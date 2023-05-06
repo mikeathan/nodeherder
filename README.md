@@ -22,3 +22,8 @@ Starts mqtt
 Websocket listener
 
 Metrics listener
+
+TODO:
+pass options to mqttclient and then create
+mediator 
+websockets
