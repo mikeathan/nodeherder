@@ -18,40 +18,56 @@ var connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, 
 	fmt.Printf("Connection Lost: %s\n", err.Error())
 }
 
-type MqttClient struct {
+type MqttOptions struct {
 	broker   string
 	username string
 	password string
-	topics   []string
-	client   mqtt.Client
 }
 
-func NewMqttClient(broker string, username string, password string) *MqttClient {
-	return &MqttClient{
+func NewMqttOptions(broker string, username string, password string) *MqttOptions {
+	return &MqttOptions{
 		broker:   broker,
 		username: username,
 		password: password,
-		topics:   []string{},
-		client:   nil,
+	}
+}
+
+type MqttClient struct {
+	options *MqttOptions
+	topics  []string
+	client  mqtt.Client
+}
+
+func (o *MqttOptions) options() *mqtt.ClientOptions {
+	options := mqtt.NewClientOptions()
+	options.AddBroker(o.broker)
+	options.SetClientID("sinkhole-mikeathan")
+	options.Username = o.username
+	options.Password = o.password
+	options.SetDefaultPublishHandler(messagePubHandler)
+	options.OnConnect = connectHandler
+	options.OnConnectionLost = connectionLostHandler
+	return options
+}
+
+func NewMqttClient(options *MqttOptions) *MqttClient {
+	return &MqttClient{
+		options: options,
+		topics:  []string{},
+		client:  nil,
 	}
 }
 
 func (m *MqttClient) AddTopic(topic string) {
+
 	m.topics = append(m.topics, topic)
 }
 
 func (m *MqttClient) Connect() {
-	options := mqtt.NewClientOptions()
-	options.AddBroker(m.broker)
-	options.SetClientID("sinkhole-mikeathan")
-	options.Username = m.username
-	options.Password = m.password
-	options.SetDefaultPublishHandler(messagePubHandler)
-	options.OnConnect = connectHandler
-	options.OnConnectionLost = connectionLostHandler
-
+	options := m.options.options()
 	m.client = mqtt.NewClient(options)
 	token := m.client.Connect()
+
 	if token.Wait() && token.Error() != nil {
 		panic(token.Error())
 	}
