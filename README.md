@@ -35,6 +35,12 @@ sample data : TH1
 go get github.com/mehdihadeli/go-mediatry
 
 
+Frontend
+settings page
+      "unit_system" : "metric",
+home
+sensor_data
+
 Web server
 
 Starts mqtt
@@ -50,3 +56,4 @@ TODO:
 pass options to mqttclient and then create
 mediator 
 websockets
+

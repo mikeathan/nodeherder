@@ -6,7 +6,6 @@ const message = ref('Node-Herder Page')
 const deviceData = ref([
 {
     "device_name": "TH1",
-    "unit_system" : "metric",
     "payload":
     {
         "battery": 100,
@@ -18,7 +17,6 @@ const deviceData = ref([
     }
 },{
     "device_name": "TH2",
-    "unit_system" : "metric",
     "payload":
     {
     "battery": 100,
