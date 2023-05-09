@@ -5,7 +5,8 @@ import SensorData from './components/SensorData.vue'
 const message = ref('Node-Herder Page')
 const deviceData = ref([
 {
-    "name": "TH1",
+    "device_name": "TH1",
+    "unit_system" : "metric",
     "payload":
     {
         "battery": 100,
@@ -16,7 +17,8 @@ const deviceData = ref([
         "voltage": 3000
     }
 },{
-    "name": "TH2",
+    "device_name": "TH2",
+    "unit_system" : "metric",
     "payload":
     {
     "battery": 100,
@@ -28,11 +30,7 @@ const deviceData = ref([
     }
 }
 ]);
-const groceryList = ref([
-  { id: 0, note: 'Vegetables' },
-  { id: 1, note: 'Cheese' },
-  { id: 2, note: 'Whatever else humans are supposed to eat' }
-])
+
 </script>
 
 <template>
@@ -41,7 +39,7 @@ const groceryList = ref([
   <SensorData 
   v-for="(item) in deviceData"
       :device="item"
-      :key="item.name"
+      :key="item.device_name"
     ></SensorData>
   </ol>
 </template>
