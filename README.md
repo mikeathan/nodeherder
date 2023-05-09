@@ -37,7 +37,12 @@ go get github.com/mehdihadeli/go-mediatry
 
 Frontend
 settings page
-      "unit_system" : "metric",
+    location_name
+    latitude
+    longitude
+    elevation
+    unit_system
+    time_zone
 home
 sensor_data
 
