@@ -10,6 +10,13 @@ const deviceData = ref([{
     "linkquality": 29,
     "temperature": 20,
     "voltage": 3000
+},{
+  "battery": 100,
+    "humidity": 61.8,
+    "last_seen": "2023-05-09T17:07:22+01:00",
+    "linkquality": 32,
+    "temperature": 22.2,
+    "voltage": 3000
 }]);
 const groceryList = ref([
   { id: 0, note: 'Vegetables' },
@@ -20,10 +27,9 @@ const groceryList = ref([
 
 <template>
   <h1>{{ message }}</h1>
-  <div>{{ deviceData }}</div>
   <ol>
-  <SensorData
-  v-for="item in groceryList"
+  <SensorData 
+  v-for="item in deviceData"
       :device="item"
       :key="item.id"
     ></SensorData>

@@ -5,5 +5,5 @@ const props = defineProps({
 </script>
 
 <template>
-  <ol>{{ device.note }}</ol>
+  <ol>{{ device }}</ol>
 </template>
