@@ -38,15 +38,18 @@ type MqttClient struct {
 	client  mqtt.Client
 }
 
-func (o *MqttOptions) options() *mqtt.ClientOptions {
+func (o *MqttOptions) ClientOptions() *mqtt.ClientOptions {
+
 	options := mqtt.NewClientOptions()
 	options.AddBroker(o.broker)
 	options.SetClientID("sinkhole-mikeathan")
 	options.Username = o.username
 	options.Password = o.password
+
 	options.SetDefaultPublishHandler(messagePubHandler)
 	options.OnConnect = connectHandler
 	options.OnConnectionLost = connectionLostHandler
+
 	return options
 }
 
@@ -64,7 +67,7 @@ func (m *MqttClient) AddTopic(topic string) {
 }
 
 func (m *MqttClient) Connect() {
-	options := m.options.options()
+	options := m.options.ClientOptions()
 	m.client = mqtt.NewClient(options)
 	token := m.client.Connect()
 
@@ -75,10 +78,11 @@ func (m *MqttClient) Connect() {
 	for _, topic := range m.topics {
 		token = m.client.Subscribe(topic, 1, nil)
 		token.Wait()
-		fmt.Printf("topic %s\n", topic)
+		fmt.Printf("subscribed topic: %s\n", topic)
 	}
 }
 
 func (m *MqttClient) Disconnect() {
 	m.client.Disconnect(100)
+	fmt.Println("mqtt disconnected")
 }
