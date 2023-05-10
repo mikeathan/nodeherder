@@ -11,7 +11,7 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 }
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
-	fmt.Println("Connected")
+	fmt.Println("zigbee2mqtt client connected")
 }
 
 var connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
@@ -26,7 +26,7 @@ func NewZ2MClient(broker string, username string, password string) *Z2MClient {
 		password: password,
 		devices:  []string{},
 		client:   nil,
-		cliendId: "sinkhole-mikeathan",
+		cliendId: "sinkhole-z2m",
 	}
 }
 
@@ -67,7 +67,7 @@ func (m *Z2MClient) Connect() error {
 		if token.Wait() && token.Error() != nil {
 			return token.Error()
 		}
-		fmt.Printf("mqtt topic: %s subscribed\n", topic)
+		fmt.Printf("subscribe zigbee2mqtt topic: %s\n", topic)
 	}
 
 	return nil
@@ -79,5 +79,5 @@ func (m *Z2MClient) AddDevice(device_name string) {
 
 func (m *Z2MClient) Disconnect() {
 	m.client.Disconnect(100)
-	fmt.Println("mqtt disconnected")
+	fmt.Println("zigbee2mqtt client disconnected")
 }
