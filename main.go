@@ -9,12 +9,20 @@ import (
 
 func main() {
 
+	broker := "192.168.50.179:1883"
+	username := "sinkhole"
+	password := "pwd"
+
 	fileServer := http.FileServer(http.Dir("./frontend/dist"))
 	http.Handle("/", fileServer)
 
-	options := hub.NewMqttOptions("192.168.50.179", "username", "password")
-	client := hub.NewMqttClient(options)
-	client.AddTopic("TH1")
+	client := hub.NewMqttClient(broker, username, password)
+	client.AddTopic("zigbee2mqtt/TH1")
+	err := client.Connect()
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 
 	fmt.Printf("Starting server at port 8080\n")
 	if err := http.ListenAndServe(":8080", nil); err != nil {

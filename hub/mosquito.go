@@ -18,68 +18,61 @@ var connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, 
 	fmt.Printf("Connection Lost: %s\n", err.Error())
 }
 
-type MqttOptions struct {
-	broker   string
-	username string
-	password string
-}
+func NewMqttClient(broker string, username string, password string) *MqttClient {
 
-func NewMqttOptions(broker string, username string, password string) *MqttOptions {
-	return &MqttOptions{
+	return &MqttClient{
 		broker:   broker,
 		username: username,
 		password: password,
+		topics:   []string{},
+		client:   nil,
+		cliendId: "sinkhole-mikeathan",
 	}
 }
 
 type MqttClient struct {
-	options *MqttOptions
-	topics  []string
-	client  mqtt.Client
+	topics   []string
+	client   mqtt.Client
+	broker   string
+	username string
+	password string
+	cliendId string
 }
 
-func (o *MqttOptions) ClientOptions() *mqtt.ClientOptions {
+func (m *MqttClient) Connect() error {
 
 	options := mqtt.NewClientOptions()
-	options.AddBroker(o.broker)
-	options.SetClientID("sinkhole-mikeathan")
-	options.Username = o.username
-	options.Password = o.password
+	options.AddBroker(m.broker)
+	options.SetClientID(m.cliendId)
+	options.Username = m.username
+	options.Password = m.password
 
 	options.SetDefaultPublishHandler(messagePubHandler)
 	options.OnConnect = connectHandler
 	options.OnConnectionLost = connectionLostHandler
 
-	return options
-}
+	m.client = mqtt.NewClient(options)
+	token := m.client.Connect()
 
-func NewMqttClient(options *MqttOptions) *MqttClient {
-	return &MqttClient{
-		options: options,
-		topics:  []string{},
-		client:  nil,
+	if token.Wait() && token.Error() != nil {
+		return token.Error()
 	}
+
+	for _, topic := range m.topics {
+		token = m.client.Subscribe(topic, 1, nil)
+
+		if token.Wait() && token.Error() != nil {
+			return token.Error()
+		}
+		fmt.Printf("mqtt topic: %s subscribed\n", topic)
+	}
+
+	return nil
 }
 
 func (m *MqttClient) AddTopic(topic string) {
 
 	m.topics = append(m.topics, topic)
-}
-
-func (m *MqttClient) Connect() {
-	options := m.options.ClientOptions()
-	m.client = mqtt.NewClient(options)
-	token := m.client.Connect()
-
-	if token.Wait() && token.Error() != nil {
-		panic(token.Error())
-	}
-
-	for _, topic := range m.topics {
-		token = m.client.Subscribe(topic, 1, nil)
-		token.Wait()
-		fmt.Printf("subscribed topic: %s\n", topic)
-	}
 }
 
 func (m *MqttClient) Disconnect() {
