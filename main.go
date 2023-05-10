@@ -16,8 +16,8 @@ func main() {
 	fileServer := http.FileServer(http.Dir("./frontend/dist"))
 	http.Handle("/", fileServer)
 
-	client := hub.NewMqttClient(broker, username, password)
-	client.AddTopic("zigbee2mqtt/TH1")
+	client := hub.NewZ2MClient(broker, username, password)
+	client.AddDevice("TH1")
 	err := client.Connect()
 	if err != nil {
 		log.Fatal(err)

@@ -18,20 +18,22 @@ var connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, 
 	fmt.Printf("Connection Lost: %s\n", err.Error())
 }
 
-func NewMqttClient(broker string, username string, password string) *MqttClient {
+func NewZ2MClient(broker string, username string, password string) *Z2MClient {
 
-	return &MqttClient{
+	return &Z2MClient{
 		broker:   broker,
 		username: username,
 		password: password,
-		topics:   []string{},
+		devices:  []string{},
 		client:   nil,
 		cliendId: "sinkhole-mikeathan",
 	}
 }
 
-type MqttClient struct {
-	topics   []string
+var baseTopic string = "zigbee2mqtt"
+
+type Z2MClient struct {
+	devices  []string
 	client   mqtt.Client
 	broker   string
 	username string
@@ -39,7 +41,7 @@ type MqttClient struct {
 	cliendId string
 }
 
-func (m *MqttClient) Connect() error {
+func (m *Z2MClient) Connect() error {
 
 	options := mqtt.NewClientOptions()
 	options.AddBroker(m.broker)
@@ -58,7 +60,8 @@ func (m *MqttClient) Connect() error {
 		return token.Error()
 	}
 
-	for _, topic := range m.topics {
+	for _, device_name := range m.devices {
+		topic := fmt.Sprintf("%s/%s", baseTopic, device_name)
 		token = m.client.Subscribe(topic, 1, nil)
 
 		if token.Wait() && token.Error() != nil {
@@ -70,12 +73,11 @@ func (m *MqttClient) Connect() error {
 	return nil
 }
 
-func (m *MqttClient) AddTopic(topic string) {
-
-	m.topics = append(m.topics, topic)
+func (m *Z2MClient) AddDevice(device_name string) {
+	m.devices = append(m.devices, device_name)
 }
 
-func (m *MqttClient) Disconnect() {
+func (m *Z2MClient) Disconnect() {
 	m.client.Disconnect(100)
 	fmt.Println("mqtt disconnected")
 }
