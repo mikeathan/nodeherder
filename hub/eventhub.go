@@ -9,6 +9,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -21,53 +22,45 @@ import (
 var addr = flag.String("addr", "localhost:8080", "http service address")
 
 var (
-	/**
-	websocketUpgrader is used to upgrade incomming HTTP requests into a persitent websocket connection
-	*/
 	websocketUpgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 	}
 )
 
+var clients map[*websocket.Conn]bool
+
 func echo(w http.ResponseWriter, r *http.Request) {
-	c, err := websocketUpgrader.Upgrade(w, r, nil)
+	connection, err := websocketUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Print("ws upgrade error:", err)
 		return
 	}
 
-	defer c.Close()
+	clients[connection] = true
+	fmt.Printf("client connected\n")
 	for {
-		mt, message, err := c.ReadMessage()
-		if err != nil {
-			log.Println("read:", err)
+		mt, message, err := connection.ReadMessage()
+		if err != nil || mt == websocket.CloseMessage {
 			break
 		}
-		log.Printf("recv: %s", message)
-		err = c.WriteMessage(mt, message)
-		if err != nil {
-			log.Println("write:", err)
-			break
-		}
+
+		fmt.Printf("message from client %s \n", string(message))
+		go BroadcastMessage([]byte("server received message"))
+	}
+
+	fmt.Printf("client disconnected\n")
+	delete(clients, connection) // Removing the connection
+
+	connection.Close()
+}
+
+func BroadcastMessage(message []byte) {
+	for conn := range clients {
+		conn.WriteMessage(websocket.TextMessage, message)
 	}
 }
 
-func ws(w http.ResponseWriter, r *http.Request) {
-	c, err := websocketUpgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Print("ws upgrade error:", err)
-		return
-	}
-
-	defer c.Close()
-	message := "test message"
-	err = c.WriteMessage(websocket.TextMessage, []byte(message))
-	if err != nil {
-		log.Println("write:", err)
-	}
-
-}
 func home(w http.ResponseWriter, r *http.Request) {
 	homeTemplate.Execute(w, "ws://"+r.Host+"/echo")
 }
@@ -75,9 +68,10 @@ func home(w http.ResponseWriter, r *http.Request) {
 func main() {
 	flag.Parse()
 	log.SetFlags(0)
+
+	clients = make(map[*websocket.Conn]bool)
 	http.HandleFunc("/echo", echo)
 	http.HandleFunc("/", home)
-	http.HandleFunc("/ws", ws)
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
 
