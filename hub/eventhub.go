@@ -1,29 +1,17 @@
-// Copyright 2015 The Gorilla WebSocket Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
-//go:build ignore
-// +build ignore
-
-package main
+package hub
 
 import (
-	"flag"
-	"fmt"
 	"html/template"
-	"log"
-	"net/http"
-	"strings"
 
 	"github.com/gorilla/websocket"
 )
 
+type device struct {
+	Name    string
+	Payload interface{}
+}
 type eventHub struct {
 	clients map[*websocket.Conn]bool
-}
-
-type wsHandler struct {
-	path string
 }
 
 func newEventHub() *eventHub {
@@ -39,60 +27,10 @@ var (
 	}
 )
 
-var _eventhub *eventHub
-
-func (h *wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
-	if strings.Compare(r.URL.Path, h.path) != 0 {
-		http.Error(w, "Not found", http.StatusNotFound)
-		return
-	}
-
-	connection, err := websocketUpgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Print("ws upgrade error:", err)
-		return
-	}
-
-	// TODO: create new client and add it to eventHub
-
-	_eventhub.clients[connection] = true
-	fmt.Printf("client connected\n")
-
-	for {
-		mt, message, err := connection.ReadMessage()
-		if err != nil || mt == websocket.CloseMessage {
-			break
-		}
-
-		fmt.Printf("message from client %s \n", string(message))
-		_eventhub.Emit(message)
-	}
-
-	fmt.Printf("client disconnected\n")
-	delete(_eventhub.clients, connection)
-	connection.Close()
-}
-
-func (h *eventHub) Emit(message []byte) {
+func (h *eventHub) Broadcast(message []byte) {
 	for conn := range h.clients {
 		conn.WriteMessage(websocket.TextMessage, message)
 	}
-}
-
-func home(w http.ResponseWriter, r *http.Request) {
-	homeTemplate.Execute(w, "")
-}
-
-func main() {
-	var addr = flag.String("addr", "localhost:8080", "http service address")
-	flag.Parse()
-	log.SetFlags(0)
-
-	clients = make(map[*websocket.Conn]bool)
-	http.HandleFunc("/ws", ws)
-	http.HandleFunc("/", home)
-	log.Fatal(http.ListenAndServe(*addr, nil))
 }
 
 var homeTemplate = template.Must(template.New("").Parse(`

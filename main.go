@@ -11,7 +11,9 @@ func main() {
 
 	broker := "192.168.50.179:1883"
 	username := "sinkhole"
-	password := "pwd"
+	password := "mqtt2023"
+
+	hub.Init("/ws")
 
 	fileServer := http.FileServer(http.Dir("./frontend/dist"))
 	http.Handle("/", fileServer)
