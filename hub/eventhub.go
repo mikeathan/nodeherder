@@ -13,13 +13,24 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/websocket"
 )
 
-//https://dev.to/davidnadejdin/simple-server-on-gorilla-websocket-52h7
+type eventHub struct {
+	clients map[*websocket.Conn]bool
+}
 
-var addr = flag.String("addr", "localhost:8080", "http service address")
+type wsHandler struct {
+	path string
+}
+
+func newEventHub() *eventHub {
+	return &eventHub{
+		clients: map[*websocket.Conn]bool{},
+	}
+}
 
 var (
 	websocketUpgrader = websocket.Upgrader{
@@ -28,16 +39,24 @@ var (
 	}
 )
 
-var clients map[*websocket.Conn]bool
+var _eventhub *eventHub
 
-func ws(w http.ResponseWriter, r *http.Request) {
+func (h *wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	if strings.Compare(r.URL.Path, h.path) != 0 {
+		http.Error(w, "Not found", http.StatusNotFound)
+		return
+	}
+
 	connection, err := websocketUpgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Print("ws upgrade error:", err)
 		return
 	}
 
-	clients[connection] = true
+	// TODO: create new client and add it to eventHub
+
+	_eventhub.clients[connection] = true
 	fmt.Printf("client connected\n")
 
 	for {
@@ -47,16 +66,16 @@ func ws(w http.ResponseWriter, r *http.Request) {
 		}
 
 		fmt.Printf("message from client %s \n", string(message))
-		go BroadcastMessage([]byte("server received message"))
+		_eventhub.Emit(message)
 	}
 
 	fmt.Printf("client disconnected\n")
-	delete(clients, connection)
+	delete(_eventhub.clients, connection)
 	connection.Close()
 }
 
-func BroadcastMessage(message []byte) {
-	for conn := range clients {
+func (h *eventHub) Emit(message []byte) {
+	for conn := range h.clients {
 		conn.WriteMessage(websocket.TextMessage, message)
 	}
 }
@@ -66,6 +85,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	var addr = flag.String("addr", "localhost:8080", "http service address")
 	flag.Parse()
 	log.SetFlags(0)
 

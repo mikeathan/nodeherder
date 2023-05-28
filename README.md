@@ -35,7 +35,7 @@ sample data : TH1
 go get github.com/mehdihadeli/go-mediatry
 
 
-Frontend
+--Frontend
 settings page
     location_name
     latitude
@@ -46,8 +46,8 @@ settings page
 home
 sensor_data
 
-Web server
 
+--Web server
 Starts mqtt
    Receives message
    Send websocket message
@@ -58,7 +58,13 @@ Websocket listener
 Metrics listener
 
 TODO:
-pass options to mqttclient and then create
-mediator 
-websockets
+mqtt message listener changed
+websocket emit device changed message
+frontend listens to message and loads it
+
+advanced:
+websockets:
+emit message device change
+all devices or just the updated ? 
+
 
