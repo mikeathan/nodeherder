@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import SensorData from './components/Dashboard.vue'
 
-const socket = new WebSocket('ws://localhost:3000')
+const socket = new WebSocket("ws://" + document.location.host + "/ws")
 const message = ref('Node-Herder Page')
 socket.onmessage = (event) => {
     const message = JSON.parse(event.data);
