@@ -48,20 +48,21 @@ func (h *wsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func Init(path string) {
 
 	if _eventhub != nil {
-		log.Fatal("eventhub is initialized")
+		log.Fatal("Init - eventhub is already initialized")
 		return
 	}
 
 	_eventhub = newEventHub()
+
 	handler := &wsHandler{path: path}
 
-	http.Handle("/"+path, handler)
+	http.Handle(fmt.Sprintf("/%s", path), handler)
 }
 
 func Broadcast(event interface{}) {
 
 	if _eventhub == nil {
-		log.Fatal("eventhub is not initialized")
+		log.Fatal("Broadcast - eventhub is not initialized")
 		return
 	}
 
