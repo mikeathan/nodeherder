@@ -56,7 +56,7 @@ func Init(path string) {
 
 	handler := &wsHandler{path: path}
 
-	http.Handle(fmt.Sprintf("/%s", path), handler)
+	http.Handle(path, handler)
 }
 
 func Broadcast(event interface{}) {

@@ -2,6 +2,7 @@ package hub
 
 import (
 	"html/template"
+	"net/http"
 
 	"github.com/gorilla/websocket"
 )
@@ -24,6 +25,7 @@ var (
 	websocketUpgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
+		CheckOrigin:     func(r *http.Request) bool { return true }, // for debug only ??
 	}
 )
 
