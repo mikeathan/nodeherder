@@ -5,8 +5,18 @@ import SensorData from './components/Dashboard.vue'
 const socket = new WebSocket("ws://" + document.location.host + "/ws")
 const message = ref('Node-Herder Page')
 socket.onmessage = (event) => {
-    const message = JSON.parse(event.data);
-    console.log("msg received " + message)
+  const message = JSON.parse(event.data);
+  print("message:" + message)
+}
+socket.onopen = function(event) {
+  print("Open");
+}
+socket.onclose = function(event) {
+  print("Close");
+  socket = null;
+}
+socket.onerror = function(event) {
+  print("Error: " + event.data);
 }
 
 const deviceData = ref([
