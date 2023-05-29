@@ -1,8 +1,14 @@
 <script setup>
 import { ref } from 'vue'
-import SensorData from './components/SensorData.vue'
+import SensorData from './components/Dashboard.vue'
 
+const socket = new WebSocket('ws://localhost:3000')
 const message = ref('Node-Herder Page')
+socket.onmessage = (event) => {
+    const message = JSON.parse(event.data);
+    console.log("msg received " + message)
+}
+
 const deviceData = ref([
 {
     "device_name": "TH1",
