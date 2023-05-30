@@ -2,15 +2,6 @@
 import { ref } from 'vue'
 import SensorData from './components/Dashboard.vue'
 
-var expectedSensorTypes = {
-  "temperature": "Temperature!!!",
-  "pressure": "Pressure!!!",
-  "humidity": "Humidity!!!",
-  "battery": "battery!!!!",
-  "last_seen": "last_seen!!!!",
-  "linkquality": "linkquality!!!!",
-  "voltage": "voltage!!!!"
-};
 
 
 const socketUri = "ws://localhost:3000/ws" //document.location.host
@@ -18,7 +9,7 @@ console.log("sockeruri:" + socketUri)
 const socket = new WebSocket(socketUri)
 const title = ref('Node-Herder Page')
 socket.onmessage = (event) => {
- 
+
   const obj = JSON.parse(event.data);
   if (event.data == undefined) {
     return
