@@ -1,31 +1,29 @@
 import path from 'path'
-import { fileURLToPath } from 'url'
+    import { fileURLToPath } from 'url'
+    
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    
+    import express from 'express'
+    import expressWs from 'express-ws'
+    import http from 'http'
+    
+    // Our port
+    let port = 3000;
+    
+    // App and server
+    let app = express();
+    let server = http.createServer(app).listen(port);    
+    
+    expressWs(app, server);
+    
+    // Get the /ws websocket route
+    app.ws('/ws', async function(ws, req) {
+        console.log("connected");
+        ws.send(JSON.stringify({ "message" : "connected" }));
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-import express from 'express'
-import WebSocket from 'ws'
-import http from 'http'
-
-
-let port = 3000;
-
-const app = express();
-const server = http.createServer(app);
-const websocketServer = new WebSocket.Server({ server });
-
-websocketServer.on("connection", (webSocketClient) => {
-    console.log("Websocket connection opened");
-    webSocketClient.send(JSON.stringify({ "message" : "hello" }));
-    // webSocketClient.send("The time is: ");
-    // setInterval(() => {
-    //     let time = new Date();
-    //     webSocketClient.send("The time is: " + time.toTimeString());
-    // }, 1000);
-  });
-  
-  //start the web server
-  server.listen(port, () => {
-    console.log("Websocket server started on port 3000");
-  });
+        ws.on('message', async function(msg) {
+            console.log(msg);
+            ws.send(JSON.stringify({ "message" : "received" }));
+        });
+    });

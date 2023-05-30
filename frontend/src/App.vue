@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import SensorData from './components/Dashboard.vue'
 
-const socketUri = "ws://localhost:3000" //document.location.host
+const socketUri = "ws://localhost:3000/ws" //document.location.host
 console.log("sockeruri:" + socketUri)
 const socket = new WebSocket(socketUri)
 const title = ref('Node-Herder Page')
