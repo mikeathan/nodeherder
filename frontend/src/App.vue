@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { useStore } from 'vuex'
 import SensorData from './components/Dashboard.vue'
 
 
@@ -8,6 +9,8 @@ const socketUri = "ws://localhost:3000/ws" //document.location.host
 console.log("sockeruri:" + socketUri)
 const socket = new WebSocket(socketUri)
 const title = ref('Node-Herder Page')
+const store = useStore()
+
 socket.onmessage = (event) => {
 
   const obj = JSON.parse(event.data);
@@ -16,6 +19,7 @@ socket.onmessage = (event) => {
   }
   console.log("message:" + event.data)
   console.log("message:" + obj.message)
+
 }
 socket.onopen = function (event) {
   console.log("Open: " + event);
