@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useStore } from 'vuex'
+import { computed } from "vue";
 import SensorData from './components/Dashboard.vue'
 
 
@@ -10,6 +11,7 @@ console.log("sockeruri:" + socketUri)
 const socket = new WebSocket(socketUri)
 const title = ref('Node-Herder Page')
 const store = useStore()
+const devices = computed(() => store.getters.devices)
 
 socket.onmessage = (event) => {
 
@@ -18,9 +20,11 @@ socket.onmessage = (event) => {
     return
   }
   console.log("message:" + event.data)
-  console.log("message:" + obj.message)
-
+  console.log("message:" + obj.name + " " + obj.payload)
+  store.commit("deviceUpdated", obj);
+ 
 }
+
 socket.onopen = function (event) {
   console.log("Open: " + event);
 }
@@ -34,7 +38,7 @@ socket.onerror = function (event) {
 
 const deviceData = ref([
   {
-    "device_name": "TH1",
+    "name": "TH1",
     "payload":
     {
       "battery": 100,
@@ -45,7 +49,7 @@ const deviceData = ref([
       "voltage": 3000
     }
   }, {
-    "device_name": "TH2",
+    "name": "TH2",
     "payload":
     {
       "battery": 100,
@@ -63,7 +67,7 @@ const deviceData = ref([
 <template>
   <h1>{{ title }}</h1>
   <ol>
-    <SensorData v-for="(item) in deviceData" :device="item" :key="item.device_name"></SensorData>
+    <SensorData v-for="(item) in devices" :device="item" :key="item.name"></SensorData>
   </ol>
 </template>
 

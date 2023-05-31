@@ -1,18 +1,23 @@
 import { createStore } from 'vuex'
 
-// Create a new store instance.
-const store = createStore({
-    state() {
-        return {
-            count: 0
-        }
-    },
-    mutations: {
-        increment(state) {
-            state.count++
-        }
-    }
-})
+const state = {
+  devices: [],
+}
 
+const mutations = {
+  deviceUpdated (state, device) {
+    state.devices.push(device)
+  },
+}
+
+const getters = {
+  devices: state => state.devices
+}
+
+export default createStore({
+  state,
+  getters,
+  mutations
+})
 
 //https://github.com/vuejs/vuex/blob/main/examples/composition/counter/store.js
