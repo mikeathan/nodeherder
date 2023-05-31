@@ -1,12 +1,12 @@
 import { createStore } from 'vuex'
 
 const state = {
-  devices: [],
+  devices: {},
 }
 
 const mutations = {
   deviceUpdated (state, device) {
-    state.devices.push(device)
+    state.devices[device.name]=device
   },
 }
 
