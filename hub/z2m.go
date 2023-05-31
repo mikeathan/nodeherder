@@ -7,9 +7,11 @@ import (
 )
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	fmt.Printf("Message %s received on topic %s\n", msg.Payload(), msg.Topic())
+	var topic = msg.Topic()
+	var payload = msg.Payload()
+	fmt.Printf("DEBUG - mqtt message => Topic: %s, Payload; %s\n", topic, payload)
 
-	Broadcast(device{Name: msg.Topic(), Payload: msg.Payload()})
+	Broadcast(device{Name: topic, Payload: string(payload)})
 }
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
@@ -26,7 +28,7 @@ func NewZ2MClient(broker string, username string, password string) *Z2MClient {
 		broker:   broker,
 		username: username,
 		password: password,
-		devices:  []string{},
+		devices:  []string{}, // not used , remove ???
 		client:   nil,
 		cliendId: "sinkhole-z2m",
 	}
@@ -35,7 +37,7 @@ func NewZ2MClient(broker string, username string, password string) *Z2MClient {
 var baseTopic string = "zigbee2mqtt"
 
 type Z2MClient struct {
-	devices  []string
+	devices  []string // not used , remove ???
 	client   mqtt.Client
 	broker   string
 	username string

@@ -6,7 +6,8 @@ import SensorData from './components/Dashboard.vue'
 
 
 
-const socketUri = "ws://localhost:3000/ws" //document.location.host
+const socketUri = "ws://localhost:3000/ws" 
+//const socketUri = "ws://"+document.location.host+"/ws"
 console.log("sockeruri:" + socketUri)
 const socket = new WebSocket(socketUri)
 const title = ref('Node-Herder Page')
@@ -36,31 +37,6 @@ socket.onerror = function (event) {
   console.log("Error: " + event.data);
 }
 
-const deviceData = ref([
-  {
-    "name": "TH1",
-    "payload":
-    {
-      "battery": 100,
-      "humidity": 69.8,
-      "last_seen": "2023-05-06T19:13:37+01:00",
-      "linkquality": 29,
-      "temperature": 20,
-      "voltage": 3000
-    }
-  }, {
-    "name": "TH2",
-    "payload":
-    {
-      "battery": 100,
-      "humidity": 61.8,
-      "last_seen": "2023-05-09T17:07:22+01:00",
-      "linkquality": 32,
-      "temperature": 22.2,
-      "voltage": 3000
-    }
-  }
-]);
 
 </script>
 
