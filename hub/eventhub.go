@@ -1,15 +1,14 @@
 package hub
 
 import (
-	"html/template"
 	"net/http"
 
 	"github.com/gorilla/websocket"
 )
 
 type device struct {
-	Name    string
-	Payload interface{}
+	Name    string      `json:"name"`
+	Payload interface{} `json:"payload"`
 }
 type eventHub struct {
 	clients map[*websocket.Conn]bool
@@ -34,76 +33,3 @@ func (h *eventHub) Broadcast(message []byte) {
 		conn.WriteMessage(websocket.TextMessage, message)
 	}
 }
-
-var homeTemplate = template.Must(template.New("").Parse(`
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<script>  
-window.addEventListener("load", function(evt) {
-
-    var output = document.getElementById("output");
-    var input = document.getElementById("input");
-
-	var ws = new WebSocket("ws://" + document.location.host + "/ws");
-	ws.onopen = function(evt) {
-		print("OPEN");
-	}
-	ws.onclose = function(evt) {
-		print("CLOSE");
-		ws = null;
-	}
-	ws.onmessage = function(evt) {
-		print("RESPONSE: " + evt.data);
-	}
-	ws.onerror = function(evt) {
-		print("ERROR: " + evt.data);
-	}
-    var print = function(message) {
-        var d = document.createElement("div");
-        d.textContent = message;
-        output.appendChild(d);
-        output.scroll(0, output.scrollHeight);
-    };
-
-    
-
-    document.getElementById("send").onclick = function(evt) {
-        if (!ws) {
-            return false;
-        }
-        print("SEND: " + input.value);
-        ws.send(input.value);
-        return false;
-    };
-
-    document.getElementById("close").onclick = function(evt) {
-        if (!ws) {
-            return false;
-        }
-        ws.close();
-        return false;
-    };
-
-});
-</script>
-</head>
-<body>
-<table>
-<tr><td valign="top" width="50%">
-<p>Click "Open" to create a connection to the server, 
-"Send" to send a message to the server and "Close" to close the connection. 
-You can change the message and send multiple times.
-<p>
-<form>
-<button id="close">Close</button>
-<p><input id="input" type="text" value="Hello world!">
-<button id="send">Send</button>
-</form>
-</td><td valign="top" width="50%">
-<div id="output" style="max-height: 70vh;overflow-y: scroll;"></div>
-</td></tr></table>
-</body>
-</html>
-`))

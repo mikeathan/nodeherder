@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -65,6 +66,9 @@ func Broadcast(event interface{}) {
 		log.Fatal("Broadcast - eventhub is not initialized")
 		return
 	}
-
-	_eventhub.Broadcast(nil)
+	bytes, err := json.Marshal(event)
+	if err != nil {
+		panic(err)
+	}
+	_eventhub.Broadcast(bytes)
 }
