@@ -6,7 +6,7 @@ import SensorData from './components/Dashboard.vue'
 
 
 
-const socketUri = "ws://localhost:3000/ws" 
+const socketUri = "ws://localhost:3000/ws"
 //const socketUri = "ws://"+document.location.host+"/ws"
 console.log("sockeruri:" + socketUri)
 const socket = new WebSocket(socketUri)
@@ -20,10 +20,9 @@ socket.onmessage = (event) => {
   if (event.data == undefined) {
     return
   }
-  console.log("message:" + event.data)
-  console.log("message:" + obj.name + " " + obj.payload)
+  console.log("message received:" + event.data)
   store.commit("deviceUpdated", obj);
- 
+
 }
 
 socket.onopen = function (event) {

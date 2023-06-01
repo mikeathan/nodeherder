@@ -5,24 +5,42 @@ const props = defineProps({
   device: Object
 })
 
-const expectedSensorTypes = {
-  "temperature": "Temperature!!!",
-  "pressure": "Pressure!!!",
-  "humidity": "Humidity!!!",
-  "battery": "battery!!!!",
+const excpectedUnits = {
+  "temperature": "°C",
+  "pressure": "hPa",
+  "humidity": "%",
+  "battery": "%",
   "last_seen": "last_seen!!!!",
-  "linkquality": "linkquality!!!!",
-  "voltage": "voltage!!!!"
+  "linkquality": "lqi",
+  "voltage": "mV"
 };
-function renderDevice(device){
+function getUnit(reading) {
 
-  for (var value of device) 
-  {
-    console.log("debug "  +value);
+  if (excpectedUnits["key"] == undefined) {
+    return "";
   }
+  return excpectedUnits[reading];
+  // check from list of units whats the unit for reading
 }
+
+function getIcon(reading) {
+  // check from list of icons whats the icon for reading
+
+}
+
+function isWhitelisted(reading) {
+
+  // check from list of unitsif reading is whitelisted for rendering
+  return true;
+}
+
 </script>
 
 <template>
-  <ol>{{ device }}</ol>
+  <ol>{{ device.name }}</ol>
+
+  <ol v-for="(value, key) in device.payload">
+
+    {{ key }}: {{ value }}
+  </ol>
 </template>
