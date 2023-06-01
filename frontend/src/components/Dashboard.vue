@@ -14,7 +14,9 @@ const expectedSensorTypes = {
   "linkquality": "linkquality!!!!",
   "voltage": "voltage!!!!"
 };
+function renderDevice(device){
 
+}
 </script>
 
 <template>
