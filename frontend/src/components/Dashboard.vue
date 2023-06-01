@@ -16,6 +16,10 @@ const expectedSensorTypes = {
 };
 function renderDevice(device){
 
+  for (var value of device) 
+  {
+    console.log("debug "  +value);
+  }
 }
 </script>
 
