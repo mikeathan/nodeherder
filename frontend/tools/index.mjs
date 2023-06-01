@@ -1,6 +1,7 @@
     import path from 'path'
     import { fileURLToPath } from 'url'
-    
+    import moment from 'moment'
+
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     
@@ -14,7 +15,7 @@
     // App and server
     let app = express();
     let server = http.createServer(app).listen(port); 
-    console.log("server listening at port "+ port);
+    console.log("["+moment().toISOString(true) + "] server listening at port "+ port );
     let deviceId = 1;
 
 
@@ -61,12 +62,15 @@
 
     // TODO:
     // match time to format: 2023-05-31T19:02:28+01:00
+    // 2023-05-31T19:02:28+01:00
+
 function mockTHDevicePayload(){
+
     var device={
         state: "",
         battery : 100,
         humidity : 60.1,
-        last_seen :  new Date().toLocaleString(),
+        last_seen :  moment().toISOString(true),
         linkquality : 47,
         temperature : 19.1,
         voltage : 3000
@@ -74,3 +78,4 @@ function mockTHDevicePayload(){
     //var jsonText = JSON.stringify(device)
     return device;
 }
+
