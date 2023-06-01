@@ -1,6 +1,7 @@
     import path from 'path'
     import { fileURLToPath } from 'url'
     import moment from 'moment'
+    import 'moment-timezone'
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
@@ -15,9 +16,7 @@
     // App and server
     let app = express();
     let server = http.createServer(app).listen(port); 
-    console.log("["+moment().toISOString(true) + "] server listening at port "+ port );
-    let deviceId = 1;
-
+    console.log("["+currentTime() + "] server listening at port "+ port );
 
     let data = [{
         "name":"device 1",
@@ -43,7 +42,6 @@
        
         setInterval(function(){
 
-            let msg = "some message id ="+deviceId++;
             data.forEach((device)=>{
                 var p = mockTHDevicePayload();
                  p.state = "updated";
@@ -59,23 +57,22 @@
         });
     });
 
-
-    // TODO:
-    // match time to format: 2023-05-31T19:02:28+01:00
-    // 2023-05-31T19:02:28+01:00
+function currentTime(){
+    var isoNow = moment().tz('Europe/London')
+    return isoNow.format();
+}
 
 function mockTHDevicePayload(){
-
     var device={
         state: "",
         battery : 100,
         humidity : 60.1,
-        last_seen :  moment().toISOString(true),
+        last_seen :  currentTime(),
         linkquality : 47,
         temperature : 19.1,
         voltage : 3000
     };
-    //var jsonText = JSON.stringify(device)
+
     return device;
 }
 
