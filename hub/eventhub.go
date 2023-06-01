@@ -1,14 +1,15 @@
 package hub
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/gorilla/websocket"
 )
 
 type device struct {
-	Name    string      `json:"name"`
-	Payload interface{} `json:"payload"`
+	Name    string          `json:"name"`
+	Payload json.RawMessage `json:"payload"`
 }
 type eventHub struct {
 	clients map[*websocket.Conn]bool

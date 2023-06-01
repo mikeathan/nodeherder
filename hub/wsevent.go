@@ -66,6 +66,7 @@ func Broadcast(event interface{}) {
 		log.Fatal("Broadcast - eventhub is not initialized")
 		return
 	}
+
 	bytes, err := json.Marshal(event)
 	if err != nil {
 		panic(err)

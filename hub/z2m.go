@@ -1,7 +1,9 @@
 package hub
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
@@ -11,7 +13,7 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 	var payload = msg.Payload()
 	fmt.Printf("DEBUG - mqtt message => Topic: %s, Payload; %s\n", topic, payload)
 
-	Broadcast(device{Name: topic, Payload: string(payload)})
+	Broadcast(device{Name: getDeviceName(topic), Payload: json.RawMessage(msg.Payload())})
 }
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
@@ -34,7 +36,7 @@ func NewZ2MClient(broker string, username string, password string) *Z2MClient {
 	}
 }
 
-var baseTopic string = "zigbee2mqtt"
+var baseTopic string = "zigbee2mqtt/"
 
 type Z2MClient struct {
 	devices  []string // not used , remove ???
@@ -43,6 +45,10 @@ type Z2MClient struct {
 	username string
 	password string
 	cliendId string
+}
+
+func getDeviceName(topic string) string {
+	return strings.Replace(topic, baseTopic, "", -1)
 }
 
 func (m *Z2MClient) Connect() error {
@@ -65,7 +71,7 @@ func (m *Z2MClient) Connect() error {
 	}
 
 	for _, device_name := range m.devices {
-		topic := fmt.Sprintf("%s/%s", baseTopic, device_name)
+		topic := fmt.Sprintf("%s%s", baseTopic, device_name)
 		token = m.client.Subscribe(topic, 1, nil)
 
 		if token.Wait() && token.Error() != nil {
