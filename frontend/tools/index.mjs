@@ -13,34 +13,10 @@
     
     // App and server
     let app = express();
-    let server = http.createServer(app).listen(port);    
+    let server = http.createServer(app).listen(port); 
+    console.log("server listening at port "+ port);
     let deviceId = 1;
 
-    // const deviceData = ref([
-    // {
-    //     "name": "TH1",
-    //     "payload":
-    //     {
-    //     "battery": 100,
-    //     "humidity": 69.8,
-    //     "last_seen": "2023-05-06T19:13:37+01:00",
-    //     "linkquality": 29,
-    //     "temperature": 20,
-    //     "voltage": 3000
-    //     }
-    // }, {
-    //     "name": "TH2",
-    //     "payload":
-    //     {
-    //     "battery": 100,
-    //     "humidity": 61.8,
-    //     "last_seen": "2023-05-09T17:07:22+01:00",
-    //     "linkquality": 32,
-    //     "temperature": 22.2,
-    //     "voltage": 3000
-    //     }
-    // }
-    // ]);
 
     let data = [{
         "name":"device 1",
@@ -82,14 +58,15 @@
         });
     });
 
-// "{\"name\":\"zigbee2mqtt/TH1\",\"payload\":\"{\\\"battery\\\":100,\\\"humidity\\\":76.7,\\\"last_seen\\\":\\\"2023-05-31T19:33:05+01:00\\\",\\\"linkquality\\\":51,\\\"temperature\\\":18.6,\\\"voltage\\\":3000}\"}"
 
+    // TODO:
+    // match time to format: 2023-05-31T19:02:28+01:00
 function mockTHDevicePayload(){
     var device={
         state: "",
         battery : 100,
         humidity : 60.1,
-        last_seen : Date.now(),
+        last_seen :  new Date().toLocaleString(),
         linkquality : 47,
         temperature : 19.1,
         voltage : 3000
