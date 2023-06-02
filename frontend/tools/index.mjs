@@ -35,7 +35,7 @@ app.ws('/ws', async function (ws, req) {
     data.forEach((device) => {
 
         var p = mockTHDevicePayload("connected");
-        console.log(p);
+       // console.log(p);
         device.payload = p
         ws.send(JSON.stringify(device));
     });
@@ -43,10 +43,12 @@ app.ws('/ws', async function (ws, req) {
     setInterval(function () {
 
         counter++
-        data.forEach((device) => {
+        // todo kill timer if client is disconnected
+        console.log("updated");
 
+        data.forEach((device) => {
+            
             var p = mockTHDevicePayload("updated");
-            console.log(p);
             device.payload = p
             ws.send(JSON.stringify(device));
         });
@@ -63,7 +65,6 @@ function currentTime() {
     return isoNow.format();
 }
 
-
 function mockTHDevicePayload(state) {
     var device = {
         state: state + "=" + counter,
@@ -73,7 +74,7 @@ function mockTHDevicePayload(state) {
         linkquality: 47,
         temperature: 19.1,
         voltage: 3000
-    };
+    };   
 
     return device;
 }
