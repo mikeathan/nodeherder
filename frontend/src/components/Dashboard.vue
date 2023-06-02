@@ -5,17 +5,26 @@ const props = defineProps({
   device: Object
 })
 
-const additionalSensorReadings = {
-  "voltage": "mV"
+const extaViewSensorReadings = {
+  "voltage": "mV",
+  "state":" ."
 }
 
-const expectedSensorReadings= {
+const quickViewSensorReadings= {
   "temperature": "°C",
   "pressure": "hPa",
   "humidity": "%",
-  "battery": "%",      // icon and caption
+  "battery": "%",       // icon and caption
   "last_seen": "(WIP)", // 22 minutes ago
-  "linkquality": "lqi", // icon and caption
+  "linkquality": "LQI", // icon and caption
+};
+
+// TODO:
+const test= {
+  "temperature": "{Icon} Temperature {value}°C",
+  "battery": "{Icon}",
+  "last_seen": "formatLastSeen(value)", // 22 minutes ago
+  "linkquality": "{Icon} {value} LQI"
 };
 
 
@@ -42,10 +51,10 @@ function formatLastSeen(sensorLastSeen)
 
 
 function getUnit(sensor) {
-  if (expectedSensorReadings[sensor] == undefined) {
+  if (quickViewSensorReadings[sensor] == undefined) {
     return "";
   }
-  return expectedSensorReadings[sensor];
+  return quickViewSensorReadings[sensor];
 }
 
 function format(sensor, value){
@@ -53,12 +62,11 @@ function format(sensor, value){
 }
 
 function getIcon(reading) {
-  // check from list of icons whats the icon for reading
 }
 
 function isWhitelisted(sensor) {
 
-  return expectedSensorReadings[sensor] != undefined;
+  return quickViewSensorReadings[sensor] != undefined;
 }
 
 </script>
