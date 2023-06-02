@@ -1,32 +1,36 @@
 <script setup>
+import { stringLiteral } from '@babel/types';
+
 
 
 const props = defineProps({
   device: Object
 })
 
-const extaViewSensorReadings = {
-  "voltage": "mV",
-  "state":" ."
-}
 
-const quickViewSensorReadings= {
-  "temperature": "°C",
-  "pressure": "hPa",
-  "humidity": "%",
+const deviceReadingsWhitelist = {
+  "voltage": "mV",
+  "state":" .", // this is just for testing - remove
   "battery": "%",       // icon and caption
   "last_seen": "(WIP)", // 22 minutes ago
   "linkquality": "LQI", // icon and caption
+}
+
+const sensorReadingsWhitelist= {
+  "temperature": "${icon}Temperature ${value}°C",
+  "pressure": "${icon}Pressure ${value}hPa",
+  "humidity": "${icon}Humidity ${value}%",  
 };
 
-// TODO:
-const test= {
-  "temperature": "{Icon} Temperature {value}°C",
-  "battery": "{Icon}",
-  "last_seen": "formatLastSeen(value)", // 22 minutes ago
-  "linkquality": "{Icon} {value} LQI"
+const sensorUnits= {
+  "temperature": "°C",
+  "pressure": "$hPa",
+  "humidity": "%",  
+  "voltage": "mV",
+  "linkquality": "LQI"
 };
 
+// https://github.com/nurikk/zigbee2mqtt-frontend/blob/dev/src/components/dashboard-page/index.tsx
 
 function formatLastSeen(sensorLastSeen)
 {
@@ -51,22 +55,30 @@ function formatLastSeen(sensorLastSeen)
 
 
 function getUnit(sensor) {
-  if (quickViewSensorReadings[sensor] == undefined) {
+  if (sensorUnits[sensor] == undefined) {
     return "";
   }
-  return quickViewSensorReadings[sensor];
+  return sensorUnits[sensor];
 }
 
 function format(sensor, value){
-  return sensor + ": "+ value + " " + getUnit(sensor)
+  
+  // icon type unit
+  var sensorName =  sensor.charAt(0).toUpperCase() + sensor.slice(1);
+  return sensorName + " "+ value + getUnit(sensor);
 }
 
 function getIcon(reading) {
+  //https://github.com/nurikk/zigbee2mqtt-frontend/blob/dev/src/components/dashboard-page/DashboardFeatureWrapper.tsx
+   return "fa-thermometer-full";
 }
 
-function isWhitelisted(sensor) {
+function isSensorReading(reading) {
+  return sensorReadingsWhitelist[reading] != undefined;
+}
 
-  return quickViewSensorReadings[sensor] != undefined;
+function isDeviceReading(reading) {
+  return deviceReadingsWhitelist[reading] != undefined;
 }
 
 </script>
@@ -74,8 +86,13 @@ function isWhitelisted(sensor) {
 <template>
   <ol>{{ device.name }}</ol>
   <ol v-for="(value, sensor) in device.payload">
-    <ol v-if="isWhitelisted(sensor)">
-        {{ format(sensor, value) }} 
+    <ol v-if="isSensorReading(sensor)">
+
+      <!-- <div>
+          <i  v-bind:class="{{ getIcon(sensor)  }}" >
+          </i>
+        </div> -->
+      {{ getIcon(sensor) }} {{ format(sensor, value) }} 
     </ol>
   </ol>
 </template>
