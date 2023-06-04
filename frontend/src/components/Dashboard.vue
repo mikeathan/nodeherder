@@ -7,7 +7,7 @@ const props = defineProps({
   device: Object
 })
 
-
+const iconPrefix = "fa fa-fw "
 const deviceReadingsWhitelist = {
   "voltage": "mV",
   "state": " .", // this is just for testing - remove
@@ -118,13 +118,14 @@ function format(sensor, value) {
 function getIcon(sensor, value) {
   //https://github.com/nurikk/zigbee2mqtt-frontend/blob/dev/src/components/dashboard-page/DashboardFeatureWrapper.tsx
   switch (name) {
-        case 'device_temperature':
-        case 'temperature':
-        case 'local_temperature':
-          typeToClassMap[sensor] = getTemperatureIcon(value);
-        break;
+    case 'device_temperature':
+    case 'temperature':
+    case 'local_temperature':
+      typeToClassMap[sensor] = getTemperatureIcon(value);
+      break;
   }
-  return typeToClassMap[sensor];
+
+  return iconPrefix + typeToClassMap[sensor];
 }
 
 function isSensorReading(reading) {
