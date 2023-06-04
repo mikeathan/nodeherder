@@ -1,6 +1,4 @@
 <script setup>
-import { stringLiteral } from '@babel/types';
-
 
 
 const props = defineProps({
@@ -132,6 +130,7 @@ function isSensorReading(reading) {
   return sensorReadingsWhitelist[reading] != undefined;
 }
 
+//todo: bootstrap-vue-3
 function isDeviceReading(reading) {
   return deviceReadingsWhitelist[reading] != undefined;
 }
@@ -139,6 +138,10 @@ function isDeviceReading(reading) {
 </script>
 
 <template>
+  <!-- <div>
+    <b-card title="Card title" sub-title="Card subtitle">
+    </b-card>
+  </div> -->
   <ol>{{ device.name }}</ol>
   <ol v-for="(value, sensor) in device.payload">
     <ol v-if="isSensorReading(sensor)">
