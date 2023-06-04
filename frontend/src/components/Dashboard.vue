@@ -115,13 +115,16 @@ function format(sensor, value) {
   return sensorName + " " + value + getUnit(sensor);
 }
 
-function getIcon(reading,) {
+function getIcon(sensor, value) {
   //https://github.com/nurikk/zigbee2mqtt-frontend/blob/dev/src/components/dashboard-page/DashboardFeatureWrapper.tsx
-
-  // todo; for temperature use
-  // getTemperatureIcon
-  // getTemperatureIcon(value)
-  return typeToClassMap[reading];
+  switch (name) {
+        case 'device_temperature':
+        case 'temperature':
+        case 'local_temperature':
+          typeToClassMap[sensor] = getTemperatureIcon(value);
+        break;
+  }
+  return typeToClassMap[sensor];
 }
 
 function isSensorReading(reading) {
