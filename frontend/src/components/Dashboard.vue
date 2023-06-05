@@ -1,79 +1,77 @@
 <script setup>
-
-
 const props = defineProps({
-  device: Object
-})
+  device: Object,
+});
 
-const iconPrefix = "fa fa-fw "
+const iconPrefix = "fa fa-fw ";
 const deviceReadingsWhitelist = {
-  "voltage": "mV",
-  "state": " .", // this is just for testing - remove
-  "battery": "%",       // icon and caption
-  "last_seen": "(WIP)", // 22 minutes ago
-  "linkquality": "LQI", // icon and caption
-}
+  voltage: "mV",
+  state: " .", // this is just for testing - remove
+  battery: "%", // icon and caption
+  last_seen: "(WIP)", // 22 minutes ago
+  linkquality: "LQI", // icon and caption
+};
 
 const sensorReadingsWhitelist = {
-  "temperature": "${icon}Temperature ${value}°C",
-  "pressure": "${icon}Pressure ${value}hPa",
-  "humidity": "${icon}Humidity ${value}%",
+  temperature: "${icon}Temperature ${value}°C",
+  pressure: "${icon}Pressure ${value}hPa",
+  humidity: "${icon}Humidity ${value}%",
 };
 
 const getTemperatureIcon = (temperature) => {
-  let icon = 'fa-thermometer-empty';
+  let icon = "fa-thermometer-empty";
   if (temperature >= 30) {
-    icon = 'fa-thermometer-full';
+    icon = "fa-thermometer-full";
   } else if (temperature >= 25) {
-    icon = 'fa-thermometer-three-quarters';
+    icon = "fa-thermometer-three-quarters";
   } else if (temperature >= 20) {
-    icon = 'fa-thermometer-half';
+    icon = "fa-thermometer-half";
   } else if (temperature >= 15) {
-    icon = 'fa-thermometer-quarter';
+    icon = "fa-thermometer-quarter";
   }
   return icon;
 };
 const typeToClassMap = {
   temperature: "fa-thermometer-full",
-  humidity: 'fa-tint',
-  illuminance: 'fa-sun',
-  pressure: 'fa-cloud-download-alt',
-  co2: 'text-warning',
-  voltage: 'text-success',
-  state: 'fa-star-half-alt',
-  brightness: 'fa-sun',
-  occupancy: 'fa-walking',
-  current: 'fa-copyright',
-  power: 'fa-power-off',
-  energy: 'fa-plug',
-  frequency: 'fa-wave-square',
-  tamper: 'fa-exclamation-circle',
-  smoke: 'fa-smoking',
-  radiation_dose_per_hour: 'fa-radiation',
-  radioactive_events_per_minute: 'fa-radiation-alt',
-  power_factor: 'fa-industry',
-  mode: 'fa-user-cog',
-  sound: 'fa-volume-up',
-  position: 'fa-percent',
-  alarm: 'fa-exclamation-triangle',
-  color_xy: 'fa-palette',
-  color_hs: 'fa-palette',
-  color_temp: 'fa-sliders-h',
-  illuminance_lux: 'fa-sun',
-  soil_moisture: 'fa-fill-drip',
-  water_leak: 'fa-water',
-  week: 'fa-calendar-week',
-  workdays_schedule: 'fa-calendar-day',
-  holidays_schedule: 'fa-calendar-day',
-  away_mode: 'fa-plane',
+  humidity: "fa-tint",
+  illuminance: "fa-sun",
+  pressure: "fa-cloud-download-alt",
+  co2: "text-warning",
+  voltage: "text-success",
+  state: "fa-star-half-alt",
+  brightness: "fa-sun",
+  occupancy: "fa-walking",
+  current: "fa-copyright",
+  power: "fa-power-off",
+  energy: "fa-plug",
+  frequency: "fa-wave-square",
+  tamper: "fa-exclamation-circle",
+  smoke: "fa-smoking",
+  radiation_dose_per_hour: "fa-radiation",
+  radioactive_events_per_minute: "fa-radiation-alt",
+  power_factor: "fa-industry",
+  mode: "fa-user-cog",
+  sound: "fa-volume-up",
+  position: "fa-percent",
+  alarm: "fa-exclamation-triangle",
+  color_xy: "fa-palette",
+  color_hs: "fa-palette",
+  color_temp: "fa-sliders-h",
+  illuminance_lux: "fa-sun",
+  soil_moisture: "fa-fill-drip",
+  water_leak: "fa-water",
+  week: "fa-calendar-week",
+  workdays_schedule: "fa-calendar-day",
+  holidays_schedule: "fa-calendar-day",
+  away_mode: "fa-plane",
 };
 
 const sensorUnits = {
-  "temperature": "°C",
-  "pressure": "$hPa",
-  "humidity": "%",
-  "voltage": "mV",
-  "linkquality": "LQI"
+  temperature: "°C",
+  pressure: "$hPa",
+  humidity: "%",
+  voltage: "mV",
+  linkquality: "LQI",
 };
 
 // https://github.com/nurikk/zigbee2mqtt-frontend/blob/dev/src/components/dashboard-page/index.tsx
@@ -98,7 +96,6 @@ function formatLastSeen(sensorLastSeen) {
   return "just now";
 }
 
-
 function getUnit(sensor) {
   if (sensorUnits[sensor] == undefined) {
     return "";
@@ -107,7 +104,6 @@ function getUnit(sensor) {
 }
 
 function format(sensor, value) {
-
   // icon type unit
   var sensorName = sensor.charAt(0).toUpperCase() + sensor.slice(1);
   return sensorName + " " + value + getUnit(sensor);
@@ -116,9 +112,9 @@ function format(sensor, value) {
 function getIcon(sensor, value) {
   //https://github.com/nurikk/zigbee2mqtt-frontend/blob/dev/src/components/dashboard-page/DashboardFeatureWrapper.tsx
   switch (name) {
-    case 'device_temperature':
-    case 'temperature':
-    case 'local_temperature':
+    case "device_temperature":
+    case "temperature":
+    case "local_temperature":
       typeToClassMap[sensor] = getTemperatureIcon(value);
       break;
   }
@@ -134,7 +130,6 @@ function isSensorReading(reading) {
 function isDeviceReading(reading) {
   return deviceReadingsWhitelist[reading] != undefined;
 }
-
 </script>
 
 <template>
@@ -142,15 +137,27 @@ function isDeviceReading(reading) {
     <b-card title="Card title" sub-title="Card subtitle">
     </b-card>
   </div> -->
-  <ol>{{ device.name }}</ol>
+  <button
+    class="btn btn-primary"
+    data-bs-target="#collapseTarget"
+    data-bs-toggle="collapse"
+  >
+    Bootstrap collapse
+  </button>
+  <div class="collapse py-2" id="collapseTarget">
+    This is the toggle-able content!
+  </div>
+  <ol>
+    {{
+      device.name
+    }}
+  </ol>
   <ol v-for="(value, sensor) in device.payload">
     <ol v-if="isSensorReading(sensor)">
-
-
-      <div :class="`fa fa-fw ${getIcon(sensor)}`">
-
-      </div>
-      {{ format(sensor, value) }}
+      <div :class="`fa fa-fw ${getIcon(sensor)}`"></div>
+      {{
+        format(sensor, value)
+      }}
     </ol>
   </ol>
 </template>
