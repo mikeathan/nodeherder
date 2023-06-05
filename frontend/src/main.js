@@ -1,8 +1,10 @@
-import { createApp } from 'vue'
-import App from './App.vue'
-import store from './store/store.js'
-import '@fortawesome/fontawesome-free/css/all.css';
+import { createApp } from "vue";
+import App from "./App.vue";
+import store from "./store/store.js";
+import "@fortawesome/fontawesome-free/css/all.css";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap";
 
-const app = createApp(App)
-app.use(store)
-app.mount('#app')
+const app = createApp(App);
+app.use(store);
+app.mount("#app");
