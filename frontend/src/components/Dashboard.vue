@@ -135,7 +135,8 @@ function isDeviceReading(reading) {
   <div class="card" style="width: 18rem;">
     <div class="card-body">
       <h5 class="card-title"> {{ device.name }}</h5>
-      <div lass="card-text" v-for="(value, sensor) in device.payload">
+
+      <div class="card-text" v-for="(value, sensor) in device.payload">
         <div v-if="isSensorReading(sensor)">
           <div :class="`fa fa-fw ${getIcon(sensor)}`"></div>
           {{
@@ -143,7 +144,10 @@ function isDeviceReading(reading) {
           }}
         </div>
       </div>
-      <!-- </p> -->
+      <p></p>
+      <div class="card-text">
+        Battery and signal stats
+      </div>
     </div>
   </div>
 </template>
