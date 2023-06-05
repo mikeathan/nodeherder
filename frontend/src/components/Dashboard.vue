@@ -126,38 +126,24 @@ function isSensorReading(reading) {
   return sensorReadingsWhitelist[reading] != undefined;
 }
 
-//todo: bootstrap-vue-3
 function isDeviceReading(reading) {
   return deviceReadingsWhitelist[reading] != undefined;
 }
 </script>
 
 <template>
-  <!-- <div>
-    <b-card title="Card title" sub-title="Card subtitle">
-    </b-card>
-  </div> -->
-  <button
-    class="btn btn-primary"
-    data-bs-target="#collapseTarget"
-    data-bs-toggle="collapse"
-  >
-    Bootstrap collapse
-  </button>
-  <div class="collapse py-2" id="collapseTarget">
-    This is the toggle-able content!
+  <div class="card" style="width: 18rem;">
+    <div class="card-body">
+      <h5 class="card-title"> {{ device.name }}</h5>
+      <div lass="card-text" v-for="(value, sensor) in device.payload">
+        <div v-if="isSensorReading(sensor)">
+          <div :class="`fa fa-fw ${getIcon(sensor)}`"></div>
+          {{
+            format(sensor, value)
+          }}
+        </div>
+      </div>
+      <!-- </p> -->
+    </div>
   </div>
-  <ol>
-    {{
-      device.name
-    }}
-  </ol>
-  <ol v-for="(value, sensor) in device.payload">
-    <ol v-if="isSensorReading(sensor)">
-      <div :class="`fa fa-fw ${getIcon(sensor)}`"></div>
-      {{
-        format(sensor, value)
-      }}
-    </ol>
-  </ol>
 </template>
