@@ -12,12 +12,6 @@ const deviceReadingsWhitelist = {
   linkquality: "LQI", // icon and caption
 };
 
-const sensorReadingsWhitelist = {
-  temperature: "${icon}Temperature ${value}°C",
-  pressure: "${icon}Pressure ${value}hPa",
-  humidity: "${icon}Humidity ${value}%",
-};
-
 const getTemperatureIcon = (temperature) => {
   let icon = "fa-thermometer-empty";
   if (temperature >= 30) {
@@ -132,22 +126,18 @@ function isDeviceReading(reading) {
 </script>
 
 <template>
-  <div class="card" style="width: 18rem;">
+  <div class="card" style="width: 18rem">
     <div class="card-body">
-      <h5 class="card-title"> {{ device.name }}</h5>
+      <h5 class="card-title">{{ device.name }}</h5>
 
       <div class="card-text" v-for="(value, sensor) in device.payload">
         <div v-if="isSensorReading(sensor)">
           <div :class="`fa fa-fw ${getIcon(sensor)}`"></div>
-          {{
-            format(sensor, value)
-          }}
+          {{ format(sensor, value) }}
         </div>
       </div>
       <p></p>
-      <div class="card-text">
-        Battery and signal stats
-      </div>
+      <div class="card-text">Battery and signal stats</div>
     </div>
   </div>
 </template>
