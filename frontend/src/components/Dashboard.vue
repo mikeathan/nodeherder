@@ -1,22 +1,10 @@
 <script setup>
 import { getSensorIcon } from "../modules/sensors/icons";
+import { isSensorReading, format } from "../modules/sensors/sensor";
 const props = defineProps({
   device: Object,
 });
 
-const sensorReadingsWhitelist = {
-  "temperature": "Temperature",
-  "pressure": "Pressure",
-  "humidity": "Humidity",
-};
-
-const sensorUnits = {
-  temperature: "°C",
-  pressure: "$hPa",
-  humidity: "%",
-  voltage: "mV",
-  linkquality: "LQI",
-};
 
 // https://github.com/nurikk/zigbee2mqtt-frontend/blob/dev/src/components/dashboard-page/index.tsx
 
@@ -40,27 +28,6 @@ function formatLastSeen(sensorLastSeen) {
   return "just now";
 }
 
-function getUnit(sensor) {
-  if (sensorUnits[sensor] == undefined) {
-    return "";
-  }
-  return sensorUnits[sensor];
-}
-
-function format(sensor, value) {
-  // icon type unit
-  var sensorName = sensor.charAt(0).toUpperCase() + sensor.slice(1);
-  return sensorName + " " + value + getUnit(sensor);
-}
-
-
-function isSensorReading(reading) {
-  return sensorReadingsWhitelist[reading] != undefined;
-}
-
-function isDeviceReading(reading) {
-  return deviceReadingsWhitelist[reading] != undefined;
-}
 </script>
 
 <template>
