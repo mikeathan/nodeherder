@@ -1,4 +1,3 @@
-const iconPrefix = "fa fa-fw ";
 const typeToClassMap = {
   temperature: "fa-thermometer-full",
   humidity: "fa-tint",
@@ -34,7 +33,7 @@ const typeToClassMap = {
   away_mode: "fa-plane",
 };
 
-export function getIcon(sensor: string, value: number) {
+export function getSensorIcon(sensor, value) {
   switch (sensor) {
     case "device_temperature":
     case "temperature":
@@ -43,10 +42,10 @@ export function getIcon(sensor: string, value: number) {
       break;
   }
 
-  return iconPrefix + typeToClassMap[sensor];
+  return typeToClassMap[sensor];
 }
 
-const getTemperatureIcon = (temperature: number) => {
+const getTemperatureIcon = (temperature) => {
   let icon = "fa-thermometer-empty";
   if (temperature >= 30) {
     icon = "fa-thermometer-full";
