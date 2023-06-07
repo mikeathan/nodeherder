@@ -19,11 +19,11 @@ function getUnit(sensor) {
   return sensorUnits[sensor];
 }
 
-export function format(sensor, value) {
+export function formatSensorValue(sensor, value) {
   var sensorName = sensor.charAt(0).toUpperCase() + sensor.slice(1);
   return sensorName + " " + value + getUnit(sensor);
 }
 
-export function isSensorReading(reading) {
+export function isSensorWhitelisted(reading) {
   return sensorReadingsWhitelist[reading] != undefined;
 }
