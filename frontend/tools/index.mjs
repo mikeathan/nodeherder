@@ -54,15 +54,13 @@ app.ws("/ws", async function (ws, req) {
     ws.send(device);
   });
 
-  setInterval(function () {
-    counter++;
-
-    // todo kill timer if client is disconnected
-    devicesConfig.forEach((config) => {
+  devicesConfig.forEach((config) => {
+    setInterval(function () {
+      counter++;
       var device = buildPayload("updated", config);
       ws.send(device);
-    });
-  }, 5000);
+    }, config.delayInSec);
+  });
 
   ws.on("message", async function (msg) {
     console.log("message received" + msg);
@@ -87,6 +85,7 @@ function buildPayload(status, settings) {
 
   return device;
 }
+
 function currentTime() {
   var isoNow = moment().tz("Europe/London");
   return isoNow.format();
