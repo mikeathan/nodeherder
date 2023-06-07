@@ -15,6 +15,10 @@ const temperatureChangeDelaySec = 5;
 const temperatureMin = 10.0;
 const temperatureMax = 40.0;
 
+const humidityChangeDelaySec = 30;
+const humidityMin = 30.0;
+const humidityMax = 100.0;
+
 // Our port
 let port = 3000;
 
@@ -30,16 +34,20 @@ let devicesConfig = [
     temperatureOffset: 0.6,
     humidityOffset: 11.3,
     delayInSec: 20,
+    humidity: humidityMin,
     temperature: temperatureMin,
-    lastChanged: moment(),
+    temperatureLastChanged: moment(),
+    humidityLastChanged: moment(),
   },
   {
     name: "device 2",
     temperatureOffset: 1.1,
     humidityOffset: 9.7,
     delayInSec: 30,
+    humidity: humidityMin,
     temperature: temperatureMin,
-    lastChanged: moment(),
+    temperatureLastChanged: moment(),
+    humidityLastChanged: moment(),
   },
 ];
 
@@ -73,16 +81,6 @@ function buildPayload(status, settings) {
     payload: mockTHDevicePayload(status, settings),
   };
   var device = JSON.stringify(data);
-  //   console.log(
-  //     status +
-  //       "=>" +
-  //       data.name +
-  //       " temp: " +
-  //       data.payload.temperature +
-  //       " temp offset: " +
-  //       settings.temperatureOffset
-  //   );
-
   return device;
 }
 
@@ -95,7 +93,7 @@ function mockTHDevicePayload(state, settings) {
   var device = {
     state: state + "=" + counter,
     battery: 100,
-    humidity: 60.1,
+    humidity: getMockHumidity(settings),
     last_seen: currentTime(),
     linkquality: 47,
     temperature: getMockTemperature(settings),
@@ -106,7 +104,7 @@ function mockTHDevicePayload(state, settings) {
 }
 
 function getMockTemperature(settings) {
-  var diff = moment().diff(settings.lastChanged);
+  var diff = moment().diff(settings.temperatureLastChanged);
   var duration = moment.duration(diff);
 
   if (duration.seconds() < temperatureChangeDelaySec) {
@@ -118,6 +116,23 @@ function getMockTemperature(settings) {
   }
 
   settings.temperature += settings.temperatureOffset;
-  settings.lastChanged = moment();
+  settings.temperatureLastChanged = moment();
   return settings.temperature;
+}
+
+function getMockHumidity(settings) {
+  var diff = moment().diff(settings.humidityLastChanged);
+  var duration = moment.duration(diff);
+
+  if (duration.seconds() < humidityChangeDelaySec) {
+    return settings.humidity;
+  }
+
+  if (settings.humidity > humidityMax) {
+    settings.humidity = humidityMin;
+  }
+
+  settings.humidity += settings.humidityOffset;
+  settings.humidityLastChanged = moment();
+  return settings.humidity;
 }
