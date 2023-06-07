@@ -58,11 +58,9 @@ app.ws("/ws", async function (ws, req) {
     counter++;
 
     // todo kill timer if client is disconnected
-    devicesConfig.forEach((device) => {
-      devicesConfig.forEach((config) => {
-        var device = buildPayload("updated", config);
-        ws.send(device);
-      });
+    devicesConfig.forEach((config) => {
+      var device = buildPayload("updated", config);
+      ws.send(device);
     });
   }, 5000);
 
