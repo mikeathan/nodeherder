@@ -16,27 +16,36 @@ export function formatLastSeen(payload) {
   var diff = moment().diff(lastSeen);
   var duration = moment.duration(diff);
 
-  var result = "just now";
+  var formatted = "just now";
   // TODO: handle days() > 0
   if (duration.hours() > 0) {
-    result = duration.hours() + " hours ago";
+    formatted = duration.hours() + " hours ago";
   }
   if (duration.minutes() > 0) {
-    result = duration.minutes() + " minutes ago";
+    formatted = duration.minutes() + " minutes ago";
   }
   if (duration.seconds() > 5) {
-    result = duration.seconds() + " seconds ago";
+    formatted = duration.seconds() + " seconds ago";
   }
 
   console.log(
-    payload["name"] + " last_seen: " + sensorLastSeen + " formated:" + result
+    " last_seen: " +
+      sensorLastSeen +
+      " formated:" +
+      formatted +
+      " diff: " +
+      diff
   );
-  return result;
+  return formatted;
 }
 
 export function formatDeviceInfo(payload) {}
 
 export function formatBattery(payload) {
+  if (isProxy(payload)) {
+    payload = toRaw(payload);
+  }
+
   if (payload["battery"] == undefined) {
     return "";
   }
@@ -66,8 +75,11 @@ export function formatBattery(payload) {
   return batteryClass;
 }
 
-function formatLinkQuality(payload) {
-  if (payload["linkquality"] != undefined) {
+export function formatLinkQuality(payload) {
+  if (isProxy(payload)) {
+    payload = toRaw(payload);
+  }
+  if (payload["linkquality"] == undefined) {
     return "";
   }
 
