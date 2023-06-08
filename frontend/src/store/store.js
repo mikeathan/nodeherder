@@ -1,5 +1,5 @@
 import { createStore } from "vuex";
-
+import createPersistedState from "vuex-persistedstate";
 const state = {
   devices: {},
 };
@@ -14,10 +14,12 @@ const getters = {
   devices: (state) => state.devices,
 };
 
+const plugins = [createPersistedState()];
 export default createStore({
   state,
   getters,
   mutations,
+  plugins,
 });
 
 //https://github.com/vuejs/vuex/blob/main/examples/composition/counter/store.js
