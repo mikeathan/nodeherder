@@ -26,7 +26,7 @@ const props = defineProps({
       </div>
       <p></p>
       <div class="card-text">
-        <!-- <div>{{ formatLastSeen(device.payload) }}</div> -->
+        <div>{{ formatLastSeen(device.payload) }}</div>
         <div :class="`fa fa-fw ${formatBattery(device.payload)}`"></div>
         <div>{{ formatLinkQuality(device.payload) }}</div>
       </div>
