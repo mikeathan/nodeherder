@@ -33,7 +33,7 @@ let devicesConfig = [
     name: "device 1",
     temperatureOffset: 0.6,
     humidityOffset: 11.3,
-    delayInSec: 20,
+    delayInMs: 20000,
     humidity: humidityMin,
     temperature: temperatureMin,
     temperatureLastChanged: moment(),
@@ -43,7 +43,7 @@ let devicesConfig = [
     name: "device 2",
     temperatureOffset: 1.1,
     humidityOffset: 9.7,
-    delayInSec: 30,
+    delayInMs: 30000,
     humidity: humidityMin,
     temperature: temperatureMin,
     temperatureLastChanged: moment(),
@@ -67,7 +67,7 @@ app.ws("/ws", async function (ws, req) {
       counter++;
       var device = buildPayload("updated", config);
       ws.send(device);
-    }, config.delayInSec);
+    }, config.delayInMs);
   });
 
   ws.on("message", async function (msg) {
