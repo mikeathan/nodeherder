@@ -1,28 +1,37 @@
 import moment from "moment";
 import "moment-timezone";
-
+import { isProxy, toRaw } from "vue";
 export function formatLastSeen(payload) {
-  if ((payload["last_seen"] = undefined)) {
+  if (isProxy(payload)) {
+    payload = toRaw(payload);
+  }
+
+  if (payload["last_seen"] == undefined) {
     return "";
   }
 
   var sensorLastSeen = payload["last_seen"];
+
   var lastSeen = moment(sensorLastSeen);
   var diff = moment().diff(lastSeen);
   var duration = moment.duration(diff);
 
+  var result = "just now";
   // TODO: handle days() > 0
   if (duration.hours() > 0) {
-    return duration.hours() + " hours ago";
+    result = duration.hours() + " hours ago";
   }
   if (duration.minutes() > 0) {
-    return duration.minutes() + " minutes ago";
+    result = duration.minutes() + " minutes ago";
   }
   if (duration.seconds() > 5) {
-    return duration.seconds() + " seconds ago";
+    result = duration.seconds() + " seconds ago";
   }
 
-  return "just now";
+  console.log(
+    payload["name"] + " last_seen: " + sensorLastSeen + " formated:" + result
+  );
+  return result;
 }
 
 export function formatDeviceInfo(payload) {}
@@ -31,8 +40,10 @@ export function formatBattery(payload) {
   if (payload["battery"] == undefined) {
     return "";
   }
+
   var batteryClass;
   var battery = payload["battery"];
+
   if (battery >= 85) {
     batteryClass += " fa-battery-full";
   } else if (battery >= 75) {
