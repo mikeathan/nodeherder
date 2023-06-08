@@ -1,16 +1,16 @@
 <script setup>
 import { getSensorIcon } from "../modules/sensors/icons";
+import { formatLastSeen, formatBattery } from "../modules/sensors/device";
 import {
   isSensorWhitelisted,
   formatSensorValue,
 } from "../modules/sensors/sensor";
+
 const props = defineProps({
   device: Object,
 });
 
 // https://github.com/nurikk/zigbee2mqtt-frontend/blob/dev/src/components/dashboard-page/index.tsx
-
-
 </script>
 
 <template>
@@ -25,7 +25,10 @@ const props = defineProps({
         </div>
       </div>
       <p></p>
-      <div class="card-text">Battery and signal stats</div>
+      <div class="card-text">
+        <div>{{ formatLastSeen(device.payload) }}</div>
+        <div :class="`fa fa-fw ${formatBattery(device.payload)}`"></div>
+      </div>
     </div>
   </div>
 </template>
