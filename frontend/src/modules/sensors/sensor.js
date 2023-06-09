@@ -20,8 +20,9 @@ function getUnit(sensor) {
 }
 
 export function formatSensorValue(sensor, value) {
+  // TODO: load name  from resources file
   var sensorName = sensor.charAt(0).toUpperCase() + sensor.slice(1);
-  return sensorName + " " + value + getUnit(sensor);
+  return sensorName + " " + value.toFixed(1) + getUnit(sensor);
 }
 
 export function isSensorWhitelisted(reading) {
