@@ -19,7 +19,7 @@ const props = defineProps({
 </script>
 
 <template>
-  <div class="card" style="width: 18rem">
+  <div class="card" style="width: 20rem">
     <div class="card-body">
       <h5 class="card-title">{{ device.name }}</h5>
 
@@ -29,17 +29,18 @@ const props = defineProps({
           {{ formatSensorValue(sensor, value) }}
         </div>
       </div>
-      <p></p>
-
-      <div class="card-text container-fluid">
-        {{ formatLastSeen(device.payload) }}
-        <div
-          :class="`fa fa-fw ${getBatteryIcon(device.payload)} container-fluid`"
-        >
-          <div :class="`fa fa-fw ${getLinkQualityIcon()} container-fluid`">
-            {{ formatLinkQuality(device.payload) }}
-          </div>
-        </div>
+      <div class="card-text">
+        <span style="margin-right: 2.5rem">
+          {{ formatLastSeen(device.payload) }}
+        </span>
+        <span
+          :class="`fa fa-fw ${getLinkQualityIcon()}`"
+          style="margin-right: 0.25rem !important"
+        ></span>
+        <span style="margin-right: 0.5rem">
+          {{ formatLinkQuality(device.payload) }}
+        </span>
+        <span :class="`fa fa-fw ${getBatteryIcon(device.payload)}`"></span>
       </div>
     </div>
   </div>
