@@ -1,6 +1,11 @@
 <script setup>
 import { getSensorIcon } from "../modules/sensors/icons";
-import { formatLastSeen, formatBattery, formatLinkQuality } from "../modules/sensors/device";
+import {
+  formatLastSeen,
+  getBatteryIcon,
+  formatLinkQuality,
+  getLinkQualityIcon,
+} from "../modules/sensors/device";
 import {
   isSensorWhitelisted,
   formatSensorValue,
@@ -25,10 +30,16 @@ const props = defineProps({
         </div>
       </div>
       <p></p>
-      <div class="card-text">
-        <div>{{ formatLastSeen(device.payload) }}</div>
-        <div :class="`fa fa-fw ${formatBattery(device.payload)}`"></div>
-        <div>{{ formatLinkQuality(device.payload) }}</div>
+
+      <div class="card-text container-fluid">
+        {{ formatLastSeen(device.payload) }}
+        <div
+          :class="`fa fa-fw ${getBatteryIcon(device.payload)} container-fluid`"
+        >
+          <div :class="`fa fa-fw ${getLinkQualityIcon()} container-fluid`">
+            {{ formatLinkQuality(device.payload) }}
+          </div>
+        </div>
       </div>
     </div>
   </div>

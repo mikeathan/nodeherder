@@ -41,7 +41,7 @@ export function formatLastSeen(payload) {
 
 export function formatDeviceInfo(payload) {}
 
-export function formatBattery(payload) {
+export function getBatteryIcon(payload) {
   if (isProxy(payload)) {
     payload = toRaw(payload);
   }
@@ -50,9 +50,8 @@ export function formatBattery(payload) {
     return "";
   }
 
-  var batteryClass;
+  var batteryClass = "";
   var battery = payload["battery"];
-
   if (battery >= 85) {
     batteryClass += " fa-battery-full";
   } else if (battery >= 75) {
@@ -74,6 +73,9 @@ export function formatBattery(payload) {
   }
   return batteryClass;
 }
+export function getLinkQualityIcon() {
+  return "fa-signal fa-fw";
+}
 
 export function formatLinkQuality(payload) {
   if (isProxy(payload)) {
@@ -83,7 +85,6 @@ export function formatLinkQuality(payload) {
     return "";
   }
 
-  //<i className="fa fa-signal fa-fw" /> {linkquality} LQI
   var linkQuality = payload["linkquality"];
 
   return linkQuality + " LQI";
