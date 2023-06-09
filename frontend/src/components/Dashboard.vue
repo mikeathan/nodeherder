@@ -8,7 +8,9 @@ const devices = computed(() => store.getters.devices);
 </script>
 
 <template>
-  <ol>
-    <Device v-for="item in devices" :device="item" :key="item.name"></Device>
-  </ol>
+  <div className="container-fluid p-0 h-100">
+    <div className="row">
+      <Device v-for="item in devices" :device="item" :key="item.name"></Device>
+    </div>
+  </div>
 </template>
