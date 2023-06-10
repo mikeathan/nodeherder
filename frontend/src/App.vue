@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from "vue";
-import Dashboard from "./components/Dashboard.vue";
+import Dashboard from "./components/device-dashboard/DeviceDashboard.vue";
 const title = ref("Node-Herder Page");
 </script>
 

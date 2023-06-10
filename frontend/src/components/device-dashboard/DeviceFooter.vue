@@ -4,7 +4,7 @@ import {
   getBatteryIcon,
   formatLinkQuality,
   getLinkQualityIcon,
-} from "../modules/sensors/device";
+} from "../../modules/sensors/device";
 
 const props = defineProps({
   payload: Object,
