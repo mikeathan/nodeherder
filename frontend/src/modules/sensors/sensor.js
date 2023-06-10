@@ -53,11 +53,11 @@ function getUnit(sensor) {
   }
   return sensorUnits[sensor];
 }
-export function sensorName(sensor, value) {
+export function getSensorName(sensor) {
   return sensor.charAt(0).toUpperCase() + sensor.slice(1); // TODO: load name  from resources file
 }
-export function sensorValue(sensor, value) {
-  return sensorName + " " + value.toFixed(1) + getUnit(sensor);
+export function getSensorValue(sensor, value) {
+  return value.toFixed(1) + getUnit(sensor);
 }
 
 export function isSensorWhitelisted(reading) {

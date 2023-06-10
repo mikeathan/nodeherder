@@ -1,10 +1,11 @@
 <script setup>
 import DeviceFooter from "./DeviceFooter.vue";
-import { getSensorIcon } from "../../modules/sensors/icons";
 
 import {
   isSensorWhitelisted,
-  formatSensorValue,
+  getSensorValue,
+  getSensorIcon,
+  getSensorName
 } from "../../modules/sensors/sensor";
 
 const props = defineProps({
@@ -13,14 +14,15 @@ const props = defineProps({
 </script>
 
 <template>
-  <div class="card" style="width: 20rem">
+  <div class="card" style="width: 25rem">
     <div class="card-body">
       <h5 class="card-title">{{ device.name }}</h5>
 
       <div class="card-text" v-for="(value, sensor) in device.payload">
         <div v-if="isSensorWhitelisted(sensor)">
-          <div :class="`fa fa-fw ${getSensorIcon(sensor)}`"></div>
-          {{ formatSensorValue(sensor, value) }}
+          <span :class="`fa fa-fw ${getSensorIcon(sensor)}`"></span>
+          <span style="display: inline-block;overflow: hidden;width:10em;">{{ getSensorName(sensor) }}</span>
+          <span>{{ getSensorValue(sensor, value) }}</span>
         </div>
       </div>
       <DeviceFooter :payload="device.payload"></DeviceFooter>
