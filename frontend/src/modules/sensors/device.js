@@ -1,6 +1,7 @@
 import moment from "moment";
 import "moment-timezone";
 import { isProxy, toRaw } from "vue";
+
 export function formatLastSeen(payload) {
   if (isProxy(payload)) {
     payload = toRaw(payload);
@@ -28,18 +29,8 @@ export function formatLastSeen(payload) {
     formatted = duration.seconds() + " seconds ago";
   }
 
-  console.log(
-    " last_seen: " +
-      sensorLastSeen +
-      " formated:" +
-      formatted +
-      " diff: " +
-      diff
-  );
   return formatted;
 }
-
-export function formatDeviceInfo(payload) {}
 
 export function getBatteryIcon(payload) {
   if (isProxy(payload)) {
