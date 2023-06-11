@@ -5,7 +5,7 @@ import {
   isSensorWhitelisted,
   getSensorValue,
   getSensorIcon,
-  getSensorName
+  getSensorName,
 } from "../../modules/sensors/sensor";
 
 const props = defineProps({
@@ -21,7 +21,9 @@ const props = defineProps({
       <div class="card-text" v-for="(value, sensor) in device.payload">
         <div v-if="isSensorWhitelisted(sensor)">
           <span :class="`fa fa-fw ${getSensorIcon(sensor)}`"></span>
-          <span style="display: inline-block;overflow: hidden;width:10em;">{{ getSensorName(sensor) }}</span>
+          <span style="display: inline-block; overflow: hidden; width: 10rem">{{
+            getSensorName(sensor)
+          }}</span>
           <span>{{ getSensorValue(sensor, value) }}</span>
         </div>
       </div>
