@@ -17,7 +17,7 @@ const props = defineProps({
 <template>
   <div class="card" style="width: 25rem">
     <div class="card-body">
-      <h5 class="card-title">{{ device.name }}</h5>
+      <div class="card-title">{{ device.name }}</h5>
 
       <div class="card-text" v-for="(value, sensor) in device.payload">
         <div v-if="isSensorWhitelisted(sensor)">
@@ -26,6 +26,7 @@ const props = defineProps({
           <span>{{ getSensorValue(sensor, value) }}</span>
         </div>
       </div>
+      <p></p>
       <DeviceFooter :payload="device.payload"></DeviceFooter>
     </div>
   </div>

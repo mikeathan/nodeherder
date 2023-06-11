@@ -12,7 +12,6 @@ const props = defineProps({
 </script>
 
 <template>
-  <p></p>
   <div class="card-text">
     <span style="margin-right: 4.5rem">
       {{ formatLastSeen(payload) }}
