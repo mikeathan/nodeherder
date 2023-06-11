@@ -1,5 +1,6 @@
 <script setup>
 import DeviceFooter from "./DeviceFooter.vue";
+import "../../assets/css/device.styles.css";
 
 import {
   isSensorWhitelisted,
@@ -21,9 +22,7 @@ const props = defineProps({
       <div class="card-text" v-for="(value, sensor) in device.payload">
         <div v-if="isSensorWhitelisted(sensor)">
           <span :class="`fa fa-fw ${getSensorIcon(sensor)}`"></span>
-          <span style="display: inline-block; overflow: hidden; width: 10rem">{{
-            getSensorName(sensor)
-          }}</span>
+          <span class="sensor-name-span">{{ getSensorName(sensor) }}</span>
           <span>{{ getSensorValue(sensor, value) }}</span>
         </div>
       </div>

@@ -1,0 +1,9 @@
+.sensor-name-span {
+  display: inline-block;
+  overflow: hidden;
+  width: 10rem;
+}
+
+.device-info-span {
+  margin-right: 0.2em;
+}

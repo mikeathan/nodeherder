@@ -5,7 +5,7 @@ import {
   formatLinkQuality,
   getLinkQualityIcon,
 } from "../../modules/sensors/device";
-
+import "../../assets/css/device.styles.css";
 const props = defineProps({
   payload: Object,
 });
@@ -13,12 +13,15 @@ const props = defineProps({
 
 <template>
   <p></p>
-  <div class="card-footer border-0">
-    <span style="margin-right: 3.1rem">
+  <div class="card-text">
+    <span style="margin-right: 4.5rem">
       {{ formatLastSeen(payload) }}
     </span>
-    <span :class="`fa fa-fw ${getLinkQualityIcon()}`" style="margin-left: 0.5rem;margin-right: 0.25rem;"></span>
-    <span style="margin-right: 0.5rem">
+    <span
+      :class="`fa fa-fw ${getLinkQualityIcon()}`"
+      class="device-info-span"
+    ></span>
+    <span class="device-info-span">
       {{ formatLinkQuality(payload) }}
     </span>
     <span :class="`fa fa-fw ${getBatteryIcon(payload)}`"></span>
