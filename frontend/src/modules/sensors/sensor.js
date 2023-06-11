@@ -33,7 +33,7 @@ const typeToClassMap = {
   away_mode: "fa-plane",
 };
 
-const sensorReadingsWhitelist = {
+const sensorsWhitelist = {
   temperature: "Temperature",
   pressure: "Pressure",
   humidity: "Humidity",
@@ -61,7 +61,7 @@ export function getSensorValue(sensor, value) {
 }
 
 export function isSensorWhitelisted(reading) {
-  return sensorReadingsWhitelist[reading] != undefined;
+  return sensorsWhitelist[reading] != undefined;
 }
 
 export function getSensorIcon(sensor, value) {
