@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted } from "vue";
+import { watch } from "vue";
 import "../../assets/css/device.styles.css";
 import {
   formatLastSeen,
@@ -13,11 +13,11 @@ const props = defineProps({
 });
 
 
-
-onMounted(() => {
-  console.log("device footer mounted");
-
+watch(() => props.payload, (newpayload) => {
+  console.log(
+    "Watch props.payload update " + newpayload.name);
 });
+
 var lastSeenTimerId = undefined;
 function lastSeen(payload) {
   return formatLastSeen(payload)
