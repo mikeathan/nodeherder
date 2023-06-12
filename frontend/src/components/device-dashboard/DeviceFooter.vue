@@ -14,6 +14,7 @@ const props = defineProps({
 
 var lastSeenTimerId = undefined;
 let lastSeenUpdater = ref("");
+
 watch(
   () => props.payload,
   (newpayload) => {
@@ -30,9 +31,11 @@ watch(
     console.log("setInterval " + newpayload.name + " id: " + lastSeenTimerId);
   }
 );
+
 onMounted(() => {
   lastSeenUpdater.value = formatLastSeen(props.payload);
 });
+
 </script>
 
 <template>
@@ -40,10 +43,7 @@ onMounted(() => {
     <span style="margin-right: 4.5rem">
       {{ lastSeenUpdater }}
     </span>
-    <span
-      :class="`fa fa-fw ${getLinkQualityIcon()}`"
-      class="device-info-span"
-    ></span>
+    <span :class="`fa fa-fw ${getLinkQualityIcon()}`" class="device-info-span"></span>
     <span class="device-info-span">
       {{ formatLinkQuality(payload) }}
     </span>
