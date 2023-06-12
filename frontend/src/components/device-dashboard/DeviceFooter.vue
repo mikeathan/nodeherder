@@ -1,5 +1,5 @@
 <script setup>
-import { watch } from "vue";
+import { watch, ref, onMounted } from "vue";
 import "../../assets/css/device.styles.css";
 import {
   formatLastSeen,
@@ -12,25 +12,38 @@ const props = defineProps({
   payload: Object,
 });
 
-
-watch(() => props.payload, (newpayload) => {
-  console.log(
-    "Watch props.payload update " + newpayload.name);
-});
-
 var lastSeenTimerId = undefined;
-function lastSeen(payload) {
-  return formatLastSeen(payload)
-};
+let lastSeenUpdater = ref("");
+watch(
+  () => props.payload,
+  (newpayload) => {
+    console.log("Watch props.payload update " + newpayload.name);
 
+    if (lastSeenTimerId != undefined) {
+      clearInterval(lastSeenTimerId);
+      console.log("clearInterval " + lastSeenTimerId);
+    }
+    lastSeenTimerId = setInterval(function () {
+      lastSeenUpdater.value = formatLastSeen(newpayload);
+    }, 1000);
+
+    console.log("setInterval " + newpayload.name + " id: " + lastSeenTimerId);
+  }
+);
+onMounted(() => {
+  lastSeenUpdater.value = formatLastSeen(props.payload);
+});
 </script>
 
 <template>
   <div class="card-text">
     <span style="margin-right: 4.5rem">
-      {{ lastSeen(payload) }}
+      {{ lastSeenUpdater }}
     </span>
-    <span :class="`fa fa-fw ${getLinkQualityIcon()}`" class="device-info-span"></span>
+    <span
+      :class="`fa fa-fw ${getLinkQualityIcon()}`"
+      class="device-info-span"
+    ></span>
     <span class="device-info-span">
       {{ formatLinkQuality(payload) }}
     </span>
