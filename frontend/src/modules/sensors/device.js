@@ -2,6 +2,38 @@ import moment from "moment";
 import "moment-timezone";
 import { isProxy, toRaw } from "vue";
 
+export default class Device {
+  constructor(payload) {
+    this.updatePayload(payload);
+  }
+
+  startLastSeenTimer() {
+    this.stoplastSeenTimer();
+    this.lastSeenTimerId = setInterval(function () {
+      this.lastSeen = formatLastSeen(this.payload);
+    }, 1000);
+
+    console.log(
+      "setInterval " + newpayload.name + " id: " + this.lastSeenTimerId
+    );
+  }
+
+  stoplastSeenTimer() {
+    if (this.lastSeenTimerId != undefined) {
+      clearInterval(this.lastSeenTimerId);
+      console.log("clearInterval " + this.lastSeenTimerId);
+    }
+  }
+
+  updatePayload(payload) {
+    this.payload = payload;
+    this.lastSeen = formatLastSeen(payload);
+    this.linkQuality = formatLinkQuality(payload);
+    this.batteryIconClass = getBatteryIcon(payload);
+    this.linkQualityIconClass = getLinkQualityIcon(payload);
+  }
+}
+
 export function formatLastSeen(payload) {
   if (isProxy(payload)) {
     payload = toRaw(payload);
