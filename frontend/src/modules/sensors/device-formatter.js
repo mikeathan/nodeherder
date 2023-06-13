@@ -9,6 +9,7 @@ export default class PayloadFormatter {
     this.stoplastSeenTimer();
     this.lastSeenTimerId = setInterval(function () {
       this.lastSeen = formatLastSeen(payload);
+      console.log("debug timer tick " + this.lastSeen);
     }, 1000);
 
     console.log("setInterval " + payload.name + " id: " + this.lastSeenTimerId);
