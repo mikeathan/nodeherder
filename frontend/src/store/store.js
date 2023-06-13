@@ -1,6 +1,6 @@
 import { createStore } from "vuex";
 import createPersistedState from "vuex-persistedstate";
-// import { Device } from "../modules/sensors/device";
+
 const state = {
   devices: {},
 };
