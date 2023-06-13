@@ -26,7 +26,10 @@ export default class Device {
   }
 
   updatePayload(payload) {
-    this.payload = payload;
+    if (isProxy(payload)) {
+      payload = toRaw(payload);
+    }
+
     this.lastSeen = formatLastSeen(payload);
     this.linkQuality = formatLinkQuality(payload);
     this.batteryIconClass = getBatteryIcon(payload);
