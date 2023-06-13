@@ -1,59 +1,43 @@
 <script setup>
 import { watch, ref, onMounted, onUnmounted } from "vue";
 import "../../assets/css/device.styles.css";
-import PayloadFormatter from "../../modules/payload-formatter";
+import DeviceFormatter from "../../modules/sensors/device-formatter";
 const props = defineProps({
   payload: Object,
 });
 
-var lastSeenTimerId = undefined;
-let lastSeenUpdater = ref("");
-let payloadFormatter = ref(PayloadFormatter);
+let deviceFormatter = ref(DeviceFormatter);
 watch(
   () => props.payload,
   (newpayload) => {
     console.log("Watch props.payload update " + newpayload.name);
-    payloadFormatter.update(newpayload);
+    deviceFormatter.update(newpayload);
   }
 );
 
 onMounted(() => {
   console.log("mounted: " + props.payload.name);
-  payloadFormatter = new PayloadFormatter();
-  payloadFormatter.update(props.payload);
+  deviceFormatter = new DeviceFormatter();
 });
+
 onUnmounted(() => {
   console.log("unmounted: " + props.payload.name);
-  payloadFormatter.dispose();
+  deviceFormatter.dispose();
 });
 </script>
 
 <template>
   <div class="card-text">
     <span style="margin-right: 4.5rem">
-      {{ payloadFormatter.lastSeen }}
+      {{ deviceFormatter.lastSeen }}
     </span>
     <span
-      :class="`fa fa-fw ${payloadFormatter.linkQualityIconClass}`"
+      :class="`fa fa-fw ${deviceFormatter.linkQualityIconClass}`"
       class="device-info-span"
     ></span>
     <span class="device-info-span">
-      {{ payloadFormatter.linkQuality }}
+      {{ deviceFormatter.linkQuality }}
     </span>
-    <span :class="`fa fa-fw ${payloadFormatter.batteryIconClass}`"></span>
+    <span :class="`fa fa-fw ${deviceFormatter.batteryIconClass}`"></span>
   </div>
-
-  <!-- <div class="card-text">
-    <span style="margin-right: 4.5rem">
-      {{ lastSeenUpdater }}
-    </span>
-    <span
-      :class="`fa fa-fw ${getLinkQualityIcon()}`"
-      class="device-info-span"
-    ></span>
-    <span class="device-info-span">
-      {{ formatLinkQuality(payload) }}
-    </span>
-    <span :class="`fa fa-fw ${getBatteryIcon(payload)}`"></span>
-  </div> -->
 </template>

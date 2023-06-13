@@ -7,7 +7,7 @@ import {
   getSensorValue,
   getSensorIcon,
   getSensorName,
-} from "../../modules/sensors/sensor";
+} from "../../modules/sensors/sensor-formatter";
 
 const props = defineProps({
   device: Object,
