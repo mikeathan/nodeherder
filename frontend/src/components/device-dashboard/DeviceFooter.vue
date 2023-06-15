@@ -7,12 +7,19 @@ const props = defineProps({
 });
 
 let formatter = ref(DeviceFormatter);
-
+let updater;
+let lastSeen = ref("");
 watch(
   () => props.payload,
   (newpayload) => {
     console.log("Watch props.payload update " + newpayload.name);
-    formatter.update(newpayload);
+    updater = formatter.update(newpayload);
+    updater
+      .then(e => {
+        lastSeen.value = e;
+        console.log(e);
+      })
+      .catch((err) => console.log(err))
   }
 );
 
@@ -30,7 +37,7 @@ onUnmounted(() => {
 <template>
   <div class="card-text">
     <span style="margin-right: 4.5rem">
-      {{ formatter.lastSeen }}
+      {{ lastSeen }}
     </span>
     <span :class="`fa fa-fw ${formatter.linkQualityIconClass}`" class="device-info-span"></span>
     <span class="device-info-span">

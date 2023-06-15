@@ -10,24 +10,17 @@ export default class DeviceFormatter {
   startLastSeenTimer(payload) {
     return new Promise(
       function (resolve, reject) {
-        (function waitForBufferingComplete(serviceProvider) {
-          if (!serviceProvider.getBufferingStatus()) {
-            alert("RESOLVED");
-            return resolve();
-          }
-          setTimeout(waitForBufferingComplete, 250, serviceProvider);
-        })(this.serviceProvider);
+        this.stoplastSeenTimer();
+
+        this.lastSeenTimerId = setInterval(function () {
+          this.lastSeen = formatLastSeen(payload);
+
+          console.log("debug timer tick " + this.lastSeen);
+
+          resolve(this.lastSeen);
+        }, 1000);
       }.bind(this)
     );
-    // this.stoplastSeenTimer();
-
-    // this.lastSeenTimerId = setInterval(function () {
-    //   this.lastSeen = formatLastSeen(payload);
-    //   console.log("debug timer tick " + this.lastSeen.value);
-    //   resolve(this.lastSeen);
-    // }, 1000);
-
-    // console.log("setInterval " + payload.name + " id: " + this.lastSeenTimerId);
   }
 
   stoplastSeenTimer() {
