@@ -1,4 +1,4 @@
-import { reject, resolve } from "core-js/fn/promise";
+import "core-js";
 import moment from "moment";
 import "moment-timezone";
 import { isProxy, reactive, ref, toRaw, toRef, toRefs } from "vue";
