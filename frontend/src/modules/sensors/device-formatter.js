@@ -1,18 +1,33 @@
+import { reject, resolve } from "core-js/fn/promise";
 import moment from "moment";
 import "moment-timezone";
-import { isProxy, toRaw } from "vue";
+import { isProxy, reactive, ref, toRaw, toRef, toRefs } from "vue";
 
-export default class PayloadFormatter {
+//https://www.vuemastery.com/blog/es6-features-you-can-use-with-vue-now/
+export default class DeviceFormatter {
   constructor() {}
 
   startLastSeenTimer(payload) {
-    this.stoplastSeenTimer();
-    this.lastSeenTimerId = setInterval(function () {
-      this.lastSeen = formatLastSeen(payload);
-      console.log("debug timer tick " + this.lastSeen);
-    }, 1000);
+    return new Promise(
+      function (resolve, reject) {
+        (function waitForBufferingComplete(serviceProvider) {
+          if (!serviceProvider.getBufferingStatus()) {
+            alert("RESOLVED");
+            return resolve();
+          }
+          setTimeout(waitForBufferingComplete, 250, serviceProvider);
+        })(this.serviceProvider);
+      }.bind(this)
+    );
+    // this.stoplastSeenTimer();
 
-    console.log("setInterval " + payload.name + " id: " + this.lastSeenTimerId);
+    // this.lastSeenTimerId = setInterval(function () {
+    //   this.lastSeen = formatLastSeen(payload);
+    //   console.log("debug timer tick " + this.lastSeen.value);
+    //   resolve(this.lastSeen);
+    // }, 1000);
+
+    // console.log("setInterval " + payload.name + " id: " + this.lastSeenTimerId);
   }
 
   stoplastSeenTimer() {
@@ -36,11 +51,11 @@ export default class PayloadFormatter {
     this.batteryIconClass = getBatteryIcon(payload);
     this.linkQualityIconClass = getLinkQualityIcon(payload);
 
-    this.startLastSeenTimer(payload);
+    return this.startLastSeenTimer(payload);
   }
 }
 
-function formatLastSeen(payload) {
+export function formatLastSeen(payload) {
   if (isProxy(payload)) {
     payload = toRaw(payload);
   }
@@ -70,7 +85,7 @@ function formatLastSeen(payload) {
   return formatted;
 }
 
-function getBatteryIcon(payload) {
+export function getBatteryIcon(payload) {
   if (isProxy(payload)) {
     payload = toRaw(payload);
   }
@@ -102,11 +117,11 @@ function getBatteryIcon(payload) {
   }
   return batteryClass;
 }
-function getLinkQualityIcon() {
+export function getLinkQualityIcon() {
   return "fa-signal fa-fw";
 }
 
-function formatLinkQuality(payload) {
+export function formatLinkQuality(payload) {
   if (isProxy(payload)) {
     payload = toRaw(payload);
   }
