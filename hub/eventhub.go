@@ -13,6 +13,11 @@ type device struct {
 }
 type eventHub struct {
 	clients map[*websocket.Conn]bool
+	// clients map[*Client]bool
+	// broadcast chan []byte
+	// register chan *Client
+	// unregister chan *Client
+	
 }
 
 func newEventHub() *eventHub {
