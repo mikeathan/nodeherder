@@ -9,9 +9,22 @@ const ws = new WebSocket(socketUri);
 ws.onmessage = (event) => {
   const obj = JSON.parse(event.data);
   if (event.data == undefined) {
+    console.log("ws undefined data: " + event);
     return;
   }
-  store.commit("deviceUpdated", obj);
+
+  var name = obj.type;
+  var payload = obj.payload;
+
+  if (name == "connected") {
+    console.log("connected");
+    store.commit("init", payload);
+  } else if (name == "deviceUpdated") {
+    console.log("deviceUpdated");
+    store.commit("deviceUpdated", payload);
+  } else {
+    console.log("ws unhandled type: ", event.data);
+  }
 };
 
 ws.onopen = function (event) {

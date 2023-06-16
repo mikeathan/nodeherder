@@ -22,7 +22,6 @@ const humidityMax = 100.0;
 // Our port
 let port = 3000;
 
-let counter = 0;
 // App and server
 let app = express();
 let server = http.createServer(app).listen(port);
@@ -57,16 +56,17 @@ expressWs(app, server);
 app.ws("/ws", async function (ws, req) {
   console.log("client connected");
 
-  devicesConfig.forEach((config) => {
-    var device = buildPayload("connected", config);
-    ws.send(device);
-  });
+  var devices = onConnectBuildPayload(devicesConfig);
+  var r = JSON.stringify({ type: "connected", payload: devices });
+  ws.send(r);
 
+  // simulate random websocket messages
   devicesConfig.forEach((config) => {
     setInterval(function () {
-      counter++;
-      var device = buildPayload("updated", config);
-      ws.send(device);
+      var device = buildPayload("newdata", config);
+
+      var d = JSON.stringify({ type: "deviceUpdated", payload: device });
+      ws.send(d);
     }, config.delayInMs);
   });
 
@@ -75,13 +75,22 @@ app.ws("/ws", async function (ws, req) {
   });
 });
 
+function onConnectBuildPayload(devicesConfig) {
+  var devices = [];
+  devicesConfig.forEach((config) => {
+    var device = buildPayload("connected", config);
+    devices.push(device);
+  });
+
+  return devices;
+}
+
 function buildPayload(status, settings) {
   var data = {
     name: settings.name,
     payload: mockTHDevicePayload(status, settings),
   };
-  var device = JSON.stringify(data);
-  return device;
+  return data;
 }
 
 function currentTime() {
@@ -92,7 +101,7 @@ function currentTime() {
 function mockTHDevicePayload(state, settings) {
   var device = {
     name: settings.name,
-    state: state + "=" + counter,
+    state: state,
     battery: 100,
     humidity: getMockHumidity(settings),
     last_seen: currentTime(),
