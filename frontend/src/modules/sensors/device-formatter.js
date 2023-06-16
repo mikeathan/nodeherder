@@ -8,7 +8,7 @@ export default class DeviceFormatter {
   stopLastSeenUpdater() {
     if (this._lastSeenTimerId != undefined) {
       clearInterval(this._lastSeenTimerId);
-      console.log("[DEBUG] clearInterval " + this._lastSeenTimerId);
+      //console.log("[DEBUG] clearInterval " + this._lastSeenTimerId);
     }
   }
 
@@ -22,7 +22,7 @@ export default class DeviceFormatter {
     this._lastSeenTimerId = setInterval(function () {
       this.lastSeen = formatLastSeen(payload);
 
-      console.log("[DEBUG] timer tick " + this.lastSeen);
+      //console.log("[DEBUG] timer tick " + this.lastSeen);
       callback(this.lastSeen);
     }, 1000);
   }
