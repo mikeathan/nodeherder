@@ -1,40 +1,33 @@
-import "core-js";
 import moment from "moment";
 import "moment-timezone";
-import { isProxy, reactive, ref, toRaw, toRef, toRefs } from "vue";
+import { isProxy, toRaw } from "vue";
 
-//https://www.vuemastery.com/blog/es6-features-you-can-use-with-vue-now/
 export default class DeviceFormatter {
   constructor() {}
 
-  startLastSeenTimer(payload) {
-    return new Promise(
-      function (resolve, reject) {
-        this.stoplastSeenTimer();
-
-        this.lastSeenTimerId = setInterval(function () {
-          this.lastSeen = formatLastSeen(payload);
-
-          console.log("debug timer tick " + this.lastSeen);
-
-          resolve(this.lastSeen);
-        }, 1000);
-      }.bind(this)
-    );
-  }
-
-  stoplastSeenTimer() {
-    if (this.lastSeenTimerId != undefined) {
-      clearInterval(this.lastSeenTimerId);
-      console.log("clearInterval " + this.lastSeenTimerId);
+  stopLastSeenUpdater() {
+    if (this._lastSeenTimerId != undefined) {
+      clearInterval(this._lastSeenTimerId);
+      console.log("[DEBUG] clearInterval " + this._lastSeenTimerId);
     }
   }
 
   dispose() {
-    this.stoplastSeenTime();
+    this.stopLastSeenUpdater();
   }
 
-  update(payload) {
+  startLastSeenUpdater(payload, callback) {
+    this.stopLastSeenUpdater();
+
+    this._lastSeenTimerId = setInterval(function () {
+      this.lastSeen = formatLastSeen(payload);
+
+      console.log("[DEBUG] timer tick " + this.lastSeen);
+      callback(this.lastSeen);
+    }, 1000);
+  }
+
+  formatPayload(payload, updaterCallback) {
     if (isProxy(payload)) {
       payload = toRaw(payload);
     }
@@ -44,11 +37,17 @@ export default class DeviceFormatter {
     this.batteryIconClass = getBatteryIcon(payload);
     this.linkQualityIconClass = getLinkQualityIcon(payload);
 
-    return this.startLastSeenTimer(payload);
+    if (isCallback(updaterCallback)) {
+      this.startLastSeenUpdater(payload, updaterCallback);
+    }
   }
 }
 
-export function formatLastSeen(payload) {
+function isCallback(callback) {
+  return callback && typeof callback == "function";
+}
+
+function formatLastSeen(payload) {
   if (isProxy(payload)) {
     payload = toRaw(payload);
   }
@@ -78,7 +77,7 @@ export function formatLastSeen(payload) {
   return formatted;
 }
 
-export function getBatteryIcon(payload) {
+function getBatteryIcon(payload) {
   if (isProxy(payload)) {
     payload = toRaw(payload);
   }
@@ -110,11 +109,11 @@ export function getBatteryIcon(payload) {
   }
   return batteryClass;
 }
-export function getLinkQualityIcon() {
+function getLinkQualityIcon() {
   return "fa-signal fa-fw";
 }
 
-export function formatLinkQuality(payload) {
+function formatLinkQuality(payload) {
   if (isProxy(payload)) {
     payload = toRaw(payload);
   }
