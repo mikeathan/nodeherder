@@ -13,17 +13,16 @@ ws.onmessage = (event) => {
     return;
   }
 
-  var name = obj.type;
-  var payload = obj.payload;
-
-  if (name == "connected") {
-    console.log("connected");
-    store.commit("init", payload);
-  } else if (name == "deviceUpdated") {
-    console.log("deviceUpdated");
-    store.commit("deviceUpdated", payload);
-  } else {
-    console.log("ws unhandled type: ", event.data);
+  console.log("event type: " + obj.type);
+  switch (obj.type) {
+    case "connected":
+      store.commit("init", obj.payload);
+      break;
+    case "deviceUpdated":
+      store.commit("deviceUpdated", obj.payload);
+      break;
+    default:
+      console.log("ws unhandled type: ", event.data);
   }
 };
 
