@@ -2,40 +2,59 @@ package hub
 
 import (
 	"encoding/json"
-	"net/http"
-
-	"github.com/gorilla/websocket"
+	"fmt"
 )
 
 type device struct {
 	Name    string          `json:"name"`
 	Payload json.RawMessage `json:"payload"`
 }
-type eventHub struct {
-	clients map[*websocket.Conn]bool
-	// clients map[*Client]bool
-	// broadcast chan []byte
-	// register chan *Client
-	// unregister chan *Client
-	
+
+type EventHub struct {
+	clients map[*EventClient]bool
+	broadcast chan []byte
+	register chan *EventClient
+	unregister chan *EventClient
 }
 
-func newEventHub() *eventHub {
-	return &eventHub{
-		clients: map[*websocket.Conn]bool{},
+func NewEventHub() *EventHub {
+	return &EventHub{
+		clients:    map[*EventClient]bool{},
+		broadcast:  make(chan []byte),
+		register:   make(chan *EventClient),
+		unregister: make(chan *EventClient),
 	}
 }
 
-var (
-	websocketUpgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-		CheckOrigin:     func(r *http.Request) bool { return true }, // for debug only ??
+func (h *EventHub) Run() {
+	for {
+		select {
+		case client := <-h.register:
+			h.clients[client] = true
+			fmt.Println("client registered")
+		case client := <-h.unregister:
+			if _, ok := h.clients[client]; ok {
+				fmt.Println("client unregistered")
+				delete(h.clients, client)
+				close(client.send)
+			}
+		case message := <-h.broadcast:
+			for client := range h.clients {
+				select {
+				case client.send <- message:
+				default:
+					fmt.Println("broadcast failed, client closed")
+					close(client.send)
+					delete(h.clients, client)
+				}
+			}
+		}
 	}
-)
+}
 
-func (h *eventHub) Broadcast(message []byte) {
-	for conn := range h.clients {
-		conn.WriteMessage(websocket.TextMessage, message)
-	}
+func (h *EventHub) Broadcast(message []byte) {
+	h.broadcast <- message
+	// for client := range h.clients {
+	// 	client.send <- message
+	// }
 }
