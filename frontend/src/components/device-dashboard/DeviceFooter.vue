@@ -13,12 +13,11 @@ watch(
   () => props.payload,
   (newpayload) => {
     console.log("Watch props.payload update " + newpayload.name);
-
     formatter.formatPayload(newpayload, (v) => {
       lastSeen.value = v;
     });
     lastSeen.value = formatter.lastSeen;
-  }
+  } { immediate: true }
 );
 
 onMounted(() => {
