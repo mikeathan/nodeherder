@@ -17,7 +17,8 @@ watch(
       lastSeen.value = v;
     });
     lastSeen.value = formatter.lastSeen;
-  } { immediate: true }
+  },
+  { immediate: true }
 );
 
 onMounted(() => {
