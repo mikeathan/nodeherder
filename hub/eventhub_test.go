@@ -37,6 +37,7 @@ func TestXxx(t *testing.T) {
 
 func TestHub(t *testing.T) {
 	
+	// /https://ieftimov.com/posts/testing-in-go-websockets/
 	//2023/06/16 20:43:41 ws upgrade error:websocket: the client is not using the websocket protocol: 'upgrade' token not found in 'Connection' header
 
 	req := httptest.NewRequest(http.MethodGet, "/ws", nil)
