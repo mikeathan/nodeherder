@@ -76,38 +76,38 @@ func (c *EventClient) readPump() {
 	}
 }
 
- func (c *EventClient) writePump() {
-		ticker := time.NewTicker(pingPeriod)
-		defer func() {
-			ticker.Stop()
-			c.conn.Close()
-		}()
-		for {
-			select {
-			case message, ok := <-c.send:
-				c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-				if !ok {
-					// The hub closed the channel.
-					c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-					return
-				}
-	
-				w, err := c.conn.NextWriter(websocket.TextMessage)
-				if err != nil {
-					return
-				}
-				w.Write(message)
-				if err := w.Close(); err != nil {
-					return
-				}
-			case <-ticker.C:
-				c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-				if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-					return
-				}
+func (c *EventClient) writePump() {
+	ticker := time.NewTicker(pingPeriod)
+	defer func() {
+		ticker.Stop()
+		c.conn.Close()
+	}()
+	for {
+		select {
+		case message, ok := <-c.send:
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				// The hub closed the channel.
+				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+
+			w, err := c.conn.NextWriter(websocket.TextMessage)
+			if err != nil {
+				return
+			}
+			w.Write(message)
+			if err := w.Close(); err != nil {
+				return
+			}
+		case <-ticker.C:
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
 			}
 		}
 	}
+}
 
 func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
@@ -131,11 +131,11 @@ func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("client connected\n")
 }
 
-func Init(path string) {
+func Init(path string) *WsHandler {
 
 	if _eventhub != nil {
 		log.Fatal("Init - eventhub is already initialized")
-		return
+		return nil
 	}
 
 	_eventhub = NewEventHub()
@@ -144,6 +144,7 @@ func Init(path string) {
 	handler := NewWsHandler(path)
 
 	http.Handle(path, handler)
+	return handler
 }
 
 func Broadcast(event interface{}) {

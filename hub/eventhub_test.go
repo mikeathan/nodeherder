@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"node-herder/hub"
 	"strconv"
-	"strings"
 	"testing"
+
+	"github.com/gorilla/websocket"
 )
 
 type device struct {
@@ -34,39 +36,81 @@ func TestXxx(t *testing.T) {
 	fmt.Println(string(bytes))
 }
 
-
 func TestHub(t *testing.T) {
-	
-	// /https://ieftimov.com/posts/testing-in-go-websockets/
-	//2023/06/16 20:43:41 ws upgrade error:websocket: the client is not using the websocket protocol: 'upgrade' token not found in 'Connection' header
 
-	req := httptest.NewRequest(http.MethodGet, "/ws", nil)
-	//url:= makeWsProto("/ws")
-	w := httptest.NewRecorder()
-	h := hub.NewWsHandler("/ws")
-	h.ServeHTTP(w, req)
+	h := hub.Init("/")
+	s, ws := newWSServer(t, h)
+	defer s.Close()
+	defer ws.Close()
+	message := "test 1"
+	sendMessage(t, ws, []byte(message))
 
+	reply := receiveWSMessage(t, ws)
 
-	message := "test message 1"
+	if string(reply) != message {
+		t.Fatalf("Expected '%+v', got '%+v'", message, reply)
+	}
 
-	hub :=hub.NewEventHub()
-	go hub.Run()
-	hub.Broadcast([]byte(message))
-}
-func makeWsProto(s string) string {
-	return "ws" + strings.TrimPrefix(s, "http")
 }
 
-// func newWSServer(t *testing.T, h http.Handler) (*httptest.Server, *websocket.Conn) {
-// 	t.Helper()
+func sendMessage(t *testing.T, ws *websocket.Conn, msg []byte) {
+	t.Helper()
 
-// 	s := httptest.NewServer(h)
-// 	wsURL := httpToWs(t, s.URL)
+	m, err := json.Marshal(msg)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	ws, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
+	if err := ws.WriteMessage(websocket.BinaryMessage, m); err != nil {
+		t.Fatalf("%v", err)
+	}
+}
 
-// 	return s, ws
-// }
+func receiveWSMessage(t *testing.T, ws *websocket.Conn) []byte {
+	t.Helper()
+
+	_, m, err := ws.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var reply []byte
+	err = json.Unmarshal(m, &reply)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return reply
+}
+
+func newWSServer(t *testing.T, h http.Handler) (*httptest.Server, *websocket.Conn) {
+	t.Helper()
+
+	s := httptest.NewServer(h)
+	wsURL := httpToWs(t, s.URL)
+
+	ws, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return s, ws
+}
+
+func httpToWs(t *testing.T, s string) string {
+	t.Helper()
+
+	wsURL, err := url.Parse(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	switch wsURL.Scheme {
+	case "http":
+		wsURL.Scheme = "ws"
+	case "https":
+		wsURL.Scheme = "wss"
+	}
+
+	return wsURL.String()
+}
