@@ -52,9 +52,11 @@ func (h *EventHub) Run() {
 	}
 }
 
+func (h *EventHub) BroadcastEvent(eventName string, message []byte) {
+	//TODO: contruct mesage to include eventName
+	h.broadcast <- message
+
+}
 func (h *EventHub) Broadcast(message []byte) {
 	h.broadcast <- message
-	// for client := range h.clients {
-	// 	client.send <- message
-	// }
 }
