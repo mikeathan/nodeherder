@@ -36,19 +36,23 @@ func TestXxx(t *testing.T) {
 	fmt.Println(string(bytes))
 }
 
-func TestHub(t *testing.T) {
+func TestHubReceiveMessagesFromMultipleConnections(t *testing.T) {
 
+	// TODO: needs more work to store all connections and check if each clinets receives the message
 	h := hub.Init("/")
-	s, ws := newWSServer(t, h)
-	defer s.Close()
-	defer ws.Close()
-	message := "test 1"
-	sendMessage(t, ws, []byte(message))
 
-	reply := receiveWSMessage(t, ws)
+	for i := 0; i < 4; i++ {
+		s, ws := newWSServer(t, h)
+		defer s.Close()
+		defer ws.Close()
+		message := fmt.Sprintf("test message %d", i)
+		sendMessage(t, ws, []byte(message))
 
-	if string(reply) != message {
-		t.Fatalf("Expected '%+v', got '%+v'", message, reply)
+		reply := receiveWSMessage(t, ws)
+
+		if string(reply) != message {
+			t.Fatalf("Expected '%+v', got '%+v'", message, reply)
+		}
 	}
 
 }

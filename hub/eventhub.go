@@ -11,9 +11,9 @@ type device struct {
 }
 
 type EventHub struct {
-	clients map[*EventClient]bool
-	broadcast chan []byte
-	register chan *EventClient
+	clients    map[*EventClient]bool
+	broadcast  chan []byte
+	register   chan *EventClient
 	unregister chan *EventClient
 }
 
@@ -31,10 +31,10 @@ func (h *EventHub) Run() {
 		select {
 		case client := <-h.register:
 			h.clients[client] = true
-			fmt.Println("client registered")
+			fmt.Println("hub: client registered")
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
-				fmt.Println("client unregistered")
+				fmt.Println("hub: client unregistered")
 				delete(h.clients, client)
 				close(client.send)
 			}

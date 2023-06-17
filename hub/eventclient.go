@@ -128,7 +128,7 @@ func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	go client.readPump()
 	go client.writePump()
 
-	fmt.Printf("client connected\n")
+	fmt.Printf("handler: client connected\n")
 }
 
 func Init(path string) *WsHandler {
