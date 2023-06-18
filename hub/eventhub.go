@@ -1,14 +1,8 @@
 package hub
 
 import (
-	"encoding/json"
 	"fmt"
 )
-
-type device struct {
-	Name    string          `json:"name"`
-	Payload json.RawMessage `json:"payload"`
-}
 
 type EventHub struct {
 	clients    map[*EventClient]bool
@@ -52,11 +46,6 @@ func (h *EventHub) Run() {
 	}
 }
 
-func (h *EventHub) BroadcastEvent(eventName string, message []byte) {
-	//TODO: contruct mesage to include eventName
-	h.broadcast <- message
-
-}
 func (h *EventHub) Broadcast(message []byte) {
 	h.broadcast <- message
 }

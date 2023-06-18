@@ -13,11 +13,15 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 	var payload = msg.Payload()
 	fmt.Printf("DEBUG - mqtt message => Topic: %s, Payload; %s\n", topic, payload)
 
-	Broadcast(device{Name: getDeviceName(topic), Payload: json.RawMessage(msg.Payload())})
+	// TODO: store device in map, global store
+	var devicePayload = device{Name: getDeviceName(topic), Payload: json.RawMessage(msg.Payload())}
+	Broadcast(DeviceUpdated, devicePayload)
 }
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
 	fmt.Println("zigbee2mqtt client connected")
+	// TODO: send devices from global store
+	// Broadcast(ClientConnected, nil)
 }
 
 var connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {

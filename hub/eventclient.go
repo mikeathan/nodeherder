@@ -11,7 +11,22 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const (
+	DeviceUpdated   = "deviceUpdated"
+	ClientConnected = "connected"
+)
+
 var _eventhub *EventHub
+
+type device struct {
+	Name    string          `json:"name"`
+	Payload json.RawMessage `json:"payload"`
+}
+
+type wsEvent struct {
+	Name string
+	Data interface{}
+}
 
 type WsHandler struct {
 	path string
@@ -147,14 +162,15 @@ func Init(path string) *WsHandler {
 	return handler
 }
 
-func Broadcast(event interface{}) {
+func Broadcast(event string, data interface{}) {
 
 	if _eventhub == nil {
 		log.Fatal("Broadcast - eventhub is not initialized")
 		return
 	}
 
-	bytes, err := json.Marshal(event)
+	var wsData = wsEvent{Name: event, Data: data}
+	bytes, err := json.Marshal(wsData)
 	if err != nil {
 		panic(err)
 	}
