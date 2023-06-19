@@ -18,11 +18,6 @@ const (
 
 var _eventhub *EventHub
 
-type device struct {
-	Name    string          `json:"name"`
-	Payload json.RawMessage `json:"payload"`
-}
-
 type wsEvent struct {
 	Name string
 	Data interface{}

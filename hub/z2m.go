@@ -8,6 +8,11 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
+type device struct {
+	Name    string          `json:"name"`
+	Payload json.RawMessage `json:"payload"`
+}
+
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
 	var topic = msg.Topic()
 	var payload = msg.Payload()
