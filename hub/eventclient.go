@@ -16,6 +16,12 @@ const (
 	ClientConnected = "connected"
 )
 
+type HubConfig struct
+{
+	MqttConfig MqttConfig
+	WSPath string
+}
+
 var _eventhub *EventHub
 
 type wsEvent struct {

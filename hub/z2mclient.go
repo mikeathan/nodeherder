@@ -8,9 +8,24 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
+// type MqttClient interface{
+// 	Connect() error
+// 	AddDevice(deviceName string)
+// 	Disconnect()
+// }
+
+const baseTopic string = "zigbee2mqtt/"
 type device struct {
 	Name    string          `json:"name"`
 	Payload json.RawMessage `json:"payload"`
+}
+
+type MqttConfig struct
+{
+	Broker string
+	Username string
+	Password string
+	Devices []string
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
@@ -19,8 +34,8 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 	fmt.Printf("DEBUG - mqtt message => Topic: %s, Payload; %s\n", topic, payload)
 
 	// TODO: store device in map, global store
-	var devicePayload = device{Name: getDeviceName(topic), Payload: json.RawMessage(msg.Payload())}
-	Broadcast(DeviceUpdated, devicePayload)
+	//var devicePayload = device{Name: getDeviceName(topic), Payload: json.RawMessage(msg.Payload())}
+	//Broadcast(DeviceUpdated, devicePayload)
 }
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
@@ -37,18 +52,16 @@ func NewZ2MClient(broker string, username string, password string) *Z2MClient {
 
 	return &Z2MClient{
 		broker:   broker,
+		devices:  []string{},
 		username: username,
 		password: password,
-		devices:  []string{}, // not used , remove ???
 		client:   nil,
 		cliendId: "sinkhole-z2m",
 	}
 }
 
-var baseTopic string = "zigbee2mqtt/"
-
 type Z2MClient struct {
-	devices  []string // not used , remove ???
+	devices  []string
 	client   mqtt.Client
 	broker   string
 	username string
@@ -92,8 +105,8 @@ func (m *Z2MClient) Connect() error {
 	return nil
 }
 
-func (m *Z2MClient) AddDevice(device_name string) {
-	m.devices = append(m.devices, device_name)
+func (m *Z2MClient) AddDevice(deviceName string) {
+	m.devices = append(m.devices, deviceName)
 }
 
 func (m *Z2MClient) Disconnect() {
