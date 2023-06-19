@@ -1,3 +1,10 @@
 package node
 
-var store = map[string]interface{}
+
+type Store interface{
+
+}
+
+type Z2MStore struct{
+	store  map[string]interface
+}

@@ -16,13 +16,14 @@ const (
 	ClientConnected = "connected"
 )
 
+var _eventhub *EventHub
+var _client *Z2MClient
+
 type HubConfig struct
 {
 	MqttConfig MqttConfig
 	WSPath string
 }
-
-var _eventhub *EventHub
 
 type wsEvent struct {
 	Name string
@@ -124,7 +125,7 @@ func (c *EventClient) writePump() {
 		}
 	}
 }
-
+// TODO: this can be moved now to http package
 func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if strings.Compare(r.URL.Path, h.path) != 0 {
@@ -147,19 +148,23 @@ func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("handler: client connected\n")
 }
 
-func Init(path string) *WsHandler {
+func Init(config HubConfig) *WsHandler {
 
 	if _eventhub != nil {
 		log.Fatal("Init - eventhub is already initialized")
 		return nil
 	}
-
+	
 	_eventhub = NewEventHub()
 	go _eventhub.Run()
 
-	handler := NewWsHandler(path)
+	_client := NewZ2MClient(config.MqttConfig)
+	_client.Connect()
 
-	http.Handle(path, handler)
+	handler := NewWsHandler(config.WSPath)
+
+	// TODO: configure in http package
+	http.Handle(config.WSPath, handler)
 	return handler
 }
 

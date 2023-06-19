@@ -48,16 +48,21 @@ var connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, 
 	fmt.Printf("Connection Lost: %s\n", err.Error())
 }
 
-func NewZ2MClient(broker string, username string, password string) *Z2MClient {
+func NewZ2MClient(config MqttConfig) *Z2MClient {
 
-	return &Z2MClient{
-		broker:   broker,
+	var client = &Z2MClient{
+		broker:   config.Broker,
 		devices:  []string{},
-		username: username,
-		password: password,
+		username: config.Username,
+		password: config.Password,
 		client:   nil,
 		cliendId: "sinkhole-z2m",
 	}
+	for _,device := range config.Devices{
+		client.AddDevice(device)
+	}
+
+	return client
 }
 
 type Z2MClient struct {
