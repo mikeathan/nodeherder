@@ -1,7 +1,6 @@
-package hub
+package ws
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -16,16 +15,7 @@ const (
 	ClientConnected = "connected"
 )
 
-var _eventhub *EventHub
-var _client *Z2MClient
-
-type HubConfig struct
-{
-	MqttConfig MqttConfig
-	WSPath string
-}
-
-type wsEvent struct {
+type WsEvent struct {
 	Name string
 	Data interface{}
 }
@@ -34,7 +24,7 @@ type WsHandler struct {
 	path string
 }
 
-func NewWsHandler(path string) *WsHandler {
+func NewHandler(path string) *WsHandler {
 	return &WsHandler{
 		path: path,
 	}
@@ -65,14 +55,14 @@ var (
 	}
 )
 
-type EventClient struct {
-	hub *EventHub
+type Client struct {
+	hub *Server
 
 	conn *websocket.Conn
 	send chan []byte
 }
 
-func (c *EventClient) readPump() {
+func (c *Client) readPump() {
 	defer func() {
 		c.hub.unregister <- c
 		c.conn.Close()
@@ -93,7 +83,7 @@ func (c *EventClient) readPump() {
 	}
 }
 
-func (c *EventClient) writePump() {
+func (c *Client) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
@@ -125,6 +115,7 @@ func (c *EventClient) writePump() {
 		}
 	}
 }
+
 // TODO: this can be moved now to http package
 func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
@@ -139,46 +130,11 @@ func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client := &EventClient{hub: _eventhub, conn: conn, send: make(chan []byte)}
+	client := &Client{hub: _eventhub, conn: conn, send: make(chan []byte)}
 	client.hub.register <- client
 
 	go client.readPump()
 	go client.writePump()
 
 	fmt.Printf("handler: client connected\n")
-}
-
-func Init(config HubConfig) *WsHandler {
-
-	if _eventhub != nil {
-		log.Fatal("Init - eventhub is already initialized")
-		return nil
-	}
-	
-	_eventhub = NewEventHub()
-	go _eventhub.Run()
-
-	_client := NewZ2MClient(config.MqttConfig)
-	_client.Connect()
-
-	handler := NewWsHandler(config.WSPath)
-
-	// TODO: configure in http package
-	http.Handle(config.WSPath, handler)
-	return handler
-}
-
-func Broadcast(event string, data interface{}) {
-
-	if _eventhub == nil {
-		log.Fatal("Broadcast - eventhub is not initialized")
-		return
-	}
-
-	var wsData = wsEvent{Name: event, Data: data}
-	bytes, err := json.Marshal(wsData)
-	if err != nil {
-		panic(err)
-	}
-	_eventhub.Broadcast(bytes)
 }

@@ -1,26 +1,26 @@
-package hub
+package ws
 
 import (
 	"fmt"
 )
 
-type EventHub struct {
-	clients    map[*EventClient]bool
+type Server struct {
+	clients    map[*Client]bool
 	broadcast  chan []byte
-	register   chan *EventClient
-	unregister chan *EventClient
+	register   chan *Client
+	unregister chan *Client
 }
 
-func NewEventHub() *EventHub {
-	return &EventHub{
-		clients:    map[*EventClient]bool{},
+func NewServer() *Server {
+	return &Server{
+		clients:    map[*Client]bool{},
 		broadcast:  make(chan []byte),
-		register:   make(chan *EventClient),
-		unregister: make(chan *EventClient),
+		register:   make(chan *Client),
+		unregister: make(chan *Client),
 	}
 }
 
-func (h *EventHub) Run() {
+func (h *Server) Run() {
 	for {
 		select {
 		case client := <-h.register:
@@ -46,6 +46,6 @@ func (h *EventHub) Run() {
 	}
 }
 
-func (h *EventHub) Broadcast(message []byte) {
+func (h *Server) Broadcast(message []byte) {
 	h.broadcast <- message
 }

@@ -1,4 +1,4 @@
-package hub_test
+package ws_test
 
 import (
 	"encoding/json"
