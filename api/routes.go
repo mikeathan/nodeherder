@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"node-herder/hub/ws"
+	"node-herder/api/hub"
 	"node-herder/node"
 	"regexp"
 
@@ -106,9 +106,9 @@ func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client := ws.RegisterConnection(nil, conn)
+	client := hub.RegisterConnection(nil, conn)
 
 	devices := h.repo.ListAll()
-	client.Broadcast(ws.DeviceUpdated, devices)
+	client.Broadcast(hub.DeviceUpdated, devices)
 	fmt.Printf("WsHandler: client connected\n")
 }

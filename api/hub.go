@@ -1,11 +1,11 @@
-package hub
+package api
 
 import (
 	"log"
-	"node-herder/hub/ws"
+	"node-herder/api/hub"
 )
 
-var _wsServer *ws.Server
+var _wsServer *hub.Server
 var _z2mClient *Z2MClient
 
 type HubConfig struct {
@@ -20,16 +20,11 @@ func Init(config HubConfig) {
 		return
 	}
 
-	_wsServer = ws.NewServer()
+	_wsServer = hub.NewServer()
 	go _wsServer.Run()
 
 	_z2mClient = NewZ2MClient(config.MqttConfig)
 	_z2mClient.Connect()
-
-	//handler := ws.NewHandler(config.WSPath)
-
-	// TODO: configure in http package
-	//http.Handle(config.WSPath, handler)
 }
 
 func Broadcast(eventName string, payload interface{}) {

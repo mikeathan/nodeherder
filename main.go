@@ -1,51 +1,16 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
-	"node-herder/hub"
+	"node-herder/api"
+	"node-herder/node"
 	"os"
+	"os/signal"
+	"syscall"
 )
-
-// port := readPort()
-
-// ctx, cancelCtx := context.WithCancel(context.Background())
-
-// fmt.Println("Starting up server.")
-// c := make(chan os.Signal)
-// signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-
-// go func() {
-// 	defer close(c)
-// 	<-c
-// 	fmt.Println("SIGTERM signal notified")
-// 	cancelCtx()
-// }()
-
-// repo := node.NewMemoryRepository()
-
-// router := hub.NewRouter()
-
-// // collectorService := api.NewCollectorService(repo)
-// // router.PUT("/collector", api.NewDataHandler(collectorService))
-// // router.POST("/collector", api.NewFindDeviceEventsHandler(collectorService))
-// // router.GET("/collector/history", api.NewHistoryHandler(collectorService))
-// // router.GET("/collector/devices", api.NewDevicesHandler(collectorService))
-// // router.GET("/collector/ping", api.NewHealthCheckHandler())
-
-// //router.Use(api.LoggingMiddleware(logger))
-
-// // apiServer := api.NewServer(
-// // 	port,
-// // 	api.WithRouter(router),
-// // 	api.WithLogger(logger),
-// // 	api.WithContext(ctx),
-// // )
-
-// // apiServer.Listen()
-// fmt.Println("Exited")
 
 func readPort() int {
 
@@ -59,7 +24,34 @@ func readPort() int {
 
 	return *port
 }
+
 func main() {
+
+	port := readPort()
+
+	ctx, cancelCtx := context.WithCancel(context.Background())
+
+	fmt.Println("Starting up server.")
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		defer close(c)
+		<-c
+		fmt.Println("SIGTERM signal notified")
+		cancelCtx()
+	}()
+
+	repo := node.NewMemoryRepository()
+	router := api.NewRouter()
+	router.GET("/ws", api.NewWsHandler(repo))
+	router.GET("/", http.FileServer(http.Dir("./frontend/dist")))
+
+	apiServer := api.NewServer(
+		port,
+		api.WithRouter(router),
+		api.WithContext(ctx),
+	)
 
 	cfg := hub.HubConfig{WSPath: "/ws",
 		MqttConfig: hub.MqttConfig{
@@ -73,11 +65,7 @@ func main() {
 
 	hub.Init(cfg)
 
-	fileServer := http.FileServer(http.Dir("./frontend/dist"))
-	http.Handle("/", fileServer)
+	apiServer.Listen()
+	fmt.Println("Exited")
 
-	fmt.Printf("Starting server at port 8080\n")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		log.Fatal(err)
-	}
 }
