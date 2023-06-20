@@ -14,7 +14,7 @@ func main() {
 			Username: "sinkhole",
 			Password: "mqtt2023",
 			Broker:   "192.168.50.179:1883",
-			Devices: []string{
+			Topics: []string{
 				"TH1",
 			},
 		}}

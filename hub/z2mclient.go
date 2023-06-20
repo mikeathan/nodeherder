@@ -25,7 +25,7 @@ type MqttConfig struct {
 	Broker   string
 	Username string
 	Password string
-	Devices  []string
+	Topics   []string
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
@@ -40,8 +40,6 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
 	fmt.Println("zigbee2mqtt client connected")
-
-	// Broadcast(ClientConnected, nil)
 }
 
 var connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
@@ -52,21 +50,21 @@ func NewZ2MClient(config MqttConfig) *Z2MClient {
 
 	var client = &Z2MClient{
 		broker:   config.Broker,
-		devices:  []string{},
+		topics:   []string{},
 		username: config.Username,
 		password: config.Password,
 		client:   nil,
 		cliendId: "sinkhole-z2m",
 	}
-	for _, device := range config.Devices {
-		client.AddDevice(device)
+	for _, topic := range config.Topics {
+		client.AddTopic(topic)
 	}
 
 	return client
 }
 
 type Z2MClient struct {
-	devices  []string
+	topics   []string
 	client   mqtt.Client
 	broker   string
 	username string
@@ -97,7 +95,7 @@ func (m *Z2MClient) Connect() error {
 		return token.Error()
 	}
 
-	for _, device_name := range m.devices {
+	for _, device_name := range m.topics {
 		topic := fmt.Sprintf("%s%s", baseTopic, device_name)
 		token = m.client.Subscribe(topic, 1, nil)
 
@@ -110,8 +108,8 @@ func (m *Z2MClient) Connect() error {
 	return nil
 }
 
-func (m *Z2MClient) AddDevice(deviceName string) {
-	m.devices = append(m.devices, deviceName)
+func (m *Z2MClient) AddTopic(topic string) {
+	m.topics = append(m.topics, topic)
 }
 
 func (m *Z2MClient) Disconnect() {
