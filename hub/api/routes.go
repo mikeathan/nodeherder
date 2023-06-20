@@ -6,18 +6,85 @@ import (
 	"net/http"
 	"node-herder/hub/ws"
 	"node-herder/node"
-	"strings"
+	"regexp"
 
 	"github.com/gorilla/websocket"
 )
 
-type WsHandler struct {
-	path string
+type Route struct {
+	pattern string
+	method  string
+	handler http.Handler
 }
 
-func NewHandler(path string) *WsHandler {
+type Router struct {
+	routes      []*Route
+	middlewares []func(http.Handler) http.Handler
+}
+
+func NewRouter() *Router {
+	return &Router{}
+}
+
+func (r *Router) Use(fn func(http.Handler) http.Handler) {
+	r.middlewares = append(r.middlewares, fn)
+}
+
+func (r *Router) GET(path string, handler http.Handler) {
+	r.addRoute(http.MethodGet, path, handler)
+}
+
+func (r *Router) POST(path string, handler http.Handler) {
+	r.addRoute(http.MethodPost, path, handler)
+}
+
+func (r *Router) PUT(path string, handler http.Handler) {
+	r.addRoute(http.MethodPut, path, handler)
+}
+
+func (r *Router) DELETE(path string, handler http.Handler) {
+	r.addRoute(http.MethodDelete, path, handler)
+}
+
+func (r *Router) addRoute(method string, path string, handler http.Handler) {
+	r.routes = append(r.routes, &Route{method: method, pattern: path, handler: handler})
+}
+
+func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	path := req.URL.Path
+	method := req.Method
+
+	handler := r.getHandler(method, path)
+
+	handler.ServeHTTP(w, req)
+}
+
+func (r *Router) getHandler(method, path string) http.Handler {
+	for _, route := range r.routes {
+		re := regexp.MustCompile(route.pattern)
+		if route.method == method && re.MatchString(path) {
+
+			handler := route.handler
+
+			// chain handler with middleware
+			for _, mw := range r.middlewares {
+				handler = mw(handler)
+			}
+
+			return handler
+		}
+	}
+
+	return http.NotFoundHandler()
+}
+
+type WsHandler struct {
+	repo node.Repository
+}
+
+func NewWsHandler(repo node.Repository) *WsHandler {
 	return &WsHandler{
-		path: path,
+		repo: repo,
 	}
 }
 
@@ -32,23 +99,16 @@ var (
 	}
 )
 
-func (h *WsHandler) UseWebSockets(repo node.Repository) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if strings.Compare(r.URL.Path, h.path) != 0 {
-			http.Error(w, "Not found", http.StatusNotFound)
-			return
-		}
-
-		conn, err := websocketUpgrader.Upgrade(w, r, nil)
-		if err != nil {
-			log.Print("ws upgrade error:", err)
-			return
-		}
-
-		client := ws.RegisterConnection(nil, conn)
-
-		devices := repo.ListAll()
-		client.Broadcast(ws.DeviceUpdated, devices)
-		fmt.Printf("handler: client connected\n")
+func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	conn, err := websocketUpgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Print("websocketUpgrader error :", err)
+		return
 	}
+
+	client := ws.RegisterConnection(nil, conn)
+
+	devices := h.repo.ListAll()
+	client.Broadcast(ws.DeviceUpdated, devices)
+	fmt.Printf("WsHandler: client connected\n")
 }
