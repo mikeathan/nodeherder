@@ -1,9 +1,7 @@
 package hub
 
 import (
-	"encoding/json"
 	"log"
-	"net/http"
 	"node-herder/hub/ws"
 )
 
@@ -15,37 +13,31 @@ type HubConfig struct {
 	WSPath     string
 }
 
-func Init(config HubConfig) *ws.WsHandler {
+func Init(config HubConfig) {
 
 	if _wsServer != nil {
 		log.Fatal("Init - wsServer is already initialized")
-		return nil
+		return
 	}
 
 	_wsServer = ws.NewServer()
 	go _wsServer.Run()
 
-	_z2mClient := NewZ2MClient(config.MqttConfig)
+	_z2mClient = NewZ2MClient(config.MqttConfig)
 	_z2mClient.Connect()
 
-	handler := ws.NewHandler(config.WSPath)
+	//handler := ws.NewHandler(config.WSPath)
 
 	// TODO: configure in http package
-	http.Handle(config.WSPath, handler)
-	return handler
+	//http.Handle(config.WSPath, handler)
 }
 
-func Broadcast(event string, data interface{}) {
+func Broadcast(eventName string, payload interface{}) {
 
 	if _wsServer == nil {
 		log.Fatal("Broadcast - eventhub is not initialized")
 		return
 	}
 
-	var wsData = ws.WsEvent{Name: event, Data: data}
-	bytes, err := json.Marshal(wsData)
-	if err != nil {
-		panic(err)
-	}
-	_wsServer.Broadcast(bytes)
+	_wsServer.Broadcast(eventName, payload)
 }

@@ -1,6 +1,8 @@
 package ws
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 )
 
@@ -46,6 +48,13 @@ func (h *Server) Run() {
 	}
 }
 
-func (h *Server) Broadcast(message []byte) {
-	h.broadcast <- message
+func (h *Server) Broadcast(eventName string, data interface{}) error {
+	var wsData = payload{Name: eventName, Data: data}
+	bytes, err := json.Marshal(wsData)
+	if err != nil {
+		return errors.New("failed to marshal server payload")
+	}
+
+	h.broadcast <- bytes
+	return nil
 }

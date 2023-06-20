@@ -1,10 +1,9 @@
 package ws
 
 import (
-	"fmt"
+	"encoding/json"
+	"errors"
 	"log"
-	"net/http"
-	"strings"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -15,19 +14,9 @@ const (
 	ClientConnected = "connected"
 )
 
-type WsEvent struct {
+type payload struct {
 	Name string
 	Data interface{}
-}
-
-type WsHandler struct {
-	path string
-}
-
-func NewHandler(path string) *WsHandler {
-	return &WsHandler{
-		path: path,
-	}
 }
 
 const (
@@ -44,22 +33,24 @@ const (
 	maxMessageSize = 512
 )
 
-var (
-	websocketUpgrader = websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
-		CheckOrigin:     func(r *http.Request) bool { return true }, // for debug only ??
-		Error: func(w http.ResponseWriter, r *http.Request, status int, reason error) {
-			http.Error(w, reason.Error(), status)
-		},
-	}
-)
-
 type Client struct {
 	hub *Server
 
 	conn *websocket.Conn
 	send chan []byte
+}
+
+func newClient(hub *Server, conn *websocket.Conn) *Client {
+	return &Client{hub: hub, conn: conn, send: make(chan []byte)}
+}
+
+func RegisterConnection(hub *Server, conn *websocket.Conn) *Client {
+	client := newClient(hub, conn)
+	client.hub.register <- client
+
+	go client.readPump()
+	go client.writePump()
+	return client
 }
 
 func (c *Client) readPump() {
@@ -116,25 +107,13 @@ func (c *Client) writePump() {
 	}
 }
 
-// TODO: this can be moved now to http package
-func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
-	if strings.Compare(r.URL.Path, h.path) != 0 {
-		http.Error(w, "Not found", http.StatusNotFound)
-		return
-	}
-
-	conn, err := websocketUpgrader.Upgrade(w, r, nil)
+func (c *Client) Broadcast(eventName string, data interface{}) error {
+	var wsData = payload{Name: eventName, Data: data}
+	bytes, err := json.Marshal(wsData)
 	if err != nil {
-		log.Print("ws upgrade error:", err)
-		return
+		return errors.New("failed to marshal client payload")
 	}
 
-	client := &Client{hub: _eventhub, conn: conn, send: make(chan []byte)}
-	client.hub.register <- client
-
-	go client.readPump()
-	go client.writePump()
-
-	fmt.Printf("handler: client connected\n")
+	c.send <- bytes
+	return nil
 }

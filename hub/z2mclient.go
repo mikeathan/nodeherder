@@ -15,17 +15,17 @@ import (
 // }
 
 const baseTopic string = "zigbee2mqtt/"
+
 type device struct {
 	Name    string          `json:"name"`
 	Payload json.RawMessage `json:"payload"`
 }
 
-type MqttConfig struct
-{
-	Broker string
+type MqttConfig struct {
+	Broker   string
 	Username string
 	Password string
-	Devices []string
+	Devices  []string
 }
 
 var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
@@ -40,7 +40,7 @@ var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Me
 
 var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
 	fmt.Println("zigbee2mqtt client connected")
-	// TODO: send devices from global store
+
 	// Broadcast(ClientConnected, nil)
 }
 
@@ -58,7 +58,7 @@ func NewZ2MClient(config MqttConfig) *Z2MClient {
 		client:   nil,
 		cliendId: "sinkhole-z2m",
 	}
-	for _,device := range config.Devices{
+	for _, device := range config.Devices {
 		client.AddDevice(device)
 	}
 
