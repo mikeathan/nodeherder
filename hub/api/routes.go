@@ -32,7 +32,7 @@ var (
 	}
 )
 
-func (h *WsHandler) UseWebSockets(store node.Store) http.HandlerFunc {
+func (h *WsHandler) UseWebSockets(repo node.Repository) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if strings.Compare(r.URL.Path, h.path) != 0 {
 			http.Error(w, "Not found", http.StatusNotFound)
@@ -47,7 +47,7 @@ func (h *WsHandler) UseWebSockets(store node.Store) http.HandlerFunc {
 
 		client := ws.RegisterConnection(nil, conn)
 
-		devices := store.ListAll()
+		devices := repo.ListAll()
 		client.Broadcast(ws.DeviceUpdated, devices)
 		fmt.Printf("handler: client connected\n")
 	}

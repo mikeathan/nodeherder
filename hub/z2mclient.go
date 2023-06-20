@@ -110,6 +110,7 @@ func (m *Z2MClient) Connect() error {
 
 func (m *Z2MClient) AddTopic(topic string) {
 	m.topics = append(m.topics, topic)
+	fmt.Printf("Topic %s added\n", topic)
 }
 
 func (m *Z2MClient) Disconnect() {
