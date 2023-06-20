@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"node-herder/api/hub"
-	"node-herder/node"
+	"node-herder/hub"
 	"regexp"
 
 	"github.com/gorilla/websocket"
@@ -79,12 +78,12 @@ func (r *Router) getHandler(method, path string) http.Handler {
 }
 
 type WsHandler struct {
-	repo node.Repository
+	hub hub.Hub
 }
 
-func NewWsHandler(repo node.Repository) *WsHandler {
+func NewWsHandler(hub hub.Hub) *WsHandler {
 	return &WsHandler{
-		repo: repo,
+		hub: hub,
 	}
 }
 
@@ -108,7 +107,7 @@ func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	client := hub.RegisterConnection(nil, conn)
 
-	devices := h.repo.ListAll()
+	devices := h.hub.Repository().ListAll()
 	client.Broadcast(hub.DeviceUpdated, devices)
 	fmt.Printf("WsHandler: client connected\n")
 }

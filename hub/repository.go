@@ -1,4 +1,4 @@
-package node
+package hub
 
 type Repository interface {
 	Add(deviceName string, payload interface{})

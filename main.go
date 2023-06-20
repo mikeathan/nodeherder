@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"node-herder/api"
+	"node-herder/hub"
 	"node-herder/node"
 	"os"
 	"os/signal"
@@ -53,8 +54,8 @@ func main() {
 		api.WithContext(ctx),
 	)
 
-	cfg := hub.HubConfig{WSPath: "/ws",
-		MqttConfig: hub.MqttConfig{
+	cfg := hub.Config{WSPath: "/ws",
+		Mqtt: hub.MqttConfig{
 			Username: "sinkhole",
 			Password: "mqtt2023",
 			Broker:   "192.168.50.179:1883",
@@ -63,7 +64,7 @@ func main() {
 			},
 		}}
 
-	hub.Init(cfg)
+	hub.Create(cfg)
 
 	apiServer.Listen()
 	fmt.Println("Exited")
