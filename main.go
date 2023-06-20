@@ -9,22 +9,20 @@ import (
 
 func main() {
 
-	broker := "192.168.50.179:1883"
-	username := "sinkhole"
-	password := "mqtt2023"
+	cfg := hub.HubConfig{WSPath: "/ws",
+		MqttConfig: hub.MqttConfig{
+			Username: "sinkhole",
+			Password: "mqtt2023",
+			Broker:   "192.168.50.179:1883",
+			Devices: []string{
+				"TH1",
+			},
+		}}
 
-	hub.Init("/ws")
+	hub.Init(cfg)
 
 	fileServer := http.FileServer(http.Dir("./frontend/dist"))
 	http.Handle("/", fileServer)
-
-	client := hub.NewZ2MClient(broker, username, password)
-	client.AddDevice("TH1")
-	err := client.Connect()
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
 
 	fmt.Printf("Starting server at port 8080\n")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
