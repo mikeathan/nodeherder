@@ -10,7 +10,7 @@ type Hub interface {
 }
 
 type HubConnector struct {
-	ws   *Server
+	ws   *WsServer
 	mqtt *Z2MClient
 	repo Repository
 }
@@ -20,7 +20,7 @@ func Create(config Config) Hub {
 	var h = &HubConnector{}
 	h.repo = NewMemoryRepository()
 
-	h.ws = NewServer()
+	h.ws = NewWsServer()
 	go h.ws.Run()
 
 	h.mqtt = NewMqttClient(config.Mqtt)

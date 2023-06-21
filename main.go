@@ -54,7 +54,7 @@ func main() {
 		api.WithContext(ctx),
 	)
 
-	cfg := hub.Config{WSPath: "/ws",
+	cfg := hub.Config{
 		Mqtt: hub.MqttConfig{
 			Username: "sinkhole",
 			Password: "mqtt2023",

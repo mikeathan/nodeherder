@@ -3,6 +3,7 @@ package hub
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -33,19 +34,19 @@ const (
 	maxMessageSize = 512
 )
 
-type Client struct {
-	hub *Server
+type WsClient struct {
+	hub *WsServer
 
 	conn *websocket.Conn
 	send chan []byte
 }
 
-func newClient(hub *Server, conn *websocket.Conn) *Client {
-	return &Client{hub: hub, conn: conn, send: make(chan []byte)}
+func newWsClient(hub *WsServer, conn *websocket.Conn) *WsClient {
+	return &WsClient{hub: hub, conn: conn, send: make(chan []byte)}
 }
 
-func RegisterConnection(hub *Server, conn *websocket.Conn) *Client {
-	client := newClient(hub, conn)
+func RegisterConnection(hub *WsServer, conn *websocket.Conn) *WsClient {
+	client := newWsClient(hub, conn)
 	client.hub.register <- client
 
 	go client.readPump()
@@ -53,7 +54,7 @@ func RegisterConnection(hub *Server, conn *websocket.Conn) *Client {
 	return client
 }
 
-func (c *Client) readPump() {
+func (c *WsClient) readPump() {
 	defer func() {
 		c.hub.unregister <- c
 		c.conn.Close()
@@ -74,7 +75,7 @@ func (c *Client) readPump() {
 	}
 }
 
-func (c *Client) writePump() {
+func (c *WsClient) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
@@ -107,7 +108,7 @@ func (c *Client) writePump() {
 	}
 }
 
-func (c *Client) Broadcast(eventName string, data interface{}) error {
+func (c *WsClient) Broadcast(eventName string, data interface{}) error {
 	var wsData = payload{Name: eventName, Data: data}
 	bytes, err := json.Marshal(wsData)
 	if err != nil {
@@ -115,5 +116,58 @@ func (c *Client) Broadcast(eventName string, data interface{}) error {
 	}
 
 	c.send <- bytes
+	return nil
+}
+
+type WsServer struct {
+	clients    map[*WsClient]bool
+	broadcast  chan []byte
+	register   chan *WsClient
+	unregister chan *WsClient
+}
+
+func NewWsServer() *WsServer {
+	return &WsServer{
+		clients:    map[*WsClient]bool{},
+		broadcast:  make(chan []byte),
+		register:   make(chan *WsClient),
+		unregister: make(chan *WsClient),
+	}
+}
+
+func (h *WsServer) Run() {
+	for {
+		select {
+		case client := <-h.register:
+			h.clients[client] = true
+			fmt.Println("hub: client registered")
+		case client := <-h.unregister:
+			if _, ok := h.clients[client]; ok {
+				fmt.Println("hub: client unregistered")
+				delete(h.clients, client)
+				close(client.send)
+			}
+		case message := <-h.broadcast:
+			for client := range h.clients {
+				select {
+				case client.send <- message:
+				default:
+					fmt.Println("broadcast failed, client closed")
+					close(client.send)
+					delete(h.clients, client)
+				}
+			}
+		}
+	}
+}
+
+func (h *WsServer) Broadcast(eventName string, data interface{}) error {
+	var wsData = payload{Name: eventName, Data: data}
+	bytes, err := json.Marshal(wsData)
+	if err != nil {
+		return errors.New("failed to marshal server payload")
+	}
+
+	h.broadcast <- bytes
 	return nil
 }
