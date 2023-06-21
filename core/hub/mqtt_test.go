@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+	"testing"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-func main() {
+func TestMqtt(t *testing.T) {
 	var ip = flag.String("ip", "tcp://127.0.0.1:1883", "MQTT broker address")
 	//var server = flag.Bool("server", false, "Run in server mode")
 	var debug = flag.Bool("debug", false, "Run in debug mode")
