@@ -1,10 +1,9 @@
 package hub_test
 
 import (
-	"flag"
 	"fmt"
 	"math/rand"
-	"strings"
+	"node-herder/hub"
 	"testing"
 	"time"
 
@@ -12,16 +11,28 @@ import (
 )
 
 func TestMqtt(t *testing.T) {
-	var ip = flag.String("ip", "tcp://127.0.0.1:1883", "MQTT broker address")
-	//var server = flag.Bool("server", false, "Run in server mode")
-	var debug = flag.Bool("debug", false, "Run in debug mode")
-	var maxInterval = flag.Int("maxinterval", 5, "Max interval for sending words")
+
+	// TODO: either connect to online test broker or the local one in the network
+	var broker = "tcp://test.mosquitto.org:1883"
+	var topic = "TestDevice1"
+	var maxInterval = 5
 
 	var message = "test mqtt data 1"
 
-	var opts = mqtt.NewClientOptions()
-	opts.AddBroker(*ip)
+	cfg := hub.Config{
+		Mqtt: hub.MqttConfig{
+			Username: "test",
+			Password: "12345",
+			Broker:   ip,
+			Topics: []string{
+				topic,
+			},
+		}}
 
+	var opts = mqtt.NewClientOptions()
+	opts.AddBroker(ip)
+	opts.Username = cfg.Mqtt.Username
+	opts.Password = cfg.Mqtt.Password
 	var client = mqtt.NewClient(opts)
 	var token = client.Connect()
 	token.Wait()
@@ -29,30 +40,35 @@ func TestMqtt(t *testing.T) {
 		panic(token.Error())
 	}
 
-	clientMain(client, message, *maxInterval, *debug)
+	mqttClient := hub.NewMqttClient(cfg.Mqtt)
+
+	mqttClient.Connect()
+	mqttClient.WithMessageHandler(messagePubHandler)
+
+	//
+	clientMain(client, topic, message, maxInterval)
 }
 
-func publishFunc(client mqtt.Client, word string, maxInterval int, debug bool) {
-	var topic = fmt.Sprintf("topic_%s", word)
+var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
+	fmt.Printf("mqtt message => Topic: %s, Payload; %s\n", msg.Topic(), msg.Payload())
+}
+
+func publishFunc(client mqtt.Client, topic string, message string, maxInterval int) {
 	for {
-		var token = client.Publish(topic, 2, false, word)
+		var token = client.Publish(topic, 2, false, message)
 		token.Wait()
 		if token.Error() != nil {
 			panic(token.Error())
 		}
-		if debug {
-			fmt.Println(word)
-		}
+		fmt.Println(message)
 		time.Sleep(time.Duration(rand.Float64() * float64(maxInterval) * float64(time.Second)))
 	}
 }
 
-func clientMain(client mqtt.Client, message string, maxInterval int, debug bool) {
+func clientMain(client mqtt.Client, topic string, message string, maxInterval int) {
 	var closeChan = make(chan struct{})
 
-	for _, w := range strings.Split(message, " ") {
-		go publishFunc(client, w, maxInterval, debug)
-	}
+	go publishFunc(client, topic, message, maxInterval)
 
 	<-closeChan
 }

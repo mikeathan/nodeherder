@@ -34,7 +34,7 @@ var _connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client,
 	fmt.Printf("Connection Lost: %s\n", err.Error())
 }
 
-func newMqttClient(config MqttConfig) *Z2MClient {
+func NewMqttClient(config MqttConfig) *Z2MClient {
 
 	var client = &Z2MClient{
 		broker:   config.Broker,

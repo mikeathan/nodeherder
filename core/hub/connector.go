@@ -38,7 +38,7 @@ func Create(config Config) Hub {
 	h.ws = newWsServer()
 	go h.ws.Run()
 
-	h.mqtt = newMqttClient(config.Mqtt)
+	h.mqtt = NewMqttClient(config.Mqtt)
 	h.mqtt.WithMessageHandler(h.messageHandler())
 	h.mqtt.Connect()
 
