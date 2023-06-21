@@ -15,6 +15,15 @@ const (
 	ClientConnected = "connected"
 )
 
+type WsMessage struct {
+	Name    string          `json:"name"`
+	Payload json.RawMessage `json:"payload"`
+}
+
+func NewWsMessage(name string, payload []byte) WsMessage {
+	return WsMessage{Name: name, Payload: json.RawMessage(payload)}
+}
+
 type payload struct {
 	Name string
 	Data interface{}

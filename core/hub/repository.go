@@ -12,7 +12,7 @@ func newDevice(name string, payload interface{}) *Device {
 }
 
 type Repository interface {
-	AddDevice(deviceName string, payload interface{})
+	Store(deviceName string, payload interface{})
 	ListAllDevices() []*Device
 }
 
@@ -24,7 +24,7 @@ func NewMemoryRepository() Repository {
 	return &MemoryRepository{store: map[string]*Device{}}
 }
 
-func (s *MemoryRepository) AddDevice(deviceName string, payload interface{}) {
+func (s *MemoryRepository) Store(deviceName string, payload interface{}) {
 
 	if _, ok := s.store[deviceName]; !ok {
 		s.store[deviceName] = newDevice(deviceName, payload)

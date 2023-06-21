@@ -1,4 +1,4 @@
-package api
+package hub
 
 import (
 	"context"
@@ -24,7 +24,7 @@ func WithRouter(router *Router) func(s *ApiServer) {
 	return func(s *ApiServer) { s.router = router }
 }
 
-func NewServer(port int, opts ...func(s *ApiServer)) HttpServer {
+func NewHttpServer(port int, opts ...func(s *ApiServer)) HttpServer {
 
 	api := &ApiServer{
 		router: &Router{},

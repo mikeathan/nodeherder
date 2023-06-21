@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	"node-herder/api"
 	"node-herder/hub"
 	"os"
 	"os/signal"
@@ -52,16 +51,16 @@ func main() {
 			},
 		}}
 
-	hub := hub.Create(cfg)
+	connector := hub.Create(cfg)
 
-	router := api.NewRouter()
-	router.GET("/ws", api.NewWsHandler(hub))
+	router := hub.NewRouter()
+	router.GET("/ws", hub.NewWsHandler(connector))
 	router.GET("/", http.FileServer(http.Dir("../../frontend/dist")))
 
-	apiServer := api.NewServer(
+	apiServer := hub.NewHttpServer(
 		port,
-		api.WithRouter(router),
-		api.WithContext(ctx),
+		hub.WithRouter(router),
+		hub.WithContext(ctx),
 	)
 
 	apiServer.Listen()

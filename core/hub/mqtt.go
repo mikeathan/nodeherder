@@ -1,7 +1,6 @@
 package hub
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -16,11 +15,6 @@ import (
 
 const baseTopic string = "zigbee2mqtt/"
 
-type device struct {
-	Name    string          `json:"name"`
-	Payload json.RawMessage `json:"payload"`
-}
-
 type MqttConfig struct {
 	Broker   string
 	Username string
@@ -28,21 +22,15 @@ type MqttConfig struct {
 	Topics   []string
 }
 
-var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	var topic = msg.Topic()
-	var payload = msg.Payload()
-	fmt.Printf("DEBUG - mqtt message => Topic: %s, Payload; %s\n", topic, payload)
-
-	// TODO: store device in map, global store
-	//var devicePayload = device{Name: getDeviceName(topic), Payload: json.RawMessage(msg.Payload())}
-	//Broadcast(DeviceUpdated, devicePayload)
+var _messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
+	fmt.Printf("mqtt message => Topic: %s, Payload; %s\n", msg.Topic(), msg.Payload())
 }
 
-var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
+var _connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
 	fmt.Println("zigbee2mqtt client connected")
 }
 
-var connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
+var _connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
 	fmt.Printf("Connection Lost: %s\n", err.Error())
 }
 
@@ -64,16 +52,21 @@ func newMqttClient(config MqttConfig) *Z2MClient {
 }
 
 type Z2MClient struct {
-	topics   []string
-	client   mqtt.Client
-	broker   string
-	username string
-	password string
-	cliendId string
+	topics         []string
+	client         mqtt.Client
+	broker         string
+	username       string
+	password       string
+	cliendId       string
+	messageHandler func(client mqtt.Client, msg mqtt.Message)
 }
 
-func getDeviceName(topic string) string {
+func SanitizeTopic(topic string) string {
 	return strings.Replace(topic, baseTopic, "", -1)
+}
+
+func (m *Z2MClient) WithMessageHandler(messageHandler func(client mqtt.Client, msg mqtt.Message)) {
+	m.messageHandler = messageHandler
 }
 
 func (m *Z2MClient) Connect() error {
@@ -84,9 +77,13 @@ func (m *Z2MClient) Connect() error {
 	options.Username = m.username
 	options.Password = m.password
 
-	options.SetDefaultPublishHandler(messagePubHandler)
-	options.OnConnect = connectHandler
-	options.OnConnectionLost = connectionLostHandler
+	if m.messageHandler == nil {
+		m.messageHandler = _messagePubHandler
+	}
+
+	options.SetDefaultPublishHandler(m.messageHandler)
+	options.OnConnect = _connectHandler
+	options.OnConnectionLost = _connectionLostHandler
 
 	m.client = mqtt.NewClient(options)
 	token := m.client.Connect()

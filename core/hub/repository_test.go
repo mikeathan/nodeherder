@@ -12,7 +12,7 @@ const data2 = "{'battery':95,'humidity':60.8,'last_seen':'2023-05-31T19:05:28+01
 func TestRepositoryCanAddOneDevice(t *testing.T) {
 
 	repo := hub.NewMemoryRepository()
-	repo.AddDevice("TH1", data1)
+	repo.Store("TH1", data1)
 
 	devices := repo.ListAllDevices()
 
@@ -33,8 +33,8 @@ func TestRepositoryCanAddOneDevice(t *testing.T) {
 func TestRepositoryCanAddMultipleDevices(t *testing.T) {
 
 	repo := hub.NewMemoryRepository()
-	repo.AddDevice("TH1", data1)
-	repo.AddDevice("TH2", data2)
+	repo.Store("TH1", data1)
+	repo.Store("TH2", data2)
 	devices := repo.ListAllDevices()
 
 	if len(devices) == 0 {
@@ -60,8 +60,8 @@ func TestRepositoryCanAddMultipleDevices(t *testing.T) {
 func TestRepositoryCanUpdateExistingDevice(t *testing.T) {
 
 	repo := hub.NewMemoryRepository()
-	repo.AddDevice("TH1", data1)
-	repo.AddDevice("TH1", data2)
+	repo.Store("TH1", data1)
+	repo.Store("TH1", data2)
 	devices := repo.ListAllDevices()
 
 	if len(devices) == 0 {
