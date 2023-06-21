@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"node-herder/api"
 	"node-herder/hub"
-	"node-herder/node"
 	"os"
 	"os/signal"
 	"syscall"
@@ -43,17 +42,6 @@ func main() {
 		cancelCtx()
 	}()
 
-	repo := node.NewMemoryRepository()
-	router := api.NewRouter()
-	router.GET("/ws", api.NewWsHandler(repo))
-	router.GET("/", http.FileServer(http.Dir("./frontend/dist")))
-
-	apiServer := api.NewServer(
-		port,
-		api.WithRouter(router),
-		api.WithContext(ctx),
-	)
-
 	cfg := hub.Config{
 		Mqtt: hub.MqttConfig{
 			Username: "sinkhole",
@@ -64,7 +52,17 @@ func main() {
 			},
 		}}
 
-	hub.Create(cfg)
+	hub := hub.Create(cfg)
+
+	router := api.NewRouter()
+	router.GET("/ws", api.NewWsHandler(hub))
+	router.GET("/", http.FileServer(http.Dir("../../frontend/dist")))
+
+	apiServer := api.NewServer(
+		port,
+		api.WithRouter(router),
+		api.WithContext(ctx),
+	)
 
 	apiServer.Listen()
 	fmt.Println("Exited")

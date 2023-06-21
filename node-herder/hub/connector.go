@@ -20,10 +20,10 @@ func Create(config Config) Hub {
 	var h = &HubConnector{}
 	h.repo = NewMemoryRepository()
 
-	h.ws = NewWsServer()
+	h.ws = newWsServer()
 	go h.ws.Run()
 
-	h.mqtt = NewMqttClient(config.Mqtt)
+	h.mqtt = newMqttClient(config.Mqtt)
 	h.mqtt.Connect()
 
 	return h

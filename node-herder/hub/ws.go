@@ -126,7 +126,7 @@ type WsServer struct {
 	unregister chan *WsClient
 }
 
-func NewWsServer() *WsServer {
+func newWsServer() *WsServer {
 	return &WsServer{
 		clients:    map[*WsClient]bool{},
 		broadcast:  make(chan []byte),
