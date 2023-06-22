@@ -23,15 +23,15 @@ type MqttConfig struct {
 }
 
 var _messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	fmt.Printf("mqtt message => Topic: %s, Payload; %s\n", msg.Topic(), msg.Payload())
+	fmt.Printf("mqtt Message => Topic: %s, Payload; %s\n", msg.Topic(), msg.Payload())
 }
 
 var _connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
-	fmt.Println("zigbee2mqtt client connected")
+	fmt.Println("mqtt Client connected")
 }
 
 var _connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
-	fmt.Printf("Connection Lost: %s\n", err.Error())
+	fmt.Printf("mqtt Connection Lost: %s\n", err.Error())
 }
 
 func NewMqttClient(config MqttConfig) *Z2MClient {
@@ -93,6 +93,7 @@ func (m *Z2MClient) Connect() error {
 	}
 
 	for _, device_name := range m.topics {
+		// todo: pass full topic dont build them here
 		topic := fmt.Sprintf("%s%s", baseTopic, device_name)
 		token = m.client.Subscribe(topic, 1, nil)
 
