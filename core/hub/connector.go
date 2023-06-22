@@ -30,17 +30,45 @@ func (h *HubConnector) messageHandler() func(client mqtt.Client, msg mqtt.Messag
 	}
 }
 
-func Create(config Config) Hub {
+func WithRepository(repo Repository) func(h *HubConnector) {
+	return func(h *HubConnector) { h.repo = repo }
+}
+
+func WithWsServer(wsServer *WsServer) func(h *HubConnector) {
+	return func(h *HubConnector) { h.ws = wsServer }
+}
+
+func WithMqttClient(mqtt *Z2MClient) func(h *HubConnector) {
+	return func(h *HubConnector) { h.mqtt = mqtt }
+}
+
+func Create(config Config, opts ...func(h *HubConnector)) Hub {
 
 	var h = &HubConnector{}
-	h.repo = NewMemoryRepository()
+	for _, opt := range opts {
+		opt(h)
+	}
 
-	h.ws = newWsServer()
-	go h.ws.Run()
+	// Temporary
+	if h.repo == nil {
+		h.repo = NewMemoryRepository()
+	}
 
-	h.mqtt = NewMqttClient(config.Mqtt)
-	h.mqtt.WithMessageHandler(h.messageHandler())
-	h.mqtt.Connect()
+	// TODO: cant new ws and mqtt because we cant mock them
+	// temporay
+	// needs to init an empty mock object instead
+	if h.ws == nil {
+		h.ws = NewWsServer()
+		go h.ws.Run()
+	}
+
+	// temporay
+	// needs to init an empty mock object instead
+	if h.mqtt == nil {
+		h.mqtt = NewMqttClient(config.Mqtt)
+		h.mqtt.WithMessageHandler(h.messageHandler())
+		h.mqtt.Connect()
+	}
 
 	return h
 }

@@ -51,6 +51,10 @@ func main() {
 			},
 		}}
 
+	// h.repo = NewMemoryRepository()
+	// h.mqtt = NewMqttClient(config.Mqtt)
+	// h.ws = NewWsServer()
+
 	connector := hub.Create(cfg)
 
 	router := hub.NewRouter()
