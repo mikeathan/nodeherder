@@ -41,7 +41,7 @@ func main() {
 		cancelCtx()
 	}()
 
-	cfg := hub.Config{
+	config := hub.Config{
 		Mqtt: hub.MqttConfig{
 			Username: "sinkhole",
 			Password: "mqtt2023",
@@ -51,11 +51,14 @@ func main() {
 			},
 		}}
 
-	// h.repo = NewMemoryRepository()
-	// h.mqtt = NewMqttClient(config.Mqtt)
-	// h.ws = NewWsServer()
+	repo := hub.NewMemoryRepository()
+	mqtt := hub.NewMqttClient(config.Mqtt)
+	ws := hub.NewWsHub()
 
-	connector := hub.Create(cfg)
+	connector := hub.Create(config,
+		hub.WithRepository(repo),
+		hub.WithMqttClient(mqtt),
+		hub.WithWsServer(ws))
 
 	router := hub.NewRouter()
 	router.GET("/ws", hub.NewWsHandler(connector))

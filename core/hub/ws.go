@@ -15,13 +15,13 @@ const (
 	ClientConnected = "connected"
 )
 
-type WsMessage struct {
+type HubMessage struct {
 	Name    string          `json:"name"`
 	Payload json.RawMessage `json:"payload"`
 }
 
-func NewWsMessage(name string, payload []byte) WsMessage {
-	return WsMessage{Name: name, Payload: json.RawMessage(payload)}
+func NewHubMessage(name string, payload []byte) HubMessage {
+	return HubMessage{Name: name, Payload: json.RawMessage(payload)}
 }
 
 type payload struct {
@@ -44,17 +44,17 @@ const (
 )
 
 type WsClient struct {
-	hub *WsServer
+	hub *WsHub
 
 	conn *websocket.Conn
 	send chan []byte
 }
 
-func newWsClient(hub *WsServer, conn *websocket.Conn) *WsClient {
+func newWsClient(hub *WsHub, conn *websocket.Conn) *WsClient {
 	return &WsClient{hub: hub, conn: conn, send: make(chan []byte)}
 }
 
-func RegisterConnection(hub *WsServer, conn *websocket.Conn) *WsClient {
+func RegisterConnection(hub *WsHub, conn *websocket.Conn) *WsClient {
 	client := newWsClient(hub, conn)
 	client.hub.register <- client
 
@@ -128,23 +128,30 @@ func (c *WsClient) Broadcast(eventName string, data interface{}) error {
 	return nil
 }
 
-type WsServer struct {
+type WsServer interface {
+	Broadcast(eventName string, data interface{}) error
+}
+
+type WsHub struct {
 	clients    map[*WsClient]bool
 	broadcast  chan []byte
 	register   chan *WsClient
 	unregister chan *WsClient
 }
 
-func NewWsServer() *WsServer {
-	return &WsServer{
+func NewWsHub() WsServer {
+	wsHub := &WsHub{
 		clients:    map[*WsClient]bool{},
 		broadcast:  make(chan []byte),
 		register:   make(chan *WsClient),
 		unregister: make(chan *WsClient),
 	}
+
+	go wsHub.run()
+	return wsHub
 }
 
-func (h *WsServer) Run() {
+func (h *WsHub) run() {
 	for {
 		select {
 		case client := <-h.register:
@@ -170,7 +177,7 @@ func (h *WsServer) Run() {
 	}
 }
 
-func (h *WsServer) Broadcast(eventName string, data interface{}) error {
+func (h *WsHub) Broadcast(eventName string, data interface{}) error {
 	var wsData = payload{Name: eventName, Data: data}
 	bytes, err := json.Marshal(wsData)
 	if err != nil {

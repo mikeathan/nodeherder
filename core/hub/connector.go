@@ -2,6 +2,7 @@ package hub
 
 import (
 	"fmt"
+	"node-herder/hub/mocks"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
@@ -15,8 +16,8 @@ type Hub interface {
 }
 
 type HubConnector struct {
-	ws   *WsServer
-	mqtt *Z2MClient
+	ws   WsServer
+	mqtt MqttClient
 	repo Repository
 }
 
@@ -34,41 +35,27 @@ func WithRepository(repo Repository) func(h *HubConnector) {
 	return func(h *HubConnector) { h.repo = repo }
 }
 
-func WithWsServer(wsServer *WsServer) func(h *HubConnector) {
+func WithWsServer(wsServer WsServer) func(h *HubConnector) {
 	return func(h *HubConnector) { h.ws = wsServer }
 }
 
-func WithMqttClient(mqtt *Z2MClient) func(h *HubConnector) {
+func WithMqttClient(mqtt MqttClient) func(h *HubConnector) {
 	return func(h *HubConnector) { h.mqtt = mqtt }
 }
 
 func Create(config Config, opts ...func(h *HubConnector)) Hub {
 
-	var h = &HubConnector{}
+	var h = &HubConnector{
+		ws:   &mocks.NopWsServer{},
+		mqtt: &mocks.NopMqttClient{},
+		repo: mocks.NopRepository{}}
+
 	for _, opt := range opts {
 		opt(h)
 	}
 
-	// Temporary
-	if h.repo == nil {
-		h.repo = NewMemoryRepository()
-	}
-
-	// TODO: cant new ws and mqtt because we cant mock them
-	// temporay
-	// needs to init an empty mock object instead
-	if h.ws == nil {
-		h.ws = NewWsServer()
-		go h.ws.Run()
-	}
-
-	// temporay
-	// needs to init an empty mock object instead
-	if h.mqtt == nil {
-		h.mqtt = NewMqttClient(config.Mqtt)
-		h.mqtt.WithMessageHandler(h.messageHandler())
-		h.mqtt.Connect()
-	}
+	// configure  mqtt
+	h.mqtt.WithMessageHandler(h.messageHandler())
 
 	return h
 }
@@ -77,7 +64,7 @@ func (h *HubConnector) DeviceUpdated(name string, payload []byte) {
 
 	h.repo.Store(name, payload)
 
-	h.ws.Broadcast(DeviceUpdated, NewWsMessage(name, payload))
+	h.ws.Broadcast(DeviceUpdated, NewHubMessage(name, payload))
 }
 
 func (h *HubConnector) Repository() Repository {

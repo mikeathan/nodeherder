@@ -7,11 +7,12 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-// type MqttClient interface{
-// 	Connect() error
-// 	AddDevice(deviceName string)
-// 	Disconnect()
-// }
+type MqttClient interface {
+	Connect() error
+	WithMessageHandler(messageHandler func(client mqtt.Client, msg mqtt.Message))
+	AddTopic(topic string)
+	Disconnect()
+}
 
 const baseTopic string = "zigbee2mqtt/"
 
@@ -34,7 +35,7 @@ var _connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client,
 	fmt.Printf("mqtt Connection Lost: %s\n", err.Error())
 }
 
-func NewMqttClient(config MqttConfig) *Z2MClient {
+func NewMqttClient(config MqttConfig) MqttClient {
 
 	var client = &Z2MClient{
 		broker:   config.Broker,
