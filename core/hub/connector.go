@@ -15,8 +15,9 @@ type Hub interface {
 }
 
 type HubConnector struct {
-	ws   WsServer
-	repo Repository
+	ws                WsServer
+	repo              Repository
+	OnClientConnected func(payload []byte)
 }
 
 func (h *HubConnector) RegisterConnection(conn *websocket.Conn) {

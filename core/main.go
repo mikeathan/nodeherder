@@ -43,8 +43,10 @@ func main() {
 		cancelCtx()
 	}()
 
-	ws := hub.NewWsHub()
 	repo := hub.NewMemoryRepository()
+	wsConfig := hub.WsConfig{OnConnected: func() []byte { return []byte(repo.ListAllDevices()) }}
+	ws := hub.NewWsHub(wsConfig)
+
 	config := hub.Config{
 		Mqtt: hub.MqttConfig{
 			Username: "sinkhole",

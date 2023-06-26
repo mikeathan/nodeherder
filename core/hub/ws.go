@@ -124,19 +124,25 @@ type WsServer interface {
 	RegisterNewClient(conn *websocket.Conn) models.EventEmitter
 }
 
-type WsHub struct {
-	clients    map[*WsClient]bool
-	broadcast  chan []byte
-	register   chan *WsClient
-	unregister chan *WsClient
+type WsConfig struct {
+	OnConnected func() []byte
 }
 
-func NewWsHub() WsServer {
+type WsHub struct {
+	clients           map[*WsClient]bool
+	broadcast         chan []byte
+	register          chan *WsClient
+	unregister        chan *WsClient
+	OnClientConnected func() []byte
+}
+
+func NewWsHub(config *WsConfig) WsServer {
 	wsHub := &WsHub{
-		clients:    map[*WsClient]bool{},
-		broadcast:  make(chan []byte),
-		register:   make(chan *WsClient),
-		unregister: make(chan *WsClient),
+		clients:           map[*WsClient]bool{},
+		broadcast:         make(chan []byte),
+		register:          make(chan *WsClient),
+		unregister:        make(chan *WsClient),
+		OnClientConnected: config.OnConnected,
 	}
 
 	go wsHub.run()
@@ -169,12 +175,15 @@ func (h *WsHub) run() {
 	}
 }
 
-func (h *WsHub) RegisterNewClient(conn *websocket.Conn) models.EventEmitter {
+func (h *WsHub) RegisterNewClient(conn *websocket.Conn) *WsClient {
 	client := newWsClient(h, conn)
 	client.hub.register <- client
 
 	go client.readPump()
 	go client.writePump()
+
+	payload := h.OnClientConnected()
+	client.Broadcast(ClientConnected, payload)
 	return client
 }
 
