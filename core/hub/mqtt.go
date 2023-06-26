@@ -9,18 +9,19 @@ import (
 
 type MqttClient interface {
 	Connect() error
-	WithMessageHandler(messageHandler func(client mqtt.Client, msg mqtt.Message))
 	AddTopic(topic string)
+	WithMessageHandler(messageHandler func(client mqtt.Client, msg mqtt.Message))
 	Disconnect()
 }
 
 const baseTopic string = "zigbee2mqtt/"
 
 type MqttConfig struct {
-	Broker   string
-	Username string
-	Password string
-	Topics   []string
+	Broker         string
+	Username       string
+	Password       string
+	Topics         []string
+	MessageHandler func(client mqtt.Client, msg mqtt.Message)
 }
 
 var _messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
@@ -38,17 +39,20 @@ var _connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client,
 func NewMqttClient(config MqttConfig) MqttClient {
 
 	var client = &Z2MClient{
-		broker:   config.Broker,
-		topics:   []string{},
-		username: config.Username,
-		password: config.Password,
-		client:   nil,
-		cliendId: "sinkhole-z2m",
+		broker:         config.Broker,
+		topics:         []string{},
+		username:       config.Username,
+		password:       config.Password,
+		client:         nil,
+		cliendId:       "sinkhole-z2m",
+		messageHandler: _messagePubHandler,
 	}
 	for _, topic := range config.Topics {
 		client.AddTopic(topic)
 	}
-
+	if config.MessageHandler != nil {
+		client.messageHandler = config.MessageHandler
+	}
 	return client
 }
 
@@ -77,10 +81,6 @@ func (m *Z2MClient) Connect() error {
 	options.SetClientID(m.cliendId)
 	options.Username = m.username
 	options.Password = m.password
-
-	if m.messageHandler == nil {
-		m.messageHandler = _messagePubHandler
-	}
 
 	options.SetDefaultPublishHandler(m.messageHandler)
 	options.OnConnect = _connectHandler

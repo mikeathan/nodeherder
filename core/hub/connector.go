@@ -5,6 +5,7 @@ import (
 	"node-herder/hub/mocks"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/gorilla/websocket"
 )
 
 type Config struct {
@@ -12,13 +13,20 @@ type Config struct {
 }
 
 type Hub interface {
-	Repository() Repository
+	RegisterConnection(conn *websocket.Conn)
 }
 
 type HubConnector struct {
 	ws   WsServer
 	mqtt MqttClient
 	repo Repository
+}
+
+func (h *HubConnector) RegisterConnection(conn *websocket.Conn) {
+	client := h.ws.RegisterNewClient(conn)
+
+	devices := h.repo.ListAllDevices()
+	client.Broadcast(DeviceUpdated, devices)
 }
 
 func (h *HubConnector) messageHandler() func(client mqtt.Client, msg mqtt.Message) {
@@ -54,9 +62,11 @@ func Create(config Config, opts ...func(h *HubConnector)) Hub {
 		opt(h)
 	}
 
+	// TODO
+	// will need refactoring
 	// configure  mqtt
-	h.mqtt.WithMessageHandler(h.messageHandler())
-
+	//h.mqtt.WithMessageHandler(h.messageHandler())
+	h.mqtt.Connect()
 	return h
 }
 
@@ -65,8 +75,4 @@ func (h *HubConnector) DeviceUpdated(name string, payload []byte) {
 	h.repo.Store(name, payload)
 
 	h.ws.Broadcast(DeviceUpdated, NewHubMessage(name, payload))
-}
-
-func (h *HubConnector) Repository() Repository {
-	return h.repo
 }

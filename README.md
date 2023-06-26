@@ -65,6 +65,19 @@ websockets:
 emit message device change
 all devices or just the updated ?
 
-TO FIX:
-display cached device ata from store on refresh
-update last_seen on client so we get updated diff
+Layers:
+
+mqtt
+
+- on new message
+  - add to repo
+  - emit message ??
+
+ws
+
+- on new connection
+  - get devices
+  - broadcast them
+- on mqtt message
+  - add to repo ??
+  - broadcast it

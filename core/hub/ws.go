@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"node-herder/models"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -53,16 +54,6 @@ type WsClient struct {
 func newWsClient(hub *WsHub, conn *websocket.Conn) *WsClient {
 	return &WsClient{hub: hub, conn: conn, send: make(chan []byte)}
 }
-
-func RegisterConnection(hub *WsHub, conn *websocket.Conn) *WsClient {
-	client := newWsClient(hub, conn)
-	client.hub.register <- client
-
-	go client.readPump()
-	go client.writePump()
-	return client
-}
-
 func (c *WsClient) readPump() {
 	defer func() {
 		c.hub.unregister <- c
@@ -130,6 +121,7 @@ func (c *WsClient) Broadcast(eventName string, data interface{}) error {
 
 type WsServer interface {
 	Broadcast(eventName string, data interface{}) error
+	RegisterNewClient(conn *websocket.Conn) models.EventClient
 }
 
 type WsHub struct {
@@ -175,6 +167,15 @@ func (h *WsHub) run() {
 			}
 		}
 	}
+}
+
+func (h *WsHub) RegisterNewClient(conn *websocket.Conn) models.EventClient {
+	client := newWsClient(h, conn)
+	client.hub.register <- client
+
+	go client.readPump()
+	go client.writePump()
+	return client
 }
 
 func (h *WsHub) Broadcast(eventName string, data interface{}) error {

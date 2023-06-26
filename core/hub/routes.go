@@ -104,9 +104,7 @@ func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client := RegisterConnection(nil, conn)
+	h.hub.RegisterConnection(conn)
 
-	devices := h.hub.Repository().ListAllDevices()
-	client.Broadcast(DeviceUpdated, devices)
 	fmt.Printf("WsHandler: client connected\n")
 }

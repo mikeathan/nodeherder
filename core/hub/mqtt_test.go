@@ -18,44 +18,38 @@ import (
 //	opts.SetClientID("go_mqtt_client")
 //	opts.SetUsername("emqx")
 //	opts.SetPassword("public")
-func TestMqtt(t *testing.T) {
-	t.Skip("component test. ignore")
-	// TODO: either connect to online test broker or the local one in the network
+
+func getConfig(broker string, messageHandler func(client mqtt.Client, msg mqtt.Message), topics ...string) hub.Config {
+	return hub.Config{
+		Mqtt: hub.MqttConfig{
+			Username:       "sinkhole",
+			Password:       "mqtt2023",
+			Broker:         broker,
+			Topics:         topics,
+			MessageHandler: messageHandler,
+		}}
+}
+func TestMqttClientReceiveesMessage(t *testing.T) {
 	var broker = "192.168.50.179:1883"
 	var topic = "device1"
-
-	cfg := hub.Config{
-		Mqtt: hub.MqttConfig{
-			Username: "sinkhole",
-			Password: "mqtt2023",
-			Broker:   broker,
-			Topics: []string{
-				topic,
-			},
-		}}
-
-	// hub mqtt client
-	mqttClient := hub.NewMqttClient(cfg.Mqtt)
-	mqttClient.WithMessageHandler(hubMessageHandler())
-	mqttClient.Connect()
-
-	startMqttNodeClient(cfg.Mqtt)
-}
-
-func hubMessageHandler() func(client mqtt.Client, msg mqtt.Message) {
-	return func(client mqtt.Client, msg mqtt.Message) {
-		var name = msg.Topic()
-		var payload = msg.Payload()
-		fmt.Printf("Hub received message => Topic: %s, Payload; %s\n", name, payload)
+	var message = "test message"
+	var messageHandler = func(client mqtt.Client, msg mqtt.Message) {
+		// TODO: test topic
+		if string(msg.Payload()) != message {
+			t.Errorf("Payload mismatch - want %s, got %s", message, string(msg.Payload()))
+		}
 	}
+
+	cfg := getConfig(broker, messageHandler, topic)
+	mqttClient := hub.NewMqttClient(cfg.Mqtt)
+	hub.Create(cfg, hub.WithMqttClient(mqttClient))
+
+	startMqttNodeClient(cfg.Mqtt, message, 2)
 }
 
-func startMqttNodeClient(cfg hub.MqttConfig) {
+func startMqttNodeClient(cfg hub.MqttConfig, message string, nEvents int) {
 
 	// some fake external device mqqtclient
-	var numOfEvents = 5
-	var message = "test mqtt data"
-
 	var opts = mqtt.NewClientOptions()
 	opts.AddBroker(cfg.Broker)
 	opts.Username = cfg.Username
@@ -75,7 +69,7 @@ func startMqttNodeClient(cfg hub.MqttConfig) {
 	var topic = fmt.Sprintf("zigbee2mqtt/%s", cfg.Topics[0])
 	var closeChan = make(chan bool)
 
-	go publishFunc(closeChan, client, topic, message, numOfEvents)
+	go publishFunc(closeChan, client, topic, message, nEvents)
 
 	<-closeChan
 	fmt.Printf("Device Shutdown \n")
@@ -96,14 +90,13 @@ var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err
 func publishFunc(closeChan chan bool, client mqtt.Client, topic string, message string, numOfEvents int) {
 
 	for i := 1; i <= numOfEvents; i++ {
-		var payload = fmt.Sprintf("%s %d", message, i)
-		var token = client.Publish(topic, 2, false, payload)
+		var token = client.Publish(topic, 2, false, message)
 		token.Wait()
 		if token.Error() != nil {
 			panic(token.Error())
 		}
 
-		fmt.Printf("Device publish: %s \n", payload)
+		fmt.Printf("Device publish: %s \n", message)
 
 		time.Sleep(2 * time.Second)
 	}

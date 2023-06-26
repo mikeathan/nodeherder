@@ -5,6 +5,7 @@ import (
 	"node-herder/models"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/gorilla/websocket"
 )
 
 type NopWsServer struct {
@@ -12,6 +13,10 @@ type NopWsServer struct {
 
 func (w *NopWsServer) Broadcast(eventName string, data interface{}) error {
 	fmt.Println("Empty Broadcast")
+	return nil
+}
+func (w *NopWsServer) RegisterNewClient(conn *websocket.Conn) models.EventClient {
+	fmt.Println("Empty RegisterNewClient")
 	return nil
 }
 
