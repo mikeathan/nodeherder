@@ -1,27 +1,25 @@
 package hub
 
-import "sort"
+import (
+	"node-herder/models"
+	"sort"
+)
 
-type Device struct {
-	Name    string      `json:"name"`
-	Payload interface{} `json:"payload"`
-}
-
-func newDevice(name string, payload interface{}) *Device {
-	return &Device{Name: name, Payload: payload}
+func newDevice(name string, payload interface{}) *models.Device {
+	return &models.Device{Name: name, Payload: payload}
 }
 
 type Repository interface {
 	Store(deviceName string, payload interface{})
-	ListAllDevices() []*Device
+	ListAllDevices() []*models.Device
 }
 
 type MemoryRepository struct {
-	store map[string]*Device
+	store map[string]*models.Device
 }
 
 func NewMemoryRepository() Repository {
-	return &MemoryRepository{store: map[string]*Device{}}
+	return &MemoryRepository{store: map[string]*models.Device{}}
 }
 
 func (s *MemoryRepository) Store(deviceName string, payload interface{}) {
@@ -32,7 +30,7 @@ func (s *MemoryRepository) Store(deviceName string, payload interface{}) {
 	s.store[deviceName].Payload = payload
 }
 
-func (s *MemoryRepository) ListAllDevices() []*Device {
+func (s *MemoryRepository) ListAllDevices() []*models.Device {
 
 	// sort before returning values
 	keys := make([]string, 0, len(s.store))
@@ -41,7 +39,7 @@ func (s *MemoryRepository) ListAllDevices() []*Device {
 	}
 	sort.Strings(keys)
 
-	devices := make([]*Device, 0, len(s.store))
+	devices := make([]*models.Device, 0, len(s.store))
 	for _, key := range keys {
 		devices = append(devices, s.store[key])
 	}

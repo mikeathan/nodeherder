@@ -2,7 +2,7 @@ package mocks
 
 import (
 	"fmt"
-	"node-herder/hub"
+	"node-herder/models"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
@@ -37,10 +37,12 @@ func (w *NopMqttClient) Disconnect() {
 type NopRepository struct {
 }
 
-func (w *NopMqttClient) Store(deviceName string, payload interface{}) {
+func (w *NopRepository) Store(deviceName string, payload interface{}) {
 	fmt.Println("Empty Store")
 }
-func (w *NopMqttClient) ListAllDevices() *hub.Device {
+
+func (w *NopRepository) ListAllDevices() []*models.Device {
+
 	fmt.Println("Empty ListAllDevices")
-	return nil
+	return []*models.Device{}
 }

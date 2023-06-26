@@ -48,7 +48,7 @@ func Create(config Config, opts ...func(h *HubConnector)) Hub {
 	var h = &HubConnector{
 		ws:   &mocks.NopWsServer{},
 		mqtt: &mocks.NopMqttClient{},
-		repo: mocks.NopRepository{}}
+		repo: &mocks.NopRepository{}}
 
 	for _, opt := range opts {
 		opt(h)
