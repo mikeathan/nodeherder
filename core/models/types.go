@@ -5,6 +5,6 @@ type Device struct {
 	Payload interface{} `json:"payload"`
 }
 
-type EventClient interface {
+type EventEmitter interface {
 	Broadcast(eventName string, data interface{}) error
 }

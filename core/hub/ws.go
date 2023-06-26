@@ -121,7 +121,7 @@ func (c *WsClient) Broadcast(eventName string, data interface{}) error {
 
 type WsServer interface {
 	Broadcast(eventName string, data interface{}) error
-	RegisterNewClient(conn *websocket.Conn) models.EventClient
+	RegisterNewClient(conn *websocket.Conn) models.EventEmitter
 }
 
 type WsHub struct {
@@ -169,7 +169,7 @@ func (h *WsHub) run() {
 	}
 }
 
-func (h *WsHub) RegisterNewClient(conn *websocket.Conn) models.EventClient {
+func (h *WsHub) RegisterNewClient(conn *websocket.Conn) models.EventEmitter {
 	client := newWsClient(h, conn)
 	client.hub.register <- client
 

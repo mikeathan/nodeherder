@@ -15,7 +15,7 @@ func (w *NopWsServer) Broadcast(eventName string, data interface{}) error {
 	fmt.Println("Empty Broadcast")
 	return nil
 }
-func (w *NopWsServer) RegisterNewClient(conn *websocket.Conn) models.EventClient {
+func (w *NopWsServer) RegisterNewClient(conn *websocket.Conn) models.EventEmitter {
 	fmt.Println("Empty RegisterNewClient")
 	return nil
 }

@@ -2,6 +2,7 @@ package hub
 
 import (
 	"fmt"
+	"node-herder/models"
 	"strings"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -38,25 +39,27 @@ var _connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client,
 
 func NewMqttClient(config MqttConfig) MqttClient {
 
-	var client = &Z2MClient{
+	var client = &MqttService{
 		broker:         config.Broker,
 		topics:         []string{},
 		username:       config.Username,
 		password:       config.Password,
 		client:         nil,
 		cliendId:       "sinkhole-z2m",
-		messageHandler: _messagePubHandler,
+		messageHandler: config.MessageHandler,
 	}
+
 	for _, topic := range config.Topics {
 		client.AddTopic(topic)
 	}
-	if config.MessageHandler != nil {
-		client.messageHandler = config.MessageHandler
+	// temporary
+	if client.messageHandler == nil {
+		client.messageHandler = _messagePubHandler
 	}
 	return client
 }
 
-type Z2MClient struct {
+type MqttService struct {
 	topics         []string
 	client         mqtt.Client
 	broker         string
@@ -64,17 +67,22 @@ type Z2MClient struct {
 	password       string
 	cliendId       string
 	messageHandler func(client mqtt.Client, msg mqtt.Message)
+	repo           Repository
 }
 
 func SanitizeTopic(topic string) string {
 	return strings.Replace(topic, baseTopic, "", -1)
 }
 
-func (m *Z2MClient) WithMessageHandler(messageHandler func(client mqtt.Client, msg mqtt.Message)) {
+func WithEmitter(emitter models.EventEmitter) {
+
+}
+
+func (m *MqttService) WithMessageHandler(messageHandler func(client mqtt.Client, msg mqtt.Message)) {
 	m.messageHandler = messageHandler
 }
 
-func (m *Z2MClient) Connect() error {
+func (m *MqttService) Connect() error {
 
 	options := mqtt.NewClientOptions()
 	options.AddBroker(m.broker)
@@ -107,12 +115,12 @@ func (m *Z2MClient) Connect() error {
 	return nil
 }
 
-func (m *Z2MClient) AddTopic(topic string) {
+func (m *MqttService) AddTopic(topic string) {
 	m.topics = append(m.topics, topic)
 	fmt.Printf("Topic %s added\n", topic)
 }
 
-func (m *Z2MClient) Disconnect() {
+func (m *MqttService) Disconnect() {
 	m.client.Disconnect(100)
 	fmt.Println("zigbee2mqtt client disconnected")
 }
