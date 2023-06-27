@@ -126,6 +126,7 @@ func (c *WsClient) Broadcast(eventName string, data interface{}) error {
 type WsServer interface {
 	Broadcast(eventName string, data interface{}) error
 	RegisterNewClient(conn *websocket.Conn)
+	WithOnConnected(onConnected func() interface{})
 }
 
 type WsConfig struct {
@@ -137,24 +138,28 @@ type WsHub struct {
 	broadcast         chan []byte
 	register          chan *WsClient
 	unregister        chan *WsClient
-	OnClientConnected func() interface{}
+	onClientConnected func() interface{}
 }
 
-func NewWsHub(config WsConfig) WsServer {
+func NewWsHub(config *WsConfig) WsServer {
 	wsHub := &WsHub{
 		clients:           map[*WsClient]bool{},
 		broadcast:         make(chan []byte),
 		register:          make(chan *WsClient),
 		unregister:        make(chan *WsClient),
-		OnClientConnected: func() interface{} { return nil },
+		onClientConnected: func() interface{} { return nil },
 	}
 
 	if config.OnConnected != nil {
-		wsHub.OnClientConnected = config.OnConnected
+		wsHub.onClientConnected = config.OnConnected
 	}
 
 	go wsHub.run()
 	return wsHub
+}
+
+func (h *WsHub) WithOnConnected(onConnected func() interface{}) {
+	h.onClientConnected = onConnected
 }
 
 func (h *WsHub) run() {
@@ -190,7 +195,7 @@ func (h *WsHub) RegisterNewClient(conn *websocket.Conn) {
 	go client.readPump()
 	go client.writePump()
 
-	payload := h.OnClientConnected()
+	payload := h.onClientConnected()
 	if payload != nil {
 		client.Broadcast(ClientConnected, payload)
 	}

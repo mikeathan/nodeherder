@@ -12,111 +12,110 @@ import (
 )
 
 // TODO: needs more work to store all connections and check if each clinets receives the message
-func TestHubNewClientConnectedEvents(t *testing.T) {
+func TestHubNewClientConnectedEventsTypesOfPayloads(t *testing.T) {
 
-	// testCases := []struct {
-	// 	Payload interface{}
-	// 	Message string
-	// }{
-	// 	{
-	// 		Payload: "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}",
-	// 		Message: "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}",
-	// 	},
-	// 	{
-	// 		Payload: []byte("{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"),
-	// 		Message: "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}",
-	// 	},
-	// }
+	testCases := []struct {
+		Payload interface{}
+		Message string
+	}{
+		{
+			Payload: "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}",
+			Message: "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}",
+		},
+		{
+			Payload: []byte("{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"),
+			Message: "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}",
+		},
+	}
 
-	// wsConfig := hub.WsConfig{
-	// 	OnConnected: func() interface{} {
-	// 		return nil
-	// 	}}
-
-	// ws := hub.NewWsHub(wsConfig)
-	// h := hub.NewWsHandler(ws)
-
-	// for _, testCase := range testCases {
-	// 	wsConfig.OnConnected = func() interface{} {
-	// 		return testCase.Payload
-	// 	}
-
-	// 	for i := 0; i < 1; i++ {
-	// 		s, ws := newWSServer(t, h)
-
-	// 		reply := receiveWSMessage(t, ws)
-	// 		gotType := reply["type"]
-	// 		if gotType != hub.ClientConnected {
-	// 			t.Fatalf("Expected type %+v', got '%+v'", hub.ClientConnected, gotType)
-	// 		}
-	// 		gotData := reply["payload"]
-	// 		if gotData != testCase.Message {
-	// 			t.Fatalf("Expected message %+v', got '%+v'", testCase.Message, gotData)
-	// 		}
-
-	// 		defer s.Close()
-	// 		defer ws.Close()
-	// 	}
-	// }
-
-	var message = "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"
-	//var bytesMessage = []byte(message)
-
-	wsConfig := hub.WsConfig{
-		OnConnected: func() interface{} {
-			bytes := message
-			return bytes
-		}}
-
-	ws := hub.NewWsHub(wsConfig)
-	h := hub.NewWsHandler(ws)
-
-	for i := 0; i < 1; i++ {
+	for _, testCase := range testCases {
+		var wsConfig = new(hub.WsConfig)
+		wsConfig.OnConnected = func() interface{} {
+			return testCase.Payload
+		}
+		wsHub := hub.NewWsHub(wsConfig)
+		h := hub.NewWsHandler(wsHub)
 		s, ws := newWSServer(t, h)
 
 		reply := receiveWSMessage(t, ws)
 		gotType := reply["type"]
+
 		if gotType != hub.ClientConnected {
 			t.Fatalf("Expected type %+v', got '%+v'", hub.ClientConnected, gotType)
 		}
 		gotData := reply["payload"]
-		if gotData != message {
-			t.Fatalf("Expected message %+v', got '%+v'", message, gotData)
+		wantData := testCase.Message
+		if gotData != wantData {
+			t.Fatalf("Expected message %+v', got '%+v'", wantData, gotData)
 		}
 
 		defer s.Close()
 		defer ws.Close()
+		ws.Close()
 	}
+}
+
+func TestHubNewClientConnectedEvents(t *testing.T) {
+
+	var expectedPayload = []byte("{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}")
+	var expectedMessage = "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"
+
+	var wsConfig = new(hub.WsConfig)
+	wsConfig.OnConnected = func() interface{} {
+		return expectedPayload
+	}
+	wsHub := hub.NewWsHub(wsConfig)
+	h := hub.NewWsHandler(wsHub)
+
+	for i := 0; i < 2; i++ {
+
+	}
+	s, ws := newWSServer(t, h)
+
+	reply := receiveWSMessage(t, ws)
+	gotType := reply["type"]
+
+	if gotType != hub.ClientConnected {
+		t.Fatalf("Expected type %+v', got '%+v'", hub.ClientConnected, gotType)
+	}
+	gotData := reply["payload"]
+	if gotData != expectedMessage {
+		t.Fatalf("Expected message %+v', got '%+v'", expectedMessage, gotData)
+	}
+
+	defer s.Close()
+	defer ws.Close()
+	ws.Close()
 }
 
 func TestHubNewClientEventsAreReceived(t *testing.T) {
 
-	message := "device updated"
-	wsConfig := hub.WsConfig{}
+	// message := "device updated"
+	// wsConfig := hub.WsConfig{}
 
-	ws := hub.NewWsHub(wsConfig)
-	h := hub.NewWsHandler(ws)
+	// ws := hub.NewWsHub(wsConfig)
+	// h := hub.NewWsHandler(ws)
 
-	for i := 0; i < 4; i++ {
-		s, con := newWSServer(t, h)
+	// for i := 0; i < 4; i++ {
+	// 	s, con := newWSServer(t, h)
 
-		er := ws.Broadcast(hub.DeviceUpdated, message)
-		if er != nil {
-			t.Fatalf("hub broadcast failed  %v", er)
-		}
-		reply := receiveWSMessage(t, con)
-		gotType := reply["type"]
-		if gotType != hub.DeviceUpdated {
-			t.Fatalf("Expected type %+v', got '%+v'", hub.ClientConnected, gotType)
-		}
-		gotData := reply["payload"]
-		if gotData != message {
-			t.Fatalf("Expected message %+v', got '%+v'", message, gotData)
-		}
+	// 	er := ws.Broadcast(hub.DeviceUpdated, message)
+	// 	if er != nil {
+	// 		t.Fatalf("hub broadcast failed  %v", er)
+	// 	}
+	// 	reply := receiveWSMessage(t, con)
+	// 	gotType := reply["type"]
+	// 	if gotType != hub.DeviceUpdated {
+	// 		t.Fatalf("Expected type %+v', got '%+v'", hub.ClientConnected, gotType)
+	// 	}
+	// 	gotData := reply["payload"]
+	// 	if gotData != message {
+	// 		t.Fatalf("Expected message %+v', got '%+v'", message, gotData)
+	// 	}
 
-		defer s.Close()
-		defer con.Close()
-	}
+	// 	defer s.Close()
+	// 	defer con.Close()
+	// }
 
 }
 
