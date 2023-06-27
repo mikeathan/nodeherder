@@ -17,7 +17,7 @@ const (
 
 type EventMessage struct {
 	Type    string      `json:"type"`
-	Payload interface{} `json:"data"`
+	Payload interface{} `json:"payload"`
 }
 
 func (e EventMessage) MarshalJSON() ([]byte, error) {
@@ -27,7 +27,7 @@ func (e EventMessage) MarshalJSON() ([]byte, error) {
 	}
 	return json.Marshal(&struct {
 		Type    string      `json:"type"`
-		Payload interface{} `json:"data"`
+		Payload interface{} `json:"payload"`
 	}{
 		Type:    e.Type,
 		Payload: p,
