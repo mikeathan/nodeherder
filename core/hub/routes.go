@@ -77,10 +77,10 @@ func (r *Router) getHandler(method, path string) http.Handler {
 }
 
 type WsHandler struct {
-	hub Hub
+	hub WsServer
 }
 
-func NewWsHandler(hub Hub) *WsHandler {
+func NewWsHandler(hub WsServer) *WsHandler {
 	return &WsHandler{
 		hub: hub,
 	}
@@ -104,7 +104,7 @@ func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.hub.RegisterConnection(conn)
+	h.hub.RegisterNewClient(conn)
 
 	fmt.Printf("WsHandler: client connected\n")
 }

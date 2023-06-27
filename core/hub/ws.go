@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"node-herder/models"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -121,11 +120,11 @@ func (c *WsClient) Broadcast(eventName string, data interface{}) error {
 
 type WsServer interface {
 	Broadcast(eventName string, data interface{}) error
-	RegisterNewClient(conn *websocket.Conn) models.EventEmitter
+	RegisterNewClient(conn *websocket.Conn)
 }
 
 type WsConfig struct {
-	OnConnected func() []byte
+	OnConnected func() interface{}
 }
 
 type WsHub struct {
@@ -133,16 +132,20 @@ type WsHub struct {
 	broadcast         chan []byte
 	register          chan *WsClient
 	unregister        chan *WsClient
-	OnClientConnected func() []byte
+	OnClientConnected func() interface{}
 }
 
-func NewWsHub(config *WsConfig) WsServer {
+func NewWsHub(config WsConfig) WsServer {
 	wsHub := &WsHub{
 		clients:           map[*WsClient]bool{},
 		broadcast:         make(chan []byte),
 		register:          make(chan *WsClient),
 		unregister:        make(chan *WsClient),
-		OnClientConnected: config.OnConnected,
+		OnClientConnected: func() interface{} { return nil },
+	}
+
+	if config.OnConnected != nil {
+		wsHub.OnClientConnected = config.OnConnected
 	}
 
 	go wsHub.run()
@@ -175,7 +178,7 @@ func (h *WsHub) run() {
 	}
 }
 
-func (h *WsHub) RegisterNewClient(conn *websocket.Conn) *WsClient {
+func (h *WsHub) RegisterNewClient(conn *websocket.Conn) {
 	client := newWsClient(h, conn)
 	client.hub.register <- client
 
@@ -183,8 +186,9 @@ func (h *WsHub) RegisterNewClient(conn *websocket.Conn) *WsClient {
 	go client.writePump()
 
 	payload := h.OnClientConnected()
-	client.Broadcast(ClientConnected, payload)
-	return client
+	if payload != nil {
+		client.Broadcast(ClientConnected, payload)
+	}
 }
 
 func (h *WsHub) Broadcast(eventName string, data interface{}) error {

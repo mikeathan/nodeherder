@@ -2,57 +2,70 @@ package hub_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strconv"
+	"node-herder/hub"
 	"testing"
 
 	"github.com/gorilla/websocket"
 )
 
-type device struct {
-	Name    string          `json:"name"`
-	Payload json.RawMessage `json:"payload"`
-}
+// TODO: needs more work to store all connections and check if each clinets receives the message
+func TestHubNewClientConnectedEvents(t *testing.T) {
 
-func TestXxx(t *testing.T) {
-	return
-	var topic = "zigbee2mqtt/TH1"
+	message := "new client connected"
+	wsConfig := hub.WsConfig{
+		OnConnected: func() interface{} {
+			bytes := message
+			return bytes
+		}}
 
-	var msg = "{'battery':100,'humidity':59.8,'last_seen':'2023-05-31T19:02:28+01:00','linkquality':51,'temperature':18.4,'voltage':3000}"
-	// escape
-	escapedmsg := strconv.Quote(msg)
-	var payload = []byte(escapedmsg)
-	payload1 := json.RawMessage(payload)
-	var device = device{Name: topic, Payload: payload1}
-	bytes, err := json.Marshal(device)
-	if err != nil {
-		panic(err)
+	ws := hub.NewWsHub(wsConfig)
+	h := hub.NewWsHandler(ws)
+
+	for i := 0; i < 4; i++ {
+		s, ws := newWSServer(t, h)
+
+		reply := receiveWSMessage(t, ws)
+		if reply["Name"] != hub.ClientConnected {
+			t.Fatalf("Expected type %+v', got '%+v'", hub.ClientConnected, reply["Name"])
+		}
+		if reply["Data"] != message {
+			t.Fatalf("Expected message %+v', got '%+v'", message, reply["Data"])
+		}
+
+		defer s.Close()
+		defer ws.Close()
 	}
-
-	fmt.Println(string(bytes))
 }
 
-func TestHubReceiveMessagesFromMultipleConnections(t *testing.T) {
+func TestHubNewClientEventsAreReceived(t *testing.T) {
 
-	// // TODO: needs more work to store all connections and check if each clinets receives the message
-	// h := api.Init("/")
+	message := "device updated"
+	wsConfig := hub.WsConfig{}
 
-	// for i := 0; i < 4; i++ {
-	// 	s, ws := newWSServer(t, h)
-	// 	defer s.Close()
-	// 	defer ws.Close()
-	// 	message := fmt.Sprintf("test message %d", i)
-	// 	sendMessage(t, ws, []byte(message))
+	ws := hub.NewWsHub(wsConfig)
+	h := hub.NewWsHandler(ws)
 
-	// 	reply := receiveWSMessage(t, ws)
+	for i := 0; i < 4; i++ {
+		s, con := newWSServer(t, h)
 
-	// 	if string(reply) != message {
-	// 		t.Fatalf("Expected '%+v', got '%+v'", message, reply)
-	// 	}
-	// }
+		er := ws.Broadcast(hub.DeviceUpdated, message)
+		if er != nil {
+			t.Fatalf("hub broadcast failed  %v", er)
+		}
+		reply := receiveWSMessage(t, con)
+		if reply["Name"] != hub.DeviceUpdated {
+			t.Fatalf("Expected type %+v', got '%+v'", hub.ClientConnected, reply["Name"])
+		}
+		if reply["Data"] != message {
+			t.Fatalf("Expected message %+v', got '%+v'", message, reply["Data"])
+		}
+
+		defer s.Close()
+		defer con.Close()
+	}
 
 }
 
@@ -69,7 +82,7 @@ func sendMessage(t *testing.T, ws *websocket.Conn, msg []byte) {
 	}
 }
 
-func receiveWSMessage(t *testing.T, ws *websocket.Conn) []byte {
+func receiveWSMessage(t *testing.T, ws *websocket.Conn) map[string]interface{} {
 	t.Helper()
 
 	_, m, err := ws.ReadMessage()
@@ -77,13 +90,19 @@ func receiveWSMessage(t *testing.T, ws *websocket.Conn) []byte {
 		t.Fatalf("%v", err)
 	}
 
-	var reply []byte
-	err = json.Unmarshal(m, &reply)
+	var payload interface{}
+	err = json.Unmarshal(m, &payload)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return reply
+	data, ok := payload.(map[string]interface{})
+	if !ok {
+		t.Errorf("error converting payload. want type map[string]interface{};  got %T", payload)
+		return nil
+	}
+
+	return data
 }
 
 func newWSServer(t *testing.T, h http.Handler) (*httptest.Server, *websocket.Conn) {

@@ -44,38 +44,47 @@ func main() {
 	}()
 
 	repo := hub.NewMemoryRepository()
-	wsConfig := hub.WsConfig{OnConnected: func() []byte { return []byte(repo.ListAllDevices()) }}
-	ws := hub.NewWsHub(wsConfig)
-
-	config := hub.Config{
-		Mqtt: hub.MqttConfig{
-			Username: "sinkhole",
-			Password: "mqtt2023",
-			Broker:   "192.168.50.179:1883",
-			Topics: []string{
-				"TH1",
-			},
-			MessageHandler: func(client mqtt.Client, msg mqtt.Message) {
-				var name = hub.SanitizeTopic(msg.Topic())
-				var payload = msg.Payload()
-				fmt.Printf("mqtt Message => Topic: %s, Payload; %s\n", msg.Topic(), msg.Payload())
-				repo.Store(name, payload)
-				ws.Broadcast(hub.DeviceUpdated, hub.NewHubMessage(name, payload))
-			},
+	wsConfig := hub.WsConfig{
+		OnConnected: func() interface{} {
+			devices := repo.ListAllDevices()
+			bytes, err := hub.ToJson(devices)
+			if err != nil {
+				fmt.Printf("OnConnected error: %s \n", err)
+				return []byte{}
+			}
+			return bytes
 		}}
 
-	mqtt := hub.NewMqttClient(config.Mqtt)
+	ws := hub.NewWsHub(wsConfig)
+
+	mqttConfig := hub.MqttConfig{
+		Username: "sinkhole",
+		Password: "mqtt2023",
+		Broker:   "192.168.50.179:1883",
+		Topics: []string{
+			"TH1",
+		},
+		MessageHandler: func(client mqtt.Client, msg mqtt.Message) {
+			var name = hub.SanitizeTopic(msg.Topic())
+			var payload = msg.Payload()
+			fmt.Printf("mqtt Message => Topic: %s, Payload; %s\n", msg.Topic(), msg.Payload())
+			repo.Store(name, payload)
+			ws.Broadcast(hub.DeviceUpdated, hub.NewHubMessage(name, payload))
+		},
+	}
+
+	mqtt := hub.NewMqttClient(mqttConfig)
 	mqtt.Connect()
 
 	// todo:
 	// ws service
 	// on event call func
-	connector := hub.Create(config,
-		hub.WithRepository(repo),
-		hub.WithWsServer(ws))
+	// connector := hub.Create(config,
+	// 	hub.WithRepository(repo),
+	// 	hub.WithWsServer(ws))
 
 	router := hub.NewRouter()
-	router.GET("/ws", hub.NewWsHandler(connector))
+	router.GET("/ws", hub.NewWsHandler(ws))
 	router.GET("/", http.FileServer(http.Dir("../../frontend/dist")))
 
 	apiServer := hub.NewHttpServer(

@@ -19,16 +19,16 @@ import (
 //	opts.SetUsername("emqx")
 //	opts.SetPassword("public")
 
-func getConfig(broker string, messageHandler func(client mqtt.Client, msg mqtt.Message), topics ...string) hub.Config {
-	return hub.Config{
-		Mqtt: hub.MqttConfig{
-			Username:       "sinkhole",
-			Password:       "mqtt2023",
-			Broker:         broker,
-			Topics:         topics,
-			MessageHandler: messageHandler,
-		}}
+func getConfig(broker string, messageHandler func(client mqtt.Client, msg mqtt.Message), topics ...string) hub.MqttConfig {
+	return hub.MqttConfig{
+		Username:       "sinkhole",
+		Password:       "mqtt2023",
+		Broker:         broker,
+		Topics:         topics,
+		MessageHandler: messageHandler,
+	}
 }
+
 func TestMqttClientReceiveesMessage(t *testing.T) {
 	var broker = "192.168.50.179:1883"
 	var topic = "device1"
@@ -41,10 +41,9 @@ func TestMqttClientReceiveesMessage(t *testing.T) {
 	}
 
 	cfg := getConfig(broker, messageHandler, topic)
-	mqttClient := hub.NewMqttClient(cfg.Mqtt)
-	hub.Create(cfg, hub.WithMqttClient(mqttClient))
-
-	startMqttNodeClient(cfg.Mqtt, message, 2)
+	mqttClient := hub.NewMqttClient(cfg)
+	mqttClient.Connect()
+	startMqttNodeClient(cfg, message, 2)
 }
 
 func startMqttNodeClient(cfg hub.MqttConfig, message string, nEvents int) {

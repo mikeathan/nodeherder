@@ -2,7 +2,6 @@ package hub
 
 import (
 	"fmt"
-	"node-herder/models"
 	"strings"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -11,7 +10,6 @@ import (
 type MqttClient interface {
 	Connect() error
 	AddTopic(topic string)
-	WithMessageHandler(messageHandler func(client mqtt.Client, msg mqtt.Message))
 	Disconnect()
 }
 
@@ -67,19 +65,10 @@ type MqttService struct {
 	password       string
 	cliendId       string
 	messageHandler func(client mqtt.Client, msg mqtt.Message)
-	repo           Repository
 }
 
 func SanitizeTopic(topic string) string {
 	return strings.Replace(topic, baseTopic, "", -1)
-}
-
-func WithEmitter(emitter models.EventEmitter) {
-
-}
-
-func (m *MqttService) WithMessageHandler(messageHandler func(client mqtt.Client, msg mqtt.Message)) {
-	m.messageHandler = messageHandler
 }
 
 func (m *MqttService) Connect() error {
