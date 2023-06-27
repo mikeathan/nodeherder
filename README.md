@@ -64,20 +64,3 @@ advanced:
 websockets:
 emit message device change
 all devices or just the updated ?
-
-Layers:
-
-mqtt
-
-- on new message
-  - add to repo
-  - emit message ???
-
-ws
-
-- on new connection
-  - get devices
-  - broadcast them
-- on mqtt message
-  - add to repo ??
-  - broadcast it

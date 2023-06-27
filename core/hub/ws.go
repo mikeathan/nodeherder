@@ -15,18 +15,23 @@ const (
 	ClientConnected = "connected"
 )
 
-type HubMessage struct {
-	Name    string          `json:"name"`
-	Payload json.RawMessage `json:"payload"`
+type EventMessage struct {
+	Type    string      `json:"type"`
+	Payload interface{} `json:"data"`
 }
 
-func NewHubMessage(name string, payload []byte) HubMessage {
-	return HubMessage{Name: name, Payload: json.RawMessage(payload)}
-}
-
-type payload struct {
-	Name string
-	Data interface{}
+func (e EventMessage) MarshalJSON() ([]byte, error) {
+	p := e.Payload
+	if v, ok := e.Payload.([]byte); ok {
+		p = string(v)
+	}
+	return json.Marshal(&struct {
+		Type    string      `json:"type"`
+		Payload interface{} `json:"data"`
+	}{
+		Type:    e.Type,
+		Payload: p,
+	})
 }
 
 const (
@@ -108,8 +113,8 @@ func (c *WsClient) writePump() {
 }
 
 func (c *WsClient) Broadcast(eventName string, data interface{}) error {
-	var wsData = payload{Name: eventName, Data: data}
-	bytes, err := json.Marshal(wsData)
+	var wsPayload = EventMessage{Type: eventName, Payload: data}
+	bytes, err := wsPayload.MarshalJSON()
 	if err != nil {
 		return errors.New("failed to marshal client payload")
 	}
@@ -191,8 +196,10 @@ func (h *WsHub) RegisterNewClient(conn *websocket.Conn) {
 	}
 }
 
+// "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"
+// ws unhandled type:  {"Name":"connected","Data":"W3sibmFtZSI6IlRIMSIsInBheWxvYWQiOiJleUppWVhSMFpYSjVJam94TURBc0ltaDFiV2xrYVhSNUlqbzJNQzQwTENKc1lYTjBYM05sWlc0aU9pSXlNREl6TFRBMkxUSTNWREUxT2pNek9qSTBLekF4T2pBd0lpd2liR2x1YTNGMVlXeHBkSGtpT2pRd0xDSjBaVzF3WlhKaGRIVnlaU0k2TWpRc0luWnZiSFJoWjJVaU9qTXdNREI5In1d"}
 func (h *WsHub) Broadcast(eventName string, data interface{}) error {
-	var wsData = payload{Name: eventName, Data: data}
+	var wsData = EventMessage{Type: eventName, Payload: data}
 	bytes, err := json.Marshal(wsData)
 	if err != nil {
 		return errors.New("failed to marshal server payload")

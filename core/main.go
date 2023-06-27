@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"net/http"
 	"node-herder/hub"
 	"os"
 	"os/signal"
@@ -67,25 +66,18 @@ func main() {
 		MessageHandler: func(client mqtt.Client, msg mqtt.Message) {
 			var name = hub.SanitizeTopic(msg.Topic())
 			var payload = msg.Payload()
-			fmt.Printf("mqtt Message => Topic: %s, Payload; %s\n", msg.Topic(), msg.Payload())
+			fmt.Printf("mqtt Message => Topic: %s, Payload: %s\n", msg.Topic(), msg.Payload())
 			repo.Store(name, payload)
-			ws.Broadcast(hub.DeviceUpdated, hub.NewHubMessage(name, payload))
+			ws.Broadcast(hub.DeviceUpdated, payload)
 		},
 	}
 
 	mqtt := hub.NewMqttClient(mqttConfig)
 	mqtt.Connect()
 
-	// todo:
-	// ws service
-	// on event call func
-	// connector := hub.Create(config,
-	// 	hub.WithRepository(repo),
-	// 	hub.WithWsServer(ws))
-
 	router := hub.NewRouter()
 	router.GET("/ws", hub.NewWsHandler(ws))
-	router.GET("/", http.FileServer(http.Dir("../../frontend/dist")))
+	//router.GET("/", http.FileServer(http.Dir("../../frontend/dist")))
 
 	apiServer := hub.NewHttpServer(
 		port,

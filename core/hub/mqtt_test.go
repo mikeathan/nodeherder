@@ -29,10 +29,10 @@ func getConfig(broker string, messageHandler func(client mqtt.Client, msg mqtt.M
 	}
 }
 
-func TestMqttClientReceiveesMessage(t *testing.T) {
+func TestMqttClientReceivesMessage(t *testing.T) {
 	var broker = "192.168.50.179:1883"
 	var topic = "device1"
-	var message = "test message"
+	var message = "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"
 	var messageHandler = func(client mqtt.Client, msg mqtt.Message) {
 		// TODO: test topic
 		if string(msg.Payload()) != message {
