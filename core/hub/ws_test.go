@@ -70,70 +70,71 @@ func TestHubNewClientConnectedEvents(t *testing.T) {
 	wsHub := hub.NewWsHub(wsConfig)
 	h := hub.NewWsHandler(wsHub)
 
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 4; i++ {
+		s, ws := newWSServer(t, h)
 
+		reply := receiveWSMessage(t, ws)
+		gotType := reply["type"]
+
+		if gotType != hub.ClientConnected {
+			t.Fatalf("Expected type %+v', got '%+v'", hub.ClientConnected, gotType)
+		}
+		gotData := reply["payload"]
+		if gotData != expectedMessage {
+			t.Fatalf("Expected message %+v', got '%+v'", expectedMessage, gotData)
+		}
+
+		defer s.Close()
+		defer ws.Close()
 	}
-	s, ws := newWSServer(t, h)
-
-	reply := receiveWSMessage(t, ws)
-	gotType := reply["type"]
-
-	if gotType != hub.ClientConnected {
-		t.Fatalf("Expected type %+v', got '%+v'", hub.ClientConnected, gotType)
-	}
-	gotData := reply["payload"]
-	if gotData != expectedMessage {
-		t.Fatalf("Expected message %+v', got '%+v'", expectedMessage, gotData)
-	}
-
-	defer s.Close()
-	defer ws.Close()
-	ws.Close()
 }
 
 func TestHubNewClientEventsAreReceived(t *testing.T) {
 
-	// message := "device updated"
-	// wsConfig := hub.WsConfig{}
+	var expectedPayload = []byte("{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}")
+	var expectedMessage = "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"
 
-	// ws := hub.NewWsHub(wsConfig)
-	// h := hub.NewWsHandler(ws)
+	var wsConfig = hub.WsConfig{}
 
-	// for i := 0; i < 4; i++ {
-	// 	s, con := newWSServer(t, h)
+	wsHub := hub.NewWsHub(wsConfig)
+	h := hub.NewWsHandler(wsHub)
 
-	// 	er := ws.Broadcast(hub.DeviceUpdated, message)
-	// 	if er != nil {
-	// 		t.Fatalf("hub broadcast failed  %v", er)
-	// 	}
-	// 	reply := receiveWSMessage(t, con)
-	// 	gotType := reply["type"]
-	// 	if gotType != hub.DeviceUpdated {
-	// 		t.Fatalf("Expected type %+v', got '%+v'", hub.ClientConnected, gotType)
-	// 	}
-	// 	gotData := reply["payload"]
-	// 	if gotData != message {
-	// 		t.Fatalf("Expected message %+v', got '%+v'", message, gotData)
-	// 	}
+	for i := 0; i < 4; i++ {
+		s, ws := newWSServer(t, h)
 
-	// 	defer s.Close()
-	// 	defer con.Close()
-	// }
+		er := wsHub.Broadcast(hub.DeviceUpdated, expectedPayload)
+		if er != nil {
+			t.Fatalf("hub broadcast failed  %v", er)
+		}
+		reply := receiveWSMessage(t, ws)
+		gotType := reply["type"]
+
+		if gotType != hub.DeviceUpdated {
+			t.Fatalf("Expected type %+v', got '%+v'", hub.DeviceUpdated, gotType)
+		}
+		gotData := reply["payload"]
+		if gotData != expectedMessage {
+			t.Fatalf("Expected message %+v', got '%+v'", expectedMessage, gotData)
+		}
+
+		defer s.Close()
+		defer ws.Close()
+	}
 
 }
 
-func sendMessage(t *testing.T, ws *websocket.Conn, msg []byte) {
-	t.Helper()
+// func sendMessage(t *testing.T, ws *websocket.Conn, msg []byte) {
+// 	t.Helper()
 
-	m, err := json.Marshal(msg)
-	if err != nil {
-		t.Fatal(err)
-	}
+// 	m, err := json.Marshal(msg)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
 
-	if err := ws.WriteMessage(websocket.BinaryMessage, m); err != nil {
-		t.Fatalf("%v", err)
-	}
-}
+// 	if err := ws.WriteMessage(websocket.BinaryMessage, m); err != nil {
+// 		t.Fatalf("%v", err)
+// 	}
+// }
 
 func receiveWSMessage(t *testing.T, ws *websocket.Conn) map[string]interface{} {
 	t.Helper()
