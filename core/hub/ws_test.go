@@ -36,7 +36,7 @@ func TestHubNewClientConnectedEventsTypesOfPayloads(t *testing.T) {
 		}
 		wsHub := hub.NewWsHub(wsConfig)
 		h := hub.NewWsHandler(wsHub)
-		s, ws := newWSServer(t, h)
+		s, ws := NewTestWsServer(t, h)
 
 		reply := receiveWSMessage(t, ws)
 		gotType := reply["type"]
@@ -71,7 +71,7 @@ func TestHubNewClientConnectedEvents(t *testing.T) {
 	h := hub.NewWsHandler(wsHub)
 
 	for i := 0; i < 4; i++ {
-		s, ws := newWSServer(t, h)
+		s, ws := NewTestWsServer(t, h)
 
 		reply := receiveWSMessage(t, ws)
 		gotType := reply["type"]
@@ -100,7 +100,7 @@ func TestHubNewClientEventsAreReceived(t *testing.T) {
 	h := hub.NewWsHandler(wsHub)
 
 	for i := 0; i < 4; i++ {
-		s, ws := newWSServer(t, h)
+		s, ws := NewTestWsServer(t, h)
 
 		er := wsHub.Broadcast(hub.DeviceUpdated, expectedPayload)
 		if er != nil {
@@ -123,18 +123,18 @@ func TestHubNewClientEventsAreReceived(t *testing.T) {
 
 }
 
-// func sendMessage(t *testing.T, ws *websocket.Conn, msg []byte) {
-// 	t.Helper()
+func SendMessage(t *testing.T, ws *websocket.Conn, msg []byte) {
+	t.Helper()
 
-// 	m, err := json.Marshal(msg)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
+	m, err := json.Marshal(msg)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	if err := ws.WriteMessage(websocket.BinaryMessage, m); err != nil {
-// 		t.Fatalf("%v", err)
-// 	}
-// }
+	if err := ws.WriteMessage(websocket.BinaryMessage, m); err != nil {
+		t.Fatalf("%v", err)
+	}
+}
 
 func receiveWSMessage(t *testing.T, ws *websocket.Conn) map[string]interface{} {
 	t.Helper()
@@ -159,7 +159,7 @@ func receiveWSMessage(t *testing.T, ws *websocket.Conn) map[string]interface{} {
 	return data
 }
 
-func newWSServer(t *testing.T, h http.Handler) (*httptest.Server, *websocket.Conn) {
+func NewTestWsServer(t *testing.T, h http.Handler) (*httptest.Server, *websocket.Conn) {
 	t.Helper()
 
 	s := httptest.NewServer(h)

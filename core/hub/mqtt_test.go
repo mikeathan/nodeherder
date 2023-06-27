@@ -19,7 +19,7 @@ import (
 //	opts.SetUsername("emqx")
 //	opts.SetPassword("public")
 
-func getConfig(broker string, messageHandler func(client mqtt.Client, msg mqtt.Message), topics ...string) hub.MqttConfig {
+func GetMqttConfig(broker string, messageHandler func(client mqtt.Client, msg mqtt.Message), topics ...string) hub.MqttConfig {
 	return hub.MqttConfig{
 		Username:       "sinkhole",
 		Password:       "mqtt2023",
@@ -40,13 +40,13 @@ func TestMqttClientReceivesMessage(t *testing.T) {
 		}
 	}
 
-	cfg := getConfig(broker, messageHandler, topic)
+	cfg := GetMqttConfig(broker, messageHandler, topic)
 	mqttClient := hub.NewMqttClient(cfg)
 	mqttClient.Connect()
-	startMqttNodeClient(cfg, message, 2)
+	StartMqttNodeClient(cfg, message, 2)
 }
 
-func startMqttNodeClient(cfg hub.MqttConfig, message string, nEvents int) {
+func StartMqttNodeClient(cfg hub.MqttConfig, message string, nEvents int) {
 
 	// some fake external device mqqtclient
 	var opts = mqtt.NewClientOptions()
@@ -97,7 +97,7 @@ func publishFunc(closeChan chan bool, client mqtt.Client, topic string, message 
 
 		fmt.Printf("Device publish: %s \n", message)
 
-		time.Sleep(2 * time.Second)
+		time.Sleep(5 * time.Minute)
 	}
 
 	closeChan <- true
