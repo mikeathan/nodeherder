@@ -14,11 +14,12 @@ func TestXxx(t *testing.T) {
 	port := 3000
 	var broker = "192.168.50.179:1883"
 	var topic = "device1"
-	var msg1 = "{\"battery\":100,\"humidity\":31.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":20,\"temperature\":24,\"voltage\":3000}"
-
+	const msg1 = "{'battery':95,'humidity':60.8,'last_seen':'2023-05-31T19:05:28+01:00','linkquality':50,'temperature':22.1,'voltage':3000}"
+	const msg2 = "{'battery':95,'humidity':60.8,'last_seen':'2023-05-31T19:05:28+01:00','linkquality':50,'temperature':22.1,'voltage':3000}"
 	repo := hub.NewMemoryRepository()
 
 	repo.Store(topic, msg1)
+	repo.Store("device2", msg2)
 	// setup ws hub
 	var wsConfig = hub.WsConfig{
 		OnConnected: func() interface{} {
