@@ -141,7 +141,7 @@ type WsHub struct {
 	onClientConnected func() interface{}
 }
 
-func NewWsHub(config *WsConfig) WsServer {
+func NewWsHub(config WsConfig) WsServer {
 	wsHub := &WsHub{
 		clients:           map[*WsClient]bool{},
 		broadcast:         make(chan []byte),
