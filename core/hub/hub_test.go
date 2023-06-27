@@ -18,6 +18,8 @@ func TestXxx(t *testing.T) {
 	const msg2 = "{'battery':95,'humidity':60.8,'last_seen':'2023-05-31T19:05:28+01:00','linkquality':50,'temperature':22.1,'voltage':3000}"
 	repo := hub.NewMemoryRepository()
 
+	// proble to fix
+	// [{"name":"device1","payload":"eyJiYXR0ZXJ5IjoxMDAsImh1bWlkaXR5Ijo2MC40LCJsYXN0X3NlZW4iOiIyMDIzLTA2LTI3VDE1OjMzOjI0KzAxOjAwIiwibGlua3F1YWxpdHkiOjQwLCJ0ZW1wZXJhdHVyZSI6MjQsInZvbHRhZ2UiOjMwMDB9"},{"name":"device2","payload":"{'battery':95,'humidity':60.8,'last_seen':'2023-05-31T19:05:28+01:00','linkquality':50,'temperature':22.1,'voltage':3000}"}]
 	repo.Store(topic, msg1)
 	repo.Store("device2", msg2)
 	// setup ws hub
