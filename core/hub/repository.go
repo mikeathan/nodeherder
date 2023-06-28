@@ -15,6 +15,7 @@ type Repository interface {
 	StoreJson(deviceName string, payload []byte) error
 	StoreObject(deviceName string, payload interface{}) error
 	ListAllDevices() []*models.Device
+	FindDevice(deviceName string) (*models.Device, error)
 }
 
 type MemoryRepository struct {
@@ -51,6 +52,16 @@ func (s *MemoryRepository) storePayload(deviceName string, payload map[string]in
 	}
 
 	s.store[deviceName].Payload = payload
+}
+
+func (s *MemoryRepository) FindDevice(deviceName string) (*models.Device, error) {
+
+	if val, ok := s.store[deviceName]; ok {
+		return val, nil
+	}
+
+	return nil, errors.New("device not found")
+
 }
 
 func (s *MemoryRepository) ListAllDevices() []*models.Device {
