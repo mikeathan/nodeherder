@@ -100,8 +100,6 @@ function currentTime() {
 
 function mockTHDevicePayload(state, settings) {
   var device = {
-    name: settings.name,
-    state: state,
     battery: 100,
     humidity: getMockHumidity(settings),
     last_seen: currentTime(),
