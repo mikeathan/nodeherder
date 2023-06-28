@@ -201,8 +201,6 @@ func (h *WsHub) RegisterNewClient(conn *websocket.Conn) {
 	}
 }
 
-// "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"
-// ws unhandled type:  {"Name":"connected","Data":"W3sibmFtZSI6IlRIMSIsInBheWxvYWQiOiJleUppWVhSMFpYSjVJam94TURBc0ltaDFiV2xrYVhSNUlqbzJNQzQwTENKc1lYTjBYM05sWlc0aU9pSXlNREl6TFRBMkxUSTNWREUxT2pNek9qSTBLekF4T2pBd0lpd2liR2x1YTNGMVlXeHBkSGtpT2pRd0xDSjBaVzF3WlhKaGRIVnlaU0k2TWpRc0luWnZiSFJoWjJVaU9qTXdNREI5In1d"}
 func (h *WsHub) Broadcast(eventName string, data interface{}) error {
 	var wsData = EventMessage{Type: eventName, Payload: data}
 	bytes, err := json.Marshal(wsData)

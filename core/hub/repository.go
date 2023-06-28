@@ -1,8 +1,6 @@
 package hub
 
 import (
-	"encoding/json"
-	"errors"
 	"node-herder/models"
 	"sort"
 )
@@ -14,15 +12,6 @@ func newDevice(name string, payload interface{}) *models.Device {
 type Repository interface {
 	Store(deviceName string, payload interface{})
 	ListAllDevices() []*models.Device
-}
-
-func ToJson(data any) ([]byte, error) {
-	bytes, err := json.Marshal(data)
-	if err != nil {
-		return nil, errors.New("failed to marshal payload")
-	}
-
-	return bytes, nil
 }
 
 type MemoryRepository struct {

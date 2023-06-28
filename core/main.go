@@ -45,13 +45,7 @@ func main() {
 	repo := hub.NewMemoryRepository()
 	wsConfig := hub.WsConfig{
 		OnConnected: func() interface{} {
-			devices := repo.ListAllDevices()
-			bytes, err := hub.ToJson(devices)
-			if err != nil {
-				fmt.Printf("OnConnected error: %s \n", err)
-				return []byte{}
-			}
-			return bytes
+			return repo.ListAllDevices()
 		}}
 
 	ws := hub.NewWsHub(wsConfig)
