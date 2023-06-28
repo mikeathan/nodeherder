@@ -1,6 +1,11 @@
 package hub
 
-import "node-herder/hub/mocks"
+import (
+	"fmt"
+	"node-herder/hub/mocks"
+
+	mqtt "github.com/eclipse/paho.mqtt.golang"
+)
 
 type Connector interface {
 }
@@ -23,8 +28,16 @@ func (h *HubConnector) NewHubConnector(opts ...func(h *HubConnector)) *HubConnec
 
 	h.ws.WithOnConnected(func() interface{} { return h.repo.ListAllDevices() })
 
-	// todo : configure mqtt hanlder
-	// and connect
+	h.mqtt.OnMessageHandler(func(client mqtt.Client, msg mqtt.Message) {
+
+		var name = SanitizeTopic(msg.Topic())
+		var payload = msg.Payload()
+		fmt.Printf("mqtt Message => Topic: %s, Payload: %s\n", msg.Topic(), msg.Payload())
+		h.repo.StoreJson(name, payload)
+		device, _ := h.repo.FindDevice(name)
+		h.ws.Broadcast(DeviceUpdated, device)
+	})
+
 	return connector
 }
 

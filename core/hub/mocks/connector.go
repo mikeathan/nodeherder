@@ -43,6 +43,10 @@ func (w *NopMqttClient) Disconnect() {
 	fmt.Println("Empty Disconnect")
 }
 
+func (m *NopMqttClient) OnMessageHandler(handler func(client mqtt.Client, msg mqtt.Message)) {
+	fmt.Println("Empty OnMessageHandler")
+}
+
 type NopRepository struct {
 }
 
