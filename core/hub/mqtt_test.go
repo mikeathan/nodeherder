@@ -97,7 +97,7 @@ func publishFunc(closeChan chan bool, client mqtt.Client, topic string, message 
 
 		fmt.Printf("Device publish: %s \n", message)
 
-		time.Sleep(5 * time.Minute)
+		time.Sleep(2 * time.Second)
 	}
 
 	closeChan <- true

@@ -61,7 +61,7 @@ func main() {
 			var name = hub.SanitizeTopic(msg.Topic())
 			var payload = msg.Payload()
 			fmt.Printf("mqtt Message => Topic: %s, Payload: %s\n", msg.Topic(), msg.Payload())
-			repo.Store(name, payload)
+			repo.StoreJson(name, string(payload))
 			ws.Broadcast(hub.DeviceUpdated, payload)
 		},
 	}

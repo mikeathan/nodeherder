@@ -14,32 +14,27 @@ func TestXxx(t *testing.T) {
 	port := 3000
 	var broker = "192.168.50.179:1883"
 	var topic = "device1"
-	const msg1 = "{'battery':95,'humidity':60.8,'last_seen':'2023-05-31T19:05:28+01:00','linkquality':50,'temperature':22.1,'voltage':3000}"
-	const msg2 = "{'battery':95,'humidity':60.8,'last_seen':'2023-05-31T19:05:28+01:00','linkquality':50,'temperature':22.1,'voltage':3000}"
+	var topic2 = "device2"
+	const data1 = `{"battery":100, "humidity":61.8, "last_seen":"2023-05-31T19:05:28+01:00", "linkquality":26,"temperature":29.5,"voltage":3000}`
+	const data2 = `{"battery":100, "humidity":54.2, "last_seen":"2023-05-31T19:05:28+01:00", "linkquality":34,"temperature":17.1,"voltage":2999}`
+
 	repo := hub.NewMemoryRepository()
 
-	// proble to fix
-	// [{"name":"device1","payload":"eyJiYXR0ZXJ5IjoxMDAsImh1bWlkaXR5Ijo2MC40LCJsYXN0X3NlZW4iOiIyMDIzLTA2LTI3VDE1OjMzOjI0KzAxOjAwIiwibGlua3F1YWxpdHkiOjQwLCJ0ZW1wZXJhdHVyZSI6MjQsInZvbHRhZ2UiOjMwMDB9"},{"name":"device2","payload":"{'battery':95,'humidity':60.8,'last_seen':'2023-05-31T19:05:28+01:00','linkquality':50,'temperature':22.1,'voltage':3000}"}]
-	repo.Store(topic, msg1)
-	repo.Store("device2", msg2)
+	repo.StoreJson(topic, data1)
+	repo.StoreJson(topic2, data2)
 	// setup ws hub
 	var wsConfig = hub.WsConfig{
 		OnConnected: func() interface{} {
-			devices := repo.ListAllDevices()
-			bytes, err := hub.ToJson(devices)
-			if err != nil {
-				fmt.Printf("OnConnected error: %s \n", err)
-				return []byte{}
-			}
-			return bytes
+			return repo.ListAllDevices()
 		},
 	}
 
 	ctx, _ := context.WithCancel(context.Background())
 	wsHub := hub.NewWsHub(wsConfig)
 
+	h := hub.NewWsHandler(wsHub)
 	router := hub.NewRouter()
-	router.GET("/ws", hub.NewWsHandler(wsHub))
+	router.GET("/ws", h)
 
 	apiServer := hub.NewHttpServer(
 		port,
@@ -49,17 +44,18 @@ func TestXxx(t *testing.T) {
 
 	go apiServer.Listen()
 
-	// need test http server
-	// h := hub.NewWsHandler(wsHub)
+	// this to directy trigger http request
+	// TEST ONLY   - comment
 	//NewTestWsServer(t, h)
+	// #######################
+	//time.Sleep(5 * time.Minute)
 
 	//setup mqtt
-
 	var messageHandler = func(client mqtt.Client, msg mqtt.Message) {
 		var name = hub.SanitizeTopic(msg.Topic())
 		var payload = msg.Payload()
 		fmt.Printf("mqtt Message => Topic: %s, Payload: %s\n", msg.Topic(), msg.Payload())
-		repo.Store(name, payload)
+		repo.StoreJson(name, string(payload))
 		wsHub.Broadcast(hub.DeviceUpdated, payload)
 	}
 
