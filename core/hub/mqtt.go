@@ -71,9 +71,11 @@ type MqttService struct {
 func SanitizeTopic(topic string) string {
 	return strings.Replace(topic, baseTopic, "", -1)
 }
+
 func (m *MqttService) OnMessageHandler(handler func(client mqtt.Client, msg mqtt.Message)) {
 	m.messageHandler = handler
 }
+
 func (m *MqttService) Connect() error {
 
 	options := mqtt.NewClientOptions()
