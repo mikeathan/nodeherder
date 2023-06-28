@@ -20,6 +20,10 @@ func (w *NopWsServer) RegisterNewClient(conn *websocket.Conn) {
 	fmt.Println("Empty RegisterNewClient")
 }
 
+func (w *NopWsServer) WithOnConnected(onConnected func() interface{}) {
+	fmt.Println("Empty WithOnConnected")
+}
+
 type NopMqttClient struct {
 }
 
@@ -42,12 +46,24 @@ func (w *NopMqttClient) Disconnect() {
 type NopRepository struct {
 }
 
-func (w *NopRepository) Store(deviceName string, payload interface{}) {
-	fmt.Println("Empty Store")
+func (w *NopRepository) StoreJson(deviceName string, payload []byte) error {
+	fmt.Println("Empty StoreJson")
+	return nil
+}
+
+func (w *NopRepository) StoreObject(deviceName string, payload interface{}) error {
+	fmt.Println("Empty StoreObject")
+	return nil
 }
 
 func (w *NopRepository) ListAllDevices() []*models.Device {
 
 	fmt.Println("Empty ListAllDevices")
 	return []*models.Device{}
+}
+
+func (w *NopRepository) FindDevice(deviceName string) (*models.Device, error) {
+
+	fmt.Println("Empty FindDevice")
+	return &models.Device{}, nil
 }
