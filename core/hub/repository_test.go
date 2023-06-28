@@ -7,12 +7,12 @@ import (
 )
 
 const data1 = `{"battery":100,"humidity":60.8,"last_seen":"2023-05-31T19:05:28+01:00","linkquality":50,"temperature":22.1,"voltage":3000}`
-const data2 = `{"battery":100,"humidity":60.8,"last_seen":"2023-05-31T19:05:28+01:00","linkquality":50,"temperature":22.1,"voltage":3000}`
+const data2 = `{"battery":100,"humidity":61.2,"last_seen":"2023-06-31T19:05:28+01:00","linkquality":34,"temperature":16.6,"voltage":2999}`
 
 func TestRepositoryCanAddOneDevice(t *testing.T) {
 
 	repo := hub.NewMemoryRepository()
-	repo.StoreJson("TH1", data1)
+	repo.StoreJson("TH1", []byte(data1))
 	devices := repo.ListAllDevices()
 
 	if len(devices) == 0 {
@@ -42,8 +42,8 @@ func toJson(payload interface{}) string {
 func TestRepositoryCanAddMultipleDevices(t *testing.T) {
 
 	repo := hub.NewMemoryRepository()
-	repo.StoreJson("TH1", data1)
-	repo.StoreJson("TH2", data2)
+	repo.StoreJson("TH1", []byte(data1))
+	repo.StoreJson("TH2", []byte(data2))
 	devices := repo.ListAllDevices()
 
 	if len(devices) == 0 {
@@ -73,8 +73,8 @@ func TestRepositoryCanAddMultipleDevices(t *testing.T) {
 func TestRepositoryCanUpdateExistingDevice(t *testing.T) {
 
 	repo := hub.NewMemoryRepository()
-	repo.StoreJson("TH1", data1)
-	repo.StoreJson("TH1", data2)
+	repo.StoreJson("TH1", []byte(data1))
+	repo.StoreJson("TH1", []byte(data2))
 	devices := repo.ListAllDevices()
 
 	if len(devices) == 0 {

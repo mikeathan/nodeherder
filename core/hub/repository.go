@@ -12,7 +12,7 @@ func newDevice(name string, payload interface{}) *models.Device {
 }
 
 type Repository interface {
-	StoreJson(deviceName string, payload string) error
+	StoreJson(deviceName string, payload []byte) error
 	StoreObject(deviceName string, payload interface{}) error
 	ListAllDevices() []*models.Device
 }
@@ -25,10 +25,9 @@ func NewMemoryRepository() Repository {
 	return &MemoryRepository{store: map[string]*models.Device{}}
 }
 
-func (s *MemoryRepository) StoreJson(deviceName string, payload string) error {
-	bytes := []byte(payload)
+func (s *MemoryRepository) StoreJson(deviceName string, payload []byte) error {
 	var data map[string]interface{}
-	err := json.Unmarshal(bytes, &data)
+	err := json.Unmarshal(payload, &data)
 	if err != nil {
 		return errors.New("invalid device data")
 	}

@@ -20,8 +20,8 @@ func TestXxx(t *testing.T) {
 
 	repo := hub.NewMemoryRepository()
 
-	repo.StoreJson(topic, data1)
-	repo.StoreJson(topic2, data2)
+	repo.StoreJson(topic, []byte(data1))
+	repo.StoreJson(topic2, []byte(data2))
 	// setup ws hub
 	var wsConfig = hub.WsConfig{
 		OnConnected: func() interface{} {
@@ -55,7 +55,7 @@ func TestXxx(t *testing.T) {
 		var name = hub.SanitizeTopic(msg.Topic())
 		var payload = msg.Payload()
 		fmt.Printf("mqtt Message => Topic: %s, Payload: %s\n", msg.Topic(), msg.Payload())
-		repo.StoreJson(name, string(payload))
+		repo.StoreJson(name, payload)
 		wsHub.Broadcast(hub.DeviceUpdated, payload)
 	}
 
