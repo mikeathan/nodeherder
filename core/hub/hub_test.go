@@ -10,6 +10,7 @@ import (
 
 func TestXxx(t *testing.T) {
 
+	t.Skip("component test. ignore")
 	port := 3000
 	var broker = "192.168.50.179:1883"
 	var topic = "device1"
@@ -27,6 +28,7 @@ func TestXxx(t *testing.T) {
 	ws := hub.NewWsHub()
 
 	cfg := GetMqttConfig(broker, nil, topic)
+
 	mqtt := hub.NewMqttClient(cfg)
 	_, err := hub.NewHubConnector(
 		hub.WithRepository(repo),
@@ -65,5 +67,4 @@ func TestXxx(t *testing.T) {
 	//SendMessage(t, conn, []byte(message))
 
 	fmt.Println("Exited")
-
 }
