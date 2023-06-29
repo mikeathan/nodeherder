@@ -29,12 +29,11 @@ func TestHubNewClientConnectedEventsTypesOfPayloads(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		var wsConfig = hub.WsConfig{
-			OnConnected: func() interface{} {
-				return testCase.Payload
-			},
-		}
-		wsHub := hub.NewWsHub(wsConfig)
+
+		wsHub := hub.NewWsHub()
+		wsHub.OnConnected(func() interface{} {
+			return testCase.Payload
+		})
 		h := hub.NewWsHandler(wsHub)
 		s, ws := NewTestWsServer(t, h)
 
@@ -61,13 +60,10 @@ func TestHubNewClientConnectedEvents(t *testing.T) {
 	var expectedPayload = []byte("{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}")
 	var expectedMessage = "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"
 
-	var wsConfig = hub.WsConfig{
-		OnConnected: func() interface{} {
-			return expectedPayload
-		},
-	}
-
-	wsHub := hub.NewWsHub(wsConfig)
+	wsHub := hub.NewWsHub()
+	wsHub.OnConnected(func() interface{} {
+		return expectedPayload
+	})
 	h := hub.NewWsHandler(wsHub)
 
 	for i := 0; i < 4; i++ {
@@ -94,9 +90,7 @@ func TestHubNewClientEventsAreReceived(t *testing.T) {
 	var expectedPayload = []byte("{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}")
 	var expectedMessage = "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"
 
-	var wsConfig = hub.WsConfig{}
-
-	wsHub := hub.NewWsHub(wsConfig)
+	wsHub := hub.NewWsHub()
 	h := hub.NewWsHandler(wsHub)
 
 	for i := 0; i < 4; i++ {

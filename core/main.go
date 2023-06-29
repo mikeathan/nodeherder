@@ -8,8 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
 func readPort() int {
@@ -43,12 +41,7 @@ func main() {
 	}()
 
 	repo := hub.NewMemoryRepository()
-	wsConfig := hub.WsConfig{
-		OnConnected: func() interface{} {
-			return repo.ListAllDevices()
-		}}
-
-	ws := hub.NewWsHub(wsConfig)
+	ws := hub.NewWsHub()
 
 	mqttConfig := hub.MqttConfig{
 		Username: "sinkhole",
@@ -57,17 +50,18 @@ func main() {
 		Topics: []string{
 			"TH1",
 		},
-		MessageHandler: func(client mqtt.Client, msg mqtt.Message) {
-			var name = hub.SanitizeTopic(msg.Topic())
-			var payload = msg.Payload()
-			fmt.Printf("mqtt Message => Topic: %s, Payload: %s\n", msg.Topic(), msg.Payload())
-			repo.StoreJson(name, payload)
-			ws.Broadcast(hub.DeviceUpdated, payload)
-		},
 	}
-
 	mqtt := hub.NewMqttClient(mqttConfig)
-	mqtt.Connect()
+
+	_, err := hub.NewHubConnector(
+		hub.WithRepository(repo),
+		hub.WithMqtt(mqtt),
+		hub.WithWs(ws))
+
+	if err != nil {
+		fmt.Printf("Hub connector error: %s \n", err.Error())
+		<-ctx.Done()
+	}
 
 	router := hub.NewRouter()
 	router.GET("/ws", hub.NewWsHandler(ws))
@@ -81,5 +75,4 @@ func main() {
 
 	apiServer.Listen()
 	fmt.Println("Exited")
-
 }

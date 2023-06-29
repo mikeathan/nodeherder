@@ -20,8 +20,8 @@ func (w *NopWsServer) RegisterNewClient(conn *websocket.Conn) {
 	fmt.Println("Empty RegisterNewClient")
 }
 
-func (w *NopWsServer) WithOnConnected(onConnected func() interface{}) {
-	fmt.Println("Empty WithOnConnected")
+func (w *NopWsServer) OnConnected(onConnected func() interface{}) {
+	fmt.Println("Empty OnConnected")
 }
 
 type NopMqttClient struct {

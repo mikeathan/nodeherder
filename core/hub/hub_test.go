@@ -6,8 +6,6 @@ import (
 	"node-herder/hub"
 	"testing"
 	"time"
-
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
 func TestXxx(t *testing.T) {
@@ -23,17 +21,24 @@ func TestXxx(t *testing.T) {
 
 	repo.StoreJson(topic, []byte(data1))
 	repo.StoreJson(topic2, []byte(data2))
-	// setup ws hub
-	var wsConfig = hub.WsConfig{
-		OnConnected: func() interface{} {
-			return repo.ListAllDevices()
-		},
-	}
 
 	ctx, _ := context.WithCancel(context.Background())
-	wsHub := hub.NewWsHub(wsConfig)
 
-	h := hub.NewWsHandler(wsHub)
+	ws := hub.NewWsHub()
+
+	cfg := GetMqttConfig(broker, nil, topic)
+	mqtt := hub.NewMqttClient(cfg)
+	_, err := hub.NewHubConnector(
+		hub.WithRepository(repo),
+		hub.WithMqtt(mqtt),
+		hub.WithWs(ws))
+
+	if err != nil {
+		fmt.Printf("Hub connector error: %s \n", err.Error())
+		<-ctx.Done()
+	}
+
+	h := hub.NewWsHandler(ws)
 	router := hub.NewRouter()
 	router.GET("/ws", h)
 
@@ -54,18 +59,6 @@ func TestXxx(t *testing.T) {
 	// wait before sending some random mqtt device data
 	time.Sleep(5 * time.Second)
 	//setup mqtt
-	var messageHandler = func(client mqtt.Client, msg mqtt.Message) {
-		var name = hub.SanitizeTopic(msg.Topic())
-		var payload = msg.Payload()
-		fmt.Printf("mqtt Message => Topic: %s, Payload: %s\n", msg.Topic(), msg.Payload())
-		repo.StoreJson(name, payload)
-		device, _ := repo.FindDevice(name)
-		wsHub.Broadcast(hub.DeviceUpdated, device)
-	}
-
-	cfg := GetMqttConfig(broker, messageHandler, topic)
-	mqttClient := hub.NewMqttClient(cfg)
-	mqttClient.Connect()
 
 	StartMqttNodeClient(cfg, data3, 1)
 
