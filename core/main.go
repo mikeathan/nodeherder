@@ -41,7 +41,7 @@ func main() {
 	}()
 
 	repo := hub.NewMemoryRepository()
-	ws := hub.NewWsHub()
+	eventHub := hub.NewWsHub()
 
 	mqttConfig := hub.MqttConfig{
 		Username: "sinkhole",
@@ -53,16 +53,23 @@ func main() {
 	}
 	mqtt := hub.NewMqttClient(mqttConfig)
 
-	_, err := hub.NewHubConnector(
+	_, err := hub.NewController(
 		hub.WithRepository(repo),
 		hub.WithMqtt(mqtt),
-		hub.WithWs(ws))
+		hub.WithEventHub(eventHub))
 
 	if err != nil {
 		fmt.Printf("Hub connector error: %s \n", err.Error())
 		<-ctx.Done()
 	}
 
+	apiServer := createHttpServer(port, eventHub, ctx)
+
+	apiServer.Listen()
+	fmt.Println("Exited")
+}
+
+func createHttpServer(port int, ws hub.EventHub, ctx context.Context) hub.HttpServer {
 	router := hub.NewRouter()
 	router.GET("/ws", hub.NewWsHandler(ws))
 	//router.GET("/", http.FileServer(http.Dir("../../frontend/dist")))
@@ -73,6 +80,13 @@ func main() {
 		hub.WithContext(ctx),
 	)
 
-	apiServer.Listen()
-	fmt.Println("Exited")
+	return apiServer
+
 }
+
+// ws used by eventhub
+// ws
+// mqtt
+// repo
+
+// ws used by api route

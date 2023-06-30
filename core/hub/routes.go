@@ -77,10 +77,10 @@ func (r *Router) getHandler(method, path string) http.Handler {
 }
 
 type WsHandler struct {
-	hub WsServer
+	hub EventHub
 }
 
-func NewWsHandler(hub WsServer) *WsHandler {
+func NewWsHandler(hub EventHub) *WsHandler {
 	return &WsHandler{
 		hub: hub,
 	}

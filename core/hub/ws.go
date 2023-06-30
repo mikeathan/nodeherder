@@ -49,13 +49,13 @@ const (
 )
 
 type WsClient struct {
-	hub *WsHub
+	hub *wsServer
 
 	conn *websocket.Conn
 	send chan []byte
 }
 
-func newWsClient(hub *WsHub, conn *websocket.Conn) *WsClient {
+func newWsClient(hub *wsServer, conn *websocket.Conn) *WsClient {
 	return &WsClient{hub: hub, conn: conn, send: make(chan []byte)}
 }
 func (c *WsClient) readPump() {
@@ -123,13 +123,13 @@ func (c *WsClient) Broadcast(eventName string, data interface{}) error {
 	return nil
 }
 
-type WsServer interface {
+type EventHub interface {
 	Broadcast(eventName string, data interface{}) error
 	RegisterNewClient(conn *websocket.Conn)
 	OnConnected(onConnected func() interface{})
 }
 
-type WsHub struct {
+type wsServer struct {
 	clients           map[*WsClient]bool
 	broadcast         chan []byte
 	register          chan *WsClient
@@ -137,8 +137,8 @@ type WsHub struct {
 	onClientConnected func() interface{}
 }
 
-func NewWsHub() WsServer {
-	wsHub := &WsHub{
+func NewWsHub() EventHub {
+	wsHub := &wsServer{
 		clients:           map[*WsClient]bool{},
 		broadcast:         make(chan []byte),
 		register:          make(chan *WsClient),
@@ -150,11 +150,11 @@ func NewWsHub() WsServer {
 	return wsHub
 }
 
-func (h *WsHub) OnConnected(onConnected func() interface{}) {
+func (h *wsServer) OnConnected(onConnected func() interface{}) {
 	h.onClientConnected = onConnected
 }
 
-func (h *WsHub) run() {
+func (h *wsServer) run() {
 	for {
 		select {
 		case client := <-h.register:
@@ -180,7 +180,7 @@ func (h *WsHub) run() {
 	}
 }
 
-func (h *WsHub) RegisterNewClient(conn *websocket.Conn) {
+func (h *wsServer) RegisterNewClient(conn *websocket.Conn) {
 	client := newWsClient(h, conn)
 	client.hub.register <- client
 
@@ -193,7 +193,7 @@ func (h *WsHub) RegisterNewClient(conn *websocket.Conn) {
 	}
 }
 
-func (h *WsHub) Broadcast(eventName string, data interface{}) error {
+func (h *wsServer) Broadcast(eventName string, data interface{}) error {
 	var wsData = EventMessage{Type: eventName, Payload: data}
 	bytes, err := json.Marshal(wsData)
 	if err != nil {
