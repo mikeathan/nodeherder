@@ -6,27 +6,23 @@ import (
 	"net/http"
 )
 
-type HttpServer interface {
-	Listen()
-}
-
-type ApiServer struct {
+type apiServer struct {
 	httpServer http.Server
 	ctx        context.Context
 	router     *Router
 }
 
-func WithContext(ctx context.Context) func(s *ApiServer) {
-	return func(s *ApiServer) { s.ctx = ctx }
+func WithContext(ctx context.Context) func(s *apiServer) {
+	return func(s *apiServer) { s.ctx = ctx }
 }
 
-func WithRouter(router *Router) func(s *ApiServer) {
-	return func(s *ApiServer) { s.router = router }
+func WithRouter(router *Router) func(s *apiServer) {
+	return func(s *apiServer) { s.router = router }
 }
 
-func NewHttpServer(port int, opts ...func(s *ApiServer)) HttpServer {
+func NewHttpServer(port int, opts ...func(s *apiServer)) *apiServer {
 
-	api := &ApiServer{
+	api := &apiServer{
 		router: &Router{},
 	}
 
@@ -42,7 +38,7 @@ func NewHttpServer(port int, opts ...func(s *ApiServer)) HttpServer {
 	return api
 }
 
-func (s *ApiServer) Listen() {
+func (s *apiServer) Listen() {
 
 	done := make(chan bool)
 	errors := make(chan error)
@@ -73,4 +69,44 @@ func (s *ApiServer) Listen() {
 	}()
 
 	<-done
+}
+
+type Server struct {
+	api *apiServer
+	ctx context.Context
+}
+
+func NewServer(port int, ctx context.Context, config MqttConfig, repo Repository) {
+
+	s := Server{ctx: ctx}
+	eventHub := NewWsHub()
+	mqtt := NewMqttClient(config)
+
+	_, err := NewController(
+		WithRepository(repo),
+		WithMqtt(mqtt),
+		WithEventHub(eventHub))
+
+	if err != nil {
+		fmt.Printf("Hub connector error: %s \n", err.Error())
+		<-ctx.Done()
+	}
+
+	s.api = registerApi(port, ctx, eventHub)
+}
+
+func registerApi(port int, ctx context.Context, eventHub EventHub) *apiServer {
+	router := NewRouter()
+	router.GET("/ws", NewWsHandler(eventHub))
+	//router.GET("/", http.FileServer(http.Dir("../../frontend/dist")))
+
+	return NewHttpServer(
+		port,
+		WithContext(ctx),
+		WithRouter(router),
+	)
+}
+
+func (s *Server) Listen() {
+	s.api.Listen()
 }
