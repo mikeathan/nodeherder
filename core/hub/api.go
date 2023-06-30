@@ -12,15 +12,15 @@ type apiServer struct {
 	router     *Router
 }
 
-func WithContext(ctx context.Context) func(s *apiServer) {
+func withContext(ctx context.Context) func(s *apiServer) {
 	return func(s *apiServer) { s.ctx = ctx }
 }
 
-func WithRouter(router *Router) func(s *apiServer) {
+func withRouter(router *Router) func(s *apiServer) {
 	return func(s *apiServer) { s.router = router }
 }
 
-func NewHttpServer(port int, opts ...func(s *apiServer)) *apiServer {
+func newHttpServer(port int, opts ...func(s *apiServer)) *apiServer {
 
 	api := &apiServer{
 		router: &Router{},
@@ -72,41 +72,46 @@ func (s *apiServer) Listen() {
 }
 
 type Server struct {
-	api *apiServer
-	ctx context.Context
+	api        *apiServer
+	controller *Controller
+	ctx        context.Context
 }
 
-func NewServer(port int, ctx context.Context, config MqttConfig, repo Repository) {
+func NewServer(port int, ctx context.Context, config MqttConfig, repo Repository) *Server {
 
-	s := Server{ctx: ctx}
+	s := &Server{ctx: ctx}
 	eventHub := NewWsHub()
 	mqtt := NewMqttClient(config)
 
-	_, err := NewController(
+	s.controller = NewController(
 		WithRepository(repo),
 		WithMqtt(mqtt),
 		WithEventHub(eventHub))
 
-	if err != nil {
-		fmt.Printf("Hub connector error: %s \n", err.Error())
-		<-ctx.Done()
-	}
-
-	s.api = registerApi(port, ctx, eventHub)
+	s.api = registerApiServer(port, ctx, eventHub)
+	return s
 }
 
-func registerApi(port int, ctx context.Context, eventHub EventHub) *apiServer {
+func registerApiServer(port int, ctx context.Context, eventHub EventHub) *apiServer {
 	router := NewRouter()
 	router.GET("/ws", NewWsHandler(eventHub))
 	//router.GET("/", http.FileServer(http.Dir("../../frontend/dist")))
 
-	return NewHttpServer(
+	return newHttpServer(
 		port,
-		WithContext(ctx),
-		WithRouter(router),
+		withContext(ctx),
+		withRouter(router),
 	)
 }
 
 func (s *Server) Listen() {
-	s.api.Listen()
+
+	err := s.controller.Connect()
+
+	if err != nil {
+		fmt.Printf("Controller connection error: %s \n", err.Error())
+		<-s.ctx.Done()
+	}
+
+	go s.api.Listen()
 }

@@ -25,24 +25,11 @@ func TestXxx(t *testing.T) {
 
 	ctx, _ := context.WithCancel(context.Background())
 
-	eventHub := hub.NewWsHub()
-
 	cfg := GetMqttConfig(broker, nil, topic)
 
-	mqtt := hub.NewMqttClient(cfg)
-	_, err := hub.NewController(
-		hub.WithRepository(repo),
-		hub.WithMqtt(mqtt),
-		hub.WithEventHub(eventHub))
+	server := hub.NewServer(port, ctx, cfg, repo)
 
-	if err != nil {
-		fmt.Printf("Hub connector error: %s \n", err.Error())
-		<-ctx.Done()
-	}
-
-	apiServer := createHttpServer(port, eventHub, ctx)
-
-	go apiServer.Listen()
+	go server.Listen()
 
 	// this to directy trigger http request
 	// TEST ONLY   - comment
@@ -59,19 +46,4 @@ func TestXxx(t *testing.T) {
 	//SendMessage(t, conn, []byte(message))
 
 	fmt.Println("Exited")
-}
-
-func createHttpServer(port int, ws hub.EventHub, ctx context.Context) hub.HttpServer {
-	router := hub.NewRouter()
-	router.GET("/ws", hub.NewWsHandler(ws))
-	//router.GET("/", http.FileServer(http.Dir("../../frontend/dist")))
-
-	apiServer := hub.NewHttpServer(
-		port,
-		hub.WithRouter(router),
-		hub.WithContext(ctx),
-	)
-
-	return apiServer
-
 }

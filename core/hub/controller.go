@@ -13,7 +13,7 @@ type Controller struct {
 	repo     Repository
 }
 
-func NewController(opts ...func(h *Controller)) (*Controller, error) {
+func NewController(opts ...func(h *Controller)) *Controller {
 	h := &Controller{
 		eventHub: &mocks.NopWsServer{},
 		mqtt:     &mocks.NopMqttClient{},
@@ -40,12 +40,16 @@ func NewController(opts ...func(h *Controller)) (*Controller, error) {
 		h.eventHub.Broadcast(DeviceUpdated, device)
 	})
 
-	err := h.mqtt.Connect()
+	return h
+}
+
+func (c *Controller) Connect() error {
+	err := c.mqtt.Connect()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return h, nil
+	return nil
 }
 
 func WithRepository(repo Repository) func(h *Controller) {
