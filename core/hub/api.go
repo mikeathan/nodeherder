@@ -113,5 +113,5 @@ func (s *Server) Listen() {
 		<-s.ctx.Done()
 	}
 
-	go s.api.Listen()
+	s.api.Listen()
 }

@@ -30,7 +30,7 @@ func TestXxx(t *testing.T) {
 
 	server := hub.NewServer(port, ctx, cfg, repo)
 
-	server.Listen()
+	go server.Listen()
 
 	// this to directy trigger http request
 	// TEST ONLY   - comment
