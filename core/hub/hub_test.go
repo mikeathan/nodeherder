@@ -11,7 +11,10 @@ import (
 func TestXxx(t *testing.T) {
 
 	t.Skip("component test. ignore")
+
+	ctx, _ := context.WithCancel(context.Background())
 	port := 3000
+
 	var broker = "192.168.50.179:1883"
 	var topic = "device1"
 	var topic2 = "device2"
@@ -23,13 +26,11 @@ func TestXxx(t *testing.T) {
 	repo.StoreJson(topic, []byte(data1))
 	repo.StoreJson(topic2, []byte(data2))
 
-	ctx, _ := context.WithCancel(context.Background())
-
 	cfg := GetMqttConfig(broker, nil, topic)
 
 	server := hub.NewServer(port, ctx, cfg, repo)
 
-	go server.Listen()
+	server.Listen()
 
 	// this to directy trigger http request
 	// TEST ONLY   - comment
