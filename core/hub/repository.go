@@ -46,7 +46,7 @@ func (s *MemoryRepository) StoreObject(deviceName string, payload interface{}) e
 }
 
 func (s *MemoryRepository) storePayload(deviceName string, payload map[string]interface{}) {
-
+	// todo: maybe check if last_send is send else set it with time.now
 	if _, ok := s.store[deviceName]; !ok {
 		s.store[deviceName] = newDevice(deviceName, payload)
 	}
