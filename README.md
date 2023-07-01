@@ -64,3 +64,16 @@ advanced:
 websockets:
 emit message device change
 all devices or just the updated ?
+
+{
+"detection_delay": 0.5,
+"fading_time": 5,
+"illuminance_lux": 168,
+"last_seen": "2023-07-01T11:20:43+01:00",
+"linkquality": 32,
+"maximum_range": 6,
+"minimum_range": 0.6,
+"presence": true,
+"radar_sensitivity": 5,
+"target_distance": 3.39
+}
