@@ -77,3 +77,24 @@ all devices or just the updated ?
 "radar_sensitivity": 5,
 "target_distance": 3.39
 }
+
+Occupancy devices
+
+UI:
+Occupancy
+luminance
+Status/availability: online or offline
+No last seen
+Or golang filters messages and uptates the last seen
+
+Backend:
+
+filters messages and uptates the last seen
+Handle no battery in payload
+Device logic for extending functionality
+
+Setting configuration for devices
+Triggers and binding
+Add api endpoint for collecting data from WiFi sensors
+
+Circuit breaker
