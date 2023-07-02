@@ -2,6 +2,7 @@ package device
 
 import (
 	"errors"
+	"node-herder/hub"
 	"time"
 )
 
@@ -19,10 +20,30 @@ var sensorWhitelist = map[string]int{
 	"presence":        4,
 	"illuminance_lux": 5,
 }
+var deviceWhitelist = map[string]int{
+	"battery":      1,
+	"linquality":   2,
+	"power_source": 3,
+}
+
 var lastSeenKey = "last_seen"
 var batterKey = "battery"
 var mainsKey = "Mains (single phase)"
 var powerSourceKey = "power_source"
+
+var repo = hub.Repository
+
+type NodePayload struct {
+	Sensor map[string]any `json:"sensor"`
+	Device map[string]any `json:"device"`
+}
+
+func NewNodePayload() *NodePayload {
+	return &NodePayload{
+		Sensor: map[string]any{},
+		Device: map[string]any{},
+	}
+}
 
 // todo:
 // collect data and pass them to different process
@@ -32,16 +53,31 @@ func Process(payload interface{}) {
 	if err != nil {
 		panic("fooked")
 	}
+	if _, ok := data["name"]; !ok {
+		panic("invalid payload")
+	}
+	name := data["name"]
+	device := repo.FindDevice(name)
+	if device == nil {
 
-	// todo:
-	// check if data exists in store before continue with logic
+		data[powerSourceKey] = batterKey
+		if _, ok := data[batterKey]; !ok {
+			data[powerSourceKey] = mainsKey
+		}
+
+		var newNode = NewNodePayload()
+		// new device
+		for key, v := range data {
+			if _, ok := sensorWhitelist[key]; ok {
+				// store in sensor data
+			} else if _, ok := deviceWhitelist[key]; ok {
+				// store in device data
+			}
+		}
+	}
 
 	// todo
 	// have a timer to see if item is available, if not set offline
-	data[powerSourceKey] = batterKey
-	if _, ok := data[batterKey]; !ok {
-		data[powerSourceKey] = mainsKey
-	}
 
 	data["availability"] = "offline"
 	if lastSeen, ok := data[lastSeenKey]; ok {
