@@ -65,7 +65,8 @@ func (p *PayloadProcessor) Process(payload interface{}) error {
 		return errors.New("no name key in payload")
 	}
 
-	// sanitize payload
+	// sanitize payload,
+	// TODO: need optimization
 	if _, ok := data[lastSeenKey]; !ok {
 		data["lastSeenKey"] = time.Now() // TODO: fix format
 	}
@@ -85,9 +86,6 @@ func (p *PayloadProcessor) Process(payload interface{}) error {
 }
 
 func (p *PayloadProcessor) updateDevice(device *models.Device, data map[string]interface{}) {
-	// TODO:
-	// have a timer to see if item is available, if not set offline
-	// data["availability"] = "offline"
 	node := device.Payload.(*NodePayload)
 	for key, value := range node.Sensor {
 		if val, ok := data[key]; ok && val == value {
@@ -99,9 +97,14 @@ func (p *PayloadProcessor) updateDevice(device *models.Device, data map[string]i
 }
 
 func (p *PayloadProcessor) addDevice(deviceName string, data map[string]interface{}) {
+	// TODO:
+	// have a timer to see if item is available, if not set offline
+	// data["availability"] = "offline"
+	// will need to syncronize data access
+
 	data[powerSourceKey] = batterKey
 
-	// check if battery key exist, if not set source as mains
+	// check if battery key exist, if not set power_source as mains
 	if _, ok := data[batterKey]; !ok {
 		data[powerSourceKey] = mainsKey
 	}
@@ -109,20 +112,17 @@ func (p *PayloadProcessor) addDevice(deviceName string, data map[string]interfac
 	var newNode = NewNodePayload()
 	newNode.Id = deviceName
 
-	// new device
 	for key, v := range data {
 		if _, ok := sensorWhitelist[key]; ok {
 			newNode.Sensor[key] = v
-			// store in sensor data
 		} else if _, ok := deviceWhitelist[key]; ok {
-			// store in device data
 			newNode.Device[key] = v
 		}
 	}
 
 	p.repo.StoreObject(deviceName, newNode)
-
 }
+
 func convertToMap(payload interface{}) (map[string]interface{}, error) {
 	if data, ok := payload.(map[string]interface{}); ok {
 		return data, nil
