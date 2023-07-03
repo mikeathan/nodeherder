@@ -2,8 +2,6 @@ package device
 
 import (
 	"errors"
-	"node-herder/hub"
-	"node-herder/models"
 	"time"
 )
 
@@ -23,9 +21,10 @@ var sensorWhitelist = map[string]int{
 }
 var deviceWhitelist = map[string]int{
 	"battery":      1,
-	"linquality":   2,
+	"linkquality":  2,
 	"power_source": 3,
 	"availability": 4,
+	"last_seen":    5,
 }
 
 var lastSeenKey = "last_seen"
@@ -34,9 +33,10 @@ var mainsKey = "Mains (single phase)"
 var powerSourceKey = "power_source"
 
 type NodePayload struct {
-	Id     string
-	Sensor map[string]any `json:"sensor"`
-	Device map[string]any `json:"device"`
+	Id          string
+	PowerSource string
+	Sensor      map[string]any `json:"sensor"`
+	Device      map[string]any `json:"device"`
 }
 
 func NewNodePayload() *NodePayload {
@@ -47,37 +47,36 @@ func NewNodePayload() *NodePayload {
 }
 
 type Processor interface {
-	Process(payload interface{}) error
+	Process(id string, payload interface{}) error
 }
 type PayloadProcessor struct {
-	repo hub.Repository
+	repo Repository
+}
+
+func NewPayloadProcessor(repo Repository) Processor {
+	return &PayloadProcessor{repo: repo}
 }
 
 // todo:
 // collect data and pass them to different process
-func (p *PayloadProcessor) Process(payload interface{}) error {
+func (p *PayloadProcessor) Process(id string, payload interface{}) error {
 
 	data, err := convertToMap(payload)
 	if err != nil {
 		return errors.New("invalid paylaod format")
 	}
-	if _, ok := data["name"]; !ok {
-		return errors.New("no name key in payload")
-	}
 
 	// sanitize payload,
 	// TODO: need optimization
 	if _, ok := data[lastSeenKey]; !ok {
-		data["lastSeenKey"] = time.Now() // TODO: fix format
+		data[lastSeenKey] = time.Now().String() // TODO: fix format
 	}
 	data["availability"] = "online"
-	//
 
-	deviceName := data["name"].(string)
-	device, _ := p.repo.FindDevice(deviceName)
+	device, _ := p.repo.FindDevice(id)
 
 	if device == nil {
-		p.addDevice(deviceName, data)
+		p.addDevice(id, data)
 		return nil
 	}
 
@@ -85,11 +84,10 @@ func (p *PayloadProcessor) Process(payload interface{}) error {
 	return nil
 }
 
-func (p *PayloadProcessor) updateDevice(device *models.Device, data map[string]interface{}) {
-	node := device.Payload.(*NodePayload)
+func (p *PayloadProcessor) updateDevice(node *NodePayload, data map[string]interface{}) {
 	for key, value := range node.Sensor {
 		if val, ok := data[key]; ok && val == value {
-			p.repo.StoreObject(node.Id, data)
+			p.repo.Store(node.Id, node)
 			// BROADCAST
 			break
 		}
@@ -102,15 +100,16 @@ func (p *PayloadProcessor) addDevice(deviceName string, data map[string]interfac
 	// data["availability"] = "offline"
 	// will need to syncronize data access
 
-	data[powerSourceKey] = batterKey
+	powerSource := batterKey
 
 	// check if battery key exist, if not set power_source as mains
 	if _, ok := data[batterKey]; !ok {
-		data[powerSourceKey] = mainsKey
+		powerSource = mainsKey
 	}
 
 	var newNode = NewNodePayload()
 	newNode.Id = deviceName
+	newNode.PowerSource = powerSource
 
 	for key, v := range data {
 		if _, ok := sensorWhitelist[key]; ok {
@@ -120,7 +119,7 @@ func (p *PayloadProcessor) addDevice(deviceName string, data map[string]interfac
 		}
 	}
 
-	p.repo.StoreObject(deviceName, newNode)
+	p.repo.Store(deviceName, newNode)
 }
 
 func convertToMap(payload interface{}) (map[string]interface{}, error) {
