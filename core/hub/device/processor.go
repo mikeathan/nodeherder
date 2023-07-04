@@ -1,7 +1,10 @@
 package device
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
+	"hash/crc32"
 	"time"
 )
 
@@ -90,9 +93,11 @@ func (p *PayloadProcessor) Process(id string, payload interface{}) error {
 
 func (p *PayloadProcessor) updateDevice(node *NodePayload, data map[string]interface{}) {
 	var checksum = node.checksum
+	//h1 := fnv1a.HashString64("Hello World!")
 	for key, value := range node.Sensor {
 		if val, ok := data[key]; ok && val == value {
 			node.Sensor[key] = val
+
 			node.checksum++
 		}
 	}
@@ -121,16 +126,30 @@ func (p *PayloadProcessor) addDevice(deviceName string, data map[string]interfac
 	var newNode = NewNodePayload()
 	newNode.Id = deviceName
 	newNode.PowerSource = powerSource
+	var buf bytes.Buffer
 
 	for key, v := range data {
 		if _, ok := sensorWhitelist[key]; ok {
 			newNode.Sensor[key] = v
+			fmt.Fprintf(&buf, "%v", v)
 		} else if _, ok := deviceWhitelist[key]; ok {
 			newNode.Device[key] = v
 		}
 	}
+	b := buf.Bytes()
+	if len(b) != 0 {
+		crc32q := crc32.MakeTable(0xD5828281)
+		fmt.Printf("%08x\n", crc32.Checksum(b, crc32q))
+		p.repo.Store(deviceName, newNode)
+	}
+}
 
-	p.repo.Store(deviceName, newNode)
+func xor(a []byte, b []byte) []byte {
+	c := make([]byte, len(a))
+	for i := range a {
+		c[i] = a[i] ^ b[i]
+	}
+	return c
 }
 
 func convertToMap(payload interface{}) (map[string]interface{}, error) {
