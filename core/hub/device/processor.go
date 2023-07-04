@@ -56,6 +56,9 @@ type PayloadProcessor struct {
 func NewPayloadProcessor(repo Repository) Processor {
 	return &PayloadProcessor{repo: repo}
 }
+func getCurrentTime() string {
+	return time.Now().Format(time.RFC3339)
+}
 
 // todo:
 // collect data and pass them to different process
@@ -69,7 +72,7 @@ func (p *PayloadProcessor) Process(id string, payload interface{}) error {
 	// sanitize payload,
 	// TODO: need optimization
 	if _, ok := data[lastSeenKey]; !ok {
-		data[lastSeenKey] = time.Now().String() // TODO: fix format
+		data[lastSeenKey] = getCurrentTime()
 	}
 	data["availability"] = "online"
 
@@ -87,11 +90,12 @@ func (p *PayloadProcessor) Process(id string, payload interface{}) error {
 func (p *PayloadProcessor) updateDevice(node *NodePayload, data map[string]interface{}) {
 	for key, value := range node.Sensor {
 		if val, ok := data[key]; ok && val == value {
-			p.repo.Store(node.Id, node)
-			// BROADCAST
-			break
+			node.Sensor[key] = val
 		}
 	}
+	// need to check if anything has change first, else we will be doing that every time
+	//p.repo.Store(node.Id, node)
+	// BROADCAST
 }
 
 func (p *PayloadProcessor) addDevice(deviceName string, data map[string]interface{}) {
