@@ -1,10 +1,7 @@
 package device
 
 import (
-	"bytes"
 	"errors"
-	"fmt"
-	"hash/crc32"
 	"time"
 )
 
@@ -38,16 +35,36 @@ var powerSourceKey = "power_source"
 type NodePayload struct {
 	Id          string
 	PowerSource string
-	checksum    int
+	checksum    string
 	Sensor      map[string]any `json:"sensor"`
 	Device      map[string]any `json:"device"`
+	hasher      Crc32Hasher
 }
 
 func NewNodePayload() *NodePayload {
 	return &NodePayload{
 		Sensor: map[string]any{},
 		Device: map[string]any{},
+		hasher: *NewCrc32Hasher(),
 	}
+}
+
+func (n *NodePayload) WriteSensor(id string, value any) {
+	n.Sensor[id] = value
+	n.hasher.Write(value)
+}
+
+func (n *NodePayload) HashSensor() bool {
+	h := n.hasher.Hash()
+	if h != "" {
+		n.checksum = h
+		return true
+	}
+	return false
+}
+
+func (n *NodePayload) ResetHasher() {
+	n.hasher.Reset()
 }
 
 type Processor interface {
@@ -92,25 +109,21 @@ func (p *PayloadProcessor) Process(id string, payload interface{}) error {
 }
 
 func (p *PayloadProcessor) updateDevice(node *NodePayload, data map[string]interface{}) {
-	var checksum = node.checksum
-	//h1 := fnv1a.HashString64("Hello World!")
 	for key, value := range node.Sensor {
 		if val, ok := data[key]; ok && val == value {
-			node.Sensor[key] = val
-
-			node.checksum++
+			node.WriteSensor(key, val)
 		}
 	}
 
-	if node.checksum != checksum {
-		// need to check if anything has change first, else we will be doing that every time
-		//p.repo.Store(node.Id, node)
+	if ok := node.HashSensor(); ok {
+		p.repo.Store(node.Id, node)
 		// BROADCAST
+		node.ResetHasher()
 	}
 
 }
 
-func (p *PayloadProcessor) addDevice(deviceName string, data map[string]interface{}) {
+func (p *PayloadProcessor) addDevice(id string, data map[string]interface{}) {
 	// TODO:
 	// have a timer to see if item is available, if not set offline
 	// data["availability"] = "offline"
@@ -124,32 +137,21 @@ func (p *PayloadProcessor) addDevice(deviceName string, data map[string]interfac
 	}
 
 	var newNode = NewNodePayload()
-	newNode.Id = deviceName
+	newNode.Id = id
 	newNode.PowerSource = powerSource
-	var buf bytes.Buffer
 
 	for key, v := range data {
 		if _, ok := sensorWhitelist[key]; ok {
-			newNode.Sensor[key] = v
-			fmt.Fprintf(&buf, "%v", v)
+			newNode.WriteSensor(key, v)
 		} else if _, ok := deviceWhitelist[key]; ok {
 			newNode.Device[key] = v
 		}
 	}
-	b := buf.Bytes()
-	if len(b) != 0 {
-		crc32q := crc32.MakeTable(0xD5828281)
-		fmt.Printf("%08x\n", crc32.Checksum(b, crc32q))
-		p.repo.Store(deviceName, newNode)
-	}
-}
 
-func xor(a []byte, b []byte) []byte {
-	c := make([]byte, len(a))
-	for i := range a {
-		c[i] = a[i] ^ b[i]
+	if ok := newNode.HashSensor(); ok {
+		p.repo.Store(id, newNode)
+		newNode.ResetHasher()
 	}
-	return c
 }
 
 func convertToMap(payload interface{}) (map[string]interface{}, error) {

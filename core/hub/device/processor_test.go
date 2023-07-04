@@ -77,6 +77,7 @@ func TestProcessorUpdatesExistingDevice(t *testing.T) {
 		t.Fatalf("want %s got %s", id, device.Id)
 	}
 }
+
 func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 
 	repo := device.NewMemoryNodeRepository()
