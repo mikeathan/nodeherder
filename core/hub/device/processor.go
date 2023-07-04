@@ -35,6 +35,7 @@ var powerSourceKey = "power_source"
 type NodePayload struct {
 	Id          string
 	PowerSource string
+	checksum    int
 	Sensor      map[string]any `json:"sensor"`
 	Device      map[string]any `json:"device"`
 }
@@ -88,14 +89,20 @@ func (p *PayloadProcessor) Process(id string, payload interface{}) error {
 }
 
 func (p *PayloadProcessor) updateDevice(node *NodePayload, data map[string]interface{}) {
+	var checksum = node.checksum
 	for key, value := range node.Sensor {
 		if val, ok := data[key]; ok && val == value {
 			node.Sensor[key] = val
+			node.checksum++
 		}
 	}
-	// need to check if anything has change first, else we will be doing that every time
-	//p.repo.Store(node.Id, node)
-	// BROADCAST
+
+	if node.checksum != checksum {
+		// need to check if anything has change first, else we will be doing that every time
+		//p.repo.Store(node.Id, node)
+		// BROADCAST
+	}
+
 }
 
 func (p *PayloadProcessor) addDevice(deviceName string, data map[string]interface{}) {
