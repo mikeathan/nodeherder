@@ -34,7 +34,7 @@ const typeToClassMap = {
 };
 const sensorUnits = {
   temperature: "°C",
-  pressure: "$hPa",
+  pressure: "hPa",
   humidity: "%",
   voltage: "mV",
   linkquality: "LQI",
@@ -51,6 +51,12 @@ export function getSensorName(sensor) {
   return sensor.charAt(0).toUpperCase() + sensor.slice(1); // TODO: load name  from resources file
 }
 export function getSensorValue(sensor, value) {
+  if (typeof value == "boolean") {
+    return value;
+  }
+  // todo : dont format integer values
+  // todo;
+  // format value with space and unit
   return value.toFixed(1) + getUnit(sensor);
 }
 

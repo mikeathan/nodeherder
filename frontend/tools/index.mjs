@@ -19,6 +19,8 @@ const humidityChangeDelaySec = 30;
 const humidityMin = 30.0;
 const humidityMax = 100.0;
 
+const luminance_luxMin = 10;
+const luminance_luxMax = 600;
 // Our port
 let port = 3000;
 
@@ -30,6 +32,7 @@ console.log("[" + currentTime() + "] server listening at port " + port);
 let devicesConfig = [
   {
     name: "device 1",
+    type: "TH",
     temperatureOffset: 0.6,
     humidityOffset: 11.3,
     delayInMs: 20000,
@@ -40,13 +43,13 @@ let devicesConfig = [
   },
   {
     name: "device 2",
-    temperatureOffset: 1.1,
-    humidityOffset: 9.7,
+    type: "presence",
+    presence: true,
+    luminance_lux_offset: 12,
     delayInMs: 30000,
-    humidity: humidityMin + 15,
-    temperature: temperatureMin,
-    temperatureLastChanged: moment(),
-    humidityLastChanged: moment(),
+    luminance_lux: luminance_luxMin,
+    luminance_luxLastChanged: moment(),
+    presenceLastChanged: moment(),
   },
 ];
 
@@ -86,9 +89,16 @@ function onConnectBuildPayload(devicesConfig) {
 }
 
 function buildPayload(status, settings) {
+  var payload;
+  if (settings.type == "TH") {
+    payload = mockTHDevicePayload(status, settings);
+  } else if (settings.type == "presence") {
+    payload = mockPresenceDevicePayload(status, settings);
+  }
+
   var data = {
     id: settings.name,
-    payload: mockTHDevicePayloadV2(status, settings),
+    payload: payload,
   };
   return data;
 }
@@ -100,20 +110,7 @@ function currentTime() {
 
 function mockTHDevicePayload(state, settings) {
   var device = {
-    battery: 100,
-    humidity: getMockHumidity(settings),
-    last_seen: currentTime(),
-    linkquality: 47,
-    temperature: getMockTemperature(settings),
-    voltage: 3000,
-  };
-
-  return device;
-}
-
-function mockTHDevicePayloadV2(state, settings) {
-  var device = {
-    id: "device1",
+    id: settings.name,
     sensors: {
       humidity: getMockHumidity(settings),
       temperature: getMockTemperature(settings),
@@ -123,6 +120,23 @@ function mockTHDevicePayloadV2(state, settings) {
       last_seen: currentTime(),
       linkquality: 47,
       battery: 98,
+    },
+  };
+
+  return device;
+}
+
+function mockPresenceDevicePayload(state, settings) {
+  var device = {
+    id: settings.name,
+    sensors: {
+      presence: false,
+      illuminance_lux: 103,
+    },
+    stats: {
+      availability: "online",
+      last_seen: currentTime(),
+      linkquality: 67,
     },
   };
 

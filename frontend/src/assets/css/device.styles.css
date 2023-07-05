@@ -2,6 +2,7 @@
   display: inline-block;
   overflow: hidden;
   width: 10rem;
+  margin-bottom: -5px;
 }
 
 .device-info-span {
