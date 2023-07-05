@@ -114,12 +114,12 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 		t.Fatalf("want %s got %s", id, device.Id)
 	}
 
-	if device.Device["last_seen"] == nil {
+	if device.Stats["last_seen"] == nil {
 		t.Fatalf("want %s got %s", "last_seen", "nil")
 	}
 	want := time.Now().Format(time.RFC3339)
-	if device.Device["last_seen"] != want {
-		t.Fatalf("want %s got %s", want, device.Device["last_seen"])
+	if device.Stats["last_seen"] != want {
+		t.Fatalf("want %s got %s", want, device.Stats["last_seen"])
 	}
 }
 

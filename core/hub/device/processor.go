@@ -37,14 +37,14 @@ type NodePayload struct {
 	Id          string `json:"id"`
 	PowerSource string `json:"power_source"`
 	checksum    string
-	Sensor      map[string]any `json:"sensor"`
-	Device      map[string]any `json:"device"`
+	Sensors     map[string]any `json:"sensors"`
+	Stats       map[string]any `json:"stats"`
 }
 
 func NewNodePayload() *NodePayload {
 	return &NodePayload{
-		Sensor: map[string]any{},
-		Device: map[string]any{},
+		Sensors: map[string]any{},
+		Stats:   map[string]any{},
 	}
 }
 
@@ -102,9 +102,9 @@ func (p *PayloadProcessor) Process(id string, payload interface{}) error {
 }
 
 func (p *PayloadProcessor) updateDevice(node *NodePayload, data map[string]interface{}) {
-	for key, currValue := range node.Sensor {
+	for key, currValue := range node.Sensors {
 		if newValue, ok := data[key]; ok && newValue != currValue {
-			node.Sensor[key] = newValue
+			node.Sensors[key] = newValue
 			p.hasher.Write(newValue)
 		}
 	}
@@ -129,10 +129,10 @@ func (p *PayloadProcessor) addDevice(id string, data map[string]interface{}) *No
 
 	for key, value := range data {
 		if _, ok := sensorWhitelist[key]; ok {
-			newNode.Sensor[key] = value
+			newNode.Sensors[key] = value
 			p.hasher.Write(value)
 		} else if _, ok := deviceWhitelist[key]; ok {
-			newNode.Device[key] = value
+			newNode.Stats[key] = value
 		}
 	}
 
