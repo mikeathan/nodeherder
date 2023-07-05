@@ -29,9 +29,8 @@ export default class DeviceFormatter {
 
   formatPayload(stats, updaterCallback) {
     if (isProxy(stats)) {
-      payload = toRaw(stats);
+      stats = toRaw(stats);
     }
-
     this.lastSeen = formatLastSeen(stats);
     this.linkQuality = formatLinkQuality(stats);
     this.powerSourceIconClass = getPowerSourceIcon(stats);
@@ -48,10 +47,6 @@ function isCallback(callback) {
 }
 
 function formatLastSeen(payload) {
-  if (isProxy(payload)) {
-    payload = toRaw(payload);
-  }
-
   if (payload["last_seen"] == undefined) {
     return "";
   }
@@ -78,10 +73,6 @@ function formatLastSeen(payload) {
 }
 
 function getPowerSourceIcon(payload) {
-  if (isProxy(payload)) {
-    payload = toRaw(payload);
-  }
-
   if (payload["battery"] == undefined) {
     return "fa fa-plug";
   }
@@ -114,9 +105,6 @@ function getLinkQualityIcon() {
 }
 
 function formatLinkQuality(payload) {
-  if (isProxy(payload)) {
-    payload = toRaw(payload);
-  }
   if (payload["linkquality"] == undefined) {
     return "";
   }

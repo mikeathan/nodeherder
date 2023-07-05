@@ -11,7 +11,6 @@ let lastSeen = ref("");
 
 watch(
   () => props.payload,
-  props.id,
   (newpayload) => {
     console.log("Watch props.payload update");
     formatter.formatPayload(newpayload.stats, (v) => {
@@ -37,10 +36,7 @@ onUnmounted(() => {
     <span style="margin-right: 4.5rem">
       {{ lastSeen }}
     </span>
-    <span
-      :class="`fa fa-fw ${formatter.linkQualityIconClass}`"
-      class="device-info-span"
-    ></span>
+    <span :class="`fa fa-fw ${formatter.linkQualityIconClass}`" class="device-info-span"></span>
     <span class="device-info-span">
       {{ formatter.linkQuality }}
     </span>
