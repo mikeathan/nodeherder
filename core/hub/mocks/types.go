@@ -8,6 +8,22 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+type MockEventHub struct {
+	MockBroadcastEvent func(eventName string, data interface{}) error
+}
+
+func (w *MockEventHub) Broadcast(eventName string, data interface{}) error {
+	return w.MockBroadcastEvent(eventName, data)
+}
+
+func (w *MockEventHub) RegisterNewClient(conn *websocket.Conn) {
+	fmt.Println("Empty RegisterNewClient")
+}
+
+func (w *MockEventHub) OnConnected(onConnected func() interface{}) {
+	fmt.Println("Empty OnConnected")
+}
+
 type NopWsServer struct {
 }
 

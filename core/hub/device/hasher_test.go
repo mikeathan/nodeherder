@@ -17,7 +17,7 @@ func TestHasher(t *testing.T) {
 		h1.Write(v)
 	}
 
-	got1 := h1.Hash()
+	got1 := h1.CalculateHash()
 	if got1 == "" {
 		t.Fatalf("got %s", got1)
 	}
@@ -27,7 +27,7 @@ func TestHasher(t *testing.T) {
 		h2.Write(v)
 	}
 
-	got2 := h1.Hash()
+	got2 := h1.CalculateHash()
 	if got2 == "" {
 		t.Fatalf("got %s", got2)
 	}

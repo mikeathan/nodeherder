@@ -2,6 +2,7 @@ package device
 
 import (
 	"errors"
+	"node-herder/hub"
 	"time"
 )
 
@@ -30,7 +31,6 @@ var deviceWhitelist = map[string]int{
 var lastSeenKey = "last_seen"
 var batterKey = "battery"
 var mainsKey = "Mains (single phase)"
-var powerSourceKey = "power_source"
 
 type NodePayload struct {
 	Id          string
@@ -38,45 +38,28 @@ type NodePayload struct {
 	checksum    string
 	Sensor      map[string]any `json:"sensor"`
 	Device      map[string]any `json:"device"`
-	hasher      Crc32Hasher
 }
 
 func NewNodePayload() *NodePayload {
 	return &NodePayload{
 		Sensor: map[string]any{},
 		Device: map[string]any{},
-		hasher: *NewCrc32Hasher(),
 	}
-}
-
-func (n *NodePayload) WriteSensor(id string, value any) {
-	n.Sensor[id] = value
-	n.hasher.Write(value)
-}
-
-func (n *NodePayload) HashSensor() bool {
-	h := n.hasher.Hash()
-	if h != "" {
-		n.checksum = h
-		return true
-	}
-	return false
-}
-
-func (n *NodePayload) ResetHasher() {
-	n.hasher.Reset()
 }
 
 type Processor interface {
 	Process(id string, payload interface{}) error
 }
 type PayloadProcessor struct {
-	repo Repository
+	eventHub hub.EventHub
+	repo     Repository
+	hasher   Crc32Hasher
 }
 
-func NewPayloadProcessor(repo Repository) Processor {
-	return &PayloadProcessor{repo: repo}
+func NewPayloadProcessor(repo Repository, eventHub hub.EventHub) Processor {
+	return &PayloadProcessor{repo: repo, eventHub: eventHub, hasher: *NewCrc32Hasher()}
 }
+
 func getCurrentTime() string {
 	return time.Now().Format(time.RFC3339)
 }
@@ -100,30 +83,33 @@ func (p *PayloadProcessor) Process(id string, payload interface{}) error {
 	device, _ := p.repo.FindDevice(id)
 
 	if device == nil {
-		p.addDevice(id, data)
-		return nil
+		device = p.addDevice(id, data)
+	} else {
+		p.updateDevice(device, data)
 	}
 
-	p.updateDevice(device, data)
+	h := p.hasher.CalculateHash()
+	if h != "" && h != device.checksum {
+		device.checksum = h
+		p.hasher.Reset()
+
+		p.repo.Store(id, device)
+		p.eventHub.Broadcast(hub.DeviceUpdated, device)
+	}
+
 	return nil
 }
 
 func (p *PayloadProcessor) updateDevice(node *NodePayload, data map[string]interface{}) {
-	for key, value := range node.Sensor {
-		if val, ok := data[key]; ok && val == value {
-			node.WriteSensor(key, val)
+	for key, currValue := range node.Sensor {
+		if newValue, ok := data[key]; ok && newValue != currValue {
+			node.Sensor[key] = newValue
+			p.hasher.Write(newValue)
 		}
 	}
-
-	if ok := node.HashSensor(); ok {
-		p.repo.Store(node.Id, node)
-		// BROADCAST
-		node.ResetHasher()
-	}
-
 }
 
-func (p *PayloadProcessor) addDevice(id string, data map[string]interface{}) {
+func (p *PayloadProcessor) addDevice(id string, data map[string]interface{}) *NodePayload {
 	// TODO:
 	// have a timer to see if item is available, if not set offline
 	// data["availability"] = "offline"
@@ -140,18 +126,16 @@ func (p *PayloadProcessor) addDevice(id string, data map[string]interface{}) {
 	newNode.Id = id
 	newNode.PowerSource = powerSource
 
-	for key, v := range data {
+	for key, value := range data {
 		if _, ok := sensorWhitelist[key]; ok {
-			newNode.WriteSensor(key, v)
+			newNode.Sensor[key] = value
+			p.hasher.Write(value)
 		} else if _, ok := deviceWhitelist[key]; ok {
-			newNode.Device[key] = v
+			newNode.Device[key] = value
 		}
 	}
 
-	if ok := newNode.HashSensor(); ok {
-		p.repo.Store(id, newNode)
-		newNode.ResetHasher()
-	}
+	return newNode
 }
 
 func convertToMap(payload interface{}) (map[string]interface{}, error) {

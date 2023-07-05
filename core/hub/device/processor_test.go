@@ -2,8 +2,9 @@ package device_test
 
 import (
 	"encoding/json"
-	"fmt"
+	"node-herder/hub"
 	"node-herder/hub/device"
+	"node-herder/hub/mocks"
 	"testing"
 	"time"
 )
@@ -12,14 +13,23 @@ const device1BatterySource = `{"battery":98, "humidity":71.2, "last_seen":"2023-
 const device2 = `{"battery":98, "humidity":71.2,  "linkquality":36.1,"temperature":17.1,"voltage":2999}`
 const device3NoLastSeen = `{"battery":98, "humidity":71.2,  "linkquality":36.1,"temperature":17.1,"voltage":2999}`
 
+func createMockPayload() map[string]interface{} {
+	return map[string]interface{}{
+		"battery":     98,
+		"humidity":    71.2,
+		"last_seen":   time.Now().Format(time.RFC3339),
+		"linkquality": 36.1,
+		"temperature": 17.1,
+	}
+}
 func TestProcessorAddsNewDevice(t *testing.T) {
 
 	repo := device.NewMemoryNodeRepository()
 	id := "device1"
 	powerSource := "battery"
 	var payload = createPayload(device1BatterySource)
-
-	p := device.NewPayloadProcessor(repo)
+	eventHub := &mocks.NopWsServer{}
+	p := device.NewPayloadProcessor(repo, eventHub)
 	addDevice(p, id, payload)
 
 	device, err := repo.FindDevice(id)
@@ -60,7 +70,8 @@ func TestProcessorUpdatesExistingDevice(t *testing.T) {
 	var payload1 = createPayload(device1BatterySource)
 	var payload2 = createPayload(device2)
 
-	p := device.NewPayloadProcessor(repo)
+	eventHub := &mocks.NopWsServer{}
+	p := device.NewPayloadProcessor(repo, eventHub)
 	addDevice(p, "device1", payload1)
 	addDevice(p, "device2", payload2)
 	addDevice(p, "device2", payload1)
@@ -88,7 +99,8 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	p := device.NewPayloadProcessor(repo)
+	eventHub := &mocks.NopWsServer{}
+	p := device.NewPayloadProcessor(repo, eventHub)
 	err = p.Process(id, payload)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -111,6 +123,55 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 	}
 }
 
-func TestProcessorLastSeen(t *testing.T) {
-	fmt.Println(time.Now().Format(time.RFC3339))
+func TestOnlyNewPayloadIsBroadcasted(t *testing.T) {
+	repo := device.NewMemoryNodeRepository()
+	id := "device1"
+	var payload = createMockPayload()
+
+	var messageBroadcasted = false
+	broadcast := func(eventName string, data interface{}) error {
+		messageBroadcasted = true
+		return nil
+	}
+	testCases := []struct {
+		key       string
+		value     any
+		broadcast bool
+	}{
+		{key: "temperature", value: 15.6, broadcast: true},
+		{key: "temperature", value: 15.6, broadcast: false},
+		{key: "temperature", value: 18.5, broadcast: true},
+		{key: "humidity", value: 70.3, broadcast: true},
+		{key: "humidity", value: 70.3, broadcast: false},
+		{key: "linkquality", value: 120, broadcast: false},
+		{key: "linkquality", value: 14, broadcast: false},
+		{key: "battery", value: 70, broadcast: false},
+		{key: "temperature", value: 18.5, broadcast: false},
+		{key: "temperature", value: 21, broadcast: true},
+		{key: "temperature", value: 21, broadcast: false},
+		{key: "temperature", value: 21, broadcast: false},
+	}
+
+	eventHub := newMockBroadcastEventHub(broadcast)
+	p := device.NewPayloadProcessor(repo, eventHub)
+	for idx, testCase := range testCases {
+		// reset
+		messageBroadcasted = false
+		// use test case for updating sensor values
+		payload[testCase.key] = testCase.value
+
+		err := p.Process(id, payload)
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+
+		if testCase.broadcast != messageBroadcasted {
+			t.Fatalf("idx %d,key %s, value %v, broadcast want %v got %v", idx, testCase.key, testCase.value, testCase.broadcast, messageBroadcasted)
+		}
+	}
+}
+
+func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data interface{}) error) hub.EventHub {
+
+	return &mocks.MockEventHub{MockBroadcastEvent: mockBroadcastEvent}
 }
