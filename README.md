@@ -78,23 +78,26 @@ all devices or just the updated ?
 "target_distance": 3.39
 }
 
-Occupancy devices
+New Payload:
+"{\"type\":\"deviceUpdated\",\"payload\":{\"id\":\"device1\",\"power_source\":\"battery\",\"sensor\":{\"humidity\":71.2,\"temperature\":17.1},\"device\":{\"availability\":\"online\",\"battery\":98,\"last_seen\":\"2023-07-05T17:18:53+01:00\",\"linkquality\":36.1}}}"
 
-UI:
-Occupancy
-luminance
-Status/availability: online or offline
-No last seen
-Or golang filters messages and uptates the last seen
-
-Backend:
-
-filters messages and uptates the last seen
-Handle no battery in payload
-Device logic for extending functionality
+new formatedd payload:
+{
+"type": "deviceUpdated",
+"payload": {
+"id": "device1",
+"power_source": "battery",
+"sensor": { "humidity": 71.2, "temperature": 17.1 },
+"device": {
+"availability": "online",
+"battery": 98,
+"last_seen": "2023-07-05T17:18:53+01:00",
+"linkquality": 36.1
+}
+}
+}
 
 Setting configuration for devices
 Triggers and binding
 Add api endpoint for collecting data from WiFi sensors
-
 Circuit breaker
