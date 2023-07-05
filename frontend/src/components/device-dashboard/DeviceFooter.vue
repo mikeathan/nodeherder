@@ -11,9 +11,10 @@ let lastSeen = ref("");
 
 watch(
   () => props.payload,
+  props.id,
   (newpayload) => {
-    console.log("Watch props.payload update " + newpayload.name);
-    formatter.formatPayload(newpayload, (v) => {
+    console.log("Watch props.payload update");
+    formatter.formatPayload(newpayload.stats, (v) => {
       lastSeen.value = v;
     });
     lastSeen.value = formatter.lastSeen;
@@ -22,11 +23,11 @@ watch(
 );
 
 onMounted(() => {
-  console.log("mounted: " + props.payload.name);
+  console.log("mounted");
 });
 
 onUnmounted(() => {
-  console.log("unmounted: " + props.payload.name);
+  console.log("unmounted");
   formatter.dispose();
 });
 </script>
@@ -43,6 +44,6 @@ onUnmounted(() => {
     <span class="device-info-span">
       {{ formatter.linkQuality }}
     </span>
-    <span :class="`fa fa-fw ${formatter.batteryIconClass}`"></span>
+    <span :class="`fa fa-fw ${formatter.powerSourceIconClass}`"></span>
   </div>
 </template>

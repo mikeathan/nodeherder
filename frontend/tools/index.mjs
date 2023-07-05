@@ -87,8 +87,8 @@ function onConnectBuildPayload(devicesConfig) {
 
 function buildPayload(status, settings) {
   var data = {
-    name: settings.name,
-    payload: mockTHDevicePayload(status, settings),
+    id: settings.name,
+    payload: mockTHDevicePayloadV2(status, settings),
   };
   return data;
 }
@@ -106,6 +106,24 @@ function mockTHDevicePayload(state, settings) {
     linkquality: 47,
     temperature: getMockTemperature(settings),
     voltage: 3000,
+  };
+
+  return device;
+}
+
+function mockTHDevicePayloadV2(state, settings) {
+  var device = {
+    id: "device1",
+    sensors: {
+      humidity: getMockHumidity(settings),
+      temperature: getMockTemperature(settings),
+    },
+    stats: {
+      availability: "online",
+      last_seen: currentTime(),
+      linkquality: 47,
+      battery: 98,
+    },
   };
 
   return device;

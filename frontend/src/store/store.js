@@ -7,12 +7,12 @@ const state = {
 
 const mutations = {
   deviceUpdated(state, device) {
-    state.devices[device.name] = device;
+    state.devices[device.id] = device;
   },
 
   init(state, devices) {
     devices.forEach((device) => {
-      state.devices[device.name] = device;
+      state.devices[device.id] = device;
     });
   },
   clear() {

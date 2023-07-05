@@ -26,7 +26,6 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 
 	repo := device.NewMemoryNodeRepository()
 	id := "device1"
-	powerSource := "battery"
 	var payload = createPayload(device1BatterySource)
 	eventHub := &mocks.NopWsServer{}
 	p := device.NewPayloadProcessor(repo, eventHub)
@@ -41,10 +40,6 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 	}
 	if device.Id != id {
 		t.Fatalf("want %s got %s", id, device.Id)
-	}
-
-	if device.PowerSource != powerSource {
-		t.Fatalf("want %s got %s", powerSource, device.PowerSource)
 	}
 }
 

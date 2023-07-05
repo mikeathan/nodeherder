@@ -6,13 +6,6 @@ import (
 	"time"
 )
 
-// sensor whitelist map
-var powerSource = map[string]int{
-	"battery":              1,
-	"Mains (single phase)": 2,
-	"DC source":            3,
-}
-
 var sensorWhitelist = map[string]int{
 	"temperature":     1,
 	"humidity":        2,
@@ -23,22 +16,17 @@ var sensorWhitelist = map[string]int{
 var deviceWhitelist = map[string]int{
 	"battery":      1,
 	"linkquality":  2,
-	"power_source": 3,
-	"availability": 4,
-	"last_seen":    5,
-	"voltage":      6,
+	"availability": 3,
+	"last_seen":    4,
 }
 
 var lastSeenKey = "last_seen"
-var batterKey = "battery"
-var mainsKey = "Mains (single phase)"
 
 type NodePayload struct {
-	Id          string `json:"id"`
-	PowerSource string `json:"power_source"`
-	checksum    string
-	Sensors     map[string]any `json:"sensors"`
-	Stats       map[string]any `json:"stats"`
+	Id       string `json:"id"`
+	checksum string
+	Sensors  map[string]any `json:"sensors"`
+	Stats    map[string]any `json:"stats"`
 }
 
 func NewNodePayload() *NodePayload {
@@ -116,17 +104,8 @@ func (p *PayloadProcessor) addDevice(id string, data map[string]interface{}) *No
 	// data["availability"] = "offline"
 	// will need to syncronize data access
 
-	powerSource := batterKey
-
-	// check if battery key exist, if not set power_source as mains
-	if _, ok := data[batterKey]; !ok {
-		powerSource = mainsKey
-	}
-
 	var newNode = NewNodePayload()
 	newNode.Id = id
-	newNode.PowerSource = powerSource
-
 	for key, value := range data {
 		if _, ok := sensorWhitelist[key]; ok {
 			newNode.Sensors[key] = value

@@ -27,18 +27,18 @@ export default class DeviceFormatter {
     }, 1000);
   }
 
-  formatPayload(payload, updaterCallback) {
-    if (isProxy(payload)) {
-      payload = toRaw(payload);
+  formatPayload(stats, updaterCallback) {
+    if (isProxy(stats)) {
+      payload = toRaw(stats);
     }
 
-    this.lastSeen = formatLastSeen(payload);
-    this.linkQuality = formatLinkQuality(payload);
-    this.batteryIconClass = getBatteryIcon(payload);
-    this.linkQualityIconClass = getLinkQualityIcon(payload);
+    this.lastSeen = formatLastSeen(stats);
+    this.linkQuality = formatLinkQuality(stats);
+    this.powerSourceIconClass = getPowerSourceIcon(stats);
+    this.linkQualityIconClass = getLinkQualityIcon(stats);
 
     if (isCallback(updaterCallback)) {
-      this.startLastSeenUpdater(payload, updaterCallback);
+      this.startLastSeenUpdater(stats, updaterCallback);
     }
   }
 }
@@ -77,13 +77,13 @@ function formatLastSeen(payload) {
   return formatted;
 }
 
-function getBatteryIcon(payload) {
+function getPowerSourceIcon(payload) {
   if (isProxy(payload)) {
     payload = toRaw(payload);
   }
 
   if (payload["battery"] == undefined) {
-    return "";
+    return "fa fa-plug";
   }
 
   var batteryClass = "";

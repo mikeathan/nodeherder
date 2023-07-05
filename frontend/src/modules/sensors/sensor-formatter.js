@@ -32,19 +32,13 @@ const typeToClassMap = {
   holidays_schedule: "fa-calendar-day",
   away_mode: "fa-plane",
 };
-
-const sensorsWhitelist = {
-  temperature: "Temperature",
-  pressure: "Pressure",
-  humidity: "Humidity",
-};
-
 const sensorUnits = {
   temperature: "°C",
   pressure: "$hPa",
   humidity: "%",
   voltage: "mV",
   linkquality: "LQI",
+  illuminance_lux: "lux",
 };
 
 function getUnit(sensor) {
@@ -58,10 +52,6 @@ export function getSensorName(sensor) {
 }
 export function getSensorValue(sensor, value) {
   return value.toFixed(1) + getUnit(sensor);
-}
-
-export function isSensorWhitelisted(reading) {
-  return sensorsWhitelist[reading] != undefined;
 }
 
 export function getSensorIcon(sensor, value) {
