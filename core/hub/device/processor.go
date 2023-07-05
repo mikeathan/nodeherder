@@ -33,8 +33,8 @@ var batterKey = "battery"
 var mainsKey = "Mains (single phase)"
 
 type NodePayload struct {
-	Id          string
-	PowerSource string
+	Id          string `json:"id"`
+	PowerSource string `json:"power_source"`
 	checksum    string
 	Sensor      map[string]any `json:"sensor"`
 	Device      map[string]any `json:"device"`
