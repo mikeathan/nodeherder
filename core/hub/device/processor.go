@@ -26,6 +26,7 @@ var deviceWhitelist = map[string]int{
 	"power_source": 3,
 	"availability": 4,
 	"last_seen":    5,
+	"voltage":      6,
 }
 
 var lastSeenKey = "last_seen"
