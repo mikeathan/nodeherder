@@ -1,6 +1,7 @@
 <script setup>
 import { watch, ref, onMounted, onUnmounted } from "vue";
 import "../../assets/css/device.styles.css";
+import "../../assets/css/dark.css";
 import DeviceFormatter from "../../modules/sensors/device-formatter";
 const props = defineProps({
   payload: Object,
@@ -33,13 +34,18 @@ onUnmounted(() => {
 
 <template>
   <div class="card-text">
-    <span style="margin-right: 4.5rem">
-      {{ lastSeen }}
-    </span>
-    <span :class="`fa fa-fw ${formatter.linkQualityIconClass}`" class="device-info-span"></span>
-    <span class="device-info-span">
-      {{ formatter.linkQuality }}
-    </span>
-    <span :class="`fa fa-fw ${formatter.powerSourceIconClass}`"></span>
+    <div className="row justify-content-between flex-nowrap">
+      <div title="last update" className="col text-truncate">
+        {{ lastSeen }}
+      </div>
+
+      <div className="col-auto text-truncate">
+        <span key="linkquality" className="me-1">
+          <i :class="`fa fa-fw ${formatter.linkQualityIconClass}`"></i>
+          {{ formatter.linkQuality }}
+        </span>
+        <span :class="`fa fa-fw ${formatter.powerSourceIconClass}`"></span>
+      </div>
+    </div>
   </div>
 </template>
