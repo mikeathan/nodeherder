@@ -1,7 +1,6 @@
 <script setup>
 import { watch, ref, onMounted, onUnmounted } from "vue";
-import "../../assets/css/device.styles.css";
-import "../../assets/css/dark.css";
+
 import DeviceFormatter from "../../modules/sensors/device-formatter";
 const props = defineProps({
   payload: Object,
@@ -33,7 +32,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="card-text">
+  <div class="card-footer">
     <div className="row justify-content-between flex-nowrap">
       <div title="last update" className="col text-truncate">
         {{ lastSeen }}
