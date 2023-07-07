@@ -1,37 +1,43 @@
-const typeToClassMap = {
-  temperature: "fa-thermometer-full",
-  humidity: "fa-tint",
+const typeToClassMapsensor = {
+  humidity: "text-info fa-tint",
   illuminance: "fa-sun",
   pressure: "fa-cloud-download-alt",
-  co2: "text-warning",
-  voltage: "text-success",
+  co2: "fa-atom text-warning",
+  voltage: "fa-bolt text-success",
   state: "fa-star-half-alt",
   brightness: "fa-sun",
-  occupancy: "fa-walking",
-  current: "fa-copyright",
-  power: "fa-power-off",
-  energy: "fa-plug",
+  occupancy: "text-warning fa-walking",
+  current: "fa-copyright text-warning",
+  power: "fa-power-off text-success",
+  energy: "fa-plug text-info",
   frequency: "fa-wave-square",
-  tamper: "fa-exclamation-circle",
-  smoke: "fa-smoking",
-  radiation_dose_per_hour: "fa-radiation",
-  radioactive_events_per_minute: "fa-radiation-alt",
-  power_factor: "fa-industry",
-  mode: "fa-user-cog",
-  sound: "fa-volume-up",
-  position: "fa-percent",
-  alarm: "fa-exclamation-triangle",
+  tamper: "text-warning fa-exclamation-circle text-danger",
+  smoke: "fa-smoking text-danger",
+  radiation_dose_per_hour: "fa-radiation text-danger",
+  radioactive_events_per_minute: "fa-radiation-alt text-warning",
+  power_factor: "fa-industry text-danger",
+  mode: "fa-user-cog text-warning",
+  sound: "fa-volume-up text-info",
+  position: "fa-percent text-info",
+  alarm: "fa-exclamation-triangle text-danger",
   color_xy: "fa-palette",
   color_hs: "fa-palette",
   color_temp: "fa-sliders-h",
   illuminance_lux: "fa-sun",
   soil_moisture: "fa-fill-drip",
-  water_leak: "fa-water",
+  water_leak: "fa-beat-fade text-primary fa-water",
   week: "fa-calendar-week",
-  workdays_schedule: "fa-calendar-day",
-  holidays_schedule: "fa-calendar-day",
-  away_mode: "fa-plane",
+  workdays_schedule: "fa-calendar-day text-info",
+  holidays_schedule: "fa-calendar-day text-danger",
+  away_mode: "fa-plane text-info",
+  vibration: "fa-shake fa-rotate-270 text-primary fa-water fa-rotate-270",
+  power_outage_count: "fa-plug-circle-xmark",
+  angle_x: "fa-x",
+  angle_y: "fa-y",
+  angle_z: "fa-z",
+  side: "fa-cube",
 };
+
 const sensorUnits = {
   temperature: "°C",
   pressure: "hPa",
@@ -65,11 +71,11 @@ export function getSensorIcon(sensor, value) {
     case "device_temperature":
     case "temperature":
     case "local_temperature":
-      typeToClassMap[sensor] = getTemperatureIcon(value);
+      typeToClassMapsensor[sensor] = getTemperatureIcon(value);
       break;
   }
 
-  return typeToClassMap[sensor];
+  return typeToClassMapsensor[sensor];
 }
 
 const getTemperatureIcon = (temperature) => {
@@ -86,59 +92,3 @@ const getTemperatureIcon = (temperature) => {
   // user "text-danger".join(icon);
   return "text-danger " + icon;
 };
-
-// case 'contact':
-//   classes.push(cx({ 'fa-door-closed text-muted': value, 'fa-door-open text-primary': !value }));
-//   break;
-// case 'occupancy':
-//   classes.push(cx({ 'text-warning': value }));
-//   break;
-// case 'tamper':
-//   classes.push(cx({ 'fa-beat-fade': value }));
-//   break;
-// case 'water_leak':
-//   classes.push(cx({ 'fa-beat-fade text-primary': value }));
-//   break;
-// case 'vibration':
-//   classes.push(cx({ 'fa-shake fa-rotate-270 text-primary': value }));
-//   break;
-
-// const typeToClassMap = {
-//   humidity: ['text-info', 'fa-tint'],
-//   illuminance: ['fa-sun'],
-//   pressure: ['fa-cloud-download-alt'],
-//   co2: ['fa-atom', 'text-warning'],
-//   voltage: ['fa-bolt', 'text-success'],
-//   state: ['fa-star-half-alt'],
-//   brightness: ['fa-sun'],
-//   occupancy: ['fa-walking'],
-//   current: ['fa-copyright', 'text-warning'],
-//   power: ['fa-power-off', 'text-success'],
-//   energy: ['fa-plug', 'text-info'],
-//   frequency: ['fa-wave-square'],
-//   tamper: ['fa-exclamation-circle', 'text-danger'],
-//   smoke: ['fa-smoking', 'text-danger'],
-//   radiation_dose_per_hour: ['fa-radiation', 'text-danger'],
-//   radioactive_events_per_minute: ['fa-radiation-alt', 'text-warning'],
-//   power_factor: ['fa-industry', 'text-danger'],
-//   mode: ['fa-user-cog', 'text-warning'],
-//   sound: ['fa-volume-up', 'text-info'],
-//   position: ['fa-percent', 'text-info'],
-//   alarm: ['fa-exclamation-triangle', 'text-danger'],
-//   color_xy: ['fa-palette'],
-//   color_hs: ['fa-palette'],
-//   color_temp: ['fa-sliders-h'],
-//   illuminance_lux: ['fa-sun'],
-//   soil_moisture: ['fa-fill-drip'],
-//   water_leak: ['fa-water'],
-//   week: ['fa-calendar-week'],
-//   workdays_schedule: ['fa-calendar-day', 'text-info'],
-//   holidays_schedule: ['fa-calendar-day', 'text-danger'],
-//   away_mode: ['fa-plane', 'text-info'],
-//   vibration: ['fa-water fa-rotate-270'],
-//   power_outage_count: ['fa-plug-circle-xmark'],
-//   angle_x: ['fa-x'],
-//   angle_y: ['fa-y'],
-//   angle_z: ['fa-z'],
-//   side: ['fa-cube'],
-// };
