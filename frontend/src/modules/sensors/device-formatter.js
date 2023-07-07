@@ -1,5 +1,6 @@
 import moment from "moment";
 import "moment-timezone";
+import { format } from "timeago.js";
 import { isProxy, toRaw } from "vue";
 
 export default class DeviceFormatter {
@@ -58,6 +59,8 @@ function formatLastSeen(payload) {
   var duration = moment.duration(diff);
 
   var formatted = "just now";
+  // chnage that with lib
+
   // TODO: handle days() > 0
   if (duration.hours() > 0) {
     formatted = duration.hours() + " hours ago";
