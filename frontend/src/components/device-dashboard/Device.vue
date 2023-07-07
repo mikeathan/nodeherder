@@ -17,11 +17,8 @@ const props = defineProps({
       <div class="card-header pb-0 d-flex justify-content-between">
         {{ device.id }}
       </div>
-      <div
-        class="card-body row align-items-center"
-        v-for="(value, sensor) in device.payload.sensors"
-      >
-        <div class="d-flex align-items-center">
+      <div class="card-body row align-items-center">
+        <div class="d-flex align-items-center" v-for="(value, sensor) in device.payload.sensors">
           <div class="me-1">
             <i :class="`fa fa-fw ${getSensorIcon(sensor)}`"></i>
           </div>
@@ -33,7 +30,6 @@ const props = defineProps({
           </div>
         </div>
       </div>
-      <p></p>
       <DeviceFooter :payload="device.payload"></DeviceFooter>
     </div>
   </div>
