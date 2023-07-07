@@ -16,6 +16,7 @@
     "express-ws": "^5.0.2",
     "moment": "^2.29.4",
     "moment-timezone": "^0.5.43",
+    "timeago": "^1.6.7",
     "vue": "^3.2.13",
     "vuex": "^4.0.2",
     "vuex-persistedstate": "^4.1.0"

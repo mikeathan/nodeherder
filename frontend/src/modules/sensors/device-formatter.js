@@ -58,8 +58,9 @@ function formatLastSeen(payload) {
   var diff = moment().diff(lastSeen);
   var duration = moment.duration(diff);
 
+  // TODO:
+  format(lastSeen, i18n.language) ????
   var formatted = "just now";
-  // chnage that with lib
 
   // TODO: handle days() > 0
   if (duration.hours() > 0) {
