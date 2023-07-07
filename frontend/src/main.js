@@ -7,7 +7,6 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap";
 
 import "./assets/css/styles.global.css";
-import "./assets/css/device.styles.css";
 import "./assets/css/dark.css";
 
 const app = createApp(App);
