@@ -1,0 +1,70 @@
+@keyframes blinker {
+  50% {
+    opacity: 0;
+  }
+}
+body {
+  overflow-y: auto !important;
+}
+
+.animation-blinking {
+  animation: blinker 1s linear infinite;
+}
+
+.content {
+  overflow-y: auto;
+}
+
+.stroke-blink-enter {
+  stroke-width: 1;
+}
+
+.stroke-blink-enter-active {
+  stroke-width: 5;
+  transition: stroke-width 200ms;
+}
+
+.stroke-blink-exit {
+  stroke-width: 5;
+}
+
+.stroke-blink-exit-active {
+  stroke-width: 1;
+  transition: stroke-width 200ms;
+}
+
+.glyphicon {
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+  -webkit-font-smoothing: antialiased;
+  display: inline-block;
+  font-style: normal;
+  font-variant: normal;
+  text-rendering: auto;
+  line-height: 1;
+}
+
+.glyphicon-plus::before {
+  content: "\f067";
+}
+
+.glyphicon-remove::before {
+  content: "\f068";
+}
+
+.glyphicon-arrow-up::before {
+  content: "\f062";
+}
+
+.glyphicon-arrow-down::before {
+  content: "\f063";
+}
+
+.dropdown-menu {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.rjsf .form-label:empty {
+  display: none;
+}

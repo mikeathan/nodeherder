@@ -10,7 +10,12 @@ div {
 </style>
 
 <template>
-  <h1>{{ title }}</h1>
-
-  <Dashboard />
+  <div class="main">
+    <nav class="navbar navbar-expand-md navbar-light">
+      <div class="container-fluid">
+        <a href="#/">{{ title }}</a>
+      </div>
+    </nav>
+    <Dashboard />
+  </div>
 </template>

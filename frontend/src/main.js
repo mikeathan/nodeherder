@@ -5,6 +5,8 @@ import "./services/ws.js";
 import "@fortawesome/fontawesome-free/css/all.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap";
+
+import "./assets/css/styles.global.css";
 import "./assets/css/device.styles.css";
 import "./assets/css/dark.css";
 
