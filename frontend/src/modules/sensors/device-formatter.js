@@ -1,6 +1,6 @@
 import moment from "moment";
 import "moment-timezone";
-//import { format } from "timeago.js";
+import { format } from "timeago.js";
 import { isProxy, toRaw } from "vue";
 
 export default class DeviceFormatter {
@@ -53,27 +53,7 @@ function formatLastSeen(payload) {
   }
 
   var sensorLastSeen = payload["last_seen"];
-
-  var lastSeen = moment(sensorLastSeen);
-  var diff = moment().diff(lastSeen);
-  var duration = moment.duration(diff);
-
-  // TODO:
-  // format(lastSeen, i18n.language) ????
-  var formatted = "just now";
-
-  // TODO: handle days() > 0
-  if (duration.hours() > 0) {
-    formatted = duration.hours() + " hours ago";
-  }
-  if (duration.minutes() > 0) {
-    formatted = duration.minutes() + " minutes ago";
-  }
-  if (duration.seconds() > 5) {
-    formatted = duration.seconds() + " seconds ago";
-  }
-
-  return formatted;
+  return format(sensorLastSeen, "en_UK");
 }
 
 function getPowerSourceIcon(payload) {
