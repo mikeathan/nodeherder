@@ -149,6 +149,7 @@ function mockMqttTHDevicePayload(state, settings) {
   var device = {
     id: settings.name,
     type: "mqtt",
+    power_source: "battery",
     sensors: {
       humidity: getMockHumidity(settings),
       temperature: getMockTemperature(settings),
@@ -168,6 +169,7 @@ function mockMqttPresenceDevicePayload(state, settings) {
   var device = {
     id: settings.name,
     type: "mqtt",
+    power_source: "mains",
     sensors: {
       presence: false,
       illuminance_lux: 103,
