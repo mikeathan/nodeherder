@@ -32,6 +32,7 @@ console.log("[" + currentTime() + "] server listening at port " + port);
 let devicesConfig = [
   {
     name: "device 1",
+    method: "mqtt",
     type: "TH",
     temperatureOffset: 0.6,
     humidityOffset: 11.3,
@@ -43,6 +44,7 @@ let devicesConfig = [
   },
   {
     name: "device 2",
+    method: "mqtt",
     type: "presence",
     presence: true,
     luminance_lux_offset: 12,
@@ -50,6 +52,18 @@ let devicesConfig = [
     luminance_lux: luminance_luxMin,
     luminance_luxLastChanged: moment(),
     presenceLastChanged: moment(),
+  },
+  {
+    name: "device 3",
+    method: "http",
+    type: "TH",
+    temperatureOffset: 0.1,
+    humidityOffset: 15.9,
+    delayInMs: 40000,
+    humidity: humidityMin + 11,
+    temperature: temperatureMin,
+    temperatureLastChanged: moment(),
+    humidityLastChanged: moment(),
   },
 ];
 
@@ -90,10 +104,16 @@ function onConnectBuildPayload(devicesConfig) {
 
 function buildPayload(status, settings) {
   var payload;
-  if (settings.type == "TH") {
-    payload = mockTHDevicePayload(status, settings);
-  } else if (settings.type == "presence") {
-    payload = mockPresenceDevicePayload(status, settings);
+  if (settings.method == "mqtt") {
+    if (settings.type == "TH") {
+      payload = mockMqttTHDevicePayload(status, settings);
+    } else if (settings.type == "presence") {
+      payload = mockMqttPresenceDevicePayload(status, settings);
+    }
+  } else if (settings.method == "http") {
+    if (settings.type == "TH") {
+      payload = mockHttpTHDevicePayload(status, settings);
+    }
   }
 
   var data = {
@@ -107,10 +127,28 @@ function currentTime() {
   var isoNow = moment().tz("Europe/London");
   return isoNow.format();
 }
-
-function mockTHDevicePayload(state, settings) {
+function mockHttpTHDevicePayload(state, settings) {
   var device = {
     id: settings.name,
+    type: "http",
+    sensors: {
+      humidity: getMockHumidity(settings),
+      temperature: getMockTemperature(settings),
+      pressure: 68,
+    },
+    stats: {
+      availability: "online",
+      last_seen: currentTime(),
+    },
+  };
+
+  return device;
+}
+
+function mockMqttTHDevicePayload(state, settings) {
+  var device = {
+    id: settings.name,
+    type: "mqtt",
     sensors: {
       humidity: getMockHumidity(settings),
       temperature: getMockTemperature(settings),
@@ -126,9 +164,10 @@ function mockTHDevicePayload(state, settings) {
   return device;
 }
 
-function mockPresenceDevicePayload(state, settings) {
+function mockMqttPresenceDevicePayload(state, settings) {
   var device = {
     id: settings.name,
+    type: "mqtt",
     sensors: {
       presence: false,
       illuminance_lux: 103,
