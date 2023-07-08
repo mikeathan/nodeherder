@@ -1,5 +1,5 @@
 <script setup>
-import DeviceFooter from "./DeviceFooter.vue";
+import DeviceFooter from "./DeviceCardFooter.vue";
 
 import {
   getSensorValue,
