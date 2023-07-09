@@ -82,3 +82,11 @@ Setting configuration for devices
 Triggers and binding
 Add api endpoint for collecting data from WiFi sensors
 Circuit breaker
+
+http
+conn="http"
+power_source NULL or [VALUE]
+
+mqtt
+conn="mqtt"
+power_source battery or mains

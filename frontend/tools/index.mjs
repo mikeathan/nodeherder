@@ -130,7 +130,7 @@ function currentTime() {
 function mockHttpTHDevicePayload(state, settings) {
   var device = {
     id: settings.name,
-    connection: "http",
+    conn: "http",
     power_source: "", // unknown
     sensors: {
       humidity: getMockHumidity(settings),
@@ -149,7 +149,7 @@ function mockHttpTHDevicePayload(state, settings) {
 function mockMqttTHDevicePayload(state, settings) {
   var device = {
     id: settings.name,
-    connection: "mqtt",
+    conn: "mqtt",
     power_source: "battery",
     sensors: {
       humidity: getMockHumidity(settings),
@@ -169,7 +169,7 @@ function mockMqttTHDevicePayload(state, settings) {
 function mockMqttPresenceDevicePayload(state, settings) {
   var device = {
     id: settings.name,
-    connection: "mqtt",
+    conn: "mqtt",
     power_source: "mains",
     sensors: {
       presence: false,
