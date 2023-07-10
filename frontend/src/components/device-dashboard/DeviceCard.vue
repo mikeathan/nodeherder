@@ -1,11 +1,7 @@
 <script setup>
 import DeviceFooter from "./DeviceCardFooter.vue";
 import Availability from "../device/Availability.vue";
-import {
-  getSensorValue,
-  getSensorIcon,
-  getSensorName,
-} from "../../modules/sensors/sensor-formatter";
+import Sensor from "../device/Sensor.vue";
 
 const props = defineProps({
   device: Object,
@@ -20,19 +16,8 @@ const props = defineProps({
       </div>
 
       <div class="card-body row align-items-center">
-        <div
-          class="d-flex align-items-center"
-          v-for="(value, sensor) in device.sensors"
-        >
-          <div class="me-1">
-            <i :class="`fa fa-fw ${getSensorIcon(sensor)}`"></i>
-          </div>
-          <div class="flex-shrink-1 flex-grow-1">
-            {{ getSensorName(sensor) }}
-          </div>
-          <div class="flex-shrink-1">
-            {{ getSensorValue(sensor, value) }}
-          </div>
+        <div class="d-flex align-items-center" v-for="(value, sensor) in device.sensors">
+          <Sensor :name="sensor" :value="value" />
         </div>
       </div>
       <DeviceFooter :payload="device"></DeviceFooter>
