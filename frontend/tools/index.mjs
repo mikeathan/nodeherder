@@ -67,6 +67,11 @@ let devicesConfig = [
   },
 ];
 
+// should be
+//{"type":"deviceUpdated","payload":{"id":"device1","sensors":{"humidity":71.2,"temperature":15.6},"stats":{"availability":"online","battery":98,"last_seen":"2023-07-10T09:08:15+01:00","linkquality":36.1}}}
+// is
+// {"type":"deviceUpdated","payload":{"id":"device 2","payload":{"id":"device 2","conn":"mqtt","power_source":"mains","sensors":{"presence":false,"illuminance_lux":103},"stats":{"availability":"online","last_seen":"2023-07-10T09:04:18+01:00","linkquality":67}}}}
+
 expressWs(app, server);
 
 // Get the /ws websocket route
@@ -116,17 +121,14 @@ function buildPayload(status, settings) {
     }
   }
 
-  var data = {
-    id: settings.name,
-    payload: payload,
-  };
-  return data;
+  return payload;
 }
 
 function currentTime() {
   var isoNow = moment().tz("Europe/London");
   return isoNow.format();
 }
+
 function mockHttpTHDevicePayload(state, settings) {
   var device = {
     id: settings.name,

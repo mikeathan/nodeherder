@@ -18,7 +18,10 @@ const props = defineProps({
         {{ device.id }}
       </div>
       <div class="card-body row align-items-center">
-        <div class="d-flex align-items-center" v-for="(value, sensor) in device.payload.sensors">
+        <div
+          class="d-flex align-items-center"
+          v-for="(value, sensor) in device.sensors"
+        >
           <div class="me-1">
             <i :class="`fa fa-fw ${getSensorIcon(sensor)}`"></i>
           </div>
@@ -30,7 +33,7 @@ const props = defineProps({
           </div>
         </div>
       </div>
-      <DeviceFooter :payload="device.payload"></DeviceFooter>
+      <DeviceFooter :payload="device"></DeviceFooter>
     </div>
   </div>
 </template>
