@@ -61,9 +61,7 @@ export function getSensorValue(sensor, value) {
     return value;
   }
   // todo : dont format integer values
-  // todo;
-  // format value with space and unit
-  return value.toFixed(1) + getUnit(sensor);
+  return `${value.toFixed(1)} ${getUnit(sensor)}`;
 }
 
 export function getSensorIcon(sensor, value) {
@@ -89,6 +87,5 @@ const getTemperatureIcon = (temperature) => {
   } else if (temperature >= 15) {
     icon = "fa-thermometer-quarter";
   }
-  // user "text-danger".join(icon);
   return "text-danger " + icon;
 };
