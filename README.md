@@ -90,3 +90,5 @@ power_source NULL or [VALUE]
 mqtt
 conn="mqtt"
 power_source battery or mains
+
+{"type":"deviceUpdated","payload":{"id":"device1","sensors":{"humidity":71.2,"temperature":15.6},"stats":{"availability":"online","battery":98,"last_seen":"2023-07-10T09:08:15+01:00","linkquality":36.1}}}
