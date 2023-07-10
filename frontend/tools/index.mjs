@@ -140,7 +140,7 @@ function mockHttpTHDevicePayload(state, settings) {
       pressure: 68,
     },
     stats: {
-      availability: "online",
+      availability: "offline",
       last_seen: currentTime(),
     },
   };

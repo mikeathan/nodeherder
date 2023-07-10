@@ -1,6 +1,6 @@
 <script setup>
 import DeviceFooter from "./DeviceCardFooter.vue";
-
+import Availability from "../device/Availability.vue";
 import {
   getSensorValue,
   getSensorIcon,
@@ -16,7 +16,9 @@ const props = defineProps({
     <div class="card flex-fill flex-shrink-1">
       <div class="card-header pb-0 d-flex justify-content-between">
         {{ device.id }}
+        <Availability :status="device.stats.availability" />
       </div>
+
       <div class="card-body row align-items-center">
         <div
           class="d-flex align-items-center"

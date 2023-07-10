@@ -36,6 +36,7 @@ const typeToClassMapsensor = {
   angle_y: "fa-y",
   angle_z: "fa-z",
   side: "fa-cube",
+  presence: "fa-light fa-person", // <i class="fa-solid fa-person"></i>
 };
 
 const sensorUnits = {
