@@ -1,6 +1,7 @@
 <script setup>
 import { watch, ref, onMounted, onUnmounted } from "vue";
-
+import LinkQuality from "../device/LinkQuality.vue";
+import PowerSource from "../device/PowerSource.vue";
 import DeviceFormatter from "../../modules/sensors/device-formatter";
 const props = defineProps({
   payload: Object,
@@ -39,11 +40,11 @@ onUnmounted(() => {
       </div>
 
       <div className="col-auto text-truncate">
-        <span key="linkquality" className="me-1">
-          <i :class="`fa fa-fw ${formatter.linkQualityIconClass}`"></i>
-          {{ formatter.linkQuality }}
-        </span>
-        <span :class="`fa fa-fw ${formatter.powerSourceIconClass}`"></span>
+        <LinkQuality :value="this.payload.stats.linkquality" />
+        <PowerSource
+          :power_source="this.payload.power_source"
+          :value="this.payload.stats.battery"
+        />
       </div>
     </div>
   </div>

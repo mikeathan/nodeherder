@@ -1,4 +1,3 @@
-import moment from "moment";
 import "moment-timezone";
 import { format } from "timeago.js";
 import { isProxy, toRaw } from "vue";
@@ -33,9 +32,6 @@ export default class DeviceFormatter {
       stats = toRaw(stats);
     }
     this.lastSeen = formatLastSeen(stats);
-    this.linkQuality = formatLinkQuality(stats);
-    this.powerSourceIconClass = getPowerSourceIcon(stats);
-    this.linkQualityIconClass = getLinkQualityIcon(stats);
 
     if (isCallback(updaterCallback)) {
       this.startLastSeenUpdater(stats, updaterCallback);
@@ -56,13 +52,16 @@ function formatLastSeen(payload) {
   return format(sensorLastSeen, "en_UK");
 }
 
-function getPowerSourceIcon(payload) {
-  if (payload["battery"] == undefined) {
+export function getPowerSourceIcon(power_source, value) {
+  if (power_source == "") {
+    return "";
+  }
+  if (power_source === "mains") {
     return "fa fa-plug";
   }
 
   var batteryClass = "";
-  var battery = payload["battery"];
+  var battery = value;
   if (battery >= 85) {
     batteryClass += " fa-battery-full";
   } else if (battery >= 75) {
@@ -77,23 +76,8 @@ function getPowerSourceIcon(payload) {
     return `animation-blinking text-danger`;
   }
 
-  /* // caption
-  // var title = `${battery ? `, power_level` + ` ${battery}%` : ""}`; */
   if (!batteryClass) {
     batteryClass = "fa-question";
   }
   return batteryClass;
-}
-function getLinkQualityIcon() {
-  return "fa-signal fa-fw";
-}
-
-function formatLinkQuality(payload) {
-  if (payload["linkquality"] == undefined) {
-    return "";
-  }
-
-  var linkQuality = payload["linkquality"];
-
-  return linkQuality + " LQI";
 }
