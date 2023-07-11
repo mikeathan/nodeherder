@@ -18,6 +18,7 @@
     "moment-timezone": "^0.5.43",
     "timeago.js": "^4.0.2",
     "vue": "^3.2.13",
+    "vue-router": "4",
     "vuex": "^4.0.2",
     "vuex-persistedstate": "^4.1.0"
   },

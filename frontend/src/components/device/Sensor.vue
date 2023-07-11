@@ -7,7 +7,7 @@ import {
 
 const props = defineProps({
     name: String,
-    value: Number,
+    value: Number | Boolean,
 });
 </script>
 <template>
