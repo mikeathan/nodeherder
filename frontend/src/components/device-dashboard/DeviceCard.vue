@@ -12,12 +12,13 @@ const props = defineProps({
     <div class="card flex-fill flex-shrink-1">
       <div class="card-header pb-0 d-flex justify-content-between">
         <Availability :status="device.stats.availability" />
-        <div class="card-body row align-items-center">
-          <div class="d-flex align-items-center" v-for="(value, sensor) in device.sensors">
-            <Sensor :name="sensor" :value="value" />
-          </div>
-        </div>
-        <DeviceFooter :payload="device"></DeviceFooter>
       </div>
+      <div class="card-body row align-items-center">
+        <div class="d-flex align-items-center" v-for="(value, sensor) in device.sensors">
+          <Sensor :name="sensor" :value="value" />
+        </div>
+      </div>
+      <DeviceFooter :payload="device"></DeviceFooter>
     </div>
+  </div>
 </template>
