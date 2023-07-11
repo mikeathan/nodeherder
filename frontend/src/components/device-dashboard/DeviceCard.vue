@@ -11,6 +11,7 @@ const props = defineProps({
   <div class="col-xl-3 col-lg-4 col-sm-6 col-12 d-flex">
     <div class="card flex-fill flex-shrink-1">
       <div class="card-header pb-0 d-flex justify-content-between">
+        <router-link to="/devicepage">{{ device.id }}</router-link> |
         <Availability :status="device.stats.availability" />
       </div>
       <div class="card-body row align-items-center">
