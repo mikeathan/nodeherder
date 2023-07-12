@@ -9,61 +9,56 @@ const props = defineProps({
 });
 
 
-// const User = {
-//   // make sure to add a prop named exactly like the route param
-//   props: ['id'],
-//   template: '<div>User {{ id }}</div>'
-// }
+const User = {
+  // make sure to add a prop named exactly like the route param
+  props: ['id'],
+  template: '<div>User {{ id }}</div>'
+}
 // const routes = [{ path: '/user/:id', component: User, props: true }]
 const displayProps = [
   {
-    // translationKey: "Friendly name",
-    // render: () => (
-    //   <dd className="col-12 col-md-7">
-    //     <strong>{device.id}</strong>
-    //   </dd>
-    // ),
-    // translationKey: "Connection Type",
-    // render: () => (
-    //   <dd className="col-12 col-md-7">
-    //     <strong>{device.conn}</strong>
-    //   </dd>
-    // ),
-    // translationKey: "Last seen",
-    // render: () => (
-    //   <dd className="col-12 col-md-7">
-    //     <strong> WIP</strong>
-    //   </dd>
-    // ),
-    // translationKey: "Availability",
-    // render: () => (
-    //   <dd className="col-12 col-md-7">
-    //     <strong> WIP</strong>
-    //   </dd>
-    // ),
-    // translationKey: "Availability",
-    // render: () => (
-    //   <dd className="col-12 col-md-7">
-    //     <strong> WIP</strong>
-    //   </dd>
-    // ),
-    // translationKey: "Power source",
-    // render: () => (
-    //   <dd className="col-12 col-md-7">
-    //     <strong> WIP</strong>
-    //   </dd>
-    // ),
+    key: "Friendly name",
+    value: device.id
+  }
+  ,
+  {
+    key: "Connection Type",
+    value: device.conn
   },
+  {
+    key: "Last seen",
+    value: device.stats.lastSeen
+  },
+  {
+    key: "Availability",
+    value: device.stats.availability
+  }, {
+    key: "Power source",
+    value: device.power_source
+  },
+  {
+    key: "Power source",
+    value: device.power_source
+  }
+
+  // translationKey: "Last seen",
+  // render: () => (
+  //   <dd className="col-12 col-md-7">
+  //     <strong> WIP</strong>
+  //   </dd>
+
 ];
 </script>
 <template>
   <h1>
     {{ id }}
   </h1>
-  <div>availability: {{ device.stats.availability }}</div>
+  <div>Availability: {{ device.stats.availability }}</div>
 
-  <!-- <dl className="row" v-for="(key, value) in displayProps">
-    <dt className="col-12 col-md-5">{key}</dt>
-  </dl> -->
-  <!-- add device control -->
+  <dl className="row" v-for="(key, value) in displayProps">
+    <dt className="col-12 col-md-5">{{ key }}</dt>
+    <dd className="col-12 col-md-7">
+      <strong> {{ value }}</strong>
+    </dd>
+  </dl>
 </template>
