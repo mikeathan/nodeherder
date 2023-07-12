@@ -9,11 +9,7 @@ const props = defineProps({
 });
 
 
-const User = {
-  // make sure to add a prop named exactly like the route param
-  props: ['id'],
-  template: '<div>User {{ id }}</div>'
-}
+
 // const routes = [{ path: '/user/:id', component: User, props: true }]
 const displayProps = [
   {
