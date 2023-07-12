@@ -3,11 +3,18 @@ import { useStore } from "vuex";
 import { computed } from "vue";
 
 const store = useStore();
-const device = computed(() => store.getters.findDevice(id));
+const device = computed(() => store.getters.findDevice(props.id));
 const props = defineProps({
   id: String,
 });
 
+
+// const User = {
+//   // make sure to add a prop named exactly like the route param
+//   props: ['id'],
+//   template: '<div>User {{ id }}</div>'
+// }
+// const routes = [{ path: '/user/:id', component: User, props: true }]
 const displayProps = [
   {
     // translationKey: "Friendly name",
@@ -50,9 +57,13 @@ const displayProps = [
 ];
 </script>
 <template>
-  TEST DEVICE PAGE
-  <dl className="row" v-for="(key, value) in displayProps">
+  <h1>
+    {{ id }}
+  </h1>
+  <div>availability: {{ device.stats.availability }}</div>
+
+  <!-- <dl className="row" v-for="(key, value) in displayProps">
     <dt className="col-12 col-md-5">{key}</dt>
-  </dl>
+  </dl> -->
   <!-- add device control -->
 </template>

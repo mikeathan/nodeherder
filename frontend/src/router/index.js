@@ -10,10 +10,10 @@ const router = createRouter({
       component: Dashboard,
     },
     {
-      path: "/devicepage:id",
+      path: "/devicepage/:id",
       name: "devicepage",
       component: DevicePage,
-      props: (route) => ({ id: route.query.id }),
+      props: true,
     },
     {
       path: "/dashboard",
