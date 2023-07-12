@@ -16,6 +16,6 @@ div {
         <a href="#/">{{ title }}</a>
       </div>
     </nav>
-    <Dashboard />
+    <RouterView />
   </div>
 </template>
