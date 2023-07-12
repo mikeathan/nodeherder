@@ -28,6 +28,9 @@ const mutations = {
 
 const getters = {
   devices: (state) => state.devices,
+  findDevice: (state) => (id) => {
+    return state.devices.find((d) => d.id === id);
+  },
 };
 
 const plugins = [createPersistedState()];

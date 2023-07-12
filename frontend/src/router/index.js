@@ -6,14 +6,18 @@ const router = createRouter({
   routes: [
     {
       path: "/",
+      name: "home",
       component: Dashboard,
     },
     {
-      path: "/devicepage",
+      path: "/devicepage:id",
+      name: "devicepage",
       component: DevicePage,
+      props: (route) => ({ id: route.query.id }),
     },
     {
       path: "/dashboard",
+      name: "dashboard",
       component: Dashboard,
     },
   ],

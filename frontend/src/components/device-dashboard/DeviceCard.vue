@@ -2,7 +2,7 @@
 import DeviceFooter from "./DeviceCardFooter.vue";
 import Availability from "../device/Availability.vue";
 import Sensor from "../device/Sensor.vue";
-
+import { RouterLink } from "vue-router";
 const props = defineProps({
   device: Object,
 });
@@ -11,11 +11,14 @@ const props = defineProps({
   <div class="col-xl-3 col-lg-4 col-sm-6 col-12 d-flex">
     <div class="card flex-fill flex-shrink-1">
       <div class="card-header pb-0 d-flex justify-content-between">
-        <router-link to="/devicepage">{{ device.id }}</router-link> |
+        <RouterLink to="'/devicepage'+{device.id}'">{{ device.id }}</RouterLink>
         <Availability :status="device.stats.availability" />
       </div>
       <div class="card-body row align-items-center">
-        <div class="d-flex align-items-center" v-for="(value, sensor) in device.sensors">
+        <div
+          class="d-flex align-items-center"
+          v-for="(value, sensor) in device.sensors"
+        >
           <Sensor :name="sensor" :value="value" />
         </div>
       </div>

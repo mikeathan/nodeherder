@@ -1,7 +1,13 @@
 <script setup>
+import { useStore } from "vuex";
+import { computed } from "vue";
+
+const store = useStore();
+const device = computed(() => store.getters.findDevice(id));
 const props = defineProps({
-  // device: Object,
+  id: String,
 });
+
 const displayProps = [
   {
     // translationKey: "Friendly name",
