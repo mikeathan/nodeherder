@@ -1,60 +1,53 @@
 <script setup>
 import { useStore } from "vuex";
 import { computed } from "vue";
+import { useRouter } from "vue-router";
+
+const previousPage = computed(() => {
+  const lastPath = useRouter().options.history.state.back;
+  return lastPath;
+});
 
 const store = useStore();
-const device = computed(() => store.getters.findDevice(props.id));
+const displayProps = computed(() => {
+  const device = store.getters.findDevice(props.id);
+  if (device == undefined) {
+    return [];
+  }
+  return [
+    {
+      key: "Friendly name:",
+      value: device.id,
+    },
+    {
+      key: "Connection Type:",
+      value: device.conn,
+    },
+    {
+      key: "Availability:",
+      value: device.stats.availability,
+    },
+    {
+      key: "Last seen:",
+      value: device.stats.last_seen,
+    },
+    {
+      key: "Power source:",
+      value: device.power_source,
+    },
+  ];
+});
+
 const props = defineProps({
   id: String,
 });
-
-
-
-// const routes = [{ path: '/user/:id', component: User, props: true }]
-const displayProps = [
-  {
-    key: "Friendly name",
-    value: device.id
-  }
-  ,
-  {
-    key: "Connection Type",
-    value: device.conn
-  },
-  {
-    key: "Last seen",
-    value: device.stats.lastSeen
-  },
-  {
-    key: "Availability",
-    value: device.stats.availability
-  }, {
-    key: "Power source",
-    value: device.power_source
-  },
-  {
-    key: "Power source",
-    value: device.power_source
-  }
-
-  // translationKey: "Last seen",
-  // render: () => (
-  //   <dd className="col-12 col-md-7">
-  //     <strong> WIP</strong>
-  //   </dd>
-
-];
 </script>
 <template>
-  <h1>
-    {{ id }}
-  </h1>
-  <div>Availability: {{ device.stats.availability }}</div>
-
-  <dl className="row" v-for="(key, value) in displayProps">
-    <dt className="col-12 col-md-5">{{ key }}</dt>
+  <h1>{{ id }}</h1>
+  <dl className="row" v-for="(prop, idx) in displayProps">
+    <dt className="col-12 col-md-5">{{ prop.key }}</dt>
     <dd className="col-12 col-md-7">
-      <strong> {{ value }}</strong>
+      <strong> {{ prop.value }}</strong>
     </dd>
   </dl>
 </template>
