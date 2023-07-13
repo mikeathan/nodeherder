@@ -4,8 +4,7 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 
 const previousPage = computed(() => {
-  const lastPath = useRouter().options.history.state.back;
-  return lastPath;
+  return useRouter().options.history.state.back;;
 });
 
 const store = useStore();
@@ -43,7 +42,20 @@ const props = defineProps({
 });
 </script>
 <template>
-  <h1>{{ id }}</h1>
+  <div>
+
+    <span>
+      <RouterLink :to="`${previousPage}`">
+        <i class="fa fa-arrow-left" aria-hidden="true"></i>
+      </RouterLink>
+    </span>
+
+    <span>
+      <h1> {{ id }}</h1>
+    </span>
+  </div>
+
+
   <dl className="row" v-for="(prop, idx) in displayProps">
     <dt className="col-12 col-md-5">{{ prop.key }}</dt>
     <dd className="col-12 col-md-7">
