@@ -42,19 +42,9 @@ const props = defineProps({
 });
 </script>
 <template>
-  <div>
-
-    <span>
-      <RouterLink :to="`${previousPage}`">
-        <i class="fa fa-arrow-left" aria-hidden="true"></i>
-      </RouterLink>
-    </span>
-
-    <span>
-      <h1> {{ id }}</h1>
-    </span>
-  </div>
-
+  <h1 class="flex-shrink-1">
+    {{ id }}
+  </h1>
 
   <dl className="row" v-for="(prop, idx) in displayProps">
     <dt className="col-12 col-md-5">{{ prop.key }}</dt>
@@ -62,4 +52,7 @@ const props = defineProps({
       <strong> {{ prop.value }}</strong>
     </dd>
   </dl>
+  <RouterLink :to="`${previousPage}`">
+    <i class="fa fa-arrow-left" aria-hidden="true"></i>
+  </RouterLink>
 </template>
