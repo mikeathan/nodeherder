@@ -26,8 +26,13 @@ const displayProps = computed(() => {
       key: "Availability:",
       value: device.stats.availability,
     },
+
     {
       key: "Last seen:",
+      type: "LastSeen",
+      component: function () {
+        return import("../device/LastSeen.vue");
+      },
       value: device.stats.last_seen,
     },
     {
@@ -42,16 +47,29 @@ const props = defineProps({
 });
 </script>
 <template>
-  <h1 class="flex-shrink-1">
-    {{ id }}
-  </h1>
+  <div class="tab-pane fade show active">
+    <h1 class="flex-shrink-1">
+      {{ id }}
+    </h1>
 
-  <dl className="row" v-for="(prop, idx) in displayProps">
-    <dt className="col-12 col-md-5">{{ prop.key }}</dt>
-    <dd className="col-12 col-md-7">
-      <strong> {{ prop.value }}</strong>
-    </dd>
-  </dl>
+    <dl className="row" v-for="(prop, idx) in displayProps">
+      <dt className="col-12 col-md-5">{{ prop.key }}</dt>
+      <dd className="col-12 col-md-7" v-if="prop.type == undefined">
+        <strong> {{ prop.value }}</strong>
+      </dd>
+      <dd className="col-12 col-md-7" v-else>
+        <component :is="prop.type"></component>
+      </dd>
+    </dl>
+
+    <!-- todo -->
+    <div class="btn-group btn-group-sm" role="group">
+      <button class="btn btn-danger" title="Remove device">
+        <i class="fa fa-trash"></i>
+      </button>
+    </div>
+  </div>
+  <!-- todo -->
   <RouterLink :to="`${previousPage}`">
     <i class="fa fa-arrow-left" aria-hidden="true"></i>
   </RouterLink>
