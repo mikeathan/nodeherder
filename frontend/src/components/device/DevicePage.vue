@@ -53,6 +53,7 @@ const props = defineProps({
 </script>
 <template>
   <div class="tab-pane fade show active">
+    <!-- <i class="fa fa-times" aria-hidden="true"></i> -->
     <h1 class="flex-shrink-1">
       {{ id }}
     </h1>
