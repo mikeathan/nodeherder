@@ -10,13 +10,10 @@ const props = defineProps({
 <template>
   <div class="card-footer">
     <div className="row justify-content-between flex-nowrap">
-      <LastSeen :lastSeen="this.payload.stats.last_seen"></LastSeen>
+      <LastSeen :value="this.payload.stats.last_seen"></LastSeen>
       <div className="col-auto text-truncate">
         <LinkQuality :value="this.payload.stats.linkquality" />
-        <PowerSource
-          :power_source="this.payload.power_source"
-          :value="this.payload.stats.battery"
-        />
+        <PowerSource :power_source="this.payload.power_source" :value="this.payload.stats.battery" />
       </div>
     </div>
   </div>

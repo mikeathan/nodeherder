@@ -6,5 +6,6 @@ const props = defineProps({
 });
 </script>
 <template>
-  <span :class="`fa fa-fw ${getPowerSourceIcon(power_source, value)}`"></span>
+  <!-- todo if power_source is not define set it to unknow same for value  -->
+  <span :title="`${power_source} ${value}`" :class="`fa fa-fw ${getPowerSourceIcon(power_source, value)}`"></span>
 </template>

@@ -3,35 +3,35 @@ import { watch, ref, onMounted, onUnmounted } from "vue";
 import ElapsedTimer from "../../modules/time-elapsed";
 
 const props = defineProps({
-  lastSeen: String,
+    value: String,
 });
 
 let elapsedTimer = new ElapsedTimer();
-let lastSeenUpdated = ref(props.lastSeen);
+let lastSeenUpdated = ref(props.value);
 
 watch(
-  () => props.lastSeen,
-  (newlastSeen) => {
-    console.log("Watch props.payload update");
-    elapsedTimer.SetTimestamp(newlastSeen, (v) => {
-      lastSeenUpdated.value = v;
-    });
-    lastSeenUpdated.value = elapsedTimer.TimeElapsed;
-  },
-  { immediate: true }
+    () => props.value,
+    (newlastSeen) => {
+        console.log("Watch props.payload update");
+        elapsedTimer.SetTimestamp(newlastSeen, (v) => {
+            lastSeenUpdated.value = v;
+        });
+        lastSeenUpdated.value = elapsedTimer.TimeElapsed;
+    },
+    { immediate: true }
 );
 
 onMounted(() => {
-  console.log("mounted");
+    console.log("mounted");
 });
 
 onUnmounted(() => {
-  console.log("unmounted");
-  elapsedTimer.dispose();
+    console.log("unmounted");
+    elapsedTimer.dispose();
 });
 </script>
 <template>
-  <div title="last update" className="col text-truncate">
-    {{ lastSeenUpdated }}
-  </div>
+    <div title="last update" className="col text-truncate">
+        {{ lastSeenUpdated }}
+    </div>
 </template>

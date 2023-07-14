@@ -3,7 +3,7 @@ import { useStore } from "vuex";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import LastSeen from "../device/LastSeen.vue";
-import Availability from "../device/Availability.vue";
+import PowerSource from "../device/PowerSource.vue";
 
 const previousPage = computed(() => {
   return useRouter().options.history.state.back;
@@ -26,18 +26,23 @@ const displayProps = computed(() => {
     },
     {
       key: "Availability:",
-      type: Availability,
       value: device.stats.availability,
     },
 
     {
       key: "Last seen:",
       type: LastSeen,
-      value: device.stats.last_seen,
+      props: {
+        value: device.stats.last_seen,
+      }
     },
     {
       key: "Power source:",
-      value: device.power_source,
+      type: PowerSource,
+      props: {
+        power_source: device.power_source,
+        value: device.stats.battery,
+      }
     },
   ];
 });
@@ -55,10 +60,10 @@ const props = defineProps({
     <dl className="row" v-for="(prop, idx) in displayProps">
       <dt className="col-12 col-md-5">{{ prop.key }}</dt>
       <dd className="col-12 col-md-7" v-if="prop.type == undefined">
-        <strong> {{ prop.value }}</strong>
+        <div title="last update" className="col text-truncate">{{ prop.value }}</div>
       </dd>
       <dd className="col-12 col-md-7" v-else>
-        <component :is="prop.type"></component>
+        <component :is="prop.type" v-bind="prop.props"></component>
       </dd>
     </dl>
 
