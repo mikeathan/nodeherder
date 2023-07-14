@@ -2,6 +2,8 @@
 import { useStore } from "vuex";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
+import LastSeen from "../device/LastSeen.vue";
+import Availability from "../device/Availability.vue";
 
 const previousPage = computed(() => {
   return useRouter().options.history.state.back;
@@ -24,15 +26,13 @@ const displayProps = computed(() => {
     },
     {
       key: "Availability:",
+      type: Availability,
       value: device.stats.availability,
     },
 
     {
       key: "Last seen:",
-      type: "LastSeen",
-      component: function () {
-        return import("../device/LastSeen.vue");
-      },
+      type: LastSeen,
       value: device.stats.last_seen,
     },
     {

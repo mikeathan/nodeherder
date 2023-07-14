@@ -31,7 +31,6 @@ onUnmounted(() => {
 });
 </script>
 <template>
-  TEST
   <div title="last update" className="col text-truncate">
     {{ lastSeenUpdated }}
   </div>
