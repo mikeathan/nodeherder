@@ -4,7 +4,7 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 
 const previousPage = computed(() => {
-  return useRouter().options.history.state.back;;
+  return useRouter().options.history.state.back;
 });
 
 const store = useStore();

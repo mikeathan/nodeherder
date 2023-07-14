@@ -1,35 +1,37 @@
 <script setup>
-import DeviceFormatter from "../../modules/sensors/device-formatter";
+import { watch, ref, onMounted, onUnmounted } from "vue";
+import ElapsedTimer from "../../modules/time-elapsed";
 
 const props = defineProps({
-    lastSeen: String,
+  lastSeen: String,
 });
-let formatter = new DeviceFormatter();
-let lastSeenUpdated = ref("");
+
+let elapsedTimer = new ElapsedTimer();
+let lastSeenUpdated = ref(props.lastSeen);
 
 watch(
-    () => props.lastSeen,
-    (newpayload) => {
-        console.log("Watch props.payload update");
-        formatter.formatPayload(newpayload.stats, (v) => {
-            lastSeenUpdated.value = v;
-        });
-        lastSeenUpdated.value = formatter.lastSeen;
-    },
-    { immediate: true }
+  () => props.lastSeen,
+  (newlastSeen) => {
+    console.log("Watch props.payload update");
+    elapsedTimer.SetTimestamp(newlastSeen, (v) => {
+      lastSeenUpdated.value = v;
+    });
+    lastSeenUpdated.value = elapsedTimer.TimeElapsed;
+  },
+  { immediate: true }
 );
 
 onMounted(() => {
-    console.log("mounted");
+  console.log("mounted");
 });
 
 onUnmounted(() => {
-    console.log("unmounted");
-    formatter.dispose();
+  console.log("unmounted");
+  elapsedTimer.dispose();
 });
 </script>
 <template>
-    <div title="last update" className="col text-truncate">
-        {{ lastSeenUpdated }}
-    </div>
+  <div title="last update" className="col text-truncate">
+    {{ lastSeenUpdated }}
+  </div>
 </template>
