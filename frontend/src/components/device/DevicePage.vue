@@ -34,7 +34,7 @@ const displayProps = computed(() => {
       type: LastSeen,
       props: {
         value: device.stats.last_seen,
-      }
+      },
     },
     {
       key: "Power source:",
@@ -42,7 +42,7 @@ const displayProps = computed(() => {
       props: {
         power_source: device.power_source,
         value: device.stats.battery,
-      }
+      },
     },
   ];
 });
@@ -53,15 +53,20 @@ const props = defineProps({
 </script>
 <template>
   <div class="tab-pane fade show active">
-    <!-- <i class="fa fa-times" aria-hidden="true"></i> -->
-    <h1 class="flex-shrink-1">
-      {{ id }}
-    </h1>
-
+    <div className="d-flex flex-row">
+      <div class="align-self-center">
+        <i class="fa fa-times fa-lg" aria-hidden="true"></i>
+      </div>
+      <div class="align-self-center">
+        {{ id }}
+      </div>
+    </div>
     <dl className="row" v-for="(prop, idx) in displayProps">
       <dt className="col-12 col-md-5">{{ prop.key }}</dt>
       <dd className="col-12 col-md-7" v-if="prop.type == undefined">
-        <div title="last update" className="col text-truncate">{{ prop.value }}</div>
+        <div title="last update" className="col text-truncate">
+          {{ prop.value }}
+        </div>
       </dd>
       <dd className="col-12 col-md-7" v-else>
         <component :is="prop.type" v-bind="prop.props"></component>
