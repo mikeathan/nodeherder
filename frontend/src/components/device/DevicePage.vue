@@ -57,7 +57,7 @@ const props = defineProps({
       <div class="align-self-center">
         <i class="fa fa-times fa-lg" aria-hidden="true"></i>
       </div>
-      <div class="align-self-center">
+      <div class="h1 align-self-center">
         {{ id }}
       </div>
     </div>
