@@ -7,9 +7,10 @@ const props = defineProps({
 });
 </script>
 <template>
-  <i class="fa fa-circle" style="color: green"></i>
-  <div key="Availability" v-if="status === 'offline'">
-    <i class="fa-solid text-danger fa-triangle-exclamation fa-fade"></i>
-    Offline
+  <div key="Availability" v-if="status === 'online'">
+    <i class="fa fa-circle fa-xs" style="color: green"></i>
+  </div>
+  <div v-else>
+    <i class="fa fa-circle fa-fade fa-xs" style="--fa-animation-duration: 2s; --fa-fade-opacity: 0.2; color: red"></i>
   </div>
 </template>
