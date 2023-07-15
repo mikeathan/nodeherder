@@ -4,7 +4,7 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 import LastSeen from "../device/LastSeen.vue";
 import PowerSource from "../device/PowerSource.vue";
-
+import ConnectionType from "../device/ConnectionType.vue";
 const previousPage = computed(() => {
   return useRouter().options.history.state.back;
 });
@@ -22,7 +22,10 @@ const displayProps = computed(() => {
     },
     {
       key: "Connection Type:",
-      value: device.conn,
+      type: ConnectionType,
+      props: {
+        type: device.conn,
+      },
     },
     {
       key: "Availability:",
@@ -54,7 +57,11 @@ const props = defineProps({
 <template>
   <div class="tab-pane fade show active">
     <div className="d-flex flex-row">
-      <div class="align-self-center fa fa-times fa-lg" aria-hidden="true"></div>
+      <div class="align-self-center">
+        <RouterLink :to="`${previousPage}`">
+          <i class="fa fa-arrow-left" aria-hidden="true"></i>
+        </RouterLink>
+      </div>
       <div class="h1 align-self-center">
         {{ id }}
       </div>
@@ -78,8 +85,4 @@ const props = defineProps({
       </button>
     </div>
   </div>
-  <!-- todo -->
-  <RouterLink :to="`${previousPage}`">
-    <i class="fa fa-arrow-left" aria-hidden="true"></i>
-  </RouterLink>
 </template>
