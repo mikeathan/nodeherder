@@ -54,9 +54,7 @@ const props = defineProps({
 <template>
   <div class="tab-pane fade show active">
     <div className="d-flex flex-row">
-      <div class="align-self-center">
-        <i class="fa fa-times fa-lg" aria-hidden="true"></i>
-      </div>
+      <div class="align-self-center fa fa-times fa-lg" aria-hidden="true"></div>
       <div class="h1 align-self-center">
         {{ id }}
       </div>
