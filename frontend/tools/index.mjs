@@ -109,6 +109,7 @@ function onConnectBuildPayload(devicesConfig) {
 
 function buildPayload(status, settings) {
   var payload;
+
   if (settings.method == "mqtt") {
     if (settings.type == "TH") {
       payload = mockMqttTHDevicePayload(status, settings);
@@ -135,8 +136,8 @@ function mockHttpTHDevicePayload(state, settings) {
     conn: "http",
     power_source: "", // unknown
     sensors: {
-      humidity: getMockHumidity(settings),
-      temperature: getMockTemperature(settings),
+      humidity: settings.humidity,
+      temperature: settings.temperature,
       pressure: 68,
     },
     stats: {
@@ -188,6 +189,10 @@ function mockMqttPresenceDevicePayload(state, settings) {
 }
 
 function getMockTemperature(settings) {
+  if (settings.availability == "offline") {
+    return settings.temperature;
+  }
+
   var diff = moment().diff(settings.temperatureLastChanged);
   var duration = moment.duration(diff);
 
@@ -205,6 +210,10 @@ function getMockTemperature(settings) {
 }
 
 function getMockHumidity(settings) {
+  if (settings.availability == "offline") {
+    return settings.humidity;
+  }
+
   var diff = moment().diff(settings.humidityLastChanged);
   var duration = moment.duration(diff);
 
