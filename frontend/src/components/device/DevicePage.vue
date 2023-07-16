@@ -20,18 +20,11 @@ const displayProps = computed(() => {
       key: "Friendly name:",
       value: device.id,
     },
-    {
-      key: "Connection Type:",
-      type: ConnectionType,
-      props: {
-        type: device.conn,
-      },
-    },
+
     {
       key: "Availability:",
       value: device.stats.availability,
     },
-
     {
       key: "Last seen:",
       type: LastSeen,
@@ -45,6 +38,13 @@ const displayProps = computed(() => {
       props: {
         power_source: device.power_source,
         value: device.stats.battery,
+      },
+    },
+    {
+      key: "Connection Type:",
+      type: ConnectionType,
+      props: {
+        type: device.conn,
       },
     },
   ];
@@ -66,9 +66,9 @@ const props = defineProps({
         {{ id }}
       </div>
     </div>
-    <dl className="row" v-for="(prop, idx) in displayProps">
+    <dl className="row align-self-center" v-for="(prop, idx) in displayProps">
       <dt className="col-12 col-md-5">{{ prop.key }}</dt>
-      <dd className="col-12 col-md-7" v-if="prop.type == undefined">
+      <dd className="col-12 col-md-7 " v-if="prop.type == undefined">
         <div title="last update" className="col text-truncate">
           {{ prop.value }}
         </div>
