@@ -182,12 +182,12 @@ p {
 }
 
 .disabled-card {
-  --bs-card-cap-bg: #dddddd;
+  /* --bs-card-cap-bg: #dddddd;
   --bs-card-bg: #dddddd;
   --bs-card-color: black;
   background-color: var(--bs-card-bg);
-  color: var(--bs-card-color);
-  opacity: 0.5;
+  color: var(--bs-card-color); */
+  opacity: 1;
 }
 
 .card {

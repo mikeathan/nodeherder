@@ -6,8 +6,6 @@ const props = defineProps({
 });
 </script>
 <template>
-    <img source="../../../assets/mqttorg-graphics-master/png/mqtt-hor-neg.png" />
-
     <div title="ConnectionType" v-if="type === 'mqtt'">
         <img :src="MqqtImage" width="100" />
     </div>
