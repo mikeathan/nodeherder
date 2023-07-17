@@ -86,9 +86,10 @@ app.ws("/ws", async function (ws, req) {
   devicesConfig.forEach((config) => {
     setInterval(function () {
       var device = buildPayload("newdata", config);
-
-      var d = JSON.stringify({ type: "deviceUpdated", payload: device });
-      ws.send(d);
+      if (device.stats.availability === "online") {
+        var d = JSON.stringify({ type: "deviceUpdated", payload: device });
+        ws.send(d);
+      }
     }, config.delayInMs);
   });
 
