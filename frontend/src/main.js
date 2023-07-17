@@ -7,7 +7,7 @@ import "@fortawesome/fontawesome-free/css/all.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap";
 
-import "./assets/css/styles.global.css";
+//import "./assets/css/styles.global.css";
 import "./assets/css/dark.css";
 
 const app = createApp(App);

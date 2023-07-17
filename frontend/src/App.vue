@@ -11,11 +11,9 @@ div {
 
 <template>
   <div class="main">
-    <nav class="navbar navbar-expand-md navbar-light">
-      <div class="container-fluid">
-        <a href="#/">{{ title }}</a>
-      </div>
-    </nav>
+    <div class="container-fluid">
+      <a href="#/">{{ title }}</a>
+    </div>
     <RouterView />
   </div>
 </template>
