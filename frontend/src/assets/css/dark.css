@@ -239,3 +239,13 @@ p {
 .p-7 {
   padding: 6rem !important;
 }
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-width: 0;
+  transition: margin-left 0.35s ease-in-out, left 0.35s ease-in-out,
+    margin-right 0.35s ease-in-out, right 0.35s ease-in-out;
+  width: 100%;
+}
