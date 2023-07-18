@@ -187,7 +187,7 @@ p {
   --bs-card-color: black;
   background-color: var(--bs-card-bg);
   color: var(--bs-card-color); */
-  opacity: 1;
+  opacity: 0.4;
 }
 
 .card {
