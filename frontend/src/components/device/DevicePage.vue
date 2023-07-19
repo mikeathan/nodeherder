@@ -6,7 +6,11 @@ import LastSeen from "../device/LastSeen.vue";
 import PowerSource from "../device/PowerSource.vue";
 import ConnectionType from "../device/ConnectionType.vue";
 const previousPage = computed(() => {
-  return useRouter().options.history.state.back;
+  var back = useRouter().options.history.state.back;
+  if (back == undefined) {
+    back = useRouter().push("/");
+  }
+  return back;
 });
 
 const store = useStore();
@@ -55,18 +59,17 @@ const props = defineProps({
 });
 </script>
 <template>
-  <div
-    style="
+  <div style="
       padding-left: 1.25rem;
       padding-right: 1.25rem;
       background-color: #293042;
       border-radius: 0.25rem;
-    "
-  >
+      height: 100%;
+    ">
     <div className="d-flex flex-row">
       <div class="align-self-center me-3">
         <RouterLink :to="`${previousPage}`">
-          <i class="fa fa-arrow-left" aria-hidden="true"></i>
+          <i class="fa fa-arrow-left fa-xl" aria-hidden="true"></i>
         </RouterLink>
       </div>
       <div class="h1 align-self-center">
