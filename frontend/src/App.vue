@@ -6,12 +6,10 @@ const title = ref("Node-Herder");
 <style></style>
 
 <template>
-  <div className="main">
-    <main className="content p-0 p-sm-3">
-      <div class="container-fluid">
-        <a href="#/">{{ title }}</a>
-      </div>
-    </main>
-    <RouterView />
-  </div>
+  <main className="content p-0 p-sm-3">
+    <div class="container-fluid p-0 h-100">
+      <a href="#/">{{ title }}</a>
+      <RouterView />
+    </div>
+  </main>
 </template>
