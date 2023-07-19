@@ -55,32 +55,42 @@ const props = defineProps({
 });
 </script>
 <template>
-  <div className="d-flex flex-row">
-    <div class="align-self-center">
-      <RouterLink :to="`${previousPage}`">
-        <i class="fa fa-arrow-left" aria-hidden="true"></i>
-      </RouterLink>
-    </div>
-    <div class="h1 align-self-center">
-      {{ id }}
-    </div>
-  </div>
-  <dl className="row align-self-center" v-for="(prop, idx) in displayProps">
-    <dt className="col-12 col-md-5">{{ prop.key }}</dt>
-    <dd className="col-12 col-md-7 " v-if="prop.type == undefined">
-      <div title="last update" className="col text-truncate">
-        {{ prop.value }}
+  <div
+    style="
+      padding-left: 1.25rem;
+      padding-right: 1.25rem;
+      background-color: #293042;
+      border-radius: 0.25rem;
+    "
+  >
+    <div className="d-flex flex-row">
+      <div class="align-self-center me-3">
+        <RouterLink :to="`${previousPage}`">
+          <i class="fa fa-arrow-left" aria-hidden="true"></i>
+        </RouterLink>
       </div>
-    </dd>
-    <dd className="col-12 col-md-7" v-else>
-      <component :is="prop.type" v-bind="prop.props"></component>
-    </dd>
-  </dl>
+      <div class="h1 align-self-center">
+        {{ id }}
+      </div>
+    </div>
 
-  <!-- todo -->
-  <div class="btn-group btn-group-sm" role="group">
-    <button class="btn btn-danger" title="Remove device">
-      <i class="fa fa-trash"></i>
-    </button>
+    <dl className="row align-self-center" v-for="(prop, idx) in displayProps">
+      <dt className="col-12 col-md-5">{{ prop.key }}</dt>
+      <dd className="col-12 col-md-7 " v-if="prop.type == undefined">
+        <div title="last update" className="col text-truncate">
+          {{ prop.value }}
+        </div>
+      </dd>
+      <dd className="col-12 col-md-7" v-else>
+        <component :is="prop.type" v-bind="prop.props"></component>
+      </dd>
+    </dl>
+
+    <!-- todo -->
+    <div class="btn-group btn-group-sm" role="group">
+      <button class="btn btn-danger" title="Remove device">
+        <i class="fa fa-trash"></i>
+      </button>
+    </div>
   </div>
 </template>
