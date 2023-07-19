@@ -59,6 +59,7 @@ const props = defineProps({
 });
 </script>
 <template>
+  <!-- todo : move styles to css file -->
   <div style="
       padding-left: 1.25rem;
       padding-right: 1.25rem;
@@ -66,7 +67,9 @@ const props = defineProps({
       border-radius: 0.25rem;
       height: 100%;
     ">
-    <div className="d-flex flex-row">
+
+    <!-- todo : move styles to css file -->
+    <div className="d-flex flex-row" style="padding-top: 0.75rem;padding-bottom: 1.75rem;">
       <div class="align-self-center me-3">
         <RouterLink :to="`${previousPage}`">
           <i class="fa fa-arrow-left fa-xl" aria-hidden="true"></i>
@@ -77,23 +80,25 @@ const props = defineProps({
       </div>
     </div>
 
-    <dl className="row align-self-center" v-for="(prop, idx) in displayProps">
-      <dt className="col-12 col-md-5">{{ prop.key }}</dt>
-      <dd className="col-12 col-md-7 " v-if="prop.type == undefined">
-        <div title="last update" className="col text-truncate">
-          {{ prop.value }}
-        </div>
-      </dd>
-      <dd className="col-12 col-md-7" v-else>
-        <component :is="prop.type" v-bind="prop.props"></component>
-      </dd>
-    </dl>
+    <div>
+      <dl className="row align-self-center" v-for="(prop, idx) in displayProps">
+        <dt className="col-12 col-md-5">{{ prop.key }}</dt>
+        <dd className="col-12 col-md-7 " v-if="prop.type == undefined">
+          <div title="last update" className="col text-truncate">
+            {{ prop.value }}
+          </div>
+        </dd>
+        <dd className="col-12 col-md-7" v-else>
+          <component :is="prop.type" v-bind="prop.props"></component>
+        </dd>
+      </dl>
 
-    <!-- todo -->
-    <div class="btn-group btn-group-sm" role="group">
-      <button class="btn btn-danger" title="Remove device">
-        <i class="fa fa-trash"></i>
-      </button>
+      <!-- todo -->
+      <div class="btn-group btn-group-sm" role="group">
+        <button class="btn btn-danger" title="Remove device">
+          <i class="fa fa-trash"></i>
+        </button>
+      </div>
     </div>
   </div>
 </template>
