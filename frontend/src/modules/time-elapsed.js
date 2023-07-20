@@ -21,7 +21,7 @@ export default class ElapsedTimer {
     this.__elapsedTimerId = setInterval(function () {
       this.TimeElapsed = format(timestamp, "en_UK");
       callback(this.TimeElapsed);
-    }, 1000); // change that to minutes
+    }, 60000);
   }
 
   SetTimestamp(timestamp, updaterCallback) {
