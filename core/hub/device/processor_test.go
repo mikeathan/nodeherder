@@ -2,6 +2,7 @@ package device_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"node-herder/hub"
 	"node-herder/hub/device"
 	"node-herder/hub/mocks"
@@ -169,4 +170,18 @@ func TestOnlyNewPayloadIsBroadcasted(t *testing.T) {
 func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data interface{}) error) hub.EventHub {
 
 	return &mocks.MockEventHub{MockBroadcastEvent: mockBroadcastEvent}
+}
+func TestAsyncProcessing(t *testing.T) {
+
+	for i := 0; i < 5; i++ {
+		var id = fmt.Sprintf("device%d", i)
+		var payload = createMockPayload()
+		go Process(id, payload)
+
+	}
+}
+
+func Process(id string, payload interface{}) error {
+
+	return nil
 }
