@@ -19,6 +19,7 @@ var deviceWhitelist = map[string]int{
 	"availability": 3,
 	"last_seen":    4,
 }
+var availabilityKey = "availability"
 var mainsKey = "mains"
 var powerSourceKey = "power_source"
 var batterKey = "battery"
@@ -27,17 +28,19 @@ var connectionTypeKey = "conn"
 var connectionTypeMqtt = "mqtt"
 
 type NodePayload struct {
-	Id             string         `json:"id"`
-	ConnectionType string         `json:"conn"`
-	PowerSource    string         `json:"power_source"`
-	Sensors        map[string]any `json:"sensors"`
-	Stats          map[string]any `json:"stats"`
+	Id                 string         `json:"id"`
+	ConnectionType     string         `json:"conn"`
+	PowerSource        string         `json:"power_source"`
+	Sensors            map[string]any `json:"sensors"`
+	Stats              map[string]any `json:"stats"`
+	availabilityTicker time.Ticker
 }
 
 func NewNodePayload() *NodePayload {
 	return &NodePayload{
-		Sensors: map[string]any{},
-		Stats:   map[string]any{},
+		Sensors:            map[string]any{},
+		Stats:              map[string]any{},
+		availabilityTicker: time.Ticker{},
 	}
 }
 
@@ -124,9 +127,26 @@ func (p *PayloadProcessor) addDevice(id string, data map[string]interface{}) *No
 			newNode.Stats[key] = value
 		}
 	}
+	// newNode.availabilityTicker = *time.NewTicker(1 * time.Hour)
+	// done := make(chan bool)
 
+	// go func() {
+	// 	for {
+	// 		select {
+	// 		// use context to kill goroutine
+	// 		case <-done:
+	// 			//newNode.Stats[availabilityKey] = "offline"
+	// 		case t := <-newNode.availabilityTicker.C:
+	// 			// if t >= newNode.last_seen
+	// 			// flag offline
+	// 			//newNode.Stats[availabilityKey] = "online"
+	// 		}
+	// 	}
+	// }()
 	return newNode
 }
+
+// ticker := time.NewTicker(500 * time.Millisecond)
 
 func convertToMap(payload interface{}) (map[string]interface{}, error) {
 	if data, ok := payload.(map[string]interface{}); ok {
