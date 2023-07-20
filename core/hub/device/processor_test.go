@@ -171,17 +171,34 @@ func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data int
 
 	return &mocks.MockEventHub{MockBroadcastEvent: mockBroadcastEvent}
 }
+
+//
+
+type processItem struct {
+	id      string
+	payload interface{}
+}
+
 func TestAsyncProcessing(t *testing.T) {
 
+	in := make(chan processItem)
 	for i := 0; i < 5; i++ {
 		var id = fmt.Sprintf("device%d", i)
 		var payload = createMockPayload()
-		go Process(id, payload)
+		fmt.Println("adding ", id)
+		// dont work - it deadlocks
+		in <- processItem{id: id, payload: payload}
+		go process(in)
 
 	}
 }
 
-func Process(id string, payload interface{}) error {
-
-	return nil
+func process(in <-chan processItem) {
+	//out := make(chan int)
+	go func() {
+		for n := range in {
+			fmt.Printf("processing %s timestamp: %v \n", n.id, time.Now())
+		}
+		//close(out)
+	}()
 }
