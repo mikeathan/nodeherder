@@ -19,14 +19,19 @@ var deviceWhitelist = map[string]int{
 	"availability": 3,
 	"last_seen":    4,
 }
-
+var mainsKey = "mains"
+var powerSourceKey = "power_source"
+var batterKey = "battery"
 var lastSeenKey = "last_seen"
+var connectionTypeKey = "conn"
+var connectionTypeMqtt = "mqtt"
 
 type NodePayload struct {
-	Id       string `json:"id"`
-	checksum string
-	Sensors  map[string]any `json:"sensors"`
-	Stats    map[string]any `json:"stats"`
+	Id             string         `json:"id"`
+	ConnectionType string         `json:"conn"`
+	PowerSource    string         `json:"power_source"`
+	Sensors        map[string]any `json:"sensors"`
+	Stats          map[string]any `json:"stats"`
 }
 
 func NewNodePayload() *NodePayload {
@@ -42,11 +47,10 @@ type Processor interface {
 type PayloadProcessor struct {
 	eventHub hub.EventHub
 	repo     Repository
-	hasher   Crc32Hasher
 }
 
 func NewPayloadProcessor(repo Repository, eventHub hub.EventHub) Processor {
-	return &PayloadProcessor{repo: repo, eventHub: eventHub, hasher: *NewCrc32Hasher()}
+	return &PayloadProcessor{repo: repo, eventHub: eventHub}
 }
 
 func getCurrentTime() string {
@@ -74,28 +78,27 @@ func (p *PayloadProcessor) Process(id string, payload interface{}) error {
 	if device == nil {
 		device = p.addDevice(id, data)
 	} else {
-		p.updateDevice(device, data)
+		if !p.updateDevice(device, data) {
+			return nil
+		}
 	}
 
-	h := p.hasher.CalculateHash()
-	if h != "" && h != device.checksum {
-		device.checksum = h
-		p.hasher.Reset()
-
-		p.repo.Store(id, device)
-		p.eventHub.Broadcast(hub.DeviceUpdated, device)
-	}
+	p.repo.Store(id, device)
+	p.eventHub.Broadcast(hub.DeviceUpdated, device)
 
 	return nil
 }
 
-func (p *PayloadProcessor) updateDevice(node *NodePayload, data map[string]interface{}) {
+func (p *PayloadProcessor) updateDevice(node *NodePayload, data map[string]interface{}) bool {
+	var updated = false
 	for key, currValue := range node.Sensors {
 		if newValue, ok := data[key]; ok && newValue != currValue {
 			node.Sensors[key] = newValue
-			p.hasher.Write(newValue)
+			updated = true
 		}
 	}
+
+	return updated
 }
 
 func (p *PayloadProcessor) addDevice(id string, data map[string]interface{}) *NodePayload {
@@ -104,12 +107,19 @@ func (p *PayloadProcessor) addDevice(id string, data map[string]interface{}) *No
 	// data["availability"] = "offline"
 	// will need to syncronize data access
 
+	// check if battery key exist, if not set source as mains
+	if _, ok := data[batterKey]; !ok {
+		data[powerSourceKey] = mainsKey
+	}
+
+	// Todo: need to pass in payload
+	data[connectionTypeKey] = connectionTypeMqtt
+
 	var newNode = NewNodePayload()
 	newNode.Id = id
 	for key, value := range data {
 		if _, ok := sensorWhitelist[key]; ok {
 			newNode.Sensors[key] = value
-			p.hasher.Write(value)
 		} else if _, ok := deviceWhitelist[key]; ok {
 			newNode.Stats[key] = value
 		}

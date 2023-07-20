@@ -90,5 +90,5 @@ power_source NULL or [VALUE]
 mqtt
 conn="mqtt"
 power_source battery or mains
-
-{"type":"deviceUpdated","payload":{"id":"device1","sensors":{"humidity":71.2,"temperature":15.6},"stats":{"availability":"online","battery":98,"last_seen":"2023-07-10T09:08:15+01:00","linkquality":36.1}}}
+data:
+{"type":"connected","payload":[{"id":"device 1","conn":"mqtt","power_source":"battery","sensors":{"humidity":92.49999999999999,"temperature":19.000000000000004},"stats":{"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":47,"battery":98}},{"id":"device 2","conn":"mqtt","power_source":"mains","sensors":{"presence":false,"illuminance_lux":103},"stats":{"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":67}},{"id":"device 3","conn":"http","power_source":"","sensors":{"humidity":41,"temperature":10,"pressure":68},"stats":{"availability":"offline","last_seen":"2023-07-20T19:48:35+01:00"}}]}
