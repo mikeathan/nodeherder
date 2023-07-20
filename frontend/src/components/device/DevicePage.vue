@@ -59,17 +59,9 @@ const props = defineProps({
 });
 </script>
 <template>
-  <!-- todo : move styles to css file -->
-  <div style="
-      padding-left: 1.25rem;
-      padding-right: 1.25rem;
-      background-color: #293042;
-      border-radius: 0.25rem;
-      height: 100%;
-    ">
-
+  <div class="panel">
     <!-- todo : move styles to css file -->
-    <div className="d-flex flex-row" style="padding-top: 0.75rem;padding-bottom: 1.75rem;">
+    <div className="panel-header d-flex flex-row">
       <div class="align-self-center me-3">
         <RouterLink :to="`${previousPage}`">
           <i class="fa fa-arrow-left fa-xl" aria-hidden="true"></i>

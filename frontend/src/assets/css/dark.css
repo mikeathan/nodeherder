@@ -14383,3 +14383,16 @@ button.bg-primary-light:hover {
   color: var(--bs-card-color); */
   opacity: 0.4;
 }
+
+.panel {
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  background-color: var(--bs-white);
+  border-radius: 0.25rem;
+  height: 100%;
+}
+.panel-header {
+  padding-top: 0.75rem;
+  padding-bottom: 1.75rem
+}
+
