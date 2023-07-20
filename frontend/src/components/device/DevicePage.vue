@@ -57,6 +57,9 @@ const displayProps = computed(() => {
 const props = defineProps({
   id: String,
 });
+function showDialog(message) {
+  alert(message);
+}
 </script>
 <template>
   <div class="panel">
@@ -86,7 +89,11 @@ const props = defineProps({
 
       <!-- todo -->
       <div class="btn-group btn-group-sm" role="group">
-        <button class="btn btn-danger" title="Remove device">
+        <button
+          class="btn btn-danger"
+          title="Remove device"
+          @click="showDialog('Not implemented')"
+        >
           <i class="fa fa-trash"></i>
         </button>
       </div>
