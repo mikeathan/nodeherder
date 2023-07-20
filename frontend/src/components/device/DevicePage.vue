@@ -60,7 +60,6 @@ const props = defineProps({
 </script>
 <template>
   <div class="panel">
-    <!-- todo : move styles to css file -->
     <div className="panel-header d-flex flex-row">
       <div class="align-self-center me-3">
         <RouterLink :to="`${previousPage}`">
