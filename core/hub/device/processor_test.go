@@ -1,6 +1,7 @@
 package device_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"node-herder/hub"
@@ -174,6 +175,7 @@ func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data int
 
 type processor struct {
 	items chan processItem
+	ctx   context.Context
 }
 
 type processItem struct {
@@ -187,8 +189,8 @@ func (p *processor) Collect(id string, payload interface{}) {
 		log(fmt.Sprintf("added %s", id))
 	}()
 }
-func newProcessor() *processor {
-	p := processor{items: make(chan processItem)}
+func newProcessor(ctx context.Context) *processor {
+	p := processor{items: make(chan processItem), ctx: ctx}
 	go p.runWorkerPool()
 	return &p
 }
@@ -204,17 +206,16 @@ func (p *processor) runWorkerPool() {
 				return
 			}
 			log(fmt.Sprintf("###Processing: %s", job.id))
-			// fan-in job execution multiplexing results into the results channel
-			//results <- job.execute(ctx)
-			// case <-ctx.Done():
-			// 	fmt.Printf("cancelled worker. Error detail: %v\n", ctx.Err())
-			// 	results <- Result{
-			// 		Err: ctx.Err(),
-			// 	}
-			// 	return
+		// fan-in job execution multiplexing results into the results channel
+		//results <- job.execute(ctx)
+		case <-p.ctx.Done():
+			fmt.Printf("cancelled worker. Error detail: %v\n", p.ctx.Err())
+			// results <- Result{
+			// 	Err: ctx.Err(),
+			// }
+			return
 		}
 	}
-	log("Exit worker pool")
 }
 
 func log(message string) {
@@ -227,8 +228,9 @@ func getNow() string {
 }
 
 func TestAsyncProcessing(t *testing.T) {
-	p := newProcessor()
-	for i := 0; i < 5; i++ {
+	ctx, cancelCtx := context.WithCancel(context.Background())
+	p := newProcessor(ctx)
+	for i := 0; i < 2; i++ {
 
 		go generateDevicePayload(i, 5, p)
 		var id = fmt.Sprintf("device%d", i)
