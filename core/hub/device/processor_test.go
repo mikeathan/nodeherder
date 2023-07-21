@@ -172,33 +172,79 @@ func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data int
 	return &mocks.MockEventHub{MockBroadcastEvent: mockBroadcastEvent}
 }
 
-//
+type processor struct {
+	items chan processItem
+}
 
 type processItem struct {
 	id      string
 	payload interface{}
 }
 
-func TestAsyncProcessing(t *testing.T) {
-
-	in := make(chan processItem)
-	for i := 0; i < 5; i++ {
-		var id = fmt.Sprintf("device%d", i)
-		var payload = createMockPayload()
-		fmt.Println("adding ", id)
-		// dont work - it deadlocks
-		in <- processItem{id: id, payload: payload}
-		go process(in)
-
-	}
+func (p *processor) Collect(id string, payload interface{}) {
+	go func() {
+		p.items <- processItem{id: id, payload: payload}
+		log(fmt.Sprintf("added %s", id))
+	}()
+}
+func newProcessor() *processor {
+	p := processor{items: make(chan processItem)}
+	go p.runWorkerPool()
+	return &p
 }
 
-func process(in <-chan processItem) {
-	//out := make(chan int)
-	go func() {
-		for n := range in {
-			fmt.Printf("processing %s timestamp: %v \n", n.id, time.Now())
+func (p *processor) runWorkerPool() {
+	//defer wg.Done()
+	log("start worker pool")
+	for {
+		select {
+		case job, ok := <-p.items:
+			if !ok {
+				log("no more items")
+				return
+			}
+			log(fmt.Sprintf("###Processing: %s", job.id))
+			// fan-in job execution multiplexing results into the results channel
+			//results <- job.execute(ctx)
+			// case <-ctx.Done():
+			// 	fmt.Printf("cancelled worker. Error detail: %v\n", ctx.Err())
+			// 	results <- Result{
+			// 		Err: ctx.Err(),
+			// 	}
+			// 	return
 		}
-		//close(out)
-	}()
+	}
+	log("Exit worker pool")
+}
+
+func log(message string) {
+	fmt.Printf("[%s] %s\n", getNow(), message)
+}
+func getNow() string {
+	currentTime := time.Now()
+
+	return currentTime.Format("03:04:05.99999")
+}
+
+func TestAsyncProcessing(t *testing.T) {
+	p := newProcessor()
+	for i := 0; i < 5; i++ {
+
+		go generateDevicePayload(i, 5, p)
+		var id = fmt.Sprintf("device%d", i)
+		var payload = createMockPayload()
+
+		p.Collect(id, payload)
+	}
+
+	time.Sleep(10 * time.Second)
+	log("finished")
+}
+
+func generateDevicePayload(id int, workItems int, processor *processor) {
+	for i := 0; i < workItems; i++ {
+		var name = fmt.Sprintf("device %d", id)
+		var payload = createMockPayload()
+		processor.Collect(name, payload)
+	}
 }
