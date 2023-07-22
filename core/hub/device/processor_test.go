@@ -1,9 +1,7 @@
 package device_test
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
 	"node-herder/hub"
 	"node-herder/hub/device"
 	"node-herder/hub/mocks"
@@ -171,83 +169,4 @@ func TestOnlyNewPayloadIsBroadcasted(t *testing.T) {
 func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data interface{}) error) hub.EventHub {
 
 	return &mocks.MockEventHub{MockBroadcastEvent: mockBroadcastEvent}
-}
-
-type processor struct {
-	items chan processItem
-	ctx   context.Context
-}
-
-type processItem struct {
-	id      string
-	payload interface{}
-}
-
-func (p *processor) Collect(id string, payload interface{}) {
-	go func() {
-		p.items <- processItem{id: id, payload: payload}
-		log(fmt.Sprintf("added %s", id))
-	}()
-}
-func newProcessor(ctx context.Context) *processor {
-	p := processor{items: make(chan processItem), ctx: ctx}
-	go p.runWorkerPool()
-	return &p
-}
-
-func (p *processor) runWorkerPool() {
-	//defer wg.Done()
-	log("start worker pool")
-	for {
-		select {
-		case job, ok := <-p.items:
-			if !ok {
-				log("queue error")
-				return
-			}
-			log(fmt.Sprintf("###Processing: %s", job.id))
-		// fan-in job execution multiplexing results into the results channel
-		//results <- job.execute(ctx)
-		case <-p.ctx.Done():
-			fmt.Printf("Cancelled worker. Error: %v\n", p.ctx.Err())
-			// results <- Result{
-			// 	Err: ctx.Err(),
-			// }
-			return
-		}
-	}
-}
-
-func log(message string) {
-	fmt.Printf("[%s] %s\n", getNow(), message)
-}
-func getNow() string {
-	currentTime := time.Now()
-
-	return currentTime.Format("03:04:05.99999")
-}
-
-func TestAsyncProcessing(t *testing.T) {
-	ctx, cancelCtx := context.WithCancel(context.Background())
-	p := newProcessor(ctx)
-	for i := 0; i < 2; i++ {
-
-		go generateDevicePayload(i, 5, p)
-		var id = fmt.Sprintf("device%d", i)
-		var payload = createMockPayload()
-
-		p.Collect(id, payload)
-	}
-
-	time.Sleep(10 * time.Second)
-	cancelCtx()
-	log("finished")
-}
-
-func generateDevicePayload(id int, workItems int, processor *processor) {
-	for i := 0; i < workItems; i++ {
-		var name = fmt.Sprintf("device %d", id)
-		var payload = createMockPayload()
-		processor.Collect(name, payload)
-	}
 }
