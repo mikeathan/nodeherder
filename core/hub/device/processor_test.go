@@ -202,14 +202,14 @@ func (p *processor) runWorkerPool() {
 		select {
 		case job, ok := <-p.items:
 			if !ok {
-				log("no more items")
+				log("queue error")
 				return
 			}
 			log(fmt.Sprintf("###Processing: %s", job.id))
 		// fan-in job execution multiplexing results into the results channel
 		//results <- job.execute(ctx)
 		case <-p.ctx.Done():
-			fmt.Printf("cancelled worker. Error detail: %v\n", p.ctx.Err())
+			fmt.Printf("Cancelled worker. Error: %v\n", p.ctx.Err())
 			// results <- Result{
 			// 	Err: ctx.Err(),
 			// }
@@ -240,6 +240,7 @@ func TestAsyncProcessing(t *testing.T) {
 	}
 
 	time.Sleep(10 * time.Second)
+	cancelCtx()
 	log("finished")
 }
 
