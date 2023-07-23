@@ -16,42 +16,32 @@ func log(message string) {
 func getNow() string {
 	currentTime := time.Now()
 
-	return currentTime.Format("03:04:05.99999")
+	return currentTime.Format("15:04:05,000") // "15:04:05,000"
 }
 
-type mockJob struct {
-	id string
-	wg *sync.WaitGroup
+type mockJobWithFunc struct {
+	id   string
+	task func()
+	wg   *sync.WaitGroup
 }
 
-func createJob(id string, wg *sync.WaitGroup) *mockJob {
-	return &mockJob{id: id, wg: wg}
+func createJobWithFunc(id string, task func(), wg *sync.WaitGroup) *mockJobWithFunc {
+	return &mockJobWithFunc{id: id, task: task, wg: wg}
 
 }
-func (m *mockJob) OnFailure(err error) {
+func (m *mockJobWithFunc) OnFailure(err error) {
 	log(fmt.Sprintf("Job: %s error: %s", m.id, err.Error()))
 
 }
 
-func (m *mockJob) Execute() error {
+func (m *mockJobWithFunc) Execute() error {
 	log(fmt.Sprintf("processing job: %s", m.id))
-	time.Sleep(1 * time.Second)
-
+	m.task()
 	m.wg.Done()
 	return nil
 }
 
-func addNewActivity(id int, numOfTasks int, workerPool *pool.WorkerPool, wg *sync.WaitGroup) {
-	for i := 0; i < numOfTasks; i++ {
-		var name = fmt.Sprintf("device %d", id)
-
-		job := createJob(name, wg)
-		log(fmt.Sprintf("adding job: %s", name))
-		workerPool.AddWorkNonBlocking(job)
-	}
-}
-
-func TestAsyncProcessing(t *testing.T) {
+func TestAsyncFuncProcessing(t *testing.T) {
 	wg := &sync.WaitGroup{}
 
 	ctx, _ := context.WithCancel(context.Background())
@@ -64,9 +54,29 @@ func TestAsyncProcessing(t *testing.T) {
 	wg.Add(totalJobs)
 
 	for i := 0; i < numOfActivies; i++ {
-		go addNewActivity(i, numOfTasks, worker, wg)
+		id := i
+		var name = fmt.Sprintf("device %d", id)
+
+		go func() {
+			for j := 0; j < numOfTasks; j++ {
+
+				task := func() {
+					mockTaskProcess(name, nil)
+				}
+
+				job := createJobWithFunc(name, task, wg)
+				//log(fmt.Sprintf("adding job: %s", name))
+				worker.AddWorkNonBlocking(job)
+			}
+		}()
 	}
 
 	wg.Wait()
+
 	log("finished")
+}
+
+func mockTaskProcess(name string, payload interface{}) {
+	log(fmt.Sprintf("processing task: %s", name))
+	time.Sleep(100 * time.Millisecond)
 }
