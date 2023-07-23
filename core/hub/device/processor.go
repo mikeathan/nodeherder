@@ -77,15 +77,11 @@ func (p *PayloadProcessor) Process(id string, payload interface{}) error {
 	data["availability"] = "online"
 
 	device, _ := p.repo.FindDevice(id)
-
-	if device == nil {
-		device = p.addDevice(id, data)
+	if device != nil && !p.updateDevice(device, data) {
+		return nil
 	} else {
-		if !p.updateDevice(device, data) {
-			return nil
-		}
+		device = p.addDevice(id, data)
 	}
-
 	p.repo.Store(id, device)
 	p.eventHub.Broadcast(hub.DeviceUpdated, device)
 
