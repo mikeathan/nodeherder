@@ -32,18 +32,23 @@ func (w *WorkerPool) Start() {
 }
 
 func (w *WorkerPool) startWorkers() {
-	//for i := 0; i < w.numOfWorkers; i++ {
+	for i := 0; i < w.numOfWorkers; i++ {
+		workerId := i
+		go w.worker(workerId)
+	}
+}
+func (w *WorkerPool) worker(workerId int) {
 	for {
 		select {
 		case <-w.quit:
-			log(fmt.Sprintf("stopping worker %d with quic channel tasks channel\n", w.numOfWorkers))
+			log(fmt.Sprintf("stopping worker %d with quit channel tasks channel\n", workerId))
 			return
 		case <-w.ctx.Done():
 			log(fmt.Sprintf("Cancelled worker. Error: %v\n", w.ctx.Err()))
 			return
 		case task, ok := <-w.queue:
 			if !ok {
-				log(fmt.Sprintf("stopping worker %d with closed tasks channel\n", w.numOfWorkers))
+				log(fmt.Sprintf("stopping worker %d with closed tasks channel\n", workerId))
 				return
 			}
 			if err := task.Execute(); err != nil {
@@ -51,8 +56,6 @@ func (w *WorkerPool) startWorkers() {
 			}
 		}
 	}
-
-	//}
 }
 func (w *WorkerPool) Stop() {
 	close(w.quit)
