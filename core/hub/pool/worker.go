@@ -38,6 +38,9 @@ func (w *WorkerPool) startWorkers() {
 	}
 }
 func (w *WorkerPool) worker(workerId int) {
+	defer close(w.quit)
+	defer close(w.queue)
+
 	for {
 		select {
 		case <-w.quit:
@@ -57,13 +60,23 @@ func (w *WorkerPool) worker(workerId int) {
 		}
 	}
 }
+func (w *WorkerPool) Wait() {
+	<-w.quit
+}
+
+func (w *WorkerPool) GetTotalQueuedTask() int {
+	return len(w.queue)
+}
 func (w *WorkerPool) Stop() {
 	close(w.quit)
 }
 
 func (w *WorkerPool) AddTask(task Task) {
 
-	w.queue <- task
+	select {
+	case w.queue <- task:
+	case <-w.quit:
+	}
 }
 
 func (w *WorkerPool) AddWorkNonBlocking(task Task) {

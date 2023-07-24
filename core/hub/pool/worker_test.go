@@ -9,14 +9,9 @@ import (
 	"time"
 )
 
-func log(message string) {
-	fmt.Printf("[%s] %s\n", getNow(), message)
-}
-
-func getNow() string {
-	currentTime := time.Now()
-
-	return currentTime.Format("15:04:05,000") // "15:04:05,000"
+func timeTrack(start time.Time, name string) {
+	elapsed := time.Since(start)
+	fmt.Printf("%s took %s \n", name, elapsed)
 }
 
 type mockJobWithFunc struct {
@@ -31,7 +26,7 @@ func createJobWithFunc(id string, eventId int, task func(), wg *sync.WaitGroup) 
 
 }
 func (m *mockJobWithFunc) OnFailure(err error) {
-	log(fmt.Sprintf("Job: %s error: %s", m.id, err.Error()))
+	fmt.Printf("Job: %s error: %s", m.id, err.Error())
 }
 
 func (m *mockJobWithFunc) Execute() error {
@@ -40,19 +35,22 @@ func (m *mockJobWithFunc) Execute() error {
 	return nil
 }
 
-func TestAsyncFuncProcessing(t *testing.T) {
+func TestAsyncFuncProcessingAllJobs(t *testing.T) {
 	wg := &sync.WaitGroup{}
-	ticker := time.NewTicker(50 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 	ctx, _ := context.WithCancel(context.Background())
 	worker := pool.NewWorkerPool(1, ctx)
 	worker.Start()
+
 	var processed = false
-	numOfActivies := 2
-	numOfTasks := 5
+	numOfActivies := 3
+	numOfTasks := 10
 	totalJobs := numOfActivies * numOfTasks
 	wg.Add(totalJobs)
 	startTime := time.Now()
+
 	for i := 0; i < numOfActivies; i++ {
+
 		id := i
 		name := fmt.Sprintf("device %d", id)
 
@@ -61,12 +59,10 @@ func TestAsyncFuncProcessing(t *testing.T) {
 			for j := 0; j < numOfTasks; j++ {
 				eventId := j
 				task := func() {
-					//log(fmt.Sprintf("PROCESSING: %s eventId: %d", name, eventId))
-					time.Sleep(500 * time.Millisecond)
+					time.Sleep(10 * time.Millisecond)
 				}
 
 				job := createJobWithFunc(name, eventId, task, wg)
-				//log(fmt.Sprintf("ADDING:  %s eventId: %d", name, eventId))
 				worker.AddWorkNonBlocking(job)
 			}
 		}()
@@ -79,14 +75,42 @@ func TestAsyncFuncProcessing(t *testing.T) {
 		ticker.Reset(time.Microsecond)
 	}()
 
-	log("waiting for completion")
 	<-ticker.C
 	if !processed {
 		t.Error("Failed to process all tasks")
 	}
-
 }
-func timeTrack(start time.Time, name string) {
-	elapsed := time.Since(start)
-	fmt.Printf("%s took %s \n", name, elapsed)
+
+func TestCancelContextStopsWorker(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	//ticker := time.NewTicker(1 * time.Second)
+	ctx, cancelCtx := context.WithCancel(context.Background())
+	worker := pool.NewWorkerPool(1, ctx)
+	worker.Start()
+	//cancelled := false
+	numOfTasks := 10
+	wg.Add(numOfTasks)
+	go func() {
+
+		for j := 0; j < numOfTasks; j++ {
+			eventId := j
+			task := func() {
+				time.Sleep(10 * time.Second)
+			}
+
+			job := createJobWithFunc("test", eventId, task, wg)
+			fmt.Println("adding", j)
+			worker.AddWorkNonBlocking(job)
+		}
+	}()
+
+	go func() {
+		time.Sleep(1 * time.Second)
+		cancelCtx()
+		//cancelled = true
+		//ticker.Reset(time.Microsecond)
+	}()
+
+	worker.Wait()
+
 }
