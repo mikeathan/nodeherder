@@ -3,7 +3,7 @@ package pool
 import (
 	"context"
 	"fmt"
-	"time"
+	"sync"
 )
 
 type Task interface {
@@ -32,26 +32,33 @@ func (w *WorkerPool) Start() {
 }
 
 func (w *WorkerPool) startWorkers() {
+
+	wg := &sync.WaitGroup{}
+	go func() {
+		defer close(w.quit)
+		defer close(w.queue)
+	}()
+
 	for i := 0; i < w.numOfWorkers; i++ {
 		workerId := i
-		go w.worker(workerId)
+		wg.Add(1)
+		go w.worker(workerId, wg)
 	}
+	wg.Wait()
 }
-func (w *WorkerPool) worker(workerId int) {
-	defer close(w.quit)
-	defer close(w.queue)
-
+func (w *WorkerPool) worker(workerId int, wg *sync.WaitGroup) {
+	defer wg.Done()
 	for {
 		select {
 		case <-w.quit:
-			log(fmt.Sprintf("stopping worker %d with quit channel tasks channel\n", workerId))
+			fmt.Printf("stopping worker %d with quit channel tasks channel\n", workerId)
 			return
 		case <-w.ctx.Done():
-			log(fmt.Sprintf("Cancelled worker. Error: %v\n", w.ctx.Err()))
+			fmt.Printf("Cancelled worker. Error: %v\n", w.ctx.Err())
 			return
 		case task, ok := <-w.queue:
 			if !ok {
-				log(fmt.Sprintf("stopping worker %d with closed tasks channel\n", workerId))
+				fmt.Printf("stopping worker %d with closed tasks channel\n", workerId)
 				return
 			}
 			if err := task.Execute(); err != nil {
@@ -64,31 +71,26 @@ func (w *WorkerPool) Wait() {
 	<-w.quit
 }
 
-func (w *WorkerPool) GetTotalQueuedTask() int {
-	return len(w.queue)
-}
 func (w *WorkerPool) Stop() {
 	close(w.quit)
 }
 
 func (w *WorkerPool) AddTask(task Task) {
-
 	select {
-	case w.queue <- task:
 	case <-w.quit:
+		fmt.Println("queue is closed. cannot add task")
+		return
+	case <-w.ctx.Done():
+		fmt.Printf("Cancelled worker. Error: %v\n", w.ctx.Err())
+		return
+	default:
+		break
 	}
+
+	w.queue <- task
 }
 
 func (w *WorkerPool) AddWorkNonBlocking(task Task) {
+
 	go w.AddTask(task)
-}
-
-func log(message string) {
-	fmt.Printf("[%s] %s\n", getNow(), message)
-}
-
-func getNow() string {
-	currentTime := time.Now()
-
-	return currentTime.Format("03:04:05.99999")
 }
