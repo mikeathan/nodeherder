@@ -3,6 +3,7 @@ package device
 import (
 	"context"
 	"errors"
+	"fmt"
 	"node-herder/hub"
 	"node-herder/hub/pool"
 	"time"
@@ -21,6 +22,7 @@ var deviceWhitelist = map[string]int{
 	"availability": 3,
 	"last_seen":    4,
 }
+
 var availabilityKey = "availability"
 var mainsKey = "mains"
 var powerSourceKey = "power_source"
@@ -47,35 +49,55 @@ func NewNodePayload() *NodePayload {
 }
 
 type Processor interface {
-	Process(id string, payload interface{}) error
+	Equeue(id string, payload interface{}) error
 }
+
+type processorTask struct {
+	Id      string
+	Payload interface{}
+}
+
+func (m *processorTask) OnFailure(err error) {
+	fmt.Printf("Job: %s Error: %s", m.Id, err.Error())
+}
+
 type PayloadProcessor struct {
 	eventHub   hub.EventHub
 	repo       Repository
 	workerPool pool.WorkerPool
 	ctx        context.Context
+	procFunc   func(t pool.Task) error
 }
 
 func NewPayloadProcessor(repo Repository, eventHub hub.EventHub, ctx context.Context) Processor {
-	return &PayloadProcessor{
-		repo:       repo,
-		eventHub:   eventHub,
-		ctx:        ctx,
-		workerPool: *pool.NewWorkerPool(1, ctx),
+	p := &PayloadProcessor{
+		repo:     repo,
+		eventHub: eventHub,
+		ctx:      ctx,
 	}
+	p.procFunc = func(t pool.Task) error {
+		return p.process(t)
+	}
+
+	p.workerPool = *pool.NewWorkerPool(1, ctx, p.procFunc)
+	p.workerPool.Start()
+	return p
 }
 
 func getCurrentTime() string {
 	return time.Now().Format(time.RFC3339)
 }
 
-// todo:
-// collect data and pass them to different process
-func (p *PayloadProcessor) Process(id string, payload interface{}) error {
-
+func (p *PayloadProcessor) process(task pool.Task) error {
+	pTask, ok := task.(*processorTask)
+	if !ok {
+		return errors.New("invalid task type")
+	}
+	id := pTask.Id
+	payload := pTask.Payload
 	data, err := convertToMap(payload)
 	if err != nil {
-		return errors.New("invalid paylaod format")
+		return errors.New("invalid payload format")
 	}
 
 	// sanitize payload,
@@ -95,6 +117,11 @@ func (p *PayloadProcessor) Process(id string, payload interface{}) error {
 	p.eventHub.Broadcast(hub.DeviceUpdated, device)
 
 	return nil
+}
+
+func (p *PayloadProcessor) Equeue(id string, payload interface{}) error {
+
+	return p.workerPool.AddTask(&processorTask{Id: id, Payload: payload})
 }
 
 func (p *PayloadProcessor) updateDevice(node *NodePayload, data map[string]interface{}) bool {

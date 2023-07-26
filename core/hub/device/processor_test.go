@@ -23,6 +23,7 @@ func createMockPayload() map[string]interface{} {
 		"temperature": 17.1,
 	}
 }
+
 func TestProcessorAddsNewDevice(t *testing.T) {
 
 	repo := device.NewMemoryNodeRepository()
@@ -32,6 +33,7 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 	p := device.NewPayloadProcessor(repo, eventHub, context.Background())
 	addDevice(p, id, payload)
 
+	time.Sleep(100 * time.Millisecond)
 	device, err := repo.FindDevice(id)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -53,7 +55,7 @@ func createPayload(data string) interface{} {
 	return payload
 }
 func addDevice(p device.Processor, id string, payload interface{}) {
-	err := p.Process(id, payload)
+	err := p.Equeue(id, payload)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -72,6 +74,7 @@ func TestProcessorUpdatesExistingDevice(t *testing.T) {
 	addDevice(p, "device2", payload2)
 	addDevice(p, "device2", payload1)
 
+	time.Sleep(100 * time.Millisecond)
 	id := "device2"
 	device, err := repo.FindDevice(id)
 	if err != nil {
@@ -97,11 +100,13 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 
 	eventHub := &mocks.NopWsServer{}
 	p := device.NewPayloadProcessor(repo, eventHub, context.Background())
-	err = p.Process(id, payload)
+	err = p.Equeue(id, payload)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
+	want := time.Now().Format(time.RFC3339)
+	time.Sleep(100 * time.Millisecond)
 	device, err := repo.FindDevice(id)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -113,7 +118,7 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 	if device.Stats["last_seen"] == nil {
 		t.Fatalf("want %s got %s", "last_seen", "nil")
 	}
-	want := time.Now().Format(time.RFC3339)
+
 	if device.Stats["last_seen"] != want {
 		t.Fatalf("want %s got %s", want, device.Stats["last_seen"])
 	}
@@ -156,11 +161,11 @@ func TestOnlyNewPayloadIsBroadcasted(t *testing.T) {
 		// use test case for updating sensor values
 		payload[testCase.key] = testCase.value
 
-		err := p.Process(id, payload)
+		err := p.Equeue(id, payload)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
-
+		time.Sleep(100 * time.Millisecond)
 		if testCase.broadcast != messageBroadcasted {
 			t.Fatalf("idx %d,key %s, value %v, broadcast want %v got %v", idx, testCase.key, testCase.value, testCase.broadcast, messageBroadcasted)
 		}
