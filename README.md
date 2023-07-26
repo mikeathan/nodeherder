@@ -92,3 +92,36 @@ conn="mqtt"
 power_source battery or mains
 data:
 {"type":"connected","payload":[{"id":"device 1","conn":"mqtt","power_source":"battery","sensors":{"humidity":92.49999999999999,"temperature":19.000000000000004},"stats":{"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":47,"battery":98}},{"id":"device 2","conn":"mqtt","power_source":"mains","sensors":{"presence":false,"illuminance_lux":103},"stats":{"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":67}},{"id":"device 3","conn":"http","power_source":"","sensors":{"humidity":41,"temperature":10,"pressure":68},"stats":{"availability":"offline","last_seen":"2023-07-20T19:48:35+01:00"}}]}
+
+Mqtt payload handling :
+
+IDEAS:
+
+1. WorkerPool returns results channel and controller handles them
+2. Processor takes controller? and does the repo.store and ws.send by calling controller function
+   -problem: dependecies between Processor and controller
+3. Separate controller:
+   - ws is resposible for its event handling
+   - mqtt for triggering processor
+   - Processor still needs repo and eventHub
+   - dependencies:
+     - ws -> repo
+     - mqtt -> Processor
+     - Processor -> ws and repo
+
+mqtt.onNewEvent{
+Processor.Enqueue(id, payload)
+}
+
+ws.onConnected{
+return all_devices()
+}
+
+Processor.ProcessPayload(id, payload){
+if payload == new || updated{
+
+        repo.store(payload)
+        ws.send(payload)
+    }
+
+}
