@@ -2,6 +2,7 @@ package pool
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 )
@@ -34,7 +35,7 @@ func (w *WorkerPool) Start() {
 }
 
 func (w *WorkerPool) startWorkers() {
-
+	defer close(w.queue)
 	defer close(w.quit)
 
 	w.wg.Add(w.numOfWorkers)
@@ -75,23 +76,24 @@ func (w *WorkerPool) Wait() {
 }
 
 func (w *WorkerPool) Stop() {
-	//close(w.quit)
-	w.wg.Wait()
+	close(w.quit)
 }
 
-func (w *WorkerPool) AddTask(task Task) {
+func (w *WorkerPool) AddTask(task Task) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New(fmt.Sprint("not accepting new jobs: ", r))
+		}
+	}()
 
 	select {
 	case <-w.quit:
-		fmt.Println("queue is closed. cannot add task")
-		return
+		return errors.New("not accepting new jobs")
 	case <-w.ctx.Done():
-		fmt.Printf("Cancelled worker. Error: %v\n", w.ctx.Err())
-		return
-	default:
-		w.queue <- task
+		return fmt.Errorf("cancelled worker. Error: %v", w.ctx.Err())
+	case w.queue <- task:
+		return nil
 	}
-
 }
 
 func (w *WorkerPool) AddWorkNonBlocking(task Task) {

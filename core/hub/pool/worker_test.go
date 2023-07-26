@@ -63,7 +63,7 @@ func TestAsyncFuncProcessingAllJobs(t *testing.T) {
 				}
 
 				job := createJobWithFunc(name, eventId, task)
-				worker.AddWorkNonBlocking(job)
+				worker.AddTask(job)
 			}
 		}()
 	}
@@ -83,46 +83,58 @@ func TestAsyncFuncProcessingAllJobs(t *testing.T) {
 
 func TestCancelContextStopsWorker(t *testing.T) {
 
-	var expectedFinishedJobs = 2
-	var finishedJobs = 0
+	testCases := []struct {
+		numOfJobs int
+	}{
+		{numOfJobs: 1},
+		{numOfJobs: 2},
+		{numOfJobs: 3},
+	}
+	for _, testCase := range testCases {
+		var expectedFinishedJobs = testCase.numOfJobs
+		var finishedJobs = 0
 
-	ctx, cancelCtx := context.WithCancel(context.Background())
-	worker := pool.NewWorkerPool(expectedFinishedJobs, ctx)
-	worker.Start()
-	numOfTasks := 10
+		ctx, cancelCtx := context.WithCancel(context.Background())
+		worker := pool.NewWorkerPool(expectedFinishedJobs, ctx)
+		worker.Start()
+		numOfTasks := 10
 
-	for j := 0; j < numOfTasks; j++ {
-		eventId := j
-		func() {
-			task := func() {
-				select {
-				case <-ctx.Done():
-					return
-				default:
-					break
-				}
+		go func() {
+			for j := 0; j < numOfTasks; j++ {
+				eventId := j
+				func() {
+					task := func() {
+						select {
+						case <-ctx.Done():
+							return
+						default:
+							break
+						}
 
-				for i := 0; i < 10; i++ {
-					time.Sleep(100 * time.Millisecond)
-				}
-				fmt.Printf("Job: %d finished\n", eventId)
-				finishedJobs++
+						for i := 0; i < 10; i++ {
+							time.Sleep(100 * time.Millisecond)
+						}
+						fmt.Printf("Job: %d finished\n", eventId)
+						finishedJobs++
+					}
+
+					job := createJobWithFunc("test", eventId, task)
+					fmt.Println("adding", eventId)
+					worker.AddTask(job)
+				}()
 			}
-
-			job := createJobWithFunc("test", eventId, task)
-			fmt.Println("adding", eventId)
-			worker.AddWorkNonBlocking(job)
 		}()
+
+		go func() {
+			time.Sleep(1 * time.Second)
+			cancelCtx()
+		}()
+		worker.Wait()
+
+		if finishedJobs != expectedFinishedJobs {
+			t.Errorf("Not matching num of finished jobs: got %d want %d", finishedJobs, expectedFinishedJobs)
+		}
+		fmt.Println("finish ")
 	}
 
-	go func() {
-		time.Sleep(1 * time.Second)
-		cancelCtx()
-	}()
-	worker.Wait()
-
-	if finishedJobs != expectedFinishedJobs {
-		t.Errorf("Not matching num of finished jobs: got %d want %d", finishedJobs, expectedFinishedJobs)
-	}
-	fmt.Println("finish ")
 }
