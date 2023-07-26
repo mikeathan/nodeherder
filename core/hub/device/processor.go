@@ -1,8 +1,10 @@
 package device
 
 import (
+	"context"
 	"errors"
 	"node-herder/hub"
+	"node-herder/hub/pool"
 	"time"
 )
 
@@ -48,12 +50,19 @@ type Processor interface {
 	Process(id string, payload interface{}) error
 }
 type PayloadProcessor struct {
-	eventHub hub.EventHub
-	repo     Repository
+	eventHub   hub.EventHub
+	repo       Repository
+	workerPool pool.WorkerPool
+	ctx        context.Context
 }
 
-func NewPayloadProcessor(repo Repository, eventHub hub.EventHub) Processor {
-	return &PayloadProcessor{repo: repo, eventHub: eventHub}
+func NewPayloadProcessor(repo Repository, eventHub hub.EventHub, ctx context.Context) Processor {
+	return &PayloadProcessor{
+		repo:       repo,
+		eventHub:   eventHub,
+		ctx:        ctx,
+		workerPool: *pool.NewWorkerPool(1, ctx),
+	}
 }
 
 func getCurrentTime() string {

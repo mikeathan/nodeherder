@@ -1,6 +1,7 @@
 package device_test
 
 import (
+	"context"
 	"encoding/json"
 	"node-herder/hub"
 	"node-herder/hub/device"
@@ -28,7 +29,7 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 	id := "device1"
 	var payload = createPayload(device1BatterySource)
 	eventHub := &mocks.NopWsServer{}
-	p := device.NewPayloadProcessor(repo, eventHub)
+	p := device.NewPayloadProcessor(repo, eventHub, context.Background())
 	addDevice(p, id, payload)
 
 	device, err := repo.FindDevice(id)
@@ -66,7 +67,7 @@ func TestProcessorUpdatesExistingDevice(t *testing.T) {
 	var payload2 = createPayload(device2)
 
 	eventHub := &mocks.NopWsServer{}
-	p := device.NewPayloadProcessor(repo, eventHub)
+	p := device.NewPayloadProcessor(repo, eventHub, context.Background())
 	addDevice(p, "device1", payload1)
 	addDevice(p, "device2", payload2)
 	addDevice(p, "device2", payload1)
@@ -95,7 +96,7 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 	}
 
 	eventHub := &mocks.NopWsServer{}
-	p := device.NewPayloadProcessor(repo, eventHub)
+	p := device.NewPayloadProcessor(repo, eventHub, context.Background())
 	err = p.Process(id, payload)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -148,7 +149,7 @@ func TestOnlyNewPayloadIsBroadcasted(t *testing.T) {
 	}
 
 	eventHub := newMockBroadcastEventHub(broadcast)
-	p := device.NewPayloadProcessor(repo, eventHub)
+	p := device.NewPayloadProcessor(repo, eventHub, context.Background())
 	for idx, testCase := range testCases {
 		// reset
 		messageBroadcasted = false
