@@ -87,7 +87,8 @@ func NewServer(port int, ctx context.Context, config MqttConfig, repo device.Rep
 	s.controller = NewController(
 		WithRepository(repo),
 		WithMqtt(mqtt),
-		WithEventHub(eventHub))
+		WithEventHub(eventHub),
+		WithContext(ctx))
 
 	s.api = registerApiServer(port, ctx, eventHub)
 	return s

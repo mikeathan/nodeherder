@@ -1,6 +1,7 @@
 package hub
 
 import (
+	"context"
 	"node-herder/device"
 	"node-herder/mocks"
 
@@ -11,6 +12,7 @@ type Controller struct {
 	eventHub EventHub
 	mqtt     MqttClient
 	repo     device.Repository
+	ctx      context.Context
 }
 
 func NewController(opts ...func(h *Controller)) *Controller {
@@ -18,6 +20,7 @@ func NewController(opts ...func(h *Controller)) *Controller {
 		eventHub: &mocks.NopWsServer{},
 		mqtt:     &mocks.NopMqttClient{},
 		repo:     &mocks.NopRepository{},
+		ctx:      context.Background(),
 	}
 
 	for _, opt := range opts {
@@ -62,4 +65,8 @@ func WithEventHub(eventhub EventHub) func(h *Controller) {
 
 func WithMqtt(mqtt MqttClient) func(h *Controller) {
 	return func(h *Controller) { h.mqtt = mqtt }
+}
+
+func WithContext(ctx context.Context) func(h *Controller) {
+	return func(h *Controller) { h.ctx = ctx }
 }
