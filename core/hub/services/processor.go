@@ -95,7 +95,7 @@ func (p *PayloadProcessor) process(task pool.Task) error {
 	if device != nil && !p.updateDevice(device, data) {
 		return nil
 	} else {
-		device = p.addDevice(id, data)
+		device = p.createNewDevice(id, data)
 	}
 	p.repo.Store(id, device)
 	p.eventHub.Broadcast(hub.DeviceUpdated, device)
@@ -120,7 +120,7 @@ func (p *PayloadProcessor) updateDevice(node *device.Payload, data map[string]in
 	return updated
 }
 
-func (p *PayloadProcessor) addDevice(id string, data map[string]interface{}) *device.Payload {
+func (p *PayloadProcessor) createNewDevice(id string, data map[string]interface{}) *device.Payload {
 	// TODO:
 	// have a timer to see if item is available, if not set offline
 	// data["availability"] = "offline"
