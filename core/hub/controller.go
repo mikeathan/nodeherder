@@ -45,7 +45,10 @@ func NewController(opts ...func(h *Controller)) *Controller {
 
 	return h
 }
-
+func (c *Controller) processPayload() {
+	// determine if payload is new or existing data that needs keeping
+	// then store and emit
+}
 func (c *Controller) Connect() error {
 	err := c.mqtt.Connect()
 	if err != nil {
