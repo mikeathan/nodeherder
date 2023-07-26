@@ -108,6 +108,11 @@ IDEAS:
      - ws -> repo
      - mqtt -> Processor
      - Processor -> ws and repo
+4. Replace controller with Processor or Processor becomes the controller
+
+ws = EventHub(repo)
+Processor= Processor(EventHub, Repo)
+mqtt = Exposes handler for someone to use Processor
 
 mqtt.onNewEvent{
 Processor.Enqueue(id, payload)
