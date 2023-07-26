@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"node-herder/device"
 	"node-herder/hub"
 	"os"
 	"os/signal"
@@ -40,7 +41,7 @@ func main() {
 		cancelCtx()
 	}()
 
-	repo := hub.NewMemoryRepository()
+	repo := device.NewMemoryNodeRepository()
 	mqttConfig := hub.MqttConfig{
 		Username: "sinkhole",
 		Password: "mqtt2023",

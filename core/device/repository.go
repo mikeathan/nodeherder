@@ -6,28 +6,22 @@ import (
 	"sync"
 )
 
-type Repository interface {
-	Store(deviceName string, payload *NodePayload)
-	ListAllDevices() []*NodePayload
-	FindDevice(deviceName string) (*NodePayload, error)
-}
-
 type MemoryNodeRepository struct {
-	store map[string]*NodePayload
+	store map[string]*Payload
 	mutex sync.RWMutex
 }
 
 func NewMemoryNodeRepository() Repository {
-	return &MemoryNodeRepository{store: map[string]*NodePayload{}, mutex: sync.RWMutex{}}
+	return &MemoryNodeRepository{store: map[string]*Payload{}, mutex: sync.RWMutex{}}
 }
 
-func (s *MemoryNodeRepository) Store(deviceName string, payload *NodePayload) {
+func (s *MemoryNodeRepository) Store(deviceName string, payload *Payload) {
 	s.mutex.Lock()
 	s.store[deviceName] = payload
 	s.mutex.Unlock()
 }
 
-func (s *MemoryNodeRepository) FindDevice(deviceName string) (*NodePayload, error) {
+func (s *MemoryNodeRepository) FindDevice(deviceName string) (*Payload, error) {
 	defer s.mutex.RUnlock()
 
 	s.mutex.RLock()
@@ -39,7 +33,7 @@ func (s *MemoryNodeRepository) FindDevice(deviceName string) (*NodePayload, erro
 
 }
 
-func (s *MemoryNodeRepository) ListAllDevices() []*NodePayload {
+func (s *MemoryNodeRepository) ListAllDevices() []*Payload {
 
 	// sort before returning values
 	s.mutex.RLock()
@@ -50,7 +44,7 @@ func (s *MemoryNodeRepository) ListAllDevices() []*NodePayload {
 
 	sort.Strings(keys)
 
-	devices := make([]*NodePayload, 0, len(s.store))
+	devices := make([]*Payload, 0, len(s.store))
 	for _, key := range keys {
 		device := s.store[key]
 		devices = append(devices, device)

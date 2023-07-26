@@ -2,7 +2,7 @@ package mocks
 
 import (
 	"fmt"
-	"node-herder/models"
+	"node-herder/device"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gorilla/websocket"
@@ -66,24 +66,18 @@ func (m *NopMqttClient) OnMessageHandler(handler func(client mqtt.Client, msg mq
 type NopRepository struct {
 }
 
-func (w *NopRepository) StoreJson(deviceName string, payload []byte) error {
-	fmt.Println("Empty StoreJson")
-	return nil
+func (w *NopRepository) Store(deviceName string, payload *device.Payload) {
+	fmt.Println("Empty Store")
 }
 
-func (w *NopRepository) StoreObject(deviceName string, payload interface{}) error {
-	fmt.Println("Empty StoreObject")
-	return nil
-}
-
-func (w *NopRepository) ListAllDevices() []*models.Device {
+func (w *NopRepository) ListAllDevices() []*device.Payload {
 
 	fmt.Println("Empty ListAllDevices")
-	return []*models.Device{}
+	return []*device.Payload{}
 }
 
-func (w *NopRepository) FindDevice(deviceName string) (*models.Device, error) {
+func (w *NopRepository) FindDevice(deviceName string) (*device.Payload, error) {
 
 	fmt.Println("Empty FindDevice")
-	return &models.Device{}, nil
+	return &device.Payload{}, nil
 }

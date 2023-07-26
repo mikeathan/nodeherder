@@ -1,9 +1,10 @@
-package device
+package services
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"node-herder/device"
 	"node-herder/hub"
 	"node-herder/hub/pool"
 	"time"
@@ -31,23 +32,6 @@ var lastSeenKey = "last_seen"
 var connectionTypeKey = "conn"
 var connectionTypeMqtt = "mqtt"
 
-type NodePayload struct {
-	Id                 string         `json:"id"`
-	ConnectionType     string         `json:"conn"`
-	PowerSource        string         `json:"power_source"`
-	Sensors            map[string]any `json:"sensors"`
-	Stats              map[string]any `json:"stats"`
-	availabilityTicker time.Ticker
-}
-
-func NewNodePayload() *NodePayload {
-	return &NodePayload{
-		Sensors:            map[string]any{},
-		Stats:              map[string]any{},
-		availabilityTicker: time.Ticker{},
-	}
-}
-
 type Processor interface {
 	Equeue(id string, payload interface{}) error
 }
@@ -63,13 +47,13 @@ func (m *processorTask) OnFailure(err error) {
 
 type PayloadProcessor struct {
 	eventHub   hub.EventHub
-	repo       Repository
+	repo       device.Repository
 	workerPool pool.WorkerPool
 	ctx        context.Context
 	procFunc   func(t pool.Task) error
 }
 
-func NewPayloadProcessor(repo Repository, eventHub hub.EventHub, ctx context.Context) Processor {
+func NewPayloadProcessor(repo device.Repository, eventHub hub.EventHub, ctx context.Context) Processor {
 	p := &PayloadProcessor{
 		repo:     repo,
 		eventHub: eventHub,
@@ -124,7 +108,7 @@ func (p *PayloadProcessor) Equeue(id string, payload interface{}) error {
 	return p.workerPool.AddTask(&processorTask{Id: id, Payload: payload})
 }
 
-func (p *PayloadProcessor) updateDevice(node *NodePayload, data map[string]interface{}) bool {
+func (p *PayloadProcessor) updateDevice(node *device.Payload, data map[string]interface{}) bool {
 	var updated = false
 	for key, currValue := range node.Sensors {
 		if newValue, ok := data[key]; ok && newValue != currValue {
@@ -136,7 +120,7 @@ func (p *PayloadProcessor) updateDevice(node *NodePayload, data map[string]inter
 	return updated
 }
 
-func (p *PayloadProcessor) addDevice(id string, data map[string]interface{}) *NodePayload {
+func (p *PayloadProcessor) addDevice(id string, data map[string]interface{}) *device.Payload {
 	// TODO:
 	// have a timer to see if item is available, if not set offline
 	// data["availability"] = "offline"
@@ -150,7 +134,7 @@ func (p *PayloadProcessor) addDevice(id string, data map[string]interface{}) *No
 	// Todo: need to pass in payload
 	data[connectionTypeKey] = connectionTypeMqtt
 
-	var newNode = NewNodePayload()
+	var newNode = device.NewPayload()
 	newNode.Id = id
 	for key, value := range data {
 		if _, ok := sensorWhitelist[key]; ok {

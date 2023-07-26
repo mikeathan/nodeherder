@@ -1,8 +1,8 @@
 package hub
 
 import (
-	"fmt"
-	"node-herder/hub/mocks"
+	"node-herder/device"
+	"node-herder/mocks"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
@@ -10,7 +10,7 @@ import (
 type Controller struct {
 	eventHub EventHub
 	mqtt     MqttClient
-	repo     Repository
+	repo     device.Repository
 }
 
 func NewController(opts ...func(h *Controller)) *Controller {
@@ -30,14 +30,14 @@ func NewController(opts ...func(h *Controller)) *Controller {
 
 	h.mqtt.OnMessageHandler(func(client mqtt.Client, msg mqtt.Message) {
 
-		var name = SanitizeTopic(msg.Topic())
-		var payload = msg.Payload()
+		// var name = SanitizeTopic(msg.Topic())
+		// var payload = msg.Payload()
 
-		fmt.Printf("mqtt Message => Topic: %s, Payload: %s\n", msg.Topic(), msg.Payload())
-		h.repo.StoreJson(name, payload)
+		// fmt.Printf("mqtt Message => Topic: %s, Payload: %s\n", msg.Topic(), msg.Payload())
+		// h.repo.StoreJson(name, payload)
 
-		device, _ := h.repo.FindDevice(name)
-		h.eventHub.Broadcast(DeviceUpdated, device)
+		// device, _ := h.repo.FindDevice(name)
+		// h.eventHub.Broadcast(DeviceUpdated, device)
 	})
 
 	return h
@@ -52,7 +52,7 @@ func (c *Controller) Connect() error {
 	return nil
 }
 
-func WithRepository(repo Repository) func(h *Controller) {
+func WithRepository(repo device.Repository) func(h *Controller) {
 	return func(h *Controller) { h.repo = repo }
 }
 

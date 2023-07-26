@@ -1,11 +1,12 @@
-package device_test
+package services_test
 
 import (
 	"context"
 	"encoding/json"
+	"node-herder/device"
 	"node-herder/hub"
-	"node-herder/hub/device"
-	"node-herder/hub/mocks"
+	"node-herder/hub/services"
+	"node-herder/mocks"
 	"testing"
 	"time"
 )
@@ -30,7 +31,7 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 	id := "device1"
 	var payload = createPayload(device1BatterySource)
 	eventHub := &mocks.NopWsServer{}
-	p := device.NewPayloadProcessor(repo, eventHub, context.Background())
+	p := services.NewPayloadProcessor(repo, eventHub, context.Background())
 	addDevice(p, id, payload)
 
 	time.Sleep(100 * time.Millisecond)
@@ -54,7 +55,7 @@ func createPayload(data string) interface{} {
 	}
 	return payload
 }
-func addDevice(p device.Processor, id string, payload interface{}) {
+func addDevice(p services.Processor, id string, payload interface{}) {
 	err := p.Equeue(id, payload)
 	if err != nil {
 		panic(err.Error())
@@ -69,7 +70,7 @@ func TestProcessorUpdatesExistingDevice(t *testing.T) {
 	var payload2 = createPayload(device2)
 
 	eventHub := &mocks.NopWsServer{}
-	p := device.NewPayloadProcessor(repo, eventHub, context.Background())
+	p := services.NewPayloadProcessor(repo, eventHub, context.Background())
 	addDevice(p, "device1", payload1)
 	addDevice(p, "device2", payload2)
 	addDevice(p, "device2", payload1)
@@ -99,7 +100,7 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 	}
 
 	eventHub := &mocks.NopWsServer{}
-	p := device.NewPayloadProcessor(repo, eventHub, context.Background())
+	p := services.NewPayloadProcessor(repo, eventHub, context.Background())
 	err = p.Equeue(id, payload)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -154,7 +155,7 @@ func TestOnlyNewPayloadIsBroadcasted(t *testing.T) {
 	}
 
 	eventHub := newMockBroadcastEventHub(broadcast)
-	p := device.NewPayloadProcessor(repo, eventHub, context.Background())
+	p := services.NewPayloadProcessor(repo, eventHub, context.Background())
 	for idx, testCase := range testCases {
 		// reset
 		messageBroadcasted = false
