@@ -8,7 +8,6 @@ import (
 )
 
 type Task interface {
-	Execute() error
 	OnFailure(error)
 }
 
@@ -18,16 +17,25 @@ type WorkerPool struct {
 	ctx          context.Context
 	quit         chan bool
 	wg           *sync.WaitGroup
+	procFunc     func(Task) error
 }
 
-func NewWorkerPool(numOfWorkers int, ctx context.Context) *WorkerPool {
+func NewWorkerPool(numOfWorkers int, ctx context.Context, procFunc func(Task) error) *WorkerPool {
 	return &WorkerPool{
 		numOfWorkers: numOfWorkers,
 		ctx:          ctx,
 		queue:        make(chan Task),
 		quit:         make(chan bool),
 		wg:           &sync.WaitGroup{},
+		procFunc:     procFunc,
 	}
+}
+func (w *WorkerPool) WithProcessFunc(procFunc func(Task) error) {
+	w.procFunc = procFunc
+}
+
+func (w *WorkerPool) WithContext(ctx context.Context) {
+	w.ctx = ctx
 }
 
 func (w *WorkerPool) Start() {
@@ -65,9 +73,14 @@ func (w *WorkerPool) worker(workerId int, wg *sync.WaitGroup) {
 				fmt.Printf("stopping worker %d with closed tasks channel\n", workerId)
 				return
 			}
-			if err := task.Execute(); err != nil {
+			// TEST WIP
+
+			if err := w.procFunc(task); err != nil {
 				task.OnFailure(err)
 			}
+			// if err := task.Execute(); err != nil {
+			// 	task.OnFailure(err)
+			// }
 		}
 	}
 }

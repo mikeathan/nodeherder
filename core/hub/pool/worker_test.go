@@ -14,31 +14,34 @@ func timeTrack(start time.Time, name string) {
 	fmt.Printf("%s took %s \n", name, elapsed)
 }
 
-type mockJobWithFunc struct {
-	id      string
-	eventId int
-	task    func()
+type mockTask struct {
+	Id      string
+	EventId int
 }
 
-func createJobWithFunc(id string, eventId int, task func()) *mockJobWithFunc {
-	return &mockJobWithFunc{id: id, eventId: eventId, task: task}
-
-}
-func (m *mockJobWithFunc) OnFailure(err error) {
-	fmt.Printf("Job: %s error: %s", m.id, err.Error())
+func (m *mockTask) OnFailure(err error) {
+	fmt.Printf("Job: %s EventId: %d Error: %s", m.Id, m.EventId, err.Error())
 }
 
-func (m *mockJobWithFunc) Execute() error {
-
-	m.task()
-	return nil
+func createTask(id string, eventId int) pool.Task {
+	return &mockTask{Id: id, EventId: eventId}
 }
 
 func TestAsyncFuncProcessingAllJobs(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	ticker := time.NewTicker(10 * time.Second)
 	ctx, _ := context.WithCancel(context.Background())
-	worker := pool.NewWorkerPool(1, ctx)
+
+	procesFunc := func(task pool.Task) error {
+
+		mockTask := task.(*mockTask)
+		fmt.Printf("Processing Id: %s  EventId: %d \n", mockTask.Id, mockTask.EventId)
+		time.Sleep(10 * time.Millisecond)
+		wg.Done()
+		return nil
+	}
+
+	worker := pool.NewWorkerPool(1, ctx, procesFunc)
 	worker.Start()
 
 	var processed = false
@@ -57,12 +60,8 @@ func TestAsyncFuncProcessingAllJobs(t *testing.T) {
 
 			for j := 0; j < numOfTasks; j++ {
 				eventId := j
-				task := func() {
-					defer wg.Done()
-					time.Sleep(10 * time.Millisecond)
-				}
 
-				job := createJobWithFunc(name, eventId, task)
+				job := createTask(name, eventId)
 				worker.AddTask(job)
 			}
 		}()
@@ -94,31 +93,26 @@ func TestCancelContextStopsWorker(t *testing.T) {
 		var expectedFinishedJobs = testCase.numOfJobs
 		var finishedJobs = 0
 
+		procesFunc := func(task pool.Task) error {
+			mockTask := task.(*mockTask)
+			for i := 0; i < 10; i++ {
+				time.Sleep(100 * time.Millisecond)
+			}
+			fmt.Printf("Job: %d finished\n", mockTask.EventId)
+			finishedJobs++
+			return nil
+		}
+
 		ctx, cancelCtx := context.WithCancel(context.Background())
-		worker := pool.NewWorkerPool(expectedFinishedJobs, ctx)
+		worker := pool.NewWorkerPool(expectedFinishedJobs, ctx, procesFunc)
 		worker.Start()
 		numOfTasks := 10
 
 		go func() {
-			for j := 0; j < numOfTasks; j++ {
+			for j := 1; j <= numOfTasks; j++ {
 				eventId := j
 				func() {
-					task := func() {
-						select {
-						case <-ctx.Done():
-							return
-						default:
-							break
-						}
-
-						for i := 0; i < 10; i++ {
-							time.Sleep(100 * time.Millisecond)
-						}
-						fmt.Printf("Job: %d finished\n", eventId)
-						finishedJobs++
-					}
-
-					job := createJobWithFunc("test", eventId, task)
+					job := createTask("test", eventId)
 					fmt.Println("adding", eventId)
 					worker.AddTask(job)
 				}()
