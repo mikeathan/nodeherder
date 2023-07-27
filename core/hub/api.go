@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"node-herder/device"
+	"node-herder/devices"
 )
 
 type apiServer struct {
@@ -78,7 +78,7 @@ type Server struct {
 	ctx        context.Context
 }
 
-func NewServer(port int, ctx context.Context, config MqttConfig, repo device.Repository) *Server {
+func NewServer(port int, ctx context.Context, config MqttConfig, repo devices.Repository) *Server {
 
 	s := &Server{ctx: ctx}
 	eventHub := NewWsHub()

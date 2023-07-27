@@ -1,6 +1,9 @@
-package device
+package devices
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 var sensorWhitelist = map[string]int{
 	"temperature":     1,
@@ -24,13 +27,7 @@ var lastSeenKey = "last_seen"
 var connectionTypeKey = "conn"
 var connectionTypeMqtt = "mqtt"
 
-type Repository interface {
-	Store(deviceName string, payload *Payload)
-	ListAllDevices() []*Payload
-	FindDevice(deviceName string) (*Payload, error)
-}
-
-type Payload struct {
+type Device struct {
 	Id                 string         `json:"id"`
 	ConnectionType     string         `json:"conn"`
 	PowerSource        string         `json:"power_source"`
@@ -39,15 +36,15 @@ type Payload struct {
 	availabilityTicker time.Ticker
 }
 
-func NewPayload() *Payload {
-	return &Payload{
+func newDevice() *Device {
+	return &Device{
 		Sensors:            map[string]any{},
 		Stats:              map[string]any{},
 		availabilityTicker: time.Ticker{},
 	}
 }
 
-func CreateDevicePayload(id string, data map[string]interface{}) *Payload {
+func CreateNewDevice(id string, data map[string]interface{}) *Device {
 	// sanitize payload,
 	// TODO: need optimization
 	if _, ok := data[lastSeenKey]; !ok {
@@ -61,7 +58,7 @@ func CreateDevicePayload(id string, data map[string]interface{}) *Payload {
 	// Todo: need to pass in payload
 	data[connectionTypeKey] = connectionTypeMqtt
 
-	var newNode = NewPayload()
+	var newNode = newDevice()
 	newNode.Id = id
 	for key, value := range data {
 		if _, ok := sensorWhitelist[key]; ok {
@@ -74,7 +71,7 @@ func CreateDevicePayload(id string, data map[string]interface{}) *Payload {
 	return newNode
 }
 
-func TryUpdateDevicePayload(node *Payload, data map[string]interface{}) bool {
+func TryUpdateDevice(node *Device, data map[string]interface{}) bool {
 	if _, ok := data[lastSeenKey]; !ok {
 		data[lastSeenKey] = getCurrentTime()
 	}
@@ -93,4 +90,28 @@ func TryUpdateDevicePayload(node *Payload, data map[string]interface{}) bool {
 
 func getCurrentTime() string {
 	return time.Now().Format(time.RFC3339)
+}
+
+// newNode.availabilityTicker = *time.NewTicker(1 * time.Hour)
+// done := make(chan bool)
+
+// go func() {
+// 	for {
+// 		select {
+// 		// use context to kill goroutine
+// 		case <-done:
+// 			//newNode.Stats[availabilityKey] = "offline"
+// 		case t := <-newNode.availabilityTicker.C:
+// 			// if t >= newNode.last_seen
+// 			// flag offline
+// 			//newNode.Stats[availabilityKey] = "online"
+// 		}
+// 	}
+// }()
+
+func convertToMap(payload interface{}) (map[string]interface{}, error) {
+	if data, ok := payload.(map[string]interface{}); ok {
+		return data, nil
+	}
+	return nil, errors.New("invalid device data")
 }
