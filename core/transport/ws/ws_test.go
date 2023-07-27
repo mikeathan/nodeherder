@@ -1,11 +1,12 @@
-package hub_test
+package ws_test
 
 import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"node-herder/hub"
+	"node-herder/transport/routes"
+	"node-herder/transport/ws"
 	"testing"
 
 	"github.com/gorilla/websocket"
@@ -30,18 +31,18 @@ func TestHubNewClientConnectedEventsTypesOfPayloads(t *testing.T) {
 
 	for _, testCase := range testCases {
 
-		wsHub := hub.NewWsHub()
+		wsHub := ws.NewWsHub()
 		wsHub.OnConnected(func() interface{} {
 			return testCase.Payload
 		})
-		h := hub.NewWsHandler(wsHub)
-		s, ws := NewTestWsServer(t, h)
+		h := routes.NewWsHandler(wsHub)
+		s, wsConn := NewTestWsServer(t, h)
 
-		reply := receiveWSMessage(t, ws)
+		reply := receiveWSMessage(t, wsConn)
 		gotType := reply["type"]
 
-		if gotType != hub.ClientConnected {
-			t.Fatalf("Expected type %+v', got '%+v'", hub.ClientConnected, gotType)
+		if gotType != ws.ClientConnected {
+			t.Fatalf("Expected type %+v', got '%+v'", ws.ClientConnected, gotType)
 		}
 		gotData := reply["payload"]
 		wantData := testCase.Message
@@ -50,8 +51,8 @@ func TestHubNewClientConnectedEventsTypesOfPayloads(t *testing.T) {
 		}
 
 		defer s.Close()
-		defer ws.Close()
-		ws.Close()
+		defer wsConn.Close()
+		wsConn.Close()
 	}
 }
 
@@ -60,20 +61,20 @@ func TestHubNewClientConnectedEvents(t *testing.T) {
 	var expectedPayload = []byte("{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}")
 	var expectedMessage = "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"
 
-	wsHub := hub.NewWsHub()
+	wsHub := ws.NewWsHub()
 	wsHub.OnConnected(func() interface{} {
 		return expectedPayload
 	})
-	h := hub.NewWsHandler(wsHub)
+	h := routes.NewWsHandler(wsHub)
 
 	for i := 0; i < 4; i++ {
-		s, ws := NewTestWsServer(t, h)
+		s, wsConn := NewTestWsServer(t, h)
 
-		reply := receiveWSMessage(t, ws)
+		reply := receiveWSMessage(t, wsConn)
 		gotType := reply["type"]
 
-		if gotType != hub.ClientConnected {
-			t.Fatalf("Expected type %+v', got '%+v'", hub.ClientConnected, gotType)
+		if gotType != ws.ClientConnected {
+			t.Fatalf("Expected type %+v', got '%+v'", ws.ClientConnected, gotType)
 		}
 		gotData := reply["payload"]
 		if gotData != expectedMessage {
@@ -81,7 +82,7 @@ func TestHubNewClientConnectedEvents(t *testing.T) {
 		}
 
 		defer s.Close()
-		defer ws.Close()
+		defer wsConn.Close()
 	}
 }
 
@@ -90,21 +91,21 @@ func TestHubNewClientEventsAreReceived(t *testing.T) {
 	var expectedPayload = []byte("{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}")
 	var expectedMessage = "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"
 
-	wsHub := hub.NewWsHub()
-	h := hub.NewWsHandler(wsHub)
+	wsHub := ws.NewWsHub()
+	h := routes.NewWsHandler(wsHub)
 
 	for i := 0; i < 4; i++ {
-		s, ws := NewTestWsServer(t, h)
+		s, wsConn := NewTestWsServer(t, h)
 
-		er := wsHub.Broadcast(hub.DeviceUpdated, expectedPayload)
+		er := wsHub.Broadcast(ws.DeviceUpdated, expectedPayload)
 		if er != nil {
 			t.Fatalf("hub broadcast failed  %v", er)
 		}
-		reply := receiveWSMessage(t, ws)
+		reply := receiveWSMessage(t, wsConn)
 		gotType := reply["type"]
 
-		if gotType != hub.DeviceUpdated {
-			t.Fatalf("Expected type %+v', got '%+v'", hub.DeviceUpdated, gotType)
+		if gotType != ws.DeviceUpdated {
+			t.Fatalf("Expected type %+v', got '%+v'", ws.DeviceUpdated, gotType)
 		}
 		gotData := reply["payload"]
 		if gotData != expectedMessage {
@@ -112,7 +113,7 @@ func TestHubNewClientEventsAreReceived(t *testing.T) {
 		}
 
 		defer s.Close()
-		defer ws.Close()
+		defer wsConn.Close()
 	}
 
 }

@@ -1,28 +1,28 @@
-package memory
+package repository
 
 import (
 	"errors"
-	"node-herder/devices"
+	"node-herder/models/devices"
 	"sort"
 	"sync"
 )
 
-type MemoryNodeRepository struct {
+type MemoryDeviceRepo struct {
 	store map[string]*devices.Device
 	mutex sync.RWMutex
 }
 
-func NewMemoryNodeRepository() devices.Repository {
-	return &MemoryNodeRepository{store: map[string]*devices.Device{}, mutex: sync.RWMutex{}}
+func NewMemoryDeviceRepo() devices.Repository {
+	return &MemoryDeviceRepo{store: map[string]*devices.Device{}, mutex: sync.RWMutex{}}
 }
 
-func (s *MemoryNodeRepository) Store(deviceName string, Device *devices.Device) {
+func (s *MemoryDeviceRepo) Store(deviceName string, Device *devices.Device) {
 	s.mutex.Lock()
 	s.store[deviceName] = Device
 	s.mutex.Unlock()
 }
 
-func (s *MemoryNodeRepository) FindDevice(deviceName string) (*devices.Device, error) {
+func (s *MemoryDeviceRepo) FindDevice(deviceName string) (*devices.Device, error) {
 	defer s.mutex.RUnlock()
 
 	s.mutex.RLock()
@@ -34,7 +34,7 @@ func (s *MemoryNodeRepository) FindDevice(deviceName string) (*devices.Device, e
 
 }
 
-func (s *MemoryNodeRepository) ListAllDevices() []*devices.Device {
+func (s *MemoryDeviceRepo) ListAllDevices() []*devices.Device {
 
 	// sort before returning values
 	s.mutex.RLock()

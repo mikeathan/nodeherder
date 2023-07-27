@@ -1,4 +1,4 @@
-package hub
+package ws
 
 import (
 	"encoding/json"

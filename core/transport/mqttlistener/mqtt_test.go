@@ -1,8 +1,8 @@
-package hub_test
+package mqttlistener_test
 
 import (
 	"fmt"
-	"node-herder/hub"
+	"node-herder/transport/mqttlistener"
 	"testing"
 	"time"
 
@@ -19,8 +19,8 @@ import (
 //	opts.SetUsername("emqx")
 //	opts.SetPassword("public")
 
-func GetMqttConfig(broker string, messageHandler func(client mqtt.Client, msg mqtt.Message), topics ...string) hub.MqttConfig {
-	return hub.MqttConfig{
+func GetMqttConfig(broker string, messageHandler func(client mqtt.Client, msg mqtt.Message), topics ...string) mqttlistener.MqttConfig {
+	return mqttlistener.MqttConfig{
 		Username:       "sinkhole",
 		Password:       "mqtt2023",
 		Broker:         broker,
@@ -41,12 +41,12 @@ func TestMqttClientReceivesMessage(t *testing.T) {
 	}
 
 	cfg := GetMqttConfig(broker, messageHandler, topic)
-	mqttClient := hub.NewMqttClient(cfg)
+	mqttClient := mqttlistener.NewMqttClient(cfg)
 	mqttClient.Connect()
 	StartMqttNodeClient(cfg, message, 2)
 }
 
-func StartMqttNodeClient(cfg hub.MqttConfig, message string, nEvents int) {
+func StartMqttNodeClient(cfg mqttlistener.MqttConfig, message string, nEvents int) {
 
 	// some fake external device mqqtclient
 	var opts = mqtt.NewClientOptions()
