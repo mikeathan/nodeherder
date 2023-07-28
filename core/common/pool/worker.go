@@ -20,25 +20,22 @@ type WorkerPool struct {
 	procFunc     func(Task) error
 }
 
-func NewWorkerPool(numOfWorkers int, ctx context.Context, procFunc func(Task) error) *WorkerPool {
+func NewWorkerPool(numOfWorkers int, ctx context.Context) *WorkerPool {
 	return &WorkerPool{
 		numOfWorkers: numOfWorkers,
 		ctx:          ctx,
 		queue:        make(chan Task),
 		quit:         make(chan bool),
 		wg:           &sync.WaitGroup{},
-		procFunc:     procFunc,
 	}
-}
-func (w *WorkerPool) WithProcessFunc(procFunc func(Task) error) {
-	w.procFunc = procFunc
 }
 
 func (w *WorkerPool) WithContext(ctx context.Context) {
 	w.ctx = ctx
 }
 
-func (w *WorkerPool) Start() {
+func (w *WorkerPool) Run(procFunc func(Task) error) {
+	w.procFunc = procFunc
 	go w.startWorkers()
 }
 

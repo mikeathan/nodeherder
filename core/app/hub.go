@@ -25,7 +25,7 @@ type HubConnector struct {
 	mqtt     mqtt.MqttClient
 	repo     devices.Repository
 	ctx      context.Context
-	wp       pool.WorkerPool
+	pool     pool.WorkerPool
 	procFunc func(t pool.Task) error
 }
 
@@ -41,19 +41,21 @@ func NewHubConnector(opts ...func(h *HubConnector)) *HubConnector {
 		opt(h)
 	}
 
+	// TODO:
+	// do i need to store procFunc as member variable
 	h.procFunc = func(t pool.Task) error {
 		return h.processPayload(t)
 	}
 
-	h.wp = *pool.NewWorkerPool(1, h.ctx, h.procFunc)
-	h.wp.Start()
+	h.pool = *pool.NewWorkerPool(1, h.ctx)
+	h.pool.Run(h.procFunc)
 
 	h.eventHub.OnConnected(func() interface{} {
 		return h.repo.ListAllDevices()
 	})
 
 	h.mqtt.OnMessageHandler(func(name string, payload []byte) {
-		h.wp.AddTask(&processorTask{Id: name, Payload: payload})
+		h.pool.AddTask(&processorTask{Id: name, Payload: payload})
 	})
 
 	return h
