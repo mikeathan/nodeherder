@@ -11,8 +11,6 @@ import (
 	"node-herder/transport/ws"
 )
 
-// TODO: is this a controller ???????????????????????????
-
 type processorTask struct {
 	Id      string
 	Payload interface{}
@@ -22,7 +20,7 @@ func (m *processorTask) OnFailure(err error) {
 	fmt.Printf("Job: %s Error: %s", m.Id, err.Error())
 }
 
-type HubConnector struct {
+type hubController struct {
 	eventHub ws.EventHub
 	mqtt     mqtt.MqttClient
 	repo     devices.Repository
@@ -31,8 +29,8 @@ type HubConnector struct {
 	procFunc func(t pool.Task) error
 }
 
-func NewHubConnector(opts ...func(h *HubConnector)) *HubConnector {
-	h := &HubConnector{
+func newHubController(opts ...func(h *hubController)) *hubController {
+	h := &hubController{
 		eventHub: &mocks.NopWsServer{},
 		mqtt:     &mocks.NopMqttClient{},
 		repo:     &mocks.NopRepository{},
@@ -73,7 +71,7 @@ func NewHubConnector(opts ...func(h *HubConnector)) *HubConnector {
 	return h
 }
 
-func (c *HubConnector) processPayload(id string, payload map[string]interface{}) error {
+func (c *hubController) processPayload(id string, payload map[string]interface{}) error {
 
 	// REFACTOR !!!!!!!!!!!!!!!!!!!!
 	device, _ := c.repo.FindDevice(id)
@@ -90,7 +88,7 @@ func (c *HubConnector) processPayload(id string, payload map[string]interface{})
 	return nil
 }
 
-func (c *HubConnector) Connect() error {
+func (c *hubController) Connect() error {
 	err := c.mqtt.Connect()
 	if err != nil {
 		return err
@@ -99,20 +97,20 @@ func (c *HubConnector) Connect() error {
 	return nil
 }
 
-func WithRepository(repo devices.Repository) func(h *HubConnector) {
-	return func(h *HubConnector) { h.repo = repo }
+func WithRepository(repo devices.Repository) func(h *hubController) {
+	return func(h *hubController) { h.repo = repo }
 }
 
-func WithEventHub(eventhub ws.EventHub) func(h *HubConnector) {
-	return func(h *HubConnector) { h.eventHub = eventhub }
+func WithEventHub(eventhub ws.EventHub) func(h *hubController) {
+	return func(h *hubController) { h.eventHub = eventhub }
 }
 
-func WithMqtt(mqtt mqtt.MqttClient) func(h *HubConnector) {
-	return func(h *HubConnector) { h.mqtt = mqtt }
+func WithMqtt(mqtt mqtt.MqttClient) func(h *hubController) {
+	return func(h *hubController) { h.mqtt = mqtt }
 }
 
-func WithContext(ctx context.Context) func(h *HubConnector) {
-	return func(h *HubConnector) { h.ctx = ctx }
+func WithContext(ctx context.Context) func(h *hubController) {
+	return func(h *hubController) { h.ctx = ctx }
 }
 
 func convertToMap(payload interface{}) (map[string]interface{}, error) {
