@@ -3,7 +3,7 @@ package pool_test
 import (
 	"context"
 	"fmt"
-	"node-herder/hub/pool"
+	"node-herder/common/pool"
 	"sync"
 	"testing"
 	"time"

@@ -1,11 +1,12 @@
-package main
+package cmd
 
 import (
 	"context"
 	"flag"
 	"fmt"
-	"node-herder/device"
-	"node-herder/hub"
+	"node-herder/app"
+	repository "node-herder/repository/devices"
+	"node-herder/transport/mqtt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -41,8 +42,8 @@ func main() {
 		cancelCtx()
 	}()
 
-	repo := device.NewMemoryNodeRepository()
-	mqttConfig := hub.MqttConfig{
+	repo := repository.NewMemoryDeviceRepo()
+	mqttConfig := mqtt.MqttConfig{
 		Username: "sinkhole",
 		Password: "mqtt2023",
 		Broker:   "192.168.50.179:1883",
@@ -51,7 +52,7 @@ func main() {
 		},
 	}
 
-	server := hub.NewServer(port, ctx, mqttConfig, repo)
+	server := app.NewHubServer(port, ctx, mqttConfig, repo)
 
 	server.Listen()
 	fmt.Println("Exited")

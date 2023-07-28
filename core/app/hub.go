@@ -1,14 +1,16 @@
-package hub
+package app
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"node-herder/devices"
-	"node-herder/hub/pool"
+	"node-herder/common/pool"
 	"node-herder/mocks"
+	"node-herder/models/devices"
+	"node-herder/transport/mqtt"
+	"node-herder/transport/ws"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	mqttlib "github.com/eclipse/paho.mqtt.golang"
 )
 
 type processorTask struct {
@@ -20,17 +22,17 @@ func (m *processorTask) OnFailure(err error) {
 	fmt.Printf("Job: %s Error: %s", m.Id, err.Error())
 }
 
-type Controller struct {
-	eventHub EventHub
-	mqtt     MqttClient
+type HubConnector struct {
+	eventHub ws.EventHub
+	mqtt     mqtt.MqttClient
 	repo     devices.Repository
 	ctx      context.Context
 	wp       pool.WorkerPool
 	procFunc func(t pool.Task) error
 }
 
-func NewController(opts ...func(h *Controller)) *Controller {
-	h := &Controller{
+func NewHubConnector(opts ...func(h *HubConnector)) *HubConnector {
+	h := &HubConnector{
 		eventHub: &mocks.NopWsServer{},
 		mqtt:     &mocks.NopMqttClient{},
 		repo:     &mocks.NopRepository{},
@@ -52,9 +54,9 @@ func NewController(opts ...func(h *Controller)) *Controller {
 		return h.repo.ListAllDevices()
 	})
 
-	h.mqtt.OnMessageHandler(func(client mqtt.Client, msg mqtt.Message) {
+	h.mqtt.OnMessageHandler(func(client mqttlib.Client, msg mqttlib.Message) {
 
-		var name = SanitizeTopic(msg.Topic())
+		var name = mqtt.SanitizeTopic(msg.Topic())
 		var payload = msg.Payload()
 
 		fmt.Printf("mqtt Message => Topic: %s, Payload: %s\n", msg.Topic(), msg.Payload())
@@ -65,7 +67,7 @@ func NewController(opts ...func(h *Controller)) *Controller {
 	return h
 }
 
-func (c *Controller) processPayload(task pool.Task) error {
+func (c *HubConnector) processPayload(task pool.Task) error {
 	pTask, ok := task.(*processorTask)
 	if !ok {
 		return errors.New("invalid task type")
@@ -87,11 +89,11 @@ func (c *Controller) processPayload(task pool.Task) error {
 	}
 
 	c.repo.Store(id, device)
-	c.eventHub.Broadcast(DeviceUpdated, device)
+	c.eventHub.Broadcast(ws.DeviceUpdated, device)
 	return nil
 }
 
-func (c *Controller) Connect() error {
+func (c *HubConnector) Connect() error {
 	err := c.mqtt.Connect()
 	if err != nil {
 		return err
@@ -100,20 +102,20 @@ func (c *Controller) Connect() error {
 	return nil
 }
 
-func WithRepository(repo devices.Repository) func(h *Controller) {
-	return func(h *Controller) { h.repo = repo }
+func WithRepository(repo devices.Repository) func(h *HubConnector) {
+	return func(h *HubConnector) { h.repo = repo }
 }
 
-func WithEventHub(eventhub EventHub) func(h *Controller) {
-	return func(h *Controller) { h.eventHub = eventhub }
+func WithEventHub(eventhub ws.EventHub) func(h *HubConnector) {
+	return func(h *HubConnector) { h.eventHub = eventhub }
 }
 
-func WithMqtt(mqtt MqttClient) func(h *Controller) {
-	return func(h *Controller) { h.mqtt = mqtt }
+func WithMqtt(mqtt mqtt.MqttClient) func(h *HubConnector) {
+	return func(h *HubConnector) { h.mqtt = mqtt }
 }
 
-func WithContext(ctx context.Context) func(h *Controller) {
-	return func(h *Controller) { h.ctx = ctx }
+func WithContext(ctx context.Context) func(h *HubConnector) {
+	return func(h *HubConnector) { h.ctx = ctx }
 }
 
 func convertToMap(payload interface{}) (map[string]interface{}, error) {

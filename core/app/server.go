@@ -1,30 +1,33 @@
-package hub
+package app
 
 import (
 	"context"
 	"fmt"
 	"net/http"
-	"node-herder/devices"
+	"node-herder/models/devices"
+	"node-herder/transport/mqtt"
+	"node-herder/transport/routes"
+	"node-herder/transport/ws"
 )
 
 type apiServer struct {
 	httpServer http.Server
 	ctx        context.Context
-	router     *Router
+	router     *routes.Router
 }
 
 func withContext(ctx context.Context) func(s *apiServer) {
 	return func(s *apiServer) { s.ctx = ctx }
 }
 
-func withRouter(router *Router) func(s *apiServer) {
+func withRouter(router *routes.Router) func(s *apiServer) {
 	return func(s *apiServer) { s.router = router }
 }
 
 func newHttpServer(port int, opts ...func(s *apiServer)) *apiServer {
 
 	api := &apiServer{
-		router: &Router{},
+		router: &routes.Router{},
 	}
 
 	for _, opt := range opts {
@@ -72,19 +75,19 @@ func (s *apiServer) Listen() {
 	<-done
 }
 
-type Server struct {
+type HubServer struct {
 	api        *apiServer
-	controller *Controller
+	controller *HubConnector
 	ctx        context.Context
 }
 
-func NewServer(port int, ctx context.Context, config MqttConfig, repo devices.Repository) *Server {
+func NewHubServer(port int, ctx context.Context, config mqtt.MqttConfig, repo devices.Repository) *HubServer {
 
-	s := &Server{ctx: ctx}
-	eventHub := NewWsHub()
-	mqtt := NewMqttClient(config)
+	s := &HubServer{ctx: ctx}
+	eventHub := ws.NewWsHub()
+	mqtt := mqtt.NewMqttClient(config)
 
-	s.controller = NewController(
+	s.controller = NewHubConnector(
 		WithRepository(repo),
 		WithMqtt(mqtt),
 		WithEventHub(eventHub),
@@ -94,9 +97,9 @@ func NewServer(port int, ctx context.Context, config MqttConfig, repo devices.Re
 	return s
 }
 
-func registerApiServer(port int, ctx context.Context, eventHub EventHub) *apiServer {
-	router := NewRouter()
-	router.GET("/ws", NewWsHandler(eventHub))
+func registerApiServer(port int, ctx context.Context, eventHub ws.EventHub) *apiServer {
+	router := routes.NewRouter()
+	router.GET("/ws", routes.NewWsHandler(eventHub))
 	//router.GET("/", http.FileServer(http.Dir("../../frontend/dist")))
 
 	return newHttpServer(
@@ -106,7 +109,7 @@ func registerApiServer(port int, ctx context.Context, eventHub EventHub) *apiSer
 	)
 }
 
-func (s *Server) Listen() {
+func (s *HubServer) Listen() {
 
 	err := s.controller.Connect()
 

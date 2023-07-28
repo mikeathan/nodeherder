@@ -2,7 +2,7 @@ package mocks
 
 import (
 	"fmt"
-	"node-herder/devices"
+	"node-herder/models/devices"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gorilla/websocket"
