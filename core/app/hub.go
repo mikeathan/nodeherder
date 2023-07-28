@@ -11,6 +11,8 @@ import (
 	"node-herder/transport/ws"
 )
 
+// TODO: is this a controller ???????????????????????????
+
 type processorTask struct {
 	Id      string
 	Payload interface{}
@@ -43,8 +45,18 @@ func NewHubConnector(opts ...func(h *HubConnector)) *HubConnector {
 
 	// TODO:
 	// do i need to store procFunc as member variable
-	h.procFunc = func(t pool.Task) error {
-		return h.processPayload(t)
+	h.procFunc = func(task pool.Task) error {
+		// TODO
+		pTask, ok := task.(*processorTask)
+		if !ok {
+			return errors.New("invalid task type")
+		}
+
+		payload, err := convertToMap(pTask.Payload)
+		if err != nil {
+			return errors.New("failed to convert to map")
+		}
+		return h.processPayload(pTask.Id, payload)
 	}
 
 	h.pool = *pool.NewWorkerPool(1, h.ctx)
@@ -61,23 +73,14 @@ func NewHubConnector(opts ...func(h *HubConnector)) *HubConnector {
 	return h
 }
 
-func (c *HubConnector) processPayload(task pool.Task) error {
-	pTask, ok := task.(*processorTask)
-	if !ok {
-		return errors.New("invalid task type")
-	}
-	id := pTask.Id
-	payload := pTask.Payload
-	data, err := convertToMap(payload)
-	if err != nil {
-		return errors.New("failed to convert to map")
-	}
+func (c *HubConnector) processPayload(id string, payload map[string]interface{}) error {
 
+	// REFACTOR !!!!!!!!!!!!!!!!!!!!
 	device, _ := c.repo.FindDevice(id)
 	if device == nil {
-		devices.CreateNewDevice(id, data)
+		devices.CreateNewDevice(id, payload)
 	} else {
-		if !device.TryUpdateDevice(data) {
+		if !device.TryUpdateDevice(payload) {
 			return nil
 		}
 	}
