@@ -71,7 +71,7 @@ func CreateNewDevice(id string, data map[string]interface{}) *Device {
 	return newNode
 }
 
-func TryUpdateDevice(node *Device, data map[string]interface{}) bool {
+func (node *Device) TryUpdateDevice(data map[string]interface{}) bool {
 	if _, ok := data[lastSeenKey]; !ok {
 		data[lastSeenKey] = getCurrentTime()
 	}

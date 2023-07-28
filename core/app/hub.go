@@ -77,7 +77,7 @@ func (c *HubConnector) processPayload(task pool.Task) error {
 	if device == nil {
 		devices.CreateNewDevice(id, data)
 	} else {
-		if !devices.TryUpdateDevice(device, data) {
+		if !device.TryUpdateDevice(data) {
 			return nil
 		}
 	}
