@@ -1,26 +1,16 @@
-package mqttlistener_test
+package mqtt_test
 
 import (
 	"fmt"
-	"node-herder/transport/mqttlistener"
+	"node-herder/transport/mqtt"
 	"testing"
 	"time"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	mqttlib "github.com/eclipse/paho.mqtt.golang"
 )
 
-// public mqtt test broker
-// var broker = "broker.emqx.io"
-//
-//	var port = 1883
-//	opts := mqtt.NewClientOptions()
-//	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", broker, port))
-//	opts.SetClientID("go_mqtt_client")
-//	opts.SetUsername("emqx")
-//	opts.SetPassword("public")
-
-func GetMqttConfig(broker string, messageHandler func(client mqtt.Client, msg mqtt.Message), topics ...string) mqttlistener.MqttConfig {
-	return mqttlistener.MqttConfig{
+func GetMqttConfig(broker string, messageHandler func(client mqttlib.Client, msg mqttlib.Message), topics ...string) mqtt.MqttConfig {
+	return mqtt.MqttConfig{
 		Username:       "sinkhole",
 		Password:       "mqtt2023",
 		Broker:         broker,
@@ -33,7 +23,7 @@ func TestMqttClientReceivesMessage(t *testing.T) {
 	var broker = "192.168.50.179:1883"
 	var topic = "device1"
 	var message = "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"
-	var messageHandler = func(client mqtt.Client, msg mqtt.Message) {
+	var messageHandler = func(client mqttlib.Client, msg mqttlib.Message) {
 		// TODO: test topic
 		if string(msg.Payload()) != message {
 			t.Errorf("Payload mismatch - want %s, got %s", message, string(msg.Payload()))
@@ -41,15 +31,15 @@ func TestMqttClientReceivesMessage(t *testing.T) {
 	}
 
 	cfg := GetMqttConfig(broker, messageHandler, topic)
-	mqttClient := mqttlistener.NewMqttClient(cfg)
+	mqttClient := mqtt.NewMqttClient(cfg)
 	mqttClient.Connect()
 	StartMqttNodeClient(cfg, message, 2)
 }
 
-func StartMqttNodeClient(cfg mqttlistener.MqttConfig, message string, nEvents int) {
+func StartMqttNodeClient(cfg mqtt.MqttConfig, message string, nEvents int) {
 
 	// some fake external device mqqtclient
-	var opts = mqtt.NewClientOptions()
+	var opts = mqttlib.NewClientOptions()
 	opts.AddBroker(cfg.Broker)
 	opts.Username = cfg.Username
 	opts.Password = cfg.Password
@@ -57,7 +47,7 @@ func StartMqttNodeClient(cfg mqttlistener.MqttConfig, message string, nEvents in
 	opts.OnConnectionLost = connectLostHandler
 	opts.OnConnect = connectHandler
 
-	var client = mqtt.NewClient(opts)
+	var client = mqttlib.NewClient(opts)
 	var token = client.Connect()
 	token.Wait()
 	if token.Error() != nil {
@@ -74,19 +64,19 @@ func StartMqttNodeClient(cfg mqttlistener.MqttConfig, message string, nEvents in
 	fmt.Printf("Device Shutdown \n")
 }
 
-var messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
+var messagePubHandler mqttlib.MessageHandler = func(client mqttlib.Client, msg mqttlib.Message) {
 	fmt.Printf("Device Message = Topic: %s, Payload: %s\n", msg.Topic(), msg.Payload())
 }
 
-var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
+var connectHandler mqttlib.OnConnectHandler = func(client mqttlib.Client) {
 	fmt.Println("Device Connected")
 }
 
-var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
+var connectLostHandler mqttlib.ConnectionLostHandler = func(client mqttlib.Client, err error) {
 	fmt.Printf("Device Connection lost: %v", err)
 }
 
-func publishFunc(closeChan chan bool, client mqtt.Client, topic string, message string, numOfEvents int) {
+func publishFunc(closeChan chan bool, client mqttlib.Client, topic string, message string, numOfEvents int) {
 
 	for i := 1; i <= numOfEvents; i++ {
 		var token = client.Publish(topic, 2, false, message)

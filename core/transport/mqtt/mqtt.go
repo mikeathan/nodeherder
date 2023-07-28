@@ -1,17 +1,17 @@
-package mqttlistener
+package mqtt
 
 import (
 	"fmt"
 	"strings"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	mqttlib "github.com/eclipse/paho.mqtt.golang"
 )
 
 type MqttClient interface {
 	Connect() error
 	AddTopic(topic string)
 	Disconnect()
-	OnMessageHandler(handler func(client mqtt.Client, msg mqtt.Message))
+	OnMessageHandler(handler func(client mqttlib.Client, msg mqttlib.Message))
 }
 
 const baseTopic string = "zigbee2mqtt/"
@@ -21,18 +21,18 @@ type MqttConfig struct {
 	Username       string
 	Password       string
 	Topics         []string
-	MessageHandler func(client mqtt.Client, msg mqtt.Message)
+	MessageHandler func(client mqttlib.Client, msg mqttlib.Message)
 }
 
-var _messagePubHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
+var _messagePubHandler mqttlib.MessageHandler = func(client mqttlib.Client, msg mqttlib.Message) {
 	fmt.Printf("mqtt Message => Topic: %s, Payload; %s\n", msg.Topic(), msg.Payload())
 }
 
-var _connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
+var _connectHandler mqttlib.OnConnectHandler = func(client mqttlib.Client) {
 	fmt.Println("mqtt Client connected")
 }
 
-var _connectionLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
+var _connectionLostHandler mqttlib.ConnectionLostHandler = func(client mqttlib.Client, err error) {
 	fmt.Printf("mqtt Connection Lost: %s\n", err.Error())
 }
 
@@ -60,25 +60,25 @@ func NewMqttClient(config MqttConfig) MqttClient {
 
 type MqttService struct {
 	topics         []string
-	client         mqtt.Client
+	client         mqttlib.Client
 	broker         string
 	username       string
 	password       string
 	cliendId       string
-	messageHandler func(client mqtt.Client, msg mqtt.Message)
+	messageHandler func(client mqttlib.Client, msg mqttlib.Message)
 }
 
 func SanitizeTopic(topic string) string {
 	return strings.Replace(topic, baseTopic, "", -1)
 }
 
-func (m *MqttService) OnMessageHandler(handler func(client mqtt.Client, msg mqtt.Message)) {
+func (m *MqttService) OnMessageHandler(handler func(client mqttlib.Client, msg mqttlib.Message)) {
 	m.messageHandler = handler
 }
 
 func (m *MqttService) Connect() error {
 
-	options := mqtt.NewClientOptions()
+	options := mqttlib.NewClientOptions()
 	options.AddBroker(m.broker)
 	options.SetClientID(m.cliendId)
 	options.Username = m.username
@@ -88,7 +88,7 @@ func (m *MqttService) Connect() error {
 	options.OnConnect = _connectHandler
 	options.OnConnectionLost = _connectionLostHandler
 
-	m.client = mqtt.NewClient(options)
+	m.client = mqttlib.NewClient(options)
 	token := m.client.Connect()
 
 	if token.Wait() && token.Error() != nil {
