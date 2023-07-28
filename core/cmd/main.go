@@ -52,8 +52,8 @@ func main() {
 		},
 	}
 
-	server := app.NewHubServer(port, ctx, mqttConfig, repo)
+	hub := app.RegisterHub(port, repo, mqttConfig, ctx)
+	hub.Listen()
 
-	server.Listen()
 	fmt.Println("Exited")
 }

@@ -24,6 +24,30 @@ func (w *MockEventHub) OnConnected(onConnected func() interface{}) {
 	fmt.Println("Empty OnConnected")
 }
 
+type MockMqttClient struct {
+	MockBroadcastMessage func(handler func(string, []byte))
+}
+
+func (m *MockMqttClient) Connect() error {
+	fmt.Println("Mock Connect")
+	return nil
+}
+
+func (m *MockMqttClient) WithMessageHandler(messageHandler func(client mqtt.Client, msg mqtt.Message)) {
+	fmt.Println("Mock WithMessageHandler")
+}
+func (m *MockMqttClient) AddTopic(topic string) {
+	fmt.Println("Mock BroaAddTopicdcast")
+
+}
+func (m *MockMqttClient) Disconnect() {
+	fmt.Println("Mock Disconnect")
+}
+
+func (m *MockMqttClient) OnMessageHandler(handler func(id string, payload []byte)) {
+	m.MockBroadcastMessage(handler, func(id string, payload []byte))
+}
+
 type NopWsServer struct {
 }
 
