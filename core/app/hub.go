@@ -9,8 +9,6 @@ import (
 	"node-herder/models/devices"
 	"node-herder/transport/mqtt"
 	"node-herder/transport/ws"
-
-	mqttlib "github.com/eclipse/paho.mqtt.golang"
 )
 
 type processorTask struct {
@@ -54,13 +52,7 @@ func NewHubConnector(opts ...func(h *HubConnector)) *HubConnector {
 		return h.repo.ListAllDevices()
 	})
 
-	h.mqtt.OnMessageHandler(func(client mqttlib.Client, msg mqttlib.Message) {
-
-		var name = mqtt.SanitizeTopic(msg.Topic())
-		var payload = msg.Payload()
-
-		fmt.Printf("mqtt Message => Topic: %s, Payload: %s\n", msg.Topic(), msg.Payload())
-
+	h.mqtt.OnMessageHandler(func(name string, payload []byte) {
 		h.wp.AddTask(&processorTask{Id: name, Payload: payload})
 	})
 

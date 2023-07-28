@@ -11,21 +11,16 @@ type MqttClient interface {
 	Connect() error
 	AddTopic(topic string)
 	Disconnect()
-	OnMessageHandler(handler func(client mqttlib.Client, msg mqttlib.Message))
+	OnMessageHandler(handler func(string, []byte))
 }
 
 const baseTopic string = "zigbee2mqtt/"
 
 type MqttConfig struct {
-	Broker         string
-	Username       string
-	Password       string
-	Topics         []string
-	MessageHandler func(client mqttlib.Client, msg mqttlib.Message)
-}
-
-var _messagePubHandler mqttlib.MessageHandler = func(client mqttlib.Client, msg mqttlib.Message) {
-	fmt.Printf("mqtt Message => Topic: %s, Payload; %s\n", msg.Topic(), msg.Payload())
+	Broker   string
+	Username string
+	Password string
+	Topics   []string
 }
 
 var _connectHandler mqttlib.OnConnectHandler = func(client mqttlib.Client) {
@@ -34,6 +29,16 @@ var _connectHandler mqttlib.OnConnectHandler = func(client mqttlib.Client) {
 
 var _connectionLostHandler mqttlib.ConnectionLostHandler = func(client mqttlib.Client, err error) {
 	fmt.Printf("mqtt Connection Lost: %s\n", err.Error())
+}
+
+func (m *MqttService) messagePubHandler() func(client mqttlib.Client, msg mqttlib.Message) {
+	return func(client mqttlib.Client, msg mqttlib.Message) {
+		fmt.Printf("mqtt Message => Topic: %s, Payload; %s\n", msg.Topic(), msg.Payload())
+
+		var name = sanitizeTopic(msg.Topic())
+		var payload = msg.Payload()
+		m.messageHandler(name, payload)
+	}
 }
 
 func NewMqttClient(config MqttConfig) MqttClient {
@@ -45,16 +50,13 @@ func NewMqttClient(config MqttConfig) MqttClient {
 		password:       config.Password,
 		client:         nil,
 		cliendId:       "sinkhole-z2m",
-		messageHandler: config.MessageHandler,
+		messageHandler: func(s string, b []byte) {},
 	}
 
 	for _, topic := range config.Topics {
 		client.AddTopic(topic)
 	}
-	// temporary
-	if client.messageHandler == nil {
-		client.messageHandler = _messagePubHandler
-	}
+
 	return client
 }
 
@@ -65,14 +67,14 @@ type MqttService struct {
 	username       string
 	password       string
 	cliendId       string
-	messageHandler func(client mqttlib.Client, msg mqttlib.Message)
+	messageHandler func(string, []byte)
 }
 
-func SanitizeTopic(topic string) string {
+func sanitizeTopic(topic string) string {
 	return strings.Replace(topic, baseTopic, "", -1)
 }
 
-func (m *MqttService) OnMessageHandler(handler func(client mqttlib.Client, msg mqttlib.Message)) {
+func (m *MqttService) OnMessageHandler(handler func(string, []byte)) {
 	m.messageHandler = handler
 }
 
@@ -84,7 +86,7 @@ func (m *MqttService) Connect() error {
 	options.Username = m.username
 	options.Password = m.password
 
-	options.SetDefaultPublishHandler(m.messageHandler)
+	options.SetDefaultPublishHandler(m.messagePubHandler())
 	options.OnConnect = _connectHandler
 	options.OnConnectionLost = _connectionLostHandler
 

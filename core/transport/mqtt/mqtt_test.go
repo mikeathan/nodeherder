@@ -9,13 +9,12 @@ import (
 	mqttlib "github.com/eclipse/paho.mqtt.golang"
 )
 
-func GetMqttConfig(broker string, messageHandler func(client mqttlib.Client, msg mqttlib.Message), topics ...string) mqtt.MqttConfig {
+func GetMqttConfig(broker string, topics ...string) mqtt.MqttConfig {
 	return mqtt.MqttConfig{
-		Username:       "sinkhole",
-		Password:       "mqtt2023",
-		Broker:         broker,
-		Topics:         topics,
-		MessageHandler: messageHandler,
+		Username: "sinkhole",
+		Password: "mqtt2023",
+		Broker:   broker,
+		Topics:   topics,
 	}
 }
 
@@ -23,15 +22,16 @@ func TestMqttClientReceivesMessage(t *testing.T) {
 	var broker = "192.168.50.179:1883"
 	var topic = "device1"
 	var message = "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"
-	var messageHandler = func(client mqttlib.Client, msg mqttlib.Message) {
+	var messageHandler = func(id string, payload []byte) {
 		// TODO: test topic
-		if string(msg.Payload()) != message {
-			t.Errorf("Payload mismatch - want %s, got %s", message, string(msg.Payload()))
+		if string(payload) != message {
+			t.Errorf("Payload mismatch - want %s, got %s", message, string(payload))
 		}
 	}
 
-	cfg := GetMqttConfig(broker, messageHandler, topic)
+	cfg := GetMqttConfig(broker, topic)
 	mqttClient := mqtt.NewMqttClient(cfg)
+	mqttClient.OnMessageHandler(messageHandler)
 	mqttClient.Connect()
 	StartMqttNodeClient(cfg, message, 2)
 }
