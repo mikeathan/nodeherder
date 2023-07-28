@@ -20,7 +20,7 @@ func (m *processorTask) OnFailure(err error) {
 	fmt.Printf("Job: %s Error: %s", m.Id, err.Error())
 }
 
-type hubController struct {
+type HubController struct {
 	eventHub ws.EventHub
 	mqtt     mqtt.MqttClient
 	repo     devices.Repository
@@ -29,8 +29,8 @@ type hubController struct {
 	procFunc func(t pool.Task) error
 }
 
-func newHubController(opts ...func(h *hubController)) *hubController {
-	h := &hubController{
+func NewHubController(opts ...func(h *HubController)) *HubController {
+	h := &HubController{
 		eventHub: &mocks.NopWsServer{},
 		mqtt:     &mocks.NopMqttClient{},
 		repo:     &mocks.NopRepository{},
@@ -71,9 +71,8 @@ func newHubController(opts ...func(h *hubController)) *hubController {
 	return h
 }
 
-func (c *hubController) processPayload(id string, payload map[string]interface{}) error {
+func (c *HubController) processPayload(id string, payload map[string]interface{}) error {
 
-	// REFACTOR !!!!!!!!!!!!!!!!!!!!
 	device, _ := c.repo.FindDevice(id)
 	if device == nil {
 		devices.CreateNewDevice(id, payload)
@@ -88,7 +87,7 @@ func (c *hubController) processPayload(id string, payload map[string]interface{}
 	return nil
 }
 
-func (c *hubController) Connect() error {
+func (c *HubController) Connect() error {
 	err := c.mqtt.Connect()
 	if err != nil {
 		return err
@@ -97,20 +96,20 @@ func (c *hubController) Connect() error {
 	return nil
 }
 
-func WithRepository(repo devices.Repository) func(h *hubController) {
-	return func(h *hubController) { h.repo = repo }
+func WithRepository(repo devices.Repository) func(h *HubController) {
+	return func(h *HubController) { h.repo = repo }
 }
 
-func WithEventHub(eventhub ws.EventHub) func(h *hubController) {
-	return func(h *hubController) { h.eventHub = eventhub }
+func WithEventHub(eventhub ws.EventHub) func(h *HubController) {
+	return func(h *HubController) { h.eventHub = eventhub }
 }
 
-func WithMqtt(mqtt mqtt.MqttClient) func(h *hubController) {
-	return func(h *hubController) { h.mqtt = mqtt }
+func WithMqtt(mqtt mqtt.MqttClient) func(h *HubController) {
+	return func(h *HubController) { h.mqtt = mqtt }
 }
 
-func WithContext(ctx context.Context) func(h *hubController) {
-	return func(h *hubController) { h.ctx = ctx }
+func WithContext(ctx context.Context) func(h *HubController) {
+	return func(h *HubController) { h.ctx = ctx }
 }
 
 func convertToMap(payload interface{}) (map[string]interface{}, error) {

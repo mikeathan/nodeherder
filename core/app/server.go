@@ -77,7 +77,7 @@ func (s *apiServer) Listen() {
 
 type HubServer struct {
 	api        *apiServer
-	controller *hubController
+	controller *HubController
 	ctx        context.Context
 }
 
@@ -87,7 +87,7 @@ func NewHubServer(port int, ctx context.Context, config mqtt.MqttConfig, repo de
 	eventHub := ws.NewWsHub()
 	mqtt := mqtt.NewMqttClient(config)
 
-	s.controller = newHubController(
+	s.controller = NewHubController(
 		WithRepository(repo),
 		WithMqtt(mqtt),
 		WithEventHub(eventHub),
