@@ -25,7 +25,7 @@ func (w *MockEventHub) OnConnected(onConnected func() interface{}) {
 }
 
 type MockMqttClient struct {
-	MockBroadcastMessage func(handler func(string, []byte))
+	messageHandler func(string, []byte)
 }
 
 func (m *MockMqttClient) Connect() error {
@@ -45,7 +45,16 @@ func (m *MockMqttClient) Disconnect() {
 }
 
 func (m *MockMqttClient) OnMessageHandler(handler func(id string, payload []byte)) {
-	m.MockBroadcastMessage(handler, func(id string, payload []byte))
+	m.messageHandler = handler
+}
+
+func (m *MockMqttClient) PublishMessage(id string, payload []byte) {
+	m.messagePubHandler()
+}
+func (m *MockMqttClient) messagePubHandler() func(id string, payload []byte) {
+	return func(id string, payload []byte) {
+		m.messageHandler(id, payload)
+	}
 }
 
 type NopWsServer struct {
