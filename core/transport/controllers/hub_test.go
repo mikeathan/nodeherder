@@ -27,7 +27,7 @@ func createMockPayload() map[string]interface{} {
 
 func TestProcessorAddsNewDevice(t *testing.T) {
 
-	id := "device1"
+	id := "device 1"
 	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
@@ -40,20 +40,11 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 	if device == nil {
-		t.Fatalf("want %s got %s", "device", "nil")
+		t.Fatalf("want %s got %s", id, "nil")
 	}
 	if device.Id != id {
 		t.Fatalf("want %s got %s", id, device.Id)
 	}
-}
-
-func createPayload(data string) interface{} {
-	var payload interface{}
-	err := json.Unmarshal([]byte(device1BatterySource), &payload)
-	if err != nil {
-		panic(err.Error())
-	}
-	return payload
 }
 
 func TestProcessorUpdatesExistingDevice(t *testing.T) {
@@ -163,7 +154,3 @@ func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data int
 
 	return &mocks.MockEventHub{MockBroadcastEvent: mockBroadcastEvent}
 }
-
-// func (m *NopMqttClient) OnMessageHandler(handler func(string, []byte)) {
-// 	fmt.Println("Empty OnMessageHandler")
-// }
