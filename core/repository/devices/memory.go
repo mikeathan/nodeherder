@@ -17,9 +17,9 @@ func NewMemoryDeviceRepo() devices.Repository {
 }
 
 func (s *MemoryDeviceRepo) Store(deviceName string, Device *devices.Device) {
+	defer s.mutex.Unlock()
 	s.mutex.Lock()
 	s.store[deviceName] = Device
-	s.mutex.Unlock()
 }
 
 func (s *MemoryDeviceRepo) FindDevice(deviceName string) (*devices.Device, error) {
