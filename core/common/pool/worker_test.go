@@ -41,8 +41,8 @@ func TestAsyncFuncProcessingAllJobs(t *testing.T) {
 		return nil
 	}
 
-	worker := pool.NewWorkerPool(1, ctx, procesFunc)
-	worker.Start()
+	worker := pool.NewWorkerPool(1, ctx)
+	worker.Run(procesFunc)
 
 	var processed = false
 	numOfActivies := 3
@@ -104,8 +104,8 @@ func TestCancelContextStopsWorker(t *testing.T) {
 		}
 
 		ctx, cancelCtx := context.WithCancel(context.Background())
-		worker := pool.NewWorkerPool(expectedFinishedJobs, ctx, procesFunc)
-		worker.Start()
+		worker := pool.NewWorkerPool(expectedFinishedJobs, ctx)
+		worker.Run(procesFunc)
 		numOfTasks := 10
 
 		go func() {
