@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"context"
@@ -49,6 +49,7 @@ func main() {
 		Broker:   "192.168.50.179:1883",
 		Topics: []string{
 			"TH1",
+			"Tuya ZY-M100",
 		},
 	}
 
