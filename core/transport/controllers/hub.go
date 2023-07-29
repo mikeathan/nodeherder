@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"node-herder/common/pool"
@@ -12,7 +13,7 @@ import (
 
 type processorTask struct {
 	Id      string
-	Payload interface{}
+	Payload []byte
 }
 
 func (m *processorTask) OnFailure(err error) {
@@ -82,9 +83,12 @@ func (c *HubController) processPayload(id string, payload map[string]interface{}
 	return nil
 }
 
-func convertToMap(payload interface{}) (map[string]interface{}, error) {
-	if data, ok := payload.(map[string]interface{}); ok {
-		return data, nil
+func convertToMap(payload []byte) (map[string]interface{}, error) {
+
+	deviceMap := make(map[string]interface{})
+	err := json.Unmarshal(payload, &deviceMap)
+	if err != nil {
+		return nil, errors.New("invalid device data")
 	}
-	return nil, errors.New("invalid device data")
+	return deviceMap, nil
 }
