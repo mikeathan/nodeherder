@@ -71,7 +71,7 @@ func (c *HubController) processPayload(id string, payload map[string]interface{}
 
 	device, _ := c.repo.FindDevice(id)
 	if device == nil {
-		devices.CreateNewDevice(id, payload)
+		device = devices.CreateNewDevice(id, payload)
 	} else {
 		if !device.TryUpdateDevice(payload) {
 			return nil
