@@ -28,12 +28,11 @@ func createMockPayload() map[string]interface{} {
 func TestProcessorAddsNewDevice(t *testing.T) {
 
 	id := "device1"
-	var payload = createPayload(device1BatterySource)
 	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
-	mqtt := &mocks.NopMqttClient{}
-	p := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
-	addDevice(p, id, payload)
+	mqtt := &mocks.MockMqttClient{}
+	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	mqtt.PublishMessage(id, []byte(device1BatterySource))
 
 	time.Sleep(100 * time.Millisecond)
 	device, err := repo.FindDevice(id)
@@ -56,25 +55,16 @@ func createPayload(data string) interface{} {
 	}
 	return payload
 }
-func addDevice(p *controllers.HubController, id string, payload interface{}) {
-	err := p.Equeue(id, payload)
-	if err != nil {
-		panic(err.Error())
-	}
-}
 
 func TestProcessorUpdatesExistingDevice(t *testing.T) {
 
-	var payload1 = createPayload(device1BatterySource)
-	var payload2 = createPayload(device2)
-
 	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
-	mqtt := &mocks.NopMqttClient{}
-	p := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
-	addDevice(p, "device1", payload1)
-	addDevice(p, "device2", payload2)
-	addDevice(p, "device2", payload1)
+	mqtt := &mocks.MockMqttClient{}
+	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	mqtt.PublishMessage("device1", []byte(device1BatterySource))
+	mqtt.PublishMessage("device2", []byte(device2))
+	mqtt.PublishMessage("device2", []byte(device1BatterySource))
 
 	time.Sleep(100 * time.Millisecond)
 	id := "device2"
@@ -93,20 +83,12 @@ func TestProcessorUpdatesExistingDevice(t *testing.T) {
 func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 
 	id := "device1"
-	var payload interface{}
-	err := json.Unmarshal([]byte(device3NoLastSeen), &payload)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
 
 	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
-	mqtt := &mocks.NopMqttClient{}
-	p := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
-	err = p.Equeue(id, payload)
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
+	mqtt := &mocks.MockMqttClient{}
+	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	mqtt.PublishMessage(id, []byte(device3NoLastSeen))
 
 	want := time.Now().Format(time.RFC3339)
 	time.Sleep(100 * time.Millisecond)
@@ -157,18 +139,19 @@ func TestOnlyNewPayloadIsBroadcasted(t *testing.T) {
 
 	ws := newMockBroadcastEventHub(broadcast)
 	repo := repository.NewMemoryDeviceRepo()
-	mqtt := &mocks.NopMqttClient{}
-	p := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	mqtt := &mocks.MockMqttClient{}
+	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
 	for idx, testCase := range testCases {
 		// reset
 		messageBroadcasted = false
 		// use test case for updating sensor values
 		payload[testCase.key] = testCase.value
-
-		err := p.Equeue(id, payload)
+		data, err := json.Marshal(payload)
 		if err != nil {
-			t.Fatalf(err.Error())
+			panic(err)
 		}
+		mqtt.PublishMessage(id, []byte(data))
+
 		time.Sleep(100 * time.Millisecond)
 		if testCase.broadcast != messageBroadcasted {
 			t.Fatalf("idx %d,key %s, value %v, broadcast want %v got %v", idx, testCase.key, testCase.value, testCase.broadcast, messageBroadcasted)
@@ -179,11 +162,6 @@ func TestOnlyNewPayloadIsBroadcasted(t *testing.T) {
 func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data interface{}) error) ws.EventHub {
 
 	return &mocks.MockEventHub{MockBroadcastEvent: mockBroadcastEvent}
-}
-
-func newMockBroadcastMqttMessage(mockBroadcastMessage func(handler func(string, []byte))) {
-
-	&mocks.MockMqttClient{MockBroadcastMessage: mockBroadcastMessage}
 }
 
 // func (m *NopMqttClient) OnMessageHandler(handler func(string, []byte)) {

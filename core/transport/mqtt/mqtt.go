@@ -85,10 +85,7 @@ func (m *MqttService) Connect() error {
 	options.SetClientID(m.cliendId)
 	options.Username = m.username
 	options.Password = m.password
-	f := func(id string, p []byte) {
 
-	}
-	m.messagePubHandler()
 	options.SetDefaultPublishHandler(m.messagePubHandler())
 	options.OnConnect = _connectHandler
 	options.OnConnectionLost = _connectionLostHandler
