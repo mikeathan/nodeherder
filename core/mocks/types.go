@@ -49,7 +49,7 @@ func (m *MockMqttClient) OnMessageHandler(handler func(id string, payload []byte
 }
 
 func (m *MockMqttClient) PublishMessage(id string, payload []byte) {
-	m.messagePubHandler()
+	m.messagePubHandler()(id, payload)
 }
 func (m *MockMqttClient) messagePubHandler() func(id string, payload []byte) {
 	return func(id string, payload []byte) {
