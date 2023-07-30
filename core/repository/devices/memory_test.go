@@ -1,58 +1,57 @@
 package repository_test
 
 import (
-	"encoding/json"
 	"node-herder/models/devices"
 	repository "node-herder/repository/devices"
 	"testing"
+	"time"
 )
 
-const device1Payload = `{"id":"device 1","conn":"mqtt","power_source":"battery","sensors":{"humidity":92.49999999999999,"temperature":19.000000000000004},"stats":{"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":47,"battery":98}}`
-const device1Payload2 = `{"id":"device 1","conn":"mqtt","power_source":"battery","sensors":{"humidity":92.49999999999999,"temperature":19.000000000000004},"stats":{"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":47,"battery":98}}`
-const device2Payload = `{"id":"device 2","conn":"http","power_source":"mains","sensors":{"humidity":45,"temperature":14},"stats":{"availability":"online","last_seen":"2023-07-12T10:10:35+01:00","linkquality":120}}`
+func createMockPayload(id string, battery int, humidity float32, temperature float32, linkquality float32) map[string]interface{} {
 
-func createDevice(payload string) *devices.Device {
-	var device *devices.Device
-	err := json.Unmarshal([]byte(payload), &device)
-	if err != nil {
-		panic(err.Error())
+	return map[string]interface{}{
+		"battery":     battery,
+		"id":          id,
+		"humidity":    humidity,
+		"last_seen":   time.Now().Format(time.RFC3339),
+		"linkquality": linkquality,
+		"temperature": 17.1,
 	}
-	return device
 }
 
 func TestRepositoryCanAddOneDevice(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()
-	repo.Store("device 1", createDevice(device1Payload))
-	device, err := repo.FindDevice("device 1")
+	id := "device 1"
+	device := devices.CreateNewDevice(id, createMockPayload(id, 50, 60.1, 23.5, 120.0))
+
+	repo.Store(id, device)
+	res, err := repo.FindDevice(id)
 
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	connType := device.ConnectionType
-	if connType != "mqtt" {
-		t.Fatalf("device 1 ConectionType mismatch  got %s want %s", connType, "mqtt")
+	if device != res {
+		t.Fatalf("device result mismatch: got %v want %v", res, device)
 	}
 
-	if device.Id != "device 1" {
-		t.Fatalf("device name mismatch ")
+	if device.Id != id {
+		t.Fatalf("device name mismatch")
 	}
-}
-
-func toJson(payload interface{}) string {
-	data, err := json.Marshal(payload)
-	if err != nil {
-		return ""
-	}
-	return string(data)
 }
 
 func TestRepositoryCanAddMultipleDevices(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()
-	repo.Store("device 1", createDevice(device1Payload))
-	repo.Store("device 2", createDevice(device2Payload))
+	devId1 := "device 1"
+	device1 := devices.CreateNewDevice(devId1, createMockPayload(devId1, 50, 60.1, 23.5, 120.0))
+
+	devId2 := "device 2"
+	device2 := devices.CreateNewDevice(devId2, createMockPayload(devId2, 90, 34.7, 36.2, 56.0))
+
+	repo.Store(devId1, device1)
+	repo.Store(devId2, device2)
 	devices := repo.ListAllDevices()
 
 	if len(devices) == 0 {
@@ -61,29 +60,31 @@ func TestRepositoryCanAddMultipleDevices(t *testing.T) {
 	if len(devices) > 2 {
 		t.Fatalf("contains invalid devices")
 	}
-	// gotPayload := toJson(devices[0].Payload)
-	// if gotPayload != data1 {
-	// 	t.Fatalf("device 1 payload mismatc ")
-	// }
-
-	// gotPayload2 := toJson(devices[1].Payload)
-	// if gotPayload2 != data2 {
-	// 	t.Fatalf("device 2 payload mismatch ")
-	// }
-
-	if devices[0].Id != "device 1" {
-		t.Fatalf("device 1 name mismatch ")
+	if devices[0] != device1 {
+		t.Fatalf("device 1 payload mismatc")
 	}
-	if devices[1].Id != "device 2" {
-		t.Fatalf("device 2 name mismatch ")
+
+	if devices[1] != device2 {
+		t.Fatalf("device 2 payload mismatch")
+	}
+
+	if devices[0].Id != devId1 {
+		t.Fatalf("device 1 name mismatch")
+	}
+	if devices[1].Id != devId2 {
+		t.Fatalf("device 2 name mismatch")
 	}
 }
 
 func TestRepositoryCanUpdateExistingDevice(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()
-	repo.Store("device 1", createDevice(device1Payload))
-	repo.Store("device 1", createDevice(device1Payload2))
+	devId1 := "device 1"
+	device1 := devices.CreateNewDevice(devId1, createMockPayload(devId1, 50, 60.1, 23.5, 120.0))
+
+	device1b := devices.CreateNewDevice(devId1, createMockPayload(devId1, 90, 34.7, 36.2, 56.0))
+	repo.Store(devId1, device1)
+	repo.Store(devId1, device1b)
 	devices := repo.ListAllDevices()
 
 	if len(devices) == 0 {
@@ -92,12 +93,12 @@ func TestRepositoryCanUpdateExistingDevice(t *testing.T) {
 	if len(devices) > 1 {
 		t.Fatalf("contains invalid devices")
 	}
-	// gotPayload := toJson(devices[0].Payload)
-	// if gotPayload != data2 {
-	// 	t.Fatalf("device payload mismatch")
-	// }
 
-	if devices[0].Id != "device 1" {
-		t.Fatalf("device name mismatc ")
+	if devices[0] != device1b {
+		t.Fatalf("device 1 payload mismatch")
+	}
+
+	if devices[0].Id != devId1 {
+		t.Fatalf("device name mismatch")
 	}
 }
