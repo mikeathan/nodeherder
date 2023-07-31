@@ -1,7 +1,7 @@
 import store from "../store/store.js";
 
-const socketUri = "ws://localhost:3000/ws"; // used for testing
-//const socketUri = "ws://" + document.location.host + "/ws";
+//const socketUri = "ws://localhost:3000/ws"; // used for testing
+const socketUri = "ws://" + document.location.host + "/ws";
 
 console.log("socketUri:" + socketUri);
 const ws = new WebSocket(socketUri);
