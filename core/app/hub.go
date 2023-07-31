@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"node-herder/models/devices"
 	"node-herder/transport/api"
@@ -10,7 +9,6 @@ import (
 	"node-herder/transport/mqtt"
 	"node-herder/transport/routes"
 	"node-herder/transport/ws"
-	"os"
 )
 
 func registerApi(port int, ws ws.EventHub, ctx context.Context) *api.ApiServer {
@@ -18,10 +16,7 @@ func registerApi(port int, ws ws.EventHub, ctx context.Context) *api.ApiServer {
 	router := routes.NewRouter()
 	router.GET("/ws", routes.NewWsHandler(ws))
 
-	if err := os.Mkdir("../../../frontend/dist", 0755); os.IsExist(err) {
-		fmt.Printf("frontend dir doesnt exist")
-	}
-	router.GET("/", http.FileServer(http.Dir("../../../frontend/dist")))
+	router.GET("/", http.FileServer(http.Dir("../frontend/dist")))
 
 	apiServer := api.NewHttpServer(
 		port,
