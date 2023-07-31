@@ -1,6 +1,6 @@
 <script setup>
-import MqqtImage from "../assets/images/transport/mqtt-logo.png";
-import HttpImage from "../assets/images/transport/http-logo.png";
+import MqqtImage from "../../assets/images/transport/mqtt-logo.png";
+import HttpImage from "../../assets/images/transport/http-logo.png";
 const props = defineProps({
   type: String,
 });
