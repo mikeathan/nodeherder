@@ -51,15 +51,20 @@ func CreateNewDevice(id string, data map[string]interface{}) *Device {
 		data[lastSeenKey] = getCurrentTime()
 	}
 	data["availability"] = "online"
-	if _, ok := data[batterKey]; !ok {
-		data[powerSourceKey] = mainsKey
-	}
 
 	// Todo: need to pass in payload
 	data[connectionTypeKey] = connectionTypeMqtt
 
 	var newNode = newDevice()
 	newNode.Id = id
+	newNode.ConnectionType = connectionTypeMqtt
+
+	if _, ok := data[batterKey]; !ok {
+		newNode.PowerSource = mainsKey
+	} else {
+		newNode.PowerSource = batterKey
+	}
+
 	for key, value := range data {
 		if _, ok := sensorWhitelist[key]; ok {
 			newNode.Sensors[key] = value
@@ -76,7 +81,6 @@ func (node *Device) TryUpdateDevice(data map[string]interface{}) bool {
 		data[lastSeenKey] = getCurrentTime()
 	}
 	data["availability"] = "online"
-
 	var updated = false
 	for key, currValue := range node.Sensors {
 		if newValue, ok := data[key]; ok && newValue != currValue {
