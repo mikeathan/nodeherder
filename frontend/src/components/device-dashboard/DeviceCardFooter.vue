@@ -11,15 +11,15 @@ const props = defineProps({
 <template>
   <div class="card-footer">
     <div class="row justify-content-between flex-nowrap">
-      <LastSeen :value="this.payload.stats.last_seen"></LastSeen>
+      <LastSeen :value="payload.stats.last_seen"></LastSeen>
       <div
         class="col-auto text-truncate"
-        v-if="this.payload.stats.availability === 'online'"
+        v-if="payload.stats.availability === 'online'"
       >
-        <LinkQuality :value="this.payload.stats.linkquality" />
+        <LinkQuality :value="payload.stats.linkquality" />
         <PowerSource
-          :power_source="this.payload.power_source"
-          :value="this.payload.stats.battery"
+          :power_source="payload.power_source"
+          :value="payload.stats.battery"
         />
       </div>
       <div className="col-auto text-truncate" v-else>
