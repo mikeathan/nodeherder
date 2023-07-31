@@ -1,19 +1,22 @@
 import store from "../store/store.js";
 
 const socketUri = "ws://localhost:3000/ws"; // used for testing
-//const socketUri = "ws://"+document.location.host+"/ws"
+//const socketUri = "ws://" + document.location.host + "/ws";
 
 console.log("socketUri:" + socketUri);
 const ws = new WebSocket(socketUri);
 
 ws.onmessage = (event) => {
-  const obj = JSON.parse(event.data);
-  if (event.data == undefined) {
-    console.log("ws undefined data: " + event);
+  if (event == undefined) {
+    console.log("ws undefined event: " + event);
     return;
   }
+  if (event.data == undefined) {
+    console.log("ws undefined data: " + event.data);
+    return;
+  }
+  const obj = JSON.parse(event.data);
 
-  console.log("event type: " + obj.type);
   switch (obj.type) {
     case "connected":
       store.commit("init", obj.payload);
