@@ -33,14 +33,14 @@ type Device struct {
 	PowerSource        string         `json:"power_source"`
 	Sensors            map[string]any `json:"sensors"`
 	Stats              map[string]any `json:"stats"`
-	availabilityTicker time.Ticker
+	AvailabilityTicker time.Ticker    `json:"-"`
 }
 
 func newDevice() *Device {
 	return &Device{
 		Sensors:            map[string]any{},
 		Stats:              map[string]any{},
-		availabilityTicker: time.Ticker{},
+		AvailabilityTicker: time.Ticker{},
 	}
 }
 
@@ -50,7 +50,7 @@ func CreateNewDevice(id string, data map[string]interface{}) *Device {
 	if _, ok := data[lastSeenKey]; !ok {
 		data[lastSeenKey] = getCurrentTime()
 	}
-	data["availability"] = "online"
+	data[availabilityKey] = "online"
 
 	// Todo: need to pass in payload
 	data[connectionTypeKey] = connectionTypeMqtt
@@ -80,7 +80,7 @@ func (node *Device) TryUpdateDevice(data map[string]interface{}) bool {
 	if _, ok := data[lastSeenKey]; !ok {
 		data[lastSeenKey] = getCurrentTime()
 	}
-	data["availability"] = "online"
+	data[availabilityKey] = "online"
 	var updated = false
 	for key, currValue := range node.Sensors {
 		if newValue, ok := data[key]; ok && newValue != currValue {
@@ -95,23 +95,6 @@ func (node *Device) TryUpdateDevice(data map[string]interface{}) bool {
 func getCurrentTime() string {
 	return time.Now().Format(time.RFC3339)
 }
-
-// newNode.availabilityTicker = *time.NewTicker(1 * time.Hour)
-// done := make(chan bool)
-
-// go func() {
-// 	for {
-// 		select {
-// 		// use context to kill goroutine
-// 		case <-done:
-// 			//newNode.Stats[availabilityKey] = "offline"
-// 		case t := <-newNode.availabilityTicker.C:
-// 			// if t >= newNode.last_seen
-// 			// flag offline
-// 			//newNode.Stats[availabilityKey] = "online"
-// 		}
-// 	}
-// }()
 
 func convertToMap(payload interface{}) (map[string]interface{}, error) {
 	if data, ok := payload.(map[string]interface{}); ok {
