@@ -1,7 +1,6 @@
 package devices
 
 import (
-	"errors"
 	"fmt"
 	"time"
 )
@@ -82,6 +81,7 @@ func CreateNewDevice(id string, data map[string]interface{}) *Device {
 	}
 	return newNode
 }
+
 func (device *Device) Dispose() {
 	if device.AvailabilityTimerRunning() {
 		device.availablityDone <- true
@@ -113,29 +113,23 @@ func (device *Device) StartAvailabilityTimer(timeoutInSecs int) {
 					return
 				}
 
-				lastSeenStr, ok := device.Stats[lastSeenKey].(string)
-				if !ok {
-					panic("failed to convert")
-				}
-
+				lastSeenStr, _ := device.Stats[lastSeenKey].(string)
 				lastSeen, err := time.Parse(time.RFC3339, lastSeenStr)
 				if err != nil {
-					fmt.Println(err)
-					panic(err)
+					fmt.Println("failed to parse time", err)
+					device.Dispose()
 				}
+
 				now := time.Now()
 				diff := now.Sub(lastSeen)
 				if diff.Seconds() >= float64(timeoutInSecs) {
-
 					device.Stats[availabilityKey] = offline
-
-					fmt.Println("we offline!!!!!!!!!!!!!!!!!")
 				}
 			}
 		}
 	}()
-
 }
+
 func (node *Device) TryUpdateDevice(data map[string]interface{}) bool {
 	if _, ok := data[lastSeenKey]; !ok {
 		data[lastSeenKey] = getCurrentTime()
@@ -159,11 +153,4 @@ func (node *Device) TryUpdateDevice(data map[string]interface{}) bool {
 
 func getCurrentTime() string {
 	return time.Now().Format(time.RFC3339)
-}
-
-func convertToMap(payload interface{}) (map[string]interface{}, error) {
-	if data, ok := payload.(map[string]interface{}); ok {
-		return data, nil
-	}
-	return nil, errors.New("invalid device data")
 }
