@@ -90,7 +90,7 @@ func (device *Device) Dispose() {
 }
 
 func (device *Device) AvailabilityTimerRunning() bool {
-	return len(device.availablityDone) != 0
+	return len(device.availablityDone) != cap(device.availablityDone)
 }
 
 func (device *Device) StartAvailabilityTimer(timeoutInSecs int) {

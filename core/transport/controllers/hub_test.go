@@ -185,6 +185,39 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 	}
 }
 
+func TestAvailabilityIsDisposed(t *testing.T) {
+
+	id := "device 1"
+	repo := repository.NewMemoryDeviceRepo()
+	ws := &mocks.NopWsServer{}
+	mqtt := &mocks.MockMqttClient{}
+	hub := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	hub.AvailabilityTimeoutinSeconds = 1
+
+	mqtt.PublishMessage(id, []byte(device1BatterySource))
+	time.Sleep(100 * time.Millisecond)
+
+	device, err := repo.FindDevice(id)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	if device.Stats["availability"] != "online" {
+		t.Fatalf("want online got offline")
+	}
+
+	if !device.AvailabilityTimerRunning() {
+		t.Fatalf("timer not running")
+	}
+
+	device.Dispose()
+	time.Sleep(100 * time.Millisecond)
+
+	if device.AvailabilityTimerRunning() {
+		t.Fatalf("timer is still running")
+	}
+}
+
 func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data interface{}) error) ws.EventHub {
 
 	return &mocks.MockEventHub{MockBroadcastEvent: mockBroadcastEvent}
