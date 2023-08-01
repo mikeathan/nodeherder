@@ -21,20 +21,22 @@ func (m *processorTask) OnFailure(err error) {
 }
 
 type HubController struct {
-	eventHub ws.EventHub
-	mqtt     mqtt.MqttClient
-	repo     devices.Repository
-	ctx      context.Context
-	pool     pool.WorkerPool
-	procFunc func(t pool.Task) error
+	eventHub                     ws.EventHub
+	mqtt                         mqtt.MqttClient
+	repo                         devices.Repository
+	ctx                          context.Context
+	pool                         pool.WorkerPool
+	procFunc                     func(t pool.Task) error
+	AvailabilityTimeoutinSeconds int
 }
 
 func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Repository, ctx context.Context) *HubController {
 	h := &HubController{
-		eventHub: ws,
-		mqtt:     mqtt,
-		repo:     repo,
-		ctx:      ctx,
+		eventHub:                     ws,
+		mqtt:                         mqtt,
+		repo:                         repo,
+		ctx:                          ctx,
+		AvailabilityTimeoutinSeconds: 3600, // 1 hour
 	}
 
 	// TODO:
@@ -72,7 +74,7 @@ func (c *HubController) processPayload(id string, payload map[string]interface{}
 	device, _ := c.repo.FindDevice(id)
 	if device == nil {
 		device = devices.CreateNewDevice(id, payload)
-
+		device.StartAvailabilityTimer(c.AvailabilityTimeoutinSeconds)
 	} else {
 		if !device.TryUpdateDevice(payload) {
 			return nil

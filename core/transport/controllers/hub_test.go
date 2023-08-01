@@ -11,9 +11,9 @@ import (
 	"time"
 )
 
-const device1BatterySource = `{"id":"device 1","conn":"mqtt","power_source":"battery","sensors":{"humidity":92.49999999999999,"temperature":19.000000000000004},"stats":{"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":47,"battery":98}}`
+const device1BatterySource = `{"id":"device 1","conn":"mqtt","power_source":"battery","humidity":92.49999999999999,"temperature":19.000000000000004,"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":47,"battery":98}`
 const device2 = `{"battery":98, "humidity":71.2,  "linkquality":36.1,"temperature":17.1,"voltage":2999}`
-const device3NoLastSeen = `{"id":"device 1","conn":"mqtt","power_source":"battery","sensors":{"humidity":92.49999999999999,"temperature":19.000000000000004},"stats":{"availability":"online","linkquality":47,"battery":98}}`
+const device3NoLastSeen = `{"id":"device 1","conn":"mqtt","power_source":"battery","humidity":92.49999999999999,"temperature":19.000000000000004,"availability":"online","linkquality":47,"battery":67}`
 
 func createMockPayload() map[string]interface{} {
 	return map[string]interface{}{
@@ -149,15 +149,17 @@ func TestOnlyNewPayloadIsBroadcasted(t *testing.T) {
 		}
 	}
 }
-func TestAvailability(t *testing.T) {
+
+func TestAvailabilityStatusIsUpdated(t *testing.T) {
 
 	id := "device 1"
 	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
-	mqtt.PublishMessage(id, []byte(device1BatterySource))
+	hub := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	hub.AvailabilityTimeoutinSeconds = 1
 
+	mqtt.PublishMessage(id, []byte(device1BatterySource))
 	time.Sleep(100 * time.Millisecond)
 
 	device, err := repo.FindDevice(id)
@@ -165,18 +167,22 @@ func TestAvailability(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	device.AvailabilityTimeoutSecs = 1
-	device.StartAvailabilityTimer()
 	if device.Stats["availability"] != "online" {
-		t.Fatalf("we are not online")
+		t.Fatalf("want online got offline")
 	}
 
-	time.Sleep(2 * time.Second)
+	time.Sleep(1100 * time.Millisecond)
 	if device.Stats["availability"] != "offline" {
-		t.Fatalf("we are not offline")
+		t.Fatalf("want offline got online")
 	}
 
-	time.Sleep(1000000 * time.Millisecond)
+	mqtt.PublishMessage(id, []byte(device1BatterySource))
+	time.Sleep(200 * time.Millisecond)
+	device1, _ := repo.FindDevice(id)
+
+	if device1.Stats["availability"] != "online" {
+		t.Fatalf("want online got offline")
+	}
 }
 
 func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data interface{}) error) ws.EventHub {

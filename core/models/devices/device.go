@@ -13,7 +13,7 @@ var sensorWhitelist = map[string]int{
 	"presence":        4,
 	"illuminance_lux": 5,
 }
-var deviceWhitelist = map[string]int{
+var statsWhitelist = map[string]int{
 	"battery":      1,
 	"linkquality":  2,
 	"availability": 3,
@@ -39,7 +39,7 @@ type Device struct {
 	Stats                   map[string]any `json:"stats"`
 	availabilityTicker      time.Ticker    `json:"-"`
 	availablityDone         chan bool
-	AvailabilityTimeoutSecs int
+	availabilityTimeoutSecs int
 }
 
 func newDevice() *Device {
@@ -48,7 +48,7 @@ func newDevice() *Device {
 		Stats:                   map[string]any{},
 		availabilityTicker:      time.Ticker{},
 		availablityDone:         make(chan bool, 1),
-		AvailabilityTimeoutSecs: 3600, // 1 hour check
+		availabilityTimeoutSecs: 3600, // 1 hour check
 	}
 }
 
@@ -76,11 +76,10 @@ func CreateNewDevice(id string, data map[string]interface{}) *Device {
 	for key, value := range data {
 		if _, ok := sensorWhitelist[key]; ok {
 			newNode.Sensors[key] = value
-		} else if _, ok := deviceWhitelist[key]; ok {
+		} else if _, ok := statsWhitelist[key]; ok {
 			newNode.Stats[key] = value
 		}
 	}
-	//newNode.startAvailabilityTimer()
 	return newNode
 }
 func (device *Device) Dispose() {
@@ -94,12 +93,13 @@ func (device *Device) AvailabilityTimerRunning() bool {
 	return len(device.availablityDone) != 0
 }
 
-func (device *Device) StartAvailabilityTimer() {
-	defer close(device.availablityDone)
+func (device *Device) StartAvailabilityTimer(timeoutInSecs int) {
 
 	device.availabilityTicker = *time.NewTicker(1 * time.Second)
 
 	go func() {
+		defer close(device.availablityDone)
+
 		for {
 			select {
 			case <-device.availablityDone:
@@ -125,7 +125,7 @@ func (device *Device) StartAvailabilityTimer() {
 				}
 				now := time.Now()
 				diff := now.Sub(lastSeen)
-				if diff.Seconds() >= float64(device.AvailabilityTimeoutSecs) {
+				if diff.Seconds() >= float64(timeoutInSecs) {
 
 					device.Stats[availabilityKey] = offline
 
@@ -133,7 +133,6 @@ func (device *Device) StartAvailabilityTimer() {
 				}
 			}
 		}
-
 	}()
 
 }
@@ -141,13 +140,18 @@ func (node *Device) TryUpdateDevice(data map[string]interface{}) bool {
 	if _, ok := data[lastSeenKey]; !ok {
 		data[lastSeenKey] = getCurrentTime()
 	}
-	data[availabilityKey] = online
+
 	var updated = false
 	for key, currValue := range node.Sensors {
 		if newValue, ok := data[key]; ok && newValue != currValue {
 			node.Sensors[key] = newValue
 			updated = true
 		}
+	}
+
+	if node.Stats[availabilityKey] != online {
+		node.Stats[availabilityKey] = online
+		return true
 	}
 
 	return updated
