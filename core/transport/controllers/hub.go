@@ -9,7 +9,6 @@ import (
 	"node-herder/models/devices"
 	"node-herder/transport/mqtt"
 	"node-herder/transport/ws"
-	"time"
 )
 
 type processorTask struct {
@@ -73,7 +72,6 @@ func (c *HubController) processPayload(id string, payload map[string]interface{}
 	device, _ := c.repo.FindDevice(id)
 	if device == nil {
 		device = devices.CreateNewDevice(id, payload)
-		// todo: start timer for availability
 
 	} else {
 		if !device.TryUpdateDevice(payload) {
@@ -86,38 +84,6 @@ func (c *HubController) processPayload(id string, payload map[string]interface{}
 	return nil
 }
 
-func startAvailabilityTimer(device *devices.Device) {
-
-	device.AvailabilityTicker = *time.NewTicker(1 * time.Hour)
-	done := make(chan bool)
-
-	go func() {
-		for {
-			select {
-			// use context to kill goroutine
-			case <-done: // cleanup
-				device.Stats["availability"] = "offline"
-			case <-device.AvailabilityTicker.C:
-				now := time.Now()
-				lastSeenStr := device.Sensors["last_seen"].(string)
-				lastSeen, err := time.Parse(time.RFC3339, lastSeenStr)
-				if err != nil {
-					fmt.Println(err)
-					panic(err)
-				}
-				diff := now.Sub(lastSeen)
-				if diff.Seconds() > 60 {
-
-					device.Stats["availability"] = "offline"
-
-					fmt.Println("we offline!!!!!!!!!!!!!!!!!")
-				}
-
-			}
-		}
-	}()
-
-}
 func convertToMap(payload []byte) (map[string]interface{}, error) {
 
 	deviceMap := make(map[string]interface{})

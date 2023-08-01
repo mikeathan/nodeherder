@@ -2,6 +2,7 @@ package devices
 
 import (
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -27,20 +28,25 @@ var lastSeenKey = "last_seen"
 var connectionTypeKey = "conn"
 var connectionTypeMqtt = "mqtt"
 
+const online = "online"
+const offline = "offline"
+
 type Device struct {
 	Id                 string         `json:"id"`
 	ConnectionType     string         `json:"conn"`
 	PowerSource        string         `json:"power_source"`
 	Sensors            map[string]any `json:"sensors"`
 	Stats              map[string]any `json:"stats"`
-	AvailabilityTicker time.Ticker    `json:"-"`
+	availabilityTicker time.Ticker    `json:"-"`
+	availablityDone    chan bool
 }
 
 func newDevice() *Device {
 	return &Device{
 		Sensors:            map[string]any{},
 		Stats:              map[string]any{},
-		AvailabilityTicker: time.Ticker{},
+		availabilityTicker: time.Ticker{},
+		availablityDone:    make(chan bool, 1),
 	}
 }
 
@@ -72,15 +78,68 @@ func CreateNewDevice(id string, data map[string]interface{}) *Device {
 			newNode.Stats[key] = value
 		}
 	}
-
+	newNode.startAvailabilityTimer()
 	return newNode
 }
 
+func (device *Device) Dispose() {
+	if device.AvailabilityTimerRunning() {
+		device.availablityDone <- true
+		device.availabilityTicker.Stop()
+	}
+}
+
+func (device *Device) AvailabilityTimerRunning() bool {
+	return len(device.availablityDone) != 0
+}
+
+func (device *Device) startAvailabilityTimer() {
+	defer close(device.availablityDone)
+
+	device.availabilityTicker = *time.NewTicker(1 * time.Second)
+
+	go func() {
+		for {
+			select {
+			case <-device.availablityDone:
+				device.Stats[availabilityKey] = offline
+				fmt.Println("timer killed")
+				return
+
+			case <-device.availabilityTicker.C:
+
+				if device.Stats[availabilityKey] == offline {
+					return
+				}
+
+				lastSeenStr, ok := device.Stats["last_seen"].(string)
+				if !ok {
+					panic("failed to convert")
+				}
+				lastSeen, err := time.Parse(time.RFC3339, lastSeenStr)
+				if err != nil {
+					fmt.Println(err)
+					panic(err)
+				}
+				now := time.Now()
+				diff := now.Sub(lastSeen)
+				if diff.Seconds() > 60 {
+
+					device.Stats[availabilityKey] = offline
+
+					fmt.Println("we offline!!!!!!!!!!!!!!!!!")
+				}
+			}
+		}
+
+	}()
+
+}
 func (node *Device) TryUpdateDevice(data map[string]interface{}) bool {
 	if _, ok := data[lastSeenKey]; !ok {
 		data[lastSeenKey] = getCurrentTime()
 	}
-	data[availabilityKey] = "online"
+	data[availabilityKey] = online
 	var updated = false
 	for key, currValue := range node.Sensors {
 		if newValue, ok := data[key]; ok && newValue != currValue {

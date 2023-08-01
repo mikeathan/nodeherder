@@ -130,3 +130,4 @@ if payload == new || updated{
     }
 
 }
+{"nickname": "enviro_node", "uid": "e661410403554934", "timestamp": "2023-08-01T16:30:04Z", "readings": {"id": "enviro_node", "temperature": 27.03, "humidity": 43.63, "pressure": 985.46, "luminance": 4.65, "wind_speed": 0, "rain": 0, "rain_per_second": 0.0, "wind_direction": 90, "voltage": 0.0}, "model": "weather"}

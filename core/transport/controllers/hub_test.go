@@ -149,6 +149,17 @@ func TestOnlyNewPayloadIsBroadcasted(t *testing.T) {
 		}
 	}
 }
+func TestAvailability(t *testing.T) {
+
+	id := "device 1"
+	repo := repository.NewMemoryDeviceRepo()
+	ws := &mocks.NopWsServer{}
+	mqtt := &mocks.MockMqttClient{}
+	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	mqtt.PublishMessage(id, []byte(device1BatterySource))
+
+	time.Sleep(100000 * time.Millisecond)
+}
 
 func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data interface{}) error) ws.EventHub {
 
