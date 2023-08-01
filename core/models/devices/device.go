@@ -32,21 +32,23 @@ const online = "online"
 const offline = "offline"
 
 type Device struct {
-	Id                 string         `json:"id"`
-	ConnectionType     string         `json:"conn"`
-	PowerSource        string         `json:"power_source"`
-	Sensors            map[string]any `json:"sensors"`
-	Stats              map[string]any `json:"stats"`
-	availabilityTicker time.Ticker    `json:"-"`
-	availablityDone    chan bool
+	Id                      string         `json:"id"`
+	ConnectionType          string         `json:"conn"`
+	PowerSource             string         `json:"power_source"`
+	Sensors                 map[string]any `json:"sensors"`
+	Stats                   map[string]any `json:"stats"`
+	availabilityTicker      time.Ticker    `json:"-"`
+	availablityDone         chan bool
+	AvailabilityTimeoutSecs int
 }
 
 func newDevice() *Device {
 	return &Device{
-		Sensors:            map[string]any{},
-		Stats:              map[string]any{},
-		availabilityTicker: time.Ticker{},
-		availablityDone:    make(chan bool, 1),
+		Sensors:                 map[string]any{},
+		Stats:                   map[string]any{},
+		availabilityTicker:      time.Ticker{},
+		availablityDone:         make(chan bool, 1),
+		AvailabilityTimeoutSecs: 3600, // 1 hour check
 	}
 }
 
@@ -78,10 +80,9 @@ func CreateNewDevice(id string, data map[string]interface{}) *Device {
 			newNode.Stats[key] = value
 		}
 	}
-	newNode.startAvailabilityTimer()
+	//newNode.startAvailabilityTimer()
 	return newNode
 }
-
 func (device *Device) Dispose() {
 	if device.AvailabilityTimerRunning() {
 		device.availablityDone <- true
@@ -93,7 +94,7 @@ func (device *Device) AvailabilityTimerRunning() bool {
 	return len(device.availablityDone) != 0
 }
 
-func (device *Device) startAvailabilityTimer() {
+func (device *Device) StartAvailabilityTimer() {
 	defer close(device.availablityDone)
 
 	device.availabilityTicker = *time.NewTicker(1 * time.Second)
@@ -112,10 +113,11 @@ func (device *Device) startAvailabilityTimer() {
 					return
 				}
 
-				lastSeenStr, ok := device.Stats["last_seen"].(string)
+				lastSeenStr, ok := device.Stats[lastSeenKey].(string)
 				if !ok {
 					panic("failed to convert")
 				}
+
 				lastSeen, err := time.Parse(time.RFC3339, lastSeenStr)
 				if err != nil {
 					fmt.Println(err)
@@ -123,7 +125,7 @@ func (device *Device) startAvailabilityTimer() {
 				}
 				now := time.Now()
 				diff := now.Sub(lastSeen)
-				if diff.Seconds() > 60 {
+				if diff.Seconds() >= float64(device.AvailabilityTimeoutSecs) {
 
 					device.Stats[availabilityKey] = offline
 

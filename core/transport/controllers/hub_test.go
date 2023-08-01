@@ -158,7 +158,25 @@ func TestAvailability(t *testing.T) {
 	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
 	mqtt.PublishMessage(id, []byte(device1BatterySource))
 
-	time.Sleep(100000 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
+
+	device, err := repo.FindDevice(id)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	device.AvailabilityTimeoutSecs = 1
+	device.StartAvailabilityTimer()
+	if device.Stats["availability"] != "online" {
+		t.Fatalf("we are not online")
+	}
+
+	time.Sleep(2 * time.Second)
+	if device.Stats["availability"] != "offline" {
+		t.Fatalf("we are not offline")
+	}
+
+	time.Sleep(1000000 * time.Millisecond)
 }
 
 func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data interface{}) error) ws.EventHub {
