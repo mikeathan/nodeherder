@@ -1,11 +1,16 @@
 package routes
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"node-herder/transport/controllers"
 	"node-herder/transport/ws"
+	"node-herder/utils"
 	"regexp"
+	"strconv"
 
 	"github.com/gorilla/websocket"
 )
@@ -108,4 +113,49 @@ func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.hub.RegisterNewClient(conn)
 
 	fmt.Printf("WsHandler: client connected\n")
+}
+
+type DataCollectorHandler struct {
+	hub *controllers.HubController
+}
+
+func NewDataCollectorHandler(hub *controllers.HubController) *DataCollectorHandler {
+	return &DataCollectorHandler{
+		hub: hub,
+	}
+}
+
+func (h *DataCollectorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Content-Type") != "application/json" {
+		http.Error(w, "Content-Type header is not application/json", http.StatusUnsupportedMediaType)
+		return
+	}
+
+	buf := new(bytes.Buffer)
+	_, err := buf.ReadFrom(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// TO check
+	// do we need that ??
+	unquote, _ := strconv.Unquote(buf.String())
+	var payload map[string]interface{}
+	if er := json.Unmarshal([]byte(unquote), &payload); er != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	id, err := utils.FindId(payload)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	h.hub.Enqueue(id, "http", payload)
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Success"))
 }

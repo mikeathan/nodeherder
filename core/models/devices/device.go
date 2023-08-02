@@ -24,7 +24,6 @@ var mainsKey = "mains"
 var powerSourceKey = "power_source"
 var batterKey = "battery"
 var lastSeenKey = "last_seen"
-var connectionTypeKey = "conn"
 var connectionTypeMqtt = "mqtt"
 
 const online = "online"
@@ -51,7 +50,7 @@ func newDevice() *Device {
 	}
 }
 
-func CreateNewDevice(id string, data map[string]interface{}) *Device {
+func CreateNewDevice(id string, connType string, data map[string]interface{}) *Device {
 	// sanitize payload,
 	// TODO: need optimization
 	if _, ok := data[lastSeenKey]; !ok {
@@ -59,12 +58,9 @@ func CreateNewDevice(id string, data map[string]interface{}) *Device {
 	}
 	data[availabilityKey] = online
 
-	// Todo: need to pass in payload
-	data[connectionTypeKey] = connectionTypeMqtt
-
 	var newNode = newDevice()
 	newNode.Id = id
-	newNode.ConnectionType = connectionTypeMqtt
+	newNode.ConnectionType = connType
 
 	if _, ok := data[batterKey]; !ok {
 		newNode.PowerSource = mainsKey

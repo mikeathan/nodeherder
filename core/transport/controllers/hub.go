@@ -5,15 +5,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"node-herder/common/pool"
 	"node-herder/models/devices"
 	"node-herder/transport/mqtt"
 	"node-herder/transport/ws"
+	"node-herder/utils/pool"
 )
 
 type processorTask struct {
 	Id      string
-	Payload []byte
+	Payload map[string]interface{}
+	Type    string
 }
 
 func (m *processorTask) OnFailure(err error) {
@@ -42,17 +43,12 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 	// TODO:
 	// do i need to store procFunc as member variable
 	h.procFunc = func(task pool.Task) error {
-		// TODO
 		pTask, ok := task.(*processorTask)
 		if !ok {
 			return errors.New("invalid task type")
 		}
 
-		payload, err := convertToMap(pTask.Payload)
-		if err != nil {
-			return errors.New("failed to convert to map")
-		}
-		return h.processPayload(pTask.Id, payload)
+		return h.processPayload(pTask.Id, pTask.Type, pTask.Payload)
 	}
 
 	h.pool = *pool.NewWorkerPool(1, h.ctx)
@@ -63,17 +59,27 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 	})
 
 	h.mqtt.OnMessageHandler(func(name string, payload []byte) {
-		h.pool.AddTask(&processorTask{Id: name, Payload: payload})
+
+		dataMap, err := convertToMap(payload)
+		if err != nil {
+			fmt.Println("error: failed to convert mqtt payload to map")
+			return
+		}
+		h.Enqueue(name, "mqtt", dataMap)
 	})
 
 	return h
 }
 
-func (c *HubController) processPayload(id string, payload map[string]interface{}) error {
+func (c *HubController) Enqueue(name string, connType string, payload map[string]interface{}) {
+	c.pool.AddTask(&processorTask{Id: name, Payload: payload, Type: connType})
+}
+
+func (c *HubController) processPayload(id string, connType string, payload map[string]interface{}) error {
 
 	device, _ := c.repo.FindDevice(id)
 	if device == nil {
-		device = devices.CreateNewDevice(id, payload)
+		device = devices.CreateNewDevice(id, connType, payload)
 		device.StartAvailabilityTimer(c.AvailabilityTimeoutinSeconds)
 	} else {
 		if !device.TryUpdateDevice(payload) {

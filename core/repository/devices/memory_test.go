@@ -23,7 +23,7 @@ func TestRepositoryCanAddOneDevice(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()
 	id := "device 1"
-	device := devices.CreateNewDevice(id, createMockPayload(id, 50, 60.1, 23.5, 120.0))
+	device := devices.CreateNewDevice(id, "mqtt", createMockPayload(id, 50, 60.1, 23.5, 120.0))
 
 	repo.Store(id, device)
 	res, err := repo.FindDevice(id)
@@ -45,10 +45,10 @@ func TestRepositoryCanAddMultipleDevices(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()
 	devId1 := "device 1"
-	device1 := devices.CreateNewDevice(devId1, createMockPayload(devId1, 50, 60.1, 23.5, 120.0))
+	device1 := devices.CreateNewDevice(devId1, "mqtt", createMockPayload(devId1, 50, 60.1, 23.5, 120.0))
 
 	devId2 := "device 2"
-	device2 := devices.CreateNewDevice(devId2, createMockPayload(devId2, 90, 34.7, 36.2, 56.0))
+	device2 := devices.CreateNewDevice(devId2, "mqtt", createMockPayload(devId2, 90, 34.7, 36.2, 56.0))
 
 	repo.Store(devId1, device1)
 	repo.Store(devId2, device2)
@@ -80,9 +80,9 @@ func TestRepositoryCanUpdateExistingDevice(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()
 	devId1 := "device 1"
-	device1 := devices.CreateNewDevice(devId1, createMockPayload(devId1, 50, 60.1, 23.5, 120.0))
+	device1 := devices.CreateNewDevice(devId1, "mqtt", createMockPayload(devId1, 50, 60.1, 23.5, 120.0))
 
-	device1b := devices.CreateNewDevice(devId1, createMockPayload(devId1, 90, 34.7, 36.2, 56.0))
+	device1b := devices.CreateNewDevice(devId1, "mqtt", createMockPayload(devId1, 90, 34.7, 36.2, 56.0))
 	repo.Store(devId1, device1)
 	repo.Store(devId1, device1b)
 	devices := repo.ListAllDevices()

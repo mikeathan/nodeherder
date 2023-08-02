@@ -11,7 +11,7 @@ import (
 	"node-herder/transport/ws"
 )
 
-func registerApi(port int, ws ws.EventHub, ctx context.Context) *api.ApiServer {
+func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, ctx context.Context) *api.ApiServer {
 
 	router := routes.NewRouter()
 	router.GET("/ws", routes.NewWsHandler(ws))
@@ -35,7 +35,7 @@ func RegisterHub(port int, repo devices.Repository, config mqtt.MqttConfig, ctx 
 	// TODO: see if i can remove and do it when newing it - to check onmessage hander gets used correctly
 	mqtt.Connect()
 
-	controllers.RegisterHubController(ws, mqtt, repo, ctx)
+	hub := controllers.RegisterHubController(ws, mqtt, repo, ctx)
 
-	return registerApi(port, ws, ctx)
+	return registerApi(port, ws, hub, ctx)
 }
