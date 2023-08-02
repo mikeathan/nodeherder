@@ -57,7 +57,7 @@ func CreateNewDevice(id string, data map[string]interface{}) *Device {
 	if _, ok := data[lastSeenKey]; !ok {
 		data[lastSeenKey] = getCurrentTime()
 	}
-	data[availabilityKey] = "online"
+	data[availabilityKey] = online
 
 	// Todo: need to pass in payload
 	data[connectionTypeKey] = connectionTypeMqtt
@@ -83,14 +83,8 @@ func CreateNewDevice(id string, data map[string]interface{}) *Device {
 }
 
 func (device *Device) Dispose() {
-	if device.AvailabilityTimerRunning() {
-		device.availablityDone <- true
-		device.availabilityTicker.Stop()
-	}
-}
-
-func (device *Device) AvailabilityTimerRunning() bool {
-	return len(device.availablityDone) != cap(device.availablityDone)
+	device.availablityDone <- true
+	device.availabilityTicker.Stop()
 }
 
 func (device *Device) StartAvailabilityTimer(timeoutInSecs int) {
@@ -99,12 +93,12 @@ func (device *Device) StartAvailabilityTimer(timeoutInSecs int) {
 
 	go func() {
 		defer close(device.availablityDone)
-
 		for {
 			select {
 			case <-device.availablityDone:
 				device.Stats[availabilityKey] = offline
 				fmt.Println("timer killed")
+
 				return
 
 			case <-device.availabilityTicker.C:

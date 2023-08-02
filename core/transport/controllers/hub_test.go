@@ -206,15 +206,11 @@ func TestAvailabilityIsDisposed(t *testing.T) {
 		t.Fatalf("want online got offline")
 	}
 
-	if !device.AvailabilityTimerRunning() {
-		t.Fatalf("timer not running")
-	}
-
 	device.Dispose()
 	time.Sleep(100 * time.Millisecond)
 
-	if device.AvailabilityTimerRunning() {
-		t.Fatalf("timer is still running")
+	if device.Stats["availability"] != "offline" {
+		t.Fatalf("want offline got online")
 	}
 }
 
