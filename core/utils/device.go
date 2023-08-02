@@ -6,6 +6,24 @@ import (
 )
 
 var nodeIds = []string{"node_id", "nodeid", "id", "nickname", "label", "name"}
+var batchPayloadIds = []string{"readings", "items", "data", "items"}
+
+func FindPayload(payload map[string]interface{}) (map[string]interface{}, error) {
+	for key, value := range payload {
+		if contains(batchPayloadIds, key) {
+			payloadMap, ok := value.(map[string]interface{})
+			if !ok {
+				return nil, errors.New("invalid data: data structure is payload")
+			}
+			timestamp, ok := payload["timestamp"]
+			if ok {
+				payloadMap["timestamp"] = timestamp
+			}
+			return payloadMap, nil
+		}
+	}
+	return payload, nil
+}
 
 func FindId(payload map[string]interface{}) (string, error) {
 	for key, value := range payload {
