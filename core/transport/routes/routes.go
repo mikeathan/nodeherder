@@ -10,7 +10,6 @@ import (
 	"node-herder/transport/ws"
 	"node-herder/utils"
 	"regexp"
-	"strconv"
 
 	"github.com/gorilla/websocket"
 )
@@ -138,11 +137,10 @@ func (h *DataCollectorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// TO check
-	// do we need that ??
-	unquote, _ := strconv.Unquote(buf.String())
+	body := buf.String()
+	//unquote, _ := strconv.Unquote(body)
 	var payload map[string]interface{}
-	if er := json.Unmarshal([]byte(unquote), &payload); er != nil {
+	if er := json.Unmarshal([]byte(body), &payload); er != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

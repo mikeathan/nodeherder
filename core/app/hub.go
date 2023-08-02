@@ -15,8 +15,8 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, ctx c
 
 	router := routes.NewRouter()
 	router.GET("/ws", routes.NewWsHandler(ws))
-
 	router.GET("/", http.FileServer(http.Dir("../frontend/dist")))
+	router.POST("/collect", routes.NewDataCollectorHandler(hub))
 
 	apiServer := api.NewHttpServer(
 		port,
