@@ -140,7 +140,7 @@ func (h *DataCollectorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	body := buf.String()
 	//unquote, _ := strconv.Unquote(body)
 	var payload map[string]interface{}
-	if er := json.Unmarshal([]byte(body), &payload); er != nil {
+	if err = json.Unmarshal([]byte(body), &payload); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
