@@ -10,10 +10,10 @@ var batchPayloadIds = []string{"readings", "items", "data", "items"}
 
 func FindPayload(payload map[string]interface{}) (map[string]interface{}, error) {
 	for key, value := range payload {
-		if contains(batchPayloadIds, key) {
-			payloadMap, ok := value.(map[string]interface{})
-			if !ok {
-				return nil, errors.New("invalid data: data structure is payload")
+		payloadMap, ok := value.(map[string]interface{})
+		if ok {
+			if !contains(batchPayloadIds, key) {
+				return nil, errors.New("invalid data: data structure not containign valid root payload")
 			}
 			timestamp, ok := payload["timestamp"]
 			if ok {
@@ -21,6 +21,7 @@ func FindPayload(payload map[string]interface{}) (map[string]interface{}, error)
 			}
 			return payloadMap, nil
 		}
+
 	}
 	return payload, nil
 }
