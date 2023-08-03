@@ -76,6 +76,7 @@ func CreateNewDevice(id string, connType string, data map[string]interface{}) (*
 			newNode.Stats[key] = value
 		}
 	}
+
 	if len(newNode.Sensors) == 0 {
 		return nil, errors.New("invalid payload - no sensor data")
 	}
@@ -148,4 +149,13 @@ func (node *Device) TryUpdateDevice(data map[string]interface{}) bool {
 
 func getCurrentTime() string {
 	return time.Now().Format(time.RFC3339)
+}
+
+func toRFC3339(timestamp string) (string, error) {
+	converted, err := time.Parse(time.RFC3339, timestamp)
+
+	if err != nil {
+		return "", err
+	}
+	return converted.String(), nil
 }

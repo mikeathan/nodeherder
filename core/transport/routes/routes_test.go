@@ -15,8 +15,8 @@ import (
 )
 
 const device1BatterySource = `{"id":"device 1","conn":"mqtt","power_source":"battery","humidity":92.49999999999999,"temperature":19.000000000000004,"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":47,"battery":98}`
-const device1ReadingsBatterySource = `{"id":"device 1", "timestamp":"2023-08-01T16:30:04Z", "readings":{"humidity":92.49999999999999,"temperature":19.000000000000004}}`
-const device1InvalidReadingsBatterySource = `{"id":"device 1", "timestamp":"2023-08-01T16:30:04Z", "readingstest":{"humidity":92.49999999999999,"temperature":19.000000000000004}}`
+const device1RootPayloadBatterySource = `{"id":"device 1", "timestamp":"2023-08-01T16:30:04Z", "readings":{"humidity":92.49999999999999,"temperature":19.000000000000004}}`
+const device1InvalidRootPayloadBatterySource = `{"id":"device 1", "timestamp":"2023-08-01T16:30:04Z", "readingstest":{"humidity":92.49999999999999,"temperature":19.000000000000004}}`
 const missingDeviceIdPayload = `{"conn":"mqtt","power_source":"battery","humidity":92.49999999999999,"temperature":19.000000000000004,"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":47,"battery":98}`
 
 func TestHandleMissingDeviceIdPayload(t *testing.T) {
@@ -62,14 +62,14 @@ func TestHandleInvalidDataPayload(t *testing.T) {
 	}
 }
 
-func TestHandleSuccesfullyReadingsPayload(t *testing.T) {
+func TestHandleSuccesfullyRootPayload(t *testing.T) {
 
 	id := "device 1"
 	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
 	hub := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
-	bodyReader := strings.NewReader(string(device1ReadingsBatterySource))
+	bodyReader := strings.NewReader(string(device1RootPayloadBatterySource))
 	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
 
@@ -95,13 +95,13 @@ func TestHandleSuccesfullyReadingsPayload(t *testing.T) {
 	}
 }
 
-func TestHandleInvalidReadingsPayload(t *testing.T) {
+func TestHandleInvalidRootPayload(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
 	hub := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
-	bodyReader := strings.NewReader(string(device1InvalidReadingsBatterySource))
+	bodyReader := strings.NewReader(string(device1InvalidRootPayloadBatterySource))
 	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
 
@@ -121,6 +121,45 @@ func TestHandleInvalidReadingsPayload(t *testing.T) {
 	}
 }
 
+func TestProcessorHandleRootPayloadWithTimestamp(t *testing.T) {
+
+	timestamp := "2023-07-20T19:48:35+01:00"
+
+	id := "device1"
+	device1RootPayload := `{"nickname":"device1","timestamp":"2023-07-20T19:48:35+01:00", "readings":{"humidity":92.1,"temperature":19.3}}`
+
+	repo := repository.NewMemoryDeviceRepo()
+	ws := &mocks.NopWsServer{}
+	mqtt := &mocks.MockMqttClient{}
+	hub := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	bodyReader := strings.NewReader(string(device1RootPayload))
+	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
+	req.Header.Add("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	h := routes.NewDataCollectorHandler(hub)
+	h.ServeHTTP(w, req)
+
+	want, _ := time.Parse(time.RFC3339, timestamp)
+
+	time.Sleep(100 * time.Millisecond)
+	device, err := repo.FindDevice(id)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if device.Id != id {
+		t.Fatalf("want %s got %s", id, device.Id)
+	}
+
+	if device.Stats["last_seen"] == nil {
+		t.Fatalf("want %s got %s", "last_seen", "nil")
+	}
+
+	if device.Stats["last_seen"] != want {
+		t.Fatalf("want %s got %s", want, device.Stats["last_seen"])
+
+	}
+}
 func TestHandleSuccesfullyPayload(t *testing.T) {
 	id := "device 1"
 	repo := repository.NewMemoryDeviceRepo()

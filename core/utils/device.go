@@ -3,6 +3,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"time"
 )
 
 var nodeIds = []string{"node_id", "nodeid", "id", "nickname", "label", "name"}
@@ -17,13 +18,36 @@ func FindPayload(payload map[string]interface{}) (map[string]interface{}, error)
 			}
 			timestamp, ok := payload["timestamp"]
 			if ok {
-				payloadMap["timestamp"] = timestamp
+				timestamp, err := convertTimestamp(timestamp)
+				if err == nil {
+					payloadMap["last_seen"] = timestamp
+				}
 			}
 			return payloadMap, nil
 		}
 
 	}
 	return payload, nil
+}
+
+func convertTimestamp(timestamp interface{}) (string, error) {
+	timestampStr, ok := timestamp.(string)
+	if !ok {
+		return "", errors.New("error - invalid timestamp format")
+	}
+	ts, err := toRFC3339(timestampStr)
+	if err != nil {
+		return "", err
+	}
+	return ts, nil
+}
+func toRFC3339(timestamp string) (string, error) {
+	converted, err := time.Parse(time.RFC3339, timestamp)
+
+	if err != nil {
+		return "", err
+	}
+	return converted.String(), nil
 }
 
 func FindId(payload map[string]interface{}) (string, error) {
