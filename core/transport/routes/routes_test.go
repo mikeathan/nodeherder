@@ -114,6 +114,11 @@ func TestHandleInvalidReadingsPayload(t *testing.T) {
 	if status := w.Code; status != http.StatusBadRequest {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusBadRequest)
 	}
+	body, _ := io.ReadAll(w.Body)
+	expectedBody := "invalid data: data structure not containign valid root payload\n"
+	if string(body) != expectedBody {
+		t.Errorf("error reading body got %v want %v", string(body), expectedBody)
+	}
 }
 
 func TestHandleSuccesfullyPayload(t *testing.T) {
@@ -175,5 +180,4 @@ func TestHandleUnsuportedMediaType(t *testing.T) {
 	if string(body) != expectedBody {
 		t.Errorf("error reading body got %v want %v", string(body), expectedBody)
 	}
-
 }
