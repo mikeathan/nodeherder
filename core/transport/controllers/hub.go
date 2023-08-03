@@ -77,10 +77,15 @@ func (c *HubController) Enqueue(name string, connType string, payload map[string
 
 func (c *HubController) processPayload(id string, connType string, payload map[string]interface{}) error {
 
+	var err error
 	device, _ := c.repo.FindDevice(id)
 	if device == nil {
-		device = devices.CreateNewDevice(id, connType, payload)
+		device, err = devices.CreateNewDevice(id, connType, payload)
+		if err != nil {
+			return err
+		}
 		device.StartAvailabilityTimer(c.AvailabilityTimeoutinSeconds)
+
 	} else {
 		if !device.TryUpdateDevice(payload) {
 			return nil

@@ -1,6 +1,7 @@
 package devices
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
@@ -50,7 +51,7 @@ func newDevice() *Device {
 	}
 }
 
-func CreateNewDevice(id string, connType string, data map[string]interface{}) *Device {
+func CreateNewDevice(id string, connType string, data map[string]interface{}) (*Device, error) {
 	// sanitize payload,
 	// TODO: need optimization
 	if _, ok := data[lastSeenKey]; !ok {
@@ -75,7 +76,11 @@ func CreateNewDevice(id string, connType string, data map[string]interface{}) *D
 			newNode.Stats[key] = value
 		}
 	}
-	return newNode
+	if len(newNode.Sensors) == 0 {
+		return nil, errors.New("invalid payload - no sensor data")
+	}
+
+	return newNode, nil
 }
 
 func (device *Device) Dispose() {

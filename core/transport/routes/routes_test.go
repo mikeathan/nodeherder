@@ -16,6 +16,7 @@ import (
 
 const device1BatterySource = `{"id":"device 1","conn":"mqtt","power_source":"battery","humidity":92.49999999999999,"temperature":19.000000000000004,"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":47,"battery":98}`
 const device1ReadingsBatterySource = `{"id":"device 1", "timestamp":"2023-08-01T16:30:04Z", "readings":{"humidity":92.49999999999999,"temperature":19.000000000000004}}`
+const device1InvalidReadingsBatterySource = `{"id":"device 1", "timestamp":"2023-08-01T16:30:04Z", "readingstest":{"humidity":92.49999999999999,"temperature":19.000000000000004}}`
 const missingDeviceIdPayload = `{"conn":"mqtt","power_source":"battery","humidity":92.49999999999999,"temperature":19.000000000000004,"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":47,"battery":98}`
 
 func TestHandleMissingDeviceIdPayload(t *testing.T) {
@@ -91,6 +92,27 @@ func TestHandleSuccesfullyReadingsPayload(t *testing.T) {
 	}
 	if device.Id != id {
 		t.Fatalf("want %s got %s", id, device.Id)
+	}
+}
+
+func TestHandleInvalidReadingsPayload(t *testing.T) {
+
+	repo := repository.NewMemoryDeviceRepo()
+	ws := &mocks.NopWsServer{}
+	mqtt := &mocks.MockMqttClient{}
+	hub := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	bodyReader := strings.NewReader(string(device1InvalidReadingsBatterySource))
+	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
+	req.Header.Add("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	h := routes.NewDataCollectorHandler(hub)
+	h.ServeHTTP(w, req)
+
+	time.Sleep(100 * time.Millisecond)
+
+	if status := w.Code; status != http.StatusBadRequest {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusBadRequest)
 	}
 }
 
