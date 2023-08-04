@@ -136,3 +136,11 @@ TODO:
 worker pool that notify consumers when task added
 
 curl -X POST http://192.168.50.183:4100/collect -H 'Content-Type: application/json' -d '{"nodeid":"node1","temperature":45.6,"Timestamp":"2023-03-19T19:57:28.961193655Z"}'
+
+BUGS:
+mqtt
+
+-ui on refresh it displays just now isntead of resume timer. event when not receiving new data ????
+TryUpdateDevice updates by reference !!!!!
+
+- ui after 1 hour displays still 1 hour and not minutes

@@ -15,6 +15,9 @@ export default class ElapsedTimer {
     this.stopElapsedTimer();
   }
 
+  // todo:
+  // first minute update very sec and after than every min
+  // same for 1 hour, update eveyr hour
   startElapsedTimer(timestamp, callback) {
     this.stopElapsedTimer();
 

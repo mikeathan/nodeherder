@@ -48,7 +48,7 @@ func main() {
 		Password: "mqtt2023",
 		Broker:   "192.168.50.179:1883",
 		Topics: []string{
-			"TH1",
+			"TH01",
 			"Tuya ZY-M100",
 		},
 	}
