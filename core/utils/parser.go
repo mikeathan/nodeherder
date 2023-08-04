@@ -9,12 +9,18 @@ import (
 var nodeIds = []string{"node_id", "nodeid", "id", "nickname", "label", "name"}
 var batchPayloadIds = []string{"readings", "items", "data", "items"}
 
-func FindPayload(payload map[string]interface{}) (map[string]interface{}, error) {
+func ParsePayload(payload map[string]interface{}) (string, map[string]interface{}, error) {
+
+	id, err := findId(payload)
+	if err != nil {
+		return ",", nil, err
+	}
+
 	for key, value := range payload {
 		payloadMap, ok := value.(map[string]interface{})
 		if ok {
 			if !contains(batchPayloadIds, key) {
-				return nil, errors.New("invalid data: data structure not containign valid root payload")
+				return "", nil, errors.New("invalid data: data structure not containign valid payload section")
 			}
 			timestamp, ok := payload["timestamp"]
 			if ok {
@@ -23,11 +29,10 @@ func FindPayload(payload map[string]interface{}) (map[string]interface{}, error)
 					payloadMap["last_seen"] = timestamp
 				}
 			}
-			return payloadMap, nil
+			return id, payloadMap, nil
 		}
-
 	}
-	return payload, nil
+	return id, payload, nil
 }
 
 func convertTimestamp(timestamp interface{}) (string, error) {
@@ -35,22 +40,14 @@ func convertTimestamp(timestamp interface{}) (string, error) {
 	if !ok {
 		return "", errors.New("error - invalid timestamp format")
 	}
-	ts, err := toRFC3339(timestampStr)
+	converted, err := time.Parse(time.RFC3339, timestampStr)
 	if err != nil {
 		return "", err
 	}
-	return ts, nil
-}
-func toRFC3339(timestamp string) (string, error) {
-	converted, err := time.Parse(time.RFC3339, timestamp)
-
-	if err != nil {
-		return "", err
-	}
-	return converted.String(), nil
+	return converted.Format(time.RFC3339), nil
 }
 
-func FindId(payload map[string]interface{}) (string, error) {
+func findId(payload map[string]interface{}) (string, error) {
 	for key, value := range payload {
 		if contains(nodeIds, key) {
 			return fmt.Sprint(value), nil

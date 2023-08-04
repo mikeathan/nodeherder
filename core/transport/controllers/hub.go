@@ -65,13 +65,13 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 			fmt.Println("error: failed to convert mqtt payload to map")
 			return
 		}
-		h.Enqueue(name, "mqtt", dataMap)
+		h.Enqueue(name, dataMap, "mqtt")
 	})
 
 	return h
 }
 
-func (c *HubController) Enqueue(name string, connType string, payload map[string]interface{}) {
+func (c *HubController) Enqueue(name string, payload map[string]interface{}, connType string) {
 	c.pool.AddTask(&processorTask{Id: name, Payload: payload, Type: connType})
 }
 
@@ -85,7 +85,6 @@ func (c *HubController) processPayload(id string, connType string, payload map[s
 			return err
 		}
 		device.StartAvailabilityTimer(c.AvailabilityTimeoutinSeconds)
-
 	} else {
 		if !device.TryUpdateDevice(payload) {
 			return nil

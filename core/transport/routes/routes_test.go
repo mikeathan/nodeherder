@@ -115,7 +115,7 @@ func TestHandleInvalidRootPayload(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusBadRequest)
 	}
 	body, _ := io.ReadAll(w.Body)
-	expectedBody := "invalid data: data structure not containign valid root payload\n"
+	expectedBody := "invalid data: data structure not containign valid payload section\n"
 	if string(body) != expectedBody {
 		t.Errorf("error reading body got %v want %v", string(body), expectedBody)
 	}
@@ -140,8 +140,8 @@ func TestProcessorHandleRootPayloadWithTimestamp(t *testing.T) {
 	h := routes.NewDataCollectorHandler(hub)
 	h.ServeHTTP(w, req)
 
-	want, _ := time.Parse(time.RFC3339, timestamp)
-
+	ts, _ := time.Parse(time.RFC3339, timestamp)
+	want := ts.Format(time.RFC3339)
 	time.Sleep(100 * time.Millisecond)
 	device, err := repo.FindDevice(id)
 	if err != nil {
@@ -157,9 +157,9 @@ func TestProcessorHandleRootPayloadWithTimestamp(t *testing.T) {
 
 	if device.Stats["last_seen"] != want {
 		t.Fatalf("want %s got %s", want, device.Stats["last_seen"])
-
 	}
 }
+
 func TestHandleSuccesfullyPayload(t *testing.T) {
 	id := "device 1"
 	repo := repository.NewMemoryDeviceRepo()

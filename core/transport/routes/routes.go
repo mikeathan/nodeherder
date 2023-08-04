@@ -145,18 +145,13 @@ func (h *DataCollectorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	id, err := utils.FindId(payload)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	payload, err = utils.FindPayload(payload)
+	id, payload, err := utils.ParsePayload(payload)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	h.hub.Enqueue(id, "http", payload)
+	h.hub.Enqueue(id, payload, "http")
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
