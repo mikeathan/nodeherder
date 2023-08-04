@@ -138,7 +138,7 @@ func (node *Device) TryUpdateDevice(data map[string]interface{}) bool {
 			updated = true
 		}
 	}
-
+	node.Stats[lastSeenKey] = data[lastSeenKey]
 	if node.Stats[availabilityKey] != online {
 		node.Stats[availabilityKey] = online
 		return true
