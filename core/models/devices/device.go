@@ -127,10 +127,9 @@ func (device *Device) StartAvailabilityTimer(timeoutInSecs int) {
 }
 
 func (node *Device) TryUpdateDevice(data map[string]interface{}) bool {
-	if _, ok := data[lastSeenKey]; !ok {
-		data[lastSeenKey] = getCurrentTime()
-	}
 
+	// TODO: needs refactoring. maybe keep reference and assign only if changes arefound
+	//
 	var updated = false
 	for key, currValue := range node.Sensors {
 		if newValue, ok := data[key]; ok && newValue != currValue {
@@ -138,12 +137,18 @@ func (node *Device) TryUpdateDevice(data map[string]interface{}) bool {
 			updated = true
 		}
 	}
-	node.Stats[lastSeenKey] = data[lastSeenKey]
+
 	if node.Stats[availabilityKey] != online {
 		node.Stats[availabilityKey] = online
-		return true
+		updated = true
 	}
 
+	if updated {
+		if _, ok := data[lastSeenKey]; !ok {
+			data[lastSeenKey] = getCurrentTime()
+		}
+		node.Stats[lastSeenKey] = data[lastSeenKey]
+	}
 	return updated
 }
 
