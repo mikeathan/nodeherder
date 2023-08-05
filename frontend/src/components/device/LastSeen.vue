@@ -35,3 +35,13 @@ onUnmounted(() => {
         {{ lastSeenUpdated }}
     </div>
 </template>
+const nodes = document.querySelectorAll('.timeago');
+
+// use render method to render nodes in real time
+render(nodes, 'zh_CN');
+
+// render with opts
+// render(nodes, 'en_US', { minInterval: 3 });
+
+// cancel all real-time render task
+cancel();
