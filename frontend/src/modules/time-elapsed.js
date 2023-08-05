@@ -20,11 +20,21 @@ export default class ElapsedTimer {
   // same for 1 hour, update eveyr hour
   startElapsedTimer(timestamp, callback) {
     this.stopElapsedTimer();
-
+    var timeout = 1000;
     this.__elapsedTimerId = setInterval(function () {
       this.TimeElapsed = format(timestamp, "en_UK");
+      if (
+        this.TimeElapsed.includes("seconds") ||
+        this.TimeElapsed.includes("now")
+      ) {
+        timeout = 1000;
+      } else if (this.TimeElapsed.includes("minutes")) {
+        timeout = 60000;
+      } else {
+        timeout = 3600000;
+      }
       callback(this.TimeElapsed);
-    }, 60000);
+    }, timeout);
   }
 
   SetTimestamp(timestamp, updaterCallback) {
