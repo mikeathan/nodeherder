@@ -30,14 +30,25 @@ export default class ElapsedTimer {
     const interval = nextInterval(diff) * 1000;
 
     this.TimeElapsed = format(timestamp, "en_UK");
-    this.updaterCallback(this.TimeElapsed);
-
+    console.log(this.TimeElapsed);
+    //this.updaterCallback(this.TimeElapsed);
+    this.__element.innerText = this.TimeElapsed;
     this.__elapsedTimerId = setInterval(
       function () {
         this.startElapsedTimer(timestamp);
       }.bind(this),
       interval
     );
+  }
+  Format2(timestamp, element) {
+    this.__element = element;
+    this.startElapsedTimer(timestamp);
+    // if (isCallback(updaterCallback)) {
+    //   this.updaterCallback = updaterCallback;
+    //   this.startElapsedTimer(timestamp);
+    // } else {
+    //   this.TimeElapsed = format(timestamp, "en_UK");
+    // }
   }
 
   Format(timestamp, updaterCallback) {
