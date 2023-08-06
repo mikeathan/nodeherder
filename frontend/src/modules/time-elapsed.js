@@ -49,11 +49,28 @@ export default class ElapsedTimer {
       this.startElapsedTimer(timestamp, updaterCallback);
     }
   }
-
-  // Format(timestamp, htmlElement) {
-
-  // }
 }
+
+// // run with timer(setTimeout)
+// function run(node: HTMLElement, date: string, localeFunc: LocaleFunc, opts: Opts): void {
+//   // clear the node's exist timer
+//   clear(getTimerId(node));
+
+//   const { relativeDate, minInterval } = opts;
+
+//   // get diff seconds
+//   const diff = diffSec(date, relativeDate);
+//   // render
+//   node.innerText = formatDiff(diff, localeFunc);
+
+//   const tid = (setTimeout(() => {
+//     run(node, date, localeFunc, opts);
+//   }, Math.min(Math.max(nextInterval(diff), minInterval || 1) * 1000, 0x7fffffff)) as unknown) as number;
+
+//   // there is no need to save node in object. Just save the key
+//   TIMER_POOL[tid] = 0;
+//   setTimerId(node, tid);
+// }
 
 export function diffSec(date) {
   const relDate = new Date();
