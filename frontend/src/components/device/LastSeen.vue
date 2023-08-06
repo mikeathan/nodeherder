@@ -8,7 +8,7 @@ const props = defineProps({
 
 let elapsedTimer = new ElapsedTimer();
 let lastSeenUpdated = ref(props.value);
-
+let lastSeenElement = ref(null)
 watch(
     () => props.value,
     (newlastSeen) => {
@@ -23,6 +23,8 @@ watch(
 
 onMounted(() => {
     console.log("mounted");
+
+
 });
 
 onUnmounted(() => {
@@ -31,17 +33,7 @@ onUnmounted(() => {
 });
 </script>
 <template>
-    <div title="last update" className="col text-truncate">
+    <div title="last update" ref="lastSeenElement" className="col text-truncate">
         {{ lastSeenUpdated }}
     </div>
 </template>
-const nodes = document.querySelectorAll('.timeago');
-
-// use render method to render nodes in real time
-render(nodes, 'zh_CN');
-
-// render with opts
-// render(nodes, 'en_US', { minInterval: 3 });
-
-// cancel all real-time render task
-cancel();
