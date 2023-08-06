@@ -13,7 +13,7 @@ watch(
     () => props.value,
     (newlastSeen) => {
         console.log("Watch props.payload update");
-        elapsedTimer.SetTimestamp(newlastSeen, (v) => {
+        elapsedTimer.Format(newlastSeen, (v) => {
             lastSeenUpdated.value = v;
         });
         lastSeenUpdated.value = elapsedTimer.TimeElapsed;
@@ -23,8 +23,6 @@ watch(
 
 onMounted(() => {
     console.log("mounted");
-
-
 });
 
 onUnmounted(() => {
