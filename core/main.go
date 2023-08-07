@@ -50,6 +50,8 @@ func main() {
 		Topics: []string{
 			"TH01",
 			"Tuya ZY-M100",
+			"Hive motion sensor",
+			"Hive light 1",
 		},
 	}
 
