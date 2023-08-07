@@ -33,7 +33,7 @@ const displayProps = computed(() => {
       key: "Last seen:",
       type: LastSeen,
       props: {
-        value: device.stats.last_seen,
+        timestamp: device.stats.last_seen,
       },
     },
     {

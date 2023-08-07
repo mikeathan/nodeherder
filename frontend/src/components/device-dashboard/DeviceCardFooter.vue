@@ -11,7 +11,7 @@ const props = defineProps({
 <template>
   <div class="card-footer">
     <div class="row justify-content-between flex-nowrap">
-      <LastSeen :id="payload.id" :value="payload.stats.last_seen"></LastSeen>
+      <LastSeen :timestamp="payload.stats.last_seen"></LastSeen>
       <div class="col-auto text-truncate" v-if="payload.stats.availability === 'online'">
         <LinkQuality :value="payload.stats.linkquality" />
         <PowerSource :power_source="payload.power_source" :value="payload.stats.battery" />

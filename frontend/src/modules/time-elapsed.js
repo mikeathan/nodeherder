@@ -10,7 +10,9 @@ const SEC_ARRAY = [
   12, // 12 months in 1 year
 ];
 export default class ElapsedTimer {
-  constructor() {}
+  constructor(element) {
+    this.__element = element;
+  }
 
   stopElapsedTimer(timerid) {
     if (this.__elapsedTimerId != undefined) {
@@ -30,8 +32,6 @@ export default class ElapsedTimer {
     const interval = nextInterval(diff) * 1000;
 
     this.TimeElapsed = format(timestamp, "en_UK");
-    console.log(this.TimeElapsed);
-    //this.updaterCallback(this.TimeElapsed);
     this.__element.innerText = this.TimeElapsed;
     this.__elapsedTimerId = setInterval(
       function () {
@@ -40,31 +40,27 @@ export default class ElapsedTimer {
       interval
     );
   }
-  Format2(timestamp, element) {
-    this.__element = element;
+ 
+  Format(timestamp) {
+   
     this.startElapsedTimer(timestamp);
-    // if (isCallback(updaterCallback)) {
-    //   this.updaterCallback = updaterCallback;
-    //   this.startElapsedTimer(timestamp);
-    // } else {
-    //   this.TimeElapsed = format(timestamp, "en_UK");
-    // }
   }
 
-  Format(timestamp, updaterCallback) {
-    if (isCallback(updaterCallback)) {
-      this.updaterCallback = updaterCallback;
-      this.startElapsedTimer(timestamp);
-    } else {
-      this.TimeElapsed = format(timestamp, "en_UK");
-    }
-  }
+  // Format(timestamp, updaterCallback) {
+  //   if (isCallback(updaterCallback)) {
+  //     this.updaterCallback = updaterCallback;
+  //     this.startElapsedTimer(timestamp);
+  //   } else {
+  //     this.TimeElapsed = format(timestamp, "en_UK");
+  //   }
+  // }
 }
 
 function diffSec(date) {
   const relDate = new Date();
   return (+relDate - +moment(date)) / 1000;
 }
+
 function nextInterval(diff) {
   let rst = 1,
     i = 0,

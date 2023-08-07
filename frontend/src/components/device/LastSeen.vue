@@ -4,28 +4,27 @@ import ElapsedTimer from "../../modules/time-elapsed";
 
 
 const props = defineProps({
-    id: string,
-    value: String,
+    timestamp: String,
 });
 
-let elapsedTimer = new ElapsedTimer();
-let lastSeenUpdated = ref(props.value);
+let elapsedTimer = null;
 let lastSeenElement = ref(null)
 watch(
-    () => props.value,
+    () => props.timestamp,
     (newlastSeen) => {
-        // console.log("Watch props.payload update");
-        // elapsedTimer.Format(newlastSeen, (v) => {
-        //     lastSeenUpdated.value = v;
-        // });
-        // lastSeenUpdated.value = elapsedTimer.TimeElapsed;
+        if (lastSeenElement.value == undefined){
+            return;
+        }
+        //console.log("Watch props.payload update");
+        elapsedTimer.Format(newlastSeen);
     },
     { immediate: true }
 );
 
 onMounted(() => {
-    elapsedTimer.Format2(props.value, lastSeenElement.value);
-    console.log("mounted");
+    elapsedTimer = new ElapsedTimer(lastSeenElement.value);
+    elapsedTimer.Format(props.timestamp);
+    console.log("mounted ");
 });
 
 onUnmounted(() => {
@@ -34,7 +33,8 @@ onUnmounted(() => {
 });
 </script>
 <template>
-    <div title="last update" :ref="'lastSeenElement' + props.id" className="col text-truncate">
+    <div :title="'last update '+timestamp" :ref="el => { lastSeenElement = el }" className="col text-truncate">
 
     </div>
+
 </template>
