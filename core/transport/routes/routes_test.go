@@ -18,6 +18,7 @@ const device1BatterySource = `{"id":"device 1","conn":"mqtt","power_source":"bat
 const device1RootPayloadBatterySource = `{"id":"device 1", "timestamp":"2023-08-01T16:30:04Z", "readings":{"humidity":92.49999999999999,"temperature":19.000000000000004}}`
 const device1InvalidRootPayloadBatterySource = `{"id":"device 1", "timestamp":"2023-08-01T16:30:04Z", "readingstest":{"humidity":92.49999999999999,"temperature":19.000000000000004}}`
 const missingDeviceIdPayload = `{"conn":"mqtt","power_source":"battery","humidity":92.49999999999999,"temperature":19.000000000000004,"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":47,"battery":98}`
+const gasNodePayload = `{"label": "gas_monitor", "node_id": "3", "temperature": "22.2 *C", "humidity": "33 %RH", "air_quality_score": "95 %", "PM1.0": "1 ug/m3 (ultrafine particles)", "PM2.5": "1 ug/m3 (combustion particles, organic compounds, metal)", "PM10.0": "2 ug/m3 (dust, pollen, mould spores)", "timestamp": 1691517687.940329}`
 
 func TestHandleMissingDeviceIdPayload(t *testing.T) {
 	repo := repository.NewMemoryDeviceRepo()
@@ -161,12 +162,12 @@ func TestProcessorHandleRootPayloadWithTimestamp(t *testing.T) {
 }
 
 func TestHandleSuccesfullyPayload(t *testing.T) {
-	id := "device 1"
+	id := "gas_monitor"
 	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
 	hub := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
-	bodyReader := strings.NewReader(string(device1BatterySource))
+	bodyReader := strings.NewReader(string(gasNodePayload))
 	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
 
