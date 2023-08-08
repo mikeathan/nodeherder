@@ -56,3 +56,15 @@ TODO:
 - worker pool that notify consumers when task added ??
 - on startup get mqtt device state from z2m and build the connected devices
   register to mqtt state topic
+
+
+hive bulb
+"color_temp"  flaot
+"color_mode" string
+
+"brightness" flaot
+"state" string
+
+
+gas pi
+42["node_data_updated","{\"3\": {\"label\": \"gas_monitor\", \"node_id\": \"3\", \"temperature\": \"22.2 *C\", \"humidity\": \"33 %RH\", \"air_quality_score\": \"95 %\", \"PM1.0\": \"1 ug/m3 (ultrafine particles)\", \"PM2.5\": \"1 ug/m3 (combustion particles, organic compounds, metal)\", \"PM10.0\": \"2 ug/m3 (dust, pollen, mould spores)\", \"timestamp\": 1691517687.940329}}"]

@@ -13,6 +13,9 @@ var sensorWhitelist = map[string]int{
 	"presence":        4,
 	"illuminance_lux": 5,
 	"occupancy":       6,
+	"brightness":      7,
+	"state":           8,
+	"color_temp":      9,
 }
 var statsWhitelist = map[string]int{
 	"battery":      1,
