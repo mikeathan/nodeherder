@@ -58,7 +58,7 @@ export function getSensorName(sensor) {
   return sensor.charAt(0).toUpperCase() + sensor.slice(1); // TODO: load name  from resources file
 }
 export function getSensorValue(sensor, value) {
-  if (typeof value == "boolean") {
+  if (typeof value == "boolean" || typeof value == "string") {
     return value;
   }
   // todo : dont format integer values
