@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"node-herder/transport/routes"
+	"node-herder/transport/api"
 	"node-herder/transport/ws"
 	"testing"
 
@@ -35,7 +35,7 @@ func TestHubNewClientConnectedEventsTypesOfPayloads(t *testing.T) {
 		wsHub.OnConnected(func() interface{} {
 			return testCase.Payload
 		})
-		h := routes.NewWsHandler(wsHub)
+		h := api.NewWsHandler(wsHub)
 		s, wsConn := NewTestWsServer(t, h)
 
 		reply := receiveWSMessage(t, wsConn)
@@ -65,7 +65,7 @@ func TestHubNewClientConnectedEvents(t *testing.T) {
 	wsHub.OnConnected(func() interface{} {
 		return expectedPayload
 	})
-	h := routes.NewWsHandler(wsHub)
+	h := api.NewWsHandler(wsHub)
 
 	for i := 0; i < 4; i++ {
 		s, wsConn := NewTestWsServer(t, h)
@@ -92,7 +92,7 @@ func TestHubNewClientEventsAreReceived(t *testing.T) {
 	var expectedMessage = "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"
 
 	wsHub := ws.NewWsHub()
-	h := routes.NewWsHandler(wsHub)
+	h := api.NewWsHandler(wsHub)
 
 	for i := 0; i < 4; i++ {
 		s, wsConn := NewTestWsServer(t, h)

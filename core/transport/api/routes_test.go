@@ -1,4 +1,4 @@
-package routes_test
+package api_test
 
 import (
 	"context"
@@ -7,16 +7,16 @@ import (
 	"net/http/httptest"
 	"node-herder/mocks"
 	repository "node-herder/repository/devices"
+	"node-herder/transport/api"
 	"node-herder/transport/controllers"
-	"node-herder/transport/routes"
 	"strings"
 	"testing"
 	"time"
 )
 
-const device1BatterySource = `{"id":"device 1","conn":"mqtt","power_source":"battery","humidity":92.49999999999999,"temperature":19.000000000000004,"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":47,"battery":98}`
-const device1RootPayloadBatterySource = `{"id":"device 1", "timestamp":"2023-08-01T16:30:04Z", "readings":{"humidity":92.49999999999999,"temperature":19.000000000000004}}`
-const device1InvalidRootPayloadBatterySource = `{"id":"device 1", "timestamp":"2023-08-01T16:30:04Z", "readingstest":{"humidity":92.49999999999999,"temperature":19.000000000000004}}`
+const device1BatterySource = `{"name":"device 1","conn":"mqtt","power_source":"battery","humidity":92.49999999999999,"temperature":19.000000000000004,"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":47,"battery":98}`
+const device1RootPayloadBatterySource = `{"name":"device 1", "timestamp":"2023-08-01T16:30:04Z", "readings":{"humidity":92.49999999999999,"temperature":19.000000000000004}}`
+const device1InvalidRootPayloadBatterySource = `{"name":"device 1", "timestamp":"2023-08-01T16:30:04Z", "readingstest":{"humidity":92.49999999999999,"temperature":19.000000000000004}}`
 const missingDeviceIdPayload = `{"conn":"mqtt","power_source":"battery","humidity":92.49999999999999,"temperature":19.000000000000004,"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":47,"battery":98}`
 const gasNodePayload = `{"label": "gas_monitor", "node_id": "3", "temperature": "22.2 *C", "humidity": "33 %RH", "air_quality_score": "95 %", "PM1.0": "1 ug/m3 (ultrafine particles)", "PM2.5": "1 ug/m3 (combustion particles, organic compounds, metal)", "PM10.0": "2 ug/m3 (dust, pollen, mould spores)", "timestamp": 1691517687.940329}`
 
@@ -31,7 +31,7 @@ func TestHandleMissingDeviceIdPayload(t *testing.T) {
 
 	w := httptest.NewRecorder()
 
-	h := routes.NewDataCollectorHandler(hub)
+	h := api.NewDataCollectorHandler(hub)
 	h.ServeHTTP(w, req)
 
 	if status := w.Code; status != http.StatusBadRequest {
@@ -55,7 +55,7 @@ func TestHandleInvalidDataPayload(t *testing.T) {
 
 	w := httptest.NewRecorder()
 
-	h := routes.NewDataCollectorHandler(hub)
+	h := api.NewDataCollectorHandler(hub)
 	h.ServeHTTP(w, req)
 
 	if status := w.Code; status != http.StatusBadRequest {
@@ -75,7 +75,7 @@ func TestHandleSuccesfullyRootPayload(t *testing.T) {
 	req.Header.Add("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
-	h := routes.NewDataCollectorHandler(hub)
+	h := api.NewDataCollectorHandler(hub)
 	h.ServeHTTP(w, req)
 
 	time.Sleep(200 * time.Millisecond)
@@ -107,7 +107,7 @@ func TestHandleInvalidRootPayload(t *testing.T) {
 	req.Header.Add("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
-	h := routes.NewDataCollectorHandler(hub)
+	h := api.NewDataCollectorHandler(hub)
 	h.ServeHTTP(w, req)
 
 	time.Sleep(100 * time.Millisecond)
@@ -138,7 +138,7 @@ func TestProcessorHandleRootPayloadWithTimestamp(t *testing.T) {
 	req.Header.Add("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
-	h := routes.NewDataCollectorHandler(hub)
+	h := api.NewDataCollectorHandler(hub)
 	h.ServeHTTP(w, req)
 
 	ts, _ := time.Parse(time.RFC3339, timestamp)
@@ -173,7 +173,7 @@ func TestHandleSuccesfullyPayload(t *testing.T) {
 
 	w := httptest.NewRecorder()
 
-	h := routes.NewDataCollectorHandler(hub)
+	h := api.NewDataCollectorHandler(hub)
 	h.ServeHTTP(w, req)
 
 	time.Sleep(200 * time.Millisecond)
@@ -205,7 +205,7 @@ func TestHandleUnsuportedMediaType(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
 	w := httptest.NewRecorder()
 
-	h := routes.NewDataCollectorHandler(hub)
+	h := api.NewDataCollectorHandler(hub)
 	h.ServeHTTP(w, req)
 
 	if status := w.Code; status != http.StatusUnsupportedMediaType {

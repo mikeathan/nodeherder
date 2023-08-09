@@ -1,4 +1,4 @@
-package app
+package main
 
 import (
 	"context"
@@ -7,16 +7,15 @@ import (
 	"node-herder/transport/api"
 	"node-herder/transport/controllers"
 	"node-herder/transport/mqtt"
-	"node-herder/transport/routes"
 	"node-herder/transport/ws"
 )
 
 func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, ctx context.Context) *api.ApiServer {
 
-	router := routes.NewRouter()
-	router.GET("/ws", routes.NewWsHandler(ws))
+	router := api.NewRouter()
+	router.GET("/ws", api.NewWsHandler(ws))
 	router.GET("/", http.FileServer(http.Dir("../frontend/dist")))
-	router.POST("/collect", routes.NewDataCollectorHandler(hub))
+	router.POST("/collect", api.NewDataCollectorHandler(hub))
 
 	apiServer := api.NewHttpServer(
 		port,

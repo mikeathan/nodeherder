@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"node-herder/app"
 	repository "node-herder/repository/devices"
 	"node-herder/transport/mqtt"
 	"os"
@@ -55,7 +54,7 @@ func main() {
 		},
 	}
 
-	hub := app.RegisterHub(port, repo, mqttConfig, ctx)
+	hub := RegisterHub(port, repo, mqttConfig, ctx)
 	hub.Listen()
 
 	fmt.Println("Exited")

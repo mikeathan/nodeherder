@@ -19,33 +19,18 @@ Websocket listener
 
 Metrics listener
 
-TODO:
-mqtt message listener changed
-websocket emit device changed message
-frontend listens to message and loads it
+
 
 advanced:
-websockets:
-emit message device change
-all devices or just the updated ?
+
 
 Setting configuration for devices
 Triggers and binding
 Add api endpoint for collecting data from WiFi sensors
 Circuit breaker
 
-http
-conn="http"
-power_source NULL or [VALUE]
 
-mqtt
-conn="mqtt"
-power_source battery or mains
 
-data:
-{"type":"connected","payload":[{"id":"device 1","conn":"mqtt","power_source":"battery","sensors":{"humidity":92.49999999999999,"temperature":19.000000000000004},"stats":{"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":47,"battery":98}},{"id":"device 2","conn":"mqtt","power_source":"mains","sensors":{"presence":false,"illuminance_lux":103},"stats":{"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":67}},{"id":"device 3","conn":"http","power_source":"","sensors":{"humidity":41,"temperature":10,"pressure":68},"stats":{"availability":"offline","last_seen":"2023-07-20T19:48:35+01:00"}}]}
-
-{"nickname": "enviro_node", "uid": "e661410403554934", "timestamp": "2023-08-01T16:30:04Z", "readings": {"id": "enviro_node", "temperature": 27.03, "humidity": 43.63, "pressure": 985.46, "luminance": 4.65, "wind_speed": 0, "rain": 0, "rain_per_second": 0.0, "wind_direction": 90, "voltage": 0.0}, "model": "weather"}
 
 TEST:
 
@@ -71,3 +56,25 @@ gas sensor
 
 enviro weather
 {"nickname": "enviro_node", "uid": "e661410403554934", "timestamp": "2023-08-09T16:50:12Z", "readings": {"temperature": 27.38, "humidity": 45.48, "pressure": 1003.16, "luminance": 54.98, "wind_speed": 0, "rain": 0, "rain_per_second": 0.0, "wind_direction": 90, "voltage": 0.0}, "model": "weather"}
+
+
+TODO: 
+Automation
+
+can only do timer/device and webrequests 
+Devices can be done only once we can send mqqt messages o devices that allow setting
+Trigger
+  Timer
+  Device 
+
+Condition
+  Timer
+    value
+  Sensor
+    value
+
+Action
+  Device
+    sensor set something
+  Web request
+    post payload

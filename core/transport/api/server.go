@@ -4,27 +4,26 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"node-herder/transport/routes"
 )
 
 type ApiServer struct {
 	httpServer http.Server
 	ctx        context.Context
-	router     *routes.Router
+	router     *Router
 }
 
 func WithContext(ctx context.Context) func(s *ApiServer) {
 	return func(s *ApiServer) { s.ctx = ctx }
 }
 
-func WithRouter(router *routes.Router) func(s *ApiServer) {
+func WithRouter(router *Router) func(s *ApiServer) {
 	return func(s *ApiServer) { s.router = router }
 }
 
 func NewHttpServer(port int, opts ...func(s *ApiServer)) *ApiServer {
 
 	api := &ApiServer{
-		router: &routes.Router{},
+		router: &Router{},
 	}
 
 	for _, opt := range opts {
