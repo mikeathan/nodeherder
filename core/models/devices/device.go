@@ -7,15 +7,19 @@ import (
 )
 
 var sensorWhitelist = map[string]int{
-	"temperature":     1,
-	"humidity":        2,
-	"pressure":        3,
-	"presence":        4,
-	"illuminance_lux": 5,
-	"occupancy":       6,
-	"brightness":      7,
-	"state":           8,
-	"color_temp":      9,
+	"temperature":       1,
+	"humidity":          2,
+	"pressure":          3,
+	"presence":          4,
+	"illuminance_lux":   5,
+	"occupancy":         6,
+	"brightness":        7,
+	"state":             8,
+	"color_temp":        9,
+	"air_quality_score": 10,
+	"PM1.0":             11,
+	"PM2.5":             12,
+	"PM10.0":            13,
 }
 var statsWhitelist = map[string]int{
 	"battery":      1,

@@ -3,11 +3,14 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"regexp"
+	"strconv"
 	"time"
 )
 
-var nodeIds = []string{"node_id", "nodeid", "id", "nickname", "label", "name"}
+var nodeIds = []string{"nickname", "label", "name"}
 var batchPayloadIds = []string{"readings", "items", "data", "items"}
+var whitelistNames = []string{"timestamp", "last_seen", "label", "name", "nickname"}
 
 func ParsePayload(payload map[string]interface{}) (string, map[string]interface{}, error) {
 
@@ -29,10 +32,43 @@ func ParsePayload(payload map[string]interface{}) (string, map[string]interface{
 					payloadMap["last_seen"] = timestamp
 				}
 			}
+
+			payloadMap = sanitizeLegacyPayload(payloadMap)
 			return id, payloadMap, nil
 		}
 	}
+
+	payload = sanitizeLegacyPayload(payload)
 	return id, payload, nil
+}
+
+func sanitizeLegacyPayload(payload map[string]interface{}) map[string]interface{} {
+
+	for key, value := range payload {
+		if contains(whitelistNames, key) {
+			continue
+		}
+		strVal, ok := value.(string)
+		if !ok {
+			continue
+		}
+
+		re := regexp.MustCompile(`[-]?\d[\d,]*[\.]?[\d{2}]*`)
+		extracted := re.Find([]byte(strVal))
+		sanitizedInt, err := strconv.Atoi(string(extracted))
+
+		if err != nil {
+			sanitizedFloat, err := strconv.ParseFloat(string(extracted), 8)
+			if err != nil {
+				fmt.Println("Error during conversion of ", string(extracted))
+			}
+			payload[key] = sanitizedFloat
+			continue
+		}
+		payload[key] = sanitizedInt
+	}
+
+	return payload
 }
 
 func convertTimestamp(timestamp interface{}) (string, error) {
