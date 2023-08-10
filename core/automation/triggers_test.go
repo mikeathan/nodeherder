@@ -3,6 +3,7 @@ package automation_test
 import (
 	"node-herder/automation"
 	"testing"
+	"time"
 )
 
 func TestTriggers(t *testing.T) {
@@ -21,8 +22,12 @@ func TestTriggers(t *testing.T) {
 	//......
 
 	trigger := new(automation.TimerTrigger)
-	trigger.WithCondition("some condition")
-	trigger.WithAction("some action")
+
+	cond := automation.TimerCondition{}
+	cond.Repeat = true
+	cond.Timestamp = time.Now().Add(5 * time.Second)
+	trigger.WithCondition(cond)
+	trigger.WithAction("Action triggered!!!!!!!!!!!1")
 	trigger.Process()
 
 	// https://www.home-assistant.io/docs/automation/basics/

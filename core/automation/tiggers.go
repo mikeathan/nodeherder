@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+type TimerCondition struct {
+	Timestamp time.Time
+	Repeat    bool
+}
+
 type Trigger interface {
 	Name() string
 	WithCondition(cond string)
@@ -14,7 +19,7 @@ type Trigger interface {
 }
 
 type TimerTrigger struct {
-	cond   string
+	cond   TimerCondition
 	action string
 }
 
@@ -28,16 +33,40 @@ func (t TimerTrigger) Name() string {
 	return "Timer"
 }
 
-func (t *TimerTrigger) WithCondition(cond string) {
+func (t *TimerTrigger) WithCondition(cond TimerCondition) {
 	t.cond = cond
+	fmt.Printf("Sceduled for %v \n", t.cond.Timestamp)
 }
+
 func (t *TimerTrigger) WithAction(action string) {
 	t.action = action
 }
 
 func (t *TimerTrigger) Process() error {
-	ticker := *time.NewTicker(1 * time.Second)
-	<-ticker.C
 
-	return t.Trigger()
+	for {
+		diff := time.Until(t.cond.Timestamp).Seconds()
+		ticker := *time.NewTicker(time.Duration(diff) * time.Second)
+		<-ticker.C
+
+		err := t.Trigger()
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		if !t.cond.Repeat {
+			fmt.Println("timer exit")
+			return nil
+		}
+
+		// timer needs resetting
+
+		t.cond.Timestamp = getTomorrow(t.cond.Timestamp)
+		fmt.Printf("Sceduled for %v \n", t.cond.Timestamp)
+	}
+
+}
+
+func getTomorrow(ts time.Time) time.Time {
+	return time.Date(ts.Year(), ts.Month(), ts.Day()+1, ts.Hour(), ts.Minute(), 0, 0, ts.Location())
 }
