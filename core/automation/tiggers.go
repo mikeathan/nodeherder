@@ -55,7 +55,3 @@ func (t *TimerTrigger) Process() error {
 		}
 	}
 }
-
-func getTomorrow(ts time.Time) time.Time {
-	return time.Date(ts.Year(), ts.Month(), ts.Day()+1, ts.Hour(), ts.Minute(), 0, 0, ts.Location())
-}

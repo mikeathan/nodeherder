@@ -42,3 +42,7 @@ func (tc *TimerCondition) GetSchedule() time.Time {
 	fmt.Printf("Sceduled for %v \n", tc._timestamp.Format(time.RFC3339))
 	return tc._timestamp
 }
+
+func getTomorrow(ts time.Time) time.Time {
+	return time.Date(ts.Year(), ts.Month(), ts.Day()+1, ts.Hour(), ts.Minute(), 0, 0, ts.Location())
+}

@@ -18,3 +18,7 @@ func TestTriggers(t *testing.T) {
 	// https://www.home-assistant.io/docs/automation/basics/
 	// https://www.home-assistant.io/docs/automation/editor/
 }
+
+func TestLifxAction(t *testing.T) {
+
+}
