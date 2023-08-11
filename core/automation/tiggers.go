@@ -10,7 +10,6 @@ type Trigger interface {
 	WithCondition(cond string)
 	WithAction(action string)
 	Process() error
-	Trigger() error
 }
 
 type TimerTrigger struct {
