@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-type TimerCondition struct {
-	Timestamp time.Time
-	Repeat    bool
-}
-
 type Trigger interface {
 	Name() string
 	WithCondition(cond string)
@@ -19,7 +14,7 @@ type Trigger interface {
 }
 
 type TimerTrigger struct {
-	cond   TimerCondition
+	cond   *TimerCondition
 	action string
 }
 
@@ -33,9 +28,8 @@ func (t TimerTrigger) Name() string {
 	return "Timer"
 }
 
-func (t *TimerTrigger) WithCondition(cond TimerCondition) {
+func (t *TimerTrigger) WithCondition(cond *TimerCondition) {
 	t.cond = cond
-	fmt.Printf("Sceduled for %v \n", t.cond.Timestamp)
 }
 
 func (t *TimerTrigger) WithAction(action string) {
@@ -45,7 +39,8 @@ func (t *TimerTrigger) WithAction(action string) {
 func (t *TimerTrigger) Process() error {
 
 	for {
-		diff := time.Until(t.cond.Timestamp).Seconds()
+
+		diff := time.Until(t.cond.GetSchedule()).Seconds()
 		ticker := *time.NewTicker(time.Duration(diff) * time.Second)
 		<-ticker.C
 
@@ -58,13 +53,7 @@ func (t *TimerTrigger) Process() error {
 			fmt.Println("timer exit")
 			return nil
 		}
-
-		// timer needs resetting
-
-		t.cond.Timestamp = getTomorrow(t.cond.Timestamp)
-		fmt.Printf("Sceduled for %v \n", t.cond.Timestamp)
 	}
-
 }
 
 func getTomorrow(ts time.Time) time.Time {
