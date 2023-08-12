@@ -1,8 +1,8 @@
 package automations_test
 
 import (
+	"encoding/json"
 	"fmt"
-	"node-herder/models/automations"
 	automation "node-herder/transport/automations"
 	"node-herder/transport/mqtt"
 	"testing"
@@ -31,15 +31,20 @@ func TestMqttAction(t *testing.T) {
 		},
 	}
 
-	bh := &automations.BridgeHandler{}
+	//\bh := &automations.BridgeHandler{}
 
 	var messageHandler = func(id string, payload []byte) {
 
 		if id == "bridge/devices" {
-			err := bh.ProcessMessage(payload)
+			var deviceMap []interface{}
+			err := json.Unmarshal(payload, &deviceMap)
 			if err != nil {
 				fmt.Println("error: ", err.Error())
 			}
+			// err := bh.ProcessMessage(payload)
+			// if err != nil {
+			// 	fmt.Println("error: ", err.Error())
+			// }
 		}
 	}
 
