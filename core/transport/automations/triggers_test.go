@@ -2,6 +2,7 @@ package automations_test
 
 import (
 	"fmt"
+	"node-herder/models/automations"
 	automation "node-herder/transport/automations"
 	"node-herder/transport/mqtt"
 	"testing"
@@ -29,7 +30,21 @@ func TestMqttAction(t *testing.T) {
 			"bridge/devices",
 		},
 	}
+
+	bh := &automations.BridgeHandler{}
+
+	var messageHandler = func(id string, payload []byte) {
+
+		if id == "bridge/devices" {
+			err := bh.ProcessMessage(payload)
+			if err != nil {
+				fmt.Println("error: ", err.Error())
+			}
+		}
+	}
+
 	mqtt := mqtt.NewMqttClient(mqttConfig)
+	mqtt.OnMessageHandler(messageHandler)
 	err := mqtt.Connect()
 	if err != nil {
 		fmt.Println(err.Error())

@@ -24,6 +24,8 @@ type AutomationProcessor struct {
 func (a *AutomationProcessor) Process() {
 }
 
+// we need mqqt hanlders for bridge/devices topic
+
 func RegisterAutomations(mqtt mqtt.MqttClient, ws ws.EventHub) {
 	//p := &AutomationProcessor{mqtt: mqtt, ws: ws}
 	tt := TriggerFromDuration(5 * time.Second)
