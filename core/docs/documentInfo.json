@@ -1,0 +1,837 @@
+    {
+        "definition": null,
+        "disabled": false,
+        "endpoints": {
+            "1": {
+                "bindings": [],
+                "clusters": {
+                    "input": [],
+                    "output": []
+                },
+                "configured_reportings": [],
+                "scenes": []
+            },
+            "10": {
+                "bindings": [],
+                "clusters": {
+                    "input": [],
+                    "output": []
+                },
+                "configured_reportings": [],
+                "scenes": []
+            },
+            "11": {
+                "bindings": [],
+                "clusters": {
+                    "input": [
+                        "ssIasAce",
+                        "genTime"
+                    ],
+                    "output": [
+                        "ssIasZone",
+                        "ssIasWd"
+                    ]
+                },
+                "configured_reportings": [],
+                "scenes": []
+            },
+            "110": {
+                "bindings": [],
+                "clusters": {
+                    "input": [],
+                    "output": []
+                },
+                "configured_reportings": [],
+                "scenes": []
+            },
+            "12": {
+                "bindings": [],
+                "clusters": {
+                    "input": [],
+                    "output": []
+                },
+                "configured_reportings": [],
+                "scenes": []
+            },
+            "13": {
+                "bindings": [],
+                "clusters": {
+                    "input": [
+                        "genOta"
+                    ],
+                    "output": []
+                },
+                "configured_reportings": [],
+                "scenes": []
+            },
+            "2": {
+                "bindings": [],
+                "clusters": {
+                    "input": [],
+                    "output": []
+                },
+                "configured_reportings": [],
+                "scenes": []
+            },
+            "242": {
+                "bindings": [],
+                "clusters": {
+                    "input": [],
+                    "output": []
+                },
+                "configured_reportings": [],
+                "scenes": []
+            },
+            "3": {
+                "bindings": [],
+                "clusters": {
+                    "input": [],
+                    "output": []
+                },
+                "configured_reportings": [],
+                "scenes": []
+            },
+            "4": {
+                "bindings": [],
+                "clusters": {
+                    "input": [],
+                    "output": []
+                },
+                "configured_reportings": [],
+                "scenes": []
+            },
+            "47": {
+                "bindings": [],
+                "clusters": {
+                    "input": [],
+                    "output": []
+                },
+                "configured_reportings": [],
+                "scenes": []
+            },
+            "5": {
+                "bindings": [],
+                "clusters": {
+                    "input": [],
+                    "output": []
+                },
+                "configured_reportings": [],
+                "scenes": []
+            },
+            "6": {
+                "bindings": [],
+                "clusters": {
+                    "input": [],
+                    "output": []
+                },
+                "configured_reportings": [],
+                "scenes": []
+            },
+            "8": {
+                "bindings": [],
+                "clusters": {
+                    "input": [],
+                    "output": []
+                },
+                "configured_reportings": [],
+                "scenes": []
+            }
+        },
+        "friendly_name": "Coordinator",
+        "ieee_address": "0x00124b0029daedd5",
+        "interview_completed": true,
+        "interviewing": false,
+        "network_address": 0,
+        "supported": false,
+        "type": "Coordinator"
+    },
+    {
+        "date_code": "20211103",
+        "definition": {
+            "description": "Temperature and humidity sensor",
+            "exposes": [
+                {
+                    "access": 1,
+                    "description": "Remaining battery in %, can take up to 24 hours before reported.",
+                    "name": "battery",
+                    "property": "battery",
+                    "type": "numeric",
+                    "unit": "%",
+                    "value_max": 100,
+                    "value_min": 0
+                },
+                {
+                    "access": 1,
+                    "description": "Measured temperature value",
+                    "name": "temperature",
+                    "property": "temperature",
+                    "type": "numeric",
+                    "unit": "°C"
+                },
+                {
+                    "access": 1,
+                    "description": "Measured relative humidity",
+                    "name": "humidity",
+                    "property": "humidity",
+                    "type": "numeric",
+                    "unit": "%"
+                },
+                {
+                    "access": 1,
+                    "description": "Voltage of the battery in millivolts",
+                    "name": "voltage",
+                    "property": "voltage",
+                    "type": "numeric",
+                    "unit": "mV"
+                },
+                {
+                    "access": 1,
+                    "description": "Link quality (signal strength)",
+                    "name": "linkquality",
+                    "property": "linkquality",
+                    "type": "numeric",
+                    "unit": "lqi",
+                    "value_max": 255,
+                    "value_min": 0
+                }
+            ],
+            "model": "SNZB-02",
+            "options": [
+                {
+                    "access": 2,
+                    "description": "Number of digits after decimal point for temperature, takes into effect on next report of device.",
+                    "name": "temperature_precision",
+                    "property": "temperature_precision",
+                    "type": "numeric",
+                    "value_max": 3,
+                    "value_min": 0
+                },
+                {
+                    "access": 2,
+                    "description": "Calibrates the temperature value (absolute offset), takes into effect on next report of device.",
+                    "name": "temperature_calibration",
+                    "property": "temperature_calibration",
+                    "type": "numeric"
+                },
+                {
+                    "access": 2,
+                    "description": "Number of digits after decimal point for humidity, takes into effect on next report of device.",
+                    "name": "humidity_precision",
+                    "property": "humidity_precision",
+                    "type": "numeric",
+                    "value_max": 3,
+                    "value_min": 0
+                },
+                {
+                    "access": 2,
+                    "description": "Calibrates the humidity value (absolute offset), takes into effect on next report of device.",
+                    "name": "humidity_calibration",
+                    "property": "humidity_calibration",
+                    "type": "numeric"
+                }
+            ],
+            "supports_ota": false,
+            "vendor": "SONOFF"
+        },
+        "disabled": false,
+        "endpoints": {
+            "1": {
+                "bindings": [
+                    {
+                        "cluster": "msTemperatureMeasurement",
+                        "target": {
+                            "endpoint": 1,
+                            "ieee_address": "0x00124b0029daedd5",
+                            "type": "endpoint"
+                        }
+                    },
+                    {
+                        "cluster": "msRelativeHumidity",
+                        "target": {
+                            "endpoint": 1,
+                            "ieee_address": "0x00124b0029daedd5",
+                            "type": "endpoint"
+                        }
+                    },
+                    {
+                        "cluster": "genPowerCfg",
+                        "target": {
+                            "endpoint": 1,
+                            "ieee_address": "0x00124b0029daedd5",
+                            "type": "endpoint"
+                        }
+                    }
+                ],
+                "clusters": {
+                    "input": [
+                        "genBasic",
+                        "genIdentify",
+                        "msTemperatureMeasurement",
+                        "msRelativeHumidity",
+                        "genPowerCfg"
+                    ],
+                    "output": [
+                        "genIdentify"
+                    ]
+                },
+                "configured_reportings": [
+                    {
+                        "attribute": "measuredValue",
+                        "cluster": "msTemperatureMeasurement",
+                        "maximum_report_interval": 1800,
+                        "minimum_report_interval": 5,
+                        "reportable_change": 20
+                    },
+                    {
+                        "attribute": "measuredValue",
+                        "cluster": "msRelativeHumidity",
+                        "maximum_report_interval": 3600,
+                        "minimum_report_interval": 10,
+                        "reportable_change": 100
+                    },
+                    {
+                        "attribute": "batteryVoltage",
+                        "cluster": "genPowerCfg",
+                        "maximum_report_interval": 7200,
+                        "minimum_report_interval": 3600,
+                        "reportable_change": 0
+                    },
+                    {
+                        "attribute": "batteryPercentageRemaining",
+                        "cluster": "genPowerCfg",
+                        "maximum_report_interval": 7200,
+                        "minimum_report_interval": 3600,
+                        "reportable_change": 0
+                    }
+                ],
+                "scenes": []
+            }
+        },
+        "friendly_name": "TH01",
+        "ieee_address": "0x00124b0029207763",
+        "interview_completed": true,
+        "interviewing": false,
+        "manufacturer": "eWeLink",
+        "model_id": "TH01",
+        "network_address": 27423,
+        "power_source": "Battery",
+        "supported": true,
+        "type": "EndDevice"
+    },
+    {
+        "date_code": "",
+        "definition": {
+            "description": "Mini Human Breathe Sensor",
+            "exposes": [
+                {
+                    "access": 1,
+                    "description": "Measured illuminance in lux",
+                    "name": "illuminance_lux",
+                    "property": "illuminance_lux",
+                    "type": "numeric",
+                    "unit": "lx"
+                },
+                {
+                    "access": 1,
+                    "description": "Indicates whether the device detected presence",
+                    "name": "presence",
+                    "property": "presence",
+                    "type": "binary",
+                    "value_off": false,
+                    "value_on": true
+                },
+                {
+                    "access": 1,
+                    "description": "Distance to target",
+                    "name": "target_distance",
+                    "property": "target_distance",
+                    "type": "numeric",
+                    "unit": "m"
+                },
+                {
+                    "access": 3,
+                    "description": "sensitivity of the radar",
+                    "name": "radar_sensitivity",
+                    "property": "radar_sensitivity",
+                    "type": "numeric",
+                    "value_max": 9,
+                    "value_min": 0,
+                    "value_step": 1
+                },
+                {
+                    "access": 3,
+                    "description": "Minimum range",
+                    "name": "minimum_range",
+                    "property": "minimum_range",
+                    "type": "numeric",
+                    "unit": "m",
+                    "value_max": 9.5,
+                    "value_min": 0,
+                    "value_step": 0.15
+                },
+                {
+                    "access": 3,
+                    "description": "Maximum range",
+                    "name": "maximum_range",
+                    "property": "maximum_range",
+                    "type": "numeric",
+                    "unit": "m",
+                    "value_max": 9.5,
+                    "value_min": 0,
+                    "value_step": 0.15
+                },
+                {
+                    "access": 3,
+                    "description": "Detection delay",
+                    "name": "detection_delay",
+                    "property": "detection_delay",
+                    "type": "numeric",
+                    "unit": "s",
+                    "value_max": 10,
+                    "value_min": 0,
+                    "value_step": 0.1
+                },
+                {
+                    "access": 3,
+                    "description": "Fading time",
+                    "name": "fading_time",
+                    "property": "fading_time",
+                    "type": "numeric",
+                    "unit": "s",
+                    "value_max": 1500,
+                    "value_min": 0.5,
+                    "value_step": 1
+                },
+                {
+                    "access": 1,
+                    "description": "Link quality (signal strength)",
+                    "name": "linkquality",
+                    "property": "linkquality",
+                    "type": "numeric",
+                    "unit": "lqi",
+                    "value_max": 255,
+                    "value_min": 0
+                }
+            ],
+            "model": "ZY-M100-S",
+            "options": [],
+            "supports_ota": false,
+            "vendor": "TuYa"
+        },
+        "description": "Human presence sensor",
+        "disabled": false,
+        "endpoints": {
+            "1": {
+                "bindings": [],
+                "clusters": {
+                    "input": [
+                        "genGroups",
+                        "genScenes",
+                        "manuSpecificTuya",
+                        "genBasic"
+                    ],
+                    "output": [
+                        "genOta",
+                        "genTime"
+                    ]
+                },
+                "configured_reportings": [],
+                "scenes": []
+            },
+            "242": {
+                "bindings": [],
+                "clusters": {
+                    "input": [],
+                    "output": [
+                        "greenPower"
+                    ]
+                },
+                "configured_reportings": [],
+                "scenes": []
+            }
+        },
+        "friendly_name": "Tuya ZY-M100",
+        "ieee_address": "0xa4c13894070052fc",
+        "interview_completed": true,
+        "interviewing": false,
+        "manufacturer": "_TZE204_sxm7l9xa",
+        "model_id": "TS0601",
+        "network_address": 54724,
+        "power_source": "Mains (single phase)",
+        "supported": true,
+        "type": "Router"
+    },
+    {
+        "date_code": "20161111",
+        "definition": {
+            "description": "Motion sensor",
+            "exposes": [
+                {
+                    "access": 1,
+                    "description": "Measured temperature value",
+                    "name": "temperature",
+                    "property": "temperature",
+                    "type": "numeric",
+                    "unit": "°C"
+                },
+                {
+                    "access": 1,
+                    "description": "Indicates whether the device detected occupancy",
+                    "name": "occupancy",
+                    "property": "occupancy",
+                    "type": "binary",
+                    "value_off": false,
+                    "value_on": true
+                },
+                {
+                    "access": 1,
+                    "description": "Indicates if the battery of this device is almost empty",
+                    "name": "battery_low",
+                    "property": "battery_low",
+                    "type": "binary",
+                    "value_off": false,
+                    "value_on": true
+                },
+                {
+                    "access": 1,
+                    "description": "Indicates whether the device is tampered",
+                    "name": "tamper",
+                    "property": "tamper",
+                    "type": "binary",
+                    "value_off": false,
+                    "value_on": true
+                },
+                {
+                    "access": 1,
+                    "description": "Remaining battery in %, can take up to 24 hours before reported.",
+                    "name": "battery",
+                    "property": "battery",
+                    "type": "numeric",
+                    "unit": "%",
+                    "value_max": 100,
+                    "value_min": 0
+                },
+                {
+                    "access": 1,
+                    "description": "Link quality (signal strength)",
+                    "name": "linkquality",
+                    "property": "linkquality",
+                    "type": "numeric",
+                    "unit": "lqi",
+                    "value_max": 255,
+                    "value_min": 0
+                }
+            ],
+            "model": "MOT003",
+            "options": [
+                {
+                    "access": 2,
+                    "description": "Number of digits after decimal point for temperature, takes into effect on next report of device.",
+                    "name": "temperature_precision",
+                    "property": "temperature_precision",
+                    "type": "numeric",
+                    "value_max": 3,
+                    "value_min": 0
+                },
+                {
+                    "access": 2,
+                    "description": "Calibrates the temperature value (absolute offset), takes into effect on next report of device.",
+                    "name": "temperature_calibration",
+                    "property": "temperature_calibration",
+                    "type": "numeric"
+                },
+                {
+                    "access": 2,
+                    "description": "Time in seconds after which occupancy is cleared after detecting it (default 90 seconds).",
+                    "name": "occupancy_timeout",
+                    "property": "occupancy_timeout",
+                    "type": "numeric",
+                    "value_min": 0
+                }
+            ],
+            "supports_ota": false,
+            "vendor": "Hive"
+        },
+        "disabled": false,
+        "endpoints": {
+            "6": {
+                "bindings": [
+                    {
+                        "cluster": "msTemperatureMeasurement",
+                        "target": {
+                            "endpoint": 1,
+                            "ieee_address": "0x00124b0029daedd5",
+                            "type": "endpoint"
+                        }
+                    },
+                    {
+                        "cluster": "genPowerCfg",
+                        "target": {
+                            "endpoint": 1,
+                            "ieee_address": "0x00124b0029daedd5",
+                            "type": "endpoint"
+                        }
+                    }
+                ],
+                "clusters": {
+                    "input": [
+                        "genBasic",
+                        "genPowerCfg",
+                        "genIdentify",
+                        "genPollCtrl",
+                        "msIlluminanceMeasurement",
+                        "msTemperatureMeasurement",
+                        "ssIasZone"
+                    ],
+                    "output": [
+                        "genOta"
+                    ]
+                },
+                "configured_reportings": [
+                    {
+                        "attribute": "measuredValue",
+                        "cluster": "msTemperatureMeasurement",
+                        "maximum_report_interval": 3600,
+                        "minimum_report_interval": 10,
+                        "reportable_change": 100
+                    }
+                ],
+                "scenes": []
+            }
+        },
+        "friendly_name": "Hive motion sensor",
+        "ieee_address": "0x00124b00146c31cd",
+        "interview_completed": true,
+        "interviewing": false,
+        "manufacturer": "HiveHome.com",
+        "model_id": "MOT003",
+        "network_address": 33997,
+        "power_source": "Battery",
+        "supported": true,
+        "type": "EndDevice"
+    },
+    {
+        "date_code": "20220420",
+        "definition": {
+            "description": "Light cool to warm white smart light bulb",
+            "exposes": [
+                {
+                    "features": [
+                        {
+                            "access": 7,
+                            "description": "On/off state of this light",
+                            "name": "state",
+                            "property": "state",
+                            "type": "binary",
+                            "value_off": "OFF",
+                            "value_on": "ON",
+                            "value_toggle": "TOGGLE"
+                        },
+                        {
+                            "access": 7,
+                            "description": "Brightness of this light",
+                            "name": "brightness",
+                            "property": "brightness",
+                            "type": "numeric",
+                            "value_max": 254,
+                            "value_min": 0
+                        },
+                        {
+                            "access": 7,
+                            "description": "Color temperature of this light",
+                            "name": "color_temp",
+                            "presets": [
+                                {
+                                    "description": "Coolest temperature supported",
+                                    "name": "coolest",
+                                    "value": 150
+                                },
+                                {
+                                    "description": "Cool temperature (250 mireds / 4000 Kelvin)",
+                                    "name": "cool",
+                                    "value": 250
+                                },
+                                {
+                                    "description": "Neutral temperature (370 mireds / 2700 Kelvin)",
+                                    "name": "neutral",
+                                    "value": 370
+                                },
+                                {
+                                    "description": "Warm temperature (454 mireds / 2200 Kelvin)",
+                                    "name": "warm",
+                                    "value": 454
+                                },
+                                {
+                                    "description": "Warmest temperature supported",
+                                    "name": "warmest",
+                                    "value": 500
+                                }
+                            ],
+                            "property": "color_temp",
+                            "type": "numeric",
+                            "unit": "mired",
+                            "value_max": 500,
+                            "value_min": 150
+                        },
+                        {
+                            "access": 7,
+                            "description": "Color temperature after cold power on of this light",
+                            "name": "color_temp_startup",
+                            "presets": [
+                                {
+                                    "description": "Coolest temperature supported",
+                                    "name": "coolest",
+                                    "value": 150
+                                },
+                                {
+                                    "description": "Cool temperature (250 mireds / 4000 Kelvin)",
+                                    "name": "cool",
+                                    "value": 250
+                                },
+                                {
+                                    "description": "Neutral temperature (370 mireds / 2700 Kelvin)",
+                                    "name": "neutral",
+                                    "value": 370
+                                },
+                                {
+                                    "description": "Warm temperature (454 mireds / 2200 Kelvin)",
+                                    "name": "warm",
+                                    "value": 454
+                                },
+                                {
+                                    "description": "Warmest temperature supported",
+                                    "name": "warmest",
+                                    "value": 500
+                                },
+                                {
+                                    "description": "Restore previous color_temp on cold power on",
+                                    "name": "previous",
+                                    "value": 65535
+                                }
+                            ],
+                            "property": "color_temp_startup",
+                            "type": "numeric",
+                            "unit": "mired",
+                            "value_max": 500,
+                            "value_min": 150
+                        }
+                    ],
+                    "type": "light"
+                },
+                {
+                    "access": 2,
+                    "description": "Triggers an effect on the light (e.g. make light blink for a few seconds)",
+                    "name": "effect",
+                    "property": "effect",
+                    "type": "enum",
+                    "values": [
+                        "blink",
+                        "breathe",
+                        "okay",
+                        "channel_change",
+                        "finish_effect",
+                        "stop_effect"
+                    ]
+                },
+                {
+                    "access": 7,
+                    "description": "Controls the behavior when the device is powered on after power loss",
+                    "name": "power_on_behavior",
+                    "property": "power_on_behavior",
+                    "type": "enum",
+                    "values": [
+                        "off",
+                        "on",
+                        "toggle",
+                        "previous"
+                    ]
+                },
+                {
+                    "access": 1,
+                    "description": "Link quality (signal strength)",
+                    "name": "linkquality",
+                    "property": "linkquality",
+                    "type": "numeric",
+                    "unit": "lqi",
+                    "value_max": 255,
+                    "value_min": 0
+                }
+            ],
+            "model": "TWBulb03UK",
+            "options": [
+                {
+                    "access": 2,
+                    "description": "Controls the transition time (in seconds) of on/off, brightness, color temperature (if applicable) and color (if applicable) changes. Defaults to `0` (no transition).",
+                    "name": "transition",
+                    "property": "transition",
+                    "type": "numeric",
+                    "value_min": 0
+                },
+                {
+                    "access": 2,
+                    "description": "When enabled colors will be synced, e.g. if the light supports both color x/y and color temperature a conversion from color x/y to color temperature will be done when setting the x/y color (default true).",
+                    "name": "color_sync",
+                    "property": "color_sync",
+                    "type": "binary",
+                    "value_off": false,
+                    "value_on": true
+                },
+                {
+                    "access": 2,
+                    "description": "State actions will also be published as 'action' when true (default false).",
+                    "name": "state_action",
+                    "property": "state_action",
+                    "type": "binary",
+                    "value_off": false,
+                    "value_on": true
+                }
+            ],
+            "supports_ota": false,
+            "vendor": "Hive"
+        },
+        "disabled": false,
+        "endpoints": {
+            "1": {
+                "bindings": [],
+                "clusters": {
+                    "input": [
+                        "genBasic",
+                        "genIdentify",
+                        "genGroups",
+                        "genScenes",
+                        "genOnOff",
+                        "genLevelCtrl",
+                        "lightingColorCtrl",
+                        "touchlink"
+                    ],
+                    "output": [
+                        "genOta"
+                    ]
+                },
+                "configured_reportings": [],
+                "scenes": []
+            },
+            "242": {
+                "bindings": [],
+                "clusters": {
+                    "input": [],
+                    "output": [
+                        "greenPower"
+                    ]
+                },
+                "configured_reportings": [],
+                "scenes": []
+            }
+        },
+        "friendly_name": "Hive light 1",
+        "ieee_address": "0x70ac08fffefafeca",
+        "interview_completed": true,
+        "interviewing": false,
+        "manufacturer": "LDS",
+        "model_id": "TWBulb03UK",
+        "network_address": 36156,
+        "power_source": "Mains (single phase)",
+        "software_build_id": "2.10.03",
+        "supported": true,
+        "type": "Router"
+    }

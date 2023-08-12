@@ -57,6 +57,10 @@ func (m *MockMqttClient) messagePubHandler() func(id string, payload []byte) {
 	}
 }
 
+func (m *MockMqttClient) Publish(topic string, payload interface{}) {
+	fmt.Println("Mock Publish")
+}
+
 type NopWsServer struct {
 }
 

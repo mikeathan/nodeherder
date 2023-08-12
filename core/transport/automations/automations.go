@@ -11,7 +11,7 @@ type Event struct {
 	value any
 }
 
-type DeviceAction struct {
+type MqttAction struct {
 	topic string
 	event *Event
 }
