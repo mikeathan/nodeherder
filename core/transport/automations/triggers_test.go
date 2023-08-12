@@ -1,7 +1,7 @@
-package automation_test
+package automations_test
 
 import (
-	"node-herder/automation"
+	automation "node-herder/transport/automations"
 	"testing"
 	"time"
 )
@@ -9,7 +9,7 @@ import (
 func TestTriggers(t *testing.T) {
 
 	tt := automation.FromDuration(5 * time.Second)
-	tt.Repeat = true
+	tt.Repeat = false
 	trigger := new(automation.TimerTrigger)
 	trigger.WithCondition(tt)
 	trigger.WithAction("Action triggered!!!!!!!!!!!1")
@@ -17,8 +17,4 @@ func TestTriggers(t *testing.T) {
 
 	// https://www.home-assistant.io/docs/automation/basics/
 	// https://www.home-assistant.io/docs/automation/editor/
-}
-
-func TestLifxAction(t *testing.T) {
-
 }

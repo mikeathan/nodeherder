@@ -1,0 +1,5 @@
+package automations
+
+func RegisterAutomations() {
+
+}

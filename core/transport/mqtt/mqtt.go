@@ -56,7 +56,6 @@ func NewMqttClient(config MqttConfig) MqttClient {
 	for _, topic := range config.Topics {
 		client.AddTopic(topic)
 	}
-
 	return client
 }
 
@@ -76,6 +75,10 @@ func sanitizeTopic(topic string) string {
 
 func (m *MqttService) OnMessageHandler(handler func(string, []byte)) {
 	m.messageHandler = handler
+}
+
+func (m *MqttService) Publish(topic string, payload interface{}) {
+	m.client.Publish(topic, 0, false, payload)
 }
 
 func (m *MqttService) Connect() error {
