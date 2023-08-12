@@ -15,14 +15,14 @@ type TimerCondition struct {
 	IsDateTime bool
 }
 
-func FromDuration(d time.Duration) *TimerCondition {
+func TriggerFromDuration(d time.Duration) *TimerCondition {
 	c := &TimerCondition{
 		_duration: d,
 	}
 	return c
 }
 
-func FromTime(t time.Time) *TimerCondition {
+func TriggerFromTime(t time.Time) *TimerCondition {
 	c := &TimerCondition{
 		_timestamp: t,
 		IsDateTime: true,

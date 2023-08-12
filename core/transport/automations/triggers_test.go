@@ -8,7 +8,7 @@ import (
 
 func TestTriggers(t *testing.T) {
 
-	tt := automation.FromDuration(5 * time.Second)
+	tt := automation.TriggerFromDuration(5 * time.Second)
 	tt.Repeat = false
 	trigger := new(automation.TimerTrigger)
 	trigger.WithCondition(tt)
