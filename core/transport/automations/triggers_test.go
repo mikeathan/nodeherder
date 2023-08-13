@@ -1,6 +1,8 @@
 package automations_test
 
 import (
+	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	automation "node-herder/transport/automations"
@@ -21,6 +23,12 @@ func TestTriggers(t *testing.T) {
 	// https://www.home-assistant.io/docs/automation/basics/
 	// https://www.home-assistant.io/docs/automation/editor/
 }
+
+type Features struct {
+	//Type string `json:"type"`
+	Data map[string]interface{}
+}
+
 func TestMqttAction(t *testing.T) {
 	mqttConfig := mqtt.MqttConfig{
 		Username: "sinkhole",
@@ -30,16 +38,34 @@ func TestMqttAction(t *testing.T) {
 			"bridge/devices",
 		},
 	}
-
 	//\bh := &automations.BridgeHandler{}
-
 	var messageHandler = func(id string, payload []byte) {
-
 		if id == "bridge/devices" {
-			var deviceMap []interface{}
+			var deviceMap []map[string]interface{}
 			err := json.Unmarshal(payload, &deviceMap)
 			if err != nil {
 				fmt.Println("error: ", err.Error())
+			}
+
+			for _, value := range deviceMap {
+				friendly_name := value["friendly_name"]
+
+				if friendly_name == "Hive light 1" {
+					definition := value["definition"]
+
+					def, _ := definition.(map[string]interface{})
+
+					exposes := def["exposes"]
+					// ???
+					ex, _ := exposes.([]map[string]interface{})
+					fmt.Println(ex) // //byteKey := []byte(fmt.Sprintf("%v", definition))
+					// var features Features
+					// err := json.Unmarshal(byteKey, &features)
+					// if err != nil {
+					// 	fmt.Println("error: ", err.Error())
+					// }
+
+				}
 			}
 			// err := bh.ProcessMessage(payload)
 			// if err != nil {
@@ -60,4 +86,14 @@ func TestMqttAction(t *testing.T) {
 	time.Sleep(10 * time.Second)
 
 	fmt.Println("finish")
+}
+
+func GetBytes(key interface{}) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(key)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
