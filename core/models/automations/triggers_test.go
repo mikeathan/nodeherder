@@ -2,16 +2,15 @@ package automations_test
 
 import (
 	"fmt"
+	automation "node-herder/models/automations"
 	"node-herder/models/bridge"
 	"node-herder/models/configuration"
-	automation "node-herder/transport/automations"
 	"node-herder/transport/mqtt"
 	"testing"
 	"time"
 )
 
 func TestTriggers(t *testing.T) {
-	factory := configuration.Load()
 
 	tt := automation.TriggerFromDuration(5 * time.Second)
 	tt.Repeat = false
@@ -34,18 +33,19 @@ func TestMqttAction(t *testing.T) {
 		},
 	}
 
-	//\bh := &automations.BridgeHandler{}
-	// need to create trigger or automation registry
-	// from some hardcoded values eg file or text
-	// find them in bridge devices and register them
 	var messageHandler = func(id string, payload []byte) {
 		if id == "bridge/devices" {
 
-			device, err := bridge.FindByExposeType(payload, "light")
+			devices, err := bridge.Parse(payload)
 			if err != nil {
 				fmt.Println("error: ", err.Error())
 			}
-			fmt.Println(device)
+			configuration.Load(devices)
+			// device, err := bridge.FindByExposeType(payload, "light")
+			// if err != nil {
+			// 	fmt.Println("error: ", err.Error())
+			// }
+			// fmt.Println(device)
 		}
 
 	}

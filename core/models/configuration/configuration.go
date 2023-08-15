@@ -1,17 +1,24 @@
 package configuration
 
 import (
+	"errors"
 	"fmt"
+	"node-herder/models/automations"
+	"node-herder/models/bridge"
 	"time"
 )
 
-type timerCondition struct {
-	Type      string        `json:"type"`
-	Timestamp time.Time     `json:"timestamp"`
-	Duration  time.Duration `json:"duration"`
-	Repeat    bool          `json:"repeat"`
+type timestampCondition struct {
+	Type      string    `json:"type"`
+	Timestamp time.Time `json:"timestamp"`
+	Repeat    bool      `json:"repeat"`
 }
 
+type timeDurationCondition struct {
+	Type     string        `json:"type"`
+	Duration time.Duration `json:"duration"`
+	Repeat   bool          `json:"repeat"`
+}
 type mqttAction struct {
 	Friendlyname string `json:"friendlyname"`
 	Type         string `json:"type"`
@@ -20,17 +27,17 @@ type mqttAction struct {
 }
 
 type trigger struct {
-	Type       string            `json:"trigger"`
-	Name       string            `json:"name"`
-	Conditions []*timerCondition `json:"conditions"`
-	Actions    []*mqttAction     `json:"actions"`
+	Type       string        `json:"trigger"`
+	Name       string        `json:"name"`
+	Conditions []interface{} `json:"conditions"`
+	Actions    []*mqttAction `json:"actions"`
 }
 
 func newTrigger() *trigger {
 	return &trigger{
 		Type:       "",
 		Name:       "",
-		Conditions: []*timerCondition{},
+		Conditions: []interface{}{},
 		Actions:    []*mqttAction{},
 	}
 }
@@ -45,20 +52,78 @@ func newConfiguration() *configuration {
 	}
 }
 
-type Factory struct {
+type Loader struct {
 }
 
-func Load() *Factory {
+func Load(bridgeDevices []*bridge.BridgeDevice) (*Loader, error) {
 
 	config := createMockConfiguration()
-	// TODO: load bridge/devices
 
 	for _, trigger := range config.triggers {
 		fmt.Println("loading:", trigger.Name)
+		if trigger.Type != "timer" {
+			return nil, errors.New("unsupported trigger type ")
+		}
+		// load conditions
+		var conds []*automations.TimerCondition
+		for _, cond := range trigger.Conditions {
+			var ac *automations.TimerCondition
+			if td, ok := cond.(timeDurationCondition); ok {
+				ac = automations.TriggerFromDuration(td.Duration)
+				ac.Repeat = td.Repeat
+			} else if tt, ok := cond.(timestampCondition); ok {
+				ac = automations.TriggerFromTime(tt.Timestamp)
+				ac.Repeat = tt.Repeat
+
+			} else {
+				return nil, errors.New("unsupported condition type ")
+			}
+
+			conds = append(conds, ac)
+		}
+
+		// load actions
+		for _, action := range trigger.Actions {
+
+			for _, device := range bridgeDevices {
+				if device.FriendlyName == action.Friendlyname {
+
+					// found device
+					// find type and state
+
+					if action.Type != "light" {
+						return nil, errors.New("unsupported action type ")
+					}
+
+					if device.Disabled {
+						return nil, errors.New("device is disabled ")
+					}
+
+					// mayb we don need all that
+					// if we assume that config is correct just use the data
+					// they should have been populated from us
+
+					// for _, expose := range device.Definition.Exposes {
+
+					// 	if expose.Type == action.Type {
+					// 		for _, feature := range expose.Features {
+					// 			if feature.Property == action.Name {
+					// 				if action.Value == true {
+					// 					valueOn := feature.ValueOn
+					// 				} else {
+					// 					valueOff := feature.ValueOff
+					// 				}
+					// 			}
+					// 		}
+					// 	}
+					// }
+				}
+			}
+		}
 
 	}
 
-	return nil
+	return nil, nil
 }
 
 func createMockConfiguration() *configuration {
@@ -68,7 +133,7 @@ func createMockConfiguration() *configuration {
 	trigger.Name = "Turn on light"
 
 	// new condition
-	tc := &timerCondition{}
+	tc := &timeDurationCondition{}
 	tc.Duration = 5 * time.Second
 	tc.Repeat = true
 	trigger.Conditions = append(trigger.Conditions, tc)
@@ -85,8 +150,4 @@ func createMockConfiguration() *configuration {
 	conf := newConfiguration()
 	conf.triggers = append(conf.triggers, trigger)
 	return conf
-}
-
-func Loader() {
-
 }
