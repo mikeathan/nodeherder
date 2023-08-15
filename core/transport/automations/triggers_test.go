@@ -3,6 +3,7 @@ package automations_test
 import (
 	"fmt"
 	"node-herder/models/bridge"
+	"node-herder/models/configuration"
 	automation "node-herder/transport/automations"
 	"node-herder/transport/mqtt"
 	"testing"
@@ -10,6 +11,7 @@ import (
 )
 
 func TestTriggers(t *testing.T) {
+	factory := configuration.Load()
 
 	tt := automation.TriggerFromDuration(5 * time.Second)
 	tt.Repeat = false
@@ -31,6 +33,7 @@ func TestMqttAction(t *testing.T) {
 			"bridge/devices",
 		},
 	}
+
 	//\bh := &automations.BridgeHandler{}
 	// need to create trigger or automation registry
 	// from some hardcoded values eg file or text
