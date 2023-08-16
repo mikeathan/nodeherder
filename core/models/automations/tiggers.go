@@ -5,34 +5,10 @@ import (
 	"time"
 )
 
-type Trigger interface {
-	Name() string
-	WithCondition(cond string)
-	WithAction(action string)
-	Process() error
-}
-
-type TimerTrigger struct {
-	cond   *TimerCondition
-	action string
-}
-
-func (t TimerTrigger) Trigger() error {
+func (t SceduleTrigger) Trigger() error {
 
 	fmt.Printf("Trigger Action: %s\n", t.action)
 	return nil
-}
-
-func (t TimerTrigger) Name() string {
-	return "Timer"
-}
-
-func (t *TimerTrigger) WithCondition(cond *TimerCondition) {
-	t.cond = cond
-}
-
-func (t *TimerTrigger) WithAction(action string) {
-	t.action = action
 }
 
 func (t *TimerTrigger) Process() error {
@@ -48,7 +24,7 @@ func (t *TimerTrigger) Process() error {
 			fmt.Println(err)
 		}
 
-		if !t.cond.Repeat {
+		if !t.cond.IsRepeat() {
 			fmt.Println("timer exit")
 			return nil
 		}
