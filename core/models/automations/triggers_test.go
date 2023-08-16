@@ -2,9 +2,9 @@ package automations_test
 
 import (
 	"fmt"
+	"node-herder/models/automations"
 	automation "node-herder/models/automations"
 	"node-herder/models/bridge"
-	"node-herder/models/configuration"
 	"node-herder/transport/mqtt"
 	"testing"
 	"time"
@@ -40,7 +40,7 @@ func TestMqttAction(t *testing.T) {
 			if err != nil {
 				fmt.Println("error: ", err.Error())
 			}
-			configuration.Load(devices)
+			automations.Load(devices)
 			// device, err := bridge.FindByExposeType(payload, "light")
 			// if err != nil {
 			// 	fmt.Println("error: ", err.Error())

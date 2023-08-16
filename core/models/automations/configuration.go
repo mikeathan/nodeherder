@@ -1,9 +1,8 @@
-package configuration
+package automations
 
 import (
 	"errors"
 	"fmt"
-	"node-herder/models/automations"
 	"node-herder/models/bridge"
 	"time"
 )
@@ -19,18 +18,12 @@ type timeDurationCondition struct {
 	Duration time.Duration `json:"duration"`
 	Repeat   bool          `json:"repeat"`
 }
-type mqttAction struct {
-	Friendlyname string `json:"friendlyname"`
-	Type         string `json:"type"`
-	Name         string `json:"name"`
-	Value        any    `json:"value"`
-}
 
 type trigger struct {
 	Type       string        `json:"trigger"`
 	Name       string        `json:"name"`
 	Conditions []interface{} `json:"conditions"`
-	Actions    []*mqttAction `json:"actions"`
+	Actions    []*MqttAction `json:"actions"`
 }
 
 func newTrigger() *trigger {
@@ -38,7 +31,7 @@ func newTrigger() *trigger {
 		Type:       "",
 		Name:       "",
 		Conditions: []interface{}{},
-		Actions:    []*mqttAction{},
+		Actions:    []*MqttAction{},
 	}
 }
 
@@ -64,15 +57,16 @@ func Load(bridgeDevices []*bridge.BridgeDevice) (*Loader, error) {
 		if trigger.Type != "timer" {
 			return nil, errors.New("unsupported trigger type ")
 		}
+
 		// load conditions
-		var conds []*automations.TimerCondition
+		var conds []*TimerCondition
 		for _, cond := range trigger.Conditions {
-			var ac *automations.TimerCondition
+			var ac *TimerCondition
 			if td, ok := cond.(timeDurationCondition); ok {
-				ac = automations.TriggerFromDuration(td.Duration)
+				ac = TriggerFromDuration(td.Duration)
 				ac.Repeat = td.Repeat
 			} else if tt, ok := cond.(timestampCondition); ok {
-				ac = automations.TriggerFromTime(tt.Timestamp)
+				ac = TriggerFromTime(tt.Timestamp)
 				ac.Repeat = tt.Repeat
 
 			} else {
@@ -139,9 +133,11 @@ func createMockConfiguration() *configuration {
 	trigger.Conditions = append(trigger.Conditions, tc)
 
 	// new action
-	ma := &mqttAction{}
+	ma := &MqttAction{}
+	ma.client = nil // todo: setup client
+
 	ma.Friendlyname = "Hive light 1"
-	ma.Name = "state"
+	ma.Property = "state"
 	ma.Type = "light"
 	ma.Value = true
 

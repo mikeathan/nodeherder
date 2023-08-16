@@ -11,11 +11,6 @@ type Event struct {
 	value any
 }
 
-type MqttAction struct {
-	topic string
-	event *Event
-}
-
 type AutomationProcessor struct {
 	mqtt mqtt.MqttClient
 	ws   ws.EventHub
