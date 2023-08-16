@@ -81,10 +81,6 @@ func Load(bridgeDevices []*bridge.BridgeDevice) (*Loader, error) {
 
 			for _, device := range bridgeDevices {
 				if device.FriendlyName == action.Friendlyname {
-
-					// found device
-					// find type and state
-
 					if action.Type != "light" {
 						return nil, errors.New("unsupported action type ")
 					}
@@ -92,25 +88,7 @@ func Load(bridgeDevices []*bridge.BridgeDevice) (*Loader, error) {
 					if device.Disabled {
 						return nil, errors.New("device is disabled ")
 					}
-
-					// mayb we don need all that
-					// if we assume that config is correct just use the data
-					// they should have been populated from us
-
-					// for _, expose := range device.Definition.Exposes {
-
-					// 	if expose.Type == action.Type {
-					// 		for _, feature := range expose.Features {
-					// 			if feature.Property == action.Name {
-					// 				if action.Value == true {
-					// 					valueOn := feature.ValueOn
-					// 				} else {
-					// 					valueOff := feature.ValueOff
-					// 				}
-					// 			}
-					// 		}
-					// 	}
-					// }
+					action.client = nil // TODO: setup
 				}
 			}
 		}
