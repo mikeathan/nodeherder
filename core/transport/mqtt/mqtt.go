@@ -12,7 +12,7 @@ type MqttClient interface {
 	AddTopic(topic string)
 	Disconnect()
 	OnMessageHandler(handler func(string, []byte))
-	Publish(topic string, payload interface{})
+	Publish(friendlyName string, payload interface{})
 }
 
 const baseTopic string = "zigbee2mqtt/"
@@ -78,7 +78,10 @@ func (m *MqttService) OnMessageHandler(handler func(string, []byte)) {
 	m.messageHandler = handler
 }
 
-func (m *MqttService) Publish(topic string, payload interface{}) {
+func (m *MqttService) Publish(friendlyName string, payload interface{}) {
+	topic := fmt.Sprintf("%s%s", baseTopic, friendlyName)
+
+	fmt.Printf("publishing to %s \n", topic)
 	m.client.Publish(topic, 0, false, payload)
 }
 

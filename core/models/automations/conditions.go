@@ -30,19 +30,9 @@ func (tc *TimeDurationCondition) GetSchedule() time.Time {
 	return tc.Timestamp
 }
 
-func (tc *TimeDurationCondition) IsRepeat() bool {
-
-	return tc.Repeat
-}
-
-func (tc *TimestampCondition) IsRepeat() bool {
-
-	return tc.Repeat
-}
-
 func (tc *TimestampCondition) GetSchedule() time.Time {
 
-	if time.Now().Sub(tc.Timestamp) < 0 {
+	if time.Since(tc.Timestamp) < 0 {
 		tc.Timestamp = getTomorrow(tc.Timestamp)
 	}
 
