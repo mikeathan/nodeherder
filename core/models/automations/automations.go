@@ -3,7 +3,6 @@ package automations
 import (
 	"node-herder/transport/mqtt"
 	"node-herder/transport/ws"
-	"time"
 )
 
 type Event struct {
@@ -22,14 +21,6 @@ func (a *AutomationProcessor) Process() {
 // we need mqqt hanlders for bridge/devices topic
 
 func RegisterAutomations(mqtt mqtt.MqttClient, ws ws.EventHub) {
-	//p := &AutomationProcessor{mqtt: mqtt, ws: ws}
-	tt := TriggerFromDuration(5 * time.Second)
-	tt.Repeat = false
-	trigger := new(TimerTrigger)
-	trigger.WithCondition(tt)
-	trigger.WithAction("Action triggered!!!!!!!!!!!1")
-	trigger.Process()
-
 	// Device Action,
 	// friendly_name for mqtt topic or full mqtt topic
 	// event with type, value eg "state" = "ON"

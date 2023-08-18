@@ -2,32 +2,20 @@ package automations
 
 import (
 	"errors"
-	"fmt"
 	"node-herder/models/bridge"
+	"node-herder/transport/mqtt"
 	"time"
 )
 
-type timestampCondition struct {
-	Type      string    `json:"type"`
-	Timestamp time.Time `json:"timestamp"`
-	Repeat    bool      `json:"repeat"`
-}
-
-type timeDurationCondition struct {
-	Type     string        `json:"type"`
-	Duration time.Duration `json:"duration"`
-	Repeat   bool          `json:"repeat"`
-}
-
-type trigger struct {
+type TimerTrigger struct {
 	Type       string        `json:"trigger"`
 	Name       string        `json:"name"`
 	Conditions []interface{} `json:"conditions"`
 	Actions    []*MqttAction `json:"actions"`
 }
 
-func newTrigger() *trigger {
-	return &trigger{
+func newTimerTrigger() *TimerTrigger {
+	return &TimerTrigger{
 		Type:       "",
 		Name:       "",
 		Conditions: []interface{}{},
@@ -36,12 +24,12 @@ func newTrigger() *trigger {
 }
 
 type configuration struct {
-	triggers []*trigger
+	triggers []interface{}
 }
 
 func newConfiguration() *configuration {
 	return &configuration{
-		triggers: []*trigger{},
+		triggers: []interface{}{},
 	}
 }
 
@@ -50,49 +38,24 @@ type Loader struct {
 
 func Load(bridgeDevices []*bridge.BridgeDevice) (*Loader, error) {
 
+	var mqtClient mqtt.MqttClient // todo: setup, this is just empty
+
+	// fake input data
 	config := createMockConfiguration()
 
 	for _, trigger := range config.triggers {
-		fmt.Println("loading:", trigger.Name)
-		if trigger.Type != "timer" {
+		switch trigger.(type) {
+		case TimerTrigger:
+			break
+		default:
 			return nil, errors.New("unsupported trigger type ")
 		}
 
-		// load conditions
-		var conds []*TimerCondition
-		for _, cond := range trigger.Conditions {
-			var ac *TimerCondition
-			if td, ok := cond.(timeDurationCondition); ok {
-				ac = TriggerFromDuration(td.Duration)
-				ac.Repeat = td.Repeat
-			} else if tt, ok := cond.(timestampCondition); ok {
-				ac = TriggerFromTime(tt.Timestamp)
-				ac.Repeat = tt.Repeat
-
-			} else {
-				return nil, errors.New("unsupported condition type ")
-			}
-
-			conds = append(conds, ac)
+		timerTrigger := trigger.(TimerTrigger)
+		err := timerTrigger.configure(bridgeDevices, mqtClient)
+		if err != nil {
+			return nil, err
 		}
-
-		// load actions
-		for _, action := range trigger.Actions {
-
-			for _, device := range bridgeDevices {
-				if device.FriendlyName == action.Friendlyname {
-					if action.Type != "light" {
-						return nil, errors.New("unsupported action type ")
-					}
-
-					if device.Disabled {
-						return nil, errors.New("device is disabled ")
-					}
-					action.client = nil // TODO: setup
-				}
-			}
-		}
-
 	}
 
 	return nil, nil
@@ -100,12 +63,12 @@ func Load(bridgeDevices []*bridge.BridgeDevice) (*Loader, error) {
 
 func createMockConfiguration() *configuration {
 
-	trigger := newTrigger()
+	trigger := newTimerTrigger()
 	trigger.Type = "timer"
 	trigger.Name = "Turn on light"
 
 	// new condition
-	tc := &timeDurationCondition{}
+	tc := &TimeDurationCondition{}
 	tc.Duration = 5 * time.Second
 	tc.Repeat = true
 	trigger.Conditions = append(trigger.Conditions, tc)

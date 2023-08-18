@@ -1,56 +1,86 @@
 package automations
 
 import (
+	"errors"
 	"fmt"
+	"node-herder/models/bridge"
+	"node-herder/transport/mqtt"
 	"time"
 )
 
-type Trigger interface {
-	Name() string
-	WithCondition(cond string)
-	WithAction(action string)
-	Process() error
-}
+func (t *TimerTrigger) configure(bridgeDevices []*bridge.BridgeDevice, client mqtt.MqttClient) error {
+	fmt.Println("loading:", t.Name)
+	if t.Type != "timer" {
+		return errors.New("unsupported trigger type ")
+	}
 
-type TimerTrigger struct {
-	cond   *TimerCondition
-	action string
-}
+	// valdate conditions
+	for _, cond := range t.Conditions {
+		switch cond.(type) {
+		case TimeDurationCondition:
+			break
+		case TimestampCondition:
+			break
+		default:
+			return errors.New("unsupported condition type ")
+		}
+	}
 
-func (t TimerTrigger) Trigger() error {
+	// validate actions
+	for _, action := range t.Actions {
+		for _, device := range bridgeDevices {
+			if device.FriendlyName == action.Friendlyname {
 
-	fmt.Printf("Trigger Action: %s\n", t.action)
+				if action.Type != "light" {
+					return errors.New("unsupported action type ")
+				}
+
+				if device.Disabled {
+					return errors.New("device is disabled ")
+				}
+				action.client = client
+			}
+		}
+	}
+
 	return nil
 }
 
-func (t TimerTrigger) Name() string {
-	return "Timer"
-}
+func (t *TimerTrigger) Trigger() error {
 
-func (t *TimerTrigger) WithCondition(cond *TimerCondition) {
-	t.cond = cond
-}
+	for _, action := range t.Actions {
 
-func (t *TimerTrigger) WithAction(action string) {
-	t.action = action
-}
-
-func (t *TimerTrigger) Process() error {
-
-	for {
-
-		diff := time.Until(t.cond.GetSchedule()).Seconds()
-		ticker := *time.NewTicker(time.Duration(diff) * time.Second)
-		<-ticker.C
-
-		err := t.Trigger()
+		fmt.Printf("Trigger Action %s\n", action.Friendlyname)
+		err := action.Run()
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("error:", err.Error())
 		}
+	}
+	return nil
+}
 
-		if !t.cond.Repeat {
-			fmt.Println("timer exit")
-			return nil
-		}
+func (t *TimerTrigger) Process() {
+
+	for _, cond := range t.Conditions {
+
+		tc := cond.(TimerCondition)
+		go func() {
+			for {
+
+				diff := time.Until(tc.GetSchedule()).Seconds()
+				ticker := *time.NewTicker(time.Duration(diff) * time.Second)
+				<-ticker.C
+
+				err := t.Trigger()
+				if err != nil {
+					fmt.Println(err)
+				}
+
+				if !tc.IsRepeat() {
+					fmt.Println("timer finished. no repeat. exiting")
+					return
+				}
+			}
+		}()
 	}
 }

@@ -5,42 +5,39 @@ import (
 	"time"
 )
 
-type Condition interface {
+type TimerCondition interface {
+	GetSchedule() time.Time
+	IsRepeat() bool
 }
 
-type TimerCondition struct {
-	_timestamp time.Time
-	_duration  time.Duration
-	Repeat     bool
-	IsDateTime bool
+type TimestampCondition struct {
+	Type      string    `json:"type"`
+	Timestamp time.Time `json:"timestamp"`
+	Repeat    bool      `json:"repeat"`
 }
 
-func TriggerFromDuration(d time.Duration) *TimerCondition {
-	c := &TimerCondition{
-		_duration: d,
-	}
-	return c
+type TimeDurationCondition struct {
+	Type      string        `json:"type"`
+	Duration  time.Duration `json:"duration"`
+	Repeat    bool          `json:"repeat"`
+	Timestamp time.Time
 }
 
-func TriggerFromTime(t time.Time) *TimerCondition {
-	c := &TimerCondition{
-		_timestamp: t,
-		IsDateTime: true,
-	}
-	return c
+func (tc *TimeDurationCondition) GetSchedule() time.Time {
+	tc.Timestamp = time.Now().Add(tc.Duration)
+
+	fmt.Printf("Sceduled for %v \n", tc.Timestamp.Format(time.RFC3339))
+	return tc.Timestamp
 }
 
-func (tc *TimerCondition) GetSchedule() time.Time {
-	if !tc.IsDateTime {
-		tc._timestamp = time.Now().Add(tc._duration)
-	} else {
-		if time.Now().Sub(tc._timestamp) < 0 {
-			tc._timestamp = getTomorrow(tc._timestamp)
-		}
+func (tc *TimestampCondition) GetSchedule() time.Time {
+
+	if time.Since(tc.Timestamp) < 0 {
+		tc.Timestamp = getTomorrow(tc.Timestamp)
 	}
 
-	fmt.Printf("Sceduled for %v \n", tc._timestamp.Format(time.RFC3339))
-	return tc._timestamp
+	fmt.Printf("Sceduled for %v \n", tc.Timestamp.Format(time.RFC3339))
+	return tc.Timestamp
 }
 
 func getTomorrow(ts time.Time) time.Time {

@@ -1,6 +1,9 @@
 package automations
 
-import "node-herder/transport/mqtt"
+import (
+	"encoding/json"
+	"node-herder/transport/mqtt"
+)
 
 type MqttAction struct {
 	Friendlyname string `json:"friendlyname"`
@@ -12,10 +15,14 @@ type MqttAction struct {
 
 func (a *MqttAction) Run() error {
 
-	var payload []byte
+	jp := map[string]any{
+		a.Property: a.Property,
+	}
+	payload, err := json.Marshal(jp)
+	if err != nil {
+		return err
+	}
 
-	topic := a.Friendlyname // TODO: build topic
-	a.client.Publish(topic, payload)
-
+	a.client.Publish(a.Friendlyname, payload)
 	return nil
 }
