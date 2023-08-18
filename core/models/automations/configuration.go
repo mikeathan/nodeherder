@@ -62,7 +62,7 @@ func createMockConfiguration() *configuration {
 
 	// new condition
 	tc := &TimeDurationCondition{}
-	tc.Duration = 20 * time.Second
+	tc.Duration = 5 * time.Second
 	trigger.Conditions = append(trigger.Conditions, tc)
 
 	// new action

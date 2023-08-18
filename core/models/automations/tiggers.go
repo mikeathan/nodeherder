@@ -43,7 +43,23 @@ func (t *TimerTrigger) configure(bridgeDevices []*bridge.BridgeDevice, client mq
 				}
 				action.client = client
 
+				// TODO: refactor. no need to keep looping once we found our value
 				// need to fix state, convert it to expected one: { "state": "ON" }'
+				for _, expose := range device.Definition.Exposes {
+					for _, feature := range expose.Features {
+						if feature.Property == action.Property {
+
+							// for now we only support "state" property
+							if action.Value == true {
+								action.Value = feature.ValueOn
+							} else {
+								action.Value = feature.ValueOff
+							}
+							break
+						}
+					}
+				}
+
 			}
 		}
 	}

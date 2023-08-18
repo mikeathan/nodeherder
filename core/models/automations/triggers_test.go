@@ -15,6 +15,7 @@ func TestTriggers(t *testing.T) {
 	// https://www.home-assistant.io/docs/automation/editor/
 }
 
+// mosquitto_pub -h 192.168.179:1883 -u sinkhole -P mqtt2023 -t 'zigbee2mqtt/Hive light 1/set' -m '{ "state": "ON" }'
 func TestMqttAction(t *testing.T) {
 	mqttConfig := mqtt.MqttConfig{
 		Username: "sinkhole",
