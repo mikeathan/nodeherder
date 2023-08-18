@@ -24,6 +24,7 @@ func TestMqttAction(t *testing.T) {
 			"bridge/devices",
 		},
 	}
+	mqtt := mqtt.NewMqttClient(mqttConfig)
 
 	var messageHandler = func(id string, payload []byte) {
 		if id == "bridge/devices" {
@@ -32,17 +33,17 @@ func TestMqttAction(t *testing.T) {
 			if err != nil {
 				fmt.Println("error: ", err.Error())
 			}
-			automations.Load(devices)
-			// device, err := bridge.FindByExposeType(payload, "light")
-			// if err != nil {
-			// 	fmt.Println("error: ", err.Error())
-			// }
+
+			err = automations.Load(devices, mqtt)
+			if err != nil {
+				fmt.Println("error loading automations: ", err.Error())
+			}
+
 			// fmt.Println(device)
 		}
 
 	}
 
-	mqtt := mqtt.NewMqttClient(mqttConfig)
 	mqtt.OnMessageHandler(messageHandler)
 	err := mqtt.Connect()
 	if err != nil {
@@ -51,7 +52,7 @@ func TestMqttAction(t *testing.T) {
 	}
 	mqtt.Publish("zigbee2mqtt/bridge/devices", nil)
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(300 * time.Second)
 
 	fmt.Println("finish")
 }

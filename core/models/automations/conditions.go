@@ -40,6 +40,13 @@ func (tc *TimestampCondition) GetSchedule() time.Time {
 	return tc.Timestamp
 }
 
+func (tc *TimeDurationCondition) IsRepeat() bool {
+	return tc.Repeat
+}
+
+func (tc *TimestampCondition) IsRepeat() bool {
+	return tc.Repeat
+}
 func getTomorrow(ts time.Time) time.Time {
 	return time.Date(ts.Year(), ts.Month(), ts.Day()+1, ts.Hour(), ts.Minute(), 0, 0, ts.Location())
 }

@@ -2,6 +2,7 @@ package automations
 
 import (
 	"encoding/json"
+	"fmt"
 	"node-herder/transport/mqtt"
 )
 
@@ -16,13 +17,13 @@ type MqttAction struct {
 func (a *MqttAction) Run() error {
 
 	jp := map[string]any{
-		a.Property: a.Property,
+		a.Property: a.Value,
 	}
 	payload, err := json.Marshal(jp)
 	if err != nil {
 		return err
 	}
 
-	a.client.Publish(a.Friendlyname, payload)
+	a.client.Publish(fmt.Sprintf("%s/set", a.Friendlyname), payload)
 	return nil
 }

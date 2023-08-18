@@ -33,32 +33,25 @@ func newConfiguration() *configuration {
 	}
 }
 
-type Loader struct {
-}
-
-func Load(bridgeDevices []*bridge.BridgeDevice) (*Loader, error) {
-
-	var mqtClient mqtt.MqttClient // todo: setup, this is just empty
+func Load(bridgeDevices []*bridge.BridgeDevice, mqtClient mqtt.MqttClient) error {
 
 	// fake input data
 	config := createMockConfiguration()
 
 	for _, trigger := range config.triggers {
-		switch trigger.(type) {
-		case TimerTrigger:
-			break
-		default:
-			return nil, errors.New("unsupported trigger type ")
+
+		timerTrigger, ok := trigger.(*TimerTrigger)
+		if !ok {
+			return errors.New("unsupported trigger type ")
 		}
 
-		timerTrigger := trigger.(TimerTrigger)
 		err := timerTrigger.configure(bridgeDevices, mqtClient)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return nil, nil
+	return nil
 }
 
 func createMockConfiguration() *configuration {
@@ -69,8 +62,7 @@ func createMockConfiguration() *configuration {
 
 	// new condition
 	tc := &TimeDurationCondition{}
-	tc.Duration = 5 * time.Second
-	tc.Repeat = true
+	tc.Duration = 20 * time.Second
 	trigger.Conditions = append(trigger.Conditions, tc)
 
 	// new action
@@ -80,7 +72,7 @@ func createMockConfiguration() *configuration {
 	ma.Friendlyname = "Hive light 1"
 	ma.Property = "state"
 	ma.Type = "light"
-	ma.Value = true
+	ma.Value = false
 
 	trigger.Actions = append(trigger.Actions, ma)
 

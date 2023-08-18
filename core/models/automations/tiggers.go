@@ -9,21 +9,24 @@ import (
 )
 
 func (t *TimerTrigger) configure(bridgeDevices []*bridge.BridgeDevice, client mqtt.MqttClient) error {
-	fmt.Println("loading:", t.Name)
+	fmt.Println("Loading trigger:", t.Name)
 	if t.Type != "timer" {
 		return errors.New("unsupported trigger type ")
 	}
 
 	// valdate conditions
 	for _, cond := range t.Conditions {
-		switch cond.(type) {
-		case TimeDurationCondition:
-			break
-		case TimestampCondition:
-			break
-		default:
-			return errors.New("unsupported condition type ")
+
+		_, ok := cond.(*TimeDurationCondition)
+		if ok {
+			continue
 		}
+		_, ok = cond.(*TimestampCondition)
+		if ok {
+			continue
+		}
+
+		return errors.New("unsupported condition type ")
 	}
 
 	// validate actions
@@ -39,10 +42,13 @@ func (t *TimerTrigger) configure(bridgeDevices []*bridge.BridgeDevice, client mq
 					return errors.New("device is disabled ")
 				}
 				action.client = client
+
+				// need to fix state, convert it to expected one: { "state": "ON" }'
 			}
 		}
 	}
 
+	t.run()
 	return nil
 }
 
@@ -59,7 +65,9 @@ func (t *TimerTrigger) Trigger() error {
 	return nil
 }
 
-func (t *TimerTrigger) Process() {
+func (t *TimerTrigger) run() {
+
+	// c: interface conversion: *automations.TimeDurationCondition is not automations.TimerCondition: missing method IsRepeat
 
 	for _, cond := range t.Conditions {
 
