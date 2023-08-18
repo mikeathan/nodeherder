@@ -20,7 +20,7 @@ func TestMqttAction(t *testing.T) {
 		Broker:   "192.168.50.179:1883",
 		Topics: []string{
 			"bridge/devices",
-			//"bridge/logging",
+			"bridge/logging",
 		},
 	}
 	mqtt := mqtt.NewMqttClient(mqttConfig)
@@ -39,6 +39,12 @@ func TestMqttAction(t *testing.T) {
 			}
 
 			// fmt.Println(device)
+		} else if id == "bridge/logging" {
+
+			fmt.Println(string(payload))
+			// handle error ?
+			//{"level":"error",
+			//"message":"Publish 'set' 'state' to 'Hive light 1' failed: 'Error: Command 0x70ac08fffefafeca/1 genOnOff.off({}, {\"sendWhen\":\"immediate\",\"timeout\":10000,\"disableResponse\":false,\"disableRecovery\":false,\"disableDefaultResponse\":false,\"direction\":0,\"srcEndpoint\":null,\"reservedBits\":0,\"manufacturerCode\":null,\"transactionSequenceNumber\":null,\"writeUndiv\":false}) failed (Data request failed with error: 'MAC no ack' (233))'"}
 		}
 	}
 

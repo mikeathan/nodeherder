@@ -34,6 +34,10 @@ func RegisterHub(port int, repo devices.Repository, config mqtt.MqttConfig, ctx 
 	// TODO: see if i can remove and do it when newing it - to check onmessage hander gets used correctly
 	mqtt.Connect()
 
+	// TODO:
+	// request bridge/devices
+	// get payload and load automations, if exist
+
 	hub := controllers.RegisterHubController(ws, mqtt, repo, ctx)
 
 	return registerApi(port, ws, hub, ctx)
