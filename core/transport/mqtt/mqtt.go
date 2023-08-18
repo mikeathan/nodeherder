@@ -34,7 +34,7 @@ var _connectionLostHandler mqttlib.ConnectionLostHandler = func(client mqttlib.C
 
 func (m *MqttService) messagePubHandler() func(client mqttlib.Client, msg mqttlib.Message) {
 	return func(client mqttlib.Client, msg mqttlib.Message) {
-		//fmt.Printf("mqtt Message => Topic: %s, Payload; %s\n", msg.Topic(), msg.Payload())
+		fmt.Printf("mqtt Message => Topic: %s, Payload; %s\n", msg.Topic(), msg.Payload())
 
 		var name = sanitizeTopic(msg.Topic())
 		var payload = msg.Payload()
