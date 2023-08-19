@@ -60,6 +60,14 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 
 	h.mqtt.OnMessageHandler(func(name string, payload []byte) {
 
+		// add nwe wroekr pool task for bridge devices data
+		/// if topic has bridge/info
+		//    load bridge info
+		//    check if automatiosn are configured
+		//       if not, load automations from file..
+
+		// else assume device reporting data
+
 		dataMap, err := convertToMap(payload)
 		if err != nil {
 			fmt.Println("error: failed to convert mqtt payload to map")

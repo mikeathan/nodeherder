@@ -91,6 +91,9 @@ func (t *TimerTrigger) run() {
 		go func() {
 			for {
 
+				//
+				// todo: allow enable/disable triggers
+				//
 				diff := time.Until(tc.GetSchedule()).Seconds()
 				ticker := *time.NewTicker(time.Duration(diff) * time.Second)
 				<-ticker.C
