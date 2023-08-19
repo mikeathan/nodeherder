@@ -31,14 +31,13 @@ func RegisterHub(port int, repo devices.Repository, config mqtt.MqttConfig, ctx 
 	ws := ws.NewWsHub()
 	mqtt := mqtt.NewMqttClient(config)
 
-	// TODO: see if i can remove and do it when newing it - to check onmessage hander gets used correctly
-	mqtt.Connect()
-
-	// TODO:
-	// request bridge/devices
-	// get payload and load automations, if exist
-
 	hub := controllers.RegisterHubController(ws, mqtt, repo, ctx)
+
+	// TODO: see if i can remove and do it when newing it - to check onmessage hander gets used correctly
+	// TODO: refactor
+	mqtt.Connect()
+	mqtt.Publish("zigbee2mqtt/bridge/devices", nil) // we publish so we get device data from bridge
+	//
 
 	return registerApi(port, ws, hub, ctx)
 }

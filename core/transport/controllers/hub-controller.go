@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"node-herder/models/automations"
+	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"node-herder/transport/mqtt"
 	"node-herder/transport/ws"
@@ -60,20 +62,33 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 
 	h.mqtt.OnMessageHandler(func(name string, payload []byte) {
 
-		// add nwe wroekr pool task for bridge devices data
-		/// if topic has bridge/info
-		//    load bridge info
-		//    check if automatiosn are configured
-		//       if not, load automations from file..
+		// TODO: needs refactoring
+		// we need mqtt message handler
+		if name == "bridge/devices" {
 
-		// else assume device reporting data
-
-		dataMap, err := convertToMap(payload)
-		if err != nil {
-			fmt.Println("error: failed to convert mqtt payload to map")
-			return
+			devices, err := bridge.Parse(payload)
+			if err != nil {
+				fmt.Println("parsing devices error: ", err.Error())
+				return
+			}
+			if !automations.IsConfigured() {
+				automations.Load(devices, h.mqtt)
+				if err != nil {
+					fmt.Println("loading automations error: ", err.Error())
+					return
+				}
+			}
+		} else if name == "bridge/logging" {
+			// todo: handle
+			fmt.Println(string(payload))
+		} else {
+			dataMap, err := convertToMap(payload)
+			if err != nil {
+				fmt.Println("error: failed to convert mqtt payload to map")
+				return
+			}
+			h.Enqueue(name, dataMap, "mqtt")
 		}
-		h.Enqueue(name, dataMap, "mqtt")
 	})
 
 	return h
