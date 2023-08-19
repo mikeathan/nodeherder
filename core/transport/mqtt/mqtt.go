@@ -17,6 +17,11 @@ type MqttClient interface {
 
 const baseTopic string = "zigbee2mqtt/"
 
+var bridgeTopics = []string{
+	"bridge/devices",
+	"bridge/logging",
+}
+
 type MqttConfig struct {
 	Broker   string
 	Username string
@@ -81,7 +86,7 @@ func (m *MqttService) OnMessageHandler(handler func(string, []byte)) {
 func (m *MqttService) Publish(friendlyName string, payload interface{}) {
 	topic := fmt.Sprintf("%s%s", baseTopic, friendlyName)
 
-	fmt.Printf("publishing to %s \n", topic)
+	//fmt.Printf("Publish: %s \n", topic)
 	m.client.Publish(topic, 0, false, payload)
 }
 
@@ -104,17 +109,29 @@ func (m *MqttService) Connect() error {
 		return token.Error()
 	}
 
-	for _, device_name := range m.topics {
-		// todo: pass full topic dont build them here
-		topic := fmt.Sprintf("%s%s", baseTopic, device_name)
-		token = m.client.Subscribe(topic, 1, nil)
+	err := m.configureTopic(bridgeTopics)
+	if err != nil {
+		return err
+	}
+
+	err = m.configureTopic(m.topics)
+	if err != nil {
+		fmt.Println("Configure user topics error: ", err.Error())
+	}
+	return nil
+}
+
+func (m *MqttService) configureTopic(topics []string) error {
+	for _, t := range topics {
+
+		topic := fmt.Sprintf("%s%s", baseTopic, t)
+		token := m.client.Subscribe(topic, 1, nil)
 
 		if token.Wait() && token.Error() != nil {
 			return token.Error()
 		}
-		fmt.Printf("subscribe zigbee2mqtt topic: %s\n", topic)
+		fmt.Printf("Subscribe zigbee2mqtt topic: %s\n", topic)
 	}
-
 	return nil
 }
 
