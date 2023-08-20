@@ -33,6 +33,14 @@ type HubController struct {
 	AvailabilityTimeoutinSeconds int
 }
 
+// if we have handlers, in device handler
+// run logic
+// new data, store...
+// else do nothing....
+
+// pass callback to handler on  success, so on device success send mqtt
+// on sth else success do sth else
+
 func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Repository, ctx context.Context) *HubController {
 	h := &HubController{
 		eventHub:                     ws,
@@ -91,6 +99,9 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 		}
 	})
 
+	// setup
+	h.mqtt.Connect()
+	h.mqtt.Publish("zigbee2mqtt/bridge/devices", nil) // get devices for setup stuff
 	return h
 }
 
