@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"node-herder/transport/controllers"
-	"node-herder/transport/ws"
+	"node-herder/internal/controllers"
+	"node-herder/internal/ws"
 	"node-herder/utils"
 	"regexp"
 

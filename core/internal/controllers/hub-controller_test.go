@@ -3,10 +3,10 @@ package controllers_test
 import (
 	"context"
 	"encoding/json"
+	"node-herder/internal/controllers"
+	"node-herder/internal/ws"
 	"node-herder/mocks"
 	repository "node-herder/repository/devices"
-	"node-herder/transport/controllers"
-	"node-herder/transport/ws"
 	"testing"
 	"time"
 )

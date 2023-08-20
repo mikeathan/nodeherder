@@ -3,7 +3,7 @@ package automations
 import (
 	"encoding/json"
 	"fmt"
-	"node-herder/transport/mqtt"
+	"node-herder/internal/mqtt"
 )
 
 type MqttAction struct {

@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"net/http"
+	"node-herder/internal/api"
+	"node-herder/internal/controllers"
+	"node-herder/internal/mqtt"
+	"node-herder/internal/ws"
 	"node-herder/models/devices"
-	"node-herder/transport/api"
-	"node-herder/transport/controllers"
-	"node-herder/transport/mqtt"
-	"node-herder/transport/ws"
 )
 
 func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, ctx context.Context) *api.ApiServer {

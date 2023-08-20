@@ -1,8 +1,8 @@
 package automations
 
 import (
-	"node-herder/transport/mqtt"
-	"node-herder/transport/ws"
+	"node-herder/internal/mqtt"
+	"node-herder/internal/ws"
 )
 
 type Event struct {

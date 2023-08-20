@@ -2,8 +2,8 @@ package automations
 
 import (
 	"errors"
-	"node-herder/models/bridge"
-	"node-herder/transport/mqtt"
+	"node-herder/internal/mqtt"
+	"node-herder/models/devices"
 	"time"
 )
 
@@ -39,7 +39,7 @@ func IsConfigured() bool {
 
 var _configured = false
 
-func Load(bridgeDevices []*bridge.BridgeDevice, mqtClient mqtt.MqttClient) error {
+func Load(bridgeDevices []*devices.BridgeDevice, mqtClient mqtt.MqttClient) error {
 
 	// fake input data
 	config := createMockConfiguration()

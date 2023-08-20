@@ -9,6 +9,7 @@ import (
 
 type Task interface {
 	OnFailure(error)
+	Process()
 }
 
 type WorkerPool struct {

@@ -2,9 +2,9 @@ package automations_test
 
 import (
 	"fmt"
+	"node-herder/internal/mqtt"
 	"node-herder/models/automations"
-	"node-herder/models/bridge"
-	"node-herder/transport/mqtt"
+	"node-herder/models/devices"
 	"testing"
 	"time"
 )
@@ -28,7 +28,7 @@ func TestMqttAction(t *testing.T) {
 	var messageHandler = func(id string, payload []byte) {
 		if id == "bridge/devices" {
 
-			devices, err := bridge.Parse(payload)
+			devices, err := devices.LoadBridgeDevices(payload)
 			if err != nil {
 				fmt.Println("error: ", err.Error())
 			}

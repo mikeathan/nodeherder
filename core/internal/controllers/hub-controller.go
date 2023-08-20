@@ -5,11 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"node-herder/internal/mqtt"
+	"node-herder/internal/ws"
 	"node-herder/models/automations"
-	"node-herder/models/bridge"
 	"node-herder/models/devices"
-	"node-herder/transport/mqtt"
-	"node-herder/transport/ws"
 	"node-herder/utils/pool"
 )
 
@@ -74,7 +73,7 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 		// we need mqtt message handler
 		if name == "bridge/devices" {
 
-			devices, err := bridge.Parse(payload)
+			devices, err := devices.LoadBridgeDevices(payload)
 			if err != nil {
 				fmt.Println("parsing devices error: ", err.Error())
 				return

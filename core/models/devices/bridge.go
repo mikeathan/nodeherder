@@ -1,4 +1,4 @@
-package bridge
+package devices
 
 import (
 	"encoding/json"
@@ -66,7 +66,7 @@ type BridgeDevice struct {
 	Type               string `json:"type"`
 }
 
-func Parse(payload []byte) ([]*BridgeDevice, error) {
+func LoadBridgeDevices(payload []byte) ([]*BridgeDevice, error) {
 	var bridgeDevices []*BridgeDevice
 	err := json.Unmarshal(payload, &bridgeDevices)
 	if err != nil {
@@ -77,7 +77,7 @@ func Parse(payload []byte) ([]*BridgeDevice, error) {
 }
 
 func FindByFriendlyName(payload []byte, friendlyName string) (*BridgeDevice, error) {
-	bridgeDevices, err := Parse(payload)
+	bridgeDevices, err := LoadBridgeDevices(payload)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func FindByFriendlyName(payload []byte, friendlyName string) (*BridgeDevice, err
 }
 
 func FindByExposeType(payload []byte, exposeType string) (*BridgeDevice, error) {
-	bridgeDevices, err := Parse(payload)
+	bridgeDevices, err := LoadBridgeDevices(payload)
 	if err != nil {
 		return nil, err
 	}

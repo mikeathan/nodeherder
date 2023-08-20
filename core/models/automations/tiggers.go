@@ -3,12 +3,12 @@ package automations
 import (
 	"errors"
 	"fmt"
-	"node-herder/models/bridge"
-	"node-herder/transport/mqtt"
+	"node-herder/internal/mqtt"
+	"node-herder/models/devices"
 	"time"
 )
 
-func (t *TimerTrigger) configure(bridgeDevices []*bridge.BridgeDevice, client mqtt.MqttClient) error {
+func (t *TimerTrigger) configure(bridgeDevices []*devices.BridgeDevice, client mqtt.MqttClient) error {
 	fmt.Println("Loading trigger:", t.Name)
 	if t.Type != "timer" {
 		return errors.New("unsupported trigger type ")
