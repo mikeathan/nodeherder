@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"node-herder/transport/api"
-	"node-herder/transport/ws"
+	"node-herder/internal/api"
+	"node-herder/internal/ws"
 	"testing"
 
 	"github.com/gorilla/websocket"

@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
@@ -57,14 +56,4 @@ func (c *HubController) Enqueue(id string, payload map[string]interface{}, connT
 	}
 
 	return c.handler.ProcessMessage(id, bytes, connType)
-}
-
-func convertToMap(payload []byte) (map[string]interface{}, error) {
-
-	deviceMap := make(map[string]interface{})
-	err := json.Unmarshal(payload, &deviceMap)
-	if err != nil {
-		return nil, errors.New("invalid device data")
-	}
-	return deviceMap, nil
 }

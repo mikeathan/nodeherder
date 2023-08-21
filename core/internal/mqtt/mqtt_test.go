@@ -2,7 +2,7 @@ package mqtt_test
 
 import (
 	"fmt"
-	"node-herder/transport/mqtt"
+	"node-herder/internal/mqtt"
 	"testing"
 	"time"
 

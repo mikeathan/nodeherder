@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
@@ -156,4 +158,14 @@ func (m *messageHandler) Register() error {
 	})
 
 	return nil
+}
+
+func convertToMap(payload []byte) (map[string]interface{}, error) {
+
+	deviceMap := make(map[string]interface{})
+	err := json.Unmarshal(payload, &deviceMap)
+	if err != nil {
+		return nil, errors.New("invalid device data")
+	}
+	return deviceMap, nil
 }
