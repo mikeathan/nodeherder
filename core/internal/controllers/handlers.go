@@ -13,7 +13,7 @@ import (
 
 type messageTask struct {
 	Id      string
-	Payload map[string]interface{}
+	Payload []byte
 	Type    string
 	h       handler
 }
@@ -22,7 +22,7 @@ func (m *messageTask) OnFailure(err error) {
 	fmt.Printf("Job: %s Error: %s", m.Id, err.Error())
 }
 
-func (m *messageTask) Process() {
+func (m *messageTask) Process() error {
 	m.h.ProcessPayload(m.Id, m.Type, m.Payload)
 }
 
@@ -37,7 +37,6 @@ func newBridgeHandler(mqtt mqtt.MqttClient) *bridgeHandler {
 	return &bridgeHandler{
 		mqtt: mqtt, //?????
 	}
-
 }
 
 func (b *bridgeHandler) ProcessPayload(id string, connType string, payload []byte) error {
@@ -79,6 +78,10 @@ func newDeviceHandler(repo devices.Repository, eventHub ws.EventHub) *deviceHand
 
 func (c *deviceHandler) ProcessPayload(id string, connType string, payload []byte) error {
 
+	// TODO:
+	// Hanlde API payload
+	// if connType == "http" do differnt parsing
+	//
 	dataMap, err := convertToMap(payload)
 	if err != nil {
 		fmt.Println("error: failed to convert mqtt payload to map")
@@ -139,33 +142,13 @@ func (m *messageHandler) Register() error {
 
 				h = newDeviceHandler(m.repo, m.eventHub)
 				m.handlers[id] = h
-
-				// procFunc := func(task pool.Task) error {
-				// 	pTask, ok := task.(*processorTask)
-				// 	if !ok {
-				// 		return errors.New("invalid task type")
-				// 	}
-
-				// 	return h.ProcessPayload(pTask.Id, pTask.Type, pTask.Payload)
-				// }
-				// m.wp = pool.NewWorkerPool(1, m.ctx)
-				// m.wp.Run(procFunc)
-				//
-				// m.Enqueue(id, dataMap, "mqtt") // ??????????????
 			}
 		}
 
-		//h.ProcessPayload(id, "mqtt", payload)
-
-		m.wp.AddTask(&messageTask{Id: id, Type: "mqtt", Payload: nil, h: h})
+		m.wp.AddTask(&messageTask{Id: id, Type: "mqtt", Payload: payload, h: h})
 	})
 
 	return nil
-}
-
-func (m *messageHandler) EnqueueMqtt(name string, payload []byte) {
-
-	//m.wp.AddTask(&processorTask{Id: name, Payload: payload, Type: "mqtt"})
 }
 
 func (m *messageHandler) EnqueueHttp(name string, payload map[string]interface{}) {
