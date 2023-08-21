@@ -23,7 +23,7 @@ func (m *messageTask) OnFailure(err error) {
 }
 
 func (m *messageTask) Process() error {
-	m.h.ProcessPayload(m.Id, m.Type, m.Payload)
+	return m.h.ProcessPayload(m.Id, m.Type, m.Payload)
 }
 
 type handler interface {
@@ -108,8 +108,8 @@ func (c *deviceHandler) ProcessPayload(id string, connType string, payload []byt
 
 type messageHandler struct {
 	mqtt     mqtt.MqttClient
-	ctx      context.Context
 	wp       *pool.WorkerPool
+	ctx      context.Context
 	repo     devices.Repository
 	eventHub ws.EventHub
 	handlers map[string]handler
@@ -120,37 +120,40 @@ func newMessageHandler(repo devices.Repository, mqtt mqtt.MqttClient, eventHub w
 		repo:     repo,
 		mqtt:     mqtt,
 		ctx:      ctx,
-		wp:       &pool.WorkerPool{},
 		handlers: map[string]handler{},
+		wp:       &pool.WorkerPool{},
 	}
 	return h
 }
 
+func (m *messageHandler) ProcessMessage(id string, payload []byte, connType string) error {
+
+	var h handler
+	if _, ok := m.handlers[id]; !ok {
+
+		if strings.HasPrefix(id, "bridge") {
+
+			h = newBridgeHandler(m.mqtt)
+			m.handlers[id] = h
+
+		} else {
+
+			h = newDeviceHandler(m.repo, m.eventHub)
+			m.handlers[id] = h
+		}
+	}
+
+	return m.wp.AddTask(&messageTask{Id: id, Type: connType, Payload: payload, h: h})
+}
+
 func (m *messageHandler) Register() error {
 
+	m.wp = pool.NewWorkerPool(1, m.ctx)
+	m.wp.Run()
+
 	m.mqtt.OnMessageHandler(func(id string, payload []byte) {
-
-		var h handler
-		if _, ok := m.handlers[id]; !ok {
-
-			if strings.HasPrefix(id, "bridge") {
-
-				h = newBridgeHandler(m.mqtt)
-				m.handlers[id] = h
-
-			} else {
-
-				h = newDeviceHandler(m.repo, m.eventHub)
-				m.handlers[id] = h
-			}
-		}
-
-		m.wp.AddTask(&messageTask{Id: id, Type: "mqtt", Payload: payload, h: h})
+		m.ProcessMessage(id, payload, "mqtt")
 	})
 
 	return nil
-}
-
-func (m *messageHandler) EnqueueHttp(name string, payload map[string]interface{}) {
-	//m.wp.AddTask(&processorTask{Id: name, Payload: payload, Type: "http"})
 }

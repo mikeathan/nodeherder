@@ -151,7 +151,11 @@ func (h *DataCollectorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	h.hub.Enqueue(id, payload, "http")
+	err = h.hub.Enqueue(id, payload, "http")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
