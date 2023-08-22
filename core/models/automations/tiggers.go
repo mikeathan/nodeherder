@@ -47,7 +47,7 @@ func (t *TimerTrigger) configure(bridgeDevices []*devices.BridgeDevice, client m
 				// need to fix state, convert it to expected one: { "state": "ON" }'
 				for _, expose := range device.Definition.Exposes {
 					for _, feature := range expose.Features {
-						if feature.Property == action.Property {
+						if feature.Property == action.Property { // state property only!
 
 							// for now we only support "state" property
 							if action.Value == true {
@@ -82,8 +82,6 @@ func (t *TimerTrigger) Trigger() error {
 }
 
 func (t *TimerTrigger) run() {
-
-	// c: interface conversion: *automations.TimeDurationCondition is not automations.TimerCondition: missing method IsRepeat
 
 	for _, cond := range t.Conditions {
 

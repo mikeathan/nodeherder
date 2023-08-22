@@ -51,8 +51,6 @@ func main() {
 			"Tuya ZY-M100",
 			"Hive motion sensor",
 			"Hive light 1",
-			"bridge/devices",
-			"bridge/logging",
 		},
 	}
 

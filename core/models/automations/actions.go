@@ -24,6 +24,7 @@ func (a *MqttAction) Run() error {
 		return err
 	}
 
-	a.client.Publish(fmt.Sprintf("%s/set", a.Friendlyname), payload)
+	msg := fmt.Sprintf("%s/set", a.Friendlyname)
+	a.client.Publish(msg, payload)
 	return nil
 }
