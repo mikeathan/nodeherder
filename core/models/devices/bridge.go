@@ -3,6 +3,7 @@ package devices
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 )
 
 type BridgeDevice struct {
@@ -66,6 +67,34 @@ type BridgeDevice struct {
 	Type               string `json:"type"`
 }
 
+func LoadDevices(payload []byte) error {
+	var bridgeDevices []*BridgeDevice
+	err := json.Unmarshal(payload, &bridgeDevices)
+	if err != nil {
+		return err
+	}
+	for _, bd := range bridgeDevices {
+		fmt.Println("friendlename:", bd.FriendlyName)
+		fmt.Println("id", bd.IeeeAddress)
+		fmt.Println("disabled:", bd.Disabled)
+		fmt.Println("Type:", bd.Type)
+
+		for _, expose := range bd.Definition.Exposes {
+			fmt.Println("Property:", expose.Property)
+			for _, feature := range expose.Features {
+				fmt.Println("Feature Property:", feature.Property)
+				fmt.Println("ValueMax:", feature.ValueMax)
+				fmt.Println("ValueMin:", feature.ValueMin)
+				fmt.Println("ValueOff:", feature.ValueOff)
+				fmt.Println("ValueOn:", feature.ValueOn)
+			}
+		}
+
+		fmt.Println("------------------------------")
+	}
+
+	return nil
+}
 func LoadBridgeDevices(payload []byte) ([]*BridgeDevice, error) {
 	var bridgeDevices []*BridgeDevice
 	err := json.Unmarshal(payload, &bridgeDevices)

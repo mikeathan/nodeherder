@@ -76,7 +76,7 @@ func createMockConfiguration() *configuration {
 	ma := &MqttAction{}
 	ma.client = nil // todo: setup client
 
-	ma.Friendlyname = "Hive light 1"
+	ma.Friendlyname = "Attic light"
 	ma.Property = "state"
 	ma.Type = "light"
 	ma.Value = false

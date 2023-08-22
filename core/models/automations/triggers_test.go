@@ -28,6 +28,12 @@ func TestMqttAction(t *testing.T) {
 	var messageHandler = func(id string, payload []byte) {
 		if id == "bridge/devices" {
 
+			//TEST
+			err := devices.LoadDevices(payload)
+			if err != nil {
+				fmt.Println("error: ", err.Error())
+			}
+			//TEST
 			devices, err := devices.LoadBridgeDevices(payload)
 			if err != nil {
 				fmt.Println("error: ", err.Error())
