@@ -15,16 +15,21 @@ func timeTrack(start time.Time, name string) {
 }
 
 type mockTask struct {
-	Id      string
-	EventId int
+	Id         string
+	EventId    int
+	procesFunc func(task pool.Task) error
+}
+
+func (m *mockTask) Process() error {
+	return m.procesFunc(m)
 }
 
 func (m *mockTask) OnFailure(err error) {
 	fmt.Printf("Job: %s EventId: %d Error: %s", m.Id, m.EventId, err.Error())
 }
 
-func createTask(id string, eventId int) pool.Task {
-	return &mockTask{Id: id, EventId: eventId}
+func createTask(id string, eventId int, processFunc func(task pool.Task) error) pool.Task {
+	return &mockTask{Id: id, EventId: eventId, procesFunc: processFunc}
 }
 
 func TestAsyncFuncProcessingAllJobs(t *testing.T) {
@@ -42,7 +47,7 @@ func TestAsyncFuncProcessingAllJobs(t *testing.T) {
 	}
 
 	worker := pool.NewWorkerPool(1, ctx)
-	worker.Run(procesFunc)
+	worker.Run()
 
 	var processed = false
 	numOfActivies := 3
@@ -61,7 +66,7 @@ func TestAsyncFuncProcessingAllJobs(t *testing.T) {
 			for j := 0; j < numOfTasks; j++ {
 				eventId := j
 
-				job := createTask(name, eventId)
+				job := createTask(name, eventId, procesFunc)
 				worker.AddTask(job)
 			}
 		}()
@@ -105,14 +110,14 @@ func TestCancelContextStopsWorker(t *testing.T) {
 
 		ctx, cancelCtx := context.WithCancel(context.Background())
 		worker := pool.NewWorkerPool(expectedFinishedJobs, ctx)
-		worker.Run(procesFunc)
+		worker.Run()
 		numOfTasks := 10
 
 		go func() {
 			for j := 1; j <= numOfTasks; j++ {
 				eventId := j
 				func() {
-					job := createTask("test", eventId)
+					job := createTask("test", eventId, procesFunc)
 					fmt.Println("adding", eventId)
 					worker.AddTask(job)
 				}()
