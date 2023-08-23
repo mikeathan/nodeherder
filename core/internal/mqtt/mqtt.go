@@ -26,7 +26,6 @@ type MqttConfig struct {
 	Broker   string
 	Username string
 	Password string
-	Topics   []string
 }
 
 var _connectHandler mqttlib.OnConnectHandler = func(client mqttlib.Client) {

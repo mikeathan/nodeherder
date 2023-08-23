@@ -26,6 +26,7 @@ func (m *messageTask) Process() error {
 type handler interface {
 	ProcessPayload(id string, connType string, payload []byte) error
 }
+
 type bridgeHandler struct {
 	mqtt       mqtt.MqttClient
 	configured bool

@@ -67,21 +67,21 @@ func (c *HubController) Enqueue(id string, payload map[string]interface{}, connT
 
 func (m *HubController) ProcessMessage(id string, payload []byte, connType string) error {
 
-	var h handler
 	if _, ok := m.handlers[id]; !ok {
 
 		if strings.HasPrefix(id, "bridge") {
 
-			h = newBridgeHandler(m.mqtt)
+			var h = newBridgeHandler(m.mqtt)
 			m.handlers[id] = h
 
 		} else {
 
-			h = newDeviceHandler(m.repo, m.eventHub)
+			var h = newDeviceHandler(m.repo, m.eventHub)
 			m.handlers[id] = h
 		}
 	}
 
+	var h handler = m.handlers[id]
 	return m.wp.AddTask(&messageTask{Id: id, Type: connType, Payload: payload, h: h})
 }
 

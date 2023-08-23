@@ -9,15 +9,17 @@ import (
 	mqttlib "github.com/eclipse/paho.mqtt.golang"
 )
 
-func GetMqttConfig(broker string, topics ...string) mqtt.MqttConfig {
+func GetMqttConfig(broker string) mqtt.MqttConfig {
 	return mqtt.MqttConfig{
 		Username: "sinkhole",
 		Password: "mqtt2023",
 		Broker:   broker,
-		Topics:   topics,
 	}
 }
 
+// TODO: !!!!!!!!!!!!!1
+// needs fixing , it fails due to registerig bridge and thats thefirst message we get
+// add some conditional topic parsing
 func TestMqttClientReceivesMessage(t *testing.T) {
 	var broker = "192.168.50.179:1883"
 	var topic = "device1"
@@ -29,14 +31,16 @@ func TestMqttClientReceivesMessage(t *testing.T) {
 		}
 	}
 
-	cfg := GetMqttConfig(broker, topic)
+	cfg := GetMqttConfig(broker)
 	mqttClient := mqtt.NewMqttClient(cfg)
+
 	mqttClient.OnMessageHandler(messageHandler)
 	mqttClient.Connect()
-	StartMqttNodeClient(cfg, message, 2)
+	mqttClient.ConfigureTopic(topic)
+	StartMqttNodeClient(cfg, topic, message, 2)
 }
 
-func StartMqttNodeClient(cfg mqtt.MqttConfig, message string, nEvents int) {
+func StartMqttNodeClient(cfg mqtt.MqttConfig, topic string, message string, nEvents int) {
 
 	// some fake external device mqqtclient
 	var opts = mqttlib.NewClientOptions()
@@ -55,10 +59,10 @@ func StartMqttNodeClient(cfg mqtt.MqttConfig, message string, nEvents int) {
 	}
 
 	//
-	var topic = fmt.Sprintf("zigbee2mqtt/%s", cfg.Topics[0])
+	var t = fmt.Sprintf("zigbee2mqtt/%s", topic)
 	var closeChan = make(chan bool)
 
-	go publishFunc(closeChan, client, topic, message, nEvents)
+	go publishFunc(closeChan, client, t, message, nEvents)
 
 	<-closeChan
 	fmt.Printf("Device Shutdown \n")

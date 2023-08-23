@@ -46,12 +46,6 @@ func main() {
 		Username: "sinkhole",
 		Password: "mqtt2023",
 		Broker:   "192.168.50.179:1883",
-		Topics: []string{
-			"TH01",
-			"Tuya ZY-M100",
-			"Hive motion sensor",
-			"Hive light 1",
-		},
 	}
 
 	hub := RegisterHub(port, repo, mqttConfig, ctx)

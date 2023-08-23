@@ -18,12 +18,16 @@ func TestMqttAction(t *testing.T) {
 		Username: "sinkhole",
 		Password: "mqtt2023",
 		Broker:   "192.168.50.179:1883",
-		Topics: []string{
-			"bridge/devices",
-			"bridge/logging",
-		},
 	}
 	mqtt := mqtt.NewMqttClient(mqttConfig)
+	topics := []string{
+		"bridge/devices",
+		"bridge/logging",
+	}
+
+	for _, t := range topics {
+		mqtt.ConfigureTopic(t)
+	}
 
 	var messageHandler = func(id string, payload []byte) {
 		if id == "bridge/devices" {
