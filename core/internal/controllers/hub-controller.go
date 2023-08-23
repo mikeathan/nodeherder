@@ -3,11 +3,13 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/utils/pool"
+	"strings"
 )
 
 type apiTask struct {
@@ -24,8 +26,8 @@ type HubController struct {
 	eventHub ws.EventHub
 	mqtt     mqtt.MqttClient
 	repo     devices.Repository
-	handler  *messageHandler
-	pool     *pool.WorkerPool
+	wp       *pool.WorkerPool
+	handlers map[string]handler
 }
 
 func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Repository, ctx context.Context) *HubController {
@@ -33,13 +35,18 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 		eventHub: ws,
 		mqtt:     mqtt,
 		repo:     repo,
+		handlers: map[string]handler{},
 	}
 
-	h.handler = newMessageHandler(repo, mqtt, ws, ctx)
-	h.handler.Register()
+	h.wp = pool.NewWorkerPool(1, ctx)
+	h.wp.Run()
 
 	h.eventHub.OnConnected(func() interface{} {
 		return h.repo.ListAllDevices()
+	})
+
+	h.mqtt.OnMessageHandler(func(id string, payload []byte) {
+		h.ProcessMessage(id, payload, "mqtt")
 	})
 
 	// setup
@@ -55,5 +62,35 @@ func (c *HubController) Enqueue(id string, payload map[string]interface{}, connT
 		return err
 	}
 
-	return c.handler.ProcessMessage(id, bytes, connType)
+	return c.ProcessMessage(id, bytes, connType)
+}
+
+func (m *HubController) ProcessMessage(id string, payload []byte, connType string) error {
+
+	var h handler
+	if _, ok := m.handlers[id]; !ok {
+
+		if strings.HasPrefix(id, "bridge") {
+
+			h = newBridgeHandler(m.mqtt)
+			m.handlers[id] = h
+
+		} else {
+
+			h = newDeviceHandler(m.repo, m.eventHub)
+			m.handlers[id] = h
+		}
+	}
+
+	return m.wp.AddTask(&messageTask{Id: id, Type: connType, Payload: payload, h: h})
+}
+
+func convertToMap(payload []byte) (map[string]interface{}, error) {
+
+	deviceMap := make(map[string]interface{})
+	err := json.Unmarshal(payload, &deviceMap)
+	if err != nil {
+		return nil, errors.New("invalid device data")
+	}
+	return deviceMap, nil
 }

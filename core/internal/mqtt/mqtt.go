@@ -9,7 +9,7 @@ import (
 
 type MqttClient interface {
 	Connect() error
-	AddTopic(topic string)
+	ConfigureTopic(topic string) error
 	Disconnect()
 	OnMessageHandler(handler func(string, []byte))
 	Publish(friendlyName string, payload interface{})
@@ -51,7 +51,6 @@ func NewMqttClient(config MqttConfig) MqttClient {
 
 	var client = &MqttService{
 		broker:         config.Broker,
-		topics:         []string{},
 		username:       config.Username,
 		password:       config.Password,
 		client:         nil,
@@ -59,14 +58,10 @@ func NewMqttClient(config MqttConfig) MqttClient {
 		messageHandler: func(s string, b []byte) {},
 	}
 
-	for _, topic := range config.Topics {
-		client.AddTopic(topic)
-	}
 	return client
 }
 
 type MqttService struct {
-	topics         []string
 	client         mqttlib.Client
 	broker         string
 	username       string
@@ -109,35 +104,27 @@ func (m *MqttService) Connect() error {
 		return token.Error()
 	}
 
-	err := m.configureTopic(bridgeTopics)
-	if err != nil {
-		return err
-	}
-
-	err = m.configureTopic(m.topics)
-	if err != nil {
-		fmt.Println("Configure user topics error: ", err.Error())
-	}
-	return nil
-}
-
-func (m *MqttService) configureTopic(topics []string) error {
-	for _, t := range topics {
-
-		topic := fmt.Sprintf("%s%s", baseTopic, t)
-		token := m.client.Subscribe(topic, 1, nil)
-
-		if token.Wait() && token.Error() != nil {
-			return token.Error()
+	for _, topic := range bridgeTopics {
+		err := m.ConfigureTopic(topic)
+		if err != nil {
+			fmt.Println("error configuring topic: ", topic, err.Error())
 		}
-		fmt.Printf("Subscribe zigbee2mqtt topic: %s\n", topic)
 	}
+
 	return nil
 }
 
-func (m *MqttService) AddTopic(topic string) {
-	m.topics = append(m.topics, topic)
-	fmt.Printf("Topic %s added\n", topic)
+func (m *MqttService) ConfigureTopic(topic string) error {
+
+	fullTopic := fmt.Sprintf("%s%s", baseTopic, topic)
+	token := m.client.Subscribe(fullTopic, 1, nil)
+
+	if token.Wait() && token.Error() != nil {
+		return token.Error()
+	}
+	fmt.Printf("Subscribe zigbee2mqtt topic: %s\n", topic)
+
+	return nil
 }
 
 func (m *MqttService) Disconnect() {

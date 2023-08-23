@@ -44,7 +44,7 @@ type Device struct {
 	PowerSource             string         `json:"power_source"`
 	Sensors                 map[string]any `json:"sensors"`
 	Stats                   map[string]any `json:"stats"`
-	availabilityTicker      time.Ticker    `json:"-"`
+	availabilityTicker      time.Ticker
 	availablityDone         chan bool
 	availabilityTimeoutSecs int
 }

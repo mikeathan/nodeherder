@@ -36,10 +36,11 @@ func (m *MockMqttClient) Connect() error {
 func (m *MockMqttClient) WithMessageHandler(messageHandler func(client mqtt.Client, msg mqtt.Message)) {
 	fmt.Println("Mock WithMessageHandler")
 }
-func (m *MockMqttClient) AddTopic(topic string) {
-	fmt.Println("Mock BroaAddTopicdcast")
-
+func (m *MockMqttClient) ConfigureTopic(topic string) error {
+	fmt.Println("Mock ConfigureTopic")
+	return nil
 }
+
 func (m *MockMqttClient) Disconnect() {
 	fmt.Println("Mock Disconnect")
 }

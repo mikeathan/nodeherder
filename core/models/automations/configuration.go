@@ -33,12 +33,6 @@ func newConfiguration() *configuration {
 	}
 }
 
-func IsConfigured() bool {
-	return _configured
-}
-
-var _configured = false
-
 func Load(bridgeDevices []*devices.BridgeDevice, mqtClient mqtt.MqttClient) error {
 
 	// fake input data
@@ -57,7 +51,6 @@ func Load(bridgeDevices []*devices.BridgeDevice, mqtClient mqtt.MqttClient) erro
 		}
 	}
 
-	_configured = true
 	return nil
 }
 
