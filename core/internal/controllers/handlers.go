@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
-	"node-herder/models/automations"
 	"node-herder/models/devices"
 )
 
@@ -49,11 +48,12 @@ func (b *bridgeHandler) ProcessPayload(id string, connType string, payload []byt
 		}
 
 		if !b.configured {
-			automations.Load(devices, b.mqtt)
-			if err != nil {
-				fmt.Println("loading automations error: ", err.Error())
-				return err
-			}
+			// WIP
+			// automations.Load(devices, b.mqtt)
+			// if err != nil {
+			// 	fmt.Println("loading automations error: ", err.Error())
+			// 	return err
+			// }
 
 			for _, device := range devices {
 				if device.Disabled {
