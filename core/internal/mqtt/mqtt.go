@@ -1,8 +1,10 @@
 package mqtt
 
 import (
+	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	mqttlib "github.com/eclipse/paho.mqtt.golang"
 )
@@ -26,14 +28,29 @@ type MqttConfig struct {
 	Broker   string
 	Username string
 	Password string
+	Ctx      context.Context
 }
 
-var _connectHandler mqttlib.OnConnectHandler = func(client mqttlib.Client) {
-	fmt.Println("mqtt Client connected")
+func (m *MqttService) onConnectedHandler() func(client mqttlib.Client) {
+	return func(client mqttlib.Client) {
+		fmt.Println("mqtt Client connected")
+	}
 }
 
-var _connectionLostHandler mqttlib.ConnectionLostHandler = func(client mqttlib.Client, err error) {
-	fmt.Printf("mqtt Connection Lost: %s\n", err.Error())
+func (m *MqttService) connectionLostHandler() func(client mqttlib.Client, err error) {
+	return func(client mqttlib.Client, err error) {
+
+		fmt.Printf("mqtt Connection Lost: %s\n", err.Error())
+		// m.mu.Lock()
+		// defer m.mu.Unlock()
+
+		// fmt.Println("reconnecting")
+
+		// cerr := m.Connect()
+		// if cerr != nil {
+		// 	fmt.Println(cerr.Error())
+		// }
+	}
 }
 
 func (m *MqttService) messagePubHandler() func(client mqttlib.Client, msg mqttlib.Message) {
@@ -55,6 +72,7 @@ func NewMqttClient(config MqttConfig) MqttClient {
 		client:         nil,
 		cliendId:       "sinkhole-z2m",
 		messageHandler: func(s string, b []byte) {},
+		ctx:            config.Ctx,
 	}
 
 	return client
@@ -67,6 +85,8 @@ type MqttService struct {
 	password       string
 	cliendId       string
 	messageHandler func(string, []byte)
+	ctx            context.Context
+	mu             sync.RWMutex
 }
 
 func sanitizeTopic(topic string) string {
@@ -93,8 +113,8 @@ func (m *MqttService) Connect() error {
 	options.Password = m.password
 
 	options.SetDefaultPublishHandler(m.messagePubHandler())
-	options.OnConnect = _connectHandler
-	options.OnConnectionLost = _connectionLostHandler
+	options.OnConnect = m.onConnectedHandler()
+	options.OnConnectionLost = m.connectionLostHandler()
 
 	m.client = mqttlib.NewClient(options)
 	token := m.client.Connect()
