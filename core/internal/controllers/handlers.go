@@ -56,11 +56,11 @@ func (b *bridgeHandler) ProcessPayload(id string, connType string, payload []byt
 			// }
 
 			for _, device := range devices {
-				if device.Disabled {
+				if device.Disabled || device.Type == "Coordinator" || !device.InterviewCompleted {
 					continue
 				}
 
-				err := b.mqtt.ConfigureTopic(device.FriendlyName)
+				err := b.mqtt.AddTopic(device.FriendlyName)
 				if err != nil {
 					fmt.Println("error configuring topic: ", device.FriendlyName, err.Error())
 				}

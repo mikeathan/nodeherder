@@ -36,7 +36,7 @@ func TestMqttClientReceivesMessage(t *testing.T) {
 
 	mqttClient.OnMessageHandler(messageHandler)
 	mqttClient.Connect()
-	mqttClient.ConfigureTopic(topic)
+	mqttClient.AddTopic(topic)
 	StartMqttNodeClient(cfg, topic, message, 2)
 }
 

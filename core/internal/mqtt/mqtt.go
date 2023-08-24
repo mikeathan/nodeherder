@@ -1,17 +1,16 @@
 package mqtt
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"strings"
-	"sync"
 
 	mqttlib "github.com/eclipse/paho.mqtt.golang"
 )
 
 type MqttClient interface {
 	Connect() error
-	ConfigureTopic(topic string) error
+	AddTopic(topic string) error
 	Disconnect()
 	OnMessageHandler(handler func(string, []byte))
 	Publish(friendlyName string, payload interface{})
@@ -28,28 +27,18 @@ type MqttConfig struct {
 	Broker   string
 	Username string
 	Password string
-	Ctx      context.Context
 }
 
 func (m *MqttService) onConnectedHandler() func(client mqttlib.Client) {
 	return func(client mqttlib.Client) {
 		fmt.Println("mqtt Client connected")
+		m.subscribeTopics()
 	}
 }
 
 func (m *MqttService) connectionLostHandler() func(client mqttlib.Client, err error) {
 	return func(client mqttlib.Client, err error) {
-
 		fmt.Printf("mqtt Connection Lost: %s\n", err.Error())
-		// m.mu.Lock()
-		// defer m.mu.Unlock()
-
-		// fmt.Println("reconnecting")
-
-		// cerr := m.Connect()
-		// if cerr != nil {
-		// 	fmt.Println(cerr.Error())
-		// }
 	}
 }
 
@@ -72,7 +61,7 @@ func NewMqttClient(config MqttConfig) MqttClient {
 		client:         nil,
 		cliendId:       "sinkhole-z2m",
 		messageHandler: func(s string, b []byte) {},
-		ctx:            config.Ctx,
+		topics:         bridgeTopics,
 	}
 
 	return client
@@ -85,8 +74,7 @@ type MqttService struct {
 	password       string
 	cliendId       string
 	messageHandler func(string, []byte)
-	ctx            context.Context
-	mu             sync.RWMutex
+	topics         []string
 }
 
 func sanitizeTopic(topic string) string {
@@ -111,11 +99,14 @@ func (m *MqttService) Connect() error {
 	options.SetClientID(m.cliendId)
 	options.Username = m.username
 	options.Password = m.password
+	options.AutoReconnect = true
 
 	options.SetDefaultPublishHandler(m.messagePubHandler())
 	options.OnConnect = m.onConnectedHandler()
 	options.OnConnectionLost = m.connectionLostHandler()
-
+	options.SetReconnectingHandler(func(c mqttlib.Client, options *mqttlib.ClientOptions) {
+		fmt.Println("...... mqtt reconnecting ......")
+	})
 	m.client = mqttlib.NewClient(options)
 	token := m.client.Connect()
 
@@ -123,17 +114,22 @@ func (m *MqttService) Connect() error {
 		return token.Error()
 	}
 
-	for _, topic := range bridgeTopics {
-		err := m.ConfigureTopic(topic)
-		if err != nil {
-			fmt.Println("error configuring topic: ", topic, err.Error())
-		}
-	}
-
 	return nil
 }
 
-func (m *MqttService) ConfigureTopic(topic string) error {
+func (m *MqttService) subscribeTopics() {
+	// fix
+	//  not currently connected and ResumeSubs not set
+	for _, topic := range m.topics {
+		fmt.Printf("Subscribe topic: %s\n", topic)
+		err := m.subscribe(topic)
+		if err != nil {
+			fmt.Printf("%s failed: %s \n", topic, err.Error())
+		}
+	}
+}
+
+func (m *MqttService) subscribe(topic string) error {
 
 	fullTopic := fmt.Sprintf("%s%s", baseTopic, topic)
 	token := m.client.Subscribe(fullTopic, 1, nil)
@@ -141,8 +137,22 @@ func (m *MqttService) ConfigureTopic(topic string) error {
 	if token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
-	fmt.Printf("Subscribe zigbee2mqtt topic: %s\n", topic)
+	return nil
+}
 
+func (m *MqttService) AddTopic(topic string) error {
+
+	for _, t := range m.topics {
+		if t == topic {
+			return errors.New("topic is subscribed")
+		}
+	}
+	fmt.Printf("Add topic: %s\n", topic)
+	err := m.subscribe(topic)
+	if err != nil {
+		fmt.Printf("%s failed: %s \n", topic, err.Error())
+	}
+	m.topics = append(m.topics, topic)
 	return nil
 }
 

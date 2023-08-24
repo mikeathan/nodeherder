@@ -26,7 +26,7 @@ func TestMqttAction(t *testing.T) {
 	}
 
 	for _, t := range topics {
-		mqtt.ConfigureTopic(t)
+		mqtt.AddTopic(t)
 	}
 
 	var messageHandler = func(id string, payload []byte) {
