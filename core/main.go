@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	hub "node-herder/internal"
 	"node-herder/internal/mqtt"
 	repository "node-herder/repository/devices"
 	"os"
@@ -48,8 +49,8 @@ func main() {
 		Broker:   "192.168.50.179:1883",
 	}
 
-	hub := RegisterHub(port, repo, mqttConfig, ctx)
-	hub.Listen()
+	h := hub.Register(port, repo, mqttConfig, ctx)
+	h.Listen()
 
 	fmt.Println("Exited")
 }

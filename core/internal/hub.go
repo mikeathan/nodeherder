@@ -1,4 +1,4 @@
-package main
+package hub
 
 import (
 	"context"
@@ -26,7 +26,7 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, ctx c
 	return apiServer
 }
 
-func RegisterHub(port int, repo devices.Repository, config mqtt.MqttConfig, ctx context.Context) *api.ApiServer {
+func Register(port int, repo devices.Repository, config mqtt.MqttConfig, ctx context.Context) *api.ApiServer {
 
 	ws := ws.NewWsHub()
 	mqtt := mqtt.NewMqttClient(config)
