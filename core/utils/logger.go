@@ -4,48 +4,78 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	easy "github.com/t-tomalak/logrus-easy-formatter"
 )
 
+var logger *Logger
+var once sync.Once
+
+func GetInstance() *Logger {
+	once.Do(func() {
+		logger = newFileLogger("..logs/nodeherder.log")
+	})
+	return logger
+}
+
 type Logger struct {
-	log logrus.Logger
+	log  *logrus.Logger
+	file *os.File
 }
 
-func (l *Logger) Setup() {
-	l.log.SetLevel(log.WarnLevel)
-	l.log.SetOutput(os.Stdout)
-	l.log.Formatter = &logrus.TextFormatter{
+func newConsoleLogger() *Logger {
 
-		DisableColors:   true,
-		TimestampFormat: "2006-01-02 15:04:05",
-		FullTimestamp:   true,
-	}
-}
-
-func newLogger() *Logger {
-	logFile := "log.txt"
-	f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-	if err != nil {
-		fmt.Println("Failed to create logfile" + logFile)
-		panic(err)
-	}
-	defer f.Close()
-	log.SetOutput(f)
 	log := &logrus.Logger{
-		// Log into f file handler and on os.Stdout
-		Out:   io.MultiWriter(f, os.Stdout),
-		Level: logrus.DebugLevel,
+		Out:   os.Stdout,
+		Level: logrus.InfoLevel,
 		Formatter: &easy.Formatter{
 			TimestampFormat: "2006-01-02 15:04:05",
 			LogFormat:       "[%lvl%]: %time% - %msg%\n",
 		},
 	}
 
-	l := &Logger{log: *log}
-	return l
+	return &Logger{log: log}
+}
+
+func newFileLogger(logFile string) *Logger {
+
+	f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		fmt.Println("Failed to create logfile" + logFile)
+		panic(err)
+	}
+
+	log := &logrus.Logger{
+		Out:   io.MultiWriter(f, os.Stdout),
+		Level: logrus.InfoLevel,
+		Formatter: &easy.Formatter{
+			TimestampFormat: "2006-01-02 15:04:05",
+			LogFormat:       "[%lvl%]: %time% - %msg%\n",
+		},
+	}
+
+	return &Logger{log: log, file: f}
+}
+
+func (l *Logger) SetLevel(level string) {
+	ll, err := log.ParseLevel(level)
+	if err != nil {
+		l.Errorf("undefined level %s\n", level)
+		return
+	}
+
+	l.log.SetLevel(ll)
+	l.Infof("set level: %s\n", ll.String())
+}
+
+func (l *Logger) Close() {
+	if l.file != nil {
+		logger.Info("file logger disposed")
+		l.file.Close()
+	}
 }
 
 func (l *Logger) Debug(msg ...interface{}) {

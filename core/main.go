@@ -7,6 +7,7 @@ import (
 	hub "node-herder/internal"
 	"node-herder/internal/mqtt"
 	repository "node-herder/repository/devices"
+	logger "node-herder/utils"
 	"os"
 	"os/signal"
 	"syscall"
@@ -38,14 +39,14 @@ func main() {
 
 	ctx, cancelCtx := context.WithCancel(context.Background())
 
-	fmt.Println("Starting up server.")
+	logger.GetInstance().Info("starting up server")
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
 		defer close(c)
 		<-c
-		fmt.Println("SIGTERM signal notified")
+		logger.GetInstance().Warning("IGTERM signal notified")
 		cancelCtx()
 	}()
 
@@ -59,6 +60,5 @@ func main() {
 
 	h := hub.Register(args.port, repo, mqttConfig, ctx)
 	h.Listen()
-
-	fmt.Println("Exited")
+	logger.GetInstance().Info("exit")
 }
