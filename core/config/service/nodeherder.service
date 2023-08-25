@@ -7,7 +7,7 @@ After=network-online.target
 User=mikeathan
 Type=simple
 WorkingDirectory=/home/mikeathan/dev/node-herder/core
-ExecStart=/home/mikeathan/dev/node-herder/core/nodeherder
+ExecStart=/home/mikeathan/dev/node-herder/core/nodeherder -port 9080
 
 Restart=always
 
