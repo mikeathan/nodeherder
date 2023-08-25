@@ -17,9 +17,9 @@ var sensorWhitelist = map[string]int{
 	"state":             8,
 	"color_temp":        9,
 	"air_quality_score": 10,
-	"PM1.0":             11,
-	"PM2.5":             12,
-	"PM10.0":            13,
+	"pm1":               11,
+	"pm25":              12,
+	"pm10":              13,
 }
 var statsWhitelist = map[string]int{
 	"battery":      1,
