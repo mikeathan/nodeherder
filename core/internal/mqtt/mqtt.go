@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	mqttlib "github.com/eclipse/paho.mqtt.golang"
 )
@@ -33,7 +34,7 @@ type MqttConfig struct {
 func (m *MqttService) onConnectedHandler() func(client mqttlib.Client) {
 	return func(client mqttlib.Client) {
 		fmt.Println("mqtt Client connected")
-		m.subscribeTopics()
+
 	}
 }
 
@@ -63,6 +64,7 @@ func NewMqttClient(config MqttConfig) MqttClient {
 		clientId:       "sinkhole-z2m",
 		messageHandler: func(s string, b []byte) {},
 		topics:         bridgeTopics,
+		mu:             sync.Mutex{},
 	}
 
 	if config.ClientType != "" {
@@ -80,6 +82,7 @@ type MqttService struct {
 	clientId       string
 	messageHandler func(string, []byte)
 	topics         []string
+	mu             sync.Mutex
 }
 
 func sanitizeTopic(topic string) string {
@@ -119,12 +122,12 @@ func (m *MqttService) Connect() error {
 		return token.Error()
 	}
 
+	m.subscribeTopics()
 	return nil
 }
 
 func (m *MqttService) subscribeTopics() {
-	// fix
-	//  not currently connected and ResumeSubs not set
+
 	for _, topic := range m.topics {
 		fmt.Printf("Subscribe topic: %s\n", topic)
 		err := m.subscribe(topic)
