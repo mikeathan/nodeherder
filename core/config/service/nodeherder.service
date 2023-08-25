@@ -1,0 +1,16 @@
+[Unit]
+Description=Event collector service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=mikeathan
+Type=simple
+WorkingDirectory=/home/mikeathan/dev/node-herder
+ExecStart=/home/mikeathan/dev/node-herder
+
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+

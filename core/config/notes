@@ -1,0 +1,10 @@
+
+sudo nano /etc/systemd/system/eventcollector.service
+
+journalctl -b | grep eventcollector
+sudo systemctl daemon-reload
+
+
+
+git config --system --unset credential.helper
+git config --global credential.helper cache
