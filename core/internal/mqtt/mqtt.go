@@ -24,9 +24,10 @@ var bridgeTopics = []string{
 }
 
 type MqttConfig struct {
-	Broker   string
-	Username string
-	Password string
+	Broker     string
+	Username   string
+	Password   string
+	ClientType string
 }
 
 func (m *MqttService) onConnectedHandler() func(client mqttlib.Client) {
@@ -59,9 +60,13 @@ func NewMqttClient(config MqttConfig) MqttClient {
 		username:       config.Username,
 		password:       config.Password,
 		client:         nil,
-		cliendId:       "sinkhole-z2m",
+		clientId:       "sinkhole-z2m",
 		messageHandler: func(s string, b []byte) {},
 		topics:         bridgeTopics,
+	}
+
+	if config.ClientType != "" {
+		client.clientId += "-" + config.ClientType
 	}
 
 	return client
@@ -72,7 +77,7 @@ type MqttService struct {
 	broker         string
 	username       string
 	password       string
-	cliendId       string
+	clientId       string
 	messageHandler func(string, []byte)
 	topics         []string
 }
@@ -96,7 +101,7 @@ func (m *MqttService) Connect() error {
 
 	options := mqttlib.NewClientOptions()
 	options.AddBroker(m.broker)
-	options.SetClientID(m.cliendId)
+	options.SetClientID(m.clientId)
 	options.Username = m.username
 	options.Password = m.password
 	options.AutoReconnect = true

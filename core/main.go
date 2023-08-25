@@ -12,9 +12,16 @@ import (
 	"syscall"
 )
 
-func readPort() int {
+type cmdArgs struct {
+	port      int
+	buildType string
+}
+
+func readArgs() *cmdArgs {
 
 	port := flag.Int("port", 4100, "port number")
+	buildType := flag.String("buildType", "", "client build type")
+
 	flag.Parse()
 	if *port <= 0 {
 
@@ -22,12 +29,12 @@ func readPort() int {
 		os.Exit(-1)
 	}
 
-	return *port
+	return &cmdArgs{port: *port, buildType: *buildType}
 }
 
 func main() {
 
-	port := readPort()
+	args := readArgs()
 
 	ctx, cancelCtx := context.WithCancel(context.Background())
 
@@ -44,12 +51,13 @@ func main() {
 
 	repo := repository.NewMemoryDeviceRepo()
 	mqttConfig := mqtt.MqttConfig{
-		Username: "sinkhole",
-		Password: "mqtt2023",
-		Broker:   "192.168.50.179:1883",
+		Username:   "sinkhole",
+		Password:   "mqtt2023",
+		Broker:     "192.168.50.179:1883",
+		ClientType: args.buildType,
 	}
 
-	h := hub.Register(port, repo, mqttConfig, ctx)
+	h := hub.Register(args.port, repo, mqttConfig, ctx)
 	h.Listen()
 
 	fmt.Println("Exited")
