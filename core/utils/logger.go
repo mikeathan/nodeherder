@@ -1,9 +1,11 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/sirupsen/logrus"
@@ -14,9 +16,11 @@ import (
 var logger *Logger
 var once sync.Once
 
+const LogPath string = "logs"
+
 func GetInstance() *Logger {
 	once.Do(func() {
-		logger = newFileLogger("..logs/nodeherder.log")
+		logger = newFileLogger("nodeherder.log")
 	})
 	return logger
 }
@@ -40,11 +44,21 @@ func newConsoleLogger() *Logger {
 	return &Logger{log: log}
 }
 
-func newFileLogger(logFile string) *Logger {
+func createDirIfNotExists() {
+	if _, err := os.Stat(LogPath); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(LogPath, os.ModePerm)
+		if err != nil {
+			log.Println(fmt.Sprintf("Failed to create log directory %s Error: %v", LogPath, err))
+		}
+	}
+}
 
-	f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+func newFileLogger(logName string) *Logger {
+
+	createDirIfNotExists()
+	f, err := os.OpenFile(filepath.Join(LogPath, logName), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
-		fmt.Println("Failed to create logfile" + logFile)
+		fmt.Println("Failed to create logfile" + err.Error())
 		panic(err)
 	}
 
