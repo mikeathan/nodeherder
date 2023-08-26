@@ -8,7 +8,6 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/utils"
-	"node-herder/utils/pool"
 	"strings"
 )
 
@@ -26,7 +25,7 @@ type HubController struct {
 	eventHub ws.EventHub
 	mqtt     mqtt.MqttClient
 	repo     devices.Repository
-	wp       *pool.WorkerPool
+	wp       *utils.WorkerPool
 	handlers map[string]handler
 }
 
@@ -38,7 +37,7 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 		handlers: map[string]handler{},
 	}
 
-	h.wp = pool.NewWorkerPool(1, ctx)
+	h.wp = utils.NewWorkerPool(1, ctx)
 	h.wp.Run()
 
 	h.eventHub.OnConnected(func() interface{} {

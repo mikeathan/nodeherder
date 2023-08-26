@@ -1,10 +1,9 @@
-package pool
+package utils
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"node-herder/utils"
 	"sync"
 )
 
@@ -60,14 +59,14 @@ func (w *WorkerPool) worker(workerId int, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-w.quit:
-			utils.LogInfof("stopping worker %d with quit channel tasks channel\n", workerId)
+			LogInfof("stopping worker %d with quit channel tasks channel\n", workerId)
 			return
 		case <-w.ctx.Done():
-			utils.LogInfof("Cancelled worker. Error: %v\n", w.ctx.Err())
+			LogInfof("Cancelled worker. Error: %v\n", w.ctx.Err())
 			return
 		case task, ok := <-w.queue:
 			if !ok {
-				utils.LogInfof("stopping worker %d with closed tasks channel\n", workerId)
+				LogInfof("stopping worker %d with closed tasks channel\n", workerId)
 				return
 			}
 			if err := task.Process(); err != nil {

@@ -1,9 +1,9 @@
-package pool_test
+package utils_test
 
 import (
 	"context"
 	"fmt"
-	"node-herder/utils/pool"
+	"node-herder/utils"
 	"sync"
 	"testing"
 	"time"
@@ -17,7 +17,7 @@ func timeTrack(start time.Time, name string) {
 type mockTask struct {
 	Id         string
 	EventId    int
-	procesFunc func(task pool.Task) error
+	procesFunc func(task utils.Task) error
 }
 
 func (m *mockTask) Process() error {
@@ -28,7 +28,7 @@ func (m *mockTask) OnFailure(err error) {
 	fmt.Printf("Job: %s EventId: %d Error: %s", m.Id, m.EventId, err.Error())
 }
 
-func createTask(id string, eventId int, processFunc func(task pool.Task) error) pool.Task {
+func createTask(id string, eventId int, processFunc func(task utils.Task) error) utils.Task {
 	return &mockTask{Id: id, EventId: eventId, procesFunc: processFunc}
 }
 
@@ -37,7 +37,7 @@ func TestAsyncFuncProcessingAllJobs(t *testing.T) {
 	ticker := time.NewTicker(10 * time.Second)
 	ctx, _ := context.WithCancel(context.Background())
 
-	procesFunc := func(task pool.Task) error {
+	procesFunc := func(task utils.Task) error {
 
 		mockTask := task.(*mockTask)
 		fmt.Printf("Processing Id: %s  EventId: %d \n", mockTask.Id, mockTask.EventId)
@@ -46,7 +46,7 @@ func TestAsyncFuncProcessingAllJobs(t *testing.T) {
 		return nil
 	}
 
-	worker := pool.NewWorkerPool(1, ctx)
+	worker := utils.NewWorkerPool(1, ctx)
 	worker.Run()
 
 	var processed = false
@@ -98,7 +98,7 @@ func TestCancelContextStopsWorker(t *testing.T) {
 		var expectedFinishedJobs = testCase.numOfJobs
 		var finishedJobs = 0
 
-		procesFunc := func(task pool.Task) error {
+		procesFunc := func(task utils.Task) error {
 			mockTask := task.(*mockTask)
 			for i := 0; i < 10; i++ {
 				time.Sleep(100 * time.Millisecond)
@@ -109,7 +109,7 @@ func TestCancelContextStopsWorker(t *testing.T) {
 		}
 
 		ctx, cancelCtx := context.WithCancel(context.Background())
-		worker := pool.NewWorkerPool(expectedFinishedJobs, ctx)
+		worker := utils.NewWorkerPool(expectedFinishedJobs, ctx)
 		worker.Run()
 		numOfTasks := 10
 
