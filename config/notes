@@ -1,7 +1,7 @@
 
-sudo nano /etc/systemd/system/eventcollector.service
+sudo nano /etc/systemd/system/nodeherder.service
 
-journalctl -b | grep eventcollector
+journalctl -b | grep nodeherder
 sudo systemctl daemon-reload
 
 
