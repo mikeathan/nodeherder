@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
+	"node-herder/utils"
 	"node-herder/utils/pool"
 	"strings"
 )
@@ -19,7 +19,7 @@ type apiTask struct {
 }
 
 func (m *apiTask) OnFailure(err error) {
-	fmt.Printf("Job: %s Error: %s", m.Id, err.Error())
+	utils.LogErrorf("Job: %s Error: %s", m.Id, err.Error())
 }
 
 type HubController struct {

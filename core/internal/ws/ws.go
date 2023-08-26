@@ -3,8 +3,7 @@ package ws
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"log"
+	"node-herder/utils"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -71,7 +70,7 @@ func (c *WsClient) readPump() {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("error: %v", err)
+				utils.LogErrorf("error: %v\n", err)
 			}
 			break
 		}
@@ -159,10 +158,10 @@ func (h *wsServer) run() {
 		select {
 		case client := <-h.register:
 			h.clients[client] = true
-			fmt.Println("hub: client registered")
+			utils.LogInfo("hub: client registered")
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
-				fmt.Println("hub: client unregistered")
+				utils.LogInfo("hub: client unregistered")
 				delete(h.clients, client)
 				close(client.send)
 			}
@@ -171,7 +170,7 @@ func (h *wsServer) run() {
 				select {
 				case client.send <- message:
 				default:
-					fmt.Println("broadcast failed, client closed")
+					utils.LogInfo("broadcast failed, client closed")
 					close(client.send)
 					delete(h.clients, client)
 				}

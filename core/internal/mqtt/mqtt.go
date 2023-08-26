@@ -3,6 +3,7 @@ package mqtt
 import (
 	"errors"
 	"fmt"
+	"node-herder/utils"
 	"strings"
 	"sync"
 
@@ -33,14 +34,14 @@ type MqttConfig struct {
 
 func (m *MqttService) onConnectedHandler() func(client mqttlib.Client) {
 	return func(client mqttlib.Client) {
-		fmt.Println("mqtt Client connected")
+		utils.LogInfof("mqtt Client connected")
 
 	}
 }
 
 func (m *MqttService) connectionLostHandler() func(client mqttlib.Client, err error) {
 	return func(client mqttlib.Client, err error) {
-		fmt.Printf("mqtt Connection Lost: %s\n", err.Error())
+		utils.LogDebugf("mqtt Connection Lost: %s\n", err.Error())
 	}
 }
 
@@ -113,8 +114,9 @@ func (m *MqttService) Connect() error {
 	options.OnConnect = m.onConnectedHandler()
 	options.OnConnectionLost = m.connectionLostHandler()
 	options.SetReconnectingHandler(func(c mqttlib.Client, options *mqttlib.ClientOptions) {
-		fmt.Println("...... mqtt reconnecting ......")
+		utils.LogDebug("...... mqtt reconnecting ......")
 	})
+
 	m.client = mqttlib.NewClient(options)
 	token := m.client.Connect()
 
@@ -129,10 +131,10 @@ func (m *MqttService) Connect() error {
 func (m *MqttService) subscribeTopics() {
 
 	for _, topic := range m.topics {
-		fmt.Printf("Subscribe topic: %s\n", topic)
+		utils.LogInfof("Subscribe topic: %s\n", topic)
 		err := m.subscribe(topic)
 		if err != nil {
-			fmt.Printf("%s failed: %s \n", topic, err.Error())
+			utils.LogErrorf("%s failed: %s \n", topic, err.Error())
 		}
 	}
 }
@@ -155,10 +157,10 @@ func (m *MqttService) AddTopic(topic string) error {
 			return errors.New("topic is subscribed")
 		}
 	}
-	fmt.Printf("Add topic: %s\n", topic)
+	utils.LogInfof("Add topic: %s\n", topic)
 	err := m.subscribe(topic)
 	if err != nil {
-		fmt.Printf("%s failed: %s \n", topic, err.Error())
+		utils.LogErrorf("%s failed: %s \n", topic, err.Error())
 	}
 	m.topics = append(m.topics, topic)
 	return nil
@@ -166,5 +168,5 @@ func (m *MqttService) AddTopic(topic string) error {
 
 func (m *MqttService) Disconnect() {
 	m.client.Disconnect(100)
-	fmt.Println("zigbee2mqtt client disconnected")
+	utils.LogInfo("zigbee2mqtt client disconnected")
 }
