@@ -158,7 +158,7 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
 	hub := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
-	hub.AvailabilityTimeoutinSeconds = 1
+	hub.DeviceAvailabilityTimeoutOverride = 1
 
 	mqtt.PublishMessage(id, []byte(device1BatterySource))
 	time.Sleep(100 * time.Millisecond)

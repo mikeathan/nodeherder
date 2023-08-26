@@ -31,7 +31,6 @@ func (s *MemoryDeviceRepo) FindDevice(deviceName string) (*devices.Device, error
 	}
 
 	return nil, errors.New("device not found")
-
 }
 
 func (s *MemoryDeviceRepo) ListAllDevices() []*devices.Device {

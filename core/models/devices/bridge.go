@@ -67,6 +67,7 @@ type BridgeDevice struct {
 	Type               string `json:"type"`
 }
 
+// DEBUG - delete
 func LoadDevices(payload []byte) error {
 	var bridgeDevices []*BridgeDevice
 	err := json.Unmarshal(payload, &bridgeDevices)
@@ -95,6 +96,7 @@ func LoadDevices(payload []byte) error {
 
 	return nil
 }
+
 func LoadBridgeDevices(payload []byte) ([]*BridgeDevice, error) {
 	var bridgeDevices []*BridgeDevice
 	err := json.Unmarshal(payload, &bridgeDevices)

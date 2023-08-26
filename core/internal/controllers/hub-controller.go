@@ -11,32 +11,22 @@ import (
 	"strings"
 )
 
-type apiTask struct {
-	Id      string
-	Payload map[string]interface{}
-	Type    string
-}
-
-func (m *apiTask) OnFailure(err error) {
-	utils.LogErrorf("Job: %s Error: %s", m.Id, err.Error())
-}
-
 type HubController struct {
-	eventHub                     ws.EventHub
-	mqtt                         mqtt.MqttClient
-	repo                         devices.Repository
-	wp                           *utils.WorkerPool
-	handlers                     map[string]handler
-	AvailabilityTimeoutinSeconds int
+	eventHub                          ws.EventHub
+	mqtt                              mqtt.MqttClient
+	repo                              devices.Repository
+	wp                                *utils.WorkerPool
+	handlers                          map[string]handler
+	DeviceAvailabilityTimeoutOverride int
 }
 
 func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Repository, ctx context.Context) *HubController {
 	h := &HubController{
-		eventHub:                     ws,
-		mqtt:                         mqtt,
-		repo:                         repo,
-		handlers:                     map[string]handler{},
-		AvailabilityTimeoutinSeconds: 3600, // 1 Hour
+		eventHub:                          ws,
+		mqtt:                              mqtt,
+		repo:                              repo,
+		handlers:                          map[string]handler{},
+		DeviceAvailabilityTimeoutOverride: 3600, // 1 Hour
 	}
 
 	h.wp = utils.NewWorkerPool(1, ctx)
@@ -78,7 +68,7 @@ func (m *HubController) ProcessMessage(id string, payload []byte, connType strin
 		} else {
 
 			var h = newDeviceHandler(m.repo, m.eventHub)
-			h.AvailabilityTimeoutinSeconds = m.AvailabilityTimeoutinSeconds
+			h.AvailabilityTimeoutInSeconds = m.DeviceAvailabilityTimeoutOverride
 			m.handlers[id] = h
 		}
 	}

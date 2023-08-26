@@ -59,14 +59,14 @@ func (w *WorkerPool) worker(workerId int, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-w.quit:
-			LogInfof("stopping worker %d with quit channel tasks channel\n", workerId)
+			LogInfof("stopping worker %d with quit channel tasks channel", workerId)
 			return
 		case <-w.ctx.Done():
-			LogInfof("Cancelled worker. Error: %v\n", w.ctx.Err())
+			LogInfof("Cancelled worker. Error: %v", w.ctx.Err())
 			return
 		case task, ok := <-w.queue:
 			if !ok {
-				LogInfof("stopping worker %d with closed tasks channel\n", workerId)
+				LogInfof("stopping worker %d with closed tasks channel", workerId)
 				return
 			}
 			if err := task.Process(); err != nil {

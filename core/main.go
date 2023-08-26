@@ -46,7 +46,7 @@ func main() {
 	go func() {
 		defer close(c)
 		<-c
-		utils.LogWarn("IGTERM signal notified")
+		utils.LogWarn("system termination signal received.")
 		cancelCtx()
 	}()
 

@@ -23,8 +23,9 @@ func ParsePayload(payload map[string]interface{}) (string, map[string]interface{
 		payloadMap, ok := value.(map[string]interface{})
 		if ok {
 			if !contains(batchPayloadIds, key) {
-				return "", nil, errors.New("invalid data: data structure not containign valid payload section")
+				return "", nil, errors.New("invalid data: data structure not containing valid payload section")
 			}
+
 			timestamp, ok := payload["timestamp"]
 			if ok {
 				timestamp, err := convertTimestamp(timestamp)
@@ -60,8 +61,9 @@ func sanitizeLegacyPayload(payload map[string]interface{}) map[string]interface{
 		if err != nil {
 			sanitizedFloat, err := strconv.ParseFloat(string(extracted), 8)
 			if err != nil {
-				fmt.Println("Error during conversion of ", string(extracted))
+				LogDebugf("Error during conversion of %s in legacy payload", string(extracted))
 			}
+
 			payload[key] = sanitizedFloat
 			continue
 		}

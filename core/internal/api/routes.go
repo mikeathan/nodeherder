@@ -3,8 +3,6 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 	"node-herder/internal/controllers"
 	"node-herder/internal/ws"
@@ -105,13 +103,12 @@ var (
 func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	conn, err := websocketUpgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Print("websocketUpgrader error :", err)
+		utils.LogErrorf("websocketUpgrader error %s", err.Error())
 		return
 	}
 
 	h.hub.RegisterNewClient(conn)
-
-	fmt.Printf("WsHandler: client connected\n")
+	utils.LogInfo("WsHandler: client connected")
 }
 
 type DataCollectorHandler struct {

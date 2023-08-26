@@ -116,12 +116,12 @@ func LogErrorf(format string, msg ...interface{}) {
 func (l *logger) SetLevel(level string) {
 	ll, err := logrus.ParseLevel(level)
 	if err != nil {
-		l.Errorf("undefined level %s\n", level)
+		l.Errorf("undefined level %s", level)
 		return
 	}
 
 	l.log.SetLevel(ll)
-	l.Infof("set level: %s\n", ll.String())
+	l.Infof("set level: %s", ll.String())
 }
 
 func (l *logger) Close() {

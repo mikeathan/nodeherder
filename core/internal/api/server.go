@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"node-herder/utils"
 )
 
 type ApiServer struct {
@@ -51,12 +52,12 @@ func (s *ApiServer) Listen() {
 		if err := s.httpServer.Close(); err != nil {
 			errors <- fmt.Errorf("HTTP close error: %v", err)
 		}
-		fmt.Println("HTTP Server Closed")
+		utils.LogInfof("HTTP Server Closed")
 		done <- true
 	}()
 
 	go func() {
-		fmt.Printf("HTTP Server Listening : %s \n", s.httpServer.Addr)
+		utils.LogInfof("HTTP Server Listening %s", s.httpServer.Addr)
 		if err := s.httpServer.ListenAndServe(); err != http.ErrServerClosed {
 			errors <- fmt.Errorf("HTTP server error: %v", err)
 		}
@@ -64,7 +65,7 @@ func (s *ApiServer) Listen() {
 
 	go func() {
 		err := <-errors
-		fmt.Println("Finished with error:", err.Error())
+		utils.LogErrorf("Finished with error %s", err.Error())
 		done <- true
 	}()
 

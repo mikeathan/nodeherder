@@ -95,6 +95,7 @@ func CreateNewDevice(id string, connType string, data map[string]interface{}) (*
 func (device *Device) Dispose() {
 	device.availablityDone <- true
 	device.availabilityTicker.Stop()
+	utils.LogDebugf("device %s disposed", device.Id)
 }
 
 func (device *Device) StartAvailabilityTimer(timeoutInSecs int) {
@@ -107,7 +108,7 @@ func (device *Device) StartAvailabilityTimer(timeoutInSecs int) {
 			select {
 			case <-device.availablityDone:
 				device.Stats[availabilityKey] = offline
-				utils.LogInfo("timer killed")
+				utils.LogInfof("device %s availability timer killed", device.Id)
 				return
 
 			case <-device.availabilityTicker.C:
@@ -119,7 +120,7 @@ func (device *Device) StartAvailabilityTimer(timeoutInSecs int) {
 				lastSeenStr, _ := device.Stats[lastSeenKey].(string)
 				lastSeen, err := time.Parse(time.RFC3339, lastSeenStr)
 				if err != nil {
-					utils.LogErrorf("failed to parse time %s", err.Error())
+					utils.LogErrorf("device %s failed to parse time %s", device.Id, err.Error())
 					device.Dispose()
 				}
 
@@ -127,26 +128,29 @@ func (device *Device) StartAvailabilityTimer(timeoutInSecs int) {
 				diff := now.Sub(lastSeen)
 				if diff.Seconds() >= float64(timeoutInSecs) {
 					device.Stats[availabilityKey] = offline
+					utils.LogInfof("device %s is offine", device.Id)
 				}
 			}
 		}
 	}()
 }
 
-func (node *Device) TryUpdateDevice(data map[string]interface{}) bool {
+func (device *Device) TryUpdateDevice(data map[string]interface{}) bool {
 
 	// TODO: needs refactoring. maybe keep reference and assign only if changes arefound
 	//
 	var updated = false
-	for key, currValue := range node.Sensors {
+	for key, currValue := range device.Sensors {
 		if newValue, ok := data[key]; ok && newValue != currValue {
-			node.Sensors[key] = newValue
+			device.Sensors[key] = newValue
 			updated = true
 		}
 	}
 
-	if node.Stats[availabilityKey] != online {
-		node.Stats[availabilityKey] = online
+	if device.Stats[availabilityKey] != online {
+		device.Stats[availabilityKey] = online
+		utils.LogWarnf("device %s is online", device.Id)
+
 		updated = true
 	}
 
@@ -154,7 +158,7 @@ func (node *Device) TryUpdateDevice(data map[string]interface{}) bool {
 		if _, ok := data[lastSeenKey]; !ok {
 			data[lastSeenKey] = getCurrentTime()
 		}
-		node.Stats[lastSeenKey] = data[lastSeenKey]
+		device.Stats[lastSeenKey] = data[lastSeenKey]
 	}
 	return updated
 }

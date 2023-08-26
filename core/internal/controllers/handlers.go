@@ -76,7 +76,7 @@ func (b *bridgeHandler) ProcessPayload(id string, connType string, payload []byt
 }
 
 type deviceHandler struct {
-	AvailabilityTimeoutinSeconds int
+	AvailabilityTimeoutInSeconds int
 	repo                         devices.Repository
 	eventHub                     ws.EventHub
 }
@@ -85,7 +85,7 @@ func newDeviceHandler(repo devices.Repository, eventHub ws.EventHub) *deviceHand
 	return &deviceHandler{
 		repo:                         repo,
 		eventHub:                     eventHub,
-		AvailabilityTimeoutinSeconds: 3600, // 1 Hour
+		AvailabilityTimeoutInSeconds: 3600, // 1 Hour
 	}
 }
 
@@ -102,7 +102,7 @@ func (c *deviceHandler) ProcessPayload(id string, connType string, payload []byt
 		if err != nil {
 			return err
 		}
-		device.StartAvailabilityTimer(c.AvailabilityTimeoutinSeconds)
+		device.StartAvailabilityTimer(c.AvailabilityTimeoutInSeconds)
 	} else {
 		if !device.TryUpdateDevice(dataMap) {
 			return nil

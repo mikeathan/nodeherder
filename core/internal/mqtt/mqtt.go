@@ -35,13 +35,12 @@ type MqttConfig struct {
 func (m *MqttService) onConnectedHandler() func(client mqttlib.Client) {
 	return func(client mqttlib.Client) {
 		utils.LogInfof("mqtt Client connected")
-
 	}
 }
 
 func (m *MqttService) connectionLostHandler() func(client mqttlib.Client, err error) {
 	return func(client mqttlib.Client, err error) {
-		utils.LogDebugf("mqtt Connection Lost: %s\n", err.Error())
+		utils.LogDebugf("mqtt Connection Lost: %s", err.Error())
 	}
 }
 
@@ -97,7 +96,7 @@ func (m *MqttService) OnMessageHandler(handler func(string, []byte)) {
 func (m *MqttService) Publish(friendlyName string, payload interface{}) {
 	topic := fmt.Sprintf("%s%s", baseTopic, friendlyName)
 
-	//fmt.Printf("Publish: %s \n", topic)
+	utils.LogDebugf("Publish: %s", topic)
 	m.client.Publish(topic, 0, false, payload)
 }
 
@@ -131,10 +130,10 @@ func (m *MqttService) Connect() error {
 func (m *MqttService) subscribeTopics() {
 
 	for _, topic := range m.topics {
-		utils.LogInfof("Subscribe topic: %s\n", topic)
+		utils.LogInfof("Subscribe topic: %s", topic)
 		err := m.subscribe(topic)
 		if err != nil {
-			utils.LogErrorf("%s failed: %s \n", topic, err.Error())
+			utils.LogErrorf("%s failed: %s", topic, err.Error())
 		}
 	}
 }
@@ -157,10 +156,10 @@ func (m *MqttService) AddTopic(topic string) error {
 			return errors.New("topic is subscribed")
 		}
 	}
-	utils.LogInfof("Add topic: %s\n", topic)
+	utils.LogInfof("Add topic: %s", topic)
 	err := m.subscribe(topic)
 	if err != nil {
-		utils.LogErrorf("%s failed: %s \n", topic, err.Error())
+		utils.LogErrorf("%s failed: %s", topic, err.Error())
 	}
 	m.topics = append(m.topics, topic)
 	return nil
