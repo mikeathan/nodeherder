@@ -22,19 +22,21 @@ func (m *apiTask) OnFailure(err error) {
 }
 
 type HubController struct {
-	eventHub ws.EventHub
-	mqtt     mqtt.MqttClient
-	repo     devices.Repository
-	wp       *utils.WorkerPool
-	handlers map[string]handler
+	eventHub                     ws.EventHub
+	mqtt                         mqtt.MqttClient
+	repo                         devices.Repository
+	wp                           *utils.WorkerPool
+	handlers                     map[string]handler
+	AvailabilityTimeoutinSeconds int
 }
 
 func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Repository, ctx context.Context) *HubController {
 	h := &HubController{
-		eventHub: ws,
-		mqtt:     mqtt,
-		repo:     repo,
-		handlers: map[string]handler{},
+		eventHub:                     ws,
+		mqtt:                         mqtt,
+		repo:                         repo,
+		handlers:                     map[string]handler{},
+		AvailabilityTimeoutinSeconds: 3600, // 1 Hour
 	}
 
 	h.wp = utils.NewWorkerPool(1, ctx)
@@ -76,6 +78,7 @@ func (m *HubController) ProcessMessage(id string, payload []byte, connType strin
 		} else {
 
 			var h = newDeviceHandler(m.repo, m.eventHub)
+			h.AvailabilityTimeoutinSeconds = m.AvailabilityTimeoutinSeconds
 			m.handlers[id] = h
 		}
 	}

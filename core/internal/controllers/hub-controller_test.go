@@ -151,40 +151,40 @@ func TestOnlyNewPayloadIsBroadcasted(t *testing.T) {
 	}
 }
 
-// func TestAvailabilityStatusIsUpdated(t *testing.T) {
+func TestAvailabilityStatusIsUpdated(t *testing.T) {
 
-// 	id := "device 1"
-// 	repo := repository.NewMemoryDeviceRepo()
-// 	ws := &mocks.NopWsServer{}
-// 	mqtt := &mocks.MockMqttClient{}
-// 	hub := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
-// 	hub.AvailabilityTimeoutinSeconds = 1
+	id := "device 1"
+	repo := repository.NewMemoryDeviceRepo()
+	ws := &mocks.NopWsServer{}
+	mqtt := &mocks.MockMqttClient{}
+	hub := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	hub.AvailabilityTimeoutinSeconds = 1
 
-// 	mqtt.PublishMessage(id, []byte(device1BatterySource))
-// 	time.Sleep(100 * time.Millisecond)
+	mqtt.PublishMessage(id, []byte(device1BatterySource))
+	time.Sleep(100 * time.Millisecond)
 
-// 	device, err := repo.FindDevice(id)
-// 	if err != nil {
-// 		t.Fatalf(err.Error())
-// 	}
+	device, err := repo.FindDevice(id)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 
-// 	if device.Stats["availability"] != "online" {
-// 		t.Fatalf("want online got offline")
-// 	}
+	if device.Stats["availability"] != "online" {
+		t.Fatalf("want online got offline")
+	}
 
-// 	time.Sleep(1100 * time.Millisecond)
-// 	if device.Stats["availability"] != "offline" {
-// 		t.Fatalf("want offline got online")
-// 	}
+	time.Sleep(1100 * time.Millisecond)
+	if device.Stats["availability"] != "offline" {
+		t.Fatalf("want offline got online")
+	}
 
-// 	mqtt.PublishMessage(id, []byte(device1BatterySource))
-// 	time.Sleep(200 * time.Millisecond)
-// 	device1, _ := repo.FindDevice(id)
+	mqtt.PublishMessage(id, []byte(device1BatterySource))
+	time.Sleep(200 * time.Millisecond)
+	device1, _ := repo.FindDevice(id)
 
-// 	if device1.Stats["availability"] != "online" {
-// 		t.Fatalf("want online got offline")
-// 	}
-// }
+	if device1.Stats["availability"] != "online" {
+		t.Fatalf("want online got offline")
+	}
+}
 
 // func TestAvailabilityIsDisposed(t *testing.T) {
 

@@ -91,10 +91,6 @@ func newDeviceHandler(repo devices.Repository, eventHub ws.EventHub) *deviceHand
 
 func (c *deviceHandler) ProcessPayload(id string, connType string, payload []byte) error {
 
-	// TODO:
-	// Hanlde API payload
-	// if connType == "http" do differnt parsing
-	//
 	dataMap, err := convertToMap(payload)
 	if err != nil {
 		return err
