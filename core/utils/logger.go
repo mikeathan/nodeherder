@@ -4,33 +4,24 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
 	easy "github.com/t-tomalak/logrus-easy-formatter"
 )
 
-var logger *Logger
-var once sync.Once
-
 const LogPath string = "logs"
 
-func GetInstance() *Logger {
-	once.Do(func() {
-		logger = newFileLogger("nodeherder.log")
-	})
-	return logger
-}
+var filelogger = newFileLogger("nodeherder.log")
 
-type Logger struct {
+type logger struct {
 	log  *logrus.Logger
 	file *os.File
 }
 
-func newConsoleLogger() *Logger {
+func newConsoleLogger() *logger {
 
 	log := &logrus.Logger{
 		Out:   os.Stdout,
@@ -41,7 +32,7 @@ func newConsoleLogger() *Logger {
 		},
 	}
 
-	return &Logger{log: log}
+	return &logger{log: log}
 }
 
 func createDirIfNotExists() {
@@ -53,7 +44,7 @@ func createDirIfNotExists() {
 	}
 }
 
-func newFileLogger(logName string) *Logger {
+func newFileLogger(logName string) *logger {
 
 	createDirIfNotExists()
 	f, err := os.OpenFile(filepath.Join(LogPath, logName), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
@@ -71,11 +62,11 @@ func newFileLogger(logName string) *Logger {
 		},
 	}
 
-	return &Logger{log: log, file: f}
+	return &logger{log: log, file: f}
 }
 
-func (l *Logger) SetLevel(level string) {
-	ll, err := log.ParseLevel(level)
+func (l *logger) SetLevel(level string) {
+	ll, err := logrus.ParseLevel(level)
 	if err != nil {
 		l.Errorf("undefined level %s\n", level)
 		return
@@ -85,41 +76,41 @@ func (l *Logger) SetLevel(level string) {
 	l.Infof("set level: %s\n", ll.String())
 }
 
-func (l *Logger) Close() {
+func (l *logger) Close() {
 	if l.file != nil {
-		logger.Info("file logger disposed")
+		l.Info("file logger disposed")
 		l.file.Close()
 	}
 }
 
-func (l *Logger) Debug(msg ...interface{}) {
+func (l *logger) Debug(msg ...interface{}) {
 	l.log.Debug(msg...)
 }
 
-func (l *Logger) Info(msg ...interface{}) {
+func (l *logger) Info(msg ...interface{}) {
 	l.log.Info(msg...)
 }
 
-func (l *Logger) Warning(msg ...interface{}) {
+func (l *logger) Warning(msg ...interface{}) {
 	l.log.Warning(msg...)
 }
 
-func (l *Logger) Error(msg ...interface{}) {
+func (l *logger) Error(msg ...interface{}) {
 	l.log.Error(msg...)
 }
 
-func (l *Logger) Debugf(format string, msg ...interface{}) {
+func (l *logger) Debugf(format string, msg ...interface{}) {
 	l.log.Debugf(format, msg...)
 }
 
-func (l *Logger) Infof(format string, msg ...interface{}) {
+func (l *logger) Infof(format string, msg ...interface{}) {
 	l.log.Infof(format, msg...)
 }
 
-func (l *Logger) Warningf(format string, msg ...interface{}) {
+func (l *logger) Warningf(format string, msg ...interface{}) {
 	l.log.Warnf(format, msg...)
 }
 
-func (l *Logger) Errorf(format string, msg ...interface{}) {
+func (l *logger) Errorf(format string, msg ...interface{}) {
 	l.log.Errorf(format, msg...)
 }
