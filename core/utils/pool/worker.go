@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"node-herder/utils"
 	"sync"
 )
 
@@ -59,14 +60,14 @@ func (w *WorkerPool) worker(workerId int, wg *sync.WaitGroup) {
 	for {
 		select {
 		case <-w.quit:
-			fmt.Printf("stopping worker %d with quit channel tasks channel\n", workerId)
+			utils.LogInfof("stopping worker %d with quit channel tasks channel\n", workerId)
 			return
 		case <-w.ctx.Done():
-			fmt.Printf("Cancelled worker. Error: %v\n", w.ctx.Err())
+			utils.LogInfof("Cancelled worker. Error: %v\n", w.ctx.Err())
 			return
 		case task, ok := <-w.queue:
 			if !ok {
-				fmt.Printf("stopping worker %d with closed tasks channel\n", workerId)
+				utils.LogInfof("stopping worker %d with closed tasks channel\n", workerId)
 				return
 			}
 			if err := task.Process(); err != nil {
