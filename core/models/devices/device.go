@@ -2,7 +2,7 @@ package devices
 
 import (
 	"errors"
-	"fmt"
+	"node-herder/utils"
 	"time"
 )
 
@@ -107,8 +107,7 @@ func (device *Device) StartAvailabilityTimer(timeoutInSecs int) {
 			select {
 			case <-device.availablityDone:
 				device.Stats[availabilityKey] = offline
-				fmt.Println("timer killed")
-
+				utils.LogInfo("timer killed")
 				return
 
 			case <-device.availabilityTicker.C:
@@ -120,7 +119,7 @@ func (device *Device) StartAvailabilityTimer(timeoutInSecs int) {
 				lastSeenStr, _ := device.Stats[lastSeenKey].(string)
 				lastSeen, err := time.Parse(time.RFC3339, lastSeenStr)
 				if err != nil {
-					fmt.Println("failed to parse time", err)
+					utils.LogErrorf("failed to parse time %s", err.Error())
 					device.Dispose()
 				}
 

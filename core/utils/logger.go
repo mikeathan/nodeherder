@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -14,7 +13,15 @@ import (
 
 const LogPath string = "logs"
 
-var filelogger = newFileLogger("nodeherder.log")
+var log *logger = newConsoleLogger()
+
+func InitFileLogger() {
+	if log != nil {
+		log.Close()
+	}
+
+	log = newFileLogger("nodeherder.log")
+}
 
 type logger struct {
 	log  *logrus.Logger
@@ -39,7 +46,8 @@ func createDirIfNotExists() {
 	if _, err := os.Stat(LogPath); errors.Is(err, os.ErrNotExist) {
 		err := os.Mkdir(LogPath, os.ModePerm)
 		if err != nil {
-			log.Println(fmt.Sprintf("Failed to create log directory %s Error: %v", LogPath, err))
+			fmt.Println(fmt.Sprintf("Failed to create log directory %s Error: %v", LogPath, err))
+			panic(err)
 		}
 	}
 }
@@ -63,6 +71,46 @@ func newFileLogger(logName string) *logger {
 	}
 
 	return &logger{log: log, file: f}
+}
+
+func SetLogLevel(level string) {
+	log.SetLevel(level)
+}
+
+func Close() {
+	log.Close()
+}
+
+func LogDebug(msg ...interface{}) {
+	log.Debug(msg...)
+}
+
+func LogInfo(msg ...interface{}) {
+	log.Info(msg...)
+}
+
+func LogWarn(msg ...interface{}) {
+	log.Warn(msg...)
+}
+
+func LogError(msg ...interface{}) {
+	log.Error(msg...)
+}
+
+func LogDebugf(format string, msg ...interface{}) {
+	log.Debugf(format, msg...)
+}
+
+func LogInfof(format string, msg ...interface{}) {
+	log.Infof(format, msg...)
+}
+
+func LogWarnf(format string, msg ...interface{}) {
+	log.Warnf(format, msg...)
+}
+
+func LogErrorf(format string, msg ...interface{}) {
+	log.Errorf(format, msg...)
 }
 
 func (l *logger) SetLevel(level string) {
@@ -91,7 +139,7 @@ func (l *logger) Info(msg ...interface{}) {
 	l.log.Info(msg...)
 }
 
-func (l *logger) Warning(msg ...interface{}) {
+func (l *logger) Warn(msg ...interface{}) {
 	l.log.Warning(msg...)
 }
 
@@ -107,7 +155,7 @@ func (l *logger) Infof(format string, msg ...interface{}) {
 	l.log.Infof(format, msg...)
 }
 
-func (l *logger) Warningf(format string, msg ...interface{}) {
+func (l *logger) Warnf(format string, msg ...interface{}) {
 	l.log.Warnf(format, msg...)
 }
 

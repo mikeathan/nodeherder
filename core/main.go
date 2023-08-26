@@ -7,7 +7,7 @@ import (
 	hub "node-herder/internal"
 	"node-herder/internal/mqtt"
 	repository "node-herder/repository/devices"
-	logger "node-herder/utils"
+	"node-herder/utils"
 	"os"
 	"os/signal"
 	"syscall"
@@ -34,19 +34,19 @@ func readArgs() *cmdArgs {
 }
 
 func main() {
-
+	utils.InitFileLogger()
 	args := readArgs()
 
 	ctx, cancelCtx := context.WithCancel(context.Background())
 
-	logger.GetInstance().Info("starting up server")
+	utils.LogInfo("starting up server")
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
 		defer close(c)
 		<-c
-		logger.GetInstance().Warning("IGTERM signal notified")
+		utils.LogWarn("IGTERM signal notified")
 		cancelCtx()
 	}()
 
@@ -60,5 +60,5 @@ func main() {
 
 	h := hub.Register(args.port, repo, mqttConfig, ctx)
 	h.Listen()
-	logger.GetInstance().Info("exit")
+	utils.LogInfo("exit")
 }

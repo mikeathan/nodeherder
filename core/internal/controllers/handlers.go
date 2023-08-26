@@ -5,6 +5,7 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
+	"node-herder/utils"
 )
 
 type messageTask struct {
@@ -15,7 +16,7 @@ type messageTask struct {
 }
 
 func (m *messageTask) OnFailure(err error) {
-	fmt.Printf("Job: %s Error: %s", m.Id, err.Error())
+	utils.LogErrorf("Job: %s Error: %s", m.Id, err.Error())
 }
 
 func (m *messageTask) Process() error {
@@ -43,7 +44,6 @@ func (b *bridgeHandler) ProcessPayload(id string, connType string, payload []byt
 
 		devices, err := devices.LoadBridgeDevices(payload)
 		if err != nil {
-			fmt.Println("parsing devices error: ", err.Error())
 			return err
 		}
 
@@ -62,7 +62,7 @@ func (b *bridgeHandler) ProcessPayload(id string, connType string, payload []byt
 
 				err := b.mqtt.AddTopic(device.FriendlyName)
 				if err != nil {
-					fmt.Println("error configuring topic: ", device.FriendlyName, err.Error())
+					utils.LogErrorf("error %s conffigure topic %s", device.FriendlyName, err.Error())
 				}
 			}
 			b.configured = true
@@ -97,7 +97,6 @@ func (c *deviceHandler) ProcessPayload(id string, connType string, payload []byt
 	//
 	dataMap, err := convertToMap(payload)
 	if err != nil {
-		fmt.Println("error: failed to convert mqtt payload to map")
 		return err
 	}
 
