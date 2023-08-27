@@ -78,3 +78,10 @@ Action
     sensor set something
   Web request
     post payload
+
+
+    icons
+
+    <i class="fa-solid fa-wind"></i>
+    https://icons8.com/icons/set/particulate-matter
+    https://icons8.com/icons/set/air-quality
