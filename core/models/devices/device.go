@@ -146,6 +146,7 @@ func (device *Device) StartAvailabilityTimer(timeoutInSecs int, onChangeCallback
 					if onChangeCallback != nil {
 						onChangeCallback()
 					}
+					device.availabilityTicker.Stop()
 				}
 			}
 		}
