@@ -102,7 +102,10 @@ func (c *deviceHandler) ProcessPayload(id string, connType string, payload []byt
 		if err != nil {
 			return err
 		}
-		device.StartAvailabilityTimer(c.AvailabilityTimeoutInSeconds)
+
+		device.StartAvailabilityTimer(c.AvailabilityTimeoutInSeconds, func() {
+			c.eventHub.Broadcast(ws.DeviceUpdated, device)
+		})
 	} else {
 		if !device.TryUpdateDevice(dataMap) {
 			return nil
@@ -110,6 +113,6 @@ func (c *deviceHandler) ProcessPayload(id string, connType string, payload []byt
 	}
 
 	c.repo.Store(id, device)
-	c.eventHub.Broadcast(ws.DeviceUpdated, device) // ????
+	c.eventHub.Broadcast(ws.DeviceUpdated, device)
 	return nil
 }
