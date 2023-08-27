@@ -65,6 +65,7 @@ func CreateNewDevice(id string, connType string, data map[string]interface{}) (*
 	if _, ok := data[lastSeenKey]; !ok {
 		data[lastSeenKey] = getCurrentTime()
 	}
+
 	data[availabilityKey] = online
 
 	var newNode = newDevice()
@@ -98,7 +99,12 @@ func (device *Device) Dispose() {
 	utils.LogDebugf("device %s disposed", device.Id)
 }
 
-func (device *Device) StartAvailabilityTimer(timeoutInSecs int) {
+func (device *Device) resetAvailabilityTimer() {
+
+	device.availabilityTicker.Reset(1 * time.Second)
+}
+
+func (device *Device) StartAvailabilityTimer(timeoutInSecs int, onChangeCallback func()) {
 
 	device.availabilityTicker = *time.NewTicker(1 * time.Second)
 
@@ -107,8 +113,14 @@ func (device *Device) StartAvailabilityTimer(timeoutInSecs int) {
 		for {
 			select {
 			case <-device.availablityDone:
+
 				device.Stats[availabilityKey] = offline
 				utils.LogInfof("device %s availability timer killed", device.Id)
+
+				if onChangeCallback != nil {
+					onChangeCallback()
+				}
+
 				return
 
 			case <-device.availabilityTicker.C:
@@ -127,8 +139,13 @@ func (device *Device) StartAvailabilityTimer(timeoutInSecs int) {
 				now := time.Now()
 				diff := now.Sub(lastSeen)
 				if diff.Seconds() >= float64(timeoutInSecs) {
+
 					device.Stats[availabilityKey] = offline
 					utils.LogInfof("device %s is offine", device.Id)
+
+					if onChangeCallback != nil {
+						onChangeCallback()
+					}
 				}
 			}
 		}
@@ -147,14 +164,13 @@ func (device *Device) TryUpdateDevice(data map[string]interface{}) bool {
 		}
 	}
 
-	if device.Stats[availabilityKey] != online {
-		device.Stats[availabilityKey] = online
-		utils.LogWarnf("device %s is online", device.Id)
-
-		updated = true
-	}
-
 	if updated {
+		if device.Stats[availabilityKey] != online {
+			device.Stats[availabilityKey] = online
+			utils.LogInfof("device %s is online", device.Id)
+			device.resetAvailabilityTimer()
+		}
+
 		if _, ok := data[lastSeenKey]; !ok {
 			data[lastSeenKey] = getCurrentTime()
 		}
