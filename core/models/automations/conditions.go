@@ -2,8 +2,28 @@ package automations
 
 import (
 	"fmt"
+	"node-herder/models/devices"
 	"time"
 )
+
+type MqttCondition struct {
+	Friendlyname string        `json:"friendlyname"`
+	Type         string        `json:"type"`
+	Value        any           `json:"value"`
+	Constrains   []interface{} `json:"constrains"` // TODO
+}
+
+func (m *MqttCondition) Evaluate(device *devices.Device) bool {
+
+	value, ok := device.Sensors[m.Type]
+	if !ok {
+		fmt.Printf("type %s not exists in %s\n", m.Type, device.Id)
+		return false
+	}
+	// TODO: validate
+	// m.Constrains
+	return value == m.Value
+}
 
 type TimerCondition interface {
 	GetSchedule() time.Time
@@ -47,6 +67,7 @@ func (tc *TimeDurationCondition) IsRepeat() bool {
 func (tc *TimestampCondition) IsRepeat() bool {
 	return tc.Repeat
 }
+
 func getTomorrow(ts time.Time) time.Time {
 	return time.Date(ts.Year(), ts.Month(), ts.Day()+1, ts.Hour(), ts.Minute(), 0, 0, ts.Location())
 }
