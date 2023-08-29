@@ -47,27 +47,19 @@ func (t *TimerTrigger) configure(bridgeDevices []*devices.BridgeDevice, client m
 	}
 
 	// valdate conditions
-	for _, cond := range t.Conditions {
-
-		_, ok := cond.(*TimeDurationCondition)
-		if ok {
-			continue
+	_, ok := t.Condition.(*TimeDurationCondition)
+	if !ok {
+		_, ok = t.Condition.(*TimestampCondition)
+		if !ok {
+			return errors.New("unsupported condition type ")
 		}
-		_, ok = cond.(*TimestampCondition)
-		if ok {
-			continue
-		}
-
-		return errors.New("unsupported condition type ")
 	}
 
 	// validate actions
-	for _, action := range t.Actions {
-		err := validateAction(bridgeDevices, action, client)
+	err := validateAction(bridgeDevices, t.Action, client)
 
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
 
 	t.run()
@@ -114,13 +106,10 @@ func validateAction(bridgeDevices []*devices.BridgeDevice, action *MqttAction, c
 
 func (t *TimerTrigger) Trigger() error {
 
-	for _, action := range t.Actions {
-
-		fmt.Printf("Trigger Action %s\n", action.Friendlyname)
-		err := action.Run()
-		if err != nil {
-			fmt.Println("error:", err.Error())
-		}
+	fmt.Printf("Trigger Action %s\n", t.Action.Friendlyname)
+	err := t.Action.Run()
+	if err != nil {
+		fmt.Println("error:", err.Error())
 	}
 	return nil
 }
@@ -132,30 +121,27 @@ func (t *TimerTrigger) run() {
 		return
 	}
 
-	for _, cond := range t.Conditions {
+	tc := t.Condition.(TimerCondition)
+	go func() {
+		for {
 
-		tc := cond.(TimerCondition)
-		go func() {
-			for {
+			//
+			// todo: allow enable/disable triggers
+			//
+			diff := time.Until(tc.GetSchedule()).Seconds()
+			ticker := *time.NewTicker(time.Duration(diff) * time.Second)
+			select {
+			case <-ticker.C:
+				err := t.Trigger()
+				if err != nil {
+					fmt.Println(err)
+				}
 
-				//
-				// todo: allow enable/disable triggers
-				//
-				diff := time.Until(tc.GetSchedule()).Seconds()
-				ticker := *time.NewTicker(time.Duration(diff) * time.Second)
-				select {
-				case <-ticker.C:
-					err := t.Trigger()
-					if err != nil {
-						fmt.Println(err)
-					}
-
-					if !tc.IsRepeat() {
-						fmt.Println("timer finished. no repeat. exiting")
-						return
-					}
+				if !tc.IsRepeat() {
+					fmt.Println("timer finished. no repeat. exiting")
+					return
 				}
 			}
-		}()
-	}
+		}
+	}()
 }

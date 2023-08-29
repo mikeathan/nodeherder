@@ -25,20 +25,19 @@ func newMqttTrigger() *MqttTrigger {
 }
 
 type TimerTrigger struct {
-	Type       string        `json:"trigger"`
-	Name       string        `json:"name"`
-	Conditions []interface{} `json:"conditions"`
-	Actions    []*MqttAction `json:"actions"`
-	Enabled    bool          `json:"enabled"`
+	Type      string      `json:"trigger"`
+	Name      string      `json:"name"`
+	Condition interface{} `json:"condition"`
+	Action    *MqttAction `json:"action"`
+	Enabled   bool        `json:"enabled"`
 }
 
 func newTimerTrigger() *TimerTrigger {
 	return &TimerTrigger{
-		Type:       "timer",
-		Name:       "",
-		Conditions: []interface{}{},
-		Actions:    []*MqttAction{},
-		Enabled:    true,
+		Type:    "timer",
+		Name:    "",
+		Action:  &MqttAction{},
+		Enabled: true,
 	}
 }
 
@@ -131,7 +130,7 @@ func createMockConfiguration() *configuration {
 	// new condition
 	tc := &TimeDurationCondition{}
 	tc.Duration = 5 * time.Second
-	trigger.Conditions = append(trigger.Conditions, tc)
+	trigger.Condition = tc
 
 	// new action
 	ma := &MqttAction{}
@@ -141,8 +140,7 @@ func createMockConfiguration() *configuration {
 	ma.Property = "state"
 	ma.Type = "light"
 	ma.Value = false
-
-	trigger.Actions = append(trigger.Actions, ma)
+	trigger.Action = ma
 
 	conf := newConfiguration()
 	conf.triggers = append(conf.triggers, trigger)
