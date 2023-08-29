@@ -48,7 +48,7 @@ func (t *MqttTrigger) configure(bridgeDevices []*devices.BridgeDevice, client mq
 		return errors.New("unsupported mqtt type ")
 	}
 
-	// valdate conditions
+	// validate conditions
 	_, ok := t.Condition.(*MqttCondition)
 	if !ok {
 		return errors.New("unsupported condition type ")

@@ -2,8 +2,8 @@ package automations_test
 
 import (
 	"fmt"
+	"node-herder/internal/automations"
 	"node-herder/internal/mqtt"
-	"node-herder/models/automations"
 	"node-herder/models/devices"
 	"testing"
 	"time"
@@ -28,7 +28,7 @@ func TestMqttAction(t *testing.T) {
 	for _, t := range topics {
 		mqtt.AddTopic(t)
 	}
-	automation := automations.Create(mqtt)
+	automation := automations.NewAutomationService(mqtt)
 	var messageHandler = func(id string, payload []byte) {
 		if id == "bridge/devices" {
 
