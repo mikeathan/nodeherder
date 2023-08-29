@@ -17,9 +17,10 @@ func (m *MqttCondition) Evaluate(device *devices.Device) bool {
 
 	value, ok := device.Sensors[m.Type]
 	if !ok {
-		fmt.Printf("type %s not exists in %s\n", m.Type, device.Id)
+		fmt.Printf("sensor type %s not exists in %s\n", m.Type, device.Id)
 		return false
 	}
+
 	// TODO: validate
 	// m.Constrains
 	return value == m.Value

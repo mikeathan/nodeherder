@@ -7,72 +7,62 @@ import (
 	"time"
 )
 
-type MqttTrigger struct {
-	Type      string      `json:"trigger"`
-	Name      string      `json:"name"`
-	Condition interface{} `json:"condition"`
-	Action    *MqttAction `json:"action"`
-	Enabled   bool        `json:"enabled"`
+type AutomationService struct {
+	mqttTriggers map[string]*MqttTrigger
+	timeTriggers map[string]*TimerTrigger
+	mqttClient   mqtt.MqttClient
 }
 
-func newMqttTrigger() *MqttTrigger {
-	return &MqttTrigger{
-		Type:    "mqtt",
-		Name:    "",
-		Action:  &MqttAction{},
-		Enabled: true,
+func Create(mqtt mqtt.MqttClient) *AutomationService {
+	return &AutomationService{
+		mqttTriggers: map[string]*MqttTrigger{},
+		timeTriggers: map[string]*TimerTrigger{},
+		mqttClient:   mqtt,
+	}
+}
+func (a *AutomationService) HandleDevice(device *devices.Device) {
+	if t, ok := a.mqttTriggers[device.Id]; ok {
+		t.Evaluate(device)
+		return
 	}
 }
 
-type TimerTrigger struct {
-	Type      string      `json:"trigger"`
-	Name      string      `json:"name"`
-	Condition interface{} `json:"condition"`
-	Action    *MqttAction `json:"action"`
-	Enabled   bool        `json:"enabled"`
-}
-
-func newTimerTrigger() *TimerTrigger {
-	return &TimerTrigger{
-		Type:    "timer",
-		Name:    "",
-		Action:  &MqttAction{},
-		Enabled: true,
-	}
-}
-
-type configuration struct {
-	triggers []interface{}
-}
-
-func newConfiguration() *configuration {
-	return &configuration{
-		triggers: []interface{}{},
-	}
-}
-
-func Load(bridgeDevices []*devices.BridgeDevice, mqtClient mqtt.MqttClient) error {
+func (a *AutomationService) Load(bridgeDevices []*devices.BridgeDevice) error {
 
 	// fake input data
-	config := createMockConfiguration()
+	triggers := createMockConfiguration()
+	//
 
-	for _, trigger := range config.triggers {
+	for _, trigger := range triggers {
 
 		timerTrigger, ok := trigger.(*TimerTrigger)
-		if !ok {
-			return errors.New("unsupported trigger type ")
+		if ok {
+			err := timerTrigger.configure(bridgeDevices, a.mqttClient)
+			if err != nil {
+				return err
+			}
+			a.timeTriggers[timerTrigger.Name] = timerTrigger
+			continue
 		}
 
-		err := timerTrigger.configure(bridgeDevices, mqtClient)
-		if err != nil {
-			return err
+		mqttTrigger, ok := trigger.(*MqttTrigger)
+		if ok {
+			err := mqttTrigger.configure(bridgeDevices, a.mqttClient)
+			if err != nil {
+				return err
+			}
+
+			a.mqttTriggers[mqttTrigger.Name] = mqttTrigger
+			continue
 		}
+
+		return errors.New("unsupported trigger type ")
 	}
 
 	return nil
 }
 
-func newMockMqttTrigger() *MqttTrigger {
+func newMockMqttTrigger() []interface{} {
 
 	trigger := newMqttTrigger()
 	trigger.Name = "Turn on light 1 mqtt automation"
@@ -119,9 +109,10 @@ func newMockMqttTrigger() *MqttTrigger {
 
 	////////////////////////////////////////////////////
 
-	return nil
+	return []interface{}{trigger}
 }
-func createMockConfiguration() *configuration {
+
+func createMockConfiguration() []interface{} {
 
 	trigger := newTimerTrigger()
 	trigger.Name = "Turn on light 1 timer automation"
@@ -142,7 +133,5 @@ func createMockConfiguration() *configuration {
 	ma.Value = false
 	trigger.Action = ma
 
-	conf := newConfiguration()
-	conf.triggers = append(conf.triggers, trigger)
-	return conf
+	return []interface{}{trigger}
 }

@@ -28,22 +28,17 @@ func TestMqttAction(t *testing.T) {
 	for _, t := range topics {
 		mqtt.AddTopic(t)
 	}
-
+	automation := automations.Create(mqtt)
 	var messageHandler = func(id string, payload []byte) {
 		if id == "bridge/devices" {
 
-			//TEST
-			err := devices.LoadDevices(payload)
-			if err != nil {
-				fmt.Println("error: ", err.Error())
-			}
 			//TEST
 			devices, err := devices.LoadBridgeDevices(payload)
 			if err != nil {
 				fmt.Println("error: ", err.Error())
 			}
 
-			err = automations.Load(devices, mqtt)
+			err = automation.Load(devices)
 			if err != nil {
 				fmt.Println("error loading automations: ", err.Error())
 			}
@@ -55,6 +50,8 @@ func TestMqttAction(t *testing.T) {
 			// handle error ?
 			//{"level":"error",
 			//"message":"Publish 'set' 'state' to 'Hive light 1' failed: 'Error: Command 0x70ac08fffefafeca/1 genOnOff.off({}, {\"sendWhen\":\"immediate\",\"timeout\":10000,\"disableResponse\":false,\"disableRecovery\":false,\"disableDefaultResponse\":false,\"direction\":0,\"srcEndpoint\":null,\"reservedBits\":0,\"manufacturerCode\":null,\"transactionSequenceNumber\":null,\"writeUndiv\":false}) failed (Data request failed with error: 'MAC no ack' (233))'"}
+		} else {
+			//automation.HandleDevice(nil)
 		}
 	}
 

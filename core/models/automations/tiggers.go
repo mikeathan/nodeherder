@@ -8,6 +8,40 @@ import (
 	"time"
 )
 
+type MqttTrigger struct {
+	Type      string      `json:"trigger"`
+	Name      string      `json:"name"`
+	Condition interface{} `json:"condition"`
+	Action    *MqttAction `json:"action"`
+	Enabled   bool        `json:"enabled"`
+}
+
+func newMqttTrigger() *MqttTrigger {
+	return &MqttTrigger{
+		Type:    "mqtt",
+		Name:    "",
+		Action:  &MqttAction{},
+		Enabled: true,
+	}
+}
+
+type TimerTrigger struct {
+	Type      string      `json:"trigger"`
+	Name      string      `json:"name"`
+	Condition interface{} `json:"condition"`
+	Action    *MqttAction `json:"action"`
+	Enabled   bool        `json:"enabled"`
+}
+
+func newTimerTrigger() *TimerTrigger {
+	return &TimerTrigger{
+		Type:    "timer",
+		Name:    "",
+		Action:  &MqttAction{},
+		Enabled: true,
+	}
+}
+
 func (t *MqttTrigger) configure(bridgeDevices []*devices.BridgeDevice, client mqtt.MqttClient) error {
 	fmt.Println("Loading mqtt trigger:", t.Name)
 	if t.Type != "mqtt" {
@@ -97,9 +131,7 @@ func validateAction(bridgeDevices []*devices.BridgeDevice, action *MqttAction, c
 					}
 				}
 			}
-
 		}
-
 	}
 	return nil
 }
