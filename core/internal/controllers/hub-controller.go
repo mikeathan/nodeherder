@@ -42,6 +42,11 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 	})
 
 	h.mqtt.OnMessageHandler(func(id string, payload []byte) {
+
+		// TODO: we cant do that here as we are blocking mqtt
+		// create new hubconfiguration handler
+		// which needs to return results
+
 		if !h.configured {
 			err := h.configureHub(id, payload)
 			if err != nil {
@@ -104,10 +109,12 @@ func (m *HubController) ProcessMessage(id string, payload []byte, connType strin
 
 	if _, ok := m.handlers[id]; !ok {
 
-		if strings.HasPrefix(id, "bridge") {
-
-			var h = newBridgeHandler(m.eventHub)
-			m.handlers[id] = h
+		// TODO add configuration handler
+		if strings.HasSuffix(id, "logging") {
+			if id == "bridge/logging" {
+				var h = newBridgeLoggingHandler(m.eventHub)
+				m.handlers[id] = h
+			}
 
 		} else {
 

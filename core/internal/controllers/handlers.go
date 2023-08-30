@@ -27,21 +27,22 @@ type handler interface {
 	ProcessPayload(id string, connType string, payload []byte) error
 }
 
-type bridgeHandler struct {
+type bridgeLoggingHandler struct {
 	ws ws.EventHub
 }
 
-func newBridgeHandler(ws ws.EventHub) *bridgeHandler {
-	return &bridgeHandler{ws: ws}
+func newBridgeLoggingHandler(ws ws.EventHub) *bridgeLoggingHandler {
+	return &bridgeLoggingHandler{ws: ws}
 }
 
-func (b *bridgeHandler) ProcessPayload(id string, connType string, payload []byte) error {
+func (b *bridgeLoggingHandler) ProcessPayload(id string, connType string, payload []byte) error {
 
-	if id == "bridge/devices" {
-		// TODO: maybe we update bridge devices later
-		// for now do nothing
+	// if id == "bridge/devices" {
+	// 	// TODO: maybe we update bridge devices later
+	// 	// for now do nothing
 
-	} else if id == "bridge/logging" {
+	// } else
+	if id == "bridge/logging" {
 		// todo: handle
 		fmt.Println(string(payload))
 	}
