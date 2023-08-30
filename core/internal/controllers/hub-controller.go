@@ -40,6 +40,9 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 	})
 
 	h.mqtt.OnMessageHandler(func(id string, payload []byte) {
+		//if !configured{
+		// configure hub
+		//}
 		h.ProcessMessage(id, payload, "mqtt")
 	})
 
@@ -49,6 +52,35 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 	return h
 }
 
+// func configureHub(){
+// 	if id == "bridge/devices" {
+
+// 		if !b.configured {
+// 			devices, err := devices.LoadBridgeDevices(payload)
+// 			if err != nil {
+// 				return err
+// 			}
+
+// 			b.automationEngine.Load(devices)
+// 			if err != nil {
+// 				return err
+// 			}
+
+// 			for _, device := range devices {
+// 				if device.Disabled || device.Type == "Coordinator" || !device.InterviewCompleted {
+// 					continue
+// 				}
+
+// 				err := b.mqtt.AddTopic(device.FriendlyName)
+// 				if err != nil {
+// 					utils.LogErrorf("error %s conffgure topic %s", device.FriendlyName, err.Error())
+// 				}
+// 			}
+// 			b.configured = true
+// 		}
+
+//		}
+//	}
 func (c *HubController) Enqueue(id string, payload map[string]interface{}, connType string) error {
 
 	bytes, err := json.Marshal(payload)
