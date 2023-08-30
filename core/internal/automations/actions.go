@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"node-herder/internal/mqtt"
 	"node-herder/models/devices"
+	"node-herder/utils"
 	"time"
 )
 
@@ -32,32 +33,39 @@ func (a *MqttAction) Run() error {
 	return nil
 }
 
-type AutomationService struct {
+type Engine interface { // TODO: might need to move it to Models????
+	HandleDevice(device *devices.Device)
+	Load(bridgeDevices []*devices.BridgeDevice) error
+}
+
+type AutomationEngine struct {
 	mqttTriggers map[string]*MqttTrigger
 	timeTriggers map[string]*TimerTrigger
 	mqttClient   mqtt.MqttClient
+	configured   bool
 }
 
-func NewAutomationService(mqtt mqtt.MqttClient) *AutomationService {
-	return &AutomationService{
+func NewEngine(mqtt mqtt.MqttClient) *AutomationEngine {
+	return &AutomationEngine{
 		mqttTriggers: map[string]*MqttTrigger{},
 		timeTriggers: map[string]*TimerTrigger{},
 		mqttClient:   mqtt,
 	}
 }
-func (a *AutomationService) HandleDevice(device *devices.Device) {
+func (a *AutomationEngine) HandleDevice(device *devices.Device) {
 	if t, ok := a.mqttTriggers[device.Id]; ok {
 		t.Evaluate(device)
-		return
 	}
 }
 
-func (a *AutomationService) Load(bridgeDevices []*devices.BridgeDevice) error {
+func (a *AutomationEngine) Load(bridgeDevices []*devices.BridgeDevice) error {
 
-	// fake input data
+	// fake input data - TEST ONLY
+	// tha needs to come from a file and loaded
 	triggers := createMockConfiguration()
 	//
 
+	utils.LogInfof("Loading automations")
 	for _, trigger := range triggers {
 
 		timerTrigger, ok := trigger.(*TimerTrigger)
@@ -67,6 +75,7 @@ func (a *AutomationService) Load(bridgeDevices []*devices.BridgeDevice) error {
 				return err
 			}
 			a.timeTriggers[timerTrigger.Name] = timerTrigger
+			utils.LogInfof("TimerTrigger %s loaded", timerTrigger.Name)
 			continue
 		}
 
@@ -78,12 +87,14 @@ func (a *AutomationService) Load(bridgeDevices []*devices.BridgeDevice) error {
 			}
 
 			a.mqttTriggers[mqttTrigger.Name] = mqttTrigger
+			utils.LogInfof("MqttTrigger %s loaded", mqttTrigger.Name)
 			continue
 		}
 
 		return errors.New("unsupported trigger type ")
 	}
 
+	a.configured = true
 	return nil
 }
 

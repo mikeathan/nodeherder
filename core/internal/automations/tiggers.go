@@ -75,9 +75,8 @@ func (t *MqttTrigger) Evaluate(device *devices.Device) {
 }
 
 func (t *TimerTrigger) configure(bridgeDevices []*devices.BridgeDevice, client mqtt.MqttClient) error {
-	fmt.Println("Loading timer trigger:", t.Name)
 	if t.Type != "timer" {
-		return errors.New("unsupported trigger type ")
+		return fmt.Errorf("unsupported trigger type %s", t.Type)
 	}
 
 	// valdate conditions
@@ -107,7 +106,7 @@ func validateAction(bridgeDevices []*devices.BridgeDevice, action *MqttAction, c
 		if device.FriendlyName == action.Friendlyname {
 
 			if action.Type != "light" {
-				return errors.New("unsupported action type ")
+				return fmt.Errorf("unsupported action type %s", action.Type)
 			}
 
 			if device.Disabled {
@@ -139,11 +138,7 @@ func validateAction(bridgeDevices []*devices.BridgeDevice, action *MqttAction, c
 func (t *TimerTrigger) Trigger() error {
 
 	fmt.Printf("Trigger Action %s\n", t.Action.Friendlyname)
-	err := t.Action.Run()
-	if err != nil {
-		fmt.Println("error:", err.Error())
-	}
-	return nil
+	return t.Action.Run()
 }
 
 func (t *TimerTrigger) run() {

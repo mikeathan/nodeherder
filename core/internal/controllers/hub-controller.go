@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"node-herder/internal/automations"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
@@ -18,6 +19,7 @@ type HubController struct {
 	wp                                *utils.WorkerPool
 	handlers                          map[string]handler
 	DeviceAvailabilityTimeoutOverride int
+	AutomationEngine                  automations.Engine
 }
 
 func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Repository, ctx context.Context) *HubController {
@@ -27,6 +29,7 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 		repo:                              repo,
 		handlers:                          map[string]handler{},
 		DeviceAvailabilityTimeoutOverride: 3600, // 1 Hour
+		AutomationEngine:                  automations.NewEngine(mqtt),
 	}
 
 	h.wp = utils.NewWorkerPool(1, ctx)
@@ -62,12 +65,12 @@ func (m *HubController) ProcessMessage(id string, payload []byte, connType strin
 
 		if strings.HasPrefix(id, "bridge") {
 
-			var h = newBridgeHandler(m.mqtt)
+			var h = newBridgeHandler(m.mqtt, m.AutomationEngine)
 			m.handlers[id] = h
 
 		} else {
 
-			var h = newDeviceHandler(m.repo, m.eventHub)
+			var h = newDeviceHandler(m.repo, m.eventHub, m.AutomationEngine)
 			h.AvailabilityTimeoutInSeconds = m.DeviceAvailabilityTimeoutOverride
 			m.handlers[id] = h
 		}

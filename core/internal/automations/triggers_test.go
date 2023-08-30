@@ -28,7 +28,7 @@ func TestMqttAction(t *testing.T) {
 	for _, t := range topics {
 		mqtt.AddTopic(t)
 	}
-	automation := automations.NewAutomationService(mqtt)
+	automation := automations.NewEngine(mqtt)
 	var messageHandler = func(id string, payload []byte) {
 		if id == "bridge/devices" {
 

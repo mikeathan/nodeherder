@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"node-herder/internal/automations"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
@@ -28,13 +29,15 @@ type handler interface {
 }
 
 type bridgeHandler struct {
-	mqtt       mqtt.MqttClient
-	configured bool
+	mqtt             mqtt.MqttClient
+	configured       bool
+	automationEngine automations.Engine
 }
 
-func newBridgeHandler(mqtt mqtt.MqttClient) *bridgeHandler {
+func newBridgeHandler(mqtt mqtt.MqttClient, automations automations.Engine) *bridgeHandler {
 	return &bridgeHandler{
-		mqtt: mqtt,
+		mqtt:             mqtt,
+		automationEngine: automations,
 	}
 }
 
@@ -48,12 +51,11 @@ func (b *bridgeHandler) ProcessPayload(id string, connType string, payload []byt
 		}
 
 		if !b.configured {
-			// WIP
-			// automations.Load(devices, b.mqtt)
-			// if err != nil {
-			// 	fmt.Println("loading automations error: ", err.Error())
-			// 	return err
-			// }
+
+			b.automationEngine.Load(devices)
+			if err != nil {
+				return err
+			}
 
 			for _, device := range devices {
 				if device.Disabled || device.Type == "Coordinator" || !device.InterviewCompleted {
@@ -79,12 +81,14 @@ type deviceHandler struct {
 	AvailabilityTimeoutInSeconds int
 	repo                         devices.Repository
 	eventHub                     ws.EventHub
+	automationEngine             automations.Engine
 }
 
-func newDeviceHandler(repo devices.Repository, eventHub ws.EventHub) *deviceHandler {
+func newDeviceHandler(repo devices.Repository, eventHub ws.EventHub, automationEngine automations.Engine) *deviceHandler {
 	return &deviceHandler{
 		repo:                         repo,
 		eventHub:                     eventHub,
+		automationEngine:             automationEngine,
 		AvailabilityTimeoutInSeconds: 3600, // 1 Hour
 	}
 }
@@ -114,5 +118,8 @@ func (c *deviceHandler) ProcessPayload(id string, connType string, payload []byt
 
 	c.repo.Store(id, device)
 	c.eventHub.Broadcast(ws.DeviceUpdated, device)
+
+	// check to see if we have an automation for current device
+	c.automationEngine.HandleDevice(device)
 	return nil
 }
