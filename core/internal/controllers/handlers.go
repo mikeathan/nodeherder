@@ -3,7 +3,6 @@ package controllers
 import (
 	"fmt"
 	"node-herder/internal/automations"
-	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/utils"
@@ -29,46 +28,18 @@ type handler interface {
 }
 
 type bridgeHandler struct {
-	mqtt             mqtt.MqttClient
-	configured       bool
-	automationEngine automations.Engine
+	ws ws.EventHub
 }
 
-func newBridgeHandler(mqtt mqtt.MqttClient, automations automations.Engine) *bridgeHandler {
-	return &bridgeHandler{
-		mqtt:             mqtt,
-		automationEngine: automations,
-	}
+func newBridgeHandler(ws ws.EventHub) *bridgeHandler {
+	return &bridgeHandler{ws: ws}
 }
 
 func (b *bridgeHandler) ProcessPayload(id string, connType string, payload []byte) error {
 
 	if id == "bridge/devices" {
-
-		devices, err := devices.LoadBridgeDevices(payload)
-		if err != nil {
-			return err
-		}
-
-		if !b.configured {
-
-			b.automationEngine.Load(devices)
-			if err != nil {
-				return err
-			}
-
-			for _, device := range devices {
-				if device.Disabled || device.Type == "Coordinator" || !device.InterviewCompleted {
-					continue
-				}
-
-				err := b.mqtt.AddTopic(device.FriendlyName)
-				if err != nil {
-					utils.LogErrorf("error %s conffigure topic %s", device.FriendlyName, err.Error())
-				}
-			}
-			b.configured = true
-		}
+		// TODO: maybe we update bridge devices later
+		// for now do nothing
 
 	} else if id == "bridge/logging" {
 		// todo: handle

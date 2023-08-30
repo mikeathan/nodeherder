@@ -17,9 +17,6 @@ func GetMqttConfig(broker string) mqtt.MqttConfig {
 	}
 }
 
-// TODO: !!!!!!!!!!!!!1
-// needs fixing , it fails due to registerig bridge and thats thefirst message we get
-// add some conditional topic parsing
 func TestMqttClientReceivesMessage(t *testing.T) {
 	var broker = "192.168.50.179:1883"
 	var topic = "device1"

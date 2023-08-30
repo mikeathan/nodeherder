@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"node-herder/internal/automations"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
@@ -19,7 +20,8 @@ type HubController struct {
 	wp                                *utils.WorkerPool
 	handlers                          map[string]handler
 	DeviceAvailabilityTimeoutOverride int
-	AutomationEngine                  automations.Engine
+	automationEngine                  automations.Engine
+	configured                        bool
 }
 
 func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Repository, ctx context.Context) *HubController {
@@ -29,7 +31,7 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 		repo:                              repo,
 		handlers:                          map[string]handler{},
 		DeviceAvailabilityTimeoutOverride: 3600, // 1 Hour
-		AutomationEngine:                  automations.NewEngine(mqtt),
+		automationEngine:                  automations.NewEngine(mqtt),
 	}
 
 	h.wp = utils.NewWorkerPool(1, ctx)
@@ -40,9 +42,14 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 	})
 
 	h.mqtt.OnMessageHandler(func(id string, payload []byte) {
-		//if !configured{
-		// configure hub
-		//}
+		if !h.configured {
+			err := h.configureHub(id, payload)
+			if err != nil {
+				utils.LogErrorf("configuring hub %s", err.Error())
+			}
+			return
+		}
+
 		h.ProcessMessage(id, payload, "mqtt")
 	})
 
@@ -52,35 +59,37 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 	return h
 }
 
-// func configureHub(){
-// 	if id == "bridge/devices" {
+func (h *HubController) configureHub(id string, payload []byte) error {
 
-// 		if !b.configured {
-// 			devices, err := devices.LoadBridgeDevices(payload)
-// 			if err != nil {
-// 				return err
-// 			}
+	if id != "bridge/devices" {
+		return fmt.Errorf("invalid hub configuration topic %s", id)
+	}
 
-// 			b.automationEngine.Load(devices)
-// 			if err != nil {
-// 				return err
-// 			}
+	devices, err := devices.LoadBridgeDevices(payload)
+	if err != nil {
+		return err
+	}
 
-// 			for _, device := range devices {
-// 				if device.Disabled || device.Type == "Coordinator" || !device.InterviewCompleted {
-// 					continue
-// 				}
+	h.automationEngine.Load(devices)
+	if err != nil {
+		return err
+	}
 
-// 				err := b.mqtt.AddTopic(device.FriendlyName)
-// 				if err != nil {
-// 					utils.LogErrorf("error %s conffgure topic %s", device.FriendlyName, err.Error())
-// 				}
-// 			}
-// 			b.configured = true
-// 		}
+	for _, device := range devices {
+		if device.Disabled || device.Type == "Coordinator" || !device.InterviewCompleted {
+			continue
+		}
 
-//		}
-//	}
+		err := h.mqtt.AddTopic(device.FriendlyName)
+		if err != nil {
+			utils.LogErrorf("error %s conffgure topic %s", device.FriendlyName, err.Error())
+		}
+	}
+	h.configured = true
+
+	return nil
+}
+
 func (c *HubController) Enqueue(id string, payload map[string]interface{}, connType string) error {
 
 	bytes, err := json.Marshal(payload)
@@ -97,12 +106,12 @@ func (m *HubController) ProcessMessage(id string, payload []byte, connType strin
 
 		if strings.HasPrefix(id, "bridge") {
 
-			var h = newBridgeHandler(m.mqtt, m.AutomationEngine)
+			var h = newBridgeHandler(m.eventHub)
 			m.handlers[id] = h
 
 		} else {
 
-			var h = newDeviceHandler(m.repo, m.eventHub, m.AutomationEngine)
+			var h = newDeviceHandler(m.repo, m.eventHub, m.automationEngine)
 			h.AvailabilityTimeoutInSeconds = m.DeviceAvailabilityTimeoutOverride
 			m.handlers[id] = h
 		}
