@@ -1,10 +1,13 @@
 package automations_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"node-herder/internal/automations"
 	"node-herder/internal/mqtt"
+	"node-herder/mocks"
 	"node-herder/models/devices"
+	"strings"
 	"testing"
 	"time"
 )
@@ -13,7 +16,91 @@ import (
 // https://www.home-assistant.io/docs/automation/editor/
 // mosquitto_pub -h 192.168.179:1883 -u sinkhole -P mqtt2023 -t 'zigbee2mqtt/Hive light 1/set' -m '{ "state": "ON" }'
 
+func TestMqttActionSuccess(t *testing.T) {
+
+	deviceName := "device1"
+	sensorProperty := "state"
+	newValue := true
+
+	var data = map[string]any{
+		"presence":    true,
+		"temperature": 20.5,
+		"humidity":    50.2,
+		"lux":         8,
+	}
+
+	var messageHandler = func(id string, payload []byte) {
+		fmt.Println("Received message", id, string(payload))
+		if !strings.HasPrefix(id, deviceName) {
+			t.Fatalf("invalid received topic: want %s got %s", deviceName, id)
+		}
+
+		data := unpackJsonToMap(string(payload))
+		if data == nil {
+			t.Fatalf("error unpacking json")
+		}
+		value, ok := data[sensorProperty]
+		if !ok {
+			t.Fatalf("property not %s found in payload", sensorProperty)
+		}
+		if value != newValue {
+			t.Fatalf("value mismatch: want %v got %v", newValue, value)
+		}
+	}
+
+	mqtt := &mocks.MockMqttClient{}
+	mqtt.OnMessageHandler(messageHandler)
+
+	trigger := newMockMqttTrigger(deviceName, true)
+	condition := newMockMqttCondition("presence", true)
+	action := newMockMqttAction(deviceName, sensorProperty, "light", newValue)
+	action.Client = mqtt
+	condition.Action = action
+	trigger.Conditions = append(trigger.Conditions, condition)
+
+	trigger.Evaluate(data)
+}
+
+func unpackJsonToMap(value string) map[string]any {
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(value), &payload); err != nil {
+		fmt.Print("ERROR unpacking ", value)
+	}
+	return payload
+
+}
+func newMockMqttAction(friendlyName string, property string, actionType string, value any) *automations.MqttAction {
+	action := &automations.MqttAction{}
+	action.Friendlyname = friendlyName
+	action.Property = property
+	action.Type = actionType
+	action.Value = value
+
+	return action
+}
+
+func newMockMqttCondition(sensor string, value any) *automations.MqttCondition {
+	condition := &automations.MqttCondition{}
+	condition.Friendlyname = sensor
+	condition.Type = sensor
+	condition.Value = value
+
+	return condition
+
+}
+func newMockMqttTrigger(deviceName string, enabled bool) *automations.MqttTrigger {
+
+	trigger := &automations.MqttTrigger{}
+	trigger.DeviceName = deviceName
+	trigger.Description = fmt.Sprintf("automation for device %s", trigger.DeviceName)
+	trigger.Enabled = enabled
+
+	return trigger
+}
+
 func TestMqttAction(t *testing.T) {
+	t.Skip()
+
 	mqttConfig := mqtt.MqttConfig{
 		Username: "sinkhole",
 		Password: "mqtt2023",
@@ -32,7 +119,6 @@ func TestMqttAction(t *testing.T) {
 	var messageHandler = func(id string, payload []byte) {
 		if id == "bridge/devices" {
 
-			//TEST
 			devices, err := devices.LoadBridgeDevices(payload)
 			if err != nil {
 				fmt.Println("error: ", err.Error())

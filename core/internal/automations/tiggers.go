@@ -55,6 +55,42 @@ func (t *MqttTrigger) Evaluate(data map[string]any) {
 	}
 }
 
+// validate actions
+func validateAction(bridgeDevices []*devices.BridgeDevice, action *MqttAction, client mqtt.MqttClient) error {
+
+	for _, device := range bridgeDevices {
+		if device.FriendlyName == action.Friendlyname {
+
+			if action.Type != "light" {
+				return fmt.Errorf("unsupported action type %s", action.Type)
+			}
+
+			if device.Disabled {
+				return errors.New("device is disabled ")
+			}
+			action.Client = client
+
+			// TODO: refactor. no need to keep looping once we found our value
+			// need to fix state, convert it to expected one: { "state": "ON" }'
+			for _, expose := range device.Definition.Exposes {
+				for _, feature := range expose.Features {
+					if feature.Property == action.Property { // state property only!
+
+						// for now we only support "state" property
+						if action.Value == true {
+							action.Value = feature.ValueOn
+						} else {
+							action.Value = feature.ValueOff
+						}
+						break
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // func (t *TimerTrigger) configure(bridgeDevices []*devices.BridgeDevice, client mqtt.MqttClient) error {
 // 	if t.Type != "timer" {
 // 		return fmt.Errorf("unsupported trigger type %s", t.Type)
@@ -79,42 +115,6 @@ func (t *MqttTrigger) Evaluate(data map[string]any) {
 // 	t.run()
 // 	return nil
 // }
-
-// validate actions
-func validateAction(bridgeDevices []*devices.BridgeDevice, action *MqttAction, client mqtt.MqttClient) error {
-
-	for _, device := range bridgeDevices {
-		if device.FriendlyName == action.Friendlyname {
-
-			if action.Type != "light" {
-				return fmt.Errorf("unsupported action type %s", action.Type)
-			}
-
-			if device.Disabled {
-				return errors.New("device is disabled ")
-			}
-			action.client = client
-
-			// TODO: refactor. no need to keep looping once we found our value
-			// need to fix state, convert it to expected one: { "state": "ON" }'
-			for _, expose := range device.Definition.Exposes {
-				for _, feature := range expose.Features {
-					if feature.Property == action.Property { // state property only!
-
-						// for now we only support "state" property
-						if action.Value == true {
-							action.Value = feature.ValueOn
-						} else {
-							action.Value = feature.ValueOff
-						}
-						break
-					}
-				}
-			}
-		}
-	}
-	return nil
-}
 
 // type TimerTrigger struct {
 // 	Type      string      `json:"trigger"`

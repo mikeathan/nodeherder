@@ -15,7 +15,7 @@ type MqttAction struct {
 	Type     string `json:"type"`
 	Property string `json:"name"`
 	Value    any    `json:"value"`
-	client   mqtt.MqttClient
+	Client   mqtt.MqttClient
 }
 
 func (a *MqttAction) Run() error {
@@ -29,9 +29,9 @@ func (a *MqttAction) Run() error {
 	}
 
 	msg := fmt.Sprintf("%s/set", a.Friendlyname)
-	a.client.Publish(msg, payload)
+	a.Client.Publish(msg, payload)
 
-	fmt.Printf("[DEBUG] publising %s => %s \n", msg, string(payload))
+	//fmt.Printf("[DEBUG] publishing topic: %s => %s \n", msg, string(payload))
 	return nil
 }
 
@@ -104,7 +104,7 @@ func newMockMqttTrigger() []interface{} {
 
 	// new action
 	ma := &MqttAction{}
-	ma.client = nil
+	ma.Client = nil
 
 	ma.Friendlyname = "Attic light"
 	ma.Property = "state"
@@ -125,7 +125,7 @@ func newMockMqttTrigger() []interface{} {
 
 	// new action
 	ma2 := &MqttAction{}
-	ma2.client = nil
+	ma2.Client = nil
 
 	ma2.Friendlyname = "Attic light"
 	ma2.Property = "state"

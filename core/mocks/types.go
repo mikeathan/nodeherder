@@ -36,6 +36,7 @@ func (m *MockMqttClient) Connect() error {
 func (m *MockMqttClient) WithMessageHandler(messageHandler func(client mqtt.Client, msg mqtt.Message)) {
 	fmt.Println("Mock WithMessageHandler")
 }
+
 func (m *MockMqttClient) AddTopic(topic string) error {
 	fmt.Println("Mock ConfigureTopic")
 	return nil
@@ -49,9 +50,6 @@ func (m *MockMqttClient) OnMessageHandler(handler func(id string, payload []byte
 	m.messageHandler = handler
 }
 
-func (m *MockMqttClient) PublishMessage(id string, payload []byte) {
-	m.messagePubHandler()(id, payload)
-}
 func (m *MockMqttClient) messagePubHandler() func(id string, payload []byte) {
 	return func(id string, payload []byte) {
 		m.messageHandler(id, payload)
@@ -60,6 +58,11 @@ func (m *MockMqttClient) messagePubHandler() func(id string, payload []byte) {
 
 func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 	fmt.Println("Mock Publish")
+	data := []byte("mock payload")
+	if p, ok := payload.([]byte); ok {
+		data = p
+	}
+	m.messagePubHandler()(topic, data)
 }
 
 type NopWsServer struct {

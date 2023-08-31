@@ -33,7 +33,7 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
 	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
-	mqtt.PublishMessage(id, []byte(device1BatterySource))
+	mqtt.Publish(id, []byte(device1BatterySource))
 
 	time.Sleep(100 * time.Millisecond)
 	device, err := repo.FindDevice(id)
@@ -54,9 +54,9 @@ func TestProcessorUpdatesExistingDevice(t *testing.T) {
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
 	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
-	mqtt.PublishMessage("device1", []byte(device1BatterySource))
-	mqtt.PublishMessage("device2", []byte(device2))
-	mqtt.PublishMessage("device2", []byte(device1BatterySource))
+	mqtt.Publish("device1", []byte(device1BatterySource))
+	mqtt.Publish("device2", []byte(device2))
+	mqtt.Publish("device2", []byte(device1BatterySource))
 
 	time.Sleep(100 * time.Millisecond)
 	id := "device2"
@@ -80,7 +80,7 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
 	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
-	mqtt.PublishMessage(id, []byte(device3NoLastSeen))
+	mqtt.Publish(id, []byte(device3NoLastSeen))
 
 	want := time.Now().Format(time.RFC3339)
 	time.Sleep(100 * time.Millisecond)
@@ -142,7 +142,7 @@ func TestOnlyNewPayloadIsBroadcasted(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		mqtt.PublishMessage(id, []byte(data))
+		mqtt.Publish(id, []byte(data))
 
 		time.Sleep(100 * time.Millisecond)
 		if testCase.broadcast != messageBroadcasted {
@@ -160,7 +160,7 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 	hub := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
 	hub.DeviceAvailabilityTimeoutOverride = 1
 
-	mqtt.PublishMessage(id, []byte(device1BatterySource))
+	mqtt.Publish(id, []byte(device1BatterySource))
 	time.Sleep(100 * time.Millisecond)
 
 	device, err := repo.FindDevice(id)
@@ -177,7 +177,7 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 		t.Fatalf("want offline got online")
 	}
 
-	mqtt.PublishMessage(id, []byte(device1BatterySource))
+	mqtt.Publish(id, []byte(device1BatterySource))
 	time.Sleep(200 * time.Millisecond)
 	device1, _ := repo.FindDevice(id)
 
@@ -195,7 +195,7 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 // 	hub := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
 // 	hub.AvailabilityTimeoutinSeconds = 1
 
-// 	mqtt.PublishMessage(id, []byte(device1BatterySource))
+// 	mqtt.Publish(id, []byte(device1BatterySource))
 // 	time.Sleep(100 * time.Millisecond)
 
 // 	device, err := repo.FindDevice(id)
