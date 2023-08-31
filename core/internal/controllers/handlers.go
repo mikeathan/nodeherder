@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"node-herder/internal/automations"
+	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/utils"
@@ -27,6 +28,49 @@ type handler interface {
 	ProcessPayload(id string, connType string, payload []byte) error
 }
 
+type bridgeConfigurationHandler struct {
+	ws          ws.EventHub
+	mqtt        mqtt.MqttClient
+	automations automations.Engine
+	configured  bool
+}
+
+func newBridgeConfigurationHandler(ws ws.EventHub, mqtt mqtt.MqttClient, automations automations.Engine) *bridgeConfigurationHandler {
+	return &bridgeConfigurationHandler{ws: ws, mqtt: mqtt, automations: automations}
+}
+
+func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, payload []byte) error {
+
+	if id != "bridge/devices" {
+		return fmt.Errorf("invalid hub configuration topic %s", id)
+	}
+
+	devices, err := devices.LoadBridgeDevices(payload)
+	if err != nil {
+		return err
+	}
+
+	// WIP
+	b.automations.Load(devices)
+	if err != nil {
+		return err
+	}
+
+	for _, device := range devices {
+		if device.Disabled || device.Type == "Coordinator" || !device.InterviewCompleted {
+			continue
+		}
+
+		err := b.mqtt.AddTopic(device.FriendlyName)
+		if err != nil {
+			utils.LogErrorf("error %s conffgure topic %s", device.FriendlyName, err.Error())
+		}
+	}
+	b.configured = true
+
+	return nil
+}
+
 type bridgeLoggingHandler struct {
 	ws ws.EventHub
 }
@@ -37,11 +81,6 @@ func newBridgeLoggingHandler(ws ws.EventHub) *bridgeLoggingHandler {
 
 func (b *bridgeLoggingHandler) ProcessPayload(id string, connType string, payload []byte) error {
 
-	// if id == "bridge/devices" {
-	// 	// TODO: maybe we update bridge devices later
-	// 	// for now do nothing
-
-	// } else
 	if id == "bridge/logging" {
 		// todo: handle
 		fmt.Println(string(payload))

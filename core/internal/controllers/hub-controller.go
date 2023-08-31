@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"node-herder/internal/automations"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
@@ -43,17 +42,13 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 
 	h.mqtt.OnMessageHandler(func(id string, payload []byte) {
 
-		// TODO: we cant do that here as we are blocking mqtt
-		// create new hubconfiguration handler
-		// which needs to return results
-
-		if !h.configured {
-			err := h.configureHub(id, payload)
-			if err != nil {
-				utils.LogErrorf("configuring hub %s", err.Error())
-			}
-			return
-		}
+		// if !h.configured {
+		// 	err := h.configureHub(id, payload)
+		// 	if err != nil {
+		// 		utils.LogErrorf("configuring hub %s", err.Error())
+		// 	}
+		// 	return
+		// }
 
 		h.ProcessMessage(id, payload, "mqtt")
 	})
@@ -62,37 +57,6 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 	h.mqtt.Connect()
 	h.mqtt.Publish("zigbee2mqtt/bridge/devices", nil) // get devices for setup stuff
 	return h
-}
-
-func (h *HubController) configureHub(id string, payload []byte) error {
-
-	if id != "bridge/devices" {
-		return fmt.Errorf("invalid hub configuration topic %s", id)
-	}
-
-	devices, err := devices.LoadBridgeDevices(payload)
-	if err != nil {
-		return err
-	}
-
-	h.automationEngine.Load(devices)
-	if err != nil {
-		return err
-	}
-
-	for _, device := range devices {
-		if device.Disabled || device.Type == "Coordinator" || !device.InterviewCompleted {
-			continue
-		}
-
-		err := h.mqtt.AddTopic(device.FriendlyName)
-		if err != nil {
-			utils.LogErrorf("error %s conffgure topic %s", device.FriendlyName, err.Error())
-		}
-	}
-	h.configured = true
-
-	return nil
 }
 
 func (c *HubController) Enqueue(id string, payload map[string]interface{}, connType string) error {
@@ -109,11 +73,17 @@ func (m *HubController) ProcessMessage(id string, payload []byte, connType strin
 
 	if _, ok := m.handlers[id]; !ok {
 
-		// TODO add configuration handler
-		if strings.HasSuffix(id, "logging") {
-			if id == "bridge/logging" {
+		if strings.HasPrefix(id, "bridge") {
+
+			switch id {
+			case "bridge/devices":
+				var h = newBridgeConfigurationHandler(m.eventHub, m.mqtt, m.automationEngine)
+				m.handlers[id] = h
+				break
+			case "bridge/logging":
 				var h = newBridgeLoggingHandler(m.eventHub)
 				m.handlers[id] = h
+				break
 			}
 
 		} else {
