@@ -37,7 +37,7 @@ func (a *MqttAction) Run() error {
 }
 
 type Engine interface { // TODO: might need to move it to Models????
-	HandleDevice(device *devices.Device)
+	HandleDevice(id string, data map[string]any)
 	Load(bridgeDevices []*devices.BridgeDevice) error
 }
 
@@ -55,9 +55,9 @@ func NewEngine(mqtt mqtt.MqttClient) *AutomationEngine {
 		mqttClient:   mqtt,
 	}
 }
-func (a *AutomationEngine) HandleDevice(device *devices.Device) {
-	if t, ok := a.mqttTriggers[device.Id]; ok {
-		t.Evaluate(device)
+func (a *AutomationEngine) HandleDevice(id string, data map[string]any) {
+	if t, ok := a.mqttTriggers[id]; ok {
+		t.Evaluate(data)
 	}
 }
 

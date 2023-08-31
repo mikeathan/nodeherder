@@ -126,15 +126,16 @@ func (c *deviceHandler) ProcessPayload(id string, connType string, payload []byt
 			c.eventHub.Broadcast(ws.DeviceUpdated, device)
 		})
 	} else {
-		if !device.TryUpdateDevice(dataMap) {
+		updated := device.TryUpdateDevice(dataMap)
+		if len(updated) == 0 {
 			return nil
 		}
+		// check to see if we have an automation for current device
+		c.automationEngine.HandleDevice(device.Id, updated)
 	}
 
 	c.repo.Store(id, device)
 	c.eventHub.Broadcast(ws.DeviceUpdated, device)
 
-	// check to see if we have an automation for current device
-	c.automationEngine.HandleDevice(device)
 	return nil
 }

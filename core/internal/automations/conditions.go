@@ -2,7 +2,6 @@ package automations
 
 import (
 	"fmt"
-	"node-herder/models/devices"
 	"time"
 )
 
@@ -14,11 +13,12 @@ type MqttCondition struct {
 	Action       *MqttAction   `json:"action"`
 }
 
-func (m *MqttCondition) Evaluate(device *devices.Device) {
+func (m *MqttCondition) Evaluate(data map[string]any) {
 
-	value, ok := device.Sensors[m.Type]
+	// TOOD:
+	value, ok := data[m.Type]
 	if !ok {
-		fmt.Printf("sensor type %s not exists in %s\n", m.Type, device.Id)
+		fmt.Printf("sensor type %s not exists \n", m.Type)
 		return
 	}
 
