@@ -12,10 +12,11 @@ import (
 
 type MqttAction struct {
 	Friendlyname string `json:"friendlyname"`
-	Type         string `json:"type"`
-	Property     string `json:"name"`
-	Value        any    `json:"value"`
-	client       mqtt.MqttClient
+
+	Type     string `json:"type"`
+	Property string `json:"name"`
+	Value    any    `json:"value"`
+	client   mqtt.MqttClient
 }
 
 func (a *MqttAction) Run() error {
@@ -62,7 +63,7 @@ func (a *AutomationEngine) Load(bridgeDevices []*devices.BridgeDevice) error {
 
 	// fake input data - TEST ONLY
 	// tha needs to come from a file and loaded
-	triggers := createMockConfiguration()
+	triggers := newMockMqttTrigger()
 	//
 
 	utils.LogInfof("Loading automations")
@@ -86,8 +87,8 @@ func (a *AutomationEngine) Load(bridgeDevices []*devices.BridgeDevice) error {
 				return err
 			}
 
-			a.mqttTriggers[mqttTrigger.Name] = mqttTrigger
-			utils.LogInfof("MqttTrigger %s loaded", mqttTrigger.Name)
+			a.mqttTriggers[mqttTrigger.DeviceName] = mqttTrigger
+			utils.LogInfof("MqttTrigger %s loaded", mqttTrigger.Description)
 			continue
 		}
 
@@ -103,12 +104,13 @@ func (a *AutomationEngine) Load(bridgeDevices []*devices.BridgeDevice) error {
 func newMockMqttTrigger() []interface{} {
 
 	trigger := newMqttTrigger()
-	trigger.Name = "Turn on light 1 mqtt automation"
-	trigger.Enabled = false
+	trigger.DeviceName = "Human presence"
+	trigger.Description = "Turn on light 1 mqtt automation"
+	trigger.Enabled = false // disabled
 
 	// new condition
 	mcOn := &MqttCondition{}
-	mcOn.Friendlyname = "Human presence"
+	mcOn.Friendlyname = "Human presence" // ? we dont need that now
 	mcOn.Type = "presence"
 	mcOn.Value = true
 
@@ -119,17 +121,14 @@ func newMockMqttTrigger() []interface{} {
 	ma.Friendlyname = "Attic light"
 	ma.Property = "state"
 	ma.Type = "light"
-	ma.Value = false
+	ma.Value = true
+	mcOn.Action = ma
 
-	//////////////////////////////////////////////////////////////
-	trigger2 := newMqttTrigger()
-	trigger2.Name = "Turn off light 1 mqtt automation"
-	trigger2.Enabled = false
-
+	// ##########################
 	mcOff := &MqttCondition{}
 	mcOff.Friendlyname = "Human presence"
 	mcOff.Type = "presence"
-	mcOn.Value = false
+	mcOff.Value = false
 
 	// TODO:
 	// add timer condition
@@ -144,9 +143,12 @@ func newMockMqttTrigger() []interface{} {
 	ma2.Property = "state"
 	ma2.Type = "light"
 	ma2.Value = false
+	mcOff.Action = ma2
 
 	////////////////////////////////////////////////////
 
+	trigger.Conditions = append(trigger.Conditions, mcOn)
+	trigger.Conditions = append(trigger.Conditions, mcOff)
 	return []interface{}{trigger}
 }
 

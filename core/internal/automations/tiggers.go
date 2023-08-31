@@ -9,19 +9,20 @@ import (
 )
 
 type MqttTrigger struct {
-	Type      string      `json:"trigger"`
-	Name      string      `json:"name"`
-	Condition interface{} `json:"condition"`
-	Action    *MqttAction `json:"action"`
-	Enabled   bool        `json:"enabled"`
+	Type        string           `json:"trigger"`
+	DeviceName  string           `json:"devicename"`
+	Description string           `json:"description"`
+	Conditions  []*MqttCondition `json:"conditions"`
+	Enabled     bool             `json:"enabled"`
 }
 
 func newMqttTrigger() *MqttTrigger {
 	return &MqttTrigger{
-		Type:    "mqtt",
-		Name:    "",
-		Action:  &MqttAction{},
-		Enabled: true,
+		Type:        "mqtt",
+		DeviceName:  "",
+		Description: "",
+		Conditions:  []*MqttCondition{},
+		Enabled:     true,
 	}
 }
 
@@ -43,35 +44,33 @@ func newTimerTrigger() *TimerTrigger {
 }
 
 func (t *MqttTrigger) configure(bridgeDevices []*devices.BridgeDevice, client mqtt.MqttClient) error {
-	fmt.Println("Loading mqtt trigger:", t.Name)
+	fmt.Println("Loading mqtt trigger:", t.Description)
 	if t.Type != "mqtt" {
 		return errors.New("unsupported mqtt type ")
 	}
 
 	// validate conditions
-	_, ok := t.Condition.(*MqttCondition)
-	if !ok {
-		return errors.New("unsupported condition type ")
-	}
+	for _, condition := range t.Conditions {
 
-	// validate actions
-	err := validateAction(bridgeDevices, t.Action, client)
-	if err != nil {
-		return err
+		// validate actions
+		err := validateAction(bridgeDevices, condition.Action, client)
+		if err != nil {
+			return err
+		}
 	}
-
 	return nil
 }
 
 func (t *MqttTrigger) Evaluate(device *devices.Device) {
 
 	if !t.Enabled {
-		fmt.Printf("%s is disabled\n", t.Name)
+		fmt.Printf("%s is disabled\n", t.Description)
 		return
 	}
 
-	mc := t.Condition.(MqttCondition)
-	mc.Evaluate(device)
+	for _, condition := range t.Conditions {
+		condition.Evaluate(device)
+	}
 }
 
 func (t *TimerTrigger) configure(bridgeDevices []*devices.BridgeDevice, client mqtt.MqttClient) error {

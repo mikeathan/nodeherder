@@ -41,15 +41,6 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 	})
 
 	h.mqtt.OnMessageHandler(func(id string, payload []byte) {
-
-		// if !h.configured {
-		// 	err := h.configureHub(id, payload)
-		// 	if err != nil {
-		// 		utils.LogErrorf("configuring hub %s", err.Error())
-		// 	}
-		// 	return
-		// }
-
 		h.ProcessMessage(id, payload, "mqtt")
 	})
 
@@ -74,7 +65,6 @@ func (m *HubController) ProcessMessage(id string, payload []byte, connType strin
 	if _, ok := m.handlers[id]; !ok {
 
 		if strings.HasPrefix(id, "bridge") {
-
 			switch id {
 			case "bridge/devices":
 				var h = newBridgeConfigurationHandler(m.eventHub, m.mqtt, m.automationEngine)

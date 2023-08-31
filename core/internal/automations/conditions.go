@@ -11,19 +11,25 @@ type MqttCondition struct {
 	Type         string        `json:"type"`
 	Value        any           `json:"value"`
 	Constrains   []interface{} `json:"constrains"` // TODO
+	Action       *MqttAction   `json:"action"`
 }
 
-func (m *MqttCondition) Evaluate(device *devices.Device) bool {
+func (m *MqttCondition) Evaluate(device *devices.Device) {
 
 	value, ok := device.Sensors[m.Type]
 	if !ok {
 		fmt.Printf("sensor type %s not exists in %s\n", m.Type, device.Id)
-		return false
+		return
 	}
 
 	// TODO: validate
 	// m.Constrains
-	return value == m.Value
+	if value == m.Value {
+		err := m.Action.Run()
+		if err != nil {
+			fmt.Printf("device sensor action failed %s", err.Error())
+		}
+	}
 }
 
 type TimerCondition interface {
