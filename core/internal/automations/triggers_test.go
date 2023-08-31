@@ -16,11 +16,13 @@ import (
 // https://www.home-assistant.io/docs/automation/editor/
 // mosquitto_pub -h 192.168.179:1883 -u sinkhole -P mqtt2023 -t 'zigbee2mqtt/Hive light 1/set' -m '{ "state": "ON" }'
 
-func TestMqttActionSuccess(t *testing.T) {
+func TestMqttEvaluateSuccessfulCondition(t *testing.T) {
 
+	wantHits := 2
+	onValue := true
+	offValue := false
 	deviceName := "device1"
-	sensorProperty := "state"
-	newValue := true
+	sensorProperty := "someproperty"
 
 	var data = map[string]any{
 		"presence":    true,
@@ -29,36 +31,74 @@ func TestMqttActionSuccess(t *testing.T) {
 		"lux":         8,
 	}
 
-	var messageHandler = func(id string, payload []byte) {
-		fmt.Println("Received message", id, string(payload))
-		if !strings.HasPrefix(id, deviceName) {
-			t.Fatalf("invalid received topic: want %s got %s", deviceName, id)
-		}
-
-		data := unpackJsonToMap(string(payload))
-		if data == nil {
-			t.Fatalf("error unpacking json")
-		}
-		value, ok := data[sensorProperty]
-		if !ok {
-			t.Fatalf("property not %s found in payload", sensorProperty)
-		}
-		if value != newValue {
-			t.Fatalf("value mismatch: want %v got %v", newValue, value)
-		}
+	testCases := []struct {
+		sensor   string
+		newValue any
+		want     bool
+	}{
+		{sensor: "presence", newValue: true, want: true},
+		{sensor: "presence", newValue: false, want: false},
+		{sensor: "temperature", newValue: 18.1, want: false},
+		{sensor: "lux", newValue: 15, want: false},
+		{sensor: "humidity", newValue: 70.3, want: false},
 	}
 
+	// Setup
+
 	mqtt := &mocks.MockMqttClient{}
-	mqtt.OnMessageHandler(messageHandler)
 
 	trigger := newMockMqttTrigger(deviceName, true)
-	condition := newMockMqttCondition("presence", true)
-	action := newMockMqttAction(deviceName, sensorProperty, "light", newValue)
-	action.Client = mqtt
-	condition.Action = action
-	trigger.Conditions = append(trigger.Conditions, condition)
 
-	trigger.Evaluate(data)
+	// create first condition
+	turnOnCondition := newMockMqttCondition("presence", true)
+	onAction := newMockMqttAction(deviceName, sensorProperty, "light", onValue)
+
+	trigger.Conditions = append(trigger.Conditions, turnOnCondition)
+	onAction.Client = mqtt
+	turnOnCondition.Action = onAction
+
+	// create second condition
+	turnOffCondition := newMockMqttCondition("presence", false)
+	offAction := newMockMqttAction(deviceName, sensorProperty, "light", offValue)
+
+	trigger.Conditions = append(trigger.Conditions, turnOffCondition)
+	offAction.Client = mqtt
+	turnOffCondition.Action = offAction
+
+	// Evaluation
+	numOfHits := 0
+	for _, testCase := range testCases {
+
+		var messageHandler = func(id string, payload []byte) {
+			fmt.Println("Received message", id, string(payload))
+			if !strings.HasPrefix(id, deviceName) {
+				t.Fatalf("invalid received topic: want %s got %s", deviceName, id)
+			}
+
+			data := unpackJsonToMap(string(payload))
+			if data == nil {
+				t.Fatalf("error unpacking json")
+			}
+			value, ok := data[sensorProperty]
+			if !ok {
+				t.Fatalf("property not %s found in payload", sensorProperty)
+			}
+			if value != testCase.want {
+				t.Fatalf("value mismatch: want %v got %v", testCase.want, value)
+			}
+			numOfHits++
+		}
+
+		mqtt.OnMessageHandler(messageHandler)
+		data[testCase.sensor] = testCase.newValue
+		trigger.Evaluate(data)
+	}
+
+	time.Sleep(100 * time.Millisecond)
+	if numOfHits != wantHits {
+		t.Fatalf("hist value mismatch: want %v got %v", wantHits, numOfHits)
+	}
+
 }
 
 func unpackJsonToMap(value string) map[string]any {
