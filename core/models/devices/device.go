@@ -165,18 +165,16 @@ func (device *Device) TryUpdateDevice(data map[string]interface{}) bool {
 		}
 	}
 
-	if updated {
-		if device.Stats[availabilityKey] != online {
-			device.Stats[availabilityKey] = online
-			utils.LogInfof("device %s is online", device.Id)
-			device.resetAvailabilityTimer()
-		}
-
-		if _, ok := data[lastSeenKey]; !ok {
-			data[lastSeenKey] = getCurrentTime()
-		}
-		device.Stats[lastSeenKey] = data[lastSeenKey]
+	if device.Stats[availabilityKey] != online {
+		device.Stats[availabilityKey] = online
+		utils.LogInfof("device %s is online", device.Id)
+		device.resetAvailabilityTimer()
 	}
+
+	if _, ok := data[lastSeenKey]; !ok {
+		data[lastSeenKey] = getCurrentTime()
+	}
+	device.Stats[lastSeenKey] = data[lastSeenKey]
 	return updated
 }
 
