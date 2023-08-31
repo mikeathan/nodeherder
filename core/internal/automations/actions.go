@@ -31,6 +31,8 @@ func (a *MqttAction) Run() error {
 
 	msg := fmt.Sprintf("%s/set", a.Friendlyname)
 	a.client.Publish(msg, payload)
+
+	fmt.Printf("[DEBUG] publising %s => %s \n", msg, string(payload))
 	return nil
 }
 
