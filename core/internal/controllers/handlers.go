@@ -41,6 +41,11 @@ func newBridgeConfigurationHandler(ws ws.EventHub, mqtt mqtt.MqttClient, automat
 
 func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, payload []byte) error {
 
+	if b.configured {
+		// to be handled later with bridge updates
+		return fmt.Errorf("hub is already configured ")
+	}
+
 	if id != "bridge/devices" {
 		return fmt.Errorf("invalid hub configuration topic %s", id)
 	}
@@ -50,7 +55,6 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 		return err
 	}
 
-	// WIP
 	b.automations.Load(devices)
 	if err != nil {
 		return err
