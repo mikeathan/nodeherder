@@ -7,7 +7,6 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/models/devices"
 	"node-herder/utils"
-	"time"
 )
 
 type MqttAction struct {
@@ -43,7 +42,6 @@ type Engine interface { // TODO: might need to move it to Models????
 
 type AutomationEngine struct {
 	mqttTriggers map[string]*MqttTrigger
-	timeTriggers map[string]*TimerTrigger
 	mqttClient   mqtt.MqttClient
 	configured   bool
 }
@@ -51,7 +49,6 @@ type AutomationEngine struct {
 func NewEngine(mqtt mqtt.MqttClient) *AutomationEngine {
 	return &AutomationEngine{
 		mqttTriggers: map[string]*MqttTrigger{},
-		timeTriggers: map[string]*TimerTrigger{},
 		mqttClient:   mqtt,
 	}
 }
@@ -70,17 +67,6 @@ func (a *AutomationEngine) Load(bridgeDevices []*devices.BridgeDevice) error {
 
 	utils.LogInfof("Loading automations")
 	for _, trigger := range triggers {
-
-		timerTrigger, ok := trigger.(*TimerTrigger)
-		if ok {
-			err := timerTrigger.configure(bridgeDevices, a.mqttClient)
-			if err != nil {
-				return err
-			}
-			a.timeTriggers[timerTrigger.Name] = timerTrigger
-			utils.LogInfof("TimerTrigger %s loaded", timerTrigger.Name)
-			continue
-		}
 
 		mqttTrigger, ok := trigger.(*MqttTrigger)
 		if ok {
@@ -151,31 +137,5 @@ func newMockMqttTrigger() []interface{} {
 
 	trigger.Conditions = append(trigger.Conditions, mcOn)
 	trigger.Conditions = append(trigger.Conditions, mcOff)
-	return []interface{}{trigger}
-}
-
-// REMOVE
-// used for testing only!!!!!!!!!!
-func createMockConfiguration() []interface{} {
-
-	trigger := newTimerTrigger()
-	trigger.Name = "Turn on light 1 timer automation"
-	trigger.Enabled = false
-
-	// new condition
-	tc := &TimeDurationCondition{}
-	tc.Duration = 5 * time.Second
-	trigger.Condition = tc
-
-	// new action
-	ma := &MqttAction{}
-	ma.client = nil
-
-	ma.Friendlyname = "Attic light"
-	ma.Property = "state"
-	ma.Type = "light"
-	ma.Value = false
-	trigger.Action = ma
-
 	return []interface{}{trigger}
 }

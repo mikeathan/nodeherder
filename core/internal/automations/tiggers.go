@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"node-herder/internal/mqtt"
 	"node-herder/models/devices"
-	"time"
 )
 
 type MqttTrigger struct {
@@ -23,23 +22,6 @@ func newMqttTrigger() *MqttTrigger {
 		Description: "",
 		Conditions:  []*MqttCondition{},
 		Enabled:     true,
-	}
-}
-
-type TimerTrigger struct {
-	Type      string      `json:"trigger"`
-	Name      string      `json:"name"`
-	Condition interface{} `json:"condition"`
-	Action    *MqttAction `json:"action"`
-	Enabled   bool        `json:"enabled"`
-}
-
-func newTimerTrigger() *TimerTrigger {
-	return &TimerTrigger{
-		Type:    "timer",
-		Name:    "",
-		Action:  &MqttAction{},
-		Enabled: true,
 	}
 }
 
@@ -61,7 +43,7 @@ func (t *MqttTrigger) configure(bridgeDevices []*devices.BridgeDevice, client mq
 	return nil
 }
 
-func (t *MqttTrigger) Evaluate(device *devices.Device) {
+func (t *MqttTrigger) Evaluate(data map[string]any) {
 
 	if !t.Enabled {
 		fmt.Printf("%s is disabled\n", t.Description)
@@ -69,34 +51,34 @@ func (t *MqttTrigger) Evaluate(device *devices.Device) {
 	}
 
 	for _, condition := range t.Conditions {
-		condition.Evaluate(device)
+		condition.Evaluate(data)
 	}
 }
 
-func (t *TimerTrigger) configure(bridgeDevices []*devices.BridgeDevice, client mqtt.MqttClient) error {
-	if t.Type != "timer" {
-		return fmt.Errorf("unsupported trigger type %s", t.Type)
-	}
+// func (t *TimerTrigger) configure(bridgeDevices []*devices.BridgeDevice, client mqtt.MqttClient) error {
+// 	if t.Type != "timer" {
+// 		return fmt.Errorf("unsupported trigger type %s", t.Type)
+// 	}
 
-	// valdate conditions
-	_, ok := t.Condition.(*TimeDurationCondition)
-	if !ok {
-		_, ok = t.Condition.(*TimestampCondition)
-		if !ok {
-			return errors.New("unsupported condition type ")
-		}
-	}
+// 	// valdate conditions
+// 	_, ok := t.Condition.(*TimeDurationCondition)
+// 	if !ok {
+// 		_, ok = t.Condition.(*TimestampCondition)
+// 		if !ok {
+// 			return errors.New("unsupported condition type ")
+// 		}
+// 	}
 
-	// validate actions
-	err := validateAction(bridgeDevices, t.Action, client)
+// 	// validate actions
+// 	err := validateAction(bridgeDevices, t.Action, client)
 
-	if err != nil {
-		return err
-	}
+// 	if err != nil {
+// 		return err
+// 	}
 
-	t.run()
-	return nil
-}
+// 	t.run()
+// 	return nil
+// }
 
 // validate actions
 func validateAction(bridgeDevices []*devices.BridgeDevice, action *MqttAction, client mqtt.MqttClient) error {
@@ -134,40 +116,57 @@ func validateAction(bridgeDevices []*devices.BridgeDevice, action *MqttAction, c
 	return nil
 }
 
-func (t *TimerTrigger) Trigger() error {
+// type TimerTrigger struct {
+// 	Type      string      `json:"trigger"`
+// 	Name      string      `json:"name"`
+// 	Condition interface{} `json:"condition"`
+// 	Action    *MqttAction `json:"action"`
+// 	Enabled   bool        `json:"enabled"`
+// }
 
-	fmt.Printf("Trigger Action %s\n", t.Action.Friendlyname)
-	return t.Action.Run()
-}
+// func newTimerTrigger() *TimerTrigger {
+// 	return &TimerTrigger{
+// 		Type:    "timer",
+// 		Name:    "",
+// 		Action:  &MqttAction{},
+// 		Enabled: true,
+// 	}
+// }
 
-func (t *TimerTrigger) run() {
+// func (t *TimerTrigger) Trigger() error {
 
-	if !t.Enabled {
-		fmt.Printf("%s is disabled\n", t.Name)
-		return
-	}
+// 	fmt.Printf("Trigger Action %s\n", t.Action.Friendlyname)
+// 	return t.Action.Run()
+// }
 
-	tc := t.Condition.(TimerCondition)
-	go func() {
-		for {
+// func (t *TimerTrigger) run() {
 
-			//
-			// todo: allow enable/disable triggers
-			//
-			diff := time.Until(tc.GetSchedule()).Seconds()
-			ticker := *time.NewTicker(time.Duration(diff) * time.Second)
-			select {
-			case <-ticker.C:
-				err := t.Trigger()
-				if err != nil {
-					fmt.Println(err)
-				}
+// 	if !t.Enabled {
+// 		fmt.Printf("%s is disabled\n", t.Name)
+// 		return
+// 	}
 
-				if !tc.IsRepeat() {
-					fmt.Println("timer finished. no repeat. exiting")
-					return
-				}
-			}
-		}
-	}()
-}
+// 	tc := t.Condition.(TimerCondition)
+// 	go func() {
+// 		for {
+
+// 			//
+// 			// todo: allow enable/disable triggers
+// 			//
+// 			diff := time.Until(tc.GetSchedule()).Seconds()
+// 			ticker := *time.NewTicker(time.Duration(diff) * time.Second)
+// 			select {
+// 			case <-ticker.C:
+// 				err := t.Trigger()
+// 				if err != nil {
+// 					fmt.Println(err)
+// 				}
+
+// 				if !tc.IsRepeat() {
+// 					fmt.Println("timer finished. no repeat. exiting")
+// 					return
+// 				}
+// 			}
+// 		}
+// 	}()
+// }
