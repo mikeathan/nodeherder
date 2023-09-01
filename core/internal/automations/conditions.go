@@ -94,7 +94,7 @@ func (m *MqttCondition) Evaluate(data map[string]any) {
 	// TOOD:
 	value, ok := data[m.Type]
 	if !ok {
-		fmt.Printf("[DEBUG] sensor type %s not exists \n", m.Type)
+		fmt.Printf("[DEBUG] sensor type %s not in input payload \n", m.Type)
 		return
 	}
 	m.cache[m.Type] = value

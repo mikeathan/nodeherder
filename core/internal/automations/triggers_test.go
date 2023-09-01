@@ -140,19 +140,19 @@ func TestMqttEvaluateSuccessfulConditionWithConstraint(t *testing.T) {
 	testCases := []struct {
 		sensor   string
 		newValue any
-		want     bool
 	}{
-		{sensor: "presence", newValue: true, want: true},
-		{sensor: "presence", newValue: true, want: true},
-		{sensor: "presence", newValue: true, want: true},
-		{sensor: "presence", newValue: false, want: false},
-		{sensor: "presence", newValue: true, want: true},
-		{sensor: "presence", newValue: false, want: true},
-		{sensor: "presence", newValue: true, want: true},
-		{sensor: "presence", newValue: false, want: true},
-		{sensor: "presence", newValue: true, want: true},
-		{sensor: "presence", newValue: true, want: true},
-		{sensor: "presence", newValue: true, want: true},
+		{sensor: "presence", newValue: true},
+		{sensor: "presence", newValue: true},
+		{sensor: "presence", newValue: true},
+		{sensor: "presence", newValue: false},
+		{sensor: "presence", newValue: true},
+		{sensor: "presence", newValue: false},
+		{sensor: "presence", newValue: true},
+		{sensor: "presence", newValue: false},
+		{sensor: "presence", newValue: true},
+		{sensor: "presence", newValue: true},
+		{sensor: "presence", newValue: true},
+		{sensor: "test", newValue: true},
 	}
 
 	for _, testCase := range testCases {
