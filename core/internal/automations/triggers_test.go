@@ -8,6 +8,7 @@ import (
 	"node-herder/mocks"
 	"node-herder/models/devices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -122,12 +123,16 @@ func TestMqttEvaluateSuccessfulConditionWithConstraint(t *testing.T) {
 	//
 	// add timer constrains
 	timerConstraint := automations.NewTimerConstraint()
-	timerConstraint.Duration = 5 * time.Second
+	timerConstraint.Duration = 500 * time.Millisecond
 	turnOnCondition.Constraint = timerConstraint
+
+	expectedMessagesSend := 1
+	wg := &sync.WaitGroup{}
+	wg.Add(expectedMessagesSend)
 
 	var messageHandler = func(id string, payload []byte) {
 		fmt.Println("Received message", id, string(payload))
-
+		wg.Done()
 	}
 
 	mqtt.OnMessageHandler(messageHandler)
@@ -160,11 +165,10 @@ func TestMqttEvaluateSuccessfulConditionWithConstraint(t *testing.T) {
 		}
 
 		trigger.Evaluate(data)
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 	}
 
-	time.Sleep(5 * time.Minute)
-
+	wg.Wait()
 }
 
 func unpackJsonToMap(value string) map[string]any {

@@ -45,7 +45,7 @@ func (t *TimerConstraint) run(procFunc func()) {
 
 		fmt.Println("time constraint started")
 
-		ticker := *time.NewTicker(getDurationFromNow(t) * time.Second)
+		ticker := *time.NewTicker(getDurationFromNow(t) * time.Millisecond)
 
 		defer func() {
 			t.sem.Release(1)
@@ -71,7 +71,7 @@ func (t *TimerConstraint) run(procFunc func()) {
 func getDurationFromNow(t *TimerConstraint) time.Duration {
 
 	timestamp := time.Now().Add(t.Duration)
-	diff := time.Until(timestamp).Seconds()
+	diff := time.Until(timestamp).Milliseconds()
 
 	return time.Duration(diff)
 }
