@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"golang.org/x/sync/semaphore"
 )
 
 // todo: new trigger for device which will hold state
@@ -12,32 +14,43 @@ type TimerConstraint struct {
 	Duration time.Duration `json:"duration"`
 	stop     chan bool
 	mut      sync.RWMutex
+	sem      *semaphore.Weighted
 }
 
 func NewTimerConstraint() *TimerConstraint {
-	return &TimerConstraint{stop: make(chan bool)}
+	return &TimerConstraint{stop: make(chan bool), sem: semaphore.NewWeighted(1)}
 
 }
 func (t *TimerConstraint) Reset() {
 	go func() {
+		defer t.mut.Unlock()
+
 		t.mut.Lock()
 		t.stop <- true
-		t.mut.Unlock()
 	}()
 }
 
 func (t *TimerConstraint) run(procFunc func()) {
 
+	defer t.mut.Unlock()
 	t.mut.Lock()
+
+	// check if its already running
+	if ok := t.sem.TryAcquire(1); !ok {
+		fmt.Println("time constraint is running")
+		return
+	}
+
 	go func() {
 
 		fmt.Println("time constraint started")
 
-		timestamp := time.Now().Add(t.Duration)
-		diff := time.Until(timestamp).Seconds()
-		ticker := *time.NewTicker(time.Duration(diff) * time.Second)
+		ticker := *time.NewTicker(getDurationFromNow(t) * time.Second)
 
-		defer ticker.Stop()
+		defer func() {
+			t.sem.Release(1)
+			ticker.Stop()
+		}()
 
 		select {
 		case <-ticker.C:
@@ -52,7 +65,15 @@ func (t *TimerConstraint) run(procFunc func()) {
 			return
 		}
 	}()
-	t.mut.Unlock()
+
+}
+
+func getDurationFromNow(t *TimerConstraint) time.Duration {
+
+	timestamp := time.Now().Add(t.Duration)
+	diff := time.Until(timestamp).Seconds()
+
+	return time.Duration(diff)
 }
 
 type MqttCondition struct {

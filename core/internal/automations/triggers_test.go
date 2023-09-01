@@ -138,11 +138,15 @@ func TestMqttEvaluateSuccessfulConditionWithConstraint(t *testing.T) {
 		want     bool
 	}{
 		{sensor: "presence", newValue: true, want: true},
+		{sensor: "presence", newValue: true, want: true},
+		{sensor: "presence", newValue: true, want: true},
 		{sensor: "presence", newValue: false, want: false},
 		{sensor: "presence", newValue: true, want: true},
 		{sensor: "presence", newValue: false, want: true},
 		{sensor: "presence", newValue: true, want: true},
 		{sensor: "presence", newValue: false, want: true},
+		{sensor: "presence", newValue: true, want: true},
+		{sensor: "presence", newValue: true, want: true},
 		{sensor: "presence", newValue: true, want: true},
 	}
 
