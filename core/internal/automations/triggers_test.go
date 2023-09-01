@@ -24,13 +24,6 @@ func TestMqttEvaluateSuccessfulCondition(t *testing.T) {
 	deviceName := "device1"
 	sensorProperty := "someproperty"
 
-	var data = map[string]any{
-		"presence":    true,
-		"temperature": 20.5,
-		"humidity":    50.2,
-		"lux":         8,
-	}
-
 	testCases := []struct {
 		sensor   string
 		newValue any
@@ -90,7 +83,15 @@ func TestMqttEvaluateSuccessfulCondition(t *testing.T) {
 		}
 
 		mqtt.OnMessageHandler(messageHandler)
-		data[testCase.sensor] = testCase.newValue
+
+		var data = map[string]any{
+			testCase.sensor:           testCase.newValue,
+			"some_sensor_data":        true,
+			"some sensor data 2":      20.5,
+			"more sensor data 4":      50.2,
+			"even more sensor data 4": 8,
+		}
+
 		trigger.Evaluate(data)
 	}
 
@@ -98,7 +99,6 @@ func TestMqttEvaluateSuccessfulCondition(t *testing.T) {
 	if numOfHits != wantHits {
 		t.Fatalf("hist value mismatch: want %v got %v", wantHits, numOfHits)
 	}
-
 }
 
 func unpackJsonToMap(value string) map[string]any {
