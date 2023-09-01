@@ -100,24 +100,66 @@ func TestMqttEvaluateSuccessfulCondition(t *testing.T) {
 		t.Fatalf("hist value mismatch: want %v got %v", wantHits, numOfHits)
 	}
 }
-func TestMqttEvaluateSuccessfulConditionWithContstrains(t *testing.T) {
+
+func TestMqttEvaluateSuccessfulConditionWithConstraint(t *testing.T) {
+
+	testSensor := "presence"
 	deviceName := "device1"
-	sensorProperty := "light"
+	sensorProperty := "state"
 	offValue := true
 
 	mqtt := &mocks.MockMqttClient{}
 	trigger := newMockMqttTrigger(deviceName, true)
 
 	// create condition
-	turnOnCondition := newMockMqttCondition("presence", true)
+	turnOnCondition := newMockMqttCondition(testSensor, true)
 	offAction := newMockMqttAction(deviceName, sensorProperty, "light", offValue)
 
 	trigger.Conditions = append(trigger.Conditions, turnOnCondition)
 	offAction.Client = mqtt
 	turnOnCondition.Action = offAction
 
-	// todo
-	// constrains
+	//
+	// add timer constrains
+	timerConstraint := automations.NewTimerConstraint()
+	timerConstraint.Duration = 5 * time.Second
+	turnOnCondition.Constraint = timerConstraint
+
+	var messageHandler = func(id string, payload []byte) {
+		fmt.Println("Received message", id, string(payload))
+
+	}
+
+	mqtt.OnMessageHandler(messageHandler)
+
+	testCases := []struct {
+		sensor   string
+		newValue any
+		want     bool
+	}{
+		{sensor: "presence", newValue: true, want: true},
+		{sensor: "presence", newValue: false, want: false},
+		{sensor: "presence", newValue: true, want: true},
+		{sensor: "presence", newValue: false, want: true},
+		{sensor: "presence", newValue: true, want: true},
+		{sensor: "presence", newValue: false, want: true},
+		{sensor: "presence", newValue: true, want: true},
+	}
+
+	for _, testCase := range testCases {
+		var data = map[string]any{
+			testCase.sensor:           testCase.newValue,
+			"some_sensor_data":        true,
+			"some sensor data 2":      20.5,
+			"more sensor data 4":      50.2,
+			"even more sensor data 4": 8,
+		}
+
+		trigger.Evaluate(data)
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	time.Sleep(5 * time.Minute)
 
 }
 
@@ -140,11 +182,10 @@ func newMockMqttAction(friendlyName string, property string, actionType string, 
 }
 
 func newMockMqttCondition(sensor string, value any) *automations.MqttCondition {
-	condition := &automations.MqttCondition{}
+	condition := automations.NewMqttCondition()
 	condition.Friendlyname = sensor
 	condition.Type = sensor
 	condition.Value = value
-
 	return condition
 }
 

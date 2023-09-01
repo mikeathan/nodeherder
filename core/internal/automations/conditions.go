@@ -2,26 +2,36 @@ package automations
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
 // todo: new trigger for device which will hold state
 
-type TimerConstrain struct {
+type TimerConstraint struct {
 	Duration time.Duration `json:"duration"`
 	procFunc func()
 	exit     chan bool
+	mut      sync.RWMutex
 }
 
-func (t *TimerConstrain) Reset() {
-	t.exit <- true
+func NewTimerConstraint() *TimerConstraint {
+	return &TimerConstraint{exit: make(chan bool), procFunc: func() {}}
+
+}
+func (t *TimerConstraint) Reset() {
+	go func() {
+		t.mut.Lock()
+		t.exit <- true
+		t.mut.Unlock()
+	}()
 }
 
-func (t *TimerConstrain) run() {
-
+func (t *TimerConstraint) run() {
+	t.mut.Lock()
 	go func() {
 		//defer close(t.exit) ??
-
+		fmt.Println("time constraint started")
 		timestamp := time.Now().Add(t.Duration)
 		diff := time.Until(timestamp).Seconds()
 		ticker := *time.NewTicker(time.Duration(diff) * time.Second)
@@ -34,15 +44,20 @@ func (t *TimerConstrain) run() {
 			return
 		}
 	}()
+	t.mut.Unlock()
 }
 
 type MqttCondition struct {
-	Friendlyname string        `json:"friendlyname"`
-	Type         string        `json:"type"`
-	Value        any           `json:"value"`
-	Constrains   []interface{} `json:"constrains"` // TODO
-	Action       *MqttAction   `json:"action"`
+	Friendlyname string      `json:"friendlyname"`
+	Type         string      `json:"type"`
+	Value        any         `json:"value"`
+	Constraint   interface{} `json:"constraint"` // TODO
+	Action       *MqttAction `json:"action"`
 	cache        map[string]any
+}
+
+func NewMqttCondition() *MqttCondition {
+	return &MqttCondition{cache: make(map[string]any)}
 }
 
 func (m *MqttCondition) Evaluate(data map[string]any) {
@@ -66,13 +81,12 @@ func (m *MqttCondition) Evaluate(data map[string]any) {
 
 	if value == m.Value {
 
-		for _, c := range m.Constrains {
-			timer, ok := c.(TimerConstrain)
+		if m.Constraint != nil {
+			timer, ok := m.Constraint.(*TimerConstraint)
 			if ok {
 				timer.procFunc = func() {
-
 					// make sure value hasnt changed while we are waiting
-					if m.cache[m.Type] == m.Value {
+					if m.cache[m.Type] == m.Value { // dont need that
 						m.Action.Run()
 					}
 				}
@@ -88,8 +102,8 @@ func (m *MqttCondition) Evaluate(data map[string]any) {
 	} else {
 
 		// reset any state we might have set during a previous match
-		for _, c := range m.Constrains {
-			timer, ok := c.(TimerConstrain)
+		if m.Constraint != nil {
+			timer, ok := m.Constraint.(*TimerConstraint)
 			if ok {
 				timer.Reset()
 			}
