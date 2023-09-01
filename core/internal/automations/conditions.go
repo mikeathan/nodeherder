@@ -21,6 +21,12 @@ func NewTimerConstraint() *TimerConstraint {
 	return &TimerConstraint{stop: make(chan bool), sem: semaphore.NewWeighted(1)}
 
 }
+
+type DeviceConstraint struct {
+	Type  string `json:"type"`
+	Value any    `json:"value"`
+}
+
 func (t *TimerConstraint) Reset() {
 	go func() {
 		defer t.mut.Unlock()
@@ -91,22 +97,13 @@ func NewMqttCondition() *MqttCondition {
 
 func (m *MqttCondition) Evaluate(data map[string]any) {
 
-	// TOOD:
 	value, ok := data[m.Type]
 	if !ok {
 		fmt.Printf("[DEBUG] sensor type %s not in input payload \n", m.Type)
 		return
 	}
-	m.cache[m.Type] = value
-	// TODO: validate
-	// m.Constrains
 
-	// example
-	// if presence if false AND timeout is 10 min => execute action = turn off light
-	//
-	// presence = false, start timer,  end of timer, chech if values is till same => execute action
-	// presence = true, stop timer
-	// presence = false, while time is running (shoulnt happen)
+	m.cache[m.Type] = value // cache any values, we might use them for any constraints
 
 	if value == m.Value {
 
@@ -114,10 +111,7 @@ func (m *MqttCondition) Evaluate(data map[string]any) {
 			timer, ok := m.Constraint.(*TimerConstraint)
 			if ok {
 				procFunc := func() {
-					// make sure value hasnt changed while we are waiting, dont need that ????
-					if m.cache[m.Type] == m.Value {
-						m.Action.Run()
-					}
+					m.Action.Run()
 				}
 				timer.run(procFunc)
 				return
@@ -130,7 +124,7 @@ func (m *MqttCondition) Evaluate(data map[string]any) {
 		}
 	} else {
 
-		// reset any state we might have set during a previous match
+		// reset any existing constraint state
 		if m.Constraint != nil {
 			timer, ok := m.Constraint.(*TimerConstraint)
 			if ok {

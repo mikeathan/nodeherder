@@ -102,7 +102,7 @@ func TestMqttEvaluateSuccessfulCondition(t *testing.T) {
 	}
 }
 
-func TestMqttEvaluateSuccessfulConditionWithConstraint(t *testing.T) {
+func TestMqttConditionWithTimerConstrait(t *testing.T) {
 
 	testSensor := "presence"
 	deviceName := "device1"
@@ -171,6 +171,30 @@ func TestMqttEvaluateSuccessfulConditionWithConstraint(t *testing.T) {
 	wg.Wait()
 }
 
+func TestMqttConditionWithSensorConstraint(t *testing.T) {
+
+	testSensor := "presence"
+	deviceName := "device1"
+	sensorProperty := "state"
+	offValue := true
+
+	mqtt := &mocks.MockMqttClient{}
+	trigger := newMockMqttTrigger(deviceName, true)
+
+	// create condition
+	turnOnCondition := newMockMqttCondition(testSensor, true)
+	offAction := newMockMqttAction(deviceName, sensorProperty, "light", offValue)
+
+	trigger.Conditions = append(trigger.Conditions, turnOnCondition)
+	offAction.Client = mqtt
+	turnOnCondition.Action = offAction
+
+	//
+	// add timer constrains
+	deviceConstrait := &automations.DeviceConstraint{}
+	t.Fatal("not implemented yet")
+}
+
 func unpackJsonToMap(value string) map[string]any {
 	var payload map[string]any
 	if err := json.Unmarshal([]byte(value), &payload); err != nil {
@@ -197,11 +221,6 @@ func newMockMqttCondition(sensor string, value any) *automations.MqttCondition {
 	return condition
 }
 
-func newMockMqttTimerConstrain(sensor string, value any) *automations.MqttCondition {
-
-	return nil
-
-}
 func newMockMqttTrigger(deviceName string, enabled bool) *automations.MqttTrigger {
 
 	trigger := &automations.MqttTrigger{}
