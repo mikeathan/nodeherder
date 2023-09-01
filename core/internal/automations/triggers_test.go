@@ -100,6 +100,26 @@ func TestMqttEvaluateSuccessfulCondition(t *testing.T) {
 		t.Fatalf("hist value mismatch: want %v got %v", wantHits, numOfHits)
 	}
 }
+func TestMqttEvaluateSuccessfulConditionWithContstrains(t *testing.T) {
+	deviceName := "device1"
+	sensorProperty := "light"
+	offValue := true
+
+	mqtt := &mocks.MockMqttClient{}
+	trigger := newMockMqttTrigger(deviceName, true)
+
+	// create condition
+	turnOnCondition := newMockMqttCondition("presence", true)
+	offAction := newMockMqttAction(deviceName, sensorProperty, "light", offValue)
+
+	trigger.Conditions = append(trigger.Conditions, turnOnCondition)
+	offAction.Client = mqtt
+	turnOnCondition.Action = offAction
+
+	// todo
+	// constrains
+
+}
 
 func unpackJsonToMap(value string) map[string]any {
 	var payload map[string]any
@@ -126,6 +146,11 @@ func newMockMqttCondition(sensor string, value any) *automations.MqttCondition {
 	condition.Value = value
 
 	return condition
+}
+
+func newMockMqttTimerConstrain(sensor string, value any) *automations.MqttCondition {
+
+	return nil
 
 }
 func newMockMqttTrigger(deviceName string, enabled bool) *automations.MqttTrigger {

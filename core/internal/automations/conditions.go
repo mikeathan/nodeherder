@@ -5,12 +5,49 @@ import (
 	"time"
 )
 
+// todo: new trigger for device which will hold state
+
+type TimerConstrain struct {
+	Duration time.Duration `json:"duration"`
+	procFunc func()
+	reset    chan bool
+	exit     chan bool
+}
+
+func (t *TimerConstrain) run() {
+
+	t.reset <- true
+
+	go func() {
+		defer close(t.exit)
+		defer close(t.reset)
+
+		for {
+
+			timestamp := time.Now().Add(t.Duration)
+			diff := time.Until(timestamp).Seconds()
+			ticker := *time.NewTicker(time.Duration(diff) * time.Second)
+			select {
+			case <-ticker.C:
+				// do stuff
+			case <-t.reset:
+				fmt.Println("resetting timer constrain")
+				continue
+			case <-t.exit:
+				fmt.Println("stopping timer constrain")
+				return
+			}
+		}
+	}()
+}
+
 type MqttCondition struct {
 	Friendlyname string        `json:"friendlyname"`
 	Type         string        `json:"type"`
 	Value        any           `json:"value"`
 	Constrains   []interface{} `json:"constrains"` // TODO
 	Action       *MqttAction   `json:"action"`
+	cache        map[string]any
 }
 
 func (m *MqttCondition) Evaluate(data map[string]any) {
@@ -18,13 +55,30 @@ func (m *MqttCondition) Evaluate(data map[string]any) {
 	// TOOD:
 	value, ok := data[m.Type]
 	if !ok {
-		fmt.Printf("sensor type %s not exists \n", m.Type)
+		fmt.Printf("[DEBUG] sensor type %s not exists \n", m.Type)
 		return
 	}
-
+	m.cache[m.Type] = value
 	// TODO: validate
 	// m.Constrains
+
 	if value == m.Value {
+
+		// for _, c := range m.Constrains {
+		// 	timer, ok := c.(TimerConstrain)
+		// 	if ok {
+		// 		timer.procFunc = func() {
+
+		// 			// make sure value hasnt changed while we are waiting
+		// 			if m.cache[m.Type] == m.Value {
+		// 				m.Action.Run()
+		// 			}
+		// 		}
+		// 		timer.run()
+		// 		return //????
+		// 	}
+		// }
+
 		err := m.Action.Run()
 		if err != nil {
 			fmt.Printf("device sensor action failed %s", err.Error())
