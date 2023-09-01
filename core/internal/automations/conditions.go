@@ -10,37 +10,45 @@ import (
 
 type TimerConstraint struct {
 	Duration time.Duration `json:"duration"`
-	procFunc func()
-	exit     chan bool
+	stop     chan bool
 	mut      sync.RWMutex
 }
 
 func NewTimerConstraint() *TimerConstraint {
-	return &TimerConstraint{exit: make(chan bool), procFunc: func() {}}
+	return &TimerConstraint{stop: make(chan bool)}
 
 }
 func (t *TimerConstraint) Reset() {
 	go func() {
 		t.mut.Lock()
-		t.exit <- true
+		t.stop <- true
 		t.mut.Unlock()
 	}()
 }
 
-func (t *TimerConstraint) run() {
+func (t *TimerConstraint) run(procFunc func()) {
+
 	t.mut.Lock()
 	go func() {
-		//defer close(t.exit) ??
+
 		fmt.Println("time constraint started")
+
 		timestamp := time.Now().Add(t.Duration)
 		diff := time.Until(timestamp).Seconds()
 		ticker := *time.NewTicker(time.Duration(diff) * time.Second)
+
+		defer ticker.Stop()
+
 		select {
 		case <-ticker.C:
-			// do stuff
-			t.procFunc()
-		case <-t.exit:
-			fmt.Println("stopping timer constrain")
+
+			procFunc()
+			fmt.Println("timer constraint finished")
+			return
+
+		case <-t.stop:
+
+			fmt.Println("timer constraint stopped")
 			return
 		}
 	}()
@@ -84,14 +92,14 @@ func (m *MqttCondition) Evaluate(data map[string]any) {
 		if m.Constraint != nil {
 			timer, ok := m.Constraint.(*TimerConstraint)
 			if ok {
-				timer.procFunc = func() {
-					// make sure value hasnt changed while we are waiting
-					if m.cache[m.Type] == m.Value { // dont need that
+				procFunc := func() {
+					// make sure value hasnt changed while we are waiting, dont need that ????
+					if m.cache[m.Type] == m.Value {
 						m.Action.Run()
 					}
 				}
-				timer.run()
-				return //????
+				timer.run(procFunc)
+				return
 			}
 		}
 
