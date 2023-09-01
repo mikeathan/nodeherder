@@ -10,33 +10,28 @@ import (
 type TimerConstrain struct {
 	Duration time.Duration `json:"duration"`
 	procFunc func()
-	reset    chan bool
 	exit     chan bool
+}
+
+func (t *TimerConstrain) Reset() {
+	t.exit <- true
 }
 
 func (t *TimerConstrain) run() {
 
-	t.reset <- true
-
 	go func() {
-		defer close(t.exit)
-		defer close(t.reset)
+		//defer close(t.exit) ??
 
-		for {
-
-			timestamp := time.Now().Add(t.Duration)
-			diff := time.Until(timestamp).Seconds()
-			ticker := *time.NewTicker(time.Duration(diff) * time.Second)
-			select {
-			case <-ticker.C:
-				// do stuff
-			case <-t.reset:
-				fmt.Println("resetting timer constrain")
-				continue
-			case <-t.exit:
-				fmt.Println("stopping timer constrain")
-				return
-			}
+		timestamp := time.Now().Add(t.Duration)
+		diff := time.Until(timestamp).Seconds()
+		ticker := *time.NewTicker(time.Duration(diff) * time.Second)
+		select {
+		case <-ticker.C:
+			// do stuff
+			t.procFunc()
+		case <-t.exit:
+			fmt.Println("stopping timer constrain")
+			return
 		}
 	}()
 }
@@ -62,26 +57,42 @@ func (m *MqttCondition) Evaluate(data map[string]any) {
 	// TODO: validate
 	// m.Constrains
 
+	// example
+	// if presence if false AND timeout is 10 min => execute action = turn off light
+	//
+	// presence = false, start timer,  end of timer, chech if values is till same => execute action
+	// presence = true, stop timer
+	// presence = false, while time is running (shoulnt happen)
+
 	if value == m.Value {
 
-		// for _, c := range m.Constrains {
-		// 	timer, ok := c.(TimerConstrain)
-		// 	if ok {
-		// 		timer.procFunc = func() {
+		for _, c := range m.Constrains {
+			timer, ok := c.(TimerConstrain)
+			if ok {
+				timer.procFunc = func() {
 
-		// 			// make sure value hasnt changed while we are waiting
-		// 			if m.cache[m.Type] == m.Value {
-		// 				m.Action.Run()
-		// 			}
-		// 		}
-		// 		timer.run()
-		// 		return //????
-		// 	}
-		// }
+					// make sure value hasnt changed while we are waiting
+					if m.cache[m.Type] == m.Value {
+						m.Action.Run()
+					}
+				}
+				timer.run()
+				return //????
+			}
+		}
 
 		err := m.Action.Run()
 		if err != nil {
 			fmt.Printf("device sensor action failed %s", err.Error())
+		}
+	} else {
+
+		// reset any state we might have set during a previous match
+		for _, c := range m.Constrains {
+			timer, ok := c.(TimerConstrain)
+			if ok {
+				timer.Reset()
+			}
 		}
 	}
 }
