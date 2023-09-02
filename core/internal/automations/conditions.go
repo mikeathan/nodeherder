@@ -8,8 +8,6 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-// todo: new trigger for device which will hold state
-
 type TimerConstraint struct {
 	Duration time.Duration `json:"duration"`
 	stop     chan bool
@@ -25,6 +23,14 @@ func NewTimerConstraint() *TimerConstraint {
 type DeviceConstraint struct {
 	Type  string `json:"type"`
 	Value any    `json:"value"`
+}
+
+func (c *DeviceConstraint) Evaluate() {
+
+}
+
+func (c *DeviceConstraint) Reset() {
+
 }
 
 func (t *TimerConstraint) Reset() {
@@ -115,6 +121,14 @@ func (m *MqttCondition) Evaluate(data map[string]any) {
 				}
 				timer.run(procFunc)
 				return
+			}
+			deviceContraint, ok := m.Constraint.(*DeviceConstraint)
+			if ok {
+				if sensorValue, ok := m.cache[deviceContraint.Type]; ok {
+					if deviceContraint.Value != sensorValue {
+						return
+					}
+				}
 			}
 		}
 

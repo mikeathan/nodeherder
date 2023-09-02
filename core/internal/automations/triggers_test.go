@@ -190,8 +190,9 @@ func TestMqttConditionWithSensorConstraint(t *testing.T) {
 	turnOnCondition.Action = offAction
 
 	//
-	// add timer constrains
-	deviceConstrait := &automations.DeviceConstraint{}
+	// add device constrains
+	deviceConstraint := &automations.DeviceConstraint{}
+	turnOnCondition.Constraint = deviceConstraint
 	t.Fatal("not implemented yet")
 }
 
