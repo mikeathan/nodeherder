@@ -214,8 +214,8 @@ func newMockMqttAction(friendlyName string, property string, actionType string, 
 	return action
 }
 
-func newMockMqttCondition(sensor string, value any) *automations.MqttCondition {
-	condition := automations.NewMqttCondition()
+func newMockMqttCondition(sensor string, value any) *automations.SensorCondition {
+	condition := automations.NewSensorCondition()
 	condition.Friendlyname = sensor
 	condition.Type = sensor
 	condition.Value = value

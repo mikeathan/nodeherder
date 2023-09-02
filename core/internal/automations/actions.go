@@ -97,7 +97,7 @@ func newMockMqttTrigger() []interface{} {
 	trigger.Enabled = false // disabled
 
 	// new condition
-	mcOn := &MqttCondition{}
+	mcOn := &SensorCondition{}
 	mcOn.Friendlyname = "Human presence" // ? we dont need that now
 	mcOn.Type = "presence"
 	mcOn.Value = true
@@ -113,7 +113,7 @@ func newMockMqttTrigger() []interface{} {
 	mcOn.Action = ma
 
 	// ##########################
-	mcOff := &MqttCondition{}
+	mcOff := &SensorCondition{}
 	mcOff.Friendlyname = "Human presence"
 	mcOff.Type = "presence"
 	mcOff.Value = false

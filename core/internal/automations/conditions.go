@@ -8,6 +8,11 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
+type Constraint interface {
+	Evaluate(parent *SensorCondition)
+	Reset()
+}
+
 type TimerConstraint struct {
 	Duration time.Duration `json:"duration"`
 	stop     chan bool
@@ -17,7 +22,6 @@ type TimerConstraint struct {
 
 func NewTimerConstraint() *TimerConstraint {
 	return &TimerConstraint{stop: make(chan bool), sem: semaphore.NewWeighted(1)}
-
 }
 
 type DeviceConstraint struct {
@@ -25,8 +29,13 @@ type DeviceConstraint struct {
 	Value any    `json:"value"`
 }
 
-func (c *DeviceConstraint) Evaluate() {
+func (c *DeviceConstraint) Evaluate(parent *SensorCondition) {
 
+	if value, ok := parent.GetValue(c.Type); ok {
+		if value == c.Value {
+			parent.Action.Run()
+		}
+	}
 }
 
 func (c *DeviceConstraint) Reset() {
@@ -42,8 +51,7 @@ func (t *TimerConstraint) Reset() {
 	}()
 }
 
-func (t *TimerConstraint) run(procFunc func()) {
-
+func (t *TimerConstraint) Evaluate(parent *SensorCondition) {
 	defer t.mut.Unlock()
 	t.mut.Lock()
 
@@ -67,7 +75,7 @@ func (t *TimerConstraint) run(procFunc func()) {
 		select {
 		case <-ticker.C:
 
-			procFunc()
+			parent.Action.Run()
 			fmt.Println("timer constraint finished")
 			return
 
@@ -77,7 +85,6 @@ func (t *TimerConstraint) run(procFunc func()) {
 			return
 		}
 	}()
-
 }
 
 func getDurationFromNow(t *TimerConstraint) time.Duration {
@@ -88,20 +95,28 @@ func getDurationFromNow(t *TimerConstraint) time.Duration {
 	return time.Duration(diff)
 }
 
-type MqttCondition struct {
+type SensorCondition struct {
 	Friendlyname string      `json:"friendlyname"`
 	Type         string      `json:"type"`
 	Value        any         `json:"value"`
-	Constraint   interface{} `json:"constraint"` // TODO
+	Constraint   Constraint  `json:"constraint"` // TODO
 	Action       *MqttAction `json:"action"`
 	cache        map[string]any
 }
 
-func NewMqttCondition() *MqttCondition {
-	return &MqttCondition{cache: make(map[string]any)}
+func NewSensorCondition() *SensorCondition {
+	return &SensorCondition{cache: make(map[string]any)}
 }
 
-func (m *MqttCondition) Evaluate(data map[string]any) {
+func (m *SensorCondition) GetValue(sensor string) (any, bool) {
+	if value, ok := m.cache[sensor]; ok {
+		return value, true
+	}
+
+	return nil, false
+}
+
+func (m *SensorCondition) Evaluate(data map[string]any) {
 
 	value, ok := data[m.Type]
 	if !ok {
@@ -114,22 +129,8 @@ func (m *MqttCondition) Evaluate(data map[string]any) {
 	if value == m.Value {
 
 		if m.Constraint != nil {
-			timer, ok := m.Constraint.(*TimerConstraint)
-			if ok {
-				procFunc := func() {
-					m.Action.Run()
-				}
-				timer.run(procFunc)
-				return
-			}
-			deviceContraint, ok := m.Constraint.(*DeviceConstraint)
-			if ok {
-				if sensorValue, ok := m.cache[deviceContraint.Type]; ok {
-					if deviceContraint.Value != sensorValue {
-						return
-					}
-				}
-			}
+			m.Constraint.Evaluate(m)
+			return
 		}
 
 		err := m.Action.Run()
@@ -140,10 +141,7 @@ func (m *MqttCondition) Evaluate(data map[string]any) {
 
 		// reset any existing constraint state
 		if m.Constraint != nil {
-			timer, ok := m.Constraint.(*TimerConstraint)
-			if ok {
-				timer.Reset()
-			}
+			m.Constraint.Reset()
 		}
 	}
 }
