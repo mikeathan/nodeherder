@@ -127,11 +127,11 @@ func (c *deviceHandler) ProcessPayload(id string, connType string, payload []byt
 		})
 	} else {
 		updated := device.TryUpdateDevice(dataMap)
-		if len(updated) == 0 {
+		if !updated {
 			return nil
 		}
 		// check to see if we have an automation for current device
-		c.automationEngine.HandleDevice(device.Id, updated)
+		c.automationEngine.HandleDevice(device.Id, device.Sensors)
 	}
 
 	c.repo.Store(id, device)

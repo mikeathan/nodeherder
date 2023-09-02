@@ -153,17 +153,16 @@ func (device *Device) StartAvailabilityTimer(timeoutInSecs int, onChangeCallback
 	}()
 }
 
-func (device *Device) TryUpdateDevice(data map[string]interface{}) map[string]any {
+func (device *Device) TryUpdateDevice(data map[string]interface{}) bool {
 
 	// TODO: needs refactoring. maybe keep reference and assign only if changes arefound
 	//
 
-	var updatedMap = map[string]any{}
-
+	var updated = false
 	for key, currValue := range device.Sensors {
 		if newValue, ok := data[key]; ok && newValue != currValue {
 			device.Sensors[key] = newValue
-			updatedMap[key] = newValue
+			updated = true
 		}
 	}
 
@@ -176,8 +175,8 @@ func (device *Device) TryUpdateDevice(data map[string]interface{}) map[string]an
 	if _, ok := data[lastSeenKey]; !ok {
 		data[lastSeenKey] = getCurrentTime()
 	}
-	device.Stats[lastSeenKey] = data[lastSeenKey]
-	return updatedMap
+	device.Stats[lastSeenKey] = data[lastSeenKey] // we need that.
+	return updated
 }
 
 func getCurrentTime() string {

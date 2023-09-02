@@ -39,7 +39,7 @@ func (c *DeviceConstraint) Evaluate(parent *DeviceCondition) {
 }
 
 func (c *DeviceConstraint) Reset() {
-
+	// nothing to reset
 }
 
 func (t *TimerConstraint) Reset() {
@@ -115,9 +115,6 @@ func (m *DeviceCondition) GetValue(sensor string) (any, bool) {
 
 	return nil, false
 }
-
-// PROBLEM:
-// problem  with sensor constraint will contain a differnt Type from the deviceconditiot Type
 
 func (m *DeviceCondition) Evaluate(data map[string]any) {
 
