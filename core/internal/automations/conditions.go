@@ -25,14 +25,15 @@ func NewTimerConstraint() *TimerConstraint {
 }
 
 type DeviceConstraint struct {
-	Type  string `json:"type"`
-	Value any    `json:"value"`
+	Type             string `json:"type"`
+	Value            any    `json:"value"`
+	EqualityOperator string `json:"equalityoperator"`
 }
 
 func (c *DeviceConstraint) Evaluate(parent *DeviceCondition) {
 
 	if value, ok := parent.getValue(c.Type); ok {
-		if value == c.Value {
+		if Equalityoperators[c.EqualityOperator](c.Value, value) {
 			parent.Action.Run()
 		}
 	}
@@ -95,17 +96,30 @@ func getDurationFromNow(t *TimerConstraint) time.Duration {
 	return time.Duration(diff)
 }
 
+var Equalityoperators = map[string]func(any, any) bool{
+	"=": func(v1 any, v2 any) bool {
+		return v1 == v2
+	},
+	">=": func(v1 any, v2 any) bool {
+		return v1.(float32) >= v2.(float32)
+	},
+	"<=": func(v1 any, v2 any) bool {
+		return v1.(float32) <= v2.(float32)
+	},
+}
+
 type DeviceCondition struct {
-	Friendlyname string      `json:"friendlyname"`
-	Type         string      `json:"type"`
-	Value        any         `json:"value"`
-	Constraint   Constraint  `json:"constraint"` // TODO
-	Action       *MqttAction `json:"action"`
-	cache        map[string]any
+	Friendlyname     string      `json:"friendlyname"`
+	Type             string      `json:"type"`
+	Value            any         `json:"value"`
+	Constraint       Constraint  `json:"constraint"` // TODO
+	Action           *MqttAction `json:"action"`
+	EqualityOperator string      `json:"equalityoperator"`
+	cache            map[string]any
 }
 
 func NewDeviceCondition() *DeviceCondition {
-	return &DeviceCondition{cache: make(map[string]any)}
+	return &DeviceCondition{cache: make(map[string]any), EqualityOperator: "="}
 }
 
 func (m *DeviceCondition) getValue(sensor string) (any, bool) {
@@ -125,10 +139,7 @@ func (m *DeviceCondition) Evaluate(data map[string]any) {
 	}
 
 	m.cache[m.Type] = value // cache any values, we might use them for any constraints
-
-	// TODO: we need euality checks
-	// equals/ biger or smaller than etc..
-	if value == m.Value {
+	if Equalityoperators[m.EqualityOperator](m.Value, value) {
 
 		if m.Constraint != nil {
 			m.Constraint.Evaluate(m)
