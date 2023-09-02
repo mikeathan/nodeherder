@@ -11,7 +11,7 @@ type MqttTrigger struct {
 	Type        string             `json:"trigger"`
 	DeviceName  string             `json:"devicename"`
 	Description string             `json:"description"`
-	Conditions  []*SensorCondition `json:"conditions"`
+	Conditions  []*DeviceCondition `json:"conditions"`
 	Enabled     bool               `json:"enabled"`
 }
 
@@ -20,7 +20,7 @@ func newMqttTrigger() *MqttTrigger {
 		Type:        "mqtt",
 		DeviceName:  "",
 		Description: "",
-		Conditions:  []*SensorCondition{},
+		Conditions:  []*DeviceCondition{},
 		Enabled:     true,
 	}
 }

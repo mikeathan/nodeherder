@@ -9,7 +9,7 @@ import (
 )
 
 type Constraint interface {
-	Evaluate(parent *SensorCondition)
+	Evaluate(parent *DeviceCondition)
 	Reset()
 }
 
@@ -29,7 +29,7 @@ type DeviceConstraint struct {
 	Value any    `json:"value"`
 }
 
-func (c *DeviceConstraint) Evaluate(parent *SensorCondition) {
+func (c *DeviceConstraint) Evaluate(parent *DeviceCondition) {
 
 	if value, ok := parent.GetValue(c.Type); ok {
 		if value == c.Value {
@@ -51,7 +51,7 @@ func (t *TimerConstraint) Reset() {
 	}()
 }
 
-func (t *TimerConstraint) Evaluate(parent *SensorCondition) {
+func (t *TimerConstraint) Evaluate(parent *DeviceCondition) {
 	defer t.mut.Unlock()
 	t.mut.Lock()
 
@@ -95,7 +95,7 @@ func getDurationFromNow(t *TimerConstraint) time.Duration {
 	return time.Duration(diff)
 }
 
-type SensorCondition struct {
+type DeviceCondition struct {
 	Friendlyname string      `json:"friendlyname"`
 	Type         string      `json:"type"`
 	Value        any         `json:"value"`
@@ -104,11 +104,11 @@ type SensorCondition struct {
 	cache        map[string]any
 }
 
-func NewSensorCondition() *SensorCondition {
-	return &SensorCondition{cache: make(map[string]any)}
+func NewDeviceCondition() *DeviceCondition {
+	return &DeviceCondition{cache: make(map[string]any)}
 }
 
-func (m *SensorCondition) GetValue(sensor string) (any, bool) {
+func (m *DeviceCondition) GetValue(sensor string) (any, bool) {
 	if value, ok := m.cache[sensor]; ok {
 		return value, true
 	}
@@ -116,7 +116,10 @@ func (m *SensorCondition) GetValue(sensor string) (any, bool) {
 	return nil, false
 }
 
-func (m *SensorCondition) Evaluate(data map[string]any) {
+// PROBLEM:
+// problem  with sensor constraint will contain a differnt Type from the deviceconditiot Type
+
+func (m *DeviceCondition) Evaluate(data map[string]any) {
 
 	value, ok := data[m.Type]
 	if !ok {
