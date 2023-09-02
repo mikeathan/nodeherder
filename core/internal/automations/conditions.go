@@ -31,7 +31,7 @@ type DeviceConstraint struct {
 
 func (c *DeviceConstraint) Evaluate(parent *DeviceCondition) {
 
-	if value, ok := parent.GetValue(c.Type); ok {
+	if value, ok := parent.getValue(c.Type); ok {
 		if value == c.Value {
 			parent.Action.Run()
 		}
@@ -108,7 +108,7 @@ func NewDeviceCondition() *DeviceCondition {
 	return &DeviceCondition{cache: make(map[string]any)}
 }
 
-func (m *DeviceCondition) GetValue(sensor string) (any, bool) {
+func (m *DeviceCondition) getValue(sensor string) (any, bool) {
 	if value, ok := m.cache[sensor]; ok {
 		return value, true
 	}
@@ -126,6 +126,8 @@ func (m *DeviceCondition) Evaluate(data map[string]any) {
 
 	m.cache[m.Type] = value // cache any values, we might use them for any constraints
 
+	// TODO: we need euality checks
+	// equals/ biger or smaller than etc..
 	if value == m.Value {
 
 		if m.Constraint != nil {
