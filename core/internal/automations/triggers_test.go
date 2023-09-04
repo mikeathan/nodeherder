@@ -178,10 +178,10 @@ func TestMqttConditionWithSensorConstraint(t *testing.T) {
 	sensor1Property := "state"
 	sensor2Property := "lux"
 	offValue := true
-	luxValue := 10
+	luxValue := 70
 
-	mqtt := &mocks.MockMqttClient{}
 	trigger := newMockMqttTrigger(deviceName, true)
+	mqtt := &mocks.MockMqttClient{}
 
 	// create condition
 	turnOnCondition := newMockMqttCondition(testSensor, true)
@@ -198,12 +198,36 @@ func TestMqttConditionWithSensorConstraint(t *testing.T) {
 	deviceConstraint.Value = luxValue
 	deviceConstraint.EqualityOperator = ">="
 	turnOnCondition.Constraint = deviceConstraint
-	var data = map[string]any{
-		"presence": true,
-		"lux":      100.1,
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	testCases := []struct {
+		op     string
+		value1 any
+		value2 any
+		result bool
+	}{
+		{op: ">", value1: 1.1, value2: 1, result: true},
 	}
-	trigger.Evaluate(data)
-	time.Sleep(50 * time.Millisecond)
+	for _, testCase := range testCases {
+
+		var messageHandler = func(id string, payload []byte) {
+
+			if !testCase.result {
+				t.Fatalf("operation result mismatch: want false got %v ", testCase.result)
+			}
+			wg.Done()
+		}
+
+		mqtt.OnMessageHandler(messageHandler)
+		var data = map[string]any{
+			"presence": true,
+			"lux":      100.1,
+		}
+
+		trigger.Evaluate(data)
+		time.Sleep(50 * time.Millisecond)
+	}
+	wg.Wait()
 }
 
 func TestEqualityChecks(t *testing.T) {

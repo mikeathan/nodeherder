@@ -33,7 +33,7 @@ type DeviceConstraint struct {
 func (c *DeviceConstraint) Evaluate(parent *DeviceCondition) {
 
 	if inputVal, ok := parent.getValue(c.Type); ok {
-		if Equalityoperators[c.EqualityOperator](c.Value, inputVal) {
+		if Equalityoperators[c.EqualityOperator](inputVal, c.Value) {
 			parent.Action.Run()
 		}
 	}
