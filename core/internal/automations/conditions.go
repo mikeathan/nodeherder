@@ -32,8 +32,8 @@ type DeviceConstraint struct {
 
 func (c *DeviceConstraint) Evaluate(parent *DeviceCondition) {
 
-	if value, ok := parent.getValue(c.Type); ok {
-		if Equalityoperators[c.EqualityOperator](c.Value, value) {
+	if inputVal, ok := parent.getValue(c.Type); ok {
+		if Equalityoperators[c.EqualityOperator](c.Value, inputVal) {
 			parent.Action.Run()
 		}
 	}
@@ -101,11 +101,30 @@ var Equalityoperators = map[string]func(any, any) bool{
 		return v1 == v2
 	},
 	">=": func(v1 any, v2 any) bool {
-		return v1.(float32) >= v2.(float32)
+		return ToFloat(v1) >= ToFloat(v2)
 	},
 	"<=": func(v1 any, v2 any) bool {
-		return v1.(float32) <= v2.(float32)
+		return ToFloat(v1) <= ToFloat(v2)
 	},
+	">": func(v1 any, v2 any) bool {
+		return ToFloat(v1) > ToFloat(v2)
+	},
+	"<": func(v1 any, v2 any) bool {
+		return ToFloat(v1) < ToFloat(v2)
+	},
+}
+
+func ToFloat(value any) float32 {
+	switch v := value.(type) {
+	case int:
+		return float32(v)
+	case float64:
+		return float32(v)
+	case float32:
+		return float32(v)
+	default:
+		return float32(0)
+	}
 }
 
 type DeviceCondition struct {
@@ -138,7 +157,7 @@ func (m *DeviceCondition) Evaluate(data map[string]any) {
 		return
 	}
 
-	m.cache[m.Type] = value // cache any values, we might use them for any constraints
+	m.cache = data // cache any values, we need them for constraints
 	if Equalityoperators[m.EqualityOperator](m.Value, value) {
 
 		if m.Constraint != nil {

@@ -175,15 +175,17 @@ func TestMqttConditionWithSensorConstraint(t *testing.T) {
 
 	testSensor := "presence"
 	deviceName := "device1"
-	sensorProperty := "state"
+	sensor1Property := "state"
+	sensor2Property := "lux"
 	offValue := true
+	luxValue := 10
 
 	mqtt := &mocks.MockMqttClient{}
 	trigger := newMockMqttTrigger(deviceName, true)
 
 	// create condition
 	turnOnCondition := newMockMqttCondition(testSensor, true)
-	offAction := newMockMqttAction(deviceName, sensorProperty, "light", offValue)
+	offAction := newMockMqttAction(deviceName, sensor1Property, "light", offValue)
 
 	trigger.Conditions = append(trigger.Conditions, turnOnCondition)
 	offAction.Client = mqtt
@@ -192,8 +194,44 @@ func TestMqttConditionWithSensorConstraint(t *testing.T) {
 	//
 	// add device constrains
 	deviceConstraint := &automations.DeviceConstraint{}
+	deviceConstraint.Type = sensor2Property
+	deviceConstraint.Value = luxValue
+	deviceConstraint.EqualityOperator = ">="
 	turnOnCondition.Constraint = deviceConstraint
-	t.Fatal("not implemented yet")
+	var data = map[string]any{
+		"presence": true,
+		"lux":      100.1,
+	}
+	trigger.Evaluate(data)
+	time.Sleep(50 * time.Millisecond)
+}
+
+func TestEqualityChecks(t *testing.T) {
+	testCases := []struct {
+		op     string
+		value1 any
+		value2 any
+		result bool
+	}{
+		{op: ">", value1: 1.1, value2: 1, result: true},
+		{op: ">=", value1: 1, value2: 1, result: true},
+		{op: "<", value1: 1, value2: 1.1, result: true},
+		{op: "<=", value1: 1, value2: 1, result: true},
+		{op: "=", value1: 2, value2: 2, result: true},
+
+		{op: ">", value1: 1, value2: 1.1, result: false},
+		{op: ">=", value1: 1, value2: 1.1, result: false},
+		{op: "<", value1: 1.1, value2: 1, result: false},
+		{op: "<=", value1: 1.1, value2: 1, result: false},
+		{op: "=", value1: 1, value2: 2, result: false},
+	}
+
+	for _, testCase := range testCases {
+		res := automations.Equalityoperators[testCase.op](testCase.value1, testCase.value2)
+		if res != testCase.result {
+			t.Fatalf("operation result mismatch: want %v got %v in  %v %s %v", testCase.result, res, testCase.value1, testCase.op, testCase.value2)
+		}
+	}
 }
 
 func unpackJsonToMap(value string) map[string]any {
