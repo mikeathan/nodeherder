@@ -102,7 +102,7 @@ func TestMqttEvaluateSuccessfulCondition(t *testing.T) {
 	}
 }
 
-func TestMqttConditionWithTimerConstrait(t *testing.T) {
+func TestMqttConditionWithTimerConstraint(t *testing.T) {
 
 	testSensor := "presence"
 	deviceName := "device1"
@@ -110,21 +110,10 @@ func TestMqttConditionWithTimerConstrait(t *testing.T) {
 	offValue := true
 
 	mqtt := &mocks.MockMqttClient{}
+
 	trigger := newMockMqttTrigger(deviceName, true)
-
-	// create condition
-	turnOnCondition := newMockMqttCondition(testSensor, true)
-	offAction := newMockMqttAction(deviceName, sensorProperty, "light", offValue)
-
-	trigger.Conditions = append(trigger.Conditions, turnOnCondition)
-	offAction.Client = mqtt
-	turnOnCondition.Action = offAction
-
-	//
-	// add timer constrains
-	timerConstraint := automations.NewTimerConstraint()
-	timerConstraint.Duration = 500 * time.Millisecond
-	turnOnCondition.Constraint = timerConstraint
+	offCondition := createConditionWithTimerConstraint(deviceName, testSensor, sensorProperty, offValue, 500*time.Millisecond, mqtt)
+	trigger.Conditions = append(trigger.Conditions, offCondition)
 
 	expectedMessagesSend := 1
 	wg := &sync.WaitGroup{}
@@ -207,22 +196,8 @@ func TestMqttConditionWithSensorConstraint(t *testing.T) {
 		}
 
 		trigger := newMockMqttTrigger(deviceName, true)
-
-		// create condition
-		turnOnCondition := newMockMqttCondition(testSensor, true)
-		offAction := newMockMqttAction(deviceName, sensor1Property, "light", testCase.occupancy)
-
+		turnOnCondition := createTriggerConditionWithSensorConstraint(deviceName, testSensor, sensor1Property, testCase.occupancy, sensor2Property, testCase.constraintValue, testCase.op, mqtt)
 		trigger.Conditions = append(trigger.Conditions, turnOnCondition)
-		offAction.Client = mqtt
-		turnOnCondition.Action = offAction
-
-		//
-		// add device constrains
-		deviceConstraint := &automations.DeviceConstraint{}
-		deviceConstraint.Type = sensor2Property
-		deviceConstraint.Value = testCase.constraintValue
-		deviceConstraint.EqualityOperator = testCase.op
-		turnOnCondition.Constraint = deviceConstraint
 
 		var messageHandler = func(id string, payload []byte) {
 
@@ -242,6 +217,26 @@ func TestMqttConditionWithSensorConstraint(t *testing.T) {
 		time.Sleep(200 * time.Millisecond)
 	}
 	wg.Wait()
+}
+
+func TestOneConditionWithSensorConstraintAndOneConditionWithTimerConstraint(t *testing.T) {
+	deviceName := "device 1"
+	offSensor := "presence"
+	actionProperty := "state"
+	actionValue := false
+	timerValue := 500 * time.Millisecond
+
+	mqtt := &mocks.MockMqttClient{}
+
+	trigger := newMockMqttTrigger(deviceName, true)
+
+	// sensor off condition
+	offCondition := createConditionWithTimerConstraint(deviceName, offSensor, actionProperty, actionValue, timerValue, mqtt)
+	trigger.Conditions = append(trigger.Conditions, offCondition)
+
+	// sensor on condition
+	turnOnCondition := createTriggerConditionWithSensorConstraint(deviceName, testSensor, sensor1Property, testCase.occupancy, sensor2Property, testCase.constraintValue, testCase.op, mqtt)
+	trigger.Conditions = append(trigger.Conditions, turnOnCondition)
 }
 
 func TestEqualityChecks(t *testing.T) {
@@ -279,6 +274,42 @@ func unpackJsonToMap(value string) map[string]any {
 	}
 	return payload
 
+}
+
+func createTriggerConditionWithSensorConstraint(deviceName string, sensor string, actionProperty string, actionValue any, constraintProperty string, constraintValue any, constraintOp string, mqtt mqtt.MqttClient) *automations.DeviceCondition {
+
+	// create condition
+	condition := newMockMqttCondition(sensor, true)
+	action := newMockMqttAction(deviceName, actionProperty, "light", actionValue)
+
+	action.Client = mqtt
+	condition.Action = action
+
+	//
+	// add device constrains
+	deviceConstraint := &automations.DeviceConstraint{}
+	deviceConstraint.Type = constraintProperty
+	deviceConstraint.Value = constraintValue
+	deviceConstraint.EqualityOperator = constraintOp
+	condition.Constraint = deviceConstraint
+	return condition
+}
+func createConditionWithTimerConstraint(deviceName string, sensor string, actionProperty string, actionValue any, constraintDuration time.Duration, mqtt mqtt.MqttClient) *automations.DeviceCondition {
+
+	// create condition
+	condition := newMockMqttCondition(sensor, true)
+	action := newMockMqttAction(deviceName, actionProperty, "light", actionValue)
+
+	action.Client = mqtt
+	condition.Action = action
+
+	//
+	// add timer constrains
+	timerConstraint := automations.NewTimerConstraint()
+	timerConstraint.Duration = constraintDuration
+	condition.Constraint = timerConstraint
+
+	return condition
 }
 func newMockMqttAction(friendlyName string, property string, actionType string, value any) *automations.MqttAction {
 	action := &automations.MqttAction{}
