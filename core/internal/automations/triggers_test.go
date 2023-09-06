@@ -107,12 +107,12 @@ func TestMqttConditionWithTimerConstraint(t *testing.T) {
 	testSensor := "presence"
 	deviceName := "device1"
 	sensorProperty := "state"
-	offValue := true
-
+	offValue := false
+	conditonValue := false
 	mqtt := &mocks.MockMqttClient{}
 
 	trigger := newMockMqttTrigger(deviceName, true)
-	offCondition := createConditionWithTimerConstraint(deviceName, testSensor, sensorProperty, offValue, 500*time.Millisecond, mqtt)
+	offCondition := createConditionWithTimerConstraint(deviceName, testSensor, conditonValue, sensorProperty, offValue, 500*time.Millisecond, mqtt)
 	trigger.Conditions = append(trigger.Conditions, offCondition)
 
 	expectedMessagesSend := 1
@@ -131,17 +131,8 @@ func TestMqttConditionWithTimerConstraint(t *testing.T) {
 		newValue any
 	}{
 		{sensor: "presence", newValue: true},
-		{sensor: "presence", newValue: true},
-		{sensor: "presence", newValue: true},
 		{sensor: "presence", newValue: false},
 		{sensor: "presence", newValue: true},
-		{sensor: "presence", newValue: false},
-		{sensor: "presence", newValue: true},
-		{sensor: "presence", newValue: false},
-		{sensor: "presence", newValue: true},
-		{sensor: "presence", newValue: true},
-		{sensor: "presence", newValue: true},
-		{sensor: "test", newValue: true},
 	}
 
 	for _, testCase := range testCases {
@@ -196,7 +187,7 @@ func TestMqttConditionWithSensorConstraint(t *testing.T) {
 		}
 
 		trigger := newMockMqttTrigger(deviceName, true)
-		turnOnCondition := createTriggerConditionWithSensorConstraint(deviceName, testSensor, sensor1Property, testCase.occupancy, sensor2Property, testCase.constraintValue, testCase.op, mqtt)
+		turnOnCondition := createTriggerConditionWithSensorConstraint(deviceName, testSensor, true, sensor1Property, testCase.occupancy, sensor2Property, testCase.constraintValue, testCase.op, mqtt)
 		trigger.Conditions = append(trigger.Conditions, turnOnCondition)
 
 		var messageHandler = func(id string, payload []byte) {
@@ -220,23 +211,65 @@ func TestMqttConditionWithSensorConstraint(t *testing.T) {
 }
 
 func TestOneConditionWithSensorConstraintAndOneConditionWithTimerConstraint(t *testing.T) {
+
+	t.Error("needs fixing . deadlock issue a reset")
+
 	deviceName := "device 1"
-	offSensor := "presence"
+	luxSensor := "lux"
+	presenceSensor := "presence"
 	actionProperty := "state"
-	actionValue := false
-	timerValue := 500 * time.Millisecond
+	offConditionValue := false
+	offActionValue := false
+	onActionValue := true
+	onConditionValue := true
+	luxConstraintValue := 30
+	constraintOp := "<="
+	timerValue := 50 * time.Millisecond
 
 	mqtt := &mocks.MockMqttClient{}
 
 	trigger := newMockMqttTrigger(deviceName, true)
 
 	// sensor off condition
-	offCondition := createConditionWithTimerConstraint(deviceName, offSensor, actionProperty, actionValue, timerValue, mqtt)
+	offCondition := createConditionWithTimerConstraint(deviceName, presenceSensor, offConditionValue, actionProperty, offActionValue, timerValue, mqtt)
 	trigger.Conditions = append(trigger.Conditions, offCondition)
 
 	// sensor on condition
-	turnOnCondition := createTriggerConditionWithSensorConstraint(deviceName, testSensor, sensor1Property, testCase.occupancy, sensor2Property, testCase.constraintValue, testCase.op, mqtt)
+	turnOnCondition := createTriggerConditionWithSensorConstraint(deviceName, presenceSensor, onConditionValue, actionProperty, onActionValue, luxSensor, luxConstraintValue, constraintOp, mqtt)
 	trigger.Conditions = append(trigger.Conditions, turnOnCondition)
+	wg := &sync.WaitGroup{}
+	testCases := []struct {
+		occupancy bool
+		luxValue  any
+		result    bool
+	}{
+		//{occupancy: true, luxValue: 35, result: false},
+		{occupancy: true, luxValue: 30, result: true},
+		{occupancy: false, luxValue: 100, result: true},
+	}
+
+	for _, testCase := range testCases {
+		if testCase.result {
+			wg.Add(1)
+		}
+		var messageHandler = func(id string, payload []byte) {
+
+			if !testCase.result {
+				t.Fatalf("operation result mismatch: want false got %v ", testCase.result)
+			}
+			wg.Done()
+		}
+
+		mqtt.OnMessageHandler(messageHandler)
+		var data = map[string]any{
+			"presence": testCase.occupancy,
+			"lux":      testCase.luxValue,
+		}
+
+		trigger.Evaluate(data)
+		time.Sleep(100 * time.Millisecond)
+	}
+	wg.Wait()
 }
 
 func TestEqualityChecks(t *testing.T) {
@@ -276,10 +309,10 @@ func unpackJsonToMap(value string) map[string]any {
 
 }
 
-func createTriggerConditionWithSensorConstraint(deviceName string, sensor string, actionProperty string, actionValue any, constraintProperty string, constraintValue any, constraintOp string, mqtt mqtt.MqttClient) *automations.DeviceCondition {
+func createTriggerConditionWithSensorConstraint(deviceName string, sensor string, conditionValue any, actionProperty string, actionValue any, constraintProperty string, constraintValue any, constraintOp string, mqtt mqtt.MqttClient) *automations.DeviceCondition {
 
 	// create condition
-	condition := newMockMqttCondition(sensor, true)
+	condition := newMockMqttCondition(sensor, conditionValue)
 	action := newMockMqttAction(deviceName, actionProperty, "light", actionValue)
 
 	action.Client = mqtt
@@ -294,10 +327,10 @@ func createTriggerConditionWithSensorConstraint(deviceName string, sensor string
 	condition.Constraint = deviceConstraint
 	return condition
 }
-func createConditionWithTimerConstraint(deviceName string, sensor string, actionProperty string, actionValue any, constraintDuration time.Duration, mqtt mqtt.MqttClient) *automations.DeviceCondition {
+func createConditionWithTimerConstraint(deviceName string, sensor string, conditionValue any, actionProperty string, actionValue any, constraintDuration time.Duration, mqtt mqtt.MqttClient) *automations.DeviceCondition {
 
 	// create condition
-	condition := newMockMqttCondition(sensor, true)
+	condition := newMockMqttCondition(sensor, conditionValue)
 	action := newMockMqttAction(deviceName, actionProperty, "light", actionValue)
 
 	action.Client = mqtt

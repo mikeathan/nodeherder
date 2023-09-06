@@ -44,11 +44,14 @@ func (c *DeviceConstraint) Reset() {
 }
 
 func (t *TimerConstraint) Reset() {
+	// problem here
+	// deadlocks
 	go func() {
 		defer t.mut.Unlock()
 
 		t.mut.Lock()
 		t.stop <- true
+		fmt.Println("out")
 	}()
 }
 
