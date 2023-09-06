@@ -44,6 +44,12 @@ func (c *DeviceConstraint) Reset() {
 }
 
 func (t *TimerConstraint) Reset() {
+
+	if ok := t.sem.TryAcquire(1); ok {
+		fmt.Println("reset - Evaluate is not waiting")
+		t.sem.Release(1)
+		return
+	}
 	// problem here
 	// deadlocks
 	go func() {
@@ -51,7 +57,6 @@ func (t *TimerConstraint) Reset() {
 
 		t.mut.Lock()
 		t.stop <- true
-		fmt.Println("out")
 	}()
 }
 

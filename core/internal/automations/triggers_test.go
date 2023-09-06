@@ -112,27 +112,25 @@ func TestMqttConditionWithTimerConstraint(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 
 	trigger := newMockMqttTrigger(deviceName, true)
-	offCondition := createConditionWithTimerConstraint(deviceName, testSensor, conditonValue, sensorProperty, offValue, 500*time.Millisecond, mqtt)
+	offCondition := createConditionWithTimerConstraint(deviceName, testSensor, conditonValue, sensorProperty, offValue, 100*time.Millisecond, mqtt)
 	trigger.Conditions = append(trigger.Conditions, offCondition)
 
-	expectedMessagesSend := 1
 	wg := &sync.WaitGroup{}
-	wg.Add(expectedMessagesSend)
-
-	var messageHandler = func(id string, payload []byte) {
-		fmt.Println("Received message", id, string(payload))
-		wg.Done()
-	}
-
-	mqtt.OnMessageHandler(messageHandler)
 
 	testCases := []struct {
 		sensor   string
+		delay    time.Duration
 		newValue any
+		result   bool
 	}{
-		{sensor: "presence", newValue: true},
-		{sensor: "presence", newValue: false},
-		{sensor: "presence", newValue: true},
+		{sensor: "presence", delay: 50 * time.Millisecond, newValue: true, result: false},
+		{sensor: "presence", delay: 50 * time.Millisecond, newValue: false, result: false},
+		{sensor: "presence", delay: 110 * time.Millisecond, newValue: false, result: true},
+		{sensor: "presence", delay: 50 * time.Millisecond, newValue: true, result: false},
+		{sensor: "presence", delay: 110 * time.Millisecond, newValue: false, result: true},
+		{sensor: "presence", delay: 50 * time.Millisecond, newValue: true, result: false},
+		{sensor: "presence", delay: 90 * time.Millisecond, newValue: false, result: false},
+		{sensor: "presence", delay: 100 * time.Millisecond, newValue: false, result: true},
 	}
 
 	for _, testCase := range testCases {
@@ -144,8 +142,20 @@ func TestMqttConditionWithTimerConstraint(t *testing.T) {
 			"even more sensor data 4": 8,
 		}
 
+		if testCase.result {
+			wg.Add(1)
+		}
+		var messageHandler = func(id string, payload []byte) {
+			if !testCase.result {
+				t.Fatalf("operation result mismatch: want false got %v ", testCase.result)
+			}
+			wg.Done()
+		}
+
+		mqtt.OnMessageHandler(messageHandler)
+
 		trigger.Evaluate(data)
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(testCase.delay)
 	}
 
 	wg.Wait()
