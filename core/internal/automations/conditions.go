@@ -31,6 +31,7 @@ type DeviceCondition struct {
 	Action           *MqttAction `json:"action"`
 	EqualityOperator string      `json:"equalityoperator"`
 	cache            map[string]any
+	exit             chan bool
 }
 
 func NewDeviceCondition() *DeviceCondition {
@@ -68,12 +69,21 @@ func (m *DeviceCondition) isConditionMatchedFromCache() bool {
 func (m *DeviceCondition) Evaluate(data map[string]any) {
 
 	m.cache = data // cache any values, we need them for constraints
-	if m.Constraint != nil {
-		m.Constraint.Evaluate(m)
-	} else if m.isConditionMatched(data) {
+	if m.isConditionMatched(data) {
+		if m.Constraint != nil {
+			m.exit = m.Constraint.Evaluate(m)
+			return
+		}
+
 		err := m.Action.Run()
 		if err != nil {
 			fmt.Printf("device sensor action failed %s", err.Error())
+		}
+	} else {
+		if m.exit != nil {
+			m.exit <- true
+			close(m.exit)
+			m.exit = nil
 		}
 	}
 }

@@ -9,7 +9,7 @@ import (
 )
 
 type Constraint interface {
-	Evaluate(parent *DeviceCondition)
+	Evaluate(parent *DeviceCondition) chan bool
 }
 
 type TimerConstraint struct {
@@ -29,10 +29,10 @@ type DeviceConstraint struct {
 	EqualityOperator string `json:"equalityoperator"`
 }
 
-func (c *DeviceConstraint) Evaluate(parent *DeviceCondition) {
+func (c *DeviceConstraint) Evaluate(parent *DeviceCondition) chan bool {
 
 	if !parent.isConditionMatchedFromCache() {
-		return
+		return nil
 	}
 
 	if inputVal, ok := parent.getValue(c.Type); ok {
@@ -40,6 +40,7 @@ func (c *DeviceConstraint) Evaluate(parent *DeviceCondition) {
 			parent.Action.Run()
 		}
 	}
+	return nil
 }
 
 func (t *TimerConstraint) Reset() {
@@ -59,8 +60,8 @@ func (t *TimerConstraint) Reset() {
 	}()
 }
 
-func (t *TimerConstraint) Evaluate(parent *DeviceCondition) {
-
+func (t *TimerConstraint) Evaluate(parent *DeviceCondition) chan bool {
+	exit := make(chan bool, 1)
 	if !parent.isConditionMatchedFromCache() {
 		// if timer not running - do nothing
 		// if timer is running - stop it
@@ -71,7 +72,7 @@ func (t *TimerConstraint) Evaluate(parent *DeviceCondition) {
 		// check if its already running
 		if ok := t.sem.TryAcquire(1); !ok {
 			fmt.Println("time constraint is running")
-			return
+			return nil
 		}
 
 		go func() {
@@ -92,13 +93,15 @@ func (t *TimerConstraint) Evaluate(parent *DeviceCondition) {
 				fmt.Println("timer constraint finished")
 				return
 
-			case <-t.stop:
+			case <-exit:
 
 				fmt.Println("timer constraint stopped")
 				return
 			}
 		}()
 	}
+
+	return exit
 	///
 
 	// 	defer t.mut.Unlock()
