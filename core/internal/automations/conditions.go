@@ -2,137 +2,25 @@ package automations
 
 import (
 	"fmt"
-	"sync"
 	"time"
-
-	"golang.org/x/sync/semaphore"
 )
-
-type Constraint interface {
-	Evaluate(parent *DeviceCondition)
-	Reset()
-}
-
-type TimerConstraint struct {
-	Duration time.Duration `json:"duration"`
-	stop     chan bool
-	mut      sync.RWMutex
-	sem      *semaphore.Weighted
-}
-
-func NewTimerConstraint() *TimerConstraint {
-	return &TimerConstraint{stop: make(chan bool), sem: semaphore.NewWeighted(1)}
-}
-
-type DeviceConstraint struct {
-	Type             string `json:"type"`
-	Value            any    `json:"value"`
-	EqualityOperator string `json:"equalityoperator"`
-}
-
-func (c *DeviceConstraint) Evaluate(parent *DeviceCondition) {
-
-	if inputVal, ok := parent.getValue(c.Type); ok {
-		if Equalityoperators[c.EqualityOperator](inputVal, c.Value) {
-			parent.Action.Run()
-		}
-	}
-}
-
-func (c *DeviceConstraint) Reset() {
-	// nothing to reset
-}
-
-func (t *TimerConstraint) Reset() {
-
-	if ok := t.sem.TryAcquire(1); ok {
-		fmt.Println("reset - Evaluate is not waiting")
-		t.sem.Release(1)
-		return
-	}
-	// problem here
-	// deadlocks
-	go func() {
-		defer t.mut.Unlock()
-
-		t.mut.Lock()
-		t.stop <- true
-	}()
-}
-
-func (t *TimerConstraint) Evaluate(parent *DeviceCondition) {
-	defer t.mut.Unlock()
-	t.mut.Lock()
-
-	// check if its already running
-	if ok := t.sem.TryAcquire(1); !ok {
-		fmt.Println("time constraint is running")
-		return
-	}
-
-	go func() {
-
-		fmt.Println("time constraint started")
-
-		ticker := *time.NewTicker(getDurationFromNow(t) * time.Millisecond)
-
-		defer func() {
-			t.sem.Release(1)
-			ticker.Stop()
-		}()
-
-		select {
-		case <-ticker.C:
-
-			parent.Action.Run()
-			fmt.Println("timer constraint finished")
-			return
-
-		case <-t.stop:
-
-			fmt.Println("timer constraint stopped")
-			return
-		}
-	}()
-}
-
-func getDurationFromNow(t *TimerConstraint) time.Duration {
-
-	timestamp := time.Now().Add(t.Duration)
-	diff := time.Until(timestamp).Milliseconds()
-
-	return time.Duration(diff)
-}
 
 var Equalityoperators = map[string]func(any, any) bool{
 	"=": func(v1 any, v2 any) bool {
 		return v1 == v2
 	},
 	">=": func(v1 any, v2 any) bool {
-		return ToFloat(v1) >= ToFloat(v2)
+		return toFloat(v1) >= toFloat(v2)
 	},
 	"<=": func(v1 any, v2 any) bool {
-		return ToFloat(v1) <= ToFloat(v2)
+		return toFloat(v1) <= toFloat(v2)
 	},
 	">": func(v1 any, v2 any) bool {
-		return ToFloat(v1) > ToFloat(v2)
+		return toFloat(v1) > toFloat(v2)
 	},
 	"<": func(v1 any, v2 any) bool {
-		return ToFloat(v1) < ToFloat(v2)
+		return toFloat(v1) < toFloat(v2)
 	},
-}
-
-func ToFloat(value any) float32 {
-	switch v := value.(type) {
-	case int:
-		return float32(v)
-	case float64:
-		return float32(v)
-	case float32:
-		return float32(v)
-	default:
-		return float32(0)
-	}
 }
 
 type DeviceCondition struct {
@@ -157,31 +45,35 @@ func (m *DeviceCondition) getValue(sensor string) (any, bool) {
 	return nil, false
 }
 
-func (m *DeviceCondition) Evaluate(data map[string]any) {
-
+func (m *DeviceCondition) isConditionMatched(data map[string]any) bool {
 	value, ok := data[m.Type]
 	if !ok {
 		fmt.Printf("[DEBUG] sensor type %s not in input payload \n", m.Type)
-		return
+		return false
 	}
 
+	return Equalityoperators[m.EqualityOperator](m.Value, value)
+}
+
+func (m *DeviceCondition) isConditionMatchedFromCache() bool {
+	value, ok := m.cache[m.Type]
+	if !ok {
+		fmt.Printf("[DEBUG] sensor type %s not in cached  payload \n", m.Type)
+		return false
+	}
+
+	return Equalityoperators[m.EqualityOperator](m.Value, value)
+}
+
+func (m *DeviceCondition) Evaluate(data map[string]any) {
+
 	m.cache = data // cache any values, we need them for constraints
-	if Equalityoperators[m.EqualityOperator](m.Value, value) {
-
-		if m.Constraint != nil {
-			m.Constraint.Evaluate(m)
-			return
-		}
-
+	if m.Constraint != nil {
+		m.Constraint.Evaluate(m)
+	} else if m.isConditionMatched(data) {
 		err := m.Action.Run()
 		if err != nil {
 			fmt.Printf("device sensor action failed %s", err.Error())
-		}
-	} else {
-
-		// reset any existing constraint state
-		if m.Constraint != nil {
-			m.Constraint.Reset()
 		}
 	}
 }
