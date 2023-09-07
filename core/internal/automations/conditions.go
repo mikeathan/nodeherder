@@ -71,7 +71,8 @@ func (m *DeviceCondition) Evaluate(data map[string]any) {
 	m.cache = data // cache any values, we need them for constraints
 	if m.isConditionMatched(data) {
 		if m.Constraint != nil {
-			m.exit = m.Constraint.Evaluate(m)
+			m.exit = make(chan bool, 1)
+			m.Constraint.Evaluate(m, m.exit)
 			return
 		}
 
@@ -80,10 +81,12 @@ func (m *DeviceCondition) Evaluate(data map[string]any) {
 			fmt.Printf("device sensor action failed %s", err.Error())
 		}
 	} else {
-		if m.exit != nil {
-			m.exit <- true
-			close(m.exit)
-			m.exit = nil
+		if m.Constraint != nil {
+			if m.exit != nil {
+				m.exit <- true
+				close(m.exit)
+				m.exit = nil
+			}
 		}
 	}
 }

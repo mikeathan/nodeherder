@@ -9,7 +9,7 @@ import (
 )
 
 type Constraint interface {
-	Evaluate(parent *DeviceCondition) chan bool
+	Evaluate(parent *DeviceCondition, exit chan bool)
 }
 
 type TimerConstraint struct {
@@ -29,10 +29,10 @@ type DeviceConstraint struct {
 	EqualityOperator string `json:"equalityoperator"`
 }
 
-func (c *DeviceConstraint) Evaluate(parent *DeviceCondition) chan bool {
+func (c *DeviceConstraint) Evaluate(parent *DeviceCondition, exit chan bool) {
 
 	if !parent.isConditionMatchedFromCache() {
-		return nil
+		return
 	}
 
 	if inputVal, ok := parent.getValue(c.Type); ok {
@@ -40,7 +40,7 @@ func (c *DeviceConstraint) Evaluate(parent *DeviceCondition) chan bool {
 			parent.Action.Run()
 		}
 	}
-	return nil
+	return
 }
 
 func (t *TimerConstraint) Reset() {
@@ -60,48 +60,39 @@ func (t *TimerConstraint) Reset() {
 	}()
 }
 
-func (t *TimerConstraint) Evaluate(parent *DeviceCondition) chan bool {
-	exit := make(chan bool, 1)
-	if !parent.isConditionMatchedFromCache() {
-		// if timer not running - do nothing
-		// if timer is running - stop it
+func (t *TimerConstraint) Evaluate(parent *DeviceCondition, exit chan bool) {
+
+	// check if its already running
+	if ok := t.sem.TryAcquire(1); !ok {
+		fmt.Println("time constraint is running")
+		return
 	}
 
-	if parent.isConditionMatchedFromCache() {
+	go func() {
 
-		// check if its already running
-		if ok := t.sem.TryAcquire(1); !ok {
-			fmt.Println("time constraint is running")
-			return nil
-		}
+		fmt.Println("time constraint started")
 
-		go func() {
+		ticker := *time.NewTicker(getDurationFromNow(t) * time.Millisecond)
 
-			fmt.Println("time constraint started")
-
-			ticker := *time.NewTicker(getDurationFromNow(t) * time.Millisecond)
-
-			defer func() {
-				t.sem.Release(1)
-				ticker.Stop()
-			}()
-
-			select {
-			case <-ticker.C:
-
-				parent.Action.Run()
-				fmt.Println("timer constraint finished")
-				return
-
-			case <-exit:
-
-				fmt.Println("timer constraint stopped")
-				return
-			}
+		defer func() {
+			t.sem.Release(1)
+			ticker.Stop()
 		}()
-	}
 
-	return exit
+		select {
+		case <-ticker.C:
+
+			parent.Action.Run()
+			fmt.Println("timer constraint finished")
+			return
+
+		case <-exit:
+
+			fmt.Println("timer constraint stopped")
+			return
+		}
+	}()
+
 	///
 
 	// 	defer t.mut.Unlock()
