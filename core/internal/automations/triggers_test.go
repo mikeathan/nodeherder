@@ -117,6 +117,7 @@ func TestMqttConditionWithTimerConstraint(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
 
+	//timer constraint delay is 100 ms
 	testCases := []struct {
 		sensor   string
 		delay    time.Duration
@@ -124,7 +125,7 @@ func TestMqttConditionWithTimerConstraint(t *testing.T) {
 		result   bool
 	}{
 		{sensor: "presence", delay: 50 * time.Millisecond, newValue: true, result: false},
-		{sensor: "presence", delay: 70 * time.Millisecond, newValue: false, result: true},
+		{sensor: "presence", delay: 70 * time.Millisecond, newValue: false, result: false}, // expect to fail as timeout is too short and we have new event next cancelling us
 		{sensor: "presence", delay: 50 * time.Millisecond, newValue: true, result: false},
 		{sensor: "presence", delay: 50 * time.Millisecond, newValue: true, result: false},
 		{sensor: "presence", delay: 50 * time.Millisecond, newValue: false, result: false},
