@@ -17,7 +17,7 @@ type TimerConstraint struct {
 	mut      sync.RWMutex
 	sem      *semaphore.Weighted
 	exit     chan bool
-	exited   bool
+	running  bool
 }
 
 func NewTimerConstraint() *TimerConstraint {
@@ -61,10 +61,10 @@ func (t *TimerConstraint) Reset() {
 	// }()
 }
 
-func (t *TimerConstraint) isStopped() bool {
+func (t *TimerConstraint) isRunning() bool {
 	t.mut.Lock()
 	defer t.mut.Unlock()
-	return t.exited
+	return t.running
 }
 
 func (t *TimerConstraint) stop() {
@@ -78,7 +78,7 @@ func (t *TimerConstraint) stop() {
 func (t *TimerConstraint) Evaluate(parent *DeviceCondition) {
 
 	if !parent.isConditionMatchedFromCache() {
-		if !t.isStopped() {
+		if t.isRunning() {
 			t.stop()
 		}
 		return
@@ -98,7 +98,7 @@ func (t *TimerConstraint) start(parent *DeviceCondition) {
 	t.mut.Lock()
 	defer t.mut.Unlock()
 	t.exit = make(chan bool, 1)
-	t.exited = false
+	t.running = true
 
 	go func() {
 
@@ -120,7 +120,7 @@ func (t *TimerConstraint) start(parent *DeviceCondition) {
 			return
 
 		case <-t.exit:
-			t.exited = true
+			t.running = false
 			fmt.Println("timer constraint stopped")
 			return
 		}
