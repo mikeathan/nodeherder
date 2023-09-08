@@ -41,24 +41,6 @@ func (c *DeviceConstraint) Evaluate(parent *DeviceCondition) {
 			parent.Action.Run()
 		}
 	}
-	return
-}
-
-func (t *TimerConstraint) Reset() {
-
-	// if ok := t.sem.TryAcquire(1); ok {
-	// 	fmt.Println("reset - Evaluate is not waiting")
-	// 	t.sem.Release(1)
-	// 	return
-	// }
-	// // problem here
-	// // deadlocks
-	// go func() {
-	// 	defer t.mut.Unlock()
-
-	// 	t.mut.Lock()
-	// 	t.stop <- true
-	// }()
 }
 
 func (t *TimerConstraint) isRunning() bool {
@@ -72,7 +54,7 @@ func (t *TimerConstraint) stop() {
 	defer t.mut.Unlock()
 
 	t.exit <- true
-	// close(t.exit) ???
+	//close(t.exit)
 }
 
 func (t *TimerConstraint) Evaluate(parent *DeviceCondition) {

@@ -13,10 +13,6 @@ import (
 	"time"
 )
 
-// https://www.home-assistant.io/docs/automation/basics/
-// https://www.home-assistant.io/docs/automation/editor/
-// mosquitto_pub -h 192.168.179:1883 -u sinkhole -P mqtt2023 -t 'zigbee2mqtt/Hive light 1/set' -m '{ "state": "ON" }'
-
 func TestMqttEvaluateSuccessfulCondition(t *testing.T) {
 
 	wantHits := 2
@@ -117,7 +113,9 @@ func TestMqttConditionWithTimerConstraint(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
 
-	//timer constraint delay is 100 ms
+	// NOTES:
+	// timer constraint delay is 100 ms
+	// newValue = false is when it should trigger no presence and start timer for ending message
 	testCases := []struct {
 		sensor   string
 		delay    time.Duration
@@ -226,8 +224,6 @@ func TestMqttConditionWithSensorConstraint(t *testing.T) {
 
 func TestOneConditionWithSensorConstraintAndOneConditionWithTimerConstraint(t *testing.T) {
 
-	t.Error("needs fixing . deadlock issue a reset")
-
 	deviceName := "device 1"
 	luxSensor := "lux"
 	presenceSensor := "presence"
@@ -257,10 +253,16 @@ func TestOneConditionWithSensorConstraintAndOneConditionWithTimerConstraint(t *t
 		luxValue  any
 		result    bool
 	}{
-		//{occupancy: true, luxValue: 35, result: false},
-		{occupancy: true, luxValue: 30, result: true},
-		{occupancy: false, luxValue: 100, result: true},
+		{occupancy: true, luxValue: 35, result: false},
+		{occupancy: true, luxValue: 30, result: true},   // turn on light
+		{occupancy: false, luxValue: 100, result: true}, // turn off light
+		{occupancy: true, luxValue: 29.9, result: true}, // turn on light
+		{occupancy: true, luxValue: 31, result: false},  // not working this one, breaks it
 	}
+
+	// NOTES:
+	// if presence is true and lux is below 30 lux, send message to turn on light
+	// if presene is off, start timer for 50 ms, send  message to turn off light
 
 	for _, testCase := range testCases {
 		if testCase.result {

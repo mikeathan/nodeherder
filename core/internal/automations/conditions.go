@@ -2,6 +2,7 @@ package automations
 
 import (
 	"fmt"
+	"node-herder/utils"
 	"time"
 )
 
@@ -48,7 +49,7 @@ func (m *DeviceCondition) getValue(sensor string) (any, bool) {
 func (m *DeviceCondition) isConditionMatched(data map[string]any) bool {
 	value, ok := data[m.Type]
 	if !ok {
-		fmt.Printf("[DEBUG] sensor type %s not in input payload \n", m.Type)
+		utils.LogDebugf("sensor type %s not in input payload \n", m.Type)
 		return false
 	}
 
@@ -58,7 +59,7 @@ func (m *DeviceCondition) isConditionMatched(data map[string]any) bool {
 func (m *DeviceCondition) isConditionMatchedFromCache() bool {
 	value, ok := m.cache[m.Type]
 	if !ok {
-		fmt.Printf("[DEBUG] sensor type %s not in cached  payload \n", m.Type)
+		utils.LogDebugf("sensor type %s not in cached  payload \n", m.Type)
 		return false
 	}
 
@@ -78,15 +79,6 @@ func (m *DeviceCondition) Evaluate(data map[string]any) {
 			fmt.Printf("device sensor action failed %s", err.Error())
 		}
 	}
-
-	// if m.Constraint != nil {
-	// 	if m.exit != nil {
-	// 		m.exit <- true
-	// 		close(m.exit)
-	// 		m.exit = nil
-	// 	}
-	// }
-
 }
 
 type TimerCondition interface {
