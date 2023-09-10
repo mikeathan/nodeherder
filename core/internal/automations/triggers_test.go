@@ -257,7 +257,7 @@ func TestOneConditionWithSensorConstraintAndOneConditionWithTimerConstraint(t *t
 		{occupancy: true, luxValue: 30, result: true},   // turn on light
 		{occupancy: false, luxValue: 100, result: true}, // turn off light
 		{occupancy: true, luxValue: 29.9, result: true}, // turn on light
-		{occupancy: true, luxValue: 31, result: false},  // not working this one, breaks it
+		{occupancy: true, luxValue: 31, result: false},
 	}
 
 	// NOTES:
@@ -271,7 +271,7 @@ func TestOneConditionWithSensorConstraintAndOneConditionWithTimerConstraint(t *t
 		var messageHandler = func(id string, payload []byte) {
 
 			if !testCase.result {
-				t.Fatalf("operation result mismatch: want false got %v ", testCase.result)
+				t.Fatalf("operation result mismatch: want true got %v ", testCase.result)
 			}
 			wg.Done()
 		}
