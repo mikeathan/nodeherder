@@ -91,7 +91,7 @@ func (t *TimerConstraint) start(parent *DeviceCondition) {
 		defer func() {
 			t.sem.Release(1)
 			ticker.Stop()
-
+			t.running = false
 		}()
 
 		select {
@@ -102,7 +102,7 @@ func (t *TimerConstraint) start(parent *DeviceCondition) {
 			return
 
 		case <-t.exit:
-			t.running = false
+
 			fmt.Println("timer constraint stopped")
 			return
 		}
