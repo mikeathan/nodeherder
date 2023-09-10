@@ -3,10 +3,12 @@ package automations_test
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"node-herder/internal/automations"
 	"node-herder/internal/mqtt"
 	"node-herder/mocks"
 	"node-herder/models/devices"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -317,6 +319,67 @@ func TestEqualityChecks(t *testing.T) {
 			t.Fatalf("operation result mismatch: want %v got %v in  %v %s %v", testCase.result, res, testCase.value1, testCase.op, testCase.value2)
 		}
 	}
+}
+
+func TestExportTriggerToFile(t *testing.T) {
+
+	deviceName := "device 1"
+	luxSensor := "lux"
+	presenceSensor := "presence"
+	actionProperty := "state"
+	offConditionValue := false
+	offActionValue := false
+	onActionValue := true
+	onConditionValue := true
+	luxConstraintValue := 30
+	constraintOp := "<="
+	timerValue := 50 * time.Millisecond
+
+	mqtt := &mocks.MockMqttClient{}
+
+	trigger := newMockMqttTrigger(deviceName, true)
+
+	// sensor off condition
+	offCondition := createConditionWithTimerConstraint(deviceName, presenceSensor, offConditionValue, actionProperty, offActionValue, timerValue, mqtt)
+	trigger.Conditions = append(trigger.Conditions, offCondition)
+
+	// sensor on condition
+	turnOnCondition := createTriggerConditionWithSensorConstraint(deviceName, presenceSensor, onConditionValue, actionProperty, onActionValue, luxSensor, luxConstraintValue, constraintOp, mqtt)
+	trigger.Conditions = append(trigger.Conditions, turnOnCondition)
+
+	data, err := json.Marshal(trigger)
+	if err != nil {
+		t.Fatalf("ERROR marshaling payload %s", err.Error())
+	}
+
+	err = os.WriteFile("temp1.json", data, 0644)
+	if err != nil {
+		t.Fatalf("ERROR writing to file %s", err.Error())
+	}
+
+	jsonFile, err := os.Open("temp1.json")
+	if err != nil {
+		t.Fatalf("ERROR opening file %s", err.Error())
+	}
+
+	data, err = io.ReadAll(jsonFile)
+	if err != nil {
+		t.Fatalf("ERROR reading data from file %s", err.Error())
+	}
+	defer jsonFile.Close()
+
+	newTrigger := &automations.MqttTrigger{}
+
+	err = json.Unmarshal(data, &newTrigger)
+	if err != nil {
+		t.Fatalf("ERROR parsing json data %s", err.Error())
+	}
+
+	err = os.Remove("temp1.json")
+	if err != nil {
+		t.Fatalf("ERROR deleting file%s", err.Error())
+	}
+
 }
 
 func unpackJsonToMap(value string) map[string]any {

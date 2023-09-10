@@ -12,10 +12,10 @@ import (
 type MqttAction struct {
 	Friendlyname string `json:"friendlyname"`
 
-	Type     string `json:"type"`
-	Property string `json:"name"`
-	Value    any    `json:"value"`
-	Client   mqtt.MqttClient
+	Type     string          `json:"type"`
+	Property string          `json:"name"`
+	Value    any             `json:"value"`
+	Client   mqtt.MqttClient `json:"-"`
 }
 
 func (a *MqttAction) Run() error {
