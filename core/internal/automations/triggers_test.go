@@ -373,7 +373,48 @@ func TestExportTriggerToFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ERROR parsing json data %s", err.Error())
 	}
-
+	if newTrigger.DeviceName != trigger.DeviceName {
+		t.Fatalf("ERROR DeviceName mismatch")
+	}
+	if newTrigger.Description != trigger.Description {
+		t.Fatalf("ERROR Description mismatch")
+	}
+	if newTrigger.Enabled != trigger.Enabled {
+		t.Fatalf("ERROR Description mismatch")
+	}
+	if newTrigger.Type != trigger.Type {
+		t.Fatalf("ERROR Type mismatch")
+	}
+	for idx, c := range trigger.Conditions {
+		nc := newTrigger.Conditions[idx]
+		if c.EqualityOperator != nc.EqualityOperator {
+			t.Fatalf("ERROR EqualityOperator mismatch")
+		}
+		if c.Friendlyname != nc.Friendlyname {
+			t.Fatalf("ERROR Friendlyname mismatch")
+		}
+		if c.Type != nc.Type {
+			t.Fatalf("ERROR Type mismatch")
+		}
+		if c.Value != nc.Value {
+			t.Fatalf("ERROR Value mismatch")
+		}
+		if c.Constraint != nc.Constraint {
+			t.Fatalf("ERROR Constraint mismatch")
+		}
+		if c.Action.Friendlyname != nc.Action.Friendlyname {
+			t.Fatalf("ERROR Action Friendlyname mismatch")
+		}
+		if c.Action.Property != nc.Action.Property {
+			t.Fatalf("ERROR Action Property mismatch")
+		}
+		if c.Action.Value != nc.Action.Value {
+			t.Fatalf("ERROR Action Value mismatch")
+		}
+		if c.Action.Type != nc.Action.Type {
+			t.Fatalf("ERROR Action Type mismatch")
+		}
+	}
 	err = os.Remove("temp1.json")
 	if err != nil {
 		t.Fatalf("ERROR deleting file%s", err.Error())

@@ -158,7 +158,7 @@ func (d *DeviceCondition) MarshalJSON() ([]byte, error) {
 }
 
 func (d *DeviceCondition) UnmarshalJSON(b []byte) error {
-	deviceCond := struct {
+	var deviceCond = struct {
 		Friendlyname     string          `json:"friendlyname"`
 		Type             string          `json:"type"`
 		Value            any             `json:"value"`
