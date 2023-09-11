@@ -1,6 +1,8 @@
 package automations
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"node-herder/utils"
 	"time"
@@ -25,12 +27,13 @@ var Equalityoperators = map[string]func(any, any) bool{
 }
 
 type DeviceCondition struct {
-	Friendlyname     string      `json:"friendlyname"`
-	Type             string      `json:"type"`
-	Value            any         `json:"value"`
-	Constraint       Constraint  `json:"constraint"` // TODO
-	Action           *MqttAction `json:"action"`
-	EqualityOperator string      `json:"equalityoperator"`
+	Friendlyname     string          `json:"friendlyname"`
+	Type             string          `json:"type"`
+	Value            any             `json:"value"`
+	Constraint       Constraint      `json:"-"`
+	RawConstraint    json.RawMessage `json:"constraint"`
+	Action           *MqttAction     `json:"action"`
+	EqualityOperator string          `json:"equalityoperator"`
 	cache            map[string]any
 }
 
@@ -126,4 +129,74 @@ func (tc *TimestampCondition) IsRepeat() bool {
 
 func getTomorrow(ts time.Time) time.Time {
 	return time.Date(ts.Year(), ts.Month(), ts.Day()+1, ts.Hour(), ts.Minute(), 0, 0, ts.Location())
+}
+
+func (d *DeviceCondition) MarshalJSON() ([]byte, error) {
+	buffer, err := json.Marshal(&d.Constraint)
+	if err != nil {
+		return nil, err
+	}
+
+	deviceCond := struct {
+		Friendlyname     string          `json:"friendlyname"`
+		Type             string          `json:"type"`
+		Value            any             `json:"value"`
+		Constraint       Constraint      `json:"-"`
+		RawConstraint    json.RawMessage `json:"constraint"`
+		Action           *MqttAction     `json:"action"`
+		EqualityOperator string          `json:"equalityoperator"`
+	}{
+		Friendlyname:     d.Friendlyname,
+		Type:             d.Type,
+		Value:            d.Value,
+		RawConstraint:    json.RawMessage(buffer), // fill in raw constraint
+		Action:           d.Action,
+		EqualityOperator: d.EqualityOperator,
+	}
+
+	return json.Marshal(deviceCond)
+}
+
+func (d *DeviceCondition) UnmarshalJSON(b []byte) error {
+	deviceCond := struct {
+		Friendlyname     string          `json:"friendlyname"`
+		Type             string          `json:"type"`
+		Value            any             `json:"value"`
+		Constraint       Constraint      `json:"-"`
+		RawConstraint    json.RawMessage `json:"constraint"`
+		Action           *MqttAction     `json:"action"`
+		EqualityOperator string          `json:"equalityoperator"`
+	}{}
+
+	err := json.Unmarshal(b, &deviceCond)
+	if err != nil {
+		return err
+	}
+
+	var rowConstraint map[string]interface{}
+	err = json.Unmarshal(deviceCond.RawConstraint, &rowConstraint)
+	if err != nil {
+		return err
+	}
+
+	switch rowConstraint["type"] {
+	case "timer":
+		var tc = NewTimerConstraint()
+		err = json.Unmarshal(deviceCond.RawConstraint, &tc)
+		if err != nil {
+			return err
+		}
+		deviceCond.Constraint = tc
+	case "device":
+		var dc = NewDeviceConstraint()
+		err = json.Unmarshal(deviceCond.RawConstraint, &dc)
+		if err != nil {
+			return err
+		}
+		deviceCond.Constraint = dc
+	default:
+		return errors.New("unknown constraint type")
+	}
+
+	return nil
 }

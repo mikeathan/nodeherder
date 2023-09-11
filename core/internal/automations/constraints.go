@@ -11,8 +11,8 @@ import (
 type Constraint interface {
 	Evaluate(parent *DeviceCondition)
 }
-
 type TimerConstraint struct {
+	Type     string        `json:"type"`
 	Duration time.Duration `json:"duration"`
 	mut      sync.RWMutex
 	sem      *semaphore.Weighted
@@ -21,13 +21,18 @@ type TimerConstraint struct {
 }
 
 func NewTimerConstraint() *TimerConstraint {
-	return &TimerConstraint{sem: semaphore.NewWeighted(1)}
+	return &TimerConstraint{sem: semaphore.NewWeighted(1), Type: "timer"}
 }
 
 type DeviceConstraint struct {
 	Type             string `json:"type"`
+	Sensor           string `json:"sensor"`
 	Value            any    `json:"value"`
 	EqualityOperator string `json:"equalityoperator"`
+}
+
+func NewDeviceConstraint() *DeviceConstraint {
+	return &DeviceConstraint{Type: "device", EqualityOperator: "="}
 }
 
 func (c *DeviceConstraint) Evaluate(parent *DeviceCondition) {
@@ -36,7 +41,7 @@ func (c *DeviceConstraint) Evaluate(parent *DeviceCondition) {
 		return
 	}
 
-	if inputVal, ok := parent.getValue(c.Type); ok {
+	if inputVal, ok := parent.getValue(c.Sensor); ok {
 		if Equalityoperators[c.EqualityOperator](inputVal, c.Value) {
 			parent.Action.Run()
 		}

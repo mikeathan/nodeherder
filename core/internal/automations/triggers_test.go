@@ -369,7 +369,6 @@ func TestExportTriggerToFile(t *testing.T) {
 	defer jsonFile.Close()
 
 	newTrigger := &automations.MqttTrigger{}
-
 	err = json.Unmarshal(data, &newTrigger)
 	if err != nil {
 		t.Fatalf("ERROR parsing json data %s", err.Error())
@@ -379,7 +378,6 @@ func TestExportTriggerToFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ERROR deleting file%s", err.Error())
 	}
-
 }
 
 func unpackJsonToMap(value string) map[string]any {
@@ -402,8 +400,8 @@ func createTriggerConditionWithSensorConstraint(deviceName string, sensor string
 
 	//
 	// add device constrains
-	deviceConstraint := &automations.DeviceConstraint{}
-	deviceConstraint.Type = constraintProperty
+	deviceConstraint := automations.NewDeviceConstraint()
+	deviceConstraint.Sensor = constraintProperty
 	deviceConstraint.Value = constraintValue
 	deviceConstraint.EqualityOperator = constraintOp
 	condition.Constraint = deviceConstraint
