@@ -1,7 +1,6 @@
 package automations
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"node-herder/internal/mqtt"
@@ -16,22 +15,6 @@ type MqttTrigger struct {
 	Enabled     bool               `json:"enabled"`
 }
 
-func (d *MqttTrigger) UnmarshalJSON(b []byte) error {
-	var t = struct {
-		Type        string             `json:"trigger"`
-		DeviceName  string             `json:"devicename"`
-		Description string             `json:"description"`
-		Conditions  []*DeviceCondition `json:"conditions"`
-		Enabled     bool               `json:"enabled"`
-	}{}
-
-	err := json.Unmarshal(b, &t)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 func newMqttTrigger() *MqttTrigger {
 	return &MqttTrigger{
 		Type:        "mqtt",

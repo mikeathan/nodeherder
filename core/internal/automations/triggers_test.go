@@ -331,7 +331,7 @@ func TestExportTriggerToFile(t *testing.T) {
 	offActionValue := false
 	onActionValue := true
 	onConditionValue := true
-	luxConstraintValue := 30
+	luxConstraintValue := 30.1
 	constraintOp := "<="
 	timerValue := 50 * time.Millisecond
 
@@ -388,31 +388,58 @@ func TestExportTriggerToFile(t *testing.T) {
 	for idx, c := range trigger.Conditions {
 		nc := newTrigger.Conditions[idx]
 		if c.EqualityOperator != nc.EqualityOperator {
-			t.Fatalf("ERROR EqualityOperator mismatch")
+			t.Fatalf("ERROR Condition.EqualityOperator mismatch")
 		}
 		if c.Friendlyname != nc.Friendlyname {
-			t.Fatalf("ERROR Friendlyname mismatch")
+			t.Fatalf("ERROR Condition.Friendlyname mismatch")
 		}
 		if c.Type != nc.Type {
-			t.Fatalf("ERROR Type mismatch")
+			t.Fatalf("ERROR Condition.Type mismatch")
 		}
 		if c.Value != nc.Value {
-			t.Fatalf("ERROR Value mismatch")
+			t.Fatalf("ERROR Condition.Value mismatch")
 		}
-		if c.Constraint != nc.Constraint {
-			t.Fatalf("ERROR Constraint mismatch")
+
+		if nc.Constraint != nil {
+			if otc, ok := nc.Constraint.(*automations.TimerConstraint); ok {
+				ntc := c.Constraint.(*automations.TimerConstraint)
+				if ntc.Duration != otc.Duration {
+					t.Fatalf("ERROR TimerConstraint.Duration mismatch")
+				}
+				if ntc.Type != otc.Type {
+					t.Fatalf("ERROR TimerConstraint.Type mismatch")
+				}
+			}
+
+			if odc, ok := nc.Constraint.(*automations.DeviceConstraint); ok {
+				ndc := c.Constraint.(*automations.DeviceConstraint)
+				if ndc.EqualityOperator != odc.EqualityOperator {
+					t.Fatalf("ERROR DeviceConstraint.EqualityOperator mismatch")
+				}
+				if ndc.Sensor != odc.Sensor {
+					t.Fatalf("ERROR DeviceConstraint.Sensor mismatch")
+				}
+				if ndc.Value != odc.Value {
+					t.Fatalf("ERROR DeviceConstraint.Value mismatch")
+				}
+				if ndc.Type != odc.Type {
+					t.Fatalf("ERROR DeviceConstraint.Type mismatch")
+				}
+			}
+
 		}
+
 		if c.Action.Friendlyname != nc.Action.Friendlyname {
-			t.Fatalf("ERROR Action Friendlyname mismatch")
+			t.Fatalf("ERROR Action.Friendlyname mismatch")
 		}
 		if c.Action.Property != nc.Action.Property {
-			t.Fatalf("ERROR Action Property mismatch")
+			t.Fatalf("ERROR Action.Property mismatch")
 		}
 		if c.Action.Value != nc.Action.Value {
-			t.Fatalf("ERROR Action Value mismatch")
+			t.Fatalf("ERROR Action.Value mismatch")
 		}
 		if c.Action.Type != nc.Action.Type {
-			t.Fatalf("ERROR Action Type mismatch")
+			t.Fatalf("ERROR Action.Type mismatch")
 		}
 	}
 	err = os.Remove("temp1.json")

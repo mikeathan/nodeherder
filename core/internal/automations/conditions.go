@@ -198,5 +198,11 @@ func (d *DeviceCondition) UnmarshalJSON(b []byte) error {
 		return errors.New("unknown constraint type")
 	}
 
+	d.Friendlyname = deviceCond.Friendlyname
+	d.Type = deviceCond.Type
+	d.EqualityOperator = deviceCond.EqualityOperator
+	d.Action = deviceCond.Action
+	d.Constraint = deviceCond.Constraint
+	d.Value = deviceCond.Value
 	return nil
 }
