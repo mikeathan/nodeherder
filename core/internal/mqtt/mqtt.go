@@ -6,6 +6,7 @@ import (
 	"node-herder/utils"
 	"strings"
 	"sync"
+	"time"
 
 	mqttlib "github.com/eclipse/paho.mqtt.golang"
 )
@@ -35,6 +36,7 @@ type MqttConfig struct {
 func (m *MqttService) onConnectedHandler() func(client mqttlib.Client) {
 	return func(client mqttlib.Client) {
 		utils.LogInfof("mqtt Client connected")
+		m.subscribeTopics()
 	}
 }
 
@@ -107,6 +109,13 @@ func (m *MqttService) Connect() error {
 	options.SetClientID(m.clientId)
 	options.Username = m.username
 	options.Password = m.password
+	options.SetOrderMatters(false)       // Allow out of order messages (use this option unless in order delivery is essential)
+	options.ConnectTimeout = time.Second // Minimal delays on connect
+	options.WriteTimeout = time.Second   // Minimal delays on writes
+	options.KeepAlive = 10               // Keepalive every 10 seconds so we quickly detect network outages
+	options.PingTimeout = time.Second    // local broker so response should be quick
+
+	options.ConnectRetry = true
 	options.AutoReconnect = true
 
 	options.SetDefaultPublishHandler(m.messagePubHandler())
@@ -123,7 +132,6 @@ func (m *MqttService) Connect() error {
 		return token.Error()
 	}
 
-	m.subscribeTopics()
 	return nil
 }
 
