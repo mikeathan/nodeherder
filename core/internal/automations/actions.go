@@ -7,6 +7,7 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/models/devices"
 	"node-herder/utils"
+	"time"
 )
 
 type MqttAction struct {
@@ -62,7 +63,7 @@ func (a *AutomationEngine) Load(bridgeDevices []*devices.BridgeDevice) error {
 
 	// fake input data - TEST ONLY
 	// tha needs to come from a file and loaded
-	triggers := newMockMqttTrigger()
+	triggers := newMockMqttTriggerPresenseWithLux(false)
 	//
 
 	utils.LogInfof("Loading automations")
@@ -89,53 +90,84 @@ func (a *AutomationEngine) Load(bridgeDevices []*devices.BridgeDevice) error {
 
 // REMOVE
 // used for testing only!!!!!!!!!!
-func newMockMqttTrigger() []interface{} {
+func newMockMqttTriggerPresenseWithLux(enabled bool) []interface{} {
+
+	deviceName := "device 1"
+	luxSensor := "lux"
+	presenceSensor := "presence"
+	actionProperty := "state"
+	offConditionValue := false
+	offActionValue := false
+	onActionValue := true
+	onConditionValue := true
+	luxConstraintValue := 30
+	constraintOp := "<="
+	timerValue := 50 * time.Millisecond
 
 	trigger := newMqttTrigger()
-	trigger.DeviceName = "Human presence"
-	trigger.Description = "Turn on light 1 mqtt automation"
-	trigger.Enabled = false // disabled
+	trigger.DeviceName = deviceName
+	trigger.Description = fmt.Sprintf("automation for device %s", trigger.DeviceName)
+	trigger.Enabled = enabled
 
-	// new condition
-	mcOn := &DeviceCondition{}
-	mcOn.Friendlyname = "Human presence" // ? we dont need that now
-	mcOn.Type = "presence"
-	mcOn.Value = true
+	// sensor off condition
+	offCondition := createConditionWithTimerConstraint(deviceName, presenceSensor, offConditionValue, actionProperty, offActionValue, timerValue, nil)
+	trigger.Conditions = append(trigger.Conditions, offCondition)
 
-	// new action
-	ma := &MqttAction{}
-	ma.Client = nil
-
-	ma.Friendlyname = "Attic light"
-	ma.Property = "state"
-	ma.Type = "light"
-	ma.Value = true
-	mcOn.Action = ma
-
-	// ##########################
-	mcOff := &DeviceCondition{}
-	mcOff.Friendlyname = "Human presence"
-	mcOff.Type = "presence"
-	mcOff.Value = false
-
-	// TODO:
-	// add timer condition
-
-	//example sensor says falss and start timer, after eg 15 min call action to turn off light
-
-	// new action
-	ma2 := &MqttAction{}
-	ma2.Client = nil
-
-	ma2.Friendlyname = "Attic light"
-	ma2.Property = "state"
-	ma2.Type = "light"
-	ma2.Value = false
-	mcOff.Action = ma2
-
-	////////////////////////////////////////////////////
-
-	trigger.Conditions = append(trigger.Conditions, mcOn)
-	trigger.Conditions = append(trigger.Conditions, mcOff)
+	// sensor on condition
+	turnOnCondition := createTriggerConditionWithSensorConstraint(deviceName, presenceSensor, onConditionValue, actionProperty, onActionValue, luxSensor, luxConstraintValue, constraintOp, nil)
+	trigger.Conditions = append(trigger.Conditions, turnOnCondition)
 	return []interface{}{trigger}
+}
+
+func createTriggerConditionWithSensorConstraint(deviceName string, sensor string, conditionValue any, actionProperty string, actionValue any, constraintProperty string, constraintValue any, constraintOp string, mqtt mqtt.MqttClient) *DeviceCondition {
+
+	// create condition
+	condition := newMockMqttCondition(sensor, conditionValue)
+	action := newMockMqttAction(deviceName, actionProperty, "light", actionValue)
+
+	action.Client = mqtt
+	condition.Action = action
+
+	//
+	// add device constrains
+	deviceConstraint := NewDeviceConstraint()
+	deviceConstraint.Sensor = constraintProperty
+	deviceConstraint.Value = constraintValue
+	deviceConstraint.EqualityOperator = constraintOp
+	condition.Constraint = deviceConstraint
+	return condition
+}
+func createConditionWithTimerConstraint(deviceName string, sensor string, conditionValue any, actionProperty string, actionValue any, constraintDuration time.Duration, mqtt mqtt.MqttClient) *DeviceCondition {
+
+	// create condition
+	condition := newMockMqttCondition(sensor, conditionValue)
+	action := newMockMqttAction(deviceName, actionProperty, "light", actionValue)
+
+	action.Client = mqtt
+	condition.Action = action
+
+	//
+	// add timer constrains
+	timerConstraint := NewTimerConstraint()
+	timerConstraint.Duration = constraintDuration
+	condition.Constraint = timerConstraint
+
+	return condition
+}
+func newMockMqttAction(friendlyName string, property string, actionType string, value any) *MqttAction {
+	action := &MqttAction{}
+	action.Friendlyname = friendlyName
+	action.Property = property
+	action.Type = actionType
+	action.Value = value
+
+	return action
+}
+
+func newMockMqttCondition(sensor string, value any) *DeviceCondition {
+	condition := NewDeviceCondition()
+	condition.Friendlyname = sensor
+	condition.Type = sensor
+	condition.Value = value
+	return condition
 }
