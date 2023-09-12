@@ -77,7 +77,8 @@ func (a *AutomationEngine) Load(bridgeDevices []*devices.BridgeDevice) error {
 			}
 
 			a.mqttTriggers[mqttTrigger.DeviceName] = mqttTrigger
-			utils.LogInfof("MqttTrigger %s loaded", mqttTrigger.Description)
+
+			utils.LogInfof("Loaded MqttTrigger %s, Enabled=%t", mqttTrigger.Description, mqttTrigger.Enabled)
 			continue
 		}
 
