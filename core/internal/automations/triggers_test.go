@@ -3,12 +3,10 @@ package automations_test
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"node-herder/internal/automations"
 	"node-herder/internal/mqtt"
 	"node-herder/mocks"
 	"node-herder/models/devices"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -347,32 +345,16 @@ func TestExportTriggerToFile(t *testing.T) {
 	turnOnCondition := createTriggerConditionWithSensorConstraint(deviceName, presenceSensor, onConditionValue, actionProperty, onActionValue, luxSensor, luxConstraintValue, constraintOp, mqtt)
 	trigger.Conditions = append(trigger.Conditions, turnOnCondition)
 
-	data, err := json.Marshal(trigger)
+	err := trigger.Save("temp1", true)
 	if err != nil {
-		t.Fatalf("ERROR marshaling payload %s", err.Error())
+		t.Fatalf("ERROR saving trigger %s", err.Error())
 	}
 
-	err = os.WriteFile("temp1.json", data, 0644)
+	newTrigger, err := automations.LoadTrigger("temp1")
 	if err != nil {
-		t.Fatalf("ERROR writing to file %s", err.Error())
+		t.Fatalf("ERROR laoding trigger from file %s", err.Error())
 	}
 
-	jsonFile, err := os.Open("temp1.json")
-	if err != nil {
-		t.Fatalf("ERROR opening file %s", err.Error())
-	}
-
-	data, err = io.ReadAll(jsonFile)
-	if err != nil {
-		t.Fatalf("ERROR reading data from file %s", err.Error())
-	}
-	defer jsonFile.Close()
-
-	newTrigger := &automations.MqttTrigger{}
-	err = json.Unmarshal(data, &newTrigger)
-	if err != nil {
-		t.Fatalf("ERROR parsing json data %s", err.Error())
-	}
 	if newTrigger.DeviceName != trigger.DeviceName {
 		t.Fatalf("ERROR DeviceName mismatch")
 	}
@@ -442,7 +424,8 @@ func TestExportTriggerToFile(t *testing.T) {
 			t.Fatalf("ERROR Action.Type mismatch")
 		}
 	}
-	err = os.Remove("temp1.json")
+
+	err = automations.DeleteTrigger("temp1")
 	if err != nil {
 		t.Fatalf("ERROR deleting file%s", err.Error())
 	}

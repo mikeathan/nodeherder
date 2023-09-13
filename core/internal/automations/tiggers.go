@@ -1,10 +1,20 @@
 package automations
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"node-herder/internal/mqtt"
 	"node-herder/models/devices"
+	"os"
+	"path/filepath"
+)
+
+const (
+	automationDir = "../config/automations"
+	automationExt = ".config"
 )
 
 type MqttTrigger struct {
@@ -22,6 +32,84 @@ func newMqttTrigger() *MqttTrigger {
 		Description: "",
 		Conditions:  []*DeviceCondition{},
 		Enabled:     true,
+	}
+}
+
+func getFilePath(name string) string {
+
+	createDirIfNotExists(name)
+	return filepath.Join(automationDir, fmt.Sprintf("%s%s", name, automationExt))
+}
+
+func prettyJson(b []byte) ([]byte, error) {
+	var out bytes.Buffer
+	err := json.Indent(&out, b, "", "  ")
+	return out.Bytes(), err
+}
+
+func (t *MqttTrigger) Save(name string, pretty bool) error {
+	filePath := getFilePath(name)
+
+	data, err := json.Marshal(t)
+	if err != nil {
+		return err
+	}
+
+	if pretty {
+		data, err = prettyJson(data)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = os.WriteFile(filePath, data, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func LoadTrigger(name string) (*MqttTrigger, error) {
+	filePath := getFilePath(name)
+
+	jsonFile, err := os.Open(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := io.ReadAll(jsonFile)
+	if err != nil {
+		return nil, err
+	}
+	defer jsonFile.Close()
+
+	t := newMqttTrigger()
+	err = json.Unmarshal(data, &t)
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}
+
+func DeleteTrigger(name string) error {
+	filePath := getFilePath(name)
+
+	err := os.Remove(filePath)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createDirIfNotExists(name string) {
+	if _, err := os.Stat(name); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(name, os.ModePerm)
+		if err != nil {
+			fmt.Println(fmt.Sprintf("Failed to create automations directory %s Error: %v", name, err))
+			panic(err)
+		}
 	}
 }
 
