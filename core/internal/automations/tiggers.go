@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	automationDir = "../config/automations"
+	automationDir = "../../configs/automations"
 	automationExt = ".config"
 )
 
@@ -37,7 +37,7 @@ func newMqttTrigger() *MqttTrigger {
 
 func getFilePath(name string) string {
 
-	createDirIfNotExists(name)
+	createDirIfNotExists(automationDir)
 	return filepath.Join(automationDir, fmt.Sprintf("%s%s", name, automationExt))
 }
 
@@ -105,7 +105,7 @@ func DeleteTrigger(name string) error {
 
 func createDirIfNotExists(name string) {
 	if _, err := os.Stat(name); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(name, os.ModePerm)
+		err := os.MkdirAll(name, os.ModePerm)
 		if err != nil {
 			fmt.Println(fmt.Sprintf("Failed to create automations directory %s Error: %v", name, err))
 			panic(err)
