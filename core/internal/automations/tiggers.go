@@ -8,6 +8,7 @@ import (
 	"io"
 	"node-herder/internal/mqtt"
 	"node-herder/models/devices"
+	"node-herder/utils"
 	"os"
 	"path/filepath"
 )
@@ -107,7 +108,7 @@ func createDirIfNotExists(name string) {
 	if _, err := os.Stat(name); errors.Is(err, os.ErrNotExist) {
 		err := os.MkdirAll(name, os.ModePerm)
 		if err != nil {
-			fmt.Println(fmt.Sprintf("Failed to create automations directory %s Error: %v", name, err))
+			utils.LogErrorf(fmt.Sprintf("Failed to create automations directory %s Error: %v", name, err))
 			panic(err)
 		}
 	}
@@ -134,7 +135,7 @@ func (t *MqttTrigger) configure(bridgeDevices []*devices.BridgeDevice, client mq
 func (t *MqttTrigger) Evaluate(data map[string]any) {
 
 	if !t.Enabled {
-		fmt.Printf("%s is disabled\n", t.Description)
+		utils.LogDebugf("Trigger %s is disabled\n", t.Description)
 		return
 	}
 

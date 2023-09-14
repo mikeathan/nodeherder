@@ -1,7 +1,7 @@
 package automations
 
 import (
-	"fmt"
+	"node-herder/utils"
 	"sync"
 	"time"
 
@@ -41,9 +41,13 @@ func (c *DeviceConstraint) Evaluate(parent *DeviceCondition) {
 		return
 	}
 
+	utils.LogInfo("DeviceConstraint evaluated")
 	if inputVal, ok := parent.getValue(c.Sensor); ok {
 		if Equalityoperators[c.EqualityOperator](inputVal, c.Value) {
-			parent.Action.Run()
+			err := parent.Action.Run()
+			if err != nil {
+				utils.LogErrorf("Action failed %s", err.Error())
+			}
 		}
 	}
 }
@@ -71,6 +75,7 @@ func (t *TimerConstraint) Evaluate(parent *DeviceCondition) {
 		return
 	}
 
+	utils.LogInfo("TimerConstraint evaluated")
 	t.start(parent)
 }
 
@@ -78,7 +83,7 @@ func (t *TimerConstraint) start(parent *DeviceCondition) {
 
 	// check if its already running
 	if ok := t.sem.TryAcquire(1); !ok {
-		fmt.Println("time constraint is running")
+		utils.LogDebug("time constraint is currently running.")
 		return
 	}
 
@@ -89,7 +94,7 @@ func (t *TimerConstraint) start(parent *DeviceCondition) {
 
 	go func() {
 
-		fmt.Println("time constraint started")
+		utils.LogInfo("time constraint started")
 
 		ticker := *time.NewTicker(getDurationFromNow(t) * time.Millisecond)
 
@@ -103,12 +108,12 @@ func (t *TimerConstraint) start(parent *DeviceCondition) {
 		case <-ticker.C:
 
 			parent.Action.Run()
-			fmt.Println("timer constraint finished")
+			utils.LogInfo("timer constraint finished")
 			return
 
 		case <-t.exit:
 
-			fmt.Println("timer constraint stopped")
+			utils.LogInfo("timer constraint stopped")
 			return
 		}
 	}()

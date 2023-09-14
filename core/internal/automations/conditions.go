@@ -55,7 +55,6 @@ func (m *DeviceCondition) isConditionMatched(data map[string]any) bool {
 		utils.LogDebugf("sensor type %s not in input payload \n", m.Type)
 		return false
 	}
-
 	return Equalityoperators[m.EqualityOperator](m.Value, value)
 }
 
@@ -77,9 +76,10 @@ func (m *DeviceCondition) Evaluate(data map[string]any) {
 		m.Constraint.Evaluate(m)
 
 	} else if m.isConditionMatched(data) {
+		utils.LogInfo("Condition evaluated")
 		err := m.Action.Run()
 		if err != nil {
-			fmt.Printf("device sensor action failed %s", err.Error())
+			utils.LogErrorf("Action failed %s", err.Error())
 		}
 	}
 }
@@ -105,7 +105,7 @@ type TimeDurationCondition struct {
 func (tc *TimeDurationCondition) GetSchedule() time.Time {
 	tc.Timestamp = time.Now().Add(tc.Duration)
 
-	fmt.Printf("Sceduled for %v \n", tc.Timestamp.Format(time.RFC3339))
+	utils.LogDebugf("TimeDurationCondition scheduled for %v \n", tc.Timestamp.Format(time.RFC3339))
 	return tc.Timestamp
 }
 
