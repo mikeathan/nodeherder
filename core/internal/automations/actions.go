@@ -93,17 +93,14 @@ func (a *AutomationEngine) Load(bridgeDevices []*devices.BridgeDevice) error {
 // used for testing only!!!!!!!!!!
 func newMockMqttTriggerPresenseWithLux(enabled bool) []interface{} {
 
-	deviceName := "device 1"
+	deviceName := "Human presence"
 	luxSensor := "lux"
-	presenceSensor := "presence"
-	actionProperty := "state"
+	conditionType := "presence"
 	offConditionValue := false
-	offActionValue := false
-	onActionValue := true
 	onConditionValue := true
-	luxConstraintValue := 30
-	constraintOp := "<="
-	timerValue := 50 * time.Millisecond
+	luxConstraintValue := 3
+	constraintOp := "<"
+	timerValue := 1 * time.Minute
 
 	trigger := newMqttTrigger()
 	trigger.DeviceName = deviceName
@@ -111,20 +108,21 @@ func newMockMqttTriggerPresenseWithLux(enabled bool) []interface{} {
 	trigger.Enabled = enabled
 
 	// sensor off condition
-	offCondition := createConditionWithTimerConstraint(deviceName, presenceSensor, offConditionValue, actionProperty, offActionValue, timerValue, nil)
+	offCondition := createConditionWithTimerConstraint("Attic light", "light", conditionType, offConditionValue, "state", false, timerValue, nil)
 	trigger.Conditions = append(trigger.Conditions, offCondition)
 
 	// sensor on condition
-	turnOnCondition := createTriggerConditionWithSensorConstraint(deviceName, presenceSensor, onConditionValue, actionProperty, onActionValue, luxSensor, luxConstraintValue, constraintOp, nil)
+	turnOnCondition := createTriggerConditionWithSensorConstraint("Attic light", "light", conditionType, onConditionValue, "state", true, luxSensor, luxConstraintValue, constraintOp, nil)
 	trigger.Conditions = append(trigger.Conditions, turnOnCondition)
+
 	return []interface{}{trigger}
 }
 
-func createTriggerConditionWithSensorConstraint(deviceName string, sensor string, conditionValue any, actionProperty string, actionValue any, constraintProperty string, constraintValue any, constraintOp string, mqtt mqtt.MqttClient) *DeviceCondition {
+func createTriggerConditionWithSensorConstraint(actionDeviceName string, actionType string, sensor string, conditionValue any, actionProperty string, actionValue any, constraintProperty string, constraintValue any, constraintOp string, mqtt mqtt.MqttClient) *DeviceCondition {
 
 	// create condition
 	condition := newMockMqttCondition(sensor, conditionValue)
-	action := newMockMqttAction(deviceName, actionProperty, "light", actionValue)
+	action := newMockMqttAction(actionDeviceName, actionProperty, actionType, actionValue)
 
 	action.Client = mqtt
 	condition.Action = action
@@ -138,11 +136,11 @@ func createTriggerConditionWithSensorConstraint(deviceName string, sensor string
 	condition.Constraint = deviceConstraint
 	return condition
 }
-func createConditionWithTimerConstraint(deviceName string, sensor string, conditionValue any, actionProperty string, actionValue any, constraintDuration time.Duration, mqtt mqtt.MqttClient) *DeviceCondition {
+func createConditionWithTimerConstraint(actionDeviceName string, actionType string, sensor string, conditionValue any, actionProperty string, actionValue any, constraintDuration time.Duration, mqtt mqtt.MqttClient) *DeviceCondition {
 
 	// create condition
 	condition := newMockMqttCondition(sensor, conditionValue)
-	action := newMockMqttAction(deviceName, actionProperty, "light", actionValue)
+	action := newMockMqttAction(actionDeviceName, actionProperty, actionType, actionValue)
 
 	action.Client = mqtt
 	condition.Action = action

@@ -408,7 +408,6 @@ func TestExportTriggerToFile(t *testing.T) {
 					t.Fatalf("ERROR DeviceConstraint.Type mismatch")
 				}
 			}
-
 		}
 
 		if c.Action.Friendlyname != nc.Action.Friendlyname {
