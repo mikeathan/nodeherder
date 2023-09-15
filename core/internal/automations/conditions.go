@@ -34,16 +34,18 @@ type DeviceCondition struct {
 	RawConstraint    json.RawMessage `json:"constraint"`
 	Action           *MqttAction     `json:"action"`
 	EqualityOperator string          `json:"equalityoperator"`
-	cache            map[string]any
+	cacheData        map[string]any
+	currentValue     any
 }
 
 func NewDeviceCondition() *DeviceCondition {
-	return &DeviceCondition{cache: make(map[string]any), EqualityOperator: "="}
+	return &DeviceCondition{cacheData: make(map[string]any), currentValue: nil, EqualityOperator: "="}
 }
 
 func (m *DeviceCondition) getValue(sensor string) (any, bool) {
-	if value, ok := m.cache[sensor]; ok {
-		return value, true
+	if newValue, ok := m.cacheData[sensor]; ok && m.currentValue != newValue {
+		m.currentValue = newValue
+		return newValue, true
 	}
 
 	return nil, false
@@ -59,7 +61,7 @@ func (m *DeviceCondition) isConditionMatched(data map[string]any) bool {
 }
 
 func (m *DeviceCondition) isConditionMatchedFromCache() bool {
-	value, ok := m.cache[m.Type]
+	value, ok := m.cacheData[m.Type]
 	if !ok {
 		utils.LogDebugf("sensor type %s not in cached  payload \n", m.Type)
 		return false
@@ -70,7 +72,7 @@ func (m *DeviceCondition) isConditionMatchedFromCache() bool {
 
 func (m *DeviceCondition) Evaluate(data map[string]any) {
 
-	m.cache = data // cache any values, we need them for constraints
+	m.cacheData = data // cache any values, we need them for constraints
 
 	if m.Constraint != nil {
 		m.Constraint.Evaluate(m)
