@@ -43,8 +43,7 @@ func NewDeviceCondition() *DeviceCondition {
 }
 
 func (m *DeviceCondition) getValue(sensor string) (any, bool) {
-	if newValue, ok := m.cacheData[sensor]; ok && m.currentValue != newValue {
-		m.currentValue = newValue
+	if newValue, ok := m.cacheData[sensor]; ok {
 		return newValue, true
 	}
 
@@ -52,21 +51,32 @@ func (m *DeviceCondition) getValue(sensor string) (any, bool) {
 }
 
 func (m *DeviceCondition) isConditionMatched(data map[string]any) bool {
-	value, ok := data[m.Type]
+	newValue, ok := data[m.Type]
 	if !ok {
 		utils.LogDebugf("sensor type %s not in input payload \n", m.Type)
 		return false
 	}
-	return Equalityoperators[m.EqualityOperator](m.Value, value)
+
+	return m.isEqual(newValue)
 }
 
 func (m *DeviceCondition) isConditionMatchedFromCache() bool {
 	value, ok := m.cacheData[m.Type]
 	if !ok {
-		utils.LogDebugf("sensor type %s not in cached  payload \n", m.Type)
+		utils.LogDebugf("sensor type %s not in cached payload \n", m.Type)
 		return false
 	}
 
+	return m.isEqual(value)
+}
+
+func (m *DeviceCondition) isEqual(value any) bool {
+
+	if value == m.currentValue { // rejec values that are the same
+		return false
+	}
+
+	m.currentValue = value
 	return Equalityoperators[m.EqualityOperator](m.Value, value)
 }
 

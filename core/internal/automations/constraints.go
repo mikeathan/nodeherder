@@ -41,8 +41,6 @@ func (c *DeviceConstraint) Evaluate(parent *DeviceCondition) {
 		return
 	}
 
-	// PROBLEM:
-	// we receive too many requests - which is wrong!!!!!!!!!!!!!!!!!!!
 	utils.LogInfo("DeviceConstraint evaluated")
 	if inputVal, ok := parent.getValue(c.Sensor); ok {
 		if Equalityoperators[c.EqualityOperator](inputVal, c.Value) {
