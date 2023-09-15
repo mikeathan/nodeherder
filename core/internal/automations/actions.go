@@ -95,11 +95,11 @@ func (a *AutomationEngine) Load(bridgeDevices []*devices.BridgeDevice) error {
 func newMockMqttTriggerPresenseWithLux(enabled bool) []interface{} {
 
 	deviceName := "Human presence"
-	luxSensor := "lux"
+	luxSensor := "illuminance_lux"
 	conditionType := "presence"
 	offConditionValue := false
 	onConditionValue := true
-	luxConstraintValue := 3
+	luxConstraintValue := 210
 	constraintOp := "<"
 	timerValue := 1 * time.Minute
 
