@@ -53,21 +53,29 @@ func (m *DeviceCondition) getValue(sensor string) (any, bool) {
 func (m *DeviceCondition) isConditionMatched(data map[string]any) bool {
 	newValue, ok := data[m.Type]
 	if !ok {
-		utils.LogDebugf("sensor type %s not in input payload \n", m.Type)
+		utils.LogDebugf("sensor type %s not in input payload", m.Type)
 		return false
 	}
 
-	return m.isEqual(newValue)
+	res := m.isEqual(newValue)
+	if res {
+		utils.LogDebugf("condition type %s matched with value %v", m.Type, newValue)
+	}
+	return res
 }
 
 func (m *DeviceCondition) isConditionMatchedFromCache() bool {
+
 	value, ok := m.cacheData[m.Type]
 	if !ok {
-		utils.LogDebugf("sensor type %s not in cached payload \n", m.Type)
+		utils.LogDebugf("sensor type %s not in cached payload", m.Type)
 		return false
 	}
-
-	return m.isEqual(value)
+	res := m.isEqual(value)
+	if res {
+		utils.LogDebugf("condition type %s matched from cache with value %v", m.Type, value)
+	}
+	return res
 }
 
 func (m *DeviceCondition) isEqual(value any) bool {

@@ -32,7 +32,7 @@ func (a *MqttAction) Run() error {
 	msg := fmt.Sprintf("%s/set", a.Friendlyname)
 	a.Client.Publish(msg, payload)
 
-	utils.LogInfof("Action triggered. Messaged %s published in %s", string(payload), a.Friendlyname)
+	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.Friendlyname)
 
 	return nil
 }

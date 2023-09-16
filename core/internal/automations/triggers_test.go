@@ -7,6 +7,7 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/mocks"
 	"node-herder/models/devices"
+	"node-herder/utils"
 	"strings"
 	"sync"
 	"testing"
@@ -130,6 +131,13 @@ func TestMqttConditionWithTimerConstraint(t *testing.T) {
 		{sensor: "presence", delay: 50 * time.Millisecond, newValue: true, result: false},
 		{sensor: "presence", delay: 50 * time.Millisecond, newValue: true, result: false},
 		{sensor: "presence", delay: 110 * time.Millisecond, newValue: false, result: true},
+		{sensor: "presence", delay: 110 * time.Millisecond, newValue: false, result: false},
+		{sensor: "presence", delay: 110 * time.Millisecond, newValue: false, result: false},
+		{sensor: "presence", delay: 110 * time.Millisecond, newValue: false, result: false},
+		{sensor: "presence", delay: 50 * time.Millisecond, newValue: true, result: false},
+		{sensor: "presence", delay: 50 * time.Millisecond, newValue: true, result: false},
+		{sensor: "presence", delay: 50 * time.Millisecond, newValue: true, result: false},
+		{sensor: "presence", delay: 110 * time.Millisecond, newValue: false, result: true},
 	}
 
 	for _, testCase := range testCases {
@@ -189,6 +197,8 @@ func TestMqttConditionWithSensorConstraint(t *testing.T) {
 		{op: "<", occupancy: true, newValue: 1.1, constraintValue: 1, result: false},
 		{op: "<=", occupancy: true, newValue: 1.1, constraintValue: 1, result: false},
 		{op: "=", occupancy: true, newValue: 1, constraintValue: 2, result: false},
+		{op: "=", occupancy: true, newValue: 1, constraintValue: 1, result: true},
+		{op: "=", occupancy: true, newValue: 1, constraintValue: 1, result: true},
 	}
 	for _, testCase := range testCases {
 		if testCase.result {
@@ -221,7 +231,7 @@ func TestMqttConditionWithSensorConstraint(t *testing.T) {
 
 func TestOneConditionWithSensorConstraintAndOneConditionWithTimerConstraint(t *testing.T) {
 
-	t.Skip("todo")
+	utils.SetLogLevel("debug")
 	deviceName := "device 1"
 	luxSensor := "lux"
 	presenceSensor := "presence"
@@ -252,13 +262,15 @@ func TestOneConditionWithSensorConstraintAndOneConditionWithTimerConstraint(t *t
 		result    bool
 	}{
 		{occupancy: true, luxValue: 35, result: false},
-		{occupancy: true, luxValue: 30, result: true},   // turn on light
-		{occupancy: false, luxValue: 100, result: true}, // turn off light
-		{occupancy: true, luxValue: 29.9, result: true}, // turn on light
-		{occupancy: true, luxValue: 31, result: false},
-		{occupancy: true, luxValue: 100, result: false},
-		{occupancy: true, luxValue: 10, result: true},  // turn on light
-		{occupancy: false, luxValue: 10, result: true}, // turn off light
+		{occupancy: true, luxValue: 30, result: true}, // turn on light
+		//{occupancy: false, luxValue: 100, result: true}, // turn off light
+		//	{occupancy: true, luxValue: 29.9, result: true}, // turn on light
+		// {occupancy: true, luxValue: 31, result: false},
+		// {occupancy: true, luxValue: 100, result: false},
+		// {occupancy: true, luxValue: 10, result: true},   // turn on light
+		// {occupancy: false, luxValue: 10, result: false}, // turn off light
+		//	{occupancy: true, luxValue: 10, result: false}, // turn on light - result should fail
+		//	{occupancy: true, luxValue: 10, result: false}, // turn on light -  result should fail
 	}
 
 	// NOTES:
