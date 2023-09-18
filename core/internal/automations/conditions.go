@@ -65,6 +65,10 @@ func (m *DeviceCondition) conditionWithConstraintIsMatched(c *DeviceConstraint) 
 		return false
 	}
 
+	if value == m.currentValue { // reject values that are the same
+		return false
+	}
+
 	res := Equalityoperators[m.EqualityOperator](m.Value, value)
 	if res {
 		utils.LogDebugf("condition type %s matched from cache with value %v", m.Type, value)
