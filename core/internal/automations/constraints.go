@@ -37,17 +37,10 @@ func NewDeviceConstraint() *DeviceConstraint {
 
 func (c *DeviceConstraint) Evaluate(parent *DeviceCondition) {
 
-	if !parent.isConditionMatchedFromCache() {
-		return
-	}
-
-	utils.LogInfo("DeviceConstraint evaluated")
-	if inputVal, ok := parent.getValue(c.Sensor); ok {
-		if Equalityoperators[c.EqualityOperator](inputVal, c.Value) {
-			err := parent.Action.Run()
-			if err != nil {
-				utils.LogErrorf("Action failed %s", err.Error())
-			}
+	if parent.conditionWithConstraintIsMatched(c) {
+		err := parent.Action.Run()
+		if err != nil {
+			utils.LogErrorf("Action failed %s", err.Error())
 		}
 	}
 }
@@ -68,7 +61,7 @@ func (t *TimerConstraint) stop() {
 
 func (t *TimerConstraint) Evaluate(parent *DeviceCondition) {
 
-	if !parent.isConditionMatchedFromCache() {
+	if !parent.conditionFromCacheIsMatched() {
 		if t.isRunning() {
 			t.stop()
 		}

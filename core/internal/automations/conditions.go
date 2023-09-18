@@ -42,15 +42,7 @@ func NewDeviceCondition() *DeviceCondition {
 	return &DeviceCondition{cacheData: make(map[string]any), currentValue: nil, EqualityOperator: "="}
 }
 
-func (m *DeviceCondition) getValue(sensor string) (any, bool) {
-	if newValue, ok := m.cacheData[sensor]; ok {
-		return newValue, true
-	}
-
-	return nil, false
-}
-
-func (m *DeviceCondition) isConditionMatched(data map[string]any) bool {
+func (m *DeviceCondition) conditionIsMatched(data map[string]any) bool {
 	newValue, ok := data[m.Type]
 	if !ok {
 		utils.LogDebugf("sensor type %s not in input payload", m.Type)
@@ -64,27 +56,32 @@ func (m *DeviceCondition) isConditionMatched(data map[string]any) bool {
 	return res
 }
 
-func (m *DeviceCondition) isConditionWithConstraintMatched(c *DeviceConstraint) bool {
+func (m *DeviceCondition) conditionWithConstraintIsMatched(c *DeviceConstraint) bool {
+
+	// first match condition
 	value, ok := m.cacheData[m.Type]
 	if !ok {
 		utils.LogDebugf("sensor type %s not in cached payload", m.Type)
 		return false
 	}
+
 	res := Equalityoperators[m.EqualityOperator](m.Value, value)
 	if res {
 		utils.LogDebugf("condition type %s matched from cache with value %v", m.Type, value)
 	}
 
-	if inputVal, ok := m.getValue(c.Sensor); ok {
-		if Equalityoperators[c.EqualityOperator](inputVal, c.Value) {
-			m.currentValue = value // !!!!
+	// now match constraint
+	if constrainValue, ok := m.cacheData[c.Sensor]; ok {
+		if Equalityoperators[c.EqualityOperator](constrainValue, c.Value) {
+			m.currentValue = value // now update the value
 			return true
 		}
 	}
+
 	return false
 }
 
-func (m *DeviceCondition) isConditionMatchedFromCache() bool {
+func (m *DeviceCondition) conditionFromCacheIsMatched() bool {
 
 	value, ok := m.cacheData[m.Type]
 	if !ok {
@@ -115,7 +112,7 @@ func (m *DeviceCondition) Evaluate(data map[string]any) {
 	if m.Constraint != nil {
 		m.Constraint.Evaluate(m)
 
-	} else if m.isConditionMatched(data) {
+	} else if m.conditionIsMatched(data) {
 		utils.LogInfo("Condition evaluated")
 		err := m.Action.Run()
 		if err != nil {
