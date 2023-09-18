@@ -51,6 +51,7 @@ func (m *DeviceCondition) conditionIsMatched(data map[string]any) bool {
 
 	res := m.isEqual(newValue)
 	if res {
+		m.currentValue = newValue // now update the value
 		utils.LogDebugf("condition type %s matched with value %v", m.Type, newValue)
 	}
 	return res
@@ -61,7 +62,7 @@ func (m *DeviceCondition) conditionWithConstraintIsMatched(c *DeviceConstraint) 
 	// first match condition
 	value, ok := m.cacheData[m.Type]
 	if !ok {
-		utils.LogDebugf("sensor type %s not in cached payload", m.Type)
+		utils.LogDebugf("sensor type %s not in payload", m.Type)
 		return false
 	}
 
@@ -69,15 +70,12 @@ func (m *DeviceCondition) conditionWithConstraintIsMatched(c *DeviceConstraint) 
 		return false
 	}
 
-	res := Equalityoperators[m.EqualityOperator](m.Value, value)
-	if res {
-		utils.LogDebugf("condition type %s matched from cache with value %v", m.Type, value)
-	}
-
 	// now match constraint
 	if constrainValue, ok := m.cacheData[c.Sensor]; ok {
 		if Equalityoperators[c.EqualityOperator](constrainValue, c.Value) {
 			m.currentValue = value // now update the value
+			utils.LogDebugf("condition type %s matched from device constraint with value %v", c.Type, constrainValue)
+
 			return true
 		}
 	}
@@ -92,8 +90,10 @@ func (m *DeviceCondition) conditionFromCacheIsMatched() bool {
 		utils.LogDebugf("sensor type %s not in cached payload", m.Type)
 		return false
 	}
+
 	res := m.isEqual(value)
 	if res {
+		m.currentValue = value
 		utils.LogDebugf("condition type %s matched from cache with value %v", m.Type, value)
 	}
 	return res
@@ -105,7 +105,6 @@ func (m *DeviceCondition) isEqual(value any) bool {
 		return false
 	}
 
-	m.currentValue = value
 	return Equalityoperators[m.EqualityOperator](m.Value, value)
 }
 
