@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func TestNewStructure(t *testing.T) {
+func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
@@ -114,6 +114,89 @@ func TestEqualityChecks(t *testing.T) {
 		if res != testCase.result {
 			t.Fatalf("operation result mismatch: want %v got %v in  %v %s %v", testCase.result, res, testCase.value1, testCase.op, testCase.value2)
 		}
+	}
+}
+
+func TestExportToFile(t *testing.T) {
+	mqtt := &mocks.MockMqttClient{}
+
+	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(mqtt, 100*time.Millisecond)
+	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30)
+
+	// create device trigger
+	deviceTrigger := automations.NewDeviceTrigger("human sensor")
+	deviceTrigger.Description = "test human sensor automation"
+	deviceTrigger.SensorTriggers = make(map[string][]*automations.SensorTrigger)
+	deviceTrigger.SensorTriggers[turnOffTrigger.Name] = append(deviceTrigger.SensorTriggers[turnOffTrigger.Name], turnOffTrigger)
+	deviceTrigger.SensorTriggers[turnOnTrigger.Name] = append(deviceTrigger.SensorTriggers[turnOnTrigger.Name], turnOnTrigger)
+
+	err := deviceTrigger.Save("temp1", true)
+	if err != nil {
+		t.Fatalf("ERROR saving trigger %s", err.Error())
+	}
+
+	newTrigger, err := automations.LoadTrigger("temp1")
+	if err != nil {
+		t.Fatalf("ERROR laoding trigger from file %s", err.Error())
+	}
+
+	if newTrigger.Name != deviceTrigger.Name {
+		t.Fatalf("ERROR Name mismatch")
+	}
+
+	if newTrigger.Description != deviceTrigger.Description {
+		t.Fatalf("ERROR Description mismatch")
+	}
+	if newTrigger.Enabled != deviceTrigger.Enabled {
+		t.Fatalf("ERROR Description mismatch")
+	}
+
+	for sensor, triggers := range deviceTrigger.SensorTriggers {
+		newTriggers := newTrigger.SensorTriggers[sensor]
+
+		for tidx, trigger := range triggers {
+
+			newTrigger := newTriggers[tidx]
+			if trigger.Name != newTrigger.Name {
+				t.Fatalf("ERROR Trigger.Name mismatch")
+			}
+			if trigger.ActionRunner.Friendlyname != newTrigger.ActionRunner.Friendlyname {
+				t.Fatalf("ERROR Action.Friendlyname mismatch")
+			}
+
+			if trigger.ActionRunner.Property != newTrigger.ActionRunner.Property {
+				t.Fatalf("ERROR Action.Property mismatch")
+			}
+
+			if trigger.ActionRunner.Type != newTrigger.ActionRunner.Type {
+				t.Fatalf("ERROR Action.Type mismatch")
+			}
+			if trigger.ActionRunner.Delay != newTrigger.ActionRunner.Delay {
+				t.Fatalf("ERROR Action.Delay mismatch")
+			}
+
+			for cidx, condition := range trigger.Conditions {
+
+				newCondition := newTriggers[tidx].Conditions[cidx]
+
+				if condition.EqualityOperator != newCondition.EqualityOperator {
+					t.Fatalf("ERROR Condition.EqualityOperator mismatch")
+				}
+				if condition.Name != newCondition.Name {
+					t.Fatalf("ERROR Condition.Name mismatch")
+				}
+
+				if condition.Value != newCondition.Value {
+					t.Fatalf("ERROR Condition.Value mismatch")
+				}
+			}
+		}
+	}
+
+	err = automations.DeleteTrigger("temp1")
+
+	if err != nil {
+		t.Fatalf("ERROR deleting file%s", err.Error())
 	}
 }
 
