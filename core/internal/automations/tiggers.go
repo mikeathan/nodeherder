@@ -18,24 +18,6 @@ const (
 	automationExt = ".config"
 )
 
-type MqttTrigger struct {
-	Type        string             `json:"trigger"`
-	DeviceName  string             `json:"devicename"`
-	Description string             `json:"description"`
-	Conditions  []*DeviceCondition `json:"conditions"`
-	Enabled     bool               `json:"enabled"`
-}
-
-func newMqttTrigger() *MqttTrigger {
-	return &MqttTrigger{
-		Type:        "mqtt",
-		DeviceName:  "",
-		Description: "",
-		Conditions:  []*DeviceCondition{},
-		Enabled:     true,
-	}
-}
-
 func getFilePath(name string) string {
 
 	createDirIfNotExists(automationDir)
@@ -48,7 +30,7 @@ func prettyJson(b []byte) ([]byte, error) {
 	return out.Bytes(), err
 }
 
-func (t *MqttTrigger) Save(name string, pretty bool) error {
+func (t *DeviceTrigger) Save(name string, pretty bool) error {
 	filePath := getFilePath(name)
 
 	data, err := json.Marshal(t)
@@ -70,7 +52,7 @@ func (t *MqttTrigger) Save(name string, pretty bool) error {
 	return nil
 }
 
-func LoadTrigger(name string) (*MqttTrigger, error) {
+func LoadTrigger(name string) (*DeviceTrigger, error) {
 	filePath := getFilePath(name)
 
 	jsonFile, err := os.Open(filePath)
@@ -84,7 +66,7 @@ func LoadTrigger(name string) (*MqttTrigger, error) {
 	}
 	defer jsonFile.Close()
 
-	t := newMqttTrigger()
+	t := &DeviceTrigger{}
 	err = json.Unmarshal(data, &t)
 	if err != nil {
 		return nil, err
@@ -114,34 +96,22 @@ func createDirIfNotExists(name string) {
 	}
 }
 
-func (t *MqttTrigger) configure(bridgeDevices []*devices.BridgeDevice, client mqtt.MqttClient) error {
-	fmt.Println("Loading mqtt trigger:", t.Description)
-	if t.Type != "mqtt" {
-		return errors.New("unsupported mqtt type ")
-	}
+func (t *DeviceTrigger) configure(bridgeDevices []*devices.BridgeDevice, client mqtt.MqttClient) error {
+	fmt.Println("Loading device trigger:", t.Description)
 
 	// validate conditions
-	for _, condition := range t.Conditions {
+	for _, triggers := range t.SensorTriggers {
 
-		// validate actions
-		err := validateAction(bridgeDevices, condition.Action, client)
-		if err != nil {
-			return err
+		for _, trigger := range triggers {
+			// validate actions
+			err := validateAction(bridgeDevices, trigger.ActionRunner, client)
+			if err != nil {
+				return err
+			}
 		}
+
 	}
 	return nil
-}
-
-func (t *MqttTrigger) Evaluate(data map[string]any) {
-
-	if !t.Enabled {
-		utils.LogDebugf("Trigger %s is disabled\n", t.Description)
-		return
-	}
-
-	for _, condition := range t.Conditions {
-		condition.Evaluate(data)
-	}
 }
 
 // validate actions

@@ -1,10 +1,21 @@
 package automations
 
 import (
-	"encoding/json"
-	"errors"
 	"node-herder/utils"
 )
+
+func toFloat(value any) float32 {
+	switch v := value.(type) {
+	case int:
+		return float32(v)
+	case float64:
+		return float32(v)
+	case float32:
+		return float32(v)
+	default:
+		return float32(0)
+	}
+}
 
 var Equalityoperators = map[string]func(any, any) bool{
 	"=": func(v1 any, v2 any) bool {
@@ -22,17 +33,6 @@ var Equalityoperators = map[string]func(any, any) bool{
 	"<": func(v1 any, v2 any) bool {
 		return toFloat(v1) < toFloat(v2)
 	},
-}
-
-type DeviceCondition struct {
-	Friendlyname     string          `json:"friendlyname"`
-	Type             string          `json:"type"`
-	Value            any             `json:"value"`
-	Constraint       Constraint      `json:"-"`
-	RawConstraint    json.RawMessage `json:"constraint"`
-	Action           *MqttAction     `json:"action"`
-	EqualityOperator string          `json:"equalityoperator"`
-	cacheData        map[string]any
 }
 
 // examples
@@ -130,110 +130,14 @@ func (d *DeviceTrigger) processTrigger(trigger *SensorTrigger, data map[string]a
 		// update sensor current value
 		d.deviceContext.Set(trigger.Name, data[trigger.Name])
 	})
-
 }
 
 type SensorTrigger struct {
-	Name          string             `json:"name"`
-	Conditions    []*SensorCondition `json:"-"`
-	RawConditions json.RawMessage    `json:"conditions"`
-	ActionRunner  *ActionRunner      `json:"action"`
+	Name         string             `json:"name"`
+	Conditions   []*SensorCondition `json:"conditions"`
+	ActionRunner *MqttAction        `json:"action"`
 }
 
 func newSensorTrigger(name string) *SensorTrigger {
 	return &SensorTrigger{}
-}
-
-func NewDeviceCondition() *DeviceCondition {
-	return &DeviceCondition{cacheData: make(map[string]any), EqualityOperator: "="}
-}
-
-func (m *DeviceCondition) conditionWithConstraintIsMatched(c *DeviceConstraint) bool {
-
-	return false
-}
-
-func (m *DeviceCondition) conditionFromCacheIsMatched() bool {
-
-	return false
-}
-
-func (m *DeviceCondition) Evaluate(data map[string]any) {
-
-}
-
-func (d *DeviceCondition) MarshalJSON() ([]byte, error) {
-	buffer, err := json.Marshal(&d.Constraint)
-	if err != nil {
-		return nil, err
-	}
-
-	deviceCond := struct {
-		Friendlyname     string          `json:"friendlyname"`
-		Type             string          `json:"type"`
-		Value            any             `json:"value"`
-		Constraint       Constraint      `json:"-"`
-		RawConstraint    json.RawMessage `json:"constraint"`
-		Action           *MqttAction     `json:"action"`
-		EqualityOperator string          `json:"equalityoperator"`
-	}{
-		Friendlyname:     d.Friendlyname,
-		Type:             d.Type,
-		Value:            d.Value,
-		RawConstraint:    json.RawMessage(buffer), // fill in raw constraint
-		Action:           d.Action,
-		EqualityOperator: d.EqualityOperator,
-	}
-
-	return json.Marshal(deviceCond)
-}
-
-func (d *DeviceCondition) UnmarshalJSON(b []byte) error {
-	var deviceCond = struct {
-		Friendlyname     string          `json:"friendlyname"`
-		Type             string          `json:"type"`
-		Value            any             `json:"value"`
-		Constraint       Constraint      `json:"-"`
-		RawConstraint    json.RawMessage `json:"constraint"`
-		Action           *MqttAction     `json:"action"`
-		EqualityOperator string          `json:"equalityoperator"`
-	}{}
-
-	err := json.Unmarshal(b, &deviceCond)
-	if err != nil {
-		return err
-	}
-
-	var rowConstraint map[string]interface{}
-	err = json.Unmarshal(deviceCond.RawConstraint, &rowConstraint)
-	if err != nil {
-		return err
-	}
-
-	switch rowConstraint["type"] {
-	case "timer":
-		var tc = NewTimerConstraint()
-		err = json.Unmarshal(deviceCond.RawConstraint, &tc)
-		if err != nil {
-			return err
-		}
-		deviceCond.Constraint = tc
-	case "device":
-		var dc = NewDeviceConstraint()
-		err = json.Unmarshal(deviceCond.RawConstraint, &dc)
-		if err != nil {
-			return err
-		}
-		deviceCond.Constraint = dc
-	default:
-		return errors.New("unknown constraint type")
-	}
-
-	d.Friendlyname = deviceCond.Friendlyname
-	d.Type = deviceCond.Type
-	d.EqualityOperator = deviceCond.EqualityOperator
-	d.Action = deviceCond.Action
-	d.Constraint = deviceCond.Constraint
-	d.Value = deviceCond.Value
-	return nil
 }

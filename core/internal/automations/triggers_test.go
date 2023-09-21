@@ -20,7 +20,7 @@ func TestNewStructure(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 
 	// action = turn off light
-	turnOffAction := &automations.ActionRunner{}
+	turnOffAction := &automations.MqttAction{}
 	turnOffAction.Friendlyname = "Attic light"
 	turnOffAction.Type = "light"
 	turnOffAction.Property = "state"
@@ -43,7 +43,7 @@ func TestNewStructure(t *testing.T) {
 
 	// ######################################################
 	// action = turn off light
-	turnOnAction := &automations.ActionRunner{}
+	turnOnAction := &automations.MqttAction{}
 	turnOnAction.Friendlyname = "Attic light"
 	turnOnAction.Type = "light"
 	turnOnAction.Property = "state"
