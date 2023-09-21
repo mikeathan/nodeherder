@@ -3,9 +3,7 @@ package automations
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"node-herder/utils"
-	"time"
 )
 
 var Equalityoperators = map[string]func(any, any) bool{
@@ -35,140 +33,133 @@ type DeviceCondition struct {
 	Action           *MqttAction     `json:"action"`
 	EqualityOperator string          `json:"equalityoperator"`
 	cacheData        map[string]any
-	currentValue     any
+}
+
+// examples
+// sensor name = condition 1 & condiiton 1  && condtion n.... = action
+// presence = (true) && (lux <= 30) = turn on
+// presence = (false) && timer condition = turn off
+// presence = true = turn on
+// presence = false = turn off
+
+type SensorCondition struct {
+	Name             string `json:"name"`
+	Value            any    `json:"value"`
+	EqualityOperator string `json:"equalityoperator"`
+}
+
+func (s *SensorCondition) Evaluate(data map[string]any) bool {
+
+	value, ok := data[s.Name]
+	if !ok {
+		utils.LogDebugf("sensor %s not found in payload", s.Name)
+		return false
+	}
+
+	if Equalityoperators[s.EqualityOperator](s.Value, value) {
+		return true
+	}
+
+	return false
+}
+
+type DeviceContext struct {
+	data map[string]any
+}
+
+func (d *DeviceContext) Get(name string) any {
+	return d.data[name]
+}
+
+func (d *DeviceContext) Set(name string, value any) {
+	d.data[name] = value
+}
+
+func NewDeviceContext() *DeviceContext {
+	return &DeviceContext{data: map[string]any{}}
+}
+
+type DeviceTrigger struct {
+	Name           string                      `json:"name"`
+	Description    string                      `json:"description"`
+	Enabled        bool                        `json:"enabled"`
+	SensorTriggers map[string][]*SensorTrigger `json:"sensor_triggers"`
+	deviceContext  *DeviceContext
+}
+
+func NewDeviceTrigger(name string) *DeviceTrigger {
+	return &DeviceTrigger{
+		Name:           name,
+		Description:    "",
+		Enabled:        false,
+		SensorTriggers: make(map[string][]*SensorTrigger),
+		deviceContext:  NewDeviceContext(),
+	}
+}
+
+func (d *DeviceTrigger) Evaluate(data map[string]any) bool {
+	for sensor := range data {
+		if triggers, ok := d.SensorTriggers[sensor]; ok {
+			for _, trigger := range triggers {
+				d.processTrigger(trigger, data)
+			}
+		}
+	}
+	return false
+}
+
+func (d *DeviceTrigger) processTrigger(trigger *SensorTrigger, data map[string]any) {
+
+	currValue := d.deviceContext.Get(trigger.Name)
+	for _, c := range trigger.Conditions {
+
+		isMatched := c.Evaluate(data)
+		if !isMatched {
+			trigger.ActionRunner.Stop()
+			return
+		}
+
+		// avoid calling action again for sensor if value hasnt changed
+		if trigger.Name == c.Name && currValue == c.Value {
+			return
+		}
+	}
+
+	trigger.ActionRunner.Execute(func() {
+		// on success callback
+		// update sensor current value
+		d.deviceContext.Set(trigger.Name, data[trigger.Name])
+	})
+
+}
+
+type SensorTrigger struct {
+	Name          string             `json:"name"`
+	Conditions    []*SensorCondition `json:"-"`
+	RawConditions json.RawMessage    `json:"conditions"`
+	ActionRunner  *ActionRunner      `json:"action"`
+}
+
+func newSensorTrigger(name string) *SensorTrigger {
+	return &SensorTrigger{}
 }
 
 func NewDeviceCondition() *DeviceCondition {
-	return &DeviceCondition{cacheData: make(map[string]any), currentValue: nil, EqualityOperator: "="}
-}
-
-func (m *DeviceCondition) conditionIsMatched(data map[string]any) bool {
-	newValue, ok := data[m.Type]
-	if !ok {
-		utils.LogDebugf("sensor type %s not in input payload", m.Type)
-		return false
-	}
-
-	res := m.isEqual(newValue)
-	if res {
-		m.currentValue = newValue // now update the value
-		utils.LogDebugf("condition type %s matched with value %v", m.Type, newValue)
-	}
-	return res
+	return &DeviceCondition{cacheData: make(map[string]any), EqualityOperator: "="}
 }
 
 func (m *DeviceCondition) conditionWithConstraintIsMatched(c *DeviceConstraint) bool {
-
-	// first match condition
-	value, ok := m.cacheData[m.Type]
-	if !ok {
-		utils.LogDebugf("sensor type %s not in payload", m.Type)
-		return false
-	}
-
-	if value == m.currentValue { // reject values that are the same
-		return false
-	}
-
-	// now match constraint
-	if constrainValue, ok := m.cacheData[c.Sensor]; ok {
-		if Equalityoperators[c.EqualityOperator](constrainValue, c.Value) {
-			m.currentValue = value // now update the value
-			utils.LogDebugf("condition type %s matched from device constraint with value %v", c.Type, constrainValue)
-
-			return true
-		}
-	}
 
 	return false
 }
 
 func (m *DeviceCondition) conditionFromCacheIsMatched() bool {
 
-	value, ok := m.cacheData[m.Type]
-	if !ok {
-		utils.LogDebugf("sensor type %s not in cached payload", m.Type)
-		return false
-	}
-
-	res := m.isEqual(value)
-	if res {
-		m.currentValue = value
-		utils.LogDebugf("condition type %s matched from cache with value %v", m.Type, value)
-	}
-	return res
-}
-
-func (m *DeviceCondition) isEqual(value any) bool {
-
-	if value == m.currentValue { // reject values that are the same
-		return false
-	}
-
-	return Equalityoperators[m.EqualityOperator](m.Value, value)
+	return false
 }
 
 func (m *DeviceCondition) Evaluate(data map[string]any) {
 
-	m.cacheData = data // cache any values, we need them for constraints
-
-	if m.Constraint != nil {
-		m.Constraint.Evaluate(m)
-
-	} else if m.conditionIsMatched(data) {
-		utils.LogInfo("Condition evaluated")
-		err := m.Action.Run()
-		if err != nil {
-			utils.LogErrorf("Action failed %s", err.Error())
-		}
-	}
-}
-
-type TimerCondition interface {
-	GetSchedule() time.Time
-	IsRepeat() bool
-}
-
-type TimestampCondition struct {
-	Type      string    `json:"type"`
-	Timestamp time.Time `json:"timestamp"`
-	Repeat    bool      `json:"repeat"`
-}
-
-type TimeDurationCondition struct {
-	Type      string        `json:"type"`
-	Duration  time.Duration `json:"duration"`
-	Repeat    bool          `json:"repeat"`
-	Timestamp time.Time
-}
-
-func (tc *TimeDurationCondition) GetSchedule() time.Time {
-	tc.Timestamp = time.Now().Add(tc.Duration)
-
-	utils.LogDebugf("TimeDurationCondition scheduled for %v \n", tc.Timestamp.Format(time.RFC3339))
-	return tc.Timestamp
-}
-
-func (tc *TimestampCondition) GetSchedule() time.Time {
-
-	if time.Since(tc.Timestamp) < 0 {
-		tc.Timestamp = getTomorrow(tc.Timestamp)
-	}
-
-	fmt.Printf("Sceduled for %v \n", tc.Timestamp.Format(time.RFC3339))
-	return tc.Timestamp
-}
-
-func (tc *TimeDurationCondition) IsRepeat() bool {
-	return tc.Repeat
-}
-
-func (tc *TimestampCondition) IsRepeat() bool {
-	return tc.Repeat
-}
-
-func getTomorrow(ts time.Time) time.Time {
-	return time.Date(ts.Year(), ts.Month(), ts.Day()+1, ts.Hour(), ts.Minute(), 0, 0, ts.Location())
 }
 
 func (d *DeviceCondition) MarshalJSON() ([]byte, error) {

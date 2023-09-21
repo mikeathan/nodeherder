@@ -7,8 +7,13 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/models/devices"
 	"node-herder/utils"
+	"sync"
 	"time"
 )
+
+type Action interface {
+	Run() error
+}
 
 type MqttAction struct {
 	Friendlyname string `json:"friendlyname"`
@@ -35,6 +40,100 @@ func (a *MqttAction) Run() error {
 	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.Friendlyname)
 
 	return nil
+}
+
+type ActionRunner struct {
+	Friendlyname string          `json:"friendlyname"`
+	Type         string          `json:"type"`
+	Property     string          `json:"name"`
+	Value        any             `json:"value"`
+	Client       mqtt.MqttClient `json:"-"`
+
+	Delay     time.Duration `json:"delay"`
+	mut       sync.RWMutex
+	exit      chan bool
+	isPending bool
+}
+
+func NewActionRunner() *ActionRunner {
+	return &ActionRunner{Delay: 0}
+}
+
+func (a *ActionRunner) Stop() {
+	if a.isPending {
+		// stop it and exit
+		a.mut.Lock()
+		defer a.mut.Unlock()
+
+		a.exit <- true
+		a.isPending = false
+	}
+}
+
+func (a *ActionRunner) Execute(onSuccess func()) {
+
+	if a.isPending {
+		a.Stop()
+		return
+	}
+
+	// no delay execution
+	if a.Delay == 0 {
+		a.run()
+		onSuccess()
+
+		return
+	}
+
+	a.mut.Lock()
+	defer a.mut.Unlock()
+
+	// with delay execution
+	a.exit = make(chan bool, 1)
+	go func() {
+
+		utils.LogInfo("time constraint started")
+
+		timestamp := time.Now().Add(a.Delay)
+		diff := time.Until(timestamp).Milliseconds()
+
+		duration := time.Duration(diff)
+		ticker := *time.NewTicker(duration * time.Millisecond)
+		a.isPending = true
+
+		defer func() {
+			close(a.exit)
+			a.isPending = false
+		}()
+
+		select {
+		case <-ticker.C:
+			a.run()
+			onSuccess()
+
+			utils.LogInfo("timer constraint finished")
+			return
+
+		case <-a.exit:
+
+			utils.LogInfo("timer constraint stopped")
+			return
+		}
+	}()
+
+}
+
+func (a *ActionRunner) run() {
+
+	jp := map[string]any{
+		a.Property: a.Value,
+	}
+	payload, _ := json.Marshal(jp)
+
+	msg := fmt.Sprintf("%s/set", a.Friendlyname)
+	a.Client.Publish(msg, payload)
+
+	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.Friendlyname)
 }
 
 type Engine interface { // TODO: might need to move it to Models????

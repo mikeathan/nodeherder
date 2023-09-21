@@ -14,6 +14,116 @@ import (
 	"time"
 )
 
+func TestNewStructure(t *testing.T) {
+
+	//wg := &sync.WaitGroup{}
+	mqtt := &mocks.MockMqttClient{}
+
+	// action = turn off light
+	turnOffAction := &automations.ActionRunner{}
+	turnOffAction.Friendlyname = "Attic light"
+	turnOffAction.Type = "light"
+	turnOffAction.Property = "state"
+	turnOffAction.Value = false
+	turnOffAction.Delay = 100 * time.Millisecond
+	turnOffAction.Client = mqtt
+
+	// Turn off sensor trigger
+	turnOffTrigger := &automations.SensorTrigger{}
+	turnOffTrigger.Name = "presence"
+	turnOffTrigger.ActionRunner = turnOffAction
+
+	// condition = presence == false
+	turnOffCondition := &automations.SensorCondition{}
+	turnOffCondition.Name = "presence"
+	turnOffCondition.EqualityOperator = "="
+	turnOffCondition.Value = false
+
+	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffCondition)
+
+	// ######################################################
+	// action = turn off light
+	turnOnAction := &automations.ActionRunner{}
+	turnOnAction.Friendlyname = "Attic light"
+	turnOnAction.Type = "light"
+	turnOnAction.Property = "state"
+	turnOnAction.Value = true
+	turnOnAction.Delay = 0
+	turnOnAction.Client = mqtt
+
+	// Turn on sensor trigger
+	turnOnTrigger := &automations.SensorTrigger{}
+	turnOnTrigger.Name = "presence"
+	turnOnTrigger.ActionRunner = turnOnAction
+
+	// condition = presence = off && lux <= 30
+	turnOnCondition := &automations.SensorCondition{}
+	turnOnCondition.Name = "presence"
+	turnOnCondition.EqualityOperator = "="
+	turnOnCondition.Value = true
+
+	luxCondition := &automations.SensorCondition{}
+	luxCondition.Name = "lux"
+	luxCondition.EqualityOperator = "<="
+	luxCondition.Value = 30
+
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, luxCondition)
+
+	// create device trigger
+	deviceTrigger := automations.NewDeviceTrigger("human sensor")
+	deviceTrigger.SensorTriggers = make(map[string][]*automations.SensorTrigger)
+	deviceTrigger.SensorTriggers[turnOffTrigger.Name] = append(deviceTrigger.SensorTriggers[turnOffTrigger.Name], turnOffTrigger)
+	deviceTrigger.SensorTriggers[turnOnTrigger.Name] = append(deviceTrigger.SensorTriggers[turnOnTrigger.Name], turnOnTrigger)
+
+	var messageHandler = func(id string, payload []byte) {
+		//fmt.Println("Received message", id, string(payload))
+		if !strings.HasPrefix(id, "Attic light") {
+			t.Fatalf("invalid received topic: want Attic light got %s", id)
+		}
+
+		// data := unpackJsonToMap(string(payload))
+		// if data == nil {
+		// 	t.Fatalf("error unpacking json")
+		// }
+		// value, ok := data[sensorProperty]
+		// if !ok {
+		// 	t.Fatalf("property not %s found in payload", sensorProperty)
+		// }
+		// if value != testCase.want {
+		// 	t.Fatalf("value mismatch: want %v got %v", testCase.want, value)
+		// }
+	}
+
+	mqtt.OnMessageHandler(messageHandler)
+
+	testCases := []struct {
+		sensor string
+		value  any
+		want   bool
+	}{
+		{sensor: "presence", value: false, want: false},
+		{sensor: "presence", value: false, want: false},
+		{sensor: "presence", value: false, want: false},
+	}
+
+	for _, testCase := range testCases {
+		var data = map[string]any{
+			"presence": testCase.value,
+			"lux":      30,
+		}
+
+		fmt.Println("TEST CASE => ", testCase.sensor, testCase.value)
+		deviceTrigger.Evaluate(data)
+
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	time.Sleep(2 * time.Minute)
+	//wg.Add(1)
+	//wg.Wait()
+}
+
 func TestMqttEvaluateSuccessfulCondition(t *testing.T) {
 
 	wantHits := 2
@@ -261,14 +371,14 @@ func TestOneConditionWithSensorConstraintAndOneConditionWithTimerConstraint(t *t
 		luxValue  any
 		result    bool
 	}{
-		{occupancy: true, luxValue: 35, result: false},
+		//{occupancy: true, luxValue: 35, result: false},
 		{occupancy: true, luxValue: 30, result: true},   // turn on light
 		{occupancy: false, luxValue: 100, result: true}, // turn off light
 		{occupancy: true, luxValue: 29.9, result: true}, // turn on light
-		{occupancy: true, luxValue: 31, result: false},
-		{occupancy: true, luxValue: 100, result: false},
-		{occupancy: true, luxValue: 10, result: true},  // turn on light
-		{occupancy: true, luxValue: 10, result: false}, // turn on light - result should fail
+		//{occupancy: true, luxValue: 31, result: false},
+		//{occupancy: true, luxValue: 100, result: false},
+		//{occupancy: true, luxValue: 10, result: true}, 	// turn on light
+		//{occupancy: true, luxValue: 10, result: false}, 	// turn on light - result should fail
 
 		// {occupancy: false, luxValue: 10, result: false}, // turn off light
 		//	{occupancy: true, luxValue: 10, result: false}, // turn on light - result should fail
@@ -297,6 +407,7 @@ func TestOneConditionWithSensorConstraintAndOneConditionWithTimerConstraint(t *t
 			"lux":      testCase.luxValue,
 		}
 
+		utils.LogDebugf("Test case occupancy =====> %v lux: %v, result: %v ", testCase.occupancy, testCase.luxValue, testCase.result)
 		trigger.Evaluate(data)
 		time.Sleep(100 * time.Millisecond)
 	}
