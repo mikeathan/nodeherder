@@ -56,7 +56,7 @@ func (s *SensorCondition) Evaluate(data map[string]any) bool {
 		return false
 	}
 
-	if Equalityoperators[s.EqualityOperator](s.Value, value) {
+	if Equalityoperators[s.EqualityOperator](value, s.Value) {
 		return true
 	}
 
