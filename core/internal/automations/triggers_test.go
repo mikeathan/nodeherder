@@ -121,7 +121,7 @@ func TestExportToFile(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 
 	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(mqtt, 100*time.Millisecond)
-	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30.0)
+	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30.1)
 
 	// create device trigger
 	deviceTrigger := automations.NewDeviceTrigger("human sensor")
