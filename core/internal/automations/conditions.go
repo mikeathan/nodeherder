@@ -1,7 +1,12 @@
 package automations
 
 import (
+	"encoding/json"
+	"fmt"
+	"node-herder/internal/mqtt"
 	"node-herder/utils"
+	"sync"
+	"time"
 )
 
 func toFloat(value any) float32 {
@@ -35,13 +40,6 @@ var Equalityoperators = map[string]func(any, any) bool{
 	},
 }
 
-// examples
-// sensor name = condition 1 & condiiton 1  && condtion n.... = action
-// presence = (true) && (lux <= 30) = turn on
-// presence = (false) && timer condition = turn off
-// presence = true = turn on
-// presence = false = turn off
-
 type SensorCondition struct {
 	Name             string `json:"name"`
 	Value            any    `json:"value"`
@@ -63,81 +61,102 @@ func (s *SensorCondition) Evaluate(data map[string]any) bool {
 	return false
 }
 
-type DeviceContext struct {
-	data map[string]any
-}
-
-func (d *DeviceContext) Get(name string) any {
-	return d.data[name]
-}
-
-func (d *DeviceContext) Set(name string, value any) {
-	d.data[name] = value
-}
-
-func NewDeviceContext() *DeviceContext {
-	return &DeviceContext{data: map[string]any{}}
-}
-
-type DeviceTrigger struct {
-	Name           string                      `json:"name"`
-	Description    string                      `json:"description"`
-	Enabled        bool                        `json:"enabled"`
-	SensorTriggers map[string][]*SensorTrigger `json:"sensor_triggers"`
-	deviceContext  *DeviceContext
-}
-
-func NewDeviceTrigger(name string) *DeviceTrigger {
-	return &DeviceTrigger{
-		Name:           name,
-		Description:    "",
-		Enabled:        false,
-		SensorTriggers: make(map[string][]*SensorTrigger),
-		deviceContext:  NewDeviceContext(),
-	}
-}
-
-func (d *DeviceTrigger) Evaluate(data map[string]any) bool {
-	for sensor := range data {
-		if triggers, ok := d.SensorTriggers[sensor]; ok {
-			for _, trigger := range triggers {
-				d.processTrigger(trigger, data)
-			}
-		}
-	}
-	return false
-}
-
-func (d *DeviceTrigger) processTrigger(trigger *SensorTrigger, data map[string]any) {
-
-	currValue := d.deviceContext.Get(trigger.Name)
-	for _, c := range trigger.Conditions {
-
-		isMatched := c.Evaluate(data)
-		if !isMatched {
-			trigger.ActionRunner.Stop()
-			return
-		}
-
-		// avoid calling action again for sensor if value hasnt changed
-		if trigger.Name == c.Name && currValue == c.Value {
-			return
-		}
-	}
-
-	trigger.ActionRunner.Execute(func() {
-		// on success callback
-		// update sensor current value
-		d.deviceContext.Set(trigger.Name, data[trigger.Name])
-	})
-}
-
 type SensorTrigger struct {
-	Name         string             `json:"name"`
-	Conditions   []*SensorCondition `json:"conditions"`
-	ActionRunner *MqttAction        `json:"action"`
+	Name       string             `json:"name"`
+	Conditions []*SensorCondition `json:"conditions"`
+	Action     *MqttAction        `json:"action"`
 }
 
-func newSensorTrigger(name string) *SensorTrigger {
-	return &SensorTrigger{}
+type MqttAction struct {
+	Friendlyname string          `json:"friendlyname"`
+	Type         string          `json:"type"`
+	Property     string          `json:"name"`
+	Value        any             `json:"value"`
+	Client       mqtt.MqttClient `json:"-"`
+
+	Delay     time.Duration `json:"delay"`
+	mut       sync.RWMutex
+	exit      chan bool
+	isPending bool
+}
+
+func NewAction() *MqttAction {
+	return &MqttAction{Delay: 0}
+}
+
+func (a *MqttAction) Stop() {
+	if a.isPending {
+		// stop it and exit
+		a.mut.Lock()
+		defer a.mut.Unlock()
+
+		a.exit <- true
+		a.isPending = false
+	}
+}
+
+func (a *MqttAction) Execute(onSuccess func()) {
+
+	if a.isPending {
+		a.Stop()
+		return
+	}
+
+	// no delay execution
+	if a.Delay == 0 {
+		a.run()
+		onSuccess()
+
+		return
+	}
+
+	a.mut.Lock()
+	defer a.mut.Unlock()
+
+	// with delay execution
+	a.exit = make(chan bool, 1)
+	go func() {
+
+		utils.LogInfo("time constraint started")
+
+		timestamp := time.Now().Add(a.Delay)
+		diff := time.Until(timestamp).Milliseconds()
+
+		duration := time.Duration(diff)
+		ticker := *time.NewTicker(duration * time.Millisecond)
+		a.isPending = true
+
+		defer func() {
+			close(a.exit)
+			a.isPending = false
+		}()
+
+		select {
+		case <-ticker.C:
+			a.run()
+			onSuccess()
+
+			utils.LogInfo("timer constraint finished")
+			return
+
+		case <-a.exit:
+
+			utils.LogInfo("timer constraint stopped")
+			return
+		}
+	}()
+
+}
+
+func (a *MqttAction) run() {
+
+	jp := map[string]any{
+		a.Property: a.Value,
+	}
+	payload, _ := json.Marshal(jp)
+
+	msg := fmt.Sprintf("%s/set", a.Friendlyname)
+	a.Client.Publish(msg, payload)
+
+	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.Friendlyname)
 }

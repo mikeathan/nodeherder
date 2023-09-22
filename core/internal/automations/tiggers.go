@@ -14,20 +14,84 @@ import (
 )
 
 const (
-	automationDir = "../../configs/automations"
+	automationDir = "configs/automations"
 	automationExt = ".config"
 )
 
-func getFilePath(name string) string {
+// examples
+// sensor name = condition 1 & condiiton 1  && condtion n.... = action
+// presence = (true) && (lux <= 30) = turn on
+// presence = (false) && timer condition = turn off
+// presence = true = turn on
+// presence = false = turn off
 
-	createDirIfNotExists(automationDir)
-	return filepath.Join(automationDir, fmt.Sprintf("%s%s", name, automationExt))
+type DeviceContext struct {
+	data map[string]any
 }
 
-func prettyJson(b []byte) ([]byte, error) {
-	var out bytes.Buffer
-	err := json.Indent(&out, b, "", "  ")
-	return out.Bytes(), err
+func (d *DeviceContext) Get(name string) any {
+	return d.data[name]
+}
+
+func (d *DeviceContext) Set(name string, value any) {
+	d.data[name] = value
+}
+
+func NewDeviceContext() *DeviceContext {
+	return &DeviceContext{data: map[string]any{}}
+}
+
+type DeviceTrigger struct {
+	Name           string                      `json:"name"`
+	Description    string                      `json:"description"`
+	Enabled        bool                        `json:"enabled"`
+	SensorTriggers map[string][]*SensorTrigger `json:"sensor_triggers"`
+	deviceContext  *DeviceContext
+}
+
+func NewDeviceTrigger(name string) *DeviceTrigger {
+	return &DeviceTrigger{
+		Name:           name,
+		Description:    "",
+		Enabled:        false,
+		SensorTriggers: make(map[string][]*SensorTrigger),
+		deviceContext:  NewDeviceContext(),
+	}
+}
+
+func (d *DeviceTrigger) Evaluate(data map[string]any) bool {
+	for sensor := range data {
+		if triggers, ok := d.SensorTriggers[sensor]; ok {
+			for _, trigger := range triggers {
+				d.processTrigger(trigger, data)
+			}
+		}
+	}
+	return false
+}
+
+func (d *DeviceTrigger) processTrigger(trigger *SensorTrigger, data map[string]any) {
+
+	currValue := d.deviceContext.Get(trigger.Name)
+	for _, c := range trigger.Conditions {
+
+		isMatched := c.Evaluate(data)
+		if !isMatched {
+			trigger.Action.Stop()
+			return
+		}
+
+		// avoid calling action again for sensor if value hasnt changed
+		if trigger.Name == c.Name && currValue == c.Value {
+			return
+		}
+	}
+
+	trigger.Action.Execute(func() {
+		// on success callback
+		// update sensor current value
+		d.deviceContext.Set(trigger.Name, data[trigger.Name])
+	})
 }
 
 func (t *DeviceTrigger) Save(name string, pretty bool) error {
@@ -52,8 +116,53 @@ func (t *DeviceTrigger) Save(name string, pretty bool) error {
 	return nil
 }
 
+func getFilePath(name string) string {
+
+	createDirIfNotExists(automationDir)
+	return filepath.Join(automationDir, fmt.Sprintf("%s%s", name, automationExt))
+}
+
+func prettyJson(b []byte) ([]byte, error) {
+	var out bytes.Buffer
+	err := json.Indent(&out, b, "", "  ")
+	return out.Bytes(), err
+}
+
+func LoadTriggers() []*DeviceTrigger {
+
+	triggers := []*DeviceTrigger{}
+	err := filepath.Walk(automationDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			utils.LogErrorf("Error loading automations %s", err.Error())
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		trigger, err := load(path)
+		if err != nil {
+			utils.LogErrorf("Error loading automation %s %s", path, err.Error())
+			return err
+		}
+
+		triggers = append(triggers, trigger)
+		return nil
+	})
+
+	if err != nil {
+		utils.LogErrorf("Error loading automations %s", err.Error())
+	}
+	return triggers
+}
+
 func LoadTrigger(name string) (*DeviceTrigger, error) {
 	filePath := getFilePath(name)
+
+	return load(filePath)
+}
+
+func load(filePath string) (*DeviceTrigger, error) {
 
 	jsonFile, err := os.Open(filePath)
 	if err != nil {
@@ -74,7 +183,6 @@ func LoadTrigger(name string) (*DeviceTrigger, error) {
 
 	return t, nil
 }
-
 func DeleteTrigger(name string) error {
 	filePath := getFilePath(name)
 
@@ -97,14 +205,13 @@ func createDirIfNotExists(name string) {
 }
 
 func (t *DeviceTrigger) configure(bridgeDevices []*devices.BridgeDevice, client mqtt.MqttClient) error {
-	fmt.Println("Loading device trigger:", t.Description)
 
 	// validate conditions
 	for _, triggers := range t.SensorTriggers {
 
 		for _, trigger := range triggers {
 			// validate actions
-			err := validateAction(bridgeDevices, trigger.ActionRunner, client)
+			err := validateAction(bridgeDevices, trigger.Action, client)
 			if err != nil {
 				return err
 			}

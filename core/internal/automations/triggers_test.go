@@ -58,7 +58,7 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 
 			wg.Done()
 
-			action := turnOnTrigger.ActionRunner
+			action := turnOnTrigger.Action
 			if !strings.HasPrefix(id, action.Friendlyname) {
 				t.Fatalf("invalid received topic: want %s got %s", action.Friendlyname, id)
 			}
@@ -160,18 +160,18 @@ func TestExportToFile(t *testing.T) {
 			if trigger.Name != newTrigger.Name {
 				t.Fatalf("ERROR Trigger.Name mismatch")
 			}
-			if trigger.ActionRunner.Friendlyname != newTrigger.ActionRunner.Friendlyname {
+			if trigger.Action.Friendlyname != newTrigger.Action.Friendlyname {
 				t.Fatalf("ERROR Action.Friendlyname mismatch")
 			}
 
-			if trigger.ActionRunner.Property != newTrigger.ActionRunner.Property {
+			if trigger.Action.Property != newTrigger.Action.Property {
 				t.Fatalf("ERROR Action.Property mismatch")
 			}
 
-			if trigger.ActionRunner.Type != newTrigger.ActionRunner.Type {
+			if trigger.Action.Type != newTrigger.Action.Type {
 				t.Fatalf("ERROR Action.Type mismatch")
 			}
-			if trigger.ActionRunner.Delay != newTrigger.ActionRunner.Delay {
+			if trigger.Action.Delay != newTrigger.Action.Delay {
 				t.Fatalf("ERROR Action.Delay mismatch")
 			}
 
@@ -221,7 +221,7 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 	// Turn on sensor trigger
 	turnOnTrigger := &automations.SensorTrigger{}
 	turnOnTrigger.Name = "presence"
-	turnOnTrigger.ActionRunner = turnOnAction
+	turnOnTrigger.Action = turnOnAction
 
 	// condition = presence = off && lux <= 30
 	turnOnCondition := &automations.SensorCondition{}
@@ -253,7 +253,7 @@ func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay t
 	// Turn off sensor trigger
 	turnOffTrigger := &automations.SensorTrigger{}
 	turnOffTrigger.Name = "presence"
-	turnOffTrigger.ActionRunner = turnOffAction
+	turnOffTrigger.Action = turnOffAction
 
 	// condition = presence == false
 	turnOffCondition := &automations.SensorCondition{}
