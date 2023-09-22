@@ -121,7 +121,7 @@ func TestExportToFile(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 
 	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(mqtt, 100*time.Millisecond)
-	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30)
+	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30.0)
 
 	// create device trigger
 	deviceTrigger := automations.NewDeviceTrigger("human sensor")
@@ -199,115 +199,6 @@ func TestExportToFile(t *testing.T) {
 		t.Fatalf("ERROR deleting file%s", err.Error())
 	}
 }
-
-// func TestExportTriggerToFile(t *testing.T) {
-
-// 	deviceName := "device 1"
-// 	luxSensor := "lux"
-// 	presenceSensor := "presence"
-// 	actionProperty := "state"
-// 	offConditionValue := false
-// 	offActionValue := false
-// 	onActionValue := true
-// 	onConditionValue := true
-// 	luxConstraintValue := 30.1
-// 	constraintOp := "<="
-// 	timerValue := 50 * time.Millisecond
-
-// 	mqtt := &mocks.MockMqttClient{}
-
-// 	trigger := newMockMqttTrigger(deviceName, true)
-
-// 	// sensor off condition
-// 	offCondition := createConditionWithTimerConstraint(deviceName, presenceSensor, offConditionValue, actionProperty, offActionValue, timerValue, mqtt)
-// 	trigger.Conditions = append(trigger.Conditions, offCondition)
-
-// 	// sensor on condition
-// 	turnOnCondition := createTriggerConditionWithSensorConstraint(deviceName, presenceSensor, onConditionValue, actionProperty, onActionValue, luxSensor, luxConstraintValue, constraintOp, mqtt)
-// 	trigger.Conditions = append(trigger.Conditions, turnOnCondition)
-
-// 	err := trigger.Save("temp1", true)
-// 	if err != nil {
-// 		t.Fatalf("ERROR saving trigger %s", err.Error())
-// 	}
-
-// 	newTrigger, err := automations.LoadTrigger("temp1")
-// 	if err != nil {
-// 		t.Fatalf("ERROR laoding trigger from file %s", err.Error())
-// 	}
-
-// 	if newTrigger.Name != trigger.Name {
-// 		t.Fatalf("ERROR Name mismatch")
-// 	}
-// 	if newTrigger.Description != trigger.Description {
-// 		t.Fatalf("ERROR Description mismatch")
-// 	}
-// 	if newTrigger.Enabled != trigger.Enabled {
-// 		t.Fatalf("ERROR Description mismatch")
-// 	}
-
-// 	for idx, c := range trigger.Conditions {
-// 		nc := newTrigger.Conditions[idx]
-// 		if c.EqualityOperator != nc.EqualityOperator {
-// 			t.Fatalf("ERROR Condition.EqualityOperator mismatch")
-// 		}
-// 		if c.Friendlyname != nc.Friendlyname {
-// 			t.Fatalf("ERROR Condition.Friendlyname mismatch")
-// 		}
-// 		if c.Type != nc.Type {
-// 			t.Fatalf("ERROR Condition.Type mismatch")
-// 		}
-// 		if c.Value != nc.Value {
-// 			t.Fatalf("ERROR Condition.Value mismatch")
-// 		}
-
-// 		if nc.Constraint != nil {
-// 			if otc, ok := nc.Constraint.(*automations.TimerConstraint); ok {
-// 				ntc := c.Constraint.(*automations.TimerConstraint)
-// 				if ntc.Duration != otc.Duration {
-// 					t.Fatalf("ERROR TimerConstraint.Duration mismatch")
-// 				}
-// 				if ntc.Type != otc.Type {
-// 					t.Fatalf("ERROR TimerConstraint.Type mismatch")
-// 				}
-// 			}
-
-// 			if odc, ok := nc.Constraint.(*automations.DeviceConstraint); ok {
-// 				ndc := c.Constraint.(*automations.DeviceConstraint)
-// 				if ndc.EqualityOperator != odc.EqualityOperator {
-// 					t.Fatalf("ERROR DeviceConstraint.EqualityOperator mismatch")
-// 				}
-// 				if ndc.Sensor != odc.Sensor {
-// 					t.Fatalf("ERROR DeviceConstraint.Sensor mismatch")
-// 				}
-// 				if ndc.Value != odc.Value {
-// 					t.Fatalf("ERROR DeviceConstraint.Value mismatch")
-// 				}
-// 				if ndc.Type != odc.Type {
-// 					t.Fatalf("ERROR DeviceConstraint.Type mismatch")
-// 				}
-// 			}
-// 		}
-
-// 		if c.Action.Friendlyname != nc.Action.Friendlyname {
-// 			t.Fatalf("ERROR Action.Friendlyname mismatch")
-// 		}
-// 		if c.Action.Property != nc.Action.Property {
-// 			t.Fatalf("ERROR Action.Property mismatch")
-// 		}
-// 		if c.Action.Value != nc.Action.Value {
-// 			t.Fatalf("ERROR Action.Value mismatch")
-// 		}
-// 		if c.Action.Type != nc.Action.Type {
-// 			t.Fatalf("ERROR Action.Type mismatch")
-// 		}
-// 	}
-
-// 	err = automations.DeleteTrigger("temp1")
-// 	if err != nil {
-// 		t.Fatalf("ERROR deleting file%s", err.Error())
-// 	}
-// }
 
 func unpackJsonToMap(value string) map[string]any {
 	var payload map[string]any
