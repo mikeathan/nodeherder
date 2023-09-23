@@ -6,8 +6,12 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"node-herder/internal/api"
+	"node-herder/internal/automations"
+	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
+	"node-herder/mocks"
 	"testing"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -118,15 +122,47 @@ func TestHubNewClientEventsAreReceived(t *testing.T) {
 
 }
 
+func TestSend(t *testing.T) {
+
+	// TODO;
+	wsHub := ws.NewWsHub()
+	wsHub.OnLoadAutomations(func() interface{} {
+		return createTestAutomation()
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	wsData := &ws.EventMessage{Type: ws.LoadAutomations, Payload: nil}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+
+	reply := receiveWSMessage(t, wsConn)
+	gotType := reply["type"]
+
+	if gotType != ws.LoadAutomations {
+		t.Fatalf("Expected type %+v', got '%+v'", ws.LoadAutomations, gotType)
+	}
+	time.Sleep(120 * time.Second)
+
+	defer s.Close()
+	defer wsConn.Close()
+
+}
+
 func SendMessage(t *testing.T, ws *websocket.Conn, msg []byte) {
 	t.Helper()
 
-	m, err := json.Marshal(msg)
-	if err != nil {
-		t.Fatal(err)
-	}
+	// m, err := json.Marshal(msg)
+	// if err != nil {
+	// 	t.Fatal(err)
+	// }
 
-	if err := ws.WriteMessage(websocket.BinaryMessage, m); err != nil {
+	if err := ws.WriteMessage(websocket.TextMessage, msg); err != nil {
 		t.Fatalf("%v", err)
 	}
 }
@@ -184,4 +220,76 @@ func httpToWs(t *testing.T, s string) string {
 	}
 
 	return wsURL.String()
+}
+
+func createTestAutomation() []*automations.DeviceTrigger {
+	mqtt := &mocks.MockMqttClient{}
+
+	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(mqtt, 100*time.Millisecond)
+	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30.1)
+
+	// create device trigger
+	deviceTrigger := automations.NewDeviceTrigger("human sensor")
+	deviceTrigger.Description = "test human sensor automation"
+	deviceTrigger.SensorTriggers = make(map[string][]*automations.SensorTrigger)
+	deviceTrigger.SensorTriggers[turnOffTrigger.Name] = append(deviceTrigger.SensorTriggers[turnOffTrigger.Name], turnOffTrigger)
+	deviceTrigger.SensorTriggers[turnOnTrigger.Name] = append(deviceTrigger.SensorTriggers[turnOnTrigger.Name], turnOnTrigger)
+	return []*automations.DeviceTrigger{deviceTrigger}
+}
+func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any) *automations.SensorTrigger {
+	// action = turn off light
+	turnOnAction := &automations.MqttAction{}
+	turnOnAction.Friendlyname = "Attic light"
+	turnOnAction.Type = "light"
+	turnOnAction.Property = "state"
+	turnOnAction.Value = true
+	turnOnAction.Delay = 0
+	turnOnAction.Client = mqtt
+
+	// Turn on sensor trigger
+	turnOnTrigger := &automations.SensorTrigger{}
+	turnOnTrigger.Name = "presence"
+	turnOnTrigger.Action = turnOnAction
+
+	// condition = presence = off && lux <= 30
+	turnOnCondition := &automations.SensorCondition{}
+	turnOnCondition.Name = "presence"
+	turnOnCondition.EqualityOperator = "="
+	turnOnCondition.Value = true
+
+	luxCondition := &automations.SensorCondition{}
+	luxCondition.Name = "lux"
+	luxCondition.EqualityOperator = "<="
+	luxCondition.Value = lux
+
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, luxCondition)
+
+	return turnOnTrigger
+}
+
+func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay time.Duration) *automations.SensorTrigger {
+	// action = turn off light
+	turnOffAction := &automations.MqttAction{}
+	turnOffAction.Friendlyname = "Attic light"
+	turnOffAction.Type = "light"
+	turnOffAction.Property = "state"
+	turnOffAction.Value = false
+	turnOffAction.Delay = delay
+	turnOffAction.Client = mqtt
+
+	// Turn off sensor trigger
+	turnOffTrigger := &automations.SensorTrigger{}
+	turnOffTrigger.Name = "presence"
+	turnOffTrigger.Action = turnOffAction
+
+	// condition = presence == false
+	turnOffCondition := &automations.SensorCondition{}
+	turnOffCondition.Name = "presence"
+	turnOffCondition.EqualityOperator = "="
+	turnOffCondition.Value = false
+
+	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffCondition)
+
+	return turnOffTrigger
 }

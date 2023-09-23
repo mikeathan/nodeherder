@@ -4,12 +4,14 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/models/devices"
 	"node-herder/utils"
+	"sort"
 	"time"
 )
 
 type Engine interface { // TODO: might need to move it to Models????
 	HandleDevice(id string, data map[string]any)
-	Load(bridgeDevices []*devices.BridgeDevice) error
+	Initialize(bridgeDevices []*devices.BridgeDevice) error
+	AllTriggers() []*DeviceTrigger
 }
 
 type AutomationEngine struct {
@@ -30,14 +32,30 @@ func (a *AutomationEngine) HandleDevice(id string, data map[string]any) {
 	}
 }
 
-func (a *AutomationEngine) Load(bridgeDevices []*devices.BridgeDevice) error {
+func (a *AutomationEngine) AllTriggers() []*DeviceTrigger {
+	keys := make([]string, 0, len(a.deviceTriggers))
+	values := make([]*DeviceTrigger, 0, len(a.deviceTriggers))
+
+	for k, _ := range a.deviceTriggers {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		values = append(values, a.deviceTriggers[k])
+	}
+
+	return values
+}
+
+func (a *AutomationEngine) Initialize(bridgeDevices []*devices.BridgeDevice) error {
 
 	// fake input data - TEST ONLY
 	// tha needs to come from a file and loaded
 	//triggers := newMockMqttTriggerPresenseWithLux(true)
 
 	triggers := LoadTriggers()
-	utils.LogInfof("Loading automations")
+	utils.LogInfof("Initialize automations")
 	for _, deviceTrigger := range triggers {
 
 		err := deviceTrigger.configure(bridgeDevices, a.mqttClient)

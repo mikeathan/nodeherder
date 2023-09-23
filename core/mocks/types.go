@@ -24,6 +24,10 @@ func (w *MockEventHub) OnConnected(onConnected func() interface{}) {
 	fmt.Println("Empty OnConnected")
 }
 
+func (w *MockEventHub) OnLoadAutomations(onLoadAutomations func() interface{}) {
+	fmt.Println("Empty OnLoadAutomations")
+}
+
 type MockMqttClient struct {
 	messageHandler func(string, []byte)
 }
@@ -79,6 +83,10 @@ func (w *NopWsServer) RegisterNewClient(conn *websocket.Conn) {
 
 func (w *NopWsServer) OnConnected(onConnected func() interface{}) {
 	fmt.Println("Empty OnConnected")
+}
+
+func (w *NopWsServer) OnLoadAutomations(onLoadAutomations func() interface{}) {
+	fmt.Println("Empty OnLoadAutomations")
 }
 
 type NopMqttClient struct {

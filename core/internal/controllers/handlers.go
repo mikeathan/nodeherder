@@ -55,7 +55,7 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 		return err
 	}
 
-	b.automations.Load(devices)
+	b.automations.Initialize(devices)
 	if err != nil {
 		return err
 	}

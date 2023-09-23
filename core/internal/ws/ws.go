@@ -3,6 +3,7 @@ package ws
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"node-herder/utils"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 const (
 	DeviceUpdated   = "deviceUpdated"
 	ClientConnected = "connected"
+	LoadAutomations = "loadAutomations"
 )
 
 type EventMessage struct {
@@ -57,6 +59,7 @@ type WsClient struct {
 func newWsClient(hub *wsServer, conn *websocket.Conn) *WsClient {
 	return &WsClient{hub: hub, conn: conn, send: make(chan []byte)}
 }
+
 func (c *WsClient) readPump() {
 	defer func() {
 		c.hub.unregister <- c
@@ -74,8 +77,29 @@ func (c *WsClient) readPump() {
 			}
 			break
 		}
-		c.hub.broadcast <- message
+		fmt.Println("[DEBUG] received ws message:", string(message))
+		c.handleMessage(message)
 	}
+}
+
+func (c *WsClient) handleMessage(message []byte) {
+	var eventMsg = &EventMessage{}
+
+	if err := json.Unmarshal(message, &eventMsg); err != nil {
+		return
+	}
+	switch eventMsg.Type {
+	case LoadAutomations:
+
+		msg := c.hub.onLoadAutomations()
+
+		c.Broadcast(LoadAutomations, msg)
+
+	default:
+		utils.LogWarnf("Unknown event type: %s", eventMsg.Type)
+		return
+	}
+
 }
 
 func (c *WsClient) writePump() {
@@ -126,6 +150,7 @@ type EventHub interface {
 	Broadcast(eventName string, data interface{}) error
 	RegisterNewClient(conn *websocket.Conn)
 	OnConnected(onConnected func() interface{})
+	OnLoadAutomations(onLoadAutomations func() interface{})
 }
 
 type wsServer struct {
@@ -134,6 +159,7 @@ type wsServer struct {
 	register          chan *WsClient
 	unregister        chan *WsClient
 	onClientConnected func() interface{}
+	onLoadAutomations func() interface{}
 }
 
 func NewWsHub() EventHub {
@@ -143,10 +169,15 @@ func NewWsHub() EventHub {
 		register:          make(chan *WsClient),
 		unregister:        make(chan *WsClient),
 		onClientConnected: func() interface{} { return nil },
+		onLoadAutomations: func() interface{} { return nil },
 	}
 
 	go wsHub.run()
 	return wsHub
+}
+
+func (h *wsServer) OnLoadAutomations(action func() interface{}) {
+	h.onLoadAutomations = action
 }
 
 func (h *wsServer) OnConnected(onConnected func() interface{}) {
