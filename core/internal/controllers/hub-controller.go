@@ -36,8 +36,9 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 	h.wp = utils.NewWorkerPool(1, ctx)
 	h.wp.Run()
 
-	h.eventHub.OnLoadAutomations(func() interface{} {
-		return h.automationEngine.AllTriggers()
+	h.eventHub.OnLoadAutomations(func() []byte {
+
+		return h.automationEngine.GetAllTriggers()
 	})
 
 	h.eventHub.OnConnected(func() interface{} {

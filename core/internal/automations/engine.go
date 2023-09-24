@@ -1,6 +1,7 @@
 package automations
 
 import (
+	"encoding/json"
 	"node-herder/internal/mqtt"
 	"node-herder/models/devices"
 	"node-herder/utils"
@@ -11,7 +12,7 @@ import (
 type Engine interface { // TODO: might need to move it to Models????
 	HandleDevice(id string, data map[string]any)
 	Initialize(bridgeDevices []*devices.BridgeDevice) error
-	AllTriggers() []*DeviceTrigger
+	GetAllTriggers() []byte
 }
 
 type AutomationEngine struct {
@@ -32,7 +33,7 @@ func (a *AutomationEngine) HandleDevice(id string, data map[string]any) {
 	}
 }
 
-func (a *AutomationEngine) AllTriggers() []*DeviceTrigger {
+func (a *AutomationEngine) GetAllTriggers() []byte {
 	keys := make([]string, 0, len(a.deviceTriggers))
 	values := make([]*DeviceTrigger, 0, len(a.deviceTriggers))
 
@@ -45,7 +46,11 @@ func (a *AutomationEngine) AllTriggers() []*DeviceTrigger {
 		values = append(values, a.deviceTriggers[k])
 	}
 
-	return values
+	bytes, err := json.Marshal(values)
+	if err != nil {
+		utils.LogErrorf("marshal automation triggers failed. error %s", err.Error())
+	}
+	return bytes
 }
 
 func (a *AutomationEngine) Initialize(bridgeDevices []*devices.BridgeDevice) error {

@@ -122,12 +122,20 @@ func TestHubNewClientEventsAreReceived(t *testing.T) {
 
 }
 
-func TestSend(t *testing.T) {
+func TestHandlingLoadAutomationsMessage(t *testing.T) {
 
-	// TODO;
 	wsHub := ws.NewWsHub()
-	wsHub.OnLoadAutomations(func() interface{} {
-		return createTestAutomation()
+
+	// input data
+	inputTriggersBytes := createTestAutomation()
+	var inputTriggers []*automations.DeviceTrigger
+	err := json.Unmarshal(inputTriggersBytes, &inputTriggers)
+	if err != nil {
+		t.Fatal(err)
+	}
+	//
+	wsHub.OnLoadAutomations(func() []byte {
+		return inputTriggersBytes
 	})
 
 	h := api.NewWsHandler(wsHub)
@@ -141,13 +149,81 @@ func TestSend(t *testing.T) {
 
 	SendMessage(t, wsConn, msg)
 
-	reply := receiveWSMessage(t, wsConn)
-	gotType := reply["type"]
-
-	if gotType != ws.LoadAutomations {
-		t.Fatalf("Expected type %+v', got '%+v'", ws.LoadAutomations, gotType)
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
 	}
-	time.Sleep(120 * time.Second)
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.LoadAutomations {
+		t.Fatalf("Expected type %v', got '%+v'", ws.LoadAutomations, event.Type)
+	}
+
+	// output data
+	var triggers []*automations.DeviceTrigger
+
+	bytes := []byte(event.Payload.(string))
+	err = json.Unmarshal(bytes, &triggers)
+	if err != nil {
+		t.Fatal(err)
+	}
+	//
+
+	for idx, trigger := range triggers {
+
+		inputTrigger := inputTriggers[idx]
+		if trigger.Enabled != inputTrigger.Enabled {
+			t.Fatalf("unexpected trigger.Enabled value")
+		}
+		if trigger.Name != inputTrigger.Name {
+			t.Fatalf("unexpected trigger.Name value")
+		}
+		if trigger.Description != inputTrigger.Description {
+			t.Fatalf("unexpected trigger.Description value")
+		}
+		for sensor, sensorTriggers := range trigger.SensorTriggers {
+			for sidx, sensorTrigger := range sensorTriggers {
+				inputSensorTrigger := inputTrigger.SensorTriggers[sensor][sidx]
+
+				if sensorTrigger.Name != inputSensorTrigger.Name {
+					t.Fatalf("unexpected sensorTrigger.Name value")
+				}
+				if sensorTrigger.Action.Friendlyname != inputSensorTrigger.Action.Friendlyname {
+					t.Fatalf("unexpected sensorTrigger.Action.Friendlyname  value")
+				}
+				if sensorTrigger.Action.Property != inputSensorTrigger.Action.Property {
+					t.Fatalf("unexpected sensorTrigger.Action.Property  value")
+				}
+				if sensorTrigger.Action.Type != inputSensorTrigger.Action.Type {
+					t.Fatalf("unexpected sensorTrigger.Action.Type  value")
+				}
+				if sensorTrigger.Action.Delay != inputSensorTrigger.Action.Delay {
+					t.Fatalf("unexpected sensorTrigger.Action.Delay  value")
+				}
+				if sensorTrigger.Action.Value != inputSensorTrigger.Action.Value {
+					t.Fatalf("unexpected sensorTrigger.Action.Value  value")
+				}
+
+				for cidx, condition := range sensorTrigger.Conditions {
+					inputCondition := inputSensorTrigger.Conditions[cidx]
+					if condition.EqualityOperator != inputCondition.EqualityOperator {
+						t.Fatalf("unexpected condition.EqualityOperator  value")
+					}
+					if condition.Value != inputCondition.Value {
+						t.Fatalf("unexpected condition.Value  value")
+					}
+					if condition.Name != inputCondition.Name {
+						t.Fatalf("unexpected condition.Name  value")
+					}
+				}
+			}
+		}
+	}
 
 	defer s.Close()
 	defer wsConn.Close()
@@ -222,20 +298,38 @@ func httpToWs(t *testing.T, s string) string {
 	return wsURL.String()
 }
 
-func createTestAutomation() []*automations.DeviceTrigger {
+func createTestAutomation() []byte {
 	mqtt := &mocks.MockMqttClient{}
 
+	// create device trigger 1
 	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(mqtt, 100*time.Millisecond)
-	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30.1)
+	turnOnTriggerWithLux := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30.1)
 
-	// create device trigger
 	deviceTrigger := automations.NewDeviceTrigger("human sensor")
 	deviceTrigger.Description = "test human sensor automation"
 	deviceTrigger.SensorTriggers = make(map[string][]*automations.SensorTrigger)
 	deviceTrigger.SensorTriggers[turnOffTrigger.Name] = append(deviceTrigger.SensorTriggers[turnOffTrigger.Name], turnOffTrigger)
-	deviceTrigger.SensorTriggers[turnOnTrigger.Name] = append(deviceTrigger.SensorTriggers[turnOnTrigger.Name], turnOnTrigger)
-	return []*automations.DeviceTrigger{deviceTrigger}
+	deviceTrigger.SensorTriggers[turnOnTriggerWithLux.Name] = append(deviceTrigger.SensorTriggers[turnOnTriggerWithLux.Name], turnOnTriggerWithLux)
+
+	// create device trigger 2
+	turnOffTrigger2 := createTriggerDelayTurnOffLightWithPresenceOff(mqtt, 5*time.Minute)
+	turnOnTrigger := createTriggerTurnOnLightWithPresenceOn(mqtt)
+
+	deviceTrigger2 := automations.NewDeviceTrigger("Motion Sensor 2")
+	deviceTrigger2.Description = "test outdoor motion sensor 2 automation"
+	deviceTrigger2.SensorTriggers = make(map[string][]*automations.SensorTrigger)
+	deviceTrigger2.SensorTriggers[turnOffTrigger2.Name] = append(deviceTrigger2.SensorTriggers[turnOffTrigger2.Name], turnOffTrigger2)
+	deviceTrigger2.SensorTriggers[turnOnTrigger.Name] = append(deviceTrigger2.SensorTriggers[turnOnTrigger.Name], turnOnTrigger)
+
+	var triggers []*automations.DeviceTrigger
+
+	triggers = append(triggers, deviceTrigger)
+	triggers = append(triggers, deviceTrigger2)
+	bytes, _ := json.Marshal(triggers)
+
+	return bytes
 }
+
 func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any) *automations.SensorTrigger {
 	// action = turn off light
 	turnOnAction := &automations.MqttAction{}
@@ -264,6 +358,32 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, luxCondition)
+
+	return turnOnTrigger
+}
+
+func createTriggerTurnOnLightWithPresenceOn(mqtt mqtt.MqttClient) *automations.SensorTrigger {
+	// action = turn off light
+	turnOnAction := &automations.MqttAction{}
+	turnOnAction.Friendlyname = "Attic light"
+	turnOnAction.Type = "light"
+	turnOnAction.Property = "state"
+	turnOnAction.Value = true
+	turnOnAction.Delay = 0
+	turnOnAction.Client = mqtt
+
+	// Turn on sensor trigger
+	turnOnTrigger := &automations.SensorTrigger{}
+	turnOnTrigger.Name = "presence"
+	turnOnTrigger.Action = turnOnAction
+
+	// condition = presence = off
+	turnOnCondition := &automations.SensorCondition{}
+	turnOnCondition.Name = "presence"
+	turnOnCondition.EqualityOperator = "="
+	turnOnCondition.Value = true
+
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
 
 	return turnOnTrigger
 }
