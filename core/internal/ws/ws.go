@@ -11,9 +11,13 @@ import (
 )
 
 const (
+	// requests
 	DeviceUpdated   = "deviceUpdated"
 	ClientConnected = "connected"
 	LoadAutomations = "loadAutomations"
+
+	// response
+	Automations = "automations"
 )
 
 type EventMessage struct {
@@ -93,7 +97,7 @@ func (c *WsClient) handleMessage(message []byte) {
 
 		msg := c.hub.onLoadAutomations()
 
-		c.Broadcast(LoadAutomations, msg)
+		c.Broadcast(Automations, msg)
 
 	default:
 		utils.LogWarnf("Unknown event type: %s", eventMsg.Type)
