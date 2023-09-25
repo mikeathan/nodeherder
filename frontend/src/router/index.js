@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
 import DevicePage from "../components/device/DevicePage.vue";
 import Dashboard from "../components/device-dashboard/DeviceDashboard.vue";
+import Automations from "../components/automations/viewer.vue";
+
 const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -8,6 +10,11 @@ const router = createRouter({
       path: "/",
       name: "home",
       component: Dashboard,
+    },
+    {
+      path: "/automations",
+      name: "automations",
+      component: Automations,
     },
     {
       path: "/devicepage/:id",

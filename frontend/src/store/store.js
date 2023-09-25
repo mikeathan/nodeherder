@@ -3,6 +3,7 @@ import createPersistedState from "vuex-persistedstate";
 
 const state = {
   devices: {},
+  automations: {},
 };
 
 const mutations = {
@@ -15,6 +16,13 @@ const mutations = {
       state.devices[device.id] = device;
     });
   },
+
+  initAutomations(state, automations) {
+    automations.forEach((automation) => {
+      state.automations[automation.name] = automation;
+    });
+  },
+
   clear() {
     console.log("clear devices");
     for (var prop in state.devices) {
@@ -28,6 +36,7 @@ const mutations = {
 
 const getters = {
   devices: (state) => state.devices,
+  automations: (state) => state.automations,
   findDevice: (state) => (id) => {
     return state.devices[id];
   },

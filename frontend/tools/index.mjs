@@ -73,7 +73,7 @@ let devicesConfig = [
 // {"type":"deviceUpdated","payload":{"id":"device 2","payload":{"id":"device 2","conn":"mqtt","power_source":"mains","sensors":{"presence":false,"illuminance_lux":103},"stats":{"availability":"online","last_seen":"2023-07-10T09:04:18+01:00","linkquality":67}}}}
 
 const automationTriggers =
-  '[{"name":"human sensor","description":"test human sensor automation","enabled":false,"sensor_triggers":{"presence":[{"name":"presence","conditions":[{"name":"presence","value":false,"equalityoperator":"="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":false,"delay":100000000}},{"name":"presence","conditions":[{"name":"presence","value":true,"equalityoperator":"="},{"name":"lux","value":30.1,"equalityoperator":"\\u003c="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":true,"delay":0}}]}},{"name":"Motion Sensor 2","description":"test outdoor motion sensor 2 automation","enabled":false,"sensor_triggers":{"presence":[{"name":"presence","conditions":[{"name":"presence","value":false,"equalityoperator":"="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":false,"delay":300000000000}},{"name":"presence","conditions":[{"name":"presence","value":true,"equalityoperator":"="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":true,"delay":0}}]}}]';
+  '{"type":"automations","payload":[{"name":"human sensor","description":"test human sensor automation","enabled":false,"sensor_triggers":{"presence":[{"name":"presence","conditions":[{"name":"presence","value":false,"equalityoperator":"="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":false,"delay":100000000}},{"name":"presence","conditions":[{"name":"presence","value":true,"equalityoperator":"="},{"name":"lux","value":30.1,"equalityoperator":"\\u003c="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":true,"delay":0}}]}},{"name":"Motion Sensor 2","description":"test outdoor motion sensor 2 automation","enabled":false,"sensor_triggers":{"presence":[{"name":"presence","conditions":[{"name":"presence","value":false,"equalityoperator":"="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":false,"delay":300000000000}},{"name":"presence","conditions":[{"name":"presence","value":true,"equalityoperator":"="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":true,"delay":0}}]}}]}';
 
 expressWs(app, server);
 
@@ -99,7 +99,7 @@ app.ws("/ws", async function (ws, req) {
   ws.on("message", async function (msg) {
     console.log("message received" + msg);
 
-    const obj = JSON.parse(event.data);
+    const obj = JSON.parse(msg);
     switch (obj.type) {
       case "loadAutomations":
         var msg = onLoadAutomationBuildResponse();
@@ -127,7 +127,8 @@ function onLoadAutomationBuildRequest() {
 }
 
 function onLoadAutomationBuildResponse() {
-  return JSON.stringify({ type: "automations", payload: automationTriggers });
+  return automationTriggers;
+  //return JSON.stringify({ type: "automations", payload: automationTriggers });
 }
 
 function buildPayload(status, settings) {

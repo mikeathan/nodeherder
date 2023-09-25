@@ -1,10 +1,15 @@
 import store from "../store/store.js";
 
-//const socketUri = "ws://localhost:3000/ws"; // used for testing
-const socketUri = "ws://" + document.location.host + "/ws";
+const socketUri = "ws://localhost:3000/ws"; // used for testing
+//const socketUri = "ws://" + document.location.host + "/ws";
 
 console.log("socketUri:" + socketUri);
 const ws = new WebSocket(socketUri);
+
+export function wssend(event, payload) {
+  var message = JSON.stringify({ type: event, payload: payload });
+  ws.send(message);
+}
 
 ws.onmessage = (event) => {
   if (event == undefined) {
@@ -15,6 +20,7 @@ ws.onmessage = (event) => {
     console.log("ws undefined data: " + event.data);
     return;
   }
+
   const obj = JSON.parse(event.data);
 
   switch (obj.type) {
@@ -23,6 +29,9 @@ ws.onmessage = (event) => {
       break;
     case "deviceUpdated":
       store.commit("deviceUpdated", obj.payload);
+      break;
+    case "automations":
+      store.commit("initAutomations", obj.payload);
       break;
     default:
       console.log("ws unhandled type: ", event.data);
