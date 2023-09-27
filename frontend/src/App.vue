@@ -1,7 +1,14 @@
 <script setup>
 import { Alert } from "bootstrap";
-import { ref } from "vue";
+import connect from "./services/ws.js";
+
+import { onBeforeMount, ref } from "vue";
 const title = ref("Node-Herder");
+
+onBeforeMount(() => {
+  connect();
+});
+
 </script>
 <style></style>
 

@@ -103,7 +103,6 @@ app.ws("/ws", async function (ws, req) {
     switch (obj.type) {
       case "loadAutomations":
         var msg = onLoadAutomationBuildResponse();
-        console.log("ws send loadAutomations response=> " + msg);
         ws.send(msg);
         break;
       default:
