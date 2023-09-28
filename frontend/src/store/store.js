@@ -1,5 +1,6 @@
 import { createStore } from "vuex";
 import createPersistedState from "vuex-persistedstate";
+import wsclient from "./modules/wsclient";
 
 const state = {
   devices: {},
@@ -42,11 +43,16 @@ const getters = {
   },
 };
 
-const plugins = [createPersistedState()];
+//const plugins = [createPersistedState()];
+const modules = {
+  ws: wsclient,
+};
+
 export default createStore({
   state,
   getters,
   mutations,
+  modules,
 });
 //plugins
 

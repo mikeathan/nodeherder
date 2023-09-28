@@ -1,14 +1,13 @@
 <script setup>
 import { useStore } from "vuex";
 import { computed, onMounted } from "vue";
-import { emit } from "../../services/ws.js";
 
 
 const store = useStore();
 const automations = computed(() => store.getters.automations);
 
 onMounted(() => {
-    emit("loadAutomations");
+    store.dispatch('ws/emit', "loadAutomations");
 });
 
 </script>

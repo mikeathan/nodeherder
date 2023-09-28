@@ -1,12 +1,14 @@
 <script setup>
 import { Alert } from "bootstrap";
-import connect from "./services/ws.js";
 
 import { onBeforeMount, ref } from "vue";
+import { useStore } from "vuex";
+
 const title = ref("Node-Herder");
+const store = useStore()
 
 onBeforeMount(() => {
-  connect();
+  store.dispatch('ws/connect')
 });
 
 </script>
