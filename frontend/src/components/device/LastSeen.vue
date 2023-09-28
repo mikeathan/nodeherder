@@ -12,7 +12,7 @@ let lastSeenElement = ref(null)
 watch(
     () => props.timestamp,
     (newlastSeen) => {
-        if (lastSeenElement.value == undefined){
+        if (lastSeenElement.value == undefined) {
             return;
         }
         //console.log("Watch props.payload update");
@@ -24,17 +24,14 @@ watch(
 onMounted(() => {
     elapsedTimer = new ElapsedTimer(lastSeenElement.value);
     elapsedTimer.Format(props.timestamp);
-    console.log("mounted ");
 });
 
 onUnmounted(() => {
-    console.log("unmounted");
     elapsedTimer.dispose();
 });
 </script>
 <template>
-    <div :title="'last update '+timestamp" :ref="el => { lastSeenElement = el }" className="col text-truncate">
+    <div :title="'last update ' + timestamp" :ref="el => { lastSeenElement = el }" className="col text-truncate">
 
     </div>
-
 </template>
