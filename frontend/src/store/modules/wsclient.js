@@ -28,7 +28,7 @@ const actions = {
       const obj = JSON.parse(event.data);
       console.log("ws message received:", obj.type);
       switch (obj.type) {
-        case "connected": // remove !!!!!
+        case "connected": // TODO: remove !!!!!
           break;
         case "deviceUpdated":
           commit("deviceUpdated", obj.payload, { root: true });
