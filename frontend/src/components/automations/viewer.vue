@@ -1,22 +1,26 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed, onMounted } from "vue";
+import { computed, onBeforeMount } from "vue";
+import Automation from "./automation.vue"
 
 
 const store = useStore();
-const automations = computed(() => store.getters.automations);
+const automations = computed(() => {
 
-onMounted(() => {
-    store.dispatch('ws/emit', "loadAutomations");
+    if (!store.getters["automations/isInitialized"]) {
+        store.dispatch('ws/emit', "loadAutomations");
+    }
+    return store.getters["automations/items"]
+});
+
+onBeforeMount(() => {
 });
 
 </script>
 
 <template>
-    <div v-for="(data, name) in automations">
+    <p>
 
-        <p>
-        <h3>{{ name }} </h3> : {{ data }}
-        </p>
-    </div>
+        <Automation v-for="automation in automations" :item="automation" :key="automation.name"></Automation>
+    </p>
 </template>

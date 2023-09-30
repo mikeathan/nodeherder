@@ -1,10 +1,10 @@
 import { createStore } from "vuex";
 import createPersistedState from "vuex-persistedstate";
 import wsclient from "./modules/wsclient";
+import automations from "./modules/automations";
 
 const state = {
   devices: {},
-  automations: {},
 };
 
 const mutations = {
@@ -12,18 +12,16 @@ const mutations = {
     state.devices[device.id] = device;
   },
 
-  init(state, devices) {
+  initDevices(state, devices) {
     devices.forEach((device) => {
       state.devices[device.id] = device;
     });
   },
-
-  initAutomations(state, automations) {
-    automations.forEach((automation) => {
-      state.automations[automation.name] = automation;
-    });
+  dispose() {
+    // call from wsclient on disconnect
+    // clear devices
+    // clear automations
   },
-
   clear() {
     console.log("clear devices");
     for (var prop in state.devices) {
@@ -37,7 +35,6 @@ const mutations = {
 
 const getters = {
   devices: (state) => state.devices,
-  automations: (state) => state.automations,
   findDevice: (state) => (id) => {
     return state.devices[id];
   },
@@ -46,6 +43,7 @@ const getters = {
 //const plugins = [createPersistedState()];
 const modules = {
   ws: wsclient,
+  automations,
 };
 
 export default createStore({
