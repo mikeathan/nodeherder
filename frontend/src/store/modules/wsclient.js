@@ -39,6 +39,9 @@ const actions = {
         case "devices":
           commit("initDevices", obj.payload, { root: true });
           break;
+        case "ping":
+          dispatch("emit", "pong");
+          break;
         default:
           console.log("ws unhandled type: ", event.data);
       }
