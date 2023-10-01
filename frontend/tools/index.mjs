@@ -21,9 +21,8 @@ const humidityMax = 100.0;
 
 const luminance_luxMin = 10;
 const luminance_luxMax = 600;
-// Our port
 let port = 3000;
-
+let pingTimer = 0;
 // App and server
 let app = express();
 let server = http.createServer(app).listen(port);
@@ -67,11 +66,6 @@ let devicesConfig = [
   },
 ];
 
-// should be
-//{"type":"deviceUpdated","payload":{"id":"device1","sensors":{"humidity":71.2,"temperature":15.6},"stats":{"availability":"online","battery":98,"last_seen":"2023-07-10T09:08:15+01:00","linkquality":36.1}}}
-// is
-// {"type":"deviceUpdated","payload":{"id":"device 2","payload":{"id":"device 2","conn":"mqtt","power_source":"mains","sensors":{"presence":false,"illuminance_lux":103},"stats":{"availability":"online","last_seen":"2023-07-10T09:04:18+01:00","linkquality":67}}}}
-
 const automationTriggers =
   '{"type":"automations","payload":[{"name":"human sensor","description":"test human sensor automation","enabled":false,"sensor_triggers":{"presence":[{"name":"presence","conditions":[{"name":"presence","value":false,"equalityoperator":"="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":false,"delay":100000000}},{"name":"presence","conditions":[{"name":"presence","value":true,"equalityoperator":"="},{"name":"lux","value":30.1,"equalityoperator":"\\u003c="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":true,"delay":0}}]}},{"name":"Motion Sensor 2","description":"test outdoor motion sensor 2 automation","enabled":false,"sensor_triggers":{"presence":[{"name":"presence","conditions":[{"name":"presence","value":false,"equalityoperator":"="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":false,"delay":300000000000}},{"name":"presence","conditions":[{"name":"presence","value":true,"equalityoperator":"="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":true,"delay":0}}]}}]}';
 
@@ -83,11 +77,7 @@ expressWs(app, server);
 app.ws("/ws", async function (ws, req) {
   console.log("client connected");
 
-  var devices = onConnectBuildPayload(devicesConfig);
-  var r = JSON.stringify({ type: "connected", payload: devices });
-  ws.send(r);
-
-  // simulate random websocket messages
+  // simulate device updated messages
   devicesConfig.forEach((config) => {
     setInterval(function () {
       var device = buildPayload("newdata", config);
@@ -112,25 +102,31 @@ app.ws("/ws", async function (ws, req) {
         var msg = onLoadDevicesBuildResponse();
         ws.send(msg);
         break;
+      case "pong":
+        break;
       default:
-        console.log("ws unhandled type: ", event.data);
+        console.log("ws unhandled type: ", msg);
     }
   });
-});
 
-function onConnectBuildPayload(devicesConfig) {
-  var devices = [];
-  devicesConfig.forEach((config) => {
-    var device = buildPayload("connected", config);
-    devices.push(device);
+  ws.on("error", function (error) {
+    console.log("Cannot start server" + error);
   });
 
-  return devices;
-}
+  ws.on("close", function (code, message) {
+    console.log("Disconnection: " + code + ", " + message);
+    clearInterval(pingTimer);
+  });
 
-function onLoadAutomationBuildRequest() {
-  return JSON.stringify({ type: "loadAutomations", payload: "" });
-}
+  try {
+    pingTimer = setInterval(() => {
+      var msg = JSON.stringify({ type: "ping", payload: "" });
+      ws.send(msg);
+    }, 30000);
+  } catch (err) {
+    console.log("ping error ", err);
+  }
+});
 
 function onLoadAutomationBuildResponse() {
   return automationTriggers;
