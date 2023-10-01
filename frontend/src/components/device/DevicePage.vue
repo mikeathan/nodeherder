@@ -15,7 +15,7 @@ const previousPage = computed(() => {
 
 const store = useStore();
 const displayProps = computed(() => {
-  const device = store.getters.findDevice(props.id);
+  const device = store.getters["devices/findDevice"](props.id);
   if (device == undefined) {
     return [];
   }
@@ -89,11 +89,7 @@ function showDialog(message) {
 
       <!-- todo -->
       <div class="btn-group btn-group-sm" role="group">
-        <button
-          class="btn btn-danger"
-          title="Remove device"
-          @click="showDialog('Not implemented')"
-        >
+        <button class="btn btn-danger" title="Remove device" @click="showDialog('Not implemented')">
           <i class="fa fa-trash"></i>
         </button>
       </div>

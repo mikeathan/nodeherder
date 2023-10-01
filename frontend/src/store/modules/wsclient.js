@@ -31,13 +31,13 @@ const actions = {
         case "connected": // TODO: remove !!!!!
           break;
         case "deviceUpdated":
-          commit("deviceUpdated", obj.payload, { root: true });
+          commit("devices/update", obj.payload, { root: true });
           break;
         case "automations":
           commit("automations/init", obj.payload, { root: true });
           break;
         case "devices":
-          commit("initDevices", obj.payload, { root: true });
+          commit("devices/init", obj.payload, { root: true });
           break;
         case "ping":
           dispatch("emit", "pong");
@@ -51,10 +51,13 @@ const actions = {
       console.log("ws open");
       dispatch("emit", "loadDevices");
     };
+
     ws.onclose = function (event) {
       console.log("ws close");
       state.connected = false;
+      dispatch("cleanup", [], { root: true });
     };
+
     ws.onerror = function (event) {
       console.log("ws error: " + event.data);
     };

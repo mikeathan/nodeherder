@@ -4,7 +4,7 @@ import { computed } from "vue";
 import DeviceCard from "./DeviceCard.vue";
 
 const store = useStore();
-const devices = computed(() => store.getters.devices);
+const devices = computed(() => store.getters["devices/items"]);
 
 
 
