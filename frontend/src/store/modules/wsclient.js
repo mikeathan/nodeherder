@@ -83,7 +83,12 @@ const mutations = {
       const interval = setInterval(() => {
         if (currentAttempt > maxNumberOfAttempts - 1) {
           clearInterval(interval);
-          throw new Error("Maximum number of attempts exceeded.");
+          console.log(
+            "emit:",
+            event,
+            " failed. Maximum number of attempts exceeded."
+          );
+          return;
         } else if (state.ws.readyState === state.ws.OPEN) {
           clearInterval(interval);
           console.log("ws emit: ", event);
