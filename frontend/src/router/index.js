@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import DevicePage from "../components/device/DevicePage.vue";
 import Dashboard from "../components/device-dashboard/DeviceDashboard.vue";
-import Automations from "../components/automations/viewer.vue";
+import Automations from "../components/automations/editor.vue";
 
 const router = createRouter({
   history: createWebHistory(),

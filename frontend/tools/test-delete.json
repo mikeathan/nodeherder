@@ -1,0 +1,36 @@
+{
+  "name": "human sensor",
+  "description": "test human sensor automation",
+  "enabled": false,
+  "sensor_triggers": {
+    "presence": [
+      {
+        "name": "presence",
+        "conditions": [
+          { "name": "presence", "value": false, "equalityoperator": "=" }
+        ],
+        "action": {
+          "friendlyname": "Attic light",
+          "type": "light",
+          "name": "state",
+          "value": false,
+          "delay": 100000000
+        }
+      },
+      {
+        "name": "presence",
+        "conditions": [
+          { "name": "presence", "value": true, "equalityoperator": "=" },
+          { "name": "lux", "value": 30.1, "equalityoperator": "\\u003c=" }
+        ],
+        "action": {
+          "friendlyname": "Attic light",
+          "type": "light",
+          "name": "state",
+          "value": true,
+          "delay": 0
+        }
+      }
+    ]
+  }
+}
