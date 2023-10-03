@@ -66,7 +66,7 @@ let devicesConfig = [
   },
 ];
 
-const automation2Triggers =
+const automation2Trigger =
   '{"type":"automations","payload":[{"name":"human sensor","description":"test human sensor automation","enabled":false,"sensor_triggers":{"presence":[{"name":"presence","conditions":[{"name":"presence","value":false,"equalityoperator":"="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":false,"delay":100000000}},{"name":"presence","conditions":[{"name":"presence","value":true,"equalityoperator":"="},{"name":"lux","value":30.1,"equalityoperator":"\\u003c="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":true,"delay":0}}]}},{"name":"Motion Sensor 2","description":"test outdoor motion sensor 2 automation","enabled":false,"sensor_triggers":{"presence":[{"name":"presence","conditions":[{"name":"presence","value":false,"equalityoperator":"="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":false,"delay":300000000000}},{"name":"presence","conditions":[{"name":"presence","value":true,"equalityoperator":"="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":true,"delay":0}}]}}]}';
 
 const automation1Trigger =
@@ -132,7 +132,7 @@ app.ws("/ws", async function (ws, req) {
 });
 
 function onLoadAutomationBuildResponse() {
-  return automation1Trigger;
+  return automation2Trigger;
 }
 
 function onLoadDevicesBuildResponse() {
