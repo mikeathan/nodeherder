@@ -19,7 +19,7 @@ onBeforeMount(() => {
     <div class="container-fluid p-0 h-100">
       <!-- TODO: add Notification area for alerts-->
       <RouterLink to="/">{{ title }}</RouterLink> |
-      <RouterLink to="/automations">Automations </RouterLink>
+      <RouterLink to="/viewer">Automations </RouterLink>
       <RouterView />
     </div>
   </main>

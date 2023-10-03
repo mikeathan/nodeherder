@@ -8,6 +8,9 @@ const actions = {};
 const getters = {
   items: (state) => state.items,
   isInitialized: (state) => state.initialized,
+  find: (state) => (name) => {
+    return state.items[name];
+  },
 };
 
 const mutations = {
@@ -17,6 +20,10 @@ const mutations = {
       state.items[item.name] = item;
     });
     state.initialized = true;
+  },
+
+  save(state, name) {
+    dispatch("emit", "saveAutomation", state.items[name]);
   },
 
   clear(state) {

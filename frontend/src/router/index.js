@@ -1,7 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
 import DevicePage from "../components/device/DevicePage.vue";
 import Dashboard from "../components/device-dashboard/DeviceDashboard.vue";
-import Automations from "../components/automations/editor.vue";
+import AutomationsViewer from "../components/automations/viewer.vue";
+import AutomationsEditor from "../components/automations/editor.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -12,9 +13,15 @@ const router = createRouter({
       component: Dashboard,
     },
     {
-      path: "/automations",
-      name: "automations",
-      component: Automations,
+      path: "/viewer",
+      name: "viewer",
+      component: AutomationsViewer,
+    },
+    {
+      path: "/editor/:name",
+      name: "editor",
+      component: AutomationsEditor,
+      props: true,
     },
     {
       path: "/devicepage/:id",
