@@ -22,9 +22,8 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 
 	// create device trigger
 	deviceTrigger := automations.NewDeviceTrigger("human sensor")
-	deviceTrigger.SensorTriggers = make(map[string][]*automations.SensorTrigger)
-	deviceTrigger.SensorTriggers[turnOffTrigger.Name] = append(deviceTrigger.SensorTriggers[turnOffTrigger.Name], turnOffTrigger)
-	deviceTrigger.SensorTriggers[turnOnTrigger.Name] = append(deviceTrigger.SensorTriggers[turnOnTrigger.Name], turnOnTrigger)
+	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOffTrigger)
+	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
 
 	testCases := []struct {
 		presence   bool
@@ -126,9 +125,8 @@ func TestExportToFile(t *testing.T) {
 	// create device trigger
 	deviceTrigger := automations.NewDeviceTrigger("human sensor")
 	deviceTrigger.Description = "test human sensor automation"
-	deviceTrigger.SensorTriggers = make(map[string][]*automations.SensorTrigger)
-	deviceTrigger.SensorTriggers[turnOffTrigger.Name] = append(deviceTrigger.SensorTriggers[turnOffTrigger.Name], turnOffTrigger)
-	deviceTrigger.SensorTriggers[turnOnTrigger.Name] = append(deviceTrigger.SensorTriggers[turnOnTrigger.Name], turnOnTrigger)
+	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOffTrigger)
+	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
 
 	err := deviceTrigger.Save("temp1", true)
 	if err != nil {
@@ -139,11 +137,12 @@ func TestExportToFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ERROR laoding trigger from file %s", err.Error())
 	}
-
+	if newTrigger.Id != deviceTrigger.Id {
+		t.Fatalf("ERROR Id mismatch")
+	}
 	if newTrigger.Name != deviceTrigger.Name {
 		t.Fatalf("ERROR Name mismatch")
 	}
-
 	if newTrigger.Description != deviceTrigger.Description {
 		t.Fatalf("ERROR Description mismatch")
 	}
@@ -151,46 +150,43 @@ func TestExportToFile(t *testing.T) {
 		t.Fatalf("ERROR Description mismatch")
 	}
 
-	for sensor, triggers := range deviceTrigger.SensorTriggers {
-		newTriggers := newTrigger.SensorTriggers[sensor]
+	for tidx, trigger := range deviceTrigger.Triggers {
+		newTrigger := newTrigger.Triggers[tidx]
 
-		for tidx, trigger := range triggers {
+		if trigger.Name != newTrigger.Name {
+			t.Fatalf("ERROR Trigger.Name mismatch")
+		}
+		if trigger.Action.Friendlyname != newTrigger.Action.Friendlyname {
+			t.Fatalf("ERROR Action.Friendlyname mismatch")
+		}
 
-			newTrigger := newTriggers[tidx]
-			if trigger.Name != newTrigger.Name {
-				t.Fatalf("ERROR Trigger.Name mismatch")
+		if trigger.Action.Property != newTrigger.Action.Property {
+			t.Fatalf("ERROR Action.Property mismatch")
+		}
+
+		if trigger.Action.Type != newTrigger.Action.Type {
+			t.Fatalf("ERROR Action.Type mismatch")
+		}
+		if trigger.Action.Delay != newTrigger.Action.Delay {
+			t.Fatalf("ERROR Action.Delay mismatch")
+		}
+
+		for cidx, condition := range trigger.Conditions {
+
+			newCondition := newTrigger.Conditions[cidx]
+
+			if condition.EqualityOperator != newCondition.EqualityOperator {
+				t.Fatalf("ERROR Condition.EqualityOperator mismatch")
 			}
-			if trigger.Action.Friendlyname != newTrigger.Action.Friendlyname {
-				t.Fatalf("ERROR Action.Friendlyname mismatch")
+			if condition.Name != newCondition.Name {
+				t.Fatalf("ERROR Condition.Name mismatch")
 			}
 
-			if trigger.Action.Property != newTrigger.Action.Property {
-				t.Fatalf("ERROR Action.Property mismatch")
-			}
-
-			if trigger.Action.Type != newTrigger.Action.Type {
-				t.Fatalf("ERROR Action.Type mismatch")
-			}
-			if trigger.Action.Delay != newTrigger.Action.Delay {
-				t.Fatalf("ERROR Action.Delay mismatch")
-			}
-
-			for cidx, condition := range trigger.Conditions {
-
-				newCondition := newTriggers[tidx].Conditions[cidx]
-
-				if condition.EqualityOperator != newCondition.EqualityOperator {
-					t.Fatalf("ERROR Condition.EqualityOperator mismatch")
-				}
-				if condition.Name != newCondition.Name {
-					t.Fatalf("ERROR Condition.Name mismatch")
-				}
-
-				if condition.Value != newCondition.Value {
-					t.Fatalf("ERROR Condition.Value mismatch")
-				}
+			if condition.Value != newCondition.Value {
+				t.Fatalf("ERROR Condition.Value mismatch")
 			}
 		}
+
 	}
 
 	err = automations.DeleteTrigger("temp1")

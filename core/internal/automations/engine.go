@@ -89,9 +89,9 @@ func newMockMqttTriggerPresenseWithLux(enabled bool) []*DeviceTrigger {
 	deviceTrigger := NewDeviceTrigger("Human presence")
 	deviceTrigger.Description = "Attic light test automation"
 	deviceTrigger.Enabled = enabled
-	deviceTrigger.SensorTriggers = make(map[string][]*SensorTrigger)
-	deviceTrigger.SensorTriggers[turnOffTrigger.Name] = append(deviceTrigger.SensorTriggers[turnOffTrigger.Name], turnOffTrigger)
-	deviceTrigger.SensorTriggers[turnOnTrigger.Name] = append(deviceTrigger.SensorTriggers[turnOnTrigger.Name], turnOnTrigger)
+	deviceTrigger.Triggers = []*SensorTrigger{}
+	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOffTrigger)
+	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
 
 	return []*DeviceTrigger{deviceTrigger}
 }

@@ -11,6 +11,8 @@ import (
 	"node-herder/utils"
 	"os"
 	"path/filepath"
+
+	"github.com/google/uuid"
 )
 
 const (
@@ -42,31 +44,33 @@ func NewDeviceContext() *DeviceContext {
 }
 
 type DeviceTrigger struct {
-	Name           string                      `json:"name"`
-	Description    string                      `json:"description"`
-	Enabled        bool                        `json:"enabled"`
-	SensorTriggers map[string][]*SensorTrigger `json:"sensor_triggers"`
-	deviceContext  *DeviceContext
+	Id            string           `json:"id"`
+	Name          string           `json:"name"`
+	Description   string           `json:"description"`
+	Enabled       bool             `json:"enabled"`
+	Triggers      []*SensorTrigger `json:"sensor_triggers"`
+	deviceContext *DeviceContext
 }
 
 func NewDeviceTrigger(name string) *DeviceTrigger {
 	return &DeviceTrigger{
-		Name:           name,
-		Description:    "",
-		Enabled:        false,
-		SensorTriggers: make(map[string][]*SensorTrigger),
-		deviceContext:  NewDeviceContext(),
+		Id:            uuid.New().String(),
+		Name:          name,
+		Description:   "",
+		Enabled:       false,
+		Triggers:      []*SensorTrigger{},
+		deviceContext: NewDeviceContext(),
 	}
 }
 
 func (d *DeviceTrigger) Evaluate(data map[string]any) bool {
-	for sensor := range data {
-		if triggers, ok := d.SensorTriggers[sensor]; ok {
-			for _, trigger := range triggers {
-				d.processTrigger(trigger, data)
-			}
+
+	for _, trigger := range d.Triggers {
+		if _, ok := data[trigger.Name]; ok {
+			d.processTrigger(trigger, data)
 		}
 	}
+
 	return false
 }
 
@@ -207,17 +211,15 @@ func createDirIfNotExists(name string) {
 func (t *DeviceTrigger) configure(bridgeDevices []*devices.BridgeDevice, client mqtt.MqttClient) error {
 
 	// validate conditions
-	for _, triggers := range t.SensorTriggers {
+	for _, trigger := range t.Triggers {
 
-		for _, trigger := range triggers {
-			// validate actions
-			err := validateAction(bridgeDevices, trigger.Action, client)
-			if err != nil {
-				return err
-			}
+		// validate actions
+		err := validateAction(bridgeDevices, trigger.Action, client)
+		if err != nil {
+			return err
 		}
-
 	}
+
 	return nil
 }
 

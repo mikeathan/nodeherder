@@ -90,10 +90,15 @@ post payload
     decide how do we store them
       per item
       all of them  (if all of them then need to send some infor to ui for table page)
+    solution: store automations ins single files/items
+          when ui asks for all automations just return a simpified view of them
+
+
 
     automation model
       add id
       simplify structure
+      change sensor name to sh generic
 
     for binding device to action, we can have trigger without conditions
 
