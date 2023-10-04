@@ -43,27 +43,27 @@ func NewDeviceContext() *DeviceContext {
 	return &DeviceContext{data: map[string]any{}}
 }
 
-type DeviceTrigger struct {
-	Id            string           `json:"id"`
-	Name          string           `json:"name"`
-	Description   string           `json:"description"`
-	Enabled       bool             `json:"enabled"`
-	Triggers      []*SensorTrigger `json:"sensor_triggers"`
+type Device struct {
+	Id            string     `json:"id"`
+	Name          string     `json:"name"`
+	Description   string     `json:"description"`
+	Enabled       bool       `json:"enabled"`
+	Triggers      []*Trigger `json:"sensor_triggers"`
 	deviceContext *DeviceContext
 }
 
-func NewDeviceTrigger(name string) *DeviceTrigger {
-	return &DeviceTrigger{
+func NewDevice(name string) *Device {
+	return &Device{
 		Id:            uuid.New().String(),
 		Name:          name,
 		Description:   "",
 		Enabled:       false,
-		Triggers:      []*SensorTrigger{},
+		Triggers:      []*Trigger{},
 		deviceContext: NewDeviceContext(),
 	}
 }
 
-func (d *DeviceTrigger) Evaluate(data map[string]any) bool {
+func (d *Device) Evaluate(data map[string]any) bool {
 
 	for _, trigger := range d.Triggers {
 		if _, ok := data[trigger.Name]; ok {
@@ -74,7 +74,7 @@ func (d *DeviceTrigger) Evaluate(data map[string]any) bool {
 	return false
 }
 
-func (d *DeviceTrigger) processTrigger(trigger *SensorTrigger, data map[string]any) {
+func (d *Device) processTrigger(trigger *Trigger, data map[string]any) {
 
 	currValue := d.deviceContext.Get(trigger.Name)
 	for _, c := range trigger.Conditions {
@@ -98,7 +98,7 @@ func (d *DeviceTrigger) processTrigger(trigger *SensorTrigger, data map[string]a
 	})
 }
 
-func (t *DeviceTrigger) Save(name string, pretty bool) error {
+func (t *Device) Save(name string, pretty bool) error {
 	filePath := getFilePath(name)
 
 	data, err := json.Marshal(t)
@@ -132,9 +132,9 @@ func prettyJson(b []byte) ([]byte, error) {
 	return out.Bytes(), err
 }
 
-func LoadTriggers() []*DeviceTrigger {
+func LoadTriggers() []*Device {
 
-	triggers := []*DeviceTrigger{}
+	triggers := []*Device{}
 	err := filepath.Walk(automationDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			utils.LogErrorf("Error loading automations %s", err.Error())
@@ -160,13 +160,13 @@ func LoadTriggers() []*DeviceTrigger {
 	return triggers
 }
 
-func LoadTrigger(name string) (*DeviceTrigger, error) {
+func LoadTrigger(name string) (*Device, error) {
 	filePath := getFilePath(name)
 
 	return load(filePath)
 }
 
-func load(filePath string) (*DeviceTrigger, error) {
+func load(filePath string) (*Device, error) {
 
 	jsonFile, err := os.Open(filePath)
 	if err != nil {
@@ -179,7 +179,7 @@ func load(filePath string) (*DeviceTrigger, error) {
 	}
 	defer jsonFile.Close()
 
-	t := &DeviceTrigger{}
+	t := &Device{}
 	err = json.Unmarshal(data, &t)
 	if err != nil {
 		return nil, err
@@ -208,7 +208,7 @@ func createDirIfNotExists(name string) {
 	}
 }
 
-func (t *DeviceTrigger) configure(bridgeDevices []*devices.BridgeDevice, client mqtt.MqttClient) error {
+func (t *Device) configure(bridgeDevices []*devices.BridgeDevice, client mqtt.MqttClient) error {
 
 	// validate conditions
 	for _, trigger := range t.Triggers {

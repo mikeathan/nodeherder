@@ -22,7 +22,7 @@ func toFloat(value any) float32 {
 	}
 }
 
-var Equalityoperators = map[string]func(any, any) bool{
+var EqualityOperators = map[string]func(any, any) bool{
 	"=": func(v1 any, v2 any) bool {
 		return v1 == v2
 	},
@@ -40,13 +40,13 @@ var Equalityoperators = map[string]func(any, any) bool{
 	},
 }
 
-type SensorCondition struct {
+type Condition struct {
 	Name             string `json:"name"`
 	Value            any    `json:"value"`
-	EqualityOperator string `json:"equalityoperator"`
+	EqualityOperator string `json:"equality"`
 }
 
-func (s *SensorCondition) Evaluate(data map[string]any) bool {
+func (s *Condition) Evaluate(data map[string]any) bool {
 
 	value, ok := data[s.Name]
 	if !ok {
@@ -54,23 +54,23 @@ func (s *SensorCondition) Evaluate(data map[string]any) bool {
 		return false
 	}
 
-	if Equalityoperators[s.EqualityOperator](value, s.Value) {
+	if EqualityOperators[s.EqualityOperator](value, s.Value) {
 		return true
 	}
 
 	return false
 }
 
-type SensorTrigger struct {
-	Name       string             `json:"name"`
-	Conditions []*SensorCondition `json:"conditions"`
-	Action     *MqttAction        `json:"action"`
+type Trigger struct {
+	Name       string       `json:"name"`
+	Conditions []*Condition `json:"conditions"`
+	Action     *MqttAction  `json:"action"`
 }
 
 type MqttAction struct {
 	Friendlyname string          `json:"friendlyname"`
 	Type         string          `json:"type"`
-	Property     string          `json:"name"`
+	Property     string          `json:"property"`
 	Value        any             `json:"value"`
 	Client       mqtt.MqttClient `json:"-"`
 

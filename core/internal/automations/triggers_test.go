@@ -21,7 +21,7 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30)
 
 	// create device trigger
-	deviceTrigger := automations.NewDeviceTrigger("human sensor")
+	deviceTrigger := automations.NewDevice("human sensor")
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOffTrigger)
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
 
@@ -109,7 +109,7 @@ func TestEqualityChecks(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		res := automations.Equalityoperators[testCase.op](testCase.value1, testCase.value2)
+		res := automations.EqualityOperators[testCase.op](testCase.value1, testCase.value2)
 		if res != testCase.result {
 			t.Fatalf("operation result mismatch: want %v got %v in  %v %s %v", testCase.result, res, testCase.value1, testCase.op, testCase.value2)
 		}
@@ -123,7 +123,7 @@ func TestExportToFile(t *testing.T) {
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30.1)
 
 	// create device trigger
-	deviceTrigger := automations.NewDeviceTrigger("human sensor")
+	deviceTrigger := automations.NewDevice("human sensor")
 	deviceTrigger.Description = "test human sensor automation"
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOffTrigger)
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
@@ -204,7 +204,7 @@ func unpackJsonToMap(value string) map[string]any {
 	return payload
 }
 
-func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any) *automations.SensorTrigger {
+func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any) *automations.Trigger {
 	// action = turn off light
 	turnOnAction := &automations.MqttAction{}
 	turnOnAction.Friendlyname = "Attic light"
@@ -215,17 +215,17 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 	turnOnAction.Client = mqtt
 
 	// Turn on sensor trigger
-	turnOnTrigger := &automations.SensorTrigger{}
+	turnOnTrigger := &automations.Trigger{}
 	turnOnTrigger.Name = "presence"
 	turnOnTrigger.Action = turnOnAction
 
 	// condition = presence = off && lux <= 30
-	turnOnCondition := &automations.SensorCondition{}
+	turnOnCondition := &automations.Condition{}
 	turnOnCondition.Name = "presence"
 	turnOnCondition.EqualityOperator = "="
 	turnOnCondition.Value = true
 
-	luxCondition := &automations.SensorCondition{}
+	luxCondition := &automations.Condition{}
 	luxCondition.Name = "lux"
 	luxCondition.EqualityOperator = "<="
 	luxCondition.Value = lux
@@ -236,7 +236,7 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 	return turnOnTrigger
 }
 
-func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay time.Duration) *automations.SensorTrigger {
+func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay time.Duration) *automations.Trigger {
 	// action = turn off light
 	turnOffAction := &automations.MqttAction{}
 	turnOffAction.Friendlyname = "Attic light"
@@ -247,12 +247,12 @@ func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay t
 	turnOffAction.Client = mqtt
 
 	// Turn off sensor trigger
-	turnOffTrigger := &automations.SensorTrigger{}
+	turnOffTrigger := &automations.Trigger{}
 	turnOffTrigger.Name = "presence"
 	turnOffTrigger.Action = turnOffAction
 
 	// condition = presence == false
-	turnOffCondition := &automations.SensorCondition{}
+	turnOffCondition := &automations.Condition{}
 	turnOffCondition.Name = "presence"
 	turnOffCondition.EqualityOperator = "="
 	turnOffCondition.Value = false
