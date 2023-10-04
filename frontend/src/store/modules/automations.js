@@ -3,7 +3,16 @@ const state = {
   items: {},
 };
 
-const actions = {};
+const actions = {
+  save({ state, dispatch, rootState }, name) {
+    console.log("automations/save");
+    dispatch(
+      "ws/emit",
+      { event: "saveAutomation", message: state.items[name] },
+      { root: true }
+    );
+  },
+};
 
 const getters = {
   items: (state) => state.items,
@@ -20,10 +29,6 @@ const mutations = {
       state.items[item.name] = item;
     });
     state.initialized = true;
-  },
-
-  save(state, name) {
-    dispatch("emit", "saveAutomation", state.items[name]);
   },
 
   clear(state) {

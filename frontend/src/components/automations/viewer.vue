@@ -8,7 +8,7 @@ const store = useStore();
 const automations = computed(() => {
 
     if (!store.getters["automations/isInitialized"]) {
-        store.dispatch('ws/emit', "loadAutomations");
+        store.dispatch('ws/emit', { event: "loadAutomations" });
     }
     return store.getters["automations/items"]
 });

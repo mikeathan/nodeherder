@@ -16,7 +16,7 @@ const automation = computed(() => {
 });
 
 function update() {
-    store.commit('automations/save', props.name);
+    store.dispatch('automations/save', props.name);
 }
 
 // ui example

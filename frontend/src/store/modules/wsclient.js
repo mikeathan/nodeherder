@@ -38,7 +38,7 @@ const actions = {
           commit("devices/init", obj.payload, { root: true });
           break;
         case "ping":
-          dispatch("emit", "pong");
+          dispatch("emit", { event: "pong" });
           break;
         default:
           console.log("ws unhandled type: ", event.data);
@@ -47,7 +47,7 @@ const actions = {
 
     ws.onopen = function (event) {
       console.log("ws open");
-      dispatch("emit", "loadDevices");
+      dispatch("emit", { event: "loadDevices" });
     };
 
     ws.onclose = function (event) {
@@ -65,13 +65,13 @@ const actions = {
     state.connected = true;
   },
 
-  emit({ commit, state, dispatch }, event, message = "") {
-    commit("sendMessage", event, message);
+  emit({ commit }, { event, message }) {
+    commit("sendMessage", { event: event, message: message });
   },
 };
 
 const mutations = {
-  sendMessage(state, event, message = "") {
+  sendMessage(state, { event, message }) {
     var payload = JSON.stringify({ type: event, payload: message });
 
     if (state.ws.readyState !== state.ws.OPEN) {
