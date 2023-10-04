@@ -66,13 +66,13 @@ let devicesConfig = [
   },
 ];
 
-const automation2Trigger =
+let automation2Trigger =
   '{"type":"automations","payload":[{"name":"human sensor","description":"test human sensor automation","enabled":false,"sensor_triggers":{"presence":[{"name":"presence","conditions":[{"name":"presence","value":false,"equalityoperator":"="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":false,"delay":100000000}},{"name":"presence","conditions":[{"name":"presence","value":true,"equalityoperator":"="},{"name":"lux","value":30.1,"equalityoperator":"\\u003c="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":true,"delay":0}}]}},{"name":"Motion Sensor 2","description":"test outdoor motion sensor 2 automation","enabled":false,"sensor_triggers":{"presence":[{"name":"presence","conditions":[{"name":"presence","value":false,"equalityoperator":"="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":false,"delay":300000000000}},{"name":"presence","conditions":[{"name":"presence","value":true,"equalityoperator":"="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":true,"delay":0}}]}}]}';
 
-const automation1Trigger =
+let automation1Trigger =
   '{"type":"automations","payload":[{"name":"human sensor","description":"test human sensor automation","enabled":false,"sensor_triggers":{"presence":[{"name":"presence","conditions":[{"name":"presence","value":false,"equalityoperator":"="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":false,"delay":100000000}},{"name":"presence","conditions":[{"name":"presence","value":true,"equalityoperator":"="},{"name":"lux","value":30.1,"equalityoperator":"\\u003c="}],"action":{"friendlyname":"Attic light","type":"light","name":"state","value":true,"delay":0}}]}}]}';
 
-const devicesResponsePayload =
+let devicesResponsePayload =
   '{"type":"devices","payload":[{"id":"device 1","conn":"mqtt","power_source":"battery","sensors":{"humidity":41.3,"temperature":18.400000000000002},"stats":{"availability":"online","last_seen":"2023-09-28T11:04:12+01:00","linkquality":47,"battery":98}},{"id":"device 2","conn":"mqtt","power_source":"mains","sensors":{"presence":false,"illuminance_lux":103},"stats":{"availability":"online","last_seen":"2023-09-28T11:04:12+01:00","linkquality":67}},{"id":"device 3","conn":"http","power_source":"","sensors":{"humidity":41,"temperature":10,"pressure":68},"stats":{"availability":"offline","last_seen":"2023-09-28T11:04:12+01:00"}}]}';
 expressWs(app, server);
 
@@ -105,6 +105,9 @@ app.ws("/ws", async function (ws, req) {
         var msg = onLoadDevicesBuildResponse();
         ws.send(msg);
         break;
+      case "saveAutomation":
+        console.log(obj.payload);
+        break;
       case "pong":
         break;
       default:
@@ -133,6 +136,10 @@ app.ws("/ws", async function (ws, req) {
 
 function onLoadAutomationBuildResponse() {
   return automation2Trigger;
+}
+
+function saveAutomation(automation) {
+  automation2Trigger = automation;
 }
 
 function onLoadDevicesBuildResponse() {
