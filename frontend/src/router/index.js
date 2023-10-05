@@ -18,7 +18,7 @@ const router = createRouter({
       component: AutomationsViewer,
     },
     {
-      path: "/editor/:name",
+      path: "/editor/:id",
       name: "editor",
       component: AutomationsEditor,
       props: true,

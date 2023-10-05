@@ -4,11 +4,11 @@ const state = {
 };
 
 const actions = {
-  save({ state, dispatch, rootState }, name) {
+  save({ state, dispatch, rootState }, id) {
     console.log("automations/save");
     dispatch(
       "ws/emit",
-      { event: "saveAutomation", message: state.items[name] },
+      { event: "saveAutomation", message: state.items[id] },
       { root: true }
     );
   },
@@ -17,8 +17,8 @@ const actions = {
 const getters = {
   items: (state) => state.items,
   isInitialized: (state) => state.initialized,
-  find: (state) => (name) => {
-    return state.items[name];
+  find: (state) => (id) => {
+    return state.items[id];
   },
 };
 
@@ -26,7 +26,7 @@ const mutations = {
   init(state, items) {
     console.log("automations/init");
     items.forEach((item) => {
-      state.items[item.name] = item;
+      state.items[item.id] = item;
     });
     state.initialized = true;
   },

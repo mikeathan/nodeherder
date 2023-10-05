@@ -5,18 +5,18 @@ import { computed } from "vue";
 
 
 const props = defineProps({
-    name: String,
+    id: String,
 });
 
 const store = useStore();
 const automation = computed(() => {
-    const item = store.getters["automations/find"](props.name);
+    const item = store.getters["automations/find"](props.id);
 
     return item
 });
 
 function update() {
-    store.dispatch('automations/save', props.name);
+    store.dispatch('automations/save', props.id);
 }
 
 // ui example
@@ -42,62 +42,58 @@ function update() {
             </div>
             <div class="card-body">
                 <div class="accordion accordion-flush" id="triggersList">
-                    <div v-for="(sensorTriggers, name) in automation.sensor_triggers">
-                        <div v-for="(trigger, index) in sensorTriggers">
+                    <div v-for="(trigger, index) in automation.triggers">
 
-                            <div class="accordion-item">
-                                <h2 class="accordion-header" :id="`header${index}`">
-                                    <button class="accordion-button" type="button" data-bs-toggle="collapse"
-                                        :data-bs-target="`#collapse${index}`" aria-expanded="true"
-                                        :aria-controls="`collapse${index}`">
-                                        Trigger #{{ index + 1 }}
-                                    </button>
-                                </h2>
-                                <div :id="`collapse${index}`" class="accordion-collapse collapse"
-                                    :aria-labelledby="`header${index}`" data-bs-parent="#triggersList">
-                                    <div class="accordion-body">
-                                        <label>Condition</label>
-                                        <div class="row w-25" v-for="(condition) in trigger.conditions">
-                                            <div class="col">
-                                                <input type="text" class="form-control" v-model="condition.name"
-                                                    placeholder="Condition name">
-                                            </div>
-                                            <div class="col">
-                                                <input type="text" style="text-align:center;" class="form-control"
-                                                    v-model="condition.equalityoperator" placeholder="Equality operator">
-                                            </div>
-                                            <div class="col">
-                                                <input type="text" style="text-align:center;" class="form-control"
-                                                    v-model="condition.value" placeholder="Condition value"
-                                                    tooltip="Condition value">
-                                            </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" :id="`header${index}`">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                    :data-bs-target="`#collapse${index}`" aria-expanded="true"
+                                    :aria-controls="`collapse${index}`">
+                                    Trigger #{{ index + 1 }}
+                                </button>
+                            </h2>
+                            <div :id="`collapse${index}`" class="accordion-collapse collapse"
+                                :aria-labelledby="`header${index}`" data-bs-parent="#triggersList">
+                                <div class="accordion-body">
+                                    <label>Condition</label>
+                                    <div class="row w-25" v-for="(condition) in trigger.conditions">
+                                        <div class="col">
+                                            <input type="text" class="form-control" v-model="condition.name"
+                                                placeholder="Condition name">
                                         </div>
-                                        <p></p>
-                                        <label>Action</label>
+                                        <div class="col">
+                                            <input type="text" style="text-align:center;" class="form-control"
+                                                v-model="condition.equality" placeholder="Equality operator">
+                                        </div>
+                                        <div class="col">
+                                            <input type="text" style="text-align:center;" class="form-control"
+                                                v-model="condition.value" placeholder="Condition value"
+                                                tooltip="Condition value">
+                                        </div>
+                                    </div>
+                                    <p></p>
+                                    <label>Action</label>
 
-                                        <div class="row w-50">
-                                            <div class="col">
-                                                <input type="text" class="form-control"
-                                                    v-model="trigger.action.friendlyname"
-                                                    placeholder="Action friendly name">
-                                            </div>
-                                            <div class="col">
-                                                <input type="text" style="text-align:center;" class="form-control"
-                                                    v-model="trigger.action.name" placeholder="Action name">
-                                            </div>
-                                            <div class="col">
-                                                <input type="text" style="text-align:center;" class="form-control"
-                                                    v-model="trigger.action.value" placeholder="Action value">
-                                            </div>
-                                            <div class="col">
-                                                <input type="text" style="text-align:center;" class="form-control"
-                                                    v-model="trigger.action.delay" placeholder="Action delay">
-                                            </div>
+                                    <div class="row w-50">
+                                        <div class="col">
+                                            <input type="text" class="form-control" v-model="trigger.action.friendlyname"
+                                                placeholder="Action friendly name">
+                                        </div>
+                                        <div class="col">
+                                            <input type="text" style="text-align:center;" class="form-control"
+                                                v-model="trigger.action.property" placeholder="Action property">
+                                        </div>
+                                        <div class="col">
+                                            <input type="text" style="text-align:center;" class="form-control"
+                                                v-model="trigger.action.data" placeholder="Action data">
+                                        </div>
+                                        <div class="col">
+                                            <input type="text" style="text-align:center;" class="form-control"
+                                                v-model="trigger.action.delay" placeholder="Action delay">
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </div>

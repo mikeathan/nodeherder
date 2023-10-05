@@ -28,7 +28,7 @@ const automations = computed(() => {
             <tr v-for="(automation, name, index) in automations" :item="automation">
                 <th scope="row">{{ index + 1 }}</th>
                 <td>
-                    <RouterLink :to="`/editor/${automation.name}`">{{
+                    <RouterLink :to="`/editor/${automation.id}`">{{
                         automation.name
                     }}</RouterLink>
                 </td>

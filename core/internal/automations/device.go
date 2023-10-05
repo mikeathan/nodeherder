@@ -48,7 +48,7 @@ type Device struct {
 	Name        string     `json:"name"`
 	Description string     `json:"description"`
 	Enabled     bool       `json:"enabled"`
-	Triggers    []*Trigger `json:"sensor_triggers"`
+	Triggers    []*Trigger `json:"triggers"`
 	ctx         *DeviceContext
 }
 
