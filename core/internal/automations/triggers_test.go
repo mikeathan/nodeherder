@@ -12,6 +12,63 @@ import (
 	"time"
 )
 
+func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
+	t.Skip()
+	wg := &sync.WaitGroup{}
+	mqtt := &mocks.MockMqttClient{}
+
+	switch1Trigger := createSwitchTriggerWithBindingAction("buttonSwitch1", "brightness", 500, mqtt)
+	switch2Trigger := createSwitchTriggerWithBindingAction("buttonSwitch2", "state", true, mqtt)
+	switch3Trigger := createSwitchTriggerWithBindingAction("buttonSwitch3", "color_brightness", 1200, mqtt)
+
+	// create device trigger
+	deviceTrigger := automations.NewDevice("button switch")
+	deviceTrigger.Triggers = append(deviceTrigger.Triggers, switch1Trigger)
+	deviceTrigger.Triggers = append(deviceTrigger.Triggers, switch2Trigger)
+	deviceTrigger.Triggers = append(deviceTrigger.Triggers, switch3Trigger)
+
+	testCases := []struct {
+		triggeredEntity string
+		value           any
+		result          bool
+	}{
+		{triggeredEntity: "buttonSwitch1", value: 200, result: true},
+		// {triggeredEntity: "buttonSwitch2", value: true, result: true},
+		// {triggeredEntity: "door_state", value: true, result: false},
+		// {triggeredEntity: "co2", value: 70, result: false},
+		// {triggeredEntity: "quality_index", value: 30, result: false},
+		// {triggeredEntity: "buttonSwitch2", value: false, result: true},
+		// {triggeredEntity: "buttonSwitch3", value: 16000, result: true},
+		// {triggeredEntity: "buttonSwitch3", value: 5000, result: true},
+		// {triggeredEntity: "temperature", value: 25.1, result: false},
+		// {triggeredEntity: "humdity", value: 35.1, result: false},
+	}
+
+	for _, testCase := range testCases {
+		var data = map[string]any{
+			"data1":                  false,
+			"data2":                  90,
+			testCase.triggeredEntity: testCase.value,
+		}
+
+		var messageHandler = func(id string, payload []byte) {
+
+			wg.Done()
+			fmt.Println("emitted", id, string(payload))
+			//p, ok := payload.(map[string]interface{})
+		}
+
+		mqtt.OnMessageHandler(messageHandler)
+		if testCase.result {
+			wg.Add(1)
+		}
+
+		deviceTrigger.Evaluate(data)
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	wg.Wait()
+}
 func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
@@ -210,7 +267,7 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 	turnOnAction.Friendlyname = "Attic light"
 	turnOnAction.Type = "light"
 	turnOnAction.Property = "state"
-	turnOnAction.Value = true
+	turnOnAction.Data = true
 	turnOnAction.Delay = 0
 	turnOnAction.Client = mqtt
 
@@ -236,13 +293,63 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 	return turnOnTrigger
 }
 
+func createSwitchTriggerWithBindinglightBrightnessAction(mqtt mqtt.MqttClient) *automations.Trigger {
+	// action = turn off light
+	brightnessAction := &automations.MqttAction{}
+	brightnessAction.Friendlyname = "Attic light"
+	brightnessAction.Type = "light"
+	brightnessAction.Property = "brightness"
+	brightnessAction.Data = 70
+	brightnessAction.Client = mqtt
+
+	// Turn off sensor trigger
+	button1Trigger := &automations.Trigger{}
+	button1Trigger.Name = "switch1"
+	button1Trigger.Action = brightnessAction
+
+	return button1Trigger
+}
+
+func createSwitchTriggerWithBindingAction(triggerName string, actionProp string, actionValue any, mqtt mqtt.MqttClient) *automations.Trigger {
+	// action = turn off light
+	brightnessAction := &automations.MqttAction{}
+	brightnessAction.Friendlyname = "Attic light"
+	brightnessAction.Type = "light"
+	brightnessAction.Property = actionProp
+	brightnessAction.Data = actionValue
+	brightnessAction.Client = mqtt
+
+	// Turn off sensor trigger
+	button1Trigger := &automations.Trigger{}
+	button1Trigger.Name = triggerName
+	button1Trigger.Action = brightnessAction
+
+	return button1Trigger
+}
+func createSwitchTriggerWithBindingLightStateAction(mqtt mqtt.MqttClient) *automations.Trigger {
+	// action = turn off light
+	brightnessAction := &automations.MqttAction{}
+	brightnessAction.Friendlyname = "Attic light"
+	brightnessAction.Type = "light"
+	brightnessAction.Property = "state"
+	brightnessAction.Data = true
+	brightnessAction.Client = mqtt
+
+	// Turn off sensor trigger
+	button1Trigger := &automations.Trigger{}
+	button1Trigger.Name = "switch2"
+	button1Trigger.Action = brightnessAction
+
+	return button1Trigger
+}
+
 func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay time.Duration) *automations.Trigger {
 	// action = turn off light
 	turnOffAction := &automations.MqttAction{}
 	turnOffAction.Friendlyname = "Attic light"
 	turnOffAction.Type = "light"
 	turnOffAction.Property = "state"
-	turnOffAction.Value = false
+	turnOffAction.Data = false
 	turnOffAction.Delay = delay
 	turnOffAction.Client = mqtt
 

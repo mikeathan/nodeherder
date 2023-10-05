@@ -102,7 +102,7 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(name string, lux any) *Trigger
 	turnOnAction.Friendlyname = name
 	turnOnAction.Type = "light"
 	turnOnAction.Property = "state"
-	turnOnAction.Value = true
+	turnOnAction.Data = true
 	turnOnAction.Delay = 0
 
 	// Turn on sensor trigger
@@ -133,7 +133,7 @@ func createTriggerDelayTurnOffLightWithPresenceOff(name string, delay time.Durat
 	turnOffAction.Friendlyname = name
 	turnOffAction.Type = "light"
 	turnOffAction.Property = "state"
-	turnOffAction.Value = false
+	turnOffAction.Data = false
 	turnOffAction.Delay = delay
 
 	// Turn off sensor trigger

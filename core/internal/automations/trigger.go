@@ -67,14 +67,34 @@ type Trigger struct {
 	Action     *MqttAction  `json:"action"`
 }
 
+func (trigger *Trigger) process(ctx *DeviceContext) {
+
+	currValue := ctx.GetCurrent(trigger.Name)
+	for _, c := range trigger.Conditions {
+
+		isMatched := c.Evaluate(ctx.Payload)
+		if !isMatched {
+			trigger.Action.Stop()
+			return
+		}
+
+		// avoid calling action again for current trigger if value hasnt changed
+		if trigger.Name == c.Name && currValue == c.Value {
+			return
+		}
+	}
+
+	trigger.Action.Execute(trigger.Name, ctx)
+}
+
 type MqttAction struct {
 	Friendlyname string          `json:"friendlyname"`
 	Type         string          `json:"type"`
 	Property     string          `json:"property"`
-	Value        any             `json:"value"`
+	Data         any             `json:"data,omitempty"`
 	Client       mqtt.MqttClient `json:"-"`
 
-	Delay     time.Duration `json:"delay"`
+	Delay     time.Duration `json:"delay,omitempty"`
 	mut       sync.RWMutex
 	exit      chan bool
 	isPending bool
@@ -84,29 +104,24 @@ func NewAction() *MqttAction {
 	return &MqttAction{Delay: 0}
 }
 
-func (a *MqttAction) Stop() {
-	if a.isPending {
-		// stop it and exit
-		a.mut.Lock()
-		defer a.mut.Unlock()
-
-		a.exit <- true
-		a.isPending = false
-	}
-}
-
-func (a *MqttAction) Execute(onSuccess func()) {
-
-	if a.isPending {
-		a.Stop()
-		return
-	}
+func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
 
 	// no delay execution
 	if a.Delay == 0 {
-		a.run()
-		onSuccess()
 
+		payload := a.buildPayload(name, ctx)
+
+		a.emit(payload)
+
+		// on success callback
+		// update sensor current value
+		ctx.SetCurrent(name, ctx.Payload[name])
+
+		return
+	}
+
+	if a.isPending {
+		a.Stop()
 		return
 	}
 
@@ -133,9 +148,14 @@ func (a *MqttAction) Execute(onSuccess func()) {
 
 		select {
 		case <-ticker.C:
-			a.run()
-			onSuccess()
 
+			payload := a.buildPayload(name, ctx)
+
+			a.emit(payload)
+			ctx.SetCurrent(name, ctx.Payload[name])
+
+			// on success callback
+			// update sensor current value
 			utils.LogInfo("timer constraint finished")
 			return
 
@@ -145,18 +165,39 @@ func (a *MqttAction) Execute(onSuccess func()) {
 			return
 		}
 	}()
-
 }
 
-func (a *MqttAction) run() {
+func (a *MqttAction) Stop() {
+	if a.isPending {
+		// stop it and exit
+		a.mut.Lock()
+		defer a.mut.Unlock()
 
-	jp := map[string]any{
-		a.Property: a.Value,
+		a.exit <- true
+		a.isPending = false
 	}
-	payload, _ := json.Marshal(jp)
+}
+
+func (a *MqttAction) emit(payload []byte) {
 
 	msg := fmt.Sprintf("%s/set", a.Friendlyname)
 	a.Client.Publish(msg, payload)
 
 	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.Friendlyname)
+}
+
+func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) []byte {
+
+	payloadData := a.Data
+	if payloadData == nil {
+		payloadData = ctx.Payload[name]
+	}
+
+	jp := map[string]any{
+		a.Property: payloadData,
+	}
+
+	payload, _ := json.Marshal(jp)
+	return payload
+
 }

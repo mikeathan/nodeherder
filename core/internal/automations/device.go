@@ -28,74 +28,54 @@ const (
 // presence = false = turn off
 
 type DeviceContext struct {
-	data map[string]any
+	currentData map[string]any
+	Payload     map[string]any
 }
 
-func (d *DeviceContext) Get(name string) any {
-	return d.data[name]
+func (d *DeviceContext) GetCurrent(name string) any {
+	return d.currentData[name]
 }
 
-func (d *DeviceContext) Set(name string, value any) {
-	d.data[name] = value
+func (d *DeviceContext) SetCurrent(name string, value any) {
+	d.currentData[name] = value
 }
 
 func NewDeviceContext() *DeviceContext {
-	return &DeviceContext{data: map[string]any{}}
+	return &DeviceContext{currentData: map[string]any{}, Payload: map[string]any{}}
 }
 
 type Device struct {
-	Id            string     `json:"id"`
-	Name          string     `json:"name"`
-	Description   string     `json:"description"`
-	Enabled       bool       `json:"enabled"`
-	Triggers      []*Trigger `json:"sensor_triggers"`
-	deviceContext *DeviceContext
+	Id          string     `json:"id"`
+	Name        string     `json:"name"`
+	Description string     `json:"description"`
+	Enabled     bool       `json:"enabled"`
+	Triggers    []*Trigger `json:"sensor_triggers"`
+	ctx         *DeviceContext
 }
 
 func NewDevice(name string) *Device {
-	return &Device{
-		Id:            uuid.New().String(),
-		Name:          name,
-		Description:   "",
-		Enabled:       false,
-		Triggers:      []*Trigger{},
-		deviceContext: NewDeviceContext(),
+	d := &Device{
+		Id:          uuid.New().String(),
+		Name:        name,
+		Description: "",
+		Enabled:     false,
+		Triggers:    []*Trigger{},
+		ctx:         NewDeviceContext(),
 	}
+
+	return d
 }
 
 func (d *Device) Evaluate(data map[string]any) bool {
 
+	d.ctx.Payload = data
 	for _, trigger := range d.Triggers {
 		if _, ok := data[trigger.Name]; ok {
-			d.processTrigger(trigger, data)
+			trigger.process(d.ctx)
 		}
 	}
 
 	return false
-}
-
-func (d *Device) processTrigger(trigger *Trigger, data map[string]any) {
-
-	currValue := d.deviceContext.Get(trigger.Name)
-	for _, c := range trigger.Conditions {
-
-		isMatched := c.Evaluate(data)
-		if !isMatched {
-			trigger.Action.Stop()
-			return
-		}
-
-		// avoid calling action again for sensor if value hasnt changed
-		if trigger.Name == c.Name && currValue == c.Value {
-			return
-		}
-	}
-
-	trigger.Action.Execute(func() {
-		// on success callback
-		// update sensor current value
-		d.deviceContext.Set(trigger.Name, data[trigger.Name])
-	})
 }
 
 func (t *Device) Save(name string, pretty bool) error {
@@ -238,17 +218,22 @@ func validateAction(bridgeDevices []*devices.BridgeDevice, action *MqttAction, c
 			}
 			action.Client = client
 
-			// TODO: refactor. no need to keep looping once we found our value
-			// need to fix state, convert it to expected one: { "state": "ON" }'
+			// TODO:
+			// feature needs to store type of value that it accepts so it an be used as required
+
 			for _, expose := range device.Definition.Exposes {
 				for _, feature := range expose.Features {
 					if feature.Property == action.Property { // state property only!
 
+						if action.Data == nil {
+							continue
+						}
+
 						// for now we only support "state" property
-						if action.Value == true {
-							action.Value = feature.ValueOn
+						if action.Data == true {
+							action.Data = feature.ValueOn // { "state": "ON" }'
 						} else {
-							action.Value = feature.ValueOff
+							action.Data = feature.ValueOff // { "state": "OFF" }'
 						}
 						break
 					}
