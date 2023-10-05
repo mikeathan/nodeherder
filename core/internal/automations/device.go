@@ -11,8 +11,7 @@ import (
 	"node-herder/utils"
 	"os"
 	"path/filepath"
-
-	"github.com/google/uuid"
+	"strings"
 )
 
 const (
@@ -54,8 +53,9 @@ type Device struct {
 }
 
 func NewDevice(name string) *Device {
+
 	d := &Device{
-		Id:          uuid.New().String(),
+		Id:          utils.Hash(strings.ReplaceAll(name, " ", "_")),
 		Name:        name,
 		Description: "",
 		Enabled:     false,
@@ -112,7 +112,7 @@ func prettyJson(b []byte) ([]byte, error) {
 	return out.Bytes(), err
 }
 
-func LoadTriggers() []*Device {
+func LoadAutomations() []*Device {
 
 	triggers := []*Device{}
 	err := filepath.Walk(automationDir, func(path string, info os.FileInfo, err error) error {
@@ -167,6 +167,7 @@ func load(filePath string) (*Device, error) {
 
 	return t, nil
 }
+
 func DeleteTrigger(name string) error {
 	filePath := getFilePath(name)
 

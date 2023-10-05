@@ -56,21 +56,22 @@ func (a *AutomationEngine) GetAllTriggers() []byte {
 func (a *AutomationEngine) Initialize(bridgeDevices []*devices.BridgeDevice) error {
 
 	// fake input data - TEST ONLY
-	// tha needs to come from a file and loaded
-	//triggers := newMockMqttTriggerPresenseWithLux(true)
+	// that needs to come from a file and loaded
+	//test := newMockMqttTriggerPresenseWithLux(true)
+	//test[0].Save("human_presence", true)
 
-	triggers := LoadTriggers()
+	automations := LoadAutomations()
 	utils.LogInfof("Initialize automations")
-	for _, deviceTrigger := range triggers {
+	for _, automation := range automations {
 
-		err := deviceTrigger.configure(bridgeDevices, a.mqttClient)
+		err := automation.configure(bridgeDevices, a.mqttClient)
 		if err != nil {
 			return err
 		}
 
-		a.deviceTriggers[deviceTrigger.Name] = deviceTrigger
+		a.deviceTriggers[automation.Name] = automation
 
-		utils.LogInfof("Loaded MqttTrigger %s, Enabled=%t", deviceTrigger.Description, deviceTrigger.Enabled)
+		utils.LogInfof("Loaded MqttTrigger %s, Enabled=%t", automation.Description, automation.Enabled)
 		continue
 	}
 
