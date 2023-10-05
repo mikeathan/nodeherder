@@ -106,3 +106,5 @@ post payload
 
     update model
       sensor needs more data eg feature, min/max values to accept etc..
+
+    translate action data to excpected feature data eg  { "state": "ON" }'
