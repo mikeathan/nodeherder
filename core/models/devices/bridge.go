@@ -4,7 +4,45 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"node-herder/utils"
+	"strings"
 )
+
+type Bridge struct {
+	bridgeDevices []*BridgeDevice
+	idMapper      map[string]string
+}
+
+func NewBridge(devices []*BridgeDevice) *Bridge {
+
+	b := &Bridge{bridgeDevices: devices, idMapper: map[string]string{}}
+
+	for _, device := range b.bridgeDevices {
+		b.idMapper[device.FriendlyName] = device.IeeeAddress
+	}
+	return b
+}
+
+func (b *Bridge) FindBridgeDevice(id string) *BridgeDevice {
+	for _, device := range b.bridgeDevices {
+		if device.IeeeAddress == id {
+			return device
+		}
+	}
+	return nil
+}
+
+func (b *Bridge) Id(name string) string {
+
+	if id, ok := b.idMapper[name]; ok {
+		return id
+	}
+
+	sanitized := strings.ReplaceAll(name, " ", "_")
+	b.idMapper[name] = utils.Hash(sanitized)
+
+	return b.idMapper[name]
+}
 
 type BridgeDevice struct {
 	DateCode   string `json:"date_code"`
@@ -22,6 +60,7 @@ type BridgeDevice struct {
 				ValueToggle string `json:"value_toggle,omitempty"`
 				ValueMax    any    `json:"value_max,omitempty"`
 				ValueMin    any    `json:"value_min,omitempty"`
+				Values      []any  `json:"values,omitempty"`
 				Presets     []struct {
 					Description string `json:"description"`
 					Name        string `json:"name"`

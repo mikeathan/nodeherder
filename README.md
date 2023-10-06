@@ -82,7 +82,6 @@ post payload
 
     ##### automations #########
 
-    ui save
     send automation back to server for saving
 
     server
@@ -92,19 +91,3 @@ post payload
       all of them  (if all of them then need to send some infor to ui for table page)
     solution: store automations ins single files/items
           when ui asks for all automations just return a simpified view of them
-
-
-
-    automation model
-      add id
-      simplify structure
-      change sensor name to sh generic
-
-    for binding device to action, we can have trigger without conditions
-
-    ###### devices ############
-
-    update model
-      sensor needs more data eg feature, min/max values to accept etc..
-
-    translate action data to excpected feature data eg  { "state": "ON" }'

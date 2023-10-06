@@ -9,11 +9,13 @@ import (
 
 type MemoryDeviceRepo struct {
 	store map[string]*devices.Device
-	mutex sync.RWMutex
+
+	storeV2 map[string]*devices.DeviceV2
+	mutex   sync.RWMutex
 }
 
 func NewMemoryDeviceRepo() devices.Repository {
-	return &MemoryDeviceRepo{store: map[string]*devices.Device{}, mutex: sync.RWMutex{}}
+	return &MemoryDeviceRepo{store: map[string]*devices.Device{}, storeV2: map[string]*devices.DeviceV2{}, mutex: sync.RWMutex{}}
 }
 
 func (s *MemoryDeviceRepo) Store(deviceName string, Device *devices.Device) {
@@ -33,6 +35,21 @@ func (s *MemoryDeviceRepo) FindDevice(deviceName string) (*devices.Device, error
 	return nil, errors.New("device not found")
 }
 
+func (s *MemoryDeviceRepo) StoreV2(deviceName string, device *devices.DeviceV2) {
+	defer s.mutex.Unlock()
+	s.mutex.Lock()
+	s.storeV2[deviceName] = device
+}
+func (s *MemoryDeviceRepo) FindDeviceV2(deviceName string) (*devices.DeviceV2, error) {
+	defer s.mutex.RUnlock()
+
+	s.mutex.RLock()
+	if val, ok := s.storeV2[deviceName]; ok {
+		return val, nil
+	}
+
+	return nil, errors.New("device not found")
+}
 func (s *MemoryDeviceRepo) ListAllDevices() []*devices.Device {
 
 	// sort before returning values

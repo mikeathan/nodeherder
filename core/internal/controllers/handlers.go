@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"fmt"
-	"node-herder/internal/automations"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
@@ -29,20 +28,22 @@ type handler interface {
 }
 
 type bridgeConfigurationHandler struct {
-	ws          ws.EventHub
-	mqtt        mqtt.MqttClient
-	automations automations.Engine
-	configured  bool
+	ws         ws.EventHub
+	mqtt       mqtt.MqttClient
+	hub        *HubController
+	configured bool
 }
 
-func newBridgeConfigurationHandler(ws ws.EventHub, mqtt mqtt.MqttClient, automations automations.Engine) *bridgeConfigurationHandler {
-	return &bridgeConfigurationHandler{ws: ws, mqtt: mqtt, automations: automations}
+func newBridgeConfigurationHandler(ws ws.EventHub, mqtt mqtt.MqttClient, hub *HubController) *bridgeConfigurationHandler {
+	return &bridgeConfigurationHandler{ws: ws, mqtt: mqtt, hub: hub}
 }
 
 func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, payload []byte) error {
 
 	if b.configured {
-		// to be handled later with bridge updates
+		//todo:
+		// we need to reconfigure mqtt topics if friendly name changed
+		// automations if names changed - maybe use id instead of name ?
 		return fmt.Errorf("hub is already configured ")
 	}
 
@@ -55,9 +56,9 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 		return err
 	}
 
-	b.automations.Initialize(devices)
+	b.hub.configureBridge(devices)
 	if err != nil {
-		return err
+		utils.LogErrorf("Configure bridge error %s", err.Error())
 	}
 
 	for _, device := range devices {
@@ -96,24 +97,33 @@ type deviceHandler struct {
 	AvailabilityTimeoutInSeconds int
 	repo                         devices.Repository
 	eventHub                     ws.EventHub
-	automationEngine             automations.Engine
+	hub                          *HubController
 }
 
-func newDeviceHandler(repo devices.Repository, eventHub ws.EventHub, automationEngine automations.Engine) *deviceHandler {
+type deviceV2Handler struct {
+	AvailabilityTimeoutInSeconds int
+	repo                         devices.Repository
+	eventHub                     ws.EventHub
+	hub                          *HubController
+}
+
+func newDeviceHandler(repo devices.Repository, eventHub ws.EventHub, hub *HubController) *deviceHandler {
 	return &deviceHandler{
 		repo:                         repo,
 		eventHub:                     eventHub,
-		automationEngine:             automationEngine,
+		hub:                          hub,
 		AvailabilityTimeoutInSeconds: 3600, // 1 Hour
 	}
 }
 
-func (c *deviceHandler) ProcessPayload(id string, connType string, payload []byte) error {
+func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, payload []byte) error {
 
 	dataMap, err := convertToMap(payload)
 	if err != nil {
 		return err
 	}
+
+	id := c.hub.bridge.Id(friendlyName)
 
 	device, _ := c.repo.FindDevice(id)
 	if device == nil {
@@ -131,11 +141,62 @@ func (c *deviceHandler) ProcessPayload(id string, connType string, payload []byt
 			return nil
 		}
 		// check to see if we have an automation for current device
-		c.automationEngine.HandleDevice(device.Id, device.Sensors)
+		c.hub.TriggerAutomation(device.Id, device.Sensors)
 	}
 
 	c.repo.Store(id, device)
 	c.eventHub.Broadcast(ws.DeviceUpdated, device)
+
+	return nil
+}
+
+func newDeviceV2Handler(repo devices.Repository, eventHub ws.EventHub, hub *HubController) *deviceV2Handler {
+	return &deviceV2Handler{
+		repo:                         repo,
+		eventHub:                     eventHub,
+		hub:                          hub,
+		AvailabilityTimeoutInSeconds: 3600, // 1 Hour
+	}
+}
+
+func (c *deviceV2Handler) ProcessPayload(friendlyName string, connType string, payload []byte) error {
+
+	dataMap, err := convertToMap(payload)
+	if err != nil {
+		return err
+	}
+
+	id := c.hub.bridge.Id(friendlyName)
+
+	device, _ := c.repo.FindDeviceV2(id)
+	if device == nil {
+		device, err = devices.CreateNewDeviceV2(c.hub.bridge, friendlyName, connType, dataMap)
+		if err != nil {
+			return err
+		}
+
+		device.Monitor(c.AvailabilityTimeoutInSeconds, func(payload map[string]string) {
+
+			c.eventHub.Broadcast(ws.DeviceUpdated, payload)
+		})
+
+		c.eventHub.Broadcast(ws.DeviceAdded, device)
+
+	} else {
+		updatedData := device.TryUpdate(dataMap)
+		if len(updatedData) == 0 {
+			return nil
+		}
+
+		// check to see if we have an automation for current device
+		// NOT IMPLEMENTED
+		// c.hub.TriggerAutomationV2(device.Id, device)
+		// NOT IMPLEMENTED
+
+		c.eventHub.Broadcast(ws.DeviceUpdated, updatedData)
+	}
+
+	c.repo.StoreV2(id, device)
 
 	return nil
 }

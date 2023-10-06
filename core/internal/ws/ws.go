@@ -12,6 +12,7 @@ import (
 
 const (
 	// requests
+	DeviceAdded     = "deviceAdded"
 	DeviceUpdated   = "deviceUpdated"
 	ClientConnected = "connected"
 	LoadAutomations = "loadAutomations"
