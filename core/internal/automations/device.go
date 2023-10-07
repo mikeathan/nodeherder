@@ -189,7 +189,7 @@ func createDirIfNotExists(name string) {
 	}
 }
 
-func (t *Device) configure(bridgeDevices []*devices.BridgeDevice, client mqtt.MqttClient) error {
+func (t *Device) configure(bridgeDevices []*devices.BridgeInfo, client mqtt.MqttClient) error {
 
 	// validate conditions
 	for _, trigger := range t.Triggers {
@@ -205,7 +205,7 @@ func (t *Device) configure(bridgeDevices []*devices.BridgeDevice, client mqtt.Mq
 }
 
 // validate actions
-func validateAction(bridgeDevices []*devices.BridgeDevice, action *MqttAction, client mqtt.MqttClient) error {
+func validateAction(bridgeDevices []*devices.BridgeInfo, action *MqttAction, client mqtt.MqttClient) error {
 
 	for _, device := range bridgeDevices {
 		if device.FriendlyName == action.Friendlyname {

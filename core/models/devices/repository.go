@@ -5,6 +5,10 @@ type Repository interface {
 	ListAllDevices() []*Device
 	FindDevice(deviceName string) (*Device, error)
 
-	StoreV2(deviceName string, device *DeviceV2)
-	FindDeviceV2(deviceName string) (*DeviceV2, error)
+	ListAllDevicesV2() []*DeviceV2
+	StoreV2(friendlyName string, device *DeviceV2)
+	FindDeviceV2(friendlyName string) (*DeviceV2, error)
+	RegisterBridge(bridgeInfoList []*BridgeInfo)
+	FindBridgeInfo(id string) *BridgeInfo
+	ResolveId(friendlyName string) string
 }

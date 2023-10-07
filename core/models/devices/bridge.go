@@ -4,47 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"node-herder/utils"
-	"strings"
 )
 
-type Bridge struct {
-	bridgeDevices []*BridgeDevice
-	idMapper      map[string]string
-}
-
-func NewBridge(devices []*BridgeDevice) *Bridge {
-
-	b := &Bridge{bridgeDevices: devices, idMapper: map[string]string{}}
-
-	for _, device := range b.bridgeDevices {
-		b.idMapper[device.FriendlyName] = device.IeeeAddress
-	}
-	return b
-}
-
-func (b *Bridge) FindBridgeDevice(id string) *BridgeDevice {
-	for _, device := range b.bridgeDevices {
-		if device.IeeeAddress == id {
-			return device
-		}
-	}
-	return nil
-}
-
-func (b *Bridge) Id(name string) string {
-
-	if id, ok := b.idMapper[name]; ok {
-		return id
-	}
-
-	sanitized := strings.ReplaceAll(name, " ", "_")
-	b.idMapper[name] = utils.Hash(sanitized)
-
-	return b.idMapper[name]
-}
-
-type BridgeDevice struct {
+type BridgeInfo struct {
 	DateCode   string `json:"date_code"`
 	Definition struct {
 		Description string `json:"description"`
@@ -108,7 +70,7 @@ type BridgeDevice struct {
 
 // DEBUG - delete
 func LoadDevices(payload []byte) error {
-	var bridgeDevices []*BridgeDevice
+	var bridgeDevices []*BridgeInfo
 	err := json.Unmarshal(payload, &bridgeDevices)
 	if err != nil {
 		return err
@@ -136,8 +98,8 @@ func LoadDevices(payload []byte) error {
 	return nil
 }
 
-func LoadBridgeDevices(payload []byte) ([]*BridgeDevice, error) {
-	var bridgeDevices []*BridgeDevice
+func LoadBridgeDevices(payload []byte) ([]*BridgeInfo, error) {
+	var bridgeDevices []*BridgeInfo
 	err := json.Unmarshal(payload, &bridgeDevices)
 	if err != nil {
 		return nil, err
@@ -146,7 +108,7 @@ func LoadBridgeDevices(payload []byte) ([]*BridgeDevice, error) {
 	return bridgeDevices, nil
 }
 
-func FindByFriendlyName(payload []byte, friendlyName string) (*BridgeDevice, error) {
+func FindByFriendlyName(payload []byte, friendlyName string) (*BridgeInfo, error) {
 	bridgeDevices, err := LoadBridgeDevices(payload)
 	if err != nil {
 		return nil, err
@@ -160,7 +122,7 @@ func FindByFriendlyName(payload []byte, friendlyName string) (*BridgeDevice, err
 	return nil, errors.New("friendlyName not found")
 }
 
-func FindByExposeType(payload []byte, exposeType string) (*BridgeDevice, error) {
+func FindByExposeType(payload []byte, exposeType string) (*BridgeInfo, error) {
 	bridgeDevices, err := LoadBridgeDevices(payload)
 	if err != nil {
 		return nil, err

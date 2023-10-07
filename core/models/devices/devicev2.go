@@ -99,18 +99,24 @@ func createProperties(data map[string]interface{}) map[string]any {
 func createExposures(data map[string]interface{}) map[string]*Entity {
 	var entities = make(map[string]*Entity)
 	for key, value := range data {
-		if _, ok := exposesWhitelist[key]; ok {
-			newEntity := createEntity(key, "", value, units[key], "", nil)
-			entities[key] = newEntity
+		if _, ok := exposesWhitelist[key]; !ok {
+			continue
 		}
+
+		newEntity := createEntity(key, "", value, units[key], "", nil)
+		entities[key] = newEntity
 	}
 	return entities
 }
 
-func createExposuresFromBridge(data map[string]interface{}, bridgeDevice *BridgeDevice) map[string]*Entity {
+func createExposuresFromBridge(data map[string]interface{}, bridgeInfo *BridgeInfo) map[string]*Entity {
 
 	var entities = map[string]*Entity{}
-	for _, expose := range bridgeDevice.Definition.Exposes {
+	for _, expose := range bridgeInfo.Definition.Exposes {
+		if _, ok := exposesWhitelist[expose.Property]; !ok {
+			continue
+		}
+
 		if value, ok := data[expose.Property]; ok {
 			entities[expose.Property] = createEntity(expose.Property, expose.Description, value, expose.Unit, expose.Type, nil)
 		}
@@ -144,17 +150,17 @@ func createExposuresFromBridge(data map[string]interface{}, bridgeDevice *Bridge
 	return entities
 }
 
-func CreateNewDeviceV2(bridge *Bridge, name string, connType string, data map[string]interface{}) (*DeviceV2, error) {
+func CreateNewDeviceV2(repo Repository, friendlyName string, connType string, data map[string]interface{}) (*DeviceV2, error) {
 
-	id := bridge.Id(name)
 	if _, ok := data[lastSeenKey]; !ok {
 		data[lastSeenKey] = getCurrentTime()
 	}
 	data[availabilityKey] = online
 
+	id := repo.ResolveId(friendlyName)
+
 	var newDevice = newDeviceV2(id)
-	newDevice.Id = id
-	newDevice.FriendlyName = name
+	newDevice.FriendlyName = friendlyName
 	newDevice.ConnectionType = connType
 
 	if _, ok := data[batterKey]; !ok {
@@ -163,9 +169,9 @@ func CreateNewDeviceV2(bridge *Bridge, name string, connType string, data map[st
 		newDevice.PowerSource = batterKey
 	}
 
-	bridgeDevice := bridge.FindBridgeDevice(id)
-	if bridgeDevice != nil {
-		newDevice.Exposes = createExposuresFromBridge(data, bridgeDevice)
+	bridgeInfo := repo.FindBridgeInfo(id)
+	if bridgeInfo != nil {
+		newDevice.Exposes = createExposuresFromBridge(data, bridgeInfo)
 	} else { // device not in hub bridge
 		newDevice.Exposes = createExposures(data)
 	}

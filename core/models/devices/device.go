@@ -155,9 +155,6 @@ func (device *Device) StartAvailabilityTimer(timeoutInSecs int, onChangeCallback
 
 func (device *Device) TryUpdateDevice(data map[string]interface{}) bool {
 
-	// TODO: needs refactoring. maybe keep reference and assign only if changes arefound
-	//
-
 	var updated = false
 	for key, currValue := range device.Sensors {
 		if newValue, ok := data[key]; ok && newValue != currValue {

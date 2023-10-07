@@ -107,6 +107,15 @@ type deviceV2Handler struct {
 	hub                          *HubController
 }
 
+func newDeviceHV2andler(repo devices.Repository, eventHub ws.EventHub, hub *HubController) *deviceV2Handler {
+	return &deviceV2Handler{
+		repo:                         repo,
+		eventHub:                     eventHub,
+		hub:                          hub,
+		AvailabilityTimeoutInSeconds: 3600, // 1 Hour
+	}
+}
+
 func newDeviceHandler(repo devices.Repository, eventHub ws.EventHub, hub *HubController) *deviceHandler {
 	return &deviceHandler{
 		repo:                         repo,
@@ -123,11 +132,9 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 		return err
 	}
 
-	id := c.hub.bridge.Id(friendlyName)
-
-	device, _ := c.repo.FindDevice(id)
+	device, _ := c.repo.FindDevice(friendlyName)
 	if device == nil {
-		device, err = devices.CreateNewDevice(id, connType, dataMap)
+		device, err = devices.CreateNewDevice(friendlyName, connType, dataMap)
 		if err != nil {
 			return err
 		}
@@ -144,7 +151,7 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 		c.hub.TriggerAutomation(device.Id, device.Sensors)
 	}
 
-	c.repo.Store(id, device)
+	c.repo.Store(friendlyName, device)
 	c.eventHub.Broadcast(ws.DeviceUpdated, device)
 
 	return nil
@@ -166,11 +173,10 @@ func (c *deviceV2Handler) ProcessPayload(friendlyName string, connType string, p
 		return err
 	}
 
-	id := c.hub.bridge.Id(friendlyName)
-
-	device, _ := c.repo.FindDeviceV2(id)
+	device, _ := c.repo.FindDeviceV2(friendlyName)
 	if device == nil {
-		device, err = devices.CreateNewDeviceV2(c.hub.bridge, friendlyName, connType, dataMap)
+
+		device, err = devices.CreateNewDeviceV2(c.repo, friendlyName, connType, dataMap)
 		if err != nil {
 			return err
 		}
@@ -190,13 +196,13 @@ func (c *deviceV2Handler) ProcessPayload(friendlyName string, connType string, p
 
 		// check to see if we have an automation for current device
 		// NOT IMPLEMENTED
-		// c.hub.TriggerAutomationV2(device.Id, device)
+		c.hub.TriggerAutomationV2(device)
 		// NOT IMPLEMENTED
 
 		c.eventHub.Broadcast(ws.DeviceUpdated, updatedData)
 	}
 
-	c.repo.StoreV2(id, device)
+	c.repo.StoreV2(friendlyName, device)
 
 	return nil
 }

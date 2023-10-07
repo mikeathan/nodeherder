@@ -20,7 +20,6 @@ type HubController struct {
 	handlers                          map[string]handler
 	DeviceAvailabilityTimeoutOverride int
 	automationEngine                  automations.Engine
-	bridge                            *devices.Bridge
 	configured                        bool
 }
 
@@ -32,7 +31,6 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 		handlers:                          map[string]handler{},
 		DeviceAvailabilityTimeoutOverride: 3600,
 		automationEngine:                  automations.NewEngine(mqtt),
-		bridge:                            &devices.Bridge{},
 		configured:                        false,
 	}
 
@@ -68,10 +66,11 @@ func (c *HubController) Enqueue(id string, payload map[string]interface{}, connT
 	return c.ProcessMessage(id, bytes, connType)
 }
 
-func (m *HubController) configureBridge(bridgeDevices []*devices.BridgeDevice) error {
+func (m *HubController) configureBridge(bridgeInfoList []*devices.BridgeInfo) error {
 
-	m.bridge = devices.NewBridge(bridgeDevices)
-	err := m.automationEngine.Initialize(bridgeDevices)
+	//m.bridge = devices.NewBridge(bridgeInfoList)
+	m.repo.RegisterBridge(bridgeInfoList)
+	err := m.automationEngine.Initialize(bridgeInfoList)
 	if err != nil {
 		return err
 	}
@@ -82,7 +81,7 @@ func (m *HubController) TriggerAutomation(id string, data map[string]any) {
 	m.automationEngine.HandleDevice(id, data)
 }
 
-func (m *HubController) TriggerAutomationV2(id string, device *devices.DeviceV2) {
+func (m *HubController) TriggerAutomationV2(device *devices.DeviceV2) {
 	//m.automationEngine.HandleDevice(id, data)
 	panic("no implemented")
 }
@@ -96,14 +95,12 @@ func (m *HubController) ProcessMessage(id string, payload []byte, connType strin
 			case "bridge/devices":
 				var h = newBridgeConfigurationHandler(m.eventHub, m.mqtt, m)
 				m.handlers[id] = h
-				break
 			case "bridge/logging":
 				var h = newBridgeLoggingHandler(m.eventHub)
 				m.handlers[id] = h
-				break
 			}
 		} else {
-			var h = newDeviceHandler(m.repo, m.eventHub, m)
+			var h = newDeviceV2Handler(m.repo, m.eventHub, m)
 			h.AvailabilityTimeoutInSeconds = m.DeviceAvailabilityTimeoutOverride
 			m.handlers[id] = h
 		}

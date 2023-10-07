@@ -11,7 +11,7 @@ import (
 
 type Engine interface { // TODO: might need to move it to Models????
 	HandleDevice(id string, data map[string]any)
-	Initialize(bridgeDevices []*devices.BridgeDevice) error
+	Initialize(bridgeDevices []*devices.BridgeInfo) error
 	GetAllTriggers() []byte
 }
 
@@ -53,7 +53,7 @@ func (a *AutomationEngine) GetAllTriggers() []byte {
 	return bytes
 }
 
-func (a *AutomationEngine) Initialize(bridgeDevices []*devices.BridgeDevice) error {
+func (a *AutomationEngine) Initialize(bridgeInfoList []*devices.BridgeInfo) error {
 
 	// fake input data - TEST ONLY
 	// that needs to come from a file and loaded
@@ -64,7 +64,7 @@ func (a *AutomationEngine) Initialize(bridgeDevices []*devices.BridgeDevice) err
 	utils.LogInfof("Initialize automations")
 	for _, automation := range automations {
 
-		err := automation.configure(bridgeDevices, a.mqttClient)
+		err := automation.configure(bridgeInfoList, a.mqttClient)
 		if err != nil {
 			return err
 		}
