@@ -82,8 +82,7 @@ func (m *HubController) TriggerAutomation(id string, data map[string]any) {
 }
 
 func (m *HubController) TriggerAutomationV2(device *devices.DeviceV2) {
-	//m.automationEngine.HandleDevice(id, data)
-	panic("no implemented")
+	m.automationEngine.HandleDeviceV2(device)
 }
 
 func (m *HubController) ProcessMessage(id string, payload []byte, connType string) error {
@@ -100,7 +99,7 @@ func (m *HubController) ProcessMessage(id string, payload []byte, connType strin
 				m.handlers[id] = h
 			}
 		} else {
-			var h = newDeviceV2Handler(m.repo, m.eventHub, m)
+			var h = newDeviceHandler(m.repo, m.eventHub, m)
 			h.AvailabilityTimeoutInSeconds = m.DeviceAvailabilityTimeoutOverride
 			m.handlers[id] = h
 		}

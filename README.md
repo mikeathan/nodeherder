@@ -91,3 +91,9 @@ post payload
       all of them  (if all of them then need to send some infor to ui for table page)
     solution: store automations ins single files/items
           when ui asks for all automations just return a simpified view of them
+
+{"type":"deviceAdded","payload":{"id":"0xa4c13894070052fc","name":"Human presence","connection_type":"mqtt","power_source":"mains","exposes":{"illuminance_lux":{"name":"illuminance_lux","description":"Measured illuminance in lux","unit":"lx","data":3,"properties":{}},"presence":{"name":"presence","description":"Indicates whether the device detected presence","data":false,"properties":{}}},"properties":{"availability":"online","last_seen":"2023-10-08T06:23:58+01:00","linkquality":36}}}
+
+{"type":"deviceAdded","payload":{"id":"0x00124b00146c31cd","name":"Motion sensor 1","connection_type":"mqtt","power_source":"battery","exposes":{"occupancy":{"name":"occupancy","description":"Indicates whether the device detected occupancy","data":false,"properties":{}},"temperature":{"name":"temperature","description":"Measured temperature value","unit":"°C","data":23.75,"properties":{}}},"properties":{"availability":"online","battery":7,"last_seen":"2023-10-08T06:24:24+01:00","linkquality":29}}}
+
+{"type":"deviceAdded","payload":{"id":"0x00124b0029207763","name":"TH01","connection_type":"mqtt","power_source":"battery","exposes":{"humidity":{"name":"humidity","description":"Measured relative humidity","unit":"%","data":83.91,"properties":{}},"temperature":{"name":"temperature","description":"Measured temperature value","unit":"°C","data":19.87,"properties":{}}},"properties":{"availability":"online","battery":100,"last_seen":"2023-10-08T06:25:37+01:00","linkquality":32}}}

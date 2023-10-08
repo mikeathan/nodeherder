@@ -26,6 +26,11 @@ const (
 // presence = true = turn on
 // presence = false = turn off
 
+type DeviceContextV2 struct {
+	currentData map[string]any
+	Payload     map[string]*devices.Entity
+}
+
 type DeviceContext struct {
 	currentData map[string]any
 	Payload     map[string]any
@@ -43,6 +48,18 @@ func NewDeviceContext() *DeviceContext {
 	return &DeviceContext{currentData: map[string]any{}, Payload: map[string]any{}}
 }
 
+func NewDeviceContextV2() *DeviceContextV2 {
+	return &DeviceContextV2{currentData: map[string]any{}, Payload: make(map[string]*devices.Entity)}
+}
+
+func (d *DeviceContextV2) GetCurrentV2(name string) any {
+	return d.currentData[name]
+}
+
+func (d *DeviceContextV2) SetCurrentV2(name string, value any) {
+	d.currentData[name] = value
+}
+
 type Device struct {
 	Id          string     `json:"id"`
 	Name        string     `json:"name"`
@@ -50,6 +67,7 @@ type Device struct {
 	Enabled     bool       `json:"enabled"`
 	Triggers    []*Trigger `json:"triggers"`
 	ctx         *DeviceContext
+	ctxV2       *DeviceContextV2
 }
 
 func NewDevice(name string) *Device {
@@ -61,6 +79,7 @@ func NewDevice(name string) *Device {
 		Enabled:     false,
 		Triggers:    []*Trigger{},
 		ctx:         NewDeviceContext(),
+		ctxV2:       &DeviceContextV2{},
 	}
 
 	return d
@@ -75,6 +94,16 @@ func (d *Device) Evaluate(data map[string]any) bool {
 		}
 	}
 
+	return false
+}
+
+func (d *Device) EvaluateV2(device *devices.DeviceV2) bool {
+	d.ctxV2.Payload = device.Exposes
+	for _, trigger := range d.Triggers {
+		if _, ok := device.Exposes[trigger.Name]; ok {
+			trigger.processV2(d.ctxV2)
+		}
+	}
 	return false
 }
 

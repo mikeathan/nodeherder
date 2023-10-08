@@ -2,6 +2,7 @@ package devices
 
 import (
 	"errors"
+	"fmt"
 	"node-herder/utils"
 	"time"
 )
@@ -75,6 +76,9 @@ type Entity struct {
 }
 
 func createEntity(name string, description string, data any, unit string, dataType string, props map[string]any) *Entity {
+	if props == nil {
+		props = make(map[string]any)
+	}
 	newEntity := &Entity{}
 	newEntity.Data = data
 	newEntity.Name = name
@@ -185,7 +189,7 @@ func CreateNewDeviceV2(repo Repository, friendlyName string, connType string, da
 }
 func (device *DeviceV2) TryUpdate(payload map[string]interface{}) map[string]any {
 
-	updatedData := map[string]any{}
+	var updatedData = make(map[string]any)
 	for name, currValue := range device.Exposes {
 		if newValue, ok := payload[name]; ok && newValue != currValue.Data {
 			device.Exposes[name].Data = newValue
@@ -257,6 +261,7 @@ func (device *DeviceV2) Monitor(timeoutInSecs int, onChangeCallback func(p map[s
 
 				now := time.Now()
 				diff := now.Sub(lastSeen)
+				fmt.Print(diff, diff.Seconds() >= float64(timeoutInSecs))
 				if diff.Seconds() >= float64(timeoutInSecs) {
 
 					device.Properties[availabilityKey] = offline

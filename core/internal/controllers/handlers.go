@@ -189,15 +189,19 @@ func (c *deviceV2Handler) ProcessPayload(friendlyName string, connType string, p
 		c.eventHub.Broadcast(ws.DeviceAdded, device)
 
 	} else {
+		// ##################
+		if friendlyName != "Human presence" {
+			fmt.Println("attempt update", friendlyName)
+		}
+		// ##################
+
 		updatedData := device.TryUpdate(dataMap)
 		if len(updatedData) == 0 {
 			return nil
 		}
 
 		// check to see if we have an automation for current device
-		// NOT IMPLEMENTED
 		c.hub.TriggerAutomationV2(device)
-		// NOT IMPLEMENTED
 
 		c.eventHub.Broadcast(ws.DeviceUpdated, updatedData)
 	}

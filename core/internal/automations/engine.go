@@ -11,6 +11,8 @@ import (
 
 type Engine interface { // TODO: might need to move it to Models????
 	HandleDevice(id string, data map[string]any)
+	HandleDeviceV2(device *devices.DeviceV2)
+
 	Initialize(bridgeDevices []*devices.BridgeInfo) error
 	GetAllTriggers() []byte
 }
@@ -27,9 +29,16 @@ func NewEngine(mqtt mqtt.MqttClient) *AutomationEngine {
 		mqttClient:     mqtt,
 	}
 }
+
 func (a *AutomationEngine) HandleDevice(id string, data map[string]any) {
 	if t, ok := a.deviceTriggers[id]; ok {
 		t.Evaluate(data)
+	}
+}
+
+func (a *AutomationEngine) HandleDeviceV2(device *devices.DeviceV2) {
+	if t, ok := a.deviceTriggers[device.Id]; ok {
+		t.EvaluateV2(device)
 	}
 }
 
@@ -68,7 +77,7 @@ func (a *AutomationEngine) Initialize(bridgeInfoList []*devices.BridgeInfo) erro
 		if err != nil {
 			return err
 		}
-
+		// problem here - need id instead of name
 		a.deviceTriggers[automation.Name] = automation
 
 		utils.LogInfof("Loaded MqttTrigger %s, Enabled=%t", automation.Description, automation.Enabled)
