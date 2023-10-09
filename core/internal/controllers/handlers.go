@@ -28,10 +28,9 @@ type handler interface {
 }
 
 type bridgeConfigurationHandler struct {
-	ws         ws.EventHub
-	mqtt       mqtt.MqttClient
-	hub        *HubController
-	configured bool
+	ws   ws.EventHub
+	mqtt mqtt.MqttClient
+	hub  *HubController
 }
 
 func newBridgeConfigurationHandler(ws ws.EventHub, mqtt mqtt.MqttClient, hub *HubController) *bridgeConfigurationHandler {
@@ -39,13 +38,6 @@ func newBridgeConfigurationHandler(ws ws.EventHub, mqtt mqtt.MqttClient, hub *Hu
 }
 
 func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, payload []byte) error {
-
-	//needs fixing here
-
-	// subscribe topic if name has changed
-	if b.configured { // remove thhat
-		return fmt.Errorf("hub is already configured ")
-	}
 
 	if id != "bridge/devices" {
 		return fmt.Errorf("invalid hub configuration topic %s", id)
@@ -63,16 +55,17 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 
 	for _, device := range devices {
 		if device.Disabled || device.Type == "Coordinator" || !device.InterviewCompleted {
+			utils.LogInfof("Bridge registration: skipping  %s", device.FriendlyName)
+
 			continue
 		}
-
+		// TODO:
+		// do we need to unsubsribe from removed/renamed topic
 		err := b.mqtt.AddTopic(device.FriendlyName)
 		if err != nil {
 			utils.LogErrorf("error %s conffgure topic %s", device.FriendlyName, err.Error())
 		}
 	}
-	b.configured = true
-
 	return nil
 }
 
@@ -105,15 +98,6 @@ type deviceV2Handler struct {
 	repo                         devices.Repository
 	eventHub                     ws.EventHub
 	hub                          *HubController
-}
-
-func newDeviceHV2andler(repo devices.Repository, eventHub ws.EventHub, hub *HubController) *deviceV2Handler {
-	return &deviceV2Handler{
-		repo:                         repo,
-		eventHub:                     eventHub,
-		hub:                          hub,
-		AvailabilityTimeoutInSeconds: 3600, // 1 Hour
-	}
 }
 
 func newDeviceHandler(repo devices.Repository, eventHub ws.EventHub, hub *HubController) *deviceHandler {

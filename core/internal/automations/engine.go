@@ -69,6 +69,9 @@ func (a *AutomationEngine) Initialize(bridgeInfoList []*devices.BridgeInfo) erro
 	//test := newMockMqttTriggerPresenseWithLux(true)
 	//test[0].Save("human_presence", true)
 
+	// TODO:
+	// update automations, if bridge call is send again, for names that have been updated
+	// currently frienly name is used as key which if nme is change automations will be broken
 	automations := LoadAutomations()
 	utils.LogInfof("Initialize automations")
 	for _, automation := range automations {

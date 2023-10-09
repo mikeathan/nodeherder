@@ -100,3 +100,8 @@ post payload
 
 {"type":"deviceUpdated","payload":{"id":"0xa4c13894070052fc","illuminance_lux":9}}
 {"type":"deviceUpdated","payload":{"id":"0xa4c13894070052fc","illuminance_lux":7}}
+
+TODO:
+fix automation loading in new bridge call if friendly name has been changed
+do we need to unsubsribe from removed/renamed topic ??
+Test new logic in RegisterBridge

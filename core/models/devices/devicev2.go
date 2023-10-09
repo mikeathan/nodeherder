@@ -143,8 +143,8 @@ func createExposuresFromBridge(data map[string]interface{}, bridgeInfo *BridgeIn
 				case "enum":
 					props["type"] = "enum"
 					props["values"] = feature.Values
-
 				}
+
 				entities[expose.Property] = createEntity(feature.Property, feature.Description, value, feature.Unit, feature.Type, props)
 			}
 		}

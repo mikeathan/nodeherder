@@ -1,7 +1,6 @@
 package mqtt
 
 import (
-	"errors"
 	"fmt"
 	"node-herder/utils"
 	"strings"
@@ -161,7 +160,8 @@ func (m *MqttService) AddTopic(topic string) error {
 
 	for _, t := range m.topics {
 		if t == topic {
-			return errors.New("topic is subscribed")
+			utils.LogInfof("skipping topic %s is already subscribed", t)
+			continue
 		}
 	}
 	utils.LogInfof("Add topic: %s", topic)
