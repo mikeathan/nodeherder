@@ -40,10 +40,10 @@ func newBridgeConfigurationHandler(ws ws.EventHub, mqtt mqtt.MqttClient, hub *Hu
 
 func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, payload []byte) error {
 
-	if b.configured {
-		//todo:
-		// we need to reconfigure mqtt topics if friendly name changed
-		// automations if names changed - maybe use id instead of name ?
+	//needs fixing here
+
+	// subscribe topic if name has changed
+	if b.configured { // remove thhat
 		return fmt.Errorf("hub is already configured ")
 	}
 
@@ -181,8 +181,7 @@ func (c *deviceV2Handler) ProcessPayload(friendlyName string, connType string, p
 			return err
 		}
 
-		device.Monitor(c.AvailabilityTimeoutInSeconds, func(payload map[string]string) {
-
+		device.Monitor(c.AvailabilityTimeoutInSeconds, func(payload map[string]any) {
 			c.eventHub.Broadcast(ws.DeviceUpdated, payload)
 		})
 

@@ -33,6 +33,7 @@ var mainsKey = "mains"
 var powerSourceKey = "power_source"
 var batterKey = "battery"
 var lastSeenKey = "last_seen"
+var idKey = "id"
 var connectionTypeMqtt = "mqtt"
 
 const online = "online"

@@ -113,6 +113,9 @@ func (s *MemoryDeviceRepo) ListAllDevicesV2() []*devices.DeviceV2 {
 }
 func (s *MemoryDeviceRepo) RegisterBridge(bridgeInfoList []*devices.BridgeInfo) {
 
+	// TODO:
+	// remove items from idMapper, that use to have a bridge info but dont exist in current bridge info list
+	// but cant clean idmapper because it contains non bridge infor items
 	s.bridgeInfoList = bridgeInfoList
 
 	for _, device := range s.bridgeInfoList {
