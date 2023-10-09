@@ -3,6 +3,7 @@ package controllers_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"node-herder/internal/controllers"
 	"node-herder/internal/ws"
 	"node-herder/mocks"
@@ -28,23 +29,26 @@ func createMockPayload() map[string]interface{} {
 
 func TestProcessorAddsNewDevice(t *testing.T) {
 
-	id := "device 1"
+	name := "device 1"
 	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
 	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
-	mqtt.Publish(id, []byte(device1BatterySource))
+	mqtt.Publish(name, []byte(device1BatterySource))
 
 	time.Sleep(100 * time.Millisecond)
-	device, err := repo.FindDevice(id)
+	device, err := repo.FindDeviceV2(name)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 	if device == nil {
-		t.Fatalf("want %s got %s", id, "nil")
+		t.Fatalf("want %s got %s", name, "nil")
 	}
-	if device.Id != id {
-		t.Fatalf("want %s got %s", id, device.Id)
+
+	wantId := repo.ResolveId(name)
+
+	if device.Id != wantId {
+		t.Fatalf("want %s got %s", wantId, device.Id)
 	}
 }
 
@@ -59,57 +63,56 @@ func TestProcessorUpdatesExistingDevice(t *testing.T) {
 	mqtt.Publish("device2", []byte(device1BatterySource))
 
 	time.Sleep(100 * time.Millisecond)
-	id := "device2"
-	device, err := repo.FindDevice(id)
+	name := "device2"
+	device, err := repo.FindDeviceV2(name)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 	if device == nil {
 		t.Fatalf("want %s got %s", "device", "nil")
 	}
-	if device.Id != id {
-		t.Fatalf("want %s got %s", id, device.Id)
+
+	wantId := repo.ResolveId(name)
+	if device.Id != wantId {
+		t.Fatalf("want %s got %s", wantId, device.Id)
 	}
 }
 
 func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 
-	id := "device1"
+	name := "device1"
 
 	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
 	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
-	mqtt.Publish(id, []byte(device3NoLastSeen))
+	mqtt.Publish(name, []byte(device3NoLastSeen))
 
 	want := time.Now().Format(time.RFC3339)
 	time.Sleep(100 * time.Millisecond)
-	device, err := repo.FindDevice(id)
+	device, err := repo.FindDeviceV2(name)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	if device.Id != id {
-		t.Fatalf("want %s got %s", id, device.Id)
+
+	wantId := repo.ResolveId(name)
+	if device.Id != wantId {
+		t.Fatalf("want %s got %s", wantId, device.Id)
 	}
 
-	if device.Stats["last_seen"] == nil {
+	if device.Properties["last_seen"] == nil {
 		t.Fatalf("want %s got %s", "last_seen", "nil")
 	}
 
-	if device.Stats["last_seen"] != want {
-		t.Fatalf("want %s got %s", want, device.Stats["last_seen"])
+	if device.Properties["last_seen"] != want {
+		t.Fatalf("want %s got %s", want, device.Properties["last_seen"])
 	}
 }
 
-func TestOnlyNewPayloadIsBroadcasted(t *testing.T) {
-	id := "device1"
+func TestNewDeviceValuesAreBroadcastedOnly(t *testing.T) {
+	name := "device1"
 	var payload = createMockPayload()
 
-	var messageBroadcasted = false
-	broadcast := func(eventName string, data interface{}) error {
-		messageBroadcasted = true
-		return nil
-	}
 	testCases := []struct {
 		key       string
 		value     any
@@ -129,9 +132,16 @@ func TestOnlyNewPayloadIsBroadcasted(t *testing.T) {
 		{key: "temperature", value: 21, broadcast: false},
 	}
 
+	var messageBroadcasted = false
+	broadcast := func(eventName string, data interface{}) error {
+		messageBroadcasted = true
+		return nil
+	}
+
 	ws := newMockBroadcastEventHub(broadcast)
 	repo := repository.NewMemoryDeviceRepo()
 	mqtt := &mocks.MockMqttClient{}
+
 	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
 	for idx, testCase := range testCases {
 		// reset
@@ -142,12 +152,71 @@ func TestOnlyNewPayloadIsBroadcasted(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		mqtt.Publish(id, []byte(data))
+		mqtt.Publish(name, []byte(data))
 
 		time.Sleep(100 * time.Millisecond)
 		if testCase.broadcast != messageBroadcasted {
 			t.Fatalf("idx %d,key %s, value %v, broadcast want %v got %v", idx, testCase.key, testCase.value, testCase.broadcast, messageBroadcasted)
 		}
+	}
+}
+
+func TestNDevicesBroadcastDeviceEvent(t *testing.T) {
+	var payload = createMockPayload()
+
+	testCases := []struct {
+		key   string
+		value any
+	}{
+		{key: "temperature", value: 15.6},
+		{key: "temperature", value: 20.1},
+		{key: "humidity", value: 61.2},
+		{key: "humidity", value: 54.8},
+		{key: "lux", value: 599.0},
+		{key: "human_presence", value: true},
+		{key: "buttonswitch1", value: 10},
+		{key: "buttonswitch1", value: 11},
+		{key: "lux", value: 90},
+		{key: "buttonswitch2", value: true},
+	}
+	eventIdx := 0
+	expectedEventNames := []string{
+		"deviceAdded",
+		"deviceUpdated",
+		"deviceAdded",
+		"deviceUpdated",
+		"deviceAdded",
+		"deviceAdded",
+		"deviceAdded",
+		"deviceUpdated",
+		"deviceUpdated",
+		"deviceAdded",
+	}
+
+	broadcast := func(eventName string, data interface{}) error {
+		expectedEvent := expectedEventNames[eventIdx]
+		fmt.Println(eventName, data)
+		if eventName != expectedEvent {
+			t.Fatalf("invalid broadcasted event:  want %s got %s", expectedEvent, eventName)
+		}
+		return nil
+	}
+
+	ws := newMockBroadcastEventHub(broadcast)
+	repo := repository.NewMemoryDeviceRepo()
+	mqtt := &mocks.MockMqttClient{}
+
+	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	for _, testCase := range testCases {
+		payload[testCase.key] = testCase.value
+		data, err := json.Marshal(payload)
+		if err != nil {
+			panic(err)
+		}
+		mqtt.Publish(testCase.key, []byte(data))
+
+		time.Sleep(100 * time.Millisecond)
+		eventIdx++
 	}
 }
 
@@ -163,25 +232,25 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 	mqtt.Publish(id, []byte(device1BatterySource))
 	time.Sleep(100 * time.Millisecond)
 
-	device, err := repo.FindDevice(id)
+	device, err := repo.FindDeviceV2(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	if device.Stats["availability"] != "online" {
+	if device.Properties["availability"] != "online" {
 		t.Fatalf("want online got offline")
 	}
 
 	time.Sleep(1100 * time.Millisecond)
-	if device.Stats["availability"] != "offline" {
+	if device.Properties["availability"] != "offline" {
 		t.Fatalf("want offline got online")
 	}
 
 	mqtt.Publish(id, []byte(device1BatterySource))
 	time.Sleep(200 * time.Millisecond)
-	device1, _ := repo.FindDevice(id)
+	device1, _ := repo.FindDeviceV2(id)
 
-	if device1.Stats["availability"] != "online" {
+	if device1.Properties["availability"] != "online" {
 		t.Fatalf("want online got offline")
 	}
 }

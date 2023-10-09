@@ -2,7 +2,6 @@ package devices
 
 import (
 	"errors"
-	"fmt"
 	"node-herder/utils"
 	"time"
 )
@@ -261,7 +260,6 @@ func (device *DeviceV2) Monitor(timeoutInSecs int, onChangeCallback func(p map[s
 
 				now := time.Now()
 				diff := now.Sub(lastSeen)
-				fmt.Print(diff, diff.Seconds() >= float64(timeoutInSecs))
 				if diff.Seconds() >= float64(timeoutInSecs) {
 
 					device.Properties[availabilityKey] = offline

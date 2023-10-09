@@ -68,7 +68,6 @@ func (c *HubController) Enqueue(id string, payload map[string]interface{}, connT
 
 func (m *HubController) configureBridge(bridgeInfoList []*devices.BridgeInfo) error {
 
-	//m.bridge = devices.NewBridge(bridgeInfoList)
 	m.repo.RegisterBridge(bridgeInfoList)
 	err := m.automationEngine.Initialize(bridgeInfoList)
 	if err != nil {
@@ -99,7 +98,7 @@ func (m *HubController) ProcessMessage(id string, payload []byte, connType strin
 				m.handlers[id] = h
 			}
 		} else {
-			var h = newDeviceHandler(m.repo, m.eventHub, m)
+			var h = newDeviceV2Handler(m.repo, m.eventHub, m)
 			h.AvailabilityTimeoutInSeconds = m.DeviceAvailabilityTimeoutOverride
 			m.handlers[id] = h
 		}

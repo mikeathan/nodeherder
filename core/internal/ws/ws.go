@@ -235,7 +235,6 @@ func (h *wsServer) Broadcast(eventName string, data interface{}) error {
 		return errors.New("failed to marshal server payload")
 	}
 
-	fmt.Println(string(bytes))
 	h.broadcast <- bytes
 	return nil
 }
