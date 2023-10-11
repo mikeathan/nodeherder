@@ -4,17 +4,17 @@ import PowerSource from "../device/PowerSource.vue";
 import LastSeen from "../device/LastSeen.vue";
 import WifiOff from "../../assets/svg/connectivity/wifi-off.svg";
 const props = defineProps({
-  payload: Object,
+  device: Object,
 });
 </script>
 
 <template>
   <div class="card-footer">
     <div class="row justify-content-between flex-nowrap">
-      <LastSeen :timestamp="payload.stats.last_seen"></LastSeen>
-      <div class="col-auto text-truncate" v-if="payload.stats.availability === 'online'">
-        <LinkQuality :value="payload.stats.linkquality" />
-        <PowerSource :power_source="payload.power_source" :value="payload.stats.battery" />
+      <LastSeen :timestamp="device.properties.last_seen"></LastSeen>
+      <div class="col-auto text-truncate" v-if="device.properties.availability === 'online'">
+        <LinkQuality :value="device.properties.linkquality" />
+        <PowerSource :power_source="device.power_source" :value="device.properties.battery" />
       </div>
       <div className="col-auto text-truncate" v-else>
         <i title="offline">

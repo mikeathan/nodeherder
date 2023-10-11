@@ -10,10 +10,24 @@ const getters = {
 };
 
 const mutations = {
-  update(state, device) {
+  // todo: add try/catch
+  update(state, payload) {
+    var device = state.items[payload.id];
+    for (var key in payload.data) {
+      device.exposes[key].data = payload.data[key];
+    }
+    device.properties.last_seen = payload.last_seen;
+  },
+  updateproperties(state, payload) {
+    var device = state.items[payload.id];
+    for (var key in payload.data) {
+      device.properties[key] = payload.data[key];
+    }
+    device.properties.last_seen = payload.last_seen;
+  },
+  add(state, device) {
     state.items[device.id] = device;
   },
-
   init(state, devices) {
     devices.forEach((device) => {
       state.items[device.id] = device;

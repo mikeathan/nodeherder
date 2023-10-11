@@ -42,6 +42,18 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 		return h.automationEngine.GetAllTriggers()
 	})
 
+	h.eventHub.OnLoadDevices(func() []byte {
+
+		devices := h.repo.ListAllDevicesV2()
+
+		// todo: move it to function instead of here
+		bytes, err := json.Marshal(devices)
+		if err != nil {
+			utils.LogErrorf("marshal devices failed. error %s", err.Error())
+		}
+		return bytes
+	})
+
 	h.eventHub.OnConnected(func() interface{} {
 		return h.repo.ListAllDevices()
 	})

@@ -66,6 +66,20 @@ func newDeviceV2(id string) *DeviceV2 {
 	}
 }
 
+type updatePackage struct {
+	Id       string         `json:"id"`
+	LastSeen string         `json:"last_seen"`
+	Data     map[string]any `json:"data"`
+}
+
+func newUpdatePackage(id string) *updatePackage {
+	return &updatePackage{Id: id, LastSeen: getCurrentTime(), Data: make(map[string]any)}
+}
+
+func (u *updatePackage) HasData() bool {
+	return len(u.Data) != 0
+}
+
 type Entity struct {
 	Name        string         `json:"name"`
 	Description string         `json:"description,omitempty"`
@@ -186,13 +200,14 @@ func CreateNewDeviceV2(repo Repository, friendlyName string, connType string, da
 
 	return newDevice, nil
 }
-func (device *DeviceV2) TryUpdate(payload map[string]interface{}) map[string]any {
 
-	var updatedData = make(map[string]any)
+func (device *DeviceV2) TryUpdate(payload map[string]interface{}) *updatePackage {
+
+	var updatePackage = newUpdatePackage(device.Id)
 	for name, currValue := range device.Exposes {
 		if newValue, ok := payload[name]; ok && newValue != currValue.Data {
 			device.Exposes[name].Data = newValue
-			updatedData[name] = newValue
+			updatePackage.Data[name] = newValue
 		}
 	}
 
@@ -207,11 +222,7 @@ func (device *DeviceV2) TryUpdate(payload map[string]interface{}) map[string]any
 	}
 
 	device.Properties[lastSeenKey] = payload[lastSeenKey] // we need that.
-	if len(updatedData) != 0 {
-		device.addPayloadProperties(updatedData)
-	}
-
-	return updatedData
+	return updatePackage
 }
 
 func (device *DeviceV2) Dispose() {
@@ -225,14 +236,7 @@ func (device *DeviceV2) resetAvailabilityTimer() {
 	device.availabilityTicker.Reset(1 * time.Second)
 }
 
-func (device *DeviceV2) addPayloadProperties(data map[string]any) map[string]any {
-	data[idKey] = device.Id
-	data[lastSeenKey] = device.Properties[lastSeenKey]
-
-	return data
-}
-
-func (device *DeviceV2) Monitor(timeoutInSecs int, onChangeCallback func(p map[string]any)) {
+func (device *DeviceV2) Monitor(timeoutInSecs int, onChangeCallback func(p interface{})) {
 
 	device.availabilityTicker = *time.NewTicker(1 * time.Second)
 
@@ -246,7 +250,9 @@ func (device *DeviceV2) Monitor(timeoutInSecs int, onChangeCallback func(p map[s
 				utils.LogInfof("device %s availability timer killed", device.Id)
 
 				if onChangeCallback != nil {
-					onChangeCallback(device.addPayloadProperties(map[string]any{availabilityKey: offline}))
+					p := newUpdatePackage(device.Id)
+					p.Data[availabilityKey] = offline
+					onChangeCallback(p)
 				}
 
 				return
@@ -272,8 +278,11 @@ func (device *DeviceV2) Monitor(timeoutInSecs int, onChangeCallback func(p map[s
 					utils.LogInfof("device %s is offine", device.Id)
 
 					if onChangeCallback != nil {
-						onChangeCallback(device.addPayloadProperties(map[string]any{availabilityKey: offline}))
+						p := newUpdatePackage(device.Id)
+						p.Data[availabilityKey] = offline
+						onChangeCallback(p)
 					}
+
 					device.availabilityTicker.Stop()
 				}
 			}

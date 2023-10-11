@@ -6,13 +6,10 @@ import DeviceCard from "./DeviceCard.vue";
 const store = useStore();
 const devices = computed(() => store.getters["devices/items"]);
 
-
-
-
 </script>
 
 <template>
   <div className="row">
-    <DeviceCard v-for="item in devices" :device="item" :key="item.name"></DeviceCard>
+    <DeviceCard v-for="item in devices" :device="item" :key="item.id"></DeviceCard>
   </div>
 </template>

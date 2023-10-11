@@ -12,13 +12,17 @@ import (
 
 const (
 	// requests
-	DeviceAdded     = "deviceAdded"
-	DeviceUpdated   = "deviceUpdated"
-	ClientConnected = "connected"
-	LoadAutomations = "loadAutomations"
+
+	DevicePropertiesUpdated = "devicePropertiesUpdated"
+	ClientConnected         = "connected"
+	LoadAutomations         = "loadAutomations"
+	LoadDevices             = "loadDevices"
 
 	// response
-	Automations = "automations"
+	Automations   = "automations"
+	Devices       = "devices"
+	DeviceAdded   = "deviceAdded"
+	DeviceUpdated = "deviceUpdated"
 )
 
 type EventMessage struct {
@@ -99,12 +103,15 @@ func (c *WsClient) handleMessage(message []byte) {
 		msg := c.hub.onLoadAutomations()
 
 		c.Broadcast(Automations, msg)
+	case LoadDevices:
 
+		msg := c.hub.onLoadDevices()
+
+		c.Broadcast(Devices, msg)
 	default:
 		utils.LogWarnf("Unknown event type: %s", eventMsg.Type)
 		return
 	}
-
 }
 
 func (c *WsClient) writePump() {
@@ -147,6 +154,7 @@ func (c *WsClient) Broadcast(eventName string, data interface{}) error {
 		return errors.New("failed to marshal client payload")
 	}
 
+	fmt.Println(string(bytes))
 	c.send <- bytes
 	return nil
 }
@@ -155,7 +163,8 @@ type EventHub interface {
 	Broadcast(eventName string, data interface{}) error
 	RegisterNewClient(conn *websocket.Conn)
 	OnConnected(onConnected func() interface{})
-	OnLoadAutomations(onLoadAutomations func() []byte)
+	OnLoadAutomations(action func() []byte)
+	OnLoadDevices(action func() []byte)
 }
 
 type wsServer struct {
@@ -165,6 +174,7 @@ type wsServer struct {
 	unregister        chan *WsClient
 	onClientConnected func() interface{}
 	onLoadAutomations func() []byte
+	onLoadDevices     func() []byte
 }
 
 func NewWsHub() EventHub {
@@ -183,6 +193,10 @@ func NewWsHub() EventHub {
 
 func (h *wsServer) OnLoadAutomations(action func() []byte) {
 	h.onLoadAutomations = action
+}
+
+func (h *wsServer) OnLoadDevices(action func() []byte) {
+	h.onLoadDevices = action
 }
 
 func (h *wsServer) OnConnected(onConnected func() interface{}) {
@@ -234,7 +248,7 @@ func (h *wsServer) Broadcast(eventName string, data interface{}) error {
 	if err != nil {
 		return errors.New("failed to marshal server payload")
 	}
-
+	fmt.Println(string(bytes))
 	h.broadcast <- bytes
 	return nil
 }

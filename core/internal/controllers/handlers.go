@@ -165,16 +165,15 @@ func (c *deviceV2Handler) ProcessPayload(friendlyName string, connType string, p
 			return err
 		}
 
-		device.Monitor(c.AvailabilityTimeoutInSeconds, func(payload map[string]any) {
-			c.eventHub.Broadcast(ws.DeviceUpdated, payload)
+		device.Monitor(c.AvailabilityTimeoutInSeconds, func(p interface{}) {
+			c.eventHub.Broadcast(ws.DevicePropertiesUpdated, p)
 		})
 
 		c.eventHub.Broadcast(ws.DeviceAdded, device)
-
 	} else {
 
 		updatedData := device.TryUpdate(dataMap)
-		if len(updatedData) == 0 {
+		if !updatedData.HasData() {
 			return nil
 		}
 

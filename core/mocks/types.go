@@ -27,6 +27,9 @@ func (w *MockEventHub) OnConnected(onConnected func() interface{}) {
 func (w *MockEventHub) OnLoadAutomations(onLoadAutomations func() []byte) {
 	fmt.Println("Empty OnLoadAutomations")
 }
+func (w *MockEventHub) OnLoadDevices(action func() []byte) {
+	fmt.Println("Empty OnLoadDevices")
+}
 
 type MockMqttClient struct {
 	messageHandler func(string, []byte)
@@ -85,8 +88,12 @@ func (w *NopWsServer) OnConnected(onConnected func() interface{}) {
 	fmt.Println("Empty OnConnected")
 }
 
-func (w *NopWsServer) OnLoadAutomations(onLoadAutomations func() []byte) {
+func (w *NopWsServer) OnLoadAutomations(action func() []byte) {
 	fmt.Println("Empty OnLoadAutomations")
+}
+
+func (w *NopWsServer) OnLoadDevices(action func() []byte) {
+	fmt.Println("Empty OnLoadDevices")
 }
 
 type NopMqttClient struct {

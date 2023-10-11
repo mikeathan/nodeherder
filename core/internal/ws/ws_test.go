@@ -10,6 +10,7 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
 	"node-herder/mocks"
+	"node-herder/models/devices"
 	"testing"
 	"time"
 
@@ -160,7 +161,7 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if event.Type != ws.LoadAutomations {
+	if event.Type != ws.Automations {
 		t.Fatalf("Expected type %v', got '%+v'", ws.LoadAutomations, event.Type)
 	}
 
@@ -221,6 +222,105 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 				}
 			}
 		}
+	}
+
+	defer s.Close()
+	defer wsConn.Close()
+}
+
+func TestHandlingLoadDevicesMessage(t *testing.T) {
+
+	wsHub := ws.NewWsHub()
+
+	// input data
+	inputDevicesBytes := createTestDevices()
+	var inputDevices []*devices.DeviceV2
+	err := json.Unmarshal(inputDevicesBytes, &inputDevices)
+	if err != nil {
+		t.Fatal(err)
+	}
+	//
+	wsHub.OnLoadDevices(func() []byte {
+		return inputDevicesBytes
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	wsData := &ws.EventMessage{Type: ws.LoadDevices, Payload: nil}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.Devices {
+		t.Fatalf("Expected type %v', got '%+v'", ws.LoadDevices, event.Type)
+	}
+
+	// output data
+	var resultDevices []*devices.DeviceV2
+
+	bytes := []byte(event.Payload.(string))
+	err = json.Unmarshal(bytes, &resultDevices)
+	if err != nil {
+		t.Fatal(err)
+	}
+	//
+
+	for idx, device := range resultDevices {
+
+		inputDevice := inputDevices[idx]
+		if device.Id != inputDevice.Id {
+			t.Fatalf("unexpected device.Id value")
+		}
+		if device.FriendlyName != inputDevice.FriendlyName {
+			t.Fatalf("unexpected device.FriendlyName value")
+		}
+		if device.Description != inputDevice.Description {
+			t.Fatalf("unexpected device.Description value")
+		}
+		if device.ConnectionType != inputDevice.ConnectionType {
+			t.Fatalf("unexpected device.ConnectionType value")
+		}
+		if device.PowerSource != inputDevice.PowerSource {
+			t.Fatalf("unexpected device.PowerSource value")
+		}
+		for eidx, expose := range device.Exposes {
+			inputExpose := inputDevice.Exposes[eidx]
+
+			if expose.Name != inputExpose.Name {
+				t.Fatalf("unexpected expose.Name value")
+			}
+			if expose.Description != inputExpose.Description {
+				t.Fatalf("unexpected expose.Description value")
+			}
+			if expose.Data != inputExpose.Data {
+				t.Fatalf("unexpected expose.Data value")
+			}
+			if expose.Unit != inputExpose.Unit {
+				t.Fatalf("unexpected expose.Unit value")
+			}
+			for pidx, property := range expose.Properties {
+				inputproperty := inputExpose.Properties[pidx]
+				if property != inputproperty {
+					t.Fatalf("unexpected property value")
+				}
+			}
+		}
+
 	}
 
 	defer s.Close()
@@ -293,6 +393,69 @@ func httpToWs(t *testing.T, s string) string {
 	}
 
 	return wsURL.String()
+}
+
+func createTestDevices() []byte {
+	all := []*devices.DeviceV2{}
+	all = append(all, createDevice1())
+	all = append(all, createDevice2())
+	bytes, _ := json.Marshal(all)
+
+	return bytes
+}
+
+func createDevice1() *devices.DeviceV2 {
+	device1 := &devices.DeviceV2{}
+	device1.Id = "x01234"
+	device1.FriendlyName = "test Device 1"
+	device1.ConnectionType = "mqtt"
+	device1.Description = "some test dev 1 description"
+	device1.PowerSource = "mains"
+	device1.Properties = map[string]any{}
+	device1.Properties["last_seen"] = time.Now().Format(time.RFC3339)
+	device1.Properties["link_quality"] = 45
+	device1.Exposes = make(map[string]*devices.Entity)
+
+	ent1 := &devices.Entity{}
+	ent1.Description = "temperature readings"
+	ent1.Name = "temperature"
+	ent1.Unit = "*c"
+	ent1.Data = 50
+
+	ent2 := &devices.Entity{}
+	ent2.Description = "humidity readings"
+	ent2.Name = "humidity"
+	ent2.Unit = "%"
+	ent2.Data = 64.1
+	device1.Exposes["1"] = ent1
+	device1.Exposes["2"] = ent2
+
+	return device1
+}
+func createDevice2() *devices.DeviceV2 {
+	device := &devices.DeviceV2{}
+	device.Id = "x34567"
+	device.FriendlyName = "test Device 2"
+	device.ConnectionType = "http"
+	device.Description = "some test dev 2 description"
+	device.PowerSource = "power"
+	device.Properties = map[string]any{}
+	device.Properties["last_seen"] = time.Now().Format(time.RFC3339)
+	device.Properties["link_quality"] = 89
+	device.Exposes = make(map[string]*devices.Entity)
+
+	ent1 := &devices.Entity{}
+	ent1.Description = "smart light livining room"
+	ent1.Name = "brightness"
+	ent1.Data = 78
+	ent1.Properties = make(map[string]any)
+	ent1.Properties["type"] = "numeric"
+	ent1.Properties["max"] = 255
+	ent1.Properties["min"] = 0
+
+	device.Exposes["1"] = ent1
+
+	return device
 }
 
 func createTestAutomation() []byte {

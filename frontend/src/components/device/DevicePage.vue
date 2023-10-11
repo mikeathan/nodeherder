@@ -14,26 +14,43 @@ const previousPage = computed(() => {
 });
 
 const store = useStore();
+const friendlyName = computed(() => {
+
+  const d = store.getters["devices/findDevice"](props.id);
+  if (d == undefined) {
+    return "";
+  }
+  return d.friendlyName;
+});
+
 const displayProps = computed(() => {
   const device = store.getters["devices/findDevice"](props.id);
   if (device == undefined) {
     return [];
   }
   return [
-    {
-      key: "Friendly name:",
-      value: device.id,
-    },
 
     {
+      key: "Id:",
+      value: device.id,
+    },
+    {
+      key: "Friendly name:",
+      value: device.friendlyName,
+    },
+    {
+      key: "Description:",
+      value: device.description,
+    },
+    {
       key: "Availability:",
-      value: device.stats.availability,
+      value: device.properties.availability,
     },
     {
       key: "Last seen:",
       type: LastSeen,
       props: {
-        timestamp: device.stats.last_seen,
+        timestamp: device.properties.last_seen,
       },
     },
     {
@@ -41,14 +58,14 @@ const displayProps = computed(() => {
       type: PowerSource,
       props: {
         power_source: device.power_source,
-        value: device.stats.battery,
+        value: device.properties.battery,
       },
     },
     {
       key: "Connection Type:",
       type: ConnectionType,
       props: {
-        type: device.conn,
+        type: device.connection_type,
       },
     },
   ];
@@ -70,7 +87,7 @@ function showDialog(message) {
         </RouterLink>
       </div>
       <div class="h1 align-self-center">
-        {{ id }}
+        {{ friendlyName }}
       </div>
     </div>
 

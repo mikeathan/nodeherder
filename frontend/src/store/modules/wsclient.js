@@ -31,6 +31,12 @@ const actions = {
         case "deviceUpdated":
           commit("devices/update", obj.payload, { root: true });
           break;
+        case "deviceAdded":
+          commit("devices/add", obj.payload, { root: true });
+          break;
+        case "devicePropertiesUpdated":
+          commit("devices/updateproperties", obj.payload, { root: true });
+          break;
         case "automations":
           commit("automations/init", obj.payload, { root: true });
           break;
