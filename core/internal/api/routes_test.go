@@ -65,7 +65,7 @@ func TestHandleInvalidDataPayload(t *testing.T) {
 
 func TestHandleSuccesfullyRootPayload(t *testing.T) {
 
-	id := "device 1"
+	name := "device 1"
 	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
@@ -84,13 +84,14 @@ func TestHandleSuccesfullyRootPayload(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 
-	device, err := repo.FindDevice(id)
+	device, err := repo.FindDeviceV2(name)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 	if device == nil {
-		t.Fatalf("want %s got %s", id, "nil")
+		t.Fatalf("want %s got %s", name, "nil")
 	}
+	id := repo.ResolveId(name)
 	if device.Id != id {
 		t.Fatalf("want %s got %s", id, device.Id)
 	}
@@ -116,7 +117,7 @@ func TestHandleInvalidRootPayload(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusBadRequest)
 	}
 	body, _ := io.ReadAll(w.Body)
-	expectedBody := "invalid data: data structure not containign valid payload section\n"
+	expectedBody := "invalid data: data structure not containing valid payload section\n"
 	if string(body) != expectedBody {
 		t.Errorf("error reading body got %v want %v", string(body), expectedBody)
 	}
@@ -126,7 +127,7 @@ func TestProcessorHandleRootPayloadWithTimestamp(t *testing.T) {
 
 	timestamp := "2023-07-20T19:48:35+01:00"
 
-	id := "device1"
+	name := "device1"
 	device1RootPayload := `{"nickname":"device1","timestamp":"2023-07-20T19:48:35+01:00", "readings":{"humidity":92.1,"temperature":19.3}}`
 
 	repo := repository.NewMemoryDeviceRepo()
@@ -144,25 +145,26 @@ func TestProcessorHandleRootPayloadWithTimestamp(t *testing.T) {
 	ts, _ := time.Parse(time.RFC3339, timestamp)
 	want := ts.Format(time.RFC3339)
 	time.Sleep(100 * time.Millisecond)
-	device, err := repo.FindDevice(id)
+	device, err := repo.FindDeviceV2(name)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
+	id := repo.ResolveId(name)
 	if device.Id != id {
 		t.Fatalf("want %s got %s", id, device.Id)
 	}
 
-	if device.Stats["last_seen"] == nil {
+	if device.Properties["last_seen"] == nil {
 		t.Fatalf("want %s got %s", "last_seen", "nil")
 	}
 
-	if device.Stats["last_seen"] != want {
-		t.Fatalf("want %s got %s", want, device.Stats["last_seen"])
+	if device.Properties["last_seen"] != want {
+		t.Fatalf("want %s got %s", want, device.Properties["last_seen"])
 	}
 }
 
 func TestHandleSuccesfullyPayload(t *testing.T) {
-	id := "gas_monitor"
+	name := "gas_monitor"
 	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
@@ -182,13 +184,14 @@ func TestHandleSuccesfullyPayload(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 
-	device, err := repo.FindDevice(id)
+	device, err := repo.FindDeviceV2(name)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 	if device == nil {
-		t.Fatalf("want %s got %s", id, "nil")
+		t.Fatalf("want %s got %s", name, "nil")
 	}
+	id := repo.ResolveId(name)
 	if device.Id != id {
 		t.Fatalf("want %s got %s", id, device.Id)
 	}

@@ -6,6 +6,17 @@ import (
 	"time"
 )
 
+var availabilityKey = "availability"
+var mainsKey = "mains"
+var powerSourceKey = "power_source"
+var batterKey = "battery"
+var lastSeenKey = "last_seen"
+var idKey = "id"
+var connectionTypeMqtt = "mqtt"
+
+const online = "online"
+const offline = "offline"
+
 var units = map[string]string{
 	"temperature":     "°C",
 	"pressure":        "hPa",
@@ -288,4 +299,8 @@ func (device *DeviceV2) Monitor(timeoutInSecs int, onChangeCallback func(p inter
 			}
 		}
 	}()
+}
+
+func getCurrentTime() string {
+	return time.Now().Format(time.RFC3339)
 }

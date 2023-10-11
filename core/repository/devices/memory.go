@@ -10,8 +10,6 @@ import (
 )
 
 type MemoryDeviceRepo struct {
-	store map[string]*devices.Device
-
 	storeV2        map[string]*devices.DeviceV2
 	mutex          sync.RWMutex
 	bridgeInfoList []*devices.BridgeInfo
@@ -20,30 +18,11 @@ type MemoryDeviceRepo struct {
 
 func NewMemoryDeviceRepo() devices.Repository {
 	return &MemoryDeviceRepo{
-		store:          map[string]*devices.Device{},
 		storeV2:        map[string]*devices.DeviceV2{},
 		mutex:          sync.RWMutex{},
 		bridgeInfoList: []*devices.BridgeInfo{},
 		idMapper:       map[string]string{},
 	}
-}
-
-func (s *MemoryDeviceRepo) Store(deviceName string, Device *devices.Device) {
-	defer s.mutex.Unlock()
-	s.mutex.Lock()
-	s.store[deviceName] = Device
-}
-
-func (s *MemoryDeviceRepo) FindDevice(name string) (*devices.Device, error) {
-
-	defer s.mutex.RUnlock()
-
-	s.mutex.RLock()
-	if val, ok := s.store[name]; ok {
-		return val, nil
-	}
-
-	return nil, errors.New("device not found")
 }
 
 func (s *MemoryDeviceRepo) StoreV2(friendlyName string, device *devices.DeviceV2) {
@@ -71,38 +50,18 @@ func (s *MemoryDeviceRepo) FindDeviceV2(friendlyName string) (*devices.DeviceV2,
 	return nil, errors.New("device not found")
 }
 
-func (s *MemoryDeviceRepo) ListAllDevices() []*devices.Device {
-
-	// sort before returning values
-	s.mutex.RLock()
-	keys := make([]string, 0, len(s.store))
-	for k := range s.store {
-		keys = append(keys, k)
-	}
-
-	sort.Strings(keys)
-
-	devices := make([]*devices.Device, 0, len(s.store))
-	for _, key := range keys {
-		device := s.store[key]
-		devices = append(devices, device)
-	}
-	s.mutex.RUnlock()
-
-	return devices
-}
 func (s *MemoryDeviceRepo) ListAllDevicesV2() []*devices.DeviceV2 {
 
 	// sort before returning values
 	s.mutex.RLock()
-	keys := make([]string, 0, len(s.store))
-	for k := range s.store {
+	keys := make([]string, 0, len(s.storeV2))
+	for k := range s.storeV2 {
 		keys = append(keys, k)
 	}
 
 	sort.Strings(keys)
 
-	devices := make([]*devices.DeviceV2, 0, len(s.store))
+	devices := make([]*devices.DeviceV2, 0, len(s.storeV2))
 	for _, key := range keys {
 		device := s.storeV2[key]
 		devices = append(devices, device)

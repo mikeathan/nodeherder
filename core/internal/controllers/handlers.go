@@ -86,59 +86,11 @@ func (b *bridgeLoggingHandler) ProcessPayload(id string, connType string, payloa
 	return nil
 }
 
-type deviceHandler struct {
-	AvailabilityTimeoutInSeconds int
-	repo                         devices.Repository
-	eventHub                     ws.EventHub
-	hub                          *HubController
-}
-
 type deviceV2Handler struct {
 	AvailabilityTimeoutInSeconds int
 	repo                         devices.Repository
 	eventHub                     ws.EventHub
 	hub                          *HubController
-}
-
-func newDeviceHandler(repo devices.Repository, eventHub ws.EventHub, hub *HubController) *deviceHandler {
-	return &deviceHandler{
-		repo:                         repo,
-		eventHub:                     eventHub,
-		hub:                          hub,
-		AvailabilityTimeoutInSeconds: 3600, // 1 Hour
-	}
-}
-
-func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, payload []byte) error {
-
-	dataMap, err := convertToMap(payload)
-	if err != nil {
-		return err
-	}
-
-	device, _ := c.repo.FindDevice(friendlyName)
-	if device == nil {
-		device, err = devices.CreateNewDevice(friendlyName, connType, dataMap)
-		if err != nil {
-			return err
-		}
-
-		device.StartAvailabilityTimer(c.AvailabilityTimeoutInSeconds, func() {
-			c.eventHub.Broadcast(ws.DeviceUpdated, device)
-		})
-	} else {
-		updated := device.TryUpdateDevice(dataMap)
-		if !updated {
-			return nil
-		}
-		// check to see if we have an automation for current device
-		c.hub.TriggerAutomation(device.Id, device.Sensors)
-	}
-
-	c.repo.Store(friendlyName, device)
-	c.eventHub.Broadcast(ws.DeviceUpdated, device)
-
-	return nil
 }
 
 func newDeviceV2Handler(repo devices.Repository, eventHub ws.EventHub, hub *HubController) *deviceV2Handler {
