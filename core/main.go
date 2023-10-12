@@ -34,7 +34,6 @@ func readArgs() *cmdArgs {
 }
 
 func main() {
-	utils.SetLogLevel("debug")
 	utils.InitFileLogger()
 	args := readArgs()
 
