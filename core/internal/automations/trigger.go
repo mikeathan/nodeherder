@@ -124,13 +124,14 @@ func (trigger *Trigger) processV2(ctx *DeviceContextV2) {
 }
 
 type MqttAction struct {
-	Friendlyname string          `json:"friendlyname"`
+	Id           string          `json:"id"`
+	FriendlyName string          `json:"friendlyname"`
 	Type         string          `json:"type"`
 	Property     string          `json:"property"`
 	Data         any             `json:"data,omitempty"`
 	Client       mqtt.MqttClient `json:"-"`
+	Delay        time.Duration   `json:"delay,omitempty"`
 
-	Delay     time.Duration `json:"delay,omitempty"`
 	mut       sync.RWMutex
 	exit      chan bool
 	isPending bool
@@ -278,10 +279,10 @@ func (a *MqttAction) Stop() {
 
 func (a *MqttAction) emit(payload []byte) {
 
-	msg := fmt.Sprintf("%s/set", a.Friendlyname)
+	msg := fmt.Sprintf("%s/set", a.FriendlyName)
 	a.Client.Publish(msg, payload)
 
-	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.Friendlyname)
+	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.FriendlyName)
 }
 
 func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) []byte {

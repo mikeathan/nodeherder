@@ -68,6 +68,11 @@ type BridgeInfo struct {
 	Type               string `json:"type"`
 }
 
+func (b *BridgeInfo) IsActive() bool {
+
+	return !b.Disabled && b.Type != "Coordinator" && b.InterviewCompleted
+}
+
 // DEBUG - delete
 func LoadDevices(payload []byte) error {
 	var bridgeDevices []*BridgeInfo

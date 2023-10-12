@@ -102,8 +102,8 @@ post payload
 {"type":"deviceUpdated","payload":{"id":"0x00124b0029207763","last_seen":"2023-10-11T06:27:28+01:00","data":{"humidity":83}}}
 
 TODO:
-automations- use device id if available
-fix automations.device.validateactions
-fix automation loading in new bridge call if friendly name has been changed
+
+test autiomation loading. configureAction for sanitizing numeric type data
+
 do we need to unsubsribe from removed/renamed topic ??
 Test new logic in RegisterBridge

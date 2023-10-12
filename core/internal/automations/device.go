@@ -11,7 +11,6 @@ import (
 	"node-herder/utils"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 const (
@@ -61,25 +60,25 @@ func (d *DeviceContextV2) SetCurrentV2(name string, value any) {
 }
 
 type Device struct {
-	Id          string     `json:"id"`
-	Name        string     `json:"name"`
-	Description string     `json:"description"`
-	Enabled     bool       `json:"enabled"`
-	Triggers    []*Trigger `json:"triggers"`
-	ctx         *DeviceContext
-	ctxV2       *DeviceContextV2
+	Id           string     `json:"id"`
+	FriendlyName string     `json:"friendlyName"`
+	Description  string     `json:"description"`
+	Enabled      bool       `json:"enabled"`
+	Triggers     []*Trigger `json:"triggers"`
+	ctx          *DeviceContext
+	ctxV2        *DeviceContextV2
 }
 
-func NewDevice(name string) *Device {
+func NewDevice(id string) *Device {
 
 	d := &Device{
-		Id:          utils.Hash(strings.ReplaceAll(name, " ", "_")),
-		Name:        name,
-		Description: "",
-		Enabled:     false,
-		Triggers:    []*Trigger{},
-		ctx:         NewDeviceContext(),
-		ctxV2:       &DeviceContextV2{},
+		Id:           id,
+		FriendlyName: "",
+		Description:  "",
+		Enabled:      false,
+		Triggers:     []*Trigger{},
+		ctx:          NewDeviceContext(),
+		ctxV2:        &DeviceContextV2{},
 	}
 
 	return d
@@ -218,138 +217,83 @@ func createDirIfNotExists(name string) {
 	}
 }
 
-func (t *Device) configure(bridgeDevices []*devices.BridgeInfo, client mqtt.MqttClient) error {
+func (d *Device) configure(repo devices.Repository, client mqtt.MqttClient) error {
+
+	//  check if device with automation id exists. friendyname can change
+	bridgeInfo := repo.FindBridgeInfo(d.Id)
+	if bridgeInfo == nil {
+		return fmt.Errorf("automation id %s not found", d.Id)
+	}
+
+	if bridgeInfo.Disabled {
+		return fmt.Errorf("device %s is disabled ", bridgeInfo.FriendlyName)
+	}
 
 	// validate conditions
-	for _, trigger := range t.Triggers {
+	for _, trigger := range d.Triggers {
 
 		// validate actions
-		err := validateAction(bridgeDevices, trigger.Action, client)
+		err := configureAction(repo, trigger.Action, client)
 		if err != nil {
 			return err
 		}
 	}
 
+	d.FriendlyName = bridgeInfo.FriendlyName
 	return nil
 }
 
 // validate actions
-func validateAction(bridgeDevices []*devices.BridgeInfo, action *MqttAction, client mqtt.MqttClient) error {
+func configureAction(repo devices.Repository, action *MqttAction, client mqtt.MqttClient) error {
 
-	for _, device := range bridgeDevices {
-		if device.FriendlyName == action.Friendlyname {
+	bridgeInfo := repo.FindBridgeInfo(action.Id)
+	if bridgeInfo == nil {
+		return fmt.Errorf("action id %s not found", action.Id)
+	}
 
-			if action.Type != "light" {
-				return fmt.Errorf("unsupported action type %s", action.Type)
-			}
+	for _, e := range bridgeInfo.Definition.Exposes {
+		for _, f := range e.Features {
 
-			if device.Disabled {
-				return errors.New("device is disabled ")
-			}
-			action.Client = client
+			if action.Property == f.Property {
 
-			// TODO:
-			// feature needs to store type of value that it accepts so it an be used as required
-
-			for _, expose := range device.Definition.Exposes {
-				for _, feature := range expose.Features {
-					if feature.Property == action.Property { // state property only!
-
-						if action.Data == nil {
-							continue
-						}
-
-						// for now we only support "state" property
-						if action.Data == true {
-							action.Data = feature.ValueOn // { "state": "ON" }'
-						} else {
-							action.Data = feature.ValueOff // { "state": "OFF" }'
-						}
-						break
-					}
+				if action.Type != e.Type {
+					return fmt.Errorf("type=%s for action=%s not found", action.Type, action.Id)
 				}
+
+				// sanitize data
+				if f.Type == "binary" {
+					if value, ok := action.Data.(bool); ok {
+						if value {
+							action.Data = f.ValueOn
+						} else {
+							action.Data = f.ValueOff
+						}
+					}
+				} else if f.Type == "numeric" {
+					if value, ok := action.Data.(int); ok {
+
+						if min, ok := f.ValueMin.(int); ok {
+							if value < min {
+								return fmt.Errorf("value=%d for action=%s smaller than Minimum %d", value, action.Id, min)
+							}
+						}
+
+						if max, ok := f.ValueMax.(int); ok {
+							if value > max {
+								return fmt.Errorf("value=%d for action=%s bigger than Maximum %d", value, action.Id, max)
+							}
+						}
+					}
+				} else {
+					return fmt.Errorf("type=%s for action=%s not implemented", f.Type, action.Id)
+				}
+
+				action.FriendlyName = bridgeInfo.FriendlyName
+				action.Client = client
+				return nil
 			}
 		}
 	}
-	return nil
+
+	return fmt.Errorf("property=%s for action=%s not found", action.Property, action.Id)
 }
-
-// func (t *TimerTrigger) configure(bridgeDevices []*devices.BridgeDevice, client mqtt.MqttClient) error {
-// 	if t.Type != "timer" {
-// 		return fmt.Errorf("unsupported trigger type %s", t.Type)
-// 	}
-
-// 	// valdate conditions
-// 	_, ok := t.Condition.(*TimeDurationCondition)
-// 	if !ok {
-// 		_, ok = t.Condition.(*TimestampCondition)
-// 		if !ok {
-// 			return errors.New("unsupported condition type ")
-// 		}
-// 	}
-
-// 	// validate actions
-// 	err := validateAction(bridgeDevices, t.Action, client)
-
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	t.run()
-// 	return nil
-// }
-
-// type TimerTrigger struct {
-// 	Type      string      `json:"trigger"`
-// 	Name      string      `json:"name"`
-// 	Condition interface{} `json:"condition"`
-// 	Action    *MqttAction `json:"action"`
-// 	Enabled   bool        `json:"enabled"`
-// }
-
-// func newTimerTrigger() *TimerTrigger {
-// 	return &TimerTrigger{
-// 		Type:    "timer",
-// 		Name:    "",
-// 		Action:  &MqttAction{},
-// 		Enabled: true,
-// 	}
-// }
-
-// func (t *TimerTrigger) Trigger() error {
-
-// 	fmt.Printf("Trigger Action %s\n", t.Action.Friendlyname)
-// 	return t.Action.Run()
-// }
-
-// func (t *TimerTrigger) run() {
-
-// 	if !t.Enabled {
-// 		fmt.Printf("%s is disabled\n", t.Name)
-// 		return
-// 	}
-
-// 	tc := t.Condition.(TimerCondition)
-// 	go func() {
-// 		for {
-
-// 			//
-// 			// todo: allow enable/disable triggers
-// 			//
-// 			diff := time.Until(tc.GetSchedule()).Seconds()
-// 			ticker := *time.NewTicker(time.Duration(diff) * time.Second)
-// 			select {
-// 			case <-ticker.C:
-// 				err := t.Trigger()
-// 				if err != nil {
-// 					fmt.Println(err)
-// 				}
-
-// 				if !tc.IsRepeat() {
-// 					fmt.Println("timer finished. no repeat. exiting")
-// 					return
-// 				}
-// 			}
-// 		}
-// 	}()
-// }

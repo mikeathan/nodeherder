@@ -49,16 +49,14 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 	}
 
 	b.hub.configureBridge(devices)
-	if err != nil {
-		utils.LogErrorf("Configure bridge error %s", err.Error())
-	}
 
 	for _, device := range devices {
-		if device.Disabled || device.Type == "Coordinator" || !device.InterviewCompleted {
+		if !device.IsActive() {
 			utils.LogInfof("Bridge registration: skipping  %s", device.FriendlyName)
 
 			continue
 		}
+
 		// TODO:
 		// do we need to unsubsribe from removed/renamed topic
 		err := b.mqtt.AddTopic(device.FriendlyName)

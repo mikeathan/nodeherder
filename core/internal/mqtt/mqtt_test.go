@@ -3,6 +3,7 @@ package mqtt_test
 import (
 	"fmt"
 	"node-herder/internal/mqtt"
+	"strings"
 	"testing"
 	"time"
 
@@ -22,7 +23,11 @@ func TestMqttClientReceivesMessage(t *testing.T) {
 	var topic = "device1"
 	var message = "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"
 	var messageHandler = func(id string, payload []byte) {
-		// TODO: test topic
+
+		if strings.HasPrefix(id, "bridge") {
+			return
+		}
+
 		if string(payload) != message {
 			t.Errorf("Payload mismatch - want %s, got %s", message, string(payload))
 		}

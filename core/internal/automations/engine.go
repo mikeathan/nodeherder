@@ -13,14 +13,13 @@ type Engine interface { // TODO: might need to move it to Models????
 	HandleDevice(id string, data map[string]any)
 	HandleDeviceV2(device *devices.DeviceV2)
 
-	Initialize(bridgeDevices []*devices.BridgeInfo) error
+	Initialize(repo devices.Repository)
 	GetAllTriggers() []byte
 }
 
 type AutomationEngine struct {
 	deviceTriggers map[string]*Device
 	mqttClient     mqtt.MqttClient
-	configured     bool
 }
 
 func NewEngine(mqtt mqtt.MqttClient) *AutomationEngine {
@@ -33,6 +32,12 @@ func NewEngine(mqtt mqtt.MqttClient) *AutomationEngine {
 func (a *AutomationEngine) HandleDevice(id string, data map[string]any) {
 	if t, ok := a.deviceTriggers[id]; ok {
 		t.Evaluate(data)
+	}
+}
+
+func (a *AutomationEngine) Clear() {
+	for k := range a.deviceTriggers {
+		delete(a.deviceTriggers, k)
 	}
 }
 
@@ -62,44 +67,45 @@ func (a *AutomationEngine) GetAllTriggers() []byte {
 	return bytes
 }
 
-func (a *AutomationEngine) Initialize(bridgeInfoList []*devices.BridgeInfo) error {
+func (a *AutomationEngine) Initialize(repo devices.Repository) {
 
 	// fake input data - TEST ONLY
 	// that needs to come from a file and loaded
-	//test := newMockMqttTriggerPresenseWithLux(true)
-	//test[0].Save("human_presence", true)
+	//automations := newMockMqttTriggerPresenseWithLux(true)
+	//automations[0].Save("human_presence", true)
 
-	// TODO:
-	// update automations, if bridge call is send again, for names that have been updated
-	// currently frienly name is used as key which if nme is change automations will be broken
+	a.Clear()
 	automations := LoadAutomations()
+
 	utils.LogInfof("Initialize automations")
 	for _, automation := range automations {
 
-		err := automation.configure(bridgeInfoList, a.mqttClient)
+		err := automation.configure(repo, a.mqttClient)
 		if err != nil {
-			return err
+			utils.LogErrorf("configure automation id %s failed. Error=%s", automation.Id, err.Error())
+			continue
 		}
-		// problem here - need id instead of name
-		a.deviceTriggers[automation.Name] = automation
+
+		a.deviceTriggers[automation.Id] = automation
 
 		utils.LogInfof("Loaded MqttTrigger %s, Enabled=%t", automation.Description, automation.Enabled)
 		continue
 	}
 
-	a.configured = true
-	return nil
+	//automations[0].Save("human_presence", true)
 }
 
 // REMOVE
 // used for testing only!!!!!!!!!!
 func newMockMqttTriggerPresenseWithLux(enabled bool) []*Device {
 
-	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff("Attic light", 5*time.Minute)
-	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux("Attic light", 30)
+	// 0x70ac08fffefafeca = Attic light
+	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff("0x70ac08fffefafeca", 5*time.Minute)
+	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux("0x70ac08fffefafeca", 30)
 
 	// create device trigger
-	deviceTrigger := NewDevice("Human presence")
+	// 0xa4c13894070052fc = Human Presence
+	deviceTrigger := NewDevice("0xa4c13894070052fc")
 	deviceTrigger.Description = "Attic light test automation"
 	deviceTrigger.Enabled = enabled
 	deviceTrigger.Triggers = []*Trigger{}
@@ -109,10 +115,10 @@ func newMockMqttTriggerPresenseWithLux(enabled bool) []*Device {
 	return []*Device{deviceTrigger}
 }
 
-func createTriggerTurnOnLightWithPresenceOnAndLux(name string, lux any) *Trigger {
+func createTriggerTurnOnLightWithPresenceOnAndLux(id string, lux any) *Trigger {
 	// action = turn off light
 	turnOnAction := &MqttAction{}
-	turnOnAction.Friendlyname = name
+	turnOnAction.Id = id
 	turnOnAction.Type = "light"
 	turnOnAction.Property = "state"
 	turnOnAction.Data = true
@@ -140,10 +146,10 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(name string, lux any) *Trigger
 	return turnOnTrigger
 }
 
-func createTriggerDelayTurnOffLightWithPresenceOff(name string, delay time.Duration) *Trigger {
+func createTriggerDelayTurnOffLightWithPresenceOff(id string, delay time.Duration) *Trigger {
 	// action = turn off light
 	turnOffAction := &MqttAction{}
-	turnOffAction.Friendlyname = name
+	turnOffAction.Id = id
 	turnOffAction.Type = "light"
 	turnOffAction.Property = "state"
 	turnOffAction.Data = false

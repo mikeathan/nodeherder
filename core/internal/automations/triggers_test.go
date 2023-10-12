@@ -124,8 +124,8 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 			wg.Done()
 
 			action := turnOnTrigger.Action
-			if !strings.HasPrefix(id, action.Friendlyname) {
-				t.Fatalf("invalid received topic: want %s got %s", action.Friendlyname, id)
+			if !strings.HasPrefix(id, action.FriendlyName) {
+				t.Fatalf("invalid received topic: want %s got %s", action.FriendlyName, id)
 			}
 
 			data := unpackJsonToMap(string(payload))
@@ -206,7 +206,7 @@ func TestExportToFile(t *testing.T) {
 	if newTrigger.Id != deviceTrigger.Id {
 		t.Fatalf("ERROR Id mismatch")
 	}
-	if newTrigger.Name != deviceTrigger.Name {
+	if newTrigger.FriendlyName != deviceTrigger.FriendlyName {
 		t.Fatalf("ERROR Name mismatch")
 	}
 	if newTrigger.Description != deviceTrigger.Description {
@@ -222,7 +222,7 @@ func TestExportToFile(t *testing.T) {
 		if trigger.Name != newTrigger.Name {
 			t.Fatalf("ERROR Trigger.Name mismatch")
 		}
-		if trigger.Action.Friendlyname != newTrigger.Action.Friendlyname {
+		if trigger.Action.FriendlyName != newTrigger.Action.FriendlyName {
 			t.Fatalf("ERROR Action.Friendlyname mismatch")
 		}
 
@@ -273,7 +273,7 @@ func unpackJsonToMap(value string) map[string]any {
 func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any) *automations.Trigger {
 	// action = turn off light
 	turnOnAction := &automations.MqttAction{}
-	turnOnAction.Friendlyname = "Attic light"
+	turnOnAction.FriendlyName = "Attic light"
 	turnOnAction.Type = "light"
 	turnOnAction.Property = "state"
 	turnOnAction.Data = true
@@ -305,7 +305,7 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 func createSwitchTriggerWithBindingAction(triggerName string, actionProp string, mqtt mqtt.MqttClient) *automations.Trigger {
 	// action = turn off light
 	brightnessAction := &automations.MqttAction{}
-	brightnessAction.Friendlyname = "Attic light"
+	brightnessAction.FriendlyName = "Attic light"
 	brightnessAction.Type = "light"
 	brightnessAction.Property = actionProp
 	brightnessAction.Client = mqtt
@@ -321,7 +321,7 @@ func createSwitchTriggerWithBindingAction(triggerName string, actionProp string,
 func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay time.Duration) *automations.Trigger {
 	// action = turn off light
 	turnOffAction := &automations.MqttAction{}
-	turnOffAction.Friendlyname = "Attic light"
+	turnOffAction.FriendlyName = "Attic light"
 	turnOffAction.Type = "light"
 	turnOffAction.Property = "state"
 	turnOffAction.Data = false

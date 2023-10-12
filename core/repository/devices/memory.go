@@ -36,10 +36,7 @@ func (s *MemoryDeviceRepo) StoreV2(friendlyName string, device *devices.DeviceV2
 	s.idMapper[friendlyName] = id // store id in mapper for easy access
 }
 
-func (s *MemoryDeviceRepo) FindDeviceV2(friendlyName string) (*devices.DeviceV2, error) {
-
-	id := s.ResolveId(friendlyName)
-
+func (s *MemoryDeviceRepo) FindDeviceV2ById(id string) (*devices.DeviceV2, error) {
 	defer s.mutex.RUnlock()
 
 	s.mutex.RLock()
@@ -48,6 +45,13 @@ func (s *MemoryDeviceRepo) FindDeviceV2(friendlyName string) (*devices.DeviceV2,
 	}
 
 	return nil, errors.New("device not found")
+}
+
+func (s *MemoryDeviceRepo) FindDeviceV2(friendlyName string) (*devices.DeviceV2, error) {
+
+	id := s.ResolveId(friendlyName)
+
+	return s.FindDeviceV2ById(id)
 }
 
 func (s *MemoryDeviceRepo) ListAllDevicesV2() []*devices.DeviceV2 {

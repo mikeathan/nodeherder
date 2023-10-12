@@ -78,14 +78,10 @@ func (c *HubController) Enqueue(id string, payload map[string]interface{}, connT
 	return c.ProcessMessage(id, bytes, connType)
 }
 
-func (m *HubController) configureBridge(bridgeInfoList []*devices.BridgeInfo) error {
+func (m *HubController) configureBridge(bridgeInfoList []*devices.BridgeInfo) {
 
 	m.repo.RegisterBridge(bridgeInfoList)
-	err := m.automationEngine.Initialize(bridgeInfoList)
-	if err != nil {
-		return err
-	}
-	return nil
+	m.automationEngine.Initialize(m.repo)
 }
 
 func (m *HubController) TriggerAutomation(id string, data map[string]any) {
