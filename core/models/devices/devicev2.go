@@ -50,7 +50,7 @@ var propertiesWhitelist = map[string]int{
 
 type DeviceV2 struct {
 	Id                      string             `json:"id"`
-	FriendlyName            string             `json:"name"`
+	FriendlyName            string             `json:"friendlyname"`
 	Description             string             `json:"description,omitempty"`
 	ConnectionType          string             `json:"connection_type"`
 	PowerSource             string             `json:"power_source"`
@@ -141,14 +141,19 @@ func createExposuresFromBridge(data map[string]interface{}, bridgeInfo *BridgeIn
 
 	var entities = map[string]*Entity{}
 	for _, expose := range bridgeInfo.Definition.Exposes {
-		if _, ok := exposesWhitelist[expose.Property]; !ok {
-			continue
-		}
 
-		if value, ok := data[expose.Property]; ok {
-			entities[expose.Property] = createEntity(expose.Property, expose.Description, value, expose.Unit, expose.Type, nil)
-		}
+		// load exposes
+		if expose.Property != "" {
 
+			if _, ok := exposesWhitelist[expose.Property]; !ok {
+				continue
+			}
+
+			if value, ok := data[expose.Property]; ok {
+				entities[expose.Property] = createEntity(expose.Property, expose.Description, value, expose.Unit, expose.Type, nil)
+			}
+		}
+		// load features
 		for _, feature := range expose.Features {
 			if value, ok := data[feature.Property]; ok {
 
@@ -170,7 +175,7 @@ func createExposuresFromBridge(data map[string]interface{}, bridgeInfo *BridgeIn
 					props["values"] = feature.Values
 				}
 
-				entities[expose.Property] = createEntity(feature.Property, feature.Description, value, feature.Unit, feature.Type, props)
+				entities[feature.Property] = createEntity(feature.Property, feature.Description, value, feature.Unit, feature.Type, props)
 			}
 		}
 	}

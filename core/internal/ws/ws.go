@@ -17,12 +17,13 @@ const (
 	ClientConnected         = "connected"
 	LoadAutomations         = "loadAutomations"
 	LoadDevices             = "loadDevices"
-
+	LoadBridgeFeatures      = "loadBridgeFeatures"
 	// response
-	Automations   = "automations"
-	Devices       = "devices"
-	DeviceAdded   = "deviceAdded"
-	DeviceUpdated = "deviceUpdated"
+	Automations    = "automations"
+	Devices        = "devices"
+	DeviceAdded    = "deviceAdded"
+	DeviceUpdated  = "deviceUpdated"
+	BridgeFeatures = "bridgeFeatures"
 )
 
 type EventMessage struct {
@@ -108,6 +109,11 @@ func (c *WsClient) handleMessage(message []byte) {
 		msg := c.hub.onLoadDevices()
 
 		c.Broadcast(Devices, msg)
+
+	case LoadBridgeFeatures:
+		msg := c.hub.onLoadBridgeFeatures()
+		c.Broadcast(BridgeFeatures, msg)
+
 	default:
 		utils.LogWarnf("Unknown event type: %s", eventMsg.Type)
 		return
@@ -153,7 +159,6 @@ func (c *WsClient) Broadcast(eventName string, data interface{}) error {
 	if err != nil {
 		return errors.New("failed to marshal client payload")
 	}
-
 	c.send <- bytes
 	return nil
 }
@@ -164,26 +169,29 @@ type EventHub interface {
 	OnConnected(onConnected func() interface{})
 	OnLoadAutomations(action func() []byte)
 	OnLoadDevices(action func() []byte)
+	OnLoadBridgeFeatures(action func() []byte)
 }
 
 type wsServer struct {
-	clients           map[*WsClient]bool
-	broadcast         chan []byte
-	register          chan *WsClient
-	unregister        chan *WsClient
-	onClientConnected func() interface{}
-	onLoadAutomations func() []byte
-	onLoadDevices     func() []byte
+	clients              map[*WsClient]bool
+	broadcast            chan []byte
+	register             chan *WsClient
+	unregister           chan *WsClient
+	onClientConnected    func() interface{}
+	onLoadAutomations    func() []byte
+	onLoadDevices        func() []byte
+	onLoadBridgeFeatures func() []byte
 }
 
 func NewWsHub() EventHub {
 	wsHub := &wsServer{
-		clients:           map[*WsClient]bool{},
-		broadcast:         make(chan []byte),
-		register:          make(chan *WsClient),
-		unregister:        make(chan *WsClient),
-		onClientConnected: func() interface{} { return nil },
-		onLoadAutomations: func() []byte { return nil },
+		clients:              map[*WsClient]bool{},
+		broadcast:            make(chan []byte),
+		register:             make(chan *WsClient),
+		unregister:           make(chan *WsClient),
+		onClientConnected:    func() interface{} { return nil },
+		onLoadAutomations:    func() []byte { return nil },
+		onLoadBridgeFeatures: func() []byte { return nil },
 	}
 
 	go wsHub.run()
@@ -192,6 +200,10 @@ func NewWsHub() EventHub {
 
 func (h *wsServer) OnLoadAutomations(action func() []byte) {
 	h.onLoadAutomations = action
+}
+
+func (h *wsServer) OnLoadBridgeFeatures(action func() []byte) {
+	h.onLoadBridgeFeatures = action
 }
 
 func (h *wsServer) OnLoadDevices(action func() []byte) {

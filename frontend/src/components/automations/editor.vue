@@ -1,19 +1,35 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed } from "vue";
-
-
+import { computed, reactive, ref } from "vue";
 
 const props = defineProps({
     id: String,
 });
 
+const operators = ref([
+    { text: '=', value: '=' },
+    { text: '<=', value: '<=' },
+    { text: '>=', value: '>=' },
+    { text: '>', value: '>' },
+    { text: '<', value: '<' }
+])
+
 const store = useStore();
 const automation = computed(() => {
-    const item = store.getters["automations/find"](props.id);
-
-    return item
+    return store.getters["automations/find"](props.id);
 });
+
+const features = computed(() => {
+    if (!store.getters["features/isInitialized"]) {
+        store.dispatch('ws/emit', { event: "loadBridgeFeatures" });
+    }
+    return store.getters["features/items"]
+});
+
+function onActionChanged(event, properties) {
+    var property = properties[event.target.value]
+    console.log("onActionChanged:", event.target.value, " type: ", property.type, " attributes:", property.attributes);
+}
 
 function update() {
     store.dispatch('automations/save', props.id);
@@ -28,8 +44,12 @@ function update() {
         <div class="card">
             <div class="card-header">
                 <div class="form-group">
-                    <label for="inputName">Name</label>
-                    <input type="input" class="form-control" id="inputName" v-model="automation.name" />
+                    <label for="inputId">Id</label>
+                    <input type="input" class="form-control" id="inputName" v-model="automation.id" disabled />
+                </div>
+                <div class="form-group">
+                    <label for="inputFriendlyName">Friendly Name</label>
+                    <input type="input" class="form-control" id="inputName" v-model="automation.friendlyName" disabled />
                 </div>
                 <div class="form-group">
                     <label for="inputDescription">Description</label>
@@ -42,7 +62,7 @@ function update() {
             </div>
             <div class="card-body">
                 <div class="accordion accordion-flush" id="triggersList">
-                    <div v-for="(trigger, index) in automation.triggers">
+                    <div v-for="(trigger, index) in  automation.triggers ">
 
                         <div class="accordion-item">
                             <h2 class="accordion-header" :id="`header${index}`">
@@ -59,11 +79,15 @@ function update() {
                                     <div class="row w-25" v-for="(condition) in trigger.conditions">
                                         <div class="col">
                                             <input type="text" class="form-control" v-model="condition.name"
-                                                placeholder="Condition name">
+                                                placeholder="Condition name" disabled>
                                         </div>
                                         <div class="col">
-                                            <input type="text" style="text-align:center;" class="form-control"
-                                                v-model="condition.equality" placeholder="Equality operator">
+                                            <select id="selectOperators" style="text-align:center;" class="form-control"
+                                                v-model="condition.equality">
+                                                <option v-for="operator in operators" :value="operator.value">
+                                                    {{ operator.text }}
+                                                </option>
+                                            </select>
                                         </div>
                                         <div class="col">
                                             <input type="text" style="text-align:center;" class="form-control"
@@ -72,26 +96,41 @@ function update() {
                                         </div>
                                     </div>
                                     <p></p>
-                                    <label>Action</label>
+                                    <div v-for="feature in features">
+                                        <div v-if="feature.id == trigger.action.id">
 
-                                    <div class="row w-50">
-                                        <div class="col">
-                                            <input type="text" class="form-control" v-model="trigger.action.friendlyname"
-                                                placeholder="Action friendly name">
-                                        </div>
-                                        <div class="col">
-                                            <input type="text" style="text-align:center;" class="form-control"
-                                                v-model="trigger.action.property" placeholder="Action property">
-                                        </div>
-                                        <div class="col">
-                                            <input type="text" style="text-align:center;" class="form-control"
-                                                v-model="trigger.action.data" placeholder="Action data">
-                                        </div>
-                                        <div class="col">
-                                            <input type="text" style="text-align:center;" class="form-control"
-                                                v-model="trigger.action.delay" placeholder="Action delay">
+                                            <label>Action</label>
+
+                                            <div class="row w-50">
+                                                <div class="col">
+                                                    <input type="text" class="form-control"
+                                                        v-model="trigger.action.friendlyname"
+                                                        placeholder="Action friendly name" disabled>
+                                                </div>
+                                                <div class="col">
+
+                                                    <select id="propertySelect" style="text-align:center;"
+                                                        class="form-control" v-model="trigger.action.property"
+                                                        @change="onActionChanged($event, feature.properties)">
+
+                                                        <option v-for="property in feature.properties"
+                                                            :value="property.name">
+                                                            {{ property.name }}
+                                                        </option>
+                                                    </select>
+                                                </div>
+                                                <div class="col">
+                                                    <input type="text" style="text-align:center;" class="form-control"
+                                                        v-model="trigger.action.data" placeholder="Action data">
+                                                </div>
+                                                <div class="col">
+                                                    <input type="text" style="text-align:center;" class="form-control"
+                                                        v-model="trigger.action.delay" placeholder="Action delay">
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
+
                                 </div>
                             </div>
                         </div>

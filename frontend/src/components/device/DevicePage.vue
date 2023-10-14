@@ -16,7 +16,7 @@ const previousPage = computed(() => {
 const store = useStore();
 const friendlyName = computed(() => {
 
-  const d = store.getters["devices/findDevice"](props.id);
+  const d = store.getters["devices/find"](props.id);
   if (d == undefined) {
     return "";
   }
@@ -24,7 +24,7 @@ const friendlyName = computed(() => {
 });
 
 const displayProps = computed(() => {
-  const device = store.getters["devices/findDevice"](props.id);
+  const device = store.getters["devices/find"](props.id);
   if (device == undefined) {
     return [];
   }

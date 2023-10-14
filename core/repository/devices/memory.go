@@ -74,6 +74,50 @@ func (s *MemoryDeviceRepo) ListAllDevicesV2() []*devices.DeviceV2 {
 
 	return devices
 }
+
+func (s *MemoryDeviceRepo) GetBridgeFeatures() []*devices.BridgeFeature {
+	var features []*devices.BridgeFeature
+
+	for _, bridgeInfo := range s.bridgeInfoList {
+
+		if !bridgeInfo.IsActive() {
+			continue
+		}
+		for _, expose := range bridgeInfo.Definition.Exposes {
+
+			df := devices.NewBridgeFeature(bridgeInfo.IeeeAddress)
+
+			for _, feature := range expose.Features {
+
+				property := devices.NewBridgeProperty(feature.Property, feature.Type)
+				var props map[string]any = make(map[string]any)
+				switch feature.Type {
+				case "numeric":
+					props["max"] = feature.ValueMax
+					props["min"] = feature.ValueMin
+
+				case "binary":
+					props["on"] = feature.ValueOn
+					props["off"] = feature.ValueOff
+					props["toggle"] = feature.ValueToggle
+
+				case "enum":
+					props["values"] = feature.Values
+				}
+
+				property.Attributes = props
+				df.Add(property)
+			}
+
+			if len(df.Properties) != 0 {
+
+				features = append(features, df)
+			}
+		}
+	}
+	return features
+}
+
 func (s *MemoryDeviceRepo) RegisterBridge(bridgeInfoList []*devices.BridgeInfo) {
 
 	// remove items from idMapper, that use to have a bridge info but dont exist in current bridge info list
@@ -108,6 +152,7 @@ func (a *MemoryDeviceRepo) FindBridgeInfo(id string) *devices.BridgeInfo {
 			return device
 		}
 	}
+
 	return nil
 }
 

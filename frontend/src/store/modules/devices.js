@@ -4,7 +4,7 @@ const state = {
 
 const getters = {
   items: (state) => state.items,
-  findDevice: (state) => (id) => {
+  find: (state) => (id) => {
     return state.items[id];
   },
 };

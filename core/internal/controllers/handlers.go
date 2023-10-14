@@ -49,7 +49,6 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 	}
 
 	b.hub.configureBridge(devices)
-
 	for _, device := range devices {
 		if !device.IsActive() {
 			utils.LogInfof("Bridge registration: skipping  %s", device.FriendlyName)

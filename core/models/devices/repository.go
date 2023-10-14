@@ -8,4 +8,5 @@ type Repository interface {
 	RegisterBridge(bridgeInfoList []*BridgeInfo)
 	FindBridgeInfo(id string) *BridgeInfo
 	ResolveId(friendlyName string) string
+	GetBridgeFeatures() []*BridgeFeature
 }

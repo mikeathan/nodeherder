@@ -43,6 +43,9 @@ const actions = {
         case "devices":
           commit("devices/init", obj.payload, { root: true });
           break;
+        case "bridgeFeatures":
+          commit("features/init", obj.payload, { root: true });
+          break;
         case "ping":
           dispatch("emit", { event: "pong" });
           break;

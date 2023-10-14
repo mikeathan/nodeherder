@@ -29,13 +29,18 @@ let server = http.createServer(app).listen(port);
 console.log("[" + currentTime() + "] server listening at port " + port);
 
 let automation1Trigger =
-  '{"type":"automations","payload":[{"id":"1d57516b","name":"Human presence","description":"Attic light test automation","enabled":true,"triggers":[{"name":"presence","conditions":[{"name":"presence","value":false,"equality":"="}],"action":{"friendlyname":"Attic light","type":"light","property":"state","data":false,"delay":300000000000}},{"name":"presence","conditions":[{"name":"presence","value":true,"equality":"="},{"name":"lux","value":30,"equality":"<="}],"action":{"friendlyname":"Attic light","type":"light","property":"state","data":true}}]}]}';
+  '{"type":"automations","payload":[{"id":"0xa4c13894070052fc","friendlyName":"Human presence","description":"Attic light test automation","enabled":true,"triggers":[{"name":"presence","conditions":[{"name":"presence","value":false,"equality":"="}],"action":{"id":"0x70ac08fffefafeca","friendlyname":"Attic light","type":"light","property":"state","data":"OFF","delay":300000000000}},{"name":"presence","conditions":[{"name":"presence","value":true,"equality":"="},{"name":"lux","value":30,"equality":"<="}],"action":{"id":"0x70ac08fffefafeca","friendlyname":"Attic light","type":"light","property":"state","data":"ON"}}]}]}';
 
+let featuresMsg =
+  '{"type":"bridgeFeatures","payload":[{"id":"0x70ac08fffefafeca","properties":{"brightness":{"name":"brightness","type":"numeric","attributes":{"max":254,"min":0}},"color_temp":{"name":"color_temp","type":"numeric","attributes":{"max":500,"min":150}},"color_temp_startup":{"name":"color_temp_startup","type":"numeric","attributes":{"max":500,"min":150}},"state":{"name":"state","type":"binary","attributes":{"off":"OFF","on":"ON","toggle":"TOGGLE"}}}},{"id":"0x001788010b99ea7f","properties":{"brightness":{"name":"brightness","type":"numeric","attributes":{"max":254,"min":0}},"color":{"name":"color","type":"composite","attributes":{}},"color_temp":{"name":"color_temp","type":"numeric","attributes":{"max":500,"min":153}},"color_temp_startup":{"name":"color_temp_startup","type":"numeric","attributes":{"max":500,"min":153}},"state":{"name":"state","type":"binary","attributes":{"off":"OFF","on":"ON","toggle":"TOGGLE"}}}}]}';
 expressWs(app, server);
 
 // Get the /ws websocket route
 app.ws("/ws", async function (ws, req) {
   console.log("client connected");
+
+  // bridge features
+  // ws.send(featuresMsg);
 
   settings.forEach((s) => {
     setInterval(function () {
@@ -79,6 +84,10 @@ app.ws("/ws", async function (ws, req) {
 
       case "saveAutomation":
         console.log(obj.payload);
+        break;
+
+      case "loadBridgeFeatures":
+        ws.send(featuresMsg);
         break;
 
       case "pong":

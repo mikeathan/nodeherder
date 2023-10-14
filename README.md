@@ -107,3 +107,13 @@ test autiomation loading. configureAction for sanitizing numeric type data
 
 do we need to unsubsribe from removed/renamed topic ??
 Test new logic in RegisterBridge
+
+###### frontend
+
+automations:
+
+editor needs info about all bridge devices for edit or insert fuctionality
+
+we need to access device capabilities in ui that might not be currently in store
+
+tidy eventhub callbacks registration in hub-controller

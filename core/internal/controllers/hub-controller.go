@@ -54,6 +54,16 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 		return bytes
 	})
 
+	h.eventHub.OnLoadBridgeFeatures(func() []byte {
+		// todo: move it to function instead of here
+		features := h.repo.GetBridgeFeatures()
+		bytes, err := json.Marshal(features)
+		if err != nil {
+			utils.LogErrorf("marshal bridge features failed. error %s", err.Error())
+		}
+		return bytes
+	})
+
 	h.eventHub.OnConnected(func() interface{} {
 		return h.repo.ListAllDevicesV2()
 	})
