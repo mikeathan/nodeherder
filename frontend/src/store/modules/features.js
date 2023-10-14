@@ -16,7 +16,6 @@ const getters = {
 const mutations = {
   init(state, items) {
     console.log("features/init");
-    console.log(items);
     items.forEach((item) => {
       state.items[item.id] = item;
     });

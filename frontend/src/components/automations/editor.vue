@@ -1,6 +1,6 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 
 const props = defineProps({
     id: String,
@@ -27,9 +27,19 @@ const features = computed(() => {
 });
 
 function onActionChanged(event, properties) {
+    if (event.target.value == "") {
+        return;
+    }
     var property = properties[event.target.value]
     console.log("onActionChanged:", event.target.value, " type: ", property.type, " attributes:", property.attributes);
+
+    // build div = actionDataDiv
 }
+onMounted(() => {
+    // if (!store.getters["features/isInitialized"]) {
+    //     store.dispatch('ws/emit', { event: "loadBridgeFeatures" });
+    // }
+});
 
 function update() {
     store.dispatch('automations/save', props.id);
@@ -84,7 +94,8 @@ function update() {
                                         <div class="col">
                                             <select id="selectOperators" style="text-align:center;" class="form-control"
                                                 v-model="condition.equality">
-                                                <option v-for="operator in operators" :value="operator.value">
+                                                <option v-for="operator in operators" :value="operator.value"
+                                                    :key="operator.value">
                                                     {{ operator.text }}
                                                 </option>
                                             </select>
@@ -110,16 +121,17 @@ function update() {
                                                 <div class="col">
 
                                                     <select id="propertySelect" style="text-align:center;"
-                                                        class="form-control" v-model="trigger.action.property"
+                                                        class="form-control" :modelValue="trigger.action.property"
                                                         @change="onActionChanged($event, feature.properties)">
 
                                                         <option v-for="property in feature.properties"
-                                                            :value="property.name">
+                                                            :value="property.name" :key="property.name">
+
                                                             {{ property.name }}
                                                         </option>
                                                     </select>
                                                 </div>
-                                                <div class="col">
+                                                <div class="col" id="actionDataDiv">
                                                     <input type="text" style="text-align:center;" class="form-control"
                                                         v-model="trigger.action.data" placeholder="Action data">
                                                 </div>
