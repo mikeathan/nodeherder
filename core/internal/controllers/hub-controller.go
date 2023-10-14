@@ -30,7 +30,7 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 		repo:                              repo,
 		handlers:                          map[string]handler{},
 		DeviceAvailabilityTimeoutOverride: 3600,
-		automationEngine:                  automations.NewEngine(mqtt),
+		automationEngine:                  automations.NewEngine(mqtt, repo),
 		configured:                        false,
 	}
 
@@ -64,6 +64,28 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 		return bytes
 	})
 
+	h.eventHub.OnSaveAutomation(func(p interface{}) {
+		automation, ok := p.(*automations.Device)
+		if !ok {
+			utils.LogErrorf("save automation failed. error invalid type")
+			// todo: error handling. message back error message
+			//h.eventHub.Broadcast(error message)
+			return
+		}
+		h.automationEngine.Add(automation)
+	})
+
+	h.eventHub.OnDeleteAutomation(func(p interface{}) {
+		id, ok := p.(string)
+		if !ok {
+			utils.LogErrorf("delete automation failed. error invalid type")
+			// todo: error handling. message back error message
+			//h.eventHub.Broadcast(error message)
+			return
+		}
+		h.automationEngine.Delete(id)
+	})
+
 	h.eventHub.OnConnected(func() interface{} {
 		return h.repo.ListAllDevicesV2()
 	})
@@ -91,7 +113,7 @@ func (c *HubController) Enqueue(id string, payload map[string]interface{}, connT
 func (m *HubController) configureBridge(bridgeInfoList []*devices.BridgeInfo) {
 
 	m.repo.RegisterBridge(bridgeInfoList)
-	m.automationEngine.Initialize(m.repo)
+	m.automationEngine.Initialize()
 }
 
 func (m *HubController) TriggerAutomation(id string, data map[string]any) {

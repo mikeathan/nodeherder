@@ -18,6 +18,9 @@ const (
 	LoadAutomations         = "loadAutomations"
 	LoadDevices             = "loadDevices"
 	LoadBridgeFeatures      = "loadBridgeFeatures"
+	SaveAutomation          = "saveAutomation"
+	DeleteAutomation        = "deleteAutomation"
+
 	// response
 	Automations    = "automations"
 	Devices        = "devices"
@@ -104,6 +107,7 @@ func (c *WsClient) handleMessage(message []byte) {
 		msg := c.hub.onLoadAutomations()
 
 		c.Broadcast(Automations, msg)
+
 	case LoadDevices:
 
 		msg := c.hub.onLoadDevices()
@@ -114,6 +118,16 @@ func (c *WsClient) handleMessage(message []byte) {
 		msg := c.hub.onLoadBridgeFeatures()
 		c.Broadcast(BridgeFeatures, msg)
 
+	case SaveAutomation:
+
+		c.hub.onSaveAutomation = func() interface{} {
+			return eventMsg.Payload
+		}
+
+	case DeleteAutomation:
+		c.hub.onDeleteAutomation = func() interface{} {
+			return eventMsg.Payload
+		}
 	default:
 		utils.LogWarnf("Unknown event type: %s", eventMsg.Type)
 		return
@@ -170,6 +184,8 @@ type EventHub interface {
 	OnLoadAutomations(action func() []byte)
 	OnLoadDevices(action func() []byte)
 	OnLoadBridgeFeatures(action func() []byte)
+	OnSaveAutomation(func(payload interface{}))
+	OnDeleteAutomation(func(payload interface{}))
 }
 
 type wsServer struct {
@@ -181,6 +197,8 @@ type wsServer struct {
 	onLoadAutomations    func() []byte
 	onLoadDevices        func() []byte
 	onLoadBridgeFeatures func() []byte
+	onSaveAutomation     func() interface{}
+	onDeleteAutomation   func() interface{}
 }
 
 func NewWsHub() EventHub {
@@ -192,6 +210,7 @@ func NewWsHub() EventHub {
 		onClientConnected:    func() interface{} { return nil },
 		onLoadAutomations:    func() []byte { return nil },
 		onLoadBridgeFeatures: func() []byte { return nil },
+		onSaveAutomation:     func() interface{} { return nil },
 	}
 
 	go wsHub.run()
@@ -212,6 +231,16 @@ func (h *wsServer) OnLoadDevices(action func() []byte) {
 
 func (h *wsServer) OnConnected(onConnected func() interface{}) {
 	h.onClientConnected = onConnected
+}
+
+func (h *wsServer) OnSaveAutomation(action func(p interface{})) {
+	payload := h.onSaveAutomation()
+	action(payload)
+}
+
+func (h *wsServer) OnDeleteAutomation(action func(p interface{})) {
+	payload := h.onDeleteAutomation()
+	action(payload)
 }
 
 func (h *wsServer) run() {

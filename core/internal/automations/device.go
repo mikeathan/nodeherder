@@ -11,6 +11,7 @@ import (
 	"node-herder/utils"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const (
@@ -107,6 +108,9 @@ func (d *Device) EvaluateV2(device *devices.DeviceV2) bool {
 }
 
 func (t *Device) Save(name string, pretty bool) error {
+
+	//sanitize
+	name = strings.Replace(name, " ", "_", -1)
 	filePath := getFilePath(name)
 
 	data, err := json.Marshal(t)
@@ -140,6 +144,11 @@ func prettyJson(b []byte) ([]byte, error) {
 	return out.Bytes(), err
 }
 
+func Saveutomations(triggers []*Device) {
+	for _, trigger := range triggers {
+		trigger.Save(trigger.FriendlyName, true)
+	}
+}
 func LoadAutomations() []*Device {
 
 	triggers := []*Device{}
@@ -197,6 +206,8 @@ func load(filePath string) (*Device, error) {
 }
 
 func DeleteTrigger(name string) error {
+	// sanitize
+	name = strings.Replace(name, " ", "_", -1)
 	filePath := getFilePath(name)
 
 	err := os.Remove(filePath)

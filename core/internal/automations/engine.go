@@ -2,30 +2,38 @@ package automations
 
 import (
 	"encoding/json"
+	"fmt"
 	"node-herder/internal/mqtt"
 	"node-herder/models/devices"
 	"node-herder/utils"
 	"sort"
+	"sync"
 	"time"
 )
 
 type Engine interface { // TODO: might need to move it to Models????
 	HandleDevice(id string, data map[string]any)
 	HandleDeviceV2(device *devices.DeviceV2)
+	Add(automation *Device) error
+	Delete(id string) error
 
-	Initialize(repo devices.Repository)
+	Initialize()
 	GetAllTriggers() []byte
 }
 
 type AutomationEngine struct {
 	deviceTriggers map[string]*Device
 	mqttClient     mqtt.MqttClient
+	repo           devices.Repository
+	mutex          sync.RWMutex
 }
 
-func NewEngine(mqtt mqtt.MqttClient) *AutomationEngine {
+func NewEngine(mqtt mqtt.MqttClient, repo devices.Repository) *AutomationEngine {
 	return &AutomationEngine{
 		deviceTriggers: map[string]*Device{},
 		mqttClient:     mqtt,
+		repo:           repo,
+		mutex:          sync.RWMutex{},
 	}
 }
 
@@ -67,7 +75,44 @@ func (a *AutomationEngine) GetAllTriggers() []byte {
 	return bytes
 }
 
-func (a *AutomationEngine) Initialize(repo devices.Repository) {
+func (a *AutomationEngine) Add(automation *Device) error {
+
+	defer a.mutex.Unlock()
+	a.mutex.Lock()
+
+	utils.LogInfof("adding automation id=%s, friendlyName=%s, enabled=%v", automation.Id, automation.FriendlyName, automation.Enabled)
+	err := automation.configure(a.repo, a.mqttClient)
+	if err != nil {
+		utils.LogErrorf("configure automation id %s failed. Error=%s", automation.Id, err.Error())
+		return err
+	}
+
+	a.deviceTriggers[automation.Id] = automation
+
+	// store to file
+	automation.Save(automation.Id, true)
+	return nil
+}
+
+func (a *AutomationEngine) Delete(id string) error {
+
+	defer a.mutex.Unlock()
+	a.mutex.Lock()
+
+	utils.LogInfof("deleting automation id=%s", id)
+	if _, ok := a.deviceTriggers[id]; !ok {
+
+		utils.LogErrorf("delete automation id %s failed. Error=automation not found", id)
+		return fmt.Errorf("automation %s not found", id)
+	}
+
+	delete(a.deviceTriggers, id)
+
+	// delete file
+	DeleteTrigger(id)
+	return nil
+}
+func (a *AutomationEngine) Initialize() {
 
 	// fake input data - TEST ONLY
 	// that needs to come from a file and loaded
@@ -80,7 +125,8 @@ func (a *AutomationEngine) Initialize(repo devices.Repository) {
 	utils.LogInfof("Initialize automations")
 	for _, automation := range automations {
 
-		err := automation.configure(repo, a.mqttClient)
+		utils.LogInfof("Loading automation id= %s, friendlyName=%s, Enabled=%t", automation.Id, automation.FriendlyName, automation.Enabled)
+		err := automation.configure(a.repo, a.mqttClient)
 		if err != nil {
 			utils.LogErrorf("configure automation id %s failed. Error=%s", automation.Id, err.Error())
 			continue
@@ -88,11 +134,10 @@ func (a *AutomationEngine) Initialize(repo devices.Repository) {
 
 		a.deviceTriggers[automation.Id] = automation
 
-		utils.LogInfof("Loaded MqttTrigger %s, Enabled=%t", automation.Description, automation.Enabled)
 		continue
 	}
 
-	//automations[0].Save("human_presence", true)
+	//automations[0].Save(, true)
 }
 
 // REMOVE
