@@ -12,17 +12,20 @@ import (
 	"strings"
 )
 
-type DiskStorage[T any] struct {
+const ext = ".json"
+
+type JsonDiskStorage[T any] struct {
 	rootDir string
 }
 
-func NewDiskStorage[T any](baseDir string) Storage[T] {
-	d := new(DiskStorage[T])
+func NewJsonDiskStorage[T any](baseDir string) Storage[T] {
+	d := new(JsonDiskStorage[T])
 	d.rootDir = baseDir
 	return d
 }
-func (d *DiskStorage[T]) LoadAll() ([]T, error) {
-	items := []T{}
+
+func (d *JsonDiskStorage[T]) LoadAll() ([]*T, error) {
+	items := []*T{}
 	err := filepath.Walk(d.rootDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			utils.LogErrorf("Error loading item %s", err.Error())
@@ -38,7 +41,7 @@ func (d *DiskStorage[T]) LoadAll() ([]T, error) {
 			return err
 		}
 
-		items = append(items, *item)
+		items = append(items, item)
 		return nil
 	})
 
@@ -48,32 +51,31 @@ func (d *DiskStorage[T]) LoadAll() ([]T, error) {
 	return items, nil
 }
 
-func (d *DiskStorage[T]) Delete(id string) error {
+func (d *JsonDiskStorage[T]) Delete(id string) error {
 
 	return d.deleteFile(id)
 }
 
-func (d *DiskStorage[T]) Store(id string, item T) error {
+func (d *JsonDiskStorage[T]) Store(name string, item *T) error {
 
-	d.saveFile(item, id, true)
+	d.saveFile(item, name, true)
 	return nil
 }
 
-func (d *DiskStorage[T]) Load(id string) (T, error) {
+func (d *JsonDiskStorage[T]) Load(name string) (*T, error) {
 
-	filePath := d.getFilePath(id)
+	filePath := d.getFilePath(name)
 
 	item, err := d.loadFile(filePath)
 	if err != nil {
-		utils.LogErrorf("Error loading item %s %s", id, err.Error())
-		var empty T
-		return empty, err
+		utils.LogErrorf("Error loading item %s %s", name, err.Error())
+		return nil, err
 	}
 
-	return *item, nil
+	return item, nil
 }
 
-func (d *DiskStorage[T]) saveFile(item T, name string, pretty bool) error {
+func (d *JsonDiskStorage[T]) saveFile(item *T, name string, pretty bool) error {
 
 	//sanitize
 	name = strings.Replace(name, " ", "_", -1)
@@ -98,10 +100,10 @@ func (d *DiskStorage[T]) saveFile(item T, name string, pretty bool) error {
 	return nil
 }
 
-func (d *DiskStorage[T]) getFilePath(name string) string {
+func (d *JsonDiskStorage[T]) getFilePath(name string) string {
 
 	createDirIfNotExists(d.rootDir)
-	return filepath.Join(d.rootDir, fmt.Sprintf("%s%s", name, d.rootDir))
+	return filepath.Join(d.rootDir, fmt.Sprintf("%s%s", name, ext))
 }
 
 func prettyJson(b []byte) ([]byte, error) {
@@ -110,7 +112,7 @@ func prettyJson(b []byte) ([]byte, error) {
 	return out.Bytes(), err
 }
 
-func (d *DiskStorage[T]) loadFile(filePath string) (*T, error) {
+func (d *JsonDiskStorage[T]) loadFile(filePath string) (*T, error) {
 
 	jsonFile, err := os.Open(filePath)
 	if err != nil {
@@ -143,7 +145,7 @@ func createDirIfNotExists(name string) {
 	}
 }
 
-func (d *DiskStorage[T]) deleteFile(name string) error {
+func (d *JsonDiskStorage[T]) deleteFile(name string) error {
 	// sanitize
 	name = strings.Replace(name, " ", "_", -1)
 	filePath := d.getFilePath(name)
