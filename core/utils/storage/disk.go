@@ -16,10 +16,12 @@ type DiskStorage[T any] struct {
 	rootDir string
 }
 
-// func NewDiskStorage(baseDir string) Storage[T] {
-// return &DiskStorage{}
-// }
-func (d *DiskStorage[T]) LoadAll() []T {
+func NewDiskStorage[T any](baseDir string) Storage[T] {
+	d := new(DiskStorage[T])
+	d.rootDir = baseDir
+	return d
+}
+func (d *DiskStorage[T]) LoadAll() ([]T, error) {
 	items := []T{}
 	err := filepath.Walk(d.rootDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -43,7 +45,7 @@ func (d *DiskStorage[T]) LoadAll() []T {
 	if err != nil {
 		utils.LogErrorf("Error loading items %s", err.Error())
 	}
-	return items
+	return items, nil
 }
 
 func (d *DiskStorage[T]) Delete(id string) error {
