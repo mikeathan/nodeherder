@@ -22,10 +22,11 @@ type Engine interface { // TODO: might need to move it to Models????
 }
 
 type AutomationEngine struct {
-	deviceTriggers map[string]*Device
-	mqttClient     mqtt.MqttClient
-	repo           devices.Repository
-	mutex          sync.RWMutex
+	deviceTriggers  map[string]*Device
+	mqttClient      mqtt.MqttClient
+	repo            devices.Repository
+	automationsRepo Repository
+	mutex           sync.RWMutex
 }
 
 func NewEngine(mqtt mqtt.MqttClient, repo devices.Repository) *AutomationEngine {
@@ -40,12 +41,6 @@ func NewEngine(mqtt mqtt.MqttClient, repo devices.Repository) *AutomationEngine 
 func (a *AutomationEngine) HandleDevice(id string, data map[string]any) {
 	if t, ok := a.deviceTriggers[id]; ok {
 		t.Evaluate(data)
-	}
-}
-
-func (a *AutomationEngine) Clear() {
-	for k := range a.deviceTriggers {
-		delete(a.deviceTriggers, k)
 	}
 }
 
@@ -87,10 +82,11 @@ func (a *AutomationEngine) Add(automation *Device) error {
 		return err
 	}
 
+	a.automationsRepo.Store(automation.Id, automation)
 	a.deviceTriggers[automation.Id] = automation
 
 	// store to file
-	automation.Save(automation.Id, true)
+	//automation.Save(automation.Id, true)
 	return nil
 }
 
@@ -106,10 +102,9 @@ func (a *AutomationEngine) Delete(id string) error {
 		return fmt.Errorf("automation %s not found", id)
 	}
 
-	delete(a.deviceTriggers, id)
-
+	//delete(a.deviceTriggers, id)
+	a.automationsRepo.Delete(id)
 	// delete file
-	DeleteTrigger(id)
 	return nil
 }
 func (a *AutomationEngine) Initialize() {
@@ -119,8 +114,9 @@ func (a *AutomationEngine) Initialize() {
 	//automations := newMockMqttTriggerPresenseWithLux(true)
 	//automations[0].Save("human_presence", true)
 
-	a.Clear()
-	automations := LoadAutomations()
+	//	a.Clear()
+
+	automations := a.automationsRepo.Load()
 
 	utils.LogInfof("Initialize automations")
 	for _, automation := range automations {

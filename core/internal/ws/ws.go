@@ -22,11 +22,12 @@ const (
 	DeleteAutomation        = "deleteAutomation"
 
 	// response
-	Automations    = "automations"
-	Devices        = "devices"
-	DeviceAdded    = "deviceAdded"
-	DeviceUpdated  = "deviceUpdated"
-	BridgeFeatures = "bridgeFeatures"
+	Automations     = "automations"
+	Devices         = "devices"
+	DeviceAdded     = "deviceAdded"
+	DeviceUpdated   = "deviceUpdated"
+	BridgeFeatures  = "bridgeFeatures"
+	OperationFailed = "operationFailed"
 )
 
 type EventMessage struct {

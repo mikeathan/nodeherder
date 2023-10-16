@@ -158,3 +158,32 @@ func (w *NopRepository) FindDeviceV2(deviceName string) (*devices.DeviceV2, erro
 	fmt.Println("Empty FindDevice")
 	return &devices.DeviceV2{}, nil
 }
+
+func (w *NopRepository) FindDeviceV2ById(id string) (*devices.DeviceV2, error) {
+
+	fmt.Println("Empty FindDeviceV2ById")
+	return &devices.DeviceV2{}, nil
+}
+
+func (w *NopRepository) RegisterBridge(bridgeInfoList []*devices.BridgeInfo) {
+
+	fmt.Println("Empty RegisterBridge")
+}
+
+func (w *NopRepository) FindBridgeInfo(id string) *devices.BridgeInfo {
+
+	fmt.Println("Empty FindBridgeInfo")
+	return &devices.BridgeInfo{}
+}
+
+func (w *NopRepository) ResolveId(friendlyName string) string {
+
+	fmt.Println("Empty ResolveId")
+	return ""
+}
+
+func (w *NopRepository) GetBridgeFeatures() []*devices.BridgeFeature {
+
+	fmt.Println("Empty GetBridgeFeatures")
+	return []*devices.BridgeFeature{}
+}

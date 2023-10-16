@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"node-herder/internal/automations"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
+
 	"node-herder/utils"
 	"strings"
 )
@@ -23,9 +25,9 @@ type HubController struct {
 	configured                        bool
 }
 
-func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Repository, ctx context.Context) *HubController {
+func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devices.Repository, ctx context.Context) *HubController {
 	h := &HubController{
-		eventHub:                          ws,
+		eventHub:                          eventHub,
 		mqtt:                              mqtt,
 		repo:                              repo,
 		handlers:                          map[string]handler{},
@@ -50,7 +52,9 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 		bytes, err := json.Marshal(devices)
 		if err != nil {
 			utils.LogErrorf("marshal devices failed. error %s", err.Error())
+			h.eventHub.Broadcast(ws.OperationFailed, "Loading devices failed")
 		}
+
 		return bytes
 	})
 
@@ -60,6 +64,7 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 		bytes, err := json.Marshal(features)
 		if err != nil {
 			utils.LogErrorf("marshal bridge features failed. error %s", err.Error())
+			h.eventHub.Broadcast(ws.OperationFailed, "Loading bridge features failed.")
 		}
 		return bytes
 	})
@@ -69,21 +74,27 @@ func RegisterHubController(ws ws.EventHub, mqtt mqtt.MqttClient, repo devices.Re
 		if !ok {
 			utils.LogErrorf("save automation failed. error invalid type")
 			// todo: error handling. message back error message
-			//h.eventHub.Broadcast(error message)
+			h.eventHub.Broadcast(ws.OperationFailed, "Save automation failed. Invalid payload type")
 			return
 		}
-		h.automationEngine.Add(automation)
+
+		err := h.automationEngine.Add(automation)
+		if err != nil {
+			h.eventHub.Broadcast(ws.OperationFailed, fmt.Sprintf("Save automation failed. %s", err.Error()))
+		}
 	})
 
 	h.eventHub.OnDeleteAutomation(func(p interface{}) {
 		id, ok := p.(string)
 		if !ok {
 			utils.LogErrorf("delete automation failed. error invalid type")
-			// todo: error handling. message back error message
-			//h.eventHub.Broadcast(error message)
+			h.eventHub.Broadcast(ws.OperationFailed, "Delete automation failed. Invalid payload type")
 			return
 		}
-		h.automationEngine.Delete(id)
+		err := h.automationEngine.Delete(id)
+		if err != nil {
+			h.eventHub.Broadcast(ws.OperationFailed, fmt.Sprintf("Delete automation failed. %s", err.Error()))
+		}
 	})
 
 	h.eventHub.OnConnected(func() interface{} {
