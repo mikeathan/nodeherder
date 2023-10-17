@@ -97,10 +97,6 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		}
 	})
 
-	h.eventHub.OnConnected(func() interface{} {
-		return h.repo.ListAllDevicesV2()
-	})
-
 	h.mqtt.OnMessageHandler(func(id string, payload []byte) {
 		h.ProcessMessage(id, payload, "mqtt")
 	})

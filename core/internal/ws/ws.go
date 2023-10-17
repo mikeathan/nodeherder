@@ -14,7 +14,6 @@ const (
 	// requests
 
 	DevicePropertiesUpdated = "devicePropertiesUpdated"
-	ClientConnected         = "connected"
 	LoadAutomations         = "loadAutomations"
 	LoadDevices             = "loadDevices"
 	LoadBridgeFeatures      = "loadBridgeFeatures"
@@ -178,7 +177,6 @@ func (c *WsClient) Broadcast(eventName string, data interface{}) error {
 type EventHub interface {
 	Broadcast(eventName string, data interface{}) error
 	RegisterNewClient(conn *websocket.Conn)
-	OnConnected(onConnected func() interface{})
 	OnLoadAutomations(action func() []byte)
 	OnLoadDevices(action func() []byte)
 	OnLoadBridgeFeatures(action func() []byte)
@@ -191,7 +189,6 @@ type wsServer struct {
 	broadcast            chan []byte
 	register             chan *WsClient
 	unregister           chan *WsClient
-	onClientConnected    func() interface{}
 	onLoadAutomations    func() []byte
 	onLoadDevices        func() []byte
 	onLoadBridgeFeatures func() []byte
@@ -205,7 +202,6 @@ func NewWsHub() EventHub {
 		broadcast:            make(chan []byte),
 		register:             make(chan *WsClient),
 		unregister:           make(chan *WsClient),
-		onClientConnected:    func() interface{} { return nil },
 		onLoadAutomations:    func() []byte { return nil },
 		onLoadBridgeFeatures: func() []byte { return nil },
 		onSaveAutomation:     func(paylod interface{}) {},
@@ -226,10 +222,6 @@ func (h *wsServer) OnLoadBridgeFeatures(action func() []byte) {
 
 func (h *wsServer) OnLoadDevices(action func() []byte) {
 	h.onLoadDevices = action
-}
-
-func (h *wsServer) OnConnected(onConnected func() interface{}) {
-	h.onClientConnected = onConnected
 }
 
 func (h *wsServer) OnSaveAutomation(action func(p interface{})) {
@@ -272,11 +264,6 @@ func (h *wsServer) RegisterNewClient(conn *websocket.Conn) {
 
 	go client.readPump()
 	go client.writePump()
-
-	payload := h.onClientConnected()
-	if payload != nil {
-		client.Broadcast(ClientConnected, payload)
-	}
 }
 
 func (h *wsServer) Broadcast(eventName string, data interface{}) error {
