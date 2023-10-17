@@ -161,7 +161,7 @@ func TestNewDeviceValuesAreBroadcastedOnly(t *testing.T) {
 	}
 }
 
-func TestNDevicesBroadcastDeviceEvent(t *testing.T) {
+func TestDevicesBroadcastDeviceEvent(t *testing.T) {
 	var payload = createMockPayload()
 
 	testCases := []struct {
@@ -255,34 +255,34 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 	}
 }
 
-// func TestAvailabilityIsDisposed(t *testing.T) {
+func TestAvailabilityIsDisposed(t *testing.T) {
 
-// 	id := "device 1"
-// 	repo := repository.NewMemoryDeviceRepo()
-// 	ws := &mocks.NopWsServer{}
-// 	mqtt := &mocks.MockMqttClient{}
-// 	hub := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
-// 	hub.AvailabilityTimeoutinSeconds = 1
+	id := "device 1"
+	repo := repository.NewMemoryDeviceRepo()
+	ws := &mocks.NopWsServer{}
+	mqtt := &mocks.MockMqttClient{}
+	hub := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	hub.DeviceAvailabilityTimeoutOverride = 1
 
-// 	mqtt.Publish(id, []byte(device1BatterySource))
-// 	time.Sleep(100 * time.Millisecond)
+	mqtt.Publish(id, []byte(device1BatterySource))
+	time.Sleep(100 * time.Millisecond)
 
-// 	device, err := repo.FindDevice(id)
-// 	if err != nil {
-// 		t.Fatalf(err.Error())
-// 	}
+	device, err := repo.FindDeviceV2(id)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 
-// 	if device.Stats["availability"] != "online" {
-// 		t.Fatalf("want online got offline")
-// 	}
+	if device.Properties["availability"] != "online" {
+		t.Fatalf("want online got offline")
+	}
 
-// 	device.Dispose()
-// 	time.Sleep(100 * time.Millisecond)
+	device.Dispose()
+	time.Sleep(100 * time.Millisecond)
 
-// 	if device.Stats["availability"] != "offline" {
-// 		t.Fatalf("want offline got online")
-// 	}
-// }
+	if device.Properties["availability"] != "offline" {
+		t.Fatalf("want offline got online")
+	}
+}
 
 func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data interface{}) error) ws.EventHub {
 

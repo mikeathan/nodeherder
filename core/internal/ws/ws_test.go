@@ -21,14 +21,17 @@ import (
 func TestHubNewClientConnectedEventsTypesOfPayloads(t *testing.T) {
 
 	testCases := []struct {
-		Payload interface{}
+		Event   string
+		Payload []byte
 		Message string
 	}{
 		{
-			Payload: "{\"battery\":100,\"humidity\":66.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":41,\"temperature\":36,\"voltage\":2900}",
+			Event:   ws.Devices,
+			Payload: []byte("{\"battery\":100,\"humidity\":66.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":41,\"temperature\":36,\"voltage\":2900}"),
 			Message: "{\"battery\":100,\"humidity\":66.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":41,\"temperature\":36,\"voltage\":2900}",
 		},
 		{
+			Event:   ws.Automations,
 			Payload: []byte("{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"),
 			Message: "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}",
 		},
@@ -37,17 +40,18 @@ func TestHubNewClientConnectedEventsTypesOfPayloads(t *testing.T) {
 	for _, testCase := range testCases {
 
 		wsHub := ws.NewWsHub()
-		wsHub.OnConnected(func() interface{} {
+		wsHub.OnLoadDevices(func() []byte {
 			return testCase.Payload
 		})
 		h := api.NewWsHandler(wsHub)
 		s, wsConn := NewTestWsServer(t, h)
+		wsHub.Broadcast(testCase.Event, testCase.Payload)
 
 		reply := receiveWSMessage(t, wsConn)
 		gotType := reply["type"]
 
-		if gotType != ws.ClientConnected {
-			t.Fatalf("Expected type %+v', got '%+v'", ws.ClientConnected, gotType)
+		if gotType != testCase.Event {
+			t.Fatalf("Expected type %+v', got '%+v'", testCase.Event, gotType)
 		}
 		gotData := reply["payload"]
 		wantData := testCase.Message
@@ -58,36 +62,6 @@ func TestHubNewClientConnectedEventsTypesOfPayloads(t *testing.T) {
 		defer s.Close()
 		defer wsConn.Close()
 		wsConn.Close()
-	}
-}
-
-func TestHubNewClientConnectedEvents(t *testing.T) {
-
-	var expectedPayload = []byte("{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}")
-	var expectedMessage = "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"
-
-	wsHub := ws.NewWsHub()
-	wsHub.OnConnected(func() interface{} {
-		return expectedPayload
-	})
-	h := api.NewWsHandler(wsHub)
-
-	for i := 0; i < 4; i++ {
-		s, wsConn := NewTestWsServer(t, h)
-
-		reply := receiveWSMessage(t, wsConn)
-		gotType := reply["type"]
-
-		if gotType != ws.ClientConnected {
-			t.Fatalf("Expected type %+v', got '%+v'", ws.ClientConnected, gotType)
-		}
-		gotData := reply["payload"]
-		if gotData != expectedMessage {
-			t.Fatalf("Expected message %+v', got '%+v'", expectedMessage, gotData)
-		}
-
-		defer s.Close()
-		defer wsConn.Close()
 	}
 }
 
