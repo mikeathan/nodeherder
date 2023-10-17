@@ -121,14 +121,11 @@ func (c *WsClient) handleMessage(message []byte) {
 
 	case SaveAutomation:
 
-		c.hub.onSaveAutomation = func() interface{} {
-			return eventMsg.Payload
-		}
+		c.hub.onSaveAutomation(eventMsg.Payload)
 
 	case DeleteAutomation:
-		c.hub.onDeleteAutomation = func() interface{} {
-			return eventMsg.Payload
-		}
+		c.hub.onDeleteAutomation(eventMsg.Payload)
+
 	default:
 		utils.LogWarnf("Unknown event type: %s", eventMsg.Type)
 		return
@@ -198,8 +195,8 @@ type wsServer struct {
 	onLoadAutomations    func() []byte
 	onLoadDevices        func() []byte
 	onLoadBridgeFeatures func() []byte
-	onSaveAutomation     func() interface{}
-	onDeleteAutomation   func() interface{}
+	onSaveAutomation     func(interface{})
+	onDeleteAutomation   func(interface{})
 }
 
 func NewWsHub() EventHub {
@@ -211,7 +208,8 @@ func NewWsHub() EventHub {
 		onClientConnected:    func() interface{} { return nil },
 		onLoadAutomations:    func() []byte { return nil },
 		onLoadBridgeFeatures: func() []byte { return nil },
-		onSaveAutomation:     func() interface{} { return nil },
+		onSaveAutomation:     func(paylod interface{}) {},
+		onDeleteAutomation:   func(payload interface{}) {},
 	}
 
 	go wsHub.run()
@@ -235,13 +233,11 @@ func (h *wsServer) OnConnected(onConnected func() interface{}) {
 }
 
 func (h *wsServer) OnSaveAutomation(action func(p interface{})) {
-	payload := h.onSaveAutomation()
-	action(payload)
+	h.onSaveAutomation = action
 }
 
 func (h *wsServer) OnDeleteAutomation(action func(p interface{})) {
-	payload := h.onDeleteAutomation()
-	action(payload)
+	h.onDeleteAutomation = action
 }
 
 func (h *wsServer) run() {
