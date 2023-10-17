@@ -127,10 +127,6 @@ func (m *HubController) configureBridge(bridgeInfoList []*devices.BridgeInfo) {
 	m.automationEngine.Initialize()
 }
 
-func (m *HubController) TriggerAutomation(id string, data map[string]any) {
-	m.automationEngine.HandleDevice(id, data)
-}
-
 func (m *HubController) TriggerAutomationV2(device *devices.DeviceV2) {
 	m.automationEngine.HandleDeviceV2(device)
 }
