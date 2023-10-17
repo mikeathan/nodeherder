@@ -2,17 +2,19 @@ package automations
 
 import (
 	"encoding/json"
-	"fmt"
 	"node-herder/internal/mqtt"
 	"node-herder/models/devices"
 	"node-herder/utils"
-	"sort"
-	"sync"
+	"node-herder/utils/storage"
 	"time"
 )
 
+const (
+	automationDir = "configs/automations"
+	automationExt = ".config"
+)
+
 type Engine interface { // TODO: might need to move it to Models????
-	HandleDevice(id string, data map[string]any)
 	HandleDeviceV2(device *devices.DeviceV2)
 	Add(automation *Device) error
 	Delete(id string) error
@@ -22,48 +24,34 @@ type Engine interface { // TODO: might need to move it to Models????
 }
 
 type AutomationEngine struct {
-	deviceTriggers  map[string]*Device
-	mqttClient      mqtt.MqttClient
-	repo            devices.Repository
-	automationsRepo Repository
-	mutex           sync.RWMutex
+	mqttClient        mqtt.MqttClient
+	repo              devices.Repository
+	automationStorage storage.Storage[Device]
 }
 
 func NewEngine(mqtt mqtt.MqttClient, repo devices.Repository) *AutomationEngine {
 	return &AutomationEngine{
-		deviceTriggers: map[string]*Device{},
-		mqttClient:     mqtt,
-		repo:           repo,
-		mutex:          sync.RWMutex{},
+		mqttClient:        mqtt,
+		repo:              repo,
+		automationStorage: storage.NewJsonDiskStorage[Device](automationDir),
 	}
 }
 
-func (a *AutomationEngine) HandleDevice(id string, data map[string]any) {
-	if t, ok := a.deviceTriggers[id]; ok {
-		t.Evaluate(data)
-	}
+func (a *AutomationEngine) WithStorage(storage storage.Storage[Device]) {
+	a.automationStorage = storage
 }
 
 func (a *AutomationEngine) HandleDeviceV2(device *devices.DeviceV2) {
-	if t, ok := a.deviceTriggers[device.Id]; ok {
-		t.EvaluateV2(device)
+	trigger, err := a.automationStorage.Load(device.Id)
+	if err == nil {
+		trigger.EvaluateV2(device)
 	}
 }
 
 func (a *AutomationEngine) GetAllTriggers() []byte {
-	keys := make([]string, 0, len(a.deviceTriggers))
-	values := make([]*Device, 0, len(a.deviceTriggers))
+	triggers := a.automationStorage.LoadAll()
 
-	for k, _ := range a.deviceTriggers {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	for _, k := range keys {
-		values = append(values, a.deviceTriggers[k])
-	}
-
-	bytes, err := json.Marshal(values)
+	bytes, err := json.Marshal(triggers)
 	if err != nil {
 		utils.LogErrorf("marshal automation triggers failed. error %s", err.Error())
 	}
@@ -72,9 +60,6 @@ func (a *AutomationEngine) GetAllTriggers() []byte {
 
 func (a *AutomationEngine) Add(automation *Device) error {
 
-	defer a.mutex.Unlock()
-	a.mutex.Lock()
-
 	utils.LogInfof("adding automation id=%s, friendlyName=%s, enabled=%v", automation.Id, automation.FriendlyName, automation.Enabled)
 	err := automation.configure(a.repo, a.mqttClient)
 	if err != nil {
@@ -82,31 +67,17 @@ func (a *AutomationEngine) Add(automation *Device) error {
 		return err
 	}
 
-	a.automationsRepo.Store(automation.Id, automation)
-	a.deviceTriggers[automation.Id] = automation
+	a.automationStorage.Store(automation.Id, automation)
 
-	// store to file
-	//automation.Save(automation.Id, true)
 	return nil
 }
 
 func (a *AutomationEngine) Delete(id string) error {
 
-	defer a.mutex.Unlock()
-	a.mutex.Lock()
-
-	utils.LogInfof("deleting automation id=%s", id)
-	if _, ok := a.deviceTriggers[id]; !ok {
-
-		utils.LogErrorf("delete automation id %s failed. Error=automation not found", id)
-		return fmt.Errorf("automation %s not found", id)
-	}
-
-	//delete(a.deviceTriggers, id)
-	a.automationsRepo.Delete(id)
-	// delete file
+	a.automationStorage.Delete(id)
 	return nil
 }
+
 func (a *AutomationEngine) Initialize() {
 
 	// fake input data - TEST ONLY
@@ -114,11 +85,13 @@ func (a *AutomationEngine) Initialize() {
 	//automations := newMockMqttTriggerPresenseWithLux(true)
 	//automations[0].Save("human_presence", true)
 
-	//	a.Clear()
-
-	automations := a.automationsRepo.Load()
-
 	utils.LogInfof("Initialize automations")
+	automations, err := a.automationStorage.Initialize()
+	if err != nil {
+		utils.LogErrorf("Load automations failed. Error=%s", err.Error())
+		return
+	}
+
 	for _, automation := range automations {
 
 		utils.LogInfof("Loading automation id= %s, friendlyName=%s, Enabled=%t", automation.Id, automation.FriendlyName, automation.Enabled)
@@ -127,10 +100,6 @@ func (a *AutomationEngine) Initialize() {
 			utils.LogErrorf("configure automation id %s failed. Error=%s", automation.Id, err.Error())
 			continue
 		}
-
-		a.deviceTriggers[automation.Id] = automation
-
-		continue
 	}
 
 	//automations[0].Save(, true)

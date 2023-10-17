@@ -8,24 +8,35 @@ import (
 	"io"
 	"node-herder/utils"
 	"os"
+	"path"
 	"path/filepath"
+	"sort"
 	"strings"
+	"sync"
 )
 
 const ext = ".json"
 
 type JsonDiskStorage[T any] struct {
 	rootDir string
+	cache   map[string]*T
+	mutex   sync.RWMutex
 }
 
 func NewJsonDiskStorage[T any](baseDir string) Storage[T] {
 	d := new(JsonDiskStorage[T])
 	d.rootDir = baseDir
+	d.cache = map[string]*T{}
+	d.mutex = sync.RWMutex{}
 	return d
 }
 
-func (d *JsonDiskStorage[T]) LoadAll() ([]*T, error) {
-	items := []*T{}
+func (d *JsonDiskStorage[T]) Initialize() ([]*T, error) {
+	defer d.mutex.Unlock()
+	d.mutex.Lock()
+
+	d.ClearCache()
+
 	err := filepath.Walk(d.rootDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			utils.LogErrorf("Error loading item %s", err.Error())
@@ -41,31 +52,82 @@ func (d *JsonDiskStorage[T]) LoadAll() ([]*T, error) {
 			return err
 		}
 
-		items = append(items, item)
+		name := filenameWithoutExtension(path)
+		d.addToCache(name, item)
 		return nil
 	})
 
 	if err != nil {
 		utils.LogErrorf("Error loading items %s", err.Error())
 	}
-	return items, nil
+
+	return d.LoadAll(), nil
 }
 
-func (d *JsonDiskStorage[T]) Delete(id string) error {
+func (d *JsonDiskStorage[T]) LoadAll() []*T {
+	defer d.mutex.RUnlock()
+	d.mutex.RLock()
 
-	return d.deleteFile(id)
+	keys := make([]string, 0, len(d.cache))
+	values := make([]*T, 0, len(d.cache))
+
+	for k, _ := range d.cache {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		values = append(values, d.cache[k])
+	}
+
+	return values
+}
+
+func (d *JsonDiskStorage[T]) Delete(name string) error {
+	defer d.mutex.Unlock()
+	d.mutex.Lock()
+
+	err := d.deleteFile(name)
+	if err != nil {
+		return err
+	}
+
+	d.deleteFromCache(name)
+	return nil
+}
+
+func (d *JsonDiskStorage[T]) ClearCache() {
+
+	for k := range d.cache {
+		delete(d.cache, k)
+	}
 }
 
 func (d *JsonDiskStorage[T]) Store(name string, item *T) error {
 
-	d.saveFile(item, name, true)
+	defer d.mutex.Unlock()
+	d.mutex.Lock()
+
+	err := d.saveFile(item, name, true)
+	if err != nil {
+		return err
+	}
+
+	d.addToCache(name, item)
 	return nil
 }
 
 func (d *JsonDiskStorage[T]) Load(name string) (*T, error) {
 
-	filePath := d.getFilePath(name)
+	defer d.mutex.RUnlock()
+	d.mutex.RLock()
 
+	item := d.loadFromCache(name)
+	if item != nil {
+		return item, nil
+	}
+
+	filePath := d.getFilePath(name)
 	item, err := d.loadFile(filePath)
 	if err != nil {
 		utils.LogErrorf("Error loading item %s %s", name, err.Error())
@@ -75,10 +137,29 @@ func (d *JsonDiskStorage[T]) Load(name string) (*T, error) {
 	return item, nil
 }
 
+func (d *JsonDiskStorage[T]) addToCache(name string, item *T) {
+	name = sanitize(name)
+	d.cache[name] = item
+}
+
+func (d *JsonDiskStorage[T]) loadFromCache(name string) *T {
+	name = sanitize(name)
+	if item, ok := d.cache[name]; ok {
+		return item
+	}
+
+	return nil
+}
+
+func (d *JsonDiskStorage[T]) deleteFromCache(name string) {
+	name = sanitize(name)
+	delete(d.cache, name)
+}
+
 func (d *JsonDiskStorage[T]) saveFile(item *T, name string, pretty bool) error {
 
 	//sanitize
-	name = strings.Replace(name, " ", "_", -1)
+	name = sanitize(name)
 	filePath := d.getFilePath(name)
 
 	data, err := json.Marshal(item)
@@ -110,6 +191,11 @@ func prettyJson(b []byte) ([]byte, error) {
 	var out bytes.Buffer
 	err := json.Indent(&out, b, "", "  ")
 	return out.Bytes(), err
+}
+
+func filenameWithoutExtension(fullPath string) string {
+	fileName := filepath.Base(fullPath)
+	return strings.TrimSuffix(fileName, path.Ext(fileName))
 }
 
 func (d *JsonDiskStorage[T]) loadFile(filePath string) (*T, error) {
@@ -145,9 +231,13 @@ func createDirIfNotExists(name string) {
 	}
 }
 
+func sanitize(name string) string {
+	return strings.Replace(name, " ", "_", -1)
+}
+
 func (d *JsonDiskStorage[T]) deleteFile(name string) error {
 	// sanitize
-	name = strings.Replace(name, " ", "_", -1)
+	name = sanitize(name)
 	filePath := d.getFilePath(name)
 
 	err := os.Remove(filePath)
