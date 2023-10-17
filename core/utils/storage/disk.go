@@ -35,7 +35,7 @@ func (d *JsonDiskStorage[T]) Initialize() ([]*T, error) {
 	defer d.mutex.Unlock()
 	d.mutex.Lock()
 
-	d.ClearCache()
+	d.deleteCache()
 
 	err := filepath.Walk(d.rootDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -61,13 +61,17 @@ func (d *JsonDiskStorage[T]) Initialize() ([]*T, error) {
 		utils.LogErrorf("Error loading items %s", err.Error())
 	}
 
-	return d.LoadAll(), nil
+	return d.findAll(), nil
 }
 
 func (d *JsonDiskStorage[T]) LoadAll() []*T {
 	defer d.mutex.RUnlock()
 	d.mutex.RLock()
 
+	return d.findAll()
+}
+
+func (d *JsonDiskStorage[T]) findAll() []*T {
 	keys := make([]string, 0, len(d.cache))
 	values := make([]*T, 0, len(d.cache))
 
@@ -82,7 +86,6 @@ func (d *JsonDiskStorage[T]) LoadAll() []*T {
 
 	return values
 }
-
 func (d *JsonDiskStorage[T]) Delete(name string) error {
 	defer d.mutex.Unlock()
 	d.mutex.Lock()
@@ -97,12 +100,18 @@ func (d *JsonDiskStorage[T]) Delete(name string) error {
 }
 
 func (d *JsonDiskStorage[T]) ClearCache() {
+	defer d.mutex.RUnlock()
+	d.mutex.RLock()
+
+	d.deleteCache()
+}
+
+func (d *JsonDiskStorage[T]) deleteCache() {
 
 	for k := range d.cache {
 		delete(d.cache, k)
 	}
 }
-
 func (d *JsonDiskStorage[T]) Store(name string, item *T) error {
 
 	defer d.mutex.Unlock()
