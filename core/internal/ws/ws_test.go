@@ -407,8 +407,12 @@ func TestSaveAutomation(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		//	response:=event.Payload.(string)
-
+		if testCase.err != nil {
+			response := event.Payload.(string)
+			if response != testCase.err.Error() {
+				t.Fatalf("Expected error %v', got '%+v'", testCase.err.Error(), response)
+			}
+		}
 		if event.Type != testCase.message {
 			t.Fatalf("Expected type %v', got '%+v'", testCase.message, event.Type)
 		}
