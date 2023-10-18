@@ -189,7 +189,7 @@ type EventHub interface {
 	OnLoadDevices(action func() interface{})
 	OnLoadBridgeFeatures(action func() interface{})
 	OnSaveAutomation(func(payload interface{}) error)
-	OnDeleteAutomation(func(payload interface{}))
+	OnDeleteAutomation(func(payload interface{}) error)
 }
 
 type wsServer struct {
@@ -201,7 +201,7 @@ type wsServer struct {
 	onLoadDevices        func() interface{}
 	onLoadBridgeFeatures func() interface{}
 	onSaveAutomation     func(interface{}) error
-	onDeleteAutomation   func(interface{})
+	onDeleteAutomation   func(interface{}) error
 }
 
 func NewWsHub() EventHub {
@@ -212,8 +212,8 @@ func NewWsHub() EventHub {
 		unregister: make(chan *WsClient),
 
 		onLoadBridgeFeatures: func() interface{} { return nil },
-		onSaveAutomation:     func(i interface{}) error { return nil },
-		onDeleteAutomation:   func(payload interface{}) {},
+		onSaveAutomation:     func(payload interface{}) error { return nil },
+		onDeleteAutomation:   func(payload interface{}) error { return nil },
 		onLoadDevices:        func() interface{} { return nil },
 		onLoadAutomations:    func() interface{} { return nil }}
 
@@ -237,7 +237,7 @@ func (h *wsServer) OnSaveAutomation(action func(p interface{}) error) {
 	h.onSaveAutomation = action
 }
 
-func (h *wsServer) OnDeleteAutomation(action func(p interface{})) {
+func (h *wsServer) OnDeleteAutomation(action func(p interface{}) error) {
 	h.onDeleteAutomation = action
 }
 
