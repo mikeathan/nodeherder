@@ -81,9 +81,10 @@ app.ws("/ws", async function (ws, req) {
         break;
 
       case "loadDevices":
-        //var payload = buildNewDevicesPayload();
-        //var msg = JSON.stringify({ type: "devices", payload: payload });
-        var msg = devicesMock;
+        var payload = buildNewDevicesPayload();
+        var msg = JSON.stringify({ type: "devices", payload: payload });
+        //var msg = devicesMock;
+
         ws.send(msg);
         break;
 
