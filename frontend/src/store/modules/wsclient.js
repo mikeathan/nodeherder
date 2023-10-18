@@ -26,6 +26,7 @@ const actions = {
       }
 
       const obj = JSON.parse(event.data);
+
       console.log("ws message received:", obj.type);
       switch (obj.type) {
         case "deviceUpdated":
