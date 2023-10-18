@@ -28,11 +28,15 @@ let app = express();
 let server = http.createServer(app).listen(port);
 console.log("[" + currentTime() + "] server listening at port " + port);
 
+var devicesMock =
+  '{"type":"devices","payload":[{"id":"0xa4c13894070052fc","friendlyname":"Human presence","connection_type":"mqtt","power_source":"mains","exposes":{"illuminance_lux":{"name":"illuminance_lux","description":"Measured illuminance in lux","unit":"lx","data":2,"properties":{}},"presence":{"name":"presence","description":"Indicates whether the device detected presence","data":false,"properties":{}}},"properties":{"availability":"online","last_seen":"2023-10-18T06:43:20+01:00","linkquality":36}}]}';
+
 let automation1Trigger =
   '{"type":"automations","payload":[{"id":"0xa4c13894070052fc","friendlyName":"Human presence","description":"Attic light test automation","enabled":true,"triggers":[{"name":"presence","conditions":[{"name":"presence","value":false,"equality":"="}],"action":{"id":"0x70ac08fffefafeca","friendlyname":"Attic light","type":"light","property":"state","data":"OFF","delay":300000000000}},{"name":"presence","conditions":[{"name":"presence","value":true,"equality":"="},{"name":"lux","value":30,"equality":"<="}],"action":{"id":"0x70ac08fffefafeca","friendlyname":"Attic light","type":"light","property":"state","data":"ON"}}]}]}';
 
 let featuresMsg =
   '{"type":"bridgeFeatures","payload":[{"id":"0x70ac08fffefafeca","properties":{"brightness":{"name":"brightness","type":"numeric","attributes":{"max":254,"min":0}},"color_temp":{"name":"color_temp","type":"numeric","attributes":{"max":500,"min":150}},"color_temp_startup":{"name":"color_temp_startup","type":"numeric","attributes":{"max":500,"min":150}},"state":{"name":"state","type":"binary","attributes":{"off":"OFF","on":"ON","toggle":"TOGGLE"}}}},{"id":"0x001788010b99ea7f","properties":{"brightness":{"name":"brightness","type":"numeric","attributes":{"max":254,"min":0}},"color":{"name":"color","type":"composite","attributes":{}},"color_temp":{"name":"color_temp","type":"numeric","attributes":{"max":500,"min":153}},"color_temp_startup":{"name":"color_temp_startup","type":"numeric","attributes":{"max":500,"min":153}},"state":{"name":"state","type":"binary","attributes":{"off":"OFF","on":"ON","toggle":"TOGGLE"}}}}]}';
+
 expressWs(app, server);
 
 // Get the /ws websocket route
@@ -77,8 +81,9 @@ app.ws("/ws", async function (ws, req) {
         break;
 
       case "loadDevices":
-        var payload = buildNewDevicesPayload();
-        var msg = JSON.stringify({ type: "devices", payload: payload });
+        //var payload = buildNewDevicesPayload();
+        //var msg = JSON.stringify({ type: "devices", payload: payload });
+        var msg = devicesMock;
         ws.send(msg);
         break;
 
