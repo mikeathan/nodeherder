@@ -2,7 +2,7 @@ package ws_test
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -367,44 +367,53 @@ func TestHandlingLoadDevicesMessage(t *testing.T) {
 }
 
 func TestSaveAutomation(t *testing.T) {
-	//todo:
-	// do case for fail and success
+	testCases := []struct {
+		err     error
+		message string
+	}{
+		{err: nil, message: ws.OperationSuccess},
+		{err: errors.New("error occurd"), message: ws.OperationFailed},
+	}
+
 	wsHub := ws.NewWsHub()
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
 
 	// input data
 	inputAutomations := createTestAutomation()
 	newItem := inputAutomations[0]
 
-	wsHub.OnSaveAutomation(func(p interface{}) error {
-		fmt.Println("received")
-		return nil
-	})
+	for _, testCase := range testCases {
+		wsHub.OnSaveAutomation(func(p interface{}) error {
+			return testCase.err
+		})
 
-	h := api.NewWsHandler(wsHub)
-	s, wsConn := NewTestWsServer(t, h)
+		wsData := &ws.EventMessage{Type: ws.SaveAutomation, Payload: newItem}
+		msg, err := wsData.MarshalJSON()
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
 
-	wsData := &ws.EventMessage{Type: ws.SaveAutomation, Payload: newItem}
-	msg, err := wsData.MarshalJSON()
-	if err != nil {
-		t.Fatalf(err.Error())
+		SendMessage(t, wsConn, msg)
+
+		_, m, err := wsConn.ReadMessage()
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+
+		var event ws.EventMessage
+		err = json.Unmarshal(m, &event)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		//	response:=event.Payload.(string)
+
+		if event.Type != testCase.message {
+			t.Fatalf("Expected type %v', got '%+v'", testCase.message, event.Type)
+		}
 	}
 
-	SendMessage(t, wsConn, msg)
-
-	_, m, err := wsConn.ReadMessage()
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-
-	var event ws.EventMessage
-	err = json.Unmarshal(m, &event)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if event.Type != ws.OperationSuccess {
-		t.Fatalf("Expected type %v', got '%+v'", ws.OperationSuccess, event.Type)
-	}
 	defer s.Close()
 	defer wsConn.Close()
 }
