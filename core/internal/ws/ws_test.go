@@ -103,15 +103,10 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 	wsHub := ws.NewWsHub()
 
 	// input data
-	inputTriggersBytes := createTestAutomation()
-	var inputTriggers []*automations.Device
-	err := json.Unmarshal(inputTriggersBytes, &inputTriggers)
-	if err != nil {
-		t.Fatal(err)
-	}
-	//
-	wsHub.OnLoadAutomations(func() []byte {
-		return inputTriggersBytes
+	inputTriggers := createTestAutomation()
+
+	wsHub.OnLoadAutomations(func() interface{} {
+		return inputTriggers
 	})
 
 	h := api.NewWsHandler(wsHub)
@@ -143,7 +138,7 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 	// output data
 	var triggers []*automations.Device
 
-	bytes := []byte(event.Payload.(string))
+	bytes, _ := json.Marshal(event.Payload)
 	err = json.Unmarshal(bytes, &triggers)
 	if err != nil {
 		t.Fatal(err)
@@ -207,15 +202,10 @@ func TestHandlingLoadBridgeFeaturesMessage(t *testing.T) {
 	wsHub := ws.NewWsHub()
 
 	// input data
-	inputFeaturesBytes := createTestFeatures()
-	var inputFeatures []*devices.BridgeFeature
-	err := json.Unmarshal(inputFeaturesBytes, &inputFeatures)
-	if err != nil {
-		t.Fatal(err)
-	}
-	//
-	wsHub.OnLoadBridgeFeatures(func() []byte {
-		return inputFeaturesBytes
+	inputFeatures := createTestFeatures()
+
+	wsHub.OnLoadBridgeFeatures(func() interface{} {
+		return inputFeatures
 	})
 
 	h := api.NewWsHandler(wsHub)
@@ -246,8 +236,7 @@ func TestHandlingLoadBridgeFeaturesMessage(t *testing.T) {
 
 	// output data
 	var resultFeatures []*devices.BridgeFeature
-
-	bytes := []byte(event.Payload.(string))
+	bytes, _ := json.Marshal(event.Payload)
 	err = json.Unmarshal(bytes, &resultFeatures)
 	if err != nil {
 		t.Fatal(err)
@@ -287,15 +276,10 @@ func TestHandlingLoadDevicesMessage(t *testing.T) {
 	wsHub := ws.NewWsHub()
 
 	// input data
-	inputDevicesBytes := createTestDevices()
-	var inputDevices []*devices.DeviceV2
-	err := json.Unmarshal(inputDevicesBytes, &inputDevices)
-	if err != nil {
-		t.Fatal(err)
-	}
-	//
+	inputDevices := createTestDevices()
+
 	wsHub.OnLoadDevices(func() interface{} {
-		return inputDevicesBytes
+		return inputDevices
 	})
 
 	h := api.NewWsHandler(wsHub)
@@ -327,7 +311,7 @@ func TestHandlingLoadDevicesMessage(t *testing.T) {
 	// output data
 	var resultDevices []*devices.DeviceV2
 
-	bytes := []byte(event.Payload.(string))
+	bytes, _ := json.Marshal(event.Payload)
 	err = json.Unmarshal(bytes, &resultDevices)
 	if err != nil {
 		t.Fatal(err)
@@ -449,7 +433,7 @@ func httpToWs(t *testing.T, s string) string {
 	return wsURL.String()
 }
 
-func createTestFeatures() []byte {
+func createTestFeatures() []*devices.BridgeFeature {
 	all := []*devices.BridgeFeature{}
 
 	f1 := devices.NewBridgeFeature("x0123")
@@ -461,21 +445,19 @@ func createTestFeatures() []byte {
 	p2 := devices.NewBridgeProperty("state", "binary")
 
 	p2.Attributes["type"] = "numeric"
-	p2.Attributes["max"] = 255
-	p2.Attributes["min"] = 50
+	p2.Attributes["max"] = 255.0
+	p2.Attributes["min"] = 50.0
 	f1.Add(p)
 	f1.Add(p2)
-
-	bytes, _ := json.Marshal(all)
-	return bytes
+	all = append(all, f1)
+	return all
 }
-func createTestDevices() []byte {
+func createTestDevices() []*devices.DeviceV2 {
 	all := []*devices.DeviceV2{}
 	all = append(all, createDevice1())
 	all = append(all, createDevice2())
-	bytes, _ := json.Marshal(all)
 
-	return bytes
+	return all
 }
 
 func createDevice1() *devices.DeviceV2 {
@@ -487,14 +469,14 @@ func createDevice1() *devices.DeviceV2 {
 	device1.PowerSource = "mains"
 	device1.Properties = map[string]any{}
 	device1.Properties["last_seen"] = time.Now().Format(time.RFC3339)
-	device1.Properties["link_quality"] = 45
+	device1.Properties["link_quality"] = 45.0
 	device1.Exposes = make(map[string]*devices.Entity)
 
 	ent1 := &devices.Entity{}
 	ent1.Description = "temperature readings"
 	ent1.Name = "temperature"
 	ent1.Unit = "*c"
-	ent1.Data = 50
+	ent1.Data = 50.0
 
 	ent2 := &devices.Entity{}
 	ent2.Description = "humidity readings"
@@ -515,24 +497,24 @@ func createDevice2() *devices.DeviceV2 {
 	device.PowerSource = "power"
 	device.Properties = map[string]any{}
 	device.Properties["last_seen"] = time.Now().Format(time.RFC3339)
-	device.Properties["link_quality"] = 89
+	device.Properties["link_quality"] = 89.0
 	device.Exposes = make(map[string]*devices.Entity)
 
 	ent1 := &devices.Entity{}
 	ent1.Description = "smart light livining room"
 	ent1.Name = "brightness"
-	ent1.Data = 78
+	ent1.Data = 78.0
 	ent1.Properties = make(map[string]any)
 	ent1.Properties["type"] = "numeric"
-	ent1.Properties["max"] = 255
-	ent1.Properties["min"] = 0
+	ent1.Properties["max"] = 255.0
+	ent1.Properties["min"] = 0.0
 
 	device.Exposes["1"] = ent1
 
 	return device
 }
 
-func createTestAutomation() []byte {
+func createTestAutomation() []*automations.Device {
 	mqtt := &mocks.MockMqttClient{}
 
 	// create device trigger 1
@@ -559,9 +541,9 @@ func createTestAutomation() []byte {
 
 	triggers = append(triggers, deviceTrigger)
 	triggers = append(triggers, deviceTrigger2)
-	bytes, _ := json.Marshal(triggers)
+	//bytes, _ := json.Marshal(triggers)
 
-	return bytes
+	return triggers
 }
 
 func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any) *automations.Trigger {

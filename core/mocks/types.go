@@ -20,17 +20,13 @@ func (w *MockEventHub) RegisterNewClient(conn *websocket.Conn) {
 	fmt.Println("Empty RegisterNewClient")
 }
 
-func (w *MockEventHub) OnConnected(onConnected func() interface{}) {
-	fmt.Println("Empty OnConnected")
-}
-
-func (w *MockEventHub) OnLoadAutomations(onLoadAutomations func() []byte) {
+func (w *MockEventHub) OnLoadAutomations(onLoadAutomations func() interface{}) {
 	fmt.Println("Empty OnLoadAutomations")
 }
 func (w *MockEventHub) OnLoadDevices(action func() interface{}) {
 	fmt.Println("Empty OnLoadDevices")
 }
-func (w *MockEventHub) OnLoadBridgeFeatures(action func() []byte) {
+func (w *MockEventHub) OnLoadBridgeFeatures(action func() interface{}) {
 	fmt.Println("Empty OnLoadBridgeFeatures")
 }
 func (w *MockEventHub) OnSaveAutomation(action func(p interface{})) {
@@ -93,11 +89,7 @@ func (w *NopWsServer) RegisterNewClient(conn *websocket.Conn) {
 	fmt.Println("Empty RegisterNewClient")
 }
 
-func (w *NopWsServer) OnConnected(onConnected func() interface{}) {
-	fmt.Println("Empty OnConnected")
-}
-
-func (w *NopWsServer) OnLoadAutomations(action func() []byte) {
+func (w *NopWsServer) OnLoadAutomations(action func() interface{}) {
 	fmt.Println("Empty OnLoadAutomations")
 }
 
@@ -105,7 +97,7 @@ func (w *NopWsServer) OnLoadDevices(action func() interface{}) {
 	fmt.Println("Empty OnLoadDevices")
 }
 
-func (w *NopWsServer) OnLoadBridgeFeatures(action func() []byte) {
+func (w *NopWsServer) OnLoadBridgeFeatures(action func() interface{}) {
 	fmt.Println("Empty OnLoadBridgeFeatures")
 }
 

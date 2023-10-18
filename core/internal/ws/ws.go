@@ -105,13 +105,11 @@ func (c *WsClient) handleMessage(message []byte) {
 	case LoadAutomations:
 
 		msg := c.hub.onLoadAutomations()
-
 		c.Broadcast(Automations, msg)
 
 	case LoadDevices:
 
 		msg := c.hub.onLoadDevices()
-
 		c.Broadcast(Devices, msg)
 
 	case LoadBridgeFeatures:
@@ -177,9 +175,9 @@ func (c *WsClient) Broadcast(eventName string, data interface{}) error {
 type EventHub interface {
 	Broadcast(eventName string, data interface{}) error
 	RegisterNewClient(conn *websocket.Conn)
-	OnLoadAutomations(action func() []byte)
+	OnLoadAutomations(action func() interface{})
 	OnLoadDevices(action func() interface{})
-	OnLoadBridgeFeatures(action func() []byte)
+	OnLoadBridgeFeatures(action func() interface{})
 	OnSaveAutomation(func(payload interface{}))
 	OnDeleteAutomation(func(payload interface{}))
 }
@@ -189,34 +187,35 @@ type wsServer struct {
 	broadcast            chan []byte
 	register             chan *WsClient
 	unregister           chan *WsClient
-	onLoadAutomations    func() []byte
+	onLoadAutomations    func() interface{}
 	onLoadDevices        func() interface{}
-	onLoadBridgeFeatures func() []byte
+	onLoadBridgeFeatures func() interface{}
 	onSaveAutomation     func(interface{})
 	onDeleteAutomation   func(interface{})
 }
 
 func NewWsHub() EventHub {
 	wsHub := &wsServer{
-		clients:              map[*WsClient]bool{},
-		broadcast:            make(chan []byte),
-		register:             make(chan *WsClient),
-		unregister:           make(chan *WsClient),
-		onLoadAutomations:    func() []byte { return nil },
-		onLoadBridgeFeatures: func() []byte { return nil },
+		clients:    map[*WsClient]bool{},
+		broadcast:  make(chan []byte),
+		register:   make(chan *WsClient),
+		unregister: make(chan *WsClient),
+
+		onLoadBridgeFeatures: func() interface{} { return nil },
 		onSaveAutomation:     func(paylod interface{}) {},
 		onDeleteAutomation:   func(payload interface{}) {},
-	}
+		onLoadDevices:        func() interface{} { return nil },
+		onLoadAutomations:    func() interface{} { return nil }}
 
 	go wsHub.run()
 	return wsHub
 }
 
-func (h *wsServer) OnLoadAutomations(action func() []byte) {
+func (h *wsServer) OnLoadAutomations(action func() interface{}) {
 	h.onLoadAutomations = action
 }
 
-func (h *wsServer) OnLoadBridgeFeatures(action func() []byte) {
+func (h *wsServer) OnLoadBridgeFeatures(action func() interface{}) {
 	h.onLoadBridgeFeatures = action
 }
 

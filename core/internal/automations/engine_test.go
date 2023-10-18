@@ -1,7 +1,6 @@
 package automations_test
 
 import (
-	"encoding/json"
 	"errors"
 	"node-herder/internal/automations"
 	"node-herder/mocks"
@@ -42,13 +41,7 @@ func TestExportToFile(t *testing.T) {
 		}
 	}
 
-	triggersBytes := engine.GetAllTriggers()
-	outputDeviceTriggers := []*automations.Device{}
-	err := json.Unmarshal(triggersBytes, &outputDeviceTriggers)
-	if err != nil {
-		t.Fatalf("ERROR unmarshal triggers %s", err.Error())
-	}
-
+	outputDeviceTriggers := engine.GetAllTriggers()
 	if len(outputDeviceTriggers) != len(inputDeviceTriggers) {
 		t.Fatalf("ERROR size mismatch. want %v got %d", len(inputDeviceTriggers), len(outputDeviceTriggers))
 	}
@@ -107,14 +100,14 @@ func TestExportToFile(t *testing.T) {
 	}
 
 	for _, inputDeviceTrigger := range inputDeviceTriggers {
-		err = engine.Delete(inputDeviceTrigger.Id)
+		err := engine.Delete(inputDeviceTrigger.Id)
 		if err != nil {
 			t.Fatalf("ERROR deleting file %v .Error %s", inputDeviceTrigger.Id, err.Error())
 		}
 	}
 
-	triggersBytes = engine.GetAllTriggers()
-	if triggersBytes != nil {
+	inputDeviceTriggers = engine.GetAllTriggers()
+	if len(inputDeviceTriggers) != 0 {
 		t.Fatalf("ERROR triggers found. expecting empty")
 	}
 }

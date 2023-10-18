@@ -1,7 +1,6 @@
 package automations
 
 import (
-	"encoding/json"
 	"node-herder/internal/mqtt"
 	"node-herder/models/devices"
 	"node-herder/utils"
@@ -20,7 +19,7 @@ type Engine interface { // TODO: might need to move it to Models????
 	Delete(id string) error
 
 	Initialize()
-	GetAllTriggers() []byte
+	GetAllTriggers() []*Device
 }
 
 type AutomationEngine struct {
@@ -48,14 +47,8 @@ func (a *AutomationEngine) HandleDeviceV2(device *devices.DeviceV2) {
 	}
 }
 
-func (a *AutomationEngine) GetAllTriggers() []byte {
-	triggers := a.automationStorage.LoadAll()
-
-	bytes, err := json.Marshal(triggers)
-	if err != nil {
-		utils.LogErrorf("marshal automation triggers failed. error %s", err.Error())
-	}
-	return bytes
+func (a *AutomationEngine) GetAllTriggers() []*Device {
+	return a.automationStorage.LoadAll()
 }
 
 func (a *AutomationEngine) Add(automation *Device) error {

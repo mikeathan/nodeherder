@@ -39,7 +39,7 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 	h.wp = utils.NewWorkerPool(1, ctx)
 	h.wp.Run()
 
-	h.eventHub.OnLoadAutomations(func() []byte {
+	h.eventHub.OnLoadAutomations(func() interface{} {
 		return h.automationEngine.GetAllTriggers()
 	})
 
@@ -47,15 +47,8 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		return h.repo.ListAllDevicesV2()
 	})
 
-	h.eventHub.OnLoadBridgeFeatures(func() []byte {
-		// todo: move it to function instead of here
-		features := h.repo.GetBridgeFeatures()
-		bytes, err := json.Marshal(features)
-		if err != nil {
-			utils.LogErrorf("marshal bridge features failed. error %s", err.Error())
-			h.eventHub.Broadcast(ws.OperationFailed, "Loading bridge features failed.")
-		}
-		return bytes
+	h.eventHub.OnLoadBridgeFeatures(func() interface{} {
+		return h.repo.GetBridgeFeatures()
 	})
 
 	h.eventHub.OnSaveAutomation(func(p interface{}) {
