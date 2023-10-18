@@ -118,6 +118,10 @@ func (c *WsClient) handleMessage(message []byte) {
 		c.Broadcast(BridgeFeatures, msg)
 
 	case SaveAutomation:
+		if eventMsg.Payload == nil {
+			c.Broadcast(OperationFailed, "payload is empty")
+			return
+		}
 
 		err := c.hub.onSaveAutomation(eventMsg.Payload)
 		if err != nil {
@@ -127,8 +131,10 @@ func (c *WsClient) handleMessage(message []byte) {
 		}
 
 	case DeleteAutomation:
-
-		// todo: do some error checking
+		if eventMsg.Payload == nil {
+			c.Broadcast(OperationFailed, "payload is empty")
+			return
+		}
 		err := c.hub.onDeleteAutomation(eventMsg.Payload)
 		if err != nil {
 			c.Broadcast(OperationFailed, err.Error())

@@ -423,28 +423,32 @@ func TestSaveAutomation(t *testing.T) {
 }
 
 func TestDeleteAutomation(t *testing.T) {
+
+	// input data
+	inputAutomations := createTestAutomation()
+	newItem := inputAutomations[0]
+
 	testCases := []struct {
 		err     error
 		message string
+		payload interface{}
 	}{
-		{err: nil, message: ws.OperationSuccess},
-		{err: errors.New("error occurd"), message: ws.OperationFailed},
+		{err: nil, message: ws.OperationSuccess, payload: newItem},
+		{err: errors.New("error occured"), message: ws.OperationFailed, payload: newItem},
+		{err: errors.New("payload is empty"), message: ws.OperationFailed, payload: nil},
 	}
 
 	wsHub := ws.NewWsHub()
 	h := api.NewWsHandler(wsHub)
 	s, wsConn := NewTestWsServer(t, h)
 
-	// input data
-	inputAutomations := createTestAutomation()
-	newItem := inputAutomations[0]
-
 	for _, testCase := range testCases {
 		wsHub.OnDeleteAutomation(func(p interface{}) error {
+
 			return testCase.err
 		})
 
-		wsData := &ws.EventMessage{Type: ws.DeleteAutomation, Payload: newItem}
+		wsData := &ws.EventMessage{Type: ws.DeleteAutomation, Payload: testCase.payload}
 		msg, err := wsData.MarshalJSON()
 		if err != nil {
 			t.Fatalf(err.Error())
