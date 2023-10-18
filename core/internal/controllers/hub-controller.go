@@ -51,19 +51,18 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		return h.repo.GetBridgeFeatures()
 	})
 
-	h.eventHub.OnSaveAutomation(func(p interface{}) {
+	h.eventHub.OnSaveAutomation(func(p interface{}) error {
 		automation, ok := p.(*automations.Device)
 		if !ok {
-			utils.LogErrorf("save automation failed. error invalid type")
-			// todo: error handling. message back error message
-			h.eventHub.Broadcast(ws.OperationFailed, "Save automation failed. Invalid payload type")
-			return
+			utils.LogErrorf("Save automation failed. error invalid type")
+			return fmt.Errorf("Save automation failed. Invalid payload type")
 		}
 
 		err := h.automationEngine.Add(automation)
 		if err != nil {
-			h.eventHub.Broadcast(ws.OperationFailed, fmt.Sprintf("Save automation failed. %s", err.Error()))
+			return fmt.Errorf("Save automation failed. %s", err.Error())
 		}
+		return nil
 	})
 
 	h.eventHub.OnDeleteAutomation(func(p interface{}) {

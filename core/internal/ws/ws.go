@@ -21,12 +21,13 @@ const (
 	DeleteAutomation        = "deleteAutomation"
 
 	// response
-	Automations     = "automations"
-	Devices         = "devices"
-	DeviceAdded     = "deviceAdded"
-	DeviceUpdated   = "deviceUpdated"
-	BridgeFeatures  = "bridgeFeatures"
-	OperationFailed = "operationFailed"
+	Automations      = "automations"
+	Devices          = "devices"
+	DeviceAdded      = "deviceAdded"
+	DeviceUpdated    = "deviceUpdated"
+	BridgeFeatures   = "bridgeFeatures"
+	OperationFailed  = "operationFailed"
+	OperationSuccess = "operationSuccess"
 )
 
 type EventMessage struct {
@@ -59,7 +60,7 @@ const (
 	pingPeriod = (pongWait * 9) / 10
 
 	// Maximum message size allowed from peer.
-	maxMessageSize = 512
+	maxMessageSize = 1024
 )
 
 type WsClient struct {
@@ -118,10 +119,19 @@ func (c *WsClient) handleMessage(message []byte) {
 
 	case SaveAutomation:
 
-		c.hub.onSaveAutomation(eventMsg.Payload)
+		// todo: do some error checking
+		err := c.hub.onSaveAutomation(eventMsg.Payload)
+		if err != nil {
+			c.Broadcast(OperationFailed, err.Error())
+		} else {
+			c.Broadcast(OperationSuccess, nil)
+		}
 
 	case DeleteAutomation:
+
+		// todo: do some error checking
 		c.hub.onDeleteAutomation(eventMsg.Payload)
+		c.Broadcast(OperationSuccess, nil)
 
 	default:
 		utils.LogWarnf("Unknown event type: %s", eventMsg.Type)
@@ -178,7 +188,7 @@ type EventHub interface {
 	OnLoadAutomations(action func() interface{})
 	OnLoadDevices(action func() interface{})
 	OnLoadBridgeFeatures(action func() interface{})
-	OnSaveAutomation(func(payload interface{}))
+	OnSaveAutomation(func(payload interface{}) error)
 	OnDeleteAutomation(func(payload interface{}))
 }
 
@@ -190,7 +200,7 @@ type wsServer struct {
 	onLoadAutomations    func() interface{}
 	onLoadDevices        func() interface{}
 	onLoadBridgeFeatures func() interface{}
-	onSaveAutomation     func(interface{})
+	onSaveAutomation     func(interface{}) error
 	onDeleteAutomation   func(interface{})
 }
 
@@ -202,7 +212,7 @@ func NewWsHub() EventHub {
 		unregister: make(chan *WsClient),
 
 		onLoadBridgeFeatures: func() interface{} { return nil },
-		onSaveAutomation:     func(paylod interface{}) {},
+		onSaveAutomation:     func(i interface{}) error { return nil },
 		onDeleteAutomation:   func(payload interface{}) {},
 		onLoadDevices:        func() interface{} { return nil },
 		onLoadAutomations:    func() interface{} { return nil }}
@@ -223,7 +233,7 @@ func (h *wsServer) OnLoadDevices(action func() interface{}) {
 	h.onLoadDevices = action
 }
 
-func (h *wsServer) OnSaveAutomation(action func(p interface{})) {
+func (h *wsServer) OnSaveAutomation(action func(p interface{}) error) {
 	h.onSaveAutomation = action
 }
 

@@ -2,6 +2,7 @@ package ws_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -270,6 +271,7 @@ func TestHandlingLoadBridgeFeaturesMessage(t *testing.T) {
 	defer s.Close()
 	defer wsConn.Close()
 }
+
 func TestHandlingLoadDevicesMessage(t *testing.T) {
 
 	wsHub := ws.NewWsHub()
@@ -360,6 +362,47 @@ func TestHandlingLoadDevicesMessage(t *testing.T) {
 
 	}
 
+	defer s.Close()
+	defer wsConn.Close()
+}
+
+func TestSaveAutomation(t *testing.T) {
+
+	wsHub := ws.NewWsHub()
+
+	// input data
+	inputAutomations := createTestAutomation()
+	newItem := inputAutomations[0]
+
+	wsHub.OnSaveAutomation(func(p interface{}) {
+		fmt.Println("received")
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	wsData := &ws.EventMessage{Type: ws.SaveAutomation, Payload: newItem}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.OperationSuccess {
+		t.Fatalf("Expected type %v', got '%+v'", ws.OperationSuccess, event.Type)
+	}
 	defer s.Close()
 	defer wsConn.Close()
 }
@@ -487,6 +530,7 @@ func createDevice1() *devices.DeviceV2 {
 
 	return device1
 }
+
 func createDevice2() *devices.DeviceV2 {
 	device := &devices.DeviceV2{}
 	device.Id = "x34567"
