@@ -58,6 +58,8 @@ func (s *MemoryDeviceRepo) ListAllDevicesV2() []*devices.DeviceV2 {
 
 	// sort before returning values
 	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
 	keys := make([]string, 0, len(s.storeV2))
 	for k := range s.storeV2 {
 		keys = append(keys, k)
@@ -70,7 +72,6 @@ func (s *MemoryDeviceRepo) ListAllDevicesV2() []*devices.DeviceV2 {
 		device := s.storeV2[key]
 		devices = append(devices, device)
 	}
-	s.mutex.RUnlock()
 
 	return devices
 }
