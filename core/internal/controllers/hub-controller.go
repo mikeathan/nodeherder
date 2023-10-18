@@ -52,13 +52,18 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 	})
 
 	h.eventHub.OnSaveAutomation(func(p interface{}) error {
-		automation, ok := p.(*automations.Device)
-		if !ok {
+
+		// TODO:
+		// might need ot move it in the ws handler
+		automation := &automations.Device{}
+		bytes, _ := json.Marshal(p)
+		err := json.Unmarshal(bytes, &automation)
+		if err != nil {
 			utils.LogErrorf("Save automation failed. Invalid type")
 			return errors.New("save automation failed. Invalid payload type")
 		}
 
-		err := h.automationEngine.Add(automation)
+		err = h.automationEngine.Add(automation)
 		if err != nil {
 			return fmt.Errorf("save automation failed. %s", err.Error())
 		}
@@ -71,6 +76,7 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 			utils.LogErrorf("Delete automation failed. Invalid type")
 			return errors.New("delete automation failed. Invalid payload type")
 		}
+
 		err := h.automationEngine.Delete(id)
 		if err != nil {
 			return fmt.Errorf("delete automation failed. %s", err.Error())

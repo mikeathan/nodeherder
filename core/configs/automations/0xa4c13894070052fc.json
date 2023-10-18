@@ -18,7 +18,7 @@
         "friendlyname": "Attic light",
         "type": "light",
         "property": "state",
-        "data": false,
+        "data": "OFF",
         "delay": 300000000000
       }
     },
@@ -41,7 +41,7 @@
         "friendlyname": "Attic light",
         "type": "light",
         "property": "state",
-        "data": true
+        "data": "ON"
       }
     }
   ]
