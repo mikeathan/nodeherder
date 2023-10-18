@@ -367,15 +367,17 @@ func TestHandlingLoadDevicesMessage(t *testing.T) {
 }
 
 func TestSaveAutomation(t *testing.T) {
-
+	//todo:
+	// do case for fail and success
 	wsHub := ws.NewWsHub()
 
 	// input data
 	inputAutomations := createTestAutomation()
 	newItem := inputAutomations[0]
 
-	wsHub.OnSaveAutomation(func(p interface{}) {
+	wsHub.OnSaveAutomation(func(p interface{}) error {
 		fmt.Println("received")
+		return nil
 	})
 
 	h := api.NewWsHandler(wsHub)

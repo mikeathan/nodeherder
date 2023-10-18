@@ -29,9 +29,10 @@ func (w *MockEventHub) OnLoadDevices(action func() interface{}) {
 func (w *MockEventHub) OnLoadBridgeFeatures(action func() interface{}) {
 	fmt.Println("Empty OnLoadBridgeFeatures")
 }
-func (w *MockEventHub) OnSaveAutomation(action func(p interface{})) {
+func (w *MockEventHub) OnSaveAutomation(action func(p interface{}) error) {
 	fmt.Println("Empty OnSaveAutomation")
 }
+
 func (w *MockEventHub) OnDeleteAutomation(action func(p interface{})) {
 	fmt.Println("Empty OnDeleteAutomation")
 }
@@ -101,7 +102,7 @@ func (w *NopWsServer) OnLoadBridgeFeatures(action func() interface{}) {
 	fmt.Println("Empty OnLoadBridgeFeatures")
 }
 
-func (w *NopWsServer) OnSaveAutomation(action func(p interface{})) {
+func (w *NopWsServer) OnSaveAutomation(action func(p interface{}) error) {
 	fmt.Println("Empty OnSaveAutomation")
 }
 
