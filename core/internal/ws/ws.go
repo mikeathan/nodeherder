@@ -102,14 +102,14 @@ func (c *WsClient) handleMessage(message []byte) {
 	if err := json.Unmarshal(message, &eventMsg); err != nil {
 		return
 	}
-	switch eventMsg.Type {
-	case LoadAutomations:
 
+	switch eventMsg.Type {
+
+	case LoadAutomations:
 		msg := c.hub.onLoadAutomations()
 		c.Broadcast(Automations, msg)
 
 	case LoadDevices:
-
 		msg := c.hub.onLoadDevices()
 		c.Broadcast(Devices, msg)
 
@@ -118,32 +118,28 @@ func (c *WsClient) handleMessage(message []byte) {
 		c.Broadcast(BridgeFeatures, msg)
 
 	case SaveAutomation:
-		if eventMsg.Payload == nil {
-			c.Broadcast(OperationFailed, "payload is empty")
-			return
-		}
-
-		err := c.hub.onSaveAutomation(eventMsg.Payload)
-		if err != nil {
-			c.Broadcast(OperationFailed, err.Error())
-		} else {
-			c.Broadcast(OperationSuccess, nil)
-		}
+		c.executeAction(eventMsg.Payload, c.hub.onSaveAutomation)
 
 	case DeleteAutomation:
-		if eventMsg.Payload == nil {
-			c.Broadcast(OperationFailed, "payload is empty")
-			return
-		}
-		err := c.hub.onDeleteAutomation(eventMsg.Payload)
-		if err != nil {
-			c.Broadcast(OperationFailed, err.Error())
-		} else {
-			c.Broadcast(OperationSuccess, nil)
-		}
+		c.executeAction(eventMsg.Payload, c.hub.onDeleteAutomation)
+
 	default:
 		utils.LogWarnf("Unknown event type: %s", eventMsg.Type)
 		return
+	}
+}
+
+func (c *WsClient) executeAction(payload interface{}, action func(interface{}) error) {
+	if payload == nil {
+		c.Broadcast(OperationFailed, "payload is empty")
+		return
+	}
+
+	err := action(payload)
+	if err != nil {
+		c.Broadcast(OperationFailed, err.Error())
+	} else {
+		c.Broadcast(OperationSuccess, nil)
 	}
 }
 
