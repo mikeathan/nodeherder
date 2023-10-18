@@ -95,7 +95,6 @@ func TestHubNewClientEventsAreReceived(t *testing.T) {
 		defer s.Close()
 		defer wsConn.Close()
 	}
-
 }
 
 func TestHandlingLoadAutomationsMessage(t *testing.T) {
