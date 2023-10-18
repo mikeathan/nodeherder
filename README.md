@@ -118,17 +118,4 @@ we need to access device capabilities in ui that might not be currently in store
 
 tidy eventhub callbacks registration in hub-controller
 
-
 ws node server sends
-
-{"type":"devices","payload":[{"id":"0x00124b0029207763","friendlyName":"TH01","description":"Temperature and Humidity TH01 sensor","connection_type":"mqtt","power_source":"battery","exposes":{"humidity":{"name":"humidity","description":"Measured relative humidity","unit":"%","data":83.91,"properties":{}},"temperature":{"name":"temperature","description":"Measured temperature value","unit":"°C","data":19.87,"properties":{}}},"properties":{"availability":"online","battery":100,"last_seen":"2023-10-17T16:55:06+01:00","linkquality":32}},{"id":"0xa4c13894070052fc","friendlyName":"Human presence","description":"Human presence sensor","connection_type":"mqtt","power_source":"mains","exposes":{"illuminance_lux":{"name":"illuminance_lux","description":"Measured illuminance in lux","unit":"lx","data":3,"properties":{}},"presence":{"name":"presence","description":"Indicates whether the device detected presence","data":false,"properties":{}}},"properties":{"availability":"online","last_seen":"2023-10-17T16:55:06+01:00","linkquality":58}},{"id":"0x00124b00146c31cd","friendlyName":"Motion sensor 1","description":"Motion sensor and temperature device","connection_type":"mqtt","power_source":"battery","exposes":{"occupancy":{"name":"occupancy","description":"Indicates whether the device detected occupancy","data":false,"properties":{}},"temperature":{"name":"temperature","description":"Measured temperature value","unit":"°C","data":23.75,"properties":{}}},"properties":{"availability":"online","battery":7,"last_seen":"2023-10-17T16:55:06+01:00","linkquality":29}},{"id":"0x123456","friendlyName":"weather node 1","connection_type":"http","power_source":"battery","exposes":{"humidity":{"name":"humidity","unit":"%","data":63.1,"properties":{}},"temperature":{"name":"temperature","unit":"°C","data":15,"properties":{}}},"properties":{"availability":"offline","battery":100,"last_seen":"2023-10-17T16:55:06+01:00"}}]}
-
-
-node-herder response
-
-js console
-{"type":"devices","payload":"[{\"id\":\"0xa4c13894070052fc\",\"friendlyname\":\"Human presence\",\"connection_type\":\"mqtt\",\"power_source\":\"mains\",\"exposes\":{\"illuminance_lux\":{\"name\":\"illuminance_lux\",\"description\":\"Measured illuminance in lux\",\"unit\":\"lx\",\"data\":10,\"properties\":{}},\"presence\":{\"name\":\"presence\",\"description\":\"Indicates whether the device detected presence\",\"data\":false,\"properties\":{}}},\"properties\":{\"availability\":\"online\",\"last_seen\":\"2023-10-17T16:56:57+01:00\",\"linkquality\":14}}]"}
-
-
-golang 
-"[{\"id\":\"0xa4c13894070052fc\",\"friendlyname\":\"Human presence\",\"connection_type\":\"mqtt\",\"power_source\":\"mains\",\"exposes\":{\"illuminance_lux\":{\"name\":\"illuminance_lux\",\"description\":\"Measured illuminance in lux\",\"unit\":\"lx\",\"data\":10,\"properties\":{}},\"presence\":{\"name\":\"presence\",\"description\":\"Indicates whether the device detected presence\",\"data\":false,\"properties\":{}}},\"properties\":{\"availability\":\"online\",\"last_seen\":\"2023-10-17T16:57:31+01:00\",\"linkquality\":14}}]"
