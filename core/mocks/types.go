@@ -27,7 +27,7 @@ func (w *MockEventHub) OnConnected(onConnected func() interface{}) {
 func (w *MockEventHub) OnLoadAutomations(onLoadAutomations func() []byte) {
 	fmt.Println("Empty OnLoadAutomations")
 }
-func (w *MockEventHub) OnLoadDevices(action func() []byte) {
+func (w *MockEventHub) OnLoadDevices(action func() interface{}) {
 	fmt.Println("Empty OnLoadDevices")
 }
 func (w *MockEventHub) OnLoadBridgeFeatures(action func() []byte) {
@@ -101,7 +101,7 @@ func (w *NopWsServer) OnLoadAutomations(action func() []byte) {
 	fmt.Println("Empty OnLoadAutomations")
 }
 
-func (w *NopWsServer) OnLoadDevices(action func() []byte) {
+func (w *NopWsServer) OnLoadDevices(action func() interface{}) {
 	fmt.Println("Empty OnLoadDevices")
 }
 

@@ -178,7 +178,7 @@ type EventHub interface {
 	Broadcast(eventName string, data interface{}) error
 	RegisterNewClient(conn *websocket.Conn)
 	OnLoadAutomations(action func() []byte)
-	OnLoadDevices(action func() []byte)
+	OnLoadDevices(action func() interface{})
 	OnLoadBridgeFeatures(action func() []byte)
 	OnSaveAutomation(func(payload interface{}))
 	OnDeleteAutomation(func(payload interface{}))
@@ -190,7 +190,7 @@ type wsServer struct {
 	register             chan *WsClient
 	unregister           chan *WsClient
 	onLoadAutomations    func() []byte
-	onLoadDevices        func() []byte
+	onLoadDevices        func() interface{}
 	onLoadBridgeFeatures func() []byte
 	onSaveAutomation     func(interface{})
 	onDeleteAutomation   func(interface{})
@@ -220,7 +220,7 @@ func (h *wsServer) OnLoadBridgeFeatures(action func() []byte) {
 	h.onLoadBridgeFeatures = action
 }
 
-func (h *wsServer) OnLoadDevices(action func() []byte) {
+func (h *wsServer) OnLoadDevices(action func() interface{}) {
 	h.onLoadDevices = action
 }
 

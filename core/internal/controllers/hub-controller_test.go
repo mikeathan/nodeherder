@@ -285,6 +285,5 @@ func TestAvailabilityIsDisposed(t *testing.T) {
 }
 
 func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data interface{}) error) ws.EventHub {
-
 	return &mocks.MockEventHub{MockBroadcastEvent: mockBroadcastEvent}
 }

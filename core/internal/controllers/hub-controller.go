@@ -40,22 +40,11 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 	h.wp.Run()
 
 	h.eventHub.OnLoadAutomations(func() []byte {
-
 		return h.automationEngine.GetAllTriggers()
 	})
 
-	h.eventHub.OnLoadDevices(func() []byte {
-
-		devices := h.repo.ListAllDevicesV2()
-
-		// todo: move it to function instead of here
-		bytes, err := json.Marshal(devices)
-		if err != nil {
-			utils.LogErrorf("marshal devices failed. error %s", err.Error())
-			h.eventHub.Broadcast(ws.OperationFailed, "Loading devices failed")
-		}
-
-		return bytes
+	h.eventHub.OnLoadDevices(func() interface{} {
+		return h.repo.ListAllDevicesV2()
 	})
 
 	h.eventHub.OnLoadBridgeFeatures(func() []byte {

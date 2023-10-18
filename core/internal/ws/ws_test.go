@@ -40,7 +40,7 @@ func TestHubNewClientConnectedEventsTypesOfPayloads(t *testing.T) {
 	for _, testCase := range testCases {
 
 		wsHub := ws.NewWsHub()
-		wsHub.OnLoadDevices(func() []byte {
+		wsHub.OnLoadDevices(func() interface{} {
 			return testCase.Payload
 		})
 		h := api.NewWsHandler(wsHub)
@@ -294,7 +294,7 @@ func TestHandlingLoadDevicesMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 	//
-	wsHub.OnLoadDevices(func() []byte {
+	wsHub.OnLoadDevices(func() interface{} {
 		return inputDevicesBytes
 	})
 
