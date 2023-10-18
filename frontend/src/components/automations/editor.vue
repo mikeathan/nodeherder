@@ -142,7 +142,12 @@ function update() {
                                             </div>
                                         </div>
                                     </div>
+                                    <div id="triggerActionPanel" class="row g-3">
+                                        <div class="col-auto">
+                                            <button type="submit" class="btn btn-primary mb-3">Delete</button>
+                                        </div>
 
+                                    </div>
                                 </div>
                             </div>
                         </div>

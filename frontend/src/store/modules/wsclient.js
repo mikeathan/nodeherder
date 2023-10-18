@@ -1,5 +1,5 @@
-//const socketUri = "ws://localhost:3000/ws"; // used for testing
-const socketUri = "ws://" + document.location.host + "/ws";
+const socketUri = "ws://localhost:3000/ws"; // used for testing
+//const socketUri = "ws://" + document.location.host + "/ws";
 const maxNumberOfAttempts = 10;
 const intervalTimeMs = 200;
 
