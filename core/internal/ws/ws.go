@@ -119,7 +119,6 @@ func (c *WsClient) handleMessage(message []byte) {
 
 	case SaveAutomation:
 
-		// todo: do some error checking
 		err := c.hub.onSaveAutomation(eventMsg.Payload)
 		if err != nil {
 			c.Broadcast(OperationFailed, err.Error())
@@ -130,9 +129,12 @@ func (c *WsClient) handleMessage(message []byte) {
 	case DeleteAutomation:
 
 		// todo: do some error checking
-		c.hub.onDeleteAutomation(eventMsg.Payload)
-		c.Broadcast(OperationSuccess, nil)
-
+		err := c.hub.onDeleteAutomation(eventMsg.Payload)
+		if err != nil {
+			c.Broadcast(OperationFailed, err.Error())
+		} else {
+			c.Broadcast(OperationSuccess, nil)
+		}
 	default:
 		utils.LogWarnf("Unknown event type: %s", eventMsg.Type)
 		return

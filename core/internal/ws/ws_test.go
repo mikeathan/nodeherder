@@ -422,6 +422,62 @@ func TestSaveAutomation(t *testing.T) {
 	defer wsConn.Close()
 }
 
+func TestDeleteAutomation(t *testing.T) {
+	testCases := []struct {
+		err     error
+		message string
+	}{
+		{err: nil, message: ws.OperationSuccess},
+		{err: errors.New("error occurd"), message: ws.OperationFailed},
+	}
+
+	wsHub := ws.NewWsHub()
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	// input data
+	inputAutomations := createTestAutomation()
+	newItem := inputAutomations[0]
+
+	for _, testCase := range testCases {
+		wsHub.OnDeleteAutomation(func(p interface{}) error {
+			return testCase.err
+		})
+
+		wsData := &ws.EventMessage{Type: ws.DeleteAutomation, Payload: newItem}
+		msg, err := wsData.MarshalJSON()
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+
+		SendMessage(t, wsConn, msg)
+
+		_, m, err := wsConn.ReadMessage()
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+
+		var event ws.EventMessage
+		err = json.Unmarshal(m, &event)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if testCase.err != nil {
+			response := event.Payload.(string)
+			if response != testCase.err.Error() {
+				t.Fatalf("Expected error %v', got '%+v'", testCase.err.Error(), response)
+			}
+		}
+		if event.Type != testCase.message {
+			t.Fatalf("Expected type %v', got '%+v'", testCase.message, event.Type)
+		}
+	}
+
+	defer s.Close()
+	defer wsConn.Close()
+}
+
 func SendMessage(t *testing.T, ws *websocket.Conn, msg []byte) {
 	t.Helper()
 
