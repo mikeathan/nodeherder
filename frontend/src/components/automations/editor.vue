@@ -84,21 +84,23 @@ function onButtonClick(event) {
 
                             <h2 class="accordion-header" id="`header${index}`">
 
-                                <div class="container-fluid">
-                                    <div class="row accordion-button collapsed " data-bs-toggle="collapse"
-                                        :data-bs-target="`#collapse${index}`" aria-expanded="false"
-                                        :aria-controls="`collapse${index}`">
+                                <div class="container border">
+                                    <div class="row ">
 
+                                        <div class="col  border accordion-button collapsed " data-bs-toggle="collapse"
+                                            :data-bs-target="`#collapse${index}`" aria-expanded="false"
+                                            :aria-controls="`collapse${index}`">
 
-                                                <div class="col">
-                                                    <p class="fa fa-trash-alt fa-lg" @click="onButtonClick($event)"
-                                                        data-bs-toggle="collapse" data-bs-target>
-                                                    </p>
-                                                </div>
-                                                <div class="col">
-                                                    Trigger #{{ index + 1 }}
-                                                </div>
+                                            <div class="col-2 border">
+                                                <span class="fa fa-trash-alt fa-lg" @click="onButtonClick($event)"
+                                                    data-bs-toggle="collapse" data-bs-target>
+                                                </span>
+                                            </div>
 
+                                            <div class="col-7 border">
+                                                Trigger #{{ index + 1 }}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <!-- <div class="accordion-button collapsed col-sm" data-bs-toggle="collapse"
@@ -122,6 +124,7 @@ function onButtonClick(event) {
 
 
                             </h2>
+
                             <!-- <h2 class="accordion-header" :id="`header${index}`">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
                                     :data-bs-target="`#collapse${index}`" aria-expanded="false"
