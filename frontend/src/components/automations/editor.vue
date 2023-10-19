@@ -139,14 +139,14 @@ function update() {
                                                     <input type="text" style="text-align:center;" class="form-control"
                                                         v-model="trigger.action.delay" placeholder="Action delay">
                                                 </div>
+
+
                                             </div>
                                         </div>
                                     </div>
-                                    <div id="triggerActionPanel" class="row g-3">
-                                        <div class="col-auto">
-                                            <button type="submit" class="btn btn-primary mb-3">Delete</button>
-                                        </div>
+                                    <div id=deleteTriggerDiv>
 
+                                        <button type="submit" class="btn btn-primary mt-3">Delete</button>
                                     </div>
                                 </div>
                             </div>
@@ -156,8 +156,8 @@ function update() {
             </div>
         </div>
 
-        <div style="margin-top: 1%;">
-            <button type="button" class="btn btn-primary" @click="update()">Update</button>
+        <div>
+            <button type="button" class="btn btn-primary mt-3" @click="update()">Update</button>
         </div>
     </div>
 </template>
