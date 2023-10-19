@@ -57,53 +57,59 @@ function onButtonClick(event) {
 
 <template>
     <div v-if="automation">
-        <div class="card">
-            <div class="card-header">
-                <div class="form-group">
-                    <label for="inputId">Id</label>
-                    <input type="input" class="form-control" id="inputName" v-model="automation.id" disabled />
-                </div>
-                <div class="form-group">
-                    <label for="inputFriendlyName">Friendly Name</label>
-                    <input type="input" class="form-control" id="inputName" v-model="automation.friendlyName" disabled />
-                </div>
-                <div class="form-group">
-                    <label for="inputDescription">Description</label>
-                    <input type="input" class="form-control" id="inputDescription" v-model="automation.description" />
-                </div>
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="checkEnabled" v-model="automation.enabled">
-                    <label class="form-check-label" for="checkEnabled">Enabled</label>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="accordion accordion-flush" id="triggersList">
-                    <div v-for="(trigger, index) in  automation.triggers ">
+        <div class="container-fluid p-0 h-100">
 
-                        <div class="accordion-item">
+            <div class="card">
+                <div class="card-header">
+                    <div class="form-group">
+                        <label for="inputId">Id</label>
+                        <input type="input" class="form-control" id="inputName" v-model="automation.id" disabled />
+                    </div>
+                    <div class="form-group">
+                        <label for="inputFriendlyName">Friendly Name</label>
+                        <input type="input" class="form-control" id="inputName" v-model="automation.friendlyName"
+                            disabled />
+                    </div>
+                    <div class="form-group">
+                        <label for="inputDescription">Description</label>
+                        <input type="input" class="form-control" id="inputDescription" v-model="automation.description" />
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="checkEnabled" v-model="automation.enabled">
+                        <label class="form-check-label" for="checkEnabled">Enabled</label>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="accordion accordion-flush" id="triggersList">
+                        <div v-for="(trigger, index) in  automation.triggers ">
 
-                            <h2 class="accordion-header" id="`header${index}`">
+                            <div class="accordion-item">
 
-                                <div class="container border">
+                                <h2 class="accordion-header" id="`header${index}`">
+
                                     <div class="row ">
 
                                         <div class="col  border accordion-button collapsed " data-bs-toggle="collapse"
                                             :data-bs-target="`#collapse${index}`" aria-expanded="false"
                                             :aria-controls="`collapse${index}`">
 
-                                            <div class="col-2 border">
-                                                <span class="fa fa-trash-alt fa-lg" @click="onButtonClick($event)"
-                                                    data-bs-toggle="collapse" data-bs-target>
-                                                </span>
-                                            </div>
 
-                                            <div class="col-7 border">
+                                            <div class="col border">
                                                 Trigger #{{ index + 1 }}
                                             </div>
+                                            <div class="col-10 border">
+                                            </div>
+                                            <div class="col-0  border">
+                                                <span class="me-3 fa fa-trash-alt fa-lg" @click="onButtonClick($event)"
+                                                    data-bs-toggle="collapse" data-bs-target>
+                                                </span>
+
+                                            </div>
+
                                         </div>
                                     </div>
-                                </div>
-                                <!-- <div class="accordion-button collapsed col-sm" data-bs-toggle="collapse"
+
+                                    <!-- <div class="accordion-button collapsed col-sm" data-bs-toggle="collapse"
                                             :data-bs-target="`#collapse${index}`" aria-expanded="false"
                                             :aria-controls="`collapse${index}`">
                                            
@@ -123,80 +129,81 @@ function onButtonClick(event) {
                                         -->
 
 
-                            </h2>
+                                </h2>
 
-                            <!-- <h2 class="accordion-header" :id="`header${index}`">
+                                <!-- <h2 class="accordion-header" :id="`header${index}`">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
                                     :data-bs-target="`#collapse${index}`" aria-expanded="false"
                                     :aria-controls="`collapse${index}`">
                                     Trigger #{{ index + 1 }}
                                 </button>
                             </h2> -->
-                            <div :id="`collapse${index}`" class="accordion-collapse collapse"
-                                :aria-labelledby="`header${index}`" data-bs-parent="#triggersList">
-                                <div class="accordion-body">
-                                    <label>Condition</label>
-                                    <div class="row w-25" v-for="(condition) in trigger.conditions">
-                                        <div class="col">
-                                            <input type="text" class="form-control" v-model="condition.name"
-                                                placeholder="Condition name" disabled>
-                                        </div>
-                                        <div class="col">
-                                            <select id="selectOperators" style="text-align:center;" class="form-control"
-                                                v-model="condition.equality">
-                                                <option v-for="operator in operators" :value="operator.value"
-                                                    :key="operator.value">
-                                                    {{ operator.text }}
-                                                </option>
-                                            </select>
-                                        </div>
-                                        <div class="col">
-                                            <input type="text" style="text-align:center;" class="form-control"
-                                                v-model="condition.value" placeholder="Condition value"
-                                                tooltip="Condition value">
-                                        </div>
-                                    </div>
-                                    <p></p>
-                                    <div v-for="feature in features">
-                                        <div v-if="feature.id == trigger.action.id">
-
-                                            <label>Action</label>
-
-                                            <div class="row w-50">
-                                                <div class="col">
-                                                    <input type="text" class="form-control"
-                                                        v-model="trigger.action.friendlyname"
-                                                        placeholder="Action friendly name" disabled>
-                                                </div>
-                                                <div class="col">
-
-                                                    <select id="propertySelect" style="text-align:center;"
-                                                        class="form-control" :modelValue="trigger.action.property"
-                                                        @change="onActionChanged($event, feature.properties)">
-
-                                                        <option v-for="property in feature.properties"
-                                                            :value="property.name" :key="property.name">
-
-                                                            {{ property.name }}
-                                                        </option>
-                                                    </select>
-                                                </div>
-                                                <div class="col" id="actionDataDiv">
-                                                    <input type="text" style="text-align:center;" class="form-control"
-                                                        v-model="trigger.action.data" placeholder="Action data">
-                                                </div>
-                                                <div class="col">
-                                                    <input type="text" style="text-align:center;" class="form-control"
-                                                        v-model="trigger.action.delay" placeholder="Action delay">
-                                                </div>
-
-
+                                <div :id="`collapse${index}`" class="accordion-collapse collapse"
+                                    :aria-labelledby="`header${index}`" data-bs-parent="#triggersList">
+                                    <div class="accordion-body">
+                                        <label>Condition</label>
+                                        <div class="row w-25" v-for="(condition) in trigger.conditions">
+                                            <div class="col">
+                                                <input type="text" class="form-control" v-model="condition.name"
+                                                    placeholder="Condition name" disabled>
+                                            </div>
+                                            <div class="col">
+                                                <select id="selectOperators" style="text-align:center;" class="form-control"
+                                                    v-model="condition.equality">
+                                                    <option v-for="operator in operators" :value="operator.value"
+                                                        :key="operator.value">
+                                                        {{ operator.text }}
+                                                    </option>
+                                                </select>
+                                            </div>
+                                            <div class="col">
+                                                <input type="text" style="text-align:center;" class="form-control"
+                                                    v-model="condition.value" placeholder="Condition value"
+                                                    tooltip="Condition value">
                                             </div>
                                         </div>
-                                    </div>
-                                    <div id=deleteTriggerDiv>
+                                        <p></p>
+                                        <div v-for="feature in features">
+                                            <div v-if="feature.id == trigger.action.id">
 
-                                        <button type="submit" class="btn btn-primary mt-3">Delete</button>
+                                                <label>Action</label>
+
+                                                <div class="row w-50">
+                                                    <div class="col">
+                                                        <input type="text" class="form-control"
+                                                            v-model="trigger.action.friendlyname"
+                                                            placeholder="Action friendly name" disabled>
+                                                    </div>
+                                                    <div class="col">
+
+                                                        <select id="propertySelect" style="text-align:center;"
+                                                            class="form-control" :modelValue="trigger.action.property"
+                                                            @change="onActionChanged($event, feature.properties)">
+
+                                                            <option v-for="property in feature.properties"
+                                                                :value="property.name" :key="property.name">
+
+                                                                {{ property.name }}
+                                                            </option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col" id="actionDataDiv">
+                                                        <input type="text" style="text-align:center;" class="form-control"
+                                                            v-model="trigger.action.data" placeholder="Action data">
+                                                    </div>
+                                                    <div class="col">
+                                                        <input type="text" style="text-align:center;" class="form-control"
+                                                            v-model="trigger.action.delay" placeholder="Action delay">
+                                                    </div>
+
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div id=deleteTriggerDiv>
+
+                                            <button type="submit" class="btn btn-primary mt-3">Delete</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -204,10 +211,10 @@ function onButtonClick(event) {
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div>
-            <button type="button" class="btn btn-primary mt-3" @click="update()">Update</button>
+            <div>
+                <button type="button" class="btn btn-primary mt-3" @click="update()">Update</button>
+            </div>
         </div>
     </div>
 </template>

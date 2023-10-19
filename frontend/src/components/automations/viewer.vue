@@ -16,26 +16,29 @@ const automations = computed(() => {
 </script>
 
 <template>
-    <table class="table responsive table-hover">
-        <thead>
-            <tr>
-                <th scope="col">#</th>
-                <th scope="col">Name</th>
-                <th scope="col">Description</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr v-for="(automation, name, index) in automations" :item="automation">
-                <th scope="row">{{ index + 1 }}</th>
-                <td>
-                    <RouterLink :to="`/editor/${automation.id}`">{{
-                        automation.friendlyName
-                    }}</RouterLink>
-                </td>
-                <td>
-                    {{ automation.description }}
-                </td>
-            </tr>
-        </tbody>
-    </table>
+    <div className="content p-0 p-sm-3">
+
+        <table class="table responsive table-hover">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(automation, name, index) in automations" :item="automation">
+                    <th scope="row">{{ index + 1 }}</th>
+                    <td>
+                        <RouterLink :to="`/editor/${automation.id}`">{{
+                            automation.friendlyName
+                        }}</RouterLink>
+                    </td>
+                    <td>
+                        {{ automation.description }}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </template>
