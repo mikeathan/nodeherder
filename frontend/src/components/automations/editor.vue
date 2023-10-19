@@ -83,15 +83,44 @@ function onButtonClick(event) {
                         <div class="accordion-item">
 
                             <h2 class="accordion-header" id="`header${index}`">
-                                <div class="accordion-button collapsed d-flex" data-bs-toggle="collapse"
-                                    :data-bs-target="`#collapse${index}`" aria-expanded="false"
-                                    :aria-controls="`collapse${index}`">
 
-                                    <div>Trigger #{{ index + 1 }}</div>
-                                    <div class="ms-auto">
-                                        <span class="far fa-trash-alt cercle-icons delete-icon fa-lg" @click="onButtonClick($event)" data-bs-toggle="collapse" data-bs-target></span>
+                                <div class="container-fluid">
+                                    <div class="row accordion-button collapsed " data-bs-toggle="collapse"
+                                        :data-bs-target="`#collapse${index}`" aria-expanded="false"
+                                        :aria-controls="`collapse${index}`">
+
+
+                                                <div class="col">
+                                                    <p class="fa fa-trash-alt fa-lg" @click="onButtonClick($event)"
+                                                        data-bs-toggle="collapse" data-bs-target>
+                                                    </p>
+                                                </div>
+                                                <div class="col">
+                                                    Trigger #{{ index + 1 }}
+                                                </div>
+
                                     </div>
                                 </div>
+                                <!-- <div class="accordion-button collapsed col-sm" data-bs-toggle="collapse"
+                                            :data-bs-target="`#collapse${index}`" aria-expanded="false"
+                                            :aria-controls="`collapse${index}`">
+                                           
+                                            <div id="triggerHeader" class="container">
+                                                <div class="row justify-content-md-center">
+                                                    <div class="col-sm">
+                                                    <div>Trigger #{{ index + 1 }}</div>                                                
+                                                    </div>
+                                                    <div class="col-sm">
+                                                    <span class="fa fa-trash-alt fa-lg" @click="onButtonClick($event)" 
+                                                        data-bs-toggle="collapse" data-bs-target>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            </div>
+                                        </div>
+                                        -->
+
+
                             </h2>
                             <!-- <h2 class="accordion-header" :id="`header${index}`">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
