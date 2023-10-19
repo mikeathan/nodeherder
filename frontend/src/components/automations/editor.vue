@@ -45,9 +45,10 @@ function update() {
     store.dispatch('automations/save', props.id);
 }
 
-function onButtonClick($event) {
-    $event.stopImmediatePropagation();
-    $event.preventDefault();
+function onButtonClick(event) {
+    console.log("button click");
+    event.stopImmediatePropagation();
+    event.preventDefault();
 }
 
 // ui example
@@ -88,13 +89,7 @@ function onButtonClick($event) {
 
                                     <div>Trigger #{{ index + 1 }}</div>
                                     <div class="ms-auto">
-                                        <button type="button" class="btn btn-sm  btn-success" @click="onButtonClick()">
-                                            <em class="fa fa-pencil-alt cercle-icons edit-icon"></em>
-                                        </button>
-                                        <span class="fa fa-pencil-alt cercle-icons edit-icon" data-app-id="1"
-                                            data-content-id="2" aria-hidden="true"></span>
-                                        <span class="far fa-trash-alt cercle-icons delete-icon" data-app-id="1"
-                                            data-content-id="2" aria-hidden="true"></span>
+                                        <span class="far fa-trash-alt cercle-icons delete-icon fa-lg" @click="onButtonClick($event)" data-bs-toggle="collapse" data-bs-target></span>
                                     </div>
                                 </div>
                             </h2>
