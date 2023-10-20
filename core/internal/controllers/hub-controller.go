@@ -52,10 +52,12 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 	})
 
 	h.eventHub.OnDeleteAutomationTrigger(func(p interface{}) error {
-		payload, ok := p.(map[string]interface{})
-		if !ok {
-			utils.LogErrorf("delete automation trigger failed. Invalid payload type")
-			return errors.New("save automation failed. Invalid payload type")
+		bytes, _ := json.Marshal(p)
+		payload := make(map[string]interface{})
+		err := json.Unmarshal(bytes, &payload)
+
+		if err != nil {
+			return errors.New("delete automation trigger failed. Invalid payload type")
 		}
 
 		automationId := payload["automationId"].(string)

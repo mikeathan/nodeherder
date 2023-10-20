@@ -3,6 +3,7 @@ package ws_test
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -449,6 +450,82 @@ func TestDeleteAutomation(t *testing.T) {
 		})
 
 		wsData := &ws.EventMessage{Type: ws.DeleteAutomation, Payload: testCase.payload}
+		msg, err := wsData.MarshalJSON()
+		if err != nil {
+			t.Fatalf(err.Error())
+		}
+
+		SendMessage(t, wsConn, msg)
+
+		_, m, err := wsConn.ReadMessage()
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+
+		var event ws.EventMessage
+		err = json.Unmarshal(m, &event)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if testCase.err != nil {
+			response := event.Payload.(string)
+			if response != testCase.err.Error() {
+				t.Fatalf("Expected error %v', got '%+v'", testCase.err.Error(), response)
+			}
+		}
+		if event.Type != testCase.message {
+			t.Fatalf("Expected type %v', got '%+v'", testCase.message, event.Type)
+		}
+	}
+
+	defer s.Close()
+	defer wsConn.Close()
+}
+
+func TestDeleteAutomationTrigger(t *testing.T) {
+
+	// input data
+	//inputAutomations := createTestAutomation()
+	//newItem := inputAutomations[0]
+
+	payload := `{"automationId":"1234", "triggerId":1}`
+	testCases := []struct {
+		err     error
+		message string
+		payload interface{}
+	}{
+		{err: nil, message: ws.OperationSuccess, payload: payload},
+	}
+
+	wsHub := ws.NewWsHub()
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	for _, testCase := range testCases {
+		wsHub.OnDeleteAutomationTrigger(func(p interface{}) error {
+
+			v, ok := p.(string)
+			fmt.Println(v, ok)
+
+			bytes := []byte(v)
+			payload := make(map[string]interface{})
+
+			err := json.Unmarshal(bytes, &payload)
+
+			if err != nil {
+				fmt.Println(err.Error())
+				return errors.New("delete automation trigger failed. Invalid payload type")
+			}
+
+			automationId := payload["automationId"].(string)
+			triggerId := payload["triggerId"].(int)
+			fmt.Println("automationId:", automationId, "triggerId:", triggerId)
+
+			return testCase.err
+		})
+
+		wsData := &ws.EventMessage{Type: ws.DeleteAutomationTrigger, Payload: testCase.payload}
 		msg, err := wsData.MarshalJSON()
 		if err != nil {
 			t.Fatalf(err.Error())

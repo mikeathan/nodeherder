@@ -37,6 +37,10 @@ func (w *MockEventHub) OnDeleteAutomation(action func(p interface{}) error) {
 	fmt.Println("Empty OnDeleteAutomation")
 }
 
+func (w *MockEventHub) OnDeleteAutomationTrigger(action func(p interface{}) error) {
+	fmt.Println("Empty OnDeleteAutomationTrigger")
+}
+
 type MockMqttClient struct {
 	messageHandler func(string, []byte)
 }
@@ -108,6 +112,10 @@ func (w *NopWsServer) OnSaveAutomation(action func(p interface{}) error) {
 
 func (w *NopWsServer) OnDeleteAutomation(action func(p interface{}) error) {
 	fmt.Println("Empty OnDeleteAutomation")
+}
+
+func (w *NopWsServer) OnDeleteAutomationTrigger(action func(p interface{}) error) {
+	fmt.Println("Empty OnDeleteAutomationTrigger")
 }
 
 type NopMqttClient struct {
