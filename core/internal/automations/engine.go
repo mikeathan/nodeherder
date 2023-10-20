@@ -17,7 +17,7 @@ type Engine interface { // TODO: might need to move it to Models????
 	HandleDeviceV2(device *devices.DeviceV2)
 	Add(automation *Device) error
 	Delete(id string) error
-
+	DeleteTrigger(id string, triggerId int) error
 	Initialize()
 	GetAllTriggers() []*Device
 }
@@ -62,6 +62,20 @@ func (a *AutomationEngine) Add(automation *Device) error {
 
 	a.automationStorage.Store(automation.Id, automation)
 
+	return nil
+}
+
+func (a *AutomationEngine) DeleteTrigger(id string, triggerId int) error {
+	automation, err := a.automationStorage.Load(id)
+	if err != nil {
+		return err
+	}
+
+	// remove trigger
+	automation.Triggers = append(automation.Triggers[:triggerId], automation.Triggers[triggerId+1:]...)
+
+	// store
+	a.automationStorage.Store(id, automation)
 	return nil
 }
 

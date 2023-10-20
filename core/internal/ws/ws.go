@@ -19,6 +19,7 @@ const (
 	LoadBridgeFeatures      = "loadBridgeFeatures"
 	SaveAutomation          = "saveAutomation"
 	DeleteAutomation        = "deleteAutomation"
+	DeleteAutomationTrigger = "deleteAutomationTrigger"
 
 	// response
 	Automations      = "automations"
@@ -123,6 +124,9 @@ func (c *WsClient) handleMessage(message []byte) {
 	case DeleteAutomation:
 		c.executeAction(eventMsg.Payload, c.hub.onDeleteAutomation)
 
+	case DeleteAutomationTrigger:
+		c.executeAction(eventMsg.Payload, c.hub.onDeleteAutomationTrigger)
+
 	default:
 		utils.LogWarnf("Unknown event type: %s", eventMsg.Type)
 		return
@@ -194,18 +198,20 @@ type EventHub interface {
 	OnLoadBridgeFeatures(action func() interface{})
 	OnSaveAutomation(func(payload interface{}) error)
 	OnDeleteAutomation(func(payload interface{}) error)
+	OnDeleteAutomationTrigger(func(payload interface{}) error)
 }
 
 type wsServer struct {
-	clients              map[*WsClient]bool
-	broadcast            chan []byte
-	register             chan *WsClient
-	unregister           chan *WsClient
-	onLoadAutomations    func() interface{}
-	onLoadDevices        func() interface{}
-	onLoadBridgeFeatures func() interface{}
-	onSaveAutomation     func(interface{}) error
-	onDeleteAutomation   func(interface{}) error
+	clients                   map[*WsClient]bool
+	broadcast                 chan []byte
+	register                  chan *WsClient
+	unregister                chan *WsClient
+	onLoadAutomations         func() interface{}
+	onLoadDevices             func() interface{}
+	onLoadBridgeFeatures      func() interface{}
+	onSaveAutomation          func(interface{}) error
+	onDeleteAutomation        func(interface{}) error
+	onDeleteAutomationTrigger func(interface{}) error
 }
 
 func NewWsHub() EventHub {
@@ -215,11 +221,12 @@ func NewWsHub() EventHub {
 		register:   make(chan *WsClient),
 		unregister: make(chan *WsClient),
 
-		onLoadBridgeFeatures: func() interface{} { return nil },
-		onSaveAutomation:     func(payload interface{}) error { return nil },
-		onDeleteAutomation:   func(payload interface{}) error { return nil },
-		onLoadDevices:        func() interface{} { return nil },
-		onLoadAutomations:    func() interface{} { return nil }}
+		onLoadBridgeFeatures:      func() interface{} { return nil },
+		onSaveAutomation:          func(payload interface{}) error { return nil },
+		onDeleteAutomation:        func(payload interface{}) error { return nil },
+		onDeleteAutomationTrigger: func(payload interface{}) error { return nil },
+		onLoadDevices:             func() interface{} { return nil },
+		onLoadAutomations:         func() interface{} { return nil }}
 
 	go wsHub.run()
 	return wsHub
@@ -243,6 +250,10 @@ func (h *wsServer) OnSaveAutomation(action func(p interface{}) error) {
 
 func (h *wsServer) OnDeleteAutomation(action func(p interface{}) error) {
 	h.onDeleteAutomation = action
+}
+
+func (h *wsServer) OnDeleteAutomationTrigger(action func(p interface{}) error) {
+	h.onDeleteAutomationTrigger = action
 }
 
 func (h *wsServer) run() {

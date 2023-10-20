@@ -51,6 +51,19 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		return h.repo.GetBridgeFeatures()
 	})
 
+	h.eventHub.OnDeleteAutomationTrigger(func(p interface{}) error {
+		payload, ok := p.(map[string]interface{})
+		if !ok {
+			utils.LogErrorf("delete automation trigger failed. Invalid payload type")
+			return errors.New("save automation failed. Invalid payload type")
+		}
+
+		automationId := payload["automationId"].(string)
+		triggerId := payload["triggerId"].(int)
+
+		return h.automationEngine.DeleteTrigger(automationId, triggerId)
+	})
+
 	h.eventHub.OnSaveAutomation(func(p interface{}) error {
 
 		// TODO:
@@ -59,7 +72,7 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		bytes, _ := json.Marshal(p)
 		err := json.Unmarshal(bytes, &automation)
 		if err != nil {
-			utils.LogErrorf("Save automation failed. Invalid type")
+			utils.LogErrorf("Save automation failed. Invalid payload type")
 			return errors.New("save automation failed. Invalid payload type")
 		}
 
@@ -73,8 +86,8 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 	h.eventHub.OnDeleteAutomation(func(p interface{}) error {
 		id, ok := p.(string)
 		if !ok {
-			utils.LogErrorf("Delete automation failed. Invalid type")
-			return errors.New("delete automation failed. Invalid payload type")
+			utils.LogErrorf("Delete automation failed. Invalid payload type")
+			return errors.New("delete automation failed. Invalid payload payload type")
 		}
 
 		err := h.automationEngine.Delete(id)
