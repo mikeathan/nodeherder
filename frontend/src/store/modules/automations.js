@@ -12,6 +12,18 @@ const actions = {
       { root: true }
     );
   },
+
+  deleteTrigger({ state, dispatch, automationId, triggerId }) {
+    console.log("automations/deleteTrigger", automationId, "=", triggerId);
+    var automation = state.items[automationId];
+    if (automation == undefined) {
+      console.log("automation id ", automationId, " not found");
+      return
+    }
+
+    // TODO:
+    // delete trigger
+  },
 };
 
 const getters = {

@@ -45,10 +45,19 @@ function update() {
     store.dispatch('automations/save', props.id);
 }
 
-function onButtonClick(event) {
-    console.log("button click");
+function onDeleteTriggerClick(event, automationId, triggerId) {
+    // disable accordion from expanding
     event.stopImmediatePropagation();
     event.preventDefault();
+
+    // emit delete trigger event
+    store.dispatch('ws/emit', {
+        event: "deleteAutomationTrigger", message: {
+            automationId: automationId,
+            triggerId: triggerId
+        }
+    });
+    console.log("deleteTrigger: automationId", automationId, ",triggerId=", triggerId);
 }
 
 // ui example
@@ -89,56 +98,28 @@ function onButtonClick(event) {
 
                                     <div class="row ">
 
-                                        <div class="col  border accordion-button collapsed " data-bs-toggle="collapse"
+                                        <div class="col accordion-button collapsed " data-bs-toggle="collapse"
                                             :data-bs-target="`#collapse${index}`" aria-expanded="false"
                                             :aria-controls="`collapse${index}`">
 
-
-                                            <div class="col-2 col-xs-3 col-md-3 col-sm-3 border">
+                                            <div class="col-2 col-md-6">
                                                 Trigger #{{ index + 1 }}
                                             </div>
-                                            <div class="col-8 border">
+                                            <div class="col-8 col-md-2">
                                             </div>
 
                                             <div class="col pe-3 text-end ">
-                                                <span class="fa fa-trash-alt fa-lg" @click="onButtonClick($event)"
+                                                <span class="fa fa-trash-alt fa-lg"
+                                                    @click="onDeleteTriggerClick($event, automation.id, index)"
                                                     data-bs-toggle="collapse" data-bs-target>
                                                 </span>
 
                                             </div>
-
                                         </div>
                                     </div>
-
-                                    <!-- <div class="accordion-button collapsed col-sm" data-bs-toggle="collapse"
-                                            :data-bs-target="`#collapse${index}`" aria-expanded="false"
-                                            :aria-controls="`collapse${index}`">
-                                           
-                                            <div id="triggerHeader" class="container">
-                                                <div class="row justify-content-md-center">
-                                                    <div class="col-sm">
-                                                    <div>Trigger #{{ index + 1 }}</div>                                                
-                                                    </div>
-                                                    <div class="col-sm">
-                                                    <span class="fa fa-trash-alt fa-lg" @click="onButtonClick($event)" 
-                                                        data-bs-toggle="collapse" data-bs-target>
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            </div>
-                                        </div>
-                                        -->
-
-
                                 </h2>
 
-                                <!-- <h2 class="accordion-header" :id="`header${index}`">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                                    :data-bs-target="`#collapse${index}`" aria-expanded="false"
-                                    :aria-controls="`collapse${index}`">
-                                    Trigger #{{ index + 1 }}
-                                </button>
-                            </h2> -->
+
                                 <div :id="`collapse${index}`" class="accordion-collapse collapse"
                                     :aria-labelledby="`header${index}`" data-bs-parent="#triggersList">
                                     <div class="accordion-body">
