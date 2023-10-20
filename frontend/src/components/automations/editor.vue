@@ -94,13 +94,14 @@ function onButtonClick(event) {
                                             :aria-controls="`collapse${index}`">
 
 
-                                            <div class="col border">
+                                            <div class="col-2 col-xs-3 col-md-3 col-sm-3 border">
                                                 Trigger #{{ index + 1 }}
                                             </div>
-                                            <div class="col-10 border">
+                                            <div class="col-8 border">
                                             </div>
-                                            <div class="col-0  border">
-                                                <span class="me-3 fa fa-trash-alt fa-lg" @click="onButtonClick($event)"
+
+                                            <div class="col pe-3 text-end ">
+                                                <span class="fa fa-trash-alt fa-lg" @click="onButtonClick($event)"
                                                     data-bs-toggle="collapse" data-bs-target>
                                                 </span>
 
