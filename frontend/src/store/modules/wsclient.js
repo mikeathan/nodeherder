@@ -50,6 +50,10 @@ const actions = {
         case "bridgeFeatures":
           commit("features/init", obj.payload, { root: true });
           break;
+        case "operationSuccess":
+          break;
+        case "operationFailed":
+          break;
         case "ping":
           dispatch("emit", { event: "pong" });
           break;

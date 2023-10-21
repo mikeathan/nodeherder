@@ -153,43 +153,53 @@ app.ws("/ws", async function (ws, req) {
     const obj = JSON.parse(msg);
     switch (obj.type) {
       case "loadAutomations":
-        var msg = onLoadAutomationBuildResponse();
-        ws.send(msg);
+        sendOMessage(ws, "automations", getAutomations());
         break;
 
       case "loadDevices":
         var payload = buildNewDevicesPayload();
-        var msg = JSON.stringify({ type: "devices", payload: payload });
-
-        ws.send(msg);
+        sendOMessage(ws, "devices", payload);
         break;
 
       case "saveAutomation":
-        console.log(obj.payload);
+        var automation = obj.payload;
+        automationMap.set(automation.id, automation);
+        sendOperationSuccess(ws);
         break;
 
       case "deleteAutomation":
-        console.log(obj.payload);
+        var aId = obj.payload.automationId;
+        if (!automationMap.has(aId)) {
+          sendOperationFailed(
+            "Delete failed. Automation id " + aId + " not found"
+          );
+          return;
+        }
 
-        // on success
-        // it needs to return all automations
+        automationMap.delete(aid);
+        sendOMessage(ws, "automations", getAutomations());
+
         break;
 
       case "deleteAutomationTrigger":
-        console.log(obj.payload);
         var aId = obj.payload.automationId;
         var tId = obj.payload.triggerId;
+
+        if (!automationMap.has(aId)) {
+          sendOperationFailed(
+            "Delete trigger. automation id " + aId + " not found"
+          );
+          return;
+        }
+
         var automation = automationMap.get(aId);
+        if (tId >= automation.triggers.length) {
+          sendOperationFailed("trigger index" + tId + " out of bounds.");
+          return;
+        }
 
         automation.triggers.splice(tId, 1);
-
-        // if success
-        var msg = JSON.stringify({
-          type: "automationUpdated",
-          payload: automation,
-        });
-
-        ws.send(msg);
+        sendOMessage(ws, "automationUpdated", automation);
         break;
 
       case "loadBridgeFeatures":
@@ -223,18 +233,43 @@ app.ws("/ws", async function (ws, req) {
   }
 });
 
-function onLoadAutomationBuildResponse() {
+function getAutomations() {
   const items = [];
   automationMap.forEach((values, k) => {
     items.push(values);
   });
 
-  return JSON.stringify({ type: "automations", payload: items });
-
-  //return automation1Trigger;
+  return items;
 }
 
-function saveAutomation(automation) {
+function sendOMessage(ws, event, payload) {
+  var msg = JSON.stringify({
+    type: event,
+    payload: payload,
+  });
+
+  ws.send(msg);
+}
+
+function sendOperationSuccess(ws) {
+  var msg = JSON.stringify({
+    type: "operationSuccess",
+    payload: {},
+  });
+
+  ws.send(msg);
+}
+
+function sendOperationFailed(ws, message) {
+  var msg = JSON.stringify({
+    type: "operationFailed",
+    payload: message,
+  });
+
+  ws.send(msg);
+}
+
+function saveAutomation(ws, automation) {
   automation1Trigger = automation;
 }
 
