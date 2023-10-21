@@ -4,6 +4,15 @@ const state = {
 };
 
 const actions = {
+  init({ state, commit }, items) {
+    commit("clear", []);
+
+    console.log("automations/init");
+    items.forEach((item) => {
+      state.items[item.id] = item;
+    });
+    state.initialized = true;
+  },
   save({ state, dispatch, rootState }, id) {
     console.log("automations/save");
     dispatch(
@@ -23,13 +32,6 @@ const getters = {
 };
 
 const mutations = {
-  init(state, items) {
-    console.log("automations/init");
-    items.forEach((item) => {
-      state.items[item.id] = item;
-    });
-    state.initialized = true;
-  },
   update(state, automation) {
     console.log("automations/update");
     state.items[automation.id] = automation;
