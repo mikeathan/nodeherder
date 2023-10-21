@@ -153,12 +153,12 @@ app.ws("/ws", async function (ws, req) {
     const obj = JSON.parse(msg);
     switch (obj.type) {
       case "loadAutomations":
-        sendOMessage(ws, "automations", getAutomations());
+        sendMessage(ws, "automations", getAutomations());
         break;
 
       case "loadDevices":
         var payload = buildNewDevicesPayload();
-        sendOMessage(ws, "devices", payload);
+        sendMessage(ws, "devices", payload);
         break;
 
       case "saveAutomation":
@@ -168,16 +168,15 @@ app.ws("/ws", async function (ws, req) {
         break;
 
       case "deleteAutomation":
-        var aId = obj.payload.automationId;
-        if (!automationMap.has(aId)) {
+        if (!automationMap.has(obj.payload.id)) {
           sendOperationFailed(
-            "Delete failed. Automation id " + aId + " not found"
+            "Delete failed. Automation id " + obj.payload.id + " not found"
           );
           return;
         }
 
-        automationMap.delete(aid);
-        sendOMessage(ws, "automations", getAutomations());
+        automationMap.delete(obj.payload.id);
+        sendMessage(ws, "automations", getAutomations());
 
         break;
 
@@ -199,7 +198,7 @@ app.ws("/ws", async function (ws, req) {
         }
 
         automation.triggers.splice(tId, 1);
-        sendOMessage(ws, "automationUpdated", automation);
+        sendMessage(ws, "automationUpdated", automation);
         break;
 
       case "loadBridgeFeatures":
@@ -242,7 +241,7 @@ function getAutomations() {
   return items;
 }
 
-function sendOMessage(ws, event, payload) {
+function sendMessage(ws, event, payload) {
   var msg = JSON.stringify({
     type: event,
     payload: payload,

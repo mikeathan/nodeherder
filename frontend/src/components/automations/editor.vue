@@ -36,9 +36,7 @@ function onActionChanged(event, properties) {
     // build div = actionDataDiv
 }
 onMounted(() => {
-    // if (!store.getters["features/isInitialized"]) {
-    //     store.dispatch('ws/emit', { event: "loadBridgeFeatures" });
-    // }
+
 });
 
 function update() {

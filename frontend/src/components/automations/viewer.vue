@@ -13,6 +13,15 @@ const automations = computed(() => {
     return store.getters["automations/items"]
 });
 
+function onDeleteAutomationClick(id) {
+    // emit delete event
+    store.dispatch('ws/emit', {
+        event: "deleteAutomation", message: {
+            id: id,
+        }
+    });
+    console.log("delete automation: Id", id);
+}
 </script>
 
 <template>
@@ -24,6 +33,7 @@ const automations = computed(() => {
                     <th scope="col">#</th>
                     <th scope="col">Name</th>
                     <th scope="col">Description</th>
+                    <th scope="col"></th>
                 </tr>
             </thead>
             <tbody>
@@ -36,6 +46,10 @@ const automations = computed(() => {
                     </td>
                     <td>
                         {{ automation.description }}
+                    </td>
+
+                    <td>
+                        <span class="fa fa-trash-alt fa-lg" @click="onDeleteAutomationClick(automation.id)"></span>
                     </td>
                 </tr>
             </tbody>
