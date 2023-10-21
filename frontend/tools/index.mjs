@@ -160,7 +160,6 @@ app.ws("/ws", async function (ws, req) {
       case "loadDevices":
         var payload = buildNewDevicesPayload();
         var msg = JSON.stringify({ type: "devices", payload: payload });
-        //var msg = devicesMock;
 
         ws.send(msg);
         break;
@@ -171,15 +170,26 @@ app.ws("/ws", async function (ws, req) {
 
       case "deleteAutomation":
         console.log(obj.payload);
+
         // on success
         // it needs to return all automations
         break;
 
       case "deleteAutomationTrigger":
         console.log(obj.payload);
+        var aId = obj.payload.automationId;
+        var tId = obj.payload.triggerId;
+        var automation = automationMap.get(aId);
 
-        // on success
-        // needs to return automation
+        automation.triggers.splice(tId, 1);
+
+        // if success
+        var msg = JSON.stringify({
+          type: "automationUpdated",
+          payload: automation,
+        });
+
+        ws.send(msg);
         break;
 
       case "loadBridgeFeatures":

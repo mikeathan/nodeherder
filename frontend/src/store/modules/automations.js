@@ -12,10 +12,6 @@ const actions = {
       { root: true }
     );
   },
-  automationUpdated({ state, automation }) {
-    console.log("automations/automationUpdated");
-    state.items[automation.id] = automation;
-  },
 };
 
 const getters = {
@@ -34,7 +30,10 @@ const mutations = {
     });
     state.initialized = true;
   },
-
+  update(state, automation) {
+    console.log("automations/update");
+    state.items[automation.id] = automation;
+  },
   clear(state) {
     console.log("clear automations");
     for (var prop in state.items) {
