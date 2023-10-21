@@ -496,7 +496,7 @@ func TestDeleteAutomationTrigger(t *testing.T) {
 		message string
 		payload interface{}
 	}{
-		{err: nil, message: ws.OperationSuccess, payload: payload},
+		{err: nil, message: ws.AutomationUpdated, payload: payload},
 	}
 
 	wsHub := ws.NewWsHub()
@@ -504,7 +504,7 @@ func TestDeleteAutomationTrigger(t *testing.T) {
 	s, wsConn := NewTestWsServer(t, h)
 
 	for _, testCase := range testCases {
-		wsHub.OnDeleteAutomationTrigger(func(p interface{}) error {
+		wsHub.OnDeleteAutomationTrigger(func(p interface{}) (interface{}, error) {
 
 			bytes := []byte(p.(string))
 			payload := make(map[string]interface{})
@@ -513,14 +513,14 @@ func TestDeleteAutomationTrigger(t *testing.T) {
 
 			if err != nil {
 				fmt.Println(err.Error())
-				return errors.New("delete automation trigger failed. Invalid payload type")
+				return nil, errors.New("delete automation trigger failed. Invalid payload type")
 			}
 
 			automationId := payload["automationId"].(string)
 			triggerId, err := strconv.Atoi(fmt.Sprint(payload["triggerId"]))
 			if err != nil {
 				fmt.Println(err.Error())
-				return errors.New("delete automation trigger failed. Invalid triggerId type")
+				return nil, errors.New("delete automation trigger failed. Invalid triggerId type")
 			}
 
 			fmt.Println("automationId:", automationId, "triggerId:", triggerId)
@@ -531,12 +531,15 @@ func TestDeleteAutomationTrigger(t *testing.T) {
 					inputAutomation.Triggers = append(inputAutomation.Triggers[:triggerId], inputAutomation.Triggers[triggerId+1:]...)
 
 					if len(inputAutomation.Triggers) == origSize {
-						return fmt.Errorf("delete automation trigger failed. original size is equal to new size")
+						return nil, fmt.Errorf("delete automation trigger failed. original size is equal to new size")
 					}
+
+					return inputAutomation, nil
+
 				}
 			}
 
-			return testCase.err
+			return nil, testCase.err
 		})
 
 		wsData := &ws.EventMessage{Type: ws.DeleteAutomationTrigger, Payload: testCase.payload}

@@ -37,7 +37,7 @@ func (w *MockEventHub) OnDeleteAutomation(action func(p interface{}) error) {
 	fmt.Println("Empty OnDeleteAutomation")
 }
 
-func (w *MockEventHub) OnDeleteAutomationTrigger(action func(p interface{}) error) {
+func (w *MockEventHub) OnDeleteAutomationTrigger(action func(p interface{}) (interface{}, error)) {
 	fmt.Println("Empty OnDeleteAutomationTrigger")
 }
 
@@ -114,7 +114,7 @@ func (w *NopWsServer) OnDeleteAutomation(action func(p interface{}) error) {
 	fmt.Println("Empty OnDeleteAutomation")
 }
 
-func (w *NopWsServer) OnDeleteAutomationTrigger(action func(p interface{}) error) {
+func (w *NopWsServer) OnDeleteAutomationTrigger(action func(p interface{}) (interface{}, error)) {
 	fmt.Println("Empty OnDeleteAutomationTrigger")
 }
 
