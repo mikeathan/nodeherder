@@ -92,6 +92,19 @@ app.ws("/ws", async function (ws, req) {
         console.log(obj.payload);
         break;
 
+      case "deleteAutomation":
+        console.log(obj.payload);
+        // on success
+        // it needs to return all automations
+        break;
+
+      case "deleteAutomationTrigger":
+        console.log(obj.payload);
+
+        // on success
+        // needs to return automation
+        break;
+
       case "loadBridgeFeatures":
         ws.send(featuresMsg);
         break;
