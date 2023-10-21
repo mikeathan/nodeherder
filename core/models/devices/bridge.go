@@ -6,42 +6,47 @@ import (
 	"fmt"
 )
 
+type BridgeExpose struct {
+	Features []struct {
+		Access      int    `json:"access"`
+		Description string `json:"description"`
+		Name        string `json:"name"`
+		Property    string `json:"property"`
+		Type        string `json:"type"`
+		ValueOff    string `json:"value_off,omitempty"`
+		ValueOn     string `json:"value_on,omitempty"`
+		ValueToggle string `json:"value_toggle,omitempty"`
+		ValueMax    any    `json:"value_max,omitempty"`
+		ValueMin    any    `json:"value_min,omitempty"`
+		Values      []any  `json:"values,omitempty"`
+		Presets     []struct {
+			Description string `json:"description"`
+			Name        string `json:"name"`
+			Value       int    `json:"value"`
+		} `json:"presets,omitempty"`
+		Unit string `json:"unit,omitempty"`
+	} `json:"features,omitempty"`
+	Type        string   `json:"type"`
+	Access      int      `json:"access,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Name        string   `json:"name,omitempty"`
+	Property    string   `json:"property,omitempty"`
+	Values      []string `json:"values,omitempty"`
+	Unit        string   `json:"unit,omitempty"`
+	ValueMax    any      `json:"value_max,omitempty"`
+	ValueMin    any      `json:"value_min,omitempty"`
+	ValueOff    any      `json:"value_off,omitempty"`
+	ValueOn     any      `json:"value_on,omitempty"`
+	ValueStep   any      `json:"value_step,omitempty"`
+}
+
 type BridgeInfo struct {
 	DateCode   string `json:"date_code"`
 	Definition struct {
-		Description string `json:"description"`
-		Exposes     []struct {
-			Features []struct {
-				Access      int    `json:"access"`
-				Description string `json:"description"`
-				Name        string `json:"name"`
-				Property    string `json:"property"`
-				Type        string `json:"type"`
-				ValueOff    string `json:"value_off,omitempty"`
-				ValueOn     string `json:"value_on,omitempty"`
-				ValueToggle string `json:"value_toggle,omitempty"`
-				ValueMax    any    `json:"value_max,omitempty"`
-				ValueMin    any    `json:"value_min,omitempty"`
-				Values      []any  `json:"values,omitempty"`
-				Presets     []struct {
-					Description string `json:"description"`
-					Name        string `json:"name"`
-					Value       int    `json:"value"`
-				} `json:"presets,omitempty"`
-				Unit string `json:"unit,omitempty"`
-			} `json:"features,omitempty"`
-			Type        string   `json:"type"`
-			Access      int      `json:"access,omitempty"`
-			Description string   `json:"description,omitempty"`
-			Name        string   `json:"name,omitempty"`
-			Property    string   `json:"property,omitempty"`
-			Values      []string `json:"values,omitempty"`
-			Unit        string   `json:"unit,omitempty"`
-			ValueMax    any      `json:"value_max,omitempty"`
-			ValueMin    any      `json:"value_min,omitempty"`
-		} `json:"exposes"`
-		Model   string `json:"model"`
-		Options []struct {
+		Description string         `json:"description"`
+		Exposes     []BridgeExpose `json:"exposes"`
+		Model       string         `json:"model"`
+		Options     []struct {
 			Access      int    `json:"access"`
 			Description string `json:"description"`
 			Name        string `json:"name"`

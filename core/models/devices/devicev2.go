@@ -2,6 +2,7 @@ package devices
 
 import (
 	"errors"
+	"node-herder/models/devices"
 	"node-herder/utils"
 	"time"
 )
@@ -61,6 +62,59 @@ type DeviceV2 struct {
 	availabilityTimeoutSecs int
 }
 
+func build(bridgeDevices []*devices.BridgeInfo) []*DeviceV2 {
+	for _, bridgeInfo := range bridgeDevices {
+		if !bridgeInfo.IsActive() {
+			continue
+		}
+		d := newDeviceV2(bridgeInfo.id)
+		d.ConnectionType = "mqtt"
+		d.Description = bridgeInfo.Description
+		d.FriendlyName = bridgeInfo.FriendlyName
+		d.PowerSource = bridgeInfo.PowerSource
+
+		for _, expose := range bridgeInfo.Definition.Exposes {
+
+			// load exposes
+			if expose.Property != "" {
+
+				if _, ok := exposesWhitelist[expose.Property]; !ok {
+					continue
+				}
+
+				d.Exposes[expose.Property] = createEntity(expose.Property, expose.Description, nil, expose.Unit, expose.Type, nil)
+			}
+
+			// load features
+			// for _, feature := range expose.Features {
+			// 	if value, ok := data[feature.Property]; ok {
+
+			// 		var props map[string]any = make(map[string]any)
+			// 		switch feature.Type {
+			// 		case "numeric":
+			// 			props["type"] = "numeric"
+			// 			props["max"] = feature.ValueMax
+			// 			props["min"] = feature.ValueMin
+
+			// 		case "binary":
+			// 			props["type"] = "binary"
+			// 			props["on"] = feature.ValueOn
+			// 			props["off"] = feature.ValueOff
+			// 			props["toggle"] = feature.ValueToggle
+
+			// 		case "enum":
+			// 			props["type"] = "enum"
+			// 			props["values"] = feature.Values
+			// 		}
+
+			// 		entities[feature.Property] = createEntity(feature.Property, feature.Description, value, feature.Unit, feature.Type, props)
+			// 	}
+			// }
+		}
+
+	}
+
+}
 func newDeviceV2(id string) *DeviceV2 {
 
 	return &DeviceV2{
@@ -99,6 +153,51 @@ type Entity struct {
 	Properties  map[string]any `json:"properties"`
 }
 
+func createFromExpose(expose *BridgeExpose) *Entity {
+	newEntity := &Entity{}
+ do null checks
+	if expose.Property != "" {
+		newEntity.Name = expose.Property
+		newEntity.Description = expose.Description
+		newEntity.Unit = expose.Unit
+		var props = map[string]any{}
+		props["type"] = expose.Type
+		switch expose.Type {
+		case "numeric":
+			props["type"] = "numeric"
+			props["max"] = expose.ValueMax
+			props["min"] = expose.ValueMin
+			props["step"] = expose.ValueStep
+
+		case "binary":
+			props["type"] = "binary"
+			props["on"] = expose.ValueOn
+			props["off"] = expose.ValueOff
+
+		case "enum":
+			props["type"] = "enum"
+			props["values"] = expose.Values
+		}
+	}
+	for _, feature := range expose.Features {
+		switch feature.Type {
+		case "numeric":
+			props["type"] = "numeric"
+			props["max"] = feature.ValueMax
+			props["min"] = feature.ValueMin
+
+		case "binary":
+			props["type"] = "binary"
+			props["on"] = feature.ValueOn
+			props["off"] = feature.ValueOff
+			props["toggle"] = feature.ValueToggle
+
+		case "enum":
+			props["type"] = "enum"
+			props["values"] = feature.Values
+		}
+	}
+}
 func createEntity(name string, description string, data any, unit string, dataType string, props map[string]any) *Entity {
 	if props == nil {
 		props = make(map[string]any)
