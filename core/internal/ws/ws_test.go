@@ -490,7 +490,7 @@ func TestDeleteAutomationTrigger(t *testing.T) {
 	inputAutomations := createTestAutomation()
 	deviceTrigger := inputAutomations[0]
 
-	payload := `{"automationId":"` + deviceTrigger.Id + `", "triggerId":"1"}`
+	payload := `{"automationId":"` + deviceTrigger.Id + `", "triggerId":1}`
 	testCases := []struct {
 		err     error
 		message string
@@ -506,10 +506,7 @@ func TestDeleteAutomationTrigger(t *testing.T) {
 	for _, testCase := range testCases {
 		wsHub.OnDeleteAutomationTrigger(func(p interface{}) error {
 
-			v, ok := p.(string)
-			fmt.Println(v, ok)
-
-			bytes := []byte(v)
+			bytes := []byte(p.(string))
 			payload := make(map[string]interface{})
 
 			err := json.Unmarshal(bytes, &payload)
@@ -520,18 +517,17 @@ func TestDeleteAutomationTrigger(t *testing.T) {
 			}
 
 			automationId := payload["automationId"].(string)
-			triggerId, err := strconv.Atoi(payload["triggerId"].(string))
-
+			triggerId, err := strconv.Atoi(fmt.Sprint(payload["triggerId"]))
 			if err != nil {
 				fmt.Println(err.Error())
 				return errors.New("delete automation trigger failed. Invalid triggerId type")
 			}
+
 			fmt.Println("automationId:", automationId, "triggerId:", triggerId)
 			for _, inputAutomation := range inputAutomations {
 				if inputAutomation.Id == automationId {
 
 					origSize := len(inputAutomation.Triggers)
-
 					inputAutomation.Triggers = append(inputAutomation.Triggers[:triggerId], inputAutomation.Triggers[triggerId+1:]...)
 
 					if len(inputAutomation.Triggers) == origSize {

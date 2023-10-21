@@ -9,6 +9,7 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
+	"strconv"
 
 	"node-herder/utils"
 	"strings"
@@ -52,6 +53,8 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 	})
 
 	h.eventHub.OnDeleteAutomationTrigger(func(p interface{}) error {
+
+		// todo:see if we can cast p to string and then to bytes
 		bytes, _ := json.Marshal(p)
 		payload := make(map[string]interface{})
 		err := json.Unmarshal(bytes, &payload)
@@ -61,7 +64,11 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		}
 
 		automationId := payload["automationId"].(string)
-		triggerId := payload["triggerId"].(int)
+		triggerId, err := strconv.Atoi(fmt.Sprint(payload["triggerId"]))
+		if err != nil {
+			fmt.Println(err.Error())
+			return errors.New("delete automation trigger failed. Invalid triggerId type")
+		}
 
 		return h.automationEngine.DeleteTrigger(automationId, triggerId)
 	})
