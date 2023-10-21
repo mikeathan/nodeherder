@@ -3,7 +3,6 @@ package devices
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 )
 
 type BridgeExpose struct {
@@ -33,11 +32,6 @@ type BridgeExpose struct {
 	Property    string   `json:"property,omitempty"`
 	Values      []string `json:"values,omitempty"`
 	Unit        string   `json:"unit,omitempty"`
-	ValueMax    any      `json:"value_max,omitempty"`
-	ValueMin    any      `json:"value_min,omitempty"`
-	ValueOff    any      `json:"value_off,omitempty"`
-	ValueOn     any      `json:"value_on,omitempty"`
-	ValueStep   any      `json:"value_step,omitempty"`
 }
 
 type BridgeInfo struct {
@@ -76,36 +70,6 @@ type BridgeInfo struct {
 func (b *BridgeInfo) IsActive() bool {
 
 	return !b.Disabled && b.Type != "Coordinator" && b.InterviewCompleted
-}
-
-// DEBUG - delete
-func LoadDevices(payload []byte) error {
-	var bridgeDevices []*BridgeInfo
-	err := json.Unmarshal(payload, &bridgeDevices)
-	if err != nil {
-		return err
-	}
-	for _, bd := range bridgeDevices {
-		fmt.Println("friendlename:", bd.FriendlyName)
-		fmt.Println("id", bd.IeeeAddress)
-		fmt.Println("disabled:", bd.Disabled)
-		fmt.Println("Type:", bd.Type)
-
-		for _, expose := range bd.Definition.Exposes {
-			fmt.Println("Property:", expose.Property)
-			for _, feature := range expose.Features {
-				fmt.Println("Feature Property:", feature.Property)
-				fmt.Println("ValueMax:", feature.ValueMax)
-				fmt.Println("ValueMin:", feature.ValueMin)
-				fmt.Println("ValueOff:", feature.ValueOff)
-				fmt.Println("ValueOn:", feature.ValueOn)
-			}
-		}
-
-		fmt.Println("------------------------------")
-	}
-
-	return nil
 }
 
 func LoadBridgeDevices(payload []byte) ([]*BridgeInfo, error) {

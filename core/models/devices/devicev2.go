@@ -2,7 +2,7 @@ package devices
 
 import (
 	"errors"
-	"node-herder/models/devices"
+	"fmt"
 	"node-herder/utils"
 	"time"
 )
@@ -62,57 +62,54 @@ type DeviceV2 struct {
 	availabilityTimeoutSecs int
 }
 
-func build(bridgeDevices []*devices.BridgeInfo) []*DeviceV2 {
+func buildFromBridge(repo Repository, bridgeDevices []*BridgeInfo) []*DeviceV2 {
+
+	devices := []*DeviceV2{}
 	for _, bridgeInfo := range bridgeDevices {
 		if !bridgeInfo.IsActive() {
 			continue
 		}
-		d := newDeviceV2(bridgeInfo.id)
-		d.ConnectionType = "mqtt"
-		d.Description = bridgeInfo.Description
-		d.FriendlyName = bridgeInfo.FriendlyName
-		d.PowerSource = bridgeInfo.PowerSource
 
-		for _, expose := range bridgeInfo.Definition.Exposes {
+		d, err := repo.FindDeviceV2ById(bridgeInfo.IeeeAddress)
+		if err != nil {
+			// not found in repo, new it here
+			d = newDeviceV2(bridgeInfo.IeeeAddress)
+			d.ConnectionType = "mqtt"
 
-			// load exposes
-			if expose.Property != "" {
+			var entity *Entity
 
-				if _, ok := exposesWhitelist[expose.Property]; !ok {
+			for _, expose := range bridgeInfo.Definition.Exposes {
+				entity, err = createFromExpose(expose)
+				if err != nil {
+					utils.LogDebugf("failed loading %s error %s", bridgeInfo.FriendlyName, err.Error())
+					break
+				}
+
+				if entity == nil {
 					continue
 				}
 
-				d.Exposes[expose.Property] = createEntity(expose.Property, expose.Description, nil, expose.Unit, expose.Type, nil)
+				// it shoud be coming from database
+				// since it doesnt we dont have below info
+				d.Exposes[entity.Name] = entity
+				d.Properties[availabilityKey] = offline
 			}
-
-			// load features
-			// for _, feature := range expose.Features {
-			// 	if value, ok := data[feature.Property]; ok {
-
-			// 		var props map[string]any = make(map[string]any)
-			// 		switch feature.Type {
-			// 		case "numeric":
-			// 			props["type"] = "numeric"
-			// 			props["max"] = feature.ValueMax
-			// 			props["min"] = feature.ValueMin
-
-			// 		case "binary":
-			// 			props["type"] = "binary"
-			// 			props["on"] = feature.ValueOn
-			// 			props["off"] = feature.ValueOff
-			// 			props["toggle"] = feature.ValueToggle
-
-			// 		case "enum":
-			// 			props["type"] = "enum"
-			// 			props["values"] = feature.Values
-			// 		}
-
-			// 		entities[feature.Property] = createEntity(feature.Property, feature.Description, value, feature.Unit, feature.Type, props)
-			// 	}
-			// }
 		}
 
+		d.Description = bridgeInfo.Definition.Description
+		d.FriendlyName = bridgeInfo.FriendlyName
+		d.PowerSource = bridgeInfo.PowerSource
+
+		/// if we new here then what we do when we update them
+		// need to start monitoring here
+		// d.Monitor(c.AvailabilityTimeoutInSeconds, func(p interface{}) {
+		// 	c.eventHub.Broadcast(ws.DevicePropertiesUpdated, p)
+		// })
+
+		devices = append(devices, d)
 	}
+
+	return devices
 
 }
 func newDeviceV2(id string) *DeviceV2 {
@@ -153,51 +150,52 @@ type Entity struct {
 	Properties  map[string]any `json:"properties"`
 }
 
-func createFromExpose(expose *BridgeExpose) *Entity {
+func createFromExpose(expose BridgeExpose) (*Entity, error) {
 	newEntity := &Entity{}
- do null checks
+	var props = map[string]any{}
+	if _, ok := exposesWhitelist[expose.Property]; !ok {
+		return nil, fmt.Errorf("property %v is blacklisted", expose.Property)
+	}
+
 	if expose.Property != "" {
 		newEntity.Name = expose.Property
 		newEntity.Description = expose.Description
 		newEntity.Unit = expose.Unit
-		var props = map[string]any{}
 		props["type"] = expose.Type
-		switch expose.Type {
-		case "numeric":
-			props["type"] = "numeric"
-			props["max"] = expose.ValueMax
-			props["min"] = expose.ValueMin
-			props["step"] = expose.ValueStep
-
-		case "binary":
-			props["type"] = "binary"
-			props["on"] = expose.ValueOn
-			props["off"] = expose.ValueOff
-
-		case "enum":
-			props["type"] = "enum"
-			props["values"] = expose.Values
-		}
+		props["feature"] = false
 	}
+
 	for _, feature := range expose.Features {
+		if _, ok := exposesWhitelist[feature.Property]; !ok {
+			return nil, fmt.Errorf("feature property %v is blacklisted", expose.Property)
+		}
+
+		newEntity.Name = feature.Property
+		newEntity.Description = feature.Description
+		newEntity.Unit = feature.Unit
+
+		props["type"] = feature.Type
+		props["feature"] = true
+
 		switch feature.Type {
 		case "numeric":
-			props["type"] = "numeric"
 			props["max"] = feature.ValueMax
 			props["min"] = feature.ValueMin
 
 		case "binary":
-			props["type"] = "binary"
 			props["on"] = feature.ValueOn
 			props["off"] = feature.ValueOff
 			props["toggle"] = feature.ValueToggle
 
 		case "enum":
-			props["type"] = "enum"
 			props["values"] = feature.Values
 		}
 	}
+
+	newEntity.Properties = props
+	return newEntity, nil
 }
+
 func createEntity(name string, description string, data any, unit string, dataType string, props map[string]any) *Entity {
 	if props == nil {
 		props = make(map[string]any)

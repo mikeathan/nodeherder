@@ -43,13 +43,16 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 		return fmt.Errorf("invalid hub configuration topic %s", id)
 	}
 
-	devices, err := devices.LoadBridgeDevices(payload)
+	// TODO:
+	// new all devices here and setup
+
+	bridgeInfoList, err := devices.LoadBridgeDevices(payload)
 	if err != nil {
 		return err
 	}
 
-	b.hub.configureBridge(devices)
-	for _, device := range devices {
+	b.hub.configureBridge(bridgeInfoList)
+	for _, device := range bridgeInfoList {
 		if !device.IsActive() {
 			utils.LogInfof("Bridge registration: skipping  %s", device.FriendlyName)
 
