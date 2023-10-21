@@ -70,7 +70,6 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 			return nil, errors.New("delete automation trigger failed. Invalid triggerId type")
 		}
 		err = h.automationEngine.DeleteTrigger(automationId, triggerId)
-
 		if err != nil {
 			return nil, err
 		}
@@ -97,18 +96,19 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		return nil
 	})
 
-	h.eventHub.OnDeleteAutomation(func(p interface{}) error {
+	h.eventHub.OnDeleteAutomation(func(p interface{}) (interface{}, error) {
 		id, ok := p.(string)
 		if !ok {
 			utils.LogErrorf("Delete automation failed. Invalid payload type")
-			return errors.New("delete automation failed. Invalid payload payload type")
+			return nil, errors.New("delete automation failed. Invalid payload payload type")
 		}
 
 		err := h.automationEngine.Delete(id)
 		if err != nil {
-			return fmt.Errorf("delete automation failed. %s", err.Error())
+			return nil, fmt.Errorf("delete automation failed. %s", err.Error())
 		}
-		return nil
+
+		return h.automationEngine.GetAllTriggers(), nil
 	})
 
 	h.mqtt.OnMessageHandler(func(id string, payload []byte) {

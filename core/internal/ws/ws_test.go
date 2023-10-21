@@ -435,7 +435,7 @@ func TestDeleteAutomation(t *testing.T) {
 		message string
 		payload interface{}
 	}{
-		{err: nil, message: ws.OperationSuccess, payload: newItem},
+		{err: nil, message: ws.Automations, payload: newItem},
 		{err: errors.New("error occured"), message: ws.OperationFailed, payload: newItem},
 		{err: errors.New("payload is empty"), message: ws.OperationFailed, payload: nil},
 	}
@@ -445,9 +445,9 @@ func TestDeleteAutomation(t *testing.T) {
 	s, wsConn := NewTestWsServer(t, h)
 
 	for _, testCase := range testCases {
-		wsHub.OnDeleteAutomation(func(p interface{}) error {
+		wsHub.OnDeleteAutomation(func(p interface{}) (interface{}, error) {
 
-			return testCase.err
+			return inputAutomations, testCase.err
 		})
 
 		wsData := &ws.EventMessage{Type: ws.DeleteAutomation, Payload: testCase.payload}
