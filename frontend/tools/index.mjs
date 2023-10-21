@@ -28,6 +28,83 @@ let app = express();
 let server = http.createServer(app).listen(port);
 console.log("[" + currentTime() + "] server listening at port " + port);
 
+var automationMap = new Map([
+  [
+    "0xa4c13894070052fc",
+    {
+      id: "0xa4c13894070052fc",
+      friendlyName: "Human presence",
+      description: "Attic light test automation",
+      enabled: true,
+      triggers: [
+        {
+          name: "presence",
+          conditions: [{ name: "presence", value: false, equality: "=" }],
+          action: {
+            id: "0x70ac08fffefafeca",
+            friendlyname: "Attic light",
+            type: "light",
+            property: "state",
+            data: "OFF",
+            delay: 300000000000,
+          },
+        },
+        {
+          name: "presence",
+          conditions: [
+            { name: "presence", value: true, equality: "=" },
+            { name: "lux", value: 30, equality: "<=" },
+          ],
+          action: {
+            id: "0x70ac08fffefafeca",
+            friendlyname: "Attic light",
+            type: "light",
+            property: "state",
+            data: "ON",
+          },
+        },
+      ],
+    },
+  ],
+  [
+    "0x00124b0029207763",
+    {
+      id: "0x00124b0029207763",
+      friendlyName: "TH1",
+      description: "Temperature and humidity test automation",
+      enabled: false,
+      triggers: [
+        {
+          name: "presence",
+          conditions: [{ name: "presence", value: false, equality: "=" }],
+          action: {
+            id: "0x70ac08fffefafeca",
+            friendlyname: "Attic light",
+            type: "light",
+            property: "state",
+            data: "OFF",
+            delay: 300000000000,
+          },
+        },
+        {
+          name: "presence",
+          conditions: [
+            { name: "presence", value: true, equality: "=" },
+            { name: "lux", value: 30, equality: "<=" },
+          ],
+          action: {
+            id: "0x70ac08fffefafeca",
+            friendlyname: "Attic light",
+            type: "light",
+            property: "state",
+            data: "ON",
+          },
+        },
+      ],
+    },
+  ],
+]);
+
 var devicesMock =
   '{"type":"devices","payload":[{"id":"0xa4c13894070052fc","friendlyname":"Human presence","connection_type":"mqtt","power_source":"mains","exposes":{"illuminance_lux":{"name":"illuminance_lux","description":"Measured illuminance in lux","unit":"lx","data":2,"properties":{}},"presence":{"name":"presence","description":"Indicates whether the device detected presence","data":false,"properties":{}}},"properties":{"availability":"online","last_seen":"2023-10-18T06:43:20+01:00","linkquality":36}}]}';
 
@@ -137,7 +214,14 @@ app.ws("/ws", async function (ws, req) {
 });
 
 function onLoadAutomationBuildResponse() {
-  return automation1Trigger;
+  const items = [];
+  automationMap.forEach((values, k) => {
+    items.push(values);
+  });
+
+  return JSON.stringify({ type: "automations", payload: items });
+
+  //return automation1Trigger;
 }
 
 function saveAutomation(automation) {
