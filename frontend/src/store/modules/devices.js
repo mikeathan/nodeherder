@@ -2,6 +2,14 @@ const state = {
   items: {},
 };
 
+const actions = {
+  init({ state, commit }, devices) {
+    commit("clear", []);
+    devices.forEach((device) => {
+      state.items[device.id] = device;
+    });
+  },
+};
 const getters = {
   items: (state) => state.items,
   find: (state) => (id) => {
@@ -10,6 +18,15 @@ const getters = {
 };
 
 const mutations = {
+  init({ state, commit }, items) {
+    commit("clear", []);
+
+    console.log("automations/init");
+    items.forEach((item) => {
+      state.items[item.id] = item;
+    });
+    state.initialized = true;
+  },
   // todo: add try/catch
   update(state, payload) {
     var device = state.items[payload.id];
@@ -28,12 +45,6 @@ const mutations = {
   add(state, device) {
     state.items[device.id] = device;
   },
-  init(state, devices) {
-    devices.forEach((device) => {
-      state.items[device.id] = device;
-    });
-  },
-
   clear(state) {
     console.log("clear devices");
     for (var prop in state.items) {
@@ -48,5 +59,6 @@ export default {
   namespaced: true,
   state,
   getters,
+  actions,
   mutations,
 };

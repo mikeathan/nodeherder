@@ -3,7 +3,17 @@ const state = {
   items: {},
 };
 
-const actions = {};
+const actions = {
+  init({ state, commit }, items) {
+    commit("clear", []);
+
+    console.log("features/init");
+    items.forEach((item) => {
+      state.items[item.id] = item;
+    });
+    state.initialized = true;
+  },
+};
 
 const getters = {
   items: (state) => state.items,
@@ -14,14 +24,6 @@ const getters = {
 };
 
 const mutations = {
-  init(state, items) {
-    console.log("features/init");
-    items.forEach((item) => {
-      state.items[item.id] = item;
-    });
-    state.initialized = true;
-  },
-
   clear(state) {
     console.log("clear features");
     for (var prop in state.items) {
