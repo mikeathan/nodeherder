@@ -41,6 +41,9 @@ const actions = {
         case "automations":
           commit("automations/init", obj.payload, { root: true });
           break;
+        case "automation":
+          commit("automations/automationUpdated", obj.payload, { root: true });
+          break;
         case "devices":
           commit("devices/init", obj.payload, { root: true });
           break;

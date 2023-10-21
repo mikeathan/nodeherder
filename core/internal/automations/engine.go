@@ -1,6 +1,7 @@
 package automations
 
 import (
+	"errors"
 	"node-herder/internal/mqtt"
 	"node-herder/models/devices"
 	"node-herder/utils"
@@ -19,6 +20,7 @@ type Engine interface { // TODO: might need to move it to Models????
 	Delete(id string) error
 	DeleteTrigger(id string, triggerId int) error
 	Initialize()
+	Load(id string) (*Device, error)
 	GetAllTriggers() []*Device
 }
 
@@ -51,6 +53,10 @@ func (a *AutomationEngine) GetAllTriggers() []*Device {
 	return a.automationStorage.LoadAll()
 }
 
+func (a *AutomationEngine) Load(id string) (*Device, error) {
+	return a.automationStorage.Load(id)
+}
+
 func (a *AutomationEngine) Add(automation *Device) error {
 
 	utils.LogInfof("adding automation id=%s, friendlyName=%s, enabled=%v", automation.Id, automation.FriendlyName, automation.Enabled)
@@ -69,6 +75,10 @@ func (a *AutomationEngine) DeleteTrigger(id string, triggerId int) error {
 	automation, err := a.automationStorage.Load(id)
 	if err != nil {
 		return err
+	}
+
+	if triggerId >= len(automation.Triggers) {
+		return errors.New("trigger index out of bounds")
 	}
 
 	// remove trigger

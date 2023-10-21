@@ -52,7 +52,7 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		return h.repo.GetBridgeFeatures()
 	})
 
-	h.eventHub.OnDeleteAutomationTrigger(func(p interface{}) error {
+	h.eventHub.OnDeleteAutomationTrigger(func(p interface{}) (interface{}, error) {
 
 		// todo:see if we can cast p to string and then to bytes
 		bytes, _ := json.Marshal(p)
@@ -60,17 +60,22 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		err := json.Unmarshal(bytes, &payload)
 
 		if err != nil {
-			return errors.New("delete automation trigger failed. Invalid payload type")
+			return nil, errors.New("delete automation trigger failed. Invalid payload type")
 		}
 
 		automationId := payload["automationId"].(string)
 		triggerId, err := strconv.Atoi(fmt.Sprint(payload["triggerId"]))
 		if err != nil {
 			fmt.Println(err.Error())
-			return errors.New("delete automation trigger failed. Invalid triggerId type")
+			return nil, errors.New("delete automation trigger failed. Invalid triggerId type")
+		}
+		err = h.automationEngine.DeleteTrigger(automationId, triggerId)
+
+		if err != nil {
+			return nil, err
 		}
 
-		return h.automationEngine.DeleteTrigger(automationId, triggerId)
+		return h.automationEngine.Load(automationId)
 	})
 
 	h.eventHub.OnSaveAutomation(func(p interface{}) error {
