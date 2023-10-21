@@ -13,6 +13,7 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/mocks"
 	"node-herder/models/devices"
+	"strconv"
 	"testing"
 	"time"
 
@@ -486,10 +487,10 @@ func TestDeleteAutomation(t *testing.T) {
 func TestDeleteAutomationTrigger(t *testing.T) {
 
 	// input data
-	//inputAutomations := createTestAutomation()
-	//newItem := inputAutomations[0]
+	inputAutomations := createTestAutomation()
+	deviceTrigger := inputAutomations[0]
 
-	payload := `{"automationId":"1234", "triggerId":1}`
+	payload := `{"automationId":"` + deviceTrigger.Id + `", "triggerId":"1"}`
 	testCases := []struct {
 		err     error
 		message string
@@ -519,8 +520,25 @@ func TestDeleteAutomationTrigger(t *testing.T) {
 			}
 
 			automationId := payload["automationId"].(string)
-			triggerId := payload["triggerId"].(int)
+			triggerId, err := strconv.Atoi(payload["triggerId"].(string))
+
+			if err != nil {
+				fmt.Println(err.Error())
+				return errors.New("delete automation trigger failed. Invalid triggerId type")
+			}
 			fmt.Println("automationId:", automationId, "triggerId:", triggerId)
+			for _, inputAutomation := range inputAutomations {
+				if inputAutomation.Id == automationId {
+
+					origSize := len(inputAutomation.Triggers)
+
+					inputAutomation.Triggers = append(inputAutomation.Triggers[:triggerId], inputAutomation.Triggers[triggerId+1:]...)
+
+					if len(inputAutomation.Triggers) == origSize {
+						return fmt.Errorf("delete automation trigger failed. original size is equal to new size")
+					}
+				}
+			}
 
 			return testCase.err
 		})
@@ -729,8 +747,8 @@ func createTestAutomation() []*automations.Device {
 	deviceTrigger2 := automations.NewDevice("Motion Sensor 2")
 	deviceTrigger2.Description = "test outdoor motion sensor 2 automation"
 
-	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOffTrigger2)
-	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
+	deviceTrigger2.Triggers = append(deviceTrigger2.Triggers, turnOffTrigger2)
+	deviceTrigger2.Triggers = append(deviceTrigger2.Triggers, turnOnTrigger)
 
 	var triggers []*automations.Device
 
