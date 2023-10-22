@@ -143,6 +143,14 @@ func (c *HubController) Enqueue(id string, payload map[string]interface{}, connT
 func (m *HubController) configureBridge(bridgeInfoList []*devices.BridgeInfo) {
 
 	m.repo.RegisterBridge(bridgeInfoList)
+
+	// ??????????
+	// devices := services.BuildFromBridge(m.eventHub, m.repo, bridgeInfoList, m.DeviceAvailabilityTimeoutOverride)
+	// for _, device := range devices {
+	// 	m.repo.StoreV2(device.Id, device)
+	// }
+	// ??????????
+
 	m.automationEngine.Initialize()
 }
 

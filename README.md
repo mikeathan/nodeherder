@@ -119,3 +119,5 @@ we need to access device capabilities in ui that might not be currently in store
 tidy eventhub callbacks registration in hub-controller
 
 ws node server sends
+
+remove logic from repo and place ti service layer

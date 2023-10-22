@@ -62,57 +62,7 @@ type DeviceV2 struct {
 	availabilityTimeoutSecs int
 }
 
-func buildFromBridge(repo Repository, bridgeDevices []*BridgeInfo) []*DeviceV2 {
-
-	devices := []*DeviceV2{}
-	for _, bridgeInfo := range bridgeDevices {
-		if !bridgeInfo.IsActive() {
-			continue
-		}
-
-		d, err := repo.FindDeviceV2ById(bridgeInfo.IeeeAddress)
-		if err != nil {
-			// not found in repo, new it here
-			d = newDeviceV2(bridgeInfo.IeeeAddress)
-			d.ConnectionType = "mqtt"
-
-			var entity *Entity
-
-			for _, expose := range bridgeInfo.Definition.Exposes {
-				entity, err = createFromExpose(expose)
-				if err != nil {
-					utils.LogDebugf("failed loading %s error %s", bridgeInfo.FriendlyName, err.Error())
-					break
-				}
-
-				if entity == nil {
-					continue
-				}
-
-				// it shoud be coming from database
-				// since it doesnt we dont have below info
-				d.Exposes[entity.Name] = entity
-				d.Properties[availabilityKey] = offline
-			}
-		}
-
-		d.Description = bridgeInfo.Definition.Description
-		d.FriendlyName = bridgeInfo.FriendlyName
-		d.PowerSource = bridgeInfo.PowerSource
-
-		/// if we new here then what we do when we update them
-		// need to start monitoring here
-		// d.Monitor(c.AvailabilityTimeoutInSeconds, func(p interface{}) {
-		// 	c.eventHub.Broadcast(ws.DevicePropertiesUpdated, p)
-		// })
-
-		devices = append(devices, d)
-	}
-
-	return devices
-
-}
-func newDeviceV2(id string) *DeviceV2 {
+func NewDeviceV2(id string) *DeviceV2 {
 
 	return &DeviceV2{
 		Id:                      id,
@@ -150,14 +100,15 @@ type Entity struct {
 	Properties  map[string]any `json:"properties"`
 }
 
-func createFromExpose(expose BridgeExpose) (*Entity, error) {
+func CreateFromExpose(expose BridgeExpose) (*Entity, error) {
 	newEntity := &Entity{}
 	var props = map[string]any{}
-	if _, ok := exposesWhitelist[expose.Property]; !ok {
-		return nil, fmt.Errorf("property %v is blacklisted", expose.Property)
-	}
 
 	if expose.Property != "" {
+		if _, ok := exposesWhitelist[expose.Property]; !ok {
+			return nil, fmt.Errorf("property %v is blacklisted", expose.Property)
+		}
+
 		newEntity.Name = expose.Property
 		newEntity.Description = expose.Description
 		newEntity.Unit = expose.Unit
@@ -167,7 +118,7 @@ func createFromExpose(expose BridgeExpose) (*Entity, error) {
 
 	for _, feature := range expose.Features {
 		if _, ok := exposesWhitelist[feature.Property]; !ok {
-			return nil, fmt.Errorf("feature property %v is blacklisted", expose.Property)
+			continue
 		}
 
 		newEntity.Name = feature.Property
@@ -192,6 +143,9 @@ func createFromExpose(expose BridgeExpose) (*Entity, error) {
 		}
 	}
 
+	if newEntity == nil {
+		return nil, fmt.Errorf("expose is not empty")
+	}
 	newEntity.Properties = props
 	return newEntity, nil
 }
@@ -217,7 +171,6 @@ func createProperties(data map[string]interface{}) map[string]any {
 			props[key] = value
 		}
 	}
-
 	return props
 }
 
@@ -289,7 +242,7 @@ func CreateNewDeviceV2(repo Repository, friendlyName string, connType string, da
 
 	id := repo.ResolveId(friendlyName)
 
-	var newDevice = newDeviceV2(id)
+	var newDevice = NewDeviceV2(id)
 	newDevice.FriendlyName = friendlyName
 	newDevice.ConnectionType = connType
 
