@@ -6,6 +6,34 @@ import (
 	"node-herder/utils"
 )
 
+func (s *) RegisterBridge(bridgeInfoList []*devices.BridgeInfo) {
+
+	// remove items from idMapper, that use to have a bridge info but dont exist in current bridge info list
+	// but cant clean idmapper because it contains non bridge infor items
+	s.bridgeInfoList = bridgeInfoList
+
+	// clean up
+	for name, id := range s.idMapper {
+		var found = false
+		for _, device := range s.bridgeInfoList {
+
+			if device.IeeeAddress == id {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			delete(s.idMapper, name)
+		}
+	}
+
+	// setup
+	for _, device := range s.bridgeInfoList {
+		s.idMapper[device.FriendlyName] = device.IeeeAddress
+	}
+}
+
 func BuildFromBridge(hub ws.EventHub, repo devices.Repository, bridgeDevices []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int) []*devices.DeviceV2 {
 
 	allDevices := []*devices.DeviceV2{}

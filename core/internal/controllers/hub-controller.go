@@ -142,7 +142,7 @@ func (c *HubController) Enqueue(id string, payload map[string]interface{}, connT
 
 func (m *HubController) configureBridge(bridgeInfoList []*devices.BridgeInfo) {
 
-	m.repo.RegisterBridge(bridgeInfoList)
+	m.repo.RegisterBridge(bridgeInfoList) //todo:move to service
 
 	// ??????????
 	// devices := services.BuildFromBridge(m.eventHub, m.repo, bridgeInfoList, m.DeviceAvailabilityTimeoutOverride)
