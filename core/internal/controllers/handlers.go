@@ -137,7 +137,7 @@ func (c *deviceV2Handler) ProcessPayload(friendlyName string, connType string, p
 		c.eventHub.Broadcast(ws.DeviceUpdated, updatedData)
 	}
 
-	c.repo.StoreV2(friendlyName, device)
+	c.registrar.Register(friendlyName, device)
 
 	return nil
 }

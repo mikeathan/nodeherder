@@ -36,9 +36,7 @@ func TestRepositoryCanAddOneDevice(t *testing.T) {
 		t.Fatalf("device result mismatch: got %v want %v", res, device)
 	}
 
-	id := repo.ResolveId(name)
-
-	if device.Id != id {
+	if device.FriendlyName != name {
 		t.Fatalf("device name mismatch")
 	}
 }
@@ -109,12 +107,10 @@ func TestRepositoryCanAddMultipleDevices(t *testing.T) {
 	validateDevice(t, devices[1], device1)
 	validateDevice(t, devices[0], device2)
 
-	id1 := repo.ResolveId(dev1Name)
-	if devices[1].Id != id1 {
+	if devices[1].Id != dev1Name {
 		t.Fatalf("device 1 name mismatch")
 	}
-	id2 := repo.ResolveId(dev2Name)
-	if devices[0].Id != id2 {
+	if devices[0].Id != dev2Name {
 		t.Fatalf("device 2 name mismatch")
 	}
 }
@@ -141,8 +137,7 @@ func TestRepositoryCanUpdateExistingDevice(t *testing.T) {
 		t.Fatalf("device 1 payload mismatch")
 	}
 
-	id := repo.ResolveId(dev1Name)
-	if devices[0].Id != id {
+	if devices[0].Id != dev1Name {
 		t.Fatalf("device name mismatch")
 	}
 }

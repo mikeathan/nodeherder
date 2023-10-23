@@ -35,10 +35,10 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		repo:                              repo,
 		handlers:                          map[string]handler{},
 		DeviceAvailabilityTimeoutOverride: 3600,
-		automationEngine:                  automations.NewEngine(mqtt, repo),
-		registrar:                         services.NewHubRegisterService(repo, eventHub, 3600),
 	}
 
+	h.registrar = services.NewHubRegisterService(repo, eventHub, 3600)
+	h.automationEngine = automations.NewEngine(h.registrar, mqtt)
 	h.wp = utils.NewWorkerPool(1, ctx)
 	h.wp.Run()
 
@@ -48,11 +48,6 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 
 	h.eventHub.OnLoadDevices(func() interface{} {
 		return h.repo.ListAllDevicesV2()
-	})
-
-	// todo :remove
-	h.eventHub.OnLoadBridgeFeatures(func() interface{} {
-		return h.repo.GetBridgeFeatures()
 	})
 
 	h.eventHub.OnDeleteAutomationTrigger(func(p interface{}) (interface{}, error) {

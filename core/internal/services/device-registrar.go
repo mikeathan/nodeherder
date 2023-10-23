@@ -32,12 +32,12 @@ func (s *DeviceRegistrar) LookupByName(name string) (*devices.DeviceV2, error) {
 
 	id := s.ResolveId(name)
 
-	return s.repo.FindDeviceV2ById(id)
+	return s.repo.FindDeviceV2(id)
 }
 
 func (s *DeviceRegistrar) LookupById(id string) (*devices.DeviceV2, error) {
 
-	return s.repo.FindDeviceV2ById(id)
+	return s.repo.FindDeviceV2(id)
 }
 
 func (s *DeviceRegistrar) configureIdMapper(bridgeInfoList []*devices.BridgeInfo) {
@@ -67,6 +67,16 @@ func (s *DeviceRegistrar) configureIdMapper(bridgeInfoList []*devices.BridgeInfo
 	}
 }
 
+func (a *DeviceRegistrar) FindBridgeInfo(id string) *devices.BridgeInfo {
+	for _, device := range a.bridgeInfoList {
+		if device.IeeeAddress == id {
+			return device
+		}
+	}
+
+	return nil
+}
+
 func (s *DeviceRegistrar) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int) []*devices.DeviceV2 {
 
 	s.bridgeInfoList = bridgeInfoList
@@ -79,7 +89,7 @@ func (s *DeviceRegistrar) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, d
 			continue
 		}
 
-		d, err := s.repo.FindDeviceV2ById(bridgeInfo.IeeeAddress)
+		d, err := s.repo.FindDeviceV2(bridgeInfo.IeeeAddress)
 		if err != nil {
 			// not found in repo, new it here
 			d = devices.NewDeviceV2(bridgeInfo.IeeeAddress)

@@ -3,6 +3,7 @@ package automations
 import (
 	"errors"
 	"node-herder/internal/mqtt"
+	"node-herder/internal/services"
 	"node-herder/models/devices"
 	"node-herder/utils"
 	"node-herder/utils/storage"
@@ -26,14 +27,14 @@ type Engine interface { // TODO: might need to move it to Models????
 
 type AutomationEngine struct {
 	mqttClient        mqtt.MqttClient
-	repo              devices.Repository
+	registrar         *services.DeviceRegistrar
 	automationStorage storage.Storage[Device]
 }
 
-func NewEngine(mqtt mqtt.MqttClient, repo devices.Repository) *AutomationEngine {
+func NewEngine(registrar *services.DeviceRegistrar, mqtt mqtt.MqttClient) *AutomationEngine {
 	return &AutomationEngine{
 		mqttClient:        mqtt,
-		repo:              repo,
+		registrar:         registrar,
 		automationStorage: storage.NewJsonDiskStorage[Device](automationDir),
 	}
 }
@@ -60,7 +61,7 @@ func (a *AutomationEngine) Load(id string) (*Device, error) {
 func (a *AutomationEngine) Add(automation *Device) error {
 
 	utils.LogInfof("adding automation id=%s, friendlyName=%s, enabled=%v", automation.Id, automation.FriendlyName, automation.Enabled)
-	err := automation.configure(a.repo, a.mqttClient)
+	err := automation.configure(a.registrar, a.mqttClient)
 	if err != nil {
 		utils.LogErrorf("configure automation id %s failed. Error=%s", automation.Id, err.Error())
 		return err
@@ -112,7 +113,6 @@ func (a *AutomationEngine) Initialize() {
 	for _, automation := range automations {
 
 		utils.LogInfof("Loading automation id= %s, friendlyName=%s, Enabled=%t", automation.Id, automation.FriendlyName, automation.Enabled)
-		err := automation.configure(a.repo, a.mqttClient)
 		if err != nil {
 			utils.LogErrorf("configure automation id %s failed. Error=%s", automation.Id, err.Error())
 			continue

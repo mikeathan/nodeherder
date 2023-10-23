@@ -3,6 +3,7 @@ package automations
 import (
 	"fmt"
 	"node-herder/internal/mqtt"
+	"node-herder/internal/services"
 	"node-herder/models/devices"
 )
 
@@ -94,10 +95,10 @@ func (d *Device) EvaluateV2(device *devices.DeviceV2) bool {
 	return false
 }
 
-func (d *Device) configure(deviceRepo devices.Repository, client mqtt.MqttClient) error {
+func (d *Device) configure(registrar *services.DeviceRegistrar, client mqtt.MqttClient) error {
 
 	//  check if device with automation id exists. friendyname can change
-	bridgeInfo := deviceRepo.FindBridgeInfo(d.Id)
+	bridgeInfo := registrar.FindBridgeInfo(d.Id)
 	if bridgeInfo == nil {
 		return fmt.Errorf("automation id %s not found", d.Id)
 	}
@@ -110,7 +111,7 @@ func (d *Device) configure(deviceRepo devices.Repository, client mqtt.MqttClient
 	for _, trigger := range d.Triggers {
 
 		// validate actions
-		err := configureAction(deviceRepo, trigger.Action, client)
+		err := configureAction(registrar, trigger.Action, client)
 		if err != nil {
 			return err
 		}
@@ -121,9 +122,9 @@ func (d *Device) configure(deviceRepo devices.Repository, client mqtt.MqttClient
 }
 
 // validate actions
-func configureAction(deviceRepo devices.Repository, action *MqttAction, client mqtt.MqttClient) error {
+func configureAction(registrar *services.DeviceRegistrar, action *MqttAction, client mqtt.MqttClient) error {
 
-	bridgeInfo := deviceRepo.FindBridgeInfo(action.Id)
+	bridgeInfo := registrar.FindBridgeInfo(action.Id)
 	if bridgeInfo == nil {
 		return fmt.Errorf("action id %s not found", action.Id)
 	}

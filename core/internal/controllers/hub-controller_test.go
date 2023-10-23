@@ -45,10 +45,8 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 		t.Fatalf("want %s got %s", name, "nil")
 	}
 
-	wantId := repo.ResolveId(name)
-
-	if device.Id != wantId {
-		t.Fatalf("want %s got %s", wantId, device.Id)
+	if device.Id != name {
+		t.Fatalf("want %s got %s", name, device.Id)
 	}
 }
 
@@ -72,9 +70,8 @@ func TestProcessorUpdatesExistingDevice(t *testing.T) {
 		t.Fatalf("want %s got %s", "device", "nil")
 	}
 
-	wantId := repo.ResolveId(name)
-	if device.Id != wantId {
-		t.Fatalf("want %s got %s", wantId, device.Id)
+	if device.FriendlyName != name {
+		t.Fatalf("want %s got %s", name, device.Id)
 	}
 }
 
@@ -95,9 +92,8 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	wantId := repo.ResolveId(name)
-	if device.Id != wantId {
-		t.Fatalf("want %s got %s", wantId, device.Id)
+	if device.Id != name {
+		t.Fatalf("want %s got %s", name, device.Id)
 	}
 
 	if device.Properties["last_seen"] == nil {
