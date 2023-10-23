@@ -28,14 +28,12 @@ func (s *DeviceRegistrar) Register(device *devices.DeviceV2) {
 func (s *DeviceRegistrar) Lookup(id string) (*devices.DeviceV2, error) {
 
 	return s.repo.FindDeviceV2ById(id)
-
 }
 
-func (s *DeviceRegistrar) registerBridge(bridgeInfoList []*devices.BridgeInfo) {
+func (s *DeviceRegistrar) configureIdMapper(bridgeInfoList []*devices.BridgeInfo) {
 
 	// remove items from idMapper, that use to have a bridge info but dont exist in current bridge info list
 	// but cant clean idmapper because it contains non bridge infor items
-	s.bridgeInfoList = bridgeInfoList
 
 	// clean up
 	for name, id := range s.idMapper {
@@ -59,12 +57,14 @@ func (s *DeviceRegistrar) registerBridge(bridgeInfoList []*devices.BridgeInfo) {
 	}
 }
 
-func (s *DeviceRegistrar) Initialize(bridgeDevices []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int) []*devices.DeviceV2 {
+func (s *DeviceRegistrar) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int) []*devices.DeviceV2 {
 
-	s.registerBridge(bridgeDevices)
+	s.bridgeInfoList = bridgeInfoList
+
+	s.configureIdMapper(bridgeInfoList)
 
 	allDevices := []*devices.DeviceV2{}
-	for _, bridgeInfo := range bridgeDevices {
+	for _, bridgeInfo := range bridgeInfoList {
 		if !bridgeInfo.IsActive() {
 			continue
 		}

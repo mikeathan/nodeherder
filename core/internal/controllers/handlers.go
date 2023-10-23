@@ -51,7 +51,7 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 		return err
 	}
 
-	b.registrar.Initialize(bridgeInfoList, b.deviceAvailabilityTimeout)
+	b.registrar.RegisterBridge(bridgeInfoList, b.deviceAvailabilityTimeout)
 	b.automationEngine.Initialize()
 
 	for _, device := range bridgeInfoList {
