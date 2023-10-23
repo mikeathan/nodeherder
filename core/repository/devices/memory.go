@@ -76,6 +76,7 @@ func (s *MemoryDeviceRepo) ListAllDevicesV2() []*devices.DeviceV2 {
 	return devices
 }
 
+// todo :remove
 func (s *MemoryDeviceRepo) GetBridgeFeatures() []*devices.BridgeFeature {
 	var features []*devices.BridgeFeature
 
@@ -119,6 +120,7 @@ func (s *MemoryDeviceRepo) GetBridgeFeatures() []*devices.BridgeFeature {
 	return features
 }
 
+// todo :remove
 func (s *MemoryDeviceRepo) RegisterBridge(bridgeInfoList []*devices.BridgeInfo) {
 
 	// remove items from idMapper, that use to have a bridge info but dont exist in current bridge info list

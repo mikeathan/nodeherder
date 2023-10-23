@@ -4,9 +4,34 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/utils"
+	"strings"
 )
 
-func (s *) RegisterBridge(bridgeInfoList []*devices.BridgeInfo) {
+type DeviceRegistrar struct {
+	bridgeInfoList            []*devices.BridgeInfo
+	idMapper                  map[string]string
+	repo                      devices.Repository
+	eventHub                  ws.EventHub
+	deviceAvailabilityTimeout int
+}
+
+func NewHubRegisterService(repo devices.Repository, hub ws.EventHub, deviceAvailabilityTimeout int) *DeviceRegistrar {
+	return &DeviceRegistrar{repo: repo, eventHub: hub, deviceAvailabilityTimeout: deviceAvailabilityTimeout}
+}
+
+func (s *DeviceRegistrar) Register(device *devices.DeviceV2) {
+	id := s.ResolveId(device.Id)
+
+	s.repo.StoreV2(id, device)
+}
+
+func (s *DeviceRegistrar) Lookup(id string) (*devices.DeviceV2, error) {
+
+	return s.repo.FindDeviceV2ById(id)
+
+}
+
+func (s *DeviceRegistrar) registerBridge(bridgeInfoList []*devices.BridgeInfo) {
 
 	// remove items from idMapper, that use to have a bridge info but dont exist in current bridge info list
 	// but cant clean idmapper because it contains non bridge infor items
@@ -34,7 +59,9 @@ func (s *) RegisterBridge(bridgeInfoList []*devices.BridgeInfo) {
 	}
 }
 
-func BuildFromBridge(hub ws.EventHub, repo devices.Repository, bridgeDevices []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int) []*devices.DeviceV2 {
+func (s *DeviceRegistrar) Initialize(bridgeDevices []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int) []*devices.DeviceV2 {
+
+	s.registerBridge(bridgeDevices)
 
 	allDevices := []*devices.DeviceV2{}
 	for _, bridgeInfo := range bridgeDevices {
@@ -42,7 +69,7 @@ func BuildFromBridge(hub ws.EventHub, repo devices.Repository, bridgeDevices []*
 			continue
 		}
 
-		d, err := repo.FindDeviceV2ById(bridgeInfo.IeeeAddress)
+		d, err := s.repo.FindDeviceV2ById(bridgeInfo.IeeeAddress)
 		if err != nil {
 			// not found in repo, new it here
 			d = devices.NewDeviceV2(bridgeInfo.IeeeAddress)
@@ -68,7 +95,7 @@ func BuildFromBridge(hub ws.EventHub, repo devices.Repository, bridgeDevices []*
 			}
 
 			d.Monitor(deviceAvailabilityTimeoutOverride, func(p interface{}) {
-				hub.Broadcast(ws.DevicePropertiesUpdated, p)
+				s.eventHub.Broadcast(ws.DevicePropertiesUpdated, p)
 			})
 		}
 
@@ -81,4 +108,16 @@ func BuildFromBridge(hub ws.EventHub, repo devices.Repository, bridgeDevices []*
 
 	return allDevices
 
+}
+
+func (a *DeviceRegistrar) ResolveId(name string) string {
+
+	// check if id already exists
+	if id, ok := a.idMapper[name]; ok {
+		return id
+	}
+
+	// create new id from name
+	newId := strings.ReplaceAll(name, " ", "_")
+	return utils.Hash(newId)
 }

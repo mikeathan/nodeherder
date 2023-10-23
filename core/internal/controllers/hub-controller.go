@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"node-herder/internal/automations"
 	"node-herder/internal/mqtt"
+	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"strconv"
@@ -23,10 +24,11 @@ type HubController struct {
 	handlers                          map[string]handler
 	DeviceAvailabilityTimeoutOverride int
 	automationEngine                  automations.Engine
-	configured                        bool
+	registrar                         *services.DeviceRegistrar
 }
 
 func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devices.Repository, ctx context.Context) *HubController {
+
 	h := &HubController{
 		eventHub:                          eventHub,
 		mqtt:                              mqtt,
@@ -34,7 +36,7 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		handlers:                          map[string]handler{},
 		DeviceAvailabilityTimeoutOverride: 3600,
 		automationEngine:                  automations.NewEngine(mqtt, repo),
-		configured:                        false,
+		registrar:                         services.NewHubRegisterService(repo, eventHub, 3600),
 	}
 
 	h.wp = utils.NewWorkerPool(1, ctx)
@@ -48,6 +50,7 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		return h.repo.ListAllDevicesV2()
 	})
 
+	// todo :remove
 	h.eventHub.OnLoadBridgeFeatures(func() interface{} {
 		return h.repo.GetBridgeFeatures()
 	})
@@ -144,13 +147,6 @@ func (m *HubController) configureBridge(bridgeInfoList []*devices.BridgeInfo) {
 
 	m.repo.RegisterBridge(bridgeInfoList) //todo:move to service
 
-	// ??????????
-	// devices := services.BuildFromBridge(m.eventHub, m.repo, bridgeInfoList, m.DeviceAvailabilityTimeoutOverride)
-	// for _, device := range devices {
-	// 	m.repo.StoreV2(device.Id, device)
-	// }
-	// ??????????
-
 	m.automationEngine.Initialize()
 }
 
@@ -165,7 +161,7 @@ func (m *HubController) ProcessMessage(id string, payload []byte, connType strin
 		if strings.HasPrefix(id, "bridge") {
 			switch id {
 			case "bridge/devices":
-				var h = newBridgeConfigurationHandler(m.eventHub, m.mqtt, m)
+				var h = newBridgeConfigurationHandler(m.registrar, m.automationEngine, m.mqtt, m.DeviceAvailabilityTimeoutOverride)
 				m.handlers[id] = h
 			case "bridge/logging":
 				var h = newBridgeLoggingHandler(m.eventHub)

@@ -2,7 +2,9 @@ package controllers
 
 import (
 	"fmt"
+	"node-herder/internal/automations"
 	"node-herder/internal/mqtt"
+	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/utils"
@@ -28,13 +30,14 @@ type handler interface {
 }
 
 type bridgeConfigurationHandler struct {
-	ws   ws.EventHub
-	mqtt mqtt.MqttClient
-	hub  *HubController
+	mqtt                      mqtt.MqttClient
+	registrar                 *services.DeviceRegistrar
+	automationEngine          automations.Engine
+	deviceAvailabilityTimeout int
 }
 
-func newBridgeConfigurationHandler(ws ws.EventHub, mqtt mqtt.MqttClient, hub *HubController) *bridgeConfigurationHandler {
-	return &bridgeConfigurationHandler{ws: ws, mqtt: mqtt, hub: hub}
+func newBridgeConfigurationHandler(registrar *services.DeviceRegistrar, engine automations.Engine, mqtt mqtt.MqttClient, deviceAvailabilityTimeout int) *bridgeConfigurationHandler {
+	return &bridgeConfigurationHandler{registrar: registrar, automationEngine: engine, mqtt: mqtt, deviceAvailabilityTimeout: deviceAvailabilityTimeout}
 }
 
 func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, payload []byte) error {
@@ -43,15 +46,14 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 		return fmt.Errorf("invalid hub configuration topic %s", id)
 	}
 
-	// TODO:
-	// new all devices here and setup
-
 	bridgeInfoList, err := devices.LoadBridgeDevices(payload)
 	if err != nil {
 		return err
 	}
 
-	b.hub.configureBridge(bridgeInfoList)
+	b.registrar.Initialize(bridgeInfoList, b.deviceAvailabilityTimeout)
+	b.automationEngine.Initialize()
+
 	for _, device := range bridgeInfoList {
 		if !device.IsActive() {
 			utils.LogInfof("Bridge registration: skipping  %s", device.FriendlyName)
