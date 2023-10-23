@@ -90,14 +90,14 @@ func (b *bridgeLoggingHandler) ProcessPayload(id string, connType string, payloa
 
 type deviceV2Handler struct {
 	AvailabilityTimeoutInSeconds int
-	repo                         devices.Repository
+	registrar                    *services.DeviceRegistrar
 	eventHub                     ws.EventHub
 	hub                          *HubController
 }
 
-func newDeviceV2Handler(repo devices.Repository, eventHub ws.EventHub, hub *HubController) *deviceV2Handler {
+func newDeviceV2Handler(registrar *services.DeviceRegistrar, eventHub ws.EventHub, hub *HubController) *deviceV2Handler {
 	return &deviceV2Handler{
-		repo:                         repo,
+		registrar:                    registrar,
 		eventHub:                     eventHub,
 		hub:                          hub,
 		AvailabilityTimeoutInSeconds: 3600, // 1 Hour
@@ -111,7 +111,7 @@ func (c *deviceV2Handler) ProcessPayload(friendlyName string, connType string, p
 		return err
 	}
 
-	device, _ := c.repo.FindDeviceV2(friendlyName)
+	device, _ := c.registrar.LookupByName(friendlyName)
 	if device == nil {
 
 		device, err = devices.CreateNewDeviceV2(c.repo, friendlyName, connType, dataMap)

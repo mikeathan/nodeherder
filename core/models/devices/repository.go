@@ -5,7 +5,6 @@ type Repository interface {
 	StoreV2(friendlyName string, device *DeviceV2)
 	FindDeviceV2(friendlyName string) (*DeviceV2, error)
 	FindDeviceV2ById(id string) (*DeviceV2, error)
-	RegisterBridge(bridgeInfoList []*BridgeInfo)
 	FindBridgeInfo(id string) *BridgeInfo
 	ResolveId(friendlyName string) string
 	GetBridgeFeatures() []*BridgeFeature

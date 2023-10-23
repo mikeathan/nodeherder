@@ -143,13 +143,6 @@ func (c *HubController) Enqueue(id string, payload map[string]interface{}, connT
 	return c.ProcessMessage(id, bytes, connType)
 }
 
-func (m *HubController) configureBridge(bridgeInfoList []*devices.BridgeInfo) {
-
-	m.repo.RegisterBridge(bridgeInfoList) //todo:move to service
-
-	m.automationEngine.Initialize()
-}
-
 func (m *HubController) TriggerAutomationV2(device *devices.DeviceV2) {
 	m.automationEngine.HandleDeviceV2(device)
 }
@@ -168,7 +161,7 @@ func (m *HubController) ProcessMessage(id string, payload []byte, connType strin
 				m.handlers[id] = h
 			}
 		} else {
-			var h = newDeviceV2Handler(m.repo, m.eventHub, m)
+			var h = newDeviceV2Handler(m.registrar, m.eventHub, m)
 			h.AvailabilityTimeoutInSeconds = m.DeviceAvailabilityTimeoutOverride
 			m.handlers[id] = h
 		}

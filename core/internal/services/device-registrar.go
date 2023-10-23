@@ -19,13 +19,23 @@ func NewHubRegisterService(repo devices.Repository, hub ws.EventHub, deviceAvail
 	return &DeviceRegistrar{repo: repo, eventHub: hub, deviceAvailabilityTimeout: deviceAvailabilityTimeout}
 }
 
-func (s *DeviceRegistrar) Register(device *devices.DeviceV2) {
-	id := s.ResolveId(device.Id)
+func (s *DeviceRegistrar) Register(friendlyName string, device *devices.DeviceV2) {
+	id := s.ResolveId(friendlyName)
 
 	s.repo.StoreV2(id, device)
+
+	s.idMapper[friendlyName] = id // store id in mapper for easy access
+
 }
 
-func (s *DeviceRegistrar) Lookup(id string) (*devices.DeviceV2, error) {
+func (s *DeviceRegistrar) LookupByName(name string) (*devices.DeviceV2, error) {
+
+	id := s.ResolveId(name)
+
+	return s.repo.FindDeviceV2ById(id)
+}
+
+func (s *DeviceRegistrar) LookupById(id string) (*devices.DeviceV2, error) {
 
 	return s.repo.FindDeviceV2ById(id)
 }
