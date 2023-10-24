@@ -78,6 +78,7 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 
 	wg.Wait()
 }
+
 func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 
 	wg := &sync.WaitGroup{}

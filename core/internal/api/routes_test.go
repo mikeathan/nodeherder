@@ -9,6 +9,7 @@ import (
 	"node-herder/internal/controllers"
 	"node-herder/mocks"
 	repository "node-herder/repository/devices"
+	"node-herder/utils"
 	"strings"
 	"testing"
 	"time"
@@ -83,15 +84,15 @@ func TestHandleSuccesfullyRootPayload(t *testing.T) {
 	if status := w.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
-
-	device, err := repo.FindDeviceV2(name)
+	id := utils.Hash(name)
+	device, err := repo.FindDeviceV2(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 	if device == nil {
 		t.Fatalf("want %s got %s", name, "nil")
 	}
-	id := repo.ResolveId(name)
+	id = utils.Hash(name)
 	if device.Id != id {
 		t.Fatalf("want %s got %s", id, device.Id)
 	}
@@ -145,11 +146,13 @@ func TestProcessorHandleRootPayloadWithTimestamp(t *testing.T) {
 	ts, _ := time.Parse(time.RFC3339, timestamp)
 	want := ts.Format(time.RFC3339)
 	time.Sleep(100 * time.Millisecond)
-	device, err := repo.FindDeviceV2(name)
+
+	id := utils.Hash(name)
+	device, err := repo.FindDeviceV2(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
-	id := repo.ResolveId(name)
+
 	if device.Id != id {
 		t.Fatalf("want %s got %s", id, device.Id)
 	}
@@ -184,14 +187,16 @@ func TestHandleSuccesfullyPayload(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 
-	device, err := repo.FindDeviceV2(name)
+	id := utils.Hash(name)
+	device, err := repo.FindDeviceV2(id)
+
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 	if device == nil {
 		t.Fatalf("want %s got %s", name, "nil")
 	}
-	id := repo.ResolveId(name)
+
 	if device.Id != id {
 		t.Fatalf("want %s got %s", id, device.Id)
 	}

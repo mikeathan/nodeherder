@@ -4,7 +4,6 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/utils"
-	"strings"
 )
 
 type devicePayload struct {
@@ -163,7 +162,5 @@ func (a *DeviceRegistrar) ResolveId(name string) string {
 		return id
 	}
 
-	// create new id from name
-	newId := strings.ReplaceAll(name, " ", "_")
-	return utils.Hash(newId)
+	return utils.Hash(name)
 }

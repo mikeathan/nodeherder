@@ -3,6 +3,7 @@ package automations_test
 import (
 	"errors"
 	"node-herder/internal/automations"
+	"node-herder/internal/services"
 	"node-herder/mocks"
 	"node-herder/utils/storage"
 	"sort"
@@ -15,11 +16,12 @@ func TestExportToFile(t *testing.T) {
 	t.Skip("delete - it needs Bridgeinfo mocking which we currently dont have")
 	mqtt := &mocks.MockMqttClient{}
 	repo := &mocks.NopRepository{}
-
+	eventHub := &mocks.MockEventHub{}
+	registrar := services.NewHubRegisterService(repo, eventHub, 30000)
 	//automationData := mockData(mqtt)
 	storage := NewMockStorage([]*automations.Device{})
 
-	engine := automations.NewEngine(mqtt, repo)
+	engine := automations.NewEngine(registrar, mqtt)
 	engine.WithStorage(storage)
 	engine.Initialize()
 
