@@ -114,12 +114,16 @@ func (c *deviceV2Handler) ProcessPayload(friendlyName string, connType string, p
 	device, _ := c.registrar.LookupByName(friendlyName)
 	if device == nil {
 
-		device, err = devices.CreateNewDeviceV2(c.repo, friendlyName, connType, dataMap)
+		device, err = devices.CreateNewDeviceV2(c.registrar, friendlyName, connType, dataMap)
 		if err != nil {
 			return err
 		}
 
-		device.Monitor(c.AvailabilityTimeoutInSeconds, func(p interface{}) {
+		device.Monitor(c.AvailabilityTimeoutInSe
+		}
+
+		// check to see if we have an automation for current device
+		c.hub.TriggerAutomationV2(device)conds, func(p interface{}) {
 			c.eventHub.Broadcast(ws.DevicePropertiesUpdated, p)
 		})
 

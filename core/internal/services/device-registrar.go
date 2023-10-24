@@ -1,11 +1,21 @@
 package services
 
 import (
+	"errors"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/utils"
 	"strings"
 )
+
+type devicePayload struct {
+	newDevice bool
+	data      interface{}
+}
+
+func newDevicePayload(newDevice bool, data interface{}) *devicePayload {
+	return &devicePayload{newDevice: newDevice, data: data}
+}
 
 type DeviceRegistrar struct {
 	bridgeInfoList            []*devices.BridgeInfo
@@ -38,6 +48,62 @@ func (s *DeviceRegistrar) LookupByName(name string) (*devices.DeviceV2, error) {
 func (s *DeviceRegistrar) LookupById(id string) (*devices.DeviceV2, error) {
 
 	return s.repo.FindDeviceV2(id)
+}
+
+func (s *DeviceRegistrar) RegisterPayload(friendlyName string, connType string, data map[string]interface{}) (*devicePayload, error) {
+
+	var err error
+	device, _ := s.LookupByName(friendlyName)
+	var newDevice bool
+	if device == nil {
+
+		device, err = s.createNewDevice(friendlyName, connType, data)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		updatedData := device.TryUpdate(data)
+		if !updatedData.HasData() {
+			return nil, errors.New("data not changed")
+		}
+	}
+
+	s.Register(friendlyName, device)
+
+	return newDevicePayload(), nil
+}
+
+func (s *DeviceRegistrar) createNewDevice(friendlyName string, connType string, data map[string]interface{}) (*devices.DeviceV2, error) {
+
+	if _, ok := data[lastSeenKey]; !ok {
+		data[lastSeenKey] = getCurrentTime()
+	}
+	data[availabilityKey] = online
+
+	id := s.ResolveId(friendlyName)
+	var newDevice = devices.NewDeviceV2(id)
+	newDevice.FriendlyName = friendlyName
+	newDevice.ConnectionType = connType
+
+	if _, ok := data[batterKey]; !ok {
+		newDevice.PowerSource = mainsKey
+	} else {
+		newDevice.PowerSource = batterKey
+	}
+
+	bridgeInfo := s.FindBridgeInfo(id)
+	if bridgeInfo != nil {
+		newDevice.Exposes = devices.CreateExposuresFromBridge(data, bridgeInfo)
+	} else { // device not in hub bridge
+		newDevice.Exposes = devices.CreateExposures(data)
+	}
+
+	newDevice.Properties = devices.CreateProperties(data)
+	if len(newDevice.Exposes) == 0 {
+		return nil, errors.New("invalid payload - no exposed entries found")
+	}
+
+	return newDevice, nil
 }
 
 func (s *DeviceRegistrar) configureIdMapper(bridgeInfoList []*devices.BridgeInfo) {

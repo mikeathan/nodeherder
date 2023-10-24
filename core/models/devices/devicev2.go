@@ -3,6 +3,7 @@ package devices
 import (
 	"errors"
 	"fmt"
+	"node-herder/internal/services"
 	"node-herder/utils"
 	"time"
 )
@@ -150,7 +151,7 @@ func CreateFromExpose(expose BridgeExpose) (*Entity, error) {
 	return newEntity, nil
 }
 
-func createEntity(name string, description string, data any, unit string, dataType string, props map[string]any) *Entity {
+func CreateEntity(name string, description string, data any, unit string, dataType string, props map[string]any) *Entity {
 	if props == nil {
 		props = make(map[string]any)
 	}
@@ -163,7 +164,7 @@ func createEntity(name string, description string, data any, unit string, dataTy
 	return newEntity
 }
 
-func createProperties(data map[string]interface{}) map[string]any {
+func CreateProperties(data map[string]interface{}) map[string]any {
 
 	var props = map[string]any{}
 	for key, value := range data {
@@ -174,20 +175,20 @@ func createProperties(data map[string]interface{}) map[string]any {
 	return props
 }
 
-func createExposures(data map[string]interface{}) map[string]*Entity {
+func CreateExposures(data map[string]interface{}) map[string]*Entity {
 	var entities = make(map[string]*Entity)
 	for key, value := range data {
 		if _, ok := exposesWhitelist[key]; !ok {
 			continue
 		}
 
-		newEntity := createEntity(key, "", value, units[key], "", nil)
+		newEntity := CreateEntity(key, "", value, units[key], "", nil)
 		entities[key] = newEntity
 	}
 	return entities
 }
 
-func createExposuresFromBridge(data map[string]interface{}, bridgeInfo *BridgeInfo) map[string]*Entity {
+func CreateExposuresFromBridge(data map[string]interface{}, bridgeInfo *BridgeInfo) map[string]*Entity {
 
 	var entities = map[string]*Entity{}
 	for _, expose := range bridgeInfo.Definition.Exposes {
@@ -200,7 +201,7 @@ func createExposuresFromBridge(data map[string]interface{}, bridgeInfo *BridgeIn
 			}
 
 			if value, ok := data[expose.Property]; ok {
-				entities[expose.Property] = createEntity(expose.Property, expose.Description, value, expose.Unit, expose.Type, nil)
+				entities[expose.Property] = CreateEntity(expose.Property, expose.Description, value, expose.Unit, expose.Type, nil)
 			}
 		}
 		// load features
@@ -233,15 +234,14 @@ func createExposuresFromBridge(data map[string]interface{}, bridgeInfo *BridgeIn
 	return entities
 }
 
-func CreateNewDeviceV2(repo Repository, friendlyName string, connType string, data map[string]interface{}) (*DeviceV2, error) {
+func CreateNewDeviceV2(registrar *services.DeviceRegistrar, friendlyName string, connType string, data map[string]interface{}) (*DeviceV2, error) {
 
 	if _, ok := data[lastSeenKey]; !ok {
 		data[lastSeenKey] = getCurrentTime()
 	}
 	data[availabilityKey] = online
 
-	id := repo.ResolveId(friendlyName)
-
+	id := registrar.ResolveId(friendlyName)
 	var newDevice = NewDeviceV2(id)
 	newDevice.FriendlyName = friendlyName
 	newDevice.ConnectionType = connType
@@ -252,7 +252,7 @@ func CreateNewDeviceV2(repo Repository, friendlyName string, connType string, da
 		newDevice.PowerSource = batterKey
 	}
 
-	bridgeInfo := repo.FindBridgeInfo(id)
+	bridgeInfo := registrar.FindBridgeInfo(id)
 	if bridgeInfo != nil {
 		newDevice.Exposes = createExposuresFromBridge(data, bridgeInfo)
 	} else { // device not in hub bridge
