@@ -25,7 +25,7 @@ type DeviceRegistrar struct {
 }
 
 func NewHubRegisterService(repo devices.Repository, hub ws.EventHub, deviceAvailabilityTimeout int) *DeviceRegistrar {
-	return &DeviceRegistrar{repo: repo, eventHub: hub, deviceAvailabilityTimeout: deviceAvailabilityTimeout}
+	return &DeviceRegistrar{repo: repo, eventHub: hub, idMapper: make(map[string]string), deviceAvailabilityTimeout: deviceAvailabilityTimeout}
 }
 
 func (s *DeviceRegistrar) Register(friendlyName string, device *devices.DeviceV2) {
