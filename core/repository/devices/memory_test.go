@@ -23,7 +23,7 @@ func TestRepositoryCanAddOneDevice(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()
 	name := "device 1"
-	device, _ := devices.CreateNewDeviceV2(repo, name, "mqtt", createMockPayload(name, 50, 60.1, 23.5, 120.0))
+	device, _ := devices.CreateNewDeviceV2("1", name, "mqtt", nil, createMockPayload(name, 50, 60.1, 23.5, 120.0))
 
 	repo.StoreV2(name, device)
 	res, err := repo.FindDeviceV2(name)
@@ -89,10 +89,10 @@ func TestRepositoryCanAddMultipleDevices(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()
 	dev1Name := "device 1"
-	device1, _ := devices.CreateNewDeviceV2(repo, dev1Name, "mqtt", createMockPayload(dev1Name, 50, 60.1, 23.5, 120.0))
+	device1, _ := devices.CreateNewDeviceV2("1", dev1Name, "mqtt", nil, createMockPayload(dev1Name, 50, 60.1, 23.5, 120.0))
 
 	dev2Name := "device 2"
-	device2, _ := devices.CreateNewDeviceV2(repo, dev2Name, "mqtt", createMockPayload(dev2Name, 90, 34.7, 36.2, 56.0))
+	device2, _ := devices.CreateNewDeviceV2("2", dev2Name, "mqtt", nil, createMockPayload(dev2Name, 90, 34.7, 36.2, 56.0))
 
 	repo.StoreV2(dev1Name, device1)
 	repo.StoreV2(dev2Name, device2)
@@ -104,13 +104,13 @@ func TestRepositoryCanAddMultipleDevices(t *testing.T) {
 	if len(devices) > 2 {
 		t.Fatalf("contains invalid devices")
 	}
-	validateDevice(t, devices[1], device1)
-	validateDevice(t, devices[0], device2)
+	validateDevice(t, devices[0], device1)
+	validateDevice(t, devices[1], device2)
 
-	if devices[1].Id != dev1Name {
+	if devices[0].FriendlyName != dev1Name {
 		t.Fatalf("device 1 name mismatch")
 	}
-	if devices[0].Id != dev2Name {
+	if devices[1].FriendlyName != dev2Name {
 		t.Fatalf("device 2 name mismatch")
 	}
 }
@@ -119,9 +119,9 @@ func TestRepositoryCanUpdateExistingDevice(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()
 	dev1Name := "device 1"
-	device1, _ := devices.CreateNewDeviceV2(repo, dev1Name, "mqtt", createMockPayload(dev1Name, 50, 60.1, 23.5, 120.0))
+	device1, _ := devices.CreateNewDeviceV2("1", dev1Name, "mqtt", nil, createMockPayload(dev1Name, 50, 60.1, 23.5, 120.0))
 
-	device1b, _ := devices.CreateNewDeviceV2(repo, dev1Name, "mqtt", createMockPayload(dev1Name, 90, 34.7, 36.2, 56.0))
+	device1b, _ := devices.CreateNewDeviceV2("1", dev1Name, "mqtt", nil, createMockPayload(dev1Name, 90, 34.7, 36.2, 56.0))
 	repo.StoreV2(dev1Name, device1)
 	repo.StoreV2(dev1Name, device1b)
 	devices := repo.ListAllDevicesV2()
@@ -132,12 +132,5 @@ func TestRepositoryCanUpdateExistingDevice(t *testing.T) {
 	if len(devices) > 1 {
 		t.Fatalf("contains invalid devices")
 	}
-
-	if devices[0] != device1b {
-		t.Fatalf("device 1 payload mismatch")
-	}
-
-	if devices[0].Id != dev1Name {
-		t.Fatalf("device name mismatch")
-	}
+	validateDevice(t, devices[0], device1b)
 }
