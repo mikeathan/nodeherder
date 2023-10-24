@@ -120,6 +120,7 @@ func (c *deviceV2Handler) ProcessPayload(friendlyName string, connType string, p
 		}
 
 		c.eventHub.Broadcast(ws.DeviceAdded, device)
+		c.registrar.Register(friendlyName, device)
 	} else {
 
 		updatedData := device.Update(dataMap)
@@ -128,11 +129,12 @@ func (c *deviceV2Handler) ProcessPayload(friendlyName string, connType string, p
 		}
 
 		// check to see if we have an automation for current device
-		c.hub.TriggerAutomationV2(device)
-		c.eventHub.Broadcast(ws.DeviceUpdated, updatedData)
-	}
 
-	c.registrar.Register(friendlyName, device)
+		c.eventHub.Broadcast(ws.DeviceUpdated, updatedData)
+		c.registrar.Register(friendlyName, device)
+
+		c.hub.TriggerAutomationV2(device)
+	}
 
 	return nil
 }
