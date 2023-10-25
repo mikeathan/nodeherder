@@ -32,10 +32,13 @@ type AutomationEngine struct {
 }
 
 func NewEngine(registrar *services.DeviceRegistrar, mqtt mqtt.MqttClient) *AutomationEngine {
+
 	return &AutomationEngine{
-		mqttClient:        mqtt,
-		registrar:         registrar,
-		automationStorage: storage.NewJsonDiskStorage[Device](automationDir),
+		mqttClient: mqtt,
+		registrar:  registrar,
+		automationStorage: storage.NewJsonDiskStorage[Device](automationDir, func() *Device {
+			return newDevice()
+		}),
 	}
 }
 

@@ -16,17 +16,29 @@ type testItem struct {
 	internalData map[string]int
 }
 
-func (t *testItem) Initialize() {
-	t.internalData = make(map[string]int)
+func ctr() *testItem {
+	return &testItem{internalData: make(map[string]int)}
+}
+
+func newTestitem(id string, value int) *testItem {
+	return &testItem{Id: id, Value: value, internalData: make(map[string]int)}
+}
+
+func createDiskStorage() storage.Storage[testItem] {
+	ctr := func() *testItem {
+		return ctr()
+	}
+	return storage.NewJsonDiskStorage[testItem]("temp", ctr)
 }
 
 func TestInitializeFromDisk(t *testing.T) {
 
 	// add some files in root dir
 	items := []*testItem{}
-	items = append(items, &testItem{Id: "some file 1", Value: 1})
-	items = append(items, &testItem{Id: "some file 2", Value: 2})
-	disk := storage.NewJsonDiskStorage[testItem]("temp")
+	items = append(items, newTestitem("some file 1", 1))
+	items = append(items, newTestitem("some file 2", 2))
+
+	disk := createDiskStorage()
 
 	for _, item := range items {
 		err := disk.Store(item.Id, item)
@@ -50,7 +62,7 @@ func TestInitializeFromDisk(t *testing.T) {
 
 		item := items[idx]
 		// do some caching to make sure internal datastructures have been initialized
-		item.internalData[fmt.Sprint(idx)] = 1
+		result.internalData[fmt.Sprint(idx)] = 1
 		//
 		if result.Id != item.Id {
 			t.Errorf("item %d mismatch want %v got %v", idx, item.Id, result.Id)
@@ -83,7 +95,7 @@ func TestLoadingFromDisk(t *testing.T) {
 	items := []*testItem{}
 	items = append(items, &testItem{Id: "test1", Value: 1})
 	items = append(items, &testItem{Id: "test2", Value: 2})
-	disk := storage.NewJsonDiskStorage[testItem]("temp")
+	disk := createDiskStorage()
 
 	for _, item := range items {
 		err := disk.Store(item.Id, item)
@@ -134,7 +146,7 @@ func TestLoadingFromCache(t *testing.T) {
 	items := []*testItem{}
 	items = append(items, &testItem{Id: "test5", Value: 5})
 	items = append(items, &testItem{Id: "test6", Value: 6})
-	disk := storage.NewJsonDiskStorage[testItem]("temp")
+	disk := createDiskStorage()
 
 	for _, item := range items {
 		err := disk.Store(item.Id, item)

@@ -6,6 +6,7 @@ import (
 	"node-herder/internal/automations"
 	"node-herder/internal/mqtt"
 	"node-herder/mocks"
+	"node-herder/models/devices"
 	"strings"
 	"sync"
 	"testing"
@@ -52,7 +53,6 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 			"data2":                  90,
 			testCase.triggeredEntity: testCase.value,
 		}
-
 		var messageHandler = func(id string, payload []byte) {
 			if !testCase.result {
 				t.Fatalf("invalid msg received")
@@ -71,8 +71,10 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 		if testCase.result {
 			wg.Add(1)
 		}
+		device := devices.NewDeviceV2("1")
+		device.Exposes = createExposures(data)
 
-		deviceTrigger.EvaluateV2(data)
+		deviceTrigger.EvaluateV2(device)
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -147,7 +149,9 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 			wg.Add(1)
 		}
 
-		deviceTrigger.EvaluateV2(data)
+		device := devices.NewDeviceV2("1")
+		device.Exposes = createExposures(data)
+		deviceTrigger.EvaluateV2(device)
 
 		time.Sleep(testCase.sleepdelay * time.Millisecond)
 	}
@@ -263,4 +267,27 @@ func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay t
 	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffCondition)
 
 	return turnOffTrigger
+}
+
+func createExposures(data map[string]interface{}) map[string]*devices.Entity {
+	var entities = make(map[string]*devices.Entity)
+	for key, value := range data {
+
+		newEntity := createEntity(key, "", value, "", "", nil)
+		entities[key] = newEntity
+	}
+	return entities
+}
+
+func createEntity(name string, description string, data any, unit string, dataType string, props map[string]any) *devices.Entity {
+	if props == nil {
+		props = make(map[string]any)
+	}
+	newEntity := &devices.Entity{}
+	newEntity.Data = data
+	newEntity.Name = name
+	newEntity.Unit = unit
+	newEntity.Description = description
+	newEntity.Properties = props
+	return newEntity
 }

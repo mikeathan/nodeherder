@@ -8,3 +8,12 @@ type Storage[T any] interface {
 	Load(item string) (*T, error)
 	Delete(item string) error
 }
+
+type StorablePointer[T any] interface {
+	*T
+	Storable
+}
+
+type Storable interface {
+	Initialize()
+}

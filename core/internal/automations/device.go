@@ -19,7 +19,7 @@ type DeviceContext struct {
 	Payload     map[string]*devices.Entity
 }
 
-func NewDeviceContextV2() *DeviceContext {
+func NewDeviceContext() *DeviceContext {
 	return &DeviceContext{currentData: map[string]any{}, Payload: make(map[string]*devices.Entity)}
 }
 
@@ -40,8 +40,18 @@ type Device struct {
 	ctx          *DeviceContext
 }
 
-func (d Device) Initialize() {
-	d.ctx = &DeviceContext{}
+func newDevice() *Device {
+
+	d := &Device{
+		Id:           "",
+		FriendlyName: "",
+		Description:  "",
+		Enabled:      false,
+		Triggers:     []*Trigger{},
+		ctx:          NewDeviceContext(),
+	}
+
+	return d
 }
 
 func NewDevice(id string) *Device {
@@ -52,7 +62,7 @@ func NewDevice(id string) *Device {
 		Description:  "",
 		Enabled:      false,
 		Triggers:     []*Trigger{},
-		ctx:          &DeviceContext{},
+		ctx:          NewDeviceContext(),
 	}
 
 	return d
