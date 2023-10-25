@@ -72,7 +72,7 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 			wg.Add(1)
 		}
 
-		deviceTrigger.Evaluate(data)
+		deviceTrigger.EvaluateV2(data)
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -147,7 +147,7 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 			wg.Add(1)
 		}
 
-		deviceTrigger.Evaluate(data)
+		deviceTrigger.EvaluateV2(data)
 
 		time.Sleep(testCase.sleepdelay * time.Millisecond)
 	}

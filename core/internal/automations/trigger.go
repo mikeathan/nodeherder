@@ -47,21 +47,6 @@ type Condition struct {
 	EqualityOperator string `json:"equality"`
 }
 
-func (s *Condition) Evaluate(data map[string]any) bool {
-
-	value, ok := data[s.Name]
-	if !ok {
-		utils.LogDebugf("sensor %s not found in payload", s.Name)
-		return false
-	}
-
-	if EqualityOperators[s.EqualityOperator](value, s.Value) {
-		return true
-	}
-
-	return false
-}
-
 func (s *Condition) EvaluateV2(exposes map[string]*devices.Entity) bool {
 
 	entity, ok := exposes[s.Name]
@@ -83,27 +68,7 @@ type Trigger struct {
 	Action     *MqttAction  `json:"action"`
 }
 
-func (trigger *Trigger) process(ctx *DeviceContext) {
-
-	currValue := ctx.GetCurrent(trigger.Name)
-	for _, c := range trigger.Conditions {
-
-		isMatched := c.Evaluate(ctx.Payload)
-		if !isMatched {
-			trigger.Action.Stop()
-			return
-		}
-
-		// avoid calling action again for current trigger if value hasnt changed
-		if trigger.Name == c.Name && currValue == c.Value {
-			return
-		}
-	}
-
-	trigger.Action.Execute(trigger.Name, ctx)
-}
-
-func (trigger *Trigger) processV2(ctx *DeviceContextV2) {
+func (trigger *Trigger) processV2(ctx *DeviceContext) {
 
 	currValue := ctx.GetCurrentV2(trigger.Name)
 	for _, c := range trigger.Conditions {
@@ -141,7 +106,7 @@ func NewAction() *MqttAction {
 	return &MqttAction{Delay: 0}
 }
 
-func (a *MqttAction) ExecuteV2(name string, ctx *DeviceContextV2) {
+func (a *MqttAction) ExecuteV2(name string, ctx *DeviceContext) {
 	// no delay execution
 	if a.Delay == 0 {
 
@@ -203,69 +168,6 @@ func (a *MqttAction) ExecuteV2(name string, ctx *DeviceContextV2) {
 	}()
 }
 
-func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
-
-	// no delay execution
-	if a.Delay == 0 {
-
-		payload := a.buildPayload(name, ctx)
-
-		a.emit(payload)
-
-		// on success callback
-		// update sensor current value
-		ctx.SetCurrent(name, ctx.Payload[name])
-
-		return
-	}
-
-	if a.isPending {
-		a.Stop()
-		return
-	}
-
-	a.mut.Lock()
-	defer a.mut.Unlock()
-
-	// with delay execution
-	a.exit = make(chan bool, 1)
-	go func() {
-
-		utils.LogInfo("time constraint started")
-
-		timestamp := time.Now().Add(a.Delay)
-		diff := time.Until(timestamp).Milliseconds()
-
-		duration := time.Duration(diff)
-		ticker := *time.NewTicker(duration * time.Millisecond)
-		a.isPending = true
-
-		defer func() {
-			close(a.exit)
-			a.isPending = false
-		}()
-
-		select {
-		case <-ticker.C:
-
-			payload := a.buildPayload(name, ctx)
-
-			a.emit(payload)
-			ctx.SetCurrent(name, ctx.Payload[name])
-
-			// on success callback
-			// update sensor current value
-			utils.LogInfo("timer constraint finished")
-			return
-
-		case <-a.exit:
-
-			utils.LogInfo("timer constraint stopped")
-			return
-		}
-	}()
-}
-
 func (a *MqttAction) Stop() {
 	if a.isPending {
 		// stop it and exit
@@ -285,22 +187,7 @@ func (a *MqttAction) emit(payload []byte) {
 	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.FriendlyName)
 }
 
-func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) []byte {
-
-	payloadData := a.Data
-	if payloadData == nil {
-		payloadData = ctx.Payload[name]
-	}
-
-	jp := map[string]any{
-		a.Property: payloadData,
-	}
-
-	payload, _ := json.Marshal(jp)
-	return payload
-
-}
-func (a *MqttAction) buildPayloadV2(name string, ctx *DeviceContextV2) []byte {
+func (a *MqttAction) buildPayloadV2(name string, ctx *DeviceContext) []byte {
 
 	payloadData := a.Data
 	if payloadData == nil {

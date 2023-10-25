@@ -11,16 +11,21 @@ import (
 )
 
 type testItem struct {
-	Id    string `json:"id"`
-	Value int    `json:"value"`
+	Id           string `json:"id"`
+	Value        int    `json:"value"`
+	internalData map[string]int
+}
+
+func (t *testItem) Initialize() {
+	t.internalData = make(map[string]int)
 }
 
 func TestInitializeFromDisk(t *testing.T) {
 
 	// add some files in root dir
-	items := []*testItem{}
-	items = append(items, &testItem{Id: "some file 1", Value: 1})
-	items = append(items, &testItem{Id: "some file 2", Value: 2})
+	items := []testItem{}
+	items = append(items, testItem{Id: "some file 1", Value: 1})
+	items = append(items, testItem{Id: "some file 2", Value: 2})
 	disk := storage.NewJsonDiskStorage[testItem]("temp")
 
 	for _, item := range items {
@@ -44,6 +49,9 @@ func TestInitializeFromDisk(t *testing.T) {
 	for idx, result := range allItems {
 
 		item := items[idx]
+		// do some caching to make sure internal datastructures have been initialized
+		item.internalData[fmt.Sprint(idx)] = 1
+		//
 		if result.Id != item.Id {
 			t.Errorf("item %d mismatch want %v got %v", idx, item.Id, result.Id)
 		}

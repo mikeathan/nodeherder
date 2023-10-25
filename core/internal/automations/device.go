@@ -14,37 +14,20 @@ import (
 // presence = true = turn on
 // presence = false = turn off
 
-type DeviceContextV2 struct {
+type DeviceContext struct {
 	currentData map[string]any
 	Payload     map[string]*devices.Entity
 }
 
-type DeviceContext struct {
-	currentData map[string]any
-	Payload     map[string]any
+func NewDeviceContextV2() *DeviceContext {
+	return &DeviceContext{currentData: map[string]any{}, Payload: make(map[string]*devices.Entity)}
 }
 
-func (d *DeviceContext) GetCurrent(name string) any {
+func (d *DeviceContext) GetCurrentV2(name string) any {
 	return d.currentData[name]
 }
 
-func (d *DeviceContext) SetCurrent(name string, value any) {
-	d.currentData[name] = value
-}
-
-func NewDeviceContext() *DeviceContext {
-	return &DeviceContext{currentData: map[string]any{}, Payload: map[string]any{}}
-}
-
-func NewDeviceContextV2() *DeviceContextV2 {
-	return &DeviceContextV2{currentData: map[string]any{}, Payload: make(map[string]*devices.Entity)}
-}
-
-func (d *DeviceContextV2) GetCurrentV2(name string) any {
-	return d.currentData[name]
-}
-
-func (d *DeviceContextV2) SetCurrentV2(name string, value any) {
+func (d *DeviceContext) SetCurrentV2(name string, value any) {
 	d.currentData[name] = value
 }
 
@@ -55,7 +38,10 @@ type Device struct {
 	Enabled      bool       `json:"enabled"`
 	Triggers     []*Trigger `json:"triggers"`
 	ctx          *DeviceContext
-	ctxV2        *DeviceContextV2
+}
+
+func (d Device) Initialize() {
+	d.ctx = &DeviceContext{}
 }
 
 func NewDevice(id string) *Device {
@@ -66,30 +52,17 @@ func NewDevice(id string) *Device {
 		Description:  "",
 		Enabled:      false,
 		Triggers:     []*Trigger{},
-		ctx:          NewDeviceContext(),
-		ctxV2:        &DeviceContextV2{},
+		ctx:          &DeviceContext{},
 	}
 
 	return d
 }
 
-func (d *Device) Evaluate(data map[string]any) bool {
-
-	d.ctx.Payload = data
-	for _, trigger := range d.Triggers {
-		if _, ok := data[trigger.Name]; ok {
-			trigger.process(d.ctx)
-		}
-	}
-
-	return false
-}
-
 func (d *Device) EvaluateV2(device *devices.DeviceV2) bool {
-	d.ctxV2.Payload = device.Exposes
+	d.ctx.Payload = device.Exposes
 	for _, trigger := range d.Triggers {
 		if _, ok := device.Exposes[trigger.Name]; ok {
-			trigger.processV2(d.ctxV2)
+			trigger.processV2(d.ctx)
 		}
 	}
 	return false

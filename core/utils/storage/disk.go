@@ -17,13 +17,13 @@ import (
 
 const ext = ".json"
 
-type JsonDiskStorage[T any] struct {
+type JsonDiskStorage[T Storable] struct {
 	rootDir string
 	cache   map[string]*T
 	mutex   sync.RWMutex
 }
 
-func NewJsonDiskStorage[T any](baseDir string) Storage[T] {
+func NewJsonDiskStorage[T Storable](baseDir string) Storage[T] {
 	d := new(JsonDiskStorage[T])
 	d.rootDir = baseDir
 	d.cache = map[string]*T{}
