@@ -33,7 +33,6 @@ func (s *DeviceRegistrar) Register(friendlyName string, device *devices.DeviceV2
 	s.repo.StoreV2(id, device)
 
 	s.idMapper[friendlyName] = id // store id in mapper for easy access
-
 }
 
 func (s *DeviceRegistrar) LookupByName(name string) (*devices.DeviceV2, error) {
@@ -102,13 +101,12 @@ func (a *DeviceRegistrar) FindBridgeInfo(id string) *devices.BridgeInfo {
 	return nil
 }
 
-func (s *DeviceRegistrar) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int) []*devices.DeviceV2 {
+func (s *DeviceRegistrar) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int) {
 
 	s.bridgeInfoList = bridgeInfoList
 
 	s.configureIdMapper(bridgeInfoList)
 
-	allDevices := []*devices.DeviceV2{}
 	for _, bridgeInfo := range bridgeInfoList {
 		if !bridgeInfo.IsActive() {
 			continue
@@ -148,11 +146,8 @@ func (s *DeviceRegistrar) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, d
 		d.FriendlyName = bridgeInfo.FriendlyName
 		d.PowerSource = bridgeInfo.PowerSource
 
-		allDevices = append(allDevices, d)
+		s.Register(d.FriendlyName, d)
 	}
-
-	return allDevices
-
 }
 
 func (a *DeviceRegistrar) ResolveId(name string) string {

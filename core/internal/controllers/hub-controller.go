@@ -138,8 +138,8 @@ func (c *HubController) Enqueue(id string, payload map[string]interface{}, connT
 	return c.ProcessMessage(id, bytes, connType)
 }
 
-func (m *HubController) TriggerAutomationV2(device *devices.DeviceV2) {
-	m.automationEngine.HandleDeviceV2(device)
+func (m *HubController) TriggerAutomation(device *devices.DeviceV2) {
+	m.automationEngine.HandleDevice(device)
 }
 
 func (m *HubController) ProcessMessage(id string, payload []byte, connType string) error {

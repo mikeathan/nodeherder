@@ -130,7 +130,7 @@ func (c *deviceV2Handler) ProcessPayload(friendlyName string, connType string, p
 		// check to see if we have an automation for current device
 
 		c.eventHub.Broadcast(ws.DeviceUpdated, updatedData)
-		c.hub.TriggerAutomationV2(device)
+		c.hub.TriggerAutomation(device)
 	}
 	c.registrar.Register(friendlyName, device)
 

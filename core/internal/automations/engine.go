@@ -16,7 +16,7 @@ const (
 )
 
 type Engine interface { // TODO: might need to move it to Models????
-	HandleDeviceV2(device *devices.DeviceV2)
+	HandleDevice(device *devices.DeviceV2)
 	Add(automation *Device) error
 	Delete(id string) error
 	DeleteTrigger(id string, triggerId int) error
@@ -43,10 +43,10 @@ func (a *AutomationEngine) WithStorage(storage storage.Storage[Device]) {
 	a.automationStorage = storage
 }
 
-func (a *AutomationEngine) HandleDeviceV2(device *devices.DeviceV2) {
-	trigger, err := a.automationStorage.Load(device.Id)
+func (a *AutomationEngine) HandleDevice(device *devices.DeviceV2) {
+	triggerDevice, err := a.automationStorage.Load(device.Id)
 	if err == nil {
-		trigger.EvaluateV2(device)
+		triggerDevice.EvaluateV2(device)
 	}
 }
 
