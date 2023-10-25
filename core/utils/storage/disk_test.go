@@ -23,9 +23,9 @@ func (t *testItem) Initialize() {
 func TestInitializeFromDisk(t *testing.T) {
 
 	// add some files in root dir
-	items := []testItem{}
-	items = append(items, testItem{Id: "some file 1", Value: 1})
-	items = append(items, testItem{Id: "some file 2", Value: 2})
+	items := []*testItem{}
+	items = append(items, &testItem{Id: "some file 1", Value: 1})
+	items = append(items, &testItem{Id: "some file 2", Value: 2})
 	disk := storage.NewJsonDiskStorage[testItem]("temp")
 
 	for _, item := range items {
