@@ -116,7 +116,7 @@ func (a *MqttAction) ExecuteV2(name string, ctx *DeviceContext) {
 
 		// on success callback
 		// update sensor current value
-		ctx.SetCurrentV2(name, ctx.Payload[name])
+		ctx.SetCurrentV2(name, ctx.Payload[name].Data)
 
 		return
 	}
