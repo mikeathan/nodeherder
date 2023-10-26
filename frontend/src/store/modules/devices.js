@@ -37,6 +37,10 @@ const mutations = {
   },
   updateproperties(state, payload) {
     var device = state.items[payload.id];
+    if (device == undefined) {
+      console.log("device ", payload.id, " not found");
+      return;
+    }
     for (var key in payload.data) {
       device.properties[key] = payload.data[key];
     }

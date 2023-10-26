@@ -17,7 +17,9 @@ const props = defineProps({
     <div class="flex-shrink-1 flex-grow-1">
         {{ getSensorName(name) }}
     </div>
-    <div class="flex-shrink-1">
+
+    <div v-if="value != undefined" class="flex-shrink-1">
         {{ getSensorValue(name, value) }}
     </div>
+    <div v-else>NA</div>
 </template>

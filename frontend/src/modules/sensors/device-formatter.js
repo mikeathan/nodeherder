@@ -8,7 +8,7 @@ export function getPowerSourceIcon(power_source, value) {
 
   var batteryClass = "";
   var battery = value;
-  if (battery >= 85) {
+  if (battery == undefined || battery >= 85) {
     batteryClass += " fa-battery-full";
   } else if (battery >= 75) {
     batteryClass += " fa-battery-three-quarters";

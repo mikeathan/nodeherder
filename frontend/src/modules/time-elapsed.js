@@ -26,6 +26,10 @@ export default class ElapsedTimer {
   }
 
   startElapsedTimer(timestamp) {
+    if (timestamp == undefined) {
+      this.TimeElapsed = "NA";
+      return;
+    }
     this.stopElapsedTimer();
 
     const diff = diffSec(timestamp);
@@ -40,9 +44,8 @@ export default class ElapsedTimer {
       interval
     );
   }
- 
+
   Format(timestamp) {
-   
     this.startElapsedTimer(timestamp);
   }
 

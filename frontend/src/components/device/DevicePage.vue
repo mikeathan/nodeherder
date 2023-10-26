@@ -20,7 +20,7 @@ const friendlyName = computed(() => {
   if (d == undefined) {
     return "";
   }
-  return d.friendlyName;
+  return d.friendly_name;
 });
 
 const displayProps = computed(() => {
@@ -36,7 +36,7 @@ const displayProps = computed(() => {
     },
     {
       key: "Friendly name:",
-      value: device.friendlyName,
+      value: device.friendly_name,
     },
     {
       key: "Description:",

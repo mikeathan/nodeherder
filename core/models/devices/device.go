@@ -51,7 +51,7 @@ var propertiesWhitelist = map[string]int{
 
 type Device struct {
 	Id                      string             `json:"id"`
-	FriendlyName            string             `json:"friendlyname"`
+	FriendlyName            string             `json:"friendly_name"`
 	Description             string             `json:"description,omitempty"`
 	ConnectionType          string             `json:"connection_type"`
 	PowerSource             string             `json:"power_source"`

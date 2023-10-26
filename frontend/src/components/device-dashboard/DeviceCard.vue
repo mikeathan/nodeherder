@@ -12,7 +12,7 @@ const props = defineProps({
       <div class="card-header pb-0 d-flex justify-content-left">
         <h4>
           <RouterLink :to="`/devicepage/${device.id}`">{{
-            device.friendlyName
+            device.friendly_name
           }}</RouterLink>
         </h4>
       </div>
