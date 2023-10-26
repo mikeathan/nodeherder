@@ -100,36 +100,38 @@ type Entity struct {
 	Properties  map[string]any `json:"properties"`
 }
 
+func newEntity() *Entity {
+	return &Entity{Properties: map[string]any{}}
+}
+
 func CreateFromFeature(feature BridgeInfoFeature) (*Entity, error) {
 
 	if _, ok := exposesWhitelist[feature.Property]; !ok {
 		return nil, fmt.Errorf("feature property %v is blacklisted", feature.Property)
 	}
 
-	newEntity := &Entity{}
-	var props = map[string]any{}
+	newEntity := newEntity()
 	newEntity.Name = feature.Property
 	newEntity.Description = feature.Description
 	newEntity.Unit = feature.Unit
 
-	props["type"] = feature.Type
-	props["feature"] = true
+	newEntity.Properties["type"] = feature.Type
+	newEntity.Properties["feature"] = true
 
 	switch feature.Type {
 	case "numeric":
-		props["max"] = feature.ValueMax
-		props["min"] = feature.ValueMin
+		newEntity.Properties["max"] = feature.ValueMax
+		newEntity.Properties["min"] = feature.ValueMin
 
 	case "binary":
-		props["on"] = feature.ValueOn
-		props["off"] = feature.ValueOff
-		props["toggle"] = feature.ValueToggle
+		newEntity.Properties["on"] = feature.ValueOn
+		newEntity.Properties["off"] = feature.ValueOff
+		newEntity.Properties["toggle"] = feature.ValueToggle
 
 	case "enum":
-		props["values"] = feature.Values
+		newEntity.Properties["values"] = feature.Values
 	}
 
-	newEntity.Properties = props
 	return newEntity, nil
 }
 
@@ -142,28 +144,26 @@ func CreateFromExpose(expose BridgeExpose) (*Entity, error) {
 	if _, ok := exposesWhitelist[expose.Property]; !ok {
 		return nil, fmt.Errorf("expose property %v is blacklisted", expose.Property)
 	}
-	newEntity := &Entity{}
-	var props = map[string]any{}
+	newEntity := newEntity()
 	newEntity.Name = expose.Property
 	newEntity.Description = expose.Description
 	newEntity.Unit = expose.Unit
-	props["type"] = expose.Type
-	props["feature"] = false
+	newEntity.Properties["type"] = expose.Type
+	newEntity.Properties["feature"] = false
 
-	newEntity.Properties = props
 	return newEntity, nil
 }
 
 func createEntity(name string, description string, data any, unit string, dataType string, props map[string]any) *Entity {
-	if props == nil {
-		props = make(map[string]any)
-	}
-	newEntity := &Entity{}
+
+	newEntity := newEntity()
 	newEntity.Data = data
 	newEntity.Name = name
 	newEntity.Unit = unit
 	newEntity.Description = description
-	newEntity.Properties = props
+	if props != nil {
+		newEntity.Properties = props
+	}
 	return newEntity
 }
 
