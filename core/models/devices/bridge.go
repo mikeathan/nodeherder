@@ -114,26 +114,3 @@ func FindByExposeType(payload []byte, exposeType string) (*BridgeInfo, error) {
 	}
 	return nil, errors.New("exposeType not found")
 }
-
-type BridgeFeature struct {
-	Id         string                     `json:"id"`
-	Properties map[string]*BridgeProperty `json:"properties"`
-}
-
-type BridgeProperty struct {
-	Name       string         `json:"name"`
-	Type       string         `json:"type"`
-	Attributes map[string]any `json:"attributes"`
-}
-
-func NewBridgeFeature(id string) *BridgeFeature {
-	return &BridgeFeature{Id: id, Properties: make(map[string]*BridgeProperty)}
-}
-
-func (f *BridgeFeature) Add(property *BridgeProperty) {
-	f.Properties[property.Name] = property
-}
-
-func NewBridgeProperty(name string, propertyType string) *BridgeProperty {
-	return &BridgeProperty{Name: name, Type: propertyType, Attributes: make(map[string]any)}
-}

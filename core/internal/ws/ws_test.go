@@ -200,80 +200,6 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 	defer wsConn.Close()
 }
 
-func TestHandlingLoadBridgeFeaturesMessage(t *testing.T) {
-	wsHub := ws.NewWsHub()
-
-	// input data
-	inputFeatures := createTestFeatures()
-
-	wsHub.OnLoadBridgeFeatures(func() interface{} {
-		return inputFeatures
-	})
-
-	h := api.NewWsHandler(wsHub)
-	s, wsConn := NewTestWsServer(t, h)
-
-	wsData := &ws.EventMessage{Type: ws.LoadBridgeFeatures, Payload: nil}
-	msg, err := wsData.MarshalJSON()
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	SendMessage(t, wsConn, msg)
-
-	_, m, err := wsConn.ReadMessage()
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-
-	var event ws.EventMessage
-	err = json.Unmarshal(m, &event)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if event.Type != ws.BridgeFeatures {
-		t.Fatalf("Expected type %v', got '%+v'", ws.BridgeFeatures, event.Type)
-	}
-
-	// output data
-	var resultFeatures []*devices.BridgeFeature
-	bytes, _ := json.Marshal(event.Payload)
-	err = json.Unmarshal(bytes, &resultFeatures)
-	if err != nil {
-		t.Fatal(err)
-	}
-	//
-
-	for idx, feature := range resultFeatures {
-
-		inputFeature := inputFeatures[idx]
-		if feature.Id != inputFeature.Id {
-			t.Fatalf("unexpected feature.Id value")
-		}
-
-		for key, property := range feature.Properties {
-
-			inputProperty := inputFeature.Properties[key]
-			if property.Name != inputProperty.Name {
-				t.Fatalf("unexpected property name")
-			}
-			if property.Type != inputProperty.Type {
-				t.Fatalf("unexpected property type")
-			}
-			for aKey, value := range property.Attributes {
-
-				if value != inputProperty.Attributes[aKey] {
-					t.Fatalf("unexpected attribute value")
-				}
-			}
-		}
-	}
-
-	defer s.Close()
-	defer wsConn.Close()
-}
-
 func TestHandlingLoadDevicesMessage(t *testing.T) {
 
 	wsHub := ws.NewWsHub()
@@ -644,25 +570,6 @@ func httpToWs(t *testing.T, s string) string {
 	return wsURL.String()
 }
 
-func createTestFeatures() []*devices.BridgeFeature {
-	all := []*devices.BridgeFeature{}
-
-	f1 := devices.NewBridgeFeature("x0123")
-	p := devices.NewBridgeProperty("state", "binary")
-	p.Attributes["on"] = "ON"
-	p.Attributes["off"] = "OFF"
-	p.Attributes["toggle"] = "TOGGLE"
-
-	p2 := devices.NewBridgeProperty("state", "binary")
-
-	p2.Attributes["type"] = "numeric"
-	p2.Attributes["max"] = 255.0
-	p2.Attributes["min"] = 50.0
-	f1.Add(p)
-	f1.Add(p2)
-	all = append(all, f1)
-	return all
-}
 func createTestDevices() []*devices.DeviceV2 {
 	all := []*devices.DeviceV2{}
 	all = append(all, createDevice1())

@@ -24,12 +24,11 @@ func (w *MockEventHub) RegisterNewClient(conn *websocket.Conn) {
 func (w *MockEventHub) OnLoadAutomations(onLoadAutomations func() interface{}) {
 	fmt.Println("Empty OnLoadAutomations")
 }
+
 func (w *MockEventHub) OnLoadDevices(action func() interface{}) {
 	fmt.Println("Empty OnLoadDevices")
 }
-func (w *MockEventHub) OnLoadBridgeFeatures(action func() interface{}) {
-	fmt.Println("Empty OnLoadBridgeFeatures")
-}
+
 func (w *MockEventHub) OnSaveAutomation(action func(p interface{}) error) {
 	fmt.Println("Empty OnSaveAutomation")
 }
@@ -103,10 +102,6 @@ func (w *NopWsServer) OnLoadDevices(action func() interface{}) {
 	fmt.Println("Empty OnLoadDevices")
 }
 
-func (w *NopWsServer) OnLoadBridgeFeatures(action func() interface{}) {
-	fmt.Println("Empty OnLoadBridgeFeatures")
-}
-
 func (w *NopWsServer) OnSaveAutomation(action func(p interface{}) error) {
 	fmt.Println("Empty OnSaveAutomation")
 }
@@ -159,33 +154,4 @@ func (w *NopRepository) FindDeviceV2(deviceName string) (*devices.DeviceV2, erro
 
 	fmt.Println("Empty FindDevice")
 	return nil, errors.New("device not found")
-}
-
-func (w *NopRepository) FindDeviceV2ById(id string) (*devices.DeviceV2, error) {
-
-	fmt.Println("Empty FindDeviceV2ById")
-	return nil, errors.New("device not found")
-}
-
-func (w *NopRepository) RegisterBridge(bridgeInfoList []*devices.BridgeInfo) {
-
-	fmt.Println("Empty RegisterBridge")
-}
-
-func (w *NopRepository) FindBridgeInfo(id string) *devices.BridgeInfo {
-
-	fmt.Println("Empty FindBridgeInfo")
-	return &devices.BridgeInfo{}
-}
-
-func (w *NopRepository) ResolveId(friendlyName string) string {
-
-	fmt.Println("Empty ResolveId")
-	return ""
-}
-
-func (w *NopRepository) GetBridgeFeatures() []*devices.BridgeFeature {
-
-	fmt.Println("Empty GetBridgeFeatures")
-	return []*devices.BridgeFeature{}
 }
