@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func createBridgeInfo() []*devices.BridgeInfo {
+func createBridgeInfoes() []*devices.BridgeInfo {
 
 	dev1 := &devices.BridgeInfo{}
 	dev1.IeeeAddress = "0x123456"
@@ -74,9 +74,8 @@ func TestExportAutomationsFromFile(t *testing.T) {
 	eventHub := &mocks.MockEventHub{}
 	registrar := services.NewHubRegisterService(repo, eventHub, 30000)
 
-	bridgeinfos := createBridgeInfo()
+	bridgeinfos := createBridgeInfoes()
 	registrar.RegisterBridge(bridgeinfos, 60)
-	//automationData := mockData(mqtt)
 	storage := NewMockStorage([]*automations.Device{})
 
 	engine := automations.NewEngine(registrar, mqtt)
