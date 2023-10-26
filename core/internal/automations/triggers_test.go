@@ -94,6 +94,8 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOffTrigger)
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
 
+	device := devices.NewDeviceV2(deviceTrigger.Id)
+
 	testCases := []struct {
 		presence   bool
 		sleepdelay time.Duration
@@ -112,6 +114,7 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 		{presence: false, sleepdelay: 200, lux: 30, result: true},
 		{presence: true, sleepdelay: 100, lux: 30.1, result: false},
 		{presence: true, sleepdelay: 100, lux: 29, result: true},
+
 		{presence: true, sleepdelay: 100, lux: 7, result: false},
 		{presence: true, sleepdelay: 100, lux: 15, result: false},
 	}
@@ -149,7 +152,6 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 			wg.Add(1)
 		}
 
-		device := devices.NewDeviceV2("1")
 		device.Exposes = createExposures(data)
 		deviceTrigger.EvaluateV2(device)
 
