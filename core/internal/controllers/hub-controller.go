@@ -47,7 +47,7 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 	})
 
 	h.eventHub.OnLoadDevices(func() interface{} {
-		return h.repo.ListAllDevicesV2()
+		return h.repo.AllDevices()
 	})
 
 	h.eventHub.OnDeleteAutomationTrigger(func(p interface{}) (interface{}, error) {
@@ -138,7 +138,7 @@ func (c *HubController) Enqueue(id string, payload map[string]interface{}, connT
 	return c.ProcessMessage(id, bytes, connType)
 }
 
-func (m *HubController) TriggerAutomation(device *devices.DeviceV2) {
+func (m *HubController) TriggerAutomation(device *devices.Device) {
 	m.automationEngine.HandleDevice(device)
 }
 
@@ -156,7 +156,7 @@ func (m *HubController) ProcessMessage(id string, payload []byte, connType strin
 				m.handlers[id] = h
 			}
 		} else {
-			var h = newDeviceV2Handler(m.registrar, m.eventHub, m)
+			var h = newDeviceHandler(m.registrar, m.eventHub, m)
 			h.AvailabilityTimeoutInSeconds = m.DeviceAvailabilityTimeoutOverride
 			m.handlers[id] = h
 		}

@@ -238,7 +238,7 @@ func TestHandlingLoadDevicesMessage(t *testing.T) {
 	}
 
 	// output data
-	var resultDevices []*devices.DeviceV2
+	var resultDevices []*devices.Device
 
 	bytes, _ := json.Marshal(event.Payload)
 	err = json.Unmarshal(bytes, &resultDevices)
@@ -570,16 +570,16 @@ func httpToWs(t *testing.T, s string) string {
 	return wsURL.String()
 }
 
-func createTestDevices() []*devices.DeviceV2 {
-	all := []*devices.DeviceV2{}
+func createTestDevices() []*devices.Device {
+	all := []*devices.Device{}
 	all = append(all, createDevice1())
 	all = append(all, createDevice2())
 
 	return all
 }
 
-func createDevice1() *devices.DeviceV2 {
-	device1 := &devices.DeviceV2{}
+func createDevice1() *devices.Device {
+	device1 := &devices.Device{}
 	device1.Id = "x01234"
 	device1.FriendlyName = "test Device 1"
 	device1.ConnectionType = "mqtt"
@@ -607,8 +607,8 @@ func createDevice1() *devices.DeviceV2 {
 	return device1
 }
 
-func createDevice2() *devices.DeviceV2 {
-	device := &devices.DeviceV2{}
+func createDevice2() *devices.Device {
+	device := &devices.Device{}
 	device.Id = "x34567"
 	device.FriendlyName = "test Device 2"
 	device.ConnectionType = "http"

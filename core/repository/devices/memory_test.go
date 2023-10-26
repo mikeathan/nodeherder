@@ -23,10 +23,10 @@ func TestRepositoryCanAddOneDevice(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()
 	name := "device 1"
-	device, _ := devices.CreateNewDeviceV2("1", name, "mqtt", nil, createMockPayload(name, 50, 60.1, 23.5, 120.0))
+	device, _ := devices.CreateNewDevice("1", name, "mqtt", nil, createMockPayload(name, 50, 60.1, 23.5, 120.0))
 
-	repo.StoreV2(name, device)
-	res, err := repo.FindDeviceV2(name)
+	repo.Store(name, device)
+	res, err := repo.FindDevice(name)
 
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -41,7 +41,7 @@ func TestRepositoryCanAddOneDevice(t *testing.T) {
 	}
 }
 
-func validateDevice(t *testing.T, dev1 *devices.DeviceV2, dev2 *devices.DeviceV2) {
+func validateDevice(t *testing.T, dev1 *devices.Device, dev2 *devices.Device) {
 
 	if dev1.Id != dev2.Id {
 		t.Fatalf("device Id mismatch")
@@ -89,14 +89,14 @@ func TestRepositoryCanAddMultipleDevices(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()
 	dev1Name := "device 1"
-	device1, _ := devices.CreateNewDeviceV2("1", dev1Name, "mqtt", nil, createMockPayload(dev1Name, 50, 60.1, 23.5, 120.0))
+	device1, _ := devices.CreateNewDevice("1", dev1Name, "mqtt", nil, createMockPayload(dev1Name, 50, 60.1, 23.5, 120.0))
 
 	dev2Name := "device 2"
-	device2, _ := devices.CreateNewDeviceV2("2", dev2Name, "mqtt", nil, createMockPayload(dev2Name, 90, 34.7, 36.2, 56.0))
+	device2, _ := devices.CreateNewDevice("2", dev2Name, "mqtt", nil, createMockPayload(dev2Name, 90, 34.7, 36.2, 56.0))
 
-	repo.StoreV2(dev1Name, device1)
-	repo.StoreV2(dev2Name, device2)
-	devices := repo.ListAllDevicesV2()
+	repo.Store(dev1Name, device1)
+	repo.Store(dev2Name, device2)
+	devices := repo.AllDevices()
 
 	if len(devices) == 0 {
 		t.Fatalf("empty device list")
@@ -119,12 +119,12 @@ func TestRepositoryCanUpdateExistingDevice(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()
 	dev1Name := "device 1"
-	device1, _ := devices.CreateNewDeviceV2("1", dev1Name, "mqtt", nil, createMockPayload(dev1Name, 50, 60.1, 23.5, 120.0))
+	device1, _ := devices.CreateNewDevice("1", dev1Name, "mqtt", nil, createMockPayload(dev1Name, 50, 60.1, 23.5, 120.0))
 
-	device1b, _ := devices.CreateNewDeviceV2("1", dev1Name, "mqtt", nil, createMockPayload(dev1Name, 90, 34.7, 36.2, 56.0))
-	repo.StoreV2(dev1Name, device1)
-	repo.StoreV2(dev1Name, device1b)
-	devices := repo.ListAllDevicesV2()
+	device1b, _ := devices.CreateNewDevice("1", dev1Name, "mqtt", nil, createMockPayload(dev1Name, 90, 34.7, 36.2, 56.0))
+	repo.Store(dev1Name, device1)
+	repo.Store(dev1Name, device1b)
+	devices := repo.AllDevices()
 
 	if len(devices) == 0 {
 		t.Fatalf("empty device list")

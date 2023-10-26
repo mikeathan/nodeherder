@@ -39,7 +39,7 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	id := utils.Hash(name)
-	device, err := repo.FindDeviceV2(id)
+	device, err := repo.FindDevice(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -66,7 +66,7 @@ func TestProcessorUpdatesExistingDevice(t *testing.T) {
 	name := "device2"
 	id := utils.Hash(name)
 
-	device, err := repo.FindDeviceV2(id)
+	device, err := repo.FindDevice(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -93,7 +93,7 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	id := utils.Hash(name)
 
-	device, err := repo.FindDeviceV2(id)
+	device, err := repo.FindDevice(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -235,7 +235,7 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	id := utils.Hash(name)
-	device, err := repo.FindDeviceV2(id)
+	device, err := repo.FindDevice(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -253,7 +253,7 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 
 	id = utils.Hash(name)
-	device1, _ := repo.FindDeviceV2(id)
+	device1, _ := repo.FindDevice(id)
 
 	if device1.Properties["availability"] != "online" {
 		t.Fatalf("want online got offline")
@@ -273,7 +273,7 @@ func TestAvailabilityIsDisposed(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	id := utils.Hash(name)
-	device, err := repo.FindDeviceV2(id)
+	device, err := repo.FindDevice(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

@@ -47,7 +47,7 @@ type Condition struct {
 	EqualityOperator string `json:"equality"`
 }
 
-func (s *Condition) EvaluateV2(exposes map[string]*devices.Entity) bool {
+func (s *Condition) Evaluate(exposes map[string]*devices.Entity) bool {
 
 	entity, ok := exposes[s.Name]
 	if !ok {
@@ -68,12 +68,12 @@ type Trigger struct {
 	Action     *MqttAction  `json:"action"`
 }
 
-func (trigger *Trigger) processV2(ctx *DeviceContext) {
+func (trigger *Trigger) process(ctx *DeviceContext) {
 
-	currValue := ctx.GetCurrentV2(trigger.Name)
+	currValue := ctx.GetCurrent(trigger.Name)
 	for _, c := range trigger.Conditions {
 
-		isMatched := c.EvaluateV2(ctx.Payload)
+		isMatched := c.Evaluate(ctx.Payload)
 		if !isMatched {
 			trigger.Action.Stop()
 			return
@@ -85,7 +85,7 @@ func (trigger *Trigger) processV2(ctx *DeviceContext) {
 		}
 	}
 
-	trigger.Action.ExecuteV2(trigger.Name, ctx)
+	trigger.Action.Execute(trigger.Name, ctx)
 }
 
 type MqttAction struct {
@@ -106,17 +106,17 @@ func NewAction() *MqttAction {
 	return &MqttAction{Delay: 0}
 }
 
-func (a *MqttAction) ExecuteV2(name string, ctx *DeviceContext) {
+func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
 	// no delay execution
 	if a.Delay == 0 {
 
-		payload := a.buildPayloadV2(name, ctx)
+		payload := a.buildPayload(name, ctx)
 
 		a.emit(payload)
 
 		// on success callback
 		// update sensor current value
-		ctx.SetCurrentV2(name, ctx.Payload[name].Data)
+		ctx.SetCurrent(name, ctx.Payload[name].Data)
 
 		return
 	}
@@ -150,10 +150,10 @@ func (a *MqttAction) ExecuteV2(name string, ctx *DeviceContext) {
 		select {
 		case <-ticker.C:
 
-			payload := a.buildPayloadV2(name, ctx)
+			payload := a.buildPayload(name, ctx)
 
 			a.emit(payload)
-			ctx.SetCurrentV2(name, ctx.Payload[name].Data)
+			ctx.SetCurrent(name, ctx.Payload[name].Data)
 
 			// on success callback
 			// update sensor current value
@@ -187,7 +187,7 @@ func (a *MqttAction) emit(payload []byte) {
 	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.FriendlyName)
 }
 
-func (a *MqttAction) buildPayloadV2(name string, ctx *DeviceContext) []byte {
+func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) []byte {
 
 	payloadData := a.Data
 	if payloadData == nil {

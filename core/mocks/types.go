@@ -140,17 +140,17 @@ func (m *NopMqttClient) OnMessageHandler(handler func(string, []byte)) {
 type NopRepository struct {
 }
 
-func (w *NopRepository) StoreV2(deviceName string, payload *devices.DeviceV2) {
+func (w *NopRepository) Store(deviceName string, payload *devices.Device) {
 	fmt.Println("Empty Store")
 }
 
-func (w *NopRepository) ListAllDevicesV2() []*devices.DeviceV2 {
+func (w *NopRepository) AllDevices() []*devices.Device {
 
 	fmt.Println("Empty ListAllDevices")
-	return []*devices.DeviceV2{}
+	return []*devices.Device{}
 }
 
-func (w *NopRepository) FindDeviceV2(deviceName string) (*devices.DeviceV2, error) {
+func (w *NopRepository) FindDevice(deviceName string) (*devices.Device, error) {
 
 	fmt.Println("Empty FindDevice")
 	return nil, errors.New("device not found")

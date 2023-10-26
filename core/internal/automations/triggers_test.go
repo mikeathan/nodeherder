@@ -29,7 +29,7 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, switch1Trigger)
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, switch2Trigger)
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, switch3Trigger)
-	device := devices.NewDeviceV2(deviceTrigger.Id)
+	device := devices.NewDevice(deviceTrigger.Id)
 
 	testCases := []struct {
 		triggeredEntity string
@@ -74,7 +74,7 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 		}
 		device.Exposes = createExposures(data)
 
-		deviceTrigger.EvaluateV2(device)
+		deviceTrigger.Evaluate(device)
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -94,7 +94,7 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOffTrigger)
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
 
-	device := devices.NewDeviceV2(deviceTrigger.Id)
+	device := devices.NewDevice(deviceTrigger.Id)
 
 	testCases := []struct {
 		presence   bool
@@ -153,7 +153,7 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 		}
 
 		device.Exposes = createExposures(data)
-		deviceTrigger.EvaluateV2(device)
+		deviceTrigger.Evaluate(device)
 
 		time.Sleep(testCase.sleepdelay * time.Millisecond)
 	}

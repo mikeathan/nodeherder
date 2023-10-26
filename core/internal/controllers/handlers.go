@@ -88,15 +88,15 @@ func (b *bridgeLoggingHandler) ProcessPayload(id string, connType string, payloa
 	return nil
 }
 
-type deviceV2Handler struct {
+type deviceHandler struct {
 	AvailabilityTimeoutInSeconds int
 	registrar                    *services.DeviceRegistrar
 	eventHub                     ws.EventHub
 	hub                          *HubController
 }
 
-func newDeviceV2Handler(registrar *services.DeviceRegistrar, eventHub ws.EventHub, hub *HubController) *deviceV2Handler {
-	return &deviceV2Handler{
+func newDeviceHandler(registrar *services.DeviceRegistrar, eventHub ws.EventHub, hub *HubController) *deviceHandler {
+	return &deviceHandler{
 		registrar:                    registrar,
 		eventHub:                     eventHub,
 		hub:                          hub,
@@ -104,7 +104,7 @@ func newDeviceV2Handler(registrar *services.DeviceRegistrar, eventHub ws.EventHu
 	}
 }
 
-func (c *deviceV2Handler) ProcessPayload(friendlyName string, connType string, payload []byte) error {
+func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, payload []byte) error {
 
 	dataMap, err := convertToMap(payload)
 	if err != nil {

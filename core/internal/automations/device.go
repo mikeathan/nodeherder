@@ -23,11 +23,11 @@ func NewDeviceContext() *DeviceContext {
 	return &DeviceContext{currentData: map[string]any{}, Payload: make(map[string]*devices.Entity)}
 }
 
-func (d *DeviceContext) GetCurrentV2(name string) any {
+func (d *DeviceContext) GetCurrent(name string) any {
 	return d.currentData[name]
 }
 
-func (d *DeviceContext) SetCurrentV2(name string, value any) {
+func (d *DeviceContext) SetCurrent(name string, value any) {
 	d.currentData[name] = value
 }
 
@@ -68,11 +68,11 @@ func NewDevice(id string) *Device {
 	return d
 }
 
-func (d *Device) EvaluateV2(device *devices.DeviceV2) bool {
+func (d *Device) Evaluate(device *devices.Device) bool {
 	d.ctx.Payload = device.Exposes
 	for _, trigger := range d.Triggers {
 		if _, ok := device.Exposes[trigger.Name]; ok {
-			trigger.processV2(d.ctx)
+			trigger.process(d.ctx)
 		}
 	}
 	return false

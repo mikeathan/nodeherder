@@ -49,7 +49,7 @@ var propertiesWhitelist = map[string]int{
 	"last_seen":    4,
 }
 
-type DeviceV2 struct {
+type Device struct {
 	Id                      string             `json:"id"`
 	FriendlyName            string             `json:"friendlyname"`
 	Description             string             `json:"description,omitempty"`
@@ -62,9 +62,9 @@ type DeviceV2 struct {
 	availabilityTimeoutSecs int
 }
 
-func NewDeviceV2(id string) *DeviceV2 {
+func NewDevice(id string) *Device {
 
-	return &DeviceV2{
+	return &Device{
 		Id:                      id,
 		FriendlyName:            "",
 		Description:             "",
@@ -237,13 +237,13 @@ func createExposuresFromBridge(data map[string]interface{}, bridgeInfo *BridgeIn
 	return entities
 }
 
-func CreateNewDeviceV2(id string, friendlyName string, connType string, bridgeInfo *BridgeInfo, data map[string]interface{}) (*DeviceV2, error) {
+func CreateNewDevice(id string, friendlyName string, connType string, bridgeInfo *BridgeInfo, data map[string]interface{}) (*Device, error) {
 
 	if _, ok := data[lastSeenKey]; !ok {
 		data[lastSeenKey] = getCurrentTime()
 	}
 	data[availabilityKey] = online
-	var newDevice = NewDeviceV2(id)
+	var newDevice = NewDevice(id)
 	newDevice.FriendlyName = friendlyName
 	newDevice.ConnectionType = connType
 
@@ -267,7 +267,7 @@ func CreateNewDeviceV2(id string, friendlyName string, connType string, bridgeIn
 	return newDevice, nil
 }
 
-func (device *DeviceV2) Update(payload map[string]interface{}) *updatePackage {
+func (device *Device) Update(payload map[string]interface{}) *updatePackage {
 
 	var updatePackage = newUpdatePackage(device.Id)
 	for name, currValue := range device.Exposes {
@@ -291,18 +291,18 @@ func (device *DeviceV2) Update(payload map[string]interface{}) *updatePackage {
 	return updatePackage
 }
 
-func (device *DeviceV2) Dispose() {
+func (device *Device) Dispose() {
 	device.availablityDone <- true
 	device.availabilityTicker.Stop()
 	utils.LogDebugf("device %s disposed", device.Id)
 }
 
-func (device *DeviceV2) resetAvailabilityTimer() {
+func (device *Device) resetAvailabilityTimer() {
 
 	device.availabilityTicker.Reset(1 * time.Second)
 }
 
-func (device *DeviceV2) Monitor(timeoutInSecs int, onChangeCallback func(p interface{})) {
+func (device *Device) Monitor(timeoutInSecs int, onChangeCallback func(p interface{})) {
 
 	device.availabilityTicker = *time.NewTicker(1 * time.Second)
 

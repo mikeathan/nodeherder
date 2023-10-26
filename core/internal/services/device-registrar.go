@@ -27,32 +27,32 @@ func NewHubRegisterService(repo devices.Repository, hub ws.EventHub, deviceAvail
 	return &DeviceRegistrar{repo: repo, eventHub: hub, idMapper: make(map[string]string), deviceAvailabilityTimeout: deviceAvailabilityTimeout}
 }
 
-func (s *DeviceRegistrar) Register(friendlyName string, device *devices.DeviceV2) {
+func (s *DeviceRegistrar) Register(friendlyName string, device *devices.Device) {
 	id := s.ResolveId(friendlyName)
 
-	s.repo.StoreV2(id, device)
+	s.repo.Store(id, device)
 
 	s.idMapper[friendlyName] = id // store id in mapper for easy access
 }
 
-func (s *DeviceRegistrar) LookupByName(name string) (*devices.DeviceV2, error) {
+func (s *DeviceRegistrar) LookupByName(name string) (*devices.Device, error) {
 
 	id := s.ResolveId(name)
 
-	return s.repo.FindDeviceV2(id)
+	return s.repo.FindDevice(id)
 }
 
-func (s *DeviceRegistrar) LookupById(id string) (*devices.DeviceV2, error) {
+func (s *DeviceRegistrar) LookupById(id string) (*devices.Device, error) {
 
-	return s.repo.FindDeviceV2(id)
+	return s.repo.FindDevice(id)
 }
 
-func (s *DeviceRegistrar) CreateNewDevice(friendlyName string, connType string, data map[string]interface{}) (*devices.DeviceV2, error) {
+func (s *DeviceRegistrar) CreateNewDevice(friendlyName string, connType string, data map[string]interface{}) (*devices.Device, error) {
 
 	id := s.ResolveId(friendlyName)
 	bridgeInfo := s.FindBridgeInfo(id)
 
-	device, err := devices.CreateNewDeviceV2(id, friendlyName, connType, bridgeInfo, data)
+	device, err := devices.CreateNewDevice(id, friendlyName, connType, bridgeInfo, data)
 	if err != nil {
 		return nil, err
 	}
@@ -112,10 +112,10 @@ func (s *DeviceRegistrar) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, d
 			continue
 		}
 
-		d, err := s.repo.FindDeviceV2(bridgeInfo.IeeeAddress)
+		d, err := s.repo.FindDevice(bridgeInfo.IeeeAddress)
 		if err != nil {
 			// not found in repo, new it here
-			d = devices.NewDeviceV2(bridgeInfo.IeeeAddress)
+			d = devices.NewDevice(bridgeInfo.IeeeAddress)
 			d.ConnectionType = "mqtt"
 
 			// load exposes
