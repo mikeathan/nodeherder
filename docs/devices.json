@@ -1,0 +1,147 @@
+{
+    "type": "devices",
+    "payload": [
+        {
+            "id": "0x00124b00146c31cd",
+            "friendlyname": "Motion sensor 1",
+            "description": "Motion sensor",
+            "connection_type": "mqtt",
+            "power_source": "Battery",
+            "exposes": {
+                "occupancy": {
+                    "name": "occupancy",
+                    "description": "Indicates whether the device detected occupancy",
+                    "data": null,
+                    "properties": {
+                        "feature": false,
+                        "type": "binary"
+                    }
+                },
+                "temperature": {
+                    "name": "temperature",
+                    "description": "Measured temperature value",
+                    "unit": "°C",
+                    "data": null,
+                    "properties": {
+                        "feature": false,
+                        "type": "numeric"
+                    }
+                }
+            },
+            "properties": {
+                "availability": "offline"
+            }
+        },
+        {
+            "id": "0x00124b0029207763",
+            "friendlyname": "TH01",
+            "description": "Temperature and humidity sensor",
+            "connection_type": "mqtt",
+            "power_source": "Battery",
+            "exposes": {
+                "humidity": {
+                    "name": "humidity",
+                    "description": "Measured relative humidity",
+                    "unit": "%",
+                    "data": null,
+                    "properties": {
+                        "feature": false,
+                        "type": "numeric"
+                    }
+                },
+                "temperature": {
+                    "name": "temperature",
+                    "description": "Measured temperature value",
+                    "unit": "°C",
+                    "data": null,
+                    "properties": {
+                        "feature": false,
+                        "type": "numeric"
+                    }
+                }
+            },
+            "properties": {
+                "availability": "offline"
+            }
+        },
+        {
+            "id": "0x70ac08fffefafeca",
+            "friendlyname": "Attic light",
+            "description": "Light cool to warm white smart light bulb",
+            "connection_type": "mqtt",
+            "power_source": "Mains (single phase)",
+            "exposes": {
+                "brightness": {
+                    "name": "brightness",
+                    "description": "Brightness of this light",
+                    "data": null,
+                    "properties": {
+                        "feature": true,
+                        "max": 254,
+                        "min": 0,
+                        "type": "numeric"
+                    }
+                },
+                "color_temp": {
+                    "name": "color_temp",
+                    "description": "Color temperature of this light",
+                    "unit": "mired",
+                    "data": null,
+                    "properties": {
+                        "feature": true,
+                        "max": 500,
+                        "min": 150,
+                        "type": "numeric"
+                    }
+                },
+                "state": {
+                    "name": "state",
+                    "description": "On/off state of this light",
+                    "data": null,
+                    "properties": {
+                        "feature": true,
+                        "off": "OFF",
+                        "on": "ON",
+                        "toggle": "TOGGLE",
+                        "type": "binary"
+                    }
+                }
+            },
+            "properties": {
+                "availability": "offline"
+            }
+        },
+        {
+            "id": "0xa4c13894070052fc",
+            "friendlyname": "Human presence",
+            "description": "Mini human breathe sensor",
+            "connection_type": "mqtt",
+            "power_source": "Mains (single phase)",
+            "exposes": {
+                "illuminance_lux": {
+                    "name": "illuminance_lux",
+                    "description": "Measured illuminance in lux",
+                    "unit": "lx",
+                    "data": 23,
+                    "properties": {
+                        "feature": false,
+                        "type": "numeric"
+                    }
+                },
+                "presence": {
+                    "name": "presence",
+                    "description": "Indicates whether the device detected presence",
+                    "data": false,
+                    "properties": {
+                        "feature": false,
+                        "type": "binary"
+                    }
+                }
+            },
+            "properties": {
+                "availability": "online",
+                "last_seen": "2023-10-26T16:21:47+01:00"
+            }
+        }
+    ]
+}
