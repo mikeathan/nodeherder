@@ -9,6 +9,12 @@ const __dirname = path.dirname(__filename);
 import express from "express";
 import expressWs from "express-ws";
 import http from "http";
+import { createRequire } from "module";
+const devicesFullPath = '../../docs/devices.json'
+
+
+
+var devicesPayload = loadDevices()
 
 // temperature
 const temperatureChangeDelaySec = 5;
@@ -27,6 +33,7 @@ let pingTimer = 0;
 let app = express();
 let server = http.createServer(app).listen(port);
 console.log("[" + currentTime() + "] server listening at port " + port);
+//const fs = require("fs");
 
 var automationMap = new Map([
   [
@@ -578,4 +585,12 @@ function getMockHumidity(settings) {
   settings.humidity += settings.humidityOffset;
   settings.humidityLastChanged = moment();
   return settings.humidity;
+}
+
+
+function loadDevices() {
+
+  const require = createRequire(import.meta.url);
+  var data = require(devicesFullPath);
+  return data.payload;
 }
