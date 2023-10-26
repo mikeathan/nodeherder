@@ -153,7 +153,7 @@ func (a *MqttAction) ExecuteV2(name string, ctx *DeviceContext) {
 			payload := a.buildPayloadV2(name, ctx)
 
 			a.emit(payload)
-			ctx.SetCurrentV2(name, ctx.Payload[name])
+			ctx.SetCurrentV2(name, ctx.Payload[name].Data)
 
 			// on success callback
 			// update sensor current value
