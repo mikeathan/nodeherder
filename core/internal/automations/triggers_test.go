@@ -29,6 +29,7 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, switch1Trigger)
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, switch2Trigger)
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, switch3Trigger)
+	device := devices.NewDeviceV2(deviceTrigger.Id)
 
 	testCases := []struct {
 		triggeredEntity string
@@ -71,7 +72,6 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 		if testCase.result {
 			wg.Add(1)
 		}
-		device := devices.NewDeviceV2("1")
 		device.Exposes = createExposures(data)
 
 		deviceTrigger.EvaluateV2(device)
