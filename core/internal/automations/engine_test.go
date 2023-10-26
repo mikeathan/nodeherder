@@ -67,9 +67,8 @@ func createBridgeInfo() []*devices.BridgeInfo {
 	return []*devices.BridgeInfo{dev1, dev2}
 }
 
-func TestExportToFile(t *testing.T) {
+func TestExportAutomationsFromFile(t *testing.T) {
 
-	//t.Skip("delete - it needs Bridgeinfo mocking which we currently dont have")
 	mqtt := &mocks.MockMqttClient{}
 	repo := &mocks.NopRepository{}
 	eventHub := &mocks.MockEventHub{}
