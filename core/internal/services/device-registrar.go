@@ -118,23 +118,34 @@ func (s *DeviceRegistrar) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, d
 			d = devices.NewDeviceV2(bridgeInfo.IeeeAddress)
 			d.ConnectionType = "mqtt"
 
-			var entity *devices.Entity
-
+			// load exposes
 			for _, expose := range bridgeInfo.Definition.Exposes {
-				entity, err = devices.CreateFromExpose(expose)
+				entity, err := devices.CreateFromExpose(expose)
 				if err != nil {
-					utils.LogDebugf("failed loading %s error %s", bridgeInfo.FriendlyName, err.Error())
+					utils.LogDebugf("expose failed loading %s error %s", bridgeInfo.FriendlyName, err.Error())
 					continue
 				}
-
-				if entity == nil {
-					continue
-				}
-
-				// it shoud be coming from database
-				// since it doesnt we dont have below info
 				d.Exposes[entity.Name] = entity
 				d.Properties["availability"] = "offline"
+			}
+
+			// load features
+			for _, expose := range bridgeInfo.Definition.Exposes {
+				for _, feature := range expose.Features {
+					entity, err := devices.CreateFromFeature(feature)
+					if err != nil {
+						utils.LogDebugf("feature failed loading %s error %s", bridgeInfo.FriendlyName, err.Error())
+						continue
+					}
+
+					d.Exposes[entity.Name] = entity
+					d.Properties["availability"] = "offline"
+				}
+			}
+
+			if len(d.Exposes) == 0 {
+				utils.LogInfof("device %s failed loading. error contains no valid exposed data", bridgeInfo.FriendlyName)
+				continue
 			}
 
 			d.Monitor(deviceAvailabilityTimeoutOverride, func(p interface{}) {

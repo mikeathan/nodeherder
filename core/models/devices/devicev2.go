@@ -100,52 +100,56 @@ type Entity struct {
 	Properties  map[string]any `json:"properties"`
 }
 
-func CreateFromExpose(expose BridgeExpose) (*Entity, error) {
+func CreateFromFeature(feature BridgeInfoFeature) (*Entity, error) {
+
+	if _, ok := exposesWhitelist[feature.Property]; !ok {
+		return nil, fmt.Errorf("feature property %v is blacklisted", feature.Property)
+	}
+
 	newEntity := &Entity{}
 	var props = map[string]any{}
+	newEntity.Name = feature.Property
+	newEntity.Description = feature.Description
+	newEntity.Unit = feature.Unit
 
-	if expose.Property != "" {
-		if _, ok := exposesWhitelist[expose.Property]; !ok {
-			return nil, fmt.Errorf("property %v is blacklisted", expose.Property)
-		}
+	props["type"] = feature.Type
+	props["feature"] = true
 
-		newEntity.Name = expose.Property
-		newEntity.Description = expose.Description
-		newEntity.Unit = expose.Unit
-		props["type"] = expose.Type
-		props["feature"] = false
+	switch feature.Type {
+	case "numeric":
+		props["max"] = feature.ValueMax
+		props["min"] = feature.ValueMin
+
+	case "binary":
+		props["on"] = feature.ValueOn
+		props["off"] = feature.ValueOff
+		props["toggle"] = feature.ValueToggle
+
+	case "enum":
+		props["values"] = feature.Values
 	}
 
-	for _, feature := range expose.Features {
-		if _, ok := exposesWhitelist[feature.Property]; !ok {
-			continue
-		}
+	newEntity.Properties = props
+	return newEntity, nil
+}
 
-		newEntity.Name = feature.Property
-		newEntity.Description = feature.Description
-		newEntity.Unit = feature.Unit
+func CreateFromExpose(expose BridgeExpose) (*Entity, error) {
 
-		props["type"] = feature.Type
-		props["feature"] = true
-
-		switch feature.Type {
-		case "numeric":
-			props["max"] = feature.ValueMax
-			props["min"] = feature.ValueMin
-
-		case "binary":
-			props["on"] = feature.ValueOn
-			props["off"] = feature.ValueOff
-			props["toggle"] = feature.ValueToggle
-
-		case "enum":
-			props["values"] = feature.Values
-		}
+	if expose.Property == "" {
+		return nil, fmt.Errorf("no expose data")
 	}
 
-	if newEntity == nil {
-		return nil, fmt.Errorf("expose is not empty")
+	if _, ok := exposesWhitelist[expose.Property]; !ok {
+		return nil, fmt.Errorf("expose property %v is blacklisted", expose.Property)
 	}
+	newEntity := &Entity{}
+	var props = map[string]any{}
+	newEntity.Name = expose.Property
+	newEntity.Description = expose.Description
+	newEntity.Unit = expose.Unit
+	props["type"] = expose.Type
+	props["feature"] = false
+
 	newEntity.Properties = props
 	return newEntity, nil
 }

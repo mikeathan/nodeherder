@@ -5,33 +5,35 @@ import (
 	"errors"
 )
 
-type BridgeExpose struct {
-	Features []struct {
-		Access      int    `json:"access"`
+type BridgeInfoFeature struct {
+	Access      int    `json:"access"`
+	Description string `json:"description"`
+	Name        string `json:"name"`
+	Property    string `json:"property"`
+	Type        string `json:"type"`
+	ValueOff    string `json:"value_off,omitempty"`
+	ValueOn     string `json:"value_on,omitempty"`
+	ValueToggle string `json:"value_toggle,omitempty"`
+	ValueMax    any    `json:"value_max,omitempty"`
+	ValueMin    any    `json:"value_min,omitempty"`
+	Values      []any  `json:"values,omitempty"`
+	Presets     []struct {
 		Description string `json:"description"`
 		Name        string `json:"name"`
-		Property    string `json:"property"`
-		Type        string `json:"type"`
-		ValueOff    string `json:"value_off,omitempty"`
-		ValueOn     string `json:"value_on,omitempty"`
-		ValueToggle string `json:"value_toggle,omitempty"`
-		ValueMax    any    `json:"value_max,omitempty"`
-		ValueMin    any    `json:"value_min,omitempty"`
-		Values      []any  `json:"values,omitempty"`
-		Presets     []struct {
-			Description string `json:"description"`
-			Name        string `json:"name"`
-			Value       int    `json:"value"`
-		} `json:"presets,omitempty"`
-		Unit string `json:"unit,omitempty"`
-	} `json:"features,omitempty"`
-	Type        string   `json:"type"`
-	Access      int      `json:"access,omitempty"`
-	Description string   `json:"description,omitempty"`
-	Name        string   `json:"name,omitempty"`
-	Property    string   `json:"property,omitempty"`
-	Values      []string `json:"values,omitempty"`
-	Unit        string   `json:"unit,omitempty"`
+		Value       int    `json:"value"`
+	} `json:"presets,omitempty"`
+	Unit string `json:"unit,omitempty"`
+}
+
+type BridgeExpose struct {
+	Features    []BridgeInfoFeature `json:"features,omitempty"`
+	Type        string              `json:"type"`
+	Access      int                 `json:"access,omitempty"`
+	Description string              `json:"description,omitempty"`
+	Name        string              `json:"name,omitempty"`
+	Property    string              `json:"property,omitempty"`
+	Values      []string            `json:"values,omitempty"`
+	Unit        string              `json:"unit,omitempty"`
 }
 
 type BridgeInfo struct {

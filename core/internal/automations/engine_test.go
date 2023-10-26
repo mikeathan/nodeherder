@@ -5,19 +5,78 @@ import (
 	"node-herder/internal/automations"
 	"node-herder/internal/services"
 	"node-herder/mocks"
+	"node-herder/models/devices"
 	"node-herder/utils/storage"
 	"sort"
 	"testing"
 	"time"
 )
 
+func createBridgeInfo() []*devices.BridgeInfo {
+
+	dev1 := &devices.BridgeInfo{}
+	dev1.IeeeAddress = "0x123456"
+	dev1.Definition.Description = "Mocking human sensor"
+	dev1.FriendlyName = "human sensor"
+	dev1.Type = "EndDevice"
+	dev1.PowerSource = "battery"
+	dev1.Disabled = false
+	dev1.InterviewCompleted = true
+
+	e := devices.BridgeExpose{}
+	e.Name = "presence"
+	e.Property = "presence"
+	e.Type = "binary"
+	e.Description = "determines if presence has been detected"
+
+	dev1.Definition.Exposes = append(dev1.Definition.Exposes, e)
+
+	//
+	dev2 := &devices.BridgeInfo{}
+	dev2.IeeeAddress = "0x56789"
+	dev2.Definition.Description = "Mocking Attic light"
+	dev2.FriendlyName = "Attic light"
+	dev2.Type = "EndDevice"
+	dev2.PowerSource = "mains"
+	dev2.Disabled = false
+	dev2.InterviewCompleted = true
+
+	e2 := devices.BridgeExpose{}
+	e2.Type = "light"
+	b2f1 := devices.BridgeInfoFeature{}
+	b2f1.Description = "On/off state of this light"
+	b2f1.Name = "state"
+	b2f1.Property = "state"
+	b2f1.Type = "binary"
+	b2f1.ValueOff = "OFF"
+	b2f1.ValueOn = "ON"
+
+	b2f2 := devices.BridgeInfoFeature{}
+	b2f2.Description = "Brightness of this light"
+	b2f2.Name = "brightness"
+	b2f2.Property = "brightness"
+	b2f2.Type = "numeric"
+	b2f2.ValueMax = 255
+	b2f2.ValueMin = 0
+
+	e2.Features = append(e2.Features, b2f1)
+	e2.Features = append(e2.Features, b2f2)
+
+	dev2.Definition.Exposes = append(dev2.Definition.Exposes, e2)
+
+	return []*devices.BridgeInfo{dev1, dev2}
+}
+
 func TestExportToFile(t *testing.T) {
 
-	t.Skip("delete - it needs Bridgeinfo mocking which we currently dont have")
+	//t.Skip("delete - it needs Bridgeinfo mocking which we currently dont have")
 	mqtt := &mocks.MockMqttClient{}
 	repo := &mocks.NopRepository{}
 	eventHub := &mocks.MockEventHub{}
 	registrar := services.NewHubRegisterService(repo, eventHub, 30000)
+
+	bridgeinfos := createBridgeInfo()
+	registrar.RegisterBridge(bridgeinfos, 60)
 	//automationData := mockData(mqtt)
 	storage := NewMockStorage([]*automations.Device{})
 
@@ -26,11 +85,13 @@ func TestExportToFile(t *testing.T) {
 	engine.Initialize()
 
 	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(mqtt, 100*time.Millisecond)
+	turnOffTrigger.Action.Id = "0x56789"
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30.1)
-
+	turnOnTrigger.Action.Id = "0x56789"
 	// create device trigger
 	inputDeviceTriggers := []*automations.Device{}
-	deviceTrigger1 := automations.NewDevice("human sensor")
+	deviceTrigger1 := automations.NewDevice("0x123456")
+	deviceTrigger1.FriendlyName = "human sensor"
 	deviceTrigger1.Description = "test human sensor automation"
 	deviceTrigger1.Triggers = append(deviceTrigger1.Triggers, turnOffTrigger)
 	deviceTrigger1.Triggers = append(deviceTrigger1.Triggers, turnOnTrigger)

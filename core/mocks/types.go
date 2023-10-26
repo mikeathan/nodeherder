@@ -1,6 +1,7 @@
 package mocks
 
 import (
+	"errors"
 	"fmt"
 	"node-herder/models/devices"
 
@@ -157,13 +158,13 @@ func (w *NopRepository) ListAllDevicesV2() []*devices.DeviceV2 {
 func (w *NopRepository) FindDeviceV2(deviceName string) (*devices.DeviceV2, error) {
 
 	fmt.Println("Empty FindDevice")
-	return &devices.DeviceV2{}, nil
+	return nil, errors.New("device not found")
 }
 
 func (w *NopRepository) FindDeviceV2ById(id string) (*devices.DeviceV2, error) {
 
 	fmt.Println("Empty FindDeviceV2ById")
-	return &devices.DeviceV2{}, nil
+	return nil, errors.New("device not found")
 }
 
 func (w *NopRepository) RegisterBridge(bridgeInfoList []*devices.BridgeInfo) {
