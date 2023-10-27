@@ -33,6 +33,7 @@ type bridgeConfigurationHandler struct {
 	mqtt                      mqtt.MqttClient
 	registrar                 *services.DeviceRegistrar
 	automationEngine          automations.Engine
+	bridgeHash                string
 	deviceAvailabilityTimeout int
 }
 
@@ -41,11 +42,17 @@ func newBridgeConfigurationHandler(registrar *services.DeviceRegistrar, engine a
 }
 
 func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, payload []byte) error {
-
 	if id != "bridge/devices" {
 		return fmt.Errorf("invalid hub configuration topic %s", id)
 	}
 
+	h := utils.HashData(payload)
+	if b.bridgeHash == h {
+		utils.LogDebugf("bridge/devices event. Skipping payload not changed")
+		return nil
+	}
+
+	b.bridgeHash = h
 	bridgeInfoList, err := devices.LoadBridgeDevices(payload)
 	if err != nil {
 		return err

@@ -38,7 +38,7 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 
 	time.Sleep(500 * time.Millisecond)
 
-	id := utils.Hash(name)
+	id := utils.HashName(name)
 	device, err := repo.FindDevice(id)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -64,7 +64,7 @@ func TestProcessorUpdatesExistingDevice(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 	name := "device2"
-	id := utils.Hash(name)
+	id := utils.HashName(name)
 
 	device, err := repo.FindDevice(id)
 	if err != nil {
@@ -91,7 +91,7 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 
 	want := time.Now().Format(time.RFC3339)
 	time.Sleep(100 * time.Millisecond)
-	id := utils.Hash(name)
+	id := utils.HashName(name)
 
 	device, err := repo.FindDevice(id)
 	if err != nil {
@@ -234,7 +234,7 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 	mqtt.Publish(name, []byte(device1BatterySource))
 	time.Sleep(100 * time.Millisecond)
 
-	id := utils.Hash(name)
+	id := utils.HashName(name)
 	device, err := repo.FindDevice(id)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -252,7 +252,7 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 	mqtt.Publish(name, []byte(device1BatterySource))
 	time.Sleep(200 * time.Millisecond)
 
-	id = utils.Hash(name)
+	id = utils.HashName(name)
 	device1, _ := repo.FindDevice(id)
 
 	if device1.Properties["availability"] != "online" {
@@ -272,7 +272,7 @@ func TestAvailabilityIsDisposed(t *testing.T) {
 	mqtt.Publish(name, []byte(device1BatterySource))
 	time.Sleep(100 * time.Millisecond)
 
-	id := utils.Hash(name)
+	id := utils.HashName(name)
 	device, err := repo.FindDevice(id)
 	if err != nil {
 		t.Fatalf(err.Error())

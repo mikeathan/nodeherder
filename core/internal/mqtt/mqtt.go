@@ -157,7 +157,7 @@ func (m *MqttService) subscribe(topic string) error {
 }
 
 func (m *MqttService) AddTopic(topic string) error {
-
+	//todo: remove unused topics if got renamed
 	for _, t := range m.topics {
 		if t == topic {
 			utils.LogInfof("skipping topic %s is already subscribed", t)

@@ -168,5 +168,5 @@ func (a *DeviceRegistrar) ResolveId(name string) string {
 		return id
 	}
 
-	return utils.Hash(name)
+	return utils.HashName(name)
 }
