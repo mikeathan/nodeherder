@@ -279,7 +279,7 @@ func (device *Device) Update(payload map[string]interface{}) *updatePackage {
 
 	if device.Properties[availabilityKey] != online {
 		device.Properties[availabilityKey] = online
-		utils.LogInfof("device %s is online", device.Id)
+		utils.LogInfof("device [%s] %s is online", device.Id, device.FriendlyName)
 		device.resetAvailabilityTimer()
 	}
 

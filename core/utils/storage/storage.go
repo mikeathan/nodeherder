@@ -5,6 +5,7 @@ type Storage[T any] interface {
 	LoadAll() []*T
 	Initialize() ([]*T, error)
 	ClearCache()
+	LoadFromCache(item string) (*T, error)
 	Load(item string) (*T, error)
 	Delete(item string) error
 }

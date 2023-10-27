@@ -232,6 +232,14 @@ func (d *MockStorage[T]) Store(name string, item *automations.Device) error {
 	d.addToCache(name, item)
 	return nil
 }
+func (d *MockStorage[T]) LoadFromCache(name string) (*automations.Device, error) {
+	item := d.loadFromCache(name)
+	if item != nil {
+		return item, nil
+	}
+
+	return nil, errors.New("not in cache")
+}
 
 func (d *MockStorage[T]) Load(name string) (*automations.Device, error) {
 

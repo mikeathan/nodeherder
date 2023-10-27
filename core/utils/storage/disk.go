@@ -129,6 +129,19 @@ func (d *JsonDiskStorage[T]) Store(name string, item *T) error {
 	return nil
 }
 
+func (d *JsonDiskStorage[T]) LoadFromCache(name string) (*T, error) {
+
+	defer d.mutex.RUnlock()
+	d.mutex.RLock()
+
+	item := d.loadFromCache(name)
+	if item != nil {
+		return item, nil
+	}
+	utils.LogDebugf("item %s not in cache", name)
+	return nil, fmt.Errorf("item %s not in cache", name)
+}
+
 func (d *JsonDiskStorage[T]) Load(name string) (*T, error) {
 
 	defer d.mutex.RUnlock()
@@ -142,7 +155,7 @@ func (d *JsonDiskStorage[T]) Load(name string) (*T, error) {
 	filePath := d.getFilePath(name)
 	item, err := d.loadFile(filePath)
 	if err != nil {
-		utils.LogErrorf("Error loading item %s %s", name, err.Error())
+		utils.LogInfof("Error loading item %s %s", name, err.Error())
 		return nil, err
 	}
 
