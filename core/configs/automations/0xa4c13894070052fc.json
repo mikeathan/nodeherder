@@ -2,7 +2,7 @@
   "id": "0xa4c13894070052fc",
   "friendlyName": "Human presence",
   "description": "Attic light test automation",
-  "enabled": true,
+  "enabled": false,
   "triggers": [
     {
       "name": "presence",
