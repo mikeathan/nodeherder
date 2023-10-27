@@ -12,25 +12,17 @@
           "name": "occupancy",
           "description": "Indicates whether the device detected occupancy",
           "data": null,
-          "properties": {
-            "feature": false,
-            "type": "binary"
-          }
+          "properties": { "feature": false, "type": "binary" }
         },
         "temperature": {
           "name": "temperature",
           "description": "Measured temperature value",
           "unit": "°C",
           "data": null,
-          "properties": {
-            "feature": false,
-            "type": "numeric"
-          }
+          "properties": { "feature": false, "type": "numeric" }
         }
       },
-      "properties": {
-        "availability": "offline"
-      }
+      "properties": { "availability": "offline" }
     },
     {
       "id": "0x00124b0029207763",
@@ -43,25 +35,20 @@
           "name": "humidity",
           "description": "Measured relative humidity",
           "unit": "%",
-          "data": null,
-          "properties": {
-            "feature": false,
-            "type": "numeric"
-          }
+          "data": 78.59,
+          "properties": { "feature": false, "type": "numeric" }
         },
         "temperature": {
           "name": "temperature",
           "description": "Measured temperature value",
           "unit": "°C",
-          "data": null,
-          "properties": {
-            "feature": false,
-            "type": "numeric"
-          }
+          "data": 18.04,
+          "properties": { "feature": false, "type": "numeric" }
         }
       },
       "properties": {
-        "availability": "offline"
+        "availability": "online",
+        "last_seen": "2023-10-27T20:22:54+01:00"
       }
     },
     {
@@ -107,9 +94,7 @@
           }
         }
       },
-      "properties": {
-        "availability": "offline"
-      }
+      "properties": { "availability": "offline" }
     },
     {
       "id": "0xa4c13894070052fc",
@@ -122,25 +107,37 @@
           "name": "illuminance_lux",
           "description": "Measured illuminance in lux",
           "unit": "lx",
-          "data": 23,
-          "properties": {
-            "feature": false,
-            "type": "numeric"
-          }
+          "data": 2,
+          "properties": { "feature": false, "type": "numeric" }
         },
         "presence": {
           "name": "presence",
           "description": "Indicates whether the device detected presence",
           "data": false,
-          "properties": {
-            "feature": false,
-            "type": "binary"
-          }
+          "properties": { "feature": false, "type": "binary" }
         }
       },
       "properties": {
         "availability": "online",
-        "last_seen": "2023-10-26T16:21:47+01:00"
+        "last_seen": "2023-10-27T20:24:18+01:00"
+      }
+    },
+    {
+      "id": "92fe86b7",
+      "friendly_name": "node1",
+      "connection_type": "http",
+      "power_source": "mains",
+      "exposes": {
+        "temperature": {
+          "name": "temperature",
+          "unit": "°C",
+          "data": 45.6,
+          "properties": {}
+        }
+      },
+      "properties": {
+        "availability": "online",
+        "last_seen": "2023-10-27T20:24:06+01:00"
       }
     }
   ]
