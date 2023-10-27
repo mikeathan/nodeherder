@@ -122,6 +122,5 @@ ws node server sends
 
 remove logic from repo and place ti service layer
 
-
 TODO:
 https://medium.com/@reetas/using-generics-with-pointer-receivers-in-go-39ee237d7475
