@@ -48,7 +48,7 @@ func (a *AutomationEngine) WithStorage(storage storage.Storage[Device]) {
 
 func (a *AutomationEngine) HandleDevice(device *devices.Device) {
 	triggerDevice, err := a.automationStorage.LoadFromCache(device.Id)
-	if err == nil {
+	if err == nil && triggerDevice.Enabled {
 		triggerDevice.Evaluate(device)
 	}
 }
@@ -116,10 +116,6 @@ func (a *AutomationEngine) Initialize() {
 	for _, automation := range automations {
 
 		utils.LogInfof("Loading automation id= %s, friendlyName=%s, Enabled=%t", automation.Id, automation.FriendlyName, automation.Enabled)
-		if !automation.Enabled {
-			continue
-		}
-
 		err := automation.configure(a.registrar, a.mqttClient)
 		if err != nil {
 			utils.LogErrorf("configure automation id %s failed. Error=%s", automation.Id, err.Error())
