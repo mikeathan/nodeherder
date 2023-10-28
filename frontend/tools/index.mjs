@@ -108,9 +108,6 @@ var automationMap = new Map([
   ],
 ]);
 
-var devicesMock =
-  '{"type":"devices","payload":[{"id":"0xa4c13894070052fc","friendlyname":"Human presence","connection_type":"mqtt","power_source":"mains","exposes":{"illuminance_lux":{"name":"illuminance_lux","description":"Measured illuminance in lux","unit":"lx","data":2,"properties":{}},"presence":{"name":"presence","description":"Indicates whether the device detected presence","data":false,"properties":{}}},"properties":{"availability":"online","last_seen":"2023-10-18T06:43:20+01:00","linkquality":36}}]}';
-
 let automation1Trigger =
   '{"type":"automations","payload":[{"id":"0xa4c13894070052fc","friendlyName":"Human presence","description":"Attic light test automation","enabled":true,"triggers":[{"name":"presence","conditions":[{"name":"presence","value":false,"equality":"="}],"action":{"id":"0x70ac08fffefafeca","friendlyname":"Attic light","type":"light","property":"state","data":"OFF","delay":300000000000}},{"name":"presence","conditions":[{"name":"presence","value":true,"equality":"="},{"name":"lux","value":30,"equality":"<="}],"action":{"id":"0x70ac08fffefafeca","friendlyname":"Attic light","type":"light","property":"state","data":"ON"}}]}]}';
 
@@ -125,6 +122,13 @@ app.ws("/ws", async function (ws, req) {
   settings.forEach((s) => {
     setInterval(function () {
       var updatePayload = buildDeviceUpdatedPayload(s);
+
+      ERROR;
+
+      //       if (updatePayload.data.availability != undefined) {
+      //         ^
+
+      // TypeError: Cannot read properties of undefined (reading 'data')
       if (updatePayload.data.availability != undefined) {
         //if (s.availability === "offline") {
         // probaly check payload as well
@@ -134,7 +138,20 @@ app.ws("/ws", async function (ws, req) {
           type: "devicePropertiesUpdated",
           payload: updatePayload,
         });
+
+        console.log("[DEBUG]:", d);
         ws.send(d);
+        //
+        setTimeout(() => {
+          var d = JSON.stringify({
+            type: "deviceUpdated",
+            payload: updatePayload,
+          });
+
+          console.log("[DEBUG] sp:", d);
+          ws.send(d);
+        }, 500);
+
         return;
       }
 
@@ -142,6 +159,8 @@ app.ws("/ws", async function (ws, req) {
         type: "deviceUpdated",
         payload: updatePayload,
       });
+
+      console.log("[DEBUG]:", d);
       ws.send(d);
     }, s.delayInMs);
   });
@@ -269,18 +288,13 @@ function saveAutomation(ws, automation) {
 
 function buildDeviceUpdatedPayload(s) {
   var func = updateDeviceMap[s.id];
-  var payload = func(s);
-  return payload;
-}
-
-function buildNewDevicesPayload() {
-  var devices = [];
-  settings.forEach((s) => {
-    var func = newDeviceMap[s.id];
-    var newDevicePayload = func(s); //
-    devices.push(newDevicePayload);
-  });
-  return devices;
+  try {
+    var payload = func(s);
+    return payload;
+  } catch (error) {
+    console.log("id:", s.id + "error:" + error);
+  }
+  return undefined;
 }
 
 function currentTime() {
@@ -333,20 +347,21 @@ let settings = [
 ];
 
 let newDeviceMap = {};
-newDeviceMap["0x123456"] = mockAddWeatherNode1v2;
+newDeviceMap["92fe86b7"] = mockAddWeatherNode1v2;
 newDeviceMap["0x00124b0029207763"] = mockAddTH01v2;
 newDeviceMap["0xa4c13894070052fc"] = mockAddHumanPresencev2;
 newDeviceMap["0x00124b00146c31cd"] = mockAddMotionSensorv2;
 
 let updateDeviceMap = {};
-updateDeviceMap["0x123456"] = mockUpdateWeatherNode1v2;
+updateDeviceMap["92fe86b7"] = mockUpdateWeatherNode1v2;
 updateDeviceMap["0x00124b0029207763"] = mockUpdateTH01v2;
 updateDeviceMap["0xa4c13894070052fc"] = mockUpdateHumanPresencev2;
 updateDeviceMap["0x00124b00146c31cd"] = mockUpdateMotionSensorv2;
 
+// 0x70ac08fffefafeca - Attic light
 function mockAddWeatherNode1v2(settings) {
   var device = {
-    id: "0x123456",
+    id: "92fe86b7",
     friendlyName: "weather node 1",
     connection_type: "http",
     power_source: "battery",
@@ -481,6 +496,7 @@ function mockUpdateHumanPresencev2(settings) {
     data: {
       illuminance_lux: 9,
       presence: true,
+      availability: "online",
     },
   };
 
@@ -494,6 +510,7 @@ function mockUpdateMotionSensorv2(settings) {
     data: {
       occupancy: true,
       temperature: getMockTemperature(settings),
+      availability: "online",
     },
   };
   return device;
@@ -504,7 +521,8 @@ function mockUpdateWeatherNode1v2(settings) {
     id: "0x123456",
     last_seen: currentTime(),
     data: {
-      availability: getMockAvailability(settings),
+      // availability: getMockAvailability(settings),
+      availability: "online",
     },
   };
 
@@ -517,6 +535,7 @@ function mockUpdateTH01v2(settings) {
     data: {
       temperature: getMockTemperature(settings),
       humidity: getMockHumidity(settings),
+      availability: "online",
     },
   };
 
