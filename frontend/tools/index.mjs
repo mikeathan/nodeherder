@@ -123,44 +123,11 @@ app.ws("/ws", async function (ws, req) {
     setInterval(function () {
       var updatePayload = buildDeviceUpdatedPayload(s);
 
-      ERROR;
-
-      //       if (updatePayload.data.availability != undefined) {
-      //         ^
-
-      // TypeError: Cannot read properties of undefined (reading 'data')
-      if (updatePayload.data.availability != undefined) {
-        //if (s.availability === "offline") {
-        // probaly check payload as well
-        // return;
-        // }
-        var d = JSON.stringify({
-          type: "devicePropertiesUpdated",
-          payload: updatePayload,
-        });
-
-        console.log("[DEBUG]:", d);
-        ws.send(d);
-        //
-        setTimeout(() => {
-          var d = JSON.stringify({
-            type: "deviceUpdated",
-            payload: updatePayload,
-          });
-
-          console.log("[DEBUG] sp:", d);
-          ws.send(d);
-        }, 500);
-
-        return;
-      }
-
       var d = JSON.stringify({
         type: "deviceUpdated",
         payload: updatePayload,
       });
 
-      console.log("[DEBUG]:", d);
       ws.send(d);
     }, s.delayInMs);
   });
@@ -304,22 +271,9 @@ function currentTime() {
 
 let settings = [
   {
-    id: "0x00124b0029207763",
-    friendlyName: "TH01",
-    availability: "online",
-    method: "mqtt",
-    temperatureOffset: 0.6,
-    humidityOffset: 11.3,
-    delayInMs: 52000,
-    humidity: humidityMin + 6,
-    temperature: temperatureMin,
-    temperatureLastChanged: moment(),
-    humidityLastChanged: moment(),
-  },
-  {
     id: "0xa4c13894070052fc",
     friendlyName: "Human presence",
-    availability: "online",
+    availability: "offline",
     method: "mqtt",
     luminance_lux_offset: 12,
     delayInMs: 35000,
@@ -327,167 +281,49 @@ let settings = [
     luminance_luxLastChanged: moment(),
     presenceLastChanged: moment(),
   },
-  {
-    id: "0x00124b00146c31cd",
-    friendlyName: "Motion sensor 1",
-    availability: "online",
-    method: "mqtt",
-    temperatureOffset: 1.2,
-    delayInMs: 20000,
-    temperature: temperatureMin,
-    temperatureLastChanged: moment(),
-  },
-  {
-    id: "0x123456",
-    friendlyName: "weather node 1",
-    availability: "offline",
-    method: "http",
-    delayInMs: 120000,
-  },
+  // {
+  //   id: "0x00124b00146c31cd",
+  //   friendlyName: "Motion sensor 1",
+  //   availability: "offline",
+  //   method: "mqtt",
+  //   temperatureOffset: 1.2,
+  //   delayInMs: 20000,
+  //   temperature: temperatureMin,
+  //   temperatureLastChanged: moment(),
+  // },
+  // {
+  //   id: "92fe86b7",
+  //   friendlyName: "weather node 1",
+  //   availability: "offline",
+  //   method: "http",
+  //   delayInMs: 120000,
+  // },
+  // {
+  //   id: "0x00124b0029207763",
+  //   friendlyName: "TH01",
+  //   availability: "offline",
+  //   method: "mqtt",
+  //   temperatureOffset: 0.6,
+  //   humidityOffset: 11.3,
+  //   delayInMs: 5000,
+  //   humidity: humidityMin + 6,
+  //   temperature: temperatureMin,
+  //   temperatureLastChanged: moment(),
+  //   humidityLastChanged: moment(),
+  // },
 ];
 
-let newDeviceMap = {};
-newDeviceMap["92fe86b7"] = mockAddWeatherNode1v2;
-newDeviceMap["0x00124b0029207763"] = mockAddTH01v2;
-newDeviceMap["0xa4c13894070052fc"] = mockAddHumanPresencev2;
-newDeviceMap["0x00124b00146c31cd"] = mockAddMotionSensorv2;
+// let newDeviceMap = {};
+// newDeviceMap["92fe86b7"] = mockAddWeatherNode1v2;
+// newDeviceMap["0x00124b0029207763"] = mockAddTH01v2;
+// newDeviceMap["0xa4c13894070052fc"] = mockAddHumanPresencev2;
+// newDeviceMap["0x00124b00146c31cd"] = mockAddMotionSensorv2;
 
 let updateDeviceMap = {};
 updateDeviceMap["92fe86b7"] = mockUpdateWeatherNode1v2;
 updateDeviceMap["0x00124b0029207763"] = mockUpdateTH01v2;
 updateDeviceMap["0xa4c13894070052fc"] = mockUpdateHumanPresencev2;
 updateDeviceMap["0x00124b00146c31cd"] = mockUpdateMotionSensorv2;
-
-// 0x70ac08fffefafeca - Attic light
-function mockAddWeatherNode1v2(settings) {
-  var device = {
-    id: "92fe86b7",
-    friendlyName: "weather node 1",
-    connection_type: "http",
-    power_source: "battery",
-    exposes: {
-      humidity: {
-        name: "humidity",
-        unit: "%",
-        data: 63.1,
-        properties: {},
-      },
-      temperature: {
-        name: "temperature",
-        unit: "°C",
-        data: 15,
-        properties: {},
-      },
-    },
-    properties: {
-      availability: settings.availability,
-      battery: 100,
-      last_seen: currentTime(),
-    },
-  };
-
-  return device;
-}
-
-function mockAddTH01v2(settings) {
-  var device = {
-    id: "0x00124b0029207763",
-    friendlyName: "TH01",
-    description: "Temperature and Humidity TH01 sensor",
-
-    connection_type: "mqtt",
-    power_source: "battery",
-    exposes: {
-      humidity: {
-        name: "humidity",
-        description: "Measured relative humidity",
-        unit: "%",
-        data: 83.91,
-        properties: {},
-      },
-      temperature: {
-        name: "temperature",
-        description: "Measured temperature value",
-        unit: "°C",
-        data: 19.87,
-        properties: {},
-      },
-    },
-    properties: {
-      availability: settings.availability,
-      battery: 100,
-      last_seen: currentTime(),
-      linkquality: 32,
-    },
-  };
-
-  return device;
-}
-
-function mockAddHumanPresencev2(settings) {
-  var device = {
-    id: "0xa4c13894070052fc",
-    friendlyName: "Human presence",
-    description: "Human presence sensor",
-    connection_type: "mqtt",
-    power_source: "mains",
-    exposes: {
-      illuminance_lux: {
-        name: "illuminance_lux",
-        description: "Measured illuminance in lux",
-        unit: "lx",
-        data: 3,
-        properties: {},
-      },
-      presence: {
-        name: "presence",
-        description: "Indicates whether the device detected presence",
-        data: false,
-        properties: {},
-      },
-    },
-    properties: {
-      availability: settings.availability,
-      last_seen: currentTime(),
-      linkquality: 58,
-    },
-  };
-
-  return device;
-}
-
-function mockAddMotionSensorv2(settings) {
-  var device = {
-    id: "0x00124b00146c31cd",
-    friendlyName: "Motion sensor 1",
-    description: "Motion sensor and temperature device",
-    connection_type: "mqtt",
-    power_source: "battery",
-    exposes: {
-      occupancy: {
-        name: "occupancy",
-        description: "Indicates whether the device detected occupancy",
-        data: false,
-        properties: {},
-      },
-      temperature: {
-        name: "temperature",
-        description: "Measured temperature value",
-        unit: "°C",
-        data: 23.75,
-        properties: {},
-      },
-    },
-    properties: {
-      availability: settings.availability,
-      battery: 7,
-      last_seen: currentTime(),
-      linkquality: 29,
-    },
-  };
-
-  return device;
-}
 
 function mockUpdateHumanPresencev2(settings) {
   var device = {
@@ -496,10 +332,13 @@ function mockUpdateHumanPresencev2(settings) {
     data: {
       illuminance_lux: 9,
       presence: true,
-      availability: "online",
     },
   };
 
+  var availability = setDeviceOnline(settings);
+  if (availability != undefined) {
+    device.data.availability = availability;
+  }
   return device;
 }
 
@@ -510,24 +349,33 @@ function mockUpdateMotionSensorv2(settings) {
     data: {
       occupancy: true,
       temperature: getMockTemperature(settings),
-      availability: "online",
     },
   };
+
+  var availability = setDeviceOnline(settings);
+  if (availability != undefined) {
+    device.data.availability = availability;
+  }
+
   return device;
 }
 
 function mockUpdateWeatherNode1v2(settings) {
   var device = {
-    id: "0x123456",
+    id: "92fe86b7",
     last_seen: currentTime(),
     data: {
-      // availability: getMockAvailability(settings),
-      availability: "online",
+      temperature: getMockTemperature(settings),
     },
   };
 
+  var availability = setDeviceOnline(settings);
+  if (availability != undefined) {
+    device.data.availability = availability;
+  }
   return device;
 }
+
 function mockUpdateTH01v2(settings) {
   var device = {
     id: "0x00124b0029207763",
@@ -535,21 +383,23 @@ function mockUpdateTH01v2(settings) {
     data: {
       temperature: getMockTemperature(settings),
       humidity: getMockHumidity(settings),
-      availability: "online",
     },
   };
 
+  var availability = setDeviceOnline(settings);
+  if (availability != undefined) {
+    device.data.availability = availability;
+  }
   return device;
 }
 
-function getMockAvailability(settings) {
-  if (settings.availability == "online") {
-    settings.availability = "offline";
-  } else {
+function setDeviceOnline(settings) {
+  if (settings.availability == "offline") {
     settings.availability = "online";
+    return settings.availability;
   }
 
-  return settings.availability;
+  return undefined;
 }
 
 function getMockTemperature(settings) {

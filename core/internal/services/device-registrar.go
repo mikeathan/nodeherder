@@ -58,7 +58,7 @@ func (s *DeviceRegistrar) CreateNewDevice(friendlyName string, connType string, 
 	}
 
 	device.Monitor(s.deviceAvailabilityTimeout, func(p interface{}) {
-		s.eventHub.Broadcast(ws.DevicePropertiesUpdated, p)
+		s.eventHub.Broadcast(ws.DeviceUpdated, p)
 	})
 
 	return device, nil
@@ -149,7 +149,7 @@ func (s *DeviceRegistrar) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, d
 			}
 
 			d.Monitor(deviceAvailabilityTimeoutOverride, func(p interface{}) {
-				s.eventHub.Broadcast(ws.DevicePropertiesUpdated, p)
+				s.eventHub.Broadcast(ws.DeviceUpdated, p)
 			})
 		}
 

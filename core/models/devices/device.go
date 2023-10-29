@@ -8,6 +8,7 @@ import (
 )
 
 var availabilityKey = "availability"
+var linkQualityKey = "linkquality"
 var mainsKey = "mains"
 var powerSourceKey = "power_source"
 var batterKey = "battery"
@@ -43,10 +44,10 @@ var exposesWhitelist = map[string]int{
 }
 
 var propertiesWhitelist = map[string]int{
-	"battery":      1,
-	"linkquality":  2,
-	"availability": 3,
-	"last_seen":    4,
+	"battery":     1,
+	"linkquality": 2,
+	//"availability": 3,handled manually
+	//"last_seen":    4,handled manually
 }
 
 type Device struct {
@@ -79,13 +80,14 @@ func NewDevice(id string) *Device {
 }
 
 type updatePackage struct {
-	Id       string         `json:"id"`
-	LastSeen string         `json:"last_seen"`
-	Data     map[string]any `json:"data"`
+	Id         string         `json:"id"`
+	LastSeen   string         `json:"last_seen"`
+	Data       map[string]any `json:"data"`
+	Properties map[string]any `json:"properties"`
 }
 
 func newUpdatePackage(id string) *updatePackage {
-	return &updatePackage{Id: id, LastSeen: getCurrentTime(), Data: make(map[string]any)}
+	return &updatePackage{Id: id, LastSeen: getCurrentTime(), Data: make(map[string]any), Properties: make(map[string]any)}
 }
 
 func (u *updatePackage) HasData() bool {
@@ -175,6 +177,12 @@ func createProperties(data map[string]interface{}) map[string]any {
 			props[key] = value
 		}
 	}
+
+	if _, ok := data[lastSeenKey]; !ok {
+		data[lastSeenKey] = getCurrentTime()
+	}
+	data[availabilityKey] = online
+
 	return props
 }
 
@@ -239,10 +247,6 @@ func createExposuresFromBridge(data map[string]interface{}, bridgeInfo *BridgeIn
 
 func CreateNewDevice(id string, friendlyName string, connType string, bridgeInfo *BridgeInfo, data map[string]interface{}) (*Device, error) {
 
-	if _, ok := data[lastSeenKey]; !ok {
-		data[lastSeenKey] = getCurrentTime()
-	}
-	data[availabilityKey] = online
 	var newDevice = NewDevice(id)
 	newDevice.FriendlyName = friendlyName
 	newDevice.ConnectionType = connType
@@ -274,6 +278,18 @@ func (device *Device) Update(payload map[string]interface{}) *updatePackage {
 		if newValue, ok := payload[name]; ok && newValue != currValue.Data {
 			device.Exposes[name].Data = newValue
 			updatePackage.Data[name] = newValue
+		}
+
+	}
+	if updatePackage.HasData() {
+
+		for name := range propertiesWhitelist {
+			currValue := device.Properties[name]
+			if newValue, ok := payload[name]; ok && newValue != currValue {
+
+				device.Properties[name] = newValue
+				updatePackage.Properties[name] = newValue
+			}
 		}
 	}
 
@@ -315,9 +331,10 @@ func (device *Device) Monitor(timeoutInSecs int, onChangeCallback func(p interfa
 				device.Properties[availabilityKey] = offline
 				utils.LogInfof("device %s availability timer killed", device.Id)
 
+				// todo: move it in one place
 				if onChangeCallback != nil {
 					p := newUpdatePackage(device.Id)
-					p.Data[availabilityKey] = offline
+					p.Properties[availabilityKey] = offline
 					onChangeCallback(p)
 				}
 
@@ -343,9 +360,10 @@ func (device *Device) Monitor(timeoutInSecs int, onChangeCallback func(p interfa
 					device.Properties[availabilityKey] = offline
 					utils.LogInfof("device %s is offine", device.Id)
 
+					// todo: move it in one place
 					if onChangeCallback != nil {
 						p := newUpdatePackage(device.Id)
-						p.Data[availabilityKey] = offline
+						p.Properties[availabilityKey] = offline
 						onChangeCallback(p)
 					}
 

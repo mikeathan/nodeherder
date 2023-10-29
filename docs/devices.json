@@ -22,7 +22,12 @@
           "properties": { "feature": false, "type": "numeric" }
         }
       },
-      "properties": { "availability": "offline" }
+      "properties": {
+        "availability": "offline",
+        "battery": 7,
+        "last_seen": "2023-10-29T11:21:41+00:00",
+        "linkquality": 43
+      }
     },
     {
       "id": "0x00124b0029207763",
@@ -46,9 +51,7 @@
           "properties": { "feature": false, "type": "numeric" }
         }
       },
-      "properties": {
-        "availability": "offline"
-      }
+      "properties": { "availability": "offline" }
     },
     {
       "id": "0x70ac08fffefafeca",
@@ -106,7 +109,7 @@
           "name": "illuminance_lux",
           "description": "Measured illuminance in lux",
           "unit": "lx",
-          "data": 2,
+          "data": null,
           "properties": { "feature": false, "type": "numeric" }
         },
         "presence": {
@@ -117,8 +120,9 @@
         }
       },
       "properties": {
-        "availability": "online",
-        "last_seen": "2023-10-27T20:24:18+01:00"
+        "availability": "offline",
+        "last_seen": "2023-10-29T11:23:48+00:00",
+        "linkquality": 40
       }
     },
     {
@@ -134,9 +138,7 @@
           "properties": {}
         }
       },
-      "properties": {
-        "availability": "offline"
-      }
+      "properties": { "availability": "offline" }
     }
   ]
 }

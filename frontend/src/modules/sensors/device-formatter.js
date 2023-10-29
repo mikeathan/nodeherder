@@ -1,8 +1,10 @@
 export function getPowerSourceIcon(power_source, value) {
+  console.log("getPowerSourceIcon: ", power_source, " - ", value);
   if (power_source == "") {
     return "";
   }
-  if (power_source === "mains") {
+
+  if (power_source.toLowerCase().includes("mains")) {
     return "fa fa-plug";
   }
 

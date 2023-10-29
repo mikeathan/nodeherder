@@ -13,7 +13,6 @@ import (
 const (
 	// requests
 
-	DevicePropertiesUpdated = "devicePropertiesUpdated"
 	LoadAutomations         = "loadAutomations"
 	LoadDevices             = "loadDevices"
 	SaveAutomation          = "saveAutomation"
