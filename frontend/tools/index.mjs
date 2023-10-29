@@ -123,6 +123,7 @@ app.ws("/ws", async function (ws, req) {
     setInterval(function () {
       var updatePayload = buildDeviceUpdatedPayload(s);
 
+      console.log("debug ", updatePayload);
       var d = JSON.stringify({
         type: "deviceUpdated",
         payload: updatePayload,
