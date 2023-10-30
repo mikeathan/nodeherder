@@ -19,13 +19,6 @@ const automation = computed(() => {
     return store.getters["automations/find"](props.id);
 });
 
-const features = computed(() => {
-    if (!store.getters["features/isInitialized"]) {
-        store.dispatch('ws/emit', { event: "loadBridgeFeatures" });
-    }
-    return store.getters["features/items"]
-});
-
 function onActionChanged(event, properties) {
     if (event.target.value == "") {
         return;
@@ -146,7 +139,7 @@ function onDeleteTriggerClick(event, automationId, triggerId) {
                                         <div v-for="feature in features">
                                             <div v-if="feature.id == trigger.action.id">
 
-                                                <label>Action</label>
+                                                <!-- <label>Action</label>
 
                                                 <div class="row w-50">
                                                     <div class="col">
@@ -177,7 +170,7 @@ function onDeleteTriggerClick(event, automationId, triggerId) {
                                                     </div>
 
 
-                                                </div>
+                                                </div> -->
                                             </div>
                                         </div>
                                         <div id=deleteTriggerDiv>
