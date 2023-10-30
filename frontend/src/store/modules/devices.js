@@ -34,6 +34,7 @@ const mutations = {
       console.log("device ", payload.id, " not found");
       return;
     }
+
     for (var key in payload.data) {
       if (device.exposes.hasOwnProperty(key)) {
         device.exposes[key].data = payload.data[key];
@@ -41,7 +42,7 @@ const mutations = {
     }
     for (var key in payload.properties) {
       if (device.properties.hasOwnProperty(key)) {
-        device.properties[key].data = payload.properties[key];
+        device.properties[key] = payload.properties[key];
       }
     }
     device.properties.last_seen = payload.last_seen;

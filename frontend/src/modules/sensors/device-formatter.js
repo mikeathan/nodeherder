@@ -1,5 +1,4 @@
 export function getPowerSourceIcon(power_source, value) {
-  console.log("getPowerSourceIcon: ", power_source, " - ", value);
   if (power_source == "") {
     return "";
   }
@@ -21,7 +20,7 @@ export function getPowerSourceIcon(power_source, value) {
   } else if (battery >= 10) {
     batteryClass += ` fa-battery-empty animation-blinking`;
   } else {
-    return `animation-blinking text-danger`;
+    return `fa-battery-empty animation-blinking text-danger`;
   }
 
   if (!batteryClass) {

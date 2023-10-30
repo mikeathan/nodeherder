@@ -51,7 +51,11 @@
           "properties": { "feature": false, "type": "numeric" }
         }
       },
-      "properties": { "availability": "offline" }
+      "properties": {
+        "battery": 60,
+        "linkquality": 7,
+        "availability": "offline"
+      }
     },
     {
       "id": "0x70ac08fffefafeca",
