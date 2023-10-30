@@ -29,7 +29,6 @@ let pingTimer = 0;
 let app = express();
 let server = http.createServer(app).listen(port);
 console.log("[" + currentTime() + "] server listening at port " + port);
-//const fs = require("fs");
 
 var automationMap = new Map([
   [
@@ -312,12 +311,6 @@ let settings = [
     humidityLastChanged: moment(),
   },
 ];
-
-// let newDeviceMap = {};
-// newDeviceMap["92fe86b7"] = mockAddWeatherNode1v2;
-// newDeviceMap["0x00124b0029207763"] = mockAddTH01v2;
-// newDeviceMap["0xa4c13894070052fc"] = mockAddHumanPresencev2;
-// newDeviceMap["0x00124b00146c31cd"] = mockAddMotionSensorv2;
 
 let updateDeviceMap = {};
 updateDeviceMap["92fe86b7"] = mockUpdateWeatherNode1v2;
