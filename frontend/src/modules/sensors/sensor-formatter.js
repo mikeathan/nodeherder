@@ -57,12 +57,18 @@ function getUnit(sensor) {
 export function getSensorName(sensor) {
   return sensor.charAt(0).toUpperCase() + sensor.slice(1); // TODO: load name  from resources file
 }
-export function getSensorValue(sensor, value) {
+
+
+export function getSensorValue(sensor, value, unit) {
   if (typeof value == "boolean" || typeof value == "string") {
     return value;
   }
+
+  if (unit == undefined) {
+    unit = getUnit(sensor);
+  }
   // todo : dont format integer values
-  return `${value.toFixed(1)} ${getUnit(sensor)}`;
+  return `${value.toFixed(1)} ${unit}`;
 }
 
 export function getSensorIcon(sensor, value) {

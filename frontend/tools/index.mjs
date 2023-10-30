@@ -295,7 +295,10 @@ let settings = [
     friendlyName: "weather node 1",
     availability: "offline",
     method: "http",
-    delayInMs: 120000,
+    delayInMs: 10000,
+    temperatureOffset: 1.2,
+    temperature: temperatureMin,
+    temperatureLastChanged: moment(),
   },
   {
     id: "0x00124b0029207763",
@@ -346,7 +349,6 @@ function mockUpdateMotionSensorv2(settings) {
     },
     properties: {},
   };
-
   var availability = setDeviceOnline(settings);
   if (availability != undefined) {
     device.properties.availability = availability;

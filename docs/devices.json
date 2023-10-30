@@ -12,14 +12,20 @@
           "name": "occupancy",
           "description": "Indicates whether the device detected occupancy",
           "data": null,
-          "properties": { "feature": false, "type": "binary" }
+          "properties": {
+            "feature": false,
+            "type": "binary"
+          }
         },
         "temperature": {
           "name": "temperature",
           "description": "Measured temperature value",
           "unit": "°C",
           "data": null,
-          "properties": { "feature": false, "type": "numeric" }
+          "properties": {
+            "feature": false,
+            "type": "numeric"
+          }
         }
       },
       "properties": {
@@ -41,14 +47,20 @@
           "description": "Measured relative humidity",
           "unit": "%",
           "data": null,
-          "properties": { "feature": false, "type": "numeric" }
+          "properties": {
+            "feature": false,
+            "type": "numeric"
+          }
         },
         "temperature": {
           "name": "temperature",
           "description": "Measured temperature value",
           "unit": "°C",
           "data": null,
-          "properties": { "feature": false, "type": "numeric" }
+          "properties": {
+            "feature": false,
+            "type": "numeric"
+          }
         }
       },
       "properties": {
@@ -100,7 +112,9 @@
           }
         }
       },
-      "properties": { "availability": "offline" }
+      "properties": {
+        "availability": "offline"
+      }
     },
     {
       "id": "0xa4c13894070052fc",
@@ -114,13 +128,19 @@
           "description": "Measured illuminance in lux",
           "unit": "lx",
           "data": null,
-          "properties": { "feature": false, "type": "numeric" }
+          "properties": {
+            "feature": false,
+            "type": "numeric"
+          }
         },
         "presence": {
           "name": "presence",
           "description": "Indicates whether the device detected presence",
           "data": false,
-          "properties": { "feature": false, "type": "binary" }
+          "properties": {
+            "feature": false,
+            "type": "binary"
+          }
         }
       },
       "properties": {
@@ -137,12 +157,13 @@
       "exposes": {
         "temperature": {
           "name": "temperature",
-          "unit": "°C",
           "data": null,
           "properties": {}
         }
       },
-      "properties": { "availability": "offline" }
+      "properties": {
+        "availability": "offline"
+      }
     }
   ]
 }

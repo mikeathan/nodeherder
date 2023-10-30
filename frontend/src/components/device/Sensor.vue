@@ -8,6 +8,7 @@ import {
 const props = defineProps({
     name: String,
     value: Number | Boolean,
+    unit: String,
 });
 </script>
 <template>
@@ -17,9 +18,8 @@ const props = defineProps({
     <div class="flex-shrink-1 flex-grow-1">
         {{ getSensorName(name) }}
     </div>
-
     <div v-if="value != undefined" class="flex-shrink-1">
-        {{ getSensorValue(name, value) }}
+        {{ getSensorValue(name, value, unit) }}
     </div>
     <div v-else>NA</div>
 </template>
