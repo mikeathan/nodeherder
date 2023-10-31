@@ -11,41 +11,55 @@ const properties = computed(() => {
 
     var device = store.getters["devices/find"](props.trigger.action.id);
     if (device == undefined) {
+        console.log("ERROR: device undefined")
 
         return []
     }
 
     var action = props.trigger.action;
-    var properties = device.exposes[action.property]
-    if (properties == undefined) {
+    var expose = device.exposes[action.property]
+    if (expose == undefined) {
+        console.log("ERROR: expose undefined")
+
         return []
     }
+    // console.log("friendlyname:" + device.friendly_name)
+    // console.log("id:" + device.id)
+    // for (var e in device.exposes) {
+    //     console.log("expose:" + e)
+    // }
 
-
-    console.log(properties)
+    var properties = expose.properties;
     if (properties.feature == false) {
-        console.log("features false")
+        console.log("properties.feature false")
 
         return []
     }
     return properties;
-    // "properties": {
-    //         "feature": true,
-    //         "max": 254,
-    //         "min": 0,
-    //         "type": "numeric"
-    //       }
 });
 
-function onActionChanged(event, properties) {
-    if (event.target.value == "") {
-        return;
+function getActionBinaryValue(properties) {
+    if (properties.on == props.trigger.action.data) {
+        return true
     }
-    var property = properties[event.target.value]
-    console.log("onActionChanged: ", event.target.value, " type: ", property.type, " attributes:", property.attributes);
 
-    // build div = actionDataDiv
+    return false
 }
+
+function onActionChanged(event, properties) {
+
+    // use v-model ideally to set value
+    props.trigger.action.data = event.target.value
+}
+
+function onActionStateChanged(event, properties) {
+    if (event.target.checked) {
+        props.trigger.action.data = properties.on
+    } else {
+        props.trigger.action.data = properties.off
+    }
+}
+
 
 </script>
 <template>
@@ -57,14 +71,37 @@ function onActionChanged(event, properties) {
                 disabled>
         </div>
         <div class="col">
+            <div v-if="properties.type == 'binary'">
 
-            <select id="propertySelect" style="text-align:center;" class="form-control"
+                <select id="propertySelect" style="text-align:center;" class="form-control"
+                    @change="onActionChanged($event, properties)" :modelValue="trigger.action.data">
+
+                    <option :value="properties.on">
+                        {{ properties.on }}
+                    </option>
+                    <option :value="properties.off">
+                        {{ properties.off }}
+                    </option>
+                </select>
+
+                <!-- 
+                    use that in the creator component page
+                    <div class="form-check form-switch">
+
+                    <label class="form-check-label" for="flexSwitchCheckDefault">State</label>
+                    <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault"
+                        :checked="getActionBinaryValue(properties)" @change="onActionStateChanged($event, properties)">
+                </div> -->
+            </div>
+
+
+            <!-- <select id="propertySelect" style="text-align:center;" class="form-control"
                 :modelValue="trigger.action.property" @change="onActionChanged($event, properties)">
 
-                <option v-for="property in properties" :value="property.name" :key="property.name">
-                    {{ property.name }}
+                <option v-for="(value, key) in properties" :value="value" :key="key">
+                    {{ value }}
                 </option>
-            </select>
+            </select> -->
         </div>
         <div class="col" id="actionDataDiv">
             <input type="text" style="text-align:center;" class="form-control" v-model="trigger.action.data"
