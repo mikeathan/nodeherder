@@ -99,11 +99,13 @@ type Entity struct {
 	Description string         `json:"description,omitempty"`
 	Unit        string         `json:"unit,omitempty"`
 	Data        any            `json:"data"`
+	Type        string         `json:"type"`
 	Properties  map[string]any `json:"properties"`
+	Attributes  map[string]any `json:"attributes"`
 }
 
 func newEntity() *Entity {
-	return &Entity{Properties: map[string]any{}}
+	return &Entity{Attributes: make(map[string]any), Properties: map[string]any{}}
 }
 
 func CreateFromFeature(feature BridgeInfoFeature) (*Entity, error) {
@@ -146,6 +148,7 @@ func CreateFromExpose(expose BridgeExpose) (*Entity, error) {
 	if _, ok := exposesWhitelist[expose.Property]; !ok {
 		return nil, fmt.Errorf("expose property %v is blacklisted", expose.Property)
 	}
+
 	newEntity := newEntity()
 	newEntity.Name = expose.Property
 	newEntity.Description = expose.Description
@@ -156,17 +159,55 @@ func CreateFromExpose(expose BridgeExpose) (*Entity, error) {
 	return newEntity, nil
 }
 
-func createEntity(name string, description string, data any, unit string, dataType string, props map[string]any) *Entity {
+func createEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
+
+	if expose.Property == "" {
+		return nil, fmt.Errorf("no expose data")
+	}
+
+	if _, ok := exposesWhitelist[expose.Property]; !ok {
+		return nil, fmt.Errorf("expose property %v is blacklisted", expose.Property)
+	}
+
+	newEntity := newEntity()
+	newEntity.Name = expose.Property
+	newEntity.Description = expose.Description
+	newEntity.Unit = expose.Unit
+	newEntity.Data = data
+	newEntity.Type = expose.Type
+
+	return newEntity, nil
+}
+
+func createEntityFromFeature(feature BridgeInfoFeature, data any) (*Entity, error) {
+
+	if _, ok := exposesWhitelist[feature.Property]; !ok {
+		return nil, fmt.Errorf("feature property %v is blacklisted", feature.Property)
+	}
 
 	newEntity := newEntity()
 	newEntity.Data = data
-	newEntity.Name = name
-	newEntity.Unit = unit
-	newEntity.Description = description
-	if props != nil {
-		newEntity.Properties = props
+	newEntity.Name = feature.Name
+	newEntity.Unit = feature.Unit
+	newEntity.Description = feature.Description
+	newEntity.Data = data
+	newEntity.Type = feature.Type
+
+	switch feature.Type {
+	case "numeric":
+		newEntity.Attributes["max"] = feature.ValueMax
+		newEntity.Attributes["min"] = feature.ValueMin
+
+	case "binary":
+		newEntity.Properties["on"] = feature.ValueOn
+		newEntity.Properties["off"] = feature.ValueOff
+
+	case "enum":
+		for index, item := range feature.Values {
+			newEntity.Properties[fmt.Sprintf("%s", index)] = item
+		}
 	}
-	return newEntity
+	return newEntity, nil
 }
 
 func createProperties(data map[string]interface{}) map[string]any {
@@ -206,38 +247,23 @@ func createExposuresFromBridge(data map[string]interface{}, bridgeInfo *BridgeIn
 
 		// load exposes
 		if expose.Property != "" {
-
-			if _, ok := exposesWhitelist[expose.Property]; !ok {
-				continue
-			}
-
 			if value, ok := data[expose.Property]; ok {
-				entities[expose.Property] = createEntity(expose.Property, expose.Description, value, expose.Unit, expose.Type, nil)
+				entity, err := createEntityFromExpose(expose, value)
+				if err != nil {
+					continue
+				}
+				entities[expose.Property] = entity
 			}
 		}
 		// load features
 		for _, feature := range expose.Features {
 			if value, ok := data[feature.Property]; ok {
 
-				var props map[string]any = make(map[string]any)
-				switch feature.Type {
-				case "numeric":
-					props["type"] = "numeric"
-					props["max"] = feature.ValueMax
-					props["min"] = feature.ValueMin
-
-				case "binary":
-					props["type"] = "binary"
-					props["on"] = feature.ValueOn
-					props["off"] = feature.ValueOff
-					props["toggle"] = feature.ValueToggle
-
-				case "enum":
-					props["type"] = "enum"
-					props["values"] = feature.Values
+				entity, err := createEntityFromExpose(expose, value)
+				if err != nil {
+					continue
 				}
-
-				entities[feature.Property] = createEntity(feature.Property, feature.Description, value, feature.Unit, feature.Type, props)
+				entities[expose.Property] = entity
 			}
 		}
 	}
