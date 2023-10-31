@@ -22,7 +22,6 @@ const props = defineProps({
         </div>
       </div>
       <DeviceFooter :device="device"></DeviceFooter>
-
     </div>
   </div>
 </template>

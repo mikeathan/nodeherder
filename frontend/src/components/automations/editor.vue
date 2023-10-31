@@ -1,9 +1,11 @@
 <script setup>
 import { useStore } from "vuex";
 import { computed, onMounted, reactive, ref } from "vue";
+import TriggerAction from "./TriggerAction.vue";
 
 const props = defineProps({
     id: String,
+    trigger: Object
 });
 
 const operators = ref([
@@ -136,43 +138,7 @@ function onDeleteTriggerClick(event, automationId, triggerId) {
                                             </div>
                                         </div>
                                         <p></p>
-                                        <div v-for="feature in features">
-                                            <div v-if="feature.id == trigger.action.id">
-
-                                                <!-- <label>Action</label>
-
-                                                <div class="row w-50">
-                                                    <div class="col">
-                                                        <input type="text" class="form-control"
-                                                            v-model="trigger.action.friendlyname"
-                                                            placeholder="Action friendly name" disabled>
-                                                    </div>
-                                                    <div class="col">
-
-                                                        <select id="propertySelect" style="text-align:center;"
-                                                            class="form-control" :modelValue="trigger.action.property"
-                                                            @change="onActionChanged($event, feature.properties)">
-
-                                                            <option v-for="property in feature.properties"
-                                                                :value="property.name" :key="property.name">
-
-                                                                {{ property.name }}
-                                                            </option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col" id="actionDataDiv">
-                                                        <input type="text" style="text-align:center;" class="form-control"
-                                                            v-model="trigger.action.data" placeholder="Action data">
-                                                    </div>
-                                                    <div class="col">
-                                                        <input type="text" style="text-align:center;" class="form-control"
-                                                            v-model="trigger.action.delay" placeholder="Action delay">
-                                                    </div>
-
-
-                                                </div> -->
-                                            </div>
-                                        </div>
+                                        <TriggerAction :trigger="trigger"></TriggerAction>
                                         <div id=deleteTriggerDiv>
 
                                             <button type="submit" class="btn btn-primary mt-3">Delete</button>

@@ -3,19 +3,32 @@ import { useStore } from "vuex";
 import { computed, onMounted, reactive, ref } from "vue";
 
 const props = defineProps({
-    id: String,
+    trigger: Object
 });
 
 const store = useStore();
 const properties = computed(() => {
 
-    var device = store.getters["devices/find"](props.id);
-    if (device.properties.feature == false) {
+    var device = store.getters["devices/find"](props.trigger.action.id);
+    if (device == undefined) {
+
         return []
     }
-    return device.properties;
-    // get device properties
-    // and check for feature = true
+
+    var action = props.trigger.action;
+    var properties = device.exposes[action.property]
+    if (properties == undefined) {
+        return []
+    }
+
+
+    console.log(properties)
+    if (properties.feature == false) {
+        console.log("features false")
+
+        return []
+    }
+    return properties;
     // "properties": {
     //         "feature": true,
     //         "max": 254,
@@ -29,7 +42,7 @@ function onActionChanged(event, properties) {
         return;
     }
     var property = properties[event.target.value]
-    console.log("onActionChanged:", event.target.value, " type: ", property.type, " attributes:", property.attributes);
+    console.log("onActionChanged: ", event.target.value, " type: ", property.type, " attributes:", property.attributes);
 
     // build div = actionDataDiv
 }
@@ -46,10 +59,9 @@ function onActionChanged(event, properties) {
         <div class="col">
 
             <select id="propertySelect" style="text-align:center;" class="form-control"
-                :modelValue="trigger.action.property" @change="onActionChanged($event, feature.properties)">
+                :modelValue="trigger.action.property" @change="onActionChanged($event, properties)">
 
-                <option v-for="property in feature.properties" :value="property.name" :key="property.name">
-
+                <option v-for="property in properties" :value="property.name" :key="property.name">
                     {{ property.name }}
                 </option>
             </select>
@@ -62,7 +74,5 @@ function onActionChanged(event, properties) {
             <input type="text" style="text-align:center;" class="form-control" v-model="trigger.action.delay"
                 placeholder="Action delay">
         </div>
-
-
     </div>
 </template>
