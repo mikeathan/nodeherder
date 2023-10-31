@@ -12,28 +12,17 @@
           "name": "occupancy",
           "description": "Indicates whether the device detected occupancy",
           "data": null,
-          "properties": {
-            "feature": false,
-            "type": "binary"
-          }
+          "type": "binary"
         },
         "temperature": {
           "name": "temperature",
           "description": "Measured temperature value",
           "unit": "°C",
           "data": null,
-          "properties": {
-            "feature": false,
-            "type": "numeric"
-          }
+          "type": "numeric"
         }
       },
-      "properties": {
-        "availability": "offline",
-        "battery": 7,
-        "last_seen": "2023-10-29T11:21:41+00:00",
-        "linkquality": 43
-      }
+      "properties": { "availability": "offline" }
     },
     {
       "id": "0x00124b0029207763",
@@ -47,27 +36,17 @@
           "description": "Measured relative humidity",
           "unit": "%",
           "data": null,
-          "properties": {
-            "feature": false,
-            "type": "numeric"
-          }
+          "type": "numeric"
         },
         "temperature": {
           "name": "temperature",
           "description": "Measured temperature value",
           "unit": "°C",
           "data": null,
-          "properties": {
-            "feature": false,
-            "type": "numeric"
-          }
+          "type": "numeric"
         }
       },
-      "properties": {
-        "battery": 60,
-        "linkquality": 7,
-        "availability": "offline"
-      }
+      "properties": { "availability": "offline" }
     },
     {
       "id": "0x70ac08fffefafeca",
@@ -80,41 +59,26 @@
           "name": "brightness",
           "description": "Brightness of this light",
           "data": null,
-          "properties": {
-            "feature": true,
-            "max": 254,
-            "min": 0,
-            "type": "numeric"
-          }
+          "type": "numeric",
+          "attributes": { "max": 254, "min": 0 }
         },
         "color_temp": {
           "name": "color_temp",
           "description": "Color temperature of this light",
           "unit": "mired",
           "data": null,
-          "properties": {
-            "feature": true,
-            "max": 500,
-            "min": 150,
-            "type": "numeric"
-          }
+          "type": "numeric",
+          "attributes": { "max": 500, "min": 150 }
         },
         "state": {
           "name": "state",
           "description": "On/off state of this light",
           "data": null,
-          "properties": {
-            "feature": true,
-            "off": "OFF",
-            "on": "ON",
-            "toggle": "TOGGLE",
-            "type": "binary"
-          }
+          "type": "binary",
+          "properties": { "off": "OFF", "on": "ON" }
         }
       },
-      "properties": {
-        "availability": "offline"
-      }
+      "properties": { "availability": "offline" }
     },
     {
       "id": "0xa4c13894070052fc",
@@ -127,42 +91,33 @@
           "name": "illuminance_lux",
           "description": "Measured illuminance in lux",
           "unit": "lx",
-          "data": null,
-          "properties": {
-            "feature": false,
-            "type": "numeric"
-          }
+          "data": 3,
+          "type": "numeric"
         },
         "presence": {
           "name": "presence",
           "description": "Indicates whether the device detected presence",
           "data": false,
-          "properties": {
-            "feature": false,
-            "type": "binary"
-          }
+          "type": "binary"
         }
       },
       "properties": {
         "availability": "offline",
-        "last_seen": "2023-10-29T11:23:48+00:00",
-        "linkquality": 40
+        "last_seen": "2023-10-31T18:15:15+00:00",
+        "linkquality": 29
       }
     },
     {
-      "id": "92fe86b7",
+      "id": "47de6f67",
       "friendly_name": "weather node 1",
       "connection_type": "http",
       "power_source": "mains",
       "exposes": {
-        "temperature": {
-          "name": "temperature",
-          "data": null,
-          "properties": {}
-        }
+        "temperature": { "name": "temperature", "unit": "°C", "data": 45.6 }
       },
       "properties": {
-        "availability": "offline"
+        "availability": "offline",
+        "last_seen": "2023-10-31T18:15:06Z"
       }
     }
   ]

@@ -99,9 +99,9 @@ type Entity struct {
 	Description string         `json:"description,omitempty"`
 	Unit        string         `json:"unit,omitempty"`
 	Data        any            `json:"data"`
-	Type        string         `json:"type"`
-	Properties  map[string]any `json:"properties"`
-	Attributes  map[string]any `json:"attributes"`
+	Type        string         `json:"type,omitempty"`
+	Properties  map[string]any `json:"properties,omitempty"`
+	Attributes  map[string]any `json:"attributes,omitempty"`
 }
 
 func newEntity() *Entity {
