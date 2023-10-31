@@ -28,7 +28,7 @@ Circuit breaker
 
 TEST:
 
-curl -X POST http://192.168.50.183:4100/collect -H 'Content-Type: application/json' -d '{"nodeid":"node1","temperature":45.6,"Timestamp":"2023-03-19T19:57:28.961193655Z"}'
+curl -X POST http://192.168.50.69:4100/collect -H 'Content-Type: application/json' -d '{"label":"weather node 1","temperature":45.6,"Timestamp":"2023-03-19T19:57:28.961193655Z"}'
 
 TODO:
 
@@ -124,3 +124,17 @@ remove logic from repo and place ti service layer
 
 TODO:
 https://medium.com/@reetas/using-generics-with-pointer-receivers-in-go-39ee237d7475
+
+automation creator
+
+new trigger
+list available devices
+
+select device
+list exposes
+
+select expose
+
+- add condition for current expose
+- add action
+  list all available devices with features
