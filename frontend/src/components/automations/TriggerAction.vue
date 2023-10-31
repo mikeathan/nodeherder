@@ -1,41 +1,28 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed } from "vue";
 
 const props = defineProps({
     trigger: Object
 });
 
 const store = useStore();
-const properties = computed(() => {
+const feature = computed(() => {
 
     var device = store.getters["devices/find"](props.trigger.action.id);
     if (device == undefined) {
         console.log("ERROR: device undefined")
-
         return []
     }
 
     var action = props.trigger.action;
-    var expose = device.exposes[action.property]
-    if (expose == undefined) {
+    if (device.exposes[action.property] == undefined) {
         console.log("ERROR: expose undefined")
 
         return []
     }
-    // console.log("friendlyname:" + device.friendly_name)
-    // console.log("id:" + device.id)
-    // for (var e in device.exposes) {
-    //     console.log("expose:" + e)
-    // }
 
-    var properties = expose.properties;
-    if (properties.feature == false) {
-        console.log("properties.feature false")
-
-        return []
-    }
-    return properties;
+    return device.exposes[action.property];
 });
 
 function getActionBinaryValue(properties) {
@@ -71,18 +58,15 @@ function onActionStateChanged(event, properties) {
                 disabled>
         </div>
         <div class="col">
-            <div v-if="properties.type == 'binary'">
+            <div v-if="feature.type == 'binary'">
+                <select id="propertySelect" style="text-align:center;" class="form-control" v-model="trigger.action.data"
+                    @change="onActionChanged($event, properties)">
 
-                <select id="propertySelect" style="text-align:center;" class="form-control"
-                    @change="onActionChanged($event, properties)" :modelValue="trigger.action.data">
-
-                    <option :value="properties.on">
-                        {{ properties.on }}
-                    </option>
-                    <option :value="properties.off">
-                        {{ properties.off }}
+                    <option v-for="(value, key) in feature.properties" :value="value" :key="key">
+                        {{ value }}
                     </option>
                 </select>
+
 
                 <!-- 
                     use that in the creator component page
@@ -93,7 +77,12 @@ function onActionStateChanged(event, properties) {
                         :checked="getActionBinaryValue(properties)" @change="onActionStateChanged($event, properties)">
                 </div> -->
             </div>
-
+            <div v-else>
+                <div class="col" id="actionDataDiv">
+                    <input type="text" style="text-align:center;" class="form-control" v-model="trigger.action.data"
+                        placeholder="Action data">
+                </div>
+            </div>
 
             <!-- <select id="propertySelect" style="text-align:center;" class="form-control"
                 :modelValue="trigger.action.property" @change="onActionChanged($event, properties)">
@@ -103,10 +92,7 @@ function onActionStateChanged(event, properties) {
                 </option>
             </select> -->
         </div>
-        <div class="col" id="actionDataDiv">
-            <input type="text" style="text-align:center;" class="form-control" v-model="trigger.action.data"
-                placeholder="Action data">
-        </div>
+
         <div class="col">
             <input type="text" style="text-align:center;" class="form-control" v-model="trigger.action.delay"
                 placeholder="Action delay">
