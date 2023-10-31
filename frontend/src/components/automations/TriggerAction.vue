@@ -33,7 +33,7 @@ function getActionBinaryValue(properties) {
     return false
 }
 
-function onActionChanged(event, properties) {
+function onActionChanged(event) {
 
     // use v-model ideally to set value
     props.trigger.action.data = event.target.value
@@ -60,7 +60,7 @@ function onActionStateChanged(event, properties) {
         <div class="col">
             <div v-if="feature.type == 'binary'">
                 <select id="propertySelect" style="text-align:center;" class="form-control" v-model="trigger.action.data"
-                    @change="onActionChanged($event, properties)">
+                    @change="onActionChanged($event)">
 
                     <option v-for="(value, key) in feature.properties" :value="value" :key="key">
                         {{ value }}
