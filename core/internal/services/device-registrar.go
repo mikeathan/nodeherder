@@ -120,7 +120,7 @@ func (s *DeviceRegistrar) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, d
 
 			// load exposes
 			for _, expose := range bridgeInfo.Definition.Exposes {
-				entity, err := devices.CreateFromExpose(expose)
+				entity, err := devices.CreateEntityFromExpose(expose, nil)
 				if err != nil {
 					utils.LogDebugf("expose failed loading %s error %s", bridgeInfo.FriendlyName, err.Error())
 					continue
@@ -132,7 +132,7 @@ func (s *DeviceRegistrar) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, d
 			// load features
 			for _, expose := range bridgeInfo.Definition.Exposes {
 				for _, feature := range expose.Features {
-					entity, err := devices.CreateFromFeature(feature)
+					entity, err := devices.CreateEntityFromFeature(feature, nil)
 					if err != nil {
 						utils.LogDebugf("feature failed loading %s error %s", bridgeInfo.FriendlyName, err.Error())
 						continue

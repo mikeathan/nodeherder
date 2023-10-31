@@ -108,58 +108,7 @@ func newEntity() *Entity {
 	return &Entity{Attributes: make(map[string]any), Properties: map[string]any{}}
 }
 
-func CreateFromFeature(feature BridgeInfoFeature) (*Entity, error) {
-
-	if _, ok := exposesWhitelist[feature.Property]; !ok {
-		return nil, fmt.Errorf("feature property %v is blacklisted", feature.Property)
-	}
-
-	newEntity := newEntity()
-	newEntity.Name = feature.Property
-	newEntity.Description = feature.Description
-	newEntity.Unit = feature.Unit
-
-	newEntity.Properties["type"] = feature.Type
-	newEntity.Properties["feature"] = true
-
-	switch feature.Type {
-	case "numeric":
-		newEntity.Properties["max"] = feature.ValueMax
-		newEntity.Properties["min"] = feature.ValueMin
-
-	case "binary":
-		newEntity.Properties["on"] = feature.ValueOn
-		newEntity.Properties["off"] = feature.ValueOff
-		newEntity.Properties["toggle"] = feature.ValueToggle
-
-	case "enum":
-		newEntity.Properties["values"] = feature.Values
-	}
-
-	return newEntity, nil
-}
-
-func CreateFromExpose(expose BridgeExpose) (*Entity, error) {
-
-	if expose.Property == "" {
-		return nil, fmt.Errorf("no expose data")
-	}
-
-	if _, ok := exposesWhitelist[expose.Property]; !ok {
-		return nil, fmt.Errorf("expose property %v is blacklisted", expose.Property)
-	}
-
-	newEntity := newEntity()
-	newEntity.Name = expose.Property
-	newEntity.Description = expose.Description
-	newEntity.Unit = expose.Unit
-	newEntity.Properties["type"] = expose.Type
-	newEntity.Properties["feature"] = false
-
-	return newEntity, nil
-}
-
-func createEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
+func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 
 	if expose.Property == "" {
 		return nil, fmt.Errorf("no expose data")
@@ -179,7 +128,7 @@ func createEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 	return newEntity, nil
 }
 
-func createEntityFromFeature(feature BridgeInfoFeature, data any) (*Entity, error) {
+func CreateEntityFromFeature(feature BridgeInfoFeature, data any) (*Entity, error) {
 
 	if _, ok := exposesWhitelist[feature.Property]; !ok {
 		return nil, fmt.Errorf("feature property %v is blacklisted", feature.Property)
@@ -204,7 +153,7 @@ func createEntityFromFeature(feature BridgeInfoFeature, data any) (*Entity, erro
 
 	case "enum":
 		for index, item := range feature.Values {
-			newEntity.Properties[fmt.Sprintf("%s", index)] = item
+			newEntity.Properties[fmt.Sprintf("%d", index)] = item
 		}
 	}
 	return newEntity, nil
@@ -222,7 +171,9 @@ func createProperties(data map[string]interface{}) map[string]any {
 	if _, ok := data[lastSeenKey]; !ok {
 		data[lastSeenKey] = getCurrentTime()
 	}
-	data[availabilityKey] = online
+
+	props[lastSeenKey] = data[lastSeenKey]
+	props[availabilityKey] = online
 
 	return props
 }
@@ -234,7 +185,10 @@ func createExposures(data map[string]interface{}) map[string]*Entity {
 			continue
 		}
 
-		newEntity := createEntity(key, "", value, units[key], "", nil)
+		newEntity := newEntity()
+		newEntity.Name = key
+		newEntity.Data = value
+		newEntity.Unit = units[key]
 		entities[key] = newEntity
 	}
 	return entities
@@ -248,18 +202,19 @@ func createExposuresFromBridge(data map[string]interface{}, bridgeInfo *BridgeIn
 		// load exposes
 		if expose.Property != "" {
 			if value, ok := data[expose.Property]; ok {
-				entity, err := createEntityFromExpose(expose, value)
+				entity, err := CreateEntityFromExpose(expose, value)
 				if err != nil {
 					continue
 				}
 				entities[expose.Property] = entity
 			}
 		}
+
 		// load features
 		for _, feature := range expose.Features {
 			if value, ok := data[feature.Property]; ok {
 
-				entity, err := createEntityFromExpose(expose, value)
+				entity, err := CreateEntityFromExpose(expose, value)
 				if err != nil {
 					continue
 				}
