@@ -196,7 +196,7 @@ func (c *WsClient) Broadcast(eventName string, data interface{}) error {
 	if err != nil {
 		return errors.New("failed to marshal client payload")
 	}
-	fmt.Print(string(bytes))
+	//fmt.Print(string(bytes))
 	c.send <- bytes
 	return nil
 }
