@@ -2,7 +2,7 @@
 import { useStore } from "vuex";
 import { computed } from "vue";
 
-import { RouterLink, useRouter } from "vue-router";
+import { RouterLink } from "vue-router";
 
 const store = useStore();
 const automations = computed(() => {
@@ -22,15 +22,7 @@ function onDeleteAutomationClick(id) {
     });
     console.log("delete automation: Id", id);
 }
-function navigate() {
-    console.log("navigate")
-    var creatorPath = useRouter().push("/creator");
-    console.log(creatorPath)
-}
-const creatorRoute = computed(() => {
-    return useRouter().push("/creator");
 
-});
 </script>
 
 <template>
@@ -65,7 +57,10 @@ const creatorRoute = computed(() => {
         </table>
 
         <div>
-            <button type="button" class="btn btn-primary mt-3" @click="navigate()">Create automations</button>
+
+            <RouterLink :to="`/creator`">
+                Create automations
+            </RouterLink>
         </div>
     </div>
 </template>

@@ -22,7 +22,9 @@
           "type": "numeric"
         }
       },
-      "properties": { "availability": "offline" }
+      "properties": {
+        "availability": "offline"
+      }
     },
     {
       "id": "0x00124b0029207763",
@@ -46,7 +48,9 @@
           "type": "numeric"
         }
       },
-      "properties": { "availability": "offline" }
+      "properties": {
+        "availability": "offline"
+      }
     },
     {
       "id": "0x70ac08fffefafeca",
@@ -60,7 +64,10 @@
           "description": "Brightness of this light",
           "data": null,
           "type": "numeric",
-          "attributes": { "max": 254, "min": 0 }
+          "attributes": {
+            "max": 254,
+            "min": 0
+          }
         },
         "color_temp": {
           "name": "color_temp",
@@ -68,17 +75,25 @@
           "unit": "mired",
           "data": null,
           "type": "numeric",
-          "attributes": { "max": 500, "min": 150 }
+          "attributes": {
+            "max": 500,
+            "min": 150
+          }
         },
         "state": {
           "name": "state",
           "description": "On/off state of this light",
           "data": null,
           "type": "binary",
-          "properties": { "off": "OFF", "on": "ON" }
+          "properties": {
+            "off": "OFF",
+            "on": "ON"
+          }
         }
       },
-      "properties": { "availability": "offline" }
+      "properties": {
+        "availability": "offline"
+      }
     },
     {
       "id": "0xa4c13894070052fc",
@@ -107,12 +122,16 @@
       }
     },
     {
-      "id": "47de6f67",
+      "id": "92fe86b7",
       "friendly_name": "weather node 1",
       "connection_type": "http",
       "power_source": "mains",
       "exposes": {
-        "temperature": { "name": "temperature", "unit": "°C", "data": 45.6 }
+        "temperature": {
+          "name": "temperature",
+          "unit": "°C",
+          "data": 45.6
+        }
       },
       "properties": {
         "availability": "offline"
