@@ -1,8 +1,8 @@
 <script setup>
 import { useStore } from "vuex";
 import { computed } from "vue";
-import Editor from "./editor.vue"
-import { RouterLink } from "vue-router";
+
+import { RouterLink, useRouter } from "vue-router";
 
 const store = useStore();
 const automations = computed(() => {
@@ -22,6 +22,15 @@ function onDeleteAutomationClick(id) {
     });
     console.log("delete automation: Id", id);
 }
+function navigate() {
+    console.log("navigate")
+    var creatorPath = useRouter().push("/creator");
+    console.log(creatorPath)
+}
+const creatorRoute = computed(() => {
+    return useRouter().push("/creator");
+
+});
 </script>
 
 <template>
@@ -54,5 +63,9 @@ function onDeleteAutomationClick(id) {
                 </tr>
             </tbody>
         </table>
+
+        <div>
+            <button type="button" class="btn btn-primary mt-3" @click="navigate()">Create automations</button>
+        </div>
     </div>
 </template>
