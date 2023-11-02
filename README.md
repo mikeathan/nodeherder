@@ -118,23 +118,27 @@ we need to access device capabilities in ui that might not be currently in store
 
 tidy eventhub callbacks registration in hub-controller
 
-ws node server sends
 
-remove logic from repo and place ti service layer
 
 TODO:
 https://medium.com/@reetas/using-generics-with-pointer-receivers-in-go-39ee237d7475
 
 automation creator
 
-new trigger
-list available devices
+select device 
+select exposed 
 
-select device
-list exposes
+condition panel appears 
+update values and click add 
+it gets addd to a list with condions, ideally that expose should be disabled - leave for later
 
-select expose
+or 
+when we select expose we add new condirion object to a ref that gets displayed 
 
-- add condition for current expose
-- add action
-  list all available devices with features
+when we click add its stored 
+so next time we select 
+
+expose click adds new condition to list if not already added 
+for each conditions
+  display condtion 
+    if empty then show add button
