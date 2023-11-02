@@ -1,20 +1,48 @@
-export const Operators = ref([
+export const Operators = [
   { text: "=", value: "=" },
   { text: "<=", value: "<=" },
   { text: ">=", value: ">=" },
   { text: ">", value: ">" },
   { text: "<", value: "<" },
-]);
+];
 
-export default class Condition {
-  Name = null;
-  Operator = "";
-  Value = null;
+export class Expose {
+  constructor() {
+    this.Name = null;
+    this.Conditions = [];
+  }
 
-  constructor(name, operator, value) {
+  setName(name) {
     this.Name = name;
+  }
+  addCondition(condition) {
+    this.Conditions.push(condition);
+  }
+}
+// "triggers": [
+//   {
+//     "name": "presence",
+//     "conditions": [
+//       {
+//         "name": "presence",
+//         "value": false,
+//         "equality": "="
+//       }
+//     ],
+export class Condition {
+  constructor() {
+    this.Name = "";
+    this.Operator = Operators[0];
+    this.Value = "";
+  }
+  setName(name) {
+    this.Name = name;
+  }
+  setOperator(operator) {
     this.Operator = operator;
-    this.value = value;
+  }
+  setValue(value) {
+    this.Value = value;
   }
   Name() {
     return this.Name;

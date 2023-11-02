@@ -1,23 +1,33 @@
 <script setup>
 import { useStore } from "vuex";
 import { computed, ref } from "vue";
+import Condition from "./Condition"
+import { Expose } from "../../models/automation"
 
-const operators = ref([
-    { text: '=', value: '=' },
-    { text: '<=', value: '<=' },
-    { text: '>=', value: '>=' },
-    { text: '>', value: '>' },
-    { text: '<', value: '<' }
-])
+const exposes = ref({})
+
 const store = useStore();
 const selectedDevice = ref(null)
+const selectedExpose = ref(null)
+
 const devices = computed(() => {
     var devices = store.getters["devices/items"];
     return devices;
 })
 
-function addCondition() {
-    console.log("add condition");
+
+
+function exposeSelectionChanged(event) {
+
+    if (event.target.value == null) {
+        return;
+    }
+    if (exposes.value[event.target.value] != null) {
+        return;
+    }
+
+    exposes.value[event.target.value] = new Expose()
+    console.log("expose selected: ", event.target.value, " : ", exposes.value[event.target.value])
 }
 
 function selectDevice() {
@@ -60,36 +70,20 @@ function selectDevice() {
 
                 <div v-if="selectedDevice != null">
                     <div class="col-3">
-                        <select id="exposeSelector" style="text-align:center;" class="form-control">
+                        <select id="exposeSelector" style="text-align:center;" class="form-control"
+                            @click="exposeSelectionChanged($event)" v-model="selectedExpose">
+
+                            <option :value="null">Select expose</option>
                             <option v-for="expose in selectedDevice.exposes">
                                 {{ expose.name }}
                             </option>
                         </select>
                     </div>
-                    // need component
                     <br>
-                    <h4>Condition</h4>
-                    <div class="row w-50">
-                        <div class="col">
-                            <input type="text" class="form-control" placeholder="Condition name"
-                                onfocus="this.placeholder = ''" onblur="this.placeholder='Condition name'" />
-                        </div>
-                        <div class="col">
-                            <select id="selectOperators" style="text-align:center;" class="form-control">
-                                <option v-for="operator in operators" :value="operator.value" :key="operator.value">
-                                    {{ operator.text }}
-                                </option>
-                            </select>
-                        </div>
-                        <div class="col">
-                            <input type="text" style="text-align:center;" class="form-control" placeholder="Condition value"
-                                onfocus="this.placeholder = ''" onblur="this.placeholder='Condition value'" />
-                        </div>
-                        <div class="col">
-                            <input type="button" class="btn btn-secondary text-nowrap" value="Add"
-                                @click="addCondition()" />
-                        </div>
 
+
+                    <div v-if="selectedExpose != null">
+                        <Condition :Condition="exposes[selectedExpose]"></Condition>
                     </div>
                 </div>
 
