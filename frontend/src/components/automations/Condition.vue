@@ -1,17 +1,13 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed } from "vue";
-import { Operators } from "../../models/automation"
-
+import { onBeforeMount, onMounted, ref } from "vue";
+import { Operators, ExposeCondition, Expose } from "../../models/automation"
 
 const props = defineProps({
-    Expose: Object
+    Expose: Object,
+    Condition: Object
 });
 
-function addCondition() {
-    console.log("add condition");
-    //props.Expose.addCondition()
-}
 </script>
 
 <template>
@@ -23,7 +19,8 @@ function addCondition() {
                     onblur="this.placeholder='Condition name'" v-model="props.Expose.Name" disabled />
             </div>
             <div class="col">
-                <select id="selectOperators" style="text-align:center;" class="form-control">
+                <select id="selectOperators" style="text-align:center;" class="form-control"
+                    v-model="props.Condition.Operator">
                     <option v-for="operator in Operators" :value="operator.value" :key="operator.value">
                         {{ operator.text }}
                     </option>
@@ -31,11 +28,8 @@ function addCondition() {
             </div>
             <div class="col">
                 <input type="text" style="text-align:center;" class="form-control" placeholder="Condition value"
-                    onfocus="this.placeholder = ''" onblur="this.placeholder='Condition value'" v-model="props.Expose.Value"
-                    p />
-            </div>
-            <div class="col">
-                <input type="button" class="btn btn-secondary text-nowrap" value="Add" @click="addCondition()" />
+                    onfocus="this.placeholder = ''" onblur="this.placeholder='Condition value'"
+                    v-model="props.Condition.Value" />
             </div>
 
         </div>

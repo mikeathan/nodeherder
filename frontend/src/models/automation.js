@@ -26,10 +26,10 @@ export class Expose {
 //         "equality": "="
 //       }
 //     ],
-export class Condition {
+export class ExposeCondition {
   constructor() {
     this.Name = "";
-    this.Operator = Operators[0];
+    this.Operator = Operators[0].value;
     this.Value = "";
   }
   setName(name) {

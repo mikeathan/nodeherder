@@ -1,8 +1,9 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed, ref } from "vue";
+import { computed, ref, onBeforeMount } from "vue";
 import Condition from "./Condition"
 import { Expose } from "../../models/automation"
+import { ExposeCondition } from "../../models/automation"
 
 const exposes = ref({})
 
@@ -14,8 +15,6 @@ const devices = computed(() => {
     var devices = store.getters["devices/items"];
     return devices;
 })
-
-
 
 function exposeSelectionChanged(event) {
 
@@ -30,6 +29,16 @@ function exposeSelectionChanged(event) {
     console.log("expose selected: ", event.target.value, " : ", exposes.value[event.target.value])
 }
 
+function addCondition() {
+
+    var newcondition = new ExposeCondition();
+    exposes.value[selectedExpose.value].addCondition(newcondition)
+
+    console.log("add condition")
+    for (var c in exposes.value[selectedExpose.value].Conditions) {
+        console.log(c);
+    }
+}
 
 </script>
 <template>
@@ -46,11 +55,7 @@ function exposeSelectionChanged(event) {
                                 {{ device.friendly_name }}
                             </option>
                         </select>
-                        <!-- <div class="input-group-btn">
-                            <button type="button" class="btn btn-secondary text-nowrap"
-                                @click="selectDevice(selectedDevice)">Select
-                                device</button>
-                        </div> -->
+
 
                     </div>
                 </div>
@@ -68,9 +73,17 @@ function exposeSelectionChanged(event) {
                     </div>
                     <br>
 
-
                     <div v-if="selectedExpose != null">
-                        <Condition :Expose="exposes[selectedExpose]"></Condition>
+
+                        <div class="col">
+                            <div v-for=" condition in exposes[selectedExpose].Conditions">
+                                <Condition :Expose="exposes[selectedExpose]" :Condition="condition"></Condition>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <input type="button" class="btn btn-secondary text-nowrap" value="Add"
+                                @click="addCondition()" />
+                        </div>
                     </div>
                 </div>
 
