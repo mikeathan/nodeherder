@@ -26,23 +26,10 @@ function exposeSelectionChanged(event) {
         return;
     }
 
-    exposes.value[event.target.value] = new Expose()
+    exposes.value[event.target.value] = new Expose(event.target.value)
     console.log("expose selected: ", event.target.value, " : ", exposes.value[event.target.value])
 }
 
-function selectDevice() {
-    console.log("selectDevice click ", selectedDevice);
-    console.log("exposes: ");
-    for (var e in selectedDevice.value.exposes) {
-        console.log(e);
-    }
-    // show panel with exposes to choose from
-
-    // TODO:
-    // to fix make combo default to first item
-    // click should call function and set the selecteditem
-    // 
-}
 
 </script>
 <template>
@@ -83,7 +70,7 @@ function selectDevice() {
 
 
                     <div v-if="selectedExpose != null">
-                        <Condition :Condition="exposes[selectedExpose]"></Condition>
+                        <Condition :Expose="exposes[selectedExpose]"></Condition>
                     </div>
                 </div>
 

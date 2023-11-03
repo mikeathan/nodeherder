@@ -7,14 +7,11 @@ export const Operators = [
 ];
 
 export class Expose {
-  constructor() {
-    this.Name = null;
+  constructor(name) {
+    this.Name = name;
     this.Conditions = [];
   }
 
-  setName(name) {
-    this.Name = name;
-  }
   addCondition(condition) {
     this.Conditions.push(condition);
   }
