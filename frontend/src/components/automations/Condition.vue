@@ -1,12 +1,11 @@
 <script setup>
-import { useStore } from "vuex";
-import { onBeforeMount, onMounted, ref } from "vue";
-import { Operators, ExposeCondition, Expose } from "../../models/automation"
+import { Operators } from "../../models/automation"
 
 const props = defineProps({
     Expose: Object,
     Condition: Object
 });
+import { useStore } from "vuex";
 
 </script>
 

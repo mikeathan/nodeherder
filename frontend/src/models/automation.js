@@ -6,26 +6,27 @@ export const Operators = [
   { text: "<", value: "<" },
 ];
 
-export class Expose {
+export class DeviceExpose {
   constructor(name) {
     this.Name = name;
     this.Conditions = [];
   }
 
+  hasConditions() {
+    return this.Conditions.length != 0;
+  }
+
   addCondition(condition) {
     this.Conditions.push(condition);
   }
+
+  removeLastCondition() {
+    if (this.Conditions.length >= 0) {
+      this.Conditions = this.Conditions.slice(0, -1);
+    }
+  }
 }
-// "triggers": [
-//   {
-//     "name": "presence",
-//     "conditions": [
-//       {
-//         "name": "presence",
-//         "value": false,
-//         "equality": "="
-//       }
-//     ],
+
 export class ExposeCondition {
   constructor() {
     this.Name = "";

@@ -1,9 +1,9 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed, ref, onBeforeMount } from "vue";
-import Condition from "./Condition"
+import { computed, ref } from "vue";
+import Expose from "./Expose"
 
-import { Expose } from "../../models/automation"
+import { DeviceExpose } from "../../models/automation"
 import { ExposeCondition } from "../../models/automation"
 
 const exposes = ref({})
@@ -19,26 +19,13 @@ const devices = computed(() => {
 
 function exposeSelectionChanged(event) {
 
-    if (event.target.value == null) {
-        return;
-    }
-    if (exposes.value[event.target.value] != null) {
+    if (event.target.value == null ||
+        exposes.value[event.target.value] != null) {
         return;
     }
 
-    exposes.value[event.target.value] = new Expose(event.target.value)
+    exposes.value[event.target.value] = new DeviceExpose(event.target.value)
     console.log("expose selected: ", event.target.value, " : ", exposes.value[event.target.value])
-}
-
-function addCondition() {
-
-    var newcondition = new ExposeCondition();
-    exposes.value[selectedExpose.value].addCondition(newcondition)
-
-    console.log("add condition")
-    for (var c in exposes.value[selectedExpose.value].Conditions) {
-        console.log(c);
-    }
 }
 
 </script>
@@ -56,8 +43,6 @@ function addCondition() {
                                 {{ device.friendly_name }}
                             </option>
                         </select>
-
-
                     </div>
                 </div>
 
@@ -75,17 +60,7 @@ function addCondition() {
                     <br>
 
                     <div v-if="selectedExpose != null">
-                        <h4>Condition</h4>
-
-                        <div class="col">
-                            <div v-for=" condition in exposes[selectedExpose].Conditions">
-                                <Condition :Expose="exposes[selectedExpose]" :Condition="condition"></Condition>
-                            </div>
-                        </div>
-                        <div class="col pt-3">
-                            <input type="button" class="btn btn-secondary text-nowrap" value="Add"
-                                @click="addCondition()" />
-                        </div>
+                        <Expose :expose="exposes[selectedExpose]"></Expose>
                     </div>
                 </div>
 
