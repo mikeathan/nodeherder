@@ -12,7 +12,6 @@ const props = defineProps({
 
 <template>
     <div class="container-fluid p-0 h-100">
-        <h4>Condition</h4>
         <div class="row w-50">
             <div class="col">
                 <input type="text" class="form-control" placeholder="Condition name" onfocus="this.placeholder = ''"

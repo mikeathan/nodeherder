@@ -2,6 +2,7 @@
 import { useStore } from "vuex";
 import { computed, ref, onBeforeMount } from "vue";
 import Condition from "./Condition"
+
 import { Expose } from "../../models/automation"
 import { ExposeCondition } from "../../models/automation"
 
@@ -74,13 +75,14 @@ function addCondition() {
                     <br>
 
                     <div v-if="selectedExpose != null">
+                        <h4>Condition</h4>
 
                         <div class="col">
                             <div v-for=" condition in exposes[selectedExpose].Conditions">
                                 <Condition :Expose="exposes[selectedExpose]" :Condition="condition"></Condition>
                             </div>
                         </div>
-                        <div class="col">
+                        <div class="col pt-3">
                             <input type="button" class="btn btn-secondary text-nowrap" value="Add"
                                 @click="addCondition()" />
                         </div>
