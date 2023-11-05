@@ -1,31 +1,39 @@
 <script setup>
 import { useStore } from "vuex";
 import { computed, ref } from "vue";
-import Expose from "./Expose"
+import DeviceAutomation from "./DeviceAutomation"
 
-import { DeviceExpose } from "../../models/automation"
-import { ExposeCondition } from "../../models/automation"
+import { DeviceTrigger } from "../../models/automation"
 
-const exposes = ref({})
+const deviceTriggers = ref({})
 
 const store = useStore();
 const selectedDevice = ref(null)
-const selectedExpose = ref(null)
 
 const devices = computed(() => {
     var devices = store.getters["devices/items"];
     return devices;
 })
-
-function exposeSelectionChanged(event) {
+function deviceSelectionChanged(event) {
 
     if (event.target.value == null ||
-        exposes.value[event.target.value] != null) {
+        deviceTriggers.value[event.target.value] != null) {
         return;
     }
 
-    exposes.value[event.target.value] = new DeviceExpose(event.target.value)
-    console.log("expose selected: ", event.target.value, " : ", exposes.value[event.target.value])
+    deviceTriggers.value[event.target.value] = new DeviceTrigger(event.target.value);
+    console.log("device selected:", event.target.value)
+}
+
+function exposeSelectionChanged(event) {
+
+    //     if (event.target.value == null ||
+    //         //exposes.value[event.target.value] != null) {
+    //         return;
+    // }
+
+    // exposes.value[event.target.value] = new DeviceExpose(event.target.value)
+    //console.log("expose selected: ", event.target.value, " : ", exposes.value[event.target.value])
 }
 
 </script>
@@ -37,16 +45,18 @@ function exposeSelectionChanged(event) {
                 <div class="col-3">
                     <div class="d-flex">
                         <select id="deviceSelector" style="text-align:center;" class="form-control"
-                            v-model="selectedDevice">
+                            @click="deviceSelectionChanged($event)">
                             <option :value="null">Select device</option>
-                            <option v-for="device in devices" :value="device" :key="device.id">
+                            <option v-for="device in devices" :value="device.id" :key="device.id">
                                 {{ device.friendly_name }}
                             </option>
                         </select>
                     </div>
                 </div>
-
-                <div v-if="selectedDevice != null">
+                <div v-for="trigger in deviceTriggers">
+                    <DeviceAutomation :trigger="trigger"></DeviceAutomation>
+                </div>
+                <!-- <div v-if="selectedDevice != null">
                     <div class="col-3">
                         <select id="exposeSelector" style="text-align:center;" class="form-control"
                             @click="exposeSelectionChanged($event)" v-model="selectedExpose">
@@ -60,9 +70,9 @@ function exposeSelectionChanged(event) {
                     <br>
 
                     <div v-if="selectedExpose != null">
-                        <Expose :expose="exposes[selectedExpose]"></Expose>
+                        <ExposeTrigger :expose="exposes[selectedExpose]"></ExposeTrigger>
                     </div>
-                </div>
+                </div> -->
 
             </div>
         </div>
