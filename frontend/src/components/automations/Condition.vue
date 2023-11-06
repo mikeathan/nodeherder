@@ -1,11 +1,13 @@
 <script setup>
 import { Operators } from "../../models/automation"
+import { defineEmits } from 'vue'
 
 const props = defineProps({
     Expose: Object,
     Condition: Object
 });
 
+const emit = defineEmits(['add', 'remove', 'update'])
 </script>
 
 <template>
