@@ -49,6 +49,12 @@ export class ExposeTrigger {
       this.Conditions = this.Conditions.slice(0, -1);
     }
   }
+  remove(condition) {
+    let index = this.Conditions.indexOf(condition);
+    if (index !== -1) {
+      this.Conditions.splice(index, 1);
+    }
+  }
 }
 
 export class ExposeCondition {

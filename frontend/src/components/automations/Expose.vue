@@ -1,18 +1,22 @@
 <script setup>
 import Condition from "./Condition"
 import { ExposeCondition } from "../../models/automation"
+import { onMounted } from "vue";
 
 const props = defineProps({
     expose: Object,
 });
 
-function addCondition() {
-    var newcondition = new ExposeCondition();
-    props.expose.addCondition(newcondition)
+function addCondition(event) {
+    console.log("addCondition triggered ", event.value)
+
+    props.expose.addCondition(event.value)
 }
 
-function removeLastCondition() {
-    props.expose.removeLastCondition()
+function remove(event) {
+    console.log("remove triggered ", event)
+
+    props.expose.remove(event.value)
 }
 
 </script>
@@ -22,11 +26,15 @@ function removeLastCondition() {
         <h4>Condition</h4>
 
         <div class="col">
-            <Condition :Expose="props.expose" :Condition="condition"></Condition>
+            <Condition :name="props.expose.Name" @add="addCondition($event)" :condition="new ExposeCondition()"
+                @remove="remove($event)">
+            </Condition>
         </div>
         <div class="col">
             <div v-for=" condition in props.expose.Conditions">
-                <Condition :Expose="props.expose" :Condition="condition"></Condition>
+
+                <Condition :name="props.expose.Name" :condition="condition" @add="addCondition($event)"
+                    @remove="remove($event)"></Condition>
             </div>
         </div>
 
