@@ -61,24 +61,16 @@ export class ExposeCondition {
   constructor() {
     this.Name = "";
     this.Operator = Operators[0].value;
-    this.Value = "";
+    this.Data = null;
   }
-  setName(name) {
-    this.Name = name;
-  }
-  setOperator(operator) {
-    this.Operator = operator;
-  }
-  setValue(value) {
-    this.Value = value;
-  }
+
   Name() {
     return this.Name;
   }
   Operator() {
     return this.Operator;
   }
-  Value() {
-    return this.Value;
+  Data() {
+    return this.Data;
   }
 }

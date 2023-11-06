@@ -1,25 +1,41 @@
 <script setup>
 import { Operators, ExposeCondition } from "../../models/automation"
-import { defineEmits, computed } from 'vue'
+import { defineEmits, computed, ref, onMounted, onUpdated } from 'vue'
 
 const props = defineProps({
     name: String,
     condition: Object
 });
 
-const condition = computed(() => {
-    console.log("computed ", props.condition);
-    if (props.condition == null) {
-        console.log("new condition");
-        return new ExposeCondition();
+
+const isNull = computed(() => {
+    if (condition.value == null) {
+        return false;
     }
-    console.log("existing condition");
+    return condition.value.Data == null
+})
+
+const hasData = computed(() => {
+    if (condition.value == null) {
+        console.log("hasData  false")
+
+        return false;
+    }
+    console.log("hasData", condition.value.Data?.length > 0);
+    return condition.value.Data?.length > 0
+})
+
+const condition = computed(() => {
+    if (props.condition == null) {
+        props.condition = new ExposeCondition();
+    }
 
     return props.condition;
 })
 
 const emit = defineEmits(['add', 'remove', 'update'])
-function addCondition() {
+function add() {
+    console.log("add");
     emit("add", condition)
 }
 
@@ -45,19 +61,22 @@ function remove() {
             </div>
             <div class="col">
                 <input type="text" style="text-align:center;" class="form-control" placeholder="Condition value"
-                    onfocus="this.placeholder = ''" onblur="this.placeholder='Condition value'" v-model="condition.Value" />
+                    onfocus="this.placeholder = ''" onblur="this.placeholder='Condition value'" v-model="condition.Data" />
             </div>
-            <div class="col-3 pt-3">
-                <div class="btn-group" role="group">
-                    <!-- <div v-if="props.condition == null"> -->
-                    <input type="button" class="btn btn-secondary text-nowrap" value="Add" @click="addCondition()" />
-                    <!-- </div>
-                    <div v-else> -->
-                    <input type="button" class="btn btn-secondary text-nowrap" value="Remove" @click="remove()" />
-                    <!-- </div> -->
+            <div class="col-3">
+                <div class="btn-group">
+                    <div v-if="isNull">
+                        <button type="button" class="btn btn-default btn-number" @click="add()">
+                            <span class="fa fa-plus"></span>
+                        </button>
+                    </div>
+                    <div v-else>
+                        <button type="button" class="btn btn-default btn-number" @click="remove()">
+                            <span class="fa fa-minus"></span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-
     </div>
 </template>

@@ -25,7 +25,7 @@ function exposeSelectionChanged(event) {
     }
 
     exposes.value[event.target.value] = new ExposeTrigger(event.target.value)
-    console.log("expose selected: ", event.target.value, " : ", exposes.value[event.target.value])
+    //console.log("expose selected: ", event.target.value, " : ", exposes.value[event.target.value])
 }
 
 </script>
