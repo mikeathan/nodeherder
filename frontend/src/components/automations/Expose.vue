@@ -22,16 +22,20 @@ function removeLastCondition() {
         <h4>Condition</h4>
 
         <div class="col">
+            <Condition :Expose="props.expose" :Condition="condition"></Condition>
+        </div>
+        <div class="col">
             <div v-for=" condition in props.expose.Conditions">
                 <Condition :Expose="props.expose" :Condition="condition"></Condition>
             </div>
         </div>
-        <div class="col-3 pt-3">
+
+        <!-- <div class="col-3 pt-3">
             <div class="btn-group" role="group">
                 <input type="button" class="btn btn-secondary text-nowrap" value="Add" @click="addCondition()" />
                 <input type="button" class="btn btn-secondary text-nowrap" value="Remove" @click="removeLastCondition()"
                     :disabled="props.expose.hasConditions() == false" />
             </div>
-        </div>
+        </div> -->
     </div>
 </template>
