@@ -22,8 +22,11 @@ function remove(event) {
     <div class="container-fluid p-0 h-100">
 
         <h4>Condition</h4>
-
         <div class="col">
+            <Condition :exposeName="props.expose.Name">
+            </Condition>
+        </div>
+        <!-- <div class="col">
             <Condition :name="props.expose.Name" @add="addCondition($event)" :condition="new ExposeCondition()"
                 @remove="remove($event)">
             </Condition>
@@ -34,7 +37,7 @@ function remove(event) {
                 <Condition :name="props.expose.Name" :condition="condition" @add="addCondition($event)"
                     @remove="remove($event)"></Condition>
             </div>
-        </div>
+        </div> -->
 
         <!-- <div class="col-3 pt-3">
             <div class="btn-group" role="group">

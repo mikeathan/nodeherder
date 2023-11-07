@@ -1,78 +1,71 @@
 <script setup>
+import { useStore } from "vuex";
 import { Operators, ExposeCondition } from "../../models/automation"
 import { defineEmits, computed, ref, onMounted, onUpdated } from 'vue'
-
+const store = useStore();
 const props = defineProps({
-    name: String,
-    condition: Object
+    exposeName: String,
+});
+
+const conditions = ref([new ExposeCondition()])
+const device = computed(() => {
+    return store.getters["devices/find"](props.trigger.id);
 });
 
 const emit = defineEmits(['add', 'remove', 'update'])
 
-const isNull = computed(() => {
-    if (condition.value == null) {
-        return false;
-    }
-    return condition.value.Data == null
-})
 
-const hasData = computed(() => {
-
-    console.log("hasData", condition.value.Data?.length > 0);
-    return condition.value.Data?.length > 0
-})
-
-
-const condition = computed(() => {
-
-    if (props.condition.Data == null) {
-        return new ExposeCondition();
-    }
-
-    return props.condition;
-})
-
-function add() {
+function add(condition) {
     console.log("add");
-    emit("add", condition)
+    conditions.value.unshift(new ExposeCondition());
+    // emit("add", condition)
 }
 
-function remove() {
-    emit("remove", condition)
+function remove(condition) {
+    var index = conditions.value.indexOf(condition);
+    if (index !== -1) {
+        conditions.value.splice(index, 1);
+        //  emit("remove", condition)
+    }
 }
-
 </script>
 
 <template>
     <div class="container-fluid p-0 h-100">
-        <div class="row w-50">
-            <div class="col">
-                <input type="text" class="form-control" placeholder="Condition name" onfocus="this.placeholder = ''"
-                    onblur="this.placeholder='Condition name'" v-model="props.name" disabled />
-            </div>
-            <div class="col">
-                <select id="selectOperators" style="text-align:center;" class="form-control" v-model="condition.Operator">
-                    <option v-for="operator in Operators" :value="operator.value" :key="operator.value">
-                        {{ operator.text }}
-                    </option>
-                </select>
-            </div>
-            <div class="col">
-                <input type="text" style="text-align:center;" class="form-control" placeholder="Condition value"
-                    onfocus="this.placeholder = ''" onblur="this.placeholder='Condition value'" v-model="condition.Data" />
-            </div>
-            <div class="col-3">
-                <div class="btn-group">
-                    <div v-if="isNull">
-                        <button type="button" class="btn btn-default btn-number" @click="add()"
-                            :disabled="hasData == false">
-                            <span class="fa fa-plus"></span>
-                        </button>
-                    </div>
-                    <div v-else>
-                        <button type="button" class="btn btn-default btn-number" @click="remove()">
-                            <span class="fa fa-minus"></span>
-                        </button>
+
+        <div v-for="condition in conditions">
+
+            <div class="row w-50">
+                <div class="col">
+                    <input type="text" class="form-control" placeholder="Condition name" onfocus="this.placeholder = ''"
+                        onblur="this.placeholder='Condition name'" v-model="props.exposeName" disabled />
+                </div>
+                <div class="col">
+                    <select id="selectOperators" style="text-align:center;" class="form-control"
+                        v-model="condition.Operator">
+                        <option v-for="operator in Operators" :value="operator.value" :key="operator.value">
+                            {{ operator.text }}
+                        </option>
+                    </select>
+                </div>
+                <div class="col">
+                    <input type="text" style="text-align:center;" class="form-control" placeholder="Condition value"
+                        onfocus="this.placeholder = ''" onblur="this.placeholder='Condition value'"
+                        v-model="condition.Data" />
+                </div>
+                <div class="col-3">
+                    <div class="btn-group">
+                        <div v-if="conditions.indexOf(condition) == 0">
+                            <button type="button" class="btn btn-default btn-number" @click="add(condition)"
+                                :disabled="condition.Data.length == 0">
+                                <span class="fa fa-plus"></span>
+                            </button>
+                        </div>
+                        <div v-else>
+                            <button type="button" class="btn btn-default btn-number" @click="remove(condition)">
+                                <span class="fa fa-minus"></span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
