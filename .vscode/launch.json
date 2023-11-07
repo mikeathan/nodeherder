@@ -1,12 +1,32 @@
 {
     "configurations": [
-    {
-        "name": "Launch file",
-        "type": "go",
-        "request": "launch",
-        "mode": "debug",
-        "program": "core/main.go",
-        "args": ["-buildType", "dev"]
-    }
+        {
+            "type": "firefox",
+            "request": "launch",
+            "name": "vuejs: firefox",
+            "url": "http://localhost:8080",
+            "webRoot": "${workspaceFolder}/src",
+            "pathMappings": [
+                {
+                    "url": "webpack://frontend/src/components",
+                    "path": "${workspaceFolder}/frontend/src/components"
+                },
+                {
+                    "url": "webpack:///src/",
+                    "path": "${webRoot}/"
+                }
+            ]
+        },
+        {
+            "name": "Launch file",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "core/main.go",
+            "args": [
+                "-buildType",
+                "dev"
+            ]
+        }
     ]
 }

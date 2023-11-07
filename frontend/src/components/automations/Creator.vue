@@ -9,19 +9,22 @@ const deviceTriggers = ref({})
 
 const store = useStore();
 const selectedDevice = ref(null)
-
+const selectedExpose = ref(null)
 const devices = computed(() => {
     var devices = store.getters["devices/items"];
     return devices;
 })
 function deviceSelectionChanged(event) {
 
+    if (selectedDevice.value == null) {
+        return;
+    }
     if (event.target.value == null ||
         deviceTriggers.value[event.target.value] != null) {
         return;
     }
-
     deviceTriggers.value[event.target.value] = new DeviceTrigger(event.target.value);
+    console.log("device selected: ", event.target.value, "-", selectedDevice.value);
 }
 
 function exposeSelectionChanged(event) {
@@ -44,7 +47,7 @@ function exposeSelectionChanged(event) {
                 <div class="col-3">
                     <div class="d-flex">
                         <select id="deviceSelector" style="text-align:center;" class="form-control"
-                            @click="deviceSelectionChanged($event)">
+                            @click="deviceSelectionChanged($event)" v-model="selectedDevice">
                             <option :value="null">Select device</option>
                             <option v-for="device in devices" :value="device.id" :key="device.id">
                                 {{ device.friendly_name }}
@@ -52,8 +55,19 @@ function exposeSelectionChanged(event) {
                         </select>
                     </div>
                 </div>
-                <div v-for="trigger in deviceTriggers">
-                    <DeviceAutomation :trigger="trigger"></DeviceAutomation>
+                <div v-if="selectedDevice != null">
+                    <DeviceAutomation :trigger="deviceTriggers[selectedDevice]"></DeviceAutomation>
+                    <!-- <div class="col-3">
+                        <select id="exposeSelector" style="text-align:center;" class="form-control"
+                            @click="exposeSelectionChanged($event)">
+
+                            <option :value="null">Select expose</option>
+                            <option v-for="expose in selectedDevice.exposes" :value="expose.name" :key="expose.name">
+                                {{ expose.name }}
+                            </option>
+                        </select>
+                    </div>
+                    <br> -->
                 </div>
                 <!-- <div v-if="selectedDevice != null">
                     <div class="col-3">

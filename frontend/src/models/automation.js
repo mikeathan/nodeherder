@@ -49,6 +49,7 @@ export class ExposeTrigger {
       this.Conditions = this.Conditions.slice(0, -1);
     }
   }
+
   remove(condition) {
     let index = this.Conditions.indexOf(condition);
     if (index !== -1) {
@@ -57,11 +58,10 @@ export class ExposeTrigger {
   }
 }
 
-export class ExposeCondition {
+export class Condition {
   constructor() {
     this.Name = "";
     this.Operator = Operators[0].value;
     this.Data = "";
   }
-
 }

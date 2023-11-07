@@ -1,20 +1,27 @@
 <script setup>
-import Condition from "./Condition"
-import { ExposeCondition } from "../../models/automation"
+import Conditions from "./Conditions"
+import { Condition } from "../../models/automation"
 import { onMounted } from "vue";
 
 const props = defineProps({
     expose: Object,
 });
 
-function addCondition(event) {
-
-    props.expose.addCondition(event.value)
+function add(event) {
+    console.log("Expose add condition ", event);
+    props.expose.addCondition(event)
+    // for (var i = 0; i < props.expose.Conditions.length; i++) {
+    //     console.log(props.expose.Conditions[i]);
+    // }
 }
 
 function remove(event) {
+    console.log("Expose remove condition ", event);
+    props.expose.remove(event)
 
-    props.expose.remove(event.value)
+    // for (var i = 0; i < props.expose.Conditions.length; i++) {
+    //     console.log(props.expose.Conditions[i]);
+    // }
 }
 
 </script>
@@ -23,28 +30,8 @@ function remove(event) {
 
         <h4>Condition</h4>
         <div class="col">
-            <Condition :exposeName="props.expose.Name">
-            </Condition>
+            <Conditions :expose="props.expose" :exposeName="props.expose.Name" @add="add($event)" @remove="remove($event)">
+            </Conditions>
         </div>
-        <!-- <div class="col">
-            <Condition :name="props.expose.Name" @add="addCondition($event)" :condition="new ExposeCondition()"
-                @remove="remove($event)">
-            </Condition>
-        </div>
-        <div class="col">
-            <div v-for=" condition in props.expose.Conditions">
-
-                <Condition :name="props.expose.Name" :condition="condition" @add="addCondition($event)"
-                    @remove="remove($event)"></Condition>
-            </div>
-        </div> -->
-
-        <!-- <div class="col-3 pt-3">
-            <div class="btn-group" role="group">
-                <input type="button" class="btn btn-secondary text-nowrap" value="Add" @click="addCondition()" />
-                <input type="button" class="btn btn-secondary text-nowrap" value="Remove" @click="removeLastCondition()"
-                    :disabled="props.expose.hasConditions() == false" />
-            </div>
-        </div> -->
     </div>
 </template>
