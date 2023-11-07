@@ -59,9 +59,10 @@ export class ExposeTrigger {
 }
 
 export class Condition {
-  constructor() {
-    this.Name = "";
-    this.Operator = Operators[0].value;
-    this.Data = "";
+  constructor(name, operator, data) {
+    this.Name = name;
+    this.Operator = operator;
+    this.Data = data;
+    this.Id = 0;
   }
 }

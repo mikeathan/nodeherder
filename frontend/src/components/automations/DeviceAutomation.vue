@@ -26,7 +26,7 @@ function exposeSelectionChanged(event) {
         return;
     }
 
-    selectedExpose.value = event.target.value;
+    selectedExpose.value = event.target.value; // maybe refactor ????
     if (exposes.value[value] != null) {
         console.log(value, " exists with conditions: ", exposes.value[value].Conditions.length)
         return
@@ -41,7 +41,6 @@ function exposeSelectionChanged(event) {
 
         <div class="col-3">
             <select id="exposeSelector" style="text-align:center;" class="form-control" @change="exposeSelectionChanged">
-
                 <option value="">Select expose</option>
                 <option v-for="expose in device.exposes" :value="expose.name" :key="expose.name">
                     {{ expose.name }}
