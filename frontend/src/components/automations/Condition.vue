@@ -7,6 +7,7 @@ const props = defineProps({
     condition: Object
 });
 
+const emit = defineEmits(['add', 'remove', 'update'])
 
 const isNull = computed(() => {
     if (condition.value == null) {
@@ -16,27 +17,21 @@ const isNull = computed(() => {
 })
 
 const hasData = computed(() => {
-    if (condition.value == null) {
-        console.log("hasData  false")
 
-        return false;
-    }
     console.log("hasData", condition.value.Data?.length > 0);
     return condition.value.Data?.length > 0
 })
 
+
 const condition = computed(() => {
-    console.log("computed condition() ", props.condition);
 
     if (props.condition.Data == null) {
-        props.condition = new ExposeCondition();// wrong is read only
-        console.log("return new condition");
+        return new ExposeCondition();
     }
-    console.log("return props condition");
+
     return props.condition;
 })
 
-const emit = defineEmits(['add', 'remove', 'update'])
 function add() {
     console.log("add");
     emit("add", condition)
@@ -69,7 +64,8 @@ function remove() {
             <div class="col-3">
                 <div class="btn-group">
                     <div v-if="isNull">
-                        <button type="button" class="btn btn-default btn-number" @click="add()">
+                        <button type="button" class="btn btn-default btn-number" @click="add()"
+                            :disabled="hasData == false">
                             <span class="fa fa-plus"></span>
                         </button>
                     </div>
