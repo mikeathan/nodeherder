@@ -8,13 +8,11 @@ const props = defineProps({
 });
 
 function addCondition(event) {
-    console.log("addCondition triggered ", event.value)
 
     props.expose.addCondition(event.value)
 }
 
 function remove(event) {
-    console.log("remove triggered ", event)
 
     props.expose.remove(event.value)
 }

@@ -22,7 +22,6 @@ function deviceSelectionChanged(event) {
     }
 
     deviceTriggers.value[event.target.value] = new DeviceTrigger(event.target.value);
-    console.log("device selected:", event.target.value)
 }
 
 function exposeSelectionChanged(event) {

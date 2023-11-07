@@ -26,10 +26,13 @@ const hasData = computed(() => {
 })
 
 const condition = computed(() => {
-    if (props.condition == null) {
-        props.condition = new ExposeCondition();
-    }
+    console.log("computed condition() ", props.condition);
 
+    if (props.condition.Data == null) {
+        props.condition = new ExposeCondition();// wrong is read only
+        console.log("return new condition");
+    }
+    console.log("return props condition");
     return props.condition;
 })
 
