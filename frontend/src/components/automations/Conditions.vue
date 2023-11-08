@@ -1,6 +1,6 @@
 <script setup>
 import { Operators, Condition } from "../../models/automation"
-import Conditions from "./Conditions"
+import TriggerCondition from "./TriggerCondition"
 
 import { defineEmits, ref } from 'vue'
 const props = defineProps({
@@ -9,14 +9,14 @@ const props = defineProps({
 });
 
 const operator = ref(Operators[0].value);
-const data = ref("")
 
-
+const conditions = ref(props.expose.Conditions)
 const emit = defineEmits(['add', 'remove', 'update'])
 
-function add() {
-    props.expose.Conditions.push(new Condition(props.exposeName, operator.value, data.value));
-    reset()
+function add(event) {
+    console.log("add ", event.Name, event.Operator, event.Data);
+    conditions.value.push(event);
+    // reset()
 }
 
 function reset() {
@@ -24,29 +24,36 @@ function reset() {
     operator.value = Operators[0].value
 }
 
-function remove(condition) {
-    var index = props.expose.Conditions.indexOf(condition);
-    if (index !== -1) {
-        props.expose.Conditions.splice(index, 1);
-        // emit("remove", condition)
-    }
+function remove(event) {
+    var id = event.value + 1;
+    console.log("remove id ", id, conditions.value[id]);
+
+    conditions.value.splice(id, 0);
+    // var index = conditions[event];
+    // if (index !== -1) {
+    //     props.expose.Conditions.splice(index, 1);
+    //     // emit("remove", condition)
+    // }
 }
 
 </script>
 
 <template>
     <div class="container-fluid p-0 h-100">
-
         <div class="row w-50">
-            <Condition id="0" :name="props.exposeName" :operator="Operators[0]" data=""></Condition>
+            Insert new condition :
+            <TriggerCondition :id="0" :name="props.exposeName" :operator="Operators[0].value" :data="''" @add="add($event)">
+            </TriggerCondition>
         </div>
 
-        <div v-for="condition in props.expose.Conditions">
+        <div v-for="condition in conditions">
             <div class="row w-50">
-                <Condition :id="condition.id" :name="props.exposeName" :operator="condition.operator"
-                    :data="condition.data"></Condition>
+                <TriggerCondition :id="condition.id" :name="condition.Name" :operator="condition.Operator"
+                    :data="condition.Data" @remove="remove($event)"></TriggerCondition>
             </div>
         </div>
+
+
         <!-- <div class="row w-50">
             <div class="col">
                 <input type="text" class="form-control" placeholder="Condition name" onfocus="this.placeholder = ''"
