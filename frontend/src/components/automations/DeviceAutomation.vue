@@ -7,6 +7,7 @@ import { ExposeTrigger } from "../../models/automation"
 
 const props = defineProps({
     trigger: Object,
+
 });
 
 const store = useStore();
@@ -50,7 +51,7 @@ function exposeSelectionChanged(event) {
         <br>
 
         <div v-if="selectedExpose != null">
-            <Expose :expose="exposes[selectedExpose]"></Expose>
+            <Expose :id="props.trigger.id" :expose="exposes[selectedExpose]"></Expose>
         </div>
     </div>
     <div v-else>

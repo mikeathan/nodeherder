@@ -32,6 +32,7 @@ export class DeviceTrigger {
 
 export class ExposeTrigger {
   constructor(name) {
+    this.id = ""; // temporary for debugging
     this.Name = name;
     this.Conditions = [];
   }

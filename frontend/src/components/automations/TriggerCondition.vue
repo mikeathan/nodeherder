@@ -1,6 +1,6 @@
 <script setup>
 import { Operators, Condition } from "../../models/automation"
-import { defineEmits, ref } from 'vue'
+import { ref, watchEffect } from 'vue'
 const props = defineProps({
     name: String,
     operator: String,
@@ -15,20 +15,27 @@ const props = defineProps({
 const id = ref(props.id);
 const data = ref(props.data)
 const operator = ref(props.operator)
+const name = ref(props.name)
 
-const emit = defineEmits(['add', 'remove', 'update'])
+const emit = defineEmits(['add', 'remove'])
 
 function add() {
     var c = new Condition(props.name, operator.value, data.value)
-    c.id = ++id.value
+    var cid = ++id.value;
+    c.Id = cid
+
     emit("add", c)
 
     reset();
 }
 
 function remove() {
-    emit("remove", id)
+    emit("remove", props.id)
 }
+
+watchEffect(() => name.value = props.name); // dont need tat 
+watchEffect(() => data.value = props.data);
+watchEffect(() => operator.value = props.operator);
 
 function reset() {
     data.value = ""
@@ -38,11 +45,8 @@ function reset() {
 
 <template>
     <div class="col">
-        {{ id }}
-    </div>
-    <div class="col">
         <input type="text" class="form-control" placeholder="Condition name" onfocus="this.placeholder = ''"
-            onblur="this.placeholder='Condition name'" v-model="props.name" disabled />
+            onblur="this.placeholder='Condition name'" v-model="name" disabled />
     </div>
     <div class="col">
         <select id="selectOperators" style="text-align:center;" class="form-control" v-model="operator">

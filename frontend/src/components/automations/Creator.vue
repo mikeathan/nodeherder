@@ -9,22 +9,26 @@ const deviceTriggers = ref({})
 
 const store = useStore();
 const selectedDevice = ref(null)
-const selectedExpose = ref(null)
 const devices = computed(() => {
     var devices = store.getters["devices/items"];
     return devices;
 })
 function deviceSelectionChanged(event) {
 
-    if (selectedDevice.value == null) {
+    var value = event.target.value;
+
+    if (value == "") {
+        selectedDevice.value = null; // maybe refactor ????
         return;
     }
-    if (event.target.value == null ||
-        deviceTriggers.value[event.target.value] != null) {
+    selectedDevice.value = value
+    if (deviceTriggers.value[value] != null) {
+        console.log(value, " already init");
         return;
     }
-    deviceTriggers.value[event.target.value] = new DeviceTrigger(event.target.value);
-    console.log("device selected: ", event.target.value, "-", selectedDevice.value);
+
+    deviceTriggers.value[value] = new DeviceTrigger(value);
+    console.log("device selected: ", value, "-", selectedDevice.value);
 }
 
 function exposeSelectionChanged(event) {
@@ -47,8 +51,8 @@ function exposeSelectionChanged(event) {
                 <div class="col-3">
                     <div class="d-flex">
                         <select id="deviceSelector" style="text-align:center;" class="form-control"
-                            @click="deviceSelectionChanged($event)" v-model="selectedDevice">
-                            <option :value="null">Select device</option>
+                            @change="deviceSelectionChanged">
+                            <option value="">Select device</option>
                             <option v-for="device in devices" :value="device.id" :key="device.id">
                                 {{ device.friendly_name }}
                             </option>

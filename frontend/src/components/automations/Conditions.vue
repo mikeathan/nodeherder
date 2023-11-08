@@ -2,38 +2,26 @@
 import { Operators, Condition } from "../../models/automation"
 import TriggerCondition from "./TriggerCondition"
 
-import { defineEmits, ref } from 'vue'
+import { ref, watchEffect } from 'vue'
 const props = defineProps({
     exposeName: String,
     expose: Object
 });
+const conditions = ref(props.expose.Conditions);
+const emit = defineEmits(['add', 'remove'])
 
-const operator = ref(Operators[0].value);
-
-const conditions = ref(props.expose.Conditions)
-const emit = defineEmits(['add', 'remove', 'update'])
+watchEffect(() => conditions.value = props.expose.Conditions);
 
 function add(event) {
-    console.log("add ", event.Name, event.Operator, event.Data);
     conditions.value.push(event);
-    // reset()
 }
 
-function reset() {
-    data.value = ""
-    operator.value = Operators[0].value
-}
 
 function remove(event) {
-    var id = event.value + 1;
-    console.log("remove id ", id, conditions.value[id]);
-
-    conditions.value.splice(id, 0);
-    // var index = conditions[event];
-    // if (index !== -1) {
-    //     props.expose.Conditions.splice(index, 1);
-    //     // emit("remove", condition)
-    // }
+    var index = conditions.value.findIndex(item => item.Id === event);
+    if (index != -1) {
+        conditions.value.splice(index, 1);
+    }
 }
 
 </script>
@@ -41,15 +29,14 @@ function remove(event) {
 <template>
     <div class="container-fluid p-0 h-100">
         <div class="row w-50">
-            Insert new condition :
             <TriggerCondition :id="0" :name="props.exposeName" :operator="Operators[0].value" :data="''" @add="add($event)">
             </TriggerCondition>
         </div>
 
         <div v-for="condition in conditions">
             <div class="row w-50">
-                <TriggerCondition :id="condition.id" :name="condition.Name" :operator="condition.Operator"
-                    :data="condition.Data" @remove="remove($event)"></TriggerCondition>
+                <TriggerCondition :id="condition.Id" :name="condition.Name" :operator="condition.Operator"
+                    :key="condition.id" :data="condition.Data" @remove="remove($event)"></TriggerCondition>
             </div>
         </div>
 
