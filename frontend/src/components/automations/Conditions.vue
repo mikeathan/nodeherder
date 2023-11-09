@@ -4,9 +4,9 @@ import TriggerCondition from "./TriggerCondition"
 
 import { ref, watchEffect } from 'vue'
 const props = defineProps({
-    exposeName: String,
     expose: Object
 });
+
 const conditions = ref(props.expose.Conditions);
 const emit = defineEmits(['add', 'remove'])
 
@@ -29,7 +29,8 @@ function remove(event) {
 <template>
     <div class="container-fluid p-0 h-100">
         <div class="row w-50">
-            <TriggerCondition :id="0" :name="props.exposeName" :operator="Operators[0].value" :data="''" @add="add($event)">
+            <TriggerCondition :id="0" :name="props.expose.Name" :operator="Operators[0].value" :data="''"
+                @add="add($event)">
             </TriggerCondition>
         </div>
 

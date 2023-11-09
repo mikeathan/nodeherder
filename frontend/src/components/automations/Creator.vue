@@ -8,7 +8,8 @@ import { DeviceTrigger } from "../../models/automation"
 const deviceTriggers = ref({})
 
 const store = useStore();
-const selectedDevice = ref(null)
+const selectedDevice = ref("")
+
 const devices = computed(() => {
     var devices = store.getters["devices/items"];
     return devices;
@@ -51,7 +52,7 @@ function exposeSelectionChanged(event) {
                 <div class="col-3">
                     <div class="d-flex">
                         <select id="deviceSelector" style="text-align:center;" class="form-control"
-                            @change="deviceSelectionChanged">
+                            v-model="selectedDevice">
                             <option value="">Select device</option>
                             <option v-for="device in devices" :value="device.id" :key="device.id">
                                 {{ device.friendly_name }}
@@ -59,8 +60,8 @@ function exposeSelectionChanged(event) {
                         </select>
                     </div>
                 </div>
-                <div v-if="selectedDevice != null">
-                    <DeviceAutomation :trigger="deviceTriggers[selectedDevice]"></DeviceAutomation>
+                <div>
+                    <DeviceAutomation :id="selectedDevice"></DeviceAutomation>
                     <!-- <div class="col-3">
                         <select id="exposeSelector" style="text-align:center;" class="form-control"
                             @click="exposeSelectionChanged($event)">

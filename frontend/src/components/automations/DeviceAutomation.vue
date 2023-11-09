@@ -1,32 +1,31 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed, onUpdated, ref } from "vue";
-import Expose from "./Expose"
+import { computed, watch, ref, onBeforeMount } from "vue";
 
-import { ExposeTrigger } from "../../models/automation"
+import { ExposeTrigger, DeviceTrigger } from "../../models/automation"
+import Conditions from "./Conditions"
 
 const props = defineProps({
-    trigger: Object,
-
+    id: String
 });
 
 const store = useStore();
-const exposes = ref([props.trigger.triggers])
+const exposes = ref({})
+
+const deviceTrigger = ref(new DeviceTrigger(props.id))
 const selectedExpose = ref(null)
-
 const device = computed(() => {
-    return store.getters["devices/find"](props.trigger.id);
+    return store.getters["devices/find"](props.id);
 });
-
 
 function exposeSelectionChanged(event) {
 
     var value = event.target.value;
     if (value == "") {
-        selectedExpose.value = null; // maybe refactor ????
+        //selectedExpose.value = null; // maybe refactor ????
         return;
     }
-
+    deviceTrigger.value.triggers
     selectedExpose.value = event.target.value; // maybe refactor ????
     if (exposes.value[value] != null) {
         console.log(value, " exists with conditions: ", exposes.value[value].Conditions.length)
@@ -35,6 +34,14 @@ function exposeSelectionChanged(event) {
     exposes.value[value] = new ExposeTrigger(value)
     console.log("expose added: ", value, " : ", exposes.value[value], "conditions: ", exposes.value[value].Conditions.length)
 }
+
+watch(
+    () => props.id,
+    (t) => {
+        selectedExpose.value = null
+    },
+    { immediate: true }
+);
 
 </script>
 <template>
@@ -49,9 +56,15 @@ function exposeSelectionChanged(event) {
             </select>
         </div>
         <br>
+        Device: {{ props.id }} - {{ selectedExpose }}
 
-        <div v-if="selectedExpose != null">
-            <Expose :id="props.trigger.id" :expose="exposes[selectedExpose]"></Expose>
+        <div>
+            <!-- <Expose :id="props.id" :expose="exposes[selectedExpose]"></Expose> -->
+            <h4>Condition</h4>
+            <div v-if="selectedExpose != null" class="col">
+                <Conditions :expose="exposes[selectedExpose]">
+                </Conditions>
+            </div>
         </div>
     </div>
     <div v-else>
