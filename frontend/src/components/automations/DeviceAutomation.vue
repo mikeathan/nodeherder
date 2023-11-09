@@ -33,9 +33,9 @@ function exposeSelectionChanged(event) {
         console.log(value, " exists with conditions: ", exposes.value[value].Conditions.length)
         return
     }
-    deviceExposes[props.id].value[value] = new ExposeTrigger(value)
+    exposes.value[value] = new ExposeTrigger(value)
 
-    console.log("expose added: ", value, " : ", deviceExposes[props.id].value[value], "conditions: ", exposes.value[value].Conditions.length)
+    console.log("expose added: ", value, " : ", exposes.value[value], "conditions: ", exposes.value[value].Conditions.length)
 }
 watch(
     () => props.id,
