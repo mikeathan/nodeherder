@@ -2,8 +2,9 @@
 import { useStore } from "vuex";
 import { computed, watch, ref, onBeforeMount } from "vue";
 
-import { ExposeTrigger, DeviceTrigger } from "../../models/automation"
+import { ExposeTrigger, DeviceTrigger, Operators } from "../../models/automation"
 import Conditions from "./Conditions"
+import TriggerCondition from "./TriggerCondition"
 
 const props = defineProps({
     id: String
@@ -11,10 +12,9 @@ const props = defineProps({
 
 const store = useStore();
 const exposes = ref({})
-
 const deviceTrigger = ref(new DeviceTrigger(props.id))
 const deviceExposes = ref({})
-
+const conditions = ref([]);
 const selectedExpose = ref(null)
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
@@ -27,23 +27,41 @@ function exposeSelectionChanged(event) {
         //selectedExpose.value = null; // maybe refactor ????
         return;
     }
-    deviceTrigger.value.triggers
-    selectedExpose.value = event.target.value; // maybe refactor ????
-    if (exposes.value[value] != null) {
-        console.log(value, " exists with conditions: ", exposes.value[value].Conditions.length)
-        return
-    }
-    exposes.value[value] = new ExposeTrigger(value)
 
-    console.log("expose added: ", value, " : ", exposes.value[value], "conditions: ", exposes.value[value].Conditions.length)
+    var deviceTrigger = deviceExposes[props.id]
+    var index = deviceTrigger.triggers.findIndex(item => item.Name === value);
+    var expose;
+    if (index != 0) {
+        expose = exposes.Conditions[index]
+    }
+    else {
+        expose = new ExposeTrigger(value)
+        device.triggers.push(expose)
+    }
+
+    conditions.value = expose.Conditions;
+    console.log("expose selected ", value)
+    selectedExpose.value = event.target.value; // maybe refactor ????
+    // if (exposes.value[value] != null) {
+    //     console.log(value, " exists with conditions: ", exposes.value[value].Conditions.length)
+    //     return
+    // }
+
+    // exposes.value[value] = new ExposeTrigger(value)
+    // deviceExposes[props.id].triggers.push(exposes.value[value])
+    // console.log("expose added: ", value, " : ", exposes.value[value], "conditions: ", exposes.value[value].Conditions.length)
 }
 watch(
     () => props.id,
     (t) => {
+        console.log("id changed ", props.id)
         selectedExpose.value = null
         if (deviceExposes[props.id] == null) {
             deviceExposes[props.id] = new DeviceTrigger(props.id)
+            console.log("new device trigger")
+
         }
+        // conditions.value = ex
     },
     { immediate: true }
 );
@@ -81,7 +99,7 @@ watch(
         <div>
             <!-- <Expose :id="props.id" :expose="exposes[selectedExpose]"></Expose> -->
             <div class="row w-50">
-                <TriggerCondition :id="0" :name="props.expose.Name" :operator="Operators[0].value" :data="''"
+                <TriggerCondition :id="0" :name="selectedExpose" :operator="Operators[0].value" :data="''"
                     @add="add($event)">
                 </TriggerCondition>
             </div>
