@@ -13,6 +13,8 @@ const store = useStore();
 const exposes = ref({})
 
 const deviceTrigger = ref(new DeviceTrigger(props.id))
+const deviceExposes = ref({})
+
 const selectedExpose = ref(null)
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
@@ -31,17 +33,35 @@ function exposeSelectionChanged(event) {
         console.log(value, " exists with conditions: ", exposes.value[value].Conditions.length)
         return
     }
-    exposes.value[value] = new ExposeTrigger(value)
-    console.log("expose added: ", value, " : ", exposes.value[value], "conditions: ", exposes.value[value].Conditions.length)
-}
+    deviceExposes[props.id].value[value] = new ExposeTrigger(value)
 
+    console.log("expose added: ", value, " : ", deviceExposes[props.id].value[value], "conditions: ", exposes.value[value].Conditions.length)
+}
 watch(
     () => props.id,
     (t) => {
         selectedExpose.value = null
+        if (deviceExposes[props.id] == null) {
+            deviceExposes[props.id] = new DeviceTrigger(props.id)
+        }
     },
     { immediate: true }
 );
+// Device Trigger
+//  Triggers
+// {
+//    Expose
+//    {
+//         Conditions
+//         {
+//
+//         }
+//         Actions
+//         {
+//    
+//         }
+//     }
+// }
 
 </script>
 <template>
@@ -59,12 +79,12 @@ watch(
         Device: {{ props.id }} - {{ selectedExpose }}
 
         <div>
-            <!-- <Expose :id="props.id" :expose="exposes[selectedExpose]"></Expose> -->
-            <h4>Condition</h4>
+            <Expose :id="props.id" :expose="exposes[selectedExpose]"></Expose>
+            <!-- <h4>Condition</h4>
             <div v-if="selectedExpose != null" class="col">
                 <Conditions :expose="exposes[selectedExpose]">
                 </Conditions>
-            </div>
+            </div> -->
         </div>
     </div>
     <div v-else>
