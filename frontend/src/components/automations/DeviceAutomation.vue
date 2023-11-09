@@ -79,7 +79,20 @@ watch(
         Device: {{ props.id }} - {{ selectedExpose }}
 
         <div>
-            <Expose :id="props.id" :expose="exposes[selectedExpose]"></Expose>
+            <!-- <Expose :id="props.id" :expose="exposes[selectedExpose]"></Expose> -->
+            <div class="row w-50">
+                <TriggerCondition :id="0" :name="props.expose.Name" :operator="Operators[0].value" :data="''"
+                    @add="add($event)">
+                </TriggerCondition>
+            </div>
+
+            <div v-for="condition in conditions">
+                <div class="row w-50">
+                    <TriggerCondition :id="condition.Id" :name="condition.Name" :operator="condition.Operator"
+                        :key="condition.id" :data="condition.Data" @remove="remove($event)"></TriggerCondition>
+                </div>
+            </div>
+
             <!-- <h4>Condition</h4>
             <div v-if="selectedExpose != null" class="col">
                 <Conditions :expose="exposes[selectedExpose]">
