@@ -32,6 +32,10 @@ function deviceSelectionChanged(event) {
     console.log("device selected: ", value, "-", selectedDevice.value);
 }
 
+function cancel() {
+    selectedDevice.value = ""
+}
+
 function exposeSelectionChanged(event) {
 
     //     if (event.target.value == null ||
@@ -61,7 +65,7 @@ function exposeSelectionChanged(event) {
                     </div>
                 </div>
                 <div>
-                    <DeviceAutomation :id="selectedDevice"></DeviceAutomation>
+                    <DeviceAutomation :id="selectedDevice" @cancel="cancel"></DeviceAutomation>
                     <!-- <div class="col-3">
                         <select id="exposeSelector" style="text-align:center;" class="form-control"
                             @click="exposeSelectionChanged($event)">

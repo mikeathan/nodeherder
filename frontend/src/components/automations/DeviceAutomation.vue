@@ -21,6 +21,7 @@ const device = computed(() => {
     return store.getters["devices/find"](props.id);
 });
 
+const emit = defineEmits(['cancel'])
 
 function exposeSelectionChanged(event) {
 
@@ -53,6 +54,12 @@ watch(
     { immediate: true }
 );
 
+function cancel() {
+    console.log("cancel ")
+    emit("cancel")
+
+    todo clear conditions and reset any state
+}
 
 function add(event) {
     console.log("add ", event)
@@ -102,7 +109,7 @@ function remove(event) {
                     <button type="button" class="btn btn-default" :disabled="conditions.length == 0">
                         Save <!-- add conditions to trigger, and reenable options drop down-->
                     </button>
-                    <button type="button" class="btn btn-default">
+                    <button type="button" class="btn btn-default" @click="cancel">
                         Cancel <!-- send event to enable back options dropdown-->
                     </button>
                 </div>
