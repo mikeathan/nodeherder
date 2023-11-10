@@ -9,7 +9,7 @@ const props = defineProps({
         type: Number,
         required: true,
         default: 0,
-    },
+    }
 });
 
 const id = ref(props.id);

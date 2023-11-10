@@ -52,7 +52,7 @@ function exposeSelectionChanged(event) {
                 <div class="col-3">
                     <div class="d-flex">
                         <select id="deviceSelector" style="text-align:center;" class="form-control"
-                            v-model="selectedDevice">
+                            :disabled="selectedDevice != ''" v-model="selectedDevice">
                             <option value="">Select device</option>
                             <option v-for="device in devices" :value="device.id" :key="device.id">
                                 {{ device.friendly_name }}

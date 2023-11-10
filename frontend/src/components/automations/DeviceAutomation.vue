@@ -1,13 +1,14 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed, watch, ref, onBeforeMount } from "vue";
+import { computed, watch, ref, onBeforeMount, watchEffect } from "vue";
 
 import { ExposeTrigger, DeviceTrigger, Operators } from "../../models/automation"
 import Conditions from "./Conditions"
 import TriggerCondition from "./TriggerCondition"
 
 const props = defineProps({
-    id: String
+    id: String,
+    trigger: Object
 });
 
 const store = useStore();
@@ -15,10 +16,11 @@ const exposes = ref({})
 const deviceTrigger = ref(new DeviceTrigger(props.id))
 const deviceExposes = ref({})
 const conditions = ref([]);
-const selectedExpose = ref(null)
+const selectedExpose = ref("")
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
 });
+
 
 function exposeSelectionChanged(event) {
 
@@ -28,20 +30,7 @@ function exposeSelectionChanged(event) {
         return;
     }
 
-    var deviceTrigger = deviceExposes[props.id]
-    var index = deviceTrigger.triggers.findIndex(item => item.Name === value);
-    var expose;
-    if (index != 0) {
-        expose = exposes.Conditions[index]
-    }
-    else {
-        expose = new ExposeTrigger(value)
-        device.triggers.push(expose)
-    }
 
-    conditions.value = expose.Conditions;
-    console.log("expose selected ", value)
-    selectedExpose.value = event.target.value; // maybe refactor ????
     // if (exposes.value[value] != null) {
     //     console.log(value, " exists with conditions: ", exposes.value[value].Conditions.length)
     //     return
@@ -59,35 +48,34 @@ watch(
         if (deviceExposes[props.id] == null) {
             deviceExposes[props.id] = new DeviceTrigger(props.id)
             console.log("new device trigger")
-
         }
-        // conditions.value = ex
     },
     { immediate: true }
 );
-// Device Trigger
-//  Triggers
-// {
-//    Expose
-//    {
-//         Conditions
-//         {
-//
-//         }
-//         Actions
-//         {
-//    
-//         }
-//     }
-// }
+
+
+function add(event) {
+    console.log("add ", event)
+    conditions.value.push(event);
+}
+
+function remove(event) {
+    console.log("remove ", event)
+
+    var index = conditions.value.findIndex(item => item.Id === event);
+    if (index != -1) {
+        conditions.value.splice(index, 1);
+    }
+}
 
 </script>
 <template>
-    <div v-if="device != null" class="container-fluid p-0 h-100">
+    <div class="container-fluid p-0 h-100" v-if="device != null"> <!-- to fix condition-->
 
         <div class="col-3">
-            <select id="exposeSelector" style="text-align:center;" class="form-control" @change="exposeSelectionChanged">
-                <option value="">Select expose</option>
+            <select id="exposeSelector" style="text-align:center;" class="form-control" @change="exposeSelectionChanged"
+                v-model="selectedExpose">
+                <option :value="null">Select expose</option>
                 <option v-for="expose in device.exposes" :value="expose.name" :key="expose.name">
                     {{ expose.name }}
                 </option>
@@ -97,8 +85,7 @@ watch(
         Device: {{ props.id }} - {{ selectedExpose }}
 
         <div>
-            <!-- <Expose :id="props.id" :expose="exposes[selectedExpose]"></Expose> -->
-            <div class="row w-50">
+            <div class="row w-50" v-if="selectedExpose != null">
                 <TriggerCondition :id="0" :name="selectedExpose" :operator="Operators[0].value" :data="''"
                     @add="add($event)">
                 </TriggerCondition>
@@ -110,14 +97,17 @@ watch(
                         :key="condition.id" :data="condition.Data" @remove="remove($event)"></TriggerCondition>
                 </div>
             </div>
+            <div class="col-50">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-default" :disabled="conditions.length == 0">
+                        Save <!-- add conditions to trigger, and reenable options drop down-->
+                    </button>
+                    <button type="button" class="btn btn-default">
+                        Cancel <!-- send event to enable back options dropdown-->
+                    </button>
+                </div>
+            </div>
 
-            <!-- <h4>Condition</h4>
-            <div v-if="selectedExpose != null" class="col">
-                <Conditions :expose="exposes[selectedExpose]">
-                </Conditions>
-            </div> -->
         </div>
-    </div>
-    <div v-else>
     </div>
 </template>
