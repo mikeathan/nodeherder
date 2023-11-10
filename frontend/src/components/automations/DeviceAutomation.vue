@@ -12,11 +12,11 @@ const props = defineProps({
 });
 
 const store = useStore();
-const exposes = ref({})
 const deviceTrigger = ref(new DeviceTrigger(props.id))
 const deviceExposes = ref({})
 const conditions = ref([]);
 const selectedExpose = ref("")
+const exposeTriggers = ref({});
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
 });
@@ -26,44 +26,56 @@ const emit = defineEmits(['cancel'])
 function exposeSelectionChanged(event) {
 
     var value = event.target.value;
-    if (value == "") {
+    if (value == "" || exposeTriggers[value] != null) {
         //selectedExpose.value = null; // maybe refactor ????
         return;
     }
-
-
-    // if (exposes.value[value] != null) {
-    //     console.log(value, " exists with conditions: ", exposes.value[value].Conditions.length)
-    //     return
-    // }
-
-    // exposes.value[value] = new ExposeTrigger(value)
-    // deviceExposes[props.id].triggers.push(exposes.value[value])
-    // console.log("expose added: ", value, " : ", exposes.value[value], "conditions: ", exposes.value[value].Conditions.length)
+    exposeTriggers[value] = new ExposeTrigger(value);
 }
+
 watch(
     () => props.id,
     (t) => {
         console.log("id changed ", props.id)
         selectedExpose.value = null
         if (deviceExposes[props.id] == null) {
-            deviceExposes[props.id] = new DeviceTrigger(props.id)
-            console.log("new device trigger")
+            deviceExposes[props.id] =
+                console.log("new device trigger")
         }
     },
     { immediate: true }
 );
+function addTrigger() {
+    console.log("addtrigger ", selectedExpose.value);
+    console.log("exposeTrigger ", exposeTriggers[selectedExpose.value]);
+
+    deviceTrigger.value.triggers.push(exposeTriggers[selectedExpose.value])
+    console.log("res ", deviceTrigger);
+}
+// export can gave export condition and another export condition
+function save() {
+
+    emit("save", deviceTrigger)
+}
 
 function cancel() {
-    console.log("cancel ")
-    emit("cancel")
 
-    todo clear conditions and reset any state
+    conditions.value = []
+    emit("cancel")
 }
 
 function add(event) {
     console.log("add ", event)
     conditions.value.push(event);
+    var exposeTrigger = exposeTriggers[selectedExpose.value];
+    exposeTrigger.Conditions.push(event)
+    console.log("res ", exposeTrigger.Conditions);
+
+
+    // this is what we want 
+    //     deviceTrigger.value.triggers.push(exposeTriggers[selectedExpose.value])
+
+
 }
 
 function remove(event) {
@@ -109,8 +121,11 @@ function remove(event) {
                     <button type="button" class="btn btn-default" :disabled="conditions.length == 0">
                         Save <!-- add conditions to trigger, and reenable options drop down-->
                     </button>
+                    <button type="button" class="btn btn-default" :disabled="conditions.length == 0" @click="addTrigger">
+                        Add Trigger
+                    </button>
                     <button type="button" class="btn btn-default" @click="cancel">
-                        Cancel <!-- send event to enable back options dropdown-->
+                        Cancel
                     </button>
                 </div>
             </div>
