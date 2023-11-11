@@ -32,22 +32,21 @@ export class DeviceTrigger {
 
 export class ExposeTrigger {
   constructor(name) {
-    this.id = ""; // temporary for debugging
-    this.Name = name;
-    this.Conditions = [];
+    this.name = name;
+    this.conditions = [];
   }
 
   hasConditions() {
-    return this.Conditions.length != 0;
+    return this.conditions.length != 0;
   }
 
   addCondition(condition) {
-    this.Conditions.push(condition);
+    this.conditions.push(condition);
   }
 
   removeLastCondition() {
-    if (this.Conditions.length >= 0) {
-      this.Conditions = this.Conditions.slice(0, -1);
+    if (this.conditions.length >= 0) {
+      this.conditions = this.conditions.slice(0, -1);
     }
   }
 
@@ -61,9 +60,9 @@ export class ExposeTrigger {
 
 export class Condition {
   constructor(name, operator, data) {
-    this.Name = name;
-    this.Operator = operator;
-    this.Data = data;
-    this.Id = 0;
+    this.name = name;
+    this.operator = operator;
+    this.data = data;
+    this.id = 0;
   }
 }

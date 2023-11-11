@@ -27,10 +27,10 @@ function exposeSelectionChanged(event) {
 
     var value = event.target.value;
     if (value == "" || exposeTriggers[value] != null) {
-        //selectedExpose.value = null; // maybe refactor ????
         return;
     }
-    exposeTriggers[value] = new ExposeTrigger(value);
+    var exposeTrigger = new ExposeTrigger(value);
+    exposeTriggers[value] = exposeTrigger;
 }
 
 watch(
@@ -45,13 +45,23 @@ watch(
     },
     { immediate: true }
 );
-function addTrigger() {
-    console.log("addtrigger ", selectedExpose.value);
-    console.log("exposeTrigger ", exposeTriggers[selectedExpose.value]);
 
+function addTrigger() {
+    console.log("AddTrigger ", selectedExpose.value);
+    deviceTrigger.value.friendly_name = device.value.friendly_name;
     deviceTrigger.value.triggers.push(exposeTriggers[selectedExpose.value])
-    console.log("res ", deviceTrigger);
+    console.log("Triggers added ", deviceTrigger.value.triggers);
+
+    // reset state
+    conditions.value = []
+    exposeTriggers[selectedExpose.value] = null
+    selectedExpose.value = null
 }
+
+function getExposes() {
+    return Object.keys(device.value.exposes)
+}
+
 // export can gave export condition and another export condition
 function save() {
 
@@ -67,21 +77,15 @@ function cancel() {
 function add(event) {
     console.log("add ", event)
     conditions.value.push(event);
+
     var exposeTrigger = exposeTriggers[selectedExpose.value];
-    exposeTrigger.Conditions.push(event)
-    console.log("res ", exposeTrigger.Conditions);
-
-
-    // this is what we want 
-    //     deviceTrigger.value.triggers.push(exposeTriggers[selectedExpose.value])
-
-
+    exposeTrigger.conditions.push(event)
+    console.log("res ", exposeTrigger.conditions);
 }
 
 function remove(event) {
     console.log("remove ", event)
-
-    var index = conditions.value.findIndex(item => item.Id === event);
+    var index = conditions.value.findIndex(item => item.id === event);
     if (index != -1) {
         conditions.value.splice(index, 1);
     }
@@ -93,7 +97,7 @@ function remove(event) {
 
         <div class="col-3">
             <select id="exposeSelector" style="text-align:center;" class="form-control" @change="exposeSelectionChanged"
-                v-model="selectedExpose">
+                v-model="selectedExpose" :disabled="selectedExpose != null">
                 <option :value="null">Select expose</option>
                 <option v-for="expose in device.exposes" :value="expose.name" :key="expose.name">
                     {{ expose.name }}
@@ -105,15 +109,15 @@ function remove(event) {
 
         <div>
             <div class="row w-50" v-if="selectedExpose != null">
-                <TriggerCondition :id="0" :name="selectedExpose" :operator="Operators[0].value" :data="''"
+                <TriggerCondition :id="0" :exposes="getExposes()" :operator="Operators[0].value" :data="''"
                     @add="add($event)">
                 </TriggerCondition>
             </div>
 
             <div v-for="condition in conditions">
                 <div class="row w-50">
-                    <TriggerCondition :id="condition.Id" :name="condition.Name" :operator="condition.Operator"
-                        :key="condition.id" :data="condition.Data" @remove="remove($event)"></TriggerCondition>
+                    <TriggerCondition :id="condition.id" :name="condition.name" :operator="condition.operator"
+                        :key="condition.id" :data="condition.data" @remove="remove($event)"></TriggerCondition>
                 </div>
             </div>
             <div class="col-50">
@@ -130,6 +134,21 @@ function remove(event) {
                 </div>
             </div>
 
+
+            DEBUG ----------------------<br>
+            <b>Device id:</b> {{ deviceTrigger.id }} <br>
+            <b>friendly_name:</b> {{ deviceTrigger.friendly_name }} <br>
+            <b>decription:</b> {{ deviceTrigger.description }}<br>
+
+            <div v-for="trigger in deviceTrigger.triggers">
+
+                <b>Trigger id: </b>{{ trigger.name }} <br>
+                <b>Conditions:</b>
+
+                <div v-for="condition in trigger.conditions">
+                    {{ condition.name }} {{ condition.operator }} {{ condition.data }}
+                </div>
+            </div>
         </div>
     </div>
 </template>

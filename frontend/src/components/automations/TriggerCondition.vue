@@ -2,6 +2,11 @@
 import { Operators, Condition } from "../../models/automation"
 import { ref, watchEffect } from 'vue'
 const props = defineProps({
+    exposes:
+    {
+        type: Array,
+        default: () => []
+    },
     name: String,
     operator: String,
     data: String,
@@ -20,9 +25,9 @@ const name = ref(props.name)
 const emit = defineEmits(['add', 'remove'])
 
 function add() {
-    var c = new Condition(props.name, operator.value, data.value)
+    var c = new Condition(name.value, operator.value, data.value)
     var cid = ++id.value;
-    c.Id = cid
+    c.id = cid
 
     emit("add", c)
 
@@ -33,7 +38,7 @@ function remove() {
     emit("remove", props.id)
 }
 
-watchEffect(() => name.value = props.name); // dont need tat 
+//watchEffect(() => name.value = props.name); // dont need tat 
 watchEffect(() => data.value = props.data);
 watchEffect(() => operator.value = props.operator);
 
@@ -44,6 +49,14 @@ function reset() {
 </script>
 
 <template>
+    <div class="col">
+        <select id="exposeSelector" style="text-align:center;" class="form-control" @change="exposeSelectionChanged"
+            v-model="name">
+            <option v-for="name in props.exposes" :value="name" :key="name">
+                {{ name }}
+            </option>
+        </select>
+    </div>
     <div class="col">
         <input type="text" class="form-control" placeholder="Condition name" onfocus="this.placeholder = ''"
             onblur="this.placeholder='Condition name'" v-model="name" disabled />
