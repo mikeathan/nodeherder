@@ -1,6 +1,7 @@
 <script setup>
 import { useStore } from "vuex";
 import { computed, watch, ref, onBeforeMount, watchEffect } from "vue";
+import { useRouter } from "vue-router";
 
 import { ExposeTrigger, DeviceTrigger, Operators } from "../../models/automation"
 import Conditions from "./Conditions"
@@ -19,6 +20,15 @@ const selectedExpose = ref("")
 const exposeTriggers = ref({});
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
+});
+
+const previousPage = computed(() => {
+    var back = useRouter().options.history.state.back;
+    if (back == undefined) {
+        cancel();
+        back = useRouter().push("/");
+    }
+    return back;
 });
 
 const emit = defineEmits(['cancel'])
@@ -95,6 +105,18 @@ function remove(event) {
 <template>
     <div class="container-fluid p-0 h-100" v-if="device != null"> <!-- to fix condition-->
 
+        <div class="align-self-center me-3">
+            <RouterLink :to="`${previousPage}`">
+                <i class="fa fa-arrow-left fa-xl" aria-hidden="true"></i>
+            </RouterLink>
+        </div>
+        <div class="form-group">
+            <label for="name" class="col-3">Name:</label>
+            <div class="col-3">
+                <input type="text" class="form-control" name="name" id="name" v-model="deviceTrigger.description">
+            </div>
+        </div>
+
         <div class="col-3">
             <select id="exposeSelector" style="text-align:center;" class="form-control" @change="exposeSelectionChanged"
                 v-model="selectedExpose" :disabled="selectedExpose != null">
@@ -123,10 +145,10 @@ function remove(event) {
             <div class="col-50">
                 <div class="btn-group">
                     <button type="button" class="btn btn-default" :disabled="conditions.length == 0">
-                        Save <!-- add conditions to trigger, and reenable options drop down-->
+                        Create
                     </button>
                     <button type="button" class="btn btn-default" :disabled="conditions.length == 0" @click="addTrigger">
-                        Add Trigger
+                        Add
                     </button>
                     <button type="button" class="btn btn-default" @click="cancel">
                         Cancel
@@ -137,7 +159,7 @@ function remove(event) {
 
             DEBUG ----------------------<br>
             <b>Device id:</b> {{ deviceTrigger.id }} <br>
-            <b>friendly_name:</b> {{ deviceTrigger.friendly_name }} <br>
+            <b>friendly_name:</b> {{ device.friendly_name }} <br>
             <b>decription:</b> {{ deviceTrigger.description }}<br>
 
             <div v-for="trigger in deviceTrigger.triggers">

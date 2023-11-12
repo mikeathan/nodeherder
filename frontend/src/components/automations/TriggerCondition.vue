@@ -38,25 +38,24 @@ function remove() {
     emit("remove", props.id)
 }
 
-//watchEffect(() => name.value = props.name); // dont need tat 
 watchEffect(() => data.value = props.data);
 watchEffect(() => operator.value = props.operator);
 
 watch(
     () => props.id,
-    (t) => {
-        if (t == 0 && props.exposes != null) {
+    (i) => {
+        if (i == 0 && props.exposes != null) {
             name.value = props.exposes[0]
         }
     },
     { immediate: true }
 );
 
-
 function reset() {
     data.value = ""
     operator.value = Operators[0].value
 }
+
 </script>
 
 <template>
