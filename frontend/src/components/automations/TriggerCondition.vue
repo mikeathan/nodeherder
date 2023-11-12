@@ -1,6 +1,6 @@
 <script setup>
 import { Operators, Condition } from "../../models/automation"
-import { ref, watchEffect } from 'vue'
+import { ref, watchEffect, watch } from 'vue'
 const props = defineProps({
     exposes:
     {
@@ -42,6 +42,17 @@ function remove() {
 watchEffect(() => data.value = props.data);
 watchEffect(() => operator.value = props.operator);
 
+watch(
+    () => props.id,
+    (t) => {
+        if (t == 0 && props.exposes != null) {
+            name.value = props.exposes[0]
+        }
+    },
+    { immediate: true }
+);
+
+
 function reset() {
     data.value = ""
     operator.value = Operators[0].value
@@ -49,7 +60,7 @@ function reset() {
 </script>
 
 <template>
-    <div class="col">
+    <div v-if="props.id == 0" class="col">
         <select id="exposeSelector" style="text-align:center;" class="form-control" @change="exposeSelectionChanged"
             v-model="name">
             <option v-for="name in props.exposes" :value="name" :key="name">
@@ -57,9 +68,9 @@ function reset() {
             </option>
         </select>
     </div>
-    <div class="col">
+    <div v-else class="col">
         <input type="text" class="form-control" placeholder="Condition name" onfocus="this.placeholder = ''"
-            onblur="this.placeholder='Condition name'" v-model="name" disabled />
+            style="text-align: center;" onblur="this.placeholder='Condition name'" v-model="name" disabled />
     </div>
     <div class="col">
         <select id="selectOperators" style="text-align:center;" class="form-control" v-model="operator">
