@@ -57,10 +57,8 @@ watch(
 );
 
 function addTrigger() {
-    console.log("AddTrigger ", selectedExpose.value);
     deviceTrigger.value.friendly_name = device.value.friendly_name;
     deviceTrigger.value.triggers.push(exposeTriggers[selectedExpose.value])
-    console.log("Triggers added ", deviceTrigger.value.triggers);
 
     // reset state
     conditions.value = []
@@ -85,16 +83,13 @@ function cancel() {
 }
 
 function add(event) {
-    console.log("add ", event)
     conditions.value.push(event);
 
     var exposeTrigger = exposeTriggers[selectedExpose.value];
     exposeTrigger.conditions.push(event)
-    console.log("res ", exposeTrigger.conditions);
 }
 
 function remove(event) {
-    console.log("remove ", event)
     var index = conditions.value.findIndex(item => item.id === event);
     if (index != -1) {
         conditions.value.splice(index, 1);
@@ -110,12 +105,13 @@ function remove(event) {
                 <i class="fa fa-arrow-left fa-xl" aria-hidden="true"></i>
             </RouterLink>
         </div>
-        <div class="form-group">
-            <label for="name" class="col-3">Name:</label>
-            <div class="col-3">
-                <input type="text" class="form-control" name="name" id="name" v-model="deviceTrigger.description">
-            </div>
+        <div class="col-3">
+            <input type="text" class="form-control" name="name" id="name" v-model="deviceTrigger.description"
+                placeholder="Name" onfocus="this.placeholder = ''" onblur="this.placeholder='Name'">
         </div>
+
+
+
 
         <div class="col-3">
             <select id="exposeSelector" style="text-align:center;" class="form-control" @change="exposeSelectionChanged"
@@ -127,7 +123,6 @@ function remove(event) {
             </select>
         </div>
         <br>
-        Device: {{ props.id }} - {{ selectedExpose }}
 
         <div>
             <div class="row w-50" v-if="selectedExpose != null">
@@ -149,9 +144,6 @@ function remove(event) {
                     </button>
                     <button type="button" class="btn btn-default" :disabled="conditions.length == 0" @click="addTrigger">
                         Add
-                    </button>
-                    <button type="button" class="btn btn-default" @click="cancel">
-                        Cancel
                     </button>
                 </div>
             </div>
