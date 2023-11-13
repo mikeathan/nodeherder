@@ -136,7 +136,8 @@ function remove(event) {
             </div>
             <div class="col-50">
                 <div class="btn-group">
-                    <button type="button" class="btn btn-default" :disabled="conditions.length == 0" @click="create">
+                    <button type="button" class="btn btn-default" :disabled="deviceTrigger.triggers.length == 0"
+                        @click="create">
                         Create
                     </button>
                     <button type="button" class="btn btn-default" :disabled="conditions.length == 0" @click="addTrigger">
