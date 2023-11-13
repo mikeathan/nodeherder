@@ -13,8 +13,7 @@ const props = defineProps({
 });
 
 const store = useStore();
-const deviceTrigger = ref(new DeviceTrigger(props.id))
-const deviceExposes = ref({})
+const deviceTrigger = ref(new DeviceTrigger())
 const conditions = ref([]);
 const selectedExpose = ref("")
 const exposeTriggers = ref({});
@@ -45,13 +44,10 @@ function exposeSelectionChanged(event) {
 
 watch(
     () => props.id,
-    (t) => {
-        console.log("id changed ", props.id)
+    (newId) => {
+        deviceTrigger.value = new DeviceTrigger()
+        deviceTrigger.value.id = newId
         selectedExpose.value = null
-        if (deviceExposes[props.id] == null) {
-            deviceExposes[props.id] =
-                console.log("new device trigger")
-        }
     },
     { immediate: true }
 );
@@ -70,10 +66,21 @@ function getExposes() {
     return Object.keys(device.value.exposes)
 }
 
-// export can gave export condition and another export condition
 function create() {
-    console.log(deviceTrigger.value)
-    emit("create", deviceTrigger.value)
+
+    // var t = new DeviceTrigger()
+    // t.friendly_name = device.value.friendly_name;
+    // t.description = "TODO";// TODO;
+    // for (var key in Object.keys(exposeTriggers)) {
+    //     var exposeTrigger = exposeTriggers[key]
+    //     console.log("adding ", key, ":", exposeTrigger)
+    //     t.triggers.push(exposeTrigger)
+    // }
+    // console.log("new device Trigger:", t)
+
+    // emit("create", deviceTrigger.value)
+
+    cancel();
 }
 
 function cancel() {
@@ -83,10 +90,24 @@ function cancel() {
 }
 
 function add(event) {
+    // TODO:
+    // to minizze the buttons eg get rid of add trigger button
+    // we can add the condition to conditions and add it to a dictionary with key of current expose
+    // only on final create we can construct the object
+
+    // TODO: !!!!!!11
+    // need to be able to exit from locked exposes options 
     conditions.value.push(event);
 
     var exposeTrigger = exposeTriggers[selectedExpose.value];
     exposeTrigger.conditions.push(event)
+
+
+
+    console.log("DEBUG  pre ", exposeTriggers)
+    for (var key in Object.keys(exposeTriggers)) {
+        console.log("DEBUG  ", key, ":", exposeTriggers[key])
+    }
 }
 
 function remove(event) {
@@ -136,12 +157,15 @@ function remove(event) {
             </div>
             <div class="col-50">
                 <div class="btn-group">
-                    <button type="button" class="btn btn-default" :disabled="deviceTrigger.triggers.length == 0"
-                        @click="create">
-                        Create
-                    </button>
-                    <button type="button" class="btn btn-default" :disabled="conditions.length == 0" @click="addTrigger">
+
+                    <!-- <button type="button" class="btn btn-default" :disabled="conditions.length == 0" @click="addTrigger">
                         Add
+                    </button> -->
+
+                    <button type="button" class="btn btn-default"
+                        :disabled="deviceTrigger.triggers.length == 0 && deviceTrigger.description.length == 0"
+                        @click="create">
+                        Done
                     </button>
                 </div>
             </div>

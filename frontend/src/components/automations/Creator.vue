@@ -37,6 +37,7 @@ function cancel() {
 }
 
 function create(event) {
+    console.log("create ", event);
     deviceTriggers.value.push(event)
 }
 
@@ -62,7 +63,7 @@ function create(event) {
 
                 </div>
 
-                DEBUG ----------------------<br>
+                CREATOR DEBUG ----------------------<br>
                 <div v-for="deviceTrigger in deviceTriggers">
                     <b>Device id:</b> {{ deviceTrigger.id }} <br>
                     <!-- <b>friendly_name:</b> {{ device.friendly_name }} <br> -->
@@ -77,6 +78,7 @@ function create(event) {
                             {{ condition.name }} {{ condition.operator }} {{ condition.data }}
                         </div>
                     </div>
+                    <hr>
                 </div>
             </div>
         </div>

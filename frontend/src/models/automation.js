@@ -6,8 +6,8 @@ export const Operators = [
   { text: "<", value: "<" },
 ];
 export class DeviceTrigger {
-  constructor(id) {
-    this.id = id;
+  constructor() {
+    this.id = "";
     this.friendly_name = "";
     this.description = "";
     this.enabled = false;
