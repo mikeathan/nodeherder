@@ -31,7 +31,7 @@ const previousPage = computed(() => {
     return back;
 });
 
-const emit = defineEmits(['cancel'])
+const emit = defineEmits(['cancel', 'create'])
 
 function exposeSelectionChanged(event) {
 
@@ -71,9 +71,9 @@ function getExposes() {
 }
 
 // export can gave export condition and another export condition
-function save() {
-
-    emit("save", deviceTrigger)
+function create() {
+    console.log(deviceTrigger.value)
+    emit("create", deviceTrigger.value)
 }
 
 function cancel() {
@@ -110,9 +110,6 @@ function remove(event) {
                 placeholder="Name" onfocus="this.placeholder = ''" onblur="this.placeholder='Name'">
         </div>
 
-
-
-
         <div class="col-3">
             <select id="exposeSelector" style="text-align:center;" class="form-control" @change="exposeSelectionChanged"
                 v-model="selectedExpose" :disabled="selectedExpose != null">
@@ -139,28 +136,12 @@ function remove(event) {
             </div>
             <div class="col-50">
                 <div class="btn-group">
-                    <button type="button" class="btn btn-default" :disabled="conditions.length == 0">
+                    <button type="button" class="btn btn-default" :disabled="conditions.length == 0" @click="create">
                         Create
                     </button>
                     <button type="button" class="btn btn-default" :disabled="conditions.length == 0" @click="addTrigger">
                         Add
                     </button>
-                </div>
-            </div>
-
-
-            DEBUG ----------------------<br>
-            <b>Device id:</b> {{ deviceTrigger.id }} <br>
-            <b>friendly_name:</b> {{ device.friendly_name }} <br>
-            <b>decription:</b> {{ deviceTrigger.description }}<br>
-
-            <div v-for="trigger in deviceTrigger.triggers">
-
-                <b>Trigger id: </b>{{ trigger.name }} <br>
-                <b>Conditions:</b>
-
-                <div v-for="condition in trigger.conditions">
-                    {{ condition.name }} {{ condition.operator }} {{ condition.data }}
                 </div>
             </div>
         </div>
