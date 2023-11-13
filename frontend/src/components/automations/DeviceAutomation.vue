@@ -1,6 +1,6 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed, watch, ref, onBeforeMount, watchEffect } from "vue";
+import { computed, watch, ref, onBeforeMount, watchEffect, reactive } from "vue";
 import { useRouter } from "vue-router";
 
 import { ExposeTrigger, DeviceTrigger, Operators } from "../../models/automation"
@@ -68,9 +68,9 @@ function getExposes() {
 
 function create() {
 
-    // var t = new DeviceTrigger()
-    // t.friendly_name = device.value.friendly_name;
-    // t.description = "TODO";// TODO;
+    var t = new DeviceTrigger()
+    t.friendly_name = device.value.friendly_name;
+    t.description = "TODO";// TODO;
     // for (var key in Object.keys(exposeTriggers)) {
     //     var exposeTrigger = exposeTriggers[key]
     //     console.log("adding ", key, ":", exposeTrigger)
@@ -80,6 +80,11 @@ function create() {
 
     // emit("create", deviceTrigger.value)
 
+    for (const [key, item] of Object.entries(exposeTriggers)) {
+        console.log("key; ", key, "item ", item)
+        t.triggers.push(item)
+    }
+    console.log("new device Trigger:", t)
     cancel();
 }
 
@@ -101,13 +106,6 @@ function add(event) {
 
     var exposeTrigger = exposeTriggers[selectedExpose.value];
     exposeTrigger.conditions.push(event)
-
-
-
-    console.log("DEBUG  pre ", exposeTriggers)
-    for (var key in Object.keys(exposeTriggers)) {
-        console.log("DEBUG  ", key, ":", exposeTriggers[key])
-    }
 }
 
 function remove(event) {
