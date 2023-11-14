@@ -34,6 +34,8 @@ function onDeleteAutomationClick(id) {
                     <th scope="col">#</th>
                     <th scope="col">Name</th>
                     <th scope="col">Description</th>
+                    <th scope="col">Enabled</th>
+
                     <th scope="col"></th>
                 </tr>
             </thead>
@@ -48,7 +50,14 @@ function onDeleteAutomationClick(id) {
                     <td>
                         {{ automation.description }}
                     </td>
+                    <td>
+                        <div class=" form-check form-switch">
+                            <label class="form-check-label">Enable</label>
 
+                            <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault"
+                                v-model="automation.enabled"> <!-- save automation change -->
+                        </div>
+                    </td>
                     <td>
                         <span class="fa fa-trash-alt fa-lg" @click="onDeleteAutomationClick(automation.id)"></span>
                     </td>

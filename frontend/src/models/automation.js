@@ -35,10 +35,22 @@ export class DeviceTrigger {
   // }
 }
 
+export class ActionTrigger {
+  constructor() {
+    this.id = "";
+    this.friendlyName = "";
+    this.type = "";
+    this.property = "";
+    this.data = null;
+    this.delay = null;
+  }
+}
+
 export class ExposeTrigger {
   constructor(name) {
     this.name = name;
     this.conditions = [];
+    this.action = new ActionTrigger();
   }
 
   hasConditions() {
