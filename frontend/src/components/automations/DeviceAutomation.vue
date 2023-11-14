@@ -50,7 +50,7 @@ function getExposes() {
 function create() {
 
     var deviceTrigger = new DeviceTrigger()
-    deviceTrigger.friendly_name = device.value.friendly_name;
+    deviceTrigger.friendlyName = device.value.friendly_name;
     deviceTrigger.id = device.value.id
     deviceTrigger.enabled = enabled.value
     deviceTrigger.description = description.value
@@ -105,18 +105,39 @@ function removeCondition(event) {
 // design 
 //https://www.home-assistant.io/getting-started/automation/
 </script>
+<style scoped>
+.inputName {
+    border: 0;
+    outline: 0;
+    background: transparent;
+    border-bottom: 1px solid #e5e5e5;
+    border-radius: 0
+}
+
+.custom-control-input {
+    transform: scale(1.4);
+}
+</style>
 <template>
     <div class="container-fluid p-0 h-100" v-if="device != null"> <!-- to fix condition-->
 
-        <div class="col-3">
+        <!-- <div class="col-3">
             <input type="text" class="form-control" name="name" id="name" v-model="description" placeholder="Enter a name"
                 onfocus="this.placeholder = ''" onblur="this.placeholder='Enter a name'">
+        </div> -->
+        <div class="col-3 pt-3 pb-4">
+            <label class="form-check-label" for="name">Name</label>
+
+            <input type="text" class="form-control inputName" name="name" id="name" v-model="description"
+                placeholder="New automation" onfocus="this.placeholder = ''" onblur="this.placeholder='New Automation 1'">
         </div>
 
-        <div class="col-3">
-            <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault" v-model="enabled">
-                <label class="form-check-label" for="flexSwitchCheckDefault">Enable</label>
+        <div class="col-3 pb-3">
+            <div class=" form-check form-switch ms-2">
+                <label class="form-check-label ms-3">Enable</label>
+
+                <input class="form-check-input custom-control-input" type="checkbox" role="switch"
+                    id="flexSwitchCheckDefault" v-model="enabled">
             </div>
         </div>
         <div class="col-50 mt-3">
@@ -138,7 +159,7 @@ function removeCondition(event) {
         <h5>Triggers</h5>
 
         <div class="col-3 mb-3">
-            <select id="exposeSelector" style="text-align:center;" class="form-control" @change="exposeSelectionChanged"
+            <select id="exposeSelector" style="text-align:center;" class="form-control " @change="exposeSelectionChanged"
                 v-model="selectedExpose">
                 <option :value="null">Select trigger</option>
                 <option v-for="expose in device.exposes" :value="expose.name" :key="expose.name">

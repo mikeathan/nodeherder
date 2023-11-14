@@ -9,14 +9,14 @@ export const Operators = [
 export class DeviceTrigger {
   constructor() {
     this.id = "";
-    this.friendly_name = "";
+    this.friendlyName = "";
     this.description = "";
     this.enabled = false;
     this.triggers = [];
   }
 
   toJson() {
-    return JSON.stringify(this, converter)
+    return JSON.stringify(this, converter);
   }
 
   // getProperties(exposeName) {

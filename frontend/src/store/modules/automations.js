@@ -32,6 +32,10 @@ const getters = {
 };
 
 const mutations = {
+  add(state, automation) {
+    console.log("automations/add");
+    state.items[automation.id] = automation;
+  },
   update(state, automation) {
     console.log("automations/update");
     state.items[automation.id] = automation;
