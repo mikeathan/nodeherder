@@ -1,10 +1,8 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed, watch, ref, onBeforeMount, watchEffect, reactive } from "vue";
-import { useRouter } from "vue-router";
+import { computed, watch, ref } from "vue";
 
 import { ExposeTrigger, DeviceTrigger, Operators } from "../../models/automation"
-import Conditions from "./Conditions"
 import TriggerCondition from "./TriggerCondition"
 
 const props = defineProps({
@@ -16,19 +14,10 @@ const store = useStore();
 const conditions = ref([]);
 const selectedExpose = ref("")
 let exposeTriggers = {};
-
+const enabled = ref(false)
 const description = ref("")
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
-});
-
-const previousPage = computed(() => {
-    var back = useRouter().options.history.state.back;
-    if (back == undefined) {
-        cancel();
-        back = useRouter().push("/");
-    }
-    return back;
 });
 
 const emit = defineEmits(['cancel', 'create'])
@@ -51,7 +40,7 @@ watch(
     { immediate: true }
 );
 
-function IsSaveEnabled() {
+function isSaveEnabled() {
     return Object.keys(exposeTriggers).length > 0 && description.value.length > 0
 }
 function getExposes() {
@@ -63,24 +52,27 @@ function create() {
     var deviceTrigger = new DeviceTrigger()
     deviceTrigger.friendly_name = device.value.friendly_name;
     deviceTrigger.id = device.value.id
+    deviceTrigger.enabled = enabled.value
     deviceTrigger.description = description.value
 
     for (const [key, item] of Object.entries(exposeTriggers)) {
         deviceTrigger.triggers.push(item)
     }
-    cancel();
 
+    reset();
     emit("create", deviceTrigger)
 }
 
-function cancel() {
+function reset() {
 
     conditions.value = []
     exposeTriggers = {}
+    description.value = ""
+    enabled.value = false
     emit("cancel")
 }
 
-function add(event) {
+function addCondition(event) {
 
     conditions.value.push(event);
 
@@ -88,61 +80,86 @@ function add(event) {
     exposeTrigger.conditions.push(event)
 }
 
-function remove(event) {
-    var index = conditions.value.findIndex(item => item.id === event);
+function removeCondition(event) {
+    var index = conditions.value.findIndex(item => item.idx === event);
+
     if (index != -1) {
+
         conditions.value.splice(index, 1);
 
-        var exposeTrigger = exposeTriggers[selectedExpose.value];
-        exposeTrigger.conditions.splice(index, 1)
+        // remove from our device trigger cache
+        for (const [key, item] of Object.entries(exposeTriggers)) {
+            var index = item.conditions.findIndex(item => item.idx === event);
+            if (index == -1) {
+                continue
+            }
+
+            item.conditions.splice(index, 1);
+            if (item.conditions.length == 0) {
+                // delete the trigger
+                delete exposeTriggers[key]
+            }
+        }
     }
 }
-
+// design 
+//https://www.home-assistant.io/getting-started/automation/
 </script>
 <template>
     <div class="container-fluid p-0 h-100" v-if="device != null"> <!-- to fix condition-->
 
-        <div class="align-self-center me-3">
-            <RouterLink :to="`${previousPage}`">
-                <i class="fa fa-arrow-left fa-xl" aria-hidden="true"></i>
-            </RouterLink>
-        </div>
         <div class="col-3">
-            <input type="text" class="form-control" name="name" id="name" v-model="description" placeholder="Name"
-                onfocus="this.placeholder = ''" onblur="this.placeholder='Name'">
+            <input type="text" class="form-control" name="name" id="name" v-model="description" placeholder="Enter a name"
+                onfocus="this.placeholder = ''" onblur="this.placeholder='Enter a name'">
         </div>
 
         <div class="col-3">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault" v-model="enabled">
+                <label class="form-check-label" for="flexSwitchCheckDefault">Enable</label>
+            </div>
+        </div>
+        <div class="col-50 mt-3">
+            <div class="btn-group">
+                <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false" @click="create">
+                    Save
+                </button>
+
+                <button type="button" class="btn btn-light" @click="reset">
+                    Cancel
+                </button>
+            </div>
+        </div>
+        <!-- TODO: accordion here for exposes -->
+        <!-- conditon value needs to be store as the expected type -->
+
+        <br>
+        <h5>Triggers</h5>
+
+        <div class="col-3 mb-3">
             <select id="exposeSelector" style="text-align:center;" class="form-control" @change="exposeSelectionChanged"
                 v-model="selectedExpose">
-                <option :value="null">Select expose</option>
+                <option :value="null">Select trigger</option>
                 <option v-for="expose in device.exposes" :value="expose.name" :key="expose.name">
                     {{ expose.name }}
                 </option>
             </select>
         </div>
-        <br>
 
         <div>
             <div class="row w-50" v-if="selectedExpose != null">
                 <TriggerCondition :id="0" :exposes="getExposes()" :name="selectedExpose" :operator="Operators[0].value"
-                    :data="''" @add="add($event)">
+                    :data="''" @add="addCondition($event)">
                 </TriggerCondition>
             </div>
 
             <div v-for="condition in conditions">
                 <div class="row w-50">
-                    <TriggerCondition :id="condition.id" :name="condition.name" :operator="condition.operator"
-                        :key="condition.id" :data="condition.data" @remove="remove($event)"></TriggerCondition>
+                    <TriggerCondition :id="condition.idx" :name="condition.name" :operator="condition.equality"
+                        :key="condition.idx" :data="condition.value" @remove="removeCondition($event)"></TriggerCondition>
                 </div>
             </div>
-            <div class="col-50">
-                <div class="btn-group">
-                    <button type="button" class="btn btn-default" :disabled="IsSaveEnabled() == false" @click="create">
-                        Save
-                    </button>
-                </div>
-            </div>
+
         </div>
     </div>
 </template>

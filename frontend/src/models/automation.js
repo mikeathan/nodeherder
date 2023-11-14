@@ -5,6 +5,7 @@ export const Operators = [
   { text: ">", value: ">" },
   { text: "<", value: "<" },
 ];
+
 export class DeviceTrigger {
   constructor() {
     this.id = "";
@@ -12,6 +13,10 @@ export class DeviceTrigger {
     this.description = "";
     this.enabled = false;
     this.triggers = [];
+  }
+
+  toJson() {
+    return JSON.stringify(this, converter)
   }
 
   // getProperties(exposeName) {
@@ -59,10 +64,15 @@ export class ExposeTrigger {
 }
 
 export class Condition {
-  constructor(name, operator, data) {
+  constructor(name, equality, value) {
     this.name = name;
-    this.operator = operator;
-    this.data = data;
-    this.id = 0;
+    this.equality = equality;
+    this.value = value;
+    this.idx = 0;
   }
+}
+
+function converter(key, value) {
+  if (key == "idx") return undefined;
+  else return value;
 }

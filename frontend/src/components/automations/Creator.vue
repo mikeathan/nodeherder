@@ -3,8 +3,6 @@ import { useStore } from "vuex";
 import { computed, ref } from "vue";
 import DeviceAutomation from "./DeviceAutomation"
 
-import { DeviceTrigger } from "../../models/automation"
-
 const deviceTriggers = ref([])
 
 const store = useStore();
@@ -14,23 +12,6 @@ const devices = computed(() => {
     var devices = store.getters["devices/items"];
     return devices;
 })
-function deviceSelectionChanged(event) {
-
-    var value = event.target.value;
-
-    if (value == "") {
-        selectedDevice.value = null; // maybe refactor ????
-        return;
-    }
-
-    selectedDevice.value = value
-    if (deviceTriggers.value[value] != null) {
-        console.log(value, " already init");
-        return;
-    }
-
-    console.log("device selected: ", value, "-", selectedDevice.value);
-}
 
 function cancel() {
     selectedDevice.value = ""
@@ -38,6 +19,9 @@ function cancel() {
 
 function create(event) {
     console.log("create ", event);
+
+    var json = event.toJson()
+    console.log(json);
     deviceTriggers.value.push(event)
 }
 
@@ -60,7 +44,6 @@ function create(event) {
                 </div>
                 <div>
                     <DeviceAutomation :id="selectedDevice" @cancel="cancel" @create="create"></DeviceAutomation>
-
                 </div>
 
                 CREATOR DEBUG ----------------------<br>
@@ -68,14 +51,14 @@ function create(event) {
                     <b>Device id:</b> {{ deviceTrigger.id }} <br>
                     <!-- <b>friendly_name:</b> {{ device.friendly_name }} <br> -->
                     <b>decription:</b> {{ deviceTrigger.description }}<br>
-
+                    <b>enabled:</b> {{ deviceTrigger.enabled }}<br>
                     <div v-for="trigger in deviceTrigger.triggers">
 
                         <b>Trigger id: </b>{{ trigger.name }} <br>
                         <b>Conditions:</b>
 
                         <div v-for="condition in trigger.conditions">
-                            {{ condition.name }} {{ condition.operator }} {{ condition.data }}
+                            {{ condition.name }} {{ condition.equality }} {{ condition.value }}
                         </div>
                     </div>
                     <hr>

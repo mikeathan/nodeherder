@@ -27,7 +27,7 @@ const emit = defineEmits(['add', 'remove'])
 function add() {
     var c = new Condition(name.value, operator.value, data.value)
     var cid = ++id.value;
-    c.id = cid
+    c.idx = cid
 
     emit("add", c)
 
@@ -37,6 +37,8 @@ function add() {
 function remove() {
     emit("remove", props.id)
 }
+
+watchEffect(() => name.value = props.name);
 
 watchEffect(() => data.value = props.data);
 watchEffect(() => operator.value = props.operator);
