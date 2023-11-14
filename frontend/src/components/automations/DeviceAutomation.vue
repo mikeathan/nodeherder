@@ -87,6 +87,9 @@ function remove(event) {
     var index = conditions.value.findIndex(item => item.id === event);
     if (index != -1) {
         conditions.value.splice(index, 1);
+
+        var exposeTrigger = exposeTriggers[selectedExpose.value];
+        exposeTrigger.conditions.splice(index, 1)
     }
 }
 
