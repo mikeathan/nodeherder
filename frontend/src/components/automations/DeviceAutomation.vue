@@ -15,7 +15,7 @@ const props = defineProps({
 const store = useStore();
 const conditions = ref([]);
 const selectedExpose = ref("")
-const exposeTriggers = {};
+let exposeTriggers = {};
 
 const description = ref("")
 const device = computed(() => {
@@ -51,6 +51,9 @@ watch(
     { immediate: true }
 );
 
+function IsSaveEnabled() {
+    return Object.keys(exposeTriggers).length > 0 && description.value.length > 0
+}
 function getExposes() {
     return Object.keys(device.value.exposes)
 }
@@ -65,13 +68,15 @@ function create() {
     for (const [key, item] of Object.entries(exposeTriggers)) {
         deviceTrigger.triggers.push(item)
     }
-    console.log("new device Trigger:", deviceTrigger)
     cancel();
+
+    emit("create", deviceTrigger)
 }
 
 function cancel() {
 
     conditions.value = []
+    exposeTriggers = {}
     emit("cancel")
 }
 
@@ -133,8 +138,7 @@ function remove(event) {
             </div>
             <div class="col-50">
                 <div class="btn-group">
-                    <button type="button" class="btn btn-default"
-                        :disabled="exposeTriggers.length == 0 && description.length == 0" @click="create">
+                    <button type="button" class="btn btn-default" :disabled="IsSaveEnabled() == false" @click="create">
                         Save
                     </button>
                 </div>
