@@ -132,7 +132,8 @@ function removeCondition(event) {
         </div>
         <!-- TODO: accordion here for exposes -->
         <!-- conditon value needs to be store as the expected type -->
-
+        <!-- Save button shouls navigate to automation viewer -->
+        <!-- check url design above for styling of creator text input -->
         <br>
         <h5>Triggers</h5>
 
