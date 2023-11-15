@@ -4,6 +4,7 @@ import { computed, watch, ref } from "vue";
 
 import { ExposeTrigger, DeviceTrigger, Operators } from "../../models/automation"
 import TriggerCondition from "./TriggerCondition"
+import TriggerActionNew from "./TriggerActionNew.vue";
 
 const props = defineProps({
     id: String,
@@ -13,11 +14,32 @@ const props = defineProps({
 const store = useStore();
 const conditions = ref([]);
 const selectedExpose = ref("")
+const selectedAction = ref(null)
+
 let exposeTriggers = {};
 const enabled = ref(false)
 const description = ref("")
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
+});
+
+const featureDevices = computed(() => {
+    var devices = store.getters["devices/items"];
+    // find exposes with properties
+    // let all = items.filter(item=> item.age==='18')
+    //     return devices;
+    // });
+    var list = []
+    for (const [key, device] of Object.entries(devices)) {
+        for (const [key, expose] of Object.entries(device.exposes)) {
+            if (expose.properties != undefined) {
+                list.push(device)
+            }
+        }
+    }
+
+    return list;
+
 });
 
 const emit = defineEmits(['cancel', 'create'])
@@ -36,6 +58,7 @@ watch(
     () => props.id,
     (newId) => {
         selectedExpose.value = null
+        selectedAction.value = null
     },
     { immediate: true }
 );
@@ -155,6 +178,8 @@ function removeCondition(event) {
         <!-- conditon value needs to be store as the expected type -->
         <!-- Save button shouls navigate to automation viewer -->
         <!-- check url design above for styling of creator text input -->
+        <!-- if automation for device exists message user else we overwrite it -->
+
         <br>
         <h5>Triggers</h5>
 
@@ -183,5 +208,33 @@ function removeCondition(event) {
             </div>
 
         </div>
+
+        <br>
+        <label>Actions</label>
+
+        <div class="col-3 mb-3">
+            <select id="featureDeviceSelector" style="text-align:center;" class="form-control" v-model="selectedAction">
+                <option :value="null">Select Action</option>
+                <option v-for="device in featureDevices" :value="device.id" :key="device.friendly_name">
+                    {{ device.friendly_name }}
+                </option>
+            </select>
+        </div>
+
+        <div class="row w-50" v-if="selectedAction != null">
+            <TriggerActionNew :id="selectedAction"></TriggerActionNew>
+        </div>
+        <!-- 
+            need to find a way to list the exposes of a device that have properties only!!!!!!!
+
+
+            List of devices with features only
+
+                Device - that has features
+                Value - needs validation
+                Delay - optional
+        
+        -->
+
     </div>
 </template>

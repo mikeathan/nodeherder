@@ -48,10 +48,10 @@ function create(event) {
                     <DeviceAutomation :id="selectedDevice" @cancel="cancel" @create="create"></DeviceAutomation>
                 </div>
 
-                CREATOR DEBUG ----------------------<br>
+                <!-- CREATOR DEBUG ----------------------<br>
                 <div v-for="deviceTrigger in deviceTriggers">
                     <b>Device id:</b> {{ deviceTrigger.id }} <br>
-                    <!-- <b>friendly_name:</b> {{ device.friendly_name }} <br> -->
+                    <b>friendly_name:</b> {{ device.friendly_name }} <br>
                     <b>decription:</b> {{ deviceTrigger.description }}<br>
                     <b>enabled:</b> {{ deviceTrigger.enabled }}<br>
                     <div v-for="trigger in deviceTrigger.triggers">
@@ -64,7 +64,7 @@ function create(event) {
                         </div>
                     </div>
                     <hr>
-                </div>
+                </div> -->
             </div>
         </div>
     </div>
