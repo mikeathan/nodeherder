@@ -210,19 +210,20 @@ function removeCondition(event) {
         </div>
 
         <br>
-        <label>Actions</label>
+        <h5>Actions</h5>
 
         <div class="col-3 mb-3">
             <select id="featureDeviceSelector" style="text-align:center;" class="form-control" v-model="selectedAction">
-                <option :value="null">Select Action</option>
+                <option :value="null">Select device</option>
                 <option v-for="device in featureDevices" :value="device.id" :key="device.friendly_name">
                     {{ device.friendly_name }}
                 </option>
             </select>
         </div>
-
-        <div class="row w-50" v-if="selectedAction != null">
-            <TriggerActionNew :id="selectedAction"></TriggerActionNew>
+        <div>
+            <div class="row w-50" v-if="selectedAction != null">
+                <TriggerActionNew :id="selectedAction" :action="null"></TriggerActionNew>
+            </div>
         </div>
         <!-- 
             need to find a way to list the exposes of a device that have properties only!!!!!!!
