@@ -36,37 +36,30 @@ const features = computed(() => {
         property.value = list[0].name
     }
     return list;
-
 });
 
 const feature = computed(() => {
 
-    if (props.property == null) {
+    if (property.value == null) {
         return []
     }
 
     var device = store.getters["devices/find"](props.id);
-    if (device == undefined) {
-        console.log("ERROR: device undefined")
-        return []
-    }
-
-
-    if (device.exposes[props.property] == undefined) {
+    if (device.exposes[property.value] == undefined) {
         console.log("ERROR: property undefined")
 
         return []
     }
 
-    console.log("DEBUG", props.property)
-    console.log("DEBUG", device.exposes[props.property])
-    return device.exposes[props.property];
+    console.log("DEBUG", property.value)
+    console.log("DEBUG", device.exposes[property.value])
+    return device.exposes[property.value];
 });
 
 function getActionBinaryValue(properties) {
-    if (properties.on == props.trigger.action.data) {
-        return true
-    }
+    // if (properties.on == props.trigger.action.data) {
+    //     return true
+    // }
 
     return false
 }
@@ -106,10 +99,24 @@ function remove() {
         </select>
     </div>
 
-    <div class="col">
+
+    <div class="col" v-if="feature.type == 'binary'">
+        <select id="propertySelect" style="text-align:center;" class="form-control" @change="onActionChanged($event)">
+
+            <option v-for="(value, key) in feature.properties" :value="value" :key="key">
+                {{ value }}
+            </option>
+        </select>
+
+    </div>
+    <div class="col" v-else>
         <input type="text" style="text-align:center;" class="form-control" placeholder="Value"
             onfocus="this.placeholder = ''" onblur="this.placeholder='Value'" v-model="data" />
     </div>
+
+
+
+
     <div class="col">
         <input type="text" style="text-align:center;" class="form-control" placeholder="Delay (optional)"
             onfocus="this.placeholder = ''" onblur="this.placeholder='Delay (optional)'" v-model="delay" />
