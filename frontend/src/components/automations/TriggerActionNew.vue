@@ -2,6 +2,8 @@
 import { useStore } from "vuex";
 import { computed, ref } from "vue";
 
+import { ActionTrigger } from "../../models/automation"
+
 const props = defineProps({
     id: {
         type: String,
@@ -18,6 +20,8 @@ const data = ref(null);
 const delay = ref(null);
 
 const store = useStore();
+const emit = defineEmits(['add', 'remove'])
+
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
 });
@@ -25,7 +29,6 @@ const device = computed(() => {
 const features = computed(() => {
 
     var device = store.getters["devices/find"](props.id);
-
     var list = []
     for (const [key, expose] of Object.entries(device.exposes)) {
         if (expose.properties != undefined) {
@@ -33,13 +36,25 @@ const features = computed(() => {
         }
     }
     if (list.length > 0) {
+
+        // set default property 
         property.value = list[0].name
+
+        // TODO:
+        // set default value if type is binary - NEEDS REFACTORING
+        for (const [key, expose] of Object.entries(device.exposes)) {
+            if (expose.name == property.value && expose.type == "binary") {
+                var keys = Object.keys(expose.properties)
+                data.value = expose.properties[keys[0]]
+                break
+            }
+        }
     }
+
     return list;
 });
 
 const feature = computed(() => {
-
     if (property.value == null) {
         return []
     }
@@ -51,34 +66,19 @@ const feature = computed(() => {
         return []
     }
 
-    console.log("DEBUG", property.value)
-    console.log("DEBUG", device.exposes[property.value])
     return device.exposes[property.value];
 });
 
-function getActionBinaryValue(properties) {
-    // if (properties.on == props.trigger.action.data) {
-    //     return true
-    // }
-
-    return false
-}
-
-function onActionChanged(event) {
-
-    // use v-model ideally to set value
-    // props.trigger.action.data = event.target.value
-}
-
-function onActionStateChanged(event, properties) {
-    // if (event.target.checked) {
-    //     props.trigger.action.data = properties.on
-    // } else {
-    //     props.trigger.action.data = properties.off
-    // }
-}
 function add() {
-
+    var newAction = new ActionTrigger()
+    newAction.delay = delay.value
+    newAction.data = data.value
+    newAction.friendlyName = device.friendly_name
+    newAction.id = device.id
+    newAction.property = property.value
+    newAction.type = feature.type
+    console.log("add ", newAction)
+    emit("add", newAction)
 }
 
 function remove() {
@@ -101,7 +101,7 @@ function remove() {
 
 
     <div class="col" v-if="feature.type == 'binary'">
-        <select id="propertySelect" style="text-align:center;" class="form-control" @change="onActionChanged($event)">
+        <select id="propertySelect" style="text-align:center;" class="form-control" v-model="data">
 
             <option v-for="(value, key) in feature.properties" :value="value" :key="key">
                 {{ value }}
