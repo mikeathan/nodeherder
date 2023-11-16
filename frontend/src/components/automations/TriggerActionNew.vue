@@ -35,24 +35,30 @@ const features = computed(() => {
             list.push(expose)
         }
     }
-    if (list.length > 0) {
-
-        // set default property 
-        // property.value = list[0].name
-
-        // // TODO:
-        // // set default value if type is binary - NEEDS REFACTORING
-        // for (const [key, expose] of Object.entries(device.exposes)) {
-        //     if (expose.name == property.value && expose.type == "binary") {
-        //         var keys = Object.keys(expose.properties)
-        //         data.value = expose.properties[keys[0]]
-        //         break
-        //     }
-        // }
-    }
 
     return list;
 });
+function dataAcceptNumber(event) {
+    data.value = data.value.replace(/[^0-9.]/g, '');
+}
+function delayAcceptNumber(event) {
+    delay.value = delay.value.replace(/[^0-9.]/g, '');
+}
+function propertySelectionChanged(event) {
+    var value = event.target.value;
+    if (value == null) {
+        return;
+    }
+    // TODO:
+    // set default value if type is binary - NEEDS REFACTORING
+    for (const [key, expose] of Object.entries(device.value.exposes)) {
+        if (expose.name != value) {
+            continue;
+        }
+        var keys = Object.keys(expose.properties)
+        data.value = expose.properties[keys[0]]
+    }
+}
 
 const feature = computed(() => {
     if (property.value == null) {
@@ -92,13 +98,14 @@ function remove() {
             disabled />
     </div>
     <div class="col">
-        <select id="featurePropertySelector" style="text-align:center;" class="form-control" v-model="property">
+        <select id="featurePropertySelector" style="text-align:center;" class="form-control" v-model="property"
+            @change="propertySelectionChanged">
+            <option :value="null">Select property</option>
             <option v-for="feature in features" :value="feature.name" :key="feature.name">
                 {{ feature.name }}
             </option>
         </select>
     </div>
-
 
     <div class="col" v-if="feature.type == 'binary'">
         <select id="propertySelect" style="text-align:center;" class="form-control" v-model="data">
@@ -111,15 +118,12 @@ function remove() {
     </div>
     <div class="col" v-else>
         <input type="text" style="text-align:center;" class="form-control" placeholder="Value"
-            onfocus="this.placeholder = ''" onblur="this.placeholder='Value'" v-model="data" />
+            onfocus="this.placeholder = ''" onblur="this.placeholder='Value'" v-model="data" @input="dataAcceptNumber" />
     </div>
-
-
-
-
     <div class="col">
         <input type="text" style="text-align:center;" class="form-control" placeholder="Delay (optional)"
-            onfocus="this.placeholder = ''" onblur="this.placeholder='Delay (optional)'" v-model="delay" />
+            onfocus="this.placeholder = ''" onblur="this.placeholder='Delay (optional)'" v-model="delay"
+            @input="delayAcceptNumber" />
     </div>
 
     <div class="col-3">

@@ -34,6 +34,7 @@ const featureDevices = computed(() => {
         for (const [key, expose] of Object.entries(device.exposes)) {
             if (expose.properties != undefined) {
                 list.push(device)
+                break;
             }
         }
     }
