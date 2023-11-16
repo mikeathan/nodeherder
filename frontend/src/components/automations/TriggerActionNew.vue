@@ -31,24 +31,24 @@ const features = computed(() => {
     var device = store.getters["devices/find"](props.id);
     var list = []
     for (const [key, expose] of Object.entries(device.exposes)) {
-        if (expose.properties != undefined) {
+        if (expose.properties != undefined || expose.attributes != undefined) { // if we have attributes then we are a feature
             list.push(expose)
         }
     }
     if (list.length > 0) {
 
         // set default property 
-        property.value = list[0].name
+        // property.value = list[0].name
 
-        // TODO:
-        // set default value if type is binary - NEEDS REFACTORING
-        for (const [key, expose] of Object.entries(device.exposes)) {
-            if (expose.name == property.value && expose.type == "binary") {
-                var keys = Object.keys(expose.properties)
-                data.value = expose.properties[keys[0]]
-                break
-            }
-        }
+        // // TODO:
+        // // set default value if type is binary - NEEDS REFACTORING
+        // for (const [key, expose] of Object.entries(device.exposes)) {
+        //     if (expose.name == property.value && expose.type == "binary") {
+        //         var keys = Object.keys(expose.properties)
+        //         data.value = expose.properties[keys[0]]
+        //         break
+        //     }
+        // }
     }
 
     return list;
