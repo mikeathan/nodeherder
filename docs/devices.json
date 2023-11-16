@@ -64,6 +64,9 @@
           "description": "Brightness of this light",
           "data": null,
           "type": "numeric",
+          "properties": {
+            "value": 0
+          },
           "attributes": {
             "max": 254,
             "min": 0
@@ -75,6 +78,9 @@
           "unit": "mired",
           "data": null,
           "type": "numeric",
+          "properties": {
+            "value": 0
+          },
           "attributes": {
             "max": 500,
             "min": 150

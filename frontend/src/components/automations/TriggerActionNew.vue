@@ -31,7 +31,7 @@ const features = computed(() => {
     var device = store.getters["devices/find"](props.id);
     var list = []
     for (const [key, expose] of Object.entries(device.exposes)) {
-        if (expose.properties != undefined || expose.attributes != undefined) { // if we have attributes then we are a feature
+        if (expose.properties != undefined) {
             list.push(expose)
         }
     }
