@@ -38,9 +38,12 @@ const features = computed(() => {
 
     return list;
 });
+
+// needs refactoring
 function dataAcceptNumber(event) {
     data.value = data.value.replace(/[^0-9.]/g, '');
 }
+// needs refactoring
 function delayAcceptNumber(event) {
     delay.value = delay.value.replace(/[^0-9.]/g, '');
 }
@@ -82,8 +85,8 @@ function add() {
     newAction.friendlyName = device.friendly_name
     newAction.id = device.id
     newAction.property = property.value
-    newAction.type = feature.type
-    console.log("add ", newAction)
+    newAction.type = device.exposes[property.value].type
+
     emit("add", newAction)
 }
 
@@ -109,7 +112,6 @@ function remove() {
 
     <div class="col" v-if="feature.type == 'binary'">
         <select id="propertySelect" style="text-align:center;" class="form-control" v-model="data">
-
             <option v-for="(value, key) in feature.properties" :value="value" :key="key">
                 {{ value }}
             </option>
@@ -118,12 +120,13 @@ function remove() {
     </div>
     <div class="col" v-else>
         <input type="text" style="text-align:center;" class="form-control" placeholder="Value"
-            onfocus="this.placeholder = ''" onblur="this.placeholder='Value'" v-model="data" @input="dataAcceptNumber" />
+            onfocus="this.placeholder = ''" onblur="this.placeholder='Value'" v-model="data" @input="dataAcceptNumber"
+            :disabled="property == null" />
     </div>
     <div class="col">
         <input type="text" style="text-align:center;" class="form-control" placeholder="Delay (optional)"
             onfocus="this.placeholder = ''" onblur="this.placeholder='Delay (optional)'" v-model="delay"
-            @input="delayAcceptNumber" />
+            :disabled="property == null" @input="delayAcceptNumber" />
     </div>
 
     <div class="col-3">

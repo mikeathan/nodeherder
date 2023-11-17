@@ -96,6 +96,14 @@ function reset() {
     emit("cancel")
 }
 
+function addAction(event) {
+    console.log("addAction ", event)
+}
+
+function removection(event) {
+    console.log("removection ", event)
+}
+
 function addCondition(event) {
 
     conditions.value.push(event);
@@ -223,7 +231,7 @@ function removeCondition(event) {
         </div>
         <div>
             <div class="row w-50" v-if="selectedAction != null">
-                <TriggerActionNew :id="selectedAction" :action="null"></TriggerActionNew>
+                <TriggerActionNew :id="selectedAction" :action="null" @remove="addAction"></TriggerActionNew>
             </div>
         </div>
         <!-- 
