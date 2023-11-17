@@ -2,13 +2,13 @@
 import { useStore } from "vuex";
 import { computed, watch, ref } from "vue";
 
-import { ExposeTrigger, DeviceTrigger, Operators } from "../../models/automation"
+import { ExposeTrigger, DeviceTrigger, Operators, ActionTrigger } from "../../models/automation"
 import TriggerCondition from "./TriggerCondition"
 import TriggerActionNew from "./TriggerActionNew.vue";
+import Trigger from "./Trigger"
 
 const props = defineProps({
     id: String,
-    trigger: Object
 });
 
 const store = useStore();
@@ -23,52 +23,11 @@ const device = computed(() => {
     return store.getters["devices/find"](props.id);
 });
 
-const featureDevices = computed(() => {
-    var devices = store.getters["devices/items"];
-    // find exposes with properties
-    // let all = items.filter(item=> item.age==='18')
-    //     return devices;
-    // });
-    var list = []
-    for (const [key, device] of Object.entries(devices)) {
-        for (const [key, expose] of Object.entries(device.exposes)) {
-            if (expose.properties != undefined) {
-                list.push(device)
-                break;
-            }
-        }
-    }
-
-    return list;
-
-});
 
 const emit = defineEmits(['cancel', 'create'])
 
-function exposeSelectionChanged(event) {
-
-    var value = event.target.value;
-    if (value == "" || exposeTriggers[value] != null) {
-        return;
-    }
-    var exposeTrigger = new ExposeTrigger(value);
-    exposeTriggers[value] = exposeTrigger;
-}
-
-watch(
-    () => props.id,
-    (newId) => {
-        selectedExpose.value = null
-        selectedAction.value = null
-    },
-    { immediate: true }
-);
-
 function isSaveEnabled() {
     return Object.keys(exposeTriggers).length > 0 && description.value.length > 0
-}
-function getExposes() {
-    return Object.keys(device.value.exposes)
 }
 
 function create() {
@@ -96,13 +55,6 @@ function reset() {
     emit("cancel")
 }
 
-function addAction(event) {
-    console.log("addAction ", event)
-}
-
-function removection(event) {
-    console.log("removection ", event)
-}
 
 function addCondition(event) {
 
@@ -134,7 +86,7 @@ function removeCondition(event) {
         }
     }
 }
-// design 
+// design
 //https://www.home-assistant.io/getting-started/automation/
 </script>
 <style scoped>
@@ -183,13 +135,9 @@ function removeCondition(event) {
                 </button>
             </div>
         </div>
-        <!-- TODO: accordion here for exposes -->
-        <!-- conditon value needs to be store as the expected type -->
-        <!-- Save button shouls navigate to automation viewer -->
-        <!-- check url design above for styling of creator text input -->
-        <!-- if automation for device exists message user else we overwrite it -->
 
-        <br>
+        <Trigger :id="props.id"></Trigger>
+        <!-- <br>
         <h5>Triggers</h5>
 
         <div class="col-3 mb-3">
@@ -220,7 +168,7 @@ function removeCondition(event) {
 
         <br>
         <h5>Actions</h5>
-
+        the action is linked to the selected trigger !!!!!
         <div class="col-3 mb-3">
             <select id="featureDeviceSelector" style="text-align:center;" class="form-control" v-model="selectedAction">
                 <option :value="null">Select device</option>
@@ -231,20 +179,14 @@ function removeCondition(event) {
         </div>
         <div>
             <div class="row w-50" v-if="selectedAction != null">
-                <TriggerActionNew :id="selectedAction" :action="null" @remove="addAction"></TriggerActionNew>
+                <TriggerActionNew :id="selectedAction" :action="null" @add="addAction"></TriggerActionNew>
             </div>
-        </div>
-        <!-- 
-            need to find a way to list the exposes of a device that have properties only!!!!!!!
 
-
-            List of devices with features only
-
-                Device - that has features
-                Value - needs validation
-                Delay - optional
-        
-        -->
+            <div class="row w-50" v-if="selectedExpose != null">
+                {{ exposeTriggers[selectedExpose] }}
+          
+            </div>
+        </div> -->
 
     </div>
 </template>

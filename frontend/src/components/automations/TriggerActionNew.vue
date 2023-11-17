@@ -29,6 +29,9 @@ const device = computed(() => {
 const features = computed(() => {
 
     var device = store.getters["devices/find"](props.id);
+    if (device == undefined) {
+        return []
+    }
     var list = []
     for (const [key, expose] of Object.entries(device.exposes)) {
         if (expose.properties != undefined) {
@@ -48,6 +51,7 @@ function delayAcceptNumber(event) {
     delay.value = delay.value.replace(/[^0-9.]/g, '');
 }
 function propertySelectionChanged(event) {
+    console.log("propertySelectionChanged ", event)
     var value = event.target.value;
     if (value == null) {
         return;
@@ -74,6 +78,7 @@ const feature = computed(() => {
 
         return []
     }
+    console.log("feature ", device)
 
     return device.exposes[property.value];
 });
@@ -82,11 +87,10 @@ function add() {
     var newAction = new ActionTrigger()
     newAction.delay = delay.value
     newAction.data = data.value
-    newAction.friendlyName = device.friendly_name
-    newAction.id = device.id
+    newAction.friendlyName = device.value.friendly_name
+    newAction.id = device.value.id
     newAction.property = property.value
-    newAction.type = device.exposes[property.value].type
-
+    newAction.type = device.value.exposes[property.value].type
     emit("add", newAction)
 }
 

@@ -50,7 +50,7 @@ export class ExposeTrigger {
   constructor(name) {
     this.name = name;
     this.conditions = [];
-    this.action = new ActionTrigger();
+    this.action = null;
   }
 
   hasConditions() {
