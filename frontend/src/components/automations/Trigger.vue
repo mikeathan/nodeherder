@@ -14,6 +14,7 @@ const store = useStore();
 const conditions = ref([]);
 const selectedExpose = ref("")
 const selectedAction = ref(null)
+const currentAction = ref(null)
 let exposeTriggers = {};
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
@@ -31,7 +32,7 @@ function exposeSelectionChanged(event) {
     }
     var exposeTrigger = new ExposeTrigger(value);
     exposeTriggers[value] = exposeTrigger;
-
+    currentAction.value = exposeTrigger.action
     console.log("exposeSelectionChanged", exposeTriggers[value]);
 }
 
@@ -69,7 +70,7 @@ function addAction(event) {
 
     var exposeTrigger = exposeTriggers[selectedExpose.value]
     exposeTrigger.action = event;
-
+    currentAction.value = event
     console.log("addAction :", exposeTrigger.action)
 }
 
@@ -104,6 +105,7 @@ function removection(event) {
         <div>
             ------ Accordion HERE --------------
             <h5>Conditions</h5>
+            dont delete
             <!-- <div class="row w-50" v-if="selectedExpose != null">
 
             <TriggerCondition :id="0" :exposes="getExposes()" :name="selectedExpose" :operator="Operators[0].value"
@@ -134,10 +136,10 @@ function removection(event) {
             <div class="row w-50" v-if="selectedAction != null">
                 <TriggerActionNew :id="selectedAction" :action="null" @add="addAction"></TriggerActionNew>
             </div>
-
-            <div class="row w-50" v-if="selectedExpose != null && exposeTriggers[selectedExpose] != NonNullable">
-                <TriggerActionNew :id="exposeTriggers[selectedExpose].id" :action="exposeTriggers[selectedExpose].action"
-                    @add="addAction"></TriggerActionNew>
+            we dont need two action trigger controls - use only one for +-
+            <div class="row w-50" v-if="selectedExpose != null && currentAction != null">
+                <TriggerActionNew :id="exposeTriggers[selectedExpose].id" :action="currentAction" @add="addAction">
+                </TriggerActionNew>
             </div>
         </div>
     </div>
