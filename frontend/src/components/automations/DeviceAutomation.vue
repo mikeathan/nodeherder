@@ -14,7 +14,6 @@ const props = defineProps({
 const store = useStore();
 const conditions = ref([]);
 const selectedExpose = ref("")
-const selectedAction = ref(null)
 
 let exposeTriggers = {};
 const enabled = ref(false)
@@ -22,6 +21,26 @@ const description = ref("")
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
 });
+
+
+function exposeSelectionChanged(event) {
+
+    var value = event.target.value;
+    if (value == "" || exposeTriggers[value] != null) {
+        return;
+    }
+    var exposeTrigger = new ExposeTrigger(value);
+    exposeTriggers[value] = exposeTrigger;
+    console.log("exposeSelectionChanged", exposeTriggers[value]);
+}
+
+watch(
+    () => props.id,
+    (newId) => {
+        selectedExpose.value = null
+    },
+    { immediate: true }
+);
 
 
 const emit = defineEmits(['cancel', 'create'])
@@ -136,8 +155,6 @@ function removeCondition(event) {
             </div>
         </div>
 
-        <Trigger :id="props.id"></Trigger>
-        <!-- <br>
         <h5>Triggers</h5>
 
         <div class="col-3 mb-3">
@@ -150,43 +167,9 @@ function removeCondition(event) {
             </select>
         </div>
 
-        <div>
-            <div class="row w-50" v-if="selectedExpose != null">
-                <TriggerCondition :id="0" :exposes="getExposes()" :name="selectedExpose" :operator="Operators[0].value"
-                    :data="''" @add="addCondition($event)">
-                </TriggerCondition>
-            </div>
-
-            <div v-for="condition in conditions">
-                <div class="row w-50">
-                    <TriggerCondition :id="condition.idx" :name="condition.name" :operator="condition.equality"
-                        :key="condition.idx" :data="condition.value" @remove="removeCondition($event)"></TriggerCondition>
-                </div>
-            </div>
-
+        <div v-if="selectedExpose != null">
+            <Trigger :id="props.id" :exposeName="selectedExpose"></Trigger>
         </div>
-
-        <br>
-        <h5>Actions</h5>
-        the action is linked to the selected trigger !!!!!
-        <div class="col-3 mb-3">
-            <select id="featureDeviceSelector" style="text-align:center;" class="form-control" v-model="selectedAction">
-                <option :value="null">Select device</option>
-                <option v-for="device in featureDevices" :value="device.id" :key="device.friendly_name">
-                    {{ device.friendly_name }}
-                </option>
-            </select>
-        </div>
-        <div>
-            <div class="row w-50" v-if="selectedAction != null">
-                <TriggerActionNew :id="selectedAction" :action="null" @add="addAction"></TriggerActionNew>
-            </div>
-
-            <div class="row w-50" v-if="selectedExpose != null">
-                {{ exposeTriggers[selectedExpose] }}
-          
-            </div>
-        </div> -->
 
     </div>
 </template>

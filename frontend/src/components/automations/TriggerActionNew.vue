@@ -9,15 +9,14 @@ const props = defineProps({
         type: String,
         required: true,
     },
-    action: {
-        type: Object,
-        default: null
-    },
+    property: String,
+    data: String,
+    delay: String,
 });
 
-const property = ref(null);
-const data = ref(null);
-const delay = ref(null);
+const property = ref(props.property);
+const data = ref(props.data);
+const delay = ref(props.delay);
 
 const store = useStore();
 const emit = defineEmits(['add', 'remove'])
@@ -53,9 +52,10 @@ function delayAcceptNumber(event) {
 function propertySelectionChanged(event) {
     console.log("propertySelectionChanged ", event)
     var value = event.target.value;
-    if (value == null) {
+    if (value == null || device.value == undefined) {
         return;
     }
+
     // TODO:
     // set default value if type is binary - NEEDS REFACTORING
     for (const [key, expose] of Object.entries(device.value.exposes)) {
@@ -94,19 +94,22 @@ function add() {
     emit("add", newAction)
 }
 
-function remove() {
+function remove(event) {
+
+    emit("add", props.id)
+
 }
 
 </script>
 <template>
-    <div class="col" v-if="props.action == null">
+    <div class="col" v-if="device != null">
         <input type="text" style="text-align:center;" class="form-control" placeholder="Friendly name"
             onfocus="this.placeholder = ''" onblur="this.placeholder='Friendly name'" v-model="device.friendly_name"
             disabled />
     </div>
     <div class="col">
         <select id="featurePropertySelector" style="text-align:center;" class="form-control" v-model="property"
-            @change="propertySelectionChanged">
+            @change="propertySelectionChanged" :disabled="props.property != null">
             <option :value="null">Select property</option>
             <option v-for="feature in features" :value="feature.name" :key="feature.name">
                 {{ feature.name }}
@@ -128,14 +131,14 @@ function remove() {
             :disabled="property == null" />
     </div>
     <div class="col">
-        <input type="text" style="text-align:center;" class="form-control" placeholder="Delay (optional)"
-            onfocus="this.placeholder = ''" onblur="this.placeholder='Delay (optional)'" v-model="delay"
+        <input type="text" style="text-align:center;" class="form-control" placeholder="Delay (ms)"
+            onfocus="this.placeholder = ''" onblur="this.placeholder='Delay (ms)'" v-model="delay"
             :disabled="property == null" @input="delayAcceptNumber" />
     </div>
 
     <div class="col-3">
         <div class="btn-group">
-            <div v-if="props.action == null">
+            <div v-if="props.property == null">
                 <button type="button" class="btn btn-default btn-number" @click="add($event)">
                     <span class="fa fa-plus"></span>
                 </button>

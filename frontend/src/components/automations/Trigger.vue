@@ -8,11 +8,11 @@ import TriggerActionNew from "./TriggerActionNew.vue";
 
 const props = defineProps({
     id: String,
+    exposeName: String
 });
 
 const store = useStore();
 const conditions = ref([]);
-const selectedExpose = ref("")
 const selectedAction = ref(null)
 const currentAction = ref(null)
 let exposeTriggers = {};
@@ -39,7 +39,6 @@ function exposeSelectionChanged(event) {
 watch(
     () => props.id,
     (newId) => {
-        selectedExpose.value = null
         selectedAction.value = null
     },
     { immediate: true }
@@ -68,14 +67,15 @@ const featureDevices = computed(() => {
 function addAction(event) {
     console.log("addAction ", event)
 
-    var exposeTrigger = exposeTriggers[selectedExpose.value]
+    var exposeTrigger = exposeTriggers[props.exposeName]
     exposeTrigger.action = event;
     currentAction.value = event
-    console.log("addAction :", exposeTrigger.action)
 }
 
-function removection(event) {
-    console.log("removection ", event)
+function removeAction(event) {
+    var exposeTrigger = exposeTriggers[props.exposeName]
+    exposeTrigger.action = null;
+    currentAction.value = null
 }
 
 //const emit = defineEmits(['cancel', 'create'])
@@ -90,17 +90,7 @@ function removection(event) {
         <!-- if automation for device exists message user else we overwrite it -->
 
         <br>
-        <h5>Triggers</h5>
 
-        <div class="col-3 mb-3">
-            <select id="exposeSelector" style="text-align:center;" class="form-control " @change="exposeSelectionChanged"
-                v-model="selectedExpose">
-                <option :value="null">Select trigger</option>
-                <option v-for="expose in device.exposes" :value="expose.name" :key="expose.name">
-                    {{ expose.name }}
-                </option>
-            </select>
-        </div>
 
         <div>
             ------ Accordion HERE --------------
@@ -125,7 +115,7 @@ function removection(event) {
         <h5>Actions</h5>
         <div class="col-3 mb-3">
             <select id="featureDeviceSelector" style="text-align:center;" class="form-control" v-model="selectedAction"
-                :disabled="selectedExpose == null">
+                :disabled="props.exposeName == null">
                 <option :value="null">Select device</option>
                 <option v-for="device in featureDevices" :value="device.id" :key="device.friendly_name">
                     {{ device.friendly_name }}
@@ -133,13 +123,17 @@ function removection(event) {
             </select>
         </div>
         <div>
-            <div class="row w-50" v-if="selectedAction != null">
-                <TriggerActionNew :id="selectedAction" :action="null" @add="addAction"></TriggerActionNew>
+            <div v-if="currentAction == null">
+                <div class="row w-50" v-if="selectedAction != null">
+                    <TriggerActionNew :id="selectedAction" @add="addAction"></TriggerActionNew>
+                </div>
             </div>
-            we dont need two action trigger controls - use only one for +-
-            <div class="row w-50" v-if="selectedExpose != null && currentAction != null">
-                <TriggerActionNew :id="exposeTriggers[selectedExpose].id" :action="currentAction" @add="addAction">
-                </TriggerActionNew>
+            <div v-else>
+                <div class="row w-50">
+                    <TriggerActionNew :id="currentAction.id" :property="currentAction.property" :data="currentAction.data"
+                        :delay="currentAction.delay" @add="removeAction">
+                    </TriggerActionNew>
+                </div>
             </div>
         </div>
     </div>
