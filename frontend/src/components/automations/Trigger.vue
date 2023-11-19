@@ -43,6 +43,7 @@ function featureSelectionChanged(event) {
     // currentAction.value = props.trigger.action
 }
 
+
 watch(
     () => props.trigger,
     (newTrigger) => {
@@ -50,12 +51,18 @@ watch(
         currentAction.value = props.trigger.action
         exposeName.value = props.trigger.name
 
+        not working here
+        console.log("trigger:", currentAction.value, newTrigger)
         //todo if we have action not null, select it but we dont have friendle name
 
-        /* if(currentAction.value!= null){
-            selectedAction.value = 
-        } */
+        if (currentAction.value != null) {
+            var device = store.getters["devices/find"](currentAction.value.id)
+            console.log("update:", currentAction.value.id, device.friendly_name)
 
+            if (device |= null) {
+                selectedAction.value = device.friendly_name
+            }
+        }
         console.log("trigger:", props.trigger, " : ", exposeName.value)
     }, { immediate: true }
 )
