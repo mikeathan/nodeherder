@@ -10,7 +10,7 @@ const props = defineProps({
         required: true,
     },
     property: String,
-    data: String,
+    data: Number,
     delay: String,
 });
 
@@ -74,11 +74,9 @@ const feature = computed(() => {
 
     var device = store.getters["devices/find"](props.id);
     if (device.exposes[property.value] == undefined) {
-        console.log("ERROR: property undefined")
 
         return []
     }
-    console.log("feature ", device)
 
     return device.exposes[property.value];
 });

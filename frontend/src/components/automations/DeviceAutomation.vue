@@ -1,6 +1,6 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed, watch, ref } from "vue";
+import { computed, watch, ref, watchEffect } from "vue";
 
 import { ExposeTrigger, DeviceTrigger, Operators, ActionTrigger } from "../../models/automation"
 import TriggerCondition from "./TriggerCondition"
@@ -14,8 +14,8 @@ const props = defineProps({
 const store = useStore();
 const conditions = ref([]);
 const selectedExpose = ref("")
-
-let exposeTriggers = {};
+const currentTrigger = ref(null)
+const exposeTriggers = ref({});
 const enabled = ref(false)
 const description = ref("")
 const device = computed(() => {
@@ -24,29 +24,53 @@ const device = computed(() => {
 
 
 function exposeSelectionChanged(event) {
-
     var value = event.target.value;
-    if (value == "" || exposeTriggers[value] != null) {
+    console.log("exposeSelectionChanged ", value)
+
+    if (exposeTriggers.value[value] != null) {
+        currentTrigger.value = exposeTriggers.value[value]
+
+        console.log("exposeSelectionChanged return");
+
         return;
     }
     var exposeTrigger = new ExposeTrigger(value);
-    exposeTriggers[value] = exposeTrigger;
-    console.log("exposeSelectionChanged", exposeTriggers[value]);
+    exposeTriggers.value[value] = exposeTrigger;
+    currentTrigger.value = exposeTriggers.value[value]
+    console.log("exposeSelectionChanged: ", exposeTriggers.value[value], value);
 }
 
 watch(
     () => props.id,
     (newId) => {
-        selectedExpose.value = null
+        selectedExpose.value = ""
+        var exposeTrigger = new ExposeTrigger(selectedExpose.value);
+        currentTrigger.value = exposeTrigger;
     },
     { immediate: true }
 );
 
+/* watch(
+    () => selectedExpose,
+    () => {
+        if (selectedExpose.value == "" || exposeTriggers.value[selectedExpose.value] != null) {
+
+            console.log("####WATCH exposeSelectionChanged return; ", currentTrigger.value);
+            return;
+        }
+
+        var exposeTrigger = new ExposeTrigger(selectedExpose.value);
+        currentTrigger.value = exposeTrigger;
+        exposeTriggers.value[value] = exposeTrigger;
+        console.log("####WATCH selectedexpose:", selectedExpose.value, " = ", currentTrigger.value);
+    },
+    { immediate: true }
+); */
 
 const emit = defineEmits(['cancel', 'create'])
 
 function isSaveEnabled() {
-    return Object.keys(exposeTriggers).length > 0 && description.value.length > 0
+    return Object.keys(exposeTriggers.value).length > 0 && description.value.length > 0
 }
 
 function create() {
@@ -57,7 +81,7 @@ function create() {
     deviceTrigger.enabled = enabled.value
     deviceTrigger.description = description.value
 
-    for (const [key, item] of Object.entries(exposeTriggers)) {
+    for (const [key, item] of Object.entries(exposeTriggers.value)) {
         deviceTrigger.triggers.push(item)
     }
 
@@ -65,15 +89,26 @@ function create() {
     emit("create", deviceTrigger)
 }
 
+
 function reset() {
 
     conditions.value = []
-    exposeTriggers = {}
+    exposeTriggers.value = {}
     description.value = ""
     enabled.value = false
     emit("cancel")
 }
 
+function addAction(event) {
+
+    var exposeTrigger = exposeTriggers.value[selectedExpose.value]
+    exposeTrigger.action = event;
+}
+
+function removeAction(event) {
+    var exposeTrigger = exposeTriggers.value[selectedExpose.value]
+    exposeTrigger.action = null;
+}
 
 function addCondition(event) {
 
@@ -108,6 +143,7 @@ function removeCondition(event) {
 // design
 //https://www.home-assistant.io/getting-started/automation/
 </script>
+
 <style scoped>
 .inputName {
     border: 0;
@@ -160,15 +196,16 @@ function removeCondition(event) {
         <div class="col-3 mb-3">
             <select id="exposeSelector" style="text-align:center;" class="form-control " @change="exposeSelectionChanged"
                 v-model="selectedExpose">
-                <option :value="null">Select trigger</option>
+                <option value="">Select trigger</option>
                 <option v-for="expose in device.exposes" :value="expose.name" :key="expose.name">
                     {{ expose.name }}
                 </option>
             </select>
         </div>
 
-        <div v-if="selectedExpose != null">
-            <Trigger :id="props.id" :exposeName="selectedExpose"></Trigger>
+        <div>
+            <Trigger :id="props.id" :trigger="currentTrigger" @addAction="addAction" @removeAction="removeAction">
+            </Trigger>
         </div>
 
     </div>

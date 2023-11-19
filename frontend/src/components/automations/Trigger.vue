@@ -1,6 +1,6 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed, watch, ref } from "vue";
+import { computed, watch, ref, watchEffect } from "vue";
 
 import { ExposeTrigger, DeviceTrigger, Operators, ActionTrigger } from "../../models/automation"
 import TriggerCondition from "./TriggerCondition"
@@ -8,41 +8,58 @@ import TriggerActionNew from "./TriggerActionNew.vue";
 
 const props = defineProps({
     id: String,
-    exposeName: String
+    trigger: Object,
 });
 
 const store = useStore();
 const conditions = ref([]);
 const selectedAction = ref(null)
-const currentAction = ref(null)
-let exposeTriggers = {};
+
+const exposeName = ref("")
+const currentAction = ref()
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
 });
+
+const emit = defineEmits(['addAction', 'removeAction', 'addcondition', 'removecondition'])
 
 function getExposes() {
     return Object.keys(device.value.exposes)
 }
 
-function exposeSelectionChanged(event) {
 
-    var value = event.target.value;
-    if (value == "" || exposeTriggers[value] != null) {
-        return;
-    }
-    var exposeTrigger = new ExposeTrigger(value);
-    exposeTriggers[value] = exposeTrigger;
-    currentAction.value = exposeTrigger.action
-    console.log("exposeSelectionChanged", exposeTriggers[value]);
+function featureSelectionChanged(event) {
+
+    // var value = event.target.value;
+    // if (value == "" || exposeTriggers[value] != null) {
+    //     return;
+    // }
+    // var exposeTrigger = new ExposeTrigger(value);
+    // exposeTriggers[value] = exposeTrigger;
+    // currentAction.value = exposeTrigger.action
+    // console.log("exposeSelectionChanged", exposeTriggers[value]);
+
+    // console.log("featureSelectionChanged changed ", props.trigger.action)
+    // currentAction.value = props.trigger.action
 }
 
 watch(
-    () => props.id,
-    (newId) => {
+    () => props.trigger,
+    (newTrigger) => {
         selectedAction.value = null
-    },
-    { immediate: true }
-);
+        currentAction.value = props.trigger.action
+        exposeName.value = props.trigger.name
+
+        //todo if we have action not null, select it but we dont have friendle name
+
+        /* if(currentAction.value!= null){
+            selectedAction.value = 
+        } */
+
+        console.log("trigger:", props.trigger, " : ", exposeName.value)
+    }, { immediate: true }
+)
+
 
 const featureDevices = computed(() => {
     var devices = store.getters["devices/items"];
@@ -61,21 +78,17 @@ const featureDevices = computed(() => {
     }
 
     return list;
-
 });
 
 function addAction(event) {
-    console.log("addAction ", event)
-
-    var exposeTrigger = exposeTriggers[props.exposeName]
-    exposeTrigger.action = event;
     currentAction.value = event
+    emit('addAction', event)
 }
 
 function removeAction(event) {
-    var exposeTrigger = exposeTriggers[props.exposeName]
-    exposeTrigger.action = null;
     currentAction.value = null
+
+    emit('removeAction', event)
 }
 
 //const emit = defineEmits(['cancel', 'create'])
@@ -90,32 +103,30 @@ function removeAction(event) {
         <!-- if automation for device exists message user else we overwrite it -->
 
         <br>
-
-
         <div>
             ------ Accordion HERE --------------
             <h5>Conditions</h5>
             dont delete
-            <!-- <div class="row w-50" v-if="selectedExpose != null">
+            <!-- <div class="row w-50" v-if="exposeName != null">
 
-            <TriggerCondition :id="0" :exposes="getExposes()" :name="selectedExpose" :operator="Operators[0].value"
-                :data="''" @add="addCondition($event)">
-            </TriggerCondition>
-        </div>
-
-        <div v-for="condition in conditions">
-            <div class="row w-50">
-                <TriggerCondition :id="condition.idx" :name="condition.name" :operator="condition.equality"
-                    :key="condition.idx" :data="condition.value" @remove="removeCondition($event)"></TriggerCondition>
+                <TriggerCondition :id="0" :exposes="getExposes()" :name="selectedExpose" :operator="Operators[0].value"
+                    :data="''" @add="addCondition($event)">
+                </TriggerCondition>
             </div>
-        </div> -->
+
+            <div v-for="condition in conditions">
+                <div class="row w-50">
+                    <TriggerCondition :id="condition.idx" :name="condition.name" :operator="condition.equality"
+                        :key="condition.idx" :data="condition.value" @remove="removeCondition($event)"></TriggerCondition>
+                </div>
+            </div> -->
         </div>
 
         <br>
         <h5>Actions</h5>
         <div class="col-3 mb-3">
             <select id="featureDeviceSelector" style="text-align:center;" class="form-control" v-model="selectedAction"
-                :disabled="props.exposeName == null">
+                @change="featureSelectionChanged" :disabled="exposeName == ''">
                 <option :value="null">Select device</option>
                 <option v-for="device in featureDevices" :value="device.id" :key="device.friendly_name">
                     {{ device.friendly_name }}
@@ -123,6 +134,7 @@ function removeAction(event) {
             </select>
         </div>
         <div>
+
             <div v-if="currentAction == null">
                 <div class="row w-50" v-if="selectedAction != null">
                     <TriggerActionNew :id="selectedAction" @add="addAction"></TriggerActionNew>

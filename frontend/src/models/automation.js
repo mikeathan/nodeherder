@@ -38,9 +38,9 @@ export class DeviceTrigger {
 export class ActionTrigger {
   constructor() {
     this.id = "";
-    this.friendlyName = "";
-    this.type = "";
-    this.property = "";
+    this.friendlyName = null;
+    this.type = null;
+    this.property = null;
     this.data = null;
     this.delay = null;
   }
