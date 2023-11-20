@@ -25,19 +25,15 @@ const device = computed(() => {
 
 function exposeSelectionChanged(event) {
     var value = event.target.value;
-    console.log("exposeSelectionChanged ", value)
 
     if (exposeTriggers.value[value] != null) {
         currentTrigger.value = exposeTriggers.value[value]
-
-        console.log("exposeSelectionChanged return");
-
         return;
     }
+
     var exposeTrigger = new ExposeTrigger(value);
     exposeTriggers.value[value] = exposeTrigger;
     currentTrigger.value = exposeTriggers.value[value]
-    console.log("exposeSelectionChanged: ", exposeTriggers.value[value], value);
 }
 
 watch(
@@ -111,10 +107,9 @@ function removeAction(event) {
 }
 
 function addCondition(event) {
-
     conditions.value.push(event);
 
-    var exposeTrigger = exposeTriggers[selectedExpose.value];
+    var exposeTrigger = exposeTriggers.value[selectedExpose.value]
     exposeTrigger.conditions.push(event)
 }
 
@@ -126,7 +121,7 @@ function removeCondition(event) {
         conditions.value.splice(index, 1);
 
         // remove from our device trigger cache
-        for (const [key, item] of Object.entries(exposeTriggers)) {
+        for (const [key, item] of Object.entries(exposeTriggers.value)) {
             var index = item.conditions.findIndex(item => item.idx === event);
             if (index == -1) {
                 continue
@@ -135,7 +130,7 @@ function removeCondition(event) {
             item.conditions.splice(index, 1);
             if (item.conditions.length == 0) {
                 // delete the trigger
-                delete exposeTriggers[key]
+                delete exposeTriggers.value[key]
             }
         }
     }
@@ -204,7 +199,8 @@ function removeCondition(event) {
         </div>
 
         <div>
-            <Trigger :id="props.id" :trigger="currentTrigger" @addAction="addAction" @removeAction="removeAction">
+            <Trigger :id="props.id" :trigger="currentTrigger" @addAction="addAction" @removeAction="removeAction"
+                @addCondition="addCondition" @removeCondition="removeCondition">
             </Trigger>
         </div>
 

@@ -13,15 +13,14 @@ const props = defineProps({
 
 const store = useStore();
 const conditions = ref([]);
-const selectedAction = ref(null)
-
-const exposeName = ref("")
+const selectedActionId = ref(null)
+const selectedExpose = ref("")
 const currentAction = ref()
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
 });
 
-const emit = defineEmits(['addAction', 'removeAction', 'addcondition', 'removecondition'])
+const emit = defineEmits(['addAction', 'removeAction', 'addCondition', 'removeCondition'])
 
 function getExposes() {
     return Object.keys(device.value.exposes)
@@ -47,23 +46,14 @@ function featureSelectionChanged(event) {
 watch(
     () => props.trigger,
     (newTrigger) => {
-        selectedAction.value = null
+        selectedActionId.value = null
         currentAction.value = props.trigger.action
-        exposeName.value = props.trigger.name
-
-        not working here
-        console.log("trigger:", currentAction.value, newTrigger)
-        //todo if we have action not null, select it but we dont have friendle name
-
+        selectedExpose.value = props.trigger.name
+        console.log("trigger changed", currentAction.value);
+        // select action optionsto current action if not null
         if (currentAction.value != null) {
-            var device = store.getters["devices/find"](currentAction.value.id)
-            console.log("update:", currentAction.value.id, device.friendly_name)
-
-            if (device |= null) {
-                selectedAction.value = device.friendly_name
-            }
+            selectedActionId.value = currentAction.value.id
         }
-        console.log("trigger:", props.trigger, " : ", exposeName.value)
     }, { immediate: true }
 )
 
@@ -92,6 +82,13 @@ function addAction(event) {
     emit('addAction', event)
 }
 
+function addCondition(event) {
+    emit('addCondition', event)
+}
+
+function removeCondition(event) {
+    emit('removeCondition', event)
+}
 function removeAction(event) {
     currentAction.value = null
 
@@ -104,56 +101,52 @@ function removeAction(event) {
 <template>
     <div class="container-fluid p-0 h-100">
         <!-- TODO: accordion here for exposes -->
-        <!-- conditon value needs to be store as the expected type -->
+        <!-- fix triggeractonnew - check refactoring logic -->
         <!-- Save button shouls navigate to automation viewer -->
         <!-- check url design above for styling of creator text input -->
         <!-- if automation for device exists message user else we overwrite it -->
 
         <br>
         <div>
-            ------ Accordion HERE --------------
+            ------ Accordion HERE conditions are optional--------------
+            conditions need to hide if we havent selected expose
             <h5>Conditions</h5>
-            dont delete
-            <!-- <div class="row w-50" v-if="exposeName != null">
+            <div class="row w-50" v-if="selectedExpose != null">
 
                 <TriggerCondition :id="0" :exposes="getExposes()" :name="selectedExpose" :operator="Operators[0].value"
-                    :data="''" @add="addCondition($event)">
+                    :data="''" @add="addCondition">
                 </TriggerCondition>
             </div>
 
-            <div v-for="condition in conditions">
+            <div v-for="condition in trigger.conditions">
                 <div class="row w-50">
                     <TriggerCondition :id="condition.idx" :name="condition.name" :operator="condition.equality"
                         :key="condition.idx" :data="condition.value" @remove="removeCondition($event)"></TriggerCondition>
                 </div>
-            </div> -->
+            </div>
         </div>
 
         <br>
         <h5>Actions</h5>
         <div class="col-3 mb-3">
-            <select id="featureDeviceSelector" style="text-align:center;" class="form-control" v-model="selectedAction"
-                @change="featureSelectionChanged" :disabled="exposeName == ''">
+            <select id="featureDeviceSelector" style="text-align:center;" class="form-control" v-model="selectedActionId"
+                @change="featureSelectionChanged" :disabled="selectedExpose == ''">
                 <option :value="null">Select device</option>
                 <option v-for="device in featureDevices" :value="device.id" :key="device.friendly_name">
                     {{ device.friendly_name }}
                 </option>
             </select>
         </div>
-        <div>
 
-            <div v-if="currentAction == null">
-                <div class="row w-50" v-if="selectedAction != null">
-                    <TriggerActionNew :id="selectedAction" @add="addAction"></TriggerActionNew>
-                </div>
-            </div>
-            <div v-else>
-                <div class="row w-50">
-                    <TriggerActionNew :id="currentAction.id" :property="currentAction.property" :data="currentAction.data"
-                        :delay="currentAction.delay" @add="removeAction">
-                    </TriggerActionNew>
-                </div>
-            </div>
+        <!-- existing action -->
+        <div v-if="currentAction != null" class="row w-50">
+            <TriggerActionNew :id="currentAction.id" :property="currentAction.property" :data="currentAction.data"
+                :delay="currentAction.delay" @add="removeAction">
+            </TriggerActionNew>
+        </div>
+        <!-- new action -->
+        <div v-else-if="selectedActionId != null" class="row w-50">
+            <TriggerActionNew :id="selectedActionId" @add="addAction"></TriggerActionNew>
         </div>
     </div>
 </template>

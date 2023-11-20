@@ -1,6 +1,6 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed, ref } from "vue";
+import { computed, ref, watchEffect } from "vue";
 
 import { ActionTrigger } from "../../models/automation"
 
@@ -10,16 +10,20 @@ const props = defineProps({
         required: true,
     },
     property: String,
-    data: Number,
+    data: String,
     delay: String,
 });
 
-const property = ref(props.property);
-const data = ref(props.data);
-const delay = ref(props.delay);
+const property = ref(null);
+const data = ref(null);
+const delay = ref(null);
 
 const store = useStore();
 const emit = defineEmits(['add', 'remove'])
+
+watchEffect(() => property.value = props.property);
+watchEffect(() => data.value = props.data);
+watchEffect(() => delay.value = props.delay);
 
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
@@ -50,7 +54,6 @@ function delayAcceptNumber(event) {
     delay.value = delay.value.replace(/[^0-9.]/g, '');
 }
 function propertySelectionChanged(event) {
-    console.log("propertySelectionChanged ", event)
     var value = event.target.value;
     if (value == null || device.value == undefined) {
         return;
