@@ -71,7 +71,6 @@ function removeAction(event) {
     emit('removeAction', event)
 }
 
-//const emit = defineEmits(['cancel', 'create'])
 </script>
 
 <template>
@@ -85,10 +84,9 @@ function removeAction(event) {
         <br>
         <div>
             ------ Accordion HERE conditions are optional--------------
-            conditions need to hide if we havent selected expose
-            <h5>Conditions</h5>
-            <div class="row w-50" v-if="selectedExpose != null">
 
+            <h5>Conditions</h5>
+            <div class="row w-50">
                 <TriggerCondition :id="0" :exposes="getExposes()" :name="selectedExpose" :operator="Operators[0].value"
                     :data="''" @add="addCondition">
                 </TriggerCondition>
@@ -108,7 +106,7 @@ function removeAction(event) {
             <select id="featureDeviceSelector" style="text-align:center;" class="form-control" v-model="selectedAction"
                 @change="featureSelectionChanged" :disabled="selectedExpose == ''">
                 <option :value="null">Select device</option>
-                <option v-for="device in featureDevices" :value="device.id" :key="device.friendly_name">
+                <option v-for="device in featureDevices" :value="device.id" :key="device.id">
                     {{ device.friendly_name }}
                 </option>
             </select>
