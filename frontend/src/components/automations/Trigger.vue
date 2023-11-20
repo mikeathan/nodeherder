@@ -12,10 +12,8 @@ const props = defineProps({
 });
 
 const store = useStore();
-const conditions = ref([]);
-const selectedActionId = ref(null)
+const selectedAction = ref(null)
 const selectedExpose = ref("")
-const currentAction = ref()
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
 });
@@ -26,33 +24,14 @@ function getExposes() {
     return Object.keys(device.value.exposes)
 }
 
-
-function featureSelectionChanged(event) {
-
-    // var value = event.target.value;
-    // if (value == "" || exposeTriggers[value] != null) {
-    //     return;
-    // }
-    // var exposeTrigger = new ExposeTrigger(value);
-    // exposeTriggers[value] = exposeTrigger;
-    // currentAction.value = exposeTrigger.action
-    // console.log("exposeSelectionChanged", exposeTriggers[value]);
-
-    // console.log("featureSelectionChanged changed ", props.trigger.action)
-    // currentAction.value = props.trigger.action
-}
-
-
 watch(
     () => props.trigger,
     (newTrigger) => {
-        selectedActionId.value = null
-        currentAction.value = props.trigger.action
+        selectedAction.value = null
         selectedExpose.value = props.trigger.name
-        console.log("trigger changed", currentAction.value);
         // select action optionsto current action if not null
-        if (currentAction.value != null) {
-            selectedActionId.value = currentAction.value.id
+        if (props.trigger.action != null) {
+            selectedAction.value = props.trigger.action.id
         }
     }, { immediate: true }
 )
@@ -78,7 +57,6 @@ const featureDevices = computed(() => {
 });
 
 function addAction(event) {
-    currentAction.value = event
     emit('addAction', event)
 }
 
@@ -90,8 +68,6 @@ function removeCondition(event) {
     emit('removeCondition', event)
 }
 function removeAction(event) {
-    currentAction.value = null
-
     emit('removeAction', event)
 }
 
@@ -129,7 +105,7 @@ function removeAction(event) {
         <br>
         <h5>Actions</h5>
         <div class="col-3 mb-3">
-            <select id="featureDeviceSelector" style="text-align:center;" class="form-control" v-model="selectedActionId"
+            <select id="featureDeviceSelector" style="text-align:center;" class="form-control" v-model="selectedAction"
                 @change="featureSelectionChanged" :disabled="selectedExpose == ''">
                 <option :value="null">Select device</option>
                 <option v-for="device in featureDevices" :value="device.id" :key="device.friendly_name">
@@ -139,14 +115,14 @@ function removeAction(event) {
         </div>
 
         <!-- existing action -->
-        <div v-if="currentAction != null" class="row w-50">
-            <TriggerActionNew :id="currentAction.id" :property="currentAction.property" :data="currentAction.data"
-                :delay="currentAction.delay" @add="removeAction">
+        <div v-if="trigger.action != null" class="row w-50">
+            <TriggerActionNew :id="trigger.action.id" :property="trigger.action.property" :data="trigger.action.data"
+                :delay="trigger.action.delay" @add="removeAction">
             </TriggerActionNew>
         </div>
         <!-- new action -->
-        <div v-else-if="selectedActionId != null" class="row w-50">
-            <TriggerActionNew :id="selectedActionId" @add="addAction"></TriggerActionNew>
+        <div v-else-if="selectedAction != null" class="row w-50">
+            <TriggerActionNew :id="selectedAction" @add="addAction"></TriggerActionNew>
         </div>
     </div>
 </template>
