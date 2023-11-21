@@ -75,52 +75,83 @@ function removeAction(event) {
 
 <template>
     <div class="container-fluid p-0 h-100">
-        <!-- TODO: accordion here for exposes -->
+        <!-- TODO:  -->
+        <!-- mobile dimensions are wrong -->
         <!-- fix triggeractonnew - check refactoring logic -->
+        <!-- fix triggeractonnew - props dont update unless we remove and add again -->
         <!-- Save button shouls navigate to automation viewer -->
         <!-- check url design above for styling of creator text input -->
         <!-- if automation for device exists message user else we overwrite it -->
 
         <br>
         <div>
-            ------ Accordion HERE conditions are optional--------------
-
-            <h5>Conditions</h5>
-            <div class="row w-50">
-                <TriggerCondition :id="0" :exposes="getExposes()" :name="selectedExpose" :operator="Operators[0].value"
-                    :data="''" @add="addCondition">
-                </TriggerCondition>
+            <!-- Actions -->
+            <h5>Action</h5>
+            <div class="col-3 mb-3">
+                <select id="featureDeviceSelector" style="text-align:center;" class="form-control" v-model="selectedAction"
+                    @change="featureSelectionChanged" :disabled="selectedExpose == ''">
+                    <option :value="null">Select device</option>
+                    <option v-for="device in featureDevices" :value="device.id" :key="device.id">
+                        {{ device.friendly_name }}
+                    </option>
+                </select>
             </div>
 
-            <div v-for="condition in trigger.conditions">
-                <div class="row w-50">
-                    <TriggerCondition :id="condition.idx" :name="condition.name" :operator="condition.equality"
-                        :key="condition.idx" :data="condition.value" @remove="removeCondition($event)"></TriggerCondition>
+            <!-- existing action -->
+            <div v-if="trigger.action != null" class="row w-50">
+                <TriggerActionNew :id="trigger.action.id" :property="trigger.action.property" :data="trigger.action.data"
+                    :delay="trigger.action.delay" @add="removeAction">
+                </TriggerActionNew>
+            </div>
+            <!-- new action -->
+            <div v-else-if="selectedAction != null" class="row w-50">
+                <TriggerActionNew :id="selectedAction" @add="addAction"></TriggerActionNew>
+            </div>
+
+            <!-- Conditions -->
+            <div class="accordion accordion-flush mt-3" id="triggerSelections">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="`header`">
+
+                        <div class="row ">
+                            <div class="col accordion-button collapsed " data-bs-toggle="collapse"
+                                :data-bs-target="`#collapseOne`" aria-expanded="false" :aria-controls="`collapseOne`">
+
+                                <div class="col-2 col-md-6">
+                                    Conditions
+                                </div>
+                                <div class="col-8 col-md-2">
+                                </div>
+                                <!-- @click="onDeleteTriggerClick($event, automation.id, index)" -->
+                                <div class="col pe-3 text-end ">
+                                    <span class="fa fa-trash-alt fa-lg" data-bs-toggle="collapse" data-bs-target>
+                                    </span>
+
+                                </div>
+                            </div>
+                        </div>
+                    </h2>
+
+                    <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne"
+                        data-bs-parent="#triggerSelections">
+                        <div class="accordion-body">
+                            <div class="row w-50">
+                                <TriggerCondition :id="0" :exposes="getExposes()" :name="selectedExpose"
+                                    :operator="Operators[0].value" :data="''" @add="addCondition">
+                                </TriggerCondition>
+                            </div>
+
+                            <div v-for="condition in trigger.conditions">
+                                <div class="row w-50">
+                                    <TriggerCondition :id="condition.idx" :name="condition.name"
+                                        :operator="condition.equality" :key="condition.idx" :data="condition.value"
+                                        @remove="removeCondition($event)"></TriggerCondition>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <br>
-        <h5>Actions</h5>
-        <div class="col-3 mb-3">
-            <select id="featureDeviceSelector" style="text-align:center;" class="form-control" v-model="selectedAction"
-                @change="featureSelectionChanged" :disabled="selectedExpose == ''">
-                <option :value="null">Select device</option>
-                <option v-for="device in featureDevices" :value="device.id" :key="device.id">
-                    {{ device.friendly_name }}
-                </option>
-            </select>
-        </div>
-
-        <!-- existing action -->
-        <div v-if="trigger.action != null" class="row w-50">
-            <TriggerActionNew :id="trigger.action.id" :property="trigger.action.property" :data="trigger.action.data"
-                :delay="trigger.action.delay" @add="removeAction">
-            </TriggerActionNew>
-        </div>
-        <!-- new action -->
-        <div v-else-if="selectedAction != null" class="row w-50">
-            <TriggerActionNew :id="selectedAction" @add="addAction"></TriggerActionNew>
         </div>
     </div>
 </template>
