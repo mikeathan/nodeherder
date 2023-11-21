@@ -22,7 +22,7 @@ const data = ref('')
 const operator = ref('')
 const name = ref('')
 
-const emit = defineEmits(['add', 'remove'])
+const emit = defineEmits(['add', 'remove', 'update:value', 'update:operator'])
 
 function add() {
     var c = new Condition(name.value, operator.value, data.value)
@@ -30,7 +30,6 @@ function add() {
     c.idx = cid
 
     emit("add", c)
-
     reset();
 }
 
@@ -63,19 +62,27 @@ watch(
     }, { immediate: true }
 )
 
-watch(
-    () => props.id,
-    (i) => {
-        if (i == 0 && props.exposes != null) {
-            //name.value = props.exposes[0]
-        }
-    },
-    { immediate: true }
-);
+// watch(
+//     () => props.id,
+//     (i) => {
+//         if (i == 0 && props.exposes != null) {
+//             //name.value = props.exposes[0]
+//         }
+//     },
+//     { immediate: true }
+// );
 
 function reset() {
     data.value = ""
     operator.value = Operators[0].value
+}
+
+function operatorSelectionChanged(event) {
+    if (event.target.value == null) {
+        return
+    }
+
+    emit("update:operator", event.target.value)
 }
 
 </script>
@@ -96,7 +103,7 @@ function reset() {
     </div>
     <div class="col">
         <select id="selectOperators" style="text-align:center;" class="form-control" v-model="operator"
-            :disabled="name == ''">
+            :disabled="name == ''" @change="operatorSelectionChanged">
             <option v-for="operator in Operators" :value="operator.value" :key="operator.value">
                 {{ operator.text }}
             </option>
@@ -105,7 +112,7 @@ function reset() {
     <div class="col">
         <input type="text" style="text-align:center;" class="form-control" placeholder="Condition value"
             onfocus="this.placeholder = ''" onblur="this.placeholder='Condition value'" v-model="data"
-            :disabled="name == ''" />
+            @input="$emit('update:value', $event.target.value)" :disabled="name == ''" />
     </div>
     <div class="col-3">
         <div class="btn-group">

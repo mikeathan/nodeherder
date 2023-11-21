@@ -147,7 +147,9 @@ function removeAction(event) {
                                 <div class="row w-50">
                                     <TriggerCondition :id="condition.idx" :name="condition.name"
                                         :operator="condition.equality" :key="condition.idx" :data="condition.value"
-                                        @remove="removeCondition($event)">
+                                        @remove="removeCondition($event)"
+                                        @update:value="newValue => condition.value = newValue"
+                                        @update:operator="newValue => condition.operator = newValue">
                                     </TriggerCondition>
                                 </div>
                             </div>

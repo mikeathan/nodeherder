@@ -60,6 +60,7 @@ function delayInputChange(event) {
     delay.value = event.target.value.replace(/[^0-9.]/g, '');
     emit("update:delay", event.target.value);
 }
+
 function dataInputChange(event) {
     data.value = event.target.value.replace(/[^0-9.]/g, '');
     emit("update:data", event.target.value);
@@ -69,12 +70,8 @@ function dataSelectionChanged(event) {
     if (event.target.value == null) {
         return;
     }
-
     emit("update:data", event.target.value);
-
 }
-
-
 
 function propertySelectionChanged(event) {
     var value = event.target.value;
