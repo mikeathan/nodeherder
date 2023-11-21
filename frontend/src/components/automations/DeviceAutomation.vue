@@ -128,10 +128,6 @@ function removeCondition(event) {
             }
 
             item.conditions.splice(index, 1);
-            if (item.conditions.length == 0) {
-                // delete the trigger
-                delete exposeTriggers.value[key]
-            }
         }
     }
 }

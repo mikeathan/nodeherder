@@ -1,6 +1,6 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed, ref, watchEffect } from "vue";
+import { computed, ref, watchEffect, watch } from "vue";
 
 import { ActionTrigger } from "../../models/automation"
 
@@ -14,16 +14,26 @@ const props = defineProps({
     delay: String,
 });
 
-const property = ref(null);
+const property = ref("");
 const data = ref(null);
 const delay = ref(null);
 
 const store = useStore();
 const emit = defineEmits(['add', 'remove'])
 
-watchEffect(() => property.value = props.property);
 watchEffect(() => data.value = props.data);
 watchEffect(() => delay.value = props.delay);
+
+watch(
+    () => props.property,
+    () => {
+        property.value = props.property
+        if (property.value == null) {
+            property.value = "" // select first option
+        }
+    },
+    { immediate: true }
+);
 
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
@@ -55,6 +65,7 @@ function delayAcceptNumber(event) {
 }
 function propertySelectionChanged(event) {
     var value = event.target.value;
+
     if (value == null || device.value == undefined) {
         return;
     }
@@ -111,7 +122,7 @@ function remove(event) {
     <div class="col">
         <select id="featurePropertySelector" style="text-align:center;" class="form-control" v-model="property"
             @change="propertySelectionChanged" :disabled="props.property != null">
-            <option :value="null">Select property</option>
+            <option value="">Select property</option>
             <option v-for="feature in features" :value="feature.name" :key="feature.name">
                 {{ feature.name }}
             </option>
