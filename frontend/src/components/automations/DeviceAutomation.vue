@@ -1,10 +1,7 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed, watch, ref, watchEffect } from "vue";
-
-import { ExposeTrigger, DeviceTrigger, Operators, ActionTrigger } from "../../models/automation"
-import TriggerCondition from "./TriggerCondition"
-import TriggerActionNew from "./TriggerActionNew.vue";
+import { computed, watch, ref } from "vue";
+import { ExposeTrigger, DeviceTrigger } from "../../models/automation"
 import Trigger from "./Trigger"
 
 const props = defineProps({
@@ -38,30 +35,13 @@ function exposeSelectionChanged(event) {
 
 watch(
     () => props.id,
-    (newId) => {
+    () => {
         selectedExpose.value = ""
         var exposeTrigger = new ExposeTrigger(selectedExpose.value);
         currentTrigger.value = exposeTrigger;
     },
     { immediate: true }
 );
-
-/* watch(
-    () => selectedExpose,
-    () => {
-        if (selectedExpose.value == "" || exposeTriggers.value[selectedExpose.value] != null) {
-
-            console.log("####WATCH exposeSelectionChanged return; ", currentTrigger.value);
-            return;
-        }
-
-        var exposeTrigger = new ExposeTrigger(selectedExpose.value);
-        currentTrigger.value = exposeTrigger;
-        exposeTriggers.value[value] = exposeTrigger;
-        console.log("####WATCH selectedexpose:", selectedExpose.value, " = ", currentTrigger.value);
-    },
-    { immediate: true }
-); */
 
 const emit = defineEmits(['cancel', 'create'])
 

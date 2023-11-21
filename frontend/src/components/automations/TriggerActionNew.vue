@@ -63,6 +63,7 @@ function dataAcceptNumber(event) {
 function delayAcceptNumber(event) {
     delay.value = delay.value.replace(/[^0-9.]/g, '');
 }
+
 function propertySelectionChanged(event) {
     var value = event.target.value;
 
@@ -107,9 +108,7 @@ function add() {
 }
 
 function remove(event) {
-
     emit("add", props.id)
-
 }
 
 </script>
@@ -143,15 +142,15 @@ function remove(event) {
             :disabled="property == null" />
     </div>
     <div class="col">
-        <input type="text" style="text-align:center;" class="form-control" placeholder="Delay (ms)"
-            onfocus="this.placeholder = ''" onblur="this.placeholder='Delay (ms)'" v-model="delay"
+        <input type="text" style="text-align:center;" class="form-control" placeholder="Delay (milliseconds)"
+            onfocus="this.placeholder = ''" onblur="this.placeholder='Delay (milliseconds)'" v-model="delay"
             :disabled="property == null" @input="delayAcceptNumber" />
     </div>
 
     <div class="col-3">
         <div class="btn-group">
             <div v-if="props.property == null">
-                <button type="button" class="btn btn-default btn-number" @click="add($event)">
+                <button type="button" class="btn btn-default btn-number" @click="add($event)" :disabled="property == ''">
                     <span class="fa fa-plus"></span>
                 </button>
             </div>
