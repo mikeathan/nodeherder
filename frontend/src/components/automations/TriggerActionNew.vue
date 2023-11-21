@@ -55,14 +55,27 @@ const features = computed(() => {
     return list;
 });
 
-// needs refactoring
-function dataAcceptNumber(event) {
-    data.value = data.value.replace(/[^0-9.]/g, '');
+
+
+//TODO
+function delayInputChange(event) {
+    console.log("delayInputChange", event.target.value)
+    delay.value = event.target.value.replace(/[^0-9.]/g, '');
+    //emit("newValue", inputValue.value);
 }
-// needs refactoring
-function delayAcceptNumber(event) {
-    delay.value = delay.value.replace(/[^0-9.]/g, '');
+function dataInputChange(event) {
+    console.log("dataInputChange", event.target.value)
+    data.value = event.target.value.replace(/[^0-9.]/g, '');
+    //emit("newValue", inputValue.value);
 }
+function dataOptionChange(event) {
+    console.log("dataInputChange", event.target.value)
+    data.value = event.target.value.replace(/[^0-9.]/g, '');
+    //emit("newValue", inputValue.value);
+}
+//TODO
+
+
 
 function propertySelectionChanged(event) {
     var value = event.target.value;
@@ -138,13 +151,13 @@ function remove(event) {
     </div>
     <div class="col" v-else>
         <input type="text" style="text-align:center;" class="form-control" placeholder="Value"
-            onfocus="this.placeholder = ''" onblur="this.placeholder='Value'" v-model="data" @input="dataAcceptNumber"
+            onfocus="this.placeholder = ''" onblur="this.placeholder='Value'" v-model="data" @keyup="dataInputChange"
             :disabled="property == null" />
     </div>
     <div class="col">
         <input type="text" style="text-align:center;" class="form-control" placeholder="Delay (milliseconds)"
             onfocus="this.placeholder = ''" onblur="this.placeholder='Delay (milliseconds)'" v-model="delay"
-            :disabled="property == null" @input="delayAcceptNumber" />
+            :disabled="property == null" @keyup="delayInputChange" />
     </div>
 
     <div class="col-3">
