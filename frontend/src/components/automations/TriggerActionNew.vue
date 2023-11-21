@@ -19,7 +19,7 @@ const data = ref(null);
 const delay = ref(null);
 
 const store = useStore();
-const emit = defineEmits(['add', 'remove'])
+const emit = defineEmits(['add', 'remove', 'update:data', 'update:delay'])
 
 watchEffect(() => data.value = props.data);
 watchEffect(() => delay.value = props.delay);
@@ -56,24 +56,23 @@ const features = computed(() => {
 });
 
 
-maybe use @focus
-//TODO
 function delayInputChange(event) {
-    console.log("delayInputChange", event.target.value)
     delay.value = event.target.value.replace(/[^0-9.]/g, '');
-    emit("updated", inputValue.value);
+    emit("update:delay", event.target.value);
 }
 function dataInputChange(event) {
-    console.log("dataInputChange", event.target.value)
     data.value = event.target.value.replace(/[^0-9.]/g, '');
-    emit("updated", inputValue.value);
+    emit("update:data", event.target.value);
 }
-function dataOptionChange(event) {
-    console.log("dataInputChange", event.target.value)
-    data.value = event.target.value.replace(/[^0-9.]/g, '');
-    //emit("newValue", inputValue.value);
+
+function dataSelectionChanged(event) {
+    if (event.target.value == null) {
+        return;
+    }
+
+    emit("update:data", event.target.value);
+
 }
-//TODO
 
 
 
@@ -142,7 +141,8 @@ function remove(event) {
     </div>
 
     <div class="col" v-if="feature.type == 'binary'">
-        <select id="propertySelect" style="text-align:center;" class="form-control" v-model="data">
+        <select id="propertySelect" style="text-align:center;" class="form-control" v-model="data"
+            @change="dataSelectionChanged">
             <option v-for="(value, key) in feature.properties" :value="value" :key="key">
                 {{ value }}
             </option>
@@ -151,13 +151,13 @@ function remove(event) {
     </div>
     <div class="col" v-else>
         <input type="text" style="text-align:center;" class="form-control" placeholder="Value"
-            onfocus="this.placeholder = ''" onblur="this.placeholder='Value'" v-model="data" @keyup="dataInputChange"
+            onfocus="this.placeholder = ''" onblur="this.placeholder='Value'" v-model="data" @input="dataInputChange"
             :disabled="property == null" />
     </div>
     <div class="col">
         <input type="text" style="text-align:center;" class="form-control" placeholder="Delay (milliseconds)"
             onfocus="this.placeholder = ''" onblur="this.placeholder='Delay (milliseconds)'" v-model="delay"
-            :disabled="property == null" @keyup="delayInputChange" />
+            :disabled="property == null" @input="delayInputChange" />
     </div>
 
     <div class="col-3">

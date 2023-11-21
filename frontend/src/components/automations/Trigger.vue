@@ -100,7 +100,9 @@ function removeAction(event) {
             <!-- existing action -->
             <div v-if="trigger.action != null" class="row w-50">
                 <TriggerActionNew :id="trigger.action.id" :property="trigger.action.property" :data="trigger.action.data"
-                    :delay="trigger.action.delay" @add="removeAction">
+                    :delay="trigger.action.delay" @add="removeAction"
+                    @update:data="newValue => trigger.action.data = newValue"
+                    @update:delay="newValue => trigger.action.delay = newValue">
                 </TriggerActionNew>
             </div>
             <!-- new action -->
@@ -145,7 +147,8 @@ function removeAction(event) {
                                 <div class="row w-50">
                                     <TriggerCondition :id="condition.idx" :name="condition.name"
                                         :operator="condition.equality" :key="condition.idx" :data="condition.value"
-                                        @remove="removeCondition($event)"></TriggerCondition>
+                                        @remove="removeCondition($event)">
+                                    </TriggerCondition>
                                 </div>
                             </div>
                         </div>
