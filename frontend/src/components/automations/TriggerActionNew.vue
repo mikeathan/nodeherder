@@ -56,17 +56,17 @@ const features = computed(() => {
 });
 
 
-
+maybe use @focus
 //TODO
 function delayInputChange(event) {
     console.log("delayInputChange", event.target.value)
     delay.value = event.target.value.replace(/[^0-9.]/g, '');
-    //emit("newValue", inputValue.value);
+    emit("updated", inputValue.value);
 }
 function dataInputChange(event) {
     console.log("dataInputChange", event.target.value)
     data.value = event.target.value.replace(/[^0-9.]/g, '');
-    //emit("newValue", inputValue.value);
+    emit("updated", inputValue.value);
 }
 function dataOptionChange(event) {
     console.log("dataInputChange", event.target.value)
