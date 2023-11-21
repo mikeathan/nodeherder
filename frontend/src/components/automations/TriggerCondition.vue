@@ -81,7 +81,6 @@ function reset() {
 </script>
 
 <template>
-    name:{{ name }}
     <div v-if="props.id == 0" class="col">
         <select id="exposeSelector" style="text-align:center;" class="form-control" @change="exposeSelectionChanged"
             v-model="name" :disabled="name == ''">
