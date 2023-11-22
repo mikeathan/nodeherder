@@ -87,7 +87,7 @@ function removeAction(event) {
         <div>
             <!-- Actions -->
             <h5>Action</h5>
-            <div class="col-3 mb-3">
+            <div class="mb-3">
                 <select id="featureDeviceSelector" style="text-align:center;" class="form-control" v-model="selectedAction"
                     @change="featureSelectionChanged" :disabled="selectedExpose == ''">
                     <option :value="null">Select device</option>
@@ -119,10 +119,10 @@ function removeAction(event) {
                             <div class="col accordion-button collapsed " data-bs-toggle="collapse"
                                 :data-bs-target="`#collapseOne`" aria-expanded="false" :aria-controls="`collapseOne`">
 
-                                <div class="col-2 col-md-6">
+                                <div class="col-xs-3 col-md-6">
                                     Conditions
                                 </div>
-                                <div class="col-8 col-md-2">
+                                <div class="col-xs-10 col-md-2">
                                 </div>
                                 <!-- @click="onDeleteTriggerClick($event, automation.id, index)" -->
                                 <div class="col pe-3 text-end ">
@@ -137,14 +137,14 @@ function removeAction(event) {
                     <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne"
                         data-bs-parent="#triggerSelections">
                         <div class="accordion-body">
-                            <div class="row w-50">
+                            <div class="row">
                                 <TriggerCondition :id="0" :exposes="getExposes()" :name="selectedExpose"
                                     :operator="Operators[0].value" :data="''" @add="addCondition">
                                 </TriggerCondition>
                             </div>
 
                             <div v-for="condition in trigger.conditions">
-                                <div class="row w-50">
+                                <div class="row">
                                     <TriggerCondition :id="condition.idx" :name="condition.name"
                                         :operator="condition.equality" :key="condition.idx" :data="condition.value"
                                         @remove="removeCondition($event)"

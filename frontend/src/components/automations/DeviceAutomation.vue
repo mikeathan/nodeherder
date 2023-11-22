@@ -150,7 +150,7 @@ function removeCondition(event) {
                     id="flexSwitchCheckDefault" v-model="enabled">
             </div>
         </div>
-        <div class="col-50 mt-3">
+        <div class="col-50 mt-3 mb-3">
             <div class="btn-group">
                 <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false" @click="create">
                     Save
@@ -164,7 +164,7 @@ function removeCondition(event) {
 
         <h5>Triggers</h5>
 
-        <div class="col-3 mb-3">
+        <div class="mb-3">
             <select id="exposeSelector" style="text-align:center;" class="form-control " @change="exposeSelectionChanged"
                 v-model="selectedExpose">
                 <option value="">Select trigger</option>
