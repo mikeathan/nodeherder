@@ -98,7 +98,7 @@ function removeAction(event) {
             </div>
 
             <!-- existing action -->
-            <div v-if="trigger.action != null" class="row w-50">
+            <div v-if="trigger.action != null" class="row">
                 <TriggerActionNew :id="trigger.action.id" :property="trigger.action.property" :data="trigger.action.data"
                     :delay="trigger.action.delay" @add="removeAction"
                     @update:data="newValue => trigger.action.data = newValue"
@@ -106,7 +106,7 @@ function removeAction(event) {
                 </TriggerActionNew>
             </div>
             <!-- new action -->
-            <div v-else-if="selectedAction != null" class="row w-50">
+            <div v-else-if="selectedAction != null" class="row">
                 <TriggerActionNew :id="selectedAction" @add="addAction"></TriggerActionNew>
             </div>
 

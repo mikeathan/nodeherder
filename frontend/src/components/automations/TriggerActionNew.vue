@@ -122,12 +122,12 @@ function remove(event) {
 
 </script>
 <template>
-    <div class="col" v-if="device != null">
+    <!-- <div class="col" v-if="device != null">
         <input type="text" style="text-align:center;" class="form-control" placeholder="Friendly name"
             onfocus="this.placeholder = ''" onblur="this.placeholder='Friendly name'" v-model="device.friendly_name"
             disabled />
-    </div>
-    <div class="col">
+    </div> -->
+    <div class="col-xl-4">
         <select id="featurePropertySelector" style="text-align:center;" class="form-control" v-model="property"
             @change="propertySelectionChanged" :disabled="props.property != null">
             <option value="">Select property</option>
@@ -137,7 +137,7 @@ function remove(event) {
         </select>
     </div>
 
-    <div class="col" v-if="feature.type == 'binary'">
+    <div class="col-xl-4" v-if="feature.type == 'binary'">
         <select id="propertySelect" style="text-align:center;" class="form-control" v-model="data"
             @change="dataSelectionChanged">
             <option v-for="(value, key) in feature.properties" :value="value" :key="key">
@@ -146,15 +146,15 @@ function remove(event) {
         </select>
 
     </div>
-    <div class="col" v-else>
+    <div class="col-xl-4" v-else>
         <input type="text" style="text-align:center;" class="form-control" placeholder="Value"
             onfocus="this.placeholder = ''" onblur="this.placeholder='Value'" v-model="data" @input="dataInputChange"
             :disabled="property == null" />
     </div>
     <div class="col">
-        <input type="text" style="text-align:center;" class="form-control" placeholder="Delay (milliseconds)"
-            onfocus="this.placeholder = ''" onblur="this.placeholder='Delay (milliseconds)'" v-model="delay"
-            :disabled="property == null" @input="delayInputChange" />
+        <input type="text" style="text-align:center;" class="form-control" placeholder="Delay"
+            onfocus="this.placeholder = ''" onblur="this.placeholder='Delay'" v-model="delay" :disabled="property == null"
+            @input="delayInputChange" />
     </div>
 
     <div class="col-3">
