@@ -136,8 +136,8 @@ function remove(event) {
             </option>
         </select>
     </div>
-
-    <div class="col-xl-4" v-if="feature.type == 'binary'">
+    maybe make text input with label: text inptu in new line - like name entry in trigger page
+    <div class="col-xl-3" v-if="feature.type == 'binary'">
         <select id="propertySelect" style="text-align:center;" class="form-control" v-model="data"
             @change="dataSelectionChanged">
             <option v-for="(value, key) in feature.properties" :value="value" :key="key">
@@ -146,18 +146,18 @@ function remove(event) {
         </select>
 
     </div>
-    <div class="col-xl-4" v-else>
+    <div class="col-xl-3" v-else>
         <input type="text" style="text-align:center;" class="form-control" placeholder="Value"
             onfocus="this.placeholder = ''" onblur="this.placeholder='Value'" v-model="data" @input="dataInputChange"
             :disabled="property == null" />
     </div>
-    <div class="col">
+    <div class="col-xl-3">
         <input type="text" style="text-align:center;" class="form-control" placeholder="Delay"
             onfocus="this.placeholder = ''" onblur="this.placeholder='Delay'" v-model="delay" :disabled="property == null"
             @input="delayInputChange" />
     </div>
 
-    <div class="col-3">
+    <div class="col-xl-2">
         <div class="btn-group">
             <div v-if="props.property == null">
                 <button type="button" class="btn btn-default btn-number" @click="add($event)" :disabled="property == ''">
