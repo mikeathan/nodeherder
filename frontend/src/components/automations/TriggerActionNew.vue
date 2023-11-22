@@ -1,6 +1,7 @@
 <script setup>
 import { useStore } from "vuex";
 import { computed, ref, watchEffect, watch } from "vue";
+import DataInput from "../input/DataInput.vue"
 
 import { ActionTrigger } from "../../models/automation"
 
@@ -121,6 +122,20 @@ function remove(event) {
 }
 
 </script>
+
+<style scoped>
+.inputName {
+    border: 0;
+    outline: 0;
+    background: transparent;
+    border-bottom: 1px solid #e5e5e5;
+    border-radius: 0
+}
+
+.custom-control-input {
+    transform: scale(1.4);
+}
+</style>
 <template>
     <!-- <div class="col" v-if="device != null">
         <input type="text" style="text-align:center;" class="form-control" placeholder="Friendly name"
@@ -136,20 +151,23 @@ function remove(event) {
             </option>
         </select>
     </div>
-    maybe make text input with label: text inptu in new line - like name entry in trigger page
+
     <div class="col-xl-3" v-if="feature.type == 'binary'">
-        <select id="propertySelect" style="text-align:center;" class="form-control" v-model="data"
+        <DataInput :type="feature.type" name="Value" :data="feature.properties"></DataInput>
+
+        <!-- <select id="propertySelect" style="text-align:center;" class="form-control" v-model="data"
             @change="dataSelectionChanged">
             <option v-for="(value, key) in feature.properties" :value="value" :key="key">
                 {{ value }}
             </option>
-        </select>
-
+        </select> -->
     </div>
+
     <div class="col-xl-3" v-else>
-        <input type="text" style="text-align:center;" class="form-control" placeholder="Value"
+        <DataInput :type="feature.type" name="Value" :data="data"></DataInput>
+        <!-- <input type="text" style="text-align:center;" class="form-control" placeholder="Value"
             onfocus="this.placeholder = ''" onblur="this.placeholder='Value'" v-model="data" @input="dataInputChange"
-            :disabled="property == null" />
+            :disabled="property == null" /> -->
     </div>
     <div class="col-xl-3">
         <input type="text" style="text-align:center;" class="form-control" placeholder="Delay"
