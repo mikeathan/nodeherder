@@ -71,7 +71,7 @@ function dataSelectionChanged(event) {
         <label class="form-check-label" for="valueinput">Value</label>
 
         <input type="text" class="form-control inputName" name="valueinput" :placeholder="props.name"
-            onfocus="this.placeholder = ''" :onblur="this.placeholder = 'props.name'" v-model="data"
+            onfocus="this.placeholder = ''" :onblur="this.placeholder = props.name" v-model="data"
             @input="dataInputChange" :disabled="props.disabled">
     </div>
 </template>
