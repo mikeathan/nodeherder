@@ -57,6 +57,7 @@ const featureDevices = computed(() => {
 });
 
 function addAction(event) {
+    console.log("trigger - add action ", event)
     emit('addAction', event)
 }
 
@@ -89,7 +90,7 @@ function removeAction(event) {
             <h5>Action</h5>
             <div class="mb-3">
                 <select id="featureDeviceSelector" style="text-align:center;" class="form-control" v-model="selectedAction"
-                    @change="featureSelectionChanged" :disabled="selectedExpose == ''">
+                    :disabled="selectedExpose == ''">
                     <option :value="null">Select device</option>
                     <option v-for="device in featureDevices" :value="device.id" :key="device.id">
                         {{ device.friendly_name }}
@@ -124,7 +125,6 @@ function removeAction(event) {
                                 </div>
                                 <div class="col-xs-10 col-md-2">
                                 </div>
-                                <!-- @click="onDeleteTriggerClick($event, automation.id, index)" -->
                                 <div class="col pe-3 text-end ">
                                     <span class="fa fa-trash-alt fa-lg" data-bs-toggle="collapse" data-bs-target>
                                     </span>

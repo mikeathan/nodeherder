@@ -6,22 +6,25 @@ const props = defineProps({
         type: String,
         required: true,
     },
-    data: Object, // could be string or array of string
-    type: String,
+    data: null, // could be string or array of string
+    type: {
+        type: String,
+        default: "numeric"
+    },
     disabled: Boolean
 });
 
 const data = ref(null);
-
+const name = ref("");
 const emit = defineEmits(['update:data'])
 
 
 watch(
     () => props.data,
     () => {
-        if (props.type == "binary" && !Array.isArray(props.data)) {
-            data.value = []
-            console.log("data is the wrong type. Expected type string []")
+        if (props.type == "binary" && typeof props.data == "object") {
+            var values = Object.values(props.data)
+            data.value = values[0]
             return
         }
         data.value = props.data
@@ -29,9 +32,17 @@ watch(
     }, { immediate: true }
 )
 
+watch(
+    () => props.name,
+    () => {
+        name.value = props.name
+    }, { immediate: true }
+)
+
 function dataInputChange(event) {
     data.value = event.target.value.replace(/[^0-9.]/g, '');
-    emit("update:data", event.target.value);
+    console.log("datainput - data ", data.value)
+    emit("update:data", data.value);
 }
 
 function dataSelectionChanged(event) {
@@ -58,20 +69,21 @@ function dataSelectionChanged(event) {
 </style>
 <template>
     <div v-if="type == 'binary'">
-        <label class="form-check-label" for="valueinput">Value</label>
+        <!-- <label class="form-check-label" for="valueinput">Value</label> -->
 
-        <select id="dataSelect" style="text-align:center;" class="form-control inputName" v-model="data" name="valueinput"
+        <select id="dataSelect" style="text-align:center;" class="form-control inputName" name="valueinput" v-model="data"
             @change="dataSelectionChanged" :disabled="props.disabled">
+            <option value="">Select item</option>
             <option v-for="(value, key) in props.data" :value="value" :key="key">
                 {{ value }}
             </option>
         </select>
     </div>
     <div v-else>
-        <label class="form-check-label" for="valueinput">Value</label>
+        <!-- <label class="form-check-label" for="valueinput">Value</label> -->
 
         <input type="text" class="form-control inputName" name="valueinput" :placeholder="props.name"
-            onfocus="this.placeholder = ''" :onblur="this.placeholder = props.name" v-model="data"
-            @input="dataInputChange" :disabled="props.disabled">
+            onfocus="this.placeholder = ''" v-model="data" @input="dataInputChange" :disabled="props.disabled">
     </div>
 </template>
+<!-- onblur="this.placeholder = 'test'" -->

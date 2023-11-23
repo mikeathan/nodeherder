@@ -11,7 +11,7 @@ const props = defineProps({
         required: true,
     },
     property: String,
-    data: String,
+    data: null,
     delay: String,
 });
 
@@ -56,24 +56,6 @@ const features = computed(() => {
     return list;
 });
 
-
-function delayInputChange(event) {
-    delay.value = event.target.value.replace(/[^0-9.]/g, '');
-    emit("update:delay", event.target.value);
-}
-
-function dataInputChange(event) {
-    data.value = event.target.value.replace(/[^0-9.]/g, '');
-    emit("update:data", event.target.value);
-}
-
-function dataSelectionChanged(event) {
-    if (event.target.value == null) {
-        return;
-    }
-    emit("update:data", event.target.value);
-}
-
 function propertySelectionChanged(event) {
     var value = event.target.value;
 
@@ -81,15 +63,15 @@ function propertySelectionChanged(event) {
         return;
     }
 
-    // TODO:
+    // TODO: we cant do thta becasue it resets the value
     // set default value if type is binary - NEEDS REFACTORING
-    for (const [key, expose] of Object.entries(device.value.exposes)) {
-        if (expose.name != value) {
-            continue;
-        }
-        var keys = Object.keys(expose.properties)
-        data.value = expose.properties[keys[0]]
-    }
+    // for (const [key, expose] of Object.entries(device.value.exposes)) {
+    //     if (expose.name != value) {
+    //         continue;
+    //     }
+    //     var keys = Object.keys(expose.properties)
+    //     data.value = expose.properties[keys[0]]
+    // }
 }
 
 const feature = computed(() => {
@@ -143,7 +125,8 @@ function remove(event) {
             disabled />
     </div> -->
     <div class="col-xl-4">
-        <select id="featurePropertySelector" style="text-align:center;" class="form-control" v-model="property"
+
+        <select id="featurePropertySelector" style="text-align:center;" class="form-control inputName" v-model="property"
             @change="propertySelectionChanged" :disabled="props.property != null">
             <option value="">Select property</option>
             <option v-for="feature in features" :value="feature.name" :key="feature.name">
@@ -151,28 +134,22 @@ function remove(event) {
             </option>
         </select>
     </div>
-
+    <!-- 
+    TODO use conditional logic between data and feature.properties fix order of rendering
+    fix blur name -->
     <div class="col-xl-3" v-if="feature.type == 'binary'">
-        <DataInput :type="feature.type" name="Value" :data="feature.properties"></DataInput>
-
-        <!-- <select id="propertySelect" style="text-align:center;" class="form-control" v-model="data"
-            @change="dataSelectionChanged">
-            <option v-for="(value, key) in feature.properties" :value="value" :key="key">
-                {{ value }}
-            </option>
-        </select> -->
+        <DataInput :type="feature.type" name="Value" :data="feature.type == 'binary' ? feature.properties : data"
+            @update:data="newValue => data = newValue">
+        </DataInput>
     </div>
 
     <div class="col-xl-3" v-else>
-        <DataInput :type="feature.type" name="Value" :data="data"></DataInput>
-        <!-- <input type="text" style="text-align:center;" class="form-control" placeholder="Value"
-            onfocus="this.placeholder = ''" onblur="this.placeholder='Value'" v-model="data" @input="dataInputChange"
-            :disabled="property == null" /> -->
+        <DataInput :type="feature.type" name="Value" :data="data" :disabled="property == ''"
+            @update:data="newValue => data = newValue"></DataInput>
     </div>
     <div class="col-xl-3">
-        <input type="text" style="text-align:center;" class="form-control" placeholder="Delay"
-            onfocus="this.placeholder = ''" onblur="this.placeholder='Delay'" v-model="delay" :disabled="property == null"
-            @input="delayInputChange" />
+        <DataInput name="Delay" :data="delay" :disabled="property == ''" @update:data="newValue => delay = newValue">
+        </DataInput>
     </div>
 
     <div class="col-xl-2">
