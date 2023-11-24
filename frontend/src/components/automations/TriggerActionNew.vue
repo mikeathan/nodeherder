@@ -134,21 +134,15 @@ function remove(event) {
             </option>
         </select>
     </div>
-    <!-- 
-    TODO use conditional logic between data and feature.properties fix order of rendering
-    fix blur name -->
-    <div class="col-xl-3" v-if="feature.type == 'binary'">
+
+
+    <div class="col-xl-3">
         <DataInput :type="feature.type" name="Value" :data="feature.type == 'binary' ? feature.properties : data"
-            @update:data="newValue => data = newValue">
+            :disabled="property == ''" @update:data="$emit('update:data', event)">
         </DataInput>
     </div>
-
-    <div class="col-xl-3" v-else>
-        <DataInput :type="feature.type" name="Value" :data="data" :disabled="property == ''"
-            @update:data="newValue => data = newValue"></DataInput>
-    </div>
     <div class="col-xl-3">
-        <DataInput name="Delay" :data="delay" :disabled="property == ''" @update:data="newValue => delay = newValue">
+        <DataInput name="Delay" :data="delay" :disabled="property == ''" @update:data="$emit('update:delay', event)">
         </DataInput>
     </div>
 
