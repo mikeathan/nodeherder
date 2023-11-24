@@ -2,9 +2,9 @@
 import { ref, watch } from "vue";
 
 const props = defineProps({
-    name: {
+    placeholder: {
         type: String,
-        required: true,
+        default: ""
     },
     data: null, // could be string or array of string
     type: {
@@ -34,9 +34,9 @@ watch(
 )
 
 watch(
-    () => props.name,
+    () => props.placeholder,
     () => {
-        placeholder.value = props.name
+        placeholder.value = props.placeholder
     }, { immediate: true }
 )
 
@@ -54,7 +54,7 @@ function dataSelectionChanged(event) {
 }
 
 function blurChanged(event) {
-    placeholder.value = props.name
+    placeholder.value = props.placeholder
 }
 
 function focusChanged(event) {
@@ -88,6 +88,7 @@ function focusChanged(event) {
 
         <select id="dataSelect" style="text-align:center;" class="form-control form-select select-outline" name="valueinput"
             v-model="data" @change="dataSelectionChanged" :disabled="props.disabled">
+            <option value="">{{ props.placeholder }}</option>
             <option v-for="(value, key) in props.data" :value="value" :key="key">
                 {{ value }}
             </option>
