@@ -15,7 +15,8 @@ const props = defineProps({
 });
 
 const data = ref(null);
-const name = ref("");
+const placeholder = ref("");
+
 const emit = defineEmits(['update:data'])
 
 
@@ -35,7 +36,7 @@ watch(
 watch(
     () => props.name,
     () => {
-        name.value = props.name
+        placeholder.value = props.name
     }, { immediate: true }
 )
 
@@ -52,15 +53,29 @@ function dataSelectionChanged(event) {
     emit("update:data", event.target.value);
 }
 
+function blurChanged(event) {
+    placeholder.value = props.name
+}
+
+function focusChanged(event) {
+    placeholder.value = ""
+}
+
 </script>
 
 <style scoped>
-.inputName {
+.input-outline {
     border: 0;
     outline: 0;
     background: transparent;
     border-bottom: 1px solid #e5e5e5;
-    border-radius: 0
+    border-radius: 0;
+}
+
+.select-outline {
+    border: 0;
+    outline: 0;
+    border-bottom: 1px solid #e5e5e5;
 }
 
 .custom-control-input {
@@ -71,9 +86,8 @@ function dataSelectionChanged(event) {
     <div v-if="type == 'binary'">
         <!-- <label class="form-check-label" for="valueinput">Value</label> -->
 
-        <select id="dataSelect" style="text-align:center;" class="form-control inputName" name="valueinput" v-model="data"
-            @change="dataSelectionChanged" :disabled="props.disabled">
-            <option value="">Select item</option>
+        <select id="dataSelect" style="text-align:center;" class="form-control form-select select-outline" name="valueinput"
+            v-model="data" @change="dataSelectionChanged" :disabled="props.disabled">
             <option v-for="(value, key) in props.data" :value="value" :key="key">
                 {{ value }}
             </option>
@@ -82,8 +96,8 @@ function dataSelectionChanged(event) {
     <div v-else>
         <!-- <label class="form-check-label" for="valueinput">Value</label> -->
 
-        <input type="text" class="form-control inputName" name="valueinput" :placeholder="props.name"
-            onfocus="this.placeholder = ''" v-model="data" @input="dataInputChange" :disabled="props.disabled">
+        <input type="text" class="form-control input-outline" name="valueinput" :placeholder="placeholder" v-model="data"
+            @input="dataInputChange" :disabled="props.disabled" @focus="focusChanged" @blur="blurChanged">
     </div>
 </template>
 <!-- onblur="this.placeholder = 'test'" -->
