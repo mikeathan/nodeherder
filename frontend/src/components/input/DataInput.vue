@@ -7,6 +7,7 @@ const props = defineProps({
         default: ""
     },
     data: null, // could be string or array of string
+    items: null,
     type: {
         type: String,
         default: "numeric"
@@ -23,11 +24,6 @@ const emit = defineEmits(['update:data'])
 watch(
     () => props.data,
     () => {
-        if (props.type == "binary" && typeof props.data == "object") {
-            var values = Object.values(props.data)
-            data.value = values[0]
-            return
-        }
         data.value = props.data
         // data.value = parseInt(props.data) // ????????? maybe cast it 
     }, { immediate: true }
@@ -42,7 +38,6 @@ watch(
 
 function dataInputChange(event) {
     data.value = event.target.value.replace(/[^0-9.]/g, '');
-    console.log("datainput - data ", data.value)
     emit("update:data", data.value);
 }
 
@@ -50,7 +45,8 @@ function dataSelectionChanged(event) {
     if (event.target.value == null) {
         return;
     }
-    emit("update:data", event.target.value);
+    data.value = event.target.value
+    emit("update:data", data.value);
 }
 
 function blurChanged(event) {
@@ -83,13 +79,12 @@ function focusChanged(event) {
 }
 </style>
 <template>
-    <div v-if="type == 'binary'">
-        <!-- <label class="form-check-label" for="valueinput">Value</label> -->
+    <div v-if="props.type == 'binary'">
 
         <select id="dataSelect" style="text-align:center;" class="form-control form-select select-outline" name="valueinput"
             v-model="data" @change="dataSelectionChanged" :disabled="props.disabled">
             <option value="">{{ props.placeholder }}</option>
-            <option v-for="(value, key) in props.data" :value="value" :key="key">
+            <option v-for="(value, key) in props.items" :value="value" :key="key">
                 {{ value }}
             </option>
         </select>

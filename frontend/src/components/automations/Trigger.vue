@@ -14,6 +14,7 @@ const props = defineProps({
 const store = useStore();
 const selectedAction = ref(null)
 const selectedExpose = ref("")
+const trigger = ref(null)
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
 });
@@ -26,13 +27,14 @@ function getExposes() {
 
 watch(
     () => props.trigger,
-    (newTrigger) => {
+    () => {
         selectedAction.value = null
         selectedExpose.value = props.trigger.name
         // select action optionsto current action if not null
         if (props.trigger.action != null) {
             selectedAction.value = props.trigger.action.id
         }
+        trigger.value = props.trigger
     }, { immediate: true }
 )
 
@@ -57,7 +59,6 @@ const featureDevices = computed(() => {
 });
 
 function addAction(event) {
-    console.log("trigger - add action ", event)
     emit('addAction', event)
 }
 

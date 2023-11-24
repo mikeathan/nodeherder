@@ -16,7 +16,7 @@ const props = defineProps({
 });
 
 const property = ref("");
-const data = ref(null);
+const data = ref("");
 const delay = ref(null);
 
 const store = useStore();
@@ -24,7 +24,6 @@ const emit = defineEmits(['add', 'remove', 'update:data', 'update:delay'])
 
 watchEffect(() => data.value = props.data);
 watchEffect(() => delay.value = props.delay);
-
 watch(
     () => props.property,
     () => {
@@ -57,21 +56,23 @@ const features = computed(() => {
 });
 
 function propertySelectionChanged(event) {
-    var value = event.target.value;
 
-    if (value == null || device.value == undefined) {
+
+    var value = event.target.value;
+    if (value == "" || device.value == undefined) {
+        data.value = "" // reset data
         return;
     }
-
-    // TODO: we cant do thta becasue it resets the value
-    // set default value if type is binary - NEEDS REFACTORING
-    // for (const [key, expose] of Object.entries(device.value.exposes)) {
-    //     if (expose.name != value) {
-    //         continue;
-    //     }
-    //     var keys = Object.keys(expose.properties)
-    //     data.value = expose.properties[keys[0]]
-    // }
+    // reset data
+    for (const [key, feature] of Object.entries(features.value)) {
+        if (feature.name == value) {
+            if (feature.type == 'binary') {
+                data.value = ""
+            } else {
+                data.value = 0
+            }
+        }
+    }
 }
 
 const feature = computed(() => {
@@ -87,6 +88,16 @@ const feature = computed(() => {
 
     return device.exposes[property.value];
 });
+
+function dataUpdated(event) {
+    data.value = event
+    emit('update:data', event)
+}
+
+function delayUpdated(event) {
+    delay.value = event
+    emit('update:delay', event)
+}
 
 function add() {
     var newAction = new ActionTrigger()
@@ -119,11 +130,6 @@ function remove(event) {
 }
 </style>
 <template>
-    <!-- <div class="col" v-if="device != null">
-        <input type="text" style="text-align:center;" class="form-control" placeholder="Friendly name"
-            onfocus="this.placeholder = ''" onblur="this.placeholder='Friendly name'" v-model="device.friendly_name"
-            disabled />
-    </div> -->
     <div class="col-xl-4">
         <select id="featurePropertySelector" style="text-align:center;" class="form-control inputName" v-model="property"
             @change="propertySelectionChanged" :disabled="props.property != null">
@@ -137,19 +143,19 @@ function remove(event) {
 
     <div class="col-xl-3">
         <DataInput :type="feature.type" :placeholder="feature.type == 'binary' ? 'Select' : 'Value'"
-            :data="feature.type == 'binary' ? feature.properties : data" :disabled="property == ''"
-            @update:data="$emit('update:data', event)">
+            :items="feature.type == 'binary' ? feature.properties : null" :data="data" :disabled="property == ''"
+            @update:data="dataUpdated">
         </DataInput>
     </div>
     <div class="col-xl-3">
-        <DataInput placeholder="Delay" :data="delay" :disabled="property == ''" @update:data="$emit('update:delay', event)">
+        <DataInput placeholder="Delay" :data="delay" :disabled="property == ''" @update:data="delayUpdated">
         </DataInput>
     </div>
 
     <div class="col-xl-2">
         <div class="btn-group">
             <div v-if="props.property == null">
-                <button type="button" class="btn btn-default btn-number" @click="add($event)" :disabled="property == ''">
+                <button type="button" class="btn btn-default btn-number" @click="add($event)" :disabled="data == ''">
                     <span class="fa fa-plus"></span>
                 </button>
             </div>
