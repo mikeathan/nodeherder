@@ -113,23 +113,18 @@ function removeAction(event) {
             </div>
 
             <!-- Conditions -->
-            <div class="accordion accordion-flush mt-3" id="triggerSelections">
+            <div class="accordion accordion-flush mt-3 " id="triggerSelections">
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="`header`">
 
                         <div class="row ">
-                            <div class="col accordion-button collapsed " data-bs-toggle="collapse"
+                            <div class="col-xl-3 accordion-button collapsed " data-bs-toggle="collapse"
                                 :data-bs-target="`#collapseOne`" aria-expanded="false" :aria-controls="`collapseOne`">
 
                                 <div class="col-xs-3 col-md-6">
                                     Conditions
                                 </div>
                                 <div class="col-xs-10 col-md-2">
-                                </div>
-                                <div class="col pe-3 text-end ">
-                                    <span class="fa fa-trash-alt fa-lg" data-bs-toggle="collapse" data-bs-target>
-                                    </span>
-
                                 </div>
                             </div>
                         </div>

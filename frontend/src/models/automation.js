@@ -6,6 +6,14 @@ export const Operators = [
   { text: "<", value: "<" },
 ];
 
+export const OperatorKeys = [
+  "=",
+  "<=",
+  ">=",
+  ">",
+  "<",
+];
+
 export class DeviceTrigger {
   constructor() {
     this.id = "";

@@ -1,5 +1,7 @@
 <script setup>
-import { Operators, Condition } from "../../models/automation"
+import { OperatorKeys, Condition } from "../../models/automation"
+import DataInput from "../input/DataInput.vue"
+
 import { ref, watchEffect, watch } from 'vue'
 const props = defineProps({
     exposes:
@@ -37,10 +39,6 @@ function remove() {
     emit("remove", props.id)
 }
 
-// watchEffect(() => name.value = props.name);
-// watchEffect(() => data.value = props.data);
-// watchEffect(() => operator.value = props.operator);
-
 watch(
     () => props.name,
     () => {
@@ -62,57 +60,51 @@ watch(
     }, { immediate: true }
 )
 
-// watch(
-//     () => props.id,
-//     (i) => {
-//         if (i == 0 && props.exposes != null) {
-//             //name.value = props.exposes[0]
-//         }
-//     },
-//     { immediate: true }
-// );
-
 function reset() {
     data.value = ""
-    operator.value = Operators[0].value
+    operator.value = OperatorKeys[0]
 }
 
-function operatorSelectionChanged(event) {
+function exposeSelectionChanged(event) {
     if (event.target.value == null) {
         return
     }
 
-    emit("update:operator", event.target.value)
+    // TODO: maybe reset operators select on change
 }
 
+function operatorUpdated(event) {
+    operator.value = event
+    emit('update:operator', event)
+}
+function dataUpdated(event) {
+    data.value = event
+    emit('update:value', event)
+}
 </script>
 
 <template>
-    <div v-if="props.id == 0" class="col">
+    <div v-if="props.id == 0" class="col-xl-3">
         <select id="exposeSelector" style="text-align:center;" class="form-control" @change="exposeSelectionChanged"
-            v-model="name" :disabled="name == ''">
+            v-model="name" :disabled="props.name == ''">
             <option value="">Select trigger</option>
             <option v-for="name in props.exposes" :value="name" :key="name">
                 {{ name }}
             </option>
         </select>
     </div>
-    <div v-else class="col">
-        <input type="text" class="form-control" placeholder="Condition name" onfocus="this.placeholder = ''"
-            style="text-align: center;" onblur="this.placeholder='Condition name'" v-model="name" disabled />
+    <div v-else class="col-xl-3">
+        <DataInput placeholder="Name" :data="name" :disabled="true">
+        </DataInput>
     </div>
-    <div class="col">
-        <select id="selectOperators" style="text-align:center;" class="form-control" v-model="operator"
-            :disabled="name == ''" @change="operatorSelectionChanged">
-            <option v-for="operator in Operators" :value="operator.value" :key="operator.value">
-                {{ operator.text }}
-            </option>
-        </select>
+    <div class="col-xl-3">
+        <DataInput type="binary" :items="OperatorKeys" :data="operator" :disabled="name == ''"
+            @update:data="operatorUpdated">
+        </DataInput>
     </div>
-    <div class="col">
-        <input type="text" style="text-align:center;" class="form-control" placeholder="Condition value"
-            onfocus="this.placeholder = ''" onblur="this.placeholder='Condition value'" v-model="data"
-            @input="$emit('update:value', $event.target.value)" :disabled="name == ''" />
+    <div class="col-xl-3">
+        <DataInput placeholder="Value" :data="data" :disabled="name == ''" @update:data="dataUpdated">
+        </DataInput>
     </div>
     <div class="col-3">
         <div class="btn-group">
@@ -120,7 +112,6 @@ function operatorSelectionChanged(event) {
                 <button type="button" class="btn btn-default btn-number" @click="add($event)" :disabled="data.length == 0">
                     <span class="fa fa-plus"></span>
                 </button>
-
             </div>
             <div v-else>
                 <button type="button" class="btn btn-default btn-number" @click="remove($event)">
