@@ -62,15 +62,17 @@ function addAction(event) {
     emit('addAction', event)
 }
 
+function removeAction(event) {
+    emit('removeAction', event)
+}
+
+
 function addCondition(event) {
     emit('addCondition', event)
 }
 
 function removeCondition(event) {
     emit('removeCondition', event)
-}
-function removeAction(event) {
-    emit('removeAction', event)
 }
 
 </script>

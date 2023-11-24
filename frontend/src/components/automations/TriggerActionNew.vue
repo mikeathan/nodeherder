@@ -56,8 +56,6 @@ const features = computed(() => {
 });
 
 function propertySelectionChanged(event) {
-
-
     var value = event.target.value;
     if (value == "" || device.value == undefined) {
         data.value = "" // reset data

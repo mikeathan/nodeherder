@@ -46,13 +46,12 @@ watch(
 const emit = defineEmits(['cancel', 'create'])
 
 function isSaveEnabled() {
-
-    exclude the exposeTriggers with empty key
-    return Object.keys(exposeTriggers.value).length > 0 && description.value.length > 0
+    // find entries with actions only
+    var values = Object.values(exposeTriggers.value).filter(k => k.action != null);
+    return values.length > 0 && description.value.length > 0
 }
 
 function create() {
-
     var deviceTrigger = new DeviceTrigger()
     deviceTrigger.friendlyName = device.value.friendly_name;
     deviceTrigger.id = device.value.id
