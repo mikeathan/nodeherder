@@ -46,6 +46,8 @@ watch(
 const emit = defineEmits(['cancel', 'create'])
 
 function isSaveEnabled() {
+
+    exclude the exposeTriggers with empty key
     return Object.keys(exposeTriggers.value).length > 0 && description.value.length > 0
 }
 
