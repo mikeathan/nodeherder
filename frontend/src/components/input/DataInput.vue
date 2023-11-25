@@ -17,7 +17,7 @@ const props = defineProps({
 
 const data = ref(null);
 const placeholder = ref("");
-
+const items = ref(['OFF', 'TRUE'])
 const emit = defineEmits(['update:data'])
 
 
@@ -26,6 +26,15 @@ watch(
     () => {
         data.value = props.data
         // data.value = parseInt(props.data) // ????????? maybe cast it 
+    }, { immediate: true }
+)
+
+watch(
+    () => props.items,
+    () => {
+        if (props.items != null) {
+            items.value = props.items
+        }
     }, { immediate: true }
 )
 
@@ -84,7 +93,7 @@ function focusChanged(event) {
         <select id="dataSelect" style="text-align:center;" class="form-control form-select select-outline" name="valueinput"
             v-model="data" @change="dataSelectionChanged" :disabled="props.disabled">
             <option v-if="props.placeholder != ''" value="">{{ props.placeholder }}</option>
-            <option v-for="(value, key) in props.items" :value="value" :key="key">
+            <option v-for="(value, key) in items" :value="value" :key="key">
                 {{ value }}
             </option>
         </select>
