@@ -17,7 +17,7 @@ const props = defineProps({
 
 const data = ref(null);
 const placeholder = ref("");
-const items = ref(['OFF', 'TRUE'])
+const items = ref(['OFF', 'ON'])
 const emit = defineEmits(['update:data'])
 
 

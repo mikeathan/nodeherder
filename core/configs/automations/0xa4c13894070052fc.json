@@ -9,7 +9,7 @@
       "conditions": [
         {
           "name": "presence",
-          "value": false,
+          "value": "OFF",
           "equality": "="
         }
       ],
@@ -27,11 +27,11 @@
       "conditions": [
         {
           "name": "presence",
-          "value": true,
+          "value": "ON",
           "equality": "="
         },
         {
-          "name": "lux",
+          "name": "iluminance_lux",
           "value": 30,
           "equality": "\u003c="
         }

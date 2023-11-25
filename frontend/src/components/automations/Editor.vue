@@ -2,6 +2,7 @@
 import { useStore } from "vuex";
 import { computed, onMounted, reactive, ref } from "vue";
 import TriggerAction from "./TriggerAction.vue";
+import TriggerCondition from "./TriggerCondition"
 
 const props = defineProps({
     id: String,
@@ -33,6 +34,14 @@ function onActionChanged(event, properties) {
 onMounted(() => {
 
 });
+
+function addCondition(event) {
+    emit('addCondition', event)
+}
+
+function removeCondition(event) {
+    emit('removeCondition', event)
+}
 
 function update() {
     store.dispatch('automations/save', props.id);
@@ -117,7 +126,20 @@ function onDeleteTriggerClick(event, automationId, triggerId) {
                                     :aria-labelledby="`header${index}`" data-bs-parent="#triggersList">
                                     <div class="accordion-body">
                                         <label>Condition</label>
-                                        <div class="row w-25" v-for="(condition) in trigger.conditions">
+
+
+                                        <div v-for="condition in trigger.conditions">
+                                            <div class="row">
+                                                <TriggerCondition :id="props.id" :index="condition.idx"
+                                                    :name="condition.name" :operator="condition.equality"
+                                                    :key="condition.idx" :data="condition.value"
+                                                    @remove="removeCondition($event)"
+                                                    @update:value="newValue => condition.value = newValue"
+                                                    @update:operator="newValue => condition.operator = newValue">
+                                                </TriggerCondition>
+                                            </div>
+                                        </div>
+                                        <!--  <div class="row w-25" v-for="(condition) in trigger.conditions">
                                             <div class="col">
                                                 <input type="text" class="form-control" v-model="condition.name"
                                                     placeholder="Condition name" disabled>
@@ -137,12 +159,15 @@ function onDeleteTriggerClick(event, automationId, triggerId) {
                                                     tooltip="Condition value">
                                             </div>
                                         </div>
-                                        <p></p>
-                                        <TriggerAction :trigger="trigger"></TriggerAction>
+                                        <p></p> -->
+
+
+                                        --------------------
+                                        <!--    <TriggerAction :trigger="trigger"></TriggerAction>
                                         <div id=deleteTriggerDiv>
 
                                             <button type="submit" class="btn btn-primary mt-3">Delete</button>
-                                        </div>
+                                        </div> -->
                                     </div>
                                 </div>
                             </div>

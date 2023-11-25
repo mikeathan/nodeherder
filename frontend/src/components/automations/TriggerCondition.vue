@@ -11,7 +11,7 @@ const props = defineProps({
     },
     name: String,
     operator: String,
-    data: String,
+    data: null,
     index: {
         type: Number,
         required: true,
@@ -21,7 +21,7 @@ const props = defineProps({
 
 const store = useStore()
 const index = ref(props.index);
-const data = ref('')
+const data = ref(null)
 const operator = ref('')
 const name = ref('')
 
