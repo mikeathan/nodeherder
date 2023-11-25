@@ -21,9 +21,6 @@ const device = computed(() => {
 
 const emit = defineEmits(['addAction', 'removeAction', 'addCondition', 'removeCondition'])
 
-function getExposes() {
-    return Object.keys(device.value.exposes)
-}
 
 watch(
     () => props.trigger,
@@ -136,14 +133,14 @@ function removeCondition(event) {
                         data-bs-parent="#triggerSelections">
                         <div class="accordion-body">
                             <div class="row">
-                                <TriggerCondition :id="0" :exposes="getExposes()" :name="selectedExpose"
+                                <TriggerCondition :id="props.id" :index="0" :name="selectedExpose"
                                     :operator="Operators[0].value" :data="''" @add="addCondition">
                                 </TriggerCondition>
                             </div>
 
                             <div v-for="condition in trigger.conditions">
                                 <div class="row">
-                                    <TriggerCondition :id="condition.idx" :name="condition.name"
+                                    <TriggerCondition :id="props.id" :index="condition.idx" :name="condition.name"
                                         :operator="condition.equality" :key="condition.idx" :data="condition.value"
                                         @remove="removeCondition($event)"
                                         @update:value="newValue => condition.value = newValue"
