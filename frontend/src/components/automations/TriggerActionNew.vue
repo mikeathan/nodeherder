@@ -12,7 +12,7 @@ const props = defineProps({
     },
     property: String,
     data: null,
-    delay: String,
+    delay: null,
 });
 
 const property = ref("");
@@ -140,7 +140,7 @@ function remove(event) {
 
 
     <div class="col-xl-3">
-        <DataInput :type="feature.type" :placeholder="feature.type == 'binary' ? 'Select' : 'Value'"
+        <DataInput :type="feature.type" :placeholder="feature.type == 'binary' ? '' : 'Value'"
             :items="feature.type == 'binary' ? feature.properties : null" :data="data" :disabled="property == ''"
             @update:data="dataUpdated">
         </DataInput>
