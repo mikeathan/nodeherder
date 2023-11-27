@@ -41,7 +41,7 @@ const featureDevices = computed(() => {
     // find exposes with properties
     // let all = items.filter(item=> item.age==='18')
     //     return deviceimport DeviceAutomation from "./DeviceAutomation"
-    s;
+
     // });
     var list = []
     for (const [key, device] of Object.entries(devices)) {

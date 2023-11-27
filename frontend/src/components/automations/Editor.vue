@@ -1,5 +1,6 @@
 <script setup>
 import { useStore } from "vuex";
+
 import { computed, ref, watchEffect, watch } from "vue";
 import TriggerActionNew from "./TriggerActionNew";
 import TriggerCondition from "./TriggerCondition"
@@ -21,6 +22,7 @@ watch(
         }
     }, { immediate: true }
 )
+
 
 function onActionChanged(event, properties) {
     if (event.target.value == "") {
@@ -45,9 +47,7 @@ function removeAction(event, trigger) {
     trigger.action = null
 }
 
-function update() {
-
-    // check id we have any actions in automation trigger
+function save() {
     store.dispatch('automations/save', automation.value);
 }
 
@@ -91,6 +91,16 @@ function onDeleteTriggerClick(event, automationId, triggerId) {
                     <div class="form-check">
                         <input type="checkbox" class="form-check-input" id="checkEnabled" v-model="automation.enabled">
                         <label class="form-check-label" for="checkEnabled">Enabled</label>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-light" @click="save">
+                            Save
+                        </button>
+                        <router-link :to="`/viewer`" tag="span">
+                            <button type="button" class="btn btn-light" @click="cancel">
+                                Cancel
+                            </button> </router-link>
                     </div>
                 </div>
                 <div class="card-body">
@@ -183,9 +193,7 @@ function onDeleteTriggerClick(event, automationId, triggerId) {
                     </div>
                 </div>
             </div>
-            <div>
-                <button type="button" class="btn btn-primary mt-3" @click="update()">Update</button>
-            </div>
+
         </div>
     </div>
 </template>
