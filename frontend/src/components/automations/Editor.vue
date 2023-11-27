@@ -6,22 +6,37 @@ import TriggerCondition from "./TriggerCondition"
 
 const props = defineProps({
     id: String,
-    trigger: Object
 });
 
-const operators = ref([
-    { text: '=', value: '=' },
-    { text: '<=', value: '<=' },
-    { text: '>=', value: '>=' },
-    { text: '>', value: '>' },
-    { text: '<', value: '<' }
-])
+const auto = ref(null)
+
 
 const store = useStore();
-const automation = computed(() => {
-    return store.getters["automations/find"](props.id);
+
+const name = computed(() => {
+    return store.getters["automations/name"](props.id);;
 });
 
+const description = computed(() => {
+    return store.getters["automations/description"](props.id);;
+});
+
+const enabled = computed(() => {
+    return store.getters["automations/enabled"](props.id);;
+});
+const trigger = computed(() => {
+    return store.getters["automations/trigger"](props.id);;
+});
+
+const conditions = computed(() => {
+    return store.getters["automations/conditions"](props.id);;
+});
+const automation2 = computed(() => {
+    //this.oldForm = Object.assign({}, this.form);
+    var result = store.getters["automations/find"](props.id);
+
+    return result
+});
 function onActionChanged(event, properties) {
     if (event.target.value == "") {
         return;
@@ -76,7 +91,7 @@ function onDeleteTriggerClick(event, automationId, triggerId) {
                 <div class="card-header">
                     <div class="form-group">
                         <label for="inputId">Id</label>
-                        <input type="input" class="form-control" id="inputName" v-model="automation.id" disabled />
+                        <input type="input" class="form-control" id="inputName" v-model="props.id" disabled />
                     </div>
                     <div class="form-group">
                         <label for="inputFriendlyName">Friendly Name</label>
@@ -98,7 +113,7 @@ function onDeleteTriggerClick(event, automationId, triggerId) {
                         keep a copy of automation so we dont updat store automtically. only on update click <br>
                         dont allow deleteing all actions, as we cant have automation without it <br>
                         fix layout<br>
-                        <div v-for="(trigger, index) in  automation.triggers ">
+                        <div v-for="(trigger, index) in  triggers ">
                             <!-- <div v-for="condition in trigger.conditions">
                                 <div class="row">
                                     <TriggerCondition :id="props.id" :index="condition.idx" :name="condition.name"
