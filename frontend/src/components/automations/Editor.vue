@@ -1,18 +1,18 @@
 <script setup>
 import { useStore } from "vuex";
-
 import { computed, ref, watchEffect, watch } from "vue";
 import TriggerActionNew from "./TriggerActionNew";
 import TriggerCondition from "./TriggerCondition"
 import { DeviceTrigger } from "../../models/automation"
-import Trigger from "./Trigger"
 import DataInput from "../input/DataInput.vue"
+import { useRouter } from 'vue-router'
 
 const props = defineProps({
     id: String,
 });
 
 const store = useStore();
+const router = useRouter()
 const automation = ref(new DeviceTrigger())
 watch(
     () => props.id,
@@ -48,6 +48,7 @@ function removeAction(event, trigger) {
 
 function save() {
     store.dispatch('automations/save', automation.value);
+    router.push("/viewer")
 }
 
 function onDeleteTriggerClick(event, triggerId) {

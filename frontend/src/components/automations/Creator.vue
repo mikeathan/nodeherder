@@ -2,9 +2,9 @@
 import { useStore } from "vuex";
 import { computed, ref } from "vue";
 import DeviceAutomation from "./DeviceAutomation"
-
+import { useRouter } from 'vue-router'
 const deviceTriggers = ref([])
-
+const router = useRouter()
 const store = useStore();
 const selectedDevice = ref("")
 
@@ -15,11 +15,13 @@ const devices = computed(() => {
 
 function cancel() {
     selectedDevice.value = ""
+    router.push("/viewer")
 }
 
 function create(event) {
     deviceTriggers.value.push(event)
     store.dispatch('automations/save', event);
+    router.push("/viewer")
 }
 
 </script>
