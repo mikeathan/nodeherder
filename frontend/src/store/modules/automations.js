@@ -13,11 +13,12 @@ const actions = {
     });
     state.initialized = true;
   },
-  save({ state, dispatch, rootState }, id) {
+  save({ commit, dispatch, rootState }, automation) {
     console.log("automations/save");
+    commit("add", automation)
     dispatch(
       "ws/emit",
-      { event: "saveAutomation", message: state.items[id] },
+      { event: "saveAutomation", message: automation },
       { root: true }
     );
   },
@@ -25,29 +26,6 @@ const actions = {
 
 const getters = {
   items: (state) => state.items,
-  name: (state) => (id) => {
-    var item = state.items[id];
-    if (item == undefined) {
-      return {};
-    }
-    return item.friendlyName;
-  },
-  description: (state) => (id) => {
-    var item = state.items[id];
-    return item.description;
-  },
-  enabled: (state) => (id) => {
-    var item = state.items[id];
-    return item.enabled;
-  },
-  action: (state) => (id) => {
-    var item = state.items[id];
-    return item.action;
-  },
-  conditions: (state) => (id) => {
-    var item = state.items[id];
-    return item.conditions;
-  },
   isInitialized: (state) => state.initialized,
   find: (state) => (id) => {
     return state.items[id];

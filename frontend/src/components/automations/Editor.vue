@@ -1,42 +1,27 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed, ref } from "vue";
+import { computed, ref, watchEffect, watch } from "vue";
 import TriggerActionNew from "./TriggerActionNew";
 import TriggerCondition from "./TriggerCondition"
+import { DeviceTrigger } from "../../models/automation"
 
 const props = defineProps({
     id: String,
 });
 
-const auto = ref(null)
-
-
 const store = useStore();
+const automation = ref(new DeviceTrigger())
+watch(
+    () => props.id,
+    () => {
+        var sourceAutomation = store.getters["automations/find"](props.id);
+        if (sourceAutomation != undefined) {
+            // make a deep copy to make it on reactive
+            automation.value = JSON.parse(JSON.stringify(sourceAutomation))
+        }
+    }, { immediate: true }
+)
 
-const name = computed(() => {
-    return store.getters["automations/name"](props.id);;
-});
-
-const description = computed(() => {
-    return store.getters["automations/description"](props.id);;
-});
-
-const enabled = computed(() => {
-    return store.getters["automations/enabled"](props.id);;
-});
-const trigger = computed(() => {
-    return store.getters["automations/trigger"](props.id);;
-});
-
-const conditions = computed(() => {
-    return store.getters["automations/conditions"](props.id);;
-});
-const automation2 = computed(() => {
-    //this.oldForm = Object.assign({}, this.form);
-    var result = store.getters["automations/find"](props.id);
-
-    return result
-});
 function onActionChanged(event, properties) {
     if (event.target.value == "") {
         return;
@@ -47,7 +32,6 @@ function onActionChanged(event, properties) {
     // build div = actionDataDiv
 }
 
-
 function addCondition(event) {
     // emit('addCondition', event)
 }
@@ -57,11 +41,14 @@ function removeCondition(event) {
 }
 
 function removeAction(event, trigger) {
+
     trigger.action = null
 }
 
 function update() {
-    store.dispatch('automations/save', props.id);
+
+    // check id we have any actions in automation trigger
+    store.dispatch('automations/save', automation.value);
 }
 
 function onDeleteTriggerClick(event, automationId, triggerId) {
@@ -91,12 +78,11 @@ function onDeleteTriggerClick(event, automationId, triggerId) {
                 <div class="card-header">
                     <div class="form-group">
                         <label for="inputId">Id</label>
-                        <input type="input" class="form-control" id="inputName" v-model="props.id" disabled />
+                        <input type="input" class="form-control" id="inputName" :value="props.id" disabled />
                     </div>
                     <div class="form-group">
                         <label for="inputFriendlyName">Friendly Name</label>
-                        <input type="input" class="form-control" id="inputName" v-model="automation.friendlyName"
-                            disabled />
+                        <input type="input" class="form-control" id="inputName" :value="automation.friendlyName" disabled />
                     </div>
                     <div class="form-group">
                         <label for="inputDescription">Description</label>
@@ -110,11 +96,10 @@ function onDeleteTriggerClick(event, automationId, triggerId) {
                 <div class="card-body">
                     <div class="col-xl-6 col-md-6 col-sm-3">
                         TODO<br>
-                        keep a copy of automation so we dont updat store automtically. only on update click <br>
-                        dont allow deleteing all actions, as we cant have automation without it <br>
                         fix layout<br>
-                        <div v-for="(trigger, index) in  triggers ">
-                            <!-- <div v-for="condition in trigger.conditions">
+                        move update button up<br>
+                        <!-- <div v-for="(trigger, index) in  automation.triggers ">
+                            <div v-for="condition in trigger.conditions">
                                 <div class="row">
                                     <TriggerCondition :id="props.id" :index="condition.idx" :name="condition.name"
                                         :operator="condition.equality" :key="condition.idx" :data="condition.value"
@@ -123,18 +108,16 @@ function onDeleteTriggerClick(event, automationId, triggerId) {
                                         @update:operator="newValue => condition.operator = newValue">
                                     </TriggerCondition>
                                 </div>
-                            </div> -->
-
+                            </div>
                             <div class="row" v-if="trigger.action != null">
                                 <TriggerActionNew :id="trigger.action.id" :property="trigger.action.property"
-                                    :data="trigger.action.data" :delay="trigger.action.delay"
-                                    @add="removeAction($event, trigger)"
+                                    :data="trigger.action.data" :delay="trigger.action.delay" :allowRemove="false"
                                     @update:data="newValue => trigger.action.data = newValue"
                                     @update:delay="newValue => trigger.action.delay = newValue">
                                 </TriggerActionNew>
                             </div>
-                        </div>
-                        <!-- <div class="accordion accordion-flush" id="triggersList">
+                        </div> -->
+                        <div class="accordion accordion-flush" id="triggersList">
                             <div v-for="(trigger, index) in  automation.triggers ">
 
                                 <div class="accordion-item">
@@ -183,10 +166,11 @@ function onDeleteTriggerClick(event, automationId, triggerId) {
                                                 </div>
                                             </div>
 
+                                            <label>Action</label>
                                             <div class="row">
                                                 <TriggerActionNew :id="trigger.action.id"
                                                     :property="trigger.action.property" :data="trigger.action.data"
-                                                    :delay="trigger.action.delay" @add="removeAction"
+                                                    :delay="trigger.action.delay" :allowRemove="false"
                                                     @update:data="newValue => trigger.action.data = newValue"
                                                     @update:delay="newValue => trigger.action.delay = newValue">
                                                 </TriggerActionNew>
@@ -195,7 +179,7 @@ function onDeleteTriggerClick(event, automationId, triggerId) {
                                     </div>
                                 </div>
                             </div>
-                        </div> -->
+                        </div>
                     </div>
                 </div>
             </div>

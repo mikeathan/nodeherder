@@ -13,6 +13,10 @@ const props = defineProps({
     property: String,
     data: null,
     delay: null,
+    allowRemove: {
+        type: Boolean,
+        default: true
+    },
 });
 
 const property = ref("");
@@ -128,7 +132,7 @@ function remove(event) {
 }
 </style>
 <template>
-    <div class="col-xl-4">
+    <div class="col-xl-3">
         <select id="featurePropertySelector" style="text-align:center;" class="form-control inputName" v-model="property"
             @change="propertySelectionChanged" :disabled="props.property != null">
             <option value="">Select property</option>
@@ -157,7 +161,7 @@ function remove(event) {
                     <span class="fa fa-plus"></span>
                 </button>
             </div>
-            <div v-else>
+            <div v-else-if="props.allowRemove">
                 <button type="button" class="btn btn-default btn-number" @click="remove($event)">
                     <span class="fa fa-minus"></span>
                 </button>
