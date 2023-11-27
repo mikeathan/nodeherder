@@ -83,7 +83,8 @@ function onDeleteTriggerClick(event, triggerId) {
                     </div>
                     <div class="pt-3  pb-4">
                         <label class="form-check-label">Description</label>
-                        <DataInput :data="automation.description" alignment="left">
+                        <DataInput :data="automation.description" @update:data="(value) => automation.description = value"
+                            type="string" alignment="left">
                         </DataInput>
                     </div>
 

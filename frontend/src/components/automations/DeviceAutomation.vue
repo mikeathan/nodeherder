@@ -119,14 +119,6 @@ function removeCondition(event) {
 </script>
 
 <style scoped>
-.inputName {
-    border: 0;
-    outline: 0;
-    background: transparent;
-    border-bottom: 1px solid #e5e5e5;
-    border-radius: 0
-}
-
 .custom-control-input {
     transform: scale(1.4);
 }
@@ -136,7 +128,8 @@ function removeCondition(event) {
 
         <div class="pt-3 pb-4">
             <label class="form-check-label" for="name">Name</label>
-            <DataInput placeholder="New automation" :data="description" alignment="left">
+            <DataInput placeholder="New automation" :data="description" @update:data="(value) => description = value"
+                type="string" alignment="left">
             </DataInput>
         </div>
 

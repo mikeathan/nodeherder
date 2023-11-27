@@ -19,8 +19,7 @@ function cancel() {
 
 function create(event) {
     deviceTriggers.value.push(event)
-    store.commit('automations/add', event);
-    store.dispatch('automations/save', event.id);
+    store.dispatch('automations/save', event);
 }
 
 </script>
