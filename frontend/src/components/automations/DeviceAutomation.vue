@@ -3,6 +3,8 @@ import { useStore } from "vuex";
 import { computed, watch, ref } from "vue";
 import { ExposeTrigger, DeviceTrigger } from "../../models/automation"
 import Trigger from "./Trigger"
+import DataInput from "../input/DataInput.vue"
+
 
 const props = defineProps({
     id: String,
@@ -132,15 +134,10 @@ function removeCondition(event) {
 <template>
     <div v-if="device != null"> <!-- to fix condition-->
 
-        <!-- <div class="col-3">
-            <input type="text" class="form-control" name="name" id="name" v-model="description" placeholder="Enter a name"
-                onfocus="this.placeholder = ''" onblur="this.placeholder='Enter a name'">
-        </div> -->
         <div class="pt-3 pb-4">
             <label class="form-check-label" for="name">Name</label>
-
-            <input type="text" class="form-control inputName" name="name" id="name" v-model="description"
-                placeholder="New automation" onfocus="this.placeholder = ''" onblur="this.placeholder='New Automation 1'">
+            <DataInput placeholder="New automation" :data="description" alignment="left">
+            </DataInput>
         </div>
 
         <div class="pb-3">

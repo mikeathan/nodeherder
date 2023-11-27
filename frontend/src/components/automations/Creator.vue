@@ -18,8 +18,6 @@ function cancel() {
 }
 
 function create(event) {
-    var json = event.toJson()
-    console.log("DEBUG create", json);
     deviceTriggers.value.push(event)
     store.commit('automations/add', event);
     store.dispatch('automations/save', event.id);
@@ -43,24 +41,6 @@ function create(event) {
                 <div class="col-xl-3 col-md-6 col-sm-3">
                     <DeviceAutomation :id="selectedDevice" @cancel="cancel" @create="create"></DeviceAutomation>
                 </div>
-
-                <!-- CREATOR DEBUG ----------------------<br>
-                <div v-for="deviceTrigger in deviceTriggers">
-                    <b>Device id:</b> {{ deviceTrigger.id }} <br>
-                    <b>friendly_name:</b> {{ device.friendly_name }} <br>
-                    <b>decription:</b> {{ deviceTrigger.description }}<br>
-                    <b>enabled:</b> {{ deviceTrigger.enabled }}<br>
-                    <div v-for="trigger in deviceTrigger.triggers">
-
-                        <b>Trigger id: </b>{{ trigger.name }} <br>
-                        <b>Conditions:</b>
-
-                        <div v-for="condition in trigger.conditions">
-                            {{ condition.name }} {{ condition.equality }} {{ condition.value }}
-                        </div>
-                    </div>
-                    <hr>
-                </div> -->
             </div>
         </div>
     </div>
