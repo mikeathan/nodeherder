@@ -69,7 +69,7 @@ function onDeleteTriggerClick(event, triggerId) {
     <div v-if="automation">
         <div class="container-fluid p-0 h-100">
 
-            <div class="card col-xl-3 col-md-6 col-sm-3">
+            <div class="card col-xl-4 col-md-6 col-sm-3">
                 <div class="card-header">
                     <div class="pt-3 ">
                         <label class="form-check-label">Id</label>
@@ -87,7 +87,7 @@ function onDeleteTriggerClick(event, triggerId) {
                         </DataInput>
                     </div>
 
-                    <div class="pb-3 ">
+                    <div class="pb-3">
                         <div class=" form-check form-switch ms-2">
                             <label class="form-check-label ms-3">Enabled</label>
 
@@ -141,7 +141,7 @@ function onDeleteTriggerClick(event, triggerId) {
                                 <div :id="`collapse${index}`" class="accordion-collapse collapse"
                                     :aria-labelledby="`header${index}`" data-bs-parent="#triggersList">
                                     <div class="accordion-body">
-                                        <label v-if="trigger.conditions.length > 0">Condition</label>
+                                        <label class="pb-4" v-if="trigger.conditions.length > 0">Condition</label>
 
                                         <div v-for="(condition, idx) in trigger.conditions">
                                             <div class="row">
@@ -155,7 +155,7 @@ function onDeleteTriggerClick(event, triggerId) {
                                             </div>
                                         </div>
 
-                                        <label>Action</label>
+                                        <label class="pb-2 pt-2">Action</label>
                                         <div class="row">
                                             <TriggerActionNew :id="trigger.action.id" :property="trigger.action.property"
                                                 :data="trigger.action.data" :delay="trigger.action.delay"
