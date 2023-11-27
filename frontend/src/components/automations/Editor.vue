@@ -6,6 +6,7 @@ import TriggerActionNew from "./TriggerActionNew";
 import TriggerCondition from "./TriggerCondition"
 import { DeviceTrigger } from "../../models/automation"
 import Trigger from "./Trigger"
+import DataInput from "../input/DataInput.vue"
 
 const props = defineProps({
     id: String,
@@ -60,14 +61,6 @@ function onDeleteTriggerClick(event, triggerId) {
 // https://www.home-assistant.io/docs/automation/editor/
 </script>
 <style scoped>
-.inputName {
-    border: 0;
-    outline: 0;
-    background: transparent;
-    border-bottom: 1px solid #e5e5e5;
-    border-radius: 0
-}
-
 .custom-control-input {
     transform: scale(1.4);
 }
@@ -76,38 +69,31 @@ function onDeleteTriggerClick(event, triggerId) {
     <div v-if="automation">
         <div class="container-fluid p-0 h-100">
 
-            <div class="card">
+            <div class="card col-xl-3 col-md-6 col-sm-3">
                 <div class="card-header">
-                    todo
-                    <!-- <div class="pt-3 pb-4">
-                        <label class="form-check-label" for="name">Name</label>
-                        <DataInput placeholder="New automation" :data="description" alignment="left">
+                    <div class="pt-3 ">
+                        <label class="form-check-label">Id</label>
+                        <DataInput :data="props.id" alignment="left" :disabled="true">
+                        </DataInput>
+                    </div>
+                    <div class="pt-3">
+                        <label class="form-check-label">Friendly Name</label>
+                        <DataInput :data="automation.friendlyName" alignment="left" :disabled="true">
+                        </DataInput>
+                    </div>
+                    <div class="pt-3  pb-4">
+                        <label class="form-check-label">Description</label>
+                        <DataInput :data="automation.description" alignment="left">
                         </DataInput>
                     </div>
 
-                    <div class="pb-3">
+                    <div class="pb-3 ">
                         <div class=" form-check form-switch ms-2">
-                            <label class="form-check-label ms-3">Enable</label>
+                            <label class="form-check-label ms-3">Enabled</label>
 
                             <input class="form-check-input custom-control-input" type="checkbox" role="switch"
-                                id="flexSwitchCheckDefault" v-model="enabled">
+                                id="flexSwitchCheckDefault" v-model="automation.enabled">
                         </div>
-                    </div> -->
-                    <div class="form-group">
-                        <label for="inputId">Id</label>
-                        <input type="input" class="form-control" id="inputName" :value="props.id" disabled />
-                    </div>
-                    <div class="form-group">
-                        <label for="inputFriendlyName">Friendly Name</label>
-                        <input type="input" class="form-control" id="inputName" :value="automation.friendlyName" disabled />
-                    </div>
-                    <div class="form-group">
-                        <label for="inputDescription">Description</label>
-                        <input type="input" class="form-control" id="inputDescription" v-model="automation.description" />
-                    </div>
-                    <div class="form-check">
-                        <input type="checkbox" class="form-check-input" id="checkEnabled" v-model="automation.enabled">
-                        <label class="form-check-label" for="checkEnabled">Enabled</label>
                     </div>
 
                     <div class="btn-group">
@@ -121,64 +107,62 @@ function onDeleteTriggerClick(event, triggerId) {
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="col-xl-6 col-md-6 col-sm-3">
-                        <div class="accordion accordion-flush" id="triggersList">
-                            <div v-for="(trigger, index) in  automation.triggers ">
+                    <div class="accordion accordion-flush" id="triggersList">
+                        <div v-for="(trigger, index) in  automation.triggers ">
 
-                                <div class="accordion-item">
+                            <div class="accordion-item">
 
-                                    <h2 class="accordion-header" id="`header${index}`">
+                                <h2 class="accordion-header" id="`header${index}`">
 
-                                        <div class="row ">
+                                    <div class="row ">
 
-                                            <div class="col accordion-button collapsed " data-bs-toggle="collapse"
-                                                :data-bs-target="`#collapse${index}`" aria-expanded="false"
-                                                :aria-controls="`collapse${index}`">
+                                        <div class="col accordion-button collapsed " data-bs-toggle="collapse"
+                                            :data-bs-target="`#collapse${index}`" aria-expanded="false"
+                                            :aria-controls="`collapse${index}`">
 
-                                                <div class="col-2 col-md-6">
-                                                    Trigger #{{ index + 1 }}
-                                                </div>
-                                                <div class="col-8 col-md-2">
-                                                </div>
+                                            <div class="col-xl-6 col-md-8">
+                                                Trigger #{{ index + 1 }}
+                                            </div>
+                                            <div class="col-xl-2 col-md-4">
+                                            </div>
 
-                                                <div class="col pe-3 text-end ">
-                                                    <span class="fa fa-trash-alt fa-lg"
-                                                        @click="onDeleteTriggerClick($event, index)"
-                                                        data-bs-toggle="collapse" data-bs-target>
-                                                    </span>
+                                            <div class="col pe-3 text-end ">
+                                                <span class="fa fa-trash-alt fa-lg"
+                                                    @click="onDeleteTriggerClick($event, index)" data-bs-toggle="collapse"
+                                                    data-bs-target>
+                                                </span>
 
-                                                </div>
                                             </div>
                                         </div>
-                                    </h2>
+                                    </div>
+                                </h2>
 
 
-                                    <div :id="`collapse${index}`" class="accordion-collapse collapse"
-                                        :aria-labelledby="`header${index}`" data-bs-parent="#triggersList">
-                                        <div class="accordion-body">
-                                            <label v-if="trigger.conditions.length > 0">Condition</label>
+                                <div :id="`collapse${index}`" class="accordion-collapse collapse"
+                                    :aria-labelledby="`header${index}`" data-bs-parent="#triggersList">
+                                    <div class="accordion-body">
+                                        <label v-if="trigger.conditions.length > 0">Condition</label>
 
-                                            <div v-for="(condition, idx) in trigger.conditions">
-                                                <div class="row">
-                                                    <TriggerCondition :id="props.id" :index="condition.idx = idx + 1"
-                                                        :name="condition.name" :operator="condition.equality"
-                                                        :key="condition.idx" :data="condition.value"
-                                                        @remove="removeCondition($event, trigger)"
-                                                        @update:value="newValue => condition.value = newValue"
-                                                        @update:operator="newValue => condition.operator = newValue">
-                                                    </TriggerCondition>
-                                                </div>
-                                            </div>
-
-                                            <label>Action</label>
+                                        <div v-for="(condition, idx) in trigger.conditions">
                                             <div class="row">
-                                                <TriggerActionNew :id="trigger.action.id"
-                                                    :property="trigger.action.property" :data="trigger.action.data"
-                                                    :delay="trigger.action.delay" :allowRemove="false"
-                                                    @update:data="newValue => trigger.action.data = newValue"
-                                                    @update:delay="newValue => trigger.action.delay = newValue">
-                                                </TriggerActionNew>
+                                                <TriggerCondition :id="props.id" :index="condition.idx = idx + 1"
+                                                    :name="condition.name" :operator="condition.equality"
+                                                    :key="condition.idx" :data="condition.value"
+                                                    @remove="removeCondition($event, trigger)"
+                                                    @update:value="newValue => condition.value = newValue"
+                                                    @update:operator="newValue => condition.operator = newValue">
+                                                </TriggerCondition>
                                             </div>
+                                        </div>
+
+                                        <label>Action</label>
+                                        <div class="row">
+                                            <TriggerActionNew :id="trigger.action.id" :property="trigger.action.property"
+                                                :data="trigger.action.data" :delay="trigger.action.delay"
+                                                :allowRemove="false"
+                                                @update:data="newValue => trigger.action.data = newValue"
+                                                @update:delay="newValue => trigger.action.delay = newValue">
+                                            </TriggerActionNew>
                                         </div>
                                     </div>
                                 </div>
