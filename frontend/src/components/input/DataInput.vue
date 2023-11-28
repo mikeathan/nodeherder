@@ -29,7 +29,9 @@ watch(
     () => props.data,
     () => {
         data.value = props.data
-        // data.value = parseInt(props.data) // ????????? maybe cast it 
+        if ((props.type == 'numeric') && isNaN(data.value)) {
+            data.value = ""
+        }
     }, { immediate: true }
 )
 
@@ -51,7 +53,8 @@ watch(
 
 function dataInputChange(event) {
     if (props.type == 'numeric') {
-        data.value = event.target.value.replace(/[^0-9.]/g, '');
+        var value = event.target.value.replace(/[^0-9.]/g, '');
+        data.value = parseInt(value)
     }
     emit("update:data", data.value);
 }
@@ -96,8 +99,9 @@ function focusChanged(event) {
 <template>
     <div v-if="props.type == 'binary'">
 
-        <select id="dataSelect" :style="'text-align:' + props.alignment + ';'" class="form-control form-select select-outline"
-            name="valueinput" v-model="data" @change="dataSelectionChanged" :disabled="props.disabled">
+        <select id="dataSelect" :style="'text-align:' + props.alignment + ';'"
+            class="form-control form-select select-outline" name="valueinput" v-model="data" @change="dataSelectionChanged"
+            :disabled="props.disabled">
             <option v-if="props.placeholder != ''" value="">{{ props.placeholder }}</option>
             <option v-for="(value, key) in items" :value="value" :key="key">
                 {{ value }}
@@ -107,8 +111,8 @@ function focusChanged(event) {
     <div v-else>
         <!-- <label class="form-check-label" for="valueinput">Value</label> -->
 
-        <input type="text" class="form-control input-outline" :style="'text-align:' + props.alignment + ';'" name="valueinput"
-            :placeholder="placeholder" v-model="data" @input="dataInputChange" :disabled="props.disabled"
+        <input type="text" class="form-control input-outline" :style="'text-align:' + props.alignment + ';'"
+            name="valueinput" :placeholder="placeholder" v-model="data" @input="dataInputChange" :disabled="props.disabled"
             @focus="focusChanged" @blur="blurChanged">
     </div>
 </template>
