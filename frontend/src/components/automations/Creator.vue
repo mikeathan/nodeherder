@@ -15,7 +15,6 @@ const devices = computed(() => {
 
 function cancel() {
     selectedDevice.value = ""
-    router.push("/viewer")
 }
 
 function create(event) {

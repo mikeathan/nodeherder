@@ -143,8 +143,8 @@ function onDeleteTriggerClick(event, triggerId) {
                                 <div :id="`collapse${index}`" class="accordion-collapse collapse"
                                     :aria-labelledby="`header${index}`" data-bs-parent="#triggersList">
                                     <div class="accordion-body">
-                                        <label class="pb-4" v-if="trigger.conditions.length > 0">Condition</label>
 
+                                        <label class="pb-4" v-if="trigger.conditions.length > 0">Condition</label>
                                         <div v-for="(condition, idx) in trigger.conditions">
                                             <div class="row">
                                                 <TriggerCondition :id="props.id" :index="condition.idx = idx + 1"

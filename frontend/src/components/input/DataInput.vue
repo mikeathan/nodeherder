@@ -65,7 +65,13 @@ function dataSelectionChanged(event) {
     if (event.target.value == null) {
         return;
     }
-    data.value = event.target.value
+
+    if (typeof data.value === "boolean") {
+        data.value = Boolean(event.target.value).valueOf()
+    } else {
+        data.value = event.target.value
+    }
+
     emit("update:data", data.value);
 }
 

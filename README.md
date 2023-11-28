@@ -113,5 +113,5 @@ Test new logic in RegisterBridge
 fix creator and editor layout sizing in condition/action
 fix creator laout, add button to create we trigger acordion
 fix device card in dahsboard switch from offline to online
-if automaiton save failed, display error response
-in actions we need name of device else we dont know 
+if automation save failed, display error response
+in actions we need name of device else we dont know

@@ -48,40 +48,6 @@ const device = computed(() => {
     return store.getters["devices/find"](props.id);
 });
 
-const features = computed(() => {
-
-    var device = store.getters["devices/find"](props.id);
-    if (device == undefined) {
-        return []
-    }
-    var list = []
-    for (const [key, expose] of Object.entries(device.exposes)) {
-        if (expose.properties != undefined) {
-            list.push(expose)
-        }
-    }
-
-    return list;
-});
-
-function propertySelectionChanged(event) {
-    var value = event.target.value;
-    if (value == "" || device.value == undefined) {
-        data.value = "" // reset data
-        return;
-    }
-    // reset data
-    for (const [key, feature] of Object.entries(features.value)) {
-        if (feature.name == value) {
-            if (feature.type == 'binary') {
-                data.value = ""
-            } else {
-                data.value = 0
-            }
-        }
-    }
-}
-
 const feature = computed(() => {
     if (name.value == '') {
         return []
@@ -118,7 +84,7 @@ watch(
 )
 
 function reset() {
-    data.value = ""
+    data.value = null
     operator.value = OperatorKeys[0]
 }
 
@@ -160,7 +126,6 @@ function dataUpdated(event) {
         </DataInput>
     </div>
     <div class="col-xl-3">
-
         <DataInput :type="feature.type" :placeholder="feature.type == 'binary' ? 'Select' : 'Value'" placeholder="Value"
             :data="data" :items="feature.type == 'binary' ? [true, false] : null" :disabled="name == ''"
             @update:data="dataUpdated">

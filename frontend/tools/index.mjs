@@ -41,7 +41,7 @@ var automationMap = new Map([
       triggers: [
         {
           name: "presence",
-          conditions: [{ name: "presence", value: "OFF", equality: "=" }],
+          conditions: [{ name: "presence", value: false, equality: "=" }],
           action: {
             id: "0x70ac08fffefafeca",
             friendlyname: "Attic light",
@@ -54,7 +54,7 @@ var automationMap = new Map([
         {
           name: "presence",
           conditions: [
-            { name: "presence", value: "ON", equality: "=" },
+            { name: "presence", value: true, equality: "=" },
             { name: "illuminance_lux", value: 30, equality: "<=" },
           ],
           action: {

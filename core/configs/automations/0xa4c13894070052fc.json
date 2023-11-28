@@ -9,7 +9,7 @@
       "conditions": [
         {
           "name": "presence",
-          "value": "OFF",
+          "value": false,
           "equality": "="
         }
       ],
@@ -27,7 +27,7 @@
       "conditions": [
         {
           "name": "presence",
-          "value": "ON",
+          "value": true,
           "equality": "="
         },
         {
