@@ -109,11 +109,9 @@ function focusChanged(event) {
         </select>
     </div>
     <div v-else>
-        <!-- <label class="form-check-label" for="valueinput">Value</label> -->
 
         <input type="text" class="form-control input-outline" :style="'text-align:' + props.alignment + ';'"
             name="valueinput" :placeholder="placeholder" v-model="data" @input="dataInputChange" :disabled="props.disabled"
             @focus="focusChanged" @blur="blurChanged">
     </div>
 </template>
-<!-- onblur="this.placeholder = 'test'" -->
