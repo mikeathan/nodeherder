@@ -5,6 +5,8 @@ import { computed, watch, ref } from "vue";
 import { Operators } from "../../models/automation"
 import TriggerCondition from "./TriggerCondition"
 import TriggerAction from "./TriggerAction.vue";
+import Selector from "../input/Selector.vue"
+
 
 const props = defineProps({
     id: String,
@@ -15,9 +17,7 @@ const store = useStore();
 const selectedAction = ref(null)
 const selectedExpose = ref("")
 const trigger = ref(null)
-const device = computed(() => {
-    return store.getters["devices/find"](props.id);
-});
+
 
 const emit = defineEmits(['addAction', 'removeAction', 'addCondition', 'removeCondition'])
 
@@ -25,7 +25,7 @@ const emit = defineEmits(['addAction', 'removeAction', 'addCondition', 'removeCo
 watch(
     () => props.trigger,
     () => {
-        selectedAction.value = null
+        selectedAction.value = ""
         selectedExpose.value = props.trigger.name
         // select action optionsto current action if not null
         if (props.trigger.action != null) {
@@ -55,6 +55,16 @@ const featureDevices = computed(() => {
 
     return list;
 });
+
+function deviceList() {
+    // todo:
+    //var result = Object.keys(obj).map((key) => [key, obj[key]]);
+    var list = {}
+    for (const [key, device] of Object.entries(featureDevices.value)) {
+        list[device.friendly_name] = device.id
+    }
+    return list
+}
 
 function addAction(event) {
     emit('addAction', event)
@@ -90,13 +100,10 @@ function removeCondition(event) {
             <!-- Actions -->
             <h5>Action</h5>
             <div class="mb-3">
-                <select id="featureDeviceSelector" style="text-align:center;" class="form-control" v-model="selectedAction"
-                    :disabled="selectedExpose == ''">
-                    <option :value="null">Select device</option>
-                    <option v-for="device in featureDevices" :value="device.id" :key="device.id">
-                        {{ device.friendly_name }}
-                    </option>
-                </select>
+
+                <Selector placeholder="Select device" :items="deviceList()" :value="selectedAction" key="id"
+                    alignment="left" @update:data="e => selectedAction = e" :disabled="selectedExpose == ''"></Selector>
+
             </div>
 
             <!-- existing action -->
@@ -108,7 +115,7 @@ function removeCondition(event) {
                 </TriggerAction>
             </div>
             <!-- new action -->
-            <div v-else-if="selectedAction != null" class="row">
+            <div v-else-if="selectedAction != ''" class="row">
                 <TriggerAction :id="selectedAction" @add="addAction"></TriggerAction>
             </div>
 

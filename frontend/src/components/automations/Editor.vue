@@ -1,6 +1,6 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed, ref, watchEffect, watch } from "vue";
+import { ref, watch } from "vue";
 import TriggerAction from "./TriggerAction";
 import TriggerCondition from "./TriggerCondition"
 import { DeviceTrigger } from "../../models/automation"

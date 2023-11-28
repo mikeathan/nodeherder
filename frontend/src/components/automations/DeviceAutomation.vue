@@ -4,6 +4,7 @@ import { computed, watch, ref } from "vue";
 import { ExposeTrigger, DeviceTrigger } from "../../models/automation"
 import Trigger from "./Trigger"
 import DataInput from "../input/DataInput.vue"
+import Selector from "../input/Selector.vue"
 
 
 const props = defineProps({
@@ -114,6 +115,16 @@ function removeCondition(event) {
         }
     }
 }
+function exposesList() {
+    // todo:
+    //var result = Object.keys(obj).map((key) => [key, obj[key]]);
+    var list = {}
+    for (const [key, expose] of Object.entries(device.value.exposes)) {
+        list[expose.name] = expose.name
+    }
+    return list
+}
+
 // design
 //https://www.home-assistant.io/getting-started/automation/
 </script>
@@ -146,7 +157,6 @@ function removeCondition(event) {
                 <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false" @click="create">
                     Save
                 </button>
-
                 <button type="button" class="btn btn-light" @click="reset">
                     Cancel
                 </button>
@@ -156,15 +166,10 @@ function removeCondition(event) {
         <h5>Triggers</h5>
 
         <div class="mb-3">
-            <select id="exposeSelector" style="text-align:center;" class="form-control " @change="exposeSelectionChanged"
-                v-model="selectedExpose">
-                <option value="">Select trigger</option>
-                <option v-for="expose in device.exposes" :value="expose.name" :key="expose.name">
-                    {{ expose.name }}
-                </option>
-            </select>
+            need to call logic in exposeSelectionChanged
+            <Selector placeholder="Select trigger" :items="exposesList()" :value="selectedExpose" alignment="left"
+                @update:data="e => selectedExpose = e"></Selector>
         </div>
-
         <div>
             <Trigger :id="props.id" :trigger="currentTrigger" @addAction="addAction" @removeAction="removeAction"
                 @addCondition="addCondition" @removeCondition="removeCondition">
