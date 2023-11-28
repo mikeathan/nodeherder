@@ -152,7 +152,7 @@ function dataUpdated(event) {
         </select>
     </div>
     <div v-else class="col-xl-3">
-        <DataInput placeholder="Name" :data="name" :disabled="true">
+        <DataInput type="string" placeholder="Name" :data="name" :disabled="true">
         </DataInput>
     </div>
     <div class="col-xl-3">

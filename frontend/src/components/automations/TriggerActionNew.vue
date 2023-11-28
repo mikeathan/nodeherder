@@ -150,7 +150,7 @@ function remove(event) {
         </DataInput>
     </div>
     <div class="col-xl-3">
-        <DataInput placeholder="Delay" :data="delay" :disabled="property == ''" @update:data="delayUpdated">
+        <DataInput placeholder="Delay" type="numeric" :data="delay" :disabled="property == ''" @update:data="delayUpdated">
         </DataInput>
     </div>
 
