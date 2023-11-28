@@ -127,8 +127,7 @@ function exposeSelectionChanged(event) {
         return
     }
 
-    // var f = feature.value
-    // TODO: maybe reset operators select on change
+    data.value = "";
 }
 
 function operatorUpdated(event) {
