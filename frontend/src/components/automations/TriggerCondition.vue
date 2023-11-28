@@ -84,7 +84,7 @@ watch(
 )
 
 function reset() {
-    data.value = null
+    data.value = ""
     operator.value = OperatorKeys[0]
 }
 
@@ -107,7 +107,7 @@ function dataUpdated(event) {
 </script>
 
 <template>
-    <div v-if="props.index == 0" class="col-xl-3">
+    <div v-if="props.index == 0" class="col">
         <select id="exposeSelector" style="text-align:center;" class="form-control" @change="exposeSelectionChanged"
             v-model="name" :disabled="props.name == ''">
             <option value="">Select trigger</option>
@@ -116,16 +116,16 @@ function dataUpdated(event) {
             </option>
         </select>
     </div>
-    <div v-else class="col-xl-3">
+    <div v-else class="col">
         <DataInput type="string" placeholder="Name" :data="name" :disabled="true">
         </DataInput>
     </div>
-    <div class="col-xl-3">
+    <div class="col">
         <DataInput type="binary" :items="OperatorKeys" :data="operator" :disabled="name == ''"
             @update:data="operatorUpdated">
         </DataInput>
     </div>
-    <div class="col-xl-3">
+    <div class="col">
         <DataInput :type="feature.type" :placeholder="feature.type == 'binary' ? 'Select' : 'Value'" placeholder="Value"
             :data="data" :items="feature.type == 'binary' ? [true, false] : null" :disabled="name == ''"
             @update:data="dataUpdated">

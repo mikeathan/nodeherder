@@ -26,19 +26,17 @@ function create(event) {
 </script>
 <template>
     <div class="container-fluid p-0 h-100">
-        <div class="card">
+        <div class="card col-xl-5 col-md-6 col-sm-3">
             <div class="card-body">
                 <h3>Create new Automation</h3>
-                <div class="col-xl-3 col-md-6 col-sm-3">
-                    <select id="deviceSelector" style="text-align:center;" class="form-control "
-                        :disabled="selectedDevice != ''" v-model="selectedDevice">
-                        <option value="">Select device</option>
-                        <option v-for="device in devices" :value="device.id" :key="device.id">
-                            {{ device.friendly_name }}
-                        </option>
-                    </select>
-                </div>
-                <div class="col-xl-3 col-md-6 col-sm-3">
+                <select id="deviceSelector" style="text-align:center;" class="form-control "
+                    :disabled="selectedDevice != ''" v-model="selectedDevice">
+                    <option value="">Select device</option>
+                    <option v-for="device in devices" :value="device.id" :key="device.id">
+                        {{ device.friendly_name }}
+                    </option>
+                </select>
+                <div>
                     <DeviceAutomation :id="selectedDevice" @cancel="cancel" @create="create"></DeviceAutomation>
                 </div>
             </div>

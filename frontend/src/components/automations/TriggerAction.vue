@@ -132,7 +132,7 @@ function remove(event) {
 }
 </style>
 <template>
-    <div class="col-xl-3">
+    <div class="col">
         <select id="featurePropertySelector" style="text-align:center;" class="form-control inputName" v-model="property"
             @change="propertySelectionChanged" :disabled="props.property != null">
             <option value="">Select property</option>
@@ -143,18 +143,18 @@ function remove(event) {
     </div>
 
 
-    <div class="col-xl-3">
+    <div class="col">
         <DataInput :type="feature.type" :placeholder="feature.type == 'binary' ? '' : 'Value'"
             :items="feature.type == 'binary' ? feature.properties : null" :data="data" :disabled="property == ''"
             @update:data="dataUpdated">
         </DataInput>
     </div>
-    <div class="col-xl-3">
+    <div class="col">
         <DataInput placeholder="Delay" type="numeric" :data="delay" :disabled="property == ''" @update:data="delayUpdated">
         </DataInput>
     </div>
 
-    <div class="col-xl-2">
+    <div class="col">
         <div class="btn-group">
             <div v-if="props.property == null">
                 <button type="button" class="btn btn-default btn-number" @click="add($event)" :disabled="data == ''">

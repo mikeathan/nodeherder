@@ -4,7 +4,7 @@ import { computed, watch, ref } from "vue";
 
 import { Operators } from "../../models/automation"
 import TriggerCondition from "./TriggerCondition"
-import TriggerActionNew from "./TriggerActionNew.vue";
+import TriggerAction from "./TriggerAction.vue";
 
 const props = defineProps({
     id: String,
@@ -101,15 +101,15 @@ function removeCondition(event) {
 
             <!-- existing action -->
             <div v-if="trigger.action != null" class="row">
-                <TriggerActionNew :id="trigger.action.id" :property="trigger.action.property" :data="trigger.action.data"
+                <TriggerAction :id="trigger.action.id" :property="trigger.action.property" :data="trigger.action.data"
                     :delay="trigger.action.delay" @add="removeAction"
                     @update:data="newValue => trigger.action.data = newValue"
                     @update:delay="newValue => trigger.action.delay = newValue">
-                </TriggerActionNew>
+                </TriggerAction>
             </div>
             <!-- new action -->
             <div v-else-if="selectedAction != null" class="row">
-                <TriggerActionNew :id="selectedAction" @add="addAction"></TriggerActionNew>
+                <TriggerAction :id="selectedAction" @add="addAction"></TriggerAction>
             </div>
 
             <!-- Conditions -->
@@ -117,16 +117,10 @@ function removeCondition(event) {
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="`header`">
 
-                        <div class="row ">
-                            <div class="col-xl-3 accordion-button collapsed " data-bs-toggle="collapse"
-                                :data-bs-target="`#collapseOne`" aria-expanded="false" :aria-controls="`collapseOne`">
+                        <div class="accordion-button collapsed " data-bs-toggle="collapse" :data-bs-target="`#collapseOne`"
+                            aria-expanded="false" :aria-controls="`collapseOne`">
 
-                                <div class="col-xs-3 col-md-6">
-                                    Conditions
-                                </div>
-                                <div class="col-xs-10 col-md-2">
-                                </div>
-                            </div>
+                            Conditions
                         </div>
                     </h2>
 

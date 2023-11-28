@@ -1,7 +1,7 @@
 <script setup>
 import { useStore } from "vuex";
 import { computed, ref, watchEffect, watch } from "vue";
-import TriggerActionNew from "./TriggerActionNew";
+import TriggerAction from "./TriggerAction";
 import TriggerCondition from "./TriggerCondition"
 import { DeviceTrigger } from "../../models/automation"
 import DataInput from "../input/DataInput.vue"
@@ -70,8 +70,8 @@ function onDeleteTriggerClick(event, triggerId) {
     <div v-if="automation">
         <div class="container-fluid p-0 h-100">
 
-            <div class="card col-xl-4 col-md-6 col-sm-3">
-                <div class="card-header">
+            <div class="card col-xl-5 col-md-6 col-sm-3">
+                <div class="card-header ">
                     <div class="pt-3 ">
                         <label class="form-check-label">Id</label>
                         <DataInput :data="props.id" alignment="left" :disabled="true">
@@ -108,7 +108,7 @@ function onDeleteTriggerClick(event, triggerId) {
                             </button> </router-link>
                     </div>
                 </div>
-                <div class="card-body">
+                <div class="card-body ">
                     <div class="accordion accordion-flush" id="triggersList">
                         <div v-for="(trigger, index) in  automation.triggers ">
 
@@ -116,25 +116,19 @@ function onDeleteTriggerClick(event, triggerId) {
 
                                 <h2 class="accordion-header" id="`header${index}`">
 
-                                    <div class="row ">
+                                    <div class="col accordion-button collapsed " data-bs-toggle="collapse"
+                                        :data-bs-target="`#collapse${index}`" aria-expanded="false"
+                                        :aria-controls="`collapse${index}`">
 
-                                        <div class="col accordion-button collapsed " data-bs-toggle="collapse"
-                                            :data-bs-target="`#collapse${index}`" aria-expanded="false"
-                                            :aria-controls="`collapse${index}`">
+                                        <div class="col">
+                                            Trigger #{{ index + 1 }} - {{ trigger.name }}
+                                        </div>
 
-                                            <div class="col-xl-6 col-md-8">
-                                                Trigger #{{ index + 1 }}
-                                            </div>
-                                            <div class="col-xl-2 col-md-4">
-                                            </div>
+                                        <div class="col pe-3 text-end ">
+                                            <span class="fa fa-trash-alt fa-lg" @click="onDeleteTriggerClick($event, index)"
+                                                data-bs-toggle="collapse" data-bs-target>
+                                            </span>
 
-                                            <div class="col pe-3 text-end ">
-                                                <span class="fa fa-trash-alt fa-lg"
-                                                    @click="onDeleteTriggerClick($event, index)" data-bs-toggle="collapse"
-                                                    data-bs-target>
-                                                </span>
-
-                                            </div>
                                         </div>
                                     </div>
                                 </h2>
@@ -157,14 +151,21 @@ function onDeleteTriggerClick(event, triggerId) {
                                             </div>
                                         </div>
 
-                                        <label class="pb-2 pt-2">Action</label>
                                         <div class="row">
-                                            <TriggerActionNew :id="trigger.action.id" :property="trigger.action.property"
+
+                                            <div class=" pb-2 pt-2">
+                                                <label class="form-check-label">Action</label>
+                                                <DataInput type="string" :data="trigger.action.friendlyname"
+                                                    alignment="left" :disabled="true">
+                                                </DataInput>
+                                            </div>
+
+                                            <TriggerAction :id="trigger.action.id" :property="trigger.action.property"
                                                 :data="trigger.action.data" :delay="trigger.action.delay"
                                                 :allowRemove="false"
                                                 @update:data="newValue => trigger.action.data = newValue"
                                                 @update:delay="newValue => trigger.action.delay = newValue">
-                                            </TriggerActionNew>
+                                            </TriggerAction>
                                         </div>
                                     </div>
                                 </div>
