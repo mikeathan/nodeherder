@@ -161,8 +161,10 @@ function dataUpdated(event) {
         </DataInput>
     </div>
     <div class="col-xl-3">
+
         <DataInput :type="feature.type" :placeholder="feature.type == 'binary' ? 'Select' : 'Value'" placeholder="Value"
-            :data="data" :disabled="name == ''" @update:data="dataUpdated">
+            :data="data" :items="feature.type == 'binary' ? [true, false] : null" :disabled="name == ''"
+            @update:data="dataUpdated">
         </DataInput>
     </div>
     <div class="col-3">

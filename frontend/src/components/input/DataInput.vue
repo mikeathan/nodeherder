@@ -21,7 +21,7 @@ const props = defineProps({
 
 const data = ref(null);
 const placeholder = ref("");
-const items = ref(['OFF', 'ON'])
+const items = ref([])
 const emit = defineEmits(['update:data'])
 
 
@@ -41,6 +41,8 @@ watch(
         if (props.items != null) {
             items.value = props.items
         }
+
+
     }, { immediate: true }
 )
 
