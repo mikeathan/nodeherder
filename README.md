@@ -110,35 +110,7 @@ Test new logic in RegisterBridge
 
 ###### frontend
 
-automations:
-
-editor needs info about all bridge devices for edit or insert fuctionality
-
-we need to access device capabilities in ui that might not be currently in store
-
-tidy eventhub callbacks registration in hub-controller
-
-
-
-TODO:
-https://medium.com/@reetas/using-generics-with-pointer-receivers-in-go-39ee237d7475
-
-automation creator
-
-select device 
-select exposed 
-
-condition panel appears 
-update values and click add 
-it gets addd to a list with condions, ideally that expose should be disabled - leave for later
-
-or 
-when we select expose we add new condirion object to a ref that gets displayed 
-
-when we click add its stored 
-so next time we select 
-
-expose click adds new condition to list if not already added 
-for each conditions
-  display condtion 
-    if empty then show add button
+fix creator and editor layout sizing in condition/action
+fix creator laout, add button to create we trigger acordion
+fix device card in dahsboard switch from offline to online
+if automaiton save failed, display error response
