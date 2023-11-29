@@ -51,8 +51,10 @@ const actions = {
           dispatch("features/init", obj.payload, { root: true });
           break;
         case "operationSuccess":
+          // do sth
           break;
         case "operationFailed":
+          // do sth
           break;
         case "ping":
           dispatch("emit", { event: "pong" });
