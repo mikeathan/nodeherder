@@ -24,7 +24,21 @@ const device = computed(() => {
 
 
 function exposeSelectionChanged(value) {
+
+    if (value == '') {
+        return
+    }
     selectedExpose.value = value;
+    if (exposeTriggers.value[value] != null) {
+        selectedExpose.value = ''; //de-select combo
+
+        return
+    }
+    var value = selectedExpose.value;
+    var exposeTrigger = new ExposeTrigger(value);
+    exposeTriggers.value[value] = exposeTrigger;
+    currentTrigger.value = exposeTriggers.value[value]
+    selectedExpose.value = ''; //de-select combo
 
 }
 
@@ -52,15 +66,6 @@ function isSaveEnabled() {
     // find entries with actions only
     var values = Object.values(exposeTriggers.value).filter(k => k.action != null);
     return values.length > 0 && description.value.length > 0
-}
-
-function addTrigger() {
-    var value = selectedExpose.value;
-    var exposeTrigger = new ExposeTrigger(value);
-    exposeTriggers.value[value] = exposeTrigger;
-    currentTrigger.value = exposeTriggers.value[value]
-    selectedExpose.value = ''; //de-select combo
-
 }
 function onDeleteTriggerClick(event, triggerName) {
     // disable accordion from expanding
@@ -164,12 +169,21 @@ function exposesList() {
 
         <div class="pb-3">
             <div class=" form-check form-switch ms-2">
-                <label class="form-check-label ms-3">Enable</label>
+                <label class="form-check-label">Enable</label>
 
                 <input class="form-check-input custom-control-input" type="checkbox" role="switch"
                     id="flexSwitchCheckDefault" v-model="enabled">
             </div>
         </div>
+
+
+        <div class="mb-3">
+            <label class="form-check-label">Trigger</label>
+
+            <Selector placeholder="Select trigger" :items="exposesList()" :value="selectedExpose" alignment="left"
+                @update:data="exposeSelectionChanged"></Selector>
+        </div>
+
         <div class="col-50 mt-3 mb-4">
             <div class="btn-group">
                 <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false" @click="create">
@@ -181,17 +195,6 @@ function exposesList() {
             </div>
         </div>
 
-        <div class="mb-3">
-            <Selector placeholder="Select trigger" :items="exposesList()" :value="selectedExpose" alignment="left"
-                @update:data="exposeSelectionChanged"></Selector>
-        </div>
-        <div class="col-50 mt-3 mb-4">
-            <div class="btn-group">
-                <button type="button" class="btn btn-light" :disabled="isAddTriggerEnabled() == false" @click="addTrigger">
-                    Add new trigger
-                </button>
-            </div>
-        </div>
 
         <div class="accordion accordion-flush" id="triggersList">
             <div v-for="(trigger, key) in  exposeTriggers ">
