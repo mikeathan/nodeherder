@@ -72,7 +72,7 @@ function onDeleteTriggerClick(event, triggerName) {
 
 function create() {
     var deviceTrigger = new DeviceTrigger()
-    deviceTrigger.friendlyName = device.value.friendly_name;
+    deviceTrigger.friendlyname = device.value.friendly_name;
     deviceTrigger.id = device.value.id
     deviceTrigger.enabled = enabled.value
     deviceTrigger.description = description.value
@@ -82,6 +82,9 @@ function create() {
     }
 
     reset();
+
+    console.log("create", deviceTrigger)
+
     emit("create", deviceTrigger)
 }
 
@@ -228,12 +231,5 @@ function exposesList() {
                 </div>
             </div>
         </div>
-
-        <div v-if="selectedExpose != ''">
-            <!-- <Trigger :id="props.id" :trigger="currentTrigger" @addAction="addAction" @removeAction="removeAction"
-                @addCondition="addCondition" @removeCondition="removeCondition">
-            </Trigger> -->
-        </div>
-
     </div>
 </template>

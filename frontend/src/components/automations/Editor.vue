@@ -79,7 +79,7 @@ function onDeleteTriggerClick(event, triggerId) {
                     </div>
                     <div class="pt-3">
                         <label class="form-check-label">Friendly Name</label>
-                        <DataInput :data="automation.friendlyName" alignment="left" type="string" :disabled="true">
+                        <DataInput :data="automation.friendlyname" alignment="left" type="string" :disabled="true">
                         </DataInput>
                     </div>
                     <div class="pt-3  pb-4">

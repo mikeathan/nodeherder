@@ -35,7 +35,7 @@ var automationMap = new Map([
     "0xa4c13894070052fc",
     {
       id: "0xa4c13894070052fc",
-      friendlyName: "Human presence",
+      friendlyname: "Human presence",
       description: "Attic light test automation",
       enabled: true,
       triggers: [
@@ -72,7 +72,7 @@ var automationMap = new Map([
     "0x00124b0029207763",
     {
       id: "0x00124b0029207763",
-      friendlyName: "TH1",
+      friendlyname: "TH1",
       description: "Temperature and humidity test automation",
       enabled: false,
       triggers: [

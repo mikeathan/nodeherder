@@ -6,18 +6,12 @@ export const Operators = [
   { text: "<", value: "<" },
 ];
 
-export const OperatorKeys = [
-  "=",
-  "<=",
-  ">=",
-  ">",
-  "<",
-];
+export const OperatorKeys = ["=", "<=", ">=", ">", "<"];
 
 export class DeviceTrigger {
   constructor() {
     this.id = "";
-    this.friendlyName = "";
+    this.friendlyname = "";
     this.description = "";
     this.enabled = false;
     this.triggers = [];
@@ -46,7 +40,7 @@ export class DeviceTrigger {
 export class ActionTrigger {
   constructor() {
     this.id = "";
-    this.friendlyName = null;
+    this.friendlyname = null;
     this.type = null;
     this.property = null;
     this.data = null;

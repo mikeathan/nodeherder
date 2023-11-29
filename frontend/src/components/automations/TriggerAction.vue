@@ -105,7 +105,7 @@ function add() {
     var newAction = new ActionTrigger()
     newAction.delay = delay.value
     newAction.data = data.value
-    newAction.friendlyName = device.value.friendly_name
+    newAction.friendlyname = device.value.friendly_name
     newAction.id = device.value.id
     newAction.property = property.value
     newAction.type = device.value.exposes[property.value].type

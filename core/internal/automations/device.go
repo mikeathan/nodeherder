@@ -33,7 +33,7 @@ func (d *DeviceContext) SetCurrent(name string, value any) {
 
 type Device struct {
 	Id           string     `json:"id"`
-	FriendlyName string     `json:"friendlyName"`
+	FriendlyName string     `json:"friendlyname"`
 	Description  string     `json:"description"`
 	Enabled      bool       `json:"enabled"`
 	Triggers     []*Trigger `json:"triggers"`

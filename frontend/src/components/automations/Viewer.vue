@@ -44,7 +44,7 @@ function onDeleteAutomationClick(id) {
                     <th scope="row">{{ index + 1 }}</th>
                     <td>
                         <RouterLink :to="`/editor/${automation.id}`">{{
-                            automation.friendlyName
+                            automation.friendlyname
                         }}</RouterLink>
                     </td>
                     <td>
