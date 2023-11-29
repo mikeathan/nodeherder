@@ -190,7 +190,6 @@ function exposesList() {
                 <button type="button" class="btn btn-light" :disabled="isAddTriggerEnabled() == false" @click="addTrigger">
                     Add new trigger
                 </button>
-
             </div>
         </div>
 
@@ -218,7 +217,7 @@ function exposesList() {
                         </div>
                     </h2>
 
-                    <div :id="`collapse${trigger.name}`" class="accordion-collapse collapse"
+                    <div :id="`collapse${trigger.name}`" class="accordion-collapse collapse show"
                         :aria-labelledby="`header${trigger.name}`" data-bs-parent="#triggersList">
                         <div class="accordion-body">
                             <Trigger :id="props.id" :trigger="trigger" @addAction="addAction($event, trigger.name)"
