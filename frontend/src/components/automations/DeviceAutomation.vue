@@ -23,9 +23,8 @@ const device = computed(() => {
 });
 
 
-function exposeSelectionChanged(event) {
-    var value = event.target.value;
-
+function exposeSelectionChanged(value) {
+    selectedExpose.value = value;
     if (exposeTriggers.value[value] != null) {
         currentTrigger.value = exposeTriggers.value[value]
         return;
@@ -80,7 +79,6 @@ function reset() {
 }
 
 function addAction(event) {
-
     var exposeTrigger = exposeTriggers.value[selectedExpose.value]
     exposeTrigger.action = event;
 }
@@ -166,9 +164,8 @@ function exposesList() {
         <h5>Triggers</h5>
 
         <div class="mb-3">
-            need to call logic in exposeSelectionChanged
             <Selector placeholder="Select trigger" :items="exposesList()" :value="selectedExpose" alignment="left"
-                @update:data="e => selectedExpose = e"></Selector>
+                @update:data="exposeSelectionChanged"></Selector>
         </div>
         <div>
             <Trigger :id="props.id" :trigger="currentTrigger" @addAction="addAction" @removeAction="removeAction"
