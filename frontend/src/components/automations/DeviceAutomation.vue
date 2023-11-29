@@ -25,15 +25,9 @@ const device = computed(() => {
 
 function exposeSelectionChanged(value) {
     selectedExpose.value = value;
-    if (exposeTriggers.value[value] != null) {
-        currentTrigger.value = exposeTriggers.value[value]
-        return;
-    }
 
-    var exposeTrigger = new ExposeTrigger(value);
-    exposeTriggers.value[value] = exposeTrigger;
-    currentTrigger.value = exposeTriggers.value[value]
 }
+
 
 watch(
     () => props.id,
@@ -46,11 +40,34 @@ watch(
 );
 
 const emit = defineEmits(['cancel', 'create'])
+function isAddTriggerEnabled() {
+    var value = selectedExpose.value;
+    if (exposeTriggers.value[value] != null) {
+        return false
+    }
+    return value != '';
+}
 
 function isSaveEnabled() {
     // find entries with actions only
     var values = Object.values(exposeTriggers.value).filter(k => k.action != null);
     return values.length > 0 && description.value.length > 0
+}
+
+function addTrigger() {
+    var value = selectedExpose.value;
+    var exposeTrigger = new ExposeTrigger(value);
+    exposeTriggers.value[value] = exposeTrigger;
+    currentTrigger.value = exposeTriggers.value[value]
+    selectedExpose.value = ''; //de-select combo
+
+}
+function onDeleteTriggerClick(event, triggerName) {
+    // disable accordion from expanding
+    event.stopImmediatePropagation();
+    event.preventDefault();
+    delete exposeTriggers.value[triggerName]
+    //automation.value.triggers.splice(triggerId, 1);
 }
 
 function create() {
@@ -78,24 +95,24 @@ function reset() {
     emit("cancel")
 }
 
-function addAction(event) {
-    var exposeTrigger = exposeTriggers.value[selectedExpose.value]
+function addAction(event, triggerName) {
+    var exposeTrigger = exposeTriggers.value[triggerName]
     exposeTrigger.action = event;
 }
 
-function removeAction(event) {
-    var exposeTrigger = exposeTriggers.value[selectedExpose.value]
+function removeAction(event, triggerName) {
+    var exposeTrigger = exposeTriggers.value[triggerName]
     exposeTrigger.action = null;
 }
 
-function addCondition(event) {
+function addCondition(event, triggerName) {
     conditions.value.push(event);
 
-    var exposeTrigger = exposeTriggers.value[selectedExpose.value]
+    var exposeTrigger = exposeTriggers.value[triggerName]
     exposeTrigger.conditions.push(event)
 }
 
-function removeCondition(event) {
+function removeCondition(event, triggerName) {
     var index = conditions.value.findIndex(item => item.idx === event);
 
     if (index != -1) {
@@ -103,7 +120,7 @@ function removeCondition(event) {
         conditions.value.splice(index, 1);
 
         // remove from our device trigger cache
-        for (const [key, item] of Object.entries(exposeTriggers.value)) {
+        for (const [key, item] of Object.entries(triggerName)) {
             var index = item.conditions.findIndex(item => item.idx === event);
             if (index == -1) {
                 continue
@@ -150,7 +167,7 @@ function exposesList() {
                     id="flexSwitchCheckDefault" v-model="enabled">
             </div>
         </div>
-        <div class="col-50 mt-3 mb-3">
+        <div class="col-50 mt-3 mb-4">
             <div class="btn-group">
                 <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false" @click="create">
                     Save
@@ -161,16 +178,61 @@ function exposesList() {
             </div>
         </div>
 
-        <h5>Triggers</h5>
-
         <div class="mb-3">
             <Selector placeholder="Select trigger" :items="exposesList()" :value="selectedExpose" alignment="left"
                 @update:data="exposeSelectionChanged"></Selector>
         </div>
-        <div>
-            <Trigger :id="props.id" :trigger="currentTrigger" @addAction="addAction" @removeAction="removeAction"
+        <div class="col-50 mt-3 mb-4">
+            <div class="btn-group">
+                <button type="button" class="btn btn-light" :disabled="isAddTriggerEnabled() == false" @click="addTrigger">
+                    Add new trigger
+                </button>
+
+            </div>
+        </div>
+
+        <div class="accordion accordion-flush" id="triggersList">
+            <div v-for="(trigger, key) in  exposeTriggers ">
+
+                <div class="accordion-item">
+
+                    <h2 class="accordion-header" :id="`header${trigger.name}`">
+
+                        <div class="col accordion-button collapsed " data-bs-toggle="collapse"
+                            :data-bs-target="`#collapse${trigger.name}`" aria-expanded="false"
+                            :aria-controls="`collapse${trigger.name}`">
+
+                            <div class="col">
+                                Trigger # {{ trigger.name }}
+                            </div>
+
+                            <div class="col pe-3 text-end ">
+                                <span class="fa fa-trash-alt fa-lg" @click="onDeleteTriggerClick($event, trigger.name)"
+                                    data-bs-toggle="collapse" data-bs-target>
+                                </span>
+
+                            </div>
+                        </div>
+                    </h2>
+
+                    <div :id="`collapse${trigger.name}`" class="accordion-collapse collapse"
+                        :aria-labelledby="`header${trigger.name}`" data-bs-parent="#triggersList">
+                        <div class="accordion-body">
+                            <Trigger :id="props.id" :trigger="trigger" @addAction="addAction($event, trigger.name)"
+                                @removeAction="removeAction($event, trigger.name)"
+                                @addCondition="addCondition($event, trigger.name)"
+                                @removeCondition="removeCondition($event, trigger.name)">
+                            </Trigger>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="selectedExpose != ''">
+            <!-- <Trigger :id="props.id" :trigger="currentTrigger" @addAction="addAction" @removeAction="removeAction"
                 @addCondition="addCondition" @removeCondition="removeCondition">
-            </Trigger>
+            </Trigger> -->
         </div>
 
     </div>

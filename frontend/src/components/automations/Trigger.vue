@@ -91,15 +91,32 @@ function removeCondition(event) {
         <!-- mobile dimensions are wrong -->
         <!-- fix triggeractonnew - check refactoring logic -->
         <!-- fix triggeractonnew - props dont update unless we remove and add again -->
-        <!-- Save button shouls navigate to automation viewer -->
         <!-- check url design above for styling of creator text input -->
         <!-- if automation for device exists message user else we overwrite it -->
 
         <br>
         <div>
+            <!-- Conditions -->
+            <h5>Conditions</h5>
+            <div class="row pb-3">
+                <TriggerCondition :id="props.id" :index="0" :name="selectedExpose" :operator="Operators[0].value" :data="''"
+                    @add="addCondition">
+                </TriggerCondition>
+            </div>
+
+            <div v-for="condition in trigger.conditions">
+                <div class="row">
+                    <TriggerCondition :id="props.id" :index="condition.idx" :name="condition.name"
+                        :operator="condition.equality" :key="condition.idx" :data="condition.value"
+                        @remove="removeCondition($event)" @update:value="newValue => condition.value = newValue"
+                        @update:operator="newValue => condition.operator = newValue">
+                    </TriggerCondition>
+                </div>
+            </div>
+
             <!-- Actions -->
-            <h5>Action</h5>
-            <div class="mb-3">
+            <h5 class="pt-3">Action</h5>
+            <div class="pb-3">
 
                 <Selector placeholder="Select device" :items="deviceList()" :value="selectedAction" key="id"
                     alignment="left" @update:data="e => selectedAction = e" :disabled="selectedExpose == ''"></Selector>
@@ -119,41 +136,7 @@ function removeCondition(event) {
                 <TriggerAction :id="selectedAction" @add="addAction"></TriggerAction>
             </div>
 
-            <!-- Conditions -->
-            <div class="accordion accordion-flush mt-3 " id="triggerSelections">
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="`header`">
 
-                        <div class="accordion-button collapsed " data-bs-toggle="collapse" :data-bs-target="`#collapseOne`"
-                            aria-expanded="false" :aria-controls="`collapseOne`">
-
-                            Conditions
-                        </div>
-                    </h2>
-
-                    <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne"
-                        data-bs-parent="#triggerSelections">
-                        <div class="accordion-body">
-                            <div class="row">
-                                <TriggerCondition :id="props.id" :index="0" :name="selectedExpose"
-                                    :operator="Operators[0].value" :data="''" @add="addCondition">
-                                </TriggerCondition>
-                            </div>
-
-                            <div v-for="condition in trigger.conditions">
-                                <div class="row">
-                                    <TriggerCondition :id="props.id" :index="condition.idx" :name="condition.name"
-                                        :operator="condition.equality" :key="condition.idx" :data="condition.value"
-                                        @remove="removeCondition($event)"
-                                        @update:value="newValue => condition.value = newValue"
-                                        @update:operator="newValue => condition.operator = newValue">
-                                    </TriggerCondition>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </template>
