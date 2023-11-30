@@ -3,7 +3,6 @@ import { Alert } from "bootstrap";
 
 import { onBeforeMount, ref } from "vue";
 import { useStore } from "vuex";
-import Notification from "./components/notifications/Notification.vue";
 const title = ref("Node-Herder");
 const store = useStore()
 
@@ -18,8 +17,7 @@ onBeforeMount(() => {
   <main className="content p-0 p-sm-3">
     <div class="container-fluid p-0 h-100">
 
-      <Notification></Notification>
-      <!-- TODO: add Notification area for alerts-->
+      <notifications position="top right" />
       <RouterLink to="/">{{ title }}</RouterLink> |
       <RouterLink to="/viewer">Automations </RouterLink>
       <RouterView />

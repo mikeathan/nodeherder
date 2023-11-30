@@ -1,5 +1,10 @@
 const socketUri = "ws://localhost:3000/ws"; // used for testing
 //const socketUri = "ws://" + document.location.host + "/ws";
+
+import { useNotification } from "@kyvg/vue3-notification";
+
+const { notify } = useNotification();
+
 const maxNumberOfAttempts = 10;
 const intervalTimeMs = 200;
 
@@ -51,10 +56,19 @@ const actions = {
           dispatch("features/init", obj.payload, { root: true });
           break;
         case "operationSuccess":
-          // do sth
+          //https://classic.yarnpkg.com/en/package/@kyvg/vue3-notification
+          notify({
+            title: "Operation was successful.",
+            duration: 2000,
+          });
           break;
         case "operationFailed":
-          // do sth
+          // https://classic.yarnpkg.com/en/package/@kyvg/vue3-notification
+          notify({
+            title: "Error",
+            text: obj.payload,
+            duration: 3000,
+          });
           break;
         case "ping":
           dispatch("emit", { event: "pong" });
