@@ -1,4 +1,4 @@
-<script >
+<script setup>
 import { computed, onMounted, ref } from "vue";
 import { createNotification } from "../../models/notification"
 
