@@ -2,8 +2,6 @@
 import { computed, onMounted, ref } from "vue";
 import { createNotification } from "../../models/notification"
 
-// Props for our component,
-// these are the same as Notitfication interface.
 const props = defineProps({
     id: { type: String, required: true },
     type: {
@@ -55,9 +53,6 @@ const toastIcon = computed(() => {
     }
 });
 
-// a computed property to set
-// the icon and progres bar color
-// for the notification
 const toastColor = computed(() => {
     switch (props.type) {
         case "error":
@@ -77,11 +72,11 @@ const toastTitle = computed(() => {
     return props.title && props.title !== null ? props.title : "Notification";
 });
 
-// a method to close the
-// notification and emit the action
-const close = () => {
+
+function close() {
     emit("close");
-};
+}
+
 </script>
 
 <template>
@@ -104,8 +99,8 @@ const close = () => {
     </div>
 </template>
 
-<style lang="scss" scoped>
-.toast-notification {
+<style scoped>
+ok .toast-notification {
     --toast-color: #0067ff;
     cursor: pointer;
     max-width: 450px;
