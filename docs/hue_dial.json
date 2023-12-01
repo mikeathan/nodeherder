@@ -1,0 +1,191 @@
+{
+    "action": "button_2_press",
+    "battery": 100,
+    "last_seen": "2023-12-01T17:06:47+00:00",
+    "linkquality": 25,
+    "update": {
+        "installed_version": 33569555,
+        "latest_version": 33569561,
+        "state": "available"
+    }
+}
+
+{
+    "action": "button_2_press_release",
+    "battery": 100,
+    "last_seen": "2023-12-01T17:06:48+00:00",
+    "linkquality": 25,
+    "update": {
+        "installed_version": 33569555,
+        "latest_version": 33569561,
+        "state": "available"
+    }
+}
+
+{
+    "action": "button_3_hold",
+    "action_duration": 0.84,
+    "battery": 100,
+    "last_seen": "2023-12-01T17:06:30+00:00",
+    "linkquality": 25,
+    "update": {
+        "installed_version": 33569555,
+        "latest_version": 33569561,
+        "state": "available"
+    }
+}
+{
+    "action": "button_3_hold_release",
+    "action_duration": 1.093,
+    "battery": 100,
+    "last_seen": "2023-12-01T17:06:30+00:00",
+    "linkquality": 29,
+    "update": {
+        "installed_version": 33569555,
+        "latest_version": 33569561,
+        "state": "available"
+    }
+}
+
+{
+    "action": "button_2_press",
+    "battery": 100,
+    "last_seen": "2023-12-01T17:07:00+00:00",
+    "linkquality": 29,
+    "update": {
+        "installed_version": 33569555,
+        "latest_version": 33569561,
+        "state": "available"
+    }
+}
+{
+    "battery": 100,
+    "last_seen": "2023-12-01T17:07:01+00:00",
+    "linkquality": 29,
+    "update": {
+        "installed_version": 33569555,
+        "latest_version": 33569561,
+        "state": "available"
+    }
+}
+{
+    "action": "button_2_hold",
+    "action_duration": 0.793,
+    "battery": 100,
+    "last_seen": "2023-12-01T17:07:01+00:00",
+    "linkquality": 29,
+    "update": {
+        "installed_version": 33569555,
+        "latest_version": 33569561,
+        "state": "available"
+    }
+}
+{
+    "action": "button_2_hold",
+    "action_duration": 1.594,
+    "battery": 100,
+    "last_seen": "2023-12-01T17:07:02+00:00",
+    "linkquality": 29,
+    "update": {
+        "installed_version": 33569555,
+        "latest_version": 33569561,
+        "state": "available"
+    }
+}
+{
+    "action": "button_2_hold",
+    "action_duration": 2.387,
+    "battery": 100,
+    "last_seen": "2023-12-01T17:07:03+00:00",
+    "linkquality": 29,
+    "update": {
+        "installed_version": 33569555,
+        "latest_version": 33569561,
+        "state": "available"
+    }
+}
+{
+    "action": "button_2_hold_release",
+    "action_duration": 2.712,
+    "battery": 100,
+    "last_seen": "2023-12-01T17:07:03+00:00",
+    "linkquality": 25,
+    "update": {
+        "installed_version": 33569555,
+        "latest_version": 33569561,
+        "state": "available"
+    }
+}
+
+
+{
+    "action": "dial_rotate_right_step",
+    "action_direction": "right",
+    "action_time": 15,
+    "action_type": "step",
+    "battery": 100,
+    "last_seen": "2023-12-01T17:08:04+00:00",
+    "linkquality": 29,
+    "update": {
+        "installed_version": 33569555,
+        "latest_version": 33569561,
+        "state": "available"
+    }
+}
+{
+    "action": "dial_rotate_right_step",
+    "action_direction": "right",
+    "action_time": 15,
+    "action_type": "rotate",
+    "battery": 100,
+    "last_seen": "2023-12-01T17:08:05+00:00",
+    "linkquality": 32,
+    "update": {
+        "installed_version": 33569555,
+        "latest_version": 33569561,
+        "state": "available"
+    }
+}
+
+{
+    "action": "dial_rotate_right_slow",
+    "action_direction": "right",
+    "action_time": 30,
+    "action_type": "step",
+    "battery": 100,
+    "last_seen": "2023-12-01T17:08:29+00:00",
+    "linkquality": 29,
+    "update": {
+        "installed_version": 33569555,
+        "latest_version": 33569561,
+        "state": "available"
+    }
+}
+{
+    "action": "dial_rotate_right_slow",
+    "action_direction": "right",
+    "action_time": 45,
+    "action_type": "rotate",
+    "battery": 100,
+    "last_seen": "2023-12-01T17:08:30+00:00",
+    "linkquality": 29,
+    "update": {
+        "installed_version": 33569555,
+        "latest_version": 33569561,
+        "state": "available"
+    }
+}
+{
+    "action": "dial_rotate_right_fast",
+    "action_direction": "right",
+    "action_time": 90,
+    "action_type": "rotate",
+    "battery": 100,
+    "last_seen": "2023-12-01T17:08:44+00:00",
+    "linkquality": 29,
+    "update": {
+        "installed_version": 33569555,
+        "latest_version": 33569561,
+        "state": "available"
+    }
+}

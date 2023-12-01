@@ -41,6 +41,10 @@ var exposesWhitelist = map[string]int{
 	"pm1":               11,
 	"pm25":              12,
 	"pm10":              13,
+	"action":            14,
+	"action_direction":  15,
+	"action_type":       16,
+	"action_time":       17,
 }
 
 var propertiesWhitelist = map[string]int{
