@@ -104,7 +104,6 @@ post payload
 TODO:
 
 test autiomation loading. configureAction for sanitizing numeric type data
-
 do we need to unsubsribe from removed/renamed topic ??
 Test new logic in RegisterBridge
 
@@ -114,3 +113,23 @@ fix sizing for mobile
 fix creator laout, add button to create we trigger acordion
 fix device card in dahsboard switch from offline to online
 if automation save failed, display error response
+
+
+Hue dial
+
+combinations:
+
+press
+release
+
+press
+hold - action_duration
+release - action_duration
+
+right - step
+
+right-slow - step
+
+right-slow - step - action time
+right-slow - rotate  - action time
+right-fast - rotate  - action time
