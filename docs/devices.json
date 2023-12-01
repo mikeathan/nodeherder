@@ -102,6 +102,69 @@
       }
     },
     {
+      "id": "0x001788010d7d9d3f",
+      "friendly_name": "0x001788010d7d9d3f",
+      "description": "Hue Tap dial switch",
+      "connection_type": "mqtt",
+      "power_source": "Battery",
+      "exposes": {
+        "action": {
+          "name": "action",
+          "description": "Triggered action (e.g. a button click)",
+          "data": null,
+          "type": "enum",
+          "properties": {
+            "0": "button_1_press",
+            "1": "button_1_press_release",
+            "10": "button_3_hold",
+            "11": "button_3_hold_release",
+            "12": "button_4_press",
+            "13": "button_4_press_release",
+            "14": "button_4_hold",
+            "15": "button_4_hold_release",
+            "16": "dial_rotate_left_step",
+            "17": "dial_rotate_left_slow",
+            "18": "dial_rotate_left_fast",
+            "19": "dial_rotate_right_step",
+            "2": "button_1_hold",
+            "20": "dial_rotate_right_slow",
+            "21": "dial_rotate_right_fast",
+            "3": "button_1_hold_release",
+            "4": "button_2_press",
+            "5": "button_2_press_release",
+            "6": "button_2_hold",
+            "7": "button_2_hold_release",
+            "8": "button_3_press",
+            "9": "button_3_press_release"
+          }
+        },
+        "action_direction": {
+          "name": "action_direction",
+          "description": "Direction in which the dial was turned",
+          "data": null,
+          "type": "enum",
+          "properties": { "0": "right", "1": "left" }
+        },
+        "action_time": {
+          "name": "action_time",
+          "description": "Raw value that represents the amount the dial was turned",
+          "data": null,
+          "type": "numeric"
+        },
+        "action_type": {
+          "name": "action_type",
+          "description": "Type of the rotation, value in the first message is `step` and in the next messages value is `rotate`",
+          "data": null,
+          "type": "enum",
+          "properties": { "0": "step", "1": "rotate" }
+        }
+      },
+      "properties": {
+        "availability": "online",
+        "last_seen": "2023-12-01T20:00:09+00:00"
+      }
+    },
+    {
       "id": "0xa4c13894070052fc",
       "friendly_name": "Human presence",
       "description": "Mini human breathe sensor",
