@@ -104,6 +104,26 @@ function dataUpdated(event) {
     data.value = event
     emit('update:value', event)
 }
+
+function getPlaceholder() {
+    if (feature.value.type == 'binary' || feature.value.type == 'enum') {
+        return 'Select'
+    }
+
+    return 'Value'
+}
+
+function getItems() {
+
+    switch (feature.value.type) {
+        case "binary":
+            return [false, true]
+        case "enum":
+            return feature.data;
+        default:
+            return null
+    }
+}
 </script>
 
 <template>
@@ -126,8 +146,7 @@ function dataUpdated(event) {
         </DataInput>
     </div>
     <div class="col">
-        <DataInput :type="feature.type" :placeholder="feature.type == 'binary' ? 'Select' : 'Value'" placeholder="Value"
-            :data="data" :items="feature.type == 'binary' ? [true, false] : null" :disabled="name == ''"
+        <DataInput :type="feature.type" :placeholder="getPlaceholder" :data="data" :items="getItems" :disabled="name == ''"
             @update:data="dataUpdated">
         </DataInput>
     </div>
