@@ -116,6 +116,26 @@ function remove(event) {
     emit("add", props.id)
 }
 
+function getPlaceholder() {
+    if (feature.value.type == 'binary' || feature.value.type == 'enum') {
+        return ''
+    }
+
+    return 'Value'
+}
+
+function getItems() {
+
+    console.log("DEBUG TriggerAction;", feature.value.properties)
+    switch (feature.value.type) {
+        case "binary":
+        case "enum":
+
+            return Object.values(feature.value.properties)
+        default:
+            return null
+    }
+}
 </script>
 
 <style scoped>
@@ -142,11 +162,10 @@ function remove(event) {
         </select>
     </div>
 
-
+    broken here
     <div class="col">
-        <DataInput :type="feature.type" :placeholder="feature.type == 'binary' ? '' : 'Value'"
-            :items="feature.type == 'binary' ? feature.properties : null" :data="data" :disabled="property == ''"
-            @update:data="dataUpdated">
+        <DataInput :type="feature.type" :placeholder="getPlaceholder()" :items="getItems()" :data="data"
+            :disabled="property == ''" @update:data="dataUpdated">
         </DataInput>
     </div>
     <div class="col">

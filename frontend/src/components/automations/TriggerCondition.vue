@@ -115,15 +115,19 @@ function getPlaceholder() {
 
 function getItems() {
 
+    if (feature.value.attributes == undefined) {
+        return null
+    }
     switch (feature.value.type) {
         case "binary":
-            return [false, true]
         case "enum":
-            return feature.data;
+
+            return Object.values(feature.value.attributes)
         default:
             return null
     }
 }
+
 </script>
 
 <template>
@@ -141,13 +145,12 @@ function getItems() {
         </DataInput>
     </div>
     <div class="col">
-        <DataInput type="binary" :items="OperatorKeys" :data="operator" :disabled="name == ''"
-            @update:data="operatorUpdated">
+        <DataInput :items="OperatorKeys" :data="operator" :disabled="name == ''" @update:data="operatorUpdated">
         </DataInput>
     </div>
     <div class="col">
-        <DataInput :type="feature.type" :placeholder="getPlaceholder" :data="data" :items="getItems" :disabled="name == ''"
-            @update:data="dataUpdated">
+        <DataInput :type="feature.type" :placeholder="getPlaceholder()" :data="data" :items="getItems()"
+            :disabled="name == ''" @update:data="dataUpdated">
         </DataInput>
     </div>
     <div class="col-3">

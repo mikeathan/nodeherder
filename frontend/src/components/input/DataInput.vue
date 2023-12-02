@@ -53,6 +53,11 @@ watch(
     }, { immediate: true }
 )
 
+function isSelection() {
+    console.log("DEBUG", items.value)
+    return items.value.length > 0
+}
+
 function dataInputChange(event) {
     if (props.type == 'numeric') {
         var value = event.target.value.replace(/[^0-9.]/g, '');
@@ -105,7 +110,7 @@ function focusChanged(event) {
 }
 </style>
 <template>
-    <div v-if="props.type == 'binary'">
+    <div v-if="isSelection()">
 
         <select id="dataSelect" :style="'text-align:' + props.alignment + ';'"
             class="form-control form-select select-outline" name="valueinput" v-model="data" @change="dataSelectionChanged"
