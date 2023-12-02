@@ -33,6 +33,10 @@ type BridgeExpose struct {
 	Name        string              `json:"name,omitempty"`
 	Property    string              `json:"property,omitempty"`
 	Values      []string            `json:"values,omitempty"`
+	ValueOff    any                 `json:"value_off,omitempty"`
+	ValueOn     any                 `json:"value_on,omitempty"`
+	ValueMax    any                 `json:"value_max,omitempty"`
+	ValueMin    any                 `json:"value_min,omitempty"`
 	Unit        string              `json:"unit,omitempty"`
 }
 

@@ -129,19 +129,27 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 	newEntity.Data = data
 	newEntity.Type = expose.Type
 
-	// TODO; support below types
+	// TODO: needs refactoring
 	switch expose.Type {
 	case "numeric":
-		//newEntity.Attributes["max"] = expose.ValueMax
-		//	newEntity.Attributes["min"] = expose.ValueMin
+		if expose.ValueMax != nil {
+			newEntity.Attributes["max"] = expose.ValueMax
+		}
+		if expose.ValueMin != nil {
+			newEntity.Attributes["min"] = expose.ValueMin
+		}
 
 	case "binary":
-		//newEntity.Properties["on"] = expose.ValueOn
-		//newEntity.Properties["off"] = expose.ValueOff
+		if expose.ValueOn != nil {
+			newEntity.Attributes["on"] = expose.ValueOn
+		}
+		if expose.ValueOff != nil {
+			newEntity.Attributes["off"] = expose.ValueOff
+		}
 
 	case "enum":
-		for index, item := range expose.Values {
-			newEntity.Properties[fmt.Sprintf("%d", index)] = item
+		for _, item := range expose.Values {
+			newEntity.Attributes[item] = item
 		}
 	}
 	return newEntity, nil
