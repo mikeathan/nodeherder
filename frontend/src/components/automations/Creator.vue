@@ -38,7 +38,7 @@ function deviceList() {
 </script>
 <template>
     <div class="container-fluid p-0 h-100">
-        <div class="card col-xl-5 col-md-6 col-sm-3">
+        <div class="card col-xl-6 col-md-5 col-sm-3">
             <div class="card-body">
                 <h3>Create new Automation</h3>
                 <div>
