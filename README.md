@@ -114,7 +114,6 @@ fix creator laout, add button to create we trigger acordion
 fix device card in dahsboard switch from offline to online
 if automation save failed, display error response
 
-
 Hue dial
 
 combinations:
@@ -131,5 +130,22 @@ right - step
 right-slow - step
 
 right-slow - step - action time
-right-slow - rotate  - action time
-right-fast - rotate  - action time
+right-slow - rotate - action time
+right-fast - rotate - action time
+
+######### Logic ############
+simple
+propery:action
+device:hue tap dial switch
+
+press btn 1
+release btn 1
+
+if current == release btn 1
+do action
+
+advanced
+we need blueprints
+[hold, release]
+eg press, hold , release
+store previous states in array
