@@ -100,7 +100,9 @@ function operatorUpdated(event) {
     operator.value = event
     emit('update:operator', event)
 }
+
 function dataUpdated(event) {
+
     data.value = event
     emit('update:value', event)
 }
@@ -145,7 +147,7 @@ function getItems() {
         </DataInput>
     </div>
     <div class="col">
-        <DataInput :items="OperatorKeys" :data="operator" :disabled="name == ''" @update:data="operatorUpdated">
+        <DataInput type="enum" :items="OperatorKeys" :data="operator" :disabled="name == ''" @update:data="operatorUpdated">
         </DataInput>
     </div>
     <div class="col">

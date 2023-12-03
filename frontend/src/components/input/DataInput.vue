@@ -38,10 +38,10 @@ watch(
 watch(
     () => props.items,
     () => {
-        if (props.items != null) {
-            items.value = props.items
+        items.value = props.items
+        if (items.value == null) {
+            items.value = []
         }
-
 
     }, { immediate: true }
 )
@@ -54,7 +54,6 @@ watch(
 )
 
 function isSelection() {
-    console.log("DEBUG", items.value)
     return items.value.length > 0
 }
 
@@ -70,7 +69,6 @@ function dataSelectionChanged(event) {
     if (event.target.value == null) {
         return;
     }
-
     if (typeof data.value === "boolean") {
         data.value = Boolean(event.target.value).valueOf()
     } else {

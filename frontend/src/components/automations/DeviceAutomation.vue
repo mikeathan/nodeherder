@@ -88,8 +88,6 @@ function create() {
 
     reset();
 
-    console.log("create", deviceTrigger)
-
     emit("create", deviceTrigger)
 }
 

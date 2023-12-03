@@ -65,6 +65,7 @@ function propertySelectionChanged(event) {
         data.value = "" // reset data
         return;
     }
+    delay.value = ""
     // reset data
     for (const [key, feature] of Object.entries(features.value)) {
         if (feature.name == value) {
@@ -118,7 +119,7 @@ function remove(event) {
 
 function getPlaceholder() {
     if (feature.value.type == 'binary' || feature.value.type == 'enum') {
-        return ''
+        return 'Select'
     }
 
     return 'Value'
@@ -126,11 +127,9 @@ function getPlaceholder() {
 
 function getItems() {
 
-    console.log("DEBUG TriggerAction;", feature.value.properties)
     switch (feature.value.type) {
         case "binary":
         case "enum":
-
             return Object.values(feature.value.properties)
         default:
             return null
@@ -162,7 +161,6 @@ function getItems() {
         </select>
     </div>
 
-    broken here
     <div class="col">
         <DataInput :type="feature.type" :placeholder="getPlaceholder()" :items="getItems()" :data="data"
             :disabled="property == ''" @update:data="dataUpdated">
