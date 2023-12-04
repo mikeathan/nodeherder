@@ -252,7 +252,7 @@ func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay t
 	turnOffAction.Type = "light"
 	turnOffAction.Property = "state"
 	turnOffAction.Data = false
-	turnOffAction.Delay = delay
+	turnOffAction.Delay = int(delay.Milliseconds())
 	turnOffAction.Client = mqtt
 
 	// Turn off sensor trigger

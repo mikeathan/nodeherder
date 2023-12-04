@@ -724,13 +724,14 @@ func createTriggerTurnOnLightWithPresenceOn(mqtt mqtt.MqttClient) *automations.T
 }
 
 func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay time.Duration) *automations.Trigger {
+
 	// action = turn off light
 	turnOffAction := &automations.MqttAction{}
 	turnOffAction.FriendlyName = "Attic light"
 	turnOffAction.Type = "light"
 	turnOffAction.Property = "state"
 	turnOffAction.Data = false
-	turnOffAction.Delay = delay
+	turnOffAction.Delay = int(delay.Milliseconds())
 	turnOffAction.Client = mqtt
 
 	// Turn off sensor trigger

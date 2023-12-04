@@ -75,16 +75,20 @@ func (trigger *Trigger) process(ctx *DeviceContext) {
 
 		isMatched := c.Evaluate(ctx.Payload)
 		if !isMatched {
+			fmt.Println("[DEBUG] FAIL. evaluation not matched=", c.Name, c.EqualityOperator, c.Value)
+
 			trigger.Action.Stop()
 			return
 		}
 
 		// avoid calling action again for current trigger if value hasnt changed
 		if trigger.Name == c.Name && currValue == c.Value {
+			fmt.Println("[DEBUG] SKIP. value not changed=", c.Name, c.EqualityOperator, c.Value)
 			return
 		}
 	}
 
+	fmt.Println("[DEBUG] PASS. execute action. ", trigger.Name)
 	trigger.Action.Execute(trigger.Name, ctx)
 }
 
@@ -94,8 +98,8 @@ type MqttAction struct {
 	Type         string          `json:"type"`
 	Property     string          `json:"property"`
 	Data         any             `json:"data,omitempty"`
+	Delay        int             `json:"delay,omitempty"`
 	Client       mqtt.MqttClient `json:"-"`
-	Delay        time.Duration   `json:"delay,omitempty"`
 
 	mut       sync.RWMutex
 	exit      chan bool
@@ -134,8 +138,8 @@ func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
 	go func() {
 
 		utils.LogInfo("time constraint started")
-
-		timestamp := time.Now().Add(a.Delay)
+		var delay = time.Duration(float64(a.Delay) * float64(time.Millisecond))
+		timestamp := time.Now().Add(delay)
 		diff := time.Until(timestamp).Milliseconds()
 
 		duration := time.Duration(diff)

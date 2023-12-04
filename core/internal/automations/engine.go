@@ -184,7 +184,7 @@ func createTriggerDelayTurnOffLightWithPresenceOff(id string, delay time.Duratio
 	turnOffAction.Type = "light"
 	turnOffAction.Property = "state"
 	turnOffAction.Data = false
-	turnOffAction.Delay = delay
+	turnOffAction.Delay = int(delay.Milliseconds())
 
 	// Turn off sensor trigger
 	turnOffTrigger := &Trigger{}
