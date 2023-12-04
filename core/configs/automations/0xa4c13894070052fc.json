@@ -2,7 +2,7 @@
   "id": "0xa4c13894070052fc",
   "friendlyname": "Human presence",
   "description": "Attic light test automation",
-  "enabled": false,
+  "enabled": true,
   "triggers": [
     {
       "name": "presence",
@@ -19,7 +19,7 @@
         "type": "light",
         "property": "state",
         "data": "OFF",
-        "delay": 300000000000
+        "delay": 30000
       }
     },
     {
@@ -31,7 +31,7 @@
           "equality": "="
         },
         {
-          "name": "iluminance_lux",
+          "name": "illuminance_lux",
           "value": 30,
           "equality": "\u003c="
         }

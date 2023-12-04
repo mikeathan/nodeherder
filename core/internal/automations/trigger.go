@@ -75,20 +75,18 @@ func (trigger *Trigger) process(ctx *DeviceContext) {
 
 		isMatched := c.Evaluate(ctx.Payload)
 		if !isMatched {
-			fmt.Println("[DEBUG] FAIL. evaluation not matched=", c.Name, c.EqualityOperator, c.Value)
-
 			trigger.Action.Stop()
 			return
 		}
 
 		// avoid calling action again for current trigger if value hasnt changed
+
+		// problem here first time , if we call execute twice, second time will stop timer from first execute
 		if trigger.Name == c.Name && currValue == c.Value {
-			fmt.Println("[DEBUG] SKIP. value not changed=", c.Name, c.EqualityOperator, c.Value)
 			return
 		}
 	}
 
-	fmt.Println("[DEBUG] PASS. execute action. ", trigger.Name)
 	trigger.Action.Execute(trigger.Name, ctx)
 }
 
@@ -137,7 +135,6 @@ func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
 	a.exit = make(chan bool, 1)
 	go func() {
 
-		utils.LogInfo("time constraint started")
 		var delay = time.Duration(float64(a.Delay) * float64(time.Millisecond))
 		timestamp := time.Now().Add(delay)
 		diff := time.Until(timestamp).Milliseconds()
@@ -145,6 +142,7 @@ func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
 		duration := time.Duration(diff)
 		ticker := *time.NewTicker(duration * time.Millisecond)
 		a.isPending = true
+		utils.LogInfof("time constraint started Delay: %d ms", a.Delay)
 
 		defer func() {
 			close(a.exit)

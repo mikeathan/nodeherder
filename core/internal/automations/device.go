@@ -69,7 +69,10 @@ func NewDevice(id string) *Device {
 }
 
 func (d *Device) Evaluate(device *devices.Device) bool {
+
 	d.ctx.Payload = device.Exposes
+	// NOTE: an trigger can have multiple conditions.
+	// e.g presence can have multiple conditions for on and off
 	for _, trigger := range d.Triggers {
 		if _, ok := device.Exposes[trigger.Name]; ok {
 			trigger.process(d.ctx)
