@@ -81,6 +81,71 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 	wg.Wait()
 }
 
+func TestHandleMultipleSameValueTriggerWithDelay(t *testing.T) {
+
+	wg := &sync.WaitGroup{}
+	mqtt := &mocks.MockMqttClient{}
+
+	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(mqtt, 3*time.Second)
+	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30)
+
+	// create device trigger
+	deviceTrigger := automations.NewDevice("human sensor")
+	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOffTrigger)
+	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
+
+	device := devices.NewDevice(deviceTrigger.Id)
+
+	testCases := []struct {
+		presence bool
+		lux      any
+		result   bool
+	}{
+		{presence: false, lux: 30, result: true},
+		{presence: false, lux: 15, result: false},
+		{presence: false, lux: 6, result: false},
+	}
+
+	for _, testCase := range testCases {
+		var data = map[string]any{
+			"presence": testCase.presence,
+			"lux":      testCase.lux,
+		}
+
+		var messageHandler = func(id string, payload []byte) {
+			wg.Done()
+			action := turnOnTrigger.Action
+			if !strings.HasPrefix(id, action.FriendlyName) {
+				t.Fatalf("invalid received topic: want %s got %s", action.FriendlyName, id)
+			}
+
+			data := unpackJsonToMap(string(payload))
+			if data == nil {
+				t.Fatalf("error unpacking json")
+			}
+			value, ok := data[action.Property]
+			if !ok {
+				t.Fatalf("property not %s found in payload", action.Property)
+			}
+			if value != testCase.presence {
+				t.Fatalf("value mismatch: want %v got %v", testCase.presence, value)
+			}
+		}
+
+		mqtt.OnMessageHandler(messageHandler)
+		if testCase.result {
+			wg.Add(1)
+		}
+
+		device.Exposes = createExposures(data)
+		deviceTrigger.Evaluate(device)
+
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	wg.Wait()
+}
+
 func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 
 	wg := &sync.WaitGroup{}

@@ -124,7 +124,6 @@ func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
 	}
 
 	if a.isPending {
-		a.Stop()
 		return
 	}
 

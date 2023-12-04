@@ -288,8 +288,8 @@ func (device *Device) Update(payload map[string]interface{}) *updatePackage {
 			device.Exposes[name].Data = newValue
 			updatePackage.Data[name] = newValue
 		}
-
 	}
+
 	if updatePackage.HasData() {
 
 		for name := range propertiesWhitelist {
