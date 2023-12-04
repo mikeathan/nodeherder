@@ -180,6 +180,15 @@ function exposesList() {
 
             <Selector placeholder="Select trigger" :items="exposesList()" :value="selectedExpose" alignment="left"
                 @update:data="exposeSelectionChanged"></Selector>
+
+            <div class="col-3">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-default btn-number" @click="add($event)">
+                        <span class="fa fa-plus"></span>
+                    </button>
+                </div>
+            </div>
+
         </div>
 
         <div class="col-50 mt-3 mb-4">
