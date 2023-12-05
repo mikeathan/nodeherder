@@ -14,8 +14,6 @@ const props = defineProps({
 const store = useStore();
 const conditions = ref([]);
 const selectedExpose = ref("")
-const currentTrigger = ref(null)
-const exposeTriggers = ref({});
 const triggers = ref([])
 
 const enabled = ref(false)
@@ -47,15 +45,12 @@ function exposeSelectionChanged(value) {
 function addTrigger() {
     var trigger = new ExposeTrigger(selectedExpose)
     triggers.value.push(trigger)
-    currentTrigger.value = trigger
 }
 
 watch(
     () => props.id,
     () => {
         selectedExpose.value = ""
-        var exposeTrigger = new ExposeTrigger(selectedExpose.value);
-        currentTrigger.value = exposeTrigger;
     },
     { immediate: true }
 );
@@ -71,15 +66,15 @@ function isAddTriggerEnabled() {
 
 function isSaveEnabled() {
     // find entries with actions only
-    var values = Object.values(exposeTriggers.value).filter(k => k.action != null);
+    var values = triggers.value.filter(k => k.action != null);
     return values.length > 0 && description.value.length > 0
 }
-function onDeleteTriggerClick(event, triggerName) {
+
+function onDeleteTriggerClick(event, index) {
     // disable accordion from expanding
     event.stopImmediatePropagation();
     event.preventDefault();
-    delete exposeTriggers.value[triggerName]
-    //automation.value.triggers.splice(triggerId, 1);
+    triggers.value.splice(index, 1);
 }
 
 function create() {
@@ -89,8 +84,8 @@ function create() {
     deviceTrigger.enabled = enabled.value
     deviceTrigger.description = description.value
 
-    for (const [key, item] of Object.entries(exposeTriggers.value)) {
-        deviceTrigger.triggers.push(item)
+    for (const trigger of triggers.value) {
+        deviceTrigger.triggers.push(trigger)
     }
 
     reset();
@@ -98,48 +93,46 @@ function create() {
     emit("create", deviceTrigger)
 }
 
-
 function reset() {
 
     conditions.value = []
-    exposeTriggers.value = {}
+    triggers.value = []
     description.value = ""
     enabled.value = false
     emit("cancel")
 }
 
-function addAction(event, triggerName) {
-    var exposeTrigger = exposeTriggers.value[triggerName]
-    exposeTrigger.action = event;
+function addAction(event, index) {
+    var trigger = triggers.value[index]
+    trigger.action = event
 }
 
-function removeAction(event, triggerName) {
-    var exposeTrigger = exposeTriggers.value[triggerName]
-    exposeTrigger.action = null;
+function removeAction(event, index) {
+    var trigger = triggers.value[index]
+    trigger.action = null
 }
 
-function addCondition(event, triggerName) {
+function addCondition(event, index) {
     conditions.value.push(event);
-
-    var exposeTrigger = exposeTriggers.value[triggerName]
-    exposeTrigger.conditions.push(event)
+    var trigger = triggers.value[index]
+    trigger.conditions.push(event)
 }
 
-function removeCondition(event, triggerName) {
-    var index = conditions.value.findIndex(item => item.idx === event);
+function removeCondition(event, index) {
+    var cIdx = conditions.value.findIndex(item => item.idx === event);
 
-    if (index != -1) {
+    if (cIdx != -1) {
 
-        conditions.value.splice(index, 1);
+        conditions.value.splice(cIdx, 1);
 
         // remove from our device trigger cache
-        for (const [key, item] of Object.entries(triggerName)) {
-            var index = item.conditions.findIndex(item => item.idx === event);
-            if (index == -1) {
+        for (const item of triggers.value[index]) {
+            var idx = item.conditions.findIndex(i => i.idx === event);
+            if (idx == -1) {
                 continue
             }
 
-            item.conditions.splice(index, 1);
+            item.conditions.splice(idx, 1);
         }
     }
 }
@@ -213,7 +206,7 @@ function exposesList() {
 
                 <div class="accordion-item">
 
-                    <h2 class="accordion-header" :id="`header${trigger.name}`">
+                    <h2 class="accordion-header" :id="`header${index}`">
 
                         <div class="col accordion-button collapsed " data-bs-toggle="collapse"
                             :data-bs-target="`#collapse${index}`" aria-expanded="false" :aria-controls="`collapse${index}`">
@@ -231,8 +224,8 @@ function exposesList() {
                         </div>
                     </h2>
 
-                    <div :id="`collapse${trigger.name}`" class="accordion-collapse collapse show"
-                        :aria-labelledby="`header${trigger.name}`" data-bs-parent="#triggersList">
+                    <div :id="`collapse${index}`" class="accordion-collapse collapse show"
+                        :aria-labelledby="`header${index}`" data-bs-parent="#triggersList">
                         <div class="accordion-body">
                             <Trigger :id="props.id" :trigger="trigger" @addAction="addAction($event, index)"
                                 @removeAction="removeAction($event, index)" @addCondition="addCondition($event, index)"
