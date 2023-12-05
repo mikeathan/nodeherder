@@ -6,7 +6,6 @@ import Trigger from "./Trigger"
 import DataInput from "../input/DataInput.vue"
 import Selector from "../input/Selector.vue"
 
-
 const props = defineProps({
     id: String,
 });
@@ -23,30 +22,6 @@ const device = computed(() => {
 });
 
 
-function exposeSelectionChanged(value) {
-
-    if (value == '') {
-        return
-    }
-    selectedExpose.value = value;
-    // if (exposeTriggers.value[value] != null) {
-    //     selectedExpose.value = ''; //de-select combo
-
-    //     return
-    // }
-    // var value = selectedExpose.value;
-    // var exposeTrigger = new ExposeTrigger(value);
-    // exposeTriggers.value[value] = exposeTrigger;
-    // currentTrigger.value = exposeTriggers.value[value]
-    // selectedExpose.value = ''; //de-select combo
-}
-
-
-function addTrigger() {
-    var trigger = new ExposeTrigger(selectedExpose)
-    triggers.value.push(trigger)
-}
-
 watch(
     () => props.id,
     () => {
@@ -56,13 +31,6 @@ watch(
 );
 
 const emit = defineEmits(['cancel', 'create'])
-function isAddTriggerEnabled() {
-    var value = selectedExpose.value;
-    if (exposeTriggers.value[value] != null) {
-        return false
-    }
-    return value != '';
-}
 
 function isSaveEnabled() {
     // find entries with actions only
@@ -102,6 +70,11 @@ function reset() {
     emit("cancel")
 }
 
+function addTrigger() {
+    var trigger = new ExposeTrigger(selectedExpose.value)
+    triggers.value.push(trigger)
+}
+
 function addAction(event, index) {
     var trigger = triggers.value[index]
     trigger.action = event
@@ -120,19 +93,15 @@ function addCondition(event, index) {
 
 function removeCondition(event, index) {
     var cIdx = conditions.value.findIndex(item => item.idx === event);
-
     if (cIdx != -1) {
 
         conditions.value.splice(cIdx, 1);
 
-        // remove from our device trigger cache
-        for (const item of triggers.value[index]) {
-            var idx = item.conditions.findIndex(i => i.idx === event);
-            if (idx == -1) {
-                continue
-            }
-
-            item.conditions.splice(idx, 1);
+        // remove from triggers cache
+        var trigger = triggers.value[index]
+        var idx = trigger.conditions.findIndex(i => i.idx === event);
+        if (idx != -1) {
+            trigger.conditions.splice(idx, 1);
         }
     }
 }
@@ -177,12 +146,11 @@ function exposesList() {
 
         <div class="mb-3">
             <div class="d-flex">
-                <label class="form-check-label">Trigger</label>
                 <Selector placeholder="Select trigger" :items="exposesList()" :value="selectedExpose" alignment="left"
-                    @update:data="exposeSelectionChanged"></Selector>
+                    @update:data="val => selectedExpose = val"></Selector>
                 <div class="btn-group">
                     <button type="button" class="btn btn-default btn-number" @click="addTrigger($event)"
-                        :disable="selectedExpose == ''">
+                        :disabled="selectedExpose == ''">
                         <span class="fa fa-plus"></span>
                     </button>
                 </div>
@@ -205,9 +173,7 @@ function exposesList() {
             <div v-for="(trigger, index) in  triggers ">
 
                 <div class="accordion-item">
-
                     <h2 class="accordion-header" :id="`header${index}`">
-
                         <div class="col accordion-button collapsed " data-bs-toggle="collapse"
                             :data-bs-target="`#collapse${index}`" aria-expanded="false" :aria-controls="`collapse${index}`">
 
