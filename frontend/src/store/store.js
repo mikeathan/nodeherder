@@ -3,7 +3,6 @@ import createPersistedState from "vuex-persistedstate";
 import wsclient from "./modules/wsclient";
 import automations from "./modules/automations";
 import devices from "./modules/devices";
-import features from "./modules/features";
 
 const state = {};
 
@@ -13,7 +12,6 @@ const actions = {
   cleanup({ commit }) {
     commit("devices/clear", []);
     commit("automations/clear", []);
-    commit("features/clear", []);
   },
 };
 
@@ -24,7 +22,6 @@ const modules = {
   ws: wsclient,
   automations,
   devices,
-  features,
 };
 
 export default createStore({
