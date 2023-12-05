@@ -16,6 +16,8 @@ const conditions = ref([]);
 const selectedExpose = ref("")
 const currentTrigger = ref(null)
 const exposeTriggers = ref({});
+const triggers = ref([])
+
 const enabled = ref(false)
 const description = ref("")
 const device = computed(() => {
@@ -29,19 +31,24 @@ function exposeSelectionChanged(value) {
         return
     }
     selectedExpose.value = value;
-    if (exposeTriggers.value[value] != null) {
-        selectedExpose.value = ''; //de-select combo
+    // if (exposeTriggers.value[value] != null) {
+    //     selectedExpose.value = ''; //de-select combo
 
-        return
-    }
-    var value = selectedExpose.value;
-    var exposeTrigger = new ExposeTrigger(value);
-    exposeTriggers.value[value] = exposeTrigger;
-    currentTrigger.value = exposeTriggers.value[value]
-    selectedExpose.value = ''; //de-select combo
-
+    //     return
+    // }
+    // var value = selectedExpose.value;
+    // var exposeTrigger = new ExposeTrigger(value);
+    // exposeTriggers.value[value] = exposeTrigger;
+    // currentTrigger.value = exposeTriggers.value[value]
+    // selectedExpose.value = ''; //de-select combo
 }
 
+
+function addTrigger() {
+    var trigger = new ExposeTrigger(selectedExpose)
+    triggers.value.push(trigger)
+    currentTrigger.value = trigger
+}
 
 watch(
     () => props.id,
@@ -176,19 +183,17 @@ function exposesList() {
 
 
         <div class="mb-3">
-            <label class="form-check-label">Trigger</label>
-
-            <Selector placeholder="Select trigger" :items="exposesList()" :value="selectedExpose" alignment="left"
-                @update:data="exposeSelectionChanged"></Selector>
-
-            <div class="col-3">
+            <div class="d-flex">
+                <label class="form-check-label">Trigger</label>
+                <Selector placeholder="Select trigger" :items="exposesList()" :value="selectedExpose" alignment="left"
+                    @update:data="exposeSelectionChanged"></Selector>
                 <div class="btn-group">
-                    <button type="button" class="btn btn-default btn-number" @click="add($event)">
+                    <button type="button" class="btn btn-default btn-number" @click="addTrigger($event)"
+                        :disable="selectedExpose == ''">
                         <span class="fa fa-plus"></span>
                     </button>
                 </div>
             </div>
-
         </div>
 
         <div class="col-50 mt-3 mb-4">
@@ -204,22 +209,21 @@ function exposesList() {
 
 
         <div class="accordion accordion-flush" id="triggersList">
-            <div v-for="(trigger, key) in  exposeTriggers ">
+            <div v-for="(trigger, index) in  triggers ">
 
                 <div class="accordion-item">
 
                     <h2 class="accordion-header" :id="`header${trigger.name}`">
 
                         <div class="col accordion-button collapsed " data-bs-toggle="collapse"
-                            :data-bs-target="`#collapse${trigger.name}`" aria-expanded="false"
-                            :aria-controls="`collapse${trigger.name}`">
+                            :data-bs-target="`#collapse${index}`" aria-expanded="false" :aria-controls="`collapse${index}`">
 
                             <div class="col">
-                                Trigger # {{ trigger.name }}
+                                Trigger #{{ index + 1 }} - {{ trigger.name }}
                             </div>
 
                             <div class="col pe-3 text-end ">
-                                <span class="fa fa-trash-alt fa-lg" @click="onDeleteTriggerClick($event, trigger.name)"
+                                <span class="fa fa-trash-alt fa-lg" @click="onDeleteTriggerClick($event, index)"
                                     data-bs-toggle="collapse" data-bs-target>
                                 </span>
 
@@ -230,10 +234,9 @@ function exposesList() {
                     <div :id="`collapse${trigger.name}`" class="accordion-collapse collapse show"
                         :aria-labelledby="`header${trigger.name}`" data-bs-parent="#triggersList">
                         <div class="accordion-body">
-                            <Trigger :id="props.id" :trigger="trigger" @addAction="addAction($event, trigger.name)"
-                                @removeAction="removeAction($event, trigger.name)"
-                                @addCondition="addCondition($event, trigger.name)"
-                                @removeCondition="removeCondition($event, trigger.name)">
+                            <Trigger :id="props.id" :trigger="trigger" @addAction="addAction($event, index)"
+                                @removeAction="removeAction($event, index)" @addCondition="addCondition($event, index)"
+                                @removeCondition="removeCondition($event, index)">
                             </Trigger>
                         </div>
                     </div>
