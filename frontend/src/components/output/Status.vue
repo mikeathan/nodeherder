@@ -4,7 +4,7 @@ import { computed, watch, ref } from "vue";
 
 const store = useStore();
 const connected = computed(() => {
-    return store.getters["wsclient/isconnected"];
+    return store.getters["ws/isconnected"];
 });
 const color = ref("red")
 // let connectionState = { true, "green", false, "red"}

@@ -1,5 +1,4 @@
 <script setup>
-import { Alert } from "bootstrap";
 
 import { onBeforeMount, ref } from "vue";
 import { useStore } from "vuex";
@@ -17,7 +16,10 @@ onBeforeMount(() => {
 <template>
   <main className="content p-0 p-sm-3">
     <div class="container-fluid p-0 h-100">
-      <Status></Status>
+      <span class="me-1">
+        <Status></Status>
+
+      </span>
       <notifications position="top right" />
       <RouterLink to="/">{{ title }}</RouterLink> |
       <RouterLink to="/viewer">Automations </RouterLink>
