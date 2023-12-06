@@ -1,8 +1,8 @@
 <script setup>
 import { useStore } from "vuex";
 import { ref, watch } from "vue";
-import TriggerAction from "./TriggerAction";
-import TriggerCondition from "./TriggerCondition"
+import Trigger from "./Trigger"
+
 import { DeviceTrigger } from "../../models/automation"
 import DataInput from "../input/DataInput.vue"
 import { useRouter } from 'vue-router'
@@ -137,8 +137,12 @@ function onDeleteTriggerClick(event, triggerId) {
                                 <div :id="`collapse${index}`" class="accordion-collapse collapse"
                                     :aria-labelledby="`header${index}`" data-bs-parent="#triggersList">
                                     <div class="accordion-body">
-
-                                        <label class="pb-4" v-if="trigger.conditions.length > 0">Condition</label>
+                                        <Trigger :id="props.id" :trigger="trigger" @addAction="addAction($event, index)"
+                                            @removeAction="removeAction($event, index)"
+                                            @addCondition="addCondition($event, index)"
+                                            @removeCondition="removeCondition($event, index)">
+                                        </Trigger>
+                                        <!-- <label class="pb-4" v-if="trigger.conditions.length > 0">Condition</label>
                                         <div v-for="(condition, idx) in trigger.conditions">
                                             <div class="row">
                                                 <TriggerCondition :id="props.id" :index="condition.idx = idx + 1"
@@ -166,7 +170,7 @@ function onDeleteTriggerClick(event, triggerId) {
                                                 @update:data="newValue => trigger.action.data = newValue"
                                                 @update:delay="newValue => trigger.action.delay = newValue">
                                             </TriggerAction>
-                                        </div>
+                                        </div> -->
                                     </div>
                                 </div>
                             </div>

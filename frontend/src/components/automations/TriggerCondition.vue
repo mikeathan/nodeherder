@@ -108,13 +108,28 @@ function dataUpdated(event) {
 }
 
 function getPlaceholder() {
-    if (feature.value.type == 'binary' || feature.value.type == 'enum') {
-        return 'Select'
-    }
 
-    return 'Value'
+    switch (feature.value.type) {
+        case "binary":
+        case "enum":
+            return 'Select'
+        default:
+            return 'Value'
+    }
 }
 
+function getOperators() {
+
+    console.log("type", feature.type)
+    switch (feature.value.type) {
+        case "binary":
+        case "enum":
+            return OperatorKeys[0]
+        default:
+            return OperatorKeys
+    }
+
+}
 function getItems() {
 
     if (feature.value.attributes == undefined) {
@@ -147,7 +162,8 @@ function getItems() {
         </DataInput>
     </div>
     <div class="col">
-        <DataInput type="enum" :items="OperatorKeys" :data="operator" :disabled="name == ''" @update:data="operatorUpdated">
+        <DataInput type="enum" :items="getOperators()" :data="operator" :disabled="name == ''"
+            @update:data="operatorUpdated">
         </DataInput>
     </div>
     <div class="col">

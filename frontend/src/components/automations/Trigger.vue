@@ -2,7 +2,7 @@
 import { useStore } from "vuex";
 import { computed, watch, ref } from "vue";
 
-import { Operators } from "../../models/automation"
+import { OperatorKeys } from "../../models/automation"
 import TriggerCondition from "./TriggerCondition"
 import TriggerAction from "./TriggerAction.vue";
 import Selector from "../input/Selector.vue"
@@ -99,7 +99,7 @@ function removeCondition(event) {
             <!-- Conditions -->
             <h5>Conditions</h5>
             <div class="row pb-3">
-                <TriggerCondition :id="props.id" :index="0" :name="selectedExpose" :operator="Operators[0].value" :data="''"
+                <TriggerCondition :id="props.id" :index="0" :name="selectedExpose" :operator="OperatorKeys[0]" :data="''"
                     @add="addCondition">
                 </TriggerCondition>
             </div>
