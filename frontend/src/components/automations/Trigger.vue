@@ -32,6 +32,10 @@ watch(
             selectedAction.value = props.trigger.action.id
         }
         trigger.value = props.trigger
+        trigger.value.conditions.forEach(function callback(condition, index) {
+            condition.idx = index + 1
+        });
+
     }, { immediate: true }
 )
 
@@ -104,7 +108,7 @@ function removeCondition(event) {
                 </TriggerCondition>
             </div>
 
-            <div v-for="condition in trigger.conditions">
+            <div v-for="condition in  trigger.conditions ">
                 <div class="row">
                     <TriggerCondition :id="props.id" :index="condition.idx" :name="condition.name"
                         :operator="condition.equality" :key="condition.idx" :data="condition.value"

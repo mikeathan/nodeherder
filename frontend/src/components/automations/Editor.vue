@@ -29,13 +29,16 @@ function hasTriggers() {
     return automation.value.triggers.length > 0
 }
 
+function addAction(event, trigger) {
+    trigger.action = event
+}
 
-function addCondition(event) {
-    // emit('addCondition', event)
+function addCondition(event, trigger) {
+    trigger.conditions.push(event)
 }
 
 function removeCondition(event, trigger) {
-    var index = trigger.conditions.findIndex(item => item.idx === event);
+    var index = trigger.conditions.filter(k => k.idx != event);
     if (index != -1) {
         trigger.conditions.splice(index, 1);
     }
@@ -137,10 +140,10 @@ function onDeleteTriggerClick(event, triggerId) {
                                 <div :id="`collapse${index}`" class="accordion-collapse collapse"
                                     :aria-labelledby="`header${index}`" data-bs-parent="#triggersList">
                                     <div class="accordion-body">
-                                        <Trigger :id="props.id" :trigger="trigger" @addAction="addAction($event, index)"
-                                            @removeAction="removeAction($event, index)"
-                                            @addCondition="addCondition($event, index)"
-                                            @removeCondition="removeCondition($event, index)">
+                                        <Trigger :id="props.id" :trigger="trigger" @addAction="addAction($event, trigger)"
+                                            @removeAction="removeAction($event, trigger)"
+                                            @addCondition="addCondition($event, trigger)"
+                                            @removeCondition="removeCondition($event, trigger)">
                                         </Trigger>
                                         <!-- <label class="pb-4" v-if="trigger.conditions.length > 0">Condition</label>
                                         <div v-for="(condition, idx) in trigger.conditions">

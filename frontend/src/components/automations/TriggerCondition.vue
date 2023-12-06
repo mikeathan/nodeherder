@@ -102,7 +102,6 @@ function operatorUpdated(event) {
 }
 
 function dataUpdated(event) {
-
     data.value = event
     emit('update:value', event)
 }
