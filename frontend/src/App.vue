@@ -2,7 +2,7 @@
 
 import { onBeforeMount, ref } from "vue";
 import { useStore } from "vuex";
-import Status from "./components/output/Status.vue";
+import Status from "./components/controls/Status.vue";
 const title = ref("Node-Herder");
 const store = useStore()
 
@@ -18,7 +18,6 @@ onBeforeMount(() => {
     <div class="container-fluid p-0 h-100">
       <span class="me-1">
         <Status></Status>
-
       </span>
       <notifications position="top right" />
       <RouterLink to="/">{{ title }}</RouterLink> |

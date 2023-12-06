@@ -52,8 +52,6 @@ const actions = {
         case "devices":
           dispatch("devices/init", obj.payload, { root: true });
           break;
-        case "bridgeFeatures":
-          dispatch("features/init", obj.payload, { root: true });
           break;
         case "operationSuccess":
           //https://classic.yarnpkg.com/en/package/@kyvg/vue3-notification

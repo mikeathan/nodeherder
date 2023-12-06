@@ -7,16 +7,11 @@ const connected = computed(() => {
     return store.getters["ws/isconnected"];
 });
 const color = ref("red")
-// let connectionState = { true, "green", false, "red"}
+const connectionState = { true: "green", false: "red", null: 'white' }
 watch(
     () => connected.value,
     () => {
-        console.log("status change", connected.value)
-        if (connected.value) {
-            color.value = "green"
-        } else {
-            color.value = "red"
-        }
+        color.value = connectionState[connected.value]
     },
     { immediate: true }
 );

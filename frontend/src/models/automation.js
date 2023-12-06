@@ -1,11 +1,3 @@
-export const Operators = [
-  { text: "=", value: "=" },
-  { text: "<=", value: "<=" },
-  { text: ">=", value: ">=" },
-  { text: ">", value: ">" },
-  { text: "<", value: "<" },
-];
-
 export const OperatorKeys = ["=", "<=", ">=", ">", "<"];
 
 export class DeviceTrigger {
