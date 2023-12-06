@@ -77,7 +77,9 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 
 	h.eventHub.OnSaveAutomation(func(p interface{}) error {
 
-		automation := &automations.Device{}
+		// TODO: move that in automations package
+		// pass payload and return model
+		automation := automations.NewDevice("")
 		bytes, _ := json.Marshal(p)
 		err := json.Unmarshal(bytes, &automation)
 		if err != nil {
