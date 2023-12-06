@@ -32,7 +32,7 @@
         },
         {
           "name": "illuminance_lux",
-          "value": 30,
+          "value": 45,
           "equality": "\u003c="
         }
       ],
