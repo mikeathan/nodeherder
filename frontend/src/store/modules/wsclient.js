@@ -66,6 +66,7 @@ const actions = {
         case "operationSuccess":
           //https://classic.yarnpkg.com/en/package/@kyvg/vue3-notification
           notify({
+            type: "success",
             title: "Operation was successful.",
             duration: 2000,
           });
@@ -73,7 +74,7 @@ const actions = {
         case "operationFailed":
           // https://classic.yarnpkg.com/en/package/@kyvg/vue3-notification
           notify({
-            title: "Error",
+            type: "error",
             text: obj.payload,
             duration: 3000,
           });
