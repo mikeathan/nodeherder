@@ -140,6 +140,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 		}
 
 	case "binary":
+
 		if expose.ValueOn != nil {
 			newEntity.Attributes["on"] = expose.ValueOn
 		}
@@ -178,6 +179,7 @@ func CreateEntityFromFeature(feature BridgeInfoFeature, data any) (*Entity, erro
 	case "binary":
 		newEntity.Properties["on"] = feature.ValueOn
 		newEntity.Properties["off"] = feature.ValueOff
+		newEntity.Properties["toggle"] = feature.ValueToggle
 
 	case "enum":
 		for index, item := range feature.Values {

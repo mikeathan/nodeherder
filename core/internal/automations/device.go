@@ -14,6 +14,8 @@ import (
 // presence = true = turn on
 // presence = false = turn off
 
+var contextIgnoreList = []string{"action"}
+
 type DeviceContext struct {
 	currentData map[string]any
 	Payload     map[string]*devices.Entity
@@ -28,6 +30,14 @@ func (d *DeviceContext) GetCurrent(name string) any {
 }
 
 func (d *DeviceContext) SetCurrent(name string, value any) {
+
+	// if trigger is in ignore list, we  want to trigger it again
+	for _, item := range contextIgnoreList {
+		if item == name {
+			return
+		}
+	}
+
 	d.currentData[name] = value
 }
 
