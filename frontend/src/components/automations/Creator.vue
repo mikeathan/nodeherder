@@ -20,7 +20,7 @@ function cancel() {
 }
 
 function create(event) {
-    deviceTriggers.value.push(event)
+    //deviceTriggers.value.push(event) ?? we dont needthat 
     store.dispatch('automations/save', event);
     router.push("/viewer")
 }

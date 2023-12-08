@@ -36,9 +36,8 @@ func readArgs() *cmdArgs {
 func main() {
 	utils.InitFileLogger()
 
-	utils.SetLogLevel("debug")
 	args := readArgs()
-
+	utils.SetLogLevel("debug")
 	ctx, cancelCtx := context.WithCancel(context.Background())
 
 	utils.LogInfo("starting up server")

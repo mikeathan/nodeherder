@@ -65,7 +65,7 @@ function propertySelectionChanged(event) {
         data.value = "" // reset data
         return;
     }
-    delay.value = ""
+    delay.value = null;
     // reset data
     for (const [key, feature] of Object.entries(features.value)) {
         if (feature.name == value) {

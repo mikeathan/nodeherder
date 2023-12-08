@@ -19,7 +19,7 @@ watch(
     () => {
         var sourceAutomation = store.getters["automations/find"](props.id);
         if (sourceAutomation != undefined) {
-            // make a deep copy to make it on reactive
+            // make a deep copy to make it not reactive
             automation.value = JSON.parse(JSON.stringify(sourceAutomation))
         }
     }, { immediate: true }
@@ -50,6 +50,7 @@ function removeAction(event, trigger) {
 }
 
 function save() {
+
     store.dispatch('automations/save', automation.value);
     router.push("/viewer")
 }

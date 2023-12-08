@@ -80,5 +80,7 @@ export class Condition {
 
 function converter(key, value) {
   if (key == "idx") return undefined;
-  else return value;
+  if (value == null) return undefined
+
+  return value;
 }
