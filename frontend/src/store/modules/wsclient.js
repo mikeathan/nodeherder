@@ -1,5 +1,5 @@
-const socketUri = "ws://localhost:3000/ws"; // used for testing
-//const socketUri = "ws://" + document.location.host + "/ws";
+const devSocketUri = "ws://localhost:3000/ws";
+const productionSocketUri = "ws://" + document.location.host + "/ws";
 
 import { useNotification } from "@kyvg/vue3-notification";
 
@@ -7,6 +7,15 @@ const { notify } = useNotification();
 
 const maxNumberOfAttempts = 10;
 const intervalTimeMs = 200;
+var socketUri = getSocketUri()
+function getSocketUri() {
+  if (process.env.NODE_ENV == "development") {
+    console.log("Enviroment:", process.env.NODE_ENV)
+    return devSocketUri
+  }
+
+  return productionSocketUri;
+}
 
 const state = {
   ws: null,
@@ -19,6 +28,7 @@ const getters = {
 
 const actions = {
   connect({ state, commit, rootState, dispatch }) {
+
     var ws = new WebSocket(socketUri);
     ws.onmessage = (event) => {
       if (event == undefined) {
