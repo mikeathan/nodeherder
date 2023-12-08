@@ -121,9 +121,10 @@ func configureAction(registrar *services.DeviceRegistrar, action *MqttAction, cl
 
 			if action.Property == f.Property {
 
-				if action.Type != e.Type {
-					return fmt.Errorf("type=%s for action=%s not found", action.Type, action.Id)
-				}
+				// currently action.Type is not used . do we need it ? if not remove
+				// if action.Type != e.Type {
+				// 	return fmt.Errorf("type=%s for action=%s not found", action.Type, action.Id)
+				// }
 
 				// sanitize data
 				if f.Type == "binary" {
