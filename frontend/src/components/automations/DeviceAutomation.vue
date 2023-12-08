@@ -14,7 +14,7 @@ const store = useStore();
 const conditions = ref([]);
 const selectedExpose = ref("")
 const triggers = ref([])
-
+const showExposeSelection = ref(false)
 const enabled = ref(false)
 const description = ref("")
 const device = computed(() => {
@@ -45,6 +45,12 @@ function onDeleteTriggerClick(event, index) {
     triggers.value.splice(index, 1);
 }
 
+function showExposesSelection() {
+    // show exposes drop down
+    selectedExpose.value = "" // reset 
+    showExposeSelection.value = true
+}
+
 function create() {
     var deviceTrigger = new DeviceTrigger()
     deviceTrigger.friendlyname = device.value.friendly_name;
@@ -57,7 +63,6 @@ function create() {
     }
 
     reset();
-
     emit("create", deviceTrigger)
 }
 
@@ -67,12 +72,20 @@ function reset() {
     triggers.value = []
     description.value = ""
     enabled.value = false
+    showExposeSelection.value = false
+    selectedExpose.value = ""
     emit("cancel")
 }
 
 function addTrigger() {
+    if (selectedExpose.value == "") {
+        return
+    }
+
     var trigger = new ExposeTrigger(selectedExpose.value)
     triggers.value.push(trigger)
+
+    showExposeSelection.value = false // hide selection   
 }
 
 function addAction(event, index) {
@@ -143,22 +156,11 @@ function exposesList() {
             </div>
         </div>
 
-
-        <div class="mb-3">
-            <div class="d-flex">
-                <Selector placeholder="Select trigger" :items="exposesList()" :value="selectedExpose" alignment="left"
-                    @update:data="val => selectedExpose = val"></Selector>
-                <div class="btn-group">
-                    <button type="button" class="btn btn-default btn-number" @click="addTrigger($event)"
-                        :disabled="selectedExpose == ''">
-                        <span class="fa fa-plus"></span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
         <div class="col-50 mt-3 mb-4">
             <div class="btn-group">
+                <button type="button" class="btn btn-light" @click="showExposesSelection">
+                    Add
+                </button>
                 <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false" @click="create">
                     Save
                 </button>
@@ -168,6 +170,12 @@ function exposesList() {
             </div>
         </div>
 
+        <div class="mb-3" v-if="showExposeSelection">
+            <div class="d-flex">
+                <Selector placeholder="Select trigger" :items="exposesList()" :value="selectedExpose" alignment="left"
+                    @update:data="val => selectedExpose = val" @change="addTrigger"></Selector>
+            </div>
+        </div>
 
         <div class="accordion accordion-flush" id="triggersList">
             <div v-for="(trigger, index) in  triggers ">
