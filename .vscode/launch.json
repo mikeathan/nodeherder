@@ -25,7 +25,9 @@
             "program": "core/main.go",
             "args": [
                 "-buildType",
-                "dev"
+                "dev",
+                "-logLevel",
+                "debug"
             ]
         }
     ]

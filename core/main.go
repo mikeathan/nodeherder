@@ -16,12 +16,14 @@ import (
 type cmdArgs struct {
 	port      int
 	buildType string
+	logLevel  string
 }
 
 func readArgs() *cmdArgs {
 
 	port := flag.Int("port", 4100, "port number")
 	buildType := flag.String("buildType", "", "client build type")
+	logLevel := flag.String("logLevel", "info", "client build type")
 
 	flag.Parse()
 	if *port <= 0 {
@@ -30,14 +32,16 @@ func readArgs() *cmdArgs {
 		os.Exit(-1)
 	}
 
-	return &cmdArgs{port: *port, buildType: *buildType}
+	return &cmdArgs{port: *port, buildType: *buildType, logLevel: *logLevel}
 }
 
 func main() {
-	utils.InitFileLogger()
 
 	args := readArgs()
-	utils.SetLogLevel("debug")
+
+	utils.InitFileLogger()
+	utils.SetLogLevel(args.logLevel)
+
 	ctx, cancelCtx := context.WithCancel(context.Background())
 
 	utils.LogInfo("starting up server")

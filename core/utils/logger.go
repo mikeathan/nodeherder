@@ -121,7 +121,7 @@ func (l *logger) SetLevel(level string) {
 	}
 
 	l.log.SetLevel(ll)
-	l.Infof("set level: %s", ll.String())
+	l.Infof("set loglevel: %s", ll.String())
 }
 
 func (l *logger) Close() {
