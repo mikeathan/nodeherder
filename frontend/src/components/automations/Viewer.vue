@@ -23,6 +23,15 @@ function onDeleteAutomationClick(id) {
     console.log("delete automation: Id", id);
 }
 
+function saveAutomation(id) {
+    // emit save event
+    var values = Object.values(automations.value);
+    var res = values.filter(k => k.id == id);
+    if (res.length != 0) {
+        store.dispatch('automations/save', res[0]);
+        console.log("save automation: Id", id);
+    }
+}
 </script>
 
 <template>
@@ -55,7 +64,7 @@ function onDeleteAutomationClick(id) {
                             <label class="form-check-label">Enable</label>
 
                             <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault"
-                                v-model="automation.enabled"> <!-- save automation change -->
+                                v-model="automation.enabled" @change="saveAutomation(automation.id)">
                         </div>
                     </td>
                     <td>
