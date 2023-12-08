@@ -75,7 +75,7 @@ type BridgeInfo struct {
 
 func (b *BridgeInfo) IsActive() bool {
 
-	return !b.Disabled && b.Type != "Coordinator" && b.InterviewCompleted
+	return !b.Disabled && b.Type != "Coordinator" //&& b.InterviewCompleted
 }
 
 func LoadBridgeDevices(payload []byte) ([]*BridgeInfo, error) {
