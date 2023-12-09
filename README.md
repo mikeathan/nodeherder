@@ -115,8 +115,6 @@ add log window in frontend
 in automation editor allow adding new trigger
 device card - add ways to control device if its feature
 fix sizing for mobile
-fix device card in dahsboard switch from offline to online
-
 
 Hue dial
 
