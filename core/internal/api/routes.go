@@ -27,6 +27,13 @@ func NewRouter() *Router {
 	return &Router{}
 }
 
+// TODO:
+// r.HandleFunc("/", index)
+
+// func index(w http.ResponseWriter, r *http.Request) {
+// 	http.ServeFile(w, r, "build/index.html")
+// }
+
 func (r *Router) Use(fn func(http.Handler) http.Handler) {
 	r.middlewares = append(r.middlewares, fn)
 }
