@@ -112,7 +112,10 @@ Test new logic in RegisterBridge
 fix golang server routing on refresh
 add more ws operation responses - eg success or error
 add log window in frontend
-in automation editor allow adding new trigger
+in automation editor allow adding new trigger - done
+
+- add validation on save
+
 device card - add ways to control device if its feature
 fix sizing for mobile
 
