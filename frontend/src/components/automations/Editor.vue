@@ -1,10 +1,12 @@
 <script setup>
 import { useStore } from "vuex";
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import Trigger from "./Trigger"
+import { ExposeTrigger, DeviceTrigger } from "../../models/automation"
 
-import { DeviceTrigger } from "../../models/automation"
 import DataInput from "../input/DataInput.vue"
+import Selector from "../input/Selector.vue"
+
 import { useRouter } from 'vue-router'
 
 const props = defineProps({
@@ -14,6 +16,10 @@ const props = defineProps({
 const store = useStore();
 const router = useRouter()
 const automation = ref(new DeviceTrigger())
+const showExposeSelection = ref(false)
+const selectedExpose = ref("")
+
+
 watch(
     () => props.id,
     () => {
@@ -24,9 +30,39 @@ watch(
         }
     }, { immediate: true }
 )
+const device = computed(() => {
+    return store.getters["devices/find"](props.id);
+});
+
+function showExposesSelection() {
+    // show exposes drop down
+    selectedExpose.value = "" // reset 
+    showExposeSelection.value = true
+}
 
 function hasTriggers() {
     return automation.value.triggers.length > 0
+}
+
+function exposesList() {
+    // todo:
+    //var result = Object.keys(obj).map((key) => [key, obj[key]]);
+    var list = {}
+    for (const [key, expose] of Object.entries(device.value.exposes)) {
+        list[expose.name] = expose.name
+    }
+    return list
+}
+
+function addTrigger() {
+    if (selectedExpose.value == "") {
+        return
+    }
+
+    var trigger = new ExposeTrigger(selectedExpose.value)
+    automation.value.triggers.push(trigger)
+
+    showExposeSelection.value = false // hide selection   
 }
 
 function addAction(event, trigger) {
@@ -103,6 +139,9 @@ function onDeleteTriggerClick(event, triggerId) {
                     </div>
 
                     <div class="btn-group">
+                        <button type="button" class="btn btn-light" @click="showExposesSelection">
+                            Add
+                        </button>
                         <button type="button" class="btn btn-light" @click="save" :disabled="hasTriggers() == false">
                             Save
                         </button>
@@ -112,6 +151,13 @@ function onDeleteTriggerClick(event, triggerId) {
                             </button> </router-link>
                     </div>
                 </div>
+                <div class="mb-3" v-if="showExposeSelection">
+                    <div class="d-flex">
+                        <Selector placeholder="Select trigger" :items="exposesList()" :value="selectedExpose"
+                            alignment="left" @update:data="val => selectedExpose = val" @change="addTrigger"></Selector>
+                    </div>
+                </div>
+
                 <div class="card-body ">
                     <div class="accordion accordion-flush" id="triggersList">
                         <div v-for="(trigger, index) in  automation.triggers ">
