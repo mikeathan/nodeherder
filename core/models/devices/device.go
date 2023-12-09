@@ -304,8 +304,15 @@ func (device *Device) Update(payload map[string]interface{}) *updatePackage {
 		}
 	}
 
+	//we are not sending online in properties - needs fixing
+	if device.Id == "0x00124b00146c31cd" {
+		fmt.Println("device online")
+	}
+
 	if device.Properties[availabilityKey] != online {
 		device.Properties[availabilityKey] = online
+		updatePackage.Properties[availabilityKey] = online // we handle it manually for now
+
 		utils.LogInfof("device [%s] %s is online", device.Id, device.FriendlyName)
 		device.resetAvailabilityTimer()
 	}
