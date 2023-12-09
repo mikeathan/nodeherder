@@ -7,11 +7,11 @@ const { notify } = useNotification();
 
 const maxNumberOfAttempts = 10;
 const intervalTimeMs = 200;
-var socketUri = getSocketUri()
+var socketUri = getSocketUri();
 function getSocketUri() {
   if (process.env.NODE_ENV == "development") {
-    console.log("Enviroment:", process.env.NODE_ENV)
-    return devSocketUri
+    console.info("Enviroment:", process.env.NODE_ENV);
+    return devSocketUri;
   }
 
   return productionSocketUri;
@@ -28,21 +28,19 @@ const getters = {
 
 const actions = {
   connect({ state, commit, rootState, dispatch }) {
-
     var ws = new WebSocket(socketUri);
     ws.onmessage = (event) => {
       if (event == undefined) {
-        console.log("ws undefined event: " + event);
+        console.error("ws undefined event: " + event);
         return;
       }
       if (event.data == undefined) {
-        console.log("ws undefined data: " + event.data);
+        console.error("ws undefined data: " + event.data);
         return;
       }
 
       const obj = JSON.parse(event.data);
 
-      console.log("ws message received:", obj.type);
       switch (obj.type) {
         case "deviceUpdated":
           commit("devices/update", obj.payload, { root: true });
@@ -51,7 +49,7 @@ const actions = {
           commit("devices/add", obj.payload, { root: true });
           break;
         case "devicePropertiesUpdated":
-          commit("devices/updateproperties", obj.payload, { root: true });
+          commit("devices/update", obj.payload, { root: true });
           break;
         case "automations":
           dispatch("automations/init", obj.payload, { root: true });
@@ -83,26 +81,25 @@ const actions = {
           dispatch("emit", { event: "pong" });
           break;
         default:
-          console.log("ws unhandled type: ", event.data);
+          console.error("ws unhandled type: ", event.data);
       }
     };
 
     ws.onopen = function (event) {
-      console.log("ws open");
+      console.info("ws open");
       dispatch("emit", { event: "loadDevices" });
     };
 
     ws.onclose = function (event) {
-      console.log("ws close");
+      console.info("ws close");
       state.connected = false;
       dispatch("cleanup", [], { root: true });
     };
 
     ws.onerror = function (event) {
-      console.log("ws error: " + event.data);
+      console.error("ws error: " + event.data);
     };
 
-    console.log("ws connect");
     state.ws = ws;
     state.connected = true;
   },
@@ -117,8 +114,6 @@ const mutations = {
     var payload = JSON.stringify({ type: event, payload: message });
 
     if (state.ws.readyState !== state.ws.OPEN) {
-      console.log("ws emit: ", event, " [PENDING]");
-
       let currentAttempt = 0;
       const interval = setInterval(() => {
         if (currentAttempt > maxNumberOfAttempts - 1) {
@@ -131,13 +126,11 @@ const mutations = {
           return;
         } else if (state.ws.readyState === state.ws.OPEN) {
           clearInterval(interval);
-          console.log("ws emit: ", event);
           state.ws.send(payload);
         }
         currentAttempt++;
       }, intervalTimeMs);
     } else {
-      console.log("ws emit: ", event);
       state.ws.send(payload);
     }
   },

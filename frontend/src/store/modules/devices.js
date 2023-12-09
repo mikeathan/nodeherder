@@ -21,7 +21,6 @@ const mutations = {
   init({ state, commit }, items) {
     commit("clear", []);
 
-    console.log("automations/init");
     items.forEach((item) => {
       state.items[item.id] = item;
     });
@@ -31,10 +30,9 @@ const mutations = {
   update(state, payload) {
     var device = state.items[payload.id];
     if (device == undefined) {
-      console.log("device ", payload.id, " not found");
+      console.error("device ", payload.id, " not found");
       return;
     }
-
     for (var key in payload.data) {
       if (device.exposes.hasOwnProperty(key)) {
         device.exposes[key].data = payload.data[key];
@@ -51,7 +49,6 @@ const mutations = {
     state.items[device.id] = device;
   },
   clear(state) {
-    console.log("clear devices");
     for (var prop in state.items) {
       if (state.items.hasOwnProperty(prop)) {
         delete state.items[prop];
