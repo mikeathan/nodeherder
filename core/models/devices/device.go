@@ -174,7 +174,7 @@ func CreateEntityFromFeature(feature BridgeInfoFeature, data any) (*Entity, erro
 	case "numeric":
 		newEntity.Attributes["max"] = feature.ValueMax
 		newEntity.Attributes["min"] = feature.ValueMin
-		// newEntity.Properties["value"] = 0 TODO:??
+		newEntity.Properties["value"] = 0
 
 	case "binary":
 		newEntity.Properties["on"] = feature.ValueOn
@@ -302,11 +302,6 @@ func (device *Device) Update(payload map[string]interface{}) *updatePackage {
 				updatePackage.Properties[name] = newValue
 			}
 		}
-	}
-
-	//we are not sending online in properties - needs fixing
-	if device.Id == "0x00124b00146c31cd" {
-		fmt.Println("device online")
 	}
 
 	if device.Properties[availabilityKey] != online {
