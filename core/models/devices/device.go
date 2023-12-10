@@ -174,7 +174,7 @@ func CreateEntityFromFeature(feature BridgeInfoFeature, data any) (*Entity, erro
 	case "numeric":
 		newEntity.Attributes["max"] = feature.ValueMax
 		newEntity.Attributes["min"] = feature.ValueMin
-		newEntity.Properties["value"] = 0
+		newEntity.Properties[feature.Name] = 0
 
 	case "binary":
 		newEntity.Properties["on"] = feature.ValueOn
