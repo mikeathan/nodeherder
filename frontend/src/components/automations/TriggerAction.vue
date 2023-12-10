@@ -170,7 +170,9 @@ function getItems() {
         <DataInput placeholder="Delay" type="numeric" :data="delay" :disabled="property == ''" @update:data="delayUpdated">
         </DataInput>
     </div>
-
+    <div v-if="feature.type == 'numeric'" class="col">
+        create drop down for selection of increase/decrease - optional
+    </div>
     <div class="col">
         <div class="btn-group">
             <div v-if="props.property == null">
