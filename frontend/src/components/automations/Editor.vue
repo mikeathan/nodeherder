@@ -40,8 +40,9 @@ function showExposesSelection() {
     showExposeSelection.value = true
 }
 
-function hasTriggers() {
-    return automation.value.triggers.length > 0
+function isSaveEnabled() {
+    var values = automation.value.triggers.filter(k => k.action != null);
+    return values.length == automation.value.triggers.length
 }
 
 function exposesList() {
@@ -142,7 +143,7 @@ function onDeleteTriggerClick(event, triggerId) {
                         <button type="button" class="btn btn-light" @click="showExposesSelection">
                             Add
                         </button>
-                        <button type="button" class="btn btn-light" @click="save" :disabled="hasTriggers() == false">
+                        <button type="button" class="btn btn-light" @click="save" :disabled="isSaveEnabled() == false">
                             Save
                         </button>
                         <router-link :to="`/viewer`" tag="span">

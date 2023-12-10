@@ -33,9 +33,8 @@ watch(
 const emit = defineEmits(['cancel', 'create'])
 
 function isSaveEnabled() {
-    // find entries with actions only
     var values = triggers.value.filter(k => k.action != null);
-    return values.length > 0 && description.value.length > 0
+    return values.length == triggers.value.length && description.value.length > 0
 }
 
 function onDeleteTriggerClick(event, index) {
