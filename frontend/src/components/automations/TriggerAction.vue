@@ -18,11 +18,11 @@ const props = defineProps({
         default: true
     },
 });
-
+const steps = ["increase", "decrease"]
 const property = ref("");
 const data = ref("");
 const delay = ref(null);
-
+const step = ref(null)
 const store = useStore();
 const emit = defineEmits(['add', 'remove', 'update:data', 'update:delay'])
 
@@ -135,6 +135,8 @@ function getItems() {
             return null
     }
 }
+
+
 </script>
 
 <style scoped>
@@ -170,9 +172,7 @@ function getItems() {
         <DataInput placeholder="Delay" type="numeric" :data="delay" :disabled="property == ''" @update:data="delayUpdated">
         </DataInput>
     </div>
-    <div v-if="feature.type == 'numeric'" class="col">
-        create drop down for selection of increase/decrease - optional
-    </div>
+
     <div class="col">
         <div class="btn-group">
             <div v-if="props.property == null">
@@ -186,5 +186,12 @@ function getItems() {
                 </button>
             </div>
         </div>
+    </div>
+
+    <div v-if="feature.type == 'numeric'" class="row">
+        create drop down for selection of increase/decrease - optional
+        <DataInput :type="feature.type" placeholder="Step" :items="steps" :data="step" :disabled="property == ''">
+            @update:data="dataUpdated"
+        </DataInput>
     </div>
 </template>
