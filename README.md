@@ -96,6 +96,10 @@ backup automations
 
 ###### frontend
 
+allow brigtness in actions. {"brightness":197}
+action doenst contain brightness when running form golang
+
+add support for hue switch rotation
 add log window in frontend
 device card - add ways to control device if its feature
 fix sizing for mobile
