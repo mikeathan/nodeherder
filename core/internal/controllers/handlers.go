@@ -90,8 +90,9 @@ func (b *bridgeLoggingHandler) ProcessPayload(id string, connType string, payloa
 
 	if id == "bridge/logging" {
 		// todo: handle
-		fmt.Println(string(payload))
+		//utils.LogDebugf(string(payload))
 	}
+
 	return nil
 }
 
