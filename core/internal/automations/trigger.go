@@ -23,6 +23,7 @@ func toFloat(value any) float32 {
 	}
 }
 
+var numericSteps = []string{"increase", "decrease"}
 var EqualityOperators = map[string]func(any, any) bool{
 	"=": func(v1 any, v2 any) bool {
 		return v1 == v2
@@ -128,6 +129,7 @@ type MqttAction struct {
 	Data         any             `json:"data,omitempty"`
 	Delay        int             `json:"delay,omitempty"`
 	Client       mqtt.MqttClient `json:"-"`
+	Step         string          `json:"step,omitempty"`
 
 	mut       sync.RWMutex
 	exit      chan bool
