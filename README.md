@@ -76,22 +76,6 @@ post payload
     https://icons8.com/icons/set/particulate-matter
     https://icons8.com/icons/set/air-quality
 
-
-
-    TODO:
-
-    ##### automations #########
-
-    send automation back to server for saving
-
-    server
-      handle ws message to save automation and update file
-    decide how do we store them
-      per item
-      all of them  (if all of them then need to send some infor to ui for table page)
-    solution: store automations ins single files/items
-          when ui asks for all automations just return a simpified view of them
-
 {"type":"deviceAdded","payload":{"id":"0xa4c13894070052fc","name":"Human presence","connection_type":"mqtt","power_source":"mains","exposes":{"illuminance_lux":{"name":"illuminance_lux","description":"Measured illuminance in lux","unit":"lx","data":3,"properties":{}},"presence":{"name":"presence","description":"Indicates whether the device detected presence","data":false,"properties":{}}},"properties":{"availability":"online","last_seen":"2023-10-10T05:55:29+01:00","linkquality":58}}}
 
 {"type":"deviceAdded","payload":{"id":"0x00124b00146c31cd","name":"Motion sensor 1","connection_type":"mqtt","power_source":"battery","exposes":{"occupancy":{"name":"occupancy","description":"Indicates whether the device detected occupancy","data":false,"properties":{}},"temperature":{"name":"temperature","description":"Measured temperature value","unit":"°C","data":23.75,"properties":{}}},"properties":{"availability":"online","battery":7,"last_seen":"2023-10-08T06:24:24+01:00","linkquality":29}}}
@@ -103,54 +87,15 @@ post payload
 
 TODO:
 
+fix golang server routing on refresh
+add more ws operation responses - eg success or error
 test autiomation loading. configureAction for sanitizing numeric type data
 do we need to unsubsribe from removed/renamed topic ??
 Test new logic in RegisterBridge
+backup automations
 
 ###### frontend
 
-fix golang server routing on refresh
-add more ws operation responses - eg success or error
 add log window in frontend
-in automation editor allow adding new trigger - done
-
-- add validation on save
-
 device card - add ways to control device if its feature
 fix sizing for mobile
-
-Hue dial
-
-combinations:
-
-press
-release
-
-press
-hold - action_duration
-release - action_duration
-
-right - step
-
-right-slow - step
-
-right-slow - step - action time
-right-slow - rotate - action time
-right-fast - rotate - action time
-
-######### Logic ############
-simple
-propery:action
-device:hue tap dial switch
-
-press btn 1
-release btn 1
-
-if current == release btn 1
-do action
-
-advanced
-we need blueprints
-[hold, release]
-eg press, hold , release
-store previous states in array
