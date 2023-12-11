@@ -130,17 +130,16 @@ function removeCondition(event) {
             <!-- existing action -->
             <div v-if="trigger.action != null" class="row">
                 <TriggerAction :id="trigger.action.id" :property="trigger.action.property" :data="trigger.action.data"
-                    :delay="trigger.action.delay" @add="removeAction"
+                    :delay="trigger.action.delay" :step="trigger.action.step" @add="removeAction"
                     @update:data="newValue => trigger.action.data = newValue"
-                    @update:delay="newValue => trigger.action.delay = newValue">
+                    @update:delay="newValue => trigger.action.delay = newValue"
+                    @update:step="newValue => trigger.action.step = newValue">
                 </TriggerAction>
             </div>
             <!-- new action -->
             <div v-else-if="selectedAction != ''" class="row">
                 <TriggerAction :id="selectedAction" @add="addAction"></TriggerAction>
             </div>
-
-
         </div>
     </div>
 </template>

@@ -119,7 +119,6 @@ function getPlaceholder() {
 
 function getOperators() {
 
-    console.log("type", feature.type)
     switch (feature.value.type) {
         case "binary":
         case "enum":

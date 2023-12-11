@@ -37,6 +37,7 @@ export class ActionTrigger {
     this.property = null;
     this.data = null;
     this.delay = null;
+    this.step = null;
   }
 }
 
@@ -64,7 +65,7 @@ export class ExposeTrigger {
   remove(condition) {
     let index = this.Conditions.indexOf(condition);
     if (index !== -1) {
-      this.Conditions.splice(index, 1);
+      this.conditions.splice(index, 1);
     }
   }
 }

@@ -2,6 +2,7 @@
 import { useStore } from "vuex";
 import { computed, ref, watchEffect, watch } from "vue";
 import DataInput from "../input/DataInput.vue"
+import RadioGroup from "../input/RadioGroup.vue"
 
 import { ActionTrigger } from "../../models/automation"
 
@@ -13,6 +14,7 @@ const props = defineProps({
     property: String,
     data: null,
     delay: null,
+    step: null,
     allowRemove: {
         type: Boolean,
         default: true
@@ -24,10 +26,12 @@ const data = ref("");
 const delay = ref(null);
 const step = ref(null)
 const store = useStore();
-const emit = defineEmits(['add', 'remove', 'update:data', 'update:delay'])
+const emit = defineEmits(['add', 'remove', 'update:data', 'update:delay', , 'update:step'])
 
 watchEffect(() => data.value = props.data);
 watchEffect(() => delay.value = props.delay);
+watchEffect(() => step.value = props.step);
+
 watch(
     () => props.property,
     () => {
@@ -63,13 +67,16 @@ function propertySelectionChanged(event) {
     var value = event.target.value;
     if (value == "" || device.value == undefined) {
         data.value = "" // reset data
+
         return;
     }
     delay.value = null;
+    step.value = "";
+
     // reset data
     for (const [key, feature] of Object.entries(features.value)) {
         if (feature.name == value) {
-            if (feature.type == 'binary') {
+            if (feature.type == 'binary' || feature.type == "enum") { // TODO: refactor/cleanup
                 data.value = ""
             } else {
                 data.value = 0
@@ -92,9 +99,16 @@ const feature = computed(() => {
     return device.exposes[property.value];
 });
 
+function getSteps() {
+    return ["disabled", "increase", "decrease"]
+}
 function dataUpdated(event) {
     data.value = event
     emit('update:data', event)
+}
+function stepUpdated(event) {
+    step.value = event
+    emit('update:step', event)
 }
 
 function delayUpdated(event) {
@@ -105,6 +119,7 @@ function delayUpdated(event) {
 function add() {
     var newAction = new ActionTrigger()
     newAction.delay = delay.value
+    newAction.step = step.value
     newAction.data = data.value
     newAction.friendlyname = device.value.friendly_name
     newAction.id = device.value.id
@@ -117,8 +132,8 @@ function remove(event) {
     emit("add", props.id)
 }
 
-function getPlaceholder() {
-    if (feature.value.type == 'binary' || feature.value.type == 'enum') {
+function getPlaceholder(type) {
+    if (type == 'binary' || type == 'enum') {
         return 'Select'
     }
 
@@ -164,7 +179,7 @@ function getItems() {
     </div>
 
     <div class="col">
-        <DataInput :type="feature.type" :placeholder="getPlaceholder()" :items="getItems()" :data="data"
+        <DataInput :type="feature.type" :placeholder="getPlaceholder(feature.type)" :items="getItems()" :data="data"
             :disabled="property == ''" @update:data="dataUpdated">
         </DataInput>
     </div>
@@ -189,9 +204,10 @@ function getItems() {
     </div>
 
     <div v-if="feature.type == 'numeric'" class="row">
-        create drop down for selection of increase/decrease - optional
-        <DataInput :type="feature.type" placeholder="Step" :items="steps" :data="step" :disabled="property == ''">
-            @update:data="dataUpdated"
-        </DataInput>
+        <h6 class="pt-3"> Step (optional)</h6>
+        <RadioGroup :items="getSteps()" value="disabled"></RadioGroup>
+        <!-- <DataInput type="binary" :placeholder="getPlaceholder('binary')" :items="steps" :data="step"
+            @update:data="stepUpdated">
+        </DataInput> -->
     </div>
 </template>
