@@ -23,7 +23,7 @@ func toFloat(value any) float32 {
 	}
 }
 
-var numericSteps = []string{"increase", "decrease"}
+var numericSteps = []int{0, 1, 2}
 var EqualityOperators = map[string]func(any, any) bool{
 	"=": func(v1 any, v2 any) bool {
 		return v1 == v2
@@ -69,38 +69,6 @@ type Trigger struct {
 	Action     *MqttAction  `json:"action"`
 }
 
-// NOTE:
-// handle action type - eg for hue tap switch
-// first case press of button (btn1_press, btn1_release)
-
-// logic needs to be in evaluate, maybe have differnt evaluate according to exposed type
-// map of evaluators for execution, eg default and action states
-// if expose is action and enum execute the stateful action evaluator
-// question : how do we access the extra device information for current action
-// eg
-//
-//		"action_direction": "right",
-//	    "action_time": 15,
-//	    "action_type": "step",
-//
-// not required for simple case but good to have an idea
-
-// statefull action evaluator
-// read action = btn1_press
-// compare with automation conditions if it matches
-
-// example of conditions, the need to be in correct sequence
-// btn1_press
-// btn1_release
-
-// if action matched do we have another one ?
-// if no then evalued is true
-// if we do have another one
-// set current action in context and return false
-
-// if we have a differnt button eg btn2_press we need to reset context guess goes thought same code path
-// what about btn1_hold or other eventws coming from same button but should not clear the context ???
-
 func (trigger *Trigger) process(ctx *DeviceContext) {
 
 	currValue := ctx.GetCurrent(trigger.Name)
@@ -129,7 +97,7 @@ type MqttAction struct {
 	Data         any             `json:"data,omitempty"`
 	Delay        int             `json:"delay,omitempty"`
 	Client       mqtt.MqttClient `json:"-"`
-	Step         string          `json:"step,omitempty"`
+	Step         int             `json:"step,omitempty"`
 
 	mut       sync.RWMutex
 	exit      chan bool
