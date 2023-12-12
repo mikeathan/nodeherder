@@ -1,5 +1,10 @@
 export const OperatorKeys = ["=", "<=", ">=", ">", "<"];
 
+export const Steps = [
+  { name: "disabled", value: 0 },
+  { name: "increase", value: 1 },
+  { name: "decrease", value: 2 },
+];
 export class DeviceTrigger {
   constructor() {
     this.id = "";
@@ -81,7 +86,7 @@ export class Condition {
 
 function converter(key, value) {
   if (key == "idx") return undefined;
-  if (value == null) return undefined
+  if (value == null) return undefined;
 
   return value;
 }

@@ -4,7 +4,7 @@ import { computed, ref, watchEffect, watch } from "vue";
 import DataInput from "../input/DataInput.vue"
 import RadioGroup from "../input/RadioGroup.vue"
 
-import { ActionTrigger } from "../../models/automation"
+import { ActionTrigger, Steps } from "../../models/automation"
 
 const props = defineProps({
     id: {
@@ -99,9 +99,6 @@ const feature = computed(() => {
     return device.exposes[property.value];
 });
 
-function getSteps() {
-    return ["disabled", "increase", "decrease"]
-}
 function dataUpdated(event) {
     data.value = event
     emit('update:data', event)
@@ -205,7 +202,7 @@ function getItems() {
 
     <div v-if="feature.type == 'numeric'" class="row">
         <h6 class="pt-3"> Step (optional)</h6>
-        <RadioGroup :items="getSteps()" value="disabled"></RadioGroup>
+        <RadioGroup :items="Steps" :value="Steps[0]"></RadioGroup>
         <!-- <DataInput type="binary" :placeholder="getPlaceholder('binary')" :items="steps" :data="step"
             @update:data="stepUpdated">
         </DataInput> -->
