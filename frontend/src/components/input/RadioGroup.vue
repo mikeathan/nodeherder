@@ -14,7 +14,9 @@ const value = ref(null)
 watch(
     () => props.value,
     () => {
+
         value.value = props.value
+
     }, { immediate: true }
 )
 
@@ -33,7 +35,7 @@ function selectionChanged(event) {
     <div class="col-50">
         <div v-for="item in props.items" class="btn-group">
             <input type="radio" class="btn-check" name="options-outlined" :id="`radioSelection${item.name}`"
-                :value="item.value" :checked="props.value == item.value" @change="selectionChanged">
+                :value="item.value" :checked="value == item.value" @change="selectionChanged">
             <label class="btn btn-outline-secondary" :for="`radioSelection${item.name}`"> {{ item.name }}</label>
         </div>
     </div>

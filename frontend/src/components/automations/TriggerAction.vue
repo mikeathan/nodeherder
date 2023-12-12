@@ -71,7 +71,7 @@ function propertySelectionChanged(event) {
         return;
     }
     delay.value = null;
-    step.value = "";
+    step.value = 0;
 
     // reset data
     for (const [key, feature] of Object.entries(features.value)) {
@@ -104,8 +104,9 @@ function dataUpdated(event) {
     emit('update:data', event)
 }
 function stepUpdated(event) {
-    step.value = event
-    emit('update:step', event)
+    var value = parseInt(event)
+    step.value = value
+    emit('update:step', value)
 }
 
 function delayUpdated(event) {
@@ -202,6 +203,6 @@ function getItems() {
 
     <div v-if="feature.type == 'numeric'">
         <label class="pt-3"> Steps</label>
-        <RadioGroup :items="Steps" :value="Steps[0].value" @update:data="stepUpdated"></RadioGroup>
+        <RadioGroup :items="Steps" :value="step" @update:data="stepUpdated"></RadioGroup>
     </div>
 </template>
