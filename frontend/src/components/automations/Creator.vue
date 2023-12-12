@@ -5,7 +5,6 @@ import DeviceAutomation from "./DeviceAutomation"
 import Selector from "../input/Selector.vue"
 
 import { useRouter } from 'vue-router'
-const deviceTriggers = ref([])
 const router = useRouter()
 const store = useStore();
 const selectedDevice = ref("")

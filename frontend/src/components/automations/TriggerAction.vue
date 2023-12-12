@@ -200,11 +200,8 @@ function getItems() {
         </div>
     </div>
 
-    <div v-if="feature.type == 'numeric'" class="row">
-        <h6 class="pt-3"> Step (optional)</h6>
-        <RadioGroup :items="Steps" :value="Steps[0]"></RadioGroup>
-        <!-- <DataInput type="binary" :placeholder="getPlaceholder('binary')" :items="steps" :data="step"
-            @update:data="stepUpdated">
-        </DataInput> -->
+    <div v-if="feature.type == 'numeric'">
+        <label class="pt-3"> Steps</label>
+        <RadioGroup :items="Steps" :value="Steps[0].value" @update:data="stepUpdated"></RadioGroup>
     </div>
 </template>

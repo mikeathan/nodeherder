@@ -1,7 +1,7 @@
 export const OperatorKeys = ["=", "<=", ">=", ">", "<"];
 
 export const Steps = [
-  { name: "disabled", value: 0 },
+  { name: "None", value: 0 },
   { name: "increase", value: 1 },
   { name: "decrease", value: 2 },
 ];

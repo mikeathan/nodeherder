@@ -2,14 +2,9 @@
 import { ref, watch } from "vue";
 
 const props = defineProps({
-    placeholder: {
-        type: String,
-        default: ""
-    },
+
     value: null,
     items: Array,
-
-    disabled: Boolean,
 });
 
 const emit = defineEmits(['update:data'])
@@ -25,7 +20,6 @@ watch(
 
 function selectionChanged(event) {
 
-    console.log(event.target.value)
     if (event.target.value == null) {
         return;
     }
@@ -36,13 +30,11 @@ function selectionChanged(event) {
 </script>
 
 <template>
-    <div v-for="item in props.items" class="col-xl-2">
-        <div class="form-check form-check-inline">
-            <input class="form-check-input " type="radio" name="radioSelection" id="radioSelection" :value="value"
-                v-model="props.value" @change="selectionChanged">
-            <label class="form-check-label" for="radioSelection">
-                {{ item.name }}
-            </label>
+    <div class="col-50">
+        <div v-for="item in props.items" class="btn-group">
+            <input type="radio" class="btn-check" name="options-outlined" :id="`radioSelection${item.name}`"
+                :value="item.value" :checked="props.value == item.value" @change="selectionChanged">
+            <label class="btn btn-outline-secondary" :for="`radioSelection${item.name}`"> {{ item.name }}</label>
         </div>
     </div>
 </template>
