@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"node-herder/internal/mqtt"
+	"node-herder/internal/services"
+	"node-herder/mocks"
 	"node-herder/models/devices"
 	"node-herder/utils"
 	"sync"
@@ -90,22 +92,23 @@ func (trigger *Trigger) process(ctx *DeviceContext) {
 }
 
 type MqttAction struct {
-	Id           string          `json:"id"`
-	FriendlyName string          `json:"friendlyname"`
-	Type         string          `json:"type"`
-	Property     string          `json:"property"`
-	Data         any             `json:"data,omitempty"`
-	Delay        int             `json:"delay,omitempty"`
-	Client       mqtt.MqttClient `json:"-"`
-	Step         int             `json:"step,omitempty"`
+	Id           string `json:"id"`
+	FriendlyName string `json:"friendlyname"`
+	Type         string `json:"type"`
+	Property     string `json:"property"`
+	Data         any    `json:"data,omitempty"`
+	Delay        int    `json:"delay,omitempty"`
+	Step         int    `json:"step,omitempty"`
 
+	Client    mqtt.MqttClient          `json:"-"`
+	registrar services.DeviceRegistrar `json:"-"`
 	mut       sync.RWMutex
 	exit      chan bool
 	isPending bool
 }
 
 func NewAction() *MqttAction {
-	return &MqttAction{Delay: 0}
+	return &MqttAction{Delay: 0, registrar: &mocks.NopDeviceRegistrar{}}
 }
 
 func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
@@ -190,9 +193,17 @@ func (a *MqttAction) emit(payload []byte) {
 
 func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) []byte {
 
+	//TODO: use a.registrar to get device data for pushing in the message
 	payloadData := a.Data
 	if payloadData == nil {
 		payloadData = ctx.Payload[name].Data
+	} else {
+		// if brightness - find current brightness value
+		// if step > 0
+		// step == 1
+		// 		data + brighness
+		// else stepp == 2
+		// 		data - brightness
 	}
 
 	jp := map[string]any{

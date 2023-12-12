@@ -27,11 +27,11 @@ type Engine interface { // TODO: might need to move it to Models????
 
 type AutomationEngine struct {
 	mqttClient        mqtt.MqttClient
-	registrar         *services.DeviceRegistrar
+	registrar         services.DeviceRegistrar
 	automationStorage storage.Storage[Device]
 }
 
-func NewEngine(registrar *services.DeviceRegistrar, mqtt mqtt.MqttClient) *AutomationEngine {
+func NewEngine(registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *AutomationEngine {
 
 	return &AutomationEngine{
 		mqttClient: mqtt,

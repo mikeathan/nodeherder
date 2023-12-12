@@ -24,7 +24,7 @@ type HubController struct {
 	handlers                          map[string]handler
 	DeviceAvailabilityTimeoutOverride int
 	automationEngine                  automations.Engine
-	registrar                         *services.DeviceRegistrar
+	registrar                         *services.HubRegisterService
 }
 
 func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devices.Repository, ctx context.Context) *HubController {
@@ -64,8 +64,7 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		automationId := payload["automationId"].(string)
 		triggerId, err := strconv.Atoi(fmt.Sprint(payload["triggerId"]))
 		if err != nil {
-			fmt.Println(err.Error())
-			return nil, errors.New("delete automation trigger failed. Invalid triggerId type")
+			return nil, fmt.Errorf("delete automation trigger failed. Invalid triggerId type  %s", err.Error())
 		}
 		err = h.automationEngine.DeleteTrigger(automationId, triggerId)
 		if err != nil {

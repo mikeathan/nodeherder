@@ -92,7 +92,7 @@ func (d *Device) Evaluate(device *devices.Device) bool {
 	return false
 }
 
-func (d *Device) configure(registrar *services.DeviceRegistrar, client mqtt.MqttClient) error {
+func (d *Device) configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
 
 	//  check if device with automation id exists. friendyname can change
 	bridgeInfo := registrar.FindBridgeInfo(d.Id)
@@ -119,7 +119,7 @@ func (d *Device) configure(registrar *services.DeviceRegistrar, client mqtt.Mqtt
 }
 
 // validate actions
-func configureAction(registrar *services.DeviceRegistrar, action *MqttAction, client mqtt.MqttClient) error {
+func configureAction(registrar services.DeviceRegistrar, action *MqttAction, client mqtt.MqttClient) error {
 
 	bridgeInfo := registrar.FindBridgeInfo(action.Id)
 	if bridgeInfo == nil {
@@ -166,6 +166,7 @@ func configureAction(registrar *services.DeviceRegistrar, action *MqttAction, cl
 
 				action.FriendlyName = bridgeInfo.FriendlyName
 				action.Client = client
+				action.registrar = registrar
 				return nil
 			}
 		}

@@ -31,13 +31,13 @@ type handler interface {
 
 type bridgeConfigurationHandler struct {
 	mqtt                      mqtt.MqttClient
-	registrar                 *services.DeviceRegistrar
+	registrar                 *services.HubRegisterService
 	automationEngine          automations.Engine
 	bridgeHash                string
 	deviceAvailabilityTimeout int
 }
 
-func newBridgeConfigurationHandler(registrar *services.DeviceRegistrar, engine automations.Engine, mqtt mqtt.MqttClient, deviceAvailabilityTimeout int) *bridgeConfigurationHandler {
+func newBridgeConfigurationHandler(registrar *services.HubRegisterService, engine automations.Engine, mqtt mqtt.MqttClient, deviceAvailabilityTimeout int) *bridgeConfigurationHandler {
 	return &bridgeConfigurationHandler{registrar: registrar, automationEngine: engine, mqtt: mqtt, deviceAvailabilityTimeout: deviceAvailabilityTimeout}
 }
 
@@ -98,12 +98,12 @@ func (b *bridgeLoggingHandler) ProcessPayload(id string, connType string, payloa
 
 type deviceHandler struct {
 	AvailabilityTimeoutInSeconds int
-	registrar                    *services.DeviceRegistrar
+	registrar                    *services.HubRegisterService
 	eventHub                     ws.EventHub
 	hub                          *HubController
 }
 
-func newDeviceHandler(registrar *services.DeviceRegistrar, eventHub ws.EventHub, hub *HubController) *deviceHandler {
+func newDeviceHandler(registrar *services.HubRegisterService, eventHub ws.EventHub, hub *HubController) *deviceHandler {
 	return &deviceHandler{
 		registrar:                    registrar,
 		eventHub:                     eventHub,

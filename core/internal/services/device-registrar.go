@@ -6,16 +6,14 @@ import (
 	"node-herder/utils"
 )
 
-type devicePayload struct {
-	status string
-	data   interface{}
+type DeviceRegistrar interface {
+	LookupByName(name string) (*devices.Device, error)
+	CreateNewDevice(friendlyName string, connType string, data map[string]interface{}) (*devices.Device, error)
+	FindBridgeInfo(id string) *devices.BridgeInfo
+	RegisterBridge(bridgeInfoList []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int)
 }
 
-func newDeviceAddedPayload(data interface{}) *devicePayload {
-	return &devicePayload{status: ws.DeviceAdded, data: data}
-}
-
-type DeviceRegistrar struct {
+type HubRegisterService struct {
 	bridgeInfoList            []*devices.BridgeInfo
 	idMapper                  map[string]string
 	repo                      devices.Repository
@@ -23,11 +21,11 @@ type DeviceRegistrar struct {
 	deviceAvailabilityTimeout int
 }
 
-func NewHubRegisterService(repo devices.Repository, hub ws.EventHub, deviceAvailabilityTimeout int) *DeviceRegistrar {
-	return &DeviceRegistrar{repo: repo, eventHub: hub, idMapper: make(map[string]string), deviceAvailabilityTimeout: deviceAvailabilityTimeout}
+func NewHubRegisterService(repo devices.Repository, hub ws.EventHub, deviceAvailabilityTimeout int) *HubRegisterService {
+	return &HubRegisterService{repo: repo, eventHub: hub, idMapper: make(map[string]string), deviceAvailabilityTimeout: deviceAvailabilityTimeout}
 }
 
-func (s *DeviceRegistrar) Register(friendlyName string, device *devices.Device) {
+func (s *HubRegisterService) Register(friendlyName string, device *devices.Device) {
 	id := s.ResolveId(friendlyName)
 
 	s.repo.Store(id, device)
@@ -35,19 +33,19 @@ func (s *DeviceRegistrar) Register(friendlyName string, device *devices.Device) 
 	s.idMapper[friendlyName] = id // store id in mapper for easy access
 }
 
-func (s *DeviceRegistrar) LookupByName(name string) (*devices.Device, error) {
+func (s *HubRegisterService) LookupByName(name string) (*devices.Device, error) {
 
 	id := s.ResolveId(name)
 
 	return s.repo.FindDevice(id)
 }
 
-func (s *DeviceRegistrar) LookupById(id string) (*devices.Device, error) {
+func (s *HubRegisterService) LookupById(id string) (*devices.Device, error) {
 
 	return s.repo.FindDevice(id)
 }
 
-func (s *DeviceRegistrar) CreateNewDevice(friendlyName string, connType string, data map[string]interface{}) (*devices.Device, error) {
+func (s *HubRegisterService) CreateNewDevice(friendlyName string, connType string, data map[string]interface{}) (*devices.Device, error) {
 
 	id := s.ResolveId(friendlyName)
 	bridgeInfo := s.FindBridgeInfo(id)
@@ -64,7 +62,7 @@ func (s *DeviceRegistrar) CreateNewDevice(friendlyName string, connType string, 
 	return device, nil
 }
 
-func (s *DeviceRegistrar) configureIdMapper(bridgeInfoList []*devices.BridgeInfo) {
+func (s *HubRegisterService) configureIdMapper(bridgeInfoList []*devices.BridgeInfo) {
 
 	// remove items from idMapper, that use to have a bridge info but dont exist in current bridge info list
 	// but cant clean idmapper because it contains non bridge infor items
@@ -91,7 +89,7 @@ func (s *DeviceRegistrar) configureIdMapper(bridgeInfoList []*devices.BridgeInfo
 	}
 }
 
-func (a *DeviceRegistrar) FindBridgeInfo(id string) *devices.BridgeInfo {
+func (a *HubRegisterService) FindBridgeInfo(id string) *devices.BridgeInfo {
 	for _, device := range a.bridgeInfoList {
 		if device.IeeeAddress == id {
 			return device
@@ -101,7 +99,7 @@ func (a *DeviceRegistrar) FindBridgeInfo(id string) *devices.BridgeInfo {
 	return nil
 }
 
-func (s *DeviceRegistrar) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int) {
+func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int) {
 
 	s.bridgeInfoList = bridgeInfoList
 
@@ -161,7 +159,7 @@ func (s *DeviceRegistrar) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, d
 	}
 }
 
-func (a *DeviceRegistrar) ResolveId(name string) string {
+func (a *HubRegisterService) ResolveId(name string) string {
 
 	// check if id already exists
 	if id, ok := a.idMapper[name]; ok {

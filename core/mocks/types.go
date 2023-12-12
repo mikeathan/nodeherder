@@ -155,3 +155,26 @@ func (w *NopRepository) FindDevice(deviceName string) (*devices.Device, error) {
 	fmt.Println("Empty FindDevice")
 	return nil, errors.New("device not found")
 }
+
+type NopDeviceRegistrar struct {
+}
+
+func (w *NopDeviceRegistrar) LookupByName(name string) (*devices.Device, error) {
+	fmt.Println("Mocked LookupByName")
+
+	return nil, errors.New("mocked object")
+}
+
+func (w *NopDeviceRegistrar) CreateNewDevice(friendlyName string, connType string, data map[string]interface{}) (*devices.Device, error) {
+	fmt.Println("Mocked CreateNewDevice")
+	return nil, errors.New("mocked object")
+
+}
+func (w *NopDeviceRegistrar) FindBridgeInfo(id string) *devices.BridgeInfo {
+	fmt.Println("Mocked FindBridgeInfo")
+	return nil
+}
+
+func (w *NopDeviceRegistrar) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int) {
+	fmt.Println("Mocked RegisterBridge")
+}
