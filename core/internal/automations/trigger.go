@@ -199,29 +199,27 @@ func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) []byte {
 		payloadData = ctx.Payload[name].Data
 	}
 	// need to get step
-	if a.Step > 0 {
-		device, er := a.registrar.LookupById(a.Id)
-		if er != nil {
-			// fail it
-			// log it
-			return []byte{}
-		}
-		var newValue float64 = a.Data.(float64)
-		if expose, ok := device.Exposes[a.Property]; ok {
-			if expose.Data != nil {
-				newValue = expose.Data.(float64) + a.Data.(float64)
-				fmt.Println(newValue)
-			}
-		}
-		payloadData = newValue
-		// if brightness - find current brightness value
-		// if step > 0
-		// step == 1
-		// 		data + brighness
-		// else stepp == 2
-		// 		data - brightness
-	}
-	// cache device so we dont do that again
+	// if a.Step > 0 {
+
+	// 	// TODO:
+	// 	// cache device so we dont do that again
+
+	// 	device, er := a.registrar.LookupById(a.Id)
+	// 	if er != nil {
+	// 		// fail it
+	// 		// log it
+	// 		return []byte{}
+	// 	}
+	// 	var newValue float64 = a.Data.(float64)
+	// 	if expose, ok := device.Exposes[a.Property]; ok {
+	// 		if expose.Data != nil {
+	// 			newValue = expose.Data.(float64) + a.Data.(float64)
+	// 			fmt.Println(newValue)
+	// 		}
+	// 	}
+	// 	payloadData = newValue
+
+	// }
 
 	// {"state":"OFF"}
 	// {"state":"ON"}
