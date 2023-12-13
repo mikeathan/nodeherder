@@ -20,6 +20,24 @@
         "property": "state",
         "data": "TOGGLE"
       }
+    },
+    {
+      "name": "action",
+      "conditions": [
+        {
+          "name": "action",
+          "value": "dial_rotate_right_slow",
+          "equality": "="
+        }
+      ],
+      "action": {
+        "id": "0x70ac08fffefafeca",
+        "friendlyname": "Attic light",
+        "type": "numeric",
+        "property": "brightness",
+        "data": 10,
+        "step": 1
+      }
     }
   ]
 }

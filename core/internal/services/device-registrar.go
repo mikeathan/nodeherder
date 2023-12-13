@@ -8,6 +8,7 @@ import (
 
 type DeviceRegistrar interface {
 	LookupByName(name string) (*devices.Device, error)
+	LookupById(id string) (*devices.Device, error)
 	CreateNewDevice(friendlyName string, connType string, data map[string]interface{}) (*devices.Device, error)
 	FindBridgeInfo(id string) *devices.BridgeInfo
 	RegisterBridge(bridgeInfoList []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int)

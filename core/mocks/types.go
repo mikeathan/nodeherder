@@ -164,6 +164,11 @@ func (w *NopDeviceRegistrar) LookupByName(name string) (*devices.Device, error) 
 
 	return nil, errors.New("mocked object")
 }
+func (w *NopDeviceRegistrar) LookupById(id string) (*devices.Device, error) {
+	fmt.Println("Mocked LookupById")
+
+	return nil, errors.New("mocked object")
+}
 
 func (w *NopDeviceRegistrar) CreateNewDevice(friendlyName string, connType string, data map[string]interface{}) (*devices.Device, error) {
 	fmt.Println("Mocked CreateNewDevice")
