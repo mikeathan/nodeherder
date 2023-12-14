@@ -226,6 +226,10 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 	wg.Wait()
 }
 
+func TestSwitch(t *testing.T) {
+
+	// todo
+}
 func TestEqualityChecks(t *testing.T) {
 	testCases := []struct {
 		op     string
@@ -260,6 +264,11 @@ func unpackJsonToMap(value string) map[string]any {
 		fmt.Print("ERROR unpacking ", value)
 	}
 	return payload
+}
+
+func createTriggerSwitchToggleLight(mqtt mqtt.MqttClient) *automations.Trigger {
+
+	return nil
 }
 
 func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any) *automations.Trigger {
