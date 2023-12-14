@@ -2,7 +2,9 @@ package automations
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
 	"node-herder/mocks"
@@ -105,17 +107,33 @@ type MqttAction struct {
 	mut       sync.RWMutex
 	exit      chan bool
 	isPending bool
+	device    *devices.Device
+	max       float64
+	min       float64
 }
 
 func NewAction() *MqttAction {
 	return &MqttAction{Delay: 0, registrar: &mocks.NopDeviceRegistrar{}}
 }
 
+func (a *MqttAction) SetRegistrar(registrar services.DeviceRegistrar) {
+	a.registrar = registrar
+
+	_, err := a.loadDevice()
+	if err != nil {
+		utils.LogInfof(err.Error())
+	}
+}
+
 func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
 	// no delay execution
 	if a.Delay == 0 {
 
-		payload := a.buildPayload(name, ctx)
+		payload, err := a.buildPayload(name, ctx)
+		if err != nil {
+			utils.LogErrorf(err.Error())
+			return
+		}
 
 		a.emit(payload)
 
@@ -154,7 +172,11 @@ func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
 		select {
 		case <-ticker.C:
 
-			payload := a.buildPayload(name, ctx)
+			payload, err := a.buildPayload(name, ctx)
+			if err != nil {
+				utils.LogErrorf(err.Error())
+				return
+			}
 
 			a.emit(payload)
 			ctx.SetCurrent(name, ctx.Payload[name].Data)
@@ -191,46 +213,77 @@ func (a *MqttAction) emit(payload []byte) {
 	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.FriendlyName)
 }
 
-func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) []byte {
+func (a *MqttAction) loadDevice() (*devices.Device, error) {
+	if a.device == nil {
+		var err error
+		a.device, err = a.registrar.LookupById(a.Id)
+		if err != nil {
+			return nil, fmt.Errorf("Device %s not found for action %s", a.Id, a.FriendlyName)
+		}
 
-	//TODO: use a.registrar to get device data for pushing in the message
+		if val, ok := a.device.Exposes[a.Property].Attributes["max"]; ok {
+			a.max = val.(float64)
+		}
+
+		if val, ok := a.device.Exposes[a.Property].Attributes["min"]; ok {
+			a.min = val.(float64)
+		}
+	}
+
+	return a.device, nil
+}
+func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, error) {
+
 	payloadData := a.Data
 	if payloadData == nil {
 		payloadData = ctx.Payload[name].Data
 	}
-	// need to get step
-	// if a.Step > 0 {
 
-	// 	// TODO:
-	// 	// cache device so we dont do that again
+	if a.Step > 0 {
 
-	// 	device, er := a.registrar.LookupById(a.Id)
-	// 	if er != nil {
-	// 		// fail it
-	// 		// log it
-	// 		return []byte{}
-	// 	}
-	// 	var newValue float64 = a.Data.(float64)
-	// 	if expose, ok := device.Exposes[a.Property]; ok {
-	// 		if expose.Data != nil {
-	// 			newValue = expose.Data.(float64) + a.Data.(float64)
-	// 			fmt.Println(newValue)
-	// 		}
-	// 	}
-	// 	payloadData = newValue
+		device, err := a.loadDevice()
+		if err != nil {
+			return nil, errors.Join(err, fmt.Errorf("error building action payload"))
+		}
 
-	// }
+		// TODO:
+		// maybe we need some ActionStepCalculator
+		// or somethig more generic for any type?
 
-	// {"state":"OFF"}
-	// {"state":"ON"}
-	// {"color_temp":408}
-	// {"brightness":240}
+		// [1] = + , max
+		// [2] = - , min
+		// [0] = string
+
+		var newValue = a.Data.(float64)
+		if a.Step == 1 { // 1 == increase
+
+			if expose, ok := device.Exposes[a.Property]; ok {
+				if expose.Data != nil {
+					newValue = expose.Data.(float64) + a.Data.(float64) // calculation
+					if a.max != 0 {
+						newValue = math.Min(newValue, a.max)
+					}
+				}
+			}
+		} else if a.Step == 2 { // 2 == decrease
+			if expose, ok := device.Exposes[a.Property]; ok {
+				if expose.Data != nil {
+					newValue = expose.Data.(float64) - a.Data.(float64) // calculation
+					if a.min != 0 {
+						newValue = math.Max(newValue, a.min)
+					}
+				}
+			}
+		}
+		payloadData = newValue
+	}
 
 	jp := map[string]any{
 		a.Property: payloadData,
 	}
 
 	payload, _ := json.Marshal(jp)
-	return payload
+
+	return payload, nil
 
 }

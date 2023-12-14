@@ -166,7 +166,7 @@ func configureAction(registrar services.DeviceRegistrar, action *MqttAction, cli
 
 				action.FriendlyName = bridgeInfo.FriendlyName
 				action.Client = client
-				action.registrar = registrar
+				action.SetRegistrar(registrar)
 				return nil
 			}
 		}
