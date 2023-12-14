@@ -27,7 +27,30 @@ func toFloat(value any) float32 {
 	}
 }
 
-var numericSteps = []int{0, 1, 2}
+var stepsOperators = map[int]string{
+	1: "+",
+	2: "-",
+}
+
+var numericOperations = map[string]func(float64, float64, float64) float64{
+	"+": func(v1 float64, v2 float64, limit float64) float64 {
+
+		newValue := v1 + v2
+		if limit != 0 {
+			newValue = math.Min(newValue, limit)
+		}
+		return newValue
+	},
+	"-": func(v1 float64, v2 float64, limit float64) float64 {
+
+		newValue := v1 - v2
+		if limit != 0 {
+			newValue = math.Max(newValue, limit)
+		}
+		return newValue
+	},
+}
+
 var EqualityOperators = map[string]func(any, any) bool{
 	"=": func(v1 any, v2 any) bool {
 		return v1 == v2
@@ -232,6 +255,7 @@ func (a *MqttAction) loadDevice() (*devices.Device, error) {
 
 	return a.device, nil
 }
+
 func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, error) {
 
 	payloadData := a.Data
@@ -245,36 +269,17 @@ func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, erro
 		if err != nil {
 			return nil, errors.Join(err, fmt.Errorf("error building action payload"))
 		}
-
-		// TODO:
-		// maybe we need some ActionStepCalculator
-		// or somethig more generic for any type?
-
 		// [1] = + , max
 		// [2] = - , min
-		// [0] = string
+		op := stepsOperators[a.Step]
 
 		var newValue = a.Data.(float64)
-		if a.Step == 1 { // 1 == increase
-
-			if expose, ok := device.Exposes[a.Property]; ok {
-				if expose.Data != nil {
-					newValue = expose.Data.(float64) + a.Data.(float64) // calculation
-					if a.max != 0 {
-						newValue = math.Min(newValue, a.max)
-					}
-				}
-			}
-		} else if a.Step == 2 { // 2 == decrease
-			if expose, ok := device.Exposes[a.Property]; ok {
-				if expose.Data != nil {
-					newValue = expose.Data.(float64) - a.Data.(float64) // calculation
-					if a.min != 0 {
-						newValue = math.Max(newValue, a.min)
-					}
-				}
+		if expose, ok := device.Exposes[a.Property]; ok {
+			if expose.Data != nil {
+				newValue = numericOperations[op](expose.Data.(float64), a.Data.(float64), a.max)
 			}
 		}
+
 		payloadData = newValue
 	}
 
