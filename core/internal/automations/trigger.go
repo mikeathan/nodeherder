@@ -273,7 +273,6 @@ func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, erro
 
 		device, err := a.loadDevice()
 		if err != nil {
-
 			return nil, errors.Join(err, fmt.Errorf("error building action payload"))
 		}
 
