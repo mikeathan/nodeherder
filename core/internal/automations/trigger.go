@@ -27,9 +27,14 @@ func toFloat(value any) float32 {
 	}
 }
 
-var stepsOperators = map[int]string{
-	1: "+",
-	2: "-",
+type numericOperator struct {
+	Operator string
+	Limit    string
+}
+
+var stepsOperators = map[int]*numericOperator{
+	1: {Operator: "+", Limit: "max"},
+	2: {Operator: "-", Limit: "min"},
 }
 
 var numericOperations = map[string]func(float64, float64, float64) float64{
@@ -131,12 +136,11 @@ type MqttAction struct {
 	exit      chan bool
 	isPending bool
 	device    *devices.Device
-	max       float64
-	min       float64
+	limits    map[string]float64
 }
 
 func NewAction() *MqttAction {
-	return &MqttAction{Delay: 0, registrar: &mocks.NopDeviceRegistrar{}}
+	return &MqttAction{Delay: 0, registrar: &mocks.NopDeviceRegistrar{}, limits: make(map[string]float64)}
 }
 
 func (a *MqttAction) SetRegistrar(registrar services.DeviceRegistrar) {
@@ -149,9 +153,11 @@ func (a *MqttAction) SetRegistrar(registrar services.DeviceRegistrar) {
 }
 
 func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
+	// TODO: need mutex to lock the event
+
 	// no delay execution
 	if a.Delay == 0 {
-
+		a.isPending = true
 		payload, err := a.buildPayload(name, ctx)
 		if err != nil {
 			utils.LogErrorf(err.Error())
@@ -163,7 +169,7 @@ func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
 		// on success callback
 		// update sensor current value
 		ctx.SetCurrent(name, ctx.Payload[name].Data)
-
+		a.isPending = false
 		return
 	}
 
@@ -244,12 +250,13 @@ func (a *MqttAction) loadDevice() (*devices.Device, error) {
 			return nil, fmt.Errorf("Device %s not found for action %s", a.Id, a.FriendlyName)
 		}
 
+		a.limits = map[string]float64{}
 		if val, ok := a.device.Exposes[a.Property].Attributes["max"]; ok {
-			a.max = val.(float64)
+			a.limits["max"] = val.(float64)
 		}
 
 		if val, ok := a.device.Exposes[a.Property].Attributes["min"]; ok {
-			a.min = val.(float64)
+			a.limits["min"] = val.(float64)
 		}
 	}
 
@@ -269,6 +276,9 @@ func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, erro
 		if err != nil {
 			return nil, errors.Join(err, fmt.Errorf("error building action payload"))
 		}
+
+		// TODO: issue same event is processed twice as previous one might not be finished
+
 		// [1] = + , max
 		// [2] = - , min
 		op := stepsOperators[a.Step]
@@ -276,7 +286,8 @@ func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, erro
 		var newValue = a.Data.(float64)
 		if expose, ok := device.Exposes[a.Property]; ok {
 			if expose.Data != nil {
-				newValue = numericOperations[op](expose.Data.(float64), a.Data.(float64), a.max)
+				limit := a.limits[op.Limit]
+				newValue = numericOperations[op.Operator](expose.Data.(float64), a.Data.(float64), limit)
 			}
 		}
 
