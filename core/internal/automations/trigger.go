@@ -277,8 +277,6 @@ func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, erro
 			return nil, errors.Join(err, fmt.Errorf("error building action payload"))
 		}
 
-		// TODO: issue same event is processed twice as previous one might not be finished
-
 		// [1] = + , max
 		// [2] = - , min
 		op := stepsOperators[a.Step]
