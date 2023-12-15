@@ -20,12 +20,12 @@ const props = defineProps({
         default: true
     },
 });
-const steps = ["increase", "decrease"]
 const property = ref("");
 const data = ref("");
 const delay = ref(null);
 const step = ref(null)
 const store = useStore();
+
 const emit = defineEmits(['add', 'remove', 'update:data', 'update:delay', , 'update:step'])
 
 watchEffect(() => data.value = props.data);
@@ -103,6 +103,7 @@ function dataUpdated(event) {
     data.value = event
     emit('update:data', event)
 }
+
 function stepUpdated(event) {
     var value = parseInt(event)
     step.value = value
@@ -148,7 +149,6 @@ function getItems() {
             return null
     }
 }
-
 
 </script>
 

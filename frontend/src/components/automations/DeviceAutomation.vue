@@ -83,7 +83,6 @@ function addTrigger() {
 
     var trigger = new ExposeTrigger(selectedExpose.value)
     triggers.value.push(trigger)
-
     showExposeSelection.value = false // hide selection   
 }
 
