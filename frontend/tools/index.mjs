@@ -105,6 +105,70 @@ var automationMap = new Map([
       ],
     },
   ],
+  [
+    "0x001788010d7d9d3f",
+    {
+      id: "0x001788010d7d9d3f",
+      friendlyname: "Hue tap dial switch",
+      description: "Light switch automation",
+      enabled: false,
+      triggers: [
+        {
+          name: "action",
+          conditions: [
+            {
+              name: "action",
+              value: "button_1_press_release",
+              equality: "=",
+            },
+          ],
+          action: {
+            id: "0x70ac08fffefafeca",
+            friendlyname: "Attic light",
+            type: "binary",
+            property: "state",
+            data: "TOGGLE",
+          },
+        },
+        {
+          name: "action",
+          conditions: [
+            {
+              name: "action",
+              value: "dial_rotate_right_slow",
+              equality: "=",
+            },
+          ],
+          action: {
+            id: "0x70ac08fffefafeca",
+            friendlyname: "Attic light",
+            type: "numeric",
+            property: "brightness",
+            data: 10,
+            step: 1,
+          },
+        },
+        {
+          name: "action",
+          conditions: [
+            {
+              name: "action",
+              value: "dial_rotate_left_slow",
+              equality: "=",
+            },
+          ],
+          action: {
+            id: "0x70ac08fffefafeca",
+            friendlyname: "Attic light",
+            type: "numeric",
+            property: "brightness",
+            data: 10,
+            step: 2,
+          },
+        },
+      ],
+    },
+  ],
 ]);
 
 let automation1Trigger =
