@@ -59,7 +59,7 @@ const (
 	pingPeriod = (pongWait * 9) / 10
 
 	// Maximum message size allowed from peer.
-	maxMessageSize = 1024
+	maxMessageSize = 2048
 )
 
 type WsClient struct {
