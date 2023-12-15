@@ -91,13 +91,13 @@ const actions = {
     };
 
     ws.onclose = function (event) {
-      console.info("ws close");
+      console.info("ws close ", event);
       state.connected = false;
       dispatch("cleanup", [], { root: true });
     };
 
     ws.onerror = function (event) {
-      console.error("ws error: " + event.data);
+      console.error("ws error: " + event);
     };
 
     state.ws = ws;
