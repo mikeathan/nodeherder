@@ -7,14 +7,12 @@ const actions = {
   init({ state, commit }, items) {
     commit("clear", []);
 
-    console.log("automations/init");
     items.forEach((item) => {
       state.items[item.id] = item;
     });
     state.initialized = true;
   },
   save({ commit, dispatch, rootState }, automation) {
-    console.log("automations/save");
     commit("add", automation);
     dispatch(
       "ws/emit",
