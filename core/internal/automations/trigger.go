@@ -160,7 +160,6 @@ func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
 		a.isPending = true
 		payload, err := a.buildPayload(name, ctx)
 		if err != nil {
-			utils.LogErrorf(err.Error())
 			return
 		}
 
@@ -274,6 +273,7 @@ func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, erro
 
 		device, err := a.loadDevice()
 		if err != nil {
+
 			return nil, errors.Join(err, fmt.Errorf("error building action payload"))
 		}
 
@@ -288,6 +288,10 @@ func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, erro
 			if expose.Data != nil {
 				limit := a.limits[op.Limit]
 				newValue = numericOperations[op.Operator](expose.Data.(float64), a.Data.(float64), limit)
+
+				if expose.Data == newValue {
+					return nil, errors.New("same value, skipping")
+				}
 			}
 		}
 
