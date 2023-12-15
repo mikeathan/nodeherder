@@ -92,6 +92,14 @@ function save() {
     router.push("/viewer")
 }
 
+function getTriggerDescription(trigger) {
+    var description = trigger.name;
+    if (trigger.conditions.length == 1) {
+        description += " - " + trigger.conditions[0].value
+    }
+    return description;
+}
+
 function onDeleteTriggerClick(event, triggerId) {
     // disable accordion from expanding
     event.stopImmediatePropagation();
@@ -172,7 +180,7 @@ function onDeleteTriggerClick(event, triggerId) {
                                         :aria-controls="`collapse${index}`">
 
                                         <div class="col">
-                                            Trigger #{{ index + 1 }} - {{ trigger.name }}
+                                            Trigger #{{ index + 1 }} - {{ getTriggerDescription(trigger) }}
                                         </div>
 
                                         <div class="col pe-3 text-end ">
@@ -193,35 +201,6 @@ function onDeleteTriggerClick(event, triggerId) {
                                             @addCondition="addCondition($event, trigger)"
                                             @removeCondition="removeCondition($event, trigger)">
                                         </Trigger>
-                                        <!-- <label class="pb-4" v-if="trigger.conditions.length > 0">Condition</label>
-                                        <div v-for="(condition, idx) in trigger.conditions">
-                                            <div class="row">
-                                                <TriggerCondition :id="props.id" :index="condition.idx = idx + 1"
-                                                    :name="condition.name" :operator="condition.equality"
-                                                    :key="condition.idx" :data="condition.value"
-                                                    @remove="removeCondition($event, trigger)"
-                                                    @update:value="newValue => condition.value = newValue"
-                                                    @update:operator="newValue => condition.operator = newValue">
-                                                </TriggerCondition>
-                                            </div>
-                                        </div>
-
-                                        <div class="row">
-
-                                            <div class=" pb-2 pt-2">
-                                                <label class="form-check-label">Action</label>
-                                                <DataInput type="string" :data="trigger.action.friendlyname"
-                                                    alignment="left" :disabled="true">
-                                                </DataInput>
-                                            </div>
-
-                                            <TriggerAction :id="trigger.action.id" :property="trigger.action.property"
-                                                :data="trigger.action.data" :delay="trigger.action.delay"
-                                                :allowRemove="false"
-                                                @update:data="newValue => trigger.action.data = newValue"
-                                                @update:delay="newValue => trigger.action.delay = newValue">
-                                            </TriggerAction>
-                                        </div> -->
                                     </div>
                                 </div>
                             </div>

@@ -102,6 +102,14 @@ function addCondition(event, index) {
     trigger.conditions.push(event)
 }
 
+function getTriggerDescription(trigger) {
+    var description = trigger.name;
+    if (trigger.conditions.length == 1) {
+        description += " - " + trigger.conditions[0].value
+    }
+    return description;
+}
+
 function removeCondition(event, index) {
     var cIdx = conditions.value.findIndex(item => item.idx === event);
     if (cIdx != -1) {
@@ -184,7 +192,7 @@ function exposesList() {
                             :data-bs-target="`#collapse${index}`" aria-expanded="false" :aria-controls="`collapse${index}`">
 
                             <div class="col">
-                                Trigger #{{ index + 1 }} - {{ trigger.name }}
+                                Trigger #{{ index + 1 }} - {{ getTriggerDescription(trigger) }}
                             </div>
 
                             <div class="col pe-3 text-end ">
