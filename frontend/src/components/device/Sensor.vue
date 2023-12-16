@@ -35,7 +35,7 @@ function properties() {
     <div v-if="value != undefined" class="flex-shrink-1">
         {{ getSensorValue(name, value, unit) }}
 
-        <div v-if="props.expose.type == 'numeric'">{{ props.expose }}</div>
+        <!-- <div v-if="props.expose.type == 'numeric'">{{ props.expose }}</div> -->
     </div>
     <div v-else>NA</div>
 </template>
