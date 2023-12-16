@@ -171,9 +171,6 @@ var automationMap = new Map([
   ],
 ]);
 
-let automation1Trigger =
-  '{"type":"automations","payload":[{"id":"0xa4c13894070052fc","friendlyName":"Human presence","description":"Attic light test automation","enabled":true,"triggers":[{"name":"presence","conditions":[{"name":"presence","value":false,"equality":"="}],"action":{"id":"0x70ac08fffefafeca","friendlyname":"Attic light","type":"light","property":"state","data":"OFF","delay":300000000000}},{"name":"presence","conditions":[{"name":"presence","value":true,"equality":"="},{"name":"lux","value":30,"equality":"<="}],"action":{"id":"0x70ac08fffefafeca","friendlyname":"Attic light","type":"light","property":"state","data":"ON"}}]}]}';
-
 expressWs(app, server);
 
 var devicesPayload = loadDevices();
@@ -377,6 +374,15 @@ let settings = [
     temperatureLastChanged: moment(),
     humidityLastChanged: moment(),
   },
+  {
+    id: "0x70ac08fffefafeca",
+    friendlyName: "Attic Light",
+    availability: "offline",
+    method: "mqtt",
+    brightness: 60,
+    color_temp: 123,
+    state: "True",
+  },
 ];
 
 let updateDeviceMap = {};
@@ -384,6 +390,26 @@ updateDeviceMap["92fe86b7"] = mockUpdateWeatherNode1v2;
 updateDeviceMap["0x00124b0029207763"] = mockUpdateTH01v2;
 updateDeviceMap["0xa4c13894070052fc"] = mockUpdateHumanPresencev2;
 updateDeviceMap["0x00124b00146c31cd"] = mockUpdateMotionSensorv2;
+updateDeviceMap["0x70ac08fffefafeca"] = mockUpdateAtticLight;
+
+function mockUpdateAtticLight(settings) {
+  var device = {
+    id: "0x70ac08fffefafeca",
+    last_seen: currentTime(),
+    data: {
+      brightness: 61,
+      color_temp: 122,
+      state: "True",
+    },
+    properties: {},
+  };
+
+  var availability = setDeviceOnline(settings);
+  if (availability != undefined) {
+    device.properties.availability = availability;
+  }
+  return device;
+}
 
 function mockUpdateHumanPresencev2(settings) {
   var device = {
