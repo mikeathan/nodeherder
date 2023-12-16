@@ -4,19 +4,21 @@ import { ref, watch, watchEffect } from "vue";
 const emit = defineEmits<{
     (e: 'change', id: number): void
 }>()
-
-const props = defineProps<{
+export interface Props {
     placeholder?: string
     value?: number,
-    min: { type: number, default: 0 }
-    max: { type: number, default: 254 }
-}>()
+    min: number
+    max: number
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    min: 0,
+    max: 254
+})
 
 watchEffect(() => value.value = props.value);
 watchEffect(() => min.value = props.min);
 watchEffect(() => max.value = props.max);
-
-
 
 function valueChanged(event: Event) {
     var v = parseInt((event.target as HTMLInputElement).value)
@@ -24,7 +26,7 @@ function valueChanged(event: Event) {
 }
 
 const value = ref()
-const max = ref()
+const max = ref(0)
 const min = ref()
 
 </script>
