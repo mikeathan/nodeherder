@@ -2,7 +2,7 @@
   "id": "0x001788010d7d9d3f",
   "friendlyname": "Hue tap dial switch",
   "description": "Light switch automation",
-  "enabled": true,
+  "enabled": false,
   "triggers": [
     {
       "name": "action",
