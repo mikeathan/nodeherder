@@ -99,3 +99,7 @@ backup automations
 add log window in frontend
 device card - add ways to control device if its feature
 fix sizing for mobile
+
+add extensio for support
+TuYa
+PA-44Z
