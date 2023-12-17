@@ -50,6 +50,11 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		return h.repo.AllDevices()
 	})
 
+	//todo:
+	h.eventHub.OnDeviceSetValue(func(p interface{}) error {
+		return nil
+	})
+
 	h.eventHub.OnDeleteAutomationTrigger(func(p interface{}) (interface{}, error) {
 
 		// todo:see if we can cast p to string and then to bytes
