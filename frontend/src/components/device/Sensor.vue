@@ -5,12 +5,22 @@ import {
     getSensorName,
 } from "../../modules/sensors/sensor-formatter";
 
+import { useStore } from "vuex";
+import Slider from "../input/Slider.vue"
+
+const store = useStore();
 const props = defineProps({
     name: String,
     value: Number | Boolean,
     unit: String,
     expose: Object
 });
+
+function updateValue() {
+    var payload = ""
+    store.dispatch("device/setValue", payload);
+}
+
 
 // todo:
 // if has properties
@@ -19,8 +29,8 @@ const props = defineProps({
 // if binary show toggle
 // for enums dont do anyting for now 
 
-function properties() {
-    return expose.properties
+function hasNumericFeatures() {
+    return props.expose.properties != null && props.expose.type == "numeric"
 }
 
 </script>
@@ -34,8 +44,7 @@ function properties() {
     </div>
     <div v-if="value != undefined" class="flex-shrink-1">
         {{ getSensorValue(name, value, unit) }}
-
-        <!-- <div v-if="props.expose.type == 'numeric'">{{ props.expose }}</div> -->
+        <div v-if="hasNumericFeatures()">{{ props.expose }}</div>
     </div>
     <div v-else>NA</div>
 </template>

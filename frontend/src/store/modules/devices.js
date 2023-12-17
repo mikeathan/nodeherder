@@ -9,6 +9,10 @@ const actions = {
       state.items[device.id] = device;
     });
   },
+
+  setValue({ dispatch }, payload) {
+    dispatch("emit", { event: "deviceSetValue", message: payload });
+  },
 };
 const getters = {
   items: (state) => state.items,
