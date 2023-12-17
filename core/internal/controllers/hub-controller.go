@@ -52,9 +52,7 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 
 	//todo:
 	h.eventHub.OnDeviceSetValue(func(p interface{}) error {
-
-		// string, string
-		// friendly_name, payload
+		fmt.Println("OnDeviceSetValue:", p)
 		return nil
 	})
 
