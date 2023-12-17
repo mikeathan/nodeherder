@@ -49,9 +49,8 @@ var numericOperations = map[string]func(float64, float64, float64) float64{
 	"-": func(v1 float64, v2 float64, limit float64) float64 {
 
 		newValue := v1 - v2
-		if limit != 0 {
-			newValue = math.Max(newValue, limit)
-		}
+		newValue = math.Max(newValue, limit)
+
 		return newValue
 	},
 }
