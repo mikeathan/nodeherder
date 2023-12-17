@@ -95,6 +95,15 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		if err != nil {
 			return fmt.Errorf("save automation failed. %s", err.Error())
 		}
+
+		// trigger automation for changes to apply
+		// TODO: need to clear state or confim is clear
+		// device, err := h.registrar.LookupById(automation.Id)
+		// if err == nil {
+		// 	utils.LogInfof("Trigger automation %s[%s] after update", automation.FriendlyName, automation.Id)
+		// 	h.TriggerAutomation(device)
+		// }
+
 		return nil
 	})
 
