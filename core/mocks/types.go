@@ -29,6 +29,9 @@ func (w *MockEventHub) OnLoadDevices(action func() interface{}) {
 	fmt.Println("Empty OnLoadDevices")
 }
 
+func (w *MockEventHub) OnDeviceSetValue(action func(p interface{}) error) {
+	fmt.Println("Empty OnDeviceSetValue")
+}
 func (w *MockEventHub) OnSaveAutomation(action func(p interface{}) error) {
 	fmt.Println("Empty OnSaveAutomation")
 }

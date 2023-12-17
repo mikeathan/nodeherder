@@ -18,6 +18,7 @@ const (
 	SaveAutomation          = "saveAutomation"
 	DeleteAutomation        = "deleteAutomation"
 	DeleteAutomationTrigger = "deleteAutomationTrigger"
+	DeviceSetValue          = "deviceSetValue"
 
 	// response
 	Automations       = "automations"
@@ -119,10 +120,13 @@ func (c *WsClient) handleMessage(message []byte) {
 		c.executeActionWithEvent(eventMsg.Payload, c.hub.onDeleteAutomation, Automations)
 
 	case DeleteAutomationTrigger:
-
 		c.executeActionWithEvent(eventMsg.Payload, c.hub.onDeleteAutomationTrigger, AutomationUpdated)
 
+	case DeviceSetValue:
+		c.executeAction(eventMsg.Payload, c.hub.onDeviceSetValue)
+
 	default:
+
 		utils.LogWarnf("Unknown event type: %s", eventMsg.Type)
 		return
 	}
@@ -206,6 +210,7 @@ type EventHub interface {
 	RegisterNewClient(conn *websocket.Conn)
 	OnLoadAutomations(action func() interface{})
 	OnLoadDevices(action func() interface{})
+	OnDeviceSetValue(func(payload interface{}) error)
 	OnSaveAutomation(func(payload interface{}) error)
 	OnDeleteAutomation(func(payload interface{}) (interface{}, error))
 	OnDeleteAutomationTrigger(func(payload interface{}) (interface{}, error))
@@ -219,6 +224,7 @@ type wsServer struct {
 	onLoadAutomations         func() interface{}
 	onLoadDevices             func() interface{}
 	onSaveAutomation          func(interface{}) error
+	onDeviceSetValue          func(interface{}) error
 	onDeleteAutomation        func(interface{}) (interface{}, error)
 	onDeleteAutomationTrigger func(interface{}) (interface{}, error)
 }
@@ -233,11 +239,16 @@ func NewWsHub() EventHub {
 		onSaveAutomation:          func(payload interface{}) error { return nil },
 		onDeleteAutomation:        func(payload interface{}) (interface{}, error) { return nil, nil },
 		onDeleteAutomationTrigger: func(payload interface{}) (interface{}, error) { return nil, nil },
+		onDeviceSetValue:          func(payload interface{}) error { return nil },
 		onLoadDevices:             func() interface{} { return nil },
 		onLoadAutomations:         func() interface{} { return nil }}
 
 	go wsHub.run()
 	return wsHub
+}
+
+func (h *wsServer) OnDeviceSetValue(action func(p interface{}) error) {
+	h.onDeviceSetValue = action
 }
 
 func (h *wsServer) OnLoadAutomations(action func() interface{}) {
