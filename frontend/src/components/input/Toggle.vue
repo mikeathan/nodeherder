@@ -1,5 +1,5 @@
 <script setup >
-import { ref, watch, watchEffect } from "vue";
+import { ref, watch } from "vue";
 
 const emit = defineEmits(['update:value'])
 
@@ -9,29 +9,36 @@ const props = defineProps({
         type: String,
         default: null
     },
-    value: {
+    enabled: {
         type: Boolean,
         default: null
     }
 });
 
-const value = ref(false)
-
+const enabled = ref(false)
 
 watch(
-    () => props.value,
+    () => props.enabled,
     () => {
-        value.value = props.value
+        enabled.value = props.value
     }, { immediate: true }
 )
+
 function valueChanged(event) {
     emit('update:value', event);
 }
 
 </script>
-
+<style scoped>
+.custom-control-input {
+    transform: scale(1.4);
+}
+</style>
 <template>
     <div>
+        <label v-if="props.placeholder != null" class="form-check-label">{{ props.placeholder }}</label>
+        <input class="form-check-input custom-control-input" type="checkbox" role="switch" id="flexSwitchCheckDefault"
+            v-model="enabled" @change="valueChanged">
     </div>
 </template>
 

@@ -8,6 +8,7 @@ import {
 
 import { useStore } from "vuex";
 import Slider from "../input/Slider.vue"
+import Toggle from "../input/Toggle.vue"
 
 const store = useStore();
 const props = defineProps({
@@ -28,6 +29,10 @@ function updateValue(event) {
 
 function hasNumericFeatures() {
     return props.expose.properties != null && props.expose.type == "numeric"
+}
+
+function hasBinaryFeatures() {
+    return props.expose.properties != null && props.expose.type == "binary"
 }
 
 function getValue() {
@@ -53,6 +58,10 @@ function getUnit() {
             <Slider :value="getValue()" :min="props.expose.attributes['min']" :max="props.expose.attributes['max']"
                 @update:value="updateValue">
             </Slider>
+        </div>
+        <div v-else="hasBinaryFeatures()">
+            <Toggle :value="getValue()" @update:value="updateValue">
+            </Toggle>
         </div>
         <div v-else>
             {{ getValue() }}
