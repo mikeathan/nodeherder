@@ -32,6 +32,7 @@ func (w *MockEventHub) OnLoadDevices(action func() interface{}) {
 func (w *MockEventHub) OnDeviceSetValue(P func(payload interface{}) error) {
 	fmt.Println("Empty OnDeviceSetValue")
 }
+
 func (w *MockEventHub) OnSaveAutomation(action func(p interface{}) error) {
 	fmt.Println("Empty OnSaveAutomation")
 }
@@ -99,6 +100,10 @@ func (w *NopWsServer) RegisterNewClient(conn *websocket.Conn) {
 
 func (w *NopWsServer) OnLoadAutomations(action func() interface{}) {
 	fmt.Println("Empty OnLoadAutomations")
+}
+
+func (w *NopWsServer) OnDeviceSetValue(action func(payload interface{}) error) {
+	fmt.Println("Empty OnDeviceSetValue")
 }
 
 func (w *NopWsServer) OnLoadDevices(action func() interface{}) {

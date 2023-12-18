@@ -16,12 +16,11 @@ const props = defineProps({
 });
 
 function updateValue(event) {
-    var data = {};
-    data[props.expose.name] = event
 
     var msg = {
         id: props.id,
-        data: data
+        name: props.expose.name,
+        value: event
     }
 
     store.dispatch("devices/setValue", msg);

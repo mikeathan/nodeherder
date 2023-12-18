@@ -114,7 +114,7 @@ func (c *WsClient) handleMessage(message []byte) {
 		c.Broadcast(Devices, msg)
 
 	case SaveAutomation:
-		c.executeAction(eventMsg.Payload, c.hub.onSaveAutomation)
+		c.executeAction(eventMsg.Payload, c.hub.onSaveAutomation, true)
 
 	case DeleteAutomation:
 		c.executeActionWithEvent(eventMsg.Payload, c.hub.onDeleteAutomation, Automations)
@@ -123,7 +123,7 @@ func (c *WsClient) handleMessage(message []byte) {
 		c.executeActionWithEvent(eventMsg.Payload, c.hub.onDeleteAutomationTrigger, AutomationUpdated)
 
 	case DeviceSetValue:
-		c.executeAction(eventMsg.Payload, c.hub.onDeviceSetValue)
+		c.executeAction(eventMsg.Payload, c.hub.onDeviceSetValue, false)
 
 	default:
 
@@ -147,7 +147,7 @@ func (c *WsClient) executeActionWithEvent(payload interface{}, action func(inter
 	}
 }
 
-func (c *WsClient) executeAction(payload interface{}, action func(interface{}) error) {
+func (c *WsClient) executeAction(payload interface{}, action func(interface{}) error, reportSuccess bool) {
 	if payload == nil {
 		c.Broadcast(OperationFailed, "payload is empty")
 		return
@@ -156,7 +156,7 @@ func (c *WsClient) executeAction(payload interface{}, action func(interface{}) e
 	err := action(payload)
 	if err != nil {
 		c.Broadcast(OperationFailed, err.Error())
-	} else {
+	} else if reportSuccess {
 		c.Broadcast(OperationSuccess, nil)
 	}
 }
