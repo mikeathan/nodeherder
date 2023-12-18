@@ -11,9 +11,14 @@ const actions = {
   },
 
   setValue({ dispatch }, payload) {
-    dispatch("emit", { event: "deviceSetValue", message: payload });
+    dispatch(
+      "ws/emit",
+      { event: "deviceSetValue", message: payload },
+      { root: true }
+    );
   },
 };
+
 const getters = {
   items: (state) => state.items,
   find: (state) => (id) => {

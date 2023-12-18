@@ -18,7 +18,7 @@ const props = defineProps({
       </div>
       <div class="card-body row align-items-center">
         <div class="d-flex align-items-center" v-for="(value, sensor) in device.exposes">
-          <Sensor :expose="device.exposes[sensor]" :name="sensor" :value="value.data" :unit="value.unit" />
+          <Sensor :id="device.id" :expose="device.exposes[sensor]" />
         </div>
       </div>
       <DeviceFooter :device="device"></DeviceFooter>

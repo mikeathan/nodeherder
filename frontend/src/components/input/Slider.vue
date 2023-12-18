@@ -23,20 +23,23 @@ const props = defineProps({
     }
 });
 
+const value = ref(0)
+const max = ref(0)
+const min = ref(254)
 
-
-watchEffect(() => value.value = props.value);
 watchEffect(() => min.value = props.min);
 watchEffect(() => max.value = props.max);
 
+watch(
+    () => props.value,
+    () => {
+        value.value = props.value
+    }, { immediate: true }
+)
 function valueChanged(event) {
     var v = parseInt(event.target.value)
     emit('update:value', v);
 }
-
-const value = ref()
-const max = ref(0)
-const min = ref()
 
 </script>
 

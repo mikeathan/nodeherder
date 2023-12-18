@@ -48,7 +48,7 @@ const sensorUnits = {
   illuminance_lux: "lux",
 };
 
-function getUnit(sensor) {
+export function getSensorUnit(sensor) {
   if (sensorUnits[sensor] == undefined) {
     return "";
   }
@@ -64,11 +64,8 @@ export function getSensorValue(sensor, value, unit) {
     return value;
   }
 
-  if (unit == undefined) {
-    unit = getUnit(sensor);
-  }
   // todo : dont format integer values
-  return `${value.toFixed(1)} ${unit}`;
+  return parseFloat(value.toFixed(1))
 }
 
 export function getSensorIcon(sensor, value) {
