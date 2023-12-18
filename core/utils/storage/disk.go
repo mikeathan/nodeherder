@@ -138,7 +138,7 @@ func (d *JsonDiskStorage[T]) LoadFromCache(name string) (*T, error) {
 	if item != nil {
 		return item, nil
 	}
-	utils.LogDebugf("item %s not in cache", name)
+	//utils.LogDebugf("item %s not in cache", name)
 	return nil, fmt.Errorf("item %s not in cache", name)
 }
 
