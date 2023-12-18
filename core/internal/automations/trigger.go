@@ -152,10 +152,20 @@ func (a *MqttAction) SetRegistrar(registrar services.DeviceRegistrar) {
 }
 
 func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
-	// TODO: need mutex to lock the event
+
+	a.mut.Lock()
+	defer a.mut.Unlock()
+
+	if a.isPending {
+		return
+	}
 
 	// no delay execution
 	if a.Delay == 0 {
+		defer func() {
+			a.isPending = false
+		}()
+
 		a.isPending = true
 		payload, err := a.buildPayload(name, ctx)
 		if err != nil {
@@ -167,16 +177,8 @@ func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
 		// on success callback
 		// update sensor current value
 		ctx.SetCurrent(name, ctx.Payload[name].Data)
-		a.isPending = false
 		return
 	}
-
-	if a.isPending {
-		return
-	}
-
-	a.mut.Lock()
-	defer a.mut.Unlock()
 
 	// with delay execution
 	a.exit = make(chan bool, 1)
