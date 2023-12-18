@@ -44,7 +44,9 @@ function hasNumericFeatures() {
     </div>
     <div v-if="value != undefined" class="flex-shrink-1">
         {{ getSensorValue(name, value, unit) }}
-        <div v-if="hasNumericFeatures()">{{ props.expose }}</div>
+        <div v-if="hasNumericFeatures()">
+            <Slider value="10" :min="0" :max="10"></Slider>
+        </div>
     </div>
     <div v-else>NA</div>
 </template>
