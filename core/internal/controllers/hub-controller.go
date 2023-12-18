@@ -50,9 +50,25 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		return h.repo.AllDevices()
 	})
 
-	//todo:
 	h.eventHub.OnDeviceSetValue(func(p interface{}) error {
-		fmt.Println("OnDeviceSetValue:", p)
+		bytes, _ := json.Marshal(p)
+		payload := make(map[string]interface{})
+		err := json.Unmarshal(bytes, &payload)
+
+		if err != nil {
+			return errors.New("set device value failed. Invalid payload type")
+		}
+
+		needs to be serialized to string - fix whle serialzie here 
+		id := payload["id"].(string)
+		data := payload["data"]
+		device, err := h.registrar.LookupById(id)
+		if err != nil {
+			return fmt.Errorf("device %s not found", id)
+		}
+
+		h.mqtt.Publish(device.FriendlyName, data)
+
 		return nil
 	})
 
