@@ -77,6 +77,7 @@ const actions = {
           });
           break;
         case "ping":
+          console.log("[DEBUG] > pong",)
           dispatch("emit", { event: "pong" });
           break;
         default:
