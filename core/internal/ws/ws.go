@@ -81,12 +81,10 @@ func (c *WsClient) readPump() {
 
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil }) //  need to pong here to keep connection open
+	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
-
-			// to fix:ws error: read tcp 127.0.0.1:4100->127.0.0.1:40736: use of closed network connection
 			utils.LogErrorf("ws error: %s", err.Error())
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				utils.LogErrorf("ws IsUnexpectedCloseError : %v", err)
@@ -174,6 +172,7 @@ func (c *WsClient) writePump() {
 		case message, ok := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
+				utils.LogDebug("ws writedeadline")
 				// The hub closed the channel.
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
