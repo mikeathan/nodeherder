@@ -3,7 +3,6 @@ package ws
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"node-herder/utils"
 	"time"
 
@@ -82,16 +81,19 @@ func (c *WsClient) readPump() {
 
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil }) //  need to pong here to keep connection open
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
+
+			// to fix:ws error: read tcp 127.0.0.1:4100->127.0.0.1:40736: use of closed network connection
+			utils.LogErrorf("ws error: %s", err.Error())
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				utils.LogErrorf("error: %v", err)
+				utils.LogErrorf("ws IsUnexpectedCloseError : %v", err)
 			}
 			break
 		}
-		fmt.Println("[DEBUG] received ws message:", string(message))
+		utils.LogDebugf("ws received: %s", string(message))
 		c.handleMessage(message)
 	}
 }
@@ -188,6 +190,7 @@ func (c *WsClient) writePump() {
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				utils.LogErrorf("Ping error %s", err.Error())
 				return
 			}
 		}
