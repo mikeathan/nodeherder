@@ -27,6 +27,35 @@ function updateValue(event) {
     store.dispatch("devices/setValue", msg);
 }
 
+function getBinaryValue() {
+
+    if (props.expose.data == props.expose.properties["on"]) {
+        return true;
+    }
+    if (props.expose.data == props.expose.properties["off"]) {
+        return false;
+    }
+
+    return false
+}
+
+
+function updateBinaryValue(event) {
+    var updatedValue = event;
+    if (event) {
+        updatedValue = props.expose.properties["on"]
+    } else {
+        updatedValue = props.expose.properties["off"]
+    }
+    var msg = {
+        id: props.id,
+        name: props.expose.name,
+        value: updatedValue
+    }
+
+    store.dispatch("devices/setValue", msg);
+}
+
 function hasNumericFeatures() {
     return props.expose.properties != null && props.expose.type == "numeric"
 }
@@ -59,8 +88,8 @@ function getUnit() {
                 @update:value="updateValue">
             </Slider>
         </div>
-        <div v-else="hasBinaryFeatures()">
-            <Toggle :value="getValue()" @update:value="updateValue">
+        <div v-else-if="hasBinaryFeatures()">
+            <Toggle :enabled="getBinaryValue()" @update:value="updateBinaryValue">
             </Toggle>
         </div>
         <div v-else>

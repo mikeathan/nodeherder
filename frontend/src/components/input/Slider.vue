@@ -45,6 +45,7 @@ function valueChanged(event) {
 
 <template>
     <div>
+
         <label v-if="props.placeholder != null" for="rangeSelector" class="form-label">{{ props.placeholder }}</label>
         <input type="range" class="form-range" id="rangeSelector" @change="valueChanged" v-model="value" :max="max"
             :min="min">
