@@ -15,7 +15,7 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, ctx c
 	router := api.NewRouter()
 	router.GET("/ws", api.NewWsHandler(ws))
 
-	// TODO: needs refactoring
+	// TODO: needs refactoring - need to use regex in the path and pass a http.serveFile
 	rootRedirectHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		name := "../frontend/dist/index.html"
 		http.ServeFile(w, r, name)
