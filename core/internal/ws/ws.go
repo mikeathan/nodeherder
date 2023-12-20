@@ -75,17 +75,22 @@ func newWsClient(hub *wsServer, conn *websocket.Conn) *WsClient {
 
 func (c *WsClient) readPump() {
 	defer func() {
+		utils.LogError("readPump closed")
 		c.hub.unregister <- c
 		c.conn.Close()
 	}()
 
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	c.conn.SetPongHandler(func(string) error {
+		c.conn.SetReadDeadline(time.Now().Add(pongWait))
+		utils.LogDebugf("ws SetPongHandler")
+		return nil
+	})
 	for {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
-			utils.LogErrorf("ws error: %s", err.Error())
+			utils.LogErrorf("ws ReadMessage error: %s", err.Error())
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				utils.LogErrorf("ws IsUnexpectedCloseError : %v", err)
 			}
@@ -100,6 +105,7 @@ func (c *WsClient) handleMessage(message []byte) {
 	var eventMsg = &EventMessage{}
 
 	if err := json.Unmarshal(message, &eventMsg); err != nil {
+		utils.LogWarnf("handleMessage unmarshal error: %s", err.Error())
 		return
 	}
 
@@ -171,8 +177,9 @@ func (c *WsClient) writePump() {
 		select {
 		case message, ok := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+
 			if !ok {
-				utils.LogDebug("ws writedeadline")
+				utils.LogErrorf("ws writePump message %s failed", string(message))
 				// The hub closed the channel.
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
@@ -180,10 +187,12 @@ func (c *WsClient) writePump() {
 
 			w, err := c.conn.NextWriter(websocket.TextMessage)
 			if err != nil {
+				utils.LogErrorf("ws NextWriter error %s ", err.Error())
 				return
 			}
 			w.Write(message)
 			if err := w.Close(); err != nil {
+				utils.LogErrorf("ws close() error %s ", err.Error())
 				return
 			}
 		case <-ticker.C:
@@ -200,6 +209,8 @@ func (c *WsClient) Broadcast(eventName string, data interface{}) error {
 	var wsPayload = EventMessage{Type: eventName, Payload: data}
 	bytes, err := wsPayload.MarshalJSON()
 	if err != nil {
+		utils.LogErrorf("WsClient.Broadcast failed to marshal server payload %s", err.Error())
+
 		return errors.New("failed to marshal client payload")
 	}
 	//fmt.Print(string(bytes))
@@ -290,7 +301,7 @@ func (h *wsServer) run() {
 				select {
 				case client.send <- message:
 				default:
-					utils.LogInfo("broadcast failed, client closed")
+					utils.LogErrorf("broadcast failed, client closed. last message %s", string(message))
 					close(client.send)
 					delete(h.clients, client)
 				}
@@ -311,6 +322,8 @@ func (h *wsServer) Broadcast(eventName string, data interface{}) error {
 	var wsData = EventMessage{Type: eventName, Payload: data}
 	bytes, err := json.Marshal(wsData)
 	if err != nil {
+		utils.LogErrorf("wsServer.Broadcast failed to marshal server payload %s", err.Error())
+
 		return errors.New("failed to marshal server payload")
 	}
 	h.broadcast <- bytes
