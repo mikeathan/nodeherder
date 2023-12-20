@@ -36,13 +36,6 @@ TODO:
 - on startup get mqtt device state from z2m and build the connected devices
   register to mqtt state topic
 
-hive bulb
-"color_temp" flaot
-"color_mode" string
-
-"brightness" flaot
-"state" string
-
 gas sensor
 42["node_data_updated","{\"3\": {\"label\": \"gas_monitor\", \"node_id\": \"3\", \"temperature\": \"22.2 *C\", \"humidity\": \"33 %RH\", \"air_quality_score\": \"95 %\", \"PM1.0\": \"1 ug/m3 (ultrafine particles)\", \"PM2.5\": \"1 ug/m3 (combustion particles, organic compounds, metal)\", \"PM10.0\": \"2 ug/m3 (dust, pollen, mould spores)\", \"timestamp\": 1691517687.940329}}"]
 
@@ -87,7 +80,9 @@ post payload
 
 TODO:
 
-fix golang server routing on refresh
+fix golang server routing on refresh !!!
+
+http polling sdevices support
 add more ws operation responses - eg success or error
 test autiomation loading. configureAction for sanitizing numeric type data
 do we need to unsubsribe from removed/renamed topic ??
@@ -96,10 +91,9 @@ backup automations
 
 ###### frontend
 
+configure typescript eslinter
 add log window in frontend
-device card - add ways to control device if its feature
 fix sizing for mobile
 
-add extensio for support
-TuYa
-PA-44Z
+add plugn for support
+TuYa-PA-44Z
