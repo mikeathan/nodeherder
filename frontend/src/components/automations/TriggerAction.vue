@@ -166,6 +166,20 @@ function getItems() {
 }
 </style>
 <template>
+    <div class="col-1">
+        <div v-if="props.property == null">
+            <button type="button" class="btn btn-default btn-number" @click="add($event)" :disabled="data == ''">
+                <span class="fa fa-plus"></span>
+            </button>
+        </div>
+        <div v-else-if="props.allowRemove">
+            <button type="button" class="btn btn-default btn-number" @click="remove($event)">
+                <span class="fa fa-minus"></span>
+                <!-- <span class="fa fa-trash"></span> -->
+
+            </button>
+        </div>
+    </div>
     <div class="col">
         <select id="featurePropertySelector" style="text-align:center;" class="form-control inputName" v-model="property"
             @change="propertySelectionChanged" :disabled="props.property != null">
@@ -186,20 +200,7 @@ function getItems() {
         </DataInput>
     </div>
 
-    <div class="col">
-        <div class="btn-group">
-            <div v-if="props.property == null">
-                <button type="button" class="btn btn-default btn-number" @click="add($event)" :disabled="data == ''">
-                    <span class="fa fa-plus"></span>
-                </button>
-            </div>
-            <div v-else-if="props.allowRemove">
-                <button type="button" class="btn btn-default btn-number" @click="remove($event)">
-                    <span class="fa fa-minus"></span>
-                </button>
-            </div>
-        </div>
-    </div>
+
 
     <div v-if="feature.type == 'numeric'">
         <label class="pt-3"> Steps</label>
