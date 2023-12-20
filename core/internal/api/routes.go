@@ -167,11 +167,12 @@ func (h *FileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.handlerFunc(w, r)
 }
 
-func NewFileHandler(path string) *FileHandler {
-
+func NewFileHandler(path string, redirectPath string) *FileHandler {
 	fh := &FileHandler{}
-	fh.handlerFunc = func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, path)
-	}
+
+	fh.handlerFunc = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, redirectPath)
+	})
+
 	return fh
 }
