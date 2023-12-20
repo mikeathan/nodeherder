@@ -260,17 +260,17 @@ app.ws("/ws", async function (ws, req) {
 
   ws.on("close", function (code, message) {
     console.log("Disconnection: " + code + ", " + message);
-    clearInterval(pingTimer);
+    // clearInterval(pingTimer);
   });
 
-  try {
-    pingTimer = setInterval(() => {
-      var msg = JSON.stringify({ type: "ping", payload: "" });
-      ws.send(msg);
-    }, 30000);
-  } catch (err) {
-    console.log("ping error ", err);
-  }
+  // try {
+  //   pingTimer = setInterval(() => {
+  //     var msg = JSON.stringify({ type: "ping", payload: "" });
+  //     ws.send(msg);
+  //   }, 30000);
+  // } catch (err) {
+  //   console.log("ping error ", err);
+  // }
 });
 
 function getAutomations() {

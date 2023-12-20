@@ -76,10 +76,6 @@ const actions = {
             duration: 3000,
           });
           break;
-        case "ping":
-          console.log("[DEBUG] > pong",)
-          dispatch("emit", { event: "pong" });
-          break;
         default:
           console.error("ws unhandled type: ", event.data);
       }
