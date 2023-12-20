@@ -81,6 +81,9 @@ post payload
 TODO:
 
 fix golang server routing on refresh !!!
+add rename functionality
+add remove /force remove/block functionality
+add configure exposes device functionality
 
 http polling sdevices support
 add more ws operation responses - eg success or error
