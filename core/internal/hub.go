@@ -2,7 +2,6 @@ package hub
 
 import (
 	"context"
-	"net/http"
 	"node-herder/internal/api"
 	"node-herder/internal/controllers"
 	"node-herder/internal/mqtt"
@@ -13,12 +12,9 @@ import (
 func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, ctx context.Context) *api.ApiServer {
 
 	router := api.NewRouter()
-	router.GET("/ws", api.NewWsHandler(ws))
 
-	//http.Handle("/", http.StripPrefix("/frontend/dist", http.FileServer(http.Dir("../frontend/dist"))))
-	// 	fs := http.FileServer(http.Dir("./public"))
-	// http.Handle("/", fs)
-	router.GET("/", http.FileServer(http.Dir("../frontend/dist")))
+	router.GET("/", api.NewFileHandler("../frontend/dist/index.html"))
+	router.GET("/ws", api.NewWsHandler(ws))
 	router.POST("/collect", api.NewDataCollectorHandler(hub))
 
 	apiServer := api.NewHttpServer(

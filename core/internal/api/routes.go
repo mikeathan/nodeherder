@@ -158,3 +158,20 @@ func (h *DataCollectorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Success"))
 }
+
+type FileHandler struct {
+	handlerFunc func(http.ResponseWriter, *http.Request)
+}
+
+func (h *FileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.handlerFunc(w, r)
+}
+
+func NewFileHandler(path string) *FileHandler {
+
+	fh := &FileHandler{}
+	fh.handlerFunc = func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, path)
+	}
+	return fh
+}

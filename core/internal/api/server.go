@@ -39,16 +39,6 @@ func NewHttpServer(port int, opts ...func(s *ApiServer)) *ApiServer {
 	return api
 }
 
-// TODO:
-// r.HandleFunc("/", index)
-
-func index(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "build/index.html")
-}
-
-func Redirect(routePath string, filePath string) {
-
-}
 func (s *ApiServer) Listen() {
 
 	done := make(chan bool)
