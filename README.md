@@ -80,10 +80,12 @@ post payload
 
 TODO:
 
-fix golang server routing on refresh !!!
+
+add refresh functionality to ping mqtt device for when we just started server 
 add rename functionality
 add remove /force remove/block functionality
 add configure exposes device functionality
+
 
 http polling sdevices support
 add more ws operation responses - eg success or error
