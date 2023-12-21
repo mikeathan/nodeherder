@@ -89,18 +89,44 @@ function focusChanged(event) {
 </script>
 
 <style scoped>
-.input-outline {
+.plain-input {
     border: 0;
     outline: 0;
-    background: transparent;
-    border-bottom: 1px solid #e5e5e5;
     border-radius: 0;
 }
 
-.select-outline {
-    border: 0;
-    outline: 0;
-    border-bottom: 1px solid #e5e5e5;
+.plain-input:focus {
+    box-shadow: none;
+}
+
+input.form-control {
+    border: none;
+    color: none;
+    background-color: transparent;
+    background-clip: padding-box;
+}
+
+.plain-select {
+    border: 1;
+    outline: 1;
+    appearance: none;
+    border: none;
+    background: none;
+    background-color: transparent;
+    font-family: inherit;
+    outline: none;
+}
+
+.plain-select:focus,
+:active,
+:hover {
+    outline: none;
+    box-shadow: none;
+}
+
+select.form-control {
+    background-color: transparent;
+    background-clip: padding-box;
 }
 
 .custom-control-input {
@@ -110,9 +136,8 @@ function focusChanged(event) {
 <template>
     <div v-if="isSelection()">
 
-        <select id="dataSelect" :style="'text-align:' + props.alignment + ';'"
-            class="form-control form-select select-outline" name="valueinput" v-model="data" @change="dataSelectionChanged"
-            :disabled="props.disabled">
+        <select id="dataSelect" :style="'text-align:' + props.alignment + ';'" class="form-control plain-select"
+            name="valueinput" v-model="data" @change="dataSelectionChanged" :disabled="props.disabled">
             <option v-if="props.placeholder != ''" value="">{{ props.placeholder }}</option>
             <option v-for="(value, key) in items" :value="value" :key="key">
                 {{ value }}
@@ -121,8 +146,8 @@ function focusChanged(event) {
     </div>
     <div v-else>
 
-        <input type="text" class="form-control input-outline" :style="'text-align:' + props.alignment + ';'"
-            name="valueinput" :placeholder="placeholder" v-model="data" @input="dataInputChange" :disabled="props.disabled"
+        <input type="text" class="form-control plain-input" :style="'text-align:' + props.alignment + ';'" name="valueinput"
+            :placeholder="placeholder" v-model="data" @input="dataInputChange" :disabled="props.disabled"
             @focus="focusChanged" @blur="blurChanged">
     </div>
 </template>
