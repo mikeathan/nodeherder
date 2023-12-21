@@ -69,8 +69,11 @@ type WsClient struct {
 	send chan []byte
 }
 
+// NOTE:
+// websocket closes - then buffered channel didnt work
+// read for fix: https://stackoverflow.com/questions/66104210/gorilla-websocket-example-hangs-when-trying-to-send-data-to-a-channel-whilst-han
 func newWsClient(hub *wsServer, conn *websocket.Conn) *WsClient {
-	return &WsClient{hub: hub, conn: conn, send: make(chan []byte)}
+	return &WsClient{hub: hub, conn: conn, send: make(chan []byte, 1024)}
 }
 
 func (c *WsClient) readPump() {
