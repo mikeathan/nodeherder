@@ -153,6 +153,29 @@ function getItems() {
 </script>
 
 <style scoped>
+.plain-select {
+    border: 1;
+    outline: 1;
+    appearance: none;
+    border: none;
+    background: none;
+    background-color: transparent;
+    font-family: inherit;
+    outline: none;
+}
+
+.plain-select:focus,
+:active,
+:hover {
+    outline: none;
+    box-shadow: none;
+}
+
+select.form-control {
+    background-color: transparent;
+    background-clip: padding-box;
+}
+
 .inputName {
     border: 0;
     outline: 0;
@@ -180,25 +203,43 @@ function getItems() {
             </button>
         </div>
     </div>
-    <div class="col">
-        <select id="featurePropertySelector" style="text-align:center;" class="form-control inputName" v-model="property"
-            @change="propertySelectionChanged" :disabled="props.property != null">
-            <option value="">Select property</option>
-            <option v-for="feature in features" :value="feature.name" :key="feature.name">
-                {{ feature.name }}
-            </option>
-        </select>
+
+    <div class="row">
+        <div class="col-4">
+            <label>Property:</label>
+        </div>
+        <div class="col-6">
+            <select id="featurePropertySelector" style="text-align:left;" class="form-control plain-select"
+                v-model="property" @change="propertySelectionChanged" :disabled="props.property != null">
+                <option value="">Select</option>
+                <option v-for="feature in features" :value="feature.name" :key="feature.name">
+                    {{ feature.name }}
+                </option>
+            </select>
+        </div>
     </div>
 
-    <div class="col">
-        <DataInput :type="feature.type" :placeholder="getPlaceholder(feature.type)" :items="getItems()" :data="data"
-            :disabled="property == ''" @update:data="dataUpdated">
-        </DataInput>
+    <div class="row">
+        <div class="col-4">
+            <label>Value:</label>
+        </div>
+        <div class="col-6">
+            <DataInput :type="feature.type" :placeholder="getPlaceholder(feature.type)" :items="getItems()" :data="data"
+                :disabled="property == ''" @update:data="dataUpdated" alignment="left">
+            </DataInput>
+        </div>
     </div>
-    <div class="col">
-        <DataInput placeholder="Delay" type="numeric" :data="delay" :disabled="property == ''" @update:data="delayUpdated">
-        </DataInput>
+    <div class="row">
+        <div class="col-4">
+            <label>Delay:</label>
+        </div>
+        <div class="col-6">
+            <DataInput placeholder="Delay" type="numeric" :data="delay" :disabled="property == ''"
+                @update:data="delayUpdated" alignment="left">
+            </DataInput>
+        </div>
     </div>
+
 
 
 

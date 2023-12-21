@@ -15,7 +15,7 @@ const props = defineProps({
     disabled: Boolean,
     alignment: {
         type: String,
-        default: 'center'
+        default: 'left'
     }
 });
 
