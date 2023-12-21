@@ -2,7 +2,6 @@ package hub
 
 import (
 	"context"
-	"net/http"
 	"node-herder/internal/api"
 	"node-herder/internal/controllers"
 	"node-herder/internal/mqtt"
@@ -13,21 +12,20 @@ import (
 func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, ctx context.Context) *api.ApiServer {
 
 	router := api.NewRouter()
+
+	//websocket routing
 	router.GET("/ws", api.NewWsHandler(ws))
 
-	// TODO: needs refactoring - need to use regex in the path and pass a http.serveFile
-	rootRedirectHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		name := "../frontend/dist/index.html"
-		http.ServeFile(w, r, name)
-	})
-	router.GET("/viewer", http.StripPrefix("/viewer", rootRedirectHandler))
-	router.GET("/creator", http.StripPrefix("/creator", rootRedirectHandler))
-	router.GET("/devicepage", http.StripPrefix("/devicepage", rootRedirectHandler))
-	router.GET("/editor", http.StripPrefix("/editor", rootRedirectHandler))
-	//router.GET("/", api.NewFileHandler("../frontend/dist/index.html"))
-
-	router.GET("/", http.FileServer(http.Dir("../frontend/dist")))
+	// api routing
 	router.POST("/collect", api.NewDataCollectorHandler(hub))
+
+	// file routing
+	fs := api.NewFileServer("../frontend/dist")
+	router.GET("/viewer", fs.Resolve(false))
+	router.GET("/creator", fs.Resolve(false))
+	router.GET("/devicepage", fs.Resolve(false))
+	router.GET("/editor", fs.Resolve(false))
+	router.GET("/", fs.Resolve(true))
 
 	apiServer := api.NewHttpServer(
 		port,
