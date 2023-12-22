@@ -144,7 +144,7 @@ function exposesList() {
 }
 </style>
 <template>
-    <div v-if="device != null"> <!-- to fix condition-->
+    <div v-if="device != null">
 
         <div class="pt-3 pb-4">
             <label class="form-check-label" for="name">Name</label>
@@ -156,12 +156,10 @@ function exposesList() {
         <div class="pb-3">
             <div class=" form-check form-switch ms-2">
                 <label class="form-check-label">Enable</label>
-
                 <input class="form-check-input custom-control-input" type="checkbox" role="switch"
                     id="flexSwitchCheckDefault" v-model="enabled">
             </div>
         </div>
-
         <div class="col-50 mt-3 mb-4">
             <div class="btn-group">
                 <button type="button" class="btn btn-light" @click="showExposesSelection">

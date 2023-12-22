@@ -38,6 +38,7 @@ watch(
 
     }, { immediate: true }
 )
+
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
 });
@@ -110,10 +111,10 @@ function exposesList() {
         <!-- check url design above for styling of creator text input -->
         <!-- if automation for device exists message user else we overwrite it -->
 
-
         <div class="row">
             <h5>Trigger</h5>
-            <Selector placeholder="Select trigger" :items="exposesList()" :value="selectedExpose" alignment="left">
+            <Selector placeholder="Select trigger" :items="exposesList()" :value="selectedExpose" alignment="left"
+                :disabled="props.trigger.name != ''">
             </Selector>
         </div>
         <br>

@@ -42,23 +42,9 @@ function isSaveEnabled() {
 
 
 
-function addTrigger() {
-    if (selectedExpose.value == "") {
-        return
-    }
-
-    // TODO:
-    // show trigger componet , tigger componet contains save button and delete
-    // so we dont need separate event for add/remvoe action/condition
-
-    // move the expose selection drop down to trigger component
-    // if we have existing one then just display but disabled
-    // if is new one then show dropdown
-
-    var trigger = new ExposeTrigger(selectedExpose.value)
-    automation.value.triggers.push(trigger)
+function addNewTrigger() {
+    var trigger = new ExposeTrigger('')
     selectedTrigger.value = trigger
-    showExposeSelection.value = false // hide selection   
 }
 
 function addAction(event, trigger) {
@@ -77,12 +63,10 @@ function removeCondition(event, trigger) {
 }
 
 function removeAction(event, trigger) {
-
-    trigger.action = null
+    trigger.action = null;
 }
 
 function save() {
-
     store.dispatch('automations/save', automation.value);
     router.push("/viewer")
 }
@@ -170,16 +154,14 @@ function onDeleteTriggerClick(event, triggerId) {
                 </div>
 
                 <div class="card-body ">
-
-                    <table class="table responsive table-hover" v-if="selectedTrigger == null">
+                    <table class="table responsive table-hover " v-if="selectedTrigger == null">
                         <thead>
                             <tr>
                                 <th scope="col">#</th>
-
                                 <th scope="col">Action</th>
                                 <th scope="col">Conditions</th>
                                 <th scope="col">
-                                    <button type="button" class="btn btn-default btn-number" @click="addTrigger()">
+                                    <button type="button" class="btn btn-default btn-number" @click="addNewTrigger()">
                                         <span class="fa fa-plus"></span>
                                     </button>
                                 </th>
@@ -187,32 +169,28 @@ function onDeleteTriggerClick(event, triggerId) {
                         </thead>
                         <tbody v-for="(trigger, index) in automation.triggers" :item="trigger">
                             <tr>
-                                <td> {{ index + 1 }}
-                                </td>
-
+                                <th scope="row">
+                                    {{ index + 1 }}
+                                </th>
                                 <td @click="rowClicked(trigger)">
                                     {{ getActionDescription(trigger) }}
                                 </td>
-
                                 <td>
                                     {{ getConditionsDescription(trigger) }}
                                 </td>
-
                                 <td>
-                                    <div class="col text-end ">
-                                        <span class="fa fa-trash-alt fa-sm" @click="onDeleteTriggerClick($event, index)"
-                                            data-bs-toggle="collapse" data-bs-target>
-                                        </span>
-                                    </div>
+                                    <span class="fa fa-trash-alt fa-sm" @click="onDeleteTriggerClick($event, index)"
+                                        data-bs-toggle="collapse" data-bs-target>
+                                    </span>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
-                    <div class="row" v-else>
 
+                    <div class="row" v-else>
                         <button type="button" class="btn-close" aria-label="Close"
                             @click="() => selectedTrigger = null"></button>
-                        <div class="col-xl-10">
+                        <div class="col">
                             <Trigger :id="props.id" :trigger="selectedTrigger"
                                 @addAction="addAction($event, selectedTrigger)"
                                 @removeAction="removeAction($event, selectedTrigger)"
