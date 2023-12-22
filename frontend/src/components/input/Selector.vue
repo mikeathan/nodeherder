@@ -50,7 +50,7 @@ function dataSelectionChanged(event) {
 }
 </style>
 <template>
-    <select id="dataSelect" :style="'text-align:' + props.alignment + ';'" class="form-control form-select select-outline"
+    <select id="dataSelect" :style="'text-align:' + props.alignment + ';'" class="form-control form-select"
         name="valueinput" v-model="selected" @change="dataSelectionChanged" :disabled="props.disabled">
         <option v-if="props.placeholder != ''" value="">{{ props.placeholder }}</option>
         <option v-for="(value, key) in props.items" :value="value" :key="value">

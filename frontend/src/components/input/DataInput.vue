@@ -15,7 +15,7 @@ const props = defineProps({
     disabled: Boolean,
     alignment: {
         type: String,
-        default: 'left'
+        default: 'center'
     }
 });
 
@@ -100,7 +100,8 @@ function focusChanged(event) {
 }
 
 input.form-control {
-    border: none;
+    border: 1;
+    outline: 1;
     color: none;
     background-color: transparent;
     background-clip: padding-box;
@@ -124,6 +125,23 @@ input.form-control {
     box-shadow: none;
 }
 
+input.form-control,
+select.form-control:focus,
+:active,
+:hover {
+    outline: none;
+    box-shadow: none;
+}
+
+
+select.form-control {
+    background-color: transparent;
+    background-clip: padding-box;
+    border: 1;
+    outline: 1;
+    appearance: none;
+}
+
 select.form-control {
     background-color: transparent;
     background-clip: padding-box;
@@ -136,7 +154,7 @@ select.form-control {
 <template>
     <div v-if="isSelection()">
 
-        <select id="dataSelect" :style="'text-align:' + props.alignment + ';'" class="form-control plain-select"
+        <select id="dataSelect" :style="'text-align:' + props.alignment + ';'" class="form-control form-select"
             name="valueinput" v-model="data" @change="dataSelectionChanged" :disabled="props.disabled">
             <option v-if="props.placeholder != ''" value="">{{ props.placeholder }}</option>
             <option v-for="(value, key) in items" :value="value" :key="key">
@@ -146,7 +164,7 @@ select.form-control {
     </div>
     <div v-else>
 
-        <input type="text" class="form-control plain-input" :style="'text-align:' + props.alignment + ';'" name="valueinput"
+        <input type="text" class="form-control" :style="'text-align:' + props.alignment + ';'" name="valueinput"
             :placeholder="placeholder" v-model="data" @input="dataInputChange" :disabled="props.disabled"
             @focus="focusChanged" @blur="blurChanged">
     </div>

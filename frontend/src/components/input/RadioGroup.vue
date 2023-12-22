@@ -28,13 +28,20 @@ function getID() {
 </script>
 
 <template>
-    <div class="col-50">
+    <div>
         <form>
+
+
             <div v-for="item in props.items" class="btn-group">
-                <input type="radio" class="btn-check" name="options-outlined" :id="`radioSelection${item.name}${id}`"
-                    :value="item.value" :checked="isChecked(item.value)" @change="selectionChanged">
-                <label class="btn btn-outline-secondary" :for="`radioSelection${item.name}${id}`"> {{ item.name
-                }}</label>
+
+
+                <div>
+                    <input type="radio" class="btn-check" name="options-outlined" :id="`radioSelection${item.name}${id}`"
+                        :value="item.value" :checked="isChecked(item.value)" @change="selectionChanged">
+
+                    <label class="btn btn-outline-secondary" :for="`radioSelection${item.name}${id}`"> {{ item.name
+                    }}</label>
+                </div>
             </div>
         </form>
     </div>

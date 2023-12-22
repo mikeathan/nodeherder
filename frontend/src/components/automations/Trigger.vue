@@ -119,14 +119,14 @@ function removeCondition(event) {
             </div>
 
             <!-- Actions -->
-            <h5 class="pt-3">Action</h5>
-            <div class="pb-3">
-
-                <Selector placeholder="Select device" :items="deviceList()" :value="selectedAction" key="id"
-                    alignment="left" @update:data="e => selectedAction = e" :disabled="selectedExpose == ''"></Selector>
-
+            <div class="row pb-3">
+                <h5 class="pt-3">Action</h5>
+                <div class="col">
+                    <Selector placeholder=" Select device" :items="deviceList()" :value="selectedAction" key="id"
+                        alignment="left" @update:data="e => selectedAction = e" :disabled="selectedExpose == ''">
+                    </Selector>
+                </div>
             </div>
-
             <!-- existing action -->
             <div v-if="trigger.action != null" class="row">
                 <TriggerAction :id="trigger.action.id" :property="trigger.action.property" :data="trigger.action.data"

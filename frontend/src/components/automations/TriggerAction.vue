@@ -164,17 +164,20 @@ function getItems() {
     outline: none;
 }
 
-.plain-select:focus,
+select.form-control:focus,
 :active,
 :hover {
     outline: none;
     box-shadow: none;
 }
 
-select.form-control {
+/* select.form-control {
     background-color: transparent;
     background-clip: padding-box;
-}
+    border: 1;
+    outline: 1;
+    appearance: none;
+} */
 
 .inputName {
     border: 0;
@@ -189,7 +192,39 @@ select.form-control {
 }
 </style>
 <template>
-    <div class="col-1">
+    <div class="col-xl-3 col-md-2">
+        <!-- 
+        <Selector placeholder="Property" :items="features" :value="selectedAction" key="id"
+                        alignment="left" @update:data="e => selectedAction = e" :disabled="props.property != null">
+                    </Selector> -->
+
+        <select id="featurePropertySelector" style="text-align:center;" class="form-control form-select" v-model="property"
+            @change="propertySelectionChanged" :disabled="props.property != null">
+            <option value="">Select</option>
+            <option v-for="feature in features" :value="feature.name" :key="feature.name">
+                {{ feature.name }}
+            </option>
+        </select>
+    </div>
+    <div class="col-xl-2 col-md-2">
+        <DataInput :type="feature.type" :placeholder="getPlaceholder(feature.type)" :items="getItems()" :data="data"
+            :disabled="property == ''" @update:data="dataUpdated">
+        </DataInput>
+    </div>
+    <div class="col-xl-2 col-md-2">
+        <DataInput placeholder="Delay" type="numeric" :data="delay" :disabled="property == ''" @update:data="delayUpdated">
+        </DataInput>
+    </div>
+
+    <div class="row" v-if="feature.type == 'numeric'">
+        <label>Steps</label>
+        <div class="col-xl-6 col-md-6">
+            <RadioGroup :items="Steps" :value="step" @update:data="stepUpdated"></RadioGroup>
+        </div>
+    </div>
+
+    <!-- buttons -->
+    <div class="row pt-2">
         <div v-if="props.property == null">
             <button type="button" class="btn btn-default btn-number" @click="add($event)" :disabled="data == ''">
                 <span class="fa fa-plus"></span>
@@ -202,49 +237,5 @@ select.form-control {
 
             </button>
         </div>
-    </div>
-
-    <div class="row">
-        <div class="col-4">
-            <label>Property:</label>
-        </div>
-        <div class="col-6">
-            <select id="featurePropertySelector" style="text-align:left;" class="form-control plain-select"
-                v-model="property" @change="propertySelectionChanged" :disabled="props.property != null">
-                <option value="">Select</option>
-                <option v-for="feature in features" :value="feature.name" :key="feature.name">
-                    {{ feature.name }}
-                </option>
-            </select>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-4">
-            <label>Value:</label>
-        </div>
-        <div class="col-6">
-            <DataInput :type="feature.type" :placeholder="getPlaceholder(feature.type)" :items="getItems()" :data="data"
-                :disabled="property == ''" @update:data="dataUpdated" alignment="left">
-            </DataInput>
-        </div>
-    </div>
-    <div class="row">
-        <div class="col-4">
-            <label>Delay:</label>
-        </div>
-        <div class="col-6">
-            <DataInput placeholder="Delay" type="numeric" :data="delay" :disabled="property == ''"
-                @update:data="delayUpdated" alignment="left">
-            </DataInput>
-        </div>
-    </div>
-
-
-
-
-    <div v-if="feature.type == 'numeric'">
-        <label class="pt-3"> Steps</label>
-        <RadioGroup :items="Steps" :value="step" @update:data="stepUpdated"></RadioGroup>
     </div>
 </template>

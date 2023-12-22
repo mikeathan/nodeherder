@@ -146,30 +146,30 @@ function getItems() {
 </script>
 
 <template>
-    <div v-if="props.index == 0" class="col">
-        <select id="exposeSelector" style="text-align:center;" class="form-control" @change="exposeSelectionChanged"
-            v-model="name" :disabled="props.name == ''">
+    <div v-if="props.index == 0" class="col-xl-3">
+        <select id="exposeSelector" style="text-align:center;" class="form-control form-select"
+            @change="exposeSelectionChanged" v-model="name" :disabled="props.name == ''">
             <option value="">Select trigger</option>
             <option v-for="name in getExposes()" :value="name" :key="name">
                 {{ name }}
             </option>
         </select>
     </div>
-    <div v-else class="col">
-        <DataInput type="string" placeholder="Name" :data="name" :disabled="true">
+    <div v-else class="col-xl-3">
+        <DataInput type="string" placeholder="Name" :data="name" :disabled="true" alignment="center">
         </DataInput>
     </div>
-    <div class="col">
-        <DataInput type="enum" :items="getOperators()" :data="operator" :disabled="name == ''"
+    <div class="col-xl-2">
+        <DataInput type="enum" :items="getOperators()" :data="operator" :disabled="name == ''" alignment="center"
             @update:data="operatorUpdated">
         </DataInput>
     </div>
     <div class="col">
-        <DataInput :type="feature.type" :placeholder="getPlaceholder()" :data="data" :items="getItems()"
+        <DataInput :type="feature.type" :placeholder="getPlaceholder()" :data="data" :items="getItems()" alignment="center"
             :disabled="name == ''" @update:data="dataUpdated">
         </DataInput>
     </div>
-    <div class="col-3">
+    <div class="col-xl-2">
         <div class="btn-group">
             <div v-if="props.index == 0">
                 <button type="button" class="btn btn-default btn-number" @click="add($event)" :disabled="data.length == 0">
