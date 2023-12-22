@@ -96,9 +96,8 @@ backup automations
 
 ###### frontend
 
+add functionality to enable/disalbe a trigger
 configure typescript eslinter
 add log window in frontend
 fix sizing for mobile
 
-add plugn for support
-TuYa-PA-44Z

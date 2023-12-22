@@ -99,13 +99,6 @@ function focusChanged(event) {
     box-shadow: none;
 }
 
-input.form-control {
-    border: 1;
-    outline: 1;
-    color: none;
-    background-color: transparent;
-    background-clip: padding-box;
-}
 
 .plain-select {
     border: 1;
@@ -125,7 +118,6 @@ input.form-control {
     box-shadow: none;
 }
 
-input.form-control,
 select.form-control:focus,
 :active,
 :hover {
