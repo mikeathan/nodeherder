@@ -1,13 +1,13 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed, watch, ref } from "vue";
+import { computed, watch, ref, watchEffect } from "vue";
 
 import { OperatorKeys } from "../../models/automation"
 import TriggerCondition from "./TriggerCondition"
 import TriggerAction from "./TriggerAction.vue";
 import Selector from "../input/Selector.vue"
 
-
+import { DeviceTrigger } from "../../models/automation"
 const props = defineProps({
     id: String,
     trigger: Object,
@@ -15,23 +15,20 @@ const props = defineProps({
 
 const store = useStore();
 const selectedAction = ref(null)
-const selectedExpose = ref("")
-const trigger = ref(null)
-
+const trigger = ref(new DeviceTrigger())
 
 const emit = defineEmits(['save', 'delete'])
-
 
 watch(
     () => props.trigger,
     () => {
         selectedAction.value = ""
-        selectedExpose.value = props.trigger.name
         // select action optionsto current action if not null
         if (props.trigger.action != null) {
             selectedAction.value = props.trigger.action.id
         }
-        trigger.value = props.trigger
+        trigger.value = JSON.parse(JSON.stringify(props.trigger))
+
         trigger.value.conditions.forEach(function callback(condition, index) {
             condition.idx = index + 1
         });
@@ -48,7 +45,6 @@ const featureDevices = computed(() => {
     // find exposes with properties
     // let all = items.filter(item=> item.age==='18')
     //     return deviceimport DeviceAutomation from "./DeviceAutomation"
-
     // });
     var list = []
     for (const [key, device] of Object.entries(devices)) {
@@ -74,22 +70,18 @@ function deviceList() {
 }
 
 function addAction(event) {
-    //emit('addAction', event)
     trigger.value.action = event
 }
 
 function removeAction(event) {
-    //emit('removeAction', event)
     trigger.value.action = null;
 }
 
 function addCondition(event) {
-    //emit('addCondition', event)
     trigger.value.conditions.push(event)
 }
 
 function removeCondition(event) {
-    //  emit('removeCondition', event)
     var index = trigger.value.conditions.filter(k => k.idx != event);
     if (index != -1) {
         trigger.value.conditions.splice(index, 1);
@@ -101,32 +93,8 @@ function isSaveEnabled() {
 }
 
 function save() {
-    emit('save', trigger.value)
+    //emit('save', trigger)
 }
-
-// function addNewTrigger() {
-//     var trigger = new ExposeTrigger('')
-//     selectedTrigger.value = trigger
-// }
-
-// function addAction(event, trigger) {
-//     trigger.action = event
-// }
-
-// function addCondition(event, trigger) {
-//     trigger.conditions.push(event)
-// }
-
-// function removeCondition(event, trigger) {
-//     var index = trigger.conditions.filter(k => k.idx != event);
-//     if (index != -1) {
-//         trigger.conditions.splice(index, 1);
-//     }
-// }
-
-// function removeAction(event, trigger) {
-//     trigger.action = null;
-// }
 
 function exposesList() {
     // todo:
@@ -151,15 +119,15 @@ function exposesList() {
 
         <div class="row">
             <h5>Trigger</h5>
-            <Selector placeholder="Select trigger" :items="exposesList()" :value="selectedExpose" alignment="left"
-                :disabled="props.trigger.name != ''" @update:data="v => selectedExpose = v">
+            <Selector placeholder="Select trigger" :items="exposesList()" :value="trigger.name" alignment="left"
+                :disabled="props.trigger.name != ''" @update:data="v => trigger.name = v">
             </Selector>
         </div>
         <br>
         <!-- Conditions -->
         <h5>Conditions</h5>
         <div class="row">
-            <TriggerCondition :id="props.id" :index="0" :name="selectedExpose" :operator="OperatorKeys[0]" :data="''"
+            <TriggerCondition :id="props.id" :index="0" :name="trigger.name" :operator="OperatorKeys[0]" :data="''"
                 @add="addCondition">
             </TriggerCondition>
         </div>
@@ -179,7 +147,7 @@ function exposesList() {
             <h5 class="pt-3">Action</h5>
             <div class="col">
                 <Selector placeholder=" Select device" :items="deviceList()" :value="selectedAction" key="id"
-                    alignment="left" @update:data="e => selectedAction = e" :disabled="selectedExpose == ''">
+                    alignment="left" @update:data="e => selectedAction = e" :disabled="trigger.name == ''">
                 </Selector>
             </div>
         </div>
@@ -199,7 +167,7 @@ function exposesList() {
 
         <div class="row">
             <div class="col">
-                <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false">
+                <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false" @click="save">
                     Save
                 </button>
                 <button type="button" class="btn btn-light" :disabled="true">

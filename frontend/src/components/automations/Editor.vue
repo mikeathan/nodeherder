@@ -5,7 +5,6 @@ import Trigger from "./Trigger"
 import { ExposeTrigger, DeviceTrigger } from "../../models/automation"
 
 import DataInput from "../input/DataInput.vue"
-import Selector from "../input/Selector.vue"
 
 import { useRouter } from 'vue-router'
 
@@ -39,9 +38,9 @@ function isSaveEnabled() {
     return values.length == automation.value.triggers.length
 }
 
-
 function addNewTrigger() {
     var trigger = new ExposeTrigger('')
+    automation.value.triggers.push(trigger)
     selectedTrigger.value = trigger
 }
 
@@ -51,8 +50,14 @@ function save() {
 }
 
 function saveTrigger(event) {
-    automation.triggers.push(event)
+    // that wont work for updates
+    // work only for adding new triggers
+
+    console.log("save trigger ", event)
+    //automation.triggers.push(event)
+    selectedTrigger.value = null;
 }
+
 
 function getConditionsDescription(trigger) {
     var conditions = trigger.conditions
