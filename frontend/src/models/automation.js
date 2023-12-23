@@ -8,6 +8,7 @@ export const Steps = [
 export class DeviceTrigger {
   constructor() {
     this.id = "";
+    this.position = -1;
     this.friendlyname = "";
     this.description = "";
     this.enabled = false;

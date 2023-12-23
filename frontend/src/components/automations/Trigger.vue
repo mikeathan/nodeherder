@@ -93,7 +93,8 @@ function isSaveEnabled() {
 }
 
 function save() {
-    //emit('save', trigger)
+    console.log(trigger.position)
+    emit('save', trigger)
 }
 
 function exposesList() {

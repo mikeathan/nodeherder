@@ -15,7 +15,7 @@ const props = defineProps({
 const store = useStore();
 const router = useRouter()
 const automation = ref(new DeviceTrigger())
-const selectedExpose = ref("")
+
 const selectedTrigger = ref(null)
 
 
@@ -26,12 +26,12 @@ watch(
         if (sourceAutomation != undefined) {
             // make a deep copy to make it not reactive
             automation.value = JSON.parse(JSON.stringify(sourceAutomation))
+            automation.value.triggers.forEach(function callback(trigger, index) {
+                trigger.position = index + 1
+            });
         }
     }, { immediate: true }
 )
-const device = computed(() => {
-    return store.getters["devices/find"](props.id);
-});
 
 function isSaveEnabled() {
     var values = automation.value.triggers.filter(k => k.action != null);
@@ -44,16 +44,17 @@ function addNewTrigger() {
     selectedTrigger.value = trigger
 }
 
-function save() {
-    store.dispatch('automations/save', automation.value);
-    router.push("/viewer")
+function save(trigger) {
+    console.log("save recevied ", trigger.position)
+    //  store.dispatch('automations/save', automation.value);
+    // router.push("/viewer")
 }
 
-function saveTrigger(event) {
+function saveTrigger(trigger) {
     // that wont work for updates
     // work only for adding new triggers
 
-    console.log("save trigger ", event)
+    console.log("save trigger ", trigger)
     //automation.triggers.push(event)
     selectedTrigger.value = null;
 }
