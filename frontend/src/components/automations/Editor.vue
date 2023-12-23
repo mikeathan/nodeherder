@@ -34,12 +34,10 @@ const device = computed(() => {
     return store.getters["devices/find"](props.id);
 });
 
-
 function isSaveEnabled() {
     var values = automation.value.triggers.filter(k => k.action != null);
     return values.length == automation.value.triggers.length
 }
-
 
 
 function addNewTrigger() {
@@ -47,28 +45,13 @@ function addNewTrigger() {
     selectedTrigger.value = trigger
 }
 
-function addAction(event, trigger) {
-    trigger.action = event
-}
-
-function addCondition(event, trigger) {
-    trigger.conditions.push(event)
-}
-
-function removeCondition(event, trigger) {
-    var index = trigger.conditions.filter(k => k.idx != event);
-    if (index != -1) {
-        trigger.conditions.splice(index, 1);
-    }
-}
-
-function removeAction(event, trigger) {
-    trigger.action = null;
-}
-
 function save() {
     store.dispatch('automations/save', automation.value);
     router.push("/viewer")
+}
+
+function saveTrigger(event) {
+    automation.triggers.push(event)
 }
 
 function getConditionsDescription(trigger) {
@@ -191,11 +174,7 @@ function onDeleteTriggerClick(event, triggerId) {
                         <button type="button" class="btn-close" aria-label="Close"
                             @click="() => selectedTrigger = null"></button>
                         <div class="col">
-                            <Trigger :id="props.id" :trigger="selectedTrigger"
-                                @addAction="addAction($event, selectedTrigger)"
-                                @removeAction="removeAction($event, selectedTrigger)"
-                                @addCondition="addCondition($event, selectedTrigger)"
-                                @removeCondition="removeCondition($event, selectedTrigger)">
+                            <Trigger :id="props.id" :trigger="selectedTrigger" @save="saveTrigger">
                             </Trigger>
                         </div>
                     </div>

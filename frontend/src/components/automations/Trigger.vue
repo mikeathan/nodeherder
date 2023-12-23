@@ -19,7 +19,7 @@ const selectedExpose = ref("")
 const trigger = ref(null)
 
 
-const emit = defineEmits(['addAction', 'removeAction', 'addCondition', 'removeCondition'])
+const emit = defineEmits(['save', 'delete'])
 
 
 watch(
@@ -74,21 +74,59 @@ function deviceList() {
 }
 
 function addAction(event) {
-    emit('addAction', event)
+    //emit('addAction', event)
+    trigger.value.action = event
 }
 
 function removeAction(event) {
-    emit('removeAction', event)
+    //emit('removeAction', event)
+    trigger.value.action = null;
 }
 
-
 function addCondition(event) {
-    emit('addCondition', event)
+    //emit('addCondition', event)
+    trigger.value.conditions.push(event)
 }
 
 function removeCondition(event) {
-    emit('removeCondition', event)
+    //  emit('removeCondition', event)
+    var index = trigger.value.conditions.filter(k => k.idx != event);
+    if (index != -1) {
+        trigger.value.conditions.splice(index, 1);
+    }
 }
+
+function isSaveEnabled() {
+    return trigger.value.name != "" && trigger.value.action != null;
+}
+
+function save() {
+    emit('save', trigger.value)
+}
+
+// function addNewTrigger() {
+//     var trigger = new ExposeTrigger('')
+//     selectedTrigger.value = trigger
+// }
+
+// function addAction(event, trigger) {
+//     trigger.action = event
+// }
+
+// function addCondition(event, trigger) {
+//     trigger.conditions.push(event)
+// }
+
+// function removeCondition(event, trigger) {
+//     var index = trigger.conditions.filter(k => k.idx != event);
+//     if (index != -1) {
+//         trigger.conditions.splice(index, 1);
+//     }
+// }
+
+// function removeAction(event, trigger) {
+//     trigger.action = null;
+// }
 
 function exposesList() {
     // todo:
@@ -114,7 +152,7 @@ function exposesList() {
         <div class="row">
             <h5>Trigger</h5>
             <Selector placeholder="Select trigger" :items="exposesList()" :value="selectedExpose" alignment="left"
-                :disabled="props.trigger.name != ''">
+                :disabled="props.trigger.name != ''" @update:data="v => selectedExpose = v">
             </Selector>
         </div>
         <br>
@@ -161,7 +199,7 @@ function exposesList() {
 
         <div class="row">
             <div class="col">
-                <button type="button" class="btn btn-light" :disabled="true">
+                <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false">
                     Save
                 </button>
                 <button type="button" class="btn btn-light" :disabled="true">
