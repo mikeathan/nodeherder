@@ -1,213 +1,221 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed, watch, ref } from "vue";
-import { ExposeTrigger, DeviceTrigger } from "../../models/automation"
+import { ref, watch } from "vue";
 import Trigger from "./Trigger"
+import { ExposeTrigger, DeviceTrigger } from "../../models/automation"
 import DataInput from "../input/DataInput.vue"
-import Selector from "../input/Selector.vue"
+import { useRouter } from 'vue-router'
+
+const emit = defineEmits(['cancel'])
 
 const props = defineProps({
     id: String,
 });
 
 const store = useStore();
-const conditions = ref([]);
-const selectedExpose = ref("")
-const triggers = ref([])
-const showExposeSelection = ref(false)
-const enabled = ref(false)
-const description = ref("")
-const device = computed(() => {
-    return store.getters["devices/find"](props.id);
-});
+const router = useRouter()
+const automation = ref(new DeviceTrigger())
+const selectedTrigger = ref(null)
 
 
 watch(
     () => props.id,
     () => {
-        selectedExpose.value = ""
-    },
-    { immediate: true }
-);
+        var sourceAutomation = store.getters["automations/find"](props.id);
+        if (sourceAutomation != undefined) {
+            // make a deep copy to make it not reactive
+            automation.value = JSON.parse(JSON.stringify(sourceAutomation))
+            automation.value.triggers.forEach(function callback(trigger, index) {
+                trigger.idx = index
+            });
+        } else {
 
-const emit = defineEmits(['cancel', 'create'])
+            automation.value = new DeviceTrigger()
+            var device = store.getters["devices/find"](props.id);
+            if (device != undefined) {
+                automation.value.id = device.id
+                automation.value.friendlyname = device.friendly_name
+            }
+        }
+    }, { immediate: true }
+)
+
 
 function isSaveEnabled() {
-    var values = triggers.value.filter(k => k.action != null);
-    return values.length == triggers.value.length && description.value.length > 0
-}
-
-function onDeleteTriggerClick(event, index) {
-    // disable accordion from expanding
-    event.stopImmediatePropagation();
-    event.preventDefault();
-    triggers.value.splice(index, 1);
-}
-
-function showExposesSelection() {
-    // show exposes drop down
-    selectedExpose.value = "" // reset 
-    showExposeSelection.value = true
-}
-
-function create() {
-    var deviceTrigger = new DeviceTrigger()
-    deviceTrigger.friendlyname = device.value.friendly_name;
-    deviceTrigger.id = device.value.id
-    deviceTrigger.enabled = enabled.value
-    deviceTrigger.description = description.value
-
-    for (const trigger of triggers.value) {
-        deviceTrigger.triggers.push(trigger)
+    if (automation.value.triggers.length == 0) {
+        return false
     }
 
-    reset();
-    emit("create", deviceTrigger)
+    var values = automation.value.triggers.filter(k => k.action != null);
+    return values.length == automation.value.triggers.length
 }
 
-function reset() {
-
-    conditions.value = []
-    triggers.value = []
-    description.value = ""
-    enabled.value = false
-    showExposeSelection.value = false
-    selectedExpose.value = ""
-    emit("cancel")
+function createNewTrigger() {
+    selectedTrigger.value = new ExposeTrigger('')
 }
 
-function addTrigger() {
-    if (selectedExpose.value == "") {
-        return
+function cancel() {
+    emit('cancel')
+}
+
+function saveAutomation(trigger) {
+    store.dispatch('automations/save', automation.value);
+    router.push("/viewer")
+}
+
+function deleteAutomation() {
+    var sourceAutomation = store.getters["automations/find"](props.id);
+    if (sourceAutomation != undefined) {
+        console.log(automation.value);
+        store.dispatch('automations/delete', automation.value.id);
+        // todo; alert message box to ask user
+        router.push("/viewer")
+    }
+}
+
+function deleteTrigger(triggerIdx) {
+    if (triggerIdx |= -1) {
+        automation.value.triggers.splice(triggerIdx, 1);
+    }
+    selectedTrigger.value = null// close trigger panel
+}
+
+function saveTrigger(trigger) {
+    if (trigger.idx == -1) {
+        automation.value.triggers.push(trigger)
+        automation.value.triggers.forEach(function callback(trigger, index) {
+            trigger.idx = index
+        });
+    } else {
+        automation.value.triggers[trigger.idx] = trigger
     }
 
-    var trigger = new ExposeTrigger(selectedExpose.value)
-    triggers.value.push(trigger)
-    showExposeSelection.value = false // hide selection   
+    selectedTrigger.value = null; // close trigger panel
 }
 
-function addAction(event, index) {
-    var trigger = triggers.value[index]
-    trigger.action = event
-}
-
-function removeAction(event, index) {
-    var trigger = triggers.value[index]
-    trigger.action = null
-}
-
-function addCondition(event, index) {
-    conditions.value.push(event);
-    var trigger = triggers.value[index]
-    trigger.conditions.push(event)
-}
-
-function getTriggerDescription(trigger) {
-    var description = trigger.name;
-    if (trigger.conditions.length == 1) {
-        description += " - " + trigger.conditions[0].value
+function getConditionsDescription(trigger) {
+    var conditions = trigger.conditions
+    if (conditions.length == 0) {
+        return ""
     }
+    var condition = conditions[0];
+    var description = condition.name + " " + condition.equality + " " + condition.value;
+    if (conditions.length > 1) {
+        description += "..."
+    }
+
     return description;
 }
 
-function removeCondition(event, index) {
-    var cIdx = conditions.value.findIndex(item => item.idx === event);
-    if (cIdx != -1) {
-
-        conditions.value.splice(cIdx, 1);
-
-        // remove from triggers cache
-        var trigger = triggers.value[index]
-        var idx = trigger.conditions.findIndex(i => i.idx === event);
-        if (idx != -1) {
-            trigger.conditions.splice(idx, 1);
-        }
+function getActionDescription(trigger) {
+    if (trigger.action == null) {
+        return "<EMPTY>"
     }
-}
-function exposesList() {
-    // todo:
-    //var result = Object.keys(obj).map((key) => [key, obj[key]]);
-    var list = {}
-    for (const [key, expose] of Object.entries(device.value.exposes)) {
-        list[expose.name] = expose.name
-    }
-    return list
+
+    var description = trigger.action.friendlyname + " " +
+        trigger.action.property;
+
+    return description;
 }
 
-// design
-//https://www.home-assistant.io/getting-started/automation/
+function rowClicked(trigger) {
+    selectedTrigger.value = trigger;
+}
+
+function onDeleteTriggerClick(event, triggerId) {
+    deleteTrigger(triggerId)
+}
+
 </script>
-
 <style scoped>
 .custom-control-input {
     transform: scale(1.4);
 }
 </style>
 <template>
-    <div v-if="device != null">
+    <div v-if="automation">
+        <div class="container-fluid p-0 h-100">
 
-        <div class="pt-3 pb-4">
-            <label class="form-check-label" for="name">Name</label>
-            <DataInput placeholder="New automation" :data="description" @update:data="(value) => description = value"
-                type="string" alignment="left">
-            </DataInput>
-        </div>
+            <div class="card col-xl-5 col-md-6 col-sm-3">
+                <div class="card-header ">
+                    <div class="pt-3 ">
+                        <label class="form-check-label">Id</label>
+                        <DataInput :data="props.id" alignment="left" :disabled="true">
+                        </DataInput>
+                    </div>
+                    <div class="pt-3">
+                        <label class="form-check-label">Friendly Name</label>
+                        <DataInput :data="automation.friendlyname" alignment="left" type="string" :disabled="true">
+                        </DataInput>
+                    </div>
+                    <div class="pt-3  pb-4">
+                        <label class="form-check-label">Description</label>
+                        <DataInput :data="automation.description" @update:data="(value) => automation.description = value"
+                            type="string" alignment="left">
+                        </DataInput>
+                    </div>
 
-        <div class="pb-3">
-            <div class=" form-check form-switch ms-2">
-                <label class="form-check-label">Enable</label>
-                <input class="form-check-input custom-control-input" type="checkbox" role="switch"
-                    id="flexSwitchCheckDefault" v-model="enabled">
-            </div>
-        </div>
-        <div class="col-50 mt-3 mb-4">
-            <div class="btn-group">
-                <button type="button" class="btn btn-light" @click="showExposesSelection">
-                    Add
-                </button>
-                <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false" @click="create">
-                    Save
-                </button>
-                <button type="button" class="btn btn-light" @click="reset">
-                    Cancel
-                </button>
-            </div>
-        </div>
+                    <div class="pb-3">
+                        <div class=" form-check form-switch ms-2">
+                            <label class="form-check-label ms-3">Enabled</label>
 
-        <div class="mb-3" v-if="showExposeSelection">
-            <div class="d-flex">
-                <Selector placeholder="Select trigger" :items="exposesList()" :value="selectedExpose" alignment="left"
-                    @update:data="val => selectedExpose = val" @change="addTrigger"></Selector>
-            </div>
-        </div>
-
-        <div class="accordion accordion-flush" id="triggersList">
-            <div v-for="(trigger, index) in  triggers ">
-
-                <div class="accordion-item">
-                    <h2 class="accordion-header" :id="`header${index}`">
-                        <div class="col accordion-button collapsed " data-bs-toggle="collapse"
-                            :data-bs-target="`#collapse${index}`" aria-expanded="false" :aria-controls="`collapse${index}`">
-
-                            <div class="col">
-                                Trigger #{{ index + 1 }} - {{ getTriggerDescription(trigger) }}
-                            </div>
-
-                            <div class="col pe-3 text-end ">
-                                <span class="fa fa-trash-alt fa-lg" @click="onDeleteTriggerClick($event, index)"
-                                    data-bs-toggle="collapse" data-bs-target>
-                                </span>
-
-                            </div>
+                            <input class="form-check-input custom-control-input" type="checkbox" role="switch"
+                                id="flexSwitchCheckDefault" v-model="automation.enabled">
                         </div>
-                    </h2>
+                    </div>
 
-                    <div :id="`collapse${index}`" class="accordion-collapse collapse show"
-                        :aria-labelledby="`header${index}`" data-bs-parent="#triggersList">
-                        <div class="accordion-body">
-                            <Trigger :id="props.id" :trigger="trigger" @addAction="addAction($event, index)"
-                                @removeAction="removeAction($event, index)" @addCondition="addCondition($event, index)"
-                                @removeCondition="removeCondition($event, index)">
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-light" @click="saveAutomation"
+                            :disabled="isSaveEnabled() == false">
+                            Save
+                        </button>
+                        <button type="button" class="btn btn-light" @click="deleteAutomation">
+                            Delete
+                        </button>
+                        <button type="button" class="btn btn-light" @click="cancel">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-body ">
+                    <table class="table responsive table-hover " v-if="selectedTrigger == null">
+                        <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Action</th>
+                                <th scope="col">Conditions</th>
+                                <th scope="col">
+                                    <button type="button" class="btn btn-default btn-number" @click="createNewTrigger()">
+                                        <span class="fa fa-plus"></span>
+                                    </button>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody v-for="(trigger, index) in automation.triggers" :item="trigger">
+                            <tr>
+                                <th scope="row">
+                                    {{ index + 1 }}
+                                </th>
+                                <td @click="rowClicked(trigger)">
+                                    {{ getActionDescription(trigger) }}
+                                </td>
+                                <td>
+                                    {{ getConditionsDescription(trigger) }}
+                                </td>
+                                <td>
+                                    <span class="fa fa-trash-alt fa-sm" @click="onDeleteTriggerClick($event, index)"
+                                        data-bs-toggle="collapse" data-bs-target>
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="row" v-else>
+                        <button type="button" class="btn-close" aria-label="Close"
+                            @click="() => selectedTrigger = null"></button>
+                        <div class="col">
+                            <Trigger :id="props.id" :trigger="selectedTrigger" @save="saveTrigger" @delete="deleteTrigger">
                             </Trigger>
                         </div>
                     </div>
