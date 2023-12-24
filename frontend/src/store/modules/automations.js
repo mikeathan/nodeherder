@@ -20,6 +20,15 @@ const actions = {
       { root: true }
     );
   },
+
+  delete({ commit, dispatch, rootState }, id) {
+    commit("delete", id);
+    dispatch(
+      "ws/emit",
+      { event: "deleteAutomation", message: { id: id } },
+      { root: true }
+    );
+  },
 };
 
 const getters = {
@@ -36,6 +45,10 @@ const mutations = {
   },
   update(state, automation) {
     state.items[automation.id] = automation;
+  },
+
+  delete(state, id) {
+    delete state.items[id];
   },
   clear(state) {
     for (var prop in state.items) {

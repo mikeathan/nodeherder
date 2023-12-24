@@ -1,6 +1,6 @@
 <script setup>
 import { useStore } from "vuex";
-import { ref, watch, computed } from "vue";
+import { ref, watch } from "vue";
 import Trigger from "./Trigger"
 import { ExposeTrigger, DeviceTrigger } from "../../models/automation"
 
@@ -27,38 +27,53 @@ watch(
             // make a deep copy to make it not reactive
             automation.value = JSON.parse(JSON.stringify(sourceAutomation))
             automation.value.triggers.forEach(function callback(trigger, index) {
-                trigger.position = index + 1
+                trigger.idx = index
             });
         }
     }, { immediate: true }
 )
+
 
 function isSaveEnabled() {
     var values = automation.value.triggers.filter(k => k.action != null);
     return values.length == automation.value.triggers.length
 }
 
-function addNewTrigger() {
-    var trigger = new ExposeTrigger('')
-    automation.value.triggers.push(trigger)
-    selectedTrigger.value = trigger
+function createNewTrigger() {
+    selectedTrigger.value = new ExposeTrigger('')
 }
 
-function save(trigger) {
-    console.log("save recevied ", trigger.position)
-    //  store.dispatch('automations/save', automation.value);
-    // router.push("/viewer")
+function saveAutomation(trigger) {
+    store.dispatch('automations/save', automation.value);
+    router.push("/viewer")
+}
+
+function deleteAutomation(trigger) {
+
+    store.dispatch('automations/delete', automation.value.id);
+    // todo; alert message box to ask user
+    router.push("/viewer")
+}
+
+function deleteTrigger(triggerIdx) {
+    if (triggerIdx |= -1) {
+        automation.value.triggers.splice(triggerIdx, 1);
+    }
+    selectedTrigger.value = null// close trigger panel
 }
 
 function saveTrigger(trigger) {
-    // that wont work for updates
-    // work only for adding new triggers
+    if (trigger.idx == -1) {
+        automation.value.triggers.push(trigger)
+        automation.value.triggers.forEach(function callback(trigger, index) {
+            trigger.idx = index
+        });
+    } else {
+        automation.value.triggers[trigger.idx] = trigger
+    }
 
-    console.log("save trigger ", trigger)
-    //automation.triggers.push(event)
-    selectedTrigger.value = null;
+    selectedTrigger.value = null; // close trigger panel
 }
-
 
 function getConditionsDescription(trigger) {
     var conditions = trigger.conditions
@@ -73,6 +88,7 @@ function getConditionsDescription(trigger) {
 
     return description;
 }
+
 function getActionDescription(trigger) {
     if (trigger.action == null) {
         return "<EMPTY>"
@@ -89,9 +105,8 @@ function rowClicked(trigger) {
 }
 
 function onDeleteTriggerClick(event, triggerId) {
-    automation.value.triggers.splice(triggerId, 1);
+    deleteTrigger(triggerId)
 }
-
 
 </script>
 <style scoped>
@@ -132,8 +147,12 @@ function onDeleteTriggerClick(event, triggerId) {
                     </div>
 
                     <div class="btn-group">
-                        <button type="button" class="btn btn-light" @click="save" :disabled="isSaveEnabled() == false">
+                        <button type="button" class="btn btn-light" @click="saveAutomation"
+                            :disabled="isSaveEnabled() == false">
                             Save
+                        </button>
+                        <button type="button" class="btn btn-light" @click="deleteAutomation">
+                            Delete
                         </button>
                         <router-link :to="`/viewer`" tag="span">
                             <button type="button" class="btn btn-light">
@@ -150,7 +169,7 @@ function onDeleteTriggerClick(event, triggerId) {
                                 <th scope="col">Action</th>
                                 <th scope="col">Conditions</th>
                                 <th scope="col">
-                                    <button type="button" class="btn btn-default btn-number" @click="addNewTrigger()">
+                                    <button type="button" class="btn btn-default btn-number" @click="createNewTrigger()">
                                         <span class="fa fa-plus"></span>
                                     </button>
                                 </th>
@@ -175,12 +194,11 @@ function onDeleteTriggerClick(event, triggerId) {
                             </tr>
                         </tbody>
                     </table>
-
                     <div class="row" v-else>
                         <button type="button" class="btn-close" aria-label="Close"
                             @click="() => selectedTrigger = null"></button>
                         <div class="col">
-                            <Trigger :id="props.id" :trigger="selectedTrigger" @save="saveTrigger">
+                            <Trigger :id="props.id" :trigger="selectedTrigger" @save="saveTrigger" @delete="deleteTrigger">
                             </Trigger>
                         </div>
                     </div>

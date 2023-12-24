@@ -7,7 +7,7 @@ import TriggerCondition from "./TriggerCondition"
 import TriggerAction from "./TriggerAction.vue";
 import Selector from "../input/Selector.vue"
 
-import { DeviceTrigger } from "../../models/automation"
+import { ExposeTrigger } from "../../models/automation"
 const props = defineProps({
     id: String,
     trigger: Object,
@@ -15,7 +15,7 @@ const props = defineProps({
 
 const store = useStore();
 const selectedAction = ref(null)
-const trigger = ref(new DeviceTrigger())
+const trigger = ref(null)
 
 const emit = defineEmits(['save', 'delete'])
 
@@ -23,12 +23,11 @@ watch(
     () => props.trigger,
     () => {
         selectedAction.value = ""
-        // select action optionsto current action if not null
+        // select action options to current action if not null
         if (props.trigger.action != null) {
             selectedAction.value = props.trigger.action.id
         }
         trigger.value = JSON.parse(JSON.stringify(props.trigger))
-
         trigger.value.conditions.forEach(function callback(condition, index) {
             condition.idx = index + 1
         });
@@ -42,10 +41,12 @@ const device = computed(() => {
 
 const featureDevices = computed(() => {
     var devices = store.getters["devices/items"];
+    
     // find exposes with properties
     // let all = items.filter(item=> item.age==='18')
     //     return deviceimport DeviceAutomation from "./DeviceAutomation"
     // });
+
     var list = []
     for (const [key, device] of Object.entries(devices)) {
         for (const [key, expose] of Object.entries(device.exposes)) {
@@ -93,8 +94,11 @@ function isSaveEnabled() {
 }
 
 function save() {
-    console.log(trigger.position)
-    emit('save', trigger)
+    emit('save', trigger.value)
+}
+
+function remove() {
+    emit('delete', trigger.value.idx)
 }
 
 function exposesList() {
@@ -171,7 +175,7 @@ function exposesList() {
                 <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false" @click="save">
                     Save
                 </button>
-                <button type="button" class="btn btn-light" :disabled="true">
+                <button type="button" class="btn btn-light" @click="remove">
                     Delete
                 </button>
             </div>
