@@ -29,6 +29,14 @@ watch(
             automation.value.triggers.forEach(function callback(trigger, index) {
                 trigger.idx = index
             });
+        } else {
+
+            automation.value = new DeviceTrigger()
+            var device = store.getters["devices/find"](props.id);
+            if (device != undefined) {
+                automation.value.id = device.id
+                automation.value.friendlyname = device.friendly_name
+            }
         }
     }, { immediate: true }
 )

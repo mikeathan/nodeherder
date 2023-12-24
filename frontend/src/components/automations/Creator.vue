@@ -2,6 +2,8 @@
 import { useStore } from "vuex";
 import { computed, ref } from "vue";
 import DeviceAutomation from "./DeviceAutomation"
+import Editor from "./Editor"
+
 import Selector from "../input/Selector.vue"
 
 import { useRouter } from 'vue-router'
@@ -45,7 +47,7 @@ function deviceList() {
                         alignment="left" @update:data="e => selectedDevice = e" :disabled="selectedDevice != ''"></Selector>
                 </div>
                 <div>
-                    <DeviceAutomation :id="selectedDevice" @cancel="cancel" @create="create"></DeviceAutomation>
+                    <Editor :id="selectedDevice"></Editor>
                 </div>
             </div>
         </div>
