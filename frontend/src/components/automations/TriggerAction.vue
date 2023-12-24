@@ -3,6 +3,7 @@ import { useStore } from "vuex";
 import { computed, ref, watchEffect, watch } from "vue";
 import DataInput from "../input/DataInput.vue"
 import RadioGroup from "../input/RadioGroup.vue"
+import Selector from "../input/Selector.vue"
 
 import { ActionTrigger, Steps } from "../../models/automation"
 
@@ -64,12 +65,13 @@ const features = computed(() => {
 });
 
 function propertySelectionChanged(event) {
-    var value = event.target.value;
+    var value = event;
     if (value == "" || device.value == undefined) {
         data.value = "" // reset data
 
         return;
     }
+    property.value = value
     delay.value = null;
     step.value = 0;
 
@@ -139,6 +141,16 @@ function getPlaceholder(type) {
     return 'Value'
 }
 
+function getFeatureNames() {
+    // todo:
+    var list = {}
+    for (const [key, feature] of Object.entries(features.value)) {
+        list[feature.name] = feature.name
+    }
+    return list
+}
+
+
 function getItems() {
 
     switch (feature.value.type) {
@@ -178,33 +190,14 @@ select.form-control:focus,
     outline: 1;
     appearance: none;
 } */
-
-.inputName {
-    border: 0;
-    outline: 0;
-    background: transparent;
-    border-bottom: 1px solid #e5e5e5;
-    border-radius: 0
-}
-
-.custom-control-input {
-    transform: scale(1.4);
-}
 </style>
 <template>
     <div class="col-xl-3 col-md-2">
-        <!-- 
-        <Selector placeholder="Property" :items="features" :value="selectedAction" key="id"
-                        alignment="left" @update:data="e => selectedAction = e" :disabled="props.property != null">
-                    </Selector> -->
 
-        <select id="featurePropertySelector" style="text-align:center;" class="form-control form-select" v-model="property"
-            @change="propertySelectionChanged" :disabled="props.property != null">
-            <option value="">Select</option>
-            <option v-for="feature in features" :value="feature.name" :key="feature.name">
-                {{ feature.name }}
-            </option>
-        </select>
+        <Selector placeholder="Select property" :items="getFeatureNames()" :value="property" alignment="center"
+            @update:data="propertySelectionChanged" :disabled="props.property != null">
+        </Selector>
+
     </div>
     <div class="col-xl-2 col-md-2">
         <DataInput :type="feature.type" :placeholder="getPlaceholder(feature.type)" :items="getItems()" :data="data"

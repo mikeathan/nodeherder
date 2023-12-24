@@ -40,7 +40,7 @@ function deviceList() {
 
         <h3>Create new Automation</h3>
         <div class="col-xl-5 col-md-3" v-if="selectedDevice == ''">
-            <Selector placeholder="Select device" :items="deviceList()" :value="selectedDevice" key="id" alignment="left"
+            <Selector placeholder="Select device" :items="deviceList()" :value="selectedDevice" alignment="left"
                 @update:data="e => selectedDevice = e" :disabled="selectedDevice != ''"></Selector>
         </div>
         <div v-else>
