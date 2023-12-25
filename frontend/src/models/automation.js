@@ -77,10 +77,10 @@ export class ExposeTrigger {
 }
 
 export class Condition {
-  constructor(name, equality, value) {
-    this.name = name;
-    this.equality = equality;
-    this.value = value;
+  constructor() {
+    this.name = "";
+    this.equality = OperatorKeys[0];
+    this.value = "";
     this.idx = 0;
   }
 }

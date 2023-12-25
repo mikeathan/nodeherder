@@ -28,7 +28,10 @@ const name = ref('')
 const emit = defineEmits(['add', 'remove', 'update:value', 'update:operator'])
 
 function add() {
-    var c = new Condition(name.value, operator.value, data.value)
+    var c = new Condition()
+    c.name = name.value
+    c.equality = operator.value
+    c.data = data.value
     var cid = ++index.value;
     c.idx = cid
 
@@ -146,9 +149,9 @@ function getItems() {
 </script>
 
 <template>
-    <div v-if="props.index == 0" class="col-xl-3">
+    <div v-if="props.name == ''" class="col-xl-3">
         <select id="exposeSelector" style="text-align:center;" class="form-control form-select"
-            @change="exposeSelectionChanged" v-model="name" :disabled="props.name == ''">
+            @change="exposeSelectionChanged" v-model="name">
             <option value="">Select trigger</option>
             <option v-for="name in getExposes()" :value="name" :key="name">
                 {{ name }}
@@ -171,16 +174,10 @@ function getItems() {
     </div>
     <div class="col-xl-2">
         <div class="btn-group">
-            <div v-if="props.index == 0">
-                <button type="button" class="btn btn-default btn-number" @click="add($event)" :disabled="data.length == 0">
-                    <span class="fa fa-plus"></span>
-                </button>
-            </div>
-            <div v-else>
-                <button type="button" class="btn btn-default btn-number" @click="remove($event)">
-                    <span class="fa fa-minus"></span>
-                </button>
-            </div>
+
+            <button type="button" class="btn btn-default btn-number" @click="remove($event)">
+                <span class="fa fa-minus"></span>
+            </button>
         </div>
     </div>
 </template>

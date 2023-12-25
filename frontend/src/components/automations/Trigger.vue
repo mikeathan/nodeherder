@@ -2,7 +2,7 @@
 import { useStore } from "vuex";
 import { computed, watch, ref, watchEffect } from "vue";
 
-import { OperatorKeys } from "../../models/automation"
+import { Condition } from "../../models/automation"
 import TriggerCondition from "./TriggerCondition"
 import TriggerAction from "./TriggerAction.vue";
 import Selector from "../input/Selector.vue"
@@ -41,10 +41,10 @@ const device = computed(() => {
 
 const featureDevices = computed(() => {
     var devices = store.getters["devices/items"];
-    
+
     // find exposes with properties
     // let all = items.filter(item=> item.age==='18')
-    //     return deviceimport DeviceAutomation from "./DeviceAutomation"
+    //     return deviceimport 
     // });
 
     var list = []
@@ -78,8 +78,9 @@ function removeAction(event) {
     trigger.value.action = null;
 }
 
-function addCondition(event) {
-    trigger.value.conditions.push(event)
+function addCondition() {
+    var condition = new Condition()
+    trigger.value.conditions.push(condition)
 }
 
 function removeCondition(event) {
@@ -130,13 +131,13 @@ function exposesList() {
         </div>
         <br>
         <!-- Conditions -->
-        <h5>Conditions</h5>
-        <div class="row">
-            <TriggerCondition :id="props.id" :index="0" :name="trigger.name" :operator="OperatorKeys[0]" :data="''"
-                @add="addCondition">
-            </TriggerCondition>
+        <div class="col-md-5">
+            <h5>Conditions
+                <button type="button" class="btn btn-default btn-number" @click="addCondition()">
+                    <span class="fa fa-plus"></span>
+                </button>
+            </h5>
         </div>
-
         <div v-for="condition in  trigger.conditions ">
             <div class="row">
                 <TriggerCondition :id="props.id" :index="condition.idx" :name="condition.name"
