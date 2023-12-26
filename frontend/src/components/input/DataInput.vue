@@ -118,6 +118,7 @@ function focusChanged(event) {
     box-shadow: none;
 }
 
+/* 
 select.form-control:focus,
 :active,
 :hover {
@@ -137,7 +138,7 @@ select.form-control {
 select.form-control {
     background-color: transparent;
     background-clip: padding-box;
-}
+} */
 
 .custom-control-input {
     transform: scale(1.4);
@@ -145,7 +146,6 @@ select.form-control {
 </style>
 <template>
     <div v-if="isSelection()">
-
         <select id="dataSelect" :style="'text-align:' + props.alignment + ';'" class="form-control form-select"
             name="valueinput" v-model="data" @change="dataSelectionChanged" :disabled="props.disabled">
             <option v-if="props.placeholder != ''" value="">{{ props.placeholder }}</option>

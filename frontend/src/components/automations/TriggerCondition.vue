@@ -20,24 +20,12 @@ const props = defineProps({
 });
 
 const store = useStore()
-const index = ref(props.index);
 const data = ref(null)
 const operator = ref('')
 const name = ref('')
 
-const emit = defineEmits(['add', 'remove', 'update:value', 'update:operator'])
+const emit = defineEmits(['add', 'remove', 'update:name', 'update:value', 'update:operator'])
 
-function add() {
-    var c = new Condition()
-    c.name = name.value
-    c.equality = operator.value
-    c.data = data.value
-    var cid = ++index.value;
-    c.idx = cid
-
-    emit("add", c)
-    reset();
-}
 
 function remove() {
     emit("remove", props.index)
@@ -92,11 +80,13 @@ function reset() {
 }
 
 function exposeSelectionChanged(event) {
+
     if (event.target.value == null) {
         return
     }
 
     data.value = "";
+    emit('update:name', event.target.value)
 }
 
 function operatorUpdated(event) {
@@ -174,7 +164,6 @@ function getItems() {
     </div>
     <div class="col-xl-2">
         <div class="btn-group">
-
             <button type="button" class="btn btn-default btn-number" @click="remove($event)">
                 <span class="fa fa-minus"></span>
             </button>

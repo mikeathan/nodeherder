@@ -2,12 +2,11 @@
 import { useStore } from "vuex";
 import { computed, watch, ref, watchEffect } from "vue";
 
-import { Condition } from "../../models/automation"
+import { Condition, ActionTrigger } from "../../models/automation"
 import TriggerCondition from "./TriggerCondition"
 import TriggerAction from "./TriggerAction.vue";
 import Selector from "../input/Selector.vue"
 
-import { ExposeTrigger } from "../../models/automation"
 const props = defineProps({
     id: String,
     trigger: Object,
@@ -39,36 +38,7 @@ const device = computed(() => {
     return store.getters["devices/find"](props.id);
 });
 
-const featureDevices = computed(() => {
-    var devices = store.getters["devices/items"];
 
-    // find exposes with properties
-    // let all = items.filter(item=> item.age==='18')
-    //     return deviceimport 
-    // });
-
-    var list = []
-    for (const [key, device] of Object.entries(devices)) {
-        for (const [key, expose] of Object.entries(device.exposes)) {
-            if (expose.properties != undefined) {
-                list.push(device)
-                break;
-            }
-        }
-    }
-
-    return list;
-});
-
-function deviceList() {
-    // todo:
-    //var result = Object.keys(obj).map((key) => [key, obj[key]]);
-    var list = {}
-    for (const [key, device] of Object.entries(featureDevices.value)) {
-        list[device.friendly_name] = device.id
-    }
-    return list
-}
 
 function addAction(event) {
     trigger.value.action = event
@@ -83,6 +53,20 @@ function addCondition() {
     trigger.value.conditions.push(condition)
 }
 
+function add() {
+    var newAction = new ActionTrigger()
+
+    trigger.value.action = newAction;
+
+    // newAction.delay = delay.value
+    // newAction.step = step.value
+    // newAction.data = data.value
+    // newAction.friendlyname = device.value.friendly_name
+    // newAction.id = device.value.id
+    // newAction.property = property.value
+    // newAction.type = device.value.exposes[property.value].type
+    //emit("add", newAction)
+}
 function removeCondition(event) {
     var index = trigger.value.conditions.filter(k => k.idx != event);
     if (index != -1) {
@@ -142,25 +126,27 @@ function exposesList() {
             <div class="row">
                 <TriggerCondition :id="props.id" :index="condition.idx" :name="condition.name"
                     :operator="condition.equality" :key="condition.idx" :data="condition.value"
-                    @remove="removeCondition($event)" @update:value="newValue => condition.value = newValue"
-                    @update:operator="newValue => condition.operator = newValue">
+                    @remove="removeCondition($event)" @update:name="newValue => condition.name = newValue"
+                    @update:value="newValue => condition.value = newValue"
+                    @update:operator="newValue => condition.equality = newValue">
                 </TriggerCondition>
             </div>
         </div>
 
         <!-- Actions -->
-        <div class="row">
-            <h5 class="pt-3">Action</h5>
-            <div class="col">
-                <Selector placeholder=" Select device" :items="deviceList()" :value="selectedAction" key="id"
-                    alignment="left" @update:data="e => selectedAction = e" :disabled="trigger.name == ''">
-                </Selector>
-            </div>
+        <div class="col-md-5">
+            <h5>
+                Action
+                <button type="button" class="btn btn-default btn-number">
+                    <span class="fa fa-plus"></span>
+                </button>
+            </h5>
+
         </div>
         <!-- existing action -->
         <div v-if="trigger.action != null" class="row">
             <TriggerAction :id="trigger.action.id" :property="trigger.action.property" :data="trigger.action.data"
-                :delay="trigger.action.delay" :step="trigger.action.step" @add="removeAction"
+                :delay="trigger.action.delay" :step="trigger.action.step" @remove="removeAction"
                 @update:data="newValue => trigger.action.data = newValue"
                 @update:delay="newValue => trigger.action.delay = newValue"
                 @update:step="newValue => trigger.action.step = newValue">
@@ -168,7 +154,7 @@ function exposesList() {
         </div>
         <!-- new action -->
         <div v-else-if="selectedAction != ''" class="row">
-            <TriggerAction :id="selectedAction" @add="addAction"></TriggerAction>
+            <TriggerAction :id="selectedAction"></TriggerAction>
         </div>
 
         <div class="row">

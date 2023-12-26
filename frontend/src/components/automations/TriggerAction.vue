@@ -10,7 +10,7 @@ import { ActionTrigger, Steps } from "../../models/automation"
 const props = defineProps({
     id: {
         type: String,
-        required: true,
+        default: ''
     },
     property: String,
     data: null,
@@ -21,18 +21,28 @@ const props = defineProps({
         default: true
     },
 });
+const id = ref("")
 const property = ref("");
 const data = ref("");
 const delay = ref(null);
-const step = ref(null)
+const step = ref('')
 const store = useStore();
 
-const emit = defineEmits(['add', 'remove', 'update:data', 'update:delay', , 'update:step'])
-
+const emit = defineEmits(['remove', 'update:id', 'update:data', 'update:delay', , 'update:step'])
+watchEffect(() => id.value = props.id);
 watchEffect(() => data.value = props.data);
 watchEffect(() => delay.value = props.delay);
 watchEffect(() => step.value = props.step);
-
+watch(
+    () => props.step,
+    () => {
+        step.value = props.step
+        if (step.value == null) {
+            step.value = "" // select first option
+        }
+    },
+    { immediate: true }
+);
 watch(
     () => props.property,
     () => {
@@ -117,20 +127,51 @@ function delayUpdated(event) {
     emit('update:delay', event)
 }
 
-function add() {
-    var newAction = new ActionTrigger()
-    newAction.delay = delay.value
-    newAction.step = step.value
-    newAction.data = data.value
-    newAction.friendlyname = device.value.friendly_name
-    newAction.id = device.value.id
-    newAction.property = property.value
-    newAction.type = device.value.exposes[property.value].type
-    emit("add", newAction)
-}
+// function add() {
+//     var newAction = new ActionTrigger()
+//     newAction.delay = delay.value
+//     newAction.step = step.value
+//     newAction.data = data.value
+//     newAction.friendlyname = device.value.friendly_name
+//     newAction.id = device.value.id
+//     newAction.property = property.value
+//     newAction.type = device.value.exposes[property.value].type
+//     emit("add", newAction)
+// }
 
 function remove(event) {
     emit("add", props.id)
+}
+
+const featureDevices = computed(() => {
+    var devices = store.getters["devices/items"];
+
+    // find exposes with properties
+    // let all = items.filter(item=> item.age==='18')
+    //     return deviceimport 
+    // });
+
+    var list = []
+    for (const [key, device] of Object.entries(devices)) {
+        for (const [key, expose] of Object.entries(device.exposes)) {
+            if (expose.properties != undefined) {
+                list.push(device)
+                break;
+            }
+        }
+    }
+
+    return list;
+});
+
+function deviceList() {
+    // todo:
+    //var result = Object.keys(obj).map((key) => [key, obj[key]]);
+    var list = {}
+    for (const [key, device] of Object.entries(featureDevices.value)) {
+        list[device.friendly_name] = device.id
+    }
+    return list
 }
 
 function getPlaceholder(type) {
@@ -149,7 +190,14 @@ function getFeatureNames() {
     }
     return list
 }
-
+function getSteps() {
+    // todo:
+    var list = {}
+    for (const [key, step] of Object.entries(Steps)) {
+        list[step.name] = step.value
+    }
+    return list
+}
 
 function getItems() {
 
@@ -192,8 +240,15 @@ select.form-control:focus,
 } */
 </style>
 <template>
-    <div class="col-xl-3 col-md-2">
+    <!-- attic light > brightness > 300 > 5 min > none
+    attic light > brightness > 5 > 0 min > increase -->
 
+    <div class="col-xl-3 col-md-2">
+        <Selector placeholder=" Select device" :items="deviceList()" :value="id" key="id" alignment="left"
+            @update:data="e => id = e" :disabled="id != ''">
+        </Selector>
+    </div>
+    <div class="col-xl-3 col-md-2">
         <Selector placeholder="Select property" :items="getFeatureNames()" :value="property" alignment="center"
             @update:data="propertySelectionChanged" :disabled="props.property != null">
         </Selector>
@@ -208,13 +263,16 @@ select.form-control:focus,
         <DataInput placeholder="Delay" type="numeric" :data="delay" :disabled="property == ''" @update:data="delayUpdated">
         </DataInput>
     </div>
-
-    <div class="row" v-if="feature.type == 'numeric'">
+    <div class="col-xl-3 col-md-2">
+        <Selector placeholder="Steps" :items="getSteps()" :value="step" alignment="left" @update:data="e => step = e">
+        </Selector>
+    </div>
+    <!-- <div class="row" v-if="feature.type == 'numeric'">
         <label>Steps</label>
         <div class="col-xl-6 col-md-6">
             <RadioGroup :items="Steps" :value="step" @update:data="stepUpdated"></RadioGroup>
         </div>
-    </div>
+    </div> -->
 
     <!-- buttons -->
     <div class="row pt-2">
