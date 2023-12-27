@@ -35,7 +35,6 @@ const device = computed(() => {
 
 function addAction() {
     var newAction = new ActionTrigger()
-
     trigger.value.action = newAction;
 }
 
@@ -57,6 +56,11 @@ function removeCondition(event) {
 
 function isSaveEnabled() {
     return trigger.value.name != "" && trigger.value.action != null;
+}
+
+function actionIdUpdated(id, friendlyName) {
+    trigger.value.action.id = id
+    trigger.value.action.friendlyname = friendlyName
 }
 
 function save() {
@@ -132,8 +136,7 @@ function exposesList() {
                 <div v-if="trigger.action != null" class="row">
                     <TriggerAction :id="trigger.action.id" :property="trigger.action.property" :data="trigger.action.data"
                         :delay="trigger.action.delay" :step="trigger.action.step" @remove="removeAction"
-                        @update:id="newValue => trigger.action.id = newValue"
-                        @update:property="newValue => trigger.action.property = newValue"
+                        @update:id="actionIdUpdated" @update:property="newValue => trigger.action.property = newValue"
                         @update:data="newValue => trigger.action.data = newValue"
                         @update:delay="newValue => trigger.action.delay = newValue"
                         @update:step="newValue => trigger.action.step = newValue">

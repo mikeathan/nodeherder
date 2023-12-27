@@ -33,6 +33,8 @@ watchEffect(() => id.value = props.id);
 watchEffect(() => data.value = props.data);
 watchEffect(() => delay.value = props.delay);
 watchEffect(() => step.value = props.step);
+
+
 watch(
     () => props.step,
     () => {
@@ -135,21 +137,11 @@ function delayUpdated(event) {
 
 function idUpdated(event) {
     id.value = event
-    emit('update:id', event)
+    var device = store.getters["devices/find"](id.value);
+    if (device != undefined) {
+        emit('update:id', id.value, device.friendly_name)
+    }
 }
-
-// function add() {
-//     var newAction = new ActionTrigger()
-//     newAction.delay = delay.value
-//     newAction.step = step.value
-//     newAction.data = data.value
-//     newAction.friendlyname = device.value.friendly_name
-//     newAction.id = device.value.id
-//     newAction.property = property.value
-//     newAction.type = device.value.exposes[property.value].type
-//     emit("add", newAction)
-// }
-
 
 function remove() {
     emit("remove", id.value)

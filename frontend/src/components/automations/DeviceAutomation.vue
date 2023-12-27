@@ -66,7 +66,6 @@ function saveAutomation(trigger) {
 function deleteAutomation() {
     var sourceAutomation = store.getters["automations/find"](props.id);
     if (sourceAutomation != undefined) {
-        console.log(automation.value);
         store.dispatch('automations/delete', automation.value.id);
         // todo; alert message box to ask user
         router.push("/viewer")
