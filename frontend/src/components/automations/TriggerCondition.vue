@@ -1,7 +1,8 @@
 <script setup>
-import { OperatorKeys, Condition } from "../../models/automation"
+import { OperatorKeys } from "../../models/automation"
 import DataInput from "../input/DataInput.vue"
 import { useStore } from "vuex";
+import Selector from "../input/Selector.vue"
 
 import { ref, computed, watch } from 'vue'
 const props = defineProps({
@@ -32,7 +33,12 @@ function remove() {
 }
 
 function getExposes() {
-    return Object.keys(device.value.exposes)
+
+    var list = {}
+    for (const [key, expose] of Object.entries(device.value.exposes)) {
+        list[expose.name] = expose.name
+    }
+    return list
 }
 
 const device = computed(() => {
@@ -81,12 +87,12 @@ function reset() {
 
 function exposeSelectionChanged(event) {
 
-    if (event.target.value == null) {
+    if (event == '') {
         return
     }
 
     data.value = "";
-    emit('update:name', event.target.value)
+    emit('update:name', event)
 }
 
 function operatorUpdated(event) {
@@ -140,13 +146,8 @@ function getItems() {
 
 <template>
     <div v-if="props.name == ''" class="col-xl-3">
-        <select id="exposeSelector" style="text-align:center;" class="form-control form-select"
-            @change="exposeSelectionChanged" v-model="name">
-            <option value="">Select trigger</option>
-            <option v-for="name in getExposes()" :value="name" :key="name">
-                {{ name }}
-            </option>
-        </select>
+        <Selector placeholder="Select trigger" :items="getExposes()" :value="name" @update:data="exposeSelectionChanged">
+        </Selector>
     </div>
     <div v-else class="col-xl-3">
         <DataInput type="string" placeholder="Name" :data="name" :disabled="true" alignment="center">

@@ -2,10 +2,9 @@
 import { useStore } from "vuex";
 import { computed, ref, watchEffect, watch } from "vue";
 import DataInput from "../input/DataInput.vue"
-import RadioGroup from "../input/RadioGroup.vue"
 import Selector from "../input/Selector.vue"
 
-import { ActionTrigger, Steps } from "../../models/automation"
+import { Steps } from "../../models/automation"
 
 const props = defineProps({
     id: {
@@ -263,7 +262,7 @@ select.form-control:focus,
             :disabled="property == ''" @update:data="dataUpdated">
         </DataInput>
     </div>
-    <div class="col-md-2">
+    <div class="col-md-2 pt-2">
         <div class="btn-group">
             <button v-if="feature.type == 'numeric'" class="btn btn-default btn-number" type="button"
                 data-bs-toggle="collapse" data-bs-target="#collapseOptions" aria-expanded="false"
@@ -278,7 +277,7 @@ select.form-control:focus,
 
     </div>
     <div class="collapse " id="collapseOptions">
-        <div class="row ">
+        <div class="row pt-2">
             <div class="col-xl-2 col-md-2">
                 <DataInput placeholder="Delay" type="numeric" :data="delay" :disabled="property == ''"
                     @update:data="delayUpdated">
