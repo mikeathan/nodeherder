@@ -40,8 +40,10 @@ const device = computed(() => {
 
 
 
-function addAction(event) {
-    trigger.value.action = event
+function addAction() {
+    var newAction = new ActionTrigger()
+
+    trigger.value.action = newAction;
 }
 
 function removeAction(event) {
@@ -54,9 +56,6 @@ function addCondition() {
 }
 
 function add() {
-    var newAction = new ActionTrigger()
-
-    trigger.value.action = newAction;
 
     // newAction.delay = delay.value
     // newAction.step = step.value
@@ -137,7 +136,7 @@ function exposesList() {
         <div class="col-md-5">
             <h5>
                 Action
-                <button type="button" class="btn btn-default btn-number">
+                <button type="button" class="btn btn-default btn-number" @click="addAction">
                     <span class="fa fa-plus"></span>
                 </button>
             </h5>
@@ -152,11 +151,6 @@ function exposesList() {
                 @update:step="newValue => trigger.action.step = newValue">
             </TriggerAction>
         </div>
-        <!-- new action -->
-        <div v-else-if="selectedAction != ''" class="row">
-            <TriggerAction :id="selectedAction"></TriggerAction>
-        </div>
-
         <div class="row">
             <div class="col">
                 <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false" @click="save">

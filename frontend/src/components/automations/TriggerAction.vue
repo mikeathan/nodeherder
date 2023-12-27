@@ -38,7 +38,7 @@ watch(
     () => {
         step.value = props.step
         if (step.value == null) {
-            step.value = "" // select first option
+            step.value = Steps[0].value
         }
     },
     { immediate: true }
@@ -55,15 +55,16 @@ watch(
 );
 
 const device = computed(() => {
-    return store.getters["devices/find"](props.id);
+    return store.getters["devices/find"](id.value);
 });
 
 const features = computed(() => {
 
-    var device = store.getters["devices/find"](props.id);
+    var device = store.getters["devices/find"](id.value);
     if (device == undefined) {
         return []
     }
+
     var list = []
     for (const [key, expose] of Object.entries(device.exposes)) {
         if (expose.properties != undefined) {
@@ -102,7 +103,10 @@ const feature = computed(() => {
         return []
     }
 
-    var device = store.getters["devices/find"](props.id);
+    var device = store.getters["devices/find"](id.value);
+    if (device == undefined) {
+        return []
+    }
     if (device.exposes[property.value] == undefined) {
 
         return []
@@ -140,7 +144,7 @@ function delayUpdated(event) {
 // }
 
 function remove(event) {
-    emit("add", props.id)
+    emit("add", id.value)
 }
 
 const featureDevices = computed(() => {
@@ -182,14 +186,15 @@ function getPlaceholder(type) {
     return 'Value'
 }
 
-function getFeatureNames() {
+const getFeatureNames = computed(() => {
     // todo:
     var list = {}
     for (const [key, feature] of Object.entries(features.value)) {
         list[feature.name] = feature.name
     }
     return list
-}
+})
+
 function getSteps() {
     // todo:
     var list = {}
@@ -244,17 +249,17 @@ select.form-control:focus,
     attic light > brightness > 5 > 0 min > increase -->
 
     <div class="col-xl-3 col-md-2">
-        <Selector placeholder=" Select device" :items="deviceList()" :value="id" key="id" alignment="left"
-            @update:data="e => id = e" :disabled="id != ''">
+        <Selector placeholder=" Select device" :items="deviceList()" :value="id" alignment="left" @update:data="e => id = e"
+            :disabled="id != ''">
         </Selector>
     </div>
     <div class="col-xl-3 col-md-2">
-        <Selector placeholder="Select property" :items="getFeatureNames()" :value="property" alignment="center"
+        <Selector placeholder="Select property" :items="getFeatureNames" :value="property" alignment="center"
             @update:data="propertySelectionChanged" :disabled="props.property != null">
         </Selector>
 
     </div>
-    <div class="col-xl-2 col-md-2">
+    <!-- <div class="col-xl-2 col-md-2">
         <DataInput :type="feature.type" :placeholder="getPlaceholder(feature.type)" :items="getItems()" :data="data"
             :disabled="property == ''" @update:data="dataUpdated">
         </DataInput>
@@ -264,24 +269,14 @@ select.form-control:focus,
         </DataInput>
     </div>
     <div class="col-xl-3 col-md-2">
-        <Selector placeholder="Steps" :items="getSteps()" :value="step" alignment="left" @update:data="e => step = e">
+        <Selector :items="getSteps()" :value="step" alignment="left" @update:data="stepUpdated">
         </Selector>
-    </div>
-    <!-- <div class="row" v-if="feature.type == 'numeric'">
-        <label>Steps</label>
-        <div class="col-xl-6 col-md-6">
-            <RadioGroup :items="Steps" :value="step" @update:data="stepUpdated"></RadioGroup>
-        </div>
     </div> -->
 
     <!-- buttons -->
-    <div class="row pt-2">
-        <div v-if="props.property == null">
-            <button type="button" class="btn btn-default btn-number" @click="add($event)" :disabled="data == ''">
-                <span class="fa fa-plus"></span>
-            </button>
-        </div>
-        <div v-else-if="props.allowRemove">
+    <div class="col-xl-2">
+
+        <div>
             <button type="button" class="btn btn-default btn-number" @click="remove($event)">
                 <span class="fa fa-minus"></span>
                 <!-- <span class="fa fa-trash"></span> -->
