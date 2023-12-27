@@ -43,6 +43,30 @@ function dataSelectionChanged(event) {
 </script>
 
 <style scoped>
+maybe use bottom lines like before select.form-control {
+    appearance: none;
+    border: none;
+    outline: none;
+    background: none;
+    background-color: transparent;
+
+}
+
+select.form-control:disabled {
+    border: 1;
+    outline: 1;
+    outline-color: white;
+    background: #545968;
+
+}
+
+select.form-control:focus,
+:active,
+:hover {
+    outline: none;
+    box-shadow: none;
+}
+
 /* 
 
 select.form-control {
