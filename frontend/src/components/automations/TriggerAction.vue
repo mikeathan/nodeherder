@@ -263,19 +263,32 @@ select.form-control:focus,
             :disabled="property == ''" @update:data="dataUpdated">
         </DataInput>
     </div>
-    <div class="col-xl-2 col-md-2">
-        <DataInput placeholder="Delay" type="numeric" :data="delay" :disabled="property == ''" @update:data="delayUpdated">
-        </DataInput>
-    </div>
-    <div class="col-xl-3 col-md-2" v-if="feature.type == 'numeric'">
-        <Selector :items="getSteps()" :value="step" alignment="left" :disabled="property == ''" @update:data="stepUpdated">
-        </Selector>
-    </div>
+    <div class="col-md-2">
+        <div class="btn-group">
+            <button v-if="feature.type == 'numeric'" class="btn btn-default btn-number" type="button"
+                data-bs-toggle="collapse" data-bs-target="#collapseOptions" aria-expanded="false"
+                aria-controls="collapseOptions">
+                <span class="fas fa-angle-double-down"></span>
+            </button>
 
-    <!-- buttons -->
-    <div class="col-xl-2">
-        <button type="button" class="btn btn-default btn-number" @click="remove">
-            <span class="fa fa-minus"></span>
-        </button>
+            <button type="button" class="btn btn-default btn-number" @click="remove">
+                <span class="fa fa-minus"></span>
+            </button>
+        </div>
+
+    </div>
+    <div class="collapse " id="collapseOptions">
+        <div class="row ">
+            <div class="col-xl-2 col-md-2">
+                <DataInput placeholder="Delay" type="numeric" :data="delay" :disabled="property == ''"
+                    @update:data="delayUpdated">
+                </DataInput>
+            </div>
+            <div class="col-xl-3 col-md-2" v-if="feature.type == 'numeric'">
+                <Selector :items="getSteps()" :value="step" alignment="left" :disabled="property == ''"
+                    @update:data="stepUpdated">
+                </Selector>
+            </div>
+        </div>
     </div>
 </template>
