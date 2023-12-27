@@ -28,7 +28,7 @@ const delay = ref(null);
 const step = ref('')
 const store = useStore();
 
-const emit = defineEmits(['remove', 'update:id', 'update:data', 'update:delay', , 'update:step'])
+const emit = defineEmits(['remove', 'update:property', 'update:id', 'update:data', 'update:delay', , 'update:step'])
 watchEffect(() => id.value = props.id);
 watchEffect(() => data.value = props.data);
 watchEffect(() => delay.value = props.delay);
@@ -96,6 +96,8 @@ function propertySelectionChanged(event) {
             }
         }
     }
+
+    emit('update:property', property.value)
 }
 
 const feature = computed(() => {
@@ -131,6 +133,11 @@ function delayUpdated(event) {
     emit('update:delay', event)
 }
 
+function idUpdated(event) {
+    id.value = event
+    emit('update:id', event)
+}
+
 // function add() {
 //     var newAction = new ActionTrigger()
 //     newAction.delay = delay.value
@@ -143,8 +150,9 @@ function delayUpdated(event) {
 //     emit("add", newAction)
 // }
 
-function remove(event) {
-    emit("add", id.value)
+
+function remove() {
+    emit("remove", id.value)
 }
 
 const featureDevices = computed(() => {
@@ -249,8 +257,8 @@ select.form-control:focus,
     attic light > brightness > 5 > 0 min > increase -->
 
     <div class="col-xl-3 col-md-2">
-        <Selector placeholder=" Select device" :items="deviceList()" :value="id" alignment="center"
-            @update:data="e => id = e" :disabled="id != ''">
+        <Selector placeholder=" Select device" :items="deviceList()" :value="id" alignment="center" @update:data="idUpdated"
+            :disabled="id != ''">
         </Selector>
     </div>
     <div class="col-xl-3 col-md-2">
@@ -274,7 +282,7 @@ select.form-control:focus,
 
     <!-- buttons -->
     <div class="col-xl-2">
-        <button type="button" class="btn btn-default btn-number" @click="remove($event)">
+        <button type="button" class="btn btn-default btn-number" @click="remove">
             <span class="fa fa-minus"></span>
         </button>
     </div>

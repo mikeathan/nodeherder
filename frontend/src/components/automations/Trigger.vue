@@ -13,7 +13,6 @@ const props = defineProps({
 });
 
 const store = useStore();
-const selectedAction = ref(null)
 const trigger = ref(null)
 
 const emit = defineEmits(['save', 'delete'])
@@ -21,11 +20,7 @@ const emit = defineEmits(['save', 'delete'])
 watch(
     () => props.trigger,
     () => {
-        selectedAction.value = ""
-        // select action options to current action if not null
-        if (props.trigger.action != null) {
-            selectedAction.value = props.trigger.action.id
-        }
+
         trigger.value = JSON.parse(JSON.stringify(props.trigger))
         trigger.value.conditions.forEach(function callback(condition, index) {
             condition.idx = index + 1
@@ -37,8 +32,6 @@ watch(
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
 });
-
-
 
 function addAction() {
     var newAction = new ActionTrigger()
@@ -55,17 +48,6 @@ function addCondition() {
     trigger.value.conditions.push(condition)
 }
 
-function add() {
-
-    // newAction.delay = delay.value
-    // newAction.step = step.value
-    // newAction.data = data.value
-    // newAction.friendlyname = device.value.friendly_name
-    // newAction.id = device.value.id
-    // newAction.property = property.value
-    // newAction.type = device.value.exposes[property.value].type
-    //emit("add", newAction)
-}
 function removeCondition(event) {
     var index = trigger.value.conditions.filter(k => k.idx != event);
     if (index != -1) {
@@ -139,7 +121,8 @@ function exposesList() {
                 <div class="col-md-5">
                     <h5>
                         Action
-                        <button type="button" class="btn btn-default btn-number" @click="addAction">
+                        <button v-if="trigger.action == null" type="button" class="btn btn-default btn-number"
+                            @click="addAction">
                             <span class="fa fa-plus"></span>
                         </button>
                     </h5>
@@ -149,6 +132,8 @@ function exposesList() {
                 <div v-if="trigger.action != null" class="row">
                     <TriggerAction :id="trigger.action.id" :property="trigger.action.property" :data="trigger.action.data"
                         :delay="trigger.action.delay" :step="trigger.action.step" @remove="removeAction"
+                        @update:id="newValue => trigger.action.id = newValue"
+                        @update:property="newValue => trigger.action.property = newValue"
                         @update:data="newValue => trigger.action.data = newValue"
                         @update:delay="newValue => trigger.action.delay = newValue"
                         @update:step="newValue => trigger.action.step = newValue">
