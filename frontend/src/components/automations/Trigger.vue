@@ -14,7 +14,6 @@ const props = defineProps({
 
 const store = useStore();
 const trigger = ref(null)
-
 const emit = defineEmits(['save', 'delete'])
 
 watch(

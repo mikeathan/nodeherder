@@ -43,16 +43,51 @@ function dataSelectionChanged(event) {
 </script>
 
 <style scoped>
-.select-outline {
-    border: 0;
-    outline: 0;
-    border-bottom: 1px solid #e5e5e5;
+/* 
+
+select.form-control {
+    border: 1;
+    outline: 1;
+    appearance: none;
+    border: none;
+    background: none;
+    background-color: transparent;
+    font-family: inherit;
+    outline: none;
 }
+
+.plain-select:focus,
+:active,
+:hover {
+    outline: none;
+    box-shadow: none;
+}
+
+
+select.form-control:focus,
+:active,
+:hover {
+    outline: none;
+    box-shadow: none;
+}
+
+select.form-control {
+    background-color: transparent;
+    background-clip: padding-box;
+    border: 1;
+    outline: 1;
+    appearance: none;
+}
+
+select.form-control {
+    background-color: transparent;
+    background-clip: padding-box;
+} */
 </style>
 <template>
     <div>
-        <select id="dataSelect" :style="'text-align:' + props.alignment + ';'" class="form-control form-select"
-            name="valueinput" v-model="selected" @change="dataSelectionChanged" :disabled="props.disabled">
+        <select id="dataSelect" :style="'text-align:' + props.alignment + ';'" class="form-control" v-model="selected"
+            @change="dataSelectionChanged" :disabled="props.disabled">
             <option v-if="props.placeholder != ''" value="">{{ props.placeholder }}</option>
             <option v-for="(value, key) in props.items" :value="value" :key="value">
                 {{ key }}
