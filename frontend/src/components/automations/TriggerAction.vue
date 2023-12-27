@@ -78,8 +78,8 @@ const features = computed(() => {
 function propertySelectionChanged(event) {
     var value = event;
     if (value == "" || device.value == undefined) {
+        property.value = ""
         data.value = "" // reset data
-
         return;
     }
     property.value = value
@@ -249,17 +249,16 @@ select.form-control:focus,
     attic light > brightness > 5 > 0 min > increase -->
 
     <div class="col-xl-3 col-md-2">
-        <Selector placeholder=" Select device" :items="deviceList()" :value="id" alignment="left" @update:data="e => id = e"
-            :disabled="id != ''">
+        <Selector placeholder=" Select device" :items="deviceList()" :value="id" alignment="center"
+            @update:data="e => id = e" :disabled="id != ''">
         </Selector>
     </div>
     <div class="col-xl-3 col-md-2">
         <Selector placeholder="Select property" :items="getFeatureNames" :value="property" alignment="center"
-            @update:data="propertySelectionChanged" :disabled="props.property != null">
+            @update:data="propertySelectionChanged" :disabled="id == ''">
         </Selector>
-
     </div>
-    <!-- <div class="col-xl-2 col-md-2">
+    <div class="col-xl-2 col-md-2">
         <DataInput :type="feature.type" :placeholder="getPlaceholder(feature.type)" :items="getItems()" :data="data"
             :disabled="property == ''" @update:data="dataUpdated">
         </DataInput>
@@ -268,20 +267,15 @@ select.form-control:focus,
         <DataInput placeholder="Delay" type="numeric" :data="delay" :disabled="property == ''" @update:data="delayUpdated">
         </DataInput>
     </div>
-    <div class="col-xl-3 col-md-2">
-        <Selector :items="getSteps()" :value="step" alignment="left" @update:data="stepUpdated">
+    <div class="col-xl-3 col-md-2" v-if="feature.type == 'numeric'">
+        <Selector :items="getSteps()" :value="step" alignment="left" :disabled="property == ''" @update:data="stepUpdated">
         </Selector>
-    </div> -->
+    </div>
 
     <!-- buttons -->
     <div class="col-xl-2">
-
-        <div>
-            <button type="button" class="btn btn-default btn-number" @click="remove($event)">
-                <span class="fa fa-minus"></span>
-                <!-- <span class="fa fa-trash"></span> -->
-
-            </button>
-        </div>
+        <button type="button" class="btn btn-default btn-number" @click="remove($event)">
+            <span class="fa fa-minus"></span>
+        </button>
     </div>
 </template>

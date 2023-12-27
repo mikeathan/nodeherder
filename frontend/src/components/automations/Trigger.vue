@@ -112,53 +112,58 @@ function exposesList() {
                 :disabled="props.trigger.name != ''" @update:data="v => trigger.name = v">
             </Selector>
         </div>
-        <br>
-        <!-- Conditions -->
-        <div class="col-md-5">
-            <h5>Conditions
-                <button type="button" class="btn btn-default btn-number" @click="addCondition()">
-                    <span class="fa fa-plus"></span>
-                </button>
-            </h5>
-        </div>
-        <div v-for="condition in  trigger.conditions ">
+        <div v-if="trigger.name != ''">
             <div class="row">
-                <TriggerCondition :id="props.id" :index="condition.idx" :name="condition.name"
-                    :operator="condition.equality" :key="condition.idx" :data="condition.value"
-                    @remove="removeCondition($event)" @update:name="newValue => condition.name = newValue"
-                    @update:value="newValue => condition.value = newValue"
-                    @update:operator="newValue => condition.equality = newValue">
-                </TriggerCondition>
+
+                <!-- Conditions -->
+                <div class="col-md-5">
+                    <h5>Conditions
+                        <button type="button" class="btn btn-default btn-number" @click="addCondition()">
+                            <span class="fa fa-plus"></span>
+                        </button>
+                    </h5>
+                </div>
+                <div v-for="condition in  trigger.conditions ">
+                    <div class="row">
+                        <TriggerCondition :id="props.id" :index="condition.idx" :name="condition.name"
+                            :operator="condition.equality" :key="condition.idx" :data="condition.value"
+                            @remove="removeCondition($event)" @update:name="newValue => condition.name = newValue"
+                            @update:value="newValue => condition.value = newValue"
+                            @update:operator="newValue => condition.equality = newValue">
+                        </TriggerCondition>
+                    </div>
+                </div>
             </div>
-        </div>
+            <!-- Actions -->
+            <div class="row">
+                <div class="col-md-5">
+                    <h5>
+                        Action
+                        <button type="button" class="btn btn-default btn-number" @click="addAction">
+                            <span class="fa fa-plus"></span>
+                        </button>
+                    </h5>
 
-        <!-- Actions -->
-        <div class="col-md-5">
-            <h5>
-                Action
-                <button type="button" class="btn btn-default btn-number" @click="addAction">
-                    <span class="fa fa-plus"></span>
-                </button>
-            </h5>
-
-        </div>
-        <!-- existing action -->
-        <div v-if="trigger.action != null" class="row">
-            <TriggerAction :id="trigger.action.id" :property="trigger.action.property" :data="trigger.action.data"
-                :delay="trigger.action.delay" :step="trigger.action.step" @remove="removeAction"
-                @update:data="newValue => trigger.action.data = newValue"
-                @update:delay="newValue => trigger.action.delay = newValue"
-                @update:step="newValue => trigger.action.step = newValue">
-            </TriggerAction>
-        </div>
-        <div class="row">
-            <div class="col">
-                <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false" @click="save">
-                    Save
-                </button>
-                <button type="button" class="btn btn-light" @click="remove">
-                    Delete
-                </button>
+                </div>
+                <!-- existing action -->
+                <div v-if="trigger.action != null" class="row">
+                    <TriggerAction :id="trigger.action.id" :property="trigger.action.property" :data="trigger.action.data"
+                        :delay="trigger.action.delay" :step="trigger.action.step" @remove="removeAction"
+                        @update:data="newValue => trigger.action.data = newValue"
+                        @update:delay="newValue => trigger.action.delay = newValue"
+                        @update:step="newValue => trigger.action.step = newValue">
+                    </TriggerAction>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false" @click="save">
+                            Save
+                        </button>
+                        <button type="button" class="btn btn-light" @click="remove">
+                            Delete
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
