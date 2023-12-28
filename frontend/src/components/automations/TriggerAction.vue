@@ -27,7 +27,7 @@ const delay = ref(null);
 const step = ref('')
 const store = useStore();
 
-const emit = defineEmits(['remove', 'update:property', 'update:id', 'update:data', 'update:delay', , 'update:step'])
+const emit = defineEmits(['update:property', 'update:id', 'update:data', 'update:delay', , 'update:step'])
 watchEffect(() => id.value = props.id);
 watchEffect(() => data.value = props.data);
 watchEffect(() => delay.value = props.delay);
@@ -152,10 +152,6 @@ function idUpdated(event) {
     }
 }
 
-function remove() {
-    emit("remove", id.value)
-}
-
 const featureDevices = computed(() => {
     var devices = store.getters["devices/items"];
 
@@ -227,45 +223,43 @@ function getItems() {
 </script>
 
 <template>
-    <div class="col-xl-3">
-        <Selector placeholder=" Select device" :items="deviceList()" :value="id" alignment="left" @update:data="idUpdated"
-            :disabled="id != ''">
-        </Selector>
-    </div>
-    <div class="col-xl-3">
-        <Selector placeholder="Select property" :items="getFeatureNames" :value="property" alignment="center"
-            @update:data="propertySelectionChanged" :disabled="id == ''">
-        </Selector>
-    </div>
-    <div class="col-xl-4">
-        <DataInput :type="feature.type" :placeholder="getPlaceholder(feature.type)" :items="getItems()" :data="data"
-            :disabled="property == ''" @update:data="dataUpdated">
-        </DataInput>
-    </div>
-    <div class="col-xl-2">
-        <div class="btn-group">
-            <button v-if="feature.type == 'numeric'" class="btn btn-default btn-number" type="button"
-                data-bs-toggle="collapse" data-bs-target="#collapseOptions" aria-expanded="false"
-                aria-controls="collapseOptions">
-                <span class="fas fa-angle-double-down"></span>
-            </button>
-
-            <button type="button" class="btn btn-default btn-number" @click="remove">
-                <span class="fa fa-minus"></span>
-            </button>
+    <div class="row">
+        <div class="col-xl-3">
+            <Selector placeholder=" Select device" :items="deviceList()" :value="id" alignment="left"
+                @update:data="idUpdated" :disabled="id != ''">
+            </Selector>
         </div>
-
-    </div>
-    <div class="collapse " id="collapseOptions">
-        <div class="row pt-2">
-            <div class="col-xl-3">
-                <DataInput placeholder="Delay (min)" type="numeric" :data="delay" :disabled="property == ''"
-                    @update:data="delayUpdated">
-                </DataInput>
+        <div class="col-xl-3">
+            <Selector placeholder="Select property" :items="getFeatureNames" :value="property" alignment="center"
+                @update:data="propertySelectionChanged" :disabled="id == ''">
+            </Selector>
+        </div>
+        <div class="col-xl-4">
+            <DataInput :type="feature.type" :placeholder="getPlaceholder(feature.type)" :items="getItems()" :data="data"
+                :disabled="property == ''" @update:data="dataUpdated">
+            </DataInput>
+        </div>
+        <div class="col-xl-2">
+            <div class="btn-group">
+                <button v-if="feature.type == 'numeric'" class="btn btn-default btn-number" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#collapseOptions" aria-expanded="false"
+                    aria-controls="collapseOptions">
+                    <span class="fas fa-angle-double-down"></span>
+                </button>
             </div>
-            <div class="col-xl-3 " v-if="feature.type == 'numeric'">
-                <Selector :items="getSteps()" :value="step" :disabled="property == ''" @update:data="stepUpdated">
-                </Selector>
+
+        </div>
+        <div class="collapse " id="collapseOptions">
+            <div class="row pt-2">
+                <div class="col-xl-3">
+                    <DataInput placeholder="Delay (min)" type="numeric" :data="delay" :disabled="property == ''"
+                        @update:data="delayUpdated">
+                    </DataInput>
+                </div>
+                <div class="col-xl-3 " v-if="feature.type == 'numeric'">
+                    <Selector :items="getSteps()" :value="step" :disabled="property == ''" @update:data="stepUpdated">
+                    </Selector>
+                </div>
             </div>
         </div>
     </div>

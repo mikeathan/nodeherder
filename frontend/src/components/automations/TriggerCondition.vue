@@ -24,12 +24,8 @@ const data = ref(null)
 const operator = ref('')
 const name = ref('')
 
-const emit = defineEmits(['add', 'remove', 'update:name', 'update:value', 'update:operator'])
+const emit = defineEmits(['update:name', 'update:value', 'update:operator'])
 
-
-function remove() {
-    emit("remove", props.index)
-}
 
 const exposes = computed(() => {
 
@@ -139,30 +135,32 @@ function getItems() {
 </script>
 
 <template>
-    <div v-if="name == ''" class="col-xl-3">
-        <DataInput placeholder="Select trigger" :items="exposes" :data="name" alignment="left" :disabled="name != ''"
-            @update:data="exposeSelectionChanged">
-        </DataInput>
-    </div>
-    <div v-else class="col-xl-3">
-        <DataInput type="string" placeholder="Name" :data="name" :disabled="true" alignment="left">
-        </DataInput>
-    </div>
-    <div class="col-xl-2">
-        <DataInput type="enum" :items="getOperators()" :data="operator" :disabled="name == ''" alignment="center"
-            @update:data="operatorUpdated">
-        </DataInput>
-    </div>
-    <div class="col-xl-4">
-        <DataInput :type="feature.type" :placeholder="getPlaceholder()" :data="data" :items="getItems()" alignment="center"
-            :disabled="name == ''" @update:data="dataUpdated">
-        </DataInput>
-    </div>
-    <div class="col-xl-2">
-        <div class="btn-group">
-            <button type="button" class="btn btn-default btn-number" @click="remove($event)">
-                <span class="fa fa-minus"></span>
-            </button>
+    <div class="row">
+        <div v-if="name == ''" class="col-md-3">
+            <DataInput placeholder="Select trigger" :items="exposes" :data="name" alignment="left" :disabled="name != ''"
+                @update:data="exposeSelectionChanged">
+            </DataInput>
         </div>
+        <div v-else class="col-md-3">
+            <DataInput type="string" placeholder="Name" :data="name" :disabled="true" alignment="left">
+            </DataInput>
+        </div>
+        <div class="col-md-2">
+            <DataInput type="enum" :items="getOperators()" :data="operator" :disabled="name == ''" alignment="center"
+                @update:data="operatorUpdated">
+            </DataInput>
+        </div>
+        <div class="col-md-4">
+            <DataInput :type="feature.type" :placeholder="getPlaceholder()" :data="data" :items="getItems()"
+                alignment="center" :disabled="name == ''" @update:data="dataUpdated">
+            </DataInput>
+        </div>
+        <!-- <div class="col-md-2">
+            <div class="btn-group">
+                <button type="button" class="btn btn-default btn-number" @click="remove($event)">
+                    <span class="fa fa-minus"></span>
+                </button>
+            </div>
+        </div> -->
     </div>
 </template>

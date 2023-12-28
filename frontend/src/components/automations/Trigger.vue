@@ -102,48 +102,96 @@ function capitalize(val) {
             <div class="row pt-3">
 
                 <!-- Conditions -->
-                <div class="col-md-5">
-                    <h5 class="ps-2">Conditions
-                        <button type="button" class="btn btn-default btn-number" @click="addCondition()">
-                            <span class="fa fa-plus"></span>
-                        </button>
-                    </h5>
-                </div>
 
-                <div v-for="condition in  trigger.conditions ">
-                    <div class="row">
-                        <TriggerCondition :id="props.id" :index="condition.idx" :name="condition.name"
-                            :operator="condition.equality" :key="condition.idx" :data="condition.value"
-                            @remove="removeCondition($event)" @update:name="newValue => condition.name = newValue"
-                            @update:value="newValue => condition.value = newValue"
-                            @update:operator="newValue => condition.equality = newValue">
-                        </TriggerCondition>
-                    </div>
-                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">
+                                <h5>Conditions
+                                    <button type="button" class="btn btn-default btn-number" @click="addCondition()">
+                                        <span class="fa fa-plus"></span>
+                                    </button>
+                                </h5>
+                            </th>
+                            <th scope="col">#</th>
+                        </tr>
+                    </thead>
+                    <tbody v-for="(condition, index) in  trigger.conditions " :item="condition">
+                        <tr>
+                            <th scope="w-25">
+                                <TriggerCondition :id="props.id" :index="condition.idx" :name="condition.name"
+                                    :operator="condition.equality" :key="condition.idx" :data="condition.value"
+                                    @update:name="newValue => condition.name = newValue"
+                                    @update:value="newValue => condition.value = newValue"
+                                    @update:operator="newValue => condition.equality = newValue">
+                                </TriggerCondition>
+                            </th>
+                            <td>
+                                <span class="fa fa-trash-alt fa-sm" @click="removeCondition(condition.index)">
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
 
+                    <!-- <tbody>
+                        <tr>
+                            <th scope="w-25">
+                                <TriggerAction v-if="trigger.action != null" :id="trigger.action.id"
+                                    :property="trigger.action.property" :data="trigger.action.data"
+                                    :delay="trigger.action.delay" :step="trigger.action.step" @update:id="actionIdUpdated"
+                                    @update:property="newValue => trigger.action.property = newValue"
+                                    @update:data="newValue => trigger.action.data = newValue"
+                                    @update:delay="newValue => trigger.action.delay = newValue"
+                                    @update:step="newValue => trigger.action.step = newValue">
+                                </TriggerAction>
+                            </th>
+                            <td>
+                                <span v-if="trigger.action != null" class="fa fa-trash-alt fa-sm" @click="removeAction">
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody> -->
+                </table>
             </div>
+
+
             <!-- Actions -->
             <div class="row  pt-3">
-                <div class="col-md-5">
-                    <h5 class="ps-2">
-                        Actions
-                        <button v-if="trigger.action == null" type="button" class="btn btn-default btn-number"
-                            @click="addAction">
-                            <span class="fa fa-plus"></span>
-                        </button>
-                    </h5>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">
+                                <h5>Actions
+                                    <button v-if="trigger.action == null" type="button" class="btn btn-default btn-number"
+                                        @click="addAction()">
+                                        <span class=" fa fa-plus"></span>
+                                    </button>
+                                </h5>
+                            </th>
+                            <th scope="col">#</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <th scope="w-25">
+                                <TriggerAction v-if="trigger.action != null" :id="trigger.action.id"
+                                    :property="trigger.action.property" :data="trigger.action.data"
+                                    :delay="trigger.action.delay" :step="trigger.action.step" @update:id="actionIdUpdated"
+                                    @update:property="newValue => trigger.action.property = newValue"
+                                    @update:data="newValue => trigger.action.data = newValue"
+                                    @update:delay="newValue => trigger.action.delay = newValue"
+                                    @update:step="newValue => trigger.action.step = newValue">
+                                </TriggerAction>
+                            </th>
+                            <td>
+                                <span v-if="trigger.action != null" class="fa fa-trash-alt fa-sm" @click="removeAction">
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
 
-                </div>
-                <!-- existing action -->
-                <div v-if="trigger.action != null" class="row">
-                    <TriggerAction :id="trigger.action.id" :property="trigger.action.property" :data="trigger.action.data"
-                        :delay="trigger.action.delay" :step="trigger.action.step" @remove="removeAction"
-                        @update:id="actionIdUpdated" @update:property="newValue => trigger.action.property = newValue"
-                        @update:data="newValue => trigger.action.data = newValue"
-                        @update:delay="newValue => trigger.action.delay = newValue"
-                        @update:step="newValue => trigger.action.step = newValue">
-                    </TriggerAction>
-                </div>
+
                 <div class="row pt-3">
                     <div class="col">
                         <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false" @click="save">
