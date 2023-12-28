@@ -96,68 +96,81 @@ function capitalize(val) {
                 :disabled="props.trigger.name != ''" @update:data="v => trigger.name = v">
             </Selector>
         </div>
-        <div v-else>
-            <h5> Trigger {{ capitalize(trigger.name) }} </h5>
-
-            <div class="row pt-3">
-
-                <!-- Conditions -->
-
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th scope="col">
-                                <h5>Conditions
-                                    <button type="button" class="btn btn-default btn-number" @click="addCondition()">
-                                        <span class="fa fa-plus"></span>
-                                    </button>
-                                </h5>
-                            </th>
-                            <th scope="col">#</th>
-                        </tr>
-                    </thead>
-                    <tbody v-for="(condition, index) in  trigger.conditions " :item="condition">
-                        <tr>
-                            <th scope="w-25">
-                                <TriggerCondition :id="props.id" :index="condition.idx" :name="condition.name"
-                                    :operator="condition.equality" :key="condition.idx" :data="condition.value"
-                                    @update:name="newValue => condition.name = newValue"
-                                    @update:value="newValue => condition.value = newValue"
-                                    @update:operator="newValue => condition.equality = newValue">
-                                </TriggerCondition>
-                            </th>
-                            <td>
-                                <span class="fa fa-trash-alt fa-sm" @click="removeCondition(condition.index)">
-                                </span>
-                            </td>
-                        </tr>
-                    </tbody>
-
-                    <!-- <tbody>
-                        <tr>
-                            <th scope="w-25">
-                                <TriggerAction v-if="trigger.action != null" :id="trigger.action.id"
-                                    :property="trigger.action.property" :data="trigger.action.data"
-                                    :delay="trigger.action.delay" :step="trigger.action.step" @update:id="actionIdUpdated"
-                                    @update:property="newValue => trigger.action.property = newValue"
-                                    @update:data="newValue => trigger.action.data = newValue"
-                                    @update:delay="newValue => trigger.action.delay = newValue"
-                                    @update:step="newValue => trigger.action.step = newValue">
-                                </TriggerAction>
-                            </th>
-                            <td>
-                                <span v-if="trigger.action != null" class="fa fa-trash-alt fa-sm" @click="removeAction">
-                                </span>
-                            </td>
-                        </tr>
-                    </tbody> -->
-                </table>
-            </div>
+        <div class="row" v-else>
 
 
-            <!-- Actions -->
-            <div class="row  pt-3">
-                <table class="table">
+            <!-- Conditions -->
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">
+                            Trigger {{ capitalize(trigger.name) }}
+                        </th>
+                        <th scope="col">#</th>
+                    </tr>
+                </thead>
+                <tr>
+                    <th scope="col">
+                        <h5>Conditions
+                            <button type="button" class="btn btn-default btn-number" @click="addCondition()">
+                                <span class="fa fa-plus"></span>
+                            </button>
+                        </h5>
+                    </th>
+                </tr>
+                <tbody v-for="(condition, index) in  trigger.conditions " :item="condition">
+                    <tr>
+                        <th scope="w-25">
+                            <TriggerCondition :id="props.id" :index="condition.idx" :name="condition.name"
+                                :operator="condition.equality" :key="condition.idx" :data="condition.value"
+                                @update:name="newValue => condition.name = newValue"
+                                @update:value="newValue => condition.value = newValue"
+                                @update:operator="newValue => condition.equality = newValue">
+                            </TriggerCondition>
+                        </th>
+                        <td>
+                            <span class="fa fa-trash-alt fa-sm" @click="removeCondition(condition.index)">
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+                <tr>
+                    <th scope="col">
+                        <h5>Actions
+                            <button v-if="trigger.action == null" type="button" class="btn btn-default btn-number ms-3"
+                                @click="addAction()">
+                                <span class=" fa fa-plus"></span>
+                            </button>
+                        </h5>
+                    </th>
+                </tr>
+                <tbody>
+
+                    <tr>
+                        <th scope="w-25">
+                            <TriggerAction v-if="trigger.action != null" :id="trigger.action.id"
+                                :property="trigger.action.property" :data="trigger.action.data"
+                                :delay="trigger.action.delay" :step="trigger.action.step" @update:id="actionIdUpdated"
+                                @update:property="newValue => trigger.action.property = newValue"
+                                @update:data="newValue => trigger.action.data = newValue"
+                                @update:delay="newValue => trigger.action.delay = newValue"
+                                @update:step="newValue => trigger.action.step = newValue">
+                            </TriggerAction>
+                        </th>
+                        <td>
+                            <span v-if="trigger.action != null" class="fa fa-trash-alt fa-sm" @click="removeAction">
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+
+        <!-- Actions -->
+        <div class="row  pt-3">
+            <!-- <table class="table">
                     <thead>
                         <tr>
                             <th scope="col">
@@ -189,18 +202,17 @@ function capitalize(val) {
                             </td>
                         </tr>
                     </tbody>
-                </table>
+                </table> -->
 
 
-                <div class="row pt-3">
-                    <div class="col">
-                        <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false" @click="save">
-                            Save
-                        </button>
-                        <button type="button" class="btn btn-light" @click="remove">
-                            Delete
-                        </button>
-                    </div>
+            <div class="row pt-3">
+                <div class="col">
+                    <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false" @click="save">
+                        Save
+                    </button>
+                    <button type="button" class="btn btn-light" @click="remove">
+                        Delete
+                    </button>
                 </div>
             </div>
         </div>

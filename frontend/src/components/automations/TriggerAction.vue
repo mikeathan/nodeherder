@@ -224,17 +224,17 @@ function getItems() {
 
 <template>
     <div class="row">
-        <div class="col-xl-3">
+        <div class="col-xl-3 col-md-4">
             <Selector placeholder=" Select device" :items="deviceList()" :value="id" alignment="left"
                 @update:data="idUpdated" :disabled="id != ''">
             </Selector>
         </div>
-        <div class="col-xl-3">
+        <div class="col-xl-3 col-md-4">
             <Selector placeholder="Select property" :items="getFeatureNames" :value="property" alignment="center"
                 @update:data="propertySelectionChanged" :disabled="id == ''">
             </Selector>
         </div>
-        <div class="col-xl-4">
+        <div class="col-xl-4 col-md-3">
             <DataInput :type="feature.type" :placeholder="getPlaceholder(feature.type)" :items="getItems()" :data="data"
                 :disabled="property == ''" @update:data="dataUpdated">
             </DataInput>
@@ -249,7 +249,7 @@ function getItems() {
             </div>
 
         </div>
-        <div class="collapse " id="collapseOptions">
+        <div class="collapse" id="collapseOptions">
             <div class="row pt-2">
                 <div class="col-xl-3">
                     <DataInput placeholder="Delay (min)" type="numeric" :data="delay" :disabled="property == ''"

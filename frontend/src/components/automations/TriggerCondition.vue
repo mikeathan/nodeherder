@@ -136,16 +136,16 @@ function getItems() {
 
 <template>
     <div class="row">
-        <div v-if="name == ''" class="col-md-3">
+        <div v-if="name == ''" class="col-xl-3 col-md-4">
             <DataInput placeholder="Select trigger" :items="exposes" :data="name" alignment="left" :disabled="name != ''"
                 @update:data="exposeSelectionChanged">
             </DataInput>
         </div>
-        <div v-else class="col-md-3">
+        <div v-else class="col-xl-3 col-md-4">
             <DataInput type="string" placeholder="Name" :data="name" :disabled="true" alignment="left">
             </DataInput>
         </div>
-        <div class="col-md-2">
+        <div class="col-xl-3 col-md-3">
             <DataInput type="enum" :items="getOperators()" :data="operator" :disabled="name == ''" alignment="center"
                 @update:data="operatorUpdated">
             </DataInput>
