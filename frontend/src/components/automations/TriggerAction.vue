@@ -45,6 +45,16 @@ watch(
     { immediate: true }
 );
 watch(
+    () => props.delay,
+    () => {
+        delay.value = props.delay
+        if (delay.value != null && delay.value >= 1000) {
+            delay.value /= 60000 // convert to minutes
+        }
+    },
+    { immediate: true }
+);
+watch(
     () => props.property,
     () => {
         property.value = props.property
@@ -131,7 +141,7 @@ function stepUpdated(event) {
 
 function delayUpdated(event) {
     delay.value = event
-    emit('update:delay', event)
+    emit('update:delay', event * 60000)// convert to minutes
 }
 
 function idUpdated(event) {
@@ -248,12 +258,12 @@ function getItems() {
     </div>
     <div class="collapse " id="collapseOptions">
         <div class="row pt-2">
-            <div class="col-xl-2 col-md-2">
-                <DataInput placeholder="Delay" type="numeric" :data="delay" :disabled="property == ''"
+            <div class="col-xl-3">
+                <DataInput placeholder="Delay (min)" type="numeric" :data="delay" :disabled="property == ''"
                     @update:data="delayUpdated">
                 </DataInput>
             </div>
-            <div class="col-xl-3 col-md-2" v-if="feature.type == 'numeric'">
+            <div class="col-xl-3 " v-if="feature.type == 'numeric'">
                 <Selector :items="getSteps()" :value="step" :disabled="property == ''" @update:data="stepUpdated">
                 </Selector>
             </div>
