@@ -216,53 +216,23 @@ function getItems() {
 
 </script>
 
-<style scoped>
-.plain-select {
-    border: 1;
-    outline: 1;
-    appearance: none;
-    border: none;
-    background: none;
-    background-color: transparent;
-    font-family: inherit;
-    outline: none;
-}
-
-select.form-control:focus,
-:active,
-:hover {
-    outline: none;
-    box-shadow: none;
-}
-
-/* select.form-control {
-    background-color: transparent;
-    background-clip: padding-box;
-    border: 1;
-    outline: 1;
-    appearance: none;
-} */
-</style>
 <template>
-    <!-- attic light > brightness > 300 > 5 min > none
-    attic light > brightness > 5 > 0 min > increase -->
-
-    <div class="col-xl-3 col-md-2">
-        <Selector placeholder=" Select device" :items="deviceList()" :value="id" alignment="center" @update:data="idUpdated"
+    <div class="col-xl-3">
+        <Selector placeholder=" Select device" :items="deviceList()" :value="id" alignment="left" @update:data="idUpdated"
             :disabled="id != ''">
         </Selector>
     </div>
-    <div class="col-xl-3 col-md-2">
+    <div class="col-xl-3">
         <Selector placeholder="Select property" :items="getFeatureNames" :value="property" alignment="center"
             @update:data="propertySelectionChanged" :disabled="id == ''">
         </Selector>
     </div>
-    <div class="col-xl-2 col-md-2">
+    <div class="col-xl-4">
         <DataInput :type="feature.type" :placeholder="getPlaceholder(feature.type)" :items="getItems()" :data="data"
             :disabled="property == ''" @update:data="dataUpdated">
         </DataInput>
     </div>
-    <div class="col-md-2 pt-2">
+    <div class="col-xl-2">
         <div class="btn-group">
             <button v-if="feature.type == 'numeric'" class="btn btn-default btn-number" type="button"
                 data-bs-toggle="collapse" data-bs-target="#collapseOptions" aria-expanded="false"
@@ -284,8 +254,7 @@ select.form-control:focus,
                 </DataInput>
             </div>
             <div class="col-xl-3 col-md-2" v-if="feature.type == 'numeric'">
-                <Selector :items="getSteps()" :value="step" alignment="left" :disabled="property == ''"
-                    @update:data="stepUpdated">
+                <Selector :items="getSteps()" :value="step" :disabled="property == ''" @update:data="stepUpdated">
                 </Selector>
             </div>
         </div>

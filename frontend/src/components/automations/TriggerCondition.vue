@@ -2,7 +2,6 @@
 import { OperatorKeys } from "../../models/automation"
 import DataInput from "../input/DataInput.vue"
 import { useStore } from "vuex";
-import Selector from "../input/Selector.vue"
 
 import { ref, computed, watch } from 'vue'
 const props = defineProps({
@@ -32,14 +31,14 @@ function remove() {
     emit("remove", props.index)
 }
 
-function getExposes() {
+const exposes = computed(() => {
 
-    var list = {}
+    var list = []
     for (const [key, expose] of Object.entries(device.value.exposes)) {
-        list[expose.name] = expose.name
+        list.push(expose.name)
     }
     return list
-}
+})
 
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
@@ -79,11 +78,6 @@ watch(
         operator.value = props.operator
     }, { immediate: true }
 )
-
-function reset() {
-    data.value = ""
-    operator.value = OperatorKeys[0]
-}
 
 function exposeSelectionChanged(event) {
 
@@ -145,12 +139,13 @@ function getItems() {
 </script>
 
 <template>
-    <div v-if="props.name == ''" class="col-xl-3">
-        <Selector placeholder="Select trigger" :items="getExposes()" :value="name" @update:data="exposeSelectionChanged">
-        </Selector>
+    <div v-if="name == ''" class="col-xl-3">
+        <DataInput placeholder="Select trigger" :items="exposes" :data="name" alignment="left" :disabled="name != ''"
+            @update:data="exposeSelectionChanged">
+        </DataInput>
     </div>
     <div v-else class="col-xl-3">
-        <DataInput type="string" placeholder="Name" :data="name" :disabled="true" alignment="center">
+        <DataInput type="string" placeholder="Name" :data="name" :disabled="true" alignment="left">
         </DataInput>
     </div>
     <div class="col-xl-2">
@@ -158,7 +153,7 @@ function getItems() {
             @update:data="operatorUpdated">
         </DataInput>
     </div>
-    <div class="col">
+    <div class="col-xl-4">
         <DataInput :type="feature.type" :placeholder="getPlaceholder()" :data="data" :items="getItems()" alignment="center"
             :disabled="name == ''" @update:data="dataUpdated">
         </DataInput>

@@ -94,7 +94,8 @@
           "type": "binary",
           "properties": {
             "off": "OFF",
-            "on": "ON"
+            "on": "ON",
+            "toggle": "TOGGLE"
           }
         }
       },

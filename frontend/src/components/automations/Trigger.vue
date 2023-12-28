@@ -80,34 +80,36 @@ function exposesList() {
     return list
 }
 
+function capitalize(val) {
+    return val.charAt(0).toUpperCase() + val.slice(1);
+}
 </script>
 
 <template>
     <div class="container-fluid p-0 h-100">
         <!-- TODO:  -->
-        <!-- mobile dimensions are wrong -->
-        <!-- fix triggeractonnew - check refactoring logic -->
-        <!-- fix triggeractonnew - props dont update unless we remove and add again -->
-        <!-- check url design above for styling of creator text input -->
         <!-- if automation for device exists message user else we overwrite it -->
 
-        <div class="row">
-            <h5>Trigger</h5>
+        <div class="row" v-if="trigger.name == ''">
+
             <Selector placeholder="Select trigger" :items="exposesList()" :value="trigger.name" alignment="left"
                 :disabled="props.trigger.name != ''" @update:data="v => trigger.name = v">
             </Selector>
         </div>
-        <div v-if="trigger.name != ''">
-            <div class="row">
+        <div v-else>
+            <h5> Trigger {{ capitalize(trigger.name) }} </h5>
+
+            <div class="row pt-3">
 
                 <!-- Conditions -->
                 <div class="col-md-5">
-                    <h5>Conditions
+                    <h5 class="ps-2">Conditions
                         <button type="button" class="btn btn-default btn-number" @click="addCondition()">
                             <span class="fa fa-plus"></span>
                         </button>
                     </h5>
                 </div>
+
                 <div v-for="condition in  trigger.conditions ">
                     <div class="row">
                         <TriggerCondition :id="props.id" :index="condition.idx" :name="condition.name"
@@ -118,12 +120,13 @@ function exposesList() {
                         </TriggerCondition>
                     </div>
                 </div>
+
             </div>
             <!-- Actions -->
-            <div class="row">
+            <div class="row  pt-3">
                 <div class="col-md-5">
-                    <h5>
-                        Action
+                    <h5 class="ps-2">
+                        Actions
                         <button v-if="trigger.action == null" type="button" class="btn btn-default btn-number"
                             @click="addAction">
                             <span class="fa fa-plus"></span>
@@ -141,7 +144,7 @@ function exposesList() {
                         @update:step="newValue => trigger.action.step = newValue">
                     </TriggerAction>
                 </div>
-                <div class="row">
+                <div class="row pt-3">
                     <div class="col">
                         <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false" @click="save">
                             Save
