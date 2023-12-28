@@ -69,43 +69,6 @@ var automationMap = new Map([
     },
   ],
   [
-    "0x00124b0029207763",
-    {
-      id: "0x00124b0029207763",
-      friendlyname: "TH1",
-      description: "Temperature and humidity test automation",
-      enabled: false,
-      triggers: [
-        {
-          name: "presence",
-          conditions: [{ name: "presence", value: false, equality: "=" }],
-          action: {
-            id: "0x70ac08fffefafeca",
-            friendlyname: "Attic light",
-            type: "light",
-            property: "state",
-            data: "OFF",
-            delay: 300000000000,
-          },
-        },
-        {
-          name: "presence",
-          conditions: [
-            { name: "presence", value: true, equality: "=" },
-            { name: "lux", value: 30, equality: "<=" },
-          ],
-          action: {
-            id: "0x70ac08fffefafeca",
-            friendlyname: "Attic light",
-            type: "light",
-            property: "state",
-            data: "ON",
-          },
-        },
-      ],
-    },
-  ],
-  [
     "0x001788010d7d9d3f",
     {
       id: "0x001788010d7d9d3f",
