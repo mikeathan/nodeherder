@@ -1,99 +1,74 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watchEffect, onMounted, watch } from 'vue';
+import { Modal } from 'bootstrap'
 
-const props = defineProps({
-    isOpen: Boolean,
-    device: Object
-});
+const props = defineProps<{
+    friendlyName: string
+    show: boolean
+}>()
 
-const message = ref('This is a modal popup');
-const emit = defineEmits(['close']);
+const emit = defineEmits(['update:name', 'close']);
 
-const closeModal = () => {
-    emit('close');
-};
+
+function rename(event: Event) {
+    emit('update:name', (event.target as HTMLInputElement).value);
+    close()
+}
+
+const friendlyName = ref<string>("")
+const closeRef = ref<HTMLButtonElement | null>(null);
+const modalRef = ref<HTMLElement | null>(null)
+const showDialog = ref<boolean>(false)
+let modal: Modal
+
+onMounted(() => {
+    if (modalRef.value) {
+        modal = new Modal(modalRef.value)
+    }
+})
+
+// https://shzhangji.com/blog/2022/06/11/use-bootstrap-v5-in-vue3-project/
+
+watchEffect(() => friendlyName.value = props.friendlyName);
+
+watch(
+    () => props.show,
+    () => {
+        showDialog.value = props.show
+        if (showDialog.value) {
+            modal.show()
+        } else {
+            modal.hide()
+        }
+    }
+);
+
+function close() {
+    emit('close', false)
+}
+function isValid() {
+    return friendlyName.value != '' && friendlyName.value != props.friendlyName
+}
 </script>
-<style scoped>
-.modal-mask {
-    position: fixed;
-    z-index: 9998;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: table;
-    transition: opacity 0.3s ease;
-}
 
-.modal-wrapper {
-    display: table-cell;
-    vertical-align: middle;
-}
-
-.modal-container {
-    width: 300px;
-    margin: 0px auto;
-    padding: 20px 30px;
-    background-color: #fff;
-    border-radius: 2px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.33);
-    transition: all 0.3s ease;
-    font-family: Helvetica, Arial, sans-serif;
-}
-
-.modal-header h3 {
-    margin-top: 0;
-    color: #42b983;
-}
-
-.modal-body {
-    margin: 20px 0;
-}
-
-.modal-default-button {
-    float: right;
-}
-
-.modal-enter-from,
-.modal-leave-to {
-    opacity: 0;
-}
-
-.modal-enter-active .modal-container,
-.modal-leave-active .modal-container {
-    -webkit-transform: scale(1.1);
-    transform: scale(1.1);
-}
-</style>
 <template>
-    https://codepen.io/immarina/pen/oNxXWKa
-
-    <div class="modal-mask" v-if="isOpen" @click.self="closeModal">
-        <div class="modal-wrapper">
-            <div class="modal-container">
-
+    <div class="modal fade" tabindex="-1" aria-hidden="true" ref="modalRef">
+        <div class="modal-dialog">
+            <div class="modal-content">
                 <div class="modal-header">
-                    <h3>Rename device</h3>
-                    <small>{{ props.device.friendly_name }}</small>
-                    <button @click.prevent="closeModal">X</button>
+                    <h5 class="modal-title">Rename device</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control" v-model="friendlyName"
+                        @input="e => friendlyName = (e.target as HTMLInputElement).value">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="close">Close</button>
+                    <button type="button" class="btn btn-primary" :disabled="isValid() == false"
+                        @click="rename">Rename</button>
                 </div>
             </div>
         </div>
     </div>
-
-    <!-- <div v-if="isOpen" class="modal-mask" @click.self="closeModal">
-        <div class="modal-wrapper">
-            <div class="popup-header">
-                <h3>Rename device</h3>
-                <small>{{ props.device.friendly_name }}</small>
-                <button @click.prevent="closeModal">X</button>
-            </div>
-            <article>
-                <div class="popup-content-text">
-                    This is a simple modal popup in Vue.js
-                </div>
-            </article>
-        </div>
-    </div> -->
 </template>

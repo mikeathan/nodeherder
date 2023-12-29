@@ -20,11 +20,14 @@ const previousPage = computed(() => {
 });
 
 const store = useStore();
-const showEditDeviceDialog = ref(false)
-
+const showDialog = ref(false)
 const device = computed(() => {
   return store.getters["devices/find"](props.id);
 });
+
+function renameDevice(value) {
+  store.dispatch("devices/rename", { name: device.friendlyName, newName: value });
+}
 
 const displayProps = computed(() => {
   const device = store.getters["devices/find"](props.id);
@@ -102,13 +105,14 @@ const displayProps = computed(() => {
       </dl>
 
       <div class="btn-group btn-group-sm" role="group">
-        <button class="btn btn-danger" title="Remove device" @click="showEditDeviceDialog = true">
-          <i class="fa fa-trash"></i>
+        <button class="btn btn-danger" title="Remove device" @click="showDialog = true">
+          <i class="far fa-edit"></i>
         </button>
       </div>
     </div>
 
-    <RenameDeviceDialog :device="device" :isOpen="showEditDeviceDialog" @close="showEditDeviceDialog = false">
+    <RenameDeviceDialog :friendlyName="device.friendly_name" :show="showDialog" @update:name="renameDevice"
+      @close="e => showDialog = e">
     </RenameDeviceDialog>
   </div>
 </template>
