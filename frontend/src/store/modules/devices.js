@@ -17,6 +17,17 @@ const actions = {
       { root: true }
     );
   },
+  rename({ dispatch }, { name, newName }) {
+    var payload = {
+      from: name,
+      to: newName,
+    };
+    dispatch(
+      "ws/emit",
+      { event: "deviceRename", message: payload },
+      { root: true }
+    );
+  },
 };
 
 const getters = {

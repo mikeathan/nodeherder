@@ -26,7 +26,7 @@ const device = computed(() => {
 });
 
 function renameDevice(value) {
-  store.dispatch("devices/rename", { name: device.friendlyName, newName: value });
+  store.dispatch("devices/rename", { name: device.value.friendly_name, newName: value });
 }
 
 const displayProps = computed(() => {
@@ -105,7 +105,7 @@ const displayProps = computed(() => {
       </dl>
 
       <div class="btn-group btn-group-sm" role="group">
-        <button class="btn btn-danger" title="Remove device" @click="showDialog = true">
+        <button class="btn btn-default btn-number" title="Remove device" @click="showDialog = true">
           <i class="far fa-edit"></i>
         </button>
       </div>

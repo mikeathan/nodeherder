@@ -11,7 +11,7 @@ const emit = defineEmits(['update:name', 'close']);
 
 
 function rename(event: Event) {
-    emit('update:name', (event.target as HTMLInputElement).value);
+    emit('update:name', friendlyName.value);
     close()
 }
 
