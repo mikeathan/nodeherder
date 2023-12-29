@@ -33,6 +33,10 @@ func (w *MockEventHub) OnDeviceSetValue(P func(payload interface{}) error) {
 	fmt.Println("Empty OnDeviceSetValue")
 }
 
+func (w *MockEventHub) OnDeviceRename(P func(payload interface{}) error) {
+	fmt.Println("Empty OnDeviceRename")
+}
+
 func (w *MockEventHub) OnSaveAutomation(action func(p interface{}) error) {
 	fmt.Println("Empty OnSaveAutomation")
 }
@@ -104,6 +108,10 @@ func (w *NopWsServer) OnLoadAutomations(action func() interface{}) {
 
 func (w *NopWsServer) OnDeviceSetValue(action func(payload interface{}) error) {
 	fmt.Println("Empty OnDeviceSetValue")
+}
+
+func (w *NopWsServer) OnDeviceRename(P func(payload interface{}) error) {
+	fmt.Println("Empty OnDeviceRename")
 }
 
 func (w *NopWsServer) OnLoadDevices(action func() interface{}) {

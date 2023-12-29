@@ -18,6 +18,7 @@ const (
 	DeleteAutomation        = "deleteAutomation"
 	DeleteAutomationTrigger = "deleteAutomationTrigger"
 	DeviceSetValue          = "deviceSetValue"
+	DeviceRename            = "deviceRename"
 
 	// response
 	Automations       = "automations"
@@ -134,6 +135,9 @@ func (c *WsClient) handleMessage(message []byte) {
 	case DeviceSetValue:
 		c.executeAction(eventMsg.Payload, c.hub.onDeviceSetValue, false)
 
+	case DeviceRename:
+		c.executeAction(eventMsg.Payload, c.hub.onDeviceRename, true)
+
 	default:
 
 		utils.LogWarnf("Unknown event type: %s", eventMsg.Type)
@@ -227,6 +231,7 @@ type EventHub interface {
 	OnLoadAutomations(action func() interface{})
 	OnLoadDevices(action func() interface{})
 	OnDeviceSetValue(func(payload interface{}) error)
+	OnDeviceRename(func(payload interface{}) error)
 	OnSaveAutomation(func(payload interface{}) error)
 	OnDeleteAutomation(func(payload interface{}) (interface{}, error))
 	OnDeleteAutomationTrigger(func(payload interface{}) (interface{}, error))
@@ -241,6 +246,7 @@ type wsServer struct {
 	onLoadDevices             func() interface{}
 	onSaveAutomation          func(interface{}) error
 	onDeviceSetValue          func(interface{}) error
+	onDeviceRename            func(interface{}) error
 	onDeleteAutomation        func(interface{}) (interface{}, error)
 	onDeleteAutomationTrigger func(interface{}) (interface{}, error)
 }
@@ -256,6 +262,7 @@ func NewWsHub() EventHub {
 		onDeleteAutomation:        func(payload interface{}) (interface{}, error) { return nil, nil },
 		onDeleteAutomationTrigger: func(payload interface{}) (interface{}, error) { return nil, nil },
 		onDeviceSetValue:          func(payload interface{}) error { return nil },
+		onDeviceRename:            func(payload interface{}) error { return nil },
 		onLoadDevices:             func() interface{} { return nil },
 		onLoadAutomations:         func() interface{} { return nil }}
 
@@ -265,6 +272,10 @@ func NewWsHub() EventHub {
 
 func (h *wsServer) OnDeviceSetValue(action func(p interface{}) error) {
 	h.onDeviceSetValue = action
+}
+
+func (h *wsServer) OnDeviceRename(action func(p interface{}) error) {
+	h.onDeviceRename = action
 }
 
 func (h *wsServer) OnLoadAutomations(action func() interface{}) {

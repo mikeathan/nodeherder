@@ -79,6 +79,24 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		return nil
 	})
 
+	// todo:
+	//zigbee2mqtt/bridge/request/device/remove
+	//Removes a device from the network. Allowed payloads are {"id": "deviceID"}
+
+	h.eventHub.OnDeviceRename(func(p interface{}) error {
+		bytes, _ := json.Marshal(p)
+		payload := make(map[string]interface{})
+		err := json.Unmarshal(bytes, &payload)
+
+		if err != nil {
+			return errors.New("device renamefailed. Invalid payload type")
+		}
+
+		h.mqtt.Publish("bridge/request/device/rename", payload)
+
+		return nil
+	})
+
 	h.eventHub.OnDeleteAutomationTrigger(func(p interface{}) (interface{}, error) {
 
 		// todo:see if we can cast p to string and then to bytes
