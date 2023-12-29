@@ -1,10 +1,16 @@
 <script setup>
 import { useStore } from "vuex";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import LastSeen from "../device/LastSeen.vue";
 import PowerSource from "../device/PowerSource.vue";
 import ConnectionType from "../device/ConnectionType.vue";
+import RenameDeviceDialog from "../dialogs/RenameDeviceDialog.vue";
+
+const props = defineProps({
+  id: String,
+});
+
 const previousPage = computed(() => {
   var back = useRouter().options.history.state.back;
   if (back == undefined) {
@@ -14,13 +20,10 @@ const previousPage = computed(() => {
 });
 
 const store = useStore();
-const friendlyName = computed(() => {
+const showEditDeviceDialog = ref(false)
 
-  const d = store.getters["devices/find"](props.id);
-  if (d == undefined) {
-    return "";
-  }
-  return d.friendly_name;
+const device = computed(() => {
+  return store.getters["devices/find"](props.id);
 });
 
 const displayProps = computed(() => {
@@ -71,12 +74,6 @@ const displayProps = computed(() => {
   ];
 });
 
-const props = defineProps({
-  id: String,
-});
-function showDialog(message) {
-  alert(message);
-}
 </script>
 <template>
   <div class="panel">
@@ -87,7 +84,7 @@ function showDialog(message) {
         </RouterLink>
       </div>
       <div class="h1 align-self-center">
-        {{ friendlyName }}
+        {{ device.friendly_name }}
       </div>
     </div>
 
@@ -104,12 +101,14 @@ function showDialog(message) {
         </dd>
       </dl>
 
-      <!-- todo -->
       <div class="btn-group btn-group-sm" role="group">
-        <button class="btn btn-danger" title="Remove device" @click="showDialog('Not implemented')">
+        <button class="btn btn-danger" title="Remove device" @click="showEditDeviceDialog = true">
           <i class="fa fa-trash"></i>
         </button>
       </div>
     </div>
+
+    <RenameDeviceDialog :device="device" :isOpen="showEditDeviceDialog" @close="showEditDeviceDialog = false">
+    </RenameDeviceDialog>
   </div>
 </template>

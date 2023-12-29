@@ -80,14 +80,12 @@ post payload
 
 TODO:
 
-
-add refresh functionality to ping mqtt device for when we just started server 
+add refresh functionality to ping mqtt device for when we just started server ?
 add rename functionality
 add remove /force remove/block functionality
 add configure exposes device functionality
 
-
-http polling sdevices support
+http polling devices support
 add more ws operation responses - eg success or error
 test autiomation loading. configureAction for sanitizing numeric type data
 do we need to unsubsribe from removed/renamed topic ??
@@ -97,7 +95,4 @@ backup automations
 ###### frontend
 
 add functionality to enable/disalbe a trigger
-configure typescript eslinter
 add log window in frontend
-fix sizing for mobile
-
