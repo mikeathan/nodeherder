@@ -79,10 +79,6 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		return nil
 	})
 
-	// todo:
-	//zigbee2mqtt/bridge/request/device/remove
-	//Removes a device from the network. Allowed payloads are {"id": "deviceID"}
-
 	h.eventHub.OnDeviceRename(func(p interface{}) error {
 		bytes, _ := json.Marshal(p)
 		payload := make(map[string]interface{})
@@ -92,7 +88,11 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 			return errors.New("device renamefailed. Invalid payload type")
 		}
 
-		h.mqtt.Publish("bridge/request/device/rename", payload)
+		json, _ := json.Marshal(payload)
+		h.mqtt.Publish("bridge/request/device/rename", json)
+
+		// need to re load devies in web page, end loaddevices ws message but on success so maybe in bridge handler
+		// topic:  zigbee2mqtt/bridge/request/device/rename
 
 		return nil
 	})
@@ -203,9 +203,13 @@ func (m *HubController) TriggerAutomation(device *devices.Device) {
 func (m *HubController) ProcessMessage(id string, payload []byte, connType string) error {
 
 	if _, ok := m.handlers[id]; !ok {
-
 		if strings.HasPrefix(id, "bridge") {
 			switch id {
+
+			case "bridge/response/device/rename": // for now we support only rename
+				var h = newbridgeDeviceResponseHandler(m.eventHub)
+				m.handlers[id] = h
+
 			case "bridge/devices":
 				var h = newBridgeConfigurationHandler(m.registrar, m.automationEngine, m.mqtt, m.DeviceAvailabilityTimeoutOverride)
 				m.handlers[id] = h

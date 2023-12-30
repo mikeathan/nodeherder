@@ -136,7 +136,7 @@ func (c *WsClient) handleMessage(message []byte) {
 		c.executeAction(eventMsg.Payload, c.hub.onDeviceSetValue, false)
 
 	case DeviceRename:
-		c.executeAction(eventMsg.Payload, c.hub.onDeviceRename, true)
+		c.executeAction(eventMsg.Payload, c.hub.onDeviceRename, false)
 
 	default:
 
@@ -228,6 +228,7 @@ func (c *WsClient) Broadcast(eventName string, data interface{}) error {
 type EventHub interface {
 	Broadcast(eventName string, data interface{}) error
 	RegisterNewClient(conn *websocket.Conn)
+	EmitDevices()
 	OnLoadAutomations(action func() interface{})
 	OnLoadDevices(action func() interface{})
 	OnDeviceSetValue(func(payload interface{}) error)
@@ -268,6 +269,11 @@ func NewWsHub() EventHub {
 
 	go wsHub.run()
 	return wsHub
+}
+
+func (h *wsServer) EmitDevices() {
+	msg := h.onLoadDevices()
+	h.Broadcast(Devices, msg)
 }
 
 func (h *wsServer) OnDeviceSetValue(action func(p interface{}) error) {

@@ -17,6 +17,10 @@ func (w *MockEventHub) Broadcast(eventName string, data interface{}) error {
 	return w.MockBroadcastEvent(eventName, data)
 }
 
+func (w *MockEventHub) EmitDevices() {
+	fmt.Println("Empty EmitDevices")
+}
+
 func (w *MockEventHub) RegisterNewClient(conn *websocket.Conn) {
 	fmt.Println("Empty RegisterNewClient")
 }
@@ -97,7 +101,9 @@ func (w *NopWsServer) Broadcast(eventName string, data interface{}) error {
 	fmt.Println("Empty Broadcast")
 	return nil
 }
-
+func (w *NopWsServer) EmitDevices() {
+	fmt.Println("Empty EmitDevices")
+}
 func (w *NopWsServer) RegisterNewClient(conn *websocket.Conn) {
 	fmt.Println("Empty RegisterNewClient")
 }

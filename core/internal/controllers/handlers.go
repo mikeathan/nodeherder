@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"fmt"
 	"node-herder/internal/automations"
 	"node-herder/internal/mqtt"
@@ -8,6 +9,7 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/utils"
+	"strings"
 )
 
 type messageTask struct {
@@ -18,6 +20,7 @@ type messageTask struct {
 }
 
 func (m *messageTask) OnFailure(err error) {
+	// TODO: maybe do somethng wit the error
 	utils.LogErrorf("Job: %s Error: %s", m.Id, err.Error())
 }
 
@@ -78,6 +81,40 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 	return nil
 }
 
+type bridgeDeviceResponseHandler struct {
+	topic string "bridge/response/device/rename" // for now we support only rename
+	ws    ws.EventHub
+}
+
+func newbridgeDeviceResponseHandler(ws ws.EventHub) *bridgeDeviceResponseHandler {
+	return &bridgeDeviceResponseHandler{ws: ws}
+}
+
+type bridgeResponse struct {
+	Data   map[string]interface{} `json:"data"`
+	Status string                 `json:"status"`
+}
+
+func (b *bridgeDeviceResponseHandler) ProcessPayload(id string, connType string, payload []byte) error {
+
+	if !strings.HasPrefix(id, b.topic) {
+		return nil
+	}
+
+	resp := new(bridgeResponse)
+	resp.Data = map[string]interface{}{}
+	err := json.Unmarshal(payload, &resp)
+	if err != nil {
+		return err
+	}
+
+	if resp.Status == "ok" {
+		b.ws.EmitDevices()
+	}
+
+	return nil
+}
+
 type bridgeLoggingHandler struct {
 	ws ws.EventHub
 }
@@ -90,7 +127,7 @@ func (b *bridgeLoggingHandler) ProcessPayload(id string, connType string, payloa
 
 	if id == "bridge/logging" {
 		// todo: handle
-		//utils.LogDebugf(string(payload))
+		utils.LogDebugf(string(payload))
 	}
 
 	return nil
@@ -114,6 +151,9 @@ func newDeviceHandler(registrar *services.HubRegisterService, eventHub ws.EventH
 
 func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, payload []byte) error {
 
+	if len(payload) == 0 {
+		return nil
+	}
 	dataMap, err := convertToMap(payload)
 	if err != nil {
 		return err
