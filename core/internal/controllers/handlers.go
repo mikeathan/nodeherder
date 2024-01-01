@@ -84,10 +84,11 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 type bridgeDeviceResponseHandler struct {
 	topic string "bridge/response/device/rename" // for now we support only rename
 	ws    ws.EventHub
+	mqtt  mqtt.MqttClient
 }
 
-func newbridgeDeviceResponseHandler(ws ws.EventHub) *bridgeDeviceResponseHandler {
-	return &bridgeDeviceResponseHandler{ws: ws}
+func newbridgeDeviceResponseHandler(ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceResponseHandler {
+	return &bridgeDeviceResponseHandler{ws: ws, mqtt: mqtt}
 }
 
 type bridgeResponse struct {
@@ -109,7 +110,23 @@ func (b *bridgeDeviceResponseHandler) ProcessPayload(id string, connType string,
 	}
 
 	if resp.Status == "ok" {
-		b.ws.EmitDevices()
+
+		newName := resp.Data["to"].(string)
+		oldName := resp.Data["from"].(string)
+
+		err = b.ws.EmitDevice(oldName)
+		if err != nil {
+			utils.LogErrorf("Rename success, failed to find device %s: %s", newName, err.Error())
+			return err
+		}
+
+		err = b.mqtt.RemoveTopic(oldName)
+		if err != nil {
+			return err
+		}
+
+	} else {
+		b.ws.Broadcast(ws.OperationFailed, resp.Status)
 	}
 
 	return nil

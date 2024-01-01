@@ -79,7 +79,7 @@ const displayProps = computed(() => {
 
 </script>
 <template>
-  <div class="panel">
+  <div v-if="device != null" class="panel">
     <div className="panel-header d-flex flex-row">
       <div class="align-self-center me-3">
         <RouterLink :to="`${previousPage}`">

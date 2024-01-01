@@ -10,10 +10,12 @@ import (
 )
 
 const (
-	// requests
 
-	LoadAutomations         = "loadAutomations"
-	LoadDevices             = "loadDevices"
+	// requests
+	LoadAutomations = "loadAutomations"
+	LoadDevices     = "loadDevices"
+	LoadDevice      = "loadDevice"
+
 	SaveAutomation          = "saveAutomation"
 	DeleteAutomation        = "deleteAutomation"
 	DeleteAutomationTrigger = "deleteAutomationTrigger"
@@ -23,6 +25,7 @@ const (
 	// response
 	Automations       = "automations"
 	Devices           = "devices"
+	Device            = "device"
 	DeviceAdded       = "deviceAdded"
 	DeviceUpdated     = "deviceUpdated"
 	OperationFailed   = "operationFailed"
@@ -229,8 +232,11 @@ type EventHub interface {
 	Broadcast(eventName string, data interface{}) error
 	RegisterNewClient(conn *websocket.Conn)
 	EmitDevices()
+	EmitDevice(name string) error
 	OnLoadAutomations(action func() interface{})
 	OnLoadDevices(action func() interface{})
+	OnLoadDevice(action func(id string) (interface{}, error))
+
 	OnDeviceSetValue(func(payload interface{}) error)
 	OnDeviceRename(func(payload interface{}) error)
 	OnSaveAutomation(func(payload interface{}) error)
@@ -245,6 +251,7 @@ type wsServer struct {
 	unregister                chan *WsClient
 	onLoadAutomations         func() interface{}
 	onLoadDevices             func() interface{}
+	onLoadDevice              func(id string) (interface{}, error)
 	onSaveAutomation          func(interface{}) error
 	onDeviceSetValue          func(interface{}) error
 	onDeviceRename            func(interface{}) error
@@ -264,11 +271,21 @@ func NewWsHub() EventHub {
 		onDeleteAutomationTrigger: func(payload interface{}) (interface{}, error) { return nil, nil },
 		onDeviceSetValue:          func(payload interface{}) error { return nil },
 		onDeviceRename:            func(payload interface{}) error { return nil },
+		onLoadDevice:              func(id string) (interface{}, error) { return nil, nil },
 		onLoadDevices:             func() interface{} { return nil },
 		onLoadAutomations:         func() interface{} { return nil }}
 
 	go wsHub.run()
 	return wsHub
+}
+
+func (h *wsServer) EmitDevice(name string) error {
+	msg, err := h.onLoadDevice(name)
+	if err != nil {
+		return err
+	}
+	h.Broadcast(Device, msg)
+	return nil
 }
 
 func (h *wsServer) EmitDevices() {
@@ -286,6 +303,10 @@ func (h *wsServer) OnDeviceRename(action func(p interface{}) error) {
 
 func (h *wsServer) OnLoadAutomations(action func() interface{}) {
 	h.onLoadAutomations = action
+}
+
+func (h *wsServer) OnLoadDevice(action func(id string) (interface{}, error)) {
+	h.onLoadDevice = action
 }
 
 func (h *wsServer) OnLoadDevices(action func() interface{}) {

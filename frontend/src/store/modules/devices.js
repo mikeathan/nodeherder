@@ -48,6 +48,7 @@ const mutations = {
   },
 
   update(state, payload) {
+    console.log("devices store", payload);
     var device = state.items[payload.id];
     if (device == undefined) {
       console.error("device ", payload.id, " not found");

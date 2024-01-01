@@ -294,6 +294,102 @@ func TestHandlingLoadDevicesMessage(t *testing.T) {
 	defer wsConn.Close()
 }
 
+// TODO:
+// func TestHandlingLoadDeviceMessage(t *testing.T) {
+
+// 	wsHub := ws.NewWsHub()
+
+// 	// input data
+// 	inputDevice := createDevice1()
+
+// 	deviceName := "test Device 1"
+// 	wsHub.OnLoadDevice(func(string) (interface{}, error) {
+// 		return inputDevice, nil
+// 	})
+
+// 	h := api.NewWsHandler(wsHub)
+// 	s, wsConn := NewTestWsServer(t, h)
+
+// 	wsData := &ws.EventMessage{Type: ws.LoadDevice, Payload: nil}
+// 	msg, err := wsData.MarshalJSON()
+// 	if err != nil {
+// 		t.Fatalf(err.Error())
+// 	}
+
+// 	SendMessage(t, wsConn, msg)
+
+// 	_, m, err := wsConn.ReadMessage()
+// 	if err != nil {
+// 		t.Fatalf("%v", err)
+// 	}
+
+// 	var event ws.EventMessage
+// 	err = json.Unmarshal(m, &event)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+
+// 	if event.Type != ws.Devices {
+// 		t.Fatalf("Expected type %v', got '%+v'", ws.Devices, event.Type)
+// 	}
+
+// 	// output data
+// 	var resultDevices []*devices.Device
+
+// 	bytes, _ := json.Marshal(event.Payload)
+// 	err = json.Unmarshal(bytes, &resultDevices)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+// 	//
+
+// 	for idx, device := range resultDevices {
+
+// 		inputDevice := inputDevices[idx]
+// 		if device.Id != inputDevice.Id {
+// 			t.Fatalf("unexpected device.Id value")
+// 		}
+// 		if device.FriendlyName != inputDevice.FriendlyName {
+// 			t.Fatalf("unexpected device.FriendlyName value")
+// 		}
+// 		if device.Description != inputDevice.Description {
+// 			t.Fatalf("unexpected device.Description value")
+// 		}
+// 		if device.ConnectionType != inputDevice.ConnectionType {
+// 			t.Fatalf("unexpected device.ConnectionType value")
+// 		}
+// 		if device.PowerSource != inputDevice.PowerSource {
+// 			t.Fatalf("unexpected device.PowerSource value")
+// 		}
+// 		for eidx, expose := range device.Exposes {
+// 			inputExpose := inputDevice.Exposes[eidx]
+
+// 			if expose.Name != inputExpose.Name {
+// 				t.Fatalf("unexpected expose.Name value")
+// 			}
+// 			if expose.Description != inputExpose.Description {
+// 				t.Fatalf("unexpected expose.Description value")
+// 			}
+// 			if expose.Data != inputExpose.Data {
+// 				t.Fatalf("unexpected expose.Data value")
+// 			}
+// 			if expose.Unit != inputExpose.Unit {
+// 				t.Fatalf("unexpected expose.Unit value")
+// 			}
+// 			for pidx, property := range expose.Properties {
+// 				inputproperty := inputExpose.Properties[pidx]
+// 				if property != inputproperty {
+// 					t.Fatalf("unexpected property value")
+// 				}
+// 			}
+// 		}
+
+// 	}
+
+// 	defer s.Close()
+// 	defer wsConn.Close()
+// }
+
 func TestSaveAutomation(t *testing.T) {
 	testCases := []struct {
 		err     error

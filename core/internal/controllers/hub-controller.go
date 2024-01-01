@@ -50,6 +50,10 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		return h.repo.AllDevices()
 	})
 
+	h.eventHub.OnLoadDevice(func(name string) (interface{}, error) {
+		return h.registrar.LookupByName(name)
+	})
+
 	h.eventHub.OnDeviceSetValue(func(p interface{}) error {
 		bytes, _ := json.Marshal(p)
 		payload := make(map[string]interface{})
@@ -90,10 +94,6 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 
 		json, _ := json.Marshal(payload)
 		h.mqtt.Publish("bridge/request/device/rename", json)
-
-		// need to re load devies in web page, end loaddevices ws message but on success so maybe in bridge handler
-		// topic:  zigbee2mqtt/bridge/request/device/rename
-
 		return nil
 	})
 
@@ -207,7 +207,7 @@ func (m *HubController) ProcessMessage(id string, payload []byte, connType strin
 			switch id {
 
 			case "bridge/response/device/rename": // for now we support only rename
-				var h = newbridgeDeviceResponseHandler(m.eventHub)
+				var h = newbridgeDeviceResponseHandler(m.eventHub, m.mqtt)
 				m.handlers[id] = h
 
 			case "bridge/devices":

@@ -17,6 +17,11 @@ func (w *MockEventHub) Broadcast(eventName string, data interface{}) error {
 	return w.MockBroadcastEvent(eventName, data)
 }
 
+func (w *MockEventHub) EmitDevice(name string) error {
+	fmt.Println("Empty EmitDevice")
+	return nil
+}
+
 func (w *MockEventHub) EmitDevices() {
 	fmt.Println("Empty EmitDevices")
 }
@@ -29,6 +34,9 @@ func (w *MockEventHub) OnLoadAutomations(onLoadAutomations func() interface{}) {
 	fmt.Println("Empty OnLoadAutomations")
 }
 
+func (w *MockEventHub) OnLoadDevice(action func(id string) (interface{}, error)) {
+	fmt.Println("Empty OnLoadDevice")
+}
 func (w *MockEventHub) OnLoadDevices(action func() interface{}) {
 	fmt.Println("Empty OnLoadDevices")
 }
@@ -71,6 +79,11 @@ func (m *MockMqttClient) AddTopic(topic string) error {
 	return nil
 }
 
+func (m *MockMqttClient) RemoveTopic(topic string) error {
+	fmt.Println("Mock RemoveTopic")
+	return nil
+}
+
 func (m *MockMqttClient) Disconnect() {
 	fmt.Println("Mock Disconnect")
 }
@@ -101,6 +114,10 @@ func (w *NopWsServer) Broadcast(eventName string, data interface{}) error {
 	fmt.Println("Empty Broadcast")
 	return nil
 }
+func (w *NopWsServer) EmitDevice(name string) error {
+	fmt.Println("Empty EmitDevice")
+	return nil
+}
 func (w *NopWsServer) EmitDevices() {
 	fmt.Println("Empty EmitDevices")
 }
@@ -120,6 +137,10 @@ func (w *NopWsServer) OnDeviceRename(P func(payload interface{}) error) {
 	fmt.Println("Empty OnDeviceRename")
 }
 
+func (w *NopWsServer) OnLoadDevice(action func(id string) (interface{}, error)) {
+	fmt.Println("Empty OnLoadDevice")
+}
+
 func (w *NopWsServer) OnLoadDevices(action func() interface{}) {
 	fmt.Println("Empty OnLoadDevices")
 }
@@ -134,29 +155,6 @@ func (w *NopWsServer) OnDeleteAutomation(action func(p interface{}) (interface{}
 
 func (w *NopWsServer) OnDeleteAutomationTrigger(action func(p interface{}) (interface{}, error)) {
 	fmt.Println("Empty OnDeleteAutomationTrigger")
-}
-
-type NopMqttClient struct {
-}
-
-func (w *NopMqttClient) Connect() error {
-	fmt.Println("Empty Connect")
-	return nil
-}
-
-func (w *NopMqttClient) WithMessageHandler(messageHandler func(client mqtt.Client, msg mqtt.Message)) {
-	fmt.Println("Empty WithMessageHandler")
-}
-func (w *NopMqttClient) AddTopic(topic string) {
-	fmt.Println("Empty BroaAddTopicdcast")
-
-}
-func (w *NopMqttClient) Disconnect() {
-	fmt.Println("Empty Disconnect")
-}
-
-func (m *NopMqttClient) OnMessageHandler(handler func(string, []byte)) {
-	fmt.Println("Empty OnMessageHandler")
 }
 
 type NopRepository struct {

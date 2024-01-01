@@ -13,6 +13,7 @@ import (
 type MqttClient interface {
 	Connect() error
 	AddTopic(topic string) error
+	RemoveTopic(topic string) error
 	Disconnect()
 	OnMessageHandler(handler func(string, []byte))
 	Publish(friendlyName string, payload interface{})
@@ -155,6 +156,26 @@ func (m *MqttService) subscribe(topic string) error {
 		return token.Error()
 	}
 	return nil
+}
+
+func (m *MqttService) RemoveTopic(topic string) error {
+
+	for idx, t := range m.topics {
+		if t == topic {
+
+			if token := m.client.Unsubscribe(topic); token.Wait() && token.Error() != nil {
+				return token.Error()
+			}
+
+			newtopics := append(m.topics[:idx], m.topics[idx+1:]...)
+			m.topics = newtopics
+			utils.LogInfof("Remove topic: %s", t)
+
+			return nil
+		}
+	}
+
+	return fmt.Errorf("topic %s not found", topic)
 }
 
 func (m *MqttService) AddTopic(topic string) error {
