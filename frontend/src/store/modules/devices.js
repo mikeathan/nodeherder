@@ -9,7 +9,10 @@ const actions = {
       state.items[device.id] = device;
     });
   },
-
+  updateItems({ commit }, devices) {
+    console.log("actions.updateitems ", devices);
+    commit("updateItems", devices);
+  },
   setValue({ dispatch }, payload) {
     dispatch(
       "ws/emit",
@@ -47,8 +50,17 @@ const mutations = {
     state.initialized = true;
   },
 
+  updateItems(state, items) {
+    items.forEach((item) => {
+      var device = state.items[item.id];
+      if (device != undefined) {
+        console.log("update device", device, " to ", item);
+        device = item;
+      }
+    });
+  },
+
   update(state, payload) {
-    console.log("devices store", payload);
     var device = state.items[payload.id];
     if (device == undefined) {
       console.error("device ", payload.id, " not found");

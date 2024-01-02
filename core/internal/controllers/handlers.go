@@ -50,8 +50,14 @@ type bridgeConfigurationHandler struct {
 	deviceAvailabilityTimeout int
 }
 
-func newBridgeConfigurationHandler(registrar *services.HubRegisterService, engine automations.Engine, mqtt mqtt.MqttClient, deviceAvailabilityTimeout int) *bridgeConfigurationHandler {
-	return &bridgeConfigurationHandler{registrar: registrar, automationEngine: engine, mqtt: mqtt, deviceAvailabilityTimeout: deviceAvailabilityTimeout, bridgeHash: newBridgeHash()}
+func newBridgeConfigurationHandler(registrar *services.HubRegisterService, engine automations.Engine, mqtt mqtt.MqttClient, ws ws.EventHub, deviceAvailabilityTimeout int) *bridgeConfigurationHandler {
+	return &bridgeConfigurationHandler{
+		registrar:                 registrar,
+		automationEngine:          engine,
+		ws:                        ws,
+		mqtt:                      mqtt,
+		deviceAvailabilityTimeout: deviceAvailabilityTimeout,
+		bridgeHash:                newBridgeHash()}
 }
 
 func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, payload []byte) error {
@@ -99,11 +105,11 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 
 	//
 	if b.bridgeHash.root != "" && len(updatedDeviceMap) > 0 {
-		keys := make([]string, 0, len(updatedDeviceMap))
+		ids := make([]string, 0, len(updatedDeviceMap))
 		for k := range updatedDeviceMap {
-			keys = append(keys, k)
+			ids = append(ids, k)
 		}
-		b.ws.EmitDeviceList(keys)
+		b.ws.EmitDeviceList(ids)
 	}
 
 	// update bridge hash
@@ -144,15 +150,6 @@ func (b *bridgeDeviceResponseHandler) ProcessPayload(id string, connType string,
 	}
 
 	if resp.Status == "ok" {
-
-		// NOTE: we cant do it here as device hasnt been updated yet
-
-		// newName := resp.Data["to"].(string)
-		// err = b.ws.EmitDevice(oldName)
-		// if err != nil {
-		// 	utils.LogErrorf("Rename success, failed to find device %s: %s", newName, err.Error())
-		// 	return err
-		// }
 
 		oldName := resp.Data["from"].(string)
 		err = b.mqtt.RemoveTopic(oldName)

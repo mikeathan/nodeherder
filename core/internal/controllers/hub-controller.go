@@ -50,13 +50,7 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 		return h.repo.AllDevices()
 	})
 
-	h.eventHub.OnLoadDeviceList(func(names []string) interface{} {
-		ids := []string{}
-		for _, name := range names {
-			id := h.registrar.ResolveId(name)
-			ids = append(ids, id)
-		}
-
+	h.eventHub.OnLoadDeviceList(func(ids []string) interface{} {
 		return h.repo.FindDevices(ids)
 	})
 
@@ -221,7 +215,7 @@ func (m *HubController) ProcessMessage(id string, payload []byte, connType strin
 				m.handlers[id] = h
 
 			case "bridge/devices":
-				var h = newBridgeConfigurationHandler(m.registrar, m.automationEngine, m.mqtt, m.DeviceAvailabilityTimeoutOverride)
+				var h = newBridgeConfigurationHandler(m.registrar, m.automationEngine, m.mqtt, m.eventHub, m.DeviceAvailabilityTimeoutOverride)
 				m.handlers[id] = h
 			case "bridge/logging":
 				var h = newBridgeLoggingHandler(m.eventHub)

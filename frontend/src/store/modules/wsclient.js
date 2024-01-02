@@ -60,9 +60,9 @@ const actions = {
         case "devices":
           dispatch("devices/init", obj.payload, { root: true });
           break;
-        case "device":
-          console.log("device", obj.payload);
-          commit("devices/update", obj.payload, { root: true });
+        case "deviceList":
+          console.log("[wslient]:", obj.payload);
+          dispatch("devices/updateItems", obj.payload, { root: true });
           break;
         case "operationSuccess":
           //https://classic.yarnpkg.com/en/package/@kyvg/vue3-notification

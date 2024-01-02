@@ -182,15 +182,17 @@ func (m *MqttService) AddTopic(topic string) error {
 	//todo: remove unused topics if got renamed
 	for _, t := range m.topics {
 		if t == topic {
-			utils.LogInfof("skipping topic %s is already subscribed", t)
-			continue
+			//utils.LogDebugf("skipping topic %s is already subscribed", t)
+			return nil
 		}
 	}
 	utils.LogInfof("Add topic: %s", topic)
 	err := m.subscribe(topic)
 	if err != nil {
 		utils.LogErrorf("%s failed: %s", topic, err.Error())
+		return fmt.Errorf("%s failed: %s", topic, err.Error())
 	}
+
 	m.topics = append(m.topics, topic)
 	return nil
 }

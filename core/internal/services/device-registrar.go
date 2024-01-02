@@ -77,6 +77,7 @@ func (s *HubRegisterService) configureIdMapper(bridgeInfoList []*devices.BridgeI
 		}
 
 		if !found {
+			utils.LogDebugf("Removing %s from IdMapper", name)
 			delete(s.idMapper, name)
 		}
 	}
