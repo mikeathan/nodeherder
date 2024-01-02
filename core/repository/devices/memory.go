@@ -38,6 +38,20 @@ func (s *MemoryDeviceRepo) FindDevice(id string) (*devices.Device, error) {
 	return nil, errors.New("device not found")
 }
 
+func (s *MemoryDeviceRepo) FindDevices(ids []string) []*devices.Device {
+	ds := []*devices.Device{}
+
+	defer s.mutex.RUnlock()
+
+	s.mutex.RLock()
+	for _, id := range ids {
+		if val, ok := s.store[id]; ok {
+			ds = append(ds, val)
+		}
+	}
+
+	return ds
+}
 func (s *MemoryDeviceRepo) AllDevices() []*devices.Device {
 
 	// sort before returning values

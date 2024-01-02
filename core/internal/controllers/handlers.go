@@ -32,16 +32,26 @@ type handler interface {
 	ProcessPayload(id string, connType string, payload []byte) error
 }
 
+type bridgeHash struct {
+	root      string
+	deviceMap map[string]string
+}
+
+func newBridgeHash() *bridgeHash {
+	return &bridgeHash{root: "", deviceMap: map[string]string{}}
+}
+
 type bridgeConfigurationHandler struct {
+	ws                        ws.EventHub
 	mqtt                      mqtt.MqttClient
 	registrar                 *services.HubRegisterService
 	automationEngine          automations.Engine
-	bridgeHash                string
+	bridgeHash                *bridgeHash
 	deviceAvailabilityTimeout int
 }
 
 func newBridgeConfigurationHandler(registrar *services.HubRegisterService, engine automations.Engine, mqtt mqtt.MqttClient, deviceAvailabilityTimeout int) *bridgeConfigurationHandler {
-	return &bridgeConfigurationHandler{registrar: registrar, automationEngine: engine, mqtt: mqtt, deviceAvailabilityTimeout: deviceAvailabilityTimeout}
+	return &bridgeConfigurationHandler{registrar: registrar, automationEngine: engine, mqtt: mqtt, deviceAvailabilityTimeout: deviceAvailabilityTimeout, bridgeHash: newBridgeHash()}
 }
 
 func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, payload []byte) error {
@@ -50,16 +60,17 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 	}
 
 	h := utils.HashData(payload)
-	if b.bridgeHash == h {
+	if b.bridgeHash.root == h {
 		utils.LogDebugf("bridge/devices event. Skipping payload not changed")
 		return nil
 	}
 
-	b.bridgeHash = h
 	bridgeInfoList, err := devices.LoadBridgeDevices(payload)
 	if err != nil {
 		return err
 	}
+
+	var updatedDeviceMap map[string]string = make(map[string]string)
 
 	b.registrar.RegisterBridge(bridgeInfoList, b.deviceAvailabilityTimeout)
 	b.automationEngine.Initialize()
@@ -71,6 +82,13 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 			continue
 		}
 
+		// device hashing
+		bytes, _ := json.Marshal(device)
+		dh := utils.HashData(bytes)
+		if dh != b.bridgeHash.deviceMap[device.IeeeAddress] {
+			updatedDeviceMap[device.IeeeAddress] = dh
+		}
+
 		// TODO:
 		// do we need to unsubsribe from removed/renamed topic
 		err := b.mqtt.AddTopic(device.FriendlyName)
@@ -78,6 +96,22 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 			utils.LogErrorf("error %s conffgure topic %s", device.FriendlyName, err.Error())
 		}
 	}
+
+	//
+	if b.bridgeHash.root != "" && len(updatedDeviceMap) > 0 {
+		keys := make([]string, 0, len(updatedDeviceMap))
+		for k := range updatedDeviceMap {
+			keys = append(keys, k)
+		}
+		b.ws.EmitDeviceList(keys)
+	}
+
+	// update bridge hash
+	for id, hash := range updatedDeviceMap {
+		b.bridgeHash.deviceMap[id] = hash
+	}
+	b.bridgeHash.root = h
+
 	return nil
 }
 
@@ -111,15 +145,16 @@ func (b *bridgeDeviceResponseHandler) ProcessPayload(id string, connType string,
 
 	if resp.Status == "ok" {
 
-		newName := resp.Data["to"].(string)
+		// NOTE: we cant do it here as device hasnt been updated yet
+
+		// newName := resp.Data["to"].(string)
+		// err = b.ws.EmitDevice(oldName)
+		// if err != nil {
+		// 	utils.LogErrorf("Rename success, failed to find device %s: %s", newName, err.Error())
+		// 	return err
+		// }
+
 		oldName := resp.Data["from"].(string)
-
-		err = b.ws.EmitDevice(oldName)
-		if err != nil {
-			utils.LogErrorf("Rename success, failed to find device %s: %s", newName, err.Error())
-			return err
-		}
-
 		err = b.mqtt.RemoveTopic(oldName)
 		if err != nil {
 			return err

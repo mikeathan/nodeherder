@@ -90,8 +90,7 @@ func (s *HubRegisterService) configureIdMapper(bridgeInfoList []*devices.BridgeI
 	// cant delete idmapper as it could be used in not mqtt devices
 	// need to find unused friendly names with same id to delete them
 
-	// !!!!!!!
-	// another probem is that we report a device that hasnt had the friendly name yet updated in the store via the bridge update
+
 	todo here 
 	// setup
 	for _, device := range s.bridgeInfoList {

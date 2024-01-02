@@ -26,6 +26,10 @@ func (w *MockEventHub) EmitDevices() {
 	fmt.Println("Empty EmitDevices")
 }
 
+func (w *MockEventHub) EmitDeviceList(names []string) {
+	fmt.Println("Empty EmitDeviceList")
+}
+
 func (w *MockEventHub) RegisterNewClient(conn *websocket.Conn) {
 	fmt.Println("Empty RegisterNewClient")
 }
@@ -39,6 +43,10 @@ func (w *MockEventHub) OnLoadDevice(action func(id string) (interface{}, error))
 }
 func (w *MockEventHub) OnLoadDevices(action func() interface{}) {
 	fmt.Println("Empty OnLoadDevices")
+}
+
+func (w *MockEventHub) OnLoadDeviceList(action func(names []string) interface{}) {
+	fmt.Println("Empty OnLoadDeviceList")
 }
 
 func (w *MockEventHub) OnDeviceSetValue(P func(payload interface{}) error) {
@@ -121,6 +129,11 @@ func (w *NopWsServer) EmitDevice(name string) error {
 func (w *NopWsServer) EmitDevices() {
 	fmt.Println("Empty EmitDevices")
 }
+
+func (w *NopWsServer) EmitDeviceList(names []string) {
+	fmt.Println("Empty EmitDeviceList")
+}
+
 func (w *NopWsServer) RegisterNewClient(conn *websocket.Conn) {
 	fmt.Println("Empty RegisterNewClient")
 }
@@ -139,6 +152,10 @@ func (w *NopWsServer) OnDeviceRename(P func(payload interface{}) error) {
 
 func (w *NopWsServer) OnLoadDevice(action func(id string) (interface{}, error)) {
 	fmt.Println("Empty OnLoadDevice")
+}
+
+func (w *NopWsServer) OnLoadDeviceList(action func(names []string) interface{}) {
+	fmt.Println("Empty OnLoadDeviceList")
 }
 
 func (w *NopWsServer) OnLoadDevices(action func() interface{}) {
@@ -167,6 +184,11 @@ func (w *NopRepository) Store(deviceName string, payload *devices.Device) {
 func (w *NopRepository) AllDevices() []*devices.Device {
 
 	fmt.Println("Empty ListAllDevices")
+	return []*devices.Device{}
+}
+
+func (w *NopRepository) FindDevices(ids []string) []*devices.Device {
+	fmt.Println("Empty FindDevices")
 	return []*devices.Device{}
 }
 

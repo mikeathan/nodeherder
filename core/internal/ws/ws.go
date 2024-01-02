@@ -15,6 +15,7 @@ const (
 	LoadAutomations = "loadAutomations"
 	LoadDevices     = "loadDevices"
 	LoadDevice      = "loadDevice"
+	LoadDeviceList  = "loadDeviceList"
 
 	SaveAutomation          = "saveAutomation"
 	DeleteAutomation        = "deleteAutomation"
@@ -25,6 +26,7 @@ const (
 	// response
 	Automations       = "automations"
 	Devices           = "devices"
+	DeviceList        = "deviceList"
 	Device            = "device"
 	DeviceAdded       = "deviceAdded"
 	DeviceUpdated     = "deviceUpdated"
@@ -232,11 +234,12 @@ type EventHub interface {
 	Broadcast(eventName string, data interface{}) error
 	RegisterNewClient(conn *websocket.Conn)
 	EmitDevices()
+	EmitDeviceList(names []string)
 	EmitDevice(name string) error
 	OnLoadAutomations(action func() interface{})
 	OnLoadDevices(action func() interface{})
 	OnLoadDevice(action func(id string) (interface{}, error))
-
+	OnLoadDeviceList(action func(names []string) interface{})
 	OnDeviceSetValue(func(payload interface{}) error)
 	OnDeviceRename(func(payload interface{}) error)
 	OnSaveAutomation(func(payload interface{}) error)
@@ -251,6 +254,7 @@ type wsServer struct {
 	unregister                chan *WsClient
 	onLoadAutomations         func() interface{}
 	onLoadDevices             func() interface{}
+	onLoadDeviceList          (func(names []string) interface{})
 	onLoadDevice              func(id string) (interface{}, error)
 	onSaveAutomation          func(interface{}) error
 	onDeviceSetValue          func(interface{}) error
@@ -272,6 +276,7 @@ func NewWsHub() EventHub {
 		onDeviceSetValue:          func(payload interface{}) error { return nil },
 		onDeviceRename:            func(payload interface{}) error { return nil },
 		onLoadDevice:              func(id string) (interface{}, error) { return nil, nil },
+		onLoadDeviceList:          func(names []string) interface{} { return nil },
 		onLoadDevices:             func() interface{} { return nil },
 		onLoadAutomations:         func() interface{} { return nil }}
 
@@ -286,6 +291,12 @@ func (h *wsServer) EmitDevice(name string) error {
 	}
 	h.Broadcast(Device, msg)
 	return nil
+}
+
+func (h *wsServer) EmitDeviceList(names []string) {
+	msg := h.onLoadDeviceList(names)
+
+	h.Broadcast(DeviceList, msg)
 }
 
 func (h *wsServer) EmitDevices() {
@@ -307,6 +318,10 @@ func (h *wsServer) OnLoadAutomations(action func() interface{}) {
 
 func (h *wsServer) OnLoadDevice(action func(id string) (interface{}, error)) {
 	h.onLoadDevice = action
+}
+
+func (h *wsServer) OnLoadDeviceList(action func(names []string) interface{}) {
+	h.onLoadDeviceList = action
 }
 
 func (h *wsServer) OnLoadDevices(action func() interface{}) {
