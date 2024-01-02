@@ -1,11 +1,9 @@
 package services
 
 import (
-	"fmt"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/utils"
-	"strings"
 )
 
 type DeviceRegistrar interface {
@@ -30,7 +28,7 @@ func NewHubRegisterService(repo devices.Repository, hub ws.EventHub, deviceAvail
 
 func (s *HubRegisterService) Register(friendlyName string, device *devices.Device) {
 	id := s.ResolveId(friendlyName)
-	
+
 	s.repo.Store(id, device)
 
 	s.idMapper[friendlyName] = id // store id in mapper for easy access
@@ -67,15 +65,12 @@ func (s *HubRegisterService) CreateNewDevice(friendlyName string, connType strin
 
 func (s *HubRegisterService) configureIdMapper(bridgeInfoList []*devices.BridgeInfo) {
 
-	// remove items from idMapper, that use to have a bridge info but dont exist in current bridge info list
-	// but cant clean idmapper because it contains non bridge infor items
-
 	// clean up
 	for name, id := range s.idMapper {
 		var found = false
 		for _, device := range s.bridgeInfoList {
-			
-			if device.IeeeAddress == id {
+
+			if device.IeeeAddress == id && device.FriendlyName == name {
 				found = true
 				break
 			}
@@ -86,12 +81,6 @@ func (s *HubRegisterService) configureIdMapper(bridgeInfoList []*devices.BridgeI
 		}
 	}
 
-	// !!!!!!!
-	// cant delete idmapper as it could be used in not mqtt devices
-	// need to find unused friendly names with same id to delete them
-
-
-	todo here 
 	// setup
 	for _, device := range s.bridgeInfoList {
 		s.idMapper[device.FriendlyName] = device.IeeeAddress
@@ -158,7 +147,7 @@ func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo
 			d.Monitor(deviceAvailabilityTimeoutOverride, func(p interface{}) {
 				s.eventHub.Broadcast(ws.DeviceUpdated, p)
 			})
-		} 
+		}
 
 		d.Description = bridgeInfo.Definition.Description
 		d.FriendlyName = bridgeInfo.FriendlyName
