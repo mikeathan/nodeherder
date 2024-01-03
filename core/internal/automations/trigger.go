@@ -130,14 +130,16 @@ type MqttAction struct {
 	Step         int    `json:"step,omitempty"`
 	PresetRotate bool   `json:"preset_rotate,omitempty"`
 
-	Client      mqtt.MqttClient          `json:"-"`
-	registrar   services.DeviceRegistrar `json:"-"`
-	mut         sync.RWMutex
-	exit        chan bool
-	isPending   bool
-	rotationPos int
-	device      *devices.Device
-	limits      map[string]float64
+	Client    mqtt.MqttClient          `json:"-"`
+	registrar services.DeviceRegistrar `json:"-"`
+	mut       sync.RWMutex
+	exit      chan bool
+	isPending bool
+
+	device    *devices.Device
+	limits    map[string]float64
+	presets   []any
+	presetPos int
 }
 
 func NewAction() *MqttAction {
@@ -260,6 +262,12 @@ func (a *MqttAction) loadDevice() (*devices.Device, error) {
 		if val, ok := a.device.Exposes[a.Property].Attributes["min"]; ok {
 			a.limits["min"] = val.(float64)
 		}
+
+		if a.PresetRotate {
+			for _, value := range a.device.Exposes[a.Property].Presets {
+				a.presets = append(a.presets, value)
+			}
+		}
 	}
 
 	return a.device, nil
@@ -277,13 +285,12 @@ func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, erro
 	// then we can move to next preset to get value
 	// increment the index and store it
 	if a.PresetRotate {
-		device, err := a.loadDevice()
+		_, err := a.loadDevice()
 		if err != nil {
 			return nil, errors.Join(err, fmt.Errorf("error building action payload"))
 		}
 
-		presets := device.Exposes[a.Property].Presets
-		p := presets[a.rotationPos]
+		v := a.presets[a.presetPos]
 	}
 
 	if a.Step > 0 {
