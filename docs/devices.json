@@ -13,7 +13,10 @@
           "description": "Indicates whether the device detected occupancy",
           "data": null,
           "type": "binary",
-          "attributes": { "off": false, "on": true }
+          "attributes": {
+            "off": false,
+            "on": true
+          }
         },
         "temperature": {
           "name": "temperature",
@@ -85,6 +88,13 @@
           "attributes": {
             "max": 500,
             "min": 150
+          },
+          "presets": {
+            "cool": 250,
+            "coolest": 150,
+            "neutral": 370,
+            "warm": 454,
+            "warmest": 500
           }
         },
         "state": {
@@ -145,21 +155,30 @@
           "description": "Direction in which the dial was turned",
           "data": "right",
           "type": "enum",
-          "attributes": { "left": "left", "right": "right" }
+          "attributes": {
+            "left": "left",
+            "right": "right"
+          }
         },
         "action_time": {
           "name": "action_time",
           "description": "Raw value that represents the amount the dial was turned",
           "data": 30,
           "type": "numeric",
-          "attributes": { "max": 255, "min": 0 }
+          "attributes": {
+            "max": 255,
+            "min": 0
+          }
         },
         "action_type": {
           "name": "action_type",
           "description": "Type of the rotation, value in the first message is `step` and in the next messages value is `rotate`",
           "data": "rotate",
           "type": "enum",
-          "attributes": { "rotate": "rotate", "step": "step" }
+          "attributes": {
+            "rotate": "rotate",
+            "step": "step"
+          }
         }
       },
       "properties": {
@@ -188,7 +207,10 @@
           "description": "Indicates whether the device detected presence",
           "data": false,
           "type": "binary",
-          "attributes": { "off": false, "on": true }
+          "attributes": {
+            "off": false,
+            "on": true
+          }
         }
       },
       "properties": {
