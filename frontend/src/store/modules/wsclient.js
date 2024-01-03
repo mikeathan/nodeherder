@@ -61,7 +61,6 @@ const actions = {
           dispatch("devices/init", obj.payload, { root: true });
           break;
         case "deviceList":
-          console.log("[wslient]:", obj.payload);
           dispatch("devices/updateItems", obj.payload, { root: true });
           break;
         case "operationSuccess":

@@ -10,7 +10,6 @@ const actions = {
     });
   },
   updateItems({ commit }, devices) {
-    console.log("actions.updateitems ", devices);
     commit("updateItems", devices);
   },
   setValue({ dispatch }, payload) {
@@ -54,8 +53,7 @@ const mutations = {
     items.forEach((item) => {
       var device = state.items[item.id];
       if (device != undefined) {
-        console.log("update device", device, " to ", item);
-        device = item;
+        state.items[item.id] = item;
       }
     });
   },
