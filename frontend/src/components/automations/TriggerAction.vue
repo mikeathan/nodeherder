@@ -152,6 +152,11 @@ function idUpdated(event) {
     }
 }
 
+function presetUpdated(event) {
+    data.value = event
+    emit('update:data', event)
+}
+
 const featureDevices = computed(() => {
     var devices = store.getters["devices/items"];
 
@@ -174,8 +179,6 @@ const featureDevices = computed(() => {
 });
 
 function deviceList() {
-    // todo:
-    //var result = Object.keys(obj).map((key) => [key, obj[key]]);
     var list = {}
     for (const [key, device] of Object.entries(featureDevices.value)) {
         list[device.friendly_name] = device.id
@@ -220,11 +223,24 @@ function getItems() {
     }
 }
 
+function getPresets() {
+
+    if (feature.value.presets == undefined) {
+        return []
+    }
+
+    var list = {}
+    for (const [name, value] of Object.entries(feature.value.presets)) {
+        list[name] = value
+    }
+    return list
+}
+
 </script>
 
 <template>
     <div class="row">
-        <div class="col-xl-3 col-md-4">
+        <div v-if="getPresets" class="col-xl-3 col-md-4">
             <Selector placeholder=" Select device" :items="deviceList()" :value="id" alignment="left"
                 @update:data="idUpdated" :disabled="id != ''">
             </Selector>
@@ -250,14 +266,17 @@ function getItems() {
 
         </div>
         <div class="collapse" id="collapseOptions">
-            <div class="row pt-2">
+            <div class="row pt-2" :disabled="property == ''">
+                <div v-if="feature.presets != null" class="col-xl-3">
+                    <Selector placeholder="Presets" :items="getPresets()" value="" @update:data="presetUpdated">
+                    </Selector>
+                </div>
                 <div class="col-xl-3">
-                    <DataInput placeholder="Delay (min)" type="numeric" :data="delay" :disabled="property == ''"
-                        @update:data="delayUpdated">
+                    <DataInput placeholder="Delay (min)" type="numeric" :data="delay" @update:data="delayUpdated">
                     </DataInput>
                 </div>
-                <div class="col-xl-3 " v-if="feature.type == 'numeric'">
-                    <Selector :items="getSteps()" :value="step" :disabled="property == ''" @update:data="stepUpdated">
+                <div v-if="feature.type == 'numeric'" class="col-xl-3 ">
+                    <Selector :items="getSteps()" :value="step" @update:data="stepUpdated">
                     </Selector>
                 </div>
             </div>
