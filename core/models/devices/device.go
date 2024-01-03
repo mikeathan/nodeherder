@@ -104,6 +104,12 @@ func (u *updatePackage) HasData() bool {
 	return len(u.Data) != 0
 }
 
+type EntityPreset struct {
+	Description string `json:"description"`
+	Name        string `json:"name"`
+	Value       int    `json:"value"`
+}
+
 type Entity struct {
 	Name        string         `json:"name"`
 	Description string         `json:"description,omitempty"`
@@ -112,6 +118,7 @@ type Entity struct {
 	Type        string         `json:"type,omitempty"`
 	Properties  map[string]any `json:"properties,omitempty"`
 	Attributes  map[string]any `json:"attributes,omitempty"`
+	Presets     map[string]any `json:"presets,omitempty"`
 }
 
 func newEntity() *Entity {
@@ -175,6 +182,14 @@ func CreateEntityFromFeature(feature BridgeInfoFeature, data any) (*Entity, erro
 	newEntity.Description = feature.Description
 	newEntity.Data = data
 	newEntity.Type = feature.Type
+
+	// populate feature presets
+	if len(feature.Presets) != 0 {
+		newEntity.Presets = make(map[string]any)
+		for _, preset := range feature.Presets {
+			newEntity.Presets[preset.Name] = preset.Value
+		}
+	}
 
 	switch feature.Type {
 	case "numeric":
