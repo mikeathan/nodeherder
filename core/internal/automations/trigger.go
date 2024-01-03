@@ -128,14 +128,16 @@ type MqttAction struct {
 	Data         any    `json:"data,omitempty"`
 	Delay        int    `json:"delay,omitempty"`
 	Step         int    `json:"step,omitempty"`
+	PresetRotate bool   `json:"preset_rotate,omitempty"`
 
-	Client    mqtt.MqttClient          `json:"-"`
-	registrar services.DeviceRegistrar `json:"-"`
-	mut       sync.RWMutex
-	exit      chan bool
-	isPending bool
-	device    *devices.Device
-	limits    map[string]float64
+	Client      mqtt.MqttClient          `json:"-"`
+	registrar   services.DeviceRegistrar `json:"-"`
+	mut         sync.RWMutex
+	exit        chan bool
+	isPending   bool
+	rotationPos int
+	device      *devices.Device
+	limits      map[string]float64
 }
 
 func NewAction() *MqttAction {
@@ -270,12 +272,28 @@ func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, erro
 		payloadData = ctx.Payload[name].Data
 	}
 
+	// TODO:
+	// if we have a a preset_cycle flag
+	// then we can move to next preset to get value
+	// increment the index and store it
+	if a.PresetRotate {
+		device, err := a.loadDevice()
+		if err != nil {
+			return nil, errors.Join(err, fmt.Errorf("error building action payload"))
+		}
+
+		presets := device.Exposes[a.Property].Presets
+		p := presets[a.rotationPos]
+	}
+
 	if a.Step > 0 {
 
 		device, err := a.loadDevice()
 		if err != nil {
 			return nil, errors.Join(err, fmt.Errorf("error building action payload"))
 		}
+		// value is modified by a step up/down value
+		// it has to be within max/min limits
 
 		// [1] = + , max
 		// [2] = - , min
