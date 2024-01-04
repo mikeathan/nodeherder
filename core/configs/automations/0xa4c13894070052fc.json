@@ -19,7 +19,7 @@
         "type": "light",
         "property": "state",
         "data": "OFF",
-        "delay": 30000
+        "delay": 300000
       }
     },
     {

@@ -48,7 +48,7 @@ var automationMap = new Map([
             type: "light",
             property: "state",
             data: "OFF",
-            delay: 300000000000,
+            delay: 300000,
           },
         },
         {
