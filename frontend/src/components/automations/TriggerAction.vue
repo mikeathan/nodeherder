@@ -200,8 +200,8 @@ const getPresets = computed(() => {
 <template>
     <div class="row">
         <div v-if="getPresets" class="col-xl-3 col-md-4">
-            <Selector placeholder=" Select device" :items="deviceList" :value="id" alignment="left" @update:data="idUpdated"
-                :disabled="id != ''">
+            <Selector placeholder=" Select device" :items="deviceList" :value="id" alignment="center"
+                @update:data="idUpdated" :disabled="id != ''">
             </Selector>
         </div>
         <div class="col-xl-3 col-md-4">
