@@ -153,8 +153,9 @@ function idUpdated(event) {
 }
 
 function presetUpdated(event) {
-    data.value = event
-    emit('update:data', event)
+    var value = parseInt(event)
+    data.value = value
+    emit('update:data', value)
 }
 
 const featureDevices = computed(() => {
