@@ -1,9 +1,9 @@
-<script setup>
+<script setup lang="ts">
 import { useStore } from "vuex";
 import { computed, ref, watchEffect, watch } from "vue";
 import DataInput from "../input/DataInput.vue"
 import Selector from "../input/Selector.vue"
-
+import { getFeatureExposes, getFeatureDevices, createMapFromObject } from "../../modules/convert"
 import { Steps } from "../../models/automation"
 
 const props = defineProps({
@@ -15,24 +15,25 @@ const props = defineProps({
     data: null,
     delay: null,
     step: null,
-    allowRemove: {
-        type: Boolean,
-        default: true
-    },
 });
-const id = ref("")
-const property = ref("");
-const data = ref("");
-const delay = ref(null);
-const step = ref('')
+const id = ref<string>("")
+const property = ref<string>("");
+const data = ref<any>("");
+const delay = ref<number | null>(null);
+const step = ref<number>(0)
 const store = useStore();
 
-const emit = defineEmits(['update:property', 'update:id', 'update:data', 'update:delay', , 'update:step'])
+const emit = defineEmits<{
+    (e: 'update:id', id: string, name: string): void,
+    (e: 'update:property', property: string): void,
+    (e: 'update:data', data: any): void,
+    (e: 'update:delay', data: number): void,
+    (e: 'update:step', data: number): void,
+
+}>()
+
 watchEffect(() => id.value = props.id);
 watchEffect(() => data.value = props.data);
-watchEffect(() => delay.value = props.delay);
-watchEffect(() => step.value = props.step);
-
 
 watch(
     () => props.step,
@@ -57,10 +58,7 @@ watch(
 watch(
     () => props.property,
     () => {
-        property.value = props.property
-        if (property.value == null) {
-            property.value = "" // select first option
-        }
+        property.value = props.property == null ? "" : props.property
     },
     { immediate: true }
 );
@@ -76,17 +74,10 @@ const features = computed(() => {
         return []
     }
 
-    var list = []
-    for (const [key, expose] of Object.entries(device.exposes)) {
-        if (expose.properties != undefined) {
-            list.push(expose)
-        }
-    }
-
-    return list;
+    return getFeatureExposes(device)
 });
 
-function propertySelectionChanged(event) {
+function propertyUpdated(event: any) {
     var value = event;
     if (value == "" || device.value == undefined) {
         property.value = ""
@@ -128,23 +119,23 @@ const feature = computed(() => {
     return device.exposes[property.value];
 });
 
-function dataUpdated(event) {
+function dataUpdated(event: any) {
     data.value = event
     emit('update:data', event)
 }
 
-function stepUpdated(event) {
+function stepUpdated(event: any) {
     var value = parseInt(event)
     step.value = value
     emit('update:step', value)
 }
 
-function delayUpdated(event) {
+function delayUpdated(event: number) {
     delay.value = event
     emit('update:delay', event * 60000)// convert to minutes
 }
 
-function idUpdated(event) {
+function idUpdated(event: string) {
     id.value = event
     var device = store.getters["devices/find"](id.value);
     if (device != undefined) {
@@ -152,7 +143,7 @@ function idUpdated(event) {
     }
 }
 
-function presetUpdated(event) {
+function presetUpdated(event: string) {
     var value = parseInt(event)
     data.value = value
     emit('update:data', value)
@@ -160,34 +151,16 @@ function presetUpdated(event) {
 
 const featureDevices = computed(() => {
     var devices = store.getters["devices/items"];
+    return getFeatureDevices(devices)
 
-    // find exposes with properties
-    // let all = items.filter(item=> item.age==='18')
-    //     return deviceimport 
-    // });
-
-    var list = []
-    for (const [key, device] of Object.entries(devices)) {
-        for (const [key, expose] of Object.entries(device.exposes)) {
-            if (expose.properties != undefined) {
-                list.push(device)
-                break;
-            }
-        }
-    }
-
-    return list;
+    // return createMapFromObject(features, "friendly_name", "id")
 });
 
-function deviceList() {
-    var list = {}
-    for (const [key, device] of Object.entries(featureDevices.value)) {
-        list[device.friendly_name] = device.id
-    }
-    return list
-}
+const deviceList = computed(() => {
+    return createMapFromObject(featureDevices.value, "friendly_name", "id")
+})
 
-function getPlaceholder(type) {
+function getPlaceholder(type: string): string {
     if (type == 'binary' || type == 'enum') {
         return 'Select'
     }
@@ -196,24 +169,14 @@ function getPlaceholder(type) {
 }
 
 const getFeatureNames = computed(() => {
-    // todo:
-    var list = {}
-    for (const [key, feature] of Object.entries(features.value)) {
-        list[feature.name] = feature.name
-    }
-    return list
+    return createMapFromObject(features.value, "name", "name")
 })
 
-function getSteps() {
-    // todo:
-    var list = {}
-    for (const [key, step] of Object.entries(Steps)) {
-        list[step.name] = step.value
-    }
-    return list
-}
+const getSteps = computed(() => {
+    return createMapFromObject(Steps, "name", "value");
+})
 
-function getItems() {
+const getItems = computed(() => {
 
     switch (feature.value.type) {
         case "binary":
@@ -222,45 +185,39 @@ function getItems() {
         default:
             return null
     }
-}
+})
 
-function getPresets() {
-
+const getPresets = computed(() => {
     if (feature.value.presets == undefined) {
-        return []
+        return {}
     }
 
-    var list = {}
-    for (const [name, value] of Object.entries(feature.value.presets)) {
-        list[name] = value
-    }
-    return list
-}
+    return feature.value.presets;
+})
 
 </script>
 
 <template>
     <div class="row">
         <div v-if="getPresets" class="col-xl-3 col-md-4">
-            <Selector placeholder=" Select device" :items="deviceList()" :value="id" alignment="left"
-                @update:data="idUpdated" :disabled="id != ''">
+            <Selector placeholder=" Select device" :items="deviceList" :value="id" alignment="left" @update:data="idUpdated"
+                :disabled="id != ''">
             </Selector>
         </div>
         <div class="col-xl-3 col-md-4">
             <Selector placeholder="Select property" :items="getFeatureNames" :value="property" alignment="center"
-                @update:data="propertySelectionChanged" :disabled="id == ''">
+                @update:data="propertyUpdated" :disabled="id == ''">
             </Selector>
         </div>
         <div class="col-xl-4 col-md-3">
-            <DataInput :type="feature.type" :placeholder="getPlaceholder(feature.type)" :items="getItems()" :data="data"
+            <DataInput :type="feature.type" :placeholder="getPlaceholder(feature.type)" :items="getItems" :data="data"
                 :disabled="property == ''" @update:data="dataUpdated">
             </DataInput>
         </div>
         <div class="col-xl-2">
             <div class="btn-group">
-                <button v-if="feature.type == 'numeric'" class="btn btn-default btn-number" type="button"
-                    data-bs-toggle="collapse" data-bs-target="#collapseOptions" aria-expanded="false"
-                    aria-controls="collapseOptions">
+                <button class="btn btn-default btn-number" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapseOptions" aria-expanded="false" aria-controls="collapseOptions">
                     <span class="fas fa-angle-double-down"></span>
                 </button>
             </div>
@@ -269,7 +226,7 @@ function getPresets() {
         <div class="collapse" id="collapseOptions">
             <div class="row pt-2" :disabled="property == ''">
                 <div v-if="feature.presets != null" class="col-xl-3">
-                    <Selector placeholder="Presets" :items="getPresets()" value="" @update:data="presetUpdated">
+                    <Selector placeholder="Presets" :items="getPresets" value="" @update:data="presetUpdated">
                     </Selector>
                 </div>
                 <div class="col-xl-3">
@@ -277,7 +234,7 @@ function getPresets() {
                     </DataInput>
                 </div>
                 <div v-if="feature.type == 'numeric'" class="col-xl-3 ">
-                    <Selector :items="getSteps()" :value="step" @update:data="stepUpdated">
+                    <Selector :items="getSteps" :value="step" @update:data="stepUpdated">
                     </Selector>
                 </div>
             </div>
