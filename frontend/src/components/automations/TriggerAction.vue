@@ -135,7 +135,7 @@ function delayUpdated(event: number) {
     emit('update:delay', event * 60000)// convert to minutes
 }
 
-function idUpdated(event: string) {
+function deviceIdUpdated(event: string) {
     id.value = event
     var device = store.getters["devices/find"](id.value);
     if (device != undefined) {
@@ -201,7 +201,7 @@ const getPresets = computed(() => {
     <div class="row">
         <div v-if="getPresets" class="col-xl-3 col-md-4">
             <Selector placeholder=" Select device" :items="deviceList" :value="id" alignment="center"
-                @update:data="idUpdated" :disabled="id != ''">
+                @update:data="deviceIdUpdated" :disabled="id != ''">
             </Selector>
         </div>
         <div class="col-xl-3 col-md-4">
