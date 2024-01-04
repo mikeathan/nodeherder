@@ -4,7 +4,7 @@ import { computed, ref, watchEffect, watch } from "vue";
 import DataInput from "../input/DataInput.vue"
 import Selector from "../input/Selector.vue"
 import { getFeatureExposes, getFeatureDevices, createMapFromObject } from "../../modules/convert"
-import { Steps } from "../../models/automation"
+import { StepOperators } from "../../models/automations"
 
 const props = defineProps({
     id: {
@@ -40,7 +40,8 @@ watch(
     () => {
         step.value = props.step
         if (step.value == null) {
-            step.value = Steps[0].value
+            step.value = StepOperators[0]
+
         }
     },
     { immediate: true }
@@ -173,7 +174,7 @@ const getFeatureNames = computed(() => {
 })
 
 const getSteps = computed(() => {
-    return createMapFromObject(Steps, "name", "value");
+    return StepOperators
 })
 
 const getItems = computed(() => {

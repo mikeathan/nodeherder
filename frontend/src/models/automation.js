@@ -1,10 +1,3 @@
-export const OperatorKeys = ["=", "<=", ">=", ">", "<"];
-
-export const Steps = [
-  { name: "None", value: 0 },
-  { name: "increase", value: 1 },
-  { name: "decrease", value: 2 },
-];
 export class DeviceTrigger {
   constructor() {
     this.id = "";
@@ -17,21 +10,6 @@ export class DeviceTrigger {
   toJson() {
     return JSON.stringify(this, converter);
   }
-
-  // getProperties(exposeName) {
-  //   var expose = this.device.exposes[exposeName];
-  //   if (expose == undefined || expose.properties == undefined) {
-  //     return [];
-  //   }
-  //   return expose.properties;
-  // }
-  // getAttributes(exposeName) {
-  //   var expose = this.device.exposes[exposeName];
-  //   if (expose == undefined || expose.attributes == undefined) {
-  //     return [];
-  //   }
-  //   return expose.attributes;
-  // }
 }
 
 export class ActionTrigger {
@@ -79,7 +57,7 @@ export class ExposeTrigger {
 export class Condition {
   constructor() {
     this.name = "";
-    this.equality = OperatorKeys[0];
+    this.equality = "=";
     this.value = "";
     this.idx = 0;
   }

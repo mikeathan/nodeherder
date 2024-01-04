@@ -1,5 +1,6 @@
 <script setup>
-import { OperatorKeys } from "../../models/automation"
+import { EqualityOperators } from "../../models/automations"
+
 import DataInput from "../input/DataInput.vue"
 import { useStore } from "vuex";
 
@@ -111,9 +112,9 @@ function getOperators() {
     switch (feature.value.type) {
         case "binary":
         case "enum":
-            return OperatorKeys[0]
+            return EqualityOperators[0]
         default:
-            return OperatorKeys
+            return EqualityOperators
     }
 
 }
