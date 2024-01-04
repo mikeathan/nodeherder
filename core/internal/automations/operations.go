@@ -18,17 +18,21 @@ func toFloat(value any) float32 {
 	}
 }
 
+type actionOperation interface {
+	Next(value float64) (any, error)
+}
+
 type rotateOperation struct {
 	position int
 	size     int
 	items    []any
 }
 
-func newRotateOperation(items []any) *rotateOperation {
+func newRotateOperation(items []any) actionOperation {
 	return &rotateOperation{items: items, size: len(items)}
 }
 
-func (r *rotateOperation) Next() any {
+func (r *rotateOperation) Next(value float64) (any, error) {
 	if r.position >= r.size {
 		r.position = 0
 	}
@@ -36,22 +40,23 @@ func (r *rotateOperation) Next() any {
 	v := r.items[r.position]
 	r.position++
 
-	return v
+	return v, nil
 }
 
 type stepOperation struct {
-	operator  string
 	limit     float64
+	stepType  int
 	stepValue float64
 }
 
-func newstepOperation(operator string, limit float64, stepValue float64) *stepOperation {
-	return &stepOperation{operator: operator, limit: limit, stepValue: stepValue}
+func newStepOperation(stepType int, stepValue float64, limit float64) actionOperation {
+	return &stepOperation{stepType: stepType, stepValue: stepValue, limit: limit}
 }
 
 func (r *stepOperation) Next(value float64) (any, error) {
+	op := stepsOperators[r.stepType]
 
-	newValue := numericOperations[r.operator](value, r.stepValue, r.limit)
+	newValue := numericOperations[op.Operator](value, r.stepValue, r.limit)
 	if value == newValue {
 		return nil, errors.New("same value, skipping")
 	}

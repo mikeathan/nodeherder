@@ -171,9 +171,7 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 			if sensorTrigger.Action.Property != inputSensorTrigger.Action.Property {
 				t.Fatalf("unexpected sensorTrigger.Action.Property  value")
 			}
-			if sensorTrigger.Action.Type != inputSensorTrigger.Action.Type {
-				t.Fatalf("unexpected sensorTrigger.Action.Type  value")
-			}
+
 			if sensorTrigger.Action.Delay != inputSensorTrigger.Action.Delay {
 				t.Fatalf("unexpected sensorTrigger.Action.Delay  value")
 			}
@@ -765,7 +763,6 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 	// action = turn off light
 	turnOnAction := &automations.MqttAction{}
 	turnOnAction.FriendlyName = "Attic light"
-	turnOnAction.Type = "light"
 	turnOnAction.Property = "state"
 	turnOnAction.Data = true
 	turnOnAction.Delay = 0
@@ -797,7 +794,6 @@ func createTriggerTurnOnLightWithPresenceOn(mqtt mqtt.MqttClient) *automations.T
 	// action = turn off light
 	turnOnAction := &automations.MqttAction{}
 	turnOnAction.FriendlyName = "Attic light"
-	turnOnAction.Type = "light"
 	turnOnAction.Property = "state"
 	turnOnAction.Data = true
 	turnOnAction.Delay = 0
@@ -824,7 +820,6 @@ func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay t
 	// action = turn off light
 	turnOffAction := &automations.MqttAction{}
 	turnOffAction.FriendlyName = "Attic light"
-	turnOffAction.Type = "light"
 	turnOffAction.Property = "state"
 	turnOffAction.Data = false
 	turnOffAction.Delay = int(delay.Milliseconds())

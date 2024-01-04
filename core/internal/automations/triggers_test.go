@@ -275,7 +275,6 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 	// action = turn off light
 	turnOnAction := &automations.MqttAction{}
 	turnOnAction.FriendlyName = "Attic light"
-	turnOnAction.Type = "light"
 	turnOnAction.Property = "state"
 	turnOnAction.Data = true
 	turnOnAction.Delay = 0
@@ -307,7 +306,6 @@ func createSwitchTriggerWithBindingAction(triggerName string, actionProp string,
 	// action = turn off light
 	brightnessAction := &automations.MqttAction{}
 	brightnessAction.FriendlyName = "Attic light"
-	brightnessAction.Type = "light"
 	brightnessAction.Property = actionProp
 	brightnessAction.Client = mqtt
 
@@ -323,7 +321,6 @@ func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay t
 	// action = turn off light
 	turnOffAction := &automations.MqttAction{}
 	turnOffAction.FriendlyName = "Attic light"
-	turnOffAction.Type = "light"
 	turnOffAction.Property = "state"
 	turnOffAction.Data = false
 	turnOffAction.Delay = int(delay.Milliseconds())

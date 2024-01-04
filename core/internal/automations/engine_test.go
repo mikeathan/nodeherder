@@ -135,9 +135,6 @@ func TestExportAutomationsFromFile(t *testing.T) {
 				t.Fatalf("ERROR Action.Property mismatch")
 			}
 
-			if outputTrigger.Action.Type != inputTrigger.Action.Type {
-				t.Fatalf("ERROR Action.Type mismatch")
-			}
 			if outputTrigger.Action.Delay != inputTrigger.Action.Delay {
 				t.Fatalf("ERROR Action.Delay mismatch")
 			}

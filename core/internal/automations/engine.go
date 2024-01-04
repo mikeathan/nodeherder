@@ -7,7 +7,6 @@ import (
 	"node-herder/models/devices"
 	"node-herder/utils"
 	"node-herder/utils/storage"
-	"time"
 )
 
 const (
@@ -101,13 +100,8 @@ func (a *AutomationEngine) Delete(id string) error {
 
 func (a *AutomationEngine) Initialize() {
 
-	// fake input data - TEST ONLY
-	// that needs to come from a file and loaded
-	//automations := newMockMqttTriggerPresenseWithLux(true)
-	//automations[0].Save("human_presence", true)
-
 	utils.LogInfof("Initialize automations")
-	automations, err := a.automationStorage.Initialize()
+	automations, err := a.automationStorage.Initialize() // <--------------- check if we clear any internal cache in automations after reloading
 	if err != nil {
 		utils.LogErrorf("Load automations failed. Error=%s", err.Error())
 		return
@@ -124,80 +118,4 @@ func (a *AutomationEngine) Initialize() {
 	}
 
 	//automations[0].Save(, true)
-}
-
-// REMOVE
-// used for testing only!!!!!!!!!!
-func newMockMqttTriggerPresenseWithLux(enabled bool) []*Device {
-
-	// 0x70ac08fffefafeca = Attic light
-	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff("0x70ac08fffefafeca", 5*time.Minute)
-	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux("0x70ac08fffefafeca", 30)
-
-	// create device trigger
-	// 0xa4c13894070052fc = Human Presence
-	deviceTrigger := NewDevice("0xa4c13894070052fc")
-	deviceTrigger.Description = "Attic light test automation"
-	deviceTrigger.Enabled = enabled
-	deviceTrigger.Triggers = []*Trigger{}
-	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOffTrigger)
-	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
-
-	return []*Device{deviceTrigger}
-}
-
-func createTriggerTurnOnLightWithPresenceOnAndLux(id string, lux any) *Trigger {
-	// action = turn off light
-	turnOnAction := &MqttAction{}
-	turnOnAction.Id = id
-	turnOnAction.Type = "light"
-	turnOnAction.Property = "state"
-	turnOnAction.Data = true
-	turnOnAction.Delay = 0
-
-	// Turn on sensor trigger
-	turnOnTrigger := &Trigger{}
-	turnOnTrigger.Name = "presence"
-	turnOnTrigger.Action = turnOnAction
-
-	// condition = presence = off && lux <= 30
-	turnOnCondition := &Condition{}
-	turnOnCondition.Name = "presence"
-	turnOnCondition.EqualityOperator = "="
-	turnOnCondition.Value = true
-
-	luxCondition := &Condition{}
-	luxCondition.Name = "lux"
-	luxCondition.EqualityOperator = "<="
-	luxCondition.Value = lux
-
-	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
-	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, luxCondition)
-
-	return turnOnTrigger
-}
-
-func createTriggerDelayTurnOffLightWithPresenceOff(id string, delay time.Duration) *Trigger {
-	// action = turn off light
-	turnOffAction := &MqttAction{}
-	turnOffAction.Id = id
-	turnOffAction.Type = "light"
-	turnOffAction.Property = "state"
-	turnOffAction.Data = false
-	turnOffAction.Delay = int(delay.Milliseconds())
-
-	// Turn off sensor trigger
-	turnOffTrigger := &Trigger{}
-	turnOffTrigger.Name = "presence"
-	turnOffTrigger.Action = turnOffAction
-
-	// condition = presence == false
-	turnOffCondition := &Condition{}
-	turnOffCondition.Name = "presence"
-	turnOffCondition.EqualityOperator = "="
-	turnOffCondition.Value = false
-
-	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffCondition)
-
-	return turnOffTrigger
 }

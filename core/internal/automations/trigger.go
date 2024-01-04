@@ -2,11 +2,8 @@ package automations
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"node-herder/internal/mqtt"
-	"node-herder/internal/services"
-	"node-herder/mocks"
 	"node-herder/models/devices"
 	"node-herder/utils"
 	"sync"
@@ -63,35 +60,43 @@ func (trigger *Trigger) process(ctx *DeviceContext) {
 type MqttAction struct {
 	Id           string `json:"id"`
 	FriendlyName string `json:"friendlyname"`
-	Type         string `json:"type"`
 	Property     string `json:"property"`
 	Data         any    `json:"data,omitempty"`
 	Delay        int    `json:"delay,omitempty"`
 	Step         int    `json:"step,omitempty"`
 	PresetRotate bool   `json:"preset_rotate,omitempty"`
 
-	Client    mqtt.MqttClient          `json:"-"`
-	registrar services.DeviceRegistrar `json:"-"`
+	Client    mqtt.MqttClient `json:"-"`
+	operation actionOperation
+	expose    *devices.Entity
 	mut       sync.RWMutex
 	exit      chan bool
 	isPending bool
-
-	device    *devices.Device
-	limits    map[string]float64
-	presets   []any
-	presetPos int
 }
 
 func NewAction() *MqttAction {
-	return &MqttAction{Delay: 0, registrar: &mocks.NopDeviceRegistrar{}, limits: make(map[string]float64)}
+	return &MqttAction{Delay: 0}
 }
 
-func (a *MqttAction) SetRegistrar(registrar services.DeviceRegistrar) {
-	a.registrar = registrar
+func (a *MqttAction) configure(expose *devices.Entity) {
+	a.expose = expose
 
-	_, err := a.loadDevice()
-	if err != nil {
-		utils.LogInfof(err.Error())
+	if a.Step > 0 {
+		var limit float64
+		op := stepsOperators[a.Step]
+		if val, ok := expose.Attributes[op.Limit]; ok {
+			limit = val.(float64)
+		}
+
+		a.operation = newStepOperation(a.Step, a.Data.(float64), limit)
+	} else if a.PresetRotate {
+
+		var presets []any
+		for _, value := range expose.Presets {
+			presets = append(presets, value)
+		}
+
+		a.operation = newRotateOperation(presets)
 	}
 }
 
@@ -186,33 +191,6 @@ func (a *MqttAction) emit(payload []byte) {
 	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.FriendlyName)
 }
 
-func (a *MqttAction) loadDevice() (*devices.Device, error) {
-	if a.device == nil {
-		var err error
-		a.device, err = a.registrar.LookupById(a.Id)
-		if err != nil {
-			return nil, fmt.Errorf("Device %s not found for action %s", a.Id, a.FriendlyName)
-		}
-
-		a.limits = map[string]float64{}
-		if val, ok := a.device.Exposes[a.Property].Attributes["max"]; ok {
-			a.limits["max"] = val.(float64)
-		}
-
-		if val, ok := a.device.Exposes[a.Property].Attributes["min"]; ok {
-			a.limits["min"] = val.(float64)
-		}
-
-		if a.PresetRotate {
-			for _, value := range a.device.Exposes[a.Property].Presets {
-				a.presets = append(a.presets, value)
-			}
-		}
-	}
-
-	return a.device, nil
-}
-
 func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, error) {
 
 	payloadData := a.Data
@@ -220,44 +198,17 @@ func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, erro
 		payloadData = ctx.Payload[name].Data
 	}
 
-	// TODO:
-	// if we have a a preset_cycle flag
-	// then we can move to next preset to get value
-	// increment the index and store it
-	if a.PresetRotate {
-		_, err := a.loadDevice()
-		if err != nil {
-			return nil, errors.Join(err, fmt.Errorf("error building action payload"))
-		}
-
-		v := a.presets[a.presetPos]
-	}
-
 	if a.Step > 0 {
-
-		device, err := a.loadDevice()
+		newValue, err := a.operation.Next(a.expose.Data.(float64))
 		if err != nil {
-			return nil, errors.Join(err, fmt.Errorf("error building action payload"))
+			return nil, err
 		}
-		// value is modified by a step up/down value
-		// it has to be within max/min limits
-
-		// [1] = + , max
-		// [2] = - , min
-		op := stepsOperators[a.Step]
-
-		var newValue = a.Data.(float64)
-		if expose, ok := device.Exposes[a.Property]; ok {
-			if expose.Data != nil {
-				limit := a.limits[op.Limit]
-				newValue = numericOperations[op.Operator](expose.Data.(float64), a.Data.(float64), limit)
-
-				if expose.Data == newValue {
-					return nil, errors.New("same value, skipping")
-				}
-			}
+		payloadData = newValue
+	} else if a.PresetRotate {
+		newValue, err := a.operation.Next(0)
+		if err != nil {
+			return nil, err
 		}
-
 		payloadData = newValue
 	}
 

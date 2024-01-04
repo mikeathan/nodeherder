@@ -131,11 +131,6 @@ func configureAction(registrar services.DeviceRegistrar, action *MqttAction, cli
 
 			if action.Property == f.Property {
 
-				// currently action.Type is not used . do we need it ? if not remove
-				// if action.Type != e.Type {
-				// 	return fmt.Errorf("type=%s for action=%s not found", action.Type, action.Id)
-				// }
-
 				// sanitize data
 				if f.Type == "binary" {
 					if value, ok := action.Data.(bool); ok {
@@ -166,7 +161,14 @@ func configureAction(registrar services.DeviceRegistrar, action *MqttAction, cli
 
 				action.FriendlyName = bridgeInfo.FriendlyName
 				action.Client = client
-				action.SetRegistrar(registrar)
+
+				device, err := registrar.LookupById(bridgeInfo.IeeeAddress)
+				if err == nil {
+
+					expose := device.Exposes[action.Property]
+					action.configure(expose)
+				}
+
 				return nil
 			}
 		}
