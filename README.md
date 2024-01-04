@@ -96,3 +96,33 @@ backup automations
 
 add functionality to enable/disalbe a trigger
 add log window in frontend
+
+
+action operations 
+    steps (value) 
+      increase
+      descrease
+
+    rotation (presets)
+
+  criteria:
+    rotation works on presents only
+    cant have both steps and rotation 
+
+    if steps selected rotation is disabled when export has presets
+    if rotation is enabled, steps are disabled 
+      
+    presets - rotation (on/off)
+      -cold,
+      -warm,
+      -hot,
+      -etc..
+
+    value - select steps [none/increase/decrease]
+
+
+     ???operations select with 
+      [steps,
+      rotation]
+
+     
