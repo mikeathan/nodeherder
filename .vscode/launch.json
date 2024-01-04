@@ -4,7 +4,7 @@
             "type": "firefox",
             "request": "launch",
             "name": "vuejs: firefox",
-            "url": "http://localhost:8080",
+            "url": "http://localhost:4100",
             "webRoot": "${workspaceFolder}/src",
             "pathMappings": [
                 {
