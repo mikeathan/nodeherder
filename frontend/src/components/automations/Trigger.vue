@@ -35,6 +35,8 @@ const device = computed(() => {
 });
 
 function addAction(): void {
+    todo
+    // make so we can set or clear it . so we dont have to do null checks
     trigger.value.action = new ActionTrigger();
 }
 
