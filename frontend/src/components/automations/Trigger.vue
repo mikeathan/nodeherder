@@ -53,18 +53,11 @@ function addCondition(): void {
         trigger.value.conditions.push(condition)
     }
 }
-interface InputFileEvent extends Event {
-    target: HTMLInputElement;
-}
+
 function removeCondition(index: number): void {
-
+    console.log("index to remove", index)
     if (trigger.value != null) {
-
-        var found = trigger.value.conditions.findIndex(k => k.idx != index);
-        console.log(trigger.value.conditions, index, found)
-        if (found != -1) {
-            trigger.value.conditions.splice(found, 1);
-        }
+        trigger.value.conditions = trigger.value.conditions.filter(k => k.idx != index);
     }
 }
 
