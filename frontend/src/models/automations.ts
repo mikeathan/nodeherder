@@ -12,6 +12,10 @@ export class DeviceTrigger {
     this.enabled = false;
     this.triggers = [];
   }
+
+  public get displayName(): string {
+    return capitalizeText(this.friendlyname);
+  }
 }
 
 export class ExposeTrigger {
@@ -47,9 +51,21 @@ export class ExposeTrigger {
       this.conditions.splice(index, 1);
     }
   }
+
+  public displayName(): string {
+    return capitalizeText(this.name);
+  }
+
+  public setAction(action: Action): void {
+    this.action = action;
+  }
+
+  public clearAction(): void {
+    this.action = null;
+  }
 }
 
-export class ActionTrigger {
+abstract class Action {
   id: string;
   friendlyname: string;
   property: string;
@@ -64,6 +80,12 @@ export class ActionTrigger {
     this.data = null;
     this.delay = null;
     this.step = 0;
+  }
+}
+
+export class ActionTrigger extends Action {
+  constructor() {
+    super();
   }
 }
 
@@ -92,4 +114,14 @@ export class Condition {
     this.value = "";
     this.idx = 0;
   }
+}
+
+// todo: convert to extension class
+function capitalizeText(value: string): string {
+  return value
+    .toLowerCase()
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+  //return value.charAt(0).toUpperCase() + value.slice(1);
 }

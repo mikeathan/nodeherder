@@ -35,13 +35,11 @@ const device = computed(() => {
 });
 
 function addAction(): void {
-    todo
-    // make so we can set or clear it . so we dont have to do null checks
-    trigger.value.action = new ActionTrigger();
+    trigger.value.setAction(new ActionTrigger());
 }
 
 function removeAction(event: Event): void {
-    trigger.value.action = null;
+    trigger.value.clearAction()
 }
 
 function addCondition(): void {
@@ -49,7 +47,6 @@ function addCondition(): void {
 }
 
 function removeCondition(index: number): void {
-    console.log("index to remove", index)
     trigger.value.conditions = trigger.value.conditions.filter(k => k.idx != index);
 }
 
@@ -120,7 +117,7 @@ const exposesList = computed(() => {
                 <thead>
                     <tr>
                         <th scope="col">
-                            Trigger {{ capitalize(trigger.name) }}
+                            Trigger {{ trigger.displayName() }}
                         </th>
                         <th scope="col">#</th>
                     </tr>
