@@ -1,27 +1,29 @@
-<script setup>
+<script setup lang="ts">
 import { useStore } from "vuex";
-import { computed, watch, ref, watchEffect } from "vue";
+import { computed, watch, ref, PropType } from "vue";
+import { Condition, ActionTrigger, ExposeTrigger } from "../../models/automations"
+import { getDeviceExposeNamesMap } from "../../modules/convert"
 
-import { Condition, ActionTrigger } from "../../models/automation"
-import TriggerCondition from "./TriggerCondition"
+import TriggerCondition from "./TriggerCondition.vue"
 import TriggerAction from "./TriggerAction.vue";
 import Selector from "../input/Selector.vue"
 
 const props = defineProps({
-    id: String,
-    trigger: Object,
+    id: { type: String },
+    trigger: { type: Object as PropType<ExposeTrigger> },
 });
 
 const store = useStore();
-const trigger = ref(null)
+const trigger = ref<ExposeTrigger | null>(null)
 const emit = defineEmits(['save', 'delete'])
 
 watch(
     () => props.trigger,
     () => {
 
-        trigger.value = JSON.parse(JSON.stringify(props.trigger))
-        trigger.value.conditions.forEach(function callback(condition, index) {
+        let obj: ExposeTrigger = JSON.parse(JSON.stringify(props.trigger))
+        trigger.value = obj
+        trigger.value?.conditions.forEach(function callback(condition, index) {
             condition.idx = index + 1
         });
 
@@ -32,34 +34,70 @@ const device = computed(() => {
     return store.getters["devices/find"](props.id);
 });
 
-function addAction() {
+function addAction(): void {
     var newAction = new ActionTrigger()
-    trigger.value.action = newAction;
-}
-
-function removeAction(event) {
-    trigger.value.action = null;
-}
-
-function addCondition() {
-    var condition = new Condition()
-    trigger.value.conditions.push(condition)
-}
-
-function removeCondition(event) {
-    var index = trigger.value.conditions.filter(k => k.idx != event);
-    if (index != -1) {
-        trigger.value.conditions.splice(index, 1);
+    if (trigger.value != null) {
+        trigger.value.action = newAction;
     }
 }
 
-function isSaveEnabled() {
-    return trigger.value.name != "" && trigger.value.action != null;
+function removeAction(event: Event): void {
+    if (trigger.value != null) {
+        trigger.value.action = null;
+    }
 }
 
-function actionIdUpdated(id, friendlyName) {
-    trigger.value.action.id = id
-    trigger.value.action.friendlyname = friendlyName
+function addCondition(): void {
+    var condition = new Condition()
+    if (trigger.value != null) {
+        trigger.value.conditions.push(condition)
+    }
+}
+interface InputFileEvent extends Event {
+    target: HTMLInputElement;
+}
+function removeCondition(index: number): void {
+
+    if (trigger.value != null) {
+
+        var found = trigger.value.conditions.findIndex(k => k.idx != index);
+        console.log(trigger.value.conditions, index, found)
+        if (found != -1) {
+            trigger.value.conditions.splice(found, 1);
+        }
+    }
+}
+
+function isSaveEnabled(): boolean {
+    return trigger.value?.name != "" && trigger.value?.action != null;
+}
+
+function actionIdUpdated(id: string, friendlyName: string): void {
+    if (trigger.value != null && trigger.value.action) {
+        trigger.value.action.id = id
+        trigger.value.action.friendlyname = friendlyName
+    }
+}
+
+function updateActionProperty(value: string): void {
+    if (trigger.value?.action != null) {
+        trigger.value.action.property = value
+    }
+}
+function updateActionData(value: string): void {
+    if (trigger.value?.action != null) {
+        trigger.value.action.data = value
+    }
+}
+function updateActionDelay(value: number | null): void {
+    if (trigger.value?.action != null) {
+        trigger.value.action.delay = value
+    }
+}
+function updateActionStep(value: number): void {
+    if (trigger.value?.action != null) {
+        trigger.value.action.step = value
+    }
 }
 
 function save() {
@@ -67,20 +105,14 @@ function save() {
 }
 
 function remove() {
-    emit('delete', trigger.value.idx)
+    emit('delete', trigger.value?.idx)
 }
 
-function exposesList() {
-    // todo:
-    //var result = Object.keys(obj).map((key) => [key, obj[key]]);
-    var list = {}
-    for (const [key, expose] of Object.entries(device.value.exposes)) {
-        list[expose.name] = expose.name
-    }
-    return list
-}
+const exposesList = computed(() => {
+    return getDeviceExposeNamesMap(device.value)
+})
 
-function capitalize(val) {
+function capitalize(val: string) {
     return val.charAt(0).toUpperCase() + val.slice(1);
 }
 </script>
@@ -92,8 +124,8 @@ function capitalize(val) {
 
         <div class="row" v-if="trigger.name == ''">
 
-            <Selector placeholder="Select trigger" :items="exposesList()" :value="trigger.name" alignment="left"
-                :disabled="props.trigger.name != ''" @update:data="v => trigger.name = v">
+            <Selector placeholder="Select trigger" :items="exposesList" :value="trigger.name" alignment="left"
+                :disabled="props.trigger?.name != ''" @update:data="v => trigger.name = v">
             </Selector>
         </div>
         <div class="row" v-else>
@@ -130,7 +162,7 @@ function capitalize(val) {
                             </TriggerCondition>
                         </th>
                         <td>
-                            <span class="fa fa-trash-alt fa-sm" @click="removeCondition(condition.index)">
+                            <span class="fa fa-trash-alt fa-sm" @click="removeCondition(condition.idx)">
                             </span>
                         </td>
                     </tr>
@@ -152,10 +184,8 @@ function capitalize(val) {
                             <TriggerAction v-if="trigger.action != null" :id="trigger.action.id"
                                 :property="trigger.action.property" :data="trigger.action.data"
                                 :delay="trigger.action.delay" :step="trigger.action.step" @update:id="actionIdUpdated"
-                                @update:property="newValue => trigger.action.property = newValue"
-                                @update:data="newValue => trigger.action.data = newValue"
-                                @update:delay="newValue => trigger.action.delay = newValue"
-                                @update:step="newValue => trigger.action.step = newValue">
+                                @update:property="updateActionProperty" @update:data="updateActionData"
+                                @update:delay="updateActionDelay" @update:step="updateActionStep">
                             </TriggerAction>
                         </th>
                         <td>

@@ -18,6 +18,25 @@ export function getFeatureExposes(device) {
     return list
 }
 
+export function getDeviceExposeNames(device) {
+
+    var list = []
+    for (const [key, expose] of Object.entries(device.exposes)) {
+        list.push(expose.name)
+    }
+
+    return list
+}
+export function getDeviceExposeNamesMap(device) {
+
+    var list = {}
+    for (const [key, expose] of Object.entries(device.exposes)) {
+        list[expose.name] = expose.name
+    }
+    return list
+}
+
+
 // returns only devices that have features (properties)
 export function getFeatureDevices(devices) {
 
@@ -35,13 +54,6 @@ export function getFeatureDevices(devices) {
 }
 
 
-export function createMapWithNameId(devices) {
-    var list = {}
-    for (const [key, device] of Object.entries(devices)) {
-        list[device.friendly_name] = device.id
-    }
-    return list
-}
 
 export function createMapFromObject(obj, key, value) {
 

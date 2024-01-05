@@ -1,5 +1,4 @@
 <script setup>
-import { ref, watch, watchEffect } from "vue";
 
 const props = defineProps({
     name: String,

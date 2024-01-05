@@ -1,10 +1,11 @@
-<script setup>
+<script setup lang="ts">
 import { useStore } from "vuex";
 import { ref, watch } from "vue";
-import Trigger from "./Trigger"
-import { ExposeTrigger, DeviceTrigger } from "../../models/automation"
-import DataInput from "../input/DataInput.vue"
 import { useRouter } from 'vue-router'
+import Trigger from "./Trigger.vue"
+import DataInput from "../input/DataInput.vue"
+import { ExposeTrigger, DeviceTrigger } from "../../models/automations"
+
 
 const emit = defineEmits(['cancel'])
 
@@ -15,7 +16,7 @@ const props = defineProps({
 const store = useStore();
 const router = useRouter()
 const automation = ref(new DeviceTrigger())
-const selectedTrigger = ref(null)
+const selectedTrigger = ref<ExposeTrigger | null>(null)
 
 
 watch(
@@ -58,7 +59,7 @@ function cancel() {
     emit('cancel')
 }
 
-function saveAutomation(trigger) {
+function saveAutomation() {
     store.dispatch('automations/save', automation.value);
     router.push("/viewer")
 }
@@ -72,14 +73,14 @@ function deleteAutomation() {
     }
 }
 
-function deleteTrigger(triggerIdx) {
+function deleteTrigger(triggerIdx: number): void {
     if (triggerIdx |= -1) {
         automation.value.triggers.splice(triggerIdx, 1);
     }
     selectedTrigger.value = null// close trigger panel
 }
 
-function saveTrigger(trigger) {
+function saveTrigger(trigger: ExposeTrigger): void {
     if (trigger.idx == -1) {
         automation.value.triggers.push(trigger)
         automation.value.triggers.forEach(function callback(trigger, index) {
@@ -92,7 +93,7 @@ function saveTrigger(trigger) {
     selectedTrigger.value = null; // close trigger panel
 }
 
-function getConditionsDescription(trigger) {
+function getConditionsDescription(trigger: ExposeTrigger): string {
     var conditions = trigger.conditions
     if (conditions.length == 0) {
         return ""
@@ -106,7 +107,7 @@ function getConditionsDescription(trigger) {
     return description;
 }
 
-function getActionDescription(trigger) {
+function getActionDescription(trigger: ExposeTrigger): string {
     if (trigger.action == null) {
         return "<EMPTY>"
     }
@@ -117,11 +118,11 @@ function getActionDescription(trigger) {
     return description;
 }
 
-function rowClicked(trigger) {
+function rowClicked(trigger: ExposeTrigger): void {
     selectedTrigger.value = trigger;
 }
 
-function onDeleteTriggerClick(event, triggerId) {
+function onDeleteTriggerClick(event: Event, triggerId: number): void {
     deleteTrigger(triggerId)
 }
 
@@ -139,7 +140,7 @@ function onDeleteTriggerClick(event, triggerId) {
                 <div class="card-header ">
                     <div class="pt-3 ">
                         <label class="form-check-label">Id</label>
-                        <DataInput :data="props.id" alignment="left" :disabled="true">
+                        <DataInput :data="automation.id" alignment="left" :disabled="true">
                         </DataInput>
                     </div>
                     <div class="pt-3">

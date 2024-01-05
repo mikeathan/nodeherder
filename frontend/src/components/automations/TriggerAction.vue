@@ -29,7 +29,6 @@ const emit = defineEmits<{
     (e: 'update:data', data: any): void,
     (e: 'update:delay', data: number): void,
     (e: 'update:step', data: number): void,
-
 }>()
 
 watchEffect(() => id.value = props.id);

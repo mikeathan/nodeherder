@@ -1,4 +1,4 @@
-class DeviceTrigger {
+export class DeviceTrigger {
   id: string;
   friendlyname: string;
   description: string;
@@ -14,25 +14,7 @@ class DeviceTrigger {
   }
 }
 
-class ActionTrigger {
-  id: string;
-  friendlyname: string;
-  property: string;
-  data: any;
-  delay: number | null;
-  step: number;
-
-  constructor() {
-    this.id = "";
-    this.friendlyname = "";
-    this.property = "";
-    this.data = null;
-    this.delay = null;
-    this.step = 0;
-  }
-}
-
-class ExposeTrigger {
+export class ExposeTrigger {
   idx: number;
   name: string;
   conditions: Array<Condition>;
@@ -67,6 +49,24 @@ class ExposeTrigger {
   }
 }
 
+export class ActionTrigger {
+  id: string;
+  friendlyname: string;
+  property: string;
+  data: any;
+  delay: number | null;
+  step: number;
+
+  constructor() {
+    this.id = "";
+    this.friendlyname = "";
+    this.property = "";
+    this.data = null;
+    this.delay = null;
+    this.step = 0;
+  }
+}
+
 export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
 
 interface Operation {
@@ -80,7 +80,7 @@ export const StepOperators: { [Name: string]: number } = {
   decrease: 2,
 };
 
-class Condition {
+export class Condition {
   name: string;
   equality: string;
   value: any | null;

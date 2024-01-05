@@ -25,6 +25,8 @@ function create(event) {
 }
 
 function deviceList() {
+
+
     // todo:
     //var result = Object.keys(obj).map((key) => [key, obj[key]]);
     var list = {}

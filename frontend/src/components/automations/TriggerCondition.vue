@@ -1,17 +1,23 @@
-<script setup>
-import { EqualityOperators } from "../../models/automations"
-
-import DataInput from "../input/DataInput.vue"
-import { useStore } from "vuex";
+<script setup lang="ts">
 
 import { ref, computed, watch } from 'vue'
+import { useStore } from "vuex";
+import DataInput from "../input/DataInput.vue"
+import { getDeviceExposeNames } from "../../modules/convert"
+import { EqualityOperators } from "../../models/automations"
+
 const props = defineProps({
     id: {
         type: String,
-        required: true,
     },
-    name: String,
-    operator: String,
+    name: {
+        type: String,
+        default: "",
+    },
+    operator: {
+        type: String,
+        default: "",
+    },
     data: null,
     index: {
         type: Number,
@@ -21,25 +27,23 @@ const props = defineProps({
 });
 
 const store = useStore()
-const data = ref(null)
-const operator = ref('')
-const name = ref('')
+const data = ref<any | null>(null)
+const operator = ref<string>('')
+const name = ref<string>('')
 
-const emit = defineEmits(['update:name', 'update:value', 'update:operator'])
-
-
-const exposes = computed(() => {
-
-    var list = []
-    for (const [key, expose] of Object.entries(device.value.exposes)) {
-        list.push(expose.name)
-    }
-    return list
-})
+const emit = defineEmits<{
+    (e: 'update:name', name: string): void,
+    (e: 'update:value', property: any): void,
+    (e: 'update:operator', data: string): void,
+}>()
 
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
 });
+
+const exposes = computed(() => {
+    return getDeviceExposeNames(device.value);
+})
 
 const feature = computed(() => {
     if (name.value == '') {
@@ -76,22 +80,22 @@ watch(
     }, { immediate: true }
 )
 
-function exposeSelectionChanged(event) {
+function exposeSelectionChanged(event: string): void {
 
     if (event == '') {
         return
     }
 
-    data.value = "";
+    data.value = '';
     emit('update:name', event)
 }
 
-function operatorUpdated(event) {
+function operatorUpdated(event: string): void {
     operator.value = event
     emit('update:operator', event)
 }
 
-function dataUpdated(event) {
+function dataUpdated(event: any): void {
     data.value = event
     emit('update:value', event)
 }
@@ -156,12 +160,5 @@ function getItems() {
                 alignment="center" :disabled="name == ''" @update:data="dataUpdated">
             </DataInput>
         </div>
-        <!-- <div class="col-md-2">
-            <div class="btn-group">
-                <button type="button" class="btn btn-default btn-number" @click="remove($event)">
-                    <span class="fa fa-minus"></span>
-                </button>
-            </div>
-        </div> -->
     </div>
 </template>
