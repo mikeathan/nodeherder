@@ -14,7 +14,7 @@ const props = defineProps({
 });
 
 const store = useStore();
-const trigger = ref<ExposeTrigger | null>(null)
+const trigger = ref<ExposeTrigger>(new ExposeTrigger(''))
 const emit = defineEmits(['save', 'delete'])
 
 watch(
@@ -23,7 +23,7 @@ watch(
 
         let obj: ExposeTrigger = JSON.parse(JSON.stringify(props.trigger))
         trigger.value = obj
-        trigger.value?.conditions.forEach(function callback(condition, index) {
+        trigger.value.conditions.forEach(function callback(condition, index) {
             condition.idx = index + 1
         });
 
@@ -35,60 +35,50 @@ const device = computed(() => {
 });
 
 function addAction(): void {
-    var newAction = new ActionTrigger()
-    if (trigger.value != null) {
-        trigger.value.action = newAction;
-    }
+    trigger.value.action = new ActionTrigger();
 }
 
 function removeAction(event: Event): void {
-    if (trigger.value != null) {
-        trigger.value.action = null;
-    }
+    trigger.value.action = null;
 }
 
 function addCondition(): void {
-    var condition = new Condition()
-    if (trigger.value != null) {
-        trigger.value.conditions.push(condition)
-    }
+    trigger.value.conditions.push(new Condition())
 }
 
 function removeCondition(index: number): void {
     console.log("index to remove", index)
-    if (trigger.value != null) {
-        trigger.value.conditions = trigger.value.conditions.filter(k => k.idx != index);
-    }
+    trigger.value.conditions = trigger.value.conditions.filter(k => k.idx != index);
 }
 
 function isSaveEnabled(): boolean {
-    return trigger.value?.name != "" && trigger.value?.action != null;
+    return trigger.value.name != "" && trigger.value.action != null;
 }
 
 function actionIdUpdated(id: string, friendlyName: string): void {
-    if (trigger.value != null && trigger.value.action) {
+    if (trigger.value.action) {
         trigger.value.action.id = id
         trigger.value.action.friendlyname = friendlyName
     }
 }
 
 function updateActionProperty(value: string): void {
-    if (trigger.value?.action != null) {
+    if (trigger.value.action != null) {
         trigger.value.action.property = value
     }
 }
 function updateActionData(value: string): void {
-    if (trigger.value?.action != null) {
+    if (trigger.value.action != null) {
         trigger.value.action.data = value
     }
 }
 function updateActionDelay(value: number | null): void {
-    if (trigger.value?.action != null) {
+    if (trigger.value.action != null) {
         trigger.value.action.delay = value
     }
 }
 function updateActionStep(value: number): void {
-    if (trigger.value?.action != null) {
+    if (trigger.value.action != null) {
         trigger.value.action.step = value
     }
 }
