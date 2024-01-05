@@ -8,6 +8,10 @@
             "webRoot": "${workspaceFolder}/src",
             "pathMappings": [
                 {
+                    "url": "webpack://frontend/src/modules",
+                    "path": "${workspaceFolder}/frontend/src/modules"
+                },
+                {
                     "url": "webpack://frontend/src/components",
                     "path": "${workspaceFolder}/frontend/src/components"
                 },
