@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useStore } from "vuex";
 import { computed, watch, ref, PropType } from "vue";
-import { Condition, ActionTrigger, ExposeTrigger } from "../../models/automations"
+import { Condition, ActionTrigger, ExposeTrigger, ExposeTriggerWrapper, DefaultExposeTriggerWrapper } from "../../models/automations"
 import { getDeviceExposeNamesMap } from "../../modules/convert"
 
 import TriggerCondition from "./TriggerCondition.vue"
@@ -14,7 +14,7 @@ const props = defineProps({
 });
 
 const store = useStore();
-const trigger = ref<ExposeTrigger>(new ExposeTrigger(''))
+const trigger = ref<ExposeTriggerWrapper>(new DefaultExposeTriggerWrapper())
 const emit = defineEmits(['save', 'delete'])
 
 watch(
@@ -22,16 +22,17 @@ watch(
     () => {
 
         let obj: ExposeTrigger = JSON.parse(JSON.stringify(props.trigger))
-        trigger.value = obj
-        trigger.value.conditions.forEach(function callback(condition, index) {
-            condition.idx = index + 1
-        });
+        trigger.value = new ExposeTriggerWrapper(obj)
 
     }, { immediate: true }
 )
 
 const device = computed(() => {
     return store.getters["devices/find"](props.id);
+});
+
+const action = computed(() => {
+    return trigger.value.action()
 });
 
 function addAction(): void {
@@ -43,57 +44,62 @@ function removeAction(event: Event): void {
 }
 
 function addCondition(): void {
-    trigger.value.conditions.push(new Condition())
+    trigger.value.addCondition(new Condition())
 }
 
 function removeCondition(index: number): void {
-    trigger.value.conditions = trigger.value.conditions.filter(k => k.idx != index);
+    trigger.value.removeCondition(index)
 }
 
 function isSaveEnabled(): boolean {
-    return trigger.value.name != "" && trigger.value.action != null;
+    return trigger.value.isValid()
 }
 
-function actionIdUpdated(id: string, friendlyName: string): void {
-    if (trigger.value.action) {
-        trigger.value.action.id = id
-        trigger.value.action.friendlyname = friendlyName
+function actionDeviceUpdated(id: string, friendlyName: string): void {
+
+    var action = trigger.value.action()
+    if (action != null) {
+        action.id = id
+        action.friendlyname = friendlyName
     }
 }
 
 function updateActionProperty(value: string): void {
-    if (trigger.value.action != null) {
-        trigger.value.action.property = value
+    var action = trigger.value.action()
+    if (action != null) {
+        action.property = value
     }
 }
 function updateActionData(value: string): void {
-    if (trigger.value.action != null) {
-        trigger.value.action.data = value
+    var action = trigger.value.action()
+    if (action != null) {
+        action.data = value
     }
 }
 function updateActionDelay(value: number | null): void {
-    if (trigger.value.action != null) {
-        trigger.value.action.delay = value
+    var action = trigger.value.action()
+    if (action != null) {
+        action.delay = value
     }
 }
 function updateActionStep(value: number): void {
-    if (trigger.value.action != null) {
-        trigger.value.action.step = value
+    var action = trigger.value.action()
+    if (action != null) {
+        action.step = value
     }
 }
 
 function save() {
-    emit('save', trigger.value)
+    emit('save', trigger.value.getTrigger())
 }
 
 function remove() {
-    emit('delete', trigger.value?.idx)
+    emit('delete', trigger.value.getIdx())
 }
 
 const exposesList = computed(() => {
     return getDeviceExposeNamesMap(device.value)
 })
-
 
 </script>
 
@@ -102,10 +108,10 @@ const exposesList = computed(() => {
         <!-- TODO:  -->
         <!-- if automation for device exists message user else we overwrite it -->
 
-        <div class="row" v-if="trigger.name == ''">
+        <div class="row" v-if="trigger.name() == ''">
 
-            <Selector placeholder="Select trigger" :items="exposesList" :value="trigger.name" alignment="left"
-                :disabled="props.trigger?.name != ''" @update:data="v => trigger.name = v">
+            <Selector placeholder="Select trigger" :items="exposesList" :value="trigger.name()" alignment="left"
+                :disabled="trigger.name() != ''" @update:data="v => trigger.setName(v)">
             </Selector>
         </div>
         <div class="row" v-else>
@@ -131,7 +137,7 @@ const exposesList = computed(() => {
                         </h5>
                     </th>
                 </tr>
-                <tbody v-for="(condition, index) in  trigger.conditions " :item="condition">
+                <tbody v-for="(condition, index) in  trigger.getConditions() " :item="condition">
                     <tr>
                         <th scope="w-25">
                             <TriggerCondition :id="props.id" :index="condition.idx" :name="condition.name"
@@ -150,7 +156,7 @@ const exposesList = computed(() => {
                 <tr>
                     <th scope="col">
                         <h5>Actions
-                            <button v-if="trigger.action == null" type="button" class="btn btn-default btn-number ms-3"
+                            <button v-if="trigger.action() == null" type="button" class="btn btn-default btn-number ms-3"
                                 @click="addAction()">
                                 <span class=" fa fa-plus"></span>
                             </button>
@@ -161,15 +167,15 @@ const exposesList = computed(() => {
 
                     <tr>
                         <th scope="w-25">
-                            <TriggerAction v-if="trigger.action != null" :id="trigger.action.id"
-                                :property="trigger.action.property" :data="trigger.action.data"
-                                :delay="trigger.action.delay" :step="trigger.action.step" @update:id="actionIdUpdated"
-                                @update:property="updateActionProperty" @update:data="updateActionData"
-                                @update:delay="updateActionDelay" @update:step="updateActionStep">
+                            <TriggerAction v-if="action != null" :id="action.id" :property="action.property"
+                                :data="action.data" :delay="action.delay" :step="action.step"
+                                @update:id="actionDeviceUpdated" @update:property="updateActionProperty"
+                                @update:data="updateActionData" @update:delay="updateActionDelay"
+                                @update:step="updateActionStep">
                             </TriggerAction>
                         </th>
                         <td>
-                            <span v-if="trigger.action != null" class="fa fa-trash-alt fa-sm" @click="removeAction">
+                            <span v-if="action != null" class="fa fa-trash-alt fa-sm" @click="removeAction">
                             </span>
                         </td>
                     </tr>
@@ -178,43 +184,7 @@ const exposesList = computed(() => {
         </div>
 
 
-        <!-- Actions -->
         <div class="row  pt-3">
-            <!-- <table class="table">
-                    <thead>
-                        <tr>
-                            <th scope="col">
-                                <h5>Actions
-                                    <button v-if="trigger.action == null" type="button" class="btn btn-default btn-number"
-                                        @click="addAction()">
-                                        <span class=" fa fa-plus"></span>
-                                    </button>
-                                </h5>
-                            </th>
-                            <th scope="col">#</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <th scope="w-25">
-                                <TriggerAction v-if="trigger.action != null" :id="trigger.action.id"
-                                    :property="trigger.action.property" :data="trigger.action.data"
-                                    :delay="trigger.action.delay" :step="trigger.action.step" @update:id="actionIdUpdated"
-                                    @update:property="newValue => trigger.action.property = newValue"
-                                    @update:data="newValue => trigger.action.data = newValue"
-                                    @update:delay="newValue => trigger.action.delay = newValue"
-                                    @update:step="newValue => trigger.action.step = newValue">
-                                </TriggerAction>
-                            </th>
-                            <td>
-                                <span v-if="trigger.action != null" class="fa fa-trash-alt fa-sm" @click="removeAction">
-                                </span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table> -->
-
-
             <div class="row pt-3">
                 <div class="col">
                     <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false" @click="save">
