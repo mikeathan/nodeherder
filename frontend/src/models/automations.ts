@@ -32,11 +32,9 @@ export class DeviceTrigger {
 
 export class ExposeTriggerWrapper {
   trigger: ExposeTrigger;
-  //private _action: ActionTriggerWrapper;
 
   constructor(trigger: ExposeTrigger) {
     this.trigger = trigger;
-    //this._action = new ActionTriggerWrapper(trigger.action);
     this.trigger.conditions.forEach(function callback(condition, index) {
       condition.idx = index + 1;
     });
@@ -46,7 +44,7 @@ export class ExposeTriggerWrapper {
     return this.trigger;
   }
   isValid(): boolean {
-    return this.trigger.name != "" && this.trigger.action != null;
+    return this.trigger.name != "" && this.trigger.action.id != "";
   }
 
   getConditions(): Array<Condition> {
@@ -102,7 +100,12 @@ export class ExposeTriggerWrapper {
   }
 
   public clearAction(): void {
-    this.trigger.action = null;
+    this.trigger.action.id = "";
+    this.trigger.action.friendlyname = "";
+    this.trigger.action.property = "";
+    this.trigger.action.data = null;
+    this.trigger.action.step = 0;
+    this.trigger.action.delay = null;
   }
 }
 
@@ -116,13 +119,13 @@ export class ExposeTrigger {
   idx: number;
   name: string;
   conditions: Array<Condition>;
-  action: ActionTrigger | null;
+  action: ActionTrigger;
 
   constructor(name: string) {
     this.idx = -1;
     this.name = name;
     this.conditions = [];
-    this.action = null;
+    this.action = new ActionTrigger();
   }
 }
 
@@ -141,41 +144,6 @@ abstract class Action {
     this.data = null;
     this.delay = null;
     this.step = 0;
-  }
-}
-
-export class ActionTriggerWrapper {
-  _action: Action | null;
-  // id: string;
-  // friendlyname: string;
-  // property: string;
-  // data: any;
-  // delay: number | null;
-  // step: number;
-
-  constructor(action: Action | null) {
-    this._action = action;
-    // this.id = "";
-    // this.friendlyname = "";
-    // this.property = "";
-    // this.data = null;
-    // this.delay = null;
-    // this.step = 0;
-  }
-
-  // public set friendlyname(value: string): void {
-  //   this._action.friendlyname = value;
-  // }
-  // public get friendlyname(): string {
-  //   return this._action.friendlyname;
-  // }
-
-  public create(): void {
-    this._action = new ActionTrigger();
-  }
-
-  public clear(): void {
-    this._action = null;
   }
 }
 
@@ -219,5 +187,4 @@ function capitalizeText(value: string): string {
     .split(" ")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
-  //return value.charAt(0).toUpperCase() + value.slice(1);
 }
