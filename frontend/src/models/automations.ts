@@ -12,9 +12,103 @@ export class DeviceTrigger {
     this.enabled = false;
     this.triggers = [];
   }
+}
 
-  public get displayName(): string {
-    return capitalizeText(this.friendlyname);
+// export interface  TriggerWrapper{
+
+//   hasConditions(): boolean;
+//   addCondition(condition: Condition) :void;
+
+//   removeLastCondition(): void ;
+
+//   remove(condition: Condition): void ;
+//   idx(idx: number): void ;
+//    friendlyName(name: string): void;
+//    displayName(): string ;
+
+//    setAction(action: Action): void;
+
+// }
+
+export class ExposeTriggerWrapper {
+  trigger: ExposeTrigger;
+  //private _action: ActionTriggerWrapper;
+
+  constructor(trigger: ExposeTrigger) {
+    this.trigger = trigger;
+    //this._action = new ActionTriggerWrapper(trigger.action);
+    this.trigger.conditions.forEach(function callback(condition, index) {
+      condition.idx = index + 1;
+    });
+  }
+
+  getTrigger(): ExposeTrigger {
+    return this.trigger;
+  }
+  isValid(): boolean {
+    return this.trigger.name != "" && this.trigger.action != null;
+  }
+
+  getConditions(): Array<Condition> {
+    return this.trigger.conditions;
+  }
+
+  hasConditions(): boolean {
+    return this.trigger.conditions.length != 0;
+  }
+
+  addCondition(condition: Condition) {
+    this.trigger.conditions.push(condition);
+  }
+
+  removeLastCondition(): void {
+    if (this.trigger.conditions.length >= 0) {
+      this.trigger.conditions = this.trigger.conditions.slice(0, -1);
+    }
+  }
+
+  removeCondition(index: number): void {
+    this.trigger.conditions = this.trigger.conditions.filter(
+      (k) => k.idx != index
+    );
+  }
+
+  public setIdx(idx: number): void {
+    this.trigger.idx = idx;
+  }
+
+  public getIdx(): number {
+    return this.trigger.idx;
+  }
+
+  public setName(name: string): void {
+    this.trigger.name = name;
+  }
+
+  public name(): string {
+    return this.trigger.name;
+  }
+
+  public displayName(): string {
+    return capitalizeText(this.trigger.name);
+  }
+
+  public action(): Action | null {
+    return this.trigger.action;
+  }
+
+  public setAction(value: Action): void {
+    this.trigger.action = value;
+  }
+
+  public clearAction(): void {
+    this.trigger.action = null;
+  }
+}
+
+export class DefaultExposeTriggerWrapper extends ExposeTriggerWrapper {
+  constructor() {
+    super(new ExposeTrigger(""));
   }
 }
 
@@ -28,39 +122,6 @@ export class ExposeTrigger {
     this.idx = -1;
     this.name = name;
     this.conditions = [];
-    this.action = null;
-  }
-
-  hasConditions(): boolean {
-    return this.conditions.length != 0;
-  }
-
-  addCondition(condition: Condition) {
-    this.conditions.push(condition);
-  }
-
-  removeLastCondition(): void {
-    if (this.conditions.length >= 0) {
-      this.conditions = this.conditions.slice(0, -1);
-    }
-  }
-
-  remove(condition: Condition): void {
-    let index = this.conditions.indexOf(condition);
-    if (index !== -1) {
-      this.conditions.splice(index, 1);
-    }
-  }
-
-  public displayName(): string {
-    return capitalizeText(this.name);
-  }
-
-  public setAction(action: Action): void {
-    this.action = action;
-  }
-
-  public clearAction(): void {
     this.action = null;
   }
 }
@@ -80,6 +141,41 @@ abstract class Action {
     this.data = null;
     this.delay = null;
     this.step = 0;
+  }
+}
+
+export class ActionTriggerWrapper {
+  _action: Action | null;
+  // id: string;
+  // friendlyname: string;
+  // property: string;
+  // data: any;
+  // delay: number | null;
+  // step: number;
+
+  constructor(action: Action | null) {
+    this._action = action;
+    // this.id = "";
+    // this.friendlyname = "";
+    // this.property = "";
+    // this.data = null;
+    // this.delay = null;
+    // this.step = 0;
+  }
+
+  // public set friendlyname(value: string): void {
+  //   this._action.friendlyname = value;
+  // }
+  // public get friendlyname(): string {
+  //   return this._action.friendlyname;
+  // }
+
+  public create(): void {
+    this._action = new ActionTrigger();
+  }
+
+  public clear(): void {
+    this._action = null;
   }
 }
 
