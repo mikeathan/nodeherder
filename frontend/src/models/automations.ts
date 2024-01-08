@@ -89,7 +89,7 @@ export class ExposeTriggerWrapper {
     this.trigger.action.friendlyname = "";
     this.trigger.action.property = "";
     this.trigger.action.data = null;
-    this.trigger.action.step = 0;
+    this.trigger.action.operation = 0;
     this.trigger.action.delay = null;
   }
 }
@@ -120,7 +120,7 @@ abstract class Action {
   property: string;
   data: any;
   delay: number | null;
-  step: number;
+  operation: number;
 
   constructor() {
     this.id = "";
@@ -128,7 +128,7 @@ abstract class Action {
     this.property = "";
     this.data = null;
     this.delay = null;
-    this.step = 0;
+    this.operation = 0;
   }
 }
 
@@ -145,10 +145,15 @@ interface Operation {
   value: number;
 }
 
-export const StepOperators: { [Name: string]: number } = {
-  None: 0,
-  increase: 1,
-  decrease: 2,
+export const Operations: { [Name: string]: number } = {
+  none: 0,
+  step: 1,
+  rotation: 3,
+};
+
+export const stepOperations: { [Name: string]: number } = {
+  step_increase: 1,
+  step_decrease: 2,
 };
 
 export class Condition {
