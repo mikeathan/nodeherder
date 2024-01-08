@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"node-herder/models/devices"
+	"sort"
 )
 
 type operationFactory interface {
@@ -28,9 +29,16 @@ type rotateOperationFactory struct {
 }
 
 func (r *rotateOperationFactory) Create(expose *devices.Entity, action *MqttAction) actionOperation {
+
+	var keys []string
+	for k := range expose.Presets {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
 	var presets []any
-	for _, value := range expose.Presets {
-		presets = append(presets, value)
+	for _, k := range keys {
+		presets = append(presets, expose.Presets[k])
 	}
 	return newRotateOperation(presets)
 }
