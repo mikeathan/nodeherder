@@ -4,6 +4,7 @@ import (
 	"math"
 	"node-herder/internal/automations"
 	"node-herder/mocks"
+	"sort"
 	"testing"
 )
 
@@ -98,10 +99,16 @@ func TestOperationCycleValue(t *testing.T) {
 	light.Presets["hotter"] = 67.0
 	light.Presets["natural"] = 43.0
 
+	var keys []string
+	for k := range light.Presets {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
 	var pos int = 0
 	var presets []any
-	for _, value := range light.Presets {
-		presets = append(presets, value)
+	for _, k := range keys {
+		presets = append(presets, light.Presets[k])
+
 	}
 
 	mqtt := &mocks.MockMqttClient{}
