@@ -108,7 +108,7 @@ var automationMap = new Map([
             type: "numeric",
             property: "brightness",
             data: 10,
-            step: 1,
+            operation: 1,
           },
         },
         {
@@ -126,7 +126,7 @@ var automationMap = new Map([
             type: "numeric",
             property: "brightness",
             data: 10,
-            step: 2,
+            operation: 2,
           },
         },
       ],
