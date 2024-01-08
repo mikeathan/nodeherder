@@ -3,7 +3,43 @@ package automations
 import (
 	"errors"
 	"math"
+	"node-herder/models/devices"
 )
+
+type operationFactory interface {
+	Create(expose *devices.Entity, action *MqttAction) actionOperation
+}
+
+type stepOperationFactory struct {
+	op    string
+	limit string
+}
+
+func (s *stepOperationFactory) Create(expose *devices.Entity, action *MqttAction) actionOperation {
+
+	var limit float64
+	if val, ok := expose.Attributes[s.limit]; ok {
+		limit = val.(float64)
+	}
+	return newStepOperation(expose, s.op, action.Data.(float64), limit)
+}
+
+type rotateOperationFactory struct {
+}
+
+func (r *rotateOperationFactory) Create(expose *devices.Entity, action *MqttAction) actionOperation {
+	var presets []any
+	for _, value := range expose.Presets {
+		presets = append(presets, value)
+	}
+	return newRotateOperation(presets)
+}
+
+var OperationTypes = map[int]operationFactory{
+	1: &stepOperationFactory{op: "+", limit: "max"},
+	2: &stepOperationFactory{op: "-", limit: "min"},
+	3: &rotateOperationFactory{},
+}
 
 func toFloat(value any) float32 {
 	switch v := value.(type) {
@@ -19,7 +55,7 @@ func toFloat(value any) float32 {
 }
 
 type actionOperation interface {
-	Next(value float64) (any, error)
+	Next() (any, error)
 }
 
 type rotateOperation struct {
@@ -32,7 +68,7 @@ func newRotateOperation(items []any) actionOperation {
 	return &rotateOperation{items: items, size: len(items)}
 }
 
-func (r *rotateOperation) Next(value float64) (any, error) {
+func (r *rotateOperation) Next() (any, error) {
 	if r.position >= r.size {
 		r.position = 0
 	}
@@ -45,33 +81,23 @@ func (r *rotateOperation) Next(value float64) (any, error) {
 
 type stepOperation struct {
 	limit     float64
-	stepType  int
+	stepType  string
 	stepValue float64
+	expose    *devices.Entity
 }
 
-func newStepOperation(stepType int, stepValue float64, limit float64) actionOperation {
-	return &stepOperation{stepType: stepType, stepValue: stepValue, limit: limit}
+func newStepOperation(expose *devices.Entity, stepType string, stepValue float64, limit float64) actionOperation {
+	return &stepOperation{expose: expose, stepType: stepType, stepValue: stepValue, limit: limit}
 }
 
-func (r *stepOperation) Next(value float64) (any, error) {
-	op := stepsOperators[r.stepType]
-
-	newValue := numericOperations[op.Operator](value, r.stepValue, r.limit)
+func (r *stepOperation) Next() (any, error) {
+	value := r.expose.Data.(float64)
+	newValue := numericOperations[r.stepType](value, r.stepValue, r.limit)
 	if value == newValue {
 		return nil, errors.New("same value, skipping")
 	}
 
 	return newValue, nil
-}
-
-type numericOperator struct {
-	Operator string
-	Limit    string
-}
-
-var stepsOperators = map[int]*numericOperator{
-	1: {Operator: "+", Limit: "max"},
-	2: {Operator: "-", Limit: "min"},
 }
 
 var numericOperations = map[string]func(float64, float64, float64) float64{

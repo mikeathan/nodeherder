@@ -63,15 +63,15 @@ type MqttAction struct {
 	Property     string `json:"property"`
 	Data         any    `json:"data,omitempty"`
 	Delay        int    `json:"delay,omitempty"`
-	Step         int    `json:"step,omitempty"`
-	PresetRotate bool   `json:"preset_rotate,omitempty"`
+	Operation    int    `json:"operation"`
 
-	Client    mqtt.MqttClient `json:"-"`
-	operation actionOperation
-	expose    *devices.Entity
-	mut       sync.RWMutex
-	exit      chan bool
-	isPending bool
+	Client mqtt.MqttClient `json:"-"`
+
+	operationAction actionOperation
+	expose          *devices.Entity
+	mut             sync.RWMutex
+	exit            chan bool
+	isPending       bool
 }
 
 func NewAction() *MqttAction {
@@ -80,23 +80,8 @@ func NewAction() *MqttAction {
 
 func (a *MqttAction) configure(expose *devices.Entity) {
 	a.expose = expose
-
-	if a.Step > 0 {
-		var limit float64
-		op := stepsOperators[a.Step]
-		if val, ok := expose.Attributes[op.Limit]; ok {
-			limit = val.(float64)
-		}
-
-		a.operation = newStepOperation(a.Step, a.Data.(float64), limit)
-	} else if a.PresetRotate {
-
-		var presets []any
-		for _, value := range expose.Presets {
-			presets = append(presets, value)
-		}
-
-		a.operation = newRotateOperation(presets)
+	if a.Operation > 0 {
+		a.operationAction = OperationTypes[a.Operation].Create(expose, a)
 	}
 }
 
@@ -193,31 +178,27 @@ func (a *MqttAction) emit(payload []byte) {
 
 func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, error) {
 
+	if a.Operation > 0 {
+		newValue, err := a.operationAction.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		return createJson(a.Property, newValue), nil
+	}
+
 	payloadData := a.Data
 	if payloadData == nil {
 		payloadData = ctx.Payload[name].Data
 	}
+	return createJson(a.Property, payloadData), nil
+}
 
-	if a.Step > 0 {
-		newValue, err := a.operation.Next(a.expose.Data.(float64))
-		if err != nil {
-			return nil, err
-		}
-		payloadData = newValue
-	} else if a.PresetRotate {
-		newValue, err := a.operation.Next(0)
-		if err != nil {
-			return nil, err
-		}
-		payloadData = newValue
-	}
-
+func createJson(property string, data any) []byte {
 	jp := map[string]any{
-		a.Property: payloadData,
+		property: data,
 	}
 
 	payload, _ := json.Marshal(jp)
-
-	return payload, nil
-
+	return payload
 }

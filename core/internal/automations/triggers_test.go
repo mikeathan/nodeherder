@@ -346,17 +346,20 @@ func createExposures(data map[string]interface{}) map[string]*devices.Entity {
 	var entities = make(map[string]*devices.Entity)
 	for key, value := range data {
 
-		newEntity := createEntity(key, "", value, "", "", nil)
+		newEntity := createEntity(key, "", value, "", nil)
 		entities[key] = newEntity
 	}
 	return entities
 }
 
-func createEntity(name string, description string, data any, unit string, dataType string, props map[string]any) *devices.Entity {
+func createEntity(name string, description string, data any, unit string, props map[string]any) *devices.Entity {
 	if props == nil {
 		props = make(map[string]any)
 	}
+
 	newEntity := &devices.Entity{}
+	newEntity.Attributes = map[string]any{}
+	newEntity.Presets = map[string]any{}
 	newEntity.Data = data
 	newEntity.Name = name
 	newEntity.Unit = unit

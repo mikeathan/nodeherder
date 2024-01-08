@@ -106,7 +106,7 @@ action operations
     rotation (presets)
 
   criteria:
-    rotation works on presents only
+    rotation works on presets only
     cant have both steps and rotation 
 
     if steps selected rotation is disabled when export has presets
