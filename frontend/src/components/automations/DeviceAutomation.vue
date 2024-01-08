@@ -74,8 +74,8 @@ function deleteAutomation() {
 }
 
 function deleteTrigger(triggerIdx: number): void {
-    if (triggerIdx |= -1) {
-        automation.value.triggers.splice(triggerIdx, 1);
+    if (triggerIdx > -1) {
+        automation.value.triggers = automation.value.triggers.filter((e, i) => e.idx !== triggerIdx);
     }
     selectedTrigger.value = null// close trigger panel
 }

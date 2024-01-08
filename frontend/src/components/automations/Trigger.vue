@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useStore } from "vuex";
 import { computed, watch, ref, PropType } from "vue";
-import { Condition, ActionTrigger, ExposeTrigger, ExposeTriggerWrapper, DefaultExposeTriggerWrapper } from "../../models/automations"
+import { Condition, ExposeTrigger, ExposeTriggerWrapper, DefaultExposeTriggerWrapper } from "../../models/automations"
 import { getDeviceExposeNamesMap } from "../../modules/convert"
 
 import TriggerCondition from "./TriggerCondition.vue"
@@ -36,7 +36,7 @@ const action = computed(() => {
 });
 
 function addAction(): void {
-    trigger.value.setAction(new ActionTrigger());
+    trigger.value.createAction();
 }
 
 function removeAction(event: Event): void {
@@ -56,37 +56,9 @@ function isSaveEnabled(): boolean {
 }
 
 function actionDeviceUpdated(id: string, friendlyName: string): void {
-
     var action = trigger.value.action()
-    if (action != null) {
-        action.id = id
-        action.friendlyname = friendlyName
-    }
-}
-
-function updateActionProperty(value: string): void {
-    var action = trigger.value.action()
-    if (action != null) {
-        action.property = value
-    }
-}
-function updateActionData(value: string): void {
-    var action = trigger.value.action()
-    if (action != null) {
-        action.data = value
-    }
-}
-function updateActionDelay(value: number | null): void {
-    var action = trigger.value.action()
-    if (action != null) {
-        action.delay = value
-    }
-}
-function updateActionStep(value: number): void {
-    var action = trigger.value.action()
-    if (action != null) {
-        action.step = value
-    }
+    action.id = id
+    action.friendlyname = friendlyName
 }
 
 function save() {
@@ -169,9 +141,10 @@ const exposesList = computed(() => {
                         <th scope="w-25">
                             <TriggerAction v-if="action != null" :id="action.id" :property="action.property"
                                 :data="action.data" :delay="action.delay" :step="action.step"
-                                @update:id="actionDeviceUpdated" @update:property="updateActionProperty"
-                                @update:data="updateActionData" @update:delay="updateActionDelay"
-                                @update:step="updateActionStep">
+                                @update:id="actionDeviceUpdated" @update:property="v => trigger.action().property = v"
+                                @update:data="v => trigger.action().data = v"
+                                @update:delay="v => trigger.action().delay = v"
+                                @update:step="v => trigger.action().step = v">
                             </TriggerAction>
                         </th>
                         <td>

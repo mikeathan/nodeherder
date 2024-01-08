@@ -14,22 +14,6 @@ export class DeviceTrigger {
   }
 }
 
-// export interface  TriggerWrapper{
-
-//   hasConditions(): boolean;
-//   addCondition(condition: Condition) :void;
-
-//   removeLastCondition(): void ;
-
-//   remove(condition: Condition): void ;
-//   idx(idx: number): void ;
-//    friendlyName(name: string): void;
-//    displayName(): string ;
-
-//    setAction(action: Action): void;
-
-// }
-
 export class ExposeTriggerWrapper {
   trigger: ExposeTrigger;
 
@@ -43,6 +27,7 @@ export class ExposeTriggerWrapper {
   getTrigger(): ExposeTrigger {
     return this.trigger;
   }
+
   isValid(): boolean {
     return this.trigger.name != "" && this.trigger.action.id != "";
   }
@@ -91,12 +76,12 @@ export class ExposeTriggerWrapper {
     return capitalizeText(this.trigger.name);
   }
 
-  public action(): Action | null {
+  public action(): Action {
     return this.trigger.action;
   }
 
-  public setAction(value: Action): void {
-    this.trigger.action = value;
+  public createAction(): void {
+    this.trigger.action = new ActionTrigger();
   }
 
   public clearAction(): void {
