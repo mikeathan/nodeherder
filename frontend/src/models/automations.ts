@@ -139,21 +139,29 @@ export class ActionTrigger extends Action {
 }
 
 export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
-
 interface Operation {
   name: string;
   value: number;
 }
 
-export const Operations: { [Name: string]: number } = {
-  none: 0,
-  step: 1,
-  rotation: 3,
+export enum Operations {
+  NoOperation,
+  StepOperation,
+  RotationOperation,
+  StepIncreaseOperation,
+  StepDecreaseOperation,
+}
+
+type EnumDictionary<KeyType extends string | symbol | number, Value> = {
+  [Key in KeyType]: Value;
 };
 
-export const stepOperations: { [Name: string]: number } = {
-  step_increase: 1,
-  step_decrease: 2,
+export const OperationContent: EnumDictionary<Operations, Operation> = {
+  [Operations.NoOperation]: { name: "None", value: 0 },
+  [Operations.StepOperation]: { name: "Steps", value: -1 },
+  [Operations.RotationOperation]: { name: "Rotation", value: 3 },
+  [Operations.StepIncreaseOperation]: { name: "Increase", value: 1 },
+  [Operations.StepDecreaseOperation]: { name: "Decrease", value: 2 },
 };
 
 export class Condition {

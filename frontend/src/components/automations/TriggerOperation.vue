@@ -2,7 +2,7 @@
 import { useStore } from "vuex";
 import { computed, ref, watchEffect, watch, PropType } from "vue";
 import { getFeatureExposes, getFeatureDevices, createMapFromObject } from "../../modules/convert"
-import { Operations, ExposeTrigger } from "../../models/automations"
+import { ExposeTrigger, Operations, OperationContent } from "../../models/automations"
 
 const store = useStore();
 
@@ -28,20 +28,27 @@ const props = defineProps({
         type: String,
         required: true
     },
+    operation: {
+        type: Number,
+        default: 0
+    },
+
 });
 
-const id = ref<string>()
-const property = ref<string>()
-
+const id = ref<string>("")
+const property = ref<string>("")
+const operation = ref<number>(0);
 const availableOperations = ref<Array<number>>()
+const availableStepOperations = ref<Array<number>>()
 
+const showStepsSelection = ref<boolean>(false)
 
 const emit = defineEmits<{
     (e: 'update:operation', operation: number): void,
 }>()
 
 watchEffect(() => id.value = props.id);
-watchEffect(() => property.value = props.property);
+watchEffect(() => operation.value = props.operation);
 
 watch(
     () => props.property,
@@ -84,12 +91,34 @@ const getPresets = computed(() => {
     return feature.value.presets;
 })
 
+function operationUpdated(operation: number) {
+
+    switch (operation) {
+        case Operations.StepOperation:
+            showStepsSelection.value = true;
+            return
+        case Operations.NoOperation:
+        case Operations.RotationOperation:
+            showStepsSelection.value = false;
+            break;
+    }
+    emit('update:operation', operation)
+}
+
+// testing
+function getOperationContext() {
+    return Object.values(OperationContent)
+}
 
 </script>
 
 <template>
     <div class="col-xl-3 ">
-        <Selector :items="availableOperations">
+        <Selector :items="availableOperations" :data="operation" @update:data="operationUpdated">
+        </Selector>
+    </div>
+    <div v-if="showStepsSelection" class="col-xl-3 ">
+        <Selector :items="getOperationContext" :data="operation" @update:data="operationUpdated">
         </Selector>
     </div>
 </template>
