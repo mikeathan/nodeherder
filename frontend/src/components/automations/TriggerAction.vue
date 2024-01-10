@@ -3,6 +3,10 @@ import { useStore } from "vuex";
 import { computed, ref, watchEffect, watch } from "vue";
 import DataInput from "../input/DataInput.vue"
 import Selector from "../input/Selector.vue"
+import RadioGroup from "../input/RadioGroup.vue"
+import Toggle from "../input/Toggle.vue"
+
+
 import { getFeatureExposes, getFeatureDevices, createMapFromObject } from "../../modules/convert"
 import { ExposeTrigger, OperationType, Operation, OperationContent, OperationTypeKeys } from "../../models/automations"
 
@@ -151,7 +155,7 @@ function tempOperationsBuilder(): any {
 }
 
 function operationUpdated(operation: number) {
-    switch (operation) {
+    switch (+operation) {
         case OperationType.StepOperation:
             showStepsSelection.value = true;
             return
@@ -165,9 +169,8 @@ function operationUpdated(operation: number) {
 
 function getOperationContent() {
 
-    build dicitonary with these below values
-    [OperationType.StepIncreaseOperation]: { name: "Increase", value: 1 },
-    [OperationType.StepDecreaseOperation]: { name: "Decrease", value: 2 },
+    // [OperationType.StepIncreaseOperation]: { name: "Increase", value: 1 },
+    // [OperationType.StepDecreaseOperation]: { name: "Decrease", value: 2 },
     return Object.values(OperationContent)
 }
 
@@ -272,9 +275,8 @@ const getPresets = computed(() => {
                     </Selector>
                 </div>
                 <div v-if="showStepsSelection == true" class="col-xl-3 ">
-                    use radio buttons instead
-                    <!-- <Selector :items="getOperationContent" :data="operation" @update:data="operationUpdated">
-                    </Selector> -->
+
+                    <RadioGroup :items="sth"></RadioGroup>
                 </div>
                 <!-- <div v-if="feature.presets != null" class="col-xl-3">
                     <Selector placeholder="Presets" :items="getPresets" value="" @update:data="presetUpdated">

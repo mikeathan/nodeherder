@@ -42,6 +42,8 @@ function valueChanged(event) {
         <label v-if="props.placeholder != null" class="form-check-label">{{ props.placeholder }}</label>
         <input class="form-check-input custom-control-input" type="checkbox" role="switch" id="flexSwitchCheckDefault"
             v-model="enabled" @change="valueChanged">
+
+        <input type="checkbox" checked data-toggle="toggle">
     </div>
 </template>
 

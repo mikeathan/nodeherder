@@ -144,13 +144,13 @@ export interface Operation {
   name: string;
   value: number;
 }
-export type OperationTypeKeys = keyof typeof OperationType
+export type OperationTypeKeys = keyof typeof OperationType;
 export enum OperationType {
-  NoOperation,
-  StepOperation,
-  RotationOperation,
-  StepIncreaseOperation,
-  StepDecreaseOperation,
+  NoOperation = 0,
+  StepOperation = -1,
+  RotationOperation = 3,
+  StepIncreaseOperation = 1,
+  StepDecreaseOperation = 2,
 }
 
 export const OperationContent: { [K in OperationType]: Operation } = {
