@@ -139,12 +139,13 @@ export class ActionTrigger extends Action {
 }
 
 export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
-interface Operation {
+
+export interface Operation {
   name: string;
   value: number;
 }
-
-export enum Operations {
+export type OperationTypeKeys = keyof typeof OperationType
+export enum OperationType {
   NoOperation,
   StepOperation,
   RotationOperation,
@@ -152,17 +153,13 @@ export enum Operations {
   StepDecreaseOperation,
 }
 
-type EnumDictionary<KeyType extends string | symbol | number, Value> = {
-  [Key in KeyType]: Value;
-};
-
-export const OperationContent: EnumDictionary<Operations, Operation> = {
-  [Operations.NoOperation]: { name: "None", value: 0 },
-  [Operations.StepOperation]: { name: "Steps", value: -1 },
-  [Operations.RotationOperation]: { name: "Rotation", value: 3 },
-  [Operations.StepIncreaseOperation]: { name: "Increase", value: 1 },
-  [Operations.StepDecreaseOperation]: { name: "Decrease", value: 2 },
-};
+export const OperationContent: { [K in OperationType]: Operation } = {
+  [OperationType.NoOperation]: { name: "None", value: 0 },
+  [OperationType.StepOperation]: { name: "Steps", value: -1 },
+  [OperationType.RotationOperation]: { name: "Rotation", value: 3 },
+  [OperationType.StepIncreaseOperation]: { name: "Increase", value: 1 },
+  [OperationType.StepDecreaseOperation]: { name: "Decrease", value: 2 },
+} as const;
 
 export class Condition {
   name: string;

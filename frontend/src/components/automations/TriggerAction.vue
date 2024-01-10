@@ -4,23 +4,33 @@ import { computed, ref, watchEffect, watch } from "vue";
 import DataInput from "../input/DataInput.vue"
 import Selector from "../input/Selector.vue"
 import { getFeatureExposes, getFeatureDevices, createMapFromObject } from "../../modules/convert"
-import { StepOperators } from "../../models/automations"
+import { ExposeTrigger, OperationType, Operation, OperationContent, OperationTypeKeys } from "../../models/automations"
 
 const props = defineProps({
     id: {
         type: String,
         default: ''
     },
-    property: String,
+    property: {
+        type: String,
+        default: ''
+    },
     data: null,
     delay: null,
-    step: null,
+    operation: {
+        type: Number,
+        default: 0
+    }
 });
+
 const id = ref<string>("")
 const property = ref<string>("");
 const data = ref<any>("");
 const delay = ref<number | null>(null);
-const step = ref<number>(0)
+const operation = ref<number>(0)
+const showStepsSelection = ref<boolean>(false);
+const availableOperations = ref<Array<{ [key: string]: number; }>>()
+
 const store = useStore();
 
 const emit = defineEmits<{
@@ -28,23 +38,14 @@ const emit = defineEmits<{
     (e: 'update:property', property: string): void,
     (e: 'update:data', data: any): void,
     (e: 'update:delay', data: number): void,
-    (e: 'update:step', data: number): void,
+    (e: 'update:operation', data: number): void,
 }>()
 
 watchEffect(() => id.value = props.id);
 watchEffect(() => data.value = props.data);
+watchEffect(() => operation.value = props.operation);
 
-watch(
-    () => props.step,
-    () => {
-        step.value = props.step
-        if (step.value == null) {
-            step.value = StepOperators[0]
 
-        }
-    },
-    { immediate: true }
-);
 watch(
     () => props.delay,
     () => {
@@ -84,20 +85,27 @@ function propertyUpdated(event: any) {
         data.value = "" // reset data
         return;
     }
+
     property.value = value
     delay.value = null;
-    step.value = 0;
-
-    // reset data
-    for (const [key, feature] of Object.entries(features.value)) {
-        if (feature.name == value) {
-            if (feature.type == 'binary' || feature.type == "enum") { // TODO: refactor/cleanup
-                data.value = ""
-            } else {
-                data.value = 0
-            }
-        }
+    operation.value = 0;
+    availableOperations.value = tempOperationsBuilder()
+    if (feature.value.type == 'binary' || feature.value.type == "enum") {
+        data.value = ""
+    } else {
+        data.value = 0
     }
+
+    // // reset data
+    // for (const [key, feature] of Object.entries(features.value)) {
+    //     if (feature.name == value) {
+    //         if (feature.type == 'binary' || feature.type == "enum") { // TODO: refactor/cleanup
+    //             data.value = ""
+    //         } else {
+    //             data.value = 0
+    //         }
+    //     }
+    // }
 
     emit('update:property', property.value)
 }
@@ -117,17 +125,55 @@ const feature = computed(() => {
     }
 
     return device.exposes[property.value];
+
 });
+// NOTE
+// its messy but we need it for now as device is not a defined class
+// keep it for now until refactoring 
+function tempOperationsBuilder(): any {
+
+    const availableOperations = Array<Operation>(OperationContent[OperationType.NoOperation])
+    if (feature.value.type === 'numeric') {
+        availableOperations.push(OperationContent[OperationType.StepOperation])
+    }
+    if (feature.value.presets !== undefined) {
+        availableOperations.push(OperationContent[OperationType.RotationOperation])
+    }
+
+    let dictionary = Object.assign({}, ...availableOperations.map(({
+        name,
+        value
+    }) => ({
+        [name]: value
+    })));
+
+    return dictionary
+}
+
+function operationUpdated(operation: number) {
+    switch (operation) {
+        case OperationType.StepOperation:
+            showStepsSelection.value = true;
+            return
+        case OperationType.NoOperation:
+        case OperationType.RotationOperation:
+            showStepsSelection.value = false;
+            break;
+    }
+    emit('update:operation', operation)
+}
+
+function getOperationContent() {
+
+    build dicitonary with these below values
+    [OperationType.StepIncreaseOperation]: { name: "Increase", value: 1 },
+    [OperationType.StepDecreaseOperation]: { name: "Decrease", value: 2 },
+    return Object.values(OperationContent)
+}
 
 function dataUpdated(event: any) {
     data.value = event
     emit('update:data', event)
-}
-
-function stepUpdated(event: any) {
-    var value = parseInt(event)
-    step.value = value
-    emit('update:step', value)
 }
 
 function delayUpdated(event: number) {
@@ -170,10 +216,6 @@ function getPlaceholder(type: string): string {
 
 const getFeatureNames = computed(() => {
     return createMapFromObject(features.value, "name", "name")
-})
-
-const getSteps = computed(() => {
-    return StepOperators
 })
 
 const getItems = computed(() => {
@@ -225,18 +267,27 @@ const getPresets = computed(() => {
         </div>
         <div class="collapse" id="collapseOptions">
             <div class="row pt-2" :disabled="property == ''">
-                <div v-if="feature.presets != null" class="col-xl-3">
-                    <Selector placeholder="Presets" :items="getPresets" value="" @update:data="presetUpdated">
+                <div class="col-xl-3 ">
+                    <Selector :items="availableOperations" :data="operation" @update:data="operationUpdated">
                     </Selector>
                 </div>
+                <div v-if="showStepsSelection == true" class="col-xl-3 ">
+                    use radio buttons instead
+                    <!-- <Selector :items="getOperationContent" :data="operation" @update:data="operationUpdated">
+                    </Selector> -->
+                </div>
+                <!-- <div v-if="feature.presets != null" class="col-xl-3">
+                    <Selector placeholder="Presets" :items="getPresets" value="" @update:data="presetUpdated">
+                    </Selector>
+                </div> -->
                 <div class="col-xl-3">
                     <DataInput placeholder="Delay (min)" type="numeric" :data="delay" @update:data="delayUpdated">
                     </DataInput>
                 </div>
-                <div v-if="feature.type == 'numeric'" class="col-xl-3 ">
+                <!-- <div v-if="feature.type == 'numeric'" class="col-xl-3 ">
                     <Selector :items="getSteps" :value="step" @update:data="stepUpdated">
                     </Selector>
-                </div>
+                </div> -->
             </div>
         </div>
     </div>

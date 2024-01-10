@@ -81,7 +81,6 @@ const exposesList = computed(() => {
         <!-- if automation for device exists message user else we overwrite it -->
 
         <div class="row" v-if="trigger.name() == ''">
-
             <Selector placeholder="Select trigger" :items="exposesList" :value="trigger.name()" alignment="left"
                 :disabled="trigger.name() != ''" @update:data="v => trigger.setName(v)">
             </Selector>
@@ -140,11 +139,11 @@ const exposesList = computed(() => {
                     <tr>
                         <th scope="w-25">
                             <TriggerAction v-if="action != null" :id="action.id" :property="action.property"
-                                :data="action.data" :delay="action.delay" :step="action.step"
+                                :data="action.data" :delay="action.delay" :step="action.operation"
                                 @update:id="actionDeviceUpdated" @update:property="v => trigger.action().property = v"
                                 @update:data="v => trigger.action().data = v"
                                 @update:delay="v => trigger.action().delay = v"
-                                @update:step="v => trigger.action().step = v">
+                                @update:operation="v => trigger.action().operation = v">
                             </TriggerAction>
                         </th>
                         <td>
