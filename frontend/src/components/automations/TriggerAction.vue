@@ -8,7 +8,7 @@ import Toggle from "../input/Toggle.vue"
 
 
 import { getFeatureExposes, getFeatureDevices, createMapFromObject } from "../../modules/convert"
-import { ExposeTrigger, OperationType, Operation, OperationContent, OperationTypeKeys } from "../../models/automations"
+import { ExposeTrigger, OperationType, resolveStepOperations, resolveObjectOperations } from "../../models/automations"
 
 const props = defineProps({
     id: {
@@ -33,7 +33,6 @@ const data = ref<any>("");
 const delay = ref<number | null>(null);
 const operation = ref<number>(0)
 const showStepsSelection = ref<boolean>(false);
-const availableOperations = ref<Array<{ [key: string]: number; }>>()
 
 const store = useStore();
 
@@ -93,7 +92,6 @@ function propertyUpdated(event: any) {
     property.value = value
     delay.value = null;
     operation.value = 0;
-    availableOperations.value = tempOperationsBuilder()
     if (feature.value.type == 'binary' || feature.value.type == "enum") {
         data.value = ""
     } else {
@@ -134,25 +132,6 @@ const feature = computed(() => {
 // NOTE
 // its messy but we need it for now as device is not a defined class
 // keep it for now until refactoring 
-function tempOperationsBuilder(): any {
-
-    const availableOperations = Array<Operation>(OperationContent[OperationType.NoOperation])
-    if (feature.value.type === 'numeric') {
-        availableOperations.push(OperationContent[OperationType.StepOperation])
-    }
-    if (feature.value.presets !== undefined) {
-        availableOperations.push(OperationContent[OperationType.RotationOperation])
-    }
-
-    let dictionary = Object.assign({}, ...availableOperations.map(({
-        name,
-        value
-    }) => ({
-        [name]: value
-    })));
-
-    return dictionary
-}
 
 function operationUpdated(operation: number) {
     switch (+operation) {
@@ -167,12 +146,6 @@ function operationUpdated(operation: number) {
     emit('update:operation', operation)
 }
 
-function getOperationContent() {
-
-    // [OperationType.StepIncreaseOperation]: { name: "Increase", value: 1 },
-    // [OperationType.StepDecreaseOperation]: { name: "Decrease", value: 2 },
-    return Object.values(OperationContent)
-}
 
 function dataUpdated(event: any) {
     data.value = event
@@ -271,12 +244,12 @@ const getPresets = computed(() => {
         <div class="collapse" id="collapseOptions">
             <div class="row pt-2" :disabled="property == ''">
                 <div class="col-xl-3 ">
-                    <Selector :items="availableOperations" :data="operation" @update:data="operationUpdated">
+                    <Selector :items="resolveObjectOperations(feature)" :data="operation" @update:data="operationUpdated">
                     </Selector>
                 </div>
                 <div v-if="showStepsSelection == true" class="col-xl-3 ">
-
-                    <RadioGroup :items="sth"></RadioGroup>
+                    {{ resolveStepOperations() }}
+                    <!-- <RadioGroup></RadioGroup> -->
                 </div>
                 <!-- <div v-if="feature.presets != null" class="col-xl-3">
                     <Selector placeholder="Presets" :items="getPresets" value="" @update:data="presetUpdated">
