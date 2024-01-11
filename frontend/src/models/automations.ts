@@ -140,47 +140,43 @@ export class ActionTrigger extends Action {
 
 export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
 
-export interface operationItem {
+interface operationItem {
   name: string;
   value: number;
 }
 
-
 const ActionOperationsMap: { [K in string]: operationItem } = {
-  "numeric": { name: "Steps", value: -1 },
-  "presets": { name: "Rotation", value: 3 },
-  "step_increase": { name: "Increase", value: 1 },
-  "step_decrease": { name: "Decrease", value: 2 },
+  none: { name: "None", value: 0 },
+  step_increase: { name: "Step increase", value: 1 },
+  step_decrease: { name: "Step decrease", value: 2 },
+  presets: { name: "Rotation", value: 3 },
 } as const;
 
 export function resolveStepOperations() {
-  let arr = Array<operationItem>(ActionOperationsMap.step_increase, ActionOperationsMap.step_decrease)
-  var r = Object.assign({}, ...arr.map((x) => ({ [x.name]: x.value })));
-
-  return r
+  const arr = Array<operationItem>(
+    ActionOperationsMap.step_increase,
+    ActionOperationsMap.step_decrease
+  );
+  return Object.assign({}, ...arr.map((x) => ({ [x.name]: x.value })));
 }
 
 export function resolveObjectOperations(obj: any) {
-  let arr = Array<operationItem>({ name: "None", value: 0 })
+  let arr = Array<operationItem>(ActionOperationsMap.none);
   if (obj.hasOwnProperty("type")) {
     if (obj["type"] === "numeric") {
-      arr.push(ActionOperationsMap.numeric)
+      arr.push(ActionOperationsMap.step_increase);
+      arr.push(ActionOperationsMap.step_decrease);
     }
   }
   if (obj.hasOwnProperty("presets")) {
     if (obj["presets"] !== undefined) {
-      arr.push(ActionOperationsMap.presets)
+      arr.push(ActionOperationsMap.presets);
     }
   }
 
-  var r = Object.assign({}, ...arr.map((x) => ({ [x.name]: x.value })));
-
-  return r
+  return Object.assign({}, ...arr.map((x) => ({ [x.name]: x.value })));
 }
 
-
-
-export type OperationTypeKeys = keyof typeof OperationType;
 export enum OperationType {
   NoOperation = 0,
   StepOperation = -1,
@@ -188,7 +184,6 @@ export enum OperationType {
   StepIncreaseOperation = 1,
   StepDecreaseOperation = 2,
 }
-
 
 export class Condition {
   name: string;

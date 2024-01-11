@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useStore } from "vuex";
-import { computed, ref, watchEffect, watch } from "vue";
+import { computed, ref, watchEffect, watch, reactive } from "vue";
 import DataInput from "../input/DataInput.vue"
 import Selector from "../input/Selector.vue"
 import RadioGroup from "../input/RadioGroup.vue"
@@ -32,10 +32,34 @@ const property = ref<string>("");
 const data = ref<any>("");
 const delay = ref<number | null>(null);
 const operation = ref<number>(0)
-const showStepsSelection = ref<boolean>(false);
+const showPresets = computed<boolean>(() => {
+
+    let device = store.getters["devices/find"](id.value);
+    if (device === undefined) {
+        return false
+    }
+    if (property.value === '') {
+        return false
+    }
+    let feature = device.exposes[property.value];
+    switch (+operation.value) {
+        case OperationType.StepIncreaseOperation:
+        case OperationType.StepDecreaseOperation:
+        case OperationType.RotationOperation:
+            return false
+
+        case OperationType.NoOperation:
+            if (feature.presets != undefined) {
+                return true;
+            }
+            break
+    }
+
+    return false
+})
+
 
 const store = useStore();
-
 const emit = defineEmits<{
     (e: 'update:id', id: string, name: string): void,
     (e: 'update:property', property: string): void,
@@ -133,19 +157,10 @@ const feature = computed(() => {
 // its messy but we need it for now as device is not a defined class
 // keep it for now until refactoring 
 
-function operationUpdated(operation: number) {
-    switch (+operation) {
-        case OperationType.StepOperation:
-            showStepsSelection.value = true;
-            return
-        case OperationType.NoOperation:
-        case OperationType.RotationOperation:
-            showStepsSelection.value = false;
-            break;
-    }
-    emit('update:operation', operation)
+function operationUpdated(op: number) {
+    operation.value = op
+    emit('update:operation', op)
 }
-
 
 function dataUpdated(event: any) {
     data.value = event
@@ -244,25 +259,18 @@ const getPresets = computed(() => {
         <div class="collapse" id="collapseOptions">
             <div class="row pt-2" :disabled="property == ''">
                 <div class="col-xl-3 ">
-                    <Selector :items="resolveObjectOperations(feature)" :data="operation" @update:data="operationUpdated">
+                    <Selector :items="resolveObjectOperations(feature)" :value="operation" @update:data="operationUpdated">
                     </Selector>
                 </div>
-                <div v-if="showStepsSelection == true" class="col-xl-3 ">
-                    {{ resolveStepOperations() }}
-                    <!-- <RadioGroup></RadioGroup> -->
-                </div>
-                <!-- <div v-if="feature.presets != null" class="col-xl-3">
+                <div v-if="showPresets" class="col-xl-3">
                     <Selector placeholder="Presets" :items="getPresets" value="" @update:data="presetUpdated">
                     </Selector>
-                </div> -->
+                </div>
                 <div class="col-xl-3">
                     <DataInput placeholder="Delay (min)" type="numeric" :data="delay" @update:data="delayUpdated">
                     </DataInput>
                 </div>
-                <!-- <div v-if="feature.type == 'numeric'" class="col-xl-3 ">
-                    <Selector :items="getSteps" :value="step" @update:data="stepUpdated">
-                    </Selector>
-                </div> -->
+
             </div>
         </div>
     </div>
