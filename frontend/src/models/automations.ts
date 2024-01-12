@@ -80,6 +80,18 @@ export class ExposeTriggerWrapper {
     return this.trigger.action;
   }
 
+  public setActionDeviceId(id: string, friendlyname: string): void {
+    this.trigger.action.id = id
+    this.trigger.action.friendlyname = friendlyname
+  }
+
+  public setActionProperty(value: string): void {
+    this.trigger.action.property = value
+    this.trigger.action.operation = 0
+    this.trigger.action.delay = null
+    this.trigger.action.data = null
+  }
+
   public createAction(): void {
     this.trigger.action = new ActionTrigger();
   }

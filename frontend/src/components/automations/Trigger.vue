@@ -51,25 +51,6 @@ function removeCondition(index: number): void {
     trigger.value.removeCondition(index)
 }
 
-function isSaveEnabled(): boolean {
-    return trigger.value.isValid()
-}
-
-function actionPropertyUpdated(property: string) {
-    let action = trigger.value.action()
-    action.property = property
-
-    // reset values
-    action.operation = 0
-    action.delay = null
-    action.data = null
-}
-
-function actionDeviceUpdated(id: string, friendlyName: string): void {
-    var action = trigger.value.action()
-    action.id = id
-    action.friendlyname = friendlyName
-}
 
 function save() {
     emit('save', trigger.value.getTrigger())
@@ -150,7 +131,8 @@ const exposesList = computed(() => {
                         <th scope="w-25">
                             <TriggerAction v-if="action != null" :id="action.id" :property="action.property"
                                 :data="action.data" :delay="action.delay" :operation="action.operation"
-                                @update:id="actionDeviceUpdated" @update:property="actionPropertyUpdated"
+                                @update:id="(id, name) => trigger.setActionDeviceId(id, name)"
+                                @update:property="v => trigger.setActionProperty(v)"
                                 @update:data="v => trigger.action().data = v"
                                 @update:delay="v => trigger.action().delay = v"
                                 @update:operation="v => trigger.action().operation = v">
@@ -169,7 +151,7 @@ const exposesList = computed(() => {
         <div class="row  pt-3">
             <div class="row pt-3">
                 <div class="col">
-                    <button type="button" class="btn btn-light" :disabled="isSaveEnabled() == false" @click="save">
+                    <button type="button" class="btn btn-light" :disabled="trigger.isValid() == false" @click="save">
                         Save
                     </button>
                     <button type="button" class="btn btn-light" @click="remove">
