@@ -4,7 +4,7 @@ import { computed, ref, watchEffect, watch } from "vue";
 import DataInput from "../input/DataInput.vue"
 import Selector from "../input/Selector.vue"
 import { getFeatureExposes, getFeatureDevices, createMapFromObject } from "../../modules/convert"
-import { OperationType, resolveObjectOperations } from "../../models/automations"
+import { OperationType, resolveObjectOperations } from "../../models/mappers/action-operation.resolver"
 
 const props = defineProps({
     id: {
