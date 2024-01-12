@@ -2,7 +2,7 @@
 import { ref, watch, watchEffect } from "vue";
 
 const emit = defineEmits<{
-    (e: 'change', id: number): void
+    (e: 'update:value', id: number): void
 }>()
 
 export interface Props {
@@ -35,7 +35,7 @@ watch(
 
 function valueChanged(event: Event) {
     var v = parseInt((event.target as HTMLInputElement).value)
-    emit('change', v);
+    emit('update:value', v);
 }
 
 </script>
