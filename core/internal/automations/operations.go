@@ -99,7 +99,12 @@ func newStepOperation(expose *devices.Entity, stepType string, stepValue float64
 }
 
 func (r *stepOperation) Next() (any, error) {
-	value := r.expose.Data.(float64)
+
+	value := r.stepValue
+	if r.expose.Data != nil {
+		value = r.expose.Data.(float64)
+	}
+
 	newValue := numericOperations[r.stepType](value, r.stepValue, r.limit)
 	if value == newValue {
 		return nil, errors.New("same value, skipping")
