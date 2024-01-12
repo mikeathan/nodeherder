@@ -1,14 +1,10 @@
 <script setup lang="ts">
 import { useStore } from "vuex";
-import { computed, ref, watchEffect, watch, reactive } from "vue";
+import { computed, ref, watchEffect, watch } from "vue";
 import DataInput from "../input/DataInput.vue"
 import Selector from "../input/Selector.vue"
-import RadioGroup from "../input/RadioGroup.vue"
-import Toggle from "../input/Toggle.vue"
-
-
 import { getFeatureExposes, getFeatureDevices, createMapFromObject } from "../../modules/convert"
-import { ExposeTrigger, OperationType, resolveStepOperations, resolveObjectOperations } from "../../models/automations"
+import { OperationType, resolveObjectOperations } from "../../models/automations"
 
 const props = defineProps({
     id: {
@@ -122,17 +118,6 @@ function propertyUpdated(event: any) {
         data.value = 0
     }
 
-    // // reset data
-    // for (const [key, feature] of Object.entries(features.value)) {
-    //     if (feature.name == value) {
-    //         if (feature.type == 'binary' || feature.type == "enum") { // TODO: refactor/cleanup
-    //             data.value = ""
-    //         } else {
-    //             data.value = 0
-    //         }
-    //     }
-    // }
-
     emit('update:property', property.value)
 }
 
@@ -157,9 +142,9 @@ const feature = computed(() => {
 // its messy but we need it for now as device is not a defined class
 // keep it for now until refactoring 
 
-function operationUpdated(op: number) {
-    operation.value = op
-    emit('update:operation', op)
+function operationUpdated(op: any) {
+    operation.value = parseInt(op)
+    emit('update:operation', operation.value)
 }
 
 function dataUpdated(event: any) {

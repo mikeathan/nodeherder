@@ -114,7 +114,7 @@ export class ExposeTrigger {
   }
 }
 
-abstract class Action {
+export abstract class Action {
   id: string;
   friendlyname: string;
   property: string;
@@ -130,12 +130,27 @@ abstract class Action {
     this.delay = null;
     this.operation = 0;
   }
+
+  public abstract setProperty(value: string): void;
+  public abstract setDeviceId(id: string, friendlyname: string): void;
 }
 
 export class ActionTrigger extends Action {
   constructor() {
     super();
   }
+  public setProperty(value: string): void {
+    this.property = value
+    this.operation = 0
+    this.delay = null
+    this.data = null
+  }
+
+  public setDeviceId(id: string, friendlyname: string): void {
+    this.id = id;
+    this.friendlyname = friendlyname;
+  }
+
 }
 
 export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
@@ -146,7 +161,7 @@ interface operationItem {
 }
 
 const ActionOperationsMap: { [K in string]: operationItem } = {
-  none: { name: "None", value: 0 },
+  none: { name: "NoOp", value: 0 },
   step_increase: { name: "Step increase", value: 1 },
   step_decrease: { name: "Step decrease", value: 2 },
   presets: { name: "Rotation", value: 3 },

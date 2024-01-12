@@ -55,6 +55,16 @@ function isSaveEnabled(): boolean {
     return trigger.value.isValid()
 }
 
+function actionPropertyUpdated(property: string) {
+    let action = trigger.value.action()
+    action.property = property
+
+    // reset values
+    action.operation = 0
+    action.delay = null
+    action.data = null
+}
+
 function actionDeviceUpdated(id: string, friendlyName: string): void {
     var action = trigger.value.action()
     action.id = id
@@ -139,8 +149,8 @@ const exposesList = computed(() => {
                     <tr>
                         <th scope="w-25">
                             <TriggerAction v-if="action != null" :id="action.id" :property="action.property"
-                                :data="action.data" :delay="action.delay" :step="action.operation"
-                                @update:id="actionDeviceUpdated" @update:property="v => trigger.action().property = v"
+                                :data="action.data" :delay="action.delay" :operation="action.operation"
+                                @update:id="actionDeviceUpdated" @update:property="actionPropertyUpdated"
                                 @update:data="v => trigger.action().data = v"
                                 @update:delay="v => trigger.action().delay = v"
                                 @update:operation="v => trigger.action().operation = v">

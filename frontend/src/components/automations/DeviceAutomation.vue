@@ -156,14 +156,6 @@ function onDeleteTriggerClick(event: Event, triggerId: number): void {
                     </div>
 
                     <div class="pb-3">
-                        <!-- <div class="d-flex my-switch">
-                            <div class="form-text text-1">Fix</div>
-
-                            <div class="form-check form-switch form-check-inline">
-                                <input id="revenue" class="form-check-input form-check-inline" type="checkbox">
-                            </div>
-                            <div class="form-text text-2">Percent</div>
-                        </div> -->
                         <div class=" form-check form-switch ms-2">
                             <label class="form-check-label ms-3">Enabled</label>
 
