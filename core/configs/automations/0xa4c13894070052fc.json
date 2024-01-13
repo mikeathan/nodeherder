@@ -2,7 +2,7 @@
   "id": "0xa4c13894070052fc",
   "friendlyname": "Human presence",
   "description": "Attic light test automation",
-  "enabled": false,
+  "enabled": true,
   "triggers": [
     {
       "name": "presence",
@@ -16,10 +16,10 @@
       "action": {
         "id": "0x70ac08fffefafeca",
         "friendlyname": "Attic light",
-        "type": "light",
         "property": "state",
         "data": "OFF",
-        "delay": 300000
+        "delay": 300000,
+        "operation": 0
       }
     },
     {
@@ -39,9 +39,9 @@
       "action": {
         "id": "0x70ac08fffefafeca",
         "friendlyname": "Attic light",
-        "type": "light",
         "property": "state",
-        "data": "ON"
+        "data": "ON",
+        "operation": 0
       }
     }
   ]
