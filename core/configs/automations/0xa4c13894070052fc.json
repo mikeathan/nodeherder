@@ -14,8 +14,8 @@
         }
       ],
       "action": {
-        "id": "0x70ac08fffefafeca",
-        "friendlyname": "Attic light",
+        "id": "0x00158d0005a23c38",
+        "friendlyname": "Living room",
         "property": "state",
         "data": "OFF",
         "delay": 300000,
@@ -37,8 +37,8 @@
         }
       ],
       "action": {
-        "id": "0x70ac08fffefafeca",
-        "friendlyname": "Attic light",
+        "id": "0x00158d0005a23c38",
+        "friendlyname": "Living room",
         "property": "state",
         "data": "ON",
         "operation": 0
