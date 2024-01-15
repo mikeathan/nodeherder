@@ -51,3 +51,11 @@ type Expose = {
   type: string | null;
   Attributes: { [key: string]: any } | null;
 };
+
+// import "jest";
+
+// describe("HelloWorld.vue", () => {
+//   test("renders props.msg when passed", () => {
+//     const msg = "new message";
+//   });
+// });
