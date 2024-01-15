@@ -30,13 +30,6 @@
 
 todo create new branch for new dev stuff
 
-import { describe, expect, test } from '@jest/globals';
-
-describe('sum module', () => {
-  test('adds 1 + 2 to equal 3', () => {
-
-  });
-});
 
 import { default as devicesObj } from "../../../../docs/devices.json";
 let device = devicesObj.payload[0]
