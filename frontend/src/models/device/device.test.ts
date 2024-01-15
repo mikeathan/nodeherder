@@ -28,6 +28,14 @@
 // }
 // }
 
+
+
+import { default as devicesObj } from "../../../../docs/devices.json";
+let device = devicesObj.payload[0]
+var json = JSON.stringify(device)
+const verifyResult = JSON.parse(json) as Device;
+
+
 type Device = {
   id: string;
   friendly_name: string;
