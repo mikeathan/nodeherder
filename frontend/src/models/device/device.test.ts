@@ -28,26 +28,26 @@
 // }
 // }
 
-// import { default as devicesObj } from "../../../../docs/devices.json";
-// let device = devicesObj.payload[0]
-// var json = JSON.stringify(device)
-// const verifyResult = JSON.parse(json) as Device;
+import { default as devicesObj } from "../../../../docs/devices.json";
+let device = devicesObj.payload[0];
+var json = JSON.stringify(device);
+const verifyResult = JSON.parse(json) as Device;
 
-// type Device = {
-//   id: string;
-//   friendly_name: string;
-//   description: string;
-//   connection_type: string;
-//   power_source: string;
-//   exposes: { [key: string]: Expose };
-//   properties: { [key: string]: any };
-// };
+type Device = {
+  id: string;
+  friendly_name: string;
+  description: string;
+  connection_type: string;
+  power_source: string;
+  exposes: { [key: string]: Expose };
+  properties: { [key: string]: any };
+};
 
-// type Expose = {
-//   name: string;
-//   description: string;
-//   unit: string;
-//   data: any | null;
-//   type: string | null;
-//   Attributes: { [key: string]: any } | null;
-// };
+type Expose = {
+  name: string;
+  description: string;
+  unit: string;
+  data: any | null;
+  type: string | null;
+  Attributes: { [key: string]: any } | null;
+};
