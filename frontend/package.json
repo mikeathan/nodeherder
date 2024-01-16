@@ -6,7 +6,7 @@
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "test:unit": "jest"
+    "test": "jest"
   },
   "jest": {
     "moduleFileExtensions": [
@@ -16,11 +16,8 @@
       "vue"
     ],
     "transform": {
-      ".*\\.(vue)$": "vue-jest",
       "^.+\\.tsx?$": "ts-jest"
-    },
-    "testURL": "http://localhost/",
-    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$"
+    }
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^6.4.0",
