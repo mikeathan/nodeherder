@@ -44,5 +44,7 @@ type Expose = {
   unit: string;
   data: any | null;
   type: string | null;
-  Attributes: { [key: string]: any } | null;
+  attributes: { [key: string]: any } | null;
+  presets: { [key: string]: any } | null;
+  properties: { [key: string]: any } | null;
 };

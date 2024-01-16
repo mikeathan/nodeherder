@@ -3,10 +3,11 @@ import { describe, expect, test } from "@jest/globals";
 import { default as devicesObj } from "../../../../docs/devices.json";
 
 test("roundtrip serializing device", () => {
-  let device = devicesObj.payload[0];
-  var json = JSON.stringify(device);
-  const verifyResult = JSON.parse(json) as Device;
+  devicesObj.payload.forEach((device) => {
+    var json = JSON.stringify(device);
 
-  var json2 = JSON.stringify(verifyResult);
-  expect(json2).toBe(json);
+    const verifyResult: Device = JSON.parse(json);
+    var new_json = JSON.stringify(verifyResult);
+    expect(new_json).toBe(json);
+  });
 });
