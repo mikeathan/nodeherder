@@ -4,7 +4,7 @@ import { ref, computed, watch } from 'vue'
 import { useStore } from "vuex";
 import DataInput from "../input/DataInput.vue"
 import { getDeviceExposeNames } from "../../modules/convert"
-import { EqualityOperators } from "../../models/automations"
+import { EqualityOperators } from "../../contracts/automations"
 
 const props = defineProps({
     id: {

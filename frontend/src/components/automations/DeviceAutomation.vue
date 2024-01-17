@@ -4,7 +4,7 @@ import { ref, watch } from "vue";
 import { useRouter } from 'vue-router'
 import Trigger from "./Trigger.vue"
 import DataInput from "../input/DataInput.vue"
-import { ExposeTrigger, DeviceTrigger } from "../../models/automations"
+import { ExposeTrigger, DeviceTrigger } from "../../contracts/automations"
 
 
 const emit = defineEmits(['cancel'])

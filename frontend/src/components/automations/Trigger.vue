@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useStore } from "vuex";
 import { computed, watch, ref, PropType } from "vue";
-import { Condition, ExposeTrigger, ExposeTriggerWrapper, DefaultExposeTriggerWrapper } from "../../models/automations"
+import { Condition, ExposeTrigger, ExposeTriggerWrapper, DefaultExposeTriggerWrapper } from "../../contracts/automations"
 import { getDeviceExposeNamesMap } from "../../modules/convert"
 
 import TriggerCondition from "./TriggerCondition.vue"

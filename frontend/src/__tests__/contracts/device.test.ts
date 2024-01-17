@@ -1,8 +1,7 @@
 import "jest";
 import { describe, expect, test } from "@jest/globals";
 import { default as devicesObj } from "../../../../docs/devices.json";
-import { Device, Expose } from "./device";
-import e from "express";
+import { Device, Expose } from "../../contracts/device";
 
 test("roundtrip serializing device", () => {
   devicesObj.payload.forEach((device) => {
