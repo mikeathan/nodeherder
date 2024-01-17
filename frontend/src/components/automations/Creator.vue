@@ -18,11 +18,6 @@ function cancel() {
     selectedDevice.value = ""
 }
 
-function create(event) {
-    //deviceTriggers.value.push(event) ?? we dont needthat 
-    store.dispatch('automations/save', event);
-    router.push("/viewer")
-}
 
 function deviceList() {
 
