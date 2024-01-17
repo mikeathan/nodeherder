@@ -80,6 +80,7 @@ post payload
 
 TODO:
 
+add type in device.expose for http data 
 add refresh functionality to ping mqtt device for when we just started server ?
 add rename functionality
 add remove /force remove/block functionality
@@ -94,35 +95,6 @@ backup automations
 
 ###### frontend
 
+add type in device.expose for http data 
 add functionality to enable/disalbe a trigger
 add log window in frontend
-
-
-action operations 
-    steps (value) 
-      increase
-      descrease
-
-    rotation (presets)
-
-  criteria:
-    rotation works on presets only
-    cant have both steps and rotation 
-
-    if steps selected rotation is disabled when export has presets
-    if rotation is enabled, steps are disabled 
-      
-    presets - rotation (on/off)
-      -cold,
-      -warm,
-      -hot,
-      -etc..
-
-    value - select steps [none/increase/decrease]
-
-
-     ???operations select with 
-      [steps,
-      rotation]
-
-     

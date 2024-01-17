@@ -28,7 +28,7 @@
 // }
 // }
 
-type Device = {
+export type Device = {
   id: string;
   friendly_name: string;
   description: string;
@@ -38,7 +38,7 @@ type Device = {
   properties: { [key: string]: any };
 };
 
-type Expose = {
+export type Expose = {
   name: string;
   description: string;
   unit: string;
