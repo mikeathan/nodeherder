@@ -11,21 +11,13 @@
     "useDefineForClassFields": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
-    "types": [
-      "webpack-env"
-    ],
+    "types": ["webpack-env"],
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["src/*"]
     },
-    "lib": [ // "lib": ["esnext", "dom", "dom.iterable", "scripthost"]
-      "dom",
-      "es5",
-      "es2015"
-    ],
-    "target": "es5", // esnext
-    "module": "es2015", // esnext
+    "lib": ["dom", "es5", "esnext"],
+    "target": "esnext",
+    "module": "esnext",
     "moduleResolution": "node",
     "sourceMap": true,
     "allowSyntheticDefaultImports": true
@@ -36,10 +28,6 @@
     "src/**/*.vue",
     "src/**/*.test.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ],
-  "types": [
-    "jest"
-  ]
+  "exclude": ["node_modules"],
+  "types": ["jest"]
 }
