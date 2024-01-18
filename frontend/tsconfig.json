@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "strict": true,
+    "outDir": "./dist",
     "jsx": "preserve",
     "jsxFactory": "h",
     "experimentalDecorators": true,
@@ -11,11 +12,19 @@
     "useDefineForClassFields": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
-    "types": ["webpack-env"],
+    "types": [
+      "webpack-env"
+    ],
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": [
+        "src/*"
+      ]
     },
-    "lib": ["dom", "es5", "esnext"],
+    "lib": [
+      "dom",
+      "es5",
+      "esnext"
+    ],
     "target": "esnext",
     "module": "esnext",
     "moduleResolution": "node",
@@ -28,6 +37,11 @@
     "src/**/*.vue",
     "src/**/*.test.ts"
   ],
-  "exclude": ["node_modules"],
-  "types": ["jest"]
+  "exclude": [
+    "./node_modules",
+    "./dist/**/*"
+  ],
+  "types": [
+    "jest"
+  ]
 }
