@@ -2,7 +2,7 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import store from "./store/store.js";
 import router from "./router";
-import Notifications from "@kyvg/vue3-notification";
+import { Notifications } from "@kyvg/vue3-notification";
 import "@fortawesome/fontawesome-free/css/all.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap";
