@@ -3,6 +3,33 @@ import { describe, expect, test } from "@jest/globals";
 import { default as devicesObj } from "../../../../docs/devices.json";
 import { Device, Expose } from "../../contracts/device";
 
+// const languageObject = {
+//   viewName: {
+//     componentName: {
+//       title: 'translated title'
+//     }
+//   },
+//   anotherName: 'this string',
+//   somethingElse: {
+//     foo: { bar: { baz: 123, qux: '456' } }
+//   }
+// }
+// type PathToStringProps<T> = T extends string | number | boolean
+//   ? []
+//   : {
+//     [K in Extract<keyof T, string>]: [K, ...PathToStringProps<T[K]>];
+//   }[Extract<keyof T, string>]
+// type dottedPath = PathToStringProps<typeof languageObject>
+
+// function translate(path: dottedPath) {
+
+// }
+// test("test1", () => {
+
+//   var arr = [languageObject]
+//   translate(arr)
+// })
+
 test("roundtrip serializing device", () => {
   devicesObj.payload.forEach((device) => {
     var json = JSON.stringify(device);
