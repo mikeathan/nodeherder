@@ -8,7 +8,7 @@
       "webRoot": "${workspaceFolder}/src",
       "pathMappings": [
         {
-          "url": "webpack://frontend/src/index.ts",
+          "url": "webpack://frontend/src/store",
           "path": "${workspaceFolder}/frontend/src/store"
         },
         {

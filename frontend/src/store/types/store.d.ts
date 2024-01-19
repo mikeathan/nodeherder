@@ -1,5 +1,5 @@
 import { Device } from "../../contracts/device";
 import { Automation } from "../../contracts/automation";
 
-type DeviceMap = { [key: string]: Device };
-type AutomationMap = { [key: string]: Automation };
+export type DeviceMap = { [key: string]: Device };
+export type AutomationMap = { [key: string]: Automation };

@@ -3,6 +3,7 @@ import { RootState } from "../../types/state";
 import { DeviceModuleState } from "./state";
 import { Device } from "../../../contracts/device";
 
+////
 export interface Getters extends GetterTree<DeviceModuleState, RootState> {
   find(state: DeviceModuleState, id: string): Device;
 }
@@ -12,11 +13,21 @@ const getters: Getters = {
     return state.devices[id];
   },
 };
-
+///
 export const DeviceModule: Module<DeviceModuleState, RootState> = {
   namespaced: true,
-  state: () => ({ devices: {} }),
-  getters,
+  state: () => ({ devices: {} }), need to define it correctly
+  getters: {
+    find(state: DeviceModuleState, id: string): Device {
+      try {
+        return state.devices[id];
+      } catch (error) {
+        console.log(error);
+        return state.devices[id]; // TODO: return emtpy object
+      }
+    },
+  },
+
   mutations: {
     add(state: DeviceModuleState, device: Device) {
       state.devices[device.id] = device;

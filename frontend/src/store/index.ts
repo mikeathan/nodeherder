@@ -11,7 +11,6 @@ export const key: InjectionKey<Store<RootState>> = Symbol();
 
 export const store_temp = createStore<RootState>({
   state: {},
-  getters: {},
   modules: {
     DeviceModule,
   },

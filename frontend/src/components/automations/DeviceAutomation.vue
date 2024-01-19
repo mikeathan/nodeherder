@@ -32,7 +32,8 @@ watch(
         const store_temp = useStore_temp()
 
         store_temp.commit("DeviceModule/add", dd)
-        const ddd = store_temp.getters("DeviceModule/find")(props.id)
+        console.log(dd, props.id)
+        const ddd = store_temp.getters["DeviceModule/find"](props.id)
         console.log(ddd)
         ////
         if (sourceAutomation != undefined) {
