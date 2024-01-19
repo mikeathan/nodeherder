@@ -6,6 +6,8 @@ import Trigger from "./Trigger.vue"
 import DataInput from "../input/DataInput.vue"
 import { ExposeTrigger, DeviceTrigger } from "../../contracts/automations"
 
+import { useStore_temp } from '../../store/index'
+import { Device } from "../../contracts/device";
 
 const emit = defineEmits(['cancel'])
 
@@ -23,6 +25,16 @@ watch(
     () => props.id,
     () => {
         var sourceAutomation = store.getters["automations/find"](props.id);
+
+        ///
+        var d = store.getters["devices/find"](props.id);
+        var dd: Device = d
+        const store_temp = useStore_temp()
+
+        store_temp.commit("DeviceModule/add", dd)
+        const ddd = store_temp.getters("DeviceModule/find")(props.id)
+        console.log(ddd)
+        ////
         if (sourceAutomation != undefined) {
             // make a deep copy to make it not reactive
             automation.value = JSON.parse(JSON.stringify(sourceAutomation))

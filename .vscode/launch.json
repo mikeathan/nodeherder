@@ -1,42 +1,41 @@
 {
-    "configurations": [
+  "configurations": [
+    {
+      "type": "firefox",
+      "request": "launch",
+      "name": "vuejs: firefox",
+      "url": "http://localhost:4100",
+      "webRoot": "${workspaceFolder}/src",
+      "pathMappings": [
         {
-            "type": "firefox",
-            "request": "launch",
-            "name": "vuejs: firefox",
-            "url": "http://localhost:4100",
-            "webRoot": "${workspaceFolder}/src",
-            "pathMappings": [
-                {
-                    "url": "webpack://frontend/src/models",
-                    "path": "${workspaceFolder}/frontend/src/models"
-                },
-                {
-                    "url": "webpack://frontend/src/modules",
-                    "path": "${workspaceFolder}/frontend/src/modules"
-                },
-                {
-                    "url": "webpack://frontend/src/components",
-                    "path": "${workspaceFolder}/frontend/src/components"
-                },
-                {
-                    "url": "webpack:///src/",
-                    "path": "${webRoot}/"
-                }
-            ]
+          "url": "webpack://frontend/src/index.ts",
+          "path": "${workspaceFolder}/frontend/src/store"
         },
         {
-            "name": "Launch Go server",
-            "type": "go",
-            "request": "launch",
-            "mode": "debug",
-            "program": "core/main.go",
-            "args": [
-                "-buildType",
-                "dev",
-                "-logLevel",
-                "debug"
-            ]
+          "url": "webpack://frontend/src/models",
+          "path": "${workspaceFolder}/frontend/src/models"
+        },
+        {
+          "url": "webpack://frontend/src/modules",
+          "path": "${workspaceFolder}/frontend/src/modules"
+        },
+        {
+          "url": "webpack://frontend/src/components",
+          "path": "${workspaceFolder}/frontend/src/components"
+        },
+        {
+          "url": "webpack:///src/",
+          "path": "${webRoot}/"
         }
-    ]
+      ]
+    },
+    {
+      "name": "Launch Go server",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "core/main.go",
+      "args": ["-buildType", "dev", "-logLevel", "debug"]
+    }
+  ]
 }

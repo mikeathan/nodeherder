@@ -6,15 +6,17 @@ import Selector from "../input/Selector.vue"
 
 import { useRouter } from 'vue-router'
 
-//import { useStore_temp } from '../../store/store_temp'
+
 const router = useRouter()
 const store = useStore();
 const selectedDevice = ref("")
 
 const devices = computed(() => {
 
-    // const store = useStore_temp()
+
     var devices = store.getters["devices/items"];
+
+
     return devices;
 })
 

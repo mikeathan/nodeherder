@@ -1,6 +1,6 @@
-import { DeviceMap, AutomationMap } from "./types/store";
+//import { DeviceMap, AutomationMap } from "./types/store";
 
-export interface State {
-    devices: DeviceMap;
-    automations: AutomationMap;
+export interface RootState {
+  //devices: DeviceMap;
+  //automations: AutomationMap;
 }

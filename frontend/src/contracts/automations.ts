@@ -1,9 +1,14 @@
-import { Automation, AutomationTrigger, AutomationTriggerCondition, AutomationTriggerAction } from "./automation"
+import {
+  Automation,
+  AutomationTrigger,
+  AutomationTriggerCondition,
+  AutomationTriggerAction,
+} from "./automation";
 
-export interface DeviceAutomation extends Automation { }
-export interface DeviceAutomationTrigger extends AutomationTrigger { }
-export interface DeviceAutomationCondition extends AutomationTriggerCondition { }
-export interface DeviceAutomationAction extends AutomationTriggerAction { }
+export interface DeviceAutomation extends Automation {}
+export interface DeviceAutomationTrigger extends AutomationTrigger {}
+export interface DeviceAutomationCondition extends AutomationTriggerCondition {}
+export interface DeviceAutomationAction extends AutomationTriggerAction {}
 
 export class DeviceTriggerClass implements DeviceAutomation {
   id: string;
@@ -21,14 +26,13 @@ export class DeviceTriggerClass implements DeviceAutomation {
   }
 }
 
-
 // #########################################
 export class DeviceTrigger {
   id: string;
   friendlyname: string;
   description: string;
   enabled: boolean;
-  triggers: Array<DeviceTrigger>;
+  triggers: Array<ExposeTrigger>;
 
   constructor() {
     this.id = "";
@@ -106,15 +110,15 @@ export class ExposeTriggerWrapper {
   }
 
   public setActionDeviceId(id: string, friendlyname: string): void {
-    this.trigger.action.id = id
-    this.trigger.action.friendlyname = friendlyname
+    this.trigger.action.id = id;
+    this.trigger.action.friendlyname = friendlyname;
   }
 
   public setActionProperty(value: string): void {
-    this.trigger.action.property = value
-    this.trigger.action.operation = 0
-    this.trigger.action.delay = null
-    this.trigger.action.data = null
+    this.trigger.action.property = value;
+    this.trigger.action.operation = 0;
+    this.trigger.action.delay = null;
+    this.trigger.action.data = null;
   }
 
   public createAction(): void {
@@ -177,10 +181,10 @@ export class ActionTrigger extends Action {
     super();
   }
   public setProperty(value: string): void {
-    this.property = value
-    this.operation = 0
-    this.delay = null
-    this.data = null
+    this.property = value;
+    this.operation = 0;
+    this.delay = null;
+    this.data = null;
   }
 
   public setDeviceId(id: string, friendlyname: string): void {
@@ -190,7 +194,6 @@ export class ActionTrigger extends Action {
 }
 
 export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
-
 
 export class Condition {
   name: string;
