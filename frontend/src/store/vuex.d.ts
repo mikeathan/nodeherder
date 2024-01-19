@@ -1,5 +1,5 @@
 import { Store } from "vuex";
-import { DeviceMap } from "./types/device";
+import { DeviceMap } from "./types/store";
 
 declare module "@vue/runtime-core" {
   interface State {

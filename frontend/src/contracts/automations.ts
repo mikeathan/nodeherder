@@ -1,9 +1,34 @@
+import { Automation, AutomationTrigger, AutomationTriggerCondition, AutomationTriggerAction } from "./automation"
+
+export interface DeviceAutomation extends Automation { }
+export interface DeviceAutomationTrigger extends AutomationTrigger { }
+export interface DeviceAutomationCondition extends AutomationTriggerCondition { }
+export interface DeviceAutomationAction extends AutomationTriggerAction { }
+
+export class DeviceTriggerClass implements DeviceAutomation {
+  id: string;
+  friendlyname: string;
+  description: string;
+  enabled: boolean;
+  triggers: Array<DeviceAutomationTrigger>;
+
+  constructor() {
+    this.id = "";
+    this.friendlyname = "";
+    this.description = "";
+    this.enabled = false;
+    this.triggers = [];
+  }
+}
+
+
+// #########################################
 export class DeviceTrigger {
   id: string;
   friendlyname: string;
   description: string;
   enabled: boolean;
-  triggers: Array<ExposeTrigger>;
+  triggers: Array<DeviceTrigger>;
 
   constructor() {
     this.id = "";

@@ -1,12 +1,13 @@
 import { InjectionKey } from "vue";
 import { GetterTree, createStore, useStore as baseUseStore, Store } from "vuex";
-import { DeviceMap } from "./types/device";
+import { State } from "./types/state";
 import { Device } from "../contracts/device";
+import { DeviceAutomation } from "../contracts/automations";
 
-export interface State {
-  devices: DeviceMap;
-}
-// define injection key
+// https://blog.openreplay.com/integrate-vuex-and-typescript/
+
+
+
 export const key: InjectionKey<Store<State>> = Symbol();
 
 export interface Getters extends GetterTree<State, State> {
@@ -22,6 +23,7 @@ const getters: Getters = {
 export const store_temp = createStore<State>({
   state: {
     devices: {},
+    automations: {}
   },
   getters,
   mutations: {

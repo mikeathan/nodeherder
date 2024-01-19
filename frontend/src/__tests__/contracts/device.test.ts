@@ -3,47 +3,6 @@ import { describe, expect, test } from "@jest/globals";
 import { default as devicesObj } from "../../../../docs/devices.json";
 import { Device } from "../../contracts/device";
 
-//https://www.angularfix.com/2022/03/typescript-string-dot-notation-of.html
-// const languageObject = {
-//   viewName: {
-//     componentName: {
-//       title: 'translated title'
-//     }
-//   },
-//   anotherName: 'this string',
-//   somethingElse: {
-//     foo: { bar: { baz: 123, qux: '456' } }
-//   }
-// }
-
-// type PathsToStringProps<T> = T extends string | number | boolean
-//   ? []
-//   : {
-//     [K in Extract<keyof T, string>]: [K, ...PathsToStringProps<T[K]>];
-//   }[Extract<keyof T, string>]
-
-// type Join<T extends string[], D extends string> =
-//   T extends [] ? never :
-//   T extends [infer F] ? F :
-//   T extends [infer F, ...infer R] ?
-//   F extends string ?
-//   `${F}${D}${Join<Extract<R, string[]>, D>}` : never : string;
-
-// type TypeLanguageObject = PathsToStringProps<typeof languageObject>
-// type DottedLanguageObjectStringPaths = Join<PathsToStringProps<typeof languageObject>, ".">
-
-// function translate(arg: DottedLanguageObjectStringPaths) {
-//   console.log("1")
-// }
-// function translate2(arg: TypeLanguageObject) {
-//   console.log("1")
-// }
-// test("test1", () => {
-
-//   translate2(['viewName', 'componentName', 'title'])
-//   translate('viewName.componentName.title')
-// })
-
 test("roundtrip serializing device", () => {
   devicesObj.payload.forEach((device) => {
     var json = JSON.stringify(device);
