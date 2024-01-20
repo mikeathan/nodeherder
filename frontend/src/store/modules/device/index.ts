@@ -9,10 +9,14 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
   state: () => ({ devices: {} as DeviceMap }),
 
   getters: {
-    list: (state: DeviceModuleState) => state.devices, // TODO that needs to return only the values !!!!!!!!!!!!!!11
-    find: (state: DeviceModuleState) => (id: string) => {
-      return state.devices[id];
+    list: (state: DeviceModuleState) => (): Devices => {
+      return Object.values(state.devices) as Devices; // TODO: convert that to typed
     },
+    find:
+      (state: DeviceModuleState) =>
+      (id: string): Device => {
+        return state.devices[id];
+      },
   },
 
   mutations: {
