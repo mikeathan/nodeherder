@@ -1,5 +1,4 @@
-import { DeviceMap } from "../../types/store";
-
+import { DeviceMap } from "../../../types/device";
 export interface DeviceModuleState {
   devices: DeviceMap;
 }

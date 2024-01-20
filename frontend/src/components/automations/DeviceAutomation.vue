@@ -25,17 +25,6 @@ watch(
     () => props.id,
     () => {
         var sourceAutomation = store.getters["automations/find"](props.id);
-
-        ///
-        var d = store.getters["devices/find"](props.id);
-        var dd: Device = d
-        const store_temp = useStore_temp()
-
-        store_temp.commit("DeviceModule/add", dd)
-        console.log(dd, props.id)
-        const ddd = store_temp.getters["DeviceModule/find"](props.id)
-        console.log(ddd)
-        ////
         if (sourceAutomation != undefined) {
             // make a deep copy to make it not reactive
             automation.value = JSON.parse(JSON.stringify(sourceAutomation))

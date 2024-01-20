@@ -1,30 +1,17 @@
-import { Module, GetterTree } from "vuex";
-import { RootState } from "../../types/state";
+import { Module } from "vuex";
+import { RootState } from "../../state";
 import { DeviceModuleState } from "./state";
-import { Device } from "../../../contracts/device";
+import { Device, Devices, DeviceMap } from "../../../types/device";
 
-////
-export interface Getters extends GetterTree<DeviceModuleState, RootState> {
-  find(state: DeviceModuleState, id: string): Device;
-}
-
-const getters: Getters = {
-  find(state: DeviceModuleState, id: string): Device {
-    return state.devices[id];
-  },
-};
-///
 export const DeviceModule: Module<DeviceModuleState, RootState> = {
   namespaced: true,
-  state: () => ({ devices: {} }), need to define it correctly
+
+  state: () => ({ devices: {} as DeviceMap }),
+
   getters: {
-    find(state: DeviceModuleState, id: string): Device {
-      try {
-        return state.devices[id];
-      } catch (error) {
-        console.log(error);
-        return state.devices[id]; // TODO: return emtpy object
-      }
+    list: (state: DeviceModuleState) => state.devices, // TODO that needs to return only the values !!!!!!!!!!!!!!11
+    find: (state: DeviceModuleState) => (id: string) => {
+      return state.devices[id];
     },
   },
 
@@ -33,14 +20,15 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
       state.devices[device.id] = device;
     },
 
-    updateDevices(state: DeviceModuleState, devices: Array<Device>) {
-      devices.forEach((updated) => {
+    updateDevices(state: DeviceModuleState, devices: Devices) {
+      devices.forEach((updated: Device) => {
         const device: Device = state.devices[updated.id];
         if (device != undefined) {
           state.devices[updated.id] = updated;
         }
       });
     },
+
     // update(state, payload) {
     //     var device = state.items[payload.id];
     //     if (device == undefined) {
@@ -59,21 +47,23 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
     //     }
     //     device.properties.last_seen = payload.last_seen;
     // },
+
     clear(state: DeviceModuleState) {
       for (var id in state.devices) {
         delete state.devices[id];
       }
     },
   },
+
   actions: {
-    init({ state, commit }, devices: Array<Device>) {
-      // TODO: convert array<device> to type
+    init({ state, commit }, devices: Devices) {
       commit("clear", state);
-      devices.forEach((device) => {
+      devices.forEach((device: Device) => {
         state.devices[device.id] = device;
       });
     },
-    updateDevices({ commit }, devices: Array<Device>) {
+
+    updateDevices({ commit }, devices: Devices) {
       commit("updateDevices", devices);
     },
   },
