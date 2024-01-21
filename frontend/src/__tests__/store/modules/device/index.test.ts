@@ -75,36 +75,32 @@ test("test devices/update update device properties", () => {
 
   // update device
   var timestamp = new Date(Date.parse("11/30/2011")).toString();
-  const update = mockDeviceUpdateData(newDevice.id, timestamp, "online");
+  const update: DeviceUpdate = {
+    id: newDevice.id,
+    last_seen: timestamp,
+    data: {
+      temperature: 23.12,
+      presure: 68,
+      presence: true,
+      state: "online",
+    },
+    properties: {
+      availability: "online",
+    },
+  } as const;
   store_temp.commit("devices/update", update);
 
   // evaluate results
   const result = store_temp.getters["devices/find"](newDevice.id) as Device;
 
+  expect(result.exposes["temperature"].data).toBe(23.12);
+  expect(result.exposes["presence"].data).toBe(true);
+  expect(result.properties["last_seen"].data).toBe(timestamp);
+
+  expect(result.exposes["presure"].data).toBeNull();
+
   TODO;
 });
-
-function mockDeviceUpdateData(
-  id: string,
-  last_seen: string,
-  availability: string
-): DeviceUpdate {
-  const data: DeviceUpdate = {
-    id: id,
-    last_seen: last_seen,
-    data: {
-      temperature: 23.12,
-      pressure: 68,
-      presence: true,
-      state: "online",
-    },
-    properties: {
-      availability: availability,
-    },
-  } as const;
-
-  return data;
-}
 
 // type updatePackage struct {
 // 	Id         string         `json:"id"`
