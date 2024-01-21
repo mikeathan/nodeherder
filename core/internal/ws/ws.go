@@ -29,10 +29,10 @@ const (
 	DeviceList        = "deviceList"
 	Device            = "device"
 	DeviceAdded       = "deviceAdded"
-	DeviceUpdated     = "deviceUpdated"
+	DeviceUpdated     = "" // returns back updated properties of type DeviceUpdated
 	OperationFailed   = "operationFailed"
 	OperationSuccess  = "operationSuccess"
-	AutomationUpdated = "automationUpdated"
+	AutomationUpdated = "automationUpdated" // returns back upated automation
 )
 
 type EventMessage struct {
@@ -126,7 +126,7 @@ func (c *WsClient) handleMessage(message []byte) {
 
 	case LoadDevices:
 		msg := c.hub.onLoadDevices()
-		c.Broadcast(Devices, msg)
+		c.Broadcast(Devices, msg) //
 
 	case SaveAutomation:
 		c.executeAction(eventMsg.Payload, c.hub.onSaveAutomation, true)

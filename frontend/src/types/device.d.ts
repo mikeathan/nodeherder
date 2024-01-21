@@ -23,3 +23,10 @@ export type Expose = {
   presets: Nullable<KeyyValuePair<any>>;
   properties: Nullable<KeyyValuePair<any>>;
 };
+
+export type DeviceUpdate = {
+  id: string;
+  last_seen: string;
+  data: KeyyValuePair<any>;
+  properties: KeyyValuePair<any>;
+};

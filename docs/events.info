@@ -1,0 +1,35 @@
+
+websocket events
+
+response : deviceUpdated
+retunrs update device properties in below type
+type updatePackage struct {
+	Id         string         `json:"id"`
+	LastSeen   string         `json:"last_seen"`
+	Data       map[string]any `json:"data"`
+	Properties map[string]any `json:"properties"`
+}
+
+
+response: automationUpdated
+returns back update automation of type automation
+
+response: deviceList
+returns back a list of all devices, type of device[]
+
+response: deviceAdded
+returns back new device added, ype of evice
+
+request: loadDevices
+response: devices
+returns back a list of all devices, type of device[]
+
+!! should be replaced with : deviceList
+
+respose: automations - rename to automationList
+returns back list of automations 
+
+request: SaveAutomation
+request: DeleteAutomation
+request: DeleteAutomationTrigger
+response: list of automations

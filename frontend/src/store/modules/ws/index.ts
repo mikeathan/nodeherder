@@ -75,9 +75,7 @@ export const WSClientModule: Module<WSClientState, RootState> = {
           case "deviceAdded":
             commit("devices/add", obj.payload, { root: true });
             break;
-          case "devicePropertiesUpdated":
-            commit("devices/update", obj.payload, { root: true });
-            break;
+
           case "automations":
             dispatch("automations/init", obj.payload, { root: true });
             break;

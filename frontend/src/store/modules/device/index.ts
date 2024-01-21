@@ -1,7 +1,12 @@
 import { Module } from "vuex";
 import { RootState } from "../../state";
 import { DeviceModuleState } from "./state";
-import { Device, Devices, DeviceMap } from "../../../types/device";
+import {
+  Device,
+  Devices,
+  DeviceMap,
+  DeviceUpdate,
+} from "../../../types/device";
 
 export const DeviceModule: Module<DeviceModuleState, RootState> = {
   namespaced: true,
@@ -33,24 +38,25 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
       });
     },
 
-    // update(state, payload) {
-    //     var device = state.items[payload.id];
-    //     if (device == undefined) {
-    //         console.error("device ", payload.id, " not found");
-    //         return;
-    //     }
-    //     for (var key in payload.data) {
-    //         if (device.exposes.hasOwnProperty(key)) {
-    //             device.exposes[key].data = payload.data[key];
-    //         }
-    //     }
-    //     for (var key in payload.properties) {
-    //         if (device.properties.hasOwnProperty(key)) {
-    //             device.properties[key] = payload.properties[key];
-    //         }
-    //     }
-    //     device.properties.last_seen = payload.last_seen;
-    // },
+    update(state, deviceUpdate: DeviceUpdate) {
+      var device = state.devices[deviceUpdate.id];
+      if (device == undefined) {
+        console.error("device ", deviceUpdate.id, " not found");
+        return;
+      }
+
+      for (var key in deviceUpdate.data) {
+        if (device.exposes[key] != undefined) {
+          device.exposes[key].data = deviceUpdate.data[key];
+        }
+      }
+      for (var key in deviceUpdate.properties) {
+        if (device.properties[key] != undefined) {
+          device.properties[key] = deviceUpdate.properties[key];
+        }
+      }
+      device.properties.last_seen = deviceUpdate.last_seen;
+    },
 
     clear(state: DeviceModuleState) {
       for (var id in state.devices) {
