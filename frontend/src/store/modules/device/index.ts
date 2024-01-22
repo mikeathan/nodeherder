@@ -11,45 +11,45 @@ import {
 export const DeviceModule: Module<DeviceModuleState, RootState> = {
   namespaced: true,
 
-  state: () => ({ devices: {} as DeviceMap }),
+  state: () => ({ deviceMap: {} as DeviceMap }),
 
   getters: {
-    list: (state: DeviceModuleState) => (): Devices => {
-      return Object.values(state.devices) as Devices; // TODO: convert that to typed
+    listAll: (state: DeviceModuleState) => (): Devices => {
+      return Object.values(state.deviceMap) as Devices;
     },
     find:
       (state: DeviceModuleState) =>
         (id: string): Device => {
-          return state.devices[id];
+          return state.deviceMap[id];
         },
   },
 
   mutations: {
     add(state: DeviceModuleState, device: Device) {
-      state.devices[device.id] = device;
+      state.deviceMap[device.id] = device;
     },
 
     updateList(state: DeviceModuleState, devices: Devices) {
       devices.forEach((device: Device) => {
-        if (device.id in state.devices)
-          state.devices[device.id] = device;
+        if (device.id in state.deviceMap)
+          state.deviceMap[device.id] = device;
       });
     },
 
     update(state, deviceUpdate: DeviceUpdate) {
-      if (deviceUpdate.id in state.devices == false) {
+      if (deviceUpdate.id in state.deviceMap == false) {
         console.error("device ", deviceUpdate.id, " not found");
         return;
       }
 
-      var device = state.devices[deviceUpdate.id];
+      var device = state.deviceMap[deviceUpdate.id];
       for (var key in deviceUpdate.data) {
-        if (key in device.exposes[key]) {
+        if (key in device.exposes) {
           device.exposes[key].data = deviceUpdate.data[key];
         }
       }
       for (var key in deviceUpdate.properties) {
-        if (key in device.properties[key]) {
+        if (key in device.properties) {
           device.properties[key] = deviceUpdate.properties[key];
         }
       }
@@ -57,8 +57,8 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
     },
 
     clear(state: DeviceModuleState) {
-      for (var id in state.devices) {
-        delete state.devices[id];
+      for (var id in state.deviceMap) {
+        delete state.deviceMap[id];
       }
     },
   },
@@ -67,7 +67,7 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
     init({ state, commit }, devices: Devices) {
       commit("clear", state);
       devices.forEach((device: Device) => {
-        state.devices[device.id] = device;
+        state.deviceMap[device.id] = device;
       });
     },
 

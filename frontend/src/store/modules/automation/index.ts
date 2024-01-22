@@ -13,19 +13,29 @@ export const AutomationModule: Module<AutomationModuleState, RootState> = {
   state: () => ({ automationsMap: {} as AutomationMap, initialized: false }),
 
   getters: {
-    list: (state: AutomationModuleState) => state.automationsMap,
-    initialized: (state: AutomationModuleState) => state.initialized,
-    find: (state: AutomationModuleState) => (id: string) => {
-      return state.automationsMap[id];
+
+    listAll: (state: AutomationModuleState) => (): Automations => {
+      return Object.values(state.automationsMap) as Automations;
     },
+
+    initialized: (state: AutomationModuleState) => (): boolean => state.initialized,
+
+    find:
+      (state: AutomationModuleState) =>
+        (id: string): Automation => {
+          return state.automationsMap[id];
+        },
   },
 
   mutations: {
     add(state: AutomationModuleState, automation: Automation) {
       state.automationsMap[automation.id] = automation;
     },
+
     update(state: AutomationModuleState, automation: Automation) {
-      state.automationsMap[automation.id] = automation;
+      if (automation.id in state.automationsMap) {
+        state.automationsMap[automation.id] = automation;
+      }
     },
 
     delete(state: AutomationModuleState, id: string) {
@@ -34,7 +44,9 @@ export const AutomationModule: Module<AutomationModuleState, RootState> = {
 
     clear(state: AutomationModuleState) {
       for (var id in state.automationsMap) {
-        delete state.automationsMap[id];
+        if (id in state.automationsMap) {
+          delete state.automationsMap[id];
+        }
       }
       state.initialized = false;
     },
@@ -49,22 +61,24 @@ export const AutomationModule: Module<AutomationModuleState, RootState> = {
       });
       state.initialized = true;
     },
-    save({ commit, dispatch, rootState }, automation: Automations) {
-      commit("add", automation);
-      dispatch(
-        "ws/emit",
-        { event: "saveAutomation", message: automation },
-        { root: true }
-      );
-    },
 
-    delete({ commit, dispatch, rootState }, id: string) {
-      commit("delete", id);
-      dispatch(
-        "ws/emit",
-        { event: "deleteAutomation", message: { id: id } },
-        { root: true }
-      );
-    },
+    // TODO once wsclient store is finished
+    //   save({ commit, dispatch, rootState }, automation: Automations) {
+    //     commit("add", automation);
+    //     dispatch(
+    //       "ws/emit",
+    //       { event: "saveAutomation", message: automation },
+    //       { root: true }
+    //     );
+    //   },
+
+    //   delete({ commit, dispatch, rootState }, id: string) {
+    //     commit("delete", id);
+    //     dispatch(
+    //       "ws/emit",
+    //       { event: "deleteAutomation", message: { id: id } },
+    //       { root: true }
+    //     );
+    //   },
   },
 };

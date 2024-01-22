@@ -21,7 +21,7 @@ test("test devices/find can load all inserted devices", () => {
   });
 });
 
-test("test devices/list returns a list of all devices", () => {
+test("test devices/listAll returns a list of all devices", () => {
   // add them to store
   devices.payload.forEach((device) => {
     var json = JSON.stringify(device);
@@ -30,7 +30,7 @@ test("test devices/list returns a list of all devices", () => {
   });
 
   // assert values
-  const result = store_temp.getters["devices/list"]() as Devices;
+  const result = store_temp.getters["devices/listAll"]() as Devices;
   devices.payload.forEach((device, idx) => {
     var json = JSON.stringify(device);
     const newDevice: Device = JSON.parse(json);
@@ -49,7 +49,7 @@ test("test devices/clear removes all devices from store", () => {
 
   // assert values
   store_temp.commit("devices/clear");
-  const result = store_temp.getters["devices/list"]() as Devices;
+  const result = store_temp.getters["devices/listAll"]() as Devices;
 
   expect(result.length).toBe(0);
 });
@@ -57,7 +57,7 @@ test("test devices/clear removes all devices from store", () => {
 test("test devices/init inserts all devices in store", () => {
   // assert values
   store_temp.dispatch("devices/init", devices.payload);
-  const result = store_temp.getters["devices/list"]() as Devices;
+  const result = store_temp.getters["devices/listAll"]() as Devices;
 
   devices.payload.forEach((device, idx) => {
     var json = JSON.stringify(device);

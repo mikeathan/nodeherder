@@ -12,6 +12,7 @@ const actions = {
   updateItems({ commit }, devices) {
     commit("updateItems", devices);
   },
+
   setValue({ dispatch }, payload) {
     dispatch(
       "ws/emit",
@@ -19,6 +20,7 @@ const actions = {
       { root: true }
     );
   },
+
   rename({ dispatch }, { name, newName }) {
     var payload = {
       from: name,
