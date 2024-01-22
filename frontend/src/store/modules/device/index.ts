@@ -19,9 +19,9 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
     },
     find:
       (state: DeviceModuleState) =>
-      (id: string): Device => {
-        return state.devices[id];
-      },
+        (id: string): Device => {
+          return state.devices[id];
+        },
   },
 
   mutations: {
@@ -29,29 +29,27 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
       state.devices[device.id] = device;
     },
 
-    updateDevices(state: DeviceModuleState, devices: Devices) {
-      devices.forEach((updated: Device) => {
-        const device: Device = state.devices[updated.id];
-        if (device != undefined) {
-          state.devices[updated.id] = updated;
-        }
+    updateList(state: DeviceModuleState, devices: Devices) {
+      devices.forEach((device: Device) => {
+        if (device.id in state.devices)
+          state.devices[device.id] = device;
       });
     },
 
     update(state, deviceUpdate: DeviceUpdate) {
-      var device = state.devices[deviceUpdate.id];
-      if (device == undefined) {
+      if (deviceUpdate.id in state.devices == false) {
         console.error("device ", deviceUpdate.id, " not found");
         return;
       }
 
+      var device = state.devices[deviceUpdate.id];
       for (var key in deviceUpdate.data) {
-        if (device.exposes[key] != undefined) {
+        if (key in device.exposes[key]) {
           device.exposes[key].data = deviceUpdate.data[key];
         }
       }
       for (var key in deviceUpdate.properties) {
-        if (device.properties[key] != undefined) {
+        if (key in device.properties[key]) {
           device.properties[key] = deviceUpdate.properties[key];
         }
       }
@@ -76,5 +74,27 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
     updateDevices({ commit }, devices: Devices) {
       commit("updateDevices", devices);
     },
+
+    // TODO once wsclient store is finished
+
+    // setValue({ dispatch }, payload) {
+    //   dispatch(
+    //     "ws/emit",
+    //     { event: "deviceSetValue", message: payload },
+    //     { root: true }
+    //   );
+    // },
+
+    // rename({ dispatch }, { name, newName }) {
+    //   var payload = {
+    //     from: name,
+    //     to: newName,
+    //   };
+    //   dispatch(
+    //     "ws/emit",
+    //     { event: "deviceRename", message: payload },
+    //     { root: true }
+    //   );
+    // },
   },
 };

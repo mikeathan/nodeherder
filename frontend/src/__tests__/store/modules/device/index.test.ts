@@ -81,7 +81,7 @@ test("test devices/update update device properties", () => {
     data: {
       temperature: 23.12,
       presure: 68,
-      presence: true,
+      occupancy: true,
       state: "online",
     },
     properties: {
@@ -94,17 +94,44 @@ test("test devices/update update device properties", () => {
   const result = store_temp.getters["devices/find"](newDevice.id) as Device;
 
   expect(result.exposes["temperature"].data).toBe(23.12);
-  expect(result.exposes["presence"].data).toBe(true);
-  expect(result.properties["last_seen"].data).toBe(timestamp);
-
-  expect(result.exposes["presure"].data).toBeNull();
-
-  TODO;
+  expect(result.exposes["occupancy"].data).toBe(true);
+  expect(result.exposes["presure"]).toBeUndefined();
+  expect(result.properties['availability']).toBe(update.properties['availability']);
+  expect(result.properties["last_seen"]).toBe(update.last_seen);
 });
 
-// type updatePackage struct {
-// 	Id         string         `json:"id"`
-// 	LastSeen   string         `json:"last_seen"`
-// 	Data       map[string]any `json:"data"`
-// 	Properties map[string]any `json:"properties"`
-// }
+
+test("test devices/updateList - update store from a list of existing devices", () => {
+
+  // add devices
+  devices.payload.forEach((device) => {
+    var json = JSON.stringify(device);
+    const newDevice: Device = JSON.parse(json);
+    store_temp.commit("devices/add", newDevice);
+  });
+
+  // update 2 devices only
+  var json = JSON.stringify(devices.payload[1]);
+  const th01: Device = JSON.parse(json);
+  th01.exposes['temperature'].data = 23.3
+  th01.exposes['humidity'].data = 65.1
+  th01.properties['availability'] = 'offline'
+
+  var json = JSON.stringify(devices.payload[2]);
+  const atticLight: Device = JSON.parse(json);
+  atticLight.exposes['brightness'].data = 100
+  atticLight.exposes['color_temp'].data = 467
+
+  // evaluate 
+  store_temp.commit("devices/updateList", [th01, atticLight] as Devices);
+
+  var result = store_temp.getters["devices/find"](th01.id) as Device;
+  expect(result.exposes["temperature"].data).toBe(23.3);
+  expect(result.exposes["humidity"].data).toBe(65.1);
+  expect(result.properties["availability"]).toBe('offline');
+
+  var result = store_temp.getters["devices/find"](atticLight.id) as Device;
+  expect(result.exposes["brightness"].data).toBe(100);
+  expect(result.exposes["color_temp"].data).toBe(467);
+
+})
