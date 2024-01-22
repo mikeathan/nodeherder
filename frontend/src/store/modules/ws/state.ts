@@ -1,4 +1,5 @@
+import { WsClient } from "./ws";
 export interface WSClientState {
-  ws: WebSocket | null;
+  ws: WsClient;
   connected: boolean;
 }

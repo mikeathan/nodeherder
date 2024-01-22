@@ -2,60 +2,26 @@ import { Module } from "vuex";
 import { RootState } from "../../state";
 import { WSClientState } from "./state";
 import { useNotification } from "@kyvg/vue3-notification";
-
+import { createSocket, sendMessage, getSocketUri, WsClient } from "./ws";
+import wsclient from "../wsclient";
 const { notify } = useNotification();
-
-const devSocketUri = "ws://localhost:3000/ws";
-const productionSocketUri = "ws://" + document.location.host + "/ws";
-const maxNumberOfAttempts = 10;
-const intervalTimeMs = 200;
-const socketUri = getSocketUri();
-function getSocketUri() {
-  if (process.env.NODE_ENV == "development") {
-    console.info("Enviroment:", process.env.NODE_ENV);
-    return devSocketUri;
-  }
-
-  return productionSocketUri;
-}
 
 export const WSClientModule: Module<WSClientState, RootState> = {
   namespaced: true,
 
-  state: () => ({ ws: null, connected: false }),
+  state: () => ({ ws: new WsClient(), connected: false }),
 
   getters: { isconnected: (state) => state.connected },
 
   mutations: {
     sendMessage(state: WSClientState, { event, message }) {
-      var payload = JSON.stringify({ type: event, payload: message });
-
-      if (state.ws?.readyState !== state.ws?.OPEN) {
-        let currentAttempt = 0;
-        const interval = setInterval(() => {
-          if (currentAttempt > maxNumberOfAttempts - 1) {
-            clearInterval(interval);
-            console.log(
-              "emit:",
-              event,
-              " failed. Maximum number of attempts exceeded."
-            );
-            return;
-          } else if (state.ws?.readyState === state.ws?.OPEN) {
-            clearInterval(interval);
-            state.ws?.send(payload);
-          }
-          currentAttempt++;
-        }, intervalTimeMs);
-      } else {
-        state.ws?.send(payload);
-      }
+      sendMessage(state.ws, event, message);
     },
   },
 
   actions: {
-    connect({ state, commit, dispatch }) {
-      var ws = new WebSocket(socketUri);
+    connect({ state, commit, rootState, dispatch }) {
+      var ws = createSocket();
       ws.onmessage = (event) => {
         if (event == undefined) {
           console.error("ws undefined event: " + event);
@@ -75,7 +41,6 @@ export const WSClientModule: Module<WSClientState, RootState> = {
           case "deviceAdded":
             commit("devices/add", obj.payload, { root: true });
             break;
-
           case "automations":
             dispatch("automations/init", obj.payload, { root: true });
             break;
