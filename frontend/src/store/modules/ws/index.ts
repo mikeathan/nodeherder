@@ -2,14 +2,20 @@ import { Module } from "vuex";
 import { RootState } from "../../state";
 import { WSClientState } from "./state";
 import { useNotification } from "@kyvg/vue3-notification";
-import { createSocket, sendMessage, getSocketUri, WsClient } from "./ws";
+import {
+  createSocket,
+  sendMessage,
+  WsClientService,
+  WsClient,
+  WsClientBuilder,
+} from "./ws";
 import wsclient from "../wsclient";
 const { notify } = useNotification();
 
 export const WSClientModule: Module<WSClientState, RootState> = {
   namespaced: true,
 
-  state: () => ({ ws: new WsClient(), connected: false }),
+  state: () => ({ ws: new WsClientService(), connected: false }),
 
   getters: { isconnected: (state) => state.connected },
 
@@ -21,8 +27,9 @@ export const WSClientModule: Module<WSClientState, RootState> = {
 
   actions: {
     connect({ state, commit, rootState, dispatch }) {
-      var ws = createSocket();
-      ws.onmessage = (event) => {
+      // var ws = WsClientService.connect();
+      const builder = WsClientBuilder.create();
+      builder.withOnMessage((event) => {
         if (event == undefined) {
           console.error("ws undefined event: " + event);
           return;
@@ -72,24 +79,24 @@ export const WSClientModule: Module<WSClientState, RootState> = {
           default:
             console.error("ws unhandled type: ", event.data);
         }
-      };
+      });
 
-      ws.onopen = function (event) {
+      builder.withOnOpen(function (event) {
         console.info("ws open");
         dispatch("emit", { event: "loadDevices" });
-      };
+      });
 
-      ws.onclose = function (event) {
+      builder.withOnClose(function (event) {
         console.info("ws close ", event);
         state.connected = false;
         dispatch("cleanup", [], { root: true });
-      };
+      });
 
-      ws.onerror = function (event) {
+      builder.withOnError(function (event) {
         console.error("ws error: " + event);
-      };
+      });
 
-      state.ws = ws;
+      state.ws = builder.build();
       state.connected = true;
     },
 

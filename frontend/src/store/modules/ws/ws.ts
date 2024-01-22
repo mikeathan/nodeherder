@@ -1,3 +1,5 @@
+import { Static } from "vue";
+
 const devSocketUri = "ws://localhost:3000/ws";
 const productionSocketUri = "ws://" + document.location.host + "/ws";
 
@@ -45,10 +47,8 @@ export function sendMessage(ws: WebSocket, event: string, message: string) {
 export class WsClient {
   private ws: WebSocket;
 
-  constructor() {}
-
-  connect(url?: string) {
-    this.ws = new WebSocket(url ?? getSocketUri());
+  constructor(ws: WebSocket) {
+    this.ws = ws;
   }
 
   emit(event: string, message: string) {
@@ -74,6 +74,21 @@ export class WsClient {
     } else {
       this.ws.send(payload);
     }
+  }
+}
+export class WsClientService {
+  static ws: WsClient;
+  constructor() {}
+
+  static connect(url?: string): WsClient {
+    const ws = createSocket(url ?? getSocketUri());
+    this.ws = new WsClient(ws);
+
+    return this.ws;
+  }
+
+  static client(): WsClient {
+    return this.ws;
   }
 }
 
