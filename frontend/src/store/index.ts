@@ -9,7 +9,7 @@ import { WSClientModule as ws } from "./modules/ws/index";
 
 export const key: InjectionKey<Store<RootState>> = Symbol();
 
-export const store_temp = createStore<RootState>({
+export const store = createStore<RootState>({
   state: {},
   actions: {
     cleanup({ commit }) {

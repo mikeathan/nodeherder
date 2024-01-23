@@ -1,5 +1,5 @@
 <script setup>
-import { useStore } from "vuex";
+import { store } from "../../store/index";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import LastSeen from "../device/LastSeen.vue";
@@ -19,7 +19,7 @@ const previousPage = computed(() => {
   return back;
 });
 
-const store = useStore();
+
 const showDialog = ref(false)
 const device = computed(() => {
   return store.getters["devices/find"](props.id);

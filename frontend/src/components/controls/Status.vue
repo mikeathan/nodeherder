@@ -1,13 +1,13 @@
 <script setup>
-import { useStore } from "vuex";
+import { store } from "../../store/index";
 import { computed, watch, ref } from "vue";
 
-const store = useStore();
 const connected = computed(() => {
     return store.getters["ws/isconnected"];
 });
 const color = ref("red")
 const connectionState = { true: "green", false: "red", null: 'white' }
+
 watch(
     () => connected.value,
     () => {
@@ -15,9 +15,6 @@ watch(
     },
     { immediate: true }
 );
-
-
-
 
 </script>
 

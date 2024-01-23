@@ -6,11 +6,10 @@ import {
     getSensorUnit,
 } from "../../modules/sensors/sensor-formatter";
 
-import { useStore } from "vuex";
+import { store } from "../../store/index";
 import Slider from "../input/Slider.vue"
 import Toggle from "../input/Toggle.vue"
 
-const store = useStore();
 const props = defineProps({
     id: { type: String, require: true },
     expose: Object

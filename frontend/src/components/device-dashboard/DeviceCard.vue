@@ -2,9 +2,11 @@
 import DeviceFooter from "./DeviceCardFooter.vue";
 import Sensor from "../device/Sensor.vue";
 import { RouterLink } from "vue-router";
+
 const props = defineProps({
   device: Object,
 });
+
 </script>
 <template>
   <div class="col-xl-3 col-lg-4 col-sm-6 col-12 d-flex">

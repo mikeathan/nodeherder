@@ -2,7 +2,7 @@
 import LinkQuality from "../device/LinkQuality.vue";
 import PowerSource from "../device/PowerSource.vue";
 import LastSeen from "../device/LastSeen.vue";
-import WifiOff from "../../assets/svg/connectivity/wifi-off.svg";
+
 const props = defineProps({
   device: Object,
 });

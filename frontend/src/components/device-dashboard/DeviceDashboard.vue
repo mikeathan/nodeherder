@@ -1,10 +1,10 @@
-<script setup>
-import { useStore } from "vuex";
+<script setup lang="ts">
 import { computed } from "vue";
 import DeviceCard from "./DeviceCard.vue";
+import { Devices } from "@/types/device";
+import { store } from "../../store/index";
 
-const store = useStore();
-const devices = computed(() => store.getters["devices/items"]);
+const devices = computed(() => store.getters["devices/listAll"]() as Devices);
 
 </script>
 

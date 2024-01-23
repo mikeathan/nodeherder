@@ -1,10 +1,10 @@
 <script setup>
 
 import { onBeforeMount, ref } from "vue";
-import { useStore } from "vuex";
+import { store } from "./store/index";
 import Status from "./components/controls/Status.vue";
+
 const title = ref("Node-Herder");
-const store = useStore()
 
 onBeforeMount(() => {
   store.dispatch('ws/connect')
