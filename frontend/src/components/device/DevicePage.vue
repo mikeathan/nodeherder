@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { store } from "../../store/index";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -6,17 +6,19 @@ import LastSeen from "../device/LastSeen.vue";
 import PowerSource from "../device/PowerSource.vue";
 import ConnectionType from "../device/ConnectionType.vue";
 import RenameDeviceDialog from "../dialogs/RenameDeviceDialog.vue";
+import { Device } from "@/types/device";
 
 const props = defineProps({
   id: String,
 });
 
 const previousPage = computed(() => {
-  var back = useRouter().options.history.state.back;
-  if (back == undefined) {
-    back = useRouter().push("/");
+  const back = useRouter().options.history.state.back;
+  if (back != undefined) {
+    return back
   }
-  return back;
+
+  return useRouter().push("/");
 });
 
 
@@ -25,12 +27,12 @@ const device = computed(() => {
   return store.getters["devices/find"](props.id);
 });
 
-function renameDevice(value) {
+function renameDevice(value: string) {
   store.dispatch("devices/rename", { name: device.value.friendly_name, newName: value });
 }
 
 const displayProps = computed(() => {
-  const device = store.getters["devices/find"](props.id);
+  const device = store.getters["devices/find"](props.id) as Device;
   if (device == undefined) {
     return [];
   }

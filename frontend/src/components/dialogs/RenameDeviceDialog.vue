@@ -9,7 +9,6 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:name', 'close']);
 
-
 function rename(event: Event) {
     emit('update:name', friendlyName.value);
     close()
