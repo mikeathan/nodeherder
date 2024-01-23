@@ -137,20 +137,23 @@ var automationMap = new Map([
 expressWs(app, server);
 
 var devicesPayload = loadDevices();
-
+var connected = false;
 // Get the /ws websocket route
 app.ws("/ws", async function (ws, req) {
   console.log("client connected");
 
   settings.forEach((s) => {
     setInterval(function () {
+      if (!connected) {
+        return;
+      }
+
       var updatePayload = buildDeviceUpdatedPayload(s);
 
       var d = JSON.stringify({
         type: "deviceUpdated",
         payload: updatePayload,
       });
-
       ws.send(d);
     }, s.delayInMs);
   });
@@ -167,6 +170,7 @@ app.ws("/ws", async function (ws, req) {
       case "loadDevices":
         //var payload = buildNewDevicesPayload();
         sendMessage(ws, "devices", devicesPayload);
+        connected = true;
         break;
 
       case "saveAutomation":
@@ -223,6 +227,7 @@ app.ws("/ws", async function (ws, req) {
 
   ws.on("close", function (code, message) {
     console.log("Disconnection: " + code + ", " + message);
+    connected = false;
     // clearInterval(pingTimer);
   });
 
