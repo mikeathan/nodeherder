@@ -1,5 +1,3 @@
-import { Static } from "vue";
-
 const devSocketUri = "ws://localhost:3000/ws";
 const productionSocketUri = "ws://" + document.location.host + "/ws";
 
@@ -15,43 +13,18 @@ function getSocketUri() {
   return productionSocketUri;
 }
 
-export function createSocket(url?: string): WebSocket {
+function createSocket(url?: string): WebSocket {
   return new WebSocket(url ?? getSocketUri());
 }
 
-export function sendMessage(ws: WebSocket, event: string, message: string) {
-  var payload = JSON.stringify({ type: event, payload: message });
-
-  if (ws.readyState !== ws.OPEN) {
-    let currentAttempt = 0;
-    const interval = setInterval(() => {
-      if (currentAttempt > maxNumberOfAttempts - 1) {
-        clearInterval(interval);
-        console.log(
-          "emit:",
-          event,
-          " failed. Maximum number of attempts exceeded."
-        );
-        return;
-      } else if (ws.readyState === ws.OPEN) {
-        clearInterval(interval);
-        ws.send(payload);
-      }
-      currentAttempt++;
-    }, intervalTimeMs);
-  } else {
-    ws.send(payload);
-  }
-}
-
-export class WsClient {
+class WsClient {
   private ws: WebSocket;
 
   constructor(ws: WebSocket) {
     this.ws = ws;
   }
 
-  emit(event: string, message: string) {
+  public emit(event: string, message: string) {
     var payload = JSON.stringify({ type: event, payload: message });
 
     if (this.ws.readyState !== this.ws.OPEN) {
@@ -76,19 +49,22 @@ export class WsClient {
     }
   }
 }
+
 export class WsClientService {
-  static ws: WsClient;
+  private static ws: WsClient;
   constructor() {}
 
-  static connect(url?: string): WsClient {
-    const ws = createSocket(url ?? getSocketUri());
-    this.ws = new WsClient(ws);
+  public emit(event: string, message: string) {
+    WsClientService.client().emit(event, message);
+  }
 
+  static create(builder: WsClientBuilder): WsClient {
+    this.ws = builder.build();
     return this.ws;
   }
 
-  static client(): WsClient {
-    return this.ws;
+  private static client(): WsClient {
+    return this.ws ?? createSocket(getSocketUri());
   }
 }
 
@@ -125,6 +101,15 @@ export class WsClientBuilder {
   withOnMessage(event: ((ev: MessageEvent) => any) | null): WsClientBuilder {
     this.onMessage = event;
     return this;
+  }
+
+  build2(): WsClientService {
+    const ws: WebSocket = new WebSocket(this.url);
+    ws.onopen = this.onOpen;
+    ws.onclose = this.onClose;
+    ws.onerror = this.onError;
+    ws.onmessage = this.onMessage;
+    return new WsClientService();
   }
 
   build(): WsClient {

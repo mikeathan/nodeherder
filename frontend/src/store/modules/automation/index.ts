@@ -13,18 +13,18 @@ export const AutomationModule: Module<AutomationModuleState, RootState> = {
   state: () => ({ automationsMap: {} as AutomationMap, initialized: false }),
 
   getters: {
-
     listAll: (state: AutomationModuleState) => (): Automations => {
       return Object.values(state.automationsMap) as Automations;
     },
 
-    initialized: (state: AutomationModuleState) => (): boolean => state.initialized,
+    initialized: (state: AutomationModuleState) => (): boolean =>
+      state.initialized,
 
     find:
       (state: AutomationModuleState) =>
-        (id: string): Automation => {
-          return state.automationsMap[id];
-        },
+      (id: string): Automation => {
+        return state.automationsMap[id];
+      },
   },
 
   mutations: {
@@ -61,24 +61,22 @@ export const AutomationModule: Module<AutomationModuleState, RootState> = {
       });
       state.initialized = true;
     },
+    save({ commit, dispatch, rootState }, automation: Automations) {
+      commit("add", automation);
+      dispatch(
+        "ws/emit",
+        { event: "saveAutomation", message: automation },
+        { root: true }
+      );
+    },
 
-    // TODO once wsclient store is finished
-    //   save({ commit, dispatch, rootState }, automation: Automations) {
-    //     commit("add", automation);
-    //     dispatch(
-    //       "ws/emit",
-    //       { event: "saveAutomation", message: automation },
-    //       { root: true }
-    //     );
-    //   },
-
-    //   delete({ commit, dispatch, rootState }, id: string) {
-    //     commit("delete", id);
-    //     dispatch(
-    //       "ws/emit",
-    //       { event: "deleteAutomation", message: { id: id } },
-    //       { root: true }
-    //     );
-    //   },
+    delete({ commit, dispatch, rootState }, id: string) {
+      commit("delete", id);
+      dispatch(
+        "ws/emit",
+        { event: "deleteAutomation", message: { id: id } },
+        { root: true }
+      );
+    },
   },
 };

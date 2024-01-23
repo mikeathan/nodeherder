@@ -7,6 +7,7 @@ import {
   DeviceMap,
   DeviceUpdate,
 } from "../../../types/device";
+import { KeyyValuePair } from "../../../types/types";
 
 export const DeviceModule: Module<DeviceModuleState, RootState> = {
   namespaced: true,
@@ -19,9 +20,9 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
     },
     find:
       (state: DeviceModuleState) =>
-        (id: string): Device => {
-          return state.deviceMap[id];
-        },
+      (id: string): Device => {
+        return state.deviceMap[id];
+      },
   },
 
   mutations: {
@@ -31,8 +32,7 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
 
     updateList(state: DeviceModuleState, devices: Devices) {
       devices.forEach((device: Device) => {
-        if (device.id in state.deviceMap)
-          state.deviceMap[device.id] = device;
+        if (device.id in state.deviceMap) state.deviceMap[device.id] = device;
       });
     },
 
@@ -75,26 +75,25 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
       commit("updateDevices", devices);
     },
 
-    // TODO once wsclient store is finished
+    setValue({ dispatch }, payload: KeyyValuePair<any>) {
+      dispatch(
+        "ws/emit",
+        { event: "deviceSetValue", message: payload },
+        { root: true }
+      );
+    },
 
-    // setValue({ dispatch }, payload) {
-    //   dispatch(
-    //     "ws/emit",
-    //     { event: "deviceSetValue", message: payload },
-    //     { root: true }
-    //   );
-    // },
+    rename({ dispatch }, { name, newName }) {
+      var payload = {
+        from: name,
+        to: newName,
+      };
 
-    // rename({ dispatch }, { name, newName }) {
-    //   var payload = {
-    //     from: name,
-    //     to: newName,
-    //   };
-    //   dispatch(
-    //     "ws/emit",
-    //     { event: "deviceRename", message: payload },
-    //     { root: true }
-    //   );
-    // },
+      dispatch(
+        "ws/emit",
+        { event: "deviceRename", message: payload },
+        { root: true }
+      );
+    },
   },
 };

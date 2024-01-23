@@ -3,6 +3,7 @@ import { createStore, useStore as baseUseStore, Store } from "vuex";
 import { RootState } from "./state";
 import { DeviceModule as devices } from "./modules/device/index";
 import { AutomationModule as automations } from "./modules/automation/index";
+import { WSClientModule as ws } from "./modules/ws/index";
 
 // https://blog.openreplay.com/integrate-vuex-and-typescript/
 
@@ -12,7 +13,8 @@ export const store_temp = createStore<RootState>({
   state: {},
   modules: {
     devices,
-    automations
+    automations,
+    ws,
   },
 });
 

@@ -1,5 +1,6 @@
-import { WsClient } from "./ws";
+import { WsClientService } from "./ws";
+
 export interface WSClientState {
-  ws: WsClient;
+  ws: WsClientService;
   connected: boolean;
 }

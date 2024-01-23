@@ -2,14 +2,7 @@ import { Module } from "vuex";
 import { RootState } from "../../state";
 import { WSClientState } from "./state";
 import { useNotification } from "@kyvg/vue3-notification";
-import {
-  createSocket,
-  sendMessage,
-  WsClientService,
-  WsClient,
-  WsClientBuilder,
-} from "./ws";
-import wsclient from "../wsclient";
+import { WsClientService, WsClientBuilder } from "./ws";
 const { notify } = useNotification();
 
 export const WSClientModule: Module<WSClientState, RootState> = {
@@ -21,13 +14,12 @@ export const WSClientModule: Module<WSClientState, RootState> = {
 
   mutations: {
     sendMessage(state: WSClientState, { event, message }) {
-      sendMessage(state.ws, event, message);
+      state.ws.emit(event, message);
     },
   },
 
   actions: {
     connect({ state, commit, rootState, dispatch }) {
-      // var ws = WsClientService.connect();
       const builder = WsClientBuilder.create();
       builder.withOnMessage((event) => {
         if (event == undefined) {
@@ -40,7 +32,6 @@ export const WSClientModule: Module<WSClientState, RootState> = {
         }
 
         const obj = JSON.parse(event.data);
-
         switch (obj.type) {
           case "deviceUpdated":
             commit("devices/update", obj.payload, { root: true });
@@ -96,7 +87,7 @@ export const WSClientModule: Module<WSClientState, RootState> = {
         console.error("ws error: " + event);
       });
 
-      state.ws = builder.build();
+      state.ws = WsClientService.create(builder);
       state.connected = true;
     },
 
@@ -105,26 +96,3 @@ export const WSClientModule: Module<WSClientState, RootState> = {
     },
   },
 };
-
-// function retryWithExponentialBackoff(fn, maxAttempts = 5, baseDelayMs = 1000) {
-//   let attempt = 1
-
-//   const execute = async () => {
-//     try {
-//       return await fn()
-//     } catch (error) {
-//       if (attempt >= maxAttempts) {
-//         throw error
-//       }
-
-//       const delayMs = baseDelayMs * 2 ** attempt
-//       console.log(`Retry attempt ${attempt} after ${delayMs}ms`)
-//       await new Promise((resolve) => setTimeout(resolve, delayMs))
-
-//       attempt++
-//       return execute()
-//     }
-//   }
-
-//   return execute()
-// }
