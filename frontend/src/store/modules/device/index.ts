@@ -57,9 +57,9 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
     },
 
     clear(state: DeviceModuleState) {
-      for (var id in state.deviceMap) {
-        delete state.deviceMap[id];
-      }
+      Object.entries(state.deviceMap).forEach(([key, value]) => {
+        delete state.deviceMap[key];
+      });
     },
   },
 

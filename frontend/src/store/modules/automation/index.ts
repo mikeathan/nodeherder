@@ -43,24 +43,24 @@ export const AutomationModule: Module<AutomationModuleState, RootState> = {
     },
 
     clear(state: AutomationModuleState) {
-      for (var id in state.automationsMap) {
-        if (id in state.automationsMap) {
-          delete state.automationsMap[id];
-        }
-      }
+      Object.entries(state.automationsMap).forEach(([key, value]) => {
+        delete state.automationsMap[key];
+      });
+
       state.initialized = false;
     },
   },
 
   actions: {
     init({ state, commit }, automations: Automations) {
-      commit("clear", []);
+      commit("clear", state);
 
       automations.forEach((item: Automation) => {
         state.automationsMap[item.id] = item;
       });
       state.initialized = true;
     },
+
     save({ commit, dispatch, rootState }, automation: Automations) {
       commit("add", automation);
       dispatch(

@@ -11,6 +11,12 @@ export const key: InjectionKey<Store<RootState>> = Symbol();
 
 export const store_temp = createStore<RootState>({
   state: {},
+  actions: {
+    cleanup({ commit }) {
+      commit("devices/clear");
+      commit("automations/clear");
+    },
+  },
   modules: {
     devices,
     automations,
