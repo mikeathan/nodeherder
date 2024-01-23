@@ -19,7 +19,7 @@ onBeforeMount(() => {
       <span class="me-1">
         <Status></Status>
       </span>
-      <notifications position="top right" />
+      <Notifications position="top right" />
       <RouterLink to="/">{{ title }}</RouterLink> |
       <RouterLink to="/viewer">Automations </RouterLink>
       <RouterView />
