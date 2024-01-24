@@ -1,23 +1,13 @@
-<script setup>
-import { useStore } from "vuex";
+<script setup lang="ts">
 import { computed, ref } from "vue";
-import DeviceAutomation from "./DeviceAutomation"
+import DeviceAutomation from "./DeviceAutomation.vue"
 import Selector from "../input/Selector.vue"
+import { store } from "../../store/index";
+import { Devices } from "../../types/device";
 
-import { useRouter } from 'vue-router'
-
-
-const router = useRouter()
-const store = useStore();
 const selectedDevice = ref("")
-
-const devices = computed(() => {
-
-
-    var devices = store.getters["devices/items"];
-
-
-    return devices;
+const devices = computed<Devices>(() => {
+    return store.getters["devices/listAll"] as Devices;
 })
 
 function cancel() {
@@ -27,14 +17,15 @@ function cancel() {
 
 function deviceList() {
 
+    const filtered = devices.value.map((d) => ({ [d.friendly_name]: d.id }))
 
     // todo:
     //var result = Object.keys(obj).map((key) => [key, obj[key]]);
-    var list = {}
-    for (const [key, device] of Object.entries(devices.value)) {
-        list[device.friendly_name] = device.id
-    }
-    return list
+    // var list = {}
+    // for (const [key, device] of Object.entries(devices.value)) {
+    //     list[device.friendly_name] = device.id
+    // }
+    return filtered
 }
 
 </script>
