@@ -18,13 +18,6 @@ function cancel() {
 function deviceList() {
 
     const filtered = devices.value.map((d) => ({ [d.friendly_name]: d.id }))
-
-    // todo:
-    //var result = Object.keys(obj).map((key) => [key, obj[key]]);
-    // var list = {}
-    // for (const [key, device] of Object.entries(devices.value)) {
-    //     list[device.friendly_name] = device.id
-    // }
     return filtered
 }
 

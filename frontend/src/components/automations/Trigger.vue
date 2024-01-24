@@ -1,19 +1,18 @@
 <script setup lang="ts">
-import { useStore } from "vuex";
+
 import { computed, watch, ref, PropType } from "vue";
 import { Condition, ExposeTrigger, ExposeTriggerWrapper, DefaultExposeTriggerWrapper } from "../../contracts/automations"
-import { getDeviceExposeNamesMap } from "../../modules/convert"
-
 import TriggerCondition from "./TriggerCondition.vue"
 import TriggerAction from "./TriggerAction.vue";
 import Selector from "../input/Selector.vue"
+import { store } from "../../store/index";
+import { Device } from "@/types/device";
 
 const props = defineProps({
     id: { type: String },
     trigger: { type: Object as PropType<ExposeTrigger> },
 });
 
-const store = useStore();
 const trigger = ref<ExposeTriggerWrapper>(new DefaultExposeTriggerWrapper())
 const emit = defineEmits(['save', 'delete'])
 
@@ -21,14 +20,14 @@ watch(
     () => props.trigger,
     () => {
 
-        let obj: ExposeTrigger = JSON.parse(JSON.stringify(props.trigger))
+        const obj: ExposeTrigger = JSON.parse(JSON.stringify(props.trigger))
         trigger.value = new ExposeTriggerWrapper(obj)
 
     }, { immediate: true }
 )
 
 const device = computed(() => {
-    return store.getters["devices/find"](props.id);
+    return store.getters["devices/find"](props.id) as Device;
 });
 
 const action = computed(() => {
@@ -51,7 +50,6 @@ function removeCondition(index: number): void {
     trigger.value.removeCondition(index)
 }
 
-
 function save() {
     emit('save', trigger.value.getTrigger())
 }
@@ -61,7 +59,9 @@ function remove() {
 }
 
 const exposesList = computed(() => {
-    return getDeviceExposeNamesMap(device.value)
+    return Object
+        .values(device.value.exposes)
+        .map((e) => ({ [e.name]: e.name }))
 })
 
 </script>

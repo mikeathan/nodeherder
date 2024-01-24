@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { useStore } from "vuex";
 import { computed, ref, watchEffect, watch } from "vue";
 import DataInput from "../input/DataInput.vue"
 import Selector from "../input/Selector.vue"
-import { getFeatureExposes, getFeatureDevices, createMapFromObject } from "../../modules/convert"
 import { OperationType, resolveObjectOperations } from "../../contracts/mappers/action-operation.resolver"
+import { store } from "../../store/index";
+import { Device, Devices, Expose } from "@/types/device";
+import { ExposeTriggerWrapper } from "@/contracts/automations";
 
 const props = defineProps({
     id: {
@@ -23,21 +24,32 @@ const props = defineProps({
     }
 });
 
+
+const emit = defineEmits<{
+    (e: 'update:id', id: string, name: string): void,
+    (e: 'update:property', property: string): void,
+    (e: 'update:data', data: any): void,
+    (e: 'update:delay', data: number): void,
+    (e: 'update:operation', data: number): void,
+}>()
+
 const id = ref<string>("")
 const property = ref<string>("");
 const data = ref<any>("");
 const delay = ref<number | null>(null);
 const operation = ref<number>(0)
-const showPresets = computed<boolean>(() => {
 
-    let device = store.getters["devices/find"](id.value);
+const showPresets = computed<boolean>(() => {
+    const device = store.getters["devices/find"](id.value) as Device;
     if (device === undefined) {
         return false
     }
+
     if (property.value === '') {
         return false
     }
-    let feature = device.exposes[property.value];
+
+    const feature = device.exposes[property.value];
     switch (+operation.value) {
         case OperationType.StepIncreaseOperation:
         case OperationType.StepDecreaseOperation:
@@ -48,6 +60,7 @@ const showPresets = computed<boolean>(() => {
             if (feature.presets != undefined) {
                 return true;
             }
+
             break
     }
 
@@ -55,20 +68,10 @@ const showPresets = computed<boolean>(() => {
 })
 
 
-const store = useStore();
-const emit = defineEmits<{
-    (e: 'update:id', id: string, name: string): void,
-    (e: 'update:property', property: string): void,
-    (e: 'update:data', data: any): void,
-    (e: 'update:delay', data: number): void,
-    (e: 'update:operation', data: number): void,
-}>()
 
 watchEffect(() => id.value = props.id);
 watchEffect(() => data.value = props.data);
 watchEffect(() => operation.value = props.operation);
-
-
 watch(
     () => props.delay,
     () => {
@@ -79,6 +82,7 @@ watch(
     },
     { immediate: true }
 );
+
 watch(
     () => props.property,
     () => {
@@ -92,13 +96,12 @@ const device = computed(() => {
 });
 
 const features = computed(() => {
-
-    var device = store.getters["devices/find"](id.value);
+    var device = store.getters["devices/find"](id.value) as Device;
     if (device == undefined) {
         return []
     }
 
-    return getFeatureExposes(device)
+    return Object.values(device.exposes).filter(f => f.properties != undefined) as Array<Expose>
 });
 
 function propertyUpdated(event: any) {
@@ -130,14 +133,10 @@ const feature = computed(() => {
     if (device == undefined) {
         return []
     }
-    if (device.exposes[property.value] == undefined) {
-
-        return []
-    }
-
     return device.exposes[property.value];
 
 });
+
 // NOTE
 // its messy but we need it for now as device is not a defined class
 // keep it for now until refactoring 
@@ -159,7 +158,7 @@ function delayUpdated(event: number) {
 
 function deviceIdUpdated(event: string) {
     id.value = event
-    var device = store.getters["devices/find"](id.value);
+    var device = store.getters["devices/find"](id.value) as Device;
     if (device != undefined) {
         emit('update:id', id.value, device.friendly_name)
     }
@@ -172,14 +171,16 @@ function presetUpdated(event: string) {
 }
 
 const featureDevices = computed(() => {
-    var devices = store.getters["devices/items"];
-    return getFeatureDevices(devices)
+    var devices = store.getters["devices/listAll"]() as Devices;
 
-    // return createMapFromObject(features, "friendly_name", "id")
+    return Object.entries(devices)
+        .filter(([key, value]) => value.properties != null)
+        .map((k) => k[1])
 });
 
 const deviceList = computed(() => {
-    return createMapFromObject(featureDevices.value, "friendly_name", "id")
+    return Object.assign({}, ...featureDevices.value.map(f => ({ [f.friendly_name]: f.id })))
+
 })
 
 function getPlaceholder(type: string): string {
@@ -191,11 +192,11 @@ function getPlaceholder(type: string): string {
 }
 
 const getFeatureNames = computed(() => {
-    return createMapFromObject(features.value, "name", "name")
+    return Object.assign({}, ...features.value
+        .map(f => ({ [f.name]: f.name })))
 })
 
 const getItems = computed(() => {
-
     switch (feature.value.type) {
         case "binary":
         case "enum":
@@ -207,7 +208,7 @@ const getItems = computed(() => {
 
 const getPresets = computed(() => {
     if (feature.value.presets == undefined) {
-        return {}
+        return []
     }
 
     return feature.value.presets;

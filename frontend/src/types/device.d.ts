@@ -18,7 +18,7 @@ export type Expose = {
   description: string;
   unit: string;
   data: any | null;
-  type: string | null;
+  type: string;
   attributes: Nullable<KeyyValuePair<any>>;
   presets: Nullable<KeyyValuePair<any>>;
   properties: Nullable<KeyyValuePair<any>>;

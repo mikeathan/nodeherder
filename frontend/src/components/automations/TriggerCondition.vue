@@ -1,10 +1,10 @@
 <script setup lang="ts">
 
 import { ref, computed, watch } from 'vue'
-import { useStore } from "vuex";
 import DataInput from "../input/DataInput.vue"
-import { getDeviceExposeNames } from "../../modules/convert"
 import { EqualityOperators } from "../../contracts/automations"
+import { store } from "../../store/index";
+import { Device } from "@/types/device";
 
 const props = defineProps({
     id: {
@@ -26,7 +26,6 @@ const props = defineProps({
     }
 });
 
-const store = useStore()
 const data = ref<any | null>(null)
 const operator = ref<string>('')
 const name = ref<string>('')
@@ -38,11 +37,11 @@ const emit = defineEmits<{
 }>()
 
 const device = computed(() => {
-    return store.getters["devices/find"](props.id);
+    return store.getters["devices/find"](props.id) as Device;
 });
 
 const exposes = computed(() => {
-    return getDeviceExposeNames(device.value);
+    return Object.keys(device.value.exposes) // CHECK that is correct and we dont eed to return expose.name instead
 })
 
 const feature = computed(() => {

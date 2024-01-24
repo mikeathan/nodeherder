@@ -1,21 +1,19 @@
 <script setup lang="ts">
-import { useStore } from "vuex";
 import { ref, watch } from "vue";
 import { useRouter } from 'vue-router'
 import Trigger from "./Trigger.vue"
 import DataInput from "../input/DataInput.vue"
 import { ExposeTrigger, DeviceTrigger } from "../../contracts/automations"
 
-import { useStore_temp } from '../../store/index'
-import { Device } from "../../types/device";
-
+import { store } from "../../store/index";
+import { Device } from "@/types/device";
+import { Automation } from "@/types/automation";
 const emit = defineEmits(['cancel'])
 
 const props = defineProps({
     id: String,
 });
 
-const store = useStore();
 const router = useRouter()
 const automation = ref(new DeviceTrigger())
 const selectedTrigger = ref<ExposeTrigger | null>(null)
@@ -24,14 +22,7 @@ const selectedTrigger = ref<ExposeTrigger | null>(null)
 watch(
     () => props.id,
     () => {
-
-        // const store2 = useStore_temp()
-        // const d = store.getters['devices/find'](props.id)
-        // store2.commit('devices/add', d)
-
-        // const list = store2.getters['devices/list']()
-        // console.log(list, typeof list)
-        var sourceAutomation = store.getters["automations/find"](props.id);
+        var sourceAutomation = store.getters["automations/find"](props.id) as Device;
         if (sourceAutomation != undefined) {
             // make a deep copy to make it not reactive
             automation.value = JSON.parse(JSON.stringify(sourceAutomation))
@@ -41,7 +32,7 @@ watch(
         } else {
 
             automation.value = new DeviceTrigger()
-            var device = store.getters["devices/find"](props.id);
+            var device = store.getters["devices/find"](props.id) as Device;
             if (device != undefined) {
                 automation.value.id = device.id
                 automation.value.friendlyname = device.friendly_name

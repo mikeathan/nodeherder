@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
-
 import { RouterLink } from "vue-router";
-
 import { store } from "../../store/index";
 import { Automations } from "@/types/automation";
+
 const automations = computed(() => {
 
     if (!store.getters["automations/initialized"]() as Boolean) {
@@ -25,13 +24,13 @@ function onDeleteAutomationClick(id: string): void {
 
 function saveAutomation(id: string): void {
     // emit save event
-    var values = Object.values(automations.value);
-    var res = values.filter(k => k.id == id);
-    if (res.length != 0) {
-        store.dispatch('automations/save', res[0]);
+    var values = Object.values(automations.value).filter(k => k.id == id);
+    if (values.length != 0) {
+        store.dispatch('automations/save', values[0]);
         console.log("save automation: Id", id);
     }
 }
+
 </script>
 
 <template>
@@ -49,7 +48,7 @@ function saveAutomation(id: string): void {
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="(automation, name, index) in automations" :item="automation">
+                <tr v-for="(automation, index) in automations" :item="automation">
                     <th scope="row">{{ index + 1 }}</th>
                     <td>
                         <RouterLink :to="`/editor/${automation.id}`">{{
