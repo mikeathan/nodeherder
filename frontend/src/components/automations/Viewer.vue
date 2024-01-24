@@ -1,19 +1,19 @@
-<script setup>
-import { useStore } from "vuex";
+<script setup lang="ts">
 import { computed } from "vue";
 
 import { RouterLink } from "vue-router";
 
-const store = useStore();
+import { store } from "../../store/index";
+import { Automations } from "@/types/automation";
 const automations = computed(() => {
 
-    if (!store.getters["automations/isInitialized"]) {
+    if (!store.getters["automations/initialized"]() as Boolean) {
         store.dispatch('ws/emit', { event: "loadAutomations" });
     }
-    return store.getters["automations/items"]
+    return store.getters["automations/listAll"]() as Automations
 });
 
-function onDeleteAutomationClick(id) {
+function onDeleteAutomationClick(id: string): void {
     // emit delete event
     store.dispatch('ws/emit', {
         event: "deleteAutomation", message: {
@@ -23,7 +23,7 @@ function onDeleteAutomationClick(id) {
     console.log("delete automation: Id", id);
 }
 
-function saveAutomation(id) {
+function saveAutomation(id: string): void {
     // emit save event
     var values = Object.values(automations.value);
     var res = values.filter(k => k.id == id);
