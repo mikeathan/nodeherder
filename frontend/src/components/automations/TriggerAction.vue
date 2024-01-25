@@ -6,6 +6,7 @@ import { OperationType, resolveObjectOperations } from "../../contracts/mappers/
 import { store } from "../../store/index";
 import { Device, Devices, Expose } from "@/types/device";
 import { ExposeTriggerWrapper } from "@/contracts/automations";
+import { KeyyValuePair } from "@/types/types";
 
 const props = defineProps({
     id: {
@@ -39,6 +40,79 @@ const data = ref<any>("");
 const delay = ref<number | null>(null);
 const operation = ref<number>(0)
 
+watchEffect(() => id.value = props.id);
+watchEffect(() => data.value = props.data);
+watchEffect(() => operation.value = props.operation);
+watch(
+    () => props.delay,
+    () => {
+        delay.value = props.delay
+        if (delay.value != null && delay.value >= 1000) {
+            delay.value /= 60000 // convert to minutes
+        }
+    },
+    { immediate: true }
+);
+
+watch(
+    () => props.property,
+    () => {
+        property.value = props.property == null ? "" : props.property
+    },
+    { immediate: true }
+);
+
+const device = computed(() => {
+    return store.getters["devices/find"](id.value);
+});
+
+const deviceFeatureList = computed(() => {
+    var devices = store.getters["devices/listAll"]() as Devices;
+
+    let list: KeyyValuePair<string> = {}
+    for (const [key, device] of Object.entries(devices)) {
+        for (const [key, expose] of Object.entries(device.exposes)) {
+            if (expose.properties != undefined) {
+                list[device.friendly_name] = device.id
+                break;
+            }
+        }
+    }
+
+    return list
+    // return Object.assign({}, ...featureDevices.value.map(f => ({ [f.friendly_name]: f.id })))
+})
+
+const getFeatureNames = computed(() => {
+    var device = store.getters["devices/find"](id.value) as Device;
+    if (device == undefined) {
+        return []
+    }
+
+    return Object.assign({},
+        ...Object.values(device.exposes)
+            .filter(f => f.properties != undefined)
+            .map(f => ({ [f.name]: f.name })))
+})
+
+const getItems = computed(() => {
+    switch (feature.value.type) {
+        case "binary":
+        case "enum":
+            return Object.values(feature.value.properties)
+        default:
+            return null
+    }
+})
+
+const getPresets = computed(() => {
+    if (feature.value.presets == undefined) {
+        return []
+    }
+
+    return feature.value.presets;
+})
+
 const showPresets = computed<boolean>(() => {
     const device = store.getters["devices/find"](id.value) as Device;
     if (device === undefined) {
@@ -68,40 +142,15 @@ const showPresets = computed<boolean>(() => {
 })
 
 
-
-watchEffect(() => id.value = props.id);
-watchEffect(() => data.value = props.data);
-watchEffect(() => operation.value = props.operation);
-watch(
-    () => props.delay,
-    () => {
-        delay.value = props.delay
-        if (delay.value != null && delay.value >= 1000) {
-            delay.value /= 60000 // convert to minutes
-        }
-    },
-    { immediate: true }
-);
-
-watch(
-    () => props.property,
-    () => {
-        property.value = props.property == null ? "" : props.property
-    },
-    { immediate: true }
-);
-
-const device = computed(() => {
-    return store.getters["devices/find"](id.value);
-});
-
-const features = computed(() => {
-    var device = store.getters["devices/find"](id.value) as Device;
+const feature = computed(() => {
+    if (property.value == '') {
+        return []
+    }
+    var device = store.getters["devices/find"](id.value);
     if (device == undefined) {
         return []
     }
-
-    return Object.values(device.exposes).filter(f => f.properties != undefined) as Array<Expose>
+    return device.exposes[property.value];
 });
 
 function propertyUpdated(event: any) {
@@ -124,18 +173,8 @@ function propertyUpdated(event: any) {
     emit('update:property', property.value)
 }
 
-const feature = computed(() => {
-    if (property.value == null) {
-        return []
-    }
 
-    var device = store.getters["devices/find"](id.value);
-    if (device == undefined) {
-        return []
-    }
-    return device.exposes[property.value];
 
-});
 
 // NOTE
 // its messy but we need it for now as device is not a defined class
@@ -170,34 +209,6 @@ function presetUpdated(event: string) {
     emit('update:data', value)
 }
 
-const featureDevices = computed(() => {
-    var devices = store.getters["devices/listAll"]() as Devices;
-    var list = []
-    for (const [key, device] of Object.entries(devices)) {
-        for (const [key, expose] of Object.entries(device.exposes)) {
-            if (expose.properties != undefined) {
-                list.push(device)
-                break;
-            }
-        }
-    }
-
-    const dv = Object.values(devices)
-
-    const ev = dv.filter((e) => e.exposes)
-    const f = Object.entries().filter((v) => v.properties != null)
-
-    return list
-
-
-    return Object.entries(devices)
-        .filter(([key, value]) => value.properties == null)
-        .map((k) => k[1])
-});
-
-const deviceList = computed(() => {
-    return Object.assign({}, ...featureDevices.value.map(f => ({ [f.friendly_name]: f.id })))
-})
 
 function getPlaceholder(type: string): string {
     if (type == 'binary' || type == 'enum') {
@@ -207,36 +218,12 @@ function getPlaceholder(type: string): string {
     return 'Value'
 }
 
-const getFeatureNames = computed(() => {
-    return Object.assign({}, ...features.value
-        .map(f => ({ [f.name]: f.name })))
-})
-
-const getItems = computed(() => {
-    switch (feature.value.type) {
-        case "binary":
-        case "enum":
-            return Object.values(feature.value.properties)
-        default:
-            return null
-    }
-})
-
-const getPresets = computed(() => {
-    if (feature.value.presets == undefined) {
-        return []
-    }
-
-    return feature.value.presets;
-})
-
 </script>
 
 <template>
     <div class="row">
-        {{ featureDevices }}
         <div v-if="getPresets" class="col-xl-3 col-md-4">
-            <Selector placeholder=" Select device" :items="deviceList" :value="id" alignment="center"
+            <Selector placeholder=" Select device" :items="deviceFeatureList" :value="id" alignment="center"
                 @update:data="deviceIdUpdated" :disabled="id != ''">
             </Selector>
         </div>
