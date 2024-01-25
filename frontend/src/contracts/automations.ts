@@ -85,6 +85,12 @@ export class ExposeTriggerWrapper {
     );
   }
 
+  removeConditionByValue(condition: Condition): void {
+    this.trigger.conditions = this.trigger.conditions.filter(
+      (c) => c != condition
+    );
+  }
+
   public setIdx(idx: number): void {
     this.trigger.idx = idx;
   }

@@ -46,8 +46,8 @@ function addCondition(): void {
     trigger.value.addCondition(new Condition())
 }
 
-function removeCondition(index: number): void {
-    trigger.value.removeCondition(index)
+function removeCondition(index: number, condition: Condition): void {
+    trigger.value.removeConditionByValue(condition)
 }
 
 function save() {
@@ -110,7 +110,7 @@ const exposesList = computed(() => {
                             </TriggerCondition>
                         </th>
                         <td>
-                            <span class="fa fa-trash-alt fa-sm" @click="removeCondition(condition.idx)">
+                            <span class="fa fa-trash-alt fa-sm" @click="removeCondition(condition.idx, condition)">
                             </span>
                         </td>
                     </tr>
