@@ -172,15 +172,31 @@ function presetUpdated(event: string) {
 
 const featureDevices = computed(() => {
     var devices = store.getters["devices/listAll"]() as Devices;
+    var list = []
+    for (const [key, device] of Object.entries(devices)) {
+        for (const [key, expose] of Object.entries(device.exposes)) {
+            if (expose.properties != undefined) {
+                list.push(device)
+                break;
+            }
+        }
+    }
+
+    const dv = Object.values(devices)
+
+    const ev = dv.filter((e) => e.exposes)
+    const f = Object.entries().filter((v) => v.properties != null)
+
+    return list
+
 
     return Object.entries(devices)
-        .filter(([key, value]) => value.properties != null)
+        .filter(([key, value]) => value.properties == null)
         .map((k) => k[1])
 });
 
 const deviceList = computed(() => {
     return Object.assign({}, ...featureDevices.value.map(f => ({ [f.friendly_name]: f.id })))
-
 })
 
 function getPlaceholder(type: string): string {
@@ -218,6 +234,7 @@ const getPresets = computed(() => {
 
 <template>
     <div class="row">
+        {{ featureDevices }}
         <div v-if="getPresets" class="col-xl-3 col-md-4">
             <Selector placeholder=" Select device" :items="deviceList" :value="id" alignment="center"
                 @update:data="deviceIdUpdated" :disabled="id != ''">
