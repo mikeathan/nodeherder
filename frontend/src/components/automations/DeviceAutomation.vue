@@ -7,7 +7,8 @@ import { ExposeTrigger, DeviceTrigger } from "../../contracts/automations"
 
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
-import { Automation } from "@/types/automation";
+import { Automation } from "@/types/automation/automation";
+
 const emit = defineEmits(['cancel'])
 
 const props = defineProps({
@@ -60,7 +61,7 @@ function cancel() {
 }
 
 function saveAutomation() {
-    store.dispatch('automations/save', automation.value);
+    store.dispatch('automations/save', automation.value as Automation);
     router.push("/viewer")
 }
 
