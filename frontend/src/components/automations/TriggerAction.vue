@@ -4,8 +4,7 @@ import DataInput from "../input/DataInput.vue"
 import Selector from "../input/Selector.vue"
 import { OperationType, resolveObjectOperations } from "../../types/automation/operations"
 import { store } from "../../store/index";
-import { Device, Devices, Expose } from "@/types/device";
-import { ExposeTriggerWrapper } from "@/contracts/automations";
+import { Device, Devices } from "@/types/device";
 import { KeyyValuePair } from "@/types/types";
 
 const props = defineProps({
