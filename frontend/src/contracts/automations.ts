@@ -48,9 +48,6 @@ export class ExposeTriggerWrapper {
 
   constructor(trigger: ExposeTrigger) {
     this.trigger = trigger;
-    this.trigger.conditions.forEach(function callback(condition, index) {
-      condition.idx = index + 1;
-    });
   }
 
   getTrigger(): ExposeTrigger {
@@ -71,18 +68,6 @@ export class ExposeTriggerWrapper {
 
   addCondition(condition: Condition) {
     this.trigger.conditions.push(condition);
-  }
-
-  removeLastCondition(): void {
-    if (this.trigger.conditions.length >= 0) {
-      this.trigger.conditions = this.trigger.conditions.slice(0, -1);
-    }
-  }
-
-  removeCondition(index: number): void {
-    this.trigger.conditions = this.trigger.conditions.filter(
-      (k) => k.idx != index
-    );
   }
 
   removeConditionByValue(condition: Condition): void {
@@ -205,13 +190,11 @@ export class Condition {
   name: string;
   equality: string;
   value: any | null;
-  idx: number;
 
   constructor() {
     this.name = "";
     this.equality = EqualityOperators[0];
     this.value = "";
-    this.idx = 0;
   }
 }
 

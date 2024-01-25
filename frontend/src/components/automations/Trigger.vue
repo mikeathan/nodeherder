@@ -46,7 +46,7 @@ function addCondition(): void {
     trigger.value.addCondition(new Condition())
 }
 
-function removeCondition(index: number, condition: Condition): void {
+function removeCondition(condition: Condition): void {
     trigger.value.removeConditionByValue(condition)
 }
 
@@ -102,15 +102,14 @@ const exposesList = computed(() => {
                 <tbody v-for="(condition, index) in  trigger.getConditions() " :item="condition">
                     <tr>
                         <th scope="w-25">
-                            <TriggerCondition :id="props.id" :index="condition.idx" :name="condition.name"
-                                :operator="condition.equality" :key="condition.idx" :data="condition.value"
-                                @update:name="newValue => condition.name = newValue"
+                            <TriggerCondition :id="props.id" :name="condition.name" :operator="condition.equality"
+                                :data="condition.value" @update:name="newValue => condition.name = newValue"
                                 @update:value="newValue => condition.value = newValue"
                                 @update:operator="newValue => condition.equality = newValue">
                             </TriggerCondition>
                         </th>
                         <td>
-                            <span class="fa fa-trash-alt fa-sm" @click="removeCondition(condition.idx, condition)">
+                            <span class="fa fa-trash-alt fa-sm" @click="removeCondition(condition)">
                             </span>
                         </td>
                     </tr>
