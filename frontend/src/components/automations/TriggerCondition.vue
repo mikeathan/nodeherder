@@ -18,12 +18,7 @@ const props = defineProps({
         type: String,
         default: "",
     },
-    data: null,
-    index: {
-        type: Number,
-        required: true,
-        default: -1,
-    }
+    data: null
 });
 
 const data = ref<any | null>(null)
