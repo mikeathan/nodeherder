@@ -2,7 +2,7 @@
 import { computed, ref, watchEffect, watch } from "vue";
 import DataInput from "../input/DataInput.vue"
 import Selector from "../input/Selector.vue"
-import { OperationType, resolveObjectOperations } from "../../types/automation/operations"
+import { OperationType, resolveObjectOperations } from "../../contracts/operations"
 import { store } from "../../store/index";
 import { Device, Devices } from "@/types/device";
 import { KeyyValuePair } from "@/types/types";

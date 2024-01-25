@@ -1,4 +1,4 @@
-import { AutomationMap } from "../../../types/automation/automation";
+import { AutomationMap } from "../../../types/automation";
 
 export interface AutomationModuleState {
   automationsMap: AutomationMap;

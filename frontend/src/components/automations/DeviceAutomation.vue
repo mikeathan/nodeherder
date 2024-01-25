@@ -7,7 +7,7 @@ import { ExposeTrigger, DeviceTrigger } from "../../contracts/automations"
 
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
-import { Automation } from "@/types/automation/automation";
+import { Automation } from "@/types/automation";
 
 const emit = defineEmits(['cancel'])
 

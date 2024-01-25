@@ -3,7 +3,7 @@ import { describe, expect, test } from "@jest/globals";
 import { default as automation_data1 } from "../../../../core/configs/automations/0x001788010d7d9d3f.json";
 import { default as automation_data2 } from "../../../../core/configs/automations/0xa4c13894070052fc.json";
 
-import { Automation } from "../../types/automation/automation";
+import { Automation } from "../../types/automation";
 
 test("roundtrip serializing automation data", () => {
   automationData1IsEqualToDeserializedObject();

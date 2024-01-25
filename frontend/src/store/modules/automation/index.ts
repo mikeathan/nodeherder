@@ -5,7 +5,7 @@ import {
   AutomationMap,
   Automation,
   Automations,
-} from "../../../types/automation/automation";
+} from "../../../types/automation";
 
 export const AutomationModule: Module<AutomationModuleState, RootState> = {
   namespaced: true,
