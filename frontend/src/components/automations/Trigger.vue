@@ -59,9 +59,9 @@ function remove() {
 }
 
 const exposesList = computed(() => {
-    return Object
+    return Object.assign({}, ...Object
         .values(device.value.exposes)
-        .map((e) => ({ [e.name]: e.name }))
+        .map((e) => ({ [e.name]: e.name })))
 })
 
 </script>
