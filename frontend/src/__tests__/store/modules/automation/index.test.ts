@@ -4,7 +4,10 @@ import { store } from "../../../../store/index";
 import { default as automation1 } from "../../../../../../core/configs/automations/0x001788010d7d9d3f.json";
 import { default as automation2 } from "../../../../../../core/configs/automations/0xa4c13894070052fc.json";
 
-import { Automation, Automations } from "../../../../types/automation";
+import {
+  Automation,
+  Automations,
+} from "../../../../types/automation/automation";
 
 test("test automations/find can load an inserted automation", () => {
   // add them to store

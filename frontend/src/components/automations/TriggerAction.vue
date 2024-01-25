@@ -2,7 +2,7 @@
 import { computed, ref, watchEffect, watch } from "vue";
 import DataInput from "../input/DataInput.vue"
 import Selector from "../input/Selector.vue"
-import { OperationType, resolveObjectOperations } from "../../contracts/mappers/action-operation.resolver"
+import { OperationType, resolveObjectOperations } from "../../types/automation/operations"
 import { store } from "../../store/index";
 import { Device, Devices, Expose } from "@/types/device";
 import { ExposeTriggerWrapper } from "@/contracts/automations";

@@ -30,38 +30,11 @@ TEST:
 
 curl -X POST http://192.168.50.69:4100/collect -H 'Content-Type: application/json' -d '{"label":"weather node 1","temperature":45.6,"Timestamp":"2023-03-19T19:57:28.961193655Z"}'
 
-TODO:
-
-- worker pool that notify consumers when task added ??
-- on startup get mqtt device state from z2m and build the connected devices
-  register to mqtt state topic
-
 gas sensor
 42["node_data_updated","{\"3\": {\"label\": \"gas_monitor\", \"node_id\": \"3\", \"temperature\": \"22.2 *C\", \"humidity\": \"33 %RH\", \"air_quality_score\": \"95 %\", \"PM1.0\": \"1 ug/m3 (ultrafine particles)\", \"PM2.5\": \"1 ug/m3 (combustion particles, organic compounds, metal)\", \"PM10.0\": \"2 ug/m3 (dust, pollen, mould spores)\", \"timestamp\": 1691517687.940329}}"]
 
 enviro weather
 {"nickname": "enviro_node", "uid": "e661410403554934", "timestamp": "2023-08-09T16:50:12Z", "readings": {"temperature": 27.38, "humidity": 45.48, "pressure": 1003.16, "luminance": 54.98, "wind_speed": 0, "rain": 0, "rain_per_second": 0.0, "wind_direction": 90, "voltage": 0.0}, "model": "weather"}
-
-TODO:
-Automation
-
-can only do timer/device and webrequests
-Devices can be done only once we can send mqqt messages o devices that allow setting
-Trigger
-Timer
-Device
-
-Condition
-Timer
-value
-Sensor
-value
-
-Action
-Device
-sensor set something
-Web request
-post payload
 
     icons
 
@@ -80,21 +53,30 @@ post payload
 
 TODO:
 
-add type in device.expose for http data 
-add refresh functionality to ping mqtt device for when we just started server ?
-add rename functionality
-add remove /force remove/block functionality
-add configure exposes device functionality
+## Deployment
 
-http polling devices support
-add more ws operation responses - eg success or error
-test autiomation loading. configureAction for sanitizing numeric type data
-do we need to unsubsribe from removed/renamed topic ??
-Test new logic in RegisterBridge
-backup automations
+- add build makefile
+- deploy to docker
 
-###### frontend
+## Backend
 
-add type in device.expose for http data 
-add functionality to enable/disalbe a trigger
-add log window in frontend
+- add type in device.expose for http data
+- add refresh functionality to ping mqtt device for when we just started server an we want to awake devices ?
+- add remove /force remove/block functionality
+- add configure exposes device functionality
+
+- add auth0
+- add support for https and websocket TLS
+
+- http polling devices support
+- add more ws operation responses - eg success or error
+- test autiomation loading. configureAction for sanitizing numeric type data
+- do we need to unsubsribe from removed/renamed topic ??
+- Test new logic in RegisterBridge
+- backup automations
+
+## frontend
+
+- add type in device.expose for http data
+- add functionality to enable/disalbe a trigger
+- add log window in frontend

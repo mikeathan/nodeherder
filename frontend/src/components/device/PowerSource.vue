@@ -1,5 +1,5 @@
 <script setup>
-import { getPowerSourceIcon } from "../../modules/sensors/device-formatter";
+import { getPowerSourceIcon } from "../../modules/sensors/device.formatter";
 const props = defineProps({
   power_source: String,
   value: Number,

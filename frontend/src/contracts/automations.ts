@@ -3,7 +3,7 @@ import {
   AutomationTrigger,
   AutomationTriggerCondition,
   AutomationTriggerAction,
-} from "../types/automation";
+} from "../types/automation/automation";
 
 export interface DeviceAutomation extends Automation {}
 export interface DeviceAutomationTrigger extends AutomationTrigger {}

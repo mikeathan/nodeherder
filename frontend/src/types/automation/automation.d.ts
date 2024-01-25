@@ -1,4 +1,4 @@
-import { KeyyValuePair, Nullable } from "./types";
+import { KeyyValuePair, Nullable } from "../types";
 export type Automations = Array<Automation>;
 export type AutomationMap = KeyyValuePair<Automation>;
 

@@ -1,4 +1,6 @@
-const typeToClassMapsensor = {
+import { KeyyValuePair } from "../../types/types";
+
+const typeToClassMapsensor: KeyyValuePair<string> = {
   humidity: "text-info fa-tint",
   illuminance: "fa-sun",
   pressure: "fa-cloud-download-alt",
@@ -39,7 +41,7 @@ const typeToClassMapsensor = {
   presence: "fa-light fa-person", // <i class="fa-solid fa-person"></i>
 };
 
-const sensorUnits = {
+const sensorUnits: KeyyValuePair<string> = {
   temperature: "°C",
   pressure: "hPa",
   humidity: "%",
@@ -48,27 +50,27 @@ const sensorUnits = {
   illuminance_lux: "lux",
 };
 
-export function getSensorUnit(sensor) {
-  if (sensorUnits[sensor] == undefined) {
+export function getSensorUnit(sensor: string): string {
+  if (sensor in sensorUnits === false) {
     return "";
   }
-  return sensorUnits[sensor];
+  return sensorUnits[sensor] as string;
 }
-export function getSensorName(sensor) {
+
+export function getSensorName(sensor: string): string {
   return sensor.charAt(0).toUpperCase() + sensor.slice(1); // TODO: load name  from resources file
 }
 
-
-export function getSensorValue(sensor, value, unit) {
+export function getSensorValue(value: any): any {
   if (typeof value == "boolean" || typeof value == "string") {
     return value;
   }
 
   // todo : dont format integer values
-  return parseFloat(value.toFixed(1))
+  return parseFloat(value.toFixed(1));
 }
 
-export function getSensorIcon(sensor, value) {
+export function getSensorIcon(sensor: string, value: number): string {
   switch (sensor) {
     case "device_temperature":
     case "temperature":
@@ -80,7 +82,7 @@ export function getSensorIcon(sensor, value) {
   return typeToClassMapsensor[sensor];
 }
 
-const getTemperatureIcon = (temperature) => {
+const getTemperatureIcon = (temperature: number): string => {
   let icon = "fa-thermometer-empty";
   if (temperature >= 30) {
     icon = "fa-thermometer-full";

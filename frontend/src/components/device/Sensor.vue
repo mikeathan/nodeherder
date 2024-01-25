@@ -64,8 +64,9 @@ function hasBinaryFeatures() {
 }
 
 function getValue() {
-    return getSensorValue(props.expose.name, props.expose.data, props.expose.unit)
+    return getSensorValue(props.expose.data)
 }
+
 function getUnit() {
     if (props.expose.unit == undefined) {
         return getSensorUnit(props.expose.name)

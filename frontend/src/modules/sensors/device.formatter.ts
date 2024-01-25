@@ -1,4 +1,7 @@
-export function getPowerSourceIcon(power_source, value) {
+export function getPowerSourceIcon(
+  power_source: string,
+  value: number
+): string {
   if (power_source == "") {
     return "";
   }
@@ -7,8 +10,8 @@ export function getPowerSourceIcon(power_source, value) {
     return "fa fa-plug";
   }
 
-  var batteryClass = "";
-  var battery = value;
+  let batteryClass: string = "";
+  const battery: number = value;
   if (battery == undefined || battery >= 85) {
     batteryClass += " fa-battery-full";
   } else if (battery >= 75) {
