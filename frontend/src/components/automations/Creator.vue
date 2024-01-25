@@ -6,19 +6,13 @@ import { store } from "../../store/index";
 import { Devices } from "../../types/device";
 
 const selectedDevice = ref("")
-const devices = computed<Devices>(() => {
-    return store.getters["devices/listAll"] as Devices;
+const deviceList = computed(() => {
+    const devices = store.getters["devices/listAll"]() as Devices;
+    return Object.assign({}, ...devices.map((d) => ({ [d.friendly_name]: d.id })))
 })
 
-function cancel() {
+function cancel(): void {
     selectedDevice.value = ""
-}
-
-
-function deviceList() {
-
-    const filtered = devices.value.map((d) => ({ [d.friendly_name]: d.id }))
-    return filtered
 }
 
 </script>
@@ -27,7 +21,7 @@ function deviceList() {
 
         <h3>Create new Automation</h3>
         <div class="col-xl-5 col-md-3" v-if="selectedDevice == ''">
-            <Selector placeholder="Select device" :items="deviceList()" :value="selectedDevice" alignment="left"
+            <Selector placeholder="Select device" :items="deviceList" :value="selectedDevice" alignment="left"
                 @update:data="e => selectedDevice = e" :disabled="selectedDevice != ''"></Selector>
         </div>
         <div v-else>
