@@ -1,28 +1,32 @@
 <script setup lang="ts">
 
 import { computed, watch, ref, PropType } from "vue";
-import { Condition, ExposeTrigger, ExposeTriggerWrapper, DefaultExposeTriggerWrapper } from "../../contracts/automations"
+
 import TriggerCondition from "./TriggerCondition.vue"
 import TriggerAction from "./TriggerAction.vue";
 import Selector from "../input/Selector.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
-import { Automation, AutomationTrigger } from "@/types/automation";
+
+import { AutomationTrigger, AutomationTriggerCondition } from "@/types/automation";
+
+//import { Condition, ExposeTrigger, ExposeTriggerWrapper, DefaultExposeTriggerWrapper } from "../../contracts/automations"
+import { EditableAutomationTrigger, TriggerConditionClass } from "../../contracts/automations_test"
 
 const props = defineProps({
     id: { type: String },
     trigger: { type: Object as PropType<AutomationTrigger> },
 });
 
-const trigger = ref<ExposeTriggerWrapper>(new DefaultExposeTriggerWrapper())
+const trigger = ref<EditableAutomationTrigger>(new EditableAutomationTrigger({} as AutomationTrigger))
 const emit = defineEmits(['save', 'delete'])
 
 watch(
     () => props.trigger,
     () => {
 
-        const obj: ExposeTrigger = JSON.parse(JSON.stringify(props.trigger))
-        trigger.value = new ExposeTriggerWrapper(obj)
+        const obj: AutomationTrigger = JSON.parse(JSON.stringify(props.trigger))
+        trigger.value = new EditableAutomationTrigger(obj)
 
     }, { immediate: true }
 )
@@ -32,7 +36,7 @@ const device = computed(() => {
 });
 
 const action = computed(() => {
-    return trigger.value.action()
+    return trigger.value.getAction()
 });
 
 function addAction(): void {
@@ -44,10 +48,10 @@ function removeAction(event: Event): void {
 }
 
 function addCondition(): void {
-    trigger.value.addCondition(new Condition())
+    trigger.value.addCondition(new TriggerConditionClass())
 }
 
-function removeCondition(condition: Condition): void {
+function removeCondition(condition: AutomationTriggerCondition): void {
     trigger.value.removeConditionByValue(condition)
 }
 
@@ -72,9 +76,9 @@ const exposesList = computed(() => {
         <!-- TODO:  -->
         <!-- if automation for device exists message user else we overwrite it -->
 
-        <div class="row" v-if="trigger.name() == ''">
-            <Selector placeholder="Select trigger" :items="exposesList" :value="trigger.name()" alignment="left"
-                :disabled="trigger.name() != ''" @update:data="v => trigger.setName(v)">
+        <div class="row" v-if="trigger.getName() == ''">
+            <Selector placeholder="Select trigger" :items="exposesList" :value="trigger.getName()" alignment="left"
+                :disabled="trigger.getName() != ''" @update:data="v => trigger.setName(v)">
             </Selector>
         </div>
         <div class="row" v-else>
@@ -118,7 +122,7 @@ const exposesList = computed(() => {
                 <tr>
                     <th scope="col">
                         <h5>Actions
-                            <button v-if="trigger.action() == null" type="button" class="btn btn-default btn-number ms-3"
+                            <button v-if="trigger.getAction() == null" type="button" class="btn btn-default btn-number ms-3"
                                 @click="addAction()">
                                 <span class=" fa fa-plus"></span>
                             </button>
@@ -133,9 +137,9 @@ const exposesList = computed(() => {
                                 :data="action.data" :delay="action.delay" :operation="action.operation"
                                 @update:id="(id, name) => trigger.setActionDeviceId(id, name)"
                                 @update:property="v => trigger.setActionProperty(v)"
-                                @update:data="v => trigger.action().data = v"
-                                @update:delay="v => trigger.action().delay = v"
-                                @update:operation="v => trigger.action().operation = v">
+                                @update:data="v => trigger.getAction().data = v"
+                                @update:delay="v => trigger.getAction().delay = v"
+                                @update:operation="v => trigger.getAction().operation = v">
                             </TriggerAction>
                         </th>
                         <td>

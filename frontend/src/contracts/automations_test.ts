@@ -3,8 +3,11 @@ import {
   AutomationTrigger,
   AutomationTriggerCondition,
   AutomationTriggerAction,
+  AutomationTriggers,
+  AutomationTriggerConditions,
 } from "../types/automation";
 import { KeyyValuePair, Nullable } from "../types/types";
+import { Condition } from "./automations";
 // export interface DeviceAutomation extends Automation {}
 // export interface DeviceAutomationTrigger extends AutomationTrigger {}
 // export interface DeviceAutomationCondition extends AutomationTriggerCondition {}
@@ -26,12 +29,30 @@ export class DeviceAutomation implements Automation {
   }
 }
 
-
-export class AutomationTriggerWrapper {
+export class EditableAutomationTrigger implements AutomationTrigger {
   trigger: AutomationTrigger;
+
+  name: string;
+  idx: number; // TEMPORARY - need to remove!!!
+  conditions: AutomationTriggerConditions;
+  action: AutomationTriggerAction;
+
+  static create(): AutomationTrigger {
+    const trigger = {} as AutomationTrigger;
+    trigger.name = "";
+    trigger.idx = -1;
+    trigger.conditions = [];
+    trigger.action = {} as AutomationTriggerAction;
+    return new EditableAutomationTrigger(trigger);
+  }
 
   constructor(trigger: AutomationTrigger) {
     this.trigger = trigger;
+
+    this.name = trigger.name;
+    this.idx = trigger.idx;
+    this.conditions = trigger.conditions;
+    this.action = trigger.action;
   }
 
   getTrigger(): AutomationTrigger {
@@ -72,7 +93,7 @@ export class AutomationTriggerWrapper {
     this.trigger.name = name;
   }
 
-  public name(): string {
+  public getName(): string {
     return this.trigger.name;
   }
 
@@ -80,7 +101,7 @@ export class AutomationTriggerWrapper {
     return capitalizeText(this.trigger.name);
   }
 
-  public action(): AutomationTriggerAction {
+  public getAction(): AutomationTriggerAction {
     return this.trigger.action;
   }
 
@@ -110,22 +131,32 @@ export class AutomationTriggerWrapper {
   }
 }
 
+export class TriggerConditionClass implements AutomationTriggerCondition {
+  name: string;
+  value: Nullable<any>;
+  equality: string;
+  constructor() {
+    this.name = "";
+    this.value = null;
+    this.equality = "=";
+  }
+}
 
 export class ActionTrigger implements AutomationTriggerAction {
   id: string;
   friendlyname: string;
   property: string;
   data: Nullable<any>;
-  operation: Nullable<number>;
+  operation: number;
   delay: Nullable<number>;
 
   constructor() {
-    this.id = ''
-    this.friendlyname = ''
-    this.property = ''
-    this.data = null
-    this.operation = 0
-    this.delay = null
+    this.id = "";
+    this.friendlyname = "";
+    this.property = "";
+    this.data = null;
+    this.operation = 0;
+    this.delay = null;
   }
 
   public setProperty(value: string): void {
@@ -142,7 +173,6 @@ export class ActionTrigger implements AutomationTriggerAction {
 }
 
 export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
-
 
 // todo: convert to extension class
 function capitalizeText(value: string): string {

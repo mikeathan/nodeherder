@@ -3,12 +3,10 @@ import { ref, watch } from "vue";
 import { useRouter } from 'vue-router'
 import Trigger from "./Trigger.vue"
 import DataInput from "../input/DataInput.vue"
-import { ExposeTrigger, DeviceTrigger } from "../../contracts/automations"
-
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
-import { Automation } from "@/types/automation";
-
+import { AutomationTrigger, Automation } from "@/types/automation";
+import { EditableAutomationTrigger, DeviceAutomation } from "../../contracts/automations_test";
 const emit = defineEmits(['cancel'])
 
 const props = defineProps({
@@ -16,10 +14,8 @@ const props = defineProps({
 });
 
 const router = useRouter()
-const automation = ref(new DeviceTrigger())
-//const automation = ref<Automation>({} as Automation)
-const selectedTrigger = ref<ExposeTrigger | null>(null)
-
+const automation = ref<Automation>({} as Automation)
+const selectedTrigger = ref<AutomationTrigger | null>(null)
 
 watch(
     () => props.id,
@@ -27,13 +23,14 @@ watch(
         var sourceAutomation = store.getters["automations/find"](props.id) as Device;
         if (sourceAutomation != undefined) {
             // make a deep copy to make it not reactive
-            automation.value = JSON.parse(JSON.stringify(sourceAutomation))
+            automation.value = JSON.parse(JSON.stringify(sourceAutomation)) as Automation
             automation.value.triggers.forEach(function callback(trigger, index) {
                 trigger.idx = index
             });
         } else {
 
-            automation.value = new DeviceTrigger()
+            automation.value = new DeviceAutomation()
+            console.log(automation.value)
             var device = store.getters["devices/find"](props.id) as Device;
             if (device != undefined) {
                 automation.value.id = device.id
@@ -54,7 +51,7 @@ function isSaveEnabled() {
 }
 
 function createNewTrigger() {
-    selectedTrigger.value = new ExposeTrigger('')
+    selectedTrigger.value = EditableAutomationTrigger.create()
 }
 
 function cancel() {
@@ -82,7 +79,7 @@ function deleteTrigger(triggerIdx: number): void {
     selectedTrigger.value = null// close trigger panel
 }
 
-function saveTrigger(trigger: ExposeTrigger): void {
+function saveTrigger(trigger: AutomationTrigger): void {
     if (trigger.idx == -1) {
         automation.value.triggers.push(trigger)
         automation.value.triggers.forEach(function callback(trigger, index) {
@@ -95,7 +92,7 @@ function saveTrigger(trigger: ExposeTrigger): void {
     selectedTrigger.value = null; // close trigger panel
 }
 
-function getConditionsDescription(trigger: ExposeTrigger): string {
+function getConditionsDescription(trigger: AutomationTrigger): string {
     var conditions = trigger.conditions
     if (conditions.length == 0) {
         return ""
@@ -109,7 +106,7 @@ function getConditionsDescription(trigger: ExposeTrigger): string {
     return description;
 }
 
-function getActionDescription(trigger: ExposeTrigger): string {
+function getActionDescription(trigger: AutomationTrigger): string {
     if (trigger.action == null) {
         return "<EMPTY>"
     }
@@ -120,7 +117,7 @@ function getActionDescription(trigger: ExposeTrigger): string {
     return description;
 }
 
-function rowClicked(trigger: ExposeTrigger): void {
+function rowClicked(trigger: AutomationTrigger): void {
     selectedTrigger.value = trigger;
 }
 
@@ -137,7 +134,7 @@ function onDeleteTriggerClick(event: Event, triggerId: number): void {
 <template>
     <div v-if="automation">
         <div class="container-fluid p-0 h-100">
-
+            automation;{{ automation }}
             <div class="card col-xl-5 col-md-6 col-sm-3">
                 <div class="card-header ">
                     <div class="pt-3 ">

@@ -171,6 +171,7 @@ export class ActionTrigger extends Action {
   constructor() {
     super();
   }
+
   public setProperty(value: string): void {
     this.property = value;
     this.operation = 0;
