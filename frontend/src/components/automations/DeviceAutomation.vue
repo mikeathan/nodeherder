@@ -17,6 +17,7 @@ const props = defineProps({
 
 const router = useRouter()
 const automation = ref(new DeviceTrigger())
+//const automation = ref<Automation>({} as Automation)
 const selectedTrigger = ref<ExposeTrigger | null>(null)
 
 

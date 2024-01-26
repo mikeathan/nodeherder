@@ -15,6 +15,7 @@ export type Automation = {
 
 export type AutomationTrigger = {
   name: string;
+  idx: number // TEMPORARY - need to remove!!!
   conditions: AutomationTriggerConditions;
   action: AutomationTriggerAction;
 };
@@ -31,4 +32,5 @@ export type AutomationTriggerAction = {
   property: string;
   data: Nullable<any>;
   operation: Nullable<number>;
+  delay: Nullable<number>;
 };

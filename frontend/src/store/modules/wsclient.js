@@ -29,7 +29,6 @@ const getters = {
 const actions = {
   connect({ state, commit, rootState, dispatch }) {
     var ws = new WebSocket(socketUri);
-
     ws.onmessage = (event) => {
       if (event == undefined) {
         console.error("ws undefined event: " + event);
