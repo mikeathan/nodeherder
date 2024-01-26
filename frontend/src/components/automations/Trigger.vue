@@ -7,10 +7,11 @@ import TriggerAction from "./TriggerAction.vue";
 import Selector from "../input/Selector.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
+import { Automation, AutomationTrigger } from "@/types/automation";
 
 const props = defineProps({
     id: { type: String },
-    trigger: { type: Object as PropType<ExposeTrigger> },
+    trigger: { type: Object as PropType<AutomationTrigger> },
 });
 
 const trigger = ref<ExposeTriggerWrapper>(new DefaultExposeTriggerWrapper())
