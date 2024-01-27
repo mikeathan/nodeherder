@@ -6,7 +6,7 @@ import DataInput from "../input/DataInput.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
 import { AutomationTrigger, Automation } from "@/types/automation";
-import { EditableAutomationTrigger, DeviceAutomation } from "../../contracts/automations_test";
+import { EditableAutomationTrigger, DeviceAutomation } from "../../contracts/automations";
 const emit = defineEmits(['cancel'])
 
 const props = defineProps({
@@ -107,7 +107,7 @@ function getConditionsDescription(trigger: AutomationTrigger): string {
 }
 
 function getActionDescription(trigger: AutomationTrigger): string {
-    if (trigger.action == null) {
+    if (trigger.action.id == '') {
         return "<EMPTY>"
     }
 

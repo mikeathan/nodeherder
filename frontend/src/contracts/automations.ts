@@ -3,19 +3,16 @@ import {
   AutomationTrigger,
   AutomationTriggerCondition,
   AutomationTriggerAction,
+  AutomationTriggerConditions,
 } from "../types/automation";
+import { Nullable } from "../types/types";
 
-export interface DeviceAutomation extends Automation {}
-export interface DeviceAutomationTrigger extends AutomationTrigger {}
-export interface DeviceAutomationCondition extends AutomationTriggerCondition {}
-export interface DeviceAutomationAction extends AutomationTriggerAction {}
-
-export class DeviceTriggerClass implements DeviceAutomation {
+export class DeviceAutomation implements Automation {
   id: string;
   friendlyname: string;
   description: string;
   enabled: boolean;
-  triggers: Array<DeviceAutomationTrigger>;
+  triggers: Array<AutomationTrigger>;
 
   constructor() {
     this.id = "";
@@ -26,39 +23,45 @@ export class DeviceTriggerClass implements DeviceAutomation {
   }
 }
 
-// #########################################
-export class DeviceTrigger {
-  id: string;
-  friendlyname: string;
-  description: string;
-  enabled: boolean;
-  triggers: Array<ExposeTrigger>;
+export class EditableAutomationTrigger implements AutomationTrigger {
+  trigger: AutomationTrigger;
 
-  constructor() {
-    this.id = "";
-    this.friendlyname = "";
-    this.description = "";
-    this.enabled = false;
-    this.triggers = [];
+  name: string;
+  idx: number; // TEMPORARY - need to remove!!!
+  conditions: AutomationTriggerConditions;
+  action: AutomationTriggerAction;
+
+  static create(): EditableAutomationTrigger {
+    const trigger = {} as AutomationTrigger;
+    trigger.name = "";
+    trigger.idx = -1;
+    trigger.conditions = [];
+    trigger.action = {} as AutomationTriggerAction;
+    return new EditableAutomationTrigger(trigger);
   }
-}
 
-export class ExposeTriggerWrapper {
-  trigger: ExposeTrigger;
+  static createFrom(trigger: AutomationTrigger): EditableAutomationTrigger {
+    return new EditableAutomationTrigger(trigger);
+  }
 
-  constructor(trigger: ExposeTrigger) {
+  private constructor(trigger: AutomationTrigger) {
     this.trigger = trigger;
+
+    this.name = trigger.name;
+    this.idx = trigger.idx;
+    this.conditions = trigger.conditions;
+    this.action = trigger.action;
   }
 
-  getTrigger(): ExposeTrigger {
+  getTrigger(): AutomationTrigger {
     return this.trigger;
   }
 
   isValid(): boolean {
-    return this.trigger.name != "" && this.trigger.action.id != "";
+    return this.trigger.name != "" && this.trigger.action.id != "" && this.trigger.action.property != "";
   }
 
-  getConditions(): Array<Condition> {
+  getConditions(): Array<AutomationTriggerCondition> {
     return this.trigger.conditions;
   }
 
@@ -66,14 +69,15 @@ export class ExposeTriggerWrapper {
     return this.trigger.conditions.length != 0;
   }
 
-  addCondition(condition: Condition) {
-    this.trigger.conditions.push(condition);
+  addCondition() {
+    this.trigger.conditions.push(new EditableTriggerCondition());
   }
 
-  removeConditionByValue(condition: Condition): void {
-    this.trigger.conditions = this.trigger.conditions.filter(
-      (c) => c != condition
-    );
+  removeConditionByValue(condition: AutomationTriggerCondition): void {
+    this.trigger.conditions = this.trigger.conditions
+      .filter(
+        (c) => c != condition
+      );
   }
 
   public setIdx(idx: number): void {
@@ -88,7 +92,7 @@ export class ExposeTriggerWrapper {
     this.trigger.name = name;
   }
 
-  public name(): string {
+  public getName(): string {
     return this.trigger.name;
   }
 
@@ -96,7 +100,7 @@ export class ExposeTriggerWrapper {
     return capitalizeText(this.trigger.name);
   }
 
-  public action(): Action {
+  public getAction(): AutomationTriggerAction {
     return this.trigger.action;
   }
 
@@ -113,7 +117,7 @@ export class ExposeTriggerWrapper {
   }
 
   public createAction(): void {
-    this.trigger.action = new ActionTrigger();
+    this.trigger.action = {} as AutomationTriggerAction;
   }
 
   public clearAction(): void {
@@ -126,50 +130,32 @@ export class ExposeTriggerWrapper {
   }
 }
 
-export class DefaultExposeTriggerWrapper extends ExposeTriggerWrapper {
-  constructor() {
-    super(new ExposeTrigger(""));
-  }
-}
-
-export class ExposeTrigger {
-  idx: number;
+export class EditableTriggerCondition implements AutomationTriggerCondition {
   name: string;
-  conditions: Array<Condition>;
-  action: ActionTrigger;
-
-  constructor(name: string) {
-    this.idx = -1;
-    this.name = name;
-    this.conditions = [];
-    this.action = new ActionTrigger();
+  value: Nullable<any>;
+  equality: string;
+  constructor() {
+    this.name = "";
+    this.value = null;
+    this.equality = "=";
   }
 }
 
-export abstract class Action {
+export class EditableActionTrigger implements AutomationTriggerAction {
   id: string;
   friendlyname: string;
   property: string;
-  data: any;
-  delay: number | null;
+  data: Nullable<any>;
   operation: number;
+  delay: Nullable<number>;
 
   constructor() {
     this.id = "";
     this.friendlyname = "";
     this.property = "";
     this.data = null;
-    this.delay = null;
     this.operation = 0;
-  }
-
-  public abstract setProperty(value: string): void;
-  public abstract setDeviceId(id: string, friendlyname: string): void;
-}
-
-export class ActionTrigger extends Action {
-  constructor() {
-    super();
+    this.delay = null;
   }
 
   public setProperty(value: string): void {
@@ -186,18 +172,6 @@ export class ActionTrigger extends Action {
 }
 
 export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
-
-export class Condition {
-  name: string;
-  equality: string;
-  value: any | null;
-
-  constructor() {
-    this.name = "";
-    this.equality = EqualityOperators[0];
-    this.value = "";
-  }
-}
 
 // todo: convert to extension class
 function capitalizeText(value: string): string {

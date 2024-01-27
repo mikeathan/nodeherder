@@ -7,18 +7,15 @@ import TriggerAction from "./TriggerAction.vue";
 import Selector from "../input/Selector.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
-
 import { AutomationTrigger, AutomationTriggerCondition } from "@/types/automation";
-
-//import { Condition, ExposeTrigger, ExposeTriggerWrapper, DefaultExposeTriggerWrapper } from "../../contracts/automations"
-import { EditableAutomationTrigger, TriggerConditionClass } from "../../contracts/automations_test"
+import { EditableAutomationTrigger } from "../../contracts/automations"
 
 const props = defineProps({
     id: { type: String },
     trigger: { type: Object as PropType<AutomationTrigger> },
 });
 
-const trigger = ref<EditableAutomationTrigger>(new EditableAutomationTrigger({} as AutomationTrigger))
+const trigger = ref<EditableAutomationTrigger>(EditableAutomationTrigger.create())
 const emit = defineEmits(['save', 'delete'])
 
 watch(
@@ -26,7 +23,7 @@ watch(
     () => {
 
         const obj: AutomationTrigger = JSON.parse(JSON.stringify(props.trigger))
-        trigger.value = new EditableAutomationTrigger(obj)
+        trigger.value = EditableAutomationTrigger.createFrom(obj)
 
     }, { immediate: true }
 )
@@ -48,7 +45,7 @@ function removeAction(event: Event): void {
 }
 
 function addCondition(): void {
-    trigger.value.addCondition(new TriggerConditionClass())
+    trigger.value.addCondition()
 }
 
 function removeCondition(condition: AutomationTriggerCondition): void {
@@ -133,7 +130,7 @@ const exposesList = computed(() => {
 
                     <tr>
                         <th scope="w-25">
-                            <TriggerAction v-if="action != null" :id="action.id" :property="action.property"
+                            <TriggerAction v-if="action.property != ''" :id="action.id" :property="action.property"
                                 :data="action.data" :delay="action.delay" :operation="action.operation"
                                 @update:id="(id, name) => trigger.setActionDeviceId(id, name)"
                                 @update:property="v => trigger.setActionProperty(v)"
@@ -143,7 +140,7 @@ const exposesList = computed(() => {
                             </TriggerAction>
                         </th>
                         <td>
-                            <span v-if="action != null" class="fa fa-trash-alt fa-sm" @click="removeAction">
+                            <span v-if="action.property != ''" class="fa fa-trash-alt fa-sm" @click="removeAction">
                             </span>
                         </td>
                     </tr>

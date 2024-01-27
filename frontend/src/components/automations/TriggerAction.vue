@@ -153,7 +153,7 @@ const feature = computed(() => {
 });
 
 function propertyUpdated(event: any) {
-    var value = event;
+    const value = event;
     if (value == "" || device.value == undefined) {
         property.value = ""
         data.value = "" // reset data
