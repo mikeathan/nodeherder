@@ -2,7 +2,7 @@
 
 import { ref, computed, watch } from 'vue'
 import DataInput from "../input/DataInput.vue"
-import { EqualityOperators } from "../../contracts/automations_test"
+import { EqualityOperators } from "../../contracts/automations"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
 

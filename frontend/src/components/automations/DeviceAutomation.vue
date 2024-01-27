@@ -134,7 +134,6 @@ function onDeleteTriggerClick(event: Event, triggerId: number): void {
 <template>
     <div v-if="automation">
         <div class="container-fluid p-0 h-100">
-            automation;{{ automation }}
             <div class="card col-xl-5 col-md-6 col-sm-3">
                 <div class="card-header ">
                     <div class="pt-3 ">

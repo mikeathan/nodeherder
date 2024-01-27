@@ -32,15 +32,13 @@ const device = computed(() => {
     return store.getters["devices/find"](props.id) as Device;
 });
 
-const action = computed(() => {
-    return trigger.value.getAction()
-});
 
-function addAction(): void {
-    trigger.value.createAction();
-}
+// function addAction(): void {
+//     trigger.value.createAction();
+// }
 
 function removeAction(event: Event): void {
+    console.log("clear action")
     trigger.value.clearAction()
 }
 
@@ -53,7 +51,7 @@ function removeCondition(condition: AutomationTriggerCondition): void {
 }
 
 function save() {
-    emit('save', trigger.value.getTrigger())
+    emit('save', trigger.value)
 }
 
 function remove() {
@@ -119,10 +117,12 @@ const exposesList = computed(() => {
                 <tr>
                     <th scope="col">
                         <h5>Actions
-                            <button v-if="trigger.getAction() == null" type="button" class="btn btn-default btn-number ms-3"
+                            <!-- 
+                                NOTE : we will use it when we have more than one Actions 
+                                <button v-if="trigger.action.id ==''" type="button" class="btn btn-default btn-number ms-3"
                                 @click="addAction()">
                                 <span class=" fa fa-plus"></span>
-                            </button>
+                            </button> -->
                         </h5>
                     </th>
                 </tr>
@@ -130,25 +130,23 @@ const exposesList = computed(() => {
 
                     <tr>
                         <th scope="w-25">
-                            <TriggerAction v-if="action.property != ''" :id="action.id" :property="action.property"
-                                :data="action.data" :delay="action.delay" :operation="action.operation"
+                            <TriggerAction :id="trigger.action.id" :property="trigger.action.property"
+                                :data="trigger.action.data" :delay="trigger.action.delay"
+                                :operation="trigger.action.operation"
                                 @update:id="(id, name) => trigger.setActionDeviceId(id, name)"
                                 @update:property="v => trigger.setActionProperty(v)"
-                                @update:data="v => trigger.getAction().data = v"
-                                @update:delay="v => trigger.getAction().delay = v"
-                                @update:operation="v => trigger.getAction().operation = v">
+                                @update:data="v => trigger.action.data = v" @update:delay="v => trigger.action.delay = v"
+                                @update:operation="v => trigger.action.operation = v">
                             </TriggerAction>
                         </th>
                         <td>
-                            <span v-if="action.property != ''" class="fa fa-trash-alt fa-sm" @click="removeAction">
+                            <span v-if="trigger.action.id != ''" class="fa fa-trash-alt fa-sm" @click="removeAction">
                             </span>
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
-
-
         <div class="row  pt-3">
             <div class="row pt-3">
                 <div class="col">

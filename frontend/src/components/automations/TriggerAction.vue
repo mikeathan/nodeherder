@@ -157,6 +157,8 @@ function propertyUpdated(event: any) {
     if (value == "" || device.value == undefined) {
         property.value = ""
         data.value = "" // reset data
+        emit('update:property', property.value)
+
         return;
     }
 

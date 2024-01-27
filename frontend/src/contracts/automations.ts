@@ -24,7 +24,7 @@ export class DeviceAutomation implements Automation {
 }
 
 export class EditableAutomationTrigger implements AutomationTrigger {
-  trigger: AutomationTrigger;
+  //trigger: AutomationTrigger;
 
   name: string;
   idx: number; // TEMPORARY - need to remove!!!
@@ -36,7 +36,7 @@ export class EditableAutomationTrigger implements AutomationTrigger {
     trigger.name = "";
     trigger.idx = -1;
     trigger.conditions = [];
-    trigger.action = {} as AutomationTriggerAction;
+    trigger.action = new EditableActionTrigger();
     return new EditableAutomationTrigger(trigger);
   }
 
@@ -45,88 +45,73 @@ export class EditableAutomationTrigger implements AutomationTrigger {
   }
 
   private constructor(trigger: AutomationTrigger) {
-    this.trigger = trigger;
-
     this.name = trigger.name;
     this.idx = trigger.idx;
     this.conditions = trigger.conditions;
     this.action = trigger.action;
   }
 
-  getTrigger(): AutomationTrigger {
-    return this.trigger;
-  }
-
   isValid(): boolean {
-    return this.trigger.name != "" && this.trigger.action.id != "" && this.trigger.action.property != "";
+    return (
+      this.name != "" && this.action.id != "" && this.action.property != ""
+    );
   }
 
   getConditions(): Array<AutomationTriggerCondition> {
-    return this.trigger.conditions;
+    return this.conditions;
   }
 
   hasConditions(): boolean {
-    return this.trigger.conditions.length != 0;
+    return this.conditions.length != 0;
   }
 
   addCondition() {
-    this.trigger.conditions.push(new EditableTriggerCondition());
+    this.conditions.push(new EditableTriggerCondition());
   }
 
   removeConditionByValue(condition: AutomationTriggerCondition): void {
-    this.trigger.conditions = this.trigger.conditions
-      .filter(
-        (c) => c != condition
-      );
+    this.conditions = this.conditions.filter((c) => c != condition);
   }
 
   public setIdx(idx: number): void {
-    this.trigger.idx = idx;
+    this.idx = idx;
   }
 
   public getIdx(): number {
-    return this.trigger.idx;
+    return this.idx;
   }
 
   public setName(name: string): void {
-    this.trigger.name = name;
+    this.name = name;
   }
 
   public getName(): string {
-    return this.trigger.name;
+    return this.name;
   }
 
   public displayName(): string {
-    return capitalizeText(this.trigger.name);
-  }
-
-  public getAction(): AutomationTriggerAction {
-    return this.trigger.action;
+    return capitalizeText(this.name);
   }
 
   public setActionDeviceId(id: string, friendlyname: string): void {
-    this.trigger.action.id = id;
-    this.trigger.action.friendlyname = friendlyname;
+    this.action.id = id;
+    this.action.friendlyname = friendlyname;
   }
 
   public setActionProperty(value: string): void {
-    this.trigger.action.property = value;
-    this.trigger.action.operation = 0;
-    this.trigger.action.delay = null;
-    this.trigger.action.data = null;
-  }
-
-  public createAction(): void {
-    this.trigger.action = {} as AutomationTriggerAction;
+    this.action.property = value;
+    this.action.operation = 0;
+    this.action.delay = null;
+    this.action.data = null;
   }
 
   public clearAction(): void {
-    this.trigger.action.id = "";
-    this.trigger.action.friendlyname = "";
-    this.trigger.action.property = "";
-    this.trigger.action.data = null;
-    this.trigger.action.operation = 0;
-    this.trigger.action.delay = null;
+    this.action.id = "";
+    this.action.friendlyname = "";
+    this.action.property = "";
+    this.action.data = null;
+    this.action.operation = 0;
+    this.action.delay = null;
   }
 }
 
