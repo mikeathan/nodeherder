@@ -2,7 +2,6 @@
 import { watch, ref, onMounted, onUnmounted } from "vue";
 import ElapsedTimer from "../../modules/time-elapsed";
 
-
 const props = defineProps({
     timestamp: String,
 });

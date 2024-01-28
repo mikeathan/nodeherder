@@ -1,9 +1,11 @@
-<script setup>
+<script setup lang="ts">
 import { getPowerSourceIcon } from "../../modules/formatters/device.formatter";
+
 const props = defineProps({
-  power_source: String,
-  value: Number,
+  power_source: { type: String, default: '' },
+  value: { type: Number, default: 0 }
 });
+
 </script>
 <template>
   <div title="Unknown power source" v-if="`${power_source}` == ''">
