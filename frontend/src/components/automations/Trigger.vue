@@ -7,7 +7,7 @@ import TriggerAction from "./TriggerAction.vue";
 import Selector from "../input/Selector.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
-import { AutomationTrigger, AutomationTriggerCondition } from "@/types/automation";
+import { AutomationTrigger, AutomationTriggerCondition, AutomationTriggerWrapper } from "@/types/automation";
 import { EditableAutomationTrigger } from "../../contracts/automations"
 
 const props = defineProps({
@@ -15,15 +15,15 @@ const props = defineProps({
     trigger: { type: Object as PropType<AutomationTrigger> },
 });
 
-const trigger = ref<EditableAutomationTrigger>(EditableAutomationTrigger.create())
+const trigger = ref<AutomationTriggerWrapper>(EditableAutomationTrigger.create())
 const emit = defineEmits(['save', 'delete'])
 
 watch(
     () => props.trigger,
     () => {
 
-        const obj: AutomationTrigger = JSON.parse(JSON.stringify(props.trigger))
-        trigger.value = EditableAutomationTrigger.createFrom(obj)
+        // const obj: AutomationTrigger = JSON.parse(JSON.stringify(props.trigger))
+        trigger.value = props.trigger as EditableAutomationTrigger; // EditableAutomationTrigger.createFrom(obj)
 
     }, { immediate: true }
 )

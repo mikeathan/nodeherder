@@ -13,6 +13,26 @@ export type Automation = {
   triggers: AutomationTriggers;
 };
 
+export interface AutomationTriggerWrapper extends AutomationTrigger {
+  name: string;
+  idx: number; // TEMPORARY - need to remove!!!
+  conditions: AutomationTriggerConditions;
+  action: AutomationTriggerAction;
+  isValid(): boolean;
+
+  addCondition();
+
+  removeCondition(condition: AutomationTriggerCondition): void;
+
+  displayName(): string;
+
+  setActionDeviceId(id: string, friendlyname: string): void;
+
+  setActionProperty(value: string): void;
+
+  clearAction(): void;
+}
+
 export type AutomationTrigger = {
   name: string;
   idx: number; // TEMPORARY - need to remove!!!

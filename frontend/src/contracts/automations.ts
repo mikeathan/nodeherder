@@ -4,6 +4,7 @@ import {
   AutomationTriggerCondition,
   AutomationTriggerAction,
   AutomationTriggerConditions,
+  AutomationTriggerWrapper,
 } from "../types/automation";
 import { Nullable } from "../types/types";
 import { capitalizeText } from "../modules/formatters/text.formatter";
@@ -26,14 +27,14 @@ export class DeviceAutomation implements Automation {
   }
 }
 
-export class EditableAutomationTrigger implements AutomationTrigger {
+export class EditableAutomationTrigger implements AutomationTriggerWrapper {
   name: string;
   idx: number; // TEMPORARY - need to remove!!!
   conditions: AutomationTriggerConditions;
   action: AutomationTriggerAction;
 
-  static create(): EditableAutomationTrigger {
-    const trigger = {} as AutomationTrigger;
+  static create(): AutomationTriggerWrapper {
+    const trigger = {} as AutomationTriggerWrapper;
     trigger.name = "";
     trigger.idx = -1;
     trigger.conditions = [];
@@ -41,7 +42,7 @@ export class EditableAutomationTrigger implements AutomationTrigger {
     return new EditableAutomationTrigger(trigger);
   }
 
-  static createFrom(trigger: AutomationTrigger): EditableAutomationTrigger {
+  static createFrom(trigger: AutomationTrigger): AutomationTriggerWrapper {
     return new EditableAutomationTrigger(trigger);
   }
 

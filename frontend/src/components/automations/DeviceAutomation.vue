@@ -79,13 +79,14 @@ function deleteTrigger(trigger: AutomationTrigger): void {
 }
 
 function saveTrigger(trigger: AutomationTrigger): void {
-    if (trigger.idx == -1) {
+    const idx = automation.value.triggers.indexOf(trigger)
+    if (idx == -1) {
         automation.value.triggers.push(trigger)
-        automation.value.triggers.forEach(function callback(trigger, index) {
-            trigger.idx = index
-        });
+        // automation.value.triggers.forEach(function callback(trigger, index) {
+        //     trigger.idx = index
+        // });
     } else {
-        automation.value.triggers[trigger.idx] = trigger
+        automation.value.triggers[idx] = trigger
     }
 
     selectedTrigger.value = null; // close trigger panel
