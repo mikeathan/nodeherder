@@ -71,13 +71,10 @@ function deleteAutomation() {
     }
 }
 
-function deleteTrigger(triggerIdx: number): void {
-    console.log("deleteTrigger ", triggerIdx)
-    if (triggerIdx > -1) {
+function deleteTrigger(trigger: AutomationTrigger): void {
+    automation.value.triggers = automation.value.triggers.filter((e, i) => e != trigger);
 
-        automation.value.triggers = automation.value.triggers.filter((e, i) => e.idx !== triggerIdx);
-        console.log("removed ", automation.value.triggers)
-    }
+
     selectedTrigger.value = null// close trigger panel
 }
 
@@ -123,8 +120,8 @@ function rowClicked(trigger: AutomationTrigger): void {
     selectedTrigger.value = trigger;
 }
 
-function onDeleteTriggerClick(event: Event, triggerId: number): void {
-    deleteTrigger(triggerId)
+function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
+    deleteTrigger(trgger)
 }
 
 </script>
@@ -194,6 +191,7 @@ function onDeleteTriggerClick(event: Event, triggerId: number): void {
                         </thead>
                         <tbody v-for="(trigger, index) in automation.triggers" :item="trigger">
                             <tr>
+
                                 <th scope="row">
                                     {{ index + 1 }}
                                 </th>
@@ -204,7 +202,7 @@ function onDeleteTriggerClick(event: Event, triggerId: number): void {
                                     {{ getConditionsDescription(trigger) }}
                                 </td>
                                 <td>
-                                    <span class="fa fa-trash-alt fa-sm" @click="onDeleteTriggerClick($event, index)"
+                                    <span class="fa fa-trash-alt fa-sm" @click="onDeleteTriggerClick($event, trigger)"
                                         data-bs-toggle="collapse" data-bs-target>
                                     </span>
                                 </td>
@@ -215,6 +213,7 @@ function onDeleteTriggerClick(event: Event, triggerId: number): void {
                         <button type="button" class="btn-close" aria-label="Close"
                             @click="() => selectedTrigger = null"></button>
                         <div class="col">
+
                             <Trigger :id="props.id" :trigger="selectedTrigger" @save="saveTrigger" @delete="deleteTrigger">
                             </Trigger>
                         </div>

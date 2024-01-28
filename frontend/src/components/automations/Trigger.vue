@@ -29,7 +29,6 @@ watch(
 )
 
 function removeAction(event: Event): void {
-    console.log("clear action")
     trigger.value.clearAction()
 }
 
@@ -46,7 +45,7 @@ function save() {
 }
 
 function remove() {
-    emit('delete', trigger.value.idx)
+    emit('delete', trigger.value)
 }
 
 const exposesList = computed(() => {

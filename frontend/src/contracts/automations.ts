@@ -6,7 +6,7 @@ import {
   AutomationTriggerConditions,
 } from "../types/automation";
 import { Nullable } from "../types/types";
-import { capitalizeText } from "../modules/formatters/text.formatter"
+import { capitalizeText } from "../modules/formatters/text.formatter";
 
 export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
 
@@ -138,5 +138,3 @@ export class EditableActionTrigger implements AutomationTriggerAction {
     this.friendlyname = friendlyname;
   }
 }
-
-
