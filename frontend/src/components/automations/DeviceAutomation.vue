@@ -30,7 +30,6 @@ watch(
         } else {
 
             automation.value = new DeviceAutomation()
-            console.log(automation.value)
             var device = store.getters["devices/find"](props.id) as Device;
             if (device != undefined) {
                 automation.value.id = device.id
@@ -73,8 +72,11 @@ function deleteAutomation() {
 }
 
 function deleteTrigger(triggerIdx: number): void {
+    console.log("deleteTrigger ", triggerIdx)
     if (triggerIdx > -1) {
+
         automation.value.triggers = automation.value.triggers.filter((e, i) => e.idx !== triggerIdx);
+        console.log("removed ", automation.value.triggers)
     }
     selectedTrigger.value = null// close trigger panel
 }

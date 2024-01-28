@@ -26,7 +26,6 @@ function saveAutomation(id: string): void {
     var values = Object.values(automations.value).filter(k => k.id == id);
     if (values.length != 0) {
         store.dispatch('automations/save', values[0]);
-        console.log("save automation: Id", id);
     }
 }
 
@@ -71,9 +70,7 @@ function saveAutomation(id: string): void {
                 </tr>
             </tbody>
         </table>
-
         <div>
-
             <RouterLink :to="`/creator`">
                 Create automations
             </RouterLink>

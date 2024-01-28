@@ -27,8 +27,6 @@ export class DeviceAutomation implements Automation {
 }
 
 export class EditableAutomationTrigger implements AutomationTrigger {
-  //trigger: AutomationTrigger;
-
   name: string;
   idx: number; // TEMPORARY - need to remove!!!
   conditions: AutomationTriggerConditions;

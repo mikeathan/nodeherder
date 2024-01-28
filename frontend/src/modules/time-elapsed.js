@@ -1,6 +1,7 @@
 import "moment-timezone";
 import moment from "moment-timezone";
 import { format } from "timeago.js";
+
 const SEC_ARRAY = [
   60, // 60 seconds in 1 min
   60, // 60 mins in 1 hour
@@ -9,6 +10,7 @@ const SEC_ARRAY = [
   365 / 7 / 12, // 4.345238095238096 weeks in 1 month
   12, // 12 months in 1 year
 ];
+
 export default class ElapsedTimer {
   constructor(element) {
     this.__element = element;

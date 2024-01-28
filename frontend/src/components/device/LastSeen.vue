@@ -8,13 +8,13 @@ const props = defineProps({
 
 let elapsedTimer = null;
 let lastSeenElement = ref(null)
+
 watch(
     () => props.timestamp,
     (newlastSeen) => {
         if (lastSeenElement.value == undefined) {
             return;
         }
-        //console.log("Watch props.payload update");
         elapsedTimer.Format(newlastSeen);
     },
     { immediate: true }
@@ -28,6 +28,7 @@ onMounted(() => {
 onUnmounted(() => {
     elapsedTimer.dispose();
 });
+
 </script>
 <template>
     <div :title="'last update ' + timestamp" :ref="el => { lastSeenElement = el }" className="col text-truncate">
