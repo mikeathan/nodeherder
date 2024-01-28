@@ -19,7 +19,6 @@ function onDeleteAutomationClick(id: string): void {
             id: id,
         }
     });
-    console.log("delete automation: Id", id);
 }
 
 function saveAutomation(id: string): void {

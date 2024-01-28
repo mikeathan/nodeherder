@@ -28,15 +28,6 @@ watch(
     }, { immediate: true }
 )
 
-const device = computed(() => {
-    return store.getters["devices/find"](props.id) as Device;
-});
-
-
-// function addAction(): void {
-//     trigger.value.createAction();
-// }
-
 function removeAction(event: Event): void {
     console.log("clear action")
     trigger.value.clearAction()
@@ -47,7 +38,7 @@ function addCondition(): void {
 }
 
 function removeCondition(condition: AutomationTriggerCondition): void {
-    trigger.value.removeConditionByValue(condition)
+    trigger.value.removeCondition(condition)
 }
 
 function save() {
@@ -55,12 +46,13 @@ function save() {
 }
 
 function remove() {
-    emit('delete', trigger.value.getIdx())
+    emit('delete', trigger.value.idx)
 }
 
 const exposesList = computed(() => {
+    const device = store.getters["devices/find"](props.id) as Device;
     return Object.assign({}, ...Object
-        .values(device.value.exposes)
+        .values(device.exposes)
         .map((e) => ({ [e.name]: e.name })))
 })
 
@@ -71,9 +63,9 @@ const exposesList = computed(() => {
         <!-- TODO:  -->
         <!-- if automation for device exists message user else we overwrite it -->
 
-        <div class="row" v-if="trigger.getName() == ''">
-            <Selector placeholder="Select trigger" :items="exposesList" :value="trigger.getName()" alignment="left"
-                :disabled="trigger.getName() != ''" @update:data="v => trigger.setName(v)">
+        <div class="row" v-if="trigger.name == ''">
+            <Selector placeholder="Select trigger" :items="exposesList" :value="trigger.name" alignment="left"
+                :disabled="trigger.name != ''" @update:data="v => trigger.name = v">
             </Selector>
         </div>
         <div class="row" v-else>
@@ -99,7 +91,7 @@ const exposesList = computed(() => {
                         </h5>
                     </th>
                 </tr>
-                <tbody v-for="(condition, index) in  trigger.getConditions() " :item="condition">
+                <tbody v-for="(condition, index) in  trigger.conditions " :item="condition">
                     <tr>
                         <th scope="w-25">
                             <TriggerCondition :id="props.id" :name="condition.name" :operator="condition.equality"

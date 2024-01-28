@@ -4,7 +4,7 @@ import {
     getSensorIcon,
     getSensorName,
     getSensorUnit,
-} from "../../modules/sensors/sensor-formatter";
+} from "../../modules/formatters/sensor-formatter";
 
 import { store } from "../../store/index";
 import Slider from "../input/Slider.vue"

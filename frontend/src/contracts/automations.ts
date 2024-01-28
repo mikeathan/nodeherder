@@ -6,6 +6,9 @@ import {
   AutomationTriggerConditions,
 } from "../types/automation";
 import { Nullable } from "../types/types";
+import { capitalizeText } from "../modules/formatters/text.formatter"
+
+export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
 
 export class DeviceAutomation implements Automation {
   id: string;
@@ -57,10 +60,6 @@ export class EditableAutomationTrigger implements AutomationTrigger {
     );
   }
 
-  getConditions(): Array<AutomationTriggerCondition> {
-    return this.conditions;
-  }
-
   hasConditions(): boolean {
     return this.conditions.length != 0;
   }
@@ -69,24 +68,8 @@ export class EditableAutomationTrigger implements AutomationTrigger {
     this.conditions.push(new EditableTriggerCondition());
   }
 
-  removeConditionByValue(condition: AutomationTriggerCondition): void {
+  removeCondition(condition: AutomationTriggerCondition): void {
     this.conditions = this.conditions.filter((c) => c != condition);
-  }
-
-  public setIdx(idx: number): void {
-    this.idx = idx;
-  }
-
-  public getIdx(): number {
-    return this.idx;
-  }
-
-  public setName(name: string): void {
-    this.name = name;
-  }
-
-  public getName(): string {
-    return this.name;
   }
 
   public displayName(): string {
@@ -100,6 +83,8 @@ export class EditableAutomationTrigger implements AutomationTrigger {
 
   public setActionProperty(value: string): void {
     this.action.property = value;
+
+    // reset value
     this.action.operation = 0;
     this.action.delay = null;
     this.action.data = null;
@@ -156,13 +141,4 @@ export class EditableActionTrigger implements AutomationTriggerAction {
   }
 }
 
-export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
 
-// todo: convert to extension class
-function capitalizeText(value: string): string {
-  return value
-    .toLowerCase()
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
