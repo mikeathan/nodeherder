@@ -15,7 +15,8 @@ const props = defineProps({
 
 const router = useRouter()
 const automation = ref<Automation>({} as Automation)
-const selectedTrigger = ref<AutomationTrigger | null>(null)
+const selectedTrigger = ref<AutomationTrigger>()
+const showTriggerCreation = ref<boolean>(false)
 
 watch(
     () => props.id,
@@ -51,6 +52,7 @@ function isSaveEnabled() {
 
 function createNewTrigger() {
     selectedTrigger.value = EditableAutomationTrigger.create()
+    showTriggerCreation.value = true
 }
 
 function cancel() {
@@ -73,9 +75,7 @@ function deleteAutomation() {
 
 function deleteTrigger(trigger: AutomationTrigger): void {
     automation.value.triggers = automation.value.triggers.filter((e, i) => e != trigger);
-
-
-    selectedTrigger.value = null// close trigger panel
+    showTriggerCreation.value = false // close trigger panel
 }
 
 function saveTrigger(trigger: AutomationTrigger): void {
@@ -89,7 +89,8 @@ function saveTrigger(trigger: AutomationTrigger): void {
         automation.value.triggers[idx] = trigger
     }
 
-    selectedTrigger.value = null; // close trigger panel
+    showTriggerCreation.value = false // close trigger panel
+
 }
 
 function getConditionsDescription(trigger: AutomationTrigger): string {
@@ -177,7 +178,7 @@ function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
                 </div>
 
                 <div class="card-body ">
-                    <table class="table responsive table-hover " v-if="selectedTrigger == null">
+                    <table class="table responsive table-hover " v-if="showTriggerCreation == false">
                         <thead>
                             <tr>
                                 <th scope="col">#</th>
@@ -211,8 +212,8 @@ function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
                         </tbody>
                     </table>
                     <div class="row" v-else>
-                        <button type="button" class="btn-close" aria-label="Close"
-                            @click="() => selectedTrigger = null"></button>
+                        <button type="button" class="btn-close" aria-label="Close" @click="() => showTriggerCreation = false // close trigger panel
+                            "></button>
                         <div class="col">
 
                             <Trigger :id="props.id" :trigger="selectedTrigger" @save="saveTrigger" @delete="deleteTrigger">
