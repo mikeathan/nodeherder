@@ -15,6 +15,7 @@ const props = defineProps({
     trigger: { type: Object as PropType<AutomationTrigger> },
 });
 
+TODO: remove AutomationTriggerWrapper
 const trigger = ref<AutomationTriggerWrapper>(EditableAutomationTrigger.create())
 const emit = defineEmits(['save', 'delete'])
 
