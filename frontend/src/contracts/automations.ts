@@ -16,7 +16,7 @@ export class DeviceAutomation implements Automation {
   friendlyname: string;
   description: string;
   enabled: boolean;
-  triggers: Array<AutomationTrigger>;
+  triggers: Array<AutomationTriggerWrapper>;
 
   constructor() {
     this.id = "";
