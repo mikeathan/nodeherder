@@ -46,7 +46,6 @@ const feature = computed(() => {
 
     var device = store.getters["devices/find"](props.id);
     if (device.exposes[name.value] == undefined) {
-
         return []
     }
 
@@ -117,10 +116,11 @@ function getOperators() {
 
 }
 function getItems() {
-
+    console.log("getItems", feature.value)
     if (feature.value.attributes == undefined) {
         return null
     }
+
     switch (feature.value.type) {
         case "binary":
         case "enum":

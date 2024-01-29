@@ -22,8 +22,8 @@ watch(
     () => props.trigger,
     () => {
 
-        // const obj: AutomationTrigger = JSON.parse(JSON.stringify(props.trigger))
-        trigger.value = props.trigger as EditableAutomationTrigger; // EditableAutomationTrigger.createFrom(obj)
+        const obj: AutomationTrigger = JSON.parse(JSON.stringify(props.trigger))
+        trigger.value = EditableAutomationTrigger.createFrom(obj)
 
     }, { immediate: true }
 )
@@ -71,7 +71,6 @@ const exposesList = computed(() => {
 
 
             <!-- Conditions -->
-
             <table class="table">
                 <thead>
                     <tr>

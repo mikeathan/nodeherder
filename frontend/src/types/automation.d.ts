@@ -15,7 +15,6 @@ export type Automation = {
 
 export interface AutomationTriggerWrapper extends AutomationTrigger {
   name: string;
-  idx: number; // TEMPORARY - need to remove!!!
   conditions: AutomationTriggerConditions;
   action: AutomationTriggerAction;
   isValid(): boolean;
@@ -35,7 +34,6 @@ export interface AutomationTriggerWrapper extends AutomationTrigger {
 
 export type AutomationTrigger = {
   name: string;
-  idx: number; // TEMPORARY - need to remove!!!
   conditions: AutomationTriggerConditions;
   action: AutomationTriggerAction;
 };

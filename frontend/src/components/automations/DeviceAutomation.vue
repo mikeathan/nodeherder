@@ -5,7 +5,7 @@ import Trigger from "./Trigger.vue"
 import DataInput from "../input/DataInput.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
-import { AutomationTrigger, Automation } from "@/types/automation";
+import { Automation, AutomationTrigger } from "@/types/automation";
 import { EditableAutomationTrigger, DeviceAutomation } from "../../contracts/automations";
 const emit = defineEmits(['cancel'])
 
@@ -24,10 +24,8 @@ watch(
         var sourceAutomation = store.getters["automations/find"](props.id) as Device;
         if (sourceAutomation != undefined) {
             // make a deep copy to make it not reactive
-            automation.value = JSON.parse(JSON.stringify(sourceAutomation)) as Automation
-            automation.value.triggers.forEach(function callback(trigger, index) {
-                trigger.idx = index
-            });
+            automation.value = JSON.parse(JSON.stringify(sourceAutomation)) as DeviceAutomation
+
         } else {
 
             automation.value = new DeviceAutomation()
@@ -82,9 +80,6 @@ function saveTrigger(trigger: AutomationTrigger): void {
     const idx = automation.value.triggers.indexOf(trigger)
     if (idx == -1) {
         automation.value.triggers.push(trigger)
-        // automation.value.triggers.forEach(function callback(trigger, index) {
-        //     trigger.idx = index
-        // });
     } else {
         automation.value.triggers[idx] = trigger
     }
@@ -120,6 +115,7 @@ function getActionDescription(trigger: AutomationTrigger): string {
 
 function rowClicked(trigger: AutomationTrigger): void {
     selectedTrigger.value = trigger;
+    showTriggerCreation.value = true;
 }
 
 function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
@@ -193,7 +189,6 @@ function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
                         </thead>
                         <tbody v-for="(trigger, index) in automation.triggers" :item="trigger">
                             <tr>
-
                                 <th scope="row">
                                     {{ index + 1 }}
                                 </th>
@@ -215,7 +210,6 @@ function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
                         <button type="button" class="btn-close" aria-label="Close" @click="() => showTriggerCreation = false // close trigger panel
                             "></button>
                         <div class="col">
-
                             <Trigger :id="props.id" :trigger="selectedTrigger" @save="saveTrigger" @delete="deleteTrigger">
                             </Trigger>
                         </div>

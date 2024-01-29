@@ -16,7 +16,7 @@ export class DeviceAutomation implements Automation {
   friendlyname: string;
   description: string;
   enabled: boolean;
-  triggers: Array<AutomationTriggerWrapper>;
+  triggers: Array<AutomationTrigger>;
 
   constructor() {
     this.id = "";
@@ -29,14 +29,12 @@ export class DeviceAutomation implements Automation {
 
 export class EditableAutomationTrigger implements AutomationTriggerWrapper {
   name: string;
-  idx: number; // TEMPORARY - need to remove!!!
   conditions: AutomationTriggerConditions;
   action: AutomationTriggerAction;
 
   static create(): AutomationTriggerWrapper {
     const trigger = {} as AutomationTriggerWrapper;
     trigger.name = "";
-    trigger.idx = -1;
     trigger.conditions = [];
     trigger.action = new EditableActionTrigger();
     return new EditableAutomationTrigger(trigger);
@@ -48,7 +46,6 @@ export class EditableAutomationTrigger implements AutomationTriggerWrapper {
 
   private constructor(trigger: AutomationTrigger) {
     this.name = trigger.name;
-    this.idx = trigger.idx;
     this.conditions = trigger.conditions;
     this.action = trigger.action;
   }
