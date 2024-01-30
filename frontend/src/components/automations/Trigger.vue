@@ -1,52 +1,52 @@
 <script setup lang="ts">
 
-import { computed, watch, ref, PropType } from "vue";
+import { computed, watch, ref, toRef, reactive, PropType } from "vue";
 
 import TriggerCondition from "./TriggerCondition.vue"
 import TriggerAction from "./TriggerAction.vue";
 import Selector from "../input/Selector.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
-import { AutomationTrigger, AutomationTriggerCondition, AutomationTriggerWrapper } from "@/types/automation";
+import { AutomationTrigger, AutomationTriggerCondition } from "@/types/automation";
 import { EditableAutomationTrigger } from "../../contracts/automations"
 
 const props = defineProps({
     id: { type: String },
-    trigger: { type: Object as PropType<AutomationTrigger> },
+    trigger: { type: Object as PropType<AutomationTrigger>, default: {} as AutomationTrigger },
 });
 
-TODO: remove AutomationTriggerWrapper
-const trigger = ref<AutomationTriggerWrapper>(EditableAutomationTrigger.create())
+const trigger2 = Object.assign({}, props.trigger)//const trigger = Object.assign({}, props.trigger)
+//const trigger = ref<AutomationTrigger>(props.trigger)
 const emit = defineEmits(['save', 'delete'])
 
-watch(
-    () => props.trigger,
-    () => {
+// watch(
+//     () => props.trigger,
+//     () => {
 
-        const obj: AutomationTrigger = JSON.parse(JSON.stringify(props.trigger))
-        trigger.value = EditableAutomationTrigger.createFrom(obj)
+//         // const obj: AutomationTrigger = JSON.parse(JSON.stringify(props.trigger))
+//         // trigger.value = obj;//EditableAutomationTrigger.createFrom(props.trigger)
 
-    }, { immediate: true }
-)
+//     }, { immediate: true }
+// )
 
 function removeAction(event: Event): void {
-    trigger.value.clearAction()
+    //trigger.value.clearAction()
 }
 
 function addCondition(): void {
-    trigger.value.addCondition()
+    //trigger.value.addCondition()
 }
 
 function removeCondition(condition: AutomationTriggerCondition): void {
-    trigger.value.removeCondition(condition)
+    // trigger.value.removeCondition(condition)
 }
 
 function save() {
-    emit('save', trigger.value)
+    emit('save', trigger2)
 }
 
 function remove() {
-    emit('delete', trigger.value)
+    emit('delete', trigger2)
 }
 
 const exposesList = computed(() => {
@@ -63,9 +63,9 @@ const exposesList = computed(() => {
         <!-- TODO:  -->
         <!-- if automation for device exists message user else we overwrite it -->
 
-        <div class="row" v-if="trigger.name == ''">
-            <Selector placeholder="Select trigger" :items="exposesList" :value="trigger.name" alignment="left"
-                :disabled="trigger.name != ''" @update:data="v => trigger.name = v">
+        <div class="row" v-if="trigger2.name == ''">
+            <Selector placeholder="Select trigger" :items="exposesList" :value="trigger2.name" alignment="left"
+                :disabled="trigger2.name != ''" @update:data="v => trigger2.name = v">
             </Selector>
         </div>
         <div class="row" v-else>
@@ -76,7 +76,8 @@ const exposesList = computed(() => {
                 <thead>
                     <tr>
                         <th scope="col">
-                            Trigger {{ trigger.displayName() }}
+                            TEMP
+                            <!-- Trigger {{ trigger.displayName() }} -->
                         </th>
                         <th scope="col">#</th>
                     </tr>
@@ -90,7 +91,7 @@ const exposesList = computed(() => {
                         </h5>
                     </th>
                 </tr>
-                <tbody v-for="(condition, index) in  trigger.conditions " :item="condition">
+                <tbody v-for="(condition, index) in  trigger2.conditions " :item="condition">
                     <tr>
                         <th scope="w-25">
                             <TriggerCondition :id="props.id" :name="condition.name" :operator="condition.equality"
@@ -120,18 +121,18 @@ const exposesList = computed(() => {
                 <tbody>
 
                     <tr>
+                        <!-- @update:id="(id, name) => trigger.setActionDeviceId(id, name)"
+                                @update:property="v => trigger.setActionProperty(v)" -->
                         <th scope="w-25">
-                            <TriggerAction :id="trigger.action.id" :property="trigger.action.property"
-                                :data="trigger.action.data" :delay="trigger.action.delay"
-                                :operation="trigger.action.operation"
-                                @update:id="(id, name) => trigger.setActionDeviceId(id, name)"
-                                @update:property="v => trigger.setActionProperty(v)"
-                                @update:data="v => trigger.action.data = v" @update:delay="v => trigger.action.delay = v"
-                                @update:operation="v => trigger.action.operation = v">
+                            <TriggerAction :id="trigger2.action.id" :property="trigger2.action.property"
+                                :data="trigger2.action.data" :delay="trigger2.action.delay"
+                                :operation="trigger2.action.operation" @update:data="v => trigger2.action.data = v"
+                                @update:delay="v => trigger2.action.delay = v"
+                                @update:operation="v => trigger2.action.operation = v">
                             </TriggerAction>
                         </th>
                         <td>
-                            <span v-if="trigger.action.id != ''" class="fa fa-trash-alt fa-sm" @click="removeAction">
+                            <span v-if="trigger2.action.id != ''" class="fa fa-trash-alt fa-sm" @click="removeAction">
                             </span>
                         </td>
                     </tr>
@@ -141,7 +142,8 @@ const exposesList = computed(() => {
         <div class="row  pt-3">
             <div class="row pt-3">
                 <div class="col">
-                    <button type="button" class="btn btn-light" :disabled="trigger.isValid() == false" @click="save">
+                    <button type="button" class="btn btn-light" @click="save">
+                        <!-- :disabled="trigger.isValid() == false"  -->
                         Save
                     </button>
                     <button type="button" class="btn btn-light" @click="remove">

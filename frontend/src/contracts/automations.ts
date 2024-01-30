@@ -4,10 +4,10 @@ import {
   AutomationTriggerCondition,
   AutomationTriggerAction,
   AutomationTriggerConditions,
-  AutomationTriggerWrapper,
 } from "../types/automation";
 import { Nullable } from "../types/types";
 import { capitalizeText } from "../modules/formatters/text.formatter";
+import { genenerateUniqueId } from "../utils/unique";
 
 export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
 
@@ -27,20 +27,21 @@ export class DeviceAutomation implements Automation {
   }
 }
 
-export class EditableAutomationTrigger implements AutomationTriggerWrapper {
+export class EditableAutomationTrigger implements AutomationTrigger {
   name: string;
   conditions: AutomationTriggerConditions;
   action: AutomationTriggerAction;
 
-  static create(): AutomationTriggerWrapper {
-    const trigger = {} as AutomationTriggerWrapper;
+  static create(): AutomationTrigger {
+    const trigger = {} as EditableAutomationTrigger;
     trigger.name = "";
     trigger.conditions = [];
     trigger.action = new EditableActionTrigger();
+
     return new EditableAutomationTrigger(trigger);
   }
 
-  static createFrom(trigger: AutomationTrigger): AutomationTriggerWrapper {
+  static createFrom(trigger: AutomationTrigger): AutomationTrigger {
     return new EditableAutomationTrigger(trigger);
   }
 
