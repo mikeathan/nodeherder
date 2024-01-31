@@ -1,68 +1,30 @@
 <script setup lang="ts">
-import { computed, ref, watchEffect, watch } from "vue";
+import { computed, ref, watchEffect, watch, PropType, reactive } from "vue";
 import DataInput from "../input/DataInput.vue"
 import Selector from "../input/Selector.vue"
 import { OperationType, resolveObjectOperations } from "../../contracts/operations"
 import { store } from "../../store/index";
 import { Device, Devices } from "@/types/device";
 import { KeyyValuePair } from "@/types/types";
+import { AutomationTriggerAction } from "@/types/automation";
 
 const props = defineProps({
-    id: {
-        type: String,
-        default: ''
+    action: {
+        type: Object as PropType<AutomationTriggerAction>,
+        default: {} as AutomationTriggerAction,
+        required: true
     },
-    property: {
-        type: String,
-        default: ''
-    },
-    data: null,
-    delay: null,
-    operation: {
-        type: Number,
-        default: 0
-    }
+
 });
 
-
+const action = reactive({ ...props.action })
 const emit = defineEmits<{
-    (e: 'update:id', id: string, name: string): void,
-    (e: 'update:property', property: string): void,
-    (e: 'update:data', data: any): void,
-    (e: 'update:delay', data: number): void,
-    (e: 'update:operation', data: number): void,
+    (e: 'update', action: AutomationTriggerAction): void,
 }>()
 
-const id = ref<string>("")
-const property = ref<string>("");
-const data = ref<any>("");
-const delay = ref<number | null>(null);
-const operation = ref<number>(0)
-
-watchEffect(() => id.value = props.id);
-watchEffect(() => data.value = props.data);
-watchEffect(() => operation.value = props.operation);
-watch(
-    () => props.delay,
-    () => {
-        delay.value = props.delay
-        if (delay.value != null && delay.value >= 1000) {
-            delay.value /= 60000 // convert to minutes
-        }
-    },
-    { immediate: true }
-);
-
-watch(
-    () => props.property,
-    () => {
-        property.value = props.property == null ? "" : props.property
-    },
-    { immediate: true }
-);
 
 const device = computed(() => {
-    return store.getters["devices/find"](id.value);
+    return store.getters["devices/find"](action.id);
 });
 
 const deviceFeatureList = computed(() => {
@@ -83,7 +45,7 @@ const deviceFeatureList = computed(() => {
 })
 
 const getFeatureNames = computed(() => {
-    var device = store.getters["devices/find"](id.value) as Device;
+    var device = store.getters["devices/find"](action.id) as Device;
     if (device == undefined) {
         return []
     }
@@ -113,17 +75,17 @@ const getPresets = computed(() => {
 })
 
 const showPresets = computed<boolean>(() => {
-    const device = store.getters["devices/find"](id.value) as Device;
+    const device = store.getters["devices/find"](action.id) as Device;
     if (device === undefined) {
         return false
     }
 
-    if (property.value === '') {
+    if (action.property === '') {
         return false
     }
 
-    const feature = device.exposes[property.value];
-    switch (+operation.value) {
+    const feature = device.exposes[action.property];
+    switch (+action.operation) {
         case OperationType.StepIncreaseOperation:
         case OperationType.StepDecreaseOperation:
         case OperationType.RotationOperation:
@@ -142,72 +104,74 @@ const showPresets = computed<boolean>(() => {
 
 
 const feature = computed(() => {
-    if (property.value == '') {
+    if (action.property == '') {
         return []
     }
-    var device = store.getters["devices/find"](id.value);
+    var device = store.getters["devices/find"](action.id);
     if (device == undefined) {
         return []
     }
-    return device.exposes[property.value];
+    return device.exposes[action.property];
 });
 
 function propertyUpdated(event: any) {
     const value = event;
     if (value == "" || device.value == undefined) {
-        property.value = ""
-        data.value = "" // reset data
-        emit('update:property', property.value)
+        action.data = ""
+        action.property = ""
+        emit('update', action)
 
         return;
     }
 
-    property.value = value
-    delay.value = null;
-    operation.value = 0;
+    action.property = value
+    action.delay = null;
+    action.operation = 0;
     if (feature.value.type == 'binary' || feature.value.type == "enum") {
-        data.value = ""
+        action.data = ""
     } else {
-        data.value = 0
+        action.data = 0
     }
 
-    emit('update:property', property.value)
+    emit('update', action)
 }
 
-
-
-
-// NOTE
-// its messy but we need it for now as device is not a defined class
-// keep it for now until refactoring 
-
 function operationUpdated(op: any) {
-    operation.value = parseInt(op)
-    emit('update:operation', operation.value)
+    action.operation = parseInt(op)
+    emit('update', action)
 }
 
 function dataUpdated(event: any) {
-    data.value = event
-    emit('update:data', event)
+    action.data = event
+    console.log("action dataa updated ", action.data, event)
+
+    emit('update', action)
+
 }
 
 function delayUpdated(event: number) {
-    delay.value = event
-    emit('update:delay', event * 60000)// convert to minutes
+    // TODO use a formatter
+    //emit('update:delay', event * 60000)// convert to minutes
+    action.delay = event
+    emit('update', action)
 }
 
 function deviceIdUpdated(event: string) {
-    id.value = event
-    var device = store.getters["devices/find"](id.value) as Device;
+    action.id = event
+    var device = store.getters["devices/find"](action.id) as Device;
     if (device != undefined) {
-        emit('update:id', id.value, device.friendly_name)
+        //emit('update:id', id.value, device.friendly_name)
+
+        action.id = device.id
+        action.friendlyname = device.friendly_name
+        emit('update', action)
     }
 }
 
 function presetUpdated(event: string) {
     var value = parseInt(event)
-    data.value = value
-    emit('update:data', value)
+    action.data = value;
+    emit('update', action)
 }
 
 
@@ -224,18 +188,18 @@ function getPlaceholder(type: string): string {
 <template>
     <div class="row">
         <div v-if="getPresets" class="col-xl-3 col-md-4">
-            <Selector placeholder=" Select device" :items="deviceFeatureList" :value="id" alignment="center"
-                @update:data="deviceIdUpdated" :disabled="id != ''">
+            <Selector placeholder=" Select device" :items="deviceFeatureList" :value="action.id" alignment="center"
+                @update:data="deviceIdUpdated" :disabled="action.id != ''">
             </Selector>
         </div>
         <div class="col-xl-3 col-md-4">
-            <Selector placeholder="Select property" :items="getFeatureNames" :value="property" alignment="center"
-                @update:data="propertyUpdated" :disabled="id == ''">
+            <Selector placeholder="Select property" :items="getFeatureNames" :value="action.property" alignment="center"
+                @update:data="propertyUpdated" :disabled="action.id == ''">
             </Selector>
         </div>
         <div class="col-xl-4 col-md-3">
-            <DataInput :type="feature.type" :placeholder="getPlaceholder(feature.type)" :items="getItems" :data="data"
-                :disabled="property == ''" @update:data="dataUpdated">
+            <DataInput :type="feature.type" :placeholder="getPlaceholder(feature.type)" :items="getItems"
+                :data="action.data" :disabled="action.property == ''" @update:data="dataUpdated">
             </DataInput>
         </div>
         <div class="col-xl-2">
@@ -248,9 +212,10 @@ function getPlaceholder(type: string): string {
 
         </div>
         <div class="collapse" id="collapseOptions">
-            <div class="row pt-2" :disabled="property == ''">
+            <div class="row pt-2" :disabled="action.property == ''">
                 <div class="col-xl-3 ">
-                    <Selector :items="resolveObjectOperations(feature)" :value="operation" @update:data="operationUpdated">
+                    <Selector :items="resolveObjectOperations(feature)" :value="action.operation"
+                        @update:data="operationUpdated">
                     </Selector>
                 </div>
                 <div v-if="showPresets" class="col-xl-3">
@@ -258,7 +223,7 @@ function getPlaceholder(type: string): string {
                     </Selector>
                 </div>
                 <div class="col-xl-3">
-                    <DataInput placeholder="Delay (min)" type="numeric" :data="delay" @update:data="delayUpdated">
+                    <DataInput placeholder="Delay (min)" type="numeric" :data="action.delay" @update:data="delayUpdated">
                     </DataInput>
                 </div>
 

@@ -65,10 +65,6 @@ export class EditableAutomationTrigger implements AutomationTrigger {
     this.conditions.push(new EditableTriggerCondition());
   }
 
-  removeCondition(condition: AutomationTriggerCondition): void {
-    this.conditions = this.conditions.filter((c) => c != condition);
-  }
-
   public displayName(): string {
     return capitalizeText(this.name);
   }
@@ -85,15 +81,6 @@ export class EditableAutomationTrigger implements AutomationTrigger {
     this.action.operation = 0;
     this.action.delay = null;
     this.action.data = null;
-  }
-
-  public clearAction(): void {
-    this.action.id = "";
-    this.action.friendlyname = "";
-    this.action.property = "";
-    this.action.data = null;
-    this.action.operation = 0;
-    this.action.delay = null;
   }
 }
 
@@ -136,4 +123,17 @@ export class EditableActionTrigger implements AutomationTriggerAction {
     this.id = id;
     this.friendlyname = friendlyname;
   }
+}
+
+export function clearAction(action: AutomationTriggerAction): void {
+  action.id = "";
+  action.friendlyname = "";
+  action.property = "";
+  action.data = null;
+  action.operation = 0;
+  action.delay = null;
+}
+
+export function removeCondition(condition: AutomationTriggerCondition): void {
+  this.conditions = this.conditions.filter((c) => c != condition);
 }

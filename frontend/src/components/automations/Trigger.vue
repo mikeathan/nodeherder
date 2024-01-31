@@ -7,37 +7,24 @@ import TriggerAction from "./TriggerAction.vue";
 import Selector from "../input/Selector.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
-import { AutomationTrigger, AutomationTriggerCondition } from "@/types/automation";
-import { EditableAutomationTrigger } from "../../contracts/automations"
+import { AutomationTrigger, AutomationTriggerAction, AutomationTriggerCondition } from "@/types/automation";
+import { EditableAutomationTrigger, EditableTriggerCondition, clearAction } from "../../contracts/automations"
+import { capitalizeText } from "../../modules/formatters/text.formatter";
+
 
 const props = defineProps({
     id: { type: String },
     trigger: { type: Object as PropType<AutomationTrigger>, default: {} as AutomationTrigger },
 });
 
-const form = ref<AutomationTrigger>({} as AutomationTrigger)
+// TODO: maybe use some automation context responsible for these operations 
+const action = ref<AutomationTriggerAction>({} as AutomationTriggerAction)
+const trigger = ref<AutomationTrigger>(props.trigger)
+
 const emit = defineEmits(['save', 'delete'])
-//const form = Object.assign({}, props.trigger)
-//const form = toRaw(props.trigger)
-watch(
-    () => props.trigger,
-    () => {
-
-        // const obj: AutomationTrigger = JSON.parse(JSON.stringify(props.trigger))
-
-        form.value = JSON.parse(JSON.stringify(props.trigger)) as AutomationTrigger;//EditableAutomationTrigger.createFrom(props.trigger)
-        console.log("props: ", props.trigger, " TYPE: ", typeof props.trigger)
-        console.log("deserialzied:: ", form.value, " TYPE: ", typeof form.value)
-
-    }, { immediate: true }
-)
-
-function removeAction(event: Event): void {
-    //trigger.value.clearAction()
-}
 
 function addCondition(): void {
-    //trigger.value.addCondition()
+    trigger.value.conditions.push(new EditableTriggerCondition());
 }
 
 function removeCondition(condition: AutomationTriggerCondition): void {
@@ -45,12 +32,18 @@ function removeCondition(condition: AutomationTriggerCondition): void {
 }
 
 function save() {
-    console.log("Save")
-    emit('save', form.value)
+    trigger.value.action.data = action.value.data
+    trigger.value.action.friendlyname = action.value.friendlyname
+    trigger.value.action.id = action.value.id
+    trigger.value.action.property = action.value.property
+    trigger.value.action.operation = action.value.operation
+    trigger.value.action.delay = action.value.delay
+
+    emit('save', trigger.value)
 }
 
 function remove() {
-    emit('delete', form)
+    emit('delete', trigger.value)
 }
 
 const exposesList = computed(() => {
@@ -80,8 +73,7 @@ const exposesList = computed(() => {
                 <thead>
                     <tr>
                         <th scope="col">
-                            TEMP
-                            <!-- Trigger {{ trigger.displayName() }} -->
+                            Trigger {{ capitalizeText(trigger.name) }}
                         </th>
                         <th scope="col">#</th>
                     </tr>
@@ -125,19 +117,14 @@ const exposesList = computed(() => {
                 <tbody>
 
                     <tr>
-                        <!-- @update:id="(id, name) => trigger.setActionDeviceId(id, name)"
-                                @update:property="v => trigger.setActionProperty(v)" -->
-
-                        dont emit changes until we have actually click save in Action component
                         <th scope="w-25">
-                            <TriggerAction :id="form.action.id" :property="form.action.property" :data="form.action.data"
-                                :delay="form.action.delay" :operation="form.action.operation"
-                                @update:data="v => form.action.data = v" @update:delay="v => form.action.delay = v"
-                                @update:operation="v => form.action.operation = v">
+
+                            <TriggerAction :action="trigger.action" @update="v => action = v">
                             </TriggerAction>
                         </th>
                         <td>
-                            <span v-if="form.action.id != ''" class="fa fa-trash-alt fa-sm" @click="removeAction">
+                            <span v-if="trigger.action.id != ''" class="fa fa-trash-alt fa-sm" @click="(v) => clearAction(trigger.action)
+                                ">
                             </span>
                         </td>
                     </tr>
