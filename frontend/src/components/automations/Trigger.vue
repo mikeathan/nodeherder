@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { computed, watch, ref, toRef, reactive, PropType } from "vue";
+import { computed, watch, ref, toRef, toRaw, reactive, PropType } from "vue";
 
 import TriggerCondition from "./TriggerCondition.vue"
 import TriggerAction from "./TriggerAction.vue";
@@ -15,19 +15,22 @@ const props = defineProps({
     trigger: { type: Object as PropType<AutomationTrigger>, default: {} as AutomationTrigger },
 });
 
-const trigger2 = Object.assign({}, props.trigger)//const trigger = Object.assign({}, props.trigger)
-//const trigger = ref<AutomationTrigger>(props.trigger)
+const form = ref<AutomationTrigger>({} as AutomationTrigger)
 const emit = defineEmits(['save', 'delete'])
+//const form = Object.assign({}, props.trigger)
+//const form = toRaw(props.trigger)
+watch(
+    () => props.trigger,
+    () => {
 
-// watch(
-//     () => props.trigger,
-//     () => {
+        // const obj: AutomationTrigger = JSON.parse(JSON.stringify(props.trigger))
 
-//         // const obj: AutomationTrigger = JSON.parse(JSON.stringify(props.trigger))
-//         // trigger.value = obj;//EditableAutomationTrigger.createFrom(props.trigger)
+        form.value = JSON.parse(JSON.stringify(props.trigger)) as AutomationTrigger;//EditableAutomationTrigger.createFrom(props.trigger)
+        console.log("props: ", props.trigger, " TYPE: ", typeof props.trigger)
+        console.log("deserialzied:: ", form.value, " TYPE: ", typeof form.value)
 
-//     }, { immediate: true }
-// )
+    }, { immediate: true }
+)
 
 function removeAction(event: Event): void {
     //trigger.value.clearAction()
@@ -42,11 +45,12 @@ function removeCondition(condition: AutomationTriggerCondition): void {
 }
 
 function save() {
-    emit('save', trigger2)
+    console.log("Save")
+    emit('save', form.value)
 }
 
 function remove() {
-    emit('delete', trigger2)
+    emit('delete', form)
 }
 
 const exposesList = computed(() => {
@@ -63,9 +67,9 @@ const exposesList = computed(() => {
         <!-- TODO:  -->
         <!-- if automation for device exists message user else we overwrite it -->
 
-        <div class="row" v-if="trigger2.name == ''">
-            <Selector placeholder="Select trigger" :items="exposesList" :value="trigger2.name" alignment="left"
-                :disabled="trigger2.name != ''" @update:data="v => trigger2.name = v">
+        <div class="row" v-if="trigger.name == ''">
+            <Selector placeholder="Select trigger" :items="exposesList" :value="trigger.name" alignment="left"
+                :disabled="trigger.name != ''" @update:data="v => trigger.name = v">
             </Selector>
         </div>
         <div class="row" v-else>
@@ -91,7 +95,7 @@ const exposesList = computed(() => {
                         </h5>
                     </th>
                 </tr>
-                <tbody v-for="(condition, index) in  trigger2.conditions " :item="condition">
+                <tbody v-for="(condition, index) in  trigger.conditions " :item="condition">
                     <tr>
                         <th scope="w-25">
                             <TriggerCondition :id="props.id" :name="condition.name" :operator="condition.equality"
@@ -123,16 +127,17 @@ const exposesList = computed(() => {
                     <tr>
                         <!-- @update:id="(id, name) => trigger.setActionDeviceId(id, name)"
                                 @update:property="v => trigger.setActionProperty(v)" -->
+
+                        dont emit changes until we have actually click save in Action component
                         <th scope="w-25">
-                            <TriggerAction :id="trigger2.action.id" :property="trigger2.action.property"
-                                :data="trigger2.action.data" :delay="trigger2.action.delay"
-                                :operation="trigger2.action.operation" @update:data="v => trigger2.action.data = v"
-                                @update:delay="v => trigger2.action.delay = v"
-                                @update:operation="v => trigger2.action.operation = v">
+                            <TriggerAction :id="form.action.id" :property="form.action.property" :data="form.action.data"
+                                :delay="form.action.delay" :operation="form.action.operation"
+                                @update:data="v => form.action.data = v" @update:delay="v => form.action.delay = v"
+                                @update:operation="v => form.action.operation = v">
                             </TriggerAction>
                         </th>
                         <td>
-                            <span v-if="trigger2.action.id != ''" class="fa fa-trash-alt fa-sm" @click="removeAction">
+                            <span v-if="form.action.id != ''" class="fa fa-trash-alt fa-sm" @click="removeAction">
                             </span>
                         </td>
                     </tr>
