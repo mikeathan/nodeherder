@@ -3,6 +3,8 @@ import { computed, ref, watchEffect, watch, PropType, reactive } from "vue";
 import DataInput from "../input/DataInput.vue"
 import Selector from "../input/Selector.vue"
 import { OperationType, resolveObjectOperations } from "../../contracts/operations"
+import { setDeviceId, setProperty } from "../../contracts/automations"
+
 import { store } from "../../store/index";
 import { Device, Devices } from "@/types/device";
 import { KeyyValuePair } from "@/types/types";
@@ -124,15 +126,10 @@ function propertyUpdated(event: any) {
         return;
     }
 
-    action.property = value
-    action.delay = null;
-    action.operation = 0;
-    if (feature.value.type == 'binary' || feature.value.type == "enum") {
-        action.data = ""
-    } else {
-        action.data = 0
-    }
-
+    var d = store.getters["devices/find"](action.id) as Device;
+    const feature = d.exposes[action.property];
+    console.log("property updated ", feature)
+    setProperty(action, value, feature.type)
     emit('update', action)
 }
 
@@ -160,10 +157,8 @@ function deviceIdUpdated(event: string) {
     action.id = event
     var device = store.getters["devices/find"](action.id) as Device;
     if (device != undefined) {
-        //emit('update:id', id.value, device.friendly_name)
 
-        action.id = device.id
-        action.friendlyname = device.friendly_name
+        setDeviceId(action, device.id, device.friendly_name)
         emit('update', action)
     }
 }

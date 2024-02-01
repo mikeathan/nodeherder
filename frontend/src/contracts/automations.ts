@@ -5,9 +5,9 @@ import {
   AutomationTriggerAction,
   AutomationTriggerConditions,
 } from "../types/automation";
+import { ExposeTypes, ExposeType } from "../types/device";
+
 import { Nullable } from "../types/types";
-import { capitalizeText } from "../modules/formatters/text.formatter";
-import { genenerateUniqueId } from "../utils/unique";
 
 export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
 
@@ -49,38 +49,6 @@ export class EditableAutomationTrigger implements AutomationTrigger {
     this.name = trigger.name;
     this.conditions = trigger.conditions;
     this.action = trigger.action;
-  }
-
-  isValid(): boolean {
-    return (
-      this.name != "" && this.action.id != "" && this.action.property != ""
-    );
-  }
-
-  hasConditions(): boolean {
-    return this.conditions.length != 0;
-  }
-
-  addCondition() {
-    this.conditions.push(new EditableTriggerCondition());
-  }
-
-  public displayName(): string {
-    return capitalizeText(this.name);
-  }
-
-  public setActionDeviceId(id: string, friendlyname: string): void {
-    this.action.id = id;
-    this.action.friendlyname = friendlyname;
-  }
-
-  public setActionProperty(value: string): void {
-    this.action.property = value;
-
-    // reset value
-    this.action.operation = 0;
-    this.action.delay = null;
-    this.action.data = null;
   }
 }
 
@@ -134,6 +102,51 @@ export function clearAction(action: AutomationTriggerAction): void {
   action.delay = null;
 }
 
-export function removeCondition(condition: AutomationTriggerCondition): void {
-  this.conditions = this.conditions.filter((c) => c != condition);
+export function insertCondition(
+  trigger: AutomationTrigger,
+  newCondition?: AutomationTriggerCondition
+) {
+  trigger.conditions.push(newCondition ?? new EditableTriggerCondition());
+}
+
+export function removeCondition(
+  trigger: AutomationTrigger,
+  condition: AutomationTriggerCondition
+) {
+  trigger.conditions = trigger.conditions.filter((c) => c != condition);
+}
+
+export function isValid(automation: AutomationTrigger): boolean {
+  return (
+    automation.name != "" &&
+    automation.action.id != "" &&
+    automation.action.property != ""
+  );
+}
+
+export function setDeviceId(
+  action: AutomationTriggerAction,
+  id: string,
+  friendlyname: string
+): void {
+  action.id = id;
+  action.friendlyname = friendlyname;
+}
+
+export function setProperty(
+  action: AutomationTriggerAction,
+  value: string,
+  type: string
+): void {
+  action.property = value;
+
+  // reset remaining properties
+  action.operation = 0;
+  action.delay = null;
+
+  if (type == ExposeTypes.Binary || type == ExposeTypes.Enum) {
+    action.data = "";
+  } else {
+    action.data = 0;
+  }
 }

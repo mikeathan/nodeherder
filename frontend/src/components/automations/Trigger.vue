@@ -7,8 +7,8 @@ import TriggerAction from "./TriggerAction.vue";
 import Selector from "../input/Selector.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
-import { AutomationTrigger, AutomationTriggerAction, AutomationTriggerCondition } from "@/types/automation";
-import { EditableAutomationTrigger, EditableTriggerCondition, clearAction } from "../../contracts/automations"
+import { AutomationTrigger, AutomationTriggerAction } from "@/types/automation";
+import { clearAction, removeCondition, isValid, insertCondition } from "../../contracts/automations"
 import { capitalizeText } from "../../modules/formatters/text.formatter";
 
 
@@ -22,14 +22,6 @@ const action = ref<AutomationTriggerAction>({} as AutomationTriggerAction)
 const trigger = ref<AutomationTrigger>(props.trigger)
 
 const emit = defineEmits(['save', 'delete'])
-
-function addCondition(): void {
-    trigger.value.conditions.push(new EditableTriggerCondition());
-}
-
-function removeCondition(condition: AutomationTriggerCondition): void {
-    // trigger.value.removeCondition(condition)
-}
 
 function save() {
     trigger.value.action.data = action.value.data
@@ -67,7 +59,6 @@ const exposesList = computed(() => {
         </div>
         <div class="row" v-else>
 
-
             <!-- Conditions -->
             <table class="table">
                 <thead>
@@ -81,13 +72,14 @@ const exposesList = computed(() => {
                 <tr>
                     <th scope="col">
                         <h5>Conditions
-                            <button type="button" class="btn btn-default btn-number" @click="addCondition()">
+                            <button type="button" class="btn btn-default btn-number"
+                                @click="(e) => insertCondition(trigger)">
                                 <span class="fa fa-plus"></span>
                             </button>
                         </h5>
                     </th>
                 </tr>
-                <tbody v-for="(condition, index) in  trigger.conditions " :item="condition">
+                <tbody v-for="( condition, index ) in   trigger.conditions  " :item="condition">
                     <tr>
                         <th scope="w-25">
                             <TriggerCondition :id="props.id" :name="condition.name" :operator="condition.equality"
@@ -97,7 +89,7 @@ const exposesList = computed(() => {
                             </TriggerCondition>
                         </th>
                         <td>
-                            <span class="fa fa-trash-alt fa-sm" @click="removeCondition(condition)">
+                            <span class="fa fa-trash-alt fa-sm" @click="removeCondition(trigger, condition)">
                             </span>
                         </td>
                     </tr>
@@ -135,10 +127,9 @@ const exposesList = computed(() => {
             <div class="row pt-3">
                 <div class="col">
                     <button type="button" class="btn btn-light" @click="save">
-                        <!-- :disabled="trigger.isValid() == false"  -->
                         Save
                     </button>
-                    <button type="button" class="btn btn-light" @click="remove">
+                    <button type="button" class="btn btn-light" :disabled="isValid(trigger) == false" @click="remove">
                         Delete
                     </button>
                 </div>

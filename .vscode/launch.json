@@ -8,6 +8,10 @@
       "webRoot": "${workspaceFolder}/src",
       "pathMappings": [
         {
+          "url": "webpack://frontend/src/contracts",
+          "path": "${workspaceFolder}/frontend/src/contracts"
+        },
+        {
           "url": "webpack://frontend/src/store",
           "path": "${workspaceFolder}/frontend/src/store"
         },

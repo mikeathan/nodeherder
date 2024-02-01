@@ -13,12 +13,20 @@ export type Device = {
   properties: KeyyValuePair<any>;
 };
 
+export const ExposeTypes = {
+  Empty: "",
+  Binary: "binary",
+  Enum: "enum",
+  Numeric: "numeric",
+};
+
+export type ExposeType = keyof ExposeTypes;
 export type Expose = {
   name: string;
   description: string;
   unit: string;
   data: any | null;
-  type: string;
+  type: ExposeType;
   attributes: Nullable<KeyyValuePair<any>>;
   presets: Nullable<KeyyValuePair<any>>;
   properties: Nullable<KeyyValuePair<any>>;
