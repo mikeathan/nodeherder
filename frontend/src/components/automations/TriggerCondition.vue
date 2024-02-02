@@ -116,7 +116,6 @@ function getOperators() {
 
 }
 function getItems() {
-    console.log("getItems", feature.value)
     if (feature.value.attributes == undefined) {
         return null
     }

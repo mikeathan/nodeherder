@@ -10,6 +10,7 @@ import { Device } from "@/types/device";
 import { AutomationTrigger, AutomationTriggerAction } from "@/types/automation";
 import { clearAction, removeCondition, isValid, insertCondition } from "../../contracts/automations"
 import { capitalizeText } from "../../modules/formatters/text.formatter";
+import { Props } from "../input/Slider.vue";
 
 
 const props = defineProps({
@@ -20,17 +21,30 @@ const props = defineProps({
 // TODO: maybe use some automation context responsible for these operations 
 const action = ref<AutomationTriggerAction>({} as AutomationTriggerAction)
 const trigger = ref<AutomationTrigger>(props.trigger)
+watch(
+    () => props.trigger,
+    () => {
+
+        action.data = props.trigger.action.data
+        action.friendlyname = props.trigger.action.friendlyname
+        action.id = props.trigger.action.id
+        action.property = props.trigger.action.property
+        action.operation = props.trigger.action.operation
+        action.delay = aprops.trigger.ction.delay
+    }, { immediate: true }
+)
 
 const emit = defineEmits(['save', 'delete'])
 
 function save() {
+
     trigger.value.action.data = action.value.data
     trigger.value.action.friendlyname = action.value.friendlyname
     trigger.value.action.id = action.value.id
     trigger.value.action.property = action.value.property
     trigger.value.action.operation = action.value.operation
     trigger.value.action.delay = action.value.delay
-
+    console.log("after save trigger.action: ", trigger.value.action)
     emit('save', trigger.value)
 }
 
@@ -110,12 +124,13 @@ const exposesList = computed(() => {
 
                     <tr>
                         <th scope="w-25">
-
-                            <TriggerAction :action="trigger.action" @update="v => action = v">
+                            initialize action properties
+                            <TriggerAction :action="action" @update="v => action = v">
                             </TriggerAction>
                         </th>
                         <td>
-                            <span v-if="trigger.action.id != ''" class="fa fa-trash-alt fa-sm" @click="(v) => clearAction(trigger.action)
+
+                            <span v-if="trigger.action.id != ''" class="fa fa-trash-alt fa-sm" @click="(v) => clearAction(action)
                                 ">
                             </span>
                         </td>

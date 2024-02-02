@@ -173,6 +173,8 @@ function getPlaceholder(type: string): string {
 </script>
 
 <template>
+    action.id{{ action.id }}
+
     <div class="row">
         <div v-if="getPresets" class="col-xl-3 col-md-4">
             <Selector placeholder=" Select device" :items="deviceFeatureList" :value="action.id" alignment="center"
@@ -201,6 +203,7 @@ function getPlaceholder(type: string): string {
         <div class="collapse" id="collapseOptions">
             <div class="row pt-2" :disabled="action.property == ''">
                 <div class="col-xl-3 ">
+                    REMOVE resolveObjectOperations
                     <Selector :items="resolveObjectOperations(feature)" :value="action.operation"
                         @update:data="operationUpdated">
                     </Selector>
