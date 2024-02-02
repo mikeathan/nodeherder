@@ -13,12 +13,6 @@ export type Device = {
   properties: KeyyValuePair<any>;
 };
 
-export const ExposeTypes = {
-  Empty: "",
-  Binary: "binary",
-  Enum: "enum",
-  Numeric: "numeric",
-};
 
 export type ExposeType = keyof ExposeTypes;
 export type Expose = {

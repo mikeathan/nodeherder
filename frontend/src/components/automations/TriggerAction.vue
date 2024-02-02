@@ -26,7 +26,7 @@ const emit = defineEmits<{
 
 
 const device = computed(() => {
-    return store.getters["devices/find"](action.id);
+    return store.getters["devices/find"](action.id) as Device;
 });
 
 const deviceFeatureList = computed(() => {
@@ -116,6 +116,7 @@ const feature = computed(() => {
     return device.exposes[action.property];
 });
 
+
 function propertyUpdated(event: any) {
     const value = event;
     if (value == "" || device.value == undefined) {
@@ -125,11 +126,8 @@ function propertyUpdated(event: any) {
 
         return;
     }
-
-    var d = store.getters["devices/find"](action.id) as Device;
-    const feature = d.exposes[action.property];
-    console.log("property updated ", feature)
-    setProperty(action, value, feature.type)
+    const newFeature = device.value.exposes[value]
+    setProperty(action, value, newFeature.type)
     emit('update', action)
 }
 
@@ -140,10 +138,7 @@ function operationUpdated(op: any) {
 
 function dataUpdated(event: any) {
     action.data = event
-    console.log("action dataa updated ", action.data, event)
-
     emit('update', action)
-
 }
 
 function delayUpdated(event: number) {

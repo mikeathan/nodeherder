@@ -1,3 +1,4 @@
+import { ExposeTypes } from "@/types/device.type";
 import {
   Automation,
   AutomationTrigger,
@@ -5,9 +6,8 @@ import {
   AutomationTriggerAction,
   AutomationTriggerConditions,
 } from "../types/automation";
-import { ExposeTypes, ExposeType } from "../types/device";
-
-import { Nullable } from "../types/types";
+import { ExposeType } from "../types/device";
+//import { Nullable } from "../types/types";
 
 export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
 
@@ -54,7 +54,7 @@ export class EditableAutomationTrigger implements AutomationTrigger {
 
 export class EditableTriggerCondition implements AutomationTriggerCondition {
   name: string;
-  value: Nullable<any>;
+  value: any | null;
   equality: string;
   constructor() {
     this.name = "";
@@ -67,9 +67,9 @@ export class EditableActionTrigger implements AutomationTriggerAction {
   id: string;
   friendlyname: string;
   property: string;
-  data: Nullable<any>;
+  data: any | null;
   operation: number;
-  delay: Nullable<number>;
+  delay: number | null;
 
   constructor() {
     this.id = "";
@@ -136,7 +136,7 @@ export function setDeviceId(
 export function setProperty(
   action: AutomationTriggerAction,
   value: string,
-  type: string
+  type: ExposeType
 ): void {
   action.property = value;
 
