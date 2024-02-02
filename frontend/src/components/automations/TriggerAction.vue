@@ -9,22 +9,21 @@ import { store } from "../../store/index";
 import { Device, Devices } from "@/types/device";
 import { KeyyValuePair } from "@/types/types";
 import { AutomationTriggerAction } from "@/types/automation";
-
+import { toMillisecs, toMinutes } from '@/modules/formatters/time.formatter'
 const props = defineProps({
     action: {
         type: Object as PropType<AutomationTriggerAction>,
         default: {} as AutomationTriggerAction,
         required: true
     },
-
 });
 
-const action = reactive({ ...props.action })
+
 const emit = defineEmits<{
     (e: 'update', action: AutomationTriggerAction): void,
 }>()
 
-
+const action = reactive({ ...props.action })
 const device = computed(() => {
     return store.getters["devices/find"](action.id) as Device;
 });
@@ -142,9 +141,7 @@ function dataUpdated(event: any) {
 }
 
 function delayUpdated(event: number) {
-    // TODO use a formatter
-    //emit('update:delay', event * 60000)// convert to minutes
-    action.delay = event
+    action.delay = toMillisecs(event)
     emit('update', action)
 }
 
@@ -213,7 +210,8 @@ function getPlaceholder(type: string): string {
                     </Selector>
                 </div>
                 <div class="col-xl-3">
-                    <DataInput placeholder="Delay (min)" type="numeric" :data="action.delay" @update:data="delayUpdated">
+                    <DataInput placeholder="Delay (min)" type="numeric" :data="toMinutes(action.delay)"
+                        @update:data="delayUpdated">
                     </DataInput>
                 </div>
 
