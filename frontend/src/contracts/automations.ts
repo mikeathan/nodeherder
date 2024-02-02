@@ -102,18 +102,31 @@ export function clearAction(action: AutomationTriggerAction): void {
   action.delay = null;
 }
 
-export function insertCondition(
+export function insertTriggerCondition(
   trigger: AutomationTrigger,
   newCondition?: AutomationTriggerCondition
 ) {
   trigger.conditions.push(newCondition ?? new EditableTriggerCondition());
 }
 
-export function removeCondition(
+export function insertCondition(
+  conditions: AutomationTriggerConditions,
+  newCondition?: AutomationTriggerCondition
+) {
+  conditions.push(newCondition ?? new EditableTriggerCondition());
+}
+export function removeTriggerCondition(
   trigger: AutomationTrigger,
   condition: AutomationTriggerCondition
 ) {
   trigger.conditions = trigger.conditions.filter((c) => c != condition);
+}
+
+export function removeCondition(
+  conditions: AutomationTriggerConditions,
+  condition: AutomationTriggerCondition
+) {
+  conditions = conditions.filter((c) => c != condition);
 }
 
 export function isValid(automation: AutomationTrigger): boolean {

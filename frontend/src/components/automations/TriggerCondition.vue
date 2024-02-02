@@ -1,14 +1,22 @@
 <script setup lang="ts">
 
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, PropType, reactive } from 'vue'
 import DataInput from "../input/DataInput.vue"
-import { EqualityOperators } from "../../contracts/automations"
+import { EqualityOperators, } from "../../contracts/automations"
+import { AutomationTriggerCondition } from "../../types/automation";
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
 
 const props = defineProps({
+    condition: {
+        type: Object as PropType<AutomationTriggerCondition>,
+        default: {} as AutomationTriggerCondition,
+        required: false
+    },
     id: {
         type: String,
+        default: '',
+        required: true
     },
     name: {
         type: String,
@@ -29,8 +37,10 @@ const emit = defineEmits<{
     (e: 'update:name', name: string): void,
     (e: 'update:value', property: any): void,
     (e: 'update:operator', data: string): void,
-}>()
+    (e: 'update', condition: AutomationTriggerCondition): void,
 
+}>()
+const condition = reactive({ ...props.condition }) as AutomationTriggerCondition
 const device = computed(() => {
     return store.getters["devices/find"](props.id) as Device;
 });
@@ -81,16 +91,25 @@ function exposeSelectionChanged(event: string): void {
 
     data.value = '';
     emit('update:name', event)
+
+    //condition.value.name = event
+    //emit('update', condition)
 }
 
 function operatorUpdated(event: string): void {
     operator.value = event
     emit('update:operator', event)
+
+    //condition.value.equality = event
+    //emit('update', condition)
 }
 
 function dataUpdated(event: any): void {
     data.value = event
     emit('update:value', event)
+
+    //condition.value.value = event
+    //emit('update', condition)
 }
 
 function getPlaceholder() {
@@ -113,8 +132,9 @@ function getOperators() {
         default:
             return EqualityOperators
     }
-
 }
+
+
 function getItems() {
     if (feature.value.attributes == undefined) {
         return null
