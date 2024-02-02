@@ -18,19 +18,14 @@ const props = defineProps({
     trigger: { type: Object as PropType<AutomationTrigger>, default: {} as AutomationTrigger },
 });
 
-// TODO: maybe use some automation context responsible for these operations 
 const action = ref<AutomationTriggerAction>({} as AutomationTriggerAction)
+const actionRef = ref<InstanceType<typeof TriggerAction>>()
 const trigger = ref<AutomationTrigger>(props.trigger)
+
 watch(
     () => props.trigger,
     () => {
-
-        action.data = props.trigger.action.data
-        action.friendlyname = props.trigger.action.friendlyname
-        action.id = props.trigger.action.id
-        action.property = props.trigger.action.property
-        action.operation = props.trigger.action.operation
-        action.delay = aprops.trigger.ction.delay
+        action.value = JSON.parse(JSON.stringify(props.trigger.action)) as AutomationTriggerAction;
     }, { immediate: true }
 )
 
@@ -58,6 +53,10 @@ const exposesList = computed(() => {
         .values(device.exposes)
         .map((e) => ({ [e.name]: e.name })))
 })
+
+function clearTriggerAction() {
+    actionRef.value?.clear()
+}
 
 </script>
 
@@ -103,6 +102,7 @@ const exposesList = computed(() => {
                             </TriggerCondition>
                         </th>
                         <td>
+                            broblem here it updates the source object, once we fix action then do same here
                             <span class="fa fa-trash-alt fa-sm" @click="removeCondition(trigger, condition)">
                             </span>
                         </td>
@@ -124,13 +124,12 @@ const exposesList = computed(() => {
 
                     <tr>
                         <th scope="w-25">
-                            initialize action properties
-                            <TriggerAction :action="action" @update="v => action = v">
+                            {{ action }}
+                            <TriggerAction :action="action" @update="v => action = v" ref="actionRef">
                             </TriggerAction>
                         </th>
                         <td>
-
-                            <span v-if="trigger.action.id != ''" class="fa fa-trash-alt fa-sm" @click="(v) => clearAction(action)
+                            <span v-if="action.id != ''" class="fa fa-trash-alt fa-sm" @click="(v) => clearTriggerAction()
                                 ">
                             </span>
                         </td>

@@ -94,7 +94,6 @@ export class EditableActionTrigger implements AutomationTriggerAction {
 }
 
 export function clearAction(action: AutomationTriggerAction): void {
-
   action.id = "";
   action.friendlyname = "";
   action.property = "";

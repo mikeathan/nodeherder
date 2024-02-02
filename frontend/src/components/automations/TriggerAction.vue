@@ -3,13 +3,14 @@ import { computed, ref, watchEffect, watch, PropType, reactive } from "vue";
 import DataInput from "../input/DataInput.vue"
 import Selector from "../input/Selector.vue"
 import { OperationType, resolveObjectOperations } from "../../contracts/operations"
-import { setDeviceId, setProperty } from "../../contracts/automations"
-
+import { clearAction, setDeviceId, setProperty } from "../../contracts/automations"
 import { store } from "../../store/index";
-import { Device, Devices } from "@/types/device";
+import { Device, Devices, ExposeType } from "@/types/device";
 import { KeyyValuePair } from "@/types/types";
 import { AutomationTriggerAction } from "@/types/automation";
 import { toMillisecs, toMinutes } from '@/modules/formatters/time.formatter'
+import { ExposeTypes } from "@/types/device.type";
+
 const props = defineProps({
     action: {
         type: Object as PropType<AutomationTriggerAction>,
@@ -18,10 +19,15 @@ const props = defineProps({
     },
 });
 
-
 const emit = defineEmits<{
     (e: 'update', action: AutomationTriggerAction): void,
 }>()
+
+const clear = (() => {
+    clearAction(action)
+    emit('update', action)
+})
+
 
 const action = reactive({ ...props.action })
 const device = computed(() => {
@@ -161,20 +167,22 @@ function presetUpdated(event: string) {
     emit('update', action)
 }
 
-
-function getPlaceholder(type: string): string {
-    if (type == 'binary' || type == 'enum') {
+function getPlaceholder(type: ExposeType): string {
+    if (type == ExposeTypes.Binary || type == ExposeTypes.Enum) {
         return 'Select'
     }
 
     return 'Value'
 }
 
+defineExpose({
+    clear,
+});
+
+
 </script>
 
 <template>
-    action.id{{ action.id }}
-
     <div class="row">
         <div v-if="getPresets" class="col-xl-3 col-md-4">
             <Selector placeholder=" Select device" :items="deviceFeatureList" :value="action.id" alignment="center"
@@ -217,8 +225,10 @@ function getPlaceholder(type: string): string {
                         @update:data="delayUpdated">
                     </DataInput>
                 </div>
-
             </div>
         </div>
+        <!-- <span v-if="action.id != ''" class="fa fa-trash-alt fa-sm" @click="(v) => clear()
+            ">
+        </span> -->
     </div>
 </template>
