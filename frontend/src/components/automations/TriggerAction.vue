@@ -109,6 +109,9 @@ const showPresets = computed<boolean>(() => {
     return false
 })
 
+// NOTE:
+// problem is we cant make fetured typed as it could return null
+// so it would require some restructuring
 
 const feature = computed(() => {
     if (action.property == '') {
