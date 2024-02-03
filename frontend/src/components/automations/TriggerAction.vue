@@ -214,7 +214,6 @@ defineExpose({
         <div class="collapse" id="collapseOptions">
             <div class="row pt-2" :disabled="action.property == ''">
                 <div class="col-xl-3 ">
-                    REMOVE resolveObjectOperations
                     <Selector :items="resolveObjectOperations(feature)" :value="action.operation"
                         @update:data="operationUpdated">
                     </Selector>
