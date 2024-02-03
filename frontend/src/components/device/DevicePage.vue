@@ -7,7 +7,8 @@ import PowerSource from "../device/PowerSource.vue";
 import ConnectionType from "../device/ConnectionType.vue";
 import RenameDeviceDialog from "../dialogs/RenameDeviceDialog.vue";
 import { Device } from "@/types/device";
-
+import Tabs from '../controls/Tabs.vue'
+import Tab from '../controls/Tab.vue'
 const props = defineProps({
   id: String,
 });
@@ -81,6 +82,20 @@ const displayProps = computed(() => {
 
 </script>
 <template>
+  <Tabs>
+    <Tab active="true" title="First Tab">
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Fusce gravida purus vitae vulputate commodo.
+    </Tab>
+    <Tab title="Second Tab">
+      Cras scelerisque, dolor vitae suscipit efficitur, risus orci sagittis velit, ac molestie nulla tortor id augue.
+    </Tab>
+    <Tab title="Third Tab">
+      Morbi posuere, mauris eu vehicula tempor, nibh orci consectetur tortor, id eleifend dolor sapien ut augue.
+    </Tab>
+    <Tab title="Fourth Tab">
+      Aenean varius dui eget ante finibus, sit amet finibus nisi facilisis. Nunc pellentesque, risus et pretium hendrerit.
+    </Tab>
+  </Tabs>
   <div v-if="device != null" class="panel">
     <div className="panel-header d-flex flex-row">
       <div class="align-self-center me-3">
