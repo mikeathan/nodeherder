@@ -1,25 +1,22 @@
 <script setup lang="ts">
 
-import { computed, watch, ref, toRef, toRaw, reactive, PropType } from "vue";
-
+import { computed, watch, ref, PropType } from "vue";
 import TriggerCondition from "./TriggerCondition.vue"
 import TriggerAction from "./TriggerAction.vue";
 import Selector from "../input/Selector.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
 import { AutomationTrigger, AutomationTriggerAction, AutomationTriggerCondition, AutomationTriggerConditions } from "@/types/automation";
-import { clearAction, removeCondition, isValid, insertCondition, EditableTriggerCondition } from "../../contracts/automations"
+import { isValid, EditableTriggerCondition } from "../../contracts/automations"
 import { capitalizeText } from "../../modules/formatters/text.formatter";
-import { Props } from "../input/Slider.vue";
-
 
 const props = defineProps({
     id: { type: String },
     trigger: { type: Object as PropType<AutomationTrigger>, default: {} as AutomationTrigger },
 });
 
+// TODO: can be refactor to some automation context
 const conditions = ref<AutomationTriggerConditions>({} as AutomationTriggerConditions)
-
 const action = ref<AutomationTriggerAction>({} as AutomationTriggerAction)
 const actionRef = ref<InstanceType<typeof TriggerAction>>()
 const trigger = ref<AutomationTrigger>(props.trigger)
@@ -35,18 +32,9 @@ watch(
 const emit = defineEmits(['save', 'delete'])
 function save() {
 
-    here
-    //TODO:
-    // need to copy local conditions to props.trigger.conditions
+    trigger.value.conditions = conditions.value
+    trigger.value.action = action.value
 
-    trigger.value.action.data = action.value.data
-    trigger.value.action.friendlyname = action.value.friendlyname
-    trigger.value.action.id = action.value.id
-    trigger.value.action.property = action.value.property
-    trigger.value.action.operation = action.value.operation
-    trigger.value.action.delay = action.value.delay
-
-    console.log("after save trigger.action: ", trigger.value.action)
     emit('save', trigger.value)
 }
 
@@ -114,12 +102,8 @@ function clearTriggerAction() {
                                 @update:value="newValue => condition.value = newValue"
                                 @update:operator="newValue => condition.equality = newValue">
                             </TriggerCondition>
-
-                            <!-- <TriggerCondition :id="props.id" :condition="condition">
-                            </TriggerCondition> -->
                         </th>
                         <td>
-                            broblem here it updates the source object, once we fix action then do same here
                             <span class="fa fa-trash-alt fa-sm" @click="removeTriggerCondition(condition)">
                             </span>
                         </td>
