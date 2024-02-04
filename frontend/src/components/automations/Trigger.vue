@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { computed, watch, ref, PropType } from "vue";
+import { computed, watch, ref, PropType, toRef } from "vue";
 import TriggerCondition from "./TriggerCondition.vue"
 import TriggerAction from "./TriggerAction.vue";
 import Selector from "../input/Selector.vue"
