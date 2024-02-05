@@ -2,13 +2,11 @@
 import { ref, onMounted, reactive } from 'vue';
 const props = defineProps(['customClass']);
 let tabContainer = ref(null);
-let tabHeaders = ref(null);
 let tabs = ref(null);
 let activeTabIndex = ref(0);
 
 onMounted(() => {
     tabs.value = [...tabContainer.value.querySelectorAll('.tab')];
-    console.log(tabs.value)
     for (let x of tabs.value) {
         if (x.classList.contains('active')) {
             activeTabIndex = tabs.value.indexOf(x);
@@ -16,13 +14,20 @@ onMounted(() => {
     }
 })
 const changeTab = (index) => {
+
+    // for (let x of [...tabs.value, ...tabHeaders.value]) {
+    //     x.classList.remove('active')
+    // }
+    // tabs.value[activeTabIndex].classList.add('active')
+    // tabHeaders.value[activeTabIndex].classList.add('active')
+
     activeTabIndex = index;
-    for (let x of [...tabs.value, ...tabHeaders.value]) {
+    for (let x of tabs.value) {
         x.classList.remove('active')
     }
     tabs.value[activeTabIndex].classList.add('active')
-    tabHeaders.value[activeTabIndex].classList.add('active')
 }
+
 </script>
 
 <template>
@@ -30,12 +35,13 @@ const changeTab = (index) => {
 
         <div id="tab-headers">
             <ul class="nav nav-tabs ">
-                <li v-for=" (tab, index) in tabs" :key="index" class="nav-item" data-bs-toggle="tab" role="presentation"
-                    ref="tabHeaders">
-                    <a href="#" class="nav-link">{{ tab.title }} </a>
+                <li v-for=" (tab, index) in tabs" :key="index" class="nav-item" data-bs-toggle="tab" role="presentation">
+                    <!-- @click.stop.prevent="setActive(tab)" -->
+                    <a href="#" class="nav-link" rrole="tab" data-toggle="tab"
+                        :class="activeTabIndex == index ? 'active' : ''" @click="changeTab(index)">{{ tab.title }}</a>
                 </li>
             </ul>
-            <ul class="dropdown-menu">
+            <ul id="active-tab">
                 <slot></slot>
             </ul>
         </div>
@@ -70,66 +76,5 @@ const changeTab = (index) => {
     </div> -->
 </template>
 
-<style>
-/* #tab-headers ul {
-    margin: 0;
-    padding: 0;
-    display: flex;
-    border-bottom: 2px solid #ddd;
-}
+<style></style>
 
-#tab-headers ul li {
-    list-style: none;
-    padding: 1rem 1.25rem;
-    position: relative;
-    cursor: pointer;
-}
-
-#tab-headers ul li.active {
-    color: #008438;
-    font-weight: bold;
-}
-
-#tab-headers ul li.active:after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    height: 2px;
-    width: 100%;
-    background: #008438;
-}
-
-#active-tab,
-#tab-headers {
-    width: 100%;
-}
-
-#active-tab {
-    padding: 0.75rem;
-} */
-</style>
-
-
-
-<!-- <ul class="nav nav-tabs">
-    <li class="nav-item">
-      <a class="nav-link active" aria-current="page" href="#">Active</a>
-    </li>
-    <li class="nav-item dropdown">
-      <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">Dropdown</a>
-      <ul class="dropdown-menu">
-        <li><a class="dropdown-item" href="#">Action</a></li>
-        <li><a class="dropdown-item" href="#">Another action</a></li>
-        <li><a class="dropdown-item" href="#">Something else here</a></li>
-        <li><hr class="dropdown-divider"></li>
-        <li><a class="dropdown-item" href="#">Separated link</a></li>
-      </ul>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" href="#">Link</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
-    </li>
-  </ul> -->
