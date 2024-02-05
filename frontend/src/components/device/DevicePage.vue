@@ -9,6 +9,7 @@ import RenameDeviceDialog from "../dialogs/RenameDeviceDialog.vue";
 import { Device } from "@/types/device";
 import Tabs from '../controls/Tabs.vue'
 import Tab from '../controls/Tab.vue'
+import { DeviceInfo } from "../device/DeviceInfo.vue";
 const props = defineProps({
   id: String,
 });
@@ -22,6 +23,16 @@ const previousPage = computed(() => {
   return useRouter().push("/");
 });
 
+
+const deviceTabs = computed(() => {
+  const device = store.getters["devices/find"](props.id) as Device;
+  if (device == undefined) {
+    return [DeviceInfo];
+  }
+
+  return [
+  ]
+});
 
 const showDialog = ref(false)
 const device = computed(() => {
