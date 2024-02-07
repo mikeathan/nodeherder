@@ -40,10 +40,16 @@ const Exposes = computed(() => {
         if its binary add toggle <br>
         if enum add radio group <br>
         if no properties then just display values <br>
-        <dl className="row" v-for="expose in Exposes">
-            <dt className=""> {{ expose.name }} </dt>
-            <dd className=""> {{ expose.description }} </dd>
-        </dl>
+        <div class="row border-bottom py-1 w-100 align-items-center" v-for="expose in Exposes">
+            <dl class="col-12 col-md-3">
+                <dt class=""><strong> {{ expose.name }}</strong> </dt>
+                <dd className=""><small> {{ expose.description }} </small></dd>
+            </dl>
+            <dl class="col-12 col-md-9">
+                <dt class=""> {{ expose.name }} </dt>
+                <dd clasclasssName=""> {{ expose.description }} </dd>
+            </dl>
+        </div>
 
     </div>
 </template>
