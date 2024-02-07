@@ -7,6 +7,8 @@ import PowerSource from "../device/PowerSource.vue";
 import ConnectionType from "../device/ConnectionType.vue";
 import RenameDeviceDialog from "../dialogs/RenameDeviceDialog.vue";
 import { Device, Expose } from "@/types/device";
+import { ExposeTypes } from "@/types/device.type";
+import Slider from "../input/Slider.vue";
 
 const props = defineProps({
     id: { type: String, required: true }
@@ -42,13 +44,20 @@ const Exposes = computed(() => {
         if no properties then just display values <br>
         <div class="row border-bottom py-1 w-100 align-items-center" v-for="expose in Exposes">
             <dl class="col-12 col-md-3">
-                <dt class=""><strong> {{ expose.name }}</strong> </dt>
-                <dd className=""><small> {{ expose.description }} </small></dd>
+                <dt><strong> {{ expose.name }}</strong></dt>
+                <dd><small> {{ expose.description }} </small></dd>
             </dl>
-            <dl class="col-12 col-md-9">
-                <dt class=""> {{ expose.name }} </dt>
-                <dd clasclasssName=""> {{ expose.description }} </dd>
-            </dl>
+
+            <div v-if="expose.properties == null" class="col-12 col-md-9">
+                {{ expose.data }} {{ expose.unit }}
+            </div>
+            <div v-else>
+                <div v-if="expose.type == ExposeTypes.Numeric">
+                    <Slider :value="expose.data" :min="expose.attributes['min']" :max="expose.attributes['max']"
+                        @update:value="updateValue">
+                    </Slider>
+                </div>
+            </div>
         </div>
 
     </div>
