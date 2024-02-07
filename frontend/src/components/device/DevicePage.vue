@@ -22,8 +22,7 @@ const previousPage = computed(() => {
 
 </script>
 <template>
-  <div class="panel">
-
+  <div class="col-12 col-md-9 panel">
     <Tabs>
       <Tab active="true" title="About">
         <DeviceInfo :id="props.id"></DeviceInfo>

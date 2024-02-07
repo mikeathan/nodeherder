@@ -2,6 +2,10 @@ import { KeyyValuePair, Nullable } from "./types";
 
 export type DeviceMap = KeyyValuePair<Device>;
 export type Devices = Array<Device>;
+export type ExposeAttributes = Nullable<KeyyValuePair<any>>;
+export type ExposePresets = Nullable<KeyyValuePair<any>>;
+export type ExposeProperties = Nullable<KeyyValuePair<any>>;
+export type DeviceProperties = KeyyValuePair<any>;
 
 export type Device = {
   id: string;
@@ -13,7 +17,6 @@ export type Device = {
   properties: KeyyValuePair<any>;
 };
 
-
 export type ExposeType = keyof ExposeTypes;
 export type Expose = {
   name: string;
@@ -21,14 +24,14 @@ export type Expose = {
   unit: string;
   data: any | null;
   type: ExposeType;
-  attributes: Nullable<KeyyValuePair<any>>;
-  presets: Nullable<KeyyValuePair<any>>;
-  properties: Nullable<KeyyValuePair<any>>;
+  attributes: ExposeAttributes;
+  presets: ExposePresets;
+  properties: ExposeProperties;
 };
 
 export type DeviceUpdate = {
   id: string;
   last_seen: string;
   data: KeyyValuePair<any>;
-  properties: KeyyValuePair<any>;
+  properties: DeviceProperties;
 };

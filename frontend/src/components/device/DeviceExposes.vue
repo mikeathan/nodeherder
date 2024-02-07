@@ -6,9 +6,12 @@ import LastSeen from "../device/LastSeen.vue";
 import PowerSource from "../device/PowerSource.vue";
 import ConnectionType from "../device/ConnectionType.vue";
 import RenameDeviceDialog from "../dialogs/RenameDeviceDialog.vue";
-import { Device, Expose } from "@/types/device";
+import { Device, Expose, ExposeAttributes } from "@/types/device";
 import { ExposeTypes } from "@/types/device.type";
+import { getExposeAttribute, getExposeBinaryProperty } from "../../contracts/device";
+
 import Slider from "../input/Slider.vue";
+import Toggle from "../input/Toggle.vue";
 
 const props = defineProps({
     id: { type: String, required: true }
@@ -29,36 +32,29 @@ const Exposes = computed(() => {
 
     return list;
 });
+
+
 </script>
 <template>
-    <div v-if="device != null" class="panel">
-        <div className="panel-header d-flex flex-row">
-        </div>
-        <div class="h1 align-self-center">
-            {{ device.friendly_name }}
-        </div>
-        if it has properties then its a feature <br>
-        if its numeric add slider <br>
-        if its binary add toggle <br>
-        if enum add radio group <br>
-        if no properties then just display values <br>
-        <div class="row border-bottom py-1 w-100 align-items-center" v-for="expose in Exposes">
-            <dl class="col-12 col-md-3">
-                <dt><strong> {{ expose.name }}</strong></dt>
-                <dd><small> {{ expose.description }} </small></dd>
-            </dl>
-
-            <div v-if="expose.properties == null" class="col-12 col-md-9">
+    <div class="row border-bottom py-1 w-100 align-items-center" v-for="expose in Exposes">
+        <dl class="col-12 col-md-3">
+            <dt><strong> {{ expose.name }}</strong></dt>
+            <dd><small> {{ expose.description }} </small></dd>
+        </dl>
+        <div class="col-12 col-md-9">
+            <div v-if="expose.properties == null">
                 {{ expose.data }} {{ expose.unit }}
             </div>
-            <div v-else>
-                <div v-if="expose.type == ExposeTypes.Numeric">
-                    <Slider :value="expose.data" :min="expose.attributes['min']" :max="expose.attributes['max']"
-                        @update:value="updateValue">
-                    </Slider>
-                </div>
+            <div v-else-if="expose.type == ExposeTypes.Numeric" class="input-group align-items-center">
+                <Slider :value="expose.data" :min="getExposeAttribute(expose, 'min')"
+                    :max="getExposeAttribute(expose, 'max')">
+                </Slider>
+                <input class="form-control ms-1" type="number" :value="expose.data" style="max-width: 100px;">
             </div>
+            <!-- <div v-else-if="expose.type == ExposeTypes.Binary">
+                <Toggle :enabled="getExposeBinaryProperty(expose)">
+                </Toggle>
+            </div> -->
         </div>
-
     </div>
 </template>
