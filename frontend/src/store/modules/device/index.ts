@@ -20,9 +20,14 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
     },
     find:
       (state: DeviceModuleState) =>
-      (id: string): Device => {
-        return state.deviceMap[id];
-      },
+        (id: string): Device => {
+          return state.deviceMap[id];
+        },
+    exists:
+      (state: DeviceModuleState) =>
+        (id: string): boolean => {
+          return state.deviceMap[id] != null;
+        },
   },
 
   mutations: {

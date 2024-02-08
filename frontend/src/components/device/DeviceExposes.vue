@@ -2,16 +2,14 @@
 import { store } from "../../store/index";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
-import LastSeen from "../device/LastSeen.vue";
-import PowerSource from "../device/PowerSource.vue";
-import ConnectionType from "../device/ConnectionType.vue";
-import RenameDeviceDialog from "../dialogs/RenameDeviceDialog.vue";
+
 import { Device, Expose, ExposeAttributes } from "@/types/device";
 import { ExposeTypes } from "@/types/device.type";
-import { getExposeAttribute, getExposeBinaryProperty } from "../../contracts/device";
+import { getExposeAttribute, getExposeBinaryProperty, hasSupportedExposeBinaryProperties, getExposePresets } from "../../contracts/device";
 
 import Slider from "../input/Slider.vue";
 import Toggle from "../input/Toggle.vue";
+import RadioGroup from "../input/RadioGroup.vue";
 
 const props = defineProps({
     id: { type: String, required: true }
@@ -51,10 +49,18 @@ const Exposes = computed(() => {
                 </Slider>
                 <input class="form-control ms-1" type="number" :value="expose.data" style="max-width: 100px;">
             </div>
-            <!-- <div v-else-if="expose.type == ExposeTypes.Binary">
-                <Toggle :enabled="getExposeBinaryProperty(expose)">
+            <div v-else-if="expose.type == ExposeTypes.Binary">
+                <Toggle :enabled="getExposeBinaryProperty(expose)" :disabled="!hasSupportedExposeBinaryProperties(expose)">
                 </Toggle>
-            </div> -->
+            </div>
+            <div v-else-if="expose.type == ExposeTypes.Enum">
+
+                {{ getExposePresets(expose) }}
+                <RadioGroup></RadioGroup>
+                <!-- <Toggle :enabled="getExposeBinaryProperty(expose)"
+                    :disabled="!hasSupportedExposeBinaryProperties(expose)">
+                </Toggle> -->
+            </div>
         </div>
     </div>
 </template>
