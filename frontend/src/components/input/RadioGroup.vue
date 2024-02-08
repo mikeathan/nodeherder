@@ -26,10 +26,12 @@ function isChecked(value: any) {
 }
 
 function selectionChanged(event: any) {
-
     if (event.target.value == null) {
         return;
     }
+    TODO
+    // need to change it to input type 
+    console.log("changed ", event.target.value, typeof event.target.value)
     emit("update", event.target.value);
 }
 
@@ -43,7 +45,6 @@ function getID() {
     <div>
         <form>
             <div v-for="(key, value) in props.items" class="btn-group">
-
                 <div>
                     <input type="radio" class="btn-check" name="options-outlined" :id="`radioSelection${value}${id}`"
                         :value="key" :checked="isChecked(key)" @change="selectionChanged">

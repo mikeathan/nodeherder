@@ -44,9 +44,12 @@ const Exposes = computed(() => {
             {{ expose.data }} {{ expose.unit }}
         </div>
         <div v-else-if="expose.type == ExposeTypes.Numeric" class="input-group align-items-center">
-            <RadioGroup v-if="expose.presets != null" :items="(expose.presets as any)" :value="expose.data"></RadioGroup>
+            TEST {{ expose.data }} typeof {{ typeof expose.data }}
+            <RadioGroup v-if="expose.presets != null" :items="(expose.presets as any)" :value="expose.data"
+                @update="v => expose.data = v"></RadioGroup>
 
-            <Slider :value="expose.data" :min="getExposeAttribute(expose, 'min')" :max="getExposeAttribute(expose, 'max')">
+            <Slider :value="expose.data" :min="getExposeAttribute(expose, 'min')" :max="getExposeAttribute(expose, 'max')"
+                @update:value="v => expose.data = v">
             </Slider>
             <input class="form-control ms-1" type="number" :value="expose.data" style="max-width: 100px;">
         </div>
