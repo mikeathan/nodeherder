@@ -1,20 +1,24 @@
 
 <script setup lang="ts">
 import { KeyyValuePair } from "@/types/types";
-import { PropType } from "vue";
+import { PropType, computed, ref } from "vue";
 
 const props = defineProps({
     name: String,
-    value: null,
+    value: {
+        type: null,
+        required: true
+    },
     items: {
-        type: Object as PropType<KeyyValuePair<any>>
+        type: Object as PropType<KeyyValuePair<any>>,
+        required: true
     }
 });
 
-if  props.value is null, preselect the first item
+const emit = defineEmits<{
+    (e: 'update', value: any): void,
+}>()
 
-
-const emit = defineEmits(['update:data'])
 const id = getID()
 
 function isChecked(value: any) {
@@ -26,7 +30,7 @@ function selectionChanged(event: any) {
     if (event.target.value == null) {
         return;
     }
-    emit("update:data", event.target.value);
+    emit("update", event.target.value);
 }
 
 function getID() {

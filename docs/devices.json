@@ -83,7 +83,7 @@
           "data": null,
           "type": "numeric",
           "properties": {
-            "color_temp": 0
+            "color_temp": 370
           },
           "attributes": {
             "max": 500,

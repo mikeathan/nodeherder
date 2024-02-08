@@ -33,8 +33,8 @@ const emit = defineEmits<{
     (e: 'update:value', property: any): void,
     (e: 'update:operator', data: string): void,
     (e: 'update', condition: AutomationTriggerCondition): void,
-
 }>()
+
 const device = computed(() => {
     return store.getters["devices/find"](props.id) as Device;
 });

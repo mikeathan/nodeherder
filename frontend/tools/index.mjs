@@ -348,7 +348,7 @@ let settings = [
     availability: "offline",
     method: "mqtt",
     brightness: 60,
-    color_temp: 123,
+    color_temp: 370,
     state: "ON",
   },
 ];
@@ -366,7 +366,7 @@ function mockUpdateAtticLight(settings) {
     last_seen: currentTime(),
     data: {
       brightness: 61,
-      color_temp: 122,
+      color_temp: 370,
       state: "ON",
     },
     properties: {},

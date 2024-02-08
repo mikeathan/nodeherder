@@ -44,7 +44,7 @@ const Exposes = computed(() => {
             {{ expose.data }} {{ expose.unit }}
         </div>
         <div v-else-if="expose.type == ExposeTypes.Numeric" class="input-group align-items-center">
-            <RadioGroup v-if="expose.presets != null" :items="(expose.presets as any)" value="test"></RadioGroup>
+            <RadioGroup v-if="expose.presets != null" :items="(expose.presets as any)" :value="expose.data"></RadioGroup>
 
             <Slider :value="expose.data" :min="getExposeAttribute(expose, 'min')" :max="getExposeAttribute(expose, 'max')">
             </Slider>
@@ -56,7 +56,7 @@ const Exposes = computed(() => {
             </Toggle>
         </div>
         <div v-else-if="expose.type == ExposeTypes.Enum">
-            <RadioGroup :items="expose.data" value="test"></RadioGroup>
+            <!-- <RadioGroup :items="expose.data" value="test"></RadioGroup> -->
 
             <!--  -->
         </div>
