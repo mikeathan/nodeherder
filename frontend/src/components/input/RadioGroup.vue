@@ -1,7 +1,7 @@
 
 <script setup lang="ts">
 import { KeyyValuePair } from "@/types/types";
-import { PropType, computed, ref } from "vue";
+import { PropType, computed, ref, watchEffect } from "vue";
 
 const props = defineProps({
     name: String,
@@ -18,21 +18,25 @@ const props = defineProps({
 const emit = defineEmits<{
     (e: 'update', value: any): void,
 }>()
+const value = ref<any>(null)
+watchEffect(() => value.value = props.value);
 
 const id = getID()
 
 function isChecked(value: any) {
-    return props.value == value
+    return value.value == value
 }
 
 function selectionChanged(event: any) {
     if (event.target.value == null) {
         return;
     }
-    TODO
-    // need to change it to input type 
-    console.log("changed ", event.target.value, typeof event.target.value)
-    emit("update", event.target.value);
+    let value = event.target.value
+    if (typeof props.value == 'number') {
+        value = parseInt(event.target.value)
+    }
+    value.value = value
+    emit("update", value);
 }
 
 function getID() {
