@@ -39,28 +39,26 @@ const Exposes = computed(() => {
             <dt><strong> {{ expose.name }}</strong></dt>
             <dd><small> {{ expose.description }} </small></dd>
         </dl>
-        <div class="col-12 col-md-9">
-            <div v-if="expose.properties == null">
-                {{ expose.data }} {{ expose.unit }}
-            </div>
-            <div v-else-if="expose.type == ExposeTypes.Numeric" class="input-group align-items-center">
-                <Slider :value="expose.data" :min="getExposeAttribute(expose, 'min')"
-                    :max="getExposeAttribute(expose, 'max')">
-                </Slider>
-                <input class="form-control ms-1" type="number" :value="expose.data" style="max-width: 100px;">
-            </div>
-            <div v-else-if="expose.type == ExposeTypes.Binary">
-                <Toggle :enabled="getExposeBinaryProperty(expose)" :disabled="!hasSupportedExposeBinaryProperties(expose)">
-                </Toggle>
-            </div>
-            <div v-else-if="expose.type == ExposeTypes.Enum">
 
-                {{ getExposePresets(expose) }}
-                <RadioGroup></RadioGroup>
-                <!-- <Toggle :enabled="getExposeBinaryProperty(expose)"
-                    :disabled="!hasSupportedExposeBinaryProperties(expose)">
-                </Toggle> -->
-            </div>
+        <div v-if="expose.properties == null">
+            {{ expose.data }} {{ expose.unit }}
+        </div>
+        <div v-else-if="expose.type == ExposeTypes.Numeric" class="input-group align-items-center">
+            <RadioGroup v-if="expose.presets != null" :items="(expose.presets as any)" value="test"></RadioGroup>
+
+            <Slider :value="expose.data" :min="getExposeAttribute(expose, 'min')" :max="getExposeAttribute(expose, 'max')">
+            </Slider>
+            <input class="form-control ms-1" type="number" :value="expose.data" style="max-width: 100px;">
+        </div>
+        <div v-else-if="expose.type == ExposeTypes.Binary">
+
+            <Toggle :enabled="getExposeBinaryProperty(expose)" :disabled="!hasSupportedExposeBinaryProperties(expose)">
+            </Toggle>
+        </div>
+        <div v-else-if="expose.type == ExposeTypes.Enum">
+            <RadioGroup :items="expose.data" value="test"></RadioGroup>
+
+            <!--  -->
         </div>
     </div>
 </template>

@@ -9,7 +9,7 @@ export function getExposeProperty(expose: Expose, name: string): any {
   return expose.properties ? expose.properties[name] : null;
 }
 
-export function getExposePresets(expose: Expose): ExposePresets {
+export function getExposePresets(expose: Expose): any {
   if (expose.presets == undefined) {
 
     return []

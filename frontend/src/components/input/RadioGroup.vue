@@ -1,18 +1,27 @@
-<script setup>
+
+<script setup lang="ts">
+import { KeyyValuePair } from "@/types/types";
+import { PropType } from "vue";
 
 const props = defineProps({
     name: String,
     value: null,
-    items: Array,
+    items: {
+        type: Object as PropType<KeyyValuePair<any>>
+    }
 });
+
+if  props.value is null, preselect the first item
+
 
 const emit = defineEmits(['update:data'])
 const id = getID()
-function isChecked(value) {
+
+function isChecked(value: any) {
     return props.value == value
 }
 
-function selectionChanged(event) {
+function selectionChanged(event: any) {
 
     if (event.target.value == null) {
         return;
@@ -29,16 +38,13 @@ function getID() {
 <template>
     <div>
         <form>
-
-
-            <div v-for="item in props.items" class="btn-group">
+            <div v-for="(key, value) in props.items" class="btn-group">
 
                 <div>
-                    <input type="radio" class="btn-check" name="options-outlined" :id="`radioSelection${item.name}${id}`"
-                        :value="item.value" :checked="isChecked(item.value)" @change="selectionChanged">
+                    <input type="radio" class="btn-check" name="options-outlined" :id="`radioSelection${value}${id}`"
+                        :value="key" :checked="isChecked(key)" @change="selectionChanged">
 
-                    <label class="btn btn-outline-secondary" :for="`radioSelection${item.name}${id}`"> {{ item.name
-                    }}</label>
+                    <label class="btn btn-outline-secondary" :for="`radioSelection${value}${id}`"> {{ value }}</label>
                 </div>
             </div>
         </form>
