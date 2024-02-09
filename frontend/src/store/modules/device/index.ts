@@ -20,14 +20,14 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
     },
     find:
       (state: DeviceModuleState) =>
-        (id: string): Device => {
-          return state.deviceMap[id];
-        },
+      (id: string): Device => {
+        return state.deviceMap[id];
+      },
     exists:
       (state: DeviceModuleState) =>
-        (id: string): boolean => {
-          return state.deviceMap[id] != null;
-        },
+      (id: string): boolean => {
+        return state.deviceMap[id] != null;
+      },
   },
 
   mutations: {
@@ -46,7 +46,6 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
         console.error("device ", deviceUpdate.id, " not found");
         return;
       }
-
       var device = state.deviceMap[deviceUpdate.id];
       for (var key in deviceUpdate.data) {
         if (key in device.exposes) {

@@ -149,7 +149,6 @@ app.ws("/ws", async function (ws, req) {
       }
 
       var updatePayload = buildDeviceUpdatedPayload(s);
-
       var d = JSON.stringify({
         type: "deviceUpdated",
         payload: updatePayload,
@@ -172,7 +171,22 @@ app.ws("/ws", async function (ws, req) {
         sendMessage(ws, "devices", devicesPayload);
         connected = true;
         break;
+      case "deviceSetValue":
+        // Respond back with update value to update UI
+        const updatePayload = {
+          id: obj.payload.id,
+          data: {
+            [obj.payload.name]: obj.payload.value,
+          },
+          properties: {
+            availability: true,
+            last_seen: currentTime(),
+          },
+        };
 
+        sendMessage(ws, "deviceUpdated", updatePayload);
+
+        break;
       case "saveAutomation":
         var automation = obj.payload;
         automationMap.set(automation.id, automation);
@@ -350,6 +364,7 @@ let settings = [
     brightness: 60,
     color_temp: 370,
     state: "ON",
+    delayInMs: 15000,
   },
 ];
 

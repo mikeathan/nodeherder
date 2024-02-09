@@ -21,16 +21,15 @@ const emit = defineEmits<{
 }>()
 
 const selectedValue = ref<any>(null)
+
 watch(
     () => props.value,
     () => {
         selectedValue.value = props.value
-        console.log("props.value updated", selectedValue.value)
     }, { immediate: true }
 )
 
 const id = getID()
-
 function isChecked(value: any) {
     return selectedValue.value == value
 }
@@ -39,12 +38,10 @@ function selectionChanged(event: any) {
     if (event.target.value == null) {
         return;
     }
-    let value = event.target.value
-    if (typeof props.value == 'number') {
-        value = parseInt(event.target.value)
-    }
-    selectedValue.value = value
-    emit("update", value);
+
+    selectedValue.value = typeof props.value == 'number' ? parseInt(event.target.value) : event.target.value
+
+    emit("update", selectedValue.value);
 }
 
 function getID() {
@@ -59,8 +56,8 @@ function getID() {
             <div v-for="(key, value) in props.items" class="btn-group">
                 <div>
                     <input type="radio" class="btn-check" name="options-outlined" :id="`radioSelection${value}${id}`"
-                        :value="key" :checked="isChecked(key)" @change="selectionChanged">
-
+                        :value="key" :checked="selectedValue == key" @change="selectionChanged"
+                        :disabled="selectedValue == null">
                     <label class="btn btn-outline-secondary" :for="`radioSelection${value}${id}`"> {{ value }}</label>
                 </div>
             </div>
