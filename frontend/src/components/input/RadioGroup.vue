@@ -1,7 +1,8 @@
 
 <script setup lang="ts">
+import { key } from "@/store";
 import { KeyyValuePair } from "@/types/types";
-import { PropType, computed, ref, watchEffect } from "vue";
+import { PropType, computed, ref, watchEffect, watch } from "vue";
 
 const props = defineProps({
     name: String,
@@ -18,13 +19,20 @@ const props = defineProps({
 const emit = defineEmits<{
     (e: 'update', value: any): void,
 }>()
-const value = ref<any>(null)
-watchEffect(() => value.value = props.value);
+
+const selectedValue = ref<any>(null)
+watch(
+    () => props.value,
+    () => {
+        selectedValue.value = props.value
+        console.log("props.value updated", selectedValue.value)
+    }, { immediate: true }
+)
 
 const id = getID()
 
 function isChecked(value: any) {
-    return value.value == value
+    return selectedValue.value == value
 }
 
 function selectionChanged(event: any) {
@@ -35,7 +43,7 @@ function selectionChanged(event: any) {
     if (typeof props.value == 'number') {
         value = parseInt(event.target.value)
     }
-    value.value = value
+    selectedValue.value = value
     emit("update", value);
 }
 
@@ -48,7 +56,7 @@ function getID() {
 <template>
     <div>
         <form>
-            <div v-for="(key, value) in props.items" class="btn-group">
+            <div v-for="(key, value) in props.items  class=" btn-group">
                 <div>
                     <input type="radio" class="btn-check" name="options-outlined" :id="`radioSelection${value}${id}`"
                         :value="key" :checked="isChecked(key)" @change="selectionChanged">

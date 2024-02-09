@@ -19,22 +19,36 @@ const device = computed(() => {
     return store.getters["devices/find"](props.id) as Device;
 });
 
-const Exposes = computed(() => {
+const Exposes = ref<Array<Expose>>(Object.values(device.value.exposes));
+// const Exposes = computed(() => {
+//     let list: Array<Expose> = []
+//     Object.values(device.value.exposes).forEach(expose => {
+//         list.push(expose)
+//     });
 
-    let list: Array<Expose> = []
-    Object.values(device.value.exposes).forEach(expose => {
+//     return list;
+// });
 
-        list.push(expose)
-    });
-
-
-    return list;
-});
-
+function testUpdated(expose: Expose, value: any) {
+    // const idx = Exposes.value.indexOf(expose)
+    // Exposes.value[idx].data = value
+    expose.data = value;
+    console.log("updated", expose.data, value, Exposes.value)
+}
 
 </script>
 <template>
-    <div class="row border-bottom py-1 w-100 align-items-center" v-for="expose in Exposes">
+    TEST
+    <div class="row border-bottom py-1 w-100 align-items-center" v-for="( expose, index ) in   Exposes  " :item="expose">
+        <div v-if="expose.properties != null && expose.type == ExposeTypes.Numeric">
+            TEST {{ expose.data }} typeof {{ typeof expose.data }}
+            <RadioGroup v-if="expose.presets != null" :items="(expose.presets as any)" :value="expose.data"
+                @update="v => testUpdated(expose, v)"></RadioGroup>
+        </div>
+    </div>
+
+    TEST
+    <!-- <div class="row border-bottom py-1 w-100 align-items-center" v-for="( expose, index ) in   Exposes  " :item="expose">
         <dl class="col-12 col-md-3">
             <dt><strong> {{ expose.name }}</strong></dt>
             <dd><small> {{ expose.description }} </small></dd>
@@ -44,12 +58,11 @@ const Exposes = computed(() => {
             {{ expose.data }} {{ expose.unit }}
         </div>
         <div v-else-if="expose.type == ExposeTypes.Numeric" class="input-group align-items-center">
-            TEST {{ expose.data }} typeof {{ typeof expose.data }}
             <RadioGroup v-if="expose.presets != null" :items="(expose.presets as any)" :value="expose.data"
-                @update="v => expose.data = v"></RadioGroup>
-
+                @update="v => testUpdated(expose, v)"></RadioGroup>
+            
             <Slider :value="expose.data" :min="getExposeAttribute(expose, 'min')" :max="getExposeAttribute(expose, 'max')"
-                @update:value="v => expose.data = v">
+                @update:value="v => testUpdated(expose, v)">
             </Slider>
             <input class="form-control ms-1" type="number" :value="expose.data" style="max-width: 100px;">
         </div>
@@ -59,9 +72,8 @@ const Exposes = computed(() => {
             </Toggle>
         </div>
         <div v-else-if="expose.type == ExposeTypes.Enum">
-            <!-- <RadioGroup :items="expose.data" value="test"></RadioGroup> -->
+            <RadioGroup :items="expose.data" value="test"></RadioGroup>
 
-            <!--  -->
-        </div>
-    </div>
+        </div> 
+</div>-->
 </template>
