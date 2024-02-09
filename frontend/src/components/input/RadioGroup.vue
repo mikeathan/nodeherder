@@ -56,8 +56,7 @@ function getID() {
             <div v-for="(key, value) in props.items" class="btn-group">
                 <div>
                     <input type="radio" class="btn-check" name="options-outlined" :id="`radioSelection${value}${id}`"
-                        :value="key" :checked="selectedValue == key" @change="selectionChanged"
-                        :disabled="selectedValue == null">
+                        :value="key" :checked="isChecked(key)" @change="selectionChanged" :disabled="selectedValue == null">
                     <label class="btn btn-outline-secondary" :for="`radioSelection${value}${id}`"> {{ value }}</label>
                 </div>
             </div>
