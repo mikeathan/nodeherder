@@ -46,7 +46,7 @@ const previousPage = computed(() => {
         {{ device.friendly_name }}
       </div>
     </div>
-    <div class="col-12 col-md-9 panel">
+    <div class="col-12 col-md-9 ">
       <Tabs>
         <Tab active="true" title="About">
           <DeviceAbout :id="props.id"></DeviceAbout>

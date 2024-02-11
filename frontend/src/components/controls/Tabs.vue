@@ -41,7 +41,7 @@ const changeTab = (index) => {
                         :class="activeTabIndex == index ? 'active' : ''" @click="changeTab(index)">{{ tab.title }}</a>
                 </li>
             </ul>
-            <ul id="active-tab">
+            <ul id="active-tab" class="panel">
                 <slot></slot>
             </ul>
         </div>
