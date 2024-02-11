@@ -41,11 +41,12 @@ function valueChanged(): void {
 }
 </style>
 <template>
-    <div class=" form-check form-switch">
-        <label v-if="props.placeholder != null" class="form-check-label">{{ props.placeholder }}</label>
-        <input class="form-check-input custom-control-input" type="checkbox" role="switch" id="flexSwitchCheckDefault"
-            v-model="enabled" @change="valueChanged" :disabled="enabled == null">
+    <!-- <button type="button" class="btn btn-link">OFF</button> -->
+    <div class="form-check form-switch form-check-inline align-middle me-0">
+        <input class="form-check-input" type="checkbox" v-model="enabled" @change="valueChanged"
+            :disabled="enabled == null">
     </div>
+    <!-- <button type="button" class="btn btn-link">ON</button> -->
 </template>
 
 
