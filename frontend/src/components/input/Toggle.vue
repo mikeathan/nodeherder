@@ -1,7 +1,9 @@
-<script setup >
+<script setup lang="ts">
 import { ref, watch } from "vue";
 
-const emit = defineEmits(['update:value'])
+const emit = defineEmits<{
+    (e: 'update:value', value: Boolean): void,
+}>()
 
 const props = defineProps({
     placeholder:
@@ -12,7 +14,8 @@ const props = defineProps({
     enabled: {
         type: Boolean,
         default: false
-    }, scale: {
+    },
+    scale: {
         type: Number,
         default: 1.0
     },
@@ -27,7 +30,7 @@ watch(
     }, { immediate: true }
 )
 
-function valueChanged(event) {
+function valueChanged(): void {
     emit('update:value', enabled.value);
 }
 
@@ -41,7 +44,7 @@ function valueChanged(event) {
     <div class=" form-check form-switch">
         <label v-if="props.placeholder != null" class="form-check-label">{{ props.placeholder }}</label>
         <input class="form-check-input custom-control-input" type="checkbox" role="switch" id="flexSwitchCheckDefault"
-            v-model="enabled" @change="valueChanged">
+            v-model="enabled" @change="valueChanged" :disabled="enabled == null">
     </div>
 </template>
 

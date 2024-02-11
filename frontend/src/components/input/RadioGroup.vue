@@ -40,7 +40,6 @@ function selectionChanged(event: any) {
     }
 
     selectedValue.value = typeof props.value == 'number' ? parseInt(event.target.value) : event.target.value
-
     emit("update", selectedValue.value);
 }
 
@@ -53,11 +52,12 @@ function getID() {
 <template>
     <div>
         <form>
-            <div v-for="(key, value) in props.items" class="btn-group">
+            <div v-for="(key, value) in props.items" class="btn-group" role="group">
                 <div>
                     <input type="radio" class="btn-check" name="options-outlined" :id="`radioSelection${value}${id}`"
-                        :value="key" :checked="isChecked(key)" @change="selectionChanged" :disabled="selectedValue == null">
-                    <label class="btn btn-outline-secondary" :for="`radioSelection${value}${id}`"> {{ value }}</label>
+                        :value="key" :checked="isChecked(key)" @change="selectionChanged" :disabled="selectedValue == null"
+                        onclick="this.blur()">
+                    <label class=" btn btn-outline-secondary" :for="`radioSelection${value}${id}`"> {{ value }}</label>
                 </div>
             </div>
         </form>
