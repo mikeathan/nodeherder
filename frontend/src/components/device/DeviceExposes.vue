@@ -10,6 +10,7 @@ import { getExposeAttribute, getExposeBinaryProperty } from "../../contracts/dev
 import Slider from "../input/Slider.vue";
 import Toggle from "../input/Toggle.vue";
 import RadioGroup from "../input/RadioGroup.vue";
+import { getSensorUnit, getSensorValue } from "@/modules/formatters/sensor-formatter";
 
 const props = defineProps({
     id: { type: String, required: true }
@@ -39,7 +40,7 @@ function updateValue(expose: Expose, value: any) {
 
         <div class="col-12 col-md-9">
             <div v-if="expose.properties == null">
-                {{ expose.data }} {{ expose.unit }}
+                {{ getSensorValue(expose.data) }} {{ getSensorUnit(expose.name) }}
             </div>
             <div v-else-if="expose.type == ExposeTypes.Numeric" class="input-group align-items-center">
                 <!-- TODO: refactor -->
