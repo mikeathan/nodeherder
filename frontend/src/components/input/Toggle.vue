@@ -6,19 +6,15 @@ const emit = defineEmits<{
 }>()
 
 const props = defineProps({
-    placeholder:
+    showLabels:
     {
-        type: String,
-        default: null
+        type: Boolean,
+        default: false
     },
     enabled: {
         type: Boolean,
         default: false
-    },
-    scale: {
-        type: Number,
-        default: 1.0
-    },
+    }
 });
 
 const enabled = ref(false)
@@ -35,18 +31,13 @@ function valueChanged(): void {
 }
 
 </script>
-<style scoped>
-.custom-control-input {
-    transform: scale(1.1);
-}
-</style>
 <template>
-    <!-- <button type="button" class="btn btn-link">OFF</button> -->
+    <button v-if="showLabels" type="button" class="btn btn-link">OFF</button>
     <div class="form-check form-switch form-check-inline align-middle me-0">
         <input class="form-check-input" type="checkbox" v-model="enabled" @change="valueChanged"
             :disabled="enabled == null">
     </div>
-    <!-- <button type="button" class="btn btn-link">ON</button> -->
+    <button v-if="showLabels" type="button" class="btn btn-link">ON</button>
 </template>
 
 

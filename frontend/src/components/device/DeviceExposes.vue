@@ -52,7 +52,8 @@ function updateValue(expose: Expose, value: any) {
                 <input class="form-control ms-1" type="number" :value="expose.data" style="max-width: 100px;">
             </div>
             <div v-else-if="expose.type == ExposeTypes.Binary">
-                <Toggle :enabled="getExposeBinaryProperty(expose)" @update:value="(v: boolean) => updateValue(expose, v)">
+                <Toggle :showLabels="true" :enabled="getExposeBinaryProperty(expose)"
+                    @update:value="(v: boolean) => updateValue(expose, v)">
                 </Toggle>
             </div>
             <div v-else-if="expose.type == ExposeTypes.Enum">
