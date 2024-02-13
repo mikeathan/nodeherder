@@ -3485,7 +3485,7 @@ fieldset:disabled .btn {
   pointer-events: none;
 }
 .nav-tabs {
-  --bs-nav-tabs-border-width: 1px;
+  --bs-nav-tabs-border-width: 0px;
   --bs-nav-tabs-border-color: #696e7b;
   --bs-nav-tabs-border-radius: 0.2rem;
   --bs-nav-tabs-link-hover-border-color: #545968 #545968 #696e7b;
@@ -3515,7 +3515,7 @@ fieldset:disabled .btn {
 }
 .nav-tabs .nav-item.show .nav-link,
 .nav-tabs .nav-link.active {
-  background-color: var(--bs-nav-tabs-link-active-bg);
+  background-color: var(--bs-white);
   border-color: var(--bs-nav-tabs-link-active-border-color);
   color: var(--bs-nav-tabs-link-active-color);
 }
@@ -14391,8 +14391,12 @@ button.bg-primary-light:hover {
   border-radius: 0.25rem;
   height: 100%;
 }
-.panel-header {
-  padding-top: 0.75rem;
-  padding-bottom: 1.75rem
+
+.active-tab a {
+  background-color: var(--bs-white);
 }
 
+.panel-header {
+  padding-top: 0.75rem;
+  padding-bottom: 1.75rem;
+}
