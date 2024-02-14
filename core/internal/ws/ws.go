@@ -29,7 +29,7 @@ const (
 	DeviceList        = "deviceList"
 	Device            = "device"
 	DeviceAdded       = "deviceAdded"
-	DeviceUpdated     = "" // returns back updated properties of type DeviceUpdated
+	DeviceUpdated     = "deviceUpdated" // returns back updated properties of type DeviceUpdated
 	OperationFailed   = "operationFailed"
 	OperationSuccess  = "operationSuccess"
 	AutomationUpdated = "automationUpdated" // returns back upated automation
