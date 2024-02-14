@@ -20,6 +20,16 @@ const device = computed(() => {
     return store.getters["devices/find"](props.id) as Device;
 });
 
+// TEMPORARY QUICK FIX 
+function update(expose: Expose, event: Event) {
+    var msg = {
+        id: props.id,
+        name: expose.name,
+        value: parseInt((event.target as HTMLInputElement).value)
+    }
+    store.dispatch("devices/setValue", msg);
+}
+
 function updateValue(expose: Expose, value: any) {
     var msg = {
         id: props.id,
@@ -50,7 +60,7 @@ function updateValue(expose: Expose, value: any) {
                     :max="getExposeAttribute(expose, 'max')" @update="v => updateValue(expose, v)">
                 </Slider>
                 <input class="form-control ms-1" type="number" :value="expose.data" style="max-width: 100px;"
-                    @change="v => updateValue(expose, v.target)">
+                    @change="v => update(expose, v)">
             </div>
             <div v-else-if="expose.type == ExposeTypes.Binary">
                 <Toggle :showLabels="true" :enabled="getExposeBinaryProperty(expose)"
