@@ -1,0 +1,16 @@
+{"action":"dial_rotate_right_slow","action_direction":"right","action_time":45,"action_type":"step","battery":100,"last_seen":"2024-02-14T18:04:20+00:00","linkquality":69,"update":{"installed_version":33569555,"latest_version":33569561,"state":"available"}}
+{"action":"dial_rotate_right_slow","action_direction":"right","action_time":45,"action_type":"rotate","battery":100,"last_seen":"2024-02-14T18:04:20+00:00","linkquality":91,"update":{"installed_version":33569555,"latest_version":33569561,"state":"available"}}
+{"action":"dial_rotate_right_slow","action_direction":"right","action_time":45,"action_type":"rotate","battery":100,"last_seen":"2024-02-14T18:04:20+00:00","linkquality":98,"update":{"installed_version":33569555,"latest_version":33569561,"state":"available"}}
+{"action":"dial_rotate_right_slow","action_direction":"right","action_time":30,"action_type":"step","battery":100,"last_seen":"2024-02-14T18:04:23+00:00","linkquality":83,"update":{"installed_version":33569555,"latest_version":33569561,"state":"available"}}
+{"action":"dial_rotate_right_slow","action_direction":"right","action_time":30,"action_type":"rotate","battery":100,"last_seen":"2024-02-14T18:04:24+00:00","linkquality":98,"update":{"installed_version":33569555,"latest_version":33569561,"state":"available"}}
+
+{"action":"dial_rotate_left_slow","action_direction":"left","action_time":30,"action_type":"step","battery":100,"last_seen":"2024-02-14T18:04:27+00:00","linkquality":94,"update":{"installed_version":33569555,"latest_version":33569561,"state":"available"}}
+{"action":"dial_rotate_left_slow","action_direction":"left","action_time":75,"action_type":"rotate","battery":100,"last_seen":"2024-02-14T18:04:27+00:00","linkquality":91,"update":{"installed_version":33569555,"latest_version":33569561,"state":"available"}}
+{"action":"dial_rotate_left_slow","action_direction":"left","action_time":30,"action_type":"step","battery":100,"last_seen":"2024-02-14T18:04:28+00:00","linkquality":94,"update":{"installed_version":33569555,"latest_version":33569561,"state":"available"}}
+{"action":"dial_rotate_left_slow","action_direction":"left","action_time":60,"action_type":"rotate","battery":100,"last_seen":"2024-02-14T18:04:28+00:00","linkquality":94,"update":{"installed_version":33569555,"latest_version":33569561,"state":"available"}}
+{"action":"dial_rotate_left_slow","action_direction":"left","action_time":45,"action_type":"step","battery":100,"last_seen":"2024-02-14T18:04:30+00:00","linkquality":87,"update":{"installed_version":33569555,"latest_version":33569561,"state":"available"}}
+{"action":"dial_rotate_left_slow","action_direction":"left","action_time":60,"action_type":"rotate","battery":100,"last_seen":"2024-02-14T18:04:30+00:00","linkquality":98,"update":{"installed_version":33569555,"latest_version":33569561,"state":"available"}}
+
+{"action":"dial_rotate_right_slow","action_direction":"right","action_time":45,"action_type":"step","battery":100,"last_seen":"2024-02-14T18:04:35+00:00","linkquality":94,"update":{"installed_version":33569555,"latest_version":33569561,"state":"available"}}
+{"action":"dial_rotate_right_fast","action_direction":"right","action_time":106,"action_type":"rotate","battery":100,"last_seen":"2024-02-14T18:04:35+00:00","linkquality":105,"update":{"installed_version":33569555,"latest_version":33569561,"state":"available"}}
+
