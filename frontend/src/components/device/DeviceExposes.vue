@@ -63,8 +63,8 @@ function updateValue(expose: Expose, value: any) {
                     @change="v => update(expose, v)">
             </div>
             <div v-else-if="expose.type == ExposeTypes.Binary">
-                <Toggle :showLabels="true" :enabled="getExposeBinaryProperty(expose)"
-                    @update="(v: boolean) => updateValue(expose, v)">
+                <Toggle :showLabels="true" :enabled="getExposeBinaryProperty(expose)" problem we need to send state a string
+                    not boolean @update="(v: boolean) => updateValue(expose, v)">
                 </Toggle>
             </div>
             <div v-else-if="expose.type == ExposeTypes.Enum">
