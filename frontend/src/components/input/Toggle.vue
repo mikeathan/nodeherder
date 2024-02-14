@@ -2,7 +2,7 @@
 import { ref, watch } from "vue";
 
 const emit = defineEmits<{
-    (e: 'update:value', value: Boolean): void,
+    (e: 'update', value: any): void,
 }>()
 
 const props = defineProps({
@@ -27,7 +27,7 @@ watch(
 )
 
 function valueChanged(): void {
-    emit('update:value', enabled.value);
+    emit('update', enabled.value);
 }
 
 </script>

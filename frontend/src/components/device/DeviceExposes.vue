@@ -37,7 +37,7 @@ function updateValue(expose: Expose, value: any) {
             <dt><strong> {{ expose.name }}</strong></dt>
             <dd><small> {{ expose.description }} </small></dd>
         </dl>
-
+        <!-- ws unhandled type:  {"type":"","payload":{"id":"0xa4c13894070052fc","last_seen":"2024-02-14T19:43:45Z","data":{"illuminance_lux":167},"properties":{}}} -->
         <div class="col-12 col-md-9">
             <div v-if="expose.properties == null">
                 {{ getSensorValue(expose.data) }} {{ getSensorUnit(expose.name) }}
@@ -47,13 +47,14 @@ function updateValue(expose: Expose, value: any) {
                 <RadioGroup v-if="expose.presets != null" :items="(expose.presets as any)" :value="expose.data"
                     @update="v => updateValue(expose, v)"></RadioGroup>
                 <Slider :value="expose.data" :min="getExposeAttribute(expose, 'min')"
-                    :max="getExposeAttribute(expose, 'max')" @update:value="v => updateValue(expose, v)">
+                    :max="getExposeAttribute(expose, 'max')" @update="v => updateValue(expose, v)">
                 </Slider>
-                <input class="form-control ms-1" type="number" :value="expose.data" style="max-width: 100px;">
+                <input class="form-control ms-1" type="number" :value="expose.data" style="max-width: 100px;"
+                    @change="v => updateValue(expose, v.target)">
             </div>
             <div v-else-if="expose.type == ExposeTypes.Binary">
                 <Toggle :showLabels="true" :enabled="getExposeBinaryProperty(expose)"
-                    @update:value="(v: boolean) => updateValue(expose, v)">
+                    @update="(v: boolean) => updateValue(expose, v)">
                 </Toggle>
             </div>
             <div v-else-if="expose.type == ExposeTypes.Enum">

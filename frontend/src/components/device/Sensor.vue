@@ -85,11 +85,11 @@ function getUnit() {
     <div v-if="props.expose.data != undefined" class="flex-shrink-1">
         <div v-if="hasNumericFeatures()">
             <Slider :value="getValue()" :min="props.expose.attributes['min']" :max="props.expose.attributes['max']"
-                @update:value="updateValue">
+                @update="updateValue">
             </Slider>
         </div>
         <div v-else-if="hasBinaryFeatures()">
-            <Toggle :enabled="getBinaryValue()" @update:value="updateBinaryValue">
+            <Toggle :enabled="getBinaryValue()" @update="updateBinaryValue">
             </Toggle>
         </div>
         <div v-else>
