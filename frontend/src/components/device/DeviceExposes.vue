@@ -19,6 +19,7 @@ const device = computed(() => {
 });
 
 // TEMPORARY QUICK FIX 
+// TODO: do the same we did in Toggle component  so value comes out the correct type eg number
 function update(expose: Expose, event: Event) {
     var msg = {
         id: props.id,
