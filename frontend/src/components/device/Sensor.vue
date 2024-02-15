@@ -1,22 +1,23 @@
-<script setup>
+<script setup lang="ts">
 import {
     getSensorValue,
     getSensorIcon,
     getSensorName,
     getSensorUnit,
 } from "../../modules/formatters/sensor-formatter";
-
+import { getExposeProperty } from "../../contracts/device";
+import { PropType } from "vue";
 import { store } from "../../store/index";
+import { Expose } from "@/types/device";
 import Slider from "../input/Slider.vue"
 import Toggle from "../input/Toggle.vue"
 
 const props = defineProps({
     id: { type: String, require: true },
-    expose: Object
+    expose: { type: Object as PropType<Expose>, default: {} as Expose },
 });
 
-function updateValue(event) {
-
+function updateValue(event: any): void {
     var msg = {
         id: props.id,
         name: props.expose.name,
@@ -26,36 +27,7 @@ function updateValue(event) {
     store.dispatch("devices/setValue", msg);
 }
 
-function getBinaryValue() {
-
-    if (props.expose.data == props.expose.properties["on"]) {
-        return true;
-    }
-    if (props.expose.data == props.expose.properties["off"]) {
-        return false;
-    }
-
-    return false
-}
-
-
-function updateBinaryValue(event) {
-    var updatedValue = event;
-    if (event) {
-        updatedValue = props.expose.properties["on"]
-    } else {
-        updatedValue = props.expose.properties["off"]
-    }
-    var msg = {
-        id: props.id,
-        name: props.expose.name,
-        value: updatedValue
-    }
-
-    store.dispatch("devices/setValue", msg);
-}
-
-function hasNumericFeatures() {
+function hasNumericFeatures(): Boolean {
     return props.expose.properties != null && props.expose.type == "numeric"
 }
 
@@ -76,7 +48,7 @@ function getUnit() {
 </script>
 <template>
     <div class="me-1">
-        <i :class="`fa fa-fw ${getSensorIcon(props.expose.name)}`"></i>
+        <i :class="`fa fa-fw ${getSensorIcon(props.expose.name, props.expose.data)}`"></i>
     </div>
 
     <div class="flex-shrink-1 flex-grow-1">
@@ -84,12 +56,13 @@ function getUnit() {
     </div>
     <div v-if="props.expose.data != undefined" class="flex-shrink-1">
         <div v-if="hasNumericFeatures()">
-            <Slider :value="getValue()" :min="props.expose.attributes['min']" :max="props.expose.attributes['max']"
-                @update="updateValue">
+            <Slider :value="getValue()" :min="getExposeProperty(props.expose, 'min')"
+                :max="getExposeProperty(props.expose, 'max')" @update="updateValue">
             </Slider>
         </div>
         <div v-else-if="hasBinaryFeatures()">
-            <Toggle :enabled="getBinaryValue()" @update="updateBinaryValue">
+            <Toggle :value="props.expose.data" :valueOn="getExposeProperty(props.expose, 'on')"
+                :valueoff="getExposeProperty(props.expose, 'off')" @update="(v) => updateValue(v)">
             </Toggle>
         </div>
         <div v-else>

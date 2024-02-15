@@ -1,43 +1,36 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref } from "vue";
 
 const emit = defineEmits<{
     (e: 'update', value: any): void,
 }>()
 
-const props = defineProps({
-    showLabels:
-    {
-        type: Boolean,
-        default: false
-    },
-    enabled: {
-        type: Boolean,
-        default: false
-    }
-});
+export interface Props {
+    value: any,
+    valueOn: any,
+    valueoff: any,
+    minimal?: boolean
+}
 
-const enabled = ref(false)
+const props = withDefaults(defineProps<Props>(), {
+    minimal: false,
+})
 
-watch(
-    () => props.enabled,
-    () => {
-        enabled.value = props.enabled
-    }, { immediate: true }
-)
+const hasValue = computed(() => props.value != null || props.value != undefined);
+const showOnOffLabel = computed(() => props.minimal && hasValue && props.valueoff != null && props.valueOn != null);
 
-function valueChanged(): void {
-    emit('update', enabled.value);
+function valueChanged(event: Event): void {
+    emit('update', (event.target as HTMLInputElement).checked ? props.valueOn : props.valueoff);
 }
 
 </script>
 <template>
-    <button v-if="showLabels" type="button" class="btn btn-link">OFF</button>
+    <button v-if="showOnOffLabel" type="button" class="btn btn-link">OFF</button>
     <div class="form-check form-switch form-check-inline align-middle me-0">
-        <input class="form-check-input" type="checkbox" v-model="enabled" @change="valueChanged"
-            :disabled="enabled == null">
+        <input class="form-check-input" type="checkbox" :checked="props.value == props.valueOn" @change="valueChanged"
+            :disabled="!hasValue">
     </div>
-    <button v-if="showLabels" type="button" class="btn btn-link">ON</button>
+    <button v-if="showOnOffLabel" type="button" class="btn btn-link">ON</button>
 </template>
 
 

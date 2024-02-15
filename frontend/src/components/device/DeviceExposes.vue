@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { store } from "../../store/index";
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router";
-
-import { Device, Expose, ExposeAttributes } from "@/types/device";
+import { Device, Expose } from "@/types/device";
 import { ExposeTypes } from "@/types/device.type";
-import { getExposeAttribute, getExposeBinaryProperty } from "../../contracts/device";
+import { getExposeAttribute, getExposeProperty } from "../../contracts/device";
 
 import Slider from "../input/Slider.vue";
 import Toggle from "../input/Toggle.vue";
@@ -31,17 +29,6 @@ function update(expose: Expose, event: Event) {
 }
 
 function updateValue(expose: Expose, value: any) {
-
-    // its coming from toggle state, check if we need to convert a differnt expected toggle value 
-    // TODO: refactor. also used code is duplcated in sensor.vue
-    if (typeof value == 'boolean' && expose.properties != null) {
-        if (value) {
-            value = expose.properties["on"]
-        } else {
-            value = expose.properties["off"]
-        }
-    }
-
     var msg = {
         id: props.id,
         name: expose.name,
@@ -73,8 +60,8 @@ function updateValue(expose: Expose, value: any) {
                     @change="v => update(expose, v)">
             </div>
             <div v-else-if="expose.type == ExposeTypes.Binary">
-                <Toggle :showLabels="true" :enabled="getExposeBinaryProperty(expose)"
-                    @update="(v: boolean) => updateValue(expose, v)">
+                <Toggle :minimal="true" :value="expose.data" :valueOn="getExposeProperty(expose, 'on')"
+                    :valueoff="getExposeProperty(expose, 'off')" @update="(v) => updateValue(expose, v)">
                 </Toggle>
             </div>
             <div v-else-if="expose.type == ExposeTypes.Enum">
