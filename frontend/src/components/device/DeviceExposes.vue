@@ -31,6 +31,17 @@ function update(expose: Expose, event: Event) {
 }
 
 function updateValue(expose: Expose, value: any) {
+
+    // its coming from toggle state, check if we need to convert a differnt expected toggle value 
+    // TODO: refactor. also used code is duplcated in sensor.vue
+    if (typeof value == 'boolean' && expose.properties != null) {
+        if (value) {
+            value = expose.properties["on"]
+        } else {
+            value = expose.properties["off"]
+        }
+    }
+
     var msg = {
         id: props.id,
         name: expose.name,
@@ -47,7 +58,6 @@ function updateValue(expose: Expose, value: any) {
             <dt><strong> {{ expose.name }}</strong></dt>
             <dd><small> {{ expose.description }} </small></dd>
         </dl>
-        <!-- ws unhandled type:  {"type":"","payload":{"id":"0xa4c13894070052fc","last_seen":"2024-02-14T19:43:45Z","data":{"illuminance_lux":167},"properties":{}}} -->
         <div class="col-12 col-md-9">
             <div v-if="expose.properties == null">
                 {{ getSensorValue(expose.data) }} {{ getSensorUnit(expose.name) }}
@@ -63,8 +73,8 @@ function updateValue(expose: Expose, value: any) {
                     @change="v => update(expose, v)">
             </div>
             <div v-else-if="expose.type == ExposeTypes.Binary">
-                <Toggle :showLabels="true" :enabled="getExposeBinaryProperty(expose)" problem we need to send state a string
-                    not boolean @update="(v: boolean) => updateValue(expose, v)">
+                <Toggle :showLabels="true" :enabled="getExposeBinaryProperty(expose)"
+                    @update="(v: boolean) => updateValue(expose, v)">
                 </Toggle>
             </div>
             <div v-else-if="expose.type == ExposeTypes.Enum">
