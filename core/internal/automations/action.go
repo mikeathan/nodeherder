@@ -1,0 +1,202 @@
+package automations
+
+import (
+	"encoding/json"
+	"fmt"
+	"node-herder/internal/mqtt"
+	"node-herder/models/devices"
+	"node-herder/utils"
+	"sync"
+	"time"
+)
+
+// TODO: this is what we need to do, split it into multiple actions
+
+type Action struct {
+	Id           string `json:"id"`
+	FriendlyName string `json:"friendlyname"`
+	Property     string `json:"property"`
+	Data         any    `json:"data,omitempty"`
+}
+
+type DelayeAction struct {
+	Id           string `json:"id"`
+	FriendlyName string `json:"friendlyname"`
+	Property     string `json:"property"`
+	Data         any    `json:"data,omitempty"`
+	Delay        int    `json:"delay,omitempty"`
+}
+
+type PresetRotationAction struct {
+	Id           string `json:"id"`
+	FriendlyName string `json:"friendlyname"`
+	Property     string `json:"property"`
+}
+
+type StepProperty struct {
+	Property string
+	Operator string // +,-, *,/
+	Value    int
+}
+
+type StepAction struct {
+	Type           string         `json:"type"`
+	Id             string         `json:"id"`
+	FriendlyName   string         `json:"friendlyname"`
+	Property       string         `json:"property"`
+	Operation      int            `json:"operation"`
+	StepProperties []StepProperty `json:"stepproperties"`
+}
+
+// brightness + value
+
+// brightness + direction_time * value = [expose_name] [+/-] [expose_name] [numeric_operator] [numeric value]
+// brightness - direction_time * value
+
+// action set brighness +/- some value = [value_source] [arithmetic operator] [step_value]
+// action set brighness  +/- some other numeric combination  eg direction_time * 0.5
+
+type MqttAction struct {
+	Id              string         `json:"id"`
+	FriendlyName    string         `json:"friendlyname"`
+	Property        string         `json:"property"`
+	Data            any            `json:"data,omitempty"`
+	Delay           int            `json:"delay,omitempty"`
+	Operation       int            `json:"operation"`
+	ExtraProperties []StepProperty `json:"extra"`
+
+	Client mqtt.MqttClient `json:"-"`
+
+	operationAction actionOperation
+	mut             sync.RWMutex
+	exit            chan bool
+	isPending       bool
+}
+
+func NewAction() *MqttAction {
+	return &MqttAction{Delay: 0}
+}
+
+func (a *MqttAction) configure(device *devices.Device) {
+	if a.Operation > 0 {
+		a.operationAction = OperationTypes[a.Operation].Create(device, a)
+	}
+}
+
+func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
+
+	a.mut.Lock()
+	defer a.mut.Unlock()
+
+	if a.isPending {
+		return
+	}
+
+	// no delay execution
+	if a.Delay == 0 {
+		defer func() {
+			a.isPending = false
+		}()
+
+		a.isPending = true
+		payload, err := a.buildPayload(name, ctx)
+		if err != nil {
+			return
+		}
+
+		a.emit(payload)
+
+		// on success callback
+		// update sensor current value
+		ctx.SetCurrent(name, ctx.Payload[name].Data)
+		return
+	}
+
+	// with delay execution
+	a.exit = make(chan bool, 1)
+	go func() {
+
+		var delay = time.Duration(float64(a.Delay) * float64(time.Millisecond))
+		timestamp := time.Now().Add(delay)
+		diff := time.Until(timestamp).Milliseconds()
+
+		duration := time.Duration(diff)
+		ticker := *time.NewTicker(duration * time.Millisecond)
+		a.isPending = true
+		utils.LogInfof("time constraint started Delay: %d ms", a.Delay)
+
+		defer func() {
+			close(a.exit)
+			a.isPending = false
+		}()
+
+		select {
+		case <-ticker.C:
+
+			payload, err := a.buildPayload(name, ctx)
+			if err != nil {
+				utils.LogErrorf(err.Error())
+				return
+			}
+
+			a.emit(payload)
+			ctx.SetCurrent(name, ctx.Payload[name].Data)
+
+			// on success callback
+			// update sensor current value
+			utils.LogInfo("timer constraint finished")
+			return
+
+		case <-a.exit:
+
+			utils.LogInfo("timer constraint stopped")
+			return
+		}
+	}()
+}
+
+func (a *MqttAction) Stop() {
+	if a.isPending {
+		// stop it and exit
+		a.mut.Lock()
+		defer a.mut.Unlock()
+
+		a.exit <- true
+		a.isPending = false
+	}
+}
+
+func (a *MqttAction) emit(payload []byte) {
+
+	msg := fmt.Sprintf("%s/set", a.FriendlyName)
+	a.Client.Publish(msg, payload)
+
+	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.FriendlyName)
+}
+
+func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, error) {
+
+	if a.Operation > 0 {
+		newValue, err := a.operationAction.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		return createJson(a.Property, newValue), nil
+	}
+
+	payloadData := a.Data
+	if payloadData == nil {
+		payloadData = ctx.Payload[name].Data
+	}
+	return createJson(a.Property, payloadData), nil
+}
+
+func createJson(property string, data any) []byte {
+	jp := map[string]any{
+		property: data,
+	}
+
+	payload, _ := json.Marshal(jp)
+	return payload
+}

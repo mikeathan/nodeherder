@@ -8,7 +8,7 @@ import (
 )
 
 type operationFactory interface {
-	Create(expose *devices.Entity, action *MqttAction) actionOperation
+	Create(device *devices.Device, action *MqttAction) actionOperation
 }
 
 type stepOperationFactory struct {
@@ -16,20 +16,26 @@ type stepOperationFactory struct {
 	limit string
 }
 
-func (s *stepOperationFactory) Create(expose *devices.Entity, action *MqttAction) actionOperation {
+func (s *stepOperationFactory) Create(device *devices.Device, action *MqttAction) actionOperation {
 
+	expose := device.Exposes[action.Property]
 	var limit float64
 	if val, ok := expose.Attributes[s.limit]; ok {
 		limit = val.(float64)
 	}
+
+	//
+	// We need to access expose value and nay other values listed in extra properties
+
 	return newStepOperation(expose, s.op, action.Data.(float64), limit)
 }
 
 type rotateOperationFactory struct {
 }
 
-func (r *rotateOperationFactory) Create(expose *devices.Entity, action *MqttAction) actionOperation {
+func (r *rotateOperationFactory) Create(device *devices.Device, action *MqttAction) actionOperation {
 
+	expose := device.Exposes[action.Property]
 	var keys []string
 	for k := range expose.Presets {
 		keys = append(keys, k)
@@ -40,6 +46,7 @@ func (r *rotateOperationFactory) Create(expose *devices.Entity, action *MqttActi
 	for _, k := range keys {
 		presets = append(presets, expose.Presets[k])
 	}
+
 	return newRotateOperation(presets)
 }
 
@@ -91,11 +98,11 @@ type stepOperation struct {
 	limit     float64
 	stepType  string
 	stepValue float64
-	expose    *devices.Entity
+	device    *devices.Device
 }
 
-func newStepOperation(expose *devices.Entity, stepType string, stepValue float64, limit float64) actionOperation {
-	return &stepOperation{expose: expose, stepType: stepType, stepValue: stepValue, limit: limit}
+func newStepOperation(device *devices.Device, stepType string, stepValue float64, limit float64) actionOperation {
+	return &stepOperation{device: device, stepType: stepType, stepValue: stepValue, limit: limit}
 }
 
 func (r *stepOperation) Next() (any, error) {
