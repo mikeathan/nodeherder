@@ -109,6 +109,18 @@ const showPresets = computed<boolean>(() => {
     return false
 })
 
+function populateExtraproperties() {
+    // TODO: we only care for  numeric types
+
+    const data = Object.assign({},
+        ...Object.values(device.value.exposes)
+            .filter(f => f.type != ExposeTypes.Numeric));
+
+    console.log(data);
+
+    return data;
+
+}
 // NOTE:
 // problem is we cant make fetured typed as it could return null
 // so it would require some restructuring
@@ -124,6 +136,13 @@ const feature = computed(() => {
     return device.exposes[action.property];
 });
 
+// make differnt time of Action type
+// Action Type 
+// action set brightness = value , with delay (or that can be new actiontype mayb)
+
+// New type = numeric step action type 
+// action set brighness +/- some value
+// action set brighness  +/- some other numeric combination  eg direction_time * 0.5
 
 function propertyUpdated(event: any) {
     const value = event;

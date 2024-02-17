@@ -158,11 +158,5 @@ function getItems() {
                 alignment="center" :disabled="name == ''" @update:data="dataUpdated">
             </DataInput>
         </div>
-
-        Add a new panel: user can click to add key value pair. for now accept:
-        where to read data from (default is expose.data)
-        value list need to have expose.name that contain values
-        eg for "action_direction": "right", we want to use
-        "action_time": 15,
     </div>
 </template>
