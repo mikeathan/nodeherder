@@ -12,41 +12,35 @@ import (
 
 // TODO: this is what we need to do, split it into multiple actions
 
-type Action struct {
-	Id           string `json:"id"`
-	FriendlyName string `json:"friendlyname"`
-	Property     string `json:"property"`
-	Data         any    `json:"data,omitempty"`
-}
+// type Action struct {
+// 	Id           string `json:"id"`
+// 	FriendlyName string `json:"friendlyname"`
+// 	Property     string `json:"property"`
+// 	Data         any    `json:"data,omitempty"`
+// }
 
-type DelayeAction struct {
-	Id           string `json:"id"`
-	FriendlyName string `json:"friendlyname"`
-	Property     string `json:"property"`
-	Data         any    `json:"data,omitempty"`
-	Delay        int    `json:"delay,omitempty"`
-}
+// type DelayeAction struct {
+// 	Id           string `json:"id"`
+// 	FriendlyName string `json:"friendlyname"`
+// 	Property     string `json:"property"`
+// 	Data         any    `json:"data,omitempty"`
+// 	Delay        int    `json:"delay,omitempty"`
+// }
 
-type PresetRotationAction struct {
-	Id           string `json:"id"`
-	FriendlyName string `json:"friendlyname"`
-	Property     string `json:"property"`
-}
+// type PresetRotationAction struct {
+// 	Id           string `json:"id"`
+// 	FriendlyName string `json:"friendlyname"`
+// 	Property     string `json:"property"`
+// }
 
-type StepProperty struct {
-	Property string
-	Operator string // +,-, *,/
-	Value    int
-}
-
-type StepAction struct {
-	Type           string         `json:"type"`
-	Id             string         `json:"id"`
-	FriendlyName   string         `json:"friendlyname"`
-	Property       string         `json:"property"`
-	Operation      int            `json:"operation"`
-	StepProperties []StepProperty `json:"stepproperties"`
-}
+// type StepAction struct {
+// 	Type           string         `json:"type"`
+// 	Id             string         `json:"id"`
+// 	FriendlyName   string         `json:"friendlyname"`
+// 	Property       string         `json:"property"`
+// 	Operation      int            `json:"operation"`
+// 	StepProperties []StepProperty `json:"stepproperties"`
+// }
 
 // brightness + value
 
@@ -56,14 +50,19 @@ type StepAction struct {
 // action set brighness +/- some value = [value_source] [arithmetic operator] [step_value]
 // action set brighness  +/- some other numeric combination  eg direction_time * 0.5
 
+type Step struct {
+	Property string
+	Operator string // +,-, *,/
+}
+
 type MqttAction struct {
-	Id              string         `json:"id"`
-	FriendlyName    string         `json:"friendlyname"`
-	Property        string         `json:"property"`
-	Data            any            `json:"data,omitempty"`
-	Delay           int            `json:"delay,omitempty"`
-	Operation       int            `json:"operation"`
-	ExtraProperties []StepProperty `json:"extra"`
+	Id           string `json:"id"`
+	FriendlyName string `json:"friendlyname"`
+	Property     string `json:"property"`
+	Data         any    `json:"data,omitempty"`
+	Delay        int    `json:"delay,omitempty"`
+	Operation    int    `json:"operation"`
+	Steps        []Step `json:"steps,omitempty"`
 
 	Client mqtt.MqttClient `json:"-"`
 
@@ -74,7 +73,7 @@ type MqttAction struct {
 }
 
 func NewAction() *MqttAction {
-	return &MqttAction{Delay: 0}
+	return &MqttAction{Delay: 0, Steps: make([]Step, 0)}
 }
 
 func (a *MqttAction) configure(device *devices.Device) {

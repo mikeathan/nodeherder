@@ -27,7 +27,7 @@ func (s *stepOperationFactory) Create(device *devices.Device, action *MqttAction
 	//
 	// We need to access expose value and nay other values listed in extra properties
 
-	return newStepOperation(expose, s.op, action.Data.(float64), limit)
+	return newStepOperation(device, action, s.op, limit)
 }
 
 type rotateOperationFactory struct {
@@ -95,29 +95,38 @@ func (r *rotateOperation) Next() (any, error) {
 }
 
 type stepOperation struct {
-	limit     float64
-	stepType  string
-	stepValue float64
-	device    *devices.Device
+	limit    float64
+	stepType string
+	action   *MqttAction
+	device   *devices.Device
 }
 
-func newStepOperation(device *devices.Device, stepType string, stepValue float64, limit float64) actionOperation {
-	return &stepOperation{device: device, stepType: stepType, stepValue: stepValue, limit: limit}
+func newStepOperation(device *devices.Device, action *MqttAction, stepType string, limit float64) actionOperation {
+	return &stepOperation{device: device, stepType: stepType, action: action, limit: limit}
 }
 
 func (r *stepOperation) Next() (any, error) {
 
-	value := r.stepValue
-	if r.expose.Data != nil {
-		value = r.expose.Data.(float64)
+	var sourceValue float64
+	var newValue float64
+	var ok bool
+	if sourceValue, ok = r.device.Exposes[r.action.Property].Data.(float64); !ok {
+		sourceValue = 0.0
 	}
 
-	newValue := numericOperations[r.stepType](value, r.stepValue, r.limit)
-	if value == newValue {
+	for i := len(r.action.Steps) - 1; i >= 0; i-- {
+		step := r.action.Steps[i]
+		if newValue, ok = r.device.Exposes[step.Property].Data.(float64); ok {
+			newValue = numericOperations[r.stepType](newValue, r.action.Data.(float64), 0)
+		}
+	}
+
+	if sourceValue == newValue {
 		return nil, errors.New("same value, skipping")
 	}
 
 	return newValue, nil
+
 }
 
 var numericOperations = map[string]func(float64, float64, float64) float64{
@@ -135,6 +144,8 @@ var numericOperations = map[string]func(float64, float64, float64) float64{
 		newValue = math.Max(newValue, limit)
 
 		return newValue
+	}, "*": func(v1 float64, v2 float64, limit float64) float64 {
+		return v1 * v2
 	},
 }
 
