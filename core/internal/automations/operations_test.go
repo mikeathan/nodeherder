@@ -10,6 +10,7 @@ import (
 
 func TestOperationIncreaseValue(t *testing.T) {
 
+	ctx := automations.NewDeviceContext()
 	rotation := createEntity("light", "some description", 51.0, "", nil)
 	rotation.Attributes["max"] = 255.0
 	rotation.Attributes["min"] = 0.0
@@ -25,9 +26,9 @@ func TestOperationIncreaseValue(t *testing.T) {
 	operationAction := automations.OperationTypes[turnOnAction.Operation].Create(rotation, turnOnAction)
 	max := rotation.Attributes["max"].(float64)
 	for i := 0; i < 150; i++ {
-		nextValue, er := operationAction.Next()
+		nextValue, er := operationAction.Next(ctx)
 		if er != nil { // we are expecting value is same error
-			continue
+			t.Fatalf("error %v", er.Error())
 		}
 
 		rotationValue := rotation.Data.(float64)
@@ -51,6 +52,8 @@ func TestOperationIncreaseValue(t *testing.T) {
 
 func TestOperationDecreaseValue(t *testing.T) {
 
+	ctx := automations.NewDeviceContext()
+
 	rotation := createEntity("light", "some description", 43.0, "", nil)
 	rotation.Attributes["max"] = 255.0
 	rotation.Attributes["min"] = 0.0
@@ -66,9 +69,9 @@ func TestOperationDecreaseValue(t *testing.T) {
 	operationAction := automations.OperationTypes[turnOnAction.Operation].Create(rotation, turnOnAction)
 	min := rotation.Attributes["min"].(float64)
 	for i := 0; i < 150; i++ {
-		nextValue, er := operationAction.Next()
+		nextValue, er := operationAction.Next(ctx)
 		if er != nil { // we are expecting value is same error
-			continue
+			t.Fatalf("error %v", er.Error())
 		}
 
 		rotationValue := rotation.Data.(float64)
@@ -91,6 +94,8 @@ func TestOperationDecreaseValue(t *testing.T) {
 }
 
 func TestOperationCycleValue(t *testing.T) {
+
+	ctx := automations.NewDeviceContext()
 
 	light := createEntity("light", "some description", 0.0, "", nil)
 	light.Presets["cold"] = 255.0
@@ -122,7 +127,7 @@ func TestOperationCycleValue(t *testing.T) {
 	operationAction := automations.OperationTypes[turnOnAction.Operation].Create(light, turnOnAction)
 
 	for i := 0; i < 15; i++ {
-		nextValue, er := operationAction.Next()
+		nextValue, er := operationAction.Next(ctx)
 		if er != nil { // we are expecting value is same error
 			continue
 		}

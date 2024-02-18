@@ -8,7 +8,7 @@ import (
 )
 
 type operationFactory interface {
-	Create(device *devices.Device, action *MqttAction) actionOperation
+	Create(expose *devices.Entity, action *MqttAction) actionOperation
 }
 
 type stepOperationFactory struct {
@@ -16,26 +16,21 @@ type stepOperationFactory struct {
 	limit string
 }
 
-func (s *stepOperationFactory) Create(device *devices.Device, action *MqttAction) actionOperation {
+func (s *stepOperationFactory) Create(expose *devices.Entity, action *MqttAction) actionOperation {
 
-	expose := device.Exposes[action.Property]
 	var limit float64
 	if val, ok := expose.Attributes[s.limit]; ok {
 		limit = val.(float64)
 	}
 
-	//
-	// We need to access expose value and nay other values listed in extra properties
-
-	return newStepOperation(device, action, s.op, limit)
+	return newStepOperation(expose, action, s.op, limit)
 }
 
 type rotateOperationFactory struct {
 }
 
-func (r *rotateOperationFactory) Create(device *devices.Device, action *MqttAction) actionOperation {
+func (r *rotateOperationFactory) Create(expose *devices.Entity, action *MqttAction) actionOperation {
 
-	expose := device.Exposes[action.Property]
 	var keys []string
 	for k := range expose.Presets {
 		keys = append(keys, k)
@@ -70,7 +65,7 @@ func toFloat(value any) float32 {
 }
 
 type actionOperation interface {
-	Next() (any, error)
+	Next(ctx *DeviceContext) (any, error)
 }
 
 type rotateOperation struct {
@@ -83,7 +78,7 @@ func newRotateOperation(items []any) actionOperation {
 	return &rotateOperation{items: items, size: len(items)}
 }
 
-func (r *rotateOperation) Next() (any, error) {
+func (r *rotateOperation) Next(ctx *DeviceContext) (any, error) {
 	if r.position >= r.size {
 		r.position = 0
 	}
@@ -98,25 +93,25 @@ type stepOperation struct {
 	limit    float64
 	stepType string
 	action   *MqttAction
-	device   *devices.Device
+	expose   *devices.Entity
 }
 
-func newStepOperation(device *devices.Device, action *MqttAction, stepType string, limit float64) actionOperation {
-	return &stepOperation{device: device, stepType: stepType, action: action, limit: limit}
+func newStepOperation(expose *devices.Entity, action *MqttAction, stepType string, limit float64) actionOperation {
+	return &stepOperation{expose: expose, stepType: stepType, action: action, limit: limit}
 }
 
-func (r *stepOperation) Next() (any, error) {
+func (r *stepOperation) Next(ctx *DeviceContext) (any, error) {
 
 	var sourceValue float64
 	var newValue float64
 	var ok bool
-	if sourceValue, ok = r.device.Exposes[r.action.Property].Data.(float64); !ok {
+	if sourceValue, ok = ctx.GetCurrent(r.action.Property).(float64); !ok {
 		sourceValue = 0.0
 	}
 
 	for i := len(r.action.Steps) - 1; i >= 0; i-- {
 		step := r.action.Steps[i]
-		if newValue, ok = r.device.Exposes[step.Property].Data.(float64); ok {
+		if newValue, ok = ctx.GetCurrent(step.Property).(float64); ok {
 			newValue = numericOperations[r.stepType](newValue, r.action.Data.(float64), 0)
 		}
 	}

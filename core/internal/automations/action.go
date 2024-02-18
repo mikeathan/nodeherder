@@ -76,9 +76,9 @@ func NewAction() *MqttAction {
 	return &MqttAction{Delay: 0, Steps: make([]Step, 0)}
 }
 
-func (a *MqttAction) configure(device *devices.Device) {
+func (a *MqttAction) configure(expose *devices.Entity) {
 	if a.Operation > 0 {
-		a.operationAction = OperationTypes[a.Operation].Create(device, a)
+		a.operationAction = OperationTypes[a.Operation].Create(expose, a)
 	}
 }
 
@@ -176,7 +176,7 @@ func (a *MqttAction) emit(payload []byte) {
 func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, error) {
 
 	if a.Operation > 0 {
-		newValue, err := a.operationAction.Next()
+		newValue, err := a.operationAction.Next(ctx)
 		if err != nil {
 			return nil, err
 		}

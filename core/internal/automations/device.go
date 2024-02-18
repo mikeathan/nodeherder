@@ -86,6 +86,12 @@ func (d *Device) Evaluate(device *devices.Device) bool {
 	// e.g presence can have multiple conditions for on and off
 	for _, trigger := range d.Triggers {
 		if _, ok := device.Exposes[trigger.Name]; ok {
+
+			// populate context with step actiob required data, rather than passing down device object
+			for _, step := range trigger.Action.Steps {
+				d.ctx.SetCurrent(step.Property, device.Exposes[trigger.Name].Data)
+			}
+
 			trigger.process(d.ctx)
 		}
 	}
@@ -164,9 +170,7 @@ func configureAction(registrar services.DeviceRegistrar, action *MqttAction, cli
 
 				device, err := registrar.LookupById(bridgeInfo.IeeeAddress)
 				if err == nil {
-
-					expose := device.Exposes[action.Property]
-					action.configure(expose)
+					action.configure(device.Exposes[action.Property])
 				}
 
 				return nil
