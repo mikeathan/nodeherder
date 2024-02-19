@@ -103,9 +103,9 @@ func newStepOperation(expose *devices.Entity, action *MqttAction, stepType strin
 func (r *stepOperation) Next(ctx *DeviceContext) (any, error) {
 
 	var sourceValue float64
-	var newValue float64
+	var newValue float64 = 0
 	var ok bool
-	thats wrong here
+
 	if sourceValue, ok = ctx.GetCurrent(r.action.Property).(float64); !ok {
 		sourceValue = 0.0
 	}

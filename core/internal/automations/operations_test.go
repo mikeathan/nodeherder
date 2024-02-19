@@ -17,13 +17,12 @@ func TestOperationIncreaseValue(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
 	turnOnAction := &automations.MqttAction{}
-	turnOnAction.FriendlyName = "button_rotation_slow"
-	turnOnAction.Property = "state"
-	turnOnAction.Data = 10.0
-	turnOnAction.Delay = 0
-	turnOnAction.Operation = 1 // increase step
+	turnOnAction.FriendlyName = "attic light"
+	turnOnAction.Property = "brightness"
+	turnOnAction.Data = 1.0    // step_value
+	turnOnAction.Operation = 1 // increase  up step - we dont need that - nneed to refactor
 	step := automations.Step{}
-	step.Property = "light"
+	step.Property = "brightness"
 	step.Operator = "+"
 
 	turnOnAction.Steps = append(turnOnAction.Steps, step)
@@ -31,9 +30,9 @@ func TestOperationIncreaseValue(t *testing.T) {
 	operationAction := automations.OperationTypes[turnOnAction.Operation].Create(rotation, turnOnAction)
 	max := rotation.Attributes["max"].(float64)
 
-	ctx.SetCurrent("light", 250.0)
+	ctx.SetCurrent("brightness", 0.0)
 
-	for i := 0; i < 150; i++ {
+	for i := 0; i < 255; i++ {
 		nextValue, er := operationAction.Next(ctx)
 		if er != nil { // we are expecting value is same error
 			t.Fatalf("error %v", er.Error())
@@ -45,13 +44,18 @@ func TestOperationIncreaseValue(t *testing.T) {
 		}
 
 		stepValue := turnOnAction.Data.(float64)
-		want := ctx.GetCurrent("light").(float64) + stepValue
+		want := ctx.GetCurrent("brightness").(float64) + stepValue
 		want = math.Min(want, max)
 
 		if got != want {
 			t.Fatalf("invalid operation value: want %v got %v", want, got)
 		}
-		ctx.SetCurrent("light", got)
+		ctx.SetCurrent("brightness", got)
+	}
+
+	val, er := operationAction.Next(ctx)
+	if er == nil {
+		t.Fatalf("expected error got %v", val)
 	}
 }
 
@@ -65,36 +69,47 @@ func TestOperationDecreaseValue(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
 	turnOnAction := &automations.MqttAction{}
-	turnOnAction.FriendlyName = "button_rotation_slow"
-	turnOnAction.Property = "state"
-	turnOnAction.Data = 10.0
+	turnOnAction.FriendlyName = "attic light"
+	turnOnAction.Property = "brightness"
+	turnOnAction.Data = 1.0
 	turnOnAction.Delay = 0
 	turnOnAction.Operation = 2 // decrease step
+	step := automations.Step{}
+	step.Property = "brightness"
+	step.Operator = "-"
+	turnOnAction.Steps = append(turnOnAction.Steps, step)
+
 	turnOnAction.Client = mqtt
 	operationAction := automations.OperationTypes[turnOnAction.Operation].Create(rotation, turnOnAction)
 	min := rotation.Attributes["min"].(float64)
-	for i := 0; i < 150; i++ {
+
+	ctx.SetCurrent("brightness", 255.0)
+
+	for i := 0; i < 255; i++ {
 		nextValue, er := operationAction.Next(ctx)
 		if er != nil { // we are expecting value is same error
 			t.Fatalf("error %v", er.Error())
 		}
-
-		rotationValue := rotation.Data.(float64)
-		stepValue := turnOnAction.Data.(float64)
 
 		got := nextValue.(float64)
 		if got < min {
 			t.Fatalf("min limit invalid operation value: want %v got %v", min, got)
 		}
 
-		want := rotationValue - stepValue
+		stepValue := turnOnAction.Data.(float64)
+		want := ctx.GetCurrent("brightness").(float64) - stepValue
 		want = math.Max(want, min)
 
 		if got != want {
 			t.Fatalf("invalid operation value: want %v got %v", want, got)
 		}
 
-		rotation.Data = got
+		ctx.SetCurrent("brightness", got)
+	}
+
+	val, er := operationAction.Next(ctx)
+	if er == nil {
+		t.Fatalf("expected error got %v", val)
 	}
 }
 
