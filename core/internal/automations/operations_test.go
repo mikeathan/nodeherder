@@ -22,31 +22,36 @@ func TestOperationIncreaseValue(t *testing.T) {
 	turnOnAction.Data = 10.0
 	turnOnAction.Delay = 0
 	turnOnAction.Operation = 1 // increase step
+	step := automations.Step{}
+	step.Property = "light"
+	step.Operator = "+"
+
+	turnOnAction.Steps = append(turnOnAction.Steps, step)
 	turnOnAction.Client = mqtt
 	operationAction := automations.OperationTypes[turnOnAction.Operation].Create(rotation, turnOnAction)
 	max := rotation.Attributes["max"].(float64)
+
+	ctx.SetCurrent("light", 250.0)
+
 	for i := 0; i < 150; i++ {
 		nextValue, er := operationAction.Next(ctx)
 		if er != nil { // we are expecting value is same error
 			t.Fatalf("error %v", er.Error())
 		}
 
-		rotationValue := rotation.Data.(float64)
-		stepValue := turnOnAction.Data.(float64)
-
 		got := nextValue.(float64)
 		if got > max {
 			t.Fatalf("max limit invalid operation value: want %v got %v", max, got)
 		}
 
-		want := rotationValue + stepValue
+		stepValue := turnOnAction.Data.(float64)
+		want := ctx.GetCurrent("light").(float64) + stepValue
 		want = math.Min(want, max)
 
 		if got != want {
 			t.Fatalf("invalid operation value: want %v got %v", want, got)
 		}
-
-		rotation.Data = got
+		ctx.SetCurrent("light", got)
 	}
 }
 

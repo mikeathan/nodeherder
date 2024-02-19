@@ -105,6 +105,7 @@ func (r *stepOperation) Next(ctx *DeviceContext) (any, error) {
 	var sourceValue float64
 	var newValue float64
 	var ok bool
+	thats wrong here
 	if sourceValue, ok = ctx.GetCurrent(r.action.Property).(float64); !ok {
 		sourceValue = 0.0
 	}
@@ -112,7 +113,7 @@ func (r *stepOperation) Next(ctx *DeviceContext) (any, error) {
 	for i := len(r.action.Steps) - 1; i >= 0; i-- {
 		step := r.action.Steps[i]
 		if newValue, ok = ctx.GetCurrent(step.Property).(float64); ok {
-			newValue = numericOperations[r.stepType](newValue, r.action.Data.(float64), 0)
+			newValue = numericOperations[r.stepType](newValue, r.action.Data.(float64), r.limit)
 		}
 	}
 
