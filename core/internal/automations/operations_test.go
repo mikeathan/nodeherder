@@ -20,7 +20,7 @@ func TestOperationIncreaseValue(t *testing.T) {
 	turnOnAction.FriendlyName = "attic light"
 	turnOnAction.Property = "brightness"
 	turnOnAction.Data = 1.0    // step_value
-	turnOnAction.Operation = 1 // increase  up step - we dont need that - nneed to refactor
+	turnOnAction.Operation = 1 // increase  up step
 	step := automations.Step{}
 	step.Property = "brightness"
 	step.Operator = "+"
@@ -34,7 +34,7 @@ func TestOperationIncreaseValue(t *testing.T) {
 
 	for i := 0; i < 255; i++ {
 		nextValue, er := operationAction.Next(ctx)
-		if er != nil { // we are expecting value is same error
+		if er != nil {
 			t.Fatalf("error %v", er.Error())
 		}
 
@@ -87,7 +87,7 @@ func TestOperationDecreaseValue(t *testing.T) {
 
 	for i := 0; i < 255; i++ {
 		nextValue, er := operationAction.Next(ctx)
-		if er != nil { // we are expecting value is same error
+		if er != nil {
 			t.Fatalf("error %v", er.Error())
 		}
 
@@ -138,8 +138,8 @@ func TestOperationCycleValue(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
 	turnOnAction := &automations.MqttAction{}
-	turnOnAction.FriendlyName = "button_rotation_slow"
-	turnOnAction.Property = "state"
+	turnOnAction.FriendlyName = "attic light"
+	turnOnAction.Property = "brightness"
 	turnOnAction.Data = 0
 	turnOnAction.Delay = 0
 	turnOnAction.Operation = 3 // decrease step
@@ -148,8 +148,8 @@ func TestOperationCycleValue(t *testing.T) {
 
 	for i := 0; i < 15; i++ {
 		nextValue, er := operationAction.Next(ctx)
-		if er != nil { // we are expecting value is same error
-			continue
+		if er != nil {
+			t.Fatalf("error %v", er.Error())
 		}
 
 		want := presets[pos].(float64)

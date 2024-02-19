@@ -18,12 +18,16 @@ type stepOperationFactory struct {
 
 func (s *stepOperationFactory) Create(expose *devices.Entity, action *MqttAction) actionOperation {
 
-	var limit float64
-	if val, ok := expose.Attributes[s.limit]; ok {
-		limit = val.(float64)
+	var minLimit float64 = 0
+	var maxLimit float64 = 255
+	if val, ok := expose.Attributes["min"]; ok {
+		minLimit = val.(float64)
+	}
+	if val, ok := expose.Attributes["max"]; ok {
+		maxLimit = val.(float64)
 	}
 
-	return newStepOperation(expose, action, s.op, limit)
+	return newStepOperation(expose, action, s.op, minLimit, maxLimit)
 }
 
 type rotateOperationFactory struct {
@@ -90,14 +94,18 @@ func (r *rotateOperation) Next(ctx *DeviceContext) (any, error) {
 }
 
 type stepOperation struct {
-	limit    float64
 	stepType string
 	action   *MqttAction
 	expose   *devices.Entity
+	limits   map[string]float64
 }
 
-func newStepOperation(expose *devices.Entity, action *MqttAction, stepType string, limit float64) actionOperation {
-	return &stepOperation{expose: expose, stepType: stepType, action: action, limit: limit}
+func newStepOperation(expose *devices.Entity, action *MqttAction, stepType string, minLimit float64, maxLimit float64) actionOperation {
+
+	limits := make(map[string]float64)
+	limits["+"] = maxLimit
+	limits["-"] = minLimit
+	return &stepOperation{expose: expose, stepType: stepType, action: action, limits: limits}
 }
 
 func (r *stepOperation) Next(ctx *DeviceContext) (any, error) {
@@ -113,7 +121,7 @@ func (r *stepOperation) Next(ctx *DeviceContext) (any, error) {
 	for i := len(r.action.Steps) - 1; i >= 0; i-- {
 		step := r.action.Steps[i]
 		if newValue, ok = ctx.GetCurrent(step.Property).(float64); ok {
-			newValue = numericOperations[r.stepType](newValue, r.action.Data.(float64), r.limit)
+			newValue = numericOperations[r.stepType](newValue, r.action.Data.(float64), r.limits[r.stepType])
 		}
 	}
 
