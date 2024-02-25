@@ -183,7 +183,7 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 	turnOnAction := &automations.MqttAction{}
 	turnOnAction.FriendlyName = "attic light"
 	turnOnAction.Property = "brightness"
-	turnOnAction.Operation = 2 // increase  up step type
+	turnOnAction.Operation = 1 // increase  up step type
 	turnOnAction.Data = 0.5
 	step := automations.Step{}
 	step.Property = "brightness"
