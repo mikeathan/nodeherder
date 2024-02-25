@@ -94,7 +94,7 @@ func (r *rotateOperation) Next(ctx *DeviceContext) (any, error) {
 }
 
 type stepOperation struct {
-	stepType string
+	stepType string // dot need that !!!!! remove
 	action   *MqttAction
 	expose   *devices.Entity
 	limits   map[string]float64
@@ -111,17 +111,21 @@ func newStepOperation(expose *devices.Entity, action *MqttAction, stepType strin
 func (r *stepOperation) Next(ctx *DeviceContext) (any, error) {
 
 	var sourceValue float64
-	var newValue float64 = 0
 	var ok bool
 
 	if sourceValue, ok = ctx.GetCurrent(r.action.Property).(float64); !ok {
 		sourceValue = 0.0
 	}
 
+	// for multi step operation
+	// 	eg brightness = brightness + action_time * 0.5
+	// for single step operation
+	//  eg brightness = brightness + 0.5
+	var newValue = r.action.Data.(float64)
 	for i := len(r.action.Steps) - 1; i >= 0; i-- {
 		step := r.action.Steps[i]
-		if newValue, ok = ctx.GetCurrent(step.Property).(float64); ok {
-			newValue = numericOperations[r.stepType](newValue, r.action.Data.(float64), r.limits[r.stepType])
+		if propValue, ok := ctx.GetCurrent(step.Property).(float64); ok {
+			newValue = numericOperations[step.Operator](propValue, newValue, r.limits[r.stepType])
 		}
 	}
 
