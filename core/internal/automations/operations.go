@@ -125,7 +125,7 @@ func (r *stepOperation) Next(ctx *DeviceContext) (any, error) {
 	for i := len(r.action.Steps) - 1; i >= 0; i-- {
 		step := r.action.Steps[i]
 		if propValue, ok := ctx.GetCurrent(step.Property).(float64); ok {
-			newValue = numericOperations[step.Operator](propValue, newValue, r.limits[r.stepType])
+			newValue = numericOperations[step.Operator](propValue, newValue, r.limits[step.Operator])
 		}
 	}
 
