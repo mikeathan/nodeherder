@@ -27,7 +27,7 @@ func TestOperationIncreaseValue(t *testing.T) {
 
 	turnOnAction.Steps = append(turnOnAction.Steps, step)
 	turnOnAction.Client = mqtt
-	operationAction := automations.OperationTypes[turnOnAction.Operation].Create(rotation, turnOnAction)
+	operationAction := automations.CreateStepOperation(rotation, turnOnAction)
 	max := rotation.Attributes["max"].(float64)
 
 	ctx.SetCurrent("brightness", 0.0)
@@ -79,7 +79,7 @@ func TestOperationDecreaseValue(t *testing.T) {
 	turnOnAction.Steps = append(turnOnAction.Steps, step)
 
 	turnOnAction.Client = mqtt
-	operationAction := automations.OperationTypes[turnOnAction.Operation].Create(rotation, turnOnAction)
+	operationAction := automations.CreateStepOperation(rotation, turnOnAction)
 	min := rotation.Attributes["min"].(float64)
 
 	ctx.SetCurrent("brightness", 255.0)
@@ -136,7 +136,7 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	turnOnAction.Steps = append(turnOnAction.Steps, step2)
 
 	turnOnAction.Client = mqtt
-	operationAction := automations.OperationTypes[turnOnAction.Operation].Create(rotation, turnOnAction)
+	operationAction := automations.CreateStepOperation(rotation, turnOnAction)
 	max := rotation.Attributes["max"].(float64)
 
 	ctx.SetCurrent("brightness", 0.0)
@@ -197,7 +197,7 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 	turnOnAction.Steps = append(turnOnAction.Steps, step2)
 
 	turnOnAction.Client = mqtt
-	operationAction := automations.OperationTypes[turnOnAction.Operation].Create(rotation, turnOnAction)
+	operationAction := automations.CreateStepOperation(rotation, turnOnAction)
 	max := rotation.Attributes["max"].(float64)
 
 	ctx.SetCurrent("brightness", 255.0)
@@ -265,7 +265,7 @@ func TestOperationCycleValue(t *testing.T) {
 	turnOnAction.Delay = 0
 	turnOnAction.Operation = 3 // decrease step
 	turnOnAction.Client = mqtt
-	operationAction := automations.OperationTypes[turnOnAction.Operation].Create(light, turnOnAction)
+	operationAction := automations.CreateRotateOperation(light, turnOnAction)
 
 	for i := 0; i < 15; i++ {
 		nextValue, er := operationAction.Next(ctx)

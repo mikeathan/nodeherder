@@ -78,18 +78,10 @@ func NewAction() *MqttAction {
 
 func (a *MqttAction) configure(expose *devices.Entity) {
 
-	if a.Property == preset{
-		do rotation operation
-	}
-	// if data == 0 and action.property is enum and a preset then do roatation operation
-	// if step has enum then use rotation operation
-	// but we have multiple steps ???
-	if len(a.Steps) > 0 {
-		// create step opration
-	}
-
-	if a.Operation > 0 {
-		a.operationAction = OperationTypes[a.Operation].Create(expose, a)
+	if expose.Type == "enum" && len(expose.Presets) > 0 && a.Data == nil {
+		a.operationAction = CreateStepOperation(expose, a)
+	} else if len(a.Steps) > 0 {
+		a.operationAction = CreateRotateOperation(expose, a)
 	}
 }
 

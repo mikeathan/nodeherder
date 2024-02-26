@@ -7,16 +7,7 @@ import (
 	"sort"
 )
 
-type operationFactory interface {
-	Create(expose *devices.Entity, action *MqttAction) actionOperation
-}
-
-type stepOperationFactory struct {
-	op    string
-	limit string
-}
-
-func (s *stepOperationFactory) Create(expose *devices.Entity, action *MqttAction) actionOperation {
+func CreateStepOperation(expose *devices.Entity, action *MqttAction) actionOperation {
 
 	var minLimit float64 = 0
 	var maxLimit float64 = 255
@@ -27,13 +18,10 @@ func (s *stepOperationFactory) Create(expose *devices.Entity, action *MqttAction
 		maxLimit = val.(float64)
 	}
 
-	return newStepOperation(expose, action, s.op, minLimit, maxLimit)
+	return newStepOperation(expose, action, minLimit, maxLimit)
 }
 
-type rotateOperationFactory struct {
-}
-
-func (r *rotateOperationFactory) Create(expose *devices.Entity, action *MqttAction) actionOperation {
+func CreateRotateOperation(expose *devices.Entity, action *MqttAction) actionOperation {
 
 	var keys []string
 	for k := range expose.Presets {
@@ -47,12 +35,6 @@ func (r *rotateOperationFactory) Create(expose *devices.Entity, action *MqttActi
 	}
 
 	return newRotateOperation(presets)
-}
-
-var OperationTypes = map[int]operationFactory{
-	1: &stepOperationFactory{op: "+", limit: "max"},
-	2: &stepOperationFactory{op: "-", limit: "min"},
-	3: &rotateOperationFactory{},
 }
 
 func toFloat(value any) float32 {
@@ -94,18 +76,17 @@ func (r *rotateOperation) Next(ctx *DeviceContext) (any, error) {
 }
 
 type stepOperation struct {
-	stepType string // dot need that !!!!! remove
-	action   *MqttAction
-	expose   *devices.Entity
-	limits   map[string]float64
+	action *MqttAction
+	expose *devices.Entity
+	limits map[string]float64
 }
 
-func newStepOperation(expose *devices.Entity, action *MqttAction, stepType string, minLimit float64, maxLimit float64) actionOperation {
+func newStepOperation(expose *devices.Entity, action *MqttAction, minLimit float64, maxLimit float64) actionOperation {
 
 	limits := make(map[string]float64)
 	limits["+"] = maxLimit
 	limits["-"] = minLimit
-	return &stepOperation{expose: expose, stepType: stepType, action: action, limits: limits}
+	return &stepOperation{expose: expose, action: action, limits: limits}
 }
 
 func (r *stepOperation) Next(ctx *DeviceContext) (any, error) {
