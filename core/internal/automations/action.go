@@ -61,7 +61,6 @@ type MqttAction struct {
 	Property     string `json:"property"`
 	Data         any    `json:"data,omitempty"`
 	Delay        int    `json:"delay,omitempty"`
-	Operation    int    `json:"operation"`
 	Steps        []Step `json:"steps,omitempty"`
 
 	Client mqtt.MqttClient `json:"-"`
@@ -78,6 +77,7 @@ func NewAction() *MqttAction {
 
 func (a *MqttAction) configure(expose *devices.Entity) {
 
+	a.operationAction = nil
 	if expose.Type == "enum" && len(expose.Presets) > 0 && a.Data == nil {
 		a.operationAction = CreateStepOperation(expose, a)
 	} else if len(a.Steps) > 0 {
@@ -178,7 +178,7 @@ func (a *MqttAction) emit(payload []byte) {
 
 func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, error) {
 
-	if a.Operation > 0 {
+	if a.operationAction != nil {
 		newValue, err := a.operationAction.Next(ctx)
 		if err != nil {
 			return nil, err

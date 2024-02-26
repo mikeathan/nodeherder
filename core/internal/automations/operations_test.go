@@ -19,7 +19,6 @@ func TestOperationIncreaseValue(t *testing.T) {
 	turnOnAction := &automations.MqttAction{}
 	turnOnAction.FriendlyName = "attic light"
 	turnOnAction.Property = "brightness"
-	turnOnAction.Operation = 1 // increase  up step
 	turnOnAction.Data = 1.0
 	step := automations.Step{}
 	step.Property = "brightness"
@@ -71,7 +70,6 @@ func TestOperationDecreaseValue(t *testing.T) {
 	turnOnAction.FriendlyName = "attic light"
 	turnOnAction.Property = "brightness"
 	turnOnAction.Data = 1.0
-	turnOnAction.Operation = 2 // decrease step
 	step := automations.Step{}
 	step.Property = "brightness"
 	step.Operator = "-"
@@ -122,7 +120,6 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	turnOnAction := &automations.MqttAction{}
 	turnOnAction.FriendlyName = "attic light"
 	turnOnAction.Property = "brightness"
-	turnOnAction.Operation = 1 // increase  up step type
 	turnOnAction.Data = 0.5
 	step := automations.Step{}
 	step.Property = "brightness"
@@ -183,7 +180,6 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 	turnOnAction := &automations.MqttAction{}
 	turnOnAction.FriendlyName = "attic light"
 	turnOnAction.Property = "brightness"
-	turnOnAction.Operation = 1 // increase  up step type
 	turnOnAction.Data = 0.5
 	step := automations.Step{}
 	step.Property = "brightness"
@@ -263,7 +259,6 @@ func TestOperationCycleValue(t *testing.T) {
 	turnOnAction.Property = "brightness"
 	turnOnAction.Data = 0
 	turnOnAction.Delay = 0
-	turnOnAction.Operation = 3 // decrease step
 	turnOnAction.Client = mqtt
 	operationAction := automations.CreateRotateOperation(light, turnOnAction)
 

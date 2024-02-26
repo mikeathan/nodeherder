@@ -18,8 +18,7 @@
         "friendlyname": "Living room",
         "property": "state",
         "data": "OFF",
-        "delay": 300000,
-        "operation": 0
+        "delay": 300000
       }
     },
     {
@@ -40,8 +39,7 @@
         "id": "0x00158d0005a23c38",
         "friendlyname": "Living room",
         "property": "state",
-        "data": "ON",
-        "operation": 0
+        "data": "ON"
       }
     }
   ]

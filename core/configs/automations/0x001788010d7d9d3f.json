@@ -17,8 +17,7 @@
         "id": "0x00158d0005a23c38",
         "friendlyname": "Living Room",
         "property": "state",
-        "data": "TOGGLE",
-        "operation": 0
+        "data": "TOGGLE"
       }
     },
     {
@@ -35,7 +34,6 @@
         "friendlyname": "Living Room",
         "property": "brightness",
         "data": 10,
-        "operation": 1,
         "steps": [{ "Property": "brightness", "Operator": "+" }]
       }
     },
@@ -53,7 +51,6 @@
         "friendlyname": "Living Room",
         "property": "brightness",
         "data": 20,
-        "operation": 1,
         "steps": [{ "Property": "brightness", "Operator": "+" }]
       }
     },
@@ -71,7 +68,6 @@
         "friendlyname": "Living Room",
         "property": "brightness",
         "data": 10,
-        "operation": 2,
         "steps": [{ "Property": "brightness", "Operator": "-" }]
       }
     },
@@ -89,7 +85,6 @@
         "friendlyname": "Living Room",
         "property": "brightness",
         "data": 20,
-        "operation": 2,
         "steps": [{ "Property": "brightness", "Operator": "-" }]
       }
     },
@@ -105,8 +100,7 @@
       "action": {
         "id": "0x00158d0005a23c38",
         "friendlyname": "Living Room",
-        "property": "color_temp",
-        "operation": 3
+        "property": "color_temp"
       }
     }
   ]
