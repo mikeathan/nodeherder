@@ -115,7 +115,6 @@ func (r *stepOperation) Next(ctx *DeviceContext) (any, error) {
 	}
 
 	return newValue, nil
-
 }
 
 var numericOperations = map[string]func(float64, float64, float64) float64{

@@ -11,6 +11,7 @@ import expressWs from "express-ws";
 import http from "http";
 import { createRequire } from "module";
 const devicesFullPath = "../../docs/devices.json";
+const automationFullPath = "../../core/config/0x001788010d7d9d3f.json";
 
 // temperature
 const temperatureChangeDelaySec = 5;
@@ -108,7 +109,7 @@ var automationMap = new Map([
             type: "numeric",
             property: "brightness",
             data: 10,
-            operation: 1,
+            steps: [{ Property: "brightness", Operator: "+" }],
           },
         },
         {
@@ -126,7 +127,7 @@ var automationMap = new Map([
             type: "numeric",
             property: "brightness",
             data: 10,
-            operation: 2,
+            steps: [{ Property: "brightness", Operator: "-" }],
           },
         },
       ],
@@ -137,6 +138,7 @@ var automationMap = new Map([
 expressWs(app, server);
 
 var devicesPayload = loadDevices();
+
 var connected = false;
 // Get the /ws websocket route
 app.ws("/ws", async function (ws, req) {

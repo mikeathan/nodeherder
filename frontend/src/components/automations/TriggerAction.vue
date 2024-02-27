@@ -136,14 +136,6 @@ const feature = computed(() => {
     return device.exposes[action.property];
 });
 
-// make differnt time of Action type
-// Action Type 
-// action set brightness = value , with delay (or that can be new actiontype mayb)
-
-// New type = numeric step action type 
-// action set brighness +/- some value
-// action set brighness  +/- some other numeric combination  eg direction_time * 0.5
-
 function propertyUpdated(event: any) {
     const value = event;
     if (value == "" || device.value == undefined) {
