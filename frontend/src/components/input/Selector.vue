@@ -57,10 +57,9 @@ input.form-control:disabled {
     border: 0;
     outline: 0;
     border-radius: 0%;
+    color: gray;
     background-color: transparent;
-    border-bottom: 0px solid white;
 }
-
 
 input.form-control:focus,
 :active,
@@ -70,11 +69,23 @@ select.form-control:focus,
 :hover {
     box-shadow: none;
 }
+
+select.form-control:first-of-type {
+    order: 0;
+    outline: 0;
+    border-radius: 0%;
+    border-bottom: 0px solid white;
+}
+
+select.form-control:required:invalid {
+    color: gray;
+    border-bottom: 1px solid white;
+}
 </style>
 <template>
     <div>
-        <select id="dataSelect" :style="'text-align:' + props.alignment + ';'" class="form-control" v-model="selected"
-            @change="dataSelectionChanged" :disabled="props.disabled">
+        <select required id="dataSelect" :style="'text-align:' + props.alignment + ';'" class="form-control"
+            v-model="selected" @change="dataSelectionChanged" :disabled="props.disabled">
             <option v-if="props.placeholder != ''" value="">{{ props.placeholder }}</option>
             <option v-for="(value, key) in props.items" :value="value" :key="value">
                 {{ key }}

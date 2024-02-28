@@ -54,14 +54,7 @@ watch(
     }
 );
 
-function deviceSelected() {
-    // action.id = event
-    // var device = store.getters["devices/find"](id) as Device;
-    // if (device != undefined) {
 
-    //     // setDeviceId(action, device.id, device.friendly_name)
-    // }
-}
 function isValid(): boolean {
     return actionType.value != '' && deviceId.value != '' && deviceProperty.value != '';
 }
@@ -117,36 +110,35 @@ function close(): void {
                     <h5 class="modal-title">Action Selector</h5>
                 </div>
                 <div class="modal-body">
-
-                    <div class="container-fluid p-0 h-100">
-                        <div class="card col-xl-5 col-md-6 col-sm-3">
-                            <div class="card-header ">
-                                <div class="pt-3 ">
-                                    <label class="form-check-label">Action Type</label>
+                    <table class="table responsive ">
+                        <thead>
+                            <tr>
+                                <th style="text-align: center;" scope="col">Action Type</th>
+                                <th style="text-align: center;" scope="col">Device</th>
+                                <th style="text-align: center;" scope="col">Expose</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
                                     <Selector placeholder="Select" :items="actionTypes" :value="actionType"
                                         @update:data="(v) => actionType = v">
                                     </Selector>
-                                </div>
-                                <div v-if="actionType != ''">
-                                    <div class="pt-3">
-                                        <label class="form-check-label">Device</label>
-                                        <Selector placeholder="Select" :items="deviceFeatureList" :value="deviceId"
-                                            @update:data="(v) => deviceId = v">
-                                        </Selector>
-                                    </div>
-                                    <div class="pt-3 ">
-                                        <label class="form-check-label">Device property</label>
-                                        <Selector placeholder="Select" :items="getDeviceFeatureNames"
-                                            :value="deviceProperty" @update:data="(v) => deviceProperty = v"
-                                            :disabled="deviceId == ''">
-                                        </Selector>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                                </td>
+                                <td>
+                                    <Selector :disabled="actionType == ''" placeholder="Select" :items="deviceFeatureList"
+                                        :value="deviceId" @update:data="(v) => deviceId = v">
+                                    </Selector>
+                                </td>
+                                <td>
+                                    <Selector :disabled="deviceId == ''" placeholder="Select" :items="getDeviceFeatureNames"
+                                        :value="deviceProperty" @update:data="(v) => deviceProperty = v">
+                                    </Selector>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                buttons for add, close , clear
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" :disabled="isValid() == false" @click="add">Add</button>
                     <button type="button" class="btn btn-secondary" @click="clear">Clear</button>
