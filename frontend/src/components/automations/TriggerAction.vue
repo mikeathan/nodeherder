@@ -227,7 +227,7 @@ defineExpose({
                 <div class="col-xl-3 ">
                     <Selector :items="resolveObjectOperations(feature)" :value="action.operation"
                         @update:data="operationUpdated">
-                    </Selector>
+                    </Selector>:disabled="action.id != ''"
                 </div>
                 <div v-if="showPresets" class="col-xl-3">
                     <Selector placeholder="Presets" :items="getPresets" value="" @update:data="presetUpdated">

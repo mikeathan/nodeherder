@@ -9,6 +9,7 @@ import { Device } from "@/types/device";
 import { AutomationTrigger, AutomationTriggerAction, AutomationTriggerCondition, AutomationTriggerConditions } from "@/types/automation";
 import { isValid, EditableTriggerCondition } from "../../contracts/automations"
 import { capitalizeText } from "../../modules/formatters/text.formatter";
+import ActionSelectorDialog from "../dialogs/ActionSelectorDialog.vue"
 
 const props = defineProps({
     id: { type: String },
@@ -20,6 +21,7 @@ const conditions = ref<AutomationTriggerConditions>({} as AutomationTriggerCondi
 const action = ref<AutomationTriggerAction>({} as AutomationTriggerAction)
 const actionRef = ref<InstanceType<typeof TriggerAction>>()
 const trigger = ref<AutomationTrigger>(props.trigger)
+const showDialog = ref<boolean>(false);
 
 watch(
     () => props.trigger,
@@ -112,12 +114,11 @@ function clearTriggerAction() {
                 <tr>
                     <th scope="col">
                         <h5>Actions
-                            <!-- 
-                                NOTE : we will use it when we have more than one Actions 
-                                <button v-if="trigger.action.id ==''" type="button" class="btn btn-default btn-number ms-3"
-                                @click="addAction()">
+
+                            <button v-if="trigger.action.id == ''" type="button" class="btn btn-default btn-number ms-3"
+                                @click="showDialog = true">
                                 <span class=" fa fa-plus"></span>
-                            </button> -->
+                            </button>
                         </h5>
                     </th>
                 </tr>
@@ -149,4 +150,6 @@ function clearTriggerAction() {
             </div>
         </div>
     </div>
+    <ActionSelectorDialog :show="showDialog" @close="e => showDialog = e">
+    </ActionSelectorDialog>
 </template>
