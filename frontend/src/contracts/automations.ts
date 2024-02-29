@@ -1,5 +1,4 @@
 import { ExposeTypes } from "@/types/device.type";
-//import { AutomationActionTypes } from "@/types/automation.type"
 import {
   Automation,
   AutomationTrigger,
@@ -10,9 +9,13 @@ import {
 import { ExposeType } from "../types/device";
 
 export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
+export type TriggerAction = "TriggerAction"
+export type StepAction = "StepAction"
+export type ActionType = TriggerAction | StepAction;
+
 export const AutomationActionTypes = {
-  Trigger: "trigger_action",
-  Step: "step_action",
+  Trigger: "TriggerAction",
+  Step: "StepAction",
 } as const;
 
 export class DeviceAutomation implements Automation {
@@ -40,7 +43,7 @@ export class EditableAutomationTrigger implements AutomationTrigger {
     const trigger = {} as EditableAutomationTrigger;
     trigger.name = "";
     trigger.conditions = [];
-    trigger.action = new EditableActionTrigger();
+    trigger.action = new EditableActionTrigger(AutomationActionTypes.Trigger);
 
     return new EditableAutomationTrigger(trigger);
   }
@@ -75,14 +78,17 @@ export class EditableActionTrigger implements AutomationTriggerAction {
   operation: number;
   delay: number | null;
   steps: string[];
-  constructor() {
+  type: ActionType;
+
+  constructor(type: ActionType) {
     this.id = "";
     this.friendlyname = "";
     this.property = "";
     this.data = null;
     this.operation = 0;
     this.delay = null;
-    this.steps = [];
+    this.type = type;
+    this.steps = new Array<string>();
   }
 
   public setProperty(value: string): void {
@@ -98,8 +104,12 @@ export class EditableActionTrigger implements AutomationTriggerAction {
   }
 }
 
-export function getActionType(action: AutomationTriggerAction): string {
-  return action.steps.length > 0 ? "AutomationActionTypes.Step" : "AutomationActionTypes.Trigger";
+export function getActionType(action: AutomationTriggerAction): ActionType {
+  const editableAction = action as EditableActionTrigger;
+  if (editableAction.type != undefined) {
+    return editableAction.type
+  }
+  return action.steps.length > 0 ? AutomationActionTypes.Step : AutomationActionTypes.Trigger;
 }
 
 export function clearAction(action: AutomationTriggerAction): void {

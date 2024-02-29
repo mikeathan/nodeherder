@@ -9,7 +9,7 @@ import Selector from "../input/Selector.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
 import { AutomationTrigger, AutomationTriggerAction, AutomationTriggerCondition, AutomationTriggerConditions } from "@/types/automation";
-import { isValid, EditableTriggerCondition } from "../../contracts/automations"
+import { isValid, EditableTriggerCondition, EditableActionTrigger, AutomationActionTypes, ActionType } from "../../contracts/automations"
 import { capitalizeText } from "../../modules/formatters/text.formatter";
 
 const props = defineProps({
@@ -19,7 +19,7 @@ const props = defineProps({
 
 // TODO: can be refactor to some automation context
 const conditions = ref<AutomationTriggerConditions>({} as AutomationTriggerConditions)
-const actions = ref<AutomationTriggerAction[]>(); // have a list of actions with only 1 item capacity 
+const actions = ref<AutomationTriggerAction[]>([]); // have a list of actions with only 1 item capacity 
 
 const action = ref<AutomationTriggerAction>({} as AutomationTriggerAction)
 const actionRef = ref<InstanceType<typeof TriggerAction>>()
@@ -63,6 +63,11 @@ const exposesList = computed(() => {
 
 function clearTriggerAction() {
     actionRef.value?.clear()
+}
+
+function newAction(actionType: ActionType) {
+    // todo: only allow 1 action
+    actions.value?.push(new EditableActionTrigger(actionType));
 }
 
 </script>
@@ -121,19 +126,22 @@ function clearTriggerAction() {
                                 <!-- <span class=" fa fa-plus"></span> -->
                             </button>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#">New action</a></li>
-                                <li><a class="dropdown-item" href="#">New step action</a></li>
+                                <ul v-for="actionType in AutomationActionTypes">
+                                    <li><a @click="newAction(actionType as ActionType)" class="dropdown-item">New {{
+                                        actionType }}</a>
+                                    </li>
+                                </ul>
                             </ul>
                         </h5>
                     </th>
                 </tr>
 
                 <!-- Actions -->
-                <tbody v-for="a in   actions  " :item="a">
+                <tbody v-for="a in actions" :item="a">
                     <tr>
                         <th scope="w-25">
                             <!-- @update="v => a = v" -->
-                            <Action :action="a" ref="actionRef">
+                            <Action :item="a" ref="actionRef">
                             </Action>
                         </th>
                         <td>
