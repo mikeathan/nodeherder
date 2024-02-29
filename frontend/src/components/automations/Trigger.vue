@@ -147,11 +147,9 @@ function addAction(actionType: ActionType) {
                             <!-- @update="v => a = v" -->
                             <Action :item="a">
                             </Action>
+
                         </th>
-                        <td>
-                            <span v-if="actions.length > 0" class="fa fa-trash-alt fa-sm" @click="clearAction">
-                            </span>
-                        </td>
+
                     </tr>
                 </tbody>
             </table>

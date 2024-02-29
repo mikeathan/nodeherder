@@ -101,14 +101,32 @@ input.form-control {
     outline: 0;
     border-radius: 0%;
     border-bottom: 1px solid white;
-    text-align: center;
+    text-align: left;
 }
 
+.form-floating>.form-control~label::after {
+    background-color: transparent;
+
+}
+
+.form-floating>.form-select~label::after {
+    background-color: transparent;
+}
+
+
+/* .form-floatingform-select~label {
+    color: grey;
+} */
+
+
+input.form-control:focus,
 select.form-select:focus,
 :active {
     box-shadow: none;
 }
 
+
+/* 
 select.form-select:first-of-type {
     border-bottom: 0px solid white;
 }
@@ -116,6 +134,14 @@ select.form-select:first-of-type {
 select.form-select:required:invalid {
     color: gray;
     border-bottom: 1px solid white;
+} */
+
+.form-floating>.form-control:focus~label,
+.form-floating>.form-control:not(:placeholder-shown)~label,
+.form-floating>.form-control~label,
+.form-floating>.form-select~label {
+    opacity: .6;
+    transform: scale(.85) translateY(-.7rem) translateX(.15rem);
 }
 
 input.form-control:disabled {
@@ -125,50 +151,66 @@ input.form-control:disabled {
 </style>
 
 <template>
+    <!-- action controls -->
+    <div class="row pb-3">
+        <form class="container">
+            <button class="btn btn-light btn-sm" type="button">Delete</button>
+            <button class="btn btn-light btn-sm" type="button" @click="addStep" :disabled="action.id == ''">Add
+                Step</button>
+        </form>
+    </div>
+    <!-- Testing select box  -->
     <div class="row">
-        <div class="col-sm-4 ">
-            <div class="form-group" style="display: flex">
+        <div class="form-floating col-sm-5">
+            <select required id="dataSelect" class="form-select form-select-solid" v-model="action.id">
+                <option value=""> Select </option>
+                <option v-for="(value, key) in getFeatureDeviceList" :value="value" :key="value">
+                    {{ key }}
+                </option>
+            </select>
+            <label for="dataSelect" class="form-label">Device to trigger</label>
+        </div>
+    </div>
 
-                <label>Update</label>
-                <select required id="dataSelect" class="form-select" v-model="action.id">
-                    <option value="">Select device</option>
-                    <option v-for="(value, key) in getFeatureDeviceList" :value="value" :key="value">
+    <!-- Testing input box  -->
+    <div class="row">
+        <div class="form-floating col-sm-7">
+            <input type=" text" class="form-control" id="dataInput" v-model="action.data">
+            <label for="dataInput">Set value</label>
+        </div>
+    </div>
+
+    <!-- <div class="col-xl-2">
+        <div class="btn-group">
+            <button class="btn btn-default btn-number" type="button" @click="addStep">
+                Add step
+    </button>
+    </div>
+    </div> -->
+
+    <!-- Steps -->
+    <div v-if="action.steps.length > 0" class="row pt-3">
+        <h5>Steps</h5>
+        <div class="row" v-for="step in action.steps">
+
+
+            <div class="form-floating col-sm-4">
+                <select required id="dataSelect" class="form-select form-select-solid" v-model="step.property">
+                    <option value=""> Select </option>
+                    <option v-for="(value, key) in getFeatureNames" :value="value" :key="value">
                         {{ key }}
                     </option>
                 </select>
+                <label for="dataSelect" class="form-label">Device property</label>
             </div>
-            <!-- <Selector placeholder="Select device" :items="getFeatureDeviceList" :value="action.id" alignment="center"
-                @update:data="deviceSelected" :disabled="action.id != ''">
-            </Selector> -->
-        </div>
-
-        <!-- Testing input box  -->
-        <div class="col-sm-2">
-            <label class="form-check-label">With value</label>
-            <input type="text" class="form-control" :placeholder="placeholder" v-model="action.data" @focus="focusChanged"
-                @blur="blurChanged">
-        </div>
-
-        <div class="col-xl-2">
-            <div class="btn-group">
-                <button class="btn btn-default btn-number" type="button" @click="addStep">
-                    Add step
-                    <!--  <span class="fa fa-plus"></span> -->
-                </button>
+            <div class="col-md-2">
+                <DataInput type="enum" :items="NumericOperators" :data="step.operator" alignment="center" @update:data="">
+                </DataInput>
+            </div>
+            <div class="col-md-3">
+                <span class="fa fa-trash-alt fa-sm" @click="removeStep(step)">
+                </span>
             </div>
         </div>
-    </div>
-    <div class="row" v-for="step in action.steps">
-        <div class="col-xl-4 col-md-3">
-            <Selector placeholder="Select property" :items="getFeatureNames" :value="step.property" alignment="center"
-                @update:data="" :disabled="action.id == ''">
-            </Selector>
-        </div>
-        <div class="col-xl-4 col-md-3">
-            <DataInput type="enum" :items="NumericOperators" :data="step.operator" alignment="center" @update:data="">
-            </DataInput>
-        </div>
-        <span class="fa fa-trash-alt fa-sm" @click="removeStep(step)">
-        </span>
     </div>
 </template>
