@@ -33,6 +33,20 @@ export function getExposeBinaryProperty(expose: Expose): boolean {
   return false;
 }
 
+export function getFeatureDevices(devices: Device[]): KeyyValuePair<string> {
+  let list: KeyyValuePair<string> = {}
+  for (const [key, device] of Object.entries(devices)) {
+    for (const [key, expose] of Object.entries(device.exposes)) {
+      if (expose.properties != undefined) {
+        list[device.friendly_name] = device.id
+        break;
+      }
+    }
+  }
+
+  return list
+}
+
 export function getDeviceFeaturesByType(
   device: Device,
   exposeType: ValueOf<typeof ExposeTypes>

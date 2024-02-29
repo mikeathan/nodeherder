@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watchEffect, watch, PropType, reactive } from "vue";
-import DataInput from "../input/DataInput.vue"
-import Selector from "../input/Selector.vue"
-import { OperationType, resolveObjectOperations } from "../../contracts/operations"
-import { clearAction, setDeviceId, setProperty } from "../../contracts/automations"
-import { getDeviceFeaturesByType } from "../../contracts/device";
-import { store } from "../../store/index";
+import Selector from "../../input/Selector.vue"
+import { OperationType, resolveObjectOperations } from "../../../contracts/operations"
+import { clearAction, setDeviceId, setProperty } from "@/contracts/automations"
+import { getDeviceFeaturesByType, getFeatureDevices } from "@/contracts/device";
+import { store } from "../../../store/index";
 import { Device, Devices, ExposeType } from "@/types/device";
 import { KeyyValuePair } from "@/types/types";
 import { AutomationTriggerAction } from "@/types/automation";
@@ -48,28 +47,43 @@ const device = computed(() => {
     return store.getters["devices/find"](action.id) as Device;
 });
 
+const getFeatureDeviceList = computed(() => {
+    var devices = store.getters["devices/listAll"]() as Devices;
+    if (device == undefined) {
+        return {}
+    }
+    return getFeatureDevices(devices)
+})
 
 const getFeatureNames = computed(() => {
     var device = store.getters["devices/find"](action.id) as Device;
     if (device == undefined) {
-        return []
+        return {}
     }
 
     return getDeviceFeaturesByType(device, ExposeTypes.Numeric);
 })
 
+function deviceSelected(id: string) {
+    const device = store.getters["devices/find"](id) as Device;
+    action.id = device.id;
+    action.friendlyname = device.friendly_name;
+}
 </script>
 
 <template>
     <div class="row">
-        <div class="col-xl-3 col-md-4">
-
-            we ned a action selector dialog
-            has action type , device to use and property to update
-
+        <div class="col-xl-4 col-md-3">
+            <Selector placeholder="Select device" :items="getFeatureDeviceList" :value="action.id" alignment="center"
+                @update:data="deviceSelected" :disabled="action.id != ''">
+            </Selector>
         </div>
-        <!-- <span v-if="action.id != ''" class="fa fa-trash-alt fa-sm" @click="(v) => clear()
-            ">
-        </span> -->
+        <div class="col-xl-3 col-md-4">
+            <Selector placeholder="Select property" :items="getFeatureNames" :value="action.property" alignment="center"
+                @update:data="" :disabled="action.id == ''">
+            </Selector>
+        </div>
+
+        TODO:Add steps
     </div>
 </template>

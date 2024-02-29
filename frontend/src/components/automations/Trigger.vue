@@ -2,8 +2,7 @@
 
 import { computed, watch, ref, PropType, toRef } from "vue";
 import TriggerCondition from "./TriggerCondition.vue"
-import TriggerAction from "./TriggerAction.vue";
-import Action from "./Action.vue";
+import Action from "./actions/Action.vue";
 
 import Selector from "../input/Selector.vue"
 import { store } from "../../store/index";
@@ -22,13 +21,15 @@ const conditions = ref<AutomationTriggerConditions>({} as AutomationTriggerCondi
 const actions = ref<AutomationTriggerAction[]>([]); // have a list of actions with only 1 item capacity 
 
 const action = ref<AutomationTriggerAction>({} as AutomationTriggerAction)
-const actionRef = ref<InstanceType<typeof TriggerAction>>()
 const trigger = ref<AutomationTrigger>(props.trigger)
 
 watch(
     () => props.trigger,
     () => {
         action.value = JSON.parse(JSON.stringify(props.trigger.action)) as AutomationTriggerAction;
+        if (action.value.id != "") {
+            actions.value.push(action.value)
+        }
         conditions.value = JSON.parse(JSON.stringify(props.trigger.conditions)) as AutomationTriggerConditions;
     }, { immediate: true }
 )
@@ -61,12 +62,10 @@ const exposesList = computed(() => {
         .map((e) => ({ [e.name]: e.name })))
 })
 
-function clearTriggerAction() {
-    actionRef.value?.clear()
+function clearAction() {
+    actions.value = [];
 }
-
-function newAction(actionType: ActionType) {
-    // todo: only allow 1 action
+function addAction(actionType: ActionType) {
     actions.value?.push(new EditableActionTrigger(actionType));
 }
 
@@ -119,19 +118,24 @@ function newAction(actionType: ActionType) {
                     </tr>
                 </tbody>
                 <tr>
+                    <!-- Actions Header -->
                     <th scope="col">
                         <h5>Actions
-                            <button v-if="trigger.action.id == ''" type="button"
-                                class="btn btn-default btn-number dropdown-toggle ms-3" data-bs-toggle="dropdown">
-                                <!-- <span class=" fa fa-plus"></span> -->
-                            </button>
-                            <ul class="dropdown-menu">
-                                <ul v-for="actionType in AutomationActionTypes">
-                                    <li><a @click="newAction(actionType as ActionType)" class="dropdown-item">New {{
-                                        actionType }}</a>
+                            <span v-if="actions.length == 0">
+                                <button type="button" class="btn btn-default btn-number  ms-3" data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                    <span class="fa fa-plus"></span>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li v-for="actionType in AutomationActionTypes">
+                                        <a @click="addAction(actionType as ActionType)" class="dropdown-item"
+                                            data-toggle="dropdown" href="#">New
+                                            {{
+                                                actionType
+                                            }}</a>
                                     </li>
                                 </ul>
-                            </ul>
+                            </span>
                         </h5>
                     </th>
                 </tr>
@@ -139,13 +143,13 @@ function newAction(actionType: ActionType) {
                 <!-- Actions -->
                 <tbody v-for="a in actions" :item="a">
                     <tr>
-                        <th scope="w-25">
+                        <th>
                             <!-- @update="v => a = v" -->
-                            <Action :item="a" ref="actionRef">
+                            <Action :item="a">
                             </Action>
                         </th>
                         <td>
-                            <span v-if="action.id != ''" class="fa fa-trash-alt fa-sm" @click="(v) => clearTriggerAction()">
+                            <span v-if="actions.length > 0" class="fa fa-trash-alt fa-sm" @click="clearAction">
                             </span>
                         </td>
                     </tr>

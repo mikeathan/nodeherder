@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watchEffect, watch, PropType, reactive } from "vue";
-import DataInput from "../input/DataInput.vue"
-import Selector from "../input/Selector.vue"
-import { OperationType, resolveObjectOperations } from "../../contracts/operations"
-import { clearAction, setDeviceId, setProperty } from "../../contracts/automations"
-import { store } from "../../store/index";
+import DataInput from "../../input/DataInput.vue"
+import Selector from "../../input/Selector.vue"
+import { OperationType, resolveObjectOperations } from "@/contracts/operations"
+import { clearAction, setDeviceId, setProperty } from "@/contracts/automations"
+import { store } from "@/store/index";
 import { Device, Devices, ExposeType } from "@/types/device";
 import { KeyyValuePair } from "@/types/types";
 import { AutomationTriggerAction } from "@/types/automation";
@@ -27,7 +27,6 @@ const clear = (() => {
     clearAction(action)
     emit('update', action)
 })
-
 
 const action = reactive({ ...props.action })
 const device = computed(() => {
