@@ -77,13 +77,11 @@ select.form-control:required:invalid {
 }
 </style>
 <template>
-    <div>
-        <select required id="dataSelect" :style="'text-align:' + props.alignment + ';'" class="form-control form-select"
-            v-model="selected" @change="dataSelectionChanged" :disabled="props.disabled">
-            <option v-if="props.placeholder != ''" value="">{{ props.placeholder }}</option>
-            <option v-for="(value, key) in props.items" :value="value" :key="value">
-                {{ key }}
-            </option>
-        </select>
-    </div>
+    <select required id="dataSelect" :style="'text-align:' + props.alignment + ';'" class="form-control form-select"
+        v-model="selected" @change="dataSelectionChanged" :disabled="props.disabled">
+        <option v-if="props.placeholder != ''" value="">{{ props.placeholder }}</option>
+        <option v-for="(value, key) in props.items" :value="value" :key="value">
+            {{ key }}
+        </option>
+    </select>
 </template>

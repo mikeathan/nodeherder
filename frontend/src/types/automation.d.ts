@@ -4,6 +4,12 @@ export type AutomationMap = KeyyValuePair<Automation>;
 
 export type AutomationTriggers = Array<AutomationTrigger>;
 export type AutomationTriggerConditions = Array<AutomationTriggerCondition>;
+export type NumericOperator = "+" | "-" | "*";
+
+export type AutomationActionStep = {
+  property: string;
+  operator: NumericOperator;
+}
 
 export type Automation = {
   id: string;
@@ -32,5 +38,5 @@ export type AutomationTriggerAction = {
   data: Nullable<any>;
   operation: number;
   delay: Nullable<number>;
-  steps: Array<string>; // FIX type "steps": [{ "Property": "brightness", "Operator": "-" }]
+  steps: Array<AutomationActionStep>;
 };

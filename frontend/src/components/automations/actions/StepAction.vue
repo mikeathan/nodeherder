@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed, ref, watchEffect, watch, PropType, reactive } from "vue";
 import Selector from "../../input/Selector.vue"
+import DataInput from "../../input/DataInput.vue"
+
 import { OperationType, resolveObjectOperations } from "../../../contracts/operations"
-import { clearAction, setDeviceId, setProperty } from "@/contracts/automations"
+import { AutomationTriggerAction, AutomationActionStep } from "@/types/automation";
+import { clearAction, setDeviceId, setProperty, NumericOperators } from "@/contracts/automations"
 import { getDeviceFeaturesByType, getFeatureDevices } from "@/contracts/device";
 import { store } from "../../../store/index";
 import { Device, Devices, ExposeType } from "@/types/device";
 import { KeyyValuePair } from "@/types/types";
-import { AutomationTriggerAction } from "@/types/automation";
 import { toMillisecs, toMinutes } from '@/modules/formatters/time.formatter'
 import { ExposeTypes } from "@/types/device.type";
 
@@ -63,27 +65,110 @@ const getFeatureNames = computed(() => {
 
     return getDeviceFeaturesByType(device, ExposeTypes.Numeric);
 })
+function addStep() {
+    const newStep: AutomationActionStep = {
+        operator: "+",
+        property: ""
+    }
+    action.steps.push(newStep);
+}
+
+function removeStep(step: AutomationActionStep) {
+    action.steps = action.steps.filter((c) => c != step);
+}
 
 function deviceSelected(id: string) {
     const device = store.getters["devices/find"](id) as Device;
     action.id = device.id;
     action.friendlyname = device.friendly_name;
 }
+
+// Temporary 
+
+const placeholder = ref("value")
+function blurChanged() {
+    placeholder.value = "value"
+}
+
+function focusChanged() {
+    placeholder.value = ""
+}
 </script>
+<style scoped>
+select.form-select,
+input.form-control {
+    border: 0;
+    outline: 0;
+    border-radius: 0%;
+    border-bottom: 1px solid white;
+    text-align: center;
+}
+
+select.form-select:focus,
+:active {
+    box-shadow: none;
+}
+
+select.form-select:first-of-type {
+    border-bottom: 0px solid white;
+}
+
+select.form-select:required:invalid {
+    color: gray;
+    border-bottom: 1px solid white;
+}
+
+input.form-control:disabled {
+    color: gray;
+    background-color: transparent;
+}
+</style>
 
 <template>
     <div class="row">
-        <div class="col-xl-4 col-md-3">
-            <Selector placeholder="Select device" :items="getFeatureDeviceList" :value="action.id" alignment="center"
+        <div class="col-sm-4 ">
+            <div class="form-group" style="display: flex">
+
+                <label>Update</label>
+                <select required id="dataSelect" class="form-select" v-model="action.id">
+                    <option value="">Select device</option>
+                    <option v-for="(value, key) in getFeatureDeviceList" :value="value" :key="value">
+                        {{ key }}
+                    </option>
+                </select>
+            </div>
+            <!-- <Selector placeholder="Select device" :items="getFeatureDeviceList" :value="action.id" alignment="center"
                 @update:data="deviceSelected" :disabled="action.id != ''">
-            </Selector>
+            </Selector> -->
         </div>
-        <div class="col-xl-3 col-md-4">
-            <Selector placeholder="Select property" :items="getFeatureNames" :value="action.property" alignment="center"
+
+        <!-- Testing input box  -->
+        <div class="col-sm-2">
+            <label class="form-check-label">With value</label>
+            <input type="text" class="form-control" :placeholder="placeholder" v-model="action.data" @focus="focusChanged"
+                @blur="blurChanged">
+        </div>
+
+        <div class="col-xl-2">
+            <div class="btn-group">
+                <button class="btn btn-default btn-number" type="button" @click="addStep">
+                    Add step
+                    <!--  <span class="fa fa-plus"></span> -->
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="row" v-for="step in action.steps">
+        <div class="col-xl-4 col-md-3">
+            <Selector placeholder="Select property" :items="getFeatureNames" :value="step.property" alignment="center"
                 @update:data="" :disabled="action.id == ''">
             </Selector>
         </div>
-
-        TODO:Add steps
+        <div class="col-xl-4 col-md-3">
+            <DataInput type="enum" :items="NumericOperators" :data="step.operator" alignment="center" @update:data="">
+            </DataInput>
+        </div>
+        <span class="fa fa-trash-alt fa-sm" @click="removeStep(step)">
+        </span>
     </div>
 </template>

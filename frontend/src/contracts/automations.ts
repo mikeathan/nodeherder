@@ -4,11 +4,15 @@ import {
   AutomationTrigger,
   AutomationTriggerCondition,
   AutomationTriggerAction,
-  AutomationTriggerConditions
+  AutomationTriggerConditions,
+  AutomationActionStep
 } from "../types/automation";
 import { ExposeType } from "../types/device";
 
+
 export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
+export const NumericOperators: string[] = ["+", "-", "*"];
+
 export type TriggerAction = "TriggerAction"
 export type StepAction = "StepAction"
 export type ActionType = TriggerAction | StepAction;
@@ -77,7 +81,7 @@ export class EditableActionTrigger implements AutomationTriggerAction {
   data: any | null;
   operation: number;
   delay: number | null;
-  steps: string[];
+  steps: AutomationActionStep[];
   type: ActionType;
 
   constructor(type: ActionType) {
@@ -88,7 +92,7 @@ export class EditableActionTrigger implements AutomationTriggerAction {
     this.operation = 0;
     this.delay = null;
     this.type = type;
-    this.steps = new Array<string>();
+    this.steps = new Array<AutomationActionStep>();
   }
 
   public setProperty(value: string): void {
