@@ -32,4 +32,5 @@ export type AutomationTriggerAction = {
   data: Nullable<any>;
   operation: number;
   delay: Nullable<number>;
+  steps: Array<string>; // FIX type "steps": [{ "Property": "brightness", "Operator": "-" }]
 };

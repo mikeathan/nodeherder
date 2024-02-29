@@ -17,8 +17,10 @@ const props = defineProps<{
     show: boolean
 }>()
 
-const emit = defineEmits(['update:name', 'close']);
-
+const emit = defineEmits<{
+    (e: 'update', actionType: string, deviceId: string, deviceProperty: string): void,
+    (e: 'close', exit: boolean): void,
+}>()
 
 const actionTypes = {
     "Trigger action": "trigger_action",
@@ -34,13 +36,20 @@ const modalRef = ref<HTMLElement | null>(null)
 const showDialog = ref<boolean>(false)
 let modal: Modal
 
-onMounted(() => {
-    if (modalRef.value) {
-        modal = new Modal(modalRef.value)
-    }
-})
+watch(
+    () => actionType.value,
+    () => {
+        deviceId.value = "";
+        deviceProperty.value = "";
+    }, { immediate: true }
+)
+watch(
+    () => deviceId.value,
+    () => {
+        deviceProperty.value = "";
+    }, { immediate: true }
+)
 
-// https://shzhangji.com/blog/2022/06/11/use-bootstrap-v5-in-vue3-project/
 
 watch(
     () => props.show,
@@ -54,6 +63,11 @@ watch(
     }
 );
 
+onMounted(() => {
+    if (modalRef.value) {
+        modal = new Modal(modalRef.value)
+    }
+})
 
 function isValid(): boolean {
     return actionType.value != '' && deviceId.value != '' && deviceProperty.value != '';
@@ -86,7 +100,7 @@ const deviceFeatureList = computed(() => {
 })
 
 function add(event: Event) {
-    // emit('update:name', friendlyName.value);
+    emit('update', actionType.value, deviceId.value, deviceProperty.value);
     close()
 }
 
@@ -97,11 +111,11 @@ function clear(): void {
 }
 
 function close(): void {
+    clear();
     emit('close', false)
 }
 
 </script>
-
 <template>
     <div class="modal fade" tabindex="-1" aria-hidden="true" ref="modalRef">
         <div class="modal-dialog">
@@ -119,18 +133,19 @@ function close(): void {
                             </tr>
                         </thead>
                         <tbody>
+
                             <tr>
-                                <td>
+                                <td class="col-xl-3 col-md-4  col-sm-6">
                                     <Selector placeholder="Select" :items="actionTypes" :value="actionType"
                                         @update:data="(v) => actionType = v">
                                     </Selector>
                                 </td>
-                                <td>
+                                <td class="col-xl-3 col-md-4 col-sm-6">
                                     <Selector :disabled="actionType == ''" placeholder="Select" :items="deviceFeatureList"
                                         :value="deviceId" @update:data="(v) => deviceId = v">
                                     </Selector>
                                 </td>
-                                <td>
+                                <td class="col-xl-3 col-md-4 col-sm-6">
                                     <Selector :disabled="deviceId == ''" placeholder="Select" :items="getDeviceFeatureNames"
                                         :value="deviceProperty" @update:data="(v) => deviceProperty = v">
                                     </Selector>
@@ -141,23 +156,9 @@ function close(): void {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" :disabled="isValid() == false" @click="add">Add</button>
-                    <button type="button" class="btn btn-secondary" @click="clear">Clear</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="close">Close</button>
                 </div>
             </div>
         </div>
     </div>
 </template>
-
-
-<!-- <tbody>
-    <tr v-for="(automation, index) in automations" :item="automation">
-        <th scope="row">{{ index + 1 }}</th>
-        <td>
-            <RouterLink :to="`/editor/${automation.id}`">{{
-                automation.friendlyname
-            }}</RouterLink>
-        </td>
-        <td>
-            {{ automation.description }}
-        </td> -->

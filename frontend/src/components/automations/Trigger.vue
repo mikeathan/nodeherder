@@ -3,13 +3,14 @@
 import { computed, watch, ref, PropType, toRef } from "vue";
 import TriggerCondition from "./TriggerCondition.vue"
 import TriggerAction from "./TriggerAction.vue";
+import Action from "./Action.vue";
+
 import Selector from "../input/Selector.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
 import { AutomationTrigger, AutomationTriggerAction, AutomationTriggerCondition, AutomationTriggerConditions } from "@/types/automation";
 import { isValid, EditableTriggerCondition } from "../../contracts/automations"
 import { capitalizeText } from "../../modules/formatters/text.formatter";
-import ActionSelectorDialog from "../dialogs/ActionSelectorDialog.vue"
 
 const props = defineProps({
     id: { type: String },
@@ -18,10 +19,11 @@ const props = defineProps({
 
 // TODO: can be refactor to some automation context
 const conditions = ref<AutomationTriggerConditions>({} as AutomationTriggerConditions)
+const actions = ref<AutomationTriggerAction[]>(); // have a list of actions with only 1 item capacity 
+
 const action = ref<AutomationTriggerAction>({} as AutomationTriggerAction)
 const actionRef = ref<InstanceType<typeof TriggerAction>>()
 const trigger = ref<AutomationTrigger>(props.trigger)
-const showDialog = ref<boolean>(false);
 
 watch(
     () => props.trigger,
@@ -114,20 +116,25 @@ function clearTriggerAction() {
                 <tr>
                     <th scope="col">
                         <h5>Actions
-
-                            <button v-if="trigger.action.id == ''" type="button" class="btn btn-default btn-number ms-3"
-                                @click="showDialog = true">
-                                <span class=" fa fa-plus"></span>
+                            <button v-if="trigger.action.id == ''" type="button"
+                                class="btn btn-default btn-number dropdown-toggle ms-3" data-bs-toggle="dropdown">
+                                <!-- <span class=" fa fa-plus"></span> -->
                             </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#">New action</a></li>
+                                <li><a class="dropdown-item" href="#">New step action</a></li>
+                            </ul>
                         </h5>
                     </th>
                 </tr>
-                <tbody>
 
+                <!-- Actions -->
+                <tbody v-for="a in   actions  " :item="a">
                     <tr>
                         <th scope="w-25">
-                            <TriggerAction :action="action" @update="v => action = v" ref="actionRef">
-                            </TriggerAction>
+                            <!-- @update="v => a = v" -->
+                            <Action :action="a" ref="actionRef">
+                            </Action>
                         </th>
                         <td>
                             <span v-if="action.id != ''" class="fa fa-trash-alt fa-sm" @click="(v) => clearTriggerAction()">
@@ -150,6 +157,4 @@ function clearTriggerAction() {
             </div>
         </div>
     </div>
-    <ActionSelectorDialog :show="showDialog" @close="e => showDialog = e">
-    </ActionSelectorDialog>
 </template>

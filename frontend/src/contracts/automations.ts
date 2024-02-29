@@ -1,15 +1,19 @@
 import { ExposeTypes } from "@/types/device.type";
+//import { AutomationActionTypes } from "@/types/automation.type"
 import {
   Automation,
   AutomationTrigger,
   AutomationTriggerCondition,
   AutomationTriggerAction,
-  AutomationTriggerConditions,
+  AutomationTriggerConditions
 } from "../types/automation";
 import { ExposeType } from "../types/device";
-//import { Nullable } from "../types/types";
 
 export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
+export const AutomationActionTypes = {
+  Trigger: "trigger_action",
+  Step: "step_action",
+} as const;
 
 export class DeviceAutomation implements Automation {
   id: string;
@@ -70,7 +74,7 @@ export class EditableActionTrigger implements AutomationTriggerAction {
   data: any | null;
   operation: number;
   delay: number | null;
-
+  steps: string[];
   constructor() {
     this.id = "";
     this.friendlyname = "";
@@ -78,6 +82,7 @@ export class EditableActionTrigger implements AutomationTriggerAction {
     this.data = null;
     this.operation = 0;
     this.delay = null;
+    this.steps = [];
   }
 
   public setProperty(value: string): void {
@@ -91,6 +96,10 @@ export class EditableActionTrigger implements AutomationTriggerAction {
     this.id = id;
     this.friendlyname = friendlyname;
   }
+}
+
+export function getActionType(action: AutomationTriggerAction): string {
+  return action.steps.length > 0 ? "AutomationActionTypes.Step" : "AutomationActionTypes.Trigger";
 }
 
 export function clearAction(action: AutomationTriggerAction): void {
