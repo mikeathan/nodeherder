@@ -3,34 +3,13 @@ import { computed, ref, watchEffect, watch, PropType, reactive } from "vue";
 import Selector from "../../input/Selector.vue"
 import DataInput from "../../input/DataInput.vue"
 
-import { OperationType, resolveObjectOperations } from "../../../contracts/operations"
-import { AutomationTriggerAction, AutomationActionStep } from "@/types/automation";
-import { clearAction, setDeviceId, setProperty, NumericOperators } from "@/contracts/automations"
+import { AutomationTriggerAction, AutomationActionStep, NumericOperator } from "@/types/automation";
+import { NumericOperators } from "@/contracts/automations"
 import { getDeviceFeaturesByType, getFeatureDevices } from "@/contracts/device";
 import { store } from "../../../store/index";
-import { Device, Devices, ExposeType } from "@/types/device";
-import { KeyyValuePair } from "@/types/types";
-import { toMillisecs, toMinutes } from '@/modules/formatters/time.formatter'
+import { Device, Devices } from "@/types/device";
 import { ExposeTypes } from "@/types/device.type";
 
-
-// New step action control is needed
-// step action = brightness increase by value // brightness decrease by value
-// brightness increase by step  action * by value/ brightness decrease by step  action * by value/
-// in action.data we store the value 
-
-// select expose property is required as is the value we modify
-// then we add steps 
-// eg property name to use the value. rquirement is only numerica properties can be used
-// operator to use - + /
-
-// brighness  = brightness + value
-// if we have multi steps 
-// brightness = brightness + (action_time * value
-
-
-
-// enum /preset rotation can happen in default action control ? 
 
 const props = defineProps({
     action: {
@@ -41,17 +20,14 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
-    (e: 'update', action: AutomationTriggerAction): void,
+    (e: 'save', action: AutomationTriggerAction): void,
+    (e: 'delete', action: AutomationTriggerAction): void,
 }>()
 
 const action = reactive({ ...props.action })
-const device = computed(() => {
-    return store.getters["devices/find"](action.id) as Device;
-});
-
 const getFeatureDeviceList = computed(() => {
     var devices = store.getters["devices/listAll"]() as Devices;
-    if (device == undefined) {
+    if (devices == undefined) {
         return {}
     }
     return getFeatureDevices(devices)
@@ -65,9 +41,18 @@ const getFeatureNames = computed(() => {
 
     return getDeviceFeaturesByType(device, ExposeTypes.Numeric);
 })
-function addStep() {
+
+function saveAction(): void {
+    emit('save', action);
+}
+
+function removeAction(): void {
+    emit('delete', action);
+}
+
+function addStep(numericOperator: NumericOperator) {
     const newStep: AutomationActionStep = {
-        operator: "+",
+        operator: numericOperator,
         property: ""
     }
     action.steps.push(newStep);
@@ -77,22 +62,17 @@ function removeStep(step: AutomationActionStep) {
     action.steps = action.steps.filter((c) => c != step);
 }
 
-function deviceSelected(id: string) {
+function deviceSelected(event: Event) {
+    const id = (event.target as HTMLInputElement).value;
     const device = store.getters["devices/find"](id) as Device;
+    if (device == undefined) {
+        // error
+        return;
+    }
     action.id = device.id;
     action.friendlyname = device.friendly_name;
 }
 
-// Temporary 
-
-const placeholder = ref("value")
-function blurChanged() {
-    placeholder.value = "value"
-}
-
-function focusChanged() {
-    placeholder.value = ""
-}
 </script>
 <style scoped>
 select.form-select,
@@ -102,6 +82,7 @@ input.form-control {
     border-radius: 0%;
     border-bottom: 1px solid white;
     text-align: left;
+    background-image: none;
 }
 
 .form-floating>.form-control~label::after {
@@ -125,8 +106,11 @@ select.form-select:focus,
     box-shadow: none;
 }
 
+select.form-select:hover:not([disabled]) {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Cpath fill=%27none%27 stroke=%27%23d4d6d9%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%272%27 d=%27m2 5 6 6 6-6%27/%3E%3C/svg%3E");
+    box-shadow: none;
+}
 
-/* 
 select.form-select:first-of-type {
     border-bottom: 0px solid white;
 }
@@ -134,7 +118,7 @@ select.form-select:first-of-type {
 select.form-select:required:invalid {
     color: gray;
     border-bottom: 1px solid white;
-} */
+}
 
 .form-floating>.form-control:focus~label,
 .form-floating>.form-control:not(:placeholder-shown)~label,
@@ -144,7 +128,8 @@ select.form-select:required:invalid {
     transform: scale(.85) translateY(-.7rem) translateX(.15rem);
 }
 
-input.form-control:disabled {
+select.form-select,
+input.form-select:disabled {
     color: gray;
     background-color: transparent;
 }
@@ -154,15 +139,25 @@ input.form-control:disabled {
     <!-- action controls -->
     <div class="row pb-3">
         <form class="container">
-            <button class="btn btn-light btn-sm" type="button">Delete</button>
-            <button class="btn btn-light btn-sm" type="button" @click="addStep" :disabled="action.id == ''">Add
-                Step</button>
+            <button class="btn btn-light btn-sm" type="button" @click="saveAction">Save</button>
+            <button class="btn btn-light btn-sm" type="button" @click="removeAction">Delete</button>
+            <button type="button" class="btn btn-light btn-sm" data-bs-toggle="dropdown" :disabled="action.id == ''">Add
+                Operation</button>
+            <ul class="dropdown-menu">
+                <li v-for="operator in NumericOperators">
+                    <a @click="addStep(operator as NumericOperator)" class="dropdown-item" data-toggle="dropdown">
+                        {{
+                            operator
+                        }}</a>
+                </li>
+            </ul>
         </form>
     </div>
     <!-- Testing select box  -->
-    <div class="row">
+    <div class="row pb-2">
         <div class="form-floating col-sm-5">
-            <select required id="dataSelect" class="form-select form-select-solid" v-model="action.id">
+            <select required id="dataSelect" class="form-select form-select-solid" v-model="action.id"
+                :disabled="action.id != ''" @change="deviceSelected">
                 <option value=""> Select </option>
                 <option v-for="(value, key) in getFeatureDeviceList" :value="value" :key="value">
                     {{ key }}
@@ -174,40 +169,28 @@ input.form-control:disabled {
 
     <!-- Testing input box  -->
     <div class="row">
-        <div class="form-floating col-sm-7">
-            <input type=" text" class="form-control" id="dataInput" v-model="action.data">
+        <div class="form-floating col-xl-7">
+            <input type="text" class="form-control" id="dataInput" v-model="action.data">
             <label for="dataInput">Set value</label>
         </div>
     </div>
 
-    <!-- <div class="col-xl-2">
-        <div class="btn-group">
-            <button class="btn btn-default btn-number" type="button" @click="addStep">
-                Add step
-    </button>
-    </div>
-    </div> -->
-
     <!-- Steps -->
     <div v-if="action.steps.length > 0" class="row pt-3">
-        <h5>Steps</h5>
+        <h5>Operations</h5>
         <div class="row" v-for="step in action.steps">
-
-
-            <div class="form-floating col-sm-4">
-                <select required id="dataSelect" class="form-select form-select-solid" v-model="step.property">
-                    <option value=""> Select </option>
+            <div class="col-1">
+                {{ step.operator }}
+            </div>
+            <div class="col col-xl-6">
+                <select required id="dataSelect1" class="form-select form-select-sm" v-model="step.property">
+                    <option value="">Select entity </option>
                     <option v-for="(value, key) in getFeatureNames" :value="value" :key="value">
                         {{ key }}
                     </option>
                 </select>
-                <label for="dataSelect" class="form-label">Device property</label>
             </div>
-            <div class="col-md-2">
-                <DataInput type="enum" :items="NumericOperators" :data="step.operator" alignment="center" @update:data="">
-                </DataInput>
-            </div>
-            <div class="col-md-3">
+            <div class="col-1">
                 <span class="fa fa-trash-alt fa-sm" @click="removeStep(step)">
                 </span>
             </div>

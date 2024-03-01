@@ -20,15 +20,13 @@ const props = defineProps({
 const conditions = ref<AutomationTriggerConditions>({} as AutomationTriggerConditions)
 const actions = ref<AutomationTriggerAction[]>([]); // have a list of actions with only 1 item capacity 
 
-const action = ref<AutomationTriggerAction>({} as AutomationTriggerAction)
 const trigger = ref<AutomationTrigger>(props.trigger)
 
 watch(
     () => props.trigger,
     () => {
-        action.value = JSON.parse(JSON.stringify(props.trigger.action)) as AutomationTriggerAction;
-        if (action.value.id != "") {
-            actions.value.push(action.value)
+        if (props.trigger.action.id != "") {
+            actions.value.push(props.trigger.action)
         }
         conditions.value = JSON.parse(JSON.stringify(props.trigger.conditions)) as AutomationTriggerConditions;
     }, { immediate: true }
@@ -36,9 +34,8 @@ watch(
 
 const emit = defineEmits(['save', 'delete'])
 function save() {
-
     trigger.value.conditions = conditions.value
-    trigger.value.action = action.value
+    //  trigger.value.action = action.value
 
     emit('save', trigger.value)
 }
@@ -62,9 +59,15 @@ const exposesList = computed(() => {
         .map((e) => ({ [e.name]: e.name })))
 })
 
-function clearAction() {
-    actions.value = [];
+function deleteAction(index: number) {
+    actions.value.splice(index, 1);
 }
+
+function SaveAction(index: number, action: AutomationTriggerAction) {
+    actions.value[index] = action;
+    console.log(actions.value);
+}
+
 function addAction(actionType: ActionType) {
     actions.value?.push(new EditableActionTrigger(actionType));
 }
@@ -129,7 +132,7 @@ function addAction(actionType: ActionType) {
                                 <ul class="dropdown-menu">
                                     <li v-for="actionType in AutomationActionTypes">
                                         <a @click="addAction(actionType as ActionType)" class="dropdown-item"
-                                            data-toggle="dropdown" href="#">New
+                                            data-toggle="dropdown">New
                                             {{
                                                 actionType
                                             }}</a>
@@ -141,13 +144,11 @@ function addAction(actionType: ActionType) {
                 </tr>
 
                 <!-- Actions -->
-                <tbody v-for="a in actions" :item="a">
+                <tbody v-for="(action, index) in actions" :item="action">
                     <tr>
                         <th>
-                            <!-- @update="v => a = v" -->
-                            <Action :item="a">
+                            <Action :item="action" @delete="deleteAction(index)" @save="a => SaveAction(index, a)">
                             </Action>
-
                         </th>
 
                     </tr>

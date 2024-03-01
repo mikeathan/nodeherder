@@ -21,6 +21,8 @@ const props = defineProps({
 
 const emit = defineEmits<{
     (e: 'update', action: AutomationTriggerAction): void,
+    (e: 'save', action: AutomationTriggerAction): void,
+    (e: 'delete', action: AutomationTriggerAction): void,
 }>()
 
 const clear = (() => {

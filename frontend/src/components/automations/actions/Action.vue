@@ -11,9 +11,9 @@ const componentMap = {
         import("./StepAction.vue"),
     ),
 }
-
 const emit = defineEmits<{
-    (e: 'update', action: AutomationTriggerAction): void,
+    (e: 'save', action: AutomationTriggerAction): void,
+    (e: 'delete', action: AutomationTriggerAction): void,
 }>()
 
 const props = defineProps({
@@ -33,15 +33,18 @@ watch(
     }, { immediate: true }
 )
 
-// const clear = (() => {
-// })
+function saveAction(action: AutomationTriggerAction): void {
+    emit('save', action);
+}
 
-// defineExpose({
-//     clear,
-// });
+function removeAction(action: AutomationTriggerAction): void {
+    emit('delete', action);
+}
 
 </script>
 
 <template>
-    <component :is="componentMap[actionType]" v-bind="{ action: props.item }" />
+    need to have simple view for existing actions once we click it i can focus the view in a panel for editing
+
+    <component :is="componentMap[actionType]" v-bind="{ action: props.item }" @delete="removeAction" @save="saveAction" />
 </template>
