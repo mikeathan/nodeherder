@@ -136,6 +136,7 @@ input.form-select:disabled {
 </style>
 
 <template>
+    <!-- Edit mode -->
     <!-- action controls -->
     <div class="row pb-3">
         <form class="container">
@@ -153,6 +154,7 @@ input.form-select:disabled {
             </ul>
         </form>
     </div>
+
     <!-- Testing select box  -->
     <div class="row pb-2">
         <div class="form-floating col-sm-5">
@@ -183,8 +185,12 @@ input.form-select:disabled {
                 {{ step.operator }}
             </div>
             <div class="col col-xl-6">
+
+                we need to select device for the new entity:
+                entities either from action device or from trigger device - either from trigger device or from action device
+                select device then load entitis for that device
                 <select required id="dataSelect1" class="form-select form-select-sm" v-model="step.property">
-                    <option value="">Select entity </option>
+                    <option value="">Select entity</option>
                     <option v-for="(value, key) in getFeatureNames" :value="value" :key="value">
                         {{ key }}
                     </option>

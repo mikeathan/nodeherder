@@ -72,6 +72,20 @@ function addAction(actionType: ActionType) {
     actions.value?.push(new EditableActionTrigger(actionType));
 }
 
+const actionView = computed(() => {
+    if (actions.value.length == 0) return '';
+    const action = actions.value[0];
+    if (action.id != '') {
+        let view = action.friendlyname;
+        let stepView = '';
+        action.steps.forEach(step => {
+            stepView += step.operator + step.property;
+        });
+        return view + " (" + stepView + ")";
+    }
+
+    return '';
+});
 </script>
 
 <template>
@@ -143,6 +157,7 @@ function addAction(actionType: ActionType) {
                     </th>
                 </tr>
 
+                [DEBUG]: {{ actionView }}
                 <!-- Actions -->
                 <tbody v-for="(action, index) in actions" :item="action">
                     <tr>

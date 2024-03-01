@@ -102,6 +102,7 @@ function getConditionsDescription(trigger: AutomationTrigger): string {
     return description;
 }
 
+
 function getActionDescription(trigger: AutomationTrigger): string {
     if (trigger.action.id == '') {
         return "<EMPTY>"
