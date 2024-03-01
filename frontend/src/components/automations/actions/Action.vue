@@ -46,5 +46,7 @@ function removeAction(action: AutomationTriggerAction): void {
 <template>
     need to have simple view for existing actions once we click it i can focus the view in a panel for editing
 
+    can we display object here in simple view without loading component ?
+    once clicked hide trigger panel and show only action. maybe it needs to be done in trigger ?
     <component :is="componentMap[actionType]" v-bind="{ action: props.item }" @delete="removeAction" @save="saveAction" />
 </template>
