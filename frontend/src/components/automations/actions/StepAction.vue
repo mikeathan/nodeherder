@@ -5,13 +5,17 @@ import DataInput from "../../input/DataInput.vue"
 
 import { AutomationTriggerAction, AutomationActionStep, NumericOperator } from "@/types/automation";
 import { NumericOperators } from "@/contracts/automations"
-import { getDeviceFeaturesByType, getFeatureDevices } from "@/contracts/device";
+import { getDeviceFeaturesByType, getFeatureDevices, getDevicesFeaturesByType } from "@/contracts/device";
 import { store } from "../../../store/index";
 import { Device, Devices } from "@/types/device";
 import { ExposeTypes } from "@/types/device.type";
 
 
 const props = defineProps({
+    triggerId: {
+        type: String,
+        required: true
+    },
     action: {
         type: Object as PropType<AutomationTriggerAction>,
         default: {} as AutomationTriggerAction,
@@ -34,12 +38,14 @@ const getFeatureDeviceList = computed(() => {
 })
 
 const getFeatureNames = computed(() => {
-    var device = store.getters["devices/find"](action.id) as Device;
+    const device = store.getters["devices/find"](action.id) as Device;
     if (device == undefined) {
         return {}
     }
+    const triggerDevice = store.getters["devices/find"](props.triggerId) as Device;
 
-    return getDeviceFeaturesByType(device, ExposeTypes.Numeric);
+    /// we need trigger devie id as well
+    return getDevicesFeaturesByType([]{ device, triggerDevice }, ExposeTypes.Numeric);
 })
 
 function saveAction(): void {
@@ -188,7 +194,7 @@ input.form-select:disabled {
 
                 we need to select device for the new entity:
                 entities either from action device or from trigger device - either from trigger device or from action device
-                select device then load entitis for that device
+                includ them all in the same drop dropdown
                 <select required id="dataSelect1" class="form-select form-select-sm" v-model="step.property">
                     <option value="">Select entity</option>
                     <option v-for="(value, key) in getFeatureNames" :value="value" :key="value">
