@@ -46,25 +46,6 @@ export function getFeatureDevices(devices: Device[]): KeyyValuePair<string> {
 
   return list;
 }
-export function getDevicesFeaturesByType(
-  devices: Device[],
-  exposeType: ValueOf<typeof ExposeTypes>
-): KeyyValuePair<string> {
-  const list: KeyyValuePair<string> = {};
-
-  devices.forEach((device: Device) => {
-    const items = Object.assign(
-      {},
-      ...Object.values(device.exposes)
-        .filter((f) => f.properties != undefined && f.type == exposeType)
-        .map((f) => f.name)
-    );
-
-    list[device.friendly_name] = items;
-  });
-
-  return list;
-}
 
 export function getDeviceFeaturesByType(
   device: Device,

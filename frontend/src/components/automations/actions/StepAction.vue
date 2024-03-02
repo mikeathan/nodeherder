@@ -4,18 +4,15 @@ import Selector from "../../input/Selector.vue"
 import DataInput from "../../input/DataInput.vue"
 
 import { AutomationTriggerAction, AutomationActionStep, NumericOperator } from "@/types/automation";
-import { NumericOperators } from "@/contracts/automations"
+import { NumericOperators, StepAction } from "@/contracts/automations"
 import { getDeviceFeaturesByType, getFeatureDevices, getDevicesFeaturesByType } from "@/contracts/device";
 import { store } from "../../../store/index";
 import { Device, Devices } from "@/types/device";
 import { ExposeTypes } from "@/types/device.type";
+import { KeyyValuePair } from "@/types/types";
 
 
 const props = defineProps({
-    triggerId: {
-        type: String,
-        required: true
-    },
     action: {
         type: Object as PropType<AutomationTriggerAction>,
         default: {} as AutomationTriggerAction,
@@ -29,6 +26,36 @@ const emit = defineEmits<{
 }>()
 
 const action = reactive({ ...props.action })
+
+const getStepPropertySelectionList = computed(() => {
+
+    // TODO: refactor
+    let deviceMap: KeyyValuePair<string[]> = {};
+
+    var devices = store.getters["devices/listAll"]() as Devices;
+    if (devices == undefined) {
+        deviceMap[""] = [];
+        return deviceMap;
+    }
+
+    if (action.steps.length == 1) {
+        devices = devices.filter(d => d.id == action.id)
+    }
+
+    for (const [key, device] of Object.entries(devices)) {
+        for (const [key, expose] of Object.entries(device.exposes)) {
+            if (expose.type == ExposeTypes.Numeric) {
+                if (device.friendly_name in deviceMap == false) {
+                    deviceMap[device.friendly_name] = [];
+                }
+                deviceMap[device.friendly_name].push(expose.name);
+            }
+        }
+    }
+
+    return deviceMap;
+})
+
 const getFeatureDeviceList = computed(() => {
     var devices = store.getters["devices/listAll"]() as Devices;
     if (devices == undefined) {
@@ -36,16 +63,13 @@ const getFeatureDeviceList = computed(() => {
     }
     return getFeatureDevices(devices)
 })
-
 const getFeatureNames = computed(() => {
     const device = store.getters["devices/find"](action.id) as Device;
     if (device == undefined) {
         return {}
     }
-    const triggerDevice = store.getters["devices/find"](props.triggerId) as Device;
 
-    /// we need trigger devie id as well
-    return getDevicesFeaturesByType([]{ device, triggerDevice }, ExposeTypes.Numeric);
+    return getDeviceFeaturesByType(device, ExposeTypes.Numeric);
 })
 
 function saveAction(): void {
@@ -80,6 +104,7 @@ function deviceSelected(event: Event) {
 }
 
 </script>
+
 <style scoped>
 select.form-select,
 input.form-control {
@@ -154,8 +179,8 @@ input.form-select:disabled {
                 <li v-for="operator in NumericOperators">
                     <a @click="addStep(operator as NumericOperator)" class="dropdown-item" data-toggle="dropdown">
                         {{
-                            operator
-                        }}</a>
+                operator
+            }}</a>
                 </li>
             </ul>
         </form>
@@ -189,17 +214,19 @@ input.form-select:disabled {
         <div class="row" v-for="step in action.steps">
             <div class="col-1">
                 {{ step.operator }}
-            </div>
-            <div class="col col-xl-6">
 
-                we need to select device for the new entity:
-                entities either from action device or from trigger device - either from trigger device or from action device
-                includ them all in the same drop dropdown
-                <select required id="dataSelect1" class="form-select form-select-sm" v-model="step.property">
+            </div>
+            // TODO:
+            will need to store device id , as entity name could exists in multiple devices
+            <div class="col col-xl-6">
+                <select required id="dataSelect2" class="form-select form-select-sm" v-model="step.property">
                     <option value="">Select entity</option>
-                    <option v-for="(value, key) in getFeatureNames" :value="value" :key="value">
-                        {{ key }}
-                    </option>
+                    <optgroup v-for="(entities, deviceName) in getStepPropertySelectionList" :label="deviceName"
+                        :key="deviceName">
+                        <option v-for="entity in entities" :value="entity" :key="entity">
+                            {{ entity }}
+                        </option>
+                    </optgroup>
                 </select>
             </div>
             <div class="col-1">
