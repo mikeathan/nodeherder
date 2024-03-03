@@ -26,6 +26,26 @@ const emit = defineEmits<{
 }>()
 
 const action = reactive({ ...props.action })
+function getStepDevicesList(step: AutomationActionStep) {
+
+    var devices = store.getters["devices/listAll"]() as Devices;
+    if (action.steps.length == 1) {
+        devices = devices.filter(d => d.id == action.id)
+
+        step.id = action.id
+    }
+
+    return devices;
+}
+
+function getStepPropertyList(step: AutomationActionStep) {
+    const device = store.getters["devices/find"](step.id) as Device;
+    if (device == undefined) {
+        return {}
+    }
+
+    return getDeviceFeaturesByType(device, ExposeTypes.Numeric);
+}
 
 const getStepPropertySelectionList = computed(() => {
 
@@ -197,7 +217,7 @@ input.form-select:disabled {
                 </option>
             </select>
             <label for="dataSelect" class="form-label">Device to trigger</label>
-        </div>
+        </div>friendly name but on chnage event
     </div>
 
     <!-- Testing input box  -->
@@ -212,24 +232,32 @@ input.form-select:disabled {
     <div v-if="action.steps.length > 0" class="row pt-3">
         <h5>Operations</h5>
         <div class="row" v-for="step in action.steps">
-            <div class="col-1">
+            <div class=" col-xl-1">
                 {{ step.operator }}
-
             </div>
-            // TODO:
-            will need to store device id , as entity name could exists in multiple devices
-            <div class="col col-xl-6">
-                <select required id="dataSelect2" class="form-select form-select-sm" v-model="step.property">
-                    <option value="">Select entity</option>
-                    <optgroup v-for="(entities, deviceName) in getStepPropertySelectionList" :label="deviceName"
-                        :key="deviceName">
-                        <option v-for="entity in entities" :value="entity" :key="entity">
-                            {{ entity }}
-                        </option>
-                    </optgroup>
+
+            we need combo for device that once selected is text. also we load devices and key is device,id and vlaue is
+            friendly_name
+            <div class="col-xl-4">
+                some device
+            </div>
+            <div class="col col-xl-4">
+                <select required class="form-select form-select-sm" v-model="step.id">
+                    <option value=""> Select device</option>
+                    <option v-for="device in getStepDevicesList(step)" :value="device.id" :key="device.id">
+                        {{ device.friendly_name }}
+                    </option>
                 </select>
             </div>
-            <div class="col-1">
+            <div class="col col-xl-6">
+                <select required class="form-select form-select-sm" v-model="step.property">
+                    <option value="">Some property</option>
+                    <option v-for="property in getStepPropertyList(step)" :value="property" :key="property">
+                        {{ property }}
+                    </option>
+                </select>
+            </div>
+            <div class="col-xl-1">
                 <span class="fa fa-trash-alt fa-sm" @click="removeStep(step)">
                 </span>
             </div>

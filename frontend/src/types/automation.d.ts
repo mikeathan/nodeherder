@@ -7,9 +7,10 @@ export type AutomationTriggerConditions = Array<AutomationTriggerCondition>;
 export type NumericOperator = "+" | "-" | "*";
 
 export type AutomationActionStep = {
+  id: string;
   property: string;
   operator: NumericOperator;
-}
+};
 
 export type Automation = {
   id: string;
