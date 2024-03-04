@@ -73,15 +73,19 @@ function addAction(actionType: ActionType) {
 }
 
 const actionView = computed(() => {
+
     if (actions.value.length == 0) return '';
     const action = actions.value[0];
     if (action.id != '') {
-        let view = action.friendlyname;
-        let stepView = '';
+        let stepView = "";
         action.steps.forEach(step => {
-            stepView += step.operator + step.property;
+            stepView += step.property + " " + step.operator + " ";
         });
-        return view + " (" + stepView + ")";
+
+        stepView += action.data
+
+        //Attic lightbrightness = (brightness + action_time * 0.3) 
+        return action.friendlyname + " " + action.property + " =  (" + stepView + ")";
     }
 
     return '';
@@ -148,8 +152,8 @@ const actionView = computed(() => {
                                         <a @click="addAction(actionType as ActionType)" class="dropdown-item"
                                             data-toggle="dropdown">New
                                             {{
-                                                actionType
-                                            }}</a>
+            actionType
+        }}</a>
                                     </li>
                                 </ul>
                             </span>

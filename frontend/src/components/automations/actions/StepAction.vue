@@ -1,16 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watchEffect, watch, PropType, reactive } from "vue";
-import Selector from "../../input/Selector.vue"
-import DataInput from "../../input/DataInput.vue"
-
 import { AutomationTriggerAction, AutomationActionStep, NumericOperator } from "@/types/automation";
 import { NumericOperators, StepAction } from "@/contracts/automations"
-import { getDeviceFeaturesByType, getFeatureDevices, getDevicesFeaturesByType } from "@/contracts/device";
+import { getFeatureDevices } from "@/contracts/device";
 import { store } from "../../../store/index";
 import { Device, Devices } from "@/types/device";
 import { ExposeTypes } from "@/types/device.type";
-import { KeyyValuePair } from "@/types/types";
-
 
 const props = defineProps({
     action: {
@@ -31,11 +26,18 @@ function getStepDevicesList(step: AutomationActionStep) {
     var devices = store.getters["devices/listAll"]() as Devices;
     if (action.steps.length == 1) {
         devices = devices.filter(d => d.id == action.id)
-
         step.id = action.id
     }
 
     return devices;
+}
+
+function deviceNameFromId(step: AutomationActionStep): string {
+    const device = store.getters["devices/find"](step.id) as Device;
+    if (device == undefined) {
+        return ""
+    }
+    return device.friendly_name
 }
 
 function getStepPropertyList(step: AutomationActionStep) {
@@ -44,52 +46,22 @@ function getStepPropertyList(step: AutomationActionStep) {
         return {}
     }
 
-    return getDeviceFeaturesByType(device, ExposeTypes.Numeric);
+    return Object.entries(device.exposes)
+        .filter(([id, entity]) => entity.type == ExposeTypes.Numeric)
+        .map(([i, e]) => e.name);
 }
 
-const getStepPropertySelectionList = computed(() => {
-
-    // TODO: refactor
-    let deviceMap: KeyyValuePair<string[]> = {};
-
-    var devices = store.getters["devices/listAll"]() as Devices;
-    if (devices == undefined) {
-        deviceMap[""] = [];
-        return deviceMap;
-    }
-
+function stepPropertySelected(event: Event) {
     if (action.steps.length == 1) {
-        devices = devices.filter(d => d.id == action.id)
+        action.property = (event.target as HTMLInputElement).value
     }
-
-    for (const [key, device] of Object.entries(devices)) {
-        for (const [key, expose] of Object.entries(device.exposes)) {
-            if (expose.type == ExposeTypes.Numeric) {
-                if (device.friendly_name in deviceMap == false) {
-                    deviceMap[device.friendly_name] = [];
-                }
-                deviceMap[device.friendly_name].push(expose.name);
-            }
-        }
-    }
-
-    return deviceMap;
-})
-
+}
 const getFeatureDeviceList = computed(() => {
     var devices = store.getters["devices/listAll"]() as Devices;
     if (devices == undefined) {
         return {}
     }
     return getFeatureDevices(devices)
-})
-const getFeatureNames = computed(() => {
-    const device = store.getters["devices/find"](action.id) as Device;
-    if (device == undefined) {
-        return {}
-    }
-
-    return getDeviceFeaturesByType(device, ExposeTypes.Numeric);
 })
 
 function saveAction(): void {
@@ -103,7 +75,8 @@ function removeAction(): void {
 function addStep(numericOperator: NumericOperator) {
     const newStep: AutomationActionStep = {
         operator: numericOperator,
-        property: ""
+        property: "",
+        id: ""
     }
     action.steps.push(newStep);
 }
@@ -119,8 +92,10 @@ function deviceSelected(event: Event) {
         // error
         return;
     }
+
     action.id = device.id;
     action.friendlyname = device.friendly_name;
+    action.steps = [];
 }
 
 </script>
@@ -217,7 +192,7 @@ input.form-select:disabled {
                 </option>
             </select>
             <label for="dataSelect" class="form-label">Device to trigger</label>
-        </div>friendly name but on chnage event
+        </div>
     </div>
 
     <!-- Testing input box  -->
@@ -236,22 +211,24 @@ input.form-select:disabled {
                 {{ step.operator }}
             </div>
 
-            we need combo for device that once selected is text. also we load devices and key is device,id and vlaue is
-            friendly_name
-            <div class="col-xl-4">
-                some device
-            </div>
-            <div class="col col-xl-4">
+            <!-- step id  -->
+            <div class="col col-xl-4" v-if="step.id == ''">
                 <select required class="form-select form-select-sm" v-model="step.id">
-                    <option value=""> Select device</option>
+                    <option value="">Select device</option>
                     <option v-for="device in getStepDevicesList(step)" :value="device.id" :key="device.id">
                         {{ device.friendly_name }}
                     </option>
                 </select>
             </div>
+            <div v-else class=" col-xl-3">
+                {{ deviceNameFromId(step) }}
+            </div>
+
+            <!-- step property -->
             <div class="col col-xl-6">
-                <select required class="form-select form-select-sm" v-model="step.property">
-                    <option value="">Some property</option>
+                <select required class="form-select form-select-sm" v-model="step.property"
+                    @change="stepPropertySelected">
+                    <option value="">Select property</option>
                     <option v-for="property in getStepPropertyList(step)" :value="property" :key="property">
                         {{ property }}
                     </option>
