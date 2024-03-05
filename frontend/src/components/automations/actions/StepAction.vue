@@ -97,7 +97,7 @@ function deviceSelected(event: Event) {
     action.friendlyname = device.friendly_name;
     action.steps = [];
 }
-
+const isSaveEnabled = computed(() => action.data && action.property && action.id && action.steps.length != 0);
 </script>
 
 <style scoped>
@@ -166,7 +166,8 @@ input.form-select:disabled {
     <!-- action controls -->
     <div class="row pb-3">
         <form class="container">
-            <button class="btn btn-light btn-sm" type="button" @click="saveAction">Save</button>
+            <button class="btn btn-light btn-sm" type="button" @click="saveAction"
+                :disabled="!isSaveEnabled">Save</button>
             <button class="btn btn-light btn-sm" type="button" @click="removeAction">Delete</button>
             <button type="button" class="btn btn-light btn-sm" data-bs-toggle="dropdown" :disabled="action.id == ''">Add
                 Operation</button>
@@ -174,8 +175,8 @@ input.form-select:disabled {
                 <li v-for="operator in NumericOperators">
                     <a @click="addStep(operator as NumericOperator)" class="dropdown-item" data-toggle="dropdown">
                         {{
-                operator
-            }}</a>
+                    operator
+                }}</a>
                 </li>
             </ul>
         </form>
