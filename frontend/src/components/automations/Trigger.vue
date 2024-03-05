@@ -72,24 +72,7 @@ function addAction(actionType: ActionType) {
     actions.value?.push(new EditableActionTrigger(actionType));
 }
 
-const actionView = computed(() => {
 
-    if (actions.value.length == 0) return '';
-    const action = actions.value[0];
-    if (action.id != '') {
-        let stepView = "";
-        action.steps.forEach(step => {
-            stepView += step.property + " " + step.operator + " ";
-        });
-
-        stepView += action.data
-
-        //Attic lightbrightness = (brightness + action_time * 0.3) 
-        return action.friendlyname + " " + action.property + " =  (" + stepView + ")";
-    }
-
-    return '';
-});
 </script>
 
 <template>
@@ -150,10 +133,7 @@ const actionView = computed(() => {
                                 <ul class="dropdown-menu">
                                     <li v-for="actionType in AutomationActionTypes">
                                         <a @click="addAction(actionType as ActionType)" class="dropdown-item"
-                                            data-toggle="dropdown">New
-                                            {{
-            actionType
-        }}</a>
+                                            data-toggle="dropdown">New {{ actionType }}</a>
                                     </li>
                                 </ul>
                             </span>
@@ -161,7 +141,6 @@ const actionView = computed(() => {
                     </th>
                 </tr>
 
-                [DEBUG]: {{ actionView }}
                 <!-- Actions -->
                 <tbody v-for="(action, index) in actions" :item="action">
                     <tr>
