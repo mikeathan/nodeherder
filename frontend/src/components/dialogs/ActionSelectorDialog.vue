@@ -116,6 +116,7 @@ function close(): void {
 }
 
 </script>
+
 <template>
     <div class="modal fade" tabindex="-1" aria-hidden="true" ref="modalRef">
         <div class="modal-dialog">
@@ -141,13 +142,14 @@ function close(): void {
                                     </Selector>
                                 </td>
                                 <td class="col-xl-3 col-md-4 col-sm-6">
-                                    <Selector :disabled="actionType == ''" placeholder="Select" :items="deviceFeatureList"
-                                        :value="deviceId" @update:data="(v) => deviceId = v">
+                                    <Selector :disabled="actionType == ''" placeholder="Select"
+                                        :items="deviceFeatureList" :value="deviceId" @update:data="(v) => deviceId = v">
                                     </Selector>
                                 </td>
                                 <td class="col-xl-3 col-md-4 col-sm-6">
-                                    <Selector :disabled="deviceId == ''" placeholder="Select" :items="getDeviceFeatureNames"
-                                        :value="deviceProperty" @update:data="(v) => deviceProperty = v">
+                                    <Selector :disabled="deviceId == ''" placeholder="Select"
+                                        :items="getDeviceFeatureNames" :value="deviceProperty"
+                                        @update:data="(v) => deviceProperty = v">
                                     </Selector>
                                 </td>
                             </tr>
@@ -155,8 +157,10 @@ function close(): void {
                     </table>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" :disabled="isValid() == false" @click="add">Add</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="close">Close</button>
+                    <button type="button" class="btn btn-primary" :disabled="isValid() == false"
+                        @click="add">Add</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                        @click="close">Close</button>
                 </div>
             </div>
         </div>

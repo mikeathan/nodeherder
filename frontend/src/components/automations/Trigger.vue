@@ -3,7 +3,6 @@
 import { computed, watch, ref, PropType, toRef } from "vue";
 import TriggerCondition from "./TriggerCondition.vue"
 import Action from "./actions/Action.vue";
-
 import Selector from "../input/Selector.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";

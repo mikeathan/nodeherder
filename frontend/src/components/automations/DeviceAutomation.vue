@@ -7,6 +7,8 @@ import { store } from "../../store/index";
 import { Device } from "@/types/device";
 import { Automation, AutomationTrigger } from "@/types/automation";
 import { EditableAutomationTrigger, DeviceAutomation } from "../../contracts/automations";
+import Panel from "../controls/Panel.vue";
+
 const emit = defineEmits(['cancel'])
 
 const props = defineProps({
@@ -124,11 +126,13 @@ function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
 }
 
 </script>
+
 <style scoped>
 .custom-control-input {
     transform: scale(1.4);
 }
 </style>
+
 <template>
     <div v-if="automation">
         <div class="container-fluid p-0 h-100">
@@ -146,8 +150,8 @@ function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
                     </div>
                     <div class="pt-3  pb-4">
                         <label class="form-check-label">Description</label>
-                        <DataInput :data="automation.description" @update:data="(value) => automation.description = value"
-                            type="string" alignment="left">
+                        <DataInput :data="automation.description"
+                            @update:data="(value) => automation.description = value" type="string" alignment="left">
                         </DataInput>
                     </div>
 
@@ -182,7 +186,8 @@ function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
                                 <th scope="col">Action</th>
                                 <th scope="col">Conditions</th>
                                 <th scope="col">
-                                    <button type="button" class="btn btn-default btn-number" @click="createNewTrigger()">
+                                    <button type="button" class="btn btn-default btn-number"
+                                        @click="createNewTrigger()">
                                         <span class="fa fa-plus"></span>
                                     </button>
                                 </th>
@@ -208,11 +213,16 @@ function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
                         </tbody>
                     </table>
                     <div class="row" v-else>
-                        <button type="button" class="btn-close" aria-label="Close" @click="() => showTriggerCreation = false // close trigger panel
-                            "></button>
+                        <button type="button" class="btn-close" aria-label="Close"
+                            @click="() => showTriggerCreation = false"></button>
                         <div class="col">
-                            <Trigger :id="props.id" :trigger="selectedTrigger" @save="saveTrigger" @delete="deleteTrigger">
-                            </Trigger>
+
+                            <Panel :component_name="'Trigger'"
+                                :component_props="{ id: props.id, trigger: selectedTrigger }"
+                                @save="e => saveTrigger(e)" @delete="e => deleteTrigger(e)"></Panel>
+                            <!-- <Trigger :id="props.id" :trigger="selectedTrigger" @save="saveTrigger"
+                                @delete="deleteTrigger">
+                            </Trigger> -->
                         </div>
                     </div>
                 </div>
@@ -220,27 +230,3 @@ function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
         </div>
     </div>
 </template>
-
-panel to pass component for viewing with close button
-let assume
-
-device automation 
-table with automations in each row 
-click row 
-load automation trigger 
-
-automation trigger control
-shows conditions and actions
-
-if we click existing action row
-we should close the current automation trigger view and load the action view 
-
-
-panel viewer should wire up to events emiting by controls
-
-but controls that have are currently viewed by its parents should be able to emit and replace current view
-
-
-
-
-

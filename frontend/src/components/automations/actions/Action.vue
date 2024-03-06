@@ -87,9 +87,9 @@ const actionView = computed(() => {
         </div>
     </div>
     <div v-else>
-        <div class="row">
+        <!-- <div class="row">
             <button type="button" class="btn-close" aria-label="Close" @click="e => setEditorView(false)"></button>
-        </div>
+        </div> -->
         <component :is="componentMap[actionType]" v-bind="{ action: props.item }" @delete="removeAction"
             @save="saveAction" />
     </div>
