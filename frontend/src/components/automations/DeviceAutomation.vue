@@ -220,3 +220,27 @@ function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
         </div>
     </div>
 </template>
+
+panel to pass component for viewing with close button
+let assume
+
+device automation 
+table with automations in each row 
+click row 
+load automation trigger 
+
+automation trigger control
+shows conditions and actions
+
+if we click existing action row
+we should close the current automation trigger view and load the action view 
+
+
+panel viewer should wire up to events emiting by controls
+
+but controls that have are currently viewed by its parents should be able to emit and replace current view
+
+
+
+
+
