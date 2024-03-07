@@ -65,6 +65,7 @@ const getFeatureDeviceList = computed(() => {
 })
 
 function saveAction(): void {
+    console.log("stepaction save clicked")
     emit('save', action);
 }
 

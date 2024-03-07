@@ -221,7 +221,8 @@ function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
                             <Panel :component_name="'Trigger'"
                                 :component_props="{ id: props.id, trigger: selectedTrigger }" :component_events="{
         save: (e: AutomationTrigger) => saveTrigger(e),
-        delete: (e: AutomationTrigger) => deleteTrigger(e)
+        delete: (e: AutomationTrigger) => deleteTrigger(e),
+        close: () => showTriggerCreation = false
     }">
                             </Panel>
                             <!-- <Trigger :id="props.id" :trigger="selectedTrigger" @save="saveTrigger"

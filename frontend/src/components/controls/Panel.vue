@@ -99,8 +99,8 @@ onMounted(() => {
     PANEL : {{ currentComponent }}
     <!-- @delete="removeItem"
         @save="saveItem" @open="openComponent" @close="closeComponent"  -->
-    <component :is="componentMap[currentComponent.name]" v-bind="currentComponent.args"
-        :v-on="currentComponent.events" />
+    <component :is="componentMap[currentComponent.name]" v-bind="currentComponent.args" :v-on="currentComponent.events"
+        @open="openComponent" @close="closeComponent" />
 </template>
 
 
