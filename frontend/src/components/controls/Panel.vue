@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { ref, watch, PropType, defineAsyncComponent, computed, onMounted, inject} from "vue";
+import { ref, watch, PropType, defineAsyncComponent, computed, onMounted, inject } from "vue";
 import { Emitter } from 'mitt'
 import { Events, OpenPanelEvent } from "@/types/events.type";
 
 
 const emitter = inject('emitter') as Emitter<Events>;
-emitter.on('openPanel', (e:OpenPanelEvent) => {
+emitter.on('openPanel', (e: OpenPanelEvent) => {
 
     console.log("openpanel received ", e)
     openComponent(e.name, e.args);
-}); 
+});
 
-emitter.on('closePanel', (e:string) => {}); 
+emitter.on('closePanel', (e: string) => { console.log("close panel event received . do nothing") });
 
 type PanelKey = string
 type Map = { [key: PanelKey]: any }
@@ -26,6 +26,9 @@ const componentMap: Map = {
     "StepAction": defineAsyncComponent(() =>
         import("../automations/actions/StepAction.vue"),
     ),
+    "Action": defineAsyncComponent(() =>
+        import("../automations/actions/Action.vue"),
+    ),
 };
 
 const emit = defineEmits<{
@@ -34,11 +37,11 @@ const emit = defineEmits<{
     (e: 'open', component_name: string): void,
     (e: 'close'): void,
 }>()
-type History  ={
-    name:string,
-    args:any
+type History = {
+    name: string,
+    args: any
 }
-const history = ref<Array<History>>([]); 
+const history = ref<Array<History>>([]);
 const props = defineProps({
     component_name: {
         type: String,
@@ -53,18 +56,18 @@ const props = defineProps({
 
 function openComponent(component_name: string, args: any): void {
 
-    history.value.push({name:component_name, args:args})
+    history.value.push({ name: component_name, args: args })
     console.log("open component: history=", component_name)
 }
 
 function closeComponent(): void {
     history.value.pop();
-    console.log("close component: history=",  history.value)
+    console.log("close component: history=", history.value)
 }
 
-const currentComponent= computed(() => { 
+const currentComponent = computed(() => {
     const lastValue = history.value.at(-1)
-    return lastValue === undefined ? {name:'',args:''}:lastValue as History;
+    return lastValue === undefined ? { name: '', args: '' } : lastValue as History;
 });
 
 function saveItem(item: any): void {
@@ -92,10 +95,10 @@ onMounted(() => {
 </script>
 
 <template>
-    PANEL : {{ currentComponent }} 
+    PANEL : {{ currentComponent }}
 
-    <component :is="componentMap[currentComponent.name]" v-bind="currentComponent.args" @delete="removeItem" @save="saveItem"
-        @open="openComponent" @close="closeComponent" />
+    <component :is="componentMap[currentComponent.name]" v-bind="currentComponent.args" @delete="removeItem"
+        @save="saveItem" @open="openComponent" @close="closeComponent" />
 </template>
 
 

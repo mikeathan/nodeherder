@@ -79,6 +79,7 @@ function deleteTrigger(trigger: AutomationTrigger): void {
 }
 
 function saveTrigger(trigger: AutomationTrigger): void {
+    console.log("deviceautomation saverigger ", trigger);
     const idx = automation.value.triggers.indexOf(trigger)
     if (idx == -1) {
         automation.value.triggers.push(trigger)

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { computed, watch, ref, PropType, toRef,inject } from "vue";
+import { computed, watch, ref, PropType, toRef, inject } from "vue";
 import TriggerCondition from "./TriggerCondition.vue"
 import Action from "./actions/Action.vue";
 import Selector from "../input/Selector.vue"
@@ -71,7 +71,9 @@ function SaveAction(index: number, action: AutomationTriggerAction) {
 }
 
 function addAction(actionType: ActionType) {
-    actions.value?.push(new EditableActionTrigger(actionType));
+    // actions.value?.push(new EditableActionTrigger(actionType));
+
+    emitter.emit('openPanel', { name: 'Action', args: { item: new EditableActionTrigger(actionType) } });
 }
 
 

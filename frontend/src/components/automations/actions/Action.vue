@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, PropType, defineAsyncComponent, computed, onMounted ,inject} from "vue";
+import { ref, watch, PropType, defineAsyncComponent, computed, onMounted, inject } from "vue";
 import { getActionType, ActionType, AutomationActionTypes } from "@/contracts/automations"
 import { AutomationTriggerAction } from "@/types/automation";
 import { Emitter } from 'mitt'
@@ -40,7 +40,7 @@ watch(
 )
 
 function saveAction(action: AutomationTriggerAction): void {
-    setEditorView(false);
+    //setEditorView(false);
     emit('save', action);
 }
 
@@ -48,7 +48,7 @@ function setEditorView(enable: boolean): void {
     isEditorView.value = enable;
     console.log("Action  emit openpanel")
 
-    emitter.emit('openPanel',  {name:'StepAction', args: { action: props.item }}); //// TESTING
+    emitter.emit('openPanel', { name: 'StepAction', args: { action: props.item } }); //// TESTING
 }
 
 function removeAction(action: AutomationTriggerAction): void {

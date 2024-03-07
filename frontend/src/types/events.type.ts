@@ -3,6 +3,8 @@ export type OpenPanelEvent ={
   args : any
 }
 
+need key value pair of events 
+
 export type Events = {
     openPanel: OpenPanelEvent;
     closePanel: string;
