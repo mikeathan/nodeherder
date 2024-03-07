@@ -1,12 +1,15 @@
-export type OpenPanelEvent ={
-  name:string,
-  args : any
-}
+import { KeyyValuePair } from "./types";
 
-need key value pair of events 
+export type EventAction = (...args: any) => void;
+export type EventActions = KeyyValuePair<EventAction>;
+
+export type OpenPanelEvent = {
+  name: string;
+  args: any;
+  events: EventActions;
+};
 
 export type Events = {
-    openPanel: OpenPanelEvent;
-    closePanel: string;
-  };
-  
+  openPanel: OpenPanelEvent;
+  closePanel: string;
+};

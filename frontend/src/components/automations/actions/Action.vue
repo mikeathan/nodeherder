@@ -3,7 +3,7 @@ import { ref, watch, PropType, defineAsyncComponent, computed, onMounted, inject
 import { getActionType, ActionType, AutomationActionTypes } from "@/contracts/automations"
 import { AutomationTriggerAction } from "@/types/automation";
 import { Emitter } from 'mitt'
-import { Events } from "@/types/events.type";
+import { EventActions, Events, OpenPanelEvent } from "@/types/events.type";
 
 const emitter = inject('emitter') as Emitter<Events>;
 
@@ -44,11 +44,20 @@ function saveAction(action: AutomationTriggerAction): void {
     emit('save', action);
 }
 
+function createActionOpenPanelEvent(action: AutomationTriggerAction): OpenPanelEvent {
+    const events: EventActions = {
+        'delete': () => { removeAction(action) },
+        'save': () => { saveAction(action) },
+    };
+
+    return { name: 'StepAction', args: { item: action }, events: events }
+}
+
 function setEditorView(enable: boolean): void {
     isEditorView.value = enable;
     console.log("Action  emit openpanel")
 
-    emitter.emit('openPanel', { name: 'StepAction', args: { action: props.item } }); //// TESTING
+    emitter.emit('openPanel', createActionOpenPanelEvent(props.item)); //// TESTING
 }
 
 function removeAction(action: AutomationTriggerAction): void {

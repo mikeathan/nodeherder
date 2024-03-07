@@ -5,7 +5,7 @@ import Trigger from "./Trigger.vue"
 import DataInput from "../input/DataInput.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
-import { Automation, AutomationTrigger } from "@/types/automation";
+import { Automation, AutomationTrigger, AutomationTriggerAction } from "@/types/automation";
 import { EditableAutomationTrigger, DeviceAutomation } from "../../contracts/automations";
 import Panel from "../controls/Panel.vue";
 
@@ -219,8 +219,11 @@ function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
                         <div class="col">
 
                             <Panel :component_name="'Trigger'"
-                                :component_props="{ id: props.id, trigger: selectedTrigger }"
-                                @save="e => saveTrigger(e)" @delete="e => deleteTrigger(e)"></Panel>
+                                :component_props="{ id: props.id, trigger: selectedTrigger }" :component_events="{
+        save: (e: AutomationTrigger) => saveTrigger(e),
+        delete: (e: AutomationTrigger) => deleteTrigger(e)
+    }">
+                            </Panel>
                             <!-- <Trigger :id="props.id" :trigger="selectedTrigger" @save="saveTrigger"
                                 @delete="deleteTrigger">
                             </Trigger> -->

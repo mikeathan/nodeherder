@@ -10,7 +10,7 @@ import { AutomationTrigger, AutomationTriggerAction, AutomationTriggerCondition,
 import { isValid, EditableTriggerCondition, EditableActionTrigger, AutomationActionTypes, ActionType } from "../../contracts/automations"
 import { capitalizeText } from "../../modules/formatters/text.formatter";
 import { Emitter } from 'mitt'
-import { Events } from "@/types/events.type";
+import { EventActions, Events, OpenPanelEvent } from "@/types/events.type";
 
 const emitter = inject('emitter') as Emitter<Events>;
 const props = defineProps({
@@ -72,11 +72,18 @@ function SaveAction(index: number, action: AutomationTriggerAction) {
 
 function addAction(actionType: ActionType) {
     // actions.value?.push(new EditableActionTrigger(actionType));
-
-    emitter.emit('openPanel', { name: 'Action', args: { item: new EditableActionTrigger(actionType) } });
+    const index = actions.value.length - 1;
+    emitter.emit('openPanel', createActionOpenPanelEvent(new EditableActionTrigger(actionType), index));
 }
 
+function createActionOpenPanelEvent(action: AutomationTriggerAction, index: number): OpenPanelEvent {
+    const events: EventActions = {
+        'delete': (e) => { deleteAction(index) },
+        'save': (a) => { SaveAction(index, a) },
+    };
 
+    return { name: 'Action', args: { item: action }, events: events }
+}
 </script>
 
 <template>

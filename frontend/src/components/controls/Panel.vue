@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, watch, PropType, defineAsyncComponent, computed, onMounted, inject } from "vue";
 import { Emitter } from 'mitt'
-import { Events, OpenPanelEvent } from "@/types/events.type";
+import { EventActions, Events, OpenPanelEvent } from "@/types/events.type";
 
 
 const emitter = inject('emitter') as Emitter<Events>;
 emitter.on('openPanel', (e: OpenPanelEvent) => {
 
     console.log("openpanel received ", e)
-    openComponent(e.name, e.args);
+    openComponent(e.name, e.args, e.events);
 });
 
 emitter.on('closePanel', (e: string) => { console.log("close panel event received . do nothing") });
@@ -37,11 +37,8 @@ const emit = defineEmits<{
     (e: 'open', component_name: string): void,
     (e: 'close'): void,
 }>()
-type History = {
-    name: string,
-    args: any
-}
-const history = ref<Array<History>>([]);
+
+const history = ref<Array<OpenPanelEvent>>([]);
 const props = defineProps({
     component_name: {
         type: String,
@@ -50,13 +47,17 @@ const props = defineProps({
     component_props: {
         type: Object,
         required: true
+    },
+    component_events: {
+        type: Object,
+        required: true
     }
 
 });
 
-function openComponent(component_name: string, args: any): void {
+function openComponent(component_name: string, args: any, events: EventActions): void {
 
-    history.value.push({ name: component_name, args: args })
+    history.value.push({ name: component_name, args: args, events: events })
     console.log("open component: history=", component_name)
 }
 
@@ -67,7 +68,7 @@ function closeComponent(): void {
 
 const currentComponent = computed(() => {
     const lastValue = history.value.at(-1)
-    return lastValue === undefined ? { name: '', args: '' } : lastValue as History;
+    return lastValue === undefined ? { name: '', args: '', events: {} } : lastValue as OpenPanelEvent;
 });
 
 function saveItem(item: any): void {
@@ -81,7 +82,7 @@ function removeItem(item: any): void {
 watch(
     () => props.component_name,
     () => {
-        openComponent(props.component_name, props.component_props)
+        openComponent(props.component_name, props.component_props, props.component_events)
     }, { immediate: true }
 )
 
@@ -96,9 +97,10 @@ onMounted(() => {
 
 <template>
     PANEL : {{ currentComponent }}
-
-    <component :is="componentMap[currentComponent.name]" v-bind="currentComponent.args" @delete="removeItem"
-        @save="saveItem" @open="openComponent" @close="closeComponent" />
+    <!-- @delete="removeItem"
+        @save="saveItem" @open="openComponent" @close="closeComponent"  -->
+    <component :is="componentMap[currentComponent.name]" v-bind="currentComponent.args"
+        :v-on="currentComponent.events" />
 </template>
 
 
