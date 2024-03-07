@@ -1,5 +1,18 @@
 <script setup lang="ts">
-import { ref, watch, PropType, defineAsyncComponent, computed, onMounted, Component, DefineComponent } from "vue";
+import { ref, watch, PropType, defineAsyncComponent, computed, onMounted, inject} from "vue";
+import { Emitter } from 'mitt'
+import { Events, OpenPanelEvent } from "@/types/events.type";
+
+
+const emitter = inject('emitter') as Emitter<Events>;
+emitter.on('openPanel', (e:OpenPanelEvent) => {
+
+    console.log("openpanel received ", e)
+    openComponent(e.name, e.args);
+}); 
+
+emitter.on('closePanel', (e:string) => {}); 
+
 type PanelKey = string
 type Map = { [key: PanelKey]: any }
 
@@ -14,14 +27,18 @@ const componentMap: Map = {
         import("../automations/actions/StepAction.vue"),
     ),
 };
+
 const emit = defineEmits<{
     (e: 'save', item: any): void,
     (e: 'delete', item: any): void,
     (e: 'open', component_name: string): void,
     (e: 'close'): void,
 }>()
-
-const history = ref<Array<string>>();
+type History  ={
+    name:string,
+    args:any
+}
+const history = ref<Array<History>>([]); 
 const props = defineProps({
     component_name: {
         type: String,
@@ -34,17 +51,22 @@ const props = defineProps({
 
 });
 
-function openComponent(component_name: string): void {
-    history.value?.push(component_name)
+function openComponent(component_name: string, args: any): void {
 
-    console.log("open component", component_name)
+    history.value.push({name:component_name, args:args})
+    console.log("open component: history=", component_name)
 }
 
 function closeComponent(): void {
-
+    history.value.pop();
+    console.log("close component: history=",  history.value)
 }
 
-const currentComponent = computed<PanelKey>((e) => { history.value?.slice(-1) as PanelKey });
+const currentComponent= computed(() => { 
+    const lastValue = history.value.at(-1)
+    return lastValue === undefined ? {name:'',args:''}:lastValue as History;
+});
+
 function saveItem(item: any): void {
     emit('save', item);
 }
@@ -56,7 +78,7 @@ function removeItem(item: any): void {
 watch(
     () => props.component_name,
     () => {
-        openComponent(props.component_name)
+        openComponent(props.component_name, props.component_props)
     }, { immediate: true }
 )
 
@@ -70,8 +92,46 @@ onMounted(() => {
 </script>
 
 <template>
-    PANEL : {{ currentComponent }}
+    PANEL : {{ currentComponent }} 
 
-    <component :is="componentMap[currentComponent]" v-bind="props.component_props" @delete="removeItem" @save="saveItem"
-        @open="" @close="" />
+    <component :is="componentMap[currentComponent.name]" v-bind="currentComponent.args" @delete="removeItem" @save="saveItem"
+        @open="openComponent" @close="closeComponent" />
 </template>
+
+
+<!-- TODO
+
+import mitt from 'mitt'
+
+const emitter = mitt()
+
+// listen to an event
+emitter.on('foo', e => console.log('foo', e) )
+
+// listen to all events
+emitter.on('*', (type, e) => console.log(type, e) )
+
+// fire an event
+emitter.emit('foo', { a: 'b' })
+
+// clearing all events
+emitter.all.clear()
+
+// working with handler references:
+function onFoo() {}
+emitter.on('foo', onFoo)   // listen
+emitter.off('foo', onFoo)  // unlisten
+
+------------------------
+import mitt from 'mitt';
+
+type Events = {
+  foo: string;
+  bar?: number;
+};
+
+const emitter = mitt<Events>(); // inferred as Emitter<Events>
+
+emitter.on('foo', (e) => {}); // 'e' has inferred type 'string'
+
+emitter.emit('foo', 42); // Error: Argument of type 'number' is not assignable to parameter of -->

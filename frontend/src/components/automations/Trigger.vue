@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { computed, watch, ref, PropType, toRef } from "vue";
+import { computed, watch, ref, PropType, toRef,inject } from "vue";
 import TriggerCondition from "./TriggerCondition.vue"
 import Action from "./actions/Action.vue";
 import Selector from "../input/Selector.vue"
@@ -9,7 +9,10 @@ import { Device } from "@/types/device";
 import { AutomationTrigger, AutomationTriggerAction, AutomationTriggerCondition, AutomationTriggerConditions } from "@/types/automation";
 import { isValid, EditableTriggerCondition, EditableActionTrigger, AutomationActionTypes, ActionType } from "../../contracts/automations"
 import { capitalizeText } from "../../modules/formatters/text.formatter";
+import { Emitter } from 'mitt'
+import { Events } from "@/types/events.type";
 
+const emitter = inject('emitter') as Emitter<Events>;
 const props = defineProps({
     id: { type: String },
     trigger: { type: Object as PropType<AutomationTrigger>, default: {} as AutomationTrigger },

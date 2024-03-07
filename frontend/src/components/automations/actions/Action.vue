@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { ref, watch, PropType, defineAsyncComponent, computed, onMounted } from "vue";
+import { ref, watch, PropType, defineAsyncComponent, computed, onMounted ,inject} from "vue";
 import { getActionType, ActionType, AutomationActionTypes } from "@/contracts/automations"
 import { AutomationTriggerAction } from "@/types/automation";
+import { Emitter } from 'mitt'
+import { Events } from "@/types/events.type";
+
+const emitter = inject('emitter') as Emitter<Events>;
 
 const componentMap = {
     "TriggerAction": defineAsyncComponent(() =>
@@ -42,6 +46,9 @@ function saveAction(action: AutomationTriggerAction): void {
 
 function setEditorView(enable: boolean): void {
     isEditorView.value = enable;
+    console.log("Action  emit openpanel")
+
+    emitter.emit('openPanel',  {name:'StepAction', args: { action: props.item }}); //// TESTING
 }
 
 function removeAction(action: AutomationTriggerAction): void {
