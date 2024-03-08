@@ -1,13 +1,13 @@
-import { Module } from "vuex";
-import { RootState } from "../../state";
-import { DeviceModuleState } from "./state";
+import { Module } from 'vuex';
+import { RootState } from '../../state';
+import { DeviceModuleState } from './state';
 import {
   Device,
   Devices,
   DeviceMap,
-  DeviceUpdate,
-} from "../../../types/device";
-import { KeyyValuePair } from "../../../types/types";
+  DeviceUpdate
+} from '../../../types/device';
+import { KeyyValuePair } from '../../../types/types';
 
 export const DeviceModule: Module<DeviceModuleState, RootState> = {
   namespaced: true,
@@ -27,7 +27,7 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
       (state: DeviceModuleState) =>
       (id: string): boolean => {
         return state.deviceMap[id] != null;
-      },
+      }
   },
 
   mutations: {
@@ -43,7 +43,7 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
 
     update(state, deviceUpdate: DeviceUpdate) {
       if (deviceUpdate.id in state.deviceMap == false) {
-        console.error("device ", deviceUpdate.id, " not found");
+        console.error('device ', deviceUpdate.id, ' not found');
         return;
       }
       var device = state.deviceMap[deviceUpdate.id];
@@ -64,25 +64,25 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
       Object.entries(state.deviceMap).forEach(([key, value]) => {
         delete state.deviceMap[key];
       });
-    },
+    }
   },
 
   actions: {
     init({ state, commit }, devices: Devices) {
-      commit("clear", state);
+      commit('clear', state);
       devices.forEach((device: Device) => {
         state.deviceMap[device.id] = device;
       });
     },
 
     updateDevices({ commit }, devices: Devices) {
-      commit("updateDevices", devices);
+      commit('updateDevices', devices);
     },
 
     setValue({ dispatch }, payload: KeyyValuePair<any>) {
       dispatch(
-        "ws/emit",
-        { event: "deviceSetValue", message: payload },
+        'ws/emit',
+        { event: 'deviceSetValue', message: payload },
         { root: true }
       );
     },
@@ -90,14 +90,14 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
     rename({ dispatch }, { name, newName }) {
       var payload = {
         from: name,
-        to: newName,
+        to: newName
       };
 
       dispatch(
-        "ws/emit",
-        { event: "deviceRename", message: payload },
+        'ws/emit',
+        { event: 'deviceRename', message: payload },
         { root: true }
       );
-    },
-  },
+    }
+  }
 };

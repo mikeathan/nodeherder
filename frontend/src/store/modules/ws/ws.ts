@@ -1,12 +1,12 @@
-const devSocketUri = "ws://localhost:3000/ws";
-const productionSocketUri = "ws://" + document.location.host + "/ws";
+const devSocketUri = 'ws://localhost:3000/ws';
+const productionSocketUri = 'ws://' + document.location.host + '/ws';
 
 const maxNumberOfAttempts = 10;
 const intervalTimeMs = 200;
 
 function getSocketUri() {
-  if (process.env.NODE_ENV == "development") {
-    console.info("Enviroment:", process.env.NODE_ENV);
+  if (process.env.NODE_ENV == 'development') {
+    console.info('Enviroment:', process.env.NODE_ENV);
     return devSocketUri;
   }
 
@@ -33,9 +33,9 @@ class WsClient {
         if (currentAttempt > maxNumberOfAttempts - 1) {
           clearInterval(interval);
           console.log(
-            "emit:",
+            'emit:',
             event,
-            " failed. Maximum number of attempts exceeded."
+            ' failed. Maximum number of attempts exceeded.'
           );
           return;
         } else if (this.ws.readyState === this.ws.OPEN) {

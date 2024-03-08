@@ -1,4 +1,4 @@
-import { KeyyValuePair } from "./types";
+import { KeyyValuePair } from './types';
 
 export type EventAction = (...args: any) => void;
 export type EventActions = KeyyValuePair<EventAction>;

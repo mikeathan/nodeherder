@@ -1,4 +1,4 @@
-import { WsClientService } from "./ws";
+import { WsClientService } from './ws';
 
 export interface WSClientState {
   ws: WsClientService;

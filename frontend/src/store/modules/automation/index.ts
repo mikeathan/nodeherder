@@ -1,11 +1,11 @@
-import { Module } from "vuex";
-import { RootState } from "../../state";
-import { AutomationModuleState } from "./state";
+import { Module } from 'vuex';
+import { RootState } from '../../state';
+import { AutomationModuleState } from './state';
 import {
   AutomationMap,
   Automation,
-  Automations,
-} from "../../../types/automation";
+  Automations
+} from '../../../types/automation';
 
 export const AutomationModule: Module<AutomationModuleState, RootState> = {
   namespaced: true,
@@ -24,7 +24,7 @@ export const AutomationModule: Module<AutomationModuleState, RootState> = {
       (state: AutomationModuleState) =>
       (id: string): Automation => {
         return state.automationsMap[id];
-      },
+      }
   },
 
   mutations: {
@@ -48,12 +48,12 @@ export const AutomationModule: Module<AutomationModuleState, RootState> = {
       });
 
       state.initialized = false;
-    },
+    }
   },
 
   actions: {
     init({ state, commit }, automations: Automations) {
-      commit("clear", state);
+      commit('clear', state);
 
       automations.forEach((item: Automation) => {
         state.automationsMap[item.id] = item;
@@ -62,21 +62,21 @@ export const AutomationModule: Module<AutomationModuleState, RootState> = {
     },
 
     save({ commit, dispatch, rootState }, automation: Automations) {
-      commit("add", automation);
+      commit('add', automation);
       dispatch(
-        "ws/emit",
-        { event: "saveAutomation", message: automation },
+        'ws/emit',
+        { event: 'saveAutomation', message: automation },
         { root: true }
       );
     },
 
     delete({ commit, dispatch, rootState }, id: string) {
-      commit("delete", id);
+      commit('delete', id);
       dispatch(
-        "ws/emit",
-        { event: "deleteAutomation", message: { id: id } },
+        'ws/emit',
+        { event: 'deleteAutomation', message: { id: id } },
         { root: true }
       );
-    },
-  },
+    }
+  }
 };

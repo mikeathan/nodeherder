@@ -1,4 +1,4 @@
-import { ExposeTypes } from "@/types/device.type";
+import { ExposeTypes } from '@/types/device.type';
 import {
   Automation,
   AutomationTrigger,
@@ -6,20 +6,19 @@ import {
   AutomationTriggerAction,
   AutomationTriggerConditions,
   AutomationActionStep
-} from "../types/automation";
-import { ExposeType } from "../types/device";
+} from '../types/automation';
+import { ExposeType } from '../types/device';
 
+export const EqualityOperators: string[] = ['=', '<=', '>=', '>', '<'];
+export const NumericOperators: string[] = ['+', '-', '*'];
 
-export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
-export const NumericOperators: string[] = ["+", "-", "*"];
-
-export type TriggerAction = "TriggerAction"
-export type StepAction = "StepAction"
+export type TriggerAction = 'TriggerAction';
+export type StepAction = 'StepAction';
 export type ActionType = TriggerAction | StepAction;
 
 export const AutomationActionTypes = {
-  Trigger: "TriggerAction",
-  Step: "StepAction",
+  Trigger: 'TriggerAction',
+  Step: 'StepAction'
 } as const;
 
 export class DeviceAutomation implements Automation {
@@ -30,9 +29,9 @@ export class DeviceAutomation implements Automation {
   triggers: Array<AutomationTrigger>;
 
   constructor() {
-    this.id = "";
-    this.friendlyname = "";
-    this.description = "";
+    this.id = '';
+    this.friendlyname = '';
+    this.description = '';
     this.enabled = false;
     this.triggers = [];
   }
@@ -45,7 +44,7 @@ export class EditableAutomationTrigger implements AutomationTrigger {
 
   static create(): AutomationTrigger {
     const trigger = {} as EditableAutomationTrigger;
-    trigger.name = "";
+    trigger.name = '';
     trigger.conditions = [];
     trigger.action = new EditableActionTrigger(AutomationActionTypes.Trigger);
 
@@ -68,9 +67,9 @@ export class EditableTriggerCondition implements AutomationTriggerCondition {
   value: any | null;
   equality: string;
   constructor() {
-    this.name = "";
+    this.name = '';
     this.value = null;
-    this.equality = "=";
+    this.equality = '=';
   }
 }
 
@@ -85,9 +84,9 @@ export class EditableActionTrigger implements AutomationTriggerAction {
   type: ActionType;
 
   constructor(type: ActionType) {
-    this.id = "";
-    this.friendlyname = "";
-    this.property = "";
+    this.id = '';
+    this.friendlyname = '';
+    this.property = '';
     this.data = null;
     this.operation = 0;
     this.delay = null;
@@ -111,15 +110,17 @@ export class EditableActionTrigger implements AutomationTriggerAction {
 export function getActionType(action: AutomationTriggerAction): ActionType {
   const editableAction = action as EditableActionTrigger;
   if (editableAction.type != undefined) {
-    return editableAction.type
+    return editableAction.type;
   }
-  return action.steps.length > 0 ? AutomationActionTypes.Step : AutomationActionTypes.Trigger;
+  return action.steps.length > 0
+    ? AutomationActionTypes.Step
+    : AutomationActionTypes.Trigger;
 }
 
 export function clearAction(action: AutomationTriggerAction): void {
-  action.id = "";
-  action.friendlyname = "";
-  action.property = "";
+  action.id = '';
+  action.friendlyname = '';
+  action.property = '';
   action.data = null;
   action.operation = 0;
   action.delay = null;
@@ -154,9 +155,9 @@ export function removeCondition(
 
 export function isValid(automation: AutomationTrigger): boolean {
   return (
-    automation.name != "" &&
-    automation.action.id != "" &&
-    automation.action.property != ""
+    automation.name != '' &&
+    automation.action.id != '' &&
+    automation.action.property != ''
   );
 }
 
@@ -181,7 +182,7 @@ export function setProperty(
   action.delay = null;
 
   if (type == ExposeTypes.Binary || type == ExposeTypes.Enum) {
-    action.data = "";
+    action.data = '';
   } else {
     action.data = 0;
   }

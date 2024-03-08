@@ -1,6 +1,6 @@
-import { Expose, ExposePresets, Device } from "@/types/device";
-import { ExposeTypes } from "@/types/device.type";
-import { KeyyValuePair, ValueOf } from "@/types/types";
+import { Expose, ExposePresets, Device } from '@/types/device';
+import { ExposeTypes } from '@/types/device.type';
+import { KeyyValuePair, ValueOf } from '@/types/types';
 
 export function getExposeAttribute(expose: Expose, name: string): any {
   return expose.attributes ? expose.attributes[name] : null;
@@ -23,7 +23,7 @@ export function getExposeBinaryProperty(expose: Expose): boolean {
     return false;
   }
 
-  if (expose.data == expose.properties["on"]) {
+  if (expose.data == expose.properties['on']) {
     return true;
   }
   // if (expose.data == expose.properties["off"]) {
@@ -65,8 +65,8 @@ export function hasSupportedExposeBinaryProperties(expose: Expose): boolean {
   }
 
   if (
-    expose.data == expose.properties["on"] ||
-    expose.data == expose.properties["off"]
+    expose.data == expose.properties['on'] ||
+    expose.data == expose.properties['off']
   ) {
     return true;
   }

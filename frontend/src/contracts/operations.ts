@@ -5,10 +5,10 @@ interface operationItem {
 type operationitems = Array<operationItem>;
 
 const ActionOperationsMap: { [K in string]: operationItem } = {
-  none: { name: "NoOp", value: 0 },
-  step_increase: { name: "Step increase", value: 1 },
-  step_decrease: { name: "Step decrease", value: 2 },
-  presets: { name: "Rotation", value: 3 },
+  none: { name: 'NoOp', value: 0 },
+  step_increase: { name: 'Step increase', value: 1 },
+  step_decrease: { name: 'Step decrease', value: 2 },
+  presets: { name: 'Rotation', value: 3 }
 } as const;
 
 export function resolveStepOperations() {
@@ -21,14 +21,14 @@ export function resolveStepOperations() {
 
 export function resolveObjectOperations(obj: any) {
   const arr: operationitems = [ActionOperationsMap.none];
-  if (obj.hasOwnProperty("type")) {
-    if (obj["type"] === "numeric") {
+  if (obj.hasOwnProperty('type')) {
+    if (obj['type'] === 'numeric') {
       arr.push(ActionOperationsMap.step_increase);
       arr.push(ActionOperationsMap.step_decrease);
     }
   }
-  if (obj.hasOwnProperty("presets")) {
-    if (obj["presets"] !== undefined) {
+  if (obj.hasOwnProperty('presets')) {
+    if (obj['presets'] !== undefined) {
       arr.push(ActionOperationsMap.presets);
     }
   }
@@ -41,5 +41,5 @@ export enum OperationType {
   StepOperation = -1,
   RotationOperation = 3,
   StepIncreaseOperation = 1,
-  StepDecreaseOperation = 2,
+  StepDecreaseOperation = 2
 }
