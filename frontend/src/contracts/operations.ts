@@ -16,7 +16,7 @@ export function resolveStepOperations() {
     ActionOperationsMap.step_increase,
     ActionOperationsMap.step_decrease
   );
-  return Object.assign({}, ...arr.map((x) => ({ [x.name]: x.value })));
+  return Object.assign({}, ...arr.map(x => ({ [x.name]: x.value })));
 }
 
 export function resolveObjectOperations(obj: any) {
@@ -33,7 +33,7 @@ export function resolveObjectOperations(obj: any) {
     }
   }
 
-  return Object.assign({}, ...arr.map((x) => ({ [x.name]: x.value })));
+  return Object.assign({}, ...arr.map(x => ({ [x.name]: x.value })));
 }
 
 export enum OperationType {

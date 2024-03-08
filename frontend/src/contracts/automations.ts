@@ -143,14 +143,14 @@ export function removeTriggerCondition(
   trigger: AutomationTrigger,
   condition: AutomationTriggerCondition
 ) {
-  trigger.conditions = trigger.conditions.filter((c) => c != condition);
+  trigger.conditions = trigger.conditions.filter(c => c != condition);
 }
 
 export function removeCondition(
   conditions: AutomationTriggerConditions,
   condition: AutomationTriggerCondition
 ) {
-  conditions = conditions.filter((c) => c != condition);
+  conditions = conditions.filter(c => c != condition);
 }
 
 export function isValid(automation: AutomationTrigger): boolean {

@@ -10,7 +10,7 @@ export const WSClientModule: Module<WSClientState, RootState> = {
 
   state: () => ({ ws: new WsClientService(), connected: false }),
 
-  getters: { isconnected: (state) => state.connected },
+  getters: { isconnected: state => state.connected },
 
   mutations: {
     sendMessage(state: WSClientState, { event, message }) {
@@ -21,7 +21,7 @@ export const WSClientModule: Module<WSClientState, RootState> = {
   actions: {
     connect({ state, commit, rootState, dispatch }) {
       const builder = WsClientBuilder.create();
-      builder.withOnMessage((event) => {
+      builder.withOnMessage(event => {
         if (event == undefined) {
           console.error('ws undefined event: ' + event);
           return;

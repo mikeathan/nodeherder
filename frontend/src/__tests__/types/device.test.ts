@@ -4,7 +4,7 @@ import { default as devicesObj } from '../../../../docs/devices.json';
 import { Device } from '../../types/device';
 
 test('roundtrip serializing device', () => {
-  devicesObj.payload.forEach((device) => {
+  devicesObj.payload.forEach(device => {
     var json = JSON.stringify(device);
 
     const newDevice: Device = JSON.parse(json);

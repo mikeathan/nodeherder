@@ -6,14 +6,14 @@ import { Device, Devices, DeviceUpdate } from '../../../../types/device';
 
 test('test devices/find can load all inserted devices', () => {
   // add them to store
-  devices.payload.forEach((device) => {
+  devices.payload.forEach(device => {
     var json = JSON.stringify(device);
     const newDevice: Device = JSON.parse(json);
     store.commit('devices/add', newDevice);
   });
 
   // assert values
-  devices.payload.forEach((device) => {
+  devices.payload.forEach(device => {
     var json = JSON.stringify(device);
     const newDevice: Device = JSON.parse(json);
     const result = store.getters['devices/find'](newDevice.id) as Device;
@@ -23,7 +23,7 @@ test('test devices/find can load all inserted devices', () => {
 
 test('test devices/listAll returns a list of all devices', () => {
   // add them to store
-  devices.payload.forEach((device) => {
+  devices.payload.forEach(device => {
     var json = JSON.stringify(device);
     const newDevice: Device = JSON.parse(json);
     store.commit('devices/add', newDevice);
@@ -41,7 +41,7 @@ test('test devices/listAll returns a list of all devices', () => {
 
 test('test devices/clear removes all devices from store', () => {
   // add them to store
-  devices.payload.forEach((device) => {
+  devices.payload.forEach(device => {
     var json = JSON.stringify(device);
     const newDevice: Device = JSON.parse(json);
     store.commit('devices/add', newDevice);
@@ -104,7 +104,7 @@ test('test devices/update update device properties', () => {
 
 test('test devices/updateList - update store from a list of existing devices', () => {
   // add devices
-  devices.payload.forEach((device) => {
+  devices.payload.forEach(device => {
     var json = JSON.stringify(device);
     const newDevice: Device = JSON.parse(json);
     store.commit('devices/add', newDevice);

@@ -227,11 +227,8 @@ function resetSelection() {
                         <!-- <div class="col"> -->
 
                         <Panel :component_name="'Trigger'" :component_props="{ id: props.id, trigger: selectedTrigger }"
-                            :component_events="{
-        save: (e: AutomationTrigger) => saveTrigger(e),
-        delete: (e: AutomationTrigger) => deleteTrigger(e),
-
-    }" @close="resetSelection">
+                            :component_events="{ save: (e: AutomationTrigger) => saveTrigger(e), delete: (e: AutomationTrigger) => deleteTrigger(e), }"
+                            @close="resetSelection">
 
                         </Panel>
                         <!-- <Trigger :id="props.id" :trigger="selectedTrigger" @save="saveTrigger"

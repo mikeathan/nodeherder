@@ -23,7 +23,7 @@ test('test automations/listAll returns a list of all automations', () => {
   const testData = [automation1, automation2];
   const automations: Automations = [];
   // add them to store
-  testData.forEach((data) => {
+  testData.forEach(data => {
     var json = JSON.stringify(data);
     const newAutomation: Automation = JSON.parse(json);
     store.commit('automations/add', newAutomation);
@@ -48,7 +48,7 @@ test('test automations/initialized returns correct value ', () => {
   const automations: Automations = [];
 
   // add them to store
-  testData.forEach((data) => {
+  testData.forEach(data => {
     var json = JSON.stringify(data);
     const newAutomation: Automation = JSON.parse(json);
     automations.push(newAutomation);
@@ -66,7 +66,7 @@ test('test automations/init stores the items ', () => {
   const automations: Automations = [];
 
   // add them to store
-  testData.forEach((data) => {
+  testData.forEach(data => {
     var json = JSON.stringify(data);
     const newAutomation: Automation = JSON.parse(json);
     automations.push(newAutomation);
@@ -89,7 +89,7 @@ test('test automations/clear removes all automations from store', () => {
   const automations: Automations = [];
 
   // add them to store
-  testData.forEach((data) => {
+  testData.forEach(data => {
     var json = JSON.stringify(data);
     const newAutomation: Automation = JSON.parse(json);
     automations.push(newAutomation);

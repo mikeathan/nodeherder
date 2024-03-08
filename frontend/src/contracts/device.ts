@@ -54,8 +54,8 @@ export function getDeviceFeaturesByType(
   return Object.assign(
     {},
     ...Object.values(device.exposes)
-      .filter((f) => f.properties != undefined && f.type == exposeType)
-      .map((f) => f.name)
+      .filter(f => f.properties != undefined && f.type == exposeType)
+      .map(f => f.name)
   );
 }
 
