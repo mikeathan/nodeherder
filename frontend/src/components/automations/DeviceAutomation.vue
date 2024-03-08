@@ -56,6 +56,7 @@ function createNewTrigger() {
 }
 
 function cancel() {
+    console.log("cancel");
     emit('cancel')
 }
 
@@ -126,6 +127,10 @@ function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
     deleteTrigger(trgger)
 }
 
+function resetSelection() {
+    selectedTrigger.value = undefined
+}
+
 </script>
 
 <style scoped>
@@ -180,7 +185,8 @@ function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
                 </div>
 
                 <div class="card-body ">
-                    <table class="table responsive table-hover " v-if="showTriggerCreation == false">
+                    <!-- v-if="showTriggerCreation == false" -->
+                    <table class="table responsive table-hover ">
                         <thead>
                             <tr>
                                 <th scope="col">#</th>
@@ -213,24 +219,27 @@ function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
                             </tr>
                         </tbody>
                     </table>
-                    <div class="row" v-else>
-                        <button type="button" class="btn-close" aria-label="Close"
-                            @click="() => showTriggerCreation = false"></button>
-                        <div class="col">
 
-                            <Panel :component_name="'Trigger'"
-                                :component_props="{ id: props.id, trigger: selectedTrigger }" :component_events="{
+                    <!-- v-else -->
+                    <div class="row" v-if="selectedTrigger != null">
+                        <!-- <button type="button" class="btn-close" aria-label="Close"
+                            @click="() => showTriggerCreation = false"></button> -->
+                        <!-- <div class="col"> -->
+
+                        <Panel :component_name="'Trigger'" :component_props="{ id: props.id, trigger: selectedTrigger }"
+                            :component_events="{
         save: (e: AutomationTrigger) => saveTrigger(e),
         delete: (e: AutomationTrigger) => deleteTrigger(e),
-        close: () => showTriggerCreation = false
-    }">
-                            </Panel>
-                            <!-- <Trigger :id="props.id" :trigger="selectedTrigger" @save="saveTrigger"
+
+    }" @close="resetSelection">
+
+                        </Panel>
+                        <!-- <Trigger :id="props.id" :trigger="selectedTrigger" @save="saveTrigger"
                                 @delete="deleteTrigger">
                             </Trigger> -->
-                        </div>
                     </div>
                 </div>
+                <!-- </div> -->
             </div>
         </div>
     </div>

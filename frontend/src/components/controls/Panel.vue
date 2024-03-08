@@ -64,6 +64,10 @@ function openComponent(component_name: string, args: any, events: EventActions):
 function closeComponent(): void {
     history.value.pop();
     console.log("close component: history=", history.value)
+
+    if (history.value.length == 0) {
+        emit('close');
+    }
 }
 
 const currentComponent = computed(() => {
@@ -96,11 +100,18 @@ onMounted(() => {
 </script>
 
 <template>
-    PANEL : {{ currentComponent }}
-    <!-- @delete="removeItem"
+    PANEL : {{ currentComponent }} <br>
+
+    <div class="row">
+        <button type="button" class="btn-close" aria-label="Close" @click="closeComponent"></button>
+        <div class="col">
+            <!-- @delete="removeItem"
         @save="saveItem" @open="openComponent" @close="closeComponent"  -->
-    <component :is="componentMap[currentComponent.name]" v-bind="currentComponent.args" :v-on="currentComponent.events"
-        @open="openComponent" @close="closeComponent" />
+            <component :is="componentMap[currentComponent.name]" v-bind="currentComponent.args"
+                :v-on="currentComponent.events" />
+        </div>
+    </div>
+
 </template>
 
 
