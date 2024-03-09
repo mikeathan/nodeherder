@@ -6,8 +6,7 @@
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
-    "test": "jest",
-    "prettier": "prettier --config .prettierrc 'src/**/*.ts' --write"
+    "test": "jest"
   },
   "jest": {
     "moduleFileExtensions": [

@@ -1,18 +1,20 @@
 module.exports = {
   // Use the rule set.
-  extends: [
-    'plugin:vue/base',
-    'plugin:prettier/recommended',
-    '@vue/prettier',
-    '@vue/typescript'
-  ],
+  extends: ["plugin:vue/base"],
   rules: {
     // Enable vue/script-setup-uses-vars rule
-    'vue/script-setup-uses-vars': 'error'
+    "vue/script-setup-uses-vars": "error",
   },
-  parser: 'vue-eslint-parser',
+  parser: "vue-eslint-parser",
   parserOptions: {
-    parser: '@typescript-eslint/parser'
+    parser: "@typescript-eslint/parser",
   },
-  plugins: ['@typescript-eslint', 'vue']
+  plugins: ["@typescript-eslint"],
 };
+
+//extends:
+//     [
+//       'eslint:recommended',
+//       'plugin:@typescript-eslint/recommended',
+//       'plugin:vue/base'
+//     ],
