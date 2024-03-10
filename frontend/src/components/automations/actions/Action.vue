@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, PropType, defineAsyncComponent, computed, onMounted, inject } from "vue";
+import { ref, watch, PropType, defineAsyncComponent, computed, onMounted, inject, reactive } from "vue";
 import { getActionType, ActionType, AutomationActionTypes } from "@/contracts/automations"
 import { AutomationTriggerAction } from "@/types/automation";
 import { Emitter } from 'mitt'
@@ -29,19 +29,44 @@ const props = defineProps({
     },
 });
 
+const currentAction = ref(props.item)
 const actionType = ref<ActionType>("TriggerAction");
-const isEditorView = ref<boolean>(false);
+const actionView = computed(() => {
+
+    let stepView = "";
+    // step action type
+    if (currentAction.value.id) {
+        if (actionType.value == AutomationActionTypes.Step) {
+            currentAction.value.steps.forEach(step => {
+                stepView += step.property + " " + step.operator + " ";
+            });
+
+            stepView += currentAction.value.data
+
+            // eg. Attic lightbrightness = (brightness + action_time * 0.3) 
+            return currentAction.value.friendlyname + " =  (" + stepView + ")";
+        }
+    }
+
+    return stepView;
+});
 
 watch(
     () => props.item,
     () => {
         actionType.value = getActionType(props.item);
+
     }, { immediate: true }
 )
 
 function saveAction(action: AutomationTriggerAction): void {
-    //setEditorView(false);
-    emit('save', action);
+
+    currentAction.value = action
+    setEditorView(false);
+    emit('save', currentAction.value);
+
+    todo!!!!!!
+    // can we send event to close panel here 
 }
 
 function createActionOpenPanelEvent(action: AutomationTriggerAction): OpenPanelEvent {
@@ -50,14 +75,14 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction): OpenPanelE
         'save': () => { saveAction(action) },
     };
 
-    return { name: 'StepAction', args: { item: action }, events: events }
+    return { name: 'Trigger', args: { action: action }, events: events }
 }
 
 function setEditorView(enable: boolean): void {
-    isEditorView.value = enable;
-    console.log("Action  emit openpanel")
 
-    emitter.emit('openPanel', createActionOpenPanelEvent(props.item)); //// TESTING
+    //isEditorView.value = enable;
+    //console.log("Action  emit openpanel")
+    //emitter.emit('openPanel', createActionOpenPanelEvent(currentAction.value)); //// TESTING
 }
 
 function removeAction(action: AutomationTriggerAction): void {
@@ -65,40 +90,22 @@ function removeAction(action: AutomationTriggerAction): void {
 }
 
 onMounted(() => {
-    if (!actionView.value) {
-        isEditorView.value = true;
-    }
+    // if (!actionView) {
+    //     isEditorView.value = true;
+    // }
 });
 
-const actionView = computed(() => {
 
-    let stepView = "";
-    // step action type
-    const action = props.item;
-    if (action.id) {
-        if (actionType.value == AutomationActionTypes.Step) {
-            action.steps.forEach(step => {
-                stepView += step.property + " " + step.operator + " ";
-            });
-
-            stepView += action.data
-
-            // eg. Attic lightbrightness = (brightness + action_time * 0.3) 
-            return action.friendlyname + " =  (" + stepView + ")";
-        }
-    }
-
-    return stepView;
-});
 </script>
 
 <template>
-    <div class="row" v-if="isEditorView == false">
+    <br>
+    <div class="row" v-if="actionView != ''">
         <div class=" col-sm-11" @click="e => setEditorView(true)">
             {{ actionView }}
         </div>
         <div class="col-sm-1">
-            <span class="fa fa-trash-alt fa-sm" @click="e => removeAction(props.item)">
+            <span class="fa fa-trash-alt fa-sm" @click="e => removeAction(currentAction)">
             </span>
         </div>
     </div>
@@ -106,7 +113,7 @@ const actionView = computed(() => {
         <!-- <div class="row">
             <button type="button" class="btn-close" aria-label="Close" @click="e => setEditorView(false)"></button>
         </div> -->
-        <component :is="componentMap[actionType]" v-bind="{ action: props.item }" @delete="removeAction"
+        <component :is="componentMap[actionType]" v-bind="{ action: currentAction }" @delete="removeAction"
             @save="saveAction" />
     </div>
 </template>

@@ -32,7 +32,7 @@ const componentMap: Map = {
 };
 
 const emit = defineEmits<{
-    (e: 'save', item: any): void,
+    //(e: 'save', item: any): void,
     (e: 'delete', item: any): void,
     (e: 'open', component_name: string): void,
     (e: 'close'): void,
@@ -58,7 +58,7 @@ const props = defineProps({
 function openComponent(component_name: string, args: any, events: EventActions): void {
 
     history.value.push({ name: component_name, args: args, events: events })
-    console.log("open component: history=", component_name)
+    console.log("open component: history=", currentComponent.value)
 }
 
 function closeComponent(): void {
@@ -76,7 +76,7 @@ const currentComponent = computed(() => {
 });
 
 function saveItem(item: any): void {
-    emit('save', item);
+    /// emit('save', item);
 }
 
 function removeItem(item: any): void {
@@ -100,7 +100,7 @@ onMounted(() => {
 </script>
 
 <template>
-    PANEL : {{ currentComponent }} <br>
+    <!-- PANEL : {{ currentComponent }} <br> -->
 
     <div class="row">
         <button type="button" class="btn-close" aria-label="Close" @click="closeComponent"></button>
@@ -108,7 +108,7 @@ onMounted(() => {
             <!-- @delete="removeItem"
         @save="saveItem" @open="openComponent" @close="closeComponent"  -->
             <component :is="componentMap[currentComponent.name]" v-bind="currentComponent.args"
-                :v-on="currentComponent.events" />
+                v-on="currentComponent.events" />
         </div>
     </div>
 

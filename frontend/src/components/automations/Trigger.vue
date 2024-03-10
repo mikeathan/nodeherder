@@ -37,7 +37,7 @@ watch(
 const emit = defineEmits(['save', 'delete'])
 function save() {
     trigger.value.conditions = conditions.value
-    //  trigger.value.action = action.value
+    trigger.value.action = actions.value[0];
 
     emit('save', trigger.value)
 }
@@ -66,13 +66,17 @@ function deleteAction(index: number) {
 }
 
 function SaveAction(index: number, action: AutomationTriggerAction) {
+    console.log("trigger save action ", action, " index ", index)
     actions.value[index] = action;
-    console.log(actions.value);
+    save();
 }
 
 function addAction(actionType: ActionType) {
     // actions.value?.push(new EditableActionTrigger(actionType));
-    const index = actions.value.length - 1;
+    let index = actions.value.length - 1;
+    if (index < 0) {
+        index = 0
+    }
     emitter.emit('openPanel', createActionOpenPanelEvent(new EditableActionTrigger(actionType), index));
 }
 
