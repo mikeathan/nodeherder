@@ -31,6 +31,8 @@ const props = defineProps({
 
 const currentAction = ref(props.item)
 const actionType = ref<ActionType>("TriggerAction");
+const editMode = ref<boolean>(false);
+
 const actionView = computed(() => {
 
     let stepView = "";
@@ -51,6 +53,10 @@ const actionView = computed(() => {
     return stepView;
 });
 
+const isEditMode = computed(() => {
+    return actionView.value == '' || editMode.value;
+});
+
 watch(
     () => props.item,
     () => {
@@ -62,10 +68,11 @@ watch(
 function saveAction(action: AutomationTriggerAction): void {
 
     currentAction.value = action
-    setEditorView(false);
+    //setEditorView(false);
     emit('save', currentAction.value);
 
-    todo!!!!!!
+    emitter.emit('closePanel', 'Action');
+
     // can we send event to close panel here 
 }
 
@@ -87,6 +94,8 @@ function setEditorView(enable: boolean): void {
 
 function removeAction(action: AutomationTriggerAction): void {
     emit('delete', action);
+
+    emitter.emit('closePanel', 'Action');
 }
 
 onMounted(() => {
@@ -99,9 +108,8 @@ onMounted(() => {
 </script>
 
 <template>
-    <br>
-    <div class="row" v-if="actionView != ''">
-        <div class=" col-sm-11" @click="e => setEditorView(true)">
+    <div class="row" v-if="isEditMode == false">
+        <div class=" col-sm-11" @click="e => editMode = true">
             {{ actionView }}
         </div>
         <div class="col-sm-1">

@@ -11,7 +11,10 @@ emitter.on('openPanel', (e: OpenPanelEvent) => {
     openComponent(e.name, e.args, e.events);
 });
 
-emitter.on('closePanel', (e: string) => { console.log("close panel event received . do nothing") });
+emitter.on('closePanel', (e: string) => {
+    console.log('closepanel event received from:', e);
+    closeComponent()
+});
 
 type PanelKey = string
 type Map = { [key: PanelKey]: any }

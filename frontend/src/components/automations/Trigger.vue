@@ -61,14 +61,20 @@ const exposesList = computed(() => {
         .map((e) => ({ [e.name]: e.name })))
 })
 
+// problem
+
+stepAction save event gets triggered 3 times and initial Panel from trigger gets closed
 function deleteAction(index: number) {
+    console.log("Trigger - deleteAction", index, " actions before: ", actions.value.length)
     actions.value.splice(index, 1);
+    console.log("Trigger - deleteAction actions after: ", actions.value.length)
+
 }
 
 function SaveAction(index: number, action: AutomationTriggerAction) {
-    console.log("trigger save action ", action, " index ", index)
+    console.log("trigger save action ", action, " index ", index);
     actions.value[index] = action;
-    save();
+    trigger.value.action = actions.value[0];
 }
 
 function addAction(actionType: ActionType) {
