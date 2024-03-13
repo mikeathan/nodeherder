@@ -7,7 +7,7 @@ import { EventActions, Events, OpenPanelEvent } from "@/types/events.type";
 const emitter = inject('emitter') as Emitter<Events>;
 emitter.on('openPanel', (e: OpenPanelEvent) => {
 
-    console.log("openpanel received ", e)
+    console.log("openpanel received ", e.name)
     openComponent(e.name, e.args, e.events);
 });
 
@@ -61,19 +61,25 @@ const props = defineProps({
 function openComponent(component_name: string, args: any, events: EventActions): void {
 
     history.value.push({ name: component_name, args: args, events: events })
-    console.log("open component: history=", currentComponent.value)
+    console.log("open component: ", currentComponent.value.name, " history:  size ", history.value.length)
 }
 
 function closeComponent(): void {
+    const prevSz = history.value.length;
+    const prevName = currentComponent.value.name
     history.value.pop();
-    console.log("close component: history=", history.value)
+    console.log("close component: ", prevName, " history previous size: ", prevSz, " size", history.value.length);
 
+    // PROBLEM HERE
     if (history.value.length == 0) {
+        console.log("no more components. emit panel close to parent");
+
         emit('close');
     }
 }
 
-const currentComponent = computed(() => {
+const currentComponent = computed(() => {// problem
+
     const lastValue = history.value.at(-1)
     return lastValue === undefined ? { name: '', args: '', events: {} } : lastValue as OpenPanelEvent;
 });

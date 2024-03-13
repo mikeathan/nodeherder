@@ -61,18 +61,15 @@ const exposesList = computed(() => {
         .map((e) => ({ [e.name]: e.name })))
 })
 
-// problem
 
-stepAction save event gets triggered 3 times and initial Panel from trigger gets closed
 function deleteAction(index: number) {
-    console.log("Trigger - deleteAction", index, " actions before: ", actions.value.length)
+    // console.log("Trigger - deleteAction", index, " actions before: ", actions.value.length)
     actions.value.splice(index, 1);
-    console.log("Trigger - deleteAction actions after: ", actions.value.length)
-
+    //console.log("Trigger - deleteAction actions after: ", actions.value.length)
 }
 
 function SaveAction(index: number, action: AutomationTriggerAction) {
-    console.log("trigger save action ", action, " index ", index);
+    //console.log("trigger save action ", action, " index ", index);
     actions.value[index] = action;
     trigger.value.action = actions.value[0];
 }
@@ -88,8 +85,14 @@ function addAction(actionType: ActionType) {
 
 function createActionOpenPanelEvent(action: AutomationTriggerAction, index: number): OpenPanelEvent {
     const events: EventActions = {
-        'delete': (e) => { deleteAction(index) },
-        'save': (a) => { SaveAction(index, a) },
+        'delete': (e) => {
+            console.log("TRIGGER createactionpanel delete event");
+            deleteAction(index)
+        },
+        'save': (a) => {
+            console.log("TRIGGER createactionpanel save event");
+            SaveAction(index, a)
+        },
     };
 
     return { name: 'Action', args: { item: action }, events: events }
@@ -166,7 +169,8 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, index: numb
                 <tbody v-for="(action, index) in actions" :item="action">
                     <tr>
                         <th>
-                            <Action :item="action" @delete="deleteAction(index)" @save="a => SaveAction(index, a)">
+                            <Action :item="action">
+                                <!-- @delete="deleteAction(index)" @save="a => SaveAction(index, a)" -->
                             </Action>
                         </th>
 

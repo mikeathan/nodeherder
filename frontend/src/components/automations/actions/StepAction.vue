@@ -70,6 +70,8 @@ function saveAction(): void {
 }
 
 function removeAction(): void {
+    console.log("removeAction save clicked")
+
     emit('delete', action);
 }
 

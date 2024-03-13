@@ -27,11 +27,15 @@ const props = defineProps({
         default: {} as AutomationTriggerAction,
         required: true
     },
+    editMode: {
+        type: Boolean,
+        defaul: false
+    }
 });
 
 const currentAction = ref(props.item)
 const actionType = ref<ActionType>("TriggerAction");
-const editMode = ref<boolean>(false);
+const editMode = ref<boolean>(props.editMode);
 
 const actionView = computed(() => {
 
@@ -76,27 +80,34 @@ function saveAction(action: AutomationTriggerAction): void {
     // can we send event to close panel here 
 }
 
-function createActionOpenPanelEvent(action: AutomationTriggerAction): OpenPanelEvent {
-    const events: EventActions = {
-        'delete': () => { removeAction(action) },
-        'save': () => { saveAction(action) },
-    };
+// closepanel event received from: Action Panel.vue:15:12
+// close component:  Action  history previous size:  2  size 1 Panel.vue:71:12
+// closepanel event received from: Action Panel.vue:15:12
+// close component:  Trigger  history previous size:  1  size 0 Panel.vue:71:12
+// no more components. emit panel close to parent Panel.vue:75:16
 
-    return { name: 'Trigger', args: { action: action }, events: events }
-}
-
-function setEditorView(enable: boolean): void {
-
-    //isEditorView.value = enable;
-    //console.log("Action  emit openpanel")
-    //emitter.emit('openPanel', createActionOpenPanelEvent(currentAction.value)); //// TESTING
-}
 
 function removeAction(action: AutomationTriggerAction): void {
     emit('delete', action);
 
     emitter.emit('closePanel', 'Action');
 }
+
+ONCE WE DELETE EXISTING STEP ACTION WE TRIGGER THE DELETE CLOSE PANEL EVENT TWICE
+function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: boolean): OpenPanelEvent {
+    const events: EventActions = {
+        'delete': () => { removeAction(action) },
+        'save': () => { saveAction(action) },
+    };
+
+    return { name: 'Action', args: { item: action, editMode: editMode }, events: events }
+}
+
+function enableEditorView(): void {
+    console.log("Action  emit openpanel")
+    emitter.emit('openPanel', createActionOpenPanelEvent(currentAction.value, true));
+}
+
 
 onMounted(() => {
     // if (!actionView) {
@@ -109,7 +120,7 @@ onMounted(() => {
 
 <template>
     <div class="row" v-if="isEditMode == false">
-        <div class=" col-sm-11" @click="e => editMode = true">
+        <div class=" col-sm-11" @click="enableEditorView()">
             {{ actionView }}
         </div>
         <div class="col-sm-1">
