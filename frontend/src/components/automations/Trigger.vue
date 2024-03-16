@@ -35,6 +35,7 @@ watch(
 )
 
 const emit = defineEmits(['save', 'delete'])
+
 function save() {
     trigger.value.conditions = conditions.value
     trigger.value.action = actions.value[0];

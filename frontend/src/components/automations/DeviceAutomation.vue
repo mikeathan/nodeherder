@@ -75,12 +75,14 @@ function deleteAutomation() {
 }
 
 function deleteTrigger(trigger: AutomationTrigger): void {
+    console.log("DeviceAutomation deletetrigger ", trigger);
+
     automation.value.triggers = automation.value.triggers.filter((e, i) => e != trigger);
     showTriggerCreation.value = false // close trigger panel
 }
 
 function saveTrigger(trigger: AutomationTrigger): void {
-    console.log("deviceautomation saverigger ", trigger);
+    console.log("DeviceAutomation savetrigger ", trigger);
     const idx = automation.value.triggers.indexOf(trigger)
     if (idx == -1) {
         automation.value.triggers.push(trigger)
@@ -128,6 +130,8 @@ function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
 }
 
 function resetSelection() {
+    console.log("DeviceAutomation close Panel ");
+
     selectedTrigger.value = undefined
 }
 

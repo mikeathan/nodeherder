@@ -1,20 +1,10 @@
 <script setup lang="ts">
-import { ref, watch, PropType, defineAsyncComponent, computed, onMounted, inject } from "vue";
+import { ref, watch, PropType, defineAsyncComponent, computed, onMounted, inject, onUnmounted } from "vue";
 import { Emitter } from 'mitt'
 import { EventActions, Events, OpenPanelEvent } from "@/types/events.type";
 
 
-const emitter = inject('emitter') as Emitter<Events>;
-emitter.on('openPanel', (e: OpenPanelEvent) => {
 
-    console.log("openpanel received ", e.name)
-    openComponent(e.name, e.args, e.events);
-});
-
-emitter.on('closePanel', (e: string) => {
-    console.log('closepanel event received from:', e);
-    closeComponent()
-});
 
 type PanelKey = string
 type Map = { [key: PanelKey]: any }
@@ -41,7 +31,7 @@ const emit = defineEmits<{
     (e: 'close'): void,
 }>()
 
-const history = ref<Array<OpenPanelEvent>>([]);
+const componentsCache = ref<Array<OpenPanelEvent>>([]);
 const props = defineProps({
     component_name: {
         type: String,
@@ -60,18 +50,22 @@ const props = defineProps({
 
 function openComponent(component_name: string, args: any, events: EventActions): void {
 
-    history.value.push({ name: component_name, args: args, events: events })
-    console.log("open component: ", currentComponent.value.name, " history:  size ", history.value.length)
+    componentsCache.value.push({ name: component_name, args: args, events: events })
+    console.log("open component: ", currentComponent.value.name, " history:  size ", componentsCache.value.length)
 }
 
 function closeComponent(): void {
-    const prevSz = history.value.length;
+    const prevSz = componentsCache.value.length;
     const prevName = currentComponent.value.name
-    history.value.pop();
-    console.log("close component: ", prevName, " history previous size: ", prevSz, " size", history.value.length);
+    const lastComponent = componentsCache.value.pop();
+    if (lastComponent != undefined) {
+        lastComponent.events = {};
+    }
+
+    console.log("close component: ", prevName, " history previous size: ", prevSz, " size", componentsCache.value.length);
 
     // PROBLEM HERE
-    if (history.value.length == 0) {
+    if (componentsCache.value.length == 0) {
         console.log("no more components. emit panel close to parent");
 
         emit('close');
@@ -80,7 +74,7 @@ function closeComponent(): void {
 
 const currentComponent = computed(() => {// problem
 
-    const lastValue = history.value.at(-1)
+    const lastValue = componentsCache.value.at(-1)
     return lastValue === undefined ? { name: '', args: '', events: {} } : lastValue as OpenPanelEvent;
 });
 
@@ -89,7 +83,7 @@ function saveItem(item: any): void {
 }
 
 function removeItem(item: any): void {
-    emit('delete', item);
+    // emit('delete', item);
 }
 
 watch(
@@ -99,8 +93,32 @@ watch(
     }, { immediate: true }
 )
 
+let eventBus = inject('emitter') as Emitter<Events>;
 onMounted(() => {
 
+    console.log("Panel mounted - register eventBus messages")
+
+    eventBus.on('openPanel', (e: OpenPanelEvent) => {
+        console.log("openpanel received ", e.name)
+        openComponent(e.name, e.args, e.events);
+    });
+
+    eventBus.on('closePanel', (e: string) => {
+        console.log('closepanel event received from:', e);
+        closeComponent()
+    });
+});
+
+onUnmounted(() => {
+    console.log("Panel unmounted - deregister eventBus messages")
+
+    eventBus.off('openPanel', (e: OpenPanelEvent) => {
+
+    });
+
+    eventBus.off('closePanel', (e: string) => {
+
+    });
 });
 
 // component that we pass in can raise event to be changed

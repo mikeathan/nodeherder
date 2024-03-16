@@ -65,12 +65,37 @@ const getFeatureDeviceList = computed(() => {
 })
 
 function saveAction(): void {
-    console.log("stepaction save clicked")
+    console.log("StepAction save action")
+
+    // DEBG for fix eventbus bug
+    //  action.steps = [];
+    //action.steps[0] = { id: '123455', property: 'some light', operator: '*' }
+    //     "1"
+    // ​​
+    // delay: null
+    // ​​
+    // friendlyname: "Attic light"
+    // ​​
+    // id: "0x70ac08fffefafeca"
+    // ​​
+    // operation: 0
+    // ​​
+    // property: "color_temp"
+    // ​​
+    // steps: Array [ {…} ]
+    // "0x70ac08fffefafeca"
+    // ​​​​
+    // operator: "+"
+    // ​​​​
+    // property: "color_temp"
+    // ​​
+    // type: "StepAction"
+    console.log(action)
     emit('save', action);
 }
 
 function removeAction(): void {
-    console.log("removeAction save clicked")
+    console.log("StepAction remove action")
 
     emit('delete', action);
 }
@@ -101,6 +126,8 @@ function deviceSelected(event: Event) {
     action.steps = [];
 }
 const isSaveEnabled = computed(() => action.data && action.property && action.id && action.steps.length != 0);
+//const isSaveEnabled = computed(() => true); // use for debugging to fix eventbus bug
+
 </script>
 
 <style scoped>
