@@ -115,12 +115,18 @@ onUnmounted(() => {
     console.log("Panel unmounted - deregister eventBus messages")
 
     eventBus.off('openPanel', (e: OpenPanelEvent) => {
+        console.log('OpenPanel deregister event');
+        openComponent(e.name, e.args, e.events);
 
     });
 
     eventBus.off('closePanel', (e: string) => {
-
+        console.log('ClosePanel deregister event');
+        closeComponent()
     });
+
+    eventBus.all.clear()
+
 });
 
 // component that we pass in can raise event to be changed
