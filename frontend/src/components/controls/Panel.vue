@@ -26,7 +26,7 @@ const componentMap: Map = {
 
 const emit = defineEmits<{
     //(e: 'save', item: any): void,
-    (e: 'delete', item: any): void,
+    //(e: 'delete', item: any): void,
     (e: 'open', component_name: string): void,
     (e: 'close'): void,
 }>()
@@ -49,24 +49,25 @@ const props = defineProps({
 });
 
 function openComponent(component_name: string, args: any, events: EventActions): void {
+    const prevSz = componentsCache.value.length;
 
     componentsCache.value.push({ name: component_name, args: args, events: events })
-    console.log("open component: ", currentComponent.value.name, " history:  size ", componentsCache.value.length)
+    console.log("OpenPanel received from:", component_name, " CurrentComponent: ", currentComponent.value.name, " Cache was:", prevSz, " is: ", componentsCache.value.length)
 }
 
 function closeComponent(): void {
     const prevSz = componentsCache.value.length;
     const prevName = currentComponent.value.name
     const lastComponent = componentsCache.value.pop();
-    if (lastComponent != undefined) {
-        lastComponent.events = {};
-    }
+    // if (lastComponent != undefined) {
+    //     lastComponent.events = {};
+    // }
 
-    console.log("close component: ", prevName, " history previous size: ", prevSz, " size", componentsCache.value.length);
+    console.log("ClosePanel CurrentComponent: ", currentComponent.value.name, " Cache was:", prevSz, " is: ", componentsCache.value.length)
 
     // PROBLEM HERE
     if (componentsCache.value.length == 0) {
-        console.log("no more components. emit panel close to parent");
+        console.log("COMPONENT IS EMPTY. emit panel close to parent");
 
         emit('close');
     }
@@ -89,6 +90,7 @@ function removeItem(item: any): void {
 watch(
     () => props.component_name,
     () => {
+        console.log("WATCH ", props.component_name, " changed");
         openComponent(props.component_name, props.component_props, props.component_events)
     }, { immediate: true }
 )
@@ -99,12 +101,12 @@ onMounted(() => {
     console.log("Panel mounted - register eventBus messages")
 
     eventBus.on('openPanel', (e: OpenPanelEvent) => {
-        console.log("openpanel received ", e.name)
+        //console.log("OpenPanel received from:", e.name)
         openComponent(e.name, e.args, e.events);
     });
 
     eventBus.on('closePanel', (e: string) => {
-        console.log('closepanel event received from:', e);
+        console.log('OpenPanel event received from:', e);
         closeComponent()
     });
 });

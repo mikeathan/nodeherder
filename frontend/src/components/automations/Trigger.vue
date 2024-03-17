@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { computed, watch, ref, PropType, toRef, inject } from "vue";
+import { computed, watch, ref, PropType, toRef, inject, onUnmounted } from "vue";
 import TriggerCondition from "./TriggerCondition.vue"
 import Action from "./actions/Action.vue";
 import Selector from "../input/Selector.vue"
@@ -81,8 +81,22 @@ function addAction(actionType: ActionType) {
     if (index < 0) {
         index = 0
     }
+    console.log("TRIGGER add action")
     emitter.emit('openPanel', createActionOpenPanelEvent(new EditableActionTrigger(actionType), index));
 }
+
+// NOT REQUIRED #####################
+onUnmounted(() => {
+    console.log("Trigger unmounted - deregister eventBus messages")
+
+    emitter.off('openPanel', (e: OpenPanelEvent) => {
+
+    });
+
+    emitter.off('closePanel', (e: string) => {
+
+    });
+});
 
 function createActionOpenPanelEvent(action: AutomationTriggerAction, index: number): OpenPanelEvent {
     const events: EventActions = {

@@ -81,9 +81,6 @@ function saveAction(action: AutomationTriggerAction): void {
     // can we send event to close panel here 
 }
 
-
-
-
 function removeAction(action: AutomationTriggerAction): void {
     emit('delete', action);
     console.log("Action - delete - emit closePanel")
@@ -100,16 +97,21 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
 }
 
 function enableEditorView(): void {
-    console.log("Action  emit openpanel")
+    console.log("ACTION - enableEditorView -   emit openpanel")
     emitter.emit('openPanel', createActionOpenPanelEvent(currentAction.value, true));
 }
 
+// NOT REQUIRED #####################
 onUnmounted(() => {
-    console.log("Action - unmount")
-    events = {};
+    console.log("ACTION unmounted - deregister eventBus messages")
 
-    // can we deregister @delete and @save
+    emitter.off('openPanel', (e: OpenPanelEvent) => {
 
+    });
+
+    emitter.off('closePanel', (e: string) => {
+
+    });
 });
 
 onMounted(() => {
