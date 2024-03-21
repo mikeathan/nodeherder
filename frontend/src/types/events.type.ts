@@ -1,4 +1,4 @@
-import { KeyyValuePair } from './types';
+import { KeyyValuePair } from "./types";
 
 export type EventAction = (...args: any) => void;
 export type EventActions = KeyyValuePair<EventAction>;
@@ -7,6 +7,7 @@ export type OpenPanelEvent = {
   name: string;
   args: any;
   events: EventActions;
+  overrideEvents: boolean;
 };
 
 export type Events = {

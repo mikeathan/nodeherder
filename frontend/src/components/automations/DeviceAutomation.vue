@@ -232,7 +232,7 @@ function resetSelection() {
 
                         <Panel :component_name="'Trigger'" :component_props="{ id: props.id, trigger: selectedTrigger }"
                             :component_events="{ save: (e: AutomationTrigger) => saveTrigger(e), delete: (e: AutomationTrigger) => deleteTrigger(e), }"
-                            @close="resetSelection">
+                            :override-events="true" @close="resetSelection">
 
                         </Panel>
                         <!-- <Trigger :id="props.id" :trigger="selectedTrigger" @save="saveTrigger"

@@ -19,7 +19,6 @@ const emit = defineEmits<{
     (e: 'save', action: AutomationTriggerAction): void,
     (e: 'delete', action: AutomationTriggerAction): void,
 }>()
-
 const action = reactive({ ...props.action })
 function getStepDevicesList(step: AutomationActionStep) {
 
@@ -65,32 +64,9 @@ const getFeatureDeviceList = computed(() => {
 })
 
 function saveAction(): void {
-    console.log("StepAction save action")
 
-    // DEBG for fix eventbus bug
-    //  action.steps = [];
-    //action.steps[0] = { id: '123455', property: 'some light', operator: '*' }
-    //     "1"
-    // ​​
-    // delay: null
-    // ​​
-    // friendlyname: "Attic light"
-    // ​​
-    // id: "0x70ac08fffefafeca"
-    // ​​
-    // operation: 0
-    // ​​
-    // property: "color_temp"
-    // ​​
-    // steps: Array [ {…} ]
-    // "0x70ac08fffefafeca"
-    // ​​​​
-    // operator: "+"
-    // ​​​​
-    // property: "color_temp"
-    // ​​
-    // type: "StepAction"
-    console.log(action)
+    console.log("StepAction save action ", action)
+
     emit('save', action);
 }
 

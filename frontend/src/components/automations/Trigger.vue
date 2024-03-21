@@ -2,7 +2,6 @@
 
 import { computed, watch, ref, PropType, toRef, inject, onUnmounted } from "vue";
 import TriggerCondition from "./TriggerCondition.vue"
-import Action from "./actions/Action.vue";
 import Selector from "../input/Selector.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
@@ -11,8 +10,17 @@ import { isValid, EditableTriggerCondition, EditableActionTrigger, AutomationAct
 import { capitalizeText } from "../../modules/formatters/text.formatter";
 import { Emitter } from 'mitt'
 import { EventActions, Events, OpenPanelEvent } from "@/types/events.type";
+import { LocalEventBus } from "@/composables/eventBus";
+import ActionViewer from "./actions/ActionViewer.vue";
 
-const emitter = inject('emitter') as Emitter<Events>;
+
+
+//// 
+const eventBus = inject(LocalEventBus);
+
+
+
+//const emitter = inject('emitter') as Emitter<Events>;
 const props = defineProps({
     id: { type: String },
     trigger: { type: Object as PropType<AutomationTrigger>, default: {} as AutomationTrigger },
@@ -64,9 +72,9 @@ const exposesList = computed(() => {
 
 
 function deleteAction(index: number) {
-    // console.log("Trigger - deleteAction", index, " actions before: ", actions.value.length)
+    console.log("Trigger - deleteAction", index, " actions before: ", actions.value.length)
     actions.value.splice(index, 1);
-    //console.log("Trigger - deleteAction actions after: ", actions.value.length)
+    console.log("Trigger - deleteAction actions after: ", actions.value.length)
 }
 
 function SaveAction(index: number, action: AutomationTriggerAction) {
@@ -76,41 +84,30 @@ function SaveAction(index: number, action: AutomationTriggerAction) {
 }
 
 function addAction(actionType: ActionType) {
-    // actions.value?.push(new EditableActionTrigger(actionType));
+    //actions.value?.push(new EditableActionTrigger(actionType));
     let index = actions.value.length - 1;
     if (index < 0) {
         index = 0
     }
     console.log("TRIGGER add action")
-    emitter.emit('openPanel', createActionOpenPanelEvent(new EditableActionTrigger(actionType), index));
+    eventBus!.emit('openPanel', createActionOpenPanelEvent(new EditableActionTrigger(actionType), index, true));
 }
 
-// NOT REQUIRED #####################
-onUnmounted(() => {
-    console.log("Trigger unmounted - deregister eventBus messages")
 
-    emitter.off('openPanel', (e: OpenPanelEvent) => {
 
-    });
-
-    emitter.off('closePanel', (e: string) => {
-
-    });
-});
-
-function createActionOpenPanelEvent(action: AutomationTriggerAction, index: number): OpenPanelEvent {
+function createActionOpenPanelEvent(action: AutomationTriggerAction, index: number, editMode: boolean): OpenPanelEvent {
     const events: EventActions = {
         'delete': (e) => {
-            console.log("TRIGGER createactionpanel delete event");
+            console.log("TRIGGER received delete event");
             deleteAction(index)
         },
         'save': (a) => {
-            console.log("TRIGGER createactionpanel save event");
+            console.log("TRIGGER received save event");
             SaveAction(index, a)
         },
     };
 
-    return { name: 'Action', args: { item: action }, events: events }
+    return { name: 'ActionEditor', args: { item: action, editMode: editMode }, events: events, overrideEvents: true }
 }
 </script>
 
@@ -184,9 +181,8 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, index: numb
                 <tbody v-for="(action, index) in actions" :item="action">
                     <tr>
                         <th>
-                            <Action :item="action">
-                                <!-- @delete="deleteAction(index)" @save="a => SaveAction(index, a)" -->
-                            </Action>
+                            <ActionViewer :item="action"></ActionViewer>
+                            <!-- @delete="deleteAction(index)" @save="a => SaveAction(index, a)" -->
                         </th>
 
                     </tr>

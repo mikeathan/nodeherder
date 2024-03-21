@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { ref, watch, PropType, defineAsyncComponent, computed, onMounted, inject, onUnmounted } from "vue";
+import { ref, watch, PropType, defineAsyncComponent, computed, onMounted, inject, onUnmounted, provide, InjectionKey } from "vue";
 import { Emitter } from 'mitt'
 import { EventActions, Events, OpenPanelEvent } from "@/types/events.type";
 
+import { useMittEvent, useMittEvents, LocalEventBus, EventHandlers } from "@/composables/eventBus";
+import mitt from "mitt";
+import { KeyyValuePair } from "@/types/types";
 
 
 
@@ -19,8 +22,8 @@ const componentMap: Map = {
     "StepAction": defineAsyncComponent(() =>
         import("../automations/actions/StepAction.vue"),
     ),
-    "Action": defineAsyncComponent(() =>
-        import("../automations/actions/Action.vue"),
+    "ActionEditor": defineAsyncComponent(() =>
+        import("../automations/actions/ActionEditor.vue"),
     ),
 };
 
@@ -31,6 +34,7 @@ const emit = defineEmits<{
     (e: 'close'): void,
 }>()
 
+const componentEventsCache = ref<KeyyValuePair<EventActions>>({});
 const componentsCache = ref<Array<OpenPanelEvent>>([]);
 const props = defineProps({
     component_name: {
@@ -44,14 +48,21 @@ const props = defineProps({
     component_events: {
         type: Object,
         required: true
+    },
+    overrideEvents: {
+        type: Boolean,
+        required: true
     }
 
 });
 
-function openComponent(component_name: string, args: any, events: EventActions): void {
+function openComponent(component_name: string, args: any, events: EventActions, overrideEvents: boolean): void {
     const prevSz = componentsCache.value.length;
 
-    componentsCache.value.push({ name: component_name, args: args, events: events })
+    if (componentEventsCache.value[component_name] != undefined || overrideEvents) {
+        componentEventsCache.value[component_name] = events;
+    }
+    componentsCache.value.push({ name: component_name, args: args, events: events, overrideEvents: overrideEvents })
     console.log("OpenPanel received from:", component_name, " CurrentComponent: ", currentComponent.value.name, " Cache was:", prevSz, " is: ", componentsCache.value.length)
 }
 
@@ -63,7 +74,7 @@ function closeComponent(): void {
     //     lastComponent.events = {};
     // }
 
-    console.log("ClosePanel CurrentComponent: ", currentComponent.value.name, " Cache was:", prevSz, " is: ", componentsCache.value.length)
+    console.log("ClosePane:l " + prevName + " CurrentComponent: ", currentComponent.value.name, " Cache was:", prevSz, " is: ", componentsCache.value.length)
 
     // PROBLEM HERE
     if (componentsCache.value.length == 0) {
@@ -72,8 +83,14 @@ function closeComponent(): void {
         emit('close');
     }
 }
+const currentComponentEvents = computed(() => {
 
-const currentComponent = computed(() => {// problem
+    const lastValue = componentsCache.value.at(-1)
+    const name = lastValue === undefined ? '' : lastValue.name;
+    return componentEventsCache.value[name];
+});
+
+const currentComponent = computed(() => {
 
     const lastValue = componentsCache.value.at(-1)
     return lastValue === undefined ? { name: '', args: '', events: {} } : lastValue as OpenPanelEvent;
@@ -90,44 +107,65 @@ function removeItem(item: any): void {
 watch(
     () => props.component_name,
     () => {
-        console.log("WATCH ", props.component_name, " changed");
-        openComponent(props.component_name, props.component_props, props.component_events)
+        openComponent(props.component_name, props.component_props, props.component_events, props.overrideEvents)
     }, { immediate: true }
 )
 
-let eventBus = inject('emitter') as Emitter<Events>;
+//let eventBus = inject('emitter') as Emitter<Events>;
+
+
+//// ######################
+const localBus = mitt<Events>();
+provide(LocalEventBus, localBus);
+
+const cleanup = useMyEvents({
+    openPanel(e: OpenPanelEvent) {
+        openComponent(e.name, e.args, e.events, e.overrideEvents);
+    },
+    closePanel(e: string) {
+        console.log('closePanel event received from:', e);
+        closeComponent()
+    },
+})
+
+
+function useMyEvents(handlers: EventHandlers<Events>) {
+    const keys = Object.keys(handlers) as Array<keyof Events>;
+    for (const key of keys) {
+        localBus.on(key, handlers[key] as never);
+    }
+
+    const cleanup = () => {
+        for (const key of keys) {
+            localBus.off(key, handlers[key] as never);
+        }
+    };
+    onUnmounted(cleanup);
+    return cleanup;
+}
+
+//// ######################
 onMounted(() => {
 
-    console.log("Panel mounted - register eventBus messages")
 
-    eventBus.on('openPanel', (e: OpenPanelEvent) => {
-        //console.log("OpenPanel received from:", e.name)
-        openComponent(e.name, e.args, e.events);
-    });
+    // console.log("Panel mounted - register eventBus messages")
 
-    eventBus.on('closePanel', (e: string) => {
-        console.log('OpenPanel event received from:', e);
-        closeComponent()
-    });
+    // localBus.on('openPanel', (e: OpenPanelEvent) => {
+    //     //console.log("OpenPanel received from:", e.name)
+    //     openComponent(e.name, e.args, e.events);
+    // });
+
+    // localBus.on('closePanel', (e: string) => {
+    //     console.log('OpenPanel event received from:', e);
+    //     closeComponent()
+    // });
 });
 
 onUnmounted(() => {
     console.log("Panel unmounted - deregister eventBus messages")
-
-    eventBus.off('openPanel', (e: OpenPanelEvent) => {
-        console.log('OpenPanel deregister event');
-        openComponent(e.name, e.args, e.events);
-
-    });
-
-    eventBus.off('closePanel', (e: string) => {
-        console.log('ClosePanel deregister event');
-        closeComponent()
-    });
-
-    eventBus.all.clear()
-
+    cleanup();
 });
+
 
 // component that we pass in can raise event to be changed
 
@@ -143,46 +181,8 @@ onUnmounted(() => {
             <!-- @delete="removeItem"
         @save="saveItem" @open="openComponent" @close="closeComponent"  -->
             <component :is="componentMap[currentComponent.name]" v-bind="currentComponent.args"
-                v-on="currentComponent.events" />
+                v-on="currentComponentEvents" />
         </div>
     </div>
 
 </template>
-
-
-<!-- TODO
-
-import mitt from 'mitt'
-
-const emitter = mitt()
-
-// listen to an event
-emitter.on('foo', e => console.log('foo', e) )
-
-// listen to all events
-emitter.on('*', (type, e) => console.log(type, e) )
-
-// fire an event
-emitter.emit('foo', { a: 'b' })
-
-// clearing all events
-emitter.all.clear()
-
-// working with handler references:
-function onFoo() {}
-emitter.on('foo', onFoo)   // listen
-emitter.off('foo', onFoo)  // unlisten
-
-------------------------
-import mitt from 'mitt';
-
-type Events = {
-  foo: string;
-  bar?: number;
-};
-
-const emitter = mitt<Events>(); // inferred as Emitter<Events>
-
-emitter.on('foo', (e) => {}); // 'e' has inferred type 'string'
-
-emitter.emit('foo', 42); // Error: Argument of type 'number' is not assignable to parameter of -->
