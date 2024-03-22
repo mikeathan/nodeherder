@@ -4,10 +4,10 @@ export type EventAction = (...args: any) => void;
 export type EventActions = KeyyValuePair<EventAction>;
 
 export type OpenPanelEvent = {
-  name: string;
+  source: string;
+  target: string;
   args: any;
   events: EventActions;
-  overrideEvents: boolean;
 };
 
 export type Events = {

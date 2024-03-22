@@ -54,7 +54,6 @@ watch(
 
 
 function removeAction(action: AutomationTriggerAction): void {
-
     console.log("ActionViewer - DELETE")
 
     emit('delete', action);
@@ -66,18 +65,7 @@ function openEditor(): void {
 }
 
 function createActionEditorOpenPanelEvent(action: AutomationTriggerAction): OpenPanelEvent {
-    // const events: EventActions = {
-    //     'delete': (e) => {
-    //         emit('delete', action);
-    //         console.log("ActionViewer -  DELETE - callback")
-    //     },
-    //     'save': (a) => {
-    //         emit('save', action);
-    //         console.log("ActionViewer - SAVE - callback")
-    //     },
-    // };
-
-    return { name: 'ActionEditor', args: { item: action }, events: {}, overrideEvents: false }
+    return { source: 'ActionViewer', target: 'ActionEditor', args: { item: action }, events: {} }
 }
 
 </script>

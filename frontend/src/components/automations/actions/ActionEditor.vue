@@ -62,7 +62,6 @@ function removeAction(action: AutomationTriggerAction): void {
     eventBus!.emit('closePanel', 'ActionEditor');
 }
 
-
 </script>
 
 <template>

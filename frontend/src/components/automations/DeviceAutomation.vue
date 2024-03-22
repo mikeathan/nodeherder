@@ -8,6 +8,7 @@ import { Device } from "@/types/device";
 import { Automation, AutomationTrigger, AutomationTriggerAction } from "@/types/automation";
 import { EditableAutomationTrigger, DeviceAutomation } from "../../contracts/automations";
 import Panel from "../controls/Panel.vue";
+import { EventActions, OpenPanelEvent } from "@/types/events.type";
 
 const emit = defineEmits(['cancel'])
 
@@ -135,6 +136,21 @@ function resetSelection() {
     selectedTrigger.value = undefined
 }
 
+function createOpenPanelEvent(): OpenPanelEvent {
+
+    const events: EventActions = {
+        save: (e: AutomationTrigger) => {
+            console.log("DEVICEAUTOMATION - SAVE");
+            saveTrigger(e)
+        },
+        delete: (e: AutomationTrigger) => {
+            console.log("DEVICEAUTOMATION - DELETE");
+            deleteTrigger(e)
+        },
+    };
+    return { name: 'Trigger', args: { id: props.id, trigger: selectedTrigger }, events: events }
+
+}
 </script>
 
 <style scoped>
@@ -230,9 +246,7 @@ function resetSelection() {
                             @click="() => showTriggerCreation = false"></button> -->
                         <!-- <div class="col"> -->
 
-                        <Panel :component_name="'Trigger'" :component_props="{ id: props.id, trigger: selectedTrigger }"
-                            :component_events="{ save: (e: AutomationTrigger) => saveTrigger(e), delete: (e: AutomationTrigger) => deleteTrigger(e), }"
-                            :override-events="true" @close="resetSelection">
+                        <Panel :item="createOpenPanelEvent()" @close="resetSelection">
 
                         </Panel>
                         <!-- <Trigger :id="props.id" :trigger="selectedTrigger" @save="saveTrigger"

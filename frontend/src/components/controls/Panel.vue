@@ -37,44 +37,43 @@ const emit = defineEmits<{
 const componentEventsCache = ref<KeyyValuePair<EventActions>>({});
 const componentsCache = ref<Array<OpenPanelEvent>>([]);
 const props = defineProps({
-    component_name: {
-        type: String,
+
+
+    item: {
+        type: Object as PropType<OpenPanelEvent>,
         required: true
     },
-    component_props: {
-        type: Object,
-        required: true
-    },
-    component_events: {
-        type: Object,
-        required: true
-    },
-    overrideEvents: {
-        type: Boolean,
-        required: true
-    }
+
 
 });
 
-function openComponent(component_name: string, args: any, events: EventActions, overrideEvents: boolean): void {
-    const prevSz = componentsCache.value.length;
+function openComponent(event: OpenPanelEvent): void {
+    if (componentEventsCache.value[event.target] != undefined && event.events === null) {
+        console.log("OpenPanel received: ", event.target, " exists in cache. [Dont override.]")
 
-    if (componentEventsCache.value[component_name] != undefined || overrideEvents) {
-        componentEventsCache.value[component_name] = events;
+    } else {
+        const prevSz = componentsCache.value.length;
+        componentsCache.value.push(event)
+        console.log("OpenPanel received: ", currentComponent.value.target, " Cache was:", prevSz, " is: ", componentsCache.value.length)
     }
-    componentsCache.value.push({ name: component_name, args: args, events: events, overrideEvents: overrideEvents })
-    console.log("OpenPanel received from:", component_name, " CurrentComponent: ", currentComponent.value.name, " Cache was:", prevSz, " is: ", componentsCache.value.length)
 }
 
 function closeComponent(): void {
     const prevSz = componentsCache.value.length;
-    const prevName = currentComponent.value.name
+    const prevName = currentComponent.value.target
+
+
+    // NEED LOGIC HERE
+    // IF CLOSE IS NOT FOR SOURCE, THEN WE CANT REMOVE THE EVENT - NNED TOO EITHER CHANGE POSITION OR CACHE IT
+    // IF CLOSE IS FOR SOURCE THEN WE ARE GOOD TO CLEAR
+    // WE NEED TO KEEP THE EVENTS AND ITEMS FOR SOURCE EVENT 
+
     const lastComponent = componentsCache.value.pop();
     // if (lastComponent != undefined) {
     //     lastComponent.events = {};
     // }
 
-    console.log("ClosePane:l " + prevName + " CurrentComponent: ", currentComponent.value.name, " Cache was:", prevSz, " is: ", componentsCache.value.length)
+    console.log("ClosePane:l " + prevName + " CurrentComponent: ", currentComponent.value.target, " Cache was:", prevSz, " is: ", componentsCache.value.length)
 
     // PROBLEM HERE
     if (componentsCache.value.length == 0) {
@@ -83,35 +82,19 @@ function closeComponent(): void {
         emit('close');
     }
 }
-const currentComponentEvents = computed(() => {
-
-    const lastValue = componentsCache.value.at(-1)
-    const name = lastValue === undefined ? '' : lastValue.name;
-    return componentEventsCache.value[name];
-});
 
 const currentComponent = computed(() => {
-
     const lastValue = componentsCache.value.at(-1)
-    return lastValue === undefined ? { name: '', args: '', events: {} } : lastValue as OpenPanelEvent;
+    return lastValue === undefined ? { source: '', target: '', args: '', events: {} } : lastValue as OpenPanelEvent;
 });
 
-function saveItem(item: any): void {
-    /// emit('save', item);
-}
-
-function removeItem(item: any): void {
-    // emit('delete', item);
-}
 
 watch(
-    () => props.component_name,
+    () => props.item,
     () => {
-        openComponent(props.component_name, props.component_props, props.component_events, props.overrideEvents)
+        openComponent(props.item)
     }, { immediate: true }
 )
-
-//let eventBus = inject('emitter') as Emitter<Events>;
 
 
 //// ######################
@@ -120,7 +103,7 @@ provide(LocalEventBus, localBus);
 
 const cleanup = useMyEvents({
     openPanel(e: OpenPanelEvent) {
-        openComponent(e.name, e.args, e.events, e.overrideEvents);
+        openComponent(e);
     },
     closePanel(e: string) {
         console.log('closePanel event received from:', e);
@@ -180,8 +163,8 @@ onUnmounted(() => {
         <div class="col">
             <!-- @delete="removeItem"
         @save="saveItem" @open="openComponent" @close="closeComponent"  -->
-            <component :is="componentMap[currentComponent.name]" v-bind="currentComponent.args"
-                v-on="currentComponentEvents" />
+            <component :is="componentMap[currentComponent.target]" v-bind="currentComponent.args"
+                v-on="currentComponent.events" />
         </div>
     </div>
 

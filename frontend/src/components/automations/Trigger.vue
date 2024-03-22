@@ -93,8 +93,6 @@ function addAction(actionType: ActionType) {
     eventBus!.emit('openPanel', createActionOpenPanelEvent(new EditableActionTrigger(actionType), index, true));
 }
 
-
-
 function createActionOpenPanelEvent(action: AutomationTriggerAction, index: number, editMode: boolean): OpenPanelEvent {
     const events: EventActions = {
         'delete': (e) => {
@@ -107,8 +105,9 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, index: numb
         },
     };
 
-    return { name: 'ActionEditor', args: { item: action, editMode: editMode }, events: events, overrideEvents: true }
+    return { source: 'Trigger', target: 'ActionEditor', args: { item: action, editMode: editMode }, events: events }
 }
+
 </script>
 
 <template>
