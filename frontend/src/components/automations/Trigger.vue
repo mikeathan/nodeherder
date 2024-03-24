@@ -105,7 +105,7 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, index: numb
         },
     };
 
-    return { source: 'Trigger', target: 'ActionEditor', args: { item: action, editMode: editMode }, events: events }
+    return { owner: 'Trigger', name: 'ActionEditor', args: { item: action, editMode: editMode }, events: events }
 }
 
 </script>

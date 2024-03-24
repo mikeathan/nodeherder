@@ -65,7 +65,7 @@ function openEditor(): void {
 }
 
 function createActionEditorOpenPanelEvent(action: AutomationTriggerAction): OpenPanelEvent {
-    return { source: 'ActionViewer', target: 'ActionEditor', args: { item: action }, events: {} }
+    return { owner: 'ActionViewer', name: 'ActionEditor', args: { item: action }, events: {} }
 }
 
 </script>
