@@ -35,8 +35,11 @@ const trigger = ref<AutomationTrigger>(props.trigger)
 watch(
     () => props.trigger,
     () => {
+
         if (props.trigger.action.id != "") {
-            actions.value.push(props.trigger.action)
+            const action = JSON.parse(JSON.stringify(props.trigger.action)) as AutomationTriggerAction
+            console.log("TRIGGER -  init trigge.action")
+            actions.value.push(action);
         }
         conditions.value = JSON.parse(JSON.stringify(props.trigger.conditions)) as AutomationTriggerConditions;
     }, { immediate: true }
@@ -47,11 +50,13 @@ const emit = defineEmits(['save', 'delete'])
 function save() {
     trigger.value.conditions = conditions.value
     trigger.value.action = actions.value[0];
+    console.log("TRIGGER SAVE")
 
     emit('save', trigger.value)
 }
 
 function remove() {
+    console.log("TRIGGER DELETE")
     emit('delete', trigger.value)
 }
 
@@ -72,19 +77,26 @@ const exposesList = computed(() => {
 
 
 function deleteAction(index: number) {
-    console.log("Trigger - deleteAction", index, " actions before: ", actions.value.length)
     actions.value.splice(index, 1);
-    console.log("Trigger - deleteAction actions after: ", actions.value.length)
+
+    // trigger.value.action = {} as AutomationTriggerAction;
+    // trigger.value.action.steps = [];
+
+    // actions.value.pop()
+    //actions.value = [];
+
+    console.log("Trigger - DELETEACTION; ", index, " szie before: ", actions.value.length, " new size ", actions.value.length)
 }
 
 function SaveAction(index: number, action: AutomationTriggerAction) {
-    //console.log("trigger save action ", action, " index ", index);
-    actions.value[index] = action;
-    trigger.value.action = actions.value[0];
+    actions.value.push(action);
+    //trigger.value.action = actions.value[0];
+
+    console.log("trigger - SAVEACTION ", action, " index ", index, " new size: ", actions.value.length);
+
 }
 
 function addAction(actionType: ActionType) {
-    //actions.value?.push(new EditableActionTrigger(actionType));
     let index = actions.value.length - 1;
     if (index < 0) {
         index = 0
@@ -96,11 +108,9 @@ function addAction(actionType: ActionType) {
 function createActionOpenPanelEvent(action: AutomationTriggerAction, index: number, editMode: boolean): OpenPanelEvent {
     const events: EventActions = {
         'delete': (e) => {
-            console.log("TRIGGER received delete event");
             deleteAction(index)
         },
         'save': (a) => {
-            console.log("TRIGGER received save event");
             SaveAction(index, a)
         },
     };
@@ -121,7 +131,7 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, index: numb
             </Selector>
         </div>
         <div class="row" v-else>
-
+            TRIGGER : {{ trigger }}
             <!-- Conditions -->
             <table class="table">
                 <thead>
@@ -175,12 +185,13 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, index: numb
                         </h5>
                     </th>
                 </tr>
-
                 <!-- Actions -->
-                <tbody v-for="(action, index) in actions" :item="action">
+                TRIGGER [DEBUG]: {{ actions }} - Size {{ actions.length }}
+                <tbody v-for="(action) in actions" :item="action">
                     <tr>
                         <th>
-                            <ActionViewer :item="action"></ActionViewer>
+                            {{ action }}
+                            <!-- <ActionViewer :item="action"></ActionViewer> -->
                             <!-- @delete="deleteAction(index)" @save="a => SaveAction(index, a)" -->
                         </th>
 

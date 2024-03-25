@@ -56,9 +56,9 @@ function openComponent(event: OpenPanelEvent): void {
 
     console.log("OpenPanel received: ", event.name)
     if (componentCache.value[event.name] != undefined) {
-        console.log(" ---- presentation", event.name, "exists in cache. [NOT CACHING]")
+        componentCache.value[event.name].args = event.args;
+        console.log(" ---- presentation", event.name, "exists in cache. Replace args: ", event.args)
 
-        we need to replace  the args only!!!!!!
     } else {
         componentCache.value[event.name] = event;
     }
@@ -81,12 +81,16 @@ function closeComponent(name: string): void {
     const prevName = presentationQueue.value.at(-1) ?? '';
 
     if (componentCache.value[event.name] != undefined) {
+
         const owner = componentCache.value[event.name].owner;
         if (owner == event.owner) {
             presentationQueue.value.pop();
             console.log("REMOVE Presention: " + prevName + " current panel: ", currentComponent.value);
+
+        } else {
         }
     }
+    componentCache.value[event.name].args = {};
 
     console.log("ClosePanel: " + prevName + " current panel: ", currentComponent.value)
 

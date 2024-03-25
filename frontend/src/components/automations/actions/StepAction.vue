@@ -19,6 +19,7 @@ const emit = defineEmits<{
     (e: 'save', action: AutomationTriggerAction): void,
     (e: 'delete', action: AutomationTriggerAction): void,
 }>()
+
 const action = reactive({ ...props.action })
 function getStepDevicesList(step: AutomationActionStep) {
 

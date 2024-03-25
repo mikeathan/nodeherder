@@ -148,7 +148,7 @@ function createOpenPanelEvent(): OpenPanelEvent {
             deleteTrigger(e)
         },
     };
-    return { name: 'Trigger', args: { id: props.id, trigger: selectedTrigger }, events: events }
+    return { owner: 'DeviceAutomation', name: 'Trigger', args: { id: props.id, trigger: selectedTrigger }, events: events }
 
 }
 </script>

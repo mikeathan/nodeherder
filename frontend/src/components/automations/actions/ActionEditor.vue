@@ -65,7 +65,6 @@ function removeAction(action: AutomationTriggerAction): void {
 </script>
 
 <template>
-
     <div>
         <component :is="componentMap[actionType]" v-bind="{ action: currentAction }" @delete="removeAction"
             @save="saveAction" />
