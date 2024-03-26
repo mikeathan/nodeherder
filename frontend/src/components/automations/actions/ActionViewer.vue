@@ -57,6 +57,7 @@ function removeAction(action: AutomationTriggerAction): void {
     console.log("ActionViewer - DELETE")
 
     emit('delete', action);
+
     eventBus!.emit('closePanel', 'ActionViewer');
 }
 

@@ -76,42 +76,28 @@ const exposesList = computed(() => {
 })
 
 
-function deleteAction(index: number) {
-    actions.value.splice(index, 1);
+function deleteAction() {
+    trigger.value.action = new EditableActionTrigger('StepAction'); // default value
+    actions.value = [];
 
-    // trigger.value.action = {} as AutomationTriggerAction;
-    // trigger.value.action.steps = [];
-
-    // actions.value.pop()
-    //actions.value = [];
-
-    console.log("Trigger - DELETEACTION; ", index, " szie before: ", actions.value.length, " new size ", actions.value.length)
 }
 
-function SaveAction(index: number, action: AutomationTriggerAction) {
-    actions.value.push(action);
-    //trigger.value.action = actions.value[0];
-
-    console.log("trigger - SAVEACTION ", action, " index ", index, " new size: ", actions.value.length);
-
+function SaveAction(action: AutomationTriggerAction) {
+    actions.value[0] = action;
+    trigger.value.action = actions.value[0];
 }
 
 function addAction(actionType: ActionType) {
-    let index = actions.value.length - 1;
-    if (index < 0) {
-        index = 0
-    }
-    console.log("TRIGGER add action")
-    eventBus!.emit('openPanel', createActionOpenPanelEvent(new EditableActionTrigger(actionType), index, true));
+    eventBus!.emit('openPanel', createActionOpenPanelEvent(new EditableActionTrigger(actionType), true));
 }
 
-function createActionOpenPanelEvent(action: AutomationTriggerAction, index: number, editMode: boolean): OpenPanelEvent {
+function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: boolean): OpenPanelEvent {
     const events: EventActions = {
         'delete': (e) => {
-            deleteAction(index)
+            deleteAction()
         },
         'save': (a) => {
-            SaveAction(index, a)
+            SaveAction(a)
         },
     };
 
@@ -131,7 +117,6 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, index: numb
             </Selector>
         </div>
         <div class="row" v-else>
-            TRIGGER : {{ trigger }}
             <!-- Conditions -->
             <table class="table">
                 <thead>
@@ -186,13 +171,10 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, index: numb
                     </th>
                 </tr>
                 <!-- Actions -->
-                TRIGGER [DEBUG]: {{ actions }} - Size {{ actions.length }}
                 <tbody v-for="(action) in actions" :item="action">
                     <tr>
                         <th>
-                            {{ action }}
-                            <!-- <ActionViewer :item="action"></ActionViewer> -->
-                            <!-- @delete="deleteAction(index)" @save="a => SaveAction(index, a)" -->
+                            <ActionViewer :item="action" @delete="deleteAction()"> </ActionViewer>
                         </th>
 
                     </tr>

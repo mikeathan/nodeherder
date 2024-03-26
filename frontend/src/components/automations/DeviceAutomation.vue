@@ -240,6 +240,7 @@ function createOpenPanelEvent(): OpenPanelEvent {
                         </tbody>
                     </table>
 
+                    DeviceAutomation: {{ selectedTrigger }}
                     <!-- v-else -->
                     <div class="row" v-if="selectedTrigger != null">
                         <!-- <button type="button" class="btn-close" aria-label="Close"

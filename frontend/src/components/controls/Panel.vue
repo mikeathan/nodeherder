@@ -54,11 +54,9 @@ function openComponent(event: OpenPanelEvent): void {
 
     presentationQueue.value.push(event.name);
 
-    console.log("OpenPanel received: ", event.name)
+    console.log("OpenPanel: name: ", event.name, " owner: ", event.owner, " args: ", event.args)
     if (componentCache.value[event.name] != undefined) {
         componentCache.value[event.name].args = event.args;
-        console.log(" ---- presentation", event.name, "exists in cache. Replace args: ", event.args)
-
     } else {
         componentCache.value[event.name] = event;
     }
@@ -78,21 +76,17 @@ function closeComponent(name: string): void {
     }
 
     const event = componentCache.value[name];
-    const prevName = presentationQueue.value.at(-1) ?? '';
-
     if (componentCache.value[event.name] != undefined) {
 
         const owner = componentCache.value[event.name].owner;
         if (owner == event.owner) {
             presentationQueue.value.pop();
-            console.log("REMOVE Presention: " + prevName + " current panel: ", currentComponent.value);
 
-        } else {
         }
     }
     componentCache.value[event.name].args = {};
 
-    console.log("ClosePanel: " + prevName + " current panel: ", currentComponent.value)
+    console.log("ClosePanel: " + event.name);
 
     if (presentationQueue.value.length == 0) {
         console.log("Presentation queue IS EMPTY. EXIT.");
