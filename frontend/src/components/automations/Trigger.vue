@@ -36,23 +36,38 @@ watch(
     () => props.trigger,
     () => {
 
-        if (props.trigger.action.id != "") {
-            const action = JSON.parse(JSON.stringify(props.trigger.action)) as AutomationTriggerAction
-            console.log("TRIGGER -  init trigge.action")
-            actions.value.push(action);
+        if (props.trigger == undefined) {
+            return;
         }
-        conditions.value = JSON.parse(JSON.stringify(props.trigger.conditions)) as AutomationTriggerConditions;
+        try {
+            console.log("Trigger props.trigger ", props.trigger);
+            if (props.trigger.action != undefined && props.trigger.action.id != "") {
+                const action = JSON.parse(JSON.stringify(props.trigger.action)) as AutomationTriggerAction
+                actions.value.push(action);
+            }
+            conditions.value = JSON.parse(JSON.stringify(props.trigger.conditions)) as AutomationTriggerConditions;
+        } catch (error) {
+            console.log(error);
+        }
+
     }, { immediate: true }
 )
 
-const emit = defineEmits(['save', 'delete'])
+const emit = defineEmits<{
+    (e: 'save', trigger: AutomationTrigger): void,
+    (e: 'delete', trigger: AutomationTrigger): void,
+}>()
 
 function save() {
     trigger.value.conditions = conditions.value
-    trigger.value.action = actions.value[0];
-    console.log("TRIGGER SAVE")
+    if (actions.value.length > 0) {
+        trigger.value.action = actions.value[0];
+    }
+    console.log("TRIGGER SAVE ", trigger.value)
 
     emit('save', trigger.value)
+
+    eventBus!.emit('closePanel', 'Trigger');
 }
 
 function remove() {
@@ -85,9 +100,13 @@ function deleteAction() {
 function SaveAction(action: AutomationTriggerAction) {
     actions.value[0] = action;
     trigger.value.action = actions.value[0];
+
+    console.log("TRIGGER - SaveAction ", action)
 }
 
 function addAction(actionType: ActionType) {
+    console.log("TRIGGER - AddNewwAction ", actionType)
+
     eventBus!.emit('openPanel', createActionOpenPanelEvent(new EditableActionTrigger(actionType), true));
 }
 

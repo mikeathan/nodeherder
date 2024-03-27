@@ -91,6 +91,7 @@ function saveTrigger(trigger: AutomationTrigger): void {
         automation.value.triggers[idx] = trigger
     }
 
+    // selectedTrigger.value = trigger;
     showTriggerCreation.value = false // close trigger panel
 
 }
@@ -111,7 +112,7 @@ function getConditionsDescription(trigger: AutomationTrigger): string {
 
 
 function getActionDescription(trigger: AutomationTrigger): string {
-    if (trigger.action.id == '') {
+    if (trigger.action?.id == '') {
         return "<EMPTY>"
     }
 
@@ -247,6 +248,7 @@ function createOpenPanelEvent(): OpenPanelEvent {
                             @click="() => showTriggerCreation = false"></button> -->
                         <!-- <div class="col"> -->
 
+                        this is retared we cant do createOpenPanelEvent() - we dont even need to
                         <Panel :item="createOpenPanelEvent()" @close="resetSelection">
 
                         </Panel>

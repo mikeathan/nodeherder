@@ -54,7 +54,7 @@ function openComponent(event: OpenPanelEvent): void {
 
     presentationQueue.value.push(event.name);
 
-    console.log("OpenPanel: name: ", event.name, " owner: ", event.owner, " args: ", event.args)
+    console.log("OpenPanel: name: ", event.name, " owner: ", event.owner, " ListSize ", presentationQueue.value.length)
     if (componentCache.value[event.name] != undefined) {
         componentCache.value[event.name].args = event.args;
     } else {
@@ -76,17 +76,17 @@ function closeComponent(name: string): void {
     }
 
     const event = componentCache.value[name];
-    if (componentCache.value[event.name] != undefined) {
+    // if (componentCache.value[event.name] != undefined) {
 
-        const owner = componentCache.value[event.name].owner;
-        if (owner == event.owner) {
-            presentationQueue.value.pop();
+    const owner = componentCache.value[event.name].owner;
+    //if (owner == event.owner) {
+    presentationQueue.value.pop();
+    console.log("ClosePanel: name " + event.name, " owner: " + event.owner, " ListSize ", presentationQueue.value.length);
 
-        }
-    }
-    componentCache.value[event.name].args = {};
+    // }
+    //  }
 
-    console.log("ClosePanel: " + event.name);
+    //componentCache.value[event.name].args = {};
 
     if (presentationQueue.value.length == 0) {
         console.log("Presentation queue IS EMPTY. EXIT.");
