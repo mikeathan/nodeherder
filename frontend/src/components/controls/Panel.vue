@@ -1,30 +1,18 @@
 <script setup lang="ts">
 import { ref, watch, PropType, defineAsyncComponent, computed, onMounted, inject, onUnmounted, provide, InjectionKey } from "vue";
-import { Emitter } from 'mitt'
-import { EventActions, Events, OpenPanelEvent } from "@/types/events.type";
-
-import { useMittEvent, useMittEvents, LocalEventBus, EventHandlers } from "@/composables/eventBus";
-import mitt from "mitt";
+import { OpenPanelEvent } from "@/types/events.type";
+import { useAutomationEvents } from "@/mixins/eventBus";
+import { PanelComponents } from "@/mixins/usePanelComponents";
 import { KeyyValuePair } from "@/types/types";
 
-
-type PanelKey = string
-type Map = { [key: PanelKey]: any }
-
-const componentMap: Map = {
-    "Trigger": defineAsyncComponent(() =>
-        import("../automations/Trigger.vue"),
-    ),
-    "TriggerAction": defineAsyncComponent(() =>
-        import("../automations/actions/TriggerAction.vue"),
-    ),
-    "StepAction": defineAsyncComponent(() =>
-        import("../automations/actions/StepAction.vue"),
-    ),
-    "ActionEditor": defineAsyncComponent(() =>
-        import("../automations/actions/ActionEditor.vue"),
-    ),
-};
+const cleanup = useAutomationEvents({
+    openPanel(e: OpenPanelEvent) {
+        openComponent(e);
+    },
+    closePanel(name: string) {
+        closeComponent(name)
+    },
+})
 
 const emit = defineEmits<{
     (e: 'open', component_name: string): void,
@@ -52,7 +40,7 @@ function openComponent(event: OpenPanelEvent): void {
 
     presentationQueue.value.push(event.name);
 
-    console.log("OPEN:" + event.name, " owner: " + event.owner, " Size ", presentationQueue.value.length);
+    console.log("OPEN:" + event.name, " Size ", presentationQueue.value.length);
 
     if (componentCache.value[event.name] != undefined) {
         componentCache.value[event.name].args = event.args;
@@ -78,44 +66,13 @@ function closeComponent(name: string): void {
     // TODO: cleanup componentCache ?
     presentationQueue.value.pop();
     const event = componentCache.value[name];
-   
-    console.log("CLOSE:" + event.name, " owner: " + event.owner, " Size ", presentationQueue.value.length);
+
+    console.log("CLOSE:" + event.name, " Size ", presentationQueue.value.length);
     if (presentationQueue.value.length == 0) {
         emit('close');
     }
 }
 
-//// ######################
-const localBus = mitt<Events>();
-provide(LocalEventBus, localBus);
-
-const cleanup = useMyEvents({
-    openPanel(e: OpenPanelEvent) {
-        openComponent(e);
-    },
-    closePanel(name: string) {
-        closeComponent(name)
-    },
-})
-
-
-function useMyEvents(handlers: EventHandlers<Events>) {
-    const keys = Object.keys(handlers) as Array<keyof Events>;
-    for (const key of keys) {
-        localBus.on(key, handlers[key] as never);
-    }
-
-    const cleanup = () => {
-        for (const key of keys) {
-            localBus.off(key, handlers[key] as never);
-        }
-    };
-    onUnmounted(cleanup);
-    return cleanup;
-}
-
-onMounted(() => {
-});
 
 onUnmounted(() => {
     console.log("Panel unmounted - deregister eventBus messages")
@@ -125,20 +82,17 @@ onUnmounted(() => {
 });
 
 
-
 </script>
 
 <template>
-    <!-- PANEL : {{ currentComponent }} <br> -->
-
     <div class="row">
         <button type="button" class="btn-close" aria-label="Close" @click="closeComponent(currentComponent)"></button>
         <div class="col">
             <!-- @delete="removeItem"
         @save="saveItem" @open="openComponent" @close="closeComponent"  -->
-            <component :is="componentMap[currentComponent]" v-bind="componentCache[currentComponent].args"
+            <component :is="PanelComponents[currentComponent]" v-bind="componentCache[currentComponent].args"
                 v-on="componentCache[currentComponent].events" />
         </div>
     </div>
 
-</template>
+</template>@/mixins/eventBus

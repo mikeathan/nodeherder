@@ -2,19 +2,11 @@
 import { ref, watch, PropType, defineAsyncComponent, inject } from "vue";
 import { getActionType, ActionType, } from "@/contracts/automations"
 import { AutomationTriggerAction } from "@/types/automation";
-import { LocalEventBus } from "@/composables/eventBus";
+import { emitClosePanel } from "@/mixins/eventBus";
+import { PanelComponents } from "@/mixins/usePanelComponents";
 
 
-const eventBus = inject(LocalEventBus);
 
-const componentMap = {
-    "TriggerAction": defineAsyncComponent(() =>
-        import("./TriggerAction.vue"),
-    ),
-    "StepAction": defineAsyncComponent(() =>
-        import("./StepAction.vue"),
-    ),
-}
 const emit = defineEmits<{
     (e: 'save', action: AutomationTriggerAction): void,
     (e: 'delete', action: AutomationTriggerAction): void,
@@ -46,21 +38,21 @@ watch(
 function saveAction(action: AutomationTriggerAction): void {
     currentAction.value = action
     emit('save', currentAction.value);
-
-    eventBus!.emit('closePanel', 'ActionEditor');
+    emitClosePanel('ActionEditor');
 }
 
 function removeAction(action: AutomationTriggerAction): void {
     emit('delete', currentAction.value);
 
-    eventBus!.emit('closePanel', 'ActionEditor');
+    emitClosePanel('ActionEditor');
 }
 
 </script>
 
 <template>
     <div>
-        <component :is="componentMap[actionType]" v-bind="{ action: currentAction }" @delete="removeAction"
+        <component :is="PanelComponents[actionType]" v-bind="{ action: currentAction }" @delete="removeAction"
             @save="saveAction" />
     </div>
 </template>
+@/mixins/eventBus

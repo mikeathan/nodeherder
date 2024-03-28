@@ -10,14 +10,12 @@ import { isValid, EditableTriggerCondition, EditableActionTrigger, AutomationAct
 import { capitalizeText } from "../../modules/formatters/text.formatter";
 import { Emitter } from 'mitt'
 import { EventActions, Events, OpenPanelEvent } from "@/types/events.type";
-import { LocalEventBus } from "@/composables/eventBus";
+import { emitClosePanel, emitOpenPanel } from "@/mixins/eventBus";
 import ActionViewer from "./actions/ActionViewer.vue";
 
 
 
 //// 
-const eventBus = inject(LocalEventBus);
-
 
 
 //const emitter = inject('emitter') as Emitter<Events>;
@@ -36,13 +34,13 @@ watch(
     () => props.trigger,
     () => {
 
-       
-            if (props.trigger.action != undefined && props.trigger.action.id != "") {
-                const action = JSON.parse(JSON.stringify(props.trigger.action)) as AutomationTriggerAction
-                actions.value.push(action);
-            }
-            conditions.value = JSON.parse(JSON.stringify(props.trigger.conditions)) as AutomationTriggerConditions;
-        
+
+        if (props.trigger.action != undefined && props.trigger.action.id != "") {
+            const action = JSON.parse(JSON.stringify(props.trigger.action)) as AutomationTriggerAction
+            actions.value.push(action);
+        }
+        conditions.value = JSON.parse(JSON.stringify(props.trigger.conditions)) as AutomationTriggerConditions;
+
 
     }, { immediate: true }
 )
@@ -59,12 +57,14 @@ function save() {
     }
 
     emit('save', trigger.value)
-    eventBus!.emit('closePanel', 'Trigger');
+
+    emitClosePanel('Trigger')
 }
 
 function remove() {
     emit('delete', trigger.value)
-    eventBus!.emit('closePanel', 'Trigger');
+
+    emitClosePanel('Trigger')
 }
 
 function addCondition() {
@@ -95,10 +95,11 @@ function SaveAction(action: AutomationTriggerAction) {
 }
 
 function addNewAction(actionType: ActionType) {
-    eventBus!.emit('openPanel', createActionOpenPanelEvent(new EditableActionTrigger(actionType), true));
+
+    emitOpenPanel(createActionOpenPanelEvent(new EditableActionTrigger(actionType), true));
 }
 
-const actionEvents = ():EventActions =>  {
+const actionEvents = (): EventActions => {
     return {
         'delete': (e) => {
             deleteAction()
@@ -108,17 +109,15 @@ const actionEvents = ():EventActions =>  {
         }
     }
 };
-        
+
 function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: boolean): OpenPanelEvent {
-    return { owner: 'Trigger', name: 'ActionEditor', args: { item: action, editMode: editMode }, events: actionEvents() }
+    return { name: 'ActionEditor', args: { item: action, editMode: editMode }, events: actionEvents() }
 }
 
 </script>
 
 <template>
     <div class="container-fluid p-0 h-100">
-
-        trigger: {{trigger}}
         <!-- TODO:  -->
         <!-- if automation for device exists message user else we overwrite it -->
 
@@ -186,7 +185,8 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                     <tr>
                         <th>
 
-                            <ActionViewer :item="action" :edit-events="actionEvents() "  @delete="deleteAction()"> </ActionViewer>
+                            <ActionViewer :item="action" :edit-events="actionEvents()" @delete="deleteAction()">
+                            </ActionViewer>
                         </th>
 
                     </tr>
@@ -206,4 +206,4 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
             </div>
         </div>
     </div>
-</template>
+</template>@/mixins/eventBus

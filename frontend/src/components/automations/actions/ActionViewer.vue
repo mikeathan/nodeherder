@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import { ref, watch, PropType, defineAsyncComponent, computed, onMounted, inject, reactive, onUnmounted } from "vue";
+import { ref, watch, PropType, computed } from "vue";
 import { getActionType, ActionType, AutomationActionTypes } from "@/contracts/automations"
 import { AutomationTriggerAction } from "@/types/automation";
-import { EventActions, Events, OpenPanelEvent } from "@/types/events.type";
-import { LocalEventBus } from "@/composables/eventBus";
+import { EventActions, OpenPanelEvent } from "@/types/events.type";
+import { emitClosePanel, emitOpenPanel } from "@/mixins/eventBus";
 
-const eventBus = inject(LocalEventBus);
 const emit = defineEmits<{
-   
     (e: 'delete', action: AutomationTriggerAction): void,
     (e: 'edit', events: EventActions): void,
-
 }>()
 
 const props = defineProps({
@@ -19,7 +16,7 @@ const props = defineProps({
         default: {} as AutomationTriggerAction,
         required: true
     },
-    editEvents:{
+    editEvents: {
         type: Object as PropType<EventActions>,
         default: {} as EventActions,
         required: true
@@ -62,15 +59,15 @@ watch(
 
 function removeAction(action: AutomationTriggerAction): void {
     emit('delete', action);
-    eventBus!.emit('closePanel', 'ActionViewer');
+    emitClosePanel('ActionViewer');
 }
 
 function openEditor(): void {
-    eventBus!.emit('openPanel', createActionEditorOpenPanelEvent(currentAction.value));
+    emitOpenPanel(createActionEditorOpenPanelEvent(currentAction.value));
 }
 
 function createActionEditorOpenPanelEvent(action: AutomationTriggerAction): OpenPanelEvent {
-    return { owner: 'ActionViewer', name: 'ActionEditor', args: { item: action }, events: props.editEvents }
+    return { name: 'ActionEditor', args: { item: action }, events: props.editEvents }
 }
 
 </script>

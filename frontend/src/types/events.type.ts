@@ -4,7 +4,6 @@ export type EventAction = (...args: any) => void;
 export type EventActions = KeyyValuePair<EventAction>;
 
 export type OpenPanelEvent = {
-  owner: string;
   name: string;
   args: any;
   events: EventActions;
