@@ -7,8 +7,10 @@ import { LocalEventBus } from "@/composables/eventBus";
 
 const eventBus = inject(LocalEventBus);
 const emit = defineEmits<{
-    (e: 'save', action: AutomationTriggerAction): void,
+   
     (e: 'delete', action: AutomationTriggerAction): void,
+    (e: 'edit', events: EventActions): void,
+
 }>()
 
 const props = defineProps({
@@ -17,6 +19,11 @@ const props = defineProps({
         default: {} as AutomationTriggerAction,
         required: true
     },
+    editEvents:{
+        type: Object as PropType<EventActions>,
+        default: {} as EventActions,
+        required: true
+    }
 });
 
 
@@ -54,10 +61,7 @@ watch(
 
 
 function removeAction(action: AutomationTriggerAction): void {
-    console.log("ActionViewer - DELETE")
-
     emit('delete', action);
-
     eventBus!.emit('closePanel', 'ActionViewer');
 }
 
@@ -66,7 +70,7 @@ function openEditor(): void {
 }
 
 function createActionEditorOpenPanelEvent(action: AutomationTriggerAction): OpenPanelEvent {
-    return { owner: 'ActionViewer', name: 'ActionEditor', args: { item: action }, events: {} }
+    return { owner: 'ActionViewer', name: 'ActionEditor', args: { item: action }, events: props.editEvents }
 }
 
 </script>

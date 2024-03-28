@@ -27,8 +27,6 @@ const componentMap: Map = {
 };
 
 const emit = defineEmits<{
-    //(e: 'save', item: any): void,
-    //(e: 'delete', item: any): void,
     (e: 'open', component_name: string): void,
     (e: 'close'): void,
 }>()
@@ -54,9 +52,11 @@ function openComponent(event: OpenPanelEvent): void {
 
     presentationQueue.value.push(event.name);
 
-    console.log("OpenPanel: name: ", event.name, " owner: ", event.owner, " ListSize ", presentationQueue.value.length)
+    console.log("OPEN:" + event.name, " owner: " + event.owner, " Size ", presentationQueue.value.length);
+
     if (componentCache.value[event.name] != undefined) {
         componentCache.value[event.name].args = event.args;
+
     } else {
         componentCache.value[event.name] = event;
     }
@@ -71,29 +71,19 @@ const currentComponent = computed(() => {
 function closeComponent(name: string): void {
 
     if (componentCache.value[name] === undefined) {
-        console.log("ClosePanel ", name, " doesnt exist in cache. [IGNORE]")
+        console.log("CLOSE ", name, " NOT FOUND")
         return
     }
 
-    const event = componentCache.value[name];
-    // if (componentCache.value[event.name] != undefined) {
-
-    const owner = componentCache.value[event.name].owner;
-    //if (owner == event.owner) {
+    // TODO: cleanup componentCache ?
     presentationQueue.value.pop();
-    console.log("ClosePanel: name " + event.name, " owner: " + event.owner, " ListSize ", presentationQueue.value.length);
-
-    // }
-    //  }
-
-    //componentCache.value[event.name].args = {};
-
+    const event = componentCache.value[name];
+   
+    console.log("CLOSE:" + event.name, " owner: " + event.owner, " Size ", presentationQueue.value.length);
     if (presentationQueue.value.length == 0) {
-        console.log("Presentation queue IS EMPTY. EXIT.");
         emit('close');
     }
 }
-
 
 //// ######################
 const localBus = mitt<Events>();
@@ -124,7 +114,6 @@ function useMyEvents(handlers: EventHandlers<Events>) {
     return cleanup;
 }
 
-//// ######################
 onMounted(() => {
 });
 

@@ -65,15 +65,10 @@ const getFeatureDeviceList = computed(() => {
 })
 
 function saveAction(): void {
-
-    console.log("StepAction save action ", action)
-
     emit('save', action);
 }
 
 function removeAction(): void {
-    console.log("StepAction remove action")
-
     emit('delete', action);
 }
 
@@ -181,9 +176,7 @@ input.form-select:disabled {
             <ul class="dropdown-menu">
                 <li v-for="operator in NumericOperators">
                     <a @click="addStep(operator as NumericOperator)" class="dropdown-item" data-toggle="dropdown">
-                        {{
-                    operator
-                }}</a>
+                        {{operator}}</a>
                 </li>
             </ul>
         </form>

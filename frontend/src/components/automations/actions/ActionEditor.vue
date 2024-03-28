@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, PropType, defineAsyncComponent, computed, onMounted, inject, reactive, onUnmounted } from "vue";
-import { getActionType, ActionType, AutomationActionTypes } from "@/contracts/automations"
+import { ref, watch, PropType, defineAsyncComponent, inject } from "vue";
+import { getActionType, ActionType, } from "@/contracts/automations"
 import { AutomationTriggerAction } from "@/types/automation";
-import { EventActions, Events, OpenPanelEvent } from "@/types/events.type";
 import { LocalEventBus } from "@/composables/eventBus";
 
 
@@ -45,9 +44,6 @@ watch(
 )
 
 function saveAction(action: AutomationTriggerAction): void {
-
-    console.log("ActionEditor - SAVE")
-
     currentAction.value = action
     emit('save', currentAction.value);
 
@@ -55,8 +51,6 @@ function saveAction(action: AutomationTriggerAction): void {
 }
 
 function removeAction(action: AutomationTriggerAction): void {
-    console.log("ActionEditor - DELETE")
-
     emit('delete', currentAction.value);
 
     eventBus!.emit('closePanel', 'ActionEditor');

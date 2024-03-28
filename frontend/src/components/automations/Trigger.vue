@@ -36,19 +36,13 @@ watch(
     () => props.trigger,
     () => {
 
-        if (props.trigger == undefined) {
-            return;
-        }
-        try {
-            console.log("Trigger props.trigger ", props.trigger);
+       
             if (props.trigger.action != undefined && props.trigger.action.id != "") {
                 const action = JSON.parse(JSON.stringify(props.trigger.action)) as AutomationTriggerAction
                 actions.value.push(action);
             }
             conditions.value = JSON.parse(JSON.stringify(props.trigger.conditions)) as AutomationTriggerConditions;
-        } catch (error) {
-            console.log(error);
-        }
+        
 
     }, { immediate: true }
 )
@@ -63,16 +57,14 @@ function save() {
     if (actions.value.length > 0) {
         trigger.value.action = actions.value[0];
     }
-    console.log("TRIGGER SAVE ", trigger.value)
 
     emit('save', trigger.value)
-
     eventBus!.emit('closePanel', 'Trigger');
 }
 
 function remove() {
-    console.log("TRIGGER DELETE")
     emit('delete', trigger.value)
+    eventBus!.emit('closePanel', 'Trigger');
 }
 
 function addCondition() {
@@ -94,39 +86,39 @@ const exposesList = computed(() => {
 function deleteAction() {
     trigger.value.action = new EditableActionTrigger('StepAction'); // default value
     actions.value = [];
-
 }
 
 function SaveAction(action: AutomationTriggerAction) {
     actions.value[0] = action;
     trigger.value.action = actions.value[0];
 
-    console.log("TRIGGER - SaveAction ", action)
 }
 
-function addAction(actionType: ActionType) {
-    console.log("TRIGGER - AddNewwAction ", actionType)
-
+function addNewAction(actionType: ActionType) {
     eventBus!.emit('openPanel', createActionOpenPanelEvent(new EditableActionTrigger(actionType), true));
 }
 
-function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: boolean): OpenPanelEvent {
-    const events: EventActions = {
+const actionEvents = ():EventActions =>  {
+    return {
         'delete': (e) => {
             deleteAction()
         },
         'save': (a) => {
             SaveAction(a)
-        },
-    };
-
-    return { owner: 'Trigger', name: 'ActionEditor', args: { item: action, editMode: editMode }, events: events }
+        }
+    }
+};
+        
+function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: boolean): OpenPanelEvent {
+    return { owner: 'Trigger', name: 'ActionEditor', args: { item: action, editMode: editMode }, events: actionEvents() }
 }
 
 </script>
 
 <template>
     <div class="container-fluid p-0 h-100">
+
+        trigger: {{trigger}}
         <!-- TODO:  -->
         <!-- if automation for device exists message user else we overwrite it -->
 
@@ -181,7 +173,7 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                                 </button>
                                 <ul class="dropdown-menu">
                                     <li v-for="actionType in AutomationActionTypes">
-                                        <a @click="addAction(actionType as ActionType)" class="dropdown-item"
+                                        <a @click="addNewAction(actionType as ActionType)" class="dropdown-item"
                                             data-toggle="dropdown">New {{ actionType }}</a>
                                     </li>
                                 </ul>
@@ -193,7 +185,8 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                 <tbody v-for="(action) in actions" :item="action">
                     <tr>
                         <th>
-                            <ActionViewer :item="action" @delete="deleteAction()"> </ActionViewer>
+
+                            <ActionViewer :item="action" :edit-events="actionEvents() "  @delete="deleteAction()"> </ActionViewer>
                         </th>
 
                     </tr>

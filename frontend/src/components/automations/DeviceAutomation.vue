@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRouter } from 'vue-router'
 import Trigger from "./Trigger.vue"
 import DataInput from "../input/DataInput.vue"
@@ -19,7 +19,6 @@ const props = defineProps({
 const router = useRouter()
 const automation = ref<Automation>({} as Automation)
 const selectedTrigger = ref<AutomationTrigger>()
-const showTriggerCreation = ref<boolean>(false)
 
 watch(
     () => props.id,
@@ -53,7 +52,6 @@ function isSaveEnabled() {
 
 function createNewTrigger() {
     selectedTrigger.value = EditableAutomationTrigger.create()
-    showTriggerCreation.value = true
 }
 
 function cancel() {
@@ -76,24 +74,16 @@ function deleteAutomation() {
 }
 
 function deleteTrigger(trigger: AutomationTrigger): void {
-    console.log("DeviceAutomation deletetrigger ", trigger);
-
     automation.value.triggers = automation.value.triggers.filter((e, i) => e != trigger);
-    showTriggerCreation.value = false // close trigger panel
 }
 
 function saveTrigger(trigger: AutomationTrigger): void {
-    console.log("DeviceAutomation savetrigger ", trigger);
     const idx = automation.value.triggers.indexOf(trigger)
     if (idx == -1) {
         automation.value.triggers.push(trigger)
     } else {
         automation.value.triggers[idx] = trigger
     }
-
-    // selectedTrigger.value = trigger;
-    showTriggerCreation.value = false // close trigger panel
-
 }
 
 function getConditionsDescription(trigger: AutomationTrigger): string {
@@ -124,18 +114,21 @@ function getActionDescription(trigger: AutomationTrigger): string {
 
 function rowClicked(trigger: AutomationTrigger): void {
     selectedTrigger.value = trigger;
-    showTriggerCreation.value = true;
 }
 
 function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
-    deleteTrigger(trgger)
+    deleteTrigger(trgger);
 }
 
 function resetSelection() {
-    console.log("DeviceAutomation close Panel ");
-
-    selectedTrigger.value = undefined
+    selectedTrigger.value = undefined;
 }
+
+const panelItem  = computed(()=>{ 
+    console.log("DEVICEAUTOMATION - createOpenPanelEvent");
+    return createOpenPanelEvent()
+});
+
 
 function createOpenPanelEvent(): OpenPanelEvent {
 
@@ -149,7 +142,7 @@ function createOpenPanelEvent(): OpenPanelEvent {
             deleteTrigger(e)
         },
     };
-    return { owner: 'DeviceAutomation', name: 'Trigger', args: { id: props.id, trigger: selectedTrigger }, events: events }
+    return { owner: 'DeviceAutomation', name: 'Trigger', args: { id: props.id, trigger: selectedTrigger.value }, events: events }
 
 }
 </script>
@@ -206,7 +199,6 @@ function createOpenPanelEvent(): OpenPanelEvent {
                 </div>
 
                 <div class="card-body ">
-                    <!-- v-if="showTriggerCreation == false" -->
                     <table class="table responsive table-hover ">
                         <thead>
                             <tr>
@@ -241,15 +233,12 @@ function createOpenPanelEvent(): OpenPanelEvent {
                         </tbody>
                     </table>
 
-                    DeviceAutomation: {{ selectedTrigger }}
-                    <!-- v-else -->
                     <div class="row" v-if="selectedTrigger != null">
                         <!-- <button type="button" class="btn-close" aria-label="Close"
                             @click="() => showTriggerCreation = false"></button> -->
                         <!-- <div class="col"> -->
 
-                        this is retared we cant do createOpenPanelEvent() - we dont even need to
-                        <Panel :item="createOpenPanelEvent()" @close="resetSelection">
+                        <Panel :item="panelItem" @close="resetSelection">
 
                         </Panel>
                         <!-- <Trigger :id="props.id" :trigger="selectedTrigger" @save="saveTrigger"
