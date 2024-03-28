@@ -35,6 +35,9 @@ const device = computed(() => {
     return store.getters["devices/find"](action.id) as Device;
 });
 
+const isSaveEnabled = computed(() => action.data && action.property && action.id);
+
+
 const deviceFeatureList = computed(() => {
     var devices = store.getters["devices/listAll"]() as Devices;
 
@@ -194,10 +197,21 @@ defineExpose({
     clear,
 });
 
-
+function saveAction() {
+}
+function removeAction() {
+}
 </script>
 
 <template>
+    <div class="row pb-3">
+        <form class="container">
+            <button class="btn btn-light btn-sm" type="button" @click="saveAction"
+                :disabled="!isSaveEnabled">Save</button>
+            <button class="btn btn-light btn-sm" type="button" @click="removeAction">Delete</button>
+
+        </form>
+    </div>
     <div class="row">
         <div v-if="getPresets" class="col-xl-3 col-md-4">
             <Selector placeholder=" Select device" :items="deviceFeatureList" :value="action.id" alignment="center"

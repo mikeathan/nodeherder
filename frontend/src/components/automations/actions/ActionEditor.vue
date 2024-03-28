@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ref, watch, PropType, defineAsyncComponent, inject } from "vue";
+import { ref, watch, PropType } from "vue";
 import { getActionType, ActionType, } from "@/contracts/automations"
 import { AutomationTriggerAction } from "@/types/automation";
-import { emitClosePanel } from "@/mixins/eventBus";
+import { emitClosePanel } from "@/mixins/useAutomationsEventBus";
 import { PanelComponents } from "@/mixins/usePanelComponents";
-
 
 
 const emit = defineEmits<{
@@ -37,13 +36,13 @@ watch(
 
 function saveAction(action: AutomationTriggerAction): void {
     currentAction.value = action
+
     emit('save', currentAction.value);
     emitClosePanel('ActionEditor');
 }
 
 function removeAction(action: AutomationTriggerAction): void {
     emit('delete', currentAction.value);
-
     emitClosePanel('ActionEditor');
 }
 

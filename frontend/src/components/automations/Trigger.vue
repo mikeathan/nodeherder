@@ -1,6 +1,5 @@
 <script setup lang="ts">
-
-import { computed, watch, ref, PropType, toRef, inject, onUnmounted } from "vue";
+import { computed, watch, ref, PropType } from "vue";
 import TriggerCondition from "./TriggerCondition.vue"
 import Selector from "../input/Selector.vue"
 import { store } from "../../store/index";
@@ -8,17 +7,11 @@ import { Device } from "@/types/device";
 import { AutomationTrigger, AutomationTriggerAction, AutomationTriggerCondition, AutomationTriggerConditions } from "@/types/automation";
 import { isValid, EditableTriggerCondition, EditableActionTrigger, AutomationActionTypes, ActionType } from "../../contracts/automations"
 import { capitalizeText } from "../../modules/formatters/text.formatter";
-import { Emitter } from 'mitt'
-import { EventActions, Events, OpenPanelEvent } from "@/types/events.type";
-import { emitClosePanel, emitOpenPanel } from "@/mixins/eventBus";
+import { EventActions, OpenPanelEvent } from "@/types/events.type";
+import { emitClosePanel, emitOpenPanel } from "@/mixins/useAutomationsEventBus";
 import ActionViewer from "./actions/ActionViewer.vue";
 
 
-
-//// 
-
-
-//const emitter = inject('emitter') as Emitter<Events>;
 const props = defineProps({
     id: { type: String },
     trigger: { type: Object as PropType<AutomationTrigger>, default: {} as AutomationTrigger },
@@ -57,13 +50,11 @@ function save() {
     }
 
     emit('save', trigger.value)
-
     emitClosePanel('Trigger')
 }
 
 function remove() {
     emit('delete', trigger.value)
-
     emitClosePanel('Trigger')
 }
 
@@ -82,7 +73,6 @@ const exposesList = computed(() => {
         .map((e) => ({ [e.name]: e.name })))
 })
 
-
 function deleteAction() {
     trigger.value.action = new EditableActionTrigger('StepAction'); // default value
     actions.value = [];
@@ -95,7 +85,6 @@ function SaveAction(action: AutomationTriggerAction) {
 }
 
 function addNewAction(actionType: ActionType) {
-
     emitOpenPanel(createActionOpenPanelEvent(new EditableActionTrigger(actionType), true));
 }
 
@@ -184,7 +173,6 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                 <tbody v-for="(action) in actions" :item="action">
                     <tr>
                         <th>
-
                             <ActionViewer :item="action" :edit-events="actionEvents()" @delete="deleteAction()">
                             </ActionViewer>
                         </th>

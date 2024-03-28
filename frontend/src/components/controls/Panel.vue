@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, PropType, defineAsyncComponent, computed, onMounted, inject, onUnmounted, provide, InjectionKey } from "vue";
 import { OpenPanelEvent } from "@/types/events.type";
-import { useAutomationEvents } from "@/mixins/eventBus";
+import { useAutomationEvents } from "@/mixins/useAutomationsEventBus";
 import { PanelComponents } from "@/mixins/usePanelComponents";
 import { KeyyValuePair } from "@/types/types";
 

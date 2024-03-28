@@ -124,7 +124,7 @@ function resetSelection() {
     selectedTrigger.value = undefined;
 }
 
-const panelItem  = computed(()=>{ 
+const panelItem = computed(() => {
     console.log("DEVICEAUTOMATION - createOpenPanelEvent");
     return createOpenPanelEvent()
 });
@@ -142,7 +142,7 @@ function createOpenPanelEvent(): OpenPanelEvent {
             deleteTrigger(e)
         },
     };
-    return { owner: 'DeviceAutomation', name: 'Trigger', args: { id: props.id, trigger: selectedTrigger.value }, events: events }
+    return { name: 'Trigger', args: { id: props.id, trigger: selectedTrigger.value }, events: events }
 
 }
 </script>
@@ -198,7 +198,7 @@ function createOpenPanelEvent(): OpenPanelEvent {
                     </div>
                 </div>
 
-                <div class="card-body ">
+                <div v-if="selectedTrigger == null" class="card-body ">
                     <table class="table responsive table-hover ">
                         <thead>
                             <tr>
@@ -232,21 +232,17 @@ function createOpenPanelEvent(): OpenPanelEvent {
                             </tr>
                         </tbody>
                     </table>
-
-                    <div class="row" v-if="selectedTrigger != null">
-                        <!-- <button type="button" class="btn-close" aria-label="Close"
-                            @click="() => showTriggerCreation = false"></button> -->
-                        <!-- <div class="col"> -->
-
-                        <Panel :item="panelItem" @close="resetSelection">
-
-                        </Panel>
-                        <!-- <Trigger :id="props.id" :trigger="selectedTrigger" @save="saveTrigger"
-                                @delete="deleteTrigger">
-                            </Trigger> -->
-                    </div>
                 </div>
-                <!-- </div> -->
+                <div v-else class="row">
+                    <!-- <button type="button" class="btn-close" aria-label="Close"
+                            @click="() => showTriggerCreation = false"></button> -->
+                    <!-- <div class="col"> -->
+
+                    <Panel :item="panelItem" @close="resetSelection">
+
+                    </Panel>
+                </div>
+
             </div>
         </div>
     </div>

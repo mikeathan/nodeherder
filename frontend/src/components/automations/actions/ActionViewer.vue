@@ -3,7 +3,7 @@ import { ref, watch, PropType, computed } from "vue";
 import { getActionType, ActionType, AutomationActionTypes } from "@/contracts/automations"
 import { AutomationTriggerAction } from "@/types/automation";
 import { EventActions, OpenPanelEvent } from "@/types/events.type";
-import { emitClosePanel, emitOpenPanel } from "@/mixins/eventBus";
+import { emitClosePanel, emitOpenPanel } from "@/mixins/useAutomationsEventBus";
 
 const emit = defineEmits<{
     (e: 'delete', action: AutomationTriggerAction): void,
