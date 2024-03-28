@@ -206,9 +206,8 @@ function removeAction() {
 <template>
     <div class="row pb-3">
         <form class="container">
-            <button class="btn btn-light btn-sm" type="button" @click="saveAction"
-                :disabled="!isSaveEnabled">Save</button>
-            <button class="btn btn-light btn-sm" type="button" @click="removeAction">Delete</button>
+            <button class="btn btn-light" type="button" @click="saveAction" :disabled="!isSaveEnabled">Save</button>
+            <button class="btn btn-light" type="button" @click="removeAction">Delete</button>
 
         </form>
     </div>

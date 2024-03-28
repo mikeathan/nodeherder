@@ -106,92 +106,90 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
 </script>
 
 <template>
-    <div class="container-fluid p-0 h-100">
-        <!-- TODO:  -->
-        <!-- if automation for device exists message user else we overwrite it -->
+    <!-- TODO:  -->
+    <!-- if automation for device exists message user else we overwrite it -->
 
-        <div class="row" v-if="trigger.name == ''">
-            <Selector placeholder="Select trigger" :items="exposesList" :value="trigger.name" alignment="left"
-                :disabled="trigger.name != ''" @update:data="v => trigger.name = v">
-            </Selector>
-        </div>
-        <div class="row" v-else>
-            <!-- Conditions -->
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th scope="col">
-                            Trigger {{ capitalizeText(trigger.name) }}
-                        </th>
-                        <th scope="col">#</th>
-                    </tr>
-                </thead>
-                <tr>
-                    <th scope="col">
-                        <h5>Conditions
-                            <button type="button" class="btn btn-default btn-number" @click="(e) => addCondition()">
-                                <span class="fa fa-plus"></span>
-                            </button>
-                        </h5>
-                    </th>
-                </tr>
-                <tbody v-for="( condition, index ) in   conditions  " :item="condition">
-                    <tr>
-                        <th scope="w-25">
-                            <TriggerCondition :id="props.id" :name="condition.name" :operator="condition.equality"
-                                :data="condition.value" @update:name="newValue => condition.name = newValue"
-                                @update:value="newValue => condition.value = newValue"
-                                @update:operator="newValue => condition.equality = newValue">
-                            </TriggerCondition>
-                        </th>
-                        <td>
-                            <span class="fa fa-trash-alt fa-sm" @click="removeTriggerCondition(condition)">
-                            </span>
-                        </td>
-                    </tr>
-                </tbody>
-                <tr>
-                    <!-- Actions Header -->
-                    <th scope="col">
-                        <h5>Actions
-                            <span v-if="actions.length == 0">
-                                <button type="button" class="btn btn-default btn-number  ms-3" data-bs-toggle="dropdown"
-                                    aria-expanded="false">
-                                    <span class="fa fa-plus"></span>
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li v-for="actionType in AutomationActionTypes">
-                                        <a @click="addNewAction(actionType as ActionType)" class="dropdown-item"
-                                            data-toggle="dropdown">New {{ actionType }}</a>
-                                    </li>
-                                </ul>
-                            </span>
-                        </h5>
-                    </th>
-                </tr>
-                <!-- Actions -->
-                <tbody v-for="(action) in actions" :item="action">
-                    <tr>
-                        <th>
-                            <ActionViewer :item="action" :edit-events="actionEvents()" @delete="deleteAction()">
-                            </ActionViewer>
-                        </th>
 
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <div class="row  pt-3">
-            <div class="row pt-3">
-                <div class="col">
-                    <button type="button" class="btn btn-light" @click="save">
-                        Save
-                    </button>
-                    <button type="button" class="btn btn-light" :disabled="isValid(trigger) == false" @click="remove">
-                        Delete
-                    </button>
-                </div>
-            </div>
+    <div class="row pb-3">
+        <div class="col">
+            <button type="button" class="btn btn-light" @click="save">
+                Save
+            </button>
+            <button type="button" class="btn btn-light" :disabled="isValid(trigger) == false" @click="remove">
+                Delete
+            </button>
         </div>
     </div>
-</template>@/mixins/eventBus
+    <div class="row" v-if="trigger.name == ''">
+        <Selector placeholder="Select trigger" :items="exposesList" :value="trigger.name" alignment="left"
+            :disabled="trigger.name != ''" @update:data="v => trigger.name = v">
+        </Selector>
+    </div>
+    <div class="row" v-else>
+        <!-- Conditions -->
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">
+                        Trigger {{ capitalizeText(trigger.name) }}
+                    </th>
+                    <th scope="col">#</th>
+                </tr>
+            </thead>
+            <tr>
+                <th scope="col">
+                    <h5>Conditions
+                        <button type="button" class="btn btn-default btn-number" @click="(e) => addCondition()">
+                            <span class="fa fa-plus"></span>
+                        </button>
+                    </h5>
+                </th>
+            </tr>
+            <tbody v-for="( condition, index ) in   conditions  " :item="condition">
+                <tr>
+                    <th scope="w-25">
+                        <TriggerCondition :id="props.id" :name="condition.name" :operator="condition.equality"
+                            :data="condition.value" @update:name="newValue => condition.name = newValue"
+                            @update:value="newValue => condition.value = newValue"
+                            @update:operator="newValue => condition.equality = newValue">
+                        </TriggerCondition>
+                    </th>
+                    <td>
+                        <span class="fa fa-trash-alt fa-sm" @click="removeTriggerCondition(condition)">
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+            <tr>
+                <!-- Actions Header -->
+                <th scope="col">
+                    <h5>Actions
+                        <span v-if="actions.length == 0">
+                            <button type="button" class="btn btn-default btn-number  ms-3" data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                                <span class="fa fa-plus"></span>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li v-for="actionType in AutomationActionTypes">
+                                    <a @click="addNewAction(actionType as ActionType)" class="dropdown-item"
+                                        data-toggle="dropdown">New {{ actionType }}</a>
+                                </li>
+                            </ul>
+                        </span>
+                    </h5>
+                </th>
+            </tr>
+            <!-- Actions -->
+            <tbody v-for="(action) in actions" :item="action">
+                <tr>
+                    <th>
+                        <ActionViewer :item="action" :edit-events="actionEvents()" @delete="deleteAction()">
+                        </ActionViewer>
+                    </th>
+
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+</template>

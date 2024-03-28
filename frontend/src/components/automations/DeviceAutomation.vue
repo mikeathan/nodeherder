@@ -184,64 +184,71 @@ function createOpenPanelEvent(): OpenPanelEvent {
                         </div>
                     </div>
 
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-light" @click="saveAutomation"
-                            :disabled="isSaveEnabled() == false">
-                            Save
-                        </button>
-                        <button type="button" class="btn btn-light" @click="deleteAutomation">
-                            Delete
-                        </button>
-                        <button type="button" class="btn btn-light" @click="cancel">
-                            Cancel
-                        </button>
+
+                </div>
+
+                <div class="card-body ">
+                    <div v-if="selectedTrigger == null">
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-light" @click="saveAutomation"
+                                :disabled="isSaveEnabled() == false">
+                                Save
+                            </button>
+                            <button type="button" class="btn btn-light" @click="deleteAutomation">
+                                Delete
+                            </button>
+                            <button type="button" class="btn btn-light" @click="cancel">
+                                Cancel
+                            </button>
+                        </div>
+
+                        <table class="table responsive table-hover ">
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Action</th>
+                                    <th scope="col">Conditions</th>
+                                    <th scope="col">
+                                        <button type="button" class="btn btn-default btn-number"
+                                            @click="createNewTrigger()">
+                                            <span class="fa fa-plus"></span>
+                                        </button>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody v-for="(trigger, index) in automation.triggers" :item="trigger">
+                                <tr>
+                                    <th scope="row">
+                                        {{ index + 1 }}
+                                    </th>
+                                    <td @click="rowClicked(trigger)">
+                                        {{ getActionDescription(trigger) }}
+                                    </td>
+                                    <td>
+                                        {{ getConditionsDescription(trigger) }}
+                                    </td>
+                                    <td>
+                                        <span class="fa fa-trash-alt fa-sm"
+                                            @click="onDeleteTriggerClick($event, trigger)" data-bs-toggle="collapse"
+                                            data-bs-target>
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div v-else class="row">
+                        <!-- <button type="button" class="btn-close" aria-label="Close"
+                            @click="() => showTriggerCreation = false"></button> -->
+                        <!-- <div class="col"> -->
+
+                        <Panel :item="panelItem" @close="resetSelection">
+
+                        </Panel>
                     </div>
                 </div>
 
-                <div v-if="selectedTrigger == null" class="card-body ">
-                    <table class="table responsive table-hover ">
-                        <thead>
-                            <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">Action</th>
-                                <th scope="col">Conditions</th>
-                                <th scope="col">
-                                    <button type="button" class="btn btn-default btn-number"
-                                        @click="createNewTrigger()">
-                                        <span class="fa fa-plus"></span>
-                                    </button>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody v-for="(trigger, index) in automation.triggers" :item="trigger">
-                            <tr>
-                                <th scope="row">
-                                    {{ index + 1 }}
-                                </th>
-                                <td @click="rowClicked(trigger)">
-                                    {{ getActionDescription(trigger) }}
-                                </td>
-                                <td>
-                                    {{ getConditionsDescription(trigger) }}
-                                </td>
-                                <td>
-                                    <span class="fa fa-trash-alt fa-sm" @click="onDeleteTriggerClick($event, trigger)"
-                                        data-bs-toggle="collapse" data-bs-target>
-                                    </span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div v-else class="row">
-                    <!-- <button type="button" class="btn-close" aria-label="Close"
-                            @click="() => showTriggerCreation = false"></button> -->
-                    <!-- <div class="col"> -->
-
-                    <Panel :item="panelItem" @close="resetSelection">
-
-                    </Panel>
-                </div>
 
             </div>
         </div>

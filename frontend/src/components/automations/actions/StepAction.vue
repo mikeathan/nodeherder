@@ -98,7 +98,6 @@ function deviceSelected(event: Event) {
     action.steps = [];
 }
 const isSaveEnabled = computed(() => action.data && action.property && action.id && action.steps.length != 0);
-//const isSaveEnabled = computed(() => true); // use for debugging to fix eventbus bug
 
 </script>
 
@@ -168,15 +167,14 @@ input.form-select:disabled {
     <!-- action controls -->
     <div class="row pb-3">
         <form class="container">
-            <button class="btn btn-light btn-sm" type="button" @click="saveAction"
-                :disabled="!isSaveEnabled">Save</button>
-            <button class="btn btn-light btn-sm" type="button" @click="removeAction">Delete</button>
-            <button type="button" class="btn btn-light btn-sm" data-bs-toggle="dropdown" :disabled="action.id == ''">Add
+            <button class="btn btn-light " type="button" @click="saveAction" :disabled="!isSaveEnabled">Save</button>
+            <button class="btn btn-light btn" type="button" @click="removeAction">Delete</button>
+            <button type="button" class="btn btn-light" data-bs-toggle="dropdown" :disabled="action.id == ''">Add
                 Operation</button>
             <ul class="dropdown-menu">
                 <li v-for="operator in NumericOperators">
                     <a @click="addStep(operator as NumericOperator)" class="dropdown-item" data-toggle="dropdown">
-                        {{operator}}</a>
+                        {{ operator }}</a>
                 </li>
             </ul>
         </form>
