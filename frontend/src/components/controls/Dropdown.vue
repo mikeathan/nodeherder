@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, watchEffect, watch, PropType, reactive } from "vue";
-import { DropDownItem } from "../../types/controls.type";
+import { DropDownItemType } from "../../types/controls.type";
 
 const props = defineProps({
     items: {
-        type: Object as PropType<Array<DropDownItem>>,
+        type: Object as PropType<Array<DropDownItemType>>,
         default: [],
         required: true
+    },
+    className: {
+        type: String,
+        default: ""
     },
     disabled: {
         type: Boolean,
@@ -15,17 +19,9 @@ const props = defineProps({
 });
 
 </script>
-<!-- 
-<button type="button" class="btn" data-bs-toggle="dropdown"
-                                aria-expanded="false">
-                                <span class="fa fa-plus"></span>
-
-                            </button> -->
-
-
 <template>
-    <button :id="`dropdownControl`" type="button" class="btn" data-bs-toggle="dropdown" aria-expanded="false"
-        :disabled="props.disabled">
+    <button :id="`dropdownControl`" type="button" :class="`btn ${props.className}`" data-bs-toggle="dropdown"
+        aria-expanded="false" :disabled="props.disabled">
         <slot></slot>
     </button>
     <ul class="dropdown-menu">

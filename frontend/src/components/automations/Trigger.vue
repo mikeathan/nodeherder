@@ -12,7 +12,6 @@ import { EventActions, OpenPanelEvent } from "@/types/events.type";
 import { emitClosePanel, emitOpenPanel } from "@/mixins/useAutomationsEventBus";
 import ActionViewer from "./actions/ActionViewer.vue";
 import { createNewActionDropdownItems } from "../../configs/automation/trigger-dropdown.config";
-import { DropDownClickEvent } from "@/types/controls.type"
 const props = defineProps({
     id: { type: String },
     trigger: { type: Object as PropType<AutomationTrigger>, default: {} as AutomationTrigger },

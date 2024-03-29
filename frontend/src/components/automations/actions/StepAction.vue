@@ -6,6 +6,8 @@ import { getFeatureDevices } from "@/contracts/device";
 import { store } from "../../../store/index";
 import { Device, Devices } from "@/types/device";
 import { ExposeTypes } from "@/types/device.type";
+import Dropdown from "@/components/controls/Dropdown.vue";
+import { createStepActionOperatorsDropdowitems } from "../../../configs/automation/trigger-dropdown.config";
 
 const props = defineProps({
     action: {
@@ -98,6 +100,7 @@ function deviceSelected(event: Event) {
     action.steps = [];
 }
 const isSaveEnabled = computed(() => action.data && action.property && action.id && action.steps.length != 0);
+const dropDownitems = computed(() => createStepActionOperatorsDropdowitems((e: NumericOperator) => addStep(e)));
 
 </script>
 
@@ -169,14 +172,9 @@ input.form-select:disabled {
         <form class="container">
             <button class="btn btn-light " type="button" @click="saveAction" :disabled="!isSaveEnabled">Save</button>
             <button class="btn btn-light btn" type="button" @click="removeAction">Delete</button>
-            <button type="button" class="btn btn-light" data-bs-toggle="dropdown" :disabled="action.id == ''">Add
-                Operation</button>
-            <ul class="dropdown-menu">
-                <li v-for="operator in NumericOperators">
-                    <a @click="addStep(operator as NumericOperator)" class="dropdown-item" data-toggle="dropdown">
-                        {{ operator }}</a>
-                </li>
-            </ul>
+
+            <Dropdown :items="dropDownitems" class-name="btn-light" :disabled="action.id == ''">Add Operation</Dropdown>
+
         </form>
     </div>
 

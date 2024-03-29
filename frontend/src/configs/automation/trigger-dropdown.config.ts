@@ -1,17 +1,32 @@
-import { AutomationActionTypes } from "@/contracts/automations";
 import {
-  DropDownItem,
+  AutomationActionTypes,
+  NumericOperators,
+} from "@/contracts/automations";
+import {
+  DropDownItemType,
   createDropDownItem,
-  DropDownClickEvent,
+  ButtonClickEventType,
 } from "../../types/controls.type";
 
 export function createNewActionDropdownItems(
-  event: DropDownClickEvent
-): DropDownItem[] {
-  let items: DropDownItem[] = [];
+  event: ButtonClickEventType
+): DropDownItemType[] {
+  let items: DropDownItemType[] = [];
 
   Object.values(AutomationActionTypes).forEach((actionType) =>
     items.push(createDropDownItem(`New ${actionType}`, actionType, event))
+  );
+
+  return items;
+}
+
+export function createStepActionOperatorsDropdowitems(
+  event: ButtonClickEventType
+): DropDownItemType[] {
+  let items: DropDownItemType[] = [];
+
+  Object.values(NumericOperators).forEach((operator) =>
+    items.push(createDropDownItem(operator, operator, event))
   );
 
   return items;
