@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watchEffect, watch, PropType, reactive, h } from "vue";
 import Dropdown from "@/components/controls/Dropdown.vue";
+import Button from "@/components/controls/Button.vue";
+
 import { ButtonPanelType, isDropdown, DropDownType } from "@/types/controls.type";
 import { PanelComponents } from "@/mixins/usePanelComponents";
 

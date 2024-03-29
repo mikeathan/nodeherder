@@ -3,11 +3,7 @@ import { computed, ref, watchEffect, watch, PropType, reactive } from "vue";
 import { ButtonType, DropDownItemType } from "../../types/controls.type";
 
 const props = defineProps({
-    item: {
-        type: Object as PropType<ButtonType>,
-        default: [],
-        required: true
-    },
+
     className: {
         type: String,
         default: ""
@@ -18,9 +14,17 @@ const props = defineProps({
     }
 });
 
+const emit = defineEmits<{
+    (e: 'click', event: any): void,
+}>()
+
+function onClick(event: any): void {
+
+}
+
 </script>
 <template>
-    <button class="btn btn-light " type="button" @click="saveAction" :disabled="props.disabled">
+    <button :class="`btn ${props.className}`" type="button" @click="onClick" :disabled="props.disabled">
         <slot>
 
         </slot>

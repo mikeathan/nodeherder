@@ -19,4 +19,10 @@ export const PanelComponents: Map = {
   ActionViewer: defineAsyncComponent(
     () => import("../components/automations/actions/ActionViewer.vue")
   ),
+  Dropdown: defineAsyncComponent(
+    () => import("../components/automations/controls/Dropdown.vue")
+  ),
+  Button: defineAsyncComponent(
+    () => import("../components/automations/controls/Button.vue")
+  ),
 };
