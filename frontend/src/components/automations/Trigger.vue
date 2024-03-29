@@ -2,16 +2,17 @@
 import { computed, watch, ref, PropType } from "vue";
 import TriggerCondition from "./TriggerCondition.vue"
 import Selector from "../input/Selector.vue"
+import Dropdown from "../controls/Dropdown.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
 import { AutomationTrigger, AutomationTriggerAction, AutomationTriggerCondition, AutomationTriggerConditions } from "@/types/automation";
-import { isValid, EditableTriggerCondition, EditableActionTrigger, AutomationActionTypes, ActionType } from "../../contracts/automations"
+import { isValid, EditableTriggerCondition, EditableActionTrigger, AutomationActionTypes, ActionType, getActionType } from "../../contracts/automations"
 import { capitalizeText } from "../../modules/formatters/text.formatter";
 import { EventActions, OpenPanelEvent } from "@/types/events.type";
 import { emitClosePanel, emitOpenPanel } from "@/mixins/useAutomationsEventBus";
 import ActionViewer from "./actions/ActionViewer.vue";
-
-
+import { createNewActionDropdownItems } from "../../configs/automation/trigger-dropdown.config";
+import { DropDownClickEvent } from "@/types/controls.type"
 const props = defineProps({
     id: { type: String },
     trigger: { type: Object as PropType<AutomationTrigger>, default: {} as AutomationTrigger },
@@ -23,10 +24,10 @@ const actions = ref<AutomationTriggerAction[]>([]); // have a list of actions wi
 
 const trigger = ref<AutomationTrigger>(props.trigger)
 
+const dropDownitems = computed(() => createNewActionDropdownItems((e: ActionType) => addNewAction(e)));
 watch(
     () => props.trigger,
     () => {
-
 
         if (props.trigger.action != undefined && props.trigger.action.id != "") {
             const action = JSON.parse(JSON.stringify(props.trigger.action)) as AutomationTriggerAction
@@ -85,8 +86,12 @@ function SaveAction(action: AutomationTriggerAction) {
 }
 
 function addNewAction(actionType: ActionType) {
+
+    console.log("AddNewAction ", actionType)
     emitOpenPanel(createActionOpenPanelEvent(new EditableActionTrigger(actionType), true));
 }
+
+
 
 const actionEvents = (): EventActions => {
     return {
@@ -165,16 +170,9 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                 <th scope="col">
                     <h5>Actions
                         <span v-if="actions.length == 0">
-                            <button type="button" class="btn btn-default btn-number  ms-3" data-bs-toggle="dropdown"
-                                aria-expanded="false">
+                            <Dropdown :items="dropDownitems">
                                 <span class="fa fa-plus"></span>
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li v-for="actionType in AutomationActionTypes">
-                                    <a @click="addNewAction(actionType as ActionType)" class="dropdown-item"
-                                        data-toggle="dropdown">New {{ actionType }}</a>
-                                </li>
-                            </ul>
+                            </Dropdown>
                         </span>
                     </h5>
                 </th>
