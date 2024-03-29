@@ -3,17 +3,32 @@ import { computed, ref, watchEffect, watch, PropType, reactive, h } from "vue";
 import Dropdown from "@/components/controls/Dropdown.vue";
 import Button from "@/components/controls/Button.vue";
 
-import { ButtonPanelType, isDropdown, DropDownType } from "@/types/controls.type";
+import { ButtonPanelType, ButtonType, isDropdown, DropDownType } from "@/types/controls.type";
 import { PanelComponents } from "@/mixins/usePanelComponents";
+import { KeyyValuePair } from "@/types/types";
 
 
 
 function setup() {
-    // buttonComponents.value = []
-    ; props.buttons.forEach((item: ButtonPanelType) => {
-
+    buttonComponents.value = {}
+    props.buttons.forEach((item: ButtonPanelType) => {
         if (isDropdown(item)) {
             const dropDown = item as DropDownType;
+
+            // need to pass
+            dropDown.items
+            dropDown.disabled
+            dropDown.name
+
+            //
+            const button = item as ButtonType;
+            button.click
+            button.disabled
+            button.name
+
+
+
+            buttonComponents.value['Dropdown'].push(item as DropDownType) // wrong
             // h("button", {
             //     class: "btn btn-light", disabled: button.disabled, onClick(event: any) {
             //         button.event(event)
@@ -34,9 +49,8 @@ function setup() {
         }
     });
 }
+const buttonComponents = ref<KeyyValuePair<ButtonPanelType[]>>({});
 
-
-const buttonComponents = ref<string[]>([]);
 const props = defineProps({
     buttons: {
         type: Object as PropType<Array<ButtonPanelType>>,
