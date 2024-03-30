@@ -11,7 +11,9 @@ import { capitalizeText } from "../../modules/formatters/text.formatter";
 import { EventActions, OpenPanelEvent } from "@/types/events.type";
 import { emitClosePanel, emitOpenPanel } from "@/mixins/useAutomationsEventBus";
 import ActionViewer from "./actions/ActionViewer.vue";
-import { createNewActionDropdownItems } from "../../configs/automation/trigger-dropdown.config";
+import ButtonPanel from "@/components/controls/ButtonPanel.vue";
+
+import { createNewActionDropdownItems, createSaveDeleteButtonItems } from "../../configs/automation/trigger-dropdown.config";
 const props = defineProps({
     id: { type: String },
     trigger: { type: Object as PropType<AutomationTrigger>, default: {} as AutomationTrigger },
@@ -24,6 +26,8 @@ const actions = ref<AutomationTriggerAction[]>([]); // have a list of actions wi
 const trigger = ref<AutomationTrigger>(props.trigger)
 
 const dropDownitems = computed(() => createNewActionDropdownItems((e: ActionType) => addNewAction(e)));
+const buttonPanelItems = computed(() => createSaveDeleteButtonItems(() => save(), () => remove(), false, isValid(trigger.value)));
+
 watch(
     () => props.trigger,
     () => {
@@ -115,13 +119,16 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
 
 
     <div class="row pb-3">
+
         <div class="col">
-            <button type="button" class="btn btn-light" @click="save">
+            <ButtonPanel :buttons="buttonPanelItems"></ButtonPanel>
+
+            <!-- <button type="button" class="btn btn-light" @click="save">
                 Save
             </button>
             <button type="button" class="btn btn-light" :disabled="isValid(trigger) == false" @click="remove">
                 Delete
-            </button>
+            </button> -->
         </div>
     </div>
     <div class="row" v-if="trigger.name == ''">

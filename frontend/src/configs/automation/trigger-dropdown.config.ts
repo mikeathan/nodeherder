@@ -6,6 +6,8 @@ import {
   DropDownItemType,
   createDropDownItem,
   ButtonClickEventType,
+  ButtonType,
+  createButton,
 } from "../../types/controls.type";
 
 export function createNewActionDropdownItems(
@@ -30,4 +32,16 @@ export function createStepActionOperatorsDropdowitems(
   );
 
   return items;
+}
+
+export function createSaveDeleteButtonItems(
+  saveEvent: ButtonClickEventType,
+  deleteEvent: ButtonClickEventType,
+  isSaveDisabled?: boolean,
+  isDeleteDisabled?: boolean
+): ButtonType[] {
+  return [
+    createButton("Save", saveEvent, isSaveDisabled),
+    createButton("Delete", deleteEvent, isDeleteDisabled),
+  ];
 }
