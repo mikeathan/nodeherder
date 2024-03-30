@@ -19,12 +19,8 @@ export type DropDownItemType = {
 
 export type ButtonClickEventType = (e: any) => void;
 
-export function isButton(item: ButtonPanelType): item is ButtonType {
-  return (item as ButtonType) !== undefined;
-}
-
-export function isDropdown(item: ButtonPanelType): item is DropDownType {
-  return (item as DropDownType) !== undefined;
+export function isDropdown(item: ButtonPanelType): boolean {
+  return (item as DropDownType).items !== undefined;
 }
 
 export function createButton(

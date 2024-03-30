@@ -26,32 +26,42 @@ function Panel() {
     //     disabled: false
     // }
     //     , "TEST BUTTON");
-    let vNode: VNode;
+
+    //     const vnode = h('div', { id: 'foo' }, [])
+
+    // vnode.type // 'div'
+    // vnode.props // { id: 'foo' }
+    // vnode.children // []
+    // vnode.key // null
+
+    let vNodes: VNode[] = [];
     props.buttons.forEach((item: ButtonPanelType) => {
 
-        //     console.log("button item:", item)
-        //     // if (isDropdown(item)) {
-        //     //     const dropDown = item as DropDownType;
-        //     //     const vNode = h("Dropdown", {
-        //     //         className: 'btn-light',
-        //     //         disabled: dropDown.disabled,
-        //     //         items: dropDown.items
-        //     //     }, dropDown.name);
+        if (isDropdown(item)) {
+            const dropDown = item as DropDownType;
+            const node = h("Dropdown", {
+                className: 'btn-light',
+                disabled: dropDown.disabled,
+                items: dropDown.items
+            }, dropDown.name);
 
-        //     //     list.push(vNode);
+            vNodes.push(node);
 
-        // } else {
-        const button = item as ButtonType;
-        vNode = h("button", {
-            class: "btn btn-light",
-            disabled: button.disabled,
-            onClick(event: any) {
-                button.click(event)
-            }
-        }, button.name);
+        } else {
+            const button = item as ButtonType;
+            const node = h("button", {
+                class: "btn btn-light",
+                disabled: button.disabled,
+                onClick(event: any) {
+                    button.click(event)
+                }
+            }, button.name);
+
+            vNodes.push(node);
+        }
 
     });
-    return vNode;
+    return vNodes;
 
 };
 
