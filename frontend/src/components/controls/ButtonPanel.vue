@@ -7,32 +7,7 @@ import { ButtonPanelType, ButtonType, isDropdown, DropDownType } from "@/types/c
 import { PanelComponents } from "@/mixins/usePanelComponents";
 import { KeyyValuePair } from "@/types/types";
 
-function HelloWorld({ }) {
-    return h(
-        'div',
-        {
-            style: {
-                color: 'red',
-
-            },
-        },
-        'Hello World'
-    )
-}
 function Panel() {
-
-    // return h("button", {
-    //     class: "btn btn-light",
-    //     disabled: false
-    // }
-    //     , "TEST BUTTON");
-
-    //     const vnode = h('div', { id: 'foo' }, [])
-
-    // vnode.type // 'div'
-    // vnode.props // { id: 'foo' }
-    // vnode.children // []
-    // vnode.key // null
 
     let vNodes: VNode[] = [];
     props.buttons.forEach((item: ButtonPanelType) => {
@@ -46,7 +21,6 @@ function Panel() {
             }, dropDown.name);
 
             vNodes.push(node);
-
         } else {
             const button = item as ButtonType;
             const node = h("button", {
@@ -77,15 +51,11 @@ const props = defineProps({
 </script>
 
 <template>
-    <HelloWorld></HelloWorld>
-    <Panel></Panel>
     <div class="row pb-3">
-        <!-- <form class="container">
+        <form class="container">
 
-            <form class="container" v-for="item in buttonComponents">
-                {{ item }}
+            <Panel></Panel>
 
-            </form>
-        </form> -->
+        </form>
     </div>
 </template>
