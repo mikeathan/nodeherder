@@ -10,6 +10,8 @@ import { KeyyValuePair } from "@/types/types";
 import { AutomationTriggerAction } from "@/types/automation";
 import { toMillisecs, toMinutes } from '@/modules/formatters/time.formatter'
 import { ExposeTypes } from "@/types/device.type";
+import ButtonPanel from "@/components/controls/ButtonPanel.vue";
+import { createStepActionOperatorsDropdowitems, createSaveDeleteButtonItems } from "../../../configs/automation/trigger-dropdown.config";
 
 const props = defineProps({
     action: {
@@ -35,8 +37,15 @@ const device = computed(() => {
     return store.getters["devices/find"](action.id) as Device;
 });
 
-const isSaveEnabled = computed(() => action.data && action.property && action.id);
+const buttonPanelItems = computed(() => {
+    const isActionValid = action.data && action.property && action.id;
 
+    return createSaveDeleteButtonItems(
+        () => saveAction(),
+        () => removeAction(),
+        !isActionValid,
+        !isActionValid)
+});
 
 const deviceFeatureList = computed(() => {
     var devices = store.getters["devices/listAll"]() as Devices;
@@ -205,11 +214,13 @@ function removeAction() {
 
 <template>
     <div class="row pb-3">
-        <form class="container">
+
+        <ButtonPanel :buttons="buttonPanelItems"></ButtonPanel>
+        <!-- <form class="container">
             <button class="btn btn-light" type="button" @click="saveAction" :disabled="!isSaveEnabled">Save</button>
             <button class="btn btn-light" type="button" @click="removeAction">Delete</button>
 
-        </form>
+        </form> -->
     </div>
     <div class="row">
         <div v-if="getPresets" class="col-xl-3 col-md-4">

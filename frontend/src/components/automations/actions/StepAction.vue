@@ -10,7 +10,6 @@ import Dropdown from "@/components/controls/Dropdown.vue";
 import ButtonPanel from "@/components/controls/ButtonPanel.vue";
 import { createStepActionOperatorsDropdowitems, createSaveDeleteButtonItems } from "../../../configs/automation/trigger-dropdown.config";
 
-
 const props = defineProps({
     action: {
         type: Object as PropType<AutomationTriggerAction>,
@@ -22,9 +21,12 @@ const props = defineProps({
 const action = reactive({ ...props.action })
 const dropdownItems = computed(() => createStepActionOperatorsDropdowitems((e: NumericOperator) => addStep(e)));
 const buttonPanelItems = computed(() => {
-    const isSaveEnabled = (action.data && action.property && action.id && action.steps.length != 0);
-    return createSaveDeleteButtonItems(() => saveAction(), () => removeAction(), !isSaveEnabled, false)
-
+    const actionIsValid = (action.data && action.property && action.id && action.steps.length != 0);
+    return createSaveDeleteButtonItems(
+        () => saveAction(),
+        () => removeAction(),
+        !actionIsValid,
+        !actionIsValid)
 });
 
 const emit = defineEmits<{
@@ -33,13 +35,11 @@ const emit = defineEmits<{
 }>()
 
 function getStepDevicesList(step: AutomationActionStep) {
-
     var devices = store.getters["devices/listAll"]() as Devices;
     if (action.steps.length == 1) {
         devices = devices.filter(d => d.id == action.id)
         step.id = action.id
     }
-
     return devices;
 }
 
