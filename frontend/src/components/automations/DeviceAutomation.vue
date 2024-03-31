@@ -10,7 +10,7 @@ import { EditableAutomationTrigger, DeviceAutomation } from "../../contracts/aut
 import Panel from "../controls/Panel.vue";
 import { EventActions, OpenPanelEvent } from "@/types/events.type";
 import ButtonPanel from "@/components/controls/ButtonPanel.vue";
-import { createSaveDeleteButtonItems } from "../../../configs/automation/trigger-dropdown.config";
+import { createSaveDeleteCancelButtonItems } from "../../configs/automation/trigger-dropdown.config";
 
 const emit = defineEmits(['cancel'])
 
@@ -20,7 +20,20 @@ const props = defineProps({
 
 const router = useRouter()
 const automation = ref<Automation>({} as Automation)
-const selectedTrigger = ref<AutomationTrigger>()
+const selectedTrigger = ref<AutomationTrigger>();
+
+const buttonPanelItems = computed(() => {
+
+    const isActionValid = automation.value.triggers.length == 0 &&
+        automation.value.triggers.filter(k => k.action != null).length == automation.value.triggers.length;
+
+    return createSaveDeleteCancelButtonItems(
+        () => saveAutomation(),
+        () => deleteAutomation(),
+        () => cancel(),
+        isActionValid,
+        isActionValid);
+});
 
 watch(
     () => props.id,
@@ -43,14 +56,7 @@ watch(
 )
 
 
-function isSaveEnabled() {
-    if (automation.value.triggers.length == 0) {
-        return false
-    }
 
-    var values = automation.value.triggers.filter(k => k.action != null);
-    return values.length == automation.value.triggers.length
-}
 
 function createNewTrigger() {
     selectedTrigger.value = EditableAutomationTrigger.create()
@@ -189,18 +195,7 @@ function createOpenPanelEvent(): OpenPanelEvent {
 
                 <div class="card-body ">
                     <div v-if="selectedTrigger == null">
-                        <div class="btn-group">
-                            <button type="button" class="btn btn-light" @click="saveAutomation"
-                                :disabled="isSaveEnabled() == false">
-                                Save
-                            </button>
-                            <button type="button" class="btn btn-light" @click="deleteAutomation">
-                                Delete
-                            </button>
-                            <button type="button" class="btn btn-light" @click="cancel">
-                                Cancel
-                            </button>
-                        </div>
+                        <ButtonPanel :buttons="buttonPanelItems"></ButtonPanel>
 
                         <table class="table responsive table-hover ">
                             <thead>

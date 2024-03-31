@@ -59,7 +59,7 @@ export function createSaveDeleteCancelButtonItems(
   return [
     createButton("Save", saveEvent, isSaveDisabled),
     createButton("Delete", deleteEvent, isDeleteDisabled),
-    createButton("Cancle", cancelEvent, isCancelDisabled),
+    createButton("Cancel", cancelEvent, isCancelDisabled),
   ];
 }
 

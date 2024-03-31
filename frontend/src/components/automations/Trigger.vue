@@ -30,8 +30,8 @@ const buttonPanelItems = computed(() =>
     createSaveDeleteButtonItems(
         () => save(),
         () => remove(),
-        false,
-        isValid(trigger.value))
+        isValid(trigger.value) == false,
+        isValid(trigger.value) == false)
 );
 
 watch(
