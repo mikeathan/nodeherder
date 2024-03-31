@@ -26,7 +26,13 @@ const actions = ref<AutomationTriggerAction[]>([]); // have a list of actions wi
 const trigger = ref<AutomationTrigger>(props.trigger)
 
 const dropDownitems = computed(() => createNewActionDropdownItems((e: ActionType) => addNewAction(e)));
-const buttonPanelItems = computed(() => createSaveDeleteButtonItems(() => save(), () => remove(), false, isValid(trigger.value)));
+const buttonPanelItems = computed(() =>
+    createSaveDeleteButtonItems(
+        () => save(),
+        () => remove(),
+        false,
+        isValid(trigger.value))
+);
 
 watch(
     () => props.trigger,
@@ -94,8 +100,6 @@ function addNewAction(actionType: ActionType) {
     emitOpenPanel(createActionOpenPanelEvent(new EditableActionTrigger(actionType), true));
 }
 
-
-
 const actionEvents = (): EventActions => {
     return {
         'delete': (e) => {
@@ -117,18 +121,10 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
     <!-- TODO:  -->
     <!-- if automation for device exists message user else we overwrite it -->
 
-
     <div class="row pb-3">
 
         <div class="col">
             <ButtonPanel :buttons="buttonPanelItems"></ButtonPanel>
-
-            <!-- <button type="button" class="btn btn-light" @click="save">
-                Save
-            </button>
-            <button type="button" class="btn btn-light" :disabled="isValid(trigger) == false" @click="remove">
-                Delete
-            </button> -->
         </div>
     </div>
     <div class="row" v-if="trigger.name == ''">

@@ -9,6 +9,8 @@ import { Automation, AutomationTrigger, AutomationTriggerAction } from "@/types/
 import { EditableAutomationTrigger, DeviceAutomation } from "../../contracts/automations";
 import Panel from "../controls/Panel.vue";
 import { EventActions, OpenPanelEvent } from "@/types/events.type";
+import ButtonPanel from "@/components/controls/ButtonPanel.vue";
+import { createSaveDeleteButtonItems } from "../../../configs/automation/trigger-dropdown.config";
 
 const emit = defineEmits(['cancel'])
 
@@ -183,8 +185,6 @@ function createOpenPanelEvent(): OpenPanelEvent {
                                 id="flexSwitchCheckDefault" v-model="automation.enabled">
                         </div>
                     </div>
-
-
                 </div>
 
                 <div class="card-body ">

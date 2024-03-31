@@ -11,7 +11,7 @@ import { AutomationTriggerAction } from "@/types/automation";
 import { toMillisecs, toMinutes } from '@/modules/formatters/time.formatter'
 import { ExposeTypes } from "@/types/device.type";
 import ButtonPanel from "@/components/controls/ButtonPanel.vue";
-import { createStepActionOperatorsDropdowitems, createSaveDeleteButtonItems } from "../../../configs/automation/trigger-dropdown.config";
+import { createSaveDeleteButtonItems } from "../../../configs/automation/trigger-dropdown.config";
 
 const props = defineProps({
     action: {
@@ -214,13 +214,7 @@ function removeAction() {
 
 <template>
     <div class="row pb-3">
-
         <ButtonPanel :buttons="buttonPanelItems"></ButtonPanel>
-        <!-- <form class="container">
-            <button class="btn btn-light" type="button" @click="saveAction" :disabled="!isSaveEnabled">Save</button>
-            <button class="btn btn-light" type="button" @click="removeAction">Delete</button>
-
-        </form> -->
     </div>
     <div class="row">
         <div v-if="getPresets" class="col-xl-3 col-md-4">

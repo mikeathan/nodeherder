@@ -48,6 +48,21 @@ export function createSaveDeleteButtonItems(
   ];
 }
 
+export function createSaveDeleteCancelButtonItems(
+  saveEvent: ButtonClickEventType,
+  deleteEvent: ButtonClickEventType,
+  cancelEvent: ButtonClickEventType,
+  isSaveDisabled?: boolean,
+  isDeleteDisabled?: boolean,
+  isCancelDisabled?: boolean
+): ButtonType[] {
+  return [
+    createButton("Save", saveEvent, isSaveDisabled),
+    createButton("Delete", deleteEvent, isDeleteDisabled),
+    createButton("Cancle", cancelEvent, isCancelDisabled),
+  ];
+}
+
 export function createStepActionButtonItems(
   dropDownItems: DropDownItemType[],
   saveEvent: ButtonClickEventType,
