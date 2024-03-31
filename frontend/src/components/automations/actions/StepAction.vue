@@ -7,7 +7,9 @@ import { store } from "../../../store/index";
 import { Device, Devices } from "@/types/device";
 import { ExposeTypes } from "@/types/device.type";
 import Dropdown from "@/components/controls/Dropdown.vue";
-import { createStepActionOperatorsDropdowitems } from "../../../configs/automation/trigger-dropdown.config";
+import ButtonPanel from "@/components/controls/ButtonPanel.vue";
+import { createStepActionOperatorsDropdowitems, createSaveDeleteButtonItems } from "../../../configs/automation/trigger-dropdown.config";
+
 
 const props = defineProps({
     action: {
@@ -17,12 +19,19 @@ const props = defineProps({
     },
 });
 
+const action = reactive({ ...props.action })
+const dropdownItems = computed(() => createStepActionOperatorsDropdowitems((e: NumericOperator) => addStep(e)));
+const buttonPanelItems = computed(() => {
+    const isSaveEnabled = (action.data && action.property && action.id && action.steps.length != 0);
+    return createSaveDeleteButtonItems(() => saveAction(), () => removeAction(), !isSaveEnabled, false)
+
+});
+
 const emit = defineEmits<{
     (e: 'save', action: AutomationTriggerAction): void,
     (e: 'delete', action: AutomationTriggerAction): void,
 }>()
 
-const action = reactive({ ...props.action })
 function getStepDevicesList(step: AutomationActionStep) {
 
     var devices = store.getters["devices/listAll"]() as Devices;
@@ -99,8 +108,6 @@ function deviceSelected(event: Event) {
     action.friendlyname = device.friendly_name;
     action.steps = [];
 }
-const isSaveEnabled = computed(() => action.data && action.property && action.id && action.steps.length != 0);
-const dropDownitems = computed(() => createStepActionOperatorsDropdowitems((e: NumericOperator) => addStep(e)));
 
 </script>
 
@@ -169,13 +176,12 @@ input.form-select:disabled {
     <!-- Edit mode -->
     <!-- action controls -->
     <div class="row pb-3">
-        <form class="container">
-            <button class="btn btn-light " type="button" @click="saveAction" :disabled="!isSaveEnabled">Save</button>
-            <button class="btn btn-light btn" type="button" @click="removeAction">Delete</button>
+        <ButtonPanel :buttons="buttonPanelItems">
+            <Dropdown :items="dropdownItems" class-name="btn-light" :disabled="action.id == ''">
+                Add Operation
+            </Dropdown>
 
-            <Dropdown :items="dropDownitems" class-name="btn-light" :disabled="action.id == ''">Add Operation</Dropdown>
-
-        </form>
+        </ButtonPanel>
     </div>
 
     <!-- Testing select box  -->
