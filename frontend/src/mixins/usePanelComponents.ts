@@ -19,4 +19,7 @@ export const PanelComponents: Map = {
   ActionViewer: defineAsyncComponent(
     () => import("../components/automations/actions/ActionViewer.vue")
   ),
+  PresetRotationAction: defineAsyncComponent(
+    () => import("../components/automations/actions/PresetRotationAction.vue")
+  ),
 };

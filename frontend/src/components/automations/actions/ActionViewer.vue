@@ -41,7 +41,10 @@ const actionView = computed(() => {
 
             // eg. Attic lightbrightness = (brightness + action_time * 0.3) 
             return currentAction.value.friendlyname + " =  (" + stepView + ")";
+        } else if (actionType.value == AutomationActionTypes.PresetRotation) {
+            return "[" + currentAction.value.friendlyname + "] preset rotate [" + currentAction.value.property + "]";
         }
+
     }
 
     return stepView;

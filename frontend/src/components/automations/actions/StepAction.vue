@@ -2,7 +2,7 @@
 import { computed, ref, watchEffect, watch, PropType, reactive } from "vue";
 import { AutomationTriggerAction, AutomationActionStep, NumericOperator } from "@/types/automation";
 import { NumericOperators, StepAction } from "@/contracts/automations"
-import { getFeatureDevices } from "@/contracts/device";
+import { getFeatureDevices, getPropertiesByExposeType } from "@/contracts/device";
 import { store } from "../../../store/index";
 import { Device, Devices } from "@/types/device";
 import { ExposeTypes } from "@/types/device.type";
@@ -57,9 +57,7 @@ function getStepPropertyList(step: AutomationActionStep) {
         return {}
     }
 
-    return Object.entries(device.exposes)
-        .filter(([id, entity]) => entity.type == ExposeTypes.Numeric)
-        .map(([i, e]) => e.name);
+    return getPropertiesByExposeType(device, ExposeTypes.Numeric)
 }
 
 function stepPropertySelected(event: Event) {

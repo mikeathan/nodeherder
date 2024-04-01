@@ -54,4 +54,4 @@ function removeAction(action: AutomationTriggerAction): void {
             @save="saveAction" />
     </div>
 </template>
-@/mixins/eventBus
+@
