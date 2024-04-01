@@ -60,6 +60,12 @@ export function getFeatureDevices(devices: Device[]): KeyyValuePair<string> {
   return list;
 }
 
+export function getDeviceFeatures(device: Device): Array<string> {
+  return Object.entries(device.exposes)
+    .filter(([id, entity]) => entity.properties != undefined)
+    .map(([i, e]) => e.name);
+}
+
 export function getPropertiesByExposeType(
   device: Device,
   exposeType: ValueOf<typeof ExposeTypes>

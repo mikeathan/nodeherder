@@ -6,6 +6,7 @@ import { OperationType, resolveObjectOperations } from "@/contracts/operations"
 import { clearAction, setDeviceId, setProperty } from "@/contracts/automations"
 import { store } from "@/store/index";
 import { Device, Devices, ExposeType } from "@/types/device";
+import { getFeatureDevices, getDeviceFeatures } from "@/contracts/device";
 import { KeyyValuePair } from "@/types/types";
 import { AutomationTriggerAction } from "@/types/automation";
 import { toMillisecs, toMinutes } from '@/modules/formatters/time.formatter'
@@ -49,20 +50,38 @@ const buttonPanelItems = computed(() => {
 
 const deviceFeatureList = computed(() => {
     var devices = store.getters["devices/listAll"]() as Devices;
+    if (devices == undefined) {
+        return {}
+    }
+    return getFeatureDevices(devices)
+})
 
-    let list: KeyyValuePair<string> = {}
-    for (const [key, device] of Object.entries(devices)) {
-        for (const [key, expose] of Object.entries(device.exposes)) {
-            if (expose.properties != undefined) {
-                list[device.friendly_name] = device.id
-                break;
-            }
-        }
+function deviceSelected(event: Event) {
+    const id = (event.target as HTMLInputElement).value;
+    const device = store.getters["devices/find"](id) as Device;
+    if (device == undefined) {
+        // error
+        return;
     }
 
-    return list
-    // return Object.assign({}, ...featureDevices.value.map(f => ({ [f.friendly_name]: f.id })))
-})
+    action.id = device.id;
+    action.friendlyname = device.friendly_name;
+    action.steps = [];
+}
+
+function getPropertyList(id: string) {
+    const device = store.getters["devices/find"](id) as Device;
+    if (device == undefined) {
+        return {}
+    }
+
+    return getDeviceFeatures(device);
+}
+
+
+function propertySelected(event: Event) {
+    action.property = (event.target as HTMLInputElement).value
+}
 
 const getFeatureNames = computed(() => {
     var device = store.getters["devices/find"](action.id) as Device;
@@ -163,11 +182,6 @@ function propertyUpdated(event: any) {
     emit('update', action)
 }
 
-function operationUpdated(op: any) {
-    action.operation = parseInt(op)
-    emit('update', action)
-}
-
 function dataUpdated(event: any) {
     action.data = event
     emit('update', action)
@@ -211,11 +225,109 @@ function saveAction() {
 function removeAction() {
 }
 </script>
+<style scoped>
+select.form-select,
+input.form-control {
+    border: 0;
+    outline: 0;
+    border-radius: 0%;
+    border-bottom: 1px solid white;
+    text-align: left;
+    background-image: none;
+}
 
+.form-floating>.form-control~label::after {
+    background-color: transparent;
+
+}
+
+.form-floating>.form-select~label::after {
+    background-color: transparent;
+}
+
+
+/* .form-floatingform-select~label {
+    color: grey;
+} */
+
+
+input.form-control:focus,
+select.form-select:focus,
+:active {
+    box-shadow: none;
+}
+
+select.form-select:hover:not([disabled]) {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Cpath fill=%27none%27 stroke=%27%23d4d6d9%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%272%27 d=%27m2 5 6 6 6-6%27/%3E%3C/svg%3E");
+    box-shadow: none;
+}
+
+select.form-select:first-of-type {
+    border-bottom: 0px solid white;
+}
+
+select.form-select:required:invalid {
+    color: gray;
+    border-bottom: 1px solid white;
+}
+
+.form-floating>.form-control:focus~label,
+.form-floating>.form-control:not(:placeholder-shown)~label,
+.form-floating>.form-control~label,
+.form-floating>.form-select~label {
+    opacity: .6;
+    transform: scale(.85) translateY(-.7rem) translateX(.15rem);
+}
+
+select.form-select,
+input.form-select:disabled {
+    color: gray;
+    background-color: transparent;
+}
+</style>
 <template>
     <div class="row pb-3">
         <ButtonPanel :buttons="buttonPanelItems"></ButtonPanel>
     </div>
+
+
+    <div class="row pb-2">
+        <div class="form-floating col-sm-5">
+            <select required id="dataSelect" class="form-select form-select-solid" v-model="action.id"
+                @change="deviceSelected">
+                <option value=""> Select </option>
+                <option v-for="(value, key) in deviceFeatureList" :value="value" :key="value">
+                    {{ key }}
+                </option>
+            </select>
+            <label for="dataSelect" class="form-label">Device to trigger</label>
+        </div>
+    </div>
+
+    <div class="row pb-2">
+        <div class="form-floating col-sm-5">
+
+            <select required class="form-select form-select-sm" v-model="action.property" @change="propertySelected">
+                <option value=""> Select </option>
+                <option v-for="property in getPropertyList(action.id)" :value="property" :key="property">
+                    {{ property }}
+                </option>
+            </select>
+            <label for="dataSelect" class="form-label">Expose</label>
+        </div>
+    </div>
+
+
+    <div class="row">
+        <div class="form-floating col-xl-7">
+            <input type="text" class="form-control" id="dataInput" v-model="action.data">
+            <label for="dataInput">Set value</label>
+        </div>
+    </div>
+
+    down is the old STUFF - to replace
+
+
     <div class="row">
         <div v-if="getPresets" class="col-xl-3 col-md-4">
             <Selector placeholder=" Select device" :items="deviceFeatureList" :value="action.id" alignment="center"
@@ -243,11 +355,6 @@ function removeAction() {
         </div>
         <div class="collapse" id="collapseOptions">
             <div class="row pt-2" :disabled="action.property == ''">
-                <div class="col-xl-3 ">
-                    <Selector :items="resolveObjectOperations(feature)" :value="action.operation"
-                        @update:data="operationUpdated">
-                    </Selector>
-                </div>
                 <div v-if="showPresets" class="col-xl-3">
                     <Selector placeholder="Presets" :items="getPresets" value="" @update:data="presetUpdated">
                     </Selector>

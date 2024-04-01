@@ -46,7 +46,7 @@ function deviceSelected(event: Event) {
     action.steps = [];
 }
 
-const getFeatureDeviceList = computed(() => {
+const getEnumDeviceList = computed(() => {
     var devices = store.getters["devices/listAll"]() as Devices;
     if (devices == undefined) {
         return {}
@@ -143,7 +143,7 @@ input.form-select:disabled {
             <select required id="dataSelect" class="form-select form-select-solid" v-model="action.id"
                 @change="deviceSelected">
                 <option value=""> Select </option>
-                <option v-for="(value, key) in getFeatureDeviceList" :value="value" :key="value">
+                <option v-for="(value, key) in getEnumDeviceList" :value="value" :key="value">
                     {{ key }}
                 </option>
             </select>
