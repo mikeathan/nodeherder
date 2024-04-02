@@ -28,16 +28,8 @@ const emit = defineEmits<{
     (e: 'delete', action: AutomationTriggerAction): void,
 }>()
 
-const clear = (() => {
-    clearAction(action)
-    emit('update', action)
-})
 
 const action = reactive({ ...props.action })
-const device = computed(() => {
-    return store.getters["devices/find"](action.id) as Device;
-});
-
 const buttonPanelItems = computed(() => {
     const isActionValid = action.data && action.property && action.id;
 
@@ -66,22 +58,25 @@ function deviceSelected(event: Event) {
 
     action.id = device.id;
     action.friendlyname = device.friendly_name;
+
+    // reset
+    action.property = '';
+    action.data = null
+    action.delay = null;
     action.steps = [];
 }
-
-
 
 function dataInputChange(event: Event) {
     let value = (event.target as HTMLInputElement).value;
     if (feature.value.type == 'numeric') {
-        value = value.replace(/[^0-9.]/g, '');
+        value = value.replace(/[^\d+$]/, '');
         action.data = parseInt(value)
     }
 }
 
 function delayInputChange(event: Event) {
-    let value = (event.target as HTMLInputElement).value;
-    action.delay = toMillisecs(parseInt(value))
+    const value = (event.target as HTMLInputElement).value;
+    action.delay = parseInt(value);
 }
 
 function getPropertyList(id: string) {
@@ -96,12 +91,27 @@ function getPropertyList(id: string) {
 
 function propertySelected(event: Event) {
     action.property = (event.target as HTMLInputElement).value
+
+    // reset
+    action.data = null
+    action.delay = null;
 }
 
 function presetSelected(event: Event) {
     const value = (event.target as HTMLInputElement).value
     action.data = parseInt(value);
 }
+
+const feature = computed(() => {
+    if (action.property == '') {
+        return []
+    }
+    var device = store.getters["devices/find"](action.id);
+    if (device == undefined) {
+        return []
+    }
+    return device.exposes[action.property];
+});
 
 
 const getPresets = computed(() => {
@@ -141,44 +151,16 @@ const showPresets = computed<boolean>(() => {
 })
 
 
-// NOTE:
-// problem is we cant make fetured typed as it could return null
-// so it would require some restructuring
-
-const feature = computed(() => {
-    if (action.property == '') {
-        return []
-    }
-    var device = store.getters["devices/find"](action.id);
-    if (device == undefined) {
-        return []
-    }
-    return device.exposes[action.property];
-});
-
-function propertyUpdated(event: any) {
-    const value = event;
-    if (value == "" || device.value == undefined) {
-        action.data = ""
-        action.property = ""
-        emit('update', action)
-
-        return;
-    }
-    const newFeature = device.value.exposes[value]
-    setProperty(action, value, newFeature.type)
-    emit('update', action)
-}
-
-
-defineExpose({
-    clear,
-});
-
 function saveAction() {
+
+    // TODO:
+    // action.delay = toMillisecs(num)
 }
 function removeAction() {
+
+
 }
+
 </script>
 <style scoped>
 select.form-select,
@@ -262,7 +244,7 @@ input.form-select:disabled {
     <div class="row pb-2">
         <div class="form-floating col-sm-5">
             <select required id="propertySelector" class="form-select form-select-sm" v-model="action.property"
-                @change="propertySelected">
+                @change="propertySelected" :disabled="action.id == ''">
                 <option value=""> Select </option>
                 <option v-for="property in getPropertyList(action.id)" :value="property" :key="property">
                     {{ property }}
@@ -284,56 +266,19 @@ input.form-select:disabled {
 
 
     <div class="row">
-
         <div class="form-floating col-sm-3">
-            <input type="text" class="form-control" id="dataInput" v-model="action.data" @input="dataInputChange">
+            <input type="text" class="form-control" id="dataInput" v-model="action.data" @input="dataInputChange"
+                :disabled="action.property == ''">
             <label for="dataInput">Set value</label>
         </div>
 
+        <!-- add it in a dropdown -->
         <div class="form-floating col-sm-2">
-            <input type="text" class="form-control" id="delayInput" v-model="action.delay" @input="delayInputChange">
+            <input type="text" class="form-control" id="delayInput" v-model="action.delay" @input="delayInputChange"
+                :disabled="action.property == ''">
             <label for="delayInput">Delay in minutes</label>
         </div>
     </div>
 
 
-    <!-- <div class="row">
-        <div v-if="getPresets" class="col-xl-3 col-md-4">
-            <Selector placeholder=" Select device" :items="deviceFeatureList" :value="action.id" alignment="center"
-                @update:data="deviceIdUpdated" :disabled="action.id != ''">
-            </Selector>
-        </div>
-        <div class="col-xl-3 col-md-4">
-            <Selector placeholder="Select property" :items="getFeatureNames" :value="action.property" alignment="center"
-                @update:data="propertyUpdated" :disabled="action.id == ''">
-            </Selector>
-        </div>
-        <div class="col-xl-4 col-md-3">
-            <DataInput :type="feature.type" :placeholder="getPlaceholder(feature.type)" :items="getItems"
-                :data="action.data" :disabled="action.property == ''" @update:data="dataUpdated">
-            </DataInput>
-        </div>
-        <div class="col-xl-2">
-            <div class="btn-group">
-                <button class="btn btn-default btn-number" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#collapseOptions" aria-expanded="false" aria-controls="collapseOptions">
-                    <span class="fas fa-angle-double-down"></span>
-                </button>
-            </div>
-
-        </div>
-        <div class="collapse" id="collapseOptions">
-            <div class="row pt-2" :disabled="action.property == ''">
-                <div v-if="showPresets" class="col-xl-3">
-                    <Selector placeholder="Presets" :items="getPresets" value="" @update:data="presetUpdated">
-                    </Selector>
-                </div>
-                <div class="col-xl-3">
-                    <DataInput placeholder="Delay (min)" type="numeric" :data="toMinutes(action.delay)"
-                        @update:data="delayUpdated">
-                    </DataInput>
-                </div>
-            </div>
-        </div> 
-    </div>-->
 </template>
