@@ -7,7 +7,7 @@ import { Device, Devices, DeviceFilter } from "@/types/device";
 const props = defineProps({
     filter: {
         type: Object as PropType<DeviceFilter>,
-        default: () => true,
+        default: (expose: any) => true,
         required: false
     },
     disabled: {

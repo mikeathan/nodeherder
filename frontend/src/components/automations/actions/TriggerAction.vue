@@ -49,7 +49,7 @@ const deviceFeatureList = computed(() => {
     return getFeatureDevices(devices)
 })
 function deviceSelected(id: string, friendlyName: string) {
-
+    console.log("deviceSelected", id, friendlyName)
     action.id = id;
     action.friendlyname = friendlyName;
 
@@ -223,7 +223,7 @@ input.form-select:disabled {
 
 
     <div class="row pb-2">
-        <DeviceSelector @updated="deviceSelected" :filter="featureDevicesFilter"></DeviceSelector>
+        <DeviceSelector @updated="deviceSelected" :filter="featureDevicesFilter()"></DeviceSelector>
         <!-- <div class="form-floating col-sm-5">
             <select required id="deviceSelector" class="form-select form-select-solid" v-model="action.id"
                 @change="deviceSelected">
