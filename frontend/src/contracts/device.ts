@@ -1,4 +1,4 @@
-import { Expose, ExposePresets, Device } from "@/types/device";
+import { Expose, DeviceFilter, Device } from "@/types/device";
 import { ExposeTypes } from "@/types/device.type";
 import { KeyyValuePair, ValueOf } from "@/types/types";
 
@@ -31,6 +31,22 @@ export function getExposeBinaryProperty(expose: Expose): boolean {
   // }
 
   return false;
+}
+
+export function getDevices(
+  devices: Device[],
+  allowedFilter: DeviceFilter
+): KeyyValuePair<string> {
+  let list: KeyyValuePair<string> = {};
+  for (const [key, device] of Object.entries(devices)) {
+    for (const [key, expose] of Object.entries(device.exposes)) {
+      if (allowedFilter(expose)) {
+        list[device.friendly_name] = device.id;
+        break;
+      }
+    }
+  }
+  return list;
 }
 
 export function getEnumDevices(devices: Device[]): KeyyValuePair<string> {

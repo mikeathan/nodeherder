@@ -13,7 +13,8 @@ import { toMillisecs, toMinutes } from '@/modules/formatters/time.formatter'
 import { ExposeTypes } from "@/types/device.type";
 import ButtonPanel from "@/components/controls/ButtonPanel.vue";
 import { createSaveDeleteButtonItems } from "../../../configs/automation/trigger-dropdown.config";
-
+import DeviceSelector from "@/components/controls/DeviceSelector.vue";
+import { featureDevicesFilter } from "@/configs/automation/device.config";
 const props = defineProps({
     action: {
         type: Object as PropType<AutomationTriggerAction>,
@@ -47,17 +48,10 @@ const deviceFeatureList = computed(() => {
     }
     return getFeatureDevices(devices)
 })
+function deviceSelected(id: string, friendlyName: string) {
 
-function deviceSelected(event: Event) {
-    const id = (event.target as HTMLInputElement).value;
-    const device = store.getters["devices/find"](id) as Device;
-    if (device == undefined) {
-        // error
-        return;
-    }
-
-    action.id = device.id;
-    action.friendlyname = device.friendly_name;
+    action.id = id;
+    action.friendlyname = friendlyName;
 
     // reset
     action.property = '';
@@ -229,7 +223,8 @@ input.form-select:disabled {
 
 
     <div class="row pb-2">
-        <div class="form-floating col-sm-5">
+        <DeviceSelector @updated="deviceSelected" :filter="featureDevicesFilter"></DeviceSelector>
+        <!-- <div class="form-floating col-sm-5">
             <select required id="deviceSelector" class="form-select form-select-solid" v-model="action.id"
                 @change="deviceSelected">
                 <option value=""> Select </option>
@@ -238,7 +233,7 @@ input.form-select:disabled {
                 </option>
             </select>
             <label for="deviceSelector" class="form-label">Device to trigger</label>
-        </div>
+        </div> -->
     </div>
 
     <div class="row pb-2">

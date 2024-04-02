@@ -1,4 +1,4 @@
-import { KeyyValuePair, Nullable } from './types';
+import { KeyyValuePair, Nullable } from "./types";
 
 export type DeviceMap = KeyyValuePair<Device>;
 export type Devices = Array<Device>;
@@ -6,6 +6,8 @@ export type ExposeAttributes = Nullable<KeyyValuePair<any>>;
 export type ExposePresets = Nullable<KeyyValuePair<any>>;
 export type ExposeProperties = Nullable<KeyyValuePair<any>>;
 export type DeviceProperties = KeyyValuePair<any>;
+
+export type DeviceFilter = (expose: Expose) => boolean;
 
 export type Device = {
   id: string;
