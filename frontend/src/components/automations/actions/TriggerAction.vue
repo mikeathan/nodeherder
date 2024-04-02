@@ -69,6 +69,21 @@ function deviceSelected(event: Event) {
     action.steps = [];
 }
 
+
+
+function dataInputChange(event: Event) {
+    let value = (event.target as HTMLInputElement).value;
+    if (feature.value.type == 'numeric') {
+        value = value.replace(/[^0-9.]/g, '');
+        action.data = parseInt(value)
+    }
+}
+
+function delayInputChange(event: Event) {
+    let value = (event.target as HTMLInputElement).value;
+    action.delay = toMillisecs(parseInt(value))
+}
+
 function getPropertyList(id: string) {
     const device = store.getters["devices/find"](id) as Device;
     if (device == undefined) {
@@ -83,27 +98,11 @@ function propertySelected(event: Event) {
     action.property = (event.target as HTMLInputElement).value
 }
 
-const getFeatureNames = computed(() => {
-    var device = store.getters["devices/find"](action.id) as Device;
-    if (device == undefined) {
-        return []
-    }
+function presetSelected(event: Event) {
+    const value = (event.target as HTMLInputElement).value
+    action.data = parseInt(value);
+}
 
-    return Object.assign({},
-        ...Object.values(device.exposes)
-            .filter(f => f.properties != undefined)
-            .map(f => ({ [f.name]: f.name })))
-})
-
-const getItems = computed(() => {
-    switch (feature.value.type) {
-        case "binary":
-        case "enum":
-            return Object.values(feature.value.properties)
-        default:
-            return null
-    }
-})
 
 const getPresets = computed(() => {
     if (feature.value.presets == undefined) {
@@ -141,18 +140,7 @@ const showPresets = computed<boolean>(() => {
     return false
 })
 
-function populateExtraproperties() {
-    // TODO: we only care for  numeric types
 
-    const data = Object.assign({},
-        ...Object.values(device.value.exposes)
-            .filter(f => f.type != ExposeTypes.Numeric));
-
-    console.log(data);
-
-    return data;
-
-}
 // NOTE:
 // problem is we cant make fetured typed as it could return null
 // so it would require some restructuring
@@ -182,39 +170,6 @@ function propertyUpdated(event: any) {
     emit('update', action)
 }
 
-function dataUpdated(event: any) {
-    action.data = event
-    emit('update', action)
-}
-
-function delayUpdated(event: number) {
-    action.delay = toMillisecs(event)
-    emit('update', action)
-}
-
-function deviceIdUpdated(event: string) {
-    action.id = event
-    var device = store.getters["devices/find"](action.id) as Device;
-    if (device != undefined) {
-
-        setDeviceId(action, device.id, device.friendly_name)
-        emit('update', action)
-    }
-}
-
-function presetUpdated(event: string) {
-    var value = parseInt(event)
-    action.data = value;
-    emit('update', action)
-}
-
-function getPlaceholder(type: ExposeType): string {
-    if (type == ExposeTypes.Binary || type == ExposeTypes.Enum) {
-        return 'Select'
-    }
-
-    return 'Value'
-}
 
 defineExpose({
     clear,
@@ -293,42 +248,56 @@ input.form-select:disabled {
 
     <div class="row pb-2">
         <div class="form-floating col-sm-5">
-            <select required id="dataSelect" class="form-select form-select-solid" v-model="action.id"
+            <select required id="deviceSelector" class="form-select form-select-solid" v-model="action.id"
                 @change="deviceSelected">
                 <option value=""> Select </option>
                 <option v-for="(value, key) in deviceFeatureList" :value="value" :key="value">
                     {{ key }}
                 </option>
             </select>
-            <label for="dataSelect" class="form-label">Device to trigger</label>
+            <label for="deviceSelector" class="form-label">Device to trigger</label>
         </div>
     </div>
 
     <div class="row pb-2">
         <div class="form-floating col-sm-5">
-
-            <select required class="form-select form-select-sm" v-model="action.property" @change="propertySelected">
+            <select required id="propertySelector" class="form-select form-select-sm" v-model="action.property"
+                @change="propertySelected">
                 <option value=""> Select </option>
                 <option v-for="property in getPropertyList(action.id)" :value="property" :key="property">
                     {{ property }}
                 </option>
             </select>
-            <label for="dataSelect" class="form-label">Expose</label>
+            <label for="propertySelector" class="form-label">Expose</label>
+        </div>
+
+        <div v-if="showPresets" class="form-floating col-sm-5">
+            <select required id="presetsSelector" class="form-select form-select-sm" @change="presetSelected">
+                <option value=""> Select </option>
+                <option v-for="(value, key) in getPresets" :value="value" :key="key">
+                    {{ key }}
+                </option>
+            </select>
+            <label for="presetsSelector" class="form-label">Expose presets</label>
         </div>
     </div>
 
 
     <div class="row">
-        <div class="form-floating col-xl-7">
-            <input type="text" class="form-control" id="dataInput" v-model="action.data">
+
+        <div class="form-floating col-sm-3">
+            <input type="text" class="form-control" id="dataInput" v-model="action.data" @input="dataInputChange">
             <label for="dataInput">Set value</label>
         </div>
+
+        <div class="form-floating col-sm-2">
+            <input type="text" class="form-control" id="delayInput" v-model="action.delay" @input="delayInputChange">
+            <label for="delayInput">Delay in minutes</label>
+        </div>
     </div>
 
-    down is the old STUFF - to replace
 
-
-    <div class="row">
+    <!-- <div class="row">
         <div v-if="getPresets" class="col-xl-3 col-md-4">
             <Selector placeholder=" Select device" :items="deviceFeatureList" :value="action.id" alignment="center"
                 @update:data="deviceIdUpdated" :disabled="action.id != ''">
@@ -365,9 +334,6 @@ input.form-select:disabled {
                     </DataInput>
                 </div>
             </div>
-        </div>
-        <!-- <span v-if="action.id != ''" class="fa fa-trash-alt fa-sm" @click="(v) => clear()
-            ">
-        </span> -->
-    </div>
+        </div> 
+    </div>-->
 </template>
