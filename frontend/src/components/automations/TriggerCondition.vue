@@ -6,6 +6,9 @@ import { EqualityOperators, } from "../../contracts/automations"
 import { AutomationTriggerCondition } from "../../types/automation";
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
+import ExposeSelector from "@/components/controls/ExposeSelector.vue";
+import { allExposeFilter } from '@/configs/automation/device.config';
+
 
 const props = defineProps({
     id: {
@@ -77,7 +80,7 @@ watch(
     }, { immediate: true }
 )
 
-function exposeSelectionChanged(event: string): void {
+function exposeSelected(event: string): void {
 
     if (event == '') {
         return
@@ -140,9 +143,8 @@ function getItems() {
 <template>
     <div class="row">
         <div v-if="name == ''" class="col-xl-3 col-md-4">
-            <DataInput placeholder="Select trigger" :items="exposes" :data="name" alignment="left" :disabled="name != ''"
-                @update:data="exposeSelectionChanged">
-            </DataInput>
+            <ExposeSelector :id="props.id" @updated="exposeSelected" :filter="allExposeFilter()">
+            </ExposeSelector>
         </div>
         <div v-else class="col-xl-3 col-md-4">
             <DataInput type="string" placeholder="Name" :data="name" :disabled="true" alignment="left">

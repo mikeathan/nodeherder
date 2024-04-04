@@ -1,4 +1,4 @@
-import { Expose, DeviceFilter, Device, ExposeFilter } from "@/types/device";
+import { Expose, DeviceFilter, Device } from "@/types/device";
 import { ExposeTypes } from "@/types/device.type";
 import { KeyyValuePair, ValueOf } from "@/types/types";
 
@@ -40,7 +40,7 @@ export function getDevices(
   let list: KeyyValuePair<string> = {};
   for (const [key, device] of Object.entries(devices)) {
     for (const [key, expose] of Object.entries(device.exposes)) {
-      if (allowedFilter(expose)) {
+      if (allowedFilter(device, expose)) {
         list[device.friendly_name] = device.id;
         break;
       }
@@ -76,9 +76,12 @@ export function getFeatureDevices(devices: Device[]): KeyyValuePair<string> {
   return list;
 }
 
-export function getExposes(device: Device, filter:ExposeFilter): Array<string> {
+export function getExposes(
+  device: Device,
+  filter: DeviceFilter
+): Array<string> {
   return Object.entries(device.exposes)
-    .filter(([id, expose]) => filter(expose))
+    .filter(([id, expose]) => filter(device, expose))
     .map(([i, e]) => e.name);
 }
 

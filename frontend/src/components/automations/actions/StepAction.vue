@@ -24,6 +24,7 @@ import ExposeSelector from "@/components/controls/ExposeSelector.vue";
 import {
   featureDevicesFilter,
   exposeFilterByType,
+  devicesFilterByActionStep,
 } from "@/configs/automation/device.config";
 
 const props = defineProps({
@@ -71,13 +72,8 @@ function deviceNameFromId(step: AutomationActionStep): string {
   return device.friendly_name;
 }
 
-function getStepPropertyList(step: AutomationActionStep) {
-  const device = store.getters["devices/find"](step.id) as Device;
-  if (device == undefined) {
-    return {};
-  }
-
-  return getPropertiesByExposeType(device, ExposeTypes.Numeric);
+function stepDeviceSelected(id: string, friendlyName: string, step: AutomationActionStep) {
+  step.id = id;
 }
 
 function stepPropertySelected(value: string, step: AutomationActionStep) {
@@ -114,13 +110,7 @@ function deviceSelected(deviceId: string, friendlyName: string) {
   action.friendlyname = friendlyName;
   action.steps = [];
 }
-function stepDeviceSelected(
-  deviceId: string,
-  friendlyName: string,
-  step: AutomationActionStep
-) {
-  step.id = deviceId;
-}
+
 </script>
 
 <style scoped>
@@ -134,11 +124,11 @@ input.form-control {
   background-image: none;
 }
 
-.form-floating > .form-control ~ label::after {
+.form-floating>.form-control~label::after {
   background-color: transparent;
 }
 
-.form-floating > .form-select ~ label::after {
+.form-floating>.form-select~label::after {
   background-color: transparent;
 }
 
@@ -166,10 +156,10 @@ select.form-select:required:invalid {
   border-bottom: 1px solid white;
 }
 
-.form-floating > .form-control:focus ~ label,
-.form-floating > .form-control:not(:placeholder-shown) ~ label,
-.form-floating > .form-control ~ label,
-.form-floating > .form-select ~ label {
+.form-floating>.form-control:focus~label,
+.form-floating>.form-control:not(:placeholder-shown)~label,
+.form-floating>.form-control~label,
+.form-floating>.form-select~label {
   opacity: 0.6;
   transform: scale(0.85) translateY(-0.7rem) translateX(0.15rem);
 }
@@ -186,11 +176,7 @@ input.form-select:disabled {
   <!-- action controls -->
   <div class="row pb-3">
     <ButtonPanel :buttons="buttonPanelItems">
-      <Dropdown
-        :items="dropdownItems"
-        class-name="btn-light"
-        :disabled="action.id == ''"
-      >
+      <Dropdown :items="dropdownItems" class-name="btn-light" :disabled="action.id == ''">
         Add Operation
       </Dropdown>
     </ButtonPanel>
@@ -198,21 +184,14 @@ input.form-select:disabled {
 
   <!-- Testing select box  -->
   <div class="row pb-2">
-    <DeviceSelector
-      @updated="deviceSelected"
-      :filter="featureDevicesFilter()"
-    ></DeviceSelector>
+    <DeviceSelector label="Device to trigger" @updated="deviceSelected" :filter="featureDevicesFilter()">
+    </DeviceSelector>
   </div>
 
   <!-- Testing input box  -->
   <div class="row">
     <div class="form-floating col-xl-7">
-      <input
-        type="text"
-        class="form-control"
-        id="dataInput"
-        v-model="action.data"
-      />
+      <input type="text" class="form-control" id="dataInput" v-model="action.data" />
       <label for="dataInput">Set value</label>
     </div>
   </div>
@@ -227,19 +206,15 @@ input.form-select:disabled {
 
       <!-- step id  -->
       <div class="col col-xl-4" v-if="step.id == ''">
-        // TODO: replace with deviceselector
-        <!-- <DeviceSelector @updated="(id,name)=>stepDeviceSelected(id,name, step)" :filter="featureDevicesFilter()"></DeviceSelector> -->
+        <DeviceSelector @updated="(id, name) => stepDeviceSelected(id, name, step)"
+          :filter="devicesFilterByActionStep(action, step)"></DeviceSelector>
 
-        <select required class="form-select form-select-sm" v-model="step.id">
+        <!-- <select required class="form-select form-select-sm" v-model="step.id">
           <option value="">Select device</option>
-          <option
-            v-for="device in getStepDevicesList(step)"
-            :value="device.id"
-            :key="device.id"
-          >
+          <option v-for="device in getStepDevicesList(step)" :value="device.id" :key="device.id">
             {{ device.friendly_name }}
           </option>
-        </select>
+        </select> -->
       </div>
       <div v-else class="col-xl-3">
         {{ deviceNameFromId(step) }}
@@ -247,19 +222,8 @@ input.form-select:disabled {
 
       <!-- step property -->
       <div class="col col-xl-6">
-        <ExposeSelector
-          :id="step.id"
-          @updated="(v) => stepPropertySelected(v, step)"
-          :filter="exposeFilterByType(ExposeTypes.Numeric)"
-        ></ExposeSelector>
-
-        <!-- <select required class="form-select form-select-sm" v-model="step.property"
-                    @change="stepPropertySelected">
-                    <option value="">Select property</option>
-                    <option v-for="property in getStepPropertyList(step)" :value="property" :key="property">
-                        {{ property }}
-                    </option>
-                </select> -->
+        <ExposeSelector :id="step.id" @updated="(v) => stepPropertySelected(v, step)"
+          :filter="exposeFilterByType(ExposeTypes.Numeric)"></ExposeSelector>
       </div>
       <div class="col-xl-1">
         <span class="fa fa-trash-alt fa-sm" @click="removeStep(step)"> </span>

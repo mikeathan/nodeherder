@@ -7,8 +7,13 @@ import { Device, Devices, DeviceFilter } from "@/types/device";
 const props = defineProps({
     filter: {
         type: Function as PropType<DeviceFilter>,
-        default: (expose: any) => true,
+        default: (device: any, expose: any) => true,
         required: false
+    },
+    label: {
+        type: String,
+        default: "",
+        required: false,
     },
     disabled: {
         type: Boolean,
@@ -98,7 +103,7 @@ input.form-select:disabled {
 }
 </style>
 <template>
-    <div class="form-floating col-sm-5">
+    <div v-if="props.label != ''" class="form-floating col-sm-5">
         <select required id="deviceSelector" class="form-select form-select-solid" @change="deviceSelected"
             :disabled="props.disabled">
             <option value=""> Select </option>
@@ -106,6 +111,15 @@ input.form-select:disabled {
                 {{ key }}
             </option>
         </select>
-        <label for="deviceSelector" class="form-label">Device to trigger</label>
+        <label for="deviceSelector" class="form-label">{{ props.label }}</label>
+    </div>
+    <div v-else>
+        <select required id="deviceSelector" class="form-select form-select-solid" @change="deviceSelected"
+            :disabled="props.disabled">
+            <option value=""> Select </option>
+            <option v-for="(value, key) in deviceList" :value="value" :key="value">
+                {{ key }}
+            </option>
+        </select>
     </div>
 </template>

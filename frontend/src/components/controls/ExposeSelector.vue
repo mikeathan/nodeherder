@@ -2,7 +2,7 @@
 import { computed, PropType } from "vue";
 import { getExposes } from "@/contracts/device";
 import { store } from "@/store/index";
-import { Device, ExposeFilter } from "@/types/device";
+import { Device, DeviceFilter } from "@/types/device";
 
 const props = defineProps({
   id: {
@@ -11,7 +11,7 @@ const props = defineProps({
     required: true,
   },
   filter: {
-    type: Function as PropType<ExposeFilter>,
+    type: Function as PropType<DeviceFilter>,
     default: (expose: any) => true,
     required: false,
   },
@@ -55,11 +55,11 @@ input.form-control {
   background-image: none;
 }
 
-.form-floating > .form-control ~ label::after {
+.form-floating>.form-control~label::after {
   background-color: transparent;
 }
 
-.form-floating > .form-select ~ label::after {
+.form-floating>.form-select~label::after {
   background-color: transparent;
 }
 
@@ -83,10 +83,10 @@ select.form-select:required:invalid {
   border-bottom: 1px solid white;
 }
 
-.form-floating > .form-control:focus ~ label,
-.form-floating > .form-control:not(:placeholder-shown) ~ label,
-.form-floating > .form-control ~ label,
-.form-floating > .form-select ~ label {
+.form-floating>.form-control:focus~label,
+.form-floating>.form-control:not(:placeholder-shown)~label,
+.form-floating>.form-control~label,
+.form-floating>.form-select~label {
   opacity: 0.6;
   transform: scale(0.85) translateY(-0.7rem) translateX(0.15rem);
 }
@@ -99,13 +99,8 @@ input.form-select:disabled {
 </style>
 <template>
   <div v-if="props.label != ''" class="form-floating col-sm-5">
-    <select
-      required
-      id="exposeSelector"
-      class="form-select form-select-sm"
-      @change="exposeSelected"
-      :disabled="props.disabled"
-    >
+    <select required id="exposeSelector" class="form-select form-select-sm" @change="exposeSelected"
+      :disabled="props.disabled">
       <option value="">Select</option>
       <option v-for="value in exposeList" :value="value" :key="value">
         {{ value }}
@@ -114,12 +109,7 @@ input.form-select:disabled {
     <label for="exposeSelector" class="form-label">{{ props.label }}</label>
   </div>
   <div v-else>
-    <select
-      required
-      class="form-select form-select-sm"
-      @change="exposeSelected"
-      :disabled="props.disabled"
-    >
+    <select required class="form-select form-select-sm" @change="exposeSelected" :disabled="props.disabled">
       <option value="">Select</option>
       <option v-for="value in exposeList" :value="value" :key="value">
         {{ value }}

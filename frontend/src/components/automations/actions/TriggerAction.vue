@@ -134,7 +134,7 @@ function saveAction() {
   // TODO:
   // action.delay = toMillisecs(num)
 }
-function removeAction() {}
+function removeAction() { }
 </script>
 <style scoped>
 select.form-select,
@@ -147,11 +147,11 @@ input.form-control {
   background-image: none;
 }
 
-.form-floating > .form-control ~ label::after {
+.form-floating>.form-control~label::after {
   background-color: transparent;
 }
 
-.form-floating > .form-select ~ label::after {
+.form-floating>.form-select~label::after {
   background-color: transparent;
 }
 
@@ -179,10 +179,10 @@ select.form-select:required:invalid {
   border-bottom: 1px solid white;
 }
 
-.form-floating > .form-control:focus ~ label,
-.form-floating > .form-control:not(:placeholder-shown) ~ label,
-.form-floating > .form-control ~ label,
-.form-floating > .form-select ~ label {
+.form-floating>.form-control:focus~label,
+.form-floating>.form-control:not(:placeholder-shown)~label,
+.form-floating>.form-control~label,
+.form-floating>.form-select~label {
   opacity: 0.6;
   transform: scale(0.85) translateY(-0.7rem) translateX(0.15rem);
 }
@@ -198,27 +198,16 @@ input.form-select:disabled {
     <ButtonPanel :buttons="buttonPanelItems"></ButtonPanel>
   </div>
   <div class="row pb-2">
-    <DeviceSelector
-      @updated="deviceSelected"
-      :filter="featureDevicesFilter()"
-    ></DeviceSelector>
+    <DeviceSelector label="Device to trigger" @updated="deviceSelected" :filter="featureDevicesFilter()">
+    </DeviceSelector>
   </div>
 
   <div class="row pb-2">
-    <ExposeSelector
-      :id="action.id"
-      label="Expose"
-      @updated="exposeSelected"
-      :filter="featureExposeFilter()"
-    ></ExposeSelector>
+    <ExposeSelector :id="action.id" label="Expose" @updated="exposeSelected" :filter="featureExposeFilter()">
+    </ExposeSelector>
     // move that in the ExposeSelector
     <div v-if="showPresets" class="form-floating col-sm-5">
-      <select
-        required
-        id="presetsSelector"
-        class="form-select form-select-sm"
-        @change="presetSelected"
-      >
+      <select required id="presetsSelector" class="form-select form-select-sm" @change="presetSelected">
         <option value="">Select</option>
         <option v-for="(value, key) in getPresets" :value="value" :key="key">
           {{ key }}
@@ -230,27 +219,15 @@ input.form-select:disabled {
 
   <div class="row">
     <div class="form-floating col-sm-3">
-      <input
-        type="text"
-        class="form-control"
-        id="dataInput"
-        v-model="action.data"
-        @input="dataInputChange"
-        :disabled="action.property == ''"
-      />
+      <input type="text" class="form-control" id="dataInput" v-model="action.data" @input="dataInputChange"
+        :disabled="action.property == ''" />
       <label for="dataInput">Set value</label>
     </div>
 
     <!-- add it in a dropdown -->
     <div class="form-floating col-sm-2">
-      <input
-        type="text"
-        class="form-control"
-        id="delayInput"
-        v-model="action.delay"
-        @input="delayInputChange"
-        :disabled="action.property == ''"
-      />
+      <input type="text" class="form-control" id="delayInput" v-model="action.delay" @input="delayInputChange"
+        :disabled="action.property == ''" />
       <label for="delayInput">Delay in minutes</label>
     </div>
   </div>

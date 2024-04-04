@@ -7,9 +7,7 @@ export type ExposePresets = Nullable<KeyyValuePair<any>>;
 export type ExposeProperties = Nullable<KeyyValuePair<any>>;
 export type DeviceProperties = KeyyValuePair<any>;
 
-export type DeviceFilter = (expose: Expose) => boolean;
-export type ExposeFilter = (expose: expose) => boolean;
-
+export type DeviceFilter = (device: Device, expose: Expose) => boolean;
 
 export type Device = {
   id: string;
