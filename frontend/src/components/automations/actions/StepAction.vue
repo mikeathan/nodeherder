@@ -55,15 +55,6 @@ const emit = defineEmits<{
   (e: "delete", action: AutomationTriggerAction): void;
 }>();
 
-function getStepDevicesList(step: AutomationActionStep) {
-  var devices = store.getters["devices/listAll"]() as Devices;
-  if (action.steps.length == 1) {
-    devices = devices.filter((d) => d.id == action.id);
-    step.id = action.id;
-  }
-  return devices;
-}
-
 function deviceNameFromId(step: AutomationActionStep): string {
   const device = store.getters["devices/find"](step.id) as Device;
   if (device == undefined) {
@@ -203,18 +194,11 @@ input.form-select:disabled {
       <div class="col-xl-1">
         {{ step.operator }}
       </div>
-
       <!-- step id  -->
       <div class="col col-xl-4" v-if="step.id == ''">
         <DeviceSelector @updated="(id, name) => stepDeviceSelected(id, name, step)"
           :filter="devicesFilterByActionStep(action, step)"></DeviceSelector>
 
-        <!-- <select required class="form-select form-select-sm" v-model="step.id">
-          <option value="">Select device</option>
-          <option v-for="device in getStepDevicesList(step)" :value="device.id" :key="device.id">
-            {{ device.friendly_name }}
-          </option>
-        </select> -->
       </div>
       <div v-else class="col-xl-3">
         {{ deviceNameFromId(step) }}

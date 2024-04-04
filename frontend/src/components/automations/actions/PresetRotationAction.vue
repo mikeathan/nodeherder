@@ -62,7 +62,7 @@ function removeAction(): void {
     </DeviceSelector>
   </div>
   <div class="row pb-2">
-    <ExposeSelector :id="action.id" label="Expose" @updated="exposeSelected" :filter="presetExposeFilter()">
+    <ExposeSelector label="Expose" :id="action.id" @updated="exposeSelected" :filter="presetExposeFilter()">
     </ExposeSelector>
   </div>
 </template>

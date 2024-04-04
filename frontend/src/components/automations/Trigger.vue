@@ -186,10 +186,8 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                         <ActionViewer :item="action" :edit-events="actionEvents()" @delete="deleteAction()">
                         </ActionViewer>
                     </th>
-
                 </tr>
             </tbody>
         </table>
     </div>
-
 </template>
