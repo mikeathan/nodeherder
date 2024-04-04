@@ -1,4 +1,4 @@
-import { Expose, DeviceFilter, Device } from "@/types/device";
+import { Expose, DeviceFilter, Device, ExposeFilter } from "@/types/device";
 import { ExposeTypes } from "@/types/device.type";
 import { KeyyValuePair, ValueOf } from "@/types/types";
 
@@ -74,6 +74,12 @@ export function getFeatureDevices(devices: Device[]): KeyyValuePair<string> {
   }
 
   return list;
+}
+
+export function getExposes(device: Device, filter:ExposeFilter): Array<string> {
+  return Object.entries(device.exposes)
+    .filter(([id, expose]) => filter(expose))
+    .map(([i, e]) => e.name);
 }
 
 export function getDeviceFeatures(device: Device): Array<string> {

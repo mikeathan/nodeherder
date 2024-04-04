@@ -8,6 +8,8 @@ export type ExposeProperties = Nullable<KeyyValuePair<any>>;
 export type DeviceProperties = KeyyValuePair<any>;
 
 export type DeviceFilter = (expose: Expose) => boolean;
+export type ExposeFilter = (expose: expose) => boolean;
+
 
 export type Device = {
   id: string;
