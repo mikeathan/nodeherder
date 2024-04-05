@@ -20,11 +20,6 @@ const props = defineProps({
     default: "",
     required: false,
   },
-  showPresets: {
-    type: Boolean,
-    default: false,
-    required: false,
-  },
   disabled: {
     type: Boolean,
     default: false,
@@ -49,28 +44,6 @@ function exposeSelected(event: Event) {
   selectedExpose.value = (event.target as HTMLInputElement).value;
   emit("updated", selectedExpose.value);
 }
-
-not sure if we need it that here at all - it only used once.could be its own component or leave it in TriggerAction
-function presetSelected(event: Event) {
-  const value = (event.target as HTMLInputElement).value;
-  action.data = parseInt(value);
-}
-
-const showPresets = computed(() => props.showPresets && exposePresets.value.length != 0);
-const exposePresets = computed(() => {
-  if (selectedExpose.value === "") {
-    return [];
-  }
-
-  var device = store.getters["devices/find"](props.id);
-  if (device == undefined) {
-    return [];
-  }
-
-  const expose = device.exposes[selectedExpose.value];
-  return expose.presets == undefined ? [] : expose.presets;
-});
-
 
 </script>
 <style scoped>
@@ -144,16 +117,5 @@ input.form-select:disabled {
         {{ value }}
       </option>
     </select>
-  </div>
-
-
-  <div v-if="showPresets" class="form-floating col-sm-5">
-    <select required id="presetsSelector" class="form-select form-select-sm" @change="presetSelected">
-      <option value=""> Select </option>
-      <option v-for="(value, key) in exposePresets" :value="value" :key="key">
-        {{ key }}
-      </option>
-    </select>
-    <label for="presetsSelector" class="form-label">Expose presets</label>
   </div>
 </template>

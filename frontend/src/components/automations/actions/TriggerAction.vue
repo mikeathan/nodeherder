@@ -20,6 +20,7 @@ import {
   featureDevicesFilter,
   featureExposeFilter,
 } from "@/configs/automation/device.config";
+import ExposeDataInput from "@/components/controls/ExposeDataInput.vue";
 const props = defineProps({
   action: {
     type: Object as PropType<AutomationTriggerAction>,
@@ -58,12 +59,8 @@ function deviceSelected(id: string, friendlyName: string) {
   action.steps = [];
 }
 
-function dataInputChange(event: Event) {
-  let value = (event.target as HTMLInputElement).value;
-  if (feature.value.type == "numeric") {
-    value = value.replace(/[^\d+$]/, "");
-    action.data = parseInt(value);
-  }
+function dataInputChange(value: string) {
+  action.data = value;
 }
 
 function delayInputChange(event: Event) {
@@ -205,8 +202,7 @@ input.form-select:disabled {
   <div class="row pb-2">
     <ExposeSelector :id="action.id" label="Expose" @updated="exposeSelected" :filter="featureExposeFilter()">
     </ExposeSelector>
-    // move that in the ExposeSelector
-    <div v-if="showPresets" class="form-floating col-sm-5">
+    <!-- <div v-if="showPresets" class="form-floating col-sm-5">
       <select required id="presetsSelector" class="form-select form-select-sm" @change="presetSelected">
         <option value="">Select</option>
         <option v-for="(value, key) in getPresets" :value="value" :key="key">
@@ -214,15 +210,16 @@ input.form-select:disabled {
         </option>
       </select>
       <label for="presetsSelector" class="form-label">Expose presets</label>
-    </div>
+    </div> -->
   </div>
 
   <div class="row">
-    <div class="form-floating col-sm-3">
+    <ExposeDataInput label="Set value" @change="dataInputChange" :disabled="action.property == ''"></ExposeDataInput>
+    <!-- <div class="form-floating col-sm-3">
       <input type="text" class="form-control" id="dataInput" v-model="action.data" @input="dataInputChange"
         :disabled="action.property == ''" />
       <label for="dataInput">Set value</label>
-    </div>
+    </div> -->
 
     <!-- add it in a dropdown -->
     <div class="form-floating col-sm-2">
