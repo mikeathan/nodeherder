@@ -202,24 +202,11 @@ input.form-select:disabled {
   <div class="row pb-2">
     <ExposeSelector :id="action.id" label="Expose" @updated="exposeSelected" :filter="featureExposeFilter()">
     </ExposeSelector>
-    <!-- <div v-if="showPresets" class="form-floating col-sm-5">
-      <select required id="presetsSelector" class="form-select form-select-sm" @change="presetSelected">
-        <option value="">Select</option>
-        <option v-for="(value, key) in getPresets" :value="value" :key="key">
-          {{ key }}
-        </option>
-      </select>
-      <label for="presetsSelector" class="form-label">Expose presets</label>
-    </div> -->
   </div>
 
   <div class="row">
-    <ExposeDataInput label="Set value" @change="dataInputChange" :disabled="action.property == ''"></ExposeDataInput>
-    <!-- <div class="form-floating col-sm-3">
-      <input type="text" class="form-control" id="dataInput" v-model="action.data" @input="dataInputChange"
-        :disabled="action.property == ''" />
-      <label for="dataInput">Set value</label>
-    </div> -->
+    <ExposeDataInput :show-presets="true" :id="action.id" :name="action.property" label="Set value"
+      @updated="dataInputChange" :disabled="action.property == ''"></ExposeDataInput>
 
     <!-- add it in a dropdown -->
     <div class="form-floating col-sm-2">

@@ -9,7 +9,7 @@ const props = defineProps({
         default: "",
         required: true,
     },
-    exposeName: {
+    name: {
         type: String,
         default: '',
         required: true,
@@ -35,8 +35,8 @@ const emit = defineEmits<{
     (e: "updated", value: any): void;
 }>();
 
-const expose = computed(() => {
-    if (props.exposeName == '') {
+const deviceExpose = computed(() => {
+    if (props.name == '') {
         return null;
     }
     var device = store.getters["devices/find"](props.id);
@@ -44,17 +44,17 @@ const expose = computed(() => {
         return null;
     }
 
-    return device.exposes[props.exposeName];
+    return device.exposes[props.name];
 });
 
 const showPresets = computed(() => props.showPresets && exposePresets.value.length != 0);
 const exposePresets = computed(() => {
-    return expose.value?.presets == undefined ? [] : expose.value.presets;
+    return deviceExpose.value?.presets == undefined ? [] : deviceExpose.value.presets;
 });
 
 function inputChanged(event: Event) {
     let value: any = (event.target as HTMLInputElement).value;
-    if (expose.value?.type == ExposeTypes.Numeric) {
+    if (deviceExpose.value?.type == ExposeTypes.Numeric) {
         value = parseInt(value.replace(/[^\d+$]/, ""));
     }
     emit('updated', value);
@@ -125,13 +125,11 @@ input.form-select:disabled {
 }
 </style>
 <template>
-    <div v-if="props.label != ''" class="form-floating col-sm-5">
-        <div class="form-floating col-sm-3">
-            <input type="text" class="form-control" id="dataInput" @input="inputChanged" :disabled="props.disabled" />
-            <label for="dataInput">{{ props.label }}</label>
-        </div>
+    <div v-if="props.label != ''" class="form-floating col-sm-3">
+        <input type="text" class="form-control" id="dataInput" @input="inputChanged" :disabled="props.disabled" />
+        <label for="dataInput">{{ props.label }}</label>
     </div>
-    <div v-else>
+    <div v-else class="col-sm-3">
         <input type="text" class="form-control" id="dataInput" @input="inputChanged" :disabled="props.disabled" />
     </div>
 
