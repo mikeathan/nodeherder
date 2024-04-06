@@ -60,6 +60,7 @@ function deviceSelected(id: string, friendlyName: string) {
 }
 
 function dataInputChange(value: string) {
+  console.log("action.data", value)
   action.data = value;
 }
 
@@ -70,62 +71,12 @@ function delayInputChange(event: Event) {
 
 function exposeSelected(name: string) {
   action.property = name;
+
   // reset
   action.data = null;
   action.delay = null;
 }
 
-function presetSelected(event: Event) {
-  const value = (event.target as HTMLInputElement).value;
-  action.data = parseInt(value);
-}
-
-const feature = computed(() => {
-  if (action.property == "") {
-    return [];
-  }
-  var device = store.getters["devices/find"](action.id);
-  if (device == undefined) {
-    return [];
-  }
-  return device.exposes[action.property];
-});
-
-const getPresets = computed(() => {
-  if (feature.value.presets == undefined) {
-    return [];
-  }
-
-  return feature.value.presets;
-});
-
-const showPresets = computed<boolean>(() => {
-  const device = store.getters["devices/find"](action.id) as Device;
-  if (device === undefined) {
-    return false;
-  }
-
-  if (action.property === "") {
-    return false;
-  }
-
-  const feature = device.exposes[action.property];
-  switch (+action.operation) {
-    case OperationType.StepIncreaseOperation:
-    case OperationType.StepDecreaseOperation:
-    case OperationType.RotationOperation:
-      return false;
-
-    case OperationType.NoOperation:
-      if (feature.presets != undefined) {
-        return true;
-      }
-
-      break;
-  }
-
-  return false;
-});
 
 function saveAction() {
   // TODO:

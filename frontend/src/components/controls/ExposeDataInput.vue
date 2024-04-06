@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { store } from "@/store/index";
 import { ExposeTypes } from "@/types/device.type";
 
@@ -46,6 +46,9 @@ const deviceExpose = computed(() => {
 
     return device.exposes[props.name];
 });
+const input = ref();
+const inputValue = ref<any>('');
+const selectedPreset = ref<any>('');
 
 const showPresets = computed(() => props.showPresets && exposePresets.value.length != 0);
 const exposePresets = computed(() => {
@@ -54,10 +57,23 @@ const exposePresets = computed(() => {
 
 function inputChanged(event: Event) {
     let value: any = (event.target as HTMLInputElement).value;
+    console.log("inputChanged", value)
     if (deviceExpose.value?.type == ExposeTypes.Numeric) {
-        value = parseInt(value.replace(/[^\d+$]/, ""));
+        const valid = /^[\d.]+$/.test(value);
+        if (valid) {
+            inputValue.value = Number(value);
+            console.log("converted:", inputValue.value)
+        } else {
+            console.log("clear")
+            input.value = null;
+            inputValue.value = null;
+            return;
+        }
     }
-    emit('updated', value);
+    event.preventDefault();
+    // reset preset value, if selected
+    selectedPreset.value = '';
+    emit('updated', inputValue.value);
 }
 
 function presetSelected(event: Event) {
@@ -67,7 +83,9 @@ function presetSelected(event: Event) {
     } catch (error) {
         console.error('error converting preset value to number ', error);
     }
-    emit('updated', value);
+
+    inputValue.value = value;
+    emit('updated', inputValue.value);
 }
 
 </script>
@@ -126,7 +144,8 @@ input.form-select:disabled {
 </style>
 <template>
     <div v-if="props.label != ''" class="form-floating col-sm-3">
-        <input type="text" class="form-control" id="dataInput" @input="inputChanged" :disabled="props.disabled" />
+        <input type="text" class="form-control" id="dataInput" :value="inputValue" @input="inputChanged" ref="input"
+            :disabled="props.disabled" />
         <label for="dataInput">{{ props.label }}</label>
     </div>
     <div v-else class="col-sm-3">
@@ -134,7 +153,8 @@ input.form-select:disabled {
     </div>
 
     <div v-if="showPresets" class="form-floating col-sm-5">
-        <select required id="presetsSelector" class="form-select form-select-sm" @change="presetSelected">
+        <select required id="presetsSelector" class="form-select form-select-sm" v-model="selectedPreset"
+            @change="presetSelected">
             <option value=""> Select </option>
             <option v-for="(value, key) in exposePresets" :value="value" :key="key">
                 {{ key }}
