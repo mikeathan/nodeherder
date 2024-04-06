@@ -46,7 +46,6 @@ const deviceExpose = computed(() => {
 
     return device.exposes[props.name];
 });
-const input = ref();
 const inputValue = ref<any>('');
 const selectedPreset = ref<any>('');
 
@@ -55,6 +54,18 @@ const exposePresets = computed(() => {
     return deviceExpose.value?.presets == undefined ? [] : deviceExpose.value.presets;
 });
 
+
+// TODO: use setter and getter in computed
+computed: {
+    inputValue: {
+        get: function() {
+            return this.number;
+        },
+        set: function(value) {
+            this.number = parseInt(value.replace(/\D/g, ''))
+        }
+    }
+}
 function inputChanged(event: Event) {
     let value: any = (event.target as HTMLInputElement).value;
     console.log("inputChanged", value)
@@ -65,7 +76,6 @@ function inputChanged(event: Event) {
             console.log("converted:", inputValue.value)
         } else {
             console.log("clear")
-            input.value = null;
             inputValue.value = null;
             return;
         }
@@ -144,7 +154,7 @@ input.form-select:disabled {
 </style>
 <template>
     <div v-if="props.label != ''" class="form-floating col-sm-3">
-        <input type="text" class="form-control" id="dataInput" :value="inputValue" @input="inputChanged" ref="input"
+        <input type="text" class="form-control" id="dataInput" v-model="inputValue" @input="inputChanged"
             :disabled="props.disabled" />
         <label for="dataInput">{{ props.label }}</label>
     </div>
