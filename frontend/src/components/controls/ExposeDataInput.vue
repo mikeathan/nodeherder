@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { PropType, computed, ref, watch } from "vue";
 import { store } from "@/store/index";
 import { ExposeTypes } from "@/types/device.type";
+import { DataInputTypes, DataInputType } from "@/types/controls.type"
 
 const props = defineProps({
     id: {
@@ -19,6 +20,7 @@ const props = defineProps({
         default: "",
         required: false,
     },
+
     showPresets: {
         type: Boolean,
         default: false,
@@ -47,8 +49,9 @@ const deviceExpose = computed(() => {
     return device.exposes[props.name];
 });
 
-
+const dataType = computed<DataInputType>(() => deviceExpose.value?.type ?? DataInputTypes.Text);
 const inputValue = ref<any>('');
+
 const selectedPreset = ref<any>('');
 
 const showPresets = computed(() => props.showPresets && exposePresets.value.length != 0);
@@ -64,12 +67,10 @@ watch(
     }, { immediate: true }
 )
 
-// TODO: handle binary type . allow only true/false
-// same for enums 
 
 function inputChanged(event: Event) {
     let value: any = (event.target as HTMLInputElement).value;
-    if (deviceExpose.value?.type == ExposeTypes.Numeric) {
+    if (dataType.value == ExposeTypes.Numeric) {
         value = Number(value);
     }
     // reset preset value, if selected
@@ -79,7 +80,7 @@ function inputChanged(event: Event) {
 
 
 function isNumber(event: KeyboardEvent) {
-    if (deviceExpose.value?.type == ExposeTypes.Numeric &&
+    if (dataType.value == ExposeTypes.Numeric &&
         (!event.key.match(/^[\d\.]$/) ||
             isNaN(Number(inputValue.value)))) {
 
@@ -155,6 +156,18 @@ input.form-select:disabled {
 </style>
 <template>
     <div v-if="props.label != ''" class="form-floating col-sm-3">
+
+        // if datatype == Binary
+        // load select box with true/false
+        // if datatype == enum
+        // load select box
+        // if datatype == numeric or text
+        // load input box
+
+        <div v-if="dataType == DataInputTypes.Binary || DataInputTypes.Enum">
+        </div>
+        <div v-if="dataType == DataInputTypes.Numeric || DataInputTypes.Text">
+        </div>
         <input type="text" class="form-control" id="dataInput" v-model="inputValue" @input="inputChanged"
             @keypress="isNumber" :disabled="props.disabled" />
         <label for="dataInput">{{ props.label }}</label>
