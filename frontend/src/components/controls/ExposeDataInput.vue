@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { store } from "@/store/index";
 import { ExposeTypes } from "@/types/device.type";
 
@@ -46,6 +46,8 @@ const deviceExpose = computed(() => {
 
     return device.exposes[props.name];
 });
+
+
 const inputValue = ref<any>('');
 const selectedPreset = ref<any>('');
 
@@ -54,6 +56,13 @@ const exposePresets = computed(() => {
     return deviceExpose.value?.presets == undefined ? [] : deviceExpose.value.presets;
 });
 
+watch(
+    () => props.name,
+    () => {
+        inputValue.value = '';
+        selectedPreset.value = '';
+    }, { immediate: true }
+)
 
 // TODO: handle binary type . allow only true/false
 // same for enums 
