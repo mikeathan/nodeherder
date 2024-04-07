@@ -1,16 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watchEffect, watch, PropType, reactive } from "vue";
-import DataInput from "../../input/DataInput.vue";
-import Selector from "../../input/Selector.vue";
-import { OperationType, resolveObjectOperations } from "@/contracts/operations";
-import { clearAction, setDeviceId, setProperty } from "@/contracts/automations";
-import { store } from "@/store/index";
-import { Device, Devices, ExposeType } from "@/types/device";
-import { getFeatureDevices, getDeviceFeatures } from "@/contracts/device";
-import { KeyyValuePair } from "@/types/types";
 import { AutomationTriggerAction } from "@/types/automation";
 import { toMillisecs, toMinutes } from "@/modules/formatters/time.formatter";
-import { ExposeTypes } from "@/types/device.type";
 import ButtonPanel from "@/components/controls/ButtonPanel.vue";
 import { createSaveDeleteButtonItems } from "../../../configs/automation/trigger-dropdown.config";
 import DeviceSelector from "@/components/controls/DeviceSelector.vue";
@@ -159,7 +150,8 @@ input.form-select:disabled {
     <ExposeDataInput :show-presets="true" :id="action.id" :name="action.property" label="Set value"
       @updated="dataInputChange" :disabled="action.property == ''"></ExposeDataInput>
 
-    <!-- add it in a dropdown -->
+    <!-- to do - add operations in dropdown for delay or repeat with delay -->
+
     <div class="form-floating col-sm-2">
       <input type="text" class="form-control" id="delayInput" v-model="action.delay" @input="delayInputChange"
         :disabled="action.property == ''" />

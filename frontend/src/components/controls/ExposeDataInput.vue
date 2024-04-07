@@ -202,7 +202,6 @@ input.form-select:disabled {
         </div>
     </div>
 
-    <!-- to do - add operations for delay or repeat with delay -->
     <div v-if="showPresets" class="form-floating col-sm-5">
         <select required id="presetsSelector" class="form-select form-select-sm" v-model="selectedPreset"
             @change="presetSelected">
