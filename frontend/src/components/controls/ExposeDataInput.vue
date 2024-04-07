@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { PropType, computed, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { store } from "@/store/index";
 import { ExposeTypes } from "@/types/device.type";
-import { DataInputTypes, DataInputType } from "@/types/controls.type"
 import { Expose, ExposeType } from "@/types/device";
 
 const props = defineProps({
@@ -203,7 +202,7 @@ input.form-select:disabled {
         </div>
     </div>
 
-
+    <!-- to do - add operations for delay or repeat with delay -->
     <div v-if="showPresets" class="form-floating col-sm-5">
         <select required id="presetsSelector" class="form-select form-select-sm" v-model="selectedPreset"
             @change="presetSelected">
