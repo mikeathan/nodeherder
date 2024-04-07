@@ -55,35 +55,35 @@ const exposePresets = computed(() => {
 });
 
 
-// TODO: use setter and getter in computed
-computed: {
-    inputValue: {
-        get: function() {
-            return this.number;
-        },
-        set: function(value) {
-            this.number = parseInt(value.replace(/\D/g, ''))
-        }
-    }
-}
 function inputChanged(event: Event) {
     let value: any = (event.target as HTMLInputElement).value;
-    console.log("inputChanged", value)
-    if (deviceExpose.value?.type == ExposeTypes.Numeric) {
-        const valid = /^[\d.]+$/.test(value);
-        if (valid) {
-            inputValue.value = Number(value);
-            console.log("converted:", inputValue.value)
-        } else {
-            console.log("clear")
-            inputValue.value = null;
-            return;
-        }
-    }
-    event.preventDefault();
+    // console.log("inputChanged: ", value)
+    // if (deviceExpose.value?.type == ExposeTypes.Numeric) {
+    //     const valid = /^[\d.]+$/.test(value);
+    //     if (valid) {
+    //         const converted = Number(value);
+    //         inputValue.value = converted
+    //         console.log("converted:", converted)
+    //     } else {
+
+    //         event.preventDefault();
+    //         console.log("clear")
+    //         //inputValue.value = null;
+    //     }
+    // }
+
+    const converted = Number(value);
+    console.log(converted)
     // reset preset value, if selected
     selectedPreset.value = '';
     emit('updated', inputValue.value);
+}
+
+
+function isNumber(event: KeyboardEvent) {
+    if (!event.key.match(/^[\d\.]$/) || isNaN(Number(inputValue.value))) {
+        event.preventDefault()
+    }
 }
 
 function presetSelected(event: Event) {
@@ -155,7 +155,7 @@ input.form-select:disabled {
 <template>
     <div v-if="props.label != ''" class="form-floating col-sm-3">
         <input type="text" class="form-control" id="dataInput" v-model="inputValue" @input="inputChanged"
-            :disabled="props.disabled" />
+            @keypress="isNumber" :disabled="props.disabled" />
         <label for="dataInput">{{ props.label }}</label>
     </div>
     <div v-else class="col-sm-3">
