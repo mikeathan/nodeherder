@@ -155,26 +155,23 @@ input.form-select:disabled {
 }
 </style>
 <template>
-    <div v-if="props.label != ''" class="form-floating col-sm-3">
 
-        // if datatype == Binary
-        // load select box with true/false
-        // if datatype == enum
-        // load select box
-        // if datatype == numeric or text
-        // load input box
+    <div v-if="dataType == DataInputTypes.Binary || DataInputTypes.Enum">
 
-        <div v-if="dataType == DataInputTypes.Binary || DataInputTypes.Enum">
-        </div>
-        <div v-if="dataType == DataInputTypes.Numeric || DataInputTypes.Text">
-        </div>
-        <input type="text" class="form-control" id="dataInput" v-model="inputValue" @input="inputChanged"
-            @keypress="isNumber" :disabled="props.disabled" />
-        <label for="dataInput">{{ props.label }}</label>
+
     </div>
-    <div v-else class="col-sm-3">
-        <input type="text" class="form-control" id="dataInput" @input="inputChanged" :disabled="props.disabled" />
+
+    <div v-if="dataType == DataInputTypes.Numeric || DataInputTypes.Text">
+        <div v-if="props.label != ''" class="form-floating col-sm-3">
+            <input type="text" class="form-control" id="dataInput" v-model="inputValue" @input="inputChanged"
+                @keypress="isNumber" :disabled="props.disabled" />
+            <label for="dataInput">{{ props.label }}</label>
+        </div>
+        <div v-else class="col-sm-3">
+            <input type="text" class="form-control" id="dataInput" @input="inputChanged" :disabled="props.disabled" />
+        </div>
     </div>
+
 
     <div v-if="showPresets" class="form-floating col-sm-5">
         <select required id="presetsSelector" class="form-select form-select-sm" v-model="selectedPreset"
