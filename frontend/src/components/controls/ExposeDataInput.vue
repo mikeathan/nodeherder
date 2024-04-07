@@ -72,8 +72,9 @@ function inputChanged(event: Event) {
     //     }
     // }
 
-    const converted = Number(value);
-    console.log(converted)
+    if (deviceExpose.value?.type == ExposeTypes.Numeric) {
+        value = Number(value);
+    }
     // reset preset value, if selected
     selectedPreset.value = '';
     emit('updated', inputValue.value);
@@ -81,7 +82,9 @@ function inputChanged(event: Event) {
 
 
 function isNumber(event: KeyboardEvent) {
-    if (!event.key.match(/^[\d\.]$/) || isNaN(Number(inputValue.value))) {
+    if (deviceExpose.value?.type == ExposeTypes.Numeric &&
+        event.key.match(/^[\d\.]$/) ||
+        isNaN(Number(inputValue.value))) {
         event.preventDefault()
     }
 }
