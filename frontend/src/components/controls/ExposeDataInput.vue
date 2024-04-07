@@ -3,6 +3,7 @@ import { PropType, computed, ref, watch } from "vue";
 import { store } from "@/store/index";
 import { ExposeTypes } from "@/types/device.type";
 import { DataInputTypes, DataInputType } from "@/types/controls.type"
+import { Expose, ExposeType } from "@/types/device";
 
 const props = defineProps({
     id: {
@@ -46,10 +47,10 @@ const deviceExpose = computed(() => {
         return null;
     }
 
-    return device.exposes[props.name];
+    return device.exposes[props.name] as Expose;
 });
 
-const dataType = computed<DataInputType>(() => deviceExpose.value?.type ?? DataInputTypes.Text);
+const dataType = computed<ExposeType>(() => deviceExpose.value?.type ?? ExposeTypes.Empty);
 const inputValue = ref<any>('');
 
 const selectedPreset = ref<any>('');
@@ -67,7 +68,6 @@ watch(
     }, { immediate: true }
 )
 
-
 function inputChanged(event: Event) {
     let value: any = (event.target as HTMLInputElement).value;
     if (dataType.value == ExposeTypes.Numeric) {
@@ -78,6 +78,13 @@ function inputChanged(event: Event) {
     emit('updated', inputValue.value);
 }
 
+const sequenceData = computed(() => {
+
+    if (dataType.value == ExposeTypes.Binary) {
+        return ["true", "false"];
+    }
+    return deviceExpose.value?.attributes ? Object.values(deviceExpose.value.attributes) : [];
+});
 
 function isNumber(event: KeyboardEvent) {
     if (dataType.value == ExposeTypes.Numeric &&
@@ -86,6 +93,12 @@ function isNumber(event: KeyboardEvent) {
 
         event.preventDefault()
     }
+}
+
+function sequenceDataSelected(event: Event) {
+    let value: any = (event.target as HTMLInputElement).value;
+    inputValue.value = value;
+    emit('updated', inputValue.value);
 }
 
 function presetSelected(event: Event) {
@@ -156,12 +169,30 @@ input.form-select:disabled {
 </style>
 <template>
 
-    <div v-if="dataType == DataInputTypes.Binary || DataInputTypes.Enum">
-
+    <!-- to be refactored : sequence data - enum or binary -->
+    <div v-if="dataType == ExposeTypes.Binary || dataType == ExposeTypes.Enum">
+        <div v-if="props.label != ''" class="form-floating col-sm-3">
+            <select required id="dataInput" class="form-select form-select-sm" @change="sequenceDataSelected">
+                <option value=""> Select </option>
+                <option v-for="value in sequenceData" :value="value" :key="value">
+                    {{ value }}
+                </option>
+            </select>
+            <label for="dataInput" class="form-label">{{ props.label }}</label>
+        </div>
+        <div v-else class="col-sm-3">
+            <select required id="dataInput" class="form-select form-select-sm" @change="sequenceDataSelected">
+                <option value=""> Select </option>
+                <option v-for="value in sequenceData" :value="value" :key="value">
+                    {{ value }}
+                </option>
+            </select>
+        </div>
 
     </div>
 
-    <div v-if="dataType == DataInputTypes.Numeric || DataInputTypes.Text">
+    <!-- to be refactored : numeric data  -->
+    <div v-if="dataType == ExposeTypes.Numeric">
         <div v-if="props.label != ''" class="form-floating col-sm-3">
             <input type="text" class="form-control" id="dataInput" v-model="inputValue" @input="inputChanged"
                 @keypress="isNumber" :disabled="props.disabled" />
