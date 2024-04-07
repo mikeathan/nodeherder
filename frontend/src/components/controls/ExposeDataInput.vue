@@ -55,23 +55,11 @@ const exposePresets = computed(() => {
 });
 
 
+// TODO: handle binary type . allow only true/false
+// same for enums 
+
 function inputChanged(event: Event) {
     let value: any = (event.target as HTMLInputElement).value;
-    // console.log("inputChanged: ", value)
-    // if (deviceExpose.value?.type == ExposeTypes.Numeric) {
-    //     const valid = /^[\d.]+$/.test(value);
-    //     if (valid) {
-    //         const converted = Number(value);
-    //         inputValue.value = converted
-    //         console.log("converted:", converted)
-    //     } else {
-
-    //         event.preventDefault();
-    //         console.log("clear")
-    //         //inputValue.value = null;
-    //     }
-    // }
-
     if (deviceExpose.value?.type == ExposeTypes.Numeric) {
         value = Number(value);
     }
@@ -83,8 +71,9 @@ function inputChanged(event: Event) {
 
 function isNumber(event: KeyboardEvent) {
     if (deviceExpose.value?.type == ExposeTypes.Numeric &&
-        event.key.match(/^[\d\.]$/) ||
-        isNaN(Number(inputValue.value))) {
+        (!event.key.match(/^[\d\.]$/) ||
+            isNaN(Number(inputValue.value)))) {
+
         event.preventDefault()
     }
 }
