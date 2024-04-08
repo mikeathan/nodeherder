@@ -3,6 +3,7 @@ import { computed, ref, watch } from "vue";
 import { store } from "@/store/index";
 import { ExposeTypes } from "@/types/device.type";
 import { Expose, ExposeType } from "@/types/device";
+import InputBox from '@/components/input/InputBox.vue';
 
 const props = defineProps({
     id: {
@@ -67,13 +68,11 @@ watch(
     }, { immediate: true }
 )
 
-function inputChanged(event: Event) {
-    let value: any = (event.target as HTMLInputElement).value;
-    if (dataType.value == ExposeTypes.Numeric) {
-        value = Number(value);
-    }
+function inputChanged(value: any) {
+
     // reset preset value, if selected
     selectedPreset.value = '';
+    inputValue.value = value;
     emit('updated', inputValue.value);
 }
 
@@ -192,14 +191,7 @@ input.form-select:disabled {
 
     <!-- to be refactored : numeric data  -->
     <div v-if="dataType == ExposeTypes.Numeric">
-        <div v-if="props.label != ''" class="form-floating col-sm-3">
-            <input type="text" class="form-control" id="dataInput" v-model="inputValue" @input="inputChanged"
-                @keypress="isNumber" :disabled="props.disabled" />
-            <label for="dataInput">{{ props.label }}</label>
-        </div>
-        <div v-else class="col-sm-3">
-            <input type="text" class="form-control" id="dataInput" @input="inputChanged" :disabled="props.disabled" />
-        </div>
+        <InputBox :label="props.label" :disabled="props.disabled" @updated="inputChanged" :isNumeric="true"></InputBox>
     </div>
 
     <div v-if="showPresets" class="form-floating col-sm-5">

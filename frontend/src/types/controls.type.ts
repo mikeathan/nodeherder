@@ -46,12 +46,3 @@ export function createDropdown(
 ): DropDownType {
   return { name: name, items: items, disabled: disabled };
 }
-
-export const DataInputTypes = {
-  Text: "Text",
-  Binary: "Binary",
-  Enum: "Enum",
-  Numeric: "Numeric",
-} as const;
-
-export type DataInputType = keyof typeof DataInputTypes;
