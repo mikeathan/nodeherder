@@ -151,7 +151,6 @@ input.form-select:disabled {
       @updated="dataInputChange" :disabled="action.property == ''"></ExposeDataInput>
 
     <!-- to do - add operations in dropdown for delay or repeat with delay -->
-
     <div class="form-floating col-sm-2">
       <input type="text" class="form-control" id="delayInput" v-model="action.delay" @input="delayInputChange"
         :disabled="action.property == ''" />

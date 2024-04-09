@@ -1,15 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, watchEffect, watch, PropType, reactive } from "vue";
+import { computed, PropType, reactive } from "vue";
 import {
   AutomationTriggerAction,
   AutomationActionStep,
   NumericOperator,
 } from "@/types/automation";
-import { NumericOperators, StepAction } from "@/contracts/automations";
-import {
-  getFeatureDevices,
-  getPropertiesByExposeType,
-} from "@/contracts/device";
 import { store } from "../../../store/index";
 import { Device, Devices } from "@/types/device";
 import { ExposeTypes } from "@/types/device.type";
@@ -26,6 +21,7 @@ import {
   exposeFilterByType,
   devicesFilterByActionStep,
 } from "@/configs/automation/device.config";
+import InputBox from '@/components/input/InputBox.vue';
 
 const props = defineProps({
   action: {
@@ -83,6 +79,10 @@ function removeAction(): void {
   emit("delete", action);
 }
 
+function actionDataChanged(value: any) {
+  action.data = value;
+}
+
 function addStep(numericOperator: NumericOperator) {
   const newStep: AutomationActionStep = {
     operator: numericOperator,
@@ -104,64 +104,6 @@ function deviceSelected(deviceId: string, friendlyName: string) {
 
 </script>
 
-<style scoped>
-select.form-select,
-input.form-control {
-  border: 0;
-  outline: 0;
-  border-radius: 0%;
-  border-bottom: 1px solid white;
-  text-align: left;
-  background-image: none;
-}
-
-.form-floating>.form-control~label::after {
-  background-color: transparent;
-}
-
-.form-floating>.form-select~label::after {
-  background-color: transparent;
-}
-
-/* .form-floatingform-select~label {
-    color: grey;
-} */
-
-input.form-control:focus,
-select.form-select:focus,
-:active {
-  box-shadow: none;
-}
-
-select.form-select:hover:not([disabled]) {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Cpath fill=%27none%27 stroke=%27%23d4d6d9%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%272%27 d=%27m2 5 6 6 6-6%27/%3E%3C/svg%3E");
-  box-shadow: none;
-}
-
-select.form-select:first-of-type {
-  border-bottom: 0px solid white;
-}
-
-select.form-select:required:invalid {
-  color: gray;
-  border-bottom: 1px solid white;
-}
-
-.form-floating>.form-control:focus~label,
-.form-floating>.form-control:not(:placeholder-shown)~label,
-.form-floating>.form-control~label,
-.form-floating>.form-select~label {
-  opacity: 0.6;
-  transform: scale(0.85) translateY(-0.7rem) translateX(0.15rem);
-}
-
-select.form-select,
-input.form-select:disabled {
-  color: gray;
-  background-color: transparent;
-}
-</style>
-
 <template>
   <!-- Edit mode -->
   <!-- action controls -->
@@ -173,18 +115,16 @@ input.form-select:disabled {
     </ButtonPanel>
   </div>
 
-  <!-- Testing select box  -->
+  <!-- device select box  -->
   <div class="row pb-2">
     <DeviceSelector label="Device to trigger" @updated="deviceSelected" :filter="featureDevicesFilter()">
     </DeviceSelector>
   </div>
 
-  <!-- Testing input box  -->
+  <!-- data input box  -->
   <div class="row">
-    <div class="form-floating col-xl-7">
-      <input type="text" class="form-control" id="dataInput" v-model="action.data" />
-      <label for="dataInput">Set value</label>
-    </div>
+    <InputBox label="Set value" :is-numeric="true" :value="action.data" @updated="actionDataChanged" :isNumeric="true">
+    </InputBox>
   </div>
 
   <!-- Steps -->
@@ -198,7 +138,6 @@ input.form-select:disabled {
       <div class="col col-xl-4" v-if="step.id == ''">
         <DeviceSelector @updated="(id, name) => stepDeviceSelected(id, name, step)"
           :filter="devicesFilterByActionStep(action, step)"></DeviceSelector>
-
       </div>
       <div v-else class="col-xl-3">
         {{ deviceNameFromId(step) }}
