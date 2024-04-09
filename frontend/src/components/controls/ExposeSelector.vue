@@ -3,6 +3,7 @@ import { computed, PropType, ref } from "vue";
 import { getExposes } from "@/contracts/device";
 import { store } from "@/store/index";
 import { Device, DeviceFilter } from "@/types/device";
+import Selection from "@/components/input/Selection.vue";
 
 const props = defineProps({
   id: {
@@ -35,7 +36,7 @@ const selectedExpose = ref<string>('');
 const exposeList = computed(() => {
   const device = store.getters["devices/find"](props.id) as Device;
   if (device == undefined) {
-    return {};
+    return [];
   }
   return getExposes(device, props.filter);
 });
@@ -100,22 +101,5 @@ input.form-select:disabled {
 }
 </style>
 <template>
-  <div v-if="props.label != ''" class="form-floating col-sm-5">
-    <select required id="exposeSelector" class="form-select form-select-sm" @change="exposeSelected"
-      :disabled="props.disabled">
-      <option value="">Select</option>
-      <option v-for="value in exposeList" :value="value" :key="value">
-        {{ value }}
-      </option>
-    </select>
-    <label for="exposeSelector" class="form-label">{{ props.label }}</label>
-  </div>
-  <div v-else>
-    <select required class="form-select form-select-sm" @change="exposeSelected" :disabled="props.disabled">
-      <option value="">Select</option>
-      <option v-for="value in exposeList" :value="value" :key="value">
-        {{ value }}
-      </option>
-    </select>
-  </div>
+  <Selection :label="props.label" :disabled="props.disabled" @updated="exposeSelected" :items="exposeList"></Selection>
 </template>

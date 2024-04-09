@@ -1,9 +1,5 @@
 <script setup lang="ts">
-import { PropType, VNode, computed, h, ref, watch } from "vue";
-import { store } from "@/store/index";
-import { ExposeTypes } from "@/types/device.type";
-import { Expose, ExposeType } from "@/types/device";
-import { prop } from "vue-class-component";
+import { ref, watch } from "vue";
 
 const props = defineProps({
     value: {

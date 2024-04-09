@@ -3,6 +3,7 @@ import { computed, PropType } from "vue";
 import { getDevices } from "@/contracts/device";
 import { store } from "@/store/index";
 import { Device, Devices, DeviceFilter } from "@/types/device";
+import Selection from "@/components/input/Selection.vue";
 
 const props = defineProps({
     filter: {
@@ -103,7 +104,10 @@ input.form-select:disabled {
 }
 </style>
 <template>
-    <div v-if="props.label != ''" class="form-floating col-sm-5">
+    <Selection :label="props.label" :disabled="props.disabled" @updated="deviceSelected" :items="deviceList">
+    </Selection>
+
+    <!-- <div v-if="props.label != ''" class="form-floating col-sm-5">
         <select required id="deviceSelector" class="form-select form-select-solid" @change="deviceSelected"
             :disabled="props.disabled">
             <option value=""> Select </option>
@@ -121,5 +125,5 @@ input.form-select:disabled {
                 {{ key }}
             </option>
         </select>
-    </div>
+    </div> -->
 </template>

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { PropType, h, VNode } from "vue";
 import { ButtonPanelType, ButtonType, isDropdown, DropDownType } from "@/types/controls.type";
-import Dropdown from "@/components/controls/Dropdown.vue";
 
 
 function Panel() {
@@ -15,7 +14,6 @@ function Panel() {
 };
 
 function createDropdown(dropDown: DropDownType): VNode {
-    console.log("dropdown ", dropDown.items, dropDown.disabled, dropDown.name);
     return h("Dropdown", {
         className: 'btn-light',
         disabled: dropDown.disabled,
