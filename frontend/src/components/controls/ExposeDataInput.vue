@@ -84,14 +84,6 @@ const sequenceData = computed(() => {
     return deviceExpose.value?.attributes ? Object.values(deviceExpose.value.attributes) : [];
 });
 
-function isNumber(event: KeyboardEvent) {
-    if (dataType.value == ExposeTypes.Numeric &&
-        (!event.key.match(/^[\d\.]$/) ||
-            isNaN(Number(inputValue.value)))) {
-
-        event.preventDefault()
-    }
-}
 
 function sequenceDataSelected(event: Event) {
     let value: any = (event.target as HTMLInputElement).value;
@@ -191,7 +183,8 @@ input.form-select:disabled {
 
     <!-- to be refactored : numeric data  -->
     <div v-if="dataType == ExposeTypes.Numeric">
-        <InputBox :label="props.label" :disabled="props.disabled" @updated="inputChanged" :isNumeric="true"></InputBox>
+        <InputBox :label="props.label" :disabled="props.disabled" :value="inputValue" @updated="inputChanged"
+            :isNumeric="true"></InputBox>
     </div>
 
     <div v-if="showPresets" class="form-floating col-sm-5">

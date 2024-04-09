@@ -3,8 +3,13 @@ import { PropType, VNode, computed, h, ref, watch } from "vue";
 import { store } from "@/store/index";
 import { ExposeTypes } from "@/types/device.type";
 import { Expose, ExposeType } from "@/types/device";
+import { prop } from "vue-class-component";
 
 const props = defineProps({
+    value: {
+        default: "",
+        required: false,
+    },
     isNumeric: {
         type: Boolean,
         default: false,
@@ -27,6 +32,12 @@ const emit = defineEmits<{
 }>();
 
 const inputValue = ref<any>('');
+watch(
+    () => props.value,
+    () => {
+        inputValue.value = props.value;
+    }, { immediate: true }
+)
 
 function inputChanged(event: Event) {
     let value: any = (event.target as HTMLInputElement).value;
