@@ -26,17 +26,18 @@ const emit = defineEmits<{
     (e: "updated", value: any): void;
 }>();
 
-const inputValue = ref<any>();
+const inputValue = ref<any>('');
 
 function inputChanged(event: Event) {
     let value: any = (event.target as HTMLInputElement).value;
     if (props.isNumeric) {
-        console.log("change convert to number: ", value)
+        if ((value as string).endsWith('.')) {
+            return
+        }
         value = Number(value);
     }
 
     inputValue.value = value;
-
     emit('updated', inputValue.value);
 }
 
@@ -44,7 +45,6 @@ function isNumber(event: KeyboardEvent) {
     if (props.isNumeric &&
         (!event.key.match(/^[\d\.]$/) ||
             isNaN(Number(inputValue.value)))) {
-        console.log("prevent ", event.key)
         event.preventDefault()
     }
 }
