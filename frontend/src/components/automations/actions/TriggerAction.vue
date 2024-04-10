@@ -39,7 +39,6 @@ const buttonPanelItems = computed(() => {
 });
 
 function deviceSelected(id: string, friendlyName: string) {
-  console.log("triggeraction - device selected:", id, friendlyName);
   action.id = id;
   action.friendlyname = friendlyName;
 
@@ -51,7 +50,6 @@ function deviceSelected(id: string, friendlyName: string) {
 }
 
 function dataInputChange(value: string) {
-  console.log("action.data", value)
   action.data = value;
 }
 
@@ -148,7 +146,6 @@ input.form-select:disabled {
   </div>
 
   <div class="row">
-    action.id {{ action.id }}
     <ExposeDataInput :show-presets="true" :id="action.id" :name="action.property" label="Set value"
       @updated="dataInputChange" :disabled="action.property == ''"></ExposeDataInput>
 

@@ -44,8 +44,8 @@ const exposeList = computed(() => {
   return getExposes(device, props.filter);
 });
 
-function exposeSelected(event: Event) {
-  selectedExpose.value = (event.target as HTMLInputElement).value;
+function exposeSelected(value: string) {
+  selectedExpose.value = value;
   emit("updated", selectedExpose.value);
 }
 

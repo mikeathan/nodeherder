@@ -59,14 +59,14 @@ function ArraySelection(items: Array<string>): VNode {
             const value = (target as HTMLInputElement)?.value ?? "";
             selectionChanged(value);
         }
-    },
-        items.map((item) => {
-            return h('option', { key: item, value: item }, item)
-        }))
+    }, [h('option', { value: "" }, "Select"),
+    items.map((item) => {
+        return h('option', { key: item, value: item }, item)
+    })]);
 }
 
 function KeyValuePairSelection(items: KeyyValuePair<string>): VNode {
-    Object.entries(items).map(([key, value]) => { console.log(key, value) });
+
     return h(
         'select', {
         required: true, id: "selection", class: "form-select form-select-sm",
@@ -75,14 +75,14 @@ function KeyValuePairSelection(items: KeyyValuePair<string>): VNode {
             selectionChanged(value);
         }
     },
+        [h('option', { value: "" }, "Select"),
         Object.entries(items).map(([key, value]) => {
             return h('option', { key: key, value: value }, key)
-        }))
+        })]);
 }
 
 function selectionChanged(value: string) {
 
-    console.log("Selection onchange:", value);
     selectedValue.value = value;
     emit("updated", selectedValue.value);
 }
@@ -136,23 +136,9 @@ select.form-select:disabled {
 <template>
     <div v-if="props.label != ''" class="form-floating col-sm-5">
         <createSelection></createSelection>
-        <!-- <select required id="selection" class="form-select form-select-sm" @change="selectionChanged"
-            :disabled="props.disabled">
-            <option value="">Select</option>
-            <option v-for="(value, key) in props.items" :value="value" :key="value">
-                {{ key }}
-            </option>
-
-        </select> -->
         <label for="selection" class="form-label">{{ props.label }}</label>
     </div>
     <div v-else>
         <createSelection></createSelection>
-        <!-- <select required class="form-select form-select-sm" @change="selectionChanged" :disabled="props.disabled">
-            <option value="">Select</option>
-            <option v-for="value in items" :value="value" :key="value">
-                {{ value }}
-            </option>
-        </select> -->
     </div>
 </template>
