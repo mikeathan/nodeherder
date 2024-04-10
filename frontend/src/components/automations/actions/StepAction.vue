@@ -123,7 +123,7 @@ function deviceSelected(deviceId: string, friendlyName: string) {
 
   <!-- data input box  -->
   <div class="row">
-    <InputBox label="Set value" :is-numeric="true" :value="action.data" @updated="actionDataChanged" :isNumeric="true">
+    <InputBox label="Set value" :is-numeric="true" :value="action.data" @updated="actionDataChanged">
     </InputBox>
   </div>
 
