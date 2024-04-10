@@ -11,6 +11,11 @@ const props = defineProps({
         default: (device: any, expose: any) => true,
         required: false
     },
+    id: {
+        type: String,
+        default: "",
+        required: false,
+    },
     label: {
         type: String,
         default: "",
@@ -35,8 +40,7 @@ const deviceList = computed(() => {
     return getDevices(devices, props.filter)
 })
 
-function deviceSelected(event: Event) {
-    const id = (event.target as HTMLInputElement).value;
+function deviceSelected(id: string) {
     const device = store.getters["devices/find"](id) as Device;
     if (device == undefined) {
         emit('updated', '', '')
@@ -104,7 +108,8 @@ input.form-select:disabled {
 }
 </style>
 <template>
-    <Selection :label="props.label" :disabled="props.disabled" @updated="deviceSelected" :items="deviceList">
+    <Selection :label="props.label" :value="props.id" :disabled="props.disabled" @updated="deviceSelected"
+        :items="deviceList">
     </Selection>
 
     <!-- <div v-if="props.label != ''" class="form-floating col-sm-5">

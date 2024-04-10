@@ -39,7 +39,7 @@ const buttonPanelItems = computed(() => {
 });
 
 function deviceSelected(id: string, friendlyName: string) {
-  console.log("deviceSelected", id, friendlyName);
+  console.log("triggeraction - device selected:", id, friendlyName);
   action.id = id;
   action.friendlyname = friendlyName;
 
@@ -137,7 +137,8 @@ input.form-select:disabled {
     <ButtonPanel :buttons="buttonPanelItems"></ButtonPanel>
   </div>
   <div class="row pb-2">
-    <DeviceSelector label="Device to trigger" @updated="deviceSelected" :filter="featureDevicesFilter()">
+    <DeviceSelector label="Device to trigger" :id="action.id" @updated="deviceSelected"
+      :filter="featureDevicesFilter()">
     </DeviceSelector>
   </div>
 
@@ -147,6 +148,7 @@ input.form-select:disabled {
   </div>
 
   <div class="row">
+    action.id {{ action.id }}
     <ExposeDataInput :show-presets="true" :id="action.id" :name="action.property" label="Set value"
       @updated="dataInputChange" :disabled="action.property == ''"></ExposeDataInput>
 

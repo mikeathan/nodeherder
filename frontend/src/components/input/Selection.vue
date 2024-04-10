@@ -44,20 +44,20 @@ const selectedValue = ref<string>(props.value);
 //             </option>
 
 function createSelection(): VNode {
-    if (Array.isArray(props.items))
+    if (Array.isArray(props.items)) {
         return ArraySelection(props.items);
-
+    }
     return KeyValuePairSelection(props.items);
 
 }
 function ArraySelection(items: Array<string>): VNode {
-    console.log("array:", props.items)
-
     return h(
         'select', {
         required: true, id: "selection", class: "form-select form-select-sm",
-        change(event: any) {
-            selectionChanged(event);
+        onChange({ target }: Event) {
+
+            const value = (target as HTMLInputElement)?.value ?? "";
+            selectionChanged(value);
         }
     },
         items.map((item) => {
@@ -66,13 +66,13 @@ function ArraySelection(items: Array<string>): VNode {
 }
 
 function KeyValuePairSelection(items: KeyyValuePair<string>): VNode {
-    console.log("keyvaluemap:", props.items)
     Object.entries(items).map(([key, value]) => { console.log(key, value) });
     return h(
         'select', {
         required: true, id: "selection", class: "form-select form-select-sm",
-        change(event: any) {
-            selectionChanged(event);
+        onChange({ target }: Event) {
+            const value = (target as HTMLInputElement)?.value ?? "";
+            selectionChanged(value);
         }
     },
         Object.entries(items).map(([key, value]) => {
@@ -80,8 +80,10 @@ function KeyValuePairSelection(items: KeyyValuePair<string>): VNode {
         }))
 }
 
-function selectionChanged(event: Event) {
-    selectedValue.value = (event.target as HTMLInputElement).value;
+function selectionChanged(value: string) {
+
+    console.log("Selection onchange:", value);
+    selectedValue.value = value;
     emit("updated", selectedValue.value);
 }
 
