@@ -18,6 +18,7 @@ export type StepAction = "StepAction";
 export type PresetRotationAction = "PresetRotationAction";
 export type ActionType = TriggerAction | StepAction | PresetRotationAction;
 
+export type TriggerActionOperation
 export const AutomationActionTypes = {
   Trigger: "TriggerAction",
   Step: "StepAction",

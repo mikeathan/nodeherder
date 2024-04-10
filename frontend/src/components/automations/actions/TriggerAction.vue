@@ -39,7 +39,7 @@ const buttonPanelItems = computed(() => {
 });
 
 const dropdownItems = computed(() =>
-  createTriggerActionOperatorsDropdowitems((e: NumericOperator) => addStep(e))
+  createTriggerActionOperatorsDropdowitems((e: TriggerActionOperations) => addStep(e))
 );
 
 function deviceSelected(id: string, friendlyName: string) {
