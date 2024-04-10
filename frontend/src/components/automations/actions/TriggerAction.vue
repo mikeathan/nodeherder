@@ -3,7 +3,7 @@ import { computed, ref, watchEffect, watch, PropType, reactive } from "vue";
 import { AutomationTriggerAction } from "@/types/automation";
 import { toMillisecs, toMinutes } from "@/modules/formatters/time.formatter";
 import ButtonPanel from "@/components/controls/ButtonPanel.vue";
-import { createSaveDeleteButtonItems } from "../../../configs/automation/trigger-dropdown.config";
+import { createSaveDeleteButtonItems, createTriggerActionOperatorsDropdowitems } from "../../../configs/automation/trigger-dropdown.config";
 import DeviceSelector from "@/components/controls/DeviceSelector.vue";
 import ExposeSelector from "@/components/controls/ExposeSelector.vue";
 
@@ -37,6 +37,10 @@ const buttonPanelItems = computed(() => {
     !isActionValid
   );
 });
+
+const dropdownItems = computed(() =>
+  createTriggerActionOperatorsDropdowitems((e: NumericOperator) => addStep(e))
+);
 
 function deviceSelected(id: string, friendlyName: string) {
   action.id = id;
@@ -132,7 +136,12 @@ input.form-select:disabled {
 </style>
 <template>
   <div class="row pb-3">
-    <ButtonPanel :buttons="buttonPanelItems"></ButtonPanel>
+    <ButtonPanel :buttons="buttonPanelItems">
+      <Dropdown :items="dropdownItems" class-name="btn-light" :disabled="action.id == ''">
+        Add Operation
+      </Dropdown>
+
+    </ButtonPanel>
   </div>
   <div class="row pb-2">
     <DeviceSelector label="Device to trigger" :id="action.id" @updated="deviceSelected"
@@ -149,7 +158,7 @@ input.form-select:disabled {
     <ExposeDataInput :show-presets="true" :id="action.id" :name="action.property" label="Set value"
       @updated="dataInputChange" :disabled="action.property == ''"></ExposeDataInput>
 
-    <!-- to do - add operations in dropdown for delay or repeat with delay -->
+    to do - add operations in dropdown for delay or repeat with delay
     <div class="form-floating col-sm-2">
       <input type="text" class="form-control" id="delayInput" v-model="action.delay" @input="delayInputChange"
         :disabled="action.property == ''" />

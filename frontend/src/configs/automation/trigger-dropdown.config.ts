@@ -1,6 +1,7 @@
 import {
   AutomationActionTypes,
   NumericOperators,
+  TriggerActionOperators,
 } from "@/contracts/automations";
 import {
   DropDownItemType,
@@ -19,6 +20,18 @@ export function createNewActionDropdownItems(
 
   Object.values(AutomationActionTypes).forEach((actionType) =>
     items.push(createDropDownItem(`New ${actionType}`, actionType, event))
+  );
+
+  return items;
+}
+
+export function createTriggerActionOperatorsDropdowitems(
+  event: ButtonClickEventType
+): DropDownItemType[] {
+  let items: DropDownItemType[] = [];
+
+  Object.values(TriggerActionOperators).forEach((operator) =>
+    items.push(createDropDownItem(operator, operator, event))
   );
 
   return items;

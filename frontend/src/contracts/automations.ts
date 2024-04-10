@@ -11,6 +11,7 @@ import { ExposeType } from "../types/device";
 
 export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
 export const NumericOperators: string[] = ["+", "-", "*"];
+export const TriggerActionOperators: string[] = ["delay", "repeat"];
 
 export type TriggerAction = "TriggerAction";
 export type StepAction = "StepAction";
