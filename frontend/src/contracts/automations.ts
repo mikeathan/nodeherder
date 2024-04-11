@@ -8,17 +8,21 @@ import {
   AutomationActionStep,
 } from "../types/automation";
 import { ExposeType } from "../types/device";
+import { ValueOf } from "@/types/types";
 
 export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
 export const NumericOperators: string[] = ["+", "-", "*"];
-export const TriggerActionOperators: string[] = ["delay", "repeat"];
 
 export type TriggerAction = "TriggerAction";
 export type StepAction = "StepAction";
 export type PresetRotationAction = "PresetRotationAction";
 export type ActionType = TriggerAction | StepAction | PresetRotationAction;
 
-export type TriggerActionOperation
+export type TriggerActionOperation = ValueOf<typeof TriggerActionOperations>;
+export const TriggerActionOperations = {
+  Delay: "delay",
+} as const;
+
 export const AutomationActionTypes = {
   Trigger: "TriggerAction",
   Step: "StepAction",

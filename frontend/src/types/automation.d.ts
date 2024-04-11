@@ -1,10 +1,10 @@
-import { KeyyValuePair, Nullable } from './types';
+import { KeyyValuePair, Nullable } from "./types";
 export type Automations = Array<Automation>;
 export type AutomationMap = KeyyValuePair<Automation>;
 
 export type AutomationTriggers = Array<AutomationTrigger>;
 export type AutomationTriggerConditions = Array<AutomationTriggerCondition>;
-export type NumericOperator = '+' | '-' | '*';
+export type NumericOperator = "+" | "-" | "*";
 
 export type AutomationActionStep = {
   id: string;

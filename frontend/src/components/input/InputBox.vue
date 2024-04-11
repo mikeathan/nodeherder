@@ -2,10 +2,7 @@
 import { ref, watch } from "vue";
 
 const props = defineProps({
-    value: {
-        default: "",
-        required: false,
-    },
+    value: null,
     isNumeric: {
         type: Boolean,
         default: false,

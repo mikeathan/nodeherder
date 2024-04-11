@@ -6,12 +6,15 @@ import ButtonPanel from "@/components/controls/ButtonPanel.vue";
 import { createSaveDeleteButtonItems, createTriggerActionOperatorsDropdowitems } from "../../../configs/automation/trigger-dropdown.config";
 import DeviceSelector from "@/components/controls/DeviceSelector.vue";
 import ExposeSelector from "@/components/controls/ExposeSelector.vue";
-
+import InputBox from '@/components/input/InputBox.vue';
+import Dropdown from "@/components/controls/Dropdown.vue";
 import {
   featureDevicesFilter,
   featureExposeFilter,
 } from "@/configs/automation/device.config";
 import ExposeDataInput from "@/components/controls/ExposeDataInput.vue";
+import { TriggerActionOperation } from "@/contracts/automations";
+
 const props = defineProps({
   action: {
     type: Object as PropType<AutomationTriggerAction>,
@@ -38,9 +41,19 @@ const buttonPanelItems = computed(() => {
   );
 });
 
+const operations = ref<TriggerActionOperation[]>([]);
 const dropdownItems = computed(() =>
-  createTriggerActionOperatorsDropdowitems((e: TriggerActionOperations) => addStep(e))
+  createTriggerActionOperatorsDropdowitems((e: TriggerActionOperation) => addOperation(e))
 );
+
+function addOperation(operation: TriggerActionOperation) {
+  operations.value.push(operation)
+}
+
+function removeOperation(operation: TriggerActionOperation) {
+  action[operation] = null;
+  operations.value = operations.value.filter(e => e == operation);
+}
 
 function deviceSelected(id: string, friendlyName: string) {
   action.id = id;
@@ -57,8 +70,7 @@ function dataInputChange(value: string) {
   action.data = value;
 }
 
-function delayInputChange(event: Event) {
-  const value = (event.target as HTMLInputElement).value;
+function delayInputChange(value: string) {
   action.delay = parseInt(value);
 }
 
@@ -77,63 +89,7 @@ function saveAction() {
 }
 function removeAction() { }
 </script>
-<style scoped>
-select.form-select,
-input.form-control {
-  border: 0;
-  outline: 0;
-  border-radius: 0%;
-  border-bottom: 1px solid white;
-  text-align: left;
-  background-image: none;
-}
 
-.form-floating>.form-control~label::after {
-  background-color: transparent;
-}
-
-.form-floating>.form-select~label::after {
-  background-color: transparent;
-}
-
-/* .form-floatingform-select~label {
-    color: grey;
-} */
-
-input.form-control:focus,
-select.form-select:focus,
-:active {
-  box-shadow: none;
-}
-
-select.form-select:hover:not([disabled]) {
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Cpath fill=%27none%27 stroke=%27%23d4d6d9%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%272%27 d=%27m2 5 6 6 6-6%27/%3E%3C/svg%3E");
-  box-shadow: none;
-}
-
-select.form-select:first-of-type {
-  border-bottom: 0px solid white;
-}
-
-select.form-select:required:invalid {
-  color: gray;
-  border-bottom: 1px solid white;
-}
-
-.form-floating>.form-control:focus~label,
-.form-floating>.form-control:not(:placeholder-shown)~label,
-.form-floating>.form-control~label,
-.form-floating>.form-select~label {
-  opacity: 0.6;
-  transform: scale(0.85) translateY(-0.7rem) translateX(0.15rem);
-}
-
-select.form-select,
-input.form-select:disabled {
-  color: gray;
-  background-color: transparent;
-}
-</style>
 <template>
   <div class="row pb-3">
     <ButtonPanel :buttons="buttonPanelItems">
@@ -157,12 +113,18 @@ input.form-select:disabled {
   <div class="row">
     <ExposeDataInput :show-presets="true" :id="action.id" :name="action.property" label="Set value"
       @updated="dataInputChange" :disabled="action.property == ''"></ExposeDataInput>
+    <div v-for="operation in operations">
+      <div class="row">
 
-    to do - add operations in dropdown for delay or repeat with delay
-    <div class="form-floating col-sm-2">
-      <input type="text" class="form-control" id="delayInput" v-model="action.delay" @input="delayInputChange"
-        :disabled="action.property == ''" />
-      <label for="delayInput">Delay in minutes</label>
+        <div class=" col-sm-6">
+          <InputBox label="Delay in minutes" :is-numeric="true" :disabled="action.property == ''"
+            @updated="delayInputChange" :value="action[operation]"> </InputBox>
+        </div>
+        <div class="col-sm-1">
+          move it in the Inputbox
+          <span class="fa fa-trash-alt fa-sm" @click="removeOperation(operation)"> </span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
