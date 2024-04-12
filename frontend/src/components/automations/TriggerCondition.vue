@@ -3,6 +3,7 @@
 import { ref, computed, watch } from 'vue'
 import InputBox from '@/components/input/InputBox.vue';
 import DataInput from "../input/DataInput.vue"
+import Selection from "../input/Selection.vue"
 
 import { EqualityOperators, } from "../../contracts/automations"
 import { AutomationTriggerCondition } from "../../types/automation";
@@ -114,16 +115,16 @@ function getPlaceholder() {
     }
 }
 
-function getOperators() {
+const exposeOperators = computed(() => {
 
     switch (feature.value.type) {
         case "binary":
         case "enum":
-            return EqualityOperators[0]
+            return Array<string>(EqualityOperators[0]);
         default:
-            return EqualityOperators
+            return EqualityOperators;
     }
-}
+});
 
 
 function getItems() {
@@ -149,27 +150,20 @@ function getItems() {
             <ExposeSelector :id="props.id" @updated="exposeSelected" :filter="allExposeFilter()" :disabled="name != ''">
             </ExposeSelector>
         </div>
-        <!-- <div v-else class="col-xl-3 col-md-4">
-            <<DataInput type="string" placeholder="Name" :data="name" :disabled="true" alignment="left">
-            </DataInput>
-            <InputBox :disabled="true" :value="name"> </InputBox>
-        </div> -->
         <div class="col-xl-3 col-md-3">
-
-            // selection
-            <DataInput type="enum" :items="getOperators()" :data="operator" :disabled="name == ''" alignment="center"
-                @update:data="operatorUpdated">
-            </DataInput>
+            <Selection :value="operator" :disabled="name == ''" @updated="operatorUpdated" :items="exposeOperators">
+            </Selection>
         </div>
         <div class="col-md-4">
-            <ExposeDataInput :id="action.id" :name="action.property" label="Set value" @updated="dataInputChange"
-                :disabled="action.property == ''"></ExposeDataInput>
-
+            {{ feature.id }}
+            <ExposeDataInput :id="feature.id" :items="getItems()" label="Set value" @updated="dataUpdated"
+                :disabled="name == ''"></ExposeDataInput>
+            <!--
 
             could be selection or input
             <DataInput :type="feature.type" :placeholder="getPlaceholder()" :data="data" :items="getItems()"
                 alignment="center" :disabled="name == ''" @update:data="dataUpdated">
-            </DataInput>
+            </DataInput> -->
         </div>
     </div>
 </template>

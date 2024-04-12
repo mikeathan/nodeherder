@@ -47,7 +47,6 @@ function removeAction(action: AutomationTriggerAction): void {
 }
 
 </script>
-
 <template>
     <div>
         <component :is="PanelComponents[actionType]" v-bind="{ action: currentAction }" @delete="removeAction"

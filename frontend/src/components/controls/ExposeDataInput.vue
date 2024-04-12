@@ -4,6 +4,7 @@ import { store } from "@/store/index";
 import { ExposeTypes } from "@/types/device.type";
 import { Expose, ExposeType } from "@/types/device";
 import InputBox from '@/components/input/InputBox.vue';
+import Selection from "@/components/input/Selection.vue";
 
 const props = defineProps({
     id: {
@@ -104,100 +105,20 @@ function presetSelected(event: Event) {
 }
 
 </script>
-<style scoped>
-select.form-select,
-input.form-control {
-    border: 0;
-    outline: 0;
-    border-radius: 0%;
-    border-bottom: 1px solid white;
-    text-align: left;
-    background-image: none;
-}
-
-.form-floating>.form-control~label::after {
-    background-color: transparent;
-}
-
-.form-floating>.form-select~label::after {
-    background-color: transparent;
-}
-
-input.form-control:focus,
-select.form-select:focus,
-:active {
-    box-shadow: none;
-}
-
-select.form-select:hover:not([disabled]) {
-    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 16 16%27%3E%3Cpath fill=%27none%27 stroke=%27%23d4d6d9%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27 stroke-width=%272%27 d=%27m2 5 6 6 6-6%27/%3E%3C/svg%3E");
-    box-shadow: none;
-}
-
-select.form-select:first-of-type {
-    border-bottom: 0px solid white;
-}
-
-select.form-select:required:invalid {
-    color: gray;
-    border-bottom: 1px solid white;
-}
-
-.form-floating>.form-control:focus~label,
-.form-floating>.form-control:not(:placeholder-shown)~label,
-.form-floating>.form-control~label,
-.form-floating>.form-select~label {
-    opacity: 0.6;
-    transform: scale(0.85) translateY(-0.7rem) translateX(0.15rem);
-}
-
-select.form-select,
-input.form-select:disabled {
-    color: gray;
-    background-color: transparent;
-}
-</style>
 <template>
-
-    <!-- to be refactored : sequence data - enum or binary -->
     <div v-if="dataType == ExposeTypes.Binary || dataType == ExposeTypes.Enum">
-        <div v-if="props.label != ''" class="form-floating col-sm-3">
-
-            replace with selection component
-            <select required id="dataInput" class="form-select form-select-sm" @change="sequenceDataSelected">
-                <option value=""> Select </option>
-                <option v-for="value in sequenceData" :value="value" :key="value">
-                    {{ value }}
-                </option>
-            </select>
-            <label for="dataInput" class="form-label">{{ props.label }}</label>
-        </div>
-        <div v-else class="col-sm-3">
-            <select required id="dataInput" class="form-select form-select-sm" @change="sequenceDataSelected">
-                <option value=""> Select </option>
-                <option v-for="value in sequenceData" :value="value" :key="value">
-                    {{ value }}
-                </option>
-            </select>
-        </div>
-
+        <Selection :label="props.label" :value="props.id" :disabled="props.disabled" @updated="sequenceDataSelected"
+            :items="sequenceData">
+        </Selection>
     </div>
-
-    <!-- to be refactored : numeric data  -->
     <div v-if="dataType == ExposeTypes.Numeric">
         <InputBox :label="props.label" :disabled="props.disabled" :value="inputValue" @updated="inputChanged"
             :isNumeric="true"></InputBox>
     </div>
 
-    <div v-if="showPresets" class="form-floating col-sm-5">
-        TO be replaced
-        <select required id="presetsSelector" class="form-select form-select-sm" v-model="selectedPreset"
-            @change="presetSelected">
-            <option value=""> Select </option>
-            <option v-for="(value, key) in exposePresets" :value="value" :key="key">
-                {{ key }}
-            </option>
-        </select>
-        <label for="presetsSelector" class="form-label">Expose presets</label>
+    <div v-if="showPresets">
+        <Selection :label="props.label" :disabled="props.disabled" :value="selectedPreset" @updated="presetSelected"
+            :items="exposePresets">
+        </Selection>
     </div>
 </template>

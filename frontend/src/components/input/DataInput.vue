@@ -121,7 +121,6 @@ select.form-control:focus,
     box-shadow: none;
 }
 
-
 .custom-control-input {
     transform: scale(1.4);
 }

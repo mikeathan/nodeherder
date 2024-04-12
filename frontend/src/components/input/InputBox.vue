@@ -56,7 +56,6 @@ function isNumber(event: KeyboardEvent) {
 </script>
 
 <style scoped>
-select.form-select,
 input.form-control {
     border: 0;
     outline: 0;
