@@ -88,8 +88,6 @@ onUnmounted(() => {
     <div class="row">
         <button type="button" class="btn-close" aria-label="Close" @click="closeComponent(currentComponent)"></button>
         <div class="col">
-            <!-- @delete="removeItem"
-        @save="saveItem" @open="openComponent" @close="closeComponent"  -->
             <component :is="PanelComponents[currentComponent]" v-bind="componentCache[currentComponent].args"
                 v-on="componentCache[currentComponent].events" />
         </div>

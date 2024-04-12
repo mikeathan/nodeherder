@@ -32,6 +32,5 @@ onUnmounted(() => {
 </script>
 <template>
     <div :title="'last update ' + timestamp" :ref="el => { lastSeenElement = el }" className="col text-truncate">
-
     </div>
 </template>

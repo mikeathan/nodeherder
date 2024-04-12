@@ -53,7 +53,7 @@ function createSelection(): VNode {
 function ArraySelection(items: Array<string>): VNode {
     return h(
         'select', {
-        required: true, id: "selection", class: "form-select form-select-sm",
+        required: true, id: "selection", class: "form-select form-select-sm", disabled: props.disabled,
         onChange({ target }: Event) {
 
             const value = (target as HTMLInputElement)?.value ?? "";
@@ -69,7 +69,7 @@ function KeyValuePairSelection(items: KeyyValuePair<string>): VNode {
 
     return h(
         'select', {
-        required: true, id: "selection", class: "form-select form-select-sm",
+        required: true, id: "selection", class: "form-select form-select-sm", disabled: props.disabled,
         onChange({ target }: Event) {
             const value = (target as HTMLInputElement)?.value ?? "";
             selectionChanged(value);

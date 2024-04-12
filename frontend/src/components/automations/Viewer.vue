@@ -51,7 +51,7 @@ function saveAutomation(id: string): void {
                     <td>
                         <RouterLink :to="`/editor/${automation.id}`">{{
                             automation.friendlyname
-                        }}</RouterLink>
+                            }}</RouterLink>
                     </td>
                     <td>
                         {{ automation.description }}
@@ -60,6 +60,7 @@ function saveAutomation(id: string): void {
                         <div class=" form-check form-switch">
                             <label class="form-check-label">Enable</label>
 
+                            todo convert it into component
                             <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault"
                                 v-model="automation.enabled" @change="saveAutomation(automation.id)">
                         </div>

@@ -52,7 +52,7 @@ function addOperation(operation: TriggerActionOperation) {
 
 function removeOperation(operation: TriggerActionOperation) {
   action[operation] = null;
-  operations.value = operations.value.filter(e => e == operation);
+  operations.value = operations.value.filter(e => e != operation);
 }
 
 function deviceSelected(id: string, friendlyName: string) {
@@ -115,13 +115,9 @@ function removeAction() { }
       @updated="dataInputChange" :disabled="action.property == ''"></ExposeDataInput>
     <div v-for="operation in operations">
       <div class="row">
-
-        <div class=" col-sm-6">
-          <InputBox label="Delay in minutes" :is-numeric="true" :disabled="action.property == ''"
-            @updated="delayInputChange" :value="action[operation]"> </InputBox>
-        </div>
-        <div class="col-sm-1">
-          move it in the Inputbox
+        <InputBox label="Delay in minutes" :is-numeric="true" :disabled="action.property == ''"
+          @updated="delayInputChange" :value="action[operation]"> </InputBox>
+        <div class="col-sm-1 pt-4">
           <span class="fa fa-trash-alt fa-sm" @click="removeOperation(operation)"> </span>
         </div>
       </div>

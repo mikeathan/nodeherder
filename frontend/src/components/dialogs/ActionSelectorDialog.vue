@@ -1,15 +1,10 @@
 <script setup lang="ts">
-import { ref, watchEffect, onMounted, watch, computed } from 'vue';
-import DataInput from "../input/DataInput.vue"
+import { ref, onMounted, watch, computed } from 'vue';
 import Selector from "../input/Selector.vue"
-import { OperationType, resolveObjectOperations } from "../../contracts/operations"
-import { clearAction, setDeviceId, setProperty } from "../../contracts/automations"
 import { getDeviceFeaturesByType } from "../../contracts/device"
 import { store } from "../../store/index";
 import { Device, Devices, ExposeType } from "@/types/device";
 import { KeyyValuePair } from "@/types/types";
-import { AutomationTriggerAction } from "@/types/automation";
-import { toMillisecs, toMinutes } from '@/modules/formatters/time.formatter'
 import { ExposeTypes } from "@/types/device.type";
 import { Modal } from 'bootstrap'
 

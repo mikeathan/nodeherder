@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useRouter } from 'vue-router'
-import Trigger from "./Trigger.vue"
-import DataInput from "../input/DataInput.vue"
+import InputBox from "../input/InputBox.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
-import { Automation, AutomationTrigger, AutomationTriggerAction } from "@/types/automation";
+import { Automation, AutomationTrigger } from "@/types/automation";
 import { EditableAutomationTrigger, DeviceAutomation } from "../../contracts/automations";
 import Panel from "../controls/Panel.vue";
 import { EventActions, OpenPanelEvent } from "@/types/events.type";
@@ -167,26 +166,27 @@ function createOpenPanelEvent(): OpenPanelEvent {
             <div class="card col-xl-5 col-md-6 col-sm-3">
                 <div class="card-header ">
                     <div class="pt-3 ">
+                        <InputBox label="Id" :disabled="true" :value="automation.id">
+                        </InputBox>
+                    </div>
+                    <!-- <div class="pt-3 ">
                         <label class="form-check-label">Id</label>
                         <DataInput :data="automation.id" alignment="left" :disabled="true">
                         </DataInput>
-                    </div>
-                    <div class="pt-3">
-                        <label class="form-check-label">Friendly Name</label>
-                        <DataInput :data="automation.friendlyname" alignment="left" type="string" :disabled="true">
-                        </DataInput>
+                    </div> -->
+                    <div class="pt-3 ">
+                        <InputBox label="Friendly Name" :disabled="true" :value="automation.friendlyname">
+                        </InputBox>
                     </div>
                     <div class="pt-3  pb-4">
-                        <label class="form-check-label">Description</label>
-                        <DataInput :data="automation.description"
-                            @update:data="(value) => automation.description = value" type="string" alignment="left">
-                        </DataInput>
+                        <InputBox label="Description" @updated="(v) => automation.description = v"
+                            :value="automation.description">
+                        </InputBox>
                     </div>
-
                     <div class="pb-3">
                         <div class=" form-check form-switch ms-2">
                             <label class="form-check-label ms-3">Enabled</label>
-
+                            TODO create new component
                             <input class="form-check-input custom-control-input" type="checkbox" role="switch"
                                 id="flexSwitchCheckDefault" v-model="automation.enabled">
                         </div>
