@@ -10,6 +10,7 @@ import { store } from "../../store/index";
 import { Device } from "@/types/device";
 import ExposeSelector from "@/components/controls/ExposeSelector.vue";
 import { allExposeFilter } from '@/configs/automation/device.config';
+import ExposeDataInput from '../controls/ExposeDataInput.vue';
 
 
 const props = defineProps({
@@ -154,12 +155,16 @@ function getItems() {
             <InputBox :disabled="true" :value="name"> </InputBox>
         </div> -->
         <div class="col-xl-3 col-md-3">
+
             // selection
             <DataInput type="enum" :items="getOperators()" :data="operator" :disabled="name == ''" alignment="center"
                 @update:data="operatorUpdated">
             </DataInput>
         </div>
         <div class="col-md-4">
+            <ExposeDataInput :id="action.id" :name="action.property" label="Set value" @updated="dataInputChange"
+                :disabled="action.property == ''"></ExposeDataInput>
+
 
             could be selection or input
             <DataInput :type="feature.type" :placeholder="getPlaceholder()" :data="data" :items="getItems()"

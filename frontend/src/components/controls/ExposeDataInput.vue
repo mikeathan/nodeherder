@@ -162,6 +162,8 @@ input.form-select:disabled {
     <!-- to be refactored : sequence data - enum or binary -->
     <div v-if="dataType == ExposeTypes.Binary || dataType == ExposeTypes.Enum">
         <div v-if="props.label != ''" class="form-floating col-sm-3">
+
+            replace with selection component
             <select required id="dataInput" class="form-select form-select-sm" @change="sequenceDataSelected">
                 <option value=""> Select </option>
                 <option v-for="value in sequenceData" :value="value" :key="value">
