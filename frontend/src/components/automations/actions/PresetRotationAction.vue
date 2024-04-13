@@ -58,11 +58,13 @@ function removeAction(): void {
     <ButtonPanel :buttons="buttonPanelItems"></ButtonPanel>
   </div>
   <div class="row pb-2">
-    <DeviceSelector label="Device to trigger" @updated="deviceSelected" :filter="presetsDevicesFilter()">
+    <DeviceSelector label="Device to trigger" :id="action.id" @updated="deviceSelected"
+      :filter="presetsDevicesFilter()">
     </DeviceSelector>
   </div>
   <div class="row pb-2">
-    <ExposeSelector label="Expose" :id="action.id" @updated="exposeSelected" :filter="presetExposeFilter()">
+    <ExposeSelector label="Expose" :id="action.id" :value="action.property" @updated="exposeSelected"
+      :filter="presetExposeFilter()">
     </ExposeSelector>
   </div>
 </template>
