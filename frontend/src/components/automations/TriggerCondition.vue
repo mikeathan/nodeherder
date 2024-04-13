@@ -115,7 +115,7 @@ const exposeOperators = computed(() => {
             </Selection>
         </div>
         <div class="col-xl-3 col-md-3">
-            <ExposeDataInput :id="props.id" :name="name" @updated="dataUpdated" position="center"
+            <ExposeDataInput :id="props.id" :name="name" :value="data" @updated="dataUpdated" position="center"
                 :disabled="name == ''">
             </ExposeDataInput>
         </div>
