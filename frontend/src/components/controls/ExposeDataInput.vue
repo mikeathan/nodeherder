@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, PropType } from "vue";
 import { store } from "@/store/index";
 import { ExposeTypes } from "@/types/device.type";
 import { Expose, ExposeType } from "@/types/device";
 import InputBox from '@/components/input/InputBox.vue';
 import Selection from "@/components/input/Selection.vue";
+import { LayoutPosition, LayoutPositions } from '@/types/controls.type';
 
 const props = defineProps({
     id: {
@@ -17,12 +18,21 @@ const props = defineProps({
         default: '',
         required: true,
     },
+    value: {
+        type: String,
+        default: "",
+        required: false,
+    },
     label: {
         type: String,
         default: "",
         required: false,
     },
-
+    position: {
+        type: String as PropType<LayoutPosition>,
+        default: LayoutPositions.left,
+        required: false,
+    },
     showPresets: {
         type: Boolean,
         default: false,
@@ -52,7 +62,7 @@ const deviceExpose = computed(() => {
 });
 
 const dataType = computed<ExposeType>(() => deviceExpose.value?.type ?? ExposeTypes.Empty);
-const inputValue = ref<any>('');
+const inputValue = ref<any>(props.value);
 
 const selectedPreset = ref<any>('');
 
@@ -106,8 +116,8 @@ function presetSelected(selected: any) {
 </script>
 <template>
     <div v-if="dataType == ExposeTypes.Binary || dataType == ExposeTypes.Enum">
-        <Selection :label="props.label" :value="props.id" :disabled="props.disabled" @updated="sequenceDataSelected"
-            :items="sequenceData">
+        <Selection :label="props.label" :value="props.value" :disabled="props.disabled" @updated="sequenceDataSelected"
+            :position="props.position" :items="sequenceData">
         </Selection>
     </div>
     <div v-if="dataType == ExposeTypes.Numeric">
@@ -117,7 +127,7 @@ function presetSelected(selected: any) {
 
     <div v-if="showPresets">
         <Selection :label="props.label" :disabled="props.disabled" :value="selectedPreset" @updated="presetSelected"
-            :items="exposePresets">
+            :position="props.position" :items="exposePresets">
         </Selection>
     </div>
 </template>

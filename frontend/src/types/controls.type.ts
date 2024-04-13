@@ -1,3 +1,4 @@
+import { right } from "@popperjs/core";
 import { KeyyValuePair } from "./types";
 
 export type ButtonPanelType = ButtonType | DropDownType;
@@ -58,4 +59,12 @@ export const SelectFormSize = {
   normal: "",
   small: "form-select-sm",
   large: "form-select-lg",
+} as const;
+
+export type LayoutPosition = keyof typeof LayoutPositions;
+
+export const LayoutPositions = {
+  center: "center",
+  left: "left",
+  right: "right",
 } as const;

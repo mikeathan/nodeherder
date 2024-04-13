@@ -1,13 +1,7 @@
 <script setup lang="ts">
 import { KeyyValuePair } from "@/types/types";
 import { PropType, VNode, h, ref, watch } from "vue";
-
-import { SelectSize, SelectFormSize, SelectionItems } from '@/types/controls.type';
-
-// TODO
-// selection size
-// alignnment maybe ? 
-
+import { SelectSize, SelectFormSize, SelectionItems, LayoutPosition, LayoutPositions } from '@/types/controls.type';
 
 const props = defineProps({
 
@@ -29,6 +23,11 @@ const props = defineProps({
     label: {
         type: String,
         default: "",
+        required: false,
+    },
+    position: {
+        type: String as PropType<LayoutPosition>,
+        default: LayoutPositions.left,
         required: false,
     },
     size: {
@@ -71,6 +70,9 @@ const selectClass = (): string => {
     return `form-select ${SelectFormSize[props.size]}`;
 };
 
+const selectStyle = (): string => {
+    return `text-align:${props.position}`;
+}
 const defaultText = (): string => {
     return props.text != '' ? props.text : "Select"
 };
@@ -78,7 +80,7 @@ const defaultText = (): string => {
 function ArraySelection(items: Array<string>): VNode {
     return h(
         'select', {
-        required: true, id: "selection", class: selectClass(), value: props.value, disabled: props.disabled,
+        required: true, id: "selection", class: selectClass(), style: selectStyle(), value: props.value, disabled: props.disabled,
         onChange({ target }: Event) {
 
             const value = (target as HTMLInputElement)?.value ?? "";
@@ -97,7 +99,7 @@ function ArraySelection(items: Array<string>): VNode {
 function KeyValuePairSelection(items: KeyyValuePair<string>): VNode {
     return h(
         'select', {
-        required: true, id: "selection", class: selectClass(), value: props.value, disabled: props.disabled,
+        required: true, id: "selection", class: selectClass(), style: selectStyle(), value: props.value, disabled: props.disabled,
         onChange({ target }: Event) {
             const value = (target as HTMLInputElement)?.value ?? "";
             selectionChanged(value);

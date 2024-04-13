@@ -4,6 +4,7 @@ import { getExposes } from "@/contracts/device";
 import { store } from "@/store/index";
 import { Device, DeviceFilter } from "@/types/device";
 import Selection from "@/components/input/Selection.vue";
+import { LayoutPosition, LayoutPositions } from '@/types/controls.type';
 
 const props = defineProps({
   id: {
@@ -24,6 +25,11 @@ const props = defineProps({
   label: {
     type: String,
     default: "",
+    required: false,
+  },
+  position: {
+    type: String as PropType<LayoutPosition>,
+    default: LayoutPositions.left,
     required: false,
   },
   disabled: {
@@ -58,5 +64,5 @@ function exposeSelected(value: string) {
 
 <template>
   <Selection :label="props.label" :value="props.value" :disabled="props.disabled" @updated="exposeSelected"
-    :items="exposeList"></Selection>
+    :position="props.position" :items="exposeList"></Selection>
 </template>
