@@ -117,7 +117,8 @@ function deviceSelected(deviceId: string, friendlyName: string) {
 
   <!-- device select box  -->
   <div class="row pb-2">
-    <DeviceSelector label="Device to trigger" @updated="deviceSelected" :filter="featureDevicesFilter()">
+    <DeviceSelector label="Device to trigger" @updated="deviceSelected" :id="action.id"
+      :filter="featureDevicesFilter()">
     </DeviceSelector>
   </div>
 
@@ -145,8 +146,8 @@ function deviceSelected(deviceId: string, friendlyName: string) {
 
       <!-- step property -->
       <div class="col col-xl-6">
-        <ExposeSelector :id="step.id" @updated="(v) => stepPropertySelected(v, step)"
-          :filter="exposeFilterByType(ExposeTypes.Numeric)"></ExposeSelector>
+        <ExposeSelector :id="step.id" @updated="(v) => stepPropertySelected(v, step)" :value="step.property"
+          :filter="exposeFilterByType(ExposeTypes.Numeric)" position="center"></ExposeSelector>
       </div>
       <div class="col-xl-1">
         <span class="fa fa-trash-alt fa-sm" @click="removeStep(step)"> </span>

@@ -124,7 +124,6 @@ function presetSelected(selected: any) {
         <InputBox :label="props.label" :disabled="props.disabled" :value="inputValue" @updated="inputChanged"
             :isNumeric="true"></InputBox>
     </div>
-
     <div v-if="showPresets">
         <Selection :label="props.label" :disabled="props.disabled" :value="selectedPreset" @updated="presetSelected"
             :position="props.position" :items="exposePresets">
