@@ -86,16 +86,15 @@ const sequenceData = computed(() => {
 });
 
 
-function sequenceDataSelected(event: Event) {
-    let value: any = (event.target as HTMLInputElement).value;
+function sequenceDataSelected(value: any) {
     inputValue.value = value;
     emit('updated', inputValue.value);
 }
 
-function presetSelected(event: Event) {
-    let value: any = (event.target as HTMLInputElement).value;
+function presetSelected(selected: any) {
+    let value: number = selected;
     try {
-        value = parseInt(value);
+        value = parseInt(selected);
     } catch (error) {
         console.error('error converting preset value to number ', error);
     }

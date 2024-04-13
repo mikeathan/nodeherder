@@ -11,6 +11,11 @@ const props = defineProps({
     default: "",
     required: true,
   },
+  value: {
+    type: String,
+    default: "",
+    required: false,
+  },
   filter: {
     type: Function as PropType<DeviceFilter>,
     default: (expose: any) => true,
@@ -32,7 +37,7 @@ const emit = defineEmits<{
   (e: "updated", valueid: string): void;
 }>();
 
-const selectedExpose = ref<string>('');
+const selectedExpose = ref<string>(props.value);
 const exposeList = computed(() => {
   const device = store.getters["devices/find"](props.id) as Device;
   if (device == undefined) {
@@ -52,5 +57,6 @@ function exposeSelected(value: string) {
 </script>
 
 <template>
-  <Selection :label="props.label" :disabled="props.disabled" @updated="exposeSelected" :items="exposeList"></Selection>
+  <Selection :label="props.label" :value="props.value" :disabled="props.disabled" @updated="exposeSelected"
+    :items="exposeList"></Selection>
 </template>
