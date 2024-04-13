@@ -154,12 +154,6 @@ function createOpenPanelEvent(): OpenPanelEvent {
 }
 </script>
 
-<style scoped>
-.custom-control-input {
-    transform: scale(1.4);
-}
-</style>
-
 <template>
     <div v-if="automation">
         <div class="container-fluid p-0 h-100">
@@ -169,11 +163,6 @@ function createOpenPanelEvent(): OpenPanelEvent {
                         <InputBox label="Id" :disabled="true" :value="automation.id">
                         </InputBox>
                     </div>
-                    <!-- <div class="pt-3 ">
-                        <label class="form-check-label">Id</label>
-                        <DataInput :data="automation.id" alignment="left" :disabled="true">
-                        </DataInput>
-                    </div> -->
                     <div class="pt-3 ">
                         <InputBox label="Friendly Name" :disabled="true" :value="automation.friendlyname">
                         </InputBox>

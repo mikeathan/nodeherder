@@ -2,7 +2,6 @@
 import { computed, ref } from "vue";
 import DeviceAutomation from "./DeviceAutomation.vue"
 import Selection from "../input/Selection.vue"
-
 import { store } from "../../store/index";
 import { Devices } from "../../types/device";
 
@@ -23,9 +22,8 @@ function cancel(): void {
         <h3>Create new Automation</h3>
         <div class="col-xl-5 col-md-3" v-if="selectedDevice == ''">
 
-            TODO: placeholder set to placeholder="Select device"
-            <Selection :value="selectedDevice" :disabled="selectedDevice != ''" @updated="v => selectedDevice = v"
-                :items="deviceList">
+            <Selection :value="selectedDevice" text="Select device" :disabled="selectedDevice != ''" size="large"
+                @updated="v => selectedDevice = v" :items="deviceList">
             </Selection>
         </div>
         <div v-else>

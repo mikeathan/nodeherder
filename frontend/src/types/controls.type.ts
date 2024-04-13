@@ -1,3 +1,5 @@
+import { KeyyValuePair } from "./types";
+
 export type ButtonPanelType = ButtonType | DropDownType;
 export type ButtonType = {
   name: string;
@@ -46,3 +48,14 @@ export function createDropdown(
 ): DropDownType {
   return { name: name, items: items, disabled: disabled };
 }
+
+// Select
+export type SelectionItems = Array<string> | KeyyValuePair<string>;
+
+export type SelectSize = keyof typeof SelectFormSize;
+
+export const SelectFormSize = {
+  default: "",
+  small: "form-select-sm",
+  large: "form-select-lg",
+} as const;

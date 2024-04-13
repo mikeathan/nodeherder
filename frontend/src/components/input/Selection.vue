@@ -2,9 +2,20 @@
 import { KeyyValuePair } from "@/types/types";
 import { PropType, VNode, h, ref, watch } from "vue";
 
-export type SelectionItems = Array<string> | KeyyValuePair<string>
+import { SelectSize, SelectFormSize, SelectionItems } from '@/types/controls.type';
+
+// TODO
+// selection size
+// fix selected value
+// alignnment maybe ? 
+
 
 const props = defineProps({
+    size: {
+        type: Object as PropType<SelectSize>,
+        default: SelectFormSize.default,
+        required: false,
+    },
     items: {
         type: Object as PropType<SelectionItems>,
         default: [],
@@ -13,6 +24,11 @@ const props = defineProps({
     value: {
         type: String,
         default: "",
+        required: false,
+    },
+    text: {
+        type: String,
+        default: null,
         required: false,
     },
     label: {
@@ -54,32 +70,41 @@ function createSelection(): VNode {
 function ArraySelection(items: Array<string>): VNode {
     return h(
         'select', {
-        required: true, id: "selection", class: "form-select form-select-sm", disabled: props.disabled,
+        required: true, id: "selection", class: "form-select form-select-sm", value: props.value, disabled: props.disabled,
         onChange({ target }: Event) {
 
             const value = (target as HTMLInputElement)?.value ?? "";
             selectionChanged(value);
         }
-    }, [h('option', { value: "" }, "Select"),
-    items.map((item) => {
-        return h('option', { key: item, value: item }, item)
-    })]);
+    },
+        [
+            h('option', { value: "" }, defaultText()),
+            items.map((item) => {
+                return h('option', { key: item, value: item }, item)
+            })
+        ]);
 }
+
+const defaultText = (): string => {
+    return props.text != '' ? props.text : "Select"
+};
 
 function KeyValuePairSelection(items: KeyyValuePair<string>): VNode {
 
     return h(
         'select', {
-        required: true, id: "selection", class: "form-select form-select-sm", disabled: props.disabled,
+        required: true, id: "selection", class: "form-select form-select-sm", value: props.value, disabled: props.disabled,
         onChange({ target }: Event) {
             const value = (target as HTMLInputElement)?.value ?? "";
             selectionChanged(value);
         }
     },
-        [h('option', { value: "" }, "Select"),
-        Object.entries(items).map(([key, value]) => {
-            return h('option', { key: key, value: value }, key)
-        })]);
+        [
+            h('option', { value: "" }, defaultText()),
+            Object.entries(items).map(([key, value]) => {
+                return h('option', { key: key, value: value }, key)
+            })
+        ]);
 }
 
 function selectionChanged(value: string) {
