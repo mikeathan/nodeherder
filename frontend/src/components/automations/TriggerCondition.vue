@@ -26,7 +26,7 @@ const props = defineProps({
     data: null
 });
 
-const data = ref<any | null>(null)
+const data = ref<any>(null)
 const operator = ref<string>('')
 const name = ref<string>('')
 

@@ -18,11 +18,7 @@ const props = defineProps({
         default: '',
         required: true,
     },
-    value: {
-        type: String,
-        default: "",
-        required: false,
-    },
+    value: null,
     label: {
         type: String,
         default: "",
@@ -80,7 +76,7 @@ watch(
 )
 
 function inputChanged(value: any) {
-
+    console.log("exposedatainput ", value)
     // reset preset value, if selected
     selectedPreset.value = '';
     inputValue.value = value;

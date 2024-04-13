@@ -24,7 +24,7 @@ const emit = defineEmits<{
     (e: "updated", value: any): void;
 }>();
 
-const inputValue = ref<any>('');
+const inputValue = ref<any>(props.value);
 watch(
     () => props.value,
     () => {
@@ -39,8 +39,13 @@ function inputChanged(event: Event) {
             return
         }
         value = Number(value);
-    }
+        if (isNaN(value)) {
+            console.log("inputbox exit ", value)
 
+            return
+        }
+    }
+    console.log("inputbox", value)
     inputValue.value = value;
     emit('updated', inputValue.value);
 }
@@ -49,8 +54,13 @@ function isNumber(event: KeyboardEvent) {
     if (props.isNumeric &&
         (!event.key.match(/^[\d\.]$/) ||
             isNaN(Number(inputValue.value)))) {
+        console.log("inputbox PREVENT", inputValue.value)
+
         event.preventDefault()
     }
+
+    console.log("inputbox ALLLOW", inputValue.value, event.key)
+
 }
 
 </script>

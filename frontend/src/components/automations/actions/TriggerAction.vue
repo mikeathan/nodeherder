@@ -112,7 +112,7 @@ function removeAction() { }
 
   <div class="row">
     <ExposeDataInput :show-presets="true" :id="action.id" :name="action.property" label="Set value"
-      @updated="dataInputChange" :disabled="action.property == ''"></ExposeDataInput>
+      @updated="dataInputChange" :disabled="action.property == ''" :value="action.data"></ExposeDataInput>
     <div v-for="operation in operations">
       <div class="row">
         <InputBox label="Delay in minutes" :is-numeric="true" :disabled="action.property == ''"
