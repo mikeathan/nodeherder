@@ -76,7 +76,6 @@ watch(
 )
 
 function inputChanged(value: any) {
-    console.log("exposedatainput ", value)
     // reset preset value, if selected
     selectedPreset.value = '';
     inputValue.value = value;
