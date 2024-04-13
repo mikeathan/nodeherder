@@ -55,7 +55,7 @@ export type SelectionItems = Array<string> | KeyyValuePair<string>;
 export type SelectSize = keyof typeof SelectFormSize;
 
 export const SelectFormSize = {
-  default: "",
+  normal: "",
   small: "form-select-sm",
   large: "form-select-lg",
 } as const;

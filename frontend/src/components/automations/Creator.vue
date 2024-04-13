@@ -22,7 +22,7 @@ function cancel(): void {
         <h3>Create new Automation</h3>
         <div class="col-xl-5 col-md-3" v-if="selectedDevice == ''">
 
-            <Selection :value="selectedDevice" text="Select device" :disabled="selectedDevice != ''" size="large"
+            <Selection :value="selectedDevice" text="Select device" :disabled="selectedDevice != ''" size="normal"
                 @updated="v => selectedDevice = v" :items="deviceList">
             </Selection>
         </div>

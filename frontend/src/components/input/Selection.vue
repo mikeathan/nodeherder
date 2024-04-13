@@ -10,11 +10,7 @@ import { SelectSize, SelectFormSize, SelectionItems } from '@/types/controls.typ
 
 
 const props = defineProps({
-    size: {
-        type: Object as PropType<SelectSize>,
-        default: SelectFormSize.default,
-        required: false,
-    },
+
     items: {
         type: Object as PropType<SelectionItems>,
         default: [],
@@ -27,12 +23,17 @@ const props = defineProps({
     },
     text: {
         type: String,
-        default: null,
+        default: "",
         required: false,
     },
     label: {
         type: String,
         default: "",
+        required: false,
+    },
+    size: {
+        type: String as PropType<SelectSize>,
+        default: SelectFormSize.small,
         required: false,
     },
     disabled: {

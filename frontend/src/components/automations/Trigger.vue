@@ -129,7 +129,7 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
     </div>
     <div class="row" v-if="trigger.name == ''">
 
-        <Selection :value="trigger.name" text="Select trigger" :disabled="trigger.name != ''" size="large"
+        <Selection :value="trigger.name" text="Select trigger" :disabled="trigger.name != ''" size="normal"
             @updated="v => trigger.name = v" :items="exposesList">
         </Selection>
     </div>
