@@ -6,7 +6,6 @@ import { SelectSize, SelectFormSize, SelectionItems } from '@/types/controls.typ
 
 // TODO
 // selection size
-// fix selected value
 // alignnment maybe ? 
 
 
@@ -65,12 +64,20 @@ function createSelection(): VNode {
         return ArraySelection(props.items);
     }
     return KeyValuePairSelection(props.items);
-
 }
+
+const selectClass = (): string => {
+    return `form-select ${SelectFormSize[props.size]}`;
+};
+
+const defaultText = (): string => {
+    return props.text != '' ? props.text : "Select"
+};
+
 function ArraySelection(items: Array<string>): VNode {
     return h(
         'select', {
-        required: true, id: "selection", class: "form-select form-select-sm", value: props.value, disabled: props.disabled,
+        required: true, id: "selection", class: selectClass(), value: props.value, disabled: props.disabled,
         onChange({ target }: Event) {
 
             const value = (target as HTMLInputElement)?.value ?? "";
@@ -85,15 +92,11 @@ function ArraySelection(items: Array<string>): VNode {
         ]);
 }
 
-const defaultText = (): string => {
-    return props.text != '' ? props.text : "Select"
-};
 
 function KeyValuePairSelection(items: KeyyValuePair<string>): VNode {
-
     return h(
         'select', {
-        required: true, id: "selection", class: "form-select form-select-sm", value: props.value, disabled: props.disabled,
+        required: true, id: "selection", class: selectClass(), value: props.value, disabled: props.disabled,
         onChange({ target }: Event) {
             const value = (target as HTMLInputElement)?.value ?? "";
             selectionChanged(value);
