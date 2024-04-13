@@ -100,7 +100,6 @@ const exposeOperators = computed(() => {
     }
 });
 
-
 </script>
 
 <template>

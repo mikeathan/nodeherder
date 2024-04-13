@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, watch, ref, PropType } from "vue";
 import TriggerCondition from "./TriggerCondition.vue"
-import Selector from "../input/Selector.vue"
+import Selection from "../input/Selection.vue"
 import Dropdown from "../controls/Dropdown.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
@@ -128,9 +128,11 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
         </div>
     </div>
     <div class="row" v-if="trigger.name == ''">
-        <Selector placeholder="Select trigger" :items="exposesList" :value="trigger.name" alignment="left"
-            :disabled="trigger.name != ''" @update:data="v => trigger.name = v">
-        </Selector>
+
+        // TODO: use slection placeholder="Select trigger"
+        <Selection :value="trigger.name" :disabled="trigger.name != ''" @updated="v => trigger.name = v"
+            :items="exposesList">
+        </Selection>
     </div>
     <div class="row" v-else>
         <!-- Conditions -->

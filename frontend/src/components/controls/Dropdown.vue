@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watchEffect, watch, PropType, reactive } from "vue";
+import { PropType } from "vue";
 import { DropDownItemType } from "../../types/controls.type";
 
 const props = defineProps({
@@ -30,4 +30,4 @@ const props = defineProps({
                 {{ item.name }}</a>
         </li>
     </ul>
-</template>../../types/controls.type
+</template>

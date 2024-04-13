@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, reactive } from 'vue';
+import { ref, onMounted } from 'vue';
 const props = defineProps(['customClass']);
 let tabContainer = ref(null);
 let tabs = ref(null);
@@ -28,8 +28,8 @@ const changeTab = (index) => {
 
         <ul class="nav nav-tabs">
             <li v-for=" (tab, index) in tabs" :key="index" class="nav-item" data-bs-toggle="tab" role="presentation">
-                <a href="#" class="nav-link" role="tab" data-toggle="tab" :class="activeTabIndex == index ? 'active' : ''"
-                    @click="changeTab(index)">{{ tab.title }}</a>
+                <a href="#" class="nav-link" role="tab" data-toggle="tab"
+                    :class="activeTabIndex == index ? 'active' : ''" @click="changeTab(index)">{{ tab.title }}</a>
             </li>
         </ul>
         <ul id="active-tab" class="panel">
@@ -38,4 +38,3 @@ const changeTab = (index) => {
 
     </div>
 </template>
-
