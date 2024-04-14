@@ -84,7 +84,6 @@ const exposesList = computed(() => {
 })
 
 function deleteAction() {
-    trigger.value.action = new EditableActionTrigger('StepAction'); // default value
     actions.value = [];
 }
 
