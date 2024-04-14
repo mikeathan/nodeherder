@@ -33,6 +33,8 @@ watch(
   () => {
 
     // TEMP: do the sanizing in the inut box . pass some rules
+
+    problem here action is not init yet
     if (props.action.delay) {
       action.delay = toMinutes(props.action.delay)
     }
@@ -127,12 +129,15 @@ function removeAction() {
     </ExposeSelector>
   </div>
 
-  <div class="row col-sm-3">
-    <ExposeDataInput :show-presets="true" :id="action.id" :name="action.property" label="Set value"
-      @updated="dataInputChange" :disabled="action.property == ''" :value="action.data"></ExposeDataInput>
+  <div class="row ">
+    <div class="col-sm-4">
+      <ExposeDataInput :show-presets="true" :id="action.id" :name="action.property" label="Set value"
+        @updated="dataInputChange" :disabled="action.property == ''" :value="action.data"></ExposeDataInput>
+    </div>
     <div v-for="operation in operations">
       <div class="row">
-        <div class="col-sm-3">
+        <div class="col-sm-4">
+          {{ action['delay'] }}
           <InputBox label="Delay in minutes" :is-numeric="true" :disabled="action.property == ''"
             @updated="delayInputChange" :value="action[operation]"> </InputBox>
         </div>

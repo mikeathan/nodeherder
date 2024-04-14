@@ -46,8 +46,8 @@ const actionView = computed(() => {
             return "[" + currentAction.value.friendlyname + "] preset rotate [" + currentAction.value.property + "]";
         } else if (actionType.value == AutomationActionTypes.Trigger) {
 
-            const delay = currentAction.value.delay ? `Delay = ${currentAction.value.delay}]` : "";
-            return `[${currentAction.value.friendlyname}] > ${currentAction.value.property} =  ${currentAction.value.data} ${delay}`
+            const delay = currentAction.value.delay ? `[Delay = ${currentAction.value.delay}]` : "";
+            return `[${currentAction.value.friendlyname}] > [${currentAction.value.property} =  ${currentAction.value.data}] ${delay}`
         }
     }
 
