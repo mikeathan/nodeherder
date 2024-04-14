@@ -28,20 +28,21 @@ const emit = defineEmits<{
   (e: "delete", action: AutomationTriggerAction): void;
 }>();
 
+const action = reactive({ ...props.action });
+const operations = ref<TriggerActionOperation[]>([]);
+
+
 watch(
   () => props.action,
   () => {
 
-    // TEMP: do the sanizing in the inut box . pass some rules
-
-    problem here action is not init yet
     if (props.action.delay) {
       action.delay = toMinutes(props.action.delay)
+      operations.value.push('delay');
     }
   }, { immediate: true }
 )
 
-const action = reactive({ ...props.action });
 const buttonPanelItems = computed(() => {
   const isActionValid = action.data && action.property && action.id;
 
@@ -53,7 +54,6 @@ const buttonPanelItems = computed(() => {
   );
 });
 
-const operations = ref<TriggerActionOperation[]>([]);
 const dropdownItems = computed(() =>
   createTriggerActionOperatorsDropdowitems((e: TriggerActionOperation) => addOperation(e))
 );
@@ -96,7 +96,6 @@ function exposeSelected(name: string) {
 
 
 function saveAction() {
-  // TEMP: do the sanizing in the inut box . pass some rules
   if (action.delay) {
     action.delay = toMillisecs(action.delay)
   }
@@ -137,7 +136,6 @@ function removeAction() {
     <div v-for="operation in operations">
       <div class="row">
         <div class="col-sm-4">
-          {{ action['delay'] }}
           <InputBox label="Delay in minutes" :is-numeric="true" :disabled="action.property == ''"
             @updated="delayInputChange" :value="action[operation]"> </InputBox>
         </div>
