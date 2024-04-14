@@ -39,12 +39,16 @@ const actionView = computed(() => {
 
             stepView += currentAction.value.data
 
-            // eg. Attic lightbrightness = (brightness + action_time * 0.3) 
+            // eg. Attic light brightness = (brightness + action_time * 0.3) 
             return currentAction.value.friendlyname + " =  (" + stepView + ")";
         } else if (actionType.value == AutomationActionTypes.PresetRotation) {
-            return "[" + currentAction.value.friendlyname + "] preset rotate [" + currentAction.value.property + "]";
-        }
 
+            return "[" + currentAction.value.friendlyname + "] preset rotate [" + currentAction.value.property + "]";
+        } else if (actionType.value == AutomationActionTypes.Trigger) {
+
+            const delay = currentAction.value.delay ? `Delay = ${currentAction.value.delay}]` : "";
+            return `[${currentAction.value.friendlyname}] > ${currentAction.value.property} =  ${currentAction.value.data} ${delay}`
+        }
     }
 
     return stepView;

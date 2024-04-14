@@ -24,10 +24,20 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
-  (e: "update", action: AutomationTriggerAction): void;
   (e: "save", action: AutomationTriggerAction): void;
   (e: "delete", action: AutomationTriggerAction): void;
 }>();
+
+watch(
+  () => props.action,
+  () => {
+
+    // TEMP: do the sanizing in the inut box . pass some rules
+    if (props.action.delay) {
+      action.delay = toMinutes(props.action.delay)
+    }
+  }, { immediate: true }
+)
 
 const action = reactive({ ...props.action });
 const buttonPanelItems = computed(() => {
@@ -84,10 +94,16 @@ function exposeSelected(name: string) {
 
 
 function saveAction() {
-  // TODO:
-  // action.delay = toMillisecs(num)
+  // TEMP: do the sanizing in the inut box . pass some rules
+  if (action.delay) {
+    action.delay = toMillisecs(action.delay)
+  }
+  emit('save', action)
 }
-function removeAction() { }
+function removeAction() {
+  emit('delete', action);
+}
+
 </script>
 
 <template>
@@ -111,12 +127,9 @@ function removeAction() { }
     </ExposeSelector>
   </div>
 
-  <div class="row">
-    <div class="col-sm-3">
-
-      <ExposeDataInput :show-presets="true" :id="action.id" :name="action.property" label="Set value"
-        @updated="dataInputChange" :disabled="action.property == ''" :value="action.data"></ExposeDataInput>
-    </div>
+  <div class="row col-sm-3">
+    <ExposeDataInput :show-presets="true" :id="action.id" :name="action.property" label="Set value"
+      @updated="dataInputChange" :disabled="action.property == ''" :value="action.data"></ExposeDataInput>
     <div v-for="operation in operations">
       <div class="row">
         <div class="col-sm-3">

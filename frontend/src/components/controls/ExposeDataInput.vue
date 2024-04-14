@@ -70,7 +70,6 @@ const exposePresets = computed(() => {
 watch(
     () => props.name,
     () => {
-        inputValue.value = '';
         selectedPreset.value = '';
     }, { immediate: true }
 )
