@@ -68,11 +68,9 @@ input.form-control {
     border-bottom: 1px solid white;
     text-align: left;
     background-image: none;
+
 }
 
-.form-floating>.form-control~label::after {
-    background-color: transparent;
-}
 
 input.form-control:focus,
 :active {
@@ -89,6 +87,17 @@ input.form-control:focus,
 
 input.form-control:disabled {
     color: gray;
+    background-color: transparent;
+}
+
+.form-floating>.form-control~label::after {
+    background-color: transparent;
+    color: white;
+
+}
+
+.form-floating>.form-control~label {
+    color: white;
     background-color: transparent;
 }
 </style>

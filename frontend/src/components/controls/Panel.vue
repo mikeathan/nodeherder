@@ -57,7 +57,7 @@ const currentComponent = computed(() => {
 
 
 function closeComponent(name: string): void {
-
+    console.log('panel close clicked');
     if (componentCache.value[name] === undefined) {
         console.log("CLOSE ", name, " NOT FOUND")
         return

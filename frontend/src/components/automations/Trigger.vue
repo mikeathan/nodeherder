@@ -94,8 +94,6 @@ function SaveAction(action: AutomationTriggerAction) {
 }
 
 function addNewAction(actionType: ActionType) {
-
-    console.log("AddNewAction ", actionType)
     emitOpenPanel(createActionOpenPanelEvent(new EditableActionTrigger(actionType), true));
 }
 
