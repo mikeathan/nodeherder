@@ -106,17 +106,23 @@ function removeAction() { }
   </div>
 
   <div class="row pb-2">
-    <ExposeSelector :id="action.id" label="Expose" @updated="exposeSelected" :filter="featureExposeFilter()">
+    <ExposeSelector :id="action.id" label="Expose" @updated="exposeSelected" :value="action.property"
+      :filter="featureExposeFilter()">
     </ExposeSelector>
   </div>
 
   <div class="row">
-    <ExposeDataInput :show-presets="true" :id="action.id" :name="action.property" label="Set value"
-      @updated="dataInputChange" :disabled="action.property == ''" :value="action.data"></ExposeDataInput>
+    <div class="col-sm-3">
+
+      <ExposeDataInput :show-presets="true" :id="action.id" :name="action.property" label="Set value"
+        @updated="dataInputChange" :disabled="action.property == ''" :value="action.data"></ExposeDataInput>
+    </div>
     <div v-for="operation in operations">
       <div class="row">
-        <InputBox label="Delay in minutes" :is-numeric="true" :disabled="action.property == ''"
-          @updated="delayInputChange" :value="action[operation]"> </InputBox>
+        <div class="col-sm-3">
+          <InputBox label="Delay in minutes" :is-numeric="true" :disabled="action.property == ''"
+            @updated="delayInputChange" :value="action[operation]"> </InputBox>
+        </div>
         <div class="col-sm-1 pt-4">
           <span class="fa fa-trash-alt fa-sm" @click="removeOperation(operation)"> </span>
         </div>

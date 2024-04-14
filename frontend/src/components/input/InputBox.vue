@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, PropType } from "vue";
+import { SelectSize, SelectFormSize, SelectionItems, LayoutPosition, LayoutPositions } from '@/types/controls.type';
 
 const props = defineProps({
     value: null,
@@ -11,6 +12,11 @@ const props = defineProps({
     label: {
         type: String,
         default: "",
+        required: false,
+    },
+    position: {
+        type: String as PropType<LayoutPosition>,
+        default: LayoutPositions.left,
         required: false,
     },
     disabled: {
@@ -87,13 +93,13 @@ input.form-control:disabled {
 }
 </style>
 <template>
-    <div v-if="props.label != ''" class="form-floating col-sm-3">
-        <input type="text" class="form-control" id="dataInput" v-model="inputValue" @input="inputChanged"
-            @keypress="isNumber" :disabled="props.disabled" />
+    <div v-if="props.label != ''" class="form-floating">
+        <input type="text" class="form-control" id="dataInput" :style="`text-align:${props.position}`"
+            v-model="inputValue" @input="inputChanged" @keypress="isNumber" :disabled="props.disabled" />
         <label for="dataInput">{{ props.label }}</label>
     </div>
-    <div v-else class="col-sm-3">
-        <input type="text" class="form-control" id="dataInput" v-model="inputValue" @input="inputChanged"
-            @keypress="isNumber" :disabled="props.disabled" />
+    <div v-else class="">
+        <input type="text" class="form-control" id="dataInput" :style="`text-align:${props.position}`"
+            v-model="inputValue" @input="inputChanged" @keypress="isNumber" :disabled="props.disabled" />
     </div>
 </template>
