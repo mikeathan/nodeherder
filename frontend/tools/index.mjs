@@ -46,10 +46,10 @@ var automationMap = new Map([
           action: {
             id: "0x70ac08fffefafeca",
             friendlyname: "Attic light",
-            type: "light",
             property: "state",
             data: "OFF",
             delay: 300000,
+            type: "TriggerAction",
           },
         },
         {
@@ -61,9 +61,9 @@ var automationMap = new Map([
           action: {
             id: "0x70ac08fffefafeca",
             friendlyname: "Attic light",
-            type: "light",
             property: "state",
             data: "ON",
+            type: "TriggerAction",
           },
         },
       ],
@@ -89,9 +89,9 @@ var automationMap = new Map([
           action: {
             id: "0x70ac08fffefafeca",
             friendlyname: "Attic light",
-            type: "binary",
             property: "state",
             data: "TOGGLE",
+            type: "TriggerAction",
           },
         },
         {
@@ -106,10 +106,16 @@ var automationMap = new Map([
           action: {
             id: "0x70ac08fffefafeca",
             friendlyname: "Attic light",
-            type: "numeric",
             property: "brightness",
             data: 10,
-            steps: [{ Property: "brightness", Operator: "+" }],
+            steps: [
+              {
+                property: "brightness",
+                operator: "+",
+                id: "0x70ac08fffefafeca",
+              },
+            ],
+            type: "StepAction",
           },
         },
         {
@@ -124,10 +130,16 @@ var automationMap = new Map([
           action: {
             id: "0x70ac08fffefafeca",
             friendlyname: "Attic light",
-            type: "numeric",
             property: "brightness",
             data: 10,
-            steps: [{ Property: "brightness", Operator: "-" }],
+            steps: [
+              {
+                property: "brightness",
+                operator: "-",
+                id: "0x70ac08fffefafeca",
+              },
+            ],
+            type: "StepAction",
           },
         },
       ],
@@ -271,7 +283,6 @@ function sendMessage(ws, event, payload) {
     type: event,
     payload: payload,
   });
-
   ws.send(msg);
 }
 
