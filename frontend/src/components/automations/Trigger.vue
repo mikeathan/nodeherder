@@ -150,7 +150,7 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                     </h5>
                 </th>
             </tr>
-            <tbody v-for="( condition, index ) in   conditions  " :item="condition">
+            <tbody v-for="( condition, index ) in conditions  " :item="condition">
                 <tr>
                     <th scope="w-25">
                         <TriggerCondition :id="props.id" :name="condition.name" :operator="condition.equality"

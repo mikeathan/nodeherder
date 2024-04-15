@@ -10,11 +10,7 @@ const props = defineProps({
         default: [],
         required: true,
     },
-    value: {
-        type: String,
-        default: "",
-        required: false,
-    },
+    value: null,
     text: {
         type: String,
         default: "",
@@ -46,7 +42,7 @@ const emit = defineEmits<{
     (e: "updated", value: any): void;
 }>();
 
-const selectedValue = ref<string>(props.value);
+const selectedValue = ref<any>(props.value);
 // watch(
 //     () => props.items,
 //     () => {
@@ -113,8 +109,7 @@ function KeyValuePairSelection(items: KeyyValuePair<string>): VNode {
         ]);
 }
 
-function selectionChanged(value: string) {
-
+function selectionChanged(value: any) {
     selectedValue.value = value;
     emit("updated", selectedValue.value);
 }

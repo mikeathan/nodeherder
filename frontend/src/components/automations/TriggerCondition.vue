@@ -74,11 +74,14 @@ function operatorUpdated(event: string): void {
     emit('update:operator', event)
 }
 
-function dataUpdated(event: any): void {
-
-    console.log(event, typeof event)
-    data.value = event
-    emit('update:value', event)
+function dataUpdated(value: any): void {
+    // cast true/false to boolean
+    if (value == "true" ||
+        value == "false") {
+        value = Boolean(value == "true");
+    }
+    data.value = value
+    emit('update:value', value)
 }
 
 

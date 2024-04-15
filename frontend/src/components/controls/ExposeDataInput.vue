@@ -94,13 +94,6 @@ const sequenceData = computed(() => {
 function sequenceDataSelected(value: any) {
     inputValue.value = value;
 
-    // cast true/false to boolean
-    if (value == "true" ||
-        value == "false") {
-        value = Boolean(value == "true");
-    }
-
-    console.log('selected ', value, typeof value)
     emit('updated', inputValue.value);
 }
 
