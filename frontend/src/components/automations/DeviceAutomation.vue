@@ -175,7 +175,6 @@ function createOpenPanelEvent(): OpenPanelEvent {
                     <div class="pb-3">
                         <div class=" form-check form-switch ms-2">
                             <label class="form-check-label ms-3">Enabled</label>
-                            TODO create new component
                             <input class="form-check-input custom-control-input" type="checkbox" role="switch"
                                 id="flexSwitchCheckDefault" v-model="automation.enabled">
                         </div>

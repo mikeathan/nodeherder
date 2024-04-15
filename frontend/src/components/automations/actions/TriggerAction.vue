@@ -129,7 +129,7 @@ function removeAction() {
   </div>
 
   <div class="row ">
-    <div class="col-sm-4">
+    <div class="col-sm-6">
       <ExposeDataInput :show-presets="true" :id="action.id" :name="action.property" label="Set value"
         @updated="dataInputChange" :disabled="action.property == ''" :value="action.data"></ExposeDataInput>
     </div>
