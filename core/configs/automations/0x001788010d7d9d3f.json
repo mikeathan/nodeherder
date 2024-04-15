@@ -51,7 +51,13 @@
         "friendlyname": "Living Room",
         "property": "brightness",
         "data": 20,
-        "steps": [{ "Property": "brightness", "Operator": "+" }]
+        "steps": [
+          {
+            "Property": "brightness",
+            "Operator": "+",
+            "id": "0x70ac08fffefafeca"
+          }
+        ]
       }
     },
     {
@@ -68,7 +74,13 @@
         "friendlyname": "Living Room",
         "property": "brightness",
         "data": 10,
-        "steps": [{ "Property": "brightness", "Operator": "-" }]
+        "steps": [
+          {
+            "Property": "brightness",
+            "Operator": "-",
+            "id": "0x70ac08fffefafeca"
+          }
+        ]
       }
     },
     {

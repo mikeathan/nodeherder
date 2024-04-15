@@ -53,12 +53,14 @@ import (
 type Step struct {
 	Property string
 	Operator string // +,-, *,/
+	Id       string
 }
 
 type MqttAction struct {
 	Id           string `json:"id"`
 	FriendlyName string `json:"friendlyname"`
 	Property     string `json:"property"`
+	Type         string `json:"type"`
 	Data         any    `json:"data,omitempty"`
 	Delay        int    `json:"delay,omitempty"`
 	Steps        []Step `json:"steps,omitempty"`
@@ -77,11 +79,17 @@ func NewAction() *MqttAction {
 
 func (a *MqttAction) configure(expose *devices.Entity) {
 
-	a.operationAction = nil
+	// TODO: use action.Type to determine actions
+	// a.Type == "TriggerAction"
+	// a.Type == "StepAction"
+	// a.Type == "PresetRotationAction"
+
+	// also we need to use step.id
+
 	if expose.Type == "enum" && len(expose.Presets) > 0 && a.Data == nil {
-		a.operationAction = CreateStepOperation(expose, a)
-	} else if len(a.Steps) > 0 {
 		a.operationAction = CreateRotateOperation(expose, a)
+	} else if len(a.Steps) > 0 {
+		a.operationAction = CreateStepOperation(expose, a)
 	}
 }
 
