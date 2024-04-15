@@ -75,6 +75,8 @@ function operatorUpdated(event: string): void {
 }
 
 function dataUpdated(event: any): void {
+
+    console.log(event, typeof event)
     data.value = event
     emit('update:value', event)
 }

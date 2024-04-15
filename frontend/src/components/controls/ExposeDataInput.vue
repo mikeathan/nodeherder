@@ -82,9 +82,10 @@ function inputChanged(value: any) {
 }
 
 const sequenceData = computed(() => {
-
     if (dataType.value == ExposeTypes.Binary) {
-        return ["true", "false"];
+        return deviceExpose.value?.properties != null ?
+            Object.values(deviceExpose.value?.properties) :
+            [true, false];
     }
     return deviceExpose.value?.attributes ? Object.values(deviceExpose.value.attributes) : [];
 });
@@ -92,6 +93,14 @@ const sequenceData = computed(() => {
 
 function sequenceDataSelected(value: any) {
     inputValue.value = value;
+
+    // cast true/false to boolean
+    if (value == "true" ||
+        value == "false") {
+        value = Boolean(value == "true");
+    }
+
+    console.log('selected ', value, typeof value)
     emit('updated', inputValue.value);
 }
 
