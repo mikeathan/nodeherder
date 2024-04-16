@@ -50,6 +50,12 @@ import (
 // action set brighness +/- some value = [value_source] [arithmetic operator] [step_value]
 // action set brighness  +/- some other numeric combination  eg direction_time * 0.5
 
+const (
+	TriggerAction        = "TriggerAction"
+	StepAction           = "StepAction"
+	PresetRotationAction = "PresetRotationAction"
+)
+
 type Step struct {
 	Property string
 	Operator string // +,-, *,/
