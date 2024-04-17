@@ -12,10 +12,16 @@ const emit = defineEmits<{
 }>()
 
 const props = defineProps({
+
     item: {
         type: Object as PropType<AutomationTriggerAction>,
         default: {} as AutomationTriggerAction,
         required: true
+    },
+    automationId: {
+        type: String,
+        default: '',
+        required: false
     },
     editMode: {
         type: Boolean,
@@ -49,8 +55,8 @@ function removeAction(action: AutomationTriggerAction): void {
 </script>
 <template>
     <div>
-        <component :is="PanelComponents[actionType]" v-bind="{ action: currentAction }" @delete="removeAction"
-            @save="saveAction" />
+        <component :is="PanelComponents[actionType]" v-bind="{ automationId: props.automationId, action: currentAction }"
+            @delete="removeAction" @save="saveAction" />
     </div>
 </template>
 @

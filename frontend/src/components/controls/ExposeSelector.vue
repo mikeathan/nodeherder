@@ -44,6 +44,7 @@ const emit = defineEmits<{
 }>();
 
 const selectedExpose = ref<string>(props.value);
+
 const exposeList = computed(() => {
   const device = store.getters["devices/find"](props.id) as Device;
   if (device == undefined) {

@@ -16,6 +16,11 @@ const props = defineProps({
     default: {} as AutomationTriggerAction,
     required: true,
   },
+  automationId: {
+    type: String,
+    default: '',
+    required: false
+  },
 });
 
 const action = reactive({ ...props.action });

@@ -29,6 +29,11 @@ const props = defineProps({
     default: {} as AutomationTriggerAction,
     required: true,
   },
+  automationId: {
+    type: String,
+    default: '',
+    required: false
+  },
 });
 
 const action = reactive({ ...props.action });
@@ -140,11 +145,12 @@ function deviceSelected(deviceId: string, friendlyName: string) {
       <!-- step id  -->
       <div class="col col-xl-4" v-if="step.id == ''">
         <DeviceSelector @updated="(id, name) => stepDeviceSelected(id, name, step)"
-          :filter="devicesFilterByActionStep(action, step)"></DeviceSelector>
+          :filter="devicesFilterByActionStep(props.automationId, action, step)"></DeviceSelector>
       </div>
       <div v-else class="col-xl-3">
         {{ deviceNameFromId(step) }}
       </div>
+
 
       <!-- step property -->
       <div class="col col-xl-6">

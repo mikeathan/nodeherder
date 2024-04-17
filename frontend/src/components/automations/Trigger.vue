@@ -109,7 +109,7 @@ const actionEvents = (): EventActions => {
 };
 
 function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: boolean): OpenPanelEvent {
-    return { name: 'ActionEditor', args: { item: action, editMode: editMode }, events: actionEvents() }
+    return { name: 'ActionEditor', args: { automationId: props.id, item: action, editMode: editMode }, events: actionEvents() }
 }
 
 </script>
@@ -181,7 +181,8 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
             <tbody v-for="(action) in actions" :item="action">
                 <tr>
                     <th>
-                        <ActionViewer :item="action" :edit-events="actionEvents()" @delete="deleteAction()">
+                        <ActionViewer :automation-id="props.id" :item="action" :edit-events="actionEvents()"
+                            @delete="deleteAction()">
                         </ActionViewer>
                     </th>
                 </tr>

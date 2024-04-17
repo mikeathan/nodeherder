@@ -20,7 +20,12 @@ const props = defineProps({
         type: Object as PropType<EventActions>,
         default: {} as EventActions,
         required: true
-    }
+    },
+    automationId: {
+        type: String,
+        default: '',
+        required: false
+    },
 });
 
 
@@ -74,7 +79,7 @@ function openEditor(): void {
 }
 
 function createActionEditorOpenPanelEvent(action: AutomationTriggerAction): OpenPanelEvent {
-    return { name: 'ActionEditor', args: { item: action }, events: props.editEvents }
+    return { name: 'ActionEditor', args: { automationId: props.automationId, item: action }, events: props.editEvents }
 }
 
 </script>

@@ -87,6 +87,8 @@ func (d *Device) Evaluate(device *devices.Device) bool {
 	for _, trigger := range d.Triggers {
 		if _, ok := device.Exposes[trigger.Name]; ok {
 
+			do sth here to somehow use step id 
+			``
 			// populate context with step actiob required data, rather than passing down device object
 			for _, step := range trigger.Action.Steps {
 				d.ctx.SetCurrent(step.Property, device.Exposes[trigger.Name].Data)

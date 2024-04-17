@@ -24,6 +24,7 @@ export function devicesFilterById(id: string): DeviceFilter {
 }
 
 export function devicesFilterByActionStep(
+  automationId: string,
   action: AutomationTriggerAction,
   step: AutomationActionStep
 ): DeviceFilter {
@@ -32,7 +33,8 @@ export function devicesFilterByActionStep(
       step.id = action.id;
       return device.id == action.id;
     }
-    return true;
+
+    return device.id == action.id || device.id == automationId;
   };
 }
 
@@ -49,12 +51,6 @@ export function presetExposeFilter(): DeviceFilter {
 }
 
 export function exposeFilterByType(exposeType: ExposeType): DeviceFilter {
-  return (device: Device, expose: Expose): boolean => {
-    return expose.type == exposeType;
-  };
-}
-
-export function exposeFilterByIds(ids: string[]): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
     return expose.type == exposeType;
   };
