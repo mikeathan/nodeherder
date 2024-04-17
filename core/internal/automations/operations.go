@@ -94,9 +94,6 @@ func (r *stepOperation) Next(ctx *DeviceContext) (any, error) {
 	var sourceValue float64
 	var ok bool
 
-	we need to use the step id to get the correct property
-
-	
 	if sourceValue, ok = ctx.GetCurrent(r.action.Property).(float64); !ok {
 		sourceValue = 0.0
 	}

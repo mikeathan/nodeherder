@@ -78,6 +78,22 @@ var automationMap = new Map([
       enabled: false,
       triggers: [
         {
+          name: "action_direction",
+          conditions: [
+            { name: "action", value: "button_2_press", equality: "=" },
+          ],
+          action: {
+            id: "0x70ac08fffefafeca",
+            friendlyname: "Attic light",
+            property: "color_temp",
+            data: null,
+            operation: 0,
+            delay: null,
+            steps: [],
+            type: "PresetRotationAction",
+          },
+        },
+        {
           name: "action",
           conditions: [
             {
@@ -111,8 +127,13 @@ var automationMap = new Map([
             steps: [
               {
                 property: "brightness",
-                operator: "+",
+                operator: "-",
                 id: "0x70ac08fffefafeca",
+              },
+              {
+                operator: "-",
+                property: "action_time",
+                id: "0x001788010d7d9d3f",
               },
             ],
             type: "StepAction",
@@ -135,8 +156,13 @@ var automationMap = new Map([
             steps: [
               {
                 property: "brightness",
-                operator: "-",
+                operator: "+",
                 id: "0x70ac08fffefafeca",
+              },
+              {
+                operator: "+",
+                property: "action_time",
+                id: "0x001788010d7d9d3f",
               },
             ],
             type: "StepAction",

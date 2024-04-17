@@ -86,7 +86,6 @@ export class EditableActionTrigger implements AutomationTriggerAction {
   friendlyname: string;
   property: string;
   data: any | null;
-  operation: number;
   delay: number | null;
   steps: AutomationActionStep[];
   type: ActionType;
@@ -96,7 +95,6 @@ export class EditableActionTrigger implements AutomationTriggerAction {
     this.friendlyname = "";
     this.property = "";
     this.data = null;
-    this.operation = 0;
     this.delay = null;
     this.type = type;
     this.steps = new Array<AutomationActionStep>();
@@ -104,7 +102,6 @@ export class EditableActionTrigger implements AutomationTriggerAction {
 
   public setProperty(value: string): void {
     this.property = value;
-    this.operation = 0;
     this.delay = null;
     this.data = null;
   }
@@ -130,7 +127,6 @@ export function clearAction(action: AutomationTriggerAction): void {
   action.friendlyname = "";
   action.property = "";
   action.data = null;
-  action.operation = 0;
   action.delay = null;
 }
 
@@ -186,7 +182,6 @@ export function setProperty(
   action.property = value;
 
   // reset remaining properties
-  action.operation = 0;
   action.delay = null;
 
   if (type == ExposeTypes.Binary || type == ExposeTypes.Enum) {

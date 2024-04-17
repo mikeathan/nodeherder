@@ -10,40 +10,6 @@ import (
 	"time"
 )
 
-// TODO: this is what we need to do, split it into multiple actions
-
-// type Action struct {
-// 	Id           string `json:"id"`
-// 	FriendlyName string `json:"friendlyname"`
-// 	Property     string `json:"property"`
-// 	Data         any    `json:"data,omitempty"`
-// }
-
-// type DelayeAction struct {
-// 	Id           string `json:"id"`
-// 	FriendlyName string `json:"friendlyname"`
-// 	Property     string `json:"property"`
-// 	Data         any    `json:"data,omitempty"`
-// 	Delay        int    `json:"delay,omitempty"`
-// }
-
-// type PresetRotationAction struct {
-// 	Id           string `json:"id"`
-// 	FriendlyName string `json:"friendlyname"`
-// 	Property     string `json:"property"`
-// }
-
-// type StepAction struct {
-// 	Type           string         `json:"type"`
-// 	Id             string         `json:"id"`
-// 	FriendlyName   string         `json:"friendlyname"`
-// 	Property       string         `json:"property"`
-// 	Operation      int            `json:"operation"`
-// 	StepProperties []StepProperty `json:"stepproperties"`
-// }
-
-// brightness + value
-
 // brightness + direction_time * value = [expose_name] [+/-] [expose_name] [numeric_operator] [numeric value]
 // brightness - direction_time * value
 
@@ -90,13 +56,22 @@ func (a *MqttAction) configure(expose *devices.Entity) {
 	// a.Type == "StepAction"
 	// a.Type == "PresetRotationAction"
 
-	// also we need to use step.id
-
-	if expose.Type == "enum" && len(expose.Presets) > 0 && a.Data == nil {
+	// configure special action operations
+	switch a.Type {
+	case TriggerAction:
+		// nothing to do here
+		break
+	case StepAction:
 		a.operationAction = CreateRotateOperation(expose, a)
-	} else if len(a.Steps) > 0 {
+	case PresetRotationAction:
 		a.operationAction = CreateStepOperation(expose, a)
 	}
+
+	// if expose.Type == "enum" && len(expose.Presets) > 0 && a.Data == nil {
+	// 	a.operationAction = CreateRotateOperation(expose, a)
+	// } else if len(a.Steps) > 0 {
+	// 	a.operationAction = CreateStepOperation(expose, a)
+	// }
 }
 
 func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
