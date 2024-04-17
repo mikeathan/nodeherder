@@ -53,6 +53,13 @@ export function exposeFilterByType(exposeType: ExposeType): DeviceFilter {
     return expose.type == exposeType;
   };
 }
+
+export function exposeFilterByIds(ids: string[]): DeviceFilter {
+  return (device: Device, expose: Expose): boolean => {
+    return expose.type == exposeType;
+  };
+}
+
 export function allExposeFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
     return true;
