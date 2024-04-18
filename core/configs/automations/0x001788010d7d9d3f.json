@@ -17,8 +17,8 @@
         "id": "0x00158d0005a23c38",
         "friendlyname": "Living Room",
         "property": "state",
-        "data": "TOGGLE",
-        "type": "TriggerAction"
+        "type": "TriggerAction",
+        "data": "TOGGLE"
       }
     },
     {
@@ -34,6 +34,7 @@
         "id": "0x00158d0005a23c38",
         "friendlyname": "Living Room",
         "property": "brightness",
+        "type": "StepAction",
         "data": 1,
         "steps": [
           {
@@ -42,12 +43,11 @@
             "id": "0x00158d0005a23c38"
           },
           {
-            "operator": "+",
             "property": "action_time",
+            "operator": "+",
             "id": "0x001788010d7d9d3f"
           }
-        ],
-        "type": "StepAction"
+        ]
       }
     },
     {
@@ -63,6 +63,7 @@
         "id": "0x00158d0005a23c38",
         "friendlyname": "Living Room",
         "property": "brightness",
+        "type": "StepAction",
         "data": 2,
         "steps": [
           {
@@ -71,12 +72,11 @@
             "id": "0x00158d0005a23c38"
           },
           {
-            "operator": "+",
             "property": "action_time",
+            "operator": "+",
             "id": "0x001788010d7d9d3f"
           }
-        ],
-        "type": "StepAction"
+        ]
       }
     },
     {
@@ -92,6 +92,7 @@
         "id": "0x00158d0005a23c38",
         "friendlyname": "Living Room",
         "property": "brightness",
+        "type": "StepAction",
         "data": 1,
         "steps": [
           {
@@ -100,12 +101,11 @@
             "id": "0x00158d0005a23c38"
           },
           {
-            "operator": "-",
             "property": "action_time",
+            "operator": "-",
             "id": "0x001788010d7d9d3f"
           }
-        ],
-        "type": "StepAction"
+        ]
       }
     },
     {
@@ -121,6 +121,7 @@
         "id": "0x00158d0005a23c38",
         "friendlyname": "Living Room",
         "property": "brightness",
+        "type": "StepAction",
         "data": 2,
         "steps": [
           {
@@ -129,12 +130,11 @@
             "id": "0x00158d0005a23c38"
           },
           {
-            "operator": "-",
             "property": "action_time",
+            "operator": "-",
             "id": "0x001788010d7d9d3f"
           }
-        ],
-        "type": "StepAction"
+        ]
       }
     },
     {
