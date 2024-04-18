@@ -44,7 +44,7 @@
           },
           {
             "property": "action_time",
-            "operator": "+",
+            "operator": "*",
             "id": "0x001788010d7d9d3f"
           }
         ]
@@ -73,7 +73,7 @@
           },
           {
             "property": "action_time",
-            "operator": "+",
+            "operator": "*",
             "id": "0x001788010d7d9d3f"
           }
         ]
@@ -102,7 +102,7 @@
           },
           {
             "property": "action_time",
-            "operator": "-",
+            "operator": "*",
             "id": "0x001788010d7d9d3f"
           }
         ]
@@ -131,7 +131,7 @@
           },
           {
             "property": "action_time",
-            "operator": "-",
+            "operator": "*",
             "id": "0x001788010d7d9d3f"
           }
         ]
