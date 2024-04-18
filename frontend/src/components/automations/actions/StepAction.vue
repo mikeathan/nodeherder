@@ -10,6 +10,8 @@ import { Device, Devices } from "@/types/device";
 import { ExposeTypes } from "@/types/device.type";
 import Dropdown from "@/components/controls/Dropdown.vue";
 import ButtonPanel from "@/components/controls/ButtonPanel.vue";
+import Selection from "@/components/input/Selection.vue";
+
 import {
   createStepActionOperatorsDropdowitems,
   createSaveDeleteButtonItems,
@@ -22,6 +24,7 @@ import {
   devicesFilterByActionStep,
 } from "@/configs/automation/device.config";
 import InputBox from '@/components/input/InputBox.vue';
+import { NumericOperators } from "@/contracts/automations";
 
 const props = defineProps({
   action: {
@@ -139,9 +142,12 @@ function deviceSelected(deviceId: string, friendlyName: string) {
   <div v-if="action.steps.length > 0" class="row pt-3">
     <h5>Operations</h5>
     <div class="row" v-for="step in action.steps">
-      <div class="col-xl-1">
-        {{ step.operator }}
+
+      <div class="col-sm-2">
+        <Selection :value="step.operator" :items="NumericOperators" @updated="o => step.operator = o">
+        </Selection>
       </div>
+
       <!-- step id  -->
       <div class="col col-xl-4" v-if="step.id == ''">
         <DeviceSelector @updated="(id, name) => stepDeviceSelected(id, name, step)"
