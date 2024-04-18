@@ -1,6 +1,7 @@
 package automations_test
 
 import (
+	"fmt"
 	"math"
 	"node-herder/internal/automations"
 	"node-herder/mocks"
@@ -120,7 +121,7 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	turnOnAction := &automations.MqttAction{}
 	turnOnAction.FriendlyName = "attic light"
 	turnOnAction.Property = "brightness"
-	turnOnAction.Data = 0.5
+	turnOnAction.Data = float64(1)
 	step := automations.Step{}
 	step.Property = "brightness"
 	step.Operator = "+"
@@ -146,8 +147,9 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 		if er != nil {
 			t.Fatalf("error %v iteration %d action_time %v", er.Error(), i, action_times[i])
 		}
-
 		got := nextValue.(float64)
+		fmt.Println((got))
+
 		if got > max {
 			t.Fatalf("max limit invalid operation value: want %v got %v", max, got)
 		}
