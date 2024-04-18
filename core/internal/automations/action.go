@@ -23,9 +23,9 @@ const (
 )
 
 type Step struct {
-	Property string
-	Operator string // +,-, *,/
-	Id       string
+	Property string `json:"property"`
+	Operator string `json:"operator"` // +,-, *,/
+	Id       string `json:"id"`
 }
 
 type MqttAction struct {
@@ -62,9 +62,9 @@ func (a *MqttAction) configure(expose *devices.Entity) {
 		// nothing to do here
 		break
 	case StepAction:
-		a.operationAction = CreateRotateOperation(expose, a)
-	case PresetRotationAction:
 		a.operationAction = CreateStepOperation(expose, a)
+	case PresetRotationAction:
+		a.operationAction = CreateRotateOperation(expose, a)
 	}
 
 	// if expose.Type == "enum" && len(expose.Presets) > 0 && a.Data == nil {
