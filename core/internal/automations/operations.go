@@ -1,6 +1,7 @@
 package automations
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"node-herder/models/devices"
@@ -119,9 +120,9 @@ func (r *stepOperation) Next(ctx *DeviceContext) (any, error) {
 	fmt.Println("[DEBUG] result ", result)
 
 	// ??
-	// if sourceValue == result {
-	// 	return nil, errors.New("same value, skipping")
-	// }
+	if sourceValue == result {
+		return nil, errors.New("same value, skipping")
+	}
 
 	// brightness = 10
 	// action_time = 20
