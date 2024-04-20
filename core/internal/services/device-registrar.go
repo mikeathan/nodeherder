@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/utils"
@@ -9,6 +10,7 @@ import (
 type DeviceRegistrar interface {
 	LookupByName(name string) (*devices.Device, error)
 	LookupById(id string) (*devices.Device, error)
+	RetrieveEntityData(id string, property string) (any, error)
 	CreateNewDevice(friendlyName string, connType string, data map[string]interface{}) (*devices.Device, error)
 	FindBridgeInfo(id string) *devices.BridgeInfo
 	RegisterBridge(bridgeInfoList []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int)
@@ -32,6 +34,19 @@ func (s *HubRegisterService) Register(friendlyName string, device *devices.Devic
 	s.repo.Store(id, device)
 
 	s.idMapper[friendlyName] = id // store id in mapper for easy access
+}
+
+func (s *HubRegisterService) RetrieveEntityData(id string, property string) (any, error) {
+	device, err := s.LookupById(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if entity, ok := device.Exposes[property]; ok {
+		return entity.Data, nil
+	}
+
+	return nil, fmt.Errorf("entity %s not found", property)
 }
 
 func (s *HubRegisterService) LookupByName(name string) (*devices.Device, error) {

@@ -82,14 +82,19 @@ func (d *Device) Evaluate(device *devices.Device) bool {
 
 	d.ctx.Payload = device.Exposes
 
-	// NOTE: an trigger can have multiple conditions.
+	// NOTE: a trigger can have multiple conditions.
 	// e.g presence can have multiple conditions for on and off
 	for _, trigger := range d.Triggers {
 		if _, ok := device.Exposes[trigger.Name]; ok {
+
+			// this is wrong !!!!!
 			// populate context with step actiob required data, rather than passing down device object
-			for _, step := range trigger.Action.Steps {
-				d.ctx.SetCurrent(step.Property, device.Exposes[trigger.Name].Data)
-			}
+			// for _, step := range trigger.Action.Steps {
+
+			// 	fmt.Println("[DEBUG] caching ", step.Property, " value ", device.Exposes[trigger.Name].Data)
+
+			// 	d.ctx.SetCurrent(step.Property, device.Exposes[trigger.Name].Data)
+			// }
 
 			trigger.process(d.ctx)
 		}
@@ -166,13 +171,7 @@ func configureAction(registrar services.DeviceRegistrar, action *MqttAction, cli
 
 				action.FriendlyName = bridgeInfo.FriendlyName
 				action.Client = client
-
-				device, err := registrar.LookupById(bridgeInfo.IeeeAddress)
-				if err == nil {
-					action.configure(device.Exposes[action.Property])
-				}
-
-				return nil
+				return action.configure(registrar)
 			}
 		}
 	}

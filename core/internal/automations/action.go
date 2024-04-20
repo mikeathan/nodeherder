@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"node-herder/internal/mqtt"
-	"node-herder/models/devices"
+	"node-herder/internal/services"
 	"node-herder/utils"
 	"sync"
 	"time"
@@ -37,9 +37,10 @@ type MqttAction struct {
 	Delay        int    `json:"delay,omitempty"`
 	Steps        []Step `json:"steps,omitempty"`
 
-	Client mqtt.MqttClient `json:"-"`
+	Client    mqtt.MqttClient          `json:"-"`
+	registrar services.DeviceRegistrar `json:"-"`
 
-	operationAction actionOperation
+	operationAction actionOperation `json:"-"`
 	mut             sync.RWMutex
 	exit            chan bool
 	isPending       bool
@@ -49,12 +50,15 @@ func NewAction() *MqttAction {
 	return &MqttAction{Delay: 0, Steps: make([]Step, 0)}
 }
 
-func (a *MqttAction) configure(expose *devices.Entity) {
+func (a *MqttAction) configure(registrar services.DeviceRegistrar) error {
 
-	// TODO: use action.Type to determine actions
-	// a.Type == "TriggerAction"
-	// a.Type == "StepAction"
-	// a.Type == "PresetRotationAction"
+	a.registrar = registrar
+	device, err := registrar.LookupById(a.Id)
+	if err != nil {
+		return fmt.Errorf("configure action %s failed: %s ", a.Id, err.Error())
+	}
+
+	expose := device.Exposes[a.Property]
 
 	// configure special action operations
 	switch a.Type {
@@ -66,12 +70,7 @@ func (a *MqttAction) configure(expose *devices.Entity) {
 	case PresetRotationAction:
 		a.operationAction = CreateRotateOperation(expose, a)
 	}
-
-	// if expose.Type == "enum" && len(expose.Presets) > 0 && a.Data == nil {
-	// 	a.operationAction = CreateRotateOperation(expose, a)
-	// } else if len(a.Steps) > 0 {
-	// 	a.operationAction = CreateStepOperation(expose, a)
-	// }
+	return nil
 }
 
 func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
