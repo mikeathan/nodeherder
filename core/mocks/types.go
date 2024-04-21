@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// Mock EventHub
 type MockEventHub struct {
 	MockBroadcastEvent func(eventName string, data interface{}) error
 }
@@ -69,6 +70,7 @@ func (w *MockEventHub) OnDeleteAutomationTrigger(action func(p interface{}) (int
 	fmt.Println("Empty OnDeleteAutomationTrigger")
 }
 
+// Mock MqttClient
 type MockMqttClient struct {
 	messageHandler func(string, []byte)
 }
@@ -115,6 +117,7 @@ func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 	m.messagePubHandler()(topic, data)
 }
 
+// Mock WsServer
 type NopWsServer struct {
 }
 
@@ -174,6 +177,7 @@ func (w *NopWsServer) OnDeleteAutomationTrigger(action func(p interface{}) (inte
 	fmt.Println("Empty OnDeleteAutomationTrigger")
 }
 
+// Mock Repository
 type NopRepository struct {
 }
 
@@ -198,6 +202,7 @@ func (w *NopRepository) FindDevice(deviceName string) (*devices.Device, error) {
 	return nil, errors.New("device not found")
 }
 
+// Mock DeviceRegistrar
 type NopDeviceRegistrar struct {
 }
 
@@ -224,4 +229,10 @@ func (w *NopDeviceRegistrar) FindBridgeInfo(id string) *devices.BridgeInfo {
 
 func (w *NopDeviceRegistrar) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int) {
 	fmt.Println("Mocked RegisterBridge")
+}
+
+func (w *NopDeviceRegistrar) RetrieveEntityData(id string, property string) (any, error) {
+	fmt.Println("Mocked RetrieveEntityData")
+	return nil, errors.New("mocked object")
+
 }

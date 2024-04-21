@@ -4,9 +4,14 @@ import (
 	"fmt"
 	"math"
 	"node-herder/internal/automations"
+	"node-herder/internal/services"
+	"node-herder/internal/ws"
 	"node-herder/mocks"
+	"node-herder/models/devices"
+	repository "node-herder/repository/devices"
 	"sort"
 	"testing"
+	"time"
 )
 
 func TestOperationIncreaseValue(t *testing.T) {
@@ -110,14 +115,38 @@ func TestOperationDecreaseValue(t *testing.T) {
 	}
 }
 
+func newMockHubRegisterService(mockBroadcastEvent func(eventName string, data interface{}) error) ws.EventHub {
+	return &mocks.MockEventHub{MockBroadcastEvent: mockBroadcastEvent}
+}
+
 func TestOperationMultiStepIncreaseValue(t *testing.T) {
 
+	mqtt := &mocks.MockMqttClient{}
+	repo := repository.NewMemoryDeviceRepo()
+	eventHub := &mocks.MockEventHub{}
+
+	testDevices := []struct {
+		id       string
+		property string
+		data     any
+	}{
+		{id: "x1234", property: "brightness", data: nil},
+		{id: "x5678", property: "action_time", data: 10},
+	}
+
+	// initialize mock devices
+	for _, testdevice := range testDevices {
+		newDevice := createMockDevice(testdevice.id, testdevice.property, testdevice.data)
+		repo.Store(testdevice.id, newDevice)
+	}
+	registrar := services.NewHubRegisterService(repo, eventHub, 30000)
+
+	//
 	ctx := automations.NewDeviceContext()
 	rotation := createEntity("light", "some description", 51.0, "", nil)
 	rotation.Attributes["max"] = 255.0
 	rotation.Attributes["min"] = 0.0
 
-	mqtt := &mocks.MockMqttClient{}
 	turnOnAction := &automations.MqttAction{}
 	turnOnAction.FriendlyName = "attic light"
 	turnOnAction.Property = "brightness"
@@ -134,6 +163,13 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	turnOnAction.Steps = append(turnOnAction.Steps, step2)
 
 	turnOnAction.Client = mqtt
+	err := turnOnAction.Configure(registrar)
+
+	if err != nil {
+		t.Fatalf("error configuring action %v ", err.Error())
+
+	}
+
 	operationAction := automations.CreateStepOperation(rotation, turnOnAction)
 	max := rotation.Attributes["max"].(float64)
 
@@ -281,4 +317,27 @@ func TestOperationCycleValue(t *testing.T) {
 			pos = 0
 		}
 	}
+}
+
+func createMockDevice(id string, property string, data any) *devices.Device {
+	device1 := &devices.Device{}
+	device1.Id = id
+	device1.FriendlyName = fmt.Sprintf("Device %s", id)
+	device1.ConnectionType = "mqtt"
+	device1.Description = fmt.Sprintf("Test device %s description", id)
+	device1.PowerSource = "mains"
+	device1.Properties = map[string]any{}
+	device1.Properties["last_seen"] = time.Now().Format(time.RFC3339)
+	device1.Properties["link_quality"] = 45.0
+	device1.Exposes = make(map[string]*devices.Entity)
+
+	ent1 := &devices.Entity{}
+	ent1.Description = fmt.Sprintf("%s readings", property)
+	ent1.Name = property
+	ent1.Unit = "test"
+	ent1.Data = data
+
+	device1.Exposes["1"] = ent1
+
+	return device1
 }

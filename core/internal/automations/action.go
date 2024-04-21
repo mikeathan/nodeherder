@@ -50,7 +50,7 @@ func NewAction() *MqttAction {
 	return &MqttAction{Delay: 0, Steps: make([]Step, 0)}
 }
 
-func (a *MqttAction) configure(registrar services.DeviceRegistrar) error {
+func (a *MqttAction) Configure(registrar services.DeviceRegistrar) error {
 
 	a.registrar = registrar
 	device, err := registrar.LookupById(a.Id)

@@ -77,9 +77,10 @@ func (r *rotateOperation) Next(ctx *DeviceContext) (any, error) {
 }
 
 type stepOperation struct {
-	action *MqttAction
-	expose *devices.Entity
-	limits map[string]float64
+	action      *MqttAction
+	expose      *devices.Entity
+	limits      map[string]float64
+	propertyMap map[string]float64
 }
 
 func newStepOperation(expose *devices.Entity, action *MqttAction, minLimit float64, maxLimit float64) actionOperation {
@@ -87,72 +88,34 @@ func newStepOperation(expose *devices.Entity, action *MqttAction, minLimit float
 	limits := make(map[string]float64)
 	limits["+"] = maxLimit
 	limits["-"] = minLimit
-	return &stepOperation{expose: expose, action: action, limits: limits}
+	return &stepOperation{expose: expose, action: action, limits: limits, propertyMap: make(map[string]float64, len(action.Steps))}
 }
 
 func (r *stepOperation) Next(ctx *DeviceContext) (any, error) {
 
-	// [brightness] = value
-	// [action_time] = value
-
-	// actionId := r.action.Id
-	// actionProperty := r.action.Property
-	// if sourceValue, err := r.action.registrar.RetrieveEntityData(actionId, actionProperty); err == nil {
-	// 	sourceValue = sourceValue.(float64)
-	// 	fmt.Println("[DEBUG] property: ", r.action.Property, " sourcevValue ", sourceValue)
-	// }
-
-	result := r.action.Data.(float64)
-	for i := len(r.action.Steps) - 1; i >= 0; i-- {
-		step := r.action.Steps[i]
-		if value, err := r.action.registrar.RetrieveEntityData(step.Id, step.Property); err == nil {
-			stepValue, ok := value.(float64)
-			if !ok {
-				stepValue = 0.0
-				fmt.Println("[DEBUG] default to zero")
-			}
-
-			result = numericOperations[step.Operator](stepValue, result, r.limits[step.Operator])
-			fmt.Println("[DEBUG] step:", step.Id, ", ", step.Property, ",", step.Operator, " data: ", stepValue, " result: ", result)
-
-		}
-	}
-	fmt.Println("[DEBUG] result ", result)
-
-	// ??
-	if sourceValue == result {
-		return nil, errors.New("same value, skipping")
-	}
-
+	// example:
 	// brightness = 10
 	// action_time = 20
 	// coeffiecient = 0.5
 
 	// 	eg brightness = brightness + action_time * 0.5
 
-	// NOTE;
-	// for multi step operation
-	// 	eg brightness = brightness + action_time * 0.5
-	// for single step operation
-	//  eg brightness = brightness + 0.5
-	// var newValue = r.action.Data.(float64)
-	// for i := len(r.action.Steps) - 1; i >= 0; i-- {
-	// 	step := r.action.Steps[i]
+	result := r.action.Data.(float64) // coefficient
+	for i := len(r.action.Steps) - 1; i >= 0; i-- {
+		step := r.action.Steps[i]
+		if value, err := r.action.registrar.RetrieveEntityData(step.Id, step.Property); err == nil {
+			if stepValue, ok := value.(float64); ok {
+				result = numericOperations[step.Operator](stepValue, result, r.limits[step.Operator])
 
-	// 	t := ctx.Payload[step.Property] // get data for the trigger device
-	// 	// we need data for the action device too
+				fmt.Println("[DEBUG] step:", step.Id, ", ", step.Property, ",", step.Operator, " data: ", stepValue, " result: ", result)
+				r.propertyMap[step.Property] = stepValue // cache value
+			}
+		}
+	}
 
-	// 	fmt.Println(t.Data)
-	// 	if propValue, ok := ctx.GetCurrent(step.Property).(float64); ok {
-	// 		fmt.Println("[DEBUG]  ", step.Property, " current value ", propValue)
-	// 		newValue = numericOperations[step.Operator](propValue, newValue, r.limits[step.Operator])
-	// 	}
-	// }
-	// fmt.Println("[DEBUG] newvalue ", newValue)
-
-	// if sourceValue == newValue {
-	// 	return nil, errors.New("same value, skipping")
-	// }
+	if r.propertyMap[r.action.Property] == result {
+		return nil, errors.New("same value, skipping")
+	}
 
 	return result, nil
 }
