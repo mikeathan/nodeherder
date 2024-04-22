@@ -41,7 +41,6 @@ func (s *HubRegisterService) RetrieveEntityData(id string, property string) (any
 	if err != nil {
 		return nil, err
 	}
-
 	if entity, ok := device.Exposes[property]; ok {
 		return entity.Data, nil
 	}

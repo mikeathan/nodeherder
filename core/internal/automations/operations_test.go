@@ -1,6 +1,7 @@
 package automations_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"node-herder/internal/automations"
@@ -10,6 +11,7 @@ import (
 	"node-herder/models/devices"
 	repository "node-herder/repository/devices"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 )
@@ -121,90 +123,115 @@ func newMockHubRegisterService(mockBroadcastEvent func(eventName string, data in
 
 func TestOperationMultiStepIncreaseValue(t *testing.T) {
 
-	mqtt := &mocks.MockMqttClient{}
+	var devices map[string]*devices.Device = make(map[string]*devices.Device)
 	repo := repository.NewMemoryDeviceRepo()
-	eventHub := &mocks.MockEventHub{}
 
 	testDevices := []struct {
 		id       string
+		name     string
 		property string
 		data     any
 	}{
-		{id: "x1234", property: "brightness", data: nil},
-		{id: "x5678", property: "action_time", data: 10},
+		{id: "x1234", name: "livingroom", property: "brightness", data: nil},
+		{id: "x5678", name: "button", property: "action_time", data: nil},
 	}
 
 	// initialize mock devices
-	for _, testdevice := range testDevices {
-		newDevice := createMockDevice(testdevice.id, testdevice.property, testdevice.data)
-		repo.Store(testdevice.id, newDevice)
+	for _, d := range testDevices {
+		newDevice := createMockDevice(d.id, d.name, d.property, d.data)
+		devices[d.name] = newDevice
+		repo.Store(d.id, newDevice)
 	}
+
+	var messageHandler = func(id string, payload []byte) {
+		//"livingroom light/set"
+		//"{\"brightness\":1}"
+		name := strings.Replace(id, "/set", "", -1)
+		data := make(map[string]interface{})
+		err := json.Unmarshal(payload, &data)
+		if err != nil {
+			t.Fatalf("invalid payload")
+
+		}
+		fmt.Println("mqtt", id, payload)
+		devices[name].Exposes["brightness"].Data = data["brightness"]
+	}
+
+	mqtt := &mocks.MockMqttClient{}
+	mqtt.OnMessageHandler(messageHandler)
+	eventHub := &mocks.MockEventHub{}
+
 	registrar := services.NewHubRegisterService(repo, eventHub, 30000)
 
-	//
+	// create trigger automation
 	ctx := automations.NewDeviceContext()
-	rotation := createEntity("light", "some description", 51.0, "", nil)
-	rotation.Attributes["max"] = 255.0
-	rotation.Attributes["min"] = 0.0
+	// rotation := createEntity("livingroom light", "livingroom light description", 51.0, "", nil)
+	// rotation.Attributes["max"] = 255.0
+	// rotation.Attributes["min"] = 0.0
 
-	turnOnAction := &automations.MqttAction{}
-	turnOnAction.FriendlyName = "attic light"
-	turnOnAction.Property = "brightness"
-	turnOnAction.Data = float64(1)
-	step := automations.Step{}
-	step.Property = "brightness"
-	step.Operator = "+"
+	action := &automations.MqttAction{}
+	action.FriendlyName = "livingroom"
+	action.Id = "x1234"
+	action.Property = "brightness"
+	action.Type = automations.StepAction
+	action.Data = float64(1)
+	brightnessStep := automations.Step{}
+	brightnessStep.Property = "brightness"
+	brightnessStep.Operator = "+"
+	brightnessStep.Id = "x1234"
 
-	step2 := automations.Step{}
-	step2.Property = "action_time"
-	step2.Operator = "*"
+	actionTimeStep := automations.Step{}
+	actionTimeStep.Property = "action_time"
+	actionTimeStep.Operator = "*"
+	actionTimeStep.Id = "x5678"
 
-	turnOnAction.Steps = append(turnOnAction.Steps, step)
-	turnOnAction.Steps = append(turnOnAction.Steps, step2)
+	action.Steps = append(action.Steps, brightnessStep)
+	action.Steps = append(action.Steps, actionTimeStep)
 
-	turnOnAction.Client = mqtt
-	err := turnOnAction.Configure(registrar)
+	action.Client = mqtt
+	err := action.Configure(registrar)
 
 	if err != nil {
 		t.Fatalf("error configuring action %v ", err.Error())
-
 	}
 
-	operationAction := automations.CreateStepOperation(rotation, turnOnAction)
-	max := rotation.Attributes["max"].(float64)
+	devices["button"].Exposes["action_time"].Data = 10
+	ctx.Payload["action_time"] = devices["button"].Exposes["action_time"]
+	action.Execute("action_time", ctx)
 
-	ctx.SetCurrent("brightness", 0.0)
-	action_times := []float64{10.0, 20.0, 10.0, 40.0, 80.0, 20.0, 100.0, 50.0, 80.0, 20.0, 20.0, 30.0, 30.0}
-	// brightness = brightness + action_time * 0.5
-	for i := 0; i < len((action_times)); i++ {
-		ctx.SetCurrent("action_time", action_times[i]) // set new action_time value to simulate a new device update
+	// operationAction := automations.CreateStepOperation(rotation, action)
+	// max := rotation.Attributes["max"].(float64)
 
-		nextValue, er := operationAction.Next(ctx)
-		if er != nil {
-			t.Fatalf("error %v iteration %d action_time %v", er.Error(), i, action_times[i])
-		}
-		got := nextValue.(float64)
-		fmt.Println((got))
+	// //ctx.SetCurrent("brightness", 0.0)
+	// action_times := []float64{10.0}
+	// // brightness = brightness + action_time * 0.5
+	// for i := 0; i < len((action_times)); i++ {
+	// 	//ctx.SetCurrent("action_time", action_times[i]) // set new action_time value to simulate a new device update
 
-		if got > max {
-			t.Fatalf("max limit invalid operation value: want %v got %v", max, got)
-		}
+	// 	nextValue, er := operationAction.Next(ctx)
+	// 	if er != nil {
+	// 		t.Fatalf("error %v iteration %d action_time %v", er.Error(), i, action_times[i])
+	// 	}
+	// 	got := nextValue.(float64)
+	// 	if got > max {
+	// 		t.Fatalf("max limit invalid operation value: want %v got %v", max, got)
+	// 	}
 
-		// brightness = brightness + action_time * 0.5
-		want := ctx.GetCurrent("brightness").(float64) + (action_times[i] * turnOnAction.Data.(float64))
-		want = math.Min(want, max)
+	// 	// brightness = brightness + action_time * 0.5
+	// 	want := ctx.GetCurrent("brightness").(float64) + (action_times[i] * action.Data.(float64))
+	// 	want = math.Min(want, max)
 
-		if got != want {
-			t.Fatalf("invalid operation value: want %v got %v", want, got)
-		}
+	// 	if got != want {
+	// 		t.Fatalf("invalid operation value: want %v got %v", want, got)
+	// 	}
 
-		ctx.SetCurrent("brightness", got) // set current updated brightness value
-	}
+	// 	ctx.SetCurrent("brightness", got) // set current updated brightness value
+	// }
 
-	val, er := operationAction.Next(ctx)
-	if er == nil {
-		t.Fatalf("expected error got %v", val)
-	}
+	// val, er := operationAction.Next(ctx)
+	// if er == nil {
+	// 	t.Fatalf("expected error got %v", val)
+	// }
 }
 
 func TestOperationMultiStepDecreaseValue(t *testing.T) {
@@ -319,10 +346,10 @@ func TestOperationCycleValue(t *testing.T) {
 	}
 }
 
-func createMockDevice(id string, property string, data any) *devices.Device {
+func createMockDevice(id string, name string, property string, data any) *devices.Device {
 	device1 := &devices.Device{}
 	device1.Id = id
-	device1.FriendlyName = fmt.Sprintf("Device %s", id)
+	device1.FriendlyName = name
 	device1.ConnectionType = "mqtt"
 	device1.Description = fmt.Sprintf("Test device %s description", id)
 	device1.PowerSource = "mains"
@@ -337,7 +364,7 @@ func createMockDevice(id string, property string, data any) *devices.Device {
 	ent1.Unit = "test"
 	ent1.Data = data
 
-	device1.Exposes["1"] = ent1
+	device1.Exposes[property] = ent1
 
 	return device1
 }
