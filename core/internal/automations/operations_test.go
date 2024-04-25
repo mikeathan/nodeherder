@@ -6,12 +6,12 @@ import (
 	"math"
 	"node-herder/internal/automations"
 	"node-herder/internal/services"
-	"node-herder/internal/ws"
 	"node-herder/mocks"
 	"node-herder/models/devices"
 	repository "node-herder/repository/devices"
 	"sort"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -116,13 +116,30 @@ func TestOperationDecreaseValue(t *testing.T) {
 		t.Fatalf("expected error got %v", val)
 	}
 }
+func createMockLivingRoomButtonStepAction(operation string, stepValue float64) *automations.MqttAction {
+	action := &automations.MqttAction{}
+	action.FriendlyName = "livingroom"
+	action.Id = "x1234"
+	action.Property = "brightness"
+	action.Type = automations.StepAction
+	action.Data = stepValue
+	brightnessStep := automations.Step{}
+	brightnessStep.Property = "brightness"
+	brightnessStep.Operator = operation
+	brightnessStep.Id = "x1234"
 
-func newMockHubRegisterService(mockBroadcastEvent func(eventName string, data interface{}) error) ws.EventHub {
-	return &mocks.MockEventHub{MockBroadcastEvent: mockBroadcastEvent}
+	actionTimeStep := automations.Step{}
+	actionTimeStep.Property = "action_time"
+	actionTimeStep.Operator = "*"
+	actionTimeStep.Id = "x5678"
+
+	action.Steps = append(action.Steps, brightnessStep)
+	action.Steps = append(action.Steps, actionTimeStep)
+
+	return action
 }
 
-func TestOperationMultiStepIncreaseValue(t *testing.T) {
-
+func createMocklivingRoomButtonDevices() devices.Repository {
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
 	repo := repository.NewMemoryDeviceRepo()
 
@@ -138,26 +155,82 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 
 	// initialize mock devices
 	for _, d := range testDevices {
-		newDevice := createMockDevice(d.id, d.name, d.property, d.data)
+		newDevice := createMockDevice(d.id, d.name, d.property, d.data, 0.0, 255.0)
+
 		devices[d.name] = newDevice
 		repo.Store(d.id, newDevice)
 	}
 
+	return repo
+}
+
+func TestOperationMultiStepIncreaseValue(t *testing.T) {
+	action_times := []float64{10.0, 20.0, 10.0, 40.0, 80.0, 20.0, 100.0, 50.0, 80.0, 20.0, 20.0, 30.0, 30.0}
+
+	wg := &sync.WaitGroup{}
+	wg.Add(len(action_times))
+
+	mqtt := &mocks.MockMqttClient{}
+	currentActionTimeIndex := 0
+
+	// create mock action
+	action := createMockLivingRoomButtonStepAction("+", 0.5)
+	action.Client = mqtt
+
+	// var devices map[string]*devices.Device = make(map[string]*devices.Device)
+	// repo := repository.NewMemoryDeviceRepo()
+
+	// testDevices := []struct {
+	// 	id       string
+	// 	name     string
+	// 	property string
+	// 	data     any
+	// }{
+	// 	{id: "x1234", name: "livingroom", property: "brightness", data: nil},
+	// 	{id: "x5678", name: "button", property: "action_time", data: nil},
+	// }
+
+	// // initialize mock devices
+	// for _, d := range testDevices {
+	// 	newDevice := createMockDevice(d.id, d.name, d.property, d.data, 0.0, 255.0)
+
+	// 	devices[d.name] = newDevice
+	// 	repo.Store(d.id, newDevice)
+	// }
+
+	repo := createMocklivingRoomButtonDevices()
+	devices := repo.AllDevices()
+	max := devices["livingroom"].Exposes["brightness"].Attributes["max"].(float64)
+
 	var messageHandler = func(id string, payload []byte) {
-		//"livingroom light/set"
-		//"{\"brightness\":1}"
 		name := strings.Replace(id, "/set", "", -1)
 		data := make(map[string]interface{})
 		err := json.Unmarshal(payload, &data)
 		if err != nil {
 			t.Fatalf("invalid payload")
-
 		}
-		fmt.Println("mqtt", id, payload)
+
+		// 	eg. brightness = brightness + action_time * 0.5
+		got := data["brightness"].(float64)
+		if got > max {
+			t.Fatalf("max limit invalid operation value: want %v got %v", max, got)
+		}
+
+		var prevValue float64 = 0
+		// need to get the previous value of brightness before update
+		prevValue, _ = devices[name].Exposes["brightness"].Data.(float64)
+
+		want := prevValue + (action_times[currentActionTimeIndex] * action.Data.(float64))
+		want = math.Min(want, max)
+		if got != want {
+			t.Fatalf("invalid operation value: want %v got %v", want, got)
+		}
+
 		devices[name].Exposes["brightness"].Data = data["brightness"]
+		wg.Done()
+
 	}
 
-	mqtt := &mocks.MockMqttClient{}
 	mqtt.OnMessageHandler(messageHandler)
 	eventHub := &mocks.MockEventHub{}
 
@@ -165,73 +238,29 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 
 	// create trigger automation
 	ctx := automations.NewDeviceContext()
-	// rotation := createEntity("livingroom light", "livingroom light description", 51.0, "", nil)
-	// rotation.Attributes["max"] = 255.0
-	// rotation.Attributes["min"] = 0.0
 
-	action := &automations.MqttAction{}
-	action.FriendlyName = "livingroom"
-	action.Id = "x1234"
-	action.Property = "brightness"
-	action.Type = automations.StepAction
-	action.Data = float64(1)
-	brightnessStep := automations.Step{}
-	brightnessStep.Property = "brightness"
-	brightnessStep.Operator = "+"
-	brightnessStep.Id = "x1234"
-
-	actionTimeStep := automations.Step{}
-	actionTimeStep.Property = "action_time"
-	actionTimeStep.Operator = "*"
-	actionTimeStep.Id = "x5678"
-
-	action.Steps = append(action.Steps, brightnessStep)
-	action.Steps = append(action.Steps, actionTimeStep)
-
-	action.Client = mqtt
 	err := action.Configure(registrar)
 
 	if err != nil {
 		t.Fatalf("error configuring action %v ", err.Error())
 	}
+	go func() {
+		for _, t := range action_times {
+			devices["button"].Exposes["action_time"].Data = float64(t)
+			ctx.Payload["action_time"] = devices["button"].Exposes["action_time"]
 
-	devices["button"].Exposes["action_time"].Data = 10
+			action.Execute("action_time", ctx)
+
+			time.Sleep(100 * time.Millisecond)
+			currentActionTimeIndex++
+		}
+	}()
+	wg.Wait()
+
+	devices["button"].Exposes["action_time"].Data = float64(30)
 	ctx.Payload["action_time"] = devices["button"].Exposes["action_time"]
+
 	action.Execute("action_time", ctx)
-
-	// operationAction := automations.CreateStepOperation(rotation, action)
-	// max := rotation.Attributes["max"].(float64)
-
-	// //ctx.SetCurrent("brightness", 0.0)
-	// action_times := []float64{10.0}
-	// // brightness = brightness + action_time * 0.5
-	// for i := 0; i < len((action_times)); i++ {
-	// 	//ctx.SetCurrent("action_time", action_times[i]) // set new action_time value to simulate a new device update
-
-	// 	nextValue, er := operationAction.Next(ctx)
-	// 	if er != nil {
-	// 		t.Fatalf("error %v iteration %d action_time %v", er.Error(), i, action_times[i])
-	// 	}
-	// 	got := nextValue.(float64)
-	// 	if got > max {
-	// 		t.Fatalf("max limit invalid operation value: want %v got %v", max, got)
-	// 	}
-
-	// 	// brightness = brightness + action_time * 0.5
-	// 	want := ctx.GetCurrent("brightness").(float64) + (action_times[i] * action.Data.(float64))
-	// 	want = math.Min(want, max)
-
-	// 	if got != want {
-	// 		t.Fatalf("invalid operation value: want %v got %v", want, got)
-	// 	}
-
-	// 	ctx.SetCurrent("brightness", got) // set current updated brightness value
-	// }
-
-	// val, er := operationAction.Next(ctx)
-	// if er == nil {
-	// 	t.Fatalf("expected error got %v", val)
-	// }
 }
 
 func TestOperationMultiStepDecreaseValue(t *testing.T) {
@@ -346,7 +375,7 @@ func TestOperationCycleValue(t *testing.T) {
 	}
 }
 
-func createMockDevice(id string, name string, property string, data any) *devices.Device {
+func createMockDevice(id string, name string, property string, data any, min float64, max float64) *devices.Device {
 	device1 := &devices.Device{}
 	device1.Id = id
 	device1.FriendlyName = name
@@ -365,6 +394,8 @@ func createMockDevice(id string, name string, property string, data any) *device
 	ent1.Data = data
 
 	device1.Exposes[property] = ent1
-
+	device1.Exposes[property].Attributes = make(map[string]any)
+	device1.Exposes[property].Attributes["min"] = min
+	device1.Exposes[property].Attributes["max"] = max
 	return device1
 }

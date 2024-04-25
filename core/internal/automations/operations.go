@@ -2,7 +2,6 @@ package automations
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"node-herder/models/devices"
 	"sort"
@@ -107,8 +106,11 @@ func (r *stepOperation) Next(ctx *DeviceContext) (any, error) {
 			if stepValue, ok := value.(float64); ok {
 				result = numericOperations[step.Operator](stepValue, result, r.limits[step.Operator])
 
-				fmt.Println("[DEBUG] step:", step.Id, ", ", step.Property, ",", step.Operator, " data: ", stepValue, " result: ", result)
-				r.propertyMap[step.Property] = stepValue // cache value
+				//fmt.Printf("[DEBUG] stepid: %s property: %s %v %v  =  %v \n", step.Id, step.Property, stepValue, step.Operator, result)
+				r.propertyMap[step.Property] = stepValue // cache value  -- temp needs refactor
+			} else {
+				r.propertyMap[step.Property] = 0 // cache value  -- temp needs refactor
+
 			}
 		}
 	}
