@@ -98,19 +98,17 @@ func (r *stepOperation) Next(ctx *DeviceContext) (any, error) {
 	// coeffiecient = 0.5
 
 	// 	eg brightness = brightness + action_time * 0.5
-
 	result := r.action.Data.(float64) // coefficient
 	for i := len(r.action.Steps) - 1; i >= 0; i-- {
 		step := r.action.Steps[i]
 		if value, err := r.action.registrar.RetrieveEntityData(step.Id, step.Property); err == nil {
+			r.propertyMap[step.Property] = 0
+
 			if stepValue, ok := value.(float64); ok {
 				result = numericOperations[step.Operator](stepValue, result, r.limits[step.Operator])
 
-				//fmt.Printf("[DEBUG] stepid: %s property: %s %v %v  =  %v \n", step.Id, step.Property, stepValue, step.Operator, result)
-				r.propertyMap[step.Property] = stepValue // cache value  -- temp needs refactor
-			} else {
-				r.propertyMap[step.Property] = 0 // cache value  -- temp needs refactor
-
+				// Cache value for equaloity check.  temp needs refactoring
+				r.propertyMap[step.Property] = stepValue
 			}
 		}
 	}
