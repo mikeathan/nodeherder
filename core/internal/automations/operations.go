@@ -107,7 +107,7 @@ func (r *stepOperation) Next(ctx *DeviceContext) (any, error) {
 			if stepValue, ok := value.(float64); ok {
 				result = numericOperations[step.Operator](stepValue, result, r.limits[step.Operator])
 
-				// Cache value for equaloity check.  temp needs refactoring
+				// Cache value for equality check.  temp needs refactoring
 				r.propertyMap[step.Property] = stepValue
 			}
 		}
