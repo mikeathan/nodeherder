@@ -116,6 +116,7 @@ func TestOperationDecreaseValue(t *testing.T) {
 		t.Fatalf("expected error got %v", val)
 	}
 }
+
 func createMockLivingRoomButtonStepAction(operation string, stepValue float64) *automations.MqttAction {
 	action := &automations.MqttAction{}
 	action.FriendlyName = "livingroom"
@@ -139,7 +140,7 @@ func createMockLivingRoomButtonStepAction(operation string, stepValue float64) *
 	return action
 }
 
-func createMocklivingRoomButtonDevices() devices.Repository {
+func createMockLivingRoomButtonDevices() devices.Repository {
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
 	repo := repository.NewMemoryDeviceRepo()
 
@@ -177,29 +178,16 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	action := createMockLivingRoomButtonStepAction("+", 0.5)
 	action.Client = mqtt
 
-	// var devices map[string]*devices.Device = make(map[string]*devices.Device)
-	// repo := repository.NewMemoryDeviceRepo()
+	repo := createMockLivingRoomButtonDevices()
 
-	// testDevices := []struct {
-	// 	id       string
-	// 	name     string
-	// 	property string
-	// 	data     any
-	// }{
-	// 	{id: "x1234", name: "livingroom", property: "brightness", data: nil},
-	// 	{id: "x5678", name: "button", property: "action_time", data: nil},
-	// }
+	//store devices in map for easy access
+	var devices map[string]*devices.Device = make(map[string]*devices.Device)
+	dev1, _ := repo.FindDevice("x1234")
+	dev2, _ := repo.FindDevice("x5678")
 
-	// // initialize mock devices
-	// for _, d := range testDevices {
-	// 	newDevice := createMockDevice(d.id, d.name, d.property, d.data, 0.0, 255.0)
+	devices["livingroom"] = dev1
+	devices["button"] = dev2
 
-	// 	devices[d.name] = newDevice
-	// 	repo.Store(d.id, newDevice)
-	// }
-
-	repo := createMocklivingRoomButtonDevices()
-	devices := repo.AllDevices()
 	max := devices["livingroom"].Exposes["brightness"].Attributes["max"].(float64)
 
 	var messageHandler = func(id string, payload []byte) {
@@ -228,7 +216,6 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 
 		devices[name].Exposes["brightness"].Data = data["brightness"]
 		wg.Done()
-
 	}
 
 	mqtt.OnMessageHandler(messageHandler)
@@ -238,7 +225,6 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 
 	// create trigger automation
 	ctx := automations.NewDeviceContext()
-
 	err := action.Configure(registrar)
 
 	if err != nil {
@@ -246,6 +232,7 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	}
 	go func() {
 		for _, t := range action_times {
+			// update both device and payload as they are used
 			devices["button"].Exposes["action_time"].Data = float64(t)
 			ctx.Payload["action_time"] = devices["button"].Exposes["action_time"]
 
@@ -261,6 +248,8 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	ctx.Payload["action_time"] = devices["button"].Exposes["action_time"]
 
 	action.Execute("action_time", ctx)
+
+	 find a way to test that value is max and it hasnt been published
 }
 
 func TestOperationMultiStepDecreaseValue(t *testing.T) {
