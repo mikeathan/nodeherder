@@ -95,6 +95,7 @@ func TestExportAutomationsFromFile(t *testing.T) {
 	deviceTrigger1.Triggers = append(deviceTrigger1.Triggers, turnOnTrigger)
 	inputDeviceTriggers = append(inputDeviceTriggers, deviceTrigger1)
 
+	need to setup a device registrar here so it can pass the action.configure
 	for _, d := range inputDeviceTriggers {
 		err := engine.Add(d)
 		if err != nil {
