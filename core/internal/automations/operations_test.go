@@ -140,7 +140,7 @@ func createMockLivingRoomButtonStepAction(operation string, stepValue float64) *
 	return action
 }
 
-func createMockLivingRoomButtonDevices() devices.Repository {
+func createMockLivingRoomButtonDevices(brightnessValue float64, actionTimeValue float64) devices.Repository {
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
 	repo := repository.NewMemoryDeviceRepo()
 
@@ -150,8 +150,8 @@ func createMockLivingRoomButtonDevices() devices.Repository {
 		property string
 		data     any
 	}{
-		{id: "x1234", name: "livingroom", property: "brightness", data: nil},
-		{id: "x5678", name: "button", property: "action_time", data: nil},
+		{id: "x1234", name: "livingroom", property: "brightness", data: brightnessValue},
+		{id: "x5678", name: "button", property: "action_time", data: actionTimeValue},
 	}
 
 	// initialize mock devices
@@ -178,7 +178,7 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	action := createMockLivingRoomButtonStepAction("+", 0.5)
 	action.Client = mqtt
 
-	repo := createMockLivingRoomButtonDevices()
+	repo := createMockLivingRoomButtonDevices(0.0, 0.0)
 
 	//store devices in map for easy access
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
@@ -191,6 +191,7 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	max := devices["livingroom"].Exposes["brightness"].Attributes["max"].(float64)
 
 	var messageHandler = func(id string, payload []byte) {
+
 		name := strings.Replace(id, "/set", "", -1)
 		data := make(map[string]interface{})
 		err := json.Unmarshal(payload, &data)
@@ -244,75 +245,104 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	}()
 	wg.Wait()
 
+	// we are expecting to have reached the max value of the 'brightness' property
+	// so next payload event shoud not publish new mqqt message. if it does it should error in the handler
 	devices["button"].Exposes["action_time"].Data = float64(30)
 	ctx.Payload["action_time"] = devices["button"].Exposes["action_time"]
 
 	action.Execute("action_time", ctx)
-
-	 find a way to test that value is max and it hasnt been published
+	time.Sleep(100 * time.Millisecond)
 }
 
 func TestOperationMultiStepDecreaseValue(t *testing.T) {
 
-	ctx := automations.NewDeviceContext()
-	rotation := createEntity("light", "some description", 51.0, "", nil)
-	rotation.Attributes["max"] = 255.0
-	rotation.Attributes["min"] = 0.0
-
-	mqtt := &mocks.MockMqttClient{}
-	turnOnAction := &automations.MqttAction{}
-	turnOnAction.FriendlyName = "attic light"
-	turnOnAction.Property = "brightness"
-	turnOnAction.Data = 0.5
-	step := automations.Step{}
-	step.Property = "brightness"
-	step.Operator = "-"
-
-	step2 := automations.Step{}
-	step2.Property = "action_time"
-	step2.Operator = "*"
-
-	turnOnAction.Steps = append(turnOnAction.Steps, step)
-	turnOnAction.Steps = append(turnOnAction.Steps, step2)
-
-	turnOnAction.Client = mqtt
-	operationAction := automations.CreateStepOperation(rotation, turnOnAction)
-	max := rotation.Attributes["max"].(float64)
-
-	ctx.SetCurrent("brightness", 255.0)
 	action_times := []float64{10.0, 20.0, 10.0, 40.0, 80.0, 20.0, 100.0, 50.0, 80.0, 20.0, 20.0, 30.0, 30.0}
 	// brightness = brightness - action_time * 0.5
 
-	for i := 0; i < len((action_times)); i++ {
-		ctx.SetCurrent("action_time", action_times[i]) // set new action_time value to simulate a new device update
+	wg := &sync.WaitGroup{}
+	wg.Add(len(action_times))
 
-		nextValue, er := operationAction.Next(ctx)
-		if er != nil {
-			t.Fatalf("error %v iteration %d action_time %v", er.Error(), i, action_times[i])
+	mqtt := &mocks.MockMqttClient{}
+	currentActionTimeIndex := 0
+
+	// create mock action
+	action := createMockLivingRoomButtonStepAction("-", 0.5)
+	action.Client = mqtt
+
+	repo := createMockLivingRoomButtonDevices(255.0, 0.0)
+
+	//store devices in map for easy access
+	var devices map[string]*devices.Device = make(map[string]*devices.Device)
+	dev1, _ := repo.FindDevice("x1234")
+	dev2, _ := repo.FindDevice("x5678")
+
+	devices["livingroom"] = dev1
+	devices["button"] = dev2
+
+	max := devices["livingroom"].Exposes["brightness"].Attributes["max"].(float64)
+
+	var messageHandler = func(id string, payload []byte) {
+		name := strings.Replace(id, "/set", "", -1)
+		data := make(map[string]interface{})
+		err := json.Unmarshal(payload, &data)
+		if err != nil {
+			t.Fatalf("invalid payload")
 		}
 
-		got := nextValue.(float64)
+		// 	eg. brightness = brightness - action_time * 0.5
+		got := data["brightness"].(float64)
 		if got > max {
 			t.Fatalf("max limit invalid operation value: want %v got %v", max, got)
 		}
 
-		// brightness = brightness - action_time * 0.5
-		want := ctx.GetCurrent("brightness").(float64) - (action_times[i] * turnOnAction.Data.(float64))
-		want = math.Min(want, max)
+		var prevValue float64 = 0
+		// need to get the previous value of brightness before update
+		prevValue, _ = devices[name].Exposes["brightness"].Data.(float64)
 
+		want := prevValue - (action_times[currentActionTimeIndex] * action.Data.(float64))
+		want = math.Min(want, max)
 		if got != want {
 			t.Fatalf("invalid operation value: want %v got %v", want, got)
 		}
 
-		ctx.SetCurrent("brightness", got) // set current updated brightness value
+		devices[name].Exposes["brightness"].Data = data["brightness"]
+		wg.Done()
 	}
 
-	val, er := operationAction.Next(ctx)
-	if er == nil {
-		t.Fatalf("expected error got %v", val)
+	mqtt.OnMessageHandler(messageHandler)
+	eventHub := &mocks.MockEventHub{}
+
+	registrar := services.NewHubRegisterService(repo, eventHub, 30000)
+
+	// create trigger automation
+	ctx := automations.NewDeviceContext()
+	err := action.Configure(registrar)
+
+	if err != nil {
+		t.Fatalf("error configuring action %v ", err.Error())
 	}
+	go func() {
+		for _, t := range action_times {
+			// update both device and payload as they are used
+			devices["button"].Exposes["action_time"].Data = float64(t)
+			ctx.Payload["action_time"] = devices["button"].Exposes["action_time"]
+
+			action.Execute("action_time", ctx)
+
+			time.Sleep(100 * time.Millisecond)
+			currentActionTimeIndex++
+		}
+	}()
+	wg.Wait()
+
+	// we are expecting to have reached the max value of the 'brightness' property
+	// so next payload event shoud not publish new mqqt message. if it does it should error in the handler
+	devices["button"].Exposes["action_time"].Data = float64(30)
+	ctx.Payload["action_time"] = devices["button"].Exposes["action_time"]
+
+	action.Execute("action_time", ctx)
+	time.Sleep(100 * time.Millisecond)
 }
-
 func TestOperationCycleValue(t *testing.T) {
 
 	ctx := automations.NewDeviceContext()
