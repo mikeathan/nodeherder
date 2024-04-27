@@ -11,6 +11,7 @@ import {
   createButton,
   DropDownType,
   ButtonPanelType,
+  isDropdown,
 } from "../../types/controls.type";
 
 export function createNewActionDropdownItems(
@@ -46,6 +47,23 @@ export function createStepActionOperatorsDropdowitems(
     items.push(createDropDownItem(operator, operator, event))
   );
 
+  return items;
+}
+
+export function createButtons(buttons: ButtonPanelType[]): ButtonPanelType[] {
+  const items = buttons.map((item: ButtonPanelType) => {
+    if (isDropdown(item)) {
+      const ddb = item as DropDownType;
+      return createDropdown(ddb.name, ddb.items, ddb.disabled);
+    } else {
+      console.log("create dropdown DEBUG");
+      const db = item as ButtonType;
+      return createButton(db.name, db.click, db.disabled);
+    }
+    // const node = isDropdown(item)
+    //   ? createDropdown(item as DropDownType)
+    //   : createButton(item.name, item.event, item.disabled);
+  });
   return items;
 }
 

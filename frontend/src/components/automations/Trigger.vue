@@ -13,7 +13,7 @@ import { emitClosePanel, emitOpenPanel } from "@/mixins/useAutomationsEventBus";
 import ActionViewer from "./actions/ActionViewer.vue";
 import ButtonPanel from "@/components/controls/ButtonPanel.vue";
 
-import { createNewActionDropdownItems, createSaveDeleteButtonItems } from "../../configs/automation/trigger-dropdown.config";
+import { createButtons, createNewActionDropdownItems, createSaveDeleteButtonItems } from "../../configs/automation/trigger-dropdown.config";
 const props = defineProps({
     id: { type: String },
     trigger: { type: Object as PropType<AutomationTrigger>, default: {} as AutomationTrigger },
@@ -26,12 +26,39 @@ const actions = ref<AutomationTriggerAction[]>([]); // have a list of actions wi
 const trigger = ref<AutomationTrigger>(props.trigger)
 
 const dropDownitems = computed(() => createNewActionDropdownItems((e: ActionType) => addNewAction(e)));
-const buttonPanelItems = computed(() =>
-    createSaveDeleteButtonItems(
-        () => save(),
-        () => remove(),
-        isValid(trigger.value) == false,
-        isValid(trigger.value) == false)
+// const buttonPanelItems = computed(() =>
+//     createSaveDeleteButtonItems(
+//         () => save(),
+//         () => remove(),
+//         isValid(trigger.value) == false,
+//         isValid(trigger.value) == false)
+// );
+
+const buttonPanelItems = computed(() => {
+    return createButtons([
+        {
+            name: "Save",
+            click: save, disabled:
+                isValid(trigger.value) == false
+        },
+        {
+            name: "Delete",
+            click: remove,
+            disabled: isValid(trigger.value) == false
+        },
+        {
+            name: "Add condition",
+            click: addCondition,
+            disabled: isValid(trigger.value) == false
+        },
+        // {
+        //     name: "Add action",
+        //     items: dpitems,
+        //     disabled: actions.value.length != 0
+        // }
+    ])
+
+}
 );
 
 watch(
@@ -121,11 +148,14 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
     <div class="row pb-3">
 
         <div class="col">
-            <ButtonPanel :buttons="buttonPanelItems"></ButtonPanel>
+            <ButtonPanel :buttons="buttonPanelItems">
+                <Dropdown :items="dropDownitems" class-name="btn-light" :disabled="actions.length != 0">
+                    Add Action
+                </Dropdown>
+            </ButtonPanel>
         </div>
     </div>
     <div class="row" v-if="trigger.name == ''">
-
         <Selection :value="trigger.name" text="Select trigger" :disabled="trigger.name != ''" size="normal"
             @updated="v => trigger.name = v" :items="exposesList">
         </Selection>
@@ -143,11 +173,7 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
             </thead>
             <tr>
                 <th scope="col">
-                    <h5>Conditions
-                        <button type="button" class="btn btn-default btn-number" @click="(e) => addCondition()">
-                            <span class="fa fa-plus"></span>
-                        </button>
-                    </h5>
+                    <h4>WHEN </h4>
                 </th>
             </tr>
             <tbody v-for="( condition, index ) in conditions  " :item="condition">
@@ -168,13 +194,7 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
             <tr>
                 <!-- Actions Header -->
                 <th scope="col">
-                    <h5>Actions
-                        <span v-if="actions.length == 0">
-                            <Dropdown :items="dropDownitems">
-                                <span class="fa fa-plus"></span>
-                            </Dropdown>
-                        </span>
-                    </h5>
+                    <h4>THEN </h4>
                 </th>
             </tr>
             <!-- Actions -->
