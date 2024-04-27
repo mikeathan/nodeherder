@@ -6,6 +6,7 @@ import (
 	"node-herder/internal/services"
 	"node-herder/mocks"
 	"node-herder/models/devices"
+	repository "node-herder/repository/devices"
 	"node-herder/utils/storage"
 	"sort"
 	"testing"
@@ -70,12 +71,18 @@ func createBridgeInfoes() []*devices.BridgeInfo {
 func TestExportAutomationsFromFile(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
-	repo := &mocks.NopRepository{}
+	repo := repository.NewMemoryDeviceRepo()
 	eventHub := &mocks.MockEventHub{}
 	registrar := services.NewHubRegisterService(repo, eventHub, 30000)
 
+	dev1 := createMockDevice("0x56789", "livingroom", "brightness", nil, 0.0, 255.0)
+	dev2 := createMockDevice("0x56789", "humansensor", "left_click", nil, 0.0, 255.0)
+
 	bridgeinfos := createBridgeInfoes()
 	registrar.RegisterBridge(bridgeinfos, 60)
+	registrar.Register("livingroom", dev1)
+	registrar.Register("humansensor", dev2)
+
 	storage := NewMockStorage([]*automations.Device{})
 
 	engine := automations.NewEngine(registrar, mqtt)
@@ -86,16 +93,16 @@ func TestExportAutomationsFromFile(t *testing.T) {
 	turnOffTrigger.Action.Id = "0x56789"
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30.1)
 	turnOnTrigger.Action.Id = "0x56789"
+
 	// create device trigger
 	inputDeviceTriggers := []*automations.Device{}
 	deviceTrigger1 := automations.NewDevice("0x123456")
-	deviceTrigger1.FriendlyName = "human sensor"
+	deviceTrigger1.FriendlyName = "humansensor"
 	deviceTrigger1.Description = "test human sensor automation"
 	deviceTrigger1.Triggers = append(deviceTrigger1.Triggers, turnOffTrigger)
 	deviceTrigger1.Triggers = append(deviceTrigger1.Triggers, turnOnTrigger)
 	inputDeviceTriggers = append(inputDeviceTriggers, deviceTrigger1)
 
-	need to setup a device registrar here so it can pass the action.configure
 	for _, d := range inputDeviceTriggers {
 		err := engine.Add(d)
 		if err != nil {
