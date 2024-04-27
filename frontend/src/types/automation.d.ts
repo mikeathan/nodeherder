@@ -37,6 +37,7 @@ export type AutomationTriggerAction = {
   friendlyname: string;
   property: string;
   data: Nullable<any>;
+  type: ActionType;
   delay: Nullable<number>;
   steps: Array<AutomationActionStep>;
 };

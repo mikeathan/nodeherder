@@ -112,11 +112,8 @@ function getActionDescription(trigger: AutomationTrigger): string {
     if (trigger.action?.id == '') {
         return "<EMPTY>"
     }
-
-    var description = trigger.action.friendlyname + " " +
-        trigger.action.property;
-
-    return description;
+    // ${trigger.action.type} 
+    return `${trigger.action.friendlyname}.${trigger.action.property}`
 }
 
 function rowClicked(trigger: AutomationTrigger): void {
