@@ -109,9 +109,9 @@ const exposeOperators = computed(() => {
 
 <template>
     <div class="row">
-        <div class="col-sm-3">
+        <div class="col-sm-4">
             <ExposeSelector :id="props.id" :value="name" @updated="exposeSelected" :filter="allExposeFilter()"
-                :disabled="name != ''" position="center">
+                :disabled="name != ''" position="left">
             </ExposeSelector>
         </div>
         <div class="col-sm-3">
@@ -119,7 +119,7 @@ const exposeOperators = computed(() => {
                 :disabled="name == ''">
             </Selection>
         </div>
-        <div class="col-sm-6">
+        <div class="col-sm-5">
             <ExposeDataInput :id="props.id" :name="name" :value="data" @updated="dataUpdated" position="center"
                 :disabled="name == ''">
             </ExposeDataInput>
