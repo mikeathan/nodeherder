@@ -12,34 +12,59 @@ const router = createRouter({
       path: "/",
       name: "home",
       component: Dashboard,
+      meta: {
+        title: "Node-herder - Home",
+      },
     },
     {
       path: "/viewer",
       name: "viewer",
       component: AutomationsViewer,
+      meta: {
+        title: "Node-herder - Automation viewer",
+      },
     },
     {
       path: "/creator",
       name: "creator",
       component: AutomationsCreator,
+      meta: {
+        title: "Node-herder - Creator",
+      },
     },
     {
       path: "/editor/:id",
       name: "editor",
       component: AutomationsEditor,
       props: true,
+      meta: {
+        title: "Node-herder - Editor",
+      },
     },
     {
       path: "/devicepage/:id",
       name: "devicepage",
       component: DevicePage,
       props: true,
+      meta: {
+        title: "Node-herder - Device page",
+      },
     },
     {
       path: "/dashboard",
       name: "dashboard",
       component: Dashboard,
+      meta: {
+        title: "Node-herder - Dashboard",
+      },
     },
   ],
 });
 export default router;
+
+// Global navigation guard to
+// set the title based on the route
+router.beforeEach((to, from, next) => {
+  document.title = to.meta.title || "Node-herder";
+  next();
+});
