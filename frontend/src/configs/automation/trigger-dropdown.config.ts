@@ -50,21 +50,13 @@ export function createStepActionOperatorsDropdowitems(
   return items;
 }
 
-export function createButtons(buttons: ButtonPanelType[]): ButtonPanelType[] {
-  const items = buttons.map((item: ButtonPanelType) => {
-    if (isDropdown(item)) {
-      const ddb = item as DropDownType;
-      return createDropdown(ddb.name, ddb.items, ddb.disabled);
-    } else {
-      console.log("create dropdown DEBUG");
-      const db = item as ButtonType;
-      return createButton(db.name, db.click, db.disabled);
-    }
+export function createButtons(buttons: ButtonType[]): ButtonType[] {
+  return buttons.map(
+    (item: ButtonType) => createButton(item.name, item.click, item.disabled)
     // const node = isDropdown(item)
     //   ? createDropdown(item as DropDownType)
     //   : createButton(item.name, item.event, item.disabled);
-  });
-  return items;
+  );
 }
 
 export function createSaveDeleteButtonItems(

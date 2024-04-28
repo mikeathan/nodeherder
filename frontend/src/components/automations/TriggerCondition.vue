@@ -86,12 +86,14 @@ function dataUpdated(value: any): void {
 
 
 const exposeOperators = computed(() => {
+
+    console.log('expose operators ', props.id, name.value)
     if (name.value == '') {
         return []
     }
 
     var device = store.getters["devices/find"](props.id);
-    if (device.exposes[name.value] == undefined) {
+    if (!device || device.exposes[name.value] == undefined) {
         return []
     }
 

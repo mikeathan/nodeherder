@@ -21,7 +21,7 @@ const props = defineProps({
 
 // TODO: can be refactor to some automation context
 const conditions = ref<AutomationTriggerConditions>({} as AutomationTriggerConditions)
-const actions = ref<AutomationTriggerAction[]>([]); // have a list of actions with only 1 item capacity 
+const actions = ref<AutomationTriggerAction[]>([]); // have a list of actions with only 1 item capacity
 
 const trigger = ref<AutomationTrigger>(props.trigger)
 
@@ -38,8 +38,8 @@ const buttonPanelItems = computed(() => {
     return createButtons([
         {
             name: "Save",
-            click: save, disabled:
-                isValid(trigger.value) == false
+            click: save,
+            disabled: isValid(trigger.value) == false
         },
         {
             name: "Delete",
@@ -47,31 +47,22 @@ const buttonPanelItems = computed(() => {
             disabled: isValid(trigger.value) == false
         },
         {
-            name: "Add condition",
-            click: addCondition,
+            name: "Add Condition",
+            click: (e: any) => { console.log("add condition event") },
             disabled: isValid(trigger.value) == false
         },
-        // {
-        //     name: "Add action",
-        //     items: dpitems,
-        //     disabled: actions.value.length != 0
-        // }
     ])
-
-}
-);
+});
 
 watch(
     () => props.trigger,
     () => {
-
+        console.log("trigger watch ");
         if (props.trigger.action != undefined && props.trigger.action.id != "") {
             const action = JSON.parse(JSON.stringify(props.trigger.action)) as AutomationTriggerAction
             actions.value.push(action);
         }
         conditions.value = JSON.parse(JSON.stringify(props.trigger.conditions)) as AutomationTriggerConditions;
-
-
     }, { immediate: true }
 )
 
@@ -80,7 +71,9 @@ const emit = defineEmits<{
     (e: 'delete', trigger: AutomationTrigger): void,
 }>()
 
+
 function save() {
+
     trigger.value.conditions = conditions.value
     if (actions.value.length > 0) {
         trigger.value.action = actions.value[0];
@@ -95,8 +88,9 @@ function remove() {
     emitClosePanel('Trigger')
 }
 
-function addCondition() {
-    conditions.value.push(new EditableTriggerCondition());
+function addNewCondition() {
+    console.log('addNewCondition')
+    //conditions.value.push(new EditableTriggerCondition());
 }
 
 function removeTriggerCondition(condition: AutomationTriggerCondition) {
@@ -117,7 +111,6 @@ function deleteAction() {
 function SaveAction(action: AutomationTriggerAction) {
     actions.value[0] = action;
     trigger.value.action = actions.value[0];
-
 }
 
 function addNewAction(actionType: ActionType) {
@@ -149,10 +142,17 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
 
         <div class="col">
             <ButtonPanel :buttons="buttonPanelItems">
+                <button class="btn btn-light" @click="addNewCondition">
+                    Slot Add condition
+                </button>
+                <button :id="`dropdownControl`" type="button" class="btn btn-light" @click="addNewCondition"
+                    aria-expanded="false">TEST</button>
+
                 <Dropdown :items="dropDownitems" class-name="btn-light" :disabled="actions.length != 0">
                     Add Action
                 </Dropdown>
             </ButtonPanel>
+
         </div>
     </div>
     <div class="row" v-if="trigger.name == ''">
@@ -174,16 +174,18 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
             <tr>
                 <th scope="col">
                     <h4>WHEN </h4>
+                    <button @click="addNewCondition">add condition test</button>
                 </th>
             </tr>
             <tbody v-for="( condition, index ) in conditions  " :item="condition">
                 <tr>
                     <th scope="w-25">
-                        <TriggerCondition :id="props.id" :name="condition.name" :operator="condition.equality"
+                        cond: ={{ condition }}
+                        <!-- <TriggerCondition :id="props.id" :name="condition.name" :operator="condition.equality"
                             :data="condition.value" @update:name="newValue => condition.name = newValue"
                             @update:value="newValue => condition.value = newValue"
                             @update:operator="newValue => condition.equality = newValue">
-                        </TriggerCondition>
+                        </TriggerCondition> -->
                     </th>
                     <td>
                         <span class="fa fa-trash-alt fa-sm" @click="removeTriggerCondition(condition)">
