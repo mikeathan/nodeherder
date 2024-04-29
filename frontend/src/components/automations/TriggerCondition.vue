@@ -87,7 +87,6 @@ function dataUpdated(value: any): void {
 
 const exposeOperators = computed(() => {
 
-    console.log('expose operators ', props.id, name.value)
     if (name.value == '') {
         return []
     }

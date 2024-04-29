@@ -26,13 +26,7 @@ const actions = ref<AutomationTriggerAction[]>([]); // have a list of actions wi
 const trigger = ref<AutomationTrigger>(props.trigger)
 
 const dropDownitems = computed(() => createNewActionDropdownItems((e: ActionType) => addNewAction(e)));
-// const buttonPanelItems = computed(() =>
-//     createSaveDeleteButtonItems(
-//         () => save(),
-//         () => remove(),
-//         isValid(trigger.value) == false,
-//         isValid(trigger.value) == false)
-// );
+
 
 const buttonPanelItems = computed(() => {
     return createButtons([
@@ -46,18 +40,17 @@ const buttonPanelItems = computed(() => {
             click: remove,
             disabled: isValid(trigger.value) == false
         },
-        {
-            name: "Add Condition",
-            click: (e: any) => { console.log("add condition event") },
-            disabled: isValid(trigger.value) == false
-        },
+        // { // It doesnt work - needs investigation
+        //     name: "Add Condition",
+        //     click: (e: any) => { console.log("add condition event") },
+        //     disabled: isValid(trigger.value) == false
+        // },
     ])
 });
 
 watch(
     () => props.trigger,
     () => {
-        console.log("trigger watch ");
         if (props.trigger.action != undefined && props.trigger.action.id != "") {
             const action = JSON.parse(JSON.stringify(props.trigger.action)) as AutomationTriggerAction
             actions.value.push(action);
@@ -89,8 +82,7 @@ function remove() {
 }
 
 function addNewCondition() {
-    console.log('addNewCondition')
-    //conditions.value.push(new EditableTriggerCondition());
+    conditions.value.push(new EditableTriggerCondition());
 }
 
 function removeTriggerCondition(condition: AutomationTriggerCondition) {
@@ -142,11 +134,8 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
 
         <div class="col">
             <ButtonPanel :buttons="buttonPanelItems">
-                <button class="btn btn-light" @click="addNewCondition">
-                    Slot Add condition
-                </button>
                 <button :id="`dropdownControl`" type="button" class="btn btn-light" @click="addNewCondition"
-                    aria-expanded="false">TEST</button>
+                    aria-expanded="false">Add condition</button>
 
                 <Dropdown :items="dropDownitems" class-name="btn-light" :disabled="actions.length != 0">
                     Add Action
@@ -174,18 +163,16 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
             <tr>
                 <th scope="col">
                     <h4>WHEN </h4>
-                    <button @click="addNewCondition">add condition test</button>
                 </th>
             </tr>
             <tbody v-for="( condition, index ) in conditions  " :item="condition">
                 <tr>
                     <th scope="w-25">
-                        cond: ={{ condition }}
-                        <!-- <TriggerCondition :id="props.id" :name="condition.name" :operator="condition.equality"
+                        <TriggerCondition :id="props.id" :name="condition.name" :operator="condition.equality"
                             :data="condition.value" @update:name="newValue => condition.name = newValue"
                             @update:value="newValue => condition.value = newValue"
                             @update:operator="newValue => condition.equality = newValue">
-                        </TriggerCondition> -->
+                        </TriggerCondition>
                     </th>
                     <td>
                         <span class="fa fa-trash-alt fa-sm" @click="removeTriggerCondition(condition)">
