@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, watch, PropType, computed } from "vue";
+import { ref, watch, PropType, computed, h } from "vue";
 import { getActionType, ActionType, AutomationActionTypes } from "@/contracts/automations"
 import { AutomationTriggerAction } from "@/types/automation";
 import { EventActions, OpenPanelEvent } from "@/types/events.type";
-import { emitClosePanel, emitOpenPanel } from "@/mixins/useAutomationsEventBus";
+import { emitOpenPanel } from "@/mixins/useAutomationsEventBus";
 
 const emit = defineEmits<{
     (e: 'delete', action: AutomationTriggerAction): void,
@@ -51,6 +51,15 @@ const actionView = computed(() => {
             return "[" + currentAction.value.friendlyname + "] preset rotate [" + currentAction.value.property + "]";
         } else if (actionType.value == AutomationActionTypes.Trigger) {
 
+            // "Delay 5 min" // new row
+            // const test = "Set Attic Light state off WITH 5 min Delay";
+
+            // const h3 = h("h3", "Set")
+            // const device = h("div", { color: "gray" }, "Attic Light")
+            // const property = h("div", "state off")
+            // const delayText = h("div", "Delay 5 min");
+            // use h() to build elements
+            //return test;
             const delay = currentAction.value.delay ? `[Delay = ${currentAction.value.delay}]` : "";
             return `[${currentAction.value.friendlyname}] > [${currentAction.value.property} =  ${currentAction.value.data}] ${delay}`
         }
@@ -58,7 +67,6 @@ const actionView = computed(() => {
 
     return stepView;
 });
-
 
 watch(
     () => props.item,
@@ -69,10 +77,10 @@ watch(
 )
 
 
-function removeAction(action: AutomationTriggerAction): void {
-    emit('delete', action);
-    emitClosePanel('ActionViewer');
-}
+// function removeAction(action: AutomationTriggerAction): void {
+//     emit('delete', action);
+//     emitClosePanel('ActionViewer');
+// }
 
 function openEditor(): void {
     emitOpenPanel(createActionEditorOpenPanelEvent(currentAction.value));
@@ -88,10 +96,6 @@ function createActionEditorOpenPanelEvent(action: AutomationTriggerAction): Open
     <div class="row">
         <div class=" col-sm-11" @click="openEditor()">
             {{ actionView }}
-        </div>
-        <div class="col-sm-1">
-            <span class="fa fa-trash-alt fa-sm" @click="e => removeAction(currentAction)">
-            </span>
         </div>
     </div>
 </template>

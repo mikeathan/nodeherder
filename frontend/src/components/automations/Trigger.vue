@@ -135,10 +135,10 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
         <div class="col">
             <ButtonPanel :buttons="buttonPanelItems">
                 <button :id="`dropdownControl`" type="button" class="btn btn-light" @click="addNewCondition"
-                    aria-expanded="false">Add condition</button>
+                    aria-expanded="false">New condition</button>
 
                 <Dropdown :items="dropDownitems" class-name="btn-light" :disabled="actions.length != 0">
-                    Add Action
+                    New Action
                 </Dropdown>
             </ButtonPanel>
 
@@ -155,14 +155,14 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
             <thead>
                 <tr>
                     <th scope="col">
-                        Trigger {{ capitalizeText(trigger.name) }}
+                        Trigger for {{ capitalizeText(trigger.name) }}
                     </th>
                     <th scope="col">#</th>
                 </tr>
             </thead>
             <tr>
                 <th scope="col">
-                    <h4>WHEN </h4>
+                    <h4>WHEN</h4>
                 </th>
             </tr>
             <tbody v-for="( condition, index ) in conditions  " :item="condition">
@@ -183,7 +183,7 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
             <tr>
                 <!-- Actions Header -->
                 <th scope="col">
-                    <h4>THEN </h4>
+                    <h4>THEN</h4>
                 </th>
             </tr>
             <!-- Actions -->
@@ -194,6 +194,10 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                             @delete="deleteAction()">
                         </ActionViewer>
                     </th>
+                    <td>
+                        <span class="fa fa-trash-alt fa-sm" @click="deleteAction()">
+                        </span>
+                    </td>
                 </tr>
             </tbody>
         </table>
