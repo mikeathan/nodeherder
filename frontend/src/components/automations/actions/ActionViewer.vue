@@ -93,9 +93,21 @@ function createActionEditorOpenPanelEvent(action: AutomationTriggerAction): Open
 </script>
 
 <template>
-    <div class="row">
+    <!-- <div class="row">
         <div class=" col-sm-11" @click="openEditor()">
             {{ actionView }}
         </div>
+    </div> -->
+    <!-- <div class="card">
+        <div class="card-body">
+            <h6 class="card-title">Set Living room state = false</h6>
+            <p class="card-text">Delay 5 min</p>
+        </div>
+    </div> -->
+    <div class="card" style="width: 18rem;">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">Set Living room state = false </li>
+            <li class="list-group-item">Delay 5 min</li>
+        </ul>
     </div>
 </template>
