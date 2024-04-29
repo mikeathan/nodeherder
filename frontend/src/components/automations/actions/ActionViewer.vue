@@ -92,6 +92,15 @@ function createActionEditorOpenPanelEvent(action: AutomationTriggerAction): Open
 
 </script>
 
+<style>
+.list-group-item {
+    color: gray;
+}
+
+/* .list-group-item.list-group-item:hover {
+    background-color: gray;
+} */
+</style>
 <template>
     <!-- <div class="row">
         <div class=" col-sm-11" @click="openEditor()">
@@ -106,7 +115,7 @@ function createActionEditorOpenPanelEvent(action: AutomationTriggerAction): Open
     </div> -->
     <div class="card" style="width: 18rem;">
         <ul class="list-group list-group-flush">
-            <li class="list-group-item">Set Living room state = false </li>
+            <li class="list-group-item">SET <strong>Living room state </strong> <strong>FALSE</strong></li>
             <li class="list-group-item">Delay 5 min</li>
         </ul>
     </div>
