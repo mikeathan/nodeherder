@@ -152,7 +152,7 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
         <h5>Trigger for {{ capitalizeText(trigger.name) }}</h5>
 
         <!-- Conditions -->
-        <div class="card " v-if="conditions.length > 0">
+        <div class="card border" v-if="conditions.length > 0">
 
             <div class="card-header">
                 <h5>WHEN</h5>
@@ -177,7 +177,7 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
 
         </div>
         <!-- ACTIONS -->
-        <div class="card" v-if="actions.length > 0">
+        <div class="card border" v-if="actions.length > 0">
             <div class="card-header">
                 <h5>THEN</h5>
             </div>
