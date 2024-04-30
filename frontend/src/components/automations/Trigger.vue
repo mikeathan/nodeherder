@@ -125,19 +125,11 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
 }
 
 </script>
-<!-- <style>
-.borderless tr,
-.borderless td,
-.borderless th {
-    border: none !important;
-}
-</style> -->
 
 <template>
     <!-- TODO:  -->
     <!-- if automation for device exists message user else we overwrite it -->
     <div class="row pb-3">
-
         <div class="col">
             <ButtonPanel :buttons="buttonPanelItems">
                 <button :id="`dropdownControl`" type="button" class="btn btn-light" @click="addNewCondition"
@@ -156,9 +148,60 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
         </Selection>
     </div>
     <div class="row" v-else>
+
+        <h5>Trigger for {{ capitalizeText(trigger.name) }}</h5>
+
+        <!-- Conditions -->
+        <div class="card " v-if="conditions.length > 0">
+
+            <div class="card-header">
+                <h5>WHEN</h5>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item" v-for="( condition, index ) in conditions  " :item="condition">
+                    <div class="row">
+                        <div class="col-sm-10">
+                            <TriggerCondition :id="props.id" :name="condition.name" :operator="condition.equality"
+                                :data="condition.value" @update:name="newValue => condition.name = newValue"
+                                @update:value="newValue => condition.value = newValue"
+                                @update:operator="newValue => condition.equality = newValue">
+                            </TriggerCondition>
+                        </div>
+                        <div class="col-sm-2">
+                            <span class="fa fa-trash-alt fa-sm" @click="removeTriggerCondition(condition)">
+                            </span>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+
+        </div>
+        <!-- ACTIONS -->
+        <div class="card" v-if="actions.length > 0">
+            <div class="card-header">
+                <h5>THEN</h5>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item" v-for="( action, index ) in actions  " :item="action">
+                    <div class="row">
+                        <div class="col-sm-10">
+                            <ActionViewer :automation-id="props.id" :item="action" :edit-events="actionEvents()"
+                                @delete="deleteAction()">
+                            </ActionViewer>
+                        </div>
+                        <div class="col-sm-2">
+                            <span class="fa fa-trash-alt fa-sm" @click="deleteAction()">
+                            </span>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <!-- DELETE -->
         <!-- Conditions -->
         <!-- table-striped -->
-        <table class="table table-responsive borderless table-sm">
+        <!-- <table class="table table-responsive borderless table-sm">
             <thead>
                 <tr>
                     <th scope="col">
@@ -188,12 +231,10 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                 </tr>
             </tbody>
             <tr>
-                <!-- Actions Header -->
                 <th scope="col" v-if="actions.length > 0">
                     <h4>THEN</h4>
                 </th>
             </tr>
-            <!-- Actions -->
             <tbody v-for="(action) in actions" :item="action">
                 <tr>
                     <th>
@@ -207,6 +248,6 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                     </td>
                 </tr>
             </tbody>
-        </table>
+        </table> -->
     </div>
 </template>
