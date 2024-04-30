@@ -166,8 +166,25 @@ var automationMap = new Map([
               },
             ],
             type: "StepAction",
-          },
+          }
         },
+        {
+          name: "action",
+          conditions: [
+            {
+              name: "action",
+              value: "button_2_press_release",
+              equality: "="
+            }
+          ],
+          action: {
+            id: "0x70ac08fffefafeca",
+            friendlyname: "Attic light",
+            property: "color_temp",
+            steps: [],
+            type: "PresetRotationAction"
+          }
+        }
       ],
     },
   ],

@@ -151,7 +151,8 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
     </div>
     <div class="row" v-else>
         <!-- Conditions -->
-        <table class="table">
+        <!-- table-striped -->
+        <table class="table  table-sm">
             <thead>
                 <tr>
                     <th scope="col">
