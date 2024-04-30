@@ -125,6 +125,13 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
 }
 
 </script>
+<!-- <style>
+.borderless tr,
+.borderless td,
+.borderless th {
+    border: none !important;
+}
+</style> -->
 
 <template>
     <!-- TODO:  -->
@@ -151,7 +158,7 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
     <div class="row" v-else>
         <!-- Conditions -->
         <!-- table-striped -->
-        <table class="table  table-sm">
+        <table class="table table-responsive borderless table-sm">
             <thead>
                 <tr>
                     <th scope="col">
