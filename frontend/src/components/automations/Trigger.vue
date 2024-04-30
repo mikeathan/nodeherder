@@ -129,7 +129,6 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
 <template>
     <!-- TODO:  -->
     <!-- if automation for device exists message user else we overwrite it -->
-
     <div class="row pb-3">
 
         <div class="col">
@@ -162,7 +161,7 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                 </tr>
             </thead>
             <tr>
-                <th scope="col">
+                <th scope="col" v-if="conditions.length > 0">
                     <h4>WHEN</h4>
                 </th>
             </tr>
@@ -183,7 +182,7 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
             </tbody>
             <tr>
                 <!-- Actions Header -->
-                <th scope="col">
+                <th scope="col" v-if="actions.length > 0">
                     <h4>THEN</h4>
                 </th>
             </tr>

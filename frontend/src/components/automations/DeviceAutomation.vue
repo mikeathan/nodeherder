@@ -22,10 +22,9 @@ const automation = ref<Automation>({} as Automation)
 const selectedTrigger = ref<AutomationTrigger>();
 
 const buttonPanelItems = computed(() => {
-    //const property = selectedTrigger.value?.name != '';
+
     const isActionValid = automation.value.triggers.length == 0 &&
         automation.value.triggers.filter(k => k.action != null).length == automation.value.triggers.length;
-
     return createSaveDeleteCancelButtonItems(
         () => saveAutomation(),
         () => deleteAutomation(),
