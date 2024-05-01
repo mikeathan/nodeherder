@@ -115,13 +115,15 @@ function deviceSelected(deviceId: string, friendlyName: string) {
 <template>
   <!-- Edit mode -->
   <!-- action controls -->
-  <div class="row pb-3">
+  <div class="row">
     <ButtonPanel :buttons="buttonPanelItems">
       <Dropdown :items="dropdownItems" class-name="btn-light" :disabled="action.id == ''">
         Add Operation
       </Dropdown>
     </ButtonPanel>
   </div>
+
+  <h5>Step Action</h5>
 
   <!-- device select box  -->
   <div class="row pb-2">

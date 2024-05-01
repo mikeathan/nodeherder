@@ -113,14 +113,16 @@ function removeAction() {
 </script>
 
 <template>
-  <div class="row pb-3">
+  <div class="row pb-2">
     <ButtonPanel :buttons="buttonPanelItems">
       <Dropdown :items="dropdownItems" class-name="btn-light" :disabled="action.id == ''">
         Add Operation
       </Dropdown>
-
     </ButtonPanel>
   </div>
+
+  <h5>Trigger Action</h5>
+
   <div class="row pb-2">
     <DeviceSelector label="Device to trigger" :id="action.id" @updated="deviceSelected"
       :filter="featureDevicesFilter()">
