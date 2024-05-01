@@ -123,6 +123,7 @@ select.form-select {
     border-radius: 0%;
     border-bottom: 1px solid white;
     text-align: left;
+    background-color: transparent;
     background-image: none;
 }
 
