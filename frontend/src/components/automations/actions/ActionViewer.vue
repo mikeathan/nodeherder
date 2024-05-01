@@ -100,7 +100,7 @@ function createActionEditorOpenPanelEvent(action: AutomationTriggerAction): Open
 <template>
     <div class="row">
         <div class=" col-sm-11" @click="openEditor()">
-            <div class="card" style="width: 20rem;">
+            <div class="card" style="width: auto">
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item" v-for="item in actionView">
                         {{ item }}
