@@ -159,17 +159,25 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
             </div>
             <ul class="list-group list-group-flush">
                 <li class="list-group-item" v-for="( condition, index ) in conditions  " :item="condition">
-                    <div class="row">
-                        <div class="col-sm-10">
-                            <TriggerCondition :id="props.id" :name="condition.name" :operator="condition.equality"
-                                :data="condition.value" @update:name="newValue => condition.name = newValue"
-                                @update:value="newValue => condition.value = newValue"
-                                @update:operator="newValue => condition.equality = newValue">
-                            </TriggerCondition>
-                        </div>
-                        <div class="col-sm-2">
-                            <span class="fa fa-trash-alt fa-sm" @click="removeTriggerCondition(condition)">
-                            </span>
+                    <div class="container">
+
+                        <div class="row">
+                            <div class="col-md-11 col-sm-8">
+                                <TriggerCondition :id="props.id" :name="condition.name" :operator="condition.equality"
+                                    :data="condition.value" @update:name="newValue => condition.name = newValue"
+                                    @update:value="newValue => condition.value = newValue"
+                                    @update:operator="newValue => condition.equality = newValue">
+                                </TriggerCondition>
+                            </div>
+                            <div class="col-md-1 col-sm-8">
+                                <button type="button" class="w-100 btn btn-md btn-primary">
+                                    <span class="fa fa-trash-alt fa-sm" @click="deleteAction()">
+                                    </span>
+                                </button>
+
+                                <!-- <span class="fa fa-trash-alt fa-sm" @click="removeTriggerCondition(condition)">
+                                </span> -->
+                            </div>
                         </div>
                     </div>
                 </li>
@@ -183,15 +191,21 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
             </div>
             <ul class="list-group list-group-flush">
                 <li class="list-group-item" v-for="( action, index ) in actions  " :item="action">
-                    <div class="row">
-                        <div class="col-sm-10">
-                            <ActionViewer :automation-id="props.id" :item="action" :edit-events="actionEvents()"
-                                @delete="deleteAction()">
-                            </ActionViewer>
-                        </div>
-                        <div class="col-sm-2">
-                            <span class="fa fa-trash-alt fa-sm" @click="deleteAction()">
-                            </span>
+                    <div class="container">
+                        <div class="row">
+                            <div class="col-md-11 col-sm-11">
+                                <ActionViewer :automation-id="props.id" :item="action" :edit-events="actionEvents()"
+                                    @delete="deleteAction()">
+                                </ActionViewer>
+                            </div>
+                            <div class="col-md-1 col-sm-1">
+                                <button type="button" class="w-100 btn btn-md btn-primary">
+                                    <span class="fa fa-trash-alt fa-sm" @click="deleteAction()">
+                                    </span>
+                                </button>
+                                <!-- <span class="fa fa-trash-alt fa-sm" @click="deleteAction()">
+                                </span> -->
+                            </div>
                         </div>
                     </div>
                 </li>
