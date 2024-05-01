@@ -169,11 +169,13 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                                     @update:operator="newValue => condition.equality = newValue">
                                 </TriggerCondition>
                             </div>
-                            <div class="col-md-1 col-sm-8">
-                                <button type="button" class="w-100 btn btn-md btn-primary">
-                                    <span class="fa fa-trash-alt fa-sm" @click="deleteAction()">
-                                    </span>
-                                </button>
+                            <div class=" col-md-1 col-sm-5">
+                                <div class="d-grid d-md-auto">
+                                    <a class="btn btn-sm  btn-light " role="button">
+                                        <span class="fa fa-trash-alt fa-sm"
+                                            @click="removeTriggerCondition(condition)"></span>
+                                    </a>
+                                </div>
 
                                 <!-- <span class="fa fa-trash-alt fa-sm" @click="removeTriggerCondition(condition)">
                                 </span> -->
@@ -199,10 +201,12 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                                 </ActionViewer>
                             </div>
                             <div class="col-md-1 col-sm-1">
-                                <button type="button" class="w-100 btn btn-md btn-primary">
-                                    <span class="fa fa-trash-alt fa-sm" @click="deleteAction()">
-                                    </span>
-                                </button>
+
+                                <div class="d-grid d-md-block">
+                                    <a class="btn btn-sm  btn-light " role="button">
+                                        <span class="fa fa-trash-alt fa-sm" @click="deleteAction()"></span>
+                                    </a>
+                                </div>
                                 <!-- <span class="fa fa-trash-alt fa-sm" @click="deleteAction()">
                                 </span> -->
                             </div>
