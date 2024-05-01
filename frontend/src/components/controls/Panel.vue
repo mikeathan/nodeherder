@@ -86,6 +86,7 @@ onUnmounted(() => {
 
 <template>
     <div class="row">
+        <!-- btn btn-sm btn-light  -->
         <button type="button" class="btn-close" aria-label="Close" @click="closeComponent(currentComponent)"></button>
         <div class="col">
             <component :is="PanelComponents[currentComponent]" v-bind="componentCache[currentComponent].args"

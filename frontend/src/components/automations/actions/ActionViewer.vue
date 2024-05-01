@@ -57,7 +57,7 @@ const actionView = computed(() => {
                 stepValue += currentAction.value.data
                 return [
                     `SET ${currentAction.value.friendlyname} ${currentAction.value.property}`,
-                    `STEP ${stepValue}`
+                    `STEP (${stepValue})`
                 ]
         }
     }

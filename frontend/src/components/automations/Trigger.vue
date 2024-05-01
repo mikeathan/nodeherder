@@ -6,14 +6,14 @@ import Dropdown from "../controls/Dropdown.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
 import { AutomationTrigger, AutomationTriggerAction, AutomationTriggerCondition, AutomationTriggerConditions } from "@/types/automation";
-import { isValid, EditableTriggerCondition, EditableActionTrigger, AutomationActionTypes, ActionType, getActionType } from "../../contracts/automations"
+import { isValid, EditableTriggerCondition, EditableActionTrigger, ActionType } from "../../contracts/automations"
 import { capitalizeText } from "../../modules/formatters/text.formatter";
 import { EventActions, OpenPanelEvent } from "@/types/events.type";
 import { emitClosePanel, emitOpenPanel } from "@/mixins/useAutomationsEventBus";
 import ActionViewer from "./actions/ActionViewer.vue";
 import ButtonPanel from "@/components/controls/ButtonPanel.vue";
+import { createButtons, createNewActionDropdownItems } from "../../configs/automation/trigger-dropdown.config";
 
-import { createButtons, createNewActionDropdownItems, createSaveDeleteButtonItems } from "../../configs/automation/trigger-dropdown.config";
 const props = defineProps({
     id: { type: String },
     trigger: { type: Object as PropType<AutomationTrigger>, default: {} as AutomationTrigger },
@@ -160,25 +160,19 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
             <ul class="list-group list-group-flush">
                 <li class="list-group-item" v-for="( condition, index ) in conditions  " :item="condition">
                     <div class="container">
-
                         <div class="row">
-                            <div class="col-md-11 col-sm-8">
+                            <div class="col-md-11 col-sm-6">
                                 <TriggerCondition :id="props.id" :name="condition.name" :operator="condition.equality"
                                     :data="condition.value" @update:name="newValue => condition.name = newValue"
                                     @update:value="newValue => condition.value = newValue"
                                     @update:operator="newValue => condition.equality = newValue">
                                 </TriggerCondition>
                             </div>
-                            <div class=" col-md-1 col-sm-5">
-                                <div class="d-grid d-md-auto">
-                                    <a class="btn btn-sm  btn-light " role="button">
-                                        <span class="fa fa-trash-alt fa-sm"
-                                            @click="removeTriggerCondition(condition)"></span>
-                                    </a>
-                                </div>
-
-                                <!-- <span class="fa fa-trash-alt fa-sm" @click="removeTriggerCondition(condition)">
-                                </span> -->
+                            <div class=" col-md-1 col-sm-6">
+                                <a class="btn btn-sm btn-light" role="button">
+                                    <span class="fa fa-trash-alt fa-sm"
+                                        @click="removeTriggerCondition(condition)"></span>
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -201,71 +195,14 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                                 </ActionViewer>
                             </div>
                             <div class="col-md-1 col-sm-1">
-
-                                <div class="d-grid d-md-block">
-                                    <a class="btn btn-sm  btn-light " role="button">
-                                        <span class="fa fa-trash-alt fa-sm" @click="deleteAction()"></span>
-                                    </a>
-                                </div>
-                                <!-- <span class="fa fa-trash-alt fa-sm" @click="deleteAction()">
-                                </span> -->
+                                <a class="btn btn-sm  btn-light " role="button">
+                                    <span class="fa fa-trash-alt fa-sm" @click="deleteAction()"></span>
+                                </a>
                             </div>
                         </div>
                     </div>
                 </li>
             </ul>
         </div>
-
-        <!-- DELETE -->
-        <!-- Conditions -->
-        <!-- table-striped -->
-        <!-- <table class="table table-responsive borderless table-sm">
-            <thead>
-                <tr>
-                    <th scope="col">
-                        Trigger for {{ capitalizeText(trigger.name) }}
-                    </th>
-                    <th scope="col">#</th>
-                </tr>
-            </thead>
-            <tr>
-                <th scope="col" v-if="conditions.length > 0">
-                    <h4>WHEN</h4>
-                </th>
-            </tr>
-            <tbody v-for="( condition, index ) in conditions  " :item="condition">
-                <tr>
-                    <th scope="w-25">
-                        <TriggerCondition :id="props.id" :name="condition.name" :operator="condition.equality"
-                            :data="condition.value" @update:name="newValue => condition.name = newValue"
-                            @update:value="newValue => condition.value = newValue"
-                            @update:operator="newValue => condition.equality = newValue">
-                        </TriggerCondition>
-                    </th>
-                    <td>
-                        <span class="fa fa-trash-alt fa-sm" @click="removeTriggerCondition(condition)">
-                        </span>
-                    </td>
-                </tr>
-            </tbody>
-            <tr>
-                <th scope="col" v-if="actions.length > 0">
-                    <h4>THEN</h4>
-                </th>
-            </tr>
-            <tbody v-for="(action) in actions" :item="action">
-                <tr>
-                    <th>
-                        <ActionViewer :automation-id="props.id" :item="action" :edit-events="actionEvents()"
-                            @delete="deleteAction()">
-                        </ActionViewer>
-                    </th>
-                    <td>
-                        <span class="fa fa-trash-alt fa-sm" @click="deleteAction()">
-                        </span>
-                    </td>
-                </tr>
-            </tbody>
-        </table> -->
     </div>
 </template>
