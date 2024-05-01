@@ -112,7 +112,7 @@ const exposeOperators = computed(() => {
     <div class="row">
         <div class="col-sm-4">
             <ExposeSelector :id="props.id" :value="name" @updated="exposeSelected" :filter="allExposeFilter()"
-                :disabled="name != ''" position="left">
+                :disabled="name != ''" position="center">
             </ExposeSelector>
         </div>
         <div class="col-sm-3">
