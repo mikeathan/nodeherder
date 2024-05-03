@@ -9,7 +9,7 @@ import { AutomationTrigger, AutomationTriggerAction, AutomationTriggerCondition,
 import { isValid, EditableTriggerCondition, EditableActionTrigger, ActionType } from "../../contracts/automations"
 import { capitalizeText } from "../../modules/formatters/text.formatter";
 import { EventActions, OpenPanelEvent } from "@/types/events.type";
-import { emitClosePanel, emitOpenPanel } from "@/mixins/useAutomationsEventBus";
+import { emitCloseLastPanel, emitClosePanel, emitOpenPanel } from "@/mixins/useAutomationsEventBus";
 import ActionViewer from "./actions/ActionViewer.vue";
 import ButtonPanel from "@/components/controls/ButtonPanel.vue";
 import { createButtons, createNewActionDropdownItems } from "../../configs/automation/trigger-dropdown.config";
@@ -91,6 +91,9 @@ function removeTriggerCondition(condition: AutomationTriggerCondition) {
 
 const exposesList = computed(() => {
     const device = store.getters["devices/find"](props.id) as Device;
+    if (device == null) {
+        return [];
+    }
     return Object.assign({}, ...Object
         .values(device.exposes)
         .map((e) => ({ [e.name]: e.name })))
@@ -169,10 +172,13 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                                 </TriggerCondition>
                             </div>
                             <div class=" col-md-1 col-sm-6">
-                                <a class="btn btn-sm btn-light" role="button">
-                                    <span class="fa fa-trash-alt fa-sm"
-                                        @click="removeTriggerCondition(condition)"></span>
-                                </a>
+                                <div class="d-grid d-md-auto">
+
+                                    <a class="btn btn-sm btn-light" role="button">
+                                        <span class="fa fa-trash-alt fa-sm"
+                                            @click="removeTriggerCondition(condition)"></span>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -195,9 +201,12 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                                 </ActionViewer>
                             </div>
                             <div class="col-md-1 col-sm-1">
-                                <a class="btn btn-sm  btn-light " role="button">
-                                    <span class="fa fa-trash-alt fa-sm" @click="deleteAction()"></span>
-                                </a>
+                                <div class="d-grid d-md-auto">
+
+                                    <a class="btn btn-sm  btn-light " role="button">
+                                        <span class="fa fa-trash-alt fa-sm" @click="deleteAction()"></span>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>

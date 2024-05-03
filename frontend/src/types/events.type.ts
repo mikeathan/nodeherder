@@ -12,4 +12,5 @@ export type OpenPanelEvent = {
 export type Events = {
   openPanel: OpenPanelEvent;
   closePanel: string;
+  closeLastPanel: void;
 };

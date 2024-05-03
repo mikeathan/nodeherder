@@ -10,6 +10,7 @@ import Panel from "../controls/Panel.vue";
 import { EventActions, OpenPanelEvent } from "@/types/events.type";
 import ButtonPanel from "@/components/controls/ButtonPanel.vue";
 import { createSaveDeleteCancelButtonItems } from "../../configs/automation/trigger-dropdown.config";
+import { emitCloseLastPanel } from "@/mixins/useAutomationsEventBus";
 
 const emit = defineEmits(['cancel'])
 
@@ -132,6 +133,10 @@ const panelItem = computed(() => {
 });
 
 
+function createCloseLastPanelEvent() {
+    emitCloseLastPanel();
+}
+
 function createOpenPanelEvent(): OpenPanelEvent {
 
     const events: EventActions = {
@@ -151,33 +156,34 @@ function createOpenPanelEvent(): OpenPanelEvent {
 
 <template>
     <div v-if="automation">
+
         <div class="container-fluid p-0 h-100">
             <div class="card col-xl-5 col-md-6 col-sm-3">
-                <div class="card-header ">
-                    <div class="pt-3 ">
-                        <InputBox label="Id" :disabled="true" :value="automation.id">
-                        </InputBox>
-                    </div>
-                    <div class="pt-3 ">
-                        <InputBox label="Friendly Name" :disabled="true" :value="automation.friendlyname">
-                        </InputBox>
-                    </div>
-                    <div class="pt-3  pb-4">
-                        <InputBox label="Description" @updated="(v) => automation.description = v"
-                            :value="automation.description">
-                        </InputBox>
-                    </div>
-                    <div class="pb-3">
-                        <div class=" form-check form-switch ms-2">
-                            <label class="form-check-label ms-3">Enabled</label>
-                            <input class="form-check-input custom-control-input" type="checkbox" role="switch"
-                                id="flexSwitchCheckDefault" v-model="automation.enabled">
+                <div v-if="selectedTrigger == null">
+                    <div class="card-header ">
+                        <div class="pt-3 ">
+                            <InputBox label="Id" :disabled="true" :value="automation.id">
+                            </InputBox>
+                        </div>
+                        <div class="pt-3 ">
+                            <InputBox label="Friendly Name" :disabled="true" :value="automation.friendlyname">
+                            </InputBox>
+                        </div>
+                        <div class="pt-3  pb-4">
+                            <InputBox label="Description" @updated="(v) => automation.description = v"
+                                :value="automation.description">
+                            </InputBox>
+                        </div>
+                        <div class="pb-3">
+                            <div class=" form-check form-switch ms-2">
+                                <label class="form-check-label ms-3">Enabled</label>
+                                <input class="form-check-input custom-control-input" type="checkbox" role="switch"
+                                    id="flexSwitchCheckDefault" v-model="automation.enabled">
+                            </div>
                         </div>
                     </div>
-                </div>
+                    <div class="card-body ">
 
-                <div class="card-body ">
-                    <div v-if="selectedTrigger == null">
                         <ButtonPanel :buttons="buttonPanelItems"></ButtonPanel>
 
                         <table class="table responsive table-hover ">
@@ -215,17 +221,15 @@ function createOpenPanelEvent(): OpenPanelEvent {
                             </tbody>
                         </table>
                     </div>
-
-                    <div v-else class="row">
-                        <!-- <button type="button" class="btn-close" aria-label="Close"
-                            @click="() => showTriggerCreation = false"></button> -->
-                        <!-- <div class="col"> -->
-
+                </div>
+                <div v-else>
+                    <div class="card-body ">
+                        <button type="button" class="btn btn-close btn-sm float-end" aria-label="Close"
+                            @click="createCloseLastPanelEvent"></button>
                         <Panel :item="panelItem" @close="resetSelection">
                         </Panel>
                     </div>
                 </div>
-
 
             </div>
         </div>

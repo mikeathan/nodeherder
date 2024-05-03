@@ -17,6 +17,10 @@ export function emitOpenPanel(event: OpenPanelEvent) {
   automationEventBus.emit("openPanel", event);
 }
 
+export function emitCloseLastPanel() {
+  automationEventBus.emit("closeLastPanel");
+}
+
 export function useAutomationEvents(handlers: EventHandlers<Events>) {
   const keys = Object.keys(handlers) as Array<keyof Events>;
   for (const key of keys) {

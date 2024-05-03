@@ -12,6 +12,9 @@ const cleanup = useAutomationEvents({
     closePanel(name: string) {
         closeComponent(name)
     },
+    closeLastPanel() {
+        closeLastComponent()
+    },
 })
 
 const emit = defineEmits<{
@@ -74,6 +77,16 @@ function closeComponent(name: string): void {
 }
 
 
+function closeLastComponent(): void {
+    console.log('panel close 2 clicked');
+
+    // TODO: cleanup componentCache ?
+    presentationQueue.value.pop();
+
+    if (presentationQueue.value.length == 0) {
+        emit('close');
+    }
+}
 onUnmounted(() => {
     console.log("Panel unmounted - deregister eventBus messages")
     cleanup();
@@ -85,12 +98,19 @@ onUnmounted(() => {
 </script>
 
 <template>
+    <!-- <div class="row">
+        Close Child
+        <button type="button" class="btn btn-close btn-sm" aria-label="Close"
+            @click="closeComponent(currentComponent)"></button>
+    </div> -->
     <div class="row">
         <!-- btn btn-sm btn-light  -->
-        <button type="button" class="btn-close" aria-label="Close" @click="closeComponent(currentComponent)"></button>
-        <div class="col">
+
+        <div class="col-md-11">
+
             <component :is="PanelComponents[currentComponent]" v-bind="componentCache[currentComponent].args"
                 v-on="componentCache[currentComponent].events" />
         </div>
+
     </div>
 </template>
