@@ -35,7 +35,7 @@
         "friendlyname": "Living Room",
         "property": "brightness",
         "type": "StepAction",
-        "data": 1,
+        "data": 0.5,
         "steps": [
           {
             "property": "brightness",
@@ -64,7 +64,7 @@
         "friendlyname": "Living Room",
         "property": "brightness",
         "type": "StepAction",
-        "data": 2,
+        "data": 1,
         "steps": [
           {
             "property": "brightness",
@@ -93,7 +93,7 @@
         "friendlyname": "Living Room",
         "property": "brightness",
         "type": "StepAction",
-        "data": 1,
+        "data": 0.5,
         "steps": [
           {
             "property": "brightness",
@@ -122,7 +122,7 @@
         "friendlyname": "Living Room",
         "property": "brightness",
         "type": "StepAction",
-        "data": 2,
+        "data": 1,
         "steps": [
           {
             "property": "brightness",
