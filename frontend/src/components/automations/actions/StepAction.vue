@@ -141,33 +141,45 @@ function deviceSelected(deviceId: string, friendlyName: string) {
   </div>
 
   <!-- Steps -->
-  <div v-if="action.steps.length > 0" class="row pt-3">
-    <h5>Operations</h5>
-    <div class="row" v-for="step in action.steps">
-
-      <div class="col-sm-2">
-        <Selection :value="step.operator" :items="NumericOperators" @updated="o => step.operator = o">
-        </Selection>
-      </div>
-
-      <!-- step id  -->
-      <div class="col col-xl-4" v-if="step.id == ''">
-        <DeviceSelector @updated="(id, name) => stepDeviceSelected(id, name, step)"
-          :filter="devicesFilterByActionStep(props.automationId, action, step)"></DeviceSelector>
-      </div>
-      <div v-else class="col-xl-3">
-        {{ deviceNameFromId(step) }}
-      </div>
-
-
-      <!-- step property -->
-      <div class="col col-xl-6">
-        <ExposeSelector :id="step.id" @updated="(v) => stepPropertySelected(v, step)" :value="step.property"
-          :filter="exposeFilterByType(ExposeTypes.Numeric)" position="center"></ExposeSelector>
-      </div>
-      <div class="col-xl-1">
-        <span class="fa fa-trash-alt fa-sm" @click="removeStep(step)"> </span>
-      </div>
+  <div v-if="action.steps.length > 0" class="card">
+    <div class="card-header">
+      <h5>Operations</h5>
+    </div>
+    <div class="card-body">
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item" v-for="step in action.steps">
+          <div class="container">
+            <div class="row">
+              <div class="col-sm-2">
+                <Selection :value="step.operator" :items="NumericOperators" @updated="o => step.operator = o">
+                </Selection>
+              </div>
+              <!-- step id  -->
+              <div class="col col-xl-4" v-if="step.id == ''">
+                <DeviceSelector @updated="(id, name) => stepDeviceSelected(id, name, step)"
+                  :filter="devicesFilterByActionStep(props.automationId, action, step)"></DeviceSelector>
+              </div>
+              <div v-else class="col-xl-3">
+                {{ deviceNameFromId(step) }}
+              </div>
+              <!-- step property -->
+              <div class="col col-xl-6">
+                <ExposeSelector :id="step.id" @updated="(v) => stepPropertySelected(v, step)" :value="step.property"
+                  :filter="exposeFilterByType(ExposeTypes.Numeric)" position="center"></ExposeSelector>
+              </div>
+              <div class="col-xl-1">
+                <div class="col-md-1 col-sm-1">
+                  <div class="d-grid d-md-auto">
+                    <a class="btn btn-sm  btn-light " role="button">
+                      <span class="fa fa-trash-alt fa-sm" @click="removeStep(step)"></span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li>
+      </ul>
     </div>
   </div>
 </template>
