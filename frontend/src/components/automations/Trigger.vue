@@ -202,7 +202,6 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                             </div>
                             <div class="col-md-1 col-sm-1">
                                 <div class="d-grid d-md-auto">
-
                                     <a class="btn btn-sm  btn-light " role="button">
                                         <span class="fa fa-trash-alt fa-sm" @click="deleteAction()"></span>
                                     </a>
