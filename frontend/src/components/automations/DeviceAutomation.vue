@@ -223,7 +223,7 @@ function createOpenPanelEvent(): OpenPanelEvent {
                     </div>
                 </div>
                 <div v-else>
-                    <div class="card-body ">
+                    <div class="card-body">
                         <button type="button" class="btn btn-close btn-sm float-end" aria-label="Close"
                             @click="createCloseLastPanelEvent"></button>
                         <Panel :item="panelItem" @close="resetSelection">
