@@ -6,7 +6,7 @@ build_backend:
 
 build_frontend:
 	echo "Building node-herder frontend"
-	cd ../frontend/; rm -fe dist/; npm run build
+	cd ../frontend/; rm -fe dist/; npm i; npm run build
 
 run:
 	./nodeherder
