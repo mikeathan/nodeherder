@@ -2,7 +2,7 @@ node-herder:
 
 build_backend:
 	echo "Building node-herder backend"
-	rm ./nodeherder; cd core/;  go build -o nodeherder  main.go
+	rm ./nodeherder;  go build -o nodeherder  main.go
 
 build_frontend:
 	echo "Building node-herder frontend"
