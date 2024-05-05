@@ -11,6 +11,7 @@ require (
 
 require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
+	github.com/nakabonne/tstorage v0.3.6 // indirect
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect

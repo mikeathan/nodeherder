@@ -77,6 +77,7 @@ TODO:
 
 ## frontend
 
-- add type in device.expose for http data
+- add card control for automations
+- add type in device.expose for http data ?
 - add functionality to enable/disalbe a trigger
 - add log window in frontend
