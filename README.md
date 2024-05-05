@@ -97,3 +97,8 @@ note:
 - allow/disalow device to be captured
 
 - store bridge data ? but overide if we do. no point keeping old
+
+SQLITE
+store
+bridge
+device
