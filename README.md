@@ -81,3 +81,19 @@ TODO:
 - add type in device.expose for http data ?
 - add functionality to enable/disalbe a trigger
 - add log window in frontend
+
+## storage
+
+2 types of storage,
+metrics for charts
+storage for retrieveing later
+maybe 2 types of repositories to hande above
+note:
+
+- device can have multiple sensors that trigger every second
+- we dont want to store every second (timeout ?)
+- dev1 (temp, humidity, co2)
+- dev2 (button press 1, button rotate)
+- allow/disalow device to be captured
+
+- store bridge data ? but overide if we do. no point keeping old
