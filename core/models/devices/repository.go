@@ -1,5 +1,7 @@
 package devices
 
+import "time"
+
 // this is going to be DeviceRepository
 type Repository interface {
 	AllDevices() []*Device
@@ -10,5 +12,6 @@ type Repository interface {
 
 type MetricsRepository interface {
 	Store(device *Device) error
+	ViewTimeRange(deviceId string, from time.Time, to time.Time) error
 	Close()
 }

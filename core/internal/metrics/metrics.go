@@ -13,7 +13,7 @@ import (
 	"github.com/boltdb/bolt"
 )
 
-const filename = "metrics.db"
+const baseFilename = "metrics.db"
 
 type MetricsRepo struct {
 	store map[string]*devices.Device
@@ -21,7 +21,7 @@ type MetricsRepo struct {
 	db    *bolt.DB
 }
 
-func NewMetricsRepo() (devices.MetricsRepository, error) {
+func NewMetricsRepo(filename string) (devices.MetricsRepository, error) {
 
 	db, err := bolt.Open(filename, 0600, nil)
 	if err != nil {
@@ -75,7 +75,7 @@ func (s *MetricsRepo) Store(device *devices.Device) error {
 	return nil
 }
 
-func (s *MetricsRepo) ViewRange(device *devices.Device, from time.Time, to time.Time) error {
+func (s *MetricsRepo) ViewTimeRange(deviceId string, from time.Time, to time.Time) error {
 
 	return s.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte("metrics")).Cursor()
@@ -83,11 +83,11 @@ func (s *MetricsRepo) ViewRange(device *devices.Device, from time.Time, to time.
 			return bolt.ErrBucketNotFound
 		}
 
-		fromKey := createKeyWithTimestamp(device, from)
-		tokey := createKeyWithTimestamp(device, to)
+		fromKey := createKeyWithTimestamp(deviceId, from)
+		tokey := createKeyWithTimestamp(deviceId, to)
 
 		for k, v := bucket.Seek(fromKey); k != nil && bytes.Compare(k, tokey) <= 0; k, v = bucket.Next() {
-			fmt.Println(string(k), string(v))
+			fmt.Println(string(v))
 
 			// var point SensorData
 			// 	if err := json.Unmarshal(v, &point); err != nil {
@@ -100,10 +100,10 @@ func (s *MetricsRepo) ViewRange(device *devices.Device, from time.Time, to time.
 	})
 }
 
-func createKeyWithTimestamp(device *devices.Device, timestamp time.Time) []byte {
+func createKeyWithTimestamp(id string, timestamp time.Time) []byte {
 
 	buffer := bytes.NewBuffer(nil)
-	binary.Write(buffer, binary.BigEndian, []byte(device.Id))
+	binary.Write(buffer, binary.BigEndian, []byte(id))
 	binary.Write(buffer, binary.BigEndian, timestamp.UnixMilli())
 
 	// Add a separator byte
@@ -120,7 +120,7 @@ func createKeyFromDevice(device *devices.Device) []byte {
 		lastSeen = time.Now()
 	}
 
-	return createKeyWithTimestamp(device, lastSeen)
+	return createKeyWithTimestamp(device.Id, lastSeen)
 }
 
 // // Paginate entries

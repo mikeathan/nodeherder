@@ -2,22 +2,35 @@ package metrics_test
 
 import (
 	"fmt"
+	"io/ioutil"
 	"node-herder/internal/metrics"
 	"node-herder/models/devices"
+	"os"
 	"testing"
 	"time"
 )
 
 func TestMetrics(t *testing.T) {
 
-	repo, err := metrics.NewMetricsRepo()
+	tempfile := tempfile()
+	defer os.Remove(tempfile)
+
+	repo, err := metrics.NewMetricsRepo(tempfile)
 	if err != nil {
-		t.Errorf("failed to initialise metrics repo", err.Error())
+		t.Error("failed to initialise metrics repo", err.Error())
 	}
+
 	for i := 0; i < 2; i++ {
-		dev := createMockDevice(fmt.Sprintf("x000%v", i), fmt.Sprintf("device %v", i), time.Now().Add(-(time.Second * 2)), i*2)
+		dev := createMockDevice(fmt.Sprintf("x000%v", i), fmt.Sprintf("device %v", i), time.Now().Add(-(time.Second * 10)), i*2)
+		repo.Store(dev)
+
+		dev = createMockDevice(fmt.Sprintf("x000%v", i), fmt.Sprintf("device %v", i), time.Now().Add(-(time.Second * 50)), i*2)
 		repo.Store(dev)
 	}
+
+	id := fmt.Sprintf("x000%v", 0)
+	repo.ViewTimeRange(id, time.Now().Add(-(time.Minute * 1)), time.Now())
+
 }
 
 func createMockDevice(id string, name string, timestamp time.Time, data any) *devices.Device {
@@ -45,4 +58,18 @@ func createMockDevice(id string, name string, timestamp time.Time, data any) *de
 	device1.Exposes[property].Attributes["min"] = 0.0
 	device1.Exposes[property].Attributes["max"] = 255.0
 	return device1
+}
+
+func tempfile() string {
+	f, err := ioutil.TempFile("", "bolt-")
+	if err != nil {
+		panic(err)
+	}
+	if err := f.Close(); err != nil {
+		panic(err)
+	}
+	if err := os.Remove(f.Name()); err != nil {
+		panic(err)
+	}
+	return f.Name()
 }
