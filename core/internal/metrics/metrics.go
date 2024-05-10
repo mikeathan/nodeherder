@@ -1,4 +1,4 @@
-package repository
+package metrics
 
 import (
 	"bytes"
@@ -49,7 +49,7 @@ func (s *MetricsRepo) Close() {
 // timestamp
 // key
 // data
-func (s *MetricsRepo) Store(key string, device *devices.Device) error {
+func (s *MetricsRepo) Store(device *devices.Device) error {
 
 	defer s.mutex.Unlock()
 	s.mutex.Lock()

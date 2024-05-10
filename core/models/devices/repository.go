@@ -9,6 +9,6 @@ type Repository interface {
 }
 
 type MetricsRepository interface {
-	Store(key string, device *Device) error
+	Store(device *Device) error
 	Close()
 }
