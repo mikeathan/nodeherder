@@ -62,14 +62,29 @@ func (s *MetricsRepo) Store(device *devices.Device) error {
 
 		// This returns an error only if the Tx is closed or not writeable.
 		// That can't happen in an Update() call so I ignore the error check.
-		bucket.NextSequence()
+		//bucket.NextSequence()
+
+		// for _, expose := range device.Exposes {
+		// 	buf, err := json.Marshal(expose.Data)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+
+		// 	key := createKeyFromDevice(device.Id, device)
+
+		// 	err = bucket.Put(key, buf)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// }
 
 		buf, err := json.Marshal(device)
 		if err != nil {
 			return err
 		}
 
-		return bucket.Put(createKeyFromDevice(device), buf)
+		key := createKeyFromDevice(device.Id, device)
+		return bucket.Put(key, buf)
 	})
 
 	return nil
@@ -87,7 +102,7 @@ func (s *MetricsRepo) ViewTimeRange(deviceId string, from time.Time, to time.Tim
 		tokey := createKeyWithTimestamp(deviceId, to)
 
 		for k, v := bucket.Seek(fromKey); k != nil && bytes.Compare(k, tokey) <= 0; k, v = bucket.Next() {
-			fmt.Println(string(v))
+			fmt.Println("found:", string(v))
 
 			// var point SensorData
 			// 	if err := json.Unmarshal(v, &point); err != nil {
@@ -112,7 +127,7 @@ func createKeyWithTimestamp(id string, timestamp time.Time) []byte {
 	return buffer.Bytes()
 }
 
-func createKeyFromDevice(device *devices.Device) []byte {
+func createKeyFromDevice(id string, device *devices.Device) []byte {
 
 	lastSeenStr, _ := device.Properties["last_seen"].(string)
 	lastSeen, err := time.Parse(time.RFC3339, lastSeenStr)
@@ -120,7 +135,7 @@ func createKeyFromDevice(device *devices.Device) []byte {
 		lastSeen = time.Now()
 	}
 
-	return createKeyWithTimestamp(device.Id, lastSeen)
+	return createKeyWithTimestamp(id, lastSeen)
 }
 
 // // Paginate entries

@@ -22,14 +22,22 @@ func TestMetrics(t *testing.T) {
 
 	for i := 0; i < 2; i++ {
 		dev := createMockDevice(fmt.Sprintf("x000%v", i), fmt.Sprintf("device %v", i), time.Now().Add(-(time.Second * 10)), i*2)
-		repo.Store(dev)
-
+		err = repo.Store(dev)
+		if err != nil {
+			t.Error("failed to store metrics ", err.Error())
+		}
 		dev = createMockDevice(fmt.Sprintf("x000%v", i), fmt.Sprintf("device %v", i), time.Now().Add(-(time.Second * 50)), i*2)
-		repo.Store(dev)
+		err = repo.Store(dev)
+		if err != nil {
+			t.Error("failed to store metrics ", err.Error())
+		}
 	}
 
 	id := fmt.Sprintf("x000%v", 0)
-	repo.ViewTimeRange(id, time.Now().Add(-(time.Minute * 1)), time.Now())
+	err = repo.ViewTimeRange(id, time.Now().Add(-(time.Minute * 20)), time.Now())
+	if err != nil {
+		t.Error("failed to query metrics ", err.Error())
+	}
 
 }
 
@@ -41,7 +49,7 @@ func createMockDevice(id string, name string, timestamp time.Time, data any) *de
 	device1.Description = fmt.Sprintf("Test device %s description", id)
 	device1.PowerSource = "mains"
 	device1.Properties = map[string]any{}
-	device1.Properties["last_seen"] = timestamp
+	device1.Properties["last_seen"] = timestamp.Format(time.RFC3339)
 	device1.Properties["link_quality"] = 45.0
 	device1.Exposes = make(map[string]*devices.Entity)
 
