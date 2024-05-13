@@ -60,23 +60,28 @@ func (s *MetricsRepo) Store(device *devices.Device) error {
 			return err
 		}
 
+		bucket, err = bucket.CreateBucketIfNotExists([]byte(device.Id))
+		if err != nil {
+			return err
+		}
+
 		// This returns an error only if the Tx is closed or not writeable.
 		// That can't happen in an Update() call so I ignore the error check.
 		//bucket.NextSequence()
 
-		// for _, expose := range device.Exposes {
-		// 	buf, err := json.Marshal(expose.Data)
-		// 	if err != nil {
-		// 		return err
-		// 	}
+		for _, expose := range device.Exposes {
+			buf, err := json.Marshal(expose.Data)
+			if err != nil {
+				return err
+			}
 
-		// 	key := createKeyFromDevice(device.Id, device)
+			key := createKeyFromDevice(expose.Name, device)
 
-		// 	err = bucket.Put(key, buf)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// }
+			err = bucket.Put(key, buf)
+			if err != nil {
+				return err
+			}
+		}
 
 		buf, err := json.Marshal(device)
 		if err != nil {
@@ -90,26 +95,54 @@ func (s *MetricsRepo) Store(device *devices.Device) error {
 	return nil
 }
 
-func (s *MetricsRepo) ViewTimeRange(deviceId string, from time.Time, to time.Time) error {
+func (s *MetricsRepo) ViewTimeRange(device *devices.Device, from time.Time, to time.Time) error {
 
 	return s.db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte("metrics")).Cursor()
-		if bucket == nil {
+		cursor := tx.Bucket([]byte("metrics")).Bucket([]byte(device.Id)).Cursor()
+		if cursor == nil {
 			return bolt.ErrBucketNotFound
 		}
 
-		fromKey := createKeyWithTimestamp(deviceId, from)
-		tokey := createKeyWithTimestamp(deviceId, to)
+		for _, expose := range device.Exposes {
 
-		for k, v := bucket.Seek(fromKey); k != nil && bytes.Compare(k, tokey) <= 0; k, v = bucket.Next() {
-			fmt.Println("found:", string(v))
+			fromKey := createKeyWithTimestamp(expose.Name, from)
+			tokey := createKeyWithTimestamp(expose.Name, to)
+			for k, v := cursor.Seek(fromKey); k != nil && bytes.Compare(k, tokey) <= 0; k, v = cursor.Next() {
 
-			// var point SensorData
-			// 	if err := json.Unmarshal(v, &point); err != nil {
-			// 		return err
-			// 	}
-			// 	data = append(data, point)
+				if bytes.HasPrefix(k, []byte(expose.Name)) {
+					ts := k[len(expose.Name):]
+					timestamp, err := time.Parse(time.RFC3339Nano, string(ts))
+					if err != nil {
+						return err
+					}
+					fmt.Printf("propert %v data: %v  timestamp : %v \n", expose.Name, string(v), timestamp)
+				}
+
+			}
 		}
+
+		// err := bucket.Cursor().ForEach(func(k, v []byte) error {
+		// 	// Check if key starts with the property name followed by separator
+		// 	if bytes.HasPrefix(k, []byte(propertyName+":")) {
+		// 		// Extract timestamp from the key format
+		// 		timestamp, err := time.Parse(time.RFC3339Nano, string(k[len(propertyName)+1:]))
+		// 		if err != nil {
+		// 			return err
+		// 		}
+
+		// 		// Check if timestamp is within the date range
+		// 		if timestamp.After(startDate.Before(endDate)) {
+		// 			// Decode value and append to results
+		// 			var value interface{}
+		// 			err := decodeValue(v, &value)
+		// 			if err != nil {
+		// 				return err
+		// 			}
+		// 			results = append(results, value)
+		// 		}
+		// 	}
+		// 	return nil
+		// })
 
 		return nil
 	})
@@ -119,11 +152,22 @@ func createKeyWithTimestamp(id string, timestamp time.Time) []byte {
 
 	buffer := bytes.NewBuffer(nil)
 	binary.Write(buffer, binary.BigEndian, []byte(id))
-	binary.Write(buffer, binary.BigEndian, timestamp.UnixMilli())
 
-	// Add a separator byte
-	buffer.WriteByte(0)
+	timestampStr := timestamp.Format(time.RFC3339Nano)
+	binary.Write(buffer, binary.BigEndian, []byte(timestampStr))
 
+	//binary.Write(buffer, binary.BigEndian, timestamp.UnixNano())
+	// separator byte
+	//buffer.WriteByte(0)
+
+	data := buffer.Bytes()
+
+	// test --------------------
+	ts := data[len(id):]
+	timestamp, err := time.Parse(time.RFC3339Nano, string(ts))
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 	return buffer.Bytes()
 }
 

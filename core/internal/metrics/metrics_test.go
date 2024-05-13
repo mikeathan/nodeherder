@@ -19,24 +19,38 @@ func TestMetrics(t *testing.T) {
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
-
+	var devices map[string]*devices.Device = make(map[string]*devices.Device)
 	for i := 0; i < 2; i++ {
-		dev := createMockDevice(fmt.Sprintf("x000%v", i), fmt.Sprintf("device %v", i), time.Now().Add(-(time.Second * 10)), i*2)
+		dev := createMockDevice(fmt.Sprintf("x000%v", i), fmt.Sprintf("device %v", i), time.Now().Add(-(time.Second * 10)), i+1*2)
 		err = repo.Store(dev)
 		if err != nil {
 			t.Error("failed to store metrics ", err.Error())
 		}
-		dev = createMockDevice(fmt.Sprintf("x000%v", i), fmt.Sprintf("device %v", i), time.Now().Add(-(time.Second * 50)), i*2)
+		dev = createMockDevice(fmt.Sprintf("x000%v", i), fmt.Sprintf("device %v", i), time.Now().Add(-(time.Minute * 20)), i+1*5)
 		err = repo.Store(dev)
 		if err != nil {
 			t.Error("failed to store metrics ", err.Error())
 		}
+
+		dev = createMockDevice(fmt.Sprintf("x000%v", i), fmt.Sprintf("device %v", i), time.Now().Add(-(time.Second * 100)), i+1*15)
+		err = repo.Store(dev)
+		if err != nil {
+			t.Error("failed to store metrics ", err.Error())
+		}
+
+		dev = createMockDevice(fmt.Sprintf("x000%v", i), fmt.Sprintf("device %v", i), time.Now().Add(-(time.Hour * 1)), i+1*20)
+		err = repo.Store(dev)
+		if err != nil {
+			t.Error("failed to store metrics ", err.Error())
+		}
+		devices[dev.Id] = dev
 	}
 
-	id := fmt.Sprintf("x000%v", 0)
-	err = repo.ViewTimeRange(id, time.Now().Add(-(time.Minute * 20)), time.Now())
+	id1 := fmt.Sprintf("x000%v", 0)
+	dev1 := devices[id1]
+	err = repo.ViewTimeRange(dev1, time.Now().Add(-(time.Minute * 30)), time.Now())
 	if err != nil {
-		t.Error("failed to query metrics ", err.Error())
+		t.Error("failed to query metrics: ", err.Error())
 	}
 
 }
