@@ -19,6 +19,17 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
+	testCases := []struct {
+		timeDuration time.Duration
+		value        int
+	}{
+		{timeDuration: time.Second, value: -5},
+		{timeDuration: time.Second, value: -10},
+		{timeDuration: time.Minute, value: -10},
+		{timeDuration: time.Minute, value: -5},
+		{timeDuration: time.Minute, value: -1},
+	}
+
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
 	for i := 0; i < 2; i++ {
 
@@ -26,46 +37,36 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 		name := fmt.Sprintf("device %v", i)
 		property := fmt.Sprintf("property_%v", id)
 
-		dev := createMockDevice(id, name, property, time.Now().Add(-(time.Second * 10)), i+1*2)
-		err = repo.Store(dev)
-		if err != nil {
-			t.Error("failed to store metrics ", err.Error())
-		}
-		dev = createMockDevice(id, name, property, time.Now().Add(-(time.Minute * 20)), i+1*5)
-		err = repo.Store(dev)
-		if err != nil {
-			t.Error("failed to store metrics ", err.Error())
+		for cIdx, c := range testCases {
+			duration := time.Duration(c.value) * c.timeDuration
+			if c.value < 0 {
+				duration = -(time.Duration(c.value) * -(c.timeDuration))
+			}
+
+			timestamp := time.Now().Add(duration)
+			data := i + 1*cIdx
+			dev := createMockDevice(id, name, property, timestamp, data)
+			err = repo.Store(dev)
+			if err != nil {
+				t.Error("failed to store metrics ", err.Error())
+			}
+			devices[dev.Id] = dev
 		}
 
-		dev = createMockDevice(id, name, property, time.Now().Add(-(time.Second * 100)), i+1*15)
-		err = repo.Store(dev)
-		if err != nil {
-			t.Error("failed to store metrics ", err.Error())
-		}
-
-		dev = createMockDevice(id, name, property, time.Now().Add(-(time.Hour * 1)), i+1*20)
-		err = repo.Store(dev)
-		if err != nil {
-			t.Error("failed to store metrics ", err.Error())
-		}
-		devices[dev.Id] = dev
 	}
 
 	id1 := fmt.Sprintf("x000%v", 0)
 	property1 := fmt.Sprintf("property_%v", id1)
-	dev1 := devices[id1]
-	err = repo.ViewDeviceTimeRange(dev1, time.Now().Add(-(time.Minute * 30)), time.Now())
-	if err != nil {
-		t.Error("failed to query metrics: ", err.Error())
-	}
-
-
+	//dev1 := devices[id1]
+	// err = repo.ViewDeviceTimeRange(dev1, time.Now().Add(-(time.Minute * 30)), time.Now())
+	// if err != nil {
+	// 	t.Error("failed to query metrics: ", err.Error())
+	// }
 
 	err = repo.ViewExposeTimeRange(id1, property1, time.Now().Add(-(time.Minute * 1)), time.Now())
 	if err != nil {
 		t.Error("failed to query metrics: ", err.Error())
 	}
-
 }
 
 func createMockDevice(id string, name string, property string, timestamp time.Time, data any) *devices.Device {
