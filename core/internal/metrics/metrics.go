@@ -93,7 +93,30 @@ func (s *MetricsRepo) Store(device *devices.Device) error {
 	return nil
 }
 
-func (s *MetricsRepo) ViewTimeRange(device *devices.Device, from time.Time, to time.Time) error {
+func (s *MetricsRepo) ViewExposeTimeRange(deviceId string, exposeName string, from time.Time, to time.Time) error {
+	return s.db.View(func(tx *bolt.Tx) error {
+		cursor := tx.Bucket([]byte("metrics")).Bucket([]byte(deviceId)).Cursor()
+		if cursor == nil {
+			return bolt.ErrBucketNotFound
+		}
+
+		fromKey := createKeyWithTimestamp(exposeName, from)
+		tokey := createKeyWithTimestamp(exposeName, to)
+
+		for k, v := cursor.Seek(fromKey); k != nil && bytes.Compare(k, tokey) <= 0; k, v = cursor.Next() {
+			timestamp, err := readTimestampFromKey(exposeName, k)
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("propert %v data: %v  timestamp : %v \n", exposeName, string(v), timestamp)
+		}
+
+		return nil
+	})
+}
+
+func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) error {
 
 	return s.db.View(func(tx *bolt.Tx) error {
 		cursor := tx.Bucket([]byte("metrics")).Bucket([]byte(device.Id)).Cursor()
@@ -105,17 +128,15 @@ func (s *MetricsRepo) ViewTimeRange(device *devices.Device, from time.Time, to t
 
 			fromKey := createKeyWithTimestamp(expose.Name, from)
 			tokey := createKeyWithTimestamp(expose.Name, to)
+
 			for k, v := cursor.Seek(fromKey); k != nil && bytes.Compare(k, tokey) <= 0; k, v = cursor.Next() {
-
-				if bytes.HasPrefix(k, []byte(expose.Name)) {
-					timestamp, err := readTimestampFromKey(expose.Name, k)
-					if err != nil {
-						return err
-					}
-
-					fmt.Printf("propert %v data: %v  timestamp : %v \n", expose.Name, string(v), timestamp)
+				//if bytes.HasPrefix(k, []byte(expose.Name)) {
+				timestamp, err := readTimestampFromKey(expose.Name, k)
+				if err != nil {
+					return err
 				}
 
+				fmt.Printf("propert %v data: %v  timestamp : %v \n", expose.Name, string(v), timestamp)
 			}
 		}
 
@@ -156,7 +177,6 @@ func readTimestampFromKey(id string, data []byte) (time.Time, error) {
 }
 
 func createKeyWithTimestamp(id string, timestamp time.Time) []byte {
-
 	buffer := bytes.NewBuffer(nil)
 	binary.Write(buffer, binary.BigEndian, []byte(id))
 
