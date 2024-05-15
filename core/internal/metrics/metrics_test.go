@@ -15,7 +15,7 @@ func TestMetrics(t *testing.T) {
 	tempfile := tempfile()
 	defer os.Remove(tempfile)
 
-	repo, err := metrics.NewMetricsRepo(tempfile)
+	repo, err := metrics.NewMetricsRepoFromFile(tempfile)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
