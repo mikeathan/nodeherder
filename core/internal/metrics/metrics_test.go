@@ -22,23 +22,12 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 	testCases := []struct {
 		timestamps []*time.Time
 	}{
-		{timestamps: CreateDateTimeTimestamps(1, 24, 1)},
+		{timestamps: CreateDateTimeTimestamps(1, 24, 1)}, // 1 day, 24 hours, 1 min = 1 event per hour = 24 total
 	}
-
-	// testCases := []struct {
-	// 	timeDuration time.Duration
-	// 	value        int
-	// }{
-	// 	{timeDuration: time.Second, value: -5},
-	// 	{timeDuration: time.Second, value: -10},
-	// 	{timeDuration: time.Minute, value: -10},
-	// 	{timeDuration: time.Minute, value: -5},
-	// 	{timeDuration: time.Minute, value: -1},
-	// }
 
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
 	numDevices := 1
-	//
+
 	for i := 0; i < numDevices; i++ {
 
 		deviceId := fmt.Sprintf("x000%v", i)
@@ -48,7 +37,6 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 		for cIdx, c := range testCases {
 
 			fmt.Println("total timestamps: ", len(c.timestamps))
-
 			for tIdx, timestamp := range c.timestamps {
 
 				data := (i + cIdx + 1) * tIdx
@@ -62,33 +50,52 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 				devices[dev.Id] = dev
 			}
 		}
-
-		// for cIdx, c := range testCases {
-		// 	duration := time.Duration(c.value) * c.timeDuration
-		// 	if c.value < 0 {
-		// 		duration = -(time.Duration(c.value) * -(c.timeDuration))
-		// 	}
-
-		// 	timestamp := time.Now().Add(duration)
-		// 	data := i + 1*cIdx
-		// 	dev := createMockDevice(id, name, property, timestamp, data)
-		// 	err = repo.Store(dev)
-		// 	if err != nil {
-		// 		t.Error("failed to store metrics ", err.Error())
-		// 	}
-		// 	devices[dev.Id] = dev
-		// }
-
 	}
 
-	//id1 := fmt.Sprintf("x000%v", 0)
-	//property1 := fmt.Sprintf("property_%v", id1)
-	//dev1 := devices[id1]
-	// err = repo.ViewDeviceTimeRange(dev1, time.Now().Add(-(time.Minute * 30)), time.Now())
-	// if err != nil {
-	// 	t.Error("failed to query metrics: ", err.Error())
-	// }
+	id1 := fmt.Sprintf("x000%v", 0)
+	dev1 := devices[id1]
+	now := time.Now()
 
+	from := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	to := time.Date(now.Year(), now.Month(), now.Day(), 5, 0, 0, 0, time.UTC)
+
+	result, err := repo.ViewDeviceTimeRange(dev1, from, to)
+	if err != nil {
+		t.Error("failed to query metrics: ", err.Error())
+	}
+	if result.DeviceId != id1 {
+		t.Errorf("deviceId mismatch want %v got %v: ", id1, result.DeviceId)
+	}
+
+	gotNumExposes := len(result.Expose)
+	wantNumExposes := 1
+	if gotNumExposes != wantNumExposes {
+		t.Errorf("num of exposes mismatch want %v got %v: ", wantNumExposes, gotNumExposes)
+	}
+
+	idx := 0
+	for _, expose := range dev1.Exposes {
+
+		events := result.Expose[idx]
+		gotNumEvents := len(events.Values)
+		wantNumEvents := 6
+
+		if gotNumEvents != wantNumEvents {
+			t.Errorf("num of events mismatch want %v got %v: ", wantNumEvents, gotNumExposes)
+		}
+
+		if events.Name != expose.Name {
+			t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, events.Name)
+		}
+
+		// TODO -
+		// verify values
+		// make assert function to reuse
+		
+		idx++
+	}
+
+	//property1 := fmt.Sprintf("property_%v", id1)
 	// err = repo.ViewExposeTimeRange(id1, property1, time.Now().Add(-(time.Minute * 1)), time.Now())
 	// if err != nil {
 	// 	t.Error("failed to query metrics: ", err.Error())

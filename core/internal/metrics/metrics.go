@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"node-herder/models/devices"
 	"node-herder/utils"
 	"sync"
@@ -63,10 +62,6 @@ func (s *MetricsRepo) Store(device *devices.Device) error {
 			return err
 		}
 
-		// This returns an error only if the Tx is closed or not writeable.
-		// That can't happen in an Update() call so I ignore the error check.
-		//bucket.NextSequence()
-
 		for _, expose := range device.Exposes {
 			buf, err := json.Marshal(expose.Data)
 			if err != nil {
@@ -93,32 +88,42 @@ func (s *MetricsRepo) Store(device *devices.Device) error {
 	return nil
 }
 
-func (s *MetricsRepo) ViewExposeTimeRange(deviceId string, exposeName string, from time.Time, to time.Time) error {
-	return s.db.View(func(tx *bolt.Tx) error {
+func (s *MetricsRepo) ViewExposeTimeRange(deviceId string, exposeName string, from time.Time, to time.Time) (*devices.DeviceMetricsResult, error) {
+
+	result := devices.NewDeviceMetricsResult(deviceId)
+
+	err := s.db.View(func(tx *bolt.Tx) error {
 		cursor := tx.Bucket([]byte("metrics")).Bucket([]byte(deviceId)).Cursor()
 		if cursor == nil {
 			return bolt.ErrBucketNotFound
 		}
+		event := devices.NewExposeMetricsResult(exposeName)
 
 		fromKey := createKeyWithTimestamp(exposeName, from)
 		tokey := createKeyWithTimestamp(exposeName, to)
 
-		for k, v := cursor.Seek(fromKey); k != nil && bytes.Compare(k, tokey) <= 0; k, v = cursor.Next() {
+		for k, value := cursor.Seek(fromKey); k != nil && bytes.Compare(k, tokey) <= 0; k, value = cursor.Next() {
 			timestamp, err := readTimestampFromKey(exposeName, k)
 			if err != nil {
 				return err
 			}
 
-			fmt.Printf("propert %v data: %v  timestamp : %v \n", exposeName, string(v), timestamp)
-		}
+			event.Add(value, &timestamp)
 
+			//fmt.Printf("propert %v data: %v  timestamp : %v \n", exposeName, string(value), timestamp)
+		}
+		result.Add(event)
 		return nil
 	})
+
+	return result, err
 }
 
-func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) error {
+func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*devices.DeviceMetricsResult, error) {
 
-	return s.db.View(func(tx *bolt.Tx) error {
+	result := devices.NewDeviceMetricsResult(device.Id)
+
+	err := s.db.View(func(tx *bolt.Tx) error {
 		cursor := tx.Bucket([]byte("metrics")).Bucket([]byte(device.Id)).Cursor()
 		if cursor == nil {
 			return bolt.ErrBucketNotFound
@@ -129,42 +134,26 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 			fromKey := createKeyWithTimestamp(expose.Name, from)
 			tokey := createKeyWithTimestamp(expose.Name, to)
 
-			for k, v := cursor.Seek(fromKey); k != nil && bytes.Compare(k, tokey) <= 0; k, v = cursor.Next() {
-				//if bytes.HasPrefix(k, []byte(expose.Name)) {
-				timestamp, err := readTimestampFromKey(expose.Name, k)
+			event := devices.NewExposeMetricsResult(expose.Name)
+
+			for key, value := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, value = cursor.Next() {
+				timestamp, err := readTimestampFromKey(expose.Name, key)
 				if err != nil {
 					return err
 				}
 
-				fmt.Printf("propert %v data: %v  timestamp : %v \n", expose.Name, string(v), timestamp)
+				event.Add(value, &timestamp)
+
+				//fmt.Printf("propert %v data: %v  timestamp : %v \n", expose.Name, string(value), timestamp)
 			}
+
+			result.Add(event)
 		}
-
-		// err := bucket.Cursor().ForEach(func(k, v []byte) error {
-		// 	// Check if key starts with the property name followed by separator
-		// 	if bytes.HasPrefix(k, []byte(propertyName+":")) {
-		// 		// Extract timestamp from the key format
-		// 		timestamp, err := time.Parse(time.RFC3339Nano, string(k[len(propertyName)+1:]))
-		// 		if err != nil {
-		// 			return err
-		// 		}
-
-		// 		// Check if timestamp is within the date range
-		// 		if timestamp.After(startDate.Before(endDate)) {
-		// 			// Decode value and append to results
-		// 			var value interface{}
-		// 			err := decodeValue(v, &value)
-		// 			if err != nil {
-		// 				return err
-		// 			}
-		// 			results = append(results, value)
-		// 		}
-		// 	}
-		// 	return nil
-		// })
 
 		return nil
 	})
+
+	return result, err
 }
 
 func readTimestampFromKey(id string, data []byte) (time.Time, error) {
