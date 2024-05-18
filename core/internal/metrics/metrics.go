@@ -108,6 +108,7 @@ func (s *MetricsRepo) ViewExposeTimeRange(deviceId string, exposeName string, fr
 				return err
 			}
 
+			wrong here
 			event.Add(value, &timestamp)
 
 			//fmt.Printf("propert %v data: %v  timestamp : %v \n", exposeName, string(value), timestamp)

@@ -3,6 +3,8 @@ package metrics_test
 import (
 	"fmt"
 	"io/ioutil"
+	"math"
+	"math/rand"
 	"node-herder/internal/metrics"
 	"node-herder/models/devices"
 	"os"
@@ -19,12 +21,15 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
-	testCases := []struct {
-		timestamps []*time.Time
-	}{
-		{timestamps: CreateDateTimeTimestamps(1, 24, 1)}, // 1 day, 24 hours, 1 min = 1 event per hour = 24 total
-	}
+	// testCases := []struct {
+	// 	timestamps []*time.Time
+	// 	values     []float32
+	// }{
+	// 	{timestamps: CreateDateTimeTimestamps(1, 24, 1), values: CreateValues(24)}, // 1 day, 24 hours, 1 min = 1 event per hour = 24 total
+	// }
 
+	timestamps := CreateDateTimeTimestamps(1, 24, 1)
+	values := CreateValues(24)
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
 	numDevices := 1
 
@@ -34,21 +39,17 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 		deviceName := fmt.Sprintf("device %v", i)
 		property := fmt.Sprintf("property_%v", deviceId)
 
-		for cIdx, c := range testCases {
+		fmt.Println("total timestamps: ", len(timestamps))
+		for tIdx, timestamp := range timestamps {
 
-			fmt.Println("total timestamps: ", len(c.timestamps))
-			for tIdx, timestamp := range c.timestamps {
+			dev := createMockDevice(deviceId, deviceName, property, *timestamp, values[tIdx])
 
-				data := (i + cIdx + 1) * tIdx
-				dev := createMockDevice(deviceId, deviceName, property, *timestamp, data)
-
-				err = repo.Store(dev)
-				fmt.Printf("Add device: %v, data: %v, timestamp: %v \n", deviceId, data, dev.Properties["last_seen"])
-				if err != nil {
-					t.Error("failed to store metrics ", err.Error())
-				}
-				devices[dev.Id] = dev
+			err = repo.Store(dev)
+			fmt.Printf("Add device: %v, data: %v, timestamp: %v \n", deviceId, values[tIdx], dev.Properties["last_seen"])
+			if err != nil {
+				t.Error("failed to store metrics ", err.Error())
 			}
+			devices[dev.Id] = dev
 		}
 	}
 
@@ -88,10 +89,37 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 			t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, events.Name)
 		}
 
+		/// -----------------------------------------
+
+		for fId, foundTs := range events.Timestamp {
+			tsFound := false
+			dataIdx := 0
+			foundTsUnix := foundTs.Unix()
+
+			for _, insertTs := range timestamps {
+				insertTsUnix := insertTs.Unix()
+
+				if foundTsUnix == insertTsUnix {
+					tsFound = true
+					dataIdx = idx
+					break
+				}
+			}
+
+			if !tsFound {
+				t.Fatalf(fmt.Sprintf("Timestamp not found %v", foundTs))
+			}
+
+			if values[dataIdx] != events.Values[fId] {
+				t.Fatalf(fmt.Sprintf("Value mismatch want:%v got: %v", values[dataIdx], events.Values[fId]))
+			}
+		}
+
+		// ---------------------------------------
 		// TODO -
 		// verify values
 		// make assert function to reuse
-		
+
 		idx++
 	}
 
@@ -186,4 +214,19 @@ func CreateDateTimeTimestamps(numberOfDays int, numberOfHours int, numberOfMinut
 	}
 
 	return timestamps
+}
+
+func CreateValues(numOfItems int) []float32 {
+	var values []float32 = make([]float32, numOfItems)
+	for i := 0; i < numOfItems; i++ {
+		values[i] = floatrandom(10, 100)
+	}
+	return values
+}
+
+func floatrandom(value_1, value_2 float32) float32 {
+	randomValue := value_1 + value_2 + rand.Float32()
+
+	ratio := math.Pow(10, float64(1))
+	return float32(math.Round(float64(randomValue)*ratio) / ratio)
 }
