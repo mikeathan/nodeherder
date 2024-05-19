@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"go/types"
 	"node-herder/models/devices"
 	"node-herder/utils"
+	"reflect"
 	"sync"
 	"time"
 
@@ -65,14 +65,12 @@ func (s *MetricsRepo) Store(device *devices.Device) error {
 
 		for _, expose := range device.Exposes {
 
-			todo store by data types
 			buf, err := json.Marshal(expose.Data)
 			if err != nil {
 				return err
 			}
 
 			key := createKeyFromDevice(expose.Name, device)
-
 			err = bucket.Put(key, buf)
 			if err != nil {
 				return err
@@ -111,15 +109,17 @@ func (s *MetricsRepo) ViewExposeTimeRange(deviceId string, exposeName string, fr
 				return err
 			}
 
-			data := 0.0
+			var data interface{}
 			err = json.Unmarshal(value, &data)
 			if err != nil {
 				return err
 			}
-			//wrong here
-			event.Add(data, &timestamp)
 
-			//fmt.Printf("propert %v data: %v  timestamp : %v \n", exposeName, string(value), timestamp)
+			// we only need to do that once ?? maybe add it in the key ??
+			event.SetType(reflect.TypeOf(data))
+			//
+
+			event.Add(data, &timestamp)
 		}
 		result.Add(event)
 		return nil
@@ -140,25 +140,23 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 
 		for _, expose := range device.Exposes {
 
+			exposeType := getExposeType(expose)
 			fromKey := createKeyWithTimestamp(expose.Name, from)
 			tokey := createKeyWithTimestamp(expose.Name, to)
 
 			event := devices.NewExposeMetricsResult(expose.Name)
-
 			for key, value := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, value = cursor.Next() {
 				timestamp, err := readTimestampFromKey(expose.Name, key)
 				if err != nil {
 					return err
 				}
 
-				var data float32 = 0.0
-				err = json.Unmarshal(value, &data)
+				data, err := unmarshaller[exposeType](value)
 				if err != nil {
 					return err
 				}
-				event.Add(data, &timestamp)
 
-				//fmt.Printf("propert %v data: %v  timestamp : %v \n", expose.Name, string(value), timestamp)
+				event.Add(data, &timestamp)
 			}
 
 			result.Add(event)
@@ -168,6 +166,66 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 	})
 
 	return result, err
+}
+
+// refactor and separate
+var unmarshaller = map[reflect.Kind]func(buffer []byte) (any, error){
+	reflect.Float32:   unmarshalFloat32,
+	reflect.String:    unmarshalString,
+	reflect.Int:       unmarshalInt,
+	reflect.Interface: unmarshalInterface,
+}
+
+func unmarshalInterface(buffer []byte) (any, error) {
+	var value interface{}
+	err := json.Unmarshal(buffer, &value)
+	if err != nil {
+		return 0, err
+	}
+
+	return value, nil
+}
+
+func unmarshalInt(buffer []byte) (any, error) {
+	var value int
+	err := json.Unmarshal(buffer, &value)
+	if err != nil {
+		return 0, err
+	}
+
+	return value, nil
+}
+
+func unmarshalFloat32(buffer []byte) (any, error) {
+	var value float32
+	err := json.Unmarshal(buffer, &value)
+	if err != nil {
+		return 0, err
+	}
+
+	return value, nil
+}
+func unmarshalString(buffer []byte) (any, error) {
+	var value string
+	err := json.Unmarshal(buffer, &value)
+	if err != nil {
+		return "", err
+	}
+
+	return value, nil
+}
+func getExposeType(expose *devices.Entity) reflect.Kind {
+	switch expose.Type {
+	case "numeric":
+		return reflect.Float32
+	case "binary":
+		return reflect.String
+
+	case "enum":
+		return reflect.Int
+	}
+
+	return reflect.Interface
 }
 
 func readTimestampFromKey(id string, data []byte) (time.Time, error) {

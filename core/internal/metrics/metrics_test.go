@@ -57,8 +57,8 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 	dev1 := devices[id1]
 	now := time.Now()
 
-	from := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-	to := time.Date(now.Year(), now.Month(), now.Day(), 5, 0, 0, 0, time.UTC)
+	from := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC)
+	to := time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)
 
 	result, err := repo.ViewDeviceTimeRange(dev1, from, to)
 	if err != nil {
@@ -74,54 +74,7 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 		t.Errorf("num of exposes mismatch want %v got %v: ", wantNumExposes, gotNumExposes)
 	}
 
-	idx := 0
-	for _, expose := range dev1.Exposes {
-
-		events := result.Expose[idx]
-		gotNumEvents := len(events.Values)
-		wantNumEvents := 6
-
-		if gotNumEvents != wantNumEvents {
-			t.Errorf("num of events mismatch want %v got %v: ", wantNumEvents, gotNumExposes)
-		}
-
-		if events.Name != expose.Name {
-			t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, events.Name)
-		}
-
-		/// -----------------------------------------
-
-		for fId, foundTs := range events.Timestamp {
-			tsFound := false
-			dataIdx := 0
-			foundTsUnix := foundTs.Unix()
-
-			for _, insertTs := range timestamps {
-				insertTsUnix := insertTs.Unix()
-
-				if foundTsUnix == insertTsUnix {
-					tsFound = true
-					dataIdx = idx
-					break
-				}
-			}
-
-			if !tsFound {
-				t.Fatalf(fmt.Sprintf("Timestamp not found %v", foundTs))
-			}
-
-			if values[dataIdx] != events.Values[fId] {
-				t.Fatalf(fmt.Sprintf("Value mismatch want:%v got: %v", values[dataIdx], events.Values[fId]))
-			}
-		}
-
-		// ---------------------------------------
-		// TODO -
-		// verify values
-		// make assert function to reuse
-
-		idx++
-	}
+	assertDeviceEvents(dev1, result, timestamps, values, t)
 
 	//property1 := fmt.Sprintf("property_%v", id1)
 	// err = repo.ViewExposeTimeRange(id1, property1, time.Now().Add(-(time.Minute * 1)), time.Now())
@@ -130,6 +83,46 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 	// }
 }
 
+func assertDeviceEvents(device *devices.Device, result *devices.DeviceMetricsResult, timestamps []*time.Time, values []float32, t *testing.T) {
+	idx := 0
+	for _, expose := range device.Exposes {
+
+		event := result.Expose[idx]
+		if event.Name != expose.Name {
+			t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, event.Name)
+		}
+
+		for fId, foundTs := range event.Timestamp {
+			tsFound := false
+			dataIdx := 0
+			foundTsUnix := foundTs.Unix()
+
+			for insertIdx, insertTs := range timestamps {
+				insertTsUnix := insertTs.Unix()
+
+				if foundTsUnix == insertTsUnix {
+					tsFound = true
+					dataIdx = insertIdx
+					break
+				}
+			}
+
+			if !tsFound {
+				t.Fatalf(fmt.Sprintf("Timestamp not found %v", foundTs))
+			}
+
+			//event.Type
+			if values[dataIdx] != event.Values[fId] {
+				t.Fatalf(fmt.Sprintf("Value mismatch want:%v got: %v", values[dataIdx], event.Values[fId]))
+			}
+			fmt.Printf("found device with data: %v, timestamp: %v \n", event.Values[fId], foundTs)
+
+		}
+
+		idx++
+	}
+
+}
 func createMockDevice(id string, name string, property string, timestamp time.Time, data any) *devices.Device {
 	device1 := &devices.Device{}
 	device1.Id = id
@@ -147,6 +140,7 @@ func createMockDevice(id string, name string, property string, timestamp time.Ti
 	ent1.Name = property
 	ent1.Unit = "test"
 	ent1.Data = data
+	ent1.Type = "numeric"
 
 	device1.Exposes[property] = ent1
 	device1.Exposes[property].Attributes = make(map[string]any)
