@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"go/types"
 	"node-herder/models/devices"
 	"node-herder/utils"
 	"sync"
@@ -63,6 +64,8 @@ func (s *MetricsRepo) Store(device *devices.Device) error {
 		}
 
 		for _, expose := range device.Exposes {
+
+			todo store by data types
 			buf, err := json.Marshal(expose.Data)
 			if err != nil {
 				return err
@@ -108,8 +111,13 @@ func (s *MetricsRepo) ViewExposeTimeRange(deviceId string, exposeName string, fr
 				return err
 			}
 
-			wrong here
-			event.Add(value, &timestamp)
+			data := 0.0
+			err = json.Unmarshal(value, &data)
+			if err != nil {
+				return err
+			}
+			//wrong here
+			event.Add(data, &timestamp)
 
 			//fmt.Printf("propert %v data: %v  timestamp : %v \n", exposeName, string(value), timestamp)
 		}
@@ -143,7 +151,12 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 					return err
 				}
 
-				event.Add(value, &timestamp)
+				var data float32 = 0.0
+				err = json.Unmarshal(value, &data)
+				if err != nil {
+					return err
+				}
+				event.Add(data, &timestamp)
 
 				//fmt.Printf("propert %v data: %v  timestamp : %v \n", expose.Name, string(value), timestamp)
 			}
