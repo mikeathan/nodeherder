@@ -8,9 +8,24 @@ import (
 	"node-herder/internal/metrics"
 	"node-herder/models/devices"
 	"os"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
+
+// testCases := []struct {
+// 	timestamps []*time.Time
+// 	values     []float32
+// }{
+// 	{timestamps: CreateDateTimeTimestamps(1, 24, 1), values: CreateValues(24)}, // 1 day, 24 hours, 1 min = 1 event per hour = 24 total
+// }
+
+//property1 := fmt.Sprintf("property_%v", id1)
+// err = repo.ViewExposeTimeRange(id1, property1, time.Now().Add(-(time.Minute * 1)), time.Now())
+// if err != nil {
+// 	t.Error("failed to query metrics: ", err.Error())
+// }
 
 func TestDeviceTimeRangeMetrics(t *testing.T) {
 
@@ -21,12 +36,6 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
-	// testCases := []struct {
-	// 	timestamps []*time.Time
-	// 	values     []float32
-	// }{
-	// 	{timestamps: CreateDateTimeTimestamps(1, 24, 1), values: CreateValues(24)}, // 1 day, 24 hours, 1 min = 1 event per hour = 24 total
-	// }
 
 	timestamps := CreateDateTimeTimestamps(1, 24, 1)
 	values := CreateValues(24)
@@ -37,12 +46,11 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 
 		deviceId := fmt.Sprintf("x000%v", i)
 		deviceName := fmt.Sprintf("device %v", i)
-		property := fmt.Sprintf("property_%v", deviceId)
 
 		fmt.Println("total timestamps: ", len(timestamps))
 		for tIdx, timestamp := range timestamps {
 
-			dev := createMockDevice(deviceId, deviceName, property, *timestamp, values[tIdx])
+			dev := createMockDevice(deviceId, deviceName, 2, *timestamp, values[tIdx])
 
 			err = repo.Store(dev)
 			fmt.Printf("Add device: %v, data: %v, timestamp: %v \n", deviceId, values[tIdx], dev.Properties["last_seen"])
@@ -51,45 +59,45 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 			}
 			devices[dev.Id] = dev
 		}
+
+		// query and assert
+		dev1 := devices[deviceId]
+		now := time.Now()
+
+		from := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC)
+		to := time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)
+
+		result, err := repo.ViewDeviceTimeRange(dev1, from, to)
+		if err != nil {
+			t.Error("failed to query metrics: ", err.Error())
+		}
+
+		assertDeviceEvents(dev1, result, timestamps, values, t)
 	}
-
-	id1 := fmt.Sprintf("x000%v", 0)
-	dev1 := devices[id1]
-	now := time.Now()
-
-	from := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC)
-	to := time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)
-
-	result, err := repo.ViewDeviceTimeRange(dev1, from, to)
-	if err != nil {
-		t.Error("failed to query metrics: ", err.Error())
-	}
-	if result.DeviceId != id1 {
-		t.Errorf("deviceId mismatch want %v got %v: ", id1, result.DeviceId)
-	}
-
-	gotNumExposes := len(result.Expose)
-	wantNumExposes := 1
-	if gotNumExposes != wantNumExposes {
-		t.Errorf("num of exposes mismatch want %v got %v: ", wantNumExposes, gotNumExposes)
-	}
-
-	assertDeviceEvents(dev1, result, timestamps, values, t)
-
-	//property1 := fmt.Sprintf("property_%v", id1)
-	// err = repo.ViewExposeTimeRange(id1, property1, time.Now().Add(-(time.Minute * 1)), time.Now())
-	// if err != nil {
-	// 	t.Error("failed to query metrics: ", err.Error())
-	// }
 }
 
 func assertDeviceEvents(device *devices.Device, result *devices.DeviceMetricsResult, timestamps []*time.Time, values []float32, t *testing.T) {
+
+	if result.DeviceId != device.Id {
+		t.Errorf("deviceId mismatch want %v got %v: ", device.Id, result.DeviceId)
+	}
+
+	gotNumExposes := len(result.Expose)
+	wantNumExposes := len(device.Exposes)
+	if gotNumExposes != wantNumExposes {
+		t.Errorf("Exposes mismatch want %v got %v: ", wantNumExposes, gotNumExposes)
+	}
+
 	idx := 0
 	for _, expose := range device.Exposes {
 
 		event := result.Expose[idx]
 		if event.Name != expose.Name {
 			t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, event.Name)
+		}
+		dataType, ok := kindFromString(event.Type)
+		if !ok {
+			t.Errorf("invalid event.type want %v got %v: ", event.Type, dataType)
 		}
 
 		for fId, foundTs := range event.Timestamp {
@@ -111,19 +119,21 @@ func assertDeviceEvents(device *devices.Device, result *devices.DeviceMetricsRes
 				t.Fatalf(fmt.Sprintf("Timestamp not found %v", foundTs))
 			}
 
-			//event.Type
+			wantKind := reflect.TypeOf(values[dataIdx]).Kind()
+			if dataType != wantKind {
+				t.Fatalf(fmt.Sprintf("Type mismatch want: %v got: %v", wantKind.String(), dataType.String()))
+			}
+
 			if values[dataIdx] != event.Values[fId] {
 				t.Fatalf(fmt.Sprintf("Value mismatch want:%v got: %v", values[dataIdx], event.Values[fId]))
 			}
-			fmt.Printf("found device with data: %v, timestamp: %v \n", event.Values[fId], foundTs)
-
+			fmt.Printf("found event %v with data: %v, timestamp: %v \n", expose.Name, event.Values[fId], foundTs)
 		}
 
 		idx++
 	}
-
 }
-func createMockDevice(id string, name string, property string, timestamp time.Time, data any) *devices.Device {
+func createMockDevice(id string, name string, numOfExposes int, timestamp time.Time, data any) *devices.Device {
 	device1 := &devices.Device{}
 	device1.Id = id
 	device1.FriendlyName = name
@@ -135,17 +145,23 @@ func createMockDevice(id string, name string, property string, timestamp time.Ti
 	device1.Properties["link_quality"] = 45.0
 	device1.Exposes = make(map[string]*devices.Entity)
 
-	ent1 := &devices.Entity{}
-	ent1.Description = fmt.Sprintf("%s readings", property)
-	ent1.Name = property
-	ent1.Unit = "test"
-	ent1.Data = data
-	ent1.Type = "numeric"
+	for i := 0; i < numOfExposes; i++ {
 
-	device1.Exposes[property] = ent1
-	device1.Exposes[property].Attributes = make(map[string]any)
-	device1.Exposes[property].Attributes["min"] = 0.0
-	device1.Exposes[property].Attributes["max"] = 255.0
+		property := fmt.Sprintf("property_%v_%v", id, (i + 1))
+
+		ent1 := &devices.Entity{}
+		ent1.Description = fmt.Sprintf("%s readings", property)
+		ent1.Name = property
+		ent1.Unit = "test"
+		ent1.Data = data
+		ent1.Type = "numeric"
+
+		device1.Exposes[property] = ent1
+		device1.Exposes[property].Attributes = make(map[string]any)
+		device1.Exposes[property].Attributes["min"] = 0.0
+		device1.Exposes[property].Attributes["max"] = 255.0
+	}
+
 	return device1
 }
 
@@ -223,4 +239,25 @@ func floatrandom(value_1, value_2 float32) float32 {
 
 	ratio := math.Pow(10, float64(1))
 	return float32(math.Round(float64(randomValue)*ratio) / ratio)
+}
+
+func kindFromString(kindStr string) (reflect.Kind, bool) {
+	kindStr = strings.ToLower(kindStr)
+	switch kindStr {
+
+	case "int", "int8", "int16", "int32", "int64":
+		return reflect.Int, true
+	case "uint", "uint8", "uint16", "uint32", "uint64":
+		return reflect.Uint, true
+	case "float32":
+		return reflect.Float32, true
+	case "float64":
+		return reflect.Float64, true
+	case "bool":
+		return reflect.Bool, true
+	case "string":
+		return reflect.String, true
+	default:
+		return reflect.Invalid, false
+	}
 }

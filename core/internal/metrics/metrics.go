@@ -136,8 +136,8 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 }
 
 func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*devices.ExposeMetricsResult, error) {
-	
-	exposeType := getExposeType(expose)
+
+	exposeType := kindFromExposeType(expose)
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
 
@@ -159,7 +159,7 @@ func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devi
 	return event, nil
 }
 
-func getExposeType(expose *devices.Entity) reflect.Kind {
+func kindFromExposeType(expose *devices.Entity) reflect.Kind {
 	switch expose.Type {
 	case "numeric":
 		return reflect.Float32
