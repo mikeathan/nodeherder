@@ -89,37 +89,20 @@ func (s *MetricsRepo) Store(device *devices.Device) error {
 	return nil
 }
 
-func (s *MetricsRepo) ViewExposeTimeRange(deviceId string, exposeName string, from time.Time, to time.Time) (*devices.DeviceMetricsResult, error) {
+func (s *MetricsRepo) ViewExposeTimeRange(device *devices.Device, exposeName string, from time.Time, to time.Time) (*devices.DeviceMetricsResult, error) {
 
-	result := devices.NewDeviceMetricsResult(deviceId)
+	result := devices.NewDeviceMetricsResult(device.Id)
 
 	err := s.db.View(func(tx *bolt.Tx) error {
-		cursor := tx.Bucket([]byte("metrics")).Bucket([]byte(deviceId)).Cursor()
+		cursor := tx.Bucket([]byte("metrics")).Bucket([]byte(device.Id)).Cursor()
 		if cursor == nil {
 			return bolt.ErrBucketNotFound
 		}
-		event := devices.NewExposeMetricsResult(exposeName)
 
-		fromKey := createKeyWithTimestamp(exposeName, from)
-		tokey := createKeyWithTimestamp(exposeName, to)
-
-		for k, value := cursor.Seek(fromKey); k != nil && bytes.Compare(k, tokey) <= 0; k, value = cursor.Next() {
-			timestamp, err := readTimestampFromKey(exposeName, k)
-			if err != nil {
-				return err
-			}
-
-			var data interface{}
-			err = json.Unmarshal(value, &data)
-			if err != nil {
-				return err
-			}
-
-			// we only need to do that once ?? maybe add it in the key ??
-			event.SetType(reflect.TypeOf(data))
-			//
-
-			event.Add(data, &timestamp)
+		expose := device.Exposes[exposeName]
+		event, err := s.findExposeTimeRangeEvent(cursor, expose, from, to)
+		if err != nil {
+			return err
 		}
 		result.Add(event)
 		return nil
@@ -139,26 +122,10 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 		}
 
 		for _, expose := range device.Exposes {
-
-			exposeType := getExposeType(expose)
-			fromKey := createKeyWithTimestamp(expose.Name, from)
-			tokey := createKeyWithTimestamp(expose.Name, to)
-
-			event := devices.NewExposeMetricsResult(expose.Name)
-			for key, value := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, value = cursor.Next() {
-				timestamp, err := readTimestampFromKey(expose.Name, key)
-				if err != nil {
-					return err
-				}
-
-				data, err := unmarshaller[exposeType](value)
-				if err != nil {
-					return err
-				}
-
-				event.Add(data, &timestamp)
+			event, err := s.findExposeTimeRangeEvent(cursor, expose, from, to)
+			if err != nil {
+				return err
 			}
-
 			result.Add(event)
 		}
 
@@ -168,52 +135,30 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 	return result, err
 }
 
-// refactor and separate
-var unmarshaller = map[reflect.Kind]func(buffer []byte) (any, error){
-	reflect.Float32:   unmarshalFloat32,
-	reflect.String:    unmarshalString,
-	reflect.Int:       unmarshalInt,
-	reflect.Interface: unmarshalInterface,
-}
+func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*devices.ExposeMetricsResult, error) {
+	
+	exposeType := getExposeType(expose)
+	fromKey := createKeyWithTimestamp(expose.Name, from)
+	tokey := createKeyWithTimestamp(expose.Name, to)
 
-func unmarshalInterface(buffer []byte) (any, error) {
-	var value interface{}
-	err := json.Unmarshal(buffer, &value)
-	if err != nil {
-		return 0, err
+	event := devices.NewExposeMetricsResult(expose.Name, exposeType.String())
+	for key, value := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, value = cursor.Next() {
+		timestamp, err := readTimestampFromKey(expose.Name, key)
+		if err != nil {
+			return nil, err
+		}
+
+		data, err := utils.Unmarshal(value, exposeType)
+		if err != nil {
+			return nil, err
+		}
+
+		event.Add(data, &timestamp)
 	}
 
-	return value, nil
+	return event, nil
 }
 
-func unmarshalInt(buffer []byte) (any, error) {
-	var value int
-	err := json.Unmarshal(buffer, &value)
-	if err != nil {
-		return 0, err
-	}
-
-	return value, nil
-}
-
-func unmarshalFloat32(buffer []byte) (any, error) {
-	var value float32
-	err := json.Unmarshal(buffer, &value)
-	if err != nil {
-		return 0, err
-	}
-
-	return value, nil
-}
-func unmarshalString(buffer []byte) (any, error) {
-	var value string
-	err := json.Unmarshal(buffer, &value)
-	if err != nil {
-		return "", err
-	}
-
-	return value, nil
-}
 func getExposeType(expose *devices.Entity) reflect.Kind {
 	switch expose.Type {
 	case "numeric":

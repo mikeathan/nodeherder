@@ -1,28 +1,23 @@
 package devices
 
 import (
-	"reflect"
 	"time"
 )
 
 type ExposeMetricsResult struct {
 	Name      string       `json:"name"`
-	Type      reflect.Type `json:"type"`
+	Type      string       `json:"type"`
 	Timestamp []*time.Time `json:"timestamp"`
 	Values    []any        `json:"values"`
 }
 
-func NewExposeMetricsResult(name string) *ExposeMetricsResult {
+func NewExposeMetricsResult(name string, dataType string) *ExposeMetricsResult {
 	return &ExposeMetricsResult{
 		Name:      name,
-		Type:      nil,
+		Type:      dataType,
 		Timestamp: []*time.Time{},
 		Values:    []any{},
 	}
-}
-
-func (e *ExposeMetricsResult) SetType(dataType reflect.Type) {
-	e.Type = dataType
 }
 
 func (e *ExposeMetricsResult) Add(value any, timestamp *time.Time) {

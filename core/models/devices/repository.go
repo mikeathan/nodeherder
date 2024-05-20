@@ -15,6 +15,6 @@ type Repository interface {
 type MetricsRepository interface {
 	Store(device *Device) error
 	ViewDeviceTimeRange(device *Device, from time.Time, to time.Time) (*DeviceMetricsResult, error)
-	ViewExposeTimeRange(deviceId string, exposeName string, from time.Time, to time.Time) (*DeviceMetricsResult, error)
+	ViewExposeTimeRange(device *Device, exposeName string, from time.Time, to time.Time) (*DeviceMetricsResult, error)
 	Close()
 }
