@@ -165,7 +165,6 @@ func kindFromExposeType(expose *devices.Entity) reflect.Kind {
 		return reflect.Float32
 	case "binary":
 		return reflect.String
-
 	case "enum":
 		return reflect.Int
 	}

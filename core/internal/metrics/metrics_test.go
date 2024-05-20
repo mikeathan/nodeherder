@@ -9,23 +9,79 @@ import (
 	"node-herder/models/devices"
 	"os"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 	"time"
 )
 
-// testCases := []struct {
-// 	timestamps []*time.Time
-// 	values     []float32
-// }{
-// 	{timestamps: CreateDateTimeTimestamps(1, 24, 1), values: CreateValues(24)}, // 1 day, 24 hours, 1 min = 1 event per hour = 24 total
-// }
+func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
+	now := time.Now()
 
-//property1 := fmt.Sprintf("property_%v", id1)
-// err = repo.ViewExposeTimeRange(id1, property1, time.Now().Add(-(time.Minute * 1)), time.Now())
-// if err != nil {
-// 	t.Error("failed to query metrics: ", err.Error())
-// }
+	testCases := []struct {
+		id         string
+		timestamps []*time.Time
+		values     []float32
+		from       time.Time
+		to         time.Time
+	}{
+		{id: "x0000",
+			timestamps: CreateDateTimeTimestamps(1, 24, 1), // 24 events
+			values:     CreateValues(24),
+			from:       time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC),
+			to:         time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)},
+		{id: "x0001",
+			timestamps: CreateDateTimeTimestamps(10, 24, 1), values: CreateValues(240), // 240 events
+			from: time.Date(now.Year(), now.Month()-6, now.Day()-5, 15, 0, 0, 0, time.UTC),
+			to:   time.Date(now.Year(), now.Month()-2, now.Day()-2, 20, 0, 0, 0, time.UTC)},
+		{id: "x0002",
+			timestamps: CreateDateTimeTimestamps(60, 2, 1), values: CreateValues(120), // 240 events
+			from: time.Date(now.Year(), now.Month()-20, now.Day()-5, 15, 0, 0, 0, time.UTC),
+			to:   time.Date(now.Year(), now.Month()-5, now.Day()-2, 20, 0, 0, 0, time.UTC)},
+	}
+
+	tempfile := tempfile()
+	defer os.Remove(tempfile)
+
+	repo, err := metrics.NewMetricsRepoFromFile(tempfile)
+	if err != nil {
+		t.Error("failed to initialise metrics repo", err.Error())
+	}
+
+	var devices map[string]*devices.Device = make(map[string]*devices.Device)
+
+	for i, test := range testCases {
+		fmt.Println(len(test.timestamps))
+
+		deviceName := fmt.Sprintf("device %v", i)
+
+		fmt.Println("total timestamps: ", len(test.timestamps))
+		for tIdx, timestamp := range test.timestamps {
+
+			dev := createMockDevice(test.id, deviceName, 2, *timestamp, test.values[tIdx])
+
+			err := repo.Store(dev)
+
+			//fmt.Printf("Add device: %v, data: %v, timestamp: %v \n", deviceId, values[tIdx], dev.Properties["last_seen"])
+			if err != nil {
+				t.Error("failed to store metrics ", err.Error())
+			}
+			devices[dev.Id] = dev
+		}
+	}
+
+	for _, test := range testCases {
+
+		dev := devices[test.id]
+
+		result, err := repo.ViewDeviceTimeRange(dev, test.from, test.to)
+		if err != nil {
+			t.Error("failed to query metrics: ", err.Error())
+		}
+
+		assertDeviceEvents(dev, result, test.timestamps, test.values, t)
+	}
+}
 
 func TestDeviceTimeRangeMetrics(t *testing.T) {
 
@@ -40,7 +96,7 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 	timestamps := CreateDateTimeTimestamps(1, 24, 1)
 	values := CreateValues(24)
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
-	numDevices := 1
+	numDevices := 3
 
 	for i := 0; i < numDevices; i++ {
 
@@ -53,27 +109,187 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 			dev := createMockDevice(deviceId, deviceName, 2, *timestamp, values[tIdx])
 
 			err = repo.Store(dev)
-			fmt.Printf("Add device: %v, data: %v, timestamp: %v \n", deviceId, values[tIdx], dev.Properties["last_seen"])
+			//fmt.Printf("Add device: %v, data: %v, timestamp: %v \n", deviceId, values[tIdx], dev.Properties["last_seen"])
 			if err != nil {
 				t.Error("failed to store metrics ", err.Error())
 			}
 			devices[dev.Id] = dev
 		}
+	}
 
-		// query and assert
-		dev1 := devices[deviceId]
+	// query and assert
+	for i := 0; i < numDevices; i++ {
+		deviceId := fmt.Sprintf("x000%v", i)
+
+		dev := devices[deviceId]
 		now := time.Now()
 
 		from := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC)
 		to := time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)
 
-		result, err := repo.ViewDeviceTimeRange(dev1, from, to)
+		result, err := repo.ViewDeviceTimeRange(dev, from, to)
 		if err != nil {
 			t.Error("failed to query metrics: ", err.Error())
 		}
 
-		assertDeviceEvents(dev1, result, timestamps, values, t)
+		assertDeviceEvents(dev, result, timestamps, values, t)
 	}
+}
+
+func TestExposeTimeRangeMetrics(t *testing.T) {
+
+	tempfile := tempfile()
+	defer os.Remove(tempfile)
+
+	repo, err := metrics.NewMetricsRepoFromFile(tempfile)
+	if err != nil {
+		t.Error("failed to initialise metrics repo", err.Error())
+	}
+
+	timestamps := CreateDateTimeTimestamps(1, 24, 1)
+	values := CreateValues(24)
+	var devices map[string]*devices.Device = make(map[string]*devices.Device)
+	numDevices := 3
+
+	for i := 0; i < numDevices; i++ {
+
+		deviceId := fmt.Sprintf("x000%v", i)
+		deviceName := fmt.Sprintf("device %v", i)
+
+		for tIdx, timestamp := range timestamps {
+
+			dev := createMockDevice(deviceId, deviceName, 5, *timestamp, values[tIdx])
+			err = repo.Store(dev)
+			if err != nil {
+				t.Error("failed to store metrics ", err.Error())
+			}
+			devices[dev.Id] = dev
+		}
+	}
+
+	// query and assert
+	for i := 0; i < numDevices; i++ {
+		deviceId := fmt.Sprintf("x000%v", i)
+
+		dev := devices[deviceId]
+		now := time.Now()
+
+		from := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC)
+		to := time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)
+
+		property := fmt.Sprintf("property_%v_%v", deviceId, 1)
+
+		result, err := repo.ViewExposeTimeRange(dev, property, from, to)
+		if err != nil {
+			t.Error("failed to query metrics: ", err.Error())
+		}
+
+		assertDeviceExposeEvents(dev, result, property, timestamps, values, t)
+	}
+}
+
+func TestMultipleExposeTimeRangeMetrics(t *testing.T) {
+
+	tempfile := tempfile()
+	defer os.Remove(tempfile)
+
+	repo, err := metrics.NewMetricsRepoFromFile(tempfile)
+	if err != nil {
+		t.Error("failed to initialise metrics repo", err.Error())
+	}
+
+	timestamps := CreateDateTimeTimestamps(1, 24, 1)
+	values := CreateValues(24)
+	numOfExposes := 10
+	deviceIds := []string{"x0000"}
+	exposes := []string{"property_x0000_1", "property_x0000_2", "property_x0000_4"}
+	var devices map[string]*devices.Device = make(map[string]*devices.Device)
+
+	for _, deviceId := range deviceIds {
+
+		deviceName := fmt.Sprintf("device %v", deviceId)
+
+		for tIdx, timestamp := range timestamps {
+
+			dev := createMockDevice(deviceId, deviceName, numOfExposes, *timestamp, values[tIdx])
+			err = repo.Store(dev)
+			if err != nil {
+				t.Error("failed to store metrics ", err.Error())
+			}
+			devices[dev.Id] = dev
+		}
+	}
+
+	// query and assert
+	for _, deviceId := range deviceIds {
+		for _, exposeName := range exposes {
+			dev := devices[deviceId]
+			now := time.Now()
+
+			from := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC)
+			to := time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)
+
+			result, err := repo.ViewExposeTimeRange(dev, exposeName, from, to)
+			if err != nil {
+				t.Error("failed to query metrics: ", err.Error())
+			}
+
+			assertDeviceExposeEvents(dev, result, exposeName, timestamps, values, t)
+		}
+	}
+}
+
+func assertDeviceExposeEvents(device *devices.Device, result *devices.DeviceMetricsResult, exposeName string, timestamps []*time.Time, values []float32, t *testing.T) {
+	if result.DeviceId != device.Id {
+		t.Errorf("deviceId mismatch want %v got %v: ", device.Id, result.DeviceId)
+	}
+
+	gotNumExposes := len(result.Expose)
+	wantNumExposes := 1
+	if gotNumExposes != wantNumExposes {
+		t.Errorf("Exposes mismatch want %v got %v: ", wantNumExposes, gotNumExposes)
+	}
+
+	expose := device.Exposes[exposeName]
+	event := result.Expose[0]
+	if event.Name != expose.Name {
+		t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, event.Name)
+	}
+	dataType, ok := kindFromString(event.Type)
+	if !ok {
+		t.Errorf("invalid event.type want %v got %v: ", event.Type, dataType)
+	}
+
+	for fId, foundTs := range event.Timestamp {
+		tsFound := false
+		dataIdx := 0
+		foundTsUnix := foundTs.Unix()
+
+		for insertIdx, insertTs := range timestamps {
+			insertTsUnix := insertTs.Unix()
+
+			if foundTsUnix == insertTsUnix {
+				tsFound = true
+				dataIdx = insertIdx
+				break
+			}
+		}
+
+		if !tsFound {
+			t.Fatalf(fmt.Sprintf("Timestamp not found %v", foundTs))
+		}
+
+		wantKind := reflect.TypeOf(values[dataIdx]).Kind()
+		if dataType != wantKind {
+			t.Fatalf(fmt.Sprintf("Type mismatch want: %v got: %v", wantKind.String(), dataType.String()))
+		}
+
+		if values[dataIdx] != event.Values[fId] {
+			t.Fatalf(fmt.Sprintf("Value mismatch want:%v got: %v", values[dataIdx], event.Values[fId]))
+		}
+		//fmt.Printf("found event %v with data: %v, timestamp: %v \n", expose.Name, event.Values[fId], foundTs)
+	}
+
 }
 
 func assertDeviceEvents(device *devices.Device, result *devices.DeviceMetricsResult, timestamps []*time.Time, values []float32, t *testing.T) {
@@ -88,9 +304,18 @@ func assertDeviceEvents(device *devices.Device, result *devices.DeviceMetricsRes
 		t.Errorf("Exposes mismatch want %v got %v: ", wantNumExposes, gotNumExposes)
 	}
 
-	idx := 0
-	for _, expose := range device.Exposes {
+	// sort exposekeys in same sequence as results.
+	exposekeys := make([]string, 0, len(device.Exposes))
+	for k := range device.Exposes {
+		exposekeys = append(exposekeys, k)
+	}
 
+	sort.Strings(exposekeys)
+
+	idx := 0
+	for _, key := range exposekeys {
+
+		expose := device.Exposes[key]
 		event := result.Expose[idx]
 		if event.Name != expose.Name {
 			t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, event.Name)
@@ -127,7 +352,7 @@ func assertDeviceEvents(device *devices.Device, result *devices.DeviceMetricsRes
 			if values[dataIdx] != event.Values[fId] {
 				t.Fatalf(fmt.Sprintf("Value mismatch want:%v got: %v", values[dataIdx], event.Values[fId]))
 			}
-			fmt.Printf("found event %v with data: %v, timestamp: %v \n", expose.Name, event.Values[fId], foundTs)
+			//fmt.Printf("found event %v with data: %v, timestamp: %v \n", expose.Name, event.Values[fId], foundTs)
 		}
 
 		idx++
@@ -177,26 +402,6 @@ func tempfile() string {
 		panic(err)
 	}
 	return f.Name()
-}
-
-func createDayTimestamps(numberOfDays int, numberOfEvents int) []*time.Time {
-
-	var eventDays []*time.Time
-	now := time.Now()
-	year, month, today := now.Date()
-	currentDay := (today + 1) - numberOfDays
-
-	for day := 1; day <= numberOfDays; day++ {
-		hour := 0
-		for i := 0; i < numberOfEvents; i++ {
-			timestamp := time.Date(year, month, currentDay, hour+i, 0, 0, 0, time.UTC)
-			eventDays = append(eventDays, &timestamp)
-		}
-
-		currentDay++
-	}
-
-	return eventDays
 }
 
 func CreateDateTimeTimestamps(numberOfDays int, numberOfHours int, numberOfMinutes int) []*time.Time {
