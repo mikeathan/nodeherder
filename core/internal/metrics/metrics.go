@@ -7,6 +7,7 @@ import (
 	"node-herder/models/devices"
 	"node-herder/utils"
 	"reflect"
+	"sort"
 	"sync"
 	"time"
 
@@ -121,7 +122,16 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 			return bolt.ErrBucketNotFound
 		}
 
-		for _, expose := range device.Exposes {
+		// sort exposekeys
+		exposekeys := make([]string, 0, len(device.Exposes))
+		for k := range device.Exposes {
+			exposekeys = append(exposekeys, k)
+		}
+
+		sort.Strings(exposekeys)
+
+		for _, key := range exposekeys {
+			expose := device.Exposes[key]
 			event, err := s.findExposeTimeRangeEvent(cursor, expose, from, to)
 			if err != nil {
 				return err
