@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"encoding/json"
 	"errors"
 	"node-herder/models/devices"
 	"node-herder/utils"
@@ -34,15 +35,57 @@ func NewFileDeviceRepoFromFile(filename string) (devices.Repository, error) {
 	}, nil
 }
 
-func (s *FileDeviceRepo) StoreBridge(key string, brigeInfo []*devices.BridgeInfo) {
+func (s *FileDeviceRepo) StoreBridge(brigeInfo []*devices.BridgeInfo) error {
+	err := s.db.Update(func(tx *bolt.Tx) error {
 
+		bucket, err := tx.CreateBucketIfNotExists([]byte("bridge"))
+		if err != nil {
+			return err
+		}
+
+		buf, err := json.Marshal(brigeInfo)
+		if err != nil {
+			return err
+		}
+
+		return bucket.Put([]byte("devicesBridgeInfo"), buf)
+	})
+
+	return err
 }
 
-func (s *FileDeviceRepo) Store(key string, device *devices.Device) {
+func (s *FileDeviceRepo) Close() {
+	err := s.db.Close()
+	if err != nil {
+		utils.LogError(err)
+	}
+}
+func (s *FileDeviceRepo) Store(key string, device *devices.Device) error {
 
 	defer s.mutex.Unlock()
 	s.mutex.Lock()
-	s.store[key] = device
+
+	err := s.db.Update(func(tx *bolt.Tx) error {
+
+		bucket, err := tx.CreateBucketIfNotExists([]byte("devices"))
+		if err != nil {
+			return err
+		}
+
+		buf, err := json.Marshal(device)
+		if err != nil {
+			return err
+		}
+
+		return bucket.Put([]byte(key), buf)
+
+	})
+
+	return err
+}
+
+func (s *FileDeviceRepo) FindBridgeInfo(ids []string) ([]*devices.BridgeInfo, error) {
+
 }
 
 func (s *FileDeviceRepo) FindDevice(id string) (*devices.Device, error) {
