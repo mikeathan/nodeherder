@@ -27,15 +27,15 @@ func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
 	}{
 		{id: "x0000",
 			timestamps: CreateDateTimeTimestamps(1, 24, 1), // 24 events
-			values:     CreateValues(24),
+			values:     CreateFloatValues(24),
 			from:       time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC),
 			to:         time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)},
 		{id: "x0001",
-			timestamps: CreateDateTimeTimestamps(10, 24, 1), values: CreateValues(240), // 240 events
+			timestamps: CreateDateTimeTimestamps(10, 24, 1), values: CreateFloatValues(240), // 240 events
 			from: time.Date(now.Year(), now.Month()-6, now.Day()-5, 15, 0, 0, 0, time.UTC),
 			to:   time.Date(now.Year(), now.Month()-2, now.Day()-2, 20, 0, 0, 0, time.UTC)},
 		{id: "x0002",
-			timestamps: CreateDateTimeTimestamps(60, 2, 1), values: CreateValues(120), // 240 events
+			timestamps: CreateDateTimeTimestamps(60, 2, 1), values: CreateFloatValues(120), // 240 events
 			from: time.Date(now.Year(), now.Month()-20, now.Day()-5, 15, 0, 0, 0, time.UTC),
 			to:   time.Date(now.Year(), now.Month()-5, now.Day()-2, 20, 0, 0, 0, time.UTC)},
 	}
@@ -94,7 +94,7 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 	}
 
 	timestamps := CreateDateTimeTimestamps(1, 24, 1)
-	values := CreateValues(24)
+	values := CreateFloatValues(24)
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
 	numDevices := 3
 
@@ -147,19 +147,44 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 	}
 
 	timestamps := CreateDateTimeTimestamps(1, 24, 1)
-	values := CreateValues(24)
-	dataTypes := []string{"numeric", "binary", "enum"}
+	data := map[string]any{
+
+		"numeric": CreateFloatValues(24),
+		"binary":  CreateBinaryValues(24),
+		"enum":    CreateEnumValues(24),
+	}
+
+	// sort data keys
+	dataKeys := make([]string, 0, len(data))
+	for k := range data {
+		dataKeys = append(dataKeys, k)
+	}
+
+	sort.Strings(dataKeys)
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
 
-	for i, dataType := range dataTypes {
+	for i, dataType := range dataKeys {
 
+		values := data[dataType]
 		deviceId := fmt.Sprintf("x000%v", i)
 		deviceName := fmt.Sprintf("device %v", i)
 
 		for tIdx, timestamp := range timestamps {
+			var value any = 0
+			if dataType == "numeric" {
+				v, _ := values.([]float32)
+				value = v[tIdx]
 
-			dev := createMockDevice(deviceId, deviceName, 2, dataType, *timestamp, values[tIdx])
+			} else if dataType == "binary" {
+				v, _ := values.([]string)
+				value = v[tIdx]
 
+			} else if dataType == "enum" {
+				v, _ := values.([]int)
+				value = v[tIdx]
+			}
+
+			dev := createMockDevice(deviceId, deviceName, 2, dataType, *timestamp, value)
 			err = repo.Store(dev)
 			if err != nil {
 				t.Error("failed to store metrics ", err.Error())
@@ -169,7 +194,10 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 	}
 
 	// query and assert
-	for i, dataType := range dataTypes {
+
+	for i, dataType := range dataKeys {
+
+		values := data[dataType]
 		deviceId := fmt.Sprintf("x000%v", i)
 
 		dev := devices[deviceId]
@@ -183,7 +211,7 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 			t.Error("failed to query metrics: ", err.Error())
 		}
 
-		assertDeviceEvents(dev, result, timestamps, values, t)
+		assertDeviceAnyDataTypeEvents(dev, result, timestamps, values, t)
 	}
 }
 
@@ -198,7 +226,7 @@ func TestExposeTimeRangeMetrics(t *testing.T) {
 	}
 
 	timestamps := CreateDateTimeTimestamps(1, 24, 1)
-	values := CreateValues(24)
+	values := CreateFloatValues(24)
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
 	numDevices := 3
 
@@ -235,7 +263,7 @@ func TestExposeTimeRangeMetrics(t *testing.T) {
 			t.Error("failed to query metrics: ", err.Error())
 		}
 
-		assertDeviceExposeEvents(dev, result, property, timestamps, values, t)
+		assertDeviceExposeFloatDataEvents(dev, result, property, timestamps, values, t)
 	}
 }
 
@@ -250,7 +278,7 @@ func TestMultipleExposeTimeRangeMetrics(t *testing.T) {
 	}
 
 	timestamps := CreateDateTimeTimestamps(1, 24, 1)
-	values := CreateValues(24)
+	values := CreateFloatValues(24)
 	numOfExposes := 10
 	deviceIds := []string{"x0000"}
 	exposes := []string{"property_x0000_1", "property_x0000_2", "property_x0000_4"}
@@ -285,12 +313,12 @@ func TestMultipleExposeTimeRangeMetrics(t *testing.T) {
 				t.Error("failed to query metrics: ", err.Error())
 			}
 
-			assertDeviceExposeEvents(dev, result, exposeName, timestamps, values, t)
+			assertDeviceExposeFloatDataEvents(dev, result, exposeName, timestamps, values, t)
 		}
 	}
 }
 
-func assertDeviceExposeEvents(device *devices.Device, result *devices.DeviceMetricsResult, exposeName string, timestamps []*time.Time, values []float32, t *testing.T) {
+func assertDeviceExposeFloatDataEvents(device *devices.Device, result *devices.DeviceMetricsResult, exposeName string, timestamps []*time.Time, values []float32, t *testing.T) {
 	if result.DeviceId != device.Id {
 		t.Errorf("deviceId mismatch want %v got %v: ", device.Id, result.DeviceId)
 	}
@@ -342,7 +370,86 @@ func assertDeviceExposeEvents(device *devices.Device, result *devices.DeviceMetr
 	}
 
 }
+func assertDeviceAnyDataTypeEvents(device *devices.Device, result *devices.DeviceMetricsResult, timestamps []*time.Time, values any, t *testing.T) {
 
+	if result.DeviceId != device.Id {
+		t.Errorf("deviceId mismatch want %v got %v: ", device.Id, result.DeviceId)
+	}
+
+	gotNumExposes := len(result.Expose)
+	wantNumExposes := len(device.Exposes)
+	if gotNumExposes != wantNumExposes {
+		t.Errorf("Exposes mismatch want %v got %v: ", wantNumExposes, gotNumExposes)
+	}
+
+	// sort exposekeys in same sequence as results.
+	exposekeys := make([]string, 0, len(device.Exposes))
+	for k := range device.Exposes {
+		exposekeys = append(exposekeys, k)
+	}
+
+	sort.Strings(exposekeys)
+
+	idx := 0
+	for _, key := range exposekeys {
+
+		expose := device.Exposes[key]
+		event := result.Expose[idx]
+
+		if event.Name != expose.Name {
+			t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, event.Name)
+		}
+		dataType, ok := kindFromString(event.Type)
+		if !ok {
+			t.Errorf("invalid event.type want %v got %v: ", event.Type, dataType)
+		}
+
+		for fId, foundTs := range event.Timestamp {
+			tsFound := false
+			dataIdx := 0
+			foundTsUnix := foundTs.Unix()
+
+			for insertIdx, insertTs := range timestamps {
+				insertTsUnix := insertTs.Unix()
+
+				if foundTsUnix == insertTsUnix {
+					tsFound = true
+					dataIdx = insertIdx
+					break
+				}
+			}
+
+			if !tsFound {
+				t.Fatalf(fmt.Sprintf("Timestamp not found %v", foundTs))
+			}
+			var value any = 0
+			if dataType == reflect.Float32 {
+				v, _ := values.([]float32)
+				value = v[dataIdx]
+
+			} else if dataType == reflect.String {
+				v, _ := values.([]string)
+				value = v[dataIdx]
+
+			} else if dataType == reflect.Int {
+				v, _ := values.([]int)
+				value = v[dataIdx]
+			}
+
+			wantKind := reflect.TypeOf(value).Kind()
+			if dataType != wantKind {
+				t.Fatalf(fmt.Sprintf("Type mismatch want: %v got: %v", wantKind.String(), dataType.String()))
+			}
+
+			if value != event.Values[fId] {
+				t.Fatalf(fmt.Sprintf("Value mismatch want:%v got: %v", value, event.Values[fId]))
+			}
+			//fmt.Printf("found event %v with data: %v, timestamp: %v \n", expose.Name, event.Values[fId], foundTs)
+		}
+
+		idx++
+	}
+}
 func assertDeviceEvents(device *devices.Device, result *devices.DeviceMetricsResult, timestamps []*time.Time, values []float32, t *testing.T) {
 
 	if result.DeviceId != device.Id {
@@ -483,7 +590,7 @@ func CreateDateTimeTimestamps(numberOfDays int, numberOfHours int, numberOfMinut
 	return timestamps
 }
 
-func CreateValues(numOfItems int) []float32 {
+func CreateFloatValues(numOfItems int) []float32 {
 	var values []float32 = make([]float32, numOfItems)
 	for i := 0; i < numOfItems; i++ {
 		values[i] = floatrandom(10, 100)
