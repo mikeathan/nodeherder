@@ -17,7 +17,6 @@ import (
 const baseFilename = "metrics.db"
 
 type MetricsRepo struct {
-	store map[string]*devices.Device
 	mutex sync.RWMutex
 	db    *bolt.DB
 }
@@ -35,7 +34,6 @@ func NewMetricsRepoFromFile(filename string) (devices.MetricsRepository, error) 
 	}
 
 	return &MetricsRepo{
-		store: map[string]*devices.Device{},
 		mutex: sync.RWMutex{},
 		db:    db,
 	}, nil
