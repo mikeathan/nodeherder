@@ -19,11 +19,20 @@ func NewMemoryDeviceRepo() devices.Repository {
 	}
 }
 
-func (s *MemoryDeviceRepo) Store(key string, device *devices.Device) {
+func (s *MemoryDeviceRepo) StoreBridge(brigeInfo []*devices.BridgeInfo) error {
+	return nil
+}
+func (s *MemoryDeviceRepo) FindBridgeInfo(ids []string) ([]*devices.BridgeInfo, error) {
+	return nil, nil
+}
+
+func (s *MemoryDeviceRepo) Store(key string, device *devices.Device) error {
 
 	defer s.mutex.Unlock()
 	s.mutex.Lock()
 	s.store[key] = device
+
+	return nil
 }
 
 func (s *MemoryDeviceRepo) FindDevice(id string) (*devices.Device, error) {
@@ -38,7 +47,7 @@ func (s *MemoryDeviceRepo) FindDevice(id string) (*devices.Device, error) {
 	return nil, errors.New("device not found")
 }
 
-func (s *MemoryDeviceRepo) FindDevices(ids []string) []*devices.Device {
+func (s *MemoryDeviceRepo) FindDevices(ids []string) ([]*devices.Device, error) {
 	ds := []*devices.Device{}
 
 	defer s.mutex.RUnlock()
@@ -50,9 +59,9 @@ func (s *MemoryDeviceRepo) FindDevices(ids []string) []*devices.Device {
 		}
 	}
 
-	return ds
+	return ds, nil
 }
-func (s *MemoryDeviceRepo) AllDevices() []*devices.Device {
+func (s *MemoryDeviceRepo) AllDevices() ([]*devices.Device, error) {
 
 	// sort before returning values
 	s.mutex.RLock()
@@ -71,5 +80,5 @@ func (s *MemoryDeviceRepo) AllDevices() []*devices.Device {
 		devices = append(devices, device)
 	}
 
-	return devices
+	return devices, nil
 }

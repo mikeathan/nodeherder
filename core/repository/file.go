@@ -5,7 +5,6 @@ import (
 	"errors"
 	"node-herder/models/devices"
 	"node-herder/utils"
-	"sort"
 	"sync"
 
 	"github.com/boltdb/bolt"
@@ -48,7 +47,7 @@ func (s *FileDeviceRepo) StoreBridge(brigeInfo []*devices.BridgeInfo) error {
 			return err
 		}
 
-		return bucket.Put([]byte("devicesBridgeInfo"), buf)
+		return bucket.Put([]byte("deviceInfo"), buf)
 	})
 
 	return err
@@ -60,6 +59,7 @@ func (s *FileDeviceRepo) Close() {
 		utils.LogError(err)
 	}
 }
+
 func (s *FileDeviceRepo) Store(key string, device *devices.Device) error {
 
 	defer s.mutex.Unlock()
@@ -86,6 +86,27 @@ func (s *FileDeviceRepo) Store(key string, device *devices.Device) error {
 
 func (s *FileDeviceRepo) FindBridgeInfo(ids []string) ([]*devices.BridgeInfo, error) {
 
+	var bridgeInfo []*devices.BridgeInfo
+	err := s.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte("bridge"))
+		if bucket == nil {
+			return bolt.ErrBucketNotFound
+		}
+
+		buffer := bucket.Get([]byte("deviceInfo"))
+		if buffer != nil {
+			return errors.New("key not found")
+		}
+
+		err := json.Unmarshal(buffer, &bridgeInfo)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return bridgeInfo, err
 }
 
 func (s *FileDeviceRepo) FindDevice(id string) (*devices.Device, error) {
@@ -93,46 +114,100 @@ func (s *FileDeviceRepo) FindDevice(id string) (*devices.Device, error) {
 	defer s.mutex.RUnlock()
 
 	s.mutex.RLock()
-	if val, ok := s.store[id]; ok {
-		return val, nil
-	}
-
-	return nil, errors.New("device not found")
+	return s.findDevice(id)
 }
 
-func (s *FileDeviceRepo) FindDevices(ids []string) []*devices.Device {
-	ds := []*devices.Device{}
+func (s *FileDeviceRepo) FindDevices(ids []string) ([]*devices.Device, error) {
 
 	defer s.mutex.RUnlock()
 
 	s.mutex.RLock()
-	for _, id := range ids {
-		if val, ok := s.store[id]; ok {
-			ds = append(ds, val)
-		}
-	}
-
-	return ds
+	return s.FindDevices(ids)
 }
 
-func (s *FileDeviceRepo) AllDevices() []*devices.Device {
+func (s *FileDeviceRepo) findAllDevices() ([]*devices.Device, error) {
+	var deviceList []*devices.Device
+	err := s.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte("devices"))
+		if bucket == nil {
+			return bolt.ErrBucketNotFound
+		}
+
+		c := bucket.Cursor()
+
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			var device *devices.Device
+			err := json.Unmarshal(v, &device)
+			if err != nil {
+				return err
+			}
+			deviceList = append(deviceList, device)
+
+		}
+
+		return nil
+	})
+
+	return deviceList, err
+}
+
+func (s *FileDeviceRepo) findDevices(keys []string) ([]*devices.Device, error) {
+	var deviceList []*devices.Device
+	err := s.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte("devices"))
+		if bucket == nil {
+			return bolt.ErrBucketNotFound
+		}
+
+		for _, key := range keys {
+			buffer := bucket.Get([]byte(key))
+			if buffer != nil {
+				return errors.New("key not found")
+			}
+
+			var device *devices.Device
+			err := json.Unmarshal(buffer, &device)
+			if err != nil {
+				return err
+			}
+
+			deviceList = append(deviceList, device)
+		}
+
+		return nil
+	})
+
+	return deviceList, err
+}
+
+func (s *FileDeviceRepo) findDevice(key string) (*devices.Device, error) {
+	var device *devices.Device
+	err := s.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte("devices"))
+		if bucket == nil {
+			return bolt.ErrBucketNotFound
+		}
+
+		buffer := bucket.Get([]byte(key))
+		if buffer != nil {
+			return errors.New("key not found")
+		}
+
+		err := json.Unmarshal(buffer, &device)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return device, err
+}
+
+func (s *FileDeviceRepo) AllDevices() ([]*devices.Device, error) {
 
 	// sort before returning values
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
-
-	keys := make([]string, 0, len(s.store))
-	for k := range s.store {
-		keys = append(keys, k)
-	}
-
-	sort.Strings(keys)
-
-	devices := make([]*devices.Device, 0, len(s.store))
-	for _, key := range keys {
-		device := s.store[key]
-		devices = append(devices, device)
-	}
-
-	return devices
+	return s.findAllDevices()
 }

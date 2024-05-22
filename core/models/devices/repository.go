@@ -6,10 +6,12 @@ import (
 
 // this is going to be DeviceRepository
 type Repository interface {
-	AllDevices() []*Device
-	Store(key string, device *Device)
+	AllDevices() ([]*Device, error)
+	Store(key string, device *Device) error
 	FindDevice(key string) (*Device, error)
-	FindDevices(ids []string) []*Device
+	FindDevices(ids []string) ([]*Device, error)
+	StoreBridge(brigeInfo []*BridgeInfo) error
+	FindBridgeInfo(ids []string) ([]*BridgeInfo, error)
 }
 
 type MetricsRepository interface {
