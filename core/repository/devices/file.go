@@ -94,7 +94,7 @@ func (s *FileDeviceRepo) FindBridgeInfo(ids []string) ([]*devices.BridgeInfo, er
 		}
 
 		buffer := bucket.Get([]byte("deviceInfo"))
-		if buffer != nil {
+		if buffer == nil {
 			return errors.New("key not found")
 		}
 
@@ -189,7 +189,7 @@ func (s *FileDeviceRepo) findDevice(key string) (*devices.Device, error) {
 		}
 
 		buffer := bucket.Get([]byte(key))
-		if buffer != nil {
+		if buffer == nil {
 			return errors.New("key not found")
 		}
 

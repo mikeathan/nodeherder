@@ -47,11 +47,13 @@ func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devi
 	})
 
 	h.eventHub.OnLoadDevices(func() interface{} {
-		return h.repo.AllDevices()
+		devs, _ := h.repo.AllDevices()
+		return devs
 	})
 
 	h.eventHub.OnLoadDeviceList(func(ids []string) interface{} {
-		return h.repo.FindDevices(ids)
+		devs, _ := h.repo.FindDevices(ids)
+		return devs
 	})
 
 	h.eventHub.OnLoadDevice(func(name string) (interface{}, error) {

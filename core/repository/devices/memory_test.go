@@ -1,8 +1,10 @@
 package repository_test
 
 import (
+	"math"
 	"node-herder/models/devices"
 	repository "node-herder/repository/devices"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -41,6 +43,26 @@ func TestRepositoryCanAddOneDevice(t *testing.T) {
 	}
 }
 
+func approxEqualReflect(a, b interface{}) bool {
+	va := reflect.ValueOf(a)
+	vb := reflect.ValueOf(b)
+
+	if va.Kind() != vb.Kind() {
+		return false
+	}
+
+	switch va.Kind() {
+	case reflect.Float32, reflect.Float64:
+		epsilon := 1e-9 // Adjust epsilon based on your desired precision
+		return math.Abs(float64(va.Float())-vb.Float()) < epsilon
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return va.Int() == vb.Int()
+	// Add cases for other numeric types with your comparison logic
+	default:
+		return false
+	}
+}
+
 func validateDevice(t *testing.T, dev1 *devices.Device, dev2 *devices.Device) {
 
 	if dev1.Id != dev2.Id {
@@ -68,6 +90,12 @@ func validateDevice(t *testing.T, dev1 *devices.Device, dev2 *devices.Device) {
 		if expose.Description != inputExpose.Description {
 			t.Fatalf("unexpected expose.Description value")
 		}
+		if !approxEqualReflect(expose.Data, inputExpose.Data) {
+			t.Fatalf("unexpected expose.Data value")
+
+		}
+
+		math.Float32bits(expose.Data)
 		if expose.Data != inputExpose.Data {
 			t.Fatalf("unexpected expose.Data value")
 		}
@@ -82,7 +110,6 @@ func validateDevice(t *testing.T, dev1 *devices.Device, dev2 *devices.Device) {
 
 		}
 	}
-
 }
 
 func TestRepositoryCanAddMultipleDevices(t *testing.T) {
@@ -96,7 +123,7 @@ func TestRepositoryCanAddMultipleDevices(t *testing.T) {
 
 	repo.Store(dev1Name, device1)
 	repo.Store(dev2Name, device2)
-	devices := repo.AllDevices()
+	devices, _ := repo.AllDevices()
 
 	if len(devices) == 0 {
 		t.Fatalf("empty device list")
@@ -124,7 +151,7 @@ func TestRepositoryCanUpdateExistingDevice(t *testing.T) {
 	device1b, _ := devices.CreateNewDevice("1", dev1Name, "mqtt", nil, createMockPayload(dev1Name, 90, 34.7, 36.2, 56.0))
 	repo.Store(dev1Name, device1)
 	repo.Store(dev1Name, device1b)
-	devices := repo.AllDevices()
+	devices, _ := repo.AllDevices()
 
 	if len(devices) == 0 {
 		t.Fatalf("empty device list")
