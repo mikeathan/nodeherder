@@ -43,26 +43,6 @@ func TestRepositoryCanAddOneDevice(t *testing.T) {
 	}
 }
 
-func approxEqualReflect(a, b interface{}) bool {
-	va := reflect.ValueOf(a)
-	vb := reflect.ValueOf(b)
-
-	if va.Kind() != vb.Kind() {
-		return false
-	}
-
-	switch va.Kind() {
-	case reflect.Float32, reflect.Float64:
-		epsilon := 1e-9 // Adjust epsilon based on your desired precision
-		return math.Abs(float64(va.Float())-vb.Float()) < epsilon
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return va.Int() == vb.Int()
-	// Add cases for other numeric types with your comparison logic
-	default:
-		return false
-	}
-}
-
 func validateDevice(t *testing.T, dev1 *devices.Device, dev2 *devices.Device) {
 
 	if dev1.Id != dev2.Id {
@@ -90,13 +70,8 @@ func validateDevice(t *testing.T, dev1 *devices.Device, dev2 *devices.Device) {
 		if expose.Description != inputExpose.Description {
 			t.Fatalf("unexpected expose.Description value")
 		}
-		if !approxEqualReflect(expose.Data, inputExpose.Data) {
-			t.Fatalf("unexpected expose.Data value")
 
-		}
-
-		math.Float32bits(expose.Data)
-		if expose.Data != inputExpose.Data {
+		if equalityCheck(expose.Data, inputExpose.Data) == false {
 			t.Fatalf("unexpected expose.Data value")
 		}
 		if expose.Unit != inputExpose.Unit {
@@ -112,6 +87,25 @@ func validateDevice(t *testing.T, dev1 *devices.Device, dev2 *devices.Device) {
 	}
 }
 
+func equalityCheck(a interface{}, b interface{}) bool {
+
+	va := reflect.ValueOf(a)
+	vb := reflect.ValueOf(b)
+
+	switch va.Kind() {
+	case reflect.Float32, reflect.Float64:
+
+		fl1 := math.Float32bits(float32(va.Float()))
+		fl2 := math.Float32bits(float32(vb.Float()))
+
+		return fl1 == fl2
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return va.Int() == vb.Int()
+	default:
+		return a == b
+	}
+
+}
 func TestRepositoryCanAddMultipleDevices(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()
