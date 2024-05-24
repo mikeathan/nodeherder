@@ -2,7 +2,7 @@ package repository
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"node-herder/models/devices"
 	"node-herder/utils"
 	"sync"
@@ -98,7 +98,7 @@ func (s *FileDeviceRepo) FindBridgeInfo(ids []string) ([]*devices.BridgeInfo, er
 
 		buffer := bucket.Get([]byte(bridgeKey))
 		if buffer == nil {
-			return errors.New("key not found")
+			return fmt.Errorf("key %v not found", bridgeKey)
 		}
 
 		err := json.Unmarshal(buffer, &bridgeInfo)
@@ -165,7 +165,7 @@ func (s *FileDeviceRepo) findDevices(keys []string) ([]*devices.Device, error) {
 		for _, key := range keys {
 			buffer := bucket.Get([]byte(key))
 			if buffer != nil {
-				return errors.New("key not found")
+				return fmt.Errorf("key %v not found", key)
 			}
 
 			var device *devices.Device
@@ -193,7 +193,7 @@ func (s *FileDeviceRepo) findDevice(key string) (*devices.Device, error) {
 
 		buffer := bucket.Get([]byte(key))
 		if buffer == nil {
-			return errors.New("key not found")
+			return fmt.Errorf("key %v not found", key)
 		}
 
 		err := json.Unmarshal(buffer, &device)
