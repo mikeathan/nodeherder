@@ -87,6 +87,97 @@ func validateDevice(t *testing.T, dev1 *devices.Device, dev2 *devices.Device) {
 	}
 }
 
+func compareStructs(s1, s2 interface{}) bool {
+	v1 := reflect.ValueOf(s1).Elem()
+	v2 := reflect.ValueOf(s2).Elem()
+
+	for i := 0; i < v1.NumField(); i++ {
+		field1 := v1.Field(i)
+		field2 := v2.Field(i)
+		if field1.Kind() != field2.Kind() || !reflect.DeepEqual(field1.Interface(), field2.Interface()) {
+			return false
+		}
+	}
+	return true
+}
+
+func validateBridge(t *testing.T, dev1 *devices.BridgeInfo, dev2 *devices.BridgeInfo) {
+	if !compareStructs(dev1, dev2) {
+		t.Fatalf("bridge mismatch")
+	}
+	// if dev1.IeeeAddress != dev2.IeeeAddress {
+	// 	t.Fatalf("device Id mismatch")
+	// }
+	// if dev1.FriendlyName != dev2.FriendlyName {
+	// 	t.Fatalf("device FriendlyName mismatch")
+	// }
+	// if dev1.DateCode != dev2.DateCode {
+	// 	t.Fatalf("device Description mismatch")
+	// }
+
+	// if dev1.Manufacturer != dev2.Manufacturer {
+	// 	t.Fatalf("device PowerSource mismatch")
+	// }
+
+	// if dev1.Type != dev2.Type {
+	// 	t.Fatalf("device PowerSource mismatch")
+	// }
+	// if dev1.SoftwareBuildID != dev2.SoftwareBuildID {
+	// 	t.Fatalf("device PowerSource mismatch")
+	// }
+	// if dev1.PowerSource != dev2.PowerSource {
+	// 	t.Fatalf("device PowerSource mismatch")
+	// }
+	// if dev1.Definition.Description != dev2.Definition.Description {
+	// 	t.Fatalf("device Definition.Description mismatch")
+	// }
+	// if dev1.Definition.Model != dev2.Definition.Model {
+	// 	t.Fatalf("device Definition.Model mismatch")
+	// }
+	// if dev1.Definition.Vendor != dev2.Definition.Vendor {
+	// 	t.Fatalf("device Definition.Vendor mismatch")
+	// }
+	// if dev1.Definition.SupportsOta != dev2.Definition.SupportsOta {
+	// 	t.Fatalf("device Definition.SupportsOta mismatch")
+	// }
+
+	// for eidx, expose := range dev1.Definition.Exposes {
+	// 	expose2:=dev2.Definition.Exposes[eidx]
+	// 	if expose.Name != expose2.Name {
+	// 		t.Fatalf("unexpected expose.Name value")
+	// 	}
+
+	// 	if expose.Name != expose2.Name {
+	// 		t.Fatalf("unexpected expose.Name value")
+	// 	}
+
+	// }
+	// for eidx, expose := range dev1.Exposes {
+	// 	inputExpose := dev2.Exposes[eidx]
+
+	// 	if expose.Name != inputExpose.Name {
+	// 		t.Fatalf("unexpected expose.Name value")
+	// 	}
+	// 	if expose.Description != inputExpose.Description {
+	// 		t.Fatalf("unexpected expose.Description value")
+	// 	}
+
+	// 	if equalityCheck(expose.Data, inputExpose.Data) == false {
+	// 		t.Fatalf("unexpected expose.Data value")
+	// 	}
+	// 	if expose.Unit != inputExpose.Unit {
+	// 		t.Fatalf("unexpected expose.Unit value")
+	// 	}
+	// 	for pidx, property := range expose.Properties {
+	// 		inputproperty := inputExpose.Properties[pidx]
+	// 		if property != inputproperty {
+	// 			t.Fatalf("unexpected property value")
+	// 		}
+
+	// 	}
+	// }
+}
+
 func equalityCheck(a interface{}, b interface{}) bool {
 
 	va := reflect.ValueOf(a)

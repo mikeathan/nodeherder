@@ -77,7 +77,7 @@ func (s *HubRegisterService) CreateNewDevice(friendlyName string, connType strin
 	return device, nil
 }
 
-func (s *HubRegisterService) configureIdMapper(bridgeInfoList []*devices.BridgeInfo) {
+func (s *HubRegisterService) configureIdMapper() {
 
 	// clean up
 	for name, id := range s.idMapper {
@@ -116,7 +116,7 @@ func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo
 
 	s.bridgeInfoList = bridgeInfoList
 
-	s.configureIdMapper(bridgeInfoList)
+	s.configureIdMapper()
 
 	for _, bridgeInfo := range bridgeInfoList {
 		if !bridgeInfo.IsActive() {

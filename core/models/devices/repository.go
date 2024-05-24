@@ -11,7 +11,7 @@ type Repository interface {
 	FindDevice(key string) (*Device, error)
 	FindDevices(ids []string) ([]*Device, error)
 	StoreBridge(brigeInfo []*BridgeInfo) error
-	FindBridgeInfo(ids []string) ([]*BridgeInfo, error)
+	FindBridgeInfo(key string) (*BridgeInfo, error)
 }
 
 type MetricsRepository interface {

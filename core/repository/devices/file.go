@@ -13,7 +13,6 @@ import (
 const baseFilename = "devices.db"
 const devicesBucketName = "devices"
 const bridgeBucketName = "bridge"
-const bridgeKey = "deviceInfo"
 
 type FileDeviceRepo struct {
 	mutex sync.RWMutex
@@ -44,13 +43,19 @@ func (s *FileDeviceRepo) StoreBridge(brigeInfo []*devices.BridgeInfo) error {
 		if err != nil {
 			return err
 		}
+		for _, bridge := range brigeInfo {
+			buf, err := json.Marshal(bridge)
+			if err != nil {
+				return err
+			}
 
-		buf, err := json.Marshal(brigeInfo)
-		if err != nil {
-			return err
+			err = bucket.Put([]byte(bridge.IeeeAddress), buf)
+			if err != nil {
+				return err
+			}
 		}
 
-		return bucket.Put([]byte(bridgeKey), buf)
+		return nil
 	})
 
 	return err
@@ -87,18 +92,18 @@ func (s *FileDeviceRepo) Store(key string, device *devices.Device) error {
 	return err
 }
 
-func (s *FileDeviceRepo) FindBridgeInfo(ids []string) ([]*devices.BridgeInfo, error) {
+func (s *FileDeviceRepo) FindBridgeInfo(key string) (*devices.BridgeInfo, error) {
 
-	var bridgeInfo []*devices.BridgeInfo
+	var bridgeInfo *devices.BridgeInfo
 	err := s.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(bridgeBucketName))
 		if bucket == nil {
 			return bolt.ErrBucketNotFound
 		}
 
-		buffer := bucket.Get([]byte(bridgeKey))
+		buffer := bucket.Get([]byte(key))
 		if buffer == nil {
-			return fmt.Errorf("key %v not found", bridgeKey)
+			return fmt.Errorf("key %v not found", key)
 		}
 
 		err := json.Unmarshal(buffer, &bridgeInfo)
@@ -164,7 +169,7 @@ func (s *FileDeviceRepo) findDevices(keys []string) ([]*devices.Device, error) {
 
 		for _, key := range keys {
 			buffer := bucket.Get([]byte(key))
-			if buffer != nil {
+			if buffer == nil {
 				return fmt.Errorf("key %v not found", key)
 			}
 

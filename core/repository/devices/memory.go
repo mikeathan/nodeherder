@@ -22,7 +22,7 @@ func NewMemoryDeviceRepo() devices.Repository {
 func (s *MemoryDeviceRepo) StoreBridge(brigeInfo []*devices.BridgeInfo) error {
 	return nil
 }
-func (s *MemoryDeviceRepo) FindBridgeInfo(ids []string) ([]*devices.BridgeInfo, error) {
+func (s *MemoryDeviceRepo) FindBridgeInfo(key string) (*devices.BridgeInfo, error) {
 	return nil, nil
 }
 
