@@ -11,6 +11,9 @@ import (
 )
 
 const baseFilename = "devices.db"
+const devicesBucketName = "devices"
+const bridgeBucketName = "bridge"
+const bridgeKey = "deviceInfo"
 
 type FileDeviceRepo struct {
 	mutex sync.RWMutex
@@ -37,7 +40,7 @@ func NewFileDeviceRepoFromFile(filename string) (devices.Repository, error) {
 func (s *FileDeviceRepo) StoreBridge(brigeInfo []*devices.BridgeInfo) error {
 	err := s.db.Update(func(tx *bolt.Tx) error {
 
-		bucket, err := tx.CreateBucketIfNotExists([]byte("bridge"))
+		bucket, err := tx.CreateBucketIfNotExists([]byte(bridgeBucketName))
 		if err != nil {
 			return err
 		}
@@ -47,7 +50,7 @@ func (s *FileDeviceRepo) StoreBridge(brigeInfo []*devices.BridgeInfo) error {
 			return err
 		}
 
-		return bucket.Put([]byte("deviceInfo"), buf)
+		return bucket.Put([]byte(bridgeKey), buf)
 	})
 
 	return err
@@ -67,7 +70,7 @@ func (s *FileDeviceRepo) Store(key string, device *devices.Device) error {
 
 	err := s.db.Update(func(tx *bolt.Tx) error {
 
-		bucket, err := tx.CreateBucketIfNotExists([]byte("devices"))
+		bucket, err := tx.CreateBucketIfNotExists([]byte(devicesBucketName))
 		if err != nil {
 			return err
 		}
@@ -88,12 +91,12 @@ func (s *FileDeviceRepo) FindBridgeInfo(ids []string) ([]*devices.BridgeInfo, er
 
 	var bridgeInfo []*devices.BridgeInfo
 	err := s.db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte("bridge"))
+		bucket := tx.Bucket([]byte(bridgeBucketName))
 		if bucket == nil {
 			return bolt.ErrBucketNotFound
 		}
 
-		buffer := bucket.Get([]byte("deviceInfo"))
+		buffer := bucket.Get([]byte(bridgeKey))
 		if buffer == nil {
 			return errors.New("key not found")
 		}
@@ -122,13 +125,13 @@ func (s *FileDeviceRepo) FindDevices(ids []string) ([]*devices.Device, error) {
 	defer s.mutex.RUnlock()
 
 	s.mutex.RLock()
-	return s.FindDevices(ids)
+	return s.findDevices(ids)
 }
 
 func (s *FileDeviceRepo) findAllDevices() ([]*devices.Device, error) {
 	var deviceList []*devices.Device
 	err := s.db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte("devices"))
+		bucket := tx.Bucket([]byte(devicesBucketName))
 		if bucket == nil {
 			return bolt.ErrBucketNotFound
 		}
@@ -154,7 +157,7 @@ func (s *FileDeviceRepo) findAllDevices() ([]*devices.Device, error) {
 func (s *FileDeviceRepo) findDevices(keys []string) ([]*devices.Device, error) {
 	var deviceList []*devices.Device
 	err := s.db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte("devices"))
+		bucket := tx.Bucket([]byte(devicesBucketName))
 		if bucket == nil {
 			return bolt.ErrBucketNotFound
 		}
@@ -183,7 +186,7 @@ func (s *FileDeviceRepo) findDevices(keys []string) ([]*devices.Device, error) {
 func (s *FileDeviceRepo) findDevice(key string) (*devices.Device, error) {
 	var device *devices.Device
 	err := s.db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte("devices"))
+		bucket := tx.Bucket([]byte(devicesBucketName))
 		if bucket == nil {
 			return bolt.ErrBucketNotFound
 		}
