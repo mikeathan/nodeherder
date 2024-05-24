@@ -11,12 +11,14 @@ import (
 func TestFileRepositoryCanAddAndFindBridgeInfo(t *testing.T) {
 
 	tempfile := tempfile()
-	defer os.Remove(tempfile)
 
 	repo, err := repository.NewFileDeviceRepoFromFile(tempfile)
 	if err != nil {
 		t.Error("failed to initialise device file repo", err.Error())
 	}
+
+	defer repo.Close()
+	defer os.Remove(tempfile)
 
 	bridgeInfo := createMockBridgeInfo()
 
@@ -34,15 +36,45 @@ func TestFileRepositoryCanAddAndFindBridgeInfo(t *testing.T) {
 	}
 }
 
-func TestFileRepositoryCanAddAndFindDevice(t *testing.T) {
+func TestFileRepositoryCanFindAllFindBridgeInfo(t *testing.T) {
 
 	tempfile := tempfile()
-	defer os.Remove(tempfile)
 
 	repo, err := repository.NewFileDeviceRepoFromFile(tempfile)
 	if err != nil {
 		t.Error("failed to initialise device file repo", err.Error())
 	}
+
+	defer repo.Close()
+	defer os.Remove(tempfile)
+
+	inputBridgeInfo := createMockBridgeInfo()
+
+	err = repo.StoreBridge(inputBridgeInfo)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	bridgeList, err := repo.AllBridgeInfo()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	for idx, inputBridge := range inputBridgeInfo {
+		outputBridge := bridgeList[idx]
+		validateBridge(t, inputBridge, outputBridge)
+	}
+}
+func TestFileRepositoryCanAddAndFindDevice(t *testing.T) {
+
+	tempfile := tempfile()
+
+	repo, err := repository.NewFileDeviceRepoFromFile(tempfile)
+	if err != nil {
+		t.Error("failed to initialise device file repo", err.Error())
+	}
+
+	defer repo.Close()
+	defer os.Remove(tempfile)
 
 	name := "device 1"
 	device, _ := devices.CreateNewDevice("1", name, "mqtt", nil, createMockPayload(name, 50, 60.1, 23.5, 120.0))
@@ -63,12 +95,13 @@ func TestFileRepositoryCanAddAndFindDevice(t *testing.T) {
 func TestFileRepositoryCanFindDevices(t *testing.T) {
 
 	tempfile := tempfile()
-	defer os.Remove(tempfile)
 
 	repo, err := repository.NewFileDeviceRepoFromFile(tempfile)
 	if err != nil {
 		t.Error("failed to initialise device file repo", err.Error())
 	}
+	defer repo.Close()
+	defer os.Remove(tempfile)
 
 	device, _ := devices.CreateNewDevice("1", "device 1", "mqtt", nil, createMockPayload("device 1", 50, 60.1, 23.5, 120.0))
 	device2, _ := devices.CreateNewDevice("2", "device 2", "mqtt", nil, createMockPayload("device 2", 23, 12.1, 33.5, 111.0))
@@ -95,12 +128,13 @@ func TestFileRepositoryCanFindDevices(t *testing.T) {
 func TestFileRepositoryCanFindAllDevices(t *testing.T) {
 
 	tempfile := tempfile()
-	defer os.Remove(tempfile)
 
 	repo, err := repository.NewFileDeviceRepoFromFile(tempfile)
 	if err != nil {
 		t.Error("failed to initialise device file repo", err.Error())
 	}
+	defer repo.Close()
+	defer os.Remove(tempfile)
 
 	device, _ := devices.CreateNewDevice("1", "device 1", "mqtt", nil, createMockPayload("device 1", 50, 60.1, 23.5, 120.0))
 	device2, _ := devices.CreateNewDevice("2", "device 2", "mqtt", nil, createMockPayload("device 2", 23, 12.1, 33.5, 111.0))

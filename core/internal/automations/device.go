@@ -95,9 +95,9 @@ func (d *Device) Evaluate(device *devices.Device) bool {
 func (d *Device) configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
 
 	//  check if device with automation id exists. friendyname can change
-	bridgeInfo := registrar.FindBridgeInfo(d.Id)
-	if bridgeInfo == nil {
-		return fmt.Errorf("automation id %s not found", d.Id)
+	bridgeInfo, err := registrar.FindBridgeInfo(d.Id)
+	if err != nil {
+		return err
 	}
 
 	if bridgeInfo.Disabled {
@@ -121,9 +121,9 @@ func (d *Device) configure(registrar services.DeviceRegistrar, client mqtt.MqttC
 // validate actions
 func configureAction(registrar services.DeviceRegistrar, action *MqttAction, client mqtt.MqttClient) error {
 
-	bridgeInfo := registrar.FindBridgeInfo(action.Id)
-	if bridgeInfo == nil {
-		return fmt.Errorf("action id %s not found", action.Id)
+	bridgeInfo, err := registrar.FindBridgeInfo(action.Id)
+	if err != nil {
+		return err
 	}
 
 	for _, e := range bridgeInfo.Definition.Exposes {

@@ -12,12 +12,11 @@ type DeviceRegistrar interface {
 	LookupById(id string) (*devices.Device, error)
 	RetrieveEntityData(id string, property string) (any, error)
 	CreateNewDevice(friendlyName string, connType string, data map[string]interface{}) (*devices.Device, error)
-	FindBridgeInfo(id string) *devices.BridgeInfo
+	FindBridgeInfo(id string) (*devices.BridgeInfo, error)
 	RegisterBridge(bridgeInfoList []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int)
 }
 
 type HubRegisterService struct {
-	bridgeInfoList            []*devices.BridgeInfo
 	idMapper                  map[string]string
 	repo                      devices.Repository
 	eventHub                  ws.EventHub
@@ -63,7 +62,10 @@ func (s *HubRegisterService) LookupById(id string) (*devices.Device, error) {
 func (s *HubRegisterService) CreateNewDevice(friendlyName string, connType string, data map[string]interface{}) (*devices.Device, error) {
 
 	id := s.ResolveId(friendlyName)
-	bridgeInfo := s.FindBridgeInfo(id)
+	bridgeInfo, err := s.repo.FindBridgeInfo(id)
+	if err != nil {
+		return nil, err
+	}
 
 	device, err := devices.CreateNewDevice(id, friendlyName, connType, bridgeInfo, data)
 	if err != nil {
@@ -78,12 +80,16 @@ func (s *HubRegisterService) CreateNewDevice(friendlyName string, connType strin
 }
 
 func (s *HubRegisterService) configureIdMapper() {
+	bridgeInfoList, err := s.repo.AllBridgeInfo()
+	if err != nil {
+		utils.LogErrorf("Error loading bridgeInfList %s", err.Error())
+		return
+	}
 
 	// clean up
 	for name, id := range s.idMapper {
 		var found = false
-		for _, device := range s.bridgeInfoList {
-
+		for _, device := range bridgeInfoList {
 			if device.IeeeAddress == id && device.FriendlyName == name {
 				found = true
 				break
@@ -97,24 +103,22 @@ func (s *HubRegisterService) configureIdMapper() {
 	}
 
 	// setup
-	for _, device := range s.bridgeInfoList {
+	for _, device := range bridgeInfoList {
 		s.idMapper[device.FriendlyName] = device.IeeeAddress
 	}
 }
 
-func (a *HubRegisterService) FindBridgeInfo(id string) *devices.BridgeInfo {
-	for _, device := range a.bridgeInfoList {
-		if device.IeeeAddress == id {
-			return device
-		}
-	}
-
-	return nil
+func (a *HubRegisterService) FindBridgeInfo(id string) (*devices.BridgeInfo, error) {
+	return a.repo.FindBridgeInfo(id)
 }
 
 func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int) {
 
-	s.bridgeInfoList = bridgeInfoList
+	err := s.repo.StoreBridge(bridgeInfoList)
+	if err != nil {
+		utils.LogErrorf("store bridgeinfo failed: %s", err.Error())
+		return
+	}
 
 	s.configureIdMapper()
 

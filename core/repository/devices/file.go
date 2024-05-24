@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"node-herder/models/devices"
-	"node-herder/utils"
 	"sync"
 
 	"github.com/boltdb/bolt"
@@ -13,6 +12,7 @@ import (
 const baseFilename = "devices.db"
 const devicesBucketName = "devices"
 const bridgeBucketName = "bridge"
+const bridgeKeyName = "bridgeInfo"
 
 type FileDeviceRepo struct {
 	mutex sync.RWMutex
@@ -27,7 +27,6 @@ func NewFileDeviceRepoFromFile(filename string) (devices.Repository, error) {
 
 	db, err := bolt.Open(filename, 0600, nil)
 	if err != nil {
-		utils.LogError(err)
 		return nil, err
 	}
 	return &FileDeviceRepo{
@@ -43,17 +42,30 @@ func (s *FileDeviceRepo) StoreBridge(brigeInfo []*devices.BridgeInfo) error {
 		if err != nil {
 			return err
 		}
-		for _, bridge := range brigeInfo {
-			buf, err := json.Marshal(bridge)
-			if err != nil {
-				return err
-			}
 
-			err = bucket.Put([]byte(bridge.IeeeAddress), buf)
-			if err != nil {
-				return err
-			}
+		// save all bridge info in one key so we dont have to update/remove
+		// devices when changed
+		buf, err := json.Marshal(brigeInfo)
+		if err != nil {
+			return err
 		}
+
+		err = bucket.Put([]byte(bridgeKeyName), buf)
+		if err != nil {
+			return err
+		}
+
+		// for _, bridge := range brigeInfo {
+		// 	buf, err := json.Marshal(bridge)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+
+		// 	err = bucket.Put([]byte(bridge.IeeeAddress), buf)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// }
 
 		return nil
 	})
@@ -61,11 +73,12 @@ func (s *FileDeviceRepo) StoreBridge(brigeInfo []*devices.BridgeInfo) error {
 	return err
 }
 
-func (s *FileDeviceRepo) Close() {
+func (s *FileDeviceRepo) Close() error {
 	err := s.db.Close()
 	if err != nil {
-		utils.LogError(err)
+		return err
 	}
+	return nil
 }
 
 func (s *FileDeviceRepo) Store(key string, device *devices.Device) error {
@@ -91,19 +104,17 @@ func (s *FileDeviceRepo) Store(key string, device *devices.Device) error {
 
 	return err
 }
-
-func (s *FileDeviceRepo) FindBridgeInfo(key string) (*devices.BridgeInfo, error) {
-
-	var bridgeInfo *devices.BridgeInfo
+func (s *FileDeviceRepo) AllBridgeInfo() ([]*devices.BridgeInfo, error) {
+	var bridgeInfo []*devices.BridgeInfo
 	err := s.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(bridgeBucketName))
 		if bucket == nil {
 			return bolt.ErrBucketNotFound
 		}
 
-		buffer := bucket.Get([]byte(key))
+		buffer := bucket.Get([]byte(bridgeKeyName))
 		if buffer == nil {
-			return fmt.Errorf("key %v not found", key)
+			return fmt.Errorf("key %v not found", bridgeKeyName)
 		}
 
 		err := json.Unmarshal(buffer, &bridgeInfo)
@@ -115,6 +126,43 @@ func (s *FileDeviceRepo) FindBridgeInfo(key string) (*devices.BridgeInfo, error)
 	})
 
 	return bridgeInfo, err
+}
+
+func (s *FileDeviceRepo) FindBridgeInfo(id string) (*devices.BridgeInfo, error) {
+
+	var bridgeInfo []*devices.BridgeInfo
+	err := s.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(bridgeBucketName))
+		if bucket == nil {
+			return bolt.ErrBucketNotFound
+		}
+
+		buffer := bucket.Get([]byte(bridgeKeyName))
+		if buffer == nil {
+			return fmt.Errorf("key %v not found", bridgeKeyName)
+		}
+
+		err := json.Unmarshal(buffer, &bridgeInfo)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	// just loop over here to find the bridge id, we do that so we dont keep state to
+	// update/delete or insert new bridges. we might want to do that eventually
+
+	for _, bridge := range bridgeInfo {
+		if bridge.IeeeAddress == id {
+			return bridge, nil
+		}
+	}
+	return nil, fmt.Errorf("bridge %v not found", id)
 }
 
 func (s *FileDeviceRepo) FindDevice(id string) (*devices.Device, error) {

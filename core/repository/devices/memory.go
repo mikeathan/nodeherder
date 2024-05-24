@@ -2,28 +2,47 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 	"node-herder/models/devices"
 	"sort"
 	"sync"
 )
 
 type MemoryDeviceRepo struct {
-	store map[string]*devices.Device
-	mutex sync.RWMutex
+	store          map[string]*devices.Device
+	mutex          sync.RWMutex
+	bridgeInfoList []*devices.BridgeInfo
 }
 
 func NewMemoryDeviceRepo() devices.Repository {
 	return &MemoryDeviceRepo{
-		store: map[string]*devices.Device{},
-		mutex: sync.RWMutex{},
+		store:          map[string]*devices.Device{},
+		mutex:          sync.RWMutex{},
+		bridgeInfoList: []*devices.BridgeInfo{},
 	}
 }
 
-func (s *MemoryDeviceRepo) StoreBridge(brigeInfo []*devices.BridgeInfo) error {
+func (s *MemoryDeviceRepo) Close() error {
 	return nil
 }
+
+func (s *MemoryDeviceRepo) StoreBridge(brigeInfo []*devices.BridgeInfo) error {
+	s.bridgeInfoList = brigeInfo
+	return nil
+}
+
+func (s *MemoryDeviceRepo) AllBridgeInfo() ([]*devices.BridgeInfo, error) {
+	return s.bridgeInfoList, nil
+}
+
 func (s *MemoryDeviceRepo) FindBridgeInfo(key string) (*devices.BridgeInfo, error) {
-	return nil, nil
+
+	for _, device := range s.bridgeInfoList {
+		if device.IeeeAddress == key {
+			return device, nil
+		}
+	}
+	return nil, fmt.Errorf("bridge id %v not found", key)
 }
 
 func (s *MemoryDeviceRepo) Store(key string, device *devices.Device) error {
