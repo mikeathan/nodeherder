@@ -98,7 +98,12 @@ note:
 
 - store bridge data ? but overide if we do. no point keeping old
 
-SQLITE
-store
-bridge
-device
+TODO:
+
+Settings struct
+
+Deviceconfig[]
+
+device_id: "0x1222",
+disabled: false,
+history: true

@@ -11,6 +11,7 @@ import (
 
 const baseFilename = "settings.db"
 const settingsBucketName = "settings"
+const settingsKeyName = "device_settings"
 
 type FileSettingsRepo struct {
 	mutex sync.RWMutex
@@ -41,7 +42,7 @@ func (s *FileSettingsRepo) Close() error {
 	return nil
 }
 
-func (s *FileSettingsRepo) Store(key string, value any) error {
+func (s *FileSettingsRepo) Save(value *settings.AppConfig) error {
 	err := s.db.Update(func(tx *bolt.Tx) error {
 
 		bucket, err := tx.CreateBucketIfNotExists([]byte(settingsBucketName))
@@ -54,7 +55,7 @@ func (s *FileSettingsRepo) Store(key string, value any) error {
 			return err
 		}
 
-		err = bucket.Put([]byte(key), buf)
+		err = bucket.Put([]byte(settingsKeyName), buf)
 		if err != nil {
 			return err
 		}
@@ -65,21 +66,46 @@ func (s *FileSettingsRepo) Store(key string, value any) error {
 	return err
 }
 
-func (s *FileSettingsRepo) Get(key string) (any, error) {
+func (s *FileSettingsRepo) FindDeviceConfig(id string) (*settings.DeviceConfig, error) {
 
-	var value any
+	config, err := s.Load()
+	if err != nil {
+		return nil, err
+	}
+
+	if val, ok := config.Devices[id]; ok {
+		return val, nil
+	}
+
+	return nil, fmt.Errorf("device config for id %v not found", id)
+}
+
+func (s *FileSettingsRepo) SaveDeviceConfig(deviceConfig *settings.DeviceConfig) error {
+
+	config, err := s.Load()
+	if err != nil {
+		return err
+	}
+
+	config.Devices[deviceConfig.Id] = deviceConfig
+	return s.Save(config)
+}
+
+func (s *FileSettingsRepo) Load() (*settings.AppConfig, error) {
+
+	var settings *settings.AppConfig
 	err := s.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(settingsBucketName))
 		if bucket == nil {
 			return bolt.ErrBucketNotFound
 		}
 
-		buffer := bucket.Get([]byte(key))
+		buffer := bucket.Get([]byte(settingsKeyName))
 		if buffer == nil {
-			return fmt.Errorf("key %v not found", key)
+			return fmt.Errorf("key %v not found", settings)
 		}
 
-		err := json.Unmarshal(buffer, &value)
+		err := json.Unmarshal(buffer, &settings)
 		if err != nil {
 			return err
 		}
@@ -87,5 +113,5 @@ func (s *FileSettingsRepo) Get(key string) (any, error) {
 		return nil
 	})
 
-	return value, err
+	return settings, err
 }

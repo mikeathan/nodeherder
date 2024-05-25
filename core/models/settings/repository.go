@@ -1,7 +1,9 @@
 package settings
 
 type Repository interface {
-	Store(key string, value any) error
-	Get(key string) (any, error)
+	Save(config *AppConfig) error
+	Load() (*AppConfig, error)
+	FindDeviceConfig(id string) (*DeviceConfig, error)
+	SaveDeviceConfig(deviceConfig *DeviceConfig) error
 	Close() error
 }

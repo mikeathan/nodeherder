@@ -2,6 +2,7 @@ package repository_test
 
 import (
 	"io/ioutil"
+	"node-herder/models/settings"
 	repository "node-herder/repository/settings"
 	"os"
 	"reflect"
@@ -51,7 +52,21 @@ func TestFileSettingsRepositoryCanAddAndFindValue(t *testing.T) {
 	}
 
 }
+func createMockAppConfig() *settings.AppConfig {
+	appconfig := settings.NewAppConfig()
+	cfg := settings.DeviceConfig{}
+	cfg.Id = "x01234567"
+	cfg.Disabled = false
+	cfg.History = true
 
+	appconfig.Add(&cfg)
+
+	cfg2 := settings.DeviceConfig{}
+	cfg2.Id = "x01234567"
+	cfg2.Disabled = false
+	cfg2.History = true
+
+}
 func createMockSettingsJson() string {
 	return `
 	{
