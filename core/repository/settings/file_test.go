@@ -9,6 +9,37 @@ import (
 	"testing"
 )
 
+func TestFileSettingsRepositoryCanAddAndLoad(t *testing.T) {
+
+	tempfile := tempfile()
+
+	repo, err := repository.NewFileSettingsRepoFromFile(tempfile)
+	if err != nil {
+		t.Error("failed to initialise device file repo", err.Error())
+	}
+
+	defer repo.Close()
+	defer os.Remove(tempfile)
+
+	appConfig := createMockAppConfig()
+	err = repo.Save(appConfig)
+	if err != nil {
+		t.Errorf("save failed with %v", err.Error())
+	}
+
+	res, err := repo.Load()
+	if err != nil {
+		t.Errorf("load failed with %v", err.Error())
+	}
+
+	for key, d := range res.Devices {
+		inputDev := appConfig.Devices[key]
+		if !reflect.DeepEqual(d, inputDev) {
+			t.Error("device config mismatch")
+		}
+	}
+}
+
 func TestFileSettingsRepositoryCanAddAndFindValue(t *testing.T) {
 
 	tempfile := tempfile()
@@ -21,37 +52,114 @@ func TestFileSettingsRepositoryCanAddAndFindValue(t *testing.T) {
 	defer repo.Close()
 	defer os.Remove(tempfile)
 
-	testCases := []struct {
-		key   string
-		value any
-	}{
-		{key: "test 1", value: createMockSettingsJson()},
-		{key: "test 2", value: 10.56},
-		{key: "test 3", value: false},
-		{key: "test 4", value: 5.0},
+	appConfig := createMockAppConfig()
+	err = repo.Save(appConfig)
+	if err != nil {
+		t.Errorf("save failed with %v", err.Error())
 	}
 
-	for _, testCase := range testCases {
-		err := repo.Store(testCase.key, testCase.value)
-		if err != nil {
-			t.Errorf("failed storing key %v, error %v", testCase.key, err.Error())
-		}
+	dataKeys := make([]string, 0, len(appConfig.Devices))
+	for k := range appConfig.Devices {
+		dataKeys = append(dataKeys, k)
+	}
+	id := dataKeys[0]
+
+	found, err := repo.FindDeviceConfig(id)
+	if err != nil {
+		t.Errorf("load failed with %v", err.Error())
 	}
 
-	for _, testCase := range testCases {
+	input := appConfig.Devices[id]
 
-		val, err := repo.Get(testCase.key)
-		if err != nil {
-			t.Errorf("failed getting key %v, error %v", testCase.key, err.Error())
-		}
-
-		if !reflect.DeepEqual(val, testCase.value) {
-			t.Errorf("value mismatch for key %v, error %v", testCase.key, err.Error())
-
-		}
+	if !reflect.DeepEqual(input, found) {
+		t.Error("device config mismatch")
 	}
-
 }
+
+func TestFileSettingsRepositoryCanAddNewDeviceConfig(t *testing.T) {
+
+	tempfile := tempfile()
+
+	repo, err := repository.NewFileSettingsRepoFromFile(tempfile)
+	if err != nil {
+		t.Error("failed to initialise device file repo", err.Error())
+	}
+
+	defer repo.Close()
+	defer os.Remove(tempfile)
+
+	appConfig := createMockAppConfig()
+	err = repo.Save(appConfig)
+	if err != nil {
+		t.Errorf("save failed with %v", err.Error())
+	}
+
+	newCfg := &settings.DeviceConfig{}
+	newCfg.Id = "x055555555"
+	newCfg.Disabled = true
+	newCfg.History = false
+
+	repo.SaveDeviceConfig(newCfg)
+
+	found, err := repo.FindDeviceConfig(newCfg.Id)
+	if err != nil {
+		t.Errorf("load failed with %v", err.Error())
+	}
+
+	if !reflect.DeepEqual(newCfg, found) {
+		t.Error("device config mismatch")
+	}
+}
+
+func TestFileSettingsRepositoryCanUpdateExistingDeviceConfig(t *testing.T) {
+
+	tempfile := tempfile()
+
+	repo, err := repository.NewFileSettingsRepoFromFile(tempfile)
+	if err != nil {
+		t.Error("failed to initialise device file repo", err.Error())
+	}
+
+	defer repo.Close()
+	defer os.Remove(tempfile)
+
+	appConfig := createMockAppConfig()
+	err = repo.Save(appConfig)
+	if err != nil {
+		t.Errorf("save failed with %v", err.Error())
+	}
+
+	dataKeys := make([]string, 0, len(appConfig.Devices))
+	for k := range appConfig.Devices {
+		dataKeys = append(dataKeys, k)
+	}
+	id := dataKeys[0]
+
+	found, err := repo.FindDeviceConfig(id)
+	if err != nil {
+		t.Errorf("load failed with %v", err.Error())
+	}
+
+	if (!found.History){
+		t.Error("found.history value invalid. want true got false")
+
+	}
+	found.History = false
+
+	err = repo.SaveDeviceConfig(found)
+	if err != nil {
+		t.Errorf("save failed with %v", err.Error())
+	}
+	updated, err := repo.FindDeviceConfig(id)
+	if err != nil {
+		t.Errorf("load failed with %v", err.Error())
+	}
+	if (updated.History){
+		t.Error("updated.history value invalid. want false got true")
+
+	}
+}
+
 func createMockAppConfig() *settings.AppConfig {
 	appconfig := settings.NewAppConfig()
 	cfg := settings.DeviceConfig{}
@@ -62,9 +170,27 @@ func createMockAppConfig() *settings.AppConfig {
 	appconfig.Add(&cfg)
 
 	cfg2 := settings.DeviceConfig{}
-	cfg2.Id = "x01234567"
-	cfg2.Disabled = false
-	cfg2.History = true
+	cfg2.Id = "x0erp09876"
+	cfg2.Disabled = true
+	cfg2.History = false
+
+	appconfig.Add(&cfg2)
+
+	cfg3 := settings.DeviceConfig{}
+	cfg3.Id = "x0lip1245h"
+	cfg3.Disabled = false
+	cfg3.History = true
+
+	appconfig.Add(&cfg3)
+
+	cfg4 := settings.DeviceConfig{}
+	cfg4.Id = "x9lo0124hggfs"
+	cfg4.Disabled = false
+	cfg4.History = true
+
+	appconfig.Add(&cfg4)
+
+	return appconfig
 
 }
 func createMockSettingsJson() string {
