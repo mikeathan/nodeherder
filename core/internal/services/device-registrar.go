@@ -64,7 +64,7 @@ func (s *HubRegisterService) CreateNewDevice(friendlyName string, connType strin
 	id := s.ResolveId(friendlyName)
 	bridgeInfo, err := s.repo.FindBridgeInfo(id)
 	if err != nil {
-		return nil, err
+		utils.LogInfof("BrideInfo not found for device id:%v friendlyName:%v", id, friendlyName)
 	}
 
 	device, err := devices.CreateNewDevice(id, friendlyName, connType, bridgeInfo, data)
@@ -82,7 +82,7 @@ func (s *HubRegisterService) CreateNewDevice(friendlyName string, connType strin
 func (s *HubRegisterService) configureIdMapper() {
 	bridgeInfoList, err := s.repo.AllBridgeInfo()
 	if err != nil {
-		utils.LogErrorf("Error loading bridgeInfList %s", err.Error())
+		utils.LogErrorf("Error loading bridgeInfoList %s", err.Error())
 		return
 	}
 
