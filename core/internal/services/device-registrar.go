@@ -28,6 +28,11 @@ func NewHubRegisterService(repo devices.Repository, hub ws.EventHub, deviceAvail
 }
 
 func (s *HubRegisterService) Register(friendlyName string, device *devices.Device) {
+
+	// TODO:
+	// have some config to check if device is allowed to publish metrics
+	// and we store metrics here if so.
+
 	id := s.ResolveId(friendlyName)
 
 	s.repo.Store(id, device)
