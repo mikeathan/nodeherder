@@ -1,6 +1,7 @@
-package devices
+package store
 
 import (
+	"node-herder/models/devices"
 	"time"
 )
 
@@ -36,4 +37,11 @@ func NewDeviceMetricsResult(deviceid string) *DeviceMetricsResult {
 
 func (e *DeviceMetricsResult) Add(event *ExposeMetricsResult) {
 	e.Expose = append(e.Expose, event)
+}
+
+type Metrics interface {
+	Store(device *devices.Device) error
+	ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*DeviceMetricsResult, error)
+	ViewExposeTimeRange(device *devices.Device, exposeName string, from time.Time, to time.Time) (*DeviceMetricsResult, error)
+	Close()
 }

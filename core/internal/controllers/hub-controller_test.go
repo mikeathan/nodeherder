@@ -31,9 +31,11 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 
 	name := "device 1"
 	repo := repository.NewMemoryDeviceRepo()
+	metrics := &mocks.NopMetricsStore{}
+
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
 	mqtt.Publish(name, []byte(device1BatterySource))
 
 	time.Sleep(500 * time.Millisecond)
@@ -55,9 +57,11 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 func TestProcessorUpdatesExistingDevice(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()
+	metrics := &mocks.NopMetricsStore{}
+
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
 	mqtt.Publish("device1", []byte(device1BatterySource))
 	mqtt.Publish("device2", []byte(device2))
 	mqtt.Publish("device2", []byte(device1BatterySource))
@@ -84,9 +88,11 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 	name := "device1"
 
 	repo := repository.NewMemoryDeviceRepo()
+	metrics := &mocks.NopMetricsStore{}
+
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
 	mqtt.Publish(name, []byte(device3NoLastSeen))
 
 	want := time.Now().Format(time.RFC3339)
@@ -142,9 +148,10 @@ func TestNewDeviceValuesAreBroadcastedOnly(t *testing.T) {
 
 	ws := newMockBroadcastEventHub(broadcast)
 	repo := repository.NewMemoryDeviceRepo()
+	metrics := &mocks.NopMetricsStore{}
 	mqtt := &mocks.MockMqttClient{}
 
-	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
 	for idx, testCase := range testCases {
 		// reset
 		messageBroadcasted = false
@@ -206,9 +213,11 @@ func TestDevicesBroadcastDeviceEvent(t *testing.T) {
 
 	ws := newMockBroadcastEventHub(broadcast)
 	repo := repository.NewMemoryDeviceRepo()
+	metrics := &mocks.NopMetricsStore{}
+
 	mqtt := &mocks.MockMqttClient{}
 
-	controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
 	for _, testCase := range testCases {
 		payload[testCase.key] = testCase.value
 		data, err := json.Marshal(payload)
@@ -226,9 +235,11 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 
 	name := "device 1"
 	repo := repository.NewMemoryDeviceRepo()
+	metrics := &mocks.NopMetricsStore{}
+
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
 	hub.DeviceAvailabilityTimeoutOverride = 1
 
 	mqtt.Publish(name, []byte(device1BatterySource))
@@ -264,9 +275,10 @@ func TestAvailabilityIsDisposed(t *testing.T) {
 
 	name := "device 1"
 	repo := repository.NewMemoryDeviceRepo()
+	metrics := &mocks.NopMetricsStore{}
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, mqtt, repo, context.Background())
+	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
 	hub.DeviceAvailabilityTimeoutOverride = 1
 
 	mqtt.Publish(name, []byte(device1BatterySource))

@@ -73,8 +73,9 @@ func TestOperationIncreaseValue(t *testing.T) {
 
 	mqtt.OnMessageHandler(messageHandler)
 	eventHub := &mocks.MockEventHub{}
+	metrics := &mocks.NopMetricsStore{}
 
-	registrar := services.NewHubRegisterService(repo, eventHub, 30000)
+	registrar := services.NewHubRegisterService(repo, metrics, eventHub, 30000)
 
 	// create trigger automation
 	ctx := automations.NewDeviceContext()
@@ -162,8 +163,9 @@ func TestOperationDecreaseValue(t *testing.T) {
 
 	mqtt.OnMessageHandler(messageHandler)
 	eventHub := &mocks.MockEventHub{}
+	metrics := &mocks.NopMetricsStore{}
 
-	registrar := services.NewHubRegisterService(repo, eventHub, 30000)
+	registrar := services.NewHubRegisterService(repo, metrics, eventHub, 30000)
 
 	// create trigger automation
 	ctx := automations.NewDeviceContext()
@@ -250,8 +252,9 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 
 	mqtt.OnMessageHandler(messageHandler)
 	eventHub := &mocks.MockEventHub{}
+	metrics := &mocks.NopMetricsStore{}
 
-	registrar := services.NewHubRegisterService(repo, eventHub, 30000)
+	registrar := services.NewHubRegisterService(repo, metrics, eventHub, 30000)
 
 	// create trigger automation
 	ctx := automations.NewDeviceContext()
@@ -340,8 +343,9 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 
 	mqtt.OnMessageHandler(messageHandler)
 	eventHub := &mocks.MockEventHub{}
+	metrics := &mocks.NopMetricsStore{}
 
-	registrar := services.NewHubRegisterService(repo, eventHub, 30000)
+	registrar := services.NewHubRegisterService(repo, metrics, eventHub, 30000)
 
 	// create trigger automation
 	ctx := automations.NewDeviceContext()

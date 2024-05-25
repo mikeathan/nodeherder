@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
+	"node-herder/models/store"
 	"node-herder/utils"
 )
 
@@ -19,12 +20,13 @@ type DeviceRegistrar interface {
 type HubRegisterService struct {
 	idMapper                  map[string]string
 	repo                      devices.Repository
+	metrics                   store.Metrics
 	eventHub                  ws.EventHub
 	deviceAvailabilityTimeout int
 }
 
-func NewHubRegisterService(repo devices.Repository, hub ws.EventHub, deviceAvailabilityTimeout int) *HubRegisterService {
-	return &HubRegisterService{repo: repo, eventHub: hub, idMapper: make(map[string]string), deviceAvailabilityTimeout: deviceAvailabilityTimeout}
+func NewHubRegisterService(repo devices.Repository, metrics store.Metrics, hub ws.EventHub, deviceAvailabilityTimeout int) *HubRegisterService {
+	return &HubRegisterService{repo: repo, metrics: metrics, eventHub: hub, idMapper: make(map[string]string), deviceAvailabilityTimeout: deviceAvailabilityTimeout}
 }
 
 func (s *HubRegisterService) Register(friendlyName string, device *devices.Device) {

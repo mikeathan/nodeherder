@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"node-herder/models/devices"
+	"node-herder/models/store"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/gorilla/websocket"
@@ -235,4 +237,27 @@ func (w *NopDeviceRegistrar) RetrieveEntityData(id string, property string) (any
 	fmt.Println("Mocked RetrieveEntityData")
 	return nil, errors.New("mocked object")
 
+}
+
+// Mock metrics store
+type NopMetricsStore struct {
+}
+
+func (s *NopMetricsStore) Store(device *devices.Device) error {
+	fmt.Println("Mocked Store")
+	return nil
+}
+func (s *NopMetricsStore) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*store.DeviceMetricsResult, error) {
+	fmt.Println("Mocked ViewDeviceTimeRange")
+	return nil, nil
+}
+
+func (s *NopMetricsStore) ViewExposeTimeRange(device *devices.Device, exposeName string, from time.Time, to time.Time) (*store.DeviceMetricsResult, error) {
+
+	fmt.Println("Mocked ViewExposeTimeRange")
+	return nil, nil
+}
+
+func (s *NopMetricsStore) Close() {
+	fmt.Println("Mocked Close")
 }

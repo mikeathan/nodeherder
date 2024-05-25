@@ -7,6 +7,7 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
+	"node-herder/models/store"
 )
 
 func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, ctx context.Context) *api.ApiServer {
@@ -36,12 +37,12 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, ctx c
 	return apiServer
 }
 
-func Register(port int, repo devices.Repository, config mqtt.MqttConfig, ctx context.Context) *api.ApiServer {
+func Register(port int, repo devices.Repository, metrics store.Metrics, config mqtt.MqttConfig, ctx context.Context) *api.ApiServer {
 
 	ws := ws.NewWsHub()
 	mqtt := mqtt.NewMqttClient(config)
 
-	hub := controllers.RegisterHubController(ws, mqtt, repo, ctx)
+	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, ctx)
 
 	return registerApi(port, ws, hub, ctx)
 }

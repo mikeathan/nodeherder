@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"node-herder/internal/metrics"
 	"node-herder/models/devices"
+	"node-herder/models/store"
 	"os"
 	"reflect"
 	"sort"
@@ -43,7 +44,7 @@ func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
 	tempfile := tempfile()
 	defer os.Remove(tempfile)
 
-	repo, err := metrics.NewMetricsRepoFromFile(tempfile)
+	repo, err := metrics.NewStoreFromFile(tempfile)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
@@ -88,7 +89,7 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 	tempfile := tempfile()
 	defer os.Remove(tempfile)
 
-	repo, err := metrics.NewMetricsRepoFromFile(tempfile)
+	repo, err := metrics.NewStoreFromFile(tempfile)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
@@ -141,7 +142,7 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 	tempfile := tempfile()
 	defer os.Remove(tempfile)
 
-	repo, err := metrics.NewMetricsRepoFromFile(tempfile)
+	repo, err := metrics.NewStoreFromFile(tempfile)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
@@ -220,7 +221,7 @@ func TestExposeTimeRangeMetrics(t *testing.T) {
 	tempfile := tempfile()
 	defer os.Remove(tempfile)
 
-	repo, err := metrics.NewMetricsRepoFromFile(tempfile)
+	repo, err := metrics.NewStoreFromFile(tempfile)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
@@ -272,7 +273,7 @@ func TestMultipleExposeTimeRangeMetrics(t *testing.T) {
 	tempfile := tempfile()
 	defer os.Remove(tempfile)
 
-	repo, err := metrics.NewMetricsRepoFromFile(tempfile)
+	repo, err := metrics.NewStoreFromFile(tempfile)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
@@ -318,7 +319,7 @@ func TestMultipleExposeTimeRangeMetrics(t *testing.T) {
 	}
 }
 
-func assertDeviceExposeFloatDataEvents(device *devices.Device, result *devices.DeviceMetricsResult, exposeName string, timestamps []*time.Time, values []float32, t *testing.T) {
+func assertDeviceExposeFloatDataEvents(device *devices.Device, result *store.DeviceMetricsResult, exposeName string, timestamps []*time.Time, values []float32, t *testing.T) {
 	if result.DeviceId != device.Id {
 		t.Errorf("deviceId mismatch want %v got %v: ", device.Id, result.DeviceId)
 	}
@@ -370,7 +371,7 @@ func assertDeviceExposeFloatDataEvents(device *devices.Device, result *devices.D
 	}
 
 }
-func assertDeviceAnyDataTypeEvents(device *devices.Device, result *devices.DeviceMetricsResult, timestamps []*time.Time, values any, t *testing.T) {
+func assertDeviceAnyDataTypeEvents(device *devices.Device, result *store.DeviceMetricsResult, timestamps []*time.Time, values any, t *testing.T) {
 
 	if result.DeviceId != device.Id {
 		t.Errorf("deviceId mismatch want %v got %v: ", device.Id, result.DeviceId)
@@ -450,7 +451,7 @@ func assertDeviceAnyDataTypeEvents(device *devices.Device, result *devices.Devic
 		idx++
 	}
 }
-func assertDeviceEvents(device *devices.Device, result *devices.DeviceMetricsResult, timestamps []*time.Time, values []float32, t *testing.T) {
+func assertDeviceEvents(device *devices.Device, result *store.DeviceMetricsResult, timestamps []*time.Time, values []float32, t *testing.T) {
 
 	if result.DeviceId != device.Id {
 		t.Errorf("deviceId mismatch want %v got %v: ", device.Id, result.DeviceId)

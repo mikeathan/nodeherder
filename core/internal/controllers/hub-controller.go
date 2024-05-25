@@ -10,6 +10,7 @@ import (
 	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
+	"node-herder/models/store"
 	"strconv"
 
 	"node-herder/utils"
@@ -20,6 +21,7 @@ type HubController struct {
 	eventHub                          ws.EventHub
 	mqtt                              mqtt.MqttClient
 	repo                              devices.Repository
+	metrics                           store.Metrics
 	wp                                *utils.WorkerPool
 	handlers                          map[string]handler
 	DeviceAvailabilityTimeoutOverride int
@@ -27,17 +29,18 @@ type HubController struct {
 	registrar                         *services.HubRegisterService
 }
 
-func RegisterHubController(eventHub ws.EventHub, mqtt mqtt.MqttClient, repo devices.Repository, ctx context.Context) *HubController {
+func RegisterHubController(eventHub ws.EventHub, metrics store.Metrics, mqtt mqtt.MqttClient, repo devices.Repository, ctx context.Context) *HubController {
 
 	h := &HubController{
 		eventHub:                          eventHub,
+		metrics:                           metrics,
 		mqtt:                              mqtt,
 		repo:                              repo,
 		handlers:                          map[string]handler{},
 		DeviceAvailabilityTimeoutOverride: 3600,
 	}
 
-	h.registrar = services.NewHubRegisterService(repo, eventHub, 3600)
+	h.registrar = services.NewHubRegisterService(repo, metrics, eventHub, 3600)
 	h.automationEngine = automations.NewEngine(h.registrar, mqtt)
 	h.wp = utils.NewWorkerPool(1, ctx)
 	h.wp.Run()
