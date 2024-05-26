@@ -9,7 +9,7 @@ import (
 	"github.com/boltdb/bolt"
 )
 
-const baseFilename = "settings.db"
+const settingsBaseFilename = "settings.db"
 const settingsBucketName = "settings"
 const settingsKeyName = "device_settings"
 
@@ -19,7 +19,7 @@ type FileSettingsRepo struct {
 }
 
 func NewFileSettingsRepo() (settings.Repository, error) {
-	return NewFileSettingsRepoFromFile(baseFilename)
+	return NewFileSettingsRepoFromFile(settingsBaseFilename)
 }
 
 func NewFileSettingsRepoFromFile(filename string) (settings.Repository, error) {

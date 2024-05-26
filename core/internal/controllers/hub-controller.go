@@ -10,7 +10,7 @@ import (
 	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
-	"node-herder/models/store"
+	"node-herder/models/metrics"
 	"strconv"
 
 	"node-herder/utils"
@@ -21,7 +21,7 @@ type HubController struct {
 	eventHub                          ws.EventHub
 	mqtt                              mqtt.MqttClient
 	repo                              devices.Repository
-	metrics                           store.Metrics
+	metrics                           metrics.Repository
 	wp                                *utils.WorkerPool
 	handlers                          map[string]handler
 	DeviceAvailabilityTimeoutOverride int
@@ -29,7 +29,7 @@ type HubController struct {
 	registrar                         *services.HubRegisterService
 }
 
-func RegisterHubController(eventHub ws.EventHub, metrics store.Metrics, mqtt mqtt.MqttClient, repo devices.Repository, ctx context.Context) *HubController {
+func RegisterHubController(eventHub ws.EventHub, metrics metrics.Repository, mqtt mqtt.MqttClient, repo devices.Repository, ctx context.Context) *HubController {
 
 	h := &HubController{
 		eventHub:                          eventHub,

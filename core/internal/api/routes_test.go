@@ -8,7 +8,7 @@ import (
 	"node-herder/internal/api"
 	"node-herder/internal/controllers"
 	"node-herder/mocks"
-	repository "node-herder/repository/devices"
+	"node-herder/repository"
 	"node-herder/utils"
 	"strings"
 	"testing"
@@ -25,7 +25,7 @@ func TestHandleMissingDeviceIdPayload(t *testing.T) {
 	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 
 	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
 	bodyReader := strings.NewReader(string(missingDeviceIdPayload))
@@ -50,7 +50,7 @@ func TestHandleMissingDeviceIdPayload(t *testing.T) {
 func TestHandleInvalidDataPayload(t *testing.T) {
 	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 
 	mqtt := &mocks.MockMqttClient{}
 	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
@@ -73,7 +73,7 @@ func TestHandleSuccesfullyRootPayload(t *testing.T) {
 	name := "device 1"
 	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 
 	mqtt := &mocks.MockMqttClient{}
 	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
@@ -108,7 +108,7 @@ func TestHandleInvalidRootPayload(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 
 	mqtt := &mocks.MockMqttClient{}
 	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
@@ -140,7 +140,7 @@ func TestProcessorHandleRootPayloadWithTimestamp(t *testing.T) {
 	device1RootPayload := `{"nickname":"device1","timestamp":"2023-07-20T19:48:35+01:00", "readings":{"humidity":92.1,"temperature":19.3}}`
 
 	repo := repository.NewMemoryDeviceRepo()
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
@@ -180,7 +180,7 @@ func TestHandleSuccesfullyPayload(t *testing.T) {
 	name := "gas_monitor"
 	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 
 	mqtt := &mocks.MockMqttClient{}
 	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
@@ -218,7 +218,7 @@ func TestHandleUnsuportedMediaType(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 
 	mqtt := &mocks.MockMqttClient{}
 	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())

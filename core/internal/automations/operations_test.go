@@ -8,7 +8,7 @@ import (
 	"node-herder/internal/services"
 	"node-herder/mocks"
 	"node-herder/models/devices"
-	repository "node-herder/repository/devices"
+	"node-herder/repository"
 	"sort"
 	"strings"
 	"sync"
@@ -73,7 +73,7 @@ func TestOperationIncreaseValue(t *testing.T) {
 
 	mqtt.OnMessageHandler(messageHandler)
 	eventHub := &mocks.MockEventHub{}
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 
 	registrar := services.NewHubRegisterService(repo, metrics, eventHub, 30000)
 
@@ -163,7 +163,7 @@ func TestOperationDecreaseValue(t *testing.T) {
 
 	mqtt.OnMessageHandler(messageHandler)
 	eventHub := &mocks.MockEventHub{}
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 
 	registrar := services.NewHubRegisterService(repo, metrics, eventHub, 30000)
 
@@ -252,7 +252,7 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 
 	mqtt.OnMessageHandler(messageHandler)
 	eventHub := &mocks.MockEventHub{}
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 
 	registrar := services.NewHubRegisterService(repo, metrics, eventHub, 30000)
 
@@ -343,7 +343,7 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 
 	mqtt.OnMessageHandler(messageHandler)
 	eventHub := &mocks.MockEventHub{}
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 
 	registrar := services.NewHubRegisterService(repo, metrics, eventHub, 30000)
 

@@ -3,7 +3,7 @@ package repository_test
 import (
 	"math"
 	"node-herder/models/devices"
-	repository "node-herder/repository/devices"
+	"node-herder/repository"
 	"reflect"
 	"testing"
 	"time"

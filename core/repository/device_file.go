@@ -9,7 +9,7 @@ import (
 	"github.com/boltdb/bolt"
 )
 
-const baseFilename = "devices.db"
+const deviceBaseFilename = "devices.db"
 const devicesBucketName = "devices"
 const bridgeBucketName = "bridge"
 const bridgeKeyName = "bridgeInfo"
@@ -20,7 +20,7 @@ type FileDeviceRepo struct {
 }
 
 func NewFileDeviceRepo() (devices.Repository, error) {
-	return NewFileDeviceRepoFromFile(baseFilename)
+	return NewFileDeviceRepoFromFile(deviceBaseFilename)
 }
 
 func NewFileDeviceRepoFromFile(filename string) (devices.Repository, error) {
@@ -54,18 +54,6 @@ func (s *FileDeviceRepo) StoreBridge(brigeInfo []*devices.BridgeInfo) error {
 		if err != nil {
 			return err
 		}
-
-		// for _, bridge := range brigeInfo {
-		// 	buf, err := json.Marshal(bridge)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-
-		// 	err = bucket.Put([]byte(bridge.IeeeAddress), buf)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// }
 
 		return nil
 	})

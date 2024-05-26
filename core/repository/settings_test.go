@@ -3,7 +3,7 @@ package repository_test
 import (
 	"io/ioutil"
 	"node-herder/models/settings"
-	repository "node-herder/repository/settings"
+	"node-herder/repository"
 	"os"
 	"reflect"
 	"testing"
@@ -140,7 +140,7 @@ func TestFileSettingsRepositoryCanUpdateExistingDeviceConfig(t *testing.T) {
 		t.Errorf("load failed with %v", err.Error())
 	}
 
-	if (!found.History){
+	if !found.History {
 		t.Error("found.history value invalid. want true got false")
 
 	}
@@ -154,7 +154,7 @@ func TestFileSettingsRepositoryCanUpdateExistingDeviceConfig(t *testing.T) {
 	if err != nil {
 		t.Errorf("load failed with %v", err.Error())
 	}
-	if (updated.History){
+	if updated.History {
 		t.Error("updated.history value invalid. want false got true")
 
 	}

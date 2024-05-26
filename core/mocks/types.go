@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"node-herder/models/devices"
-	"node-herder/models/store"
+	"node-herder/models/metrics"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -240,24 +240,24 @@ func (w *NopDeviceRegistrar) RetrieveEntityData(id string, property string) (any
 }
 
 // Mock metrics store
-type NopMetricsStore struct {
+type NopMetricsRepo struct {
 }
 
-func (s *NopMetricsStore) Store(device *devices.Device) error {
+func (s *NopMetricsRepo) Store(device *devices.Device) error {
 	fmt.Println("Mocked Store")
 	return nil
 }
-func (s *NopMetricsStore) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*store.DeviceMetricsResult, error) {
+func (s *NopMetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 	fmt.Println("Mocked ViewDeviceTimeRange")
 	return nil, nil
 }
 
-func (s *NopMetricsStore) ViewExposeTimeRange(device *devices.Device, exposeName string, from time.Time, to time.Time) (*store.DeviceMetricsResult, error) {
+func (s *NopMetricsRepo) ViewExposeTimeRange(device *devices.Device, exposeName string, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 
 	fmt.Println("Mocked ViewExposeTimeRange")
 	return nil, nil
 }
 
-func (s *NopMetricsStore) Close() {
+func (s *NopMetricsRepo) Close() {
 	fmt.Println("Mocked Close")
 }

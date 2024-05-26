@@ -1,4 +1,4 @@
-package store
+package metrics
 
 import (
 	"node-herder/models/devices"
@@ -39,7 +39,7 @@ func (e *DeviceMetricsResult) Add(event *ExposeMetricsResult) {
 	e.Expose = append(e.Expose, event)
 }
 
-type Metrics interface {
+type Repository interface {
 	Store(device *devices.Device) error
 	ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*DeviceMetricsResult, error)
 	ViewExposeTimeRange(device *devices.Device, exposeName string, from time.Time, to time.Time) (*DeviceMetricsResult, error)

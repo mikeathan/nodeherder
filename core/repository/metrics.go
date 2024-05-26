@@ -1,11 +1,11 @@
-package metrics
+package repository
 
 import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
 	"node-herder/models/devices"
-	"node-herder/models/store"
+	"node-herder/models/metrics"
 	"node-herder/utils"
 	"reflect"
 	"sort"
@@ -15,18 +15,18 @@ import (
 	"github.com/boltdb/bolt"
 )
 
-const baseFilename = "metrics.db"
+const metricsBaseFilename = "metrics.db"
 
-type MetricsStore struct {
+type MetricsRepo struct {
 	mutex *sync.RWMutex
 	db    *bolt.DB
 }
 
-func NewStore() (store.Metrics, error) {
-	return NewStoreFromFile(baseFilename)
+func NewMetricsRepo() (metrics.Repository, error) {
+	return NewMetricsRepoFromFile(metricsBaseFilename)
 }
 
-func NewStoreFromFile(filename string) (store.Metrics, error) {
+func NewMetricsRepoFromFile(filename string) (metrics.Repository, error) {
 
 	db, err := bolt.Open(filename, 0600, nil)
 	if err != nil {
@@ -34,20 +34,20 @@ func NewStoreFromFile(filename string) (store.Metrics, error) {
 		return nil, err
 	}
 
-	return &MetricsStore{
+	return &MetricsRepo{
 		mutex: &sync.RWMutex{},
 		db:    db,
 	}, nil
 }
 
-func (s *MetricsStore) Close() {
+func (s *MetricsRepo) Close() {
 	err := s.db.Close()
 	if err != nil {
 		utils.LogError(err)
 	}
 }
 
-func (s *MetricsStore) Store(device *devices.Device) error {
+func (s *MetricsRepo) Store(device *devices.Device) error {
 
 	defer s.mutex.Unlock()
 	s.mutex.Lock()
@@ -89,9 +89,9 @@ func (s *MetricsStore) Store(device *devices.Device) error {
 	return nil
 }
 
-func (s *MetricsStore) ViewExposeTimeRange(device *devices.Device, exposeName string, from time.Time, to time.Time) (*store.DeviceMetricsResult, error) {
+func (s *MetricsRepo) ViewExposeTimeRange(device *devices.Device, exposeName string, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 
-	result := store.NewDeviceMetricsResult(device.Id)
+	result := metrics.NewDeviceMetricsResult(device.Id)
 
 	err := s.db.View(func(tx *bolt.Tx) error {
 		cursor := tx.Bucket([]byte("metrics")).Bucket([]byte(device.Id)).Cursor()
@@ -111,9 +111,9 @@ func (s *MetricsStore) ViewExposeTimeRange(device *devices.Device, exposeName st
 	return result, err
 }
 
-func (s *MetricsStore) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*store.DeviceMetricsResult, error) {
+func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 
-	result := store.NewDeviceMetricsResult(device.Id)
+	result := metrics.NewDeviceMetricsResult(device.Id)
 
 	err := s.db.View(func(tx *bolt.Tx) error {
 		cursor := tx.Bucket([]byte("metrics")).Bucket([]byte(device.Id)).Cursor()
@@ -144,13 +144,13 @@ func (s *MetricsStore) ViewDeviceTimeRange(device *devices.Device, from time.Tim
 	return result, err
 }
 
-func (s *MetricsStore) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*store.ExposeMetricsResult, error) {
+func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeMetricsResult, error) {
 
 	exposeType := kindFromExposeType(expose)
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
 
-	event := store.NewExposeMetricsResult(expose.Name, exposeType.String())
+	event := metrics.NewExposeMetricsResult(expose.Name, exposeType.String())
 	for key, value := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, value = cursor.Next() {
 		timestamp, err := readTimestampFromKey(expose.Name, key)
 		if err != nil {

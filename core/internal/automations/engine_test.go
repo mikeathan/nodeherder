@@ -6,7 +6,7 @@ import (
 	"node-herder/internal/services"
 	"node-herder/mocks"
 	"node-herder/models/devices"
-	repository "node-herder/repository/devices"
+	"node-herder/repository"
 	"node-herder/utils/storage"
 	"sort"
 	"testing"
@@ -72,7 +72,7 @@ func TestExportAutomationsFromFile(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
 	repo := repository.NewMemoryDeviceRepo()
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 
 	eventHub := &mocks.MockEventHub{}
 	registrar := services.NewHubRegisterService(repo, metrics, eventHub, 30000)

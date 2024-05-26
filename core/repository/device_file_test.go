@@ -1,9 +1,8 @@
 package repository_test
 
 import (
-	"io/ioutil"
 	"node-herder/models/devices"
-	repository "node-herder/repository/devices"
+	"node-herder/repository"
 	"os"
 	"testing"
 )
@@ -163,19 +162,6 @@ func TestFileRepositoryCanFindAllDevices(t *testing.T) {
 		sourceDevice := devices[idx]
 		validateDevice(t, sourceDevice, resDevice)
 	}
-}
-func tempfile() string {
-	f, err := ioutil.TempFile("", "bolt-")
-	if err != nil {
-		panic(err)
-	}
-	if err := f.Close(); err != nil {
-		panic(err)
-	}
-	if err := os.Remove(f.Name()); err != nil {
-		panic(err)
-	}
-	return f.Name()
 }
 
 func createMockBridgeInfo() []*devices.BridgeInfo {

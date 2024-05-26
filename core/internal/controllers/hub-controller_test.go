@@ -7,7 +7,7 @@ import (
 	"node-herder/internal/controllers"
 	"node-herder/internal/ws"
 	"node-herder/mocks"
-	repository "node-herder/repository/devices"
+	"node-herder/repository"
 	"node-herder/utils"
 	"testing"
 	"time"
@@ -31,7 +31,7 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 
 	name := "device 1"
 	repo := repository.NewMemoryDeviceRepo()
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
@@ -57,7 +57,7 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 func TestProcessorUpdatesExistingDevice(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
@@ -88,7 +88,7 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 	name := "device1"
 
 	repo := repository.NewMemoryDeviceRepo()
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
@@ -148,7 +148,7 @@ func TestNewDeviceValuesAreBroadcastedOnly(t *testing.T) {
 
 	ws := newMockBroadcastEventHub(broadcast)
 	repo := repository.NewMemoryDeviceRepo()
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 	mqtt := &mocks.MockMqttClient{}
 
 	controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
@@ -213,7 +213,7 @@ func TestDevicesBroadcastDeviceEvent(t *testing.T) {
 
 	ws := newMockBroadcastEventHub(broadcast)
 	repo := repository.NewMemoryDeviceRepo()
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 
 	mqtt := &mocks.MockMqttClient{}
 
@@ -235,7 +235,7 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 
 	name := "device 1"
 	repo := repository.NewMemoryDeviceRepo()
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
@@ -275,7 +275,7 @@ func TestAvailabilityIsDisposed(t *testing.T) {
 
 	name := "device 1"
 	repo := repository.NewMemoryDeviceRepo()
-	metrics := &mocks.NopMetricsStore{}
+	metrics := &mocks.NopMetricsRepo{}
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
 	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
