@@ -335,6 +335,11 @@ func NewMockAppStoreFromDevicesRepo(devicesRepo devices.Repository) store.AppSto
 	return &NopAppStore{devices: devicesRepo, metrics: metricsRepo, settings: settingsRepo}
 }
 
+func (s *NopAppStore) StoreDevice(device *devices.Device) error {
+	fmt.Println("Mocked store StoreDevice")
+
+	return nil
+}
 func (s *NopAppStore) History() metrics.Repository {
 	return s.metrics
 }

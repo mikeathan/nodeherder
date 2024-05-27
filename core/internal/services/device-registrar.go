@@ -36,7 +36,8 @@ func (s *HubRegisterService) Register(friendlyName string, device *devices.Devic
 
 	id := s.ResolveId(friendlyName)
 
-	s.store.Devices().Store(id, device)
+	s.store.StoreDevice(device)
+	//	s.store.Devices().Store(id, device)
 
 	s.idMapper[friendlyName] = id // store id in mapper for easy access
 }
