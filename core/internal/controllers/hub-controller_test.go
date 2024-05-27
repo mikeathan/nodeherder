@@ -7,8 +7,7 @@ import (
 	"node-herder/internal/controllers"
 	"node-herder/internal/ws"
 	"node-herder/mocks"
-	"node-herder/repository"
-	"node-herder/store"
+	utils_test "node-herder/testing"
 	"node-herder/utils"
 	"testing"
 	"time"
@@ -31,7 +30,7 @@ func createMockPayload() map[string]interface{} {
 func TestProcessorAddsNewDevice(t *testing.T) {
 
 	name := "device 1"
-	store := createStore()
+	store := utils_test.CreateStore()
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
@@ -57,7 +56,7 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 
 func TestProcessorUpdatesExistingDevice(t *testing.T) {
 
-	store := createStore()
+	store := utils_test.CreateStore()
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
@@ -87,7 +86,7 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 
 	name := "device1"
 
-	store := createStore()
+	store := utils_test.CreateStore()
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
@@ -146,7 +145,7 @@ func TestNewDeviceValuesAreBroadcastedOnly(t *testing.T) {
 	}
 
 	ws := newMockBroadcastEventHub(broadcast)
-	store := createStore()
+	store := utils_test.CreateStore()
 
 	mqtt := &mocks.MockMqttClient{}
 
@@ -211,7 +210,7 @@ func TestDevicesBroadcastDeviceEvent(t *testing.T) {
 	}
 
 	ws := newMockBroadcastEventHub(broadcast)
-	store := createStore()
+	store := utils_test.CreateStore()
 
 	mqtt := &mocks.MockMqttClient{}
 
@@ -232,7 +231,7 @@ func TestDevicesBroadcastDeviceEvent(t *testing.T) {
 func TestAvailabilityStatusIsUpdated(t *testing.T) {
 
 	name := "device 1"
-	store := createStore()
+	store := utils_test.CreateStore()
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
@@ -271,7 +270,7 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 func TestAvailabilityIsDisposed(t *testing.T) {
 
 	name := "device 1"
-	store := createStore()
+	store := utils_test.CreateStore()
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
@@ -297,11 +296,6 @@ func TestAvailabilityIsDisposed(t *testing.T) {
 	if device.Properties["availability"] != "offline" {
 		t.Fatalf("want offline got online")
 	}
-}
-
-func createStore() store.AppStore {
-	repo := repository.NewMemoryDeviceRepo()
-	return mocks.NewMockAppStoreFromDevicesRepo(repo)
 }
 
 func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data interface{}) error) ws.EventHub {

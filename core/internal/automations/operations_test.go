@@ -9,6 +9,7 @@ import (
 	"node-herder/mocks"
 	"node-herder/models/devices"
 	"node-herder/repository"
+	utils_test "node-herder/testing"
 	"sort"
 	"strings"
 	"sync"
@@ -32,6 +33,7 @@ func TestOperationIncreaseValue(t *testing.T) {
 	action.Client = mqtt
 
 	repo := createMockLivingRoomButtonDevices(0.0, 0.0)
+	store := utils_test.CreateStoreFromDeviceRepo(repo)
 
 	//store devices in map for easy access
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
@@ -73,9 +75,8 @@ func TestOperationIncreaseValue(t *testing.T) {
 
 	mqtt.OnMessageHandler(messageHandler)
 	eventHub := &mocks.MockEventHub{}
-	metrics := &mocks.NopMetricsRepo{}
 
-	registrar := services.NewHubRegisterService(repo, metrics, eventHub, 30000)
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
 	// create trigger automation
 	ctx := automations.NewDeviceContext()
@@ -122,6 +123,7 @@ func TestOperationDecreaseValue(t *testing.T) {
 	action.Client = mqtt
 
 	repo := createMockLivingRoomButtonDevices(255.0, 0.0)
+	store := utils_test.CreateStoreFromDeviceRepo(repo)
 
 	//store devices in map for easy access
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
@@ -163,9 +165,7 @@ func TestOperationDecreaseValue(t *testing.T) {
 
 	mqtt.OnMessageHandler(messageHandler)
 	eventHub := &mocks.MockEventHub{}
-	metrics := &mocks.NopMetricsRepo{}
-
-	registrar := services.NewHubRegisterService(repo, metrics, eventHub, 30000)
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
 	// create trigger automation
 	ctx := automations.NewDeviceContext()
@@ -210,6 +210,7 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	action.Client = mqtt
 
 	repo := createMockLivingRoomButtonDevices(0.0, 0.0)
+	store := utils_test.CreateStoreFromDeviceRepo(repo)
 
 	//store devices in map for easy access
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
@@ -252,9 +253,8 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 
 	mqtt.OnMessageHandler(messageHandler)
 	eventHub := &mocks.MockEventHub{}
-	metrics := &mocks.NopMetricsRepo{}
 
-	registrar := services.NewHubRegisterService(repo, metrics, eventHub, 30000)
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
 	// create trigger automation
 	ctx := automations.NewDeviceContext()
@@ -302,6 +302,7 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 	action.Client = mqtt
 
 	repo := createMockLivingRoomButtonDevices(255.0, 0.0)
+	store := utils_test.CreateStoreFromDeviceRepo(repo)
 
 	//store devices in map for easy access
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
@@ -343,9 +344,8 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 
 	mqtt.OnMessageHandler(messageHandler)
 	eventHub := &mocks.MockEventHub{}
-	metrics := &mocks.NopMetricsRepo{}
 
-	registrar := services.NewHubRegisterService(repo, metrics, eventHub, 30000)
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
 	// create trigger automation
 	ctx := automations.NewDeviceContext()

@@ -6,7 +6,7 @@ import (
 	"node-herder/internal/services"
 	"node-herder/mocks"
 	"node-herder/models/devices"
-	"node-herder/repository"
+	utils_test "node-herder/testing"
 	"node-herder/utils/storage"
 	"sort"
 	"testing"
@@ -71,11 +71,9 @@ func createBridgeInfoes() []*devices.BridgeInfo {
 func TestExportAutomationsFromFile(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
-	repo := repository.NewMemoryDeviceRepo()
-	metrics := &mocks.NopMetricsRepo{}
-
+	store := utils_test.CreateStore()
 	eventHub := &mocks.MockEventHub{}
-	registrar := services.NewHubRegisterService(repo, metrics, eventHub, 30000)
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
 	dev1 := createMockDevice("0x56789", "livingroom", "brightness", nil, 0.0, 255.0)
 	dev2 := createMockDevice("0x56789", "humansensor", "left_click", nil, 0.0, 255.0)

@@ -8,7 +8,7 @@ import (
 	"node-herder/internal/api"
 	"node-herder/internal/controllers"
 	"node-herder/mocks"
-	"node-herder/repository"
+	utils_test "node-herder/testing"
 	"node-herder/utils"
 	"strings"
 	"testing"
@@ -22,12 +22,11 @@ const missingDeviceIdPayload = `{"conn":"mqtt","power_source":"battery","humidit
 const gasNodePayload = `{"label": "gas_monitor", "node_id": "3", "temperature": "22.2 *C", "humidity": "33 %RH", "air_quality_score": "95 %", "PM1.0": "1 ug/m3 (ultrafine particles)", "PM2.5": "1 ug/m3 (combustion particles, organic compounds, metal)", "PM10.0": "2 ug/m3 (dust, pollen, mould spores)", "timestamp": 1691517687.940329}`
 
 func TestHandleMissingDeviceIdPayload(t *testing.T) {
-	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	metrics := &mocks.NopMetricsRepo{}
+	store := utils_test.CreateStore()
 
-	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	bodyReader := strings.NewReader(string(missingDeviceIdPayload))
 	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
@@ -48,12 +47,11 @@ func TestHandleMissingDeviceIdPayload(t *testing.T) {
 }
 
 func TestHandleInvalidDataPayload(t *testing.T) {
-	repo := repository.NewMemoryDeviceRepo()
-	ws := &mocks.NopWsServer{}
-	metrics := &mocks.NopMetricsRepo{}
 
+	store := utils_test.CreateStore()
+	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	bodyReader := strings.NewReader(string("test"))
 	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
@@ -71,12 +69,11 @@ func TestHandleInvalidDataPayload(t *testing.T) {
 func TestHandleSuccesfullyRootPayload(t *testing.T) {
 
 	name := "device 1"
-	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
-	metrics := &mocks.NopMetricsRepo{}
+	store := utils_test.CreateStore()
 
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	bodyReader := strings.NewReader(string(device1RootPayloadBatterySource))
 	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
@@ -91,7 +88,7 @@ func TestHandleSuccesfullyRootPayload(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 	id := utils.HashName(name)
-	device, err := repo.FindDevice(id)
+	device, err := store.Devices().FindDevice(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -106,12 +103,11 @@ func TestHandleSuccesfullyRootPayload(t *testing.T) {
 
 func TestHandleInvalidRootPayload(t *testing.T) {
 
-	repo := repository.NewMemoryDeviceRepo()
+	store := utils_test.CreateStore()
 	ws := &mocks.NopWsServer{}
-	metrics := &mocks.NopMetricsRepo{}
 
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	bodyReader := strings.NewReader(string(device1InvalidRootPayloadBatterySource))
 	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
@@ -139,12 +135,11 @@ func TestProcessorHandleRootPayloadWithTimestamp(t *testing.T) {
 	name := "device1"
 	device1RootPayload := `{"nickname":"device1","timestamp":"2023-07-20T19:48:35+01:00", "readings":{"humidity":92.1,"temperature":19.3}}`
 
-	repo := repository.NewMemoryDeviceRepo()
-	metrics := &mocks.NopMetricsRepo{}
+	store := utils_test.CreateStore()
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	bodyReader := strings.NewReader(string(device1RootPayload))
 	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
@@ -158,7 +153,7 @@ func TestProcessorHandleRootPayloadWithTimestamp(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	id := utils.HashName(name)
-	device, err := repo.FindDevice(id)
+	device, err := store.Devices().FindDevice(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -178,12 +173,11 @@ func TestProcessorHandleRootPayloadWithTimestamp(t *testing.T) {
 
 func TestHandleSuccesfullyPayload(t *testing.T) {
 	name := "gas_monitor"
-	repo := repository.NewMemoryDeviceRepo()
 	ws := &mocks.NopWsServer{}
-	metrics := &mocks.NopMetricsRepo{}
+	store := utils_test.CreateStore()
 
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	bodyReader := strings.NewReader(string(gasNodePayload))
 	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
@@ -200,7 +194,7 @@ func TestHandleSuccesfullyPayload(t *testing.T) {
 	}
 
 	id := utils.HashName(name)
-	device, err := repo.FindDevice(id)
+	device, err := store.Devices().FindDevice(id)
 
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -216,12 +210,11 @@ func TestHandleSuccesfullyPayload(t *testing.T) {
 
 func TestHandleUnsuportedMediaType(t *testing.T) {
 
-	repo := repository.NewMemoryDeviceRepo()
+	store := utils_test.CreateStore()
 	ws := &mocks.NopWsServer{}
-	metrics := &mocks.NopMetricsRepo{}
 
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
 	bodyReader := strings.NewReader(string(device1BatterySource))
 	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
