@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
+	"node-herder/models/settings"
+	"node-herder/store"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -179,29 +181,54 @@ func (w *NopWsServer) OnDeleteAutomationTrigger(action func(p interface{}) (inte
 	fmt.Println("Empty OnDeleteAutomationTrigger")
 }
 
-// Mock Repository
+// Mock devices Repository
 type NopRepository struct {
 }
 
-func (w *NopRepository) Store(deviceName string, payload *devices.Device) {
+func (w *NopRepository) Store(deviceName string, payload *devices.Device) error {
 	fmt.Println("Empty Store")
+	return nil
 }
 
-func (w *NopRepository) AllDevices() []*devices.Device {
+func (w *NopRepository) AllDevices() ([]*devices.Device, error) {
 
 	fmt.Println("Empty ListAllDevices")
-	return []*devices.Device{}
+	return []*devices.Device{}, nil
 }
 
-func (w *NopRepository) FindDevices(ids []string) []*devices.Device {
+func (w *NopRepository) FindDevices(ids []string) ([]*devices.Device, error) {
 	fmt.Println("Empty FindDevices")
-	return []*devices.Device{}
+	return []*devices.Device{}, nil
 }
 
 func (w *NopRepository) FindDevice(deviceName string) (*devices.Device, error) {
 
 	fmt.Println("Empty FindDevice")
 	return nil, errors.New("device not found")
+}
+
+func (w *NopRepository) StoreBridge(brigeInfo []*devices.BridgeInfo) error {
+
+	fmt.Println("Empty StoreBridge")
+	return nil
+}
+
+func (w *NopRepository) AllBridgeInfo() ([]*devices.BridgeInfo, error) {
+
+	fmt.Println("Empty AllBridgeInfo")
+	return nil, nil
+}
+
+func (w *NopRepository) FindBridgeInfo(key string) (*devices.BridgeInfo, error) {
+
+	fmt.Println("Empty FindBridgeInfo")
+	return nil, nil
+}
+
+func (w *NopRepository) Close() error {
+
+	fmt.Println("Empty close")
+	return nil
 }
 
 // Mock DeviceRegistrar
@@ -239,7 +266,7 @@ func (w *NopDeviceRegistrar) RetrieveEntityData(id string, property string) (any
 
 }
 
-// Mock metrics store
+// Mock metrics repo
 type NopMetricsRepo struct {
 }
 
@@ -260,4 +287,56 @@ func (s *NopMetricsRepo) ViewExposeTimeRange(device *devices.Device, exposeName 
 
 func (s *NopMetricsRepo) Close() {
 	fmt.Println("Mocked Close")
+}
+
+// Mock seting repo
+type NopSettingsrepo struct {
+}
+
+func (s *NopSettingsrepo) Save(config *settings.AppConfig) error {
+	fmt.Println("Mocked settingsRepo Save")
+	return nil
+}
+
+func (s *NopSettingsrepo) Load() (*settings.AppConfig, error) {
+	fmt.Println("Mocked settingsRepo Load")
+	return nil, nil
+}
+func (s *NopSettingsrepo) FindDeviceConfig(id string) (*settings.DeviceConfig, error) {
+	fmt.Println("Mocked settingsRepo FindDeviceConfig")
+	return nil, nil
+}
+func (s *NopSettingsrepo) SaveDeviceConfig(deviceConfig *settings.DeviceConfig) error {
+	fmt.Println("Mocked settingsRepo SaveDeviceConfig")
+	return nil
+}
+func (s *NopSettingsrepo) Close() error {
+	fmt.Println("Mocked settingsRepo Close")
+	return nil
+}
+
+// Mock appstore
+type NopAppStore struct {
+	devices  devices.Repository
+	metrics  metrics.Repository
+	settings settings.Repository
+}
+
+func NewMockAppStore() store.AppStore {
+	devicesRepo := NopRepository{}
+	metricsRepo := NopMetricsRepo{}
+	settingsRepo := NopSettingsrepo{}
+	return &NopAppStore{devices: &devicesRepo, metrics: &metricsRepo, settings: &settingsRepo}
+}
+
+func (s *NopAppStore) History() metrics.Repository {
+	return s.metrics
+}
+
+func (s *NopAppStore) Devices() devices.Repository {
+	return s.devices
+}
+
+func (s *NopAppStore) Config() settings.Repository {
+	return s.settings
 }
