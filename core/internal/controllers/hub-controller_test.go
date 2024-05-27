@@ -8,6 +8,7 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/mocks"
 	"node-herder/repository"
+	"node-herder/store"
 	"node-herder/utils"
 	"testing"
 	"time"
@@ -30,18 +31,18 @@ func createMockPayload() map[string]interface{} {
 func TestProcessorAddsNewDevice(t *testing.T) {
 
 	name := "device 1"
-	repo := repository.NewMemoryDeviceRepo()
-	metrics := &mocks.NopMetricsRepo{}
+	store := createStore()
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
+
+	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	mqtt.Publish(name, []byte(device1BatterySource))
 
 	time.Sleep(500 * time.Millisecond)
 
 	id := utils.HashName(name)
-	device, err := repo.FindDevice(id)
+	device, err := store.Devices().FindDevice(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -56,12 +57,11 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 
 func TestProcessorUpdatesExistingDevice(t *testing.T) {
 
-	repo := repository.NewMemoryDeviceRepo()
-	metrics := &mocks.NopMetricsRepo{}
+	store := createStore()
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	mqtt.Publish("device1", []byte(device1BatterySource))
 	mqtt.Publish("device2", []byte(device2))
 	mqtt.Publish("device2", []byte(device1BatterySource))
@@ -70,7 +70,7 @@ func TestProcessorUpdatesExistingDevice(t *testing.T) {
 	name := "device2"
 	id := utils.HashName(name)
 
-	device, err := repo.FindDevice(id)
+	device, err := store.Devices().FindDevice(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -87,19 +87,18 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 
 	name := "device1"
 
-	repo := repository.NewMemoryDeviceRepo()
-	metrics := &mocks.NopMetricsRepo{}
+	store := createStore()
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	mqtt.Publish(name, []byte(device3NoLastSeen))
 
 	want := time.Now().Format(time.RFC3339)
 	time.Sleep(100 * time.Millisecond)
 	id := utils.HashName(name)
 
-	device, err := repo.FindDevice(id)
+	device, err := store.Devices().FindDevice(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -147,11 +146,11 @@ func TestNewDeviceValuesAreBroadcastedOnly(t *testing.T) {
 	}
 
 	ws := newMockBroadcastEventHub(broadcast)
-	repo := repository.NewMemoryDeviceRepo()
-	metrics := &mocks.NopMetricsRepo{}
+	store := createStore()
+
 	mqtt := &mocks.MockMqttClient{}
 
-	controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	for idx, testCase := range testCases {
 		// reset
 		messageBroadcasted = false
@@ -212,12 +211,11 @@ func TestDevicesBroadcastDeviceEvent(t *testing.T) {
 	}
 
 	ws := newMockBroadcastEventHub(broadcast)
-	repo := repository.NewMemoryDeviceRepo()
-	metrics := &mocks.NopMetricsRepo{}
+	store := createStore()
 
 	mqtt := &mocks.MockMqttClient{}
 
-	controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	for _, testCase := range testCases {
 		payload[testCase.key] = testCase.value
 		data, err := json.Marshal(payload)
@@ -234,19 +232,18 @@ func TestDevicesBroadcastDeviceEvent(t *testing.T) {
 func TestAvailabilityStatusIsUpdated(t *testing.T) {
 
 	name := "device 1"
-	repo := repository.NewMemoryDeviceRepo()
-	metrics := &mocks.NopMetricsRepo{}
+	store := createStore()
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	hub.DeviceAvailabilityTimeoutOverride = 1
 
 	mqtt.Publish(name, []byte(device1BatterySource))
 	time.Sleep(100 * time.Millisecond)
 
 	id := utils.HashName(name)
-	device, err := repo.FindDevice(id)
+	device, err := store.Devices().FindDevice(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -264,7 +261,7 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 
 	id = utils.HashName(name)
-	device1, _ := repo.FindDevice(id)
+	device1, _ := store.Devices().FindDevice(id)
 
 	if device1.Properties["availability"] != "online" {
 		t.Fatalf("want online got offline")
@@ -274,18 +271,18 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 func TestAvailabilityIsDisposed(t *testing.T) {
 
 	name := "device 1"
-	repo := repository.NewMemoryDeviceRepo()
-	metrics := &mocks.NopMetricsRepo{}
+	store := createStore()
+
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, metrics, mqtt, repo, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	hub.DeviceAvailabilityTimeoutOverride = 1
 
 	mqtt.Publish(name, []byte(device1BatterySource))
 	time.Sleep(100 * time.Millisecond)
 
 	id := utils.HashName(name)
-	device, err := repo.FindDevice(id)
+	device, err := store.Devices().FindDevice(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -300,6 +297,11 @@ func TestAvailabilityIsDisposed(t *testing.T) {
 	if device.Properties["availability"] != "offline" {
 		t.Fatalf("want offline got online")
 	}
+}
+
+func createStore() store.AppStore {
+	repo := repository.NewMemoryDeviceRepo()
+	return mocks.NewMockAppStoreFromDevicesRepo(repo)
 }
 
 func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data interface{}) error) ws.EventHub {

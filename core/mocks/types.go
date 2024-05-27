@@ -329,6 +329,12 @@ func NewMockAppStore() store.AppStore {
 	return &NopAppStore{devices: &devicesRepo, metrics: &metricsRepo, settings: &settingsRepo}
 }
 
+func NewMockAppStoreFromDevicesRepo(devicesRepo devices.Repository) store.AppStore {
+	metricsRepo := &NopMetricsRepo{}
+	settingsRepo := &NopSettingsrepo{}
+	return &NopAppStore{devices: devicesRepo, metrics: metricsRepo, settings: settingsRepo}
+}
+
 func (s *NopAppStore) History() metrics.Repository {
 	return s.metrics
 }
