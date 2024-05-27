@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
-	"node-herder/models/metrics"
+	"node-herder/store"
 	"node-herder/utils"
 )
 
@@ -19,14 +19,13 @@ type DeviceRegistrar interface {
 
 type HubRegisterService struct {
 	idMapper                  map[string]string
-	repo                      devices.Repository
-	metrics                   metrics.Repository
+	store                     store.AppStore
 	eventHub                  ws.EventHub
 	deviceAvailabilityTimeout int
 }
 
-func NewHubRegisterService(repo devices.Repository, metrics metrics.Repository, hub ws.EventHub, deviceAvailabilityTimeout int) *HubRegisterService {
-	return &HubRegisterService{repo: repo, metrics: metrics, eventHub: hub, idMapper: make(map[string]string), deviceAvailabilityTimeout: deviceAvailabilityTimeout}
+func NewHubRegisterService(store store.AppStore, hub ws.EventHub, deviceAvailabilityTimeout int) *HubRegisterService {
+	return &HubRegisterService{store: store, eventHub: hub, idMapper: make(map[string]string), deviceAvailabilityTimeout: deviceAvailabilityTimeout}
 }
 
 func (s *HubRegisterService) Register(friendlyName string, device *devices.Device) {
@@ -37,7 +36,7 @@ func (s *HubRegisterService) Register(friendlyName string, device *devices.Devic
 
 	id := s.ResolveId(friendlyName)
 
-	s.repo.Store(id, device)
+	s.store.Devices().Store(id, device)
 
 	s.idMapper[friendlyName] = id // store id in mapper for easy access
 }
@@ -58,18 +57,18 @@ func (s *HubRegisterService) LookupByName(name string) (*devices.Device, error) 
 
 	id := s.ResolveId(name)
 
-	return s.repo.FindDevice(id)
+	return s.store.Devices().FindDevice(id)
 }
 
 func (s *HubRegisterService) LookupById(id string) (*devices.Device, error) {
 
-	return s.repo.FindDevice(id)
+	return s.store.Devices().FindDevice(id)
 }
 
 func (s *HubRegisterService) CreateNewDevice(friendlyName string, connType string, data map[string]interface{}) (*devices.Device, error) {
 
 	id := s.ResolveId(friendlyName)
-	bridgeInfo, err := s.repo.FindBridgeInfo(id)
+	bridgeInfo, err := s.store.Devices().FindBridgeInfo(id)
 	if err != nil {
 		utils.LogInfof("BrideInfo not found for device id:%v friendlyName:%v", id, friendlyName)
 	}
@@ -87,7 +86,7 @@ func (s *HubRegisterService) CreateNewDevice(friendlyName string, connType strin
 }
 
 func (s *HubRegisterService) configureIdMapper() {
-	bridgeInfoList, err := s.repo.AllBridgeInfo()
+	bridgeInfoList, err := s.store.Devices().AllBridgeInfo()
 	if err != nil {
 		utils.LogErrorf("Error loading bridgeInfoList %s", err.Error())
 		return
@@ -116,12 +115,12 @@ func (s *HubRegisterService) configureIdMapper() {
 }
 
 func (a *HubRegisterService) FindBridgeInfo(id string) (*devices.BridgeInfo, error) {
-	return a.repo.FindBridgeInfo(id)
+	return a.store.Devices().FindBridgeInfo(id)
 }
 
 func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int) {
 
-	err := s.repo.StoreBridge(bridgeInfoList)
+	err := s.store.Devices().StoreBridge(bridgeInfoList)
 	if err != nil {
 		utils.LogErrorf("store bridgeinfo failed: %s", err.Error())
 		return
@@ -134,7 +133,7 @@ func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo
 			continue
 		}
 
-		d, err := s.repo.FindDevice(bridgeInfo.IeeeAddress)
+		d, err := s.store.Devices().FindDevice(bridgeInfo.IeeeAddress)
 		if err != nil {
 			// not found in repo, new it here
 			d = devices.NewDevice(bridgeInfo.IeeeAddress)

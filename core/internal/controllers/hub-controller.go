@@ -10,7 +10,7 @@ import (
 	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
-	"node-herder/models/metrics"
+	"node-herder/store"
 	"strconv"
 
 	"node-herder/utils"
@@ -20,8 +20,7 @@ import (
 type HubController struct {
 	eventHub                          ws.EventHub
 	mqtt                              mqtt.MqttClient
-	repo                              devices.Repository
-	metrics                           metrics.Repository
+	store                             store.AppStore
 	wp                                *utils.WorkerPool
 	handlers                          map[string]handler
 	DeviceAvailabilityTimeoutOverride int
@@ -29,18 +28,17 @@ type HubController struct {
 	registrar                         *services.HubRegisterService
 }
 
-func RegisterHubController(eventHub ws.EventHub, metrics metrics.Repository, mqtt mqtt.MqttClient, repo devices.Repository, ctx context.Context) *HubController {
+func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context) *HubController {
 
 	h := &HubController{
 		eventHub:                          eventHub,
-		metrics:                           metrics,
+		store:                             store,
 		mqtt:                              mqtt,
-		repo:                              repo,
 		handlers:                          map[string]handler{},
 		DeviceAvailabilityTimeoutOverride: 3600,
 	}
 
-	h.registrar = services.NewHubRegisterService(repo, metrics, eventHub, 3600)
+	h.registrar = services.NewHubRegisterService(store, eventHub, 3600)
 	h.automationEngine = automations.NewEngine(h.registrar, mqtt)
 	h.wp = utils.NewWorkerPool(1, ctx)
 	h.wp.Run()
@@ -50,12 +48,12 @@ func RegisterHubController(eventHub ws.EventHub, metrics metrics.Repository, mqt
 	})
 
 	h.eventHub.OnLoadDevices(func() interface{} {
-		devs, _ := h.repo.AllDevices()
+		devs, _ := h.store.Devices().AllDevices()
 		return devs
 	})
 
 	h.eventHub.OnLoadDeviceList(func(ids []string) interface{} {
-		devs, _ := h.repo.FindDevices(ids)
+		devs, _ := h.store.Devices().FindDevices(ids)
 		return devs
 	})
 

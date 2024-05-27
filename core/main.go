@@ -6,7 +6,7 @@ import (
 	"fmt"
 	hub "node-herder/internal"
 	"node-herder/internal/mqtt"
-	"node-herder/repository"
+	"node-herder/store"
 	"node-herder/utils"
 	"os"
 	"os/signal"
@@ -55,10 +55,6 @@ func main() {
 		cancelCtx()
 	}()
 
-	repo, err := repository.NewFileDeviceRepo()
-	if err != nil {
-		utils.LogErrorf("loading device repository failed: %v", err.Error())
-	}
 	mqttConfig := mqtt.MqttConfig{
 		Username:   "sinkhole",
 		Password:   "mqtt2023",
@@ -66,12 +62,11 @@ func main() {
 		ClientType: args.buildType,
 	}
 
-	metrics, err := repository.NewMetricsRepo()
+	store, err := store.Create()
 	if err != nil {
-		utils.LogErrorf("loading metrics repository failed: %v", err.Error())
+		utils.LogErrorf("error creating store: %v", err.Error())
 	}
-
-	h := hub.Register(args.port, repo, metrics, mqttConfig, ctx)
+	h := hub.Register(args.port, store, mqttConfig, ctx)
 	h.Listen()
 	utils.LogInfo("exit")
 }
