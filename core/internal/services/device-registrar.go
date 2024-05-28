@@ -28,16 +28,20 @@ func NewHubRegisterService(store store.AppStore, hub ws.EventHub, deviceAvailabi
 	return &HubRegisterService{store: store, eventHub: hub, idMapper: make(map[string]string), deviceAvailabilityTimeout: deviceAvailabilityTimeout}
 }
 
-func (s *HubRegisterService) Register(friendlyName string, device *devices.Device) {
-
-	// TODO:
-	// have some config to check if device is allowed to publish metrics
-	// and we store metrics here if so.
+func (s *HubRegisterService) Update(friendlyName string, device *devices.Device) {
 
 	id := s.ResolveId(friendlyName)
 
-	s.store.StoreDevice(device)
-	//	s.store.Devices().Store(id, device)
+	s.store.DeviceUpdated(id, device)
+
+	s.idMapper[friendlyName] = id // store id in mapper for easy access
+}
+
+func (s *HubRegisterService) Register(friendlyName string, device *devices.Device) {
+
+	id := s.ResolveId(friendlyName)
+
+	s.store.StoreDevice(id, device)
 
 	s.idMapper[friendlyName] = id // store id in mapper for easy access
 }

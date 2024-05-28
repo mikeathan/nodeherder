@@ -10,46 +10,46 @@ import (
 type AppStore interface {
 	History() metrics.Repository
 	Devices() devices.Repository
-	Config() settings.Repository
-	StoreDevice(device *devices.Device) error
+	StoreDevice(id string, device *devices.Device) error
+	DeviceUpdated(id string, device *devices.Device) error
 }
 
 type appStore struct {
-	history    metrics.Repository
-	devices    devices.Repository
-	settings   settings.Repository
-	appConfig  *settings.AppConfig
-	historyMap map[string]bool
+	history        metrics.Repository
+	devices        devices.Repository
+	config         settings.Repository
+	deviceConfigs  map[string]*settings.DeviceConfig
+	deviceIdMapper map[string]string
 }
 
-func newAppStore(devices devices.Repository, metrics metrics.Repository, settings settings.Repository) (AppStore, error) {
+func newAppStore(devices devices.Repository, metrics metrics.Repository, config settings.Repository) (AppStore, error) {
 
-	appconfig, err := settings.Load()
+	appconfig, err := config.Load()
 	if err != nil {
 		return nil, err
 	}
 
-	var historyMap map[string]bool = make(map[string]bool)
-	for _, config := range appconfig.Devices {
-		historyMap[config.Id] = config.History
+	deviceConfigs := make(map[string]*settings.DeviceConfig)
+	for _, dev := range appconfig.Devices {
+		deviceConfigs[dev.Id] = dev
 	}
 
 	return &appStore{
-		history:    metrics,
-		devices:    devices,
-		settings:   settings,
-		appConfig:  appconfig,
-		historyMap: historyMap,
+		history:        metrics,
+		devices:        devices,
+		config:         config,
+		deviceConfigs:  deviceConfigs,
+		deviceIdMapper: map[string]string{},
 	}, nil
 }
 
-func (s *appStore) StoreDevice(device *devices.Device) error {
-	err := s.devices.Store(device.Id, device)
+func (s *appStore) DeviceUpdated(id string, device *devices.Device) error {
+	err := s.StoreDevice(id, device)
 	if err != nil {
 		return err
 	}
 
-	if enabled, ok := s.historyMap[device.Id]; ok && enabled {
+	if config, ok := s.deviceConfigs[id]; ok && config.History {
 		err := s.history.Store(device)
 		if err != nil {
 			utils.LogErrorf("storing metrics failed %v", err.Error())
@@ -59,14 +59,41 @@ func (s *appStore) StoreDevice(device *devices.Device) error {
 	return nil
 }
 
+func (s *appStore) StoreDevice(id string, device *devices.Device) error {
+	err := s.devices.Store(id, device)
+	if err != nil {
+		return err
+	}
+
+	if config, ok := s.deviceConfigs[id]; ok && config.History {
+		err := s.history.Store(device)
+		if err != nil {
+			utils.LogErrorf("storing metrics failed %v", err.Error())
+		}
+	}
+	return nil
+}
+
+// func (s *appStore) FindDevice(id string) error {
+// 	err := s.devices.Store(device.Id, device)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	if enabled, ok := s.historyMap[device.Id]; ok && enabled {
+// 		err := s.history.Store(device)
+// 		if err != nil {
+// 			utils.LogErrorf("storing metrics failed %v", err.Error())
+// 		}
+// 	}
+
+//		return nil
+//	}
+
 func (s *appStore) History() metrics.Repository {
 	return s.history
 }
 
 func (s *appStore) Devices() devices.Repository {
 	return s.devices
-}
-
-func (s *appStore) Config() settings.Repository {
-	return s.settings
 }

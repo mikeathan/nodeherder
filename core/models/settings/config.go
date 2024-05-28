@@ -1,5 +1,11 @@
 package settings
 
+type DeviceConfig struct {
+	Id       string `json:"id"`
+	Disabled bool   `json:"disabled"`
+	History  bool   `json:"history"`
+}
+
 type AppConfig struct {
 	Devices map[string]*DeviceConfig `json:"devices"`
 }
