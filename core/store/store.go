@@ -59,9 +59,7 @@ func (s *appStore) UpdateDevice(friendlyName string, device *devices.Device) err
 		return err
 	}
 
-	id := s.ResolveFriendlyName(friendlyName)
-
-	if s.IsMetricsEnabled(id) {
+	if s.IsMetricsEnabled(friendlyName) {
 		err := s.metrics.Store(device)
 		if err != nil {
 			utils.LogErrorf("storing metrics failed %v", err.Error())
@@ -71,7 +69,8 @@ func (s *appStore) UpdateDevice(friendlyName string, device *devices.Device) err
 	return nil
 }
 
-func (s *appStore) IsMetricsEnabled(id string) bool {
+func (s *appStore) IsMetricsEnabled(friendlyName string) bool {
+	id := s.ResolveFriendlyName(friendlyName)
 	if config, ok := s.deviceConfigs[id]; ok && config.MetricsEnabled {
 		return true
 	}
