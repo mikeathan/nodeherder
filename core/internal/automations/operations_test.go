@@ -451,6 +451,7 @@ func createMockDevice(id string, name string, property string, data any, min flo
 	device1.Exposes[property].Attributes["max"] = max
 	return device1
 }
+
 func createMockLivingRoomButtonStepAction(operation string, stepValue float64) *automations.MqttAction {
 	action := &automations.MqttAction{}
 	action.FriendlyName = "livingroom"

@@ -12,6 +12,7 @@ import (
 func TestFileSettingsRepositoryCanAddAndLoad(t *testing.T) {
 
 	tempfile := tempfile()
+	defer os.Remove(tempfile)
 
 	repo, err := repository.NewFileSettingsRepoFromFile(tempfile)
 	if err != nil {
@@ -19,7 +20,6 @@ func TestFileSettingsRepositoryCanAddAndLoad(t *testing.T) {
 	}
 
 	defer repo.Close()
-	defer os.Remove(tempfile)
 
 	appConfig := createMockAppConfig()
 	err = repo.Save(appConfig)
@@ -43,6 +43,7 @@ func TestFileSettingsRepositoryCanAddAndLoad(t *testing.T) {
 func TestFileSettingsRepositoryCanAddAndFindValue(t *testing.T) {
 
 	tempfile := tempfile()
+	defer os.Remove(tempfile)
 
 	repo, err := repository.NewFileSettingsRepoFromFile(tempfile)
 	if err != nil {
@@ -50,7 +51,6 @@ func TestFileSettingsRepositoryCanAddAndFindValue(t *testing.T) {
 	}
 
 	defer repo.Close()
-	defer os.Remove(tempfile)
 
 	appConfig := createMockAppConfig()
 	err = repo.Save(appConfig)
@@ -79,6 +79,7 @@ func TestFileSettingsRepositoryCanAddAndFindValue(t *testing.T) {
 func TestFileSettingsRepositoryCanAddNewDeviceConfig(t *testing.T) {
 
 	tempfile := tempfile()
+	defer os.Remove(tempfile)
 
 	repo, err := repository.NewFileSettingsRepoFromFile(tempfile)
 	if err != nil {
@@ -86,7 +87,6 @@ func TestFileSettingsRepositoryCanAddNewDeviceConfig(t *testing.T) {
 	}
 
 	defer repo.Close()
-	defer os.Remove(tempfile)
 
 	appConfig := createMockAppConfig()
 	err = repo.Save(appConfig)
@@ -114,6 +114,7 @@ func TestFileSettingsRepositoryCanAddNewDeviceConfig(t *testing.T) {
 func TestFileSettingsRepositoryCanUpdateExistingDeviceConfig(t *testing.T) {
 
 	tempfile := tempfile()
+	defer os.Remove(tempfile)
 
 	repo, err := repository.NewFileSettingsRepoFromFile(tempfile)
 	if err != nil {
@@ -121,7 +122,6 @@ func TestFileSettingsRepositoryCanUpdateExistingDeviceConfig(t *testing.T) {
 	}
 
 	defer repo.Close()
-	defer os.Remove(tempfile)
 
 	appConfig := createMockAppConfig()
 	err = repo.Save(appConfig)
