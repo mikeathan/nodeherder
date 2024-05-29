@@ -54,12 +54,12 @@ func NewAppStore(devices devices.Repository, metrics metrics.Repository, config 
 
 func (s *appStore) UpdateDevice(friendlyName string, device *devices.Device) error {
 
-	id := s.ResolveFriendlyName(friendlyName)
-
-	err := s.StoreDevice(id, device)
+	err := s.StoreDevice(friendlyName, device)
 	if err != nil {
 		return err
 	}
+
+	id := s.ResolveFriendlyName(friendlyName)
 
 	if s.IsMetricsEnabled(id) {
 		err := s.metrics.Store(device)
@@ -68,7 +68,6 @@ func (s *appStore) UpdateDevice(friendlyName string, device *devices.Device) err
 		}
 	}
 
-	s.deviceIdMapper.UpdateId(friendlyName, id)
 	return nil
 }
 
