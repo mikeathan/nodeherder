@@ -9,8 +9,10 @@ import (
 func TestStoreLoadAllDevices(t *testing.T) {
 
 	wantDevices := createMockLivingRoomButtonDevices(255.0, 0.0)
-
 	store := utils_test.CreateStore()
+	for _, wd := range wantDevices {
+		store.StoreDevice(wd.FriendlyName, wd)
+	}
 
 	gotDevices, err := store.AllDevices()
 	if err != nil {
@@ -29,31 +31,33 @@ func TestStoreLoadAllDevices(t *testing.T) {
 
 func TestStoreLoadFindsDeviceById(t *testing.T) {
 
-	repo := createMockLivingRoomButtonDevices(255.0, 0.0)
-	store := utils_test.CreateStoreFromDeviceRepo(repo)
-
-	testCases := []struct {
-		id string
-	}{
-		{id: "x1234"},
-		{id: "x5678"},
+	wantDevices := createMockLivingRoomButtonDevices(255.0, 0.0)
+	store := utils_test.CreateStore()
+	for _, wd := range wantDevices {
+		store.StoreDevice(wd.FriendlyName, wd)
 	}
 
-	for _, testCase := range testCases {
-		gotDevice, err := store.FindDeviceById(testCase.id)
+	TODO
+	// problem , it needs to call configure id mapper else is hashing the friendlyName
+	//  which means i need to mock bridgeInfoList and call store.StoreBridge
+	for _, wd := range wantDevices {
+		gotDevice, err := store.FindDeviceById(wd.Id)
 		if err != nil {
-			t.Fatalf("error loading device %v error: %v", testCase.id, err.Error())
+			t.Fatalf("error loading device %v error: %v", wd.Id, err.Error())
 		}
 
-		wantDevice, _ := repo.FindDevice(testCase.id)
+		wantDevice := wantDevices[wd.FriendlyName]
 		utils_test.ValidateDevice(t, wantDevice, gotDevice)
 	}
 }
 
 func TestStoreLoadFindsDeviceByFriendlyName(t *testing.T) {
 
-	repo := createMockLivingRoomButtonDevices(255.0, 0.0)
-	store := utils_test.CreateStoreFromDeviceRepo(repo)
+	wantDevices := createMockLivingRoomButtonDevices(255.0, 0.0)
+	store := utils_test.CreateStore()
+	for _, wd := range wantDevices {
+		store.StoreDevice(wd.FriendlyName, wd)
+	}
 
 	testCases := []struct {
 		id   string
@@ -69,7 +73,7 @@ func TestStoreLoadFindsDeviceByFriendlyName(t *testing.T) {
 			t.Fatalf("error loading device %v error: %v", testCase.name, err.Error())
 		}
 
-		wantDevice, _ := repo.FindDevice(testCase.id)
+		wantDevice := wantDevices[testCase.name]
 		utils_test.ValidateDevice(t, wantDevice, gotDevice)
 	}
 }
