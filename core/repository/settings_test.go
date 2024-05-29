@@ -97,7 +97,7 @@ func TestFileSettingsRepositoryCanAddNewDeviceConfig(t *testing.T) {
 	newCfg := &settings.DeviceConfig{}
 	newCfg.Id = "x055555555"
 	newCfg.Disabled = true
-	newCfg.History = false
+	newCfg.MetricsEnabled = false
 
 	repo.SaveDeviceConfig(newCfg)
 
@@ -140,11 +140,11 @@ func TestFileSettingsRepositoryCanUpdateExistingDeviceConfig(t *testing.T) {
 		t.Errorf("load failed with %v", err.Error())
 	}
 
-	if !found.History {
+	if !found.MetricsEnabled {
 		t.Error("found.history value invalid. want true got false")
 
 	}
-	found.History = false
+	found.MetricsEnabled = false
 
 	err = repo.SaveDeviceConfig(found)
 	if err != nil {
@@ -154,7 +154,7 @@ func TestFileSettingsRepositoryCanUpdateExistingDeviceConfig(t *testing.T) {
 	if err != nil {
 		t.Errorf("load failed with %v", err.Error())
 	}
-	if updated.History {
+	if updated.MetricsEnabled {
 		t.Error("updated.history value invalid. want false got true")
 
 	}
@@ -165,28 +165,28 @@ func createMockAppConfig() *settings.AppConfig {
 	cfg := settings.DeviceConfig{}
 	cfg.Id = "x01234567"
 	cfg.Disabled = false
-	cfg.History = true
+	cfg.MetricsEnabled = true
 
 	appconfig.Add(&cfg)
 
 	cfg2 := settings.DeviceConfig{}
 	cfg2.Id = "x0erp09876"
 	cfg2.Disabled = true
-	cfg2.History = false
+	cfg2.MetricsEnabled = false
 
 	appconfig.Add(&cfg2)
 
 	cfg3 := settings.DeviceConfig{}
 	cfg3.Id = "x0lip1245h"
 	cfg3.Disabled = false
-	cfg3.History = true
+	cfg3.MetricsEnabled = true
 
 	appconfig.Add(&cfg3)
 
 	cfg4 := settings.DeviceConfig{}
 	cfg4.Id = "x9lo0124hggfs"
 	cfg4.Disabled = false
-	cfg4.History = true
+	cfg4.MetricsEnabled = true
 
 	appconfig.Add(&cfg4)
 

@@ -6,6 +6,7 @@ import (
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
+	"node-herder/repository"
 	"node-herder/store"
 	"time"
 
@@ -300,8 +301,11 @@ func (s *NopSettingsrepo) Save(config *settings.AppConfig) error {
 
 func (s *NopSettingsrepo) Load() (*settings.AppConfig, error) {
 	fmt.Println("Mocked settingsRepo Load")
-	return nil, nil
+	return &settings.AppConfig{
+		Devices: map[string]*settings.DeviceConfig{},
+	}, nil
 }
+
 func (s *NopSettingsrepo) FindDeviceConfig(id string) (*settings.DeviceConfig, error) {
 	fmt.Println("Mocked settingsRepo FindDeviceConfig")
 	return nil, nil
@@ -317,37 +321,78 @@ func (s *NopSettingsrepo) Close() error {
 
 // Mock appstore
 type NopAppStore struct {
-	devices  devices.Repository
-	metrics  metrics.Repository
-	settings settings.Repository
+	devices        devices.Repository
+	metrics        metrics.Repository
+	settings       settings.Repository
+	deviceIdMapper *repository.DeviceIdMapper
 }
 
 func NewMockAppStore() store.AppStore {
 	devicesRepo := NopRepository{}
 	metricsRepo := NopMetricsRepo{}
 	settingsRepo := NopSettingsrepo{}
-	return &NopAppStore{devices: &devicesRepo, metrics: &metricsRepo, settings: &settingsRepo}
+	return &NopAppStore{
+		devices:        &devicesRepo,
+		metrics:        &metricsRepo,
+		settings:       &settingsRepo,
+		deviceIdMapper: repository.NewDeviceIdMapper(&devicesRepo),
+	}
 }
 
 func NewMockAppStoreFromDevicesRepo(devicesRepo devices.Repository) store.AppStore {
 	metricsRepo := &NopMetricsRepo{}
 	settingsRepo := &NopSettingsrepo{}
-	return &NopAppStore{devices: devicesRepo, metrics: metricsRepo, settings: settingsRepo}
+	return &NopAppStore{
+		devices:        devicesRepo,
+		metrics:        metricsRepo,
+		settings:       settingsRepo,
+		deviceIdMapper: repository.NewDeviceIdMapper(devicesRepo),
+	}
 }
 
-func (s *NopAppStore) StoreDevice(device *devices.Device) error {
+func (s *NopAppStore) StoreDevice(friendlyName string, device *devices.Device) error {
 	fmt.Println("Mocked store StoreDevice")
 
 	return nil
 }
-func (s *NopAppStore) History() metrics.Repository {
-	return s.metrics
+
+func (s *NopAppStore) UpdateDevice(friendlyName string, device *devices.Device) error {
+	fmt.Println("Mocked store UpdateDevice")
+	return nil
 }
 
-func (s *NopAppStore) Devices() devices.Repository {
-	return s.devices
+func (s *NopAppStore) FindDeviceByFriendlyName(friendlyName string) (*devices.Device, error) {
+	fmt.Println("Mocked store FindDeviceByFriendlyName")
+	return &devices.Device{}, nil
 }
 
-func (s *NopAppStore) Config() settings.Repository {
-	return s.settings
+func (s *NopAppStore) FindDeviceById(id string) (*devices.Device, error) {
+	fmt.Println("Mocked store FindDeviceById")
+	return &devices.Device{}, nil
+}
+func (s *NopAppStore) FindDeviceByIds(ids []string) ([]*devices.Device, error) {
+	fmt.Println("Mocked store FindDeviceByIds")
+	return []*devices.Device{}, nil
+}
+func (s *NopAppStore) AllDevices() ([]*devices.Device, error) {
+	fmt.Println("Mocked store AllDevices")
+	return []*devices.Device{}, nil
+}
+
+func (s *NopAppStore) StoreBridgeInfoList(bridgeInfoList []*devices.BridgeInfo) error {
+	fmt.Println("Mocked store StoreBridgeInfoList")
+	return nil
+}
+func (s *NopAppStore) FindBridgeInfoByFriendlyName(friendlyName string) (*devices.BridgeInfo, error) {
+	fmt.Println("Mocked store FindBridgeInfoByFriendlyName")
+	return &devices.BridgeInfo{}, nil
+}
+func (s *NopAppStore) FindBridgeInfoById(id string) (*devices.BridgeInfo, error) {
+	fmt.Println("Mocked store FindBridgeInfoById")
+	return &devices.BridgeInfo{}, nil
+}
+
+func (s *NopAppStore) ResolveFriendlyName(friendlyName string) string {
+	fmt.Println("Mocked store ResolveFriendlyName")
+	return ""
 }

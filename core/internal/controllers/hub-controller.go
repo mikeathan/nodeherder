@@ -48,12 +48,12 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 	})
 
 	h.eventHub.OnLoadDevices(func() interface{} {
-		devs, _ := h.store.Devices().AllDevices()
+		devs, _ := h.store.AllDevices()
 		return devs
 	})
 
 	h.eventHub.OnLoadDeviceList(func(ids []string) interface{} {
-		devs, _ := h.store.Devices().FindDevices(ids)
+		devs, _ := h.store.FindDeviceByIds(ids)
 		return devs
 	})
 

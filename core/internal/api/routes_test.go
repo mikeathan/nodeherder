@@ -88,7 +88,7 @@ func TestHandleSuccesfullyRootPayload(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 	id := utils.HashName(name)
-	device, err := store.Devices().FindDevice(id)
+	device, err := store.FindDeviceById(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -153,7 +153,7 @@ func TestProcessorHandleRootPayloadWithTimestamp(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	id := utils.HashName(name)
-	device, err := store.Devices().FindDevice(id)
+	device, err := store.FindDeviceById(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -194,7 +194,7 @@ func TestHandleSuccesfullyPayload(t *testing.T) {
 	}
 
 	id := utils.HashName(name)
-	device, err := store.Devices().FindDevice(id)
+	device, err := store.FindDeviceById(id)
 
 	if err != nil {
 		t.Fatalf(err.Error())

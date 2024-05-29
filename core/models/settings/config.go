@@ -1,9 +1,9 @@
 package settings
 
 type DeviceConfig struct {
-	Id       string `json:"id"`
-	Disabled bool   `json:"disabled"`
-	History  bool   `json:"history"`
+	Id             string `json:"id"`
+	Disabled       bool   `json:"disabled"`
+	MetricsEnabled bool   `json:"history"`
 }
 
 type AppConfig struct {

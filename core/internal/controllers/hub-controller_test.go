@@ -41,7 +41,7 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	id := utils.HashName(name)
-	device, err := store.Devices().FindDevice(id)
+	device, err := store.FindDeviceById(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -69,7 +69,7 @@ func TestProcessorUpdatesExistingDevice(t *testing.T) {
 	name := "device2"
 	id := utils.HashName(name)
 
-	device, err := store.Devices().FindDevice(id)
+	device, err := store.FindDeviceById(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -97,7 +97,7 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 	id := utils.HashName(name)
 
-	device, err := store.Devices().FindDevice(id)
+	device, err := store.FindDeviceById(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -242,7 +242,7 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	id := utils.HashName(name)
-	device, err := store.Devices().FindDevice(id)
+	device, err := store.FindDeviceById(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -260,7 +260,7 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 
 	id = utils.HashName(name)
-	device1, _ := store.Devices().FindDevice(id)
+	device1, _ := store.FindDeviceById(id)
 
 	if device1.Properties["availability"] != "online" {
 		t.Fatalf("want online got offline")
@@ -281,7 +281,7 @@ func TestAvailabilityIsDisposed(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	id := utils.HashName(name)
-	device, err := store.Devices().FindDevice(id)
+	device, err := store.FindDeviceById(id)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

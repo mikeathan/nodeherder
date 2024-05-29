@@ -9,9 +9,15 @@ import (
 
 func CreateStore() store.AppStore {
 	repo := repository.NewMemoryDeviceRepo()
-	return mocks.NewMockAppStoreFromDevicesRepo(repo)
+	metricsRepo := mocks.NopMetricsRepo{}
+	settingsRepo := mocks.NopSettingsrepo{}
+	store, _ := store.NewAppStore(repo, &metricsRepo, &settingsRepo)
+	return store
 }
 
 func CreateStoreFromDeviceRepo(repo devices.Repository) store.AppStore {
-	return mocks.NewMockAppStoreFromDevicesRepo(repo)
+	metricsRepo := mocks.NopMetricsRepo{}
+	settingsRepo := mocks.NopSettingsrepo{}
+	store, _ := store.NewAppStore(repo, &metricsRepo, &settingsRepo)
+	return store
 }

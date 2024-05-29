@@ -21,5 +21,5 @@ func Create() (AppStore, error) {
 		return nil, fmt.Errorf("loading settings repository failed: %v", err.Error())
 	}
 
-	return newAppStore(devices, metrics, settings)
+	return NewAppStore(devices, metrics, settings)
 }

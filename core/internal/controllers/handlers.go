@@ -229,7 +229,7 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 		c.hub.TriggerAutomation(device)
 	}
 	
-	c.registrar.Update(friendlyName, device)
+	c.registrar.Register(friendlyName, device)
 
 	return nil
 }
