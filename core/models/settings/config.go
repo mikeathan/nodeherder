@@ -6,6 +6,14 @@ type DeviceConfig struct {
 	MetricsEnabled bool   `json:"history"`
 }
 
+func NewDeviceConfig(id string) *DeviceConfig {
+	return &DeviceConfig{
+		Id:             id,
+		Disabled:       false,
+		MetricsEnabled: false,
+	}
+}
+
 type AppConfig struct {
 	Devices map[string]*DeviceConfig `json:"devices"`
 }
