@@ -111,113 +111,32 @@ history: true
 
 
 
-package main
-
-import (
-	"fmt"
-	"time"
-
-	"github.com/boltdb/bolt"
-)
-
-const (
-	bucketName = "metrics"
-	dbName     = "metrics.db"
-	rateLimit  = time.Minute // Minimum interval between storing metrics for a device
-)
-
-// Metric represents a data point from a device
-type Metric struct {
-	DeviceID string
-	Value    float64
-	Timestamp time.Time
+type RateLimiter struct {
+	mutex     sync.Mutex
+	deviceId  string
+	rateLimit time.Duration
+	lastWrite time.Time
+	store     map[string]time.Time // In-memory store for device IDs and last write times
 }
 
-// storeMetric stores a metric in the BoltDB database
-func storeMetric(db *bolt.DB, metric Metric) error {
-	err := db.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte(bucketName))
-		if err != nil {
-			return err
+func (rl *RateLimiter) AllowWrite() bool {
+	rl.mutex.Lock()
+	defer rl.mutex.Unlock()
+
+	currentTime := time.Now()
+
+	// Check if device exists in the in-memory store
+	if lastWrite, ok := rl.store[rl.deviceId]; ok {
+		if currentTime.Sub(lastWrite) < rl.rateLimit {
+			return false // Rate limit exceeded
 		}
-
-		// Encode metric as bytes before storing
-		metricBytes, err := marshalMetric(metric)
-		if err != nil {
-			return err
-		}
-
-		// Check if the device has sent data recently
-		lastValue, err := bucket.Get([]byte(metric.DeviceID))
-		if err != nil && err != bolt.ErrBucketNotFound {
-			return err
-		}
-
-		if lastValue != nil {
-			// Check if the last metric was stored within the rate limit
-			lastTime, err := unmarshalTime(lastValue)
-			if err != nil {
-				return err
-			}
-			if time.Since(lastTime) < rateLimit {
-				// Skip storing if data is within rate limit
-				return nil
-			}
-		}
-
-		return bucket.Put([]byte(metric.DeviceID), metricBytes)
-	})
-	return err
-}
-
-// marshalMetric encodes a Metric struct to a byte array
-func marshalMetric(metric Metric) ([]byte, error) {
-	// Implement your encoding logic here (e.g., JSON or Gob)
-	// This is a placeholder for demonstration purposes
-	return []byte(fmt.Sprintf("%+v", metric)), nil
-}
-
-// unmarshalTime decodes a byte array to a time.Time object
-func unmarshalTime(data []byte) (time.Time, error) {
-	// Implement your decoding logic here (e.g., corresponding to marshalMetric)
-	// This is a placeholder for demonstration purposes
-	var timestamp time.Time
-	fmt.Sscanf(string(data), "%v", &timestamp)
-	return timestamp, nil
-}
-
-// simulateDeviceData simulates data sent from a device at regular intervals
-func simulateDeviceData(deviceID string, db *bolt.DB) {
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-	go func() {
-		for range ticker.C {
-			metric := Metric{
-				DeviceID: deviceID,
-				Value:    // Generate random value here
-				Timestamp: time.Now(),
-			}
-			err := storeMetric(db, metric)
-			if err != nil {
-				fmt.Printf("Error storing metric: %v\n", err)
-			}
-		}
-	}()
-}
-
-func main() {
-	// Open the BoltDB database
-	db, err := bolt.Open(dbName, 0600, nil)
-	if err != nil {
-		fmt.Println("Error opening database:", err)
-		return
 	}
-	defer db.Close()
 
-	// Simulate data from multiple devices
-	go simulateDeviceData("device1", db)
-	go simulateDeviceData("device2", db)
+	// Update lastWrite time and store in map
+	rl.lastWrite = currentTime
+	rl.store[rl.deviceId] = currentTime
 
-	// Keep the main program running
-	select {}
+	return true
 }
+
+https://gemini.google.com/app/f350132855a2472e?utm_source=google&utm_medium=cpc&utm_campaign=2024enGB_gemfeb&gad_source=1
