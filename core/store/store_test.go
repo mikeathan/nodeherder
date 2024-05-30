@@ -50,7 +50,64 @@ func TestStoreLoadAllDevices(t *testing.T) {
 	}
 }
 
-func TestStoreUpdateStoresMetricsIfEnabled(t *testing.T) {
+func TestStoreDeviceStoreDoesNotStoreMetricsIfEnabled(t *testing.T) {
+	wantDevices := createMockLivingRoomButtonDevices(255.0, 0.0)
+
+	//create device repo
+	deviceRepo := repository.NewMemoryDeviceRepo()
+
+	//create settings repo
+	settingsTempFile := utils_test.Tempfile()
+	defer os.Remove(settingsTempFile)
+	settingsRepo, err := repository.NewFileSettingsRepoFromFile(settingsTempFile)
+	if err != nil {
+		t.Fatalf("settings repo failed. error: %v ", err.Error())
+	}
+
+	// get first device and enable metrics
+	dev1 := wantDevices[0]
+	appConfig := settings.NewAppConfig()
+	deviceConfig := settings.NewDeviceConfig(dev1.Id)
+	deviceConfig.MetricsEnabled = true
+	appConfig.Add(deviceConfig)
+	settingsRepo.Save(appConfig)
+
+	// create metrics repo
+	var metricsStoreHandler = func(device *devices.Device) {
+		t.Fatalf("unexpected device %v invoked for metrics", device.Id)
+	}
+
+	metricsRepo := &mocks.NopMetricsRepo{}
+	metricsRepo.WithStoreHandler(metricsStoreHandler)
+
+	//create store
+	store := utils_test.CreateStoreFromRepos(deviceRepo, metricsRepo, settingsRepo)
+
+	// store bridgeInfoList
+	bridgeList := utils_test.CreateBridgeInfoList(wantDevices)
+	err = store.StoreBridgeInfoList(bridgeList)
+	if err != nil {
+		t.Fatalf("error storing BridgeInfoList: %v", err.Error())
+	}
+
+	// update all devices but assert that only metrics enabled device stores metrics
+
+	// trigger multiple events for each device
+	for i := 0; i < 10; i++ {
+		for id, wd := range wantDevices {
+			for _, we := range wd.Exposes {
+				we.Data = (i + 1) + id*2
+			}
+
+			err := store.StoreDevice(wd.FriendlyName, wd)
+			if err != nil {
+				t.Fatalf("error updating device %v error: %v:", wd.FriendlyName, err.Error())
+			}
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+func TestStoreDeviceUpdateStoresMetricsIfEnabled(t *testing.T) {
 
 	wantDevices := createMockLivingRoomButtonDevices(255.0, 0.0)
 
@@ -112,8 +169,6 @@ func TestStoreUpdateStoresMetricsIfEnabled(t *testing.T) {
 	}
 }
 
-todo
-// test that store device doesnt invoke metrics 
 func TestStoreUpdateDevice(t *testing.T) {
 
 	wantDevices := createMockLivingRoomButtonDevices(255.0, 0.0)
