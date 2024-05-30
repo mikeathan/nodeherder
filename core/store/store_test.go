@@ -1,6 +1,8 @@
 package store_test
 
 import (
+	"fmt"
+	"node-herder/mocks"
 	"node-herder/models/devices"
 	"node-herder/models/settings"
 	"node-herder/repository"
@@ -13,6 +15,7 @@ import (
 func TestStoreLoadAllDevices(t *testing.T) {
 
 	wantDevices := createMockLivingRoomButtonDevices(255.0, 0.0)
+
 	store := utils_test.CreateStore()
 
 	// NOTE:
@@ -54,13 +57,6 @@ func TestStoreUpdateStoresMetricsIfEnabled(t *testing.T) {
 	//create device repo
 	deviceRepo := repository.NewMemoryDeviceRepo()
 
-	//create metrics repo
-	metricsTempFile := utils_test.Tempfile()
-	defer os.Remove(metricsTempFile)
-	metricsRepo, err := repository.NewMetricsRepoFromFile(metricsTempFile)
-	if err != nil {
-		t.Fatalf("metrics repo failed. error: %v ", err.Error())
-	}
 	//create settings repo
 	settingsTempFile := utils_test.Tempfile()
 	defer os.Remove(settingsTempFile)
@@ -77,6 +73,17 @@ func TestStoreUpdateStoresMetricsIfEnabled(t *testing.T) {
 	appConfig.Add(deviceConfig)
 	settingsRepo.Save(appConfig)
 
+	// create metrics repo
+	var metricsStoreHandler = func(device *devices.Device) {
+		fmt.Printf("invoked with %v", device.Id)
+		if device.Id != dev1.Id {
+			t.Fatalf("invalid device invoked for metrics want %v got %v ", dev1.Id, device.Id)
+		}
+	}
+
+	metricsRepo := &mocks.NopMetricsRepo{}
+	metricsRepo.WithStoreHandler(metricsStoreHandler)
+
 	//create store
 	store := utils_test.CreateStoreFromRepos(deviceRepo, metricsRepo, settingsRepo)
 
@@ -92,7 +99,6 @@ func TestStoreUpdateStoresMetricsIfEnabled(t *testing.T) {
 	// trigger multiple events for each device
 	for i := 0; i < 10; i++ {
 		for id, wd := range wantDevices {
-
 			for _, we := range wd.Exposes {
 				we.Data = (i + 1) + id*2
 			}
@@ -104,10 +110,10 @@ func TestStoreUpdateStoresMetricsIfEnabled(t *testing.T) {
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-
-	// assert
 }
 
+todo
+// test that store device doesnt invoke metrics 
 func TestStoreUpdateDevice(t *testing.T) {
 
 	wantDevices := createMockLivingRoomButtonDevices(255.0, 0.0)

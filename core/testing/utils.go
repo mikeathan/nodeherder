@@ -31,8 +31,8 @@ func CreateStoreFromDeviceRepo(repo devices.Repository) store.AppStore {
 	return store
 }
 
-func CreateStoreFromRepos(repo devices.Repository, metrics metrics.Repository, settings settings.Repository) store.AppStore {
-	store, _ := store.NewAppStore(repo, metrics, settings)
+func CreateStoreFromRepos(deviceRepo devices.Repository, metricsRepo metrics.Repository, settingsRepo settings.Repository) store.AppStore {
+	store, _ := store.NewAppStore(deviceRepo, metricsRepo, settingsRepo)
 	return store
 }
 

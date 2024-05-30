@@ -269,12 +269,25 @@ func (w *NopDeviceRegistrar) RetrieveEntityData(id string, property string) (any
 
 // Mock metrics repo
 type NopMetricsRepo struct {
+	storeHandler func(device *devices.Device)
+}
+
+func (s *NopMetricsRepo) WithStoreHandler(storeHandler func(device *devices.Device)) {
+	s.storeHandler = storeHandler
+}
+
+func (s *NopMetricsRepo) invokeStoreHandler() func(device *devices.Device) {
+	return func(device *devices.Device) {
+		s.storeHandler(device)
+	}
 }
 
 func (s *NopMetricsRepo) Store(device *devices.Device) error {
 	fmt.Println("Mocked Store")
+	s.invokeStoreHandler()(device)
 	return nil
 }
+
 func (s *NopMetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 	fmt.Println("Mocked ViewDeviceTimeRange")
 	return nil, nil
@@ -286,8 +299,9 @@ func (s *NopMetricsRepo) ViewExposeTimeRange(device *devices.Device, exposeName 
 	return nil, nil
 }
 
-func (s *NopMetricsRepo) Close() {
+func (s *NopMetricsRepo) Close() error {
 	fmt.Println("Mocked Close")
+	return nil
 }
 
 // Mock seting repo

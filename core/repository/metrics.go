@@ -40,11 +40,12 @@ func NewMetricsRepoFromFile(filename string) (metrics.Repository, error) {
 	}, nil
 }
 
-func (s *MetricsRepo) Close() {
+func (s *MetricsRepo) Close() error {
 	err := s.db.Close()
 	if err != nil {
-		utils.LogError(err)
+		return err
 	}
+	return nil
 }
 
 func (s *MetricsRepo) Store(device *devices.Device) error {
