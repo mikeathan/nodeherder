@@ -107,6 +107,7 @@ func TestStoreDeviceStoreDoesNotStoreMetricsIfEnabled(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 	}
 }
+
 func TestStoreDeviceUpdateStoresMetricsIfEnabled(t *testing.T) {
 
 	wantDevices := createMockLivingRoomButtonDevices(255.0, 0.0)
@@ -136,6 +137,229 @@ func TestStoreDeviceUpdateStoresMetricsIfEnabled(t *testing.T) {
 		if device.Id != dev1.Id {
 			t.Fatalf("invalid device invoked for metrics want %v got %v ", dev1.Id, device.Id)
 		}
+	}
+
+	metricsRepo := &mocks.NopMetricsRepo{}
+	metricsRepo.WithStoreHandler(metricsStoreHandler)
+
+	//create store
+	store := utils_test.CreateStoreFromRepos(deviceRepo, metricsRepo, settingsRepo)
+
+	// store bridgeInfoList
+	bridgeList := utils_test.CreateBridgeInfoList(wantDevices)
+	err = store.StoreBridgeInfoList(bridgeList)
+	if err != nil {
+		t.Fatalf("error storing BridgeInfoList: %v", err.Error())
+	}
+
+	// update all devices but assert that only metrics enabled device stores metrics
+
+	// trigger multiple events for each device
+	for i := 0; i < 10; i++ {
+		for id, wd := range wantDevices {
+			for _, we := range wd.Exposes {
+				we.Data = (i + 1) + id*2
+			}
+
+			err := store.UpdateDevice(wd.FriendlyName, wd)
+			if err != nil {
+				t.Fatalf("error updating device %v error: %v:", wd.FriendlyName, err.Error())
+			}
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+func TestStoreMetricsLimitsDataWithDefaultRateLimiter(t *testing.T) {
+
+	wantDevices := createMockLivingRoomButtonDevices(255.0, 0.0)
+
+	//create device repo
+	deviceRepo := repository.NewMemoryDeviceRepo()
+
+	//create settings repo
+	settingsTempFile := utils_test.Tempfile()
+	defer os.Remove(settingsTempFile)
+	settingsRepo, err := repository.NewFileSettingsRepoFromFile(settingsTempFile)
+	if err != nil {
+		t.Fatalf("settings repo failed. error: %v ", err.Error())
+	}
+
+	// get first device and enable metrics
+	dev1 := wantDevices[0]
+	appConfig := settings.NewAppConfig()
+	deviceConfig := settings.NewDeviceConfig(dev1.Id)
+	deviceConfig.MetricsEnabled = true
+	appConfig.Add(deviceConfig)
+	settingsRepo.Save(appConfig)
+
+	metircsHits := 0
+	// create metrics repo
+	var metricsStoreHandler = func(device *devices.Device) {
+		fmt.Printf("invoked with %v", device.Id)
+
+		if metircsHits > 0 {
+			t.Fatalf("rate limiter failed. we only expect 1 hit.")
+		}
+
+		if device.Id != dev1.Id {
+			t.Fatalf("invalid device invoked for metrics want %v got %v ", dev1.Id, device.Id)
+		}
+
+		metircsHits++
+	}
+
+	metricsRepo := &mocks.NopMetricsRepo{}
+	metricsRepo.WithStoreHandler(metricsStoreHandler)
+
+	//create store
+	store := utils_test.CreateStoreFromRepos(deviceRepo, metricsRepo, settingsRepo)
+
+	// store bridgeInfoList
+	bridgeList := utils_test.CreateBridgeInfoList(wantDevices)
+	err = store.StoreBridgeInfoList(bridgeList)
+	if err != nil {
+		t.Fatalf("error storing BridgeInfoList: %v", err.Error())
+	}
+
+	// update all devices but assert that only metrics enabled device stores metrics
+
+	// trigger multiple events for each device
+	for i := 0; i < 10; i++ {
+		for id, wd := range wantDevices {
+			for _, we := range wd.Exposes {
+				we.Data = (i + 1) + id*2
+			}
+
+			err := store.UpdateDevice(wd.FriendlyName, wd)
+			if err != nil {
+				t.Fatalf("error updating device %v error: %v:", wd.FriendlyName, err.Error())
+			}
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+func TestStoreMetricsLimitsDataWithConfiguredRateLimiter(t *testing.T) {
+
+	wantDevices := createMockLivingRoomButtonDevices(255.0, 0.0)
+
+	//create device repo
+	deviceRepo := repository.NewMemoryDeviceRepo()
+
+	//create settings repo
+	settingsTempFile := utils_test.Tempfile()
+	defer os.Remove(settingsTempFile)
+	settingsRepo, err := repository.NewFileSettingsRepoFromFile(settingsTempFile)
+	if err != nil {
+		t.Fatalf("settings repo failed. error: %v ", err.Error())
+	}
+
+	// get first device and enable metrics
+	dev1 := wantDevices[0]
+	appConfig := settings.NewAppConfig()
+	deviceConfig := settings.NewDeviceConfig(dev1.Id)
+	deviceConfig.MetricsEnabled = true
+	deviceConfig.RateLimit = int(time.Millisecond.Milliseconds()) * 100
+	appConfig.Add(deviceConfig)
+	settingsRepo.Save(appConfig)
+
+	metircsHits := 0
+	// create metrics repo
+	var metricsStoreHandler = func(device *devices.Device) {
+		fmt.Printf("invoked with %v", device.Id)
+
+		if metircsHits >= 24 {
+			t.Fatalf("invalid metrics hits  want 24 got %v.", metircsHits)
+		}
+
+		if device.Id != dev1.Id {
+			t.Fatalf("invalid device invoked for metrics want %v got %v ", dev1.Id, device.Id)
+		}
+
+		metircsHits++
+	}
+
+	metricsRepo := &mocks.NopMetricsRepo{}
+	metricsRepo.WithStoreHandler(metricsStoreHandler)
+
+	//create store
+	store := utils_test.CreateStoreFromRepos(deviceRepo, metricsRepo, settingsRepo)
+
+	// store bridgeInfoList
+	bridgeList := utils_test.CreateBridgeInfoList(wantDevices)
+	err = store.StoreBridgeInfoList(bridgeList)
+	if err != nil {
+		t.Fatalf("error storing BridgeInfoList: %v", err.Error())
+	}
+
+	// update all devices but assert that only metrics enabled device stores metrics
+
+	// trigger multiple events for each device
+	for i := 0; i < 10; i++ {
+		for id, wd := range wantDevices {
+			for _, we := range wd.Exposes {
+				we.Data = (i + 1) + id*2
+			}
+
+			err := store.UpdateDevice(wd.FriendlyName, wd)
+			if err != nil {
+				t.Fatalf("error updating device %v error: %v:", wd.FriendlyName, err.Error())
+			}
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+func TestStoreMetricsLimitsDataWithMultipleDevicesConfiguredRateLimiter(t *testing.T) {
+
+	wantDevices := createMockLivingRoomButtonDevices(255.0, 0.0)
+
+	//create device repo
+	deviceRepo := repository.NewMemoryDeviceRepo()
+
+	//create settings repo
+	settingsTempFile := utils_test.Tempfile()
+	defer os.Remove(settingsTempFile)
+	settingsRepo, err := repository.NewFileSettingsRepoFromFile(settingsTempFile)
+	if err != nil {
+		t.Fatalf("settings repo failed. error: %v ", err.Error())
+	}
+
+	// configure 1st device
+	dev1 := wantDevices[0]
+	appConfig := settings.NewAppConfig()
+	deviceConfig := settings.NewDeviceConfig(dev1.Id)
+	deviceConfig.MetricsEnabled = true
+	deviceConfig.RateLimit = int(time.Millisecond.Milliseconds()) * 100 // rate limit at 100 ms
+
+	// configure 2st device
+	dev2 := wantDevices[1]
+	deviceConfig2 := settings.NewDeviceConfig(dev2.Id)
+	deviceConfig2.MetricsEnabled = true
+	deviceConfig2.RateLimit = int(time.Minute.Milliseconds()) // rate limit at 60000 ms
+	appConfig.Add(deviceConfig)
+	settingsRepo.Save(appConfig)
+
+	expectedHits := map[string]int{}
+	expectedHits[dev1.Id] = 24
+	expectedHits[dev2.Id] = 1
+
+	hitsCounter := map[string]int{}
+
+	// create metrics repo
+	var metricsStoreHandler = func(device *devices.Device) {
+		fmt.Printf("invoked with %v", device.Id)
+
+		if hitsCounter[device.Id] >= expectedHits[device.Id] {
+			t.Fatalf("invalid metrics hits want %v got %v.", expectedHits[device.Id], hitsCounter[device.Id])
+		}
+
+		if device.Id != dev1.Id {
+			t.Fatalf("invalid device invoked for metrics want %v got %v ", dev1.Id, device.Id)
+		}
+
+		hitsCounter[device.Id]++
 	}
 
 	metricsRepo := &mocks.NopMetricsRepo{}

@@ -9,6 +9,10 @@ type DeviceConfig struct {
 	RateLimit      int    `json:"rateLimit"`
 }
 
+func (d *DeviceConfig) RateLimitDuration() time.Duration {
+	return time.Duration(d.RateLimit) * time.Millisecond
+}
+
 func NewDeviceConfig(id string) *DeviceConfig {
 	return &DeviceConfig{
 		Id:             id,

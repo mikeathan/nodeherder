@@ -99,36 +99,28 @@ func (s *appStore) UpdateDevice(friendlyName string, device *devices.Device) err
 		return err
 	}
 
-	// check if metris is allowed and store them
-	id := s.ResolveFriendlyName(friendlyName)
-	if config, ok := s.deviceConfigs[id]; ok && config.MetricsEnabled {
-		if s.rateLimiter.AllowWrite(id, time.Duration(config.RateLimit)) {
-			err := s.metrics.Store(device)
-			if err != nil {
-				utils.LogErrorf("storing metrics failed %v", err.Error())
-			}
-		}
+	err = s.storeMetrics(friendlyName, device)
+	if err != nil {
+		utils.LogErrorf("storing metrics failed %v", err.Error())
 	}
-
-	// if s.IsMetricsEnabled(friendlyName) {
-
-	// 	err := s.metrics.Store(device)
-	// 	if err != nil {
-	// 		utils.LogErrorf("storing metrics failed %v", err.Error())
-	// 	}
-	// }
-
 	return nil
 }
 
-// func (s *appStore) IsMetricsEnabled(friendlyName string) bool {
-// 	id := s.ResolveFriendlyName(friendlyName)
-// 	if config, ok := s.deviceConfigs[id]; ok && config.MetricsEnabled {
-// 		return true
-// 	}
+func (s *appStore) storeMetrics(friendlyName string, device *devices.Device) error {
+	id := s.ResolveFriendlyName(friendlyName)
 
-// 	return false
-// }
+	if config, ok := s.deviceConfigs[id]; ok &&
+		config.MetricsEnabled &&
+		s.rateLimiter.AllowWrite(id, config.RateLimitDuration()) {
+
+		err := s.metrics.Store(device)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 func (s *appStore) StoreDevice(friendlyName string, device *devices.Device) error {
 	id := s.ResolveFriendlyName(friendlyName)
