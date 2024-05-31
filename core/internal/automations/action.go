@@ -113,7 +113,7 @@ func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
 		duration := time.Duration(diff)
 		ticker := *time.NewTicker(duration * time.Millisecond)
 		a.isPending = true
-		utils.LogInfof("time constraint started Delay: %d ms", a.Delay)
+		//utils.LogInfof("time constraint started Delay: %d ms", a.Delay)
 
 		defer func() {
 			close(a.exit)
@@ -134,12 +134,12 @@ func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
 
 			// on success callback
 			// update sensor current value
-			utils.LogInfo("timer constraint finished")
+			//utils.LogInfo("timer constraint finished")
 			return
 
 		case <-a.exit:
 
-			utils.LogInfo("timer constraint stopped")
+			//utils.LogInfo("timer constraint stopped")
 			return
 		}
 	}()
