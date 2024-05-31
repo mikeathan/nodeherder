@@ -226,9 +226,12 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 
 		// check to see if we have an automation for current device
 		c.eventHub.Broadcast(ws.DeviceUpdated, updatedData)
+
+		// TODO: process in a new worker
 		c.hub.TriggerAutomation(device)
 	}
-	
+
+	// TODO: process in a new worker
 	c.registrar.Register(friendlyName, device)
 
 	return nil
