@@ -136,62 +136,62 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 	}
 }
 
-func TestMetricsRateLimiter(t *testing.T) {
+// func TestMetricsRateLimiter(t *testing.T) {
 
-	tempfile := tempfile()
-	defer os.Remove(tempfile)
+// 	tempfile := tempfile()
+// 	defer os.Remove(tempfile)
 
-	repo, err := repository.NewMetricsRepoFromFile(tempfile)
-	if err != nil {
-		t.Error("failed to initialise metrics repo", err.Error())
-	}
+// 	repo, err := repository.NewMetricsRepoFromFile(tempfile)
+// 	if err != nil {
+// 		t.Error("failed to initialise metrics repo", err.Error())
+// 	}
 
-	timestamps := CreateDateTimeTimestamps(1, 24, 1)
-	values := CreateFloatValues(24)
-	var devices map[string]*devices.Device = make(map[string]*devices.Device)
-	numDevices := 1
+// 	timestamps := CreateDateTimeTimestamps(1, 24, 1)
+// 	values := CreateFloatValues(24)
+// 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
+// 	numDevices := 1
 
-	for i := 0; i < numDevices; i++ {
+// 	for i := 0; i < numDevices; i++ {
 
-		deviceId := fmt.Sprintf("x000%v", i)
-		deviceName := fmt.Sprintf("device %v", i)
+// 		deviceId := fmt.Sprintf("x000%v", i)
+// 		deviceName := fmt.Sprintf("device %v", i)
 
-		fmt.Println("total timestamps: ", len(timestamps))
-		for tIdx, timestamp := range timestamps {
+// 		fmt.Println("total timestamps: ", len(timestamps))
+// 		for tIdx, timestamp := range timestamps {
 
-			dev := createMockDevice(deviceId, deviceName, 2, "numeric", *timestamp, values[tIdx])
+// 			dev := createMockDevice(deviceId, deviceName, 2, "numeric", *timestamp, values[tIdx])
 
-			err = repo.Store(dev)
-			//fmt.Printf("Add device: %v, data: %v, timestamp: %v \n", deviceId, values[tIdx], dev.Properties["last_seen"])
-			if err != nil {
-				t.Error("failed to store metrics ", err.Error())
-			}
-			devices[dev.Id] = dev
-		}
-	}
+// 			err = repo.Store(dev)
+// 			//fmt.Printf("Add device: %v, data: %v, timestamp: %v \n", deviceId, values[tIdx], dev.Properties["last_seen"])
+// 			if err != nil {
+// 				t.Error("failed to store metrics ", err.Error())
+// 			}
+// 			devices[dev.Id] = dev
+// 		}
+// 	}
 
-	// query and assert
-	for i := 0; i < numDevices; i++ {
-		deviceId := fmt.Sprintf("x000%v", i)
+// 	// query and assert
+// 	for i := 0; i < numDevices; i++ {
+// 		deviceId := fmt.Sprintf("x000%v", i)
 
-		dev := devices[deviceId]
-		now := time.Now()
+// 		dev := devices[deviceId]
+// 		now := time.Now()
 
-		from := time.Date(now.Year(), now.Month(), now.Day()-1, 0, 0, 0, 0, time.UTC)
-		to := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC)
+// 		from := time.Date(now.Year(), now.Month(), now.Day()-1, 0, 0, 0, 0, time.UTC)
+// 		to := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC)
 
-		result, err := repo.ViewDeviceTimeRange(dev, from, to)
-		if err != nil {
-			t.Error("failed to query metrics: ", err.Error())
-		}
+// 		result, err := repo.ViewDeviceTimeRange(dev, from, to)
+// 		if err != nil {
+// 			t.Error("failed to query metrics: ", err.Error())
+// 		}
 
-		for _, expose := range result.Expose {
-			if len(expose.Values) > 1 {
-				t.Errorf("rate limiter registered more than expected device hits want 1 got %v: ", len((expose.Values)))
-			}
-		}
-	}
-}
+// 		for _, expose := range result.Expose {
+// 			if len(expose.Values) > 1 {
+// 				t.Errorf("rate limiter registered more than expected device hits want 1 got %v: ", len((expose.Values)))
+// 			}
+// 		}
+// 	}
+// }
 
 func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 

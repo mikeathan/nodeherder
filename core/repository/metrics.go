@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
-	"node-herder/models/settings"
 	"node-herder/utils"
 	"reflect"
 	"sort"
@@ -18,59 +17,16 @@ import (
 
 const metricsBaseFilename = "metrics.db"
 
-type RateLimiter struct {
-	mutex     sync.Mutex
-	rateLimit time.Duration
-	lastWrite time.Time
-	appConfig *settings.AppConfig
-	store     map[string]time.Time // In-memory store for device IDs and last write times
-}
-
-func NewRateLimiter(appConfig *settings.AppConfig) *RateLimiter {
-	return &RateLimiter{
-		mutex:     sync.Mutex{},
-		rateLimit: time.Minute,
-		lastWrite: time.Time{},
-		appConfig: appConfig,
-		store:     map[string]time.Time{},
-	}
-}
-
-func (rl *RateLimiter) AllowWrite(id string) bool {
-	rl.mutex.Lock()
-	defer rl.mutex.Unlock()
-
-	currentTime := time.Now()
-
-	if rateLimit, ok := rl.appConfig.Devices[id].RateLimit; ok {
-
-	}
-
-	// Check if device exists in the in-memory store
-	if lastWrite, ok := rl.store[id]; ok {
-		if currentTime.Sub(lastWrite) < rl.rateLimit {
-			return false // Rate limit exceeded
-		}
-	}
-
-	// Update lastWrite time and store in map
-	rl.lastWrite = currentTime
-	rl.store[id] = currentTime
-
-	return true
-}
-
 type MetricsRepo struct {
-	mutex       *sync.RWMutex
-	db          *bolt.DB
-	rateLimiter *RateLimiter
+	mutex *sync.RWMutex
+	db    *bolt.DB
 }
 
-func NewMetricsRepo(appConfig *settings.AppConfig) (metrics.Repository, error) {
-	return NewMetricsRepoFromFile(metricsBaseFilename, appConfig)
+func NewMetricsRepo() (metrics.Repository, error) {
+	return NewMetricsRepoFromFile(metricsBaseFilename)
 }
 
-func NewMetricsRepoFromFile(filename string, appConfig *settings.AppConfig) (metrics.Repository, error) {
+func NewMetricsRepoFromFile(filename string) (metrics.Repository, error) {
 
 	db, err := bolt.Open(filename, 0600, nil)
 	if err != nil {
@@ -80,9 +36,8 @@ func NewMetricsRepoFromFile(filename string, appConfig *settings.AppConfig) (met
 
 	// TODO: ideally pass device configs to configure the rate limiter timeout
 	return &MetricsRepo{
-		mutex:       &sync.RWMutex{},
-		db:          db,
-		rateLimiter: NewRateLimiter(appConfig),
+		mutex: &sync.RWMutex{},
+		db:    db,
 	}, nil
 }
 
@@ -95,10 +50,6 @@ func (s *MetricsRepo) Close() error {
 }
 
 func (s *MetricsRepo) Store(device *devices.Device) error {
-
-	if !s.rateLimiter.AllowWrite(device.Id) {
-		return nil
-	}
 
 	defer s.mutex.Unlock()
 	s.mutex.Lock()

@@ -6,7 +6,45 @@ import (
 	"node-herder/models/settings"
 	"node-herder/repository"
 	"node-herder/utils"
+	"sync"
+	"time"
 )
+
+type RateLimiter struct {
+	mutex     sync.Mutex
+	lastWrite time.Time
+	appConfig *settings.AppConfig
+	store     map[string]time.Time // In-memory store for device IDs and last write times
+}
+
+func NewRateLimiter(appConfig *settings.AppConfig) *RateLimiter {
+	return &RateLimiter{
+		mutex:     sync.Mutex{},
+		lastWrite: time.Time{},
+		appConfig: appConfig,
+		store:     map[string]time.Time{},
+	}
+}
+
+func (rl *RateLimiter) AllowWrite(id string, rateLimit time.Duration) bool {
+	rl.mutex.Lock()
+	defer rl.mutex.Unlock()
+
+	currentTime := time.Now()
+
+	// Check if device exists in the in-memory store
+	if lastWrite, ok := rl.store[id]; ok {
+		if currentTime.Sub(lastWrite) < rateLimit {
+			return false // Rate limit exceeded
+		}
+	}
+
+	// Update lastWrite time and store in map
+	rl.lastWrite = currentTime
+	rl.store[id] = currentTime
+
+	return true
+}
 
 type AppStore interface {
 	StoreDevice(friendlyName string, device *devices.Device) error
@@ -29,6 +67,7 @@ type appStore struct {
 	config         settings.Repository
 	deviceConfigs  map[string]*settings.DeviceConfig
 	deviceIdMapper *repository.DeviceIdMapper
+	rateLimiter    *RateLimiter
 }
 
 func NewAppStore(devices devices.Repository, metrics metrics.Repository, config settings.Repository) (AppStore, error) {
@@ -49,6 +88,7 @@ func NewAppStore(devices devices.Repository, metrics metrics.Repository, config 
 		config:         config,
 		deviceConfigs:  deviceConfigs,
 		deviceIdMapper: repository.NewDeviceIdMapper(devices),
+		rateLimiter:    NewRateLimiter(appconfig),
 	}, nil
 }
 
@@ -59,24 +99,36 @@ func (s *appStore) UpdateDevice(friendlyName string, device *devices.Device) err
 		return err
 	}
 
-	if s.IsMetricsEnabled(friendlyName) {
-		err := s.metrics.Store(device)
-		if err != nil {
-			utils.LogErrorf("storing metrics failed %v", err.Error())
+	// check if metris is allowed and store them
+	id := s.ResolveFriendlyName(friendlyName)
+	if config, ok := s.deviceConfigs[id]; ok && config.MetricsEnabled {
+		if s.rateLimiter.AllowWrite(id, time.Duration(config.RateLimit)) {
+			err := s.metrics.Store(device)
+			if err != nil {
+				utils.LogErrorf("storing metrics failed %v", err.Error())
+			}
 		}
 	}
+
+	// if s.IsMetricsEnabled(friendlyName) {
+
+	// 	err := s.metrics.Store(device)
+	// 	if err != nil {
+	// 		utils.LogErrorf("storing metrics failed %v", err.Error())
+	// 	}
+	// }
 
 	return nil
 }
 
-func (s *appStore) IsMetricsEnabled(friendlyName string) bool {
-	id := s.ResolveFriendlyName(friendlyName)
-	if config, ok := s.deviceConfigs[id]; ok && config.MetricsEnabled {
-		return true
-	}
+// func (s *appStore) IsMetricsEnabled(friendlyName string) bool {
+// 	id := s.ResolveFriendlyName(friendlyName)
+// 	if config, ok := s.deviceConfigs[id]; ok && config.MetricsEnabled {
+// 		return true
+// 	}
 
-	return false
-}
+// 	return false
+// }
 
 func (s *appStore) StoreDevice(friendlyName string, device *devices.Device) error {
 	id := s.ResolveFriendlyName(friendlyName)
