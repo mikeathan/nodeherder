@@ -13,6 +13,7 @@ import (
 	"node-herder/models/metrics"
 	"node-herder/store"
 	"strconv"
+	"time"
 
 	"node-herder/utils"
 	"strings"
@@ -55,18 +56,22 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 
 	h.eventHub.OnLoadMetrics(func(p interface{}) (interface{}, error) {
 
-		req := metrics.MetricsRequest{}
+		req := metrics.LoadDeviceMetricsRequest{}
 		bytes, _ := json.Marshal(p)
 		err := json.Unmarshal(bytes, &req)
 
 		if err != nil {
-			return nil, fmt.Errorf("loadMetrics failed. Invalid payload type : %v ", err.Error())
+			return nil, fmt.Errorf("LoadDeviceMetricsRequest failed. Invalid payload type : %v ", err.Error())
 		}
 
 		device, err := h.registrar.LookupById(req.Id)
 		if err != nil {
-			return nil, fmt.Errorf("loadMetrics failed. Device %s not found", id)
+			return nil, fmt.Errorf("LoadDeviceMetricsRequest failed. Device %s not found", id)
 		}
+
+		layout := "2006-01-02 15:04:05" // Year, Month, Day, Hour, Minute, Second
+		from, err := time.Parse(layout, req.From)
+		to, err := time.Parse(layout, req.To)
 
 		result, err := h.store.ViewMetrics(device, req.From, req.To)
 

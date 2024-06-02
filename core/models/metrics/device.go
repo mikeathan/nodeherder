@@ -2,11 +2,11 @@ package metrics
 
 import "time"
 
-type MetricsRequest struct {
+type LoadDeviceMetricsRequest struct {
 	Id     string `json:"id"`
 	Expose string `json:"expose,omitempty"`
-	From   int    `json:"from"`
-	To     int    `json:"to"`
+	From   string `json:"from"`
+	To     string `json:"to"`
 }
 
 type ExposeMetricsResult struct {
