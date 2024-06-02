@@ -10,6 +10,7 @@ import (
 	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
+	"node-herder/models/metrics"
 	"node-herder/store"
 	"strconv"
 
@@ -50,6 +51,30 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 	h.eventHub.OnLoadDevices(func() interface{} {
 		devs, _ := h.store.AllDevices()
 		return devs
+	})
+
+	h.eventHub.OnLoadMetrics(func(p interface{}) (interface{}, error) {
+
+		req := metrics.MetricsRequest{}
+		bytes, _ := json.Marshal(p)
+		err := json.Unmarshal(bytes, &req)
+
+		if err != nil {
+			return nil, fmt.Errorf("loadMetrics failed. Invalid payload type : %v ", err.Error())
+		}
+
+		device, err := h.registrar.LookupById(req.Id)
+		if err != nil {
+			return nil, fmt.Errorf("loadMetrics failed. Device %s not found", id)
+		}
+
+		result, err := h.store.ViewMetrics(device, req.From, req.To)
+
+		if err != nil {
+			return nil, fmt.Errorf("ViewMetrics failed.%v", err.Error())
+		}
+		return result, nil
+
 	})
 
 	h.eventHub.OnLoadDeviceList(func(ids []string) interface{} {

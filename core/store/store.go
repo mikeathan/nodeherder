@@ -58,6 +58,7 @@ type AppStore interface {
 	FindBridgeInfoByFriendlyName(friendlyName string) (*devices.BridgeInfo, error)
 	FindBridgeInfoById(id string) (*devices.BridgeInfo, error)
 
+	ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error)
 	ResolveFriendlyName(friendlyName string) string
 }
 
@@ -104,6 +105,10 @@ func (s *appStore) UpdateDevice(friendlyName string, device *devices.Device) err
 		utils.LogErrorf("storing metrics failed %v", err.Error())
 	}
 	return nil
+}
+
+func (s *appStore) ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
+	return s.metrics.ViewDeviceTimeRange(device, from, to)
 }
 
 func (s *appStore) storeMetrics(friendlyName string, device *devices.Device) error {

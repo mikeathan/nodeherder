@@ -75,6 +75,10 @@ func (w *MockEventHub) OnDeleteAutomationTrigger(action func(p interface{}) (int
 	fmt.Println("Empty OnDeleteAutomationTrigger")
 }
 
+func (w *MockEventHub) OnLoadMetrics(action func(interface{}) (interface{}, error)) {
+	fmt.Println("Empty OnLoadMetrics")
+}
+
 // Mock MqttClient
 type MockMqttClient struct {
 	messageHandler func(string, []byte)
@@ -152,6 +156,10 @@ func (w *NopWsServer) OnLoadAutomations(action func() interface{}) {
 
 func (w *NopWsServer) OnDeviceSetValue(action func(payload interface{}) error) {
 	fmt.Println("Empty OnDeviceSetValue")
+}
+
+func (w *NopWsServer) OnLoadMetrics(action func(interface{}) (interface{}, error)) {
+	fmt.Println("Empty OnLoadMetrics")
 }
 
 func (w *NopWsServer) OnDeviceRename(P func(payload interface{}) error) {
@@ -373,6 +381,12 @@ func (s *NopAppStore) StoreDevice(friendlyName string, device *devices.Device) e
 func (s *NopAppStore) UpdateDevice(friendlyName string, device *devices.Device) error {
 	fmt.Println("Mocked store UpdateDevice")
 	return nil
+}
+
+func (s *NopAppStore) ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
+	fmt.Println("Mocked store ViewMetrics")
+
+	return &metrics.DeviceMetricsResult{}, nil
 }
 
 func (s *NopAppStore) FindDeviceByFriendlyName(friendlyName string) (*devices.Device, error) {

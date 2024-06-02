@@ -23,6 +23,8 @@ const (
 	DeviceSetValue          = "deviceSetValue"
 	DeviceRename            = "deviceRename"
 
+	LoadMetrics = "loadMetrics"
+
 	// response
 	Automations       = "automations"
 	Devices           = "devices"
@@ -33,6 +35,9 @@ const (
 	OperationFailed   = "operationFailed"
 	OperationSuccess  = "operationSuccess"
 	AutomationUpdated = "automationUpdated" // returns back upated automation
+
+	Metrics        = "metrics"
+	MetricsEnabled = "metricsEnabled"
 )
 
 type EventMessage struct {
@@ -127,6 +132,8 @@ func (c *WsClient) handleMessage(message []byte) {
 	case LoadDevices:
 		msg := c.hub.onLoadDevices()
 		c.Broadcast(Devices, msg) //
+	case LoadMetrics:
+		c.executeActionWithEvent(eventMsg.Payload, c.hub.onLoadMetrics, Metrics)
 
 	case SaveAutomation:
 		c.executeAction(eventMsg.Payload, c.hub.onSaveAutomation, true)
@@ -245,6 +252,7 @@ type EventHub interface {
 	OnSaveAutomation(func(payload interface{}) error)
 	OnDeleteAutomation(func(payload interface{}) (interface{}, error))
 	OnDeleteAutomationTrigger(func(payload interface{}) (interface{}, error))
+	OnLoadMetrics(action func(interface{}) (interface{}, error))
 }
 
 type wsServer struct {
@@ -256,6 +264,7 @@ type wsServer struct {
 	onLoadDevices             func() interface{}
 	onLoadDeviceList          (func(ids []string) interface{})
 	onLoadDevice              func(id string) (interface{}, error)
+	onLoadMetrics             func(interface{}) (interface{}, error)
 	onSaveAutomation          func(interface{}) error
 	onDeviceSetValue          func(interface{}) error
 	onDeviceRename            func(interface{}) error
@@ -270,7 +279,9 @@ func NewWsHub() EventHub {
 		register:   make(chan *WsClient),
 		unregister: make(chan *WsClient),
 
-		onSaveAutomation:          func(payload interface{}) error { return nil },
+		onSaveAutomation: func(payload interface{}) error { return nil },
+		onLoadMetrics:    func(interface{}) (interface{}, error) { return nil, nil },
+
 		onDeleteAutomation:        func(payload interface{}) (interface{}, error) { return nil, nil },
 		onDeleteAutomationTrigger: func(payload interface{}) (interface{}, error) { return nil, nil },
 		onDeviceSetValue:          func(payload interface{}) error { return nil },
@@ -318,6 +329,10 @@ func (h *wsServer) OnLoadAutomations(action func() interface{}) {
 
 func (h *wsServer) OnLoadDevice(action func(id string) (interface{}, error)) {
 	h.onLoadDevice = action
+}
+
+func (h *wsServer) OnLoadMetrics(action func(p interface{}) (interface{}, error)) {
+	h.onLoadMetrics = action
 }
 
 func (h *wsServer) OnLoadDeviceList(action func(ids []string) interface{}) {
