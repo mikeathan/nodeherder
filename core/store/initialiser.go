@@ -6,10 +6,13 @@ import (
 )
 
 func Create() (AppStore, error) {
-	devices, err := repository.NewFileDeviceRepo()
-	if err != nil {
-		return nil, fmt.Errorf("loading device repository failed: %v", err.Error())
-	}
+
+	devices := repository.NewMemoryDeviceRepo()
+
+	// devices, err := repository.NewMemoryDeviceRepo()
+	// if err != nil {
+	// 	return nil, fmt.Errorf("loading device repository failed: %v", err.Error())
+	// }
 
 	metrics, err := repository.NewMetricsRepo()
 	if err != nil {
