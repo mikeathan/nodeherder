@@ -82,6 +82,7 @@ func (d *Device) Evaluate(device *devices.Device) bool {
 
 	d.ctx.Payload = device.Exposes
 
+	// triggers = automations for the device
 	// NOTE: a trigger can have multiple conditions.
 	// e.g presence can have multiple conditions for on and off
 	for _, trigger := range d.Triggers {

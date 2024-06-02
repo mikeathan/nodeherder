@@ -11,15 +11,15 @@ type Condition struct {
 	EqualityOperator string `json:"equality"`
 }
 
-func (s *Condition) Evaluate(exposes map[string]*devices.Entity) bool {
+func (c *Condition) Evaluate(exposes map[string]*devices.Entity) bool {
 
-	entity, ok := exposes[s.Name]
+	expose, ok := exposes[c.Name]
 	if !ok {
-		utils.LogDebugf("sensor %s not found in payload", s.Name)
+		utils.LogDebugf("sensor %s not found in payload", c.Name)
 		return false
 	}
 
-	if EqualityOperators[s.EqualityOperator](entity.Data, s.Value) {
+	if EqualityOperators[c.EqualityOperator](expose.Data, c.Value) {
 		return true
 	}
 
@@ -32,22 +32,22 @@ type Trigger struct {
 	Action     *MqttAction  `json:"action"`
 }
 
-func (trigger *Trigger) process(ctx *DeviceContext) {
+func (t *Trigger) process(ctx *DeviceContext) {
 
-	currValue := ctx.GetCurrent(trigger.Name)
-	for _, c := range trigger.Conditions {
+	currValue := ctx.GetCurrent(t.Name)
+	for _, c := range t.Conditions {
 
 		isMatched := c.Evaluate(ctx.Payload)
 		if !isMatched {
-			trigger.Action.Stop()
+			t.Action.Stop()
 			return
 		}
 
 		// avoid calling action again for current trigger if value hasnt changed
-		if trigger.Name == c.Name && currValue == c.Value {
+		if t.Name == c.Name && currValue == c.Value {
 			return
 		}
 	}
 
-	trigger.Action.Execute(trigger.Name, ctx)
+	t.Action.Execute(t.Name, ctx)
 }
