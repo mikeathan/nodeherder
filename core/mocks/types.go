@@ -79,6 +79,14 @@ func (w *MockEventHub) OnLoadMetrics(action func(interface{}) (interface{}, erro
 	fmt.Println("Empty OnLoadMetrics")
 }
 
+func (w *MockEventHub) OnLoadAppConfig(action func() (interface{}, error)) {
+	fmt.Println("Empty OnLoadAppConfig")
+
+}
+func (w *MockEventHub) OnSaveDeviceConfig(func(payload interface{}) error) {
+	fmt.Println("Empty OnSaveDeviceConfig")
+}
+
 // Mock MqttClient
 type MockMqttClient struct {
 	messageHandler func(string, []byte)
@@ -188,6 +196,14 @@ func (w *NopWsServer) OnDeleteAutomation(action func(p interface{}) (interface{}
 
 func (w *NopWsServer) OnDeleteAutomationTrigger(action func(p interface{}) (interface{}, error)) {
 	fmt.Println("Empty OnDeleteAutomationTrigger")
+}
+
+func (w *NopWsServer) OnLoadAppConfig(action func() (interface{}, error)) {
+	fmt.Println("Empty OnLoadAppConfig")
+
+}
+func (w *NopWsServer) OnSaveDeviceConfig(func(payload interface{}) error) {
+	fmt.Println("Empty OnSaveDeviceConfig")
 }
 
 // Mock devices Repository
