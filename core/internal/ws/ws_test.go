@@ -13,6 +13,8 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/mocks"
 	"node-herder/models/devices"
+	"node-herder/models/metrics"
+	utils_test "node-herder/testing"
 	"strconv"
 	"testing"
 	"time"
@@ -594,6 +596,118 @@ func TestDeleteAutomationTrigger(t *testing.T) {
 
 	defer s.Close()
 	defer wsConn.Close()
+}
+
+func TestHandlingLoadMetricsMessage(t *testing.T) {
+
+	wsHub := ws.NewWsHub()
+
+	// input data
+	expose1 := metrics.NewExposeMetricsResult("temperature", "numeric")
+	timestamps := utils_test.CreateDateTimeTimestamps(1, 24, 1)
+	values := utils_test.CreateFloatValues(24)
+	for idx, value := range values {
+		expose1.Add(value, timestamps[idx])
+	}
+
+	expose2 := metrics.NewExposeMetricsResult("presence", "binary")
+	timestamps2 := utils_test.CreateDateTimeTimestamps(1, 10, 1)
+	values2 := utils_test.CreateBinaryValues(10)
+	for idx, value := range values2 {
+		expose2.Add(value, timestamps2[idx])
+	}
+
+	expose3 := metrics.NewExposeMetricsResult("color_temp", "enum")
+	timestamps3 := utils_test.CreateDateTimeTimestamps(1, 5, 1)
+	values3 := utils_test.CreateEnumValues(5)
+	for idx, value := range values3 {
+		expose3.Add(value, timestamps3[idx])
+	}
+
+	viewMetrics := metrics.NewDeviceMetricsResult("x01234")
+	viewMetrics.Add(expose1)
+	viewMetrics.Add(expose2)
+	viewMetrics.Add(expose3)
+
+	wsHub.OnLoadMetrics(func(p interface{}) (interface{}, error) {
+		return viewMetrics, nil
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	req := metrics.LoadDeviceMetricsRequest{}
+	req.Id = "x01234"
+	now := time.Now()
+	req.From = now.AddDate(0, 0, 5).UnixMilli()
+	req.To = now.AddDate(0, 0, 1).UnixMilli()
+	reqBytes, err := utils_test.StructToBytes(req)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	wsData := &ws.EventMessage{Type: ws.LoadMetrics, Payload: reqBytes}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	defer s.Close()
+	defer wsConn.Close()
+
+	SendMessage(t, wsConn, msg)
+
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.Metrics {
+		t.Fatalf("Expected type %v', got '%v'", ws.Metrics, event.Type)
+	}
+
+	// output data
+	var resultMetrics *metrics.DeviceMetricsResult
+
+	bytes, _ := json.Marshal(event.Payload)
+	err = json.Unmarshal(bytes, &resultMetrics)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resultMetrics.DeviceId != viewMetrics.DeviceId {
+		t.Fatalf("Expected result id %v', got '%v'", viewMetrics.DeviceId, resultMetrics.DeviceId)
+	}
+	if len(resultMetrics.Expose) != len(viewMetrics.Expose) {
+		t.Fatalf("Expected numer of exposes %v', got '%v'", len(viewMetrics.Expose), len(resultMetrics.Expose))
+	}
+	for idx, expose := range resultMetrics.Expose {
+
+		wantExpose := viewMetrics.Expose[idx]
+		if expose.Type != wantExpose.Type {
+			t.Fatalf("Expected type %v', got '%v'", wantExpose.Type, expose.Type)
+
+		}
+		for vidx, wantValue := range wantExpose.Values {
+
+			gotValue := expose.Values[vidx]
+			if !utils_test.EqualityCheck(wantValue, gotValue) {
+				t.Fatalf("Expected value %v', got '%v'", wantValue, gotValue)
+			}
+		}
+		for tidx, wantTimestamp := range wantExpose.Timestamp {
+			gotTimestamp := expose.Timestamp[tidx]
+			if wantTimestamp.UnixMicro() != gotTimestamp.UnixMicro() {
+				t.Fatalf("Expected timestamp %v', got '%v'", wantTimestamp, gotTimestamp)
+			}
+		}
+
+	}
+	//
 }
 
 func SendMessage(t *testing.T, ws *websocket.Conn, msg []byte) {

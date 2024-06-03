@@ -66,20 +66,12 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 
 		device, err := h.registrar.LookupById(req.Id)
 		if err != nil {
-			return nil, fmt.Errorf("LoadDeviceMetricsRequest failed. Device %s not found", id)
+			return nil, fmt.Errorf("LoadDeviceMetricsRequest failed. Device %s not found", req.Id)
 		}
 
-		layout := "2006-01-02 15:04:05" // Year, Month, Day, Hour, Minute, Second
-		from, err := time.Parse(layout, req.From)
-		to, err := time.Parse(layout, req.To)
-
-		result, err := h.store.ViewMetrics(device, req.From, req.To)
-
-		if err != nil {
-			return nil, fmt.Errorf("ViewMetrics failed.%v", err.Error())
-		}
-		return result, nil
-
+		from := time.Unix(req.From, 0)
+		to := time.Unix(req.To, 0)
+		return h.store.ViewMetrics(device, from, to)
 	})
 
 	h.eventHub.OnLoadDeviceList(func(ids []string) interface{} {

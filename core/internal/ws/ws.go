@@ -131,7 +131,8 @@ func (c *WsClient) handleMessage(message []byte) {
 
 	case LoadDevices:
 		msg := c.hub.onLoadDevices()
-		c.Broadcast(Devices, msg) //
+		c.Broadcast(Devices, msg) 
+
 	case LoadMetrics:
 		c.executeActionWithEvent(eventMsg.Payload, c.hub.onLoadMetrics, Metrics)
 

@@ -5,8 +5,8 @@ import "time"
 type LoadDeviceMetricsRequest struct {
 	Id     string `json:"id"`
 	Expose string `json:"expose,omitempty"`
-	From   string `json:"from"`
-	To     string `json:"to"`
+	From   int64  `json:"from"`
+	To     int64  `json:"to"`
 }
 
 type ExposeMetricsResult struct {

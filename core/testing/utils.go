@@ -1,9 +1,12 @@
 package utils_test
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"io/ioutil"
 	"math"
+	"math/rand"
 	"node-herder/mocks"
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
@@ -64,7 +67,7 @@ func ValidateDevice(t *testing.T, dev1 *devices.Device, dev2 *devices.Device) {
 			t.Fatalf("unexpected expose.Description value")
 		}
 
-		if !equalityCheck(expose.Data, inputExpose.Data) {
+		if !EqualityCheck(expose.Data, inputExpose.Data) {
 			t.Fatalf("unexpected expose.Data value")
 		}
 		if expose.Unit != inputExpose.Unit {
@@ -163,7 +166,12 @@ func ValidateBridge(t *testing.T, dev1 *devices.BridgeInfo, dev2 *devices.Bridge
 	}
 }
 
-func equalityCheck(a interface{}, b interface{}) bool {
+const epsilon = 1e-9 // Adjust epsilon based on your desired precision
+
+func compareIntFloat(i int, f float64) bool {
+	return math.Abs(float64(i)-f) <= epsilon
+}
+func EqualityCheck(a interface{}, b interface{}) bool {
 
 	va := reflect.ValueOf(a)
 	vb := reflect.ValueOf(b)
@@ -176,6 +184,10 @@ func equalityCheck(a interface{}, b interface{}) bool {
 
 		return fl1 == fl2
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+
+		if va.Kind() != vb.Kind() {
+			return compareIntFloat(a.(int), b.(float64))
+		}
 		return va.Int() == vb.Int()
 	default:
 		return a == b
@@ -261,4 +273,84 @@ func Tempfile() string {
 		panic(err)
 	}
 	return f.Name()
+}
+
+func CreateDateTimeTimestamps(numberOfDays int, numberOfHours int, numberOfMinutes int) []*time.Time {
+	var timestamps []*time.Time
+	year := time.Now().Year()
+	month := time.Now().Month()
+	today := time.Now().Day()
+	hours := 0
+	minutes := 0
+
+	if numberOfMinutes <= 0 {
+		numberOfMinutes = 1
+	}
+
+	currentDay := (today + 1) - numberOfDays
+
+	for d := 1; d <= numberOfDays; d++ {
+		for h := 0; h < numberOfHours; h++ {
+			for m := 0; m < numberOfMinutes; m++ {
+				timestamp := time.Date(year, month, currentDay, hours+h, minutes+m, 0, 0, time.UTC)
+				timestamps = append(timestamps, &timestamp)
+			}
+		}
+		currentDay++
+	}
+
+	return timestamps
+}
+
+func CreateFloatValues(numOfItems int) []float32 {
+	var values []float32 = make([]float32, numOfItems)
+	for i := 0; i < numOfItems; i++ {
+		values[i] = floatrandom(10, 100)
+	}
+	return values
+}
+
+func CreateEnumValues(numOfItems int) []int {
+	var values []int = make([]int, numOfItems)
+	for i := 0; i < numOfItems; i++ {
+		values[i] = intrandom(100)
+	}
+	return values
+}
+
+func CreateBinaryValues(numOfItems int) []string {
+	var values []string = make([]string, numOfItems)
+	for i := 0; i < numOfItems; i++ {
+		val := intrandom(2)
+		if val == 0 {
+			values[i] = "on"
+		} else {
+			values[i] = "off"
+		}
+	}
+	return values
+}
+
+func StructToBytes(p interface{}) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	err := enc.Encode(p)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func intrandom(max int) int {
+	rand.Seed(time.Now().UnixNano())
+	val := rand.Intn(max)
+
+	return val
+}
+
+func floatrandom(value_1, value_2 float32) float32 {
+	randomValue := value_1 + value_2 + rand.Float32()
+
+	ratio := math.Pow(10, float64(1))
+	return float32(math.Round(float64(randomValue)*ratio) / ratio)
 }

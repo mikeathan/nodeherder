@@ -2,11 +2,10 @@ package repository_test
 
 import (
 	"fmt"
-	"math"
-	"math/rand"
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
 	"node-herder/repository"
+	utils_test "node-herder/testing"
 	"os"
 	"reflect"
 	"sort"
@@ -26,16 +25,16 @@ func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
 		to         time.Time
 	}{
 		{id: "x0000",
-			timestamps: CreateDateTimeTimestamps(1, 24, 1), // 24 events
-			values:     CreateFloatValues(24),
+			timestamps: utils_test.CreateDateTimeTimestamps(1, 24, 1), // 24 events
+			values:     utils_test.CreateFloatValues(24),
 			from:       time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC),
 			to:         time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)},
 		{id: "x0001",
-			timestamps: CreateDateTimeTimestamps(10, 24, 1), values: CreateFloatValues(240), // 240 events
+			timestamps: utils_test.CreateDateTimeTimestamps(10, 24, 1), values: utils_test.CreateFloatValues(240), // 240 events
 			from: time.Date(now.Year(), now.Month()-6, now.Day()-5, 15, 0, 0, 0, time.UTC),
 			to:   time.Date(now.Year(), now.Month()-2, now.Day()-2, 20, 0, 0, 0, time.UTC)},
 		{id: "x0002",
-			timestamps: CreateDateTimeTimestamps(60, 2, 1), values: CreateFloatValues(120), // 240 events
+			timestamps: utils_test.CreateDateTimeTimestamps(60, 2, 1), values: utils_test.CreateFloatValues(120), // 240 events
 			from: time.Date(now.Year(), now.Month()-20, now.Day()-5, 15, 0, 0, 0, time.UTC),
 			to:   time.Date(now.Year(), now.Month()-5, now.Day()-2, 20, 0, 0, 0, time.UTC)},
 	}
@@ -93,8 +92,8 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
 
-	timestamps := CreateDateTimeTimestamps(1, 24, 1)
-	values := CreateFloatValues(24)
+	timestamps := utils_test.CreateDateTimeTimestamps(1, 24, 1)
+	values := utils_test.CreateFloatValues(24)
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
 	numDevices := 3
 
@@ -146,8 +145,8 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 // 		t.Error("failed to initialise metrics repo", err.Error())
 // 	}
 
-// 	timestamps := CreateDateTimeTimestamps(1, 24, 1)
-// 	values := CreateFloatValues(24)
+// 	timestamps := utils_test.CreateDateTimeTimestamps(1, 24, 1)
+// 	values := utils_test.CreateFloatValues(24)
 // 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
 // 	numDevices := 1
 
@@ -203,12 +202,12 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
 
-	timestamps := CreateDateTimeTimestamps(1, 24, 1)
+	timestamps := utils_test.CreateDateTimeTimestamps(1, 24, 1)
 	data := map[string]any{
 
-		"numeric": CreateFloatValues(24),
-		"binary":  CreateBinaryValues(24),
-		"enum":    CreateEnumValues(24),
+		"numeric": utils_test.CreateFloatValues(24),
+		"binary":  utils_test.CreateBinaryValues(24),
+		"enum":    utils_test.CreateEnumValues(24),
 	}
 
 	// sort data keys
@@ -282,8 +281,8 @@ func TestExposeTimeRangeMetrics(t *testing.T) {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
 
-	timestamps := CreateDateTimeTimestamps(1, 24, 1)
-	values := CreateFloatValues(24)
+	timestamps := utils_test.CreateDateTimeTimestamps(1, 24, 1)
+	values := utils_test.CreateFloatValues(24)
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
 	numDevices := 3
 
@@ -334,8 +333,8 @@ func TestMultipleExposeTimeRangeMetrics(t *testing.T) {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
 
-	timestamps := CreateDateTimeTimestamps(1, 24, 1)
-	values := CreateFloatValues(24)
+	timestamps := utils_test.CreateDateTimeTimestamps(1, 24, 1)
+	values := utils_test.CreateFloatValues(24)
 	numOfExposes := 10
 	deviceIds := []string{"x0000"}
 	exposes := []string{"property_x0000_1", "property_x0000_2", "property_x0000_4"}
@@ -604,76 +603,6 @@ func createMockDevice(id string, name string, numOfExposes int, exposeType strin
 	}
 
 	return device1
-}
-
-func CreateDateTimeTimestamps(numberOfDays int, numberOfHours int, numberOfMinutes int) []*time.Time {
-	var timestamps []*time.Time
-	year := time.Now().Year()
-	month := time.Now().Month()
-	today := time.Now().Day()
-	hours := 0
-	minutes := 0
-
-	if numberOfMinutes <= 0 {
-		numberOfMinutes = 1
-	}
-
-	currentDay := (today + 1) - numberOfDays
-
-	for d := 1; d <= numberOfDays; d++ {
-		for h := 0; h < numberOfHours; h++ {
-			for m := 0; m < numberOfMinutes; m++ {
-				timestamp := time.Date(year, month, currentDay, hours+h, minutes+m, 0, 0, time.UTC)
-				timestamps = append(timestamps, &timestamp)
-			}
-		}
-		currentDay++
-	}
-
-	return timestamps
-}
-
-func CreateFloatValues(numOfItems int) []float32 {
-	var values []float32 = make([]float32, numOfItems)
-	for i := 0; i < numOfItems; i++ {
-		values[i] = floatrandom(10, 100)
-	}
-	return values
-}
-
-func CreateEnumValues(numOfItems int) []int {
-	var values []int = make([]int, numOfItems)
-	for i := 0; i < numOfItems; i++ {
-		values[i] = intrandom(100)
-	}
-	return values
-}
-
-func CreateBinaryValues(numOfItems int) []string {
-	var values []string = make([]string, numOfItems)
-	for i := 0; i < numOfItems; i++ {
-		val := intrandom(1)
-		if val == 0 {
-			values[i] = "on"
-		} else {
-			values[i] = "off"
-		}
-	}
-	return values
-}
-
-func intrandom(max int) int {
-	rand.Seed(time.Now().UnixNano())
-	val := rand.Intn(max)
-
-	return val
-}
-
-func floatrandom(value_1, value_2 float32) float32 {
-	randomValue := value_1 + value_2 + rand.Float32()
-
-	ratio := math.Pow(10, float64(1))
-	return float32(math.Round(float64(randomValue)*ratio) / ratio)
 }
 
 func kindFromString(kindStr string) (reflect.Kind, bool) {
