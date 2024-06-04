@@ -11,6 +11,7 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
+	"node-herder/models/settings"
 	"node-herder/store"
 	"strconv"
 	"time"
@@ -44,6 +45,21 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 	h.automationEngine = automations.NewEngine(h.registrar, mqtt)
 	h.wp = utils.NewWorkerPool(1, ctx)
 	h.wp.Run()
+
+	h.eventHub.OnLoadAppConfig(func() (interface{}, error) {
+		return h.store.LoadAppConfig()
+	})
+
+	h.eventHub.OnSaveDeviceConfig(func(p interface{}) error {
+		req := &settings.DeviceConfig{}
+		bytes, _ := json.Marshal(p)
+		err := json.Unmarshal(bytes, &req)
+
+		if err != nil {
+			return fmt.Errorf("OnSaveDeviceConfig failed. Invalid payload type : %v ", err.Error())
+		}
+		return h.store.SaveDeviceConfig(req)
+	})
 
 	h.eventHub.OnLoadAutomations(func() interface{} {
 		return h.automationEngine.GetAllTriggers()

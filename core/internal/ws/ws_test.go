@@ -14,6 +14,7 @@ import (
 	"node-herder/mocks"
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
+	"node-herder/models/settings"
 	utils_test "node-herder/testing"
 	"strconv"
 	"testing"
@@ -598,6 +599,139 @@ func TestDeleteAutomationTrigger(t *testing.T) {
 	defer wsConn.Close()
 }
 
+func TestLoadAppConfigMessage(t *testing.T) {
+
+	inputAppConfig := createAppconfig()
+	wsHub := ws.NewWsHub()
+	wsHub.OnLoadAppConfig(func() (interface{}, error) {
+		return inputAppConfig, nil
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	defer s.Close()
+	defer wsConn.Close()
+
+	wsData := &ws.EventMessage{Type: ws.LoadAppconfig, Payload: nil}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.AppConfig {
+		t.Fatalf("Expected type %v', got '%v'", ws.AppConfig, event.Type)
+	}
+
+	// output data
+	var resultAppConfig *settings.AppConfig
+
+	bytes, _ := json.Marshal(event.Payload)
+	err = json.Unmarshal(bytes, &resultAppConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(resultAppConfig.Devices) != len(inputAppConfig.Devices) {
+		t.Fatalf("Expected numer of appconfig devices. want %v', got '%v'", len(inputAppConfig.Devices), len(resultAppConfig.Devices))
+	}
+	for id, d := range inputAppConfig.Devices {
+		gotDeviceConfig := resultAppConfig.Devices[id]
+		if d.Id != gotDeviceConfig.Id {
+			t.Fatalf("Expected device id %v', got '%v'", d.Id, gotDeviceConfig.Id)
+		}
+		if d.Disabled != gotDeviceConfig.Disabled {
+			t.Fatalf("Expected Disabled %v', got '%v'", d.Disabled, gotDeviceConfig.Disabled)
+		}
+		if d.MetricsEnabled != gotDeviceConfig.MetricsEnabled {
+			t.Fatalf("Expected MetricsEnabled %v', got '%v'", d.MetricsEnabled, gotDeviceConfig.MetricsEnabled)
+		}
+
+		if d.RateLimit != gotDeviceConfig.RateLimit {
+			t.Fatalf("Expected RateLimit %v', got '%v'", d.RateLimit, gotDeviceConfig.RateLimit)
+		}
+	}
+}
+
+func TestSaveDeviceConfigMessage(t *testing.T) {
+
+	inputAppConfig := createAppconfig()
+
+	modifiedDevConfig := inputAppConfig.Devices["x0333444"]
+	wsHub := ws.NewWsHub()
+	wsHub.OnSaveDeviceConfig(func(p interface{}) error {
+
+		bytes := []byte(p.(string))
+		payload := &settings.DeviceConfig{}
+
+		err := json.Unmarshal(bytes, &payload)
+		if err != nil {
+			fmt.Println(err.Error())
+			return errors.New("save device config failed. Invalid payload type")
+		}
+
+		if payload.Id != modifiedDevConfig.Id {
+			t.Fatalf("Expected device id %v', got '%v'", modifiedDevConfig.Id, payload.Id)
+		}
+		if payload.Disabled != modifiedDevConfig.Disabled {
+			t.Fatalf("Expected disabled%v', got '%v'", modifiedDevConfig.Disabled, payload.Disabled)
+		}
+
+		if payload.MetricsEnabled != modifiedDevConfig.MetricsEnabled {
+			t.Fatalf("Expected MetricsEnabled %v', got '%v'", modifiedDevConfig.MetricsEnabled, payload.MetricsEnabled)
+		}
+
+		if payload.RateLimit != modifiedDevConfig.RateLimit {
+			t.Fatalf("Expected RateLimit %v', got '%v'", modifiedDevConfig.RateLimit, payload.RateLimit)
+		}
+		return nil
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	defer s.Close()
+	defer wsConn.Close()
+
+	reqBytes, _ := json.Marshal(modifiedDevConfig)
+	wsData := &ws.EventMessage{Type: ws.SaveDeviceConfig, Payload: reqBytes}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.OperationSuccess {
+		t.Fatalf("Expected type %v', got '%v'", ws.OperationSuccess, event.Type)
+	}
+
+}
+
 func TestHandlingLoadMetricsMessage(t *testing.T) {
 
 	wsHub := ws.NewWsHub()
@@ -778,6 +912,23 @@ func httpToWs(t *testing.T, s string) string {
 	return wsURL.String()
 }
 
+func createAppconfig() *settings.AppConfig {
+	appConfig := settings.NewAppConfig()
+	deviceConfig := settings.NewDeviceConfig("x01234")
+	deviceConfig.MetricsEnabled = true
+	deviceConfig.RateLimit = int(time.Millisecond.Milliseconds()) * 100 // rate limit at 100 ms
+
+	deviceConfig2 := settings.NewDeviceConfig("x0111222")
+	deviceConfig2.MetricsEnabled = true
+	deviceConfig2.RateLimit = int(time.Minute.Milliseconds()) // rate limit at 60000 ms
+	appConfig.Add(deviceConfig)
+
+	deviceConfig3 := settings.NewDeviceConfig("x0333444")
+	deviceConfig3.MetricsEnabled = false
+	deviceConfig3.RateLimit = int(time.Minute.Milliseconds()) * 1111 // rate limit at 60000 ms
+	appConfig.Add(deviceConfig3)
+	return appConfig
+}
 func createTestDevices() []*devices.Device {
 	all := []*devices.Device{}
 	all = append(all, createDevice1())

@@ -388,6 +388,15 @@ func NewMockAppStoreFromDevicesRepo(devicesRepo devices.Repository) store.AppSto
 	}
 }
 
+func (s *NopAppStore) LoadAppConfig() (*settings.AppConfig, error) {
+	fmt.Println("Mocked store LoadAppConfig")
+	return nil, nil
+}
+
+func (s *NopAppStore) SaveDeviceConfig(deviceconfig *settings.DeviceConfig) error {
+	fmt.Println("Mocked store SaveDeviceConfig")
+	return nil
+}
 func (s *NopAppStore) StoreDevice(friendlyName string, device *devices.Device) error {
 	fmt.Println("Mocked store StoreDevice")
 

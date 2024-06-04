@@ -54,6 +54,9 @@ type AppStore interface {
 	FindDeviceByIds(ids []string) ([]*devices.Device, error)
 	AllDevices() ([]*devices.Device, error)
 
+	LoadAppConfig() (*settings.AppConfig, error)
+	SaveDeviceConfig(deviceconfig *settings.DeviceConfig) error
+
 	StoreBridgeInfoList(bridgeInfoList []*devices.BridgeInfo) error
 	FindBridgeInfoByFriendlyName(friendlyName string) (*devices.BridgeInfo, error)
 	FindBridgeInfoById(id string) (*devices.BridgeInfo, error)
@@ -109,6 +112,14 @@ func (s *appStore) UpdateDevice(friendlyName string, device *devices.Device) err
 
 func (s *appStore) ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 	return s.metrics.ViewDeviceTimeRange(device, from, to)
+}
+
+func (s *appStore) LoadAppConfig() (*settings.AppConfig, error) {
+	return s.config.Load()
+}
+
+func (s *appStore) SaveDeviceConfig(deviceconfig *settings.DeviceConfig) error {
+	return s.config.SaveDeviceConfig(deviceconfig)
 }
 
 func (s *appStore) storeMetrics(friendlyName string, device *devices.Device) error {
