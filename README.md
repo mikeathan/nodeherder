@@ -82,61 +82,9 @@ TODO:
 - add functionality to enable/disalbe a trigger
 - add log window in frontend
 
-## storage
+TODO
 
-2 types of storage,
-metrics for charts
-storage for retrieveing later
-maybe 2 types of repositories to hande above
-note:
+deviceconfig.enabled - to enable/disable device
 
-- device can have multiple sensors that trigger every second
-- we dont want to store every second (timeout ?)
-- dev1 (temp, humidity, co2)
-- dev2 (button press 1, button rotate)
-- allow/disalow device to be captured
-
-- store bridge data ? but overide if we do. no point keeping old
-
-TODO:
-
-Settings struct
-
-Deviceconfig[]
-
-device_id: "0x1222",
-disabled: false,
-history: true
-
-
-
-
-type RateLimiter struct {
-	mutex     sync.Mutex
-	deviceId  string
-	rateLimit time.Duration
-	lastWrite time.Time
-	store     map[string]time.Time // In-memory store for device IDs and last write times
-}
-
-func (rl *RateLimiter) AllowWrite() bool {
-	rl.mutex.Lock()
-	defer rl.mutex.Unlock()
-
-	currentTime := time.Now()
-
-	// Check if device exists in the in-memory store
-	if lastWrite, ok := rl.store[rl.deviceId]; ok {
-		if currentTime.Sub(lastWrite) < rl.rateLimit {
-			return false // Rate limit exceeded
-		}
-	}
-
-	// Update lastWrite time and store in map
-	rl.lastWrite = currentTime
-	rl.store[rl.deviceId] = currentTime
-
-	return true
-}
-
-https://gemini.google.com/app/f350132855a2472e?utm_source=google&utm_medium=cpc&utm_campaign=2024enGB_gemfeb&gad_source=1
+error reporting - important
+metrics repo - keep for x days ?

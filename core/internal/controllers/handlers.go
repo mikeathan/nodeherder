@@ -217,6 +217,7 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 		}
 
 		c.eventHub.Broadcast(ws.DeviceAdded, device)
+		c.hub.deviceAdded(device)
 	} else {
 
 		updatedData := device.Update(dataMap)
@@ -228,11 +229,14 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 		c.eventHub.Broadcast(ws.DeviceUpdated, updatedData)
 
 		// TODO: process in a new worker
-		c.hub.TriggerAutomation(device)
+		//c.hub.TriggerAutomation(device)
+
+		c.hub.deviceUpdated(device)
+
 	}
 
 	// TODO: process in a new worker
-	c.registrar.Register(friendlyName, device)
+	//c.registrar.Register(friendlyName, device)
 
 	return nil
 }

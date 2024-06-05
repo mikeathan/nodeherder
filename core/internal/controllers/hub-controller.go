@@ -222,7 +222,7 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 	})
 
 	h.mqtt.OnMessageHandler(func(id string, payload []byte) {
-		h.ProcessMessage(id, payload, "mqtt")
+		h.processMessage(id, payload, "mqtt")
 	})
 
 	// setup
@@ -238,14 +238,35 @@ func (c *HubController) Enqueue(id string, payload map[string]interface{}, connT
 		return err
 	}
 
-	return c.ProcessMessage(id, bytes, connType)
+	return c.processMessage(id, bytes, connType)
 }
 
 func (m *HubController) TriggerAutomation(device *devices.Device) {
 	m.automationEngine.HandleDevice(device)
 }
 
-func (m *HubController) ProcessMessage(id string, payload []byte, connType string) error {
+func (m *HubController) deviceAdded(device *devices.Device) {
+	// todo: add them in workerTask
+
+	m.registrar.Register(device.FriendlyName, device)
+}
+
+func (m *HubController) deviceUpdated(device *devices.Device) {
+
+	// todo: add them in workerTask
+	m.automationEngine.HandleDevice(device)
+
+	m.registrar.Register(device.FriendlyName, device)
+
+	// 	d := device
+	// 		func() error {
+	// 			c.hub.TriggerAutomation(d)
+	// 			c.registrar.Register(friendlyName, d)
+	// 			return nil
+	// 		}()
+}
+
+func (m *HubController) processMessage(id string, payload []byte, connType string) error {
 
 	if _, ok := m.handlers[id]; !ok {
 		if strings.HasPrefix(id, "bridge") {

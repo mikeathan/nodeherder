@@ -7,6 +7,25 @@ import (
 	"sync"
 )
 
+type WorkerTask struct {
+	action func() error
+}
+
+func NewWorkerTask(action func() error) *WorkerTask {
+	return &WorkerTask{
+		action: action,
+	}
+}
+
+func (t *WorkerTask) OnFailure(err error) {
+	// TODO: maybe do somethng with the error
+	LogErrorf("WorkerTask  Error: %s", err.Error())
+}
+
+func (t *WorkerTask) Process() error {
+	return t.action()
+}
+
 type Task interface {
 	OnFailure(error)
 	Process() error
