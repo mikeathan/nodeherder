@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"node-herder/internal/automations"
 	"node-herder/internal/controllers"
 	"node-herder/internal/ws"
 	"node-herder/mocks"
+	"node-herder/models/devices"
 	utils_test "node-herder/testing"
 	"node-herder/utils"
+	"sync"
 	"testing"
 	"time"
 )
@@ -26,22 +29,79 @@ func createMockPayload() map[string]interface{} {
 		"temperature": 17.1,
 	}
 }
- TODO: test automations triggers in the hub 
+
+// TODO: test automations triggers in the hub
 // to confirm the worker taks works correctly
 func TestProcessorTriggersAutomations(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	mqtt := &mocks.MockMqttClient{}
 
-	// CHECK trigger_tests 
-// Mqtt wil need to be mocked to receive and publish messages
-// mqtt.OnMessageHandler(messageHandler)
-	// create devices
+	// "name": "action",
+	// "conditions": [
+	//   {
+	// 	"name": "action",
+	// 	"value": "button_1_press_release",
+	// 	"equality": "="
+	//   }
+	// ],
+	// "id": "0x00158d0005a23c38",
+	//     "friendlyname": "Living Room",
+	//     "property": "brightness",
+	//     "type": "StepAction",
+	//     "data": 0.5,
+	//     "steps": [
+	//       {
+	//         "property": "brightness",
+	//         "operator": "+",
+	//         "id": "0x00158d0005a23c38"
+	//       },
+
+	cont1 := &automations.Condition{}
+	cont1.EqualityOperator = "="
+	cont1.Value = "button_1_press_release"
+	cont1.Name = "action"
+
+	step := &automations.Step{}
+	step.Id = "x02222222"
+	step.Operator = "="
+	step.Property = "brightness"
+	brightnessAction := &automations.MqttAction{}
+	brightnessAction.Id = "x02222222"
+	brightnessAction.FriendlyName = "Attic light"
+	brightnessAction.Property = "brightness"
+	brightnessAction.Type = "StepAction"
+	brightnessAction.Data = 0.5
+	brightnessAction.Steps = []automations.Step{*step}
+	brightnessAction.Client = mqtt
+
+	// Turn off sensor trigger
+	button1Trigger := &automations.Trigger{}
+	button1Trigger.Name = "action"
+	button1Trigger.Action = brightnessAction
+	button1Trigger.Conditions = []*automations.Condition{cont1}
+	d1e1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
+	device1 := utils_test.CreateDeviceWithExposes("x01111111", "dial button", []*devices.Entity{d1e1})
+
+	d2e1 := utils_test.CreateEntity("brightness", "numeric", nil)
+	d2e2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
+	device2 := utils_test.CreateDeviceWithExposes("x02222222", "Attic light", []*devices.Entity{d2e1, d2e2})
+
+	utils_test.CreateBridgeInfoList([]*devices.Device{device1, device2})
+
+	// might not need that
+	// var messageHandler = func(id string, payload []byte) {
+	// }
+	// mqtt.OnMessageHandler(messageHandler)
+
+	// create device
 	// create brideInfoList
 	//create automations for devices
 
 	// setup and then trigger automations
 
-	
-}
+	wg.Wait()
 
+}
 
 func TestProcessorAddsNewDevice(t *testing.T) {
 
