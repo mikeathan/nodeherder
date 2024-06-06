@@ -28,6 +28,19 @@ func createMockPayload() map[string]interface{} {
 }
  TODO: test automations triggers in the hub 
 // to confirm the worker taks works correctly
+func TestProcessorTriggersAutomations(t *testing.T) {
+
+	// CHECK trigger_tests 
+// Mqtt wil need to be mocked to receive and publish messages
+// mqtt.OnMessageHandler(messageHandler)
+	// create devices
+	// create brideInfoList
+	//create automations for devices
+
+	// setup and then trigger automations
+
+	
+}
 
 
 func TestProcessorAddsNewDevice(t *testing.T) {
