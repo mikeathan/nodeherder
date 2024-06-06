@@ -36,49 +36,13 @@ func TestProcessorTriggersAutomations(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
 
-	// "name": "action",
-	// "conditions": [
-	//   {
-	// 	"name": "action",
-	// 	"value": "button_1_press_release",
-	// 	"equality": "="
-	//   }
-	// ],
-	// "id": "0x00158d0005a23c38",
-	//     "friendlyname": "Living Room",
-	//     "property": "brightness",
-	//     "type": "StepAction",
-	//     "data": 0.5,
-	//     "steps": [
-	//       {
-	//         "property": "brightness",
-	//         "operator": "+",
-	//         "id": "0x00158d0005a23c38"
-	//       },
+	dialgTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_1_press_release", mqtt)
+	deviceAutomation := automations.NewDevice("human sensor")
+	deviceAutomation.Id = "x01111111"
+	deviceAutomation.FriendlyName = "dial button"
+	deviceAutomation.Enabled = true
+	deviceAutomation.Triggers = append(deviceAutomation.Triggers, dialgTrigger)
 
-	cont1 := &automations.Condition{}
-	cont1.EqualityOperator = "="
-	cont1.Value = "button_1_press_release"
-	cont1.Name = "action"
-
-	step := &automations.Step{}
-	step.Id = "x02222222"
-	step.Operator = "="
-	step.Property = "brightness"
-	brightnessAction := &automations.MqttAction{}
-	brightnessAction.Id = "x02222222"
-	brightnessAction.FriendlyName = "Attic light"
-	brightnessAction.Property = "brightness"
-	brightnessAction.Type = "StepAction"
-	brightnessAction.Data = 0.5
-	brightnessAction.Steps = []automations.Step{*step}
-	brightnessAction.Client = mqtt
-
-	// Turn off sensor trigger
-	button1Trigger := &automations.Trigger{}
-	button1Trigger.Name = "action"
-	button1Trigger.Action = brightnessAction
-	button1Trigger.Conditions = []*automations.Condition{cont1}
 	d1e1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
 	device1 := utils_test.CreateDeviceWithExposes("x01111111", "dial button", []*devices.Entity{d1e1})
 
