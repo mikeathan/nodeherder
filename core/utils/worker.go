@@ -8,18 +8,20 @@ import (
 )
 
 type WorkerTask struct {
+	id     string
 	action func() error
 }
 
-func NewWorkerTask(action func() error) *WorkerTask {
+func NewWorkerTask(id string, action func() error) *WorkerTask {
 	return &WorkerTask{
+		id:     id,
 		action: action,
 	}
 }
 
 func (t *WorkerTask) OnFailure(err error) {
 	// TODO: maybe do somethng with the error
-	LogErrorf("WorkerTask  Error: %s", err.Error())
+	LogErrorf("WorkerTask id %s Error: %s", t.id, err.Error())
 }
 
 func (t *WorkerTask) Process() error {

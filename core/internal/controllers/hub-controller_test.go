@@ -26,6 +26,9 @@ func createMockPayload() map[string]interface{} {
 		"temperature": 17.1,
 	}
 }
+// TODO: test automations triggers in the hub 
+// to confirm the worker taks works correctly
+
 
 func TestProcessorAddsNewDevice(t *testing.T) {
 

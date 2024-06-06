@@ -43,7 +43,7 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 
 	h.registrar = services.NewHubRegisterService(store, eventHub, 3600)
 	h.automationEngine = automations.NewEngine(h.registrar, mqtt)
-	h.wp = utils.NewWorkerPool(1, ctx)
+	h.wp = utils.NewWorkerPool(4, ctx)
 	h.wp.Run()
 
 	h.eventHub.OnLoadAppConfig(func() (interface{}, error) {
@@ -246,24 +246,26 @@ func (m *HubController) TriggerAutomation(device *devices.Device) {
 }
 
 func (m *HubController) deviceAdded(device *devices.Device) {
-	// todo: add them in workerTask
-
 	m.registrar.Register(device.FriendlyName, device)
+	// TESTING
+	// d := device
+	// action := func() error {
+	// 	return m.registrar.Register(device.FriendlyName, device)
+	// }
+	// m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
 }
 
 func (m *HubController) deviceUpdated(device *devices.Device) {
 
-	// todo: add them in workerTask
 	m.automationEngine.HandleDevice(device)
-
 	m.registrar.Register(device.FriendlyName, device)
-
-	// 	d := device
-	// 		func() error {
-	// 			c.hub.TriggerAutomation(d)
-	// 			c.registrar.Register(friendlyName, d)
-	// 			return nil
-	// 		}()
+	// // TESTING
+	// d := device
+	// action := func() error {
+	// 	m.automationEngine.HandleDevice(device)
+	// 	return m.registrar.Register(device.FriendlyName, device)
+	// }
+	// m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
 }
 
 func (m *HubController) processMessage(id string, payload []byte, connType string) error {
