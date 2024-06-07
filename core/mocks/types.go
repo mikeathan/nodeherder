@@ -1,13 +1,17 @@
 package mocks
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"node-herder/internal/automations"
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	"node-herder/repository"
 	"node-herder/store"
+	"node-herder/utils/storage"
+	"sort"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -127,11 +131,22 @@ func (m *MockMqttClient) messagePubHandler() func(id string, payload []byte) {
 
 func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 	fmt.Println("Mock Publish")
-	data := []byte("mock payload")
-	if p, ok := payload.([]byte); ok {
-		data = p
+
+	if payload == nil {
+		data := []byte("mock payload")
+		if p, ok := payload.([]byte); ok {
+			data = p
+		}
+		m.messagePubHandler()(topic, data)
+	} else {
+		bytes, err := json.Marshal(payload)
+		if err != nil {
+			fmt.Println("Mock Publish error:", err.Error())
+			return
+		}
+		m.messagePubHandler()(topic, bytes)
 	}
-	m.messagePubHandler()(topic, data)
+
 }
 
 // Mock WsServer
@@ -448,4 +463,105 @@ func (s *NopAppStore) FindBridgeInfoById(id string) (*devices.BridgeInfo, error)
 func (s *NopAppStore) ResolveFriendlyName(friendlyName string) string {
 	fmt.Println("Mocked store ResolveFriendlyName")
 	return ""
+}
+
+// Mock engine
+type MockAutomationEngine[T any] struct {
+	cache    map[string]*automations.Device
+	mockData []*automations.Device
+}
+
+func NewMockAutomationStorage[T automations.Device](mockData []*automations.Device) storage.Storage[automations.Device] {
+	d := new(MockAutomationEngine[automations.Device])
+	d.cache = make(map[string]*automations.Device)
+	d.mockData = mockData
+	return d
+}
+
+func (d *MockAutomationEngine[T]) Initialize() ([]*automations.Device, error) {
+
+	d.ClearCache()
+
+	// initialize with mock data
+	for _, mockItem := range d.mockData {
+		d.Store(mockItem.Id, mockItem)
+	}
+
+	return d.LoadAll(), nil
+}
+
+func (d *MockAutomationEngine[T]) LoadAll() []*automations.Device {
+
+	keys := make([]string, 0, len(d.cache))
+	values := make([]*automations.Device, 0, len(d.cache))
+
+	for k, _ := range d.cache {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		values = append(values, d.cache[k])
+	}
+
+	return values
+}
+
+func (d *MockAutomationEngine[T]) Delete(name string) error {
+
+	d.deleteFromCache(name)
+	return nil
+}
+
+func (d *MockAutomationEngine[T]) ClearCache() {
+
+	for k := range d.cache {
+		delete(d.cache, k)
+	}
+}
+
+func (d *MockAutomationEngine[T]) Store(name string, item *automations.Device) error {
+
+	d.addToCache(name, item)
+	return nil
+}
+func (d *MockAutomationEngine[T]) LoadFromCache(name string) (*automations.Device, error) {
+	item := d.loadFromCache(name)
+	if item != nil {
+		return item, nil
+	}
+
+	return nil, errors.New("not in cache")
+}
+
+func (d *MockAutomationEngine[T]) Load(name string) (*automations.Device, error) {
+
+	item := d.loadFromCache(name)
+	if item != nil {
+		return item, nil
+	}
+
+	for _, mockItem := range d.mockData {
+		if mockItem.Id == name {
+			return mockItem, nil
+		}
+	}
+
+	return nil, errors.New("item not found")
+}
+
+func (d *MockAutomationEngine[T]) addToCache(name string, item *automations.Device) {
+	d.cache[name] = item
+}
+
+func (d *MockAutomationEngine[T]) loadFromCache(name string) *automations.Device {
+	if item, ok := d.cache[name]; ok {
+		return item
+	}
+
+	return nil
+}
+
+func (d *MockAutomationEngine[T]) deleteFromCache(name string) {
+	delete(d.cache, name)
 }

@@ -232,29 +232,23 @@ func CreateBridgeInfoList(deviceList []*devices.Device) []*devices.BridgeInfo {
 		bridge.Disabled = false
 		bridge.InterviewCompleted = true
 
-		for _, expose := range dev.Exposes {
-			e := devices.BridgeExpose{}
-			e.Name = expose.Name
-			e.Property = expose.Type
-			e.Type = expose.Type
-			e.Unit = expose.Unit
-			e.ValueMin = expose.Attributes["min"]
-			e.ValueMax = expose.Attributes["max"]
-			e.Description = expose.Description
+		e := devices.BridgeExpose{}
+		e.Name = fmt.Sprintf("expose for %v", dev.FriendlyName)
 
+		// NOTE: We make all features for now
+		for _, expose := range dev.Exposes {
 			f := devices.BridgeInfoFeature{}
 			f.Name = expose.Name
-			f.Property = expose.Type
+			f.Property = expose.Name
 			f.Type = expose.Type
 			f.Unit = expose.Unit
 			f.ValueMin = expose.Attributes["min"]
 			f.ValueMax = expose.Attributes["max"]
 			f.Description = expose.Description
 			e.Features = append(e.Features, f)
-
-			bridge.Definition.Exposes = append(bridge.Definition.Exposes, e)
 		}
 
+		bridge.Definition.Exposes = append(bridge.Definition.Exposes, e)
 		bridgeInfoList = append(bridgeInfoList, bridge)
 	}
 

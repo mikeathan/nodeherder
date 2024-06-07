@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"node-herder/models/settings"
+	"node-herder/utils"
 	"sync"
 
 	"github.com/boltdb/bolt"
@@ -28,10 +29,17 @@ func NewFileSettingsRepoFromFile(filename string) (settings.Repository, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &FileSettingsRepo{
+	repo := &FileSettingsRepo{
 		db:    db,
 		mutex: sync.RWMutex{},
-	}, nil
+	}
+	err = repo.init()
+	if err != nil {
+		utils.LogError(err)
+		return nil, err
+	}
+
+	return repo, nil
 }
 
 func (s *FileSettingsRepo) Close() error {
@@ -91,9 +99,23 @@ func (s *FileSettingsRepo) SaveDeviceConfig(deviceConfig *settings.DeviceConfig)
 	return s.Save(config)
 }
 
+func (s *FileSettingsRepo) init() error {
+	tx, err := s.db.Begin(true)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.CreateBucketIfNotExists([]byte(settingsBucketName)); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
 func (s *FileSettingsRepo) Load() (*settings.AppConfig, error) {
 
-	var settings *settings.AppConfig
+	settings := settings.NewAppConfig()
 	err := s.db.View(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(settingsBucketName))
 		if bucket == nil {
@@ -102,7 +124,8 @@ func (s *FileSettingsRepo) Load() (*settings.AppConfig, error) {
 
 		buffer := bucket.Get([]byte(settingsKeyName))
 		if buffer == nil {
-			return fmt.Errorf("key %v not found", settings)
+			return nil
+			//return fmt.Errorf("key %v not found", settings)
 		}
 
 		err := json.Unmarshal(buffer, &settings)

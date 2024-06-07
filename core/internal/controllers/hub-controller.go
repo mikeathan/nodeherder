@@ -13,6 +13,7 @@ import (
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	"node-herder/store"
+	"node-herder/utils/storage"
 	"strconv"
 	"time"
 
@@ -46,6 +47,19 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 	h.wp = utils.NewWorkerPool(4, ctx)
 	h.wp.Run()
 
+	h.registerEventHubEvents()
+
+	h.mqtt.OnMessageHandler(func(id string, payload []byte) {
+		h.processMessage(id, payload, "mqtt")
+	})
+
+	// setup
+	h.mqtt.Connect()
+	h.mqtt.Publish("bridge/devices", nil) //zigbee2mqtt/ get devices for setup stuff
+	return h
+}
+
+func (h *HubController) registerEventHubEvents() {
 	h.eventHub.OnLoadAppConfig(func() (interface{}, error) {
 		return h.store.LoadAppConfig()
 	})
@@ -220,15 +234,11 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 
 		return h.automationEngine.GetAllTriggers(), nil
 	})
+}
 
-	h.mqtt.OnMessageHandler(func(id string, payload []byte) {
-		h.processMessage(id, payload, "mqtt")
-	})
-
-	// setup
-	h.mqtt.Connect()
-	h.mqtt.Publish("zigbee2mqtt/bridge/devices", nil) // get devices for setup stuff
-	return h
+// we only use that to override the default automation storage, lame but we cant easily refactor as weget alot of cyclic dependencies
+func (h *HubController) WithAutomationStorage(storage storage.Storage[automations.Device]) {
+	h.automationEngine.WithStorage(storage)
 }
 
 func (c *HubController) Enqueue(id string, payload map[string]interface{}, connType string) error {

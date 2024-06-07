@@ -30,41 +30,59 @@ func createMockPayload() map[string]interface{} {
 	}
 }
 
-// TODO: test automations triggers in the hub
-// to confirm the worker taks works correctly
 func TestProcessorTriggersAutomations(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
+	ws := &mocks.NopWsServer{}
 
-	dialgTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_1_press_release", mqtt)
+	// SETUP START
+	// setup automations
+	btn1PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_1_press_release", mqtt)
+	btn2PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_2_press_release", mqtt)
+
 	deviceAutomation := automations.NewDevice("human sensor")
 	deviceAutomation.Id = "x01111111"
 	deviceAutomation.FriendlyName = "dial button"
 	deviceAutomation.Enabled = true
-	deviceAutomation.Triggers = append(deviceAutomation.Triggers, dialgTrigger)
+	deviceAutomation.Triggers = []*automations.Trigger{btn1PressTrigger, btn2PressTrigger}
+	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
 
-	d1e1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
-	device1 := utils_test.CreateDeviceWithExposes("x01111111", "dial button", []*devices.Entity{d1e1})
+	// setup device
+	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
+	dialDevice := utils_test.CreateDeviceWithExposes("x01111111", "Dial button", []*devices.Entity{device1Expose1})
 
-	d2e1 := utils_test.CreateEntity("brightness", "numeric", nil)
-	d2e2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
-	device2 := utils_test.CreateDeviceWithExposes("x02222222", "Attic light", []*devices.Entity{d2e1, d2e2})
+	device2Expose1 := utils_test.CreateEntity("brightness", "numeric", nil)
+	device2Expose2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
+	lightDevice := utils_test.CreateDeviceWithExposes("x02222222", "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
 
-	utils_test.CreateBridgeInfoList([]*devices.Device{device1, device2})
+	// setup bridgeInfo List
+	devices := []*devices.Device{dialDevice, lightDevice}
+	deviceBridgeList := utils_test.CreateBridgeInfoList(devices) // NEED TO FIX, currently i make all devices features which is not right!!!!
 
-	// might not need that
-	// var messageHandler = func(id string, payload []byte) {
+	// store  bridgeInfo list to app store
+	store := utils_test.CreateStore()
+	//store.StoreBridgeInfoList(deviceBridgeList)
+	// for _, d := range devices {
+	// 	err := store.StoreDevice(d.FriendlyName, d)
+	// 	if err != nil {
+	// 		t.Fatalf("error storing device %v, %v", d.Id, err.Error())
+	// 	}
 	// }
-	// mqtt.OnMessageHandler(messageHandler)
 
-	// create device
-	// create brideInfoList
-	//create automations for devices
+	// register hub
+	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub.WithAutomationStorage(automationStorage)
 
-	// setup and then trigger automations
+	// publish deviceBridgeList to configure hub
+	mqtt.Publish("bridge/devices", deviceBridgeList)
+	// SETUP END
 
+	// add new light device
+	payload := map[string]any{"brightness": 10, "color_temp": 100}
+	mqtt.Publish(lightDevice.FriendlyName, payload)
+
+	wg.Add(1)
 	wg.Wait()
-
 }
 
 func TestProcessorAddsNewDevice(t *testing.T) {

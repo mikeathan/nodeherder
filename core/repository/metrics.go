@@ -16,6 +16,7 @@ import (
 )
 
 const metricsBaseFilename = "metrics.db"
+const metricsBucketName = "metrics"
 
 type MetricsRepo struct {
 	mutex *sync.RWMutex
@@ -33,12 +34,32 @@ func NewMetricsRepoFromFile(filename string) (metrics.Repository, error) {
 		utils.LogError(err)
 		return nil, err
 	}
-
 	// TODO: ideally pass device configs to configure the rate limiter timeout
-	return &MetricsRepo{
+	repo := &MetricsRepo{
 		mutex: &sync.RWMutex{},
 		db:    db,
-	}, nil
+	}
+	err = repo.init()
+	if err != nil {
+		utils.LogError(err)
+		return nil, err
+	}
+
+	return repo, nil
+}
+
+func (s *MetricsRepo) init() error {
+	tx, err := s.db.Begin(true)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.CreateBucketIfNotExists([]byte(metricsBucketName)); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (s *MetricsRepo) Close() error {
@@ -54,7 +75,7 @@ func (s *MetricsRepo) Store(device *devices.Device) error {
 	defer s.mutex.Unlock()
 	s.mutex.Lock()
 	s.db.Update(func(tx *bolt.Tx) error {
-		bucket, err := tx.CreateBucketIfNotExists([]byte("metrics"))
+		bucket, err := tx.CreateBucketIfNotExists([]byte(metricsBucketName))
 		if err != nil {
 			return err
 		}
@@ -94,7 +115,7 @@ func (s *MetricsRepo) ViewExposeTimeRange(device *devices.Device, exposeName str
 	result := metrics.NewDeviceMetricsResult(device.Id)
 
 	err := s.db.View(func(tx *bolt.Tx) error {
-		cursor := tx.Bucket([]byte("metrics")).Bucket([]byte(device.Id)).Cursor()
+		cursor := tx.Bucket([]byte(metricsBucketName)).Bucket([]byte(device.Id)).Cursor()
 		if cursor == nil {
 			return bolt.ErrBucketNotFound
 		}
@@ -116,7 +137,7 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 	result := metrics.NewDeviceMetricsResult(device.Id)
 
 	err := s.db.View(func(tx *bolt.Tx) error {
-		cursor := tx.Bucket([]byte("metrics")).Bucket([]byte(device.Id)).Cursor()
+		cursor := tx.Bucket([]byte(metricsBucketName)).Bucket([]byte(device.Id)).Cursor()
 		if cursor == nil {
 			return bolt.ErrBucketNotFound
 		}

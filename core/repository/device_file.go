@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"node-herder/models/devices"
+	"node-herder/utils"
 	"sync"
 
 	"github.com/boltdb/bolt"
@@ -29,10 +30,34 @@ func NewFileDeviceRepoFromFile(filename string) (devices.Repository, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &FileDeviceRepo{
+	repo := &FileDeviceRepo{
 		db:    db,
 		mutex: sync.RWMutex{},
-	}, nil
+	}
+	err = repo.init()
+	if err != nil {
+		utils.LogError(err)
+		return nil, err
+	}
+
+	return repo, nil
+}
+
+func (s *FileDeviceRepo) init() error {
+	tx, err := s.db.Begin(true)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.CreateBucketIfNotExists([]byte(devicesBucketName)); err != nil {
+		return err
+	}
+	if _, err := tx.CreateBucketIfNotExists([]byte(bridgeBucketName)); err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (s *FileDeviceRepo) StoreBridge(brigeInfo []*devices.BridgeInfo) error {

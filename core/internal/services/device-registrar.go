@@ -28,7 +28,7 @@ func NewHubRegisterService(store store.AppStore, hub ws.EventHub, deviceAvailabi
 	return &HubRegisterService{store: store, eventHub: hub, deviceIdMapper: make(map[string]string), deviceAvailabilityTimeout: deviceAvailabilityTimeout}
 }
 
-func (s *HubRegisterService) Register(friendlyName string, device *devices.Device)error {
+func (s *HubRegisterService) Register(friendlyName string, device *devices.Device) error {
 	return s.store.UpdateDevice(friendlyName, device)
 }
 

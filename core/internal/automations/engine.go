@@ -11,7 +11,6 @@ import (
 
 const (
 	automationDir = "configs/automations"
-	automationExt = ".config"
 )
 
 type Engine interface { // TODO: might need to move it to Models????
@@ -22,12 +21,13 @@ type Engine interface { // TODO: might need to move it to Models????
 	Initialize()
 	Load(id string) (*Device, error)
 	GetAllTriggers() []*Device
+	WithStorage(storage storage.Storage[Device])
 }
 
 type AutomationEngine struct {
-	mqttClient        mqtt.MqttClient
-	registrar         services.DeviceRegistrar
-	automationStorage storage.Storage[Device]
+	mqttClient mqtt.MqttClient
+	registrar  services.DeviceRegistrar
+	storage    storage.Storage[Device]
 }
 
 func NewEngine(registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *AutomationEngine {
@@ -35,29 +35,29 @@ func NewEngine(registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *Automa
 	return &AutomationEngine{
 		mqttClient: mqtt,
 		registrar:  registrar,
-		automationStorage: storage.NewJsonDiskStorage[Device](automationDir, func() *Device {
+		storage: storage.NewJsonDiskStorage[Device](automationDir, func() *Device {
 			return newDevice()
 		}),
 	}
 }
 
 func (a *AutomationEngine) WithStorage(storage storage.Storage[Device]) {
-	a.automationStorage = storage
+	a.storage = storage
 }
 
 func (a *AutomationEngine) HandleDevice(device *devices.Device) {
-	triggerDevice, err := a.automationStorage.LoadFromCache(device.Id)
+	triggerDevice, err := a.storage.LoadFromCache(device.Id)
 	if err == nil && triggerDevice.Enabled {
 		triggerDevice.Evaluate(device)
 	}
 }
 
 func (a *AutomationEngine) GetAllTriggers() []*Device {
-	return a.automationStorage.LoadAll()
+	return a.storage.LoadAll()
 }
 
 func (a *AutomationEngine) Load(id string) (*Device, error) {
-	return a.automationStorage.Load(id)
+	return a.storage.Load(id)
 }
 
 func (a *AutomationEngine) Add(automation *Device) error {
@@ -69,13 +69,13 @@ func (a *AutomationEngine) Add(automation *Device) error {
 		return err
 	}
 
-	a.automationStorage.Store(automation.Id, automation)
+	a.storage.Store(automation.Id, automation)
 
 	return nil
 }
 
 func (a *AutomationEngine) DeleteTrigger(id string, triggerId int) error {
-	automation, err := a.automationStorage.Load(id)
+	automation, err := a.storage.Load(id)
 	if err != nil {
 		return err
 	}
@@ -88,20 +88,20 @@ func (a *AutomationEngine) DeleteTrigger(id string, triggerId int) error {
 	automation.Triggers = append(automation.Triggers[:triggerId], automation.Triggers[triggerId+1:]...)
 
 	// store
-	a.automationStorage.Store(id, automation)
+	a.storage.Store(id, automation)
 	return nil
 }
 
 func (a *AutomationEngine) Delete(id string) error {
 
-	a.automationStorage.Delete(id)
+	a.storage.Delete(id)
 	return nil
 }
 
 func (a *AutomationEngine) Initialize() {
 
 	utils.LogInfof("Initialize automations")
-	automations, err := a.automationStorage.Initialize() // <--------------- check if we clear any internal cache in automations after reloading
+	automations, err := a.storage.Initialize() // <--------------- check if we clear any internal cache in automations after reloading
 	if err != nil {
 		utils.LogErrorf("Load automations failed. Error=%s", err.Error())
 		return

@@ -65,6 +65,7 @@ func main() {
 	store, err := store.Create()
 	if err != nil {
 		utils.LogErrorf("error creating store: %v", err.Error())
+		cancelCtx()
 	}
 	h := hub.Register(args.port, store, mqttConfig, ctx)
 	h.Listen()

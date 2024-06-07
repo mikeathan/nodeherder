@@ -1,14 +1,11 @@
 package automations_test
 
 import (
-	"errors"
 	"node-herder/internal/automations"
 	"node-herder/internal/services"
 	"node-herder/mocks"
 	"node-herder/models/devices"
 	utils_test "node-herder/testing"
-	"node-herder/utils/storage"
-	"sort"
 	"testing"
 	"time"
 )
@@ -83,7 +80,7 @@ func TestExportAutomationsFromFile(t *testing.T) {
 	registrar.Register("livingroom", dev1)
 	registrar.Register("humansensor", dev2)
 
-	storage := NewMockStorage([]*automations.Device{})
+	storage := mocks.NewMockAutomationStorage([]*automations.Device{})
 
 	engine := automations.NewEngine(registrar, mqtt)
 	engine.WithStorage(storage)
@@ -176,104 +173,4 @@ func TestExportAutomationsFromFile(t *testing.T) {
 	if len(inputDeviceTriggers) != 0 {
 		t.Fatalf("ERROR triggers found. expecting empty")
 	}
-}
-
-type MockStorage[T any] struct {
-	cache    map[string]*automations.Device
-	mockData []*automations.Device
-}
-
-func NewMockStorage[T automations.Device](mockData []*automations.Device) storage.Storage[automations.Device] {
-	d := new(MockStorage[automations.Device])
-	d.cache = make(map[string]*automations.Device)
-	d.mockData = mockData
-	return d
-}
-
-func (d *MockStorage[T]) Initialize() ([]*automations.Device, error) {
-
-	d.ClearCache()
-
-	// initialize with mock data
-	for _, mockItem := range d.mockData {
-		d.Store(mockItem.Id, mockItem)
-	}
-
-	return d.LoadAll(), nil
-}
-
-func (d *MockStorage[T]) LoadAll() []*automations.Device {
-
-	keys := make([]string, 0, len(d.cache))
-	values := make([]*automations.Device, 0, len(d.cache))
-
-	for k, _ := range d.cache {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	for _, k := range keys {
-		values = append(values, d.cache[k])
-	}
-
-	return values
-}
-
-func (d *MockStorage[T]) Delete(name string) error {
-
-	d.deleteFromCache(name)
-	return nil
-}
-
-func (d *MockStorage[T]) ClearCache() {
-
-	for k := range d.cache {
-		delete(d.cache, k)
-	}
-}
-
-func (d *MockStorage[T]) Store(name string, item *automations.Device) error {
-
-	d.addToCache(name, item)
-	return nil
-}
-func (d *MockStorage[T]) LoadFromCache(name string) (*automations.Device, error) {
-	item := d.loadFromCache(name)
-	if item != nil {
-		return item, nil
-	}
-
-	return nil, errors.New("not in cache")
-}
-
-func (d *MockStorage[T]) Load(name string) (*automations.Device, error) {
-
-	item := d.loadFromCache(name)
-	if item != nil {
-		return item, nil
-	}
-
-	for _, mockItem := range d.mockData {
-		if mockItem.Id == name {
-			return mockItem, nil
-		}
-	}
-
-	return nil, errors.New("item not found")
-}
-
-func (d *MockStorage[T]) addToCache(name string, item *automations.Device) {
-	d.cache[name] = item
-}
-
-func (d *MockStorage[T]) loadFromCache(name string) *automations.Device {
-	if item, ok := d.cache[name]; ok {
-		return item
-	}
-
-	return nil
-}
-
-func (d *MockStorage[T]) deleteFromCache(name string) {
-	delete(d.cache, name)
 }

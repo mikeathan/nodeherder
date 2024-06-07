@@ -10,15 +10,15 @@ import (
 	"time"
 )
 
-type RateLimiter struct {
+type rateLimiter struct {
 	mutex     sync.Mutex
 	lastWrite time.Time
 	appConfig *settings.AppConfig
 	store     map[string]time.Time // In-memory store for device IDs and last write times
 }
 
-func NewRateLimiter(appConfig *settings.AppConfig) *RateLimiter {
-	return &RateLimiter{
+func NewRateLimiter(appConfig *settings.AppConfig) *rateLimiter {
+	return &rateLimiter{
 		mutex:     sync.Mutex{},
 		lastWrite: time.Time{},
 		appConfig: appConfig,
@@ -26,7 +26,7 @@ func NewRateLimiter(appConfig *settings.AppConfig) *RateLimiter {
 	}
 }
 
-func (rl *RateLimiter) AllowWrite(id string, rateLimit time.Duration) bool {
+func (rl *rateLimiter) AllowWrite(id string, rateLimit time.Duration) bool {
 	rl.mutex.Lock()
 	defer rl.mutex.Unlock()
 
@@ -71,7 +71,7 @@ type appStore struct {
 	config         settings.Repository
 	deviceConfigs  map[string]*settings.DeviceConfig
 	deviceIdMapper *repository.DeviceIdMapper
-	rateLimiter    *RateLimiter
+	rateLimiter    *rateLimiter
 }
 
 func NewAppStore(devices devices.Repository, metrics metrics.Repository, config settings.Repository) (AppStore, error) {

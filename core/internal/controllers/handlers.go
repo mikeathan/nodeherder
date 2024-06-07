@@ -61,6 +61,10 @@ func newBridgeConfigurationHandler(registrar *services.HubRegisterService, engin
 }
 
 func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, payload []byte) error {
+	if len(payload) == 0 {
+		return nil
+	}
+
 	if id != "bridge/devices" {
 		return fmt.Errorf("invalid hub configuration topic %s", id)
 	}

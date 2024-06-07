@@ -8,12 +8,6 @@ import (
 func Create() (AppStore, error) {
 
 	devices := repository.NewMemoryDeviceRepo()
-
-	// devices, err := repository.NewMemoryDeviceRepo()
-	// if err != nil {
-	// 	return nil, fmt.Errorf("loading device repository failed: %v", err.Error())
-	// }
-
 	metrics, err := repository.NewMetricsRepo()
 	if err != nil {
 		return nil, fmt.Errorf("loading metrics repository failed: %v", err.Error())
