@@ -59,27 +59,23 @@ func TestProcessorTriggersAutomations(t *testing.T) {
 	devices := []*devices.Device{dialDevice, lightDevice}
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices) // NEED TO FIX, currently i make all devices features which is not right!!!!
 
-	// store  bridgeInfo list to app store
-	store := utils_test.CreateStore()
-	//store.StoreBridgeInfoList(deviceBridgeList)
-	// for _, d := range devices {
-	// 	err := store.StoreDevice(d.FriendlyName, d)
-	// 	if err != nil {
-	// 		t.Fatalf("error storing device %v, %v", d.Id, err.Error())
-	// 	}
-	// }
-
 	// register hub
+	store := utils_test.CreateStore()
 	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
-	hub.WithAutomationStorage(automationStorage)
+	hub.WithAutomationStorage(automationStorage) // overide storage
 
-	// publish deviceBridgeList to configure hub
+	// publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 	// SETUP END
 
-	// add new light device
+	// publish light device
 	payload := map[string]any{"brightness": 10, "color_temp": 100}
 	mqtt.Publish(lightDevice.FriendlyName, payload)
+
+	// publish dial button device
+
+	payload = map[string]any{"actio": "button_2_hold"} // it shouldnt trigger autonation as is not in automation condition
+	mqtt.Publish(dialDevice.FriendlyName, payload)
 
 	wg.Add(1)
 	wg.Wait()
