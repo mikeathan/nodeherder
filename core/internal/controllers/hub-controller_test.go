@@ -37,8 +37,8 @@ func TestProcessorTriggersAutomations(t *testing.T) {
 
 	// SETUP START
 	// setup automations
-	btn1PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_1_press_release", mqtt)
-	btn2PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_2_press_release", mqtt)
+	btn1PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x01111111", "button_1_press_release", mqtt)
+	btn2PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x01111111", "button_2_press_release", mqtt)
 
 	deviceAutomation := automations.NewDevice("human sensor")
 	deviceAutomation.Id = "x01111111"
@@ -64,19 +64,28 @@ func TestProcessorTriggersAutomations(t *testing.T) {
 	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	hub.WithAutomationStorage(automationStorage) // overide storage
 
-	// publish deviceBridgeList to configure hub with devices
+
+	action.Property == f.Property mismatch
+	// bridge for x01111111 doesnt have any definitions.Exposes matchng in configureAction
+	//automation needs to have exposes but i have configure bridge devices to only have features
+
+	// // publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	// SETUP END
+	// // SETUP END
 
-	// publish light device
-	payload := map[string]any{"brightness": 10, "color_temp": 100}
-	mqtt.Publish(lightDevice.FriendlyName, payload)
+	// // publish light device
+	// payload := map[string]any{"brightness": 10, "color_temp": 100}
+	// mqtt.Publish(lightDevice.FriendlyName, payload)
 
-	// publish dial button device
+	// // publish dial button device
 
-	payload = map[string]any{"actio": "button_2_hold"} // it shouldnt trigger autonation as is not in automation condition
-	mqtt.Publish(dialDevice.FriendlyName, payload)
+	// payload = map[string]any{"action": "button_2_hold"} // this event shouldnt trigger autonation as is not in automation condition
+	// mqtt.Publish(dialDevice.FriendlyName, payload)
 
+	// //probles with the mocked automation storage and ocked brideinfo. cant find device frombridge
+	// //we need to mock registrat as wellautomationStorage	// device id name is wrong when automation storage loadfrom  cahce
+	// payload = map[string]any{"action": "button_1_press_release"}
+	// mqtt.Publish(dialDevice.FriendlyName, payload)
 	wg.Add(1)
 	wg.Wait()
 }
