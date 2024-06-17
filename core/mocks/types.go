@@ -129,6 +129,9 @@ func (m *MockMqttClient) messagePubHandler() func(id string, payload []byte) {
 	}
 }
 
+// todo handle below case, data we receive
+// "Attic light/set"
+// "{\"brightness\":10.5}"
 func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 	fmt.Println("Mock Publish")
 
@@ -138,6 +141,8 @@ func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 			data = p
 		}
 		m.messagePubHandler()(topic, data)
+	} else if value, ok := payload.(string); ok {
+		m.messagePubHandler()(topic, []byte(value))
 	} else {
 		bytes, err := json.Marshal(payload)
 		if err != nil {

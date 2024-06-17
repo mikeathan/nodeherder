@@ -83,7 +83,7 @@ func TestProcessorTriggersAutomations(t *testing.T) {
 	payload = map[string]any{"action": "button_1_press_release"}
 	mqtt.Publish(dialDevice.FriendlyName, payload)
 
-	TODO
+	//TODO
 	// it hits automation but it publishes new mqtt message which then lands back in our handler with wrong paylod message
 	// fix the mock MQTT handler
 
