@@ -13,7 +13,7 @@ func CreateDialTriggerActionsBrightness(actionId string, dialActionName string, 
 
 	step := &automations.Step{}
 	step.Id = actionId
-	step.Operator = "="
+	step.Operator = "+"
 	step.Property = "brightness"
 
 	action := &automations.MqttAction{}
