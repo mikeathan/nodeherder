@@ -12,6 +12,7 @@ import (
 	"node-herder/store"
 	"node-herder/utils/storage"
 	"sort"
+	"strings"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -129,20 +130,27 @@ func (m *MockMqttClient) messagePubHandler() func(id string, payload []byte) {
 	}
 }
 
-// todo handle below case, data we receive
-// "Attic light/set"
-// "{\"brightness\":10.5}"
+func stripAfterSeparator(input string, separator string) (string, bool) {
+	parts := strings.SplitN(input, separator, 2)
+	if len(parts) > 1 {
+		return parts[0], true
+	}
+	return input, false
+}
+
 func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 	fmt.Println("Mock Publish")
 
+	// handle setter mqtt messages. strip set and publish, it then gets handled as device update
+	topic = strings.Replace(topic, "/set", "", -1)
 	if payload == nil {
 		data := []byte("mock payload")
 		if p, ok := payload.([]byte); ok {
 			data = p
 		}
 		m.messagePubHandler()(topic, data)
-	} else if value, ok := payload.(string); ok {
-		m.messagePubHandler()(topic, []byte(value))
+	} else if value, ok := payload.([]byte); ok {
+		m.messagePubHandler()(topic, value)
 	} else {
 		bytes, err := json.Marshal(payload)
 		if err != nil {

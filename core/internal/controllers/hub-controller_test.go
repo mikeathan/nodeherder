@@ -73,19 +73,19 @@ func TestProcessorTriggersAutomations(t *testing.T) {
 	payload := map[string]any{"brightness": 10.0, "color_temp": 100}
 	mqtt.Publish(lightDevice.FriendlyName, payload)
 
-	// // publish dial button device
+	// publish dial button device
 
 	payload = map[string]any{"action": "button_2_hold"} // this event shouldnt trigger autonation as is not in automation condition
 	mqtt.Publish(dialDevice.FriendlyName, payload)
 
 	time.Sleep(100 * time.Millisecond)
 
-	payload = map[string]any{"action": "button_1_press_release"}
-	mqtt.Publish(dialDevice.FriendlyName, payload)
+	for i := 0; i < 2; i++ {
+		payload = map[string]any{"action": "button_1_press_release"}
 
-	//TODO
-	// it hits automation but it publishes new mqtt message which then lands back in our handler with wrong paylod message
-	// fix the mock MQTT handler
+		mqtt.Publish(dialDevice.FriendlyName, payload)
+		time.Sleep(1000 * time.Millisecond)
+	}
 
 	wg.Add(1)
 	wg.Wait()
