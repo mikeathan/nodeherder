@@ -37,8 +37,8 @@ func TestProcessorTriggersAutomations(t *testing.T) {
 
 	// SETUP START
 	// setup automations
-	btn1PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_1_press_release", mqtt)
-	btn2PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_2_press_release", mqtt)
+	btn1PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_1_press", mqtt)
+	btn2PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_2_press", mqtt)
 
 	deviceAutomation := automations.NewDevice("human sensor")
 	deviceAutomation.Id = "x01111111"
@@ -80,13 +80,19 @@ func TestProcessorTriggersAutomations(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	for i := 0; i < 2; i++ {
-		payload = map[string]any{"action": "button_1_press_release"}
-
+	for i := 0; i < 3; i++ {
+		payload = map[string]any{"action": "button_1_press"}
 		mqtt.Publish(dialDevice.FriendlyName, payload)
-		time.Sleep(1000 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
+
+		//reset state
+		payload = map[string]any{"action": "button_1_press_release"}
+		mqtt.Publish(dialDevice.FriendlyName, payload)
+
+		time.Sleep(5000 * time.Millisecond)
 	}
 
+	fmt.Println("finished....")
 	wg.Add(1)
 	wg.Wait()
 }
