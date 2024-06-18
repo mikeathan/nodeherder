@@ -33,6 +33,71 @@ func CreateDialTriggerActionsBrightness(actionId string, dialActionName string, 
 	return trigger
 }
 
+func CreateDialTriggerStepActionBrightnessTODO(lightDeviceId string,dialDeviceId string, dialActionName string, mqtt mqtt.MqttClient) *automations.Trigger {
+	condition := &automations.Condition{}
+	condition.EqualityOperator = "="
+	condition.Value = dialActionName
+	condition.Name = "action"
+
+	step := &automations.Step{}
+	step.Id = lightDeviceId
+	step.Operator = "+"
+	step.Property = "brightness"
+
+	step2 := &automations.Step{}
+	step2.Id = dialDeviceId
+	step2.Operator = "*"
+	step2.Property = "action_time"
+
+	action := &automations.MqttAction{}
+	action.Id = lightDeviceId
+	action.FriendlyName = "Attic light"
+	action.Property = "brightness"
+	action.Type = "StepAction"
+	action.Data = 0.5
+	action.Steps = []automations.Step{*step}
+	action.Client = mqtt
+
+	trigger := &automations.Trigger{}
+	trigger.Name = "action"
+	trigger.Action = action
+	trigger.Conditions = []*automations.Condition{condition}
+
+	return trigger
+}
+
+// "name": "action",
+// "conditions": [
+//
+//	  {
+//		"name": "action",
+//		"value": "dial_rotate_right_slow",
+//		"equality": "="
+//	  }
+//
+// ],
+//
+//	"action": {
+//	  "id": "0x00158d0005a23c38",
+//	  "friendlyname": "Living Room",
+//	  "property": "brightness",
+//	  "type": "StepAction",
+//	  "data": 0.5,
+//	  "steps": [
+//		{
+//		  "property": "brightness",
+//		  "operator": "+",
+//		  "id": "0x00158d0005a23c38"
+//		},
+//		{
+//		  "property": "action_time",
+//		  "operator": "*",
+//		  "id": "0x001788010d7d9d3f"
+//		}
+//	  ]
+//	}
+//
+// },
 func CreateSwitchTriggerWithBindingAction(triggerName string, actionProp string, mqtt mqtt.MqttClient) *automations.Trigger {
 	// action = turn off light
 	brightnessAction := &automations.MqttAction{}
