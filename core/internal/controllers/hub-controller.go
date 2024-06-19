@@ -256,26 +256,26 @@ func (m *HubController) TriggerAutomation(device *devices.Device) {
 }
 
 func (m *HubController) deviceAdded(device *devices.Device) {
-	m.registrar.Register(device.FriendlyName, device)
+	//m.registrar.Register(device.FriendlyName, device)
 	// TESTING
-	// d := device
-	// action := func() error {
-	// 	return m.registrar.Register(device.FriendlyName, device)
-	// }
-	// m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
+	d := device
+	action := func() error {
+		return m.registrar.Register(device.FriendlyName, device)
+	}
+	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
 }
 
 func (m *HubController) deviceUpdated(device *devices.Device) {
 
-	m.automationEngine.HandleDevice(device)
-	m.registrar.Register(device.FriendlyName, device)
-	// // TESTING
-	// d := device
-	// action := func() error {
-	// 	m.automationEngine.HandleDevice(device)
-	// 	return m.registrar.Register(device.FriendlyName, device)
-	// }
-	// m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
+	//`m.automationEngine.HandleDevice(device)
+	////m.registrar.Register(device.FriendlyName, device)
+	// TESTING
+	d := device
+	action := func() error {
+		m.automationEngine.HandleDevice(device)
+		return m.registrar.Register(device.FriendlyName, device)
+	}
+	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
 }
 
 func (m *HubController) processMessage(id string, payload []byte, connType string) error {

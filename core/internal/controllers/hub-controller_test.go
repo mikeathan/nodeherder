@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"node-herder/internal/automations"
 	"node-herder/internal/controllers"
 	"node-herder/internal/ws"
 	"node-herder/mocks"
 	"node-herder/models/devices"
+	"node-herder/models/settings"
 	utils_test "node-herder/testing"
 	"node-herder/utils"
 	"sync"
@@ -30,7 +32,8 @@ func createMockPayload() map[string]interface{} {
 	}
 }
 
-func TestProcessorTriggersAutomations(t *testing.T) {
+func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
+
 	wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
@@ -38,14 +41,14 @@ func TestProcessorTriggersAutomations(t *testing.T) {
 	// SETUP START
 	// setup automations
 	dialRotateSlowTrigger := utils_test.CreateDialTriggerStepActionBrightness("x02222222", "x01111111", "dial_rotate_left_slow", mqtt)
-	//btn1PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_1_press", mqtt)
-	//btn2PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_2_press", mqtt)
+	btn1PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_1_press", mqtt)
+	btn2PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_2_press", mqtt)
 
 	deviceAutomation := automations.NewDevice("human sensor")
 	deviceAutomation.Id = "x01111111"
 	deviceAutomation.FriendlyName = "dial button"
 	deviceAutomation.Enabled = true
-	deviceAutomation.Triggers = []*automations.Trigger{dialRotateSlowTrigger}
+	deviceAutomation.Triggers = []*automations.Trigger{dialRotateSlowTrigger, btn1PressTrigger, btn2PressTrigger}
 	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
 
 	// setup device
@@ -65,7 +68,6 @@ func TestProcessorTriggersAutomations(t *testing.T) {
 	store := utils_test.CreateStore()
 	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	hub.WithAutomationStorage(automationStorage) // overide storage
-
 	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
@@ -76,22 +78,119 @@ func TestProcessorTriggersAutomations(t *testing.T) {
 	mqtt.Publish(lightDevice.FriendlyName, payload)
 
 	// publish dial button device
-
 	payload = map[string]any{"action": "button_2_hold"} // this event shouldnt trigger autonation as is not in automation condition
 	mqtt.Publish(dialDevice.FriendlyName, payload)
 
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
 
-	for i := 0; i < 3; i++ {
-		atValue := 45 + (i)
-		payload = map[string]any{"action": "dial_rotate_left_slow", "action_direction": "left", "action_time": atValue, "action_type": "step"}
+	light, _ := store.FindDeviceById("x02222222")
+	max := light.Exposes["brightness"].Attributes["max"].(float64)
+
+	numTriggers := 10
+
+	wg.Add(numTriggers)
+	for i := 0; i < numTriggers; i++ {
+
+		prevValue, _ := light.Exposes["brightness"].Data.(float64)
+
+		action_time := 10 + (i * 2)
+		payload = map[string]any{"action": "dial_rotate_left_slow", "action_direction": "left", "action_time": action_time, "action_type": "step"}
 		mqtt.Publish(dialDevice.FriendlyName, payload)
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
+
+		// assert.  calculate expected value
+		wantvalue := prevValue + (float64(action_time) * dialRotateSlowTrigger.Action.Data.(float64))
+		gotValue, _ := light.Exposes["brightness"].Data.(float64)
+
+		wantvalue = math.Min(wantvalue, max)
+
+		if gotValue != wantvalue {
+			t.Fatalf("brightness value mismatch. want %v got %v", wantvalue, gotValue)
+		}
+
+		wg.Done()
 	}
 
-	fmt.Println("finished....")
-	wg.Add(1)
+	wg.Wait()
+}
+
+func TestProcessorTriggersAutomationsTESTforMetrics(t *testing.T) {
+
+	wg := &sync.WaitGroup{}
+	mqtt := &mocks.MockMqttClient{}
+	ws := &mocks.NopWsServer{}
+
+	// SETUP START
+	// setup automations
+	dialRotateSlowTrigger := utils_test.CreateDialTriggerStepActionBrightness("x02222222", "x01111111", "dial_rotate_left_slow", mqtt)
+	btn1PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_1_press", mqtt)
+	btn2PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_2_press", mqtt)
+
+	deviceAutomation := automations.NewDevice("human sensor")
+	deviceAutomation.Id = "x01111111"
+	deviceAutomation.FriendlyName = "dial button"
+	deviceAutomation.Enabled = true
+	deviceAutomation.Triggers = []*automations.Trigger{dialRotateSlowTrigger, btn1PressTrigger, btn2PressTrigger}
+	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+
+	// setup device
+	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
+	device1Expose2 := utils_test.CreateNumericEntity("action_time", 0)
+	dialDevice := utils_test.CreateDeviceWithExposes("x01111111", "Dial button", []*devices.Entity{device1Expose1, device1Expose2})
+
+	device2Expose1 := utils_test.CreateEntity("brightness", "numeric", nil)
+	device2Expose2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
+	lightDevice := utils_test.CreateDeviceWithExposes("x02222222", "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
+
+	// setup bridgeInfo List
+	devices := []*devices.Device{dialDevice, lightDevice}
+	deviceBridgeList := utils_test.CreateBridgeInfoList(devices) // NEED TO FIX, currently i make all devices features which is not right!!!!
+
+	// register hub
+	store := utils_test.CreateStore()
+
+	// enable metrics for dial device
+	cfg := settings.NewDeviceConfig("x02222222")
+	cfg.MetricsEnabled = true
+	store.SaveDeviceConfig(cfg)
+
+
+	currently NopSettingsrepo is mocked so need to use real one
+
+	
+	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub.WithAutomationStorage(automationStorage) // overide storage
+	//  publish deviceBridgeList to configure hub with devices
+	mqtt.Publish("bridge/devices", deviceBridgeList)
+	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	//  SETUP END
+
+	// publish light device
+	payload := map[string]any{"brightness": 10.0, "color_temp": 100}
+	mqtt.Publish(lightDevice.FriendlyName, payload)
+
+	// publish dial button device
+	payload = map[string]any{"action": "button_2_hold"} // this event shouldnt trigger autonation as is not in automation condition
+	mqtt.Publish(dialDevice.FriendlyName, payload)
+
+	time.Sleep(50 * time.Millisecond)
+
+	numTriggers := 10
+
+	wg.Add(numTriggers)
+	for i := 0; i < numTriggers; i++ {
+
+		action_time := 10 + (i * 2)
+		payload = map[string]any{"action": "dial_rotate_left_slow", "action_direction": "left", "action_time": action_time, "action_type": "step"}
+		mqtt.Publish(dialDevice.FriendlyName, payload)
+
+		time.Sleep(50 * time.Millisecond)
+
+
+		wg.Done()
+	}
+
 	wg.Wait()
 }
 

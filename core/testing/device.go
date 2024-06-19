@@ -25,21 +25,21 @@ func CreateEnumEntity(name string, enums map[string]any) *devices.Entity {
 	newEntity.Type = "enums"
 	newEntity.Unit = "unit_test"
 	newEntity.Description = fmt.Sprintf("description for expose: %s ", name)
-	newEntity.Properties = map[string]any{"max": 0, "min": 255}
+	newEntity.Properties = map[string]any{"min": 0, "max": 255}
 
 	return newEntity
 }
 func CreatePresetsEntity(name string, presets map[string]any) *devices.Entity {
 
 	newEntity := &devices.Entity{}
-	newEntity.Attributes = map[string]any{"max": 0.0, "min": 255.0}
+	newEntity.Attributes = map[string]any{"min": 0.0, "max": 255.0}
 	newEntity.Presets = presets
 	newEntity.Data = nil
 	newEntity.Name = name
 	newEntity.Type = "numeric"
 	newEntity.Unit = "unit_test"
 	newEntity.Description = fmt.Sprintf("description for expose: %s ", name)
-	newEntity.Properties = map[string]any{"max": 0, "min": 255}
+	newEntity.Properties = map[string]any{"min": 0, "max": 255}
 
 	return newEntity
 }
@@ -53,7 +53,7 @@ func CreateNumericEntity(name string, data any) *devices.Entity {
 	newEntity.Type = "numeric"
 	newEntity.Unit = "unit_test"
 	newEntity.Description = fmt.Sprintf("description for expose: %s ", name)
-	newEntity.Properties = map[string]any{"max": 0, "min": 255}
+	newEntity.Properties = map[string]any{"min": 0, "max": 255}
 
 	return newEntity
 }
@@ -61,14 +61,14 @@ func CreateNumericEntity(name string, data any) *devices.Entity {
 func CreateEntity(name string, propType string, data any) *devices.Entity {
 
 	newEntity := &devices.Entity{}
-	newEntity.Attributes = map[string]any{"max": 0.0, "min": 255.0}
+	newEntity.Attributes = map[string]any{"min": 0.0, "max": 255.0}
 	newEntity.Presets = make(map[string]any)
 	newEntity.Data = data
 	newEntity.Name = name
 	newEntity.Type = propType
 	newEntity.Unit = "unit_test"
 	newEntity.Description = fmt.Sprintf("description for expose: %s ", name)
-	newEntity.Properties = map[string]any{"max": 0.0, "min": 255.0}
+	newEntity.Properties = map[string]any{"min": 0.0, "max": 255.0}
 
 	return newEntity
 }
