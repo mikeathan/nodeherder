@@ -44,6 +44,20 @@ func CreatePresetsEntity(name string, presets map[string]any) *devices.Entity {
 	return newEntity
 }
 
+func CreateNumericEntity(name string, data any) *devices.Entity {
+
+	newEntity := &devices.Entity{}
+	newEntity.Attributes = map[string]any{"max": 0.0, "min": 255.0}
+	newEntity.Data = data
+	newEntity.Name = name
+	newEntity.Type = "numeric"
+	newEntity.Unit = "unit_test"
+	newEntity.Description = fmt.Sprintf("description for expose: %s ", name)
+	newEntity.Properties = map[string]any{"max": 0, "min": 255}
+
+	return newEntity
+}
+
 func CreateEntity(name string, propType string, data any) *devices.Entity {
 
 	newEntity := &devices.Entity{}

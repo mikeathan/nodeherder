@@ -37,19 +37,21 @@ func TestProcessorTriggersAutomations(t *testing.T) {
 
 	// SETUP START
 	// setup automations
-	btn1PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_1_press", mqtt)
-	btn2PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_2_press", mqtt)
+	dialRotateSlowTrigger := utils_test.CreateDialTriggerStepActionBrightness("x02222222", "x01111111", "dial_rotate_left_slow", mqtt)
+	//btn1PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_1_press", mqtt)
+	//btn2PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_2_press", mqtt)
 
 	deviceAutomation := automations.NewDevice("human sensor")
 	deviceAutomation.Id = "x01111111"
 	deviceAutomation.FriendlyName = "dial button"
 	deviceAutomation.Enabled = true
-	deviceAutomation.Triggers = []*automations.Trigger{btn1PressTrigger, btn2PressTrigger}
+	deviceAutomation.Triggers = []*automations.Trigger{dialRotateSlowTrigger}
 	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
 
 	// setup device
 	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
-	dialDevice := utils_test.CreateDeviceWithExposes("x01111111", "Dial button", []*devices.Entity{device1Expose1})
+	device1Expose2 := utils_test.CreateNumericEntity("action_time", 0)
+	dialDevice := utils_test.CreateDeviceWithExposes("x01111111", "Dial button", []*devices.Entity{device1Expose1, device1Expose2})
 
 	device2Expose1 := utils_test.CreateEntity("brightness", "numeric", nil)
 	device2Expose2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
@@ -81,15 +83,11 @@ func TestProcessorTriggersAutomations(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	for i := 0; i < 3; i++ {
-		payload = map[string]any{"action": "button_1_press"}
+		atValue := 45 + (i)
+		payload = map[string]any{"action": "dial_rotate_left_slow", "action_direction": "left", "action_time": atValue, "action_type": "step"}
 		mqtt.Publish(dialDevice.FriendlyName, payload)
+
 		time.Sleep(100 * time.Millisecond)
-
-		//reset state
-		payload = map[string]any{"action": "button_1_press_release"}
-		mqtt.Publish(dialDevice.FriendlyName, payload)
-
-		time.Sleep(5000 * time.Millisecond)
 	}
 
 	fmt.Println("finished....")

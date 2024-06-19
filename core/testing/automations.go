@@ -33,7 +33,7 @@ func CreateDialTriggerActionsBrightness(actionId string, dialActionName string, 
 	return trigger
 }
 
-func CreateDialTriggerStepActionBrightnessTODO(lightDeviceId string,dialDeviceId string, dialActionName string, mqtt mqtt.MqttClient) *automations.Trigger {
+func CreateDialTriggerStepActionBrightness(lightDeviceId string, dialDeviceId string, dialActionName string, mqtt mqtt.MqttClient) *automations.Trigger {
 	condition := &automations.Condition{}
 	condition.EqualityOperator = "="
 	condition.Value = dialActionName
@@ -55,7 +55,7 @@ func CreateDialTriggerStepActionBrightnessTODO(lightDeviceId string,dialDeviceId
 	action.Property = "brightness"
 	action.Type = "StepAction"
 	action.Data = 0.5
-	action.Steps = []automations.Step{*step}
+	action.Steps = []automations.Step{*step, *step2}
 	action.Client = mqtt
 
 	trigger := &automations.Trigger{}
