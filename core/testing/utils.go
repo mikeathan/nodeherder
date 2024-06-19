@@ -37,6 +37,31 @@ func CreateStore() store.AppStore {
 	return store
 }
 
+
+func CreateStoreTemp() (store.AppStore, func(),error) {
+	repo := repository.NewMemoryDeviceRepo()
+	metricsRepo := mocks.NopMetricsRepo{}
+
+cleanup:=	func ()  {
+	os.Remove(tempfile)
+	metricsRepo.Close()
+	}
+	TODO
+	return callback to delete temp files and close repos
+
+
+	tempfile := tempfile()
+
+	settingsRepo, err := repository.NewFileSettingsRepoFromFile(tempfile)
+	if err != nil {
+		return nil,nil, err
+	}
+
+	defer repo.Close()
+	store, _ := store.NewAppStore(repo, &metricsRepo, &settingsRepo)
+	return store, cleanup, nil
+}
+
 func CreateStoreFromDeviceRepo(repo devices.Repository) store.AppStore {
 	metricsRepo := mocks.NopMetricsRepo{}
 	settingsRepo := mocks.NopSettingsrepo{}
