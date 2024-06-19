@@ -23,6 +23,16 @@ func CreateStore() store.AppStore {
 	repo := repository.NewMemoryDeviceRepo()
 	metricsRepo := mocks.NopMetricsRepo{}
 	settingsRepo := mocks.NopSettingsrepo{}
+
+	// tempfile := tempfile()
+	// defer os.Remove(tempfile)
+
+	// repo, err := repository.NewFileSettingsRepoFromFile(tempfile)
+	// if err != nil {
+	// 	t.Error("failed to initialise device file repo", err.Error())
+	// }
+
+	defer repo.Close()
 	store, _ := store.NewAppStore(repo, &metricsRepo, &settingsRepo)
 	return store
 }
