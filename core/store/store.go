@@ -119,6 +119,9 @@ func (s *appStore) LoadAppConfig() (*settings.AppConfig, error) {
 }
 
 func (s *appStore) SaveDeviceConfig(deviceconfig *settings.DeviceConfig) error {
+
+	s.deviceConfigs[deviceconfig.Id] = deviceconfig
+
 	return s.config.SaveDeviceConfig(deviceconfig)
 }
 

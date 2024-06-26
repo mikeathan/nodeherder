@@ -123,16 +123,16 @@ func TestProcessorTriggersAutomationsTESTforMetrics(t *testing.T) {
 
 	// SETUP START
 	// setup automations
-	dialRotateSlowTrigger := utils_test.CreateDialTriggerStepActionBrightness("x02222222", "x01111111", "dial_rotate_left_slow", mqtt)
-	btn1PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_1_press", mqtt)
-	btn2PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_2_press", mqtt)
+	// dialRotateSlowTrigger := utils_test.CreateDialTriggerStepActionBrightness("x02222222", "x01111111", "dial_rotate_left_slow", mqtt)
+	// btn1PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_1_press", mqtt)
+	// btn2PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_2_press", mqtt)
 
-	deviceAutomation := automations.NewDevice("human sensor")
-	deviceAutomation.Id = "x01111111"
-	deviceAutomation.FriendlyName = "dial button"
-	deviceAutomation.Enabled = true
-	deviceAutomation.Triggers = []*automations.Trigger{dialRotateSlowTrigger, btn1PressTrigger, btn2PressTrigger}
-	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+	// deviceAutomation := automations.NewDevice("human sensor")
+	// deviceAutomation.Id = "x01111111"
+	// deviceAutomation.FriendlyName = "dial button"
+	// deviceAutomation.Enabled = true
+	// deviceAutomation.Triggers = []*automations.Trigger{dialRotateSlowTrigger, btn1PressTrigger, btn2PressTrigger}
+	// automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
 
 	// setup device
 	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
@@ -148,19 +148,21 @@ func TestProcessorTriggersAutomationsTESTforMetrics(t *testing.T) {
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices) // NEED TO FIX, currently i make all devices features which is not right!!!!
 
 	// register hub
-	store := utils_test.CreateStore()
+	store, cleanup, err := utils_test.CreateFileStore()
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
 
 	// enable metrics for dial device
-	cfg := settings.NewDeviceConfig("x02222222")
+	cfg := settings.NewDeviceConfig("x01111111")
 	cfg.MetricsEnabled = true
+
+	need to change the metrics limiter timout 
 	store.SaveDeviceConfig(cfg)
 
-
-	currently NopSettingsrepo is mocked so need to use real one
-
-	
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
-	hub.WithAutomationStorage(automationStorage) // overide storage
+	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	//hub.WithAutomationStorage(automationStorage) // overide storage
 	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
@@ -187,11 +189,21 @@ func TestProcessorTriggersAutomationsTESTforMetrics(t *testing.T) {
 
 		time.Sleep(50 * time.Millisecond)
 
-
 		wg.Done()
 	}
 
 	wg.Wait()
+
+	now := time.Now()
+	from := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC)
+	to := time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)
+	results,err:=store.ViewMetrics(dialDevice, from, to)
+
+	if err != nil {
+		t.Fatalf("ViewMetrics failed. err %v ", err)
+	}
+
+	fmt.Printf(results.DeviceId)
 }
 
 func TestProcessorAddsNewDevice(t *testing.T) {

@@ -24,41 +24,33 @@ func CreateStore() store.AppStore {
 	metricsRepo := mocks.NopMetricsRepo{}
 	settingsRepo := mocks.NopSettingsrepo{}
 
-	// tempfile := tempfile()
-	// defer os.Remove(tempfile)
-
-	// repo, err := repository.NewFileSettingsRepoFromFile(tempfile)
-	// if err != nil {
-	// 	t.Error("failed to initialise device file repo", err.Error())
-	// }
-
 	defer repo.Close()
 	store, _ := store.NewAppStore(repo, &metricsRepo, &settingsRepo)
 	return store
 }
 
+func CreateFileStore() (store.AppStore, func(), error) {
 
-func CreateStoreTemp() (store.AppStore, func(),error) {
+	settingsTempFile := tempfile()
+	metricsTempFile := tempfile()
 	repo := repository.NewMemoryDeviceRepo()
-	metricsRepo := mocks.NopMetricsRepo{}
 
-cleanup:=	func ()  {
-	os.Remove(tempfile)
-	metricsRepo.Close()
+	cleanup := func() {
+		os.Remove(settingsTempFile)
+		os.Remove(metricsTempFile)
 	}
-	TODO
-	return callback to delete temp files and close repos
 
-
-	tempfile := tempfile()
-
-	settingsRepo, err := repository.NewFileSettingsRepoFromFile(tempfile)
+	metricsRepo, err := repository.NewMetricsRepoFromFile(metricsTempFile)
 	if err != nil {
-		return nil,nil, err
+		return nil, nil, err
+	}
+	settingsRepo, err := repository.NewFileSettingsRepoFromFile(settingsTempFile)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	defer repo.Close()
-	store, _ := store.NewAppStore(repo, &metricsRepo, &settingsRepo)
+	store, _ := store.NewAppStore(repo, metricsRepo, settingsRepo)
 	return store, cleanup, nil
 }
 
@@ -382,4 +374,18 @@ func floatrandom(value_1, value_2 float32) float32 {
 
 	ratio := math.Pow(10, float64(1))
 	return float32(math.Round(float64(randomValue)*ratio) / ratio)
+}
+
+func tempfile() string {
+	f, err := ioutil.TempFile("", "bolt-")
+	if err != nil {
+		panic(err)
+	}
+	if err := f.Close(); err != nil {
+		panic(err)
+	}
+	if err := os.Remove(f.Name()); err != nil {
+		panic(err)
+	}
+	return f.Name()
 }
