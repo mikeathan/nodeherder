@@ -61,6 +61,7 @@ type AppStore interface {
 	FindBridgeInfoByFriendlyName(friendlyName string) (*devices.BridgeInfo, error)
 	FindBridgeInfoById(id string) (*devices.BridgeInfo, error)
 
+	StoreMetrics(friendlyName string, data *devices.UpdatePackage) error
 	ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error)
 	ResolveFriendlyName(friendlyName string) string
 }
@@ -103,7 +104,7 @@ func (s *appStore) UpdateDevice(friendlyName string, device *devices.Device) err
 		return err
 	}
 
-	err = s.storeMetrics(friendlyName, device)
+	err = s.StoreMetrics(friendlyName, device)
 	if err != nil {
 		utils.LogErrorf("storing metrics failed %v", err.Error())
 	}
@@ -125,7 +126,7 @@ func (s *appStore) SaveDeviceConfig(deviceconfig *settings.DeviceConfig) error {
 	return s.config.SaveDeviceConfig(deviceconfig)
 }
 
-func (s *appStore) storeMetrics(friendlyName string, device *devices.Device) error {
+func (s *appStore) StoreMetrics(friendlyName string, data *devices.UpdatePackage) error {
 	id := s.ResolveFriendlyName(friendlyName)
 
 	if config, ok := s.deviceConfigs[id]; ok &&

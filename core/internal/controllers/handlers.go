@@ -235,7 +235,7 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 		// TODO: process in a new worker
 		//c.hub.TriggerAutomation(device)
 
-		c.hub.deviceUpdated(device)
+		c.hub.deviceUpdated(device, updatedData)
 
 	}
 

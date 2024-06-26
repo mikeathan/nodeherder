@@ -89,18 +89,18 @@ func NewDevice(id string) *Device {
 	}
 }
 
-type updatePackage struct {
+type UpdatePackage struct {
 	Id         string         `json:"id"`
 	LastSeen   string         `json:"last_seen"`
 	Data       map[string]any `json:"data"`
 	Properties map[string]any `json:"properties"`
 }
 
-func newUpdatePackage(id string) *updatePackage {
-	return &updatePackage{Id: id, LastSeen: getCurrentTime(), Data: make(map[string]any), Properties: make(map[string]any)}
+func newUpdatePackage(id string) *UpdatePackage {
+	return &UpdatePackage{Id: id, LastSeen: getCurrentTime(), Data: make(map[string]any), Properties: make(map[string]any)}
 }
 
-func (u *updatePackage) HasData() bool {
+func (u *UpdatePackage) HasData() bool {
 	return len(u.Data) != 0
 }
 
@@ -303,7 +303,7 @@ func CreateNewDevice(id string, friendlyName string, connType string, bridgeInfo
 	return newDevice, nil
 }
 
-func (device *Device) Update(payload map[string]interface{}) *updatePackage {
+func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
 
 	var updatePackage = newUpdatePackage(device.Id)
 	for name, currValue := range device.Exposes {

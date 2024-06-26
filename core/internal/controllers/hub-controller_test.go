@@ -163,10 +163,10 @@ func TestProcessorTriggersAutomationsTESTforMetrics(t *testing.T) {
 
 	time.Sleep(50 * time.Millisecond)
 
-	 PROBLEM is that we register device exposes on first device registration
-	and that also registers all exposes, even when they dont have value
+	//  PROBLEM is that we register device exposes on first device registration
+	// and that also registers all exposes, even when they dont have value
 
-	 second is that in device update, we register again all exposes even ones that haven changed 
+	//  second is that in device update, we register again all exposes even ones that haven changed
 	// numTriggers := 5
 
 	// wg.Add(numTriggers)

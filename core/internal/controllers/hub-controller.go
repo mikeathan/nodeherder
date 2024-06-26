@@ -265,7 +265,7 @@ func (m *HubController) deviceAdded(device *devices.Device) {
 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
 }
 
-func (m *HubController) deviceUpdated(device *devices.Device) {
+func (m *HubController) deviceUpdated(device *devices.Device, data *devices.UpdatePackage) {
 
 	//`m.automationEngine.HandleDevice(device)
 	////m.registrar.Register(device.FriendlyName, device)
