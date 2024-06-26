@@ -94,19 +94,24 @@ func (s *MetricsRepo) Store(device *devices.Device) error {
 
 			key := createKeyFromDevice(expose.Name, device)
 			err = bucket.Put(key, buf)
+
 			if err != nil {
+				fmt.Printf("DEBUG -  metrics: Expose=%v, Data=%v, Key=%v ERROR=%v\n", expose.Name, string(buf), string(key), err.Error())
 				return err
 			}
-		}
 
-		buf, err := json.Marshal(device)
-		if err != nil {
-			return err
+			fmt.Printf("DEBUG -  metrics: Expose=%v, Data=%v, Key=%v \n", expose.Name, string(buf), string(key))
 		}
+		return nil
+		// // ??????
+		// buf, err := json.Marshal(device)
+		// if err != nil {
+		// 	return err
+		// }
 
-		key := createKeyFromDevice(device.Id, device)
-		fmt.Printf("DEBUG store metrics for: %v with key: %v \n", device.Id, string(key))
-		return bucket.Put(key, buf)
+		// key := createKeyFromDevice(device.Id, device)
+		// //fmt.Printf("DEBUG store device metrics for: %v with key: %v \n", device.Id, string(key))
+		// return bucket.Put(key, buf)
 	})
 
 	return nil
@@ -139,9 +144,13 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 	result := metrics.NewDeviceMetricsResult(device.Id)
 
 	err := s.db.View(func(tx *bolt.Tx) error {
-		cursor := tx.Bucket([]byte(metricsBucketName)).Bucket([]byte(device.Id)).Cursor()
-		if cursor == nil {
+		bucket := tx.Bucket([]byte(metricsBucketName)).Bucket([]byte(device.Id))
+		if bucket == nil {
 			return bolt.ErrBucketNotFound
+		}
+		cursor := bucket.Cursor()
+		if cursor == nil {
+			return fmt.Errorf("bucket cursor not found")
 		}
 
 		// sort exposekeys
@@ -205,7 +214,7 @@ func kindFromExposeType(expose *devices.Entity) reflect.Kind {
 }
 
 func readTimestampFromKey(id string, data []byte) (time.Time, error) {
-	timestamp, err := time.Parse(time.RFC3339, string(data[len(id):]))
+	timestamp, err := time.Parse(time.RFC3339Nano, string(data[len(id):]))
 	if err != nil {
 		return time.Now(), err
 
@@ -217,18 +226,19 @@ func createKeyWithTimestamp(id string, timestamp time.Time) []byte {
 	buffer := bytes.NewBuffer(nil)
 	binary.Write(buffer, binary.BigEndian, []byte(id))
 
-	timestampStr := timestamp.Format(time.RFC3339)
+	timestampStr := timestamp.Format(time.RFC3339Nano)
 	binary.Write(buffer, binary.BigEndian, []byte(timestampStr))
 
 	return buffer.Bytes()
 }
 
 func createKeyFromDevice(id string, device *devices.Device) []byte {
-	lastSeenStr, _ := device.Properties["last_seen"].(string)
-	lastSeen, err := time.Parse(time.RFC3339, lastSeenStr)
-	if err != nil {
-		lastSeen = time.Now()
-	}
+	// lastSeenStr, _ := device.Properties["last_seen"].(string)
+
+	// lastSeen, err := time.Parse(time.RFC3339Nano, lastSeenStr)
+	// if err != nil {
+	lastSeen := time.Now()
+	//}
 
 	return createKeyWithTimestamp(id, lastSeen)
 }

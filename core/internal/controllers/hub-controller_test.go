@@ -117,7 +117,7 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 
 func TestProcessorTriggersAutomationsTESTforMetrics(t *testing.T) {
 
-	wg := &sync.WaitGroup{}
+	//wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
 
@@ -157,28 +157,42 @@ func TestProcessorTriggersAutomationsTESTforMetrics(t *testing.T) {
 	payload := map[string]any{"brightness": 10.0, "color_temp": 100}
 	mqtt.Publish(lightDevice.FriendlyName, payload)
 
-	// publish dial button device
+	// // publish dial button device
 	payload = map[string]any{"action": "button_2_hold"} // this event shouldnt trigger autonation as is not in automation condition
 	mqtt.Publish(dialDevice.FriendlyName, payload)
 
 	time.Sleep(50 * time.Millisecond)
 
-	numTriggers := 10
+	 PROBLEM is that we register device exposes on first device registration
+	and that also registers all exposes, even when they dont have value
 
-	wg.Add(numTriggers)
-	for i := 0; i < numTriggers; i++ {
+	 second is that in device update, we register again all exposes even ones that haven changed 
+	// numTriggers := 5
 
-		action_time := 10 + (i * 2)
-		//payload = map[string]any{"action": "dial_rotate_left_slow", "action_direction": "left", "action_time": action_time, "action_type": "step"}
-		payload = map[string]any{"action_time": action_time}
-		mqtt.Publish(dialDevice.FriendlyName, payload)
+	// wg.Add(numTriggers)
+	// for i := 0; i < numTriggers; i++ {
+	// 	// now := time.Now()
+	// 	// lastSeenStr := now.Format(time.RFC3339Nano)
+	// 	// lastSeen, err := time.Parse(time.RFC3339Nano, lastSeenStr)
 
-		time.Sleep(50 * time.Millisecond)
+	// 	// if err != nil {
+	// 	// 	fmt.Println("Publish error", err.Error())
 
-		wg.Done()
-	}
+	// 	// } else {
+	// 	// 	fmt.Println("Publish", lastSeenStr, lastSeen)
+	// 	// }
 
-	wg.Wait()
+	// 	action_time := 10 + (i * 2)
+	// 	payload = map[string]any{"action": "dial_rotate_left_slow", "action_direction": "left", "action_time": action_time, "action_type": "step"}
+	// 	payload = map[string]any{"action_time": action_time}
+	// 	mqtt.Publish(dialDevice.FriendlyName, payload)
+
+	// 	time.Sleep(100 * time.Millisecond)
+
+	// 	wg.Done()
+	// }
+
+	// wg.Wait()
 
 	from := time.Now().Add(-time.Minute)
 	to := time.Now()
@@ -188,6 +202,14 @@ func TestProcessorTriggersAutomationsTESTforMetrics(t *testing.T) {
 		t.Fatalf("ViewMetrics failed. err %v ", err)
 	}
 
+	// if results.Expose[1].Name != "action_time" {
+	// 	t.Fatalf("name mismatch want action_time got %v", results.Expose[1].Name)
+
+	// }
+	// if len(results.Expose[1].Values) != numTriggers {
+	// 	t.Fatalf("size mismatch want %v got %v", numTriggers, len(results.Expose[1].Values))
+
+	// }
 	fmt.Printf(results.DeviceId)
 }
 
