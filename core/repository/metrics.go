@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
 	"node-herder/utils"
@@ -104,6 +105,7 @@ func (s *MetricsRepo) Store(device *devices.Device) error {
 		}
 
 		key := createKeyFromDevice(device.Id, device)
+		fmt.Printf("DEBUG store metrics for: %v with key: %v \n", device.Id, string(key))
 		return bucket.Put(key, buf)
 	})
 
