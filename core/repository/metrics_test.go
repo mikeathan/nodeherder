@@ -58,9 +58,9 @@ func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
 		for tIdx, timestamp := range test.timestamps {
 
 			dev := createMockDevice(test.id, deviceName, 2, "numeric", *timestamp, test.values[tIdx])
+			payload := utils_test.Payload(dev)
 
-			err := repo.Store(dev)
-
+			err = repo.Store(dev.Id, payload)
 			//fmt.Printf("Add device: %v, data: %v, timestamp: %v \n", deviceId, values[tIdx], dev.Properties["last_seen"])
 			if err != nil {
 				t.Error("failed to store metrics ", err.Error())
@@ -107,7 +107,10 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 
 			dev := createMockDevice(deviceId, deviceName, 2, "numeric", *timestamp, values[tIdx])
 
-			err = repo.Store(dev)
+			payload := utils_test.Payload(dev)
+
+			err = repo.Store(dev.Id, payload)
+
 			//fmt.Printf("Add device: %v, data: %v, timestamp: %v \n", deviceId, values[tIdx], dev.Properties["last_seen"])
 			if err != nil {
 				t.Error("failed to store metrics ", err.Error())
@@ -241,7 +244,9 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 			}
 
 			dev := createMockDevice(deviceId, deviceName, 2, dataType, *timestamp, value)
-			err = repo.Store(dev)
+			payload := utils_test.Payload(dev)
+
+			err = repo.Store(dev.Id, payload)
 			if err != nil {
 				t.Error("failed to store metrics ", err.Error())
 			}
@@ -294,7 +299,9 @@ func TestExposeTimeRangeMetrics(t *testing.T) {
 		for tIdx, timestamp := range timestamps {
 
 			dev := createMockDevice(deviceId, deviceName, 5, "numeric", *timestamp, values[tIdx])
-			err = repo.Store(dev)
+			payload := utils_test.Payload(dev)
+
+			err = repo.Store(dev.Id, payload)
 			if err != nil {
 				t.Error("failed to store metrics ", err.Error())
 			}
@@ -347,7 +354,9 @@ func TestMultipleExposeTimeRangeMetrics(t *testing.T) {
 		for tIdx, timestamp := range timestamps {
 
 			dev := createMockDevice(deviceId, deviceName, numOfExposes, "numeric", *timestamp, values[tIdx])
-			err = repo.Store(dev)
+			payload := utils_test.Payload(dev)
+
+			err = repo.Store(dev.Id, payload)
 			if err != nil {
 				t.Error("failed to store metrics ", err.Error())
 			}

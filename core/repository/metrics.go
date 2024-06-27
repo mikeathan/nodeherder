@@ -71,7 +71,7 @@ func (s *MetricsRepo) Close() error {
 	return nil
 }
 
-func (s *MetricsRepo) Store(device *devices.Device) error {
+func (s *MetricsRepo) Store(id string, data map[string]any) error {
 
 	defer s.mutex.Unlock()
 	s.mutex.Lock()
@@ -81,26 +81,26 @@ func (s *MetricsRepo) Store(device *devices.Device) error {
 			return err
 		}
 
-		bucket, err = bucket.CreateBucketIfNotExists([]byte(device.Id))
+		bucket, err = bucket.CreateBucketIfNotExists([]byte(id))
 		if err != nil {
 			return err
 		}
 
-		for _, expose := range device.Exposes {
-			buf, err := json.Marshal(expose.Data)
+		for name, value := range data {
+			buf, err := json.Marshal(value)
 			if err != nil {
 				return err
 			}
 
-			key := createKeyFromDevice(expose.Name, device)
+			key := createKeyWithTimestamp(name, time.Now())
 			err = bucket.Put(key, buf)
 
 			if err != nil {
-				fmt.Printf("DEBUG -  metrics: Expose=%v, Data=%v, Key=%v ERROR=%v\n", expose.Name, string(buf), string(key), err.Error())
+				fmt.Printf("DEBUG -  metrics: Expose=%v, Data=%v, Key=%v ERROR=%v\n", name, string(buf), string(key), err.Error())
 				return err
 			}
 
-			fmt.Printf("DEBUG -  metrics: Expose=%v, Data=%v, Key=%v \n", expose.Name, string(buf), string(key))
+			fmt.Printf("DEBUG -  metrics: Expose=%v, Data=%v, Key=%v \n", name, string(buf), string(key))
 		}
 		return nil
 		// // ??????
@@ -230,17 +230,6 @@ func createKeyWithTimestamp(id string, timestamp time.Time) []byte {
 	binary.Write(buffer, binary.BigEndian, []byte(timestampStr))
 
 	return buffer.Bytes()
-}
-
-func createKeyFromDevice(id string, device *devices.Device) []byte {
-	// lastSeenStr, _ := device.Properties["last_seen"].(string)
-
-	// lastSeen, err := time.Parse(time.RFC3339Nano, lastSeenStr)
-	// if err != nil {
-	lastSeen := time.Now()
-	//}
-
-	return createKeyWithTimestamp(id, lastSeen)
 }
 
 // // Paginate entries

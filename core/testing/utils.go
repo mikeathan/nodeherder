@@ -282,6 +282,14 @@ func CreateBridgeInfoList(deviceList []*devices.Device) []*devices.BridgeInfo {
 	return bridgeInfoList
 }
 
+func Payload(device *devices.Device) map[string]any {
+	payload := map[string]any{}
+	for k, v := range device.Exposes {
+		payload[k] = v.Data
+	}
+	return payload
+}
+
 func Tempfile() string {
 	f, err := ioutil.TempFile("", "bolt-")
 	if err != nil {

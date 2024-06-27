@@ -6,7 +6,7 @@ import (
 )
 
 type Repository interface {
-	Store(device *devices.Device) error
+	Store(id string, data map[string]any) error
 	ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*DeviceMetricsResult, error)
 	ViewExposeTimeRange(device *devices.Device, exposeName string, from time.Time, to time.Time) (*DeviceMetricsResult, error)
 	Close() error

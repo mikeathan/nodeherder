@@ -321,22 +321,22 @@ func (w *NopDeviceRegistrar) RetrieveEntityData(id string, property string) (any
 
 // Mock metrics repo
 type NopMetricsRepo struct {
-	storeHandler func(device *devices.Device)
+	storeHandler func(id string, data map[string]any)
 }
 
-func (s *NopMetricsRepo) WithStoreHandler(storeHandler func(device *devices.Device)) {
+func (s *NopMetricsRepo) WithStoreHandler(storeHandler func(id string, data map[string]any)) {
 	s.storeHandler = storeHandler
 }
 
-func (s *NopMetricsRepo) invokeStoreHandler() func(device *devices.Device) {
-	return func(device *devices.Device) {
-		s.storeHandler(device)
+func (s *NopMetricsRepo) invokeStoreHandler() func(id string, data map[string]any) {
+	return func(id string, data map[string]any) {
+		s.storeHandler(id, data)
 	}
 }
 
-func (s *NopMetricsRepo) Store(device *devices.Device) error {
+func (s *NopMetricsRepo) Store(id string, data map[string]any) error {
 	fmt.Println("Mocked Store")
-	s.invokeStoreHandler()(device)
+	s.invokeStoreHandler()(id, data)
 	return nil
 }
 

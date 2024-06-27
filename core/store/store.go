@@ -60,7 +60,7 @@ type AppStore interface {
 	FindBridgeInfoByFriendlyName(friendlyName string) (*devices.BridgeInfo, error)
 	FindBridgeInfoById(id string) (*devices.BridgeInfo, error)
 
-	StoreMetrics(friendlyName string, data map[string]interface{}) error
+	StoreMetrics(friendlyName string, data map[string]any) error
 	ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error)
 	ResolveFriendlyName(friendlyName string) string
 }
@@ -125,14 +125,14 @@ func (s *appStore) SaveDeviceConfig(deviceconfig *settings.DeviceConfig) error {
 	return s.config.SaveDeviceConfig(deviceconfig)
 }
 
-func (s *appStore) StoreMetrics(friendlyName string, data map[string]interface{}) error {
+func (s *appStore) StoreMetrics(friendlyName string, data map[string]any) error {
 	id := s.ResolveFriendlyName(friendlyName)
 
 	if config, ok := s.deviceConfigs[id]; ok &&
 		config.MetricsEnabled &&
 		s.rateLimiter.AllowWrite(id, config.RateLimitDuration()) {
 
-		err := s.metrics.Store(device)
+		err := s.metrics.Store(id, data)
 		if err != nil {
 			return err
 		}
