@@ -163,6 +163,9 @@ func TestProcessorTriggersAutomationsTESTforMetrics(t *testing.T) {
 
 	time.Sleep(50 * time.Millisecond)
 
+	//TODO: !!!!!!!!!!!!!!!!!!!!!!!!!1
+	// TODO: check if we hit metrics store with bridge infor registration. we dont want to
+
 	//  PROBLEM is that we register device exposes on first device registration
 	// and that also registers all exposes, even when they dont have value
 

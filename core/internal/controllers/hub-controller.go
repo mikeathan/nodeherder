@@ -262,7 +262,7 @@ func (m *HubController) deviceAdded(device *devices.Device, data map[string]inte
 		if err != nil {
 			return err
 		}
-		// check if we hit that with bridge infor registration. we dont want to
+		// TODO: check if we hit that with bridge infor registration. we dont want to
 		return m.registrar.StoreMetrics(device.FriendlyName, data)
 	}
 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
