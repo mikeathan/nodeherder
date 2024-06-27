@@ -15,6 +15,7 @@ type DeviceRegistrar interface {
 	CreateNewDevice(friendlyName string, connType string, data map[string]interface{}) (*devices.Device, error)
 	FindBridgeInfo(id string) (*devices.BridgeInfo, error)
 	RegisterBridge(bridgeInfoList []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int)
+	StoreMetrics(friendlyName string, data map[string]interface{}) error
 }
 
 type HubRegisterService struct {
@@ -29,7 +30,11 @@ func NewHubRegisterService(store store.AppStore, hub ws.EventHub, deviceAvailabi
 }
 
 func (s *HubRegisterService) Register(friendlyName string, device *devices.Device) error {
-	return s.store.UpdateDevice(friendlyName, device)
+	return s.store.StoreDevice(friendlyName, device)
+}
+
+func (s *HubRegisterService) StoreMetrics(friendlyName string, data map[string]interface{}) error {
+	return s.store.StoreMetrics(friendlyName, data)
 }
 
 func (s *HubRegisterService) RetrieveEntityData(id string, property string) (any, error) {

@@ -255,26 +255,31 @@ func (m *HubController) TriggerAutomation(device *devices.Device) {
 	m.automationEngine.HandleDevice(device)
 }
 
-func (m *HubController) deviceAdded(device *devices.Device) {
-	//m.registrar.Register(device.FriendlyName, device)
-	// TESTING
+func (m *HubController) deviceAdded(device *devices.Device, data map[string]interface{}) {
 	d := device
 	action := func() error {
-		return m.registrar.Register(device.FriendlyName, device)
+		err := m.registrar.Register(device.FriendlyName, device)
+		if err != nil {
+			return err
+		}
+		// check if we hit that with bridge infor registration. we dont want to
+		return m.registrar.StoreMetrics(device.FriendlyName, data)
 	}
 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
 }
 
-func (m *HubController) deviceUpdated(device *devices.Device, data *devices.UpdatePackage) {
+func (m *HubController) deviceUpdated(device *devices.Device, data map[string]interface{}) {
 
-	//`m.automationEngine.HandleDevice(device)
-	////m.registrar.Register(device.FriendlyName, device)
-	// TESTING
 	d := device
 	action := func() error {
 		m.automationEngine.HandleDevice(device)
-		return m.registrar.Register(device.FriendlyName, device)
+		err := m.registrar.Register(device.FriendlyName, device)
+		if err != nil {
+			return err
+		}
+		return m.registrar.StoreMetrics(device.FriendlyName, data)
 	}
+
 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
 }
 

@@ -431,8 +431,9 @@ func (s *NopAppStore) StoreDevice(friendlyName string, device *devices.Device) e
 	return nil
 }
 
-func (s *NopAppStore) UpdateDevice(friendlyName string, device *devices.Device) error {
-	fmt.Println("Mocked store UpdateDevice")
+func (s *NopAppStore) StoreMetrics(friendlyName string, data map[string]interface{}) error {
+	fmt.Println("Mocked store StoreMetrics")
+
 	return nil
 }
 

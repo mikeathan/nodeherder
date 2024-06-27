@@ -5,7 +5,6 @@ import (
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	"node-herder/repository"
-	"node-herder/utils"
 	"sync"
 	"time"
 )
@@ -48,7 +47,7 @@ func (rl *rateLimiter) AllowWrite(id string, rateLimit time.Duration) bool {
 
 type AppStore interface {
 	StoreDevice(friendlyName string, device *devices.Device) error
-	UpdateDevice(friendlyName string, device *devices.Device) error
+	//UpdateDevice(friendlyName string, device *devices.Device) error
 	FindDeviceByFriendlyName(friendlyName string) (*devices.Device, error)
 	FindDeviceById(id string) (*devices.Device, error)
 	FindDeviceByIds(ids []string) ([]*devices.Device, error)
@@ -61,7 +60,7 @@ type AppStore interface {
 	FindBridgeInfoByFriendlyName(friendlyName string) (*devices.BridgeInfo, error)
 	FindBridgeInfoById(id string) (*devices.BridgeInfo, error)
 
-	StoreMetrics(friendlyName string, data *devices.UpdatePackage) error
+	StoreMetrics(friendlyName string, data map[string]interface{}) error
 	ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error)
 	ResolveFriendlyName(friendlyName string) string
 }
@@ -97,19 +96,19 @@ func NewAppStore(devices devices.Repository, metrics metrics.Repository, config 
 	}, nil
 }
 
-func (s *appStore) UpdateDevice(friendlyName string, device *devices.Device) error {
+// func (s *appStore) UpdateDevice(friendlyName string, device *devices.Device) error {
 
-	err := s.StoreDevice(friendlyName, device)
-	if err != nil {
-		return err
-	}
+// 	err := s.StoreDevice(friendlyName, device)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	err = s.StoreMetrics(friendlyName, device)
-	if err != nil {
-		utils.LogErrorf("storing metrics failed %v", err.Error())
-	}
-	return nil
-}
+// 	// err = s.StoreMetrics(friendlyName, device)
+// 	// if err != nil {
+// 	// 	utils.LogErrorf("storing metrics failed %v", err.Error())
+// 	// }
+// 	return nil
+// }
 
 func (s *appStore) ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 	return s.metrics.ViewDeviceTimeRange(device, from, to)
@@ -126,7 +125,7 @@ func (s *appStore) SaveDeviceConfig(deviceconfig *settings.DeviceConfig) error {
 	return s.config.SaveDeviceConfig(deviceconfig)
 }
 
-func (s *appStore) StoreMetrics(friendlyName string, data *devices.UpdatePackage) error {
+func (s *appStore) StoreMetrics(friendlyName string, data map[string]interface{}) error {
 	id := s.ResolveFriendlyName(friendlyName)
 
 	if config, ok := s.deviceConfigs[id]; ok &&
