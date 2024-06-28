@@ -115,9 +115,9 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 	wg.Wait()
 }
 
-func TestProcessorTriggersAutomationsTESTforMetrics(t *testing.T) {
+func TestProcessorTriggersAutomationsStoresMetrics(t *testing.T) {
 
-	//wg := &sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
 
@@ -158,62 +158,69 @@ func TestProcessorTriggersAutomationsTESTforMetrics(t *testing.T) {
 	mqtt.Publish(lightDevice.FriendlyName, payload)
 
 	// // publish dial button device
-	payload = map[string]any{"action": "button_2_hold"} // this event shouldnt trigger autonation as is not in automation condition
+	payload = map[string]any{"action": "button_2_hold"}
 	mqtt.Publish(dialDevice.FriendlyName, payload)
 
 	time.Sleep(50 * time.Millisecond)
 
-	//TODO: !!!!!!!!!!!!!!!!!!!!!!!!!1
-	// TODO: check if we hit metrics store with bridge infor registration. we dont want to
+	numTriggers := 5
 
-	//  PROBLEM is that we register device exposes on first device registration
-	// and that also registers all exposes, even when they dont have value
+	wg.Add(numTriggers)
+	for i := 0; i < numTriggers; i++ {
 
-	//  second is that in device update, we register again all exposes even ones that haven changed
-	// numTriggers := 5
+		action_time := float64(10 + (i * 2))
+		payload = map[string]any{"action": "dial_rotate_left_slow", "action_direction": "left", "action_time": action_time, "action_type": "step"}
+		//payload = map[string]any{"action_time": action_time}
+		mqtt.Publish(dialDevice.FriendlyName, payload)
 
-	// wg.Add(numTriggers)
-	// for i := 0; i < numTriggers; i++ {
-	// 	// now := time.Now()
-	// 	// lastSeenStr := now.Format(time.RFC3339Nano)
-	// 	// lastSeen, err := time.Parse(time.RFC3339Nano, lastSeenStr)
+		time.Sleep(100 * time.Millisecond)
 
-	// 	// if err != nil {
-	// 	// 	fmt.Println("Publish error", err.Error())
+		wg.Done()
+	}
 
-	// 	// } else {
-	// 	// 	fmt.Println("Publish", lastSeenStr, lastSeen)
-	// 	// }
-
-	// 	action_time := 10 + (i * 2)
-	// 	payload = map[string]any{"action": "dial_rotate_left_slow", "action_direction": "left", "action_time": action_time, "action_type": "step"}
-	// 	payload = map[string]any{"action_time": action_time}
-	// 	mqtt.Publish(dialDevice.FriendlyName, payload)
-
-	// 	time.Sleep(100 * time.Millisecond)
-
-	// 	wg.Done()
-	// }
-
-	// wg.Wait()
+	wg.Wait()
 
 	from := time.Now().Add(-time.Minute)
 	to := time.Now()
-	results, err := store.ViewMetrics(dialDevice, from, to)
-
+	dialMetrics, err := store.ViewMetrics(dialDevice, from, to)
 	if err != nil {
 		t.Fatalf("ViewMetrics failed. err %v ", err)
 	}
 
-	// if results.Expose[1].Name != "action_time" {
-	// 	t.Fatalf("name mismatch want action_time got %v", results.Expose[1].Name)
+	// assert first expose results
+	if dialMetrics.Expose[0].Name != "action" {
+		t.Fatalf("name mismatch want action got %v", dialMetrics.Expose[0].Name)
+	}
+	if len(dialMetrics.Expose[0].Values) != 2 {
+		t.Fatalf("size mismatch want %v got %v", 2, len(dialMetrics.Expose[0].Values))
+	}
 
-	// }
-	// if len(results.Expose[1].Values) != numTriggers {
-	// 	t.Fatalf("size mismatch want %v got %v", numTriggers, len(results.Expose[1].Values))
+	if dialMetrics.Expose[0].Values[0] != "button_2_hold" {
+		t.Fatalf("size mismatch want %v got %v", "button_2_hold", dialMetrics.Expose[0].Values[0])
+	}
+	if dialMetrics.Expose[0].Values[1] != "dial_rotate_left_slow" {
+		t.Fatalf("size mismatch want %v got %v", "dial_rotate_left_slow", dialMetrics.Expose[0].Values[0])
+	}
 
-	// }
-	fmt.Printf(results.DeviceId)
+	// assert second expose results
+
+	if dialMetrics.Expose[1].Name != "action_time" {
+		t.Fatalf("name mismatch want action_time got %v", dialMetrics.Expose[1].Name)
+	}
+	if len(dialMetrics.Expose[1].Values) != numTriggers {
+		t.Fatalf("size mismatch want %v got %v", numTriggers, len(dialMetrics.Expose[1].Values))
+	}
+	for i, v := range dialMetrics.Expose[1].Values {
+		action_time := float32(10 + (i * 2))
+
+		if v != action_time {
+			t.Fatalf("value mismatch want %v got %v", action_time, v)
+		}
+	}
+	_, err = store.ViewMetrics(lightDevice, from, to)
+	if err == nil {
+		t.Fatalf("found light device metrics. It should not be stored")
+	}
 }
 
 func TestProcessorAddsNewDevice(t *testing.T) {
