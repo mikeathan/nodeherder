@@ -82,9 +82,16 @@ TODO:
 - add functionality to enable/disalbe a trigger
 - add log window in frontend
 
+BUGS:
+
+- Non bridge new device
+  when new nont Bridge device joins
+  because it hasnt Id, we build one Id on regisration. So we cant store it in metrics straighr away.
+  we would have to set it up afterwards
+  Also not sure if server is restarted that we have stored that information eg device id in the store, TO be tested
+-
+
 TODO
-
-deviceconfig.enabled - to enable/disable device
-
-error reporting - important
-metrics repo - keep for x days ?
+-Non bridge devices . eg HTTP need more investigation/testing
+-error reporting - important
+-metrics repo - keep for x days ?

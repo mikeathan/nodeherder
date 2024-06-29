@@ -115,8 +115,7 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 	wg.Wait()
 }
 
-func TestProcessorTriggersAutomationsStoresMetricsForNewDevice(t *testing.T) {
-	wg := &sync.WaitGroup{}
+func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
 
@@ -127,7 +126,7 @@ func TestProcessorTriggersAutomationsStoresMetricsForNewDevice(t *testing.T) {
 
 	device2Expose1 := utils_test.CreateEntity("brightness", "numeric", nil)
 	device2Expose2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
-	lightDevice := utils_test.CreateDeviceWithExposes("x02222222", "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
+	lightDevice := utils_test.CreateDeviceWithExposes("", "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
 
 	// setup bridgeInfo List
 	devices := []*devices.Device{dialDevice}
@@ -140,29 +139,74 @@ func TestProcessorTriggersAutomationsStoresMetricsForNewDevice(t *testing.T) {
 	}
 	defer cleanup()
 
-	// enable metrics for dial device
-	cfg := settings.NewDeviceConfig("x02222222")
-	cfg.MetricsEnabled = true
-	cfg.RateLimit = 10 // 10 ms
-	store.SaveDeviceConfig(cfg)
-
 	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
-
-	// update dial button device - shouldne be stored as metrics 
+	// note:
+	// update dial button device - This should NOT be stored as metrics
 	payload := map[string]any{"action": "button_2_hold"}
 	mqtt.Publish(dialDevice.FriendlyName, payload)
 
-
-	// publish new device
+	// note:
+	// publish new device that is not in Bridge - eg via HTTP . it will be registered here and generate new Id
 	payload = map[string]any{"brightness": 10.0, "color_temp": 100}
 	mqtt.Publish(lightDevice.FriendlyName, payload)
 
-	TEST New device is stored corectly
+	time.Sleep(500 * time.Millisecond)
+	d, err := store.FindDeviceByFriendlyName("Attic light")
+	if err != nil {
+		t.Fatalf("device not found. err %v ", err)
+	}
+
+	// enable metrics for light device. use its new Id
+	cfg := settings.NewDeviceConfig(d.Id)
+	cfg.MetricsEnabled = true
+	cfg.RateLimit = 10 // 10 ms
+	store.SaveDeviceConfig(cfg)
+
+	// note:
+	// publish new device again- This SHOULD be stored as metrics NOW
+	payload = map[string]any{"brightness": 20.0, "color_temp": 110.0}
+	mqtt.Publish(d.FriendlyName, payload)
+	time.Sleep(500 * time.Millisecond)
+
+	from := time.Now().Add(-time.Minute)
+	to := time.Now()
+	lightMetrics, err := store.ViewMetrics(d, from, to)
+	if err != nil {
+		t.Fatalf("ViewMetrics failed. err %v ", err)
+	}
+
+	// assert exposes
+	if len(lightMetrics.Expose) != 2 {
+		t.Fatalf("size mismatch want %v got %v", 2, len(lightMetrics.Expose))
+	}
+
+	if lightMetrics.Expose[0].Name != "brightness" {
+		t.Fatalf("name mismatch want brightness got %v", lightMetrics.Expose[0].Name)
+	}
+	if lightMetrics.Expose[1].Name != "color_temp" {
+		t.Fatalf("name mismatch want color_temp got %v", lightMetrics.Expose[1].Name)
+	}
+
+	// assert birghtness values
+	if len(lightMetrics.Expose[0].Values) != 1 {
+		t.Fatalf("size mismatch want %v got %v", 1, len(lightMetrics.Expose[0].Values))
+	}
+
+	if lightMetrics.Expose[0].Values[0] != 20.0 {
+		t.Fatalf("name mismatch want brightness value 20.0 got %v", lightMetrics.Expose[0].Values[0])
+	}
+	// assert color_temp values
+	if len(lightMetrics.Expose[1].Values) != 1 {
+		t.Fatalf("size mismatch want %v got %v", 1, len(lightMetrics.Expose[1].Values))
+	}
+	if lightMetrics.Expose[1].Values[0] != 110.0 {
+		t.Fatalf("name mismatch want color_temp value 110.0 got %v", lightMetrics.Expose[1].Values[0])
+	}
 
 }
 func TestProcessorTriggersAutomationsStoresMetricsForExistingDevice(t *testing.T) {
