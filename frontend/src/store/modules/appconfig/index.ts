@@ -36,7 +36,6 @@ export const AppConfigModule: Module<AppConfigModuleState, RootState> = {
     },
   },
 
-  //LoadAppconfig
   actions: {
     init({ state, commit }, appConfig: AppConfig) {
       commit("clear", state);
