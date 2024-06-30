@@ -6,6 +6,7 @@ import Tabs from '../controls/Tabs.vue'
 import Tab from '../controls/Tab.vue'
 import DeviceAbout from "./DeviceAbout.vue";
 import DeviceExposes from "./DeviceExposes.vue";
+import DeviceSettings from "./DeviceSettings.vue";
 import { Device } from "@/types/device";
 
 const props = defineProps({
@@ -53,6 +54,9 @@ const previousPage = computed(() => {
         </Tab>
         <Tab title="Exposes">
           <DeviceExposes :id="props.id"></DeviceExposes>
+        </Tab>
+        <Tab title="Settings">
+          <DeviceSettings :id="props.id"></DeviceSettings>
         </Tab>
       </Tabs>
     </div>

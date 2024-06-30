@@ -60,6 +60,9 @@ const actions = {
         case "deviceList":
           dispatch("devices/updateItems", obj.payload, { root: true });
           break;
+        case "loadAppConfig":
+          dispatch("appconfig/init", obj.payload, { root: true });
+          break;
         case "operationSuccess":
           //https://classic.yarnpkg.com/en/package/@kyvg/vue3-notification
           notify({
