@@ -1,6 +1,6 @@
-import { AppConfig } from "@/types/settings";
+import { DeviceSettingsMap } from "@/types/settings";
 
 export interface AppConfigModuleState {
-  appConfig: AppConfig;
+  deviceSettingsMap: DeviceSettingsMap;
   initialized: boolean;
 }

@@ -1,9 +1,7 @@
 import "jest";
-import { describe, expect, test } from "@jest/globals";
+import { describe, expect, test, beforeEach } from "@jest/globals";
 import { store } from "../../../../store/index";
-
-import { Automation, Automations } from "../../../../types/automation";
-import { AppConfig } from "@/types/settings";
+import { AppConfig, DeviceSettings } from "@/types/settings";
 
 const mockAppconfig: AppConfig = {
   devices: {
@@ -28,17 +26,65 @@ const mockAppconfig: AppConfig = {
   },
 };
 
-test("test appconfig gets initialized", () => {
-  var result = store.getters["appconfig/initialized"]() as boolean;
-  expect(result).toEqual(false);
+describe("test appconfig module", () => {
+  beforeEach(() => {
+    store.commit("appconfig/clear");
+  });
+  
+  test("test appconfig gets initialized", () => {
+    var result = store.getters["appconfig/initialized"]() as boolean;
+    expect(result).toEqual(false);
 
-  store.dispatch("appconfig/init", mockAppconfig);
-  var result = store.getters["appconfig/initialized"]() as boolean;
-  expect(result).toEqual(true);
+    store.dispatch("appconfig/init", mockAppconfig);
+    var result = store.getters["appconfig/initialized"]() as boolean;
+    expect(result).toEqual(true);
+
+    Object.values(mockAppconfig.devices).forEach((value) => {
+      const deviceSetting = store.getters["appconfig/findDeviceSetting"](
+        (value as DeviceSettings).id
+      ) as DeviceSettings;
+      expect(value).toEqual(deviceSetting);
+    });
+  });
+
+  test("test save device settigs saves the device settigs changes", () => {
+    store.dispatch("appconfig/init", mockAppconfig);
+
+    const dev = mockAppconfig.devices["x2222222"];
+
+    dev.disabled = true;
+    dev.metricsEnabled = false;
+    dev.rateLimit = 66666666;
+
+    store.commit("appconfig/setDeviceSetting", dev);
+
+    var deviceSetting = store.getters["appconfig/findDeviceSetting"](
+      "x2222222"
+    ) as DeviceSettings;
+
+    expect(deviceSetting.id).toEqual("x2222222");
+    expect(deviceSetting.disabled).toEqual(true);
+    expect(deviceSetting.metricsEnabled).toEqual(false);
+    expect(deviceSetting.rateLimit).toEqual(66666666);
+  });
+
+  test("test clear device settings, clears the device settings", () => {
+    var result = store.getters["appconfig/initialized"]() as boolean;
+    expect(result).toEqual(false);
+    store.dispatch("appconfig/init", mockAppconfig);
+
+    var result = store.getters["appconfig/initialized"]() as boolean;
+    expect(result).toEqual(true);
+
+    store.commit("appconfig/clear");
+
+    var result = store.getters["appconfig/initialized"]() as boolean;
+    expect(result).toEqual(false);
+
+    var deviceSetting = store.getters["appconfig/findDeviceSetting"](
+      "x2222222"
+    ) as DeviceSettings;
+
+    expect(deviceSetting).toBeUndefined();
+  });
 });
-
-test("test save device settigs saves the device settigs changes", () => {});
-
-test("test find device settigs loads the correct device settings", () => {});
-
-//saveDeviceConfig

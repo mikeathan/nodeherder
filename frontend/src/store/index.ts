@@ -4,7 +4,7 @@ import { RootState } from "./state";
 import { DeviceModule as devices } from "./modules/device/index";
 import { AutomationModule as automations } from "./modules/automation/index";
 import { WSClientModule as ws } from "./modules/ws/index";
-import { AppConfigModule as appConfig } from "./modules/appconfig/index";
+import { AppConfigModule as appconfig } from "./modules/appconfig/index";
 
 // https://blog.openreplay.com/integrate-vuex-and-typescript/
 
@@ -22,7 +22,7 @@ export const store = createStore<RootState>({
   modules: {
     devices,
     automations,
-    appConfig,
+    appconfig,
     ws,
   },
 });

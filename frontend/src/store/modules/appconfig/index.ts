@@ -1,13 +1,16 @@
 import { Module } from "vuex";
 import { RootState } from "../../state";
 import { AppConfigModuleState } from "./state";
-
-import { AppConfig, DeviceSettings } from "@/types/settings";
+import { AppConfig, DeviceSettings, DeviceSettingsMap } from "@/types/settings";
+import { key } from "@/store";
 
 export const AppConfigModule: Module<AppConfigModuleState, RootState> = {
   namespaced: true,
 
-  state: () => ({ appConfig: {} as AppConfig, initialized: false }),
+  state: () => ({
+    deviceSettingsMap: {} as DeviceSettingsMap,
+    initialized: false,
+  }),
 
   getters: {
     initialized: (state: AppConfigModuleState) => (): boolean =>
@@ -16,7 +19,7 @@ export const AppConfigModule: Module<AppConfigModuleState, RootState> = {
     findDeviceSetting:
       (state: AppConfigModuleState) =>
       (id: string): DeviceSettings => {
-        return state.appConfig.devices[id];
+        return state.deviceSettingsMap[id];
       },
   },
 
@@ -25,12 +28,12 @@ export const AppConfigModule: Module<AppConfigModuleState, RootState> = {
       state: AppConfigModuleState,
       deviceSetting: DeviceSettings
     ) {
-      state.appConfig.devices[deviceSetting.id] = deviceSetting;
+      state.deviceSettingsMap[deviceSetting.id] = deviceSetting;
     },
 
     clear(state: AppConfigModuleState) {
-      Object.entries(state.appConfig.devices).forEach(([key, value]) => {
-        delete state.appConfig.devices[key];
+      Object.entries(state.deviceSettingsMap).forEach(([key, value]) => {
+        delete state.deviceSettingsMap[key];
       });
       state.initialized = false;
     },
@@ -40,7 +43,10 @@ export const AppConfigModule: Module<AppConfigModuleState, RootState> = {
     init({ state, commit }, appConfig: AppConfig) {
       commit("clear", state);
 
-      state.appConfig = appConfig;
+      Object.values(appConfig.devices).forEach((value) => {
+        commit("setDeviceSetting", value);
+      });
+
       state.initialized = true;
     },
 
