@@ -31,6 +31,22 @@ let app = express();
 let server = http.createServer(app).listen(port);
 console.log("[" + currentTime() + "] server listening at port " + port);
 
+var appConfig = {
+  devices: {
+    "0xa4c13894070052fc": {
+      id: "0xa4c13894070052fc",
+      disabled: false,
+      metricsEnabled: false,
+      rateLimit: 10000,
+    },
+    "0x001788010d7d9d3f": {
+      id: "0x001788010d7d9d3f",
+      disabled: false,
+      metricsEnabled: false,
+      rateLimit: 50000,
+    },
+  },
+};
 var automationMap = new Map([
   [
     "0xa4c13894070052fc",
@@ -166,7 +182,7 @@ var automationMap = new Map([
               },
             ],
             type: "StepAction",
-          }
+          },
         },
         {
           name: "action",
@@ -174,17 +190,17 @@ var automationMap = new Map([
             {
               name: "action",
               value: "button_2_press_release",
-              equality: "="
-            }
+              equality: "=",
+            },
           ],
           action: {
             id: "0x70ac08fffefafeca",
             friendlyname: "Attic light",
             property: "color_temp",
             steps: [],
-            type: "PresetRotationAction"
-          }
-        }
+            type: "PresetRotationAction",
+          },
+        },
       ],
     },
   ],

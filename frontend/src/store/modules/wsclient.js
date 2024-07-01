@@ -60,7 +60,7 @@ const actions = {
         case "deviceList":
           dispatch("devices/updateItems", obj.payload, { root: true });
           break;
-        case "loadAppConfig":
+        case "appConfig":
           dispatch("appconfig/init", obj.payload, { root: true });
           break;
         case "operationSuccess":
