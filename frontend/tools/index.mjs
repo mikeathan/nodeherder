@@ -300,6 +300,17 @@ app.ws("/ws", async function (ws, req) {
         sendMessage(ws, "automationUpdated", automation);
         break;
 
+      case "loadAppConfig":
+        sendMessage(ws, "appConfig", appConfig);
+
+        break;
+
+      case "saveDeviceConfig":
+        var deviceId = obj.payload.id;
+        appConfig[deviceId] = obj.payload;
+        //sendOperationSuccess(ws);
+        break;
+
       case "pong":
         break;
 

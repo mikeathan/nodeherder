@@ -57,7 +57,7 @@ export const AppConfigModule: Module<AppConfigModuleState, RootState> = {
       commit("setDeviceSetting", deviceSetting);
       dispatch(
         "ws/emit",
-        { event: "SaveDeviceConfig", message: deviceSetting },
+        { event: "saveDeviceConfig", message: deviceSetting },
         { root: true }
       );
     },
