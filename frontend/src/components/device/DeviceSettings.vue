@@ -38,10 +38,17 @@ const settingsElements = computed(() => {
     return Object.entries(deviceSettings.value);
 });
 
-function updateValue(prop: any, value: any) {
+function updateValue(propName: any, propValue: any) {
+    settingsElements.value[propName] = propValue;
 
-    deviceSettings.value[prop] = value
+    console.log("uodate value ", propName, settingsElements.value[propName])
+
     //store.dispatch('appconfig/saveDeviceSettings', deviceSettings.value)
+}
+
+function save() {
+    console.log("save ", deviceSettings.value)
+    store.dispatch('appconfig/saveDeviceSettings', deviceSettings.value)
 }
 
 
@@ -62,5 +69,6 @@ function updateValue(prop: any, value: any) {
                 </InputBox>
             </div>
         </div>
+        <button :onclick="save()">Save</button>
     </form>
 </template>
