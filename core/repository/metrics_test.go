@@ -407,10 +407,10 @@ func assertDeviceExposeFloatDataEvents(device *devices.Device, result *metrics.D
 	for fId, foundTs := range event.Timestamp {
 		tsFound := false
 		dataIdx := 0
-		foundTsUnix := foundTs.Unix()
+		foundTsUnix := foundTs.UnixNano()
 
 		for insertIdx, insertTs := range timestamps {
-			insertTsUnix := insertTs.Unix()
+			insertTsUnix := insertTs.UnixNano()
 
 			if foundTsUnix == insertTsUnix {
 				tsFound = true
@@ -472,10 +472,10 @@ func assertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 		for fId, foundTs := range event.Timestamp {
 			tsFound := false
 			dataIdx := 0
-			foundTsUnix := foundTs.Unix()
+			foundTsUnix := foundTs.UnixNano()
 
 			for insertIdx, insertTs := range timestamps {
-				insertTsUnix := insertTs.Unix()
+				insertTsUnix := insertTs.UnixNano()
 
 				if foundTsUnix == insertTsUnix {
 					tsFound = true
@@ -552,10 +552,10 @@ func assertDeviceEvents(device *devices.Device, result *metrics.DeviceMetricsRes
 		for fId, foundTs := range event.Timestamp {
 			tsFound := false
 			dataIdx := 0
-			foundTsUnix := foundTs.Unix()
+			foundTsUnix := foundTs.UnixNano()
 
 			for insertIdx, insertTs := range timestamps {
-				insertTsUnix := insertTs.Unix()
+				insertTsUnix := insertTs.UnixNano()
 
 				if foundTsUnix == insertTsUnix {
 					tsFound = true
