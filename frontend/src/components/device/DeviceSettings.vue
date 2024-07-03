@@ -52,6 +52,14 @@ function save() {
 }
 </script>
 <template>
+  TODO
+  <!-- <div class="row border-bottom py-1 w-100 align-items-center" v-for="( expose, index ) in  device.exposes "
+        :item="expose">
+        <dl class="col-12 col-md-3">
+            <dt><strong> {{ expose.name }}</strong></dt>
+            <dd><small> {{ expose.description }} </small></dd>
+        </dl>
+        <div class="col-12 col-md-9"> -->
   <form @submit.prevent="save()">
     <div v-for="(value, key) in deviceSettings" :key="key">
       <label>{{ key }}</label>
@@ -71,6 +79,16 @@ function save() {
         </InputBox>
       </div>
     </div>
-    <button type="button" @click="save()" :disabled="!isDirty">Save</button>
+
+    <br />
+    <button
+      type="button"
+      class="btn btn-light"
+      aria-label="Save"
+      @click="save()"
+      :disabled="!isDirty"
+    >
+      Save
+    </button>
   </form>
 </template>
