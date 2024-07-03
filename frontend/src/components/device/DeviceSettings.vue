@@ -12,12 +12,10 @@ const props = defineProps({
 });
 const cachedDeviceSettings = ref<KeyyValuePair<any>>({} as KeyyValuePair<any>);
 const isDirty = computed(() => {
-  const res =
+  return (
     JSON.stringify(cachedDeviceSettings.value) !==
-    JSON.stringify(deviceSettings.value);
-
-  console.log("isDirty", res);
-  return res;
+    JSON.stringify(deviceSettings.value)
+  );
 });
 
 const deviceSettings = computed(() => {
@@ -44,17 +42,9 @@ onMounted(() => {
 
 function updateValue(propName: any, propValue: any) {
   cachedDeviceSettings.value[propName] = propValue;
-  console.log(
-    "updating ",
-    propName,
-    deviceSettings.value[propName],
-    "cached",
-    cachedDeviceSettings.value[propName]
-  );
 }
 
 function save() {
-  console.log("save ", cachedDeviceSettings.value as DeviceSettings);
   store.dispatch(
     "appconfig/saveDeviceSettings",
     cachedDeviceSettings.value as DeviceSettings
@@ -62,8 +52,6 @@ function save() {
 }
 </script>
 <template>
-  {{ deviceSettings }}
-
   <form @submit.prevent="save()">
     <div v-for="(value, key) in deviceSettings" :key="key">
       <label>{{ key }}</label>
