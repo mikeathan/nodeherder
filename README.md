@@ -92,6 +92,10 @@ BUGS:
 -
 
 TODO
--Non bridge devices . eg HTTP need more investigation/testing
--error reporting - important
--metrics repo - keep for x days ?
+
+- frontend - device settings component - DONE
+- frontend - test metrics graph - need mocked data in test node server !
+  - create fil with mocked metrics
+- Non bridge devices . eg HTTP need more investigation/testing
+- error reporting - important
+- metrics repo - keep for x days ?
