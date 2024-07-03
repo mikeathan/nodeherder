@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { store } from "../../store/index";
-import { Ref, computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import Toggle from "../input/Toggle.vue";
 import { DeviceSettings } from "@/types/settings";
 import { createDeviceSettings } from "@/contracts/settings";
@@ -37,7 +37,6 @@ const deviceSettings = computed(() => {
 
 onMounted(() => {
   cachedDeviceSettings.value = JSON.parse(JSON.stringify(deviceSettings.value));
-  console.log("mounted ", cachedDeviceSettings.value);
 });
 
 function updateValue(propName: any, propValue: any) {
@@ -52,43 +51,26 @@ function save() {
 }
 </script>
 <template>
-  TODO
-  <!-- <div class="row border-bottom py-1 w-100 align-items-center" v-for="( expose, index ) in  device.exposes "
-        :item="expose">
-        <dl class="col-12 col-md-3">
-            <dt><strong> {{ expose.name }}</strong></dt>
-            <dd><small> {{ expose.description }} </small></dd>
-        </dl>
-        <div class="col-12 col-md-9"> -->
-  <form @submit.prevent="save()">
-    <div v-for="(value, key) in deviceSettings" :key="key">
-      <label>{{ key }}</label>
-
+  <div class="row border-bottom py-1 w-100 align-items-center" v-for="(value, key) in deviceSettings" :key="key">
+    <dl class="col-12 col-md-3">
+      <dt><strong> {{ key }}</strong></dt>
+    </dl>
+    <div class="col-md-4">
       <div v-if="typeof value === 'boolean'">
-        <Toggle
-          :minimal="false"
-          :value="value"
-          :valueOn="true"
-          :valueoff="false"
-          @update="(v) => updateValue(key, v)"
-        >
+        <Toggle :minimal="false" :value="value" :valueOn="true" :valueoff="false" @update="(v) => updateValue(key, v)">
         </Toggle>
       </div>
       <div v-else>
-        <InputBox @updated="(v) => updateValue(key, v)" :value="value">
+        <InputBox @updated="(v) => updateValue(key, v)" :value="value" :disabled="typeof value !== 'number'"
+          :is-numeric="typeof value === 'number'">
         </InputBox>
       </div>
     </div>
-
-    <br />
-    <button
-      type="button"
-      class="btn btn-light"
-      aria-label="Save"
-      @click="save()"
-      :disabled="!isDirty"
-    >
+  </div>
+  <br />
+  <div class="pb-3">
+    <button type="button" class="btn btn-light" aria-label="Save" @click="save()" :disabled="!isDirty">
       Save
     </button>
-  </form>
+  </div>
 </template>

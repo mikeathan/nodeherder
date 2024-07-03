@@ -72,7 +72,6 @@ input.form-control {
 
 }
 
-
 input.form-control:focus,
 :active {
     box-shadow: none;
