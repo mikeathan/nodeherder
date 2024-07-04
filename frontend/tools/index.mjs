@@ -45,6 +45,12 @@ var appConfig = {
       metricsEnabled: false,
       rateLimit: 50000,
     },
+    "0x70ac08fffefafeca":{
+      id: "0x70ac08fffefafeca",
+      disabled: false,
+      metricsEnabled: true,
+      rateLimit: 50000,
+    }
   },
 };
 var automationMap = new Map([
