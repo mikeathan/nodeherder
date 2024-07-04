@@ -5,3 +5,4 @@ dist
 .gitignore
 package.json
 package-lock.json
+*.md

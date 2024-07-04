@@ -100,4 +100,25 @@ TODO
 - error reporting - important
 - metrics repo - keep for x days ?
 
-pretifier config
+frontend metrics
+
+example
+
+id = x01
+expose = brightness
+values=[...]
+timestamps=[...]
+
+in UI
+UI form fields
+
+- id:x01
+- expose: brightness
+- from: timestamp
+- to: timestamp
+
+submit button
+toggle for live data ? later
+
+once we send the request
+store response in metrics store ? needs thinking if we need that
