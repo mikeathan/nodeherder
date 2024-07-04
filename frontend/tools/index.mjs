@@ -1,17 +1,19 @@
-import path from "path";
-import { fileURLToPath } from "url";
-import moment from "moment";
-import "moment-timezone";
+import path from 'path';
+import { fileURLToPath } from 'url';
+import moment from 'moment';
+import 'moment-timezone';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import express from "express";
-import expressWs from "express-ws";
-import http from "http";
-import { createRequire } from "module";
-const devicesFullPath = "../../docs/devices.json";
-const automationFullPath = "../../core/config/0x001788010d7d9d3f.json";
+import express from 'express';
+import expressWs from 'express-ws';
+import http from 'http';
+import { createRequire } from 'module';
+const devicesFullPath = '../../docs/devices.json';
+const automationFullPath =
+  '../../core/config/0x001788010d7d9d3f.json';
+const mockMetricsFullPath = '.metrics.json';
 
 // temperature
 const temperatureChangeDelaySec = 5;
@@ -29,182 +31,205 @@ let pingTimer = 0;
 // App and server
 let app = express();
 let server = http.createServer(app).listen(port);
-console.log("[" + currentTime() + "] server listening at port " + port);
+console.log(
+  '[' +
+    currentTime() +
+    '] server listening at port ' +
+    port,
+);
 
 var appConfig = {
   devices: {
-    "0xa4c13894070052fc": {
-      id: "0xa4c13894070052fc",
+    '0xa4c13894070052fc': {
+      id: '0xa4c13894070052fc',
       disabled: false,
       metricsEnabled: false,
       rateLimit: 10000,
     },
-    "0x001788010d7d9d3f": {
-      id: "0x001788010d7d9d3f",
+    '0x001788010d7d9d3f': {
+      id: '0x001788010d7d9d3f',
       disabled: false,
       metricsEnabled: false,
       rateLimit: 50000,
     },
-    "0x70ac08fffefafeca":{
-      id: "0x70ac08fffefafeca",
+    '0x70ac08fffefafeca': {
+      id: '0x70ac08fffefafeca',
       disabled: false,
       metricsEnabled: true,
       rateLimit: 50000,
-    }
+    },
   },
 };
 var automationMap = new Map([
   [
-    "0xa4c13894070052fc",
+    '0xa4c13894070052fc',
     {
-      id: "0xa4c13894070052fc",
-      friendlyname: "Human presence",
-      description: "Attic light test automation",
+      id: '0xa4c13894070052fc',
+      friendlyname: 'Human presence',
+      description: 'Attic light test automation',
       enabled: true,
       triggers: [
         {
-          name: "presence",
-          conditions: [{ name: "presence", value: false, equality: "=" }],
+          name: 'presence',
+          conditions: [
+            {
+              name: 'presence',
+              value: false,
+              equality: '=',
+            },
+          ],
           action: {
-            id: "0x70ac08fffefafeca",
-            friendlyname: "Attic light",
-            property: "state",
-            data: "OFF",
+            id: '0x70ac08fffefafeca',
+            friendlyname: 'Attic light',
+            property: 'state',
+            data: 'OFF',
             delay: 300000,
-            type: "TriggerAction",
+            type: 'TriggerAction',
           },
         },
         {
-          name: "presence",
+          name: 'presence',
           conditions: [
-            { name: "presence", value: true, equality: "=" },
-            { name: "illuminance_lux", value: 30, equality: "<=" },
+            {
+              name: 'presence',
+              value: true,
+              equality: '=',
+            },
+            {
+              name: 'illuminance_lux',
+              value: 30,
+              equality: '<=',
+            },
           ],
           action: {
-            id: "0x70ac08fffefafeca",
-            friendlyname: "Attic light",
-            property: "state",
-            data: "ON",
-            type: "TriggerAction",
+            id: '0x70ac08fffefafeca',
+            friendlyname: 'Attic light',
+            property: 'state',
+            data: 'ON',
+            type: 'TriggerAction',
           },
         },
       ],
     },
   ],
   [
-    "0x001788010d7d9d3f",
+    '0x001788010d7d9d3f',
     {
-      id: "0x001788010d7d9d3f",
-      friendlyname: "Hue tap dial switch",
-      description: "Light switch automation",
+      id: '0x001788010d7d9d3f',
+      friendlyname: 'Hue tap dial switch',
+      description: 'Light switch automation',
       enabled: false,
       triggers: [
         {
-          name: "action_direction",
+          name: 'action_direction',
           conditions: [
-            { name: "action", value: "button_2_press", equality: "=" },
+            {
+              name: 'action',
+              value: 'button_2_press',
+              equality: '=',
+            },
           ],
           action: {
-            id: "0x70ac08fffefafeca",
-            friendlyname: "Attic light",
-            property: "color_temp",
+            id: '0x70ac08fffefafeca',
+            friendlyname: 'Attic light',
+            property: 'color_temp',
             data: null,
             operation: 0,
             delay: null,
             steps: [],
-            type: "PresetRotationAction",
+            type: 'PresetRotationAction',
           },
         },
         {
-          name: "action",
+          name: 'action',
           conditions: [
             {
-              name: "action",
-              value: "button_1_press_release",
-              equality: "=",
+              name: 'action',
+              value: 'button_1_press_release',
+              equality: '=',
             },
           ],
           action: {
-            id: "0x70ac08fffefafeca",
-            friendlyname: "Attic light",
-            property: "state",
-            data: "TOGGLE",
-            type: "TriggerAction",
+            id: '0x70ac08fffefafeca',
+            friendlyname: 'Attic light',
+            property: 'state',
+            data: 'TOGGLE',
+            type: 'TriggerAction',
           },
         },
         {
-          name: "action",
+          name: 'action',
           conditions: [
             {
-              name: "action",
-              value: "dial_rotate_right_slow",
-              equality: "=",
+              name: 'action',
+              value: 'dial_rotate_right_slow',
+              equality: '=',
             },
           ],
           action: {
-            id: "0x70ac08fffefafeca",
-            friendlyname: "Attic light",
-            property: "brightness",
+            id: '0x70ac08fffefafeca',
+            friendlyname: 'Attic light',
+            property: 'brightness',
             data: 10,
             steps: [
               {
-                property: "brightness",
-                operator: "-",
-                id: "0x70ac08fffefafeca",
+                property: 'brightness',
+                operator: '-',
+                id: '0x70ac08fffefafeca',
               },
               {
-                operator: "-",
-                property: "action_time",
-                id: "0x001788010d7d9d3f",
+                operator: '-',
+                property: 'action_time',
+                id: '0x001788010d7d9d3f',
               },
             ],
-            type: "StepAction",
+            type: 'StepAction',
           },
         },
         {
-          name: "action",
+          name: 'action',
           conditions: [
             {
-              name: "action",
-              value: "dial_rotate_left_slow",
-              equality: "=",
+              name: 'action',
+              value: 'dial_rotate_left_slow',
+              equality: '=',
             },
           ],
           action: {
-            id: "0x70ac08fffefafeca",
-            friendlyname: "Attic light",
-            property: "brightness",
+            id: '0x70ac08fffefafeca',
+            friendlyname: 'Attic light',
+            property: 'brightness',
             data: 10,
             steps: [
               {
-                property: "brightness",
-                operator: "+",
-                id: "0x70ac08fffefafeca",
+                property: 'brightness',
+                operator: '+',
+                id: '0x70ac08fffefafeca',
               },
               {
-                operator: "+",
-                property: "action_time",
-                id: "0x001788010d7d9d3f",
+                operator: '+',
+                property: 'action_time',
+                id: '0x001788010d7d9d3f',
               },
             ],
-            type: "StepAction",
+            type: 'StepAction',
           },
         },
         {
-          name: "action",
+          name: 'action',
           conditions: [
             {
-              name: "action",
-              value: "button_2_press_release",
-              equality: "=",
+              name: 'action',
+              value: 'button_2_press_release',
+              equality: '=',
             },
           ],
           action: {
-            id: "0x70ac08fffefafeca",
-            friendlyname: "Attic light",
-            property: "color_temp",
+            id: '0x70ac08fffefafeca',
+            friendlyname: 'Attic light',
+            property: 'color_temp',
             steps: [],
-            type: "PresetRotationAction",
+            type: 'PresetRotationAction',
           },
         },
       ],
@@ -215,11 +240,12 @@ var automationMap = new Map([
 expressWs(app, server);
 
 var devicesPayload = loadDevices();
+var metricsMap = loadMetrics();
 
 var connected = false;
 // Get the /ws websocket route
-app.ws("/ws", async function (ws, req) {
-  console.log("client connected");
+app.ws('/ws', async function (ws, req) {
+  console.log('client connected');
 
   settings.forEach((s) => {
     setInterval(function () {
@@ -229,28 +255,28 @@ app.ws("/ws", async function (ws, req) {
 
       var updatePayload = buildDeviceUpdatedPayload(s);
       var d = JSON.stringify({
-        type: "deviceUpdated",
+        type: 'deviceUpdated',
         payload: updatePayload,
       });
       ws.send(d);
     }, s.delayInMs);
   });
 
-  ws.on("message", async function (msg) {
-    console.log("message received" + msg);
+  ws.on('message', async function (msg) {
+    console.log('message received' + msg);
 
     const obj = JSON.parse(msg);
     switch (obj.type) {
-      case "loadAutomations":
-        sendMessage(ws, "automations", getAutomations());
+      case 'loadAutomations':
+        sendMessage(ws, 'automations', getAutomations());
         break;
 
-      case "loadDevices":
+      case 'loadDevices':
         //var payload = buildNewDevicesPayload();
-        sendMessage(ws, "devices", devicesPayload);
+        sendMessage(ws, 'devices', devicesPayload);
         connected = true;
         break;
-      case "deviceSetValue":
+      case 'deviceSetValue':
         // Respond back with update value to update UI
         const updatePayload = {
           id: obj.payload.id,
@@ -263,74 +289,96 @@ app.ws("/ws", async function (ws, req) {
           },
         };
 
-        sendMessage(ws, "deviceUpdated", updatePayload);
+        sendMessage(ws, 'deviceUpdated', updatePayload);
 
         break;
-      case "saveAutomation":
+      case 'saveAutomation':
         var automation = obj.payload;
         automationMap.set(automation.id, automation);
         sendOperationSuccess(ws);
         break;
 
-      case "deleteAutomation":
+      case 'deleteAutomation':
         if (!automationMap.has(obj.payload.id)) {
           sendOperationFailed(
-            "Delete failed. Automation id " + obj.payload.id + " not found"
+            'Delete failed. Automation id ' +
+              obj.payload.id +
+              ' not found',
           );
           return;
         }
 
         automationMap.delete(obj.payload.id);
-        sendMessage(ws, "automations", getAutomations());
+        sendMessage(ws, 'automations', getAutomations());
 
         break;
 
-      case "deleteAutomationTrigger":
+      case 'deleteAutomationTrigger':
         var aId = obj.payload.automationId;
         var tId = obj.payload.triggerId;
 
         if (!automationMap.has(aId)) {
           sendOperationFailed(
-            "Delete trigger. automation id " + aId + " not found"
+            'Delete trigger. automation id ' +
+              aId +
+              ' not found',
           );
           return;
         }
 
         var automation = automationMap.get(aId);
         if (tId >= automation.triggers.length) {
-          sendOperationFailed("trigger index" + tId + " out of bounds.");
+          sendOperationFailed(
+            'trigger index' + tId + ' out of bounds.',
+          );
           return;
         }
 
         automation.triggers.splice(tId, 1);
-        sendMessage(ws, "automationUpdated", automation);
+        sendMessage(ws, 'automationUpdated', automation);
         break;
 
-      case "loadAppConfig":
-        sendMessage(ws, "appConfig", appConfig);
+      case 'loadAppConfig':
+        sendMessage(ws, 'appConfig', appConfig);
 
         break;
+      case 'loadMetrics':
+        // expected payload structure - use only id and expose as data is mocked
+        // Id     string `json:"id"`
+        // Expose string `json:"expose,omitempty"`
+        // From   int64  `json:"from"`
+        // To     int64  `json:"to"`
+        const deviceMetrics = metricsMap[obj.payload.id];
+        console.log(
+          'loadMetrics found for id:',
+          obj.payload.id,
+          ' = ',
+          deviceMetrics,
+        );
 
-      case "saveDeviceConfig":
+        sendMessage(ws, 'metrics', deviceMetrics);
+        break;
+
+      case 'saveDeviceConfig':
         var deviceId = obj.payload.id;
         appConfig[deviceId] = obj.payload;
         //sendOperationSuccess(ws);
         break;
 
-      case "pong":
+      case 'pong':
         break;
 
       default:
-        console.log("ws unhandled type: ", msg);
+        console.log('ws unhandled type: ', msg);
     }
   });
 
-  ws.on("error", function (error) {
-    console.log("Cannot start server" + error);
+  ws.on('error', function (error) {
+    console.log('Cannot start server' + error);
   });
 
-  ws.on("close", function (code, message) {
-    console.log("Disconnection: " + code + ", " + message);
+  ws.on('close', function (code, message) {
+    console.log('Disconnection: ' + code + ', ' + message);
     connected = false;
     // clearInterval(pingTimer);
   });
@@ -364,7 +412,7 @@ function sendMessage(ws, event, payload) {
 
 function sendOperationSuccess(ws) {
   var msg = JSON.stringify({
-    type: "operationSuccess",
+    type: 'operationSuccess',
     payload: {},
   });
 
@@ -373,7 +421,7 @@ function sendOperationSuccess(ws) {
 
 function sendOperationFailed(ws, message) {
   var msg = JSON.stringify({
-    type: "operationFailed",
+    type: 'operationFailed',
     payload: message,
   });
 
@@ -390,22 +438,22 @@ function buildDeviceUpdatedPayload(s) {
     var payload = func(s);
     return payload;
   } catch (error) {
-    console.log("id:", s.id + "error:" + error);
+    console.log('id:', s.id + 'error:' + error);
   }
   return undefined;
 }
 
 function currentTime() {
-  var isoNow = moment().tz("Europe/London");
+  var isoNow = moment().tz('Europe/London');
   return isoNow.format();
 }
 
 let settings = [
   {
-    id: "0xa4c13894070052fc",
-    friendlyName: "Human presence",
-    availability: "offline",
-    method: "mqtt",
+    id: '0xa4c13894070052fc',
+    friendlyName: 'Human presence',
+    availability: 'offline',
+    method: 'mqtt',
     luminance_lux_offset: 12,
     delayInMs: 35000,
     luminance_lux: luminance_luxMin,
@@ -413,30 +461,30 @@ let settings = [
     presenceLastChanged: moment(),
   },
   {
-    id: "0x00124b00146c31cd",
-    friendlyName: "Motion sensor 1",
-    availability: "offline",
-    method: "mqtt",
+    id: '0x00124b00146c31cd',
+    friendlyName: 'Motion sensor 1',
+    availability: 'offline',
+    method: 'mqtt',
     temperatureOffset: 1.2,
     delayInMs: 2000,
     temperature: temperatureMin,
     temperatureLastChanged: moment(),
   },
   {
-    id: "92fe86b7",
-    friendlyName: "weather node 1",
-    availability: "offline",
-    method: "http",
+    id: '92fe86b7',
+    friendlyName: 'weather node 1',
+    availability: 'offline',
+    method: 'http',
     delayInMs: 10000,
     temperatureOffset: 1.2,
     temperature: temperatureMin,
     temperatureLastChanged: moment(),
   },
   {
-    id: "0x00124b0029207763",
-    friendlyName: "TH01",
-    availability: "offline",
-    method: "mqtt",
+    id: '0x00124b0029207763',
+    friendlyName: 'TH01',
+    availability: 'offline',
+    method: 'mqtt',
     temperatureOffset: 0.6,
     humidityOffset: 11.3,
     delayInMs: 5000,
@@ -446,32 +494,35 @@ let settings = [
     humidityLastChanged: moment(),
   },
   {
-    id: "0x70ac08fffefafeca",
-    friendlyName: "Attic Light",
-    availability: "offline",
-    method: "mqtt",
+    id: '0x70ac08fffefafeca',
+    friendlyName: 'Attic Light',
+    availability: 'offline',
+    method: 'mqtt',
     brightness: 60,
     color_temp: 370,
-    state: "ON",
+    state: 'ON',
     delayInMs: 15000,
   },
 ];
 
 let updateDeviceMap = {};
-updateDeviceMap["92fe86b7"] = mockUpdateWeatherNode1v2;
-updateDeviceMap["0x00124b0029207763"] = mockUpdateTH01v2;
-updateDeviceMap["0xa4c13894070052fc"] = mockUpdateHumanPresencev2;
-updateDeviceMap["0x00124b00146c31cd"] = mockUpdateMotionSensorv2;
-updateDeviceMap["0x70ac08fffefafeca"] = mockUpdateAtticLight;
+updateDeviceMap['92fe86b7'] = mockUpdateWeatherNode1v2;
+updateDeviceMap['0x00124b0029207763'] = mockUpdateTH01v2;
+updateDeviceMap['0xa4c13894070052fc'] =
+  mockUpdateHumanPresencev2;
+updateDeviceMap['0x00124b00146c31cd'] =
+  mockUpdateMotionSensorv2;
+updateDeviceMap['0x70ac08fffefafeca'] =
+  mockUpdateAtticLight;
 
 function mockUpdateAtticLight(settings) {
   var device = {
-    id: "0x70ac08fffefafeca",
+    id: '0x70ac08fffefafeca',
     last_seen: currentTime(),
     data: {
       brightness: 61,
       color_temp: 370,
-      state: "ON",
+      state: 'ON',
     },
     properties: {},
   };
@@ -485,7 +536,7 @@ function mockUpdateAtticLight(settings) {
 
 function mockUpdateHumanPresencev2(settings) {
   var device = {
-    id: "0xa4c13894070052fc",
+    id: '0xa4c13894070052fc',
     last_seen: currentTime(),
     data: {
       illuminance_lux: 9,
@@ -503,7 +554,7 @@ function mockUpdateHumanPresencev2(settings) {
 
 function mockUpdateMotionSensorv2(settings) {
   var device = {
-    id: "0x00124b00146c31cd",
+    id: '0x00124b00146c31cd',
     last_seen: currentTime(),
     data: {
       occupancy: true,
@@ -521,7 +572,7 @@ function mockUpdateMotionSensorv2(settings) {
 
 function mockUpdateWeatherNode1v2(settings) {
   var device = {
-    id: "92fe86b7",
+    id: '92fe86b7',
     last_seen: currentTime(),
     data: {
       temperature: getMockTemperature(settings),
@@ -538,7 +589,7 @@ function mockUpdateWeatherNode1v2(settings) {
 
 function mockUpdateTH01v2(settings) {
   var device = {
-    id: "0x00124b0029207763",
+    id: '0x00124b0029207763',
     last_seen: currentTime(),
     data: {
       temperature: getMockTemperature(settings),
@@ -555,8 +606,8 @@ function mockUpdateTH01v2(settings) {
 }
 
 function setDeviceOnline(settings) {
-  if (settings.availability == "offline") {
-    settings.availability = "online";
+  if (settings.availability == 'offline') {
+    settings.availability = 'online';
     return settings.availability;
   }
 
@@ -564,7 +615,7 @@ function setDeviceOnline(settings) {
 }
 
 function getMockTemperature(settings) {
-  if (settings.availability == "offline") {
+  if (settings.availability == 'offline') {
     return settings.temperature;
   }
 
@@ -585,7 +636,7 @@ function getMockTemperature(settings) {
 }
 
 function getMockHumidity(settings) {
-  if (settings.availability == "offline") {
+  if (settings.availability == 'offline') {
     return settings.humidity;
   }
 
@@ -609,4 +660,10 @@ function loadDevices() {
   const require = createRequire(import.meta.url);
   var data = require(devicesFullPath);
   return data.payload;
+}
+
+function loadMetrics() {
+  const require = createRequire(import.meta.url);
+  var data = require(mockMetricsFullPath);
+  return data;
 }
