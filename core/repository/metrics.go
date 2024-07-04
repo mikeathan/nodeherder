@@ -22,13 +22,14 @@ const metricsBucketName = "metrics"
 type MetricsRepo struct {
 	mutex *sync.RWMutex
 	db    *bolt.DB
+	clock utils.Clock
 }
 
 func NewMetricsRepo() (metrics.Repository, error) {
-	return NewMetricsRepoFromFile(metricsBaseFilename)
+	return NewMetricsRepoFromFile(metricsBaseFilename, &utils.RealClock{})
 }
 
-func NewMetricsRepoFromFile(filename string) (metrics.Repository, error) {
+func NewMetricsRepoFromFile(filename string, clock utils.Clock) (metrics.Repository, error) {
 
 	db, err := bolt.Open(filename, 0600, nil)
 	if err != nil {
@@ -39,6 +40,7 @@ func NewMetricsRepoFromFile(filename string) (metrics.Repository, error) {
 	repo := &MetricsRepo{
 		mutex: &sync.RWMutex{},
 		db:    db,
+		clock: clock,
 	}
 	err = repo.init()
 	if err != nil {
@@ -92,7 +94,7 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 				return err
 			}
 
-			key := createKeyWithTimestamp(name, time.Now())
+			key := createKeyWithTimestamp(name, s.clock.Now())
 			err = bucket.Put(key, buf)
 
 			if err != nil {
@@ -184,7 +186,7 @@ func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devi
 
 	event := metrics.NewExposeMetricsResult(expose.Name, exposeType.String())
 	for key, value := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, value = cursor.Next() {
-		timestamp, err := readTimestampFromKey(expose.Name, key)
+		timestamp, err := s.readTimestampFromKey(expose.Name, key)
 		if err != nil {
 			return nil, err
 		}
@@ -213,10 +215,10 @@ func kindFromExposeType(expose *devices.Entity) reflect.Kind {
 	return reflect.Interface
 }
 
-func readTimestampFromKey(id string, data []byte) (time.Time, error) {
+func (s *MetricsRepo) readTimestampFromKey(id string, data []byte) (time.Time, error) {
 	timestamp, err := time.Parse(time.RFC3339Nano, string(data[len(id):]))
 	if err != nil {
-		return time.Now(), err
+		return s.clock.Now(), err
 
 	}
 	return timestamp, nil

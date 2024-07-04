@@ -579,3 +579,21 @@ func (d *MockAutomationEngine[T]) loadFromCache(name string) *automations.Device
 func (d *MockAutomationEngine[T]) deleteFromCache(name string) {
 	delete(d.cache, name)
 }
+
+// Mock Clock
+type MockClock struct {
+	callback func() time.Time
+}
+
+func NewMockClock(callback func() time.Time) *MockClock {
+	return &MockClock{callback: callback}
+}
+
+func (m *MockClock) SetMockTime(t time.Time) {
+	m.callback = func() time.Time {
+		return t
+	}
+}
+func (m *MockClock) Now() time.Time {
+	return m.callback()
+}

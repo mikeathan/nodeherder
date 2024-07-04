@@ -1,7 +1,9 @@
 package repository_test
 
 import (
+	"encoding/json"
 	"fmt"
+	"node-herder/mocks"
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
 	"node-herder/repository"
@@ -14,8 +16,62 @@ import (
 	"time"
 )
 
+func TestGenerateMockMetrics(t *testing.T) {
+	now := time.Now()
+
+	tempfile := tempfile()
+	defer os.Remove(tempfile)
+
+	id := "x0000"
+	timestamps := utils_test.CreateDateTimeTimestamps(1, 24, 1)
+	values := utils_test.CreateFloatValues(24)
+	from := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC)
+	to := time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)
+
+
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now()
+	})
+	repo, err := repository.NewMetricsRepoFromFile(tempfile, mockClock)
+	if err != nil {
+		t.Error("failed to initialise metrics repo", err.Error())
+	}
+
+	var devices map[string]*devices.Device = make(map[string]*devices.Device)
+
+	deviceName := fmt.Sprintf("device %v", 0)
+
+	fmt.Println("total timestamps: ", len(timestamps))
+	dev := createMockDevice(id, deviceName, 2, "numeric", time.Now(), nil)
+	for tIdx, timestamp := range timestamps {
+
+		dev = createMockDevice(id, deviceName, 2, "numeric", *timestamp, values[tIdx])
+		payload := utils_test.Payload(dev)
+
+		mockClock.SetMockTime(*timestamp)
+
+		err = repo.Store(dev.Id, payload)
+		if err != nil {
+			t.Error("failed to store metrics ", err.Error())
+		}
+		devices[dev.Id] = dev
+	}
+
+	result, err := repo.ViewDeviceTimeRange(dev, from, to)
+	if err != nil {
+		t.Error("failed to query metrics: ", err.Error())
+	}
+
+	assertDeviceEvents(dev, result, timestamps, values, t)
+	bytes, _ := json.Marshal(result)
+	fmt.Println(string(bytes))
+}
+
 func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
 	now := time.Now()
+
+	tempfile := tempfile()
+	defer os.Remove(tempfile)
 
 	testCases := []struct {
 		id         string
@@ -31,24 +87,23 @@ func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
 			to:         time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)},
 		{id: "x0001",
 			timestamps: utils_test.CreateDateTimeTimestamps(10, 24, 1), values: utils_test.CreateFloatValues(240), // 240 events
-			from: time.Date(now.Year(), now.Month()-6, now.Day()-5, 15, 0, 0, 0, time.UTC),
-			to:   time.Date(now.Year(), now.Month()-2, now.Day()-2, 20, 0, 0, 0, time.UTC)},
+			from: time.Date(now.Year(), now.Month(), now.Day()-5, 15, 0, 0, 0, time.UTC),
+			to:   time.Date(now.Year(), now.Month(), now.Day()-2, 20, 0, 0, 0, time.UTC)},
 		{id: "x0002",
 			timestamps: utils_test.CreateDateTimeTimestamps(60, 2, 1), values: utils_test.CreateFloatValues(120), // 240 events
-			from: time.Date(now.Year(), now.Month()-20, now.Day()-5, 15, 0, 0, 0, time.UTC),
-			to:   time.Date(now.Year(), now.Month()-5, now.Day()-2, 20, 0, 0, 0, time.UTC)},
+			from: time.Date(now.Year(), now.Month(), now.Day()-55, 15, 0, 0, 0, time.UTC),
+			to:   time.Date(now.Year(), now.Month(), now.Day()-5, 20, 0, 0, 0, time.UTC)},
 	}
 
-	tempfile := tempfile()
-	defer os.Remove(tempfile)
-
-	repo, err := repository.NewMetricsRepoFromFile(tempfile)
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now()
+	})
+	repo, err := repository.NewMetricsRepoFromFile(tempfile, mockClock)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
 
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
-
 	for i, test := range testCases {
 		fmt.Println(len(test.timestamps))
 
@@ -60,8 +115,9 @@ func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
 			dev := createMockDevice(test.id, deviceName, 2, "numeric", *timestamp, test.values[tIdx])
 			payload := utils_test.Payload(dev)
 
+			mockClock.SetMockTime(*timestamp)
+
 			err = repo.Store(dev.Id, payload)
-			//fmt.Printf("Add device: %v, data: %v, timestamp: %v \n", deviceId, values[tIdx], dev.Properties["last_seen"])
 			if err != nil {
 				t.Error("failed to store metrics ", err.Error())
 			}
@@ -70,7 +126,6 @@ func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-
 		dev := devices[test.id]
 
 		result, err := repo.ViewDeviceTimeRange(dev, test.from, test.to)
@@ -87,7 +142,10 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 	tempfile := tempfile()
 	defer os.Remove(tempfile)
 
-	repo, err := repository.NewMetricsRepoFromFile(tempfile)
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now()
+	})
+	repo, err := repository.NewMetricsRepoFromFile(tempfile, mockClock)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
@@ -108,10 +166,9 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 			dev := createMockDevice(deviceId, deviceName, 2, "numeric", *timestamp, values[tIdx])
 
 			payload := utils_test.Payload(dev)
+			mockClock.SetMockTime(*timestamp)
 
 			err = repo.Store(dev.Id, payload)
-
-			//fmt.Printf("Add device: %v, data: %v, timestamp: %v \n", deviceId, values[tIdx], dev.Properties["last_seen"])
 			if err != nil {
 				t.Error("failed to store metrics ", err.Error())
 			}
@@ -200,7 +257,10 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 	tempfile := tempfile()
 	defer os.Remove(tempfile)
 
-	repo, err := repository.NewMetricsRepoFromFile(tempfile)
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now()
+	})
+	repo, err := repository.NewMetricsRepoFromFile(tempfile, mockClock)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
@@ -243,9 +303,11 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 				value = v[tIdx]
 			}
 
+			// used dev.props['last_seen] previously but now using time.now in metrics.Store
+			// so i cant test timestamps
 			dev := createMockDevice(deviceId, deviceName, 2, dataType, *timestamp, value)
 			payload := utils_test.Payload(dev)
-
+			mockClock.SetMockTime(*timestamp)
 			err = repo.Store(dev.Id, payload)
 			if err != nil {
 				t.Error("failed to store metrics ", err.Error())
@@ -280,8 +342,10 @@ func TestExposeTimeRangeMetrics(t *testing.T) {
 
 	tempfile := tempfile()
 	defer os.Remove(tempfile)
-
-	repo, err := repository.NewMetricsRepoFromFile(tempfile)
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now()
+	})
+	repo, err := repository.NewMetricsRepoFromFile(tempfile, mockClock)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
@@ -300,7 +364,7 @@ func TestExposeTimeRangeMetrics(t *testing.T) {
 
 			dev := createMockDevice(deviceId, deviceName, 5, "numeric", *timestamp, values[tIdx])
 			payload := utils_test.Payload(dev)
-
+			mockClock.SetMockTime(*timestamp)
 			err = repo.Store(dev.Id, payload)
 			if err != nil {
 				t.Error("failed to store metrics ", err.Error())
@@ -335,7 +399,10 @@ func TestMultipleExposeTimeRangeMetrics(t *testing.T) {
 	tempfile := tempfile()
 	defer os.Remove(tempfile)
 
-	repo, err := repository.NewMetricsRepoFromFile(tempfile)
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now()
+	})
+	repo, err := repository.NewMetricsRepoFromFile(tempfile, mockClock)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
@@ -354,7 +421,9 @@ func TestMultipleExposeTimeRangeMetrics(t *testing.T) {
 		for tIdx, timestamp := range timestamps {
 
 			dev := createMockDevice(deviceId, deviceName, numOfExposes, "numeric", *timestamp, values[tIdx])
+
 			payload := utils_test.Payload(dev)
+			mockClock.SetMockTime(*timestamp)
 
 			err = repo.Store(dev.Id, payload)
 			if err != nil {
@@ -381,6 +450,7 @@ func TestMultipleExposeTimeRangeMetrics(t *testing.T) {
 			assertDeviceExposeFloatDataEvents(dev, result, exposeName, timestamps, values, t)
 		}
 	}
+
 }
 
 func assertDeviceExposeFloatDataEvents(device *devices.Device, result *metrics.DeviceMetricsResult, exposeName string, timestamps []*time.Time, values []float32, t *testing.T) {
@@ -402,6 +472,13 @@ func assertDeviceExposeFloatDataEvents(device *devices.Device, result *metrics.D
 	dataType, ok := kindFromString(event.Type)
 	if !ok {
 		t.Errorf("invalid event.type want %v got %v: ", event.Type, dataType)
+	}
+
+	if len(event.Timestamp) == 0 {
+		t.Errorf("event.timestamps is empty")
+	}
+	if len(event.Values) == 0 {
+		t.Errorf("event.Values is empty")
 	}
 
 	for fId, foundTs := range event.Timestamp {
@@ -547,6 +624,13 @@ func assertDeviceEvents(device *devices.Device, result *metrics.DeviceMetricsRes
 		dataType, ok := kindFromString(event.Type)
 		if !ok {
 			t.Errorf("invalid event.type want %v got %v: ", event.Type, dataType)
+		}
+
+		if len(event.Timestamp) == 0 {
+			t.Errorf("event.Timestamp is empty")
+		}
+		if len(event.Values) == 0 {
+			t.Errorf("event.Values is empty")
 		}
 
 		for fId, foundTs := range event.Timestamp {

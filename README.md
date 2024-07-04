@@ -99,3 +99,20 @@ TODO
 - Non bridge devices . eg HTTP need more investigation/testing
 - error reporting - important
 - metrics repo - keep for x days ?
+
+pretifier config
+{
+"semi": true,
+
+"trailingComma": "es5",
+
+"singleQuote": true,
+
+"tabWidth": 2,
+
+"useTabs": false,
+
+"quoteProps": "consistent",
+
+"bracketSameLine": true
+}
