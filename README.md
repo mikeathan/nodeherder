@@ -96,6 +96,7 @@ TODO
 - frontend - device settings component - DONE
 - frontend - test metrics graph - need mocked data in test node server !
   - create fil with mocked metrics
+- metrics results could have property from/to so we know the range for ui purposes
 - Non bridge devices . eg HTTP need more investigation/testing
 - error reporting - important
 - metrics repo - keep for x days ?

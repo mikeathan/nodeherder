@@ -1,5 +1,5 @@
-import { DeviceMetricsMap } from '@/types/metrics';
+import { DeviceMetricsQueryMap } from '@/types/metrics';
 
 export interface MetricsModuleState {
-  deviceMetricseMap: DeviceMetricsMap;
+  deviceMetricsQueryMap: DeviceMetricsQueryMap;
 }

@@ -13,7 +13,7 @@ import { createRequire } from 'module';
 const devicesFullPath = '../../docs/devices.json';
 const automationFullPath =
   '../../core/config/0x001788010d7d9d3f.json';
-const mockMetricsFullPath = '.metrics.json';
+const mockMetricsFullPath = './metrics.json';
 
 // temperature
 const temperatureChangeDelaySec = 5;
@@ -343,11 +343,6 @@ app.ws('/ws', async function (ws, req) {
 
         break;
       case 'loadMetrics':
-        // expected payload structure - use only id and expose as data is mocked
-        // Id     string `json:"id"`
-        // Expose string `json:"expose,omitempty"`
-        // From   int64  `json:"from"`
-        // To     int64  `json:"to"`
         const deviceMetrics = metricsMap[obj.payload.id];
         console.log(
           'loadMetrics found for id:',
