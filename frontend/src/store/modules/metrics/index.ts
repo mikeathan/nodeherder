@@ -12,4 +12,11 @@ export const DeviceModule: Module<
   state: () => ({
     deviceMetricseMap: {} as DeviceMetricsMap,
   }),
+
+  getters: {},
+  mutations: {},
+  actions: {},
 };
+
+
+

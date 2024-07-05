@@ -2,7 +2,7 @@
   "id": "0x70ac08fffefafeca",
   "payload": {
     "deviceId": "0x70ac08fffefafeca",
-    "Expose": [
+    "expose": [
       {
         "name": "brightness",
         "type": "float32",
