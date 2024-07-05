@@ -17,7 +17,17 @@ export const MetricsModule: Module<
     deviceMetricsQueryMap: {} as DeviceMetricsQueryMap,
   }),
 
-  getters: {},
+  getters: {
+    view(
+      state: MetricsModuleState,
+      id: string,
+    ): DeviceMetrics | null {
+      if (!state.deviceMetricsQueryMap[id]) {
+        return null;
+      }
+      return state.deviceMetricsQueryMap[id].results;
+    },
+  },
 
   mutations: {
     // addRequest(
@@ -35,6 +45,9 @@ export const MetricsModule: Module<
         metrics.deviceId
       ].results = metrics;
     },
+    delete(state: MetricsModuleState, id: string) {
+      delete state.deviceMetricsQueryMap[id];
+    },
     clear(state: MetricsModuleState) {
       Object.entries(state.deviceMetricsQueryMap).forEach(
         ([key, value]) => {
@@ -48,6 +61,7 @@ export const MetricsModule: Module<
       { commit, dispatch, rootState },
       request: DeviceMetricsRequest,
     ) {
+      commit('delete', request.id); // remove any existing results
       dispatch(
         'ws/emit',
         { event: 'loadMetrics', message: request },
