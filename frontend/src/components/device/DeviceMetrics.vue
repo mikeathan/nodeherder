@@ -6,10 +6,16 @@ import { DeviceMetricsRequest, DeviceMetrics } from '@/types/metrics';
 import { createDeviceSettings } from '@/contracts/settings';
 import InputBox from '../input/InputBox.vue';
 import { KeyyValuePair } from '@/types/types';
+import VueDatePicker from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css';
+
 
 const props = defineProps({
     id: { type: String, required: true },
 });
+
+const date = ref(null);
+
 const metricsRequest = ref<KeyyValuePair<DeviceMetricsRequest>>(
     {} as KeyyValuePair<DeviceMetricsRequest>,
 );
@@ -32,7 +38,13 @@ const deviceMetrics = computed(() => {
 
 
 </script>
+
+
 <template>
-
-
+    <div class="col-sm-3">
+        <VueDatePicker v-model="date" name="fromDate" placeholder="From" dark="true" />
+    </div>
+    <div class="col-sm-3">
+        <VueDatePicker v-model="date" name="toDate" placeholder="To" dark="true" />
+    </div>
 </template>
