@@ -344,14 +344,24 @@ app.ws('/ws', async function (ws, req) {
         break;
       case 'loadMetrics':
         const deviceMetrics = metricsMap[obj.payload.id];
+
+        if (!deviceMetrics) {
+          sendOperationFailed(
+            ws,
+            'Metrics for device id' +
+              obj.payload.id +
+              ' not found',
+          );
+          return;
+        }
+        const payload = deviceMetrics.payload;
         console.log(
           'loadMetrics found for id:',
           obj.payload.id,
           ' = ',
-          deviceMetrics,
+          payload,
         );
-
-        sendMessage(ws, 'metrics', deviceMetrics);
+        sendMessage(ws, 'metrics', payload);
         break;
 
       case 'saveDeviceConfig':

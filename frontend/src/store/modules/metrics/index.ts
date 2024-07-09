@@ -3,7 +3,7 @@ import { MetricsModuleState } from './state';
 import { RootState } from '@/store/state';
 import {
   DeviceMetrics,
-  DeviceMetricsQueryMap,
+  DeviceMetricsyMap,
   DeviceMetricsRequest,
 } from '@/types/metrics';
 
@@ -14,36 +14,30 @@ export const MetricsModule: Module<
   namespaced: true,
 
   state: () => ({
-    deviceMetricsQueryMap: {} as DeviceMetricsQueryMap,
+    deviceMetricsQueryMap: {} as DeviceMetricsyMap,
   }),
 
   getters: {
-    view(
-      state: MetricsModuleState,
-      id: string,
-    ): DeviceMetrics | null {
-      if (!state.deviceMetricsQueryMap[id]) {
-        return null;
-      }
-      return state.deviceMetricsQueryMap[id].results;
-    },
+    view:
+      (state: MetricsModuleState) =>
+      (id: string): DeviceMetrics | null => {
+        if (!state.deviceMetricsQueryMap[id]) {
+          return null;
+        }
+        return state.deviceMetricsQueryMap[id];
+      },
   },
 
   mutations: {
-    // addRequest(
-    //   state: MetricsModuleState,
-    //   request: DeviceMetricsRequest,
-    // ) {
-    //   state.deviceMetricsQueryMap[request.id].request =
-    //     request;
-    // },
-    store(
-      state: MetricsModuleState,
-      metrics: DeviceMetrics,
-    ) {
-      state.deviceMetricsQueryMap[
-        metrics.deviceId
-      ].results = metrics;
+    set(state: MetricsModuleState, metrics: DeviceMetrics) {
+      if (!metrics) {
+        console.error('metrics is null');
+        return;
+      }
+
+      console.log('metrics', metrics);
+      state.deviceMetricsQueryMap[metrics.deviceId] =
+        metrics;
     },
     delete(state: MetricsModuleState, id: string) {
       delete state.deviceMetricsQueryMap[id];
@@ -67,6 +61,12 @@ export const MetricsModule: Module<
         { event: 'loadMetrics', message: request },
         { root: true },
       );
+    },
+    store(
+      { commit, dispatch, rootState },
+      metrics: DeviceMetrics,
+    ) {
+      commit('set', metrics);
     },
   },
 };
