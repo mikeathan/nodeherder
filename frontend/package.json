@@ -24,7 +24,6 @@
     "@fortawesome/fontawesome-free": "^6.4.0",
     "@kyvg/vue3-notification": "^3.0.2",
     "@popperjs/core": "^2.11.8",
-    "@vuepic/vue-datepicker": "^8.8.1",
     "bootstrap": "^5.3.0",
     "caniuse-lite": "^1.0.30001572",
     "core-js": "^3.8.3",

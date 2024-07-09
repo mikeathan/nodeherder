@@ -9,8 +9,6 @@ import { store, key } from './store/index';
 import mitt from 'mitt';
 import { Events } from '@/types/events.type';
 
-import VueDatePicker from '@vuepic/vue-datepicker';
-import '@vuepic/vue-datepicker/dist/main.css';
 const emitter = mitt<Events>();
 
 //import "./assets/css/styles.global.css";
@@ -21,5 +19,4 @@ app.use(store, key);
 app.use(router);
 app.use(Notifications);
 app.provide('emitter', emitter);
-app.component('VueDatePicker', VueDatePicker);
 app.mount('#app');
