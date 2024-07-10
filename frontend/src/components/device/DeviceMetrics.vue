@@ -53,8 +53,31 @@ const metricsRequest = ref<
 >({} as KeyyValuePair<DeviceMetricsRequest>);
 
 const deviceMetrics = computed(() => {
-  const results = store.getters['metrics/view'](props.id);
-  // if (results == null) {
+  const results = store.getters['metrics/view'](
+    props.id,
+  ) as DeviceMetrics;
+  if (results != null) {
+    const chartData = {
+      labels: [],
+      datasets: [
+        {
+          label: 'Data One',
+          backgroundColor: '#f87979',
+          data: [],
+        },
+      ],
+    };
+
+    // brightness
+    // timestamp : 1
+    // value: 1
+    // timestamp: 2
+    // value :2
+    
+    results.expose.forEach((expose) => {
+      expose.timestamp.forEach((timestamp) => {});
+    });
+  }
   //     var request: DeviceMetricsRequest = {
   //         id: props.id,
   //         from: toUnix(fromDate.value ?? new Date()), // temp
@@ -66,6 +89,32 @@ const deviceMetrics = computed(() => {
 
   return results;
 });
+
+// const data: ChartData = {
+//   labels: [
+//     'January',
+//     'February',
+//     'March',
+//     'April',
+//     'May',
+//     'June',
+//     'July',
+//     'August',
+//     'September',
+//     'October',
+//     'November',
+//     'December',
+//   ],
+//   datasets: [
+//     {
+//       label: 'Data One',
+//       backgroundColor: '#f87979',
+//       data: [
+//         40, 20, 12, 39, 10, 40, 39, 80, 40, 20, 12, 11,
+//       ],
+//     },
+//   ],
+// };
 </script>
 <style scoped></style>
 

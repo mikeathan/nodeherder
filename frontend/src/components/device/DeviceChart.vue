@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onBeforeMount } from 'vue';
-import type { Ref } from 'vue';
+import type { PropType, Ref } from 'vue';
 import { Bar, Line } from 'vue-chartjs';
 import {
   Chart as ChartJS,
@@ -43,9 +43,10 @@ const data: ChartData = {
     },
   ],
 };
+
 const props = defineProps({
   chartData: {
-    type: Object,
+    type: Object as PropType<ChartData>,
     default: null,
   },
   options: {
@@ -84,5 +85,5 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  <Line :options="chartOptions" :data="data" />
+  <Line :options="chartOptions" :data="props.chartData" />
 </template>
