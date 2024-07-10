@@ -73,7 +73,18 @@ const deviceMetrics = computed(() => {
     // value: 1
     // timestamp: 2
     // value :2
-    
+
+    const chartData = {
+      labels: yourArrayOfExposes[0].timestamps, // Assuming all exposes have the same timestamps length
+      datasets: yourArrayOfExposes.map((expose) => ({
+        label: expose.name, // Assuming 'name' property exists for identification
+        data: expose.timestamps.map((timestamp, index) => ({
+          x: timestamp,
+          y: expose.values[index],
+        })),
+        borderColor: 'rgba(75, 192, 192, 0.8)', // Example blue color
+      })),
+    };
     results.expose.forEach((expose) => {
       expose.timestamp.forEach((timestamp) => {});
     });
