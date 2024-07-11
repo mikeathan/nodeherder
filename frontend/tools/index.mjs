@@ -13,7 +13,9 @@ import { createRequire } from 'module';
 const devicesFullPath = '../../docs/devices.json';
 const automationFullPath =
   '../../core/config/0x001788010d7d9d3f.json';
-const mockMetricsFullPath = './metrics.json';
+const lightMetricsFullPath = './light_metrics.json';
+const temperatureMetricsFullPath =
+  './tempreature_metrics.json';
 
 // temperature
 const temperatureChangeDelaySec = 5;
@@ -343,9 +345,9 @@ app.ws('/ws', async function (ws, req) {
 
         break;
       case 'loadMetrics':
-        const deviceMetrics = metricsMap[obj.payload.id];
+        const payload = metricsMap[obj.payload.id];
 
-        if (!deviceMetrics) {
+        if (!payload) {
           sendOperationFailed(
             ws,
             'Metrics for device id' +
@@ -354,7 +356,6 @@ app.ws('/ws', async function (ws, req) {
           );
           return;
         }
-        const payload = deviceMetrics.payload;
         console.log(
           'loadMetrics found for id:',
           obj.payload.id,
@@ -668,7 +669,22 @@ function loadDevices() {
 }
 
 function loadMetrics() {
+  const t = loadTemperatureMetrics();
+  const l = loadLightetrics();
+
+  return {
+    [t.deviceId]: t,
+    [l.deviceId]: l,
+  };
+}
+function loadTemperatureMetrics() {
   const require = createRequire(import.meta.url);
-  var data = require(mockMetricsFullPath);
+  var data = require(temperatureMetricsFullPath);
+  return data;
+}
+
+function loadLightetrics() {
+  const require = createRequire(import.meta.url);
+  var data = require(lightMetricsFullPath);
   return data;
 }

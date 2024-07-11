@@ -23,11 +23,10 @@ func TestGenerateMockMetrics(t *testing.T) {
 	defer os.Remove(tempfile)
 
 	id := "x0000"
-	timestamps := utils_test.CreateDateTimeTimestamps(1, 24, 1)
-	values := utils_test.CreateFloatValues(24)
-	from := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC)
-	to := time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)
-
+	timestamps := utils_test.CreateDateTimeTimestamps(7, 24, 5)
+	values := utils_test.CreateFloatValues(len(timestamps))
+	from := time.Date(now.Year(), now.Month(), now.Day()-10, 0, 0, 0, 0, time.UTC)
+	to := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 
 	mockClock := mocks.NewMockClock(func() time.Time {
 		return time.Now()
@@ -42,10 +41,10 @@ func TestGenerateMockMetrics(t *testing.T) {
 	deviceName := fmt.Sprintf("device %v", 0)
 
 	fmt.Println("total timestamps: ", len(timestamps))
-	dev := createMockDevice(id, deviceName, 2, "numeric", time.Now(), nil)
+	dev := createMockDevice(id, deviceName, 1, "numeric", time.Now(), nil)
 	for tIdx, timestamp := range timestamps {
 
-		dev = createMockDevice(id, deviceName, 2, "numeric", *timestamp, values[tIdx])
+		dev = createMockDevice(id, deviceName, 1, "numeric", *timestamp, values[tIdx])
 		payload := utils_test.Payload(dev)
 
 		mockClock.SetMockTime(*timestamp)
