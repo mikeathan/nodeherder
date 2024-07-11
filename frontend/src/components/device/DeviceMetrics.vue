@@ -10,6 +10,7 @@ import DeviceChart from '../device/DeviceChart.vue';
 
 import { KeyyValuePair } from '@/types/types';
 import { toUnix } from '@/utils/date.utils';
+import { Chart, ChartData } from 'chart.js';
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -48,46 +49,56 @@ function dateSelected(value: any) {
   store.dispatch('metrics/query', request);
 }
 
-const metricsRequest = ref<
-  KeyyValuePair<DeviceMetricsRequest>
->({} as KeyyValuePair<DeviceMetricsRequest>);
+const chartData = ref<KeyyValuePair<DeviceMetricsRequest>>(
+  {} as KeyyValuePair<DeviceMetricsRequest>,
+);
 
 const deviceMetrics = computed(() => {
   const results = store.getters['metrics/view'](
     props.id,
   ) as DeviceMetrics;
   if (results != null) {
-    const chartData = {
-      labels: [],
-      datasets: [
-        {
-          label: 'Data One',
-          backgroundColor: '#f87979',
-          data: [],
-        },
-      ],
-    };
-
     // brightness
     // timestamp : 1
     // value: 1
     // timestamp: 2
     // value :2
 
-    const chartData = {
-      labels: yourArrayOfExposes[0].timestamps, // Assuming all exposes have the same timestamps length
-      datasets: yourArrayOfExposes.map((expose) => ({
-        label: expose.name, // Assuming 'name' property exists for identification
-        data: expose.timestamps.map((timestamp, index) => ({
-          x: timestamp,
-          y: expose.values[index],
-        })),
-        borderColor: 'rgba(75, 192, 192, 0.8)', // Example blue color
+    // type: 'scatter',
+    // datasets: [
+    //     {
+    //       label: 'Data One',
+    //       backgroundColor: '#f87979',
+    //       data: [],
+    //     },
+    //   ],
+
+    const datasets = results.expose.map((expose) => ({
+      label: expose.name,
+      data: expose.timestamp.map((timestamp, index) => ({
+        x: timestamp,
+        y: expose.values[index],
       })),
+    }));
+    const chartData = {
+      datasets: datasets,
     };
-    results.expose.forEach((expose) => {
-      expose.timestamp.forEach((timestamp) => {});
-    });
+    return chartData;
+    // const expose = results.expose[0];
+    // const chartData = {
+    //   labels: expose.timestamp, // THIS IS WRONG HERE
+    //   datasets: results.expose.map((expose) => ({
+    //     label: expose.name,
+    //     data: expose.timestamp.map((timestamp, index) => ({
+    //       x: timestamp,
+    //       y: expose.values[index],
+    //     })),
+    //     borderColor: 'rgba(75, 192, 192, 0.8)', // Example blue color
+    //   })),
+    // };
+    // results.expose.forEach((expose) => {
+    //   expose.timestamp.forEach((timestamp) => {});
+    // });
   }
   //     var request: DeviceMetricsRequest = {
   //         id: props.id,
@@ -98,7 +109,8 @@ const deviceMetrics = computed(() => {
   //     store.dispatch('metrics/query', request);
   // }
 
-  return results;
+  return null;
+  // return results;
 });
 
 // const data: ChartData = {
@@ -139,5 +151,5 @@ const deviceMetrics = computed(() => {
   </div>
   {{ deviceMetrics }}
 
-  <DeviceChart></DeviceChart>
+  <DeviceChart :chartData="{ deviceMetrics }"></DeviceChart>
 </template>
