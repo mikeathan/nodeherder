@@ -16,7 +16,7 @@ const automationFullPath =
 const lightMetricsFullPath = './light_metrics.json';
 const temperatureMetricsFullPath =
   './tempreature_metrics.json';
-
+const presenceMetricsFullPath = './presence_metrics.json';
 // temperature
 const temperatureChangeDelaySec = 5;
 const temperatureMin = 10.0;
@@ -671,10 +671,11 @@ function loadDevices() {
 function loadMetrics() {
   const t = loadTemperatureMetrics();
   const l = loadLightetrics();
-
+  const p = loadPresenceMetrics();
   return {
     [t.deviceId]: t,
     [l.deviceId]: l,
+    [p.deviceId]: p,
   };
 }
 function loadTemperatureMetrics() {
@@ -683,6 +684,11 @@ function loadTemperatureMetrics() {
   return data;
 }
 
+function loadPresenceMetrics() {
+  const require = createRequire(import.meta.url);
+  var data = require(presenceMetricsFullPath);
+  return data;
+}
 function loadLightetrics() {
   const require = createRequire(import.meta.url);
   var data = require(lightMetricsFullPath);
