@@ -103,21 +103,7 @@ TODO
 
 frontend metrics
 
-example
-
-id = x01
-expose = brightness
-values=[...]
-timestamps=[...]
-
-in UI
-UI form fields
-
-- id:x01
-- expose: brightness
-- from: timestamp
-- to: timestamp
-
+need alot of test data for the test server
 submit button
 toggle for live data ? later
 
