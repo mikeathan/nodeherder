@@ -518,6 +518,24 @@ func TestDevicesBroadcastDeviceEvent(t *testing.T) {
 	}
 }
 
+// // TODO: test if presence is converted to 0 and 1
+// func TestDevicePackageData(t *testing.T) {
+
+// 	p := &devices.UpdatePackage{Id: "x0111", LastSeen: time.Now().String(), Data: make(map[string]any), Properties: make(map[string]any)}
+
+// 	p.Data["temperature"] = 15.6
+// 	p.Data["humidity"] = 61.2
+// 	p.Data["lux"] = 599.0
+// 	p.Data["human_presence"] = "on"
+
+// 	temp, err := json.Marshal(p.Data)
+// 	if err == nil {
+// 		fmt.Println(string(temp))
+// 	} else {
+// 		fmt.Println(err.Error())
+// 	}
+// }
+
 func TestAvailabilityStatusIsUpdated(t *testing.T) {
 
 	name := "device 1"

@@ -1,8 +1,8 @@
 {
   "deviceId": "0x00124b0029207763",
-  "Expose": [
+  "expose": [
     {
-      "name": "property_x0000_1",
+      "name": "temperature",
       "type": "float32",
       "timestamp": [
         "2024-07-05T00:00:00Z",

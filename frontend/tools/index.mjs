@@ -13,10 +13,10 @@ import { createRequire } from 'module';
 const devicesFullPath = '../../docs/devices.json';
 const automationFullPath =
   '../../core/config/0x001788010d7d9d3f.json';
-const lightMetricsFullPath = './light_metrics.json';
+const lightMetricsFullPath = './metrics/light.json';
 const temperatureMetricsFullPath =
-  './tempreature_metrics.json';
-const presenceMetricsFullPath = './presence_metrics.json';
+  './metrics/temperature.json';
+const presenceMetricsFullPath = './metrics/presence.json';
 // temperature
 const temperatureChangeDelaySec = 5;
 const temperatureMin = 10.0;

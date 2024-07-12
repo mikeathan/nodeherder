@@ -1,6 +1,7 @@
 package devices
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"node-herder/utils"
@@ -89,10 +90,32 @@ func NewDevice(id string) *Device {
 	}
 }
 
+type PackageData map[string]any
+
+func (c PackageData) MarshalJSON() ([]byte, error) {
+	tempMap := make(map[string]any)
+	for key, value := range c {
+		switch v := value.(type) {
+		case string:
+			if v == "on" {
+				tempMap[key] = 1
+			} else if v == "off" {
+				tempMap[key] = 0
+			} else {
+				tempMap[key] = v
+			}
+
+		default:
+			tempMap[key] = v
+		}
+	}
+	return json.Marshal(tempMap)
+}
+
 type UpdatePackage struct {
 	Id         string         `json:"id"`
 	LastSeen   string         `json:"last_seen"`
-	Data       map[string]any `json:"data"`
+	Data       PackageData    `json:"data"`
 	Properties map[string]any `json:"properties"`
 }
 
