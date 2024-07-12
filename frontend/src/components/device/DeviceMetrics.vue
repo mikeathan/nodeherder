@@ -8,7 +8,9 @@ import {
 import Selection from '../input/Selection.vue';
 import DeviceChart from '../device/DeviceChart.vue';
 import { KeyyValuePair } from '@/types/types';
+import { ChartColor } from '@/types/chart.type';
 import { toUnix } from '@/utils/date.utils';
+import { chartColors } from '@/contracts/chart';
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -47,25 +49,16 @@ function dateSelected(value: any) {
   store.dispatch('metrics/query', request);
 }
 
-
-var dynamicColors = function () {
-  var r = Math.floor(Math.random() * 255);
-  var g = Math.floor(Math.random() * 255);
-  var b = Math.floor(Math.random() * 255);
-  return "rgb(" + r + "," + g + "," + b + ")";
-};
-
 const deviceMetrics = computed(() => {
   const results = store.getters['metrics/view'](
     props.id,
   ) as DeviceMetrics;
   if (results != null) {
-
     const chartData = {
-      datasets: results.expose.map((expose) => ({
+      datasets: results.expose.map((expose, idx) => ({
         label: expose.name,
-        backgroundColor: dynamicColors(),
-        borderColor: dynamicColors(),
+        backgroundColor: chartColors[idx].backgroundColor,
+        borderColor: chartColors[idx].borderColor,
         data: expose.timestamp.map((timestamp, index) => ({
           x: timestamp,
           y: expose.values[index],
@@ -73,18 +66,18 @@ const deviceMetrics = computed(() => {
       })),
     };
     return chartData;
-
   }
-  return { datasets: [], };
+  return { datasets: [] };
 });
-
-
 </script>
 <style scoped></style>
 
 <template>
   <div class="col-sm-3">
-    <Selection label="Select time offset:" @updated="dateSelected" :items="historySelection">
+    <Selection
+      label="Select time offset:"
+      @updated="dateSelected"
+      :items="historySelection">
     </Selection>
   </div>
   <DeviceChart :chartData="deviceMetrics"></DeviceChart>

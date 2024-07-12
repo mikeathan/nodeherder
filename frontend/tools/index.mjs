@@ -356,12 +356,6 @@ app.ws('/ws', async function (ws, req) {
           );
           return;
         }
-        console.log(
-          'loadMetrics found for id:',
-          obj.payload.id,
-          ' = ',
-          payload,
-        );
         sendMessage(ws, 'metrics', payload);
         break;
 
