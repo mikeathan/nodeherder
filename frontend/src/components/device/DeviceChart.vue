@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, onBeforeMount } from 'vue';
 import type { PropType, Ref } from 'vue';
-import { Bar, Line, Scatter, Bubble } from 'vue-chartjs';
+import { Bar, Line, Scatter,} from 'vue-chartjs';
+
 import {
   Chart as ChartJS,
   Title,
@@ -14,6 +15,8 @@ import {
   LineElement,
   TimeScale,
   Colors,
+  
+  
 } from 'chart.js';
 import moment from 'moment';
 import 'chartjs-adapter-moment';
@@ -27,29 +30,24 @@ const props = defineProps({
     default: null,
   },
 });
-const chartOptions2 = {
+
+
+
+const timelineOptions = {
+  responsive: true,
+  maintainAspectRatio: true,
   scales: {
     x: {
-      type: 'time',
+      type: 'time', // Set the x-axis type to 'time' for timestamps
       time: {
-        unit: 'hour',
-        displayFormats: {
-          hour: 'HH:mm',
-        },
-      },
-      title: {
-        display: true,
-        text: 'Time',
+        unit: 'day', // Adjust unit based on your timestamps (e.g., 'month', 'hour')
       },
     },
     y: {
-      title: {
-        display: true,
-        text: 'Temperature (°C)', // Adjust units as needed
-      },
+      stacked: true, // Enable stacking for bars
     },
   },
-};
+}
 const chartOptions = ref({
   responsive: true,
   maintainAspectRatio: true,
@@ -99,7 +97,7 @@ onBeforeMount(() => {
 </script>
 
 <template>
-  <Line :options="chartOptions" :data="props.chartData" />
+  <Bar :options="timelineOptions" :data="props.chartData" />
 </template>
 
 <!-- 
