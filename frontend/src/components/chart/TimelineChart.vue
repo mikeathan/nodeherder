@@ -1,41 +1,44 @@
 <script setup lang="ts">
 import { ref, onBeforeMount } from 'vue';
 import type { PropType, Ref } from 'vue';
-import { Line, Bar } from 'vue-chartjs';
+import { Line, Bar, HorizontalBar } from 'vue-chartjs';
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, LinearScale, CategoryScale, BarElement } from 'chart.js';
 
 import 'chartjs-adapter-date-fns';
 
 
 var data = {
-    labels: ['Data 1', 'Data 2', 'Data 3'],
-    datasets: [
-        {
-            label: 'My Dataset',
-            data: [[-10, 5], [2, 8], [12, 15]], // Start and end values for floating bars
-
-            backgroundColor: 'rgba(255, 99, 132, 0.2)',
-            borderColor: 'rgba(255, 99, 132, 1)',
-            borderWidth: 1,
-        },
-    ],
+    datasets: [{
+        label: 'My Dataset',
+        data: [
+            { x: '2024-07-10T00:00:00', y: 20 },
+            { x: '2024-07-12T12:30:00', y: 35 },
+            { x: '2024-07-14T18:00:00', y: 10 },
+        ],
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+    }],
 
 };
 
 const datasetoptions = {
-    indexAxis: 'y', // Set y-axis as the main axis
-    scales: {
-        x: {
-            stacked: false, // Disable stacking for floating bars
-            beginAtZero: true, // Ensure x-axis starts at zero
-        },
-    },
     plugins: {
-        tooltip: {
-            // Optional: customize tooltip position
-            yAlign: 'bottom',
+        legend: {
+            position: 'right',
         },
-    },
+    }
+    , scales: {
+        xAxes: [{
+            type: 'time',
+            time: {
+                unit: 'day',
+                tooltipFormat: 'YYYY-MM-DD HH:mm:ss' // Optional: format for hover tooltip
+            }
+        }],
+        yAxes: [{
+            stacked: true // Optional: stack bars on top of each other
+        }]
+    }
 };
 
 const options = {
