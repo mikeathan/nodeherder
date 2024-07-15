@@ -6,7 +6,7 @@ import {
   DeviceMetrics,
 } from '@/types/metrics';
 import Selection from '../input/Selection.vue';
-import DeviceChart from '../device/DeviceChart.vue';
+import TimelineChart from '../chart/TimelineChart.vue';
 import { KeyyValuePair } from '@/types/types';
 import { ChartColor } from '@/types/chart.type';
 import { toUnix } from '@/utils/date.utils';
@@ -132,6 +132,5 @@ const deviceMetrics = computed(() => {
     </Selection>
   </div>
 
-  use Timeline
-  <DeviceChart :chartData="deviceMetrics" :options="timelineOptions"></DeviceChart>
+  <TimelineChart :chartData="deviceMetrics" :options="timelineOptions"></TimelineChart>
 </template>
