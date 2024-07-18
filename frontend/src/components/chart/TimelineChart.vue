@@ -9,106 +9,100 @@ const presenceData = ref([
   { timestamp: '2024-07-17T12:00:00', value: 0 }, // Off at 12:00
   { timestamp: '2024-07-17T14:00:00', value: 1 }, // On at 14:00
   { timestamp: '2024-07-17T18:00:00', value: 0 }, // Off at 18:00
+  { timestamp: '2024-07-17T20:00:00', value: 1 }, // On at 20:00
+  { timestamp: '2024-07-17T20:05:00', value: 0 }, // Off at 20:05
+  { timestamp: '2024-07-17T20:10:00', value: 1 }, // On at 20:10
+  { timestamp: '2024-07-17T20:24:00', value: 0 }, // Off at 20:24
 ]);
+
+function convertToApexTimelineRangebarData(
+  data: { timestamp: Date; value: number }[],
+): any[] {
+  const apexData: any[] = [];
+
+  // Group data by presence (value)
+  const presenceGroups = data.reduce((acc, curr) => {
+    const presence = curr.value;
+    acc[presence] = acc[presence] || [];
+    acc[presence].push(curr.timestamp);
+    return acc;
+  }, {});
+
+  // Convert timestamps to epoch milliseconds for ApexCharts
+  for (const presence in presenceGroups) {
+    const timestamps = presenceGroups[presence].map(
+      (timestamp) => timestamp.getTime(),
+    );
+    apexData.push({
+      x: presence === '1' ? 'Present' : 'Absent', // Set labels based on presence value
+      y: timestamps,
+    });
+  }
+
+  return apexData;
+}
 
 const series = [
   {
-    name: 'George Washington',
+    name: 'ON',
     data: [
       {
-        x: 'President',
+        x: 'Presence',
         y: [
-          new Date(1789, 3, 30).getTime(),
-          new Date(1797, 2, 4).getTime(),
+          new Date('2024-07-17T09:00:00').getTime(),
+          new Date('2024-07-17T12:00:00').getTime(),
         ],
       },
     ],
   },
-  // John Adams
   {
-    name: 'John Adams',
+    name: 'OFF',
     data: [
       {
-        x: 'President',
+        x: 'Presence',
         y: [
-          new Date(1797, 2, 4).getTime(),
-          new Date(1801, 2, 4).getTime(),
-        ],
-      },
-      {
-        x: 'Vice President',
-        y: [
-          new Date(1789, 3, 21).getTime(),
-          new Date(1797, 2, 4).getTime(),
-        ],
-      },
-    ],
-  },
-  // Thomas Jefferson
-  {
-    name: 'Thomas Jefferson',
-    data: [
-      {
-        x: 'President',
-        y: [
-          new Date(1801, 2, 4).getTime(),
-          new Date(1809, 2, 4).getTime(),
-        ],
-      },
-      {
-        x: 'Vice President',
-        y: [
-          new Date(1797, 2, 4).getTime(),
-          new Date(1801, 2, 4).getTime(),
-        ],
-      },
-      {
-        x: 'Secretary of State',
-        y: [
-          new Date(1790, 2, 22).getTime(),
-          new Date(1793, 11, 31).getTime(),
+          new Date('2024-07-17T12:00:00').getTime(),
+          new Date('2024-07-17T14:00:00').getTime(),
         ],
       },
     ],
   },
 ];
+
 const chartOptions = {
   chart: {
-    height: 350,
+    height: 450,
     type: 'rangeBar',
   },
   plotOptions: {
     bar: {
       horizontal: true,
-      barHeight: '50%',
+      barHeight: '20%',
       rangeBarGroupRows: true,
     },
-  },
-  colors: [
-    '#008FFB',
-    '#00E396',
-    '#FEB019',
-    '#FF4560',
-    '#775DD0',
-    '#3F51B5',
-    '#546E7A',
-    '#D4526E',
-    '#8D5B4C',
-    '#F86624',
-    '#D7263D',
-    '#1B998B',
-    '#2E294E',
-    '#F46036',
-    '#E2C044',
-  ],
-  fill: {
-    type: 'solid',
+    fill: {
+      type: 'solid',
+    },
+    xaxis: {
+      type: 'datetime',
+    },
+    legend: {
+      position: 'right',
+    },
   },
   xaxis: {
     type: 'datetime',
   },
+  stroke: {
+    width: 1,
+  },
+  fill: {
+    type: 'solid',
+    opacity: 0.6,
+  },
   legend: {
-    position: 'right',
+    position: 'top',
+    horizontalAlign: 'left',
   },
 };
 
