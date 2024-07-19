@@ -54,9 +54,13 @@ function convertToTimelineRangebarData(
         const currentTimestamp = data[j].timestamp;
 
         // if we dont have next timestamp
-        //d efault to now as its still in that state
+        // default to now as its still in that state
+
+        // TODO:
+        // maybe get the range ofthe query and use that for the next timestamp
+        // that something to be done on the server side 
         const nextTimestamp = (j + 1 >= data.length) ?
-            new Date().getTime() :
+            new Date().getTime() /* TEMPORARY */ :
             new Date(data[j + 1].timestamp).getTime();
 
         transformedData.push({
@@ -71,32 +75,6 @@ function convertToTimelineRangebarData(
     return transformedData;
 }
 
-// const series: TimelineChartEntry[] = [
-//     {
-//         name: 'ON',
-//         data: [
-//             {
-//                 x: 'Presence',
-//                 y: [
-//                     new Date('2024-07-17T09:00:00').getTime(),
-//                     new Date('2024-07-17T12:00:00').getTime(),
-//                 ],
-//             },
-//         ],
-//     },
-//     {
-//         name: 'OFF',
-//         data: [
-//             {
-//                 x: 'Presence',
-//                 y: [
-//                     new Date('2024-07-17T12:00:00').getTime(),
-//                     new Date('2024-07-17T14:00:00').getTime(),
-//                 ],
-//             },
-//         ],
-//     },
-// ];
 
 const chartOptions = {
     chart: {
