@@ -27,7 +27,7 @@ const presenceData = ref<PresenceData[]>([
 ])
 
 const chartDataTest = computed(() => {
-    return convertToApexTimelineRangebarData(presenceData.value);
+    return convertToTimelineRangebarData(presenceData.value);
 });
 
 type PresenceData = {
@@ -35,76 +35,68 @@ type PresenceData = {
     value: 0 | 1;
 };
 
+type TimelineChartEntry = {
+    name: string;
+    data: [{
+        x: string;
+        y: number[]
+    }]
+};
 
-function convertToApexTimelineRangebarData(
+
+function convertToTimelineRangebarData(
     data: PresenceData[],
-) {
+): TimelineChartEntry[] {
+    const transformedData: TimelineChartEntry[] = [];
 
-    const apexData: any[] = [];
+    for (let j = 0; j < data.length; j++) {
+        const currentValue = data[j].value;
+        const currentTimestamp = data[j].timestamp;
 
-    const groupedByPresence: Record<number, number[]> = data.reduce((acc: any, curr) => {
-        const presence: number = curr.value as number;
-        acc[presence] = acc[presence] || [];
-        acc[presence].push(new Date(curr.timestamp).getTime(),);
-        return acc;
-    }, {} as Record<number, number[]>);
+        // if we dont have next timestamp
+        //d efault to now as its still in that state
+        const nextTimestamp = (j + 1 >= data.length) ?
+            new Date().getTime() :
+            new Date(data[j + 1].timestamp).getTime();
 
-
-
-    for (const presence in groupedByPresence) {
-        const timestamps: number[] = groupedByPresence[presence];
-        if (timestamps.length !== 2) {
-            console.warn(
-                `Presence value ${presence} has ${timestamps.length} timestamps, expected 2 for rangebar chart. Skipping this presence.`
-            );
-            continue;
-        }
-
-        apexData.push({
-            x: presence,
-            y: timestamps,
+        transformedData.push({
+            name: currentValue === 0 ? "Present" : "Absent",
+            data: [{
+                x: 'Presence',
+                y: [new Date(currentTimestamp).getTime(), new Date(nextTimestamp).getTime()],
+            }]
         });
     }
-    // // Convert timestamps to epoch milliseconds for ApexCharts
-    // for (const presence in presenceGroups) {
-    //     const timestamps = presenceGroups[presence].map(
-    //         (timestamp: Date) => new Date(timestamp).getTime(),
-    //     );
-    //     apexData.push({
-    //         x: presence === '1' ? 'Present' : 'Absent', // Set labels based on presence value
-    //         y: timestamps,
-    //     });
-    // }
 
-    // return groupedByPresence;
+    return transformedData;
 }
 
-const series = [
-    {
-        name: 'ON',
-        data: [
-            {
-                x: 'Presence',
-                y: [
-                    new Date('2024-07-17T09:00:00').getTime(),
-                    new Date('2024-07-17T12:00:00').getTime(),
-                ],
-            },
-        ],
-    },
-    {
-        name: 'OFF',
-        data: [
-            {
-                x: 'Presence',
-                y: [
-                    new Date('2024-07-17T12:00:00').getTime(),
-                    new Date('2024-07-17T14:00:00').getTime(),
-                ],
-            },
-        ],
-    },
-];
+// const series: TimelineChartEntry[] = [
+//     {
+//         name: 'ON',
+//         data: [
+//             {
+//                 x: 'Presence',
+//                 y: [
+//                     new Date('2024-07-17T09:00:00').getTime(),
+//                     new Date('2024-07-17T12:00:00').getTime(),
+//                 ],
+//             },
+//         ],
+//     },
+//     {
+//         name: 'OFF',
+//         data: [
+//             {
+//                 x: 'Presence',
+//                 y: [
+//                     new Date('2024-07-17T12:00:00').getTime(),
+//                     new Date('2024-07-17T14:00:00').getTime(),
+//                 ],
+//             },
+//         ],
+//     },
+// ];
 
 const chartOptions = {
     chart: {
@@ -149,14 +141,8 @@ onBeforeMount(() => {
 </script>
 
 <template>
-
-    {{ chartDataTest }}
     <div class="chart-container">
-        <VueApexCharts width="800" height="400" :options="chartOptions" :series="series">
+        <VueApexCharts width="800" height="400" :options="chartOptions" :series="chartDataTest">
         </VueApexCharts>
     </div>
 </template>
-
-<!-- 
-// Bar
-// Line -->
