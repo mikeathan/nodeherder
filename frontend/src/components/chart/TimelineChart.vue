@@ -6,7 +6,7 @@ import VueApexCharts from 'vue3-apexcharts';
 
 const props = defineProps({
     chartData: {
-        type: Object as PropType<any>, // ChartData<'bar'
+        type: Object as PropType<any>,
         default: null,
     },
     options: {
@@ -39,7 +39,7 @@ type TimelineChartEntry = {
     name: string;
     data: [{
         x: string;
-        y: number[]
+        y: number[];
     }]
 };
 
@@ -68,6 +68,7 @@ function convertToTimelineRangebarData(
             data: [{
                 x: 'Presence',
                 y: [new Date(currentTimestamp).getTime(), new Date(nextTimestamp).getTime()],
+
             }]
         });
     }
@@ -80,6 +81,15 @@ const chartOptions = {
     chart: {
         height: 450,
         type: 'rangeBar',
+        background: '#fff',
+        toolbar: {
+            show: false
+        }
+    },
+    tooltip: {
+        x: {
+            format: "dd/MMM/yy HH:mm:ss ",
+        }
     },
     plotOptions: {
         bar: {
@@ -93,12 +103,18 @@ const chartOptions = {
         xaxis: {
             type: 'datetime',
         },
-        legend: {
-            position: 'right',
-        },
     },
+    colors: ['#FF4560', '#00E396',],
     xaxis: {
         type: 'datetime',
+        labels: {
+            datetimeFormatter: {
+                year: 'yyyy',
+                month: 'MMM \'yy',
+                day: 'dd MMM',
+                hour: 'HH:mm'
+            }
+        }
     },
     stroke: {
         width: 1,
