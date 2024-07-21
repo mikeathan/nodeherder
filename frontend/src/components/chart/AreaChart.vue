@@ -14,6 +14,7 @@ const props = defineProps({
         default: null,
     },
 });
+
 const temperatureData = ref<MetricsData[]>([
     { timestamp: '2024-07-17T09:00:00', value: 15.1 },
     { timestamp: '2024-07-17T12:00:00', value: 15.9 },
@@ -23,10 +24,10 @@ const temperatureData = ref<MetricsData[]>([
     { timestamp: '2024-07-17T20:05:00', value: 15.1 },
     { timestamp: '2024-07-17T20:10:00', value: 15.0 },
     { timestamp: '2024-07-17T20:24:00', value: 14.5 },
-])
+]);
 
 const chartDataTest = computed(() => {
-    return convertToTimelineRangebarData(presenceData.value);
+    return convert("temperature", temperatureData.value);
 });
 
 type MetricsData = {
@@ -36,42 +37,39 @@ type MetricsData = {
 
 type AreaChartEntry = {
     name: string;
-    data: [{
+    data: {
         x: string;
         y: number;
+    }[]
+};
+
+function convert(
+    name: string,
+    data: MetricsData[],
+): AreaChartEntry[] {
+    return [{
+        name: name,
+        data: data.map(({ timestamp, value }) => (
+            {
+                x: timestamp,
+                y: value,
+            }))
     }]
 };
 
 
-function convert(
-    data: MetricsData[],
-): AreaChartEntry[] {
-
-    const transformedData: AreaChartEntry[] = timestamps.map((timestamp, index) => (
-        data: {
-            x: timestamp,
-            y: yValues[index],
-        }))
-
-
-    return transformedData;
-}
-
-
 const chartOptions = {
     chart: {
-        height: 450,
         type: 'area',
         background: '#fff',
         toolbar: {
             show: false
         }
     },
-    tooltip: {
-        x: {
-            format: "dd/MMM/yy HH:mm:ss ",
-        }
+    dataLabels: {
+        enabled: false
     },
+
     stroke: {
         curve: 'smooth'
     },
@@ -86,6 +84,21 @@ const chartOptions = {
             }
         }
     },
+    Tooltip: {
+        x: {
+            format: "dd/MMM/yy HH:mm:ss ",
+        }
+    },
+    responsive: [
+        {
+            breakpoint: undefined,
+            options: {
+                chart: {
+                    width: '100%'
+                }
+            }
+        }
+    ]
 
 };
 
@@ -96,7 +109,7 @@ onBeforeMount(() => {
 
 <template>
     <div class="chart-container">
-        <VueApexCharts width="800" height="400" :options="chartOptions" :series="chartDataTest">
+        <VueApexCharts :options="chartOptions" :series="chartDataTest">
         </VueApexCharts>
     </div>
 </template>

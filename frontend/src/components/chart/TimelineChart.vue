@@ -79,7 +79,6 @@ function convertToTimelineRangebarData(
 
 const chartOptions = {
     chart: {
-        height: 450,
         type: 'rangeBar',
         background: '#fff',
         toolbar: {
@@ -127,6 +126,16 @@ const chartOptions = {
         position: 'top',
         horizontalAlign: 'left',
     },
+    responsive: [
+        {
+            breakpoint: undefined, // Matches all screens
+            options: {
+                chart: {
+                    width: '100%' // Set chart width to 100% for all screens
+                }
+            }
+        }
+    ]
 };
 
 onBeforeMount(() => {
@@ -136,7 +145,7 @@ onBeforeMount(() => {
 
 <template>
     <div class="chart-container">
-        <VueApexCharts width="800" height="400" :options="chartOptions" :series="chartDataTest">
+        <VueApexCharts :options="chartOptions" :series="chartDataTest">
         </VueApexCharts>
     </div>
 </template>

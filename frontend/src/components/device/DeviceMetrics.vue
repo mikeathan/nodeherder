@@ -7,6 +7,8 @@ import {
 } from '@/types/metrics';
 import Selection from '../input/Selection.vue';
 import TimelineChart from '../chart/TimelineChart.vue';
+import AreaChart from '../chart/AreaChart.vue';
+
 import { KeyyValuePair } from '@/types/types';
 import { ChartColor } from '@/types/chart.type';
 import { toUnix } from '@/utils/date.utils';
@@ -132,5 +134,6 @@ const deviceMetrics = computed(() => {
     </Selection>
   </div>
 
-  <TimelineChart :chartData="deviceMetrics" :options="timelineOptions"></TimelineChart>
+  <AreaChart :chartData="deviceMetrics" :options="timelineOptions"></AreaChart>
+  <!-- <TimelineChart :chartData="deviceMetrics" :options="timelineOptions"></TimelineChart> -->
 </template>
