@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onBeforeMount, computed } from 'vue';
+import { ref, computed } from 'vue';
 import type { PropType, Ref } from 'vue';
 import BaseChart from './BaseChart.vue';
+import { TimelineChartEntry } from '@/types/chart.type';
 
 const props = defineProps({
   chartData: {
@@ -62,15 +63,6 @@ const transformedChartData = computed(() => {
   return transformedData;
 });
 
-type TimelineChartEntry = {
-  name: string;
-  data: [
-    {
-      x: string;
-      y: number[];
-    },
-  ];
-};
 
 const chartOptions = {
   chart: {
@@ -133,13 +125,10 @@ const chartOptions = {
   ],
 };
 
-onBeforeMount(() => {});
 </script>
 
 <template>
   <div class="timeline-chart">
-    <BaseChart
-      :data="transformedChartData"
-      :options="chartOptions" />
+    <BaseChart :data="transformedChartData" :options="chartOptions" />
   </div>
 </template>
