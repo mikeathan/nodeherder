@@ -3,15 +3,54 @@ import { ref, computed } from 'vue';
 import type { PropType, Ref } from 'vue';
 import BaseChart from './BaseChart.vue';
 import { TimelineChartEntry } from '@/types/chart.type';
+import { DeviceMetrics } from '@/types/metrics';
 
 const props = defineProps({
   chartData: {
-    type: Object as PropType<any>,
+    type: Object as PropType<DeviceMetrics>,
     default: null,
   },
 });
 
-const NEWPresenceData = {
+TODO
+// find a way how to separate the differnt types in the graph
+const NewPresenceData: DeviceMetrics = {
+  deviceId: "device_1",
+  expose: [
+    {
+      type: 'binary',
+      name: 'Presence',
+      timestamp: [
+        '2024-07-17T09:00:00',
+        '2024-07-17T12:00:00',
+        '2024-07-17T14:00:00',
+        '2024-07-17T18:00:00',
+        '2024-07-17T20:00:00',
+        '2024-07-17T20:05:00',
+        '2024-07-17T20:10:00',
+        '2024-07-17T20:24:00',
+      ],
+      values: [1, 0, 1, 0, 1, 0, 1, 0],
+    },
+    {
+      name: 'Temperature',
+      type: 'numeric',
+      timestamp: [
+        '2024-07-17T09:00:00',
+        '2024-07-17T12:00:00',
+        '2024-07-17T14:00:00',
+        '2024-07-17T18:00:00',
+        '2024-07-17T20:00:00',
+        '2024-07-17T20:05:00',
+        '2024-07-17T20:10:00',
+        '2024-07-17T20:24:00',
+      ],
+      values: [15.1, 15.9, 16.2, 16.5, 17.1, 15.1, 15.0, 14.5],
+    }
+  ]
+};
+
+const PresenceData = {
   name: 'Presence',
   timestamp: [
     '2024-07-17T09:00:00',
@@ -29,8 +68,8 @@ const NEWPresenceData = {
 const transformedChartData = computed(() => {
   const transformedData: TimelineChartEntry[] = [];
 
-  const timestamps = NEWPresenceData.timestamp;
-  const values = NEWPresenceData.value;
+  const timestamps = PresenceData.timestamp;
+  const values = PresenceData.value;
   for (let j = 0; j < timestamps.length; j++) {
     const currentValue = values[j];
     const currentTimestamp = timestamps[j];
@@ -50,7 +89,7 @@ const transformedChartData = computed(() => {
       name: currentValue === 0 ? 'Off' : 'On',
       data: [
         {
-          x: NEWPresenceData.name,
+          x: PresenceData.name,
           y: [
             new Date(currentTimestamp).getTime(),
             new Date(nextTimestamp).getTime(),
