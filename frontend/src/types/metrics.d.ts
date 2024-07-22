@@ -25,5 +25,4 @@ export type DeviceMetricsQuery = {
   request: DeviceMetricsRequest;
   results: DeviceMetrics;
 };
-export type DeviceMetricsyMap =
-  KeyyValuePair<DeviceMetrics>;
+export type DeviceMetricsMap = KeyyValuePair<DeviceMetrics>;

@@ -1,115 +1,129 @@
 <script setup lang="ts">
 import { ref, onBeforeMount, computed } from 'vue';
 import type { PropType, Ref } from 'vue';
-import VueApexCharts from 'vue3-apexcharts';
-
+import BaseChart from './BaseChart.vue';
 
 const props = defineProps({
-    chartData: {
-        type: Object as PropType<any>,
-        default: null,
-    },
-    options: {
-        type: Object,
-        default: null,
-    },
+  chartData: {
+    type: Object as PropType<any>,
+    default: null,
+  },
 });
 
 const temperatureData = ref<MetricsData[]>([
-    { timestamp: '2024-07-17T09:00:00', value: 15.1 },
-    { timestamp: '2024-07-17T12:00:00', value: 15.9 },
-    { timestamp: '2024-07-17T14:00:00', value: 16.2 },
-    { timestamp: '2024-07-17T18:00:00', value: 16.5 },
-    { timestamp: '2024-07-17T20:00:00', value: 17.1 },
-    { timestamp: '2024-07-17T20:05:00', value: 15.1 },
-    { timestamp: '2024-07-17T20:10:00', value: 15.0 },
-    { timestamp: '2024-07-17T20:24:00', value: 14.5 },
+  { timestamp: '2024-07-17T09:00:00', value: 15.1 },
+  { timestamp: '2024-07-17T12:00:00', value: 15.9 },
+  { timestamp: '2024-07-17T14:00:00', value: 16.2 },
+  { timestamp: '2024-07-17T18:00:00', value: 16.5 },
+  { timestamp: '2024-07-17T20:00:00', value: 17.1 },
+  { timestamp: '2024-07-17T20:05:00', value: 15.1 },
+  { timestamp: '2024-07-17T20:10:00', value: 15.0 },
+  { timestamp: '2024-07-17T20:24:00', value: 14.5 },
 ]);
 
+const NEWTemperatureData = {
+  name: 'Temperature',
+  timestamp: [
+    '2024-07-17T09:00:00',
+    '2024-07-17T12:00:00',
+    '2024-07-17T14:00:00',
+    '2024-07-17T18:00:00',
+    '2024-07-17T20:00:00',
+    '2024-07-17T20:05:00',
+    '2024-07-17T20:10:00',
+    '2024-07-17T20:24:00',
+  ],
+  value: [15.1, 15.9, 16.2, 16.5, 17.1, 15.1, 15.0, 14.5],
+};
+
+const transformedChartData = computed(() => {
+  const t = data.map(({ timestamp, value }) => ({
+    x: timestamp,
+    y: value,
+  }));
+});
 const chartDataTest = computed(() => {
-    return convert("temperature", temperatureData.value);
+  return convert('temperature', temperatureData.value);
 });
 
 type MetricsData = {
-    timestamp: string;
-    value: number;
+  timestamp: string;
+  value: number;
 };
 
 type AreaChartEntry = {
-    name: string;
-    data: {
-        x: string;
-        y: number;
-    }[]
+  name: string;
+  data: {
+    x: string;
+    y: number;
+  }[];
 };
 
 function convert(
-    name: string,
-    data: MetricsData[],
+  name: string,
+  data: MetricsData[],
 ): AreaChartEntry[] {
-    return [{
-        name: name,
-        data: data.map(({ timestamp, value }) => (
-            {
-                x: timestamp,
-                y: value,
-            }))
-    }]
-};
-
+  return [
+    {
+      name: name,
+      data: data.map(({ timestamp, value }) => ({
+        x: timestamp,
+        y: value,
+      })),
+    },
+  ];
+}
 
 const chartOptions = {
-    chart: {
-        type: 'area',
-        background: '#fff',
-        toolbar: {
-            show: false
-        }
+  chart: {
+    type: 'area',
+    background: '#fff',
+    toolbar: {
+      show: false,
     },
-    dataLabels: {
-        enabled: false
-    },
+  },
+  dataLabels: {
+    enabled: false,
+  },
 
-    stroke: {
-        curve: 'smooth'
+  stroke: {
+    curve: 'smooth',
+  },
+  xaxis: {
+    type: 'datetime',
+    labels: {
+      datetimeFormatter: {
+        year: 'yyyy',
+        month: "MMM 'yy",
+        day: 'dd MMM',
+        hour: 'HH:mm',
+      },
     },
-    xaxis: {
-        type: 'datetime',
-        labels: {
-            datetimeFormatter: {
-                year: 'yyyy',
-                month: 'MMM \'yy',
-                day: 'dd MMM',
-                hour: 'HH:mm'
-            }
-        }
+  },
+  Tooltip: {
+    x: {
+      format: 'dd/MMM/yy HH:mm:ss ',
     },
-    Tooltip: {
-        x: {
-            format: "dd/MMM/yy HH:mm:ss ",
-        }
+  },
+  responsive: [
+    {
+      breakpoint: undefined,
+      options: {
+        chart: {
+          width: '100%',
+        },
+      },
     },
-    responsive: [
-        {
-            breakpoint: undefined,
-            options: {
-                chart: {
-                    width: '100%'
-                }
-            }
-        }
-    ]
-
+  ],
 };
 
-onBeforeMount(() => {
-
-});
+onBeforeMount(() => {});
 </script>
 
 <template>
-    <div class="chart-container">
-        <VueApexCharts :options="chartOptions" :series="chartDataTest">
-        </VueApexCharts>
-    </div>
+  <div class="area-chart">
+    <BaseChart
+      :data="chartDataTest"
+      :options="chartOptions" />
+  </div>
 </template>

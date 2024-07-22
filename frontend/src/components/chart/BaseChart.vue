@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, onBeforeMount } from 'vue';
 import type { PropType, Ref } from 'vue';
+import VueApexCharts from 'vue3-apexcharts';
 
 const props = defineProps({
-  chartData: {
-    type: Object as PropType<any>, // ChartData<'bar'
+  data: {
+    type: Object as PropType<any>,
     default: null,
   },
   options: {
@@ -13,9 +14,14 @@ const props = defineProps({
   },
 });
 
-const chartOptions = ref({});
-
 onBeforeMount(() => {});
 </script>
 
-<template></template>
+<template>
+  <div class="chart-container">
+    <VueApexCharts
+      :options="props.options"
+      :series="props.data">
+    </VueApexCharts>
+  </div>
+</template>

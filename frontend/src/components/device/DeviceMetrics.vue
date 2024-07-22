@@ -51,12 +51,10 @@ function dateSelected(value: any) {
   store.dispatch('metrics/query', request);
 }
 const timelineDataset = computed(() => {
-
   const results = store.getters['metrics/view'](
     props.id,
   ) as DeviceMetrics;
   if (results != null) {
-
     const datasets = results.expose.map((expose, idx) => ({
       label: expose.name,
 
@@ -66,16 +64,20 @@ const timelineDataset = computed(() => {
       })),
     }));
 
+    const parsedTimestamps: Date[] = datasets.reduce(
+      (acc: any, dataset) => {
+        dataset.data.forEach((datapoint) => {
+          const timestamp = new Date(datapoint.x); // Assuming timestamps are strings in YYYY-MM-DD format
+          acc.push(timestamp);
+        });
+        return acc;
+      },
+      [],
+    );
 
-    const parsedTimestamps: Date[] = datasets.reduce((acc: any, dataset) => {
-      dataset.data.forEach(datapoint => {
-        const timestamp = new Date(datapoint.x); // Assuming timestamps are strings in YYYY-MM-DD format
-        acc.push(timestamp);
-      });
-      return acc;
-    }, []);
-
-    const labels = [...new Set(parsedTimestamps)].map(timestamp => timestamp.toLocaleDateString());
+    const labels = [...new Set(parsedTimestamps)].map(
+      (timestamp) => timestamp.toLocaleDateString(),
+    );
     const chartData = {
       data: {
         labels,
@@ -87,8 +89,8 @@ const timelineDataset = computed(() => {
           stack: 'data',
         })),
       },
-    }
-    return chartData
+    };
+    return chartData;
   }
   return { datasets: [] };
 });
@@ -103,7 +105,6 @@ const timelineOptions = {
     },
   },
 };
-
 
 const deviceMetrics = computed(() => {
   const results = store.getters['metrics/view'](
@@ -130,10 +131,15 @@ const deviceMetrics = computed(() => {
 
 <template>
   <div class="col-sm-3">
-    <Selection label="Select time offset:" @updated="dateSelected" :items="historySelection">
+    <Selection
+      label="Select time offset:"
+      @updated="dateSelected"
+      :items="historySelection">
     </Selection>
   </div>
 
-  <AreaChart :chartData="deviceMetrics" :options="timelineOptions"></AreaChart>
-  <!-- <TimelineChart :chartData="deviceMetrics" :options="timelineOptions"></TimelineChart> -->
+  <!-- <AreaChart :chartData="deviceMetrics" :options="timelineOptions"></AreaChart> -->
+  <TimelineChart
+    :chartData="deviceMetrics"
+    :options="timelineOptions"></TimelineChart>
 </template>

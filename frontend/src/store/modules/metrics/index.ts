@@ -3,7 +3,7 @@ import { MetricsModuleState } from './state';
 import { RootState } from '@/store/state';
 import {
   DeviceMetrics,
-  DeviceMetricsyMap,
+  DeviceMetricsMap,
   DeviceMetricsRequest,
 } from '@/types/metrics';
 
@@ -14,7 +14,7 @@ export const MetricsModule: Module<
   namespaced: true,
 
   state: () => ({
-    deviceMetricsQueryMap: {} as DeviceMetricsyMap,
+    deviceMetricsQueryMap: {} as DeviceMetricsMap,
   }),
 
   getters: {
