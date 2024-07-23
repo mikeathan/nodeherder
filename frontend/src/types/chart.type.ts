@@ -23,6 +23,8 @@ export type TimelineChartEntry = {
   data: TimelineDataPoint[];
 };
 
-export type ChartTypes = AreaType | TimelineType;
-export type AreaType = 'float32' | 'AreaChart';
-export type TimelineType = 'int' | 'TimelineChart';
+export type ChartType = keyof typeof ChartTypes;
+export const ChartTypes = {
+  AreaChart: 'AreaChart',
+  TimelineChart: 'TimelineChart',
+} as const;

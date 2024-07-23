@@ -1,5 +1,11 @@
 import { KeyyValuePair } from './types';
 
+export const MetricsTypes = {
+  Integer: 'int',
+  Float: 'float32',
+  Enums: 'enum',
+};
+
 export type DeviceMetrics = {
   deviceId: string;
   expose: DeviceExposeMetrics[];

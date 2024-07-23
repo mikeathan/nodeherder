@@ -1,8 +1,11 @@
+import AreaChart from '@/components/chart/AreaChart.vue';
+import { ChartType, ChartTypes } from '@/types/chart.type';
 import {
   DeviceMetrics,
   DeviceExposeMetrics,
+  MetricsTypes,
 } from '@/types/metrics';
-import { KeyyValuePair } from '@/types/types';
+import { GenericMap, KeyyValuePair } from '@/types/types';
 
 // export function groupMetricsByType(
 //   metrics: DeviceMetrics,
@@ -18,18 +21,18 @@ import { KeyyValuePair } from '@/types/types';
 //   }, {} as KeyyValuePair<DeviceExposeMetrics[]>);
 // }
 
-TODO - fix;
 
 export function groupMetricsByType(
   metrics: DeviceMetrics,
 ): KeyyValuePair<DeviceExposeMetrics[]> {
-  let map: KeyyValuePair<DeviceExposeMetrics[]> = {};
+  let map: GenericMap<ChartType, DeviceExposeMetrics[]> = {};
 
   metrics.expose.forEach((expose) => {
-    if (expose.type === 'int') {
-      map['Timeline'].push(expose);
+    if (expose.type === MetricsTypes.Integer) {
+        
+      map[ChartTypes.TimelineChart] ?? [].push(expose);
     } else {
-      map['AreaChart'].push(expose);
+      map[ChartTypes.AreaChart].push(expose);
     }
   });
 
