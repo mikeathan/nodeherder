@@ -12,7 +12,8 @@ import AreaChart from '../chart/AreaChart.vue';
 import { KeyyValuePair } from '@/types/types';
 import { ChartColor } from '@/types/chart.type';
 import { toUnix } from '@/utils/date.utils';
-import { chartColors } from '@/contracts/chart';
+import { groupMetricsByType } from '@/contracts/metrics';
+import { ChartComponents } from '@/mixins/useChartComponents';
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -51,17 +52,20 @@ function dateSelected(value: any) {
   store.dispatch('metrics/query', request);
 }
 
-const deviceMetrics = computed(() => {
+const groupedMetrics = computed(() => {
   const results = store.getters['metrics/view'](
     props.id,
   ) as DeviceMetrics;
 
-  if (results != null) {
-    return results;
-  }
+  // ChartComponents['AreaChart'].chartData = results;
 
-  return {} as DeviceMetrics;
+  return groupMetricsByType(results);
 });
+
+// WE NEED TO GROUP
+// INT GOOES TO TIMELINE
+// FLOAT AND EVERYTHNG ELSE GOES TO AREA
+
 </script>
 <style scoped></style>
 
@@ -71,6 +75,11 @@ const deviceMetrics = computed(() => {
     </Selection>
   </div>
 
+  {{ groupedMetrics }}
+  
   <!-- <AreaChart :chartData="deviceMetrics" ></AreaChart> -->
-  <TimelineChart :chartData="deviceMetrics"></TimelineChart>
+  <!-- <TimelineChart :chartData="deviceMetrics"></TimelineChart> -->
+
+  <!-- <component :is="PanelComponents[actionType]" v-bind="{ automationId: props.automationId, action: currentAction }"
+  @delete="removeAction" @save="saveAction" /> -->
 </template>

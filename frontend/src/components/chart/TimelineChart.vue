@@ -12,43 +12,6 @@ const props = defineProps({
   },
 });
 
-TODO
-// find a way how to separate the differnt types in the graph
-const NewPresenceData: DeviceMetrics = {
-  deviceId: "device_1",
-  expose: [
-    {
-      type: 'binary',
-      name: 'Presence',
-      timestamp: [
-        '2024-07-17T09:00:00',
-        '2024-07-17T12:00:00',
-        '2024-07-17T14:00:00',
-        '2024-07-17T18:00:00',
-        '2024-07-17T20:00:00',
-        '2024-07-17T20:05:00',
-        '2024-07-17T20:10:00',
-        '2024-07-17T20:24:00',
-      ],
-      values: [1, 0, 1, 0, 1, 0, 1, 0],
-    },
-    {
-      name: 'Temperature',
-      type: 'numeric',
-      timestamp: [
-        '2024-07-17T09:00:00',
-        '2024-07-17T12:00:00',
-        '2024-07-17T14:00:00',
-        '2024-07-17T18:00:00',
-        '2024-07-17T20:00:00',
-        '2024-07-17T20:05:00',
-        '2024-07-17T20:10:00',
-        '2024-07-17T20:24:00',
-      ],
-      values: [15.1, 15.9, 16.2, 16.5, 17.1, 15.1, 15.0, 14.5],
-    }
-  ]
-};
 
 const PresenceData = {
   name: 'Presence',

@@ -1,5 +1,8 @@
 import { ChartColor } from '@/types/chart.type';
 
+
+export const chartColors: ChartColor[] = buildColors(20);
+
 var dynamicColors = function () {
   var r = Math.floor(Math.random() * 255);
   var g = Math.floor(Math.random() * 255);
@@ -11,8 +14,6 @@ var dynamicColors = function () {
       'rgba(' + r + ',' + g + ',' + b + ',' + 0.5 + ')',
   };
 };
-
-export const chartColors: ChartColor[] = buildColors(20);
 
 function buildColors(n: number): ChartColor[] {
   let chartColors: ChartColor[] = [];

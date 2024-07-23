@@ -22,3 +22,7 @@ export type TimelineChartEntry = {
   name: string;
   data: TimelineDataPoint[];
 };
+
+export type ChartTypes = AreaType | TimelineType;
+export type AreaType = 'float32' | 'AreaChart';
+export type TimelineType = 'int' | 'TimelineChart';
