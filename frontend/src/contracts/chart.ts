@@ -1,6 +1,5 @@
 import { ChartColor } from '@/types/chart.type';
 
-
 export const chartColors: ChartColor[] = buildColors(20);
 
 var dynamicColors = function () {

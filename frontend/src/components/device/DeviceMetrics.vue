@@ -4,16 +4,14 @@ import { computed, onMounted, ref } from 'vue';
 import {
   DeviceMetricsRequest,
   DeviceMetrics,
-} from '@/types/metrics';
+} from '@/types/metrics.type';
 import Selection from '../input/Selection.vue';
 import TimelineChart from '../chart/TimelineChart.vue';
 import AreaChart from '../chart/AreaChart.vue';
 
 import { KeyyValuePair } from '@/types/types';
-import { ChartColor } from '@/types/chart.type';
 import { toUnix } from '@/utils/date.utils';
 import { groupMetricsByType } from '@/contracts/metrics';
-import { ChartComponents } from '@/mixins/useChartComponents';
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -57,26 +55,26 @@ const groupedMetrics = computed(() => {
     props.id,
   ) as DeviceMetrics;
 
-  // ChartComponents['AreaChart'].chartData = results;
-
   return groupMetricsByType(results);
 });
 
 // WE NEED TO GROUP
 // INT GOOES TO TIMELINE
 // FLOAT AND EVERYTHNG ELSE GOES TO AREA
-
 </script>
 <style scoped></style>
 
 <template>
   <div class="col-sm-3">
-    <Selection label="Select time offset:" @updated="dateSelected" :items="historySelection">
+    <Selection
+      label="Select time offset:"
+      @updated="dateSelected"
+      :items="historySelection">
     </Selection>
   </div>
 
   {{ groupedMetrics }}
-  
+
   <!-- <AreaChart :chartData="deviceMetrics" ></AreaChart> -->
   <!-- <TimelineChart :chartData="deviceMetrics"></TimelineChart> -->
 

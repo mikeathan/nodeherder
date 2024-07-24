@@ -1,40 +1,26 @@
-import AreaChart from '@/components/chart/AreaChart.vue';
 import { ChartType, ChartTypes } from '@/types/chart.type';
 import {
   DeviceMetrics,
   DeviceExposeMetrics,
   MetricsTypes,
-} from '@/types/metrics';
-import { GenericMap, KeyyValuePair } from '@/types/types';
-
-// export function groupMetricsByType(
-//   metrics: DeviceMetrics,
-// ): KeyyValuePair<DeviceExposeMetrics[]> {
-//   if (!metrics) {
-//     return {};
-//   }
-//   return metrics.expose.reduce((grouped, expose) => {
-//     grouped[expose.type] = (
-//       grouped[expose.type] || []
-//     ).concat(expose);
-//     return grouped;
-//   }, {} as KeyyValuePair<DeviceExposeMetrics[]>);
-// }
-
+} from '@/types/metrics.type';
+import { KeyyValuePair } from '@/types/types';
 
 export function groupMetricsByType(
   metrics: DeviceMetrics,
 ): KeyyValuePair<DeviceExposeMetrics[]> {
-  let map: GenericMap<ChartType, DeviceExposeMetrics[]> = {};
-
-  metrics.expose.forEach((expose) => {
+  if (!metrics) {
+    return {};
+  }
+  return metrics.expose.reduce((grouped, expose) => {
+    let chartType: ChartType = ChartTypes.AreaChart;
     if (expose.type === MetricsTypes.Integer) {
-        
-      map[ChartTypes.TimelineChart] ?? [].push(expose);
-    } else {
-      map[ChartTypes.AreaChart].push(expose);
+      chartType = ChartTypes.TimelineChart;
     }
-  });
+    grouped[chartType] = (grouped[chartType] || []).concat(
+      expose,
+    );
 
-  return map;
+    return grouped;
+  }, {} as KeyyValuePair<DeviceExposeMetrics[]>);
 }

@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import type { PropType, Ref } from 'vue';
 import BaseChart from './BaseChart.vue';
 import { TimelineChartEntry } from '@/types/chart.type';
-import { DeviceMetrics } from '@/types/metrics';
+import { DeviceMetrics } from '@/types/metrics.type';
 
 const props = defineProps({
   chartData: {
@@ -11,7 +11,6 @@ const props = defineProps({
     default: null,
   },
 });
-
 
 const PresenceData = {
   name: 'Presence',
@@ -64,7 +63,6 @@ const transformedChartData = computed(() => {
 
   return transformedData;
 });
-
 
 const chartOptions = {
   chart: {
@@ -126,11 +124,12 @@ const chartOptions = {
     },
   ],
 };
-
 </script>
 
 <template>
   <div class="timeline-chart">
-    <BaseChart :data="transformedChartData" :options="chartOptions" />
+    <BaseChart
+      :data="transformedChartData"
+      :options="chartOptions" />
   </div>
 </template>

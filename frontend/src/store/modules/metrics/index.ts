@@ -5,7 +5,7 @@ import {
   DeviceMetrics,
   DeviceMetricsMap,
   DeviceMetricsRequest,
-} from '@/types/metrics';
+} from '@/types/metrics.type';
 
 export const MetricsModule: Module<
   MetricsModuleState,

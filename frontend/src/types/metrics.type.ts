@@ -1,7 +1,7 @@
 import { KeyyValuePair } from './types';
 
 export const MetricsTypes = {
-  Integer: 'int',
+  Integer: 'integer',
   Float: 'float32',
   Enums: 'enum',
 };
