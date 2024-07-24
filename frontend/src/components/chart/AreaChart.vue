@@ -3,10 +3,11 @@ import { ref, computed } from 'vue';
 import type { PropType, Ref } from 'vue';
 import BaseChart from './BaseChart.vue';
 import { AreaChartEntry } from '@/types/chart.type';
+import { DeviceExposeMetrics } from '@/types/metrics.type';
 
 const props = defineProps({
   chartData: {
-    type: Object as PropType<any>,
+    type: Object as PropType<DeviceExposeMetrics[]>,
     default: null,
   },
 });
@@ -29,8 +30,8 @@ const NEWTemperatureData = {
 const transformedChartData = computed(() => {
   return [
     {
-      name: NEWTemperatureData.name,
-      data: NEWTemperatureData.timestamp.map(
+      name: props.chartData.name,
+      data: props.chartData.timestamp.map(
         (timestamp, index) => ({
           x: timestamp,
           y: NEWTemperatureData.value[index],

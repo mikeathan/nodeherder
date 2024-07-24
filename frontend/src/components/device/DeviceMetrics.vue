@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from 'vue';
 import {
   DeviceMetricsRequest,
   DeviceMetrics,
+  DeviceExposeMetrics,
 } from '@/types/metrics.type';
 import Selection from '../input/Selection.vue';
 import TimelineChart from '../chart/TimelineChart.vue';
@@ -12,6 +13,7 @@ import AreaChart from '../chart/AreaChart.vue';
 import { KeyyValuePair } from '@/types/types';
 import { toUnix } from '@/utils/date.utils';
 import { groupMetricsByType } from '@/contracts/metrics';
+import { ChartComponents } from '@/mixins/useChartComponents';
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -55,7 +57,7 @@ const groupedMetrics = computed(() => {
     props.id,
   ) as DeviceMetrics;
 
-  return groupMetricsByType(results);
+  return groupMetricsByType(results) as KeyyValuePair<DeviceExposeMetrics[]>;
 });
 
 // WE NEED TO GROUP
@@ -66,18 +68,16 @@ const groupedMetrics = computed(() => {
 
 <template>
   <div class="col-sm-3">
-    <Selection
-      label="Select time offset:"
-      @updated="dateSelected"
-      :items="historySelection">
+    <Selection label="Select time offset:" @updated="dateSelected" :items="historySelection">
     </Selection>
   </div>
 
   {{ groupedMetrics }}
-
+  <div v-for="(metric, chartType)  in groupedMetrics">
+    <component :is="ChartComponents[chartType]" v-bind="{ chartDate: metric }">
+    </component>
+  </div>
   <!-- <AreaChart :chartData="deviceMetrics" ></AreaChart> -->
   <!-- <TimelineChart :chartData="deviceMetrics"></TimelineChart> -->
 
-  <!-- <component :is="PanelComponents[actionType]" v-bind="{ automationId: props.automationId, action: currentAction }"
-  @delete="removeAction" @save="saveAction" /> -->
 </template>
