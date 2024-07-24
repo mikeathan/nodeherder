@@ -72,9 +72,9 @@ const groupedMetrics = computed(() => {
     </Selection>
   </div>
 
-  {{ groupedMetrics }}
+  <!-- {{ groupedMetrics }} -->
   <div v-for="(metric, chartType)  in groupedMetrics">
-    <component :is="ChartComponents[chartType]" v-bind="{ chartDate: metric }">
+    <component :is="ChartComponents[chartType]" v-bind="{ chartData: metric }">
     </component>
   </div>
   <!-- <AreaChart :chartData="deviceMetrics" ></AreaChart> -->

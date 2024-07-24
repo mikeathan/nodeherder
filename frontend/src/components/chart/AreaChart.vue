@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import type { PropType, Ref } from 'vue';
 import BaseChart from './BaseChart.vue';
 import { AreaChartEntry } from '@/types/chart.type';
@@ -11,6 +11,7 @@ const props = defineProps({
     default: null,
   },
 });
+const chartData = ref<AreaChartEntry[]>([]);
 
 const NEWTemperatureData = {
   name: 'Temperature',
@@ -27,19 +28,27 @@ const NEWTemperatureData = {
   value: [15.1, 15.9, 16.2, 16.5, 17.1, 15.1, 15.0, 14.5],
 };
 
-const transformedChartData = computed(() => {
-  return [
-    {
-      name: props.chartData.name,
-      data: props.chartData.timestamp.map(
-        (timestamp, index) => ({
-          x: timestamp,
-          y: NEWTemperatureData.value[index],
-        }),
-      ),
-    },
-  ] as AreaChartEntry[];
-});
+watch(
+  () => props.chartData,
+  () => {
+    if (props.chartData !== null) {
+      chartData.value = transformedChartData(props.chartData);
+    }
+  }, { immediate: true }
+)
+
+function transformedChartData(chartData: DeviceExposeMetrics[]): AreaChartEntry[] {
+
+  chartData.map((item) => {
+    return [{
+      name: item.name,
+      data: item.timestamp.map((timestamp, index) => ({
+        x: timestamp,
+        y: item.values[index],
+      })),
+    }] as AreaChartEntry[];
+  });
+};
 
 const chartOptions = {
   chart: {
@@ -86,9 +95,8 @@ const chartOptions = {
 </script>
 
 <template>
+  chartData:{{ chartData }}
   <div class="area-chart">
-    <BaseChart
-      :data="transformedChartData"
-      :options="chartOptions" />
+    <!-- <BaseChart :data="chartData" :options="chartOptions" /> -->
   </div>
 </template>
