@@ -24,3 +24,15 @@ export function groupMetricsByType(
     return grouped;
   }, {} as KeyyValuePair<DeviceExposeMetrics[]>);
 }
+
+// temperature
+// areachart
+// humidity
+// areachart
+
+// CHART FOR EACH
+
+// binary
+// presense livingroom
+//light on/off livngroom
+// ALL IN ONE CHART

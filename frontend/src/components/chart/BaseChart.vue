@@ -18,10 +18,8 @@ onBeforeMount(() => {});
 </script>
 
 <template>
-  <div class="chart-container">
     <VueApexCharts
       :options="props.options"
       :series="props.data">
     </VueApexCharts>
-  </div>
 </template>

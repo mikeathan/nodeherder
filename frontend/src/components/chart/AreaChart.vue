@@ -11,6 +11,7 @@ const props = defineProps({
     default: null,
   },
 });
+
 const chartData = ref<AreaChartEntry[]>([]);
 
 watch(

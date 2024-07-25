@@ -60,9 +60,7 @@ const groupedMetrics = computed(() => {
   return groupMetricsByType(results) as KeyyValuePair<DeviceExposeMetrics[]>;
 });
 
-// WE NEED TO GROUP
-// INT GOOES TO TIMELINE
-// FLOAT AND EVERYTHNG ELSE GOES TO AREA
+
 </script>
 <style scoped></style>
 
@@ -72,7 +70,6 @@ const groupedMetrics = computed(() => {
     </Selection>
   </div>
 
-  <!-- {{ groupedMetrics }} -->
   <div v-for="(metric, chartType)  in groupedMetrics">
     <component :is="ChartComponents[chartType]" v-bind="{ chartData: metric }">
     </component>
