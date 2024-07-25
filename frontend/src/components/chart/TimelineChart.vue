@@ -1,31 +1,93 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import type { PropType, Ref } from 'vue';
 import BaseChart from './BaseChart.vue';
 import { TimelineChartEntry } from '@/types/chart.type';
-import { DeviceMetrics } from '@/types/metrics.type';
+import { DeviceExposeMetrics } from '@/types/metrics.type';
 
 const props = defineProps({
   chartData: {
-    type: Object as PropType<DeviceMetrics>,
+    type: Object as PropType<DeviceExposeMetrics[]>,
     default: null,
   },
 });
 
-const PresenceData = {
-  name: 'Presence',
-  timestamp: [
-    '2024-07-17T09:00:00',
-    '2024-07-17T12:00:00',
-    '2024-07-17T14:00:00',
-    '2024-07-17T18:00:00',
-    '2024-07-17T20:00:00',
-    '2024-07-17T20:05:00',
-    '2024-07-17T20:10:00',
-    '2024-07-17T20:24:00',
-  ],
-  value: [1, 0, 1, 0, 1, 0, 1, 0],
-};
+const chartData = ref<TimelineChartEntry[]>([]);
+
+// watch(
+//   () => props.chartData,
+//   () => {
+//     if (props.chartData !== null) {
+//       chartData.value = transformedChartData(
+//         props.chartData,
+//       );
+//     }
+//   },
+//   { immediate: true },
+// );
+
+const PresenceData = [
+  {
+    name: 'Presence Kitchen',
+    timestamp: [
+      '2024-07-17T09:00:00',
+      '2024-07-17T12:00:00',
+      '2024-07-17T14:00:00',
+      '2024-07-17T18:00:00',
+      '2024-07-17T20:00:00',
+      '2024-07-17T20:05:00',
+      '2024-07-17T20:10:00',
+      '2024-07-17T20:24:00',
+    ],
+    value: [1, 0, 1, 0, 1, 0, 1, 0],
+  },
+  {
+    name: 'Presence Living Room',
+    timestamp: [
+      '2024-07-17T11:00:00',
+      '2024-07-17T12:00:00',
+      '2024-07-17T13:00:00',
+      '2024-07-17T14:00:00',
+      '2024-07-17T20:00:00',
+      '2024-07-17T21:05:00',
+      '2024-07-17T22:10:00',
+      '2024-07-17T23:24:00',
+    ],
+    value: [1, 0, 1, 0, 1, 0, 1, 0],
+  },
+];
+
+// function transformedChartDataTEST(
+//   chartData: DeviceExposeMetrics[],
+// ): TimelineChartEntry[] {
+//   const transformedData = chartData.map((item) => {
+//     const timestamps = item.timestamp;
+
+//     return item.timestamp.map((timestamp, index) => {
+//       const currentValue = item.values[index];
+//       const currentTimestamp = timestamp;
+//       const nextTimestamp =
+//         index + 1 >= timestamps.length
+//           ? new Date().getTime() /* TEMPORARY */
+//           : new Date(timestamps[index + 1]).getTime();
+
+//       return {
+//         name: currentValue === 0 ? 'Off' : 'On',
+//         data: [
+//           {
+//             x: item.name,
+//             y: [
+//               new Date(currentTimestamp).getTime(),
+//               new Date(nextTimestamp).getTime(),
+//             ],
+//           },
+//         ],
+//       };
+//     });
+//   });
+
+//   return transformedData as TimelineChartEntry[];
+// }
 
 const transformedChartData = computed(() => {
   const transformedData: TimelineChartEntry[] = [];
@@ -63,7 +125,6 @@ const transformedChartData = computed(() => {
 
   return transformedData;
 });
-
 const chartOptions = {
   chart: {
     type: 'rangeBar',

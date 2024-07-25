@@ -13,42 +13,33 @@ const props = defineProps({
 });
 const chartData = ref<AreaChartEntry[]>([]);
 
-const NEWTemperatureData = {
-  name: 'Temperature',
-  timestamp: [
-    '2024-07-17T09:00:00',
-    '2024-07-17T12:00:00',
-    '2024-07-17T14:00:00',
-    '2024-07-17T18:00:00',
-    '2024-07-17T20:00:00',
-    '2024-07-17T20:05:00',
-    '2024-07-17T20:10:00',
-    '2024-07-17T20:24:00',
-  ],
-  value: [15.1, 15.9, 16.2, 16.5, 17.1, 15.1, 15.0, 14.5],
-};
-
 watch(
   () => props.chartData,
   () => {
     if (props.chartData !== null) {
-      chartData.value = transformedChartData(props.chartData);
+      chartData.value = transformedChartData(
+        props.chartData,
+      );
     }
-  }, { immediate: true }
-)
+  },
+  { immediate: true },
+);
 
-function transformedChartData(chartData: DeviceExposeMetrics[]): AreaChartEntry[] {
-
-  chartData.map((item) => {
-    return [{
+function transformedChartData(
+  chartData: DeviceExposeMetrics[],
+): AreaChartEntry[] {
+  const transformed = chartData.map((item) => {
+    return {
       name: item.name,
       data: item.timestamp.map((timestamp, index) => ({
         x: timestamp,
         y: item.values[index],
       })),
-    }] as AreaChartEntry[];
-  });
-};
+    };
+  }) as AreaChartEntry[];
+
+  return transformed;
+}
 
 const chartOptions = {
   chart: {
@@ -81,6 +72,9 @@ const chartOptions = {
       format: 'dd/MMM/yy HH:mm:ss ',
     },
   },
+  legend: {
+    position: 'top',
+  },
   responsive: [
     {
       breakpoint: undefined,
@@ -95,8 +89,7 @@ const chartOptions = {
 </script>
 
 <template>
-  chartData:{{ chartData }}
   <div class="area-chart">
-    <!-- <BaseChart :data="chartData" :options="chartOptions" /> -->
+    <BaseChart :data="chartData" :options="chartOptions" />
   </div>
 </template>
