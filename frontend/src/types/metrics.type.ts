@@ -1,4 +1,4 @@
-import { KeyyValuePair } from './types';
+import { KeyValuePair } from './types';
 
 export const MetricsTypes = {
   Integer: 'integer',
@@ -31,4 +31,4 @@ export type DeviceMetricsQuery = {
   request: DeviceMetricsRequest;
   results: DeviceMetrics;
 };
-export type DeviceMetricsMap = KeyyValuePair<DeviceMetrics>;
+export type DeviceMetricsMap = KeyValuePair<DeviceMetrics>;

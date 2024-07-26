@@ -7,7 +7,7 @@ import {
   DeviceExposeMetrics,
 } from '@/types/metrics.type';
 import Selection from '../input/Selection.vue';
-import { KeyyValuePair } from '@/types/types';
+import { KeyValuePair } from '@/types/types';
 import { toUnix } from '@/utils/date.utils';
 import { groupMetricsByType } from '@/contracts/metrics';
 import { ChartComponents } from '@/mixins/useChartComponents';
@@ -22,7 +22,7 @@ const historySelection: string[] = [
   'last week',
   'last month',
 ];
-const timeOffsets: KeyyValuePair<number> = {
+const timeOffsets: KeyValuePair<number> = {
   'last hour': 1,
   'last day': 24,
   'last week': 168,
@@ -54,7 +54,7 @@ const groupedMetrics = computed(() => {
     props.id,
   ) as DeviceMetrics;
 
-  return groupMetricsByType(results) as KeyyValuePair<
+  return groupMetricsByType(results) as KeyValuePair<
     DeviceExposeMetrics[]
   >;
 });

@@ -1,5 +1,5 @@
-import { right } from "@popperjs/core";
-import { KeyyValuePair } from "./types";
+import { right } from '@popperjs/core';
+import { KeyValuePair } from './types';
 
 export type ButtonPanelType = ButtonType | DropDownType;
 export type ButtonType = {
@@ -29,7 +29,7 @@ export function isDropdown(item: ButtonPanelType): boolean {
 export function createButton(
   name: string,
   click: ButtonClickEventType,
-  disabled: boolean = false
+  disabled: boolean = false,
 ): ButtonType {
   return { name: name, click: click, disabled: disabled };
 }
@@ -37,7 +37,7 @@ export function createButton(
 export function createDropDownItem(
   name: string,
   value: string,
-  click: ButtonClickEventType
+  click: ButtonClickEventType,
 ): DropDownItemType {
   return { name: name, value: value, event: click };
 }
@@ -45,26 +45,28 @@ export function createDropDownItem(
 export function createDropdown(
   name: string,
   items: DropDownItemType[],
-  disabled: boolean = false
+  disabled: boolean = false,
 ): DropDownType {
   return { name: name, items: items, disabled: disabled };
 }
 
 // Select
-export type SelectionItems = Array<string> | KeyyValuePair<string>;
+export type SelectionItems =
+  | Array<string>
+  | KeyValuePair<string>;
 
 export type SelectSize = keyof typeof SelectFormSize;
 
 export const SelectFormSize = {
-  normal: "",
-  small: "form-select-sm",
-  large: "form-select-lg",
+  normal: '',
+  small: 'form-select-sm',
+  large: 'form-select-lg',
 } as const;
 
 export type LayoutPosition = keyof typeof LayoutPositions;
 
 export const LayoutPositions = {
-  center: "center",
-  left: "left",
-  right: "right",
+  center: 'center',
+  left: 'left',
+  right: 'right',
 } as const;

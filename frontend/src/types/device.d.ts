@@ -1,13 +1,16 @@
-import { KeyyValuePair, Nullable } from "./types";
+import { KeyValuePair, Nullable } from './types';
 
-export type DeviceMap = KeyyValuePair<Device>;
+export type DeviceMap = KeyValuePair<Device>;
 export type Devices = Array<Device>;
-export type ExposeAttributes = Nullable<KeyyValuePair<any>>;
-export type ExposePresets = Nullable<KeyyValuePair<any>>;
-export type ExposeProperties = Nullable<KeyyValuePair<any>>;
-export type DeviceProperties = KeyyValuePair<any>;
+export type ExposeAttributes = Nullable<KeyValuePair<any>>;
+export type ExposePresets = Nullable<KeyValuePair<any>>;
+export type ExposeProperties = Nullable<KeyValuePair<any>>;
+export type DeviceProperties = KeyValuePair<any>;
 
-export type DeviceFilter = (device: Device, expose: Expose) => boolean;
+export type DeviceFilter = (
+  device: Device,
+  expose: Expose,
+) => boolean;
 
 export type Device = {
   id: string;
@@ -15,8 +18,8 @@ export type Device = {
   description: string;
   connection_type: string;
   power_source: string;
-  exposes: KeyyValuePair<Expose>;
-  properties: KeyyValuePair<any>;
+  exposes: KeyValuePair<Expose>;
+  properties: KeyValuePair<any>;
 };
 
 export type ExposeType = keyof ExposeTypes;
@@ -34,6 +37,6 @@ export type Expose = {
 export type DeviceUpdate = {
   id: string;
   last_seen: string;
-  data: KeyyValuePair<any>;
+  data: KeyValuePair<any>;
   properties: DeviceProperties;
 };

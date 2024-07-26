@@ -5,13 +5,13 @@ import Toggle from '../input/Toggle.vue';
 import { DeviceSettings } from '@/types/settings';
 import { createDeviceSettings } from '@/contracts/settings';
 import InputBox from '../input/InputBox.vue';
-import { KeyyValuePair } from '@/types/types';
+import { KeyValuePair } from '@/types/types';
 
 const props = defineProps({
   id: { type: String, required: true },
 });
-const cachedDeviceSettings = ref<KeyyValuePair<any>>(
-  {} as KeyyValuePair<any>,
+const cachedDeviceSettings = ref<KeyValuePair<any>>(
+  {} as KeyValuePair<any>,
 );
 const isDirty = computed(() => {
   return (

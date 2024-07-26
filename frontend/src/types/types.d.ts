@@ -1,4 +1,4 @@
-export type KeyyValuePair<T> = { [key: string]: T };
+export type KeyValuePair<T> = { [key: string]: T };
 
 export type ValueOf<T> = T[keyof T];
 

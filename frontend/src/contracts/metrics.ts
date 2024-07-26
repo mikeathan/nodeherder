@@ -4,11 +4,11 @@ import {
   DeviceExposeMetrics,
   MetricsTypes,
 } from '@/types/metrics.type';
-import { KeyyValuePair } from '@/types/types';
+import { KeyValuePair } from '@/types/types';
 
 export function groupMetricsByType(
   metrics: DeviceMetrics,
-): KeyyValuePair<DeviceExposeMetrics[]> {
+): KeyValuePair<DeviceExposeMetrics[]> {
   if (!metrics) {
     return {};
   }
@@ -22,5 +22,5 @@ export function groupMetricsByType(
     );
 
     return grouped;
-  }, {} as KeyyValuePair<DeviceExposeMetrics[]>);
+  }, {} as KeyValuePair<DeviceExposeMetrics[]>);
 }

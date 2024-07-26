@@ -5,11 +5,14 @@ import {
   Device,
   Devices,
   DeviceMap,
-  DeviceUpdate
+  DeviceUpdate,
 } from '../../../types/device';
-import { KeyyValuePair } from '../../../types/types';
+import { KeyValuePair } from '../../../types/types';
 
-export const DeviceModule: Module<DeviceModuleState, RootState> = {
+export const DeviceModule: Module<
+  DeviceModuleState,
+  RootState
+> = {
   namespaced: true,
 
   state: () => ({ deviceMap: {} as DeviceMap }),
@@ -27,7 +30,7 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
       (state: DeviceModuleState) =>
       (id: string): boolean => {
         return state.deviceMap[id] != null;
-      }
+      },
   },
 
   mutations: {
@@ -37,13 +40,18 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
 
     updateList(state: DeviceModuleState, devices: Devices) {
       devices.forEach((device: Device) => {
-        if (device.id in state.deviceMap) state.deviceMap[device.id] = device;
+        if (device.id in state.deviceMap)
+          state.deviceMap[device.id] = device;
       });
     },
 
     update(state, deviceUpdate: DeviceUpdate) {
       if (deviceUpdate.id in state.deviceMap == false) {
-        console.error('device ', deviceUpdate.id, ' not found');
+        console.error(
+          'device ',
+          deviceUpdate.id,
+          ' not found',
+        );
         return;
       }
       var device = state.deviceMap[deviceUpdate.id];
@@ -54,17 +62,20 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
       }
       for (var key in deviceUpdate.properties) {
         if (key in device.properties) {
-          device.properties[key] = deviceUpdate.properties[key];
+          device.properties[key] =
+            deviceUpdate.properties[key];
         }
       }
       device.properties.last_seen = deviceUpdate.last_seen;
     },
 
     clear(state: DeviceModuleState) {
-      Object.entries(state.deviceMap).forEach(([key, value]) => {
-        delete state.deviceMap[key];
-      });
-    }
+      Object.entries(state.deviceMap).forEach(
+        ([key, value]) => {
+          delete state.deviceMap[key];
+        },
+      );
+    },
   },
 
   actions: {
@@ -79,25 +90,25 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
       commit('updateDevices', devices);
     },
 
-    setValue({ dispatch }, payload: KeyyValuePair<any>) {
+    setValue({ dispatch }, payload: KeyValuePair<any>) {
       dispatch(
         'ws/emit',
         { event: 'deviceSetValue', message: payload },
-        { root: true }
+        { root: true },
       );
     },
 
     rename({ dispatch }, { name, newName }) {
       var payload = {
         from: name,
-        to: newName
+        to: newName,
       };
 
       dispatch(
         'ws/emit',
         { event: 'deviceRename', message: payload },
-        { root: true }
+        { root: true },
       );
-    }
-  }
+    },
+  },
 };
