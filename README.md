@@ -109,3 +109,38 @@ toggle for live data ? later
 
 once we send the request
 store response in metrics store ? needs thinking if we need that
+
+Metrics TODO
+
+consider sampling data if too large data set  ?
+
+Backend send metrics data in format:
+TYPE: binary
+timestamp is stored as integer
+each block has the current and next timestamp
+if the results dont contain start or end timestmap matching
+use query range to get start or end timestamp
+
+{
+"name": "On",
+"data": [
+{
+"x": $EXPOSE_NAME,
+"y": [1721203200000, 1721214000000],
+}
+]
+}
+
+TYPE: float
+for now keep timestmap as string, need to test if integer will work
+{
+name: "brightness",
+data: [
+{ x: "2024-07-04T15:00:00Z", y: 110.8 },
+{ x: "2024-07-04T16:00:00Z", y: 110.3 },
+{ x: "2024-07-04T17:00:00Z", y: 110.8 },
+{ x: "2024-07-04T18:00:00Z", y: 110.1 },
+{ x: "2024-07-04T19:00:00Z", y: 110.1 },
+{ x: "2024-07-04T20:00:00Z", y: 110.7 },
+],
+}
