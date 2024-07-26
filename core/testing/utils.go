@@ -306,8 +306,8 @@ func Tempfile() string {
 	return f.Name()
 }
 
-func CreateDateTimeTimestamps(numberOfDays int, numberOfHours int, numberOfMinutes int) []*time.Time {
-	var timestamps []*time.Time
+func CreateDateTimeTimestamps(numberOfDays int, numberOfHours int, numberOfMinutes int) []time.Time {
+	var timestamps []time.Time
 	year := time.Now().Year()
 	month := time.Now().Month()
 	today := time.Now().Day()
@@ -324,7 +324,7 @@ func CreateDateTimeTimestamps(numberOfDays int, numberOfHours int, numberOfMinut
 		for h := 0; h < numberOfHours; h++ {
 			for m := 0; m < numberOfMinutes; m++ {
 				timestamp := time.Date(year, month, currentDay, hours+h, minutes+m, 0, 0, time.UTC)
-				timestamps = append(timestamps, &timestamp)
+				timestamps = append(timestamps, timestamp)
 			}
 		}
 		currentDay++

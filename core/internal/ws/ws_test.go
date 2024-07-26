@@ -736,22 +736,26 @@ func TestHandlingLoadMetricsMessage(t *testing.T) {
 
 	wsHub := ws.NewWsHub()
 
+	now := time.Now()
+	from := now.AddDate(0, 0, 5)
+	to := now.AddDate(0, 0, 1)
+
 	// input data
-	expose1 := metrics.NewExposeMetricsResult("temperature", "numeric")
+	expose1 := metrics.NewExposeMetricsResult("temperature", from, to, "numeric")
 	timestamps := utils_test.CreateDateTimeTimestamps(1, 24, 1)
 	values := utils_test.CreateFloatValues(24)
 	for idx, value := range values {
 		expose1.Add(value, timestamps[idx])
 	}
 
-	expose2 := metrics.NewExposeMetricsResult("presence", "binary")
+	expose2 := metrics.NewExposeMetricsResult("presence", from, to, "binary")
 	timestamps2 := utils_test.CreateDateTimeTimestamps(1, 10, 1)
 	values2 := utils_test.CreateBinaryValues(10)
 	for idx, value := range values2 {
 		expose2.Add(value, timestamps2[idx])
 	}
 
-	expose3 := metrics.NewExposeMetricsResult("color_temp", "enum")
+	expose3 := metrics.NewExposeMetricsResult("color_temp", from, to, "enum")
 	timestamps3 := utils_test.CreateDateTimeTimestamps(1, 5, 1)
 	values3 := utils_test.CreateEnumValues(5)
 	for idx, value := range values3 {
@@ -772,9 +776,8 @@ func TestHandlingLoadMetricsMessage(t *testing.T) {
 
 	req := metrics.LoadDeviceMetricsRequest{}
 	req.Id = "x01234"
-	now := time.Now()
-	req.From = now.AddDate(0, 0, 5).UnixMilli()
-	req.To = now.AddDate(0, 0, 1).UnixMilli()
+	req.From = from.UnixMilli()
+	req.To = to.UnixMilli()
 	reqBytes, err := utils_test.StructToBytes(req)
 	if err != nil {
 		t.Fatalf(err.Error())
@@ -833,9 +836,9 @@ func TestHandlingLoadMetricsMessage(t *testing.T) {
 				t.Fatalf("Expected value %v', got '%v'", wantValue, gotValue)
 			}
 		}
-		for tidx, wantTimestamp := range wantExpose.Timestamp {
-			gotTimestamp := expose.Timestamp[tidx]
-			if wantTimestamp.UnixMicro() != gotTimestamp.UnixMicro() {
+		for tidx, wantTimestamp := range wantExpose.Timestamps {
+			gotTimestamp := expose.Timestamps[tidx]
+			if wantTimestamp != gotTimestamp {
 				t.Fatalf("Expected timestamp %v', got '%v'", wantTimestamp, gotTimestamp)
 			}
 		}

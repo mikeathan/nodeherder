@@ -1,6 +1,8 @@
 package metrics
 
-import "time"
+import (
+	"time"
+)
 
 type LoadDeviceMetricsRequest struct {
 	Id     string `json:"id"`
@@ -10,24 +12,28 @@ type LoadDeviceMetricsRequest struct {
 }
 
 type ExposeMetricsResult struct {
-	Name      string       `json:"name"`
-	Type      string       `json:"type"`
-	Timestamp []*time.Time `json:"timestamp"`
-	Values    []any        `json:"values"`
+	Name       string  `json:"name"`
+	Type       string  `json:"type"`
+	From       int64   `json:"from"`
+	To         int64   `json:"to"`
+	Timestamps []int64 `json:"timestamps"`
+	Values     []any   `json:"values"`
 }
 
-func NewExposeMetricsResult(name string, dataType string) *ExposeMetricsResult {
+func NewExposeMetricsResult(name string, from time.Time, to time.Time, dataType string) *ExposeMetricsResult {
 	return &ExposeMetricsResult{
-		Name:      name,
-		Type:      dataType,
-		Timestamp: []*time.Time{},
-		Values:    []any{},
+		Name:       name,
+		Type:       dataType,
+		From:       from.UnixMilli(),
+		To:         to.UnixMilli(),
+		Timestamps: []int64{},
+		Values:     []any{},
 	}
 }
 
-func (e *ExposeMetricsResult) Add(value any, timestamp *time.Time) {
+func (e *ExposeMetricsResult) Add(value any, timestamp time.Time) {
 	e.Values = append(e.Values, value)
-	e.Timestamp = append(e.Timestamp, timestamp)
+	e.Timestamps = append(e.Timestamps, timestamp.UnixMilli())
 }
 
 type DeviceMetricsResult struct {

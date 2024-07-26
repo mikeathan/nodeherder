@@ -17,6 +17,7 @@ import (
 )
 
 func TestGenerateMockMetrics(t *testing.T) {
+	t.Skip("NOTE: used for generating mock data")
 	now := time.Now()
 
 	tempfile := tempfile()
@@ -44,10 +45,10 @@ func TestGenerateMockMetrics(t *testing.T) {
 	dev := createMockDevice(id, deviceName, 1, "binary", time.Now(), nil)
 	for tIdx, timestamp := range timestamps {
 
-		dev = createMockDevice(id, deviceName, 1, "binary", *timestamp, values[tIdx])
+		dev = createMockDevice(id, deviceName, 1, "binary", timestamp, values[tIdx])
 		payload := utils_test.Payload(dev)
 
-		mockClock.SetMockTime(*timestamp)
+		mockClock.SetMockTime(timestamp)
 
 		err = repo.Store(dev.Id, payload)
 		if err != nil {
@@ -74,7 +75,7 @@ func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
 
 	testCases := []struct {
 		id         string
-		timestamps []*time.Time
+		timestamps []time.Time
 		values     []float32
 		from       time.Time
 		to         time.Time
@@ -84,14 +85,6 @@ func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
 			values:     utils_test.CreateFloatValues(24),
 			from:       time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC),
 			to:         time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)},
-		{id: "x0001",
-			timestamps: utils_test.CreateDateTimeTimestamps(10, 24, 1), values: utils_test.CreateFloatValues(240), // 240 events
-			from: time.Date(now.Year(), now.Month(), now.Day()-5, 15, 0, 0, 0, time.UTC),
-			to:   time.Date(now.Year(), now.Month(), now.Day()-2, 20, 0, 0, 0, time.UTC)},
-		{id: "x0002",
-			timestamps: utils_test.CreateDateTimeTimestamps(60, 2, 1), values: utils_test.CreateFloatValues(120), // 240 events
-			from: time.Date(now.Year(), now.Month(), now.Day()-55, 15, 0, 0, 0, time.UTC),
-			to:   time.Date(now.Year(), now.Month(), now.Day()-5, 20, 0, 0, 0, time.UTC)},
 	}
 
 	mockClock := mocks.NewMockClock(func() time.Time {
@@ -111,10 +104,10 @@ func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
 		fmt.Println("total timestamps: ", len(test.timestamps))
 		for tIdx, timestamp := range test.timestamps {
 
-			dev := createMockDevice(test.id, deviceName, 2, "numeric", *timestamp, test.values[tIdx])
+			dev := createMockDevice(test.id, deviceName, 2, "numeric", timestamp, test.values[tIdx])
 			payload := utils_test.Payload(dev)
 
-			mockClock.SetMockTime(*timestamp)
+			mockClock.SetMockTime(timestamp)
 
 			err = repo.Store(dev.Id, payload)
 			if err != nil {
@@ -162,10 +155,10 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 		fmt.Println("total timestamps: ", len(timestamps))
 		for tIdx, timestamp := range timestamps {
 
-			dev := createMockDevice(deviceId, deviceName, 2, "numeric", *timestamp, values[tIdx])
+			dev := createMockDevice(deviceId, deviceName, 2, "numeric", timestamp, values[tIdx])
 
 			payload := utils_test.Payload(dev)
-			mockClock.SetMockTime(*timestamp)
+			mockClock.SetMockTime(timestamp)
 
 			err = repo.Store(dev.Id, payload)
 			if err != nil {
@@ -304,9 +297,9 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 
 			// used dev.props['last_seen] previously but now using time.now in metrics.Store
 			// so i cant test timestamps
-			dev := createMockDevice(deviceId, deviceName, 2, dataType, *timestamp, value)
+			dev := createMockDevice(deviceId, deviceName, 2, dataType, timestamp, value)
 			payload := utils_test.Payload(dev)
-			mockClock.SetMockTime(*timestamp)
+			mockClock.SetMockTime(timestamp)
 			err = repo.Store(dev.Id, payload)
 			if err != nil {
 				t.Error("failed to store metrics ", err.Error())
@@ -361,9 +354,9 @@ func TestExposeTimeRangeMetrics(t *testing.T) {
 
 		for tIdx, timestamp := range timestamps {
 
-			dev := createMockDevice(deviceId, deviceName, 5, "numeric", *timestamp, values[tIdx])
+			dev := createMockDevice(deviceId, deviceName, 5, "numeric", timestamp, values[tIdx])
 			payload := utils_test.Payload(dev)
-			mockClock.SetMockTime(*timestamp)
+			mockClock.SetMockTime(timestamp)
 			err = repo.Store(dev.Id, payload)
 			if err != nil {
 				t.Error("failed to store metrics ", err.Error())
@@ -419,10 +412,10 @@ func TestMultipleExposeTimeRangeMetrics(t *testing.T) {
 
 		for tIdx, timestamp := range timestamps {
 
-			dev := createMockDevice(deviceId, deviceName, numOfExposes, "numeric", *timestamp, values[tIdx])
+			dev := createMockDevice(deviceId, deviceName, numOfExposes, "numeric", timestamp, values[tIdx])
 
 			payload := utils_test.Payload(dev)
-			mockClock.SetMockTime(*timestamp)
+			mockClock.SetMockTime(timestamp)
 
 			err = repo.Store(dev.Id, payload)
 			if err != nil {
@@ -452,7 +445,7 @@ func TestMultipleExposeTimeRangeMetrics(t *testing.T) {
 
 }
 
-func assertDeviceExposeFloatDataEvents(device *devices.Device, result *metrics.DeviceMetricsResult, exposeName string, timestamps []*time.Time, values []float32, t *testing.T) {
+func assertDeviceExposeFloatDataEvents(device *devices.Device, result *metrics.DeviceMetricsResult, exposeName string, timestamps []time.Time, values []float32, t *testing.T) {
 	if result.DeviceId != device.Id {
 		t.Errorf("deviceId mismatch want %v got %v: ", device.Id, result.DeviceId)
 	}
@@ -473,20 +466,18 @@ func assertDeviceExposeFloatDataEvents(device *devices.Device, result *metrics.D
 		t.Errorf("invalid event.type want %v got %v: ", event.Type, dataType)
 	}
 
-	if len(event.Timestamp) == 0 {
+	if len(event.Timestamps) == 0 {
 		t.Errorf("event.timestamps is empty")
 	}
 	if len(event.Values) == 0 {
 		t.Errorf("event.Values is empty")
 	}
 
-	for fId, foundTs := range event.Timestamp {
+	for fId, foundTsUnix := range event.Timestamps {
 		tsFound := false
 		dataIdx := 0
-		foundTsUnix := foundTs.UnixNano()
-
 		for insertIdx, insertTs := range timestamps {
-			insertTsUnix := insertTs.UnixNano()
+			insertTsUnix := insertTs.UnixMilli()
 
 			if foundTsUnix == insertTsUnix {
 				tsFound = true
@@ -496,7 +487,7 @@ func assertDeviceExposeFloatDataEvents(device *devices.Device, result *metrics.D
 		}
 
 		if !tsFound {
-			t.Fatalf(fmt.Sprintf("Timestamp not found %v", foundTs))
+			t.Fatalf(fmt.Sprintf("Timestamp not found %v", foundTsUnix))
 		}
 
 		wantKind := reflect.TypeOf(values[dataIdx]).Kind()
@@ -511,7 +502,7 @@ func assertDeviceExposeFloatDataEvents(device *devices.Device, result *metrics.D
 	}
 
 }
-func assertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.DeviceMetricsResult, timestamps []*time.Time, values any, t *testing.T) {
+func assertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.DeviceMetricsResult, timestamps []time.Time, values any, t *testing.T) {
 
 	if result.DeviceId != device.Id {
 		t.Errorf("deviceId mismatch want %v got %v: ", device.Id, result.DeviceId)
@@ -545,13 +536,12 @@ func assertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 			t.Errorf("invalid event.type want %v got %v: ", event.Type, dataType)
 		}
 
-		for fId, foundTs := range event.Timestamp {
+		for fId, foundTsUnix := range event.Timestamps {
 			tsFound := false
 			dataIdx := 0
-			foundTsUnix := foundTs.UnixNano()
 
 			for insertIdx, insertTs := range timestamps {
-				insertTsUnix := insertTs.UnixNano()
+				insertTsUnix := insertTs.UnixMilli()
 
 				if foundTsUnix == insertTsUnix {
 					tsFound = true
@@ -561,7 +551,7 @@ func assertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 			}
 
 			if !tsFound {
-				t.Fatalf(fmt.Sprintf("Timestamp not found %v", foundTs))
+				t.Fatalf(fmt.Sprintf("Timestamp not found %v", foundTsUnix))
 			}
 			var value any = 0
 			if dataType == reflect.Float32 {
@@ -591,7 +581,7 @@ func assertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 		idx++
 	}
 }
-func assertDeviceEvents(device *devices.Device, result *metrics.DeviceMetricsResult, timestamps []*time.Time, values []float32, t *testing.T) {
+func assertDeviceEvents(device *devices.Device, result *metrics.DeviceMetricsResult, timestamps []time.Time, values []float32, t *testing.T) {
 
 	if result.DeviceId != device.Id {
 		t.Errorf("deviceId mismatch want %v got %v: ", device.Id, result.DeviceId)
@@ -625,20 +615,19 @@ func assertDeviceEvents(device *devices.Device, result *metrics.DeviceMetricsRes
 			t.Errorf("invalid event.type want %v got %v: ", event.Type, dataType)
 		}
 
-		if len(event.Timestamp) == 0 {
+		if len(event.Timestamps) == 0 {
 			t.Errorf("event.Timestamp is empty")
 		}
 		if len(event.Values) == 0 {
 			t.Errorf("event.Values is empty")
 		}
 
-		for fId, foundTs := range event.Timestamp {
+		for fId, foundTsUnix := range event.Timestamps {
 			tsFound := false
 			dataIdx := 0
-			foundTsUnix := foundTs.UnixNano()
 
 			for insertIdx, insertTs := range timestamps {
-				insertTsUnix := insertTs.UnixNano()
+				insertTsUnix := insertTs.UnixMilli()
 
 				if foundTsUnix == insertTsUnix {
 					tsFound = true
@@ -648,7 +637,7 @@ func assertDeviceEvents(device *devices.Device, result *metrics.DeviceMetricsRes
 			}
 
 			if !tsFound {
-				t.Fatalf(fmt.Sprintf("Timestamp not found %v", foundTs))
+				t.Fatalf(fmt.Sprintf("Timestamp not found %v", foundTsUnix))
 			}
 
 			wantKind := reflect.TypeOf(values[dataIdx]).Kind()

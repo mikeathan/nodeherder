@@ -184,7 +184,7 @@ func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devi
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
 
-	event := metrics.NewExposeMetricsResult(expose.Name, exposeType.String())
+	event := metrics.NewExposeMetricsResult(expose.Name, from, to, exposeType.String())
 	for key, value := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, value = cursor.Next() {
 		timestamp, err := s.readTimestampFromKey(expose.Name, key)
 		if err != nil {
@@ -196,7 +196,7 @@ func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devi
 			return nil, err
 		}
 
-		event.Add(data, &timestamp)
+		event.Add(data, timestamp)
 	}
 
 	return event, nil
