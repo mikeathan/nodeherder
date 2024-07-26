@@ -196,6 +196,9 @@ func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devi
 			return nil, err
 		}
 
+		BUILD RESULTS DEPENDEND OF TYPE 
+
+		
 		event.Add(data, timestamp)
 	}
 
