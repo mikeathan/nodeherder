@@ -7,9 +7,6 @@ import {
   DeviceExposeMetrics,
 } from '@/types/metrics.type';
 import Selection from '../input/Selection.vue';
-import TimelineChart from '../chart/TimelineChart.vue';
-import AreaChart from '../chart/AreaChart.vue';
-
 import { KeyyValuePair } from '@/types/types';
 import { toUnix } from '@/utils/date.utils';
 import { groupMetricsByType } from '@/contracts/metrics';
@@ -57,24 +54,25 @@ const groupedMetrics = computed(() => {
     props.id,
   ) as DeviceMetrics;
 
-  return groupMetricsByType(results) as KeyyValuePair<DeviceExposeMetrics[]>;
+  return groupMetricsByType(results) as KeyyValuePair<
+    DeviceExposeMetrics[]
+  >;
 });
-
-
 </script>
-<style scoped></style>
 
 <template>
   <div class="col-sm-3">
-    <Selection label="Select time offset:" @updated="dateSelected" :items="historySelection">
+    <Selection
+      label="Select time offset:"
+      @updated="dateSelected"
+      :items="historySelection">
     </Selection>
   </div>
 
-  <div v-for="(metric, chartType)  in groupedMetrics">
-    <component :is="ChartComponents[chartType]" v-bind="{ chartData: metric }">
+  <div v-for="(metrics, chartType) in groupedMetrics">
+    <component
+      :is="ChartComponents[chartType]"
+      v-bind="{ chartData: metrics }">
     </component>
   </div>
-  <!-- <AreaChart :chartData="deviceMetrics" ></AreaChart> -->
-  <!-- <TimelineChart :chartData="deviceMetrics"></TimelineChart> -->
-
 </template>

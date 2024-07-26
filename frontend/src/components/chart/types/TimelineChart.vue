@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, toRaw } from 'vue';
 import type { PropType, Ref } from 'vue';
-import BaseChart from './BaseChart.vue';
+import BaseChart from '../BaseChart.vue';
 import { TimelineChartEntry } from '@/types/chart.type';
 import { DeviceExposeMetrics } from '@/types/metrics.type';
 
@@ -12,50 +12,19 @@ const props = defineProps({
   },
 });
 
-const chartData = ref<TimelineChartEntry[]>([]);
+const timelineData = ref<TimelineChartEntry[]>([]);
 
-// watch(
-//   () => props.chartData,
-//   () => {
-//     if (props.chartData !== null) {
-//       chartData.value = transformedChartData(
-//         props.chartData,
-//       );
-//     }
-//   },
-//   { immediate: true },
-// );
-
-const PresenceData = [
-  {
-    name: 'Presence Kitchen',
-    timestamp: [
-      '2024-07-17T09:00:00',
-      '2024-07-17T12:00:00',
-      '2024-07-17T14:00:00',
-      '2024-07-17T18:00:00',
-      '2024-07-17T20:00:00',
-      '2024-07-17T20:05:00',
-      '2024-07-17T20:10:00',
-      '2024-07-17T20:24:00',
-    ],
-    values: [1, 0, 1, 0, 1, 0, 1, 0],
+watch(
+  () => props.chartData,
+  () => {
+    if (props.chartData !== null) {
+      timelineData.value = transformedChartData(
+        props.chartData,
+      );
+    }
   },
-  {
-    name: 'Presence Living Room',
-    timestamp: [
-      '2024-07-17T11:00:00',
-      '2024-07-17T12:00:00',
-      '2024-07-17T13:00:00',
-      '2024-07-17T14:00:00',
-      '2024-07-17T20:00:00',
-      '2024-07-17T21:05:00',
-      '2024-07-17T22:10:00',
-      '2024-07-17T23:24:00',
-    ],
-    values: [1, 0, 1, 0, 1, 0, 1, 0],
-  },
-];
+  { immediate: true },
+);
 
 //TEMP
 function addOneMinute(date: Date) {
@@ -66,18 +35,21 @@ function addOneMinute(date: Date) {
   return newDate;
 }
 
-const transformedChartData = computed(() => {
+function transformedChartData(
+  exposeMetrics: DeviceExposeMetrics[],
+): TimelineChartEntry[] {
   const transformedData: TimelineChartEntry[] = [];
 
-  PresenceData.forEach((item) => {
-
+  exposeMetrics.forEach((item) => {
     item.timestamp.forEach((timestamp, index) => {
       const currentValue = item.values[index];
 
       const currentTimestamp = timestamp;
       const nextTimestamp =
         index + 1 >= item.timestamp.length
-          ? addOneMinute(new Date(item.timestamp[index + 1])).getTime() /* TEMPORARY */
+          ? addOneMinute(
+              new Date(item.timestamp[index + 1]),
+            ).getTime() /* TEMPORARY */
           : new Date(item.timestamp[index + 1]).getTime();
 
       const entry = {
@@ -91,14 +63,14 @@ const transformedChartData = computed(() => {
             ],
           },
         ],
-      }
+      };
       transformedData.push(entry);
     });
-
   });
 
   return transformedData;
-});
+}
+
 const chartOptions = {
   chart: {
     type: 'rangeBar',
@@ -126,7 +98,7 @@ const chartOptions = {
     },
   },
   colors: ['#FF4560', '#00E396'],
- 
+
   xaxis: {
     type: 'datetime',
     labels: {
@@ -136,7 +108,6 @@ const chartOptions = {
         day: 'dd MMM',
         hour: 'HH:mm',
       },
-
     },
   },
   stroke: {
@@ -164,6 +135,9 @@ const chartOptions = {
 
 <template>
   <div class="timeline-chart">
-    <BaseChart height="200" :data="transformedChartData" :options="chartOptions" />
+    <BaseChart
+      height="200"
+      :data="toRaw(timelineData)"
+      :options="chartOptions" />
   </div>
 </template>

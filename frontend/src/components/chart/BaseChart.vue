@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref, onBeforeMount } from 'vue';
 import type { PropType, Ref } from 'vue';
 import VueApexCharts from 'vue3-apexcharts';
 
@@ -13,13 +12,11 @@ const props = defineProps({
     default: null,
   },
 });
-
-onBeforeMount(() => {});
 </script>
 
 <template>
-    <VueApexCharts
-      :options="props.options"
-      :series="props.data">
-    </VueApexCharts>
+  <VueApexCharts
+    :options="props.options"
+    :series="props.data">
+  </VueApexCharts>
 </template>

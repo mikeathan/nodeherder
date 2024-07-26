@@ -13,9 +13,9 @@ export function groupMetricsByType(
     return {};
   }
   return metrics.expose.reduce((grouped, expose) => {
-    let chartType: ChartType = ChartTypes.AreaChart;
+    let chartType: ChartType = ChartTypes.FloatChart;
     if (expose.type === MetricsTypes.Integer) {
-      chartType = ChartTypes.TimelineChart;
+      chartType = ChartTypes.BinaryChart;
     }
     grouped[chartType] = (grouped[chartType] || []).concat(
       expose,
@@ -24,15 +24,3 @@ export function groupMetricsByType(
     return grouped;
   }, {} as KeyyValuePair<DeviceExposeMetrics[]>);
 }
-
-// temperature
-// areachart
-// humidity
-// areachart
-
-// CHART FOR EACH
-
-// binary
-// presense livingroom
-//light on/off livngroom
-// ALL IN ONE CHART
