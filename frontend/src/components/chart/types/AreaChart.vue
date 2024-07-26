@@ -33,7 +33,7 @@ function transformedChartData(
     {
       name: chartData.name,
       data: chartData.timestamp.map((timestamp, index) => ({
-        x: timestamp,
+        x: new Date(timestamp).getTime(),
         y: chartData.values[index],
       })),
     },

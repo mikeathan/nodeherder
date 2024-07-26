@@ -4,7 +4,7 @@ export type ChartColor = {
 };
 
 export type AreaDataPoint = {
-  x: string;
+  x: number;
   y: number;
 };
 
