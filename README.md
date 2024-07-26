@@ -112,7 +112,7 @@ store response in metrics store ? needs thinking if we need that
 
 Metrics TODO
 
-consider sampling data if too large data set  ?
+consider sampling data if too large data set ?
 
 Backend send metrics data in format:
 TYPE: binary
@@ -132,7 +132,7 @@ use query range to get start or end timestamp
 }
 
 TYPE: float
-for now keep timestmap as string, need to test if integer will work
+make timestamp to number
 {
 name: "brightness",
 data: [
