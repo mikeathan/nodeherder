@@ -178,32 +178,64 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 	return result, err
 }
 
-func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeMetricsResult, error) {
-
-	exposeType := kindFromExposeType(expose)
+func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeMetricsResult, error) {
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
 
-	event := metrics.NewExposeMetricsResult(expose.Name, from, to, exposeType.String())
-	for key, value := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, value = cursor.Next() {
+	event := metrics.NewExposeNumericMetricResult(expose.Name, from, to)
+	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
 		timestamp, err := s.readTimestampFromKey(expose.Name, key)
 		if err != nil {
 			return nil, err
 		}
 
-		data, err := utils.Unmarshal(value, exposeType)
+		value, err := utils.Unmarshal(data, reflect.Float32)
 		if err != nil {
 			return nil, err
 		}
 
-		BUILD RESULTS DEPENDEND OF TYPE 
+		truncated := utils.TruncateFloat32(value.(float32), 1)
+		event.Add(truncated, timestamp)
+	}
+	return nil, nil
+}
 
-		
-		event.Add(data, timestamp)
+func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeMetricsResult, error) {
+
+	if expose.Type == "numeric" {
+		return s.readNumericValues(cursor, expose, from, to)
+	} else {
+		// to implement
 	}
 
-	return event, nil
+	// event := metrics.NewExposeMetricsResult(expose.Name, from, to, exposeType.String())
+	// for key, value := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, value = cursor.Next() {
+	// 	timestamp, err := s.readTimestampFromKey(expose.Name, key)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+
+	// 	data, err := utils.Unmarshal(value, exposeType)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+
+	// 	event.Add(data, timestamp)
+	// }
+
+	return nil, nil
 }
+
+// name: "brightness",
+// data: [
+// { x: "2024-07-04T15:00:00Z", y: 110.8 },
+// { x: "2024-07-04T16:00:00Z", y: 110.3 },
+// { x: "2024-07-04T17:00:00Z", y: 110.8 },
+// { x: "2024-07-04T18:00:00Z", y: 110.1 },
+// { x: "2024-07-04T19:00:00Z", y: 110.1 },
+// { x: "2024-07-04T20:00:00Z", y: 110.7 },
+// ],
+// }
 
 func kindFromExposeType(expose *devices.Entity) reflect.Kind {
 	switch expose.Type {

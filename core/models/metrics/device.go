@@ -11,6 +11,36 @@ type LoadDeviceMetricsRequest struct {
 	To     int64  `json:"to"`
 }
 
+type NumericValue struct {
+	X int64   `json:"x"`
+	Y float32 `json:"y"`
+}
+
+type ExposeNumericMetricResult struct {
+	Name string          `json:"name"`
+	Type string          `json:"type"`
+	From int64           `json:"from"`
+	To   int64           `json:"to"`
+	Data []*NumericValue `json:"data"`
+}
+
+func NewExposeNumericMetricResult(name string, from time.Time, to time.Time) *ExposeNumericMetricResult {
+	return &ExposeNumericMetricResult{
+		Name: name,
+		Type: "numeric",
+		From: from.UnixMilli(),
+		To:   to.UnixMilli(),
+		Data: []*NumericValue{},
+	}
+}
+
+func (e *ExposeNumericMetricResult) Add(value float32, timestamp time.Time) {
+	e.Data = append(e.Data, &NumericValue{
+		X: timestamp.UnixMilli(),
+		Y: value,
+	})
+}
+
 type ExposeMetricsResult struct {
 	Name       string  `json:"name"`
 	Type       string  `json:"type"`
