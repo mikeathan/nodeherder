@@ -52,6 +52,10 @@ var exposesWhitelist = map[string]int{
 	"smoke_concentration": 21,
 	"test":                22,
 	"device_fault":        23,
+	"power":               24,
+	"voltage":             25,
+	"current":             26,
+	"energy":              27,
 }
 
 var propertiesWhitelist = map[string]int{
