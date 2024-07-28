@@ -178,6 +178,53 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 	return result, err
 }
 
+func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeMetricsResult, error) {
+	fromKey := createKeyWithTimestamp(expose.Name, from)
+	tokey := createKeyWithTimestamp(expose.Name, to)
+
+	event := metrics.NewExposeBinaryMetricResult(expose.Name, from, to)
+	var currentValue string = ""
+	var currentRangeIdx int16 = 0
+	timeRange := [2]int64{}
+	tempData := map[time.Time]string{}
+	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
+		timestamp, err := s.readTimestampFromKey(expose.Name, key)
+		if err != nil {
+			return nil, err
+		}
+
+		value, err := utils.Unmarshal(data, reflect.String)
+		if err != nil {
+			return nil, err
+		}
+		if value != currentValue {
+			if currentRangeIdx >= 2 { //????
+				event.Add(currentValue, timeRange)
+				currentRangeIdx = 0
+				timeRange = [2]int64{}
+			}
+
+			currentValue = value.(string)
+			timeRange[currentRangeIdx] = timestamp.UnixMilli()
+			currentRangeIdx++
+		}
+		tempData[timestamp] = value.(string)
+		//		event.Add(truncated, timestamp)
+	}
+
+	// iterate though maps change order !!!!!!!!!!!!!!!!!!!1
+
+	// idx := 0
+	// for i := 0; i <= len(tempData); i += 2 {
+	// 	timestamp := tempData
+	// 	event.Add(timestamp, idx)
+	// 	idx++
+	// }
+	// for timestamp, value := range tempData {
+	// }
+	return nil, nil
+}
+
 func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeMetricsResult, error) {
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
