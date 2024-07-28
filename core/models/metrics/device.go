@@ -41,6 +41,36 @@ func (e *ExposeNumericMetricResult) Add(value float32, timestamp time.Time) {
 	})
 }
 
+type BinaryValue struct {
+	X string   `json:"x"`
+	Y [2]int64 `json:"y"`
+}
+
+type ExposeBinaryMetricResult struct {
+	Name string         `json:"name"`
+	Type string         `json:"type"`
+	From int64          `json:"from"`
+	To   int64          `json:"to"`
+	Data []*BinaryValue `json:"data"`
+}
+
+func NewExposeBinaryMetricResult(name string, from time.Time, to time.Time) *ExposeBinaryMetricResult {
+	return &ExposeBinaryMetricResult{
+		Name: name,
+		Type: "binary",
+		From: from.UnixMilli(),
+		To:   to.UnixMilli(),
+		Data: []*BinaryValue{},
+	}
+}
+
+func (e *ExposeBinaryMetricResult) Add(value string, timestamps [2]int64) {
+	e.Data = append(e.Data, &BinaryValue{
+		X: value,
+		Y: timestamps,
+	})
+}
+
 type ExposeMetricsResult struct {
 	Name       string  `json:"name"`
 	Type       string  `json:"type"`
