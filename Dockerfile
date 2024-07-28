@@ -24,12 +24,12 @@ RUN go build -o /nodeherder main.go
 
 # Stage 3: Final image
 FROM alpine:latest
-WORKDIR /nodeherder
+WORKDIR /core
 COPY --from=frontend-builder /frontend/dist ./dist
-COPY --from=backend-builder /core/nodeherder .
+COPY --from=backend-builder /nodeherder .
 
 
 EXPOSE 4100
 
 # Run
-CMD ["/nodeherder"]
+CMD ["./nodeherder"]
