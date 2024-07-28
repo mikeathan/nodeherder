@@ -1,30 +1,37 @@
-FROM golang:1.19
 
-ENV GO111MODULE=on \
-    CGO_ENABLED=0 \
-    GOOS=linux \
-    GOARCH=amd64
+# Stage 1: Build Vue frontend
+FROM node:latest AS build-stage
+WORKDIR /frontend
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/. .
+RUN npm run build
 
-# Set destination for COPY
-WORKDIR /core
-COPY core/ .
+# # Stage 2: Build Golang backend
+# FROM golang:1.20-alpine AS backend-builder
 
-# Download Go modules
-RUN go mod download
+# ENV GO111MODULE=on \
+#     CGO_ENABLED=0 \
+#     GOOS=linux \
+#     GOARCH=amd64
 
-# Copy the source code. Note the slash at the end, as explained in
-# https://docs.docker.com/reference/dockerfile/#copy
-COPY *.go ./
+# WORKDIR /core
+# COPY core/ ./
+# RUN go mod download
+# COPY *.go ./
 
-# Build
-RUN go build -o /nodeherder  main.go
+# # Build
+# RUN go build -o /nodeherder  main.go
 
-# Optional:
-# To bind to a TCP port, runtime parameters must be supplied to the docker command.
-# But we can document in the Dockerfile what ports
-# the application is going to listen on by default.
-# https://docs.docker.com/reference/dockerfile/#expose
-EXPOSE 4100
 
-# Run
-CMD ["/nodeherder"]
+# # Stage 3: Final image
+# FROM alpine:latest
+# WORKDIR /nodeherder
+# COPY --from=frontend-builder /frontend/dist ./dist
+# COPY --from=backend-builder /core/nodeherder .
+
+
+# EXPOSE 4100
+
+# # Run
+# CMD ["/nodeherder"]
