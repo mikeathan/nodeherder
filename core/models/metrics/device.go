@@ -64,10 +64,10 @@ func NewExposeBinaryMetricResult(name string, from time.Time, to time.Time) *Exp
 	}
 }
 
-func (e *ExposeBinaryMetricResult) Add(value string, timestamps [2]int64) {
+func (e *ExposeBinaryMetricResult) Add(value string, from time.Time, to time.Time) {
 	e.Data = append(e.Data, &BinaryValue{
 		X: value,
-		Y: timestamps,
+		Y: [2]int64{from.UnixMilli(), to.UnixMilli()},
 	})
 }
 

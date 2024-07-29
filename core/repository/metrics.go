@@ -183,13 +183,12 @@ type binaryValue struct {
 	Timestamp time.Time
 }
 
-func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeMetricsResult, error) {
+func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeBinaryMetricResult, error) {
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
 
 	event := metrics.NewExposeBinaryMetricResult(expose.Name, from, to)
-	var currentValue string = ""
-	binaryResults := []*binaryValue{}
+	var prevValue *binaryValue = nil
 
 	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
 		timestamp, err := s.readTimestampFromKey(expose.Name, key)
@@ -202,88 +201,24 @@ func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Enti
 			return nil, err
 		}
 
-		// only first time is different a we need to fill 2 items in arrya
-		//every other tiem we only fill one item
-
-		if value != currentValue {
-
-			binaryResults = append(binaryResults, &binaryValue{value.(string), timestamp})
-
-			// currentValue = value.(string)
-			// binaryValues[currentValueIdx] = currentValue
-
-			// timeRange[currentRangeIdx] = timestamp.UnixMilli()
-
-			// currentRangeIdx++
-			// currentValueIdx++
-			// if currentRangeIdx > 1 {
-			// 	if len(event.Data) == 0 {
-			// 		event.Add(binaryValues[0], timeRange)
-			// 		currentValueIdx = 0
-			// 	} else {
-			// 		event.Add(binaryValues[1], timeRange)
-			// 		currentValueIdx = 1
-			// 	}
-
-			// 	timeRange[0] = timestamp.UnixMilli()
-			// 	currentRangeIdx = 1
-
-			// }
+		// TODO ; maybe start and end point can bethe from, to ofthe query
+		//if they corespondant result dont maach in the boundaries
+		fmt.Println("item found = > ", value, timestamp.UnixMilli())
+		if prevValue == nil {
+			prevValue = &binaryValue{value.(string), timestamp}
+			continue
 		}
 
-		//tempData[timestamp] = value.(string)
-		//		event.Add(truncated, timestamp)
-	}
-
-	// tranform DATA
-
-	// on 1
-	// off 2-
-	// on 3
-	// off 4-
-	// on 5
-	// off 6-
-
-	// on [1,2]
-	// off [2,3]
-	// on [3,4]
-	// off [4,5]
-	for i := 0; i < len(binaryResults); i += 2 {
-
-		var start_timestamp time.Time
-		var end_timestamp time.Time
-		var value string
-		fmt.Println("i=", i, " = ", binaryResults[i].Value, binaryResults[i].Timestamp.UnixMilli())
-
-		if i != 0 {
-			start_timestamp = binaryResults[i-1].Timestamp
-			end_timestamp = binaryResults[i].Timestamp
-			value = binaryResults[i-1].Value
-
-		} else {
-			start_timestamp = binaryResults[i].Timestamp
-			end_timestamp = binaryResults[i+1].Timestamp
-			value = binaryResults[i].Value
+		if prevValue.Value != value {
+			event.Add(prevValue.Value, prevValue.Timestamp, timestamp)
+			prevValue = &binaryValue{value.(string), timestamp}
 		}
-
-		fmt.Println("		TRANSFORMED = ", value, start_timestamp.UnixMilli(), end_timestamp.UnixMilli())
-
-		event.Add(value, [2]int64{start_timestamp.UnixMilli(), end_timestamp.UnixMilli()})
 	}
-	// iterate though maps change order !!!!!!!!!!!!!!!!!!!1
 
-	// idx := 0
-	// for i := 0; i <= len(tempData); i += 2 {
-	// 	timestamp := tempData
-	// 	event.Add(timestamp, idx)
-	// 	idx++
-	// }
-	// for timestamp, value := range tempData {
-	// }
-	return nil, nil
+	return event, nil
 }
 
-func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeMetricsResult, error) {
+func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeNumericMetricResult, error) {
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
 
@@ -302,7 +237,7 @@ func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Ent
 		truncated := utils.TruncateFloat32(value.(float32), 1)
 		event.Add(truncated, timestamp)
 	}
-	return nil, nil
+	return event, nil
 }
 
 func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeMetricsResult, error) {

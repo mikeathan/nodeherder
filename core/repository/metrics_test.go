@@ -260,15 +260,15 @@ func TestDeviceTimeRangeDataBinaryTypeMetrics(t *testing.T) {
 	values := utils_test.CreateBinaryValues(24)
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
 
-	deviceId := fmt.Sprintf("x000%v", 1)
-	deviceName := fmt.Sprintf("device %v", 1)
+	deviceId := fmt.Sprintf("x000%v", 0)
+	deviceName := fmt.Sprintf("device %v", 0)
 
 	for tIdx, timestamp := range timestamps {
 		value := values[tIdx]
 
 		// used dev.props['last_seen] previously but now using time.now in metrics.Store
 		// so i cant test timestamps
-		dev := createMockDevice(deviceId, deviceName, 2, "binary", timestamp, value)
+		dev := createMockDevice(deviceId, deviceName, 1, "binary", timestamp, value)
 		payload := utils_test.Payload(dev)
 		mockClock.SetMockTime(timestamp)
 		err = repo.Store(dev.Id, payload)
