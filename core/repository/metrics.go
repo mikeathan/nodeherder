@@ -178,15 +178,19 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 	return result, err
 }
 
+type binaryValue struct {
+	Value     string
+	Timestamp time.Time
+}
+
 func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeMetricsResult, error) {
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
 
 	event := metrics.NewExposeBinaryMetricResult(expose.Name, from, to)
 	var currentValue string = ""
-	var currentRangeIdx int16 = 0
-	timeRange := [2]int64{}
-	tempData := map[time.Time]string{}
+	binaryResults := []*binaryValue{}
+
 	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
 		timestamp, err := s.readTimestampFromKey(expose.Name, key)
 		if err != nil {
@@ -197,21 +201,75 @@ func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Enti
 		if err != nil {
 			return nil, err
 		}
-		if value != currentValue {
-			if currentRangeIdx >= 2 { //????
-				event.Add(currentValue, timeRange)
-				currentRangeIdx = 0
-				timeRange = [2]int64{}
-			}
 
-			currentValue = value.(string)
-			timeRange[currentRangeIdx] = timestamp.UnixMilli()
-			currentRangeIdx++
+		// only first time is different a we need to fill 2 items in arrya
+		//every other tiem we only fill one item
+
+		if value != currentValue {
+
+			binaryResults = append(binaryResults, &binaryValue{value.(string), timestamp})
+
+			// currentValue = value.(string)
+			// binaryValues[currentValueIdx] = currentValue
+
+			// timeRange[currentRangeIdx] = timestamp.UnixMilli()
+
+			// currentRangeIdx++
+			// currentValueIdx++
+			// if currentRangeIdx > 1 {
+			// 	if len(event.Data) == 0 {
+			// 		event.Add(binaryValues[0], timeRange)
+			// 		currentValueIdx = 0
+			// 	} else {
+			// 		event.Add(binaryValues[1], timeRange)
+			// 		currentValueIdx = 1
+			// 	}
+
+			// 	timeRange[0] = timestamp.UnixMilli()
+			// 	currentRangeIdx = 1
+
+			// }
 		}
-		tempData[timestamp] = value.(string)
+
+		//tempData[timestamp] = value.(string)
 		//		event.Add(truncated, timestamp)
 	}
 
+	// tranform DATA
+
+	// on 1
+	// off 2-
+	// on 3
+	// off 4-
+	// on 5
+	// off 6-
+
+	// on [1,2]
+	// off [2,3]
+	// on [3,4]
+	// off [4,5]
+	for i := 0; i < len(binaryResults); i += 2 {
+
+		var start_timestamp time.Time
+		var end_timestamp time.Time
+		var value string
+		fmt.Println("i=", i, " = ", binaryResults[i].Value, binaryResults[i].Timestamp.UnixMilli())
+
+		if i != 0 {
+			start_timestamp = binaryResults[i-1].Timestamp
+			end_timestamp = binaryResults[i].Timestamp
+			value = binaryResults[i-1].Value
+
+		} else {
+			start_timestamp = binaryResults[i].Timestamp
+			end_timestamp = binaryResults[i+1].Timestamp
+			value = binaryResults[i].Value
+		}
+
+		fmt.Println("		TRANSFORMED = ", value, start_timestamp.UnixMilli(), end_timestamp.UnixMilli())
+
+		event.Add(value, [2]int64{start_timestamp.UnixMilli(), end_timestamp.UnixMilli()})
+	}
 	// iterate though maps change order !!!!!!!!!!!!!!!!!!!1
 
 	// idx := 0
@@ -251,8 +309,10 @@ func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devi
 
 	if expose.Type == "numeric" {
 		return s.readNumericValues(cursor, expose, from, to)
+	} else if expose.Type == "binary" {
+		return s.readBinaryValues(cursor, expose, from, to)
 	} else {
-		// to implement
+		return nil, fmt.Errorf("expose type not supported")
 	}
 
 	// event := metrics.NewExposeMetricsResult(expose.Name, from, to, exposeType.String())

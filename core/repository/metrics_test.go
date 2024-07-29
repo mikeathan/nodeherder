@@ -236,13 +236,62 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 // 			t.Error("failed to query metrics: ", err.Error())
 // 		}
 
-// 		for _, expose := range result.Expose {
-// 			if len(expose.Values) > 1 {
-// 				t.Errorf("rate limiter registered more than expected device hits want 1 got %v: ", len((expose.Values)))
-// 			}
-// 		}
-// 	}
-// }
+//			for _, expose := range result.Expose {
+//				if len(expose.Values) > 1 {
+//					t.Errorf("rate limiter registered more than expected device hits want 1 got %v: ", len((expose.Values)))
+//				}
+//			}
+//		}
+//	}
+func TestDeviceTimeRangeDataBinaryTypeMetrics(t *testing.T) {
+
+	tempfile := tempfile()
+	defer os.Remove(tempfile)
+
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now()
+	})
+	repo, err := repository.NewMetricsRepoFromFile(tempfile, mockClock)
+	if err != nil {
+		t.Error("failed to initialise metrics repo", err.Error())
+	}
+
+	timestamps := utils_test.CreateDateTimeTimestamps(1, 24, 1)
+	values := utils_test.CreateBinaryValues(24)
+	var devices map[string]*devices.Device = make(map[string]*devices.Device)
+
+	deviceId := fmt.Sprintf("x000%v", 1)
+	deviceName := fmt.Sprintf("device %v", 1)
+
+	for tIdx, timestamp := range timestamps {
+		value := values[tIdx]
+
+		// used dev.props['last_seen] previously but now using time.now in metrics.Store
+		// so i cant test timestamps
+		dev := createMockDevice(deviceId, deviceName, 2, "binary", timestamp, value)
+		payload := utils_test.Payload(dev)
+		mockClock.SetMockTime(timestamp)
+		err = repo.Store(dev.Id, payload)
+		if err != nil {
+			t.Error("failed to store metrics ", err.Error())
+		}
+		devices[dev.Id] = dev
+	}
+
+	dev := devices[deviceId]
+	now := time.Now()
+
+	from := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC)
+	to := time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)
+
+	result, err := repo.ViewDeviceTimeRange(dev, from, to)
+	if err != nil {
+		t.Error("failed to query metrics: ", err.Error())
+	}
+
+	fmt.Println(result.DeviceId)
+
+}
 
 func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 

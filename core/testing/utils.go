@@ -351,9 +351,10 @@ func CreateEnumValues(numOfItems int) []int {
 
 func CreateBinaryValues(numOfItems int) []string {
 	var values []string = make([]string, numOfItems)
+	var currentValue bool = false
 	for i := 0; i < numOfItems; i++ {
-		val := intrandom(2)
-		if val == 0 {
+		currentValue = !currentValue
+		if currentValue {
 			values[i] = "on"
 		} else {
 			values[i] = "off"
