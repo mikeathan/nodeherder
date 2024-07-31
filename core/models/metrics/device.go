@@ -11,12 +11,11 @@ type LoadDeviceMetricsRequest struct {
 	To     int64  `json:"to"`
 }
 
-type NumericValue struct {
-	X int64   `json:"x"`
-	Y float32 `json:"y"`
+type ExposeMetricsResult interface {
+	GetType() string
 }
 
-type ExposeNumericMetricResult struct {
+type ExposeNumericMetricsResult struct {
 	Name string          `json:"name"`
 	Type string          `json:"type"`
 	From int64           `json:"from"`
@@ -24,8 +23,48 @@ type ExposeNumericMetricResult struct {
 	Data []*NumericValue `json:"data"`
 }
 
-func NewExposeNumericMetricResult(name string, from time.Time, to time.Time) *ExposeNumericMetricResult {
-	return &ExposeNumericMetricResult{
+func ToBinaryExposeResults(r ExposeMetricsResult) *ExposeBinaryMetricsResult {
+	if e, ok := r.(*ExposeBinaryMetricsResult); ok {
+		return e
+	}
+	return nil
+}
+
+func ToNumericExposeResults(r ExposeMetricsResult) *ExposeNumericMetricsResult {
+	if e, ok := r.(*ExposeNumericMetricsResult); ok {
+		return e
+	}
+	return nil
+}
+
+func (e *ExposeNumericMetricsResult) GetType() string {
+	return "numeric"
+}
+
+type ExposeBinaryMetricsResult struct {
+	Name string         `json:"name"`
+	Type string         `json:"type"`
+	From int64          `json:"from"`
+	To   int64          `json:"to"`
+	Data []*BinaryValue `json:"data"`
+}
+
+func (e *ExposeBinaryMetricsResult) GetType() string {
+	return "binary"
+}
+
+type BinaryValue struct {
+	X string   `json:"x"`
+	Y [2]int64 `json:"y"`
+}
+
+type NumericValue struct {
+	X int64   `json:"x"`
+	Y float32 `json:"y"`
+}
+
+func NewExposeNumericMetricResult(name string, from time.Time, to time.Time) *ExposeNumericMetricsResult {
+	return &ExposeNumericMetricsResult{
 		Name: name,
 		Type: "numeric",
 		From: from.UnixMilli(),
@@ -34,28 +73,15 @@ func NewExposeNumericMetricResult(name string, from time.Time, to time.Time) *Ex
 	}
 }
 
-func (e *ExposeNumericMetricResult) Add(value float32, timestamp time.Time) {
+func (e *ExposeNumericMetricsResult) Add(value float32, timestamp time.Time) {
 	e.Data = append(e.Data, &NumericValue{
 		X: timestamp.UnixMilli(),
 		Y: value,
 	})
 }
 
-type BinaryValue struct {
-	X string   `json:"x"`
-	Y [2]int64 `json:"y"`
-}
-
-type ExposeBinaryMetricResult struct {
-	Name string         `json:"name"`
-	Type string         `json:"type"`
-	From int64          `json:"from"`
-	To   int64          `json:"to"`
-	Data []*BinaryValue `json:"data"`
-}
-
-func NewExposeBinaryMetricResult(name string, from time.Time, to time.Time) *ExposeBinaryMetricResult {
-	return &ExposeBinaryMetricResult{
+func NewExposeBinaryMetricResult(name string, from time.Time, to time.Time) *ExposeBinaryMetricsResult {
+	return &ExposeBinaryMetricsResult{
 		Name: name,
 		Type: "binary",
 		From: from.UnixMilli(),
@@ -64,47 +90,22 @@ func NewExposeBinaryMetricResult(name string, from time.Time, to time.Time) *Exp
 	}
 }
 
-func (e *ExposeBinaryMetricResult) Add(value string, from time.Time, to time.Time) {
+func (e *ExposeBinaryMetricsResult) Add(value string, from time.Time, to time.Time) {
 	e.Data = append(e.Data, &BinaryValue{
 		X: value,
 		Y: [2]int64{from.UnixMilli(), to.UnixMilli()},
 	})
 }
 
-type ExposeMetricsResult struct {
-	Name       string  `json:"name"`
-	Type       string  `json:"type"`
-	From       int64   `json:"from"`
-	To         int64   `json:"to"`
-	Timestamps []int64 `json:"timestamps"`
-	Values     []any   `json:"values"`
-}
-
-func NewExposeMetricsResult(name string, from time.Time, to time.Time, dataType string) *ExposeMetricsResult {
-	return &ExposeMetricsResult{
-		Name:       name,
-		Type:       dataType,
-		From:       from.UnixMilli(),
-		To:         to.UnixMilli(),
-		Timestamps: []int64{},
-		Values:     []any{},
-	}
-}
-
-func (e *ExposeMetricsResult) Add(value any, timestamp time.Time) {
-	e.Values = append(e.Values, value)
-	e.Timestamps = append(e.Timestamps, timestamp.UnixMilli())
-}
-
 type DeviceMetricsResult struct {
 	DeviceId string `json:"deviceId"`
-	Expose   []*ExposeMetricsResult
+	Expose   []ExposeMetricsResult
 }
 
 func NewDeviceMetricsResult(deviceid string) *DeviceMetricsResult {
-	return &DeviceMetricsResult{DeviceId: deviceid, Expose: []*ExposeMetricsResult{}}
+	return &DeviceMetricsResult{DeviceId: deviceid, Expose: []ExposeMetricsResult{}}
 }
 
-func (e *DeviceMetricsResult) Add(event *ExposeMetricsResult) {
+func (e *DeviceMetricsResult) Add(event ExposeMetricsResult) {
 	e.Expose = append(e.Expose, event)
 }

@@ -183,7 +183,7 @@ type binaryValue struct {
 	Timestamp time.Time
 }
 
-func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeBinaryMetricResult, error) {
+func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeBinaryMetricsResult, error) {
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
 
@@ -218,7 +218,7 @@ func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Enti
 	return event, nil
 }
 
-func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeNumericMetricResult, error) {
+func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeNumericMetricsResult, error) {
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
 
@@ -240,32 +240,15 @@ func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Ent
 	return event, nil
 }
 
-func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeMetricsResult, error) {
+func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (metrics.ExposeMetricsResult, error) {
 
 	if expose.Type == "numeric" {
 		return s.readNumericValues(cursor, expose, from, to)
 	} else if expose.Type == "binary" {
 		return s.readBinaryValues(cursor, expose, from, to)
 	} else {
-		return nil, fmt.Errorf("expose type not supported")
+		return nil, fmt.Errorf("expose type %s not supported", expose.Type)
 	}
-
-	// event := metrics.NewExposeMetricsResult(expose.Name, from, to, exposeType.String())
-	// for key, value := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, value = cursor.Next() {
-	// 	timestamp, err := s.readTimestampFromKey(expose.Name, key)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-
-	// 	data, err := utils.Unmarshal(value, exposeType)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-
-	// 	event.Add(data, timestamp)
-	// }
-
-	return nil, nil
 }
 
 // name: "brightness",
@@ -279,18 +262,18 @@ func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devi
 // ],
 // }
 
-func kindFromExposeType(expose *devices.Entity) reflect.Kind {
-	switch expose.Type {
-	case "numeric":
-		return reflect.Float32
-	case "binary":
-		return reflect.String
-	case "enum":
-		return reflect.Int
-	}
+// func kindFromExposeType(expose *devices.Entity) reflect.Kind {
+// 	switch expose.Type {
+// 	case "numeric":
+// 		return reflect.Float32
+// 	case "binary":
+// 		return reflect.String
+// 	case "enum":
+// 		return reflect.Int
+// 	}
 
-	return reflect.Interface
-}
+// 	return reflect.Interface
+// }
 
 func (s *MetricsRepo) readTimestampFromKey(id string, data []byte) (time.Time, error) {
 	timestamp, err := time.Parse(time.RFC3339Nano, string(data[len(id):]))
