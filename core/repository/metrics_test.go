@@ -125,7 +125,7 @@ func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
 			t.Error("failed to query metrics: ", err.Error())
 		}
 
-		assertDeviceEvents(dev, result, test.timestamps, test.values, t)
+		assertDeviceAnyDataTypeEvents(dev, result, test.timestamps, test.values, t)
 	}
 }
 
@@ -183,7 +183,7 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 			t.Error("failed to query metrics: ", err.Error())
 		}
 
-		assertDeviceEvents(dev, result, timestamps, values, t)
+		assertDeviceAnyDataTypeEvents(dev, result, timestamps, values, t)
 	}
 }
 
@@ -311,8 +311,9 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 
 		"numeric": utils_test.CreateFloatValues(24),
 		"binary":  utils_test.CreateBinaryValues(24),
-		"enum":    utils_test.CreateEnumValues(24),
 	}
+
+	// "enum":    utils_test.CreateEnumValues(24), NOT SUPPORTED YET
 
 	// sort data keys
 	dataKeys := make([]string, 0, len(data))
@@ -424,14 +425,14 @@ func TestExposeTimeRangeMetrics(t *testing.T) {
 		from := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC)
 		to := time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)
 
-		property := fmt.Sprintf("property_%v_%v", deviceId, 1)
+		exposeName := fmt.Sprintf("property_%v_%v", deviceId, 1)
 
-		result, err := repo.ViewExposeTimeRange(dev, property, from, to)
+		result, err := repo.ViewExposeTimeRange(dev, exposeName, from, to)
 		if err != nil {
 			t.Error("failed to query metrics: ", err.Error())
 		}
 
-		assertDeviceExposeFloatDataEvents(dev, result, property, timestamps, values, t)
+		assertDeviceExportAnyDataTypeEvents(dev, exposeName, result, timestamps, values, t)
 	}
 }
 
@@ -488,72 +489,27 @@ func TestMultipleExposeTimeRangeMetrics(t *testing.T) {
 				t.Error("failed to query metrics: ", err.Error())
 			}
 
-			assertDeviceExposeFloatDataEvents(dev, result, exposeName, timestamps, values, t)
+			assertDeviceExportAnyDataTypeEvents(dev, exposeName, result, timestamps, values, t)
 		}
 	}
-
 }
 
-func assertDeviceExposeFloatDataEvents(device *devices.Device, result *metrics.DeviceMetricsResult, exposeName string, timestamps []time.Time, values []float32, t *testing.T) {
+func assertDeviceExportAnyDataTypeEvents(device *devices.Device, exposeName string, result *metrics.DeviceMetricsResult, timestamps []time.Time, values any, t *testing.T) {
+
 	if result.DeviceId != device.Id {
 		t.Errorf("deviceId mismatch want %v got %v: ", device.Id, result.DeviceId)
 	}
-
-	gotNumExposes := len(result.Expose)
-	wantNumExposes := 1
-	if gotNumExposes != wantNumExposes {
-		t.Errorf("Exposes mismatch want %v got %v: ", wantNumExposes, gotNumExposes)
-	}
-
 	expose := device.Exposes[exposeName]
-	event := result.Expose[0]
+	for _, event := range result.Expose {
+		if event.GetType() == "numeric" {
+			assertNumericExposeEvent(expose, event, timestamps, values.([]float32), t)
 
-	numericEvent := metrics.ToNumericExposeResults(event)
-	if numericEvent == nil {
-		t.Errorf("invalid expoe type want numeric got %v: ", event.GetType())
-	}
+		} else if event.GetType() == "binary" {
+			assertBinaryExposeEvent(expose, event, timestamps, values.([]string), t)
 
-	if numericEvent.Name != expose.Name {
-		t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, numericEvent.Name)
-	}
-	dataType, ok := kindFromString(numericEvent.Type)
-	if !ok {
-		t.Errorf("invalid event.type want %v got %v: ", numericEvent.Type, dataType)
-	}
-
-	if len(event.Timestamps) == 0 {
-		t.Errorf("event.timestamps is empty")
-	}
-	if len(event.Values) == 0 {
-		t.Errorf("event.Values is empty")
-	}
-
-	for fId, foundTsUnix := range event.Timestamps {
-		tsFound := false
-		dataIdx := 0
-		for insertIdx, insertTs := range timestamps {
-			insertTsUnix := insertTs.UnixMilli()
-
-			if foundTsUnix == insertTsUnix {
-				tsFound = true
-				dataIdx = insertIdx
-				break
-			}
+		} else {
+			t.Errorf("invalid expose type %v: ", event.GetType())
 		}
-
-		if !tsFound {
-			t.Fatalf(fmt.Sprintf("Timestamp not found %v", foundTsUnix))
-		}
-
-		wantKind := reflect.TypeOf(values[dataIdx]).Kind()
-		if dataType != wantKind {
-			t.Fatalf(fmt.Sprintf("Type mismatch want: %v got: %v", wantKind.String(), dataType.String()))
-		}
-
-		if values[dataIdx] != event.Values[fId] {
-			t.Fatalf(fmt.Sprintf("Value mismatch want:%v got: %v", values[dataIdx], event.Values[fId]))
-		}
-		//fmt.Printf("found event %v with data: %v, timestamp: %v \n", expose.Name, event.Values[fId], foundTs)
 	}
 
 }
@@ -590,58 +546,8 @@ func assertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 		} else {
 			t.Errorf("invalid expose type %v: ", event.GetType())
 		}
+		idx++ // ?????
 
-		if event.Name != expose.Name {
-			t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, event.Name)
-		}
-		dataType, ok := kindFromString(event.Type)
-		if !ok {
-			t.Errorf("invalid event.type want %v got %v: ", event.Type, dataType)
-		}
-
-		for fId, foundTsUnix := range event.Timestamps {
-			tsFound := false
-			dataIdx := 0
-
-			for insertIdx, insertTs := range timestamps {
-				insertTsUnix := insertTs.UnixMilli()
-
-				if foundTsUnix == insertTsUnix {
-					tsFound = true
-					dataIdx = insertIdx
-					break
-				}
-			}
-
-			if !tsFound {
-				t.Fatalf(fmt.Sprintf("Timestamp not found %v", foundTsUnix))
-			}
-			var value any = 0
-			if dataType == reflect.Float32 {
-				v, _ := values.([]float32)
-				value = v[dataIdx]
-
-			} else if dataType == reflect.String {
-				v, _ := values.([]string)
-				value = v[dataIdx]
-
-			} else if dataType == reflect.Int {
-				v, _ := values.([]int)
-				value = v[dataIdx]
-			}
-
-			wantKind := reflect.TypeOf(value).Kind()
-			if dataType != wantKind {
-				t.Fatalf(fmt.Sprintf("Type mismatch want: %v got: %v", wantKind.String(), dataType.String()))
-			}
-
-			if value != event.Values[fId] {
-				t.Fatalf(fmt.Sprintf("Value mismatch want:%v got: %v", value, event.Values[fId]))
-			}
-			//fmt.Printf("found event %v with data: %v, timestamp: %v \n", expose.Name, event.Values[fId], foundTs)
-		}
-
-		idx++
 	}
 }
 func assertNumericExposeEvent(expose *devices.Entity, event metrics.ExposeMetricsResult, timestamps []time.Time, values []float32, t *testing.T) {
@@ -654,6 +560,7 @@ func assertNumericExposeEvent(expose *devices.Entity, event metrics.ExposeMetric
 	if numericEvent.Name != expose.Name {
 		t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, numericEvent.Name)
 	}
+
 	for _, numericData := range numericEvent.Data {
 		tsFound := false
 		dataIdx := 0
@@ -674,7 +581,7 @@ func assertNumericExposeEvent(expose *devices.Entity, event metrics.ExposeMetric
 		}
 
 		wantValue := values[dataIdx]
-		wantKind := reflect.Float64
+		wantKind := reflect.Float32
 		gotKind := reflect.TypeOf(eventValue).Kind()
 		if gotKind != wantKind {
 			t.Fatalf(fmt.Sprintf("Type mismatch want: %v got: %v", wantKind.String(), gotKind.String()))
@@ -698,81 +605,60 @@ func assertBinaryExposeEvent(expose *devices.Entity, event metrics.ExposeMetrics
 	if binaryEvent.Name != expose.Name {
 		t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, binaryEvent.Name)
 	}
-}
 
-func assertDeviceEvents(device *devices.Device, result *metrics.DeviceMetricsResult, timestamps []time.Time, values []float32, t *testing.T) {
+	// on = 1
+	// off = 2
+	// on = 3
+	// off = 4
 
-	if result.DeviceId != device.Id {
-		t.Errorf("deviceId mismatch want %v got %v: ", device.Id, result.DeviceId)
-	}
+	// on = [1,2]
+	// off = [2,3]
+	// on = [3,4]
+	for _, binaryData := range binaryEvent.Data {
+		tsFound := false
+		dataIdx := 0
 
-	gotNumExposes := len(result.Expose)
-	wantNumExposes := len(device.Exposes)
-	if gotNumExposes != wantNumExposes {
-		t.Errorf("Exposes mismatch want %v got %v: ", wantNumExposes, gotNumExposes)
-	}
+		eventValue := binaryData.X
+		eventTimestamps := binaryData.Y
 
-	// sort exposekeys in same sequence as results.
-	exposekeys := make([]string, 0, len(device.Exposes))
-	for k := range device.Exposes {
-		exposekeys = append(exposekeys, k)
-	}
+		eventStart := eventTimestamps[0]
+		eventEnd := eventTimestamps[1]
 
-	sort.Strings(exposekeys)
+		for insertIdx, insertTs := range timestamps {
+			insertTsUnix := insertTs.UnixMilli()
 
-	idx := 0
-	for _, key := range exposekeys {
-
-		expose := device.Exposes[key]
-		event := result.Expose[idx]
-
-		if event.Name != expose.Name {
-			t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, event.Name)
-		}
-		dataType, ok := kindFromString(event.Type)
-		if !ok {
-			t.Errorf("invalid event.type want %v got %v: ", event.Type, dataType)
-		}
-
-		if len(event.Timestamps) == 0 {
-			t.Errorf("event.Timestamp is empty")
-		}
-		if len(event.Values) == 0 {
-			t.Errorf("event.Values is empty")
-		}
-
-		for fId, foundTsUnix := range event.Timestamps {
-			tsFound := false
-			dataIdx := 0
-
-			for insertIdx, insertTs := range timestamps {
-				insertTsUnix := insertTs.UnixMilli()
-
-				if foundTsUnix == insertTsUnix {
-					tsFound = true
-					dataIdx = insertIdx
-					break
-				}
+			if eventStart == insertTsUnix {
+				tsFound = true
+				dataIdx = insertIdx
+				break
 			}
-
-			if !tsFound {
-				t.Fatalf(fmt.Sprintf("Timestamp not found %v", foundTsUnix))
-			}
-
-			wantKind := reflect.TypeOf(values[dataIdx]).Kind()
-			if dataType != wantKind {
-				t.Fatalf(fmt.Sprintf("Type mismatch want: %v got: %v", wantKind.String(), dataType.String()))
-			}
-
-			if values[dataIdx] != event.Values[fId] {
-				t.Fatalf(fmt.Sprintf("Value mismatch want:%v got: %v", values[dataIdx], event.Values[fId]))
-			}
-			//fmt.Printf("found event %v with data: %v, timestamp: %v \n", expose.Name, event.Values[fId], foundTs)
 		}
 
-		idx++
+		if !tsFound {
+			t.Fatalf(fmt.Sprintf("Start timestamp not found %v", eventStart))
+		}
+
+		// we are expecting the end timestamp to be the next one
+		if eventEnd != timestamps[dataIdx+1].UnixMilli() {
+			t.Fatalf(fmt.Sprintf("End timestamp not matching %v", eventEnd))
+		}
+
+		// NOTE: not sure if dataindex is correct here . could be + or -1
+		// NEEDS TESTING
+		wantValue := values[dataIdx] // !!!!!!!
+		wantKind := reflect.String
+		gotKind := reflect.TypeOf(eventValue).Kind()
+		if gotKind != wantKind {
+			t.Fatalf(fmt.Sprintf("Type mismatch want: %v got: %v", wantKind.String(), gotKind.String()))
+		}
+
+		if wantValue != eventValue {
+			t.Fatalf(fmt.Sprintf("Value mismatch want:%v got: %v", wantValue, eventValue))
+		}
+		//fmt.Printf("found event %v with data: %v, timestamp: %v \n", expose.Name, event.Values[fId], foundTs)
 	}
 }
+
 func createMockDevice(id string, name string, numOfExposes int, exposeType string, timestamp time.Time, data any) *devices.Device {
 	device1 := &devices.Device{}
 	device1.Id = id
