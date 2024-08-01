@@ -256,8 +256,8 @@ func TestDeviceTimeRangeBinaryDataMetrics(t *testing.T) {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
 
-	//timestamps := utils_test.CreateDateTimeTimestamps(2, 24, 10)
-	//values := utils_test.CreateBinaryValues(480)
+	TODO
+	// TO TEST  binary data that canctains the same value ins sequence
 	eventsPerDay := 1
 	eventPerHour := 24
 	eventsPerMin := 2
