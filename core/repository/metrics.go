@@ -201,18 +201,17 @@ func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Enti
 			return nil, err
 		}
 
-		// TODO ; maybe start and end point can bethe from, to ofthe query
-		//if they corespondant result dont maach in the boundaries
-		fmt.Println("item found = > ", value, timestamp.UnixMilli())
 		if prevValue == nil {
 			prevValue = &binaryValue{value.(string), timestamp}
 			continue
 		}
 
 		if prevValue.Value != value {
+
 			event.Add(prevValue.Value, prevValue.Timestamp, timestamp)
 			prevValue = &binaryValue{value.(string), timestamp}
 		}
+
 	}
 
 	return event, nil

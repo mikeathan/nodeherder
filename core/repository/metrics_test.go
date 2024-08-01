@@ -243,21 +243,26 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 //			}
 //		}
 //	}
-func TestDeviceTimeRangeDataBinaryTypeMetrics(t *testing.T) {
+func TestDeviceTimeRangeBinaryDataMetrics(t *testing.T) {
 
 	tempfile := tempfile()
 	defer os.Remove(tempfile)
 
 	mockClock := mocks.NewMockClock(func() time.Time {
-		return time.Now()
+		return time.Now().UTC()
 	})
 	repo, err := repository.NewMetricsRepoFromFile(tempfile, mockClock)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
 
-	timestamps := utils_test.CreateDateTimeTimestamps(1, 24, 1)
-	values := utils_test.CreateBinaryValues(24)
+	//timestamps := utils_test.CreateDateTimeTimestamps(2, 24, 10)
+	//values := utils_test.CreateBinaryValues(480)
+	eventsPerDay := 1
+	eventPerHour := 24
+	eventsPerMin := 2
+	timestamps := utils_test.CreateDateTimeTimestamps(eventsPerDay, eventPerHour, eventsPerMin)
+	values := utils_test.CreateBinaryValues(eventsPerDay * eventPerHour * eventsPerMin)
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
 
 	deviceId := fmt.Sprintf("x000%v", 0)
@@ -265,9 +270,6 @@ func TestDeviceTimeRangeDataBinaryTypeMetrics(t *testing.T) {
 
 	for tIdx, timestamp := range timestamps {
 		value := values[tIdx]
-
-		// used dev.props['last_seen] previously but now using time.now in metrics.Store
-		// so i cant test timestamps
 		dev := createMockDevice(deviceId, deviceName, 1, "binary", timestamp, value)
 		payload := utils_test.Payload(dev)
 		mockClock.SetMockTime(timestamp)
@@ -281,15 +283,36 @@ func TestDeviceTimeRangeDataBinaryTypeMetrics(t *testing.T) {
 	dev := devices[deviceId]
 	now := time.Now()
 
-	from := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC)
-	to := time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)
+	from := time.Date(now.Year(), now.Month(), now.Day(), 19, 0, 0, 0, time.UTC)
+	to := time.Date(now.Year(), now.Month(), now.Day(), 20, 2, 0, 0, time.UTC)
 
 	result, err := repo.ViewDeviceTimeRange(dev, from, to)
 	if err != nil {
 		t.Error("failed to query metrics: ", err.Error())
 	}
 
-	fmt.Println(result.DeviceId)
+	for _, event := range result.Expose {
+		binaryEvent := metrics.ToBinaryExposeResults(event)
+
+		if from != time.UnixMilli(binaryEvent.From).UTC() {
+			t.Errorf("from time mismatch want %v got %v", from.UnixMilli(), binaryEvent.From)
+		}
+		if to != time.UnixMilli(binaryEvent.To).UTC() {
+			t.Errorf("to time mismatch want %v got %v", to.UnixMilli(), binaryEvent.To)
+		}
+
+		fmt.Printf("Name: %v \n", binaryEvent.Name)
+		fmt.Printf("From: %v \n", time.UnixMilli(binaryEvent.From))
+		fmt.Printf("To: %v \n", time.UnixMilli(binaryEvent.To))
+
+		if len(binaryEvent.Data) != 3 {
+			t.Errorf("number of data points mismatch want 3 got %v", len(binaryEvent.Data))
+		}
+		for _, v := range binaryEvent.Data {
+			fmt.Printf("value: %v \n", v.X)
+			fmt.Printf("Time range : %v  - %v \n", time.UnixMilli(v.Y[0]).UTC(), time.UnixMilli(v.Y[1]).UTC())
+		}
+	}
 
 }
 
