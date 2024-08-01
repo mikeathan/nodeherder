@@ -102,7 +102,7 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 				return err
 			}
 
-			//fmt.Printf("DEBUG -  metrics: Expose=%v, Data=%v, Key=%v \n", name, string(buf), string(key))
+			fmt.Printf("DEBUG -  metrics: Expose=%v, Data=%v, Key=%v \n", name, string(buf), string(key))
 		}
 		return nil
 		// // ??????
@@ -210,6 +210,8 @@ func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Enti
 
 			event.Add(prevValue.Value, prevValue.Timestamp, timestamp)
 			prevValue = &binaryValue{value.(string), timestamp}
+		} else {
+			fmt.Println(value.(string))
 		}
 
 	}

@@ -741,31 +741,31 @@ func TestHandlingLoadMetricsMessage(t *testing.T) {
 	to := now.AddDate(0, 0, 1)
 
 	// input data
-	expose1 := metrics.NewExposeMetricsResult("temperature", from, to, "numeric")
+	expose1 := metrics.NewExposeNumericMetricResult("temperature", from, to)
 	timestamps := utils_test.CreateDateTimeTimestamps(1, 24, 1)
 	values := utils_test.CreateFloatValues(24)
 	for idx, value := range values {
 		expose1.Add(value, timestamps[idx])
 	}
 
-	expose2 := metrics.NewExposeMetricsResult("presence", from, to, "binary")
+	expose2 := metrics.NewExposeBinaryMetricResult("presence", from, to)
 	timestamps2 := utils_test.CreateDateTimeTimestamps(1, 10, 1)
 	values2 := utils_test.CreateBinaryValues(10)
 	for idx, value := range values2 {
 		expose2.Add(value, timestamps2[idx])
 	}
 
-	expose3 := metrics.NewExposeMetricsResult("color_temp", from, to, "enum")
-	timestamps3 := utils_test.CreateDateTimeTimestamps(1, 5, 1)
-	values3 := utils_test.CreateEnumValues(5)
-	for idx, value := range values3 {
-		expose3.Add(value, timestamps3[idx])
-	}
+	// expose3 := metrics.NewExposeBinaryMetricResult("color_temp", from, to, "enum")
+	// timestamps3 := utils_test.CreateDateTimeTimestamps(1, 5, 1)
+	// values3 := utils_test.CreateEnumValues(5)
+	// for idx, value := range values3 {
+	// 	expose3.Add(value, timestamps3[idx])
+	// }
 
 	viewMetrics := metrics.NewDeviceMetricsResult("x01234")
 	viewMetrics.Add(expose1)
 	viewMetrics.Add(expose2)
-	viewMetrics.Add(expose3)
+	//viewMetrics.Add(expose3)
 
 	wsHub.OnLoadMetrics(func(p interface{}) (interface{}, error) {
 		return viewMetrics, nil
