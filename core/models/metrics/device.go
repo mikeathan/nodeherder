@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -11,8 +13,16 @@ type LoadDeviceMetricsRequest struct {
 	To     int64  `json:"to"`
 }
 
-type ExposeMetricsResult interface {
+type ExposeResult interface {
 	GetType() string
+}
+
+type ExposeMetricsResult struct {
+	Type string `json:"type"`
+}
+
+func (e *ExposeMetricsResult) GetType() string {
+	return e.Type
 }
 
 type ExposeNumericMetricsResult struct {
@@ -23,14 +33,14 @@ type ExposeNumericMetricsResult struct {
 	Data []*NumericValue `json:"data"`
 }
 
-func ToBinaryExposeResults(r ExposeMetricsResult) *ExposeBinaryMetricsResult {
+func ToBinaryExposeResults(r ExposeResult) *ExposeBinaryMetricsResult {
 	if e, ok := r.(*ExposeBinaryMetricsResult); ok {
 		return e
 	}
 	return nil
 }
 
-func ToNumericExposeResults(r ExposeMetricsResult) *ExposeNumericMetricsResult {
+func ToNumericExposeResults(r ExposeResult) *ExposeNumericMetricsResult {
 	if e, ok := r.(*ExposeNumericMetricsResult); ok {
 		return e
 	}
@@ -97,15 +107,77 @@ func (e *ExposeBinaryMetricsResult) Add(value string, from time.Time, to time.Ti
 	})
 }
 
+
+INEED UNMARSHALLER FOR deviceMetricsobject
+func (c *ExposeMetricsResult) UnmarshalJSON(data []byte) error {
+	var s *ExposeMetricsResult = &ExposeMetricsResult{}
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+
+	if s.GetType() == "binary" {
+		var b *ExposeBinaryMetricsResult = &ExposeBinaryMetricsResult{}
+		//b:=ToBinaryExposeResults(s)
+		return json.Unmarshal(data, &b)
+	}
+	if s.GetType() == "numeric" {
+		var n *ExposeNumericMetricsResult = &ExposeNumericMetricsResult{}
+		//b:=ToBinaryExposeResults(s)
+		return json.Unmarshal(data, &n)
+	}
+
+	return nil
+}
+func (c *ExposeMetricsResult) MarshalJSON() ([]byte, error) {
+	switch c.GetType() {
+	case "binary":
+		b := ToBinaryExposeResults(c)
+		return json.Marshal(b)
+		// return json.Marshal(struct {
+		// 	Name string         `json:"name"`
+		// 	Type string         `json:"type"`
+		// 	From int64          `json:"from"`
+		// 	To   int64          `json:"to"`
+		// 	Data []*BinaryValue `json:"data"`
+		// }{
+		// 	Name: b.Name,
+		// 	Type: c.GetType(),
+		// 	From: b.From,
+		// 	To:   b.To,
+		// 	Data: b.Data,
+		// })
+
+	case "numeric":
+		n := ToNumericExposeResults(c)
+		return json.Marshal(n)
+		// return json.Marshal(struct {
+		// 	Name string          `json:"name"`
+		// 	Type string          `json:"type"`
+		// 	From int64           `json:"from"`
+		// 	To   int64           `json:"to"`
+		// 	Data []*NumericValue `json:"data"`
+		// }{
+		// 	Name: n.Name,
+		// 	Type: c.GetType(),
+		// 	From: n.From,
+		// 	To:   n.To,
+		// 	Data: n.Data,
+		// })
+
+	default:
+		return nil, fmt.Errorf("unknown customer type")
+	}
+}
+
 type DeviceMetricsResult struct {
 	DeviceId string `json:"deviceId"`
-	Expose   []ExposeMetricsResult
+	Expose   []ExposeResult
 }
 
 func NewDeviceMetricsResult(deviceid string) *DeviceMetricsResult {
-	return &DeviceMetricsResult{DeviceId: deviceid, Expose: []ExposeMetricsResult{}}
+	return &DeviceMetricsResult{DeviceId: deviceid, Expose: []ExposeResult{}}
 }
 
-func (e *DeviceMetricsResult) Add(event ExposeMetricsResult) {
+func (e *DeviceMetricsResult) Add(event ExposeResult) {
 	e.Expose = append(e.Expose, event)
 }

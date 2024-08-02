@@ -19,6 +19,11 @@ import (
 	"time"
 )
 
+type binaryValue struct {
+	Value     string
+	Timestamp time.Time
+}
+
 func CreateStore() store.AppStore {
 	repo := repository.NewMemoryDeviceRepo()
 	metricsRepo := mocks.NopMetricsRepo{}
@@ -361,6 +366,22 @@ func CreateBinaryValues(numOfItems int) []string {
 		}
 	}
 	return values
+}
+
+func AddBinaryDataToExposeMetricsResult(expose *metrics.ExposeBinaryMetricsResult, values []string, timestamps []time.Time) *metrics.ExposeBinaryMetricsResult {
+	var prevValue *binaryValue = nil
+	for idx, value := range values {
+		if prevValue == nil {
+			prevValue = &binaryValue{value, timestamps[idx]}
+			continue
+		}
+		if prevValue.Value != value {
+			expose.Add(prevValue.Value, prevValue.Timestamp, timestamps[idx])
+			prevValue = &binaryValue{value, timestamps[idx]}
+		}
+	}
+
+	return expose
 }
 
 func StructToBytes(p interface{}) ([]byte, error) {

@@ -210,8 +210,6 @@ func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Enti
 
 			event.Add(prevValue.Value, prevValue.Timestamp, timestamp)
 			prevValue = &binaryValue{value.(string), timestamp}
-		} else {
-			fmt.Println(value.(string))
 		}
 
 	}
@@ -241,7 +239,7 @@ func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Ent
 	return event, nil
 }
 
-func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (metrics.ExposeMetricsResult, error) {
+func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (metrics.ExposeResult, error) {
 
 	if expose.Type == "numeric" {
 		return s.readNumericValues(cursor, expose, from, to)

@@ -750,10 +750,9 @@ func TestHandlingLoadMetricsMessage(t *testing.T) {
 
 	expose2 := metrics.NewExposeBinaryMetricResult("presence", from, to)
 	timestamps2 := utils_test.CreateDateTimeTimestamps(1, 10, 1)
+
 	values2 := utils_test.CreateBinaryValues(10)
-	for idx, value := range values2 {
-		expose2.Add(value, timestamps2[idx])
-	}
+	expose2 = utils_test.AddBinaryDataToExposeMetricsResult(expose2, values2, timestamps2)
 
 	// expose3 := metrics.NewExposeBinaryMetricResult("color_temp", from, to, "enum")
 	// timestamps3 := utils_test.CreateDateTimeTimestamps(1, 5, 1)
@@ -822,29 +821,17 @@ func TestHandlingLoadMetricsMessage(t *testing.T) {
 	if len(resultMetrics.Expose) != len(viewMetrics.Expose) {
 		t.Fatalf("Expected numer of exposes %v', got '%v'", len(viewMetrics.Expose), len(resultMetrics.Expose))
 	}
-	for idx, expose := range resultMetrics.Expose {
-
+	for idx, gotExpose := range resultMetrics.Expose {
 		wantExpose := viewMetrics.Expose[idx]
-		if expose.Type != wantExpose.Type {
-			t.Fatalf("Expected type %v', got '%v'", wantExpose.Type, expose.Type)
 
+		if gotExpose.GetType() == "numeric" {
+			utils_test.AssertNumericExposeMetricResults(wantExpose, gotExpose, t)
+		} else if gotExpose.GetType() == "binary" {
+			utils_test.AssertBinaryExposeMetricResults(wantExpose, gotExpose, t)
+		} else {
+			t.Errorf("invalid expose type %v: ", gotExpose.GetType())
 		}
-		for vidx, wantValue := range wantExpose.Values {
-
-			gotValue := expose.Values[vidx]
-			if !utils_test.EqualityCheck(wantValue, gotValue) {
-				t.Fatalf("Expected value %v', got '%v'", wantValue, gotValue)
-			}
-		}
-		for tidx, wantTimestamp := range wantExpose.Timestamps {
-			gotTimestamp := expose.Timestamps[tidx]
-			if wantTimestamp != gotTimestamp {
-				t.Fatalf("Expected timestamp %v', got '%v'", wantTimestamp, gotTimestamp)
-			}
-		}
-
 	}
-	//
 }
 
 func SendMessage(t *testing.T, ws *websocket.Conn, msg []byte) {
