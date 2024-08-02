@@ -16,7 +16,7 @@ func AssertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 		t.Errorf("deviceId mismatch want %v got %v: ", device.Id, result.DeviceId)
 	}
 
-	gotNumExposes := len(result.Expose)
+	gotNumExposes := len(result.Exposes)
 	wantNumExposes := len(device.Exposes)
 	if gotNumExposes != wantNumExposes {
 		t.Errorf("Exposes mismatch want %v got %v: ", wantNumExposes, gotNumExposes)
@@ -34,7 +34,7 @@ func AssertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 	for _, key := range exposekeys {
 
 		expose := device.Exposes[key]
-		event := result.Expose[idx]
+		event := result.Exposes[idx]
 
 		if event.GetType() == "numeric" {
 			AssertNumericExposeEvent(expose, event, timestamps, values.([]float32), t)

@@ -308,7 +308,7 @@ func TestDeviceTimeRangeBinaryDataMetrics(t *testing.T) {
 			t.Error("failed to query metrics: ", err.Error())
 		}
 
-		for _, event := range result.Expose {
+		for _, event := range result.Exposes {
 			binaryEvent := metrics.ToBinaryExposeResults(event)
 
 			if testCase.from != time.UnixMilli(binaryEvent.From).UTC() {
@@ -546,7 +546,7 @@ func assertDeviceExportAnyDataTypeEvents(device *devices.Device, exposeName stri
 		t.Errorf("deviceId mismatch want %v got %v: ", device.Id, result.DeviceId)
 	}
 	expose := device.Exposes[exposeName]
-	for _, event := range result.Expose {
+	for _, event := range result.Exposes {
 		if event.GetType() == "numeric" {
 			utils_test.AssertNumericExposeEvent(expose, event, timestamps, values.([]float32), t)
 

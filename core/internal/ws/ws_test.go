@@ -818,11 +818,11 @@ func TestHandlingLoadMetricsMessage(t *testing.T) {
 	if resultMetrics.DeviceId != viewMetrics.DeviceId {
 		t.Fatalf("Expected result id %v', got '%v'", viewMetrics.DeviceId, resultMetrics.DeviceId)
 	}
-	if len(resultMetrics.Expose) != len(viewMetrics.Expose) {
-		t.Fatalf("Expected numer of exposes %v', got '%v'", len(viewMetrics.Expose), len(resultMetrics.Expose))
+	if len(resultMetrics.Exposes) != len(viewMetrics.Exposes) {
+		t.Fatalf("Expected numer of exposes %v', got '%v'", len(viewMetrics.Exposes), len(resultMetrics.Exposes))
 	}
-	for idx, gotExpose := range resultMetrics.Expose {
-		wantExpose := viewMetrics.Expose[idx]
+	for idx, gotExpose := range resultMetrics.Exposes {
+		wantExpose := viewMetrics.Exposes[idx]
 
 		if gotExpose.GetType() == "numeric" {
 			utils_test.AssertNumericExposeMetricResults(wantExpose, gotExpose, t)

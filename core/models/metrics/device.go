@@ -13,6 +13,11 @@ type LoadDeviceMetricsRequest struct {
 	To     int64  `json:"to"`
 }
 
+type DeviceMetricsResult struct {
+	DeviceId string         `json:"deviceId"`
+	Exposes  []ExposeResult `json:"exposes"`
+}
+
 type ExposeResult interface {
 	GetType() string
 }
@@ -107,77 +112,73 @@ func (e *ExposeBinaryMetricsResult) Add(value string, from time.Time, to time.Ti
 	})
 }
 
+func (c *DeviceMetricsResult) MarshalJSON() ([]byte, error) {
 
-INEED UNMARSHALLER FOR deviceMetricsobject
-func (c *ExposeMetricsResult) UnmarshalJSON(data []byte) error {
-	var s *ExposeMetricsResult = &ExposeMetricsResult{}
-	if err := json.Unmarshal(data, &s); err != nil {
+	res := struct {
+		DeviceId string         `json:"deviceId"`
+		Exposes  []ExposeResult `json:"exposes"`
+	}{
+		DeviceId: c.DeviceId,
+		Exposes:  c.Exposes,
+	}
+
+	return json.Marshal(res)
+}
+
+func (c *DeviceMetricsResult) UnmarshalJSON(data []byte) error {
+
+	var tmpJson map[string]interface{}
+	err := json.Unmarshal(data, &tmpJson)
+	if err != nil {
 		return err
 	}
-
-	if s.GetType() == "binary" {
-		var b *ExposeBinaryMetricsResult = &ExposeBinaryMetricsResult{}
-		//b:=ToBinaryExposeResults(s)
-		return json.Unmarshal(data, &b)
+	for key, value := range tmpJson {
+		switch key {
+		case "deviceId":
+			c.DeviceId = value.(string)
+		case "exposes":
+			c.Exposes = []ExposeResult{}
+			for _, expose := range value.([]interface{}) {
+				exposeResult := expose.(map[string]interface{})
+				if exposeType, ok := exposeResult["type"]; ok {
+					switch exposeType {
+					case "numeric":
+						exposeBytes, err := json.Marshal(exposeResult)
+						if err != nil {
+							return err
+						}
+						var n *ExposeNumericMetricsResult = &ExposeNumericMetricsResult{}
+						err = json.Unmarshal(exposeBytes, &n)
+						if err != nil {
+							return err
+						}
+						c.Exposes = append(c.Exposes, n)
+					case "binary":
+						exposeBytes, err := json.Marshal(exposeResult)
+						if err != nil {
+							return err
+						}
+						var b *ExposeBinaryMetricsResult = &ExposeBinaryMetricsResult{}
+						err = json.Unmarshal(exposeBytes, &b)
+						if err != nil {
+							return err
+						}
+						c.Exposes = append(c.Exposes, b)
+					default:
+						return fmt.Errorf("unknown expose type: %s", exposeType)
+					}
+				}
+			}
+		}
 	}
-	if s.GetType() == "numeric" {
-		var n *ExposeNumericMetricsResult = &ExposeNumericMetricsResult{}
-		//b:=ToBinaryExposeResults(s)
-		return json.Unmarshal(data, &n)
-	}
 
-	return nil
-}
-func (c *ExposeMetricsResult) MarshalJSON() ([]byte, error) {
-	switch c.GetType() {
-	case "binary":
-		b := ToBinaryExposeResults(c)
-		return json.Marshal(b)
-		// return json.Marshal(struct {
-		// 	Name string         `json:"name"`
-		// 	Type string         `json:"type"`
-		// 	From int64          `json:"from"`
-		// 	To   int64          `json:"to"`
-		// 	Data []*BinaryValue `json:"data"`
-		// }{
-		// 	Name: b.Name,
-		// 	Type: c.GetType(),
-		// 	From: b.From,
-		// 	To:   b.To,
-		// 	Data: b.Data,
-		// })
-
-	case "numeric":
-		n := ToNumericExposeResults(c)
-		return json.Marshal(n)
-		// return json.Marshal(struct {
-		// 	Name string          `json:"name"`
-		// 	Type string          `json:"type"`
-		// 	From int64           `json:"from"`
-		// 	To   int64           `json:"to"`
-		// 	Data []*NumericValue `json:"data"`
-		// }{
-		// 	Name: n.Name,
-		// 	Type: c.GetType(),
-		// 	From: n.From,
-		// 	To:   n.To,
-		// 	Data: n.Data,
-		// })
-
-	default:
-		return nil, fmt.Errorf("unknown customer type")
-	}
-}
-
-type DeviceMetricsResult struct {
-	DeviceId string `json:"deviceId"`
-	Expose   []ExposeResult
+	return err
 }
 
 func NewDeviceMetricsResult(deviceid string) *DeviceMetricsResult {
-	return &DeviceMetricsResult{DeviceId: deviceid, Expose: []ExposeResult{}}
+	return &DeviceMetricsResult{DeviceId: deviceid, Exposes: []ExposeResult{}}
 }
 
 func (e *DeviceMetricsResult) Add(event ExposeResult) {
-	e.Expose = append(e.Expose, event)
+	e.Exposes = append(e.Exposes, event)
 }

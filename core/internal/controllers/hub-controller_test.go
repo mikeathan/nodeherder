@@ -181,31 +181,31 @@ func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *tes
 	}
 
 	// assert exposes
-	if len(lightMetrics.Expose) != 2 {
-		t.Fatalf("size mismatch want %v got %v", 2, len(lightMetrics.Expose))
+	if len(lightMetrics.Exposes) != 2 {
+		t.Fatalf("size mismatch want %v got %v", 2, len(lightMetrics.Exposes))
 	}
 
-	if lightMetrics.Expose[0].Name != "brightness" {
-		t.Fatalf("name mismatch want brightness got %v", lightMetrics.Expose[0].Name)
+	if lightMetrics.Exposes[0].Name != "brightness" {
+		t.Fatalf("name mismatch want brightness got %v", lightMetrics.Exposes[0].Name)
 	}
-	if lightMetrics.Expose[1].Name != "color_temp" {
-		t.Fatalf("name mismatch want color_temp got %v", lightMetrics.Expose[1].Name)
+	if lightMetrics.Exposes[1].Name != "color_temp" {
+		t.Fatalf("name mismatch want color_temp got %v", lightMetrics.Exposes[1].Name)
 	}
 
 	// assert birghtness values
-	if len(lightMetrics.Expose[0].Values) != 1 {
-		t.Fatalf("size mismatch want %v got %v", 1, len(lightMetrics.Expose[0].Values))
+	if len(lightMetrics.Exposes[0].Values) != 1 {
+		t.Fatalf("size mismatch want %v got %v", 1, len(lightMetrics.Exposes[0].Values))
 	}
 
-	if lightMetrics.Expose[0].Values[0] != 20.0 {
-		t.Fatalf("name mismatch want brightness value 20.0 got %v", lightMetrics.Expose[0].Values[0])
+	if lightMetrics.Exposes[0].Values[0] != 20.0 {
+		t.Fatalf("name mismatch want brightness value 20.0 got %v", lightMetrics.Exposes[0].Values[0])
 	}
 	// assert color_temp values
-	if len(lightMetrics.Expose[1].Values) != 1 {
-		t.Fatalf("size mismatch want %v got %v", 1, len(lightMetrics.Expose[1].Values))
+	if len(lightMetrics.Exposes[1].Values) != 1 {
+		t.Fatalf("size mismatch want %v got %v", 1, len(lightMetrics.Exposes[1].Values))
 	}
-	if lightMetrics.Expose[1].Values[0] != 110.0 {
-		t.Fatalf("name mismatch want color_temp value 110.0 got %v", lightMetrics.Expose[1].Values[0])
+	if lightMetrics.Exposes[1].Values[0] != 110.0 {
+		t.Fatalf("name mismatch want color_temp value 110.0 got %v", lightMetrics.Exposes[1].Values[0])
 	}
 
 }
@@ -282,29 +282,29 @@ func TestProcessorTriggersAutomationsStoresMetricsForExistingDevice(t *testing.T
 	}
 
 	// assert first expose results
-	if dialMetrics.Expose[0].Name != "action" {
-		t.Fatalf("name mismatch want action got %v", dialMetrics.Expose[0].Name)
+	if dialMetrics.Exposes[0].Name != "action" {
+		t.Fatalf("name mismatch want action got %v", dialMetrics.Exposes[0].Name)
 	}
-	if len(dialMetrics.Expose[0].Values) != 2 {
-		t.Fatalf("size mismatch want %v got %v", 2, len(dialMetrics.Expose[0].Values))
+	if len(dialMetrics.Exposes[0].Values) != 2 {
+		t.Fatalf("size mismatch want %v got %v", 2, len(dialMetrics.Exposes[0].Values))
 	}
 
-	if dialMetrics.Expose[0].Values[0] != "button_2_hold" {
-		t.Fatalf("size mismatch want %v got %v", "button_2_hold", dialMetrics.Expose[0].Values[0])
+	if dialMetrics.Exposes[0].Values[0] != "button_2_hold" {
+		t.Fatalf("size mismatch want %v got %v", "button_2_hold", dialMetrics.Exposes[0].Values[0])
 	}
-	if dialMetrics.Expose[0].Values[1] != "dial_rotate_left_slow" {
-		t.Fatalf("size mismatch want %v got %v", "dial_rotate_left_slow", dialMetrics.Expose[0].Values[0])
+	if dialMetrics.Exposes[0].Values[1] != "dial_rotate_left_slow" {
+		t.Fatalf("size mismatch want %v got %v", "dial_rotate_left_slow", dialMetrics.Exposes[0].Values[0])
 	}
 
 	// assert second expose results
 
-	if dialMetrics.Expose[1].Name != "action_time" {
-		t.Fatalf("name mismatch want action_time got %v", dialMetrics.Expose[1].Name)
+	if dialMetrics.Exposes[1].Name != "action_time" {
+		t.Fatalf("name mismatch want action_time got %v", dialMetrics.Exposes[1].Name)
 	}
-	if len(dialMetrics.Expose[1].Values) != numTriggers {
-		t.Fatalf("size mismatch want %v got %v", numTriggers, len(dialMetrics.Expose[1].Values))
+	if len(dialMetrics.Exposes[1].Values) != numTriggers {
+		t.Fatalf("size mismatch want %v got %v", numTriggers, len(dialMetrics.Exposes[1].Values))
 	}
-	for i, v := range dialMetrics.Expose[1].Values {
+	for i, v := range dialMetrics.Exposes[1].Values {
 		action_time := float32(10 + (i * 2))
 
 		if v != action_time {
