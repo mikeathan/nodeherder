@@ -102,7 +102,7 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 				return err
 			}
 
-			fmt.Printf("DEBUG -  metrics: Expose=%v, Data=%v, Key=%v \n", name, string(buf), string(key))
+			//fmt.Printf("DEBUG -  metrics: Expose=%v, Data=%v, Key=%v \n", name, string(buf), string(key))
 		}
 		return nil
 		// // ??????
@@ -246,20 +246,9 @@ func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devi
 	} else if expose.Type == "binary" {
 		return s.readBinaryValues(cursor, expose, from, to)
 	} else {
-		return nil, fmt.Errorf("expose type %s not supported", expose.Type)
+		return nil, fmt.Errorf("expose type %v not supported", expose.Type)
 	}
 }
-
-// name: "brightness",
-// data: [
-// { x: "2024-07-04T15:00:00Z", y: 110.8 },
-// { x: "2024-07-04T16:00:00Z", y: 110.3 },
-// { x: "2024-07-04T17:00:00Z", y: 110.8 },
-// { x: "2024-07-04T18:00:00Z", y: 110.1 },
-// { x: "2024-07-04T19:00:00Z", y: 110.1 },
-// { x: "2024-07-04T20:00:00Z", y: 110.7 },
-// ],
-// }
 
 // func kindFromExposeType(expose *devices.Entity) reflect.Kind {
 // 	switch expose.Type {

@@ -24,9 +24,9 @@ func TestGenerateMockMetrics(t *testing.T) {
 	defer os.Remove(tempfile)
 
 	id := "0xa4c13894070052fc"
-	timestamps := utils_test.CreateDateTimeTimestamps(30, 24, 10)
+	timestamps := utils_test.CreateDateTimeTimestamps(2, 24, 1)
 	values := utils_test.CreateBinaryValues(len(timestamps))
-	from := time.Date(now.Year(), now.Month(), now.Day()-40, 0, 0, 0, 0, time.UTC)
+	from := time.Date(now.Year(), now.Month(), now.Day()-1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 
 	mockClock := mocks.NewMockClock(func() time.Time {

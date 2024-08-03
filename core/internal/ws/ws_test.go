@@ -729,7 +729,6 @@ func TestSaveDeviceConfigMessage(t *testing.T) {
 	if event.Type != ws.OperationSuccess {
 		t.Fatalf("Expected type %v', got '%v'", ws.OperationSuccess, event.Type)
 	}
-
 }
 
 func TestHandlingLoadMetricsMessage(t *testing.T) {

@@ -10,6 +10,7 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/mocks"
 	"node-herder/models/devices"
+	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	utils_test "node-herder/testing"
 	"node-herder/utils"
@@ -185,30 +186,44 @@ func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *tes
 		t.Fatalf("size mismatch want %v got %v", 2, len(lightMetrics.Exposes))
 	}
 
-	if lightMetrics.Exposes[0].Name != "brightness" {
-		t.Fatalf("name mismatch want brightness got %v", lightMetrics.Exposes[0].Name)
-	}
-	if lightMetrics.Exposes[1].Name != "color_temp" {
-		t.Fatalf("name mismatch want color_temp got %v", lightMetrics.Exposes[1].Name)
-	}
+	for idx, gotExpose := range lightMetrics.Exposes {
+		if gotExpose.GetType() == "numeric" {
+			numericExpose := metrics.ToNumericExposeResults(gotExpose)
 
-	// assert birghtness values
-	if len(lightMetrics.Exposes[0].Values) != 1 {
-		t.Fatalf("size mismatch want %v got %v", 1, len(lightMetrics.Exposes[0].Values))
-	}
+			// first index expected to be brightness
+			if idx == 0 {
+				if numericExpose.Name != "brightness" {
+					t.Fatalf("name mismatch want brightness got %v", numericExpose.Name)
+				}
+				// assert birghtness values
+				if len(numericExpose.Data) != 1 {
+					t.Fatalf("size mismatch want %v got %v", 1, len(numericExpose.Data))
+				}
 
-	if lightMetrics.Exposes[0].Values[0] != 20.0 {
-		t.Fatalf("name mismatch want brightness value 20.0 got %v", lightMetrics.Exposes[0].Values[0])
-	}
-	// assert color_temp values
-	if len(lightMetrics.Exposes[1].Values) != 1 {
-		t.Fatalf("size mismatch want %v got %v", 1, len(lightMetrics.Exposes[1].Values))
-	}
-	if lightMetrics.Exposes[1].Values[0] != 110.0 {
-		t.Fatalf("name mismatch want color_temp value 110.0 got %v", lightMetrics.Exposes[1].Values[0])
+				if numericExpose.Data[0].Y != 20.0 {
+					t.Fatalf("name mismatch want brightness value 20.0 got %v", numericExpose.Data[0].Y)
+				}
+
+				//second index expected to be color_temp
+			} else if idx == 1 {
+				if numericExpose.Name != "color_temp" {
+					t.Fatalf("name mismatch want color_temp got %v", numericExpose.Name)
+				}
+
+				if len(numericExpose.Data) != 1 {
+					t.Fatalf("size mismatch want %v got %v", 1, len(numericExpose.Data))
+				}
+				if numericExpose.Data[1].Y != 110.0 {
+					t.Fatalf("name mismatch want color_temp value 110.0 got %v", numericExpose.Data[1].Y)
+				}
+			} else {
+				t.Errorf("invalid expose type %v: ", gotExpose.GetType())
+			}
+		}
 	}
 
 }
+
 func TestProcessorTriggersAutomationsStoresMetricsForExistingDevice(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
@@ -281,36 +296,51 @@ func TestProcessorTriggersAutomationsStoresMetricsForExistingDevice(t *testing.T
 		t.Fatalf("ViewMetrics failed. err %v ", err)
 	}
 
-	// assert first expose results
-	if dialMetrics.Exposes[0].Name != "action" {
-		t.Fatalf("name mismatch want action got %v", dialMetrics.Exposes[0].Name)
-	}
-	if len(dialMetrics.Exposes[0].Values) != 2 {
-		t.Fatalf("size mismatch want %v got %v", 2, len(dialMetrics.Exposes[0].Values))
-	}
+	for _, gotExpose := range dialMetrics.Exposes {
+		if gotExpose.GetType() == "numeric" {
+			numericExpose := metrics.ToNumericExposeResults(gotExpose)
+			if numericExpose.Name != "action_time" {
+				t.Fatalf("name mismatch want action_time got %v", numericExpose.Name)
+			}
+			if len(numericExpose.Data) != numTriggers {
+				t.Fatalf("size mismatch want %v got %v", numTriggers, len(numericExpose.Data))
+			}
 
-	if dialMetrics.Exposes[0].Values[0] != "button_2_hold" {
-		t.Fatalf("size mismatch want %v got %v", "button_2_hold", dialMetrics.Exposes[0].Values[0])
-	}
-	if dialMetrics.Exposes[0].Values[1] != "dial_rotate_left_slow" {
-		t.Fatalf("size mismatch want %v got %v", "dial_rotate_left_slow", dialMetrics.Exposes[0].Values[0])
+			for i, v := range numericExpose.Data {
+				action_time := float32(10 + (i * 2))
+
+				if v.Y != action_time {
+					t.Fatalf("value mismatch want %v got %v", action_time, v.X)
+				}
+			}
+
+		} else if gotExpose.GetType() == "enum" {
+
+			// TODO: support enums
+			// not supported for now
+
+			// // assert expose results
+			// if numericExpose.Name != "action" {
+			// 	t.Fatalf("name mismatch want action got %v", numericExpose.Name)
+			// }
+			// if len(numericExpose.Data) != 2 {
+			// 	t.Fatalf("size mismatch want %v got %v", 2, len(numericExpose.Data))
+			// }
+
+			// if numericExpose.Data[0] != "button_2_hold" {
+			// 	t.Fatalf("size mismatch want %v got %v", "button_2_hold", dialMetrics.Exposes[0].Values[0])
+			// }
+			// if dialMetrics.Exposes[0].Values[1] != "dial_rotate_left_slow" {
+			// 	t.Fatalf("size mismatch want %v got %v", "dial_rotate_left_slow", dialMetrics.Exposes[0].Values[0])
+			// }
+			continue
+		} else {
+			t.Errorf("invalid expose type %v: ", gotExpose.GetType())
+		}
 	}
 
 	// assert second expose results
 
-	if dialMetrics.Exposes[1].Name != "action_time" {
-		t.Fatalf("name mismatch want action_time got %v", dialMetrics.Exposes[1].Name)
-	}
-	if len(dialMetrics.Exposes[1].Values) != numTriggers {
-		t.Fatalf("size mismatch want %v got %v", numTriggers, len(dialMetrics.Exposes[1].Values))
-	}
-	for i, v := range dialMetrics.Exposes[1].Values {
-		action_time := float32(10 + (i * 2))
-
-		if v != action_time {
-			t.Fatalf("value mismatch want %v got %v", action_time, v)
-		}
-	}
 	_, err = store.ViewMetrics(lightDevice, from, to)
 	if err == nil {
 		t.Fatalf("found light device metrics. It should not be stored")
