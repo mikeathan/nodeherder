@@ -296,7 +296,7 @@ func TestProcessorTriggersAutomationsStoresMetricsForExistingDevice(t *testing.T
 		t.Fatalf("ViewMetrics failed. err %v ", err)
 	}
 
-	for _, gotExpose := range dialMetrics.Exposes {
+	for idx, gotExpose := range dialMetrics.Exposes {
 		if gotExpose.GetType() == "numeric" {
 			numericExpose := metrics.ToNumericExposeResults(gotExpose)
 			if numericExpose.Name != "action_time" {
@@ -316,20 +316,24 @@ func TestProcessorTriggersAutomationsStoresMetricsForExistingDevice(t *testing.T
 
 		} else if gotExpose.GetType() == "enum" {
 
-			// TODO: support enums
-			// not supported for now
+			timeRangeExport := metrics.ToTimeRangeExposeResults(gotExpose)
+			if timeRangeExport.Name != "action" {
+				t.Fatalf("name mismatch want action got %v", timeRangeExport.Name)
+			}
+			if len(timeRangeExport.Data) != 2 {
+				t.Fatalf("size mismatch want %v got %v", 2, len(timeRangeExport.Data))
+			}
 
-			// // assert expose results
-			// if numericExpose.Name != "action" {
-			// 	t.Fatalf("name mismatch want action got %v", numericExpose.Name)
-			// }
-			// if len(numericExpose.Data) != 2 {
-			// 	t.Fatalf("size mismatch want %v got %v", 2, len(numericExpose.Data))
-			// }
+			if idx == 0 {
+				if timeRangeExport.Data[0].X != "button_2_hold" {
+					t.Fatalf("size mismatch want %v got %v", "button_2_hold", timeRangeExport.Data[0].X)
+				}
+				if timeRangeExport.Data[1].X != "dial_rotate_left_slow" {
+					t.Fatalf("size mismatch want %v got %v", "dial_rotate_left_slow", timeRangeExport.Data[1].X)
+				}
 
-			// if numericExpose.Data[0] != "button_2_hold" {
-			// 	t.Fatalf("size mismatch want %v got %v", "button_2_hold", dialMetrics.Exposes[0].Values[0])
-			// }
+			}
+
 			// if dialMetrics.Exposes[0].Values[1] != "dial_rotate_left_slow" {
 			// 	t.Fatalf("size mismatch want %v got %v", "dial_rotate_left_slow", dialMetrics.Exposes[0].Values[0])
 			// }

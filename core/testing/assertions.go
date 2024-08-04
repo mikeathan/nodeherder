@@ -156,7 +156,7 @@ func AssertTimeRangeExposeEvent(expose *devices.Entity, event metrics.ExposeResu
 	}
 }
 
-func AssertBinaryExposeMetricResults(wantResults metrics.ExposeResult, gotResults metrics.ExposeResult, t *testing.T) {
+func AssertTimeRangeExposeMetricResults(wantResults metrics.ExposeResult, gotResults metrics.ExposeResult, t *testing.T) {
 	if wantResults.GetType() != gotResults.GetType() {
 		t.Fatalf("Expected type %v', got '%v'", wantResults.GetType(), gotResults.GetType())
 	}
