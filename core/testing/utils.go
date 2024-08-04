@@ -346,12 +346,27 @@ func CreateFloatValues(numOfItems int) []float32 {
 	return values
 }
 
-func CreateEnumValues(numOfItems int) []int {
-	var values []int = make([]int, numOfItems)
-	for i := 0; i < numOfItems; i++ {
-		values[i] = intrandom(100)
+var mockEnums = []string{"hot", "cold", "cooler", "warm"}
+
+const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func generateRandomWord(length int) string {
+	rand.Seed(time.Now().UnixNano())
+
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[rand.Intn(len(charset))]
 	}
-	return values
+	return string(b)
+}
+func CreateEnumValues(numOfItems int) []string {
+	enums := []string{}
+	for i := 0; i < numOfItems; i++ {
+
+		word := generateRandomWord(5)
+		enums = append(enums, word)
+	}
+	return enums
 }
 
 func CreateBinaryValues(numOfItems int) []string {

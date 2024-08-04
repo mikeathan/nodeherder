@@ -39,7 +39,7 @@ func AssertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 		if event.GetType() == "numeric" {
 			AssertNumericExposeEvent(expose, event, timestamps, values.([]float32), t)
 		} else if event.GetType() == "binary" || event.GetType() == "enum" {
-			AssertBinaryExposeEvent(expose, event, timestamps, values.([]string), t)
+			AssertTimeRangeExposeEvent(expose, event, timestamps, values.([]string), t)
 		} else {
 			t.Errorf("invalid expose type %v: ", event.GetType())
 		}
@@ -92,7 +92,7 @@ func AssertNumericExposeEvent(expose *devices.Entity, event metrics.ExposeResult
 
 }
 
-func AssertBinaryExposeEvent(expose *devices.Entity, event metrics.ExposeResult, timestamps []time.Time, values []string, t *testing.T) {
+func AssertTimeRangeExposeEvent(expose *devices.Entity, event metrics.ExposeResult, timestamps []time.Time, values []string, t *testing.T) {
 	binaryEvent := metrics.ToTimeRangeExposeResults(event)
 
 	if binaryEvent == nil {

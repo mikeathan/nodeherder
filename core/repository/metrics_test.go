@@ -386,7 +386,7 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 				value = v[tIdx]
 
 			} else if dataType == "enum" {
-				v, _ := values.([]int)
+				v, _ := values.([]string)
 				value = v[tIdx]
 			}
 
@@ -550,7 +550,7 @@ func assertDeviceExportAnyDataTypeEvents(device *devices.Device, exposeName stri
 			utils_test.AssertNumericExposeEvent(expose, event, timestamps, values.([]float32), t)
 
 		} else if event.GetType() == "binary" {
-			utils_test.AssertBinaryExposeEvent(expose, event, timestamps, values.([]string), t)
+			utils_test.AssertTimeRangeExposeEvent(expose, event, timestamps, values.([]string), t)
 
 		} else {
 			t.Errorf("invalid expose type %v: ", event.GetType())
