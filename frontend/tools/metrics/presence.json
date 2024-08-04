@@ -2,7 +2,7 @@
   "deviceId": "0xa4c13894070052fc",
   "exposes": [
     {
-      "name": "property_0xa4c13894070052fc_1",
+      "name": "presence room 1",
       "type": "binary",
       "from": 1722556800000,
       "to": 1722643200000,

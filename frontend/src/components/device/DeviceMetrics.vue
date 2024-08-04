@@ -62,17 +62,13 @@ const groupedMetrics = computed(() => {
 
 <template>
   <div class="col-sm-3">
-    <Selection
-      label="Select time offset:"
-      @updated="dateSelected"
-      :items="historySelection">
+    <Selection label="Select time offset:" @updated="dateSelected" :items="historySelection">
     </Selection>
   </div>
 
+
   <div v-for="(metrics, chartType) in groupedMetrics">
-    <component
-      :is="ChartComponents[chartType]"
-      v-bind="{ chartData: metrics }">
+    <component :is="ChartComponents[chartType]" v-bind="{ chartData: metrics }">
     </component>
   </div>
 </template>

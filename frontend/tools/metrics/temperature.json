@@ -1,8 +1,8 @@
 {
-  "deviceId": "0xa4c13894070052fc",
+  "deviceId": "0x00124b0029207763",
   "exposes": [
     {
-      "name": "property_0xa4c13894070052fc_1",
+      "name": "temperature room 1",
       "type": "numeric",
       "from": 1722556800000,
       "to": 1722643200000,

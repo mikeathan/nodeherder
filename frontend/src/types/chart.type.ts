@@ -28,5 +28,5 @@ export const ChartTypes = {
   AreaChart: 'AreaChart',
   TimelineChart: 'TimelineChart',
   BinaryChart: 'BinaryChart',
-  FloatChart: 'FloatChart',
+  NumericChart: 'NumericChart',
 } as const;

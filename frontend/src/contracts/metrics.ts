@@ -12,9 +12,9 @@ export function groupMetricsByType(
   if (!metrics) {
     return {};
   }
-  return metrics.expose.reduce((grouped, expose) => {
-    let chartType: ChartType = ChartTypes.FloatChart;
-    if (expose.type === MetricsTypes.Integer) {
+  return metrics.exposes.reduce((grouped, expose) => {
+    let chartType: ChartType = ChartTypes.NumericChart;
+    if (expose.type === MetricsTypes.Binary) {
       chartType = ChartTypes.BinaryChart;
     }
     grouped[chartType] = (grouped[chartType] || []).concat(

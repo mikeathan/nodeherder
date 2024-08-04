@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, watch, toRaw } from 'vue';
+import { ref, watch, toRaw } from 'vue';
 import type { PropType, Ref } from 'vue';
 import BaseChart from '../BaseChart.vue';
 import { TimelineChartEntry } from '@/types/chart.type';
-import { DeviceExposeMetrics } from '@/types/metrics.type';
+import { DeviceExposeBinaryMetrics, DeviceExposeMetrics } from '@/types/metrics.type';
 
 const props = defineProps({
   chartData: {
-    type: Object as PropType<DeviceExposeMetrics[]>,
+    type: Object as PropType<DeviceExposeBinaryMetrics[]>,
     default: null,
   },
 });
@@ -26,44 +26,23 @@ watch(
   { immediate: true },
 );
 
-//TEMP
-function addOneMinute(date: Date) {
-  const newDate = new Date(date);
-
-  newDate.setTime(newDate.getTime() + 60000);
-
-  return newDate;
-}
-
 function transformedChartData(
-  exposeMetrics: DeviceExposeMetrics[],
+  exposeMetrics: DeviceExposeBinaryMetrics[],
 ): TimelineChartEntry[] {
   const transformedData: TimelineChartEntry[] = [];
 
   exposeMetrics.forEach((item) => {
-    item.timestamp.forEach((timestamp, index) => {
-      const currentValue = item.values[index];
-
-      const currentTimestamp = timestamp;
-      const nextTimestamp =
-        index + 1 >= item.timestamp.length
-          ? addOneMinute(
-              new Date(item.timestamp[index + 1]),
-            ).getTime() /* TEMPORARY */
-          : new Date(item.timestamp[index + 1]).getTime();
-
+    item.data.forEach((point, index) => {
       const entry = {
-        name: currentValue === 0 ? 'Off' : 'On',
+        name: point.x,
         data: [
           {
             x: item.name,
-            y: [
-              new Date(currentTimestamp).getTime(),
-              new Date(nextTimestamp).getTime(),
-            ],
+            y: point.y
           },
-        ],
+        ]
       };
+
       transformedData.push(entry);
     });
   });
@@ -135,9 +114,6 @@ const chartOptions = {
 
 <template>
   <div class="timeline-chart">
-    <BaseChart
-      height="200"
-      :data="toRaw(timelineData)"
-      :options="chartOptions" />
+    <BaseChart height="200" :data="toRaw(timelineData)" :options="chartOptions" />
   </div>
 </template>

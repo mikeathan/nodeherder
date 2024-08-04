@@ -7,8 +7,8 @@ export const ChartComponents: ChartMap = {
   BinaryChart: defineAsyncComponent(
     () => import('../components/chart/BinaryChart.vue'),
   ),
-  FloatChart: defineAsyncComponent(
-    () => import('../components/chart/FloatChart.vue'),
+  NumericChart: defineAsyncComponent(
+    () => import('../components/chart/NumericChart.vue'),
   ),
   TimelineChart: defineAsyncComponent(
     () =>

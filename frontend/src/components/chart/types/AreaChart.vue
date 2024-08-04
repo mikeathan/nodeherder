@@ -3,11 +3,11 @@ import { ref, computed, watch } from 'vue';
 import type { PropType, Ref } from 'vue';
 import BaseChart from '../BaseChart.vue';
 import { AreaChartEntry } from '@/types/chart.type';
-import { DeviceExposeMetrics } from '@/types/metrics.type';
+import { DeviceExposeMetrics, DeviceExposeNumericMetrics } from '@/types/metrics.type';
 
 const props = defineProps({
   chartData: {
-    type: Object as PropType<DeviceExposeMetrics>,
+    type: Object as PropType<DeviceExposeNumericMetrics>,
     default: null,
   },
 });
@@ -27,14 +27,14 @@ watch(
 );
 
 function transformedChartData(
-  chartData: DeviceExposeMetrics,
+  chartData: DeviceExposeNumericMetrics,
 ): AreaChartEntry[] {
   return [
     {
       name: chartData.name,
-      data: chartData.timestamp.map((timestamp, index) => ({
-        x: new Date(timestamp).getTime(),
-        y: chartData.values[index],
+      data: chartData.data.map((point) => ({
+        x: point.x,
+        y: point.y,
       })),
     },
   ] as AreaChartEntry[];
@@ -89,9 +89,6 @@ const chartOptions = {
 
 <template>
   <div class="area-chart">
-    <BaseChart
-      height="200"
-      :data="chartData"
-      :options="chartOptions" />
+    <BaseChart height="200" :data="chartData" :options="chartOptions" />
   </div>
 </template>

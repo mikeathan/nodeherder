@@ -1,23 +1,47 @@
 import { KeyValuePair } from './types';
 
 export const MetricsTypes = {
-  Integer: 'integer',
-  Float: 'float32',
+  Binary: 'binary',
+  Numeric: 'numeric',
   Enums: 'enum',
 };
 
 export type DeviceMetrics = {
   deviceId: string;
-  expose: DeviceExposeMetrics[];
+  exposes: DeviceExposeMetrics[];
 };
 
 export type DeviceExposeMetrics = {
   name: string;
   type: string;
-  from?: string; // not implemented yet
-  to?: string; // not implemented yet
-  timestamp: string[];
-  values: any[];
+  from?: string;
+  to?: string;
+};
+
+export type NumericDataPoint = {
+  x: number;
+  y: number;
+};
+
+export type BinaryDataPoint = {
+  x: string;
+  y: number[];
+};
+
+export type DeviceExposeNumericMetrics = {
+  name: string;
+  type: string;
+  from?: string;
+  to?: string;
+  data: NumericDataPoint[];
+};
+
+export type DeviceExposeBinaryMetrics = {
+  name: string;
+  type: string;
+  from?: string;
+  to?: string;
+  data: BinaryDataPoint[];
 };
 
 export type DeviceMetricsRequest = {

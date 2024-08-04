@@ -13,7 +13,7 @@ import { createRequire } from 'module';
 const devicesFullPath = '../../docs/devices.json';
 const automationFullPath =
   '../../core/config/0x001788010d7d9d3f.json';
-const lightMetricsFullPath = './metrics/light.json';
+//const lightMetricsFullPath = './metrics/light.json';
 const temperatureMetricsFullPath =
   './metrics/temperature.json';
 const presenceMetricsFullPath = './metrics/presence.json';
@@ -664,11 +664,11 @@ function loadDevices() {
 
 function loadMetrics() {
   const t = loadTemperatureMetrics();
-  const l = loadLightetrics();
+  // const l = loadLightetrics();     [l.deviceId]: l,
   const p = loadPresenceMetrics();
   return {
     [t.deviceId]: t,
-    [l.deviceId]: l,
+
     [p.deviceId]: p,
   };
 }
