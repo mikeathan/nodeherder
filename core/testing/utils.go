@@ -368,7 +368,7 @@ func CreateBinaryValues(numOfItems int) []string {
 	return values
 }
 
-func AddBinaryDataToExposeMetricsResult(expose *metrics.ExposeBinaryMetricsResult, values []string, timestamps []time.Time) *metrics.ExposeBinaryMetricsResult {
+func AddBinaryDataToExposeMetricsResult(expose *metrics.ExposeTimeRangeMetricsResult, values []string, timestamps []time.Time) *metrics.ExposeTimeRangeMetricsResult {
 	var prevValue *binaryValue = nil
 	for idx, value := range values {
 		if prevValue == nil {

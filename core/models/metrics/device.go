@@ -38,8 +38,8 @@ type ExposeNumericMetricsResult struct {
 	Data []*NumericValue `json:"data"`
 }
 
-func ToBinaryExposeResults(r ExposeResult) *ExposeBinaryMetricsResult {
-	if e, ok := r.(*ExposeBinaryMetricsResult); ok {
+func ToTimeRangeExposeResults(r ExposeResult) *ExposeTimeRangeMetricsResult {
+	if e, ok := r.(*ExposeTimeRangeMetricsResult); ok {
 		return e
 	}
 	return nil
@@ -56,19 +56,29 @@ func (e *ExposeNumericMetricsResult) GetType() string {
 	return "numeric"
 }
 
-type ExposeBinaryMetricsResult struct {
-	Name string         `json:"name"`
-	Type string         `json:"type"`
-	From int64          `json:"from"`
-	To   int64          `json:"to"`
-	Data []*BinaryValue `json:"data"`
+type ExposeTimeRangeMetricsResult struct {
+	Name string            `json:"name"`
+	Type string            `json:"type"`
+	From int64             `json:"from"`
+	To   int64             `json:"to"`
+	Data []*TimeRangeValue `json:"data"`
 }
 
-func (e *ExposeBinaryMetricsResult) GetType() string {
-	return "binary"
+func (e *ExposeTimeRangeMetricsResult) GetType() string {
+	return e.Type
 }
 
 type BinaryValue struct {
+	X string   `json:"x"`
+	Y [2]int64 `json:"y"`
+}
+
+type EnumValue struct {
+	X string   `json:"x"`
+	Y [2]int64 `json:"y"`
+}
+
+type TimeRangeValue struct {
 	X string   `json:"x"`
 	Y [2]int64 `json:"y"`
 }
@@ -95,18 +105,18 @@ func (e *ExposeNumericMetricsResult) Add(value float32, timestamp time.Time) {
 	})
 }
 
-func NewExposeBinaryMetricResult(name string, from time.Time, to time.Time) *ExposeBinaryMetricsResult {
-	return &ExposeBinaryMetricsResult{
+func NewExposeTimeRageMetricResult(name string, eventType string, from time.Time, to time.Time) *ExposeTimeRangeMetricsResult {
+	return &ExposeTimeRangeMetricsResult{
 		Name: name,
-		Type: "binary",
+		Type: eventType,
 		From: from.UnixMilli(),
 		To:   to.UnixMilli(),
-		Data: []*BinaryValue{},
+		Data: []*TimeRangeValue{},
 	}
 }
 
-func (e *ExposeBinaryMetricsResult) Add(value string, from time.Time, to time.Time) {
-	e.Data = append(e.Data, &BinaryValue{
+func (e *ExposeTimeRangeMetricsResult) Add(value string, from time.Time, to time.Time) {
+	e.Data = append(e.Data, &TimeRangeValue{
 		X: value,
 		Y: [2]int64{from.UnixMilli(), to.UnixMilli()},
 	})
@@ -154,11 +164,12 @@ func (c *DeviceMetricsResult) UnmarshalJSON(data []byte) error {
 						}
 						c.Exposes = append(c.Exposes, n)
 					case "binary":
+					case "enum":
 						exposeBytes, err := json.Marshal(exposeResult)
 						if err != nil {
 							return err
 						}
-						var b *ExposeBinaryMetricsResult = &ExposeBinaryMetricsResult{}
+						var b *ExposeTimeRangeMetricsResult = &ExposeTimeRangeMetricsResult{}
 						err = json.Unmarshal(exposeBytes, &b)
 						if err != nil {
 							return err

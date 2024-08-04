@@ -38,7 +38,7 @@ func AssertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 
 		if event.GetType() == "numeric" {
 			AssertNumericExposeEvent(expose, event, timestamps, values.([]float32), t)
-		} else if event.GetType() == "binary" {
+		} else if event.GetType() == "binary" || event.GetType() == "enum" {
 			AssertBinaryExposeEvent(expose, event, timestamps, values.([]string), t)
 		} else {
 			t.Errorf("invalid expose type %v: ", event.GetType())
@@ -93,7 +93,7 @@ func AssertNumericExposeEvent(expose *devices.Entity, event metrics.ExposeResult
 }
 
 func AssertBinaryExposeEvent(expose *devices.Entity, event metrics.ExposeResult, timestamps []time.Time, values []string, t *testing.T) {
-	binaryEvent := metrics.ToBinaryExposeResults(event)
+	binaryEvent := metrics.ToTimeRangeExposeResults(event)
 
 	if binaryEvent == nil {
 		t.Errorf("invalid expos type want binary got %v: ", event.GetType())
@@ -142,7 +142,7 @@ func AssertBinaryExposeEvent(expose *devices.Entity, event metrics.ExposeResult,
 
 		// NOTE: not sure if dataindex is correct here . could be + or -1
 		// NEEDS TESTING
-		wantValue := values[dataIdx] // !!!!!!!
+		wantValue := values[dataIdx] // \!!!!!!!
 		wantKind := reflect.String
 		gotKind := reflect.TypeOf(eventValue).Kind()
 		if gotKind != wantKind {
@@ -161,8 +161,8 @@ func AssertBinaryExposeMetricResults(wantResults metrics.ExposeResult, gotResult
 		t.Fatalf("Expected type %v', got '%v'", wantResults.GetType(), gotResults.GetType())
 	}
 
-	wantBinaryResults := metrics.ToBinaryExposeResults(wantResults)
-	gotBinaryResults := metrics.ToBinaryExposeResults(gotResults)
+	wantBinaryResults := metrics.ToTimeRangeExposeResults(wantResults)
+	gotBinaryResults := metrics.ToTimeRangeExposeResults(gotResults)
 
 	if wantBinaryResults.Name != gotBinaryResults.Name {
 		t.Fatalf("Expected name %v', got '%v'", wantBinaryResults.Name, gotBinaryResults.Name)

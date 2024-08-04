@@ -112,6 +112,6 @@ store response in metrics store ? needs thinking if we need that
 
 Metrics TODO
 
-- Add support for enum data type !
+- Add support for enum data type ! - will be timeline chart
 
 - consider sampling data if too large data set ?

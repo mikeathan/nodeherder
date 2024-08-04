@@ -105,15 +105,6 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 			//fmt.Printf("DEBUG -  metrics: Expose=%v, Data=%v, Key=%v \n", name, string(buf), string(key))
 		}
 		return nil
-		// // ??????
-		// buf, err := json.Marshal(device)
-		// if err != nil {
-		// 	return err
-		// }
-
-		// key := createKeyFromDevice(device.Id, device)
-		// //fmt.Printf("DEBUG store device metrics for: %v with key: %v \n", device.Id, string(key))
-		// return bucket.Put(key, buf)
 	})
 
 	return nil
@@ -178,17 +169,18 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 	return result, err
 }
 
-type binaryValue struct {
+type timeRangeValue struct {
 	Value     string
 	Timestamp time.Time
 }
 
-func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeBinaryMetricsResult, error) {
+func (s *MetricsRepo) readTimeRangeValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeTimeRangeMetricsResult, error) {
+
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
+	var prevValue *timeRangeValue = nil
 
-	event := metrics.NewExposeBinaryMetricResult(expose.Name, from, to)
-	var prevValue *binaryValue = nil
+	events := metrics.NewExposeTimeRageMetricResult(expose.Name, expose.Type, from, to)
 
 	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
 		timestamp, err := s.readTimestampFromKey(expose.Name, key)
@@ -202,21 +194,19 @@ func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Enti
 		}
 
 		if prevValue == nil {
-			prevValue = &binaryValue{value.(string), timestamp}
+			prevValue = &timeRangeValue{value.(string), timestamp}
 			continue
 		}
 
 		if prevValue.Value != value {
 
-			event.Add(prevValue.Value, prevValue.Timestamp, timestamp)
-			prevValue = &binaryValue{value.(string), timestamp}
+			events.Add(prevValue.Value, prevValue.Timestamp, timestamp)
+			prevValue = &timeRangeValue{value.(string), timestamp}
 		}
-
 	}
+	return events, nil
 
-	return event, nil
 }
-
 func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeNumericMetricsResult, error) {
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
@@ -243,8 +233,8 @@ func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devi
 
 	if expose.Type == "numeric" {
 		return s.readNumericValues(cursor, expose, from, to)
-	} else if expose.Type == "binary" {
-		return s.readBinaryValues(cursor, expose, from, to)
+	} else if expose.Type == "binary" || expose.Type == "enum" {
+		return s.readTimeRangeValues(cursor, expose, from, to)
 	} else {
 		return nil, fmt.Errorf("expose type %v not supported", expose.Type)
 	}

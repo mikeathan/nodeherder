@@ -309,7 +309,7 @@ func TestDeviceTimeRangeBinaryDataMetrics(t *testing.T) {
 		}
 
 		for _, event := range result.Exposes {
-			binaryEvent := metrics.ToBinaryExposeResults(event)
+			binaryEvent := metrics.ToTimeRangeExposeResults(event)
 
 			if testCase.from != time.UnixMilli(binaryEvent.From).UTC() {
 				t.Errorf("from time mismatch want %v got %v", testCase.from.UnixMilli(), binaryEvent.From)
@@ -357,9 +357,8 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 
 		"numeric": utils_test.CreateFloatValues(24),
 		"binary":  utils_test.CreateBinaryValues(24),
+		"enum":    utils_test.CreateEnumValues(24),
 	}
-
-	// "enum":    utils_test.CreateEnumValues(24), NOT SUPPORTED YET
 
 	// sort data keys
 	dataKeys := make([]string, 0, len(data))
