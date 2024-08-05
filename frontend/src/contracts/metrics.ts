@@ -14,9 +14,10 @@ export function groupMetricsByType(
   }
   return metrics.exposes.reduce((grouped, expose) => {
     let chartType: ChartType = ChartTypes.NumericChart;
-    if (expose.type === MetricsTypes.Binary) {
-      chartType = ChartTypes.TimeRangeChart;
-    } else if (expose.type === MetricsTypes.Enum) {
+    if (
+      expose.type === MetricsTypes.Binary ||
+      expose.type === MetricsTypes.Enum
+    ) {
       chartType = ChartTypes.TimeRangeChart;
     }
     grouped[chartType] = (grouped[chartType] || []).concat(
