@@ -112,4 +112,6 @@ store response in metrics store ? needs thinking if we need that
 
 Metrics TODO
 
+- remove operation succesful message when we create merics settings in store
+
 - consider sampling data if too large data set ?
