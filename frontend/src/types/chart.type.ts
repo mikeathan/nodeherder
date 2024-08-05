@@ -27,6 +27,6 @@ export type ChartType = keyof typeof ChartTypes;
 export const ChartTypes = {
   AreaChart: 'AreaChart',
   TimelineChart: 'TimelineChart',
-  BinaryChart: 'BinaryChart',
+  TimeRangeChart: 'TimeRangeChart',
   NumericChart: 'NumericChart',
 } as const;

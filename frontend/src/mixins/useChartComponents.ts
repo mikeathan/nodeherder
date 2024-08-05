@@ -4,8 +4,8 @@ type ChartType = string;
 type ChartMap = { [key: ChartType]: any };
 
 export const ChartComponents: ChartMap = {
-  BinaryChart: defineAsyncComponent(
-    () => import('../components/chart/BinaryChart.vue'),
+  TimeRangeChart: defineAsyncComponent(
+    () => import('../components/chart/TimeRangeChart.vue'),
   ),
   NumericChart: defineAsyncComponent(
     () => import('../components/chart/NumericChart.vue'),

@@ -3,7 +3,7 @@ import { KeyValuePair } from './types';
 export const MetricsTypes = {
   Binary: 'binary',
   Numeric: 'numeric',
-  Enums: 'enum',
+  Enum: 'enum',
 };
 
 export type DeviceMetrics = {
