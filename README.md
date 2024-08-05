@@ -104,14 +104,12 @@ TODO
 frontend metrics
 
 need alot of test data for the test server
-submit button
+dropdown with time ranges to select from - check homeassistant
 toggle for live data ? later
 
 once we send the request
 store response in metrics store ? needs thinking if we need that
 
 Metrics TODO
-
-- Add support for enum data type ! - will be timeline chart
 
 - consider sampling data if too large data set ?
