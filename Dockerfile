@@ -32,4 +32,6 @@ COPY --from=backend-builder /nodeherder .
 EXPOSE 4100
 
 # Run
-CMD ["./nodeherder"]
+CMD ["./nodeherder","-logLevel","debug"]
+
+# TODO call docker build with netwokr= host

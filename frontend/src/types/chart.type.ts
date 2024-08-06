@@ -1,3 +1,5 @@
+import { ValueOf } from './types';
+
 export type ChartColor = {
   backgroundColor: string;
   borderColor: string;
@@ -30,3 +32,14 @@ export const ChartTypes = {
   TimeRangeChart: 'TimeRangeChart',
   NumericChart: 'NumericChart',
 } as const;
+
+export type PeriodType = ValueOf<typeof PeriodTypes>;
+export const PeriodTypes = {
+  Today: 'Today',
+  OneDay: '1 Day',
+  ThreeDays: '3 Days',
+  ThisWeek: 'This week',
+  LastWeek: 'Last week',
+} as const;
+
+export const PeriodOptions = Object.values(PeriodTypes);

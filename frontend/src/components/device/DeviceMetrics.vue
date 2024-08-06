@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { store } from '../../store/index';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import {
   DeviceMetricsRequest,
   DeviceMetrics,
@@ -11,39 +11,34 @@ import { KeyValuePair } from '@/types/types';
 import { toUnix } from '@/utils/date.utils';
 import { groupMetricsByType } from '@/contracts/metrics';
 import { ChartComponents } from '@/mixins/useChartComponents';
+import { PeriodType, PeriodOptions, PeriodTypes } from '@/types/chart.type';
+import { getPeriodOffset } from '@/contracts/chart';
 
 const props = defineProps({
   id: { type: String, required: true },
 });
 
-const historySelection: string[] = [
-  'last hour',
-  'last day',
-  'last week',
-  'last month',
-];
-const timeOffsets: KeyValuePair<number> = {
-  'last hour': 1,
-  'last day': 24,
-  'last week': 168,
-  'last month': 720,
-};
-const fromDate = ref<Date | null>(null);
-const toDate = ref<Date | null>(null);
 
-function dateSelected(value: any) {
-  const dateOffset = timeOffsets[value];
+const selectePeriod = ref<PeriodType>(PeriodTypes.Today);
 
-  toDate.value = new Date();
-  fromDate.value = new Date();
-  fromDate.value.setHours(
-    toDate.value.getHours() - dateOffset,
-  );
+watch(
+  () => props.id,
+  () => {
 
+    dateSelected(selectePeriod.value)
+  }, { immediate: true }
+)
+
+function dateSelected(value: PeriodType) {
+
+  console.log('dateSelected', value);
+  const { from, to } = getPeriodOffset(value);
+
+  console.log(from, ' ----', to);
   var request: DeviceMetricsRequest = {
     id: props.id,
-    from: toUnix(fromDate.value ?? new Date()), // temp
-    to: toUnix(toDate.value ?? new Date()), // temp
+    from: toUnix(from),
+    to: toUnix(to),
   };
 
   store.dispatch('metrics/query', request);
@@ -62,10 +57,9 @@ const groupedMetrics = computed(() => {
 
 <template>
   <div class="col-sm-3">
-    <Selection label="Select time offset:" @updated="dateSelected" :items="historySelection">
+    <Selection label="Select time offset:" :value="selectePeriod" @updated="dateSelected" :items="PeriodOptions">
     </Selection>
   </div>
-
 
   <div v-for="(metrics, chartType) in groupedMetrics">
     <component :is="ChartComponents[chartType]" v-bind="{ chartData: metrics }">
