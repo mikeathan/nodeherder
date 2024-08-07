@@ -143,7 +143,7 @@ func (c *WsClient) handleMessage(message []byte) {
 		c.executeActionWithEvent(c.hub.onLoadAppConfig, AppConfig)
 
 	case SaveDeviceConfig:
-		c.executeAction(eventMsg.Payload, c.hub.onSaveDeviceConfig, true)
+		c.executeAction(eventMsg.Payload, c.hub.onSaveDeviceConfig, false)
 
 	case SaveAutomation:
 		c.executeAction(eventMsg.Payload, c.hub.onSaveAutomation, true)
