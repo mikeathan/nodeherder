@@ -245,6 +245,7 @@ func createExposures(data map[string]interface{}) map[string]*Entity {
 		newEntity.Name = key
 		newEntity.Data = value
 		newEntity.Unit = units[key]
+		newEntity.Type = "numeric" // TODO: make this dynamic
 		entities[key] = newEntity
 	}
 	return entities
