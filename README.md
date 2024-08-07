@@ -151,15 +151,19 @@ DEBUG readNumericValues - fromKey energy2024-08-07T16:15:12+01:00 toKey energy20
 DEBUG readNumericValues - fromKey power2024-08-07T16:15:12+01:00 toKey power2024-08-06T16:15:12+01:00
 DEBUG readNumericValues - fromKey voltage2024-08-07T16:15:12+01:00 toKey voltage2024-08-06T16:15:12+01:00
 
------
+---
 
 STORE
-DEBUG -  metrics: Expose=temperature, Data=23.19, Key=temperature2024-08-07T16:19:18.61589554+01:00 
-DEBUG -  metrics: Expose=humidity, Data=63.91, Key=humidity2024-08-07T16:19:18.615910934+01:00 
-DEBUG -  metrics: Expose=voltage, Data=3000, Key=voltage2024-08-07T16:19:18.615915429+01:00 
+DEBUG - metrics: Expose=temperature, Data=23.19, Key=temperature2024-08-07T16:19:18.61589554+01:00
+DEBUG - metrics: Expose=humidity, Data=63.91, Key=humidity2024-08-07T16:19:18.615910934+01:00
+DEBUG - metrics: Expose=voltage, Data=3000, Key=voltage2024-08-07T16:19:18.615915429+01:00
 
 settings not shown in frontend
 
-i think settings dont get loaded from storeon launch
+i think settings dont get loaded from store on launch
+it seems to work for only 1 Attic power socket but not Human presence or TH01
+after i re saved them 2 twice it seems to work now. so sth must be overiding sth
 
 metrics results are not loaded. data is always emtpy. maybe issue with store
+
+getting alot of mqtt Connection Lost: EOF - not sure if its a problem or not
