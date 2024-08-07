@@ -174,7 +174,7 @@ type timeRangeValue struct {
 	Timestamp time.Time
 }
 
-func (s *MetricsRepo) readTimeRangeValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeTimeRangeMetricsResult, error) {
+func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeTimeRangeMetricsResult, error) {
 
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
@@ -198,6 +198,40 @@ func (s *MetricsRepo) readTimeRangeValues(cursor *bolt.Cursor, expose *devices.E
 			continue
 		}
 
+		if prevValue.Value != value {
+
+			events.Add(prevValue.Value, prevValue.Timestamp, timestamp)
+			prevValue = &timeRangeValue{value.(string), timestamp}
+		}
+	}
+	return events, nil
+
+}
+
+func (s *MetricsRepo) readEnumValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeTimeRangeMetricsResult, error) {
+
+	fromKey := createKeyWithTimestamp(expose.Name, from)
+	tokey := createKeyWithTimestamp(expose.Name, to)
+	var prevValue *timeRangeValue = nil
+
+	events := metrics.NewExposeTimeRageMetricResult(expose.Name, expose.Type, from, to)
+
+	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
+		timestamp, err := s.readTimestampFromKey(expose.Name, key)
+		if err != nil {
+			return nil, err
+		}
+
+		value, err := utils.Unmarshal(data, reflect.String)
+		if err != nil {
+			return nil, err
+		}
+
+		if prevValue == nil {
+			prevValue = &timeRangeValue{value.(string), timestamp}
+			continue
+		}
+		NEED different type here
 		if prevValue.Value != value {
 
 			events.Add(prevValue.Value, prevValue.Timestamp, timestamp)
@@ -233,8 +267,11 @@ func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devi
 
 	if expose.Type == "numeric" {
 		return s.readNumericValues(cursor, expose, from, to)
-	} else if expose.Type == "binary" || expose.Type == "enum" {
-		return s.readTimeRangeValues(cursor, expose, from, to)
+	} else if expose.Type == "binary" {
+		return s.readBinaryValues(cursor, expose, from, to)
+	} else if expose.Type == "enum" {
+		return s.readEnumValues(cursor, expose, from, to)
+
 	} else {
 		return nil, fmt.Errorf("expose type %v not supported", expose.Type)
 	}
