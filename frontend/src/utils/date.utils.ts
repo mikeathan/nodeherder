@@ -1,4 +1,39 @@
-export const toUnix = (date: Date) =>
+export const toUTC = (date: Date): Date => {
+  // Create a new Date object to avoid modifying the original
+  const utcDate = new Date(date.getTime());
+
+  // Adjust for local time offset
+  utcDate.setMinutes(
+    utcDate.getMinutes() - utcDate.getTimezoneOffset(),
+  );
+
+  return utcDate;
+};
+
+export const utcToUnixTimestamp = (date: Date): number => {
+  // Create a Date object from the UTC string
+  // Convert to UTC milliseconds
+  const utcMilliseconds = Date.UTC(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+    date.getHours(),
+    date.getMinutes(),
+    date.getSeconds(),
+  );
+  const unixTimestamp = Math.floor(utcMilliseconds / 1000);
+  console.log(
+    'UTC:',
+    utcMilliseconds,
+    '=',
+    new Date(utcMilliseconds),
+    ' unix::',
+    unixTimestamp,
+  );
+
+  return unixTimestamp;
+};
+export const toUnix = (date: Date): number =>
   Math.floor(date.getTime() / 1000);
 
 export const getDateRange = (

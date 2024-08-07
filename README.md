@@ -112,6 +112,54 @@ store response in metrics store ? needs thinking if we need that
 
 Metrics TODO
 
-- remove operation succesful message when we create merics settings in store
-
+- fronted period selection make sure time is in UTC
+- make sure we handle metrics containing numeric and binary fields - is this already done?
 - consider sampling data if too large data set ?
+
+ERROR:
+atal error: concurrent map read and map write
+
+goroutine 50 [running]:
+node-herder/models/devices.(*Device).Update(0xc00032a0c0, 0xc000024cf0)
+/home/mikeathan/dev/node-herder/core/models/devices/device.go:333 +0x336
+node-herder/internal/controllers.(*deviceHandler).ProcessPayload(0xc0002901b0, {0xc000497740, 0xe}, {0x77abde, 0x4}, {0xc000135180?, 0xc00026deb0?, 0x0?})
+/home/mikeathan/dev/node-herder/core/internal/controllers/handlers.go:227 +0xa7
+node-herder/internal/controllers.(\*messageTask).Process(0xc00026df48?)
+/home/mikeathan/dev/node-herder/core/internal/controllers/handlers.go:28 +0x3a
+
+DATA
+
+STORE
+DEBUG - metrics: Expose=presence, Data=false, Key=presence2024-08-07T16:08:47.017742224+01:00
+
+REQUEST
+
+DEBUG - metrics: Expose=illuminance_lux, Data=356, Key=illuminance_lux2024-08-07T16:12:52.775090535+01:00
+DEBUG - metrics: Expose=presence, Data=true, Key=presence2024-08-07T16:12:52.775110061+01:00
+
+---
+
+STORE
+
+DEBUG - metrics: Expose=power, Data=92, Key=power2024-08-07T16:16:55.256189724+01:00
+DEBUG - metrics: Expose=power, Data=111, Key=power2024-08-07T16:17:48.057825945+01:00
+
+REQUEST
+
+DEBUG readNumericValues - fromKey current2024-08-07T16:15:12+01:00 toKey current2024-08-06T16:15:12+01:00
+DEBUG readNumericValues - fromKey energy2024-08-07T16:15:12+01:00 toKey energy2024-08-06T16:15:12+01:00
+DEBUG readNumericValues - fromKey power2024-08-07T16:15:12+01:00 toKey power2024-08-06T16:15:12+01:00
+DEBUG readNumericValues - fromKey voltage2024-08-07T16:15:12+01:00 toKey voltage2024-08-06T16:15:12+01:00
+
+-----
+
+STORE
+DEBUG -  metrics: Expose=temperature, Data=23.19, Key=temperature2024-08-07T16:19:18.61589554+01:00 
+DEBUG -  metrics: Expose=humidity, Data=63.91, Key=humidity2024-08-07T16:19:18.615910934+01:00 
+DEBUG -  metrics: Expose=voltage, Data=3000, Key=voltage2024-08-07T16:19:18.615915429+01:00 
+
+settings not shown in frontend
+
+i think settings dont get loaded from storeon launch
+
+metrics results are not loaded. data is always emtpy. maybe issue with store

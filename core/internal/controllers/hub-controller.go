@@ -101,6 +101,7 @@ func (h *HubController) registerEventHubEvents() {
 
 		from := time.Unix(req.From, 0)
 		to := time.Unix(req.To, 0)
+		fmt.Printf("metrics request with from %s to %s \n", from, to)
 		return h.store.ViewMetrics(device, from, to)
 	})
 
