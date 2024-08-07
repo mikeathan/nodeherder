@@ -163,6 +163,7 @@ settings not shown in frontend
 i think settings dont get loaded from store on launch
 it seems to work for only 1 Attic power socket but not Human presence or TH01
 after i re saved them 2 twice it seems to work now. so sth must be overiding sth
+and then after restart it stopped working again
 
 metrics results are not loaded. data is always emtpy. maybe issue with store
 
