@@ -167,4 +167,6 @@ and then after restart it stopped working again
 
 metrics results are not loaded. data is always emtpy. maybe issue with store
 
+first enabling metrics in setting - it doesnt store events
+
 getting alot of mqtt Connection Lost: EOF - not sure if its a problem or not
