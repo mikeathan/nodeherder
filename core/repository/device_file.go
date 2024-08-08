@@ -16,8 +16,9 @@ const bridgeBucketName = "bridge"
 const bridgeKeyName = "bridgeInfo"
 
 type FileDeviceRepo struct {
-	mutex sync.RWMutex
-	db    *bolt.DB
+	mutex   sync.RWMutex
+	db      *bolt.DB
+	updated map[string]bool
 }
 
 func NewFileDeviceRepo() (devices.Repository, error) {
@@ -31,8 +32,9 @@ func NewFileDeviceRepoFromFile(filename string) (devices.Repository, error) {
 		return nil, err
 	}
 	repo := &FileDeviceRepo{
-		db:    db,
-		mutex: sync.RWMutex{},
+		mutex:   sync.RWMutex{},
+		db:      db,
+		updated: map[string]bool{},
 	}
 	err = repo.init()
 	if err != nil {
@@ -94,7 +96,7 @@ func (s *FileDeviceRepo) Close() error {
 	return nil
 }
 
-func (s *FileDeviceRepo) Store(key string, device *devices.Device) error {
+func (s *FileDeviceRepo) Store(key string, device *devices.Device) (bool, error) {
 
 	defer s.mutex.Unlock()
 	s.mutex.Lock()
@@ -115,7 +117,11 @@ func (s *FileDeviceRepo) Store(key string, device *devices.Device) error {
 
 	})
 
-	return err
+	ok := s.updated[key]
+	if err != nil {
+		s.updated[key] = true
+	}
+	return !ok, err
 }
 func (s *FileDeviceRepo) AllBridgeInfo() ([]*devices.BridgeInfo, error) {
 	var bridgeInfo []*devices.BridgeInfo

@@ -54,6 +54,7 @@ type AppStore interface {
 	AllDevices() ([]*devices.Device, error)
 
 	LoadAppConfig() (*settings.AppConfig, error)
+	FindDeviceConfig(id string) (*settings.DeviceConfig, error)
 	SaveDeviceConfig(deviceconfig *settings.DeviceConfig) error
 
 	StoreBridgeInfoList(bridgeInfoList []*devices.BridgeInfo) error
@@ -141,8 +142,13 @@ func (s *appStore) StoreMetrics(friendlyName string, data map[string]any) error 
 	return nil
 }
 
+func (s *appStore) FindDeviceConfig(id string) (*settings.DeviceConfig, error) {
+	return s.config.FindDeviceConfig(id)
+}
+
 func (s *appStore) StoreDevice(friendlyName string, device *devices.Device) error {
 	id := s.ResolveFriendlyName(friendlyName)
+
 
 	err := s.devices.Store(id, device)
 	if err != nil {

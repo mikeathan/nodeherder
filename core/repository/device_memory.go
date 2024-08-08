@@ -12,6 +12,7 @@ type MemoryDeviceRepo struct {
 	store          map[string]*devices.Device
 	mutex          sync.RWMutex
 	bridgeInfoList []*devices.BridgeInfo
+	updated        map[string]bool
 }
 
 func NewMemoryDeviceRepo() devices.Repository {
@@ -19,6 +20,7 @@ func NewMemoryDeviceRepo() devices.Repository {
 		store:          map[string]*devices.Device{},
 		mutex:          sync.RWMutex{},
 		bridgeInfoList: []*devices.BridgeInfo{},
+		updated:        map[string]bool{},
 	}
 }
 
@@ -45,13 +47,16 @@ func (s *MemoryDeviceRepo) FindBridgeInfo(key string) (*devices.BridgeInfo, erro
 	return nil, fmt.Errorf("bridge id %v not found", key)
 }
 
-func (s *MemoryDeviceRepo) Store(key string, device *devices.Device) error {
+func (s *MemoryDeviceRepo) Store(key string, device *devices.Device) (bool, error) {
 
 	defer s.mutex.Unlock()
 	s.mutex.Lock()
+
+	ok := s.updated[key]
 	s.store[key] = device
 
-	return nil
+	s.updated[key] = true
+	return !ok, nil
 }
 
 func (s *MemoryDeviceRepo) FindDevice(id string) (*devices.Device, error) {
