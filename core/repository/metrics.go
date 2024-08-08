@@ -231,16 +231,25 @@ func (s *MetricsRepo) readEnumValues(cursor *bolt.Cursor, expose *devices.Entity
 			prevValue = &timeRangeValue{value.(string), timestamp}
 			continue
 		}
-		NEED different type here
 		if prevValue.Value != value {
 
 			events.Add(prevValue.Value, prevValue.Timestamp, timestamp)
 			prevValue = &timeRangeValue{value.(string), timestamp}
 		}
 	}
+
+	if len(events.Data)%2 != 0 {
+		events.Add(prevValue.Value, prevValue.Timestamp, to)
+	}
+
 	return events, nil
 
 }
+
+// warm - 1
+// hot -2
+// war - 1-2
+// hot 2 - ?
 func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeNumericMetricsResult, error) {
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)

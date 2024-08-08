@@ -289,10 +289,6 @@ func TestProcessorTriggersAutomationsStoresMetricsForExistingDevice(t *testing.T
 
 	wg.Wait()
 
-
-	PROBLEM HERE
-	// PROBLEM STORING ENUMS AS BINARY
-	// WITH ONLY TWO VALUES IT RETURNS ONLY THE FIRST WHICH IS WRONG
 	from := time.Now().Add(-time.Minute)
 	to := time.Now()
 	dialMetrics, err := store.ViewMetrics(dialDevice, from, to)
