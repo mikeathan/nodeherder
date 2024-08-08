@@ -180,7 +180,7 @@ func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Enti
 	tokey := createKeyWithTimestamp(expose.Name, to)
 	var prevValue *timeRangeValue = nil
 
-	events := metrics.NewExposeTimeRageMetricResult(expose.Name, expose.Type, from, to)
+	events := metrics.NewExposeBinaryMetricResult(expose.Name, from, to)
 
 	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
 		timestamp, err := s.readTimestampFromKey(expose.Name, key)
@@ -214,7 +214,7 @@ func (s *MetricsRepo) readEnumValues(cursor *bolt.Cursor, expose *devices.Entity
 	tokey := createKeyWithTimestamp(expose.Name, to)
 	var prevValue *timeRangeValue = nil
 
-	events := metrics.NewExposeTimeRageMetricResult(expose.Name, expose.Type, from, to)
+	events := metrics.NewExposeEnumMetricResult(expose.Name, from, to)
 
 	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
 		timestamp, err := s.readTimestampFromKey(expose.Name, key)

@@ -105,16 +105,25 @@ func (e *ExposeNumericMetricsResult) Add(value float32, timestamp time.Time) {
 	})
 }
 
-func NewExposeTimeRageMetricResult(name string, eventType string, from time.Time, to time.Time) *ExposeTimeRangeMetricsResult {
+func NewExposeBinaryMetricResult(name string, from time.Time, to time.Time) *ExposeTimeRangeMetricsResult {
 	return &ExposeTimeRangeMetricsResult{
 		Name: name,
-		Type: eventType,
+		Type: "binary",
 		From: from.UnixMilli(),
 		To:   to.UnixMilli(),
 		Data: []*TimeRangeValue{},
 	}
 }
 
+func NewExposeEnumMetricResult(name string, from time.Time, to time.Time) *ExposeTimeRangeMetricsResult {
+	return &ExposeTimeRangeMetricsResult{
+		Name: name,
+		Type: "enum",
+		From: from.UnixMilli(),
+		To:   to.UnixMilli(),
+		Data: []*TimeRangeValue{},
+	}
+}
 func (e *ExposeTimeRangeMetricsResult) Add(value string, from time.Time, to time.Time) {
 	e.Data = append(e.Data, &TimeRangeValue{
 		X: value,
