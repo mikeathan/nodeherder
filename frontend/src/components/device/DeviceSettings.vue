@@ -24,16 +24,22 @@ const deviceSettings = computed(() => {
   if (
     !store.getters['appconfig/initialized']() as Boolean
   ) {
+    console.log('[DEBUG] appconfig/initialized');
     store.dispatch('ws/emit', { event: 'loadAppConfig' });
   }
 
   const settings = store.getters[
     'appconfig/findDeviceSetting'
   ](props.id);
+  console.log('[DEBUG] settings ', settings);
 
   if (!settings) {
     const newDeviceSettings = JSON.parse(
       JSON.stringify(createDeviceSettings(props.id)),
+    );
+    console.log(
+      '[DEBUG] appconfig/saveDeviceSetting ',
+      newDeviceSettings,
     );
     store.dispatch(
       'appconfig/saveDeviceSettings',
