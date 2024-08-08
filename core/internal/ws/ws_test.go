@@ -747,7 +747,7 @@ func TestHandlingLoadMetricsMessage(t *testing.T) {
 		expose1.Add(value, timestamps[idx])
 	}
 
-	expose2 := metrics.NewExposeTimeRageMetricResult("presence", "binary", from, to)
+	expose2 := metrics.NewExposeBinaryMetricResult("presence", from, to)
 	timestamps2 := utils_test.CreateDateTimeTimestamps(1, 10, 1)
 
 	values2 := utils_test.CreateBinaryValues(10)
