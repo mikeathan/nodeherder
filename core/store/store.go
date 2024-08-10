@@ -149,11 +149,19 @@ func (s *appStore) FindDeviceConfig(id string) (*settings.DeviceConfig, error) {
 func (s *appStore) StoreDevice(friendlyName string, device *devices.Device) error {
 	id := s.ResolveFriendlyName(friendlyName)
 
-
-	err := s.devices.Store(id, device)
+	exists, err := s.devices.Store(id, device)
 	if err != nil {
 		return err
 	}
+
+	if exists {
+		_,err:=s.FindDeviceConfig(id)
+		if err!= nil {
+
+			initialize new device settings here
+		}
+	}
+
 
 	s.deviceIdMapper.UpdateId(friendlyName, id)
 	return nil

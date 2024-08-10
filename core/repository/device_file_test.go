@@ -78,7 +78,7 @@ func TestFileRepositoryCanAddAndFindDevice(t *testing.T) {
 	name := "device 1"
 	device, _ := devices.CreateNewDevice("1", name, "mqtt", nil, createMockPayload(name, 50, 60.1, 23.5, 120.0))
 
-	err = repo.Store(name, device)
+	_, err = repo.Store(name, device)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -107,7 +107,7 @@ func TestFileRepositoryCanFindDevices(t *testing.T) {
 	devices := []*devices.Device{device, device2}
 
 	for _, device := range devices {
-		err = repo.Store(device.Id, device)
+		_, err = repo.Store(device.Id, device)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}
@@ -143,7 +143,7 @@ func TestFileRepositoryCanFindAllDevices(t *testing.T) {
 	devices := []*devices.Device{device, device2, device3, device4}
 
 	for _, device := range devices {
-		err = repo.Store(device.Id, device)
+		_, err = repo.Store(device.Id, device)
 		if err != nil {
 			t.Fatalf(err.Error())
 		}

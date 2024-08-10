@@ -238,9 +238,9 @@ func (w *NopWsServer) OnSaveDeviceConfig(func(payload interface{}) error) {
 type NopRepository struct {
 }
 
-func (w *NopRepository) Store(deviceName string, payload *devices.Device) error {
+func (w *NopRepository) Store(deviceName string, payload *devices.Device) (bool, error) {
 	fmt.Println("Empty Store")
-	return nil
+	return false, nil
 }
 
 func (w *NopRepository) AllDevices() ([]*devices.Device, error) {
@@ -414,6 +414,11 @@ func NewMockAppStoreFromDevicesRepo(devicesRepo devices.Repository) store.AppSto
 		settings:       settingsRepo,
 		deviceIdMapper: repository.NewDeviceIdMapper(devicesRepo),
 	}
+}
+
+func (s *NopAppStore) FindDeviceConfig(id string) (*settings.DeviceConfig, error) {
+	fmt.Println("Mocked store LoaFindDeviceConfigdAppConfig")
+	return nil, nil
 }
 
 func (s *NopAppStore) LoadAppConfig() (*settings.AppConfig, error) {
