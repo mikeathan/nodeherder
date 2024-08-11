@@ -102,7 +102,7 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 				return err
 			}
 
-			fmt.Printf("DEBUG -  metrics: Expose=%v, Data=%v, Key=%v \n", name, string(buf), string(key))
+			//fmt.Printf("DEBUG -  metrics: Expose=%v, Data=%v, Key=%v \n", name, string(buf), string(key))
 		}
 		return nil
 	})
@@ -246,21 +246,17 @@ func (s *MetricsRepo) readEnumValues(cursor *bolt.Cursor, expose *devices.Entity
 
 }
 
-// warm - 1
-// hot -2
-// war - 1-2
-// hot 2 - ?
 func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeNumericMetricsResult, error) {
+
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
-	fmt.Printf("DEBUG readNumericValues - fromKey %v toKey %v \n", string(fromKey), string(tokey))
 	event := metrics.NewExposeNumericMetricResult(expose.Name, from, to)
+
 	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
 		timestamp, err := s.readTimestampFromKey(expose.Name, key)
 		if err != nil {
 			return nil, err
 		}
-		fmt.Printf("DEBUG readNumericValues - key %v data found %v \n", string(key), string(data))
 		value, err := utils.Unmarshal(data, reflect.Float32)
 		if err != nil {
 			return nil, err

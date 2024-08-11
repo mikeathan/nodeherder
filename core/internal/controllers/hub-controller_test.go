@@ -224,6 +224,69 @@ func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *tes
 
 }
 
+func TestHubCreatesNewDeviceConfigurationsforNewDevices(t *testing.T) {
+
+	mqtt := &mocks.MockMqttClient{}
+	ws := &mocks.NopWsServer{}
+
+	// setup device
+	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
+	device1Expose2 := utils_test.CreateNumericEntity("action_time", 0)
+	dialDevice := utils_test.CreateDeviceWithExposes("x01111111", "Dial button", []*devices.Entity{device1Expose1, device1Expose2})
+
+	device2Expose1 := utils_test.CreateEntity("brightness", "numeric", nil)
+	device2Expose2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
+	lightDevice := utils_test.CreateDeviceWithExposes("x02222222", "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
+
+	// setup bridgeInfo List
+	devices := []*devices.Device{dialDevice, lightDevice}
+	deviceBridgeList := utils_test.CreateBridgeInfoList(devices) // NEED TO FIX, currently i make all devices features which is not right!!!!
+
+	// register hub
+	store, cleanup, err := utils_test.CreateFileStore()
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+
+	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+
+	mqtt.Publish("bridge/devices", deviceBridgeList)
+	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	//  SETUP END
+
+	configs := []*settings.DeviceConfig{}
+	for id, device := range devices {
+		cfg, err := store.FindDeviceConfig(device.Id)
+		if err != nil {
+			t.Fatalf("device not found. err %v ", err)
+		}
+		// update values and store for assertions
+		cfg.RateLimit = (id +1) * 2 // 10 ms
+		cfg.Disabled = true
+		cfg.MetricsEnabled = true
+		store.SaveDeviceConfig(cfg)
+		configs = append(configs, cfg)
+	}
+
+	// assert new stored values
+	for id, device := range devices {
+		cfg, err := store.FindDeviceConfig(device.Id)
+		if err != nil {
+			t.Fatalf("device not found. err %v ", err)
+		}
+		if configs[id].Disabled != cfg.Disabled {
+			t.Fatalf("disabled mismatch want %v got %v", configs[id].Disabled, cfg.Disabled)
+		}
+		if configs[id].RateLimit != cfg.RateLimit {
+			t.Fatalf("rateLimit mismatch want %v got %v", configs[id].RateLimit, cfg.RateLimit)
+		}
+		if configs[id].MetricsEnabled != cfg.MetricsEnabled {
+			t.Fatalf("metricsEnabled mismatch want %v got %v", configs[id].MetricsEnabled, cfg.MetricsEnabled)
+		}
+	}
+
+}
 func TestProcessorTriggersAutomationsStoresMetricsForExistingDevice(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
@@ -250,17 +313,21 @@ func TestProcessorTriggersAutomationsStoresMetricsForExistingDevice(t *testing.T
 	}
 	defer cleanup()
 
-	// enable metrics for dial device
-	cfg := settings.NewDeviceConfig("x01111111")
-	cfg.MetricsEnabled = true
-	cfg.RateLimit = 10 // 10 ms
-	store.SaveDeviceConfig(cfg)
-
 	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
+
+	cfg, err := store.FindDeviceConfig("x01111111")
+	if err != nil {
+		t.Fatalf("device not found. err %v ", err)
+	}
+
+	// enable metrics for dial device
+	cfg.MetricsEnabled = true
+	cfg.RateLimit = 10 // 10 ms
+	store.SaveDeviceConfig(cfg)
 
 	// publish light device
 	payload := map[string]any{"brightness": 10.0, "color_temp": 100}

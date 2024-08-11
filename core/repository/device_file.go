@@ -118,7 +118,7 @@ func (s *FileDeviceRepo) Store(key string, device *devices.Device) (bool, error)
 	})
 
 	ok := s.updated[key]
-	if err != nil {
+	if err == nil {
 		s.updated[key] = true
 	}
 	return !ok, err

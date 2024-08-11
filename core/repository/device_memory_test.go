@@ -43,6 +43,24 @@ func TestRepositoryCanAddOneDevice(t *testing.T) {
 	}
 }
 
+func TestRepositoryStoreReturnsStatusOfData(t *testing.T) {
+
+	repo := repository.NewMemoryDeviceRepo()
+	name := "device 1"
+	device, _ := devices.CreateNewDevice("1", name, "mqtt", nil, createMockPayload(name, 50, 60.1, 23.5, 120.0))
+
+	isNew, _ := repo.Store(name, device)
+	if !isNew  {
+		t.Fatalf("device does not exists")
+	}
+
+	device, _ = devices.CreateNewDevice("1", name, "mqtt", nil, createMockPayload(name, 100, 1.1, 12.5, 10.0))
+	isNew, _ = repo.Store(name, device)
+	if isNew  {
+		t.Fatalf("device does exists")
+	}
+}
+
 func validateDevice(t *testing.T, dev1 *devices.Device, dev2 *devices.Device) {
 
 	if dev1.Id != dev2.Id {

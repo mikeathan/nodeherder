@@ -372,8 +372,8 @@ func (s *NopSettingsrepo) Load() (*settings.AppConfig, error) {
 	}, nil
 }
 
-func (s *NopSettingsrepo) FindDeviceConfig(id string) (*settings.DeviceConfig, error) {
-	fmt.Println("Mocked settingsRepo FindDeviceConfig")
+func (s *NopSettingsrepo) FindOrAddDeviceConfigIfNotExists(id string) (*settings.DeviceConfig, error) {
+	fmt.Println("Mocked settingsRepo FindOrAddDeviceConfigIfnotExists")
 	return nil, nil
 }
 func (s *NopSettingsrepo) SaveDeviceConfig(deviceConfig *settings.DeviceConfig) error {

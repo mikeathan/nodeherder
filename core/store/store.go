@@ -143,25 +143,24 @@ func (s *appStore) StoreMetrics(friendlyName string, data map[string]any) error 
 }
 
 func (s *appStore) FindDeviceConfig(id string) (*settings.DeviceConfig, error) {
-	return s.config.FindDeviceConfig(id)
+	return s.config.FindOrAddDeviceConfigIfNotExists(id)
 }
 
 func (s *appStore) StoreDevice(friendlyName string, device *devices.Device) error {
 	id := s.ResolveFriendlyName(friendlyName)
 
-	exists, err := s.devices.Store(id, device)
+	isNew, err := s.devices.Store(id, device)
 	if err != nil {
 		return err
 	}
 
-	if exists {
-		_,err:=s.FindDeviceConfig(id)
-		if err!= nil {
-
-			initialize new device settings here
+	if isNew {
+		// make sure new device has a configuration if added for first time
+		_, err := s.config.FindOrAddDeviceConfigIfNotExists(id)
+		if err != nil {
+			return err
 		}
 	}
-
 
 	s.deviceIdMapper.UpdateId(friendlyName, id)
 	return nil

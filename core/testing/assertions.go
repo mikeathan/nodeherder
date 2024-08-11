@@ -38,8 +38,10 @@ func AssertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 
 		if event.GetType() == "numeric" {
 			AssertNumericExposeEvent(expose, event, timestamps, values.([]float32), t)
-		} else if event.GetType() == "binary" || event.GetType() == "enum" {
-			AssertTimeRangeExposeEvent(expose, event, timestamps, values.([]string), t)
+		} else if event.GetType() == "binary" {
+			AssertBinaryExposeEvent(expose, event, timestamps, values.([]string), t)
+		} else if event.GetType() == "enum" {
+
 		} else {
 			t.Errorf("invalid expose type %v: ", event.GetType())
 		}
@@ -92,7 +94,7 @@ func AssertNumericExposeEvent(expose *devices.Entity, event metrics.ExposeResult
 
 }
 
-func AssertTimeRangeExposeEvent(expose *devices.Entity, event metrics.ExposeResult, timestamps []time.Time, values []string, t *testing.T) {
+func AssertBinaryExposeEvent(expose *devices.Entity, event metrics.ExposeResult, timestamps []time.Time, values []string, t *testing.T) {
 	binaryEvent := metrics.ToTimeRangeExposeResults(event)
 
 	if binaryEvent == nil {
@@ -103,14 +105,6 @@ func AssertTimeRangeExposeEvent(expose *devices.Entity, event metrics.ExposeResu
 		t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, binaryEvent.Name)
 	}
 
-	// on = 1
-	// off = 2
-	// on = 3
-	// off = 4
-
-	// on = [1,2]
-	// off = [2,3]
-	// on = [3,4]
 	for _, binaryData := range binaryEvent.Data {
 		tsFound := false
 		dataIdx := 0
@@ -140,9 +134,7 @@ func AssertTimeRangeExposeEvent(expose *devices.Entity, event metrics.ExposeResu
 			t.Fatalf(fmt.Sprintf("End timestamp not matching %v", eventEnd))
 		}
 
-		// NOTE: not sure if dataindex is correct here . could be + or -1
-		// NEEDS TESTING
-		wantValue := values[dataIdx] // \!!!!!!!
+		wantValue := values[dataIdx]
 		wantKind := reflect.String
 		gotKind := reflect.TypeOf(eventValue).Kind()
 		if gotKind != wantKind {
@@ -156,6 +148,64 @@ func AssertTimeRangeExposeEvent(expose *devices.Entity, event metrics.ExposeResu
 	}
 }
 
+func AssertEnumExposeEvent(expose *devices.Entity, event metrics.ExposeResult, timestamps []time.Time, values []string, t *testing.T) {
+	enumEvent := metrics.ToTimeRangeExposeResults(event)
+
+	if enumEvent == nil {
+		t.Errorf("invalid expos type want enum got %v: ", event.GetType())
+	}
+
+	if enumEvent.Name != expose.Name {
+		t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, enumEvent.Name)
+	}
+
+	for _, enumData := range enumEvent.Data {
+		tsFound := false
+		dataIdx := 0
+
+		eventValue := enumData.X
+		eventTimestamps := enumData.Y
+
+		eventStart := eventTimestamps[0]
+		eventEnd := eventTimestamps[1]
+
+		for insertIdx, insertTs := range timestamps {
+			insertTsUnix := insertTs.UnixMilli()
+
+			if eventStart == insertTsUnix {
+				tsFound = true
+				dataIdx = insertIdx
+				break
+			}
+		}
+
+		// todo - metric logic to include
+		if len(events.Data)%2 != 0 {
+			events.Add(prevValue.Value, prevValue.Timestamp, to)
+		}
+		///
+		if !tsFound {
+			t.Fatalf(fmt.Sprintf("Start timestamp not found %v", eventStart))
+		}
+
+		// we are expecting the end timestamp to be the next one
+		if eventEnd != timestamps[dataIdx+1].UnixMilli() {
+			t.Fatalf(fmt.Sprintf("End timestamp not matching %v", eventEnd))
+		}
+
+		wantValue := values[dataIdx]
+		wantKind := reflect.String
+		gotKind := reflect.TypeOf(eventValue).Kind()
+		if gotKind != wantKind {
+			t.Fatalf(fmt.Sprintf("Type mismatch want: %v got: %v", wantKind.String(), gotKind.String()))
+		}
+
+		if wantValue != eventValue {
+			t.Fatalf(fmt.Sprintf("Value mismatch want:%v got: %v", wantValue, eventValue))
+		}
+		//fmt.Printf("found event %v with data: %v, timestamp: %v \n", expose.Name, event.Values[fId], foundTs)
+	}
+}
 func AssertTimeRangeExposeMetricResults(wantResults metrics.ExposeResult, gotResults metrics.ExposeResult, t *testing.T) {
 	if wantResults.GetType() != gotResults.GetType() {
 		t.Fatalf("Expected type %v', got '%v'", wantResults.GetType(), gotResults.GetType())

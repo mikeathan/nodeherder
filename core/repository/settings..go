@@ -74,7 +74,7 @@ func (s *FileSettingsRepo) Save(value *settings.AppConfig) error {
 	return err
 }
 
-func (s *FileSettingsRepo) FindDeviceConfig(id string) (*settings.DeviceConfig, error) {
+func (s *FileSettingsRepo) FindOrAddDeviceConfigIfNotExists(id string) (*settings.DeviceConfig, error) {
 
 	config, err := s.Load()
 	if err != nil {
@@ -85,7 +85,13 @@ func (s *FileSettingsRepo) FindDeviceConfig(id string) (*settings.DeviceConfig, 
 		return val, nil
 	}
 
-	return nil, fmt.Errorf("device config for id %v not found", id)
+	// if device config not found, create one with default values
+	cfg := settings.NewDeviceConfig(id)
+	err = s.SaveDeviceConfig(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialise new device config for id %v", id)
+	}
+	return cfg, nil
 }
 
 func (s *FileSettingsRepo) SaveDeviceConfig(deviceConfig *settings.DeviceConfig) error {

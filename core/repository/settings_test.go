@@ -64,7 +64,7 @@ func TestFileSettingsRepositoryCanAddAndFindValue(t *testing.T) {
 	}
 	id := dataKeys[0]
 
-	found, err := repo.FindDeviceConfig(id)
+	found, err := repo.FindOrAddDeviceConfigIfNotExists(id)
 	if err != nil {
 		t.Errorf("load failed with %v", err.Error())
 	}
@@ -101,7 +101,7 @@ func TestFileSettingsRepositoryCanAddNewDeviceConfig(t *testing.T) {
 
 	repo.SaveDeviceConfig(newCfg)
 
-	found, err := repo.FindDeviceConfig(newCfg.Id)
+	found, err := repo.FindOrAddDeviceConfigIfNotExists(newCfg.Id)
 	if err != nil {
 		t.Errorf("load failed with %v", err.Error())
 	}
@@ -135,7 +135,7 @@ func TestFileSettingsRepositoryCanUpdateExistingDeviceConfig(t *testing.T) {
 	}
 	id := dataKeys[0]
 
-	found, err := repo.FindDeviceConfig(id)
+	found, err := repo.FindOrAddDeviceConfigIfNotExists(id)
 	if err != nil {
 		t.Errorf("load failed with %v", err.Error())
 	}
@@ -150,7 +150,7 @@ func TestFileSettingsRepositoryCanUpdateExistingDeviceConfig(t *testing.T) {
 	if err != nil {
 		t.Errorf("save failed with %v", err.Error())
 	}
-	updated, err := repo.FindDeviceConfig(id)
+	updated, err := repo.FindOrAddDeviceConfigIfNotExists(id)
 	if err != nil {
 		t.Errorf("load failed with %v", err.Error())
 	}
