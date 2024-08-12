@@ -13,6 +13,7 @@ const props = defineProps({
 const cachedDeviceSettings = ref<KeyValuePair<any>>(
   {} as KeyValuePair<any>,
 );
+
 const isDirty = computed(() => {
   return (
     JSON.stringify(cachedDeviceSettings.value) !==
@@ -21,33 +22,14 @@ const isDirty = computed(() => {
 });
 
 const deviceSettings = computed(() => {
-  if (
-    !store.getters['appconfig/initialized']() as Boolean
-  ) {
-    console.log('[DEBUG] appconfig/initialized');
+  if (!store.getters['appconfig/initialized']() as Boolean) {
     store.dispatch('ws/emit', { event: 'loadAppConfig' });
   }
 
-  const settings = store.getters[
-    'appconfig/findDeviceSetting'
-  ](props.id);
-  console.log('[DEBUG] settings ', settings);
-
-  if (!settings) {
-    const newDeviceSettings = JSON.parse(
-      JSON.stringify(createDeviceSettings(props.id)),
-    );
-    console.log(
-      '[DEBUG] appconfig/saveDeviceSetting ',
-      newDeviceSettings,
-    );
-    store.dispatch(
-      'appconfig/saveDeviceSettings',
-      newDeviceSettings,
-    );
-    return newDeviceSettings;
-  }
-  return JSON.parse(JSON.stringify(settings));
+  const settings = store.getters['appconfig/findDeviceSetting'](props.id);
+  return settings ?
+    JSON.parse(JSON.stringify(settings)) :
+    {} as DeviceSettings
 });
 
 onMounted(() => {
@@ -66,12 +48,10 @@ function save() {
     cachedDeviceSettings.value as DeviceSettings,
   );
 }
+
 </script>
 <template>
-  <div
-    class="row border-bottom py-1 w-100 align-items-center"
-    v-for="(value, key) in deviceSettings"
-    :key="key">
+  <div class="row border-bottom py-1 w-100 align-items-center" v-for="(value, key) in deviceSettings" :key="key">
     <dl class="col-12 col-md-3">
       <dt>
         <strong> {{ key }}</strong>
@@ -79,19 +59,11 @@ function save() {
     </dl>
     <div class="col-md-4">
       <div v-if="typeof value === 'boolean'">
-        <Toggle
-          :minimal="false"
-          :value="value"
-          :valueOn="true"
-          :valueoff="false"
-          @update="(v) => updateValue(key, v)">
+        <Toggle :minimal="false" :value="value" :valueOn="true" :valueoff="false" @update="(v) => updateValue(key, v)">
         </Toggle>
       </div>
       <div v-else>
-        <InputBox
-          @updated="(v) => updateValue(key, v)"
-          :value="value"
-          :disabled="typeof value !== 'number'"
+        <InputBox @updated="(v) => updateValue(key, v)" :value="value" :disabled="typeof value !== 'number'"
           :is-numeric="typeof value === 'number'">
         </InputBox>
       </div>
@@ -99,12 +71,7 @@ function save() {
   </div>
   <br />
   <div class="pb-3">
-    <button
-      type="button"
-      class="btn btn-light"
-      aria-label="Save"
-      @click="save()"
-      :disabled="!isDirty">
+    <button type="button" class="btn btn-light" aria-label="Save" @click="save()" :disabled="!isDirty">
       Save
     </button>
   </div>
