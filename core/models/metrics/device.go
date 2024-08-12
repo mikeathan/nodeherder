@@ -173,6 +173,16 @@ func (c *DeviceMetricsResult) UnmarshalJSON(data []byte) error {
 						}
 						c.Exposes = append(c.Exposes, n)
 					case "binary":
+						exposeBytes, err := json.Marshal(exposeResult)
+						if err != nil {
+							return err
+						}
+						var b *ExposeTimeRangeMetricsResult = &ExposeTimeRangeMetricsResult{}
+						err = json.Unmarshal(exposeBytes, &b)
+						if err != nil {
+							return err
+						}
+						c.Exposes = append(c.Exposes, b)
 					case "enum":
 						exposeBytes, err := json.Marshal(exposeResult)
 						if err != nil {
