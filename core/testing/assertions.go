@@ -41,7 +41,7 @@ func AssertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 		} else if event.GetType() == "binary" {
 			AssertBinaryExposeEvent(expose, event, timestamps, values.([]string), t)
 		} else if event.GetType() == "enum" {
-
+			AssertEnumExposeEvent(expose, event, timestamps, values.([]string), t)
 		} else {
 			t.Errorf("invalid expose type %v: ", event.GetType())
 		}
@@ -159,7 +159,7 @@ func AssertEnumExposeEvent(expose *devices.Entity, event metrics.ExposeResult, t
 		t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, enumEvent.Name)
 	}
 
-	for _, enumData := range enumEvent.Data {
+	for idx, enumData := range enumEvent.Data {
 		tsFound := false
 		dataIdx := 0
 
@@ -179,18 +179,20 @@ func AssertEnumExposeEvent(expose *devices.Entity, event metrics.ExposeResult, t
 			}
 		}
 
-		// todo - metric logic to include
-		if len(events.Data)%2 != 0 {
-			events.Add(prevValue.Value, prevValue.Timestamp, to)
-		}
-		///
 		if !tsFound {
 			t.Fatalf(fmt.Sprintf("Start timestamp not found %v", eventStart))
 		}
 
 		// we are expecting the end timestamp to be the next one
 		if eventEnd != timestamps[dataIdx+1].UnixMilli() {
-			t.Fatalf(fmt.Sprintf("End timestamp not matching %v", eventEnd))
+			// if last item check to see if its been padded with previous item value and end timestamp
+			if idx+1 == len(enumEvent.Data) {
+				if eventEnd != timestamps[dataIdx].UnixMilli() {
+					t.Fatalf(fmt.Sprintf("End timestamp not matching %v", eventEnd))
+				}
+			} else {
+				t.Fatalf(fmt.Sprintf("End timestamp not matching %v", eventEnd))
+			}
 		}
 
 		wantValue := values[dataIdx]
@@ -206,7 +208,7 @@ func AssertEnumExposeEvent(expose *devices.Entity, event metrics.ExposeResult, t
 		//fmt.Printf("found event %v with data: %v, timestamp: %v \n", expose.Name, event.Values[fId], foundTs)
 	}
 }
-func AssertTimeRangeExposeMetricResults(wantResults metrics.ExposeResult, gotResults metrics.ExposeResult, t *testing.T) {
+func AssertBinaryExposeMetricResults(wantResults metrics.ExposeResult, gotResults metrics.ExposeResult, t *testing.T) {
 	if wantResults.GetType() != gotResults.GetType() {
 		t.Fatalf("Expected type %v', got '%v'", wantResults.GetType(), gotResults.GetType())
 	}
@@ -243,6 +245,42 @@ func AssertTimeRangeExposeMetricResults(wantResults metrics.ExposeResult, gotRes
 	}
 }
 
+func AssertEnumExposeMetricResults(wantResults metrics.ExposeResult, gotResults metrics.ExposeResult, t *testing.T) {
+	if wantResults.GetType() != gotResults.GetType() {
+		t.Fatalf("Expected type %v', got '%v'", wantResults.GetType(), gotResults.GetType())
+	}
+
+	wantEnumResults := metrics.ToTimeRangeExposeResults(wantResults)
+	gotEnumResults := metrics.ToTimeRangeExposeResults(gotResults)
+
+	if wantEnumResults.Name != gotEnumResults.Name {
+		t.Fatalf("Expected name %v', got '%v'", wantEnumResults.Name, gotEnumResults.Name)
+	}
+
+	if wantEnumResults.From != gotEnumResults.From {
+		t.Fatalf("Expected from %v', got '%v'", wantEnumResults.From, gotEnumResults.From)
+	}
+
+	if wantEnumResults.To != gotEnumResults.To {
+		t.Fatalf("Expected to %v', got '%v'", wantEnumResults.To, gotEnumResults.To)
+
+	}
+	for idx, wantEvent := range wantEnumResults.Data {
+
+		gotEvent := gotEnumResults.Data[idx]
+
+		if wantEvent.X != gotEvent.X {
+			t.Fatalf("Expected X %v', got '%v'", wantEvent.X, gotEvent.X)
+		}
+
+		for tIdx, wantTimestamp := range wantEvent.Y {
+			gotTimestamp := gotEvent.Y[tIdx]
+			if wantTimestamp != gotTimestamp {
+				t.Fatalf("Expected Y want %v', got '%v'", wantTimestamp, gotTimestamp)
+			}
+		}
+	}
+}
 func AssertNumericExposeMetricResults(wantResults metrics.ExposeResult, gotResults metrics.ExposeResult, t *testing.T) {
 	if wantResults.GetType() != gotResults.GetType() {
 		t.Fatalf("Expected type %v', got '%v'", wantResults.GetType(), gotResults.GetType())

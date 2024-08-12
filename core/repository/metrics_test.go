@@ -552,6 +552,8 @@ func assertDeviceExportAnyDataTypeEvents(device *devices.Device, exposeName stri
 		} else if event.GetType() == "binary" {
 			utils_test.AssertBinaryExposeEvent(expose, event, timestamps, values.([]string), t)
 
+		} else if event.GetType() == "enum" {
+			utils_test.AssertEnumExposeEvent(expose, event, timestamps, values.([]string), t)
 		} else {
 			t.Errorf("invalid expose type %v: ", event.GetType())
 		}

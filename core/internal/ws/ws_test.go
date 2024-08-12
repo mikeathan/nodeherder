@@ -825,8 +825,10 @@ func TestHandlingLoadMetricsMessage(t *testing.T) {
 
 		if gotExpose.GetType() == "numeric" {
 			utils_test.AssertNumericExposeMetricResults(wantExpose, gotExpose, t)
-		} else if gotExpose.GetType() == "binary" || gotExpose.GetType() == "enum" {
-			utils_test.AssertTimeRangeExposeMetricResults(wantExpose, gotExpose, t)
+		} else if gotExpose.GetType() == "binary" {
+			utils_test.AssertBinaryExposeMetricResults(wantExpose, gotExpose, t)
+		} else if gotExpose.GetType() == "enum" {
+			utils_test.AssertEnumExposeMetricResults(wantExpose, gotExpose, t)
 		} else {
 			t.Errorf("invalid expose type %v: ", gotExpose.GetType())
 		}
