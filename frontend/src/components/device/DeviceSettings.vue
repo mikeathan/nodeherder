@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { store } from '../../store/index';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import Toggle from '../input/Toggle.vue';
 import { DeviceSettings } from '@/types/settings';
 import { createDeviceSettings } from '@/contracts/settings';
@@ -10,16 +10,6 @@ import { KeyValuePair } from '@/types/types';
 const props = defineProps({
   id: { type: String, required: true },
 });
-const cachedDeviceSettings = ref<KeyValuePair<any>>(
-  {} as KeyValuePair<any>,
-);
-
-const isDirty = computed(() => {
-  return (
-    JSON.stringify(cachedDeviceSettings.value) !==
-    JSON.stringify(deviceSettings.value)
-  );
-});
 
 const deviceSettings = computed(() => {
   if (!store.getters['appconfig/initialized']() as Boolean) {
@@ -27,26 +17,20 @@ const deviceSettings = computed(() => {
   }
 
   const settings = store.getters['appconfig/findDeviceSetting'](props.id);
-  return settings ?
-    JSON.parse(JSON.stringify(settings)) :
-    {} as DeviceSettings
+  return settings
 });
 
-onMounted(() => {
-  cachedDeviceSettings.value = JSON.parse(
-    JSON.stringify(deviceSettings.value),
-  );
-});
+
+TODO - save on form change
 
 function updateValue(propName: any, propValue: any) {
-  cachedDeviceSettings.value[propName] = propValue;
+  deviceSettings.value[propName] = propValue;
+  console.log("updateValue", deviceSettings.value);
 }
 
 function save() {
-  store.dispatch(
-    'appconfig/saveDeviceSettings',
-    cachedDeviceSettings.value as DeviceSettings,
-  );
+  console.log("save", deviceSettings.value);
+  store.dispatch('appconfig/saveDeviceSettings', deviceSettings.value as DeviceSettings);
 }
 
 </script>
@@ -71,7 +55,7 @@ function save() {
   </div>
   <br />
   <div class="pb-3">
-    <button type="button" class="btn btn-light" aria-label="Save" @click="save()" :disabled="!isDirty">
+    <button type="button" class="btn btn-light" aria-label="Save" @click="save()">
       Save
     </button>
   </div>
