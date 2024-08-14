@@ -28,7 +28,9 @@ const props = defineProps({
 
 const emit = defineEmits<{
     (e: "updated", value: any): void;
+    (e: "lostFocus", value: any): void;
 }>();
+
 
 const inputValue = ref<any>(props.value);
 watch(
@@ -48,6 +50,10 @@ function inputChanged(event: Event) {
     }
     inputValue.value = value;
     emit('updated', inputValue.value);
+}
+
+function onLostFocus(event: Event) {
+    emit('lostFocus', inputValue.value);
 }
 
 function isNumber(event: KeyboardEvent) {
@@ -109,6 +115,6 @@ input.form-control:disabled {
     </div>
     <div v-else class="">
         <input type="text" class="form-control" id="dataInput" :style="`text-align:${props.position}`"
-            v-model="inputValue" @input="inputChanged" @keypress="isNumber" :disabled="props.disabled" />
+            v-model="inputValue" @input="inputChanged" @keypress="isNumber" :disabled="props.disabled" :onblur="onLostFocus"/>
     </div>
 </template>

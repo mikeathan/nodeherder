@@ -362,7 +362,7 @@ app.ws('/ws', async function (ws, req) {
       case 'saveDeviceConfig':
         var deviceId = obj.payload.id;
         appConfig[deviceId] = obj.payload;
-        //sendOperationSuccess(ws);
+        sendOperationSuccess(ws);
         break;
 
       case 'pong':

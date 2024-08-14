@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { store } from '../../store/index';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed } from 'vue';
 import Toggle from '../input/Toggle.vue';
 import { DeviceSettings } from '@/types/settings';
-import { createDeviceSettings } from '@/contracts/settings';
 import InputBox from '../input/InputBox.vue';
-import { KeyValuePair } from '@/types/types';
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -16,21 +14,23 @@ const deviceSettings = computed(() => {
     store.dispatch('ws/emit', { event: 'loadAppConfig' });
   }
 
-  const settings = store.getters['appconfig/findDeviceSetting'](props.id);
-  return settings
+  return store.getters['appconfig/findDeviceSetting'](props.id)
 });
 
 
-TODO - save on form change
-
-function updateValue(propName: any, propValue: any) {
-  deviceSettings.value[propName] = propValue;
-  console.log("updateValue", deviceSettings.value);
+function toggleChanged(propName: any, propValue: any) {
+  save(propName, propValue);
 }
 
-function save() {
-  console.log("save", deviceSettings.value);
-  store.dispatch('appconfig/saveDeviceSettings', deviceSettings.value as DeviceSettings);
+function inputLostFocus(propName: any, propValue: any) {
+  save(propName, propValue);
+}
+
+function save(propName: any, propValue: any) {
+  if (deviceSettings.value[propName] != propValue) {
+    deviceSettings.value[propName] = propValue;
+    store.dispatch('appconfig/saveDeviceSettings', deviceSettings.value as DeviceSettings);
+  }
 }
 
 </script>
@@ -43,20 +43,15 @@ function save() {
     </dl>
     <div class="col-md-4">
       <div v-if="typeof value === 'boolean'">
-        <Toggle :minimal="false" :value="value" :valueOn="true" :valueoff="false" @update="(v) => updateValue(key, v)">
+        <Toggle :minimal="false" :value="value" :valueOn="true" :valueoff="false"
+          @update="(v) => toggleChanged(key, v)">
         </Toggle>
       </div>
       <div v-else>
-        <InputBox @updated="(v) => updateValue(key, v)" :value="value" :disabled="typeof value !== 'number'"
-          :is-numeric="typeof value === 'number'">
+        <InputBox :value="value" :disabled="typeof value !== 'number'" :is-numeric="typeof value === 'number'"
+          @lost-focus="(f) => inputLostFocus(key, f)">
         </InputBox>
       </div>
     </div>
-  </div>
-  <br />
-  <div class="pb-3">
-    <button type="button" class="btn btn-light" aria-label="Save" @click="save()">
-      Save
-    </button>
   </div>
 </template>
