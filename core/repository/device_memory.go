@@ -88,8 +88,9 @@ func (s *MemoryDeviceRepo) FindDevices(ids []string) ([]*devices.Device, error) 
 func (s *MemoryDeviceRepo) AllDevices() ([]*devices.Device, error) {
 
 	// sort before returning values
-	s.mutex.RLock()
 	defer s.mutex.RUnlock()
+
+	s.mutex.RLock()
 
 	keys := make([]string, 0, len(s.store))
 	for k := range s.store {
