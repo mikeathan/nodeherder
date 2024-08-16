@@ -104,7 +104,23 @@ func (e *ExposeNumericMetricsResult) Add(value float32, timestamp time.Time) {
 		Y: value,
 	})
 }
+func (c *ExposeNumericMetricsResult) MarshalJSON() ([]byte, error) {
+	res := struct {
+		Name string          `json:"name"`
+		Type string          `json:"type"`
+		From int64           `json:"from"`
+		To   int64           `json:"to"`
+		Data []*NumericValue `json:"data"`
+	}{
+		Name: c.Name,
+		Type: c.Type,
+		From: c.From,
+		To:   c.To,
+		Data: c.Data,
+	}
 
+	return json.Marshal(res)
+}
 func NewExposeBinaryMetricResult(name string, from time.Time, to time.Time) *ExposeTimeRangeMetricsResult {
 	return &ExposeTimeRangeMetricsResult{
 		Name: name,
@@ -129,6 +145,24 @@ func (e *ExposeTimeRangeMetricsResult) Add(value string, from time.Time, to time
 		X: value,
 		Y: [2]int64{from.UnixMilli(), to.UnixMilli()},
 	})
+}
+
+func (c *ExposeTimeRangeMetricsResult) MarshalJSON() ([]byte, error) {
+	res := struct {
+		Name string            `json:"name"`
+		Type string            `json:"type"`
+		From int64             `json:"from"`
+		To   int64             `json:"to"`
+		Data []*TimeRangeValue `json:"data"`
+	}{
+		Name: c.Name,
+		Type: c.Type,
+		From: c.From,
+		To:   c.To,
+		Data: c.Data,
+	}
+
+	return json.Marshal(res)
 }
 
 func (c *DeviceMetricsResult) MarshalJSON() ([]byte, error) {
