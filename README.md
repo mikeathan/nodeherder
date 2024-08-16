@@ -170,3 +170,16 @@ metrics results are not loaded. data is always emtpy. maybe issue with store
 first enabling metrics in setting - it doesnt store events
 
 getting alot of mqtt Connection Lost: EOF - not sure if its a problem or not
+
+time.Time(2024-08-16T16:28:25+01:00)
+
+store "illuminance_lux2024-08-16T16:31:24.225532209Z"
+store "presence2024-08-16T16:31:42.678211440Z"
+
+request "illuminance_lux2024-08-16T16:32:05.000000000Z"
+request "presence2024-08-16T16:32:05.000000000Z"
+request "current2024-08-16T16:28:25.000000000Z"
+reqeust "current2024-08-15T16:28:25.000000000Z"
+
+store "property_x0000_12024-08-16T00:00:00.000000000Z"
+view "property_x0000_12024-08-16T15:01:05.000000012Z"
