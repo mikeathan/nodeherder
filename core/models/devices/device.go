@@ -101,8 +101,8 @@ type UpdatePackage struct {
 	Properties map[string]any `json:"properties"`
 }
 
-func newUpdatePackage(id string) *UpdatePackage {
-	return &UpdatePackage{Id: id, LastSeen: getCurrentTime(), Data: make(map[string]any), Properties: make(map[string]any)}
+func newUpdatePackage(id string) UpdatePackage {
+	return UpdatePackage{Id: id, LastSeen: getCurrentTime(), Data: make(map[string]any), Properties: make(map[string]any)}
 }
 
 func (u *UpdatePackage) HasData() bool {
@@ -309,7 +309,7 @@ func CreateNewDevice(id string, friendlyName string, connType string, bridgeInfo
 	return newDevice, nil
 }
 
-func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
+func (device *Device) Update(payload map[string]interface{}) UpdatePackage {
 
 	var updatePackage = newUpdatePackage(device.Id)
 	for name, currValue := range device.Exposes {
