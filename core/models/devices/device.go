@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"node-herder/utils"
+	"sync"
 	"time"
 )
 
@@ -75,6 +76,7 @@ type Device struct {
 	availabilityTicker      time.Ticker
 	availablityDone         chan bool
 	availabilityTimeoutSecs int
+	mutex                   sync.Mutex
 }
 
 func NewDevice(id string) *Device {
@@ -90,6 +92,7 @@ func NewDevice(id string) *Device {
 		availabilityTicker:      time.Ticker{},
 		availablityDone:         make(chan bool, 1),
 		availabilityTimeoutSecs: 3600,
+		mutex:                   sync.Mutex{},
 	}
 }
 
@@ -386,6 +389,8 @@ func (device *Device) Monitor(timeoutInSecs int, onChangeCallback func(p interfa
 					return
 				}
 
+				device.mutex.Lock()
+
 				lastSeenStr, _ := device.Properties[lastSeenKey].(string)
 				lastSeen, err := time.Parse(time.RFC3339, lastSeenStr)
 				if err != nil {
@@ -409,6 +414,8 @@ func (device *Device) Monitor(timeoutInSecs int, onChangeCallback func(p interfa
 
 					device.availabilityTicker.Stop()
 				}
+
+				device.mutex.Unlock()
 			}
 		}
 	}()
