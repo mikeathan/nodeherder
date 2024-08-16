@@ -98,11 +98,11 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 			err = bucket.Put(key, buf)
 
 			if err != nil {
-				fmt.Printf("DEBUG -  metrics: Expose=%v, Data=%v, Key=%v ERROR=%v\n", name, string(buf), string(key), err.Error())
+				fmt.Printf("DEBUG - StoreMetrics ERROR: Expose=%v, Data=%v, Key=%v ERROR=%v\n", name, string(buf), string(key), err.Error())
 				return err
 			}
 
-			//fmt.Printf("DEBUG -  metrics: Expose=%v, Data=%v, Key=%v \n", name, string(buf), string(key))
+			//fmt.Printf("DEBUG - StoreMetrics: Expose=%v, Data=%v, Key=%v \n", name, string(buf), string(key))
 		}
 		return nil
 	})
@@ -157,9 +157,13 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 		for _, key := range exposekeys {
 			expose := device.Exposes[key]
 			event, err := s.findExposeTimeRangeEvent(cursor, expose, from, to)
+
 			if err != nil {
 				return err
 			}
+
+			// TODO
+			// check here is event is empty anddont add it to result
 			result.Add(event)
 		}
 
@@ -250,6 +254,8 @@ func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Ent
 
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
+
+	// TODO: dont return event with filled in values and no data
 	event := metrics.NewExposeNumericMetricResult(expose.Name, from, to)
 
 	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
@@ -296,7 +302,8 @@ func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devi
 // }
 
 func (s *MetricsRepo) readTimestampFromKey(id string, data []byte) (time.Time, error) {
-	timestamp, err := time.Parse(time.RFC3339Nano, string(data[len(id):]))
+	customFormat := "2006-01-02T15:04:05.000000000Z"
+	timestamp, err := time.Parse(customFormat, string(data[len(id):]))
 	if err != nil {
 		return s.clock.Now(), err
 
@@ -307,8 +314,8 @@ func (s *MetricsRepo) readTimestampFromKey(id string, data []byte) (time.Time, e
 func createKeyWithTimestamp(id string, timestamp time.Time) []byte {
 	buffer := bytes.NewBuffer(nil)
 	binary.Write(buffer, binary.BigEndian, []byte(id))
-
-	timestampStr := timestamp.Format(time.RFC3339Nano)
+	customFormat := "2006-01-02T15:04:05.000000000Z"
+	timestampStr := timestamp.Format(customFormat)
 	binary.Write(buffer, binary.BigEndian, []byte(timestampStr))
 
 	return buffer.Bytes()
