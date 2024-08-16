@@ -68,9 +68,17 @@ func TestGenerateMockMetrics(t *testing.T) {
 }
 
 func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
+
 	now := time.Now()
+	// t1 := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC)
+
+	// customFormat := "2006-01-02T15:04:05.000000000Z"
+	// timestampStr := now.Format(customFormat)
+	// t1f := t1.Format(customFormat)
+	// fmt.Println(timestampStr, t1f)
 
 	tempfile := tempfile()
+
 	defer os.Remove(tempfile)
 
 	testCases := []struct {
