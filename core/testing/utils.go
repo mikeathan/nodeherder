@@ -313,9 +313,10 @@ func Tempfile() string {
 
 func CreateDateTimeTimestamps(numberOfDays int, numberOfHours int, numberOfMinutes int) []time.Time {
 	var timestamps []time.Time
-	year := time.Now().Year()
-	month := time.Now().Month()
-	today := time.Now().Day()
+	now := time.Now()
+	year := now.Year()
+	month := now.Month()
+	today := now.Day()
 	hours := 0
 	minutes := 0
 
@@ -328,7 +329,7 @@ func CreateDateTimeTimestamps(numberOfDays int, numberOfHours int, numberOfMinut
 	for d := 1; d <= numberOfDays; d++ {
 		for h := 0; h < numberOfHours; h++ {
 			for m := 0; m < numberOfMinutes; m++ {
-				timestamp := time.Date(year, month, currentDay, hours+h, minutes+m, 0, 0, time.UTC)
+				timestamp := time.Date(year, month, currentDay, hours+h, minutes+m, now.Second(), now.Nanosecond(), time.UTC)
 				timestamps = append(timestamps, timestamp)
 			}
 		}

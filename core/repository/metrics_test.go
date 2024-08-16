@@ -67,6 +67,68 @@ func TestGenerateMockMetrics(t *testing.T) {
 	fmt.Println(string(bytes))
 }
 
+func TestSingleExposeValueUpdatesDeviceTimeRangeMetrics(t *testing.T) {
+
+	now := time.Now()
+
+	tempfile := tempfile()
+
+	defer os.Remove(tempfile)
+
+	id := "x0000"
+	timestamps := utils_test.CreateDateTimeTimestamps(1, 24, 1)
+	values := utils_test.CreateFloatValues(24)
+	from := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC)
+	to := time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)
+
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now()
+	})
+	repo, err := repository.NewMetricsRepoFromFile(tempfile, mockClock)
+	if err != nil {
+		t.Error("failed to initialise metrics repo", err.Error())
+	}
+
+	var devices map[string]*devices.Device = make(map[string]*devices.Device)
+	fmt.Println(len(timestamps))
+
+	deviceName := fmt.Sprintf("device %v", 1)
+
+	fmt.Println("total timestamps: ", len(timestamps))
+
+	exposeNames := []string{"temperature", "humidity", "presence", "power", "voltage", "current"}
+
+	dev := createMockDeviceWithExposes(id, deviceName, exposeNames, "numeric", now, nil)
+
+	exposeIdx := 0
+
+	// fire data changes one by one
+	for tIdx, timestamp := range timestamps {
+
+		if tIdx >= len(exposeNames) {
+			exposeIdx = 0
+		}
+		exposeName := exposeNames[exposeIdx]
+		exposeIdx++
+
+		payload := map[string]any{exposeName: values[tIdx]}
+		mockClock.SetMockTime(timestamp)
+
+		err = repo.Store(dev.Id, payload)
+		if err != nil {
+			t.Error("failed to store metrics ", err.Error())
+		}
+		devices[dev.Id] = dev
+	}
+
+	result, err := repo.ViewDeviceTimeRange(dev, from, to)
+	if err != nil {
+		t.Error("failed to query metrics: ", err.Error())
+	}
+
+	utils_test.AssertDeviceAnyDataTypeEvents(dev, result, timestamps, values, t)
+
+}
 func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
 
 	now := time.Now()
@@ -567,6 +629,37 @@ func assertDeviceExportAnyDataTypeEvents(device *devices.Device, exposeName stri
 		}
 	}
 
+}
+func createMockDeviceWithExposes(id string, name string, exposeNames []string, exposeType string, timestamp time.Time, data any) *devices.Device {
+	device1 := &devices.Device{}
+	device1.Id = id
+	device1.FriendlyName = name
+	device1.ConnectionType = "mqtt"
+	device1.Description = fmt.Sprintf("Test device %s description", id)
+	device1.PowerSource = "mains"
+	device1.Properties = map[string]any{}
+	device1.Properties["last_seen"] = timestamp.Format(time.RFC3339)
+	device1.Properties["link_quality"] = 45.0
+	device1.Exposes = make(map[string]*devices.Entity)
+
+	for i := 0; i < len(exposeNames); i++ {
+
+		property := exposeNames[i]
+
+		ent1 := &devices.Entity{}
+		ent1.Description = fmt.Sprintf("%s readings", property)
+		ent1.Name = property
+		ent1.Unit = "test"
+		ent1.Data = data
+		ent1.Type = exposeType
+
+		device1.Exposes[property] = ent1
+		device1.Exposes[property].Attributes = make(map[string]any)
+		device1.Exposes[property].Attributes["min"] = 0.0
+		device1.Exposes[property].Attributes["max"] = 255.0
+	}
+
+	return device1
 }
 
 func createMockDevice(id string, name string, numOfExposes int, exposeType string, timestamp time.Time, data any) *devices.Device {
