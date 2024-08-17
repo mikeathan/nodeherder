@@ -136,14 +136,14 @@ func (c *WsClient) handleMessage(message []byte) {
 		msg := c.hub.onLoadDevices()
 		c.Broadcast(Devices, msg)
 
-	case LoadMetrics:
-		c.executePayloadActionWithEvent(eventMsg.Payload, c.hub.onLoadMetrics, Metrics)
+	// case LoadMetrics:
+	// 	c.executePayloadActionWithEvent(eventMsg.Payload, c.hub.onLoadMetrics, Metrics)
 
-	case LoadAppconfig:
-		c.executeActionWithEvent(c.hub.onLoadAppConfig, AppConfig)
+	// case LoadAppconfig:
+	// 	c.executeActionWithEvent(c.hub.onLoadAppConfig, AppConfig)
 
-	case SaveDeviceConfig:
-		c.executeAction(eventMsg.Payload, c.hub.onSaveDeviceConfig, true)
+	// case SaveDeviceConfig:
+	// 	c.executeAction(eventMsg.Payload, c.hub.onSaveDeviceConfig, true)
 
 	case SaveAutomation:
 		c.executeAction(eventMsg.Payload, c.hub.onSaveAutomation, true)
@@ -205,7 +205,8 @@ func (c *WsClient) executeAction(payload interface{}, action func(interface{}) e
 		c.Broadcast(OperationSuccess, nil)
 	}
 }
-
+// TODO
+//https://github.com/olahol/melody
 func (c *WsClient) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {

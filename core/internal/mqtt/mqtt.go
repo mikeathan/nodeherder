@@ -36,8 +36,8 @@ type MqttConfig struct {
 
 func (m *MqttService) onConnectedHandler() func(client mqttlib.Client) {
 	return func(client mqttlib.Client) {
-		defer m.mu.Unlock()
-		m.mu.Lock()
+		//defer m.mu.Unlock()
+		//m.mu.Lock()
 
 		utils.LogInfof("mqtt Client connected")
 		m.subscribeTopics()

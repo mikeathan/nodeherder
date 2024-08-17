@@ -104,8 +104,8 @@ type UpdatePackage struct {
 	Properties map[string]any `json:"properties"`
 }
 
-func newUpdatePackage(id string) UpdatePackage {
-	return UpdatePackage{Id: id, LastSeen: getCurrentTime(), Data: make(map[string]any), Properties: make(map[string]any)}
+func newUpdatePackage(id string) *UpdatePackage {
+	return &UpdatePackage{Id: id, LastSeen: getCurrentTime(), Data: make(map[string]any), Properties: make(map[string]any)}
 }
 
 func (u *UpdatePackage) HasData() bool {
@@ -312,7 +312,7 @@ func CreateNewDevice(id string, friendlyName string, connType string, bridgeInfo
 	return newDevice, nil
 }
 
-func (device *Device) Update(payload map[string]interface{}) UpdatePackage {
+func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
 
 	var updatePackage = newUpdatePackage(device.Id)
 	for name, currValue := range device.Exposes {
@@ -389,12 +389,11 @@ func (device *Device) Monitor(timeoutInSecs int, onChangeCallback func(p interfa
 					return
 				}
 
-				device.mutex.Lock()
-
 				lastSeenStr, _ := device.Properties[lastSeenKey].(string)
 				lastSeen, err := time.Parse(time.RFC3339, lastSeenStr)
 				if err != nil {
 					utils.LogErrorf("device %s failed to parse time %s", device.Id, err.Error())
+
 					device.Dispose()
 				}
 
@@ -415,7 +414,6 @@ func (device *Device) Monitor(timeoutInSecs int, onChangeCallback func(p interfa
 					device.availabilityTicker.Stop()
 				}
 
-				device.mutex.Unlock()
 			}
 		}
 	}()

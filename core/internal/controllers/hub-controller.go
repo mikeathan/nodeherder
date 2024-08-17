@@ -265,30 +265,33 @@ func (m *HubController) TriggerAutomation(device *devices.Device) {
 }
 
 func (m *HubController) deviceAdded(device *devices.Device, data map[string]interface{}) {
-	d := device
+	//d := device
 	action := func() error {
 		err := m.registrar.Register(device.FriendlyName, device)
 		if err != nil {
 			return err
 		}
-		return m.registrar.StoreMetrics(device.FriendlyName, data)
+		// m.registrar.StoreMetrics(device.FriendlyName, data)
+		return nil
 	}
-	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
+	action()
+	//m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
 }
 
 func (m *HubController) deviceUpdated(device *devices.Device, data map[string]interface{}) {
 
-	d := device
+	//d := device
 	action := func() error {
 		m.automationEngine.HandleDevice(device)
 		err := m.registrar.Register(device.FriendlyName, device)
 		if err != nil {
 			return err
 		}
-		return m.registrar.StoreMetrics(device.FriendlyName, data)
+		//m.registrar.StoreMetrics(device.FriendlyName, data)
+		return nil
 	}
-
-	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
+	action()
+	//m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
 }
 
 func (m *HubController) processMessage(id string, payload []byte, connType string) error {

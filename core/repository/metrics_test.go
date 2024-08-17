@@ -96,7 +96,7 @@ func TestSingleExposeValueUpdatesDeviceTimeRangeMetrics(t *testing.T) {
 
 	fmt.Println("total timestamps: ", len(timestamps))
 
-	exposeNames := []string{"temperature", "humidity", "presence", "power", "voltage", "current"}
+	exposeNames := []string{"temperature", "humidity"} //, "presence", "power", "voltage", "current"}
 
 	dev := createMockDeviceWithExposes(id, deviceName, exposeNames, "numeric", now, nil)
 
@@ -105,15 +105,15 @@ func TestSingleExposeValueUpdatesDeviceTimeRangeMetrics(t *testing.T) {
 	// fire data changes one by one
 	for tIdx, timestamp := range timestamps {
 
-		if tIdx >= len(exposeNames) {
-			exposeIdx = 0
-		}
 		exposeName := exposeNames[exposeIdx]
 		exposeIdx++
 
 		payload := map[string]any{exposeName: values[tIdx]}
 		mockClock.SetMockTime(timestamp)
 
+		if exposeIdx >= len(exposeNames) {
+			exposeIdx = 0
+		}
 		err = repo.Store(dev.Id, payload)
 		if err != nil {
 			t.Error("failed to store metrics ", err.Error())

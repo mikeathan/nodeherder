@@ -88,6 +88,8 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 			return err
 		}
 
+		fmt.Printf("DEBUG - StoreMetrics: Device=%v \n", id)
+
 		for name, value := range data {
 			buf, err := json.Marshal(value)
 			if err != nil {
@@ -102,7 +104,7 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 				return err
 			}
 
-			//fmt.Printf("DEBUG - StoreMetrics: Expose=%v, Data=%v, Key=%v \n", name, string(buf), string(key))
+			fmt.Printf("DEBUG - StoreMetrics: Expose=%v, Data=%v, Key=%v \n", name, string(buf), string(key))
 		}
 		return nil
 	})
@@ -254,6 +256,8 @@ func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Ent
 
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
+
+	fmt.Printf("DEBUG - ViewMetrics - readNumeric Expose=%v, Fromkey=%v , ToKey=%v \n", expose.Name, string(fromKey), string(tokey))
 
 	// TODO: dont return event with filled in values and no data
 	event := metrics.NewExposeNumericMetricResult(expose.Name, from, to)

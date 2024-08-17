@@ -77,23 +77,23 @@ type appStore struct {
 
 func NewAppStore(devices devices.Repository, metrics metrics.Repository, config settings.Repository) (AppStore, error) {
 
-	appconfig, err := config.Load()
-	if err != nil {
-		return nil, err
-	}
+	// appconfig, err := config.Load()
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	deviceConfigs := make(map[string]*settings.DeviceConfig)
-	for _, dev := range appconfig.Devices {
-		deviceConfigs[dev.Id] = dev
-	}
+	// deviceConfigs := make(map[string]*settings.DeviceConfig)
+	// for _, dev := range appconfig.Devices {
+	// 	deviceConfigs[dev.Id] = dev
+	// }
 
 	return &appStore{
 		metrics:        metrics,
 		devices:        devices,
 		config:         config,
-		deviceConfigs:  deviceConfigs,
+		deviceConfigs:  nil,
 		deviceIdMapper: repository.NewDeviceIdMapper(devices),
-		rateLimiter:    NewRateLimiter(appconfig),
+		rateLimiter:    NewRateLimiter(nil),
 	}, nil
 }
 
@@ -149,18 +149,18 @@ func (s *appStore) FindDeviceConfig(id string) (*settings.DeviceConfig, error) {
 func (s *appStore) StoreDevice(friendlyName string, device *devices.Device) error {
 	id := s.ResolveFriendlyName(friendlyName)
 
-	isNew, err := s.devices.Store(id, device)
+	_, err := s.devices.Store(id, device)
 	if err != nil {
 		return err
 	}
 
-	if isNew {
-		// make sure new device has a configuration if added for first time
-		_, err := s.config.FindOrAddDeviceConfigIfNotExists(id)
-		if err != nil {
-			return err
-		}
-	}
+	// if isNew {
+	// 	// make sure new device has a configuration if added for first time
+	// 	_, err := s.config.FindOrAddDeviceConfigIfNotExists(id)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	s.deviceIdMapper.UpdateId(friendlyName, id)
 	return nil

@@ -11,6 +11,7 @@ require (
 )
 
 require (
+	github.com/olahol/melody v1.2.1 // indirect
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
