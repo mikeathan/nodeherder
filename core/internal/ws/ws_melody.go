@@ -12,9 +12,65 @@ import (
 	"github.com/olahol/melody"
 )
 
+const (
+
+	// requests
+	LoadAutomations = "loadAutomations"
+	LoadDevices     = "loadDevices"
+	LoadDevice      = "loadDevice"
+	LoadDeviceList  = "loadDeviceList"
+
+	SaveAutomation          = "saveAutomation"
+	DeleteAutomation        = "deleteAutomation"
+	DeleteAutomationTrigger = "deleteAutomationTrigger"
+	DeviceSetValue          = "deviceSetValue"
+	DeviceRename            = "deviceRename"
+
+	SaveDeviceConfig = "saveDeviceConfig"
+	LoadAppconfig    = "loadAppConfig"
+
+	LoadMetrics = "loadMetrics"
+
+	// response
+	Automations       = "automations"
+	Devices           = "devices"
+	DeviceList        = "deviceList"
+	Device            = "device"
+	DeviceAdded       = "deviceAdded"
+	DeviceUpdated     = "deviceUpdated" // returns back updated properties of type DeviceUpdated
+	OperationFailed   = "operationFailed"
+	OperationSuccess  = "operationSuccess"
+	AutomationUpdated = "automationUpdated" // returns back upated automation
+
+	Metrics   = "metrics"
+	AppConfig = "appConfig"
+)
+
+var clientId atomic.Int64
+
+type EventMessage struct {
+	Type    string      `json:"type"`
+	Payload interface{} `json:"payload"`
+}
+
+func (e EventMessage) MarshalJSON() ([]byte, error) {
+	p := e.Payload
+	if v, ok := e.Payload.([]byte); ok {
+		p = string(v)
+	}
+	return json.Marshal(&struct {
+		Type    string      `json:"type"`
+		Payload interface{} `json:"payload"`
+	}{
+		Type:    e.Type,
+		Payload: p,
+	})
+}
+
 type EventHubMelogy interface {
 	Broadcast(eventName string, data interface{}) error
-	RegisterNewClient(conn *websocket.Conn)
+	Start()
+	Close() error
 	EmitDevices()
 	EmitDeviceList(names []string)
 	EmitDevice(name string) error
@@ -34,6 +90,7 @@ type EventHubMelogy interface {
 }
 
 type wsMelodyServer struct {
+	clients                   map[int64]bool
 	server                    *melody.Melody
 	onLoadAutomations         func() interface{}
 	onLoadDevices             func() interface{}
@@ -53,6 +110,7 @@ func NewWsHubMelody() EventHubMelogy {
 
 	wsHub := &wsMelodyServer{
 		server:                    melody.New(),
+		clients:                   map[int64]bool{},
 		onSaveAutomation:          func(payload interface{}) error { return nil },
 		onLoadMetrics:             func(interface{}) (interface{}, error) { return nil, nil },
 		onDeleteAutomation:        func(payload interface{}) (interface{}, error) { return nil, nil },
@@ -158,13 +216,18 @@ func (h *wsMelodyServer) Broadcast(eventName string, data interface{}) error {
 	return h.server.Broadcast(bytes)
 }
 
-var clientId atomic.Int64
+func (h *wsMelodyServer) Close() error {
+	utils.LogDebugf("wsMelodyServer.Close")
+	return h.server.Close()
+}
 
-func (h *wsMelodyServer) run() {
+func (h *wsMelodyServer) Start() {
+
 	h.server.HandleConnect(func(s *melody.Session) {
-		utils.LogDebugf("wsMelodyServer.run: New client connected")
+		utils.LogDebugf("wsMelodyServer: New client connected")
 		id := clientId.Add(1)
 
+		h.clients[id] = true
 		s.Set("id", id)
 
 		s.Write([]byte(fmt.Sprintf("client id %d connected", id)))
@@ -174,8 +237,23 @@ func (h *wsMelodyServer) run() {
 		if id, ok := s.Get("id"); ok {
 			s.Write([]byte(fmt.Sprintf("client id %d disconnected", id)))
 
+			h.clients[id.(int64)] = false
 			//h.server.BroadcastOthers([]byte(fmt.Sprintf("dis %d", id)), s)
 		}
+	})
+
+	h.server.HandleError(func(s *melody.Session, err error) {
+		if id, ok := s.Get("id"); ok {
+			fmt.Printf("client id %d Session error: %s\n", id, err.Error())
+		} // Handle the error
+	})
+
+	h.server.HandleClose(func(s *melody.Session, code int, reason string) error {
+		if id, ok := s.Get("id"); ok {
+			fmt.Printf("client id %d Session closed: %d, %s\n", id, code, reason)
+		}
+		// do cleanup
+		return nil
 	})
 
 	h.server.HandleMessage(func(s *melody.Session, msg []byte) {
@@ -270,17 +348,3 @@ func (c *wsMelodyServer) executeAction(payload interface{}, action func(interfac
 		c.Broadcast(OperationSuccess, nil)
 	}
 }
-
-// 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-// 		http.ServeFile(w, r, "index.html")
-// 	})
-
-// 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-// 		m.HandleRequest(w, r)
-// 	})
-
-// 	m.HandleMessage(func(s *melody.Session, msg []byte) {
-// 		m.Broadcast(msg)
-// 	})
-
-// 	http.ListenAndServe(":5000", nil)
