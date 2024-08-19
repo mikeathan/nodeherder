@@ -3,10 +3,13 @@ package ws
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
 	"node-herder/utils"
-	"time"
+	"sync/atomic"
 
 	"github.com/gorilla/websocket"
+	"github.com/olahol/melody"
 )
 
 const (
@@ -43,6 +46,8 @@ const (
 	AppConfig = "appConfig"
 )
 
+var clientId atomic.Int64
+
 type EventMessage struct {
 	Type    string      `json:"type"`
 	Payload interface{} `json:"payload"`
@@ -62,205 +67,10 @@ func (e EventMessage) MarshalJSON() ([]byte, error) {
 	})
 }
 
-const (
-	// Time allowed to write a message to the peer.
-	writeWait = 10 * time.Second
-
-	// Time allowed to read the next pong message from the peer.
-	pongWait = 60 * time.Second
-
-	// Send pings to peer with this period. Must be less than pongWait.
-	pingPeriod = (pongWait * 9) / 10
-
-	// Maximum message size allowed from peer.
-	maxMessageSize = 5 * 1048
-)
-
-type WsClient struct {
-	hub *wsServer
-
-	conn *websocket.Conn
-	send chan []byte
-}
-
-// NOTE:
-// websocket closes - then buffered channel didnt work
-// read for fix: https://stackoverflow.com/questions/66104210/gorilla-websocket-example-hangs-when-trying-to-send-data-to-a-channel-whilst-han
-func newWsClient(hub *wsServer, conn *websocket.Conn) *WsClient {
-	return &WsClient{hub: hub, conn: conn, send: make(chan []byte, 1024)}
-}
-
-func (c *WsClient) readPump() {
-	defer func() {
-		utils.LogError("readPump closed")
-		c.hub.unregister <- c
-		c.conn.Close()
-	}()
-
-	c.conn.SetReadLimit(maxMessageSize)
-	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error {
-		c.conn.SetReadDeadline(time.Now().Add(pongWait))
-		utils.LogDebugf("ws SetPongHandler")
-		return nil
-	})
-	for {
-		_, message, err := c.conn.ReadMessage()
-		if err != nil {
-			utils.LogErrorf("ws ReadMessage error: %s", err.Error())
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				utils.LogErrorf("ws IsUnexpectedCloseError : %v", err)
-			}
-			break
-		}
-		utils.LogDebugf("ws received: %s", string(message))
-		c.handleMessage(message)
-	}
-}
-
-func (c *WsClient) handleMessage(message []byte) {
-	var eventMsg = &EventMessage{}
-
-	if err := json.Unmarshal(message, &eventMsg); err != nil {
-		utils.LogWarnf("handleMessage unmarshal error: %s", err.Error())
-		return
-	}
-
-	switch eventMsg.Type {
-
-	case LoadAutomations:
-		msg := c.hub.onLoadAutomations()
-		c.Broadcast(Automations, msg)
-
-	case LoadDevices:
-		msg := c.hub.onLoadDevices()
-		c.Broadcast(Devices, msg)
-
-	// case LoadMetrics:
-	// 	c.executePayloadActionWithEvent(eventMsg.Payload, c.hub.onLoadMetrics, Metrics)
-
-	// case LoadAppconfig:
-	// 	c.executeActionWithEvent(c.hub.onLoadAppConfig, AppConfig)
-
-	// case SaveDeviceConfig:
-	// 	c.executeAction(eventMsg.Payload, c.hub.onSaveDeviceConfig, true)
-
-	case SaveAutomation:
-		c.executeAction(eventMsg.Payload, c.hub.onSaveAutomation, true)
-
-	case DeleteAutomation:
-		c.executePayloadActionWithEvent(eventMsg.Payload, c.hub.onDeleteAutomation, Automations)
-
-	case DeleteAutomationTrigger:
-		c.executePayloadActionWithEvent(eventMsg.Payload, c.hub.onDeleteAutomationTrigger, AutomationUpdated)
-
-	case DeviceSetValue:
-		c.executeAction(eventMsg.Payload, c.hub.onDeviceSetValue, false)
-
-	case DeviceRename:
-		c.executeAction(eventMsg.Payload, c.hub.onDeviceRename, false)
-
-	default:
-
-		utils.LogWarnf("Unknown event type: %s", eventMsg.Type)
-		return
-	}
-}
-
-func (c *WsClient) executeActionWithEvent(action func() (interface{}, error), successEvent string) {
-
-	result, err := action()
-	if err != nil {
-		c.Broadcast(OperationFailed, err.Error())
-	} else {
-		c.Broadcast(successEvent, result)
-	}
-}
-
-func (c *WsClient) executePayloadActionWithEvent(payload interface{}, action func(interface{}) (interface{}, error), successEvent string) {
-
-	if payload == nil {
-		c.Broadcast(OperationFailed, "payload is empty")
-		return
-	}
-
-	result, err := action(payload)
-	if err != nil {
-		c.Broadcast(OperationFailed, err.Error())
-	} else {
-		c.Broadcast(successEvent, result)
-	}
-}
-
-func (c *WsClient) executeAction(payload interface{}, action func(interface{}) error, reportSuccess bool) {
-	if payload == nil {
-		c.Broadcast(OperationFailed, "payload is empty")
-		return
-	}
-
-	err := action(payload)
-	if err != nil {
-		c.Broadcast(OperationFailed, err.Error())
-	} else if reportSuccess {
-		c.Broadcast(OperationSuccess, nil)
-	}
-}
-// TODO
-//https://github.com/olahol/melody
-func (c *WsClient) writePump() {
-	ticker := time.NewTicker(pingPeriod)
-	defer func() {
-		ticker.Stop()
-		c.conn.Close()
-	}()
-	for {
-		select {
-		case message, ok := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-
-			if !ok {
-				utils.LogErrorf("ws writePump message %s failed", string(message))
-				// The hub closed the channel.
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
-
-			w, err := c.conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				utils.LogErrorf("ws NextWriter error %s ", err.Error())
-				return
-			}
-			w.Write(message)
-			if err := w.Close(); err != nil {
-				utils.LogErrorf("ws close() error %s ", err.Error())
-				return
-			}
-		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				utils.LogErrorf("Ping error %s", err.Error())
-				return
-			}
-		}
-	}
-}
-
-func (c *WsClient) Broadcast(eventName string, data interface{}) error {
-	var wsPayload = EventMessage{Type: eventName, Payload: data}
-	bytes, err := wsPayload.MarshalJSON()
-	if err != nil {
-		utils.LogErrorf("WsClient.Broadcast failed to marshal server payload %s", err.Error())
-
-		return errors.New("failed to marshal client payload")
-	}
-	//fmt.Print(string(bytes))
-	c.send <- bytes
-	return nil
-}
-
 type EventHub interface {
 	Broadcast(eventName string, data interface{}) error
-	RegisterNewClient(conn *websocket.Conn)
+	Start()
+	Close() error
 	EmitDevices()
 	EmitDeviceList(names []string)
 	EmitDevice(name string) error
@@ -276,13 +86,12 @@ type EventHub interface {
 	OnLoadMetrics(action func(interface{}) (interface{}, error))
 	OnLoadAppConfig(action func() (interface{}, error))
 	OnSaveDeviceConfig(func(payload interface{}) error)
+	HandleRequest(w http.ResponseWriter, r *http.Request) error
 }
 
 type wsServer struct {
-	clients                   map[*WsClient]bool
-	broadcast                 chan []byte
-	register                  chan *WsClient
-	unregister                chan *WsClient
+	clients                   map[int64]bool
+	server                    *melody.Melody
 	onLoadAutomations         func() interface{}
 	onLoadDevices             func() interface{}
 	onLoadDeviceList          (func(ids []string) interface{})
@@ -298,12 +107,10 @@ type wsServer struct {
 }
 
 func NewWsHub() EventHub {
-	wsHub := &wsServer{
-		clients:    map[*WsClient]bool{},
-		broadcast:  make(chan []byte),
-		register:   make(chan *WsClient),
-		unregister: make(chan *WsClient),
 
+	wsHub := &wsServer{
+		server:                    melody.New(),
+		clients:                   map[int64]bool{},
 		onSaveAutomation:          func(payload interface{}) error { return nil },
 		onLoadMetrics:             func(interface{}) (interface{}, error) { return nil, nil },
 		onDeleteAutomation:        func(payload interface{}) (interface{}, error) { return nil, nil },
@@ -318,28 +125,11 @@ func NewWsHub() EventHub {
 		onSaveDeviceConfig:        func(payload interface{}) error { return nil },
 	}
 
-	go wsHub.run()
 	return wsHub
 }
 
-func (h *wsServer) EmitDevice(name string) error {
-	msg, err := h.onLoadDevice(name)
-	if err != nil {
-		return err
-	}
-	h.Broadcast(Device, msg)
-	return nil
-}
-
-func (h *wsServer) EmitDeviceList(ids []string) {
-	msg := h.onLoadDeviceList(ids)
-
-	h.Broadcast(DeviceList, msg)
-}
-
-func (h *wsServer) EmitDevices() {
-	msg := h.onLoadDevices()
-	h.Broadcast(Devices, msg)
+func (h *wsServer) HandleRequest(w http.ResponseWriter, r *http.Request) error {
+	return h.server.HandleRequest(w, r)
 }
 
 func (h *wsServer) OnDeviceSetValue(action func(p interface{}) error) {
@@ -390,48 +180,171 @@ func (h *wsServer) OnDeleteAutomationTrigger(action func(p interface{}) (interfa
 	h.onDeleteAutomationTrigger = action
 }
 
-func (h *wsServer) run() {
-	for {
-		select {
-		case client := <-h.register:
-			h.clients[client] = true
-			utils.LogInfo("hub: client registered")
-		case client := <-h.unregister:
-			if _, ok := h.clients[client]; ok {
-				utils.LogInfo("hub: client unregistered")
-				delete(h.clients, client)
-				close(client.send)
-			}
-		case message := <-h.broadcast:
-			for client := range h.clients {
-				select {
-				case client.send <- message:
-				default:
-					utils.LogErrorf("broadcast failed, client closed. last message %s", string(message))
-					close(client.send)
-					delete(h.clients, client)
-				}
-			}
-		}
+func (h *wsServer) EmitDevice(name string) error {
+	msg, err := h.onLoadDevice(name)
+	if err != nil {
+		return err
 	}
+	h.Broadcast(Device, msg)
+	return nil
+}
+
+func (h *wsServer) EmitDeviceList(ids []string) {
+	msg := h.onLoadDeviceList(ids)
+
+	h.Broadcast(DeviceList, msg)
+}
+
+func (h *wsServer) EmitDevices() {
+	msg := h.onLoadDevices()
+	h.Broadcast(Devices, msg)
 }
 
 func (h *wsServer) RegisterNewClient(conn *websocket.Conn) {
-	client := newWsClient(h, conn)
-	client.hub.register <- client
 
-	go client.readPump()
-	go client.writePump()
 }
 
 func (h *wsServer) Broadcast(eventName string, data interface{}) error {
 	var wsData = EventMessage{Type: eventName, Payload: data}
 	bytes, err := json.Marshal(wsData)
 	if err != nil {
-		utils.LogErrorf("wsServer.Broadcast failed to marshal server payload %s", err.Error())
+		utils.LogErrorf("wsMelodyServer.Broadcast failed to marshal server payload %s", err.Error())
 
 		return errors.New("failed to marshal server payload")
 	}
-	h.broadcast <- bytes
-	return nil
+
+	return h.server.Broadcast(bytes)
+}
+
+func (h *wsServer) Close() error {
+	utils.LogDebugf("wsMelodyServer.Close")
+	return h.server.Close()
+}
+
+func (h *wsServer) Start() {
+
+	h.server.HandleConnect(func(s *melody.Session) {
+		utils.LogDebugf("wsMelodyServer: New client connected")
+		id := clientId.Add(1)
+
+		h.clients[id] = true
+		s.Set("id", id)
+
+		//s.Write([]byte(fmt.Sprintf("client id %d connected", id)))
+	})
+
+	h.server.HandleDisconnect(func(s *melody.Session) {
+		if id, ok := s.Get("id"); ok {
+			s.Write([]byte(fmt.Sprintf("client id %d disconnected", id)))
+
+			h.clients[id.(int64)] = false
+			//h.server.BroadcastOthers([]byte(fmt.Sprintf("dis %d", id)), s)
+		}
+	})
+
+	h.server.HandleError(func(s *melody.Session, err error) {
+		if id, ok := s.Get("id"); ok {
+			fmt.Printf("client id %d Session error: %s\n", id, err.Error())
+		} // Handle the error
+	})
+
+	h.server.HandleClose(func(s *melody.Session, code int, reason string) error {
+		if id, ok := s.Get("id"); ok {
+			fmt.Printf("client id %d Session closed: %d, %s\n", id, code, reason)
+		}
+		// do cleanup
+		return nil
+	})
+
+	h.server.HandleMessage(func(s *melody.Session, msg []byte) {
+		h.handleHubEvents(msg)
+	})
+}
+
+func (c *wsServer) handleHubEvents(message []byte) {
+	var eventMsg = &EventMessage{}
+
+	if err := json.Unmarshal(message, &eventMsg); err != nil {
+		utils.LogWarnf("wsServer handleHubEvents:  unmarshal error: %s", err.Error())
+		return
+	}
+
+	switch eventMsg.Type {
+
+	case LoadAutomations:
+		msg := c.onLoadAutomations()
+		c.Broadcast(Automations, msg)
+
+	case LoadDevices:
+		msg := c.onLoadDevices()
+		c.Broadcast(Devices, msg)
+
+	// case LoadMetrics:
+	// 	c.executePayloadActionWithEvent(eventMsg.Payload, c.hub.onLoadMetrics, Metrics)
+
+	// case LoadAppconfig:
+	// 	c.executeActionWithEvent(c.hub.onLoadAppConfig, AppConfig)
+
+	// case SaveDeviceConfig:
+	// 	c.executeAction(eventMsg.Payload, c.hub.onSaveDeviceConfig, true)
+
+	case SaveAutomation:
+		c.executeAction(eventMsg.Payload, c.onSaveAutomation, true)
+
+	case DeleteAutomation:
+		c.executePayloadActionWithEvent(eventMsg.Payload, c.onDeleteAutomation, Automations)
+
+	case DeleteAutomationTrigger:
+		c.executePayloadActionWithEvent(eventMsg.Payload, c.onDeleteAutomationTrigger, AutomationUpdated)
+
+	case DeviceSetValue:
+		c.executeAction(eventMsg.Payload, c.onDeviceSetValue, false)
+
+	case DeviceRename:
+		c.executeAction(eventMsg.Payload, c.onDeviceRename, false)
+
+	default:
+
+		utils.LogWarnf("Unknown event type: %s", eventMsg.Type)
+		return
+	}
+}
+
+func (c *wsServer) executeActionWithEvent(action func() (interface{}, error), successEvent string) {
+
+	result, err := action()
+	if err != nil {
+		c.Broadcast(OperationFailed, err.Error())
+	} else {
+		c.Broadcast(successEvent, result)
+	}
+}
+
+func (c *wsServer) executePayloadActionWithEvent(payload interface{}, action func(interface{}) (interface{}, error), successEvent string) {
+
+	if payload == nil {
+		c.Broadcast(OperationFailed, "payload is empty")
+		return
+	}
+
+	result, err := action(payload)
+	if err != nil {
+		c.Broadcast(OperationFailed, err.Error())
+	} else {
+		c.Broadcast(successEvent, result)
+	}
+}
+
+func (c *wsServer) executeAction(payload interface{}, action func(interface{}) error, reportSuccess bool) {
+	if payload == nil {
+		c.Broadcast(OperationFailed, "payload is empty")
+		return
+	}
+
+	err := action(payload)
+	if err != nil {
+		c.Broadcast(OperationFailed, err.Error())
+	} else if reportSuccess {
+		c.Broadcast(OperationSuccess, nil)
+	}
 }
