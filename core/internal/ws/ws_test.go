@@ -46,6 +46,8 @@ func TestHubNewClientConnectedEventsTypesOfPayloads(t *testing.T) {
 	for _, testCase := range testCases {
 
 		wsHub := ws.NewWsHub()
+		wsHub.Start()
+
 		wsHub.OnLoadDevices(func() interface{} {
 			return testCase.Payload
 		})
@@ -77,6 +79,8 @@ func TestHubNewClientEventsAreReceived(t *testing.T) {
 	var expectedMessage = "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"
 
 	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
 	h := api.NewWsHandler(wsHub)
 
 	for i := 0; i < 4; i++ {
@@ -101,11 +105,15 @@ func TestHubNewClientEventsAreReceived(t *testing.T) {
 		defer s.Close()
 		defer wsConn.Close()
 	}
+
+	defer wsHub.Close()
+
 }
 
 func TestHandlingLoadAutomationsMessage(t *testing.T) {
 
 	wsHub := ws.NewWsHub()
+	wsHub.Start()
 
 	// input data
 	inputTriggers := createTestAutomation()
@@ -117,10 +125,14 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 	h := api.NewWsHandler(wsHub)
 	s, wsConn := NewTestWsServer(t, h)
 
+	defer wsHub.Close()
+	defer s.Close()
+	//defer wsConn.Close()
+
 	wsData := &ws.EventMessage{Type: ws.LoadAutomations, Payload: nil}
 	msg, err := wsData.MarshalJSON()
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 
 	SendMessage(t, wsConn, msg)
@@ -196,14 +208,12 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 			}
 		}
 	}
-
-	defer s.Close()
-	defer wsConn.Close()
 }
 
 func TestHandlingLoadDevicesMessage(t *testing.T) {
 
 	wsHub := ws.NewWsHub()
+	wsHub.Start()
 
 	// input data
 	inputDevices := createTestDevices()
@@ -218,7 +228,7 @@ func TestHandlingLoadDevicesMessage(t *testing.T) {
 	wsData := &ws.EventMessage{Type: ws.LoadDevices, Payload: nil}
 	msg, err := wsData.MarshalJSON()
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 
 	SendMessage(t, wsConn, msg)
@@ -293,6 +303,7 @@ func TestHandlingLoadDevicesMessage(t *testing.T) {
 
 	defer s.Close()
 	defer wsConn.Close()
+	defer wsHub.Close()
 }
 
 // TODO:
@@ -401,6 +412,8 @@ func TestSaveAutomation(t *testing.T) {
 	}
 
 	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
 	h := api.NewWsHandler(wsHub)
 	s, wsConn := NewTestWsServer(t, h)
 
@@ -416,7 +429,7 @@ func TestSaveAutomation(t *testing.T) {
 		wsData := &ws.EventMessage{Type: ws.SaveAutomation, Payload: newItem}
 		msg, err := wsData.MarshalJSON()
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatal(err.Error())
 		}
 
 		SendMessage(t, wsConn, msg)
@@ -445,6 +458,7 @@ func TestSaveAutomation(t *testing.T) {
 
 	defer s.Close()
 	defer wsConn.Close()
+	wsHub.Close()
 }
 
 func TestDeleteAutomation(t *testing.T) {
@@ -464,6 +478,8 @@ func TestDeleteAutomation(t *testing.T) {
 	}
 
 	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
 	h := api.NewWsHandler(wsHub)
 	s, wsConn := NewTestWsServer(t, h)
 
@@ -476,7 +492,7 @@ func TestDeleteAutomation(t *testing.T) {
 		wsData := &ws.EventMessage{Type: ws.DeleteAutomation, Payload: testCase.payload}
 		msg, err := wsData.MarshalJSON()
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatal(err.Error())
 		}
 
 		SendMessage(t, wsConn, msg)
@@ -523,6 +539,8 @@ func TestDeleteAutomationTrigger(t *testing.T) {
 	}
 
 	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
 	h := api.NewWsHandler(wsHub)
 	s, wsConn := NewTestWsServer(t, h)
 
@@ -568,7 +586,7 @@ func TestDeleteAutomationTrigger(t *testing.T) {
 		wsData := &ws.EventMessage{Type: ws.DeleteAutomationTrigger, Payload: testCase.payload}
 		msg, err := wsData.MarshalJSON()
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatal(err.Error())
 		}
 
 		SendMessage(t, wsConn, msg)
@@ -603,6 +621,8 @@ func TestLoadAppConfigMessage(t *testing.T) {
 
 	inputAppConfig := createAppconfig()
 	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
 	wsHub.OnLoadAppConfig(func() (interface{}, error) {
 		return inputAppConfig, nil
 	})
@@ -610,13 +630,14 @@ func TestLoadAppConfigMessage(t *testing.T) {
 	h := api.NewWsHandler(wsHub)
 	s, wsConn := NewTestWsServer(t, h)
 
+	defer wsHub.Close()
 	defer s.Close()
 	defer wsConn.Close()
 
 	wsData := &ws.EventMessage{Type: ws.LoadAppconfig, Payload: nil}
 	msg, err := wsData.MarshalJSON()
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 
 	SendMessage(t, wsConn, msg)
@@ -672,6 +693,8 @@ func TestSaveDeviceConfigMessage(t *testing.T) {
 
 	modifiedDevConfig := inputAppConfig.Devices["x0333444"]
 	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
 	wsHub.OnSaveDeviceConfig(func(p interface{}) error {
 
 		bytes := []byte(p.(string))
@@ -710,7 +733,7 @@ func TestSaveDeviceConfigMessage(t *testing.T) {
 	wsData := &ws.EventMessage{Type: ws.SaveDeviceConfig, Payload: reqBytes}
 	msg, err := wsData.MarshalJSON()
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 
 	SendMessage(t, wsConn, msg)
@@ -734,6 +757,7 @@ func TestSaveDeviceConfigMessage(t *testing.T) {
 func TestHandlingLoadMetricsMessage(t *testing.T) {
 
 	wsHub := ws.NewWsHub()
+	wsHub.Start()
 
 	now := time.Now()
 
@@ -777,12 +801,12 @@ func TestHandlingLoadMetricsMessage(t *testing.T) {
 	req.To = to.UnixMilli()
 	reqBytes, err := utils_test.StructToBytes(req)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	wsData := &ws.EventMessage{Type: ws.LoadMetrics, Payload: reqBytes}
 	msg, err := wsData.MarshalJSON()
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 
 	defer s.Close()

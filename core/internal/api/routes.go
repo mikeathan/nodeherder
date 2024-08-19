@@ -8,8 +8,6 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/utils"
 	"regexp"
-
-	"github.com/gorilla/websocket"
 )
 
 type Route struct {
@@ -89,25 +87,13 @@ func NewWsHandler(hub ws.EventHub) *WsHandler {
 	}
 }
 
-var (
-	websocketUpgrader = websocket.Upgrader{
-		ReadBufferSize:  4096,
-		WriteBufferSize: 4096,
-		CheckOrigin:     func(r *http.Request) bool { return true }, // for debug only ??
-		Error: func(w http.ResponseWriter, r *http.Request, status int, reason error) {
-			http.Error(w, reason.Error(), status)
-		},
-	}
-)
-
 func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	conn, err := websocketUpgrader.Upgrade(w, r, nil)
+	err := h.hub.HandleRequest(w, r)
 	if err != nil {
-		utils.LogErrorf("websocketUpgrader error %s", err.Error())
+		utils.LogErrorf("WsHandler: HandleRequest error %s", err.Error())
 		return
 	}
 
-	h.hub.RegisterNewClient(conn)
 	utils.LogInfo("WsHandler: client connected")
 }
 

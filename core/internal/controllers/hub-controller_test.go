@@ -262,7 +262,7 @@ func TestHubCreatesNewDeviceConfigurationsforNewDevices(t *testing.T) {
 			t.Fatalf("device not found. err %v ", err)
 		}
 		// update values and store for assertions
-		cfg.RateLimit = (id +1) * 2 // 10 ms
+		cfg.RateLimit = (id + 1) * 2 // 10 ms
 		cfg.Disabled = true
 		cfg.MetricsEnabled = true
 		store.SaveDeviceConfig(cfg)

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"node-herder/internal/automations"
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
@@ -20,8 +21,24 @@ import (
 )
 
 // Mock EventHub
+
+// TODO: get rid of this. we only used it to have a differnet mocked implementation of Publish
 type MockEventHub struct {
 	MockBroadcastEvent func(eventName string, data interface{}) error
+}
+
+func (w *MockEventHub) Start() {
+	fmt.Println("EventHub: Mocked Start")
+}
+
+func (w *MockEventHub) Close() error {
+	fmt.Println("EventHub: Mocked Close")
+	return nil
+}
+
+func (s *MockEventHub) HandleRequest(w http.ResponseWriter, r *http.Request) error {
+	fmt.Println("EventHub: Mocked HandleRequest")
+	return nil
 }
 
 func (w *MockEventHub) Broadcast(eventName string, data interface{}) error {
@@ -166,60 +183,74 @@ func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 type NopWsServer struct {
 }
 
+func (w *NopWsServer) Start() {
+	fmt.Println("WsServer: Mocked Start")
+}
+
+func (w *NopWsServer) Close() error {
+	fmt.Println("WsServer: Mocked Close")
+	return nil
+}
+
+func (s *NopWsServer) HandleRequest(w http.ResponseWriter, r *http.Request) error {
+	fmt.Println("WsServer: Mocked HandleRequest")
+	return nil
+}
+
 func (w *NopWsServer) Broadcast(eventName string, data interface{}) error {
-	fmt.Println("Empty Broadcast")
+	fmt.Println("WsServer: Mocked Broadcast")
 	return nil
 }
 func (w *NopWsServer) EmitDevice(name string) error {
-	fmt.Println("Empty EmitDevice")
+	fmt.Println("WsServer: Mocked EmitDevice")
 	return nil
 }
 func (w *NopWsServer) EmitDevices() {
-	fmt.Println("Empty EmitDevices")
+	fmt.Println("WsServer: Mocked EmitDevices")
 }
 
 func (w *NopWsServer) EmitDeviceList(names []string) {
-	fmt.Println("Empty EmitDeviceList")
+	fmt.Println("WsServer: Mocked EmitDeviceList")
 }
 
 func (w *NopWsServer) RegisterNewClient(conn *websocket.Conn) {
-	fmt.Println("Empty RegisterNewClient")
+	fmt.Println("WsServer: Mocked RegisterNewClient")
 }
 
 func (w *NopWsServer) OnLoadAutomations(action func() interface{}) {
-	fmt.Println("Empty OnLoadAutomations")
+	fmt.Println("WsServer: Mocked OnLoadAutomations")
 }
 
 func (w *NopWsServer) OnDeviceSetValue(action func(payload interface{}) error) {
-	fmt.Println("Empty OnDeviceSetValue")
+	fmt.Println("WsServer: Mocked OnDeviceSetValue")
 }
 
 func (w *NopWsServer) OnLoadMetrics(action func(interface{}) (interface{}, error)) {
-	fmt.Println("Empty OnLoadMetrics")
+	fmt.Println("WsServer: Mocked OnLoadMetrics")
 }
 
 func (w *NopWsServer) OnDeviceRename(P func(payload interface{}) error) {
-	fmt.Println("Empty OnDeviceRename")
+	fmt.Println("WsServer: Mocked OnDeviceRename")
 }
 
 func (w *NopWsServer) OnLoadDevice(action func(id string) (interface{}, error)) {
-	fmt.Println("Empty OnLoadDevice")
+	fmt.Println("WsServer: Mocked OnLoadDevice")
 }
 
 func (w *NopWsServer) OnLoadDeviceList(action func(names []string) interface{}) {
-	fmt.Println("Empty OnLoadDeviceList")
+	fmt.Println("WsServer: Mocked OnLoadDeviceList")
 }
 
 func (w *NopWsServer) OnLoadDevices(action func() interface{}) {
-	fmt.Println("Empty OnLoadDevices")
+	fmt.Println("WsServer: Mocked OnLoadDevices")
 }
 
 func (w *NopWsServer) OnSaveAutomation(action func(p interface{}) error) {
-	fmt.Println("Empty OnSaveAutomation")
+	fmt.Println("WsServer: Mocked OnSaveAutomation")
 }
 
 func (w *NopWsServer) OnDeleteAutomation(action func(p interface{}) (interface{}, error)) {
-	fmt.Println("Empty OnDeleteAutomation")
+	fmt.Println("WsServer: Mocked OnDeleteAutomation")
 }
 
 func (w *NopWsServer) OnDeleteAutomationTrigger(action func(p interface{}) (interface{}, error)) {
@@ -227,11 +258,11 @@ func (w *NopWsServer) OnDeleteAutomationTrigger(action func(p interface{}) (inte
 }
 
 func (w *NopWsServer) OnLoadAppConfig(action func() (interface{}, error)) {
-	fmt.Println("Empty OnLoadAppConfig")
+	fmt.Println("WsServer: Mocked OnLoadAppConfig")
 
 }
 func (w *NopWsServer) OnSaveDeviceConfig(func(payload interface{}) error) {
-	fmt.Println("Empty OnSaveDeviceConfig")
+	fmt.Println("WsServer: Mocked OnSaveDeviceConfig")
 }
 
 // Mock devices Repository
