@@ -119,9 +119,37 @@ type wsServer struct {
 	onSaveDeviceConfig        func(interface{}) error
 }
 
+// func New() *Melody {
+// 	upgrader := &websocket.Upgrader{
+// 		ReadBufferSize:  1024,
+// 		WriteBufferSize: 1024,
+// 		CheckOrigin:     func(r *http.Request) bool { return true },
+// 	}
+
+// 	hub := newHub()
+
+// 	go hub.run()
+
+// 	return &Melody{
+// 		Config:                   newConfig(),
+// 		Upgrader:                 upgrader,
+// 		messageHandler:           func(*Session, []byte) {},
+// 		messageHandlerBinary:     func(*Session, []byte) {},
+// 		messageSentHandler:       func(*Session, []byte) {},
+// 		messageSentHandlerBinary: func(*Session, []byte) {},
+// 		errorHandler:             func(*Session, error) {},
+// 		closeHandler:             nil,
+// 		connectHandler:           func(*Session) {},
+// 		disconnectHandler:        func(*Session) {},
+// 		pongHandler:              func(*Session) {},
+// 		hub:                      hub,
+// 	}
+// }
+
 func NewWsHub() EventHub {
 
 	server := melody.New()
+	server.Upgrader.ReadBufferSize = maxMessageSize
 	server.Config.PingPeriod = pingPeriod
 	server.Config.PongWait = pongWait
 	server.Config.WriteWait = writeWait
