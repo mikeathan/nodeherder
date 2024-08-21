@@ -98,11 +98,8 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 			err = bucket.Put(key, buf)
 
 			if err != nil {
-				fmt.Printf("DEBUG - StoreMetrics ERROR: Expose=%v, Data=%v, Key=%v ERROR=%v\n", name, string(buf), string(key), err.Error())
 				return err
 			}
-
-			fmt.Printf("DEBUG - StoreMetrics: Expose=%v, Data=%v, Key=%v \n", name, string(buf), string(key))
 		}
 		return nil
 	})
@@ -254,8 +251,6 @@ func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Ent
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
 
-	fmt.Printf("DEBUG - ViewMetrics - readNumeric Expose=%v, Fromkey=%v , ToKey=%v \n", expose.Name, string(fromKey), string(tokey))
-
 	// TODO: dont return event with filled in values and no data
 	event := metrics.NewExposeNumericMetricResult(expose.Name, from, to)
 
@@ -288,19 +283,6 @@ func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devi
 		return nil, fmt.Errorf("expose type %v not supported", expose.Type)
 	}
 }
-
-// func kindFromExposeType(expose *devices.Entity) reflect.Kind {
-// 	switch expose.Type {
-// 	case "numeric":
-// 		return reflect.Float32
-// 	case "binary":
-// 		return reflect.String
-// 	case "enum":
-// 		return reflect.Int
-// 	}
-
-// 	return reflect.Interface
-// }
 
 func (s *MetricsRepo) readTimestampFromKey(id string, data []byte) (time.Time, error) {
 	customFormat := "2006-01-02T15:04:05.000000000Z"

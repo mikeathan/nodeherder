@@ -44,7 +44,7 @@ export const getDateRange = (
   const date = new Date();
   date.setHours(hours);
 
-  return { from: now, to: date };
+  return { from: date, to: now };
 };
 
 export const getWeekStartEndDate = (): {
