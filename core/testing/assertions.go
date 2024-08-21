@@ -68,7 +68,6 @@ func AssertNumericExposeEvent(expose *devices.Entity, event metrics.ExposeResult
 		eventValue := numericData.Y
 		for insertIdx, insertTs := range timestamps {
 			insertTsUnix := insertTs.UnixMilli()
-
 			if eventTimestamp == insertTsUnix {
 				tsFound = true
 				dataIdx = insertIdx
@@ -76,7 +75,7 @@ func AssertNumericExposeEvent(expose *devices.Entity, event metrics.ExposeResult
 			}
 		}
 		if !tsFound {
-			t.Fatalf(fmt.Sprintf("Timestamp not found %v", eventTimestamp))
+			t.Fatalf(fmt.Sprintf("Timestamp not found %v,  timestamp: %v", eventTimestamp, time.UnixMilli(eventTimestamp).UTC()))
 		}
 
 		wantValue := values[dataIdx]
@@ -126,7 +125,7 @@ func AssertBinaryExposeEvent(expose *devices.Entity, event metrics.ExposeResult,
 		}
 
 		if !tsFound {
-			t.Fatalf(fmt.Sprintf("Start timestamp not found %v", eventStart))
+			t.Fatalf(fmt.Sprintf("Start timestamp not found %v, timestamp: %v", eventStart, time.UnixMilli(eventStart).UTC()))
 		}
 
 		// we are expecting the end timestamp to be the next one
@@ -180,7 +179,7 @@ func AssertEnumExposeEvent(expose *devices.Entity, event metrics.ExposeResult, t
 		}
 
 		if !tsFound {
-			t.Fatalf(fmt.Sprintf("Start timestamp not found %v", eventStart))
+			t.Fatalf(fmt.Sprintf("Start timestamp not found %v, timestamp: %v", eventStart, time.UnixMilli(eventStart).UTC()))
 		}
 
 		// we are expecting the end timestamp to be the next one

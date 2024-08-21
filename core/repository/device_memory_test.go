@@ -50,13 +50,13 @@ func TestRepositoryStoreReturnsStatusOfData(t *testing.T) {
 	device, _ := devices.CreateNewDevice("1", name, "mqtt", nil, createMockPayload(name, 50, 60.1, 23.5, 120.0))
 
 	isNew, _ := repo.Store(name, device)
-	if !isNew  {
+	if !isNew {
 		t.Fatalf("device does not exists")
 	}
 
 	device, _ = devices.CreateNewDevice("1", name, "mqtt", nil, createMockPayload(name, 100, 1.1, 12.5, 10.0))
 	isNew, _ = repo.Store(name, device)
-	if isNew  {
+	if isNew {
 		t.Fatalf("device does exists")
 	}
 }
@@ -100,23 +100,8 @@ func validateDevice(t *testing.T, dev1 *devices.Device, dev2 *devices.Device) {
 			if property != inputproperty {
 				t.Fatalf("unexpected property value")
 			}
-
 		}
 	}
-}
-
-func compareStructs(s1, s2 interface{}) bool {
-	v1 := reflect.ValueOf(s1).Elem()
-	v2 := reflect.ValueOf(s2).Elem()
-
-	for i := 0; i < v1.NumField(); i++ {
-		field1 := v1.Field(i)
-		field2 := v2.Field(i)
-		if field1.Kind() != field2.Kind() || !reflect.DeepEqual(field1.Interface(), field2.Interface()) {
-			return false
-		}
-	}
-	return true
 }
 
 func validateBridge(t *testing.T, dev1 *devices.BridgeInfo, dev2 *devices.BridgeInfo) {

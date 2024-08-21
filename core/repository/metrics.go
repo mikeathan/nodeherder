@@ -88,8 +88,6 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 			return err
 		}
 
-		fmt.Printf("DEBUG - StoreMetrics: Device=%v \n", id)
-
 		for name, value := range data {
 			buf, err := json.Marshal(value)
 			if err != nil {
@@ -211,7 +209,6 @@ func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Enti
 		}
 	}
 	return events, nil
-
 }
 
 func (s *MetricsRepo) readEnumValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeTimeRangeMetricsResult, error) {

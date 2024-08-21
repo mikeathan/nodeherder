@@ -322,6 +322,10 @@ func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
 		}
 	}
 
+	// Update device properties
+	defer device.mutex.Unlock()
+	device.mutex.Lock()
+
 	if updatePackage.HasData() {
 
 		for name := range propertiesWhitelist {
@@ -333,9 +337,6 @@ func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
 			}
 		}
 	}
-	// Update device properties
-	defer device.mutex.Unlock()
-	device.mutex.Lock()
 
 	if device.Properties[availabilityKey] != online {
 		device.Properties[availabilityKey] = online

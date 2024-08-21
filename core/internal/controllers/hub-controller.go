@@ -99,8 +99,8 @@ func (h *HubController) registerEventHubEvents() {
 			return nil, fmt.Errorf("LoadDeviceMetricsRequest failed. Device %s not found", req.Id)
 		}
 
-		from := time.Unix(req.From, 0)
-		to := time.Unix(req.To, 0)
+		from := time.Unix(req.From, 0).UTC()
+		to := time.Unix(req.To, 0).UTC()
 		fmt.Printf("DEBUG - metrics request with from %s to %s \n", from, to)
 		res, err := h.store.ViewMetrics(device, from, to)
 

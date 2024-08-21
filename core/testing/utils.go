@@ -329,7 +329,7 @@ func CreateDateTimeTimestamps(numberOfDays int, numberOfHours int, numberOfMinut
 	for d := 1; d <= numberOfDays; d++ {
 		for h := 0; h < numberOfHours; h++ {
 			for m := 0; m < numberOfMinutes; m++ {
-				timestamp := time.Date(year, month, currentDay, hours+h, minutes+m, now.Second(), now.Nanosecond(), time.UTC)
+				timestamp := time.Date(year, month, currentDay, hours+h, minutes+m, 0, 0, time.UTC)
 				timestamps = append(timestamps, timestamp)
 			}
 		}
@@ -339,6 +339,35 @@ func CreateDateTimeTimestamps(numberOfDays int, numberOfHours int, numberOfMinut
 	return timestamps
 }
 
+func CreateFullDateTimeTimestamps(numberOfDays int, numberOfHours int, numberOfMinutes int) []time.Time {
+	var timestamps []time.Time
+	now := time.Now()
+	year := now.Year()
+	month := now.Month()
+	today := now.Day()
+	hours := 0
+	minutes := 0
+
+	if numberOfMinutes <= 0 {
+		numberOfMinutes = 1
+	}
+	random := NewRanomValueGenerator(time.Now().UnixNano())
+	currentDay := (today + 1) - numberOfDays
+
+	for d := 1; d <= numberOfDays; d++ {
+		for h := 0; h < numberOfHours; h++ {
+			for m := 0; m < numberOfMinutes; m++ {
+				seconds := random.GenerateRandomValue(0, 59)
+				nanoseconds := random.GenerateRandomValue(0, 999999999)
+				timestamp := time.Date(year, month, currentDay, hours+h, minutes+m, seconds, nanoseconds, time.UTC)
+				timestamps = append(timestamps, timestamp)
+			}
+		}
+		currentDay++
+	}
+
+	return timestamps
+}
 func CreateFloatValues(numOfItems int) []float32 {
 	var values []float32 = make([]float32, numOfItems)
 	for i := 0; i < numOfItems; i++ {
@@ -346,8 +375,6 @@ func CreateFloatValues(numOfItems int) []float32 {
 	}
 	return values
 }
-
-var mockEnums = []string{"hot", "cold", "cooler", "warm"}
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 

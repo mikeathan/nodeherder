@@ -9,9 +9,7 @@ import (
 	"node-herder/repository"
 	utils_test "node-herder/testing"
 	"os"
-	"reflect"
 	"sort"
-	"strings"
 	"testing"
 	"time"
 )
@@ -76,10 +74,10 @@ func TestSingleExposeValueUpdatesDeviceTimeRangeMetrics(t *testing.T) {
 	defer os.Remove(tempfile)
 
 	id := "x0000"
-	timestamps := utils_test.CreateDateTimeTimestamps(1, 24, 1)
+	timestamps := utils_test.CreateFullDateTimeTimestamps(1, 24, 1)
 	values := utils_test.CreateFloatValues(24)
-	from := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC)
-	to := time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)
+	from := time.Date(now.Year(), now.Month(), now.Day()-2, 15, 0, 0, 0, time.UTC)
+	to := time.Date(now.Year(), now.Month(), now.Day(), 23, 30, 0, 0, time.UTC)
 
 	mockClock := mocks.NewMockClock(func() time.Time {
 		return time.Now()
@@ -96,7 +94,7 @@ func TestSingleExposeValueUpdatesDeviceTimeRangeMetrics(t *testing.T) {
 
 	fmt.Println("total timestamps: ", len(timestamps))
 
-	exposeNames := []string{"temperature", "humidity"} //, "presence", "power", "voltage", "current"}
+	exposeNames := []string{"temperature", "humidity", "presence", "power", "voltage", "current"}
 
 	dev := createMockDeviceWithExposes(id, deviceName, exposeNames, "numeric", now, nil)
 
@@ -692,25 +690,4 @@ func createMockDevice(id string, name string, numOfExposes int, exposeType strin
 	}
 
 	return device1
-}
-
-func kindFromString(kindStr string) (reflect.Kind, bool) {
-	kindStr = strings.ToLower(kindStr)
-	switch kindStr {
-
-	case "int", "int8", "int16", "int32", "int64":
-		return reflect.Int, true
-	case "uint", "uint8", "uint16", "uint32", "uint64":
-		return reflect.Uint, true
-	case "float32":
-		return reflect.Float32, true
-	case "float64":
-		return reflect.Float64, true
-	case "bool":
-		return reflect.Bool, true
-	case "string":
-		return reflect.String, true
-	default:
-		return reflect.Invalid, false
-	}
 }
