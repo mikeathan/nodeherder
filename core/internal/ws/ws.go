@@ -261,21 +261,27 @@ func (h *wsServer) Start() {
 			s.Write([]byte(fmt.Sprintf("client id %d disconnected", id)))
 
 			h.clients[id.(int64)] = false
-			//h.server.BroadcastOthers([]byte(fmt.Sprintf("dis %d", id)), s)
+			h.server.BroadcastOthers([]byte(fmt.Sprintf("dis %d", id)), s)
+		} else {
+			fmt.Println("client diconnected")
 		}
 	})
 
 	h.server.HandleError(func(s *melody.Session, err error) {
 		if id, ok := s.Get("id"); ok {
 			fmt.Printf("client id %d Session error: %s\n", id, err.Error())
-		} // Handle the error
+		} else {
+			fmt.Printf("client Session error: %s\n", err.Error())
+		}
 	})
 
 	h.server.HandleClose(func(s *melody.Session, code int, reason string) error {
 		if id, ok := s.Get("id"); ok {
 			fmt.Printf("client id %d Session closed: %d, %s\n", id, code, reason)
+		} else {
+			fmt.Println("client session closed")
 		}
-		// do cleanup
+
 		return nil
 	})
 
@@ -283,6 +289,7 @@ func (h *wsServer) Start() {
 		// Check message size here:
 		if len(msg) > maxMessageSize {
 			// Handle message too large error
+			fmt.Println("message too large")
 			s.CloseWithMsg([]byte(fmt.Sprintf("%d message too large", websocket.CloseMessageTooBig)))
 			return
 		}
@@ -308,14 +315,14 @@ func (c *wsServer) handleHubEvents(message []byte) {
 		msg := c.onLoadDevices()
 		c.Broadcast(Devices, msg)
 
-	// case LoadMetrics:
-	// 	c.executePayloadActionWithEvent(eventMsg.Payload, c.hub.onLoadMetrics, Metrics)
+	case LoadMetrics:
+		c.executePayloadActionWithEvent(eventMsg.Payload, c.onLoadMetrics, Metrics)
 
-	// case LoadAppconfig:
-	// 	c.executeActionWithEvent(c.hub.onLoadAppConfig, AppConfig)
+	case LoadAppconfig:
+		c.executeActionWithEvent(c.onLoadAppConfig, AppConfig)
 
-	// case SaveDeviceConfig:
-	// 	c.executeAction(eventMsg.Payload, c.hub.onSaveDeviceConfig, true)
+	case SaveDeviceConfig:
+		c.executeAction(eventMsg.Payload, c.onSaveDeviceConfig, true)
 
 	case SaveAutomation:
 		c.executeAction(eventMsg.Payload, c.onSaveAutomation, true)

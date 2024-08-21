@@ -39,6 +39,8 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, ctx c
 func Register(port int, store store.AppStore, config mqtt.MqttConfig, ctx context.Context) *api.ApiServer {
 
 	ws := ws.NewWsHub()
+	ws.Start()
+
 	mqtt := mqtt.NewMqttClient(config)
 
 	hub := controllers.RegisterHubController(ws, store, mqtt, ctx)

@@ -52,7 +52,7 @@ func TestHubNewClientConnectedEventsTypesOfPayloads(t *testing.T) {
 			return testCase.Payload
 		})
 		h := api.NewWsHandler(wsHub)
-		s, wsConn := NewTestWsServer(t, h)
+		_, wsConn := NewTestWsServer(t, h)
 		wsHub.Broadcast(testCase.Event, testCase.Payload)
 
 		reply := receiveWSMessage(t, wsConn)
@@ -67,9 +67,12 @@ func TestHubNewClientConnectedEventsTypesOfPayloads(t *testing.T) {
 			t.Fatalf("Expected message %+v', got '%+v'", wantData, gotData)
 		}
 
-		defer s.Close()
-		defer wsConn.Close()
-		wsConn.Close()
+		
+		//defer s.Close()
+		//defer wsConn.Close()
+		//wsConn.Close()
+
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 

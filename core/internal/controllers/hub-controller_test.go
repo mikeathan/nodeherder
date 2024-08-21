@@ -224,7 +224,7 @@ func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *tes
 
 }
 
-func TestHubCreatesNewDeviceConfigurationsforNewDevices(t *testing.T) {
+func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}

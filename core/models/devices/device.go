@@ -76,7 +76,7 @@ type Device struct {
 	availabilityTicker      time.Ticker
 	availablityDone         chan bool
 	availabilityTimeoutSecs int
-	mutex                   sync.Mutex
+	mutex                   sync.RWMutex
 }
 
 func NewDevice(id string) *Device {
@@ -92,7 +92,7 @@ func NewDevice(id string) *Device {
 		availabilityTicker:      time.Ticker{},
 		availablityDone:         make(chan bool, 1),
 		availabilityTimeoutSecs: 3600,
-		mutex:                   sync.Mutex{},
+		mutex:                   sync.RWMutex{},
 	}
 }
 
@@ -333,6 +333,9 @@ func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
 			}
 		}
 	}
+	// Update device properties
+	defer device.mutex.Unlock()
+	device.mutex.Lock()
 
 	if device.Properties[availabilityKey] != online {
 		device.Properties[availabilityKey] = online
@@ -348,6 +351,39 @@ func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
 
 	device.Properties[lastSeenKey] = payload[lastSeenKey] // we need that.
 	return updatePackage
+}
+
+func (device *Device) LastSeen() (time.Time, error) {
+
+	defer device.mutex.RUnlock()
+	device.mutex.RLock()
+
+	lastSeenStr, _ := device.Properties[lastSeenKey].(string)
+	lastSeen, err := time.Parse(time.RFC3339, lastSeenStr)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return lastSeen, nil
+}
+
+func (device *Device) isAvailable() bool {
+
+	defer device.mutex.RUnlock()
+	device.mutex.RLock()
+
+	return device.Properties[availabilityKey] == online
+}
+
+func (device *Device) setAvailable(value bool) {
+
+	defer device.mutex.Unlock()
+	device.mutex.Lock()
+	if value {
+		device.Properties[availabilityKey] = online
+	} else {
+		device.Properties[availabilityKey] = offline
+	}
 }
 
 func (device *Device) Dispose() {
@@ -371,7 +407,7 @@ func (device *Device) Monitor(timeoutInSecs int, onChangeCallback func(p interfa
 			select {
 			case <-device.availablityDone:
 
-				device.Properties[availabilityKey] = offline
+				device.setAvailable(false)
 				utils.LogInfof("device %s availability timer killed", device.Id)
 
 				// todo: move it in one place
@@ -385,12 +421,11 @@ func (device *Device) Monitor(timeoutInSecs int, onChangeCallback func(p interfa
 
 			case <-device.availabilityTicker.C:
 
-				if device.Properties[availabilityKey] == offline {
+				if !device.isAvailable() {
 					return
 				}
 
-				lastSeenStr, _ := device.Properties[lastSeenKey].(string)
-				lastSeen, err := time.Parse(time.RFC3339, lastSeenStr)
+				lastSeen, err := device.LastSeen()
 				if err != nil {
 					utils.LogErrorf("device %s failed to parse time %s", device.Id, err.Error())
 
@@ -401,7 +436,7 @@ func (device *Device) Monitor(timeoutInSecs int, onChangeCallback func(p interfa
 				diff := now.Sub(lastSeen)
 				if diff.Seconds() >= float64(timeoutInSecs) {
 
-					device.Properties[availabilityKey] = offline
+					device.setAvailable(false)
 					utils.LogInfof("device %s is offine", device.Id)
 
 					// todo: move it in one place

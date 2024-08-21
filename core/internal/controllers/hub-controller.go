@@ -271,7 +271,7 @@ func (m *HubController) deviceAdded(device *devices.Device, data map[string]inte
 		if err != nil {
 			return err
 		}
-		// m.registrar.StoreMetrics(device.FriendlyName, data)
+		m.registrar.StoreMetrics(device.FriendlyName, data)
 		return nil
 	}
 	action()
@@ -287,7 +287,7 @@ func (m *HubController) deviceUpdated(device *devices.Device, data map[string]in
 		if err != nil {
 			return err
 		}
-		//m.registrar.StoreMetrics(device.FriendlyName, data)
+		m.registrar.StoreMetrics(device.FriendlyName, data)
 		return nil
 	}
 	action()
