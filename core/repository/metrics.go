@@ -122,6 +122,10 @@ func (s *MetricsRepo) ViewExposeTimeRange(device *devices.Device, exposeName str
 		if err != nil {
 			return err
 		}
+
+		if len(event.Data) == 0 {
+			return nil
+		}
 		result.Add(event)
 		return nil
 	})
@@ -157,6 +161,10 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 
 			if err != nil {
 				return err
+			}
+
+			if len(event.Data) == 0 {
+				continue
 			}
 
 			// TODO
@@ -205,6 +213,7 @@ func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Enti
 			prevValue = &timeRangeValue{value.(string), timestamp}
 		}
 	}
+
 	return events, nil
 }
 
@@ -243,7 +252,6 @@ func (s *MetricsRepo) readEnumValues(cursor *bolt.Cursor, expose *devices.Entity
 	}
 
 	return events, nil
-
 }
 
 func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeNumericMetricsResult, error) {
@@ -267,6 +275,7 @@ func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Ent
 		truncated := utils.TruncateFloat32(value.(float32), 1)
 		event.Add(truncated, timestamp)
 	}
+
 	return event, nil
 }
 

@@ -101,16 +101,7 @@ func (h *HubController) registerEventHubEvents() {
 
 		from := time.Unix(req.From, 0).UTC()
 		to := time.Unix(req.To, 0).UTC()
-		fmt.Printf("DEBUG - metrics request with from %s to %s \n", from, to)
-		res, err := h.store.ViewMetrics(device, from, to)
-
-		if err != nil {
-			fmt.Printf("DEBUG - load metrics error %s \n", err.Error())
-		} else {
-			bytes, _ := json.Marshal(res)
-			fmt.Printf("DEBUG - load metrics result %s \n", string(bytes))
-		}
-		return res, err
+		return h.store.ViewMetrics(device, from, to)
 	})
 
 	h.eventHub.OnLoadDeviceList(func(ids []string) interface{} {
