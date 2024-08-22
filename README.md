@@ -112,8 +112,7 @@ store response in metrics store ? needs thinking if we need that
 
 Metrics TODO
 
-- fronted period selection make sure time is in UTC
-- make sure we handle metrics containing numeric and binary fields - is this already done?
 - consider sampling data if too large data set ?
-- handle time convertions in one place
-- handle results not found in view metrics
+
+problem with light now storing metrics every timei switch off or now
+problem when storing binary as bool or string

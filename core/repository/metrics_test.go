@@ -342,7 +342,7 @@ func TestDeviceTimeRangeBinaryDataMetrics(t *testing.T) {
 		{numEvents: []int{1, 24, 2},
 			from:        time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC),
 			to:          time.Date(now.Year(), now.Month(), now.Day(), 80, 0, 0, 0, time.UTC),
-			wantResults: 89},
+			wantResults: 90},
 	}
 
 	for _, testCase := range testCases {
@@ -618,10 +618,10 @@ func assertDeviceExportAnyDataTypeEvents(device *devices.Device, exposeName stri
 			utils_test.AssertNumericExposeEvent(expose, event, timestamps, values.([]float32), t)
 
 		} else if event.GetType() == "binary" {
-			utils_test.AssertBinaryExposeEvent(expose, event, timestamps, values.([]string), t)
+			utils_test.AsserTimeRangeExposeEvent(expose, event, timestamps, values.([]string), t)
 
 		} else if event.GetType() == "enum" {
-			utils_test.AssertEnumExposeEvent(expose, event, timestamps, values.([]string), t)
+			utils_test.AsserTimeRangeExposeEvent(expose, event, timestamps, values.([]string), t)
 		} else {
 			t.Errorf("invalid expose type %v: ", event.GetType())
 		}

@@ -39,9 +39,9 @@ func AssertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 		if event.GetType() == "numeric" {
 			AssertNumericExposeEvent(expose, event, timestamps, values.([]float32), t)
 		} else if event.GetType() == "binary" {
-			AssertBinaryExposeEvent(expose, event, timestamps, values.([]string), t)
+			AsserTimeRangeExposeEvent(expose, event, timestamps, values.([]string), t)
 		} else if event.GetType() == "enum" {
-			AssertEnumExposeEvent(expose, event, timestamps, values.([]string), t)
+			AsserTimeRangeExposeEvent(expose, event, timestamps, values.([]string), t)
 		} else {
 			t.Errorf("invalid expose type %v: ", event.GetType())
 		}
@@ -90,64 +90,9 @@ func AssertNumericExposeEvent(expose *devices.Entity, event metrics.ExposeResult
 		}
 		//fmt.Printf("found event %v with data: %v, timestamp: %v \n", expose.Name, event.Values[fId], foundTs)
 	}
-
 }
 
-func AssertBinaryExposeEvent(expose *devices.Entity, event metrics.ExposeResult, timestamps []time.Time, values []string, t *testing.T) {
-	binaryEvent := metrics.ToTimeRangeExposeResults(event)
-
-	if binaryEvent == nil {
-		t.Errorf("invalid expos type want binary got %v: ", event.GetType())
-	}
-
-	if binaryEvent.Name != expose.Name {
-		t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, binaryEvent.Name)
-	}
-
-	for _, binaryData := range binaryEvent.Data {
-		tsFound := false
-		dataIdx := 0
-
-		eventValue := binaryData.X
-		eventTimestamps := binaryData.Y
-
-		eventStart := eventTimestamps[0]
-		eventEnd := eventTimestamps[1]
-
-		for insertIdx, insertTs := range timestamps {
-			insertTsUnix := insertTs.UnixMilli()
-
-			if eventStart == insertTsUnix {
-				tsFound = true
-				dataIdx = insertIdx
-				break
-			}
-		}
-
-		if !tsFound {
-			t.Fatalf(fmt.Sprintf("Start timestamp not found %v, timestamp: %v", eventStart, time.UnixMilli(eventStart).UTC()))
-		}
-
-		// we are expecting the end timestamp to be the next one
-		if eventEnd != timestamps[dataIdx+1].UnixMilli() {
-			t.Fatalf(fmt.Sprintf("End timestamp not matching %v", eventEnd))
-		}
-
-		wantValue := values[dataIdx]
-		wantKind := reflect.String
-		gotKind := reflect.TypeOf(eventValue).Kind()
-		if gotKind != wantKind {
-			t.Fatalf(fmt.Sprintf("Type mismatch want: %v got: %v", wantKind.String(), gotKind.String()))
-		}
-
-		if wantValue != eventValue {
-			t.Fatalf(fmt.Sprintf("Value mismatch want:%v got: %v", wantValue, eventValue))
-		}
-		//fmt.Printf("found event %v with data: %v, timestamp: %v \n", expose.Name, event.Values[fId], foundTs)
-	}
-}
-
-func AssertEnumExposeEvent(expose *devices.Entity, event metrics.ExposeResult, timestamps []time.Time, values []string, t *testing.T) {
+func AsserTimeRangeExposeEvent(expose *devices.Entity, event metrics.ExposeResult, timestamps []time.Time, values []string, t *testing.T) {
 	enumEvent := metrics.ToTimeRangeExposeResults(event)
 
 	if enumEvent == nil {
@@ -207,44 +152,8 @@ func AssertEnumExposeEvent(expose *devices.Entity, event metrics.ExposeResult, t
 		//fmt.Printf("found event %v with data: %v, timestamp: %v \n", expose.Name, event.Values[fId], foundTs)
 	}
 }
-func AssertBinaryExposeMetricResults(wantResults metrics.ExposeResult, gotResults metrics.ExposeResult, t *testing.T) {
-	if wantResults.GetType() != gotResults.GetType() {
-		t.Fatalf("Expected type %v', got '%v'", wantResults.GetType(), gotResults.GetType())
-	}
 
-	wantBinaryResults := metrics.ToTimeRangeExposeResults(wantResults)
-	gotBinaryResults := metrics.ToTimeRangeExposeResults(gotResults)
-
-	if wantBinaryResults.Name != gotBinaryResults.Name {
-		t.Fatalf("Expected name %v', got '%v'", wantBinaryResults.Name, gotBinaryResults.Name)
-	}
-
-	if wantBinaryResults.From != gotBinaryResults.From {
-		t.Fatalf("Expected from %v', got '%v'", wantBinaryResults.From, gotBinaryResults.From)
-	}
-
-	if wantBinaryResults.To != gotBinaryResults.To {
-		t.Fatalf("Expected to %v', got '%v'", wantBinaryResults.To, gotBinaryResults.To)
-
-	}
-	for idx, wantEvent := range wantBinaryResults.Data {
-
-		gotEvent := gotBinaryResults.Data[idx]
-
-		if wantEvent.X != gotEvent.X {
-			t.Fatalf("Expected X %v', got '%v'", wantEvent.X, gotEvent.X)
-		}
-
-		for tIdx, wantTimestamp := range wantEvent.Y {
-			gotTimestamp := gotEvent.Y[tIdx]
-			if wantTimestamp != gotTimestamp {
-				t.Fatalf("Expected Y want %v', got '%v'", wantTimestamp, gotTimestamp)
-			}
-		}
-	}
-}
-
-func AssertEnumExposeMetricResults(wantResults metrics.ExposeResult, gotResults metrics.ExposeResult, t *testing.T) {
+func AssertTimeRangeExposeMetricResults(wantResults metrics.ExposeResult, gotResults metrics.ExposeResult, t *testing.T) {
 	if wantResults.GetType() != gotResults.GetType() {
 		t.Fatalf("Expected type %v', got '%v'", wantResults.GetType(), gotResults.GetType())
 	}

@@ -3,6 +3,7 @@ package metrics
 import (
 	"encoding/json"
 	"fmt"
+	"node-herder/models/devices"
 	"time"
 )
 
@@ -20,6 +21,7 @@ type DeviceMetricsResult struct {
 
 type ExposeResult interface {
 	GetType() string
+	Size() int
 }
 
 type ExposeMetricsResult struct {
@@ -28,6 +30,10 @@ type ExposeMetricsResult struct {
 
 func (e *ExposeMetricsResult) GetType() string {
 	return e.Type
+}
+
+func (e *ExposeMetricsResult) Size() int {
+	return 0
 }
 
 type ExposeNumericMetricsResult struct {
@@ -56,6 +62,10 @@ func (e *ExposeNumericMetricsResult) GetType() string {
 	return "numeric"
 }
 
+func (e *ExposeNumericMetricsResult) Size() int {
+	return len(e.Data)
+}
+
 type ExposeTimeRangeMetricsResult struct {
 	Name string            `json:"name"`
 	Type string            `json:"type"`
@@ -66,6 +76,10 @@ type ExposeTimeRangeMetricsResult struct {
 
 func (e *ExposeTimeRangeMetricsResult) GetType() string {
 	return e.Type
+}
+
+func (e *ExposeTimeRangeMetricsResult) Size() int {
+	return len(e.Data)
 }
 
 type BinaryValue struct {
@@ -121,6 +135,17 @@ func (c *ExposeNumericMetricsResult) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(res)
 }
+
+func NewExposeTimeRangeMetricResult(expose *devices.Entity, from time.Time, to time.Time) *ExposeTimeRangeMetricsResult {
+	return &ExposeTimeRangeMetricsResult{
+		Name: expose.Name,
+		Type: expose.Type,
+		From: from.UnixMilli(),
+		To:   to.UnixMilli(),
+		Data: []*TimeRangeValue{},
+	}
+}
+
 func NewExposeBinaryMetricResult(name string, from time.Time, to time.Time) *ExposeTimeRangeMetricsResult {
 	return &ExposeTimeRangeMetricsResult{
 		Name: name,
@@ -140,6 +165,7 @@ func NewExposeEnumMetricResult(name string, from time.Time, to time.Time) *Expos
 		Data: []*TimeRangeValue{},
 	}
 }
+
 func (e *ExposeTimeRangeMetricsResult) Add(value string, from time.Time, to time.Time) {
 	e.Data = append(e.Data, &TimeRangeValue{
 		X: value,

@@ -123,9 +123,10 @@ func (s *MetricsRepo) ViewExposeTimeRange(device *devices.Device, exposeName str
 			return err
 		}
 
-		if len(event.Data) == 0 {
+		if event.Size() == 0 {
 			return nil
 		}
+
 		result.Add(event)
 		return nil
 	})
@@ -163,12 +164,10 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 				return err
 			}
 
-			if len(event.Data) == 0 {
+			if event.Size() == 0 {
 				continue
 			}
 
-			// TODO
-			// check here is event is empty anddont add it to result
 			result.Add(event)
 		}
 
@@ -183,13 +182,13 @@ type timeRangeValue struct {
 	Timestamp time.Time
 }
 
-func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeTimeRangeMetricsResult, error) {
+func (s *MetricsRepo) readTimeRangeValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeTimeRangeMetricsResult, error) {
 
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
 	var prevValue *timeRangeValue = nil
 
-	events := metrics.NewExposeBinaryMetricResult(expose.Name, from, to)
+	events := metrics.NewExposeTimeRangeMetricResult(expose, from, to)
 
 	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
 		timestamp, err := s.readTimestampFromKey(expose.Name, key)
@@ -197,53 +196,20 @@ func (s *MetricsRepo) readBinaryValues(cursor *bolt.Cursor, expose *devices.Enti
 			return nil, err
 		}
 
-		value, err := utils.Unmarshal(data, reflect.String)
+		//value, err := utils.Unmarshal(data, reflect.String)
+		value := string(data)
 		if err != nil {
 			return nil, err
 		}
-
 		if prevValue == nil {
-			prevValue = &timeRangeValue{value.(string), timestamp}
+			prevValue = &timeRangeValue{value, timestamp}
 			continue
 		}
 
 		if prevValue.Value != value {
 
 			events.Add(prevValue.Value, prevValue.Timestamp, timestamp)
-			prevValue = &timeRangeValue{value.(string), timestamp}
-		}
-	}
-
-	return events, nil
-}
-
-func (s *MetricsRepo) readEnumValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeTimeRangeMetricsResult, error) {
-
-	fromKey := createKeyWithTimestamp(expose.Name, from)
-	tokey := createKeyWithTimestamp(expose.Name, to)
-	var prevValue *timeRangeValue = nil
-
-	events := metrics.NewExposeEnumMetricResult(expose.Name, from, to)
-
-	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
-		timestamp, err := s.readTimestampFromKey(expose.Name, key)
-		if err != nil {
-			return nil, err
-		}
-
-		value, err := utils.Unmarshal(data, reflect.String)
-		if err != nil {
-			return nil, err
-		}
-
-		if prevValue == nil {
-			prevValue = &timeRangeValue{value.(string), timestamp}
-			continue
-		}
-		if prevValue.Value != value {
-
-			events.Add(prevValue.Value, prevValue.Timestamp, timestamp)
-			prevValue = &timeRangeValue{value.(string), timestamp}
+			prevValue = &timeRangeValue{value, timestamp}
 		}
 	}
 
@@ -259,7 +225,6 @@ func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Ent
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
 
-	// TODO: dont return event with filled in values and no data
 	event := metrics.NewExposeNumericMetricResult(expose.Name, from, to)
 
 	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
@@ -283,11 +248,8 @@ func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devi
 
 	if expose.Type == "numeric" {
 		return s.readNumericValues(cursor, expose, from, to)
-	} else if expose.Type == "binary" {
-		return s.readBinaryValues(cursor, expose, from, to)
-	} else if expose.Type == "enum" {
-		return s.readEnumValues(cursor, expose, from, to)
-
+	} else if expose.Type == "binary" || expose.Type == "enum" {
+		return s.readTimeRangeValues(cursor, expose, from, to)
 	} else {
 		return nil, fmt.Errorf("expose type %v not supported", expose.Type)
 	}
