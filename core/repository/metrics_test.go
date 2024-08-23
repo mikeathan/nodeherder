@@ -425,6 +425,7 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 
 		"numeric": utils_test.CreateFloatValues(24),
 		"binary":  utils_test.CreateBinaryValues(24),
+		"binary":  utils_test.CreateBinaryBooleanValues(24),
 		"enum":    utils_test.CreateEnumValues(24),
 	}
 
@@ -450,7 +451,15 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 				value = v[tIdx]
 
 			} else if dataType == "binary" {
-				v, _ := values.([]string)
+				if v, ok := values.([]string); ok {
+					value = v[tIdx]
+				} else if v, ok := values.([]bool); ok {
+					value = v[tIdx]
+				} else {
+					t.Error("failed to create data type")
+				}
+			} else if dataType == "binaryBool" {
+				v, _ := values.([]bool)
 				value = v[tIdx]
 
 			} else if dataType == "enum" {

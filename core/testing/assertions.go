@@ -31,15 +31,26 @@ func AssertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 	sort.Strings(exposekeys)
 
 	idx := 0
+
 	for _, key := range exposekeys {
 
 		expose := device.Exposes[key]
 		event := result.Exposes[idx]
-
 		if event.GetType() == "numeric" {
 			AssertNumericExposeEvent(expose, event, timestamps, values.([]float32), t)
 		} else if event.GetType() == "binary" {
-			AsserTimeRangeExposeEvent(expose, event, timestamps, values.([]string), t)
+
+			stringValues := values
+			if values, ok := values.([]bool); ok {
+				stringArray := make([]string, len(values))
+				for i, b := range values {
+					stringArray[i] = fmt.Sprintf("%v", b)
+				}
+
+				stringValues = stringArray
+			}
+
+			AsserTimeRangeExposeEvent(expose, event, timestamps, stringValues.([]string), t)
 		} else if event.GetType() == "enum" {
 			AsserTimeRangeExposeEvent(expose, event, timestamps, values.([]string), t)
 		} else {

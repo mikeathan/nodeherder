@@ -3,12 +3,10 @@ package repository
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
 	"node-herder/utils"
-	"reflect"
 	"sort"
 	"sync"
 	"time"
@@ -90,22 +88,13 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 
 		for name, value := range data {
 
-			binary value can have bool or string which get encoded here wit h escaped stringbuf
-			//
-			
-			buf, err := json.Marshal(value)
-
-			///
+			buffer, err := utils.AnyToByteArray(value)
 			if err != nil {
 				return err
 			}
 
 			key := createKeyWithTimestamp(name, s.clock.Now())
-
-
-			
-
-			err = bucket.Put(key, buf)
+			err = bucket.Put(key, buffer)
 
 			if err != nil {
 				return err
@@ -206,21 +195,21 @@ func (s *MetricsRepo) readTimeRangeValues(cursor *bolt.Cursor, expose *devices.E
 			return nil, err
 		}
 
-		value, err := utils.Unmarshal(data, reflect.String)
-
-		//value = value.(string)
+		var value string
+		err = utils.ByteArrayToAny(data, &value)
 		if err != nil {
 			return nil, err
 		}
+
 		if prevValue == nil {
-			prevValue = &timeRangeValue{value.(string), timestamp}
+			prevValue = &timeRangeValue{value, timestamp}
 			continue
 		}
 
 		if prevValue.Value != value {
 
 			events.Add(prevValue.Value, prevValue.Timestamp, timestamp)
-			prevValue = &timeRangeValue{value.(string), timestamp}
+			prevValue = &timeRangeValue{value, timestamp}
 		}
 	}
 
@@ -243,12 +232,14 @@ func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Ent
 		if err != nil {
 			return nil, err
 		}
-		value, err := utils.Unmarshal(data, reflect.Float32)
+
+		var value float32
+		err = utils.ByteArrayToAny(data, &value)
 		if err != nil {
 			return nil, err
 		}
 
-		truncated := utils.TruncateFloat32(value.(float32), 1)
+		truncated := utils.TruncateFloat32(value, 1)
 		event.Add(truncated, timestamp)
 	}
 
