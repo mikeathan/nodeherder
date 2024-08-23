@@ -95,6 +95,10 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 			}
 
 			key := createKeyWithTimestamp(name, s.clock.Now())
+
+			
+			binary value can have bool or string which get encoded here wit h escaped stringbuf
+
 			err = bucket.Put(key, buf)
 
 			if err != nil {
@@ -196,20 +200,21 @@ func (s *MetricsRepo) readTimeRangeValues(cursor *bolt.Cursor, expose *devices.E
 			return nil, err
 		}
 
-		//value, err := utils.Unmarshal(data, reflect.String)
-		value := string(data)
+		value, err := utils.Unmarshal(data, reflect.String)
+
+		//value = value.(string)
 		if err != nil {
 			return nil, err
 		}
 		if prevValue == nil {
-			prevValue = &timeRangeValue{value, timestamp}
+			prevValue = &timeRangeValue{value.(string), timestamp}
 			continue
 		}
 
 		if prevValue.Value != value {
 
 			events.Add(prevValue.Value, prevValue.Timestamp, timestamp)
-			prevValue = &timeRangeValue{value, timestamp}
+			prevValue = &timeRangeValue{value.(string), timestamp}
 		}
 	}
 

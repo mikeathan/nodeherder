@@ -396,6 +396,17 @@ func CreateEnumValues(numOfItems int) []string {
 	}
 	return enums
 }
+func CreateBinaryBooleanValues(numOfItems int) []bool {
+	var values []bool = make([]bool, numOfItems)
+	var currentValue bool = false
+	for i := 0; i < numOfItems; i++ {
+		currentValue = !currentValue
+
+		values[i] = currentValue
+
+	}
+	return values
+}
 
 func CreateBinaryValues(numOfItems int) []string {
 	var values []string = make([]string, numOfItems)
