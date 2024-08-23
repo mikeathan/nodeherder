@@ -89,15 +89,21 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 		}
 
 		for name, value := range data {
+
+			binary value can have bool or string which get encoded here wit h escaped stringbuf
+			//
+			
 			buf, err := json.Marshal(value)
+
+			///
 			if err != nil {
 				return err
 			}
 
 			key := createKeyWithTimestamp(name, s.clock.Now())
 
+
 			
-			binary value can have bool or string which get encoded here wit h escaped stringbuf
 
 			err = bucket.Put(key, buf)
 
