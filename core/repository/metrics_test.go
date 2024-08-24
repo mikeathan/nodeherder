@@ -9,7 +9,6 @@ import (
 	"node-herder/repository"
 	utils_test "node-herder/testing"
 	"os"
-	"sort"
 	"testing"
 	"time"
 )
@@ -420,27 +419,23 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
 
+	testCases := []struct {
+		dataType string
+		data     any
+	}{
+		{dataType: "numeric", data: utils_test.CreateFloatValues(24)},
+		{dataType: "binary", data: utils_test.CreateBinaryValues(24)},
+		{dataType: "binary", data: utils_test.CreateBinaryBooleanValues(24)},
+		{dataType: "enum", data: utils_test.CreateEnumValues(24)},
+	}
+
 	timestamps := utils_test.CreateDateTimeTimestamps(1, 24, 1)
-	data := map[string]any{
-
-		"numeric": utils_test.CreateFloatValues(24),
-		"binary":  utils_test.CreateBinaryValues(24),
-		"binary":  utils_test.CreateBinaryBooleanValues(24),
-		"enum":    utils_test.CreateEnumValues(24),
-	}
-
-	// sort data keys
-	dataKeys := make([]string, 0, len(data))
-	for k := range data {
-		dataKeys = append(dataKeys, k)
-	}
-
-	sort.Strings(dataKeys)
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
 
-	for i, dataType := range dataKeys {
+	for i, testCase := range testCases {
+		values := testCase.data
+		dataType := testCase.dataType
 
-		values := data[dataType]
 		deviceId := fmt.Sprintf("x000%v", i)
 		deviceName := fmt.Sprintf("device %v", i)
 
@@ -481,10 +476,8 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 	}
 
 	// query and assert
-
-	for i, dataType := range dataKeys {
-
-		values := data[dataType]
+	for i, testCase := range testCases {
+		values := testCase.data
 		deviceId := fmt.Sprintf("x000%v", i)
 
 		dev := devices[deviceId]
