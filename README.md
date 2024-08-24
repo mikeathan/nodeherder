@@ -113,6 +113,3 @@ store response in metrics store ? needs thinking if we need that
 Metrics TODO
 
 - consider sampling data if too large data set ?
-
-problem with light now storing metrics every timei switch off or now - thats due to timeout set to 60 seconds
-problem when storing binary as bool or string

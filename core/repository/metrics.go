@@ -103,6 +103,8 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 		return nil
 	})
 
+	utils.LogDebugf("Store metrics for device %v", id)
+
 	return nil
 }
 
@@ -185,6 +187,7 @@ func (s *MetricsRepo) readTimeRangeValues(cursor *bolt.Cursor, expose *devices.E
 
 	fromKey := createKeyWithTimestamp(expose.Name, from)
 	tokey := createKeyWithTimestamp(expose.Name, to)
+
 	var prevValue *timeRangeValue = nil
 
 	events := metrics.NewExposeTimeRangeMetricResult(expose, from, to)
@@ -255,6 +258,46 @@ func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devi
 	} else {
 		return nil, fmt.Errorf("expose type %v not supported", expose.Type)
 	}
+}
+
+func (s *MetricsRepo) runPruningTask() {
+	go func() {
+		for {
+			time.Sleep(time.Minute) // Change it hour or day !!!!!!
+			err := s.pruneEntries(s.db, metricsBucketName)
+			if err != nil {
+				utils.LogErrorf("Error pruning entries:", err)
+			}
+		}
+	}()
+}
+func (s *MetricsRepo) pruneEntries(db *bolt.DB, bucketName string) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(bucketName))
+		if bucket == nil {
+			return fmt.Errorf("bucket not found: %s", bucketName)
+		}
+
+		c := bucket.Cursor()
+		for key, v := c.First(); key != nil; key, v = c.Next() {
+
+			fmt.Println("key", key)
+			// timestamp, err := s.readTimestampFromKey(expose.Name, key)
+
+			// expiresAt, err := strconv.ParseInt(strings.Split(k, "-")[0], 10, 64)
+			// if err != nil {
+			// 	return fmt.Errorf("error parsing expiration timestamp: %w", err)
+			// }
+
+			// if time.Now().Unix() > expiresAt {
+			// 	if err := bucket.Delete(k); err != nil {
+			// 		return fmt.Errorf("error deleting expired entry: %w", err)
+			// 	}
+			// }
+		}
+
+		return nil
+	})
 }
 
 func (s *MetricsRepo) readTimestampFromKey(id string, data []byte) (time.Time, error) {
