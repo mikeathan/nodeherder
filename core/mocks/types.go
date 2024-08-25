@@ -618,7 +618,8 @@ func (d *MockAutomationEngine[T]) deleteFromCache(name string) {
 
 // Mock Clock
 type MockClock struct {
-	callback func() time.Time
+	callback      func() time.Time
+	sleepDuration time.Duration
 }
 
 func NewMockClock(callback func() time.Time) *MockClock {
@@ -630,6 +631,15 @@ func (m *MockClock) SetMockTime(t time.Time) {
 		return t
 	}
 }
+
+func (m *MockClock) SetMockSleepDuration(d time.Duration) {
+	m.sleepDuration = d
+}
+
 func (m *MockClock) Now() time.Time {
 	return m.callback()
+}
+
+func (m *MockClock) Sleep(d time.Duration) {
+	time.Sleep(m.sleepDuration) // ignore the passed in duration and use the mock duration
 }

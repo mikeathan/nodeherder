@@ -59,8 +59,13 @@ func (s *MetricsRepo) init() error {
 	if _, err := tx.CreateBucketIfNotExists([]byte(metricsBucketName)); err != nil {
 		return err
 	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
 
-	return tx.Commit()
+	s.runPruningTask()
+	return nil
 }
 
 func (s *MetricsRepo) Close() error {
@@ -263,11 +268,18 @@ func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devi
 func (s *MetricsRepo) runPruningTask() {
 	go func() {
 		for {
-			time.Sleep(time.Minute) // Change it hour or day !!!!!!
+
+			// TODO:
+			// maybe pass duration in configuration
+			s.clock.Sleep(time.Minute) // Change it hour or day !!!!!!
+			utils.LogInfof("Start pruning bucket %v", metricsBucketName)
+
 			err := s.pruneEntries(s.db, metricsBucketName)
 			if err != nil {
-				utils.LogErrorf("Error pruning entries:", err)
+				utils.LogErrorf("Error pruning entries: %v", err)
 			}
+			utils.LogInfof("End pruning bucket %v", metricsBucketName)
+
 		}
 	}()
 }
@@ -279,9 +291,17 @@ func (s *MetricsRepo) pruneEntries(db *bolt.DB, bucketName string) error {
 		}
 
 		c := bucket.Cursor()
-		for key, v := c.First(); key != nil; key, v = c.Next() {
+		for key, _ := c.First(); key != nil; key, _ = c.Next() {
 
-			fmt.Println("key", key)
+			fmt.Println("device id", string(key))
+
+			bucket.Bucket(key).ForEach(func(k, _ []byte) error {
+				fmt.Println("device key", string(k))
+				// voc2024-08-25T18:02:52.455198804Z
+				return nil
+			})
+
+			// timestamp, err := s.readTimestampFromKey(expose.Name, key)
 			// timestamp, err := s.readTimestampFromKey(expose.Name, key)
 
 			// expiresAt, err := strconv.ParseInt(strings.Split(k, "-")[0], 10, 64)
@@ -362,3 +382,40 @@ func createKeyWithTimestamp(id string, timestamp time.Time) []byte {
 // 	log.Fatal(err)
 // }
 // }
+
+TODO reconsruct the key 
+
+func storeEntry(db *bolt.DB, bucketName string, key string, value any) error {
+	// ... (rest of your code)
+
+	// Construct the key with the timestamp prefix
+	timestamp := time.Now().Format("2006-01-02T15:04:05.000000000Z")
+	newKey := fmt.Sprintf("%s_%s", timestamp, key)
+
+	return bucket.Put([]byte(newKey), bytes)
+}
+
+func getEntry(db *bolt.DB, bucketName string, key string) (any, error) {
+	// ... (rest of your code)
+
+	// Construct the key with the timestamp prefix
+	timestamp := time.Now().Format("2006-01-02T15:04:05.000000000Z")
+	newKey := fmt.Sprintf("%s_%s", timestamp, key)
+
+	// ... (rest of your code)
+}
+
+func pruneEntries(db *bolt.DB, bucketName string, maxAge time.Duration) error {
+	// ... (rest of your code)
+
+	// Iterate over entries and parse the timestamp from the key
+	c := bucket.Cursor()
+	for k, v := c.First(); k != nil; k, v = c.Next() {
+			timestamp, err := time.Parse("2006-01-02T15:04:05.000000000Z", string(k[:23]))
+			if err != nil {
+					// Handle error
+			}
+
+			// ... (rest of your code)
+	}
+}

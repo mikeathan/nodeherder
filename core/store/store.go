@@ -97,20 +97,6 @@ func NewAppStore(devices devices.Repository, metrics metrics.Repository, config 
 	}, nil
 }
 
-// func (s *appStore) UpdateDevice(friendlyName string, device *devices.Device) error {
-
-// 	err := s.StoreDevice(friendlyName, device)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	// err = s.StoreMetrics(friendlyName, device)
-// 	// if err != nil {
-// 	// 	utils.LogErrorf("storing metrics failed %v", err.Error())
-// 	// }
-// 	return nil
-// }
-
 func (s *appStore) ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 	return s.metrics.ViewDeviceTimeRange(device, from, to)
 }

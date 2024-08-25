@@ -113,3 +113,5 @@ store response in metrics store ? needs thinking if we need that
 Metrics TODO
 
 - consider sampling data if too large data set ?
+- pruning duration in config
+- or maybe store configures prune timeout and starts service
