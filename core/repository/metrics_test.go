@@ -126,6 +126,7 @@ func TestSingleExposeValueUpdatesDeviceTimeRangeMetrics(t *testing.T) {
 	utils_test.AssertDeviceAnyDataTypeEvents(dev, result, timestamps, values, t)
 
 }
+
 func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
 
 	now := time.Now()

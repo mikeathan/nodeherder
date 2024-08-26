@@ -2,7 +2,6 @@ package repository
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
@@ -27,7 +26,7 @@ func NewMetricsRepo() (metrics.Repository, error) {
 	return NewMetricsRepoFromFile(metricsBaseFilename, &utils.RealClock{})
 }
 
-func NewMetricsRepoFromFile(filename string, clock utils.Clock) (metrics.Repository, error) {
+func NewMetricsRepoFromFile(filename string, keyGenerator metrics.TimestampedKeyGenerator) (metrics.Repository, error) {
 
 	db, err := bolt.Open(filename, 0600, nil)
 	if err != nil {
@@ -64,7 +63,7 @@ func (s *MetricsRepo) init() error {
 		return err
 	}
 
-	s.runPruningTask()
+	//s.runPruningTask()
 	return nil
 }
 
@@ -198,7 +197,7 @@ func (s *MetricsRepo) readTimeRangeValues(cursor *bolt.Cursor, expose *devices.E
 	events := metrics.NewExposeTimeRangeMetricResult(expose, from, to)
 
 	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
-		timestamp, err := s.readTimestampFromKey(expose.Name, key)
+		timestamp, err := s.readTimestampFromKey(key)
 		if err != nil {
 			return nil, err
 		}
@@ -236,7 +235,7 @@ func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Ent
 	event := metrics.NewExposeNumericMetricResult(expose.Name, from, to)
 
 	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
-		timestamp, err := s.readTimestampFromKey(expose.Name, key)
+		timestamp, err := s.readTimestampFromKey(key)
 		if err != nil {
 			return nil, err
 		}
@@ -320,24 +319,22 @@ func (s *MetricsRepo) pruneEntries(db *bolt.DB, bucketName string) error {
 	})
 }
 
-func (s *MetricsRepo) readTimestampFromKey(id string, data []byte) (time.Time, error) {
-	customFormat := "2006-01-02T15:04:05.000000000Z"
-	timestamp, err := time.Parse(customFormat, string(data[len(id):]))
+func (s *MetricsRepo) readTimestampFromKey(data []byte) (time.Time, error) {
+
+	timestamp, err := time.Parse("2006-01-02T15:04:05.000000000Z", string(data[:30]))
 	if err != nil {
 		return s.clock.Now(), err
-
 	}
 	return timestamp, nil
 }
 
 func createKeyWithTimestamp(id string, timestamp time.Time) []byte {
-	buffer := bytes.NewBuffer(nil)
-	binary.Write(buffer, binary.BigEndian, []byte(id))
+
 	customFormat := "2006-01-02T15:04:05.000000000Z"
 	timestampStr := timestamp.Format(customFormat)
-	binary.Write(buffer, binary.BigEndian, []byte(timestampStr))
+	key := fmt.Sprintf("%s_%s", timestampStr, id)
 
-	return buffer.Bytes()
+	return []byte(key)
 }
 
 // // Paginate entries
@@ -382,40 +379,3 @@ func createKeyWithTimestamp(id string, timestamp time.Time) []byte {
 // 	log.Fatal(err)
 // }
 // }
-
-TODO reconsruct the key 
-
-func storeEntry(db *bolt.DB, bucketName string, key string, value any) error {
-	// ... (rest of your code)
-
-	// Construct the key with the timestamp prefix
-	timestamp := time.Now().Format("2006-01-02T15:04:05.000000000Z")
-	newKey := fmt.Sprintf("%s_%s", timestamp, key)
-
-	return bucket.Put([]byte(newKey), bytes)
-}
-
-func getEntry(db *bolt.DB, bucketName string, key string) (any, error) {
-	// ... (rest of your code)
-
-	// Construct the key with the timestamp prefix
-	timestamp := time.Now().Format("2006-01-02T15:04:05.000000000Z")
-	newKey := fmt.Sprintf("%s_%s", timestamp, key)
-
-	// ... (rest of your code)
-}
-
-func pruneEntries(db *bolt.DB, bucketName string, maxAge time.Duration) error {
-	// ... (rest of your code)
-
-	// Iterate over entries and parse the timestamp from the key
-	c := bucket.Cursor()
-	for k, v := c.First(); k != nil; k, v = c.Next() {
-			timestamp, err := time.Parse("2006-01-02T15:04:05.000000000Z", string(k[:23]))
-			if err != nil {
-					// Handle error
-			}
-
-			// ... (rest of your code)
-	}
-}

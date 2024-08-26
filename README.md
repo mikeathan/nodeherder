@@ -115,3 +115,4 @@ Metrics TODO
 - consider sampling data if too large data set ?
 - pruning duration in config
 - or maybe store configures prune timeout and starts service
+  NEED key formatter
