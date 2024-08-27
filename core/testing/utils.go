@@ -47,7 +47,8 @@ func CreateFileStore() (store.AppStore, func(), error) {
 	mockClock := mocks.NewMockClock(func() time.Time {
 		return time.Now()
 	})
-	metricsRepo, err := repository.NewMetricsRepoFromFile(metricsTempFile, mockClock)
+	keyGenerator := metrics.NewTimestampedKeyGenerator(mockClock)
+	metricsRepo, err := repository.NewMetricsRepoFromFile(metricsTempFile, keyGenerator)
 	if err != nil {
 		return nil, nil, err
 	}

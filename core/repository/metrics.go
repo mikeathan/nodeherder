@@ -17,13 +17,13 @@ const metricsBaseFilename = "metrics.db"
 const metricsBucketName = "metrics"
 
 type MetricsRepo struct {
-	mutex *sync.RWMutex
-	db    *bolt.DB
-	clock utils.Clock
+	mutex        *sync.RWMutex
+	db           *bolt.DB
+	keyGenerator metrics.TimestampedKeyGenerator
 }
 
-func NewMetricsRepo() (metrics.Repository, error) {
-	return NewMetricsRepoFromFile(metricsBaseFilename, &utils.RealClock{})
+func NewMetricsRepo(keyGenerator metrics.TimestampedKeyGenerator) (metrics.Repository, error) {
+	return NewMetricsRepoFromFile(metricsBaseFilename, keyGenerator)
 }
 
 func NewMetricsRepoFromFile(filename string, keyGenerator metrics.TimestampedKeyGenerator) (metrics.Repository, error) {
@@ -35,9 +35,9 @@ func NewMetricsRepoFromFile(filename string, keyGenerator metrics.TimestampedKey
 	}
 	// TODO: ideally pass device configs to configure the rate limiter timeout
 	repo := &MetricsRepo{
-		mutex: &sync.RWMutex{},
-		db:    db,
-		clock: clock,
+		mutex:        &sync.RWMutex{},
+		db:           db,
+		keyGenerator: keyGenerator,
 	}
 	err = repo.init()
 	if err != nil {
@@ -97,7 +97,7 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 				return err
 			}
 
-			key := createKeyWithTimestamp(name, s.clock.Now())
+			key := s.keyGenerator.CreateKey(name)
 			err = bucket.Put(key, buffer)
 
 			if err != nil {
@@ -189,15 +189,15 @@ type timeRangeValue struct {
 
 func (s *MetricsRepo) readTimeRangeValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeTimeRangeMetricsResult, error) {
 
-	fromKey := createKeyWithTimestamp(expose.Name, from)
-	tokey := createKeyWithTimestamp(expose.Name, to)
+	fromKey := s.keyGenerator.CreateKeyFromTimestamp(expose.Name, from)
+	tokey := s.keyGenerator.CreateKeyFromTimestamp(expose.Name, to)
 
 	var prevValue *timeRangeValue = nil
 
 	events := metrics.NewExposeTimeRangeMetricResult(expose, from, to)
 
 	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
-		timestamp, err := s.readTimestampFromKey(key)
+		timestamp, err := s.keyGenerator.GetTimestampFromkey(key)
 		if err != nil {
 			return nil, err
 		}
@@ -229,13 +229,13 @@ func (s *MetricsRepo) readTimeRangeValues(cursor *bolt.Cursor, expose *devices.E
 
 func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeNumericMetricsResult, error) {
 
-	fromKey := createKeyWithTimestamp(expose.Name, from)
-	tokey := createKeyWithTimestamp(expose.Name, to)
+	fromKey := s.keyGenerator.CreateKeyFromTimestamp(expose.Name, from)
+	tokey := s.keyGenerator.CreateKeyFromTimestamp(expose.Name, to)
 
 	event := metrics.NewExposeNumericMetricResult(expose.Name, from, to)
 
 	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
-		timestamp, err := s.readTimestampFromKey(key)
+		timestamp, err := s.keyGenerator.GetTimestampFromkey(key)
 		if err != nil {
 			return nil, err
 		}
@@ -264,78 +264,78 @@ func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devi
 	}
 }
 
-func (s *MetricsRepo) runPruningTask() {
-	go func() {
-		for {
+// func (s *MetricsRepo) runPruningTask() {
+// 	go func() {
+// 		for {
 
-			// TODO:
-			// maybe pass duration in configuration
-			s.clock.Sleep(time.Minute) // Change it hour or day !!!!!!
-			utils.LogInfof("Start pruning bucket %v", metricsBucketName)
+// 			// TODO:
+// 			// maybe pass duration in configuration
+// 			s.clock.Sleep(time.Minute) // Change it hour or day !!!!!!
+// 			utils.LogInfof("Start pruning bucket %v", metricsBucketName)
 
-			err := s.pruneEntries(s.db, metricsBucketName)
-			if err != nil {
-				utils.LogErrorf("Error pruning entries: %v", err)
-			}
-			utils.LogInfof("End pruning bucket %v", metricsBucketName)
+// 			err := s.pruneEntries(s.db, metricsBucketName)
+// 			if err != nil {
+// 				utils.LogErrorf("Error pruning entries: %v", err)
+// 			}
+// 			utils.LogInfof("End pruning bucket %v", metricsBucketName)
 
-		}
-	}()
-}
-func (s *MetricsRepo) pruneEntries(db *bolt.DB, bucketName string) error {
-	return db.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(bucketName))
-		if bucket == nil {
-			return fmt.Errorf("bucket not found: %s", bucketName)
-		}
+// 		}
+// 	}()
+// }
+// func (s *MetricsRepo) pruneEntries(db *bolt.DB, bucketName string) error {
+// 	return db.Update(func(tx *bolt.Tx) error {
+// 		bucket := tx.Bucket([]byte(bucketName))
+// 		if bucket == nil {
+// 			return fmt.Errorf("bucket not found: %s", bucketName)
+// 		}
 
-		c := bucket.Cursor()
-		for key, _ := c.First(); key != nil; key, _ = c.Next() {
+// 		c := bucket.Cursor()
+// 		for key, _ := c.First(); key != nil; key, _ = c.Next() {
 
-			fmt.Println("device id", string(key))
+// 			fmt.Println("device id", string(key))
 
-			bucket.Bucket(key).ForEach(func(k, _ []byte) error {
-				fmt.Println("device key", string(k))
-				// voc2024-08-25T18:02:52.455198804Z
-				return nil
-			})
+// 			bucket.Bucket(key).ForEach(func(k, _ []byte) error {
+// 				fmt.Println("device key", string(k))
+// 				// voc2024-08-25T18:02:52.455198804Z
+// 				return nil
+// 			})
 
-			// timestamp, err := s.readTimestampFromKey(expose.Name, key)
-			// timestamp, err := s.readTimestampFromKey(expose.Name, key)
+// 			// timestamp, err := s.readTimestampFromKey(expose.Name, key)
+// 			// timestamp, err := s.readTimestampFromKey(expose.Name, key)
 
-			// expiresAt, err := strconv.ParseInt(strings.Split(k, "-")[0], 10, 64)
-			// if err != nil {
-			// 	return fmt.Errorf("error parsing expiration timestamp: %w", err)
-			// }
+// 			// expiresAt, err := strconv.ParseInt(strings.Split(k, "-")[0], 10, 64)
+// 			// if err != nil {
+// 			// 	return fmt.Errorf("error parsing expiration timestamp: %w", err)
+// 			// }
 
-			// if time.Now().Unix() > expiresAt {
-			// 	if err := bucket.Delete(k); err != nil {
-			// 		return fmt.Errorf("error deleting expired entry: %w", err)
-			// 	}
-			// }
-		}
+// 			// if time.Now().Unix() > expiresAt {
+// 			// 	if err := bucket.Delete(k); err != nil {
+// 			// 		return fmt.Errorf("error deleting expired entry: %w", err)
+// 			// 	}
+// 			// }
+// 		}
 
-		return nil
-	})
-}
+// 		return nil
+// 	})
+// }
 
-func (s *MetricsRepo) readTimestampFromKey(data []byte) (time.Time, error) {
+// func (s *MetricsRepo) readTimestampFromKey(data []byte) (time.Time, error) {
 
-	timestamp, err := time.Parse("2006-01-02T15:04:05.000000000Z", string(data[:30]))
-	if err != nil {
-		return s.clock.Now(), err
-	}
-	return timestamp, nil
-}
+// 	timestamp, err := time.Parse("2006-01-02T15:04:05.000000000Z", string(data[:30]))
+// 	if err != nil {
+// 		return s.clock.Now(), err
+// 	}
+// 	return timestamp, nil
+// }
 
-func createKeyWithTimestamp(id string, timestamp time.Time) []byte {
+// func createKeyWithTimestamp(id string, timestamp time.Time) []byte {
 
-	customFormat := "2006-01-02T15:04:05.000000000Z"
-	timestampStr := timestamp.Format(customFormat)
-	key := fmt.Sprintf("%s_%s", timestampStr, id)
+// 	customFormat := "2006-01-02T15:04:05.000000000Z"
+// 	timestampStr := timestamp.Format(customFormat)
+// 	key := fmt.Sprintf("%s_%s", timestampStr, id)
 
-	return []byte(key)
-}
+// 	return []byte(key)
+// }
 
 // // Paginate entries
 // pageSize := 10

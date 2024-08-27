@@ -2,13 +2,17 @@ package store
 
 import (
 	"fmt"
+	"node-herder/models/metrics"
 	"node-herder/repository"
+	"node-herder/utils"
 )
 
 func Create() (AppStore, error) {
 
 	devices := repository.NewMemoryDeviceRepo()
-	metrics, err := repository.NewMetricsRepo()
+
+	keyGenerator := metrics.NewTimestampedKeyGenerator(utils.NewRealClock())
+	metrics, err := repository.NewMetricsRepo(keyGenerator)
 	if err != nil {
 		return nil, fmt.Errorf("loading metrics repository failed: %v", err.Error())
 	}

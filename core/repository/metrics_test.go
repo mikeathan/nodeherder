@@ -29,7 +29,8 @@ func TestGenerateMockMetrics(t *testing.T) {
 	mockClock := mocks.NewMockClock(func() time.Time {
 		return time.Now()
 	})
-	repo, err := repository.NewMetricsRepoFromFile(tempfile, mockClock)
+	keyGenerator := metrics.NewTimestampedKeyGenerator(mockClock)
+	repo, err := repository.NewMetricsRepoFromFile(tempfile, keyGenerator)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
@@ -81,7 +82,9 @@ func TestSingleExposeValueUpdatesDeviceTimeRangeMetrics(t *testing.T) {
 	mockClock := mocks.NewMockClock(func() time.Time {
 		return time.Now()
 	})
-	repo, err := repository.NewMetricsRepoFromFile(tempfile, mockClock)
+	keyGenerator := metrics.NewTimestampedKeyGenerator(mockClock)
+
+	repo, err := repository.NewMetricsRepoFromFile(tempfile, keyGenerator)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
@@ -151,7 +154,8 @@ func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
 	mockClock := mocks.NewMockClock(func() time.Time {
 		return time.Now()
 	})
-	repo, err := repository.NewMetricsRepoFromFile(tempfile, mockClock)
+	keyGenerator := metrics.NewTimestampedKeyGenerator(mockClock)
+	repo, err := repository.NewMetricsRepoFromFile(tempfile, keyGenerator)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
@@ -213,10 +217,11 @@ func TestMetricsPruning(t *testing.T) {
 	mockClock := mocks.NewMockClock(func() time.Time {
 		return time.Now()
 	})
+	keyGenerator := metrics.NewTimestampedKeyGenerator(mockClock)
 	// pruning sleep duration - give test time to fill in data
 	mockClock.SetMockSleepDuration(time.Millisecond * 1000)
 
-	repo, err := repository.NewMetricsRepoFromFile(tempfile, mockClock)
+	repo, err := repository.NewMetricsRepoFromFile(tempfile, keyGenerator)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
@@ -255,7 +260,8 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 	mockClock := mocks.NewMockClock(func() time.Time {
 		return time.Now()
 	})
-	repo, err := repository.NewMetricsRepoFromFile(tempfile, mockClock)
+	keyGenerator := metrics.NewTimestampedKeyGenerator(mockClock)
+	repo, err := repository.NewMetricsRepoFromFile(tempfile, keyGenerator)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
@@ -365,11 +371,11 @@ func TestDeviceTimeRangeBinaryDataMetrics(t *testing.T) {
 
 	tempfile := tempfile()
 	defer os.Remove(tempfile)
-
 	mockClock := mocks.NewMockClock(func() time.Time {
 		return time.Now().UTC()
 	})
-	repo, err := repository.NewMetricsRepoFromFile(tempfile, mockClock)
+	keyGenerator := metrics.NewTimestampedKeyGenerator(mockClock)
+	repo, err := repository.NewMetricsRepoFromFile(tempfile, keyGenerator)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
@@ -465,7 +471,8 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 	mockClock := mocks.NewMockClock(func() time.Time {
 		return time.Now()
 	})
-	repo, err := repository.NewMetricsRepoFromFile(tempfile, mockClock)
+	keyGenerator := metrics.NewTimestampedKeyGenerator(mockClock)
+	repo, err := repository.NewMetricsRepoFromFile(tempfile, keyGenerator)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
@@ -553,7 +560,8 @@ func TestExposeTimeRangeMetrics(t *testing.T) {
 	mockClock := mocks.NewMockClock(func() time.Time {
 		return time.Now()
 	})
-	repo, err := repository.NewMetricsRepoFromFile(tempfile, mockClock)
+	keyGenerator := metrics.NewTimestampedKeyGenerator(mockClock)
+	repo, err := repository.NewMetricsRepoFromFile(tempfile, keyGenerator)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}
@@ -610,7 +618,8 @@ func TestMultipleExposeTimeRangeMetrics(t *testing.T) {
 	mockClock := mocks.NewMockClock(func() time.Time {
 		return time.Now()
 	})
-	repo, err := repository.NewMetricsRepoFromFile(tempfile, mockClock)
+	keyGenerator := metrics.NewTimestampedKeyGenerator(mockClock)
+	repo, err := repository.NewMetricsRepoFromFile(tempfile, keyGenerator)
 	if err != nil {
 		t.Error("failed to initialise metrics repo", err.Error())
 	}

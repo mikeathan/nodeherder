@@ -285,8 +285,8 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 			t.Fatalf("metricsEnabled mismatch want %v got %v", configs[id].MetricsEnabled, cfg.MetricsEnabled)
 		}
 	}
-
 }
+
 func TestProcessorTriggersAutomationsStoresMetricsForExistingDevice(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
