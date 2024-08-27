@@ -85,6 +85,7 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 			return err
 		}
 
+		Store each expose to separate bucket
 		bucket, err = bucket.CreateBucketIfNotExists([]byte(id))
 		if err != nil {
 			return err
