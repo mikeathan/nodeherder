@@ -85,7 +85,7 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 			return err
 		}
 
-		Store each expose to separate bucket
+		
 		bucket, err = bucket.CreateBucketIfNotExists([]byte(id))
 		if err != nil {
 			return err
@@ -198,6 +198,8 @@ func (s *MetricsRepo) readTimeRangeValues(cursor *bolt.Cursor, expose *devices.E
 	events := metrics.NewExposeTimeRangeMetricResult(expose, from, to)
 
 	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
+		if bytes.HasPrefix(k, []byte("timestamp_event")) {
+			https://gemini.google.com/app/d47e689f9b0011c0
 		timestamp, err := s.keyGenerator.GetTimestampFromkey(key)
 		if err != nil {
 			return nil, err
