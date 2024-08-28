@@ -85,7 +85,6 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 			return err
 		}
 
-		
 		bucket, err = bucket.CreateBucketIfNotExists([]byte(id))
 		if err != nil {
 			return err
@@ -188,6 +187,48 @@ type timeRangeValue struct {
 	Timestamp time.Time
 }
 
+func (s *MetricsRepo) readValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time, action func(time.Time, []byte) error) error {
+
+	fromKey := s.keyGenerator.CreateKeyFromTimestamp(expose.Name, from)
+	tokey := s.keyGenerator.CreateKeyFromTimestamp(expose.Name, to)
+
+	//events := metrics.NewExposeTimeRangeMetricResult(expose, from, to)
+
+	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
+		if !bytes.HasSuffix(key, []byte(expose.Name)) {
+			continue
+		}
+
+		timestamp, err := s.keyGenerator.GetTimestampFromkey(key)
+		if err != nil {
+			return err
+		}
+
+		err = action(timestamp, data)
+		if err != nil {
+			return err
+		}
+		// var value string
+		// err = utils.ByteArrayToAny(data, &value)
+		// if err != nil {
+		// 	return nil, err
+		// }
+
+		// if prevValue == nil {
+		// 	prevValue = &timeRangeValue{value, timestamp}
+		// 	continue
+		// }
+
+		// if prevValue.Value != value {
+
+		// 	events.Add(prevValue.Value, prevValue.Timestamp, timestamp)
+		// 	prevValue = &timeRangeValue{value, timestamp}
+		// }
+	}
+
+	return nil
+}
+
 func (s *MetricsRepo) readTimeRangeValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeTimeRangeMetricsResult, error) {
 
 	fromKey := s.keyGenerator.CreateKeyFromTimestamp(expose.Name, from)
@@ -198,8 +239,10 @@ func (s *MetricsRepo) readTimeRangeValues(cursor *bolt.Cursor, expose *devices.E
 	events := metrics.NewExposeTimeRangeMetricResult(expose, from, to)
 
 	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
-		if bytes.HasPrefix(k, []byte("timestamp_event")) {
-			https://gemini.google.com/app/d47e689f9b0011c0
+		if !bytes.HasSuffix(key, []byte(expose.Name)) {
+			continue
+		}
+
 		timestamp, err := s.keyGenerator.GetTimestampFromkey(key)
 		if err != nil {
 			return nil, err
@@ -238,6 +281,9 @@ func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Ent
 	event := metrics.NewExposeNumericMetricResult(expose.Name, from, to)
 
 	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
+		if !bytes.HasSuffix(key, []byte(expose.Name)) {
+			continue
+		}
 		timestamp, err := s.keyGenerator.GetTimestampFromkey(key)
 		if err != nil {
 			return nil, err
@@ -259,8 +305,44 @@ func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Ent
 func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (metrics.ExposeResult, error) {
 
 	if expose.Type == "numeric" {
+
 		return s.readNumericValues(cursor, expose, from, to)
 	} else if expose.Type == "binary" || expose.Type == "enum" {
+
+		// WIP ############################
+		events := metrics.NewExposeTimeRangeMetricResult(expose, from, to)
+		var prevValue *timeRangeValue = nil
+
+		action := func(timestamp time.Time, data []byte) error {
+			var value string
+			err := utils.ByteArrayToAny(data, &value)
+			if err != nil {
+				return err
+			}
+			if prevValue == nil {
+				prevValue = &timeRangeValue{value, timestamp}
+				return nil
+			}
+			if prevValue.Value != value {
+
+				events.Add(prevValue.Value, prevValue.Timestamp, timestamp)
+				prevValue = &timeRangeValue{value, timestamp}
+			}
+
+			return nil
+		}
+		err := s.readValues(cursor, expose, from, to, action)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if len(events.Data)%2 != 0 {
+			events.Add(prevValue.Value, prevValue.Timestamp, to)
+		}
+
+		return events, nil
+		// #############################
 		return s.readTimeRangeValues(cursor, expose, from, to)
 	} else {
 		return nil, fmt.Errorf("expose type %v not supported", expose.Type)
