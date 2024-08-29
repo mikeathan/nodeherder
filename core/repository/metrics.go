@@ -123,7 +123,7 @@ func (s *MetricsRepo) ViewExposeTimeRange(device *devices.Device, exposeName str
 		}
 
 		expose := device.Exposes[exposeName]
-		event, err := s.findExposeTimeRangeEvent(cursor, expose, from, to)
+		event, err := s.collectEvents(cursor, expose, from, to)
 		if err != nil {
 			return err
 		}
@@ -163,8 +163,7 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 
 		for _, key := range exposekeys {
 			expose := device.Exposes[key]
-			event, err := s.findExposeTimeRangeEvent(cursor, expose, from, to)
-
+			event, err := s.collectEvents(cursor, expose, from, to)
 			if err != nil {
 				return err
 			}
@@ -182,61 +181,15 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 	return result, err
 }
 
-type timeRangeValue struct {
-	Value     string
-	Timestamp time.Time
-}
+func (s *MetricsRepo) collectEvents(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (metrics.ExposeResult, error) {
 
-func (s *MetricsRepo) readValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time, action func(time.Time, []byte) error) error {
-
-	fromKey := s.keyGenerator.CreateKeyFromTimestamp(expose.Name, from)
-	tokey := s.keyGenerator.CreateKeyFromTimestamp(expose.Name, to)
-
-	//events := metrics.NewExposeTimeRangeMetricResult(expose, from, to)
-
-	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
-		if !bytes.HasSuffix(key, []byte(expose.Name)) {
-			continue
-		}
-
-		timestamp, err := s.keyGenerator.GetTimestampFromkey(key)
-		if err != nil {
-			return err
-		}
-
-		err = action(timestamp, data)
-		if err != nil {
-			return err
-		}
-		// var value string
-		// err = utils.ByteArrayToAny(data, &value)
-		// if err != nil {
-		// 	return nil, err
-		// }
-
-		// if prevValue == nil {
-		// 	prevValue = &timeRangeValue{value, timestamp}
-		// 	continue
-		// }
-
-		// if prevValue.Value != value {
-
-		// 	events.Add(prevValue.Value, prevValue.Timestamp, timestamp)
-		// 	prevValue = &timeRangeValue{value, timestamp}
-		// }
+	result, err := metrics.NewExposeResult(expose.Name, expose.Type, from, to)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil
-}
-
-func (s *MetricsRepo) readTimeRangeValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeTimeRangeMetricsResult, error) {
-
 	fromKey := s.keyGenerator.CreateKeyFromTimestamp(expose.Name, from)
 	tokey := s.keyGenerator.CreateKeyFromTimestamp(expose.Name, to)
-
-	var prevValue *timeRangeValue = nil
-
-	events := metrics.NewExposeTimeRangeMetricResult(expose, from, to)
 
 	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
 		if !bytes.HasSuffix(key, []byte(expose.Name)) {
@@ -248,105 +201,59 @@ func (s *MetricsRepo) readTimeRangeValues(cursor *bolt.Cursor, expose *devices.E
 			return nil, err
 		}
 
-		var value string
-		err = utils.ByteArrayToAny(data, &value)
+		err = result.Collect(timestamp, data)
 		if err != nil {
 			return nil, err
 		}
-
-		if prevValue == nil {
-			prevValue = &timeRangeValue{value, timestamp}
-			continue
-		}
-
-		if prevValue.Value != value {
-
-			events.Add(prevValue.Value, prevValue.Timestamp, timestamp)
-			prevValue = &timeRangeValue{value, timestamp}
-		}
 	}
 
-	if len(events.Data)%2 != 0 {
-		events.Add(prevValue.Value, prevValue.Timestamp, to)
-	}
-
-	return events, nil
+	result.Flush()
+	return result, nil
 }
 
-func (s *MetricsRepo) readNumericValues(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (*metrics.ExposeNumericMetricsResult, error) {
-
-	fromKey := s.keyGenerator.CreateKeyFromTimestamp(expose.Name, from)
-	tokey := s.keyGenerator.CreateKeyFromTimestamp(expose.Name, to)
-
-	event := metrics.NewExposeNumericMetricResult(expose.Name, from, to)
-
-	for key, data := cursor.Seek(fromKey); key != nil && bytes.Compare(key, tokey) <= 0; key, data = cursor.Next() {
-		if !bytes.HasSuffix(key, []byte(expose.Name)) {
-			continue
-		}
-		timestamp, err := s.keyGenerator.GetTimestampFromkey(key)
-		if err != nil {
-			return nil, err
-		}
-
-		var value float32
-		err = utils.ByteArrayToAny(data, &value)
-		if err != nil {
-			return nil, err
-		}
-
-		truncated := utils.TruncateFloat32(value, 1)
-		event.Add(truncated, timestamp)
-	}
-
-	return event, nil
+// TEST WIP ===================
+// ////////////////////////////////
+type PruningService struct {
+	keyGenerator metrics.TimestampedKeyGenerator
 }
 
-func (s *MetricsRepo) findExposeTimeRangeEvent(cursor *bolt.Cursor, expose *devices.Entity, from time.Time, to time.Time) (metrics.ExposeResult, error) {
+func NewPruningService(keyGenerator metrics.TimestampedKeyGenerator) *PruningService {
+	return &PruningService{
+		keyGenerator: keyGenerator,
+	}
+}
 
-	if expose.Type == "numeric" {
+type Database interface {
+	Update(func(tx *bolt.Tx) error) error
+}
 
-		return s.readNumericValues(cursor, expose, from, to)
-	} else if expose.Type == "binary" || expose.Type == "enum" {
+func (p *PruningService) Run(db Database, bucketName string, duration time.Duration) error {
 
-		// WIP ############################
-		events := metrics.NewExposeTimeRangeMetricResult(expose, from, to)
-		var prevValue *timeRangeValue = nil
+	return db.Update(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(bucketName))
+		if bucket == nil {
+			return fmt.Errorf("bucket not found: %s", bucketName)
+		}
 
-		action := func(timestamp time.Time, data []byte) error {
-			var value string
-			err := utils.ByteArrayToAny(data, &value)
+		c := bucket.Cursor()
+		for key, _ := c.First(); key != nil; key, _ = c.Next() {
+			timestamp, err := p.keyGenerator.GetTimestampFromkey(key)
+
+			//expiresAt, err := strconv.ParseInt(strings.Split(k, "-")[0], 10, 64)
 			if err != nil {
-				return err
-			}
-			if prevValue == nil {
-				prevValue = &timeRangeValue{value, timestamp}
-				return nil
-			}
-			if prevValue.Value != value {
-
-				events.Add(prevValue.Value, prevValue.Timestamp, timestamp)
-				prevValue = &timeRangeValue{value, timestamp}
+				return fmt.Errorf("error parsing expiration timestamp: %w", err)
 			}
 
-			return nil
-		}
-		err := s.readValues(cursor, expose, from, to, action)
-
-		if err != nil {
-			return nil, err
-		}
-
-		if len(events.Data)%2 != 0 {
-			events.Add(prevValue.Value, prevValue.Timestamp, to)
+			if time.Now().Unix() > timestamp.Unix() {
+				if err := bucket.Delete(key); err != nil {
+					return fmt.Errorf("error deleting expired entry: %w", err)
+				}
+			}
 		}
 
-		return events, nil
-		// #############################
-		return s.readTimeRangeValues(cursor, expose, from, to)
-	} else {
-		return nil, fmt.Errorf("expose type %v not supported", expose.Type)
-	}
+		return nil
+	})
+
 }
 
 // func (s *MetricsRepo) runPruningTask() {
