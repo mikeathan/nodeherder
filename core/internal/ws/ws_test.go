@@ -25,7 +25,6 @@ import (
 
 // TODO: needs more work to store all connections and check if each clinets receives the message
 func TestHubNewClientConnectedEventsTypesOfPayloads(t *testing.T) {
-
 	testCases := []struct {
 		Event   string
 		Payload []byte
@@ -52,7 +51,7 @@ func TestHubNewClientConnectedEventsTypesOfPayloads(t *testing.T) {
 			return testCase.Payload
 		})
 		h := api.NewWsHandler(wsHub)
-		_, wsConn := NewTestWsServer(t, h)
+		s, wsConn := NewTestWsServer(t, h)
 		wsHub.Broadcast(testCase.Event, testCase.Payload)
 
 		reply := receiveWSMessage(t, wsConn)
@@ -67,9 +66,9 @@ func TestHubNewClientConnectedEventsTypesOfPayloads(t *testing.T) {
 			t.Fatalf("Expected message %+v', got '%+v'", wantData, gotData)
 		}
 
-		//defer s.Close()
-		//defer wsConn.Close()
-		//wsConn.Close()
+		defer s.Close()
+		defer wsConn.Close()
+		wsConn.Close()
 
 		time.Sleep(100 * time.Millisecond)
 	}
@@ -774,13 +773,13 @@ func TestHandlingLoadMetricsMessage(t *testing.T) {
 		expose1.Add(value, timestamps[idx])
 	}
 
-	expose2 := metrics.NewExposeBinaryMetricResult("presence", from, to)
+	expose2 := metrics.NewExposeBinaryMetricResult("presence", from, to).(*metrics.ExposeTimeRangeMetricsResult)
 	timestamps2 := utils_test.CreateDateTimeTimestamps(1, 10, 1)
 
 	values2 := utils_test.CreateBinaryValues(10)
 	expose2 = utils_test.AddBinaryDataToExposeMetricsResult(expose2, values2, timestamps2)
 
-	expose3 := metrics.NewExposeEnumMetricResult("color_temp", from, to)
+	expose3 := metrics.NewExposeEnumMetricResult("color_temp", from, to).(*metrics.ExposeTimeRangeMetricsResult)
 	timestamps3 := utils_test.CreateDateTimeTimestamps(1, 5, 1)
 	values3 := utils_test.CreateEnumValues(5)
 	expose3 = utils_test.AddBinaryDataToExposeMetricsResult(expose3, values3, timestamps3)

@@ -3,7 +3,7 @@ package metrics
 import (
 	"encoding/json"
 	"fmt"
-	"node-herder/models/devices"
+	"node-herder/utils"
 	"time"
 )
 
@@ -22,6 +22,8 @@ type DeviceMetricsResult struct {
 type ExposeResult interface {
 	GetType() string
 	Size() int
+	Collect(timestamp time.Time, data []byte) error
+	Flush()
 }
 
 type ExposeMetricsResult struct {
@@ -30,6 +32,13 @@ type ExposeMetricsResult struct {
 
 func (e *ExposeMetricsResult) GetType() string {
 	return e.Type
+}
+
+func (e *ExposeMetricsResult) ProcessData(timestamp time.Time, data []byte) error {
+	return nil
+}
+
+func (e *ExposeMetricsResult) Finish() {
 }
 
 func (e *ExposeMetricsResult) Size() int {
@@ -66,12 +75,18 @@ func (e *ExposeNumericMetricsResult) Size() int {
 	return len(e.Data)
 }
 
+type timeRangeStartValue struct {
+	Value     string
+	Timestamp time.Time
+}
+
 type ExposeTimeRangeMetricsResult struct {
-	Name string            `json:"name"`
-	Type string            `json:"type"`
-	From int64             `json:"from"`
-	To   int64             `json:"to"`
-	Data []*TimeRangeValue `json:"data"`
+	Name      string            `json:"name"`
+	Type      string            `json:"type"`
+	From      int64             `json:"from"`
+	To        int64             `json:"to"`
+	Data      []*TimeRangeValue `json:"data"`
+	prevValue *timeRangeStartValue
 }
 
 func (e *ExposeTimeRangeMetricsResult) GetType() string {
@@ -102,6 +117,19 @@ type NumericValue struct {
 	Y float32 `json:"y"`
 }
 
+func NewExposeResult(name string, dataType string, from time.Time, to time.Time) (ExposeResult, error) {
+	var result ExposeResult
+	if dataType == "numeric" {
+		result = NewExposeNumericMetricResult(name, from, to)
+	} else if dataType == "binary" || dataType == "enum" {
+		result = NewExposeTimeRangeMetricResult(name, dataType, from, to)
+	} else {
+		return nil, fmt.Errorf("expose type %v not supported", dataType)
+	}
+
+	return result, nil
+}
+
 func NewExposeNumericMetricResult(name string, from time.Time, to time.Time) *ExposeNumericMetricsResult {
 	return &ExposeNumericMetricsResult{
 		Name: name,
@@ -110,6 +138,22 @@ func NewExposeNumericMetricResult(name string, from time.Time, to time.Time) *Ex
 		To:   to.UnixMilli(),
 		Data: []*NumericValue{},
 	}
+}
+
+func (e *ExposeNumericMetricsResult) Collect(timestamp time.Time, data []byte) error {
+	var value float32
+	err := utils.ByteArrayToAny(data, &value)
+	if err != nil {
+		return err
+	}
+
+	truncated := utils.TruncateFloat32(value, 1)
+	e.Add(truncated, timestamp)
+	return nil
+}
+
+func (e *ExposeNumericMetricsResult) Flush() {
+	// do nothing
 }
 
 func (e *ExposeNumericMetricsResult) Add(value float32, timestamp time.Time) {
@@ -136,17 +180,17 @@ func (c *ExposeNumericMetricsResult) MarshalJSON() ([]byte, error) {
 	return json.Marshal(res)
 }
 
-func NewExposeTimeRangeMetricResult(expose *devices.Entity, from time.Time, to time.Time) *ExposeTimeRangeMetricsResult {
+func NewExposeTimeRangeMetricResult(name string, dataType string, from time.Time, to time.Time) ExposeResult {
 	return &ExposeTimeRangeMetricsResult{
-		Name: expose.Name,
-		Type: expose.Type,
+		Name: name,
+		Type: dataType,
 		From: from.UnixMilli(),
 		To:   to.UnixMilli(),
 		Data: []*TimeRangeValue{},
 	}
 }
 
-func NewExposeBinaryMetricResult(name string, from time.Time, to time.Time) *ExposeTimeRangeMetricsResult {
+func NewExposeBinaryMetricResult(name string, from time.Time, to time.Time) ExposeResult {
 	return &ExposeTimeRangeMetricsResult{
 		Name: name,
 		Type: "binary",
@@ -156,13 +200,38 @@ func NewExposeBinaryMetricResult(name string, from time.Time, to time.Time) *Exp
 	}
 }
 
-func NewExposeEnumMetricResult(name string, from time.Time, to time.Time) *ExposeTimeRangeMetricsResult {
+func NewExposeEnumMetricResult(name string, from time.Time, to time.Time) ExposeResult {
 	return &ExposeTimeRangeMetricsResult{
 		Name: name,
 		Type: "enum",
 		From: from.UnixMilli(),
 		To:   to.UnixMilli(),
 		Data: []*TimeRangeValue{},
+	}
+}
+
+func (e *ExposeTimeRangeMetricsResult) Collect(timestamp time.Time, data []byte) error {
+	var value string
+	err := utils.ByteArrayToAny(data, &value)
+	if err != nil {
+		return err
+	}
+	if e.prevValue == nil {
+		e.prevValue = &timeRangeStartValue{value, timestamp}
+		return nil
+	}
+	if e.prevValue.Value != value {
+
+		e.Add(e.prevValue.Value, e.prevValue.Timestamp, timestamp)
+		e.prevValue = &timeRangeStartValue{value, timestamp}
+	}
+
+	return nil
+}
+
+func (e *ExposeTimeRangeMetricsResult) Flush() {
+	if len(e.Data)%2 != 0 {
+		e.Add(e.prevValue.Value, e.prevValue.Timestamp, time.UnixMilli(e.To))
 	}
 }
 

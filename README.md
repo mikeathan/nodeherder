@@ -115,6 +115,5 @@ Metrics TODO
 - consider sampling data if too large data set ?
 - pruning duration in config
 - or maybe store configures prune timeout and starts service
-  NEED key formatter
+
   index entries = bolt.Bucket.CreateIndex
-  merge view query in one functions that handles different types
