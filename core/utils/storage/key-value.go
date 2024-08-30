@@ -15,9 +15,11 @@ type KeyValueDatabase interface {
 
 	Set(bucketName string, key, value []byte) error
 
+	SetBatch(bucketName string, key, data []interface{}) error
+
 	Get(bucketName string, key []byte) ([]byte, error)
 
-	ViewInRange(bucketName string, startTime, endTime time.Time) ([]byte, error)
+	ViewInRange(bucketName string, startTime, endTime time.Time, callback func(key, value []byte) error) ([]byte, error)
 
 	Delete(bucketName string, key []byte) error
 
