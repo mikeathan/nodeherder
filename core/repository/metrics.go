@@ -6,6 +6,7 @@ import (
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
 	"node-herder/utils"
+	"node-herder/utils/storage"
 	"sort"
 	"sync"
 	"time"
@@ -223,11 +224,7 @@ func NewPruningService(keyGenerator metrics.TimestampedKeyGenerator) *PruningSer
 	}
 }
 
-type Database interface {
-	Update(func(tx *bolt.Tx) error) error
-}
-
-func (p *PruningService) Run(db Database, bucketName string, duration time.Duration) error {
+func (p *PruningService) Run(db storage.KeyValueDatabase, bucketName string, duration time.Duration) error {
 
 	return db.Update(func(tx *bolt.Tx) error {
 		bucket := tx.Bucket([]byte(bucketName))
