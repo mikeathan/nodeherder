@@ -21,9 +21,17 @@ type MetricsRepo struct {
 	mutex        *sync.RWMutex
 	db           *bolt.DB
 	keyGenerator metrics.TimestampedKeyGenerator
+	kvdb         storage.KeyValueDatabase
 }
 
+func NewMetricsRepoTEST(kvdb storage.KeyValueDatabase) (metrics.Repository, error) {
+	repo := &MetricsRepo{
+		kvdb: kvdb,
+	}
+	return repo, nil
+}
 func NewMetricsRepo(keyGenerator metrics.TimestampedKeyGenerator) (metrics.Repository, error) {
+
 	return NewMetricsRepoFromFile(metricsBaseFilename, keyGenerator)
 }
 
@@ -74,6 +82,20 @@ func (s *MetricsRepo) Close() error {
 		return err
 	}
 	return nil
+}
+
+func (s *MetricsRepo) StoreTEST(id string, data map[string]any) error {
+
+	callback := func(key string, value any) ([]byte, []byte, error) {
+		buffer, err := utils.AnyToByteArray(value)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return s.keyGenerator.CreateKey(key), buffer, nil
+	}
+
+	return s.kvdb.SetBatch(id, data, callback)
 }
 
 func (s *MetricsRepo) Store(id string, data map[string]any) error {
@@ -140,6 +162,17 @@ func (s *MetricsRepo) ViewExposeTimeRange(device *devices.Device, exposeName str
 	return result, err
 }
 
+func (s *MetricsRepo) ViewDeviceTimeRangeTEST(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
+
+	callback := func(fromKey, tokey []byte, name string) ([]byte,[]byte, error) {
+		
+	fromKey := s.keyGenerator.CreateKeyFromTimestamp(expose.Name, from)
+	tokey := s.keyGenerator.CreateKeyFromTimestamp(expose.Name, to)
+
+	}
+	s.kvdb.ViewInRange(device.Id, from, to, nil)
+
+}
 func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 
 	result := metrics.NewDeviceMetricsResult(device.Id)
