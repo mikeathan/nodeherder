@@ -8,6 +8,7 @@ import (
 	"node-herder/models/metrics"
 	"node-herder/repository"
 	utils_test "node-herder/testing"
+	"node-herder/utils/storage"
 	"os"
 	"testing"
 	"time"
@@ -65,6 +66,64 @@ func TestGenerateMockMetrics(t *testing.T) {
 	fmt.Println(string(bytes))
 }
 
+func TestNewVersionSingleExposeValueUpdatesDeviceTimeRangeMetrics(t *testing.T) {
+	tempfile := tempfile()
+	defer os.Remove(tempfile)
+
+	kvdb, err := storage.NewBoltKeyValueDatabase(tempfile, "metrics")
+	if err != nil {
+		t.Error("failed to initialise keyvalue db: ", err.Error())
+	}
+
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now()
+	})
+	keyGenerator := metrics.NewTimestampedKeyGenerator(mockClock)
+	repo, err := repository.NewMetricsRepoTEST(kvdb, keyGenerator)
+	if err != nil {
+		t.Error("failed to initialise metrics repo: ", err.Error())
+	}
+	now := time.Now()
+
+	timestamps := utils_test.CreateFullDateTimeTimestamps(1, 24, 1)
+	values := utils_test.CreateFloatValues(24)
+	from := time.Date(now.Year(), now.Month(), now.Day()-2, 15, 0, 0, 0, time.UTC)
+	to := time.Date(now.Year(), now.Month(), now.Day(), 23, 30, 0, 0, time.UTC)
+
+	exposeNames := []string{"temperature", "humidity", "presence", "power", "voltage", "current"}
+
+	id := "x0001"
+	deviceName := "device_1"
+	dev := createMockDeviceWithExposes(id, deviceName, exposeNames, "numeric", now, nil)
+
+	exposeIdx := 0
+
+	// fire data changes one by one
+	for tIdx, timestamp := range timestamps {
+
+		exposeName := exposeNames[exposeIdx]
+		exposeIdx++
+
+		payload := map[string]any{exposeName: values[tIdx]}
+		mockClock.SetMockTime(timestamp)
+
+		if exposeIdx >= len(exposeNames) {
+			exposeIdx = 0
+		}
+
+		err = repo.Store(dev.Id, payload)
+		if err != nil {
+			t.Error("failed to store metrics ", err.Error())
+		}
+	}
+
+	result, err := repo.ViewDeviceTimeRange(dev, from, to)
+	if err != nil {
+		t.Error("failed to query metrics: ", err.Error())
+	}
+
+	utils_test.AssertDeviceAnyDataTypeEvents(dev, result, timestamps, values, t)
+}
 func TestSingleExposeValueUpdatesDeviceTimeRangeMetrics(t *testing.T) {
 
 	now := time.Now()
