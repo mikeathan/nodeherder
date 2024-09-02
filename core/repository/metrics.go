@@ -179,6 +179,7 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 func (s *MetricsRepo) Prune(expireAt time.Time) error {
 
 	callback := func(key []byte) (bool, error) {
+
 		timestamp, err := s.keyGenerator.GetTimestampFromkey(key)
 		if err != nil {
 			return false, err

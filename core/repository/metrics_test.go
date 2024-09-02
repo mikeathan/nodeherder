@@ -251,25 +251,15 @@ func TestMetricsPruning(t *testing.T) {
 			to:         time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)},
 	}
 
-	mockClock := mocks.NewMockClock(func() time.Time {
-		return time.Now()
-	})
-	keyGenerator := metrics.NewTimestampedKeyGenerator(mockClock)
-	// pruning sleep duration - give test time to fill in data
-	mockClock.SetMockSleepDuration(time.Millisecond * 1000)
-
-	repo, err := repository.NewMetricsRepoFromFile(tempfile, keyGenerator)
+	repo, mockClock, err := utils_test.CreateMetricsRepo(tempfile)
 	if err != nil {
-		t.Error("failed to initialise metrics repo", err.Error())
+		t.Error("failed to initialise metrics repo: ", err.Error())
 	}
 
 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
 	for i, test := range testCases {
-		fmt.Println(len(test.timestamps))
 
 		deviceName := fmt.Sprintf("device %v", i)
-
-		fmt.Println("total timestamps: ", len(test.timestamps))
 		for tIdx, timestamp := range test.timestamps {
 
 			dev := createMockDevice(test.id, deviceName, 2, "numeric", timestamp, test.values[tIdx])
@@ -281,12 +271,17 @@ func TestMetricsPruning(t *testing.T) {
 			if err != nil {
 				t.Error("failed to store metrics ", err.Error())
 			}
+
 			devices[dev.Id] = dev
 		}
 	}
 
 	// assert data has been pruned
-	time.Sleep(time.Millisecond * 1000)
+	time.Sleep(time.Millisecond * 500)
+
+	repo.Prune(time.Now().Add(-time.Hour * 24))
+
+	time.Sleep(time.Minute * 500)
 
 }
 func TestDeviceTimeRangeMetrics(t *testing.T) {

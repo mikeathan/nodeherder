@@ -365,6 +365,11 @@ func (s *NopMetricsRepo) invokeStoreHandler() func(id string, data map[string]an
 	}
 }
 
+func (s *NopMetricsRepo) Prune(expireAt time.Time) error {
+	fmt.Println("Mocked Prune")
+	return nil
+}
+
 func (s *NopMetricsRepo) Store(id string, data map[string]any) error {
 	fmt.Println("Mocked Store")
 	s.invokeStoreHandler()(id, data)

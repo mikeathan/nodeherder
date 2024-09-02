@@ -198,17 +198,21 @@ func (b *BoltKeyValueDatabase) Prune(callback func(key []byte) (bool, error)) er
 		}
 
 		c := bucket.Cursor()
-		for key, _ := c.First(); key != nil; key, _ = c.Next() {
-			canDelete, err := callback(key)
-			if err != nil {
-				return err
-			}
+		for bucketName, _ := c.First(); bucketName != nil; bucketName, _ = c.Next() {
 
-			if canDelete {
-				if err := bucket.Delete(key); err != nil {
+			bucket.Bucket(bucketName).ForEach(func(key, _ []byte) error {
+				canDelete, err := callback(key)
+				if err != nil {
 					return err
 				}
-			}
+
+				if canDelete {
+					if err := bucket.Delete(key); err != nil {
+						return err
+					}
+				}
+				return nil
+			})
 		}
 
 		return nil
