@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"node-herder/models/settings"
-	"node-herder/utils"
-	"sync"
+	"node-herder/utils/storage"
 
 	"github.com/boltdb/bolt"
 )
@@ -15,8 +14,7 @@ const settingsBucketName = "settings"
 const settingsKeyName = "device_settings"
 
 type FileSettingsRepo struct {
-	mutex sync.RWMutex
-	db    *bolt.DB
+	kvdb storage.KeyValueDatabase
 }
 
 func NewFileSettingsRepo() (settings.Repository, error) {
@@ -25,21 +23,14 @@ func NewFileSettingsRepo() (settings.Repository, error) {
 
 func NewFileSettingsRepoFromFile(filename string) (settings.Repository, error) {
 
-	db, err := bolt.Open(filename, 0600, nil)
+	kvdb, err := storage.NewBoltKeyValueDatabase(filename, metricsBucketName)
 	if err != nil {
-		return nil, err
-	}
-	repo := &FileSettingsRepo{
-		db:    db,
-		mutex: sync.RWMutex{},
-	}
-	err = repo.init()
-	if err != nil {
-		utils.LogError(err)
 		return nil, err
 	}
 
-	return repo, nil
+	return &FileSettingsRepo{
+		kvdb: kvdb,
+	}, nil
 }
 
 func (s *FileSettingsRepo) Close() error {

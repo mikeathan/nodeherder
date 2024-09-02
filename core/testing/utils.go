@@ -44,14 +44,12 @@ func CreateFileStore() (store.AppStore, func(), error) {
 		os.Remove(settingsTempFile)
 		os.Remove(metricsTempFile)
 	}
-	mockClock := mocks.NewMockClock(func() time.Time {
-		return time.Now()
-	})
-	keyGenerator := metrics.NewTimestampedKeyGenerator(mockClock)
-	metricsRepo, err := repository.NewMetricsRepoFromFile(metricsTempFile, keyGenerator)
+
+	metricsRepo, _, err := CreateMetricsRepo(metricsTempFile)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	settingsRepo, err := repository.NewFileSettingsRepoFromFile(settingsTempFile)
 	if err != nil {
 		return nil, nil, err
