@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"node-herder/utils"
 	"sync"
-	"time"
 
 	"github.com/boltdb/bolt"
 )
@@ -23,7 +22,7 @@ type KeyValueDatabase interface {
 
 	Delete(bucketName string, key []byte) error
 
-	Prune(bucketName string, before time.Time) error
+	Prune(callback func(key []byte) (bool, error)) error
 }
 
 type BoltKeyValueDatabase struct {
@@ -107,7 +106,7 @@ func (b *BoltKeyValueDatabase) SetBatch(bucketName string, data map[string]any, 
 
 	return b.db.Update(func(tx *bolt.Tx) error {
 
-		bucket, err := b.createBucket(tx, bucketName)
+		bucket, err := b.createChildBucket(tx, bucketName)
 		if err != nil {
 			return err
 		}
@@ -152,7 +151,7 @@ func (b *BoltKeyValueDatabase) Delete(bucketName string, key []byte) error {
 	b.mutex.Lock()
 
 	return b.db.Update(func(tx *bolt.Tx) error {
-		bucket, err := b.openBucket(tx, bucketName)
+		bucket, err := b.openChildBucket(tx, bucketName)
 		if err != nil {
 			return err
 		}
@@ -165,7 +164,7 @@ func (b *BoltKeyValueDatabase) ViewInRange(bucketName string, from, to []byte, c
 	b.mutex.RLock()
 
 	return b.db.View(func(tx *bolt.Tx) error {
-		bucket, err := b.openBucket(tx, bucketName)
+		bucket, err := b.openChildBucket(tx, bucketName)
 		if err != nil {
 			return err
 		}
@@ -188,29 +187,35 @@ func (b *BoltKeyValueDatabase) ViewInRange(bucketName string, from, to []byte, c
 	})
 }
 
-func (b *BoltKeyValueDatabase) Prune(bucketName string, before time.Time) error {
+func (b *BoltKeyValueDatabase) Prune(callback func(key []byte) (bool, error)) error {
 	defer b.mutex.Unlock()
 	b.mutex.Lock()
 
-	beforeTimestamp := before.Unix()
-
 	return b.db.Update(func(tx *bolt.Tx) error {
-		bucket, err := b.openBucket(tx, bucketName)
-		if err != nil {
-			return err
+		bucket := tx.Bucket([]byte(b.rootBucket))
+		if bucket == nil {
+			return bolt.ErrBucketNotFound
 		}
 
 		c := bucket.Cursor()
-		for k, _ := c.Seek([]byte{byte(beforeTimestamp)}); k != nil; k, _ = c.Next() {
-			if err := bucket.Delete(k); err != nil {
+		for key, _ := c.First(); key != nil; key, _ = c.Next() {
+			canDelete, err := callback(key)
+			if err != nil {
 				return err
 			}
+
+			if canDelete {
+				if err := bucket.Delete(key); err != nil {
+					return err
+				}
+			}
 		}
+
 		return nil
 	})
 }
 
-func (b *BoltKeyValueDatabase) openBucket(tx *bolt.Tx, bucketName string) (*bolt.Bucket, error) {
+func (b *BoltKeyValueDatabase) openChildBucket(tx *bolt.Tx, bucketName string) (*bolt.Bucket, error) {
 
 	bucket := tx.Bucket([]byte(b.rootBucket)).Bucket([]byte(bucketName))
 	if bucket == nil {
@@ -220,7 +225,7 @@ func (b *BoltKeyValueDatabase) openBucket(tx *bolt.Tx, bucketName string) (*bolt
 	return bucket, nil
 }
 
-func (b *BoltKeyValueDatabase) createBucket(tx *bolt.Tx, bucketName string) (*bolt.Bucket, error) {
+func (b *BoltKeyValueDatabase) createChildBucket(tx *bolt.Tx, bucketName string) (*bolt.Bucket, error) {
 	bucket, err := tx.CreateBucketIfNotExists([]byte(b.rootBucket))
 	if err != nil {
 		return nil, bolt.ErrBucketNotFound

@@ -231,64 +231,64 @@ func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
 	}
 }
 
-// func TestMetricsPruning(t *testing.T) {
-// 	now := time.Now()
+func TestMetricsPruning(t *testing.T) {
+	now := time.Now()
 
-// 	tempfile := utils_test.Tempfile()
-// 	defer os.Remove(tempfile)
+	tempfile := utils_test.Tempfile()
+	defer os.Remove(tempfile)
 
-// 	testCases := []struct {
-// 		id         string
-// 		timestamps []time.Time
-// 		values     []float32
-// 		from       time.Time
-// 		to         time.Time
-// 	}{
-// 		{id: "x0000",
-// 			timestamps: utils_test.CreateDateTimeTimestamps(1, 24, 1), // 24 events
-// 			values:     utils_test.CreateFloatValues(24),
-// 			from:       time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC),
-// 			to:         time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)},
-// 	}
+	testCases := []struct {
+		id         string
+		timestamps []time.Time
+		values     []float32
+		from       time.Time
+		to         time.Time
+	}{
+		{id: "x0000",
+			timestamps: utils_test.CreateDateTimeTimestamps(1, 24, 1), // 24 events
+			values:     utils_test.CreateFloatValues(24),
+			from:       time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC),
+			to:         time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)},
+	}
 
-// 	mockClock := mocks.NewMockClock(func() time.Time {
-// 		return time.Now()
-// 	})
-// 	keyGenerator := metrics.NewTimestampedKeyGenerator(mockClock)
-// 	// pruning sleep duration - give test time to fill in data
-// 	mockClock.SetMockSleepDuration(time.Millisecond * 1000)
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now()
+	})
+	keyGenerator := metrics.NewTimestampedKeyGenerator(mockClock)
+	// pruning sleep duration - give test time to fill in data
+	mockClock.SetMockSleepDuration(time.Millisecond * 1000)
 
-// 	repo, err := repository.NewMetricsRepoFromFile(tempfile, keyGenerator)
-// 	if err != nil {
-// 		t.Error("failed to initialise metrics repo", err.Error())
-// 	}
+	repo, err := repository.NewMetricsRepoFromFile(tempfile, keyGenerator)
+	if err != nil {
+		t.Error("failed to initialise metrics repo", err.Error())
+	}
 
-// 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
-// 	for i, test := range testCases {
-// 		fmt.Println(len(test.timestamps))
+	var devices map[string]*devices.Device = make(map[string]*devices.Device)
+	for i, test := range testCases {
+		fmt.Println(len(test.timestamps))
 
-// 		deviceName := fmt.Sprintf("device %v", i)
+		deviceName := fmt.Sprintf("device %v", i)
 
-// 		fmt.Println("total timestamps: ", len(test.timestamps))
-// 		for tIdx, timestamp := range test.timestamps {
+		fmt.Println("total timestamps: ", len(test.timestamps))
+		for tIdx, timestamp := range test.timestamps {
 
-// 			dev := createMockDevice(test.id, deviceName, 2, "numeric", timestamp, test.values[tIdx])
-// 			payload := utils_test.Payload(dev)
+			dev := createMockDevice(test.id, deviceName, 2, "numeric", timestamp, test.values[tIdx])
+			payload := utils_test.Payload(dev)
 
-// 			mockClock.SetMockTime(timestamp)
+			mockClock.SetMockTime(timestamp)
 
-// 			err = repo.Store(dev.Id, payload)
-// 			if err != nil {
-// 				t.Error("failed to store metrics ", err.Error())
-// 			}
-// 			devices[dev.Id] = dev
-// 		}
-// 	}
+			err = repo.Store(dev.Id, payload)
+			if err != nil {
+				t.Error("failed to store metrics ", err.Error())
+			}
+			devices[dev.Id] = dev
+		}
+	}
 
-// 	// assert data has been pruned
-// 	time.Sleep(time.Millisecond * 1000)
+	// assert data has been pruned
+	time.Sleep(time.Millisecond * 1000)
 
-// }
+}
 func TestDeviceTimeRangeMetrics(t *testing.T) {
 
 	tempfile := utils_test.Tempfile()

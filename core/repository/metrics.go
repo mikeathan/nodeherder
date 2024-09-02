@@ -172,9 +172,24 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 // 			}
 // 			utils.LogInfof("End pruning bucket %v", metricsBucketName)
 
-// 		}
-// 	}()
-// }
+//			}
+//		}()
+//	}
+
+func (s *MetricsRepo) Prune(expireAt time.Time) error {
+
+	callback := func(key []byte) (bool, error) {
+		timestamp, err := s.keyGenerator.GetTimestampFromkey(key)
+		if err != nil {
+			return false, err
+		}
+
+		return timestamp.Before(expireAt), nil
+	}
+
+	return s.kvdb.Prune(callback)
+}
+
 // func (s *MetricsRepo) pruneEntries(db *bolt.DB, bucketName string) error {
 // 	return db.Update(func(tx *bolt.Tx) error {
 // 		bucket := tx.Bucket([]byte(bucketName))
