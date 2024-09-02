@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"node-herder/models/settings"
 	"node-herder/utils/storage"
-
-	"github.com/boltdb/bolt"
 )
 
 const settingsBaseFilename = "settings.db"
@@ -23,7 +21,7 @@ func NewFileSettingsRepo() (settings.Repository, error) {
 
 func NewFileSettingsRepoFromFile(filename string) (settings.Repository, error) {
 
-	kvdb, err := storage.NewBoltKeyValueDatabase(filename, metricsBucketName)
+	kvdb, err := storage.NewBoltKeyValueDatabase(filename, settingsBucketName)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +32,7 @@ func NewFileSettingsRepoFromFile(filename string) (settings.Repository, error) {
 }
 
 func (s *FileSettingsRepo) Close() error {
-	err := s.db.Close()
+	err := s.kvdb.Close()
 	if err != nil {
 		return err
 	}
@@ -42,27 +40,13 @@ func (s *FileSettingsRepo) Close() error {
 }
 
 func (s *FileSettingsRepo) Save(value *settings.AppConfig) error {
-	err := s.db.Update(func(tx *bolt.Tx) error {
 
-		bucket, err := tx.CreateBucketIfNotExists([]byte(settingsBucketName))
-		if err != nil {
-			return err
-		}
+	buf, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
 
-		buf, err := json.Marshal(value)
-		if err != nil {
-			return err
-		}
-
-		err = bucket.Put([]byte(settingsKeyName), buf)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
-
-	return err
+	return s.kvdb.Set([]byte(settingsKeyName), buf)
 }
 
 func (s *FileSettingsRepo) FindOrAddDeviceConfigIfNotExists(id string) (*settings.DeviceConfig, error) {
@@ -96,42 +80,18 @@ func (s *FileSettingsRepo) SaveDeviceConfig(deviceConfig *settings.DeviceConfig)
 	return s.Save(config)
 }
 
-func (s *FileSettingsRepo) init() error {
-	tx, err := s.db.Begin(true)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.CreateBucketIfNotExists([]byte(settingsBucketName)); err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}
-
 func (s *FileSettingsRepo) Load() (*settings.AppConfig, error) {
 
+	buffer, err := s.kvdb.Get([]byte(settingsKeyName))
+	if buffer == nil {
+		return nil, err
+	}
+
 	settings := settings.NewAppConfig()
-	err := s.db.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(settingsBucketName))
-		if bucket == nil {
-			return bolt.ErrBucketNotFound
-		}
-
-		buffer := bucket.Get([]byte(settingsKeyName))
-		if buffer == nil {
-			return nil
-			//return fmt.Errorf("key %v not found", settings)
-		}
-
-		err := json.Unmarshal(buffer, &settings)
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
+	err = json.Unmarshal(buffer, &settings)
+	if err != nil {
+		return nil, err
+	}
 
 	return settings, err
 }

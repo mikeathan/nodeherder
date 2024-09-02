@@ -13,11 +13,11 @@ import (
 type KeyValueDatabase interface {
 	Close() error
 
-	Set(bucketName string, key, value []byte) error
+	Set(key, value []byte) error
+
+	Get(key []byte) ([]byte, error)
 
 	SetBatch(bucketName string, data map[string]any, callback func(key string, value any) ([]byte, []byte, error)) error
-
-	Get(bucketName string, key []byte) ([]byte, error)
 
 	ViewInRange(bucketName string, from []byte, to []byte, callback func(key, value []byte) error) error
 
@@ -85,16 +85,16 @@ func (b *BoltKeyValueDatabase) Close() error {
 	return nil
 }
 
-func (b *BoltKeyValueDatabase) Set(bucketName string, key, value []byte) error {
+func (b *BoltKeyValueDatabase) Set(key, value []byte) error {
 
 	defer b.mutex.Unlock()
 	b.mutex.Lock()
 
 	return b.db.Update(func(tx *bolt.Tx) error {
 
-		bucket, err := b.createBucket(tx, bucketName)
+		bucket, err := tx.CreateBucketIfNotExists([]byte(b.rootBucket))
 		if err != nil {
-			return err
+			return bolt.ErrBucketNotFound
 		}
 
 		return bucket.Put(key, value)
@@ -128,19 +128,22 @@ func (b *BoltKeyValueDatabase) SetBatch(bucketName string, data map[string]any, 
 	})
 }
 
-func (b *BoltKeyValueDatabase) Get(bucketName string, key []byte) ([]byte, error) {
+func (b *BoltKeyValueDatabase) Get(key []byte) ([]byte, error) {
 	defer b.mutex.RUnlock()
 	b.mutex.RLock()
 
 	var value []byte
 	err := b.db.View(func(tx *bolt.Tx) error {
-		bucket, err := b.openBucket(tx, bucketName)
-		if err != nil {
-			return err
+
+		bucket := tx.Bucket([]byte(b.rootBucket))
+		if bucket == nil {
+			return bolt.ErrBucketNotFound
 		}
+
 		value = bucket.Get(key)
 		return nil
 	})
+
 	return value, err
 }
 

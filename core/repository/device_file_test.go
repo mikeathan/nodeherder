@@ -3,13 +3,14 @@ package repository_test
 import (
 	"node-herder/models/devices"
 	"node-herder/repository"
+	utils_test "node-herder/testing"
 	"os"
 	"testing"
 )
 
 func TestFileRepositoryCanAddAndFindBridgeInfo(t *testing.T) {
 
-	tempfile := tempfile()
+	tempfile := utils_test.Tempfile()
 
 	repo, err := repository.NewFileDeviceRepoFromFile(tempfile)
 	if err != nil {
@@ -23,12 +24,12 @@ func TestFileRepositoryCanAddAndFindBridgeInfo(t *testing.T) {
 
 	err = repo.StoreBridge(bridgeInfo)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	for _, device := range bridgeInfo {
 		bridge, err := repo.FindBridgeInfo(device.IeeeAddress)
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatal(err.Error())
 		}
 
 		validateBridge(t, device, bridge)
@@ -37,7 +38,7 @@ func TestFileRepositoryCanAddAndFindBridgeInfo(t *testing.T) {
 
 func TestFileRepositoryCanFindAllFindBridgeInfo(t *testing.T) {
 
-	tempfile := tempfile()
+	tempfile := utils_test.Tempfile()
 
 	repo, err := repository.NewFileDeviceRepoFromFile(tempfile)
 	if err != nil {
@@ -51,11 +52,11 @@ func TestFileRepositoryCanFindAllFindBridgeInfo(t *testing.T) {
 
 	err = repo.StoreBridge(inputBridgeInfo)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	bridgeList, err := repo.AllBridgeInfo()
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 
 	for idx, inputBridge := range inputBridgeInfo {
@@ -65,7 +66,7 @@ func TestFileRepositoryCanFindAllFindBridgeInfo(t *testing.T) {
 }
 func TestFileRepositoryCanAddAndFindDevice(t *testing.T) {
 
-	tempfile := tempfile()
+	tempfile := utils_test.Tempfile()
 
 	repo, err := repository.NewFileDeviceRepoFromFile(tempfile)
 	if err != nil {
@@ -80,12 +81,12 @@ func TestFileRepositoryCanAddAndFindDevice(t *testing.T) {
 
 	_, err = repo.Store(name, device)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 
 	res, err := repo.FindDevice(name)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 
 	validateDevice(t, device, res)
@@ -93,7 +94,7 @@ func TestFileRepositoryCanAddAndFindDevice(t *testing.T) {
 
 func TestFileRepositoryStoreReturnsStatusOfData(t *testing.T) {
 
-	tempfile := tempfile()
+	tempfile := utils_test.Tempfile()
 	repo, err := repository.NewFileDeviceRepoFromFile(tempfile)
 	if err != nil {
 		t.Error("failed to initialise device file repo", err.Error())
@@ -118,7 +119,7 @@ func TestFileRepositoryStoreReturnsStatusOfData(t *testing.T) {
 
 func TestFileRepositoryCanFindDevices(t *testing.T) {
 
-	tempfile := tempfile()
+	tempfile := utils_test.Tempfile()
 
 	repo, err := repository.NewFileDeviceRepoFromFile(tempfile)
 	if err != nil {
@@ -134,13 +135,13 @@ func TestFileRepositoryCanFindDevices(t *testing.T) {
 	for _, device := range devices {
 		_, err = repo.Store(device.Id, device)
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatal(err.Error())
 		}
 	}
 
 	res, err := repo.FindDevices([]string{"1", "2"})
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 
 	for idx, resDevice := range res {
@@ -151,7 +152,7 @@ func TestFileRepositoryCanFindDevices(t *testing.T) {
 
 func TestFileRepositoryCanFindAllDevices(t *testing.T) {
 
-	tempfile := tempfile()
+	tempfile := utils_test.Tempfile()
 
 	repo, err := repository.NewFileDeviceRepoFromFile(tempfile)
 	if err != nil {
@@ -170,13 +171,13 @@ func TestFileRepositoryCanFindAllDevices(t *testing.T) {
 	for _, device := range devices {
 		_, err = repo.Store(device.Id, device)
 		if err != nil {
-			t.Fatalf(err.Error())
+			t.Fatal(err.Error())
 		}
 	}
 
 	res, err := repo.AllDevices()
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 
 	if len(res) != len(devices) {

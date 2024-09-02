@@ -1,9 +1,9 @@
 package repository_test
 
 import (
-	"io/ioutil"
 	"node-herder/models/settings"
 	"node-herder/repository"
+	utils_test "node-herder/testing"
 	"os"
 	"reflect"
 	"testing"
@@ -11,7 +11,7 @@ import (
 
 func TestFileSettingsRepositoryCanAddAndLoad(t *testing.T) {
 
-	tempfile := tempfile()
+	tempfile := utils_test.Tempfile()
 	defer os.Remove(tempfile)
 
 	repo, err := repository.NewFileSettingsRepoFromFile(tempfile)
@@ -42,7 +42,7 @@ func TestFileSettingsRepositoryCanAddAndLoad(t *testing.T) {
 
 func TestFileSettingsRepositoryCanAddAndFindValue(t *testing.T) {
 
-	tempfile := tempfile()
+	tempfile := utils_test.Tempfile()
 	defer os.Remove(tempfile)
 
 	repo, err := repository.NewFileSettingsRepoFromFile(tempfile)
@@ -78,7 +78,7 @@ func TestFileSettingsRepositoryCanAddAndFindValue(t *testing.T) {
 
 func TestFileSettingsRepositoryCanAddNewDeviceConfig(t *testing.T) {
 
-	tempfile := tempfile()
+	tempfile := utils_test.Tempfile()
 	defer os.Remove(tempfile)
 
 	repo, err := repository.NewFileSettingsRepoFromFile(tempfile)
@@ -113,7 +113,7 @@ func TestFileSettingsRepositoryCanAddNewDeviceConfig(t *testing.T) {
 
 func TestFileSettingsRepositoryCanUpdateExistingDeviceConfig(t *testing.T) {
 
-	tempfile := tempfile()
+	tempfile := utils_test.Tempfile()
 	defer os.Remove(tempfile)
 
 	repo, err := repository.NewFileSettingsRepoFromFile(tempfile)
@@ -191,41 +191,4 @@ func createMockAppConfig() *settings.AppConfig {
 	appconfig.Add(&cfg4)
 
 	return appconfig
-
-}
-func createMockSettingsJson() string {
-	return `
-	{
-	  "id": "test_1",
-	  "name": "settings file 1",
-	  "items": [
-		{ 
-		 	"deviceId": "x01234",
-		  	"metrics": false
-		},
-		{ 
-			"deviceId": "x45567",
-			"metrics": true
-		},
-		{ 
-			"deviceId": "x78910",
-			"metrics": false
-		}
-	  ]
-	}
-	`
-}
-
-func tempfile() string {
-	f, err := ioutil.TempFile("", "bolt-")
-	if err != nil {
-		panic(err)
-	}
-	if err := f.Close(); err != nil {
-		panic(err)
-	}
-	if err := os.Remove(f.Name()); err != nil {
-		panic(err)
-	}
-	return f.Name()
 }
