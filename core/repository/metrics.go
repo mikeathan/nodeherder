@@ -16,21 +16,22 @@ const metricsBucketName = "metrics"
 type MetricsRepo struct {
 	keyGenerator metrics.TimestampedKeyGenerator
 	kvdb         storage.KeyValueDatabase
+	clock        utils.Clock
 }
 
 func NewMetricsRepo() (metrics.Repository, error) {
-	keyGenerator := metrics.NewTimestampedKeyGenerator(utils.NewRealClock())
 	kvdb, err := storage.NewBoltKeyValueDatabase(metricsBaseFilename, metricsBucketName)
 	if err != nil {
 		return nil, err
 	}
-	return NewMetricsRepoFromDatabase(kvdb, keyGenerator)
+	return NewMetricsRepoFromDatabase(kvdb, utils.NewRealClock())
 }
 
-func NewMetricsRepoFromDatabase(kvdb storage.KeyValueDatabase, keyGenerator metrics.TimestampedKeyGenerator) (metrics.Repository, error) {
+func NewMetricsRepoFromDatabase(kvdb storage.KeyValueDatabase, clock utils.Clock) (metrics.Repository, error) {
 	repo := &MetricsRepo{
 		kvdb:         kvdb,
-		keyGenerator: keyGenerator,
+		clock:        clock,
+		keyGenerator: metrics.NewTimestampedKeyGenerator(clock),
 	}
 	return repo, nil
 }
@@ -116,47 +117,6 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 	return result, nil
 }
 
-// TEST WIP ===================
-// ////////////////////////////////
-// type PruningService struct {
-// 	keyGenerator metrics.TimestampedKeyGenerator
-// }
-
-// func NewPruningService(keyGenerator metrics.TimestampedKeyGenerator) *PruningService {
-// 	return &PruningService{
-// 		keyGenerator: keyGenerator,
-// 	}
-// }
-
-// func (p *PruningService) Run(db storage.KeyValueDatabase, bucketName string, duration time.Duration) error {
-
-// 	return db.Update(func(tx *bolt.Tx) error {
-// 		bucket := tx.Bucket([]byte(bucketName))
-// 		if bucket == nil {
-// 			return fmt.Errorf("bucket not found: %s", bucketName)
-// 		}
-
-// 		c := bucket.Cursor()
-// 		for key, _ := c.First(); key != nil; key, _ = c.Next() {
-// 			timestamp, err := p.keyGenerator.GetTimestampFromkey(key)
-
-// 			//expiresAt, err := strconv.ParseInt(strings.Split(k, "-")[0], 10, 64)
-// 			if err != nil {
-// 				return fmt.Errorf("error parsing expiration timestamp: %w", err)
-// 			}
-
-// 			if time.Now().Unix() > timestamp.Unix() {
-// 				if err := bucket.Delete(key); err != nil {
-// 					return fmt.Errorf("error deleting expired entry: %w", err)
-// 				}
-// 			}
-// 		}
-
-// 		return nil
-// 	})
-
-// }
-
 // func (s *MetricsRepo) runPruningTask() {
 // 	go func() {
 // 		for {
@@ -176,8 +136,9 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 //		}()
 //	}
 
-func (s *MetricsRepo) Prune(expireAt time.Time) error {
+func (s *MetricsRepo) Prune(expireAt time.Duration) error {
 
+	currentTime := s.clock.Now()
 	callback := func(key []byte) (bool, error) {
 
 		timestamp, err := s.keyGenerator.GetTimestampFromkey(key)
@@ -185,48 +146,11 @@ func (s *MetricsRepo) Prune(expireAt time.Time) error {
 			return false, err
 		}
 
-		return timestamp.Before(expireAt), nil
+		return currentTime.Sub(timestamp) > expireAt, nil
 	}
 
 	return s.kvdb.Prune(callback)
 }
-
-// func (s *MetricsRepo) pruneEntries(db *bolt.DB, bucketName string) error {
-// 	return db.Update(func(tx *bolt.Tx) error {
-// 		bucket := tx.Bucket([]byte(bucketName))
-// 		if bucket == nil {
-// 			return fmt.Errorf("bucket not found: %s", bucketName)
-// 		}
-
-// 		c := bucket.Cursor()
-// 		for key, _ := c.First(); key != nil; key, _ = c.Next() {
-
-// 			fmt.Println("device id", string(key))
-
-// 			bucket.Bucket(key).ForEach(func(k, _ []byte) error {
-// 				fmt.Println("device key", string(k))
-// 				// voc2024-08-25T18:02:52.455198804Z
-// 				return nil
-// 			})
-
-// 			// timestamp, err := s.readTimestampFromKey(expose.Name, key)
-// 			// timestamp, err := s.readTimestampFromKey(expose.Name, key)
-
-// 			// expiresAt, err := strconv.ParseInt(strings.Split(k, "-")[0], 10, 64)
-// 			// if err != nil {
-// 			// 	return fmt.Errorf("error parsing expiration timestamp: %w", err)
-// 			// }
-
-// 			// if time.Now().Unix() > expiresAt {
-// 			// 	if err := bucket.Delete(k); err != nil {
-// 			// 		return fmt.Errorf("error deleting expired entry: %w", err)
-// 			// 	}
-// 			// }
-// 		}
-
-// 		return nil
-// 	})
-// }
 
 // func (s *MetricsRepo) readTimestampFromKey(data []byte) (time.Time, error) {
 

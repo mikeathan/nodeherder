@@ -232,7 +232,6 @@ func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
 }
 
 func TestMetricsPruning(t *testing.T) {
-	now := time.Now()
 
 	tempfile := utils_test.Tempfile()
 	defer os.Remove(tempfile)
@@ -241,14 +240,11 @@ func TestMetricsPruning(t *testing.T) {
 		id         string
 		timestamps []time.Time
 		values     []float32
-		from       time.Time
-		to         time.Time
 	}{
 		{id: "x0000",
 			timestamps: utils_test.CreateDateTimeTimestamps(1, 24, 1), // 24 events
 			values:     utils_test.CreateFloatValues(24),
-			from:       time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC),
-			to:         time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)},
+		},
 	}
 
 	repo, mockClock, err := utils_test.CreateMetricsRepo(tempfile)
@@ -279,7 +275,8 @@ func TestMetricsPruning(t *testing.T) {
 	// assert data has been pruned
 	time.Sleep(time.Millisecond * 500)
 
-	repo.Prune(time.Now().Add(-time.Hour * 24))
+	// delete all data
+	repo.Prune(-time.Hour * 48)
 
 	time.Sleep(time.Minute * 500)
 

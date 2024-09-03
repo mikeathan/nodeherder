@@ -18,8 +18,7 @@ func CreateMetricsRepo(filename string) (metrics.Repository, *mocks.MockClock, e
 	mockClock := mocks.NewMockClock(func() time.Time {
 		return time.Now()
 	})
-	keyGenerator := metrics.NewTimestampedKeyGenerator(mockClock)
-	repo, err := repository.NewMetricsRepoFromDatabase(kvdb, keyGenerator)
+	repo, err := repository.NewMetricsRepoFromDatabase(kvdb, mockClock)
 
 	if err != nil {
 		return nil, nil, err

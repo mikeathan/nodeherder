@@ -10,7 +10,7 @@ type Repository interface {
 
 	ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*DeviceMetricsResult, error)
 
-	Prune(expireAt time.Time) error
+	Prune(expireAt time.Duration) error
 
 	Close() error
 }
