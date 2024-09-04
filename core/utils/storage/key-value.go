@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"node-herder/utils"
 	"sync"
@@ -188,35 +189,66 @@ func (b *BoltKeyValueDatabase) ViewInRange(bucketName string, from, to []byte, c
 }
 
 func (b *BoltKeyValueDatabase) Prune(callback func(key []byte) (bool, error)) error {
-	defer b.mutex.Unlock()
-	b.mutex.Lock()
-
-	return b.db.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket([]byte(b.rootBucket))
-		if bucket == nil {
-			return bolt.ErrBucketNotFound
+	err := b.db.Update(func(tx *bolt.Tx) error {
+		rootBucket := tx.Bucket([]byte(b.rootBucket))
+		if rootBucket == nil {
+			return errors.New("root bucket not found")
 		}
 
-		c := bucket.Cursor()
-		for bucketName, _ := c.First(); bucketName != nil; bucketName, _ = c.Next() {
+		return rootBucket.ForEach(func(bucketName, _ []byte) error {
+			bucket := rootBucket.Bucket(bucketName)
+			if bucket == nil {
+				return bolt.ErrBucketNotFound
+			}
 
-			bucket.Bucket(bucketName).ForEach(func(key, _ []byte) error {
+			return bucket.ForEach(func(key, value []byte) error {
+				b.mutex.Lock()
+
 				canDelete, err := callback(key)
+
+				b.mutex.Unlock()
+
 				if err != nil {
 					return err
 				}
 
 				if canDelete {
-					if err := bucket.Delete(key); err != nil {
-						return err
+					err = bucket.Delete(key)
+					if err != nil {
+						utils.LogErrorf("Error deleting key: %v", err)
 					}
 				}
 				return nil
 			})
-		}
-
-		return nil
+		})
 	})
+	return err
+	// return b.db.Update(func(tx *bolt.Tx) error {
+	// 	rootBucket := tx.Bucket([]byte(b.rootBucket))
+	// 	if rootBucket == nil {
+	// 		return bolt.ErrBucketNotFound
+	// 	}
+
+	// 	c := rootBucket.Cursor()
+	// 	for bucketName, _ := c.First(); bucketName != nil; bucketName, _ = c.Next() {
+
+	// 		rootBucket.Bucket(bucketName).ForEach(func(key, _ []byte) error {
+	// 			canDelete, err := callback(key)
+	// 			if err != nil {
+	// 				return err
+	// 			}
+
+	// 			if canDelete {
+	// 				if err := rootBucket.Delete(key); err != nil {
+	// 					return err
+	// 				}
+	// 			}
+	// 			return nil
+	// 		})
+	// 	}
+
+	// 	return nil
+	// })
 }
 
 func (b *BoltKeyValueDatabase) openChildBucket(tx *bolt.Tx, bucketName string) (*bolt.Bucket, error) {

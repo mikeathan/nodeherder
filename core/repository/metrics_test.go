@@ -278,8 +278,26 @@ func TestMetricsPruning(t *testing.T) {
 	// delete all data
 	repo.Prune(-time.Hour * 48)
 
-	time.Sleep(time.Minute * 500)
+	time.Sleep(time.Millisecond * 500)
 
+	// assert deletion
+	for _, test := range testCases {
+
+		now := time.Now()
+
+		from := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC)
+		to := time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)
+
+		dev := devices[test.id]
+		result, err := repo.ViewDeviceTimeRange(dev, from, to)
+		if err != nil {
+			t.Errorf("failed to query metrics for device %v error:%v ", test.id, err.Error())
+		}
+
+		if result != nil {
+			t.Errorf("failed to prune device %v", test.id)
+		}
+	}
 }
 func TestDeviceTimeRangeMetrics(t *testing.T) {
 
