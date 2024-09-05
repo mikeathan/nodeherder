@@ -286,7 +286,7 @@ func TestMetricsPruning(t *testing.T) {
 	time.Sleep(time.Millisecond * 500)
 
 	// delete all data
-	repo.Prune(-time.Hour * 48)
+	repo.Prune(time.Hour * 48)
 
 	time.Sleep(time.Millisecond * 500)
 
@@ -362,7 +362,7 @@ func TestMetricsComplexPruning(t *testing.T) {
 	time.Sleep(time.Millisecond * 500)
 
 	// delete anything older than 5 days
-	repo.Prune(-Day * 5)
+	repo.Prune(Day * 5)
 
 	time.Sleep(time.Millisecond * 500)
 
