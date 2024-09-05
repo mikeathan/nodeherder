@@ -152,24 +152,6 @@ func (s *MetricsRepo) Prune(expireAt time.Duration) error {
 	return s.kvdb.Prune(callback)
 }
 
-// func (s *MetricsRepo) readTimestampFromKey(data []byte) (time.Time, error) {
-
-// 	timestamp, err := time.Parse("2006-01-02T15:04:05.000000000Z", string(data[:30]))
-// 	if err != nil {
-// 		return s.clock.Now(), err
-// 	}
-// 	return timestamp, nil
-// }
-
-// func createKeyWithTimestamp(id string, timestamp time.Time) []byte {
-
-// 	customFormat := "2006-01-02T15:04:05.000000000Z"
-// 	timestampStr := timestamp.Format(customFormat)
-// 	key := fmt.Sprintf("%s_%s", timestampStr, id)
-
-// 	return []byte(key)
-// }
-
 // // Paginate entries
 // pageSize := 10
 // pageNumber := 1

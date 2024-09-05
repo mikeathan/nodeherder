@@ -5,6 +5,7 @@ import (
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	"node-herder/repository"
+	"node-herder/utils"
 	"sync"
 	"time"
 )
@@ -97,6 +98,27 @@ func NewAppStore(devices devices.Repository, metrics metrics.Repository, config 
 	}, nil
 }
 
+func (s *appStore) startTasks() {
+	clock := utils.NewRealClock()
+
+	go func() {
+		for {
+
+			// TODO:
+			//make it so we can start/stop it
+			//probably pass context to prune
+			// maybe pass duration in configuration
+			clock.Sleep(time.Minute)
+			utils.LogInfo("Start pruning metrics")
+
+			err := s.metrics.Prune(time.Hour * 12)
+			if err != nil {
+				utils.LogErrorf("Error runing: %v", err)
+			}
+			utils.LogInfo("End pruning metrics")
+		}
+	}()
+}
 func (s *appStore) ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 	return s.metrics.ViewDeviceTimeRange(device, from, to)
 }

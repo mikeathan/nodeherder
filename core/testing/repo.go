@@ -16,7 +16,7 @@ func CreateMetricsRepo(filename string) (metrics.Repository, *mocks.MockClock, e
 	}
 
 	mockClock := mocks.NewMockClock(func() time.Time {
-		return time.Now()
+		return time.Now().UTC()
 	})
 	repo, err := repository.NewMetricsRepoFromDatabase(kvdb, mockClock)
 

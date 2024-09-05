@@ -12,8 +12,6 @@ import (
 	"time"
 )
 
-const Day = 24 * time.Hour
-
 func TestGenerateMockMetrics(t *testing.T) {
 	t.Skip("NOTE: used for generating mock data")
 	now := time.Now()
@@ -244,8 +242,16 @@ func TestMetricsPruning(t *testing.T) {
 		values     []float32
 	}{
 		{id: "x0000",
-			timestamps: utils_test.CreateDateTimeTimestamps(2, 2, 1),
-			values:     utils_test.CreateFloatValues(4),
+			timestamps: utils_test.CreateDateTimeTimestamps(2, 24, 1),
+			values:     utils_test.CreateFloatValues(48),
+		},
+		{id: "x0001",
+			timestamps: utils_test.CreateDateTimeTimestamps(10, 5, 1),
+			values:     utils_test.CreateFloatValues(50),
+		},
+		{id: "x0002",
+			timestamps: utils_test.CreateDateTimeTimestamps(20, 2, 1),
+			values:     utils_test.CreateFloatValues(40),
 		},
 	}
 
@@ -274,17 +280,20 @@ func TestMetricsPruning(t *testing.T) {
 		}
 	}
 
-	// assert data has been pruned
 	time.Sleep(time.Millisecond * 500)
 
+	// reset clock. we reset it earlier so we can store the mocked timestamp in the repo
+	// reset back with now() time for pruning to work
+	now := time.Now().UTC()
+	mockClock.SetMockTime(now)
+
+	// assert data has been pruned
 	repo.Prune(time.Hour * 24)
 
 	time.Sleep(time.Millisecond * 500)
 
 	// assert deletion
 	for _, test := range testCases {
-
-		now := time.Now()
 
 		from := time.Date(now.Year(), now.Month(), now.Day()-2, 0, 0, 0, 0, time.UTC)
 		to := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
@@ -300,99 +309,10 @@ func TestMetricsPruning(t *testing.T) {
 			for _, event := range eventResult.Data {
 				timestamp := time.UnixMilli(event.X).UTC()
 
-				diff := now.Sub(timestamp) > time.Hour*24
-				fmt.Println(diff, timestamp, now)
-			}
-		}
-	}
-}
-
-func TestMetricsComplexPruning(t *testing.T) {
-
-	tempfile := utils_test.Tempfile()
-	defer os.Remove(tempfile)
-
-	testCases := []struct {
-		id         string
-		timestamps []time.Time
-		values     []float32
-	}{
-		{id: "x0000",
-			timestamps: utils_test.CreateDateTimeTimestamps(20, 2, 1),
-			values:     utils_test.CreateFloatValues(40),
-		},
-		{id: "x0001",
-			timestamps: utils_test.CreateDateTimeTimestamps(15, 2, 1), // 24 events
-			values:     utils_test.CreateFloatValues(30),
-		},
-		{id: "x0002",
-			timestamps: utils_test.CreateDateTimeTimestamps(5, 2, 1), // 24 events
-			values:     utils_test.CreateFloatValues(10),
-		},
-	}
-
-	repo, mockClock, err := utils_test.CreateMetricsRepo(tempfile)
-	if err != nil {
-		t.Error("failed to initialise metrics repo: ", err.Error())
-	}
-
-	var devices map[string]*devices.Device = make(map[string]*devices.Device)
-	for i, test := range testCases {
-
-		deviceName := fmt.Sprintf("device %v", i)
-		for tIdx, timestamp := range test.timestamps {
-
-			dev := createMockDevice(test.id, deviceName, 2, "numeric", timestamp, test.values[tIdx])
-			payload := utils_test.Payload(dev)
-
-			mockClock.SetMockTime(timestamp)
-
-			err = repo.Store(dev.Id, payload)
-			if err != nil {
-				t.Error("failed to store metrics ", err.Error())
-			}
-
-			devices[dev.Id] = dev
-		}
-	}
-
-	time.Sleep(time.Millisecond * 500)
-
-	// delete anything older than 5 days
-	repo.Prune(Day * 5)
-
-	time.Sleep(time.Millisecond * 500)
-
-	// assert we only have date from the last 5 days
-
-	for _, test := range testCases {
-
-		now := time.Now()
-
-		from := time.Date(now.Year(), now.Month(), now.Day()-20, 0, 0, 0, 0, time.UTC)
-		to := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-
-		dev := devices[test.id]
-		result, err := repo.ViewDeviceTimeRange(dev, from, to)
-		if err != nil {
-			t.Errorf("failed to query metrics for device %v error:%v ", test.id, err.Error())
-		}
-
-		if len(result.Exposes) == 0 {
-			t.Errorf("failed to find any device %v events", test.id)
-		}
-
-		currentTime := time.Now()
-		for _, expose := range result.Exposes {
-			eventResult := metrics.ToNumericExposeResults(expose)
-			for _, event := range eventResult.Data {
-
-				timestamp := time.UnixMilli(event.X)
-
-				if currentTime.Sub(timestamp) > Day*5 {
+				// assert for any events that are older than 24 hours
+				if now.Sub(timestamp) > time.Hour*24 {
 					t.Errorf("failed to prune device %v event", test.id)
 				}
-
 			}
 		}
 	}
