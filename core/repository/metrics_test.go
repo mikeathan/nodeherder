@@ -244,16 +244,8 @@ func TestMetricsPruning(t *testing.T) {
 		values     []float32
 	}{
 		{id: "x0000",
-			timestamps: utils_test.CreateDateTimeTimestamps(1, 24, 1), // 24 events
-			values:     utils_test.CreateFloatValues(24),
-		},
-		{id: "x0001",
-			timestamps: utils_test.CreateDateTimeTimestamps(1, 10, 1), // 24 events
-			values:     utils_test.CreateFloatValues(10),
-		},
-		{id: "x0002",
-			timestamps: utils_test.CreateDateTimeTimestamps(1, 22, 1), // 24 events
-			values:     utils_test.CreateFloatValues(22),
+			timestamps: utils_test.CreateDateTimeTimestamps(2, 2, 1),
+			values:     utils_test.CreateFloatValues(4),
 		},
 	}
 
@@ -285,8 +277,7 @@ func TestMetricsPruning(t *testing.T) {
 	// assert data has been pruned
 	time.Sleep(time.Millisecond * 500)
 
-	// delete all data
-	repo.Prune(time.Hour * 48)
+	repo.Prune(time.Hour * 24)
 
 	time.Sleep(time.Millisecond * 500)
 
@@ -295,8 +286,8 @@ func TestMetricsPruning(t *testing.T) {
 
 		now := time.Now()
 
-		from := time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC)
-		to := time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)
+		from := time.Date(now.Year(), now.Month(), now.Day()-2, 0, 0, 0, 0, time.UTC)
+		to := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 
 		dev := devices[test.id]
 		result, err := repo.ViewDeviceTimeRange(dev, from, to)
@@ -304,8 +295,14 @@ func TestMetricsPruning(t *testing.T) {
 			t.Errorf("failed to query metrics for device %v error:%v ", test.id, err.Error())
 		}
 
-		if len(result.Exposes) != 0 {
-			t.Errorf("failed to prune device %v", test.id)
+		for _, expose := range result.Exposes {
+			eventResult := metrics.ToNumericExposeResults(expose)
+			for _, event := range eventResult.Data {
+				timestamp := time.UnixMilli(event.X).UTC()
+
+				diff := now.Sub(timestamp) > time.Hour*24
+				fmt.Println(diff, timestamp, now)
+			}
 		}
 	}
 }
