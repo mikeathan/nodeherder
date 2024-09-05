@@ -245,6 +245,14 @@ func TestMetricsPruning(t *testing.T) {
 			timestamps: utils_test.CreateDateTimeTimestamps(1, 24, 1), // 24 events
 			values:     utils_test.CreateFloatValues(24),
 		},
+		{id: "x0001",
+			timestamps: utils_test.CreateDateTimeTimestamps(1, 10, 1), // 24 events
+			values:     utils_test.CreateFloatValues(10),
+		},
+		{id: "x0002",
+			timestamps: utils_test.CreateDateTimeTimestamps(1, 22, 1), // 24 events
+			values:     utils_test.CreateFloatValues(22),
+		},
 	}
 
 	repo, mockClock, err := utils_test.CreateMetricsRepo(tempfile)
@@ -294,11 +302,22 @@ func TestMetricsPruning(t *testing.T) {
 			t.Errorf("failed to query metrics for device %v error:%v ", test.id, err.Error())
 		}
 
-		if result != nil {
+		if len(result.Exposes) != 0 {
 			t.Errorf("failed to prune device %v", test.id)
 		}
 	}
 }
+
+func TestMetricsComplexPruning(t *testing.T) {
+
+	// CASE 1
+	// add various device data going back 10 days
+	// delete anything older than 5 days
+
+	// assert we only have date from the last 5 days
+
+}
+
 func TestDeviceTimeRangeMetrics(t *testing.T) {
 
 	tempfile := utils_test.Tempfile()
