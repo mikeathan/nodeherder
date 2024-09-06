@@ -2,6 +2,7 @@ package utils_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
 	"fmt"
 	"io/ioutil"
@@ -30,7 +31,17 @@ func CreateStore() store.AppStore {
 	settingsRepo := mocks.NopSettingsrepo{}
 
 	defer repo.Close()
-	store, _ := store.NewAppStore(repo, &metricsRepo, &settingsRepo)
+	store, _ := store.NewAppStore(repo, &metricsRepo, &settingsRepo, []store.Task{})
+	return store
+}
+
+func CreateStoreWithTasks(tasks []store.Task) store.AppStore {
+	repo := repository.NewMemoryDeviceRepo()
+	metricsRepo := mocks.NopMetricsRepo{}
+	settingsRepo := mocks.NopSettingsrepo{}
+
+	defer repo.Close()
+	store, _ := store.NewAppStore(repo, &metricsRepo, &settingsRepo, tasks)
 	return store
 }
 
@@ -56,19 +67,48 @@ func CreateFileStore() (store.AppStore, func(), error) {
 	}
 
 	defer repo.Close()
-	store, _ := store.NewAppStore(repo, metricsRepo, settingsRepo)
+	store, _ := store.NewAppStore(repo, metricsRepo, settingsRepo, []store.Task{})
 	return store, cleanup, nil
 }
 
+func CreateFileStoreWithMetricsCleanup(config *store.MetricsCleanupConfig) (store.AppStore, func(), error) {
+
+	settingsTempFile := tempfile()
+	metricsTempFile := tempfile()
+	repo := repository.NewMemoryDeviceRepo()
+
+	cleanup := func() {
+		os.Remove(settingsTempFile)
+		os.Remove(metricsTempFile)
+	}
+
+	metricsRepo, _, err := CreateMetricsRepo(metricsTempFile)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	settingsRepo, err := repository.NewFileSettingsRepoFromFile(settingsTempFile)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	defer repo.Close()
+
+	tasks := []store.Task{
+		store.NewMetricsCleanupTask(context.Background(), metricsRepo, config),
+	}
+	store, _ := store.NewAppStore(repo, metricsRepo, settingsRepo, tasks)
+	return store, cleanup, nil
+}
 func CreateStoreFromDeviceRepo(repo devices.Repository) store.AppStore {
 	metricsRepo := mocks.NopMetricsRepo{}
 	settingsRepo := mocks.NopSettingsrepo{}
-	store, _ := store.NewAppStore(repo, &metricsRepo, &settingsRepo)
+	store, _ := store.NewAppStore(repo, &metricsRepo, &settingsRepo, []store.Task{})
 	return store
 }
 
 func CreateStoreFromRepos(deviceRepo devices.Repository, metricsRepo metrics.Repository, settingsRepo settings.Repository) store.AppStore {
-	store, _ := store.NewAppStore(deviceRepo, metricsRepo, settingsRepo)
+	store, _ := store.NewAppStore(deviceRepo, metricsRepo, settingsRepo, []store.Task{})
 	return store
 }
 

@@ -6,6 +6,7 @@ import (
 	"node-herder/models/devices"
 	"node-herder/models/settings"
 	"node-herder/repository"
+	"node-herder/store"
 	utils_test "node-herder/testing"
 	"os"
 	"sync"
@@ -49,6 +50,47 @@ func TestStoreLoadAllDevices(t *testing.T) {
 		gt := gotDevices[id]
 		utils_test.ValidateDevice(t, wd, gt)
 	}
+}
+
+TO FIX
+func TestStoreMetricsCleanupTasks(t *testing.T) {
+
+	wantDevices := createMockLivingRoomButtonDevices(255.0, 0.0)
+
+	config := store.NewMetricsCleanupConfig(time.Second*10, time.Hour)
+	appStore, cleanup, err := utils_test.CreateFileStoreWithMetricsCleanup(config)
+
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+
+	// NOTE:
+	// need to add bridgeinfo so the new devices can be registered withthe mapper
+	// else if not found in bridge it will use the friendlyname to has the id for mapping
+	bridgeList := utils_test.CreateBridgeInfoList(wantDevices)
+	err = appStore.StoreBridgeInfoList(bridgeList)
+	if err != nil {
+		t.Fatalf("error storing BridgeInfoList: %v", err.Error())
+	}
+
+	// store devices in store
+	for _, wd := range wantDevices {
+		err := appStore.StoreDevice(wd.FriendlyName, wd)
+		if err != nil {
+			t.Fatalf("error storing device %v, %v", wd.Id, err.Error())
+		}
+	}
+
+	gotDevices, err := appStore.AllDevices()
+	if err != nil {
+		t.Fatalf("error loading devices %v:", err.Error())
+	}
+
+	if len(gotDevices) != len(wantDevices) {
+		t.Fatalf("wrong number of devices. want %v got %v ", len(wantDevices), len(gotDevices))
+	}
+
 }
 
 func TestStoreDeviceStoreDoesNotStoreMetricsIfDisabled(t *testing.T) {

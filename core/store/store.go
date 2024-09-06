@@ -65,6 +65,8 @@ type AppStore interface {
 	StoreMetrics(friendlyName string, data map[string]any) error
 	ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error)
 	ResolveFriendlyName(friendlyName string) string
+
+	AddTask(task Task)
 }
 
 type appStore struct {
@@ -74,51 +76,52 @@ type appStore struct {
 	deviceConfigs  map[string]*settings.DeviceConfig
 	deviceIdMapper *repository.DeviceIdMapper
 	rateLimiter    *rateLimiter
+	tasks          []Task
 }
 
-func NewAppStore(devices devices.Repository, metrics metrics.Repository, config settings.Repository) (AppStore, error) {
+func NewAppStore(devices devices.Repository, metrics metrics.Repository, config settings.Repository, tasks []Task) (AppStore, error) {
 
 	appconfig, err := config.Load()
 	if err != nil {
 		return nil, err
 	}
 
+	// TODO: from config get task settings and initialize tasks eg sleep timeout or expireAt
+	// maybe before starting the tasks
+
 	deviceConfigs := make(map[string]*settings.DeviceConfig)
 	for _, dev := range appconfig.Devices {
 		deviceConfigs[dev.Id] = dev
 	}
 
-	return &appStore{
+	app := &appStore{
 		metrics:        metrics,
 		devices:        devices,
 		config:         config,
 		deviceConfigs:  deviceConfigs,
 		deviceIdMapper: repository.NewDeviceIdMapper(devices),
 		rateLimiter:    NewRateLimiter(nil),
-	}, nil
+		tasks:          tasks,
+	}
+
+	app.startTasks()
+	return app, nil
+}
+
+func (s *appStore) AddTask(task Task) {
+	s.tasks = append(s.tasks, task)
 }
 
 func (s *appStore) startTasks() {
-	clock := utils.NewRealClock()
 
-	go func() {
-		for {
-
-			// TODO:
-			//make it so we can start/stop it
-			//probably pass context to prune
-			// maybe pass duration in configuration
-			clock.Sleep(time.Minute)
-			utils.LogInfo("Start pruning metrics")
-
-			err := s.metrics.Prune(time.Hour * 12)
-			if err != nil {
-				utils.LogErrorf("Error runing: %v", err)
-			}
-			utils.LogInfo("End pruning metrics")
+	for _, task := range s.tasks {
+		err := task.Start()
+		if err != nil {
+			utils.LogErrorf("Error starting task: %v\n", err)
 		}
-	}()
+	}
 }
+
 func (s *appStore) ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 	return s.metrics.ViewDeviceTimeRange(device, from, to)
 }

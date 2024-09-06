@@ -457,6 +457,10 @@ func (s *NopAppStore) FindDeviceConfig(id string) (*settings.DeviceConfig, error
 	return nil, nil
 }
 
+func (s *NopAppStore) AddTask(task store.Task) {
+	fmt.Println("Mocked store AddTask")
+}
+
 func (s *NopAppStore) LoadAppConfig() (*settings.AppConfig, error) {
 	fmt.Println("Mocked store LoadAppConfig")
 	return nil, nil
