@@ -1,14 +1,25 @@
 package store
 
 import (
+	"context"
 	"fmt"
+	"node-herder/models/metrics"
 	"node-herder/repository"
 )
 
-func Create() (AppStore, error) {
+func Create(ctx context.Context) (AppStore, error) {
 
-	devices := repository.NewMemoryDeviceRepo()
-	metrics, err := repository.NewMetricsRepo()
+	devicesRepo := repository.NewMemoryDeviceRepo()
+	metricsRepo, err := repository.NewMetricsRepo()
+
+	// pass task to metrics repo
+
+	// is silly task takes metrics repo and then we add it to it.
+	// re think,
+	//and also find a way to start it
+	metricsCleanupTask := metrics.NewCleanupTask(ctx, metricsRepo, metrics.DefaultCleanupConfig())
+
+	metricsRepo.AddTask(metricsCleanupTask)
 	if err != nil {
 		return nil, fmt.Errorf("loading metrics repository failed: %v", err.Error())
 	}
@@ -18,5 +29,5 @@ func Create() (AppStore, error) {
 		return nil, fmt.Errorf("loading settings repository failed: %v", err.Error())
 	}
 
-	return NewAppStore(devices, metrics, settings)
+	return NewAppStore(devicesRepo, metricsRepo, settings)
 }

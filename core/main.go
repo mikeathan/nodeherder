@@ -62,7 +62,7 @@ func main() {
 		ClientType: args.buildType,
 	}
 
-	store, err := store.Create()
+	store, err := store.Create(ctx)
 	if err != nil {
 		utils.LogErrorf("error creating store: %v", err.Error())
 		cancelCtx()

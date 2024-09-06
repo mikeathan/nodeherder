@@ -17,6 +17,7 @@ type MetricsRepo struct {
 	keyGenerator metrics.TimestampedKeyGenerator
 	kvdb         storage.KeyValueDatabase
 	clock        utils.Clock
+	tasks        []metrics.Task
 }
 
 func NewMetricsRepo() (metrics.Repository, error) {
@@ -29,11 +30,16 @@ func NewMetricsRepo() (metrics.Repository, error) {
 
 func NewMetricsRepoFromDatabase(kvdb storage.KeyValueDatabase, clock utils.Clock) (metrics.Repository, error) {
 	repo := &MetricsRepo{
+		keyGenerator: metrics.NewTimestampedKeyGenerator(clock),
 		kvdb:         kvdb,
 		clock:        clock,
-		keyGenerator: metrics.NewTimestampedKeyGenerator(clock),
+		tasks:        []metrics.Task{},
 	}
 	return repo, nil
+}
+
+func (s *MetricsRepo) AddTask(task metrics.Task) {
+	s.tasks = append(s.tasks, task)
 }
 
 func (s *MetricsRepo) Close() error {
