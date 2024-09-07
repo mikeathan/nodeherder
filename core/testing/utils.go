@@ -284,6 +284,7 @@ func CreateDevice(deviceId string, friendlyName string, property string, data an
 	ent1.Name = property
 	ent1.Unit = "test"
 	ent1.Data = data
+	ent1.Type = "numeric"
 
 	device1.Exposes[property] = ent1
 	device1.Exposes[property].Attributes = make(map[string]any)

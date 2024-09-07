@@ -82,16 +82,19 @@ func (s *FileSettingsRepo) SaveDeviceConfig(deviceConfig *settings.DeviceConfig)
 
 func (s *FileSettingsRepo) Load() (*settings.AppConfig, error) {
 
-	buffer, err := s.kvdb.Get([]byte(settingsKeyName))
-	if buffer == nil {
-		return nil, err
-	}
-
-	settings := settings.NewAppConfig()
-	err = json.Unmarshal(buffer, &settings)
+	buffer, err := s.kvdb.Get([]byte(settingsBucketName))
 	if err != nil {
 		return nil, err
 	}
 
+	settings := settings.NewAppConfig()
+
+	if buffer != nil {
+		err = json.Unmarshal(buffer, &settings)
+		if err != nil {
+			return nil, err
+		}
+
+	}
 	return settings, err
 }

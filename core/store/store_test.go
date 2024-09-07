@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"node-herder/mocks"
 	"node-herder/models/devices"
+	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	"node-herder/repository"
 	"node-herder/store"
@@ -52,44 +53,91 @@ func TestStoreLoadAllDevices(t *testing.T) {
 	}
 }
 
-TO FIX
 func TestStoreMetricsCleanupTasks(t *testing.T) {
+
+	config := store.NewMetricsCleanupConfig(time.Second*1000, time.Hour)
+	appStore, cleanup, err := utils_test.CreateFileStoreWithMetricsCleanup(config)
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
 
 	wantDevices := createMockLivingRoomButtonDevices(255.0, 0.0)
 
-	config := store.NewMetricsCleanupConfig(time.Second*10, time.Hour)
-	appStore, cleanup, err := utils_test.CreateFileStoreWithMetricsCleanup(config)
+	// store bridgeInfoList
+	bridgeList := utils_test.CreateBridgeInfoList(wantDevices)
+	err = appStore.StoreBridgeInfoList(bridgeList)
+	if err != nil {
+		t.Fatalf("error storing BridgeInfoList: %v", err.Error())
+	}
+	//Enable metrics for all devices
+	for _, wd := range wantDevices {
+		deviceConfig := settings.NewDeviceConfig(wd.Id)
+		deviceConfig.MetricsEnabled = true
+		appStore.SaveDeviceConfig(deviceConfig)
+		if err != nil {
+			t.Fatalf("error updating device %v error: %v:", wd.FriendlyName, err.Error())
+		}
+	}
 
 	if err != nil {
 		t.Fatalf("CreateFileStore failed. err %v ", err)
 	}
 	defer cleanup()
 
-	// NOTE:
-	// need to add bridgeinfo so the new devices can be registered withthe mapper
-	// else if not found in bridge it will use the friendlyname to has the id for mapping
-	bridgeList := utils_test.CreateBridgeInfoList(wantDevices)
-	err = appStore.StoreBridgeInfoList(bridgeList)
-	if err != nil {
-		t.Fatalf("error storing BridgeInfoList: %v", err.Error())
-	}
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now().UTC()
+	})
+	timestamps := utils_test.CreateDateTimeTimestamps(3, 24, 1)
 
-	// store devices in store
-	for _, wd := range wantDevices {
-		err := appStore.StoreDevice(wd.FriendlyName, wd)
-		if err != nil {
-			t.Fatalf("error storing device %v, %v", wd.Id, err.Error())
+	wd := wantDevices[0]
+	// trigger multiple events for each device
+	for i, timestamp := range timestamps {
+		//for id, wd := range wantDevices {
+		for _, we := range wd.Exposes {
+			we.Data = float32((i + 1) + 1*2)
 		}
+
+		payload := utils_test.Payload(wd)
+		for e, p := range payload {
+			fmt.Println(timestamp, e, p)
+		}
+
+		TO FIX somehwre is wrong
+		mockClock.SetMockTime(timestamp)
+
+		err := appStore.StoreMetrics(wd.FriendlyName, payload)
+		if err != nil {
+			t.Fatalf("error updating device %v error: %v:", wd.FriendlyName, err.Error())
+		}
+
+		//time.Sleep(time.Millisecond * 100)
+		//}
 	}
 
-	gotDevices, err := appStore.AllDevices()
+	time.Sleep(time.Millisecond * 100)
+
+	now := time.Now().UTC()
+	from := time.Date(now.Year(), now.Month(), now.Day()-5, 0, 0, 0, 0, time.UTC)
+	to := time.Date(now.Year(), now.Month(), now.Day(), 23, 0, 0, 0, time.UTC)
+	// assert that metrics are stored
+	//for _, wd := range wantDevices {
+
+	fmt.Println(from, to)
+	result, err := appStore.ViewMetrics(wd, from, to)
 	if err != nil {
-		t.Fatalf("error loading devices %v:", err.Error())
+		t.Fatalf("error retreiving metrics device %v error: %v:", wd.FriendlyName, err.Error())
 	}
 
-	if len(gotDevices) != len(wantDevices) {
-		t.Fatalf("wrong number of devices. want %v got %v ", len(wantDevices), len(gotDevices))
+	for _, expose := range result.Exposes {
+
+		event := metrics.ToNumericExposeResults(expose)
+		fmt.Println(event.Name, len(event.Data))
+
 	}
+	//}
+
+	time.Sleep(time.Second * 100)
 
 }
 
