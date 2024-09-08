@@ -55,8 +55,12 @@ func TestStoreLoadAllDevices(t *testing.T) {
 
 func TestStoreMetricsCleanupTasks(t *testing.T) {
 
-	config := store.NewMetricsCleanupConfig(time.Second*1000, time.Hour)
-	appStore, cleanup, err := utils_test.CreateFileStoreWithMetricsCleanup(config)
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now().UTC()
+	})
+
+	config := store.NewMetricsCleanupConfig(time.Second*1, time.Hour)
+	appStore, cleanup, err := utils_test.CreateFileStoreWithMetricsCleanup(config, mockClock)
 	if err != nil {
 		t.Fatalf("CreateFileStore failed. err %v ", err)
 	}
@@ -70,10 +74,12 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error storing BridgeInfoList: %v", err.Error())
 	}
+	
 	//Enable metrics for all devices
 	for _, wd := range wantDevices {
 		deviceConfig := settings.NewDeviceConfig(wd.Id)
 		deviceConfig.MetricsEnabled = true
+		deviceConfig.RateLimit = 1
 		appStore.SaveDeviceConfig(deviceConfig)
 		if err != nil {
 			t.Fatalf("error updating device %v error: %v:", wd.FriendlyName, err.Error())
@@ -85,34 +91,26 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	}
 	defer cleanup()
 
-	mockClock := mocks.NewMockClock(func() time.Time {
-		return time.Now().UTC()
-	})
-	timestamps := utils_test.CreateDateTimeTimestamps(3, 24, 1)
+	timestamps := utils_test.CreateDateTimeTimestamps(3, 2, 1)
 
-	wd := wantDevices[0]
+	numOfEvents := 6
 	// trigger multiple events for each device
 	for i, timestamp := range timestamps {
-		//for id, wd := range wantDevices {
-		for _, we := range wd.Exposes {
-			we.Data = float32((i + 1) + 1*2)
+		for id, wd := range wantDevices {
+			for _, we := range wd.Exposes {
+				we.Data = float32((i + 1) + id*2)
+			}
+
+			payload := utils_test.Payload(wd)
+			mockClock.SetMockTime(timestamp)
+
+			err := appStore.StoreMetrics(wd.FriendlyName, payload)
+			if err != nil {
+				t.Fatalf("error updating device %v error: %v:", wd.FriendlyName, err.Error())
+			}
+
+			time.Sleep(time.Millisecond * 20)
 		}
-
-		payload := utils_test.Payload(wd)
-		for e, p := range payload {
-			fmt.Println(timestamp, e, p)
-		}
-
-		TO FIX somehwre is wrong
-		mockClock.SetMockTime(timestamp)
-
-		err := appStore.StoreMetrics(wd.FriendlyName, payload)
-		if err != nil {
-			t.Fatalf("error updating device %v error: %v:", wd.FriendlyName, err.Error())
-		}
-
-		//time.Sleep(time.Millisecond * 100)
-		//}
 	}
 
 	time.Sleep(time.Millisecond * 100)
@@ -120,23 +118,44 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	now := time.Now().UTC()
 	from := time.Date(now.Year(), now.Month(), now.Day()-5, 0, 0, 0, 0, time.UTC)
 	to := time.Date(now.Year(), now.Month(), now.Day(), 23, 0, 0, 0, time.UTC)
+
 	// assert that metrics are stored
-	//for _, wd := range wantDevices {
+	for _, wd := range wantDevices {
 
-	fmt.Println(from, to)
-	result, err := appStore.ViewMetrics(wd, from, to)
-	if err != nil {
-		t.Fatalf("error retreiving metrics device %v error: %v:", wd.FriendlyName, err.Error())
+		result, err := appStore.ViewMetrics(wd, from, to)
+		if err != nil {
+			t.Fatalf("error retreiving metrics device %v error: %v:", wd.FriendlyName, err.Error())
+		}
+		for _, expose := range result.Exposes {
+
+			event := metrics.ToNumericExposeResults(expose)
+			if len(event.Data) != numOfEvents {
+				t.Fatalf("error metrics results mismatch. want %v got %v", numOfEvents, len(event.Data))
+
+			}
+		}
 	}
 
-	for _, expose := range result.Exposes {
+	time.Sleep(time.Second * 1)
 
-		event := metrics.ToNumericExposeResults(expose)
-		fmt.Println(event.Name, len(event.Data))
+	// assert that metrics are removed
+	for _, wd := range wantDevices {
 
+		result, err := appStore.ViewMetrics(wd, from, to)
+		if err != nil {
+			t.Fatalf("error retreiving metrics device %v error: %v:", wd.FriendlyName, err.Error())
+		}
+		for _, expose := range result.Exposes {
+
+			event := metrics.ToNumericExposeResults(expose)
+
+			 check if results are older than 1 hour if so error
+			if len(event.Data) != 0 {
+				t.Fatalf("error metrics results mismatch. want 0 got %v", len(event.Data))
+
+			}
+		}
 	}
-	//}
-
 	time.Sleep(time.Second * 100)
 
 }
