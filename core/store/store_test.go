@@ -59,7 +59,8 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 		return time.Now().UTC()
 	})
 
-	config := store.NewMetricsCleanupConfig(time.Second*1, time.Hour)
+	sleepTimeout := time.Second * 1
+	config := store.NewMetricsCleanupConfig(sleepTimeout, time.Hour)
 	appStore, cleanup, err := utils_test.CreateFileStoreWithMetricsCleanup(config, mockClock)
 	if err != nil {
 		t.Fatalf("CreateFileStore failed. err %v ", err)
@@ -74,7 +75,7 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error storing BridgeInfoList: %v", err.Error())
 	}
-	
+
 	//Enable metrics for all devices
 	for _, wd := range wantDevices {
 		deviceConfig := settings.NewDeviceConfig(wd.Id)
@@ -91,9 +92,9 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	}
 	defer cleanup()
 
-	timestamps := utils_test.CreateDateTimeTimestamps(3, 2, 1)
+	timestamps := utils_test.CreateDateTimeTimestamps(3, 24, 1)
 
-	numOfEvents := 6
+	numOfEvents := 3 * 24
 	// trigger multiple events for each device
 	for i, timestamp := range timestamps {
 		for id, wd := range wantDevices {
@@ -108,17 +109,19 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 			if err != nil {
 				t.Fatalf("error updating device %v error: %v:", wd.FriendlyName, err.Error())
 			}
-
-			time.Sleep(time.Millisecond * 20)
 		}
 	}
+
+	// reset clock its used in pruning
+	mockClock.SetMockTime(time.Now().UTC())
 
 	time.Sleep(time.Millisecond * 100)
 
 	now := time.Now().UTC()
 	from := time.Date(now.Year(), now.Month(), now.Day()-5, 0, 0, 0, 0, time.UTC)
-	to := time.Date(now.Year(), now.Month(), now.Day(), 23, 0, 0, 0, time.UTC)
+	to := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC)
 
+	fmt.Println(from, to)
 	// assert that metrics are stored
 	for _, wd := range wantDevices {
 
@@ -136,7 +139,7 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 		}
 	}
 
-	time.Sleep(time.Second * 1)
+	time.Sleep(sleepTimeout)
 
 	// assert that metrics are removed
 	for _, wd := range wantDevices {
@@ -149,14 +152,17 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 
 			event := metrics.ToNumericExposeResults(expose)
 
-			 check if results are older than 1 hour if so error
-			if len(event.Data) != 0 {
-				t.Fatalf("error metrics results mismatch. want 0 got %v", len(event.Data))
+			for _, event := range event.Data {
+				timestamp := time.UnixMilli(event.X).UTC()
 
+				// assert for any events that are older than 1 hour
+				if now.Sub(timestamp) > time.Hour {
+
+					t.Errorf("failed to prune event timestamp %v", timestamp)
+				}
 			}
 		}
 	}
-	time.Sleep(time.Second * 100)
 
 }
 
@@ -219,6 +225,7 @@ func TestStoreDeviceStoreDoesNotStoreMetricsIfDisabled(t *testing.T) {
 	}
 }
 
+broken
 func TestStoreDeviceUpdateStoresMetricsIfEnabled(t *testing.T) {
 	wg := &sync.WaitGroup{}
 
@@ -287,7 +294,7 @@ func TestStoreDeviceUpdateStoresMetricsIfEnabled(t *testing.T) {
 
 	wg.Wait()
 }
-
+broken
 func TestStoreMetricsLimitsDataWithDefaultRateLimiter(t *testing.T) {
 	wg := &sync.WaitGroup{}
 
