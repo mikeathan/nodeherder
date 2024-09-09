@@ -22,13 +22,27 @@ func NewDeviceConfig(id string) *DeviceConfig {
 	}
 }
 
+type HistoryConfig struct {
+	SleepTimeout time.Duration `json:"sleeptimeout"`
+	ExpireAt     time.Duration `json:"expireat"`
+}
+
+func DefaultHistoryConfig() *HistoryConfig {
+	return &HistoryConfig{
+		SleepTimeout: time.Hour * 12,      // 12 hours timeout
+		ExpireAt:     time.Hour * 24 * 10, // 10 days expiration
+	}
+}
+
 type AppConfig struct {
 	Devices map[string]*DeviceConfig `json:"devices"`
+	History *HistoryConfig           `json:"history"`
 }
 
 func NewAppConfig() *AppConfig {
 	return &AppConfig{
 		Devices: map[string]*DeviceConfig{},
+		History: DefaultHistoryConfig(),
 	}
 }
 

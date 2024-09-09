@@ -88,7 +88,6 @@ func (s *FileSettingsRepo) Load() (*settings.AppConfig, error) {
 	}
 
 	settings := settings.NewAppConfig()
-
 	if buffer != nil {
 		err = json.Unmarshal(buffer, &settings)
 		if err != nil {

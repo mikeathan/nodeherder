@@ -104,7 +104,7 @@ func NewAppStore(devices devices.Repository, metrics metrics.Repository, config 
 		tasks:          tasks,
 	}
 
-	app.startTasks()
+	app.startTasks(appconfig.History)
 	return app, nil
 }
 
@@ -112,10 +112,10 @@ func (s *appStore) AddTask(task Task) {
 	s.tasks = append(s.tasks, task)
 }
 
-func (s *appStore) startTasks() {
+func (s *appStore) startTasks(config *settings.HistoryConfig) {
 
 	for _, task := range s.tasks {
-		err := task.Start()
+		err := task.Start(config)
 		if err != nil {
 			utils.LogErrorf("Error starting task: %v\n", err)
 		}

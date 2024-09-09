@@ -117,3 +117,4 @@ Metrics TODO
 - or maybe store configures prune timeout and starts service
 
   index entries = bolt.Bucket.CreateIndex
+  viewmetrics and store metrics require utc time - do we care to sanity pr not

@@ -3,13 +3,14 @@ package store
 import (
 	"context"
 	"node-herder/models/metrics"
+	"node-herder/models/settings"
 	"node-herder/utils"
 	"sync"
 	"time"
 )
 
 type Task interface {
-	Start() error
+	Start(cfg *settings.HistoryConfig) error
 	Stop() error
 }
 
@@ -50,24 +51,23 @@ func (c *MetricsCleanupConfig) SetSleepTimeout(sleepTimeout time.Duration) {
 }
 
 type MetricsCleanupTask struct {
-	clock  utils.Clock
-	repo   metrics.Repository
-	ctx    context.Context
-	wg     sync.WaitGroup
-	config *MetricsCleanupConfig
+	clock utils.Clock
+	repo  metrics.Repository
+	ctx   context.Context
+	wg    sync.WaitGroup
 }
 
 func DefaultMetricsCleanupTask(ctx context.Context, repo metrics.Repository) Task {
 	return &MetricsCleanupTask{
-		clock:  utils.NewRealClock(),
-		repo:   repo,
-		ctx:    ctx,
-		wg:     sync.WaitGroup{},
-		config: DefaultCleanupConfig(),
+		clock: utils.NewRealClock(),
+		repo:  repo,
+		ctx:   ctx,
+		wg:    sync.WaitGroup{},
 	}
 }
 
-func (t *MetricsCleanupTask) Start() error {
+TODO use cfg from args
+func (t *MetricsCleanupTask) Start(cfg *settings.HistoryConfig) error {
 	t.wg.Add(1)
 
 	go func() {
