@@ -225,7 +225,6 @@ func TestStoreDeviceStoreDoesNotStoreMetricsIfDisabled(t *testing.T) {
 	}
 }
 
-problem with loading settings - so store doesnt know that we enabled metrics. it has empty buffer when we Load settings
 func TestStoreDeviceUpdateStoresMetricsIfEnabled(t *testing.T) {
 	wg := &sync.WaitGroup{}
 
