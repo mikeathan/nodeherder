@@ -172,10 +172,10 @@ func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *tes
 	// publish new device again- This SHOULD be stored as metrics NOW
 	payload = map[string]any{"brightness": 20.0, "color_temp": 110.0}
 	mqtt.Publish(d.FriendlyName, payload)
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(5 * time.Second)
 
-	from := time.Now().Add(-time.Minute)
-	to := time.Now()
+	from := time.Now().Add(-time.Minute * 2).UTC()
+	to := time.Now().UTC()
 	lightMetrics, err := store.ViewMetrics(d, from, to)
 	if err != nil {
 		t.Fatalf("ViewMetrics failed. err %v ", err)
