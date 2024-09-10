@@ -71,7 +71,7 @@ func CreateFileStore() (store.AppStore, func(), error) {
 	return store, cleanup, nil
 }
 
-func CreateFileStoreWithMetricsCleanup(config *store.MetricsCleanupConfig, mockClock *mocks.MockClock) (store.AppStore, func(), error) {
+func CreateFileStoreWithAppConfig(appConfig *settings.AppConfig, mockClock *mocks.MockClock) (store.AppStore, func(), error) {
 
 	settingsTempFile := tempfile()
 	metricsTempFile := tempfile()
@@ -91,11 +91,15 @@ func CreateFileStoreWithMetricsCleanup(config *store.MetricsCleanupConfig, mockC
 	if err != nil {
 		return nil, nil, err
 	}
+	err = settingsRepo.Save(appConfig)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	defer repo.Close()
 
 	tasks := []store.Task{
-		store.NewMetricsCleanupTask(context.Background(), metricsRepo, config),
+		store.NewMetricsCleanupTask(context.Background(), metricsRepo),
 	}
 	store, _ := store.NewAppStore(repo, metricsRepo, settingsRepo, tasks)
 	return store, cleanup, nil

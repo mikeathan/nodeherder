@@ -6,7 +6,6 @@ import (
 	"node-herder/models/settings"
 	"node-herder/utils"
 	"sync"
-	"time"
 )
 
 type Task interface {
@@ -14,40 +13,13 @@ type Task interface {
 	Stop() error
 }
 
-type MetricsCleanupConfig struct {
-	SleepTimeout time.Duration
-	ExpireAt     time.Duration
-}
-
-func NewMetricsCleanupConfig(sleepTimeout time.Duration, expireAt time.Duration) *MetricsCleanupConfig {
-	return &MetricsCleanupConfig{
-		SleepTimeout: sleepTimeout,
-		ExpireAt:     expireAt,
-	}
-}
-
-func DefaultCleanupConfig() *MetricsCleanupConfig {
-	return &MetricsCleanupConfig{
-		SleepTimeout: time.Hour * 12,
-		ExpireAt:     time.Hour * 24 * 10,
-	}
-}
-
-func NewMetricsCleanupTask(ctx context.Context, repo metrics.Repository, config *MetricsCleanupConfig) Task {
+func NewMetricsCleanupTask(ctx context.Context, repo metrics.Repository) Task {
 	return &MetricsCleanupTask{
-		clock:  utils.NewRealClock(),
-		repo:   repo,
-		ctx:    ctx,
-		wg:     sync.WaitGroup{},
-		config: config,
+		clock: utils.NewRealClock(),
+		repo:  repo,
+		ctx:   ctx,
+		wg:    sync.WaitGroup{},
 	}
-}
-func (c *MetricsCleanupConfig) SetExpireAt(expireAt time.Duration) {
-	c.ExpireAt = expireAt
-}
-
-func (c *MetricsCleanupConfig) SetSleepTimeout(sleepTimeout time.Duration) {
-	c.SleepTimeout = sleepTimeout
 }
 
 type MetricsCleanupTask struct {
@@ -66,8 +38,7 @@ func DefaultMetricsCleanupTask(ctx context.Context, repo metrics.Repository) Tas
 	}
 }
 
-TODO use cfg from args
-func (t *MetricsCleanupTask) Start(cfg *settings.HistoryConfig) error {
+func (t *MetricsCleanupTask) Start(config *settings.HistoryConfig) error {
 	t.wg.Add(1)
 
 	go func() {
@@ -80,10 +51,10 @@ func (t *MetricsCleanupTask) Start(cfg *settings.HistoryConfig) error {
 				return
 
 			default:
-				t.clock.Sleep(t.config.SleepTimeout)
+				t.clock.Sleep(config.SleepTimeout)
 				utils.LogInfo("Start metrics cleanup")
 
-				err := t.repo.Prune(t.config.ExpireAt)
+				err := t.repo.Prune(config.ExpireAt)
 				if err != nil {
 					utils.LogErrorf("Error during metrics cleanup: %v", err)
 				}

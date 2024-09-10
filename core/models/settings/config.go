@@ -27,6 +27,12 @@ type HistoryConfig struct {
 	ExpireAt     time.Duration `json:"expireat"`
 }
 
+func NewHistoryConfig(sleepTimeout time.Duration, expireAt time.Duration) *HistoryConfig {
+	return &HistoryConfig{
+		SleepTimeout: sleepTimeout,
+		ExpireAt:     expireAt,
+	}
+}
 func DefaultHistoryConfig() *HistoryConfig {
 	return &HistoryConfig{
 		SleepTimeout: time.Hour * 12,      // 12 hours timeout

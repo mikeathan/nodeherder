@@ -7,7 +7,6 @@ import (
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	"node-herder/repository"
-	"node-herder/store"
 	utils_test "node-herder/testing"
 	"os"
 	"sync"
@@ -60,8 +59,10 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	})
 
 	sleepTimeout := time.Second * 1
-	config := store.NewMetricsCleanupConfig(sleepTimeout, time.Hour)
-	appStore, cleanup, err := utils_test.CreateFileStoreWithMetricsCleanup(config, mockClock)
+
+	appConfig := settings.NewAppConfig()
+	appConfig.History = settings.NewHistoryConfig(sleepTimeout, time.Hour)
+	appStore, cleanup, err := utils_test.CreateFileStoreWithAppConfig(appConfig, mockClock)
 	if err != nil {
 		t.Fatalf("CreateFileStore failed. err %v ", err)
 	}
@@ -121,7 +122,6 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	from := time.Date(now.Year(), now.Month(), now.Day()-5, 0, 0, 0, 0, time.UTC)
 	to := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC)
 
-	fmt.Println(from, to)
 	// assert that metrics are stored
 	for _, wd := range wantDevices {
 
@@ -148,6 +148,7 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 		if err != nil {
 			t.Fatalf("error retreiving metrics device %v error: %v:", wd.FriendlyName, err.Error())
 		}
+		
 		for _, expose := range result.Exposes {
 
 			event := metrics.ToNumericExposeResults(expose)

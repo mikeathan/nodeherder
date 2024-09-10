@@ -86,9 +86,6 @@ func NewAppStore(devices devices.Repository, metrics metrics.Repository, config 
 		return nil, err
 	}
 
-	// TODO: from config get task settings and initialize tasks eg sleep timeout or expireAt
-	// maybe before starting the tasks
-
 	deviceConfigs := make(map[string]*settings.DeviceConfig)
 	for _, dev := range appconfig.Devices {
 		deviceConfigs[dev.Id] = dev
