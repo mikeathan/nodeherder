@@ -103,7 +103,7 @@ TODO
 
 frontend - tabs - load tab on click
 frontend - add app settings in main page
-frontend - numeric chart - fix chart
+frontend - numeric/timeseris chart - fix chart layout , add colours etc...
 
 METRICS frontend TODO
 

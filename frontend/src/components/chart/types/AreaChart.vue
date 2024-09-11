@@ -53,9 +53,9 @@ const chartOptions = {
     enabled: false,
   },
   legend: {
+    showForSingleSeries: true,
     position: 'top'
   },
-
   stroke: {
     curve: 'smooth',
   },
@@ -70,11 +70,6 @@ const chartOptions = {
         hour: 'HH:mm',
       },
     },
-  },
-  yaxis: {
-    title: {
-      text: props.chartData.name,
-    }
   },
   Tooltip: {
     x: {
