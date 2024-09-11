@@ -48,13 +48,18 @@ const chartOptions = {
       show: false,
     },
   },
+
   dataLabels: {
     enabled: false,
+  },
+  legend: {
+    position: 'top'
   },
 
   stroke: {
     curve: 'smooth',
   },
+
   xaxis: {
     type: 'datetime',
     labels: {
@@ -66,14 +71,17 @@ const chartOptions = {
       },
     },
   },
+  yaxis: {
+    title: {
+      text: props.chartData.name,
+    }
+  },
   Tooltip: {
     x: {
       format: 'dd/MMM/yy HH:mm:ss ',
     },
   },
-  legend: {
-    position: 'top',
-  },
+
   responsive: [
     {
       breakpoint: undefined,

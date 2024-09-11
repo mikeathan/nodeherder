@@ -22,15 +22,6 @@ export const utcToUnixTimestamp = (date: Date): number => {
     date.getSeconds(),
   );
   const unixTimestamp = Math.floor(utcMilliseconds / 1000);
-  console.log(
-    'UTC:',
-    utcMilliseconds,
-    '=',
-    new Date(utcMilliseconds),
-    ' unix::',
-    unixTimestamp,
-  );
-
   return unixTimestamp;
 };
 export const toUnix = (date: Date): number =>

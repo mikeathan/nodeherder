@@ -94,27 +94,27 @@ BUGS:
 TODO
 
 - frontend - device settings component - DONE
-- frontend - test metrics graph - need mocked data in test node server !
+- frontend - test metrics graph - need mocked data in test node server ! - done
   - create fil with mocked metrics
 - metrics results could have property from/to so we know the range for ui purposes
 - Non bridge devices . eg HTTP need more investigation/testing
 - error reporting - important
-- metrics repo - keep for x days ?
+- metrics repo - keep for x days - done
 
-frontend metrics
+frontend - tabs - load tab on click
+frontend - add app settings in main page
+frontend - numeric chart - fix chart
 
-need alot of test data for the test server
+METRICS frontend TODO
+
 dropdown with time ranges to select from - check homeassistant
 toggle for live data ? later
 
 once we send the request
 store response in metrics store ? needs thinking if we need that
 
-Metrics TODO
+METRICS backend TODO
 
 - consider sampling data if too large data set ?
-- pruning duration in config
-- or maybe store configures prune timeout and starts service
-
-  index entries = bolt.Bucket.CreateIndex
-  viewmetrics and store metrics require utc time - do we care to sanity pr not
+- index entries = bolt.Bucket.CreateIndex
+- viewmetrics and store metrics require utc time - do we care to sanity pr not

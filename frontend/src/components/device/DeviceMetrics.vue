@@ -31,10 +31,7 @@ watch(
 
 function dateSelected(value: PeriodType) {
 
-  console.log('dateSelected', value);
   const { from, to } = getPeriodOffset(value);
-
-  console.log(from, ' ----', to);
   var request: DeviceMetricsRequest = {
     id: props.id,
     from: toUnix(from),

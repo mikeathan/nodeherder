@@ -32,7 +32,7 @@ function transformedChartData(
   const transformedData: TimelineChartEntry[] = [];
 
   exposeMetrics.forEach((item) => {
-    item.data.forEach((point, index) => {
+    item.data.forEach((point) => {
       const entry = {
         name: point.x,
         data: [
@@ -77,7 +77,6 @@ const chartOptions = {
     },
   },
   colors: ['#FF4560', '#00E396'],
-
   xaxis: {
     type: 'datetime',
     labels: {

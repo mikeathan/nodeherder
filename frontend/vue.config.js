@@ -1,4 +1,4 @@
-const { defineConfig } = require("@vue/cli-service");
+const { defineConfig } = require('@vue/cli-service');
 
 module.exports = defineConfig({
   devServer: {
@@ -6,21 +6,6 @@ module.exports = defineConfig({
   },
   transpileDependencies: true,
   configureWebpack: {
-    devtool: "source-map",
+    devtool: 'source-map',
   },
-  // configureWebpack: {
-  //   resolve: {
-  //     extensions: ['.ts', '.tsx', '.vue', '.js', '.json'],
-  //   },
-  //   module: {
-  //     rules: [
-  //       {
-  //         test: /\.tsx?$/,
-  //         loader: 'ts-loader',
-  //         options: { appendTsSuffixTo: [/\.vue$/] },
-  //         exclude: /node_modules/,
-  //       },
-  //     ],
-  //   },
-  //},
 });
