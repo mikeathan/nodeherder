@@ -12,6 +12,7 @@ export type AreaDataPoint = {
 
 export type AreaChartEntry = {
   name: string;
+  color: string;
   data: AreaDataPoint[];
 };
 

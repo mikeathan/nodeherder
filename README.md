@@ -104,6 +104,10 @@ TODO
 frontend - tabs - load tab on click
 frontend - add app settings in main page
 frontend - numeric/timeseris chart - fix chart layout , add colours etc...
+-make dynamics colours of specific range https://apexcharts.com/docs/options/theme/
+or assing specific colours to each expose
+
+- fix timeline legend
 
 METRICS frontend TODO
 

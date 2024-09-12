@@ -4,6 +4,8 @@ import type { PropType, Ref } from 'vue';
 import BaseChart from '../BaseChart.vue';
 import { AreaChartEntry } from '@/types/chart.type';
 import { DeviceExposeMetrics, DeviceExposeNumericMetrics } from '@/types/metrics.type';
+import { auto } from '@popperjs/core';
+import { dynamicColors } from '@/contracts/chart';
 
 const props = defineProps({
   chartData: {
@@ -32,6 +34,7 @@ function transformedChartData(
   return [
     {
       name: chartData.name,
+      color: dynamicColors().backgroundColor,
       data: chartData.data.map((point) => ({
         x: point.x,
         y: point.y,
@@ -45,10 +48,10 @@ const chartOptions = {
     type: 'area',
     background: '#fff',
     toolbar: {
+      autoselected: 'pan',
       show: false,
     },
   },
-
   dataLabels: {
     enabled: false,
   },
@@ -59,7 +62,6 @@ const chartOptions = {
   stroke: {
     curve: 'smooth',
   },
-
   xaxis: {
     type: 'datetime',
     labels: {

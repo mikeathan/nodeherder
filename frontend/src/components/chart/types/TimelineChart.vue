@@ -47,6 +47,14 @@ function transformedChartData(
     });
   });
 
+  // TO TRY
+  // name: 'Series 2',
+  //         data: [
+  //           { x: '2023-01-01', y: [5, 15] },
+  //           { x: '2023-02-01', y: [15, 25] },
+  //           { x: '2023-03-01', y: [25, 35] }
+  //         ]
+
   return transformedData;
 }
 
@@ -62,6 +70,12 @@ const chartOptions = {
     x: {
       format: 'dd/MMM/yy HH:mm:ss ',
     },
+  },
+  legend: {
+    show: false,
+    showForSingleSeries: true,
+    position: 'top',
+    //customLegendItems: timelineLegends.value
   },
   plotOptions: {
     bar: {
@@ -94,9 +108,6 @@ const chartOptions = {
   fill: {
     type: 'solid',
     opacity: 0.6,
-  },
-  legend: {
-    show: false,
   },
   responsive: [
     {
