@@ -29,10 +29,7 @@ const humidityMax = 100.0;
 const luminance_luxMin = 10;
 const luminance_luxMax = 600;
 
-// Id             string `json:"id"`
-// 	Disabled       bool   `json:"disabled"`
-// 	MetricsEnabled bool   `json:"history"`
-// 	RateLimit      int    `json:"rateLimit"`
+
 
 
 let port = 3000;

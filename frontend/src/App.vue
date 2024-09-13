@@ -21,7 +21,9 @@ onBeforeMount(() => {
       </span>
       <Notifications position="top right" />
       <RouterLink to="/">{{ title }}</RouterLink> |
-      <RouterLink to="/viewer">Automations </RouterLink>
+      <RouterLink to="/viewer">Automations </RouterLink> |
+      <RouterLink to="/settings">Settings </RouterLink>
+
       <RouterView />
     </div>
   </main>

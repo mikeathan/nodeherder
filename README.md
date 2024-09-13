@@ -75,6 +75,7 @@ TODO:
 - backup automations
 
 ## Features
+
 - Add schemes - living room with grouped devices
 
 ## frontend
@@ -101,10 +102,11 @@ TODO
 - error reporting - important
 - metrics repo - keep for x days - DONE
 
-frontend - tabs - load tab on click -() leave for now)
-frontend - add app settings in main page
-frotend  - fix device settings in demo mode
-frontend - fix timerange colours 
+frontend - tabs - load tab on click -(leave for now)
+frontend - add app settings in main page:
+format later currently is at the top of the page
+
+frontend - fix timerange colours
 
 METRICS frontend TODO
 
