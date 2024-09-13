@@ -54,7 +54,7 @@ const groupedMetrics = computed(() => {
 
 <template>
   <div class="col-sm-3">
-    <Selection label="Select time offset:" :value="selectePeriod" @updated="dateSelected" :items="PeriodOptions">
+    <Selection label="Period:" :value="selectePeriod" @updated="dateSelected" :items="PeriodOptions">
     </Selection>
   </div>
 

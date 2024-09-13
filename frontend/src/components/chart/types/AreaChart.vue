@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, watch } from 'vue';
 import type { PropType, Ref } from 'vue';
 import BaseChart from '../BaseChart.vue';
 import { AreaChartEntry } from '@/types/chart.type';
-import { DeviceExposeMetrics, DeviceExposeNumericMetrics } from '@/types/metrics.type';
-import { auto } from '@popperjs/core';
-import { dynamicColors } from '@/contracts/chart';
+import { DeviceExposeNumericMetrics } from '@/types/metrics.type';
+import { getExposeColor } from '@/contracts/chart';
 
 const props = defineProps({
   chartData: {
@@ -34,7 +33,7 @@ function transformedChartData(
   return [
     {
       name: chartData.name,
-      color: dynamicColors().backgroundColor,
+      color: getExposeColor(chartData.name),
       data: chartData.data.map((point) => ({
         x: point.x,
         y: point.y,
@@ -49,8 +48,19 @@ const chartOptions = {
     background: '#fff',
     toolbar: {
       autoselected: 'pan',
+      theme: 'dark',
       show: false,
     },
+  },
+  fill: {
+    type: 'gradient',
+    gradient: {
+      shadeIntensity: 1,
+      inverseColors: false,
+      opacityFrom: 0.6,
+      opacityTo: 0,
+      stops: [0, 100]
+    }
   },
   dataLabels: {
     enabled: false,

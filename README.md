@@ -22,7 +22,6 @@ Metrics listener
 advanced:
 
 Setting configuration for devices
-Triggers and binding
 Add api endpoint for collecting data from WiFi sensors
 Circuit breaker
 
@@ -55,7 +54,7 @@ TODO:
 
 ## Deployment
 
-- add build makefile
+- add build makefile - DONE
 - deploy to docker
 
 ## Backend
@@ -75,11 +74,13 @@ TODO:
 - Test new logic in RegisterBridge
 - backup automations
 
+## Features
+- Add schemes - living room with grouped devices
+
 ## frontend
 
-- add card control for automations
 - add type in device.expose for http data ?
-- add functionality to enable/disalbe a trigger
+- add functionality to enable/disable a trigger
 - add log window in frontend
 
 BUGS:
@@ -94,20 +95,16 @@ BUGS:
 TODO
 
 - frontend - device settings component - DONE
-- frontend - test metrics graph - need mocked data in test node server ! - done
-  - create fil with mocked metrics
-- metrics results could have property from/to so we know the range for ui purposes
+- frontend - test metrics graph - need mocked data in test node server ! - DONE
+- metrics results could have property from/to so we know the range for ui purposes - DONE
 - Non bridge devices . eg HTTP need more investigation/testing
 - error reporting - important
-- metrics repo - keep for x days - done
+- metrics repo - keep for x days - DONE
 
-frontend - tabs - load tab on click
+frontend - tabs - load tab on click -() leave for now)
 frontend - add app settings in main page
-frontend - numeric/timeseris chart - fix chart layout , add colours etc...
--make dynamics colours of specific range https://apexcharts.com/docs/options/theme/
-or assing specific colours to each expose
-
-- fix timeline legend
+frotend  - fix device settings in demo mode
+frontend - fix timerange colours 
 
 METRICS frontend TODO
 
@@ -121,4 +118,3 @@ METRICS backend TODO
 
 - consider sampling data if too large data set ?
 - index entries = bolt.Bucket.CreateIndex
-- viewmetrics and store metrics require utc time - do we care to sanity pr not

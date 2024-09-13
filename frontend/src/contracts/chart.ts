@@ -3,11 +3,13 @@ import {
   PeriodType,
   PeriodTypes,
 } from '@/types/chart.type';
+import { AlllowedExposeList } from '@/types/device.type';
 import {
   getDateRange,
   getLastWeekStartEndDate,
   getWeekStartEndDate,
 } from '@/utils/date.utils';
+import { KeyValuePair } from '@/types/types';
 
 const HOURS = 24;
 
@@ -52,3 +54,49 @@ function buildColors(n: number): ChartColor[] {
   }
   return chartColors;
 }
+
+const colors: string[] = [
+  'red',
+  'green',
+  'blue',
+  'orange',
+  'purple',
+  'yellow',
+  'pink',
+  'cyan',
+  'lightblue',
+  'lime',
+  'darkgreen',
+  'darkblue',
+  'darkorange',
+  'darkred',
+  'darkgreen',
+  'darkblue',
+  'darkorange',
+  'darkred',
+  'darkgreen',
+  'darkblue',
+  'darkorange',
+  'darkred',
+  'darkgreen',
+  'darkblue',
+  'darkorange',
+];
+
+const buildExposeColors = (): KeyValuePair<string> => {
+  const exposeColors: KeyValuePair<string> = {};
+  for (let i = 0; i < AlllowedExposeList.length; i++) {
+    exposeColors[AlllowedExposeList[i]] =
+      colors[i % colors.length];
+  }
+  return exposeColors;
+};
+
+const exposeColors: KeyValuePair<string> =
+  buildExposeColors();
+
+export const getExposeColor = (
+  exposeName: string,
+): string => {
+  return exposeColors[exposeName] ?? 'blue';
+};
