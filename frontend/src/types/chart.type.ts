@@ -1,9 +1,5 @@
-import { ValueOf } from './types';
-
-export type ChartColor = {
-  backgroundColor: string;
-  borderColor: string;
-};
+import { ColorValue } from './color.type';
+import { KeyValuePair, ValueOf } from './types';
 
 export type AreaDataPoint = {
   x: number;
@@ -12,7 +8,7 @@ export type AreaDataPoint = {
 
 export type AreaChartEntry = {
   name: string;
-  color: string;
+  color: ColorValue;
   data: AreaDataPoint[];
 };
 

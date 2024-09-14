@@ -103,10 +103,9 @@ TODO
 - metrics repo - keep for x days - DONE
 
 frontend - tabs - load tab on click -(leave for now)
-frontend - add app settings in main page:
-format later currently is at the top of the page
-
-frontend - fix timerange colours
+frontend - add app settings in main page - fix layout
+frontend - add navigation for pages - use vuetify and redesign layout
+frontend - handle timerange enum colours
 
 METRICS frontend TODO
 
@@ -118,5 +117,6 @@ store response in metrics store ? needs thinking if we need that
 
 METRICS backend TODO
 
+- returns lis of period for ui to choose from
 - consider sampling data if too large data set ?
 - index entries = bolt.Bucket.CreateIndex

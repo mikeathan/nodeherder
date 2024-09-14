@@ -205,7 +205,7 @@
       ]
     },
     {
-      "name": "test enum",
+      "name": "color_sync",
       "type": "enum",
       "from": 1722729600000,
       "to": 1722816000000,

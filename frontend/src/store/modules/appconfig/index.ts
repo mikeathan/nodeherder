@@ -1,20 +1,35 @@
-import { Module } from "vuex";
-import { RootState } from "../../state";
-import { AppConfigModuleState } from "./state";
-import { AppConfig, DeviceSettings, DeviceSettingsMap } from "@/types/settings";
-import { key } from "@/store";
+import { Module } from 'vuex';
+import { RootState } from '../../state';
+import { AppConfigModuleState } from './state';
+import {
+  AppConfig,
+  DeviceSettings,
+  DeviceSettingsMap,
+  HistorySettings,
+} from '@/types/settings';
+import { key } from '@/store';
 
-export const AppConfigModule: Module<AppConfigModuleState, RootState> = {
+export const AppConfigModule: Module<
+  AppConfigModuleState,
+  RootState
+> = {
   namespaced: true,
 
   state: () => ({
     deviceSettingsMap: {} as DeviceSettingsMap,
+    appConfig: {} as AppConfig,
     initialized: false,
   }),
 
   getters: {
-    initialized: (state: AppConfigModuleState) => (): boolean =>
-      state.initialized,
+    initialized:
+      (state: AppConfigModuleState) => (): boolean =>
+        state.initialized,
+
+    history:
+      (state: AppConfigModuleState) =>
+      (): HistorySettings =>
+        state.appConfig.history,
 
     findDeviceSetting:
       (state: AppConfigModuleState) =>
@@ -26,25 +41,30 @@ export const AppConfigModule: Module<AppConfigModuleState, RootState> = {
   mutations: {
     setDeviceSetting(
       state: AppConfigModuleState,
-      deviceSetting: DeviceSettings
+      deviceSetting: DeviceSettings,
     ) {
-      state.deviceSettingsMap[deviceSetting.id] = deviceSetting;
+      state.deviceSettingsMap[deviceSetting.id] =
+        deviceSetting;
     },
 
     clear(state: AppConfigModuleState) {
-      Object.entries(state.deviceSettingsMap).forEach(([key, value]) => {
-        delete state.deviceSettingsMap[key];
-      });
+      Object.entries(state.deviceSettingsMap).forEach(
+        ([key, value]) => {
+          delete state.deviceSettingsMap[key];
+        },
+      );
+
+      state.appConfig = {} as AppConfig;
       state.initialized = false;
     },
   },
 
   actions: {
     init({ state, commit }, appConfig: AppConfig) {
-      commit("clear", state);
-
+      commit('clear', state);
+      state.appConfig = appConfig;
       Object.values(appConfig.devices).forEach((value) => {
-        commit("setDeviceSetting", value);
+        commit('setDeviceSetting', value);
       });
 
       state.initialized = true;
@@ -52,13 +72,16 @@ export const AppConfigModule: Module<AppConfigModuleState, RootState> = {
 
     saveDeviceSettings(
       { commit, dispatch, rootState },
-      deviceSetting: DeviceSettings
+      deviceSetting: DeviceSettings,
     ) {
-      commit("setDeviceSetting", deviceSetting);
+      commit('setDeviceSetting', deviceSetting);
       dispatch(
-        "ws/emit",
-        { event: "saveDeviceConfig", message: deviceSetting },
-        { root: true }
+        'ws/emit',
+        {
+          event: 'saveDeviceConfig',
+          message: deviceSetting,
+        },
+        { root: true },
       );
     },
   },

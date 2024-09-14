@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { ref, watch, toRaw } from 'vue';
+import { ref, watch, toRaw, computed } from 'vue';
 import type { PropType, Ref } from 'vue';
 import BaseChart from '../BaseChart.vue';
 import { TimelineChartEntry } from '@/types/chart.type';
 import { DeviceExposeBinaryMetrics, DeviceExposeMetrics } from '@/types/metrics.type';
+import { ColorValue } from '@/types/color.type';
+import { getExposeBinaryColour } from '@/contracts/chart';
+import { ExposeTypes } from '@/types/device.type';
 
 const props = defineProps({
   chartData: {
@@ -13,6 +16,16 @@ const props = defineProps({
 });
 
 const timelineData = ref<TimelineChartEntry[]>([]);
+
+const timelineColours = computed(() => {
+  return props.chartData.flatMap((item) => {
+    if (item.type === ExposeTypes.Binary) {
+      const color = getExposeBinaryColour(item.name)
+      return [color.on, color.off]
+    }
+    return [] // TODO: handle Enum types
+  });
+})
 
 watch(
   () => props.chartData,
@@ -47,7 +60,6 @@ function transformedChartData(
     });
   });
 
-
   return transformedData;
 }
 
@@ -80,7 +92,7 @@ const chartOptions = {
       type: 'datetime',
     },
   },
-  colors: ['#FF4560', '#00E396'],
+  colors: timelineColours.value,
   xaxis: {
     type: 'datetime',
     labels: {

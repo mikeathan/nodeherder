@@ -29,9 +29,6 @@ const humidityMax = 100.0;
 const luminance_luxMin = 10;
 const luminance_luxMax = 600;
 
-
-
-
 let port = 3000;
 let pingTimer = 0;
 // App and server
@@ -45,6 +42,10 @@ console.log(
 );
 
 var appConfig = {
+  history: {
+    sleepTimeout: 10000,
+    expireAt: 50000,
+  },
   devices: {
     '0xa4c13894070052fc': {
       id: '0xa4c13894070052fc',

@@ -1,3 +1,5 @@
+import { KeyValuePair } from './types';
+
 export const ExposeTypes = {
   Empty: '',
   Binary: 'binary',
@@ -5,7 +7,7 @@ export const ExposeTypes = {
   Numeric: 'numeric',
 } as const;
 
-export const AlllowedExposeList: string[] = [
+export const alllowedExposeList: string[] = [
   'temperature',
   'humidity',
   'pressure',
@@ -34,3 +36,16 @@ export const AlllowedExposeList: string[] = [
   'current',
   'energy',
 ];
+
+export type ExposeBinaryColor = {
+  on: string;
+  off: string;
+};
+
+export const binaryExposeTypes = {
+  Presence: 'presence',
+  State: 'state',
+  Tamper: 'tamper',
+};
+
+

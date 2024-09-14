@@ -1,19 +1,20 @@
 import {
-  ChartColor,
   PeriodType,
   PeriodTypes,
 } from '@/types/chart.type';
-import { AlllowedExposeList } from '@/types/device.type';
+import {
+  alllowedExposeList,
+  ExposeBinaryColor,
+} from '@/types/device.type';
 import {
   getDateRange,
   getLastWeekStartEndDate,
   getWeekStartEndDate,
 } from '@/utils/date.utils';
 import { KeyValuePair } from '@/types/types';
+import { ColorTypes, ColorValue } from '@/types/color.type';
 
 const HOURS = 24;
-
-export const chartColors: ChartColor[] = buildColors(20);
 
 export const getPeriodOffset = (
   period: PeriodType,
@@ -47,46 +48,11 @@ export function dynamicColors() {
   };
 }
 
-function buildColors(n: number): ChartColor[] {
-  let chartColors: ChartColor[] = [];
-  for (let i = 0; i < n; i++) {
-    chartColors[i] = dynamicColors();
-  }
-  return chartColors;
-}
-
-const colors: string[] = [
-  'red',
-  'green',
-  'blue',
-  'orange',
-  'purple',
-  'yellow',
-  'pink',
-  'cyan',
-  'lightblue',
-  'lime',
-  'darkgreen',
-  'darkblue',
-  'darkorange',
-  'darkred',
-  'darkgreen',
-  'darkblue',
-  'darkorange',
-  'darkred',
-  'darkgreen',
-  'darkblue',
-  'darkorange',
-  'darkred',
-  'darkgreen',
-  'darkblue',
-  'darkorange',
-];
-
 const buildExposeColors = (): KeyValuePair<string> => {
+  const colors = Object.values(ColorTypes);
   const exposeColors: KeyValuePair<string> = {};
-  for (let i = 0; i < AlllowedExposeList.length; i++) {
-    exposeColors[AlllowedExposeList[i]] =
+  for (let i = 0; i < alllowedExposeList.length; i++) {
+    exposeColors[alllowedExposeList[i]] =
       colors[i % colors.length];
   }
   return exposeColors;
@@ -97,6 +63,29 @@ const exposeColors: KeyValuePair<string> =
 
 export const getExposeColor = (
   exposeName: string,
-): string => {
-  return exposeColors[exposeName] ?? 'blue';
+): ColorValue => {
+  return (
+    exposeColors[exposeName] ?? Object.values(ColorTypes)[0]
+  );
+};
+
+export const ExposeBinaryColours: KeyValuePair<ExposeBinaryColor> =
+  {
+    presence: {
+      on: ColorTypes.SkyBlue,
+      off: ColorTypes.Grey,
+    },
+    state: { on: ColorTypes.Yellow, off: ColorTypes.Grey },
+    tamper: { on: ColorTypes.Red, off: ColorTypes.SkyBlue },
+  };
+
+export const getExposeBinaryColour = (
+  exposeName: string,
+): ExposeBinaryColor => {
+  return (
+    ExposeBinaryColours[exposeName] ?? {
+      on: ColorTypes.Blue,
+      off: ColorTypes.Grey,
+    }
+  );
 };

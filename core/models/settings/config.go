@@ -23,8 +23,8 @@ func NewDeviceConfig(id string) *DeviceConfig {
 }
 
 type HistoryConfig struct {
-	SleepTimeout time.Duration `json:"sleeptimeout"`
-	ExpireAt     time.Duration `json:"expireat"`
+	SleepTimeout time.Duration `json:"sleeptTmeout"`
+	ExpireAt     time.Duration `json:"expireAt"`
 }
 
 func NewHistoryConfig(sleepTimeout time.Duration, expireAt time.Duration) *HistoryConfig {
@@ -33,6 +33,7 @@ func NewHistoryConfig(sleepTimeout time.Duration, expireAt time.Duration) *Histo
 		ExpireAt:     expireAt,
 	}
 }
+
 func DefaultHistoryConfig() *HistoryConfig {
 	return &HistoryConfig{
 		SleepTimeout: time.Hour * 12,      // 12 hours timeout

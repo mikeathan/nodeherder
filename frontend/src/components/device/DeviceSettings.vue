@@ -32,7 +32,7 @@ function save(propName: any, propValue: any) {
     store.dispatch('appconfig/saveDeviceSettings', deviceSettings.value as DeviceSettings);
   }
 }
-
+deviceSettings
 </script>
 <template>
   <div class="row border-bottom py-1 w-100 align-items-center" v-for="(value, key) in deviceSettings" :key="key">
