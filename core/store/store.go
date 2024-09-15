@@ -57,6 +57,7 @@ type AppStore interface {
 	LoadAppConfig() (*settings.AppConfig, error)
 	FindDeviceConfig(id string) (*settings.DeviceConfig, error)
 	SaveDeviceConfig(deviceconfig *settings.DeviceConfig) error
+	SaveHistoryConfig(historyConfig *settings.HistoryConfig) error
 
 	StoreBridgeInfoList(bridgeInfoList []*devices.BridgeInfo) error
 	FindBridgeInfoByFriendlyName(friendlyName string) (*devices.BridgeInfo, error)
@@ -119,12 +120,40 @@ func (s *appStore) startTasks(config *settings.HistoryConfig) {
 	}
 }
 
+func (s *appStore) reloadTasks(config *settings.HistoryConfig) {
+
+	for _, task := range s.tasks {
+		err := task.Stop()
+		if err != nil {
+			utils.LogErrorf("Error stopping task: %v\n", err)
+			continue
+		}
+
+		err = task.Start(config)
+		if err != nil {
+			utils.LogErrorf("Error starting task: %v\n", err)
+		}
+	}
+}
 func (s *appStore) ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 	return s.metrics.ViewDeviceTimeRange(device, from, to)
 }
 
 func (s *appStore) LoadAppConfig() (*settings.AppConfig, error) {
 	return s.config.Load()
+}
+
+func (s *appStore) SaveHistoryConfig(historyConfig *settings.HistoryConfig) error {
+	config, err := s.config.Load()
+	if err != nil {
+		return err
+	}
+
+	config.History = historyConfig
+
+	s.reloadTasks(config.History)
+
+	return s.config.Save(config)
 }
 
 func (s *appStore) SaveDeviceConfig(deviceconfig *settings.DeviceConfig) error {

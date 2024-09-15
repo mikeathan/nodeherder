@@ -47,6 +47,13 @@ export const AppConfigModule: Module<
         deviceSetting;
     },
 
+    setHistorySettings(
+      state: AppConfigModuleState,
+      historySetting: HistorySettings,
+    ) {
+      state.appConfig.history = historySetting;
+    },
+
     clear(state: AppConfigModuleState) {
       Object.entries(state.deviceSettingsMap).forEach(
         ([key, value]) => {
@@ -62,6 +69,7 @@ export const AppConfigModule: Module<
   actions: {
     init({ state, commit }, appConfig: AppConfig) {
       commit('clear', state);
+
       state.appConfig = appConfig;
       Object.values(appConfig.devices).forEach((value) => {
         commit('setDeviceSetting', value);
@@ -80,6 +88,20 @@ export const AppConfigModule: Module<
         {
           event: 'saveDeviceConfig',
           message: deviceSetting,
+        },
+        { root: true },
+      );
+    },
+    saveHistorySettings(
+      { commit, dispatch, rootState },
+      historySettings: HistorySettings,
+    ) {
+      commit('setHistorySettings', historySettings);
+      dispatch(
+        'ws/emit',
+        {
+          event: 'saveHistoryConfig',
+          message: historySettings,
         },
         { root: true },
       );

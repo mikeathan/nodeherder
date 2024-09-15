@@ -44,6 +44,7 @@ func (t *MetricsCleanupTask) Start(config *settings.HistoryConfig) error {
 	go func() {
 		defer t.wg.Done()
 
+		utils.LogInfo("Metrics cleanup task started")
 		for {
 			select {
 			case <-t.ctx.Done():
@@ -67,7 +68,9 @@ func (t *MetricsCleanupTask) Start(config *settings.HistoryConfig) error {
 }
 
 func (t *MetricsCleanupTask) Stop() error {
-	t.wg.Wait()
+	t.wg.Done()
+
+	utils.LogInfo("Metrics cleanup task stopped")
 
 	return nil
 }

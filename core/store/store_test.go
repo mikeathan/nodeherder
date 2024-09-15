@@ -58,10 +58,8 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 		return time.Now().UTC()
 	})
 
-	sleepTimeout := time.Second * 1
-
 	appConfig := settings.NewAppConfig()
-	appConfig.History = settings.NewHistoryConfig(sleepTimeout, time.Hour)
+	appConfig.History = settings.DefaultHistoryConfig()
 	appStore, cleanup, err := utils_test.CreateFileStoreWithAppConfig(appConfig, mockClock)
 	if err != nil {
 		t.Fatalf("CreateFileStore failed. err %v ", err)
@@ -92,6 +90,11 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 		t.Fatalf("CreateFileStore failed. err %v ", err)
 	}
 	defer cleanup()
+
+	// set new history config
+	sleepTimeout := time.Second * 1
+	expireAt := time.Hour
+	appStore.SaveHistoryConfig(settings.NewHistoryConfig(sleepTimeout, expireAt))
 
 	timestamps := utils_test.CreateDateTimeTimestamps(3, 24, 1)
 
@@ -139,7 +142,7 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 		}
 	}
 
-	time.Sleep(sleepTimeout)
+	time.Sleep(time.Second * 1)
 
 	// assert that metrics are removed
 	for _, wd := range wantDevices {
@@ -148,7 +151,7 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 		if err != nil {
 			t.Fatalf("error retreiving metrics device %v error: %v:", wd.FriendlyName, err.Error())
 		}
-		
+
 		for _, expose := range result.Exposes {
 
 			event := metrics.ToNumericExposeResults(expose)
@@ -157,7 +160,7 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 				timestamp := time.UnixMilli(event.X).UTC()
 
 				// assert for any events that are older than 1 hour
-				if now.Sub(timestamp) > time.Hour {
+				if now.Sub(timestamp) > expireAt {
 
 					t.Errorf("failed to prune event timestamp %v", timestamp)
 				}

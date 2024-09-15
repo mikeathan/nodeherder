@@ -64,6 +64,17 @@ func (h *HubController) registerEventHubEvents() {
 		return h.store.LoadAppConfig()
 	})
 
+	h.eventHub.OnSaveHistoryConfig(func(p interface{}) error {
+		req := &settings.HistoryConfig{}
+		bytes, _ := json.Marshal(p)
+		err := json.Unmarshal(bytes, &req)
+
+		if err != nil {
+			return fmt.Errorf("OnSaveAppOnSaveHistoryConfigConfig failed. Invalid payload type : %v ", err.Error())
+		}
+		return h.store.SaveHistoryConfig(req)
+	});
+
 	h.eventHub.OnSaveDeviceConfig(func(p interface{}) error {
 		req := &settings.DeviceConfig{}
 		bytes, _ := json.Marshal(p)

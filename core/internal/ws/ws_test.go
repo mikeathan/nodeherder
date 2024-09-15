@@ -688,6 +688,68 @@ func TestLoadAppConfigMessage(t *testing.T) {
 	}
 }
 
+func TestSavistoryConfigMessage(t *testing.T) {
+
+	inputAppConfig := createAppconfig()
+
+	modifiedHistory := inputAppConfig.History
+	modifiedHistory.ExpireAt = 66666
+	modifiedHistory.SleepTimeout = 999999
+
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
+	wsHub.OnSaveHistoryConfig(func(p interface{}) error {
+
+		bytes := []byte(p.(string))
+		payload := &settings.HistoryConfig{}
+
+		err := json.Unmarshal(bytes, &payload)
+		if err != nil {
+			fmt.Println(err.Error())
+			return errors.New("save device config failed. Invalid payload type")
+		}
+
+		if payload.ExpireAt != modifiedHistory.ExpireAt {
+			t.Fatalf("Expected history ExpireAt %v', got '%v'", modifiedHistory.ExpireAt, payload.ExpireAt)
+		}
+		if payload.SleepTimeout != modifiedHistory.SleepTimeout {
+			t.Fatalf("Expected history SleepTimeout %v', got '%v'", modifiedHistory.SleepTimeout, payload.SleepTimeout)
+		}
+		return nil
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	defer s.Close()
+	defer wsConn.Close()
+
+	reqBytes, _ := json.Marshal(modifiedHistory)
+	wsData := &ws.EventMessage{Type: ws.SaveHistoryConfig, Payload: reqBytes}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.OperationSuccess {
+		t.Fatalf("Expected type %v', got '%v'", ws.OperationSuccess, event.Type)
+	}
+}
+
 func TestSaveDeviceConfigMessage(t *testing.T) {
 
 	inputAppConfig := createAppconfig()

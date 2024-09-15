@@ -27,8 +27,9 @@ const (
 	DeviceSetValue          = "deviceSetValue"
 	DeviceRename            = "deviceRename"
 
-	SaveDeviceConfig = "saveDeviceConfig"
-	LoadAppconfig    = "loadAppConfig"
+	SaveHistoryConfig = "saveHistoryConfig"
+	SaveDeviceConfig  = "saveDeviceConfig"
+	LoadAppconfig     = "loadAppConfig"
 
 	LoadMetrics = "loadMetrics"
 
@@ -99,6 +100,7 @@ type EventHub interface {
 	OnLoadMetrics(action func(interface{}) (interface{}, error))
 	OnLoadAppConfig(action func() (interface{}, error))
 	OnSaveDeviceConfig(func(payload interface{}) error)
+	OnSaveHistoryConfig(func(payload interface{}) error)
 	HandleRequest(w http.ResponseWriter, r *http.Request) error
 }
 
@@ -117,6 +119,7 @@ type wsServer struct {
 	onDeleteAutomationTrigger func(interface{}) (interface{}, error)
 	onLoadAppConfig           func() (interface{}, error)
 	onSaveDeviceConfig        func(interface{}) error
+	onSaveHistoryConfig       func(interface{}) error
 }
 
 func NewWsHub() EventHub {
@@ -146,6 +149,7 @@ func NewWsHub() EventHub {
 		onLoadAutomations:         func() interface{} { return nil },
 		onLoadAppConfig:           func() (interface{}, error) { return nil, nil },
 		onSaveDeviceConfig:        func(payload interface{}) error { return nil },
+		onSaveHistoryConfig:       func(payload interface{}) error { return nil },
 	}
 
 	return wsHub
@@ -177,6 +181,10 @@ func (h *wsServer) OnLoadAppConfig(action func() (interface{}, error)) {
 
 func (h *wsServer) OnSaveDeviceConfig(action func(payload interface{}) error) {
 	h.onSaveDeviceConfig = action
+}
+
+func (h *wsServer) OnSaveHistoryConfig(action func(payload interface{}) error) {
+	h.onSaveHistoryConfig = action
 }
 
 func (h *wsServer) OnLoadMetrics(action func(p interface{}) (interface{}, error)) {
@@ -323,6 +331,9 @@ func (c *wsServer) handleHubEvents(message []byte) {
 
 	case SaveDeviceConfig:
 		c.executeAction(eventMsg.Payload, c.onSaveDeviceConfig, true)
+
+	case SaveHistoryConfig:
+		c.executeAction(eventMsg.Payload, c.onSaveHistoryConfig, true)
 
 	case SaveAutomation:
 		c.executeAction(eventMsg.Payload, c.onSaveAutomation, true)

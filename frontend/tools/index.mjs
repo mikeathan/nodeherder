@@ -364,6 +364,11 @@ app.ws('/ws', async function (ws, req) {
         sendMessage(ws, 'metrics', payload);
         break;
 
+      case 'saveHistoryConfig':
+        appConfig.history = obj.payload;
+        sendOperationSuccess(ws);
+        break;
+
       case 'saveDeviceConfig':
         var deviceId = obj.payload.id;
         appConfig[deviceId] = obj.payload;

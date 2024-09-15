@@ -8,25 +8,28 @@ import InputBox from '../input/InputBox.vue';
 
 // for now just load history
 // maybe we load everyhing and the individual device settings are in a combo 
-const historyeSettings = computed(() => {
+const historySettings = computed(() => {
     if (!store.getters['appconfig/initialized']() as Boolean) {
         store.dispatch('ws/emit', { event: 'loadAppConfig' });
     }
 
-    return store.getters['appconfig/history']() as HistorySettings;
+    return store.getters['appconfig/history']();
 });
 
 
 function toggleChanged(propName: any, propValue: any) {
-    // save(propName, propValue);
+    save(propName, propValue);
 }
 
 function inputLostFocus(propName: any, propValue: any) {
-    // save(propName, propValue);
+    save(propName, propValue);
 }
 
 function save(propName: any, propValue: any) {
-
+    if (historySettings.value[propName] != propValue) {
+        historySettings.value[propName] = propValue;
+        store.dispatch('appconfig/saveHistorySettings', historySettings.value as HistorySettings);
+    }
 }
 
 </script>
@@ -37,8 +40,7 @@ function save(propName: any, propValue: any) {
         <br>
         <br>
         <h2>History</h2>
-        <div class="row border-bottom py-1 w-100 align-items-center" v-for="(value, key) in historyeSettings"
-            :key="key">
+        <div class="row border-bottom py-1 w-100 align-items-center" v-for="(value, key) in historySettings" :key="key">
             <dl class="col-12 col-md-3">
                 <dt>
                     <strong> {{ key }}</strong>

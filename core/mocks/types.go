@@ -109,6 +109,10 @@ func (w *MockEventHub) OnSaveDeviceConfig(func(payload interface{}) error) {
 	fmt.Println("Empty OnSaveDeviceConfig")
 }
 
+func (w *MockEventHub) OnSaveHistoryConfig(func(payload interface{}) error) {
+	fmt.Println("Empty OnSaveHistoryConfig")
+}
+
 // Mock MqttClient
 type MockMqttClient struct {
 	messageHandler func(string, []byte)
@@ -263,6 +267,9 @@ func (w *NopWsServer) OnLoadAppConfig(action func() (interface{}, error)) {
 }
 func (w *NopWsServer) OnSaveDeviceConfig(func(payload interface{}) error) {
 	fmt.Println("WsServer: Mocked OnSaveDeviceConfig")
+}
+func (w *NopWsServer) OnSaveHistoryConfig(func(payload interface{}) error) {
+	fmt.Println("WsServer: Mocked OnSaveHistoryConfig")
 }
 
 // Mock devices Repository
@@ -450,6 +457,11 @@ func NewMockAppStoreFromDevicesRepo(devicesRepo devices.Repository) store.AppSto
 		settings:       settingsRepo,
 		deviceIdMapper: repository.NewDeviceIdMapper(devicesRepo),
 	}
+}
+
+func (s *NopAppStore) SaveHistoryConfig(historyConfig *settings.HistoryConfig) error {
+	fmt.Println("Mocked store SaveHistoryConfig")
+	return nil
 }
 
 func (s *NopAppStore) FindDeviceConfig(id string) (*settings.DeviceConfig, error) {
