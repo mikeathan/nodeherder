@@ -16,7 +16,6 @@ const historySettings = computed(() => {
     return store.getters['appconfig/history']();
 });
 
-
 function toggleChanged(propName: any, propValue: any) {
     save(propName, propValue);
 }

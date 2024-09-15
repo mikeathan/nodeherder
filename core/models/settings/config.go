@@ -22,6 +22,10 @@ func NewDeviceConfig(id string) *DeviceConfig {
 	}
 }
 
+
+TOOD - convert time.Duration to int that takes only hours
+or type thats valur and unit eg hours or minutes so we can hanlde in ui and also moc and tets hereconst
+
 type HistoryConfig struct {
 	SleepTimeout time.Duration `json:"sleeptTmeout"`
 	ExpireAt     time.Duration `json:"expireAt"`
