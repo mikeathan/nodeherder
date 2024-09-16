@@ -8,6 +8,7 @@ import (
 	"node-herder/models/settings"
 	"node-herder/repository"
 	utils_test "node-herder/testing"
+	"node-herder/utils"
 	"os"
 	"sync"
 	"testing"
@@ -92,8 +93,9 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	defer cleanup()
 
 	// set new history config
-	sleepTimeout := time.Second * 1
-	expireAt := time.Hour
+	sleepTimeout := utils.IntervalFromSeconds(1)
+	expireAt := utils.IntervalFromHours(1)
+
 	appStore.SaveHistoryConfig(settings.NewHistoryConfig(sleepTimeout, expireAt))
 
 	timestamps := utils_test.CreateDateTimeTimestamps(3, 24, 1)
@@ -160,7 +162,7 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 				timestamp := time.UnixMilli(event.X).UTC()
 
 				// assert for any events that are older than 1 hour
-				if now.Sub(timestamp) > expireAt {
+				if now.Sub(timestamp) > expireAt.Duration() {
 
 					t.Errorf("failed to prune event timestamp %v", timestamp)
 				}

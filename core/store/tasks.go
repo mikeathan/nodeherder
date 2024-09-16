@@ -52,10 +52,10 @@ func (t *MetricsCleanupTask) Start(config *settings.HistoryConfig) error {
 				return
 
 			default:
-				t.clock.Sleep(config.SleepTimeout)
+				t.clock.Sleep(config.SleepTimeout.Duration())
 				utils.LogInfo("Start metrics cleanup")
 
-				err := t.repo.Prune(config.ExpireAt)
+				err := t.repo.Prune(config.ExpireAt.Duration())
 				if err != nil {
 					utils.LogErrorf("Error during metrics cleanup: %v", err)
 				}

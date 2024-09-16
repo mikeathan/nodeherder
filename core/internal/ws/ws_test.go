@@ -16,6 +16,7 @@ import (
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	utils_test "node-herder/testing"
+	"node-herder/utils"
 	"strconv"
 	"testing"
 	"time"
@@ -693,8 +694,8 @@ func TestSavistoryConfigMessage(t *testing.T) {
 	inputAppConfig := createAppconfig()
 
 	modifiedHistory := inputAppConfig.History
-	modifiedHistory.ExpireAt = 66666
-	modifiedHistory.SleepTimeout = 999999
+	modifiedHistory.ExpireAt = utils.IntervalFromDays(7891)
+	modifiedHistory.SleepTimeout = utils.IntervalFromHours(123)
 
 	wsHub := ws.NewWsHub()
 	wsHub.Start()
@@ -710,11 +711,19 @@ func TestSavistoryConfigMessage(t *testing.T) {
 			return errors.New("save device config failed. Invalid payload type")
 		}
 
-		if payload.ExpireAt != modifiedHistory.ExpireAt {
-			t.Fatalf("Expected history ExpireAt %v', got '%v'", modifiedHistory.ExpireAt, payload.ExpireAt)
+		if payload.ExpireAt.Value != modifiedHistory.ExpireAt.Value {
+			t.Fatalf("Expected history ExpireAt Value %v', got '%v'", modifiedHistory.ExpireAt.Value, payload.ExpireAt.Value)
 		}
-		if payload.SleepTimeout != modifiedHistory.SleepTimeout {
-			t.Fatalf("Expected history SleepTimeout %v', got '%v'", modifiedHistory.SleepTimeout, payload.SleepTimeout)
+
+		if payload.ExpireAt.Unit != modifiedHistory.ExpireAt.Unit {
+			t.Fatalf("Expected history ExpireAt unit %v', got '%v'", modifiedHistory.ExpireAt.Unit, payload.ExpireAt.Unit)
+		}
+		if payload.SleepTimeout.Value != modifiedHistory.SleepTimeout.Value {
+			t.Fatalf("Expected history SleepTimeout value %v', got '%v'", modifiedHistory.SleepTimeout.Value, payload.SleepTimeout.Value)
+		}
+
+		if payload.SleepTimeout.Unit != modifiedHistory.SleepTimeout.Unit {
+			t.Fatalf("Expected history SleepTimeout unit %v', got '%v'", modifiedHistory.SleepTimeout.Unit, payload.SleepTimeout.Unit)
 		}
 		return nil
 	})

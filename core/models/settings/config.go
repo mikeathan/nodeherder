@@ -1,6 +1,9 @@
 package settings
 
-import "time"
+import (
+	"node-herder/utils"
+	"time"
+)
 
 type DeviceConfig struct {
 	Id             string `json:"id"`
@@ -22,16 +25,12 @@ func NewDeviceConfig(id string) *DeviceConfig {
 	}
 }
 
-
-TOOD - convert time.Duration to int that takes only hours
-or type thats valur and unit eg hours or minutes so we can hanlde in ui and also moc and tets hereconst
-
 type HistoryConfig struct {
-	SleepTimeout time.Duration `json:"sleeptTmeout"`
-	ExpireAt     time.Duration `json:"expireAt"`
+	SleepTimeout *utils.TimeInterval `json:"sleeptTmeout"`
+	ExpireAt     *utils.TimeInterval `json:"expireAt"`
 }
 
-func NewHistoryConfig(sleepTimeout time.Duration, expireAt time.Duration) *HistoryConfig {
+func NewHistoryConfig(sleepTimeout *utils.TimeInterval, expireAt *utils.TimeInterval) *HistoryConfig {
 	return &HistoryConfig{
 		SleepTimeout: sleepTimeout,
 		ExpireAt:     expireAt,
@@ -40,8 +39,8 @@ func NewHistoryConfig(sleepTimeout time.Duration, expireAt time.Duration) *Histo
 
 func DefaultHistoryConfig() *HistoryConfig {
 	return &HistoryConfig{
-		SleepTimeout: time.Hour * 12,      // 12 hours timeout
-		ExpireAt:     time.Hour * 24 * 10, // 10 days expiration
+		SleepTimeout: utils.IntervalFromHours(12),
+		ExpireAt:     utils.IntervalFromDays(10),
 	}
 }
 
