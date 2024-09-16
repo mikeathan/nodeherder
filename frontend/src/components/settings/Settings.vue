@@ -13,7 +13,7 @@ const historySettings = computed(() => {
         store.dispatch('ws/emit', { event: 'loadAppConfig' });
     }
 
-    return store.getters['appconfig/history']();
+    return store.getters['appconfig/history']()
 });
 
 function toggleChanged(propName: any, propValue: any) {

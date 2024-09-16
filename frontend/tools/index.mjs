@@ -43,8 +43,8 @@ console.log(
 
 var appConfig = {
   history: {
-    sleepTimeout: 10000,
-    expireAt: 50000,
+    sleepTimeout: { value: 12, unit: 'hours' },
+    expireAt: { value: 10, unit: 'days' },
   },
   devices: {
     '0xa4c13894070052fc': {
