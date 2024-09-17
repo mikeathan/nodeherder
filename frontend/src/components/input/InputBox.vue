@@ -110,11 +110,13 @@ input.form-control:disabled {
 <template>
     <div v-if="props.label != ''" class="form-floating">
         <input type="text" class="form-control" id="dataInput" :style="`text-align:${props.position}`"
-            v-model="inputValue" @input="inputChanged" @keypress="isNumber" :disabled="props.disabled" />
+            v-model="inputValue" @input="inputChanged" @keypress="isNumber" :disabled="props.disabled"
+            :onblur="onLostFocus" />
         <label for="dataInput">{{ props.label }}</label>
     </div>
     <div v-else class="">
         <input type="text" class="form-control" id="dataInput" :style="`text-align:${props.position}`"
-            v-model="inputValue" @input="inputChanged" @keypress="isNumber" :disabled="props.disabled" :onblur="onLostFocus"/>
+            v-model="inputValue" @input="inputChanged" @keypress="isNumber" :disabled="props.disabled"
+            :onblur="onLostFocus" />
     </div>
 </template>

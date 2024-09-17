@@ -2,7 +2,7 @@ import { ValueOf } from './types';
 
 export type AppConfig = {
   devices: KeyyValuePair<DeviceSettings>;
-  history: HistorySettings;
+  history: HistorySettingsType;
 };
 
 export type DeviceSettingsMap =
@@ -22,7 +22,10 @@ export type TimeInterval = {
   unit: TimeUnit;
 };
 
-export type HistorySettings = {
+export type HistorySettingsPropsType =
+  keyof HistorySettingsType;
+
+export type HistorySettingsType = {
   sleepTimeout: TimeInterval;
   expireAt: TimeInterval;
 };

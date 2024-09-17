@@ -5,7 +5,7 @@ import {
   AppConfig,
   DeviceSettings,
   DeviceSettingsMap,
-  HistorySettings,
+  HistorySettingsType,
 } from '@/types/settings';
 import { key } from '@/store';
 
@@ -28,7 +28,7 @@ export const AppConfigModule: Module<
 
     history:
       (state: AppConfigModuleState) =>
-      (): HistorySettings =>
+      (): HistorySettingsType =>
         state.appConfig.history,
 
     findDeviceSetting:
@@ -49,7 +49,7 @@ export const AppConfigModule: Module<
 
     setHistorySettings(
       state: AppConfigModuleState,
-      historySetting: HistorySettings,
+      historySetting: HistorySettingsType,
     ) {
       state.appConfig.history = historySetting;
     },
@@ -94,7 +94,7 @@ export const AppConfigModule: Module<
     },
     saveHistorySettings(
       { commit, dispatch, rootState },
-      historySettings: HistorySettings,
+      historySettings: HistorySettingsType,
     ) {
       commit('setHistorySettings', historySettings);
       dispatch(

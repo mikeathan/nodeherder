@@ -13,8 +13,8 @@ import {
 
 const mockAppconfig: AppConfig = {
   history: {
-    sleepTimeout: 1000,
-    expireAt: 100000,
+    sleepTimeout: { value: 1, unit: 'hours' },
+    expireAt: { value: 10, unit: 'days' },
   },
   devices: {
     x01234: {
