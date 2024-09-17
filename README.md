@@ -121,14 +121,7 @@ METRICS backend TODO
 - consider sampling data if too large data set ?
 - index entries = bolt.Bucket.CreateIndex
 
-
-PROBLEM in ui how to convert time.durarion to readable time
-do i need to send time.duratio or only allow hours 
-if so then will need to mock that for testing
-
-
 and prolem below
-
 
 [INFO]: 2024-09-15 19:50:31 - Start metrics cleanup
 [ERROR]: 2024-09-15 19:50:31 - Error during metrics cleanup: parsing time "brightness2024-08-25T18:04:56." as "2006-01-02T15:04:05.000000000Z": cannot parse "brightness2024-08-25T18:04:56." as "2006"
