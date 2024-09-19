@@ -21,6 +21,8 @@ type KeyValueDatabase interface {
 
 	ViewInRange(bucketName string, from []byte, to []byte, callback func(key, value []byte) error) error
 
+	HasDataInRange(bucketName string, from, to []byte) (bool, error)
+
 	Delete(bucketName string, key []byte) error
 
 	Prune(callback func(key []byte) (bool, error)) error
@@ -186,6 +188,35 @@ func (b *BoltKeyValueDatabase) ViewInRange(bucketName string, from, to []byte, c
 
 		return nil
 	})
+}
+
+func (b *BoltKeyValueDatabase) HasDataInRange(bucketName string, from, to []byte) (bool, error) {
+	defer b.mutex.RUnlock()
+	b.mutex.RLock()
+
+	var result bool
+	err := b.db.View(func(tx *bolt.Tx) error {
+
+		bucket, err := b.openChildBucket(tx, bucketName)
+		if err != nil {
+			return err
+		}
+
+		cursor := bucket.Cursor()
+		for key, _ := cursor.Seek(from); key != nil && bytes.Compare(key, to) <= 0; cursor.Next() {
+			result = true
+
+			// err = callback(key, data)
+			// if err != nil {
+			// 	return err
+			// }
+
+			break
+		}
+		return nil
+	})
+
+	return result, err
 }
 
 func (b *BoltKeyValueDatabase) Prune(callback func(key []byte) (bool, error)) error {
