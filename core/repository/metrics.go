@@ -2,11 +2,15 @@ package repository
 
 import (
 	"bytes"
+	"fmt"
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
 	"node-herder/utils"
 	"node-herder/utils/storage"
+	"regexp"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -44,6 +48,79 @@ func (s *MetricsRepo) Close() error {
 	return nil
 }
 
+func GetDayRange(now time.Time, duration time.Duration) (time.Time, time.Time) {
+	from := now.Truncate(24 * time.Hour)
+	to := from.Add(24 * time.Hour)
+	return from, to
+}
+
+func getTimestampRanges(periods []string) [][]int64 {
+	ranges := [][]int64{}
+	now := time.Now()
+
+	for _, period := range periods {
+		if period == "today" {
+			from := now.Truncate(24 * time.Hour)
+			to := now
+			fmt.Printf("today from: %v to: %v\n", from, to)
+		} else if strings.Contains(period, "day") {
+			re := regexp.MustCompile(`(\d+)\s*(day|days)`)
+			match := re.FindStringSubmatch(period)
+			if match == nil {
+				fmt.Println("Invalid period:", period)
+				continue
+			}
+
+			days, err := strconv.Atoi(match[1])
+			if err != nil {
+				fmt.Println("Invalid period:", period)
+				continue
+			}
+
+			from := now.Add(-time.Duration(days) * 24 * time.Hour).Truncate(24 * time.Hour)
+			to := now.Truncate(24 * time.Hour)
+			fmt.Printf("%d days from: %v to: %v\n", days, from, to)
+
+		} else if period == "1 week" {
+			from := now.AddDate(0, 0, -int(now.Weekday())+1).Truncate(24 * time.Hour)
+			to := from.Add(7 * 24 * time.Hour)
+			fmt.Printf("1 week from: %v to: %v\n", from, to)
+		}
+
+	}
+
+	return ranges
+}
+func (s *MetricsRepo) ListAvailableRanges(device *devices.Device) error {
+
+	// time ranges
+	// today
+	// 1 day
+	// 3 days
+	// 1 week
+	// 10 days - max limit
+	//now := s.clock.Now()
+
+	getTimestampRanges([]string{"today", "1 day", "3 days", "1 week", "10 days"})
+	// periods := []time.Duration{
+	// 	24 * time.Hour,
+	// 	2 * 24 * time.Hour,
+	// 	3 * 24 * time.Hour,
+	// 	7 * 24 * time.Hour,
+	// 	10 * 24 * time.Hour,
+	// }
+	// from := now.Truncate(24 * time.Hour)
+	// to := from.Add(24 * time.Hour)
+	// fmt.Println("today: ", from, to)
+
+	// for _, period := range periods {
+	// 	from, to := utils.GetDayRange(now, period)
+	// 	fmt.Println("period", from, to)
+	// }
+
+	return nil
+
+}
 func (s *MetricsRepo) Store(id string, data map[string]any) error {
 
 	callback := func(key string, value any) ([]byte, []byte, error) {
