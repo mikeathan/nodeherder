@@ -372,11 +372,6 @@ func (s *NopMetricsRepo) invokeStoreHandler() func(id string, data map[string]an
 	}
 }
 
-func (s *NopMetricsRepo) ListAvailableRanges(device *devices.Device) error {
-	fmt.Println("Mocked ListAvailableRanges")
-	return nil
-}
-
 func (s *NopMetricsRepo) Prune(expireAt time.Duration) error {
 	fmt.Println("Mocked Prune")
 	return nil

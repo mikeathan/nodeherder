@@ -70,9 +70,3 @@ func (d *TimeInterval) Duration() time.Duration {
 		return 0
 	}
 }
-
-func GetDayRange(now time.Time, duration time.Duration) (time.Time, time.Time) {
-	from := now.Add(-duration).Truncate(24 * time.Hour)
-	to := from.Add(duration)
-	return from, to
-}

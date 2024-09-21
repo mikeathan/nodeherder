@@ -231,55 +231,6 @@ func TestMultipleDeviceTimeRangeMetrics(t *testing.T) {
 	}
 }
 
-func TestMetricsListPeriods(t *testing.T) {
-	tempfile := utils_test.Tempfile()
-	defer os.Remove(tempfile)
-
-	testCases := []struct {
-		id         string
-		timestamps []time.Time
-		values     []float32
-	}{
-		{id: "x0000",
-			timestamps: utils_test.CreateDateTimeTimestamps(2, 24, 1),
-			values:     utils_test.CreateFloatValues(48),
-		},
-	}
-
-	repo, mockClock, err := utils_test.CreateMetricsRepo(tempfile)
-	if err != nil {
-		t.Error("failed to initialise metrics repo: ", err.Error())
-	}
-
-	var devices map[string]*devices.Device = make(map[string]*devices.Device)
-	for i, test := range testCases {
-
-		deviceName := fmt.Sprintf("device %v", i)
-		for tIdx, timestamp := range test.timestamps {
-
-			dev := createMockDevice(test.id, deviceName, 2, "numeric", timestamp, test.values[tIdx])
-			payload := utils_test.Payload(dev)
-
-			mockClock.SetMockTime(timestamp)
-
-			err = repo.Store(dev.Id, payload)
-			if err != nil {
-				t.Error("failed to store metrics ", err.Error())
-			}
-
-			devices[dev.Id] = dev
-		}
-	}
-
-	time.Sleep(time.Millisecond * 500)
-
-	now := time.Now().UTC()
-	mockClock.SetMockTime(now)
-
-	repo.ListAvailableRanges(devices["x0000"])
-	
-
-}
 func TestMetricsPruning(t *testing.T) {
 
 	tempfile := utils_test.Tempfile()

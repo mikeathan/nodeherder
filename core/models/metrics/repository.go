@@ -12,7 +12,5 @@ type Repository interface {
 
 	Prune(expireAt time.Duration) error
 
-	ListAvailableRanges(device *devices.Device) error
-
 	Close() error
 }

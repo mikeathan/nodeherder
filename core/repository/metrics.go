@@ -2,7 +2,6 @@ package repository
 
 import (
 	"bytes"
-	"fmt"
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
 	"node-herder/utils"
@@ -51,34 +50,6 @@ func GetDayRange(now time.Time, duration time.Duration) (time.Time, time.Time) {
 	return from, to
 }
 
-func (s *MetricsRepo) ListAvailableRanges(device *devices.Device) error {
-
-	// time ranges
-	// today
-	// 1 day
-	// 3 days
-	// 1 week
-	// 10 days - max limit
-
-	periods := []time.Duration{
-		24 * time.Hour,
-		2 * 24 * time.Hour,
-		3 * 24 * time.Hour,
-		7 * 24 * time.Hour,
-		10 * 24 * time.Hour,
-	}
-
-	for _, period := range periods {
-		now := s.clock.Now()
-
-		from := now.Add(-period)
-		to := now
-		fmt.Println("period", from, to)
-	}
-
-	return nil
-
-}
 func (s *MetricsRepo) Store(id string, data map[string]any) error {
 
 	callback := func(key string, value any) ([]byte, []byte, error) {
