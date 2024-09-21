@@ -106,10 +106,8 @@ frontend - tabs - load tab on click -(leave for now)
 frontend - add app settings in main page - fix layout
 frontend - add navigation for pages - use vuetify and redesign layout
 frontend - handle timerange enum colours
+frontend - when device is offline or not yet active, settings panel is not populated
 
-METRICS frontend TODO
-
-dropdown with time ranges to select from - check homeassistant
 toggle for live data ? later
 
 once we send the request
@@ -117,11 +115,11 @@ store response in metrics store ? needs thinking if we need that
 
 METRICS backend TODO
 
-- returns lis of period for ui to choose from
+- returns lis of period for ui to choose from - NO
 - consider sampling data if too large data set ?
 - index entries = bolt.Bucket.CreateIndex
 
-and prolem below
+and prolem below ?
 
 [INFO]: 2024-09-15 19:50:31 - Start metrics cleanup
 [ERROR]: 2024-09-15 19:50:31 - Error during metrics cleanup: parsing time "brightness2024-08-25T18:04:56." as "2006-01-02T15:04:05.000000000Z": cannot parse "brightness2024-08-25T18:04:56." as "2006"

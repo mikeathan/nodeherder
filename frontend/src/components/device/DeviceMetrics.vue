@@ -20,24 +20,25 @@ const props = defineProps({
 
 
 const selectePeriod = ref<PeriodType>(PeriodTypes.Today);
+const hasMetrics = computed(() => Object.keys(groupedMetrics.value).length > 0);
 
 watch(
   () => props.id,
   () => {
-
     dateSelected(selectePeriod.value)
   }, { immediate: true }
 )
 
 function dateSelected(value: PeriodType) {
 
+  selectePeriod.value = value;
   const { from, to } = getPeriodOffset(value);
   var request: DeviceMetricsRequest = {
     id: props.id,
     from: toUnix(from),
     to: toUnix(to),
   };
-
+  console.log('Period:', selectePeriod.value, "from:", from, "to:", to)
   store.dispatch('metrics/query', request);
 }
 
@@ -54,10 +55,14 @@ const groupedMetrics = computed(() => {
 
 <template>
   <div class="col-sm-3">
-    <Selection label="Period:" :value="selectePeriod" @updated="dateSelected" :items="PeriodOptions">
+    <Selection label="Period:" :value="selectePeriod" @updated="dateSelected" :items="PeriodOptions"
+      :disabled="!hasMetrics">
     </Selection>
   </div>
 
+  <div v-if="!hasMetrics">
+    <p>No metrics available</p>
+  </div>
   <div v-for="(metrics, chartType) in groupedMetrics">
     <component :is="ChartComponents[chartType]" v-bind="{ chartData: metrics }">
     </component>

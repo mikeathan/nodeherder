@@ -353,12 +353,17 @@ app.ws('/ws', async function (ws, req) {
         const payload = metricsMap[obj.payload.id];
 
         if (!payload) {
-          sendOperationFailed(
-            ws,
+          console.log(
             'Metrics for device id' +
               obj.payload.id +
               ' not found',
           );
+          // sendOperationFailed(
+          //   ws,
+          //   'Metrics for device id' +
+          //     obj.payload.id +
+          //     ' not found',
+          // );
           return;
         }
         sendMessage(ws, 'metrics', payload);
