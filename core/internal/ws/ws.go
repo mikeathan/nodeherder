@@ -324,7 +324,7 @@ func (c *wsServer) handleHubEvents(message []byte) {
 		c.Broadcast(Devices, msg)
 
 	case LoadMetrics:
-		c.executePayloadActionWithEvent(eventMsg.Payload, c.onLoadMetrics, Metrics)
+		c.executePayloadActionWithSuccessfullyEvent(eventMsg.Payload, c.onLoadMetrics, Metrics)
 
 	case LoadAppconfig:
 		c.executeActionWithEvent(c.onLoadAppConfig, AppConfig)
@@ -363,6 +363,19 @@ func (c *wsServer) executeActionWithEvent(action func() (interface{}, error), su
 	if err != nil {
 		c.Broadcast(OperationFailed, err.Error())
 	} else {
+		c.Broadcast(successEvent, result)
+	}
+}
+
+func (c *wsServer) executePayloadActionWithSuccessfullyEvent(payload interface{}, action func(interface{}) (interface{}, error), successEvent string) {
+
+	if payload == nil {
+		c.Broadcast(OperationFailed, "payload is empty")
+		return
+	}
+
+	result, err := action(payload)
+	if err == nil {
 		c.Broadcast(successEvent, result)
 	}
 }
