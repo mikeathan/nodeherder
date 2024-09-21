@@ -106,7 +106,6 @@ frontend - tabs - load tab on click -(leave for now)
 frontend - add app settings in main page - fix layout
 frontend - add navigation for pages - use vuetify and redesign layout
 frontend - handle timerange enum colours
-frontend - when device is offline or not yet active, settings panel is not populated
 
 toggle for live data ? later
 
