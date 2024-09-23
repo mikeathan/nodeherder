@@ -112,6 +112,12 @@ toggle for live data ? later
 once we send the request
 store response in metrics store ? needs thinking if we need that
 
+# Logging
+
+TODO
+frontend send request to backend to post logs
+backeend remote logger is turned on and posts line by line logged data
+
 METRICS backend TODO
 
 - returns lis of period for ui to choose from - NO
