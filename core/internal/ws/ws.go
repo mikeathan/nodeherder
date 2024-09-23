@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"node-herder/utils"
-	"sync/atomic"
-	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/olahol/melody"
@@ -46,40 +44,7 @@ const (
 
 	Metrics   = "metrics"
 	AppConfig = "appConfig"
-
-	// Maximum message size allowed from peer.
-	maxMessageSize = 1 * 1024 * 1024
-
-	// Time allowed to write a message to the peer.
-	writeWait = 10 * time.Second
-
-	// Time allowed to read the next pong message from the peer.
-	pongWait = 60 * time.Second
-
-	// Send pings to peer with this period. Must be less than pongWait.
-	pingPeriod = (pongWait * 9) / 10
 )
-
-var clientId atomic.Int64
-
-type EventMessage struct {
-	Type    string      `json:"type"`
-	Payload interface{} `json:"payload"`
-}
-
-func (e EventMessage) MarshalJSON() ([]byte, error) {
-	p := e.Payload
-	if v, ok := e.Payload.([]byte); ok {
-		p = string(v)
-	}
-	return json.Marshal(&struct {
-		Type    string      `json:"type"`
-		Payload interface{} `json:"payload"`
-	}{
-		Type:    e.Type,
-		Payload: p,
-	})
-}
 
 type EventHub interface {
 	Broadcast(eventName string, data interface{}) error
