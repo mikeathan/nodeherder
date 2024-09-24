@@ -2,13 +2,8 @@ package ws
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
 	"node-herder/utils"
-
-	"github.com/gorilla/websocket"
-	"github.com/olahol/melody"
 )
 
 const (
@@ -69,9 +64,8 @@ type EventHub interface {
 	HandleRequest(w http.ResponseWriter, r *http.Request) error
 }
 
-type wsServer struct {
-	clients                   map[int64]bool
-	server                    *melody.Melody
+type eventHubImpl struct {
+	server                    WebSocket
 	onLoadAutomations         func() interface{}
 	onLoadDevices             func() interface{}
 	onLoadDeviceList          (func(ids []string) interface{})
@@ -88,20 +82,8 @@ type wsServer struct {
 }
 
 func NewWsHub() EventHub {
-
-	server := melody.New()
-	server.Upgrader.ReadBufferSize = maxMessageSize
-	server.Upgrader.WriteBufferSize = maxMessageSize
-	server.Config.PingPeriod = pingPeriod
-	server.Config.PongWait = pongWait
-	server.Config.WriteWait = writeWait
-	server.Config.MaxMessageSize = maxMessageSize
-	server.Config.MessageBufferSize = maxMessageSize
-	//		ConcurrentMessageHandling bool          // Handle messages from sessions concurrently.
-
-	wsHub := &wsServer{
-		server:                    server,
-		clients:                   map[int64]bool{},
+	return &eventHubImpl{
+		server:                    NewWebSocket(),
 		onSaveAutomation:          func(payload interface{}) error { return nil },
 		onLoadMetrics:             func(interface{}) (interface{}, error) { return nil, nil },
 		onDeleteAutomation:        func(payload interface{}) (interface{}, error) { return nil, nil },
@@ -116,67 +98,65 @@ func NewWsHub() EventHub {
 		onSaveDeviceConfig:        func(payload interface{}) error { return nil },
 		onSaveHistoryConfig:       func(payload interface{}) error { return nil },
 	}
-
-	return wsHub
 }
 
-func (h *wsServer) HandleRequest(w http.ResponseWriter, r *http.Request) error {
+func (h *eventHubImpl) HandleRequest(w http.ResponseWriter, r *http.Request) error {
 	return h.server.HandleRequest(w, r)
 }
 
-func (h *wsServer) OnDeviceSetValue(action func(p interface{}) error) {
+func (h *eventHubImpl) OnDeviceSetValue(action func(p interface{}) error) {
 	h.onDeviceSetValue = action
 }
 
-func (h *wsServer) OnDeviceRename(action func(p interface{}) error) {
+func (h *eventHubImpl) OnDeviceRename(action func(p interface{}) error) {
 	h.onDeviceRename = action
 }
 
-func (h *wsServer) OnLoadAutomations(action func() interface{}) {
+func (h *eventHubImpl) OnLoadAutomations(action func() interface{}) {
 	h.onLoadAutomations = action
 }
 
-func (h *wsServer) OnLoadDevice(action func(id string) (interface{}, error)) {
+func (h *eventHubImpl) OnLoadDevice(action func(id string) (interface{}, error)) {
 	h.onLoadDevice = action
 }
 
-func (h *wsServer) OnLoadAppConfig(action func() (interface{}, error)) {
+func (h *eventHubImpl) OnLoadAppConfig(action func() (interface{}, error)) {
 	h.onLoadAppConfig = action
 }
 
-func (h *wsServer) OnSaveDeviceConfig(action func(payload interface{}) error) {
+func (h *eventHubImpl) OnSaveDeviceConfig(action func(payload interface{}) error) {
 	h.onSaveDeviceConfig = action
 }
 
-func (h *wsServer) OnSaveHistoryConfig(action func(payload interface{}) error) {
+func (h *eventHubImpl) OnSaveHistoryConfig(action func(payload interface{}) error) {
 	h.onSaveHistoryConfig = action
 }
 
-func (h *wsServer) OnLoadMetrics(action func(p interface{}) (interface{}, error)) {
+func (h *eventHubImpl) OnLoadMetrics(action func(p interface{}) (interface{}, error)) {
 	h.onLoadMetrics = action
 }
 
-func (h *wsServer) OnLoadDeviceList(action func(ids []string) interface{}) {
+func (h *eventHubImpl) OnLoadDeviceList(action func(ids []string) interface{}) {
 	h.onLoadDeviceList = action
 }
 
-func (h *wsServer) OnLoadDevices(action func() interface{}) {
+func (h *eventHubImpl) OnLoadDevices(action func() interface{}) {
 	h.onLoadDevices = action
 }
 
-func (h *wsServer) OnSaveAutomation(action func(p interface{}) error) {
+func (h *eventHubImpl) OnSaveAutomation(action func(p interface{}) error) {
 	h.onSaveAutomation = action
 }
 
-func (h *wsServer) OnDeleteAutomation(action func(p interface{}) (interface{}, error)) {
+func (h *eventHubImpl) OnDeleteAutomation(action func(p interface{}) (interface{}, error)) {
 	h.onDeleteAutomation = action
 }
 
-func (h *wsServer) OnDeleteAutomationTrigger(action func(p interface{}) (interface{}, error)) {
+func (h *eventHubImpl) OnDeleteAutomationTrigger(action func(p interface{}) (interface{}, error)) {
 	h.onDeleteAutomationTrigger = action
 }
 
-func (h *wsServer) EmitDevice(name string) error {
+func (h *eventHubImpl) EmitDevice(name string) error {
 	msg, err := h.onLoadDevice(name)
 	if err != nil {
 		return err
@@ -185,92 +165,30 @@ func (h *wsServer) EmitDevice(name string) error {
 	return nil
 }
 
-func (h *wsServer) EmitDeviceList(ids []string) {
+func (h *eventHubImpl) EmitDeviceList(ids []string) {
 	msg := h.onLoadDeviceList(ids)
 
 	h.Broadcast(DeviceList, msg)
 }
 
-func (h *wsServer) EmitDevices() {
+func (h *eventHubImpl) EmitDevices() {
 	msg := h.onLoadDevices()
 	h.Broadcast(Devices, msg)
 }
 
-func (h *wsServer) RegisterNewClient(conn *websocket.Conn) {
-
+func (h *eventHubImpl) Broadcast(eventName string, data interface{}) error {
+	return h.server.Broadcast(eventName, data)
 }
 
-func (h *wsServer) Broadcast(eventName string, data interface{}) error {
-	var wsData = EventMessage{Type: eventName, Payload: data}
-	bytes, err := json.Marshal(wsData)
-	if err != nil {
-		utils.LogErrorf("wsMelodyServer.Broadcast failed to marshal server payload %s", err.Error())
-
-		return errors.New("failed to marshal server payload")
-	}
-
-	return h.server.Broadcast(bytes)
-}
-
-func (h *wsServer) Close() error {
-	utils.LogDebugf("wsMelodyServer.Close")
+func (h *eventHubImpl) Close() error {
 	return h.server.Close()
 }
 
-func (h *wsServer) Start() {
-
-	h.server.HandleConnect(func(s *melody.Session) {
-		utils.LogDebugf("wsMelodyServer: New client connected")
-		id := clientId.Add(1)
-
-		h.clients[id] = true
-		s.Set("id", id)
-
-		//s.Write([]byte(fmt.Sprintf("client id %d connected", id)))
-	})
-
-	h.server.HandleDisconnect(func(s *melody.Session) {
-		if id, ok := s.Get("id"); ok {
-			s.Write([]byte(fmt.Sprintf("client id %d disconnected", id)))
-
-			h.clients[id.(int64)] = false
-			h.server.BroadcastOthers([]byte(fmt.Sprintf("dis %d", id)), s)
-		} else {
-			fmt.Println("client diconnected")
-		}
-	})
-
-	h.server.HandleError(func(s *melody.Session, err error) {
-		if id, ok := s.Get("id"); ok {
-			fmt.Printf("client id %d Session error: %s\n", id, err.Error())
-		} else {
-			fmt.Printf("client Session error: %s\n", err.Error())
-		}
-	})
-
-	h.server.HandleClose(func(s *melody.Session, code int, reason string) error {
-		if id, ok := s.Get("id"); ok {
-			fmt.Printf("client id %d Session closed: %d, %s\n", id, code, reason)
-		} else {
-			fmt.Println("client session closed")
-		}
-
-		return nil
-	})
-
-	h.server.HandleMessage(func(s *melody.Session, msg []byte) {
-		// Check message size here:
-		if len(msg) > maxMessageSize {
-			// Handle message too large error
-			fmt.Println("message too large")
-			s.CloseWithMsg([]byte(fmt.Sprintf("%d message too large", websocket.CloseMessageTooBig)))
-			return
-		}
-		h.handleHubEvents(msg)
-	})
+func (h *eventHubImpl) Start() {
+	h.server.Start(func(message []byte) { h.handleHubEvents(message) })
 }
 
-func (c *wsServer) handleHubEvents(message []byte) {
+func (c *eventHubImpl) handleHubEvents(message []byte) {
 	var eventMsg = &EventMessage{}
 
 	if err := json.Unmarshal(message, &eventMsg); err != nil {
@@ -322,7 +240,7 @@ func (c *wsServer) handleHubEvents(message []byte) {
 	}
 }
 
-func (c *wsServer) executeActionWithEvent(action func() (interface{}, error), successEvent string) {
+func (c *eventHubImpl) executeActionWithEvent(action func() (interface{}, error), successEvent string) {
 
 	result, err := action()
 	if err != nil {
@@ -332,7 +250,7 @@ func (c *wsServer) executeActionWithEvent(action func() (interface{}, error), su
 	}
 }
 
-func (c *wsServer) executePayloadActionWithSuccessfullyEvent(payload interface{}, action func(interface{}) (interface{}, error), successEvent string) {
+func (c *eventHubImpl) executePayloadActionWithSuccessfullyEvent(payload interface{}, action func(interface{}) (interface{}, error), successEvent string) {
 
 	if payload == nil {
 		c.Broadcast(OperationFailed, "payload is empty")
@@ -345,7 +263,7 @@ func (c *wsServer) executePayloadActionWithSuccessfullyEvent(payload interface{}
 	}
 }
 
-func (c *wsServer) executePayloadActionWithEvent(payload interface{}, action func(interface{}) (interface{}, error), successEvent string) {
+func (c *eventHubImpl) executePayloadActionWithEvent(payload interface{}, action func(interface{}) (interface{}, error), successEvent string) {
 
 	if payload == nil {
 		c.Broadcast(OperationFailed, "payload is empty")
@@ -360,7 +278,7 @@ func (c *wsServer) executePayloadActionWithEvent(payload interface{}, action fun
 	}
 }
 
-func (c *wsServer) executeAction(payload interface{}, action func(interface{}) error, reportSuccess bool) {
+func (c *eventHubImpl) executeAction(payload interface{}, action func(interface{}) error, reportSuccess bool) {
 	if payload == nil {
 		c.Broadcast(OperationFailed, "payload is empty")
 		return

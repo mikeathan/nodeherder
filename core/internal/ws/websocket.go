@@ -48,12 +48,19 @@ func (e EventMessage) MarshalJSON() ([]byte, error) {
 	})
 }
 
-type WebSocket struct {
+type WebSocket interface {
+	HandleRequest(w http.ResponseWriter, r *http.Request) error
+	Broadcast(eventName string, data interface{}) error
+	Close() error
+	Start(messageHandler func(message []byte))
+}
+
+type webSocketImpl struct {
 	conn    *melody.Melody
 	clients map[int64]bool
 }
 
-func NewWebSocket() *WebSocket {
+func NewWebSocket() WebSocket {
 	server := melody.New()
 	server.Upgrader.ReadBufferSize = maxMessageSize
 	server.Upgrader.WriteBufferSize = maxMessageSize
@@ -64,21 +71,21 @@ func NewWebSocket() *WebSocket {
 	server.Config.MessageBufferSize = maxMessageSize
 	//		ConcurrentMessageHandling bool
 
-	return &WebSocket{
+	return &webSocketImpl{
 		conn:    server,
 		clients: map[int64]bool{},
 	}
 }
 
-func (h *WebSocket) HandleRequest(w http.ResponseWriter, r *http.Request) error {
+func (h *webSocketImpl) HandleRequest(w http.ResponseWriter, r *http.Request) error {
 	return h.conn.HandleRequest(w, r)
 }
 
-func (h *WebSocket) Broadcast(eventName string, data interface{}) error {
+func (h *webSocketImpl) Broadcast(eventName string, data interface{}) error {
 	var wsData = EventMessage{Type: eventName, Payload: data}
 	bytes, err := json.Marshal(wsData)
 	if err != nil {
-		utils.LogErrorf("wsMelodyServer.Broadcast failed to marshal server payload %s", err.Error())
+		utils.LogErrorf("WebSocket.Broadcast failed to marshal server payload %s", err.Error())
 
 		return errors.New("failed to marshal server payload")
 	}
@@ -86,15 +93,15 @@ func (h *WebSocket) Broadcast(eventName string, data interface{}) error {
 	return h.conn.Broadcast(bytes)
 }
 
-func (h *WebSocket) Close() error {
-	utils.LogDebugf("wsMelodyServer.Close")
+func (h *webSocketImpl) Close() error {
+	utils.LogDebugf("WebSocket.Close")
 	return h.conn.Close()
 }
 
-func (h *WebSocket) Start() {
+func (h *webSocketImpl) Start(messageHandler func(message []byte)) {
 
 	h.conn.HandleConnect(func(s *melody.Session) {
-		utils.LogDebugf("wsMelodyServer: New client connected")
+		utils.LogDebugf("WebSocket: New client connected")
 		id := clientId.Add(1)
 
 		h.clients[id] = true
@@ -105,43 +112,41 @@ func (h *WebSocket) Start() {
 
 	h.conn.HandleDisconnect(func(s *melody.Session) {
 		if id, ok := s.Get("id"); ok {
-			s.Write([]byte(fmt.Sprintf("client id %d disconnected", id)))
+			s.Write([]byte(fmt.Sprintf("WebSocket: client id %d disconnected", id)))
 
 			h.clients[id.(int64)] = false
 			h.conn.BroadcastOthers([]byte(fmt.Sprintf("dis %d", id)), s)
 		} else {
-			fmt.Println("client diconnected")
+			utils.LogDebug("WebSocket: client diconnected")
 		}
 	})
 
 	h.conn.HandleError(func(s *melody.Session, err error) {
 		if id, ok := s.Get("id"); ok {
-			fmt.Printf("client id %d Session error: %s\n", id, err.Error())
+			utils.LogErrorf("WebSocket: client id %d Session error: %s\n", id, err.Error())
 		} else {
-			fmt.Printf("client Session error: %s\n", err.Error())
+			utils.LogErrorf("WebSocket: client Session error: %s\n", err.Error())
 		}
 	})
 
 	h.conn.HandleClose(func(s *melody.Session, code int, reason string) error {
 		if id, ok := s.Get("id"); ok {
-			fmt.Printf("client id %d Session closed: %d, %s\n", id, code, reason)
+			utils.LogDebugf("WebSocket: client id %d Session closed: %d, %s\n", id, code, reason)
 		} else {
-			fmt.Println("client session closed")
+			utils.LogDebug("WebSocket: client session closed")
 		}
 
 		return nil
 	})
 
 	h.conn.HandleMessage(func(s *melody.Session, msg []byte) {
-		// Check message size here:
 		if len(msg) > maxMessageSize {
 			// Handle message too large error
-			fmt.Println("message too large")
+			utils.LogError("WebSocket: message too large")
 			s.CloseWithMsg([]byte(fmt.Sprintf("%d message too large", websocket.CloseMessageTooBig)))
 			return
 		}
 
-		// TODO !!!!!11111
-		h.handleHubEvents(msg)
+		messageHandler(msg)
 	})
 }

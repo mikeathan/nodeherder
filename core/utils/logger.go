@@ -1,11 +1,13 @@
 package utils
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	easy "github.com/t-tomalak/logrus-easy-formatter"
@@ -21,6 +23,12 @@ func InitFileLogger() {
 	}
 
 	log = newFileLogger("nodeherder.log")
+}
+
+type LogMessage struct {
+	Level   string    `json:"level"`
+	Message string    `json:"message"`
+	Time    time.Time `json:"time"`
 }
 
 type logger struct {
@@ -161,4 +169,35 @@ func (l *logger) Warnf(format string, msg ...interface{}) {
 
 func (l *logger) Errorf(format string, msg ...interface{}) {
 	l.log.Errorf(format, msg...)
+}
+
+func (l *logger) AddHook(hook logrus.Hook) {
+	l.log.AddHook(hook)
+}
+
+type RemoteLoggerHook struct {
+	emit func(message []byte) error
+}
+
+func NewRemoteLogger(emit func(message []byte) error) *RemoteLoggerHook {
+	return &RemoteLoggerHook{emit: emit}
+}
+
+func (hook *RemoteLoggerHook) Fire(entry *logrus.Entry) error {
+	logMessage := LogMessage{
+		Level:   entry.Level.String(),
+		Message: entry.Message,
+		Time:    entry.Time,
+	}
+	jsonBytes, err := json.Marshal(logMessage)
+	if err != nil {
+		return err
+	}
+
+	err = hook.emit(jsonBytes)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
