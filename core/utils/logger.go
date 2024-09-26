@@ -45,6 +45,7 @@ func newConsoleLogger() *logger {
 			TimestampFormat: "2006-01-02 15:04:05",
 			LogFormat:       "[%lvl%]: %time% - %msg%\n",
 		},
+		Hooks: make(logrus.LevelHooks),
 	}
 
 	return &logger{log: log}
@@ -76,6 +77,7 @@ func newFileLogger(logName string) *logger {
 			TimestampFormat: "2006-01-02 15:04:05",
 			LogFormat:       "[%lvl%]: %time% - %msg%\n",
 		},
+		Hooks: make(logrus.LevelHooks),
 	}
 
 	return &logger{log: log, file: f}
@@ -179,20 +181,19 @@ func (l *logger) AddHook(hook logrus.Hook) {
 	l.log.AddHook(hook)
 }
 
-type RemoteLoggerHook struct {
-	emit   func(message []byte) error
-	levels []logrus.Level
+type JsonHook struct {
+	handler func(message []byte) error
 }
 
-func NewRemoteLogger(emit func(message []byte) error) logrus.Hook {
-	return &RemoteLoggerHook{emit: emit}
+func NewJsonHook(handler func(message []byte) error) logrus.Hook {
+	return &JsonHook{handler: handler}
 }
 
-func (hook *RemoteLoggerHook) Levels() []logrus.Level {
-	return hook.levels
+func (hook *JsonHook) Levels() []logrus.Level {
+	return []logrus.Level{logrus.InfoLevel, logrus.ErrorLevel, logrus.WarnLevel, logrus.PanicLevel, logrus.FatalLevel}
 }
 
-func (hook *RemoteLoggerHook) Fire(entry *logrus.Entry) error {
+func (hook *JsonHook) Fire(entry *logrus.Entry) error {
 	logMessage := LogMessage{
 		Level:   entry.Level.String(),
 		Message: entry.Message,
@@ -203,7 +204,7 @@ func (hook *RemoteLoggerHook) Fire(entry *logrus.Entry) error {
 		return err
 	}
 
-	err = hook.emit(jsonBytes)
+	err = hook.handler(jsonBytes)
 	if err != nil {
 		return err
 	}
