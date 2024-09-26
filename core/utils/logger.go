@@ -121,6 +121,10 @@ func LogErrorf(format string, msg ...interface{}) {
 	log.Errorf(format, msg...)
 }
 
+func AddHook(hook logrus.Hook) {
+	log.AddHook(hook)
+}
+
 func (l *logger) SetLevel(level string) {
 	ll, err := logrus.ParseLevel(level)
 	if err != nil {
@@ -176,11 +180,16 @@ func (l *logger) AddHook(hook logrus.Hook) {
 }
 
 type RemoteLoggerHook struct {
-	emit func(message []byte) error
+	emit   func(message []byte) error
+	levels []logrus.Level
 }
 
-func NewRemoteLogger(emit func(message []byte) error) *RemoteLoggerHook {
+func NewRemoteLogger(emit func(message []byte) error) logrus.Hook {
 	return &RemoteLoggerHook{emit: emit}
+}
+
+func (hook *RemoteLoggerHook) Levels() []logrus.Level {
+	return hook.levels
 }
 
 func (hook *RemoteLoggerHook) Fire(entry *logrus.Entry) error {
