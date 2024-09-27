@@ -187,13 +187,16 @@ type JsonHook struct {
 	enabled bool
 }
 
-// TODO
-enableFunc := func() bool {
-	return true // Or false to disable the hook initially
+func NewJsonHook(handler func(message []byte) error, enabled bool) logrus.Hook {
+	return &JsonHook{
+		enabled: enabled,
+		handler: handler,
+		levels:  []logrus.Level{logrus.InfoLevel, logrus.ErrorLevel, logrus.WarnLevel, logrus.PanicLevel, logrus.FatalLevel},
+	}
 }
 
-func NewJsonHook(handler func(message []byte) error) logrus.Hook {
-	return &JsonHook{handler: handler, levels: []logrus.Level{logrus.InfoLevel, logrus.ErrorLevel, logrus.WarnLevel, logrus.PanicLevel, logrus.FatalLevel}}
+func (h *JsonHook) Enabled(enabled bool) {
+	h.enabled = enabled
 }
 
 func (h *JsonHook) Levels() []logrus.Level {
