@@ -183,17 +183,28 @@ func (l *logger) AddHook(hook logrus.Hook) {
 
 type JsonHook struct {
 	handler func(message []byte) error
+	levels  []logrus.Level
+	enabled bool
+}
+
+// TODO
+enableFunc := func() bool {
+	return true // Or false to disable the hook initially
 }
 
 func NewJsonHook(handler func(message []byte) error) logrus.Hook {
-	return &JsonHook{handler: handler}
+	return &JsonHook{handler: handler, levels: []logrus.Level{logrus.InfoLevel, logrus.ErrorLevel, logrus.WarnLevel, logrus.PanicLevel, logrus.FatalLevel}}
 }
 
-func (hook *JsonHook) Levels() []logrus.Level {
-	return []logrus.Level{logrus.InfoLevel, logrus.ErrorLevel, logrus.WarnLevel, logrus.PanicLevel, logrus.FatalLevel}
+func (h *JsonHook) Levels() []logrus.Level {
+	return h.levels
 }
 
-func (hook *JsonHook) Fire(entry *logrus.Entry) error {
+func (h *JsonHook) Fire(entry *logrus.Entry) error {
+	if !h.enabled {
+		return nil
+	}
+
 	logMessage := LogMessage{
 		Level:   entry.Level.String(),
 		Message: entry.Message,
@@ -204,7 +215,7 @@ func (hook *JsonHook) Fire(entry *logrus.Entry) error {
 		return err
 	}
 
-	err = hook.handler(jsonBytes)
+	err = h.handler(jsonBytes)
 	if err != nil {
 		return err
 	}
