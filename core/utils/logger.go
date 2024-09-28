@@ -186,10 +186,23 @@ type JsonHook struct {
 	levels  []logrus.Level
 	enabled bool
 }
+type LoggerHookEnabler interface {
+	Enabled(enabled bool)
+}
 
-func NewJsonHook(handler func(message []byte) error, enabled bool) logrus.Hook {
+type LoggerHookEnablerImpl struct {
+	enabled bool
+}
+
+func (l *LoggerHookEnablerImpl) Enabled(enabled bool) {
+	l.enabled = enabled
+}
+
+func NewJsonHook(handler func(message []byte) error, hookEnabler LoggerHookEnabler) logrus.Hook {
+	hookEnabler.Enabled(true) TODO
+
 	return &JsonHook{
-		enabled: enabled,
+		enabled: false,
 		handler: handler,
 		levels:  []logrus.Level{logrus.InfoLevel, logrus.ErrorLevel, logrus.WarnLevel, logrus.PanicLevel, logrus.FatalLevel},
 	}
