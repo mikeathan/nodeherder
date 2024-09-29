@@ -17,8 +17,6 @@ const LogPath string = "logs"
 
 var log *logger = newConsoleLogger()
 
-var logEmitter RemoteEmitter = &mockRemoteEmitter{}
-
 func InitFileLogger() {
 	if log != nil {
 		log.Close()
@@ -126,44 +124,66 @@ func LogErrorf(format string, msg ...interface{}) {
 }
 
 // WIP
-type RemoteEmitter interface {
+type RemoteHookEmitter interface {
 	Broadcast(eventName string, data interface{}) error
 }
 
-type mockRemoteEmitter struct {
+type RemoteHook struct {
+	levels  []logrus.Level
+	emitter RemoteHookEmitter
+	enabled bool
 }
 
-func (m *mockRemoteEmitter) Broadcast(eventName string, data interface{}) error {
-	return nil
+func newRemoteHook() *RemoteHook {
+	return &RemoteHook{
+		levels:  []logrus.Level{logrus.InfoLevel, logrus.ErrorLevel, logrus.WarnLevel, logrus.PanicLevel, logrus.FatalLevel},
+		enabled: false,
+	}
 }
 
-// THIS WILL NEED REFACTORING !!!!!!!!!!!!!!1
-var jsonHook *JsonHook
+func (h *RemoteHook) Configure(emitter RemoteHookEmitter) {
+	h.emitter = emitter
+}
+func (h *RemoteHook) Levels() []logrus.Level {
+	return h.levels
+}
 
-func RegisterRemoteLogger(emitter RemoteEmitter) {
-	// TODO: check if emiter is ready to send before just sending
-	logEmitter = emitter // ??? do i need to cache the emitter?
+func (h *RemoteHook) Enabled(enabled bool) {
+	h.enabled = enabled
+}
 
-	handler := func(message []byte) error {
-		// WIP
-		fmt.Println("[DEBUG] RemoteLogger - JsonHook handler:", string(message))
-		err := logEmitter.Broadcast("logger", message)
-		if err != nil {
-			fmt.Println("[ERROR] RemoteLogger - Error broadcasting message:", err.Error())
-		}
+func (h *RemoteHook) Fire(entry *logrus.Entry) error {
+	if !h.enabled {
 		return nil
 	}
 
-	jsonHook = NewJsonHook(handler, false)
-	AddHook(jsonHook)
+	logMessage := LogMessage{
+		Level:   entry.Level.String(),
+		Message: entry.Message,
+		Time:    entry.Time,
+	}
+	jsonBytes, err := json.Marshal(logMessage)
+	if err != nil {
+		return err
+	}
+
+	err = h.emitter.Broadcast("logger", jsonBytes)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func EnableRemoteLogger(enabled bool) {
-	jsonHook.Enabled(enabled)
+var remoteHook *RemoteHook = newRemoteHook()
+
+func RegisterRemoteHook(emitter RemoteHookEmitter) {
+	remoteHook.Configure(emitter)
+	log.AddHook(remoteHook)
 }
 
-func AddHook(hook logrus.Hook) {
-	log.AddHook(hook)
+func EnableRemoteHook(enabled bool) {
+	remoteHook.Enabled(enabled)
 }
 
 func (l *logger) SetLevel(level string) {
@@ -218,50 +238,4 @@ func (l *logger) Errorf(format string, msg ...interface{}) {
 
 func (l *logger) AddHook(hook logrus.Hook) {
 	l.log.AddHook(hook)
-}
-
-type JsonHook struct {
-	handler func(message []byte) error
-	levels  []logrus.Level
-	enabled bool
-}
-
-func NewJsonHook(handler func(message []byte) error, enabled bool) *JsonHook {
-
-	return &JsonHook{
-		enabled: enabled,
-		handler: handler,
-		levels:  []logrus.Level{logrus.InfoLevel, logrus.ErrorLevel, logrus.WarnLevel, logrus.PanicLevel, logrus.FatalLevel},
-	}
-}
-
-func (h *JsonHook) Enabled(enabled bool) {
-	h.enabled = enabled
-}
-
-func (h *JsonHook) Levels() []logrus.Level {
-	return h.levels
-}
-
-func (h *JsonHook) Fire(entry *logrus.Entry) error {
-	if !h.enabled {
-		return nil
-	}
-
-	logMessage := LogMessage{
-		Level:   entry.Level.String(),
-		Message: entry.Message,
-		Time:    entry.Time,
-	}
-	jsonBytes, err := json.Marshal(logMessage)
-	if err != nil {
-		return err
-	}
-
-	err = h.handler(jsonBytes)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

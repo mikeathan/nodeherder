@@ -47,7 +47,7 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 	h.wp = utils.NewWorkerPool(4, ctx)
 	h.wp.Run()
 
-	utils.RegisterRemoteLogger(eventHub)
+	utils.RegisterRemoteHook(eventHub)
 	h.registerEventHubEvents()
 
 	h.mqtt.OnMessageHandler(func(id string, payload []byte) {
@@ -259,7 +259,7 @@ func (h *HubController) registerEventHubEvents() {
 			return errors.New("enable remote logger failed. Invalid payload type. Missing enable field")
 		} else {
 			utils.LogInfof("Remote logger %v", enable)
-			utils.EnableRemoteLogger(enable)
+			utils.EnableRemoteHook(enable)
 		}
 
 		return nil
