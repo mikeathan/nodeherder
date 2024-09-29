@@ -261,8 +261,6 @@ func (h *HubController) registerEventHubEvents() {
 			utils.EnableRemoteLogger(enable)
 		}
 
-		//TODO
-		//we need to init the hook somewhere and in the callback use the websocket to send the message
 		return nil
 	})
 
