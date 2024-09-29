@@ -17,6 +17,8 @@ const LogPath string = "logs"
 
 var log *logger = newConsoleLogger()
 
+var logEmitter RemoteEmitter = &mockRemoteEmitter{}
+
 func InitFileLogger() {
 	if log != nil {
 		log.Close()
@@ -121,6 +123,43 @@ func LogWarnf(format string, msg ...interface{}) {
 
 func LogErrorf(format string, msg ...interface{}) {
 	log.Errorf(format, msg...)
+}
+
+// WIP
+type RemoteEmitter interface {
+	Broadcast(eventName string, data interface{}) error
+}
+
+type mockRemoteEmitter struct {
+}
+
+func (m *mockRemoteEmitter) Broadcast(eventName string, data interface{}) error {
+	return nil
+}
+
+// THIS WILL NEED REFACTORING !!!!!!!!!!!!!!1
+var jsonHook *JsonHook
+
+func RegisterRemoteLogger(emitter RemoteEmitter) {
+	// TODO: check if emiter is ready to send before just sending
+	logEmitter = emitter // ??? do i need to cache the emitter?
+
+	handler := func(message []byte) error {
+		// WIP
+		fmt.Println("[DEBUG] RemoteLogger - JsonHook handler:", string(message))
+		err := logEmitter.Broadcast("logger", message)
+		if err != nil {
+			fmt.Println("[ERROR] RemoteLogger - Error broadcasting message:", err.Error())
+		}
+		return nil
+	}
+
+	jsonHook = NewJsonHook(handler, false)
+	AddHook(jsonHook)
+}
+
+func EnableRemoteLogger(enabled bool) {
+	jsonHook.Enabled(enabled)
 }
 
 func AddHook(hook logrus.Hook) {
