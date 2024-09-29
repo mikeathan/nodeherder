@@ -36,6 +36,16 @@ type logger struct {
 	file *os.File
 }
 
+func createDirIfNotExists() {
+	if _, err := os.Stat(LogPath); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(LogPath, os.ModePerm)
+		if err != nil {
+			fmt.Printf("Failed to create log directory %s Error: %v\n", LogPath, err)
+			panic(err)
+		}
+	}
+}
+
 func newConsoleLogger() *logger {
 
 	log := &logrus.Logger{
@@ -49,16 +59,6 @@ func newConsoleLogger() *logger {
 	}
 
 	return &logger{log: log}
-}
-
-func createDirIfNotExists() {
-	if _, err := os.Stat(LogPath); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(LogPath, os.ModePerm)
-		if err != nil {
-			fmt.Println(fmt.Sprintf("Failed to create log directory %s Error: %v", LogPath, err))
-			panic(err)
-		}
-	}
 }
 
 func newFileLogger(logName string) *logger {

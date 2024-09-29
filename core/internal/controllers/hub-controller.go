@@ -73,7 +73,7 @@ func (h *HubController) registerEventHubEvents() {
 			return fmt.Errorf("OnSaveAppOnSaveHistoryConfigConfig failed. Invalid payload type : %v ", err.Error())
 		}
 		return h.store.SaveHistoryConfig(req)
-	});
+	})
 
 	h.eventHub.OnSaveDeviceConfig(func(p interface{}) error {
 		req := &settings.DeviceConfig{}
@@ -245,6 +245,27 @@ func (h *HubController) registerEventHubEvents() {
 
 		return h.automationEngine.GetAllTriggers(), nil
 	})
+
+	h.eventHub.OnEnableRemoteLogger(func(p interface{}) error {
+		bytes, _ := json.Marshal(p)
+		payload := make(map[string]interface{})
+		err := json.Unmarshal(bytes, &payload)
+		if err != nil {
+			return errors.New("enable remote logger failed. Invalid payload type")
+		}
+
+		if enable, ok := payload["enable"].(bool); !ok {
+			return errors.New("enable remote logger failed. Invalid payload type. Missing enable field")
+		} else {
+			utils.LogInfof("Remote logger %s", enable)
+			utils.EnableRemoteLogger(enable)
+		}
+
+		//TODO
+		//we need to init the hook somewhere and in the callback use the websocket to send the message
+		return nil
+	})
+
 }
 
 // we only use that to override the default automation storage, lame but we cant easily refactor as weget alot of cyclic dependencies

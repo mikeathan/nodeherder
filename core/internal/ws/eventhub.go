@@ -26,6 +26,8 @@ const (
 
 	LoadMetrics = "loadMetrics"
 
+	EnableRemoteLogger = "enableRemoteLogger"
+
 	// response
 	Automations       = "automations"
 	Devices           = "devices"
@@ -39,6 +41,8 @@ const (
 
 	Metrics   = "metrics"
 	AppConfig = "appConfig"
+
+	Logging = "logging"
 )
 
 type EventHub interface {
@@ -61,6 +65,7 @@ type EventHub interface {
 	OnLoadAppConfig(action func() (interface{}, error))
 	OnSaveDeviceConfig(func(payload interface{}) error)
 	OnSaveHistoryConfig(func(payload interface{}) error)
+	OnEnableRemoteLogger(func(payload interface{}) error)
 	HandleRequest(w http.ResponseWriter, r *http.Request) error
 }
 
@@ -79,6 +84,7 @@ type eventHubImpl struct {
 	onLoadAppConfig           func() (interface{}, error)
 	onSaveDeviceConfig        func(interface{}) error
 	onSaveHistoryConfig       func(interface{}) error
+	onEnableRemoteLogger      func(interface{}) error
 }
 
 func NewWsHub() EventHub {
@@ -97,6 +103,7 @@ func NewWsHub() EventHub {
 		onLoadAppConfig:           func() (interface{}, error) { return nil, nil },
 		onSaveDeviceConfig:        func(payload interface{}) error { return nil },
 		onSaveHistoryConfig:       func(payload interface{}) error { return nil },
+		onEnableRemoteLogger:      func(payload interface{}) error { return nil },
 	}
 }
 
@@ -154,6 +161,9 @@ func (h *eventHubImpl) OnDeleteAutomation(action func(p interface{}) (interface{
 
 func (h *eventHubImpl) OnDeleteAutomationTrigger(action func(p interface{}) (interface{}, error)) {
 	h.onDeleteAutomationTrigger = action
+}
+func (h *eventHubImpl) OnEnableRemoteLogger(action func(payload interface{}) error) {
+	h.onEnableRemoteLogger = action
 }
 
 func (h *eventHubImpl) EmitDevice(name string) error {
@@ -232,6 +242,9 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 
 	case DeviceRename:
 		c.executeAction(eventMsg.Payload, c.onDeviceRename, false)
+
+	case EnableRemoteLogger:
+		c.executeAction(eventMsg.Payload, c.onEnableRemoteLogger, true)
 
 	default:
 
