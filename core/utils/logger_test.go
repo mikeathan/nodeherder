@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"node-herder/utils"
+	"reflect"
 	"testing"
+
+	"github.com/sirupsen/logrus"
 )
 
 func TestJsonHook(t *testing.T) {
@@ -73,6 +76,16 @@ func TestJsonHook(t *testing.T) {
 
 }
 
+func TestJsonHookLevels(t *testing.T) {
+
+	expectedLevels := []logrus.Level{logrus.InfoLevel, logrus.ErrorLevel, logrus.WarnLevel, logrus.PanicLevel, logrus.FatalLevel}
+	hook := utils.NewJsonHook(func(message []byte) error { return nil }, true)
+	if !reflect.DeepEqual(hook.Levels(), expectedLevels) {
+		t.Errorf("hook levels are not correct want: %v got: %v", expectedLevels, hook.Levels())
+	}
+
+}
+
 func TestEnableDisableJsonHook(t *testing.T) {
 
 	testIndex := 0
@@ -87,12 +100,19 @@ func TestEnableDisableJsonHook(t *testing.T) {
 		{message: "message-error-2", level: "error", enabled: true},
 		{message: "message-info-2", level: "info", enabled: true},
 		{message: "message-warning-2", level: "warning", enabled: false},
+		{message: "message-debug-1", level: "debug", enabled: true},
+		{message: "message-debug-2", level: "debug", enabled: false},
+
 	}
 
 	handler := func(message []byte) error {
 		fmt.Println("handler called with ", string(message))
 
 		testCase := testCases[testIndex]
+		if !testCase.enabled {
+			t.Errorf("hook should be disabled")
+		}
+
 		var logMessage utils.LogMessage
 		err := json.Unmarshal(message, &logMessage)
 
@@ -119,11 +139,8 @@ func TestEnableDisableJsonHook(t *testing.T) {
 	utils.AddHook(hook)
 
 	for _, testCase := range testCases {
-		if testCase.enabled {
-			hook.Enabled(true)
-		} else {
-			hook.Enabled(false)
-		}
+		hook.Enabled(testCase.enabled)
+
 		if testCase.level == "info" {
 			utils.LogInfo(testCase.message)
 		} else if testCase.level == "warning" {
