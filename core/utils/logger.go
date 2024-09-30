@@ -16,6 +16,7 @@ import (
 const LogPath string = "logs"
 
 var log *logger = newConsoleLogger()
+var remoteHook *RemoteHook = newRemoteHook()
 
 func InitFileLogger() {
 	if log != nil {
@@ -123,7 +124,6 @@ func LogErrorf(format string, msg ...interface{}) {
 	log.Errorf(format, msg...)
 }
 
-// WIP
 type RemoteHookEmitter interface {
 	Broadcast(eventName string, data interface{}) error
 }
@@ -175,7 +175,7 @@ func (h *RemoteHook) Fire(entry *logrus.Entry) error {
 	return nil
 }
 
-var remoteHook *RemoteHook = newRemoteHook()
+
 
 func RegisterRemoteHook(emitter RemoteHookEmitter) {
 	remoteHook.Configure(emitter)

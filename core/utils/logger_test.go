@@ -4,16 +4,28 @@ import (
 	"encoding/json"
 	"fmt"
 	"node-herder/utils"
-	"reflect"
 	"testing"
-
-	"github.com/sirupsen/logrus"
 )
+
+type mockEmitter struct {
+	callback func(eventName string, data interface{}) error
+}
+
+func newMockEmitter(callback func(eventName string, data interface{}) error) utils.RemoteHookEmitter {
+	return &mockEmitter{
+		callback: callback,
+	}
+}
+
+func (e *mockEmitter) Broadcast(eventName string, data interface{}) error {
+	return e.callback(eventName, data)
+}
 
 func TestJsonHook(t *testing.T) {
 
 	//todo create testCases wit messages and log levels to assert on
 	testIndex := 0
+	expectedEventName := "logger"
 	testCases := []struct {
 		message string
 		level   string
@@ -29,10 +41,20 @@ func TestJsonHook(t *testing.T) {
 		{message: "message-warning-2", level: "warning"},
 	}
 
-	handler := func(message []byte) error {
+	handler := func(eventName string, data interface{}) error {
+
+		message, ok := data.([]byte)
+		if !ok {
+			t.Errorf("Failed to unmarshal message: %v", data)
+		}
+
 		fmt.Println("handler called with ", string(message))
 
 		testCase := testCases[testIndex]
+
+		if eventName != expectedEventName {
+			t.Errorf("event name is not correct want: %s got: %s", expectedEventName, eventName)
+		}
 		var logMessage utils.LogMessage
 		err := json.Unmarshal(message, &logMessage)
 
@@ -54,9 +76,10 @@ func TestJsonHook(t *testing.T) {
 
 		return nil
 	}
+	emitter := newMockEmitter(handler)
+	utils.RegisterRemoteHook(emitter)
 
-	hook := utils.NewJsonHook(handler, true)
-	utils.AddHook(hook)
+	utils.EnableRemoteHook(true)
 
 	for _, testCase := range testCases {
 		if testCase.level == "info" {
@@ -72,16 +95,6 @@ func TestJsonHook(t *testing.T) {
 		}
 
 		testIndex++
-	}
-
-}
-
-func TestJsonHookLevels(t *testing.T) {
-
-	expectedLevels := []logrus.Level{logrus.InfoLevel, logrus.ErrorLevel, logrus.WarnLevel, logrus.PanicLevel, logrus.FatalLevel}
-	hook := utils.NewJsonHook(func(message []byte) error { return nil }, true)
-	if !reflect.DeepEqual(hook.Levels(), expectedLevels) {
-		t.Errorf("hook levels are not correct want: %v got: %v", expectedLevels, hook.Levels())
 	}
 
 }
@@ -102,12 +115,14 @@ func TestEnableDisableJsonHook(t *testing.T) {
 		{message: "message-warning-2", level: "warning", enabled: false},
 		{message: "message-debug-1", level: "debug", enabled: true},
 		{message: "message-debug-2", level: "debug", enabled: false},
-
 	}
 
-	handler := func(message []byte) error {
-		fmt.Println("handler called with ", string(message))
+	handler := func(eventName string, data interface{}) error {
 
+		message, ok := data.([]byte)
+		if !ok {
+			t.Errorf("Failed to unmarshal message: %v", data)
+		}
 		testCase := testCases[testIndex]
 		if !testCase.enabled {
 			t.Errorf("hook should be disabled")
@@ -135,11 +150,11 @@ func TestEnableDisableJsonHook(t *testing.T) {
 		return nil
 	}
 
-	hook := utils.NewJsonHook(handler, true)
-	utils.AddHook(hook)
+	emitter := newMockEmitter(handler)
+	utils.RegisterRemoteHook(emitter)
 
 	for _, testCase := range testCases {
-		hook.Enabled(testCase.enabled)
+		utils.EnableRemoteHook(testCase.enabled)
 
 		if testCase.level == "info" {
 			utils.LogInfo(testCase.message)
