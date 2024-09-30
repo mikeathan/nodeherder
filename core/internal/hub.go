@@ -42,7 +42,6 @@ func Register(port int, store store.AppStore, config mqtt.MqttConfig, ctx contex
 	ws.Start()
 
 	mqtt := mqtt.NewMqttClient(config)
-
 	hub := controllers.RegisterHubController(ws, store, mqtt, ctx)
 
 	return registerApi(port, ws, hub, ctx)

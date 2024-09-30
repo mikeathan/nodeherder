@@ -175,15 +175,17 @@ func (h *RemoteHook) Fire(entry *logrus.Entry) error {
 	return nil
 }
 
-
-
 func RegisterRemoteHook(emitter RemoteHookEmitter) {
 	remoteHook.Configure(emitter)
 	log.AddHook(remoteHook)
+
+	log.Infof("Remote hook registered")
 }
 
 func EnableRemoteHook(enabled bool) {
 	remoteHook.Enabled(enabled)
+
+	log.Infof("Remote hook enabled: %v", enabled)
 }
 
 func (l *logger) SetLevel(level string) {
