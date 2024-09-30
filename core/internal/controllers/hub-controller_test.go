@@ -116,6 +116,42 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 	wg.Wait()
 }
 
+func TestHubTriggersRemoteLogger(t *testing.T) {
+
+	mqtt := &mocks.MockMqttClient{}
+	ws := &mocks.NopWsServer{}
+
+	// setup device
+	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
+	device1Expose2 := utils_test.CreateNumericEntity("action_time", 0)
+	dialDevice := utils_test.CreateDeviceWithExposes("x01111111", "Dial button", []*devices.Entity{device1Expose1, device1Expose2})
+
+	device2Expose1 := utils_test.CreateEntity("brightness", "numeric", nil)
+	device2Expose2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
+	lightDevice := utils_test.CreateDeviceWithExposes("x02222222", "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
+
+	// setup bridgeInfo List
+	devices := []*devices.Device{dialDevice, lightDevice}
+	deviceBridgeList := utils_test.CreateBridgeInfoList(devices) // NEED TO FIX, currently i make all devices features which is not right!!!!
+
+	// register hub
+	store, cleanup, err := utils_test.CreateFileStore()
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+
+	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+
+	// enable remote hook
+	utils.EnableRemoteLoggerHook(true)
+
+	TODO
+	// find a way to test the remote logger
+	mqtt.Publish("bridge/devices", deviceBridgeList)
+	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+}
+
 func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}

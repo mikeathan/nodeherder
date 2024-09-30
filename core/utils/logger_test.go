@@ -79,7 +79,7 @@ func TestJsonHook(t *testing.T) {
 	emitter := newMockEmitter(handler)
 	utils.RegisterRemoteHook(emitter)
 
-	utils.EnableRemoteHook(true)
+	utils.EnableRemoteLoggerHook(true)
 
 	for _, testCase := range testCases {
 		if testCase.level == "info" {
@@ -154,7 +154,7 @@ func TestEnableDisableJsonHook(t *testing.T) {
 	utils.RegisterRemoteHook(emitter)
 
 	for _, testCase := range testCases {
-		utils.EnableRemoteHook(testCase.enabled)
+		utils.EnableRemoteLoggerHook(testCase.enabled)
 
 		if testCase.level == "info" {
 			utils.LogInfo(testCase.message)

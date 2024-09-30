@@ -182,7 +182,7 @@ func RegisterRemoteHook(emitter RemoteHookEmitter) {
 	log.Infof("Remote hook registered")
 }
 
-func EnableRemoteHook(enabled bool) {
+func EnableRemoteLoggerHook(enabled bool) {
 	remoteHook.Enabled(enabled)
 
 	log.Infof("Remote hook enabled: %v", enabled)
