@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"node-herder/internal/automations"
 	"node-herder/models/devices"
+	"node-herder/models/logging"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	"node-herder/repository"
@@ -671,4 +672,19 @@ func (m *MockClock) Now() time.Time {
 
 func (m *MockClock) Sleep(d time.Duration) {
 	time.Sleep(m.sleepDuration) // ignore the passed in duration and use the mock duration
+}
+
+// Mock RemoteLogger emitter
+type MockRemoteLoggerEmitter struct {
+	callback func(eventName string, data interface{}) error
+}
+
+func NewMockRemoteLoggerEmitter(callback func(eventName string, data interface{}) error) logging.RemoteHookEmitter {
+	return &MockRemoteLoggerEmitter{
+		callback: callback,
+	}
+}
+
+func (e *MockRemoteLoggerEmitter) Broadcast(eventName string, data interface{}) error {
+	return e.callback(eventName, data)
 }

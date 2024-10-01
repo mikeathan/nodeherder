@@ -7,6 +7,7 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
 	"node-herder/store"
+	"node-herder/utils"
 )
 
 func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, ctx context.Context) *api.ApiServer {
@@ -40,6 +41,8 @@ func Register(port int, store store.AppStore, config mqtt.MqttConfig, ctx contex
 
 	ws := ws.NewWsHub()
 	ws.Start()
+
+	utils.RegisterRemoteLoggerHook(ws)
 
 	mqtt := mqtt.NewMqttClient(config)
 	hub := controllers.RegisterHubController(ws, store, mqtt, ctx)

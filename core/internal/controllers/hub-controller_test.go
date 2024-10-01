@@ -116,22 +116,15 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 	wg.Wait()
 }
 
-func TestHubTriggersRemoteLogger(t *testing.T) {
-
+func TestHubEnableRemoteLogger(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
 
+	// cleanup any previous remote logger hooks
+	utils.RemoveRemoteLoggerHook()
+
 	// setup device
-	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
-	device1Expose2 := utils_test.CreateNumericEntity("action_time", 0)
-	dialDevice := utils_test.CreateDeviceWithExposes("x01111111", "Dial button", []*devices.Entity{device1Expose1, device1Expose2})
-
-	device2Expose1 := utils_test.CreateEntity("brightness", "numeric", nil)
-	device2Expose2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
-	lightDevice := utils_test.CreateDeviceWithExposes("x02222222", "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
-
-	// setup bridgeInfo List
-	devices := []*devices.Device{dialDevice, lightDevice}
+	devices := createMockDialAndLightDevices("x01111111", "x02222222")
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices) // NEED TO FIX, currently i make all devices features which is not right!!!!
 
 	// register hub
@@ -141,15 +134,158 @@ func TestHubTriggersRemoteLogger(t *testing.T) {
 	}
 	defer cleanup()
 
+	expectedEventName := "logger"
+
+	index := 0
+	handler := func(eventName string, data interface{}) error {
+		message, ok := data.([]byte)
+		if !ok {
+			t.Errorf("Failed to unmarshal message: %v", data)
+		}
+
+		if eventName != expectedEventName {
+			t.Errorf("event name is not correct want: %s got: %s", expectedEventName, eventName)
+		}
+		var logMessage utils.LogMessage
+		err := json.Unmarshal(message, &logMessage)
+
+		if err != nil {
+			t.Errorf("Failed to unmarshal message: %v", err.Error())
+		}
+
+		if logMessage.Level == "debug" {
+			t.Errorf("log level is debug and is unsupported	")
+		}
+
+		expectedLogLevel := "info"
+		expectedLogMessage := "Remote hook enabled: true"
+		if logMessage.Message != expectedLogMessage {
+			t.Errorf("log message is not correct want: %s got: %s", expectedLogMessage, logMessage.Message)
+		}
+
+		if logMessage.Level != expectedLogLevel {
+			t.Errorf("log level is not correct want: %s got: %s", expectedLogLevel, logMessage.Level)
+		}
+		index++
+
+		return nil
+	}
+
+	// register mock remote logger
+	remoteLogEmitter := mocks.NewMockRemoteLoggerEmitter(handler)
+	utils.RegisterRemoteLoggerHook(remoteLogEmitter)
+
 	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
-	// enable remote hook
-	utils.EnableRemoteLoggerHook(true)
-
-	TODO
 	// find a way to test the remote logger
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+
+	expectedEnabledMessages := 5
+	testCases := []bool{true, false, true, false, true, false, true, false, true, false}
+	for _, enabled := range testCases {
+		utils.EnableRemoteLoggerHook(enabled)
+		if enabled {
+			utils.LogInfo("Remote hook enabled: true")
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	if index != expectedEnabledMessages {
+		t.Errorf("expected %d messages got %d", expectedEnabledMessages, index)
+	}
+}
+
+func TestHubTriggersRemoteLogger(t *testing.T) {
+
+	mqtt := &mocks.MockMqttClient{}
+	ws := &mocks.NopWsServer{}
+
+	// cleanup any previous remote logger hooks
+	utils.RemoveRemoteLoggerHook()
+
+	// setup device
+	devices := createMockDialAndLightDevices("x01111111", "x02222222")
+	deviceBridgeList := utils_test.CreateBridgeInfoList(devices) // NEED TO FIX, currently i make all devices features which is not right!!!!
+
+	dialDevice := devices[0]
+	lightDevice := devices[1]
+
+	// register hub
+	store, cleanup, err := utils_test.CreateFileStore()
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+
+	expectedEventName := "logger"
+	expectedRemoteLogMessages := []utils.LogMessage{
+		{Level: "info", Message: "device [x02222222] Attic light is online"},
+		{Level: "info", Message: "device [x01111111] Dial button is online"},
+	}
+
+	index := 0
+	handler := func(eventName string, data interface{}) error {
+		message, ok := data.([]byte)
+		if !ok {
+			t.Errorf("Failed to unmarshal message: %v", data)
+		}
+
+		if eventName != expectedEventName {
+			t.Errorf("event name is not correct want: %s got: %s", expectedEventName, eventName)
+		}
+		var logMessage utils.LogMessage
+		err := json.Unmarshal(message, &logMessage)
+
+		if err != nil {
+			t.Errorf("Failed to unmarshal message: %v", err.Error())
+		}
+
+		if logMessage.Level == "debug" {
+			t.Errorf("log level is debug and is unsupported	")
+		}
+
+		expectedRemoteLogMessage := expectedRemoteLogMessages[index]
+		if logMessage.Message != expectedRemoteLogMessage.Message {
+			t.Errorf("log message is not correct want: %s got: %s", expectedRemoteLogMessage.Message, logMessage.Message)
+		}
+
+		if logMessage.Level != expectedRemoteLogMessage.Level {
+			t.Errorf("log level is not correct want: %s got: %s", expectedRemoteLogMessage.Level, logMessage.Level)
+		}
+		index++
+
+		return nil
+	}
+
+	// register mock remote logger
+	remoteLogEmitter := mocks.NewMockRemoteLoggerEmitter(handler)
+	utils.RegisterRemoteLoggerHook(remoteLogEmitter)
+
+	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+
+	// find a way to test the remote logger
+	mqtt.Publish("bridge/devices", deviceBridgeList)
+	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+
+	utils.EnableRemoteLoggerHook(true)
+
+	payload := map[string]any{"brightness": 10.0, "color_temp": 100}
+	mqtt.Publish(lightDevice.FriendlyName, payload)
+
+	time.Sleep(100 * time.Millisecond)
+
+	// publish dial button device
+	payload = map[string]any{"action": "button_2_hold"}
+	mqtt.Publish(dialDevice.FriendlyName, payload)
+
+	time.Sleep(100 * time.Millisecond)
+
+	utils.EnableRemoteLoggerHook(false)
+
+	if index != len(expectedRemoteLogMessages) {
+		t.Errorf("expected %d log messages, got %d", len(expectedRemoteLogMessages), index)
+	}
 }
 
 func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *testing.T) {
@@ -157,17 +293,11 @@ func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *tes
 	ws := &mocks.NopWsServer{}
 
 	// setup device
-	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
-	device1Expose2 := utils_test.CreateNumericEntity("action_time", 0)
-	dialDevice := utils_test.CreateDeviceWithExposes("x01111111", "Dial button", []*devices.Entity{device1Expose1, device1Expose2})
+	allDevices := createMockDialAndLightDevices("x01111111", "0x02222222")
 
-	device2Expose1 := utils_test.CreateEntity("brightness", "numeric", nil)
-	device2Expose2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
-	lightDevice := utils_test.CreateDeviceWithExposes("", "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
-
-	// setup bridgeInfo List
-	devices := []*devices.Device{dialDevice}
-	deviceBridgeList := utils_test.CreateBridgeInfoList(devices) // NEED TO FIX, currently i make all devices features which is not right!!!!
+	dialDevice := allDevices[0]
+	lightDevice := allDevices[1]
+	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{dialDevice})
 
 	// register hub
 	store, cleanup, err := utils_test.CreateFileStore()
@@ -732,6 +862,19 @@ func TestAvailabilityIsDisposed(t *testing.T) {
 	if device.Properties["availability"] != "offline" {
 		t.Fatalf("want offline got online")
 	}
+}
+
+func createMockDialAndLightDevices(dialName string, lightName string) []*devices.Device {
+
+	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
+	device1Expose2 := utils_test.CreateNumericEntity("action_time", 0)
+	dialDevice := utils_test.CreateDeviceWithExposes(dialName, "Dial button", []*devices.Entity{device1Expose1, device1Expose2})
+
+	device2Expose1 := utils_test.CreateEntity("brightness", "numeric", nil)
+	device2Expose2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
+	lightDevice := utils_test.CreateDeviceWithExposes(lightName, "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
+
+	return []*devices.Device{dialDevice, lightDevice}
 }
 
 func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data interface{}) error) ws.EventHub {

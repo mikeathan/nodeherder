@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"node-herder/models/logging"
 	"os"
 	"path/filepath"
 	"time"
@@ -124,13 +125,9 @@ func LogErrorf(format string, msg ...interface{}) {
 	log.Errorf(format, msg...)
 }
 
-type RemoteHookEmitter interface {
-	Broadcast(eventName string, data interface{}) error
-}
-
 type RemoteHook struct {
 	levels  []logrus.Level
-	emitter RemoteHookEmitter
+	emitter logging.RemoteHookEmitter
 	enabled bool
 }
 
@@ -141,7 +138,7 @@ func newRemoteHook() *RemoteHook {
 	}
 }
 
-func (h *RemoteHook) Configure(emitter RemoteHookEmitter) {
+func (h *RemoteHook) Configure(emitter logging.RemoteHookEmitter) {
 	h.emitter = emitter
 }
 func (h *RemoteHook) Levels() []logrus.Level {
@@ -175,17 +172,24 @@ func (h *RemoteHook) Fire(entry *logrus.Entry) error {
 	return nil
 }
 
-func RegisterRemoteHook(emitter RemoteHookEmitter) {
+func RegisterRemoteLoggerHook(emitter logging.RemoteHookEmitter) {
 	remoteHook.Configure(emitter)
 	log.AddHook(remoteHook)
 
 	log.Infof("Remote hook registered")
 }
 
+func RemoveRemoteLoggerHook() {
+	remoteHook.Configure(newRemoteHook().emitter)
+	log.log.ReplaceHooks(logrus.LevelHooks{})
+
+	log.Infof("Remote hook unregistered")
+}
+
 func EnableRemoteLoggerHook(enabled bool) {
 	remoteHook.Enabled(enabled)
 
-	log.Infof("Remote hook enabled: %v", enabled)
+	//log.Infof("Remote hook enabled: %v", enabled)
 }
 
 func (l *logger) SetLevel(level string) {

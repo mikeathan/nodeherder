@@ -47,8 +47,6 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 	h.wp = utils.NewWorkerPool(4, ctx)
 	h.wp.Run()
 
-	utils.RegisterRemoteHook(eventHub)
-
 	h.registerEventHubEvents()
 
 	h.mqtt.OnMessageHandler(func(id string, payload []byte) {

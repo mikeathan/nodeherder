@@ -3,25 +3,18 @@ package utils_test
 import (
 	"encoding/json"
 	"fmt"
+	"node-herder/mocks"
 	"node-herder/utils"
 	"testing"
 )
 
-type mockEmitter struct {
-	callback func(eventName string, data interface{}) error
-}
 
-func newMockEmitter(callback func(eventName string, data interface{}) error) utils.RemoteHookEmitter {
-	return &mockEmitter{
-		callback: callback,
-	}
-}
+TODO setup step to run 	utils.RemoveRemoteLoggerHook()
 
-func (e *mockEmitter) Broadcast(eventName string, data interface{}) error {
-	return e.callback(eventName, data)
-}
+instead of calling it each tim
+func TestRemoteLoggerEmitter(t *testing.T) {
 
-func TestJsonHook(t *testing.T) {
+	utils.RemoveRemoteLoggerHook()
 
 	//todo create testCases wit messages and log levels to assert on
 	testIndex := 0
@@ -76,8 +69,8 @@ func TestJsonHook(t *testing.T) {
 
 		return nil
 	}
-	emitter := newMockEmitter(handler)
-	utils.RegisterRemoteHook(emitter)
+	emitter := mocks.NewMockRemoteLoggerEmitter(handler)
+	utils.RegisterRemoteLoggerHook(emitter)
 
 	utils.EnableRemoteLoggerHook(true)
 
@@ -99,7 +92,60 @@ func TestJsonHook(t *testing.T) {
 
 }
 
-func TestEnableDisableJsonHook(t *testing.T) {
+func TestRemoveRemoteLoggerHook(t *testing.T) {
+
+	id := 0
+	expectedMessages := []string{"Test Info message"}
+	handler := func(eventName string, data interface{}) error {
+
+		message, ok := data.([]byte)
+		if !ok {
+			t.Errorf("Failed to unmarshal message: %v", data)
+		}
+
+		var logMessage utils.LogMessage
+		err := json.Unmarshal(message, &logMessage)
+
+		if err != nil {
+			t.Errorf("Failed to unmarshal message: %v", err.Error())
+		}
+
+		if logMessage.Level == "debug" {
+			t.Errorf("log level is debug and is unsupported	")
+		}
+
+		expecteMessage := expectedMessages[id]
+		if logMessage.Message != expecteMessage {
+			t.Errorf("log message is not correct want: %s got: %s", expecteMessage, logMessage.Message)
+		}
+
+		if logMessage.Level != "info" {
+			t.Errorf("log level is not correct want: %s got: %s", "info", logMessage.Level)
+		}
+
+		id++
+		return nil
+	}
+
+	emitter := mocks.NewMockRemoteLoggerEmitter(handler)
+	utils.RegisterRemoteLoggerHook(emitter)
+	utils.EnableRemoteLoggerHook(true)
+
+	utils.LogInfo("Test Info message")
+
+	// disable remote logger
+	utils.RemoveRemoteLoggerHook()
+
+	utils.LogInfo("Test Info message after disable remote logger")
+	if id != 1 {
+		t.Errorf("Remote logger should be disabled")
+	}
+}
+
+func TestEnableRemoteLoggerHook(t *testing.T) {
+
+	utils.RemoveRemoteLoggerHook()
+
 
 	testIndex := 0
 	testCases := []struct {
@@ -150,8 +196,8 @@ func TestEnableDisableJsonHook(t *testing.T) {
 		return nil
 	}
 
-	emitter := newMockEmitter(handler)
-	utils.RegisterRemoteHook(emitter)
+	emitter := mocks.NewMockRemoteLoggerEmitter(handler)
+	utils.RegisterRemoteLoggerHook(emitter)
 
 	for _, testCase := range testCases {
 		utils.EnableRemoteLoggerHook(testCase.enabled)
