@@ -1,5 +1,9 @@
 package logging
 
+type EnableRemoteLoggerRequest struct {
+	Enable bool `json:"enable"`
+}
+
 type RemoteHookEmitter interface {
 	Broadcast(eventName string, data interface{}) error
 }

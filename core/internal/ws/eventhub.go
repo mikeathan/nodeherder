@@ -41,8 +41,6 @@ const (
 
 	Metrics   = "metrics"
 	AppConfig = "appConfig"
-
-	Logging = "logging"
 )
 
 type EventHub interface {

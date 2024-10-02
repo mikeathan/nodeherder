@@ -10,6 +10,7 @@ import (
 	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
+	"node-herder/models/logging"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	"node-herder/store"
@@ -247,20 +248,16 @@ func (h *HubController) registerEventHubEvents() {
 	})
 
 	h.eventHub.OnEnableRemoteLogger(func(p interface{}) error {
-		bytes, _ := json.Marshal(p)
-		payload := make(map[string]interface{})
-		err := json.Unmarshal(bytes, &payload)
+		bytes := []byte(p.(string))
+		req := &logging.EnableRemoteLoggerRequest{}
+		err := json.Unmarshal(bytes, &req)
 		if err != nil {
 			return errors.New("enable remote logger failed. Invalid payload type")
 		}
 
-		if enable, ok := payload["enable"].(bool); !ok {
-			return errors.New("enable remote logger failed. Invalid payload type. Missing enable field")
-		} else {
-			utils.LogInfof("Remote logger %v", enable)
-			utils.EnableRemoteLoggerHook(enable)
-		}
+		utils.EnableRemoteLoggerHook(req.Enable)
 
+		utils.LogInfof("Remote logger enabled: %v", req.Enable)
 		return nil
 	})
 

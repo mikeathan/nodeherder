@@ -13,6 +13,7 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/mocks"
 	"node-herder/models/devices"
+	"node-herder/models/logging"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	utils_test "node-herder/testing"
@@ -804,6 +805,56 @@ func TestSaveDeviceConfigMessage(t *testing.T) {
 
 	reqBytes, _ := json.Marshal(modifiedDevConfig)
 	wsData := &ws.EventMessage{Type: ws.SaveDeviceConfig, Payload: reqBytes}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.OperationSuccess {
+		t.Fatalf("Expected type %v', got '%v'", ws.OperationSuccess, event.Type)
+	}
+}
+
+func TestHandlingEnableRemoteLoggerMessage(t *testing.T) {
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
+	req := &logging.EnableRemoteLoggerRequest{Enable: true}
+
+	wsHub.OnEnableRemoteLogger(func(p interface{}) error {
+		bytes := []byte(p.(string))
+		payload := &logging.EnableRemoteLoggerRequest{}
+		err := json.Unmarshal(bytes, &payload)
+		if err != nil {
+			t.Fatal("enable remote logger failed. Invalid payload type")
+		}
+
+		if payload.Enable != req.Enable {
+			t.Fatalf("enable remote logger failed. want %v got %v", req.Enable, payload.Enable)
+		}
+		return nil
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	defer s.Close()
+	defer wsConn.Close()
+
+	reqBytes, _ := json.Marshal(req)
+	wsData := &ws.EventMessage{Type: ws.EnableRemoteLogger, Payload: reqBytes}
 	msg, err := wsData.MarshalJSON()
 	if err != nil {
 		t.Fatal(err.Error())
