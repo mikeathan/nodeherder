@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { key, store } from "../../store/index";
-import InputBox from '../input/InputBox.vue';
+import { key, store } from "../../../store/index";
 import HistorySettings from './HistorySettings.vue';
 import { HistorySettingsType } from "@/types/settings";
 

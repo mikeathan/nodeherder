@@ -114,7 +114,8 @@ store response in metrics store ? needs thinking if we need that
 
 # Logging
 
-add log rotation
+add log rotation - DONE
+send mqqt message to enable log type from bridge to be emmited for zigbee2mqtt event logs
 add remote log enable in UI
 add download file log in UI
 
