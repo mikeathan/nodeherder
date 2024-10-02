@@ -12,6 +12,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	easy "github.com/t-tomalak/logrus-easy-formatter"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 const LogPath string = "logs"
@@ -20,10 +21,6 @@ var log *logger = newConsoleLogger()
 var remoteHook *RemoteHook = newRemoteHook()
 
 func InitFileLogger() {
-	if log != nil {
-		log.Close()
-	}
-
 	log = newFileLogger("nodeherder.log")
 }
 
@@ -34,8 +31,7 @@ type LogMessage struct {
 }
 
 type logger struct {
-	log  *logrus.Logger
-	file *os.File
+	log *logrus.Logger
 }
 
 func createDirIfNotExists() {
@@ -66,14 +62,22 @@ func newConsoleLogger() *logger {
 func newFileLogger(logName string) *logger {
 
 	createDirIfNotExists()
-	f, err := os.OpenFile(filepath.Join(LogPath, logName), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
-	if err != nil {
-		fmt.Println("Failed to create logfile" + err.Error())
-		panic(err)
+	// f, err := os.OpenFile(filepath.Join(LogPath, logName), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	// if err != nil {
+	// 	fmt.Println("Failed to create logfile" + err.Error())
+	// 	panic(err)
+	// }
+	lumberjackLogger := &lumberjack.Logger{
+		Filename:   filepath.Join(LogPath, logName),
+		MaxSize:    2,     // Max size in MB
+		MaxBackups: 3,     // Max number of old log files to keep
+		MaxAge:     30,    // Max age in days to keep a log file
+		Compress:   false, // Compress old log files
 	}
 
 	log := &logrus.Logger{
-		Out:   io.MultiWriter(f, os.Stdout),
+		Out: io.MultiWriter(lumberjackLogger, os.Stdout),
+
 		Level: logrus.InfoLevel,
 		Formatter: &easy.Formatter{
 			TimestampFormat: "2006-01-02 15:04:05",
@@ -82,15 +86,11 @@ func newFileLogger(logName string) *logger {
 		Hooks: make(logrus.LevelHooks),
 	}
 
-	return &logger{log: log, file: f}
+	return &logger{log: log}
 }
 
 func SetLogLevel(level string) {
 	log.SetLevel(level)
-}
-
-func Close() {
-	log.Close()
 }
 
 func LogDebug(msg ...interface{}) {
@@ -201,13 +201,6 @@ func (l *logger) SetLevel(level string) {
 
 	l.log.SetLevel(ll)
 	l.Infof("set loglevel: %s", ll.String())
-}
-
-func (l *logger) Close() {
-	if l.file != nil {
-		l.Info("file logger disposed")
-		l.file.Close()
-	}
 }
 
 func (l *logger) Debug(msg ...interface{}) {
