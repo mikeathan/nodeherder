@@ -173,10 +173,10 @@ func (h *RemoteHook) Fire(entry *logrus.Entry) error {
 }
 
 func RegisterRemoteLoggerHook(emitter logging.RemoteHookEmitter) {
+	log.Infof("Remote hook registered")
+
 	remoteHook.Configure(emitter)
 	log.AddHook(remoteHook)
-
-	log.Infof("Remote hook registered")
 }
 
 func RemoveRemoteLoggerHook() {

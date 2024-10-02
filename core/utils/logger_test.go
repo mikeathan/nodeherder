@@ -8,15 +8,14 @@ import (
 	"testing"
 )
 
+func setup() {
+	utils.RemoveRemoteLoggerHook()
+}
 
-TODO setup step to run 	utils.RemoveRemoteLoggerHook()
-
-instead of calling it each tim
 func TestRemoteLoggerEmitter(t *testing.T) {
 
-	utils.RemoveRemoteLoggerHook()
+	setup()
 
-	//todo create testCases wit messages and log levels to assert on
 	testIndex := 0
 	expectedEventName := "logger"
 	testCases := []struct {
@@ -94,6 +93,8 @@ func TestRemoteLoggerEmitter(t *testing.T) {
 
 func TestRemoveRemoteLoggerHook(t *testing.T) {
 
+	setup()
+
 	id := 0
 	expectedMessages := []string{"Test Info message"}
 	handler := func(eventName string, data interface{}) error {
@@ -144,8 +145,7 @@ func TestRemoveRemoteLoggerHook(t *testing.T) {
 
 func TestEnableRemoteLoggerHook(t *testing.T) {
 
-	utils.RemoveRemoteLoggerHook()
-
+	setup()
 
 	testIndex := 0
 	testCases := []struct {
