@@ -114,15 +114,17 @@ store response in metrics store ? needs thinking if we need that
 
 # Logging
 
-TODO
-frontend send request to backend to post logs
-backeend remote logger is turned on and posts line by line logged data
+add log rotation
+add remote log enable in UI
+add download file log in UI
 
 METRICS backend TODO
 
 - returns lis of period for ui to choose from - NO
 - consider sampling data if too large data set ?
 - index entries = bolt.Bucket.CreateIndex
+
+Check for disalbed items in bridge - see if we can add them if online
 
 and prolem below ?
 
