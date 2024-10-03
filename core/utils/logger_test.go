@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"node-herder/mocks"
+	"node-herder/models/logging"
 	"node-herder/utils"
 	"testing"
 )
@@ -47,7 +48,7 @@ func TestRemoteLoggerEmitter(t *testing.T) {
 		if eventName != expectedEventName {
 			t.Errorf("event name is not correct want: %s got: %s", expectedEventName, eventName)
 		}
-		var logMessage utils.LogMessage
+		var logMessage logging.LogMessage
 		err := json.Unmarshal(message, &logMessage)
 
 		if err != nil {
@@ -104,7 +105,7 @@ func TestRemoveRemoteLoggerHook(t *testing.T) {
 			t.Errorf("Failed to unmarshal message: %v", data)
 		}
 
-		var logMessage utils.LogMessage
+		var logMessage logging.LogMessage
 		err := json.Unmarshal(message, &logMessage)
 
 		if err != nil {
@@ -174,7 +175,7 @@ func TestEnableRemoteLoggerHook(t *testing.T) {
 			t.Errorf("hook should be disabled")
 		}
 
-		var logMessage utils.LogMessage
+		var logMessage logging.LogMessage
 		err := json.Unmarshal(message, &logMessage)
 
 		if err != nil {

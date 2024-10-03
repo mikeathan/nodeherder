@@ -10,6 +10,7 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/mocks"
 	"node-herder/models/devices"
+	"node-herder/models/logging"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	utils_test "node-herder/testing"
@@ -146,7 +147,7 @@ func TestHubEnableRemoteLogger(t *testing.T) {
 		if eventName != expectedEventName {
 			t.Errorf("event name is not correct want: %s got: %s", expectedEventName, eventName)
 		}
-		var logMessage utils.LogMessage
+		var logMessage logging.LogMessage
 		err := json.Unmarshal(message, &logMessage)
 
 		if err != nil {
@@ -219,7 +220,7 @@ func TestHubTriggersRemoteLogger(t *testing.T) {
 	defer cleanup()
 
 	expectedEventName := "logger"
-	expectedRemoteLogMessages := []utils.LogMessage{
+	expectedRemoteLogMessages := []logging.LogMessage{
 		{Level: "info", Message: "device [x02222222] Attic light is online"},
 		{Level: "info", Message: "device [x01111111] Dial button is online"},
 	}
@@ -234,7 +235,7 @@ func TestHubTriggersRemoteLogger(t *testing.T) {
 		if eventName != expectedEventName {
 			t.Errorf("event name is not correct want: %s got: %s", expectedEventName, eventName)
 		}
-		var logMessage utils.LogMessage
+		var logMessage logging.LogMessage
 		err := json.Unmarshal(message, &logMessage)
 
 		if err != nil {

@@ -8,7 +8,6 @@ import (
 	"node-herder/models/logging"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/sirupsen/logrus"
 	easy "github.com/t-tomalak/logrus-easy-formatter"
@@ -22,12 +21,6 @@ var remoteHook *RemoteHook = newRemoteHook()
 
 func InitFileLogger() {
 	log = newFileLogger("nodeherder.log")
-}
-
-type LogMessage struct {
-	Level   string    `json:"level"`
-	Message string    `json:"message"`
-	Time    time.Time `json:"time"`
 }
 
 type logger struct {
@@ -154,7 +147,7 @@ func (h *RemoteHook) Fire(entry *logrus.Entry) error {
 		return nil
 	}
 
-	logMessage := LogMessage{
+	logMessage := logging.LogMessage{
 		Level:   entry.Level.String(),
 		Message: entry.Message,
 		Time:    entry.Time,
