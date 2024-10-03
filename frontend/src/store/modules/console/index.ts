@@ -4,15 +4,13 @@ import { ConsoleModuleState } from './state';
 
 import { key } from '@/store';
 import { LogMessageType } from '@/types/event-logs.type';
-
+const MAX_MESSAGE_SIZE = 100;
 export const ConsoleModule: Module<
   ConsoleModuleState,
   RootState
 > = {
   namespaced: true,
 
-  // TODO: add limit how much we can store.
- clear last if we exeed number
   state: () => ({
     messages: [],
     initialized: false,
@@ -29,10 +27,15 @@ export const ConsoleModule: Module<
   },
 
   mutations: {
+ 
+
     add(
       state: ConsoleModuleState,
       message: LogMessageType,
     ) {
+      if (state.messages.length >= MAX_MESSAGE_SIZE) {
+        state.messages.shift(); //? or clear all
+      }
       state.messages.push(message);
     },
 
@@ -51,3 +54,23 @@ export const ConsoleModule: Module<
     },
   },
 };
+
+
+
+clearOldMessages({ commit }) {
+  const currentTime = new Date().getTime();
+  const cutoffTime = currentTime - 30 * 60 * 1000; // 30 minutes in milliseconds
+
+  const filteredMessages = state.messages.filter(
+    (message) => {
+      return message.timestamp >= cutoffTime;
+    },
+  );
+
+  commit('SET_MESSAGES', filteredMessages);
+},
+
+
+setInterval(() => {
+  store.dispatch('clearOldMessages');
+}, 60 * 1000); // Run every minute
