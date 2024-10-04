@@ -27,8 +27,6 @@ export const ConsoleModule: Module<
   },
 
   mutations: {
- 
-
     add(
       state: ConsoleModuleState,
       message: LogMessageType,
@@ -37,6 +35,15 @@ export const ConsoleModule: Module<
         state.messages.shift(); //? or clear all
       }
       state.messages.push(message);
+    },
+
+    removeItems(
+      state: ConsoleModuleState,
+      itemsToRemove: LogMessageType[],
+    ) {
+      state.messages = state.messages.filter(
+        (item) => !itemsToRemove.includes(item),
+      );
     },
 
     clear(state: ConsoleModuleState) {
@@ -52,25 +59,26 @@ export const ConsoleModule: Module<
 
       state.initialized = true;
     },
+
+    deleteExpiredMessages({ state, commit }) {
+      const currentTime = new Date().getTime();
+      const cutoffTime = currentTime - 30 * 60 * 1000; // 30 minutes in milliseconds
+
+      const itemsToRemove = state.messages.filter(
+        (message) => {
+          return (
+            new Date(message.timestamp).getTime() >=
+            cutoffTime
+          );
+        },
+      );
+
+      commit('remoteItems', itemsToRemove);
+    },
   },
 };
 
-
-
-clearOldMessages({ commit }) {
-  const currentTime = new Date().getTime();
-  const cutoffTime = currentTime - 30 * 60 * 1000; // 30 minutes in milliseconds
-
-  const filteredMessages = state.messages.filter(
-    (message) => {
-      return message.timestamp >= cutoffTime;
-    },
-  );
-
-  commit('SET_MESSAGES', filteredMessages);
-},
-
-
+// Run the action every 30 seconds
 setInterval(() => {
-  store.dispatch('clearOldMessages');
-}, 60 * 1000); // Run every minute
+  store.dispatch('deleteExpiredMessages');
+}, 30 * 1000);

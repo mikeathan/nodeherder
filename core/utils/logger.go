@@ -148,10 +148,11 @@ func (h *RemoteHook) Fire(entry *logrus.Entry) error {
 	}
 
 	logMessage := logging.LogMessage{
-		Level:   entry.Level.String(),
-		Message: entry.Message,
-		Time:    entry.Time,
+		Level:     entry.Level.String(),
+		Message:   entry.Message,
+		Timestamp: entry.Time.UnixMilli(),
 	}
+
 	jsonBytes, err := json.Marshal(logMessage)
 	if err != nil {
 		return err
