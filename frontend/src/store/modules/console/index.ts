@@ -5,6 +5,8 @@ import { ConsoleModuleState } from './state';
 import { key } from '@/store';
 import { LogMessageType } from '@/types/event-logs.type';
 const MAX_MESSAGE_SIZE = 100;
+const MESSAGE_EXPIRATION_TIME = 30 * 60 * 1000; // 30 minutes in milliseconds
+
 export const ConsoleModule: Module<
   ConsoleModuleState,
   RootState
@@ -13,14 +15,9 @@ export const ConsoleModule: Module<
 
   state: () => ({
     messages: [],
-    initialized: false,
   }),
 
   getters: {
-    initialized:
-      (state: ConsoleModuleState) => (): boolean =>
-        state.initialized,
-
     messages:
       (state: ConsoleModuleState) => (): LogMessageType[] =>
         state.messages,
@@ -41,44 +38,60 @@ export const ConsoleModule: Module<
       state: ConsoleModuleState,
       itemsToRemove: LogMessageType[],
     ) {
+      console.log(
+        'Store - removeItems before',
+        state.messages.length,
+      );
+
       state.messages = state.messages.filter(
         (item) => !itemsToRemove.includes(item),
+      );
+
+      console.log(
+        'Store removeItems after',
+        state.messages.length,
       );
     },
 
     clear(state: ConsoleModuleState) {
       state.messages = [];
-
-      state.initialized = false;
     },
   },
 
   actions: {
     init({ state, commit }) {
       commit('clear', state);
-
-      state.initialized = true;
     },
 
     deleteExpiredMessages({ state, commit }) {
+      if (state.messages.length === 0) {
+        console.log(
+          'Store - deleteExpiredMessages no messages',
+        );
+        return;
+      }
+
       const currentTime = new Date().getTime();
-      const cutoffTime = currentTime - 30 * 60 * 1000; // 30 minutes in milliseconds
+      const expirationTime =
+        currentTime - MESSAGE_EXPIRATION_TIME;
 
       const itemsToRemove = state.messages.filter(
         (message) => {
           return (
             new Date(message.timestamp).getTime() >=
-            cutoffTime
+            expirationTime
           );
         },
       );
 
-      commit('remoteItems', itemsToRemove);
+      console.log(
+        'Store - deleteExpiredMessages found',
+        itemsToRemove.length,
+      );
+
+      if (itemsToRemove.length > 0) {
+        commit('removeItems', itemsToRemove);
+      }
     },
   },
 };
-
-// Run the action every 30 seconds
-setInterval(() => {
-  store.dispatch('deleteExpiredMessages');
-}, 30 * 1000);
