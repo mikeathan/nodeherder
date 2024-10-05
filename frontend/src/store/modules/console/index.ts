@@ -63,6 +63,10 @@ export const ConsoleModule: Module<
       commit('clear', state);
     },
 
+    addMessage({ commit }, message: LogMessageType) {
+      commit('add', message);
+    },
+
     deleteExpiredMessages({ state, commit }) {
       if (state.messages.length === 0) {
         console.log(

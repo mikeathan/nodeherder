@@ -10,6 +10,7 @@ import { AutomationModule as automations } from './modules/automation/index';
 import { WSClientModule as ws } from './modules/ws/index';
 import { AppConfigModule as appconfig } from './modules/appconfig/index';
 import { MetricsModule as metrics } from './modules/metrics/index';
+import { ConsoleModule as console } from './modules/console/index';
 
 // https://blog.openreplay.com/integrate-vuex-and-typescript/
 
@@ -23,6 +24,7 @@ export const store = createStore<RootState>({
       commit('automations/clear');
       commit('appconfig/clear');
       commit('metrics/clear');
+      commit('console/clear');
     },
   },
   modules: {
@@ -30,6 +32,7 @@ export const store = createStore<RootState>({
     automations,
     appconfig,
     metrics,
+    console,
     ws,
   },
 });
