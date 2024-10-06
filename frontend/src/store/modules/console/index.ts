@@ -7,6 +7,7 @@ import { LogMessageType } from '@/types/event-logs.type';
 const MAX_MESSAGE_SIZE = 100;
 const MESSAGE_EXPIRATION_TIME = 30 * 60 * 1000; // 30 minutes in milliseconds
 
+
 export const ConsoleModule: Module<
   ConsoleModuleState,
   RootState
@@ -43,9 +44,10 @@ export const ConsoleModule: Module<
         state.messages.length,
       );
 
-      state.messages = state.messages.filter(
-        (item) => !itemsToRemove.includes(item),
-      );
+      TODO
+      // state.messages = state.messages.filter(
+      //   (item) => !itemsToRemove.includes(item),
+      // );
 
       console.log(
         'Store removeItems after',
@@ -79,6 +81,8 @@ export const ConsoleModule: Module<
       const expirationTime =
         currentTime - MESSAGE_EXPIRATION_TIME;
 
+
+        do the filtering here and add this function to mutators
       const itemsToRemove = state.messages.filter(
         (message) => {
           return (

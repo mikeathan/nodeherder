@@ -45,7 +45,7 @@ export const DeviceModule: Module<
       });
     },
 
-    update(state, deviceUpdate: DeviceUpdate) {
+    update(state:DeviceModuleState, deviceUpdate: DeviceUpdate) {
       if (deviceUpdate.id in state.deviceMap == false) {
         console.error(
           'device ',
