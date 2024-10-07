@@ -410,7 +410,7 @@ app.ws('/ws', async function (ws, req) {
             const severity = logSeverity[randomIndex];
             const msg = {
               type: severity,
-              payload: severity + ' message',
+              message: severity + ' message',
               timestamp: Date.now(),
             };
             sendMessage(ws, 'logging', msg);
