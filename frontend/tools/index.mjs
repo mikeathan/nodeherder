@@ -10,6 +10,7 @@ import express from 'express';
 import expressWs from 'express-ws';
 import http from 'http';
 import { createRequire } from 'module';
+import { log, timeStamp } from 'console';
 const devicesFullPath = '../../docs/devices.json';
 const automationFullPath =
   '../../core/config/0x001788010d7d9d3f.json';
@@ -31,6 +32,15 @@ const luminance_luxMax = 600;
 
 let port = 3000;
 let pingTimer = 0;
+
+let consoleLogIntervalId = 0;
+const logSeverity = [
+  'info',
+  'warning',
+  'error',
+  'critical',
+];
+
 // App and server
 let app = express();
 let server = http.createServer(app).listen(port);
@@ -378,6 +388,37 @@ app.ws('/ws', async function (ws, req) {
         var deviceId = obj.payload.id;
         appConfig[deviceId] = obj.payload;
         sendOperationSuccess(ws);
+        break;
+      case 'enableRemoteLogger':
+        console.log('enableRemoteLogger', obj.payload);
+
+        if (obj.payload.enabled) {
+          if (consoleLogIntervalId != 0) {
+            console.log(
+              'consoleLogIntervalId already running',
+            );
+            return;
+          }
+
+          console.log('enableRemoteLogger');
+
+          consoleLogIntervalId = setInterval(() => {
+            const randomIndex = Math.floor(
+              Math.random() * logSeverity.length,
+            );
+
+            const severity = logSeverity[randomIndex];
+            const msg = {
+              type: severity,
+              payload: severity + ' message',
+              timestamp: Date.now(),
+            };
+            sendMessage(ws, 'logging', msg);
+          }, 1000);
+        } else {
+          console.log('disableRemoteLogger');
+          clearInterval(consoleLogIntervalId);
+        }
         break;
 
       case 'pong':
