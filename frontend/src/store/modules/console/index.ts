@@ -7,7 +7,6 @@ import { LogMessageType } from '@/types/event-logs.type';
 const MAX_MESSAGE_SIZE = 100;
 const MESSAGE_EXPIRATION_TIME = 30 * 60 * 1000; // 30 minutes in milliseconds
 
-
 export const ConsoleModule: Module<
   ConsoleModuleState,
   RootState
@@ -35,22 +34,40 @@ export const ConsoleModule: Module<
       state.messages.push(message);
     },
 
-    removeItems(
+    removeExpiredMessages(
       state: ConsoleModuleState,
-      itemsToRemove: LogMessageType[],
+      expirationTimeInMs?: number,
     ) {
+      if (state.messages.length === 0) {
+        console.log(
+          'Store - removeExpiredMessages no messages',
+        );
+        return;
+      }
+
+      const currentTime = new Date().getTime();
+      const expirationTime =
+        currentTime -
+        (expirationTimeInMs == null
+          ? MESSAGE_EXPIRATION_TIME
+          : expirationTimeInMs);
+
       console.log(
-        'Store - removeItems before',
+        'Store - removeExpiredMessages before clean',
         state.messages.length,
+        'expiration set',
+        expirationTime,
       );
 
-      TODO
-      // state.messages = state.messages.filter(
-      //   (item) => !itemsToRemove.includes(item),
-      // );
+      state.messages = state.messages.filter((message) => {
+        return (
+          new Date(message.timestamp).getTime() >=
+          expirationTime
+        );
+      });
 
       console.log(
-        'Store removeItems after',
+        'Store - removeExpiredMessages after clean',
         state.messages.length,
       );
     },
@@ -67,39 +84,6 @@ export const ConsoleModule: Module<
 
     addMessage({ commit }, message: LogMessageType) {
       commit('add', message);
-    },
-
-    deleteExpiredMessages({ state, commit }) {
-      if (state.messages.length === 0) {
-        console.log(
-          'Store - deleteExpiredMessages no messages',
-        );
-        return;
-      }
-
-      const currentTime = new Date().getTime();
-      const expirationTime =
-        currentTime - MESSAGE_EXPIRATION_TIME;
-
-
-        do the filtering here and add this function to mutators
-      const itemsToRemove = state.messages.filter(
-        (message) => {
-          return (
-            new Date(message.timestamp).getTime() >=
-            expirationTime
-          );
-        },
-      );
-
-      console.log(
-        'Store - deleteExpiredMessages found',
-        itemsToRemove.length,
-      );
-
-      if (itemsToRemove.length > 0) {
-        commit('removeItems', itemsToRemove);
-      }
     },
   },
 };

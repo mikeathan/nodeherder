@@ -12,7 +12,7 @@ import { LogMessageType } from '@/types/event-logs.type';
 const mockMessage: LogMessageType = {
   level: 'info',
   message: 'test message',
-  timestamp: Date.now(),
+  timestamp: new Date(Date.now() + 60000).getTime(),
 };
 
 const mockMessages: LogMessageType[] = [
@@ -74,32 +74,15 @@ describe('test console module', () => {
     const messages = store.getters['console/messages']();
     expect(messages.length).toEqual(0);
   });
-
-  it('test console messages can be deleted', () => {
+  //removeExpiredMessages
+  it('test expired console messages are removed', () => {
     mockMessages.forEach((message) => {
       store.dispatch('console/addMessage', message);
     });
 
-    store.commit('console/removeItems', mockMessages);
+    store.commit('console/removeExpiredMessages', 100);
+
     const messages = store.getters['console/messages']();
     expect(messages.length).toEqual(0);
-  });
-
-  it('test selected console messages can be deleted', () => {
-    mockMessages.forEach((message) => {
-      store.dispatch('console/addMessage', message);
-    });
-
-    store.commit('console/removeItems', [
-      mockMessages[0],
-      mockMessages[3],
-    ]);
-
-    store.getters['console/messages']().forEach(
-      (message: LogMessageType, index: number) => {
-        expect(message).not.toEqual(mockMessages[0]);
-        expect(message).not.toEqual(mockMessages[3]);
-      },
-    );
   });
 });
