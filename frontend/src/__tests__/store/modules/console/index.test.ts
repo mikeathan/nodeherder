@@ -9,12 +9,6 @@ import {
 import { store } from '../../../../store/index';
 import { LogMessageType } from '@/types/event-logs.type';
 
-const mockMessage: LogMessageType = {
-  level: 'info',
-  message: 'test message',
-  timestamp: new Date(Date.now() + 60000).getTime(),
-};
-
 const mockMessages: LogMessageType[] = [
   {
     level: 'info',
@@ -74,15 +68,37 @@ describe('test console module', () => {
     const messages = store.getters['console/messages']();
     expect(messages.length).toEqual(0);
   });
-  //removeExpiredMessages
+
   it('test expired console messages are removed', () => {
+    let mockMessages: LogMessageType[] = [];
+
+    // create 10 messages with timestamps 1  minutes back
+    const now = new Date();
+    for (let i = 0; i < 10; i++) {
+      mockMessages.push({
+        level: 'info',
+        message: 'test message ' + i,
+        timestamp: new Date(
+          now.getTime() - i * 61000,
+        ).getTime(),
+      });
+    }
+
     mockMessages.forEach((message) => {
       store.dispatch('console/addMessage', message);
     });
 
-    store.commit('console/removeExpiredMessages', 100);
+    // remove messages older than 5 minutes
+    store.commit(
+      'console/removeExpiredMessages',
+      5 * 60000,
+    );
 
-    const messages = store.getters['console/messages']();
-    expect(messages.length).toEqual(0);
+    const messages = store.getters[
+      'console/messages'
+    ]() as LogMessageType[];
+
+    // expect 5 messages to be left
+    expect(messages.length).toEqual(5);
   });
 });

@@ -1,9 +1,8 @@
 import { Module } from 'vuex';
 import { RootState } from '../../state';
 import { ConsoleModuleState } from './state';
-
-import { key } from '@/store';
 import { LogMessageType } from '@/types/event-logs.type';
+
 const MAX_MESSAGE_SIZE = 100;
 const MESSAGE_EXPIRATION_TIME = 30 * 60 * 1000; // 30 minutes in milliseconds
 
@@ -55,8 +54,8 @@ export const ConsoleModule: Module<
       console.log(
         'Store - removeExpiredMessages before clean',
         state.messages.length,
-        'expiration set',
-        expirationTime,
+        'expiration time',
+        new Date(expirationTime),
       );
 
       state.messages = state.messages.filter((message) => {
