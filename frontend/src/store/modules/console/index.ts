@@ -14,15 +14,26 @@ export const ConsoleModule: Module<
 
   state: () => ({
     messages: [],
+    isEnabled: false,
   }),
 
   getters: {
+    isEnabled: (state: ConsoleModuleState) => (): boolean =>
+      state.isEnabled,
+
     messages:
       (state: ConsoleModuleState) => (): LogMessageType[] =>
         state.messages,
   },
 
   mutations: {
+    setEnabled(
+      state: ConsoleModuleState,
+      enabled: boolean,
+    ) {
+      state.isEnabled = enabled;
+    },
+
     add(
       state: ConsoleModuleState,
       message: LogMessageType,
@@ -83,6 +94,31 @@ export const ConsoleModule: Module<
 
     addMessage({ commit }, message: LogMessageType) {
       commit('add', message);
+    },
+
+    enableRemoteLogging(
+      { state, commit, dispatch },
+      enabled: boolean,
+    ) {
+      if (enabled == state.isEnabled) {
+        console.log(
+          'Store - enableRemoteLogging already enabled',
+          enabled,
+        );
+        return;
+      }
+
+      commit('setEnabled', enabled);
+      dispatch(
+        'ws/emit',
+        {
+          event: 'enableRemoteLogger',
+          message: {
+            enabled: enabled,
+          },
+        },
+        { root: true },
+      );
     },
   },
 };

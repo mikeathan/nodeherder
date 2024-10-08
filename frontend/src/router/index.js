@@ -5,6 +5,7 @@ import AutomationsViewer from '../components/automations/Viewer.vue';
 import AutomationsEditor from '../components/automations/Editor.vue';
 import AutomationsCreator from '../components/automations/Creator.vue';
 import Settings from '../components/hub/settings/Settings.vue';
+import ConsoleViewer from '../components/hub/console/Viewer.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -31,6 +32,14 @@ const router = createRouter({
       component: Settings,
       meta: {
         title: 'Node-herder - Settings',
+      },
+    },
+    {
+      path: '/consoleviewer',
+      name: 'consoleviewer',
+      component: ConsoleViewer,
+      meta: {
+        title: 'Node-herder - Console viewer',
       },
     },
     {
