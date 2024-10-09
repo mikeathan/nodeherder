@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { key, store } from "../../../store/index";
 import Toggle from "../../input/Toggle.vue"
+import { consoleCleanupService } from "@/services/console-cleanup.service";
 
+
+onMounted(() => {
+    consoleCleanupService.startTimer(store);
+});
 
 const isEnabled = computed(() => {
     return store.getters['console/isEnabled']();
 });
+
 
 function enableLogging(enabled: boolean) {
     if (enabled == isEnabled.value) {

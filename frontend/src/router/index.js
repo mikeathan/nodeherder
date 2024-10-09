@@ -5,7 +5,7 @@ import AutomationsViewer from '../components/automations/Viewer.vue';
 import AutomationsEditor from '../components/automations/Editor.vue';
 import AutomationsCreator from '../components/automations/Creator.vue';
 import Settings from '../components/hub/settings/Settings.vue';
-import ConsoleViewer from '../components/hub/console/Viewer.vue';
+import ConsoleViewer from '../components/hub/console/ConsoleViewer.vue';
 
 const router = createRouter({
   history: createWebHistory(),

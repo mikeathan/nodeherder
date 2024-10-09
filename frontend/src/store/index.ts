@@ -16,6 +16,8 @@ import { ConsoleModule as console } from './modules/console/index';
 
 export const key: InjectionKey<Store<RootState>> = Symbol();
 
+export type StoreType = Store<RootState>;
+
 export const store = createStore<RootState>({
   state: {},
   actions: {
