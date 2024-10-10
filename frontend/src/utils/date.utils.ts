@@ -81,3 +81,10 @@ export const getLastWeekStartEndDate = (): {
 
   return { from: lastWeekStart, to: lastWeekEnd };
 };
+
+export const formatTimestamp = (
+  timestamp: number,
+): string => {
+  const date = new Date(timestamp);
+  return date.toLocaleString();
+};

@@ -79,6 +79,11 @@ export const WSClientModule: Module<
               root: true,
             });
             break;
+          case 'logger':
+            dispatch('console/addMessage', obj.payload, {
+              root: true,
+            });
+            break;
           case 'operationSuccess':
             //https://classic.yarnpkg.com/en/package/@kyvg/vue3-notification
             notify({

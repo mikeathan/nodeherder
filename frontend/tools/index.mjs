@@ -413,11 +413,12 @@ app.ws('/ws', async function (ws, req) {
               message: severity + ' message',
               timestamp: Date.now(),
             };
-            sendMessage(ws, 'logging', msg);
+            sendMessage(ws, 'logger', msg);
           }, 1000);
         } else {
           console.log('disableRemoteLogger');
           clearInterval(consoleLogIntervalId);
+          consoleLogIntervalId = 0;
         }
         break;
 
