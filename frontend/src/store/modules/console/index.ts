@@ -4,7 +4,7 @@ import { ConsoleModuleState } from './state';
 import { LogMessageType } from '@/types/event-logs.type';
 
 const MAX_MESSAGE_SIZE = 100;
-const MESSAGE_EXPIRATION_TIME = 30 * 60 * 1000; // 30 minutes in milliseconds
+const MESSAGE_EXPIRATION_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 export const ConsoleModule: Module<
   ConsoleModuleState,
