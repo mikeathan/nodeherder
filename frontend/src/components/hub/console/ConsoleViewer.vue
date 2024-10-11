@@ -32,6 +32,9 @@ function enableLogging(enabled: boolean) {
   }
   store.dispatch('console/enableRemoteLogging', enabled);
 }
+
+TODO;
+vuex - persistedstate;
 </script>
 
 <style>
