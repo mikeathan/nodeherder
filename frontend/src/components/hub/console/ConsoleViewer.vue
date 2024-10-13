@@ -6,7 +6,7 @@ import { consoleCleanupService } from '@/services/console-cleanup.service';
 import { LogMessageType } from '@/types/event-logs.type';
 import { formatTimestamp } from '@/utils/date.utils';
 
-//const messagesDiv = ref<HTMLDivElement>();
+const consoleDiv = ref<HTMLDivElement>();
 
 onMounted(() => {
     consoleCleanupService.startTimer(store);
@@ -17,21 +17,20 @@ const isEnabled = computed(() => {
 });
 
 const messages = computed(() => {
-    //   if (messagesDiv.value) {
-    //     messagesDiv.value!.scrollTop =
-    //       messagesDiv.value!.scrollHeight;
-    //   }
+
     return store.getters[
         'console/messages'
     ]() as LogMessageType[];
 });
 
-TODO: watch messages and scroll to bottom
 watch(
     () => messages,
     () => {
-        console.log("message uopdated")
-    }, { immediate: true }
+        // if (consoleDiv.value) {
+        //     consoleDiv.value.scrollIntoView({ behavior: 'smooth' });
+        // }
+
+    }, { deep: true }
 )
 
 function enableLogging(enabled: boolean) {
@@ -58,19 +57,22 @@ function enableLogging(enabled: boolean) {
 </style>
 <template>
     <div className="content p-0 p-sm-3">
+
         <Toggle :minimal="false" :value="isEnabled" :valueOn="true" :valueoff="false"
             @update="(v: boolean) => enableLogging(v)">
         </Toggle>
 
-        <div ref="messagesDiv">
-            <div v-for="(message, index) in messages" :key="message.timestamp">
-                <span class="index">{{ index + 1 }}</span>
-                <span class="timestamp">{{
-                    formatTimestamp(message.timestamp)
+
+    </div>
+
+    <div ref="consoleDiv">
+        <div v-for="(message, index) in messages" :key="message.timestamp">
+            <span class="index">{{ index + 1 }}</span>
+            <span class="timestamp">{{
+                formatTimestamp(message.timestamp)
                 }}</span>
-                <span class="level">{{ message.level }}</span>
-                <span class="message">{{ message.message }}</span>
-            </div>
+            <span class="level">{{ message.level }}</span>
+            <span class="message">{{ message.message }}</span>
         </div>
     </div>
 </template>
