@@ -20,13 +20,12 @@ const (
 	DeviceSetValue          = "deviceSetValue"
 	DeviceRename            = "deviceRename"
 
+	SaveLoggerConfig  = "saveLoggerConfig"
 	SaveHistoryConfig = "saveHistoryConfig"
 	SaveDeviceConfig  = "saveDeviceConfig"
 	LoadAppconfig     = "loadAppConfig"
 
 	LoadMetrics = "loadMetrics"
-
-	EnableRemoteLogger = "enableRemoteLogger"
 
 	// response
 	Automations       = "automations"
@@ -241,7 +240,7 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 	case DeviceRename:
 		c.executeAction(eventMsg.Payload, c.onDeviceRename, false)
 
-	case EnableRemoteLogger:
+	case SaveLoggerConfig:
 		c.executeAction(eventMsg.Payload, c.onEnableRemoteLogger, true)
 
 	default:

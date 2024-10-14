@@ -44,15 +44,33 @@ func DefaultHistoryConfig() *HistoryConfig {
 	}
 }
 
+type LoggerConfig struct {
+	EnableRemoteLogger bool `json:"enableRemoteLogger"`
+}
+
+func NewLoggerConfig(enableRemoteLogger bool) *LoggerConfig {
+	return &LoggerConfig{
+		EnableRemoteLogger: enableRemoteLogger,
+	}
+}
+
+func DefaultLoggingConfig() *LoggerConfig {
+	return &LoggerConfig{
+		EnableRemoteLogger: false,
+	}
+}
+
 type AppConfig struct {
 	Devices map[string]*DeviceConfig `json:"devices"`
 	History *HistoryConfig           `json:"history"`
+	Logger  *LoggerConfig            `json:"logger"`
 }
 
 func NewAppConfig() *AppConfig {
 	return &AppConfig{
 		Devices: map[string]*DeviceConfig{},
 		History: DefaultHistoryConfig(),
+		Logger:  DefaultLoggingConfig(),
 	}
 }
 

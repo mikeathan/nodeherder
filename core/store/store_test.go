@@ -53,6 +53,41 @@ func TestStoreLoadAllDevices(t *testing.T) {
 	}
 }
 
+func TestStoreSavesLoggerConfig(t *testing.T) {
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now().UTC()
+	})
+
+	appConfig := settings.NewAppConfig()
+	appConfig.History = settings.DefaultHistoryConfig()
+	appStore, cleanup, err := utils_test.CreateFileStoreWithAppConfig(appConfig, mockClock)
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+
+	appConfig, err = appStore.LoadAppConfig()
+	if err != nil {
+		t.Fatalf("LoadAppConfig failed. err %v ", err)
+	}
+
+	if appConfig.Logger.EnableRemoteLogger != false {
+		t.Fatalf("Logger config EnableRemoteLogger is set")
+	}
+
+	mockLoggerConfig := settings.NewLoggerConfig(true)
+	appStore.SaveLoggerConfig(mockLoggerConfig)
+
+	appConfig, err = appStore.LoadAppConfig()
+	if err != nil {
+		t.Fatalf("LoadAppConfig failed. err %v ", err)
+	}
+
+	if appConfig.Logger.EnableRemoteLogger != true {
+		t.Fatalf("Logger config EnableRemoteLogger is not set")
+	}
+}
+
 func TestStoreMetricsCleanupTasks(t *testing.T) {
 
 	mockClock := mocks.NewMockClock(func() time.Time {

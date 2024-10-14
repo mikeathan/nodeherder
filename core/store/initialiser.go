@@ -19,8 +19,8 @@ func Create(ctx context.Context) (AppStore, error) {
 		return nil, fmt.Errorf("loading settings repository failed: %v", err.Error())
 	}
 
-	// Build Tasks  - only one for now
-	tasks := []Task{DefaultMetricsCleanupTask(ctx, metricsRepo)}
+	// Build Tasks
+	tasks := []Task{DefaultMetricsCleanupTask(ctx, metricsRepo), DefaultRemoteLoggerTask()}
 
 	return NewAppStore(devicesRepo, metricsRepo, settings, tasks)
 }

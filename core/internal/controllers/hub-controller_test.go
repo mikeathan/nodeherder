@@ -117,6 +117,7 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 	wg.Wait()
 }
 
+UPDATE to TEST the new task 
 func TestHubEnableRemoteLogger(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}

@@ -58,6 +58,7 @@ type AppStore interface {
 	FindDeviceConfig(id string) (*settings.DeviceConfig, error)
 	SaveDeviceConfig(deviceconfig *settings.DeviceConfig) error
 	SaveHistoryConfig(historyConfig *settings.HistoryConfig) error
+	SaveLoggerConfig(loggerConfig *settings.LoggerConfig) error
 
 	StoreBridgeInfoList(bridgeInfoList []*devices.BridgeInfo) error
 	FindBridgeInfoByFriendlyName(friendlyName string) (*devices.BridgeInfo, error)
@@ -102,7 +103,7 @@ func NewAppStore(devices devices.Repository, metrics metrics.Repository, config 
 		tasks:          tasks,
 	}
 
-	app.startTasks(appconfig.History)
+	app.startTasks(appconfig)
 	return app, nil
 }
 
@@ -110,7 +111,7 @@ func (s *appStore) AddTask(task Task) {
 	s.tasks = append(s.tasks, task)
 }
 
-func (s *appStore) startTasks(config *settings.HistoryConfig) {
+func (s *appStore) startTasks(config *settings.AppConfig) {
 
 	for _, task := range s.tasks {
 		err := task.Start(config)
@@ -120,7 +121,7 @@ func (s *appStore) startTasks(config *settings.HistoryConfig) {
 	}
 }
 
-func (s *appStore) reloadTasks(config *settings.HistoryConfig) {
+func (s *appStore) reloadTasks(config *settings.AppConfig) {
 
 	for _, task := range s.tasks {
 		err := task.Stop()
@@ -151,7 +152,20 @@ func (s *appStore) SaveHistoryConfig(historyConfig *settings.HistoryConfig) erro
 
 	config.History = historyConfig
 
-	s.reloadTasks(config.History)
+	s.reloadTasks(config)
+
+	return s.config.Save(config)
+}
+
+func (s *appStore) SaveLoggerConfig(loggerConfig *settings.LoggerConfig) error {
+	config, err := s.config.Load()
+	if err != nil {
+		return err
+	}
+
+	config.Logger = loggerConfig
+
+	s.reloadTasks(config)
 
 	return s.config.Save(config)
 }

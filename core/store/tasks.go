@@ -9,7 +9,7 @@ import (
 )
 
 type Task interface {
-	Start(cfg *settings.HistoryConfig) error
+	Start(cfg *settings.AppConfig) error
 	Stop() error
 }
 
@@ -38,7 +38,7 @@ func DefaultMetricsCleanupTask(ctx context.Context, repo metrics.Repository) Tas
 	}
 }
 
-func (t *MetricsCleanupTask) Start(config *settings.HistoryConfig) error {
+func (t *MetricsCleanupTask) Start(config *settings.AppConfig) error {
 	t.wg.Add(1)
 
 	go func() {
@@ -52,10 +52,10 @@ func (t *MetricsCleanupTask) Start(config *settings.HistoryConfig) error {
 				return
 
 			default:
-				t.clock.Sleep(config.SleepTimeout.Duration())
+				t.clock.Sleep(config.History.SleepTimeout.Duration())
 				utils.LogInfo("Start metrics cleanup")
 
-				err := t.repo.Prune(config.ExpireAt.Duration())
+				err := t.repo.Prune(config.History.ExpireAt.Duration())
 				if err != nil {
 					utils.LogErrorf("Error during metrics cleanup: %v", err)
 				}
@@ -72,5 +72,28 @@ func (t *MetricsCleanupTask) Stop() error {
 
 	utils.LogInfo("Metrics cleanup task stopped")
 
+	return nil
+}
+
+type RemoteLoggerTask struct {
+	mutex sync.RWMutex
+}
+
+func DefaultRemoteLoggerTask() Task {
+	return &RemoteLoggerTask{
+		mutex: sync.RWMutex{},
+	}
+}
+func (t *RemoteLoggerTask) Start(config *settings.AppConfig) error {
+
+	defer t.mutex.Unlock()
+	t.mutex.Lock()
+
+	utils.EnableRemoteLoggerHook(config.Logger.EnableRemoteLogger)
+
+	return nil
+}
+
+func (t *RemoteLoggerTask) Stop() error {
 	return nil
 }
