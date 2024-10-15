@@ -253,11 +253,6 @@ func (h *HubController) registerEventHubEvents() {
 		if err != nil {
 			return errors.New("enable remote logger failed. Invalid payload type")
 		}
-
-		//	 TEMP: move it to a store task
-		//utils.EnableRemoteLoggerHook(req.EnableRemoteLogger)
-		//
-
 		h.store.SaveLoggerConfig(req)
 		utils.LogInfof("Remote logger enabled: %v", req.EnableRemoteLogger)
 		return nil

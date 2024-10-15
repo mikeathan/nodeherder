@@ -3,6 +3,7 @@ import { ValueOf } from './types';
 export type AppConfig = {
   devices: KeyyValuePair<DeviceSettings>;
   history: HistorySettingsType;
+  logger: LoggerSettingsType;
 };
 
 export type DeviceSettingsMap =
@@ -28,6 +29,13 @@ export type HistorySettingsPropsType =
 export type HistorySettingsType = {
   sleepTimeout: TimeInterval;
   expireAt: TimeInterval;
+};
+
+export type LoggerSettingsTypePropsType =
+  keyof LoggerSettingsType;
+  
+export type LoggerSettingsType = {
+  enableRemoteLogger: boolean;
 };
 
 export type DeviceSettings = {

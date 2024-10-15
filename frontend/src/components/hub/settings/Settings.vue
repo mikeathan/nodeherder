@@ -2,8 +2,11 @@
 import { computed } from "vue";
 import { key, store } from "../../../store/index";
 import HistorySettings from './HistorySettings.vue';
-import { HistorySettingsType } from "@/types/settings";
+import { HistorySettingsType, LoggerSettingsType } from "@/types/settings";
+import LoggerSettings from "./LoggerSettings.vue";
 
+
+NEED fixing - it doesnt load the settings
 const historySettings = computed(() => {
     if (!store.getters['appconfig/initialized']() as Boolean) {
         store.dispatch('ws/emit', { event: 'loadAppConfig' });
@@ -11,6 +14,12 @@ const historySettings = computed(() => {
     return store.getters['appconfig/history']() as HistorySettingsType
 });
 
+const loggerSettings = computed(() => {
+    if (!store.getters['appconfig/initialized']() as Boolean) {
+        store.dispatch('ws/emit', { event: 'loadAppConfig' });
+    }
+    return store.getters['appconfig/logger']() as LoggerSettingsType
+});
 </script>
 
 <template>
@@ -19,5 +28,6 @@ const historySettings = computed(() => {
         <br>
         <br>
         <HistorySettings :settings="historySettings"></HistorySettings>
+        <LoggerSettings :settings="loggerSettings"></LoggerSettings>
     </div>
 </template>

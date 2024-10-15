@@ -1,4 +1,4 @@
-import { Module } from 'vuex';
+import { Logger, Module } from 'vuex';
 import { RootState } from '../../state';
 import { AppConfigModuleState } from './state';
 import {
@@ -6,6 +6,7 @@ import {
   DeviceSettings,
   DeviceSettingsMap,
   HistorySettingsType,
+  LoggerSettingsType,
 } from '@/types/settings';
 import { key } from '@/store';
 
@@ -30,7 +31,10 @@ export const AppConfigModule: Module<
       (state: AppConfigModuleState) =>
       (): HistorySettingsType =>
         state.appConfig.history,
-
+    logger:
+      (state: AppConfigModuleState) =>
+      (): LoggerSettingsType =>
+        state.appConfig.logger,
     findDeviceSetting:
       (state: AppConfigModuleState) =>
       (id: string): DeviceSettings => {
@@ -52,6 +56,12 @@ export const AppConfigModule: Module<
       historySetting: HistorySettingsType,
     ) {
       state.appConfig.history = historySetting;
+    },
+    setLoggerSettings(
+      state: AppConfigModuleState,
+      loggerSettings: LoggerSettingsType,
+    ) {
+      state.appConfig.logger = loggerSettings;
     },
 
     clear(state: AppConfigModuleState) {
@@ -79,7 +89,7 @@ export const AppConfigModule: Module<
     },
 
     saveDeviceSettings(
-      { commit, dispatch, rootState },
+      { commit, dispatch },
       deviceSetting: DeviceSettings,
     ) {
       commit('setDeviceSetting', deviceSetting);
@@ -93,7 +103,7 @@ export const AppConfigModule: Module<
       );
     },
     saveHistorySettings(
-      { commit, dispatch, rootState },
+      { commit, dispatch },
       historySettings: HistorySettingsType,
     ) {
       commit('setHistorySettings', historySettings);
@@ -102,6 +112,20 @@ export const AppConfigModule: Module<
         {
           event: 'saveHistoryConfig',
           message: historySettings,
+        },
+        { root: true },
+      );
+    },
+    saveLoggerSettings(
+      { commit, dispatch },
+      loggerSetings: LoggerSettingsType,
+    ) {
+      commit('setLoggerSettings', loggerSetings);
+      dispatch(
+        'ws/emit',
+        {
+          event: 'saveLoggerConfig',
+          message: loggerSetings,
         },
         { root: true },
       );

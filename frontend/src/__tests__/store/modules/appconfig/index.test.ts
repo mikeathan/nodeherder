@@ -9,12 +9,16 @@ import { store } from '../../../../store/index';
 import {
   AppConfig,
   DeviceSettings,
+  LoggerSettingsType,
 } from '@/types/settings';
 
 const mockAppconfig: AppConfig = {
   history: {
     sleepTimeout: { value: 1, unit: 'hours' },
     expireAt: { value: 10, unit: 'days' },
+  },
+  logger: {
+    enableRemoteLogger: false,
   },
   devices: {
     x01234: {
@@ -110,5 +114,19 @@ describe('test appconfig module', () => {
     ]('x2222222') as DeviceSettings;
 
     expect(deviceSetting).toBeUndefined();
+  });
+
+  test('test save logger settigs saves the logger settings changes', () => {
+    store.dispatch('appconfig/init', mockAppconfig);
+
+   mockAppconfig.logger.enableRemoteLogger = true;
+
+    store.commit('appconfig/setLoggerSettings',  mockAppconfig.logger);
+
+    var loggerSetting = store.getters[
+      'appconfig/logger'
+    ]() as LoggerSettingsType;
+
+    expect(loggerSetting.enableRemoteLogger).toEqual(true);
   });
 });

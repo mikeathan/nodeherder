@@ -56,6 +56,9 @@ var appConfig = {
     sleepTimeout: { value: 12, unit: 'hours' },
     expireAt: { value: 10, unit: 'days' },
   },
+  logger: {
+    enableRemoteLogger: false,
+  },
   devices: {
     '0xa4c13894070052fc': {
       id: '0xa4c13894070052fc',
@@ -389,15 +392,16 @@ app.ws('/ws', async function (ws, req) {
         appConfig[deviceId] = obj.payload;
         sendOperationSuccess(ws);
         break;
-      case 'enableRemoteLogger':
-        console.log('enableRemoteLogger', obj.payload);
+      case 'saveLoggerConfig':
+        console.log('saveLoggerConfig', obj.payload);
+        appConfig.logger = obj.payload;
 
-        if (obj.payload.enabled) {
+        if (appConfig.logger.enableRemoteLogger) {
           if (consoleLogIntervalId != 0) {
             console.log(
               'consoleLogIntervalId already running',
             );
-            return;
+            clearInterval(consoleLogIntervalId);
           }
 
           console.log('enableRemoteLogger');
