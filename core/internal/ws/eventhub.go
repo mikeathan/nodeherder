@@ -62,7 +62,7 @@ type EventHub interface {
 	OnLoadAppConfig(action func() (interface{}, error))
 	OnSaveDeviceConfig(func(payload interface{}) error)
 	OnSaveHistoryConfig(func(payload interface{}) error)
-	OnEnableRemoteLogger(func(payload interface{}) error)
+	OnSaveLoggerConfig(func(payload interface{}) error)
 	HandleRequest(w http.ResponseWriter, r *http.Request) error
 }
 
@@ -81,7 +81,7 @@ type eventHubImpl struct {
 	onLoadAppConfig           func() (interface{}, error)
 	onSaveDeviceConfig        func(interface{}) error
 	onSaveHistoryConfig       func(interface{}) error
-	onEnableRemoteLogger      func(interface{}) error
+	onSaveLoggerConfig        func(interface{}) error
 }
 
 func NewWsHub() EventHub {
@@ -100,7 +100,7 @@ func NewWsHub() EventHub {
 		onLoadAppConfig:           func() (interface{}, error) { return nil, nil },
 		onSaveDeviceConfig:        func(payload interface{}) error { return nil },
 		onSaveHistoryConfig:       func(payload interface{}) error { return nil },
-		onEnableRemoteLogger:      func(payload interface{}) error { return nil },
+		onSaveLoggerConfig:        func(payload interface{}) error { return nil },
 	}
 }
 
@@ -159,8 +159,8 @@ func (h *eventHubImpl) OnDeleteAutomation(action func(p interface{}) (interface{
 func (h *eventHubImpl) OnDeleteAutomationTrigger(action func(p interface{}) (interface{}, error)) {
 	h.onDeleteAutomationTrigger = action
 }
-func (h *eventHubImpl) OnEnableRemoteLogger(action func(payload interface{}) error) {
-	h.onEnableRemoteLogger = action
+func (h *eventHubImpl) OnSaveLoggerConfig(action func(payload interface{}) error) {
+	h.onSaveLoggerConfig = action
 }
 
 func (h *eventHubImpl) EmitDevice(name string) error {
@@ -241,7 +241,7 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 		c.executeAction(eventMsg.Payload, c.onDeviceRename, false)
 
 	case SaveLoggerConfig:
-		c.executeAction(eventMsg.Payload, c.onEnableRemoteLogger, true)
+		c.executeAction(eventMsg.Payload, c.onSaveLoggerConfig, true)
 
 	default:
 

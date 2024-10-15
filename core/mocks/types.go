@@ -114,8 +114,8 @@ func (w *MockEventHub) OnSaveHistoryConfig(func(payload interface{}) error) {
 	fmt.Println("Empty OnSaveHistoryConfig")
 }
 
-func (w MockEventHub) OnEnableRemoteLogger(action func(payload interface{}) error) {
-	fmt.Println("WsServer: Mocked OnEnableRemoteLogger")
+func (w MockEventHub) OnSaveLoggerConfig(action func(payload interface{}) error) {
+	fmt.Println("WsServer: Mocked OnSaveLoggerConfig")
 }
 
 // Mock MqttClient
@@ -277,8 +277,8 @@ func (w *NopWsServer) OnSaveHistoryConfig(func(payload interface{}) error) {
 	fmt.Println("WsServer: Mocked OnSaveHistoryConfig")
 }
 
-func (w NopWsServer) OnEnableRemoteLogger(action func(payload interface{}) error) {
-	fmt.Println("WsServer: Mocked OnEnableRemoteLogger")
+func (w NopWsServer) OnSaveLoggerConfig(action func(payload interface{}) error) {
+	fmt.Println("WsServer: Mocked OnSaveLoggerConfig")
 }
 
 // Mock devices Repository

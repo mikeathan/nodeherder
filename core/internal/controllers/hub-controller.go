@@ -246,7 +246,7 @@ func (h *HubController) registerEventHubEvents() {
 		return h.automationEngine.GetAllTriggers(), nil
 	})
 
-	h.eventHub.OnEnableRemoteLogger(func(p interface{}) error {
+	h.eventHub.OnSaveLoggerConfig(func(p interface{}) error {
 		bytes := []byte(p.(string))
 		req := &settings.LoggerConfig{}
 		err := json.Unmarshal(bytes, &req)

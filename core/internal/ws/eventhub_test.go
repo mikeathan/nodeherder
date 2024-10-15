@@ -832,7 +832,7 @@ func TestHandlingEnableRemoteLoggerMessage(t *testing.T) {
 	wsHub.Start()
 	req := &settings.LoggerConfig{EnableRemoteLogger: true}
 
-	wsHub.OnEnableRemoteLogger(func(p interface{}) error {
+	wsHub.OnSaveLoggerConfig(func(p interface{}) error {
 		bytes := []byte(p.(string))
 		payload := &settings.LoggerConfig{}
 		err := json.Unmarshal(bytes, &payload)
