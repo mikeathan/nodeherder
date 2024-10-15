@@ -13,6 +13,7 @@ import (
 	"node-herder/models/logging"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
+	"node-herder/store"
 	utils_test "node-herder/testing"
 	"node-herder/utils"
 	"sync"
@@ -117,7 +118,6 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 	wg.Wait()
 }
 
-UPDATE to TEST the new task 
 func TestHubEnableRemoteLogger(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
@@ -130,7 +130,9 @@ func TestHubEnableRemoteLogger(t *testing.T) {
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices) // NEED TO FIX, currently i make all devices features which is not right!!!!
 
 	// register hub
-	store, cleanup, err := utils_test.CreateFileStore()
+	tasks := []store.Task{store.DefaultRemoteLoggerTask()}
+
+	store, cleanup, err := utils_test.CreateStoreWithTasks(tasks)
 	if err != nil {
 		t.Fatalf("CreateFileStore failed. err %v ", err)
 	}
@@ -186,7 +188,9 @@ func TestHubEnableRemoteLogger(t *testing.T) {
 	expectedEnabledMessages := 5
 	testCases := []bool{true, false, true, false, true, false, true, false, true, false}
 	for _, enabled := range testCases {
-		utils.EnableRemoteLoggerHook(enabled)
+
+		logger := settings.NewLoggerConfig(enabled)
+		store.SaveLoggerConfig(logger)
 		if enabled {
 			utils.LogInfo("Remote hook enabled: true")
 		}

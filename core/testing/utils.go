@@ -35,14 +35,23 @@ func CreateStore() store.AppStore {
 	return store
 }
 
-func CreateStoreWithTasks(tasks []store.Task) store.AppStore {
+func CreateStoreWithTasks(tasks []store.Task) (store.AppStore, func(), error) {
+	settingsTempFile := tempfile()
+
 	repo := repository.NewMemoryDeviceRepo()
 	metricsRepo := mocks.NopMetricsRepo{}
-	settingsRepo := mocks.NopSettingsrepo{}
+	settingsRepo, err := repository.NewFileSettingsRepoFromFile(settingsTempFile)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cleanup := func() {
+		os.Remove(settingsTempFile)
+	}
 
 	defer repo.Close()
-	store, _ := store.NewAppStore(repo, &metricsRepo, &settingsRepo, tasks)
-	return store
+	store, _ := store.NewAppStore(repo, &metricsRepo, settingsRepo, tasks)
+	return store, cleanup, nil
 }
 
 func CreateFileStore() (store.AppStore, func(), error) {
