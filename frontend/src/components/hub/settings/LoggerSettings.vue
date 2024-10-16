@@ -16,9 +16,9 @@ const props = defineProps({
 
 const loggerSettings = ref<LoggerSettingsType>(props.settings)
 
-function inputLostFocus(propName: any, propValue: any) {
-    save(propName, propValue);
-}
+// function inputLostFocus(propName: any, propValue: any) {
+//     save(propName, propValue);
+// }
 
 function save(propName: LoggerSettingsTypePropsType, propValue: any) {
     if (loggerSettings.value[propName] != propValue) {
@@ -26,8 +26,6 @@ function save(propName: LoggerSettingsTypePropsType, propValue: any) {
         store.dispatch('appconfig/saveLoggerSettings', loggerSettings.value);
     }
 }
-
-
 
 function enableLogging(enabled: boolean) {
     if (enabled == loggerSettings.value.enableRemoteLogger) {
