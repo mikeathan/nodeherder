@@ -1,7 +1,7 @@
 import { Module } from 'vuex';
 import { RootState } from '../../state';
 import { ConsoleModuleState } from './state';
-import { LogMessageType } from '@/types/event-logs.type';
+import { LogMessageType } from '@/types/console.type';
 
 const MAX_MESSAGE_SIZE = 100;
 const MESSAGE_EXPIRATION_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds

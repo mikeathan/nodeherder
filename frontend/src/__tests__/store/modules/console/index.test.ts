@@ -7,7 +7,7 @@ import {
   it,
 } from '@jest/globals';
 import { store } from '../../../../store/index';
-import { LogMessageType } from '@/types/event-logs.type';
+import { LogMessageType } from '@/types/console.type';
 
 const mockMessages: LogMessageType[] = [
   {

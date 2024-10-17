@@ -3,9 +3,10 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { key, store } from '../../../store/index';
 import Toggle from '../../input/Toggle.vue';
 import { consoleCleanupService } from '@/services/console-cleanup.service';
-import { LogMessageType } from '@/types/event-logs.type';
+import { LogMessageType } from '@/types/console.type';
 import { formatTimestamp } from '@/utils/date.utils';
 import { LoggerSettingsType } from '@/types/settings';
+import { getConsoleLevelClass } from '@/contracts/console';
 
 const consoleDiv = ref<HTMLDivElement>();
 
@@ -46,19 +47,7 @@ function enableLogging(enabled: boolean) {
 
 </script>
 
-<style>
-.index {
-    margin-right: 20px;
-}
-
-.timestamp {
-    margin-right: 20px;
-}
-
-.level {
-    margin-right: 20px;
-}
-</style>
+<style></style>
 <template>
     <div className="content p-0 p-sm-3">
 
@@ -69,14 +58,17 @@ function enableLogging(enabled: boolean) {
 
     </div>
 
+
     <div ref="consoleDiv">
         <div v-for="(message, index) in messages" :key="message.timestamp">
-            <span class="index">{{ index + 1 }}</span>
-            <span class="timestamp">{{
-                formatTimestamp(message.timestamp)
+            <span style="width: 60px;" :class="`badge ${getConsoleLevelClass(message.level)}`">{{ message.level
                 }}</span>
-            <span class="level">{{ message.level }}</span>
-            <span class="message">{{ message.message }}</span>
+            &nbsp;
+            <small class="pe-1">{{
+                formatTimestamp(message.timestamp)
+            }}</small>
+            &nbsp;
+            <code>{{ message.message }}</code>
         </div>
     </div>
 </template>

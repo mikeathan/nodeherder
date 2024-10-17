@@ -1,4 +1,4 @@
-import { LogMessageType } from '@/types/event-logs.type';
+import { LogMessageType } from '@/types/console.type';
 
 export interface ConsoleModuleState {
   messages: LogMessageType[];
