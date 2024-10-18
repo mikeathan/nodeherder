@@ -247,8 +247,8 @@ func (h *HubController) registerEventHubEvents() {
 	})
 
 	h.eventHub.OnSaveLoggerConfig(func(p interface{}) error {
-		bytes := []byte(p.(string))
 		req := &settings.LoggerConfig{}
+		bytes, _ := json.Marshal(p)
 		err := json.Unmarshal(bytes, &req)
 		if err != nil {
 			return errors.New("enable remote logger failed. Invalid payload type")
