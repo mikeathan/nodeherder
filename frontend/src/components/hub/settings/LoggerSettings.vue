@@ -45,7 +45,7 @@ function enableLogging(enabled: boolean) {
             </dt>
         </dl>
         <div class="col-md-4">
-            <Toggle :minimal="false" :value="loggerSettings.enableRemoteLogger" :valueOn="true" :valueoff="false"
+            <Toggle :minimal="true" :value="loggerSettings.enableRemoteLogger" :valueOn="true" :valueoff="false"
                 @update="(v: boolean) => enableLogging(v)">
             </Toggle>
 

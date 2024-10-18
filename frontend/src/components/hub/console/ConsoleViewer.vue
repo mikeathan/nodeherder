@@ -8,8 +8,6 @@ import { formatTimestamp } from '@/utils/date.utils';
 import { LoggerSettingsType } from '@/types/settings';
 import { getConsoleLevelClass } from '@/contracts/console';
 
-const consoleDiv = ref<HTMLDivElement>();
-
 onMounted(() => {
     consoleCleanupService.startTimer(store);
 });
@@ -17,6 +15,10 @@ onMounted(() => {
 const loggerSettings = computed(() => {
     if (!store.getters['appconfig/initialized']() as Boolean) {
         store.dispatch('ws/emit', { event: 'loadAppConfig' });
+    }
+    const set = store.getters['appconfig/logger']()
+    if (set == undefined) {
+        return {} as LoggerSettingsType
     }
     return store.getters['appconfig/logger']() as LoggerSettingsType
 });
@@ -27,15 +29,6 @@ const messages = computed(() => {
     ]() as LogMessageType[];
 });
 
-watch(
-    () => messages,
-    () => {
-        // if (consoleDiv.value) {
-        //     consoleDiv.value.scrollIntoView({ behavior: 'smooth' });
-        // }
-
-    }, { deep: true }
-)
 
 function enableLogging(enabled: boolean) {
     if (enabled == loggerSettings.value.enableRemoteLogger) {
@@ -45,30 +38,36 @@ function enableLogging(enabled: boolean) {
     store.dispatch('appconfig/saveLoggerSettings', loggerSettings.value);
 }
 
+function clearConsole() {
+    store.commit('console/clear');
+}
 </script>
 
 <style></style>
 <template>
     <div className="content p-0 p-sm-3">
+        <div class="card">
+            <div class="card-header">
+                <label class=" pe-1">Remote logger:</label>
+                <Toggle :minimal="true" :value="loggerSettings.enableRemoteLogger" :valueOn="true" :valueoff="false"
+                    @update="(v: boolean) => enableLogging(v)">
+                </Toggle>
 
-        <Toggle :minimal="false" :value="loggerSettings.enableRemoteLogger" :valueOn="true" :valueoff="false"
-            @update="(v: boolean) => enableLogging(v)">
-        </Toggle>
+                <button class="btn btn-link" @click="clearConsole">Clear</button>
+            </div>
 
-
-    </div>
-
-
-    <div ref="consoleDiv">
-        <div v-for="(message, index) in messages" :key="message.timestamp">
-            <span style="width: 60px;" :class="`badge ${getConsoleLevelClass(message.level)}`">{{ message.level
-                }}</span>
-            &nbsp;
-            <small class="pe-1">{{
-                formatTimestamp(message.timestamp)
-            }}</small>
-            &nbsp;
-            <code>{{ message.message }}</code>
+            <div class="card-body">
+                <div v-for="(message, index) in messages" :key="message.timestamp">
+                    <span style="width: 60px;" :class="`badge ${getConsoleLevelClass(message.level)}`">{{ message.level
+                        }}</span>
+                    &nbsp;
+                    <small class="pe-1">{{
+                        formatTimestamp(message.timestamp)
+                        }}</small>
+                    &nbsp;
+                    <code>{{ message.message }}</code>
+                </div>
+            </div>
         </div>
     </div>
 </template>
