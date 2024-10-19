@@ -97,6 +97,14 @@ func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	utils.LogInfo("WsHandler: client connected")
 }
 
+TODO
+type LogFileHandler struct {
+}
+
+func (h *LogFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+}
+
 type DataCollectorHandler struct {
 	hub *controllers.HubController
 }
