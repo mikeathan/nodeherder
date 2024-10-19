@@ -3,8 +3,8 @@ import { RootState } from '../../state';
 import { ConsoleModuleState } from './state';
 import { LogMessageType } from '@/types/console.type';
 
-const MAX_MESSAGE_SIZE = 100;
-const MESSAGE_EXPIRATION_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
+const MAX_MESSAGE_SIZE = 1000;
+const MESSAGE_EXPIRATION_TIME = 24 * 60 * 60 * 1000; // 1 day in milliseconds
 
 export const ConsoleModule: Module<
   ConsoleModuleState,
