@@ -153,12 +153,17 @@ func (h *RemoteHook) Fire(entry *logrus.Entry) error {
 		Timestamp: entry.Time.UnixMilli(),
 	}
 
-	jsonBytes, err := json.Marshal(logMessage)
+	bytes, err := json.Marshal(logMessage)
+	if err != nil {
+		return err
+	}
+	payload := make(map[string]interface{})
+	err = json.Unmarshal(bytes, &payload)
 	if err != nil {
 		return err
 	}
 
-	err = h.emitter.Broadcast("logger", jsonBytes)
+	err = h.emitter.Broadcast("logger", payload)
 	if err != nil {
 		return err
 	}
