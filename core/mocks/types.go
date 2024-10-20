@@ -13,6 +13,8 @@ import (
 	"node-herder/repository"
 	"node-herder/store"
 	"node-herder/utils/storage"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -693,3 +695,36 @@ func NewMockRemoteLoggerEmitter(callback func(eventName string, data interface{}
 func (e *MockRemoteLoggerEmitter) Broadcast(eventName string, data interface{}) error {
 	return e.callback(eventName, data)
 }
+
+// File Walker
+
+type MockWalker struct {
+	mockFiles []string
+}
+
+func NewMockWalker(mockFiles []string) *MockWalker {
+	return &MockWalker{mockFiles: mockFiles}
+}
+
+func (m *MockWalker) Walk(root string, walkFn filepath.WalkFunc) error {
+
+	for _, file := range m.mockFiles {
+		fileInfo := mockFileInfo{name: file, isDir: false}
+		if err := walkFn(file, fileInfo, nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type mockFileInfo struct {
+	name  string
+	isDir bool
+}
+
+func (m mockFileInfo) Name() string       { return m.name }
+func (m mockFileInfo) Size() int64        { return 0 }
+func (m mockFileInfo) Mode() os.FileMode  { return 0 }
+func (m mockFileInfo) ModTime() time.Time { return time.Now() }
+func (m mockFileInfo) IsDir() bool        { return m.isDir }
+func (m mockFileInfo) Sys() interface{}   { return nil }

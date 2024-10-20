@@ -14,13 +14,14 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-const LogPath string = "logs"
+const LogsPath string = "logs"
+const LogName string = "nodeherder.log"
 
 var log *logger = newConsoleLogger()
 var remoteHook *RemoteHook = newRemoteHook()
 
 func InitFileLogger() {
-	log = newFileLogger("nodeherder.log")
+	log = newFileLogger(LogName)
 }
 
 type logger struct {
@@ -28,10 +29,10 @@ type logger struct {
 }
 
 func createDirIfNotExists() {
-	if _, err := os.Stat(LogPath); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(LogPath, os.ModePerm)
+	if _, err := os.Stat(LogsPath); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(LogsPath, os.ModePerm)
 		if err != nil {
-			fmt.Printf("Failed to create log directory %s Error: %v\n", LogPath, err)
+			fmt.Printf("Failed to create log directory %s Error: %v\n", LogsPath, err)
 			panic(err)
 		}
 	}
@@ -61,7 +62,7 @@ func newFileLogger(logName string) *logger {
 	// 	panic(err)
 	// }
 	lumberjackLogger := &lumberjack.Logger{
-		Filename:   filepath.Join(LogPath, logName),
+		Filename:   filepath.Join(LogsPath, logName),
 		MaxSize:    2,     // Max size in MB
 		MaxBackups: 3,     // Max number of old log files to keep
 		MaxAge:     30,    // Max age in days to keep a log file

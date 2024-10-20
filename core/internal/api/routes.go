@@ -97,11 +97,17 @@ func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	utils.LogInfo("WsHandler: client connected")
 }
 
-TODO
-type LogFileHandler struct {
+type ListLogsHandler struct {
+	path string
 }
 
-func (h *LogFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func NewListLogsHandler(path string) *ListLogsHandler {
+	return &ListLogsHandler{
+		path: path,
+	}
+}
+
+func (h *ListLogsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 }
 
