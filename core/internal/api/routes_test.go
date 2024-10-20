@@ -2,7 +2,7 @@ package api_test
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -259,6 +259,15 @@ func TestHandleListLogFiles(t *testing.T) {
 		t.Errorf("error reading body got %v want nil", err)
 	}
 
-	todo - assert that
-	fmt.Println(body)
+	resultFiles := []string{}
+	err = json.Unmarshal(body, &resultFiles)
+	if err != nil {
+		t.Errorf("error reading body got %v want nil", err)
+	}
+
+	for i := range mockeFiles {
+		if resultFiles[i] != mockeFiles[i] {
+			t.Errorf("error reading body got %v want %v", resultFiles[i], mockeFiles[i])
+		}
+	}
 }
