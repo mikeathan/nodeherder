@@ -20,6 +20,10 @@ const LogName string = "nodeherder.log"
 var log *logger = newConsoleLogger()
 var remoteHook *RemoteHook = newRemoteHook()
 
+func ListFileLogs(walker Walker) ([]string, error) {
+	return ListFilesWithExtension(walker, LogName, filepath.Ext(LogName))
+}
+
 func InitFileLogger() {
 	log = newFileLogger(LogName)
 }

@@ -97,18 +97,32 @@ func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	utils.LogInfo("WsHandler: client connected")
 }
 
-type ListLogsHandler struct {
-	path string
+type ListFileLogsHandler struct {
+	walker utils.Walker
 }
 
-func NewListLogsHandler(path string) *ListLogsHandler {
-	return &ListLogsHandler{
-		path: path,
+func NewListFileLogsHandler(walker utils.Walker) *ListFileLogsHandler {
+	return &ListFileLogsHandler{walker: walker}
+}
+
+func (h *ListFileLogsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	files, err := utils.ListFileLogs(h.walker)
+	if err != nil {
+		utils.LogErrorf("ListFileLogsHandler: ListFileLogs error %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+
+		return
 	}
-}
 
-func (h *ListLogsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(files); err != nil {
+		utils.LogErrorf("ListFileLogsHandler: Failed to encode response %s", err.Error())
 
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 type DataCollectorHandler struct {

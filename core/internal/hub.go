@@ -19,6 +19,7 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, ctx c
 
 	// api routing
 	router.POST("/collect", api.NewDataCollectorHandler(hub))
+	router.GET("/listlogs", api.NewListFileLogsHandler(utils.FileSystemWalker{}))
 
 	// file routing
 	fs := api.NewFileServer("../frontend/dist")

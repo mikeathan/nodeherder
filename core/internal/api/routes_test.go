@@ -2,6 +2,7 @@ package api_test
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -235,4 +236,29 @@ func TestHandleUnsuportedMediaType(t *testing.T) {
 	if string(body) != expectedBody {
 		t.Errorf("error reading body got %v want %v", string(body), expectedBody)
 	}
+}
+
+func TestHandleListLogFiles(t *testing.T) {
+
+	mockeFiles := []string{"nodeherder.log", "nodeherder2.log", "nodeherder3.log", "nodeherder4.log"}
+
+	walker := mocks.NewMockWalker(mockeFiles)
+	req := httptest.NewRequest(http.MethodGet, "/listlogs", nil)
+
+	w := httptest.NewRecorder()
+
+	h := api.NewListFileLogsHandler(walker)
+	h.ServeHTTP(w, req)
+
+	if status := w.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	body, err := io.ReadAll(w.Body)
+	if err != nil {
+		t.Errorf("error reading body got %v want nil", err)
+	}
+
+	todo - assert that
+	fmt.Println(body)
 }
