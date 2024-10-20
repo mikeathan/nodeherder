@@ -1,5 +1,18 @@
 package logging
 
+const (
+	LoadAction = "load"
+)
+
+type FileLogRequest struct {
+	File   string `json:"file"`
+	Action string `json:"action"`
+}
+
+func NewFileLogRequest() *FileLogRequest {
+	return &FileLogRequest{}
+}
+
 type LogMessage struct {
 	Level     string `json:"level"`
 	Message   string `json:"message"`

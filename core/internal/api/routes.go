@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"node-herder/internal/controllers"
 	"node-herder/internal/ws"
+	"node-herder/models/logging"
 	"node-herder/utils"
 	"regexp"
 )
@@ -106,7 +107,6 @@ func NewListFileLogsHandler(walker utils.Walker) *ListFileLogsHandler {
 }
 
 func (h *ListFileLogsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	files, err := utils.ListFileLogs(h.walker)
 	if err != nil {
 		utils.LogErrorf("ListFileLogsHandler: ListFileLogs error %s", err.Error())
@@ -122,6 +122,52 @@ func (h *ListFileLogsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 		return
+	}
+}
+
+type LogFileHandler struct {
+	loader utils.Loader
+}
+
+func NewLogFileHandler(loader utils.Loader) *LogFileHandler {
+	return &LogFileHandler{loader: loader}
+}
+func (h *LogFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		http.Error(w, "Content-Type header is not application/json", http.StatusUnsupportedMediaType)
+		return
+	}
+
+	buf := new(bytes.Buffer)
+	_, err := buf.ReadFrom(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	body := buf.String()
+	request := logging.FileLogRequest{}
+	if err = json.Unmarshal([]byte(body), &request); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if request.Action != logging.LoadAction {
+		http.Error(w, "Error unknown request action type", http.StatusBadRequest)
+		return
+	}
+
+	// we only support loading files for now
+	bytes, err := h.loader.Load(request.File)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if _, err = w.Write(bytes); err != nil {
+		http.Error(w, "Error writing response", http.StatusInternalServerError)
 	}
 }
 

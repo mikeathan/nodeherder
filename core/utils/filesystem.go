@@ -5,6 +5,19 @@ import (
 	"path/filepath"
 )
 
+type Loader interface {
+	Load(file string) ([]byte, error)
+}
+
+type FileSystemLoader struct{}
+
+func (FileSystemLoader) Load(file string) ([]byte, error) {
+	return os.ReadFile(file)
+}
+func LoadFile(file string) ([]byte, error) {
+	return os.ReadFile(file)
+}
+
 type Walker interface {
 	Walk(root string, walkFn filepath.WalkFunc) error
 }
