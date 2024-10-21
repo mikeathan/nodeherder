@@ -119,6 +119,10 @@ send mqqt message to enable log type from bridge to be emmited for zigbee2mqtt e
 add remote log enable in UI
 add download file log in UI
 
+Backend TODO
+api limiter
+cache with expiration
+
 METRICS backend TODO
 
 - returns lis of period for ui to choose from - NO

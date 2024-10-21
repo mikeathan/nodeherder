@@ -102,6 +102,13 @@ type ListFileLogsHandler struct {
 	walker utils.Walker
 }
 
+type FileSystemService interface {
+	ListFiles(path string) ([]string, error)
+	Load(file string) ([]byte, error)
+}
+
+TODO use filesystemservice
+
 func NewListFileLogsHandler(walker utils.Walker) *ListFileLogsHandler {
 	return &ListFileLogsHandler{walker: walker}
 }
