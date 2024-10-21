@@ -19,6 +19,7 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, ctx c
 
 	// api routing
 	router.POST("/collect", api.NewDataCollectorHandler(hub))
+	router.POST("/logfile",api.NewLogFileHandler(utils.FileSystemLoader{}))
 	router.GET("/listlogs", api.NewListFileLogsHandler(utils.FileSystemWalker{}))
 
 	// file routing

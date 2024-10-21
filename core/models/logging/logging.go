@@ -9,8 +9,11 @@ type FileLogRequest struct {
 	Action string `json:"action"`
 }
 
-func NewFileLogRequest() *FileLogRequest {
-	return &FileLogRequest{}
+func NewFileLogRequest(file string, action string) *FileLogRequest {
+	return &FileLogRequest{
+		File:   file,
+		Action: action,
+	}
 }
 
 type LogMessage struct {

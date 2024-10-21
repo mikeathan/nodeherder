@@ -132,6 +132,7 @@ type LogFileHandler struct {
 func NewLogFileHandler(loader utils.Loader) *LogFileHandler {
 	return &LogFileHandler{loader: loader}
 }
+
 func (h *LogFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if r.Header.Get("Content-Type") != "application/json" {

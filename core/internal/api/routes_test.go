@@ -9,6 +9,7 @@ import (
 	"node-herder/internal/api"
 	"node-herder/internal/controllers"
 	"node-herder/mocks"
+	"node-herder/models/logging"
 	utils_test "node-herder/testing"
 	"node-herder/utils"
 	"strings"
@@ -238,6 +239,33 @@ func TestHandleUnsuportedMediaType(t *testing.T) {
 	}
 }
 
+func TestLoadLogFileHandler(t *testing.T) {
+
+	reqJson, err := json.Marshal(logging.NewFileLogRequest("nodeherder.log", logging.LoadAction))
+	if err != nil {
+		t.Errorf("error reading body got %v want nil", err)
+	}
+	bodyReader := strings.NewReader(string(reqJson))
+
+	req := httptest.NewRequest(http.MethodPost, "/logfile", bodyReader)
+	req.Header.Add("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+	mockFileBuffer := []byte("test file")
+	h := api.NewLogFileHandler(mocks.NewMockFileLoader(mockFileBuffer))
+
+	h.ServeHTTP(w, req)
+
+	if status := w.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	body, _ := io.ReadAll(w.Body)
+	if string(body) != string(mockFileBuffer) {
+		t.Errorf("error reading body got %v want %v", string(body), string(mockFileBuffer))
+	}
+
+}
 func TestHandleListLogFiles(t *testing.T) {
 
 	mockeFiles := []string{"nodeherder.log", "nodeherder2.log", "nodeherder3.log", "nodeherder4.log"}

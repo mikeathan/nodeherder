@@ -728,3 +728,17 @@ func (m mockFileInfo) Mode() os.FileMode  { return 0 }
 func (m mockFileInfo) ModTime() time.Time { return time.Now() }
 func (m mockFileInfo) IsDir() bool        { return m.isDir }
 func (m mockFileInfo) Sys() interface{}   { return nil }
+
+// File loader
+
+type MockFileLoader struct {
+	fileBuffer []byte
+}
+
+func NewMockFileLoader(fileBuffer []byte) *MockFileLoader {
+	return &MockFileLoader{fileBuffer: fileBuffer}
+}
+
+func (f MockFileLoader) Load(file string) ([]byte, error) {
+	return f.fileBuffer, nil
+}
