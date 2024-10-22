@@ -16,12 +16,13 @@ import (
 
 const LogsPath string = "logs"
 const LogName string = "nodeherder.log"
+const Ext = ".log"
 
 var log *logger = newConsoleLogger()
 var remoteHook *RemoteHook = newRemoteHook()
 
 func ListFileLogs(walker Walker) ([]string, error) {
-	return ListFilesWithExtension(walker, LogName, filepath.Ext(LogName))
+	return ListFilesWithExtension(walker, LogName, Ext)
 }
 
 func InitFileLogger() {

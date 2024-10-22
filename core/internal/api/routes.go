@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"node-herder/internal/controllers"
+	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/models/logging"
 	"node-herder/utils"
@@ -99,22 +100,16 @@ func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 type ListFileLogsHandler struct {
-	walker utils.Walker
+	fs services.FileSystemService
 }
 
-type FileSystemService interface {
-	ListFiles(path string) ([]string, error)
-	Load(file string) ([]byte, error)
-}
-
-TODO use filesystemservice
-
-func NewListFileLogsHandler(walker utils.Walker) *ListFileLogsHandler {
-	return &ListFileLogsHandler{walker: walker}
+func NewListFileLogsHandler(fs services.FileSystemService) *ListFileLogsHandler {
+	return &ListFileLogsHandler{fs: fs}
 }
 
 func (h *ListFileLogsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	files, err := utils.ListFileLogs(h.walker)
+
+	files, err := h.fs.ListFilesWithExtension(utils.LogsPath, utils.Ext)
 	if err != nil {
 		utils.LogErrorf("ListFileLogsHandler: ListFileLogs error %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -133,11 +128,11 @@ func (h *ListFileLogsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 }
 
 type LogFileHandler struct {
-	loader utils.Loader
+	fs services.FileSystemService
 }
 
-func NewLogFileHandler(loader utils.Loader) *LogFileHandler {
-	return &LogFileHandler{loader: loader}
+func NewLogFileHandler(fs services.FileSystemService) *LogFileHandler {
+	return &LogFileHandler{fs: fs}
 }
 
 func (h *LogFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -167,7 +162,7 @@ func (h *LogFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// we only support loading files for now
-	bytes, err := h.loader.Load(request.File)
+	bytes, err := h.fs.Load(request.File)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
