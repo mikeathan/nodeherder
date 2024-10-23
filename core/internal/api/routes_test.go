@@ -254,7 +254,6 @@ func TestLoadLogFileHandler(t *testing.T) {
 		t.Errorf("error reading body got %v want nil", err)
 	}
 	bodyReader := strings.NewReader(string(reqJson))
-
 	req := httptest.NewRequest(http.MethodPost, "/logfile", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
 
@@ -282,8 +281,8 @@ func TestHandleListLogFiles(t *testing.T) {
 	fs := fs.NewFileSystem(
 		fs.WithFileLoader(mocks.NewMockFileLoader(mockFileBuffer)),
 		fs.WithFileWalker(mocks.NewMockWalker(mockeFiles)))
-	req := httptest.NewRequest(http.MethodGet, "/listlogs", nil)
 
+	req := httptest.NewRequest(http.MethodGet, "/listlogs", nil)
 	w := httptest.NewRecorder()
 
 	h := api.NewListFileLogsHandler(fs)
