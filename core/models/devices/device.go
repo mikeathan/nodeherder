@@ -27,6 +27,7 @@ var units = map[string]string{
 	"voltage":         "mV",
 	"linkquality":     "LQI",
 	"illuminance_lux": "lux",
+	"battpercentage":  "%",
 }
 var exposesWhitelist = map[string]int{
 	"temperature":         1,
@@ -56,11 +57,15 @@ var exposesWhitelist = map[string]int{
 	"voltage":             25,
 	"current":             26,
 	"energy":              27,
+	"alarm":               28,
+	"volume":              29,
+	"melody":              30,
 }
 
 var propertiesWhitelist = map[string]int{
-	"battery":     1,
-	"linkquality": 2,
+	"battery":        1,
+	"linkquality":    2,
+	"battpercentage": 3,
 	//"availability": 3,handled manually
 	//"last_seen":    4,handled manually
 }
@@ -161,7 +166,6 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 		}
 
 	case "binary":
-
 		if expose.ValueOn != nil {
 			newEntity.Attributes["on"] = expose.ValueOn
 		}
