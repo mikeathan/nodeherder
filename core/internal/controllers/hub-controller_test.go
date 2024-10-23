@@ -142,16 +142,17 @@ func TestHubEnableRemoteLogger(t *testing.T) {
 
 	index := 0
 	handler := func(eventName string, data interface{}) error {
-		message, ok := data.([]byte)
-		if !ok {
-			t.Errorf("Failed to unmarshal message: %v", data)
+
+		message, err := json.Marshal(data)
+		if err != nil {
+			t.Errorf("Failed to marshal message: %v", err.Error())
 		}
 
 		if eventName != expectedEventName {
 			t.Errorf("event name is not correct want: %s got: %s", expectedEventName, eventName)
 		}
 		var logMessage logging.LogMessage
-		err := json.Unmarshal(message, &logMessage)
+		err = json.Unmarshal(message, &logMessage)
 
 		if err != nil {
 			t.Errorf("Failed to unmarshal message: %v", err.Error())
@@ -232,16 +233,17 @@ func TestHubTriggersRemoteLogger(t *testing.T) {
 
 	index := 0
 	handler := func(eventName string, data interface{}) error {
-		message, ok := data.([]byte)
-		if !ok {
-			t.Errorf("Failed to unmarshal message: %v", data)
+
+		message, err := json.Marshal(data)
+		if err != nil {
+			t.Errorf("Failed to marshal message: %v", err.Error())
 		}
 
 		if eventName != expectedEventName {
 			t.Errorf("event name is not correct want: %s got: %s", expectedEventName, eventName)
 		}
 		var logMessage logging.LogMessage
-		err := json.Unmarshal(message, &logMessage)
+		err = json.Unmarshal(message, &logMessage)
 
 		if err != nil {
 			t.Errorf("Failed to unmarshal message: %v", err.Error())

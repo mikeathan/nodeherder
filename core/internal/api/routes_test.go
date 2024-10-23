@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"node-herder/internal/api"
 	"node-herder/internal/controllers"
+	"node-herder/internal/fs"
 	"node-herder/mocks"
 	"node-herder/models/logging"
 	utils_test "node-herder/testing"
@@ -241,7 +242,14 @@ func TestHandleUnsuportedMediaType(t *testing.T) {
 
 func TestLoadLogFileHandler(t *testing.T) {
 
-	reqJson, err := json.Marshal(logging.NewFileLogRequest("nodeherder.log", logging.LoadAction))
+	mockFileBuffer := []byte("test file")
+	mockFile := "nodeherder.log"
+
+	fs := fs.NewFileSystem(
+		fs.WithFileLoader(mocks.NewMockFileLoader(mockFileBuffer)),
+		fs.WithFileWalker(mocks.NewMockWalker([]string{mockFile})))
+
+	reqJson, err := json.Marshal(logging.NewFileLogRequest(mockFile, logging.LoadAction))
 	if err != nil {
 		t.Errorf("error reading body got %v want nil", err)
 	}
@@ -251,8 +259,7 @@ func TestLoadLogFileHandler(t *testing.T) {
 	req.Header.Add("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
-	mockFileBuffer := []byte("test file")
-	h := api.NewLogFileHandler(mocks.NewMockFileLoader(mockFileBuffer))
+	h := api.NewLogFileHandler(fs)
 
 	h.ServeHTTP(w, req)
 
@@ -270,12 +277,16 @@ func TestHandleListLogFiles(t *testing.T) {
 
 	mockeFiles := []string{"nodeherder.log", "nodeherder2.log", "nodeherder3.log", "nodeherder4.log"}
 
-	walker := mocks.NewMockWalker(mockeFiles)
+	mockFileBuffer := []byte("test file")
+
+	fs := fs.NewFileSystem(
+		fs.WithFileLoader(mocks.NewMockFileLoader(mockFileBuffer)),
+		fs.WithFileWalker(mocks.NewMockWalker(mockeFiles)))
 	req := httptest.NewRequest(http.MethodGet, "/listlogs", nil)
 
 	w := httptest.NewRecorder()
 
-	h := api.NewListFileLogsHandler(walker)
+	h := api.NewListFileLogsHandler(fs)
 	h.ServeHTTP(w, req)
 
 	if status := w.Code; status != http.StatusOK {

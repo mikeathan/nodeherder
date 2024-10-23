@@ -36,9 +36,9 @@ func TestRemoteLoggerEmitter(t *testing.T) {
 
 	handler := func(eventName string, data interface{}) error {
 
-		message, ok := data.([]byte)
-		if !ok {
-			t.Errorf("Failed to unmarshal message: %v", data)
+		message, err := json.Marshal(data)
+		if err != nil {
+			t.Errorf("Failed to marshal message: %v", err.Error())
 		}
 
 		fmt.Println("handler called with ", string(message))
@@ -49,7 +49,7 @@ func TestRemoteLoggerEmitter(t *testing.T) {
 			t.Errorf("event name is not correct want: %s got: %s", expectedEventName, eventName)
 		}
 		var logMessage logging.LogMessage
-		err := json.Unmarshal(message, &logMessage)
+		err = json.Unmarshal(message, &logMessage)
 
 		if err != nil {
 			t.Errorf("Failed to unmarshal message: %v", err.Error())
@@ -100,13 +100,13 @@ func TestRemoveRemoteLoggerHook(t *testing.T) {
 	expectedMessages := []string{"Test Info message"}
 	handler := func(eventName string, data interface{}) error {
 
-		message, ok := data.([]byte)
-		if !ok {
-			t.Errorf("Failed to unmarshal message: %v", data)
+		message, err := json.Marshal(data)
+		if err != nil {
+			t.Errorf("Failed to marshal message: %v", err.Error())
 		}
 
 		var logMessage logging.LogMessage
-		err := json.Unmarshal(message, &logMessage)
+		err = json.Unmarshal(message, &logMessage)
 
 		if err != nil {
 			t.Errorf("Failed to unmarshal message: %v", err.Error())
@@ -166,9 +166,9 @@ func TestEnableRemoteLoggerHook(t *testing.T) {
 
 	handler := func(eventName string, data interface{}) error {
 
-		message, ok := data.([]byte)
-		if !ok {
-			t.Errorf("Failed to unmarshal message: %v", data)
+		message, err := json.Marshal(data)
+		if err != nil {
+			t.Errorf("Failed to marshal message: %v", err.Error())
 		}
 		testCase := testCases[testIndex]
 		if !testCase.enabled {
@@ -176,7 +176,7 @@ func TestEnableRemoteLoggerHook(t *testing.T) {
 		}
 
 		var logMessage logging.LogMessage
-		err := json.Unmarshal(message, &logMessage)
+		err = json.Unmarshal(message, &logMessage)
 
 		if err != nil {
 			t.Errorf("Failed to unmarshal message: %v", err.Error())

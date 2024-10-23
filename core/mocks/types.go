@@ -733,6 +733,11 @@ func (m mockFileInfo) Sys() interface{}   { return nil }
 
 type MockFileLoader struct {
 	fileBuffer []byte
+	callback   func() []byte
+}
+
+func NewMockFileLoaderWithCallback(callback func() []byte) *MockFileLoader {
+	return &MockFileLoader{callback: callback}
 }
 
 func NewMockFileLoader(fileBuffer []byte) *MockFileLoader {
@@ -740,5 +745,8 @@ func NewMockFileLoader(fileBuffer []byte) *MockFileLoader {
 }
 
 func (f MockFileLoader) Load(file string) ([]byte, error) {
+	if f.callback != nil {
+		return f.callback(), nil
+	}
 	return f.fileBuffer, nil
 }

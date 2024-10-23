@@ -4,6 +4,7 @@ import (
 	"context"
 	"node-herder/internal/api"
 	"node-herder/internal/controllers"
+	"node-herder/internal/fs"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
 	"node-herder/store"
@@ -13,14 +14,16 @@ import (
 func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, ctx context.Context) *api.ApiServer {
 
 	router := api.NewRouter()
+	fservice := fs.NewFileSystem()
 
 	//websocket routing
 	router.GET("/ws", api.NewWsHandler(ws))
 
 	// api routing
 	router.POST("/collect", api.NewDataCollectorHandler(hub))
-	router.POST("/logfile",api.NewLogFileHandler(utils.FileSystemLoader{}))
-	router.GET("/listlogs", api.NewListFileLogsHandler(utils.FileSystemWalker{}))
+
+	router.POST("/logfile", api.NewLogFileHandler(fservice))
+	router.GET("/listlogs", api.NewListFileLogsHandler(fservice))
 
 	// file routing
 	fs := api.NewFileServer("../frontend/dist")

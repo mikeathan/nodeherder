@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"node-herder/internal/controllers"
-	"node-herder/internal/services"
+	"node-herder/internal/fs"
 	"node-herder/internal/ws"
 	"node-herder/models/logging"
 	"node-herder/utils"
@@ -100,16 +100,16 @@ func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 type ListFileLogsHandler struct {
-	fs services.FileSystemService
+	fs fs.FileSystem
 }
 
-func NewListFileLogsHandler(fs services.FileSystemService) *ListFileLogsHandler {
+func NewListFileLogsHandler(fs fs.FileSystem) *ListFileLogsHandler {
 	return &ListFileLogsHandler{fs: fs}
 }
 
 func (h *ListFileLogsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	files, err := h.fs.ListFilesWithExtension(utils.LogsPath, utils.Ext)
+	files, err := h.fs.ListFilesWithExtension(utils.LogsPath, utils.LogExtension)
 	if err != nil {
 		utils.LogErrorf("ListFileLogsHandler: ListFileLogs error %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -128,10 +128,10 @@ func (h *ListFileLogsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 }
 
 type LogFileHandler struct {
-	fs services.FileSystemService
+	fs fs.FileSystem
 }
 
-func NewLogFileHandler(fs services.FileSystemService) *LogFileHandler {
+func NewLogFileHandler(fs fs.FileSystem) *LogFileHandler {
 	return &LogFileHandler{fs: fs}
 }
 
