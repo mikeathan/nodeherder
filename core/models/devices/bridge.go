@@ -30,6 +30,7 @@ type BridgeExpose struct {
 	Type        string              `json:"type"`
 	Access      int                 `json:"access,omitempty"`
 	Description string              `json:"description,omitempty"`
+	Category    string              `json:"category,omitempty"`
 	Name        string              `json:"name,omitempty"`
 	Property    string              `json:"property,omitempty"`
 	Values      []string            `json:"values,omitempty"`

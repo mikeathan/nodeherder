@@ -114,6 +114,17 @@ func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo
 
 			// load features
 			for _, expose := range bridgeInfo.Definition.Exposes {
+
+				if expose.Features == nil {
+					entity, err := devices.CreateCustomFeatureFromExpose(expose, nil)
+					if err != nil {
+						continue
+					}
+
+					d.Exposes[entity.Name] = entity
+					d.Properties["availability"] = "offline"
+				}
+
 				for _, feature := range expose.Features {
 					entity, err := devices.CreateEntityFromFeature(feature, nil)
 					if err != nil {
@@ -124,6 +135,7 @@ func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo
 					d.Exposes[entity.Name] = entity
 					d.Properties["availability"] = "offline"
 				}
+
 			}
 
 			if len(d.Exposes) == 0 {

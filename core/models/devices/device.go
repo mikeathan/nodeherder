@@ -59,7 +59,17 @@ var exposesWhitelist = map[string]int{
 	"energy":              27,
 	"alarm":               28,
 	"volume":              29,
-	"melody":              30,
+	"contact":             30,
+}
+
+// var exposesCategoriesBlacklist = map[string]int{
+// 	"diagnostics": 1,
+// 	"test":        2,
+// }
+
+var customExposeFeaturesPropertyWhitelist = map[string]int{
+	"silence": 1,
+	"alarm":   2,
 }
 
 var propertiesWhitelist = map[string]int{
@@ -179,6 +189,46 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 		}
 	}
 	return newEntity, nil
+}
+
+func CreateCustomFeatureFromExpose(expose BridgeExpose, data any) (*Entity, error) {
+
+	// NOTE:
+	// create custom feature from devices that can be triggered but dont have feature description
+	// only support alarm for now
+	if expose.Property == "" {
+		return nil, fmt.Errorf("no expose data")
+	}
+
+	if _, ok := customExposeFeaturesPropertyWhitelist[expose.Property]; !ok {
+		return nil, fmt.Errorf("custom expose property %v is blacklisted", expose.Property)
+	}
+
+	newEntity := newEntity()
+	newEntity.Data = data
+	newEntity.Name = expose.Name
+	newEntity.Unit = expose.Unit
+	newEntity.Description = expose.Description
+	newEntity.Data = data
+	newEntity.Type = expose.Type
+
+	switch expose.Type {
+	case "numeric":
+		newEntity.Attributes["max"] = expose.ValueMax
+		newEntity.Attributes["min"] = expose.ValueMin
+		newEntity.Properties[expose.Name] = 0
+
+	case "binary":
+		newEntity.Properties["on"] = expose.ValueOn
+		newEntity.Properties["off"] = expose.ValueOff
+
+	case "enum":
+		for index, item := range expose.Values {
+			newEntity.Properties[fmt.Sprintf("%d", index)] = item
+		}
+	}
+	return newEntity, nil
+
 }
 
 func CreateEntityFromFeature(feature BridgeInfoFeature, data any) (*Entity, error) {

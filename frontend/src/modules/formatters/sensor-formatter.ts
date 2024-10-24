@@ -41,6 +41,7 @@ const typeToClassMapsensor: KeyValuePair<string> = {
   angle_z: 'fa-z',
   side: 'fa-cube',
   presence: 'fa-light fa-person', // <i class="fa-solid fa-person"></i>
+  contact: 'fa-fw fa-door-open',
 };
 
 const sensorUnits: KeyValuePair<string> = {
