@@ -5,19 +5,13 @@
     "endpoints": {
       "1": {
         "bindings": [],
-        "clusters": {
-          "input": [],
-          "output": []
-        },
+        "clusters": { "input": [], "output": [] },
         "configured_reportings": [],
         "scenes": []
       },
       "10": {
         "bindings": [],
-        "clusters": {
-          "input": [],
-          "output": []
-        },
+        "clusters": { "input": [], "output": [] },
         "configured_reportings": [],
         "scenes": []
       },
@@ -32,100 +26,67 @@
       },
       "110": {
         "bindings": [],
-        "clusters": {
-          "input": [],
-          "output": []
-        },
+        "clusters": { "input": [], "output": [] },
         "configured_reportings": [],
         "scenes": []
       },
       "12": {
         "bindings": [],
-        "clusters": {
-          "input": [],
-          "output": []
-        },
+        "clusters": { "input": [], "output": [] },
         "configured_reportings": [],
         "scenes": []
       },
       "13": {
         "bindings": [],
-        "clusters": {
-          "input": ["genOta"],
-          "output": []
-        },
+        "clusters": { "input": ["genOta"], "output": [] },
         "configured_reportings": [],
         "scenes": []
       },
       "2": {
         "bindings": [],
-        "clusters": {
-          "input": [],
-          "output": []
-        },
+        "clusters": { "input": [], "output": [] },
         "configured_reportings": [],
         "scenes": []
       },
       "242": {
         "bindings": [],
-        "clusters": {
-          "input": [],
-          "output": []
-        },
+        "clusters": { "input": [], "output": [] },
         "configured_reportings": [],
         "scenes": []
       },
       "3": {
         "bindings": [],
-        "clusters": {
-          "input": [],
-          "output": []
-        },
+        "clusters": { "input": [], "output": [] },
         "configured_reportings": [],
         "scenes": []
       },
       "4": {
         "bindings": [],
-        "clusters": {
-          "input": [],
-          "output": []
-        },
+        "clusters": { "input": [], "output": [] },
         "configured_reportings": [],
         "scenes": []
       },
       "47": {
         "bindings": [],
-        "clusters": {
-          "input": [],
-          "output": []
-        },
+        "clusters": { "input": [], "output": [] },
         "configured_reportings": [],
         "scenes": []
       },
       "5": {
         "bindings": [],
-        "clusters": {
-          "input": [],
-          "output": []
-        },
+        "clusters": { "input": [], "output": [] },
         "configured_reportings": [],
         "scenes": []
       },
       "6": {
         "bindings": [],
-        "clusters": {
-          "input": [],
-          "output": []
-        },
+        "clusters": { "input": [], "output": [] },
         "configured_reportings": [],
         "scenes": []
       },
       "8": {
         "bindings": [],
-        "clusters": {
-          "input": [],
-          "output": []
-        },
+        "clusters": { "input": [], "output": [] },
         "configured_reportings": [],
         "scenes": []
       }
@@ -453,10 +414,7 @@
       },
       "242": {
         "bindings": [],
-        "clusters": {
-          "input": [],
-          "output": ["greenPower"]
-        },
+        "clusters": { "input": [], "output": ["greenPower"] },
         "configured_reportings": [],
         "scenes": []
       }
@@ -800,10 +758,7 @@
       },
       "242": {
         "bindings": [],
-        "clusters": {
-          "input": [],
-          "output": ["greenPower"]
-        },
+        "clusters": { "input": [], "output": ["greenPower"] },
         "configured_reportings": [],
         "scenes": []
       }
@@ -1046,6 +1001,241 @@
     "software_build_id": "2.59.25",
     "supported": true,
     "type": "EndDevice"
+  },
+  {
+    "date_code": "20220420",
+    "definition": {
+      "description": "Automatically generated definition",
+      "exposes": [
+        {
+          "access": 2,
+          "category": "config",
+          "description": "Initiate device identification",
+          "label": "Identify",
+          "name": "identify",
+          "property": "identify",
+          "type": "enum",
+          "values": ["identify"]
+        },
+        {
+          "features": [
+            {
+              "access": 7,
+              "description": "On/off state of this light",
+              "label": "State",
+              "name": "state",
+              "property": "state",
+              "type": "binary",
+              "value_off": "OFF",
+              "value_on": "ON",
+              "value_toggle": "TOGGLE"
+            },
+            {
+              "access": 7,
+              "description": "Brightness of this light",
+              "label": "Brightness",
+              "name": "brightness",
+              "property": "brightness",
+              "type": "numeric",
+              "value_max": 254,
+              "value_min": 0
+            },
+            {
+              "access": 7,
+              "description": "Color temperature of this light",
+              "label": "Color temp",
+              "name": "color_temp",
+              "presets": [
+                {
+                  "description": "Coolest temperature supported",
+                  "name": "coolest",
+                  "value": 153
+                },
+                {
+                  "description": "Cool temperature (250 mireds / 4000 Kelvin)",
+                  "name": "cool",
+                  "value": 250
+                },
+                {
+                  "description": "Neutral temperature (370 mireds / 2700 Kelvin)",
+                  "name": "neutral",
+                  "value": 370
+                },
+                {
+                  "description": "Warmest temperature supported",
+                  "name": "warmest",
+                  "value": 370
+                }
+              ],
+              "property": "color_temp",
+              "type": "numeric",
+              "unit": "mired",
+              "value_max": 370,
+              "value_min": 153
+            },
+            {
+              "access": 7,
+              "description": "Color temperature after cold power on of this light",
+              "label": "Color temp startup",
+              "name": "color_temp_startup",
+              "presets": [
+                {
+                  "description": "Coolest temperature supported",
+                  "name": "coolest",
+                  "value": 153
+                },
+                {
+                  "description": "Cool temperature (250 mireds / 4000 Kelvin)",
+                  "name": "cool",
+                  "value": 250
+                },
+                {
+                  "description": "Neutral temperature (370 mireds / 2700 Kelvin)",
+                  "name": "neutral",
+                  "value": 370
+                },
+                {
+                  "description": "Warmest temperature supported",
+                  "name": "warmest",
+                  "value": 370
+                },
+                {
+                  "description": "Restore previous color_temp on cold power on",
+                  "name": "previous",
+                  "value": 65535
+                }
+              ],
+              "property": "color_temp_startup",
+              "type": "numeric",
+              "unit": "mired",
+              "value_max": 370,
+              "value_min": 153
+            }
+          ],
+          "type": "light"
+        },
+        {
+          "access": 2,
+          "description": "Triggers an effect on the light (e.g. make light blink for a few seconds)",
+          "label": "Effect",
+          "name": "effect",
+          "property": "effect",
+          "type": "enum",
+          "values": [
+            "blink",
+            "breathe",
+            "okay",
+            "channel_change",
+            "finish_effect",
+            "stop_effect"
+          ]
+        },
+        {
+          "access": 7,
+          "category": "config",
+          "description": "Controls the behavior when the device is powered on after power loss. If you get an `UNSUPPORTED_ATTRIBUTE` error, the device does not support it.",
+          "label": "Power-on behavior",
+          "name": "power_on_behavior",
+          "property": "power_on_behavior",
+          "type": "enum",
+          "values": ["off", "on", "toggle", "previous"]
+        },
+        {
+          "access": 1,
+          "category": "diagnostic",
+          "description": "Link quality (signal strength)",
+          "label": "Linkquality",
+          "name": "linkquality",
+          "property": "linkquality",
+          "type": "numeric",
+          "unit": "lqi",
+          "value_max": 255,
+          "value_min": 0
+        }
+      ],
+      "model": "TWBulb03UK",
+      "options": [
+        {
+          "access": 2,
+          "description": "Sets the duration of the identification procedure in seconds (i.e., how long the device would flash).The value ranges from 1 to 30 seconds (default: 3).",
+          "label": "Identify timeout",
+          "name": "identify_timeout",
+          "property": "identify_timeout",
+          "type": "numeric",
+          "value_max": 30,
+          "value_min": 1
+        },
+        {
+          "access": 2,
+          "description": "Controls the transition time (in seconds) of on/off, brightness, color temperature (if applicable) and color (if applicable) changes. Defaults to `0` (no transition).",
+          "label": "Transition",
+          "name": "transition",
+          "property": "transition",
+          "type": "numeric",
+          "value_min": 0
+        },
+        {
+          "access": 2,
+          "description": "When enabled colors will be synced, e.g. if the light supports both color x/y and color temperature a conversion from color x/y to color temperature will be done when setting the x/y color (default true).",
+          "label": "Color sync",
+          "name": "color_sync",
+          "property": "color_sync",
+          "type": "binary",
+          "value_off": false,
+          "value_on": true
+        },
+        {
+          "access": 2,
+          "description": "State actions will also be published as 'action' when true (default false).",
+          "label": "State action",
+          "name": "state_action",
+          "property": "state_action",
+          "type": "binary",
+          "value_off": false,
+          "value_on": true
+        }
+      ],
+      "supports_ota": false,
+      "vendor": "LDS"
+    },
+    "disabled": false,
+    "endpoints": {
+      "1": {
+        "bindings": [],
+        "clusters": {
+          "input": [
+            "genBasic",
+            "genIdentify",
+            "genGroups",
+            "genScenes",
+            "genOnOff",
+            "genLevelCtrl",
+            "lightingColorCtrl",
+            "touchlink"
+          ],
+          "output": ["genOta"]
+        },
+        "configured_reportings": [],
+        "scenes": []
+      },
+      "242": {
+        "bindings": [],
+        "clusters": { "input": [], "output": ["greenPower"] },
+        "configured_reportings": [],
+        "scenes": []
+      }
+    },
+    "friendly_name": "Attic light",
+    "ieee_address": "0x70ac08fffefafeca",
+    "interview_completed": true,
+    "interviewing": false,
+    "manufacturer": "LDS",
+    "model_id": "TWBulb03UK",
+    "network_address": 61851,
+    "power_source": "Mains (single phase)",
+    "software_build_id": "2.10.03",
+    "supported": false,
+    "type": "Router"
   },
   {
     "date_code": "",
@@ -1524,10 +1714,7 @@
       },
       "242": {
         "bindings": [],
-        "clusters": {
-          "input": [],
-          "output": ["greenPower"]
-        },
+        "clusters": { "input": [], "output": ["greenPower"] },
         "configured_reportings": [],
         "scenes": []
       }
@@ -1799,10 +1986,7 @@
       },
       "242": {
         "bindings": [],
-        "clusters": {
-          "input": [],
-          "output": ["greenPower"]
-        },
+        "clusters": { "input": [], "output": ["greenPower"] },
         "configured_reportings": [],
         "scenes": []
       }
@@ -1820,142 +2004,52 @@
     "type": "Router"
   },
   {
-    "date_code": "20220420",
+    "date_code": "20230630",
     "definition": {
-      "description": "Automatically generated definition",
+      "description": "Contact sensor",
       "exposes": [
         {
-          "access": 2,
-          "category": "config",
-          "description": "Initiate device identification",
-          "label": "Identify",
-          "name": "identify",
-          "property": "identify",
-          "type": "enum",
-          "values": ["identify"]
+          "access": 1,
+          "description": "Indicates if the contact is closed (= true) or open (= false)",
+          "label": "Contact",
+          "name": "contact",
+          "property": "contact",
+          "type": "binary",
+          "value_off": true,
+          "value_on": false
         },
         {
-          "features": [
-            {
-              "access": 7,
-              "description": "On/off state of this light",
-              "label": "State",
-              "name": "state",
-              "property": "state",
-              "type": "binary",
-              "value_off": "OFF",
-              "value_on": "ON",
-              "value_toggle": "TOGGLE"
-            },
-            {
-              "access": 7,
-              "description": "Brightness of this light",
-              "label": "Brightness",
-              "name": "brightness",
-              "property": "brightness",
-              "type": "numeric",
-              "value_max": 254,
-              "value_min": 0
-            },
-            {
-              "access": 7,
-              "description": "Color temperature of this light",
-              "label": "Color temp",
-              "name": "color_temp",
-              "presets": [
-                {
-                  "description": "Coolest temperature supported",
-                  "name": "coolest",
-                  "value": 153
-                },
-                {
-                  "description": "Cool temperature (250 mireds / 4000 Kelvin)",
-                  "name": "cool",
-                  "value": 250
-                },
-                {
-                  "description": "Neutral temperature (370 mireds / 2700 Kelvin)",
-                  "name": "neutral",
-                  "value": 370
-                },
-                {
-                  "description": "Warmest temperature supported",
-                  "name": "warmest",
-                  "value": 370
-                }
-              ],
-              "property": "color_temp",
-              "type": "numeric",
-              "unit": "mired",
-              "value_max": 370,
-              "value_min": 153
-            },
-            {
-              "access": 7,
-              "description": "Color temperature after cold power on of this light",
-              "label": "Color temp startup",
-              "name": "color_temp_startup",
-              "presets": [
-                {
-                  "description": "Coolest temperature supported",
-                  "name": "coolest",
-                  "value": 153
-                },
-                {
-                  "description": "Cool temperature (250 mireds / 4000 Kelvin)",
-                  "name": "cool",
-                  "value": 250
-                },
-                {
-                  "description": "Neutral temperature (370 mireds / 2700 Kelvin)",
-                  "name": "neutral",
-                  "value": 370
-                },
-                {
-                  "description": "Warmest temperature supported",
-                  "name": "warmest",
-                  "value": 370
-                },
-                {
-                  "description": "Restore previous color_temp on cold power on",
-                  "name": "previous",
-                  "value": 65535
-                }
-              ],
-              "property": "color_temp_startup",
-              "type": "numeric",
-              "unit": "mired",
-              "value_max": 370,
-              "value_min": 153
-            }
-          ],
-          "type": "light"
+          "access": 1,
+          "category": "diagnostic",
+          "description": "Indicates if the battery of this device is almost empty",
+          "label": "Battery low",
+          "name": "battery_low",
+          "property": "battery_low",
+          "type": "binary",
+          "value_off": false,
+          "value_on": true
         },
         {
-          "access": 2,
-          "description": "Triggers an effect on the light (e.g. make light blink for a few seconds)",
-          "label": "Effect",
-          "name": "effect",
-          "property": "effect",
-          "type": "enum",
-          "values": [
-            "blink",
-            "breathe",
-            "okay",
-            "channel_change",
-            "finish_effect",
-            "stop_effect"
-          ]
+          "access": 1,
+          "category": "diagnostic",
+          "description": "Remaining battery in %, can take up to 24 hours before reported",
+          "label": "Battery",
+          "name": "battery",
+          "property": "battery",
+          "type": "numeric",
+          "unit": "%",
+          "value_max": 100,
+          "value_min": 0
         },
         {
-          "access": 7,
-          "category": "config",
-          "description": "Controls the behavior when the device is powered on after power loss. If you get an `UNSUPPORTED_ATTRIBUTE` error, the device does not support it.",
-          "label": "Power-on behavior",
-          "name": "power_on_behavior",
-          "property": "power_on_behavior",
-          "type": "enum",
-          "values": ["off", "on", "toggle", "previous"]
+          "access": 1,
+          "category": "diagnostic",
+          "description": "Voltage of the battery in millivolts",
+          "label": "Voltage",
+          "name": "voltage",
+          "property": "voltage",
+          "type": "numeric",
+          "unit": "mV"
         },
         {
           "access": 1,
@@ -1970,91 +2064,56 @@
           "value_min": 0
         }
       ],
-      "model": "TWBulb03UK",
-      "options": [
-        {
-          "access": 2,
-          "description": "Sets the duration of the identification procedure in seconds (i.e., how long the device would flash).The value ranges from 1 to 30 seconds (default: 3).",
-          "label": "Identify timeout",
-          "name": "identify_timeout",
-          "property": "identify_timeout",
-          "type": "numeric",
-          "value_max": 30,
-          "value_min": 1
-        },
-        {
-          "access": 2,
-          "description": "Controls the transition time (in seconds) of on/off, brightness, color temperature (if applicable) and color (if applicable) changes. Defaults to `0` (no transition).",
-          "label": "Transition",
-          "name": "transition",
-          "property": "transition",
-          "type": "numeric",
-          "value_min": 0
-        },
-        {
-          "access": 2,
-          "description": "When enabled colors will be synced, e.g. if the light supports both color x/y and color temperature a conversion from color x/y to color temperature will be done when setting the x/y color (default true).",
-          "label": "Color sync",
-          "name": "color_sync",
-          "property": "color_sync",
-          "type": "binary",
-          "value_off": false,
-          "value_on": true
-        },
-        {
-          "access": 2,
-          "description": "State actions will also be published as 'action' when true (default false).",
-          "label": "State action",
-          "name": "state_action",
-          "property": "state_action",
-          "type": "binary",
-          "value_off": false,
-          "value_on": true
-        }
-      ],
+      "model": "SNZB-04",
+      "options": [],
       "supports_ota": false,
-      "vendor": "LDS"
+      "vendor": "SONOFF"
     },
     "disabled": false,
     "endpoints": {
       "1": {
-        "bindings": [],
+        "bindings": [
+          {
+            "cluster": "genPowerCfg",
+            "target": {
+              "endpoint": 1,
+              "ieee_address": "0x00124b0029daedd5",
+              "type": "endpoint"
+            }
+          }
+        ],
         "clusters": {
-          "input": [
-            "genBasic",
-            "genIdentify",
-            "genGroups",
-            "genScenes",
-            "genOnOff",
-            "genLevelCtrl",
-            "lightingColorCtrl",
-            "touchlink"
-          ],
-          "output": ["genOta"]
+          "input": ["genBasic", "genIdentify", "ssIasZone", "genPowerCfg"],
+          "output": ["genIdentify"]
         },
-        "configured_reportings": [],
-        "scenes": []
-      },
-      "242": {
-        "bindings": [],
-        "clusters": {
-          "input": [],
-          "output": ["greenPower"]
-        },
-        "configured_reportings": [],
+        "configured_reportings": [
+          {
+            "attribute": "batteryVoltage",
+            "cluster": "genPowerCfg",
+            "maximum_report_interval": 7200,
+            "minimum_report_interval": 3600,
+            "reportable_change": 0
+          },
+          {
+            "attribute": "batteryPercentageRemaining",
+            "cluster": "genPowerCfg",
+            "maximum_report_interval": 7200,
+            "minimum_report_interval": 3600,
+            "reportable_change": 0
+          }
+        ],
         "scenes": []
       }
     },
-    "friendly_name": "Attic light",
-    "ieee_address": "0x70ac08fffefafeca",
+    "friendly_name": "Front door sensor",
+    "ieee_address": "0x00124b002fa5844e",
     "interview_completed": true,
     "interviewing": false,
-    "manufacturer": "LDS",
-    "model_id": "TWBulb03UK",
-    "network_address": 61851,
-    "power_source": "Mains (single phase)",
-    "software_build_id": "2.10.03",
-    "supported": false,
-    "type": "Router"
+    "manufacturer": "eWeLink",
+    "model_id": "DS01",
+    "network_address": 5962,
+    "power_source": "Battery",
+    "supported": true,
+    "type": "EndDevice"
   }
 ]
