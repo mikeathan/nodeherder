@@ -120,6 +120,10 @@ add remote log enable in UI
 add download file log in UI
 
 Backend TODO
+automation schedule
+if automation has schedule then it will be enabled/disabled accordingly during the set hours/days
+
+device bridge utilize diagnostics category
 api limiter
 cache with expiration
 
