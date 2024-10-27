@@ -16,33 +16,46 @@ type TimeSchedule struct {
 }
 
 type Scheduler struct {
-	startTime     time.Time
-	endTime       time.Time
 	enabled       bool
 	ctx           context.Context
 	cronScheduler *gocron.Scheduler
+	jobs          []*gocron.Job
 }
 
-func NewScheduler(timeSchedule *TimeSchedule, ctx context.Context) (*Scheduler, error) {
-	start, err := parserTime(timeSchedule.Start)
-	if err != nil {
-		utils.LogError("Error parsing start time:", err)
-		return nil, err
-	}
-
-	end, err := parserTime(timeSchedule.End)
-	if err != nil {
-		utils.LogError("Error parsing end time:", err)
-		return nil, err
-	}
+func NewScheduler(ctx context.Context) *Scheduler {
 
 	return &Scheduler{
-		startTime:     start,
-		endTime:       end,
 		enabled:       false,
 		ctx:           ctx,
 		cronScheduler: gocron.NewScheduler(time.UTC),
-	}, nil
+		jobs:          []*gocron.Job{},
+	}
+}
+
+func (s *Scheduler) AddJob(timeString string, action func() error) error {
+	time, err := parserTime(timeString)
+	if err != nil {
+		utils.LogError("Error parsing start time:", err)
+		return err
+	}
+
+	name := fmt.Sprintf("Job %s", timeString)
+	job, err := s.cronScheduler.Name(name).Every(1).Day().At(time).Do(func() {
+		utils.LogInfo("Executing job ", time)
+
+		err = action()
+		if err != nil {
+			utils.LogErrorf("Job %s failed: %s", timeString, err.Error())
+		}
+	})
+
+	if err != nil {
+		utils.LogErrorf("Job %s failed to schedule: %s", timeString, err.Error())
+		return err
+	}
+	s.jobs = append(s.jobs, job)
+
+	return nil
 }
 
 // TODO:
@@ -74,30 +87,17 @@ func (s *Scheduler) Start() {
 		utils.LogInfo("Scheduler already running")
 		return
 	}
-	// configure start job
-	_, err := s.cronScheduler.Every(1).Day().At(s.startTime).Do(func() {
-		utils.LogInfo("Daily job executed at ", s.startTime)
-	})
-
-	if err != nil {
-		utils.LogError("Error scheduling start job:", err)
-		return
-	}
-
-	// configure end job
-	_, err = s.cronScheduler.Every(1).Day().At(s.endTime).Do(func() {
-		utils.LogInfo("Daily job executed at ", s.endTime)
-	})
-	if err != nil {
-		utils.LogError("Error scheduling end job:", err)
+	if len(s.jobs) == 0 {
+		utils.LogInfo("No jobs scheduled")
 		return
 	}
 
 	go func() {
 		defer s.Stop()
 
-		utils.LogInfo("Scheduler started")
 		s.cronScheduler.StartAsync()
+
+		utils.LogInfo("Scheduler started")
 
 		select {
 		case <-s.ctx.Done():
@@ -109,15 +109,28 @@ func (s *Scheduler) Start() {
 
 }
 
-func (s *Scheduler) Stop() {
+func (s *Scheduler) Stop() error {
 
 	if !s.cronScheduler.IsRunning() {
-		utils.LogInfo("Scheduler is not running")
-		return
+		return fmt.Errorf("scheduler is not running")
+	}
+
+	if len(s.jobs) == 0 {
+		return fmt.Errorf("no jobs scheduled")
 	}
 
 	s.cronScheduler.Stop()
+
+	for _, j := range s.jobs {
+		if j.IsRunning() {
+			return fmt.Errorf("job %s is still running", j.Error())
+		}
+
+	}
+
 	utils.LogInfo("Scheduler stopped")
+
+	return nil
 }
 
 // type DaySchedule struct {
