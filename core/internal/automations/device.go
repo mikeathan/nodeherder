@@ -1,10 +1,12 @@
 package automations
 
 import (
+	"context"
 	"fmt"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
 	"node-herder/models/devices"
+	"node-herder/utils"
 )
 
 // examples
@@ -42,11 +44,12 @@ func (d *DeviceContext) SetCurrent(name string, value any) {
 }
 
 type Device struct {
-	Id           string     `json:"id"`
-	FriendlyName string     `json:"friendlyname"`
-	Description  string     `json:"description"`
-	Enabled      bool       `json:"enabled"`
-	Triggers     []*Trigger `json:"triggers"`
+	Id           string        `json:"id"`
+	FriendlyName string        `json:"friendlyname"`
+	Description  string        `json:"description"`
+	Enabled      bool          `json:"enabled"`
+	Triggers     []*Trigger    `json:"triggers"`
+	Schedule     *TimeSchedule `json:"scheule"`
 	ctx          *DeviceContext
 }
 
@@ -58,6 +61,7 @@ func newDevice() *Device {
 		Description:  "",
 		Enabled:      false,
 		Triggers:     []*Trigger{},
+		Schedule:     NewTimeSchedule(),
 		ctx:          NewDeviceContext(),
 	}
 
@@ -116,6 +120,49 @@ func (d *Device) configure(registrar services.DeviceRegistrar, client mqtt.MqttC
 	}
 
 	d.FriendlyName = bridgeInfo.FriendlyName
+
+	return configureSchedule(d)
+}
+
+func configureSchedule(d *Device) error {
+
+	if d.Schedule == nil || !d.Schedule.Enabled {
+		return nil
+	}
+
+	// if we have schedule, disable automation and configure scheduler
+	d.Enabled = false
+
+	// TODO: need to pass in context for cancellation
+
+	TODO
+	// TODO
+	// if we get here again from event check if schedule is still running and stop it before starting new one
+
+	ctx := context.Background()
+
+	utils.LogInfof("adding schedule for automation id=%s, friendlyName=%s, start=%s, end=%s", d.Id, d.FriendlyName, d.Schedule.Start, d.Schedule.End)
+
+	scheduler := NewScheduler(ctx)
+
+	err := scheduler.AddJob(d.Schedule.Start, func() error {
+		d.Enabled = true
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	err = scheduler.AddJob(d.Schedule.End, func() error {
+		d.Enabled = false
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

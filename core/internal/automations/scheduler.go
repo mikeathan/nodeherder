@@ -15,6 +15,14 @@ type TimeSchedule struct {
 	End     string `json:"end"`
 }
 
+func NewTimeSchedule() *TimeSchedule {
+	return &TimeSchedule{
+		Enabled: false,
+		Start:   "",
+		End:     "",
+	}
+}
+
 type Scheduler struct {
 	enabled       bool
 	ctx           context.Context
