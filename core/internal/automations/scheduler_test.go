@@ -96,7 +96,49 @@ func TestStopTimeSchedule(t *testing.T) {
 	if err != nil {
 		t.Errorf("failed to stop scheduler %s", err.Error())
 	}
+}
 
+func TestTimeScheduleContextCancellation(t *testing.T) {
+
+	ctx, cancel := context.WithCancel(context.Background())
+	now := time.Now().UTC()
+	start := now.Add(2000 * time.Millisecond)
+	end := start.Add(2000 * time.Millisecond)
+
+	ts := &automations.TimeSchedule{
+		Start: start.Format("15:04:05"),
+		End:   end.Format("15:04:05"),
+	}
+	s := automations.NewScheduler(ctx)
+
+	// add start job
+	err := s.AddJob(ts.Start, func() error {
+		t.Errorf("Start job executed")
+
+		return nil
+	})
+
+	if err != nil {
+		t.Errorf("failed to add start job %s", err.Error())
+	}
+
+	// add end job
+	err = s.AddJob(ts.End, func() error {
+		t.Errorf("End job executed")
+
+		return nil
+	})
+	if err != nil {
+		t.Errorf("failed to add end job %s", err.Error())
+	}
+
+	s.Start()
+
+	time.Sleep(500 * time.Millisecond)
+
+	cancel()
+
+	<-ctx.Done()
 }
 
 func waitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {

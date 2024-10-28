@@ -41,12 +41,24 @@ func (s *Scheduler) AddJob(timeString string, action func() error) error {
 
 	name := fmt.Sprintf("Job %s", timeString)
 	job, err := s.cronScheduler.Name(name).Every(1).Day().At(time).Do(func() {
-		utils.LogInfo("Executing job ", time)
+		select {
 
-		err = action()
-		if err != nil {
-			utils.LogErrorf("Job %s failed: %s", timeString, err.Error())
+		case <-s.ctx.Done():
+
+			utils.LogInfo("Scheduler context cancel requested")
+			s.Stop()
+
+			return
+
+		default:
+			utils.LogInfo("Executing job ", time)
+
+			err = action()
+			if err != nil {
+				utils.LogErrorf("Job %s failed: %s", timeString, err.Error())
+			}
 		}
+
 	})
 
 	if err != nil {
@@ -92,21 +104,9 @@ func (s *Scheduler) Start() {
 		return
 	}
 
-	go func() {
-		defer s.Stop()
+	s.cronScheduler.StartAsync()
 
-		s.cronScheduler.StartAsync()
-
-		utils.LogInfo("Scheduler started")
-
-		select {
-		case <-s.ctx.Done():
-			utils.LogInfo("Scheduler context cancellation")
-			return
-		}
-
-	}()
-
+	utils.LogInfo("Scheduler started")
 }
 
 func (s *Scheduler) Stop() error {
