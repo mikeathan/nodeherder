@@ -30,6 +30,7 @@ type HubController struct {
 	DeviceAvailabilityTimeoutOverride int
 	automationEngine                  automations.Engine
 	registrar                         *services.HubRegisterService
+	ctx                               context.Context
 }
 
 func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context) *HubController {
@@ -40,10 +41,11 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 		mqtt:                              mqtt,
 		handlers:                          map[string]handler{},
 		DeviceAvailabilityTimeoutOverride: 3600,
+		ctx:                               ctx,
 	}
 
 	h.registrar = services.NewHubRegisterService(store, eventHub, 3600)
-	h.automationEngine = automations.NewEngine(h.registrar, mqtt)
+	h.automationEngine = automations.NewEngine(h.registrar, mqtt, ctx)
 	h.wp = utils.NewWorkerPool(4, ctx)
 	h.wp.Run()
 
@@ -195,7 +197,7 @@ func (h *HubController) registerEventHubEvents() {
 
 		// TODO: move that in automations package
 		// pass payload and return model
-		automation := automations.NewDevice("")
+		automation := automations.NewDevice("", h.ctx)
 		bytes, _ := json.Marshal(p)
 		err := json.Unmarshal(bytes, &automation)
 		if err != nil {

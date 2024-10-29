@@ -34,7 +34,75 @@ func createMockPayload() map[string]interface{} {
 		"temperature": 17.1,
 	}
 }
+func TestProcessorTriggerScheduledAutomation(t *testing.T) {
+	//wg := &sync.WaitGroup{}
+	mqtt := &mocks.MockMqttClient{}
+	ws := &mocks.NopWsServer{}
 
+	// SETUP START
+	// setup automations
+	alarmAction := &automations.MqttAction{}
+	alarmAction.Id = "x02222222"
+	alarmAction.FriendlyName = "alarm device"
+	alarmAction.Property = "alarm"
+	alarmAction.Type = automations.TriggerAction
+	alarmAction.Data = true
+	alarmAction.Client = mqtt
+
+	doorSensorTrigger := &automations.Trigger{}
+	doorSensorTrigger.Name = "door sensor trigger"
+	doorSensorTrigger.Action = alarmAction
+
+	deviceAutomation := automations.NewDevice("door sensor", context.Background())
+	deviceAutomation.Id = "x01111111"
+	deviceAutomation.FriendlyName = "front door sensor"
+	deviceAutomation.Enabled = true
+	deviceAutomation.Triggers = []*automations.Trigger{doorSensorTrigger}
+
+	now := time.Now().UTC()
+	start := now.Add(1000 * time.Millisecond)
+	end := start.Add(500 * time.Millisecond)
+
+	deviceAutomation.Schedule = &automations.TimeSchedule{
+		Start:   start.Format("15:04:05"),
+		End:     end.Format("15:04:05"),
+		Enabled: false, /// SCHEDULE DISABLED !!!!!
+	}
+
+	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+
+	// setup device
+	device2Expose1 := utils_test.CreateEntity("alarm", "binary", false)
+	alarmDevice := utils_test.CreateDeviceWithExposes("x02222222", "alarm device", []*devices.Entity{device2Expose1})
+
+	device1Expose1 := utils_test.CreateEntity("contact", "binary", false)
+	doorSensorDevice := utils_test.CreateDeviceWithExposes("x01111111", "front door sensor", []*devices.Entity{device1Expose1})
+	// setup bridgeInfo List
+	devices := []*devices.Device{doorSensorDevice, alarmDevice}
+	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
+
+	// register hub
+	store := utils_test.CreateStore()
+	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub.WithAutomationStorage(automationStorage) // overide storage
+	//  publish deviceBridgeList to configure hub with devices
+	mqtt.Publish("bridge/devices", deviceBridgeList)
+	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+
+	// publish light device
+	payload := map[string]any{"contact": true}
+	mqtt.Publish(doorSensorDevice.FriendlyName, payload)
+	time.Sleep(500 * time.Millisecond)
+
+	// WIP
+	// for now check if alarm is on when door sensor triggers
+	alarm, _ := store.FindDeviceById("x02222222")
+
+	if alarm.Exposes["alarm"].Data != true {
+		t.Errorf("alarm should be on when door sensor triggers")
+	}
+
+}
 func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
@@ -47,7 +115,7 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 	btn1PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_1_press", mqtt)
 	btn2PressTrigger := utils_test.CreateDialTriggerActionsBrightness("x02222222", "button_2_press", mqtt)
 
-	deviceAutomation := automations.NewDevice("human sensor")
+	deviceAutomation := automations.NewDevice("human sensor", context.Background())
 	deviceAutomation.Id = "x01111111"
 	deviceAutomation.FriendlyName = "dial button"
 	deviceAutomation.Enabled = true

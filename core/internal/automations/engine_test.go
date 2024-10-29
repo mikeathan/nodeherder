@@ -1,6 +1,7 @@
 package automations_test
 
 import (
+	"context"
 	"node-herder/internal/automations"
 	"node-herder/internal/services"
 	"node-herder/mocks"
@@ -82,7 +83,8 @@ func TestExportAutomationsFromFile(t *testing.T) {
 
 	storage := mocks.NewMockAutomationStorage([]*automations.Device{})
 
-	engine := automations.NewEngine(registrar, mqtt)
+	ctx := context.Background()
+	engine := automations.NewEngine(registrar, mqtt, ctx)
 	engine.WithStorage(storage)
 	engine.Initialize()
 
@@ -93,7 +95,7 @@ func TestExportAutomationsFromFile(t *testing.T) {
 
 	// create device trigger
 	inputDeviceTriggers := []*automations.Device{}
-	deviceTrigger1 := automations.NewDevice("0x123456")
+	deviceTrigger1 := automations.NewDevice("0x123456", ctx)
 	deviceTrigger1.FriendlyName = "humansensor"
 	deviceTrigger1.Description = "test human sensor automation"
 	deviceTrigger1.Triggers = append(deviceTrigger1.Triggers, turnOffTrigger)

@@ -1,6 +1,7 @@
 package automations
 
 import (
+	"context"
 	"errors"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
@@ -30,13 +31,13 @@ type AutomationEngine struct {
 	storage    storage.Storage[Device]
 }
 
-func NewEngine(registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *AutomationEngine {
+func NewEngine(registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, ctx context.Context) *AutomationEngine {
 
 	return &AutomationEngine{
 		mqttClient: mqtt,
 		registrar:  registrar,
 		storage: storage.NewJsonDiskStorage[Device](automationDir, func() *Device {
-			return newDevice()
+			return newDevice(ctx)
 		}),
 	}
 }

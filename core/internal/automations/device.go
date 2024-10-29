@@ -21,10 +21,15 @@ var contextIgnoreList = []string{"action"}
 type DeviceContext struct {
 	currentData map[string]any
 	Payload     map[string]*devices.Entity
+	scheduler   *Scheduler
 }
 
-func NewDeviceContext() *DeviceContext {
-	return &DeviceContext{currentData: map[string]any{}, Payload: make(map[string]*devices.Entity)}
+func NewDeviceContext(ctx context.Context) *DeviceContext {
+	return &DeviceContext{
+		currentData: map[string]any{},
+		Payload:     make(map[string]*devices.Entity),
+		scheduler:   NewScheduler(ctx),
+	}
 }
 
 func (d *DeviceContext) GetCurrent(name string) any {
@@ -53,7 +58,7 @@ type Device struct {
 	ctx          *DeviceContext
 }
 
-func newDevice() *Device {
+func newDevice(ctx context.Context) *Device {
 
 	d := &Device{
 		Id:           "",
@@ -62,13 +67,13 @@ func newDevice() *Device {
 		Enabled:      false,
 		Triggers:     []*Trigger{},
 		Schedule:     NewTimeSchedule(),
-		ctx:          NewDeviceContext(),
+		ctx:          NewDeviceContext(ctx),
 	}
 
 	return d
 }
 
-func NewDevice(id string) *Device {
+func NewDevice(id string, ctx context.Context) *Device {
 
 	d := &Device{
 		Id:           id,
@@ -76,7 +81,7 @@ func NewDevice(id string) *Device {
 		Description:  "",
 		Enabled:      false,
 		Triggers:     []*Trigger{},
-		ctx:          NewDeviceContext(),
+		ctx:          NewDeviceContext(ctx),
 	}
 
 	return d
@@ -133,19 +138,11 @@ func configureSchedule(d *Device) error {
 	// if we have schedule, disable automation and configure scheduler
 	d.Enabled = false
 
-	// TODO: need to pass in context for cancellation
-
-	TODO
-	// TODO
-	// if we get here again from event check if schedule is still running and stop it before starting new one
-
-	ctx := context.Background()
-
 	utils.LogInfof("adding schedule for automation id=%s, friendlyName=%s, start=%s, end=%s", d.Id, d.FriendlyName, d.Schedule.Start, d.Schedule.End)
 
-	scheduler := NewScheduler(ctx)
+	d.ctx.scheduler.Stop()
 
-	err := scheduler.AddJob(d.Schedule.Start, func() error {
+	err := d.ctx.scheduler.AddJob(d.Schedule.Start, func() error {
 		d.Enabled = true
 		return nil
 	})
@@ -154,7 +151,7 @@ func configureSchedule(d *Device) error {
 		return err
 	}
 
-	err = scheduler.AddJob(d.Schedule.End, func() error {
+	err = d.ctx.scheduler.AddJob(d.Schedule.End, func() error {
 		d.Enabled = false
 		return nil
 	})
