@@ -160,6 +160,8 @@ func configureSchedule(d *Device) error {
 		return err
 	}
 
+	d.ctx.scheduler.Start()
+
 	return nil
 }
 

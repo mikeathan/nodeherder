@@ -331,6 +331,14 @@ func CreateBridgeInfoList(deviceList []*devices.Device) []*devices.BridgeInfo {
 			f.Unit = expose.Unit
 			f.ValueMin = expose.Attributes["min"]
 			f.ValueMax = expose.Attributes["max"]
+
+			if f.Type == "binary" {
+				if _, ok := expose.Data.(bool); ok {
+					f.ValueOn = true
+					f.ValueOff = false
+				}
+			}
+
 			f.Description = expose.Description
 			e.Features = append(e.Features, f)
 		}

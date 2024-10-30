@@ -11,8 +11,8 @@ type BridgeInfoFeature struct {
 	Name        string `json:"name"`
 	Property    string `json:"property"`
 	Type        string `json:"type"`
-	ValueOff    string `json:"value_off,omitempty"`
-	ValueOn     string `json:"value_on,omitempty"`
+	ValueOff    any    `json:"value_off,omitempty"`
+	ValueOn     any    `json:"value_on,omitempty"`
 	ValueToggle string `json:"value_toggle,omitempty"`
 	ValueMax    any    `json:"value_max,omitempty"`
 	ValueMin    any    `json:"value_min,omitempty"`

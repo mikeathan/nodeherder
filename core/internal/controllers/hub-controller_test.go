@@ -50,7 +50,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 	alarmAction.Client = mqtt
 
 	doorSensorTrigger := &automations.Trigger{}
-	doorSensorTrigger.Name = "door sensor trigger"
+	doorSensorTrigger.Name = "contact"
 	doorSensorTrigger.Action = alarmAction
 
 	deviceAutomation := automations.NewDevice("door sensor", context.Background())
@@ -60,13 +60,13 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 	deviceAutomation.Triggers = []*automations.Trigger{doorSensorTrigger}
 
 	now := time.Now().UTC()
-	start := now.Add(1000 * time.Millisecond)
-	end := start.Add(500 * time.Millisecond)
+	start := now.Add(10 * time.Millisecond)
+	end := start.Add(50000 * time.Second) // testing values DEUG !!!!!!
 
 	deviceAutomation.Schedule = &automations.TimeSchedule{
 		Start:   start.Format("15:04:05"),
 		End:     end.Format("15:04:05"),
-		Enabled: false, /// SCHEDULE DISABLED !!!!!
+		Enabled: true,
 	}
 
 	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
@@ -85,17 +85,19 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 	store := utils_test.CreateStore()
 	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	hub.WithAutomationStorage(automationStorage) // overide storage
+
 	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(500 * time.Millisecond)
 
 	// publish light device
 	payload := map[string]any{"contact": true}
 	mqtt.Publish(doorSensorDevice.FriendlyName, payload)
 	time.Sleep(500 * time.Millisecond)
 
-	// WIP
-	// for now check if alarm is on when door sensor triggers
+
+	i think problem might be because we stor scheduler to automation store and instance is not active anymore . not sure
+	// alarm should be trigger only when schedule is due
 	alarm, _ := store.FindDeviceById("x02222222")
 
 	if alarm.Exposes["alarm"].Data != true {
