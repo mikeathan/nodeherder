@@ -34,6 +34,7 @@ func createMockPayload() map[string]interface{} {
 		"temperature": 17.1,
 	}
 }
+
 func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	//wg := &sync.WaitGroup{}
@@ -89,12 +90,12 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 
 	// publish light device
 	payload := map[string]any{"contact": true}
 	mqtt.Publish(doorSensorDevice.FriendlyName, payload)
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(500 * time.Second)
 
 	// alarm should be trigger only when schedule is due
 	alarm, _ := store.FindDeviceById("x02222222")
