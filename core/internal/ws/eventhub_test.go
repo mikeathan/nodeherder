@@ -1,7 +1,6 @@
 package ws_test
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -1137,7 +1136,7 @@ func createTestAutomation() []*automations.Device {
 	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(mqtt, 100*time.Millisecond)
 	turnOnTriggerWithLux := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30.1)
 
-	deviceTrigger := automations.NewDevice("human sensor", context.Background())
+	deviceTrigger := automations.NewDevice("human sensor")
 	deviceTrigger.Description = "test human sensor automation"
 	deviceTrigger.Triggers = []*automations.Trigger{}
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOffTrigger)
@@ -1147,7 +1146,7 @@ func createTestAutomation() []*automations.Device {
 	turnOffTrigger2 := createTriggerDelayTurnOffLightWithPresenceOff(mqtt, 5*time.Minute)
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOn(mqtt)
 
-	deviceTrigger2 := automations.NewDevice("Motion Sensor 2", context.Background())
+	deviceTrigger2 := automations.NewDevice("Motion Sensor 2")
 	deviceTrigger2.Description = "test outdoor motion sensor 2 automation"
 
 	deviceTrigger2.Triggers = append(deviceTrigger2.Triggers, turnOffTrigger2)

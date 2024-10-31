@@ -1,12 +1,10 @@
 package automations
 
 import (
-	"context"
 	"fmt"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
 	"node-herder/models/devices"
-	"node-herder/utils"
 )
 
 // examples
@@ -21,14 +19,12 @@ var contextIgnoreList = []string{"action"}
 type DeviceContext struct {
 	currentData map[string]any
 	Payload     map[string]*devices.Entity
-	scheduler   *Scheduler
 }
 
-func NewDeviceContext(ctx context.Context) *DeviceContext {
+func NewDeviceContext() *DeviceContext {
 	return &DeviceContext{
 		currentData: map[string]any{},
 		Payload:     make(map[string]*devices.Entity),
-		scheduler:   NewScheduler(ctx),
 	}
 }
 
@@ -58,7 +54,7 @@ type Device struct {
 	ctx          *DeviceContext
 }
 
-func newDevice(ctx context.Context) *Device {
+func newDevice() *Device {
 
 	d := &Device{
 		Id:           "",
@@ -67,13 +63,13 @@ func newDevice(ctx context.Context) *Device {
 		Enabled:      false,
 		Triggers:     []*Trigger{},
 		Schedule:     NewTimeSchedule(),
-		ctx:          NewDeviceContext(ctx),
+		ctx:          NewDeviceContext(),
 	}
 
 	return d
 }
 
-func NewDevice(id string, ctx context.Context) *Device {
+func NewDevice(id string) *Device {
 
 	d := &Device{
 		Id:           id,
@@ -81,7 +77,7 @@ func NewDevice(id string, ctx context.Context) *Device {
 		Description:  "",
 		Enabled:      false,
 		Triggers:     []*Trigger{},
-		ctx:          NewDeviceContext(ctx),
+		ctx:          NewDeviceContext(),
 	}
 
 	return d
@@ -125,42 +121,6 @@ func (d *Device) configure(registrar services.DeviceRegistrar, client mqtt.MqttC
 	}
 
 	d.FriendlyName = bridgeInfo.FriendlyName
-
-	return configureSchedule(d)
-}
-
-func configureSchedule(d *Device) error {
-
-	if d.Schedule == nil || !d.Schedule.Enabled {
-		return nil
-	}
-
-	// if we have schedule, disable automation and configure scheduler
-	d.Enabled = false
-
-	utils.LogInfof("adding schedule for automation id=%s, friendlyName=%s, start=%s, end=%s", d.Id, d.FriendlyName, d.Schedule.Start, d.Schedule.End)
-
-	d.ctx.scheduler.Stop()
-
-	err := d.ctx.scheduler.AddJob(d.Schedule.Start, func() error {
-		d.Enabled = true
-		return nil
-	})
-
-	if err != nil {
-		return err
-	}
-
-	err = d.ctx.scheduler.AddJob(d.Schedule.End, func() error {
-		d.Enabled = false
-		return nil
-	})
-
-	if err != nil {
-		return err
-	}
-
-	d.ctx.scheduler.Start()
 
 	return nil
 }

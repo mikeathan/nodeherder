@@ -197,7 +197,7 @@ func (h *HubController) registerEventHubEvents() {
 
 		// TODO: move that in automations package
 		// pass payload and return model
-		automation := automations.NewDevice("", h.ctx)
+		automation := automations.NewDevice("")
 		bytes, _ := json.Marshal(p)
 		err := json.Unmarshal(bytes, &automation)
 		if err != nil {

@@ -1,7 +1,6 @@
 package automations_test
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -80,7 +79,7 @@ func TestOperationIncreaseValue(t *testing.T) {
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
 	// create trigger automation
-	ctx := automations.NewDeviceContext(context.Background())
+	ctx := automations.NewDeviceContext()
 	err := action.Configure(registrar)
 
 	if err != nil {
@@ -169,7 +168,7 @@ func TestOperationDecreaseValue(t *testing.T) {
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
 	// create trigger automation
-	ctx := automations.NewDeviceContext(context.Background())
+	ctx := automations.NewDeviceContext()
 	err := action.Configure(registrar)
 
 	if err != nil {
@@ -258,7 +257,7 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
 	// create trigger automation
-	ctx := automations.NewDeviceContext(context.Background())
+	ctx := automations.NewDeviceContext()
 	err := action.Configure(registrar)
 
 	if err != nil {
@@ -349,7 +348,7 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
 	// create trigger automation
-	ctx := automations.NewDeviceContext(context.Background())
+	ctx := automations.NewDeviceContext()
 	err := action.Configure(registrar)
 
 	if err != nil {
@@ -379,7 +378,7 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 }
 func TestOperationCycleValue(t *testing.T) {
 
-	ctx := automations.NewDeviceContext(context.Background())
+	ctx := automations.NewDeviceContext()
 
 	light := createEntity("light", "some description", 0.0, "", nil)
 	light.Presets["cold"] = 255.0

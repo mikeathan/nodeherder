@@ -95,7 +95,7 @@ func TestExportAutomationsFromFile(t *testing.T) {
 
 	// create device trigger
 	inputDeviceTriggers := []*automations.Device{}
-	deviceTrigger1 := automations.NewDevice("0x123456", ctx)
+	deviceTrigger1 := automations.NewDevice("0x123456")
 	deviceTrigger1.FriendlyName = "humansensor"
 	deviceTrigger1.Description = "test human sensor automation"
 	deviceTrigger1.Triggers = append(deviceTrigger1.Triggers, turnOffTrigger)

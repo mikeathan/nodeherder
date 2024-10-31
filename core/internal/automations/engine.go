@@ -26,9 +26,11 @@ type Engine interface { // TODO: might need to move it to Models????
 }
 
 type AutomationEngine struct {
-	mqttClient mqtt.MqttClient
-	registrar  services.DeviceRegistrar
-	storage    storage.Storage[Device]
+	mqttClient      mqtt.MqttClient
+	registrar       services.DeviceRegistrar
+	storage         storage.Storage[Device]
+	deviceScheduler map[string]*Scheduler
+	ctx             context.Context
 }
 
 func NewEngine(registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, ctx context.Context) *AutomationEngine {
@@ -37,8 +39,10 @@ func NewEngine(registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, ctx con
 		mqttClient: mqtt,
 		registrar:  registrar,
 		storage: storage.NewJsonDiskStorage[Device](automationDir, func() *Device {
-			return newDevice(ctx)
+			return newDevice()
 		}),
+		deviceScheduler: map[string]*Scheduler{},
+		ctx:             ctx,
 	}
 }
 
@@ -64,7 +68,7 @@ func (a *AutomationEngine) Load(id string) (*Device, error) {
 func (a *AutomationEngine) Add(automation *Device) error {
 
 	utils.LogInfof("adding automation id=%s, friendlyName=%s, enabled=%v", automation.Id, automation.FriendlyName, automation.Enabled)
-	err := automation.configure(a.registrar, a.mqttClient)
+	err := a.configureAutomation(automation)
 	if err != nil {
 		utils.LogErrorf("configure automation id %s failed. Error=%s", automation.Id, err.Error())
 		return err
@@ -111,12 +115,51 @@ func (a *AutomationEngine) Initialize() {
 	for _, automation := range automations {
 
 		utils.LogInfof("Loading automation id= %s, friendlyName=%s, Enabled=%t", automation.Id, automation.FriendlyName, automation.Enabled)
-		err := automation.configure(a.registrar, a.mqttClient)
+
+		err := a.configureAutomation(automation)
 		if err != nil {
 			utils.LogErrorf("configure automation id %s failed. Error=%s", automation.Id, err.Error())
 			continue
 		}
 	}
+}
 
-	//automations[0].Save(, true)
+func (a *AutomationEngine) configureAutomation(automation *Device) error {
+
+	err := automation.configure(a.registrar, a.mqttClient)
+	if err != nil {
+		return err
+	}
+
+	if automation.Schedule != nil && automation.Schedule.Enabled {
+		// if we have schedule, disable automation and configure scheduler
+		automation.Enabled = false
+
+		utils.LogInfof("adding schedule for automation id=%s, friendlyName=%s, start=%s, end=%s", automation.Id, automation.FriendlyName, automation.Schedule.Start, automation.Schedule.End)
+
+		scheduler := NewScheduler(a.ctx)
+
+		err := scheduler.AddJob(automation.Schedule.Start, func() error {
+			automation.Enabled = true
+			return nil
+		})
+
+		if err != nil {
+			return err
+		}
+
+		err = scheduler.AddJob(automation.Schedule.End, func() error {
+			automation.Enabled = false
+			return nil
+		})
+
+		if err != nil {
+			return err
+		}
+
+		scheduler.Start()
+		a.deviceScheduler[automation.Id] = scheduler
+	}
+
+	return nil
 }

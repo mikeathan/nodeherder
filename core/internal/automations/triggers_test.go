@@ -1,7 +1,6 @@
 package automations_test
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"node-herder/internal/automations"
@@ -26,7 +25,7 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 	switch3Trigger := createSwitchTriggerWithBindingAction("buttonSwitch3", "color_brightness", mqtt)
 
 	// create device trigger
-	deviceTrigger := automations.NewDevice("button switch", context.Background())
+	deviceTrigger := automations.NewDevice("button switch")
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, switch1Trigger)
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, switch2Trigger)
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, switch3Trigger)
@@ -91,7 +90,7 @@ func TestHandleMultipleSameValueTriggerWithDelay(t *testing.T) {
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30)
 
 	// create device trigger
-	deviceTrigger := automations.NewDevice("human sensor", context.Background())
+	deviceTrigger := automations.NewDevice("human sensor")
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOffTrigger)
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
 
@@ -156,7 +155,7 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30)
 
 	// create device trigger
-	deviceTrigger := automations.NewDevice("human sensor", context.Background())
+	deviceTrigger := automations.NewDevice("human sensor")
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOffTrigger)
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
 
