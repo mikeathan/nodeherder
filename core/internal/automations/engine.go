@@ -132,33 +132,42 @@ func (a *AutomationEngine) configureAutomation(automation *Device) error {
 	}
 
 	if automation.Schedule != nil && automation.Schedule.Enabled {
-		// if we have schedule, disable automation and configure scheduler
-		automation.Enabled = false
 
-		utils.LogInfof("adding schedule for automation id=%s, friendlyName=%s, start=%s, end=%s", automation.Id, automation.FriendlyName, automation.Schedule.Start, automation.Schedule.End)
+		todo fix - it was blocking the scheduler
+		go func() error {
 
-		scheduler := NewScheduler(a.ctx)
-
-		err := scheduler.AddJob(automation.Schedule.Start, func() error {
-			automation.Enabled = true
-			return nil
-		})
-
-		if err != nil {
-			return err
-		}
-
-		err = scheduler.AddJob(automation.Schedule.End, func() error {
+			// if we have schedule, disable automation and configure scheduler
 			automation.Enabled = false
+
+			utils.LogInfof("adding schedule for automation id=%s, friendlyName=%s, start=%s, end=%s", automation.Id, automation.FriendlyName, automation.Schedule.Start, automation.Schedule.End)
+
+			scheduler := NewScheduler(a.ctx)
+
+			enableAutomation := func() error {
+				automation.Enabled = true
+				return nil
+			}
+			err := scheduler.AddJob(automation.Schedule.Start, enableAutomation)
+			if err != nil {
+				return err
+			}
+
+			disableAutomation := func() error {
+				automation.Enabled = false
+				return nil
+			}
+			err = scheduler.AddJob(automation.Schedule.End, disableAutomation)
+
+			if err != nil {
+				return err
+			}
+
+			scheduler.Start()
+			a.deviceScheduler[automation.Id] = scheduler
+
 			return nil
-		})
+		}()
 
-		if err != nil {
-			return err
-		}
-
-		scheduler.Start()
-		a.deviceScheduler[automation.Id] = scheduler
 	}
 
 	return nil

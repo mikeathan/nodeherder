@@ -36,10 +36,6 @@ func createMockPayload() map[string]interface{} {
 }
 func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
-	/// REMOVE------------------------------------------------
-	t.SkipNow()
-	/// REMOVE------------------------------------------------
-
 	//wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
@@ -93,7 +89,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
 
 	// publish light device
 	payload := map[string]any{"contact": true}
