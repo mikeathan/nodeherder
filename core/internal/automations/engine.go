@@ -132,21 +132,42 @@ func (a *AutomationEngine) configureAutomation(automation *Device) error {
 	}
 
 	if automation.Schedule != nil && automation.Schedule.Enabled {
+		return a.configureScheduler(automation)
+	}
 
-		// if we have schedule, disable automation and configure scheduler
-		automation.Enabled = false
+	return nil
+}
 
-		utils.LogInfof("adding schedule for automation id=%s, friendlyName=%s, start=%s, end=%s", automation.Id, automation.FriendlyName, automation.Schedule.Start, automation.Schedule.End)
+func (a *AutomationEngine) configureScheduler(automation *Device) error {
 
-	NOTE:
-		// WE NEED TO KEEP THE SCEDULER ALIVE - we ar ehere trigered from the worker pool and when it exits the scheduler will be destroyed
+	scheduler := a.deviceScheduler[automation.Id]
+	TODO
+	// DO WE WANT TO DO THAT EVERYTIME. MIGHT NOT AS WE GET HERE FROM BRIDGE EVENTS
+	// IF SCHEDULE HAS NOT CHANGED THEN WE CAN SKIP
+	if scheduler != nil {
+		scheduler.Stop()
+	}
 
+	// if we have schedule, disable automation and configure scheduler
+	automation.Enabled = false
+
+	utils.LogInfof("adding schedule for automation id=%s, friendlyName=%s, start=%s, end=%s", automation.Id, automation.FriendlyName, automation.Schedule.Start, automation.Schedule.End)
+
+	// TODO:
+	// add channel to get back error from the scheduler
+
+	// NOTE:
+	// WE NEED TO KEEP THE SCEDULER ALIVE - we areh ere trigered from the worker pool and
+	// when it exits the scheduler will be destroyed
+
+	go func() error {
 		scheduler := NewScheduler(a.ctx)
 		err := scheduler.AddJob(automation.Schedule.Start, func() error {
 			automation.Enabled = true
 			return nil
 		})
 		if err != nil {
+			utils.LogError("Error adding start job:", err)
 			return err
 		}
 
@@ -155,12 +176,14 @@ func (a *AutomationEngine) configureAutomation(automation *Device) error {
 			return nil
 		})
 		if err != nil {
+			utils.LogError("Error adding end job:", err)
 			return err
 		}
 
 		scheduler.Start()
 		a.deviceScheduler[automation.Id] = scheduler
-	}
+		return nil
+	}()
 
 	return nil
 }
