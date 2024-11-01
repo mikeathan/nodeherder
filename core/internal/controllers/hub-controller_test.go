@@ -62,7 +62,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 	deviceAutomation.Triggers = []*automations.Trigger{doorSensorTrigger}
 
 	now := time.Now().UTC()
-	start := now.Add(10 * time.Millisecond)
+	start := now.Add(1 * time.Second)
 	end := start.Add(50000 * time.Second) // testing values DEUG !!!!!!
 
 	deviceAutomation.Schedule = &automations.TimeSchedule{
@@ -86,13 +86,14 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 	// register hub
 	store := utils_test.CreateStore()
 	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+
 	hub.WithAutomationStorage(automationStorage) // overide storage
 
 	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(5 * time.Second)
 
-	// publish light device
+	time.Sleep(1 * time.Second)
+
 	payload := map[string]any{"contact": true}
 	mqtt.Publish(doorSensorDevice.FriendlyName, payload)
 	time.Sleep(500 * time.Millisecond)

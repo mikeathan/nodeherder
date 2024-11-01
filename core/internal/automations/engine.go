@@ -52,6 +52,11 @@ func (a *AutomationEngine) WithStorage(storage storage.Storage[Device]) {
 
 func (a *AutomationEngine) HandleDevice(device *devices.Device) {
 	triggerDevice, err := a.storage.LoadFromCache(device.Id)
+	if triggerDevice != nil {
+		utils.LogInfof("DEBUG - trigger automation %s - enabled %v ", device.Id, triggerDevice.Enabled)
+	} else {
+		utils.LogInfof("DEBUG - trigger automation %s - IS NULL ", device.Id)
+	}
 	if err == nil && triggerDevice.Enabled {
 		triggerDevice.Evaluate(device)
 	}
@@ -131,7 +136,7 @@ func (a *AutomationEngine) configureAutomation(automation *Device) error {
 		return err
 	}
 
-	if automation.Schedule != nil {
+	if automation.Schedule != nil && automation.Schedule.Enabled {
 		return a.configureScheduler(automation)
 	}
 
@@ -139,26 +144,26 @@ func (a *AutomationEngine) configureAutomation(automation *Device) error {
 }
 
 func (a *AutomationEngine) configureScheduler(automation *Device) error {
-	scheduler := a.deviceScheduler[automation.Id]
+	// scheduler := a.deviceScheduler[automation.Id]
 
-	if !automation.Schedule.Enabled {
-		if scheduler != nil && scheduler.IsRunning() {
-			scheduler.Stop()
-		}
+	// if !automation.Schedule.Enabled {
+	// 	if scheduler != nil && scheduler.IsRunning() {
+	// 		scheduler.Stop()
+	// 	}
 
-		return nil
-	}
+	// 	return nil
+	// }
 
-	if scheduler != nil && scheduler.IsRunning() {
+	// if scheduler != nil && scheduler.IsRunning() {
 
-		// check if schedule has changed and determine logic
-		// TODO
-		return nil
-	}
+	// 	// check if schedule has changed and determine logic
+	// 	// TODO
+	// 	return nil
+	// }
 
-	if scheduler != nil {
-		scheduler.Stop()
-	}
+	// if scheduler != nil {
+	// 	scheduler.Stop()
+	// }
 
 	// if we have schedule, disable automation and configure scheduler
 	automation.Enabled = false
@@ -168,11 +173,11 @@ func (a *AutomationEngine) configureScheduler(automation *Device) error {
 	// NOTE:
 	// WE NEED TO KEEP THE SCEDULER ALIVE - we areh ere trigered from the worker pool and
 	// when it exits the scheduler will be destroyed
-
 	go func() error {
 		scheduler := NewScheduler(a.ctx)
-
 		start := func() error {
+
+			utils.LogInfo("automation enabled")
 			automation.Enabled = true
 			return nil
 		}
@@ -183,6 +188,7 @@ func (a *AutomationEngine) configureScheduler(automation *Device) error {
 		}
 
 		end := func() error {
+			utils.LogInfo("automation disabled")
 			automation.Enabled = false
 			return nil
 		}
@@ -194,6 +200,7 @@ func (a *AutomationEngine) configureScheduler(automation *Device) error {
 
 		scheduler.Start()
 		a.deviceScheduler[automation.Id] = scheduler
+
 		return nil
 	}()
 
