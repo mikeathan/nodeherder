@@ -5,6 +5,29 @@ import (
 	"node-herder/internal/mqtt"
 )
 
+func CreateDoorContactWithAlarmTriggerAutomation(doorSensorId string, alarmId string, mqtt mqtt.MqttClient) *automations.Device {
+	// setup automations
+	alarmAction := &automations.MqttAction{}
+	alarmAction.Id = alarmId
+	alarmAction.FriendlyName = "alarm device"
+	alarmAction.Property = "alarm"
+	alarmAction.Type = automations.TriggerAction
+	alarmAction.Data = true
+	alarmAction.Client = mqtt
+
+	doorSensorTrigger := &automations.Trigger{}
+	doorSensorTrigger.Name = "contact"
+	doorSensorTrigger.Action = alarmAction
+
+	deviceAutomation := automations.NewDevice("door sensor")
+	deviceAutomation.Id = doorSensorId
+	deviceAutomation.FriendlyName = "front door sensor"
+	deviceAutomation.Enabled = true
+	deviceAutomation.Triggers = []*automations.Trigger{doorSensorTrigger}
+
+	return deviceAutomation
+}
+
 func CreateDialTriggerActionsBrightness(actionId string, dialActionName string, mqtt mqtt.MqttClient) *automations.Trigger {
 	condition := &automations.Condition{}
 	condition.EqualityOperator = "="

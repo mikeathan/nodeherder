@@ -5,6 +5,7 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
 	"node-herder/models/devices"
+	"sync"
 )
 
 // examples
@@ -52,6 +53,7 @@ type Device struct {
 	Triggers     []*Trigger    `json:"triggers"`
 	Schedule     *TimeSchedule `json:"scheule"`
 	ctx          *DeviceContext
+	mutex        *sync.Mutex
 }
 
 func newDevice() *Device {
@@ -64,6 +66,7 @@ func newDevice() *Device {
 		Triggers:     []*Trigger{},
 		Schedule:     NewTimeSchedule(),
 		ctx:          NewDeviceContext(),
+		mutex:        &sync.Mutex{},
 	}
 
 	return d
@@ -81,6 +84,18 @@ func NewDevice(id string) *Device {
 	}
 
 	return d
+}
+
+func (d *Device) SetEnabled(enabled bool) {
+
+	lock
+	d.Enabled = enabled
+}
+
+func (d *Device) IsEnabled() bool {
+
+	lock
+	return d.Enabled
 }
 
 func (d *Device) Evaluate(device *devices.Device) bool {

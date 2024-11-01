@@ -37,33 +37,16 @@ func createMockPayload() map[string]interface{} {
 
 func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
-	//wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
 
 	// SETUP START
 	// setup automations
-	alarmAction := &automations.MqttAction{}
-	alarmAction.Id = "x02222222"
-	alarmAction.FriendlyName = "alarm device"
-	alarmAction.Property = "alarm"
-	alarmAction.Type = automations.TriggerAction
-	alarmAction.Data = true
-	alarmAction.Client = mqtt
-
-	doorSensorTrigger := &automations.Trigger{}
-	doorSensorTrigger.Name = "contact"
-	doorSensorTrigger.Action = alarmAction
-
-	deviceAutomation := automations.NewDevice("door sensor")
-	deviceAutomation.Id = "x01111111"
-	deviceAutomation.FriendlyName = "front door sensor"
-	deviceAutomation.Enabled = true
-	deviceAutomation.Triggers = []*automations.Trigger{doorSensorTrigger}
+	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
 	now := time.Now().UTC()
-	start := now.Add(1 * time.Second)
-	end := start.Add(50000 * time.Second) // testing values DEUG !!!!!!
+	start := now.Add(1000 * time.Millisecond)
+	end := now.Add(2000 * time.Millisecond)
 
 	deviceAutomation.Schedule = &automations.TimeSchedule{
 		Start:   start.Format("15:04:05"),
@@ -92,20 +75,53 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(1000 * time.Millisecond)
 
-	payload := map[string]any{"contact": true}
-	mqtt.Publish(doorSensorDevice.FriendlyName, payload)
-	time.Sleep(500 * time.Millisecond)
+	for i := 0; i < 2; i++ {
 
-	// alarm should be trigger only when schedule is due
-	alarm, _ := store.FindDeviceById("x02222222")
+		payload := map[string]any{"contact": true}
+		mqtt.Publish(doorSensorDevice.FriendlyName, payload)
+		time.Sleep(100 * time.Millisecond)
 
-	if alarm.Exposes["alarm"].Data != true {
-		t.Errorf("alarm should be on when door sensor triggers")
+		// alarm should be trigger only when schedule is due
+		alarm, _ := store.FindDeviceById("x02222222")
+
+		if i == 0 {
+			if alarm.Exposes["alarm"].Data != true {
+				t.Errorf("alarm should be on when door sensor triggers")
+			}
+
+			// reset alarm
+			payload = map[string]any{"alarm": false}
+			mqtt.Publish(alarmDevice.FriendlyName, payload)
+			time.Sleep(100 * time.Millisecond)
+
+			if alarm.Exposes["alarm"].Data != false {
+				t.Errorf("alarm should be off ")
+			}
+
+			// reset contact
+			payload = map[string]any{"contact": false}
+			mqtt.Publish(doorSensorDevice.FriendlyName, payload)
+			time.Sleep(100 * time.Millisecond)
+
+			contact, _ := store.FindDeviceById("x01111111")
+			if contact.Exposes["contact"].Data != false {
+				t.Errorf("contact should be off ")
+			}
+
+			// TEMP
+			time.Sleep(2000 * time.Millisecond)
+
+		} else {
+			if alarm.Exposes["alarm"].Data != false {
+				t.Errorf("alarm should be off - schedule end should disable automation")
+			}
+		}
+
 	}
-
 }
+
 func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
