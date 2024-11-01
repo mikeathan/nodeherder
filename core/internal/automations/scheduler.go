@@ -24,7 +24,6 @@ func NewTimeSchedule() *TimeSchedule {
 }
 
 type Scheduler struct {
-	enabled       bool
 	ctx           context.Context
 	cronScheduler *gocron.Scheduler
 	jobs          []*gocron.Job
@@ -33,7 +32,6 @@ type Scheduler struct {
 func NewScheduler(ctx context.Context) *Scheduler {
 
 	return &Scheduler{
-		enabled:       false,
 		ctx:           ctx,
 		cronScheduler: gocron.NewScheduler(time.UTC),
 		jobs:          []*gocron.Job{},
@@ -92,18 +90,15 @@ func parserTime(timeString string) (time.Time, error) {
 	return t, nil
 }
 
-func (s *Scheduler) SetEnabled(enabled bool) {
-	s.enabled = enabled
-}
-func (s *Scheduler) IsEnabled() bool {
-	return s.enabled
+func (s *Scheduler) IsRunning() bool {
+	return s.cronScheduler.IsRunning()
 }
 
 func (s *Scheduler) Start() {
 
 	// TODO: use enabled/disabled logic
 
-	if s.cronScheduler.IsRunning() {
+	if s.IsRunning() {
 		utils.LogInfo("Scheduler already running")
 		return
 	}
@@ -119,7 +114,7 @@ func (s *Scheduler) Start() {
 
 func (s *Scheduler) Stop() error {
 
-	if !s.cronScheduler.IsRunning() {
+	if !s.IsRunning() {
 		return fmt.Errorf("scheduler is not running")
 	}
 
@@ -129,9 +124,9 @@ func (s *Scheduler) Stop() error {
 
 	s.cronScheduler.Stop()
 
-	for _, j := range s.jobs {
-		if j.IsRunning() {
-			return fmt.Errorf("job %s is still running", j.Error())
+	for _, job := range s.jobs {
+		if job.IsRunning() {
+			return fmt.Errorf("job %s is still running", job.Error())
 		}
 
 	}

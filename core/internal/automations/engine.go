@@ -131,7 +131,7 @@ func (a *AutomationEngine) configureAutomation(automation *Device) error {
 		return err
 	}
 
-	if automation.Schedule != nil && automation.Schedule.Enabled {
+	if automation.Schedule != nil {
 		return a.configureScheduler(automation)
 	}
 
@@ -139,11 +139,23 @@ func (a *AutomationEngine) configureAutomation(automation *Device) error {
 }
 
 func (a *AutomationEngine) configureScheduler(automation *Device) error {
-
 	scheduler := a.deviceScheduler[automation.Id]
-	TODO
-	// DO WE WANT TO DO THAT EVERYTIME. MIGHT NOT AS WE GET HERE FROM BRIDGE EVENTS
-	// IF SCHEDULE HAS NOT CHANGED THEN WE CAN SKIP
+
+	if !automation.Schedule.Enabled {
+		if scheduler != nil && scheduler.IsRunning() {
+			scheduler.Stop()
+		}
+
+		return nil
+	}
+
+	if scheduler != nil && scheduler.IsRunning() {
+
+		// check if schedule has changed and determine logic
+		// TODO
+		return nil
+	}
+
 	if scheduler != nil {
 		scheduler.Stop()
 	}
@@ -153,28 +165,28 @@ func (a *AutomationEngine) configureScheduler(automation *Device) error {
 
 	utils.LogInfof("adding schedule for automation id=%s, friendlyName=%s, start=%s, end=%s", automation.Id, automation.FriendlyName, automation.Schedule.Start, automation.Schedule.End)
 
-	// TODO:
-	// add channel to get back error from the scheduler
-
 	// NOTE:
 	// WE NEED TO KEEP THE SCEDULER ALIVE - we areh ere trigered from the worker pool and
 	// when it exits the scheduler will be destroyed
 
 	go func() error {
 		scheduler := NewScheduler(a.ctx)
-		err := scheduler.AddJob(automation.Schedule.Start, func() error {
+
+		start := func() error {
 			automation.Enabled = true
 			return nil
-		})
+		}
+		err := scheduler.AddJob(automation.Schedule.Start, start)
 		if err != nil {
 			utils.LogError("Error adding start job:", err)
 			return err
 		}
 
-		err = scheduler.AddJob(automation.Schedule.End, func() error {
+		end := func() error {
 			automation.Enabled = false
 			return nil
-		})
+		}
+		err = scheduler.AddJob(automation.Schedule.End, end)
 		if err != nil {
 			utils.LogError("Error adding end job:", err)
 			return err

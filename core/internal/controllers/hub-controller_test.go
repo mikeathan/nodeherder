@@ -90,12 +90,12 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(5 * time.Second)
 
 	// publish light device
 	payload := map[string]any{"contact": true}
 	mqtt.Publish(doorSensorDevice.FriendlyName, payload)
-	time.Sleep(500 * time.Second)
+	time.Sleep(500 * time.Millisecond)
 
 	// alarm should be trigger only when schedule is due
 	alarm, _ := store.FindDeviceById("x02222222")
