@@ -2115,5 +2115,110 @@
     "power_source": "Battery",
     "supported": true,
     "type": "EndDevice"
+  },
+  {
+    "date_code": "",
+    "definition": {
+      "description": "Carbon monoxide alarm",
+      "exposes": [
+        {
+          "access": 1,
+          "description": "Indicates if CO (carbon monoxide) is detected",
+          "label": "Carbon monoxide",
+          "name": "carbon_monoxide",
+          "property": "carbon_monoxide",
+          "type": "binary",
+          "value_off": false,
+          "value_on": true
+        },
+        {
+          "access": 1,
+          "description": "The measured CO (carbon monoxide) value",
+          "label": "CO",
+          "name": "co",
+          "property": "co",
+          "type": "numeric",
+          "unit": "ppm"
+        },
+        {
+          "access": 1,
+          "description": "Result of the self-test",
+          "label": "Self test result",
+          "name": "self_test_result",
+          "property": "self_test_result",
+          "type": "enum",
+          "values": ["checking", "success", "failure", "others"]
+        },
+        {
+          "access": 1,
+          "category": "diagnostic",
+          "description": "Remaining battery in %, can take up to 24 hours before reported",
+          "label": "Battery",
+          "name": "battery",
+          "property": "battery",
+          "type": "numeric",
+          "unit": "%",
+          "value_max": 100,
+          "value_min": 0
+        },
+        {
+          "access": 3,
+          "description": "Silence the alarm",
+          "label": "Silence",
+          "name": "silence",
+          "property": "silence",
+          "type": "binary",
+          "value_off": false,
+          "value_on": true
+        },
+        {
+          "access": 1,
+          "category": "diagnostic",
+          "description": "Link quality (signal strength)",
+          "label": "Linkquality",
+          "name": "linkquality",
+          "property": "linkquality",
+          "type": "numeric",
+          "unit": "lqi",
+          "value_max": 255,
+          "value_min": 0
+        }
+      ],
+      "model": "ZC-HM",
+      "options": [
+        {
+          "access": 2,
+          "description": "Calibrates the co value (absolute offset), takes into effect on next report of device.",
+          "label": "Co calibration",
+          "name": "co_calibration",
+          "property": "co_calibration",
+          "type": "numeric"
+        }
+      ],
+      "supports_ota": false,
+      "vendor": "Moes"
+    },
+    "disabled": false,
+    "endpoints": {
+      "1": {
+        "bindings": [],
+        "clusters": {
+          "input": ["genGroups", "genScenes", "manuSpecificTuya", "genBasic"],
+          "output": ["genOta", "genTime"]
+        },
+        "configured_reportings": [],
+        "scenes": []
+      }
+    },
+    "friendly_name": "Kitchen CO alarm ",
+    "ieee_address": "0xa4c1384ea0e6d3eb",
+    "interview_completed": true,
+    "interviewing": false,
+    "manufacturer": "_TZE200_rjxqso4a",
+    "model_id": "TS0601",
+    "network_address": 28306,
+    "power_source": "Battery",
+    "supported": true,
+    "type": "EndDevice"
   }
 ]

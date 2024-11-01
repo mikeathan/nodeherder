@@ -28,6 +28,7 @@ var units = map[string]string{
 	"linkquality":     "LQI",
 	"illuminance_lux": "lux",
 	"battpercentage":  "%",
+	"co":              "ppm",
 }
 var exposesWhitelist = map[string]int{
 	"temperature":         1,
@@ -60,6 +61,9 @@ var exposesWhitelist = map[string]int{
 	"alarm":               28,
 	"volume":              29,
 	"contact":             30,
+	"co":                  31,
+	"carbon_monoxide":     32,
+	"self_test_result":    33,
 }
 
 // var exposesCategoriesBlacklist = map[string]int{
