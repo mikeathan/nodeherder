@@ -14,6 +14,10 @@ import (
 
 var (
 	ErrUnsupportedTimeFormat = errors.New("scheduler: the given time format is not supported")
+	ErrIsRunning             = errors.New("scheduler: the scheduler is already running")
+	ErrNotRunning            = errors.New("scheduler: the scheduler is not running")
+	ErrNoJobsScheduled       = errors.New("scheduler: no jobs scheduled")
+	ErrJobIsRunning          = errors.New("scheduler: the job is already running")
 )
 
 type TimeSchedule struct {
@@ -35,17 +39,17 @@ type job struct {
 	Id              uuid.UUID
 	Action          func() error
 	StartAtDuration time.Duration
+	startAtTime     string
 	RepeatEvery     time.Duration
 	timer           *time.Timer
 	Error           error
 	ctx             context.Context
-	cancel          context.CancelFunc
 	lock            *sync.RWMutex
 	isRunning       *atomic.Bool
 }
 
 func newJob() *job {
-	ctx, cancel := context.WithCancel(context.Background())
+	//ctx, cancel := context.WithCancel(context.Background())
 
 	id := uuid.New()
 	return &job{
@@ -58,11 +62,13 @@ func newJob() *job {
 		RepeatEvery:     0,
 		timer:           &time.Timer{},
 		Error:           nil,
-		ctx:             ctx,
-		cancel:          cancel,
 		lock:            &sync.RWMutex{},
 		isRunning:       atomic.NewBool(false),
 	}
+}
+
+func (j *job) IsRunning() bool {
+	return j.isRunning.Load()
 }
 
 func (j *job) Stop() {
@@ -73,16 +79,12 @@ func (j *job) Stop() {
 		j.timer.Stop()
 	}
 
-	if j.cancel != nil {
-		j.cancel()
-		j.ctx, j.cancel = context.WithCancel(context.Background())
-	}
+	// if j.cancel != nil {
+	// 	j.cancel()
+	// 	j.ctx, j.cancel = context.WithCancel(context.Background())
+	// }
 
-	j.isRunning.Store(true)
-}
-
-func (j *job) IsRunning() bool {
-	return j.isRunning.Load()
+	j.isRunning.Store(false)
 }
 
 func (j *job) Start() error {
@@ -94,31 +96,53 @@ func (j *job) Start() error {
 
 	j.timer = time.AfterFunc(j.StartAtDuration, func() {
 
-		select {
+		utils.LogInfo("Executing job ", j.Name)
 
-		case <-j.ctx.Done():
+		err := j.Action()
+		if err != nil {
+			utils.LogErrorf("Job %s failed: %s", j.Name, err.Error())
+			j.Error = errors.Join(j.Error, err)
+		}
 
-			utils.LogInfo("Scheduler context cancel requested")
-			j.Stop()
-
-			return
-
-		default:
-			utils.LogInfo("Executing job ", j.Name)
-
-			err := j.Action()
+		if j.RepeatEvery > 0 {
+			nexStartAtDuration, err := j.getStartAtDuration()
 			if err != nil {
-				utils.LogErrorf("Job %s failed: %s", j.Name, err.Error())
 				j.Error = errors.Join(j.Error, err)
+				return
 			}
 
-			if j.RepeatEvery > 0 {
-				j.timer.Reset(j.RepeatEvery)
-			}
+			j.timer.Reset(nexStartAtDuration)
 		}
 	})
 
+	j.isRunning.Store(true)
 	return nil
+}
+
+func (j *job) getStartAtDuration() (time.Duration, error) {
+
+	if j.startAtTime == "" {
+		return 0, nil
+	}
+
+	startAtTime, err := parserTime(j.startAtTime)
+	if err != nil {
+		utils.LogError("Error parsing start time:", err)
+		return 0, err
+	}
+
+	now := time.Now().UTC()
+	startTime := time.Date(now.Year(), now.Month(), now.Day(), startAtTime.Hour(), startAtTime.Minute(), startAtTime.Second(), 0, time.UTC)
+
+	if startTime.Before(now) {
+		nextTime := now.Truncate(time.Second).Add(j.RepeatEvery)
+		nextDuration := nextTime.Sub(now)
+
+		fmt.Printf("Next job start at: %s  with duration: %v  and now: %s\n", nextTime.Format("15:04:05.000"), nextDuration, now.Format("15:04:05.000"))
+		return nextDuration, nil
+	}
+
+	return startTime.Sub(now), nil
 }
 
 type Scheduler struct {
@@ -130,13 +154,28 @@ type Scheduler struct {
 }
 
 func NewScheduler(ctx context.Context) *Scheduler {
-	return &Scheduler{
+
+	s := &Scheduler{
 		ctx:             ctx,
 		jobs:            map[uuid.UUID]*job{},
 		inScheduleChain: nil,
 		isRunning:       atomic.NewBool(false),
 		jobsLock:        &sync.RWMutex{},
 	}
+
+	go func() {
+		select {
+		case <-ctx.Done():
+			utils.LogError("Scheduler context cancel requested")
+			err := s.Stop()
+			if err != nil {
+				utils.LogError("Error stopping scheduler: ", err)
+			}
+			return
+		}
+	}()
+
+	return s
 }
 
 func (s *Scheduler) getCurrentJob() *job {
@@ -167,18 +206,15 @@ func (s *Scheduler) Every(duration time.Duration) *Scheduler {
 func (s *Scheduler) At(timeString string) *Scheduler {
 	job := s.getCurrentJob()
 
-	timestamp, err := parserTime(timeString)
+	job.startAtTime = timeString
+	startAtTime, err := job.getStartAtDuration()
 	if err != nil {
 		utils.LogError("Error parsing start time:", err)
 		job.Error = err
 		return s
 	}
 
-	now := time.Now().UTC()
-	startAtTime := time.Date(now.Year(), now.Month(), now.Day(), timestamp.Hour(), timestamp.Minute(), timestamp.Second(), 0, time.UTC)
-
-	job.StartAtDuration = startAtTime.Sub(now)
-
+	job.StartAtDuration = startAtTime
 	return s
 }
 
@@ -285,17 +321,18 @@ func (s *Scheduler) setRunning(vaue bool) {
 	s.isRunning.Store(vaue)
 }
 
-func (s *Scheduler) Start() {
+func (s *Scheduler) Start() error {
 
 	// TODO: use enabled/disabled logic ???
 
 	if s.IsRunning() {
 		utils.LogInfo("Scheduler already running")
-		return
+		return ErrIsRunning
 	}
+
 	if len(s.jobs) == 0 {
 		utils.LogInfo("No jobs scheduled")
-		return
+		return ErrNoJobsScheduled
 	}
 
 	s.jobsLock.Lock()
@@ -303,12 +340,16 @@ func (s *Scheduler) Start() {
 	defer s.jobsLock.Unlock()
 
 	for _, job := range s.jobs {
-		job.Start()
+		err := job.Start()
+		if err != nil {
+			return err
+		}
 	}
 
 	s.setRunning(true)
 
 	utils.LogInfo("Scheduler started")
+	return nil
 }
 
 func (s *Scheduler) stopJobs() {
@@ -333,7 +374,7 @@ func (s *Scheduler) Stop() error {
 	// check if all jobs are stopped
 	for _, job := range s.jobs {
 		if job.IsRunning() {
-			return fmt.Errorf("job %s is still running", job.Error)
+			return ErrJobIsRunning
 		}
 	}
 

@@ -2,23 +2,22 @@ package automations_test
 
 import (
 	"context"
-	"fmt"
 	"node-herder/internal/automations"
 	"sync"
 	"testing"
 	"time"
 )
 
-func TestAddTimeScheduleTEMP(t *testing.T) {
+func TestAddTimeSchedule(t *testing.T) {
 
 	wg := sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(4)
 
 	order := []int{1, 2, 1, 2}
 	done := make(chan int, 4)
 	now := time.Now().UTC()
 	start := now.Add(500 * time.Millisecond)
-	end := now.Add(1500 * time.Millisecond)
+	end := now.Add(2000 * time.Millisecond)
 
 	ts := &automations.TimeSchedule{
 		Start: start.Format("15:04:05.000"),
@@ -27,9 +26,7 @@ func TestAddTimeScheduleTEMP(t *testing.T) {
 
 	s := automations.NewScheduler(context.Background())
 	// add start job
-	err := s.Name("Start job").At(ts.Start).Every(time.Second * 2).Do(func() error {
-		fmt.Println("Start job executed")
-
+	err := s.Name("Start job").At(ts.Start).Every(time.Second * 4).Do(func() error {
 		done <- 1
 		wg.Done()
 		return nil
@@ -39,9 +36,7 @@ func TestAddTimeScheduleTEMP(t *testing.T) {
 		t.Errorf("failed to add start job %s", err.Error())
 	}
 
-	err = s.Name("End job").At(ts.End).Every(time.Second * 2).Do(func() error {
-		fmt.Println("End job executed")
-
+	err = s.Name("End job").At(ts.End).Every(time.Second * 4).Do(func() error {
 		done <- 2
 		wg.Done()
 		return nil
@@ -51,13 +46,16 @@ func TestAddTimeScheduleTEMP(t *testing.T) {
 		t.Errorf("failed to add End job %s", err.Error())
 	}
 
-	s.Start()
+	err = s.Start()
+	if err != nil {
+		t.Errorf("failed to start scheduler %s", err.Error())
+	}
 
 	if !waitTimeout(&wg, 60*time.Second) {
 		t.Errorf("failed to execute jobs")
 	}
 
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 4; i++ {
 		id := <-done
 
 		if order[i] != id {
@@ -66,137 +64,101 @@ func TestAddTimeScheduleTEMP(t *testing.T) {
 	}
 }
 
-// func TestAddTimeSchedule(t *testing.T) {
+func TestStopTimeSchedule(t *testing.T) {
 
-// 	wg := sync.WaitGroup{}
-// 	wg.Add(2)
+	now := time.Now().UTC()
+	start := now.Add(2000 * time.Millisecond)
+	end := start.Add(2000 * time.Millisecond)
 
-// 	now := time.Now().UTC()
-// 	start := now.Add(1000 * time.Millisecond)
-// 	end := start.Add(500 * time.Millisecond)
+	ts := &automations.TimeSchedule{
+		Start: start.Format("15:04:05.000"),
+		End:   end.Format("15:04:05.000"),
+	}
+	s := automations.NewScheduler(context.Background())
 
-// 	ts := &automations.TimeSchedule{
-// 		Start: start.Format("15:04:05"),
-// 		End:   end.Format("15:04:05"),
-// 	}
-// 	s := automations.NewScheduler(context.Background())
+	// add start job
+	err := s.Name("Start job").At(ts.Start).Every(time.Second * 1).Do(func() error {
+		t.Errorf("Start job executed")
 
-// 	// add start job
-// 	err := s.AddJob(ts.Start, func() error {
-// 		fmt.Println("Start job executed")
-// 		wg.Done()
+		return nil
+	})
 
-// 		return nil
-// 	})
+	if err != nil {
+		t.Errorf("failed to add start job %s", err.Error())
+	}
 
-// 	if err != nil {
-// 		t.Errorf("failed to add start job %s", err.Error())
-// 	}
+	// add end job
+	err = s.Name("End job").At(ts.End).Every(time.Second * 1).Do(func() error {
+		t.Errorf("End job executed")
 
-// 	// add end job
-// 	err = s.AddJob(ts.End, func() error {
-// 		fmt.Println("End job executed")
-// 		wg.Done()
+		return nil
+	})
+	if err != nil {
+		t.Errorf("failed to add end job %s", err.Error())
+	}
 
-// 		return nil
-// 	})
-// 	if err != nil {
-// 		t.Errorf("failed to add end job %s", err.Error())
-// 	}
+	err = s.Start()
+	if err != nil {
+		t.Errorf("failed to start scheduler %s", err.Error())
+	}
 
-// 	s.Start()
+	time.Sleep(200 * time.Millisecond)
 
-// 	if !waitTimeout(&wg, 5*time.Second) {
-// 		t.Errorf("failed to execute jobs")
-// 	}
-// }
+	err = s.Stop()
 
-// func TestStopTimeSchedule(t *testing.T) {
+	if err != nil {
+		t.Errorf("failed to stop scheduler %s", err.Error())
+	}
+}
 
-// 	now := time.Now().UTC()
-// 	start := now.Add(2000 * time.Millisecond)
-// 	end := start.Add(2000 * time.Millisecond)
+func TestTimeScheduleContextCancellation(t *testing.T) {
 
-// 	ts := &automations.TimeSchedule{
-// 		Start: start.Format("15:04:05"),
-// 		End:   end.Format("15:04:05"),
-// 	}
-// 	s := automations.NewScheduler(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	now := time.Now().UTC()
+	start := now.Add(2000 * time.Millisecond)
+	end := start.Add(2000 * time.Millisecond)
 
-// 	// add start job
-// 	err := s.AddJob(ts.Start, func() error {
-// 		t.Errorf("Start job executed")
+	ts := &automations.TimeSchedule{
+		Start: start.Format("15:04:05.000"),
+		End:   end.Format("15:04:05.000"),
+	}
+	s := automations.NewScheduler(ctx)
 
-// 		return nil
-// 	})
+	// add start job
+	err := s.Name("Start job").At(ts.Start).Every(time.Second * 1).Do(func() error {
+		t.Errorf("Start job executed")
 
-// 	if err != nil {
-// 		t.Errorf("failed to add start job %s", err.Error())
-// 	}
+		return nil
+	})
 
-// 	// add end job
-// 	err = s.AddJob(ts.End, func() error {
-// 		t.Errorf("End job executed")
+	if err != nil {
+		t.Errorf("failed to add start job %s", err.Error())
+	}
 
-// 		return nil
-// 	})
-// 	if err != nil {
-// 		t.Errorf("failed to add end job %s", err.Error())
-// 	}
+	// add end job
+	err = s.Name("End job").At(ts.End).Every(time.Second * 1).Do(func() error {
+		t.Errorf("End job executed")
 
-// 	s.Start()
+		return nil
+	})
+	if err != nil {
+		t.Errorf("failed to add end job %s", err.Error())
+	}
 
-// 	time.Sleep(200 * time.Millisecond)
+	s.Start()
 
-// 	err = s.Stop()
+	time.Sleep(100 * time.Millisecond)
 
-// 	if err != nil {
-// 		t.Errorf("failed to stop scheduler %s", err.Error())
-// 	}
-// }
+	cancel()
 
-// func TestTimeScheduleContextCancellation(t *testing.T) {
+	time.Sleep(100 * time.Millisecond)
 
-// 	ctx, cancel := context.WithCancel(context.Background())
-// 	now := time.Now().UTC()
-// 	start := now.Add(2000 * time.Millisecond)
-// 	end := start.Add(2000 * time.Millisecond)
+	<-ctx.Done()
 
-// 	ts := &automations.TimeSchedule{
-// 		Start: start.Format("15:04:05"),
-// 		End:   end.Format("15:04:05"),
-// 	}
-// 	s := automations.NewScheduler(ctx)
-
-// 	// add start job
-// 	err := s.AddJob(ts.Start, func() error {
-// 		t.Errorf("Start job executed")
-
-// 		return nil
-// 	})
-
-// 	if err != nil {
-// 		t.Errorf("failed to add start job %s", err.Error())
-// 	}
-
-// 	// add end job
-// 	err = s.AddJob(ts.End, func() error {
-// 		t.Errorf("End job executed")
-
-// 		return nil
-// 	})
-// 	if err != nil {
-// 		t.Errorf("failed to add end job %s", err.Error())
-// 	}
-
-// 	s.Start()
-
-// 	time.Sleep(500 * time.Millisecond)
-
-// 	cancel()
-
-// 	<-ctx.Done()
-// }
+	if s.IsRunning() {
+		t.Errorf("scheduler is still running")
+	}
+}
 
 func waitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
 	c := make(chan struct{})
