@@ -8,6 +8,7 @@ import (
 	"node-herder/models/devices"
 	"node-herder/utils"
 	"node-herder/utils/storage"
+	"sync"
 )
 
 const (
@@ -31,6 +32,7 @@ type AutomationEngine struct {
 	storage         storage.Storage[Device]
 	deviceScheduler map[string]*Scheduler
 	ctx             context.Context
+	mutex           *sync.RWMutex
 }
 
 func NewEngine(registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, ctx context.Context) *AutomationEngine {
@@ -43,6 +45,7 @@ func NewEngine(registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, ctx con
 		}),
 		deviceScheduler: map[string]*Scheduler{},
 		ctx:             ctx,
+		mutex:           &sync.RWMutex{},
 	}
 }
 
@@ -52,7 +55,12 @@ func (a *AutomationEngine) WithStorage(storage storage.Storage[Device]) {
 
 func (a *AutomationEngine) HandleDevice(device *devices.Device) {
 	automation, err := a.storage.LoadFromCache(device.Id)
-	if err == nil && automation.Enabled {
+
+	// WIP - this is wrong just using it for test - we cant have one mutex for all automations
+	a.mutex.RLock()
+	ok := err == nil && automation.Enabled
+	a.mutex.RUnlock()
+	if ok {
 		automation.Evaluate(device)
 	}
 }
@@ -169,36 +177,39 @@ func (a *AutomationEngine) configureScheduler(automation *Device) error {
 	// WE NEED TO KEEP THE SCEDULER ALIVE - we areh ere trigered from the worker pool and
 	// when it exits the scheduler will be destroyed
 	go func() error {
-		scheduler := NewScheduler(a.ctx)
-		start := func() error {
-			utils.LogInfof("Schedule enable %v automation", automation.FriendlyName)
+		//scheduler := NewScheduler(a.ctx)
+		// start := func() error {
+		// 	defer a.mutex.Unlock()
 
-			will need  omutex to lock it here
-			automation.Enabled = true
-			return nil
-		}
-		err := scheduler.AddJob(automation.Schedule.Start, start)
-		if err != nil {
-			utils.LogError("Error adding start job:", err)
-			return err
-		}
+		// 	utils.LogInfof("Schedule enable %v automation", automation.FriendlyName)
 
-		end := func() error {
-			utils.LogInfof("Schedule disable %v automation", automation.FriendlyName)
+		// 	a.mutex.Lock()
+		// 	automation.Enabled = true
+		// 	return nil
+		// }
+		// err := scheduler.AddJob(automation.Schedule.Start, start)
+		// if err != nil {
+		// 	utils.LogError("Error adding start job:", err)
+		// 	return err
+		// }
 
-			will need  omutex to lock it here
+		// end := func() error {
+		// 	defer a.mutex.Unlock()
 
-			automation.Enabled = false
-			return nil
-		}
-		err = scheduler.AddJob(automation.Schedule.End, end)
-		if err != nil {
-			utils.LogError("Error adding end job:", err)
-			return err
-		}
+		// 	utils.LogInfof("Schedule disable %v automation", automation.FriendlyName)
 
-		scheduler.Start()
-		a.deviceScheduler[automation.Id] = scheduler
+		// 	a.mutex.Lock()
+		// 	automation.Enabled = false
+		// 	return nil
+		// }
+		// err = scheduler.AddJob(automation.Schedule.End, end)
+		// if err != nil {
+		// 	utils.LogError("Error adding end job:", err)
+		// 	return err
+		// }
+
+		// scheduler.Start()
+		// a.deviceScheduler[automation.Id] = scheduler
 
 		return nil
 	}()

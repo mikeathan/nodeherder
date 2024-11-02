@@ -46,7 +46,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	now := time.Now().UTC()
 	start := now.Add(1000 * time.Millisecond)
-	end := now.Add(2000 * time.Millisecond)
+	end := start.Add(1000 * time.Millisecond)
 
 	deviceAutomation.Schedule = &automations.TimeSchedule{
 		Start:   start.Format("15:04:05"),
@@ -81,7 +81,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 		payload := map[string]any{"contact": true}
 		mqtt.Publish(doorSensorDevice.FriendlyName, payload)
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 
 		// alarm should be trigger only when schedule is due
 		alarm, _ := store.FindDeviceById("x02222222")
@@ -110,8 +110,11 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 				t.Errorf("contact should be off ")
 			}
 
+			utils.LogInfo("start sleep")
 			// TEMP
-			time.Sleep(2000 * time.Millisecond)
+			time.Sleep(3 * time.Second)
+
+			utils.LogInfo("end sleep")
 
 		} else {
 			if alarm.Exposes["alarm"].Data != false {
