@@ -19,6 +19,10 @@ var (
 	ErrNotRunning            = errors.New("scheduler: the scheduler is not running")
 	ErrNoJobsScheduled       = errors.New("scheduler: no jobs scheduled")
 	ErrJobIsRunning          = errors.New("scheduler: the job is already running")
+
+	timeWithSeconds      = regexp.MustCompile(`(?m)^\d{1,2}:\d\d:\d\d$`)
+	timeWithMilliseconds = regexp.MustCompile(`^\d{2}:\d{2}:\d{2}\.\d{3}$`)
+	timeWithoutSeconds   = regexp.MustCompile(`(?m)^\d{1,2}:\d\d$`)
 )
 
 type TimeSchedule struct {
@@ -44,7 +48,6 @@ type job struct {
 	RepeatEvery     time.Duration
 	timer           *time.Timer
 	Error           error
-	ctx             context.Context
 	lock            *sync.RWMutex
 	isRunning       *atomic.Bool
 }
@@ -79,11 +82,6 @@ func (j *job) Stop() {
 	if j.timer != nil {
 		j.timer.Stop()
 	}
-
-	// if j.cancel != nil {
-	// 	j.cancel()
-	// 	j.ctx, j.cancel = context.WithCancel(context.Background())
-	// }
 
 	j.isRunning.Store(false)
 }
@@ -139,7 +137,6 @@ func (j *job) getStartAtDuration() (time.Duration, error) {
 		nextTime := now.Truncate(time.Second).Add(j.RepeatEvery)
 		nextDuration := nextTime.Sub(now)
 
-		fmt.Printf("Next job start at: %s  with duration: %v  and now: %s\n", nextTime.Format("15:04:05.000"), nextDuration, now.Format("15:04:05.000"))
 		return nextDuration, nil
 	}
 
@@ -232,83 +229,6 @@ func (s *Scheduler) Do(action func() error) error {
 	}
 	return nil
 }
-
-// // time , repeat, func, name
-// func (s *Scheduler) AddJob(timeString string, repeat time.Duration, action func() error) error {
-
-// 	now := time.Now().UTC()
-// 	timestamp, err := parserTime(timeString)
-
-// 	if err != nil {
-// 		utils.LogError("Error parsing start time:", err)
-// 		return err
-// 	}
-
-// 	stm := time.Date(now.Year(), now.Month(), now.Day(), timestamp.Hour(), timestamp.Minute(), timestamp.Second(), 0, time.UTC)
-// 	duration := stm.Sub(now)
-// 	var job *time.Timer
-
-// 	fmt.Println(now, " trigger time: ", timestamp, " - ", stm, " duration: ", duration)
-// 	job = time.AfterFunc(duration, func() {
-
-// 		select {
-
-// 		case <-s.ctx.Done():
-
-// 			utils.LogInfo("Scheduler context cancel requested")
-// 			s.Stop()
-
-// 			return
-
-// 		default:
-// 			utils.LogInfo("Executing job ", stm, " - ", time.Now().UTC())
-
-// 			err = action()
-// 			if err != nil {
-// 				utils.LogErrorf("Job %s failed: %s", timeString, err.Error())
-// 			}
-
-// 			job.Reset(repeat)
-// 		}
-// 	})
-
-// 	//name := fmt.Sprintf("Job %s", timeString)
-
-// 	job, err := s.cronScheduler.Name(name).Every(1).Day().At(time).Do(func() {
-// 	// 	select {
-
-// 	// 	case <-s.ctx.Done():
-
-// 	// 		utils.LogInfo("Scheduler context cancel requested")
-// 	// 		s.Stop()
-
-// 	// 		return
-
-// 	// 	default:
-// 	// 		utils.LogInfo("Executing job ", time)
-
-// 	// 		err = action()
-// 	// 		if err != nil {
-// 	// 			utils.LogErrorf("Job %s failed: %s", timeString, err.Error())
-// 	// 		}
-// 	// 	}
-
-// 	// })
-
-// 	if err != nil {
-// 		utils.LogErrorf("Job %s failed to schedule: %s", timeString, err.Error())
-// 		return err
-// 	}
-// 	s.jobs = append(s.jobs, job)
-
-// 	return nil
-// }
-
-var (
-	timeWithSeconds      = regexp.MustCompile(`(?m)^\d{1,2}:\d\d:\d\d$`)
-	timeWithMilliseconds = regexp.MustCompile(`^\d{2}:\d{2}:\d{2}\.\d{3}$`)
-	timeWithoutSeconds   = regexp.MustCompile(`(?m)^\d{1,2}:\d\d$`)
-)
 
 func parserTime(timeString string) (time.Time, error) {
 

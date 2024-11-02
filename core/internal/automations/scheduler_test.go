@@ -177,6 +177,7 @@ func TestTimeScheduleCSupportFileFormats(t *testing.T) {
 			format: "15:04",
 		},
 	}
+
 	for _, tc := range testCase {
 		now := time.Now().UTC()
 		start := now.Add(2000 * time.Millisecond)
@@ -195,6 +196,17 @@ func TestTimeScheduleCSupportFileFormats(t *testing.T) {
 		if err != nil {
 			t.Errorf("failed to add start job %s", err.Error())
 		}
+
+		err = s.Name("End job").At(ts.End).Every(time.Second * 1).Do(func() error {
+			t.Errorf("End job executed")
+
+			return nil
+		})
+		if err != nil {
+			t.Errorf("failed to add end job %s", err.Error())
+		}
+
+		s.Stop()
 	}
 }
 
