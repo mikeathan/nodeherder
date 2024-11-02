@@ -160,6 +160,44 @@ func TestTimeScheduleContextCancellation(t *testing.T) {
 	}
 }
 
+func TestTimeScheduleCSupportFileFormats(t *testing.T) {
+
+	ctx := context.Background()
+
+	testCase := []struct {
+		format string
+	}{
+		{
+			format: "15:04:05.000",
+		},
+		{
+			format: "15:04:05",
+		},
+		{
+			format: "15:04",
+		},
+	}
+	for _, tc := range testCase {
+		now := time.Now().UTC()
+		start := now.Add(2000 * time.Millisecond)
+		end := start.Add(2000 * time.Millisecond)
+
+		ts := &automations.TimeSchedule{
+			Start: start.Format(tc.format),
+			End:   end.Format(tc.format),
+		}
+		s := automations.NewScheduler(ctx)
+		err := s.Name("Start job").At(ts.Start).Every(time.Second * 1).Do(func() error {
+			t.Errorf("Start job executed")
+
+			return nil
+		})
+		if err != nil {
+			t.Errorf("failed to add start job %s", err.Error())
+		}
+	}
+}
+
 func waitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
 	c := make(chan struct{})
 	go func() {

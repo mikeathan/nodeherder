@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"node-herder/utils"
+	"regexp"
 	"sync"
 	"time"
 
@@ -189,6 +190,7 @@ func (s *Scheduler) getCurrentJob() *job {
 
 	return j
 }
+
 func (s *Scheduler) Name(name string) *Scheduler {
 	job := s.getCurrentJob()
 
@@ -302,10 +304,26 @@ func (s *Scheduler) Do(action func() error) error {
 // 	return nil
 // }
 
-func parserTime(timeString string) (time.Time, error) {
-	layout := "15:04:05.000"
-	t, err := time.Parse(layout, timeString)
+var (
+	timeWithSeconds      = regexp.MustCompile(`(?m)^\d{1,2}:\d\d:\d\d$`)
+	timeWithMilliseconds = regexp.MustCompile(`^\d{2}:\d{2}:\d{2}\.\d{3}$`)
+	timeWithoutSeconds   = regexp.MustCompile(`(?m)^\d{1,2}:\d\d$`)
+)
 
+func parserTime(timeString string) (time.Time, error) {
+
+	var layout string
+	if timeWithMilliseconds.MatchString(timeString) {
+		layout = "15:04:05.000"
+	} else if timeWithSeconds.MatchString(timeString) {
+		layout = "15:04:05"
+	} else if timeWithoutSeconds.MatchString(timeString) {
+		layout = "15:04"
+	} else {
+		return time.Time{}, ErrUnsupportedTimeFormat
+	}
+
+	t, err := time.Parse(layout, timeString)
 	if err != nil {
 		return time.Time{}, ErrUnsupportedTimeFormat
 	}
