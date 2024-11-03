@@ -261,8 +261,6 @@ func (s *Scheduler) setRunning(vaue bool) {
 
 func (s *Scheduler) Start() error {
 
-	// TODO: use enabled/disabled logic ???
-
 	if s.IsRunning() {
 		utils.LogInfo("Scheduler already running")
 		return ErrIsRunning

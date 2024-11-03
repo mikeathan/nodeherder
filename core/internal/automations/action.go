@@ -91,6 +91,7 @@ func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
 		a.isPending = true
 		payload, err := a.buildPayload(name, ctx)
 		if err != nil {
+			utils.LogErrorf("build payload failed: %s", err.Error())
 			return
 		}
 
