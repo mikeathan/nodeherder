@@ -211,3 +211,82 @@ func (a *AutomationEngine) configureScheduler(automation *Device) error {
 
 	return nil
 }
+
+/// WIP
+
+type AutomationScheduler struct {
+	automation Device
+	scheduler  *Scheduler
+}
+
+func NewAutomationScheduler(automation Device, ctx context.Context) *AutomationScheduler {
+	return &AutomationScheduler{
+		automation: automation,
+		scheduler:  NewScheduler(ctx),
+	}
+}
+
+func (a *AutomationScheduler) Configure(automation Device) error {
+
+	if !automation.Schedule.Enabled {
+		if a.scheduler != nil && a.scheduler.IsRunning() {
+			a.scheduler.Stop()
+		}
+
+		return nil
+	}
+
+	if a.scheduler != nil && a.scheduler.IsRunning() {
+
+		// check if schedule has changed and determine logic
+		// TODO
+		return nil
+	}
+
+	if a.scheduler != nil {
+		a.scheduler.Stop()
+	}
+
+	if err := a.addTask(automation.Schedule.Start, func() error {
+		utils.LogInfof("Schedule enable %v automation", automation.FriendlyName)
+		automation.Enabled = true
+		return nil
+	}); err != nil {
+		utils.LogError("Error adding start job:", err)
+		return err
+	}
+
+	if err := a.addTask(automation.Schedule.End, func() error {
+		utils.LogInfof("Schedule disable %v automation", automation.FriendlyName)
+		automation.Enabled = false
+		return nil
+	}); err != nil {
+		utils.LogError("Error adding end job:", err)
+		return err
+	}
+
+	return nil
+}
+
+func (a *AutomationScheduler) addTask(startAt string, action func() error) error {
+	err := a.scheduler.
+		Name(fmt.Sprintf("Enable %v automation", a.automation.FriendlyName)).
+		At(startAt).
+		Every(time.Hour * 24).
+		Do(action)
+
+	if err != nil {
+		utils.LogError("Error adding job:", err)
+		return err
+	}
+
+	return nil
+}
+
+func (a *AutomationScheduler) Stop() error {
+	return a.scheduler.Stop()
+}
+
+func (a *AutomationScheduler) Start() error {
+	return a.scheduler.Start()
+}

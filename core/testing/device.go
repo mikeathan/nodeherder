@@ -73,6 +73,18 @@ func CreateEntity(name string, propType string, data any) *devices.Entity {
 	return newEntity
 }
 
+func CreateAlarmDevice(id string, name string, value bool) *devices.Device {
+
+	device2Expose1 := CreateEntity("alarm", "binary", value)
+	return CreateDeviceWithExposes(id, name, []*devices.Entity{device2Expose1})
+}
+
+func CreateDoorSensorDevice(id string, name string, value bool) *devices.Device {
+
+	device1Expose1 := CreateEntity("contact", "binary", value)
+	return CreateDeviceWithExposes(id, name, []*devices.Entity{device1Expose1})
+}
+
 func CreateDialActionEnums() map[string]any {
 
 	enums := map[string]any{
@@ -137,4 +149,3 @@ func createEntity(name string, description string, data any, unit string, props 
 	newEntity.Properties = props
 	return newEntity
 }
-

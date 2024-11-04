@@ -54,8 +54,8 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
 	// setup device
-	alarmDevice := createAlarmDevice("x02222222", "alarm device", false)
-	doorSensorDevice := createDoorSensorDevice("x01111111", "front door sensor", false)
+	alarmDevice := utils_test.CreateAlarmDevice("x02222222", "alarm device", false)
+	doorSensorDevice := utils_test.CreateDoorSensorDevice("x01111111", "front door sensor", false)
 	// setup bridgeInfo List
 	devices := []*devices.Device{doorSensorDevice, alarmDevice}
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
@@ -103,7 +103,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 				t.Errorf("contact should be off ")
 			}
 
-			time.Sleep(2 * time.Second)
+			time.Sleep(3 * time.Second)
 
 		} else {
 
@@ -114,75 +114,6 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 			}
 		}
 	}
-}
-
-func TestBridgeEventResetScheduledAutomation(t *testing.T) {
-
-	// test case 1
-	// we have scheduler that is running
-	// we get a new bridge event
-	// scheduler should not be stopped or reset
-
-	// test case 2
-	// we have scheduler that is running
-	// automation is updated and scheduled time has changed
-	// scheduler should be stopped and reset
-
-	// test case 3
-	// we have scheduler that is running
-	// automation is updated and scheduled time has not changed
-	// scheduler should not be stopped or reset
-	mqtt := &mocks.MockMqttClient{}
-	ws := &mocks.NopWsServer{}
-
-	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
-
-	now := time.Now().UTC()
-	start := now.Add(500 * time.Millisecond)
-	end := now.Add(1 * time.Hour) // we dont care about end time
-
-	deviceAutomation.Schedule = &automations.TimeSchedule{
-		Start:   start.Format("15:04:05"),
-		End:     end.Format("15:04:05"),
-		Enabled: true,
-	}
-
-	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
-	// setup device
-	alarmDevice := createAlarmDevice("x02222222", "alarm device", false)
-	doorSensorDevice := createDoorSensorDevice("x01111111", "front door sensor", false)
-	// setup bridgeInfo List
-	devices := []*devices.Device{doorSensorDevice, alarmDevice}
-	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
-
-	// register hub
-	store := utils_test.CreateStore()
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
-
-	hub.WithAutomationStorage(automationStorage) // overide storage
-
-	//  publish deviceBridgeList to configure hub with devices
-	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(600 * time.Millisecond)
-
-	// MAYBE TEST that automation works here
-
-	TODO
-
-	or do we want to use some callback to evaluate ???
-	/// UPDATE automation
-	now = time.Now().UTC()
-	newStart := now.Add(1 * time.Hour)
-	newEnd := now.Add(500 * time.Millisecond)
-	deviceAutomation.Schedule = &automations.TimeSchedule{
-		Start:   newStart.Format("15:04:05"),
-		End:     newEnd.Format("15:04:05"),
-		Enabled: true,
-	}
-
-	automationStorage.Store(deviceAutomation.Id, deviceAutomation)
-
-	// check here that automation doesnt work
 }
 
 func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
@@ -1035,17 +966,6 @@ func createMockDialAndLightDevices(dialName string, lightName string) []*devices
 	return []*devices.Device{dialDevice, lightDevice}
 }
 
-func createAlarmDevice(id string, name string, value bool) *devices.Device {
-
-	device2Expose1 := utils_test.CreateEntity("alarm", "binary", value)
-	return utils_test.CreateDeviceWithExposes(id, name, []*devices.Entity{device2Expose1})
-}
-
-func createDoorSensorDevice(id string, name string, value bool) *devices.Device {
-
-	device1Expose1 := utils_test.CreateEntity("contact", "binary", value)
-	return utils_test.CreateDeviceWithExposes(id, name, []*devices.Entity{device1Expose1})
-}
 func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data interface{}) error) ws.EventHub {
 	return &mocks.MockEventHub{MockBroadcastEvent: mockBroadcastEvent}
 }
