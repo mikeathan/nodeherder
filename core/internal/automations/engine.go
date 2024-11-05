@@ -1,15 +1,12 @@
 package automations
 
 import (
-	"context"
 	"errors"
-	"fmt"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
 	"node-herder/models/devices"
 	"node-herder/utils"
 	"node-herder/utils/storage"
-	"time"
 )
 
 const (
@@ -28,14 +25,13 @@ type Engine interface { // TODO: might need to move it to Models????
 }
 
 type AutomationEngine struct {
-	mqttClient      mqtt.MqttClient
-	registrar       services.DeviceRegistrar
-	storage         storage.Storage[Device]
-	deviceScheduler map[string]*Scheduler
-	ctx             context.Context
+	mqttClient mqtt.MqttClient
+	registrar  services.DeviceRegistrar
+	storage    storage.Storage[Device]
+	handlers   []AutomationHandler
 }
 
-func NewEngine(registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, ctx context.Context) *AutomationEngine {
+func NewEngine(handlers []AutomationHandler, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *AutomationEngine {
 
 	return &AutomationEngine{
 		mqttClient: mqtt,
@@ -43,8 +39,7 @@ func NewEngine(registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, ctx con
 		storage: storage.NewJsonDiskStorage[Device](automationDir, func() *Device {
 			return newDevice()
 		}),
-		deviceScheduler: map[string]*Scheduler{},
-		ctx:             ctx,
+		handlers: handlers,
 	}
 }
 
@@ -133,160 +128,12 @@ func (a *AutomationEngine) configureAutomation(automation *Device) error {
 		return err
 	}
 
-	if automation.Schedule != nil {
-		return a.configureScheduler(automation)
-	}
-
-	return nil
-}
-
-func (a *AutomationEngine) configureScheduler(automation *Device) error {
-	scheduler := a.deviceScheduler[automation.Id]
-
-	if !automation.Schedule.Enabled {
-		if scheduler != nil && scheduler.IsRunning() {
-			scheduler.Stop()
-		}
-
-		return nil
-	}
-
-	if scheduler != nil && scheduler.IsRunning() {
-
-		// check if schedule has changed and determine logic
-		// TODO
-		return nil
-	}
-
-	if scheduler != nil {
-		scheduler.Stop()
-	}
-
-	// if we have schedule, disable automation and configure scheduler
-	automation.Enabled = false
-
-	utils.LogInfof("adding schedule for automation id=%s, friendlyName=%s, start=%s, end=%s", automation.Id, automation.FriendlyName, automation.Schedule.Start, automation.Schedule.End)
-
-	// NOTE:
-	// WE NEED TO KEEP THE SCEDULER ALIVE - we are here triggered from the worker pool and
-	// when it exits the scheduler will be destroyed
-	go func() error {
-		scheduler := NewScheduler(a.ctx)
-		start := func() error {
-
-			utils.LogInfof("Schedule enable %v automation", automation.FriendlyName)
-			automation.Enabled = true
-			return nil
-		}
-		err := scheduler.
-			Name(fmt.Sprintf("Enable %v automation", automation.FriendlyName)).
-			At(automation.Schedule.Start).
-			Every(time.Hour * 24).
-			Do(start)
+	for _, handler := range a.handlers {
+		err = handler.Process(automation)
 		if err != nil {
-			utils.LogError("Error adding start job:", err)
 			return err
 		}
-		end := func() error {
-
-			utils.LogInfof("Schedule disable %v automation", automation.FriendlyName)
-			automation.Enabled = false
-			return nil
-		}
-		err = scheduler.
-			Name(fmt.Sprintf("Disable %v automation", automation.FriendlyName)).
-			At(automation.Schedule.End).
-			Every(time.Hour * 24).
-			Do(end)
-		if err != nil {
-			utils.LogError("Error adding end job:", err)
-			return err
-		}
-
-		scheduler.Start()
-		a.deviceScheduler[automation.Id] = scheduler
-
-		return nil
-	}()
-
-	return nil
-}
-
-/// WIP
-
-type AutomationScheduler struct {
-	automation Device
-	scheduler  *Scheduler
-}
-
-func NewAutomationScheduler(automation Device, ctx context.Context) *AutomationScheduler {
-	return &AutomationScheduler{
-		automation: automation,
-		scheduler:  NewScheduler(ctx),
-	}
-}
-
-func (a *AutomationScheduler) Configure(automation Device) error {
-
-	if !automation.Schedule.Enabled {
-		if a.scheduler != nil && a.scheduler.IsRunning() {
-			a.scheduler.Stop()
-		}
-
-		return nil
-	}
-
-	if a.scheduler != nil && a.scheduler.IsRunning() {
-
-		// check if schedule has changed and determine logic
-		// TODO
-		return nil
-	}
-
-	if a.scheduler != nil {
-		a.scheduler.Stop()
-	}
-
-	if err := a.addTask(automation.Schedule.Start, func() error {
-		utils.LogInfof("Schedule enable %v automation", automation.FriendlyName)
-		automation.Enabled = true
-		return nil
-	}); err != nil {
-		utils.LogError("Error adding start job:", err)
-		return err
-	}
-
-	if err := a.addTask(automation.Schedule.End, func() error {
-		utils.LogInfof("Schedule disable %v automation", automation.FriendlyName)
-		automation.Enabled = false
-		return nil
-	}); err != nil {
-		utils.LogError("Error adding end job:", err)
-		return err
 	}
 
 	return nil
-}
-
-func (a *AutomationScheduler) addTask(startAt string, action func() error) error {
-	err := a.scheduler.
-		Name(fmt.Sprintf("Enable %v automation", a.automation.FriendlyName)).
-		At(startAt).
-		Every(time.Hour * 24).
-		Do(action)
-
-	if err != nil {
-		utils.LogError("Error adding job:", err)
-		return err
-	}
-
-	return nil
-}
-
-func (a *AutomationScheduler) Stop() error {
-	return a.scheduler.Stop()
-}
-
-func (a *AutomationScheduler) Start() error {
-	return a.scheduler.Start()
 }

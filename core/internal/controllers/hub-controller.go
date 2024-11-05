@@ -45,7 +45,12 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 	}
 
 	h.registrar = services.NewHubRegisterService(store, eventHub, 3600)
-	h.automationEngine = automations.NewEngine(h.registrar, mqtt, ctx)
+
+	//TODO:
+	// needs refactoring
+	scheduleHandler := automations.NewAutomationScheduler(automations.WithContext(ctx))
+	//
+	h.automationEngine = automations.NewEngine([]automations.AutomationHandler{scheduleHandler}, h.registrar, mqtt)
 	h.wp = utils.NewWorkerPool(4, ctx)
 	h.wp.Run()
 

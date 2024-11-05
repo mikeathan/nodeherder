@@ -77,7 +77,6 @@ func (d *Device) Evaluate(device *devices.Device) bool {
 
 	d.ctx.Payload = device.Exposes
 
-	// triggers = automations for the device
 	// NOTE: a trigger can have multiple conditions.
 	// e.g presence can have multiple conditions for on and off
 	for _, trigger := range d.Triggers {
@@ -88,6 +87,8 @@ func (d *Device) Evaluate(device *devices.Device) bool {
 	return false
 }
 
+// TODO:
+// THIS CAN BE AUTOMATION HANDLE
 func (d *Device) configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
 
 	//  check if device with automation id exists. friendyname can change
@@ -115,7 +116,8 @@ func (d *Device) configure(registrar services.DeviceRegistrar, client mqtt.MqttC
 	return nil
 }
 
-// validate actions
+// TODO:
+// THIS CAN BE AUTOMATION HANDLE
 func configureAction(registrar services.DeviceRegistrar, action *MqttAction, client mqtt.MqttClient) error {
 
 	bridgeInfo, err := registrar.FindBridgeInfo(action.Id)

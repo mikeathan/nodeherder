@@ -1,7 +1,6 @@
 package automations_test
 
 import (
-	"context"
 	"fmt"
 	"node-herder/internal/automations"
 	"node-herder/internal/services"
@@ -84,8 +83,7 @@ func TestExportAutomationsFromFile(t *testing.T) {
 
 	storage := mocks.NewMockAutomationStorage([]*automations.Device{})
 
-	ctx := context.Background()
-	engine := automations.NewEngine(registrar, mqtt, ctx)
+	engine := automations.NewEngine([]automations.AutomationHandler{}, registrar, mqtt)
 	engine.WithStorage(storage)
 	engine.Initialize()
 
@@ -224,8 +222,8 @@ func TestEngineScheduler(t *testing.T) {
 	}
 	storage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
 
-	ctx := context.Background()
-	engine := automations.NewEngine(registrar, mqtt, ctx)
+	scheduleHandler := automations.NewAutomationScheduler()
+	engine := automations.NewEngine([]automations.AutomationHandler{scheduleHandler}, registrar, mqtt)
 	engine.WithStorage(storage)
 	engine.Initialize()
 	// make sure automation is disabled on startup
@@ -250,6 +248,7 @@ func TestEngineScheduler(t *testing.T) {
 	// scheduler needs abstraction from engine
 
 }
+
 func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
@@ -283,8 +282,8 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 	}
 	storage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
 
-	ctx := context.Background()
-	engine := automations.NewEngine(registrar, mqtt, ctx)
+	scheduleHandler := automations.NewAutomationScheduler()
+	engine := automations.NewEngine([]automations.AutomationHandler{scheduleHandler}, registrar, mqtt)
 	engine.WithStorage(storage)
 	engine.Initialize()
 
