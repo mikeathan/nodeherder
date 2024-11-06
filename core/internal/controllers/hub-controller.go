@@ -48,6 +48,16 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 
 	//TODO:
 	// needs refactoring
+
+	NEED REFACTORING
+	automations.WithScheduleFunc("enable", func(a *automations.Device) error {
+		a.Enabled = true
+		return nil
+	})
+	automations.WithScheduleFunc("disable", func(a *automations.Device) error {
+		a.Enabled = false
+		return nil
+	})
 	scheduleHandler := automations.NewAutomationScheduler(automations.WithContext(ctx))
 	//
 	h.automationEngine = automations.NewEngine([]automations.AutomationHandler{scheduleHandler}, h.registrar, mqtt)

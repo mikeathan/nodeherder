@@ -7,6 +7,54 @@ import (
 	"time"
 )
 
+const (
+	EnableScheduleType  = "enable"
+	DisableScheduleType = "disable"
+)
+
+type TimeSchedule struct {
+	Enabled bool   `json:"enabled"`
+	StartAt string `json:"startAt"`
+	Name    string `json:"name"`
+	Type    string `json:"type"`
+}
+
+func NewTimeSchedule() *TimeSchedule {
+	return &TimeSchedule{
+		Enabled: false,
+		StartAt: "",
+		Name:    "",
+		Type:    "",
+	}
+}
+
+type ScheduleFunc interface {
+	Name() string
+	Do(a *Device) func() error
+}
+
+type AutomationScheduleFunc struct {
+	action func(a *Device) error
+	name   string
+}
+
+func NewAutomationScheduleFunc(name string, action func(a *Device) error) ScheduleFunc {
+	return &AutomationScheduleFunc{
+		action: action,
+		name:   name,
+	}
+}
+
+func (s *AutomationScheduleFunc) Name() string {
+	return s.name
+}
+
+func (s *AutomationScheduleFunc) Do(a *Device) func() error {
+	return func() error {
+		return s.action(a)
+	}
+}
+
 type AutomationHandler interface {
 	Process(automation *Device) error
 	Type() string
@@ -15,19 +63,13 @@ type AutomationHandler interface {
 type AutomationScheduler struct {
 	repeatDuration time.Duration
 	scheduler      *Scheduler
-	startFunc      func() error
-	stopFunc       func() error
+	actionsMap     map[string]ScheduleFunc
 	ctx            context.Context
 }
 
-func WithStartFunc(start func() error) func(*AutomationScheduler) {
+func WithScheduleFunc(name string, action func(a *Device) error) func(*AutomationScheduler) {
 	return func(as *AutomationScheduler) {
-		as.startFunc = start
-	}
-}
-func WithStopFunc(stop func() error) func(*AutomationScheduler) {
-	return func(as *AutomationScheduler) {
-		as.stopFunc = stop
+		as.actionsMap[name] = NewAutomationScheduleFunc(name, action)
 	}
 }
 
@@ -48,8 +90,7 @@ func NewAutomationScheduler(opts ...func(as *AutomationScheduler)) AutomationHan
 	as := &AutomationScheduler{
 		repeatDuration: 24 * time.Hour, // default to 1 day
 		ctx:            context.Background(),
-		startFunc:      func() error { return nil },
-		stopFunc:       func() error { return nil },
+		actionsMap:     make(map[string]ScheduleFunc),
 	}
 	for _, opt := range opts {
 		opt(as)
@@ -62,64 +103,51 @@ func (a *AutomationScheduler) Type() string {
 	return "scheduler"
 }
 
-need to use the startFunc and stopFunc so i can be configured
 func (a *AutomationScheduler) Process(automation *Device) error {
 
-	if automation.Schedule == nil {
+	if len(automation.Schedules) == 0 {
 		return nil
 	}
-	if !automation.Schedule.Enabled {
-		if a.scheduler != nil && a.scheduler.IsRunning() {
-			a.scheduler.Stop()
-		}
+	// if !automation.Schedule.Enabled {
+	// 	if a.scheduler != nil && a.scheduler.IsRunning() {
+	// 		a.scheduler.Stop()
+	// 	}
 
-		return nil
-	}
+	// 	return nil
+	// }
 
-	if a.scheduler != nil && a.scheduler.IsRunning() {
+	if a.scheduler.IsRunning() {
 
 		// check if schedule has changed and determine logic
 		// TODO
 		return nil
 	}
 
-	if a.scheduler != nil {
-		a.scheduler.Stop()
-	}
+	// if a.scheduler != nil {
+	// 	a.scheduler.Stop()
+	// }
 
 	// if we have schedule, disable automation and configure scheduler
 	automation.Enabled = false
 
-	err := a.scheduler.
-		Name(fmt.Sprintf("Start job for %v automation", automation.FriendlyName)).
-		At(automation.Schedule.Start).
-		Every(a.repeatDuration).
-		Do(func() error {
+	for _, schedule := range automation.Schedules {
 
-			utils.LogInfof("Schedule enable %v automation", automation.FriendlyName)
-			automation.Enabled = true
-			return nil
-		})
+		actionFunc := a.actionsMap[schedule.Type]
+		if actionFunc == nil {
+			utils.LogErrorf("No action func for type %s in schedule %s", schedule.Type, schedule.Name)
+			continue
+		}
 
-	if err != nil {
-		utils.LogError("Error adding start job:", err)
-		return err
-	}
+		err := a.scheduler.
+			Name(fmt.Sprintf("%s job for %v automation", schedule.Name, automation.FriendlyName)).
+			At(schedule.StartAt).
+			Every(a.repeatDuration).
+			Do(actionFunc.Do(automation))
 
-	err = a.scheduler.
-		Name(fmt.Sprintf("End job for %v automation", automation.FriendlyName)).
-		At(automation.Schedule.End).
-		Every(a.repeatDuration).
-		Do(func() error {
-
-			utils.LogInfof("Schedule disable %v automation", automation.FriendlyName)
-			automation.Enabled = false
-			return nil
-		})
-
-	if err != nil {
-		utils.LogError("Error adding end job:", err)
-		return err
+		if err != nil {
+			utils.LogErrorf("Error adding %s job: %v", schedule.Name, err)
+			return err
+		}
 	}
 
 	a.scheduler.Start()

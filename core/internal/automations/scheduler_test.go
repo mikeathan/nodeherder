@@ -3,6 +3,7 @@ package automations_test
 import (
 	"context"
 	"node-herder/internal/automations"
+	utils_test "node-herder/testing"
 	"sync"
 	"testing"
 	"time"
@@ -19,14 +20,10 @@ func TestAddTimeSchedule(t *testing.T) {
 	start := now.Add(500 * time.Millisecond)
 	end := now.Add(2000 * time.Millisecond)
 
-	ts := &automations.TimeSchedule{
-		Start: start.Format("15:04:05.000"),
-		End:   end.Format("15:04:05.000"),
-	}
-
+	schedules := utils_test.CreateTimeSchedule(start, end)
 	s := automations.NewScheduler(context.Background())
 	// add start job
-	err := s.Name("Start job").At(ts.Start).Every(time.Second * 4).Do(func() error {
+	err := s.Name("Start job").At(schedules[0].StartAt).Every(time.Second * 4).Do(func() error {
 		done <- 1
 		wg.Done()
 		return nil
@@ -36,7 +33,7 @@ func TestAddTimeSchedule(t *testing.T) {
 		t.Errorf("failed to add start job %s", err.Error())
 	}
 
-	err = s.Name("End job").At(ts.End).Every(time.Second * 4).Do(func() error {
+	err = s.Name("End job").At(schedules[1].StartAt).Every(time.Second * 4).Do(func() error {
 		done <- 2
 		wg.Done()
 		return nil
@@ -70,14 +67,11 @@ func TestStopTimeSchedule(t *testing.T) {
 	start := now.Add(2000 * time.Millisecond)
 	end := start.Add(2000 * time.Millisecond)
 
-	ts := &automations.TimeSchedule{
-		Start: start.Format("15:04:05.000"),
-		End:   end.Format("15:04:05.000"),
-	}
+	schedules := utils_test.CreateTimeSchedule(start, end)
 	s := automations.NewScheduler(context.Background())
 
 	// add start job
-	err := s.Name("Start job").At(ts.Start).Every(time.Second * 1).Do(func() error {
+	err := s.Name("Start job").At(schedules[0].StartAt).Every(time.Second * 1).Do(func() error {
 		t.Errorf("Start job executed")
 
 		return nil
@@ -88,7 +82,7 @@ func TestStopTimeSchedule(t *testing.T) {
 	}
 
 	// add end job
-	err = s.Name("End job").At(ts.End).Every(time.Second * 1).Do(func() error {
+	err = s.Name("End job").At(schedules[1].StartAt).Every(time.Second * 1).Do(func() error {
 		t.Errorf("End job executed")
 
 		return nil
@@ -118,14 +112,11 @@ func TestTimeScheduleContextCancellation(t *testing.T) {
 	start := now.Add(2000 * time.Millisecond)
 	end := start.Add(2000 * time.Millisecond)
 
-	ts := &automations.TimeSchedule{
-		Start: start.Format("15:04:05.000"),
-		End:   end.Format("15:04:05.000"),
-	}
+	schedules := utils_test.CreateTimeSchedule(start, end)
 	s := automations.NewScheduler(ctx)
 
 	// add start job
-	err := s.Name("Start job").At(ts.Start).Every(time.Second * 1).Do(func() error {
+	err := s.Name("Start job").At(schedules[0].StartAt).Every(time.Second * 1).Do(func() error {
 		t.Errorf("Start job executed")
 
 		return nil
@@ -136,7 +127,7 @@ func TestTimeScheduleContextCancellation(t *testing.T) {
 	}
 
 	// add end job
-	err = s.Name("End job").At(ts.End).Every(time.Second * 1).Do(func() error {
+	err = s.Name("End job").At(schedules[1].StartAt).Every(time.Second * 1).Do(func() error {
 		t.Errorf("End job executed")
 
 		return nil
@@ -183,12 +174,9 @@ func TestTimeScheduleCSupportFileFormats(t *testing.T) {
 		start := now.Add(2000 * time.Millisecond)
 		end := start.Add(2000 * time.Millisecond)
 
-		ts := &automations.TimeSchedule{
-			Start: start.Format(tc.format),
-			End:   end.Format(tc.format),
-		}
+		schedules := utils_test.CreateTimeScheduleWithTimeFormat(start, end, tc.format)
 		s := automations.NewScheduler(ctx)
-		err := s.Name("Start job").At(ts.Start).Every(time.Second * 1).Do(func() error {
+		err := s.Name("Start job").At(schedules[0].StartAt).Every(time.Second * 1).Do(func() error {
 			t.Errorf("Start job executed")
 
 			return nil
@@ -197,7 +185,7 @@ func TestTimeScheduleCSupportFileFormats(t *testing.T) {
 			t.Errorf("failed to add start job %s", err.Error())
 		}
 
-		err = s.Name("End job").At(ts.End).Every(time.Second * 1).Do(func() error {
+		err = s.Name("End job").At(schedules[1].StartAt).Every(time.Second * 1).Do(func() error {
 			t.Errorf("End job executed")
 
 			return nil

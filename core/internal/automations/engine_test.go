@@ -215,11 +215,7 @@ func TestEngineScheduler(t *testing.T) {
 	start := now.Add(500 * time.Millisecond)
 	end := now.Add(1 * time.Hour)
 
-	deviceAutomation.Schedule = &automations.TimeSchedule{
-		Start:   start.Format("15:04:05.000"),
-		End:     end.Format("15:04:05.000"),
-		Enabled: true,
-	}
+	deviceAutomation.Schedules = utils_test.CreateTimeSchedule(start, end)
 	storage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
 
 	scheduleHandler := automations.NewAutomationScheduler()
@@ -275,11 +271,7 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 	start := now.Add(500 * time.Millisecond)
 	end := now.Add(1500 * time.Millisecond)
 
-	deviceAutomation.Schedule = &automations.TimeSchedule{
-		Start:   start.Format("15:04:05.000"),
-		End:     end.Format("15:04:05.000"),
-		Enabled: true,
-	}
+	deviceAutomation.Schedules = utils_test.CreateTimeSchedule(start, end)
 	storage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
 
 	scheduleHandler := automations.NewAutomationScheduler()

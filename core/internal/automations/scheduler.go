@@ -25,20 +25,6 @@ var (
 	timeWithoutSeconds   = regexp.MustCompile(`(?m)^\d{1,2}:\d\d$`)
 )
 
-type TimeSchedule struct {
-	Enabled bool   `json:"enabled"`
-	Start   string `json:"start"`
-	End     string `json:"end"`
-}
-
-func NewTimeSchedule() *TimeSchedule {
-	return &TimeSchedule{
-		Enabled: false,
-		Start:   "",
-		End:     "",
-	}
-}
-
 type job struct {
 	Name            string
 	Id              uuid.UUID
@@ -53,7 +39,6 @@ type job struct {
 }
 
 func newJob() *job {
-	//ctx, cancel := context.WithCancel(context.Background())
 
 	id := uuid.New()
 	return &job{

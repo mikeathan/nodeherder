@@ -45,12 +45,12 @@ func (d *DeviceContext) SetCurrent(name string, value any) {
 }
 
 type Device struct {
-	Id           string        `json:"id"`
-	FriendlyName string        `json:"friendlyname"`
-	Description  string        `json:"description"`
-	Enabled      bool          `json:"enabled"`
-	Triggers     []*Trigger    `json:"triggers"`
-	Schedule     *TimeSchedule `json:"scheule"`
+	Id           string          `json:"id"`
+	FriendlyName string          `json:"friendlyname"`
+	Description  string          `json:"description"`
+	Enabled      bool            `json:"enabled"`
+	Triggers     []*Trigger      `json:"triggers"`
+	Schedules    []*TimeSchedule `json:"schedule"`
 	ctx          *DeviceContext
 }
 
@@ -66,7 +66,7 @@ func NewDevice(id string) *Device {
 		Description:  "",
 		Enabled:      false,
 		Triggers:     []*Trigger{},
-		Schedule:     &TimeSchedule{},
+		Schedules:    []*TimeSchedule{},
 		ctx:          NewDeviceContext(),
 	}
 
