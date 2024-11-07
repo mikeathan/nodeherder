@@ -20,7 +20,7 @@ func TestAddTimeSchedule(t *testing.T) {
 	start := now.Add(500 * time.Millisecond)
 	end := now.Add(2000 * time.Millisecond)
 
-	schedules := utils_test.CreateTimeSchedule(start, end)
+	schedules := utils_test.CreateTimeSchedules(start, end)
 	s := automations.NewScheduler(context.Background())
 	// add start job
 	err := s.Name("Start job").At(schedules[0].StartAt).Every(time.Second * 4).Do(func() error {
@@ -67,7 +67,7 @@ func TestStopTimeSchedule(t *testing.T) {
 	start := now.Add(2000 * time.Millisecond)
 	end := start.Add(2000 * time.Millisecond)
 
-	schedules := utils_test.CreateTimeSchedule(start, end)
+	schedules := utils_test.CreateTimeSchedules(start, end)
 	s := automations.NewScheduler(context.Background())
 
 	// add start job
@@ -112,7 +112,7 @@ func TestTimeScheduleContextCancellation(t *testing.T) {
 	start := now.Add(2000 * time.Millisecond)
 	end := start.Add(2000 * time.Millisecond)
 
-	schedules := utils_test.CreateTimeSchedule(start, end)
+	schedules := utils_test.CreateTimeSchedules(start, end)
 	s := automations.NewScheduler(ctx)
 
 	// add start job
@@ -174,7 +174,7 @@ func TestTimeScheduleCSupportFileFormats(t *testing.T) {
 		start := now.Add(2000 * time.Millisecond)
 		end := start.Add(2000 * time.Millisecond)
 
-		schedules := utils_test.CreateTimeScheduleWithTimeFormat(start, end, tc.format)
+		schedules := utils_test.CreateTimeSchedulesWithTimeFormat(start, end, tc.format)
 		s := automations.NewScheduler(ctx)
 		err := s.Name("Start job").At(schedules[0].StartAt).Every(time.Second * 1).Do(func() error {
 			t.Errorf("Start job executed")

@@ -161,6 +161,24 @@ func NewScheduler(ctx context.Context) *Scheduler {
 	return s
 }
 
+func (s *Scheduler) JobByName(name string) *job {
+	for _, job := range s.jobs {
+		if job.Name == name {
+			return job
+		}
+	}
+	return nil
+}
+
+func (s *Scheduler) JobByStartAt(startAt string) *job {
+	for _, job := range s.jobs {
+		if job.startAtTime == startAt {
+			return job
+		}
+	}
+	return nil
+}
+
 func (s *Scheduler) getCurrentJob() *job {
 	if s.inScheduleChain != nil {
 		return s.jobs[*s.inScheduleChain]

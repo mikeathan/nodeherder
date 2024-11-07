@@ -2,7 +2,6 @@ package automations
 
 import (
 	"context"
-	"fmt"
 	"node-herder/utils"
 	"time"
 )
@@ -13,7 +12,6 @@ const (
 )
 
 type TimeSchedule struct {
-	Enabled bool   `json:"enabled"`
 	StartAt string `json:"startAt"`
 	Name    string `json:"name"`
 	Type    string `json:"type"`
@@ -21,7 +19,6 @@ type TimeSchedule struct {
 
 func NewTimeSchedule() *TimeSchedule {
 	return &TimeSchedule{
-		Enabled: false,
 		StartAt: "",
 		Name:    "",
 		Type:    "",
@@ -58,15 +55,34 @@ func (s *AutomationScheduleFunc) Do(a *Device) func() error {
 type AutomationHandler interface {
 	Process(automation *Device) error
 	Type() string
+	IsRunning(automation *Device) bool
 }
 
 type AutomationScheduler struct {
 	repeatDuration time.Duration
-	scheduler      *Scheduler
 	actionsMap     map[string]ScheduleFunc
+	schedulers     map[string]*Scheduler
 	ctx            context.Context
 }
 
+var scheduleFuncMap = map[string]ScheduleFunc{
+	"enable": NewAutomationScheduleFunc(EnableScheduleType, func(a *Device) error {
+		a.Enabled = true
+		return nil
+	}),
+	"disable": NewAutomationScheduleFunc(DisableScheduleType, func(a *Device) error {
+		a.Enabled = false
+		return nil
+	}),
+}
+
+func WithAutomationsFuncs() func(*AutomationScheduler) {
+	return func(as *AutomationScheduler) {
+		for name, scheduleFunc := range scheduleFuncMap {
+			as.actionsMap[name] = scheduleFunc
+		}
+	}
+}
 func WithScheduleFunc(name string, action func(a *Device) error) func(*AutomationScheduler) {
 	return func(as *AutomationScheduler) {
 		as.actionsMap[name] = NewAutomationScheduleFunc(name, action)
@@ -88,14 +104,14 @@ func WithRepeatDuration(duration time.Duration) func(*AutomationScheduler) {
 func NewAutomationScheduler(opts ...func(as *AutomationScheduler)) AutomationHandler {
 
 	as := &AutomationScheduler{
-		repeatDuration: 24 * time.Hour, // default to 1 day
-		ctx:            context.Background(),
+		repeatDuration: 24 * time.Hour,
 		actionsMap:     make(map[string]ScheduleFunc),
+		schedulers:     map[string]*Scheduler{},
+		ctx:            context.Background(),
 	}
 	for _, opt := range opts {
 		opt(as)
 	}
-	as.scheduler = NewScheduler(as.ctx)
 	return as
 }
 
@@ -103,31 +119,55 @@ func (a *AutomationScheduler) Type() string {
 	return "scheduler"
 }
 
+func (a *AutomationScheduler) IsRunning(automation *Device) bool {
+	return a.schedulers[automation.Id].IsRunning()
+}
+
 func (a *AutomationScheduler) Process(automation *Device) error {
 
+	scheduler := a.schedulers[automation.Id]
+
 	if len(automation.Schedules) == 0 {
-		return nil
-	}
-	// if !automation.Schedule.Enabled {
-	// 	if a.scheduler != nil && a.scheduler.IsRunning() {
-	// 		a.scheduler.Stop()
-	// 	}
 
-	// 	return nil
-	// }
+		// remove scheduler if exists
+		if scheduler != nil {
+			scheduler.Stop()
+			delete(a.schedulers, automation.Id)
+		}
 
-	if a.scheduler.IsRunning() {
-
-		// check if schedule has changed and determine logic
-		// TODO
 		return nil
 	}
 
-	// if a.scheduler != nil {
-	// 	a.scheduler.Stop()
-	// }
+	if scheduler != nil {
 
-	// if we have schedule, disable automation and configure scheduler
+		shouldRestart := false
+		for _, schedule := range automation.Schedules {
+
+			job := scheduler.JobByName(schedule.Name)
+			if job != nil {
+				// reset job
+				if job.startAtTime != schedule.StartAt {
+					job.startAtTime = schedule.StartAt
+					shouldRestart = true
+				}
+			}
+		}
+
+		if shouldRestart && scheduler.IsRunning() {
+			err := scheduler.Stop()
+			if err != nil {
+				utils.LogError("Error stopping scheduler: ", err)
+			}
+			scheduler.Start()
+		}
+
+		return nil
+	}
+
+	// New scheduler
+	scheduler = NewScheduler(a.ctx)
+
+	// disable automation and configure scheduler
 	automation.Enabled = false
 
 	for _, schedule := range automation.Schedules {
@@ -138,8 +178,8 @@ func (a *AutomationScheduler) Process(automation *Device) error {
 			continue
 		}
 
-		err := a.scheduler.
-			Name(fmt.Sprintf("%s job for %v automation", schedule.Name, automation.FriendlyName)).
+		err := scheduler.
+			Name(schedule.Name).
 			At(schedule.StartAt).
 			Every(a.repeatDuration).
 			Do(actionFunc.Do(automation))
@@ -150,7 +190,8 @@ func (a *AutomationScheduler) Process(automation *Device) error {
 		}
 	}
 
-	a.scheduler.Start()
+	scheduler.Start()
+	a.schedulers[automation.Id] = scheduler
 
 	return nil
 }

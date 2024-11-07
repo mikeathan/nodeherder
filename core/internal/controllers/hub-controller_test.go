@@ -46,7 +46,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 	start := now.Add(500 * time.Millisecond)
 	end := now.Add(1500 * time.Millisecond)
 
-	deviceAutomation.Schedules = utils_test.CreateTimeSchedule(start, end)
+	deviceAutomation.Schedules = utils_test.CreateTimeSchedules(start, end)
 	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
 	// setup device
 	alarmDevice := utils_test.CreateAlarmDevice("x02222222", "alarm device", false)
