@@ -131,6 +131,7 @@ func (a *AutomationScheduler) Process(automation *Device) error {
 
 		// remove scheduler if exists
 		if scheduler != nil {
+
 			scheduler.Stop()
 			delete(a.schedulers, automation.Id)
 		}
@@ -140,31 +141,34 @@ func (a *AutomationScheduler) Process(automation *Device) error {
 
 	if scheduler != nil {
 
-		shouldRestart := false
-		for _, schedule := range automation.Schedules {
+		scheduleUpdated := false
 
-			job := scheduler.JobByName(schedule.Name)
-			if job != nil {
-				// reset job
-				if job.startAtTime != schedule.StartAt {
-					job.startAtTime = schedule.StartAt
-					shouldRestart = true
-				}
+		for _, schedule := range automation.Schedules {
+			job := scheduler.FindJobByStartTime(schedule.StartAt)
+			if job == nil {
+				scheduleUpdated = true
+				break
 			}
 		}
 
-		if shouldRestart && scheduler.IsRunning() {
+		if !scheduleUpdated {
+			// nothing to do, schedules are the same
+			return nil
+		}
+
+		if scheduleUpdated {
 			err := scheduler.Stop()
 			if err != nil {
 				utils.LogError("Error stopping scheduler: ", err)
 			}
-			scheduler.Start()
-		}
 
-		return nil
+			// delete and configure new scheduler
+			scheduler = nil
+			delete(a.schedulers, automation.Id)
+		}
 	}
 
-	// New scheduler
+	// new scheduler
 	scheduler = NewScheduler(a.ctx)
 
 	// disable automation and configure scheduler

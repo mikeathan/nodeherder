@@ -253,7 +253,7 @@ func TestEngineAutomationUpdateShouldNotResetScheduler(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// assert that scheduler is still running
-	if !scheduleHandler.IsRunning() {
+	if !scheduleHandler.IsRunning(deviceAutomation) {
 		t.Fatalf("ERROR scheduler is not running")
 	}
 	// we expect only one event to be triggered and release the wait group
@@ -332,7 +332,7 @@ func TestEngineAutomationUpdateShouldResetScheduler(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	// assert that scheduler is still running
-	if !scheduleHandler.IsRunning() {
+	if !scheduleHandler.IsRunning(deviceAutomation) {
 		t.Fatalf("ERROR scheduler is not running")
 	}
 	// we expect only one event to be triggered and release the wait group

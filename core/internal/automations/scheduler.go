@@ -161,9 +161,9 @@ func NewScheduler(ctx context.Context) *Scheduler {
 	return s
 }
 
-func (s *Scheduler) JobByName(name string) *job {
+func (s *Scheduler) FindJobByStartTime(startTime string) *job {
 	for _, job := range s.jobs {
-		if job.Name == name {
+		if job.startAtTime == startTime {
 			return job
 		}
 	}
