@@ -177,16 +177,6 @@ func TestExportAutomationsFromFile(t *testing.T) {
 	}
 }
 
-//TODO:
-// test case 2
-// we have scheduler that is running
-// automation is updated and scheduled time has changed
-// scheduler should be stopped and reset
-
-// test case 3
-// we have scheduler that is running
-// automation is updated and scheduled time has not changed
-// scheduler should not be stopped or reset
 func TestEngineAutomationUpdateShouldNotResetScheduler(t *testing.T) {
 
 	wg := sync.WaitGroup{}
@@ -261,6 +251,87 @@ func TestEngineAutomationUpdateShouldNotResetScheduler(t *testing.T) {
 	wg.Wait()
 }
 
+func TestEngineAutomationUpdateShouldResetAndTriggerAgainScheduler(t *testing.T) {
+
+	wg := sync.WaitGroup{}
+	mqtt := &mocks.MockMqttClient{}
+
+	mqtt.OnMessageHandler(func(topic string, payload []byte) {
+		fmt.Printf("Received message on topic %s\n", topic)
+	})
+
+	store := utils_test.CreateStore()
+	eventHub := &mocks.MockEventHub{}
+
+	alarmDevice := utils_test.CreateAlarmDevice("x02222222", "alarm device", false)
+	doorSensorDevice := utils_test.CreateDoorSensorDevice("x01111111", "front door sensor", false)
+
+	// setup bridgeInfo List
+	devices := []*devices.Device{doorSensorDevice, alarmDevice}
+	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+
+	registrar.RegisterBridge(deviceBridgeList, 60)
+
+	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
+
+	now := time.Now().UTC()
+	start := now.Add(500 * time.Millisecond)
+	end := now.Add(1 * time.Hour)
+
+	deviceAutomation.Schedules = utils_test.CreateTimeSchedules(start, end)
+	storage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+
+	// we expect only 2 event to be triggered
+	// first event is on startup
+	// second event is on automation schedule update
+	wg.Add(2)
+
+	scheduleHandler := automations.NewAutomationScheduler(
+		automations.WithScheduleFunc("enable", func(automation *automations.Device) error {
+			automation.Enabled = true
+			wg.Done()
+			return nil
+		}),
+		automations.WithScheduleFunc("disable", func(automation *automations.Device) error {
+			automation.Enabled = false
+			return nil
+		}),
+	)
+
+	engine := automations.NewEngine([]automations.AutomationHandler{scheduleHandler}, registrar, mqtt)
+	engine.WithStorage(storage)
+	engine.Initialize()
+
+	// make sure automation is disabled on startup
+	if deviceAutomation.Enabled {
+		t.Fatalf("ERROR automation is enabled")
+	}
+
+	time.Sleep(500 * time.Millisecond)
+
+	// automation must be enabled from scheduler
+	if !deviceAutomation.Enabled {
+		t.Fatalf("ERROR automation is disable")
+	}
+
+	// update automation and change schedule
+	now = time.Now().UTC()
+	start = now.Add(50 * time.Millisecond)
+	deviceAutomation.Schedules[0] = utils_test.CreateTimeSchedule(start)
+
+	engine.Add(deviceAutomation)
+	time.Sleep(50 * time.Millisecond)
+
+	// assert that scheduler is still running
+	if !scheduleHandler.IsRunning(deviceAutomation) {
+		t.Fatalf("ERROR scheduler is not running")
+	}
+	// we expect only 2 events to be triggered and release the wait group
+	// any more events triggered will cause the test to fail
+	wg.Wait()
+}
+
 func TestEngineAutomationUpdateShouldResetScheduler(t *testing.T) {
 
 	wg := sync.WaitGroup{}
@@ -292,7 +363,10 @@ func TestEngineAutomationUpdateShouldResetScheduler(t *testing.T) {
 	deviceAutomation.Schedules = utils_test.CreateTimeSchedules(start, end)
 	storage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
 
-	wg.Add(1) // we expect only one event to be triggered
+	// we expect only 1 event to be triggered
+	// first event is on startup
+	// after we update the automation schedule, the second event ashould not be trigger on time
+	wg.Add(1)
 
 	scheduleHandler := automations.NewAutomationScheduler(
 		automations.WithScheduleFunc("enable", func(automation *automations.Device) error {
@@ -323,9 +397,8 @@ func TestEngineAutomationUpdateShouldResetScheduler(t *testing.T) {
 	}
 
 	// update automation and change schedule
-
 	now = time.Now().UTC()
-	start = now.Add(500 * time.Millisecond)
+	start = now.Add(1000 * time.Millisecond)
 	deviceAutomation.Schedules[0] = utils_test.CreateTimeSchedule(start)
 
 	engine.Add(deviceAutomation)
@@ -335,7 +408,86 @@ func TestEngineAutomationUpdateShouldResetScheduler(t *testing.T) {
 	if !scheduleHandler.IsRunning(deviceAutomation) {
 		t.Fatalf("ERROR scheduler is not running")
 	}
-	// we expect only one event to be triggered and release the wait group
+	// we expect only 1 event to be triggered and release the wait group
+	// any more events triggered will cause the test to fail
+	wg.Wait()
+}
+
+func TestEngineAutomationUpdateShouldStopScheduler(t *testing.T) {
+
+	wg := sync.WaitGroup{}
+	mqtt := &mocks.MockMqttClient{}
+
+	mqtt.OnMessageHandler(func(topic string, payload []byte) {
+		fmt.Printf("Received message on topic %s\n", topic)
+	})
+
+	store := utils_test.CreateStore()
+	eventHub := &mocks.MockEventHub{}
+
+	alarmDevice := utils_test.CreateAlarmDevice("x02222222", "alarm device", false)
+	doorSensorDevice := utils_test.CreateDoorSensorDevice("x01111111", "front door sensor", false)
+
+	// setup bridgeInfo List
+	devices := []*devices.Device{doorSensorDevice, alarmDevice}
+	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+
+	registrar.RegisterBridge(deviceBridgeList, 60)
+
+	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
+
+	now := time.Now().UTC()
+	start := now.Add(500 * time.Millisecond)
+	end := now.Add(1 * time.Hour)
+
+	deviceAutomation.Schedules = utils_test.CreateTimeSchedules(start, end)
+	storage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+
+	// we expect only 1 event to be triggered
+	// first event is on startup
+	// after we update the automation schedule, the second event ashould not be trigger on time
+	wg.Add(1)
+
+	scheduleHandler := automations.NewAutomationScheduler(
+		automations.WithScheduleFunc("enable", func(automation *automations.Device) error {
+			automation.Enabled = true
+			wg.Done()
+			return nil
+		}),
+		automations.WithScheduleFunc("disable", func(automation *automations.Device) error {
+			automation.Enabled = false
+			return nil
+		}),
+	)
+
+	engine := automations.NewEngine([]automations.AutomationHandler{scheduleHandler}, registrar, mqtt)
+	engine.WithStorage(storage)
+	engine.Initialize()
+
+	// make sure automation is disabled on startup
+	if deviceAutomation.Enabled {
+		t.Fatalf("ERROR automation is enabled")
+	}
+
+	time.Sleep(500 * time.Millisecond)
+
+	// automation must be enabled from scheduler
+	if !deviceAutomation.Enabled {
+		t.Fatalf("ERROR automation is disable")
+	}
+
+	// update automation remove schedules
+	deviceAutomation.Schedules = []*automations.TimeSchedule{}
+
+	engine.Add(deviceAutomation)
+	time.Sleep(50 * time.Millisecond)
+
+	// assert that scheduler is not running
+	if scheduleHandler.IsRunning(deviceAutomation) {
+		t.Fatalf("ERROR scheduler is not running")
+	}
+	// we expect only 1 event to be triggered and release the wait group
 	// any more events triggered will cause the test to fail
 	wg.Wait()
 }

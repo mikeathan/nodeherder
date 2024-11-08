@@ -120,7 +120,10 @@ func (a *AutomationScheduler) Type() string {
 }
 
 func (a *AutomationScheduler) IsRunning(automation *Device) bool {
-	return a.schedulers[automation.Id].IsRunning()
+	if scheduler := a.schedulers[automation.Id]; scheduler != nil {
+		return scheduler.IsRunning()
+	}
+	return false
 }
 
 func (a *AutomationScheduler) Process(automation *Device) error {
