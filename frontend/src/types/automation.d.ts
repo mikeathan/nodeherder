@@ -18,7 +18,14 @@ export type Automation = {
   friendlyname: string;
   description: string;
   enabled: boolean;
+  schedules: TimeSchedule[];
   triggers: AutomationTriggers;
+};
+
+export type TimeSchedule = {
+  startAt: string;
+  name: string;
+  type: string;
 };
 
 export type AutomationTrigger = {

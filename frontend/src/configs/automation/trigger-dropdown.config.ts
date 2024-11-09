@@ -2,7 +2,7 @@ import {
   AutomationActionTypes,
   NumericOperators,
   TriggerActionOperations,
-} from "@/contracts/automations";
+} from '@/contracts/automations';
 import {
   DropDownItemType,
   createDropDownItem,
@@ -12,47 +12,66 @@ import {
   DropDownType,
   ButtonPanelType,
   isDropdown,
-} from "../../types/controls.type";
+} from '../../types/controls.type';
 
 export function createNewActionDropdownItems(
-  event: ButtonClickEventType
+  event: ButtonClickEventType,
 ): DropDownItemType[] {
   let items: DropDownItemType[] = [];
 
-  Object.values(AutomationActionTypes).forEach((actionType) =>
-    items.push(createDropDownItem(`New ${actionType}`, actionType, event))
+  Object.values(AutomationActionTypes).forEach(
+    (actionType) =>
+      items.push(
+        createDropDownItem(
+          `New ${actionType}`,
+          actionType,
+          event,
+        ),
+      ),
   );
 
   return items;
 }
 
 export function createTriggerActionOperatorsDropdowitems(
-  event: ButtonClickEventType
+  event: ButtonClickEventType,
 ): DropDownItemType[] {
   let items: DropDownItemType[] = [];
 
-  Object.values(TriggerActionOperations).forEach((operator) =>
-    items.push(createDropDownItem(`New ${operator}`, operator, event))
+  Object.values(TriggerActionOperations).forEach(
+    (operator) =>
+      items.push(
+        createDropDownItem(
+          `New ${operator}`,
+          operator,
+          event,
+        ),
+      ),
   );
 
   return items;
 }
 
 export function createStepActionOperatorsDropdowitems(
-  event: ButtonClickEventType
+  event: ButtonClickEventType,
 ): DropDownItemType[] {
   let items: DropDownItemType[] = [];
 
   Object.values(NumericOperators).forEach((operator) =>
-    items.push(createDropDownItem(operator, operator, event))
+    items.push(
+      createDropDownItem(operator, operator, event),
+    ),
   );
 
   return items;
 }
 
-export function createButtons(buttons: ButtonType[]): ButtonType[] {
+export function createButtons(
+  buttons: ButtonType[],
+): ButtonType[] {
   return buttons.map(
-    (item: ButtonType) => createButton(item.name, item.click, item.disabled)
+    (item: ButtonType) =>
+      createButton(item.name, item.click, item.disabled),
     // const node = isDropdown(item)
     //   ? createDropdown(item as DropDownType)
     //   : createButton(item.name, item.event, item.disabled);
@@ -63,26 +82,46 @@ export function createSaveDeleteButtonItems(
   saveEvent: ButtonClickEventType,
   deleteEvent: ButtonClickEventType,
   isSaveDisabled?: boolean,
-  isDeleteDisabled?: boolean
+  isDeleteDisabled?: boolean,
 ): ButtonType[] {
   return [
-    createButton("Save", saveEvent, isSaveDisabled),
-    createButton("Delete", deleteEvent, isDeleteDisabled),
+    createButton('Save', saveEvent, isSaveDisabled),
+    createButton('Delete', deleteEvent, isDeleteDisabled),
   ];
 }
-
+export function createEditAutomationButtonItems(
+  saveEvent: ButtonClickEventType,
+  deleteEvent: ButtonClickEventType,
+  scheduleEvent: ButtonClickEventType,
+  cancelEvent: ButtonClickEventType,
+  isSaveDisabled?: boolean,
+  isDeleteDisabled?: boolean,
+  isScheduleEnabled?: boolean,
+  isCancelDisabled?: boolean,
+): ButtonType[] {
+  return [
+    createButton('Save', saveEvent, isSaveDisabled),
+    createButton('Delete', deleteEvent, isDeleteDisabled),
+    createButton(
+      'Schedule',
+      scheduleEvent,
+      isScheduleEnabled,
+    ),
+    createButton('Cancel', cancelEvent, isCancelDisabled),
+  ];
+}
 export function createSaveDeleteCancelButtonItems(
   saveEvent: ButtonClickEventType,
   deleteEvent: ButtonClickEventType,
   cancelEvent: ButtonClickEventType,
   isSaveDisabled?: boolean,
   isDeleteDisabled?: boolean,
-  isCancelDisabled?: boolean
+  isCancelDisabled?: boolean,
 ): ButtonType[] {
   return [
-    createButton("Save", saveEvent, isSaveDisabled),
-    createButton("Delete", deleteEvent, isDeleteDisabled),
-    createButton("Cancel", cancelEvent, isCancelDisabled),
+    createButton('Save', saveEvent, isSaveDisabled),
+    createButton('Delete', deleteEvent, isDeleteDisabled),
+    createButton('Cancel', cancelEvent, isCancelDisabled),
   ];
 }
 
@@ -92,19 +131,23 @@ export function createStepActionButtonItems(
   deleteEvent: ButtonClickEventType,
   isSaveDisabled?: boolean,
   isDeleteDisabled?: boolean,
-  isDropdownDisabled?: boolean
+  isDropdownDisabled?: boolean,
 ): ButtonPanelType[] {
   return [
-    createButton("Save", saveEvent, isSaveDisabled),
-    createButton("Delete", deleteEvent, isDeleteDisabled),
-    createDropdown("Add Operation", dropDownItems, isDropdownDisabled),
+    createButton('Save', saveEvent, isSaveDisabled),
+    createButton('Delete', deleteEvent, isDeleteDisabled),
+    createDropdown(
+      'Add Operation',
+      dropDownItems,
+      isDropdownDisabled,
+    ),
   ];
 }
 
 export function createDropdown(
   name: string,
   items: DropDownItemType[],
-  disabled: boolean = false
+  disabled: boolean = false,
 ): DropDownType {
   return { name: name, items: items, disabled: disabled };
 }

@@ -1,4 +1,4 @@
-import { ExposeTypes } from "@/types/device.type";
+import { ExposeTypes } from '@/types/device.type';
 import {
   Automation,
   AutomationTrigger,
@@ -6,27 +6,39 @@ import {
   AutomationTriggerAction,
   AutomationTriggerConditions,
   AutomationActionStep,
-} from "../types/automation";
-import { ExposeType } from "../types/device";
-import { ValueOf } from "@/types/types";
+  TimeSchedule,
+} from '../types/automation';
+import { ExposeType } from '../types/device';
+import { ValueOf } from '@/types/types';
 
-export const EqualityOperators: string[] = ["=", "<=", ">=", ">", "<"];
-export const NumericOperators: string[] = ["+", "-", "*"];
+export const EqualityOperators: string[] = [
+  '=',
+  '<=',
+  '>=',
+  '>',
+  '<',
+];
+export const NumericOperators: string[] = ['+', '-', '*'];
 
-export type TriggerAction = "TriggerAction";
-export type StepAction = "StepAction";
-export type PresetRotationAction = "PresetRotationAction";
-export type ActionType = TriggerAction | StepAction | PresetRotationAction;
+export type TriggerAction = 'TriggerAction';
+export type StepAction = 'StepAction';
+export type PresetRotationAction = 'PresetRotationAction';
+export type ActionType =
+  | TriggerAction
+  | StepAction
+  | PresetRotationAction;
 
-export type TriggerActionOperation = ValueOf<typeof TriggerActionOperations>;
+export type TriggerActionOperation = ValueOf<
+  typeof TriggerActionOperations
+>;
 export const TriggerActionOperations = {
-  Delay: "delay",
+  Delay: 'delay',
 } as const;
 
 export const AutomationActionTypes = {
-  Trigger: "TriggerAction",
-  Step: "StepAction",
-  PresetRotation: "PresetRotationAction",
+  Trigger: 'TriggerAction',
+  Step: 'StepAction',
+  PresetRotation: 'PresetRotationAction',
 } as const;
 
 export class DeviceAutomation implements Automation {
@@ -35,31 +47,39 @@ export class DeviceAutomation implements Automation {
   description: string;
   enabled: boolean;
   triggers: Array<AutomationTrigger>;
-
+  schedules: TimeSchedule[];
+  
   constructor() {
-    this.id = "";
-    this.friendlyname = "";
-    this.description = "";
+    this.id = '';
+    this.friendlyname = '';
+    this.description = '';
     this.enabled = false;
     this.triggers = [];
+    this.schedules = [];
   }
 }
 
-export class EditableAutomationTrigger implements AutomationTrigger {
+export class EditableAutomationTrigger
+  implements AutomationTrigger
+{
   name: string;
   conditions: AutomationTriggerConditions;
   action: AutomationTriggerAction;
 
   static create(): AutomationTrigger {
     const trigger = {} as EditableAutomationTrigger;
-    trigger.name = "";
+    trigger.name = '';
     trigger.conditions = [];
-    trigger.action = new EditableActionTrigger(AutomationActionTypes.Trigger);
+    trigger.action = new EditableActionTrigger(
+      AutomationActionTypes.Trigger,
+    );
 
     return new EditableAutomationTrigger(trigger);
   }
 
-  static createFrom(trigger: AutomationTrigger): AutomationTrigger {
+  static createFrom(
+    trigger: AutomationTrigger,
+  ): AutomationTrigger {
     return new EditableAutomationTrigger(trigger);
   }
 
@@ -70,18 +90,22 @@ export class EditableAutomationTrigger implements AutomationTrigger {
   }
 }
 
-export class EditableTriggerCondition implements AutomationTriggerCondition {
+export class EditableTriggerCondition
+  implements AutomationTriggerCondition
+{
   name: string;
   value: any | null;
   equality: string;
   constructor() {
-    this.name = "";
+    this.name = '';
     this.value = null;
-    this.equality = "=";
+    this.equality = '=';
   }
 }
 
-export class EditableActionTrigger implements AutomationTriggerAction {
+export class EditableActionTrigger
+  implements AutomationTriggerAction
+{
   id: string;
   friendlyname: string;
   property: string;
@@ -91,9 +115,9 @@ export class EditableActionTrigger implements AutomationTriggerAction {
   type: ActionType;
 
   constructor(type: ActionType) {
-    this.id = "";
-    this.friendlyname = "";
-    this.property = "";
+    this.id = '';
+    this.friendlyname = '';
+    this.property = '';
     this.data = null;
     this.delay = null;
     this.type = type;
@@ -106,13 +130,18 @@ export class EditableActionTrigger implements AutomationTriggerAction {
     this.data = null;
   }
 
-  public setDeviceId(id: string, friendlyname: string): void {
+  public setDeviceId(
+    id: string,
+    friendlyname: string,
+  ): void {
     this.id = id;
     this.friendlyname = friendlyname;
   }
 }
 
-export function getActionType(action: AutomationTriggerAction): ActionType {
+export function getActionType(
+  action: AutomationTriggerAction,
+): ActionType {
   const editableAction = action as EditableActionTrigger;
   if (editableAction.type != undefined) {
     return editableAction.type;
@@ -122,53 +151,63 @@ export function getActionType(action: AutomationTriggerAction): ActionType {
     : AutomationActionTypes.Trigger;
 }
 
-export function clearAction(action: AutomationTriggerAction): void {
-  action.id = "";
-  action.friendlyname = "";
-  action.property = "";
+export function clearAction(
+  action: AutomationTriggerAction,
+): void {
+  action.id = '';
+  action.friendlyname = '';
+  action.property = '';
   action.data = null;
   action.delay = null;
 }
 
 export function insertTriggerCondition(
   trigger: AutomationTrigger,
-  newCondition?: AutomationTriggerCondition
+  newCondition?: AutomationTriggerCondition,
 ) {
-  trigger.conditions.push(newCondition ?? new EditableTriggerCondition());
+  trigger.conditions.push(
+    newCondition ?? new EditableTriggerCondition(),
+  );
 }
 
 export function insertCondition(
   conditions: AutomationTriggerConditions,
-  newCondition?: AutomationTriggerCondition
+  newCondition?: AutomationTriggerCondition,
 ) {
-  conditions.push(newCondition ?? new EditableTriggerCondition());
+  conditions.push(
+    newCondition ?? new EditableTriggerCondition(),
+  );
 }
 export function removeTriggerCondition(
   trigger: AutomationTrigger,
-  condition: AutomationTriggerCondition
+  condition: AutomationTriggerCondition,
 ) {
-  trigger.conditions = trigger.conditions.filter((c) => c != condition);
+  trigger.conditions = trigger.conditions.filter(
+    (c) => c != condition,
+  );
 }
 
 export function removeCondition(
   conditions: AutomationTriggerConditions,
-  condition: AutomationTriggerCondition
+  condition: AutomationTriggerCondition,
 ) {
   conditions = conditions.filter((c) => c != condition);
 }
 
-export function isValid(automation: AutomationTrigger): boolean {
+export function isValid(
+  automation: AutomationTrigger,
+): boolean {
   return (
-    automation.name != "" &&
-    automation.action.id != "" &&
-    automation.action.property != ""
+    automation.name != '' &&
+    automation.action.id != '' &&
+    automation.action.property != ''
   );
 }
 
 export function setDeviceId(
   action: AutomationTriggerAction,
   id: string,
-  friendlyname: string
+  friendlyname: string,
 ): void {
   action.id = id;
   action.friendlyname = friendlyname;
@@ -177,15 +216,18 @@ export function setDeviceId(
 export function setProperty(
   action: AutomationTriggerAction,
   value: string,
-  type: ExposeType
+  type: ExposeType,
 ): void {
   action.property = value;
 
   // reset remaining properties
   action.delay = null;
 
-  if (type == ExposeTypes.Binary || type == ExposeTypes.Enum) {
-    action.data = "";
+  if (
+    type == ExposeTypes.Binary ||
+    type == ExposeTypes.Enum
+  ) {
+    action.data = '';
   } else {
     action.data = 0;
   }

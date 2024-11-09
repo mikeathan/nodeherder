@@ -88,6 +88,19 @@ var automationMap = new Map([
       friendlyname: 'Human presence',
       description: 'Attic light test automation',
       enabled: true,
+      schedules: [
+        {
+          startAt: '11:30',
+          name: 'enable automation',
+          type: 'enable',
+        },
+        {
+          startAt: '05:00',
+          name: 'disable automation',
+          type: 'disable',
+        },
+      ],
+
       triggers: [
         {
           name: 'presence',

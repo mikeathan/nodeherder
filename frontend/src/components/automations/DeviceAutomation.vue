@@ -4,12 +4,12 @@ import { useRouter } from 'vue-router'
 import InputBox from "../input/InputBox.vue"
 import { store } from "../../store/index";
 import { Device } from "@/types/device";
-import { Automation, AutomationTrigger } from "@/types/automation";
+import { Automation, AutomationTrigger, TimeSchedule } from "@/types/automation";
 import { EditableAutomationTrigger, DeviceAutomation } from "../../contracts/automations";
 import Panel from "../controls/Panel.vue";
 import { EventActions, OpenPanelEvent } from "@/types/events.type";
 import ButtonPanel from "@/components/controls/ButtonPanel.vue";
-import { createSaveDeleteCancelButtonItems } from "../../configs/automation/trigger-dropdown.config";
+import { createEditAutomationButtonItems, createSaveDeleteCancelButtonItems } from "../../configs/automation/trigger-dropdown.config";
 import { emitCloseLastPanel } from "@/mixins/useAutomationsEventBus";
 
 const emit = defineEmits(['cancel'])
@@ -26,12 +26,15 @@ const buttonPanelItems = computed(() => {
 
     const isActionValid = automation.value.triggers.length == 0 &&
         automation.value.triggers.filter(k => k.action != null).length == automation.value.triggers.length;
-    return createSaveDeleteCancelButtonItems(
+    return createEditAutomationButtonItems(
         () => saveAutomation(),
         () => deleteAutomation(),
+        () => schedule(),
         () => cancel(),
         isActionValid,
-        isActionValid);
+        isActionValid,
+        isActionValid,
+    );
 });
 
 watch(
@@ -61,7 +64,6 @@ function createNewTrigger() {
 }
 
 function cancel() {
-    console.log("cancel");
     emit('cancel')
 }
 
@@ -77,6 +79,13 @@ function deleteAutomation() {
         // todo; alert message box to ask user
         router.push("/viewer")
     }
+}
+
+function schedule() {
+    router.push({
+        name: 'scheduler',
+        params: { id: automation.value.id },
+    });
 }
 
 function deleteTrigger(trigger: AutomationTrigger): void {
