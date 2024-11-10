@@ -1,25 +1,43 @@
-import { defineAsyncComponent } from "vue";
+import { defineAsyncComponent } from 'vue';
 
 type PanelKey = string;
 type Map = { [key: PanelKey]: any };
 
 export const PanelComponents: Map = {
   Trigger: defineAsyncComponent(
-    () => import("../components/automations/Trigger.vue")
+    () => import('../components/automations/Trigger.vue'),
   ),
   TriggerAction: defineAsyncComponent(
-    () => import("../components/automations/actions/TriggerAction.vue")
+    () =>
+      import(
+        '../components/automations/actions/TriggerAction.vue'
+      ),
   ),
   StepAction: defineAsyncComponent(
-    () => import("../components/automations/actions/StepAction.vue")
+    () =>
+      import(
+        '../components/automations/actions/StepAction.vue'
+      ),
   ),
   ActionEditor: defineAsyncComponent(
-    () => import("../components/automations/actions/ActionEditor.vue")
+    () =>
+      import(
+        '../components/automations/actions/ActionEditor.vue'
+      ),
   ),
   ActionViewer: defineAsyncComponent(
-    () => import("../components/automations/actions/ActionViewer.vue")
+    () =>
+      import(
+        '../components/automations/actions/ActionViewer.vue'
+      ),
   ),
   PresetRotationAction: defineAsyncComponent(
-    () => import("../components/automations/actions/PresetRotationAction.vue")
+    () =>
+      import(
+        '../components/automations/actions/PresetRotationAction.vue'
+      ),
+  ),
+  Scheduler: defineAsyncComponent(
+    () => import('../components/automations/Scheduler.vue'),
   ),
 };

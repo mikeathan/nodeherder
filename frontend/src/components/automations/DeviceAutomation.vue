@@ -9,8 +9,8 @@ import { EditableAutomationTrigger, DeviceAutomation } from "../../contracts/aut
 import Panel from "../controls/Panel.vue";
 import { EventActions, OpenPanelEvent } from "@/types/events.type";
 import ButtonPanel from "@/components/controls/ButtonPanel.vue";
-import { createEditAutomationButtonItems, createSaveDeleteCancelButtonItems } from "../../configs/automation/trigger-dropdown.config";
-import { emitCloseLastPanel } from "@/mixins/useAutomationsEventBus";
+import { createEditAutomationButtonItems } from "../../configs/automation/trigger-dropdown.config";
+import { emitCloseLastPanel, emitOpenPanel } from "@/mixins/useAutomationsEventBus";
 
 const emit = defineEmits(['cancel'])
 
@@ -20,8 +20,7 @@ const props = defineProps({
 
 const router = useRouter()
 const automation = ref<Automation>({} as Automation)
-const selectedTrigger = ref<AutomationTrigger>();
-
+const isInViewMode = ref<boolean>(true);
 const buttonPanelItems = computed(() => {
 
     const isActionValid = automation.value.triggers.length == 0 &&
@@ -29,7 +28,7 @@ const buttonPanelItems = computed(() => {
     return createEditAutomationButtonItems(
         () => saveAutomation(),
         () => deleteAutomation(),
-        () => schedule(),
+        () => openScheduler(),
         () => cancel(),
         isActionValid,
         isActionValid,
@@ -60,11 +59,34 @@ watch(
 )
 
 function createNewTrigger() {
-    selectedTrigger.value = EditableAutomationTrigger.create()
+    const newTrigger = EditableAutomationTrigger.create()
+    emitOpenPanel(createOpenTriggerPanelEvent(newTrigger))
+}
+
+function openScheduler() {
+    emitOpenPanel(createOpenSchedulerPanelEvent())
 }
 
 function cancel() {
     emit('cancel')
+}
+
+function rowClicked(trigger: AutomationTrigger): void {
+    emitOpenPanel(createOpenTriggerPanelEvent(trigger))
+}
+
+function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
+    deleteTrigger(trgger);
+}
+
+function onComponentDisplayed() {
+    isInViewMode.value = false;
+}
+function onComponentHidden() {
+    isInViewMode.value = true;
+}
+function createCloseLastPanelEvent() {
+    emitCloseLastPanel();
 }
 
 function saveAutomation() {
@@ -81,12 +103,6 @@ function deleteAutomation() {
     }
 }
 
-function schedule() {
-    router.push({
-        name: 'scheduler',
-        params: { id: automation.value.id },
-    });
-}
 
 function deleteTrigger(trigger: AutomationTrigger): void {
     automation.value.triggers = automation.value.triggers.filter((e, i) => e != trigger);
@@ -100,6 +116,7 @@ function saveTrigger(trigger: AutomationTrigger): void {
         automation.value.triggers[idx] = trigger
     }
 }
+
 
 function getConditionsDescription(trigger: AutomationTrigger): string {
     var conditions = trigger.conditions
@@ -124,51 +141,41 @@ function getActionDescription(trigger: AutomationTrigger): string {
     return `${trigger.action.friendlyname}.${trigger.action.property}`
 }
 
-function rowClicked(trigger: AutomationTrigger): void {
-    selectedTrigger.value = trigger;
+
+function createOpenSchedulerPanelEvent() {
+
+    const events: EventActions = {
+        save: (e: TimeSchedule[]) => {
+            console.log('save ', e)
+        },
+        delete: (e: TimeSchedule[]) => {
+            console.log('delete', e)
+        },
+    };
+
+    return { name: 'Scheduler', args: { schedules: automation.value.schedules }, events: events }
 }
 
-function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
-    deleteTrigger(trgger);
-}
-
-function resetSelection() {
-    selectedTrigger.value = undefined;
-}
-
-const panelItem = computed(() => {
-    console.log("DEVICEAUTOMATION - createOpenPanelEvent");
-    return createOpenPanelEvent()
-});
-
-
-function createCloseLastPanelEvent() {
-    emitCloseLastPanel();
-}
-
-function createOpenPanelEvent(): OpenPanelEvent {
+function createOpenTriggerPanelEvent(trigger: AutomationTrigger): OpenPanelEvent {
 
     const events: EventActions = {
         save: (e: AutomationTrigger) => {
-            console.log("DEVICEAUTOMATION - SAVE");
             saveTrigger(e)
         },
         delete: (e: AutomationTrigger) => {
-            console.log("DEVICEAUTOMATION - DELETE");
             deleteTrigger(e)
         },
     };
-    return { name: 'Trigger', args: { id: props.id, trigger: selectedTrigger.value }, events: events }
-
+    return { name: 'Trigger', args: { id: props.id, trigger: trigger }, events: events }
 }
+
 </script>
 
 <template>
     <div v-if="automation">
-
         <div class="container-fluid p-0 h-100">
             <div class="card col-xl-5 col-md-6 col-sm-3">
-                <div v-if="selectedTrigger == null">
+                <div v-if="isInViewMode">
                     <div class="card-header ">
                         <div class="pt-3 ">
                             <InputBox label="Id" :disabled="true" :value="automation.id">
@@ -231,15 +238,12 @@ function createOpenPanelEvent(): OpenPanelEvent {
                         </table>
                     </div>
                 </div>
-                <div v-else>
-                    <div class="card-body">
-                        <button type="button" class="btn btn-close btn-sm float-end" aria-label="Close"
-                            @click="createCloseLastPanelEvent"></button>
-                        <Panel :item="panelItem" @close="resetSelection">
-                        </Panel>
-                    </div>
+                <div v-bind:style="{ display: isInViewMode == false ? 'block' : 'none' }" class="card-body">
+                    <button type="button" class="btn btn-close btn-sm float-end" aria-label="Close"
+                        @click="createCloseLastPanelEvent"></button>
+                    <Panel @close="onComponentHidden" @component-displayed="onComponentDisplayed">
+                    </Panel>
                 </div>
-
             </div>
         </div>
     </div>

@@ -26,6 +26,8 @@ const cleanup = useAutomationEvents({
 const emit = defineEmits<{
   (e: 'open', component_name: string): void;
   (e: 'close'): void;
+  (e: 'componentDisplayed'): void;
+
 }>();
 
 const componentCache = ref<KeyValuePair<OpenPanelEvent>>(
@@ -33,29 +35,12 @@ const componentCache = ref<KeyValuePair<OpenPanelEvent>>(
 );
 const presentationQueue = ref<Array<string>>([]);
 
-const props = defineProps({
-  item: {
-    type: Object as PropType<OpenPanelEvent>,
-    required: true,
-  },
-});
-
-watch(
-  () => props.item,
-  () => {
-    openComponent(props.item);
-  },
-  { immediate: true },
-);
-
 function openComponent(event: OpenPanelEvent): void {
   presentationQueue.value.push(event.name);
 
-  console.log(
-    'OPEN:' + event.name,
-    ' Size ',
-    presentationQueue.value.length,
-  );
+  if (presentationQueue.value.length == 1) {
+    emit('componentDisplayed')
+  }
 
   if (componentCache.value[event.name] != undefined) {
     componentCache.value[event.name].args = event.args;
@@ -72,7 +57,6 @@ const currentComponent = computed(() => {
 function closeComponent(name: string): void {
   console.log('panel close clicked');
   if (componentCache.value[name] === undefined) {
-    console.log('CLOSE ', name, ' NOT FOUND');
     return;
   }
 
@@ -80,18 +64,13 @@ function closeComponent(name: string): void {
   presentationQueue.value.pop();
   const event = componentCache.value[name];
 
-  console.log(
-    'CLOSE:' + event.name,
-    ' Size ',
-    presentationQueue.value.length,
-  );
+
   if (presentationQueue.value.length == 0) {
     emit('close');
   }
 }
 
 function closeLastComponent(): void {
-  console.log('panel close 2 clicked');
 
   // TODO: cleanup componentCache ?
   presentationQueue.value.pop();
@@ -101,9 +80,7 @@ function closeLastComponent(): void {
   }
 }
 onUnmounted(() => {
-  console.log(
-    'Panel unmounted - deregister eventBus messages',
-  );
+
   cleanup();
   presentationQueue.value = [];
   componentCache.value = {};
@@ -111,10 +88,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="row">
-    <component
-      :is="PanelComponents[currentComponent]"
-      v-bind="componentCache[currentComponent].args"
+  <div class="row" v-if="currentComponent != ''">
+
+    <component :is="PanelComponents[currentComponent]" v-bind="componentCache[currentComponent].args"
       v-on="componentCache[currentComponent].events" />
   </div>
 </template>

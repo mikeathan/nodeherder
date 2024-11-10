@@ -103,7 +103,7 @@ export function createEditAutomationButtonItems(
     createButton('Save', saveEvent, isSaveDisabled),
     createButton('Delete', deleteEvent, isDeleteDisabled),
     createButton(
-      'Schedule',
+      'Schedules',
       scheduleEvent,
       isScheduleEnabled,
     ),

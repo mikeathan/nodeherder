@@ -61,15 +61,6 @@ const router = createRouter({
       },
     },
     {
-      path: '/scheduler/:id',
-      name: 'scheduler',
-      component: Scheduler,
-      props: true,
-      meta: {
-        title: 'Node-herder - Scheduler',
-      },
-    },
-    {
       path: '/devicepage/:id',
       name: 'devicepage',
       component: DevicePage,
