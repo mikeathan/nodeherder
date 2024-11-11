@@ -69,8 +69,16 @@ function clear() {
   console.log("remove")
 }
 
-const time = ref<{ hours: number | string; minutes: number }>({ hours: 12, minutes: 34 });
+type TimePicker = {
+  hours: number;
+  minutes: number;
+}
+const time = ref<TimePicker>({ hours: 12, minutes: 34 });
+const formattedTime = ref<string>("");
 
+function updateTime(value: any) {
+  formattedTime.value = value;
+}
 </script>
 <template>
   <div>
@@ -80,8 +88,9 @@ const time = ref<{ hours: number | string; minutes: number }>({ hours: 12, minut
     <ButtonPanel :buttons="buttonPanelItems">
     </ButtonPanel>
 
-    <VueDatePicker v-model="time" text-input time-picker model-type="HH.mm" placeholder="Enter time" :is-24="true"
-      :esc-close="true" dark />
+    formattedTime: {{ formattedTime }}
+    <VueDatePicker v-model="time" @update:model-value="updateTime" text-input time-picker model-type="HH:mm"
+      placeholder="Enter time" :is-24="true" :esc-close="true" dark />
 
     <div v-for="schedule in schedules" :key="schedule.name">
       {{ schedule.startAt }}
