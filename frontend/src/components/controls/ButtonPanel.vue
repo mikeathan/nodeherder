@@ -3,17 +3,19 @@ import { PropType, h, VNode } from "vue";
 import { ButtonPanelType, ButtonType, isDropdown, DropDownType } from "@/types/controls.type";
 
 
+const props = defineProps({
+    buttons: {
+        type: Object as PropType<Array<ButtonPanelType>>,
+        default: [],
+        required: true
+    },
+});
+
 function Panel() {
-    let vNodes: VNode[] = [];
-    props.buttons.forEach((item: ButtonPanelType) => {
-        const node = isDropdown(item) ? createDropdown(item as DropDownType) : createButton(item as ButtonType);
-        vNodes.push(node);
-    });
-    return vNodes;
-
+    return props.buttons.map((item: ButtonPanelType) => isDropdown(item)
+        ? createDropdown(item as DropDownType)
+        : createButton(item as ButtonType));
 };
-
-// this is not working !!!!!!
 
 function createDropdown(dropDown: DropDownType): VNode {
     return h("Dropdown", {
@@ -27,27 +29,23 @@ function createButton(button: ButtonType): VNode {
     return h("button", {
         class: "btn btn-light",
         disabled: button.disabled,
-        onClick(event: any) {
-            button.click(event)
+        onClick: (event: any) => {
+            event.preventDefault();
+            try {
+                button.click(event);
+            } catch (error) {
+                console.error('Error during button click:', error);
+            }
         }
     }, button.name);
 }
-
-const props = defineProps({
-    buttons: {
-        type: Object as PropType<Array<ButtonPanelType>>,
-        default: [],
-        required: true
-    },
-});
 
 </script>
 
 <template>
     <div class="row pb-3">
         <form class="container">
-            <Panel>
-            </Panel>
+            <component :is="Panel"></component>
             <slot></slot>
         </form>
     </div>

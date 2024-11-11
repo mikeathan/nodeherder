@@ -8,9 +8,11 @@ import Dropdown from "@/components/controls/Dropdown.vue";
 import ButtonPanel from "@/components/controls/ButtonPanel.vue";
 import Selection from "@/components/input/Selection.vue";
 import { createButtons, createSaveDeleteButtonItems } from "@/configs/automation/trigger-dropdown.config";
-import { add } from "date-fns";
+import { ButtonPanelType } from "@/types/controls.type";
+import VueDatePicker from '@vuepic/vue-datepicker';
+// import '@vuepic/vue-datepicker/dist/main.css'
 
-
+const date = ref();
 const props = defineProps({
   schedules: {
     type: Object as PropType<TimeSchedule[]>,
@@ -34,34 +36,40 @@ const emit = defineEmits<{
   (e: 'delete', schedule: TimeSchedule[]): void,
 }>()
 
-const buttonPanelItems = computed(() => {
-  return createButtons([
-    {
-      name: "Save",
-      click: remove,
-      disabled: false
-    },
-    {
-      name: "Delete",
-      click: remove,
-      disabled: false
-    },
+const buttonPanelItems: ButtonPanelType[] = createButtons([
+  {
+    name: "Add",
+    click: addSchedule,
+    disabled: false
+  },
+  {
+    name: "Save",
+    click: save,
+    disabled: false
+  },
+  {
+    name: "Clear",
+    click: clear,
+    disabled: false
+  },
+])
 
-  ])
 
 
-});
-
-function addSchedule(event: Event) {
+function addSchedule() {
   schedules.value.push({} as TimeSchedule)
-
 }
 
-function remove() {
+function save() {
+
+  console.log("save")
+}
+function clear() {
 
   console.log("remove")
 }
 
+const time = ref<{ hours: number | string; minutes: number }>({ hours: 12, minutes: 34 });
 
 </script>
 <template>
@@ -70,11 +78,15 @@ function remove() {
     <h2>Schedules</h2>
 
     <ButtonPanel :buttons="buttonPanelItems">
-      <button type="button" class="btn btn-light" @click="addSchedule">Add schedule</button>
     </ButtonPanel>
 
+    <VueDatePicker v-model="time" text-input time-picker model-type="HH.mm" placeholder="Enter time" :is-24="true"
+      :esc-close="true" dark />
+
     <div v-for="schedule in schedules" :key="schedule.name">
-      {{ schedule.name }} - {{ schedule.startAt }} - {{ schedule.type }}
+      {{ schedule.startAt }}
+      <VueDatePicker v-model="schedule.startAt" time-picker model-type="HH.mm" placeholder="Enter time" :is-24="true"
+        :esc-close="true" dark />
     </div>
   </div>
 </template>

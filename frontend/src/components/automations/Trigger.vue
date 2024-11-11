@@ -40,11 +40,11 @@ const buttonPanelItems = computed(() => {
             click: remove,
             disabled: isValid(trigger.value) == false
         },
-        // { // It doesnt work - needs investigation
-        //     name: "Add Condition",
-        //     click: (e: any) => { console.log("add condition event") },
-        //     disabled: isValid(trigger.value) == false
-        // },
+        {
+            name: "Add Condition",
+            click: addNewCondition,
+            disabled: isValid(trigger.value) == false
+        },
     ])
 });
 
@@ -135,14 +135,10 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
     <div class="row pb-3">
         <div class="col">
             <ButtonPanel :buttons="buttonPanelItems">
-                <button :id="`dropdownControl`" type="button" class="btn btn-light" @click="addNewCondition"
-                    aria-expanded="false">New condition</button>
-
                 <Dropdown :items="dropDownitems" class-name="btn-light" :disabled="actions.length != 0">
                     New Action
                 </Dropdown>
             </ButtonPanel>
-
         </div>
     </div>
     <div class="row" v-if="trigger.name == ''">
