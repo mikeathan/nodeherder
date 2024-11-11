@@ -143,3 +143,7 @@ and prolem below ?
 [INFO]: 2024-09-15 19:50:31 - Start metrics cleanup
 [ERROR]: 2024-09-15 19:50:31 - Error during metrics cleanup: parsing time "brightness2024-08-25T18:04:56." as "2006-01-02T15:04:05.000000000Z": cannot parse "brightness2024-08-25T18:04:56." as "2006"
 [INFO]: 2024-09-15 19:50:31 - End metrics cleanup
+
+
+
+npm install @vuepic/vue-datepicker
