@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { ref, watch, PropType, computed } from "vue";
-import { getActionType, ActionType, } from "@/contracts/automations"
-import { Automation, AutomationTrigger, AutomationTriggerAction, TimeSchedule } from "@/types/automation";
-import { emitClosePanel } from "@/mixins/useAutomationsEventBus";
-import { PanelComponents } from "@/mixins/usePanelComponents";
+import InputBox from '@/components/input/InputBox.vue';
+
 import Dropdown from "@/components/controls/Dropdown.vue";
 import ButtonPanel from "@/components/controls/ButtonPanel.vue";
 import Selection from "@/components/input/Selection.vue";
 import { createButtons, createSaveDeleteButtonItems } from "@/configs/automation/trigger-dropdown.config";
-import { ButtonPanelType } from "@/types/controls.type";
+import { ButtonPanelType, TimePicker } from "@/types/controls.type";
+import { TimeSchedule } from "@/types/automation";
+import { TimeScheduleTypes } from "@/contracts/automations";
 import VueDatePicker from '@vuepic/vue-datepicker';
+import { toTimePicker } from "@/contracts/controls";
 // import '@vuepic/vue-datepicker/dist/main.css'
 
 const date = ref();
@@ -69,16 +70,13 @@ function clear() {
   console.log("remove")
 }
 
-type TimePicker = {
-  hours: number;
-  minutes: number;
-}
 const time = ref<TimePicker>({ hours: 12, minutes: 34 });
-const formattedTime = ref<string>("");
 
-function updateTime(value: any) {
-  formattedTime.value = value;
+function updateTime(schedule: TimeSchedule, value: any) {
+  schedule.startAt = value;
 }
+
+
 </script>
 <template>
   <div>
@@ -88,15 +86,25 @@ function updateTime(value: any) {
     <ButtonPanel :buttons="buttonPanelItems">
     </ButtonPanel>
 
-    formattedTime: {{ formattedTime }}
-    <VueDatePicker v-model="time" @update:model-value="updateTime" text-input time-picker model-type="HH:mm"
-      placeholder="Enter time" :is-24="true" :esc-close="true" dark />
-
     <div v-for="schedule in schedules" :key="schedule.name">
-      {{ schedule.startAt }}
-      <VueDatePicker v-model="schedule.startAt" time-picker model-type="HH.mm" placeholder="Enter time" :is-24="true"
-        :esc-close="true" dark />
+
+      <div class="row">
+        <div class="col-sm-4  pe-5">
+          <Selection :value="schedule.type" :items="TimeScheduleTypes" position="center">
+          </Selection>
+        </div>
+        <div class="col-sm-4 pt-4">
+          <VueDatePicker :model-value="toTimePicker(schedule.startAt)"
+            @update:model-value="(e: any) => updateTime(schedule, e)" time-picker model-type="HH:mm"
+            placeholder="Enter time" :is-24="true" :esc-close="true" dark />
+        </div>
+        <div class="col-sm-1 pt-4">
+          <span class="fa fa-trash-alt fa-sm"> </span>
+        </div>
+      </div>
     </div>
+
+
   </div>
 </template>
 @

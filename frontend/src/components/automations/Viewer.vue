@@ -50,8 +50,8 @@ function saveAutomation(id: string): void {
                     <th scope="row">{{ index + 1 }}</th>
                     <td>
                         <RouterLink :to="`/editor/${automation.id}`">{{
-                    automation.friendlyname
-                }}</RouterLink>
+                            automation.friendlyname
+                        }}</RouterLink>
                     </td>
                     <td>
                         {{ automation.description }}

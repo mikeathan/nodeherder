@@ -1,4 +1,4 @@
-import { KeyValuePair, Nullable } from './types';
+import { KeyValuePair, Nullable, ValueOf } from './types';
 export type Automations = Array<Automation>;
 export type AutomationMap = KeyValuePair<Automation>;
 
@@ -22,10 +22,12 @@ export type Automation = {
   triggers: AutomationTriggers;
 };
 
+export type TimeScheduleType = 'enable' | 'disable';
+
 export type TimeSchedule = {
   startAt: string;
   name: string;
-  type: string;
+  type: TimeScheduleType;
 };
 
 export type AutomationTrigger = {

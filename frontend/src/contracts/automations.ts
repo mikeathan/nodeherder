@@ -20,6 +20,11 @@ export const EqualityOperators: string[] = [
 ];
 export const NumericOperators: string[] = ['+', '-', '*'];
 
+export const TimeScheduleTypes: string[] = [
+  'enable',
+  'disable',
+];
+
 export type TriggerAction = 'TriggerAction';
 export type StepAction = 'StepAction';
 export type PresetRotationAction = 'PresetRotationAction';
@@ -48,7 +53,7 @@ export class DeviceAutomation implements Automation {
   enabled: boolean;
   triggers: Array<AutomationTrigger>;
   schedules: TimeSchedule[];
-  
+
   constructor() {
     this.id = '';
     this.friendlyname = '';

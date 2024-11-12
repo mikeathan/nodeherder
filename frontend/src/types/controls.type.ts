@@ -1,4 +1,3 @@
-import { right } from '@popperjs/core';
 import { KeyValuePair } from './types';
 
 export type ButtonPanelType = ButtonType | DropDownType;
@@ -21,6 +20,11 @@ export type DropDownItemType = {
 };
 
 export type ButtonClickEventType = (e: any) => void;
+
+export type TimePicker = {
+  hours: number;
+  minutes: number;
+};
 
 export function isDropdown(item: ButtonPanelType): boolean {
   return (item as DropDownType).items !== undefined;

@@ -14,36 +14,68 @@ function automationData1IsEqualToDeserializedObject() {
   const json = JSON.stringify(automation_data1);
 
   const newAutomaton: Automation = JSON.parse(json);
-  isEqualToValueAndNotNull(automation_data1, 'id', newAutomaton.id);
+  isEqualToValueAndNotNull(
+    automation_data1,
+    'id',
+    newAutomaton.id,
+  );
   isEqualToValueAndNotNull(
     automation_data1,
     'friendlyname',
-    newAutomaton.friendlyname
+    newAutomaton.friendlyname,
   );
   isEqualToValueAndNotNull(
     automation_data1,
     'description',
-    newAutomaton.description
+    newAutomaton.description,
   );
-  isEqualToValueAndNotNull(automation_data1, 'enabled', newAutomaton.enabled);
+  isEqualToValueAndNotNull(
+    automation_data1,
+    'enabled',
+    newAutomaton.enabled,
+  );
 
   automation_data1.triggers.forEach((trigger, index) => {
     const newTrigger = newAutomaton.triggers[index];
-    isEqualToValueAndNotNull(trigger, 'name', newTrigger.name);
+    isEqualToValueAndNotNull(
+      trigger,
+      'name',
+      newTrigger.name,
+    );
 
     trigger.conditions.forEach((condition, contIdx) => {
       const newCondition = newTrigger.conditions[contIdx];
-      isEqualToValueAndNotNull(condition, 'name', newCondition.name);
-      isEqualToValueAndNotNull(condition, 'value', newCondition.value);
-      isEqualToValueAndNotNull(condition, 'equality', newCondition.equality);
+      isEqualToValueAndNotNull(
+        condition,
+        'name',
+        newCondition.name,
+      );
+      isEqualToValueAndNotNull(
+        condition,
+        'value',
+        newCondition.value,
+      );
+      isEqualToValueAndNotNull(
+        condition,
+        'equality',
+        newCondition.equality,
+      );
     });
 
     const action = trigger.action;
     const newAction = newTrigger.action;
 
     isEqualToValueAndNotNull(action, 'id', newAction.id);
-    isEqualToValueAndNotNull(action, 'friendlyname', newAction.friendlyname);
-    isEqualToValueAndNotNull(action, 'property', newAction.property);
+    isEqualToValueAndNotNull(
+      action,
+      'friendlyname',
+      newAction.friendlyname,
+    );
+    isEqualToValueAndNotNull(
+      action,
+      'property',
+      newAction.property,
+    );
 
     isEqualToValueOrNull(action, 'data', newAction.data);
   });
@@ -53,41 +85,77 @@ function automationData2IsEqualToDeserializedObject() {
   const json = JSON.stringify(automation_data2);
 
   const newAutomaton: Automation = JSON.parse(json);
-  isEqualToValueAndNotNull(automation_data2, 'id', newAutomaton.id);
+  isEqualToValueAndNotNull(
+    automation_data2,
+    'id',
+    newAutomaton.id,
+  );
   isEqualToValueAndNotNull(
     automation_data2,
     'friendlyname',
-    newAutomaton.friendlyname
+    newAutomaton.friendlyname,
   );
   isEqualToValueAndNotNull(
     automation_data2,
     'description',
-    newAutomaton.description
+    newAutomaton.description,
   );
-  isEqualToValueAndNotNull(automation_data2, 'enabled', newAutomaton.enabled);
+  isEqualToValueAndNotNull(
+    automation_data2,
+    'enabled',
+    newAutomaton.enabled,
+  );
 
   automation_data2.triggers.forEach((trigger, index) => {
     const newTrigger = newAutomaton.triggers[index];
-    isEqualToValueAndNotNull(trigger, 'name', newTrigger.name);
+    isEqualToValueAndNotNull(
+      trigger,
+      'name',
+      newTrigger.name,
+    );
 
     trigger.conditions.forEach((condition, contIdx) => {
       const newCondition = newTrigger.conditions[contIdx];
-      isEqualToValueAndNotNull(condition, 'name', newCondition.name);
-      isEqualToValueAndNotNull(condition, 'value', newCondition.value);
-      isEqualToValueAndNotNull(condition, 'equality', newCondition.equality);
+      isEqualToValueAndNotNull(
+        condition,
+        'name',
+        newCondition.name,
+      );
+      isEqualToValueAndNotNull(
+        condition,
+        'value',
+        newCondition.value,
+      );
+      isEqualToValueAndNotNull(
+        condition,
+        'equality',
+        newCondition.equality,
+      );
     });
 
     const action = trigger.action;
     const newAction = newTrigger.action;
 
     isEqualToValueAndNotNull(action, 'id', newAction.id);
-    isEqualToValueAndNotNull(action, 'friendlyname', newAction.friendlyname);
-    isEqualToValueAndNotNull(action, 'property', newAction.property);
+    isEqualToValueAndNotNull(
+      action,
+      'friendlyname',
+      newAction.friendlyname,
+    );
+    isEqualToValueAndNotNull(
+      action,
+      'property',
+      newAction.property,
+    );
 
     isEqualToValueOrNull(action, 'data', newAction.data);
   });
 }
-function isEqualToValueAndNotNull(obj: any, propName: string, value: any) {
+function isEqualToValueAndNotNull(
+  obj: any,
+  propName: string,
+  value: any,
+) {
   expect(obj.hasOwnProperty(propName)).toBe(true);
   const srcValue = obj[propName];
   expect(value).not.toBeUndefined();
@@ -96,7 +164,11 @@ function isEqualToValueAndNotNull(obj: any, propName: string, value: any) {
   expect(srcValue).toBe(value);
 }
 
-function isEqualToValueOrNull(obj: any, propName: string, value: any) {
+function isEqualToValueOrNull(
+  obj: any,
+  propName: string,
+  value: any,
+) {
   const srcValue = obj[propName];
   expect(srcValue).toBe(value);
 }
