@@ -154,6 +154,11 @@ function createOpenSchedulerPanelEvent() {
     return { name: 'Scheduler', args: { schedules: automation.value.schedules }, events: events }
 }
 
+
+TODO
+add schedules in panel
+
+
 function createOpenTriggerPanelEvent(trigger: AutomationTrigger): OpenPanelEvent {
 
     const events: EventActions = {
@@ -193,7 +198,7 @@ function createOpenTriggerPanelEvent(trigger: AutomationTrigger): OpenPanelEvent
                                 <label class="form-check-label ms-3">Enabled</label>
                                 <input class="form-check-input custom-control-input" type="checkbox" role="switch"
                                     id="flexSwitchCheckDefault" v-model="automation.enabled" />
-                                    <!-- move below to a control -->
+                                <!-- move below to a control -->
                                 <i v-if="automation.schedules && automation.schedules.length != 0"
                                     class="fa-solid fa-clock ms-2"></i>
                             </div>
@@ -249,3 +254,6 @@ function createOpenTriggerPanelEvent(trigger: AutomationTrigger): OpenPanelEvent
         </div>
     </div>
 </template>
+
+TODO
+add schedules in panel
