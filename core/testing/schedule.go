@@ -8,13 +8,11 @@ import (
 func CreateTimeSchedulesWithTimeFormat(startAt time.Time, endAt time.Time, timeFormat string) []*automations.TimeSchedule {
 	startSchedule := &automations.TimeSchedule{
 		StartAt: startAt.Format(timeFormat),
-		Name:    "start job",
 		Type:    automations.EnableScheduleType,
 	}
 
 	endSchedule := &automations.TimeSchedule{
 		StartAt: endAt.Format(timeFormat),
-		Name:    "end job",
 		Type:    automations.DisableScheduleType,
 	}
 	return []*automations.TimeSchedule{startSchedule, endSchedule}
@@ -25,7 +23,6 @@ func CreateTimeSchedule(startAt time.Time) *automations.TimeSchedule {
 
 	return &automations.TimeSchedule{
 		StartAt: startAt.Format("15:04:05.000"),
-		Name:    "job",
 		Type:    automations.EnableScheduleType,
 	}
 }

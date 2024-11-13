@@ -26,7 +26,6 @@ export type TimeScheduleType = 'enable' | 'disable';
 
 export type TimeSchedule = {
   startAt: string;
-  name: string;
   type: TimeScheduleType;
 };
 

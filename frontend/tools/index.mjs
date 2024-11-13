@@ -91,12 +91,10 @@ var automationMap = new Map([
       schedules: [
         {
           startAt: '11:30',
-          name: 'enable automation',
           type: 'enable',
         },
         {
           startAt: '05:00',
-          name: 'disable automation',
           type: 'disable',
         },
       ],

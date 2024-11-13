@@ -76,7 +76,7 @@ function updateStartAtTime(schedule: TimeSchedule, value: any) {
 }
 
 function removeSchedule(schedule: TimeSchedule) {
-  schedules.value = schedules.value.filter(x => x.name != schedule.startAt && x.type != schedule.type);
+  schedules.value = schedules.value.filter(x => x.startAt != schedule.startAt && x.type != schedule.type);
 }
 function updateType(schedule: TimeSchedule, value: any) {
   schedule.type = value;
@@ -91,7 +91,7 @@ function updateType(schedule: TimeSchedule, value: any) {
     <ButtonPanel :buttons="buttonPanelItems">
     </ButtonPanel>
 
-    <div v-for="schedule in schedules" :key="schedule.name">
+    <div v-for="schedule in schedules" :key="schedule.type">
 
       <div class="row">
         <div class="col-sm-4">

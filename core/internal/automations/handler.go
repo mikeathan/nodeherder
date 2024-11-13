@@ -2,6 +2,7 @@ package automations
 
 import (
 	"context"
+	"fmt"
 	"node-herder/utils"
 	"time"
 )
@@ -13,14 +14,12 @@ const (
 
 type TimeSchedule struct {
 	StartAt string `json:"startAt"`
-	Name    string `json:"name"`
 	Type    string `json:"type"`
 }
 
 func NewTimeSchedule() *TimeSchedule {
 	return &TimeSchedule{
 		StartAt: "",
-		Name:    "",
 		Type:    "",
 	}
 }
@@ -179,20 +178,22 @@ func (a *AutomationScheduler) Process(automation *Device) error {
 
 	for _, schedule := range automation.Schedules {
 
+		name := fmt.Sprintf("%s-%s", automation.Id, schedule.Type)
+
 		actionFunc := a.actionsMap[schedule.Type]
 		if actionFunc == nil {
-			utils.LogErrorf("No action func for type %s in schedule %s", schedule.Type, schedule.Name)
+			utils.LogErrorf("No action func for type %s in schedule %s", schedule.Type, name)
 			continue
 		}
 
 		err := scheduler.
-			Name(schedule.Name).
+			Name(name).
 			At(schedule.StartAt).
 			Every(a.repeatDuration).
 			Do(actionFunc.Do(automation))
 
 		if err != nil {
-			utils.LogErrorf("Error adding %s job: %v", schedule.Name, err)
+			utils.LogErrorf("Error adding %s job: %v", name, err)
 			return err
 		}
 	}
