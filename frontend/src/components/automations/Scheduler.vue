@@ -1,19 +1,14 @@
 <script setup lang="ts">
 import { ref, watch, PropType, computed } from "vue";
-import InputBox from '@/components/input/InputBox.vue';
-
-import Dropdown from "@/components/controls/Dropdown.vue";
 import ButtonPanel from "@/components/controls/ButtonPanel.vue";
 import Selection from "@/components/input/Selection.vue";
-import { createButtons, createSaveDeleteButtonItems } from "@/configs/automation/trigger-dropdown.config";
-import { ButtonPanelType, TimePicker } from "@/types/controls.type";
+import { createButtons } from "@/configs/automation/trigger-dropdown.config";
 import { TimeSchedule } from "@/types/automation";
 import { TimeScheduleTypes } from "@/contracts/automations";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import { toTimePicker } from "@/contracts/controls";
-// import '@vuepic/vue-datepicker/dist/main.css'
+import { emitClosePanel } from "@/mixins/useAutomationsEventBus";
 
-const date = ref();
 const props = defineProps({
   schedules: {
     type: Object as PropType<TimeSchedule[]>,
@@ -34,48 +29,58 @@ watch(
 
 const emit = defineEmits<{
   (e: 'save', schedules: TimeSchedule[]): void,
-  (e: 'delete', schedule: TimeSchedule[]): void,
 }>()
 
-const buttonPanelItems: ButtonPanelType[] = createButtons([
-  {
-    name: "Add",
-    click: addSchedule,
-    disabled: false
-  },
-  {
-    name: "Save",
-    click: save,
-    disabled: false
-  },
-  {
-    name: "Clear",
-    click: clear,
-    disabled: false
-  },
-])
+const buttonPanelItems = computed(() => {
 
+  const canClear = schedules.value.length != 0;
+  const canAdd = schedules.value.length != TimeScheduleTypes.length;
+  // TODO
+  // const isModified = props.schedules.length != schedules.value.length;
+  // const isValid = isModified && canClear && schedules.value.every(k => k.startAt != '' && k.type != undefined);
 
+  return createButtons([
+    {
+      name: "Save",
+      click: save,
+      disabled: false
+    },
+    {
+      name: "Add",
+      click: addSchedule,
+      disabled: !canAdd,
+    },
+    {
+      name: "Clear",
+      click: clear,
+      disabled: !canClear
+    }
+  ]);
+});
 
 function addSchedule() {
   schedules.value.push({} as TimeSchedule)
 }
 
 function save() {
-
-  console.log("save")
+  emit('save', schedules.value)
+  emitClosePanel('Scheduler')
 }
+
 function clear() {
-
-  console.log("remove")
+  schedules.value = []
 }
 
-const time = ref<TimePicker>({ hours: 12, minutes: 34 });
-
-function updateTime(schedule: TimeSchedule, value: any) {
+function updateStartAtTime(schedule: TimeSchedule, value: any) {
   schedule.startAt = value;
 }
 
+function removeSchedule(schedule: TimeSchedule) {
+  schedules.value = schedules.value.filter(x => x.name != schedule.startAt && x.type != schedule.type);
+}
+function updateType(schedule: TimeSchedule, value: any) {
+  schedule.type = value;
+}
 
 </script>
 <template>
@@ -89,22 +94,21 @@ function updateTime(schedule: TimeSchedule, value: any) {
     <div v-for="schedule in schedules" :key="schedule.name">
 
       <div class="row">
-        <div class="col-sm-4  pe-5">
-          <Selection :value="schedule.type" :items="TimeScheduleTypes" position="center">
+        <div class="col-sm-4">
+          <Selection :value="schedule.type" :items="TimeScheduleTypes" position="center"
+            @updated="(t) => updateType(schedule, t)">
           </Selection>
         </div>
-        <div class="col-sm-4 pt-4">
+        <div class="col-sm-4 ">
           <VueDatePicker :model-value="toTimePicker(schedule.startAt)"
-            @update:model-value="(e: any) => updateTime(schedule, e)" time-picker model-type="HH:mm"
+            @update:model-value="(e: any) => updateStartAtTime(schedule, e)" time-picker model-type="HH:mm"
             placeholder="Enter time" :is-24="true" :esc-close="true" dark />
         </div>
-        <div class="col-sm-1 pt-4">
-          <span class="fa fa-trash-alt fa-sm"> </span>
+        <div class="col-sm-1 pt-1">
+          <span class="fa fa-trash-alt fa-sm" @click="removeSchedule(schedule)"> </span>
         </div>
       </div>
     </div>
-
-
   </div>
 </template>
 @

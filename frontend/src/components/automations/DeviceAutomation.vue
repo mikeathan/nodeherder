@@ -145,11 +145,9 @@ function getActionDescription(trigger: AutomationTrigger): string {
 function createOpenSchedulerPanelEvent() {
 
     const events: EventActions = {
-        save: (e: TimeSchedule[]) => {
-            console.log('save ', e)
-        },
-        delete: (e: TimeSchedule[]) => {
-            console.log('delete', e)
+        save: (schedules: TimeSchedule[]) => {
+            automation.value.schedules = schedules
+            automation.value.enabled = schedules.length == 0
         },
     };
 
@@ -194,7 +192,10 @@ function createOpenTriggerPanelEvent(trigger: AutomationTrigger): OpenPanelEvent
                             <div class=" form-check form-switch ms-2">
                                 <label class="form-check-label ms-3">Enabled</label>
                                 <input class="form-check-input custom-control-input" type="checkbox" role="switch"
-                                    id="flexSwitchCheckDefault" v-model="automation.enabled">
+                                    id="flexSwitchCheckDefault" v-model="automation.enabled" />
+                                    <!-- move below to a control -->
+                                <i v-if="automation.schedules && automation.schedules.length != 0"
+                                    class="fa-solid fa-clock ms-2"></i>
                             </div>
                         </div>
                     </div>
