@@ -6,11 +6,12 @@ import { store } from "../../store/index";
 import { Device } from "@/types/device";
 import { Automation, AutomationTrigger, TimeSchedule } from "@/types/automation";
 import { EditableAutomationTrigger, DeviceAutomation } from "../../contracts/automations";
+import AutomationStatus from "@/components/automations/schedule/AutomationStatus.vue";
 import Panel from "../controls/Panel.vue";
-import { EventActions, OpenPanelEvent } from "@/types/events.type";
 import ButtonPanel from "@/components/controls/ButtonPanel.vue";
 import { createEditAutomationButtonItems } from "../../configs/automation/trigger-dropdown.config";
-import { emitCloseLastPanel, emitOpenPanel } from "@/mixins/useAutomationsEventBus";
+import { emitCloseLastPanel } from "@/mixins/useAutomationsEventBus";
+import { emitOpenSchedulerPanelEvent, emitOpenTriggerPanelEvent } from "@/contracts/panel-events";
 
 const emit = defineEmits(['cancel'])
 
@@ -28,7 +29,7 @@ const buttonPanelItems = computed(() => {
     return createEditAutomationButtonItems(
         () => saveAutomation(),
         () => deleteAutomation(),
-        () => openScheduler(),
+        () => openScheduler(automation.value),
         () => cancel(),
         isActionValid,
         isActionValid,
@@ -60,11 +61,12 @@ watch(
 
 function createNewTrigger() {
     const newTrigger = EditableAutomationTrigger.create()
-    emitOpenPanel(createOpenTriggerPanelEvent(newTrigger))
+
+    emitOpenTriggerPanelEvent(automation.value.id, newTrigger, saveTrigger, deleteTrigger)
 }
 
-function openScheduler() {
-    emitOpenPanel(createOpenSchedulerPanelEvent())
+function openScheduler(automation: Automation) {
+    emitOpenSchedulerPanelEvent(automation)
 }
 
 function cancel() {
@@ -72,7 +74,7 @@ function cancel() {
 }
 
 function rowClicked(trigger: AutomationTrigger): void {
-    emitOpenPanel(createOpenTriggerPanelEvent(trigger))
+    emitOpenTriggerPanelEvent(automation.value.id, trigger, saveTrigger, deleteTrigger)
 }
 
 function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
@@ -103,7 +105,6 @@ function deleteAutomation() {
     }
 }
 
-
 function deleteTrigger(trigger: AutomationTrigger): void {
     automation.value.triggers = automation.value.triggers.filter((e, i) => e != trigger);
 }
@@ -132,44 +133,11 @@ function getConditionsDescription(trigger: AutomationTrigger): string {
     return description;
 }
 
-
 function getActionDescription(trigger: AutomationTrigger): string {
     if (trigger.action?.id == '') {
         return "<EMPTY>"
     }
-    // ${trigger.action.type} 
     return `${trigger.action.friendlyname}.${trigger.action.property}`
-}
-
-
-function createOpenSchedulerPanelEvent() {
-
-    const events: EventActions = {
-        save: (schedules: TimeSchedule[]) => {
-            automation.value.schedules = schedules
-            automation.value.enabled = schedules.length == 0
-        },
-    };
-
-    return { name: 'Scheduler', args: { schedules: automation.value.schedules }, events: events }
-}
-
-
-TODO
-add schedules in panel
-
-
-function createOpenTriggerPanelEvent(trigger: AutomationTrigger): OpenPanelEvent {
-
-    const events: EventActions = {
-        save: (e: AutomationTrigger) => {
-            saveTrigger(e)
-        },
-        delete: (e: AutomationTrigger) => {
-            deleteTrigger(e)
-        },
-    };
-    return { name: 'Trigger', args: { id: props.id, trigger: trigger }, events: events }
 }
 
 </script>
@@ -194,20 +162,11 @@ function createOpenTriggerPanelEvent(trigger: AutomationTrigger): OpenPanelEvent
                             </InputBox>
                         </div>
                         <div class="pb-3">
-                            <div class=" form-check form-switch ms-2">
-                                <label class="form-check-label ms-3">Enabled</label>
-                                <input class="form-check-input custom-control-input" type="checkbox" role="switch"
-                                    id="flexSwitchCheckDefault" v-model="automation.enabled" />
-                                <!-- move below to a control -->
-                                <i v-if="automation.schedules && automation.schedules.length != 0"
-                                    class="fa-solid fa-clock ms-2"></i>
-                            </div>
+                            <AutomationStatus :automation="automation" :clickToOpen="true" />
                         </div>
                     </div>
                     <div class="card-body ">
-
                         <ButtonPanel :buttons="buttonPanelItems"></ButtonPanel>
-
                         <table class="table responsive table-hover ">
                             <thead>
                                 <tr>
@@ -254,6 +213,3 @@ function createOpenTriggerPanelEvent(trigger: AutomationTrigger): OpenPanelEvent
         </div>
     </div>
 </template>
-
-TODO
-add schedules in panel

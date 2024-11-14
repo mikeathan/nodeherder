@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { RouterLink } from "vue-router";
 import { store } from "../../store/index";
 import { Automations } from "@/types/automation";
+import AutomationStatus from "./schedule/AutomationStatus.vue";
 
 const automations = computed(() => {
 
@@ -57,15 +58,7 @@ function saveAutomation(id: string): void {
                         {{ automation.description }}
                     </td>
                     <td>
-                        <div class=" form-check form-switch">
-                            <label class="form-check-label">Enable</label>
-
-                            <input class="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault"
-                                v-model="automation.enabled" @change="saveAutomation(automation.id)">
-                            <i v-if="automation.schedules && automation.schedules.length != 0"
-                                class="fa-solid fa-clock ms-2"></i>
-
-                        </div>
+                        <AutomationStatus :automation="automation" />
                     </td>
                     <td>
                         <span class="fa fa-trash-alt fa-lg" @click="onDeleteAutomationClick(automation.id)"></span>
