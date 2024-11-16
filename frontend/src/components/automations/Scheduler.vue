@@ -5,7 +5,7 @@ import Selection from "@/components/input/Selection.vue";
 import { createButtons } from "@/configs/automation/trigger-dropdown.config";
 import { TimeSchedule } from "@/types/automation";
 import { TimeScheduleTypes } from "@/contracts/automations";
-import VueDatePicker from '@vuepic/vue-datepicker';
+//import VueDatePicker from '@vuepic/vue-datepicker';
 import { toTimePicker } from "@/contracts/controls";
 import { emitClosePanel } from "@/mixins/useAutomationsEventBus";
 
@@ -100,9 +100,7 @@ function updateType(schedule: TimeSchedule, value: any) {
           </Selection>
         </div>
         <div class="col-sm-4 ">
-          <VueDatePicker :model-value="toTimePicker(schedule.startAt)"
-            @update:model-value="(e: any) => updateStartAtTime(schedule, e)" time-picker model-type="HH:mm"
-            placeholder="Enter time" :is-24="true" :esc-close="true" dark />
+
         </div>
         <div class="col-sm-1 pt-1">
           <span class="fa fa-trash-alt fa-sm" @click="removeSchedule(schedule)"> </span>
@@ -111,4 +109,7 @@ function updateType(schedule: TimeSchedule, value: any) {
     </div>
   </div>
 </template>
-@
+<!-- 
+<VueDatePicker :model-value="toTimePicker(schedule.startAt)"
+            @update:model-value="(e: any) => updateStartAtTime(schedule, e)" time-picker model-type="HH:mm"
+            placeholder="Enter time" :is-24="true" :esc-close="true" dark /> -->

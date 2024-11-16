@@ -1,9 +1,9 @@
 import { Module } from 'vuex';
 import { RootState } from '../../state';
 import { WSClientState } from './state';
-import { useNotification } from '@kyvg/vue3-notification';
+//import { useNotification } from '@kyvg/vue3-notification';
 import { WsClientService, WsClientBuilder } from './ws';
-const { notify } = useNotification();
+//const { notify } = useNotification();
 
 export const WSClientModule: Module<
   WSClientState,
@@ -85,20 +85,20 @@ export const WSClientModule: Module<
             });
             break;
           case 'operationSuccess':
-            //https://classic.yarnpkg.com/en/package/@kyvg/vue3-notification
-            notify({
-              type: 'success',
-              title: 'Operation was successful.',
-              duration: 2000,
-            });
-            break;
+          //https://classic.yarnpkg.com/en/package/@kyvg/vue3-notification
+          // notify({
+          //   type: 'success',
+          //   title: 'Operation was successful.',
+          //   duration: 2000,
+          // });
+          // break;
           case 'operationFailed':
             // https://classic.yarnpkg.com/en/package/@kyvg/vue3-notification
-            notify({
-              type: 'error',
-              text: obj.payload,
-              duration: 3000,
-            });
+            // notify({
+            //   type: 'error',
+            //   text: obj.payload,
+            //   duration: 3000,
+            // });
             break;
           default:
             console.error(
