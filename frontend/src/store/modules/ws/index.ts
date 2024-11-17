@@ -85,6 +85,13 @@ export const WSClientModule: Module<
             });
             break;
           case 'operationSuccess':
+            dispatch(
+              'alerts/showSuccess',
+              'Operation was successful.',
+              {
+                root: true,
+              },
+            );
           //https://classic.yarnpkg.com/en/package/@kyvg/vue3-notification
           // notify({
           //   type: 'success',
@@ -99,6 +106,14 @@ export const WSClientModule: Module<
             //   text: obj.payload,
             //   duration: 3000,
             // });
+            console.log(
+              'store ws.alertError: ',
+              obj.payload,
+            );
+            dispatch('alerts/showError', obj.payload, {
+              root: true,
+            });
+
             break;
           default:
             console.error(

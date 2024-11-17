@@ -11,6 +11,8 @@ import { WSClientModule as ws } from './modules/ws/index';
 import { AppConfigModule as appconfig } from './modules/appconfig/index';
 import { MetricsModule as metrics } from './modules/metrics/index';
 import { ConsoleModule as console } from './modules/console/index';
+import { AlertsModule as alerts } from './modules/alerts/index';
+
 import createPersistedState from 'vuex-persistedstate';
 
 // https://blog.openreplay.com/integrate-vuex-and-typescript/
@@ -20,7 +22,7 @@ export const key: InjectionKey<Store<RootState>> = Symbol();
 export type StoreType = Store<RootState>;
 
 export const store = createStore<RootState>({
-  plugins: [createPersistedState()],
+  plugins: [], // createPersistedState() - needs fixing . stopped workig with vuetify ?
   state: {},
   actions: {
     cleanup({ commit }) {
@@ -28,7 +30,7 @@ export const store = createStore<RootState>({
       commit('automations/clear');
       commit('appconfig/clear');
       commit('metrics/clear');
-      // commit('console/clear');
+      commit('alerts/clear');
     },
   },
   modules: {
@@ -37,6 +39,7 @@ export const store = createStore<RootState>({
     appconfig,
     metrics,
     console,
+    alerts,
     ws,
   },
 });

@@ -1,5 +1,3 @@
-import { KeyValuePair } from './types';
-
 export const ExposeTypes = {
   Empty: '',
   Binary: 'binary',
@@ -47,5 +45,3 @@ export const binaryExposeTypes = {
   State: 'state',
   Tamper: 'tamper',
 };
-
-

@@ -1,0 +1,17 @@
+import { ValueOf } from './types';
+
+export type AlertType = ValueOf<typeof AlertTypes>;
+
+export type AlertMessage = {
+  type: AlertType;
+  message: string;
+  id: string;
+  timeout?: number;
+};
+
+export const AlertTypes = {
+  success: 'success',
+  error: 'error',
+  info: 'info',
+  warning: 'warning',
+};
