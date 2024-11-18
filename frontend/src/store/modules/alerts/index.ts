@@ -9,6 +9,8 @@ import {
 } from '../../../contracts/alerts';
 import { AlertMessage } from '../../../types/alerts.type';
 
+const TIMEOUT = 3000;
+
 export const AlertsModule: Module<
   AlertModuleState,
   RootState
@@ -47,44 +49,23 @@ export const AlertsModule: Module<
       commit('clear', state);
     },
 
-    showWarning(
-      { dispatch },
-      message: string,
-      timeout?: number,
-    ) {
-      const alert = createWarning(message, timeout);
+    showWarning({ dispatch }, message: string) {
+      const alert = createWarning(message, TIMEOUT);
       dispatch('showAlert', alert);
     },
-    showError(
-      { dispatch },
-      message: string,
-      timeout?: number,
-    ) {
-      console.log('store alert.showError:', message);
-      const alert = createError(message, timeout);
+    showError({ dispatch }, message: string) {
+      const alert = createError(message, TIMEOUT);
       dispatch('showAlert', alert);
     },
-    showInfo(
-      { dispatch },
-      message: string,
-      timeout?: number,
-    ) {
-      const alert = createInfo(message, timeout);
+    showInfo({ dispatch }, message: string) {
+      const alert = createInfo(message, TIMEOUT);
       dispatch('showAlert', alert);
     },
-    showSuccess(
-      { dispatch },
-      message: string,
-      timeout?: number,
-    ) {
-      console.log('store alert.showSuccess', message);
-
-      const alert = createSuccess(message, timeout);
+    showSuccess({ dispatch }, message: string) {
+      const alert = createSuccess(message, TIMEOUT);
       dispatch('showAlert', alert);
     },
     showAlert({ commit }, alert: AlertMessage) {
-      console.log('store alert.showAlert', alert);
-
       commit('showAlert', alert);
       if (alert.timeout) {
         setTimeout(

@@ -7,6 +7,7 @@ export type AlertMessage = {
   message: string;
   id: string;
   timeout?: number;
+  color: string;
 };
 
 export const AlertTypes = {

@@ -15,22 +15,29 @@ const mockAlerts: AlertMessage[] = [
     message: 'test success message',
     timeout: 1000,
     id: '1',
+    color: 'greeen',
+
   },
   {
     type: 'error',
     message: 'test error message',
     id: '2',
+    color: 'red',
+
   },
   {
     type: 'info',
     message: 'test info message',
     id: '3',
+    color: 'yelloq',
+
   },
   {
     type: 'warning',
     message: 'test warning message',
     timeout: 1000,
     id: '4',
+    color: 'blue',
   },
 ];
 
@@ -53,6 +60,8 @@ describe('test alert module', () => {
       expect(alert.type).toEqual(message.type);
       expect(alert.message).toEqual(message.message);
       expect(alert.timeout).toEqual(message.timeout);
+      expect(alert.color).toEqual(message.color);
+
       expect(alert.id).toEqual(message.id);
     });
   });

@@ -13,6 +13,7 @@ export const createWarning = (
     message: message,
     id: genenerateUniqueId(),
     timeout: timeout,
+    color: 'orange',
   };
 };
 
@@ -25,6 +26,7 @@ export const createError = (
     message: message,
     id: genenerateUniqueId(),
     timeout: timeout,
+    color: 'red',
   };
 };
 
@@ -37,6 +39,7 @@ export const createSuccess = (
     message: message,
     id: genenerateUniqueId(),
     timeout: timeout,
+    color: 'green',
   };
 };
 
@@ -49,5 +52,6 @@ export const createInfo = (
     message: message,
     id: genenerateUniqueId(),
     timeout: timeout,
+    color: 'blue',
   };
 };

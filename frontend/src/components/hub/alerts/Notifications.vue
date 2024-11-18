@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { key, store } from '../../../store/index';
+import { store } from '../../../store/index';
 import { AlertMessage } from '../../../types/alerts.type';
 
 
@@ -10,24 +10,28 @@ const messages = computed(() => {
   ]() as AlertMessage[];
 });
 
+const hasAlerts = computed(() => messages.value.length > 0);
+
+const getSnackbarStyle = (index: number) => {
+  return {
+    bottom: `${(messages.value.length - index - 1) * 60}px`,
+  };
+};
 </script>
 
 <template>
+
   <div class="text-center ma-2">
-
-    NOTIFICATIONS TEST
-    <v-snackbar v-for="(message, index) in messages" :key="message.id" :timeout="message.timeout" :top="true"
-      @input="() => store.dispatch('alerts/removeAlert', message.id)">
-      {{ message.message }}
-
+    <v-snackbar v-for="(alert, index) in messages" :key="alert.id" :color="alert.color" :timeout="alert.timeout"
+      location="top" :style="getSnackbarStyle(index)" v-model="hasAlerts"
+      @input="() => store.commit('alerts/removeAlert', alert.id)">
+      {{ alert.message }}
 
       <template v-slot:actions>
-        <v-btn color="white" @click="store.dispatch('alerts/removeAlert', index)">
+        <v-btn color="white" @click="store.commit('alerts/removeAlert', alert.id)">
           Dismiss
         </v-btn>
       </template>
     </v-snackbar>
   </div>
 </template>
-
-<!-- https://vuetifyjs.com/en/components/snackbars/#usage -->

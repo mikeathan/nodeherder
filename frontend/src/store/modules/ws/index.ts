@@ -92,6 +92,7 @@ export const WSClientModule: Module<
                 root: true,
               },
             );
+            break;
           //https://classic.yarnpkg.com/en/package/@kyvg/vue3-notification
           // notify({
           //   type: 'success',
@@ -106,10 +107,7 @@ export const WSClientModule: Module<
             //   text: obj.payload,
             //   duration: 3000,
             // });
-            console.log(
-              'store ws.alertError: ',
-              obj.payload,
-            );
+            console.log('operationFailed', obj.payload);
             dispatch('alerts/showError', obj.payload, {
               root: true,
             });
