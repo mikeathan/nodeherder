@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { KeyValuePair } from '@/types/types';
-import { PropType, VNode, h, ref, watch } from 'vue';
+import { PropType, VNode, computed, h, ref, watch } from 'vue';
 import {
   SelectSize,
   SelectFormSize,
@@ -59,6 +59,16 @@ const selectedValue = ref<any>(props.value);
 //                 {{ value }}
 //             </option>
 
+
+// const items = computed(() => {
+//   if (Array.isArray(props.items)) {
+//     return props.items;
+//   }
+//   return Object.entries(items).map(([key, value]) => ({
+//     key,
+//     value
+//   }))
+// });
 function createSelection(): VNode {
   if (Array.isArray(props.items)) {
     return ArraySelection(props.items);
@@ -150,7 +160,7 @@ select.form-select {
   background-image: none;
 }
 
-.form-floating > .form-select ~ label::after {
+.form-floating>.form-select~label::after {
   background-color: transparent;
 }
 
@@ -173,10 +183,9 @@ select.form-select:required:invalid {
   border-bottom: 1px solid white;
 }
 
-.form-floating > .form-select ~ label {
+.form-floating>.form-select~label {
   opacity: 0.6;
-  transform: scale(0.85) translateY(-0.7rem)
-    translateX(0.15rem);
+  transform: scale(0.85) translateY(-0.7rem) translateX(0.15rem);
 }
 
 select.form-select:disabled {
@@ -186,9 +195,10 @@ select.form-select:disabled {
 </style>
 
 <template>
-  <div
-    v-if="props.label != ''"
-    class="form-floating col-sm-5">
+  <!-- 
+  <v-select label="Select" :items="items" :value="value" :disabled="disabled"
+    variant="underlined"></v-select> -->
+  <div v-if="props.label != ''" class="form-floating col-sm-5">
     <createSelection></createSelection>
     <label for="selection" class="form-label">{{
       props.label

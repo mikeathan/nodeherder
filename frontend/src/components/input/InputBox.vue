@@ -66,50 +66,14 @@ function isNumber(event: KeyboardEvent) {
 
 </script>
 
-<style scoped>
-input.form-control {
-    border: 0;
-    outline: 0;
-    border-radius: 0%;
-    border-bottom: 1px solid white;
-    text-align: left;
-    background-color: transparent;
-    background-image: none;
 
-}
-
-input.form-control:focus,
-:active {
-    box-shadow: none;
-}
-
-
-.form-floating>.form-control:focus~label,
-.form-floating>.form-control:not(:placeholder-shown)~label,
-.form-floating>.form-control~label {
-    opacity: 0.6;
-    transform: scale(0.85) translateY(-0.7rem) translateX(0.15rem);
-}
-
-input.form-control:disabled {
-    color: gray;
-    background-color: transparent;
-}
-
-.form-floating>.form-control~label::after {
-    background-color: transparent;
-    color: white;
-
-}
-
-.form-floating>.form-control~label {
-    color: white;
-    background-color: transparent;
-}
-</style>
 <template>
-    <div v-if="props.label != ''" class="form-floating">
-        <input type="text" class="form-control" id="dataInput" :style="`text-align:${props.position}`"
+
+    <v-text-field dense v-model="inputValue" @input="inputChanged" @keypress="isNumber" :disabled="props.disabled"
+        :label="props.label" variant="underlined" />
+
+    <!-- <div v-if="props.label != ''">
+             <input type="text" class="form-control" id="dataInput" :style="`text-align:${props.position}`"
             v-model="inputValue" @input="inputChanged" @keypress="isNumber" :disabled="props.disabled"
             :onblur="onLostFocus" />
         <label for="dataInput">{{ props.label }}</label>
@@ -118,5 +82,5 @@ input.form-control:disabled {
         <input type="text" class="form-control" id="dataInput" :style="`text-align:${props.position}`"
             v-model="inputValue" @input="inputChanged" @keypress="isNumber" :disabled="props.disabled"
             :onblur="onLostFocus" />
-    </div>
+    </div> -->
 </template>

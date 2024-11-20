@@ -100,6 +100,7 @@ function updateType(schedule: TimeSchedule, value: any) {
           </Selection>
         </div>
         <div class="col-sm-4 ">
+          <!-- prepend-icon="mdi-clock-time-four-outline" -->
           <TimePicker :value="schedule.startAt" @updated="(e) => updateStartAtTime(schedule, e)" />
           <!-- 
           <v-text-field v-model="schedule.startAt" label="Picker in menu" prepend-icon="mdi-clock-time-four-outline" readonly>

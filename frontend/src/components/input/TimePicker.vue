@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { VTimePicker } from 'vuetify/labs/VTimePicker';
-import { ref, watch, watchEffect } from "vue";
-
+import { ref } from "vue";
 
 const props = defineProps({
 
@@ -10,7 +9,6 @@ const props = defineProps({
         default: '',
         required: false,
     },
-
 });
 
 const showTimePicker = ref(false);
@@ -30,7 +28,8 @@ function handleEnterKey() {
 
 <template>
     <!-- prepend-icon="mdi-clock-time-four-outline" -->
-    <v-text-field dense v-model="selectedTime" label="Start at" readonly @click="showTimePicker = true" />
+    <v-text-field dense v-model="selectedTime" label="Start at" readonly @click="showTimePicker = true"
+        variant="underlined" />
 
     <v-dialog v-model="showTimePicker" width="250" @keydown.enter="handleEnterKey">
         <v-time-picker v-model="selectedTime" format="24hr" position="relative" small

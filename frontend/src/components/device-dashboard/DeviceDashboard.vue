@@ -9,7 +9,10 @@ const devices = computed(() => store.getters["devices/listAll"]() as Devices);
 </script>
 
 <template>
-  <div className="row">
+  <v-row>
     <DeviceCard v-for="item in devices" :device="item" :key="item.id"></DeviceCard>
-  </div>
+  </v-row>
+  <!-- <div className="row">
+    <DeviceCard v-for="item in devices" :device="item" :key="item.id"></DeviceCard>
+  </div> -->
 </template>
