@@ -15,6 +15,7 @@ import { Events } from '@/types/events.type';
 import VueApexCharts from 'vue3-apexcharts';
 
 import 'vuetify/styles';
+//import '@mdi/font/css/materialdesignicons.css';
 
 const emitter = mitt<Events>();
 

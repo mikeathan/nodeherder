@@ -8,37 +8,28 @@ const props = defineProps({
 });
 
 </script>
-<style>
-.v-card {
-  display: flex;
-  flex-direction: column;
-}
-
-.v-card-actions {
-  flex-shrink: 0;
-}
-</style>
 <template>
 
-  <v-col cols="12" md="4">
-    <v-card height="100%">
-      <v-card-item>
-        <v-card-title>
-          <RouterLink :to="`/devicepage/${device.id}`">{{
-            device.friendly_name
-            }}</RouterLink>
-        </v-card-title>
-        <v-card-text class="pt-4">
-          <div class="d-flex align-items-center mb-2" v-for="(value, sensor) in device.exposes">
+  <v-card class="d-flex flex-column flex-grow-1"
+    :class="device.properties.availability == 'offline' ? 'disabled-card' : ''" outlined>
+    <v-card-title>
+      <RouterLink :to="`/devicepage/${device.id}`">{{
+        device.friendly_name
+      }}</RouterLink>
+    </v-card-title>
+    <v-card-text class="flex-grow-1">
+      <v-list>
+        <v-list-item dense v-for="(value, sensor) in device.exposes" :key="sensor">
+          <v-list-item-title class="d-flex align-center">
             <Sensor :id="device.id" :expose="value" />
-          </div>
-        </v-card-text>
-        <v-card-actions>
-          <DeviceFooter :device="device"></DeviceFooter>
-        </v-card-actions>
-      </v-card-item>
-    </v-card>
-  </v-col>
+          </v-list-item-title>
+        </v-list-item>
+      </v-list>
+    </v-card-text>
+    <v-card-actions>
+      <DeviceFooter :device="device"></DeviceFooter>
+    </v-card-actions>
+  </v-card>
   <!-- <div class="col-xl-3 col-lg-4 col-sm-6 col-12 d-flex">
     <div class="card flex-fill flex-shrink-1"
       :class="device.properties.availability == 'offline' ? 'disabled-card' : ''">
