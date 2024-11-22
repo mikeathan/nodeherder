@@ -1,34 +1,47 @@
 <script setup>
-import DeviceFooter from "./DeviceCardFooter.vue";
-import Sensor from "../device/Sensor.vue";
-import { RouterLink } from "vue-router";
+import DeviceFooter from './DeviceCardFooter.vue';
+import Sensor from '../device/Sensor.vue';
+import { RouterLink } from 'vue-router';
 
 const props = defineProps({
   device: Object,
 });
-
 </script>
+<style scoped>
+.sensor-item {
+  white-space: nowrap; /* prevent text wrapping */
+  overflow: hidden; /* hide overflow */
+  text-overflow: ellipsis; /* add ellipsis on overflow */
+  padding-top: 5px;
+}
+</style>
 <template>
-
-  <v-card class="d-flex flex-column flex-grow-1"
-    :class="device.properties.availability == 'offline' ? 'disabled-card' : ''" outlined>
+  <v-card
+    class="d-flex flex-column flex-grow-1 w-100 h-100"
+    :class="
+      device.properties.availability == 'offline'
+        ? 'disabled-card'
+        : ''
+    "
+    outlined>
     <v-card-title>
       <RouterLink :to="`/devicepage/${device.id}`">{{
         device.friendly_name
       }}</RouterLink>
     </v-card-title>
-    <v-card-text class="flex-grow-1">
-      <v-list>
-        <v-list-item dense v-for="(value, sensor) in device.exposes" :key="sensor">
-          <v-list-item-title class="d-flex align-center">
-            <Sensor :id="device.id" :expose="value" />
-          </v-list-item-title>
-        </v-list-item>
-      </v-list>
+    <v-card-text
+      class="flex-grow-1 d-flex flex-column justify-content-start">
+      <div
+        v-for="(value, sensor) in device.exposes"
+        :key="sensor"
+        class="d-flex align-center sensor-item">
+        <Sensor :id="device.id" :expose="value" />
+      </div>
     </v-card-text>
-    <v-card-actions>
+    <div
+      class="d-flex flex-column flex-grow-1 justify-content-end ps-3 pb-3">
       <DeviceFooter :device="device"></DeviceFooter>
-    </v-card-actions>
+    </div>
   </v-card>
   <!-- <div class="col-xl-3 col-lg-4 col-sm-6 col-12 d-flex">
     <div class="card flex-fill flex-shrink-1"
