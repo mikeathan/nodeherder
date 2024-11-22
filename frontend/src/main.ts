@@ -20,7 +20,7 @@ import 'vuetify/styles';
 const emitter = mitt<Events>();
 
 //import "./assets/css/styles.global.css";
-import './assets/css/dark.css';
+//import './assets/css/dark.css';
 const vuetify = createVuetify({
   components,
   directives,

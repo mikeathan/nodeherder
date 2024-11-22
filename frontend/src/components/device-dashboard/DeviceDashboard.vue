@@ -13,7 +13,7 @@ md="4"
 lg="3"
 xl="2" -->
 <template>
-  <v-row align="stretch" justify="start" dense>
+  <!-- <v-row align="stretch" justify="start" dense>
     <v-col
       cols="3"
       v-for="(device, index) in devices"
@@ -23,5 +23,13 @@ xl="2" -->
         :device="device"
         :key="device.id"></DeviceCard>
     </v-col>
-  </v-row>
+  </v-row> -->
+
+  <v-container fluid>
+    <v-row dense align="stretch" justify="start">
+      <v-col cols="12" sm="6" md="4" lg="3" xl="4" class="pa-1" v-for="(device, index) in devices" :key="index">
+        <DeviceCard :device="device" :key="device.id"></DeviceCard>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>

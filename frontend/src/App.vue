@@ -17,7 +17,28 @@ onBeforeMount(() => {
 
 <template>
   <v-app>
-    <v-main className="content p-0 p-sm-3">
+
+    <v-main>
+      <v-app-bar dark>
+        <v-toolbar-title>
+
+            <span class="me-1">
+              <Status></Status>
+            </span>
+            <Notifications />
+            <RouterLink to="/">{{ title }}</RouterLink> |
+            <RouterLink to="/viewer">Automations </RouterLink> |
+            <RouterLink to="/consoleviewer">Console</RouterLink> |
+            <RouterLink to="/settings">Settings </RouterLink>
+        </v-toolbar-title>
+
+      </v-app-bar>
+
+      <RouterView />
+    </v-main>
+
+    <!-- <v-main className="content p-0 p-sm-3">
+      
       <div class="container-fluid p-0 h-100">
         <span class="me-1">
           <Status></Status>
@@ -30,6 +51,6 @@ onBeforeMount(() => {
 
         <RouterView />
       </div>
-    </v-main>
+    </v-main> -->
   </v-app>
 </template>
