@@ -3,7 +3,6 @@ import { computed } from 'vue';
 import { store } from '../../../store/index';
 import { AlertMessage } from '../../../types/alerts.type';
 
-
 const messages = computed(() => {
   return store.getters[
     'alerts/messages'
@@ -20,9 +19,8 @@ const getSnackbarStyle = (index: number) => {
 </script>
 
 <template>
-
   <div class="text-center ma-2">
-    <v-snackbar v-for="(alert, index) in messages" :key="alert.id" :color="alert.color" :timeout="alert.timeout"
+    <!-- <v-snackbar v-for="(alert, index) in messages" :key="alert.id" :color="alert.color" :timeout="alert.timeout"
       location="top" :style="getSnackbarStyle(index)" v-model="hasAlerts"
       @input="() => store.commit('alerts/removeAlert', alert.id)">
       {{ alert.message }}
@@ -32,6 +30,6 @@ const getSnackbarStyle = (index: number) => {
           Dismiss
         </v-btn>
       </template>
-    </v-snackbar>
+    </v-snackbar> -->
   </div>
 </template>
