@@ -8,48 +8,26 @@ import Card from 'primevue/card';
 const devices = computed(
   () => store.getters['devices/listAll']() as Devices,
 );
+function getConnectivityIcon(status: string) {
+  if (status === "Connected") return "pi pi-wifi";
+  if (status === "Weak Signal") return "pi pi-wifi-slash";
+  return "pi pi-times-circle";
+}
+
 </script>
-<!-- sm="6"
-md="4"
-lg="3"
-xl="2" -->
+<style scoped></style>
+
 <template>
-  test
-  <div class="dashboard">
-    <div v-for="device in devices" :key="device.id">
-      <Card title="Device {{ device.friendly_name }}">
-        <template #header>
-          <img
-            alt="user header"
-            src="/images/usercard.png" />
-        </template>
-        <template #title>{{
-          device.friendly_name
-        }}</template>
-        <template #subtitle>{{ device.id }}</template>
-        <template #content>
-          <p class="m-0">
-            Lorem ipsum dolor sit amet, consectetur
-            adipisicing elit. Inventore sed consequuntur
-            error repudiandae numquam deserunt quisquam
-            repellat libero asperiores earum nam nobis,
-            culpa ratione quam perferendis esse, cupiditate
-            neque quas!
-          </p>
-        </template>
-        <template #footer>
-          <div class="flex gap-4 mt-1">
-            <Button
-              label="Cancel"
-              severity="secondary"
-              outlined
-              class="w-full" />
-            <Button label="Save" class="w-full" />
-          </div>
-        </template>
-      </Card>
+
+  <div class="p-grid p-nogutter">
+    <div class="grid ">
+      <div class="col-12 md:col-6 lg:col-3 xg:col-2" v-for="device in devices" :key="device.id">
+        <DeviceCard :device="device" :key="device.id"></DeviceCard>
+      </div>
     </div>
   </div>
+
+
   <!-- <v-row align="stretch" justify="start" dense>
     <v-col
       cols="3"

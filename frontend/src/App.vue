@@ -15,14 +15,82 @@ const title = ref('Node-Herder');
 onBeforeMount(() => {
   store.dispatch('ws/connect');
 });
+
+// const routes = [
+//   { path: "/dashboard", name: "dashboard", component: Dashboard },
+//   { path: "/devices", name: "devices", component: Devices },
+//   { path: "/settings", name: "settings", component: Settings },
+//   { path: "/docs", name: "docs", component: Documentation },
+//   { path: "/support", name: "support", component: Support },
+// ];
 </script>
-<style></style>
+
+<style>
+app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.top-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background-color: var(--primary-color, #007ad9);
+  color: white;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 0 1rem;
+}
+
+.menu-links {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.menu-link {
+  text-decoration: none;
+  color: white;
+  font-weight: 500;
+}
+
+.menu-link:hover {
+  text-decoration: underline;
+}
+
+.content {
+  flex: 1;
+  padding: 1rem;
+  overflow: auto;
+}
+</style>
 
 <template>
   <!--  -->
 
-  <div>
-    <main className="content p-0 p-sm-3">
+  <main>
+    <div class="app-container">
+      <Menubar class="top-navbar">
+        <!-- <Menubar :model="menuItems" class="top-navbar" /> -->
+        <template #start>
+          <div class="menu-links">
+            <Status></Status>
+            <Notifications />
+
+            <RouterLink to="/" class="menu-link">{{ title }}</RouterLink>
+            <RouterLink to="/viewer" class="menu-link">Automations </RouterLink>
+            <RouterLink to="/consoleviewer" class="menu-link">Console</RouterLink>
+            <RouterLink to="/settings" class="menu-link">Settings </RouterLink>
+          </div>
+        </template>
+      </Menubar>
+
+      <div class="content">
+        <RouterView />
+      </div>
+    </div>
+  </main>
+  <!-- <main className="content p-0 p-sm-3">
       
       <div class="container-fluid p-0 h-100">
         <span class="me-1">
@@ -36,6 +104,5 @@ onBeforeMount(() => {
 
         <RouterView />
       </div>
-    </main>
-  </div>
+    </main> -->
 </template>

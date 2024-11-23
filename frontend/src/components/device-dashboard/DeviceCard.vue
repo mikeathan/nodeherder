@@ -8,29 +8,38 @@ const props = defineProps({
   device: Object,
 });
 </script>
-<style lang="css" scoped>
-
-</style>
+<style lang="css" scoped></style>
 <template>
-<Card style="width: 25rem; overflow: hidden">
-    <template #header>
-        <img alt="user header" src="/images/usercard.png" />
+  <Card :class="device.properties.availability == 'offline' ? 'disabled-card' : ''">
+    <template #title>
+      <h4>
+        <RouterLink :to="`/devicepage/${device.id}`">{{
+          device.friendly_name
+          }}</RouterLink>
+      </h4>
     </template>
-    <template #title>Advanced Card</template>
-    <template #subtitle>Card subtitle</template>
+    <template #subtitle>
+
+      <p>{{ device.description }}</p>
+    </template>
     <template #content>
-        <p class="m-0">
-            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Inventore sed consequuntur error repudiandae numquam deserunt quisquam repellat libero asperiores earum nam nobis, culpa ratione quam perferendis esse, cupiditate neque
-            quas!
-        </p>
-    </template>
-    <template #footer>
-        <div class="flex gap-4 mt-1">
-            <Button label="Cancel" severity="secondary" outlined class="w-full" />
-            <Button label="Save" class="w-full" />
+      <div class="d-flex align-items-center" v-for="(value, sensor) in device.exposes">
+          <Sensor :id="device.id" :expose="device.exposes[sensor]" />
         </div>
     </template>
-</Card>
+    <template #footer>
+      <div class="grid justify-content-between align-items-center">
+        <div>
+          <i class="pi pi-battery-half" style="font-size: 1.5em;"></i>
+          <span>50%</span>
+        </div>
+        <div>
+          <i class="pi pi-wifi" style="font-size: 1.5em;"></i>
+          <span>Connected</span>
+        </div>
+      </div>
+    </template>
+  </Card>
   <!-- <div class="col-xl-3 col-lg-4 col-sm-6 col-12 d-flex">
     <div class="card flex-fill flex-shrink-1"
       :class="device.properties.availability == 'offline' ? 'disabled-card' : ''">
