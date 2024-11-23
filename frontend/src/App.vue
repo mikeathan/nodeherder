@@ -8,7 +8,8 @@ import {
 import { store } from './store/index';
 import Status from './components/controls/Status.vue';
 import Notifications from './components/hub/alerts/Notifications.vue';
-
+import InputText from 'primevue/inputtext';
+import Button from 'primevue/button';
 const title = ref('Node-Herder');
 
 onBeforeMount(() => {
@@ -33,4 +34,11 @@ onBeforeMount(() => {
         <RouterView />
       </div>
     </v-main> -->
+
+  <div>
+    <InputText
+      v-model="value1"
+      placeholder="Enter a value" />
+    <Button label="Submit" />
+  </div>
 </template>

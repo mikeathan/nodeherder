@@ -10,10 +10,11 @@ import mitt from 'mitt';
 import { Events } from '@/types/events.type';
 import VueApexCharts from 'vue3-apexcharts';
 import PrimeVue from 'primevue/config'; // here
-import "primevue/resources/themes/saga-blue/theme.css"; //theme
-import "primevue/resources/primevue.min.css"; //core CSS
-import "primeicons/primeicons.css"; //icons
+//import 'primevue/resources/themes/saga-blue/theme.css'; //theme
+import 'primevue/resources/primevue.min.css'; //core CSS
+import 'primeicons/primeicons.css'; //icons
 
+import 'primevue/resources/themes/lara-light-indigo/theme.css'; // Import
 const emitter = mitt<Events>();
 
 const app = createApp(App);
