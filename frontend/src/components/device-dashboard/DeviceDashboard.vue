@@ -26,17 +26,4 @@ function getConnectivityIcon(status: string) {
       </div>
     </div>
   </div>
-
-
-  <!-- <v-row align="stretch" justify="start" dense>
-    <v-col
-      cols="3"
-      v-for="(device, index) in devices"
-      :key="index"
-      class="d-flex">
-      <DeviceCard
-        :device="device"
-        :key="device.id"></DeviceCard>
-    </v-col>
-  </v-row> -->
 </template>

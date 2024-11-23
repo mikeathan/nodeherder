@@ -7,12 +7,10 @@ const props = defineProps({
   device: Object,
 });
 </script>
-
 <template>
-  <div class="card-footer">
-    <div class="row justify-content-between flex-nowrap">
+    <div class="grid justify-content-between align-items-center">
       <LastSeen :timestamp="device.properties.last_seen"></LastSeen>
-      <div class="col-auto text-truncate" v-if="device.properties.availability === 'online'">
+      <div class=" text-truncate" v-if="device.properties.availability === 'online'">
         <LinkQuality :value="device.properties.linkquality" />
         <PowerSource :power_source="device.power_source" :value="device.properties.battery" />
       </div>
@@ -26,5 +24,5 @@ const props = defineProps({
         </i>
       </div>
     </div>
-  </div>
+  
 </template>
