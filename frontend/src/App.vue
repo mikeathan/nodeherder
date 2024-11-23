@@ -19,7 +19,10 @@ onBeforeMount(() => {
 <style></style>
 
 <template>
-  <!-- <v-main className="content p-0 p-sm-3">
+  <!--  -->
+
+  <div>
+    <main className="content p-0 p-sm-3">
       
       <div class="container-fluid p-0 h-100">
         <span class="me-1">
@@ -33,12 +36,6 @@ onBeforeMount(() => {
 
         <RouterView />
       </div>
-    </v-main> -->
-
-  <div>
-    <InputText
-      v-model="value1"
-      placeholder="Enter a value" />
-    <Button label="Submit" />
+    </main>
   </div>
 </template>
