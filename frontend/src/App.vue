@@ -11,18 +11,21 @@ import Notifications from './components/hub/alerts/Notifications.vue';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 const title = ref('Node-Herder');
+import { useRouter } from 'vue-router';
 
 onBeforeMount(() => {
   store.dispatch('ws/connect');
 });
+const router = useRouter();
+const menuItems = [
+  { to: "/", label: "dashboard", icon: 'pi pi-home', command: () => router.push('/') },
+  { to: "/viewer", label: "automations", icon: 'pi pi-objects-column', command: () => router.push('/viewer') },
+  { to: "/consoleviewer", label: "console", icon: 'pi pi-code', command: () => router.push('/consoleviewer') },
+  { to: "/settings", label: "settings", icon: 'pi pi-cog', command: () => router.push('/settings') },
 
-// const routes = [
-//   { path: "/dashboard", name: "dashboard", component: Dashboard },
-//   { path: "/devices", name: "devices", component: Devices },
-//   { path: "/settings", name: "settings", component: Settings },
-//   { path: "/docs", name: "docs", component: Documentation },
-//   { path: "/support", name: "support", component: Support },
-// ];
+
+];
+
 </script>
 
 <style>
@@ -66,12 +69,18 @@ app-container {
 </style>
 
 <template>
-  <!--  -->
 
   <main>
     <div class="app-container">
-      <Menubar class="top-navbar">
-        <!-- <Menubar :model="menuItems" class="top-navbar" /> -->
+      <Menubar :model="menuItems" class="top-navbar">
+        <template #start>
+          <div class="menu-links">
+            <Status />
+            <Notifications />
+          </div>
+        </template>
+      </Menubar>
+      <!-- <Menubar class="top-navbar">
         <template #start>
           <div class="menu-links">
             <Status></Status>
@@ -83,7 +92,7 @@ app-container {
             <RouterLink to="/settings" class="menu-link">Settings </RouterLink>
           </div>
         </template>
-      </Menubar>
+</Menubar> -->
 
       <div class="content">
         <RouterView />

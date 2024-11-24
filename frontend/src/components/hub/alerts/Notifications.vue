@@ -12,7 +12,6 @@ watchEffect(() => {
   const messages = store.getters[
     'alerts/messages'
   ]() as AlertMessage[];
-  console.log('watchEffect messages', messages);
 
   messages.forEach((alert: AlertMessage) => {
     if (alert.visible) return;
@@ -31,8 +30,6 @@ watchEffect(() => {
 
 <template>
   <div class="text-center ma-2">
-    <div class="card flex justify-center">
-      <Toast />
-    </div>
+    <Toast />
   </div>
 </template>
