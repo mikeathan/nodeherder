@@ -8,12 +8,12 @@ export type AlertMessage = {
   message: string;
   id: string;
   timeout?: number;
-  color: string;
+  visible: boolean;
 };
 
 export const AlertTypes = {
   success: 'success',
   error: 'error',
   info: 'info',
-  warning: 'warning',
+  warning: 'warn',
 };

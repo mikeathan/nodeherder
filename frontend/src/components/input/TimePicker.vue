@@ -28,6 +28,8 @@ function handleEnterKey() {
 
 <template>
     <!-- prepend-icon="mdi-clock-time-four-outline" -->
+
+    <DatePicker id="datepicker-timeonly" v-model="time" timeOnly fluid />
     <v-text-field dense v-model="selectedTime" label="Start at" readonly @click="showTimePicker = true"
         variant="underlined" />
 

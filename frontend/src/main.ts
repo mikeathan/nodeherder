@@ -18,9 +18,10 @@ import FloatLabel from 'primevue/floatlabel';
 import Menubar from 'primevue/menubar';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import ColumnGroup from 'primevue/columngroup';  
-import Row from 'primevue/row';                  
+import ColumnGroup from 'primevue/columngroup';
+import Row from 'primevue/row';
 import ToastService from 'primevue/toastservice';
+import DatePicker from 'primevue/datepicker';
 
 import 'primevue/resources/themes/saga-blue/theme.css'; //theme
 import 'primevue/resources/primevue.min.css'; //core CSS
@@ -44,6 +45,7 @@ app.component('DataTable', DataTable);
 app.component('Column', Column);
 app.component('ColumnGroup', ColumnGroup);
 app.component('Row', Row);
+app.component('DatePicker', DatePicker);
 app.use(ToastService);
 app.use(store, key);
 app.use(router);
