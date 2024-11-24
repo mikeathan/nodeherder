@@ -8,11 +8,6 @@ import Card from 'primevue/card';
 const devices = computed(
   () => store.getters['devices/listAll']() as Devices,
 );
-function getConnectivityIcon(status: string) {
-  if (status === "Connected") return "pi pi-wifi";
-  if (status === "Weak Signal") return "pi pi-wifi-slash";
-  return "pi pi-times-circle";
-}
 
 </script>
 <style scoped></style>

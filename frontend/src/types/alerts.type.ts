@@ -3,7 +3,8 @@ import { ValueOf } from './types';
 export type AlertType = ValueOf<typeof AlertTypes>;
 
 export type AlertMessage = {
-  type: AlertType;
+  severity: AlertType;
+  title: string;
   message: string;
   id: string;
   timeout?: number;

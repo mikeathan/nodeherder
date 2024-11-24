@@ -11,29 +11,30 @@ import { AlertMessage } from '../../../../types/alerts.type';
 
 const mockAlerts: AlertMessage[] = [
   {
-    type: 'success',
+    severity: 'success',
+    title: 'Success',
     message: 'test success message',
     timeout: 1000,
     id: '1',
     color: 'greeen',
-
   },
   {
-    type: 'error',
+    severity: 'error',
+    title: 'Error',
     message: 'test error message',
     id: '2',
     color: 'red',
-
   },
   {
-    type: 'info',
+    severity: 'info',
+    title: 'Info',
     message: 'test info message',
     id: '3',
     color: 'yelloq',
-
   },
   {
-    type: 'warning',
+    severity: 'warning',
+    title: 'Warning',
     message: 'test warning message',
     timeout: 1000,
     id: '4',
@@ -57,7 +58,8 @@ describe('test alert module', () => {
 
     Object.values(allMessages).forEach((alert, index) => {
       const message = mockAlerts[index];
-      expect(alert.type).toEqual(message.type);
+      expect(alert.severity).toEqual(message.severity);
+      expect(alert.title).toEqual(message.title);
       expect(alert.message).toEqual(message.message);
       expect(alert.timeout).toEqual(message.timeout);
       expect(alert.color).toEqual(message.color);

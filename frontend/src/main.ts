@@ -18,8 +18,10 @@ import FloatLabel from 'primevue/floatlabel';
 import Menubar from 'primevue/menubar';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
-import ColumnGroup from 'primevue/columngroup';   // optional
-import Row from 'primevue/row';                   // optional
+import ColumnGroup from 'primevue/columngroup';  
+import Row from 'primevue/row';                  
+import ToastService from 'primevue/toastservice';
+
 import 'primevue/resources/themes/saga-blue/theme.css'; //theme
 import 'primevue/resources/primevue.min.css'; //core CSS
 import 'primeicons/primeicons.css'; //icons
@@ -42,6 +44,7 @@ app.component('DataTable', DataTable);
 app.component('Column', Column);
 app.component('ColumnGroup', ColumnGroup);
 app.component('Row', Row);
+app.use(ToastService);
 app.use(store, key);
 app.use(router);
 app.use(VueApexCharts);

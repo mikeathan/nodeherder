@@ -9,7 +9,8 @@ export const createWarning = (
   timeout?: number,
 ): AlertMessage => {
   return {
-    type: AlertTypes.warning,
+    severity: AlertTypes.warning,
+    title: 'Warning',
     message: message,
     id: genenerateUniqueId(),
     timeout: timeout,
@@ -22,7 +23,8 @@ export const createError = (
   timeout?: number,
 ): AlertMessage => {
   return {
-    type: AlertTypes.error,
+    severity: AlertTypes.error,
+    title: 'Error',
     message: message,
     id: genenerateUniqueId(),
     timeout: timeout,
@@ -35,7 +37,8 @@ export const createSuccess = (
   timeout?: number,
 ): AlertMessage => {
   return {
-    type: AlertTypes.success,
+    severity: AlertTypes.success,
+    title: 'Success',
     message: message,
     id: genenerateUniqueId(),
     timeout: timeout,
@@ -48,7 +51,8 @@ export const createInfo = (
   timeout?: number,
 ): AlertMessage => {
   return {
-    type: AlertTypes.info,
+    severity: AlertTypes.info,
+    title: 'Info',
     message: message,
     id: genenerateUniqueId(),
     timeout: timeout,
