@@ -23,9 +23,10 @@ import Row from 'primevue/row';
 import ToastService from 'primevue/toastservice';
 import DatePicker from 'primevue/datepicker';
 
-//import 'primevue/resources/themes/saga-blue/theme.css'; //theme
-import 'primevue/resources/primevue.min.css'; //core CSS
-import 'primeicons/primeicons.css';
+//import 'primevue/resources/themes/saga-blue/theme.css'; // Theme
+//import 'primevue/resources/primevue.min.css'; // Core CSS
+import 'primeicons/primeicons.css'; // Icons
+
 import 'primeflex/primeflex.css';
 
 //import 'primevue/resources/themes/lara-light-indigo/theme.css'; // Import
