@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, watch, watchEffect } from "vue";
+import Slider from 'primevue/slider';
 
 const emit = defineEmits<{
     (e: 'update', id: number): void
 }>()
 
 export interface Props {
-    placeholder?: string
-    value?: number,
+    value: number,
     min: number
     max: number
 }
@@ -33,7 +33,7 @@ watch(
     }, { immediate: true }
 )
 
-function valueChanged(event: Event) {
+function valueChanged(event: any) {
     var v = parseInt((event.target as HTMLInputElement).value)
     emit('update', v);
 }
@@ -41,7 +41,8 @@ function valueChanged(event: Event) {
 </script>
 
 <template>
-    <label v-if="props.placeholder != null" for="rangeSelector" class="form-label">{{ props.placeholder }}</label>
-    <input type="range" class="form-range form-control border-0" id="rangeSelector" @change="valueChanged" v-model="value"
-        :max="max" :min="min" :disabled="value == null">
+
+    <!-- <Slider id="slider" v-model="props.value" :min="min" :max="max" @change="valueChanged" /> -->
+    <input type="range" class="form-range form-control border-0" id="rangeSelector" @change="valueChanged"
+        v-model="value" :max="max" :min="min" :disabled="value == null">
 </template>

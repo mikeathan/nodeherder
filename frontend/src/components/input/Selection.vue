@@ -198,6 +198,8 @@ select.form-select:disabled {
   <!-- 
   <v-select label="Select" :items="items" :value="value" :disabled="disabled"
     variant="underlined"></v-select> -->
+    <!-- <Select v-model="selectedCity" :options="item" optionLabel="name" placeholder="Select a City" class="w-full md:w-56" /> -->
+
   <div v-if="props.label != ''" class="form-floating col-sm-5">
     <createSelection></createSelection>
     <label for="selection" class="form-label">{{

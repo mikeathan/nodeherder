@@ -22,14 +22,14 @@ import ColumnGroup from 'primevue/columngroup';
 import Row from 'primevue/row';
 import ToastService from 'primevue/toastservice';
 import DatePicker from 'primevue/datepicker';
+import Slider from 'primevue/slider';
+import InputNumber from 'primevue/inputnumber';
+import Select from 'primevue/select';
+import ToggleSwitch from 'primevue/toggleswitch';
 
-//import 'primevue/resources/themes/saga-blue/theme.css'; // Theme
-//import 'primevue/resources/primevue.min.css'; // Core CSS
 import 'primeicons/primeicons.css'; // Icons
-
 import 'primeflex/primeflex.css';
 
-//import 'primevue/resources/themes/lara-light-indigo/theme.css'; // Import
 const emitter = mitt<Events>();
 
 const app = createApp(App);
@@ -47,6 +47,11 @@ app.component('Column', Column);
 app.component('ColumnGroup', ColumnGroup);
 app.component('Row', Row);
 app.component('DatePicker', DatePicker);
+app.component('Slider', Slider);
+app.component('InputNumber', InputNumber);
+app.component('Select', Select);
+app.component('ToggleSwitch', ToggleSwitch);
+
 app.use(ToastService);
 app.use(store, key);
 app.use(router);

@@ -26,6 +26,7 @@ function valueChanged(event: Event): void {
 </script>
 <template>
     <button v-if="showOnOffLabel" type="button" class="btn btn-link">OFF</button>
+    <!-- <ToggleSwitch v-model="checked" /> -->
     <div class="form-check form-switch form-check-inline align-middle me-0">
         <input class="form-check-input" type="checkbox" :checked="props.value == props.valueOn" @change="valueChanged"
             :disabled="!hasValue">
