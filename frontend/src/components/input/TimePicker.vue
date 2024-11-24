@@ -1,42 +1,52 @@
 <script setup lang="ts">
-
-
-import { ref } from "vue";
+import { computed, ref } from 'vue';
 
 const props = defineProps({
-
-    value: {
-        type: String,
-        default: '',
-        required: false,
-    },
+  value: {
+    type: Date,
+    default: '',
+    required: true,
+  },
 });
 
-const showTimePicker = ref(false);
+const selectedTime = ref<Date>(props.value);
 
-const selectedTime = ref<string | null>(props.value);
+// const time = computed(() => {
+//   if (selectedTime.value) {
+//     const tp = toTimePicker(selectedTime.value);
+//     const time = new Date();
+//     time.setHours(tp.hours);
+//     time.setMinutes(tp.minutes);
+//     time.setSeconds(0);
+//     time.setMilliseconds(0);
+//     return time;
+//   }
+//   return new Date();
+// });
+
 const emit = defineEmits<{
-    (e: 'updated', value: any): void;
+  (e: 'updated', value: any): void;
 }>();
 
 function handleEnterKey() {
-
-    showTimePicker.value = false;
-    emit('updated', selectedTime.value);
+  console.log('handleEnterKey', selectedTime.value);
+  emit('updated', selectedTime.value);
 }
-
 </script>
 
 <template>
-    <!-- prepend-icon="mdi-clock-time-four-outline" -->
-
-    <DatePicker id="datepicker-timeonly" v-model="time" timeOnly fluid />
-    <v-text-field dense v-model="selectedTime" label="Start at" readonly @click="showTimePicker = true"
-        variant="underlined" />
-
-    <v-dialog v-model="showTimePicker" width="250" @keydown.enter="handleEnterKey">
-        <v-time-picker v-model="selectedTime" format="24hr" position="relative" small
-            @input="() => (showTimePicker = false)" />
-    </v-dialog>
-
+  <DatePicker
+    id="datepicker-timeonly"
+    v-model="selectedTime"
+    showIcon
+    fluid
+    iconDisplay="input"
+    timeOnly
+    @blur="handleEnterKey">
+    <template #inputicon="slotProps">
+      <i
+        class="pi pi-clock"
+        @click="slotProps.clickCallback" />
+    </template>
+  </DatePicker>
 </template>

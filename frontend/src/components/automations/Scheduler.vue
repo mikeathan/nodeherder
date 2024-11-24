@@ -6,7 +6,10 @@ import { createButtons } from '@/configs/automation/trigger-dropdown.config';
 import { TimeSchedule } from '@/types/automation';
 import { TimeScheduleTypes } from '@/contracts/automations';
 import TimePicker from '@/components/input/TimePicker.vue';
-import { toTimePicker } from '@/contracts/controls';
+import {
+  convertTimeToDate,
+  toHourMinuteString,
+} from '@/contracts/controls';
 import { emitClosePanel } from '@/mixins/useAutomationsEventBus';
 
 const props = defineProps({
@@ -76,9 +79,9 @@ function clear() {
 
 function updateStartAtTime(
   schedule: TimeSchedule,
-  value: any,
+  value: Date,
 ) {
-  schedule.startAt = value;
+  schedule.startAt = toHourMinuteString(value);
 }
 
 function removeSchedule(schedule: TimeSchedule) {
@@ -109,14 +112,11 @@ function updateType(schedule: TimeSchedule, value: any) {
           </Selection>
         </div>
         <div class="col-sm-4">
-          <!-- prepend-icon="mdi-clock-time-four-outline" -->
-          <!-- <TimePicker :value="schedule.startAt" @updated="(e) => updateStartAtTime(schedule, e)" /> -->
-          <!-- 
-          <v-text-field v-model="schedule.startAt" label="Picker in menu" prepend-icon="mdi-clock-time-four-outline" readonly>
-
-            <v-time-picker v-model="schedule.startAt" />
-
-          </v-text-field> -->
+          <TimePicker
+            :value="convertTimeToDate(schedule.startAt)"
+            @updated="
+              (e) => updateStartAtTime(schedule, e)
+            " />
         </div>
         <div class="col-sm-1 pt-4">
           <span
