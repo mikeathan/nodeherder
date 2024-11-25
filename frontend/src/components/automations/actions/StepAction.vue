@@ -159,7 +159,7 @@ function deviceSelected(deviceId: string, friendlyName: string) {
                 <DeviceSelector @updated="(id, name) => stepDeviceSelected(id, name, step)"
                   :filter="devicesFilterByActionStep(props.automationId, action, step)"></DeviceSelector>
               </div>
-              <div v-else class="col-xl-3">
+              <div v-else class="col col-xl-3">
                 {{ deviceNameFromId(step) }}
               </div>
               <!-- step property -->
@@ -167,7 +167,6 @@ function deviceSelected(deviceId: string, friendlyName: string) {
                 <ExposeSelector :id="step.id" @updated="(v) => stepPropertySelected(v, step)" :value="step.property"
                   :filter="exposeFilterByType(ExposeTypes.Numeric)" position="center"></ExposeSelector>
               </div>
-              <div class="col-xl-1">
                 <div class="col-md-1 col-sm-1">
                   <div class="d-grid d-md-auto">
                     <a class="btn btn-sm  btn-light " role="button">
@@ -175,7 +174,6 @@ function deviceSelected(deviceId: string, friendlyName: string) {
                     </a>
                   </div>
                 </div>
-              </div>
             </div>
           </div>
         </li>

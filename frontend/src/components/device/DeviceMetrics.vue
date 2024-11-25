@@ -38,7 +38,6 @@ function dateSelected(value: PeriodType) {
     from: toUnix(from),
     to: toUnix(to),
   };
-  console.log('Period:', selectePeriod.value, "from:", from, "to:", to)
   store.dispatch('metrics/query', request);
 }
 

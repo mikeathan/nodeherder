@@ -103,7 +103,7 @@ function updateType(schedule: TimeSchedule, value: any) {
 
     <div v-for="schedule in schedules" :key="schedule.type">
       <div class="row">
-        <div class="col-sm-4 pt-3">
+        <div class="col-sm-4">
           <Selection
             :value="schedule.type"
             :items="TimeScheduleTypes"
@@ -118,7 +118,7 @@ function updateType(schedule: TimeSchedule, value: any) {
               (e) => updateStartAtTime(schedule, e)
             " />
         </div>
-        <div class="col-sm-1 pt-4">
+        <div class="col-sm-1 pt-2">
           <span
             class="fa fa-trash-alt fa-sm"
             @click="removeSchedule(schedule)">

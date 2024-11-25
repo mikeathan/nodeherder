@@ -1,20 +1,23 @@
 <script setup lang="ts">
-import { computed, PropType, ref } from "vue";
-import { getExposes } from "@/contracts/device";
-import { store } from "@/store/index";
-import { Device, DeviceFilter } from "@/types/device";
-import Selection from "@/components/input/Selection.vue";
-import { LayoutPosition, LayoutPositions } from '@/types/controls.type';
+import { computed, PropType, ref } from 'vue';
+import { getExposes } from '@/contracts/device';
+import { store } from '@/store/index';
+import { Device, DeviceFilter } from '@/types/device';
+import Selection from '@/components/input/Selection.vue';
+import {
+  LayoutPosition,
+  LayoutPositions,
+} from '@/types/controls.type';
 
 const props = defineProps({
   id: {
     type: String,
-    default: "",
+    default: '',
     required: true,
   },
   value: {
     type: String,
-    default: "",
+    default: '',
     required: false,
   },
   filter: {
@@ -24,7 +27,7 @@ const props = defineProps({
   },
   label: {
     type: String,
-    default: "",
+    default: '',
     required: false,
   },
   position: {
@@ -40,15 +43,17 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
-  (e: "updated", valueid: string): void;
+  (e: 'updated', valueid: string): void;
 }>();
 
 const selectedExpose = ref<string>(props.value);
 
 const exposeList = computed(() => {
-  const device = store.getters["devices/find"](props.id) as Device;
+  const device = store.getters['devices/find'](
+    props.id,
+  ) as Device;
   if (device == undefined) {
-    console.log('exposeList empty', props.id)
+    console.log('exposeList empty', props.id);
 
     return Array<string>();
   }
@@ -58,12 +63,16 @@ const exposeList = computed(() => {
 
 function exposeSelected(value: string) {
   selectedExpose.value = value;
-  emit("updated", selectedExpose.value);
+  emit('updated', selectedExpose.value);
 }
-
 </script>
 
 <template>
-  <Selection :label="props.label" :value="props.value" :disabled="props.disabled" @updated="exposeSelected"
-    :position="props.position" :items="exposeList"></Selection>
+  <Selection
+    :label="props.label"
+    :value="props.value"
+    :disabled="props.disabled"
+    @updated="exposeSelected"
+    :position="props.position"
+    :items="exposeList"></Selection>
 </template>

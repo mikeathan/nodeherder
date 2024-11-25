@@ -29,7 +29,6 @@ const emit = defineEmits<{
 }>();
 
 function handleEnterKey() {
-  console.log('handleEnterKey', selectedTime.value);
   emit('updated', selectedTime.value);
 }
 </script>

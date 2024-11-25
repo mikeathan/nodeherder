@@ -1,129 +1,143 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { EqualityOperators, } from "../../contracts/automations"
-import { AutomationTriggerCondition } from "../../types/automation";
-import { store } from "../../store/index";
+import { ref, computed, watch } from 'vue';
+import { EqualityOperators } from '../../contracts/automations';
+import { AutomationTriggerCondition } from '../../types/automation';
+import { store } from '../../store/index';
 import { allExposeFilter } from '@/configs/automation/device.config';
 import ExposeDataInput from '../controls/ExposeDataInput.vue';
-import Selection from "../input/Selection.vue"
-import ExposeSelector from "@/components/controls/ExposeSelector.vue";
-
+import Selection from '../input/Selection.vue';
+import ExposeSelector from '@/components/controls/ExposeSelector.vue';
 
 const props = defineProps({
-    id: {
-        type: String,
-        default: '',
-        required: true
-    },
-    name: {
-        type: String,
-        default: "",
-    },
-    operator: {
-        type: String,
-        default: "",
-    },
-    data: null
+  id: {
+    type: String,
+    default: '',
+    required: true,
+  },
+  name: {
+    type: String,
+    default: '',
+  },
+  operator: {
+    type: String,
+    default: '',
+  },
+  data: null,
 });
 
-const data = ref<any>(null)
-const operator = ref<string>('')
-const name = ref<string>('')
+const data = ref<any>(null);
+const operator = ref<string>('');
+const name = ref<string>('');
 
 const emit = defineEmits<{
-    (e: 'update:name', name: string): void,
-    (e: 'update:value', property: any): void,
-    (e: 'update:operator', data: string): void,
-    (e: 'update', condition: AutomationTriggerCondition): void,
-}>()
-
-
-watch(
-    () => props.name,
-    () => {
-        name.value = props.name
-    }, { immediate: true }
-)
+  (e: 'update:name', name: string): void;
+  (e: 'update:value', property: any): void;
+  (e: 'update:operator', data: string): void;
+  (
+    e: 'update',
+    condition: AutomationTriggerCondition,
+  ): void;
+}>();
 
 watch(
-    () => props.data,
-    () => {
-        data.value = props.data
-    }, { immediate: true }
-)
+  () => props.name,
+  () => {
+    name.value = props.name;
+  },
+  { immediate: true },
+);
 
 watch(
-    () => props.operator,
-    () => {
-        operator.value = props.operator
-    }, { immediate: true }
-)
+  () => props.data,
+  () => {
+    data.value = props.data;
+  },
+  { immediate: true },
+);
+
+watch(
+  () => props.operator,
+  () => {
+    operator.value = props.operator;
+  },
+  { immediate: true },
+);
 
 function exposeSelected(value: string): void {
-    if (value == '') {
-        return
-    }
+  if (value == '') {
+    return;
+  }
 
-    name.value = value;
-    data.value = '';
-    emit('update:name', value)
+  name.value = value;
+  data.value = '';
+  emit('update:name', value);
 }
 
 function operatorUpdated(event: string): void {
-    operator.value = event
-    emit('update:operator', event)
+  operator.value = event;
+  emit('update:operator', event);
 }
 
 function dataUpdated(value: any): void {
-    // cast true/false to boolean
-    if (value == "true" ||
-        value == "false") {
-        value = Boolean(value == "true");
-    }
-    data.value = value
-    emit('update:value', value)
+  // cast true/false to boolean
+  if (value == 'true' || value == 'false') {
+    value = Boolean(value == 'true');
+  }
+  data.value = value;
+  emit('update:value', value);
 }
 
-
 const exposeOperators = computed(() => {
+  if (name.value == '') {
+    return [];
+  }
 
-    if (name.value == '') {
-        return []
-    }
+  var device = store.getters['devices/find'](props.id);
+  if (!device || device.exposes[name.value] == undefined) {
+    return [];
+  }
 
-    var device = store.getters["devices/find"](props.id);
-    if (!device || device.exposes[name.value] == undefined) {
-        return []
-    }
-
-    const feature = device.exposes[name.value];
-    switch (feature.type) {
-        case "binary":
-        case "enum":
-            return Array<string>(EqualityOperators[0]);
-        default:
-            return EqualityOperators;
-    }
+  const feature = device.exposes[name.value];
+  switch (feature.type) {
+    case 'binary':
+    case 'enum':
+      return Array<string>(EqualityOperators[0]);
+    default:
+      return EqualityOperators;
+  }
 });
-
 </script>
 
 <template>
-    <div class="row">
-        <div class="col-sm-4">
-            <ExposeSelector :id="props.id" :value="name" @updated="exposeSelected" :filter="allExposeFilter()"
-                :disabled="name != ''" position="center">
-            </ExposeSelector>
-        </div>
-        <div class="col-sm-3">
-            <Selection :value="operator" @updated="operatorUpdated" :items="exposeOperators" position="center"
-                :disabled="name == ''">
-            </Selection>
-        </div>
-        <div class="col-sm-5">
-            <ExposeDataInput :id="props.id" :name="name" :value="data" @updated="dataUpdated" position="center"
-                :disabled="name == ''">
-            </ExposeDataInput>
-        </div>
+  <div class="row">
+    <div class="col-sm-4">
+      <ExposeSelector
+        :id="props.id"
+        :value="name"
+        @updated="exposeSelected"
+        :filter="allExposeFilter()"
+        :disabled="name != ''"
+        position="center">
+      </ExposeSelector>
     </div>
+    <div class="col-sm-3">
+      <Selection
+        :value="operator"
+        @updated="operatorUpdated"
+        :items="exposeOperators"
+        position="center"
+        :disabled="name == ''">
+      </Selection>
+    </div>
+    <div class="col-sm-5">
+      <ExposeDataInput
+        :id="props.id"
+        :name="name"
+        :value="data"
+        @updated="dataUpdated"
+        position="center"
+        :disabled="name == ''">
+      </ExposeDataInput>
+    </div>
+  </div>
 </template>

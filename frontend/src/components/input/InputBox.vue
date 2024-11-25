@@ -58,7 +58,6 @@ function onLostFocus(event: Event): void {
   emit('lostFocus', inputValue.value);
 }
 
-
 </script>
 
 <template>

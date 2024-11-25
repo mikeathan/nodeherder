@@ -14,7 +14,6 @@ const deviceList = computed(() => {
 function cancel(): void {
     selectedDevice.value = ""
 }
-
 </script>
 <template>
     <div class="container-fluid p-0 h-100">
