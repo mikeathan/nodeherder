@@ -3,7 +3,6 @@ import { computed } from 'vue';
 import DeviceCard from './DeviceCard.vue';
 import { Devices } from '@/types/device';
 import { store } from '../../store/index';
-import Card from 'primevue/card';
 
 const devices = computed(
   () => store.getters['devices/listAll']() as Devices,

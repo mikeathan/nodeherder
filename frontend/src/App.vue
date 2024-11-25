@@ -80,38 +80,10 @@ app-container {
           </div>
         </template>
       </Menubar>
-      <!-- <Menubar class="top-navbar">
-        <template #start>
-          <div class="menu-links">
-            <Status></Status>
-            <Notifications />
-
-            <RouterLink to="/" class="menu-link">{{ title }}</RouterLink>
-            <RouterLink to="/viewer" class="menu-link">Automations </RouterLink>
-            <RouterLink to="/consoleviewer" class="menu-link">Console</RouterLink>
-            <RouterLink to="/settings" class="menu-link">Settings </RouterLink>
-          </div>
-        </template>
-</Menubar> -->
 
       <div class="content">
         <RouterView />
       </div>
     </div>
   </main>
-  <!-- <main className="content p-0 p-sm-3">
-      
-      <div class="container-fluid p-0 h-100">
-        <span class="me-1">
-          <Status></Status>
-        </span>
-        <Notifications />
-        <RouterLink to="/">{{ title }}</RouterLink> |
-        <RouterLink to="/viewer">Automations </RouterLink> |
-        <RouterLink to="/consoleviewer">Console</RouterLink> |
-        <RouterLink to="/settings">Settings </RouterLink>
-
-        <RouterView />
-      </div>
-    </main> -->
 </template>
