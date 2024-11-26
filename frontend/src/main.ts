@@ -12,6 +12,7 @@ import VueApexCharts from 'vue3-apexcharts';
 
 import PrimeVue from 'primevue/config';
 import Aura from '@primevue/themes/aura';
+import Material from '@primevue/themes/material';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import FloatLabel from 'primevue/floatlabel';
@@ -36,7 +37,7 @@ const emitter = mitt<Events>();
 const app = createApp(App);
 app.use(PrimeVue, {
   theme: {
-    preset: Aura,
+    preset: Material,
   },
 });
 app.component('Button', Button);

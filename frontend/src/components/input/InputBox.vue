@@ -21,6 +21,11 @@ const props = defineProps({
     default: false,
     required: false,
   },
+  class: {
+    type: String,
+    default: false,
+    required: false,
+  },
 });
 
 const emit = defineEmits<{
@@ -66,11 +71,10 @@ function onLostFocus(event: Event): void {
       <InputNumber v-if="props.isNumeric" v-model="inputValue" :disabled="props.disabled" inputId="integeronly"
         @input="inputNumberEvent" :onblur="onLostFocus" :min="0" :max="100" />
       <label v-if="props.label != ''">{{ props.label }}</label>
-
     </div>
     <div v-else>
-      <InputText v-model="inputValue" variant="filled" :disabled="props.disabled" @input="inputTextEvent"
-        :onblur="onLostFocus" />
+      <InputText v-model="inputValue" variant="outlined" :disabled="props.disabled" @input="inputTextEvent"
+        :class="props.class" :onblur="onLostFocus" />
       <label v-if="props.label != ''">{{ props.label }}</label>
     </div>
   </FloatLabel>

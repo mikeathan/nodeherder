@@ -146,75 +146,67 @@ function getActionDescription(trigger: AutomationTrigger): string {
     <!-- TODO: find better way to do this
     we have 2 components that use the same template and toggle from the if isinVieMode -->
 
-    <div class="grid ">
-        <div class="col ">
-            <Card v-bind:style="{ display: isInViewMode ? 'block' : 'none' }">
+    <Card v-bind:style="{ display: isInViewMode ? 'block' : 'none' }" class="col-12">
 
-                <template #title>
-                    <div class="flex flex-column">
-                        <div class="flex mb-3 ">
-                            <InputBox label="Id" :disabled="true" :value="automation.id">
-                            </InputBox>
-                        </div>
-                        <div class="flex mb-3">
-                            <InputBox label="Friendly Name" :disabled="true" :value="automation.friendlyname">
-                            </InputBox>
-                        </div>
-                        <div class="flex mb-3">
-                            <InputBox label="Description" @updated="(v) => automation.description = v"
-                                :value="automation.description">
-                            </InputBox>
-                        </div>
-                        <div class="flex pb-3">
-                            <AutomationStatus :automation="automation" :clickToOpen="true" />
-                        </div>
-                    </div>
-                </template>
-                <template #content>
-                    <ButtonPanel :buttons="buttonPanelItems"></ButtonPanel>
-                    <table class="table responsive table-hover ">
-                        <thead>
-                            <tr>
-                                <th scope="col">#</th>
-                                <th scope="col">Action</th>
-                                <th scope="col">Conditions</th>
-                                <th scope="col">
-                                    <button type="button" class="btn btn-default btn-number"
-                                        @click="createNewTrigger()">
-                                        <span class="fa fa-plus"></span>
-                                    </button>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody v-for="(trigger, index) in automation.triggers" :item="trigger">
-                            <tr>
-                                <th scope="row">
-                                    {{ index + 1 }}
-                                </th>
-                                <td @click="rowClicked(trigger)">
-                                    {{ getActionDescription(trigger) }}
-                                </td>
-                                <td>
-                                    {{ getConditionsDescription(trigger) }}
-                                </td>
-                                <td>
-                                    <span class="fa fa-trash-alt fa-sm" @click="onDeleteTriggerClick($event, trigger)"
-                                        data-bs-toggle="collapse" data-bs-target>
-                                    </span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </template>
-            </Card>
-            <Card v-bind:style="{ display: isInViewMode == false ? 'block' : 'none' }">
-                <template #content>
-                    <button type="button" class="btn btn-close btn-sm float-end" aria-label="Close"
-                        @click="createCloseLastPanelEvent"></button>
-                    <Panel @close="onComponentHidden" @component-displayed="onComponentDisplayed">
-                    </Panel>
-                </template>
-            </Card>
-        </div>
-    </div>
+        <template #title>
+            <div class="grid">
+                <div class="col-12 pb-3 lg:col-8 sm:col-8">
+                    <InputBox label="Id" :disabled="true" :value="automation.id" class="w-full" />
+                </div>
+                <div class="col-12 pb-3 lg:col-8 sm:col-8">
+                    <InputBox label="Friendly Name" :disabled="true" :value="automation.friendlyname" class="w-full" />
+                </div>
+                <div class="col-12 pb-3 lg:col-8 sm:row-8">
+                    <InputBox label="Description" @updated="(v) => automation.description = v"
+                        :value="automation.description" class="w-full" />
+                </div>
+                <!-- <div class="col-12 pb-3 lg:row-6 sm:row-8">
+                    <AutomationStatus :automation="automation" :clickToOpen="true" />
+                </div> -->
+            </div>
+        </template>
+        <template #content>
+            <ButtonPanel :buttons="buttonPanelItems"></ButtonPanel>
+            <table class="table responsive table-hover ">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Action</th>
+                        <th scope="col">Conditions</th>
+                        <th scope="col">
+                            <button type="button" class="btn btn-default btn-number" @click="createNewTrigger()">
+                                <span class="fa fa-plus"></span>
+                            </button>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody v-for="(trigger, index) in automation.triggers" :item="trigger">
+                    <tr>
+                        <th scope="row">
+                            {{ index + 1 }}
+                        </th>
+                        <td @click="rowClicked(trigger)">
+                            {{ getActionDescription(trigger) }}
+                        </td>
+                        <td>
+                            {{ getConditionsDescription(trigger) }}
+                        </td>
+                        <td>
+                            <span class="fa fa-trash-alt fa-sm" @click="onDeleteTriggerClick($event, trigger)"
+                                data-bs-toggle="collapse" data-bs-target>
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </template>
+    </Card>
+    <Card v-bind:style="{ display: isInViewMode == false ? 'block' : 'none' }">
+        <template #content>
+            <button type="button" class="btn btn-close btn-sm float-end" aria-label="Close"
+                @click="createCloseLastPanelEvent"></button>
+            <Panel @close="onComponentHidden" @component-displayed="onComponentDisplayed">
+            </Panel>
+        </template>
+    </Card>
 </template>
