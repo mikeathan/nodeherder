@@ -28,6 +28,7 @@ import InputNumber from 'primevue/inputnumber';
 import Select from 'primevue/select';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Card from 'primevue/card';
+import SplitButton from 'primevue/splitbutton';
 
 import 'primeicons/primeicons.css'; // Icons
 import 'primeflex/primeflex.css';
@@ -54,6 +55,7 @@ app.component('InputNumber', InputNumber);
 app.component('Select', Select);
 app.component('ToggleSwitch', ToggleSwitch);
 app.component('Card', Card);
+app.component('SplitButton', SplitButton);
 
 app.use(ToastService);
 app.use(store, key);
