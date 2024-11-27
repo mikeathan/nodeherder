@@ -39,12 +39,23 @@ function createButton(button: ButtonType): VNode {
         }
     }, button.name);
 }
-
+function createButton2(button: ButtonType): VNode {
+    functional 
+}
 </script>
 
 <template>
     <div class="row pb-3">
         <form class="container">
+            <Button label="Primary" variant="text" raised />
+
+            <Button
+            v-for="buttonInfo in props.buttons"
+            :key="buttonInfo.name"
+            :label="buttonInfo.name"
+            :disabled="buttonInfo.disabled"
+            @click="buttonInfo.event"
+        />
             <component :is="Panel"></component>
             <slot></slot>
         </form>
