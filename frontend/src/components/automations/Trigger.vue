@@ -177,11 +177,13 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                         <ActionViewer :automation-id="props.id" :item="slotProps.data" :edit-events="actionEvents()"
                             @delete="deleteAction()">
                         </ActionViewer>
+
+                        maybe use dataaview
                     </template>
                 </Column>
                 <Column>
                     <template #header="slotProps">
-                        <SplitButton  text icon="pi pi-plus" size="small"></SplitButton>                         
+                        <SplitButton text icon="pi pi-plus" size="small"></SplitButton>
                     </template>
                     <template #body="slotProps">
                         <Button icon="pi pi-trash" variant="text" rounded @click="
