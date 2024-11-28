@@ -100,7 +100,7 @@ function createDropEvent(
 
 <!-- // if button is dropdown use <SplitButton label="Save" @click="save" :model="items" /> -->
 <template>
-  <div class="grid grid-cols-4 gap-1 md:flex md:flex-col">
+  <div class="grid grid-cols-4 gap-1 ">
     <div v-for="item in props.buttons" :key="item.name">
       <template v-if="isButtonType(item)">
         <Button

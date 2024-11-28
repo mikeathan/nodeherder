@@ -285,39 +285,6 @@ function getActionDescription(
               </template>
             </Column>
           </DataTable>
-          <!-- <table class="table responsive table-hover">
-                <thead>
-                    <tr>
-                        <th scope="col">#</th>
-                        <th scope="col">Action</th>
-                        <th scope="col">Conditions</th>
-                        <th scope="col">
-                            <button type="button" class="btn btn-default btn-number" @click="createNewTrigger()">
-                                <span class="fa fa-plus"></span>
-                            </button>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody v-for="(trigger, index) in automation.triggers" :item="trigger">
-                    <tr>
-                        <th scope="row">
-                            {{ index + 1 }}
-                        </th>
-                        <td @click="rowClicked(trigger)">
-                            {{ getActionDescription(trigger) }}
-                        </td>
-                        <td>
-                            {{ getConditionsDescription(trigger) }}
-                        </td>
-                        <td>
-                            <span class="fa fa-trash-alt fa-sm" @click="
-                                onDeleteTriggerClick($event, trigger)
-                                " data-bs-toggle="collapse" data-bs-target>
-                            </span>
-                        </td>
-                    </tr>
-                </tbody>
-            </table> -->
         </template>
       </Card>
       <Card

@@ -88,9 +88,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="row" v-if="currentComponent != ''">
 
-    <component :is="PanelComponents[currentComponent]" v-bind="componentCache[currentComponent].args"
-      v-on="componentCache[currentComponent].events" />
-  </div>
+  <component v-if="currentComponent != ''" :is="PanelComponents[currentComponent]"
+    v-bind="componentCache[currentComponent].args" v-on="componentCache[currentComponent].events" />
 </template>

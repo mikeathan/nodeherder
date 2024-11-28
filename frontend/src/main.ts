@@ -31,6 +31,8 @@ import Card from 'primevue/card';
 import SplitButton from 'primevue/splitbutton';
 
 import DataView from 'primevue/dataview';
+import Fieldset from 'primevue/fieldset';
+
 
 import 'primeicons/primeicons.css'; // Icons
 import 'primeflex/primeflex.css';
@@ -59,6 +61,7 @@ app.component('ToggleSwitch', ToggleSwitch);
 app.component('Card', Card);
 app.component('SplitButton', SplitButton);
 app.component('DataView', DataView);
+app.component('Fieldset', Fieldset);
 app.use(ToastService);
 app.use(store, key);
 app.use(router);

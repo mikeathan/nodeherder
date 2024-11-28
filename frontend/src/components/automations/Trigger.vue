@@ -39,12 +39,7 @@ const buttonPanelItems = computed(() => {
             name: "Delete",
             click: remove,
             disabled: isValid(trigger.value) == false
-        },
-        {
-            name: "Add Condition",
-            click: addNewCondition,
-            disabled: isValid(trigger.value) == false
-        },
+        }
     ])
 });
 
@@ -130,8 +125,74 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
 </script>
 
 <template>
+
     <!-- TODO:  -->
     <!-- if automation for device exists message user else we overwrite it -->
+
+    <div class="row pb-3">
+        <div class="col">
+            <ButtonPanel :buttons="buttonPanelItems">
+                <Dropdown :items="dropDownitems" class-name="btn-light" :disabled="actions.length != 0">
+                    New Action
+                </Dropdown>
+            </ButtonPanel>
+        </div>
+    </div>
+    <div class="row" v-if="trigger.name == ''">
+        <Selection :value="trigger.name" text="Select trigger" :disabled="trigger.name != ''" size="normal"
+            @updated="v => trigger.name = v" :items="exposesList">
+        </Selection>
+    </div>
+    <div class="row" v-else>
+        <h5>Trigger for {{ capitalizeText(trigger.name) }}</h5>
+
+        <Fieldset legend="When" :toggleable="true" :collapsed="true">
+            <DataTable :value="conditions" tableStyle="min-width: 50rem" selectionMode="single">
+                <Column header="Condition">
+                    <template #body="slotProps">
+                        <TriggerCondition :id="props.id" :name="slotProps.data.name" :operator="slotProps.data.equality"
+                            :data="slotProps.data.value" @update:name="newValue => slotProps.data.name = newValue"
+                            @update:value="newValue => slotProps.data.value = newValue"
+                            @update:operator="newValue => slotProps.data.equality = newValue">
+                        </TriggerCondition>
+                    </template>
+                </Column>
+                <Column>
+                    <template #header="slotProps">
+                        <Button icon="pi pi-plus" variant="text" rounded @click="addNewCondition" />
+                    </template>
+                    <template #body="slotProps">
+                        <Button icon="pi pi-trash" variant="text" rounded @click="
+                            removeTriggerCondition(slotProps.data)
+                            " />
+                    </template>
+                </Column>
+            </DataTable>
+        </Fieldset>
+
+        <Fieldset legend="Then" :toggleable="true" :collapsed="false">
+            <DataTable :value="actions" tableStyle="min-width: 50rem" selectionMode="single">
+                <Column header="Actions">
+                    <template #body="slotProps">
+                        <ActionViewer :automation-id="props.id" :item="slotProps.data" :edit-events="actionEvents()"
+                            @delete="deleteAction()">
+                        </ActionViewer>
+                    </template>
+                </Column>
+                <Column>
+                    <template #header="slotProps">
+                        <SplitButton  text icon="pi pi-plus" size="small"></SplitButton>                         
+                    </template>
+                    <template #body="slotProps">
+                        <Button icon="pi pi-trash" variant="text" rounded @click="
+                            deleteAction()
+                            " />
+                    </template>
+                </Column>
+            </DataTable>
+        </Fieldset>
+    </div>
+    <!--     
     <div class="row pb-3">
         <div class="col">
             <ButtonPanel :buttons="buttonPanelItems">
@@ -150,7 +211,6 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
 
         <h5>Trigger for {{ capitalizeText(trigger.name) }}</h5>
 
-        <!-- Conditions -->
         <div class="card border" v-if="conditions.length > 0">
 
             <div class="card-header">
@@ -180,9 +240,7 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                     </div>
                 </li>
             </ul>
-
         </div>
-        <!-- ACTIONS -->
         <div class="card border" v-if="actions.length > 0">
             <div class="card-header">
                 <h5>THEN</h5>
@@ -208,5 +266,5 @@ function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: b
                 </li>
             </ul>
         </div>
-    </div>
+    </div> -->
 </template>

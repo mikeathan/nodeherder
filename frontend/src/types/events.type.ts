@@ -13,6 +13,7 @@ export type EventActions = KeyValuePair<EventAction>;
 
 export type OpenPanelEvent = {
   name: string;
+  
   args: any;
   events: EventActions;
 };
