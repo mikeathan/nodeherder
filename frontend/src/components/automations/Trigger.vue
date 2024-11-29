@@ -246,16 +246,18 @@ function createActionOpenPanelEvent(
           </template>
         </Column>
       </DataTable>
-    
-      <Button
-       icon="pi pi-plus"
-        label="Add condition"
-        severity="contrast"
-        @click="addNewCondition"
-        variant="outlined"
-        type="button"
-        size="small" badgeSeverity="contrast" raised
-         />
+
+        <div class="row pt-4">
+          <Button
+            width="100%"
+            icon="pi pi-plus"
+            label="Add condition"
+            @click="addNewCondition"
+            variant="outlined"
+            type="button"
+            size="small"
+            raised />
+        </div>
     </Fieldset>
 
     <div class="pt-2"></div>
