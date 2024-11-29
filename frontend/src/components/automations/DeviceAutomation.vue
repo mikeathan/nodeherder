@@ -248,7 +248,6 @@ function getActionDescription(
 
           <DataTable
             :value="automation.triggers"
-            tableStyle="min-width: 50rem"
             @row-click="rowClicked"
             selectionMode="single">
             <Column field="action" header="Action">
@@ -263,7 +262,7 @@ function getActionDescription(
                 }}
               </template>
             </Column>
-            <Column>
+            <Column class="col-sm-1">
               <template #header="slotProps">
                 <Button
                   icon="pi pi-plus"
@@ -285,6 +284,11 @@ function getActionDescription(
               </template>
             </Column>
           </DataTable>
+          <div class="pt-4 flex align-items-center justify-content-center">
+                <Button style="width: 99%;" icon="pi pi-plus" label="Add Trigger" @click="createNewTrigger()" text
+                    size="small" />
+            </div>
+          
         </template>
       </Card>
       <Card

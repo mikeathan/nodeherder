@@ -24,6 +24,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  label: {
+    type: String,
+    default: '',
+  },
 });
 
 function convert() {
@@ -36,29 +40,7 @@ function convert() {
 }
 </script>
 <template>
-  <SplitButton
-    :model="convert()"
-    :disabled="props.disabled"
-    text 
-    :icon="props.icon" :size="props.size"/>
-  
-  <!-- <button
-    :id="`dropdownControl`"
-    type="button"
-    :class="`btn ${props.className}`"
-    data-bs-toggle="dropdown"
-    aria-expanded="false"
-    :disabled="props.disabled">
-    <slot></slot>
-  </button>
-  <ul class="dropdown-menu">
-    <li v-for="item in props.items" :key="item.value">
-      <a
-        @click="item.click(item.value)"
-        class="dropdown-item"
-        data-toggle="dropdown">
-        {{ item.name }}</a
-      >
-    </li>
-  </ul> -->
+  <SplitButton :label="props.label" :model="convert()" :disabled="props.disabled" text :icon="props.icon"
+    :size="props.size" />
+
 </template>
