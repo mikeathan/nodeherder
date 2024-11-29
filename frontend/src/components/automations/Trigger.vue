@@ -235,13 +235,6 @@ function createActionOpenPanelEvent(
           </template>
         </Column>
         <Column>
-          <template #header="slotProps">
-            <!-- <Button
-              icon="pi pi-plus"
-              variant="text"
-              rounded
-              @click="addNewCondition" /> -->
-          </template>
           <template #body="slotProps">
             <Button
               icon="pi pi-trash"
@@ -253,7 +246,16 @@ function createActionOpenPanelEvent(
           </template>
         </Column>
       </DataTable>
-      Add new condtion button
+    
+      <Button
+       icon="pi pi-plus"
+        label="Add condition"
+        severity="contrast"
+        @click="addNewCondition"
+        variant="outlined"
+        type="button"
+        size="small" badgeSeverity="contrast" raised
+         />
     </Fieldset>
 
     <div class="pt-2"></div>
@@ -266,7 +268,7 @@ function createActionOpenPanelEvent(
         tableStyle="min-width: 50rem"
         selectionMode="single"
         fixedHeader="1,2">
-        <Column header="Actions" >
+        <Column header="Actions">
           <template #body="slotProps">
             <ActionViewer
               :automation-id="props.id"
@@ -276,7 +278,7 @@ function createActionOpenPanelEvent(
             </ActionViewer>
           </template>
         </Column>
-        <Column >
+        <Column>
           <!-- <template #header="slotProps">
             <Dropdown
               :items="dropDownitems"
