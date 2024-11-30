@@ -107,7 +107,6 @@ function updateType(schedule: TimeSchedule, value: any) {
           <Selection
             :value="schedule.type"
             :items="TimeScheduleTypes"
-            position="center"
             @updated="(t) => updateType(schedule, t)">
           </Selection>
         </div>

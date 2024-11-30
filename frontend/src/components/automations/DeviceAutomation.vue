@@ -43,7 +43,6 @@ const buttonPanelItems = computed(() => {
     () => saveAutomation(),
     () => deleteAutomation(),
     () => openScheduler(automation.value),
-    () => cancel(),
     isActionValid,
     isActionValid,
     isActionValid,
@@ -204,8 +203,16 @@ function getActionDescription(
         }"
         class="col-12">
         <template #title>
+          <Button
+            icon="pi pi-times"
+            variant="text"
+            rounded
+            class="float-end"
+            @click="cancel()" />
           <div class="grid">
+            
             <div class="row">
+              
               <div
                 class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
                 <InputBox

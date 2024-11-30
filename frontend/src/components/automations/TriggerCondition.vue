@@ -33,10 +33,7 @@ const emit = defineEmits<{
   (e: 'update:name', name: string): void;
   (e: 'update:value', property: any): void;
   (e: 'update:operator', data: string): void;
-  (
-    e: 'update',
-    condition: AutomationTriggerCondition,
-  ): void;
+  (e: 'update', condition: AutomationTriggerCondition): void;
 }>();
 
 watch(
@@ -111,33 +108,14 @@ const exposeOperators = computed(() => {
 <template>
   <div class="row">
     <div class="col-sm-4">
-      <ExposeSelector
-        :id="props.id"
-        :value="name"
-        @updated="exposeSelected"
-        :filter="allExposeFilter()"
-        :disabled="name != ''"
-        position="center">
-      </ExposeSelector>
+      <ExposeSelector :id="props.id" :value="name" @updated="exposeSelected" :filter="allExposeFilter()"
+        :disabled="name != ''" />
     </div>
     <div class="col-sm-3">
-      <Selection
-        :value="operator"
-        @updated="operatorUpdated"
-        :items="exposeOperators"
-        position="center"
-        :disabled="name == ''">
-      </Selection>
+      <Selection :value="operator" @updated="operatorUpdated" :items="exposeOperators" :disabled="name == ''" />
     </div>
     <div class="col-sm-5">
-      <ExposeDataInput
-        :id="props.id"
-        :name="name"
-        :value="data"
-        @updated="dataUpdated"
-        position="center"
-        :disabled="name == ''">
-      </ExposeDataInput>
+      <ExposeDataInput :id="props.id" :name="name" :value="data" @updated="dataUpdated" :disabled="name == ''" />
     </div>
   </div>
 </template>

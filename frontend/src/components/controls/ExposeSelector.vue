@@ -30,11 +30,6 @@ const props = defineProps({
     default: '',
     required: false,
   },
-  position: {
-    type: String as PropType<LayoutPosition>,
-    default: LayoutPositions.left,
-    required: false,
-  },
   disabled: {
     type: Boolean,
     default: false,
@@ -73,6 +68,5 @@ function exposeSelected(value: string) {
     :value="props.value"
     :disabled="props.disabled"
     @updated="exposeSelected"
-    :position="props.position"
-    :items="exposeList"></Selection>
+    :items="exposeList"/>
 </template>

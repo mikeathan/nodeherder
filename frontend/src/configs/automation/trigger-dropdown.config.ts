@@ -93,11 +93,9 @@ export function createEditAutomationButtonItems(
   saveEvent: ButtonClickEventType,
   deleteEvent: ButtonClickEventType,
   scheduleEvent: ButtonClickEventType,
-  cancelEvent: ButtonClickEventType,
   isSaveDisabled?: boolean,
   isDeleteDisabled?: boolean,
   isScheduleEnabled?: boolean,
-  isCancelDisabled?: boolean,
 ): ButtonType[] {
   return [
     createButton('Save', saveEvent, isSaveDisabled),
@@ -107,7 +105,6 @@ export function createEditAutomationButtonItems(
       scheduleEvent,
       isScheduleEnabled,
     ),
-    createButton('Cancel', cancelEvent, isCancelDisabled),
   ];
 }
 export function createSaveDeleteCancelButtonItems(

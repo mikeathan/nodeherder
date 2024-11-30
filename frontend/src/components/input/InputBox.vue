@@ -23,7 +23,7 @@ const props = defineProps({
   },
   class: {
     type: String,
-    default: false,
+    default: '',
     required: false,
   },
 });
@@ -38,7 +38,12 @@ const inputValue = ref<any>(props.value);
 watch(
   () => props.value,
   () => {
-    inputValue.value = props.value;
+    if (props.isNumeric && (typeof props.value !== 'number' || isNaN(props.value))) {
+
+      inputValue.value = 0;
+    } else {
+      inputValue.value = props.value;
+    }
   },
   { immediate: true },
 );

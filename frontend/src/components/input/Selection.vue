@@ -27,11 +27,7 @@ const props = defineProps({
     default: '',
     required: false,
   },
-  position: {
-    type: String as PropType<LayoutPosition>,
-    default: LayoutPositions.left,
-    required: false,
-  },
+
   size: {
     type: String as PropType<SelectSize>,
     default: SelectFormSize.small,
@@ -95,6 +91,5 @@ function selectionChanged(event: SelectChangeEvent): void {
     :placeholder="defaultText()"
     @change="selectionChanged"
     class="w-full md:w-56" />
-
  
 </template>

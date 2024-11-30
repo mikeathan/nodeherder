@@ -204,21 +204,17 @@ function createActionOpenPanelEvent(
                 <Column header="Condition">
                     <template #body="slotProps">
                         <TriggerCondition :id="props.id" :name="slotProps.data.name" :operator="slotProps.data.equality"
-                            :data="slotProps.data.value" @update:name="(newValue) =>
-                                (slotProps.data.name = newValue)
-                                " @update:value="(newValue) =>
-                                    (slotProps.data.value = newValue)
-                                    " @update:operator="(newValue) =>
-                                        (slotProps.data.equality = newValue)
-                                        ">
+                            :data="slotProps.data.value" @update:name="(newValue) => (slotProps.data.name = newValue)"
+                            @update:value="(newValue) => (slotProps.data.value = newValue)"
+                            @update:operator="(newValue) => (slotProps.data.equality = newValue)">
                         </TriggerCondition>
                     </template>
                 </Column>
                 <Column class="col-sm-1">
                     <template #body="slotProps">
-                            <Button icon="pi pi-trash" variant="text" rounded @click="
-                                removeTriggerCondition(slotProps.data)
-                                " />
+                        <Button icon="pi pi-trash" variant="text" rounded @click="
+                            removeTriggerCondition(slotProps.data)
+                            " />
                     </template>
                 </Column>
             </DataTable>
@@ -232,7 +228,7 @@ function createActionOpenPanelEvent(
 
         <div class="pt-2"></div>
         <Fieldset legend="Then" :toggleable="true" :collapsed="true">
-            <DataTable :value="actions" selectionMode="single" >
+            <DataTable :value="actions" selectionMode="single">
                 <Column header="Actions">
                     <template #body="slotProps">
                         <ActionViewer :automation-id="props.id" :item="slotProps.data" :edit-events="actionEvents()"

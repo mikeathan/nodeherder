@@ -27,11 +27,6 @@ const props = defineProps({
     default: '',
     required: false,
   },
-  position: {
-    type: String as PropType<LayoutPosition>,
-    default: LayoutPositions.left,
-    required: false,
-  },
   showPresets: {
     type: Boolean,
     default: false,
@@ -136,7 +131,6 @@ function presetSelected(selected: any) {
       :value="props.value"
       :disabled="props.disabled"
       @updated="sequenceDataSelected"
-      :position="props.position"
       :items="sequenceData">
     </Selection>
   </div>
@@ -146,8 +140,7 @@ function presetSelected(selected: any) {
       :disabled="props.disabled"
       :value="inputValue"
       @updated="inputChanged"
-      :position="props.position"
-      :isNumeric="true"></InputBox>
+      :isNumeric="true"/>
   </div>
   <div v-if="showPresets">
     <Selection
@@ -155,7 +148,6 @@ function presetSelected(selected: any) {
       :disabled="props.disabled"
       :value="selectedPreset"
       @updated="presetSelected"
-      :position="props.position"
       :items="exposePresets">
     </Selection>
   </div>
