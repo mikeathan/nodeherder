@@ -60,11 +60,6 @@ function deviceSelected(id: string) {
 }
 </script>
 <template>
-  <Selection
-    :label="props.label"
-    :value="props.id"
-    :disabled="props.disabled"
-    @updated="(v) => deviceSelected(v)"
-    :items="deviceList">
-  </Selection>
+  <Selection :label="props.label" :value="props.id" :disabled="props.disabled" @updated="(v) => deviceSelected(v)"
+    :items="deviceList" />
 </template>

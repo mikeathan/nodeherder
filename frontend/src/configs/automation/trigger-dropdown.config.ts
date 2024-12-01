@@ -42,7 +42,7 @@ export function createTriggerActionOperatorsDropdowitems(
     (operator) =>
       items.push(
         createDropDownItem(
-          `New ${operator}`,
+          `Add ${operator}`,
           operator,
           event,
         ),

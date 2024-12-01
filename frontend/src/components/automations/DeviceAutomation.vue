@@ -7,7 +7,6 @@ import { Device } from '@/types/device';
 import {
   Automation,
   AutomationTrigger,
-  TimeSchedule,
 } from '@/types/automation';
 import {
   EditableAutomationTrigger,
@@ -219,7 +218,7 @@ function getActionDescription(
                   label="Id"
                   :disabled="true"
                   :value="automation.id"
-                  class="w-full" />
+                 />
               </div>
               <div
                 class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">

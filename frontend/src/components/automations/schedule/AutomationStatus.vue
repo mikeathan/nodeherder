@@ -29,7 +29,7 @@ function scheduleClick() {
 </script>
 
 <template>
-    <div class=" form-check form-switch ms-2">
+    <div class="form-check form-switch ms-2">
         <div v-if="hasSchedules">
             <label class="form-check-label ">Scheduled</label>
             <input class="form-check-input custom-control-input" type="checkbox" role="switch"
@@ -40,9 +40,7 @@ function scheduleClick() {
             <label class=" form-check-label ms-3">Enabled</label>
             <input class="form-check-input custom-control-input" type="checkbox" role="switch"
                 id="flexSwitchCheckDefault" v-model="automation.enabled" />
-
         </div>
-
     </div>
 
 </template>

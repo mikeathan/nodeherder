@@ -59,18 +59,21 @@ function removeAction(): void {
 }
 </script>
 <template>
-  <div class="row pb-2">
-    <ButtonPanel :buttons="buttonPanelItems"></ButtonPanel>
+  <div class="row pb-3">
+    <div class="col">
+      <ButtonPanel :buttons="buttonPanelItems"></ButtonPanel>
+    </div>
   </div>
 
-  <h5>Rotate Action</h5>
+  <h4>Rotate Action</h4>
+  <div class="pb-3" />
 
-  <div class="row pb-2">
+  <div class="row pb-3">
     <DeviceSelector label="Device to trigger" :id="action.id" @updated="deviceSelected"
       :filter="presetsDevicesFilter()">
     </DeviceSelector>
   </div>
-  <div class="row pb-2">
+  <div class="row pb-3">
     <ExposeSelector label="Expose" :id="action.id" :value="action.property" @updated="exposeSelected"
       :filter="presetExposeFilter()">
     </ExposeSelector>

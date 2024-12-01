@@ -27,7 +27,6 @@ const props = defineProps({
     default: '',
     required: false,
   },
-
   size: {
     type: String as PropType<SelectSize>,
     default: SelectFormSize.small,
@@ -79,17 +78,10 @@ function selectionChanged(event: SelectChangeEvent): void {
 }
 </script>
 
-<style scoped></style>
-
 <template>
-   <label v-if="props.label != ''">{{ props.label }}</label>
-  <Select
-    v-model="selectedValue"
-    :options="selectionItems()"
-    :optionLabel="isKeyValuePair ? 'key' : ''"
-    :optionValue="isKeyValuePair ? 'value' : ''"
-    :placeholder="defaultText()"
-    @change="selectionChanged"
-    class="w-full md:w-56" />
- 
+  <FloatLabel class="w-full md:w-56" variant="on">
+    <Select v-model="selectedValue" :options="selectionItems()" :optionLabel="isKeyValuePair ? 'key' : ''"
+      :optionValue="isKeyValuePair ? 'value' : ''" @change="selectionChanged" class="w-full" />
+    <label v-if="props.label != ''">{{ props.label }}</label>
+  </FloatLabel>
 </template>

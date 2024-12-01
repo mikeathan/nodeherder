@@ -4,10 +4,6 @@ import { getExposes } from '@/contracts/device';
 import { store } from '@/store/index';
 import { Device, DeviceFilter } from '@/types/device';
 import Selection from '@/components/input/Selection.vue';
-import {
-  LayoutPosition,
-  LayoutPositions,
-} from '@/types/controls.type';
 
 const props = defineProps({
   id: {

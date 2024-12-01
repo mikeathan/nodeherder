@@ -71,17 +71,18 @@ function onLostFocus(event: Event): void {
 </script>
 
 <template>
-  <FloatLabel variant="in">
-    <div v-if="props.isNumeric">
+  <div v-if="props.isNumeric">
+    <FloatLabel variant="in">
       <InputNumber v-if="props.isNumeric" v-model="inputValue" :disabled="props.disabled" inputId="integeronly"
-        @input="inputNumberEvent" :onblur="onLostFocus" :min="0" :max="100" />
+        @input="inputNumberEvent" :onblur="onLostFocus" :min="0" :max="100" class="w-full" />
       <label v-if="props.label != ''">{{ props.label }}</label>
-    </div>
-    <div v-else>
+    </FloatLabel>
+  </div>
+  <div v-else>
+    <FloatLabel variant="in">
       <InputText v-model="inputValue" variant="outlined" :disabled="props.disabled" @input="inputTextEvent"
         :class="props.class" :onblur="onLostFocus" />
       <label v-if="props.label != ''">{{ props.label }}</label>
-    </div>
-  </FloatLabel>
-
+    </FloatLabel>
+  </div>
 </template>

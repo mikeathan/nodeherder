@@ -5,10 +5,6 @@ import { ExposeTypes } from '@/types/device.type';
 import { Expose, ExposeType } from '@/types/device';
 import InputBox from '@/components/input/InputBox.vue';
 import Selection from '@/components/input/Selection.vue';
-import {
-  LayoutPosition,
-  LayoutPositions,
-} from '@/types/controls.type';
 
 const props = defineProps({
   id: {
@@ -120,7 +116,6 @@ function presetSelected(selected: any) {
 }
 </script>
 <template>
-  {{ props.label }}
   <div
     v-if="
       dataType == ExposeTypes.Binary ||
@@ -142,7 +137,7 @@ function presetSelected(selected: any) {
       @updated="inputChanged"
       :isNumeric="true"/>
   </div>
-  <div v-if="showPresets">
+  <div v-if="showPresets" class="pt-2">
     <Selection
       :label="props.label"
       :disabled="props.disabled"

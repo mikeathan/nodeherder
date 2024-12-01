@@ -18,10 +18,9 @@ function cancel(): void {
 <template>
     <div class="container-fluid p-0 h-100">
 
-        <h3>Create new Automation</h3>
+        <h4>Create new Automation</h4>
         <div class="col-xl-5 col-md-3" v-if="selectedDevice == ''">
-
-            <Selection :value="selectedDevice" text="Select device" :disabled="selectedDevice != ''" size="normal"
+            <Selection :value="selectedDevice" label="Select device" :disabled="selectedDevice != ''" size="normal"
                 @updated="v => selectedDevice = v" :items="deviceList">
             </Selection>
         </div>

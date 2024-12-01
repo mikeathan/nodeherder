@@ -115,15 +115,19 @@ function deviceSelected(deviceId: string, friendlyName: string) {
 <template>
   <!-- Edit mode -->
   <!-- action controls -->
-  <div class="row">
-    <ButtonPanel :buttons="buttonPanelItems">
-      <Dropdown :items="dropdownItems" class-name="btn-light" :disabled="action.id == ''">
-        Add Operation
-      </Dropdown>
-    </ButtonPanel>
+  <div class="row pb-3">
+    <div class="col">
+      <ButtonPanel :buttons="buttonPanelItems">
+        <Dropdown :items="dropdownItems" class-name="btn-light" :disabled="action.id == ''">
+          Add Operation
+        </Dropdown>
+      </ButtonPanel>
+    </div>
   </div>
 
-  <h5>Step Action</h5>
+  <h4>Step Action</h4>
+  <div class="pb-3" />
+
 
   <!-- device select box  -->
   <div class="row pb-2">
@@ -142,6 +146,7 @@ function deviceSelected(deviceId: string, friendlyName: string) {
 
   <!-- Steps -->
   <div v-if="action.steps.length > 0" class="card">
+
     <div class="card-header">
       <h5>Operations</h5>
     </div>
@@ -167,13 +172,13 @@ function deviceSelected(deviceId: string, friendlyName: string) {
                 <ExposeSelector :id="step.id" @updated="(v) => stepPropertySelected(v, step)" :value="step.property"
                   :filter="exposeFilterByType(ExposeTypes.Numeric)" position="center"></ExposeSelector>
               </div>
-                <div class="col-md-1 col-sm-1">
-                  <div class="d-grid d-md-auto">
-                    <a class="btn btn-sm  btn-light " role="button">
-                      <span class="fa fa-trash-alt fa-sm" @click="removeStep(step)"></span>
-                    </a>
-                  </div>
+              <div class="col-md-1 col-sm-1">
+                <div class="d-grid d-md-auto">
+                  <a class="btn btn-sm  btn-light " role="button">
+                    <span class="fa fa-trash-alt fa-sm" @click="removeStep(step)"></span>
+                  </a>
                 </div>
+              </div>
             </div>
           </div>
         </li>
