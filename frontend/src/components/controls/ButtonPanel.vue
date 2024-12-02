@@ -79,6 +79,8 @@ function isDropdownType(
 function createEvent(event: Event, button: ButtonType) {
   event.preventDefault();
   try {
+    console.log("[DEBUG] Buttonpanel - createEvent", event, button);
+
     button.click(event);
   } catch (error) {
     console.error('Error during button click:', error);
@@ -103,22 +105,11 @@ function createDropEvent(
   <div class="grid grid-cols-4 gap-1">
     <div v-for="item in props.buttons" :key="item.name">
       <template v-if="isButtonType(item)">
-        <Button
-          :key="item.name"
-          :label="item.name"
-          severity="secondary"
-          variant="outlined"
-          :disabled="item.disabled"
-          @click="(event) => createEvent(event, item)"
-          raised />
+        <Button :key="item.name" :label="item.name" severity="secondary" variant="outlined" :disabled="item.disabled"
+          @click="(event) => createEvent(event, item)" raised />
       </template>
       <template v-else-if="isDropdownType(item)">
-        <SplitButton
-          v-for="dropdownItem in item.items"
-          :key="dropdownItem.name"
-          :label="dropdownItem.name"
-          @click="
-            (event) => createDropEvent(event, dropdownItem)
+        <SplitButton v-for="dropdownItem in item.items" :key="dropdownItem.name" :label="dropdownItem.name" @click="(event) => createDropEvent(event, dropdownItem)
           " />
       </template>
     </div>

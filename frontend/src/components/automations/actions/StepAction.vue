@@ -80,6 +80,7 @@ function stepPropertySelected(value: string, step: AutomationActionStep) {
 }
 
 function saveAction(): void {
+  console.log("[DEBUG] StepAction SaveAction ", action);
   emit("save", action);
 }
 
@@ -162,7 +163,6 @@ function deviceSelected(deviceId: string, friendlyName: string) {
           </div>
         </template>
       </Column>
-
 
       <Column header="Expose">
         <template #body="slotProps">

@@ -119,6 +119,7 @@ function exposeSelected(name: string) {
 }
 
 function saveAction() {
+  console.log('[DEBUG] TriggerAction SaveAction ', action);
   if (action.delay) {
     action.delay = toMillisecs(action.delay);
   }

@@ -142,6 +142,7 @@ function deleteAction() {
 }
 
 function SaveAction(action: AutomationTriggerAction) {
+    console.log('Trigger SaveAction ', action);
     actions.value[0] = action;
     trigger.value.action = actions.value[0];
 }
@@ -161,6 +162,7 @@ const actionEvents = (): EventActions => {
             deleteAction();
         },
         save: (a) => {
+            console.log('Trigger actionEvents - SaveAction ', a);
             SaveAction(a);
         },
     };
@@ -212,20 +214,16 @@ function createActionOpenPanelEvent(
                 </Column>
                 <Column class="col-sm-1">
                     <template #body="slotProps">
-                        <Button icon="pi pi-trash" variant="text" rounded @click="
-                            removeTriggerCondition(slotProps.data)
-                            " />
+                        <Button icon="pi pi-trash" variant="text" rounded
+                            @click="removeTriggerCondition(slotProps.data)" />
                     </template>
                 </Column>
             </DataTable>
-
             <div class="pt-4 flex align-items-center justify-content-center">
                 <Button style="width: 99%;" icon="pi pi-plus" label="Add condition" @click="addNewCondition" text
                     size="small" />
             </div>
-
         </Fieldset>
-
         <div class="pt-2"></div>
         <Fieldset legend="Then" :toggleable="true" :collapsed="true">
             <DataTable :value="actions" selectionMode="single">

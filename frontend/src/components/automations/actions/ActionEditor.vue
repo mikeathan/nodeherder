@@ -43,6 +43,8 @@ watch(
 function saveAction(action: AutomationTriggerAction): void {
     currentAction.value = action
 
+    console.log('[DEBUG] ActionEditor -  SaveAction ', action.steps);
+
     emit('save', currentAction.value);
     emitClosePanel('ActionEditor');
 }
