@@ -141,6 +141,7 @@ function deleteAction() {
     actions.value = [];
 }
 
+maybe we dont update the selected trigger.value so the new action edit event is not saved
 function SaveAction(action: AutomationTriggerAction) {
     console.log('Trigger SaveAction ', action);
     actions.value[0] = action;
@@ -148,6 +149,7 @@ function SaveAction(action: AutomationTriggerAction) {
 }
 
 function addNewAction(actionType: ActionType) {
+    console.log('Trigger addNewAction emit event', actionType);
     emitOpenPanel(
         createActionOpenPanelEvent(
             new EditableActionTrigger(actionType),
