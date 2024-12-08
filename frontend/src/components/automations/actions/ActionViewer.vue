@@ -40,14 +40,13 @@ const actionView = computed(() => {
         switch (actionType.value) {
             case AutomationActionTypes.Trigger:
                 return [
-                    `SET ${currentAction.value.friendlyname} ${currentAction.value.property} ${currentAction.value.data}`,
+                    `Set the ${currentAction.value.friendlyname} ${currentAction.value.property} to ${currentAction.value.data} `,
                     currentAction.value.delay ?
-                        `Delay ${toMinutes(currentAction.value.delay)} min` : null
+                        `in ${toMinutes(currentAction.value.delay)} minutes` : null
                 ]
             case AutomationActionTypes.PresetRotation:
                 return [
-                    `SET ${currentAction.value.friendlyname}`,
-                    `ROTATE ${currentAction.value.property}`
+                    `Rotate the ${currentAction.value.friendlyname} ${currentAction.value.property}`
                 ]
             case AutomationActionTypes.Step:
                 let stepValue = '';
@@ -56,9 +55,11 @@ const actionView = computed(() => {
                 });
                 stepValue += currentAction.value.data
                 return [
-                    `SET ${currentAction.value.friendlyname} ${currentAction.value.property}`,
-                    `STEP (${stepValue})`
+                    `Adjusting ${currentAction.value.friendlyname} ${currentAction.value.property}`,
+                    `by [${stepValue}] steps`
                 ]
+
+            // TODO; appy styles eg = <p>Adjusting <span class="highlight-word">attic light</span> <span class="highlight-word">brightness</span> by [action-time + 10] steps.</p>
         }
     }
     return [];
@@ -68,15 +69,9 @@ watch(
     () => props.item,
     () => {
         actionType.value = getActionType(props.item);
-
     }, { immediate: true }
 )
 
-
-// function removeAction(action: AutomationTriggerAction): void {
-//     emit('delete', action);
-//     emitClosePanel('ActionViewer');
-// }
 
 function openEditor(): void {
     emitOpenPanel(createActionEditorOpenPanelEvent(currentAction.value));
@@ -87,26 +82,14 @@ function createActionEditorOpenPanelEvent(action: AutomationTriggerAction): Open
 }
 
 </script>
-
-<style>
-.list-group-item {
-    color: gray;
-}
-
-/* .list-group-item.list-group-item:hover {
-    background-color: gray;
-} */
-</style>
 <template>
-    <div class="row">
-        <div class=" col-sm-11" @click="openEditor()">
-            <div class="card" style="width: auto">
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item" v-for="item in actionView">
-                        {{ item }}
-                    </li>
-                </ul>
-            </div>
-        </div>
+    <div class="" @click="openEditor()">
+        <Card>
+            <template #content>
+                <div v-for="item in actionView">
+                    {{ item }}
+                </div>
+            </template>
+        </Card>
     </div>
 </template>

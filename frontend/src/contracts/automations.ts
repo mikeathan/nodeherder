@@ -201,14 +201,15 @@ export function removeCondition(
 }
 
 export function isValid(
-  automation: AutomationTrigger,
+  trigger: AutomationTrigger,
 ): boolean {
-  return (
-    automation.name != '' &&
-    automation.actions.every((action) => {
-      action.id != '' && action.property != '';
-    })
-  );
+  const r =
+    trigger.name != '' &&
+    trigger.actions.length > 0 &&
+    trigger.actions.every(
+      (action) => action.id != '' && action.property != '',
+    );
+  return r;
 }
 
 export function setDeviceId(
