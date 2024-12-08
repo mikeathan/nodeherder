@@ -5,6 +5,9 @@ export type AutomationMap = KeyValuePair<Automation>;
 export type AutomationTriggers = Array<AutomationTrigger>;
 export type AutomationTriggerConditions =
   Array<AutomationTriggerCondition>;
+export type AutomationTriggerActions =
+  Array<AutomationTriggerAction>;
+
 export type NumericOperator = '+' | '-' | '*';
 
 export type AutomationActionStep = {
@@ -32,7 +35,7 @@ export type TimeSchedule = {
 export type AutomationTrigger = {
   name: string;
   conditions: AutomationTriggerConditions;
-  action: AutomationTriggerAction;
+  actions: AutomationTriggerActions;
 };
 
 export type AutomationTriggerCondition = {

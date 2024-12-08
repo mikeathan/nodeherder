@@ -8,6 +8,7 @@ import { Device } from '@/types/device';
 import {
     AutomationTrigger,
     AutomationTriggerAction,
+    AutomationTriggerActions,
     AutomationTriggerCondition,
     AutomationTriggerConditions,
 } from '@/types/automation';
@@ -46,7 +47,7 @@ const props = defineProps({
 const conditions = ref<AutomationTriggerConditions>(
     {} as AutomationTriggerConditions,
 );
-const actions = ref<AutomationTriggerAction[]>([]); // have a list of actions with only 1 item capacity
+const actions = ref<AutomationTriggerActions>({} as AutomationTriggerActions);
 
 const trigger = ref<AutomationTrigger>(props.trigger);
 
@@ -74,15 +75,16 @@ const buttonPanelItems = computed(() => {
 watch(
     () => props.trigger,
     () => {
+
         if (
-            props.trigger.action != undefined &&
-            props.trigger.action.id != ''
+            props.trigger.actions != undefined &&
+            props.trigger.actions.every(action => action.id != '') // refactor
         ) {
-            const action = JSON.parse(
-                JSON.stringify(props.trigger.action),
-            ) as AutomationTriggerAction;
-            actions.value.push(action);
+            actions.value = JSON.parse(
+                JSON.stringify(props.trigger.actions),
+            ) as AutomationTriggerAction[];
         }
+
         conditions.value = JSON.parse(
             JSON.stringify(props.trigger.conditions),
         ) as AutomationTriggerConditions;
@@ -97,9 +99,8 @@ const emit = defineEmits<{
 
 function save() {
     trigger.value.conditions = conditions.value;
-    if (actions.value.length > 0) {
-        trigger.value.action = actions.value[0];
-    }
+
+    trigger.value.actions = actions.value;
 
     emit('save', trigger.value);
     emitClosePanel('Trigger');
@@ -141,15 +142,18 @@ function deleteAction() {
     actions.value = [];
 }
 
-maybe we dont update the selected trigger.value so the new action edit event is not saved
-function SaveAction(action: AutomationTriggerAction) {
-    console.log('Trigger SaveAction ', action);
-    actions.value[0] = action;
-    trigger.value.action = actions.value[0];
+
+function SaveAction(currentAction: AutomationTriggerAction, updatedAction: AutomationTriggerAction) {
+    const idx = actions.value.findIndex(a => a == currentAction)
+    if (idx != -1) {
+        trigger.value.actions[idx] = updatedAction;
+
+    } else {
+        trigger.value.actions.push(updatedAction);
+    }
 }
 
 function addNewAction(actionType: ActionType) {
-    console.log('Trigger addNewAction emit event', actionType);
     emitOpenPanel(
         createActionOpenPanelEvent(
             new EditableActionTrigger(actionType),
@@ -158,14 +162,13 @@ function addNewAction(actionType: ActionType) {
     );
 }
 
-const actionEvents = (): EventActions => {
+const actionEvents = (currentAction: AutomationTriggerAction): EventActions => {
     return {
         delete: (e) => {
             deleteAction();
         },
         save: (a) => {
-            console.log('Trigger actionEvents - SaveAction ', a);
-            SaveAction(a);
+            SaveAction(currentAction, a);
         },
     };
 };
@@ -181,7 +184,7 @@ function createActionOpenPanelEvent(
             item: action,
             editMode: editMode,
         },
-        events: actionEvents(),
+        events: actionEvents(action),
     };
 }
 </script>
@@ -227,12 +230,12 @@ function createActionOpenPanelEvent(
             </div>
         </Fieldset>
         <div class="pt-2"></div>
-        <Fieldset legend="Then" :toggleable="true" :collapsed="true">
+        <Fieldset legend="Then" :toggleable="true" :collapsed="false">
             <DataTable :value="actions" selectionMode="single">
                 <Column header="Actions">
                     <template #body="slotProps">
-                        <ActionViewer :automation-id="props.id" :item="slotProps.data" :edit-events="actionEvents()"
-                            @delete="deleteAction()">
+                        <ActionViewer :automation-id="props.id" :item="slotProps.data"
+                            :edit-events="actionEvents(slotProps.data)" @delete="deleteAction()">
                         </ActionViewer>
                     </template>
                 </Column>

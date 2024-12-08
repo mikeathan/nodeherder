@@ -109,14 +109,16 @@ var automationMap = new Map([
               equality: '=',
             },
           ],
-          action: {
-            id: '0x70ac08fffefafeca',
-            friendlyname: 'Attic light',
-            property: 'state',
-            data: 'OFF',
-            delay: 300000,
-            type: 'TriggerAction',
-          },
+          actions: [
+            {
+              id: '0x70ac08fffefafeca',
+              friendlyname: 'Attic light',
+              property: 'state',
+              data: 'OFF',
+              delay: 300000,
+              type: 'TriggerAction',
+            },
+          ],
         },
         {
           name: 'presence',
@@ -132,13 +134,15 @@ var automationMap = new Map([
               equality: '<=',
             },
           ],
-          action: {
-            id: '0x70ac08fffefafeca',
-            friendlyname: 'Attic light',
-            property: 'state',
-            data: 'ON',
-            type: 'TriggerAction',
-          },
+          actions: [
+            {
+              id: '0x70ac08fffefafeca',
+              friendlyname: 'Attic light',
+              property: 'state',
+              data: 'ON',
+              type: 'TriggerAction',
+            },
+          ],
         },
       ],
     },
@@ -160,16 +164,18 @@ var automationMap = new Map([
               equality: '=',
             },
           ],
-          action: {
-            id: '0x70ac08fffefafeca',
-            friendlyname: 'Attic light',
-            property: 'color_temp',
-            data: null,
-            operation: 0,
-            delay: null,
-            steps: [],
-            type: 'PresetRotationAction',
-          },
+          actions: [
+            {
+              id: '0x70ac08fffefafeca',
+              friendlyname: 'Attic light',
+              property: 'color_temp',
+              data: null,
+              operation: 0,
+              delay: null,
+              steps: [],
+              type: 'PresetRotationAction',
+            },
+          ],
         },
         {
           name: 'action',
@@ -180,13 +186,15 @@ var automationMap = new Map([
               equality: '=',
             },
           ],
-          action: {
-            id: '0x70ac08fffefafeca',
-            friendlyname: 'Attic light',
-            property: 'state',
-            data: 'TOGGLE',
-            type: 'TriggerAction',
-          },
+          actions: [
+            {
+              id: '0x70ac08fffefafeca',
+              friendlyname: 'Attic light',
+              property: 'state',
+              data: 'TOGGLE',
+              type: 'TriggerAction',
+            },
+          ],
         },
         {
           name: 'action',
@@ -197,25 +205,27 @@ var automationMap = new Map([
               equality: '=',
             },
           ],
-          action: {
-            id: '0x70ac08fffefafeca',
-            friendlyname: 'Attic light',
-            property: 'brightness',
-            data: 10,
-            steps: [
-              {
-                property: 'brightness',
-                operator: '-',
-                id: '0x70ac08fffefafeca',
-              },
-              {
-                operator: '-',
-                property: 'action_time',
-                id: '0x001788010d7d9d3f',
-              },
-            ],
-            type: 'StepAction',
-          },
+          actions: [
+            {
+              id: '0x70ac08fffefafeca',
+              friendlyname: 'Attic light',
+              property: 'brightness',
+              data: 10,
+              steps: [
+                {
+                  property: 'brightness',
+                  operator: '-',
+                  id: '0x70ac08fffefafeca',
+                },
+                {
+                  operator: '-',
+                  property: 'action_time',
+                  id: '0x001788010d7d9d3f',
+                },
+              ],
+              type: 'StepAction',
+            },
+          ],
         },
         {
           name: 'action',
@@ -226,25 +236,27 @@ var automationMap = new Map([
               equality: '=',
             },
           ],
-          action: {
-            id: '0x70ac08fffefafeca',
-            friendlyname: 'Attic light',
-            property: 'brightness',
-            data: 10,
-            steps: [
-              {
-                property: 'brightness',
-                operator: '+',
-                id: '0x70ac08fffefafeca',
-              },
-              {
-                operator: '+',
-                property: 'action_time',
-                id: '0x001788010d7d9d3f',
-              },
-            ],
-            type: 'StepAction',
-          },
+          actions: [
+            {
+              id: '0x70ac08fffefafeca',
+              friendlyname: 'Attic light',
+              property: 'brightness',
+              data: 10,
+              steps: [
+                {
+                  property: 'brightness',
+                  operator: '+',
+                  id: '0x70ac08fffefafeca',
+                },
+                {
+                  operator: '+',
+                  property: 'action_time',
+                  id: '0x001788010d7d9d3f',
+                },
+              ],
+              type: 'StepAction',
+            },
+          ],
         },
         {
           name: 'action',
@@ -255,13 +267,15 @@ var automationMap = new Map([
               equality: '=',
             },
           ],
-          action: {
-            id: '0x70ac08fffefafeca',
-            friendlyname: 'Attic light',
-            property: 'color_temp',
-            steps: [],
-            type: 'PresetRotationAction',
-          },
+          actions: [
+            {
+              id: '0x70ac08fffefafeca',
+              friendlyname: 'Attic light',
+              property: 'color_temp',
+              steps: [],
+              type: 'PresetRotationAction',
+            },
+          ],
         },
       ],
     },

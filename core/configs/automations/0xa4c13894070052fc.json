@@ -13,14 +13,16 @@
           "equality": "="
         }
       ],
-      "action": {
-        "id": "0x00158d0005a23c38",
-        "friendlyname": "Living room",
-        "property": "state",
-        "data": "OFF",
-        "delay": 300000,
-        "type": "TriggerAction"
-      }
+      "actions": [
+        {
+          "id": "0x00158d0005a23c38",
+          "friendlyname": "Living room",
+          "property": "state",
+          "data": "OFF",
+          "delay": 300000,
+          "type": "TriggerAction"
+        }
+      ]
     },
     {
       "name": "presence",
@@ -36,13 +38,15 @@
           "equality": "\u003c="
         }
       ],
-      "action": {
-        "id": "0x00158d0005a23c38",
-        "friendlyname": "Living room",
-        "property": "state",
-        "data": "ON",
-        "type": "TriggerAction"
-      }
+      "actions": [
+        {
+          "id": "0x00158d0005a23c38",
+          "friendlyname": "Living room",
+          "property": "state",
+          "data": "ON",
+          "type": "TriggerAction"
+        }
+      ]
     }
   ]
 }

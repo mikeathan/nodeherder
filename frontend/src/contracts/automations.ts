@@ -69,16 +69,17 @@ export class EditableAutomationTrigger
 {
   name: string;
   conditions: AutomationTriggerConditions;
-  action: AutomationTriggerAction;
+  actions: AutomationTriggerAction[];
 
   static create(): AutomationTrigger {
     const trigger = {} as EditableAutomationTrigger;
     trigger.name = '';
     trigger.conditions = [];
-    trigger.action = new EditableActionTrigger(
-      AutomationActionTypes.Trigger,
-    );
+    // trigger.action = new EditableActionTrigger(
+    //   AutomationActionTypes.Trigger,
+    // );
 
+    trigger.actions = [];
     return new EditableAutomationTrigger(trigger);
   }
 
@@ -91,7 +92,7 @@ export class EditableAutomationTrigger
   private constructor(trigger: AutomationTrigger) {
     this.name = trigger.name;
     this.conditions = trigger.conditions;
-    this.action = trigger.action;
+    this.actions = trigger.actions;
   }
 }
 
@@ -204,8 +205,9 @@ export function isValid(
 ): boolean {
   return (
     automation.name != '' &&
-    automation.action.id != '' &&
-    automation.action.property != ''
+    automation.actions.every((action) => {
+      action.id != '' && action.property != '';
+    })
   );
 }
 

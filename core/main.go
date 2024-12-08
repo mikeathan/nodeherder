@@ -58,7 +58,7 @@ func main() {
 	mqttConfig := mqtt.MqttConfig{
 		Username:   "sinkhole",
 		Password:   "mqtt2023",
-		Broker:     "192.168.50.179:1883",
+		Broker:     "tcp://localhost:1883",
 		ClientType: args.buildType,
 	}
 

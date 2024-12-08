@@ -79,8 +79,6 @@ function isDropdownType(
 function createEvent(event: Event, button: ButtonType) {
   event.preventDefault();
   try {
-    console.log("[DEBUG] Buttonpanel - createEvent", event, button);
-
     button.click(event);
   } catch (error) {
     console.error('Error during button click:', error);

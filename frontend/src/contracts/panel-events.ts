@@ -31,7 +31,7 @@ export function emitOpenSchedulerPanelEvent(
 }
 
 export function emitOpenTriggerPanelEvent(
-  id: string,
+  automationId: string,
   trigger: AutomationTrigger,
   saveFunc: SaveTriggerFunc,
   deleteFunc: DeleteTriggerFunc,
@@ -47,7 +47,7 @@ export function emitOpenTriggerPanelEvent(
 
   const openPanelEvent: OpenPanelEvent = {
     name: 'Trigger',
-    args: { id: id, trigger: trigger },
+    args: { id: automationId, trigger: trigger },
     events: events,
   };
   emitOpenPanel(openPanelEvent);

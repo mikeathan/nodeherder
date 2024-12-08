@@ -36,17 +36,17 @@ const componentCache = ref<KeyValuePair<OpenPanelEvent>>(
 const presentationQueue = ref<Array<string>>([]);
 
 function openComponent(event: OpenPanelEvent): void {
-  presentationQueue.value.push(event.name);
 
+  presentationQueue.value.push(event.name);
   if (presentationQueue.value.length == 1) {
     emit('componentDisplayed')
   }
 
   if (componentCache.value[event.name] != undefined) {
     componentCache.value[event.name].args = event.args;
-  } else {
-    componentCache.value[event.name] = event;
   }
+
+  componentCache.value[event.name] = event;
 }
 
 const currentComponent = computed(() => {

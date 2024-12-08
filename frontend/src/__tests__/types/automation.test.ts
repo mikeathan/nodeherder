@@ -62,8 +62,8 @@ function automationData1IsEqualToDeserializedObject() {
       );
     });
 
-    const action = trigger.action;
-    const newAction = newTrigger.action;
+    const action = trigger.actions[0];
+    const newAction = newTrigger.actions[0];
 
     isEqualToValueAndNotNull(action, 'id', newAction.id);
     isEqualToValueAndNotNull(
@@ -133,8 +133,8 @@ function automationData2IsEqualToDeserializedObject() {
       );
     });
 
-    const action = trigger.action;
-    const newAction = newTrigger.action;
+    const action = trigger.actions[0];
+    const newAction = newTrigger.actions[0];
 
     isEqualToValueAndNotNull(action, 'id', newAction.id);
     isEqualToValueAndNotNull(

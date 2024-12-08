@@ -80,7 +80,6 @@ function stepPropertySelected(value: string, step: AutomationActionStep) {
 }
 
 function saveAction(): void {
-  console.log("[DEBUG] StepAction SaveAction ", action);
   emit("save", action);
 }
 
