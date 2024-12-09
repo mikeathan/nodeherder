@@ -209,6 +209,7 @@ export function isValid(
     trigger.actions.every(
       (action) => action.id != '' && action.property != '',
     );
+
   return r;
 }
 

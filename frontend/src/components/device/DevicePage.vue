@@ -2,13 +2,11 @@
 import { computed, ref } from "vue";
 import { store } from "../../store/index";
 import { useRouter } from "vue-router";
-import Tabs from '../controls/Tabs.vue'
-import Tab from '../controls/Tab.vue'
 import DeviceAbout from "./DeviceAbout.vue";
 import DeviceExposes from "./DeviceExposes.vue";
 import DeviceSettings from "./DeviceSettings.vue";
 import DeviceMetrics from "./DeviceMetrics.vue";
-
+import { deviceTabComponents } from '../../mixins/useTabComponents'
 import { Device } from "@/types/device";
 
 const props = defineProps({
@@ -35,6 +33,7 @@ const previousPage = computed(() => {
   return useRouter().push("/");
 });
 
+
 </script>
 <template>
   <div v-if="deviceExist">
@@ -50,19 +49,15 @@ const previousPage = computed(() => {
       </div>
     </div>
     <div class="col-12 col-md-9 ">
-      <Tabs>
-        <Tab active="true" title="About">
-          <DeviceAbout :id="props.id"></DeviceAbout>
-        </Tab>
-        <Tab title="Exposes">
-          <DeviceExposes :id="props.id"></DeviceExposes>
-        </Tab>
-        <Tab title="Settings">
-          <DeviceSettings :id="props.id"></DeviceSettings>
-        </Tab>
-        <Tab title="Metrics">
-          <DeviceMetrics :id="props.id"></DeviceMetrics>
-        </Tab>
+      <Tabs value="0">
+        <TabList>
+          <Tab v-for="tab in deviceTabComponents" :key="tab.title" :value="tab.value">{{ tab.title }}</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel v-for="tab in deviceTabComponents" :key="tab.value" :value="tab.value">
+            <component :is="tab.content" v-bind="{ id: props.id }"></component>
+          </TabPanel>
+        </TabPanels>
       </Tabs>
     </div>
   </div>

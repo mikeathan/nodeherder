@@ -62,8 +62,6 @@ function closeComponent(name: string): void {
 
   // TODO: cleanup componentCache ?
   presentationQueue.value.pop();
-  const event = componentCache.value[name];
-
 
   if (presentationQueue.value.length == 0) {
     emit('close');

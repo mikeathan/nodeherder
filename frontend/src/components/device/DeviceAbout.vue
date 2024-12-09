@@ -73,15 +73,17 @@ const displayProps = computed(() => {
 </script>
 <template>
     <div>
-        <dl className="row align-self-center" v-for="(prop, idx) in displayProps">
-            <dt className="col-12 col-md-5">{{ prop.key }}</dt>
-            <dd className="col-12 col-md-7 " v-if="prop.type == undefined">
-                <div title="last update" className="col text-truncate">
-                    {{ prop.value }}
+        <dl v-for="(prop, idx) in displayProps" :key="idx">
+            <dt>
+                {{ prop.key }}
+            </dt>
+            <dd>
+                <div v-if="prop.type === undefined">
+                    <span title="last update">{{ prop.value }}</span>
                 </div>
-            </dd>
-            <dd className="col-12 col-md-7" v-else>
-                <component :is="prop.type" v-bind="prop.props"></component>
+                <template v-else>
+                    <component :is="prop.type" v-bind="prop.props"></component>
+                </template>
             </dd>
         </dl>
 

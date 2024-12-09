@@ -51,7 +51,7 @@ const actions = ref<AutomationTriggerActions>({} as AutomationTriggerActions);
 
 const trigger = ref<AutomationTrigger>(props.trigger);
 
-const dropDownitems = computed(() =>
+const dropDownActionItems = computed(() =>
     createNewActionDropdownItems((e: ActionType) =>
         addNewAction(e),
     ),
@@ -230,7 +230,7 @@ function createActionOpenPanelEvent(
             </div>
         </Fieldset>
         <div class="pt-2"></div>
-        <Fieldset legend="Then" :toggleable="true" :collapsed="false">
+        <Fieldset legend="Then" :toggleable="true" :collapsed="true">
             <DataTable :value="actions" selectionMode="single">
                 <Column header="Actions">
                     <template #body="slotProps">
@@ -247,7 +247,7 @@ function createActionOpenPanelEvent(
             </DataTable>
 
             <div class="pt-4 flex align-items-center justify-content-center">
-                <Dropdown :items="dropDownitems" :disabled="actions.length != 0" text label="New Action"
+                <Dropdown :items="dropDownActionItems" :disabled="actions.length != 0" text label="New Action"
                     icon="pi pi-plus" size="small" />
             </div>
         </Fieldset>

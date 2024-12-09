@@ -29,7 +29,11 @@ import Select from 'primevue/select';
 import ToggleSwitch from 'primevue/toggleswitch';
 import Card from 'primevue/card';
 import SplitButton from 'primevue/splitbutton';
-
+import Tabs from 'primevue/tabs';
+import TabList from 'primevue/tablist';
+import Tab from 'primevue/tab';
+import TabPanels from 'primevue/tabpanels';
+import TabPanel from 'primevue/tabpanel';
 import DataView from 'primevue/dataview';
 import Fieldset from 'primevue/fieldset';
 
@@ -45,6 +49,7 @@ app.use(PrimeVue, {
     preset: Material,
   },
 });
+
 app.component('Button', Button);
 app.component('InputText', InputText);
 app.component('FloatLabel', FloatLabel);
@@ -62,6 +67,14 @@ app.component('Card', Card);
 app.component('SplitButton', SplitButton);
 app.component('DataView', DataView);
 app.component('Fieldset', Fieldset);
+
+app.component('TabList', TabList);
+app.component('Tabs', Tabs);
+app.component('Tab', Tab);
+app.component('TabPanels', TabPanels);
+app.component('TabPanel', TabPanel);
+
+
 app.use(ToastService);
 app.use(store, key);
 app.use(router);
