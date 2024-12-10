@@ -40,17 +40,17 @@ function updateValue(expose: Expose, value: any) {
 
 </script>
 <template>
-    <div class="row border-bottom py-1 w-100 align-items-center" v-for="( expose, index ) in  device.exposes "
+    <div class="grid col-12 align-items-center grid-nogutter" v-for="( expose, index ) in  device.exposes "
         :item="expose">
-        <dl class="col-12 col-md-3">
+        <dl class="col-12 md:col-3">
             <dt><strong> {{ expose.name }}</strong></dt>
             <dd><small> {{ expose.description }} </small></dd>
         </dl>
-        <div class="col-12 col-md-9">
+        <div class="col-12 md:col-9">
             <div v-if="expose.properties == null">
                 {{ getSensorValue(expose.data) }} {{ getSensorUnit(expose.name) }}
             </div>
-            <div v-else-if="expose.type == ExposeTypes.Numeric" class="input-group align-items-center">
+            <div v-else-if="expose.type == ExposeTypes.Numeric" class="align-items-center">
                 <!-- TODO: refactor -->
                 <RadioGroup v-if="expose.presets != null" :items="(expose.presets as any)" :value="expose.data"
                     @update="v => updateValue(expose, v)"></RadioGroup>

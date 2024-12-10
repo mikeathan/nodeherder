@@ -30,7 +30,7 @@ const displayProps = computed(() => {
     return [
 
         {
-            key: "Id:",
+            key: "IEEE Address:",
             value: device.id,
         },
         {
@@ -70,14 +70,15 @@ const displayProps = computed(() => {
     ];
 });
 
+
 </script>
 <template>
     <div>
-        <dl v-for="(prop, idx) in displayProps" :key="idx">
-            <dt>
+        <dl class="grid grid-nogutter" v-for="(prop, idx) in displayProps" :key="idx">
+            <dt class="col-12 md:col-5">
                 {{ prop.key }}
             </dt>
-            <dd>
+            <dd class="col-12 md:col-7">
                 <div v-if="prop.type === undefined">
                     <span title="last update">{{ prop.value }}</span>
                 </div>
@@ -93,8 +94,6 @@ const displayProps = computed(() => {
             </button>
         </div>
     </div>
-
-    <RenameDeviceDialog :friendlyName="device.friendly_name" :show="showDialog" @update:name="renameDevice"
-        @close="e => showDialog = e">
-    </RenameDeviceDialog>
+    <Button  icon="pi pi-user-edit"  variant="text" v-tooltip="'Rename device'"  @click="showDialog = true" />
+    <RenameDeviceDialog :friendlyName="device.friendly_name" :show="showDialog" @update:name="renameDevice" @close="showDialog = false" />
 </template>

@@ -27,7 +27,7 @@ const menuItems = [
 ];
 
 </script>
-
+<!-- 
 <style>
 app-container {
   display: flex;
@@ -66,11 +66,11 @@ app-container {
   padding: 1rem;
   overflow: auto;
 }
-</style>
+</style> -->
 
 <template>
 
-  <main>
+  <main class="">
     <div class="app-container">
       <Menubar :model="menuItems" class="top-navbar">
         <template #start>

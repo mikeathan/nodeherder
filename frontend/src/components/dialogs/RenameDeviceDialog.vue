@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watchEffect, onMounted, watch } from 'vue';
-import { Modal } from 'bootstrap'
+import { prop } from 'vue-class-component';
 
 const props = defineProps<{
     friendlyName: string
@@ -9,41 +9,22 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:name', 'close']);
 
-function rename(event: Event) {
+function rename() {
     emit('update:name', friendlyName.value);
     close()
 }
 
 const friendlyName = ref<string>("")
-const closeRef = ref<HTMLButtonElement | null>(null);
-const modalRef = ref<HTMLElement | null>(null)
-const showDialog = ref<boolean>(false)
-let modal: Modal
+const showDialog = ref<boolean>(props.show)
 
-onMounted(() => {
-    if (modalRef.value) {
-        modal = new Modal(modalRef.value)
-    }
-})
-
-// https://shzhangji.com/blog/2022/06/11/use-bootstrap-v5-in-vue3-project/
 
 watchEffect(() => friendlyName.value = props.friendlyName);
+watchEffect(() => showDialog.value = props.show);
 
-watch(
-    () => props.show,
-    () => {
-        showDialog.value = props.show
-        if (showDialog.value) {
-            modal.show()
-        } else {
-            modal.hide()
-        }
-    }
-);
 
 function close() {
     emit('close', false)
+    showDialog.value = false
 }
 function isValid() {
     return friendlyName.value != '' && friendlyName.value != props.friendlyName
@@ -51,23 +32,14 @@ function isValid() {
 </script>
 
 <template>
-    <div class="modal fade" tabindex="-1" aria-hidden="true" ref="modalRef">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Rename device</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="text" class="form-control" v-model="friendlyName"
-                        @input="e => friendlyName = (e.target as HTMLInputElement).value">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="close">Close</button>
-                    <button type="button" class="btn btn-primary" :disabled="isValid() == false"
-                        @click="rename">Rename</button>
-                </div>
-            </div>
+    <Dialog v-model:visible="showDialog" modal header="Rename device" :style="{ width: '25rem' }">
+        <div class="flex items-center gap-4 mb-4">
+            <label for="friendlyNameId" class="font-semibold w-24">Friendly name</label>
+            <InputText id="friendlyNameId" class="flex-auto" v-model="friendlyName" autocomplete="off" />
         </div>
-    </div>
+        <div class="flex justify-end gap-2">
+            <Button type="button" label="Cancel" severity="secondary" @click="close()"></Button>
+            <Button type="button" label="Save" :disabled="isValid() == false" @click="(e) => rename()"></Button>
+        </div>
+    </Dialog>
 </template>

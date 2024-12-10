@@ -36,7 +36,8 @@ import TabPanels from 'primevue/tabpanels';
 import TabPanel from 'primevue/tabpanel';
 import DataView from 'primevue/dataview';
 import Fieldset from 'primevue/fieldset';
-
+import Dialog from 'primevue/dialog';
+import Tooltip from 'primevue/tooltip';
 
 import 'primeicons/primeicons.css'; // Icons
 import 'primeflex/primeflex.css';
@@ -73,6 +74,8 @@ app.component('Tabs', Tabs);
 app.component('Tab', Tab);
 app.component('TabPanels', TabPanels);
 app.component('TabPanel', TabPanel);
+app.component('Dialog', Dialog);
+app.directive('tooltip', Tooltip);
 
 
 app.use(ToastService);
