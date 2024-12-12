@@ -23,7 +23,6 @@ import ColumnGroup from 'primevue/columngroup';
 import Row from 'primevue/row';
 import ToastService from 'primevue/toastservice';
 import DatePicker from 'primevue/datepicker';
-import Slider from 'primevue/slider';
 import InputNumber from 'primevue/inputnumber';
 import Select from 'primevue/select';
 import ToggleSwitch from 'primevue/toggleswitch';
@@ -38,6 +37,7 @@ import DataView from 'primevue/dataview';
 import Fieldset from 'primevue/fieldset';
 import Dialog from 'primevue/dialog';
 import Tooltip from 'primevue/tooltip';
+import Slider from 'primevue/slider';
 
 import 'primeicons/primeicons.css'; // Icons
 import 'primeflex/primeflex.css';
@@ -76,7 +76,7 @@ app.component('TabPanels', TabPanels);
 app.component('TabPanel', TabPanel);
 app.component('Dialog', Dialog);
 app.directive('tooltip', Tooltip);
-
+app.component('Slider', Slider);
 
 app.use(ToastService);
 app.use(store, key);

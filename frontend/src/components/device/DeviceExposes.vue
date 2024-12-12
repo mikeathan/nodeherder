@@ -5,10 +5,10 @@ import { Device, Expose } from "@/types/device";
 import { ExposeTypes } from "@/types/device.type";
 import { getExposeAttribute, getExposeProperty } from "../../contracts/device";
 
-import Slider from "../input/Slider.vue";
 import Toggle from "../input/Toggle.vue";
 import RadioGroup from "../input/RadioGroup.vue";
 import { getSensorUnit, getSensorValue } from "@/modules/formatters/sensor-formatter";
+import Range from "../input/Range.vue";
 
 const props = defineProps({
     id: { type: String, required: true }
@@ -40,7 +40,7 @@ function updateValue(expose: Expose, value: any) {
 
 </script>
 <template>
-    <div class="grid col-12 align-items-center grid-nogutter" v-for="( expose, index ) in  device.exposes "
+    <div class="grid col-12 align-items-center grid-nogutter" v-for="( expose, index ) in device.exposes "
         :item="expose">
         <dl class="col-12 md:col-3">
             <dt><strong> {{ expose.name }}</strong></dt>
@@ -54,11 +54,10 @@ function updateValue(expose: Expose, value: any) {
                 <!-- TODO: refactor -->
                 <RadioGroup v-if="expose.presets != null" :items="(expose.presets as any)" :value="expose.data"
                     @update="v => updateValue(expose, v)"></RadioGroup>
-                <Slider :value="expose.data" :min="getExposeAttribute(expose, 'min')"
-                    :max="getExposeAttribute(expose, 'max')" @update="v => updateValue(expose, v)">
-                </Slider>
-                <input class="form-control ms-1" type="number" :value="expose.data" style="max-width: 100px;"
-                    @change="v => update(expose, v)">
+                <Range :value="expose.data" :showInput="true" :min="getExposeAttribute(expose, 'min')"
+                    :max="getExposeAttribute(expose, 'max')" @update='v => updateValue(expose, v)'>
+                </Range>
+
             </div>
             <div v-else-if="expose.type == ExposeTypes.Binary">
                 <Toggle :minimal="true" :value="expose.data" :valueOn="getExposeProperty(expose, 'on')"

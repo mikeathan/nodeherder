@@ -35,13 +35,13 @@ function save(propName: any, propValue: any) {
 deviceSettings
 </script>
 <template>
-  <div class="row border-bottom py-1 w-100 align-items-center" v-for="(value, key) in deviceSettings" :key="key">
-    <dl class="col-12 col-md-3">
+  <div class="grid col-12 align-items-center grid-nogutter" v-for="(value, key) in deviceSettings" :key="key">
+    <dl class="col-12 md:col-3">
       <dt>
         <strong> {{ key }}</strong>
       </dt>
     </dl>
-    <div class="col-md-4">
+    <div class="md:col-4">
       <div v-if="typeof value === 'boolean'">
         <Toggle :minimal="false" :value="value" :valueOn="true" :valueoff="false"
           @update="(v) => toggleChanged(key, v)">

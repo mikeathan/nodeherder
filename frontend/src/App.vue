@@ -71,18 +71,20 @@ app-container {
 <template>
 
   <main class="">
-    <div class="app-container">
-      <Menubar :model="menuItems" class="top-navbar">
-        <template #start>
-          <div class="menu-links">
-            <Status />
-            <Notifications />
-          </div>
-        </template>
-      </Menubar>
+    <div class="app-container grid  align-items-center justify-content-center">
+      <div class="col-12 md:col-10 lg:col-12 p-4">
+        <Menubar :model="menuItems" class="top-navbar">
+          <template #start>
+            <div class="menu-links">
+              <Status />
+              <Notifications />
+            </div>
+          </template>
+        </Menubar>
 
-      <div class="content">
-        <RouterView />
+        <div class="content">
+          <RouterView />
+        </div>
       </div>
     </div>
   </main>

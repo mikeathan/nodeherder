@@ -53,17 +53,17 @@ const groupedMetrics = computed(() => {
 </script>
 
 <template>
-  <div class="col-sm-3">
-    <Selection label="Period:" :value="selectePeriod" @updated="dateSelected" :items="PeriodOptions"
-      :disabled="!hasMetrics">
-    </Selection>
-  </div>
+    <div class="sm:col-3">
+      <Selection label="Period:" :value="selectePeriod" @updated="dateSelected" :items="PeriodOptions"
+        :disabled="!hasMetrics">
+      </Selection>
+    </div>
 
-  <div v-if="!hasMetrics">
-    <p>No metrics available</p>
-  </div>
-  <div v-for="(metrics, chartType) in groupedMetrics">
-    <component :is="ChartComponents[chartType]" v-bind="{ chartData: metrics }">
-    </component>
-  </div>
+    <div v-if="!hasMetrics">
+      <p>No metrics available</p>
+    </div>
+    <div  v-for="(metrics, chartType) in groupedMetrics">
+      <component :is="ChartComponents[chartType]" v-bind="{ chartData: metrics }">
+      </component>
+    </div>
 </template>

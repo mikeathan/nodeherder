@@ -9,7 +9,7 @@ import { getExposeProperty } from "../../contracts/device";
 import { PropType } from "vue";
 import { store } from "../../store/index";
 import { Expose } from "@/types/device";
-import Slider from "../input/Slider.vue"
+import Range from "../input/Range.vue"
 import Toggle from "../input/Toggle.vue"
 
 const props = defineProps({
@@ -56,9 +56,9 @@ function getUnit() {
     </div>
     <div v-if="props.expose.data != undefined" class="flex-shrink-1">
         <div v-if="hasNumericFeatures()">
-            <Slider :value="getValue()" :min="getExposeProperty(props.expose, 'min')"
+            <Range :value="getValue()" :min="getExposeProperty(props.expose, 'min')"
                 :max="getExposeProperty(props.expose, 'max')" @update="updateValue">
-            </Slider>
+            </Range>
         </div>
         <div v-else-if="hasBinaryFeatures()">
             <Toggle :value="props.expose.data" :valueOn="getExposeProperty(props.expose, 'on')"

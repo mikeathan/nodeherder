@@ -200,79 +200,77 @@ function getActionDescription(
 <template>
   <!-- TODO: find better way to do this
     we have 2 components that use the same template and toggle from the if isinVieMode -->
-  <div class="grid">
-    <div class="col-12 md:col-6 lg:col-8 sm:col-6">
-      <Card v-bind:style="{
-        display: isInViewMode ? 'block' : 'none',
-      }" class="col-12">
-        <template #title>
-          <Button icon="pi pi-times" variant="text" rounded class="float-end" @click="cancel()" />
-          <div class="grid">
 
-            <div class="row">
 
-              <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
-                <InputBox label="Id" :disabled="true" :value="automation.id" />
-              </div>
-              <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
-                <InputBox label="Friendly Name" :disabled="true" :value="automation.friendlyname" class="w-full" />
-              </div>
-              <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
-                <InputBox label="Description" @updated="(v) => (automation.description = v)
-                  " :value="automation.description" class="w-full" />
-              </div>
-              <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
-                <AutomationStatus :automation="automation" :clickToOpen="true" />
-              </div>
-            </div>
+  <Card v-bind:style="{
+    display: isInViewMode ? 'block' : 'none',
+  }" class="col-12">
+    <template #title>
+      <Button icon="pi pi-times" variant="text" rounded class="float-end" @click="cancel()" />
+      <div class="grid">
+
+        <div class="row">
+
+          <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
+            <InputBox label="Id" :disabled="true" :value="automation.id" />
           </div>
-        </template>
-        <template #content>
-          <ButtonPanel :buttons="buttonPanelItems" class="pb-3 pt-3" />
-          <DataTable :value="automation.triggers" @row-click="rowClicked" selectionMode="single">
-            <Column field="action" header="Action">
-              <template #body="slotProps">
-                {{ getActionDescription(slotProps.data) }}
-              </template>
-            </Column>
-            <Column field="conditions" header="Conditions">
-              <template #body="slotProps">
-                {{
-                  getConditionsDescription(slotProps.data)
-                }}
-              </template>
-            </Column>
-            <Column class="col-sm-1">
-              <template #header="slotProps">
-                <Button icon="pi pi-plus" variant="text" rounded @click="createNewTrigger()" />
-              </template>
-              <template #body="slotProps">
-                <Button icon="pi pi-trash" variant="text" rounded @click="
-                  onDeleteTriggerClick(
-                    $event,
-                    slotProps.data,
-                  )
-                  " />
-              </template>
-            </Column>
-          </DataTable>
-          <div class="pt-4 flex align-items-center justify-content-center">
-            <Button style="width: 99%;" icon="pi pi-plus" label="Add Trigger" @click="createNewTrigger()" text
-              size="small" />
+          <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
+            <InputBox label="Friendly Name" :disabled="true" :value="automation.friendlyname" class="w-full" />
           </div>
+          <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
+            <InputBox label="Description" @updated="(v) => (automation.description = v)
+              " :value="automation.description" class="w-full" />
+          </div>
+          <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
+            <AutomationStatus :automation="automation" :clickToOpen="true" />
+          </div>
+        </div>
+      </div>
+    </template>
+    <template #content>
+      <ButtonPanel :buttons="buttonPanelItems" class="pb-3 pt-3" />
+      <DataTable :value="automation.triggers" @row-click="rowClicked" selectionMode="single">
+        <Column field="action" header="Action">
+          <template #body="slotProps">
+            {{ getActionDescription(slotProps.data) }}
+          </template>
+        </Column>
+        <Column field="conditions" header="Conditions">
+          <template #body="slotProps">
+            {{
+              getConditionsDescription(slotProps.data)
+            }}
+          </template>
+        </Column>
+        <Column class="col-sm-1">
+          <template #header="slotProps">
+            <Button icon="pi pi-plus" variant="text" rounded @click="createNewTrigger()" />
+          </template>
+          <template #body="slotProps">
+            <Button icon="pi pi-trash" variant="text" rounded @click="
+              onDeleteTriggerClick(
+                $event,
+                slotProps.data,
+              )
+              " />
+          </template>
+        </Column>
+      </DataTable>
+      <div class="pt-4 flex align-items-center justify-content-center">
+        <Button style="width: 99%;" icon="pi pi-plus" label="Add Trigger" @click="createNewTrigger()" text
+          size="small" />
+      </div>
 
-        </template>
-      </Card>
-      <Card v-bind:style="{
-        display: isInViewMode == false ? 'block' : 'none',
-      }">
-        <template #content>
-          <Button icon="pi pi-times" variant="text" rounded class="float-end" @click="createCloseLastPanelEvent" />
+    </template>
+  </Card>
+  <Card v-bind:style="{
+    display: isInViewMode == false ? 'block' : 'none',
+  }">
+    <template #content>
+      <Button icon="pi pi-times" variant="text" rounded class="float-end" @click="createCloseLastPanelEvent" />
 
-          <Panel @close="onComponentHidden" @component-displayed="onComponentDisplayed">
-          </Panel>
-        </template>
-      </Card>
-    </div>
-  </div>
+      <Panel @close="onComponentHidden" @component-displayed="onComponentDisplayed">
+      </Panel>
+    </template>
+  </Card>
 </template>

@@ -33,43 +33,41 @@ function saveAutomation(id: string): void {
 </script>
 
 <template>
-    <div className="content p-0 p-sm-3">
 
-        <table class="table responsive table-hover">
-            <thead>
-                <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">Name</th>
-                    <th scope="col">Description</th>
-                    <th scope="col">Enabled</th>
+    <table class="table responsive table-hover">
+        <thead>
+            <tr>
+                <th scope="col">#</th>
+                <th scope="col">Name</th>
+                <th scope="col">Description</th>
+                <th scope="col">Enabled</th>
 
-                    <th scope="col"></th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="(automation, index) in automations" :item="automation">
-                    <th scope="row">{{ index + 1 }}</th>
-                    <td>
-                        <RouterLink :to="`/editor/${automation.id}`">{{
-                            automation.friendlyname
-                            }}</RouterLink>
-                    </td>
-                    <td>
-                        {{ automation.description }}
-                    </td>
-                    <td>
-                        <AutomationStatus :automation="automation" />
-                    </td>
-                    <td>
-                        <span class="fa fa-trash-alt fa-lg" @click="onDeleteAutomationClick(automation.id)"></span>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-        <div>
-            <RouterLink :to="`/creator`">
-                Create automations
-            </RouterLink>
-        </div>
+                <th scope="col"></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr v-for="(automation, index) in automations" :item="automation">
+                <th scope="row">{{ index + 1 }}</th>
+                <td>
+                    <RouterLink :to="`/editor/${automation.id}`">{{
+                        automation.friendlyname
+                    }}</RouterLink>
+                </td>
+                <td>
+                    {{ automation.description }}
+                </td>
+                <td>
+                    <AutomationStatus :automation="automation" />
+                </td>
+                <td>
+                    <span class="fa fa-trash-alt fa-lg" @click="onDeleteAutomationClick(automation.id)"></span>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <div>
+        <RouterLink :to="`/creator`">
+            Create automations
+        </RouterLink>
     </div>
 </template>

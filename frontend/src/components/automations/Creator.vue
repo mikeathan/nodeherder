@@ -16,16 +16,14 @@ function cancel(): void {
 }
 </script>
 <template>
-    <div class="container-fluid p-0 h-100">
 
-        <h4>Create new Automation</h4>
-        <div class="col-xl-5 col-md-3" v-if="selectedDevice == ''">
-            <Selection :value="selectedDevice" label="Select device" :disabled="selectedDevice != ''" size="normal"
-                @updated="v => selectedDevice = v" :items="deviceList">
-            </Selection>
-        </div>
-        <div v-else>
-            <DeviceAutomation :id="selectedDevice" @cancel="cancel"></DeviceAutomation>
-        </div>
+    <h4>Create new Automation</h4>
+    <div class="col-xl-5 col-md-3" v-if="selectedDevice == ''">
+        <Selection :value="selectedDevice" label="Select device" :disabled="selectedDevice != ''" size="normal"
+            @updated="v => selectedDevice = v" :items="deviceList">
+        </Selection>
+    </div>
+    <div v-else>
+        <DeviceAutomation :id="selectedDevice" @cancel="cancel"></DeviceAutomation>
     </div>
 </template>
