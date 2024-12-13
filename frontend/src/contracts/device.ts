@@ -13,6 +13,7 @@ export function getExposeAttribute(
   return expose.attributes ? expose.attributes[name] : null;
 }
 
+
 export function getExposeProperty(
   expose: Expose,
   name: string,

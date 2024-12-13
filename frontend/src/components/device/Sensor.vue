@@ -5,7 +5,7 @@ import {
     getSensorName,
     getSensorUnit,
 } from "../../modules/formatters/sensor-formatter";
-import { getExposeProperty } from "../../contracts/device";
+import { getExposeProperty, getExposeAttribute } from "../../contracts/device";
 import { PropType } from "vue";
 import { store } from "../../store/index";
 import { Expose } from "@/types/device";
@@ -54,10 +54,10 @@ function getUnit() {
     <div class="flex-shrink-1 flex-grow-1">
         {{ getSensorName(props.expose.name) }}
     </div>
-    <div v-if="props.expose.data != undefined" class="flex-shrink-1">
-        <div v-if="hasNumericFeatures()">
-            <Range :value="getValue()" :min="getExposeProperty(props.expose, 'min')"
-                :max="getExposeProperty(props.expose, 'max')" @update="updateValue">
+    <div v-if="props.expose.data != undefined" class="flex-shrink-1 ">
+        <div v-if="hasNumericFeatures()" class='align-items-center'>
+            <Range :value="getValue()" :min="getExposeAttribute(props.expose, 'min')"
+                :max="getExposeAttribute(props.expose, 'max')" @update="updateValue">
             </Range>
         </div>
         <div v-else-if="hasBinaryFeatures()">

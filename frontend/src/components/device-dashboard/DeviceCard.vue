@@ -22,7 +22,7 @@ const props = defineProps({
       <p>{{ device.description }}</p>
     </template>
     <template #content>
-      <div class="d-flex align-items-center" v-for="(value, sensor) in device.exposes">
+      <div class="flex align-items-center" v-for="(value, sensor) in device.exposes">
           <Sensor :id="device.id" :expose="device.exposes[sensor]" />
         </div>
     </template>
