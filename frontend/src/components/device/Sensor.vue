@@ -50,25 +50,22 @@ function getUnit() {
     <div class="me-1">
         <i :class="`fa fa-fw ${getSensorIcon(props.expose.name, props.expose.data)}`"></i>
     </div>
-
-    <div class="flex-shrink-1 flex-grow-1">
+    <div class="flex-grow-1">
         {{ getSensorName(props.expose.name) }}
     </div>
-    <div v-if="props.expose.data != undefined" class="flex-shrink-1 ">
-        <div v-if="hasNumericFeatures()" class='align-items-center'>
-            <Range :value="getValue()" :min="getExposeAttribute(props.expose, 'min')"
-                :max="getExposeAttribute(props.expose, 'max')" @update="updateValue">
-            </Range>
-        </div>
-        <div v-else-if="hasBinaryFeatures()">
-            <Toggle :value="props.expose.data" :valueOn="getExposeProperty(props.expose, 'on')"
-                :valueoff="getExposeProperty(props.expose, 'off')" @update="(v) => updateValue(v)">
-            </Toggle>
-        </div>
-        <div v-else>
-            {{ getValue() }}
-            {{ getUnit() }}
-        </div>
+    <div v-if="hasNumericFeatures()" class='col-7'>
+        <Range :value="getValue()" :min="getExposeAttribute(props.expose, 'min')"
+            :max="getExposeAttribute(props.expose, 'max')" @update="updateValue">
+        </Range>
     </div>
-    <div v-else>NA</div>
+    <div v-else-if="hasBinaryFeatures()">
+        <Toggle :value="props.expose.data" :valueOn="getExposeProperty(props.expose, 'on')"
+            :valueoff="getExposeProperty(props.expose, 'off')" @update="(v) => updateValue(v)">
+        </Toggle>
+    </div>
+    <div v-else>
+        {{ getValue() }}
+        {{ getUnit() }}
+    </div>
+    <!-- <div v-else>NA</div> -->
 </template>

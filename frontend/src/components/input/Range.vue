@@ -51,12 +51,9 @@ function inputChanged(event: InputNumberInputEvent) {
 }
 
 </script>
-
+<style scoped></style>
 <template>
-   <input type="range" class="form-range form-control border-0" id="rangeSelector" 
-    v-model="value" :max="max" :min="min" :disabled="value == null">
-    </input>
-        <!-- <InputNumber v-model.number="value" v-if="props.showInput" @input="inputChanged" class="w-full mb-4" />
-        <Slider v-model="value" @change="sliderChanged" :max="max" :min="min" :disabled="props.value == null"
-            class="w-full " /> -->
+    <InputNumber v-model.number="value" v-if="props.showInput" @input="inputChanged" class="w-full mb-4" />
+    <Slider v-model="value" @change="sliderChanged" :max="max" :min="min" :disabled="props.value == null"
+        class="w-full" :step="1" />
 </template>
