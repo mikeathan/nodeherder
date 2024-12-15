@@ -29,17 +29,18 @@ function scheduleClick() {
 </script>
 
 <template>
-    <div class="form-check form-switch ms-2">
+    <ToggleButton v-model="automation.enabled" onLabel="Enabled" offLabel="Disabled" size="small" />
+
+    <div class="form-check form-switch ">
         <div v-if="hasSchedules">
             <label class="form-check-label ">Scheduled</label>
-            <input class="form-check-input custom-control-input" type="checkbox" role="switch"
-                id="flexSwitchCheckDefault" v-model="automation.enabled" :disabled="true" />
-            <i class="fa-solid fa-clock ms-1" @click="scheduleClick()"></i>
+            <input class="form-check-input " type="checkbox" role="switch" v-model="automation.enabled"
+                :disabled="true" />
+            <i class="fa-solid fa-clock ps-1" @click="scheduleClick()"></i>
         </div>
         <div v-else>
-            <label class=" form-check-label ms-3">Enabled</label>
-            <input class="form-check-input custom-control-input" type="checkbox" role="switch"
-                id="flexSwitchCheckDefault" v-model="automation.enabled" />
+            <label class=" form-check-label ">Enabled</label>
+            <input class="form-check-input" type="checkbox" role="switch" v-model="automation.enabled" />
         </div>
     </div>
 

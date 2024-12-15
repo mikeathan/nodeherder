@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { RouterLink } from "vue-router";
+import { RouterLink, useRouter } from "vue-router";
 import { store } from "../../store/index";
-import { Automations } from "@/types/automation";
+import { Automation, Automations } from "@/types/automation";
 import AutomationStatus from "./schedule/AutomationStatus.vue";
+
+const router = useRouter();
 
 const automations = computed(() => {
 
@@ -22,52 +24,63 @@ function onDeleteAutomationClick(id: string): void {
     });
 }
 
-function saveAutomation(id: string): void {
-    // emit save event
-    var values = Object.values(automations.value).filter(k => k.id == id);
-    if (values.length != 0) {
-        store.dispatch('automations/save', values[0]);
-    }
+function getIndex(item: Automation): number {
+    return automations.value.indexOf(item);
 }
+
+const navigateToCreator = () => {
+    router.push('/creator');
+};
+
 
 </script>
 
 <template>
+    <Card>
+        <template #title>
+            <h2>
+                Automations
+            </h2>
+        </template>
+        <template #content>
 
-    <table class="table responsive table-hover">
-        <thead>
-            <tr>
-                <th scope="col">#</th>
-                <th scope="col">Name</th>
-                <th scope="col">Description</th>
-                <th scope="col">Enabled</th>
+            <DataTable size="small" :value="automations" >
+                <Column header="#"  >
+                    <template #body="slotProps">
+                        {{ getIndex(slotProps.data) + 1 }}
+                    </template>
+                </Column>
+                <Column field="friendlyname" header="Name"  >
+                    <template #body="slotProps">
+                        <RouterLink :to="`/editor/${slotProps.data.id}`">{{
+                            slotProps.data.friendlyname
+                            }}</RouterLink>
+                    </template>
+                </Column>
+                <Column field="description" header="Description" >
+                    <template #body="slotProps">
+                        {{ slotProps.data.description }}
+                    </template>
+                </Column>
+                <Column field="enabled" header="Enabled" >
+                    <template #body="slotProps">
+                        <AutomationStatus :automation="slotProps.data" />
+                    </template>
+                </Column>
+                <Column >
+                    <template #body="slotProps">
+                        <Button icon="pi pi-trash" variant="text" rounded
+                            @click="onDeleteAutomationClick(slotProps.data.id)" />
+                    </template>
+                </Column>
+            </DataTable>
 
-                <th scope="col"></th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr v-for="(automation, index) in automations" :item="automation">
-                <th scope="row">{{ index + 1 }}</th>
-                <td>
-                    <RouterLink :to="`/editor/${automation.id}`">{{
-                        automation.friendlyname
-                    }}</RouterLink>
-                </td>
-                <td>
-                    {{ automation.description }}
-                </td>
-                <td>
-                    <AutomationStatus :automation="automation" />
-                </td>
-                <td>
-                    <span class="fa fa-trash-alt fa-lg" @click="onDeleteAutomationClick(automation.id)"></span>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-    <div>
-        <RouterLink :to="`/creator`">
-            Create automations
-        </RouterLink>
-    </div>
+            <div class="pt-3"></div>
+            <div class="col md:col-3 sm:col-6">
+                <Button style="width: 99%;" icon="pi pi-plus" label="Create automation" @click="navigateToCreator"
+                    size="small" />
+            </div>
+        </template>
+    </Card>
+
 </template>
