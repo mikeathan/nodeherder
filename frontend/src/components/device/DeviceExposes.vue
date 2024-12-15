@@ -6,7 +6,7 @@ import { ExposeTypes } from "@/types/device.type";
 import { getExposeAttribute, getExposeProperty } from "../../contracts/device";
 
 import Toggle from "../input/Toggle.vue";
-import RadioGroup from "../input/RadioGroup.vue";
+import ButtonGroup from "../input/ButtonGroup.vue";
 import { getSensorUnit, getSensorValue } from "@/modules/formatters/sensor-formatter";
 import Range from "../input/Range.vue";
 
@@ -52,8 +52,11 @@ function updateValue(expose: Expose, value: any) {
             </div>
             <div v-else-if="expose.type == ExposeTypes.Numeric" class="align-items-center">
                 <!-- TODO: refactor -->
-                <RadioGroup v-if="expose.presets != null" :items="(expose.presets as any)" :value="expose.data"
-                    @update="v => updateValue(expose, v)"></RadioGroup>
+                <div class="pt-3"></div>
+
+                <ButtonGroup v-if="expose.presets != null" :items="(expose.presets as any)" :value="expose.data"
+                    @update="v => updateValue(expose, v)" />
+                    <div class="pt-3"></div>
                 <Range :value="expose.data" :showInput="true" :min="getExposeAttribute(expose, 'min')"
                     :max="getExposeAttribute(expose, 'max')" @update='v => updateValue(expose, v)'>
                 </Range>

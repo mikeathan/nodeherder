@@ -62,7 +62,7 @@ const groupedMetrics = computed(() => {
     <div v-if="!hasMetrics">
       <p>No metrics available</p>
     </div>
-    <div  v-for="(metrics, chartType) in groupedMetrics">
+    <div v-for="(metrics, chartType) in groupedMetrics">
       <component :is="ChartComponents[chartType]" v-bind="{ chartData: metrics }">
       </component>
     </div>

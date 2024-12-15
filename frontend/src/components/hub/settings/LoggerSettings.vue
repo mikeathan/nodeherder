@@ -38,13 +38,13 @@ function enableLogging(enabled: boolean) {
 
 <template>
     <h2>Logger</h2>
-    <div class="row border-bottom py-1 w-100 align-items-center" v-for="(interval, key) in loggerSettings" :key="key">
-        <dl class="col-12 col-md-3">
+    <div class="grid col-12 align-items-center grid-nogutter" v-for="(interval, key) in loggerSettings" :key="key">
+        <dl class="col md:col-3 ">
             <dt>
                 <strong> {{ key }}</strong>
             </dt>
         </dl>
-        <div class="col-md-4">
+        <div class="col md:col-3">
             <Toggle :minimal="true" :value="loggerSettings.enableRemoteLogger" :valueOn="true" :valueoff="false"
                 @update="(v: boolean) => enableLogging(v)">
             </Toggle>
