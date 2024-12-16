@@ -39,6 +39,9 @@ import Dialog from 'primevue/dialog';
 import Tooltip from 'primevue/tooltip';
 import Slider from 'primevue/slider';
 import ToggleButton from 'primevue/togglebutton';
+import Divider from 'primevue/divider';
+import Badge from 'primevue/badge';
+import OverlayBadge from 'primevue/overlaybadge';
 
 import 'primeicons/primeicons.css'; // Icons
 import 'primeflex/primeflex.css';
@@ -78,6 +81,9 @@ app.component('TabPanels', TabPanels);
 app.component('TabPanel', TabPanel);
 app.component('Dialog', Dialog);
 app.directive('tooltip', Tooltip);
+app.component('Divider', Divider);
+app.component('Badge', Badge);
+app.component('OverlayBadge', OverlayBadge);  
 
 app.use(ToastService);
 app.use(store, key);

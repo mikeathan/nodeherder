@@ -30,12 +30,8 @@ function scheduleClick() {
   }
 }
 </script>
-<style scoped></style>
 <template>
-  <div v-if="hasSchedules" class="form-check form-switch">
-    <!-- <label for="automation-status" class="pe-2"
-      >Scheduled</label
-    > -->
+  <div v-if="hasSchedules">
     <!-- <input
       id="automation-status"
       class="form-check-input"
@@ -43,34 +39,13 @@ function scheduleClick() {
       role="switch"
       v-model="automation.enabled"
       :disabled="true" /> -->
-    <!-- <ToggleSwitch
-      v-model="automation.enabled"
-      :disabled="true" /> -->
-    <Button
-      label="Scheduled"
-      icon="pi pi-clock"
-      size="small"
-      text />
 
-    <!-- <i
-      class="fa-solid fa-clock ps-1"
-      @click="scheduleClick()"></i> -->
-
-    <!-- <div class="col-1">
-      <Button
-        icon="pi pi-clock"
-        variant="text"
-        size="small"
-        @click="scheduleClick()" />
-    </div> -->
+    <Button label="Scheduled" icon="pi pi-clock" size="small" text @click="scheduleClick()" />
   </div>
-  <div v-else class="form-check form-switch">
-    <label class="pe-2">Enabled</label>
-    <ToggleSwitch v-model="automation.enabled" />
-    <!-- <input
-        class="form-check-input"
-        type="checkbox"
-        role="switch"
-        v-model="automation.enabled" /> -->
+  <div v-else>
+
+    <ToggleButton v-model="automation.enabled" onLabel="Enabled" offLabel="Disabled" onIcon="pi pi-check"
+      offIcon="pi pi-times" severity="success" size="small" />
+
   </div>
 </template>
