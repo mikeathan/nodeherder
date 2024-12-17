@@ -45,29 +45,29 @@ function clearConsole() {
 
 <style></style>
 <template>
-    <div className="content p-0 p-sm-3">
-        <div class="card">
-            <div class="card-header">
-                <label class=" pe-1">Remote logger:</label>
-                <Toggle :minimal="true" :value="loggerSettings.enableRemoteLogger" :valueOn="true" :valueoff="false"
-                    @update="(v: boolean) => enableLogging(v)">
-                </Toggle>
 
-                <button class="btn btn-link" @click="clearConsole">Clear</button>
-            </div>
+    <Card>
+        <template #title>
+            Remote logger
 
-            <div class="card-body">
-                <div v-for="(message, index) in messages" :key="message.timestamp">
-                    <span style="width: 60px;" :class="`badge ${getConsoleLevelClass(message.level)}`">{{ message.level
-                        }}</span>
-                    &nbsp;
-                    <small class="pe-1">{{
-                        formatTimestamp(message.timestamp)
-                        }}</small>
-                    &nbsp;
-                    <code>{{ message.message }}</code>
-                </div>
+        </template>
+        <template #content>
+            <Toggle :minimal="true" :value="loggerSettings.enableRemoteLogger" :valueOn="true" :valueoff="false"
+                @update="(v: boolean) => enableLogging(v)">
+            </Toggle>
+            <button class="btn btn-link" @click="clearConsole">Clear</button>
+            <div class="pb-3"></div>
+            <div v-for="(message, index) in messages" :key="message.timestamp">
+                <span style="width: 60px;" :class="`badge ${getConsoleLevelClass(message.level)}`">{{ message.level
+                    }}</span>
+                &nbsp;
+                <small class="pe-1">{{
+                    formatTimestamp(message.timestamp)
+                    }}</small>
+                &nbsp;
+                <code>{{ message.message }}</code>
             </div>
-        </div>
-    </div>
+        </template>
+    </Card>
+
 </template>

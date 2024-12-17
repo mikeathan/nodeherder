@@ -54,8 +54,8 @@ const navigateToCreator = () => {
 
                         <!-- Index Badge -->
                         <div
-                            class="flex-shrink-0 flex justify-center items-center text-white font-bold bg-blue-500 rounded-full mr-3 mb-2 md:mb-0">
-                            <Badge :value="index + 1" size="small"></Badge>
+                            class="flex-shrink-0 flex justify-center items-center text-white font-bold bg-blue-500 rounded-full me-3 mt-2 mb-2 md:mb-0">
+                            <Badge severity="secondary" :value="index + 1" size="small"></Badge>
                         </div>
 
                         <!-- Automation Details -->
@@ -73,23 +73,22 @@ const navigateToCreator = () => {
                         </div>
 
                         <!-- Actions Section -->
-                        <div
-                            class="flex-shrink-0 flex items-center space-x-3 w-full md:w-auto justify-between md:justify-end">
+                        <div class="flex-shrink-0 flex items-center space-x-3 w-full  mt-2 md:w-auto lg:w-30">
                             <!-- Status -->
-                            <AutomationStatus :automation="automation" />
-                            <!-- Delete Button -->
-                            <Button icon="pi pi-trash" variant="text" rounded class="text-red-500"
-                                @click="onDeleteAutomationClick(automation.id)" />
+                            <div>
+                                <AutomationStatus :automation="automation" />
+                            </div>
+                            <div>
+                                <!-- Delete Button -->
+                                <Button icon="pi pi-trash" variant="text" rounded class="text-red-500"
+                                    @click="onDeleteAutomationClick(automation.id)" />
+                            </div>
                         </div>
 
                     </li>
                     <Divider type="solid" />
-
                 </template>
-
             </ul>
-
-
             <div class="pt-3"></div>
             <div class="col md:col-3 sm:col-6">
                 <Button style="width: 99%" icon="pi pi-plus" label="Create automation" @click="navigateToCreator"

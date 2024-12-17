@@ -25,11 +25,13 @@ const loggerSettings = computed(() => {
 </script>
 
 <template>
-    <div className="content p-0 p-sm-3">
-        <h1>Settings</h1>
-        <br>
-        <br>
-        <HistorySettings :settings="historySettings"></HistorySettings>
-        <LoggerSettings :settings="loggerSettings"></LoggerSettings>
-    </div>
+    <Card>
+        <template #title>
+            <h2>Settings</h2>
+        </template>
+        <template #content>
+            <HistorySettings :settings="historySettings"></HistorySettings>
+            <LoggerSettings :settings="loggerSettings"></LoggerSettings>
+        </template>
+    </Card>
 </template>

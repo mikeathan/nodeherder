@@ -13,8 +13,12 @@ function cancel(): void {
 
 </script>
 <template>
-    <h3>Automation editor</h3>
-    <div>
-        <DeviceAutomation :id="props.id" @cancel="cancel"></DeviceAutomation>
-    </div>
+    <Card>
+        <template #title>
+            <h2>Automation Editor</h2>
+        </template>
+        <template #content>
+            <DeviceAutomation :id="props.id" @cancel="cancel"></DeviceAutomation>
+        </template>
+    </Card>
 </template>
