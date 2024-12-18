@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { key, store } from '../../../store/index';
 import Toggle from '../../input/Toggle.vue';
 import { consoleCleanupService } from '@/services/console-cleanup.service';
@@ -30,6 +30,25 @@ const messages = computed(() => {
 });
 
 
+const scrollToBottom = () => {
+    if (messageContainer.value) {
+        messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
+    }
+};
+const messageContainer = ref<HTMLDivElement | null>(null);
+watch(
+    messages,
+    (newMessages, oldMessages) => {
+        // if (newMessages.length !== oldMessages?.length) {
+            nextTick(() => scrollToBottom());
+        
+    },
+    { deep: true }
+);
+onMounted(() => {
+    scrollToBottom();
+});
+
 function enableLogging(enabled: boolean) {
     if (enabled == loggerSettings.value.enableRemoteLogger) {
         return;
@@ -43,8 +62,13 @@ function clearConsole() {
 }
 </script>
 
-<style></style>
-<template>
+<style>
+.message-container {
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+</style><template>
 
     <Card>
         <template #title>
@@ -57,15 +81,17 @@ function clearConsole() {
             </Toggle>
             <button class="btn btn-link" @click="clearConsole">Clear</button>
             <div class="pb-3"></div>
-            <div v-for="(message, index) in messages" :key="message.timestamp">
-                <span style="width: 60px;" :class="`badge ${getConsoleLevelClass(message.level)}`">{{ message.level
-                    }}</span>
-                &nbsp;
-                <small class="pe-1">{{
-                    formatTimestamp(message.timestamp)
+            <div ref="messageContainer" class="message-container">
+                <div v-for="(message, index) in messages" :key="message.timestamp">
+                    <span style="width: 60px;" :class="`badge ${getConsoleLevelClass(message.level)}`">{{ message.level
+                        }}</span>
+                    &nbsp;
+                    <small class="pe-1">{{
+                        formatTimestamp(message.timestamp)
                     }}</small>
-                &nbsp;
-                <code>{{ message.message }}</code>
+                    &nbsp;
+                    <code>{{ message.message }}</code>
+                </div>
             </div>
         </template>
     </Card>
