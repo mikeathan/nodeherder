@@ -10,17 +10,17 @@ const devices = computed(
 
 </script>
 <style scoped>
-
-.dashboard {
-  background-color: var(--surface-card); /* Use the same background color as PrimeVue cards */
-    height: 100vh; /* Optional: Full height */
-    overflow: auto; /* Optional: Scroll if content exceeds */}</style>
+/* .dashboard {
+  background-color: var(--p-card-background);
+  height: 100vh;
+  overflow: auto;
+} */
+</style>
 
 <template>
-
-    <div class="grid dashboard" >
-      <div class="col-12 md:col-6 lg:col-3 xg:col-2" v-for="device in devices" :key="device.id">
-        <DeviceCard :device="device" :key="device.id"></DeviceCard>
-      </div>
+  <div class="grid">
+    <div class="col-12 md:col-6 lg:col-3 xg:col-2" v-for="device in devices" :key="device.id">
+      <DeviceCard :device="device" :key="device.id"></DeviceCard>
     </div>
+  </div>
 </template>

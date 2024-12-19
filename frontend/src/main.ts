@@ -45,13 +45,17 @@ import OverlayBadge from 'primevue/overlaybadge';
 
 import 'primeicons/primeicons.css'; // Icons
 import 'primeflex/primeflex.css';
-
+import { definePreset } from '@primevue/themes';
 const emitter = mitt<Events>();
 
 const app = createApp(App);
+
 app.use(PrimeVue, {
   theme: {
-    preset: Material,
+    preset: Aura,
+    options: {
+      darkModeSelector: 'system',
+    },
   },
 });
 
@@ -83,7 +87,7 @@ app.component('Dialog', Dialog);
 app.directive('tooltip', Tooltip);
 app.component('Divider', Divider);
 app.component('Badge', Badge);
-app.component('OverlayBadge', OverlayBadge);  
+app.component('OverlayBadge', OverlayBadge);
 
 app.use(ToastService);
 app.use(store, key);

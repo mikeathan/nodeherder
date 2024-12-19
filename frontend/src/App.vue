@@ -8,9 +8,6 @@ import {
 import { store } from './store/index';
 import Status from './components/controls/Status.vue';
 import Notifications from './components/hub/alerts/Notifications.vue';
-import InputText from 'primevue/inputtext';
-import Button from 'primevue/button';
-const title = ref('Node-Herder');
 import { useRouter } from 'vue-router';
 
 onBeforeMount(() => {
@@ -25,6 +22,20 @@ const menuItems = [
 
 
 ];
+
+const toggleDarkMode = () => {
+  isDarkMode.value = !isDarkMode.value;
+  if (isDarkMode.value) {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+};
+
+onMounted(() => {
+  // document.documentElement.classList.add('dark');
+
+});
 
 </script>
 <!-- 
@@ -67,6 +78,21 @@ app-container {
   overflow: auto;
 }
 </style> -->
+<style>
+:root {
+  --background-color: #ffffff;
+  /* Light mode background */
+}
+
+:root.dark {
+  --background-color: #121212;
+  /* Dark mode background */
+}
+
+body {
+  background-color: var(--background-color);
+}
+</style>
 
 <template>
 
