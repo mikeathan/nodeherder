@@ -204,7 +204,7 @@ function getActionDescription(
 <template>
   <!-- TODO: find better way to do this
     we have 2 components that use the same template and toggle from the if isinVieMode -->
-  <Button icon="pi pi-times" variant="text" rounded class="float-end" @click="cancel()" />
+  <Button icon="pi pi-times" size="large" variant="text" rounded class="float-end" @click="cancel()" />
   <div v-bind:style="{
     display: isInViewMode ? 'block' : 'none',
   }" class="col-12">

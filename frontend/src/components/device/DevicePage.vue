@@ -36,29 +36,32 @@ const previousPage = computed(() => {
 
 </script>
 <template>
-  <div v-if="deviceExist">
-
-    <div className="d-flex flex-row">
-      <div class="align-self-center me-3">
-        <RouterLink :to="`${previousPage}`">
-          <i class="fa fa-arrow-left fa-xl" aria-hidden="true"></i>
-        </RouterLink>
+  <Card>
+    <template #title>
+      <div className="d-flex flex-row">
+        <div class="align-self-center me-3">
+          <RouterLink :to="`${previousPage}`">
+            <Button icon="pi pi-arrow-left" variant="text" />
+          </RouterLink>
+        </div>
+        <div class="h3 align-self-center">
+          {{ device.friendly_name }}
+        </div>
       </div>
-      <div class="h3 align-self-center">
-        {{ device.friendly_name }}
+    </template>
+    <template #content>
+      <div class="col-12 col-md-9 ">
+        <Tabs value="0">
+          <TabList>
+            <Tab v-for="tab in deviceTabComponents" :key="tab.title" :value="tab.value">{{ tab.title }}</Tab>
+          </TabList>
+          <TabPanels>
+            <TabPanel v-for="tab in deviceTabComponents" :key="tab.value" :value="tab.value">
+              <component :is="tab.content" v-bind="{ id: props.id }"></component>
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
       </div>
-    </div>
-    <div class="col-12 col-md-9 ">
-      <Tabs value="0">
-        <TabList>
-          <Tab v-for="tab in deviceTabComponents" :key="tab.title" :value="tab.value">{{ tab.title }}</Tab>
-        </TabList>
-        <TabPanels>
-          <TabPanel v-for="tab in deviceTabComponents" :key="tab.value" :value="tab.value">
-            <component :is="tab.content" v-bind="{ id: props.id }"></component>
-          </TabPanel>
-        </TabPanels>
-      </Tabs>
-    </div>
-  </div>
+    </template>
+  </Card>
 </template>

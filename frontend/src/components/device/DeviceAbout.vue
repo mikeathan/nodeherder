@@ -87,13 +87,8 @@ const displayProps = computed(() => {
                 </template>
             </dd>
         </dl>
-
-        <div class="btn-group btn-group-sm" role="group">
-            <button class="btn btn-default btn-number" title="Remove device" @click="showDialog = true">
-                <i class="far fa-edit"></i>
-            </button>
-        </div>
     </div>
-    <Button  icon="pi pi-user-edit"  variant="text" v-tooltip="'Rename device'"  @click="showDialog = true" />
-    <RenameDeviceDialog :friendlyName="device.friendly_name" :show="showDialog" @update:name="renameDevice" @close="showDialog = false" />
+    <Button icon="pi pi-user-edit" variant="text" v-tooltip="'Rename device'" @click="showDialog = true" />
+    <RenameDeviceDialog :friendlyName="device.friendly_name" :show="showDialog" @update:name="renameDevice"
+        @close="showDialog = false" />
 </template>

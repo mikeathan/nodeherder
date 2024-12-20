@@ -79,7 +79,7 @@ function clearConsole() {
             <Toggle :minimal="true" :value="loggerSettings.enableRemoteLogger" :valueOn="true" :valueoff="false"
                 @update="(v: boolean) => enableLogging(v)">
             </Toggle>
-            <button class="btn btn-link" @click="clearConsole">Clear</button>
+            <Button label="Clear" @click="clearConsole" variant="text" icon="pi pi-delete-left"/>
             <div class="pb-3"></div>
             <div ref="messageContainer" class="message-container">
                 <div v-for="(message, index) in messages" :key="message.timestamp">

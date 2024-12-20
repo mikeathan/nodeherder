@@ -45,14 +45,14 @@ import OverlayBadge from 'primevue/overlaybadge';
 
 import 'primeicons/primeicons.css'; // Icons
 import 'primeflex/primeflex.css';
-import { definePreset } from '@primevue/themes';
+
 const emitter = mitt<Events>();
 
 const app = createApp(App);
 
 app.use(PrimeVue, {
   theme: {
-    preset: Aura,
+    preset: Material,
     options: {
       darkModeSelector: 'system',
     },
