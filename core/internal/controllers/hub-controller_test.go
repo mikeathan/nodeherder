@@ -178,8 +178,8 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 
 		time.Sleep(50 * time.Millisecond)
 
-		// assert.  calculate expected value
-		wantvalue := prevValue + (float64(action_time) * dialRotateSlowTrigger.Action.Data.(float64))
+		// assert. calculate expected value
+		wantvalue := prevValue + (float64(action_time) * dialRotateSlowTrigger.Actions[0].Data.(float64))
 		gotValue, _ := light.Exposes["brightness"].Data.(float64)
 
 		wantvalue = math.Min(wantvalue, max)

@@ -27,9 +27,17 @@ func (c *Condition) Evaluate(exposes map[string]*devices.Entity) bool {
 }
 
 type Trigger struct {
-	Name       string       `json:"name"`
-	Conditions []*Condition `json:"conditions"`
-	Action     *MqttAction  `json:"action"`
+	Name       string        `json:"name"`
+	Conditions []*Condition  `json:"conditions"`
+	Actions    []*MqttAction `json:"actions"`
+}
+
+func NewTrigger(name string) *Trigger {
+	return &Trigger{
+		Name:       name,
+		Conditions: []*Condition{},
+		Actions:    []*MqttAction{},
+	}
 }
 
 func (t *Trigger) process(ctx *DeviceContext) {
@@ -39,7 +47,9 @@ func (t *Trigger) process(ctx *DeviceContext) {
 
 		isMatched := c.Evaluate(ctx.Payload)
 		if !isMatched {
-			t.Action.Stop()
+			for _, action := range t.Actions {
+				action.Stop()
+			}
 			return
 		}
 
@@ -49,5 +59,7 @@ func (t *Trigger) process(ctx *DeviceContext) {
 		}
 	}
 
-	t.Action.Execute(t.Name, ctx)
+	for _, action := range t.Actions {
+		action.Execute(t.Name, ctx)
+	}
 }

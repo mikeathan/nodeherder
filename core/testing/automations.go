@@ -17,7 +17,7 @@ func CreateDoorContactWithAlarmTriggerAutomation(doorSensorId string, alarmId st
 
 	doorSensorTrigger := &automations.Trigger{}
 	doorSensorTrigger.Name = "contact"
-	doorSensorTrigger.Action = alarmAction
+	doorSensorTrigger.Actions = []*automations.MqttAction{alarmAction}
 
 	deviceAutomation := automations.NewDevice("door sensor")
 	deviceAutomation.Id = doorSensorId
@@ -50,7 +50,7 @@ func CreateDialTriggerActionsBrightness(actionId string, dialActionName string, 
 
 	trigger := &automations.Trigger{}
 	trigger.Name = "action"
-	trigger.Action = action
+	trigger.Actions = []*automations.MqttAction{action}
 	trigger.Conditions = []*automations.Condition{condition}
 
 	return trigger
@@ -83,7 +83,7 @@ func CreateDialTriggerStepActionBrightness(lightDeviceId string, dialDeviceId st
 
 	trigger := &automations.Trigger{}
 	trigger.Name = "action"
-	trigger.Action = action
+	trigger.Actions = []*automations.MqttAction{action}
 	trigger.Conditions = []*automations.Condition{condition}
 
 	return trigger
@@ -131,7 +131,7 @@ func CreateSwitchTriggerWithBindingAction(triggerName string, actionProp string,
 	// Turn off sensor trigger
 	button1Trigger := &automations.Trigger{}
 	button1Trigger.Name = triggerName
-	button1Trigger.Action = brightnessAction
+	button1Trigger.Actions = []*automations.MqttAction{brightnessAction}
 
 	return button1Trigger
 }

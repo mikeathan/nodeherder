@@ -105,9 +105,11 @@ func (d *Device) configure(registrar services.DeviceRegistrar, client mqtt.MqttC
 	for _, trigger := range d.Triggers {
 
 		// validate actions
-		err := configureAction(registrar, trigger.Action, client)
-		if err != nil {
-			return err
+		for _, action := range trigger.Actions {
+			err := configureAction(registrar, action, client)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

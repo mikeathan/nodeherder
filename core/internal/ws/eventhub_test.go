@@ -183,18 +183,22 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 			if sensorTrigger.Name != inputSensorTrigger.Name {
 				t.Fatalf("unexpected sensorTrigger.Name value")
 			}
-			if sensorTrigger.Action.FriendlyName != inputSensorTrigger.Action.FriendlyName {
-				t.Fatalf("unexpected sensorTrigger.Action.Friendlyname  value")
-			}
-			if sensorTrigger.Action.Property != inputSensorTrigger.Action.Property {
-				t.Fatalf("unexpected sensorTrigger.Action.Property  value")
-			}
 
-			if sensorTrigger.Action.Delay != inputSensorTrigger.Action.Delay {
-				t.Fatalf("unexpected sensorTrigger.Action.Delay  value")
-			}
-			if sensorTrigger.Action.Data != inputSensorTrigger.Action.Data {
-				t.Fatalf("unexpected sensorTrigger.Action.Value  value")
+			// check actions
+			for aidx, action := range sensorTrigger.Actions {
+				inputAction := inputSensorTrigger.Actions[aidx]
+				if action.FriendlyName != inputAction.FriendlyName {
+					t.Fatalf("unexpected action.FriendlyName value")
+				}
+				if action.Property != inputAction.Property {
+					t.Fatalf("unexpected action.Property value")
+				}
+				if action.Delay != inputAction.Delay {
+					t.Fatalf("unexpected action.Delay value")
+				}
+				if action.Data != inputAction.Data {
+					t.Fatalf("unexpected action.Data value")
+				}
 			}
 
 			for cidx, condition := range sensorTrigger.Conditions {
@@ -1173,7 +1177,7 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 	// Turn on sensor trigger
 	turnOnTrigger := &automations.Trigger{}
 	turnOnTrigger.Name = "presence"
-	turnOnTrigger.Action = turnOnAction
+	turnOnTrigger.Actions = []*automations.MqttAction{turnOnAction}
 
 	// condition = presence = off && lux <= 30
 	turnOnCondition := &automations.Condition{}
@@ -1204,7 +1208,7 @@ func createTriggerTurnOnLightWithPresenceOn(mqtt mqtt.MqttClient) *automations.T
 	// Turn on sensor trigger
 	turnOnTrigger := &automations.Trigger{}
 	turnOnTrigger.Name = "presence"
-	turnOnTrigger.Action = turnOnAction
+	turnOnTrigger.Actions = []*automations.MqttAction{turnOnAction}
 
 	// condition = presence = off
 	turnOnCondition := &automations.Condition{}
@@ -1230,7 +1234,7 @@ func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay t
 	// Turn off sensor trigger
 	turnOffTrigger := &automations.Trigger{}
 	turnOffTrigger.Name = "presence"
-	turnOffTrigger.Action = turnOffAction
+	turnOffTrigger.Actions = []*automations.MqttAction{turnOffAction}
 
 	// condition = presence == false
 	turnOffCondition := &automations.Condition{}

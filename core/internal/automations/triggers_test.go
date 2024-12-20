@@ -114,21 +114,24 @@ func TestHandleMultipleSameValueTriggerWithDelay(t *testing.T) {
 
 		var messageHandler = func(id string, payload []byte) {
 			wg.Done()
-			action := turnOnTrigger.Action
-			if !strings.HasPrefix(id, action.FriendlyName) {
-				t.Fatalf("invalid received topic: want %s got %s", action.FriendlyName, id)
-			}
 
-			data := unpackJsonToMap(string(payload))
-			if data == nil {
-				t.Fatalf("error unpacking json")
-			}
-			value, ok := data[action.Property]
-			if !ok {
-				t.Fatalf("property not %s found in payload", action.Property)
-			}
-			if value != testCase.presence {
-				t.Fatalf("value mismatch: want %v got %v", testCase.presence, value)
+			for _, action := range turnOnTrigger.Actions {
+				if !strings.HasPrefix(id, action.FriendlyName) {
+					t.Fatalf("invalid received topic: want %s got %s", action.FriendlyName, id)
+				}
+
+				data := unpackJsonToMap(string(payload))
+				if data == nil {
+					t.Fatalf("error unpacking json")
+				}
+				value, ok := data[action.Property]
+				if !ok {
+					t.Fatalf("property not %s found in payload", action.Property)
+				}
+				if value != testCase.presence {
+					t.Fatalf("value mismatch: want %v got %v", testCase.presence, value)
+				}
+
 			}
 		}
 
@@ -194,21 +197,22 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 
 			wg.Done()
 
-			action := turnOnTrigger.Action
-			if !strings.HasPrefix(id, action.FriendlyName) {
-				t.Fatalf("invalid received topic: want %s got %s", action.FriendlyName, id)
-			}
+			for _, action := range turnOnTrigger.Actions {
+				if !strings.HasPrefix(id, action.FriendlyName) {
+					t.Fatalf("invalid received topic: want %s got %s", action.FriendlyName, id)
+				}
 
-			data := unpackJsonToMap(string(payload))
-			if data == nil {
-				t.Fatalf("error unpacking json")
-			}
-			value, ok := data[action.Property]
-			if !ok {
-				t.Fatalf("property not %s found in payload", action.Property)
-			}
-			if value != testCase.presence {
-				t.Fatalf("value mismatch: want %v got %v", testCase.presence, value)
+				data := unpackJsonToMap(string(payload))
+				if data == nil {
+					t.Fatalf("error unpacking json")
+				}
+				value, ok := data[action.Property]
+				if !ok {
+					t.Fatalf("property not %s found in payload", action.Property)
+				}
+				if value != testCase.presence {
+					t.Fatalf("value mismatch: want %v got %v", testCase.presence, value)
+				}
 			}
 		}
 
@@ -283,7 +287,7 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 	// Turn on sensor trigger
 	turnOnTrigger := &automations.Trigger{}
 	turnOnTrigger.Name = "presence"
-	turnOnTrigger.Action = turnOnAction
+	turnOnTrigger.Actions = []*automations.MqttAction{turnOnAction}
 
 	// condition = presence = off && lux <= 30
 	turnOnCondition := &automations.Condition{}
@@ -312,7 +316,7 @@ func createSwitchTriggerWithBindingAction(triggerName string, actionProp string,
 	// Turn off sensor trigger
 	button1Trigger := &automations.Trigger{}
 	button1Trigger.Name = triggerName
-	button1Trigger.Action = brightnessAction
+	button1Trigger.Actions = []*automations.MqttAction{brightnessAction}
 
 	return button1Trigger
 }
@@ -329,7 +333,7 @@ func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay t
 	// Turn off sensor trigger
 	turnOffTrigger := &automations.Trigger{}
 	turnOffTrigger.Name = "presence"
-	turnOffTrigger.Action = turnOffAction
+	turnOffTrigger.Actions = []*automations.MqttAction{turnOffAction}
 
 	// condition = presence == false
 	turnOffCondition := &automations.Condition{}

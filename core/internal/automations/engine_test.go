@@ -89,9 +89,12 @@ func TestExportAutomationsFromFile(t *testing.T) {
 	engine.Initialize()
 
 	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(mqtt, 100*time.Millisecond)
-	turnOffTrigger.Action.Id = "0x56789"
+	turnOffTrigger.Actions = []*automations.MqttAction{}
+	turnOffTrigger.Actions = append(turnOffTrigger.Actions, &automations.MqttAction{Id: "0x56789"})
+	
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30.1)
-	turnOnTrigger.Action.Id = "0x56789"
+	turnOnTrigger.Actions = []*automations.MqttAction{}
+	turnOnTrigger.Actions = append(turnOffTrigger.Actions, &automations.MqttAction{Id: "0x56789"})
 
 	// create device trigger
 	inputDeviceTriggers := []*automations.Device{}
@@ -134,16 +137,25 @@ func TestExportAutomationsFromFile(t *testing.T) {
 			if outputTrigger.Name != inputTrigger.Name {
 				t.Fatalf("ERROR Trigger.Name mismatch")
 			}
-			if outputTrigger.Action.FriendlyName != inputTrigger.Action.FriendlyName {
-				t.Fatalf("ERROR Action.Friendlyname mismatch")
-			}
 
-			if outputTrigger.Action.Property != inputTrigger.Action.Property {
-				t.Fatalf("ERROR Action.Property mismatch")
-			}
+			// check actions
+			for aidx, outputAction := range outputTrigger.Actions {
+				inputAction := inputTrigger.Actions[aidx]
 
-			if outputTrigger.Action.Delay != inputTrigger.Action.Delay {
-				t.Fatalf("ERROR Action.Delay mismatch")
+				if outputAction.Id != inputAction.Id {
+					t.Fatalf("ERROR Action.Id mismatch")
+				}
+				if outputAction.FriendlyName != inputAction.FriendlyName {
+					t.Fatalf("ERROR Action.Friendlyname mismatch")
+				}
+
+				if outputAction.Property != inputAction.Property {
+					t.Fatalf("ERROR Action.Property mismatch")
+				}
+
+				if outputAction.Delay != inputAction.Delay {
+					t.Fatalf("ERROR Action.Delay mismatch")
+				}
 			}
 
 			for cidx, outputCondition := range outputTrigger.Conditions {
