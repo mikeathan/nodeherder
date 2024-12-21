@@ -20,12 +20,14 @@ const menuItems = [
 
 
 </script>
+<style>
 
+</style>
 <template>
   <main>
     <div class="app-container grid  align-items-center justify-content-center">
       <div class="col-12 md:col-10 lg:col-12 p-4">
-        <Menubar :model="menuItems" class="top-navbar">
+        <Menubar :model="menuItems" >
           <template #start>
             <div class="menu-links">
               <Status />

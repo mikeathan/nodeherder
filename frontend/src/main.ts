@@ -43,6 +43,7 @@ import Divider from 'primevue/divider';
 import Badge from 'primevue/badge';
 import OverlayBadge from 'primevue/overlaybadge';
 
+import { MaterialBlue } from './themes/material_blue.js';
 import 'primeicons/primeicons.css'; // Icons
 import 'primeflex/primeflex.css';
 
@@ -52,7 +53,7 @@ const app = createApp(App);
 
 app.use(PrimeVue, {
   theme: {
-    preset: Material,
+    preset: MaterialBlue,
     options: {
       darkModeSelector: 'system',
     },
