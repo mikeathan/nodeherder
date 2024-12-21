@@ -89,12 +89,10 @@ func TestExportAutomationsFromFile(t *testing.T) {
 	engine.Initialize()
 
 	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(mqtt, 100*time.Millisecond)
-	turnOffTrigger.Actions = []*automations.MqttAction{}
-	turnOffTrigger.Actions = append(turnOffTrigger.Actions, &automations.MqttAction{Id: "0x56789"})
-	
+	turnOffTrigger.Actions[0].Id = "0x56789"
+
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30.1)
-	turnOnTrigger.Actions = []*automations.MqttAction{}
-	turnOnTrigger.Actions = append(turnOffTrigger.Actions, &automations.MqttAction{Id: "0x56789"})
+	turnOnTrigger.Actions[0].Id = "0x56789"
 
 	// create device trigger
 	inputDeviceTriggers := []*automations.Device{}

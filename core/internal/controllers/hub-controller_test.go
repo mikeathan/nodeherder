@@ -66,7 +66,8 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	time.Sleep(600 * time.Millisecond)
 
-	for i := 0; i < 2; i++ {
+	numOfEvents := 2
+	for i := 0; i < numOfEvents; i++ {
 
 		payload := map[string]any{"contact": true}
 		mqtt.Publish(doorSensorDevice.FriendlyName, payload)
