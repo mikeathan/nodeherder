@@ -321,10 +321,12 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 		if strings.HasPrefix(id, "bridge") {
 			switch id {
 
-			case "bridge/response/device/rename": // for now we support only rename
-				var h = newbridgeDeviceResponseHandler(m.eventHub, m.mqtt)
+			case "bridge/response/device/rename":
+				var h = newBridgeDeviceResponseHandler(m.eventHub, m.mqtt)
 				m.handlers[id] = h
-
+			case "bridge/request/device/interview":
+				var h = newBridgeDeviceInterviewRequestHandler(m.eventHub, m.mqtt)
+				m.handlers[id] = h
 			case "bridge/devices":
 				var h = newBridgeConfigurationHandler(m.registrar, m.automationEngine, m.mqtt, m.eventHub, m.DeviceAvailabilityTimeoutOverride)
 				m.handlers[id] = h

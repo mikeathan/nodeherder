@@ -125,13 +125,48 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 	return nil
 }
 
+type bridgeDeviceInterviewRequestHandler struct {
+	topic string "bridge/request/device/interview"
+	ws    ws.EventHub
+	mqtt  mqtt.MqttClient
+}
+
+func newBridgeDeviceInterviewRequestHandler(ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceInterviewRequestHandler {
+	return &bridgeDeviceInterviewRequestHandler{ws: ws, mqtt: mqtt}
+}
+
+func (b *bridgeDeviceInterviewRequestHandler) ProcessPayload(id string, connType string, payload []byte) error {
+
+	if !strings.HasPrefix(id, b.topic) {
+		return nil
+	}
+	resp := new(bridgeResponse)
+	resp.Data = map[string]interface{}{}
+	err := json.Unmarshal(payload, &resp)
+	if err != nil {
+		return err
+	}
+
+	if resp.Status == "ok" {
+		deviceId := resp.Data["id"].(string)
+		if id != deviceId {
+			return fmt.Errorf("device id mismatch %s != %s", id, deviceId)
+		}
+
+	} else {
+		b.ws.Broadcast(ws.OperationFailed, resp.Status)
+	}
+
+	return nil
+}
+
 type bridgeDeviceResponseHandler struct {
 	topic string "bridge/response/device/rename" // for now we support only rename
 	ws    ws.EventHub
 	mqtt  mqtt.MqttClient
 }
 
-func newbridgeDeviceResponseHandler(ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceResponseHandler {
+func newBridgeDeviceResponseHandler(ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceResponseHandler {
 	return &bridgeDeviceResponseHandler{ws: ws, mqtt: mqtt}
 }
 
