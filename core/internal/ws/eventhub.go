@@ -246,10 +246,10 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 		c.executeAction(eventMsg.Payload, c.onDeviceSetValue, false)
 
 	case DeviceRename:
-		c.executeAction(eventMsg.Payload, c.onDeviceRename, true)
+		c.executeAction(eventMsg.Payload, c.onDeviceRename, false)
 
 	case DeviceInterview:
-		c.executeAction(eventMsg.Payload, c.onDeviceInterview, true)
+		c.executeAction(eventMsg.Payload, c.onDeviceInterview, false)
 
 	case SaveLoggerConfig:
 		c.executeAction(eventMsg.Payload, c.onSaveLoggerConfig, true)

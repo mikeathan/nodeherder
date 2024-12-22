@@ -24,8 +24,8 @@ const baseTopic string = "zigbee2mqtt/"
 var bridgeTopics = []string{
 	"bridge/devices",
 	"bridge/response/device/rename",
+	"bridge/response/device/interview",
 	"bridge/logging",
-	"bridge/request/device/interview",
 }
 
 // TODO

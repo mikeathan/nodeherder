@@ -136,25 +136,23 @@ func newBridgeDeviceInterviewRequestHandler(ws ws.EventHub, mqtt mqtt.MqttClient
 }
 
 func (b *bridgeDeviceInterviewRequestHandler) ProcessPayload(id string, connType string, payload []byte) error {
-
 	if !strings.HasPrefix(id, b.topic) {
 		return nil
 	}
+
 	resp := new(bridgeResponse)
 	resp.Data = map[string]interface{}{}
 	err := json.Unmarshal(payload, &resp)
+
 	if err != nil {
 		return err
 	}
 
 	if resp.Status == "ok" {
 		deviceId := resp.Data["id"].(string)
-		if id != deviceId {
-			return fmt.Errorf("device id mismatch %s != %s", id, deviceId)
-		}
-
+		b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Device %s interview successful", deviceId)) // doesnt work!!!!
 	} else {
-		b.ws.Broadcast(ws.OperationFailed, resp.Status)
+		b.ws.Broadcast(ws.OperationFailed, resp.Status) // doesnt work!!!!
 	}
 
 	return nil
@@ -195,9 +193,9 @@ func (b *bridgeDeviceResponseHandler) ProcessPayload(id string, connType string,
 		if err != nil {
 			return err
 		}
-
+		b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Device %s renamed to %s", oldName, resp.Data["to"].(string))) // doesnt work
 	} else {
-		b.ws.Broadcast(ws.OperationFailed, resp.Status)
+		b.ws.Broadcast(ws.OperationFailed, resp.Status) // doesnt work
 	}
 
 	return nil

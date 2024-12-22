@@ -338,7 +338,7 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 			case "bridge/response/device/rename":
 				var h = newBridgeDeviceResponseHandler(m.eventHub, m.mqtt)
 				m.handlers[id] = h
-			case "bridge/request/device/interview":
+			case "bridge/response/device/interview":
 				var h = newBridgeDeviceInterviewRequestHandler(m.eventHub, m.mqtt)
 				m.handlers[id] = h
 			case "bridge/devices":

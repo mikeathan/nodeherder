@@ -45,7 +45,10 @@ export const DeviceModule: Module<
       });
     },
 
-    update(state:DeviceModuleState, deviceUpdate: DeviceUpdate) {
+    update(
+      state: DeviceModuleState,
+      deviceUpdate: DeviceUpdate,
+    ) {
       if (deviceUpdate.id in state.deviceMap == false) {
         console.error(
           'device ',
@@ -97,7 +100,6 @@ export const DeviceModule: Module<
         { root: true },
       );
     },
-
     rename({ dispatch }, { name, newName }) {
       var payload = {
         from: name,
@@ -107,6 +109,13 @@ export const DeviceModule: Module<
       dispatch(
         'ws/emit',
         { event: 'deviceRename', message: payload },
+        { root: true },
+      );
+    },
+    interview({ dispatch }, { id }) {
+      dispatch(
+        'ws/emit',
+        { event: 'deviceInterview', message: { id } },
         { root: true },
       );
     },

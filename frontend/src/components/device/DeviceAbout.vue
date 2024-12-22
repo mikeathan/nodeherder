@@ -21,6 +21,10 @@ function renameDevice(value: string) {
     store.dispatch("devices/rename", { name: device.value.friendly_name, newName: value });
 }
 
+function interviewDevice() {
+    store.dispatch("devices/interview", { id: device.value.id });
+}
+
 const displayProps = computed(() => {
     const device = store.getters["devices/find"](props.id) as Device;
     if (device == undefined) {
@@ -91,4 +95,6 @@ const displayProps = computed(() => {
     <Button icon="pi pi-user-edit" variant="text" v-tooltip="'Rename device'" @click="showDialog = true" />
     <RenameDeviceDialog :friendlyName="device.friendly_name" :show="showDialog" @update:name="renameDevice"
         @close="showDialog = false" />
+
+    <Button icon="pi pi-sync" variant="text" v-tooltip="'Interview device'" @click="interviewDevice" />
 </template>
