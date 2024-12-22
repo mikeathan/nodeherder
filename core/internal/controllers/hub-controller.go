@@ -165,11 +165,25 @@ func (h *HubController) registerEventHubEvents() {
 		err := json.Unmarshal(bytes, &payload)
 
 		if err != nil {
-			return errors.New("device renamefailed. Invalid payload type")
+			return errors.New("device rename failed. Invalid payload type")
 		}
 
 		json, _ := json.Marshal(payload)
 		h.mqtt.Publish("bridge/request/device/rename", json)
+		return nil
+	})
+
+	h.eventHub.OnDeviceInterview(func(p interface{}) error {
+		bytes, _ := json.Marshal(p)
+		payload := make(map[string]interface{})
+		err := json.Unmarshal(bytes, &payload)
+
+		if err != nil {
+			return errors.New("device interview failed. Invalid payload type")
+		}
+
+		json, _ := json.Marshal(payload)
+		h.mqtt.Publish("bridge/request/device/interview", json)
 		return nil
 	})
 
