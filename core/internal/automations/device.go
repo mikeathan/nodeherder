@@ -1,6 +1,7 @@
 package automations
 
 import (
+	"errors"
 	"fmt"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
@@ -132,39 +133,33 @@ func configureAction(registrar services.DeviceRegistrar, action *MqttAction, cli
 
 			if action.Property == f.Property {
 
-				// sanitize data
-				if f.Type == "binary" {
-					if value, ok := action.Data.(bool); ok {
-						if value {
-							action.Data = f.ValueOn
-						} else {
-							action.Data = f.ValueOff
-						}
-					}
-				} else if f.Type == "numeric" {
-					if value, ok := action.Data.(int); ok {
-
-						if min, ok := f.ValueMin.(int); ok {
-							if value < min {
-								return fmt.Errorf("value=%d for action=%s smaller than Minimum %d", value, action.Id, min)
-							}
-						}
-
-						if max, ok := f.ValueMax.(int); ok {
-							if value > max {
-								return fmt.Errorf("value=%d for action=%s bigger than Maximum %d", value, action.Id, max)
-							}
-						}
-					}
-				} else {
-					return fmt.Errorf("type=%s for action=%s not implemented", f.Type, action.Id)
+				sanitizedData, err := f.SanitizeData(action.Data)
+				if err != nil {
+					return errors.Join(fmt.Errorf("failed to sanitize feature data for action %s: %s", action.Id, err.Error()))
 				}
-
+				action.Data = sanitizedData
 				action.FriendlyName = bridgeInfo.FriendlyName
 				action.Client = client
 				return action.Configure(registrar)
 			}
+
 		}
+
+		// NOTE:
+		// there are devices tha tcan be triggered in an action but dont have features.
+		if e.Property == action.Property {
+
+			sanitizedData, err := e.SanitizeData(action.Data)
+			if err != nil {
+				return errors.Join(fmt.Errorf("failed to sanitize expose data for action %s: %s", action.Id, err.Error()))
+			}
+			action.Data = sanitizedData
+			action.FriendlyName = bridgeInfo.FriendlyName
+			action.Client = client
+			return action.Configure(registrar)
+
+		}
+
 	}
 
 	return fmt.Errorf("property=%s for action=%s not found", action.Property, action.Id)

@@ -1,0 +1,22 @@
+{
+  "id": "0x00124b002fa5844e",
+  "friendlyname": "Front door sensor",
+  "description": "test",
+  "enabled": false,
+  "triggers": [
+    {
+      "name": "contact",
+      "conditions": [],
+      "actions": [
+        {
+          "id": "0xa4c1389b273366c3",
+          "friendlyname": "Attic alarm",
+          "property": "alarm",
+          "type": "TriggerAction",
+          "data": true
+        }
+      ]
+    }
+  ],
+  "schedule": []
+}

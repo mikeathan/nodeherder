@@ -3,6 +3,7 @@ package devices
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 )
 
 type BridgeInfoFeature struct {
@@ -118,4 +119,68 @@ func FindByExposeType(payload []byte, exposeType string) (*BridgeInfo, error) {
 		}
 	}
 	return nil, errors.New("exposeType not found")
+}
+
+func (f *BridgeInfoFeature) SanitizeData(data any) (any, error) {
+
+	if f.Type == "binary" {
+		if value, ok := data.(bool); ok {
+			if value {
+				return f.ValueOn, nil
+			} else {
+				return f.ValueOff, nil
+			}
+		}
+	} else if f.Type == "numeric" {
+		if value, ok := data.(int); ok {
+
+			if min, ok := f.ValueMin.(int); ok {
+				if value < min {
+					return nil, fmt.Errorf("value=%d smaller than Minimum %d", value, min)
+				}
+			}
+
+			if max, ok := f.ValueMax.(int); ok {
+				if value > max {
+					return nil, fmt.Errorf("value=%d bigger than Maximum %d", value, max)
+				}
+			}
+		}
+	} else {
+		return nil, fmt.Errorf("type=%s  not implemented", f.Type)
+	}
+
+	return data, nil
+}
+
+func (e *BridgeExpose) SanitizeData(data any) (any, error) {
+
+	if e.Type == "binary" {
+		if value, ok := data.(bool); ok {
+			if value {
+				return e.ValueOn, nil
+			} else {
+				return e.ValueOff, nil
+			}
+		}
+	} else if e.Type == "numeric" {
+		if value, ok := data.(int); ok {
+
+			if min, ok := e.ValueMin.(int); ok {
+				if value < min {
+					return nil, fmt.Errorf("value=%d smaller than Minimum %d", value, min)
+				}
+			}
+
+			if max, ok := e.ValueMax.(int); ok {
+				if value > max {
+					return nil, fmt.Errorf("value=%d bigger than Maximum %d", value, max)
+				}
+			}
+		}
+	} else {
+		return nil, fmt.Errorf("type=%s  not implemented", e.Type)
+	}
+
+	return data, nil
 }
