@@ -19,7 +19,5 @@ watch(
 </script>
 
 <template>
-    <span :style="'color:' + color + ';'">
-        <i class="fa fa-circle fa-xs"></i>
-    </span>
+    <i class="pi pi-circle-fill" :style="{ color: color, fontSize: '0.75rem' }"></i>
 </template>

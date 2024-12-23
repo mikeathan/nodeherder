@@ -30,6 +30,7 @@ const menuItems = [
         <Menubar :model="menuItems" >
           <template #start>
             <div class="menu-links">
+              <img src="./assets/images/nodeherder_logo.png" width="50" height="50"/>
               <Status />
               <Notifications />
             </div>
