@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { InputNumberInputEvent } from "primevue";
+import { InputNumberInputEvent, SliderSlideEndEvent } from "primevue";
 import { ref, watch, watchEffect } from "vue";
 import { prop } from "vue-class-component";
 
@@ -21,6 +21,7 @@ const props = withDefaults(defineProps<Props>(), {
     showInput: false
 })
 
+
 const value = ref<number>()
 const max = ref<number>(0)
 const min = ref<number>(254)
@@ -41,37 +42,20 @@ watch(
     }, { immediate: true }
 )
 
-function sliderChanged(value: number) {
-    emit('update', value);
+function onSlideEnds(event: SliderSlideEndEvent) {
+    emit('update', event.value);
 }
+
 
 function inputChanged(event: InputNumberInputEvent) {
     var v = parseInt(event.value?.toString() || "0")
     emit('update', v);
 }
 
-
-    //@trackClick="onTrackClick"  event
-// onTrackClick(event) {
-//       const trackRect = event.target.getBoundingClientRect();
-//       const clickX = event.clientX - trackRect.left;
-//       const trackWidth = trackRect.width;
-//       const newPosition = (clickX / trackWidth) * (this.max - this.min);
-//       this.value = Math.round(newPosition);
-//     },
-
-
-// onchange event
-
-const releasedValue = ref(50);
-const onValueChange = (event) => {
-        // Update the releasedValue only when the mouse/touch is released
-        releasedValue.value = event.value;
-    };
 </script>
 <style scoped></style>
 <template>
     <InputNumber v-model.number="value" v-if="props.showInput" @input="inputChanged" class="w-full mb-4" />
-    <Slider v-model="value" @change="sliderChanged" :max="max" :min="min" :disabled="props.value == null"
+    <Slider v-model="value" @slideend="onSlideEnds" :max="max" :min="min" :disabled="props.value == null"
         class="w-full" />
 </template>
