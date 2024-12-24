@@ -1,23 +1,31 @@
-<script setup>
+<script setup lang="ts">
+import { KeyValuePair } from "@/types/types";
 import { store } from "../../store/index";
 import { computed, watch, ref } from "vue";
+import { ConnectionStateIcon } from "@/types/connection.type";
 
-const connected = computed(() => {
-    return store.getters["ws/isconnected"];
+const connectionStatus = computed(() => {
+    return store.getters["ws/getConnectionStatus"];
 });
-const color = ref("red")
-const connectionState = { true: "green", false: "red", null: 'white' }
+
+const connectionStatusState: KeyValuePair<ConnectionStateIcon> = {
+    connected: { icon: 'pi pi-circle-fill', color: "green", },
+    disconnected: { icon: 'pi pi-circle-fill', color: "red" },
+    connecting: { icon: 'pi pi-spin pi-spinner', color: 'white' }
+}
+
+const status = ref<ConnectionStateIcon>(connectionStatusState['disconnected']);
 
 watch(
-    () => connected.value,
+    () => connectionStatus.value,
     () => {
-        color.value = connectionState[connected.value]
+        status.value = connectionStatusState[connectionStatus.value]
+
     },
     { immediate: true }
 );
-
 </script>
 
 <template>
-    <i class="pi pi-circle-fill" :style="{ color: color, fontSize: '0.75rem' }"></i>
+    <i :class="status.icon" :style="{ color: status.color, fontSize: '0.75rem' }"></i>
 </template>

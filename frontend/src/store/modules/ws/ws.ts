@@ -1,6 +1,3 @@
-const maxNumberOfAttempts = 10;
-const intervalTimeMs = 200;
-
 function getSocketUri() {
   const devSocketUri = 'ws://localhost:3000/ws';
   const productionSocketUri =
@@ -22,10 +19,6 @@ class WsClient {
   private ws: WebSocket;
 
   constructor(ws: WebSocket) {
-    console.log(
-      '[DEBUG]  WsClient created, readyState:',
-      ws.readyState,
-    );
     this.ws = ws;
   }
 
@@ -39,13 +32,13 @@ class WsClient {
       payload: message,
     });
 
-    console.log(
-      '[DEBUG] WsClient Emit:',
-      payload,
-      'readyState:',
-      this.ws.readyState,
-    );
-    this.ws.send(payload);
+    if (this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(payload);
+    } else {
+      console.error(
+        'Cannot send message: WebSocket is not open.',
+      );
+    }
 
     // if (this.ws.readyState !== this.ws.OPEN) {
     //   let currentAttempt = 0;
@@ -69,32 +62,16 @@ class WsClient {
     // }
   }
 }
-let clientId = 0;
 export class WsClientService {
   private wsClient!: WsClient;
   private builder: WsClientBuilder;
-  private id: number;
 
   constructor() {
     this.builder = WsClientBuilder.create();
-    this.id = clientId++;
-  }
-
-  private connectWebSocket() {
-    this.wsClient = this.builder.connect();
-    console.log('WebSocket connected');
-  }
-
-  public clientId(): number {
-    return this.id;
-  }
-
-  public client() {
-    return this.wsClient; //?? this.connectWebSocket();
   }
 
   public emit(event: string, message: string) {
-    this.client().emit(event, message);
+    this.wsClient.emit(event, message);
   }
 
   static createFromBuilder(
@@ -113,6 +90,7 @@ export class WsClientBuilder {
   private onClose: ((ev: CloseEvent) => any) | null;
   private onError: ((tev: Event) => any) | null;
   private onDisconnected: (() => void) | null;
+  private onReconnected: (() => void) | null;
   private onMessage: ((ev: MessageEvent) => any) | null;
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts = 10;
@@ -124,19 +102,25 @@ export class WsClientBuilder {
     this.onError = null;
     this.onMessage = null;
     this.onDisconnected = null;
+    this.onReconnected = null;
   }
   webSocket(): WebSocket {
     return this.ws;
   }
+
+  withOnReconnected(
+    event: (() => void) | null,
+  ): WsClientBuilder {
+    this.onReconnected = () => {
+      event?.();
+    };
+    return this;
+  }
+
   withOnOpen(
     event: ((ev: Event) => any) | null,
   ): WsClientBuilder {
     this.onOpen = (ev: Event) => {
-      console.log(
-        '[DEBUG] WsClientBuilder OnOpen readyState:',
-        this.ws.readyState,
-      );
-
       this.reconnectAttempts = 0;
       event?.(ev);
     };
@@ -148,7 +132,6 @@ export class WsClientBuilder {
   ): WsClientBuilder {
     this.onClose = (ev: CloseEvent) => {
       this.reconnectWithBackoff();
-
       event?.(ev);
     };
 
@@ -202,6 +185,7 @@ export class WsClientBuilder {
       setTimeout(() => {
         this.reconnectAttempts += 1;
         this.connect();
+        this.onReconnected?.();
       }, backoffDelay);
     } else {
       console.error('Max reconnect attempts reached');

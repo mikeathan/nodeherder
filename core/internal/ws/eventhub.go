@@ -196,7 +196,6 @@ func (h *eventHubImpl) Broadcast(eventName string, data interface{}) error {
 }
 
 func (h *eventHubImpl) Close() error {
-	utils.LogDebug("[DEBUG] Closing ws server")
 	return h.server.Close()
 }
 
