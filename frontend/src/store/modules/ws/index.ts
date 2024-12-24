@@ -24,7 +24,6 @@ export const WSClientModule: Module<
 
   actions: {
     connect({ state, commit, rootState, dispatch }) {
-
       const builder = WsClientBuilder.create();
       builder.withOnMessage((event) => {
         if (event == undefined) {
@@ -107,12 +106,17 @@ export const WSClientModule: Module<
 
       builder.withOnOpen(function (event) {
         console.info('ws open');
+        state.connected = true;
         dispatch('emit', { event: 'loadDevices' });
       });
 
       builder.withOnClose(function (event) {
         console.info('ws close ', event);
         state.connected = false;
+      });
+
+      builder.withOnDisconnected(function () {
+        console.info('ws disconnected');
         dispatch('cleanup', [], { root: true });
       });
 
@@ -121,9 +125,7 @@ export const WSClientModule: Module<
       });
 
       state.ws = WsClientService.createFromBuilder(builder);
-      state.connected = true;
     },
-
 
     emit({ commit }, { event, message }) {
       commit('sendMessage', {

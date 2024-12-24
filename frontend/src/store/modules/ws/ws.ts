@@ -90,9 +90,9 @@ export class WsClientBuilder {
   private onOpen: ((ev: Event) => any) | null;
   private onClose: ((ev: CloseEvent) => any) | null;
   private onError: ((tev: Event) => any) | null;
+  private onDisconnected: (() => void) | null;
   private onMessage: ((ev: MessageEvent) => any) | null;
   private reconnectAttempts: number = 0;
-  private reconnectInterval = 5000;
   private maxReconnectAttempts = 10;
 
   private constructor(url: string) {
@@ -101,12 +101,16 @@ export class WsClientBuilder {
     this.onClose = null;
     this.onError = null;
     this.onMessage = null;
+    this.onDisconnected = null;
   }
 
   withOnOpen(
     event: ((ev: Event) => any) | null,
   ): WsClientBuilder {
-    this.onOpen = event;
+    this.onOpen = (ev: Event) => {
+      this.reconnectAttempts = 0;
+      event?.(ev);
+    };
     return this;
   }
 
@@ -118,6 +122,10 @@ export class WsClientBuilder {
       event?.(ev);
     };
 
+    return this;
+  }
+  withOnDisconnected(event: (() => void) | null) {
+    this.onDisconnected = event;
     return this;
   }
 
@@ -142,12 +150,10 @@ export class WsClientBuilder {
     ws.onerror = this.onError;
     ws.onmessage = this.onMessage;
 
-    this.reconnectAttempts = 0;
     return new WsClient(ws);
   }
 
   private reconnectWithBackoff() {
-    console.log('[DEBUG] reconnectWithBackoff');
     if (
       this.reconnectAttempts < this.maxReconnectAttempts
     ) {
@@ -156,7 +162,11 @@ export class WsClientBuilder {
         30000, // Cap the delay at 30 seconds
       );
       console.log(
-        `Reconnecting in ${backoffDelay / 1000} seconds...`,
+        `(${this.reconnectAttempts}/${
+          this.maxReconnectAttempts
+        }) Reconnecting in ${
+          backoffDelay / 1000
+        } seconds... `,
       );
       setTimeout(() => {
         this.reconnectAttempts += 1;
@@ -164,6 +174,7 @@ export class WsClientBuilder {
       }, backoffDelay);
     } else {
       console.error('Max reconnect attempts reached');
+      this.onDisconnected?.();
     }
   }
 
