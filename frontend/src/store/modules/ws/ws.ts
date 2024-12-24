@@ -22,7 +22,15 @@ class WsClient {
   private ws: WebSocket;
 
   constructor(ws: WebSocket) {
+    console.log(
+      '[DEBUG]  WsClient created, readyState:',
+      ws.readyState,
+    );
     this.ws = ws;
+  }
+
+  public readyState(): number {
+    return this.ws.readyState;
   }
 
   public emit(event: string, message: string) {
@@ -31,6 +39,12 @@ class WsClient {
       payload: message,
     });
 
+    console.log(
+      '[DEBUG] WsClient Emit:',
+      payload,
+      'readyState:',
+      this.ws.readyState,
+    );
     this.ws.send(payload);
 
     // if (this.ws.readyState !== this.ws.OPEN) {
@@ -55,13 +69,15 @@ class WsClient {
     // }
   }
 }
-
+let clientId = 0;
 export class WsClientService {
   private wsClient!: WsClient;
   private builder: WsClientBuilder;
+  private id: number;
 
   constructor() {
     this.builder = WsClientBuilder.create();
+    this.id = clientId++;
   }
 
   private connectWebSocket() {
@@ -69,9 +85,14 @@ export class WsClientService {
     console.log('WebSocket connected');
   }
 
-  private client() {
-    return this.wsClient ?? this.connectWebSocket();
+  public clientId(): number {
+    return this.id;
   }
+
+  public client() {
+    return this.wsClient; //?? this.connectWebSocket();
+  }
+
   public emit(event: string, message: string) {
     this.client().emit(event, message);
   }
@@ -87,6 +108,7 @@ export class WsClientService {
 
 export class WsClientBuilder {
   private url: string;
+  private ws!: WebSocket;
   private onOpen: ((ev: Event) => any) | null;
   private onClose: ((ev: CloseEvent) => any) | null;
   private onError: ((tev: Event) => any) | null;
@@ -103,11 +125,18 @@ export class WsClientBuilder {
     this.onMessage = null;
     this.onDisconnected = null;
   }
-
+  webSocket(): WebSocket {
+    return this.ws;
+  }
   withOnOpen(
     event: ((ev: Event) => any) | null,
   ): WsClientBuilder {
     this.onOpen = (ev: Event) => {
+      console.log(
+        '[DEBUG] WsClientBuilder OnOpen readyState:',
+        this.ws.readyState,
+      );
+
       this.reconnectAttempts = 0;
       event?.(ev);
     };
@@ -119,11 +148,13 @@ export class WsClientBuilder {
   ): WsClientBuilder {
     this.onClose = (ev: CloseEvent) => {
       this.reconnectWithBackoff();
+
       event?.(ev);
     };
 
     return this;
   }
+
   withOnDisconnected(event: (() => void) | null) {
     this.onDisconnected = event;
     return this;
@@ -149,7 +180,7 @@ export class WsClientBuilder {
     ws.onclose = this.onClose;
     ws.onerror = this.onError;
     ws.onmessage = this.onMessage;
-
+    this.ws = ws;
     return new WsClient(ws);
   }
 

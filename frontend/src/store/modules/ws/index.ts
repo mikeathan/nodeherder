@@ -17,6 +17,12 @@ export const WSClientModule: Module<
   getters: { isconnected: (state) => state.connected },
 
   mutations: {
+    setWs(state, ws: WsClientService) {
+      state.ws = ws;
+    },
+    setConnected(state, connected: boolean) {
+      state.connected = connected;
+    },
     sendMessage(state: WSClientState, { event, message }) {
       state.ws.emit(event, message);
     },
@@ -105,14 +111,16 @@ export const WSClientModule: Module<
       });
 
       builder.withOnOpen(function (event) {
-        console.info('ws open');
-        state.connected = true;
+        commit('setConnected', true);
         dispatch('emit', { event: 'loadDevices' });
       });
 
       builder.withOnClose(function (event) {
         console.info('ws close ', event);
-        state.connected = false;
+        commit('setConnected', false);
+
+        TODO: once reconnects succeeds we need to renew the connectin
+        commit('setWs', null); 
       });
 
       builder.withOnDisconnected(function () {
@@ -124,7 +132,8 @@ export const WSClientModule: Module<
         console.error('ws error: ' + event);
       });
 
-      state.ws = WsClientService.createFromBuilder(builder);
+      const ws = WsClientService.createFromBuilder(builder);
+      commit('setWs', ws);
     },
 
     emit({ commit }, { event, message }) {
