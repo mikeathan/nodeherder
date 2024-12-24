@@ -2,11 +2,12 @@ const maxNumberOfAttempts = 10;
 const intervalTimeMs = 200;
 
 function getSocketUri() {
-  const devSocketUri = "ws://localhost:3000/ws";
-  const productionSocketUri = "ws://" + document.location.host + "/ws";
+  const devSocketUri = 'ws://localhost:3000/ws';
+  const productionSocketUri =
+    'ws://' + document.location.host + '/ws';
 
-  if (process.env.NODE_ENV == "development") {
-    console.info("Enviroment:", process.env.NODE_ENV);
+  if (process.env.NODE_ENV == 'development') {
+    console.info('Enviroment:', process.env.NODE_ENV);
     return devSocketUri;
   }
 
@@ -25,46 +26,62 @@ class WsClient {
   }
 
   public emit(event: string, message: string) {
-    var payload = JSON.stringify({ type: event, payload: message });
+    var payload = JSON.stringify({
+      type: event,
+      payload: message,
+    });
 
-    if (this.ws.readyState !== this.ws.OPEN) {
-      let currentAttempt = 0;
-      const interval = setInterval(() => {
-        if (currentAttempt > maxNumberOfAttempts - 1) {
-          clearInterval(interval);
-          console.log(
-            "emit:",
-            event,
-            " failed. Maximum number of attempts exceeded."
-          );
-          return;
-        } else if (this.ws.readyState === this.ws.OPEN) {
-          clearInterval(interval);
-          this.ws.send(payload);
-        }
-        currentAttempt++;
-      }, intervalTimeMs);
-    } else {
-      this.ws.send(payload);
-    }
+    this.ws.send(payload);
+
+    // if (this.ws.readyState !== this.ws.OPEN) {
+    //   let currentAttempt = 0;
+    //   const interval = setInterval(() => {
+    //     if (currentAttempt > maxNumberOfAttempts - 1) {
+    //       clearInterval(interval);
+    //       console.log(
+    //         'emit:',
+    //         event,
+    //         ' failed. Maximum number of attempts exceeded.',
+    //       );
+    //       return;
+    //     } else if (this.ws.readyState === this.ws.OPEN) {
+    //       clearInterval(interval);
+    //       this.ws.send(payload);
+    //     }
+    //     currentAttempt++;
+    //   }, intervalTimeMs);
+    // } else {
+    //   this.ws.send(payload);
+    // }
   }
 }
 
 export class WsClientService {
-  private static ws: WsClient;
-  constructor() {}
+  private wsClient!: WsClient;
+  private builder: WsClientBuilder;
 
+  constructor() {
+    this.builder = WsClientBuilder.create();
+  }
+
+  private connectWebSocket() {
+    this.wsClient = this.builder.connect();
+    console.log('WebSocket connected');
+  }
+
+  private client() {
+    return this.wsClient ?? this.connectWebSocket();
+  }
   public emit(event: string, message: string) {
-    WsClientService.client().emit(event, message);
+    this.client().emit(event, message);
   }
 
-  static create(builder: WsClientBuilder): WsClient {
-    this.ws = builder.build();
-    return this.ws;
-  }
-
-  private static client(): WsClient {
-    return this.ws ?? createSocket(getSocketUri());
+  static createFromBuilder(
+    builder: WsClientBuilder,
+  ): WsClientService {
+    var service = new WsClientService();
+    service.wsClient = builder.connect();
+    return service;
   }
 }
 
@@ -74,6 +91,9 @@ export class WsClientBuilder {
   private onClose: ((ev: CloseEvent) => any) | null;
   private onError: ((tev: Event) => any) | null;
   private onMessage: ((ev: MessageEvent) => any) | null;
+  private reconnectAttempts: number = 0;
+  private reconnectInterval = 5000;
+  private maxReconnectAttempts = 10;
 
   private constructor(url: string) {
     this.url = url;
@@ -83,69 +103,72 @@ export class WsClientBuilder {
     this.onMessage = null;
   }
 
-  withOnOpen(event: ((ev: Event) => any) | null): WsClientBuilder {
+  withOnOpen(
+    event: ((ev: Event) => any) | null,
+  ): WsClientBuilder {
     this.onOpen = event;
     return this;
   }
 
-  withOnClose(event: ((ev: CloseEvent) => any) | null): WsClientBuilder {
-    this.onClose = event;
+  withOnClose(
+    event: ((ev: CloseEvent) => any) | null,
+  ): WsClientBuilder {
+    this.onClose = (ev: CloseEvent) => {
+      this.reconnectWithBackoff();
+      event?.(ev);
+    };
+
     return this;
   }
 
-  withOnError(event: ((ev: Event) => any) | null): WsClientBuilder {
+  withOnError(
+    event: ((ev: Event) => any) | null,
+  ): WsClientBuilder {
     this.onError = event;
     return this;
   }
 
-  withOnMessage(event: ((ev: MessageEvent) => any) | null): WsClientBuilder {
+  withOnMessage(
+    event: ((ev: MessageEvent) => any) | null,
+  ): WsClientBuilder {
     this.onMessage = event;
     return this;
   }
 
-  build2(): WsClientService {
-    const ws: WebSocket = new WebSocket(this.url);
-    ws.onopen = this.onOpen;
-    ws.onclose = this.onClose;
-    ws.onerror = this.onError;
-    ws.onmessage = this.onMessage;
-    return new WsClientService();
-  }
-
-  build(): WsClient {
+  connect(): WsClient {
     const ws: WebSocket = new WebSocket(this.url);
     ws.onopen = this.onOpen;
     ws.onclose = this.onClose;
     ws.onerror = this.onError;
     ws.onmessage = this.onMessage;
 
+    this.reconnectAttempts = 0;
     return new WsClient(ws);
   }
 
-  static create(url?: string): WsClientBuilder {
-    return new WsClientBuilder(url ?? getSocketUri());
+  private reconnectWithBackoff() {
+    console.log('[DEBUG] reconnectWithBackoff');
+    if (
+      this.reconnectAttempts < this.maxReconnectAttempts
+    ) {
+      const backoffDelay = Math.min(
+        1000 * Math.pow(2, this.reconnectAttempts), // Exponential backoff: 1s, 2s, 4s, etc.
+        30000, // Cap the delay at 30 seconds
+      );
+      console.log(
+        `Reconnecting in ${backoffDelay / 1000} seconds...`,
+      );
+      setTimeout(() => {
+        this.reconnectAttempts += 1;
+        this.connect();
+      }, backoffDelay);
+    } else {
+      console.error('Max reconnect attempts reached');
+    }
+  }
+
+  static create(): WsClientBuilder {
+    const url = getSocketUri();
+    return new WsClientBuilder(url);
   }
 }
-
-// function retryWithExponentialBackoff(fn, maxAttempts = 5, baseDelayMs = 1000) {
-//   let attempt = 1
-
-//   const execute = async () => {
-//     try {
-//       return await fn()
-//     } catch (error) {
-//       if (attempt >= maxAttempts) {
-//         throw error
-//       }
-
-//       const delayMs = baseDelayMs * 2 ** attempt
-//       console.log(`Retry attempt ${attempt} after ${delayMs}ms`)
-//       await new Promise((resolve) => setTimeout(resolve, delayMs))
-
-//       attempt++
-//       return execute()
-//     }
-//   }
-
-//   return execute()
-// }

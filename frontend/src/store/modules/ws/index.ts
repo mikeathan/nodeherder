@@ -1,9 +1,7 @@
 import { Module } from 'vuex';
 import { RootState } from '../../state';
 import { WSClientState } from './state';
-//import { useNotification } from '@kyvg/vue3-notification';
 import { WsClientService, WsClientBuilder } from './ws';
-//const { notify } = useNotification();
 
 export const WSClientModule: Module<
   WSClientState,
@@ -26,6 +24,7 @@ export const WSClientModule: Module<
 
   actions: {
     connect({ state, commit, rootState, dispatch }) {
+
       const builder = WsClientBuilder.create();
       builder.withOnMessage((event) => {
         if (event == undefined) {
@@ -93,25 +92,10 @@ export const WSClientModule: Module<
               },
             );
             break;
-          //https://classic.yarnpkg.com/en/package/@kyvg/vue3-notification
-          // notify({
-          //   type: 'success',
-          //   title: 'Operation was successful.',
-          //   duration: 2000,
-          // });
-          // break;
           case 'operationFailed':
-            // https://classic.yarnpkg.com/en/package/@kyvg/vue3-notification
-            // notify({
-            //   type: 'error',
-            //   text: obj.payload,
-            //   duration: 3000,
-            // });
-            console.log('operationFailed', obj.payload);
             dispatch('alerts/showError', obj.payload, {
               root: true,
             });
-
             break;
           default:
             console.error(
@@ -136,9 +120,10 @@ export const WSClientModule: Module<
         console.error('ws error: ' + event);
       });
 
-      state.ws = WsClientService.create(builder);
+      state.ws = WsClientService.createFromBuilder(builder);
       state.connected = true;
     },
+
 
     emit({ commit }, { event, message }) {
       commit('sendMessage', {
