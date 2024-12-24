@@ -196,6 +196,7 @@ func (h *eventHubImpl) Broadcast(eventName string, data interface{}) error {
 }
 
 func (h *eventHubImpl) Close() error {
+	utils.LogDebug("[DEBUG] Closing ws server")
 	return h.server.Close()
 }
 
@@ -215,11 +216,17 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 
 	case LoadAutomations:
 		msg := c.onLoadAutomations()
-		c.Broadcast(Automations, msg)
+		err := c.Broadcast(Automations, msg)
+		if err != nil {
+			utils.LogErrorf("Failed to broadcast onLoadAutomations %s", err.Error())
+		}
 
 	case LoadDevices:
 		msg := c.onLoadDevices()
-		c.Broadcast(Devices, msg)
+		err := c.Broadcast(Devices, msg)
+		if err != nil {
+			utils.LogErrorf("Failed to broadcast onLoadDevices %s", err.Error())
+		}
 
 	case LoadMetrics:
 		c.executePayloadActionWithSuccessfullyEvent(eventMsg.Payload, c.onLoadMetrics, Metrics)
@@ -265,9 +272,15 @@ func (c *eventHubImpl) executeActionWithEvent(action func() (interface{}, error)
 
 	result, err := action()
 	if err != nil {
-		c.Broadcast(OperationFailed, err.Error())
+		err = c.Broadcast(OperationFailed, err.Error())
+		if err != nil {
+			utils.LogErrorf("Failed to broadcast OperationFailed %s", err.Error())
+		}
 	} else {
-		c.Broadcast(successEvent, result)
+		err = c.Broadcast(successEvent, result)
+		if err != nil {
+			utils.LogErrorf("Failed to broadcast successEvent %s", err.Error())
+		}
 	}
 }
 
@@ -280,7 +293,10 @@ func (c *eventHubImpl) executePayloadActionWithSuccessfullyEvent(payload interfa
 
 	result, err := action(payload)
 	if err == nil {
-		c.Broadcast(successEvent, result)
+		err = c.Broadcast(successEvent, result)
+		if err != nil {
+			utils.LogErrorf("Failed to broadcast successEvent %s", err.Error())
+		}
 	}
 }
 
@@ -293,9 +309,15 @@ func (c *eventHubImpl) executePayloadActionWithEvent(payload interface{}, action
 
 	result, err := action(payload)
 	if err != nil {
-		c.Broadcast(OperationFailed, err.Error())
+		err = c.Broadcast(OperationFailed, err.Error())
+		if err != nil {
+			utils.LogErrorf("Failed to broadcast OperationFailed %s", err.Error())
+		}
 	} else {
-		c.Broadcast(successEvent, result)
+		err = c.Broadcast(successEvent, result)
+		if err != nil {
+			utils.LogErrorf("Failed to broadcast OperationSuccess %s", err.Error())
+		}
 	}
 }
 
@@ -307,8 +329,14 @@ func (c *eventHubImpl) executeAction(payload interface{}, action func(interface{
 
 	err := action(payload)
 	if err != nil {
-		c.Broadcast(OperationFailed, err.Error())
+		err = c.Broadcast(OperationFailed, err.Error())
+		if err != nil {
+			utils.LogErrorf("Failed to broadcast OperationFailed %s", err.Error())
+		}
 	} else if reportSuccess {
-		c.Broadcast(OperationSuccess, nil)
+		err = c.Broadcast(OperationSuccess, nil)
+		if err != nil {
+			utils.LogErrorf("Failed to broadcast OperationSuccess %s", err.Error())
+		}
 	}
 }
