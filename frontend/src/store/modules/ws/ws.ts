@@ -1,4 +1,4 @@
-function getSocketUri() {
+export function getSocketUri() {
   const devSocketUri = 'ws://localhost:3000/ws';
   const productionSocketUri =
     'ws://' + document.location.host + '/ws';
