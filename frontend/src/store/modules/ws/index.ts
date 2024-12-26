@@ -1,7 +1,10 @@
 import { Module } from 'vuex';
 import { RootState } from '../../state';
 import { WSClientState } from './state';
-import { ConnectionStatus } from '@/types/connection.type';
+import {
+  ConnectionStatus,
+  ConnectionStatusType,
+} from '@/types/connection.type';
 
 function getSocketUri() {
   const devSocketUri = 'ws://localhost:3000/ws';
@@ -15,6 +18,10 @@ function getSocketUri() {
 
   return productionSocketUri;
 }
+let reconnectAttempts: number = 0;
+const maxReconnectAttempts = 10;
+const maxReconnectTimeout = 30000; //// Cap the delay at 30 seconds
+
 export const WSClientModule: Module<
   WSClientState,
   RootState
@@ -23,7 +30,7 @@ export const WSClientModule: Module<
 
   state: () => ({
     socket: null,
-    connectionStatus: 'disconnected',
+    connectionStatus: ConnectionStatus.disconnected,
   }),
 
   getters: {
@@ -34,11 +41,10 @@ export const WSClientModule: Module<
     setSocket(state, socket: WebSocket) {
       state.socket = socket;
     },
-    
-    setConnected(state, connected: boolean) {
-      state.connected = connected;
-    },
-    setConnectionStatus(state, status: ConnectionStatus) {
+    setConnectionStatus(
+      state,
+      status: ConnectionStatusType,
+    ) {
       state.connectionStatus = status;
     },
     sendMessage(state: WSClientState, { event, message }) {
@@ -60,12 +66,12 @@ export const WSClientModule: Module<
   actions: {
     connect({ state, commit, rootState, dispatch }) {
       const socket = new WebSocket(getSocketUri());
-      
+
       socket.onopen = function (event) {
         console.log('ws connected');
+        reconnectAttempts = 0;
         dispatch('emit', { event: 'loadDevices' });
 
-        commit('setConnected', true);
         commit('setConnectionStatus', 'connected');
       };
 
@@ -149,146 +155,44 @@ export const WSClientModule: Module<
       };
       socket.onclose = function (event) {
         console.log('ws close ', event);
-        commit('setConnected', false);
         commit('setConnectionStatus', 'connecting'); // WIP
 
-        // TODO use backoff reconnect
-        setTimeout(() => {
-          console.log('ws reconnecting');
-          dispatch('connect', {});
-        }, 2000);
+        if (reconnectAttempts < maxReconnectAttempts) {
+          const backoffDelay = Math.min(
+            1000 * Math.pow(2, reconnectAttempts),
+            maxReconnectTimeout,
+          );
+          console.log(
+            `(${reconnectAttempts}/${maxReconnectAttempts}) Reconnecting in ${
+              backoffDelay / 1000
+            } seconds... `,
+          );
+          setTimeout(() => {
+            reconnectAttempts += 1;
+            dispatch('connect', {});
+          }, backoffDelay);
+        } else {
+          console.error('Max reconnect attempts reached');
+          commit('setConnectionStatus', 'disconnected');
+          reconnectAttempts = 0;
+        }
       };
 
       socket.onerror = function (event) {
+
+        // no need to log errors when we are already connecting
+        if (
+          state.connectionStatus ===
+          ConnectionStatus.connecting
+        ) {
+          return;
+        }
+
         console.error('ws error: ' + event);
       };
 
       commit('setSocket', socket);
     },
-
-    // connect({ state, commit, rootState, dispatch }) {
-    //   const initializeWebSocket = () => {
-    //     const builder = WsClientBuilder.create();
-
-    //     builder.withOnMessage((event) => {
-    //       if (event == undefined) {
-    //         console.error('ws undefined event: ' + event);
-    //         return;
-    //       }
-    //       if (event.data == undefined) {
-    //         console.error(
-    //           'ws undefined data: ' + event.data,
-    //         );
-    //         return;
-    //       }
-
-    //       const obj = JSON.parse(event.data);
-    //       switch (obj.type) {
-    //         case 'deviceUpdated':
-    //           commit('devices/update', obj.payload, {
-    //             root: true,
-    //           });
-    //           break;
-    //         case 'deviceAdded':
-    //           commit('devices/add', obj.payload, {
-    //             root: true,
-    //           });
-    //           break;
-    //         case 'automations':
-    //           dispatch('automations/init', obj.payload, {
-    //             root: true,
-    //           });
-    //           break;
-    //         case 'automationUpdated':
-    //           commit('automations/update', obj.payload, {
-    //             root: true,
-    //           });
-    //           break;
-    //         case 'devices':
-    //           dispatch('devices/init', obj.payload, {
-    //             root: true,
-    //           });
-    //           break;
-    //         case 'deviceList':
-    //           dispatch('devices/updateItems', obj.payload, {
-    //             root: true,
-    //           });
-    //           break;
-    //         case 'appConfig':
-    //           dispatch('appconfig/init', obj.payload, {
-    //             root: true,
-    //           });
-    //           break;
-    //         case 'metrics':
-    //           dispatch('metrics/store', obj.payload, {
-    //             root: true,
-    //           });
-    //           break;
-    //         case 'logger':
-    //           dispatch('console/addMessage', obj.payload, {
-    //             root: true,
-    //           });
-    //           break;
-    //         case 'operationSuccess':
-    //           dispatch(
-    //             'alerts/showSuccess',
-    //             'Operation was successful.',
-    //             {
-    //               root: true,
-    //             },
-    //           );
-    //           break;
-    //         case 'operationFailed':
-    //           dispatch('alerts/showError', obj.payload, {
-    //             root: true,
-    //           });
-    //           break;
-    //         default:
-    //           console.error(
-    //             'ws unhandled type: ',
-    //             event.data,
-    //           );
-    //       }
-    //     });
-
-    //     builder.withOnReconnected(function () {
-    //       console.info('ws reconnected');
-    //       initializeWebSocket();
-    //     });
-
-    //     builder.withOnOpen(function (event) {
-    //       commit('setConnected', true);
-    //       dispatch('emit', { event: 'loadDevices' });
-    //       commit('setConnectionStatus', 'connected');
-    //     });
-
-    //     builder.withOnClose(function (event) {
-    //       console.info('ws close ', event);
-    //       commit('setConnected', false);
-    //       commit('setConnectionStatus', 'connecting'); // WIP
-    // commit('setConnected', false);
-    //       commit('setConnectionStatus', 'connecting'); // WIP
-    //     });
-
-    //     builder.withOnDisconnected(function () {
-    //       console.info('ws disconnected');
-
-    //       dispatch('cleanup', [], { root: true });
-    //       commit('setConnectionStatus', 'disconnected'); // WIP
-    //     });
-
-    //     builder.withOnError(function (event) {
-    //       console.error('ws error: ' + event);
-    //     });
-
-    //     const ws =
-    //       WsClientService.createFromBuilder(builder);
-    //     commit('setWs', ws);
-    //   };
-
-    //   initializeWebSocket();
-    // },
-
     emit({ commit }, { event, message }) {
       commit('sendMessage', {
         event: event,

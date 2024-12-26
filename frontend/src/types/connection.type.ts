@@ -1,7 +1,13 @@
-export type ConnectionStatus =
-  | 'connected'
-  | 'disconnected'
-  | 'connecting';
+import { ValueOf } from './types';
+
+export const ConnectionStatus = {
+  connected: 'connected',
+  disconnected: 'disconnected',
+  connecting: 'connecting',
+};
+export type ConnectionStatusType = ValueOf<
+  typeof ConnectionStatus
+>;
 
 export type ConnectionStateIcon = {
   icon: string;

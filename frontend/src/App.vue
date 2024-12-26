@@ -20,21 +20,24 @@ const menuItems = [
 
 
 </script>
-<style>
-
-</style>
+<style></style>
 <template>
   <main>
     <div class="app-container grid  align-items-center justify-content-center">
       <div class="col-12 md:col-10 lg:col-12 p-4">
-        <Menubar :model="menuItems" >
+        <Menubar :model="menuItems">
           <template #start>
-            <div class="menu-links">
-              <img src="./assets/images/nodeherder_logo.png" width="50" height="50"/>
+            <div class="menu-title">
               <Status />
+              <RouterLink :to="`/`">
+                <img src="./assets/images/nodeherder_logo.png" width="50" height="50" />
+              </RouterLink>
+              Node-Herder
               <Notifications />
             </div>
           </template>
+          <!-- <template #end>
+          </template> -->
         </Menubar>
         <div class="content">
           <RouterView />

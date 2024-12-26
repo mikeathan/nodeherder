@@ -1,9 +1,6 @@
-import { ConnectionStatus } from '@/types/connection.type';
-import { WsClientService } from './ws';
+import { ConnectionStatusType } from '@/types/connection.type';
 
 export interface WSClientState {
-  ws: WsClientService;
-  socket:WebSocket | null;
-  connected: boolean;
-  connectionStatus: ConnectionStatus;
+  socket: WebSocket | null;
+  connectionStatus: ConnectionStatusType;
 }
