@@ -20,7 +20,14 @@ const menuItems = [
 
 
 </script>
-<style></style>
+<style>
+body {
+  font-family: 'Roboto', sans-serif !important;
+}
+.p-component {
+  font-family: 'Roboto', sans-serif !important;
+}
+</style>
 <template>
   <main>
     <div class="app-container grid  align-items-center justify-content-center">

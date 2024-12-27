@@ -5,6 +5,8 @@ import router from './router';
 import '@fortawesome/fontawesome-free/css/all.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap';
+import '@fontsource/roboto';
+
 import { store, key } from './store/index';
 import mitt from 'mitt';
 import { Events } from '@/types/events.type';
