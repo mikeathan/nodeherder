@@ -24,6 +24,7 @@ const menuItems = [
 body {
   font-family: 'Roboto', sans-serif !important;
 }
+
 .p-component {
   font-family: 'Roboto', sans-serif !important;
 }
@@ -39,7 +40,7 @@ body {
               <RouterLink :to="`/`">
                 <img src="./assets/images/nodeherder_logo.png" width="50" height="50" />
               </RouterLink>
-              Node-Herder
+              <!-- Node-Herder -->
               <Notifications />
             </div>
           </template>
