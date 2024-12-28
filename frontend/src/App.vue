@@ -41,45 +41,56 @@ const menuItems: MenuItem[] = [
 body {
   font-family: 'Roboto', sans-serif !important;
 }
+
 .p-component {
   font-family: 'Roboto', sans-serif !important;
 }
 
-.p-menubar {
+.menu-title {
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .node-herder-text {
   font-family: 'Roboto';
-  font-size: 24px; /* Adjust the font size for prominence */
-  font-weight: 700; /* Bold weight for more prominence */
-  margin-left: 10px; /* Space between logo and text */
-
+  color: var(--bs-body-color);
+  font-size: 24px;
+  font-weight: 700;
+  margin-left: 10px;
+  white-space: nowrap;
 }
 
-/* Optional: Add hover effect for more interactivity */
-.node-herder-text:hover {
-  cursor: pointer;
+@media (max-width: 970px) {
+  /* .node-herder-text {
+    display: none;
+  } */
+
+  .menu-title {
+    flex: 1;
+  }
+
+  .p-menubar {
+    display: flex;
+  align-items: center;
+    justify-content: space-between;
+  }
+
+ 
 }
+
 </style>
 <template>
   <main>
-    <div
-      class="app-container grid align-items-center justify-content-center">
+    <div class="app-container grid align-items-center justify-content-center">
       <div class="col-12 md:col-10 lg:col-12 p-4">
-        <Menubar :model="menuItems" breakpoint="400px">
+        <Menubar :model="menuItems" >
           <template #start>
             <div class="menu-title">
               <Status />
-              <RouterLink :to="`/`">
-                <img
-                  src="./assets/images/nodeherder_logo.png"
-                  width="50"
-                  height="50" />
-                <span class="node-herder-text"
-                  >Node-Herder</span
-                >
+              <RouterLink :to="`/`" style="text-decoration: none;">
+                <img src="./assets/images/nodeherder_logo.png" width="50" height="50" />
+                <span class="node-herder-text">Node-Herder</span>
               </RouterLink>
 
               <Notifications />
