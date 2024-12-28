@@ -98,12 +98,15 @@ TODO
 - frontend - device settings component - DONE
 - frontend - test metrics graph - need mocked data in test node server ! - DONE
 - metrics results could have property from/to so we know the range for ui purposes - DONE
+- frontend - automation trigger when/then layout mobile fix
+- frontend - when device updated from mqt not updaitng the UI eg enable/disabled device - could be toggle control issue
+
 - Non bridge devices . eg HTTP need more investigation/testing
-- error reporting - important
+- error reporting - important - Done
 - metrics repo - keep for x days - DONE
 
 frontend - tabs - load tab on click -(leave for now)
-frontend - add app settings in main page - fix layout
+frontend - add app settings in main page - Done
 frontend - add navigation for pages - use vuetify and redesign layout
 frontend - handle timerange enum colours
 
@@ -120,7 +123,7 @@ add remote log enable in UI
 add download file log in UI
 
 Backend TODO
-automation schedule
+automation schedule - Done
 if automation has schedule then it will be enabled/disabled accordingly during the set hours/days
 
 device bridge utilize diagnostics category
@@ -143,70 +146,3 @@ and prolem below ?
 [INFO]: 2024-09-15 19:50:31 - Start metrics cleanup
 [ERROR]: 2024-09-15 19:50:31 - Error during metrics cleanup: parsing time "brightness2024-08-25T18:04:56." as "2006-01-02T15:04:05.000000000Z": cannot parse "brightness2024-08-25T18:04:56." as "2006"
 [INFO]: 2024-09-15 19:50:31 - End metrics cleanup
-
-<template>
-  <v-card>
-    <v-card-title>
-      <v-icon>{{ device.icon }}</v-icon>
-      {{ device.name }}
-    </v-card-title>
-
-    <v-list>
-      <v-list-item v-for="sensor in device.sensors" :key="sensor.id">
-        <v-list-item-avatar>
-          <v-icon>{{ sensor.icon }}</v-icon>
-        </v-list-item-avatar>
-        <v-list-item-content>
-          <v-list-item-title>{{ sensor.name }}</v-list-item-title>
-          <v-list-item-subtitle>{{ sensor.value }} {{ sensor.unit }}</v-list-item-subtitle>
-        </v-list-item-content>
-      </v-list-item>
-    </v-list>
-
-    <v-card-text>
-      <v-row>
-        <v-col cols="6">
-          <v-progress-linear :value="device.battery" color="primary"></v-progress-linear>
-          <v-icon small>battery</v-icon> {{ device.battery }}%
-        </v-col>
-        <v-col cols="6">
-          <v-icon small>wifi</v-icon> {{ device.wifiSignal }}
-        </v-col>
-      </v-row>
-    </v-card-text>
-
-  </v-card>
-</template>
-
-<script>
-export default {
-  props: {
-    device: {
-      type: Object,
-      required: true,
-    },
-  },
-};
-</script>
-
-<template>
-  <v-container>
-    <v-row>
-      <v-col cols="12" sm="4" v-for="device in devices" :key="device.id">
-        <device-card :device="device"></device-card>
-      </v-col>
-    </v-row>
-  </v-container>
-</template>
-
-<script>
-export default {
-  data() {
-    return {
-      devices: [
-        // ... your device data ...
-      ],
-    };
-  },
-};
-</script>
