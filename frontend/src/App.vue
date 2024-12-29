@@ -4,13 +4,12 @@ import { store } from './store/index';
 import Status from './components/controls/Status.vue';
 import Notifications from './components/hub/alerts/Notifications.vue';
 import { useRouter } from 'vue-router';
-import { MenuItem } from 'primevue/menuitem';
 
 onBeforeMount(() => {
   store.dispatch('ws/connect');
 });
 const router = useRouter();
-const menuItems: MenuItem[] = [
+const menuItems = [
   {
     to: '/',
     label: 'dashboard',
@@ -72,19 +71,18 @@ body {
 
   .p-menubar {
     display: flex;
-  align-items: center;
+    align-items: center;
     justify-content: space-between;
   }
 
- 
-}
 
+}
 </style>
 <template>
   <main>
     <div class="app-container grid align-items-center justify-content-center">
       <div class="col-12 md:col-10 lg:col-12 p-4">
-        <Menubar :model="menuItems" >
+        <Menubar :model="menuItems">
           <template #start>
             <div class="menu-title">
               <Status />
