@@ -1,10 +1,11 @@
 {
-	"semi": true,
-	"trailingComma": "all",
-	"singleQuote": true,
-	"tabWidth": 2,
-	"useTabs": false,
-	"quoteProps": "consistent",
-	"bracketSameLine": true,
-    "printWidth": 60
+  "$schema": "https://json.schemastore.org/prettierrc",
+  "semi": true,
+  "trailingComma": "all",
+  "singleQuote": true,
+  "tabWidth": 2,
+  "useTabs": false,
+  "quoteProps": "consistent",
+  "bracketSameLine": true,
+  "printWidth": 60
 }
