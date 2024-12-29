@@ -312,150 +312,150 @@ app.ws('/ws', async function (ws, req) {
 
     const obj = JSON.parse(msg);
     switch (obj.type) {
-      case 'loadAutomations':
-        sendMessage(ws, 'automations', getAutomations());
-        break;
+    case 'loadAutomations':
+      sendMessage(ws, 'automations', getAutomations());
+      break;
 
-      case 'loadDevices':
-        //var payload = buildNewDevicesPayload();
-        sendMessage(ws, 'devices', devicesPayload);
-        connected = true;
-        break;
-      case 'deviceSetValue':
-        // Respond back with update value to update UI
-        const updatePayload = {
-          id: obj.payload.id,
-          data: {
-            [obj.payload.name]: obj.payload.value,
-          },
-          properties: {
-            availability: true,
-            last_seen: currentTime(),
-          },
-        };
+    case 'loadDevices':
+      //var payload = buildNewDevicesPayload();
+      sendMessage(ws, 'devices', devicesPayload);
+      connected = true;
+      break;
+    case 'deviceSetValue':
+      // Respond back with update value to update UI
+      const updatePayload = {
+        id: obj.payload.id,
+        data: {
+          [obj.payload.name]: obj.payload.value,
+        },
+        properties: {
+          availability: true,
+          last_seen: currentTime(),
+        },
+      };
 
-        sendMessage(ws, 'deviceUpdated', updatePayload);
+      sendMessage(ws, 'deviceUpdated', updatePayload);
 
-        break;
-      case 'saveAutomation':
-        var automation = obj.payload;
-        automationMap.set(automation.id, automation);
-        sendOperationSuccess(ws);
-        break;
+      break;
+    case 'saveAutomation':
+      var automation = obj.payload;
+      automationMap.set(automation.id, automation);
+      sendOperationSuccess(ws);
+      break;
 
-      case 'deleteAutomation':
-        if (!automationMap.has(obj.payload.id)) {
-          sendOperationFailed(
-            'Delete failed. Automation id ' +
+    case 'deleteAutomation':
+      if (!automationMap.has(obj.payload.id)) {
+        sendOperationFailed(
+          'Delete failed. Automation id ' +
               obj.payload.id +
               ' not found',
-          );
-          return;
-        }
+        );
+        return;
+      }
 
-        automationMap.delete(obj.payload.id);
-        sendMessage(ws, 'automations', getAutomations());
+      automationMap.delete(obj.payload.id);
+      sendMessage(ws, 'automations', getAutomations());
 
-        break;
+      break;
 
-      case 'deleteAutomationTrigger':
-        var aId = obj.payload.automationId;
-        var tId = obj.payload.triggerId;
+    case 'deleteAutomationTrigger':
+      var aId = obj.payload.automationId;
+      var tId = obj.payload.triggerId;
 
-        if (!automationMap.has(aId)) {
-          sendOperationFailed(
-            'Delete trigger. automation id ' +
+      if (!automationMap.has(aId)) {
+        sendOperationFailed(
+          'Delete trigger. automation id ' +
               aId +
               ' not found',
-          );
-          return;
-        }
+        );
+        return;
+      }
 
-        var automation = automationMap.get(aId);
-        if (tId >= automation.triggers.length) {
-          sendOperationFailed(
-            'trigger index' + tId + ' out of bounds.',
-          );
-          return;
-        }
+      var automation = automationMap.get(aId);
+      if (tId >= automation.triggers.length) {
+        sendOperationFailed(
+          'trigger index' + tId + ' out of bounds.',
+        );
+        return;
+      }
 
-        automation.triggers.splice(tId, 1);
-        sendMessage(ws, 'automationUpdated', automation);
-        break;
+      automation.triggers.splice(tId, 1);
+      sendMessage(ws, 'automationUpdated', automation);
+      break;
 
-      case 'loadAppConfig':
-        sendMessage(ws, 'appConfig', appConfig);
+    case 'loadAppConfig':
+      sendMessage(ws, 'appConfig', appConfig);
 
-        break;
-      case 'loadMetrics':
-        const payload = metricsMap[obj.payload.id];
+      break;
+    case 'loadMetrics':
+      const payload = metricsMap[obj.payload.id];
 
-        if (!payload) {
-          console.log(
-            'Metrics for device id' +
+      if (!payload) {
+        console.log(
+          'Metrics for device id' +
               obj.payload.id +
               ' not found',
+        );
+        // sendOperationFailed(
+        //   ws,
+        //   'Metrics for device id' +
+        //     obj.payload.id +
+        //     ' not found',
+        // );
+        return;
+      }
+      sendMessage(ws, 'metrics', payload);
+      break;
+
+    case 'saveHistoryConfig':
+      appConfig.history = obj.payload;
+      sendOperationSuccess(ws);
+      break;
+
+    case 'saveDeviceConfig':
+      var deviceId = obj.payload.id;
+      appConfig[deviceId] = obj.payload;
+      sendOperationSuccess(ws);
+      break;
+    case 'saveLoggerConfig':
+      console.log('saveLoggerConfig', obj.payload);
+      appConfig.logger = obj.payload;
+
+      if (appConfig.logger.enableRemoteLogger) {
+        if (consoleLogIntervalId != 0) {
+          console.log(
+            'consoleLogIntervalId already running',
           );
-          // sendOperationFailed(
-          //   ws,
-          //   'Metrics for device id' +
-          //     obj.payload.id +
-          //     ' not found',
-          // );
-          return;
-        }
-        sendMessage(ws, 'metrics', payload);
-        break;
-
-      case 'saveHistoryConfig':
-        appConfig.history = obj.payload;
-        sendOperationSuccess(ws);
-        break;
-
-      case 'saveDeviceConfig':
-        var deviceId = obj.payload.id;
-        appConfig[deviceId] = obj.payload;
-        sendOperationSuccess(ws);
-        break;
-      case 'saveLoggerConfig':
-        console.log('saveLoggerConfig', obj.payload);
-        appConfig.logger = obj.payload;
-
-        if (appConfig.logger.enableRemoteLogger) {
-          if (consoleLogIntervalId != 0) {
-            console.log(
-              'consoleLogIntervalId already running',
-            );
-            clearInterval(consoleLogIntervalId);
-          }
-
-          console.log('enableRemoteLogger');
-
-          consoleLogIntervalId = setInterval(() => {
-            const randomIndex = Math.floor(
-              Math.random() * logSeverity.length,
-            );
-
-            const severity = logSeverity[randomIndex];
-            const msg = {
-              level: severity,
-              message: severity + ' message',
-              timestamp: Date.now(),
-            };
-            sendMessage(ws, 'logger', msg);
-          }, 1000);
-        } else {
-          console.log('disableRemoteLogger');
           clearInterval(consoleLogIntervalId);
-          consoleLogIntervalId = 0;
         }
-        break;
 
-      case 'pong':
-        break;
+        console.log('enableRemoteLogger');
 
-      default:
-        console.log('ws unhandled type: ', msg);
+        consoleLogIntervalId = setInterval(() => {
+          const randomIndex = Math.floor(
+            Math.random() * logSeverity.length,
+          );
+
+          const severity = logSeverity[randomIndex];
+          const msg = {
+            level: severity,
+            message: severity + ' message',
+            timestamp: Date.now(),
+          };
+          sendMessage(ws, 'logger', msg);
+        }, 1000);
+      } else {
+        console.log('disableRemoteLogger');
+        clearInterval(consoleLogIntervalId);
+        consoleLogIntervalId = 0;
+      }
+      break;
+
+    case 'pong':
+      break;
+
+    default:
+      console.log('ws unhandled type: ', msg);
     }
   });
 

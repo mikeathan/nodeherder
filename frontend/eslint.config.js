@@ -1,19 +1,49 @@
-import globals from 'globals';
-import pluginJs from '@eslint/js';
-import tseslint from 'typescript-eslint';
-import pluginVue from 'eslint-plugin-vue';
+import vue from 'eslint-plugin-vue';
+import vueParser from 'vue-eslint-parser';
 
-/** @type {import('eslint').Linter.Config[]} */
 export default [
-  { files: ['**/*.{js,mjs,cjs,ts,vue}'] },
-  { languageOptions: { globals: globals.browser } },
-  pluginJs.configs.recommended,
-  ...tseslint.configs.recommended,
-  ...pluginVue.configs['flat/essential'],
   {
-    files: ['**/*.vue'],
+    ignores: ['dist'], // Exclude the 'dist' folder
+  },
+  {
+    plugins: {
+      vue,
+    },
     languageOptions: {
-      parserOptions: { parser: tseslint.parser },
+      parser: vueParser,
+      parserOptions: {
+        ecmaVersion: 2020,
+        sourceType: 'module',
+        ecmaFeatures: {
+          jsx: true, // Enable JSX support if needed
+        },
+      },
+      globals: {
+        window: 'readonly',
+        document: 'readonly',
+        console: 'readonly',
+        process: 'readonly',
+      },
+    },
+    settings: {
+      vue: {
+        version: 'detect', // Automatically detect Vue version
+      },
+    },
+    rules: {
+      ...vue.configs.recommended.rules, // Vue recommended rules
+      'no-unused-vars': 'warn',
+      'no-console': 'warn',
+      'indent': ['error', 2],
+      'quotes': ['error', 'single'],
+      'semi': ['error', 'always'],
+    },
+  },
+  {
+    files: ['*.vue'], // Apply specific rules to .vue files
+    rules: {
+      'vue/script-setup-uses-vars': 'error', // Prevent unused variable warnings in <script setup>
+      'vue/multi-word-component-names': 'off', // Disable multi-word component names warning
     },
   },
 ];

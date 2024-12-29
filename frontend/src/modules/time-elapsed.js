@@ -1,6 +1,6 @@
-import "moment-timezone";
-import moment from "moment-timezone";
-import { format } from "timeago.js";
+import 'moment-timezone';
+import moment from 'moment-timezone';
+import { format } from 'timeago.js';
 
 const SEC_ARRAY = [
   60, // 60 seconds in 1 min
@@ -29,7 +29,7 @@ export default class ElapsedTimer {
 
   startElapsedTimer(timestamp) {
     if (timestamp == undefined) {
-      this.TimeElapsed = "NA";
+      this.TimeElapsed = 'NA';
       return;
     }
     this.stopElapsedTimer();
@@ -37,7 +37,7 @@ export default class ElapsedTimer {
     const diff = diffSec(timestamp);
     const interval = nextInterval(diff) * 1000;
 
-    this.TimeElapsed = format(timestamp, "en_UK");
+    this.TimeElapsed = format(timestamp, 'en_UK');
     this.__element.innerText = this.TimeElapsed;
     this.__elapsedTimerId = setInterval(
       function () {
@@ -80,5 +80,5 @@ function nextInterval(diff) {
 }
 
 function isCallback(callback) {
-  return callback && typeof callback == "function";
+  return callback && typeof callback == 'function';
 }
