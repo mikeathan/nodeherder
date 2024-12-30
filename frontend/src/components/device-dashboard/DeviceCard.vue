@@ -14,13 +14,10 @@ const props = defineProps({
   <Card :class="device.properties.availability == 'offline' ? 'disabled-card' : ''">
     <template #title>
       <RouterLink :to="`/devicepage/${device.id}`">
-          <Button label="Link" variant="link" class="ps-0">
-            <h4>{{ device.friendly_name }}</h4>
-          </Button>
+        <Button label="Link" variant="link" class="ps-0">
+          <h4>{{ device.friendly_name }}</h4>
+        </Button>
       </RouterLink>
-    </template>
-    <template #subtitle>
-      <p>{{ device.description }}</p>
     </template>
     <template #content>
       <div class="flex align-items-center" v-for="(value, sensor) in device.exposes">

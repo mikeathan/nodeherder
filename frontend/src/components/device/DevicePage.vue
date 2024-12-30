@@ -51,9 +51,13 @@ const previousPage = computed(() => {
     </template>
     <template #content>
       <div class="col-12 col-md-9 ">
-        <Tabs value="0">
+        <Tabs value="0" class="flex flex-wrap gap-2">
           <TabList>
-            <Tab v-for="tab in deviceTabComponents" :key="tab.title" :value="tab.value">{{ tab.title }}</Tab>
+            <Tab v-for="tab in deviceTabComponents" :key="tab.title" :value="tab.value"
+              class="flex-1 text-center p-2 md:flex-none">
+
+              {{ tab.title }}
+            </Tab>
           </TabList>
           <TabPanels>
             <TabPanel v-for="tab in deviceTabComponents" :key="tab.value" :value="tab.value">
