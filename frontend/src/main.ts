@@ -34,7 +34,6 @@ app.use(PrimeVue, {
   },
 });
 
-
 app.use(ToastService);
 app.use(store, key);
 app.use(router);

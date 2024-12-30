@@ -81,7 +81,7 @@ export function getSensorValue(value: any): any {
 
 export function getSensorIcon(
   sensor: string,
-  value: number,
+  value: number
 ): string {
   switch (sensor) {
     case 'device_temperature':
@@ -96,7 +96,7 @@ export function getSensorIcon(
 }
 
 const getTemperatureIcon = (
-  temperature: number,
+  temperature: number
 ): string => {
   let icon = 'fa-thermometer-empty';
   if (temperature >= 30) {

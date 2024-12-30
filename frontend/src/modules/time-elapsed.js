@@ -70,7 +70,11 @@ function nextInterval(diff) {
   let rst = 1,
     i = 0,
     d = Math.abs(diff);
-  for (; diff >= SEC_ARRAY[i] && i < SEC_ARRAY.length; i++) {
+  for (
+    ;
+    diff >= SEC_ARRAY[i] && i < SEC_ARRAY.length;
+    i++
+  ) {
     diff /= SEC_ARRAY[i];
     rst *= SEC_ARRAY[i];
   }

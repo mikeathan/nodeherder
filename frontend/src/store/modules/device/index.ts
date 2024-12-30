@@ -47,13 +47,13 @@ export const DeviceModule: Module<
 
     update(
       state: DeviceModuleState,
-      deviceUpdate: DeviceUpdate,
+      deviceUpdate: DeviceUpdate
     ) {
       if (deviceUpdate.id in state.deviceMap == false) {
         console.error(
           'device ',
           deviceUpdate.id,
-          ' not found',
+          ' not found'
         );
         return;
       }
@@ -76,7 +76,7 @@ export const DeviceModule: Module<
       Object.entries(state.deviceMap).forEach(
         ([key, value]) => {
           delete state.deviceMap[key];
-        },
+        }
       );
     },
   },
@@ -97,7 +97,7 @@ export const DeviceModule: Module<
       dispatch(
         'ws/emit',
         { event: 'deviceSetValue', message: payload },
-        { root: true },
+        { root: true }
       );
     },
     rename({ dispatch }, { name, newName }) {
@@ -109,14 +109,14 @@ export const DeviceModule: Module<
       dispatch(
         'ws/emit',
         { event: 'deviceRename', message: payload },
-        { root: true },
+        { root: true }
       );
     },
     interview({ dispatch }, { id }) {
       dispatch(
         'ws/emit',
         { event: 'deviceInterview', message: { id } },
-        { root: true },
+        { root: true }
       );
     },
   },

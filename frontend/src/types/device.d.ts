@@ -9,7 +9,7 @@ export type DeviceProperties = KeyValuePair<any>;
 
 export type DeviceFilter = (
   device: Device,
-  expose: Expose,
+  expose: Expose
 ) => boolean;
 
 export type Device = {

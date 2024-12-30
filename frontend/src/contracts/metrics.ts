@@ -7,7 +7,7 @@ import {
 import { KeyValuePair } from '@/types/types';
 
 export function groupMetricsByType(
-  metrics: DeviceMetrics,
+  metrics: DeviceMetrics
 ): KeyValuePair<DeviceExposeMetrics[]> {
   if (!metrics) {
     return {};
@@ -21,7 +21,7 @@ export function groupMetricsByType(
       chartType = ChartTypes.TimeRangeChart;
     }
     grouped[chartType] = (grouped[chartType] || []).concat(
-      expose,
+      expose
     );
 
     return grouped;

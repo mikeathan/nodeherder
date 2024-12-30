@@ -29,14 +29,14 @@ export const ConsoleModule: Module<
   mutations: {
     setEnabled(
       state: ConsoleModuleState,
-      enabled: boolean,
+      enabled: boolean
     ) {
       state.isEnabled = enabled;
     },
 
     add(
       state: ConsoleModuleState,
-      message: LogMessageType,
+      message: LogMessageType
     ) {
       if (state.messages.length >= MAX_MESSAGE_SIZE) {
         state.messages.shift(); //? or clear all
@@ -46,11 +46,11 @@ export const ConsoleModule: Module<
 
     removeExpiredMessages(
       state: ConsoleModuleState,
-      expirationTimeInMs?: number,
+      expirationTimeInMs?: number
     ) {
       if (state.messages.length === 0) {
         console.log(
-          'Store - removeExpiredMessages no messages',
+          'Store - removeExpiredMessages no messages'
         );
         return;
       }
@@ -66,7 +66,7 @@ export const ConsoleModule: Module<
         'Store - removeExpiredMessages before clean',
         state.messages.length,
         'expiration time',
-        new Date(expirationTime),
+        new Date(expirationTime)
       );
 
       state.messages = state.messages.filter((message) => {
@@ -78,7 +78,7 @@ export const ConsoleModule: Module<
 
       console.log(
         'Store - removeExpiredMessages after clean',
-        state.messages.length,
+        state.messages.length
       );
     },
 
@@ -98,12 +98,12 @@ export const ConsoleModule: Module<
 
     enableRemoteLogging(
       { state, commit, dispatch },
-      enabled: boolean,
+      enabled: boolean
     ) {
       if (enabled == state.isEnabled) {
         console.log(
           'Store - enableRemoteLogging already enabled',
-          enabled,
+          enabled
         );
         return;
       }
@@ -117,7 +117,7 @@ export const ConsoleModule: Module<
             enabled: enabled,
           },
         },
-        { root: true },
+        { root: true }
       );
     },
   },

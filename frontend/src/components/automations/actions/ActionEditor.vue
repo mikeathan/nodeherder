@@ -1,60 +1,70 @@
 <script setup lang="ts">
-import { ref, watch, PropType } from "vue";
-import { getActionType, ActionType, } from "@/contracts/automations"
-import { AutomationTriggerAction } from "@/types/automation";
-import { emitClosePanel } from "@/mixins/useAutomationsEventBus";
-import { PanelComponents } from "@/mixins/usePanelComponents";
+  import { ref, watch, PropType } from 'vue';
+  import {
+    getActionType,
+    ActionType,
+  } from '@/contracts/automations';
+  import { AutomationTriggerAction } from '@/types/automation';
+  import { emitClosePanel } from '@/mixins/useAutomationsEventBus';
+  import { PanelComponents } from '@/mixins/usePanelComponents';
 
+  const emit = defineEmits<{
+    (e: 'save', action: AutomationTriggerAction): void;
+    (e: 'delete', action: AutomationTriggerAction): void;
+  }>();
 
-const emit = defineEmits<{
-    (e: 'save', action: AutomationTriggerAction): void,
-    (e: 'delete', action: AutomationTriggerAction): void,
-}>()
-
-const props = defineProps({
-
+  const props = defineProps({
     item: {
-        type: Object as PropType<AutomationTriggerAction>,
-        default: {} as AutomationTriggerAction,
-        required: true
+      type: Object as PropType<AutomationTriggerAction>,
+      default: {} as AutomationTriggerAction,
+      required: true,
     },
     automationId: {
-        type: String,
-        default: '',
-        required: false
+      type: String,
+      default: '',
+      required: false,
     },
     editMode: {
-        type: Boolean,
-        defaul: false
-    }
-});
+      type: Boolean,
+      defaul: false,
+    },
+  });
 
-const currentAction = ref(props.item)
-const actionType = ref<ActionType>("TriggerAction");
+  const currentAction = ref(props.item);
+  const actionType = ref<ActionType>('TriggerAction');
 
-watch(
+  watch(
     () => props.item,
     () => {
-        actionType.value = getActionType(props.item);
+      actionType.value = getActionType(props.item);
+    },
+    { immediate: true }
+  );
 
-    }, { immediate: true }
-)
-
-function saveAction(action: AutomationTriggerAction): void {
-    currentAction.value = action
+  function saveAction(
+    action: AutomationTriggerAction
+  ): void {
+    currentAction.value = action;
 
     emit('save', currentAction.value);
     emitClosePanel('ActionEditor');
-}
+  }
 
-function removeAction(action: AutomationTriggerAction): void {
+  function removeAction(
+    action: AutomationTriggerAction
+  ): void {
     emit('delete', currentAction.value);
     emitClosePanel('ActionEditor');
-}
-
+  }
 </script>
 <template>
-    <component :is="PanelComponents[actionType]" v-bind="{ automationId: props.automationId, action: currentAction }"
-        @delete="removeAction" @save="saveAction" />
+  <component
+    :is="PanelComponents[actionType]"
+    v-bind="{
+      automationId: props.automationId,
+      action: currentAction,
+    }"
+    @delete="removeAction"
+    @save="saveAction" />
 </template>
 @

@@ -46,25 +46,25 @@ export const MetricsModule: Module<
       Object.entries(state.deviceMetricsQueryMap).forEach(
         ([key, value]) => {
           delete state.deviceMetricsQueryMap[key];
-        },
+        }
       );
     },
   },
   actions: {
     query(
       { commit, dispatch, rootState },
-      request: DeviceMetricsRequest,
+      request: DeviceMetricsRequest
     ) {
       commit('delete', request.id); // remove any existing results
       dispatch(
         'ws/emit',
         { event: 'loadMetrics', message: request },
-        { root: true },
+        { root: true }
       );
     },
     store(
       { commit, dispatch, rootState },
-      metrics: DeviceMetrics,
+      metrics: DeviceMetrics
     ) {
       commit('set', metrics);
     },

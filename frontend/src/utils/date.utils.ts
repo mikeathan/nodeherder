@@ -4,7 +4,7 @@ export const toUTC = (date: Date): Date => {
 
   // Adjust for local time offset
   utcDate.setMinutes(
-    utcDate.getMinutes() - utcDate.getTimezoneOffset(),
+    utcDate.getMinutes() - utcDate.getTimezoneOffset()
   );
 
   return utcDate;
@@ -19,7 +19,7 @@ export const utcToUnixTimestamp = (date: Date): number => {
     date.getDate(),
     date.getHours(),
     date.getMinutes(),
-    date.getSeconds(),
+    date.getSeconds()
   );
   const unixTimestamp = Math.floor(utcMilliseconds / 1000);
   return unixTimestamp;
@@ -28,7 +28,7 @@ export const toUnix = (date: Date): number =>
   Math.floor(date.getTime() / 1000);
 
 export const getDateRange = (
-  hours: number,
+  hours: number
 ): { from: Date; to: Date } => {
   const now = new Date();
 
@@ -83,7 +83,7 @@ export const getLastWeekStartEndDate = (): {
 };
 
 export const formatTimestamp = (
-  timestamp: number,
+  timestamp: number
 ): string => {
   try {
     const date = new Date(timestamp);

@@ -45,7 +45,7 @@ export const AppConfigModule: Module<
   mutations: {
     setDeviceSetting(
       state: AppConfigModuleState,
-      deviceSetting: DeviceSettings,
+      deviceSetting: DeviceSettings
     ) {
       state.deviceSettingsMap[deviceSetting.id] =
         deviceSetting;
@@ -53,13 +53,13 @@ export const AppConfigModule: Module<
 
     setHistorySettings(
       state: AppConfigModuleState,
-      historySetting: HistorySettingsType,
+      historySetting: HistorySettingsType
     ) {
       state.appConfig.history = historySetting;
     },
     setLoggerSettings(
       state: AppConfigModuleState,
-      loggerSettings: LoggerSettingsType,
+      loggerSettings: LoggerSettingsType
     ) {
       state.appConfig.logger = loggerSettings;
     },
@@ -68,7 +68,7 @@ export const AppConfigModule: Module<
       Object.entries(state.deviceSettingsMap).forEach(
         ([key, value]) => {
           delete state.deviceSettingsMap[key];
-        },
+        }
       );
 
       state.appConfig = {} as AppConfig;
@@ -90,7 +90,7 @@ export const AppConfigModule: Module<
 
     saveDeviceSettings(
       { commit, dispatch },
-      deviceSetting: DeviceSettings,
+      deviceSetting: DeviceSettings
     ) {
       commit('setDeviceSetting', deviceSetting);
       dispatch(
@@ -99,12 +99,12 @@ export const AppConfigModule: Module<
           event: 'saveDeviceConfig',
           message: deviceSetting,
         },
-        { root: true },
+        { root: true }
       );
     },
     saveHistorySettings(
       { commit, dispatch },
-      historySettings: HistorySettingsType,
+      historySettings: HistorySettingsType
     ) {
       commit('setHistorySettings', historySettings);
       dispatch(
@@ -113,12 +113,12 @@ export const AppConfigModule: Module<
           event: 'saveHistoryConfig',
           message: historySettings,
         },
-        { root: true },
+        { root: true }
       );
     },
     saveLoggerSettings(
       { commit, dispatch },
-      loggerSetings: LoggerSettingsType,
+      loggerSetings: LoggerSettingsType
     ) {
       commit('setLoggerSettings', loggerSetings);
       dispatch(
@@ -127,7 +127,7 @@ export const AppConfigModule: Module<
           event: 'saveLoggerConfig',
           message: loggerSetings,
         },
-        { root: true },
+        { root: true }
       );
     },
   },

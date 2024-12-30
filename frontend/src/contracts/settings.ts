@@ -1,4 +1,4 @@
-import { DeviceSettings } from "@/types/settings";
+import { DeviceSettings } from '@/types/settings';
 
 export function createDeviceSettings(
   id: string,

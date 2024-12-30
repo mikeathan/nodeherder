@@ -17,22 +17,22 @@ function automationData1IsEqualToDeserializedObject() {
   isEqualToValueAndNotNull(
     automation_data1,
     'id',
-    newAutomaton.id,
+    newAutomaton.id
   );
   isEqualToValueAndNotNull(
     automation_data1,
     'friendlyname',
-    newAutomaton.friendlyname,
+    newAutomaton.friendlyname
   );
   isEqualToValueAndNotNull(
     automation_data1,
     'description',
-    newAutomaton.description,
+    newAutomaton.description
   );
   isEqualToValueAndNotNull(
     automation_data1,
     'enabled',
-    newAutomaton.enabled,
+    newAutomaton.enabled
   );
 
   automation_data1.triggers.forEach((trigger, index) => {
@@ -40,7 +40,7 @@ function automationData1IsEqualToDeserializedObject() {
     isEqualToValueAndNotNull(
       trigger,
       'name',
-      newTrigger.name,
+      newTrigger.name
     );
 
     trigger.conditions.forEach((condition, contIdx) => {
@@ -48,17 +48,17 @@ function automationData1IsEqualToDeserializedObject() {
       isEqualToValueAndNotNull(
         condition,
         'name',
-        newCondition.name,
+        newCondition.name
       );
       isEqualToValueAndNotNull(
         condition,
         'value',
-        newCondition.value,
+        newCondition.value
       );
       isEqualToValueAndNotNull(
         condition,
         'equality',
-        newCondition.equality,
+        newCondition.equality
       );
     });
 
@@ -69,12 +69,12 @@ function automationData1IsEqualToDeserializedObject() {
     isEqualToValueAndNotNull(
       action,
       'friendlyname',
-      newAction.friendlyname,
+      newAction.friendlyname
     );
     isEqualToValueAndNotNull(
       action,
       'property',
-      newAction.property,
+      newAction.property
     );
 
     isEqualToValueOrNull(action, 'data', newAction.data);
@@ -88,22 +88,22 @@ function automationData2IsEqualToDeserializedObject() {
   isEqualToValueAndNotNull(
     automation_data2,
     'id',
-    newAutomaton.id,
+    newAutomaton.id
   );
   isEqualToValueAndNotNull(
     automation_data2,
     'friendlyname',
-    newAutomaton.friendlyname,
+    newAutomaton.friendlyname
   );
   isEqualToValueAndNotNull(
     automation_data2,
     'description',
-    newAutomaton.description,
+    newAutomaton.description
   );
   isEqualToValueAndNotNull(
     automation_data2,
     'enabled',
-    newAutomaton.enabled,
+    newAutomaton.enabled
   );
 
   automation_data2.triggers.forEach((trigger, index) => {
@@ -111,7 +111,7 @@ function automationData2IsEqualToDeserializedObject() {
     isEqualToValueAndNotNull(
       trigger,
       'name',
-      newTrigger.name,
+      newTrigger.name
     );
 
     trigger.conditions.forEach((condition, contIdx) => {
@@ -119,17 +119,17 @@ function automationData2IsEqualToDeserializedObject() {
       isEqualToValueAndNotNull(
         condition,
         'name',
-        newCondition.name,
+        newCondition.name
       );
       isEqualToValueAndNotNull(
         condition,
         'value',
-        newCondition.value,
+        newCondition.value
       );
       isEqualToValueAndNotNull(
         condition,
         'equality',
-        newCondition.equality,
+        newCondition.equality
       );
     });
 
@@ -140,12 +140,12 @@ function automationData2IsEqualToDeserializedObject() {
     isEqualToValueAndNotNull(
       action,
       'friendlyname',
-      newAction.friendlyname,
+      newAction.friendlyname
     );
     isEqualToValueAndNotNull(
       action,
       'property',
-      newAction.property,
+      newAction.property
     );
 
     isEqualToValueOrNull(action, 'data', newAction.data);
@@ -154,7 +154,7 @@ function automationData2IsEqualToDeserializedObject() {
 function isEqualToValueAndNotNull(
   obj: any,
   propName: string,
-  value: any,
+  value: any
 ) {
   expect(obj.hasOwnProperty(propName)).toBe(true);
   const srcValue = obj[propName];
@@ -167,7 +167,7 @@ function isEqualToValueAndNotNull(
 function isEqualToValueOrNull(
   obj: any,
   propName: string,
-  value: any,
+  value: any
 ) {
   const srcValue = obj[propName];
   expect(srcValue).toBe(value);

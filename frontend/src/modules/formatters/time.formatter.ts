@@ -4,7 +4,9 @@ export function toMillisecs(minutes: number): number {
   return minutes * 60000;
 }
 
-export function toMinutes(millisecs: Nullable<number>): Nullable<number> {
+export function toMinutes(
+  millisecs: Nullable<number>
+): Nullable<number> {
   if (millisecs == null) {
     return null;
   }

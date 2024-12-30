@@ -1,36 +1,41 @@
 <script setup>
-import { watch, ref, onMounted, onUnmounted } from "vue";
-import ElapsedTimer from "../../modules/time-elapsed";
+  import { watch, ref, onMounted, onUnmounted } from 'vue';
+  import ElapsedTimer from '../../modules/time-elapsed';
 
-const props = defineProps({
+  const props = defineProps({
     timestamp: String,
-});
+  });
 
-let elapsedTimer = null;
-let lastSeenElement = ref(null)
+  let elapsedTimer = null;
+  let lastSeenElement = ref(null);
 
-watch(
+  watch(
     () => props.timestamp,
     (newlastSeen) => {
-        if (lastSeenElement.value == undefined) {
-            return;
-        }
-        elapsedTimer.Format(newlastSeen);
+      if (lastSeenElement.value == undefined) {
+        return;
+      }
+      elapsedTimer.Format(newlastSeen);
     },
     { immediate: true }
-);
+  );
 
-onMounted(() => {
+  onMounted(() => {
     elapsedTimer = new ElapsedTimer(lastSeenElement.value);
     elapsedTimer.Format(props.timestamp);
-});
+  });
 
-onUnmounted(() => {
+  onUnmounted(() => {
     elapsedTimer.dispose();
-});
-
+  });
 </script>
 <template>
-    <div :title="'last update ' + timestamp" :ref="el => { lastSeenElement = el }" className="col text-truncate">
-    </div>
+  <div
+    :title="'last update ' + timestamp"
+    :ref="
+      (el) => {
+        lastSeenElement = el;
+      }
+    "
+    className="col text-truncate"></div>
 </template>

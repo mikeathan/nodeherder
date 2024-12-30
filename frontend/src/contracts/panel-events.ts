@@ -12,7 +12,7 @@ import {
 } from '@/types/events.type';
 
 export function emitOpenSchedulerPanelEvent(
-  automation: Automation,
+  automation: Automation
 ): void {
   const events: EventActions = {
     save: (schedules: TimeSchedule[]) => {
@@ -34,7 +34,7 @@ export function emitOpenTriggerPanelEvent(
   automationId: string,
   trigger: AutomationTrigger,
   saveFunc: SaveTriggerFunc,
-  deleteFunc: DeleteTriggerFunc,
+  deleteFunc: DeleteTriggerFunc
 ): void {
   const events: EventActions = {
     save: (e: AutomationTrigger) => {

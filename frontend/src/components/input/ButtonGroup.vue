@@ -1,44 +1,44 @@
 <script setup lang="ts">
-import { KeyValuePair } from '@/types/types';
-import { PropType, ref, watch } from 'vue';
+  import { KeyValuePair } from '@/types/types';
+  import { PropType, ref, watch } from 'vue';
 
-const props = defineProps({
-  name: String,
-  value: {
-    type: null,
-    required: true,
-  },
-  items: {
-    type: Object as PropType<KeyValuePair<any>>,
-    required: true,
-  },
-});
+  const props = defineProps({
+    name: String,
+    value: {
+      type: null,
+      required: true,
+    },
+    items: {
+      type: Object as PropType<KeyValuePair<any>>,
+      required: true,
+    },
+  });
 
-const emit = defineEmits<{
-  (e: 'update', value: any): void;
-}>();
+  const emit = defineEmits<{
+    (e: 'update', value: any): void;
+  }>();
 
-const selectedValue = ref<any>(null);
+  const selectedValue = ref<any>(null);
 
-watch(
-  () => props.value,
-  () => {
-    selectedValue.value = props.value;
-  },
-  { immediate: true },
-);
+  watch(
+    () => props.value,
+    () => {
+      selectedValue.value = props.value;
+    },
+    { immediate: true }
+  );
 
-function selectionChanged(value: any) {
-  selectedValue.value =
-    typeof props.value == 'number'
-      ? parseInt(value)
-      : value;
-  emit('update', selectedValue.value);
-}
+  function selectionChanged(value: any) {
+    selectedValue.value =
+      typeof props.value == 'number'
+        ? parseInt(value)
+        : value;
+    emit('update', selectedValue.value);
+  }
 
-function getID() {
-  return new Date().getTime();
-}
+  function getID() {
+    return new Date().getTime();
+  }
 </script>
 
 <template>

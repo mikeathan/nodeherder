@@ -33,7 +33,7 @@ export type HistorySettingsType = {
 
 export type LoggerSettingsTypePropsType =
   keyof LoggerSettingsType;
-  
+
 export type LoggerSettingsType = {
   enableRemoteLogger: boolean;
 };

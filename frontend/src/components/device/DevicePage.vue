@@ -1,39 +1,37 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { store } from "../../store/index";
-import { useRouter } from "vue-router";
-import DeviceAbout from "./DeviceAbout.vue";
-import DeviceExposes from "./DeviceExposes.vue";
-import DeviceSettings from "./DeviceSettings.vue";
-import DeviceMetrics from "./DeviceMetrics.vue";
-import { deviceTabComponents } from '../../mixins/useTabComponents'
-import { Device } from "@/types/device";
+  import { computed, ref } from 'vue';
+  import { store } from '../../store/index';
+  import { useRouter } from 'vue-router';
+  import DeviceAbout from './DeviceAbout.vue';
+  import DeviceExposes from './DeviceExposes.vue';
+  import DeviceSettings from './DeviceSettings.vue';
+  import DeviceMetrics from './DeviceMetrics.vue';
+  import { deviceTabComponents } from '../../mixins/useTabComponents';
+  import { Device } from '@/types/device';
 
-const props = defineProps({
-  id: {
-    type: String,
-    required: true
-  }
-});
+  const props = defineProps({
+    id: {
+      type: String,
+      required: true,
+    },
+  });
 
-const deviceExist = computed<boolean>(() => {
-  return store.getters["devices/exists"](props.id);
-});
+  const deviceExist = computed<boolean>(() => {
+    return store.getters['devices/exists'](props.id);
+  });
 
-const device = computed<Device>(() => {
-  return store.getters["devices/find"](props.id);
-});
+  const device = computed<Device>(() => {
+    return store.getters['devices/find'](props.id);
+  });
 
-const previousPage = computed(() => {
-  const back = useRouter().options.history.state.back;
-  if (back != undefined) {
-    return back
-  }
+  const previousPage = computed(() => {
+    const back = useRouter().options.history.state.back;
+    if (back != undefined) {
+      return back;
+    }
 
-  return useRouter().push("/");
-});
-
-
+    return useRouter().push('/');
+  });
 </script>
 <template>
   <Card>
@@ -41,7 +39,9 @@ const previousPage = computed(() => {
       <div className="d-flex flex-row">
         <div class="align-self-center me-3">
           <RouterLink :to="`${previousPage}`">
-            <Button icon="pi pi-arrow-left" variant="text" />
+            <Button
+              icon="pi pi-arrow-left"
+              variant="text" />
           </RouterLink>
         </div>
         <div class="h3 align-self-center">
@@ -50,18 +50,25 @@ const previousPage = computed(() => {
       </div>
     </template>
     <template #content>
-      <div class="col-12 col-md-9 ">
+      <div class="col-12 col-md-9">
         <Tabs value="0" class="flex flex-wrap gap-2">
           <TabList>
-            <Tab v-for="tab in deviceTabComponents" :key="tab.title" :value="tab.value"
+            <Tab
+              v-for="tab in deviceTabComponents"
+              :key="tab.title"
+              :value="tab.value"
               class="flex-1 text-center p-2 md:flex-none">
-
               {{ tab.title }}
             </Tab>
           </TabList>
           <TabPanels>
-            <TabPanel v-for="tab in deviceTabComponents" :key="tab.value" :value="tab.value">
-              <component :is="tab.content" v-bind="{ id: props.id }"></component>
+            <TabPanel
+              v-for="tab in deviceTabComponents"
+              :key="tab.value"
+              :value="tab.value">
+              <component
+                :is="tab.content"
+                v-bind="{ id: props.id }"></component>
             </TabPanel>
           </TabPanels>
         </Tabs>

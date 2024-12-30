@@ -43,7 +43,7 @@ export const WSClientModule: Module<
     },
     setConnectionStatus(
       state,
-      status: ConnectionStatusType,
+      status: ConnectionStatusType
     ) {
       state.connectionStatus = status;
     },
@@ -57,7 +57,7 @@ export const WSClientModule: Module<
         state.socket.send(payload);
       } else {
         console.error(
-          'Cannot send message: WebSocket is not open.',
+          'Cannot send message: WebSocket is not open.'
         );
       }
     },
@@ -138,7 +138,7 @@ export const WSClientModule: Module<
               'Operation was successful.',
               {
                 root: true,
-              },
+              }
             );
             break;
           case 'operationFailed':
@@ -149,7 +149,7 @@ export const WSClientModule: Module<
           default:
             console.error(
               'ws unhandled type: ',
-              event.data,
+              event.data
             );
         }
       };
@@ -160,12 +160,12 @@ export const WSClientModule: Module<
         if (reconnectAttempts < maxReconnectAttempts) {
           const backoffDelay = Math.min(
             1000 * Math.pow(2, reconnectAttempts),
-            maxReconnectTimeout,
+            maxReconnectTimeout
           );
           console.log(
             `(${reconnectAttempts}/${maxReconnectAttempts}) Reconnecting in ${
               backoffDelay / 1000
-            } seconds... `,
+            } seconds... `
           );
           setTimeout(() => {
             reconnectAttempts += 1;
@@ -179,7 +179,6 @@ export const WSClientModule: Module<
       };
 
       socket.onerror = function (event) {
-
         // no need to log errors when we are already connecting
         if (
           state.connectionStatus ===

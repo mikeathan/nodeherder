@@ -30,7 +30,7 @@ export const AlertsModule: Module<
   mutations: {
     showAlert(
       state: AlertModuleState,
-      message: AlertMessage,
+      message: AlertMessage
     ) {
       state.messages[message.id] = message;
     },
@@ -70,7 +70,7 @@ export const AlertsModule: Module<
       if (alert.timeout) {
         setTimeout(
           () => commit('removeAlert', alert.id),
-          alert.timeout,
+          alert.timeout
         );
       }
     },

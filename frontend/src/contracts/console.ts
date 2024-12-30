@@ -10,7 +10,7 @@ const consoleLevelClassMap = {
 };
 
 export const getConsoleLevelClass = (
-  level: ConsoleLevel,
+  level: ConsoleLevel
 ) => {
   return (
     consoleLevelClassMap[level] ?? defaultConsoleLevelClass

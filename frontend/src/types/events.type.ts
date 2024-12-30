@@ -2,10 +2,10 @@ import { AutomationTrigger } from './automation';
 import { KeyValuePair } from './types';
 
 export type SaveTriggerFunc = (
-  trigger: AutomationTrigger,
+  trigger: AutomationTrigger
 ) => void;
 export type DeleteTriggerFunc = (
-  trigger: AutomationTrigger,
+  trigger: AutomationTrigger
 ) => void;
 
 export type EventAction = (...args: any) => void;
@@ -13,7 +13,7 @@ export type EventActions = KeyValuePair<EventAction>;
 
 export type OpenPanelEvent = {
   name: string;
-  
+
   args: any;
   events: EventActions;
 };

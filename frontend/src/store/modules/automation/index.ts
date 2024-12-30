@@ -22,7 +22,7 @@ export const AutomationModule: Module<
     listAll:
       (state: AutomationModuleState) => (): Automations => {
         return Object.values(
-          state.automationsMap,
+          state.automationsMap
         ) as Automations;
       },
 
@@ -40,14 +40,14 @@ export const AutomationModule: Module<
   mutations: {
     add(
       state: AutomationModuleState,
-      automation: Automation,
+      automation: Automation
     ) {
       state.automationsMap[automation.id] = automation;
     },
 
     update(
       state: AutomationModuleState,
-      automation: Automation,
+      automation: Automation
     ) {
       if (automation.id in state.automationsMap) {
         state.automationsMap[automation.id] = automation;
@@ -62,7 +62,7 @@ export const AutomationModule: Module<
       Object.entries(state.automationsMap).forEach(
         ([key, value]) => {
           delete state.automationsMap[key];
-        },
+        }
       );
 
       state.initialized = false;
@@ -81,13 +81,13 @@ export const AutomationModule: Module<
 
     save(
       { commit, dispatch, rootState },
-      automation: Automations,
+      automation: Automations
     ) {
       commit('add', automation);
       dispatch(
         'ws/emit',
         { event: 'saveAutomation', message: automation },
-        { root: true },
+        { root: true }
       );
     },
 
@@ -96,7 +96,7 @@ export const AutomationModule: Module<
       dispatch(
         'ws/emit',
         { event: 'deleteAutomation', message: { id: id } },
-        { root: true },
+        { root: true }
       );
     },
   },

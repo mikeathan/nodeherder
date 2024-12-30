@@ -65,7 +65,7 @@ describe('test appconfig module', () => {
           'appconfig/findDeviceSetting'
         ]((value as DeviceSettings).id) as DeviceSettings;
         expect(value).toEqual(deviceSetting);
-      },
+      }
     );
   });
 
@@ -119,9 +119,12 @@ describe('test appconfig module', () => {
   test('test save logger settigs saves the logger settings changes', () => {
     store.dispatch('appconfig/init', mockAppconfig);
 
-   mockAppconfig.logger.enableRemoteLogger = true;
+    mockAppconfig.logger.enableRemoteLogger = true;
 
-    store.commit('appconfig/setLoggerSettings',  mockAppconfig.logger);
+    store.commit(
+      'appconfig/setLoggerSettings',
+      mockAppconfig.logger
+    );
 
     var loggerSetting = store.getters[
       'appconfig/logger'

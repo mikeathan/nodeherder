@@ -1,36 +1,36 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+  import { computed, ref } from 'vue';
 
-const props = defineProps({
-  value: {
-    type: Date,
-    default: '',
-    required: true,
-  },
-});
+  const props = defineProps({
+    value: {
+      type: Date,
+      default: '',
+      required: true,
+    },
+  });
 
-const selectedTime = ref<Date>(props.value);
+  const selectedTime = ref<Date>(props.value);
 
-// const time = computed(() => {
-//   if (selectedTime.value) {
-//     const tp = toTimePicker(selectedTime.value);
-//     const time = new Date();
-//     time.setHours(tp.hours);
-//     time.setMinutes(tp.minutes);
-//     time.setSeconds(0);
-//     time.setMilliseconds(0);
-//     return time;
-//   }
-//   return new Date();
-// });
+  // const time = computed(() => {
+  //   if (selectedTime.value) {
+  //     const tp = toTimePicker(selectedTime.value);
+  //     const time = new Date();
+  //     time.setHours(tp.hours);
+  //     time.setMinutes(tp.minutes);
+  //     time.setSeconds(0);
+  //     time.setMilliseconds(0);
+  //     return time;
+  //   }
+  //   return new Date();
+  // });
 
-const emit = defineEmits<{
-  (e: 'updated', value: any): void;
-}>();
+  const emit = defineEmits<{
+    (e: 'updated', value: any): void;
+  }>();
 
-function handleEnterKey() {
-  emit('updated', selectedTime.value);
-}
+  function handleEnterKey() {
+    emit('updated', selectedTime.value);
+  }
 </script>
 
 <template>

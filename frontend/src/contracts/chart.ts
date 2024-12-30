@@ -17,7 +17,7 @@ import { ColorTypes, ColorValue } from '@/types/color.type';
 const HOURS = 24;
 
 export const getPeriodOffset = (
-  period: PeriodType,
+  period: PeriodType
 ): { from: Date; to: Date } => {
   const now = new Date();
   switch (period) {
@@ -62,7 +62,7 @@ const exposeColors: KeyValuePair<string> =
   buildExposeColors();
 
 export const getExposeColor = (
-  exposeName: string,
+  exposeName: string
 ): ColorValue => {
   return (
     exposeColors[exposeName] ?? Object.values(ColorTypes)[0]
@@ -80,7 +80,7 @@ export const ExposeBinaryColours: KeyValuePair<ExposeBinaryColor> =
   };
 
 export const getExposeBinaryColour = (
-  exposeName: string,
+  exposeName: string
 ): ExposeBinaryColor => {
   return (
     ExposeBinaryColours[exposeName] ?? {

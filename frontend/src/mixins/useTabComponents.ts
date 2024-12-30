@@ -11,15 +11,14 @@ export const deviceTabComponents: TabContent[] = [
     title: 'About',
     value: '0',
     content: defineAsyncComponent(
-      () => import('../components/device/DeviceAbout.vue'),
+      () => import('../components/device/DeviceAbout.vue')
     ),
   },
   {
     title: 'Exposes',
     value: '1',
     content: defineAsyncComponent(
-      () =>
-        import('../components/device/DeviceExposes.vue'),
+      () => import('../components/device/DeviceExposes.vue')
     ),
   },
   {
@@ -27,15 +26,14 @@ export const deviceTabComponents: TabContent[] = [
     value: '2',
     content: defineAsyncComponent(
       () =>
-        import('../components/device/DeviceSettings.vue'),
+        import('../components/device/DeviceSettings.vue')
     ),
   },
   {
     title: 'Metrics',
     value: '3',
     content: defineAsyncComponent(
-      () =>
-        import('../components/device/DeviceMetrics.vue'),
+      () => import('../components/device/DeviceMetrics.vue')
     ),
   },
 ];

@@ -26,7 +26,7 @@ describe('test automation module', () => {
 
     // assert
     const result = store.getters['automations/find'](
-      newAutomation.id,
+      newAutomation.id
     ) as Automation;
     expect(result).toEqual(newAutomation);
   });
@@ -145,7 +145,7 @@ describe('test automation module', () => {
 
     // assert values
     const result = store.getters['automations/find'](
-      newAutomation.id,
+      newAutomation.id
     ) as Automation;
     expect(result).toEqual(newAutomation);
   });
@@ -160,7 +160,7 @@ describe('test automation module', () => {
 
     // assert values
     const result = store.getters['automations/find'](
-      newAutomation.id,
+      newAutomation.id
     ) as Automation;
     expect(result).toBeUndefined();
   });

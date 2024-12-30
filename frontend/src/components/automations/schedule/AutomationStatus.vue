@@ -1,34 +1,34 @@
 <script setup lang="ts">
-import { computed, PropType, ref } from 'vue';
-import { Automation } from '@/types/automation';
-import { emitOpenSchedulerPanelEvent } from '@/contracts/panel-events';
+  import { computed, PropType, ref } from 'vue';
+  import { Automation } from '@/types/automation';
+  import { emitOpenSchedulerPanelEvent } from '@/contracts/panel-events';
 
-const emit = defineEmits(['cancel']);
+  const emit = defineEmits(['cancel']);
 
-const props = defineProps({
-  automation: {
-    type: Object as PropType<Automation>,
-    default: {} as Automation,
-    required: true,
-  },
-  clickToOpen: {
-    type: Boolean,
-    default: false,
-  },
-});
+  const props = defineProps({
+    automation: {
+      type: Object as PropType<Automation>,
+      default: {} as Automation,
+      required: true,
+    },
+    clickToOpen: {
+      type: Boolean,
+      default: false,
+    },
+  });
 
-const automation = ref<Automation>(props.automation);
-const hasSchedules = computed(
-  () =>
-    automation.value.schedules &&
-    automation.value.schedules.length != 0,
-);
+  const automation = ref<Automation>(props.automation);
+  const hasSchedules = computed(
+    () =>
+      automation.value.schedules &&
+      automation.value.schedules.length != 0
+  );
 
-function scheduleClick() {
-  if (props.clickToOpen) {
-    emitOpenSchedulerPanelEvent(automation.value);
+  function scheduleClick() {
+    if (props.clickToOpen) {
+      emitOpenSchedulerPanelEvent(automation.value);
+    }
   }
-}
 </script>
 <template>
   <div v-if="hasSchedules">

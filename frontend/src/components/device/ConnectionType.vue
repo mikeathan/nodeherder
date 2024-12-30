@@ -1,9 +1,9 @@
 <script setup>
-import MqqtImage from "../../assets/images/transport/mqtt-logo.png";
-import HttpImage from "../../assets/images/transport/http-logo.png";
-const props = defineProps({
-  type: String,
-});
+  import MqqtImage from '../../assets/images/transport/mqtt-logo.png';
+  import HttpImage from '../../assets/images/transport/http-logo.png';
+  const props = defineProps({
+    type: String,
+  });
 </script>
 <template>
   <div title="ConnectionType" v-if="type === 'mqtt'">

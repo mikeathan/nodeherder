@@ -1,132 +1,135 @@
 <script setup lang="ts">
-import {
-  computed,
-  ref,
-  watchEffect,
-  watch,
-  PropType,
-  reactive,
-} from 'vue';
-import { AutomationTriggerAction } from '@/types/automation';
-import {
-  toMillisecs,
-  toMinutes,
-} from '@/modules/formatters/time.formatter';
-import ButtonPanel from '@/components/controls/ButtonPanel.vue';
-import {
-  createSaveDeleteButtonItems,
-  createTriggerActionOperatorsDropdowitems,
-} from '../../../configs/automation/trigger-dropdown.config';
-import DeviceSelector from '@/components/controls/DeviceSelector.vue';
-import ExposeSelector from '@/components/controls/ExposeSelector.vue';
-import InputBox from '@/components/input/InputBox.vue';
-import Dropdown from '@/components/controls/Dropdown.vue';
-import {
-  featureDevicesFilter,
-  featureExposeFilter,
-} from '@/configs/automation/device.config';
-import ExposeDataInput from '@/components/controls/ExposeDataInput.vue';
-import { TriggerActionOperation } from '@/contracts/automations';
+  import {
+    computed,
+    ref,
+    watchEffect,
+    watch,
+    PropType,
+    reactive,
+  } from 'vue';
+  import { AutomationTriggerAction } from '@/types/automation';
+  import {
+    toMillisecs,
+    toMinutes,
+  } from '@/modules/formatters/time.formatter';
+  import ButtonPanel from '@/components/controls/ButtonPanel.vue';
+  import {
+    createSaveDeleteButtonItems,
+    createTriggerActionOperatorsDropdowitems,
+  } from '../../../configs/automation/trigger-dropdown.config';
+  import DeviceSelector from '@/components/controls/DeviceSelector.vue';
+  import ExposeSelector from '@/components/controls/ExposeSelector.vue';
+  import InputBox from '@/components/input/InputBox.vue';
+  import Dropdown from '@/components/controls/Dropdown.vue';
+  import {
+    featureDevicesFilter,
+    featureExposeFilter,
+  } from '@/configs/automation/device.config';
+  import ExposeDataInput from '@/components/controls/ExposeDataInput.vue';
+  import { TriggerActionOperation } from '@/contracts/automations';
 
-const props = defineProps({
-  action: {
-    type: Object as PropType<AutomationTriggerAction>,
-    default: {} as AutomationTriggerAction,
-    required: true,
-  },
-  automationId: {
-    type: String,
-    default: '',
-    required: false,
-  },
-});
+  const props = defineProps({
+    action: {
+      type: Object as PropType<AutomationTriggerAction>,
+      default: {} as AutomationTriggerAction,
+      required: true,
+    },
+    automationId: {
+      type: String,
+      default: '',
+      required: false,
+    },
+  });
 
-const emit = defineEmits<{
-  (e: 'save', action: AutomationTriggerAction): void;
-  (e: 'delete', action: AutomationTriggerAction): void;
-}>();
+  const emit = defineEmits<{
+    (e: 'save', action: AutomationTriggerAction): void;
+    (e: 'delete', action: AutomationTriggerAction): void;
+  }>();
 
-const action = reactive({ ...props.action });
-const operations = ref<TriggerActionOperation[]>([]);
+  const action = reactive({ ...props.action });
+  const operations = ref<TriggerActionOperation[]>([]);
 
-watch(
-  () => props.action,
-  () => {
-    if (props.action.delay) {
-      action.delay = toMinutes(props.action.delay);
-      operations.value.push('delay');
-    }
-  },
-  { immediate: true },
-);
-
-const buttonPanelItems = computed(() => {
-  const isActionValid =
-    action.data && action.property && action.id;
-
-  return createSaveDeleteButtonItems(
-    () => saveAction(),
-    () => removeAction(),
-    !isActionValid,
-    !isActionValid,
+  watch(
+    () => props.action,
+    () => {
+      if (props.action.delay) {
+        action.delay = toMinutes(props.action.delay);
+        operations.value.push('delay');
+      }
+    },
+    { immediate: true }
   );
-});
 
-const dropdownItems = computed(() =>
-  createTriggerActionOperatorsDropdowitems(
-    (e: TriggerActionOperation) => addOperation(e),
-  ),
-);
+  const buttonPanelItems = computed(() => {
+    const isActionValid =
+      action.data && action.property && action.id;
 
-function addOperation(operation: TriggerActionOperation) {
-  operations.value.push(operation);
-}
+    return createSaveDeleteButtonItems(
+      () => saveAction(),
+      () => removeAction(),
+      !isActionValid,
+      !isActionValid
+    );
+  });
 
-function removeOperation(
-  operation: TriggerActionOperation,
-) {
-  action[operation] = null;
-  operations.value = operations.value.filter(
-    (e) => e != operation,
+  const dropdownItems = computed(() =>
+    createTriggerActionOperatorsDropdowitems(
+      (e: TriggerActionOperation) => addOperation(e)
+    )
   );
-}
 
-function deviceSelected(id: string, friendlyName: string) {
-  action.id = id;
-  action.friendlyname = friendlyName;
-
-  // reset
-  action.property = '';
-  action.data = null;
-  action.delay = null;
-  action.steps = [];
-}
-
-function dataInputChange(value: string) {
-  action.data = value;
-}
-
-function delayInputChange(value: string) {
-  action.delay = parseInt(value);
-}
-
-function exposeSelected(name: string) {
-  action.property = name;
-
-  // reset
-  action.data = null;
-  action.delay = null;
-}
-
-function saveAction() {
-  if (action.delay) {
-    action.delay = toMillisecs(action.delay);
+  function addOperation(operation: TriggerActionOperation) {
+    operations.value.push(operation);
   }
-  emit('save', action);
-}
-function removeAction() {
-  emit('delete', action);
-}
+
+  function removeOperation(
+    operation: TriggerActionOperation
+  ) {
+    action[operation] = null;
+    operations.value = operations.value.filter(
+      (e) => e != operation
+    );
+  }
+
+  function deviceSelected(
+    id: string,
+    friendlyName: string
+  ) {
+    action.id = id;
+    action.friendlyname = friendlyName;
+
+    // reset
+    action.property = '';
+    action.data = null;
+    action.delay = null;
+    action.steps = [];
+  }
+
+  function dataInputChange(value: string) {
+    action.data = value;
+  }
+
+  function delayInputChange(value: string) {
+    action.delay = parseInt(value);
+  }
+
+  function exposeSelected(name: string) {
+    action.property = name;
+
+    // reset
+    action.data = null;
+    action.delay = null;
+  }
+
+  function saveAction() {
+    if (action.delay) {
+      action.delay = toMillisecs(action.delay);
+    }
+    emit('save', action);
+  }
+  function removeAction() {
+    emit('delete', action);
+  }
 </script>
 
 <template>

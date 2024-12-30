@@ -8,15 +8,14 @@ import { KeyValuePair, ValueOf } from '@/types/types';
 
 export function getExposeAttribute(
   expose: Expose,
-  name: string,
+  name: string
 ): any {
   return expose.attributes ? expose.attributes[name] : null;
 }
 
-
 export function getExposeProperty(
   expose: Expose,
-  name: string,
+  name: string
 ): any {
   return expose.properties ? expose.properties[name] : null;
 }
@@ -30,7 +29,7 @@ export function getExposePresets(expose: Expose): any {
 }
 
 export function getExposeBinaryProperty(
-  expose: Expose,
+  expose: Expose
 ): boolean {
   if (expose.properties == null) {
     return false;
@@ -48,12 +47,12 @@ export function getExposeBinaryProperty(
 
 export function getDevices(
   devices: Device[],
-  allowedFilter: DeviceFilter,
+  allowedFilter: DeviceFilter
 ): KeyValuePair<string> {
   let list: KeyValuePair<string> = {};
   for (const [key, device] of Object.entries(devices)) {
     for (const [key, expose] of Object.entries(
-      device.exposes,
+      device.exposes
     )) {
       if (allowedFilter(device, expose)) {
         list[device.friendly_name] = device.id;
@@ -65,12 +64,12 @@ export function getDevices(
 }
 
 export function getEnumDevices(
-  devices: Device[],
+  devices: Device[]
 ): KeyValuePair<string> {
   let list: KeyValuePair<string> = {};
   for (const [key, device] of Object.entries(devices)) {
     for (const [key, expose] of Object.entries(
-      device.exposes,
+      device.exposes
     )) {
       if (
         expose.type == ExposeTypes.Enum ||
@@ -85,12 +84,12 @@ export function getEnumDevices(
 }
 
 export function getFeatureDevices(
-  devices: Device[],
+  devices: Device[]
 ): KeyValuePair<string> {
   let list: KeyValuePair<string> = {};
   for (const [key, device] of Object.entries(devices)) {
     for (const [key, expose] of Object.entries(
-      device.exposes,
+      device.exposes
     )) {
       if (expose.properties != undefined) {
         list[device.friendly_name] = device.id;
@@ -104,7 +103,7 @@ export function getFeatureDevices(
 
 export function getExposes(
   device: Device,
-  filter: DeviceFilter,
+  filter: DeviceFilter
 ): Array<string> {
   return Object.entries(device.exposes)
     .filter(([id, expose]) => filter(device, expose))
@@ -112,18 +111,18 @@ export function getExposes(
 }
 
 export function getDeviceFeatures(
-  device: Device,
+  device: Device
 ): Array<string> {
   return Object.entries(device.exposes)
     .filter(
-      ([id, entity]) => entity.properties != undefined,
+      ([id, entity]) => entity.properties != undefined
     )
     .map(([i, e]) => e.name);
 }
 
 export function getPropertiesByExposeType(
   device: Device,
-  exposeType: ValueOf<typeof ExposeTypes>,
+  exposeType: ValueOf<typeof ExposeTypes>
 ): Array<string> {
   return Object.entries(device.exposes)
     .filter(([id, entity]) => entity.type == exposeType)
@@ -131,34 +130,34 @@ export function getPropertiesByExposeType(
 }
 
 export function getDevicePropertiesWithPresets(
-  device: Device,
+  device: Device
 ): Array<string> {
   return Object.entries(device.exposes)
     .filter(
       ([id, entity]) =>
         entity.type == ExposeTypes.Enum ||
-        entity.presets != null,
+        entity.presets != null
     )
     .map(([i, e]) => e.name);
 }
 
 export function getDeviceFeaturesByType(
   device: Device,
-  exposeType: ValueOf<typeof ExposeTypes>,
+  exposeType: ValueOf<typeof ExposeTypes>
 ): Array<string> {
   return Object.assign(
     {},
     ...Object.values(device.exposes)
       .filter(
         (f) =>
-          f.properties != undefined && f.type == exposeType,
+          f.properties != undefined && f.type == exposeType
       )
-      .map((f) => f.name),
+      .map((f) => f.name)
   );
 }
 
 export function hasSupportedExposeBinaryProperties(
-  expose: Expose,
+  expose: Expose
 ): boolean {
   if (expose.properties == null) {
     return false;

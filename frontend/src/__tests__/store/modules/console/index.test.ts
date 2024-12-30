@@ -55,7 +55,7 @@ describe('test console module', () => {
     store.getters['console/messages']().forEach(
       (message: LogMessageType, index: number) => {
         expect(message).toEqual(mockMessages[index]);
-      },
+      }
     );
   });
 
@@ -79,7 +79,7 @@ describe('test console module', () => {
         level: 'info',
         message: 'test message ' + i,
         timestamp: new Date(
-          now.getTime() - i * 61000,
+          now.getTime() - i * 61000
         ).getTime(),
       });
     }
@@ -91,7 +91,7 @@ describe('test console module', () => {
     // remove messages older than 5 minutes
     store.commit(
       'console/removeExpiredMessages',
-      5 * 60000,
+      5 * 60000
     );
 
     const messages = store.getters[

@@ -84,7 +84,7 @@ export class EditableAutomationTrigger
   }
 
   static createFrom(
-    trigger: AutomationTrigger,
+    trigger: AutomationTrigger
   ): AutomationTrigger {
     return new EditableAutomationTrigger(trigger);
   }
@@ -138,7 +138,7 @@ export class EditableActionTrigger
 
   public setDeviceId(
     id: string,
-    friendlyname: string,
+    friendlyname: string
   ): void {
     this.id = id;
     this.friendlyname = friendlyname;
@@ -146,7 +146,7 @@ export class EditableActionTrigger
 }
 
 export function getActionType(
-  action: AutomationTriggerAction,
+  action: AutomationTriggerAction
 ): ActionType {
   const editableAction = action as EditableActionTrigger;
   if (editableAction.type != undefined) {
@@ -158,7 +158,7 @@ export function getActionType(
 }
 
 export function clearAction(
-  action: AutomationTriggerAction,
+  action: AutomationTriggerAction
 ): void {
   action.id = '';
   action.friendlyname = '';
@@ -169,45 +169,45 @@ export function clearAction(
 
 export function insertTriggerCondition(
   trigger: AutomationTrigger,
-  newCondition?: AutomationTriggerCondition,
+  newCondition?: AutomationTriggerCondition
 ) {
   trigger.conditions.push(
-    newCondition ?? new EditableTriggerCondition(),
+    newCondition ?? new EditableTriggerCondition()
   );
 }
 
 export function insertCondition(
   conditions: AutomationTriggerConditions,
-  newCondition?: AutomationTriggerCondition,
+  newCondition?: AutomationTriggerCondition
 ) {
   conditions.push(
-    newCondition ?? new EditableTriggerCondition(),
+    newCondition ?? new EditableTriggerCondition()
   );
 }
 export function removeTriggerCondition(
   trigger: AutomationTrigger,
-  condition: AutomationTriggerCondition,
+  condition: AutomationTriggerCondition
 ) {
   trigger.conditions = trigger.conditions.filter(
-    (c) => c != condition,
+    (c) => c != condition
   );
 }
 
 export function removeCondition(
   conditions: AutomationTriggerConditions,
-  condition: AutomationTriggerCondition,
+  condition: AutomationTriggerCondition
 ) {
   conditions = conditions.filter((c) => c != condition);
 }
 
 export function isValid(
-  trigger: AutomationTrigger,
+  trigger: AutomationTrigger
 ): boolean {
   const r =
     trigger.name != '' &&
     trigger.actions.length > 0 &&
     trigger.actions.every(
-      (action) => action.id != '' && action.property != '',
+      (action) => action.id != '' && action.property != ''
     );
 
   return r;
@@ -216,7 +216,7 @@ export function isValid(
 export function setDeviceId(
   action: AutomationTriggerAction,
   id: string,
-  friendlyname: string,
+  friendlyname: string
 ): void {
   action.id = id;
   action.friendlyname = friendlyname;
@@ -225,7 +225,7 @@ export function setDeviceId(
 export function setProperty(
   action: AutomationTriggerAction,
   value: string,
-  type: ExposeType,
+  type: ExposeType
 ): void {
   action.property = value;
 

@@ -8,7 +8,7 @@ import { InjectionKey, onUnmounted, provide } from 'vue';
 
 export type Handler<T = unknown> = (event: T) => void;
 export type EventHandlers<
-  T extends Record<string, unknown>,
+  T extends Record<string, unknown>
 > = {
   [K in keyof T]: (event: T[K]) => void;
 };
@@ -28,7 +28,7 @@ export function emitCloseLastPanel() {
 }
 
 export function useAutomationEvents(
-  handlers: EventHandlers<Events>,
+  handlers: EventHandlers<Events>
 ) {
   const keys = Object.keys(handlers) as Array<keyof Events>;
   for (const key of keys) {
@@ -47,7 +47,7 @@ export function useAutomationEvents(
 export function createActionOpenPanelEvent(
   name: string,
   args: any,
-  events: EventActions,
+  events: EventActions
 ): OpenPanelEvent {
   return { name: name, args: args, events: events };
 }

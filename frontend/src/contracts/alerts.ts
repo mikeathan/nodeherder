@@ -6,7 +6,7 @@ import {
 import { genenerateUniqueId } from '../utils/unique';
 
 export const toToastSeverity = (
-  severity: AlertType,
+  severity: AlertType
 ): string | undefined => {
   switch (severity) {
     case 'success':
@@ -26,35 +26,35 @@ export const toToastSeverity = (
 
 export const createWarning = (
   message: string,
-  timeout?: number,
+  timeout?: number
 ): AlertMessage =>
   createAlert(
     message,
     'Warning',
     AlertTypes.warning,
-    timeout,
+    timeout
   );
 
 export const createError = (
   message: string,
-  timeout?: number,
+  timeout?: number
 ): AlertMessage =>
   createAlert(message, 'Error', AlertTypes.error, timeout);
 
 export const createSuccess = (
   message: string,
-  timeout?: number,
+  timeout?: number
 ): AlertMessage =>
   createAlert(
     message,
     'Success',
     AlertTypes.success,
-    timeout,
+    timeout
   );
 
 export const createInfo = (
   message: string,
-  timeout?: number,
+  timeout?: number
 ): AlertMessage =>
   createAlert(message, 'Info', AlertTypes.info, timeout);
 
@@ -62,7 +62,7 @@ const createAlert = (
   message: string,
   title: string,
   severity: AlertType,
-  timeout?: number,
+  timeout?: number
 ): AlertMessage => {
   return {
     severity: severity,

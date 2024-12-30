@@ -33,7 +33,7 @@ export function isDropdown(item: ButtonPanelType): boolean {
 export function createButton(
   name: string,
   click: ButtonClickEventType,
-  disabled: boolean = false,
+  disabled: boolean = false
 ): ButtonType {
   return { name: name, click: click, disabled: disabled };
 }
@@ -41,7 +41,7 @@ export function createButton(
 export function createDropDownItem(
   name: string,
   value: string,
-  click: ButtonClickEventType,
+  click: ButtonClickEventType
 ): DropDownItemType {
   return { name: name, value: value, click: click };
 }
@@ -49,7 +49,7 @@ export function createDropDownItem(
 export function createDropdown(
   name: string,
   items: DropDownItemType[],
-  disabled: boolean = false,
+  disabled: boolean = false
 ): DropDownType {
   return { name: name, items: items, disabled: disabled };
 }

@@ -26,7 +26,7 @@ export function presetsDevicesFilter(): DeviceFilter {
 }
 
 export function devicesFilterById(
-  id: string,
+  id: string
 ): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
     return device.id == id;
@@ -36,7 +36,7 @@ export function devicesFilterById(
 export function devicesFilterByActionStep(
   automationId: string,
   action: AutomationTriggerAction,
-  step: AutomationActionStep,
+  step: AutomationActionStep
 ): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
     if (action.steps.length == 1) {
@@ -66,7 +66,7 @@ export function presetExposeFilter(): DeviceFilter {
 }
 
 export function exposeFilterByType(
-  exposeType: ExposeType,
+  exposeType: ExposeType
 ): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
     return expose.type == exposeType;

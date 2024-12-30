@@ -15,7 +15,7 @@ import {
 } from '../../types/controls.type';
 
 export function createNewActionDropdownItems(
-  event: ButtonClickEventType,
+  event: ButtonClickEventType
 ): DropDownItemType[] {
   let items: DropDownItemType[] = [];
 
@@ -25,16 +25,16 @@ export function createNewActionDropdownItems(
         createDropDownItem(
           `New ${actionType}`,
           actionType,
-          event,
-        ),
-      ),
+          event
+        )
+      )
   );
 
   return items;
 }
 
 export function createTriggerActionOperatorsDropdowitems(
-  event: ButtonClickEventType,
+  event: ButtonClickEventType
 ): DropDownItemType[] {
   let items: DropDownItemType[] = [];
 
@@ -44,34 +44,34 @@ export function createTriggerActionOperatorsDropdowitems(
         createDropDownItem(
           `Add ${operator}`,
           operator,
-          event,
-        ),
-      ),
+          event
+        )
+      )
   );
 
   return items;
 }
 
 export function createStepActionOperatorsDropdowitems(
-  event: ButtonClickEventType,
+  event: ButtonClickEventType
 ): DropDownItemType[] {
   let items: DropDownItemType[] = [];
 
   Object.values(NumericOperators).forEach((operator) =>
     items.push(
-      createDropDownItem(operator, operator, event),
-    ),
+      createDropDownItem(operator, operator, event)
+    )
   );
 
   return items;
 }
 
 export function createButtons(
-  buttons: ButtonType[],
+  buttons: ButtonType[]
 ): ButtonType[] {
   return buttons.map(
     (item: ButtonType) =>
-      createButton(item.name, item.click, item.disabled),
+      createButton(item.name, item.click, item.disabled)
     // const node = isDropdown(item)
     //   ? createDropdown(item as DropDownType)
     //   : createButton(item.name, item.event, item.disabled);
@@ -82,7 +82,7 @@ export function createSaveDeleteButtonItems(
   saveEvent: ButtonClickEventType,
   deleteEvent: ButtonClickEventType,
   isSaveDisabled?: boolean,
-  isDeleteDisabled?: boolean,
+  isDeleteDisabled?: boolean
 ): ButtonType[] {
   return [
     createButton('Save', saveEvent, isSaveDisabled),
@@ -95,7 +95,7 @@ export function createEditAutomationButtonItems(
   scheduleEvent: ButtonClickEventType,
   isSaveDisabled?: boolean,
   isDeleteDisabled?: boolean,
-  isScheduleEnabled?: boolean,
+  isScheduleEnabled?: boolean
 ): ButtonType[] {
   return [
     createButton('Save', saveEvent, isSaveDisabled),
@@ -103,7 +103,7 @@ export function createEditAutomationButtonItems(
     createButton(
       'Schedules',
       scheduleEvent,
-      isScheduleEnabled,
+      isScheduleEnabled
     ),
   ];
 }
@@ -113,7 +113,7 @@ export function createSaveDeleteCancelButtonItems(
   cancelEvent: ButtonClickEventType,
   isSaveDisabled?: boolean,
   isDeleteDisabled?: boolean,
-  isCancelDisabled?: boolean,
+  isCancelDisabled?: boolean
 ): ButtonType[] {
   return [
     createButton('Save', saveEvent, isSaveDisabled),
@@ -128,7 +128,7 @@ export function createStepActionButtonItems(
   deleteEvent: ButtonClickEventType,
   isSaveDisabled?: boolean,
   isDeleteDisabled?: boolean,
-  isDropdownDisabled?: boolean,
+  isDropdownDisabled?: boolean
 ): ButtonPanelType[] {
   return [
     createButton('Save', saveEvent, isSaveDisabled),
@@ -136,7 +136,7 @@ export function createStepActionButtonItems(
     createDropdown(
       'Add Operation',
       dropDownItems,
-      isDropdownDisabled,
+      isDropdownDisabled
     ),
   ];
 }
@@ -144,7 +144,7 @@ export function createStepActionButtonItems(
 export function createDropdown(
   name: string,
   items: DropDownItemType[],
-  disabled: boolean = false,
+  disabled: boolean = false
 ): DropDownType {
   return { name: name, items: items, disabled: disabled };
 }
