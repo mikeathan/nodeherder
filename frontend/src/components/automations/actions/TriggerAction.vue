@@ -130,40 +130,67 @@ function removeAction() {
 </script>
 
 <template>
-  <div class="row pb-3">
-    <div class="col">
-      <ButtonPanel :buttons="buttonPanelItems" />
-    </div>
-  </div>
+  <ButtonPanel :buttons="buttonPanelItems" />
 
+  <div class="pb-3" />
   <h4>Trigger Action</h4>
   <div class="pb-3" />
 
-  <div class="row pb-3">
-    <DeviceSelector label="Device to trigger" :id="action.id" @updated="deviceSelected"
+  <div class="pb-3">
+    <DeviceSelector
+      label="Device to trigger"
+      :id="action.id"
+      @updated="deviceSelected"
       :filter="featureDevicesFilter()" />
   </div>
-
-  <div class="row pb-3">
-    <ExposeSelector :id="action.id" label="Expose" @updated="exposeSelected" :value="action.property"
+  <div class="pb-3">
+    <ExposeSelector
+      :id="action.id"
+      label="Expose"
+      @updated="exposeSelected"
+      :value="action.property"
       :filter="featureExposeFilter()" />
   </div>
-
-  <div class="flex align-items-center justify-content-left pb-3">
-    <Dropdown :items="dropdownItems" :disabled="action.id == ''" text label="Operations" icon="pi pi-plus"
+  <div
+    class="flex align-items-center justify-content-left pb-3">
+    <Dropdown
+      :items="dropdownItems"
+      :disabled="action.id == ''"
+      text
+      label="Operations"
+      icon="pi pi-plus"
       size="small" />
   </div>
-  <div class="row ">
+  <div class="row">
     <div class="col sm:col-4">
-      <ExposeDataInput :show-presets="true" :id="action.id" :name="action.property" label="Set value"
-        @updated="dataInputChange" :disabled="action.property == ''" :value="action.data"></ExposeDataInput>
+      <ExposeDataInput
+        :show-presets="true"
+        :id="action.id"
+        :name="action.property"
+        label="Set value"
+        @updated="dataInputChange"
+        :disabled="action.property == ''"
+        :value="action.data"></ExposeDataInput>
     </div>
   </div>
   <div v-for="operation in operations">
-    <div style="display: flex; align-items: center; gap: 0.5rem;">
-      <InputBox label=" Delay in minutes" :is-numeric="true" :disabled="action.property == ''"
-        @updated="delayInputChange" :value="action[operation]" />
-      <Button icon="pi pi-trash" text iconOnly="true" @click="removeOperation(operation)" />
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      ">
+      <InputBox
+        label=" Delay in minutes"
+        :is-numeric="true"
+        :disabled="action.property == ''"
+        @updated="delayInputChange"
+        :value="action[operation]" />
+      <Button
+        icon="pi pi-trash"
+        text
+        iconOnly="true"
+        @click="removeOperation(operation)" />
     </div>
   </div>
 </template>

@@ -1,37 +1,51 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
-import { store } from "../../../store/index";
+import { computed, onMounted, ref, watch } from 'vue';
+import { store } from '../../../store/index';
 import HistorySettings from './HistorySettings.vue';
-import { HistorySettingsType, LoggerSettingsType } from "@/types/settings";
-import LoggerSettings from "./LoggerSettings.vue";
+import {
+  HistorySettingsType,
+  LoggerSettingsType,
+} from '@/types/settings';
+import LoggerSettings from './LoggerSettings.vue';
 
 const historyConfig = ref<HistorySettingsType>();
 const loggerConfig = ref<LoggerSettingsType>();
 
 const historySettings = computed(() => {
-    if (!store.getters['appconfig/initialized']() as Boolean) {
-        store.dispatch('ws/emit', { event: 'loadAppConfig' });
-    }
-    return historyConfig.value = store.getters['appconfig/history']() as HistorySettingsType
+  if (
+    !store.getters['appconfig/initialized']() as Boolean
+  ) {
+    store.dispatch('ws/emit', { event: 'loadAppConfig' });
+  }
+  return (historyConfig.value = store.getters[
+    'appconfig/history'
+  ]() as HistorySettingsType);
 });
 
 const loggerSettings = computed(() => {
-    if (!store.getters['appconfig/initialized']() as Boolean) {
-        store.dispatch('ws/emit', { event: 'loadAppConfig' });
-    }
-    return loggerConfig.value = store.getters['appconfig/logger']() as LoggerSettingsType
+  if (
+    !store.getters['appconfig/initialized']() as Boolean
+  ) {
+    store.dispatch('ws/emit', { event: 'loadAppConfig' });
+  }
+  return (loggerConfig.value = store.getters[
+    'appconfig/logger'
+  ]() as LoggerSettingsType);
 });
-
 </script>
 
 <template>
-    <Card>
-        <template #title>
-            <h2>Settings</h2>
-        </template>
-        <template #content>
-            <HistorySettings :settings="historySettings"></HistorySettings>
-            <LoggerSettings :settings="loggerSettings"></LoggerSettings>
-        </template>
-    </Card>
+  <Card>
+    <template #title>
+      <h2>Settings</h2>
+    </template>
+    <template #content>
+      <div class="pt-3">
+        <HistorySettings :settings="historySettings" />
+      </div>
+      <div class="pt-3">
+        <LoggerSettings :settings="loggerSettings" />
+      </div>
+    </template>
+  </Card>
 </template>

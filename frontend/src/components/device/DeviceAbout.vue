@@ -79,7 +79,7 @@ const displayProps = computed(() => {
 <template>
     <div>
         <dl class="grid grid-nogutter" v-for="(prop, idx) in displayProps" :key="idx">
-            <dt class="col-12 md:col-5">
+            <dt class="col-12 md:col-5  text-secondary">
                 {{ prop.key }}
             </dt>
             <dd class="col-12 md:col-7">

@@ -27,19 +27,24 @@ function save(propName: HistorySettingsPropsType, propValue: any) {
 }
 
 </script>
-
 <template>
-    <h2>History</h2>
-    <div class="grid col-12 align-items-center grid-nogutter" v-for="(interval, key) in historySettings" :key="key">
-        <dl class="col md:col-3 sm:col-3">
-            <dt>
-                <strong> {{ key }}</strong>
-            </dt>
-        </dl>
-        <div class="col md:col-3 sm:col-3">
-            <InputBox :label="interval.unit" :value="interval.value" :is-numeric="true"
-                @lost-focus="(f) => inputLostFocus(key, f)">
-            </InputBox>
-        </div>
+    <h3>History</h3>
+    <div class="pt-3"/>
+    <div class="grid grid-nogutter" v-for="(interval, key) in historySettings" :key="key">
+      <dl class="col-12 md:col-3 text-secondary">
+        <dt>
+          <strong>{{ key }}</strong>
+        </dt>
+      </dl>
+  
+      <div class="col-12 md:col-3">
+        <InputBox 
+          :label="interval.unit" 
+          :value="interval.value" 
+          :is-numeric="true"
+          @lost-focus="(f) => inputLostFocus(key, f)" 
+        />
+      </div>
     </div>
-</template>
+  </template>
+  

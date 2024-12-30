@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { KeyValuePair } from '@/types/types';
-import {
-  PropType,
-  ref,
-  watch,
-} from 'vue';
+import { PropType, ref, watch } from 'vue';
 
 const props = defineProps({
   name: String,
@@ -32,7 +28,6 @@ watch(
   { immediate: true },
 );
 
-
 function selectionChanged(value: any) {
   selectedValue.value =
     typeof props.value == 'number'
@@ -47,8 +42,14 @@ function getID() {
 </script>
 
 <template>
-  <div class="toggle-button-group">
-    <Button v-for="(key, value) in props.items" :key="key" :label="value as string" @click="selectionChanged(key)"
-      :class="{ 'p-button-primary': selectedValue === key, 'p-button-outlined': selectedValue !== key }" />
-  </div>
+  <Button
+    v-for="(key, value) in props.items"
+    :key="key"
+    :label="value as string"
+    size="small"
+    @click="selectionChanged(key)"
+    :class="{
+      'p-button-primary': selectedValue === key,
+      'p-button-outlined': selectedValue !== key,
+    }" />
 </template>

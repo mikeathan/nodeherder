@@ -37,7 +37,7 @@ deviceSettings
 <template>
   <div class="grid col-12 align-items-center grid-nogutter" v-for="(value, key) in deviceSettings" :key="key">
     <dl class="col-12 md:col-3">
-      <dt>
+      <dt class="text-secondary">
         <strong> {{ key }}</strong>
       </dt>
     </dl>

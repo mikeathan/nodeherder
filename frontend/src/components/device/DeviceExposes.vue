@@ -44,7 +44,7 @@ function updateValue(expose: Expose, value: any) {
         :item="expose">
         <dl class="col-12 md:col-3">
             <dt><strong> {{ expose.name }}</strong></dt>
-            <dd><small> {{ expose.description }} </small></dd>
+            <dd class=" text-secondary"><small> {{ expose.description }} </small></dd>
         </dl>
         <div class="col-12 md:col-9">
             <div v-if="expose.properties == null">
