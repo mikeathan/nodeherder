@@ -96,7 +96,7 @@ function cancel() {
   if (isInViewMode.value) {
     emit('cancel');
   } else {
-    createCloseLastPanelEvent()
+    createCloseLastPanelEvent();
   }
 }
 
@@ -190,13 +190,12 @@ function getConditionsDescription(
 function getActionDescription(
   trigger: AutomationTrigger,
 ): string {
-
-
-  if (trigger.actions.every(a => a.id == '')) {
+  if (trigger.actions.every((a) => a.id == '')) {
     return '<EMPTY>';
   }
-  const res = trigger.actions.map(a =>
-    `${a.friendlyname}.${a.property}`)
+  const res = trigger.actions.map(
+    (a) => `${a.friendlyname}.${a.property}`,
+  );
   return res.join(',');
 }
 </script>
@@ -204,31 +203,53 @@ function getActionDescription(
 <template>
   <!-- TODO: find better way to do this
     we have 2 components that use the same template and toggle from the if isinVieMode -->
-  <Button icon="pi pi-times" size="large" variant="text" rounded class="float-end" @click="cancel()" />
-  <div v-bind:style="{
-    display: isInViewMode ? 'block' : 'none',
-  }" class="col-12">
+  <Button
+    icon="pi pi-times"
+    size="large"
+    variant="text"
+    rounded
+    class="float-end"
+    @click="cancel()" />
+  <div
+    v-bind:style="{
+      display: isInViewMode ? 'block' : 'none',
+    }">
     <div class="grid">
-
       <div class="row">
-
         <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
-          <InputBox label="Id" :disabled="true" :value="automation.id" />
+          <InputBox
+            label="Id"
+            :disabled="true"
+            :value="automation.id" />
         </div>
         <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
-          <InputBox label="Friendly Name" :disabled="true" :value="automation.friendlyname" class="w-full" />
+          <InputBox
+            label="Friendly Name"
+            :disabled="true"
+            :value="automation.friendlyname"
+            class="w-full" />
         </div>
         <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
-          <InputBox label="Description" @updated="(v) => (automation.description = v)
-            " :value="automation.description" class="w-full" />
+          <InputBox
+            label="Description"
+            @updated="(v) => (automation.description = v)"
+            :value="automation.description"
+            class="w-full" />
         </div>
         <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
-          <AutomationStatus :automation="automation" :clickToOpen="true" />
+          <AutomationStatus
+            :automation="automation"
+            :clickToOpen="true" />
         </div>
       </div>
     </div>
-    <ButtonPanel :buttons="buttonPanelItems" class="pb-3 pt-3" />
-    <DataTable :value="automation.triggers" @row-click="rowClicked" selectionMode="single">
+    <ButtonPanel
+      :buttons="buttonPanelItems"
+      class="pb-3 pt-3" />
+    <DataTable
+      :value="automation.triggers"
+      @row-click="rowClicked"
+      selectionMode="single">
       <Column field="action" header="Action">
         <template #body="slotProps">
           {{ getActionDescription(slotProps.data) }}
@@ -236,37 +257,46 @@ function getActionDescription(
       </Column>
       <Column field="conditions" header="Conditions">
         <template #body="slotProps">
-          {{
-            getConditionsDescription(slotProps.data)
-          }}
+          {{ getConditionsDescription(slotProps.data) }}
         </template>
       </Column>
       <Column class="col-sm-1">
         <template #header="slotProps">
-          <Button icon="pi pi-plus" variant="text" rounded @click="createNewTrigger()" />
+          <Button
+            icon="pi pi-plus"
+            variant="text"
+            rounded
+            @click="createNewTrigger()" />
         </template>
         <template #body="slotProps">
-          <Button icon="pi pi-trash" variant="text" rounded @click="
-            onDeleteTriggerClick(
-              $event,
-              slotProps.data,
-            )
+          <Button
+            icon="pi pi-trash"
+            variant="text"
+            rounded
+            @click="
+              onDeleteTriggerClick($event, slotProps.data)
             " />
         </template>
       </Column>
     </DataTable>
-    <div class="pt-4 flex align-items-center justify-content-center">
-      <Button style="width: 99%;" icon="pi pi-plus" label="Add Trigger" @click="createNewTrigger()" text size="small" />
+    <div
+      class="pt-4 flex align-items-center justify-content-center">
+      <Button
+        style="width: 99%"
+        icon="pi pi-plus"
+        label="Add Trigger"
+        @click="createNewTrigger()"
+        text
+        size="small" />
     </div>
-
   </div>
-  <Card v-bind:style="{
-    display: isInViewMode == false ? 'block' : 'none',
-  }">
-    <template #content>
-
-      <Panel @close="onComponentHidden" @component-displayed="onComponentDisplayed">
-      </Panel>
-    </template>
-  </Card>
+  <div
+    v-bind:style="{
+      display: isInViewMode == false ? 'block' : 'none',
+    }">
+    <Panel
+      @close="onComponentHidden"
+      @component-displayed="onComponentDisplayed">
+    </Panel>
+  </div>
 </template>
