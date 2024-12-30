@@ -40,6 +40,84 @@ const navigateToCreator = () => {
 };
 </script>
 
+<style scoped>
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  .list {
+    padding: 0;
+    margin: 0;
+  }
+  .list-item {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    border-bottom: 1px solid #e0e0e0;
+    gap: 16px;
+  }
+  .badge {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-weight: bold;
+    width: 48px;
+    height: 48px;
+  }
+  .details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-grow: 1;
+  }
+  .friendly-name {
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .link {
+    text-decoration: none;
+  }
+  .description {
+    font-size: 14px;
+    color: #4b5563;
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .actions {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+
+  /* Mobile: Stack vertically */
+  @media (max-width: 768px) {
+    .list-item {
+      flex-direction: column;
+    }
+    .actions {
+      justify-content: flex-start;
+      margin-top: 8px;
+    }
+  }
+
+  /* Desktop: Flex horizontally */
+  @media (min-width: 768px) {
+    .list-item {
+      flex-direction: row;
+      align-items: center;
+    }
+    .actions {
+      justify-content: flex-end;
+    }
+    .description {
+      white-space: normal;
+    }
+  }
+</style>
 <template>
 
     <Card>
@@ -48,47 +126,40 @@ const navigateToCreator = () => {
         </template>
         <template #content>
             <Divider type="solid" />
-            <ul class="list-none p-0 m-0">
-                <template v-for="(automation, index) in automations">
-                    <li class="p-3 border-b-1  flex flex-wrap md:flex-nowrap items-center">
-
-                        <!-- Index Badge -->
-                        <div
-                            class="flex-shrink-0 flex justify-center items-center text-white font-bold bg-blue-500 rounded-full me-3 mt-2 mb-2 md:mb-0">
-                            <Badge severity="secondary" :value="index + 1" size="small"></Badge>
-                        </div>
-
-                        <!-- Automation Details -->
-                        <div class="flex-1 mb-2 md:mb-0">
-                            <!-- Friendly Name -->
-                            <div class="text-lg font-medium">
-                                <RouterLink :to="`/editor/${automation.id}`" class="text-blue-600 hover:underline">
-                                    {{ automation.friendlyname }}
-                                </RouterLink>
+            <div class="container">
+                <ul class="list">
+                    <template v-for="(automation, index) in automations" :key="automation.id">
+                        <li class="list-item">
+                            <!-- Index Badge -->
+                            <div class="badge">
+                                <Badge severity="secondary" :value="index + 1" size="small" />
                             </div>
-                            <!-- Description -->
-                            <div class="text-sm text-gray-600">
-                                {{ automation.description }}
-                            </div>
-                        </div>
 
-                        <!-- Actions Section -->
-                        <div class="flex-shrink-0 flex items-center space-x-3 w-full  mt-2 md:w-auto lg:w-30">
-                            <!-- Status -->
-                            <div>
+                            <!-- Automation Details -->
+                            <div class="details">
+                                <!-- Friendly Name -->
+                                <div class="friendly-name">
+                                    <RouterLink :to="`/editor/${automation.id}`" class="link">
+                                        {{ automation.friendlyname }}
+                                    </RouterLink>
+                                </div>
+                                <!-- Description -->
+                                <div class="description">
+                                    {{ automation.description }}
+                                </div>
+                            </div>
+
+                            <!-- Actions Section -->
+                            <div class="actions">
                                 <AutomationStatus :automation="automation" />
-                            </div>
-                            <div>
-                                <!-- Delete Button -->
-                                <Button icon="pi pi-trash" variant="text" rounded class="text-red-500"
+                                <Button icon="pi pi-trash" variant="text" rounded
                                     @click="onDeleteAutomationClick(automation.id)" />
                             </div>
-                        </div>
+                        </li>
+                    </template>
+                </ul>
+            </div>
 
-                    </li>
-                    <Divider type="solid" />
-                </template>
-            </ul>
             <div class="pt-3"></div>
             <div class="col md:col-3 sm:col-6">
                 <Button style="width: 99%" icon="pi pi-plus" label="Create automation" @click="navigateToCreator"
