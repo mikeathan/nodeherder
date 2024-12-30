@@ -13,14 +13,12 @@ function cancel(): void {
 </script>
 
 <template>
-  <Card>
+  <Card >
     <template #title>
       <h2>Automation Editor</h2>
     </template>
     <template #content>
-      <DeviceAutomation
-        :id="props.id"
-        @cancel="cancel"></DeviceAutomation>
+        <DeviceAutomation :id="props.id" @cancel="cancel" />
     </template>
   </Card>
 </template>
