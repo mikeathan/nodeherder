@@ -32,20 +32,21 @@ function scheduleClick() {
 </script>
 <template>
   <div v-if="hasSchedules">
-    <!-- <input
-      id="automation-status"
-      class="form-check-input"
-      type="checkbox"
-      role="switch"
-      v-model="automation.enabled"
-      :disabled="true" /> -->
-
-    <Button label="Scheduled" icon="pi pi-clock" size="small" text @click="scheduleClick()" />
+    <Button
+      label="Scheduled"
+      icon="pi pi-clock"
+      size="small"
+      text
+      @click="scheduleClick()" />
   </div>
   <div v-else>
-
-    <ToggleButton v-model="automation.enabled" onLabel="Enabled" offLabel="Disabled" onIcon="pi pi-check"
-      offIcon="pi pi-times" severity="success" size="small" />
-
+    <ToggleButton
+      v-model="automation.enabled"
+      onLabel="Enabled"
+      offLabel="Disabled"
+      onIcon="pi pi-check"
+      offIcon="pi pi-times"
+      severity="success"
+      size="small" />
   </div>
 </template>

@@ -15,6 +15,9 @@ import VueApexCharts from 'vue3-apexcharts';
 import PrimeVue from 'primevue/config';
 import Aura from '@primevue/themes/aura';
 import Material from '@primevue/themes/material';
+
+import Accordion from 'primevue/accordion';
+import AccordionTab from 'primevue/accordiontab';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
 import FloatLabel from 'primevue/floatlabel';
@@ -44,7 +47,7 @@ import ToggleButton from 'primevue/togglebutton';
 import Divider from 'primevue/divider';
 import Badge from 'primevue/badge';
 import OverlayBadge from 'primevue/overlaybadge';
-
+import Dropdown from 'primevue/dropdown';
 import { MaterialBlue } from './themes/material_blue.js';
 import 'primeicons/primeicons.css'; // Icons
 import 'primeflex/primeflex.css';
@@ -80,7 +83,8 @@ app.component('Card', Card);
 app.component('SplitButton', SplitButton);
 app.component('DataView', DataView);
 app.component('Fieldset', Fieldset);
-
+app.component('Accordion', Accordion);
+app.component('AccordionTab', AccordionTab);
 app.component('TabList', TabList);
 app.component('Tabs', Tabs);
 app.component('Tab', Tab);
@@ -91,6 +95,7 @@ app.directive('tooltip', Tooltip);
 app.component('Divider', Divider);
 app.component('Badge', Badge);
 app.component('OverlayBadge', OverlayBadge);
+app.component('Dropdown', Dropdown);
 
 app.use(ToastService);
 app.use(store, key);

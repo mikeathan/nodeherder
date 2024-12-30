@@ -95,12 +95,21 @@ function updateType(schedule: TimeSchedule, value: any) {
   schedule.type = value;
 }
 </script>
+
+<style scoped>
+@media (max-width: 768px) {
+  .p-button {
+    width: 100%;
+    text-align: center;
+  }
+}
+</style>
 <template>
   <div>
     <h2>Schedules</h2>
-
-    <ButtonPanel :buttons="buttonPanelItems"> </ButtonPanel>
-
+    <div class="pt-3"></div>
+    <ButtonPanel :buttons="buttonPanelItems" />
+    <div class="pt-3"></div>
     <div v-for="schedule in schedules" :key="schedule.type">
       <div class="row">
         <div class="col-sm-4">
@@ -117,11 +126,13 @@ function updateType(schedule: TimeSchedule, value: any) {
               (e) => updateStartAtTime(schedule, e)
             " />
         </div>
-        <div class="col-sm-1 pt-2">
-          <span
-            class="fa fa-trash-alt fa-sm"
-            @click="removeSchedule(schedule)">
-          </span>
+        <div class="col-sm-1">
+          <Button
+            icon="pi pi-trash"
+            variant="text"
+            rounded
+            @click="removeSchedule(schedule)"
+            class="delete-button" />
         </div>
       </div>
     </div>

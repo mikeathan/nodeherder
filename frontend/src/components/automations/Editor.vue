@@ -1,24 +1,26 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
-import DeviceAutomation from "./DeviceAutomation.vue"
+import { useRouter } from 'vue-router';
+import DeviceAutomation from './DeviceAutomation.vue';
 
 const props = defineProps({
-    id: String,
+  id: String,
 });
 
-const router = useRouter()
+const router = useRouter();
 function cancel(): void {
-    router.push("/viewer")
+  router.push('/viewer');
 }
-
 </script>
+
 <template>
-    <Card>
-        <template #title>
-            <h2>Automation Editor</h2>
-        </template>
-        <template #content>
-            <DeviceAutomation :id="props.id" @cancel="cancel"></DeviceAutomation>
-        </template>
-    </Card>
+  <Card>
+    <template #title>
+      <h2>Automation Editor</h2>
+    </template>
+    <template #content>
+      <DeviceAutomation
+        :id="props.id"
+        @cancel="cancel"></DeviceAutomation>
+    </template>
+  </Card>
 </template>
