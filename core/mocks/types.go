@@ -88,6 +88,10 @@ func (w *MockEventHub) OnDeviceRename(P func(payload interface{}) error) {
 	fmt.Println("Empty OnDeviceRename")
 }
 
+func (w *MockEventHub) OnDeviceRemove(P func(payload interface{}) error) {
+	fmt.Println("Empty OnDeviceRemove")
+}
+
 func (w *MockEventHub) OnDeviceInterview(P func(payload interface{}) error) {
 	fmt.Println("Empty OnDeviceInterview")
 }
@@ -246,6 +250,10 @@ func (w *NopWsServer) OnLoadMetrics(action func(interface{}) (interface{}, error
 
 func (w *NopWsServer) OnDeviceRename(P func(payload interface{}) error) {
 	fmt.Println("WsServer: Mocked OnDeviceRename")
+}
+
+func (w *NopWsServer) OnDeviceRemove(P func(payload interface{}) error) {
+	fmt.Println("WsServer: Mocked OnDeviceRemove")
 }
 
 func (w *NopWsServer) OnDeviceInterview(P func(payload interface{}) error) {

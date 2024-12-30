@@ -19,6 +19,7 @@ const (
 	DeleteAutomationTrigger = "deleteAutomationTrigger"
 	DeviceSetValue          = "deviceSetValue"
 	DeviceRename            = "deviceRename"
+	DeviceRemove            = "deviceRemove"
 	DeviceInterview         = "deviceInterview"
 
 	SaveLoggerConfig  = "saveLoggerConfig"
@@ -56,6 +57,7 @@ type EventHub interface {
 	OnLoadDeviceList(action func(ids []string) interface{})
 	OnDeviceSetValue(func(payload interface{}) error)
 	OnDeviceRename(func(payload interface{}) error)
+	OnDeviceRemove(func(payload interface{}) error)
 	OnDeviceInterview(func(payload interface{}) error)
 	OnSaveAutomation(func(payload interface{}) error)
 	OnDeleteAutomation(func(payload interface{}) (interface{}, error))
@@ -78,6 +80,7 @@ type eventHubImpl struct {
 	onSaveAutomation          func(interface{}) error
 	onDeviceSetValue          func(interface{}) error
 	onDeviceRename            func(interface{}) error
+	onDeviceRemove            func(interface{}) error
 	onDeviceInterview         func(interface{}) error
 	onDeleteAutomation        func(interface{}) (interface{}, error)
 	onDeleteAutomationTrigger func(interface{}) (interface{}, error)
@@ -96,6 +99,7 @@ func NewWsHub() EventHub {
 		onDeleteAutomationTrigger: func(payload interface{}) (interface{}, error) { return nil, nil },
 		onDeviceSetValue:          func(payload interface{}) error { return nil },
 		onDeviceRename:            func(payload interface{}) error { return nil },
+		onDeviceRemove:            func(payload interface{}) error { return nil },
 		onDeviceInterview:         func(payload interface{}) error { return nil },
 		onLoadDevice:              func(id string) (interface{}, error) { return nil, nil },
 		onLoadDeviceList:          func(ids []string) interface{} { return nil },
@@ -118,6 +122,10 @@ func (h *eventHubImpl) OnDeviceSetValue(action func(p interface{}) error) {
 
 func (h *eventHubImpl) OnDeviceRename(action func(p interface{}) error) {
 	h.onDeviceRename = action
+}
+
+func (h *eventHubImpl) OnDeviceRemove(action func(p interface{}) error) {
+	h.onDeviceRemove = action
 }
 
 func (h *eventHubImpl) OnDeviceInterview(action func(p interface{}) error) {
@@ -253,6 +261,9 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 
 	case DeviceRename:
 		c.executeAction(eventMsg.Payload, c.onDeviceRename, false)
+
+	case DeviceRemove:
+		c.executeAction(eventMsg.Payload, c.onDeviceRemove, true)
 
 	case DeviceInterview:
 		c.executeAction(eventMsg.Payload, c.onDeviceInterview, false)

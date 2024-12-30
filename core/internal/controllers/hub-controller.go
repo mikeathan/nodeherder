@@ -173,6 +173,20 @@ func (h *HubController) registerEventHubEvents() {
 		return nil
 	})
 
+	h.eventHub.OnDeviceRemove(func(p interface{}) error {
+
+		req := devices.DeviceRemoveRequest{}
+		bytes, _ := json.Marshal(p)
+		err := json.Unmarshal(bytes, &req)
+		if err != nil {
+			return errors.New("device remove failed. Invalid payload type")
+		}
+
+		json, _ := json.Marshal(p)
+		h.mqtt.Publish("bridge/request/device/remove", json)
+		return nil
+	})
+
 	h.eventHub.OnDeviceInterview(func(p interface{}) error {
 		bytes, _ := json.Marshal(p)
 		payload := make(map[string]interface{})
