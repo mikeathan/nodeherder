@@ -6,6 +6,7 @@
   "scripts": {
     "test-server": "node ./tools/index.mjs",
     "lint": "eslint . --fix",
+    "format": "prettier --write .",
     "test": "jest",
     "dev": "vite",
     "build": "vite build",

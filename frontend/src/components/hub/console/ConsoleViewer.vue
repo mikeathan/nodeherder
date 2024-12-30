@@ -1,85 +1,87 @@
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onMounted,
-  ref,
-  watch,
-} from 'vue';
-import { key, store } from '../../../store/index';
-import Toggle from '../../input/Toggle.vue';
-import { consoleCleanupService } from '@/services/console-cleanup.service';
-import { LogMessageType } from '@/types/console.type';
-import { formatTimestamp } from '@/utils/date.utils';
-import { LoggerSettingsType } from '@/types/settings';
-import { getConsoleLevelClass } from '@/contracts/console';
+  import {
+    computed,
+    nextTick,
+    onMounted,
+    ref,
+    watch,
+  } from 'vue';
+  import { key, store } from '../../../store/index';
+  import Toggle from '../../input/Toggle.vue';
+  import { consoleCleanupService } from '@/services/console-cleanup.service';
+  import { LogMessageType } from '@/types/console.type';
+  import { formatTimestamp } from '@/utils/date.utils';
+  import { LoggerSettingsType } from '@/types/settings';
+  import { getConsoleLevelClass } from '@/contracts/console';
 
-onMounted(() => {
-  consoleCleanupService.startTimer(store);
-});
+  onMounted(() => {
+    consoleCleanupService.startTimer(store);
+  });
 
-const loggerSettings = computed(() => {
-  if (
-    !store.getters['appconfig/initialized']() as Boolean
-  ) {
-    store.dispatch('ws/emit', { event: 'loadAppConfig' });
-  }
-  const set = store.getters['appconfig/logger']();
-  if (set == undefined) {
-    return {} as LoggerSettingsType;
-  }
-  return store.getters[
-    'appconfig/logger'
-  ]() as LoggerSettingsType;
-});
+  const loggerSettings = computed(() => {
+    if (
+      !store.getters['appconfig/initialized']() as Boolean
+    ) {
+      store.dispatch('ws/emit', { event: 'loadAppConfig' });
+    }
+    const set = store.getters['appconfig/logger']();
+    if (set == undefined) {
+      return {} as LoggerSettingsType;
+    }
+    return store.getters[
+      'appconfig/logger'
+    ]() as LoggerSettingsType;
+  });
 
-const messages = computed(() => {
-  return store.getters[
-    'console/messages'
-  ]() as LogMessageType[];
-});
+  const messages = computed(() => {
+    return store.getters[
+      'console/messages'
+    ]() as LogMessageType[];
+  });
 
-const scrollToBottom = () => {
-  if (messageContainer.value) {
-    messageContainer.value.scrollTop =
-      messageContainer.value.scrollHeight;
-  }
-};
-const messageContainer = ref<HTMLDivElement | null>(null);
-watch(
-  messages,
-  (newMessages, oldMessages) => {
-    // if (newMessages.length !== oldMessages?.length) {
-    nextTick(() => scrollToBottom());
-  },
-  { deep: true },
-);
-onMounted(() => {
-  scrollToBottom();
-});
-
-function enableLogging(enabled: boolean) {
-  if (enabled == loggerSettings.value.enableRemoteLogger) {
-    return;
-  }
-  loggerSettings.value.enableRemoteLogger = enabled;
-  store.dispatch(
-    'appconfig/saveLoggerSettings',
-    loggerSettings.value,
+  const scrollToBottom = () => {
+    if (messageContainer.value) {
+      messageContainer.value.scrollTop =
+        messageContainer.value.scrollHeight;
+    }
+  };
+  const messageContainer = ref<HTMLDivElement | null>(null);
+  watch(
+    messages,
+    (newMessages, oldMessages) => {
+      // if (newMessages.length !== oldMessages?.length) {
+      nextTick(() => scrollToBottom());
+    },
+    { deep: true }
   );
-}
+  onMounted(() => {
+    scrollToBottom();
+  });
 
-function clearConsole() {
-  store.commit('console/clear');
-}
+  function enableLogging(enabled: boolean) {
+    if (
+      enabled == loggerSettings.value.enableRemoteLogger
+    ) {
+      return;
+    }
+    loggerSettings.value.enableRemoteLogger = enabled;
+    store.dispatch(
+      'appconfig/saveLoggerSettings',
+      loggerSettings.value
+    );
+  }
+
+  function clearConsole() {
+    store.commit('console/clear');
+  }
 </script>
 
 <style>
-.message-container {
-  max-height: 200px;
-  overflow-y: auto;
-  padding-right: 10px;
-}
+  .message-container {
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 10px;
+  }
 </style>
 <template>
   <Card>
@@ -107,7 +109,7 @@ function clearConsole() {
           <span
             style="width: 60px"
             :class="`badge ${getConsoleLevelClass(
-              message.level,
+              message.level
             )}`"
             >{{ message.level }}</span
           >
