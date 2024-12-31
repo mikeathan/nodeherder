@@ -49,6 +49,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
+    "@mdi/js": "^7.4.47",
     "@primevue/auto-import-resolver": "^4.2.5",
     "@types/jest": "^29.5.11",
     "@vitejs/plugin-vue": "^5.2.1",

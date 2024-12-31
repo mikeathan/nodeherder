@@ -1,5 +1,43 @@
 import { KeyValuePair } from '../../types/types';
 
+import {
+  mdiWaterPercent,
+  mdiWhiteBalanceSunny,
+  mdiCloudDownload,
+  mdiAtomVariant,
+  mdiBolt,
+  mdiStarHalfFull,
+  mdiWalk,
+  mdiCopyright,
+  mdiPower,
+  mdiPowerPlug,
+  mdiSineWave,
+  mdiAlertCircleOutline,
+  mdiSmoking,
+  mdiRadioactive,
+  mdiFactory,
+  mdiCog,
+  mdiVolumeHigh,
+  mdiPercent,
+  mdiAlert,
+  mdiPalette,
+  mdiWater,
+  mdiCalendarWeek,
+  mdiCalendarCheck,
+  mdiAirplane,
+  mdiVibrate,
+  mdiPowerPlugOff,
+  mdiAxisXArrow,
+  mdiAxisYArrow,
+  mdiAxisZArrow,
+  mdiCubeOutline,
+  mdiAccount,
+  mdiDoorOpen,
+  mdiThermometer,
+  mdiThermometerHigh,
+  mdiThermometerLow,
+} from '@mdi/js';
+
 // const typeToClassMapsensor: KeyValuePair<string> = {
 //   humidity: 'text-info fa-tint',
 //   illuminance: 'fa-sun',
@@ -66,46 +104,87 @@ import { KeyValuePair } from '../../types/types';
 // </template>
 
 const typeToClassMapsensor: KeyValuePair<string> = {
-  humidity: 'pi pi-droplet',
-  illuminance: 'pi pi-sun',
-  pressure: 'pi pi-cloud-download',
-  co2: 'mdi mdi-molecule-co2',
-  voltage: 'pi pi-bolt',
-  state: 'pi pi-star-half',
-  brightness: 'pi pi-sun',
-  occupancy: 'mdi mdi-walk',
-  current: 'mdi mdi-current-ac',
-  power: 'pi pi-power-off',
-  energy: 'mdi mdi-lightning-bolt',
-  frequency: 'mdi mdi-sine-wave',
-  tamper: 'pi pi-exclamation-triangle',
-  smoke: 'mdi mdi-smoke',
-  radiation_dose_per_hour: 'mdi mdi-radiation',
-  radioactive_events_per_minute: 'mdi mdi-radioactive',
-  power_factor: 'mdi mdi-chart-line',
-  mode: 'pi pi-cog',
-  sound: 'pi pi-volume-up',
-  position: 'mdi mdi-map-marker',
-  alarm: 'pi pi-bell',
-  color_xy: 'mdi mdi-palette',
-  color_hs: 'mdi mdi-palette',
-  color_temp: 'mdi mdi-thermometer',
-  illuminance_lux: 'pi pi-sun',
-  soil_moisture: 'mdi mdi-water-percent',
-  water_leak: 'mdi mdi-leak',
-  week: 'pi pi-calendar-clock',
-  workdays_schedule: 'pi pi-calendar',
-  holidays_schedule: 'pi pi-calendar-times',
-  away_mode: 'pi pi-send',
-  vibration: 'mdi mdi-vibrate',
-  power_outage_count: 'mdi mdi-power-plug-off',
-  angle_x: 'mdi mdi-axis-x-arrow',
-  angle_y: 'mdi mdi-axis-y-arrow',
-  angle_z: 'mdi mdi-axis-z-arrow',
-  side: 'mdi mdi-cube-outline',
-  presence: 'mdi mdi-account-check',
-  contact: 'mdi mdi-door', // mdi-door-closed, mdi-door-open
+  humidity: mdiWaterPercent,
+  illuminance: mdiWhiteBalanceSunny,
+  pressure: mdiCloudDownload,
+  co2: mdiAtomVariant,
+  voltage: mdiBolt,
+  state: mdiStarHalfFull,
+  brightness: mdiWhiteBalanceSunny,
+  occupancy: mdiWalk,
+  current: mdiCopyright,
+  power: mdiPower,
+  energy: mdiPowerPlug,
+  frequency: mdiSineWave,
+  tamper: mdiAlertCircleOutline,
+  smoke: mdiSmoking,
+  radiation_dose_per_hour: mdiRadioactive,
+  radioactive_events_per_minute: mdiRadioactive, // Consider a different icon if needed
+  power_factor: mdiFactory,
+  mode: mdiCog,
+  sound: mdiVolumeHigh,
+  position: mdiPercent,
+  alarm: mdiAlert,
+  color_xy: mdiPalette,
+  color_hs: mdiPalette,
+  color_temp: mdiThermometer, // Or a slider icon if more appropriate
+  illuminance_lux: mdiWhiteBalanceSunny,
+  soil_moisture: mdiWater, // Or a "water drop" icon
+  water_leak: mdiWater,
+  week: mdiCalendarWeek,
+  workdays_schedule: mdiCalendarCheck,
+  holidays_schedule: mdiCalendarCheck,
+  away_mode: mdiAirplane,
+  vibration: mdiVibrate,
+  power_outage_count: mdiPowerPlugOff,
+  angle_x: mdiAxisXArrow,
+  angle_y: mdiAxisYArrow,
+  angle_z: mdiAxisZArrow,
+  side: mdiCubeOutline,
+  presence: mdiAccount,
+  contact: mdiDoorOpen,
 };
+// const typeToClassMapsensor: KeyValuePair<string> = {
+//   humidity: 'pi pi-droplet',
+//   illuminance: 'pi pi-sun',
+//   pressure: 'pi pi-cloud-download',
+//   co2: 'mdi mdi-molecule-co2',
+//   voltage: 'pi pi-bolt',
+//   state: 'pi pi-star-half',
+//   brightness: 'pi pi-sun',
+//   occupancy: 'mdi mdi-walk',
+//   current: 'mdi mdi-current-ac',
+//   power: 'pi pi-power-off',
+//   energy: 'mdi mdi-lightning-bolt',
+//   frequency: 'mdi mdi-sine-wave',
+//   tamper: 'pi pi-exclamation-triangle',
+//   smoke: 'mdi mdi-smoke',
+//   radiation_dose_per_hour: 'mdi mdi-radiation',
+//   radioactive_events_per_minute: 'mdi mdi-radioactive',
+//   power_factor: 'mdi mdi-chart-line',
+//   mode: 'pi pi-cog',
+//   sound: 'pi pi-volume-up',
+//   position: 'mdi mdi-map-marker',
+//   alarm: 'pi pi-bell',
+//   color_xy: 'mdi mdi-palette',
+//   color_hs: 'mdi mdi-palette',
+//   color_temp: 'mdi mdi-thermometer',
+//   illuminance_lux: 'pi pi-sun',
+//   soil_moisture: 'mdi mdi-water-percent',
+//   water_leak: 'mdi mdi-leak',
+//   week: 'pi pi-calendar-clock',
+//   workdays_schedule: 'pi pi-calendar',
+//   holidays_schedule: 'pi pi-calendar-times',
+//   away_mode: 'pi pi-send',
+//   vibration: 'mdi mdi-vibrate',
+//   power_outage_count: 'mdi mdi-power-plug-off',
+//   angle_x: 'mdi mdi-axis-x-arrow',
+//   angle_y: 'mdi mdi-axis-y-arrow',
+//   angle_z: 'mdi mdi-axis-z-arrow',
+//   side: 'mdi mdi-cube-outline',
+//   presence: 'mdi mdi-account-check',
+//   contact: 'mdi mdi-door', // mdi-door-closed, mdi-door-open
+// };
 
 const sensorUnits: KeyValuePair<string> = {
   temperature: '°C',
@@ -157,19 +236,14 @@ export function getSensorIcon(
 
   return typeToClassMapsensor[sensor];
 }
-
 const getTemperatureIcon = (
   temperature: number
 ): string => {
-  let icon = 'fa-thermometer-empty';
   if (temperature >= 30) {
-    icon = 'fa-thermometer-full';
-  } else if (temperature >= 25) {
-    icon = 'fa-thermometer-three-quarters';
-  } else if (temperature >= 20) {
-    icon = 'fa-thermometer-half';
-  } else if (temperature >= 15) {
-    icon = 'fa-thermometer-quarter';
+    return mdiThermometerHigh; // High temperature
+  } else if (temperature <= 10) {
+    return mdiThermometerLow; // Low temperature
+  } else {
+    return mdiThermometer; // Normal temperature
   }
-  return 'text-danger ' + icon;
 };

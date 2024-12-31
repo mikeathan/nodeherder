@@ -32,7 +32,6 @@ declare module 'vue' {
     DevicePage: typeof import('./src/components/device/DevicePage.vue')['default']
     DeviceSelector: typeof import('./src/components/controls/DeviceSelector.vue')['default']
     DeviceSettings: typeof import('./src/components/device/DeviceSettings.vue')['default']
-    Dialog: typeof import('primevue/dialog')['default']
     Divider: typeof import('primevue/divider')['default']
     Dropdown: typeof import('./src/components/controls/Dropdown.vue')['default']
     Editor: typeof import('./src/components/automations/Editor.vue')['default']
@@ -40,6 +39,7 @@ declare module 'vue' {
     ExposeSelector: typeof import('./src/components/controls/ExposeSelector.vue')['default']
     FloatLabel: typeof import('primevue/floatlabel')['default']
     HistorySettings: typeof import('./src/components/hub/settings/HistorySettings.vue')['default']
+    Icon: typeof import('./src/components/controls/Icon.vue')['default']
     InputBox: typeof import('./src/components/input/InputBox.vue')['default']
     InputNumber: typeof import('primevue/inputnumber')['default']
     InputText: typeof import('primevue/inputtext')['default']
@@ -80,8 +80,5 @@ declare module 'vue' {
     TriggerAction: typeof import('./src/components/automations/actions/TriggerAction.vue')['default']
     TriggerCondition: typeof import('./src/components/automations/TriggerCondition.vue')['default']
     Viewer: typeof import('./src/components/automations/Viewer.vue')['default']
-  }
-  export interface ComponentCustomProperties {
-    Tooltip: typeof import('primevue/tooltip')['default']
   }
 }

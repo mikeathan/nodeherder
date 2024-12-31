@@ -1,33 +1,45 @@
+import {
+  mdiPowerPlug,
+  mdiBattery,
+  mdiBatteryCharging,
+  mdiAlertCircleOutline,
+} from '@mdi/js';
+
 export function getPowerSourceIcon(
   power_source: string,
-  value: number
-): string {
-  if (power_source == '') {
-    return '';
+  value: number | undefined
+): { icon: string | null; color: string | null } {
+  if (!power_source) {
+    return { icon: null, color: null };
   }
 
   if (power_source.toLowerCase().includes('mains')) {
-    return 'fa fa-plug';
+    return { icon: mdiPowerPlug, color: null };
   }
 
-  let batteryClass: string = '';
-  const battery: number = value;
-  if (battery == undefined || battery >= 85) {
-    batteryClass += ' fa-battery-full';
-  } else if (battery >= 75) {
-    batteryClass += ' fa-battery-three-quarters';
-  } else if (battery >= 50) {
-    batteryClass += ' fa-battery-half';
-  } else if (battery >= 25) {
-    batteryClass += ' fa-battery-quarter';
-  } else if (battery >= 10) {
-    batteryClass += ` fa-battery-empty animation-blinking`;
+  if (value === undefined) {
+    return { icon: mdiAlertCircleOutline, color: 'orange' }; // Indicate unknown with orange alert
+  }
+
+  let icon = mdiBattery;
+  let color: string | null = null;
+
+  if (value >= 95) {
+    icon = mdiBattery;
+    color = 'green';
+  } else if (value >= 70) {
+    icon = mdiBattery;
+    color = 'lightgreen';
+  } else if (value >= 40) {
+    icon = mdiBattery;
+    color = 'orange';
+  } else if (value >= 15) {
+    icon = mdiBattery;
+    color = 'darkorange';
   } else {
-    return `fa-battery-empty animation-blinking text-danger`;
+    icon = mdiBattery;
+    color = 'red'; // Low battery, use red
   }
 
-  if (!batteryClass) {
-    batteryClass = 'fa-question';
-  }
-  return batteryClass;
+  return { icon, color };
 }
