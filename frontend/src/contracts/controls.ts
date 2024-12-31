@@ -1,4 +1,7 @@
-import { TimePicker } from '@/types/controls.type';
+export function getNowTime(): string {
+  const now = new Date();
+  return toHourMinuteString(now);
+}
 
 export function convertTimeToDate(time: string): Date {
   if (!time || time === '') {

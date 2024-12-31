@@ -1,124 +1,134 @@
 <script setup lang="ts">
-  import { computed } from 'vue';
-  import { RouterLink, useRouter } from 'vue-router';
-  import { store } from '../../store/index';
-  import {
-    Automation,
-    Automations,
-  } from '@/types/automation';
-  import AutomationStatus from './schedule/AutomationStatus.vue';
+import { computed } from 'vue';
+import { RouterLink, useRouter } from 'vue-router';
+import { store } from '../../store/index';
+import {
+  Automation,
+  Automations,
+} from '@/types/automation';
+import AutomationStatus from './schedule/AutomationStatus.vue';
 
-  const router = useRouter();
+const router = useRouter();
 
-  const automations = computed(() => {
-    if (
-      !store.getters['automations/initialized']() as Boolean
-    ) {
-      store.dispatch('ws/emit', {
-        event: 'loadAutomations',
-      });
-    }
-    return store.getters[
-      'automations/listAll'
-    ]() as Automations;
-  });
-
-  function onDeleteAutomationClick(id: string): void {
-    // emit delete event
+const automations = computed(() => {
+  if (
+    !store.getters['automations/initialized']() as Boolean
+  ) {
     store.dispatch('ws/emit', {
-      event: 'deleteAutomation',
-      message: {
-        id: id,
-      },
+      event: 'loadAutomations',
     });
   }
+  return store.getters[
+    'automations/listAll'
+  ]() as Automations;
+});
 
-  function getIndex(item: Automation): number {
-    return automations.value.indexOf(item);
-  }
+function onDeleteAutomationClick(id: string): void {
+  // emit delete event
+  store.dispatch('ws/emit', {
+    event: 'deleteAutomation',
+    message: {
+      id: id,
+    },
+  });
+}
 
-  const navigateToCreator = () => {
-    router.push('/creator');
-  };
+function getIndex(item: Automation): number {
+  return automations.value.indexOf(item);
+}
+
+const navigateToCreator = () => {
+  router.push('/creator');
+};
 </script>
 
 <style scoped>
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 20px;
-  }
-  .list {
-    padding: 0;
-    margin: 0;
-  }
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.list {
+  padding: 0;
+  margin: 0;
+}
+
+.list-item {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border-bottom: 1px solid #e0e0e0;
+  gap: 16px;
+}
+
+.badge {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-weight: bold;
+  width: 48px;
+  height: 48px;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-grow: 1;
+}
+
+.friendly-name {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.link {
+  text-decoration: none;
+}
+
+.description {
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+/* Mobile: Stack vertically */
+@media (max-width: 768px) {
   .list-item {
-    display: flex;
     flex-direction: column;
-    padding: 16px;
-    border-bottom: 1px solid #e0e0e0;
-    gap: 16px;
   }
-  .badge {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    font-weight: bold;
-    width: 48px;
-    height: 48px;
-  }
-  .details {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    flex-grow: 1;
-  }
-  .friendly-name {
-    font-size: 18px;
-    font-weight: 600;
-  }
-  .link {
-    text-decoration: none;
-  }
-  .description {
-    font-size: 14px;
-    color: #4b5563;
-    line-height: 1.5;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+
   .actions {
-    display: flex;
-    gap: 16px;
+    justify-content: flex-start;
+    margin-top: 8px;
+  }
+}
+
+@media (min-width: 768px) {
+  .list-item {
+    flex-direction: row;
     align-items: center;
   }
 
-  /* Mobile: Stack vertically */
-  @media (max-width: 768px) {
-    .list-item {
-      flex-direction: column;
-    }
-    .actions {
-      justify-content: flex-start;
-      margin-top: 8px;
-    }
+  .actions {
+    justify-content: flex-end;
   }
 
-  /* Desktop: Flex horizontally */
-  @media (min-width: 768px) {
-    .list-item {
-      flex-direction: row;
-      align-items: center;
-    }
-    .actions {
-      justify-content: flex-end;
-    }
-    .description {
-      white-space: normal;
-    }
+  .description {
+    white-space: normal;
   }
+}
 </style>
 <template>
   <Card>
@@ -129,21 +139,14 @@
       <Divider type="solid" />
       <div class="container">
         <ul class="list">
-          <template
-            v-for="(automation, index) in automations"
-            :key="automation.id">
+          <template v-for="(automation, index) in automations" :key="automation.id">
             <li class="list-item">
-              <!-- Automation Details -->
               <div class="details">
-                <!-- Friendly Name -->
                 <div class="friendly-name">
-                  <RouterLink
-                    :to="`/editor/${automation.id}`"
-                    class="link">
+                  <RouterLink :to="`/editor/${automation.id}`" class="link">
                     {{ automation.friendlyname }}
                   </RouterLink>
                 </div>
-                <!-- Description -->
                 <div class="description">
                   {{ automation.description }}
                 </div>
@@ -151,14 +154,9 @@
 
               <!-- Actions Section -->
               <div class="actions">
-                <AutomationStatus
-                  :automation="automation" />
-                <Button
-                  icon="pi pi-trash"
-                  variant="text"
-                  rounded
-                  @click="
-                    onDeleteAutomationClick(automation.id)
+                <AutomationStatus :automation="automation" />
+                <Button icon="pi pi-trash" variant="text" rounded @click="
+                  onDeleteAutomationClick(automation.id)
                   " />
               </div>
             </li>
@@ -168,11 +166,7 @@
 
       <div class="pt-3"></div>
       <div class="col md:col-3 sm:col-6">
-        <Button
-          style="width: 99%"
-          icon="pi pi-plus"
-          label="Create automation"
-          @click="navigateToCreator"
+        <Button style="width: 99%" icon="pi pi-plus" label="Create automation" @click="navigateToCreator"
           size="small" />
       </div>
     </template>
