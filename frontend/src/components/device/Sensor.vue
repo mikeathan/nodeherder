@@ -61,7 +61,7 @@
 <template>
   <div class="me-1">
     <i
-      :class="`fa fa-fw ${getSensorIcon(
+      :class="`${getSensorIcon(
         props.expose.name,
         props.expose.data
       )}`"></i>
