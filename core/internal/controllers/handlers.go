@@ -125,6 +125,44 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 	return nil
 }
 
+type bridgeDeviceRemoveRequestHandler struct {
+	topic string "bridge/request/device/remove"
+	ws    ws.EventHub
+	mqtt  mqtt.MqttClient
+}
+
+func newBridgeDeviceRemoveResponseHandler(ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceRemoveRequestHandler {
+	return &bridgeDeviceRemoveRequestHandler{ws: ws, mqtt: mqtt}
+}
+
+func (b *bridgeDeviceRemoveRequestHandler) ProcessPayload(id string, connType string, payload []byte) error {
+
+	if !strings.HasPrefix(id, b.topic) {
+		return nil
+	}
+
+	resp := new(bridgeResponse)
+	resp.Data = map[string]interface{}{}
+	err := json.Unmarshal(payload, &resp)
+
+	if err != nil {
+		return err
+	}
+
+	if resp.Status == "ok" {
+		deviceId := resp.Data["id"].(string)
+
+		// TODO
+		//if success remove device from our store
+
+		b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Device %s interview successful", deviceId)) // doesnt work!!!!
+	} else {
+		b.ws.Broadcast(ws.OperationFailed, resp.Status) // doesnt work!!!!
+	}
+
+	return nil
+}
+
 type bridgeDeviceInterviewRequestHandler struct {
 	topic string "bridge/request/device/interview"
 	ws    ws.EventHub
@@ -158,14 +196,14 @@ func (b *bridgeDeviceInterviewRequestHandler) ProcessPayload(id string, connType
 	return nil
 }
 
-type bridgeDeviceResponseHandler struct {
+type bridgeDeviceRenameResponseHandler struct {
 	topic string "bridge/response/device/rename" // for now we support only rename
 	ws    ws.EventHub
 	mqtt  mqtt.MqttClient
 }
 
-func newBridgeDeviceResponseHandler(ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceResponseHandler {
-	return &bridgeDeviceResponseHandler{ws: ws, mqtt: mqtt}
+func newBridgeDeviceRenameResponseHandler(ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceRenameResponseHandler {
+	return &bridgeDeviceRenameResponseHandler{ws: ws, mqtt: mqtt}
 }
 
 type bridgeResponse struct {
@@ -173,7 +211,7 @@ type bridgeResponse struct {
 	Status string                 `json:"status"`
 }
 
-func (b *bridgeDeviceResponseHandler) ProcessPayload(id string, connType string, payload []byte) error {
+func (b *bridgeDeviceRenameResponseHandler) ProcessPayload(id string, connType string, payload []byte) error {
 
 	if !strings.HasPrefix(id, b.topic) {
 		return nil

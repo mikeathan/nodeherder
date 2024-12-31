@@ -831,11 +831,71 @@ func TestSaveDeviceConfigMessage(t *testing.T) {
 	}
 }
 
+func TestHandleBridgeDeviceRemoveMessage(t *testing.T) {
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
+	deviceId := "x0123456"
+	forceRemove := true
+
+	wsHub.OnDeviceRemove(func(p interface{}) error {
+
+		bytes := []byte(p.(string))
+		
+		req := devices.DeviceRemoveRequest{}
+		err := json.Unmarshal(bytes, &req)
+		if err != nil {
+			return errors.New("device remove failed. Invalid payload type")
+		}
+
+		if req.ID != deviceId {
+			t.Fatalf("Expected device id %v', got '%v'", deviceId, req.ID)
+		}
+
+		if req.Force != forceRemove {
+			t.Fatalf("Expected forceRemove %v', got '%v'", forceRemove, req.Force)
+		}
+
+		return nil
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	defer s.Close()
+	defer wsConn.Close()
+
+	reqBytes, _ := json.Marshal(devices.NewDeviceRemoveRequest(deviceId, forceRemove))
+
+	wsData := &ws.EventMessage{Type: ws.DeviceRemove, Payload: reqBytes}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.OperationSuccess {
+		t.Fatalf("Expected type %v', got '%v'", ws.OperationSuccess, event.Type)
+	}
+}
+
 func TestHandleBridgeDeviceInterviewMessage(t *testing.T) {
 	wsHub := ws.NewWsHub()
 	wsHub.Start()
 
-	deviceId:= "x0123456"
+	deviceId := "x0123456"
 	wsHub.OnDeviceInterview(func(p interface{}) error {
 
 		bytes := []byte(p.(string))
@@ -845,7 +905,7 @@ func TestHandleBridgeDeviceInterviewMessage(t *testing.T) {
 
 		if err != nil {
 			fmt.Println(err.Error())
-			return  errors.New("delete automation trigger failed. Invalid payload type")
+			return errors.New("delete automation trigger failed. Invalid payload type")
 		}
 
 		if payload["id"] != deviceId {
