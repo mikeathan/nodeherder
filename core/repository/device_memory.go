@@ -59,6 +59,15 @@ func (s *MemoryDeviceRepo) Store(key string, device *devices.Device) (bool, erro
 	return !ok, nil
 }
 
+func (s *MemoryDeviceRepo) Remove(key string) error {
+
+	defer s.mutex.Unlock()
+	s.mutex.Lock()
+
+	delete(s.store, key)
+	return nil
+}
+
 func (s *MemoryDeviceRepo) FindDevice(id string) (*devices.Device, error) {
 
 	defer s.mutex.RUnlock()

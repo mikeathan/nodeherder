@@ -46,6 +46,26 @@ func NewFileDeviceRepoFromFile(filename string) (devices.Repository, error) {
 	return repo, nil
 }
 
+func (s *FileDeviceRepo) Remove(key string) error {
+
+	defer s.mutex.Unlock()
+	s.mutex.Lock()
+
+	return s.db.Update(func(tx *bolt.Tx) error {
+
+		b := tx.Bucket([]byte(devicesBucketName))
+		if b == nil {
+			return bolt.ErrBucketNotFound
+		}
+
+		err := b.Delete([]byte(key))
+		if err != nil {
+			return fmt.Errorf("delete key: %w", err)
+		}
+		return nil
+	})
+}
+
 func (s *FileDeviceRepo) init() error {
 	tx, err := s.db.Begin(true)
 	if err != nil {
@@ -124,6 +144,7 @@ func (s *FileDeviceRepo) Store(key string, device *devices.Device) (bool, error)
 	}
 	return !ok, err
 }
+
 func (s *FileDeviceRepo) AllBridgeInfo() ([]*devices.BridgeInfo, error) {
 	var bridgeInfo []*devices.BridgeInfo
 	err := s.db.View(func(tx *bolt.Tx) error {

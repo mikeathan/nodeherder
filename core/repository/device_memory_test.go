@@ -21,6 +21,42 @@ func createMockPayload(id string, battery int, humidity float32, temperature flo
 	}
 }
 
+func TestRepositoryCanRemoveDevice(t *testing.T) {
+
+	repo := repository.NewMemoryDeviceRepo()
+	dev1Name := "device 1"
+	device1, _ := devices.CreateNewDevice("1", dev1Name, "mqtt", nil, createMockPayload(dev1Name, 50, 60.1, 23.5, 120.0))
+
+	dev2Name := "device 2"
+	device2, _ := devices.CreateNewDevice("2", dev2Name, "mqtt", nil, createMockPayload(dev2Name, 90, 34.7, 36.2, 56.0))
+
+	repo.Store(dev1Name, device1)
+	repo.Store(dev2Name, device2)
+
+	devices, _ := repo.AllDevices()
+
+	if len(devices) == 0 {
+		t.Fatalf("empty device list")
+	}
+	if len(devices) > 2 {
+		t.Fatalf("contains invalid devices")
+	}
+
+	repo.Remove(dev1Name)
+	devices, _ = repo.AllDevices()
+
+	if len(devices) == 0 {
+		t.Fatalf("empty device list")
+	}
+	if len(devices) > 1 {
+		t.Fatalf("contains invalid devices")
+	}
+
+	if devices[0].FriendlyName != dev2Name {
+		t.Fatalf("device 2 name mismatch")
+	}
+}
+
 func TestRepositoryCanAddOneDevice(t *testing.T) {
 
 	repo := repository.NewMemoryDeviceRepo()

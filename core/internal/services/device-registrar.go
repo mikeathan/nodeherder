@@ -58,6 +58,10 @@ func (s *HubRegisterService) LookupById(id string) (*devices.Device, error) {
 	return s.store.FindDeviceById(id)
 }
 
+func (s *HubRegisterService) RemoveDevice(id string) error {
+	return s.store.RemoveDeviceById(id)
+}
+
 func (s *HubRegisterService) CreateNewDevice(friendlyName string, connType string, data map[string]interface{}) (*devices.Device, error) {
 
 	bridgeInfo, err := s.store.FindBridgeInfoByFriendlyName(friendlyName)

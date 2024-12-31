@@ -48,6 +48,7 @@ func (rl *rateLimiter) AllowWrite(id string, rateLimit time.Duration) bool {
 
 type AppStore interface {
 	StoreDevice(friendlyName string, device *devices.Device) error
+	RemoveDeviceById(id string) error
 	//UpdateDevice(friendlyName string, device *devices.Device) error
 	FindDeviceByFriendlyName(friendlyName string) (*devices.Device, error)
 	FindDeviceById(id string) (*devices.Device, error)
@@ -195,6 +196,10 @@ func (s *appStore) StoreMetrics(friendlyName string, data map[string]any) error 
 
 func (s *appStore) FindDeviceConfig(id string) (*settings.DeviceConfig, error) {
 	return s.config.FindOrAddDeviceConfigIfNotExists(id)
+}
+
+func (s *appStore) RemoveDeviceById(id string) error {
+	return s.devices.Remove(id)
 }
 
 func (s *appStore) StoreDevice(friendlyName string, device *devices.Device) error {

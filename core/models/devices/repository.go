@@ -3,6 +3,7 @@ package devices
 type Repository interface {
 	AllDevices() ([]*Device, error)
 	Store(key string, device *Device) (bool, error)
+	Remove(key string) error
 	FindDevice(key string) (*Device, error)
 	FindDevices(ids []string) ([]*Device, error)
 	StoreBridge(brigeInfo []*BridgeInfo) error

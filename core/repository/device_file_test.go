@@ -92,6 +92,37 @@ func TestFileRepositoryCanAddAndFindDevice(t *testing.T) {
 	validateDevice(t, device, res)
 }
 
+func TestFileRepositoryCanRemoveDevice(t *testing.T) {
+
+	tempfile := utils_test.Tempfile()
+
+	repo, err := repository.NewFileDeviceRepoFromFile(tempfile)
+	if err != nil {
+		t.Error("failed to initialise device file repo", err.Error())
+	}
+
+	defer repo.Close()
+	defer os.Remove(tempfile)
+
+	name := "device 1"
+	device, _ := devices.CreateNewDevice("1", name, "mqtt", nil, createMockPayload(name, 50, 60.1, 23.5, 120.0))
+
+	_, err = repo.Store(name, device)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	err = repo.Remove(name)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	_, err = repo.FindDevice(name)
+	if err == nil {
+		t.Fatal("device should not exist")
+	}
+}
+
 func TestFileRepositoryStoreReturnsStatusOfData(t *testing.T) {
 
 	tempfile := utils_test.Tempfile()

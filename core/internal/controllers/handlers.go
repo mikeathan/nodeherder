@@ -126,13 +126,14 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 }
 
 type bridgeDeviceRemoveRequestHandler struct {
-	topic string "bridge/request/device/remove"
-	ws    ws.EventHub
-	mqtt  mqtt.MqttClient
+	topic     string "bridge/request/device/remove"
+	ws        ws.EventHub
+	mqtt      mqtt.MqttClient
+	registrar *services.HubRegisterService
 }
 
-func newBridgeDeviceRemoveResponseHandler(ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceRemoveRequestHandler {
-	return &bridgeDeviceRemoveRequestHandler{ws: ws, mqtt: mqtt}
+func newBridgeDeviceRemoveResponseHandler(registrar *services.HubRegisterService, ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceRemoveRequestHandler {
+	return &bridgeDeviceRemoveRequestHandler{registrar: registrar, ws: ws, mqtt: mqtt}
 }
 
 func (b *bridgeDeviceRemoveRequestHandler) ProcessPayload(id string, connType string, payload []byte) error {
@@ -152,10 +153,12 @@ func (b *bridgeDeviceRemoveRequestHandler) ProcessPayload(id string, connType st
 	if resp.Status == "ok" {
 		deviceId := resp.Data["id"].(string)
 
-		// TODO
-		//if success remove device from our store
-
-		b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Device %s interview successful", deviceId)) // doesnt work!!!!
+		err = b.registrar.RemoveDevice(deviceId)
+		if err != nil {
+			b.ws.Broadcast(ws.OperationFailed, resp.Status) // doesnt work!!!!
+			return nil
+		}
+		b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Device %s removed successfully", deviceId)) // doesnt work!!!!
 	} else {
 		b.ws.Broadcast(ws.OperationFailed, resp.Status) // doesnt work!!!!
 	}

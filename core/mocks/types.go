@@ -308,6 +308,11 @@ func (w *NopRepository) Store(deviceName string, payload *devices.Device) (bool,
 	return false, nil
 }
 
+func (w *NopRepository) Remove(deviceName string) error {
+	fmt.Println("Empty Remove")
+	return nil
+}
+
 func (w *NopRepository) AllDevices() ([]*devices.Device, error) {
 
 	fmt.Println("Empty ListAllDevices")
@@ -517,6 +522,11 @@ func (s *NopAppStore) SaveDeviceConfig(deviceconfig *settings.DeviceConfig) erro
 func (s *NopAppStore) StoreDevice(friendlyName string, device *devices.Device) error {
 	fmt.Println("Mocked store StoreDevice")
 
+	return nil
+}
+
+func (s *NopAppStore) RemoveDeviceById(id string) error {
+	fmt.Println("Mocked store RemoveDeviceById")
 	return nil
 }
 
