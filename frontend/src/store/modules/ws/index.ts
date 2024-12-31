@@ -133,13 +133,13 @@ export const WSClientModule: Module<
             });
             break;
           case 'operationSuccess':
-            dispatch(
-              'alerts/showSuccess',
-              'Operation was successful.',
-              {
-                root: true,
-              }
-            );
+            let message = 'Operation was successful.';
+            if (obj.payload) {
+              message = obj.payload;
+            }
+            dispatch('alerts/showSuccess', message, {
+              root: true,
+            });
             break;
           case 'operationFailed':
             dispatch('alerts/showError', obj.payload, {
