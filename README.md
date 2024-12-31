@@ -98,9 +98,9 @@ TODO
 - frontend - device settings component - DONE
 - frontend - test metrics graph - need mocked data in test node server ! - DONE
 - metrics results could have property from/to so we know the range for ui purposes - DONE
-- frontend - automation trigger when/then layout mobile fix
-- frontend - when device updated from mqt not updaitng the UI eg enable/disabled device - could be toggle control issue
 
+- automation viewer - enable/disable doesnt save update
+-
 - Non bridge devices . eg HTTP need more investigation/testing
 - error reporting - important - Done
 - metrics repo - keep for x days - DONE
