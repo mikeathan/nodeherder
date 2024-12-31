@@ -126,14 +126,14 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 }
 
 type bridgeDeviceRemoveRequestHandler struct {
-	topic     string "bridge/request/device/remove"
+	topic     string
 	ws        ws.EventHub
 	mqtt      mqtt.MqttClient
 	registrar *services.HubRegisterService
 }
 
 func newBridgeDeviceRemoveResponseHandler(registrar *services.HubRegisterService, ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceRemoveRequestHandler {
-	return &bridgeDeviceRemoveRequestHandler{registrar: registrar, ws: ws, mqtt: mqtt}
+	return &bridgeDeviceRemoveRequestHandler{topic: "bridge/request/device/remove", registrar: registrar, ws: ws, mqtt: mqtt}
 }
 
 func (b *bridgeDeviceRemoveRequestHandler) ProcessPayload(id string, connType string, payload []byte) error {
@@ -151,29 +151,31 @@ func (b *bridgeDeviceRemoveRequestHandler) ProcessPayload(id string, connType st
 	}
 
 	if resp.Status == "ok" {
-		deviceId := resp.Data["id"].(string)
+		if deviceId, ok := resp.Data["id"].(string); ok {
+			err = b.registrar.RemoveDevice(deviceId)
+			if err != nil {
+				utils.LogErrorf("error removing device %s from store = %s", deviceId, err.Error())
 
-		err = b.registrar.RemoveDevice(deviceId)
-		if err != nil {
-			b.ws.Broadcast(ws.OperationFailed, resp.Status) // doesnt work!!!!
-			return nil
+				b.ws.Broadcast(ws.OperationFailed, fmt.Sprintf("Device %s removed from bridge but not from store", deviceId))
+				return nil
+			}
+			b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Device %s removed", deviceId))
 		}
-		b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Device %s removed successfully", deviceId)) // doesnt work!!!!
 	} else {
-		b.ws.Broadcast(ws.OperationFailed, resp.Status) // doesnt work!!!!
+		b.ws.Broadcast(ws.OperationFailed, resp.Error)
 	}
 
 	return nil
 }
 
 type bridgeDeviceInterviewRequestHandler struct {
-	topic string "bridge/request/device/interview"
+	topic string
 	ws    ws.EventHub
 	mqtt  mqtt.MqttClient
 }
 
 func newBridgeDeviceInterviewRequestHandler(ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceInterviewRequestHandler {
-	return &bridgeDeviceInterviewRequestHandler{ws: ws, mqtt: mqtt}
+	return &bridgeDeviceInterviewRequestHandler{topic: "bridge/request/device/interview", ws: ws, mqtt: mqtt}
 }
 
 func (b *bridgeDeviceInterviewRequestHandler) ProcessPayload(id string, connType string, payload []byte) error {
@@ -190,28 +192,30 @@ func (b *bridgeDeviceInterviewRequestHandler) ProcessPayload(id string, connType
 	}
 
 	if resp.Status == "ok" {
-		deviceId := resp.Data["id"].(string)
-		b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Device %s interview successful", deviceId)) // doesnt work!!!!
+		if deviceId, ok := resp.Data["id"].(string); ok {
+			b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Device %s interview successful", deviceId))
+		}
 	} else {
-		b.ws.Broadcast(ws.OperationFailed, resp.Status) // doesnt work!!!!
+		b.ws.Broadcast(ws.OperationFailed, resp.Status)
 	}
 
 	return nil
 }
 
 type bridgeDeviceRenameResponseHandler struct {
-	topic string "bridge/response/device/rename" // for now we support only rename
+	topic string
 	ws    ws.EventHub
 	mqtt  mqtt.MqttClient
 }
 
 func newBridgeDeviceRenameResponseHandler(ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceRenameResponseHandler {
-	return &bridgeDeviceRenameResponseHandler{ws: ws, mqtt: mqtt}
+	return &bridgeDeviceRenameResponseHandler{topic: "bridge/response/device/rename", ws: ws, mqtt: mqtt}
 }
 
 type bridgeResponse struct {
 	Data   map[string]interface{} `json:"data"`
 	Status string                 `json:"status"`
+	Error  string                 `json:"error"`
 }
 
 func (b *bridgeDeviceRenameResponseHandler) ProcessPayload(id string, connType string, payload []byte) error {
@@ -228,15 +232,15 @@ func (b *bridgeDeviceRenameResponseHandler) ProcessPayload(id string, connType s
 	}
 
 	if resp.Status == "ok" {
-
-		oldName := resp.Data["from"].(string)
-		err = b.mqtt.RemoveTopic(oldName)
-		if err != nil {
-			return err
+		if oldName, ok := resp.Data["from"].(string); ok {
+			err = b.mqtt.RemoveTopic(oldName)
+			if err != nil {
+				return err
+			}
+			b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Device %s renamed to %s", oldName, resp.Data["to"].(string)))
 		}
-		b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Device %s renamed to %s", oldName, resp.Data["to"].(string))) // doesnt work
 	} else {
-		b.ws.Broadcast(ws.OperationFailed, resp.Status) // doesnt work
+		b.ws.Broadcast(ws.OperationFailed, resp.Status)
 	}
 
 	return nil
