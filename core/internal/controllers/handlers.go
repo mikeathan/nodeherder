@@ -8,6 +8,7 @@ import (
 	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
+	"node-herder/models/logging"
 	"node-herder/utils"
 	"strings"
 )
@@ -133,11 +134,12 @@ type bridgeDeviceRemoveRequestHandler struct {
 }
 
 func newBridgeDeviceRemoveResponseHandler(registrar *services.HubRegisterService, ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceRemoveRequestHandler {
-	return &bridgeDeviceRemoveRequestHandler{topic: "bridge/request/device/remove", registrar: registrar, ws: ws, mqtt: mqtt}
+	return &bridgeDeviceRemoveRequestHandler{topic: "bridge/response/device/remove", registrar: registrar, ws: ws, mqtt: mqtt}
 }
 
 func (b *bridgeDeviceRemoveRequestHandler) ProcessPayload(id string, connType string, payload []byte) error {
 
+	utils.LogDebugf("bridge/response/device/remove %s", string(payload))
 	if !strings.HasPrefix(id, b.topic) {
 		return nil
 	}
@@ -155,8 +157,7 @@ func (b *bridgeDeviceRemoveRequestHandler) ProcessPayload(id string, connType st
 			err = b.registrar.RemoveDevice(deviceId)
 			if err != nil {
 				utils.LogErrorf("error removing device %s from store = %s", deviceId, err.Error())
-
-				b.ws.Broadcast(ws.OperationFailed, fmt.Sprintf("Device %s removed from bridge but not from store", deviceId))
+				b.ws.Broadcast(ws.OperationFailed, fmt.Sprintf("Device %s failed to remove from store", deviceId))
 				return nil
 			}
 			b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Device %s removed", deviceId))
@@ -175,10 +176,12 @@ type bridgeDeviceInterviewRequestHandler struct {
 }
 
 func newBridgeDeviceInterviewRequestHandler(ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceInterviewRequestHandler {
-	return &bridgeDeviceInterviewRequestHandler{topic: "bridge/request/device/interview", ws: ws, mqtt: mqtt}
+	return &bridgeDeviceInterviewRequestHandler{topic: "bridge/response/device/interview", ws: ws, mqtt: mqtt}
 }
 
 func (b *bridgeDeviceInterviewRequestHandler) ProcessPayload(id string, connType string, payload []byte) error {
+
+	utils.LogDebugf("bridge/response/device/interview: %s", string(payload))
 	if !strings.HasPrefix(id, b.topic) {
 		return nil
 	}
@@ -196,7 +199,7 @@ func (b *bridgeDeviceInterviewRequestHandler) ProcessPayload(id string, connType
 			b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Device %s interview successful", deviceId))
 		}
 	} else {
-		b.ws.Broadcast(ws.OperationFailed, resp.Status)
+		b.ws.Broadcast(ws.OperationFailed, resp.Error)
 	}
 
 	return nil
@@ -218,8 +221,14 @@ type bridgeResponse struct {
 	Error  string                 `json:"error"`
 }
 
+type bridgeLoggingResponse struct {
+	Level   string `json:"level"`
+	Message string `json:"message"`
+}
+
 func (b *bridgeDeviceRenameResponseHandler) ProcessPayload(id string, connType string, payload []byte) error {
 
+	utils.LogDebugf("bridge/response/device/rename: %s", string(payload))
 	if !strings.HasPrefix(id, b.topic) {
 		return nil
 	}
@@ -247,18 +256,28 @@ func (b *bridgeDeviceRenameResponseHandler) ProcessPayload(id string, connType s
 }
 
 type bridgeLoggingHandler struct {
-	ws ws.EventHub
+	ws    ws.EventHub
+	topic string
 }
 
 func newBridgeLoggingHandler(ws ws.EventHub) *bridgeLoggingHandler {
-	return &bridgeLoggingHandler{ws: ws}
+	return &bridgeLoggingHandler{topic: "bridge/logging", ws: ws}
 }
 
 func (b *bridgeLoggingHandler) ProcessPayload(id string, connType string, payload []byte) error {
+	if !strings.HasPrefix(id, b.topic) {
+		return nil
+	}
 
-	if id == "bridge/logging" {
-		// todo: handle
-		//utils.LogDebugf(string(payload))
+	resp := new(bridgeLoggingResponse)
+	err := json.Unmarshal(payload, &resp)
+	if err != nil {
+		return err
+	}
+
+	if resp.Level == logging.LogLevelError {
+		b.ws.Broadcast(ws.OperationFailed, resp.Message)
+		utils.LogError(resp.Message)
 	}
 
 	return nil

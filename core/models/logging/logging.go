@@ -4,6 +4,13 @@ const (
 	LoadAction = "load"
 )
 
+const (
+	LogLevelDebug   string = "debug"
+	LogLevelInfo    string = "info"
+	LogLevelWarning string = "warning"
+	LogLevelError   string = "error"
+)
+
 type FileLogRequest struct {
 	File   string `json:"file"`
 	Action string `json:"action"`
