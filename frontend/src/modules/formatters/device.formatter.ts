@@ -1,3 +1,4 @@
+import { IconProps } from '@/types/icon.type';
 import {
   mdiPowerPlug,
   mdiBattery,
@@ -8,38 +9,38 @@ import {
 export function getPowerSourceIcon(
   power_source: string,
   value: number | undefined
-): { icon: string | null; color: string | null } {
+): IconProps {
   if (!power_source) {
-    return { icon: null, color: null };
+    return { name: '', color: '' };
   }
 
   if (power_source.toLowerCase().includes('mains')) {
-    return { icon: mdiPowerPlug, color: null };
+    return { name: mdiPowerPlug, color: 'gray' };
   }
 
   if (value === undefined) {
-    return { icon: mdiAlertCircleOutline, color: 'orange' }; // Indicate unknown with orange alert
+    return { name: mdiAlertCircleOutline, color: 'orange' }; // Indicate unknown with orange alert
   }
 
-  let icon = mdiBattery;
+  let name = mdiBattery;
   let color: string | null = null;
 
   if (value >= 95) {
-    icon = mdiBattery;
+    name = mdiBattery;
     color = 'green';
   } else if (value >= 70) {
-    icon = mdiBattery;
+    name = mdiBattery;
     color = 'lightgreen';
   } else if (value >= 40) {
-    icon = mdiBattery;
+    name = mdiBattery;
     color = 'orange';
   } else if (value >= 15) {
-    icon = mdiBattery;
+    name = mdiBattery;
     color = 'darkorange';
   } else {
-    icon = mdiBattery;
+    name = mdiBattery;
     color = 'red'; // Low battery, use red
   }
 
-  return { icon, color };
+  return { name, color };
 }

@@ -1,15 +1,12 @@
 <script setup lang="ts">
-
-type IconType = {
-    name: string;
-    color: string;
-}
+import { PropType } from 'vue';
+import { IconProps } from '../../types/icon.type';
 
 const props = defineProps({
 
     icon: {
-        type: Object as PropType<IconType>,
-        default: {} as IconType,
+        type: Object as PropType<IconProps>,
+        default: {} as IconProps,
     },
     name: {
         type: String,

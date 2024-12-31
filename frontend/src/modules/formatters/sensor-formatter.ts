@@ -1,3 +1,4 @@
+import { IconProps } from '@/types/icon.type';
 import { KeyValuePair } from '../../types/types';
 
 import {
@@ -103,47 +104,114 @@ import {
 //   <Mdi icon="mdi-sine-wave" :size="36" color="green" />
 // </template>
 
-const typeToClassMapsensor: KeyValuePair<string> = {
-  humidity: mdiWaterPercent,
-  illuminance: mdiWhiteBalanceSunny,
-  pressure: mdiCloudDownload,
-  co2: mdiAtomVariant,
-  voltage: mdiBolt,
-  state: mdiStarHalfFull,
-  brightness: mdiWhiteBalanceSunny,
-  occupancy: mdiWalk,
-  current: mdiCopyright,
-  power: mdiPower,
-  energy: mdiPowerPlug,
-  frequency: mdiSineWave,
-  tamper: mdiAlertCircleOutline,
-  smoke: mdiSmoking,
-  radiation_dose_per_hour: mdiRadioactive,
-  radioactive_events_per_minute: mdiRadioactive, // Consider a different icon if needed
-  power_factor: mdiFactory,
-  mode: mdiCog,
-  sound: mdiVolumeHigh,
-  position: mdiPercent,
-  alarm: mdiAlert,
-  color_xy: mdiPalette,
-  color_hs: mdiPalette,
-  color_temp: mdiThermometer, // Or a slider icon if more appropriate
-  illuminance_lux: mdiWhiteBalanceSunny,
-  soil_moisture: mdiWater, // Or a "water drop" icon
-  water_leak: mdiWater,
-  week: mdiCalendarWeek,
-  workdays_schedule: mdiCalendarCheck,
-  holidays_schedule: mdiCalendarCheck,
-  away_mode: mdiAirplane,
-  vibration: mdiVibrate,
-  power_outage_count: mdiPowerPlugOff,
-  angle_x: mdiAxisXArrow,
-  angle_y: mdiAxisYArrow,
-  angle_z: mdiAxisZArrow,
-  side: mdiCubeOutline,
-  presence: mdiAccount,
-  contact: mdiDoorOpen,
+// const typeToClassMapsensor: KeyValuePair<string> = {
+//   humidity: mdiWaterPercent,
+//   illuminance: mdiWhiteBalanceSunny,
+//   pressure: mdiCloudDownload,
+//   co2: mdiAtomVariant,
+//   voltage: mdiBolt,
+//   state: mdiStarHalfFull,
+//   brightness: mdiWhiteBalanceSunny,
+//   occupancy: mdiWalk,
+//   current: mdiCopyright,
+//   power: mdiPower,
+//   energy: mdiPowerPlug,
+//   frequency: mdiSineWave,
+//   tamper: mdiAlertCircleOutline,
+//   smoke: mdiSmoking,
+//   radiation_dose_per_hour: mdiRadioactive,
+//   radioactive_events_per_minute: mdiRadioactive, // Consider a different icon if needed
+//   power_factor: mdiFactory,
+//   mode: mdiCog,
+//   sound: mdiVolumeHigh,
+//   position: mdiPercent,
+//   alarm: mdiAlert,
+//   color_xy: mdiPalette,
+//   color_hs: mdiPalette,
+//   color_temp: mdiThermometer, // Or a slider icon if more appropriate
+//   illuminance_lux: mdiWhiteBalanceSunny,
+//   soil_moisture: mdiWater, // Or a "water drop" icon
+//   water_leak: mdiWater,
+//   week: mdiCalendarWeek,
+//   workdays_schedule: mdiCalendarCheck,
+//   holidays_schedule: mdiCalendarCheck,
+//   away_mode: mdiAirplane,
+//   vibration: mdiVibrate,
+//   power_outage_count: mdiPowerPlugOff,
+//   angle_x: mdiAxisXArrow,
+//   angle_y: mdiAxisYArrow,
+//   angle_z: mdiAxisZArrow,
+//   side: mdiCubeOutline,
+//   presence: mdiAccount,
+//   contact: mdiDoorOpen,
+// };
+
+const typeToClassMapsensor: KeyValuePair<IconProps> = {
+  humidity: { name: mdiWaterPercent, color: 'blue' },
+  illuminance: {
+    name: mdiWhiteBalanceSunny,
+    color: 'yellow',
+  },
+  pressure: { name: mdiCloudDownload, color: 'gray' },
+  co2: { name: mdiAtomVariant, color: 'gray' },
+  voltage: { name: mdiBolt, color: 'orange' },
+  state: { name: mdiStarHalfFull, color: 'gold' },
+  brightness: {
+    name: mdiWhiteBalanceSunny,
+    color: 'yellow',
+  },
+  occupancy: { name: mdiWalk, color: 'green' },
+  current: { name: mdiCopyright, color: 'gray' },
+  power: { name: mdiPower, color: 'red' },
+  energy: { name: mdiPowerPlug, color: 'green' },
+  frequency: { name: mdiSineWave, color: 'purple' },
+  tamper: { name: mdiAlertCircleOutline, color: 'red' },
+  smoke: { name: mdiSmoking, color: 'red' },
+  radiation_dose_per_hour: {
+    name: mdiRadioactive,
+    color: 'orange',
+  },
+  radioactive_events_per_minute: {
+    name: mdiRadioactive,
+    color: 'orange',
+  },
+  power_factor: { name: mdiFactory, color: 'gray' },
+  mode: { name: mdiCog, color: 'gray' },
+  sound: { name: mdiVolumeHigh, color: 'blue' },
+  position: { name: mdiPercent, color: 'blue' },
+  alarm: { name: mdiAlert, color: 'red' },
+  color_xy: { name: mdiPalette, color: 'purple' },
+  color_hs: { name: mdiPalette, color: 'purple' },
+  color_temp: { name: mdiThermometer, color: 'orange' },
+  illuminance_lux: {
+    name: mdiWhiteBalanceSunny,
+    color: 'yellow',
+  },
+  soil_moisture: { name: mdiWater, color: 'brown' },
+  water_leak: { name: mdiWater, color: 'blue' },
+  week: { name: mdiCalendarWeek, color: 'gray' },
+  workdays_schedule: {
+    name: mdiCalendarCheck,
+    color: 'green',
+  },
+  holidays_schedule: {
+    name: mdiCalendarCheck,
+    color: 'red',
+  },
+  away_mode: { name: mdiAirplane, color: 'blue' },
+  vibration: { name: mdiVibrate, color: 'gray' },
+  power_outage_count: {
+    name: mdiPowerPlugOff,
+    color: 'red',
+  },
+  angle_x: { name: mdiAxisXArrow, color: 'gray' },
+  angle_y: { name: mdiAxisYArrow, color: 'gray' },
+  angle_z: { name: mdiAxisZArrow, color: 'gray' },
+  side: { name: mdiCubeOutline, color: 'gray' },
+  presence: { name: mdiAccount, color: 'green' },
+  contact: { name: mdiDoorOpen, color: 'gray' },
 };
+
 // const typeToClassMapsensor: KeyValuePair<string> = {
 //   humidity: 'pi pi-droplet',
 //   illuminance: 'pi pi-sun',
@@ -224,26 +292,26 @@ export function getSensorValue(value: any): any {
 export function getSensorIcon(
   sensor: string,
   value: number
-): string {
+): IconProps {
   switch (sensor) {
     case 'device_temperature':
     case 'temperature':
     case 'local_temperature':
-      typeToClassMapsensor[sensor] =
-        getTemperatureIcon(value);
+      return getTemperatureIcon(value);
       break;
   }
 
   return typeToClassMapsensor[sensor];
 }
+
 const getTemperatureIcon = (
   temperature: number
-): string => {
+): IconProps => {
   if (temperature >= 30) {
-    return mdiThermometerHigh; // High temperature
+    return { name: mdiThermometerHigh, color: 'red' }; // High temperature
   } else if (temperature <= 10) {
-    return mdiThermometerLow; // Low temperature
+    return { name: mdiThermometerLow, color: 'blue' }; // Low temperature
   } else {
-    return mdiThermometer; // Normal temperature
+    return { name: mdiThermometer, color: 'white' }; // Normal temperature (no specific color)
   }
 };
