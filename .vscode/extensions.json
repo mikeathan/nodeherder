@@ -4,6 +4,7 @@
     "visualstudioexptteam.vscodeintellicode",
     "golang.go",
     "mhutchie.git-graph",
-    "donjayamanne.githistory"
+    "donjayamanne.githistory",
+    "editorconfig.editorconfig"
   ]
 }
