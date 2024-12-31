@@ -146,3 +146,47 @@ and prolem below ?
 [INFO]: 2024-09-15 19:50:31 - Start metrics cleanup
 [ERROR]: 2024-09-15 19:50:31 - Error during metrics cleanup: parsing time "brightness2024-08-25T18:04:56." as "2006-01-02T15:04:05.000000000Z": cannot parse "brightness2024-08-25T18:04:56." as "2006"
 [INFO]: 2024-09-15 19:50:31 - End metrics cleanup
+
+
+npm install @mdi/font
+const iconMapping = {
+  humidity: 'pi pi-droplet', // PrimeIcons: Similar to fa-tint (droplet)
+  illuminance: 'pi pi-sun', // PrimeIcons: Direct equivalent
+  pressure: 'pi pi-cloud-download', // PrimeIcons: Close to fa-cloud-download-alt
+  co2: 'mdi mdi-molecule-co2', // MDI: Specific icon for CO2
+  voltage: 'pi pi-bolt', // PrimeIcons: Direct equivalent
+  state: 'pi pi-star-half', // PrimeIcons: Direct equivalent
+  brightness: 'pi pi-sun', // PrimeIcons: Direct equivalent
+  occupancy: 'mdi mdi-walk', // MDI: Clearer than fa-walking
+  current: 'mdi mdi-current-ac', // MDI: More specific for electrical current
+  power: 'pi pi-power-off', // PrimeIcons: Direct equivalent
+  energy: 'mdi mdi-lightning-bolt', // MDI: Represents energy better than fa-plug
+  frequency: 'mdi mdi-sine-wave', // MDI: More suitable for frequency
+  tamper: 'pi pi-exclamation-triangle', // PrimeIcons: Similar, use with danger color
+  smoke: 'mdi mdi-smoke', // MDI: Direct equivalent
+  radiation_dose_per_hour: 'mdi mdi-radiation', // MDI: Direct equivalent
+  radioactive_events_per_minute: 'mdi mdi-radioactive', // MDI: Direct equivalent
+  power_factor: 'mdi mdi-chart-line', // MDI: Represents a factor/ratio
+  mode: 'pi pi-cog', // PrimeIcons: General settings/mode icon
+  sound: 'pi pi-volume-up', // PrimeIcons: Direct equivalent
+  position: 'mdi mdi-map-marker', // MDI: More appropriate for position
+  alarm: 'pi pi-bell', // PrimeIcons: More common alarm icon
+  color_xy: 'mdi mdi-palette', // MDI: Direct equivalent
+  color_hs: 'mdi mdi-palette', // MDI: Direct equivalent
+  color_temp: 'mdi mdi-thermometer', // MDI: More appropriate for temperature
+  illuminance_lux: 'pi pi-sun', // PrimeIcons: Direct equivalent
+  soil_moisture: 'mdi mdi-water-percent', // MDI: Represents moisture level
+  water_leak: 'mdi mdi-leak', // MDI: Direct equivalent
+  week: 'pi pi-calendar-week', // PrimeIcons: Direct equivalent
+  workdays_schedule: 'pi pi-calendar', // PrimeIcons: General calendar
+  holidays_schedule: 'pi pi-calendar-times', // PrimeIcons: Calendar with times
+  away_mode: 'pi pi-send', // PrimeIcons: A sending icon could represent "away"
+  vibration: 'mdi mdi-vibrate', // MDI: Direct equivalent
+  power_outage_count: 'mdi mdi-power-plug-off', //MDI: Direct equivalent
+  angle_x: 'mdi mdi-axis-x-arrow', // MDI: Represents x-axis
+    angle_y: 'mdi mdi-axis-y-arrow', // MDI: Represents y-axis
+    angle_z: 'mdi mdi-axis-z-arrow', // MDI: Represents z-axis
+  side: 'mdi mdi-cube-outline', // MDI: Represents a cube/side
+  presence: 'mdi mdi-account-check', // MDI: Represents presence/availability
+  contact: 'pi pi-inbox', // PrimeIcons: An inbox can represent contact/messages
+};
