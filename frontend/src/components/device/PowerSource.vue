@@ -26,6 +26,5 @@
   </div>
   <Icon
     v-else
-    
-    :icon="getPowerSourceIcon(power_source, value)" />
+    :icon="getPowerSourceIcon(power_source, value)" rotationAngle="90" />
 </template>

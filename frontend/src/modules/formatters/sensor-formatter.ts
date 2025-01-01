@@ -6,6 +6,8 @@ import {
   mdiWhiteBalanceSunny,
   mdiCloudDownload,
   mdiAtomVariant,
+  mdiMoleculeCo,
+  mdiMoleculeCo2,
   mdiLightningBolt,
   mdiStarHalfFull,
   mdiWalk,
@@ -37,6 +39,7 @@ import {
   mdiThermometer,
   mdiThermometerHigh,
   mdiThermometerLow,
+  mdiTune,
 } from '@mdi/js';
 
 // const typeToClassMapsensor: KeyValuePair<string> = {
@@ -83,69 +86,6 @@ import {
 //   contact: 'fa-fw fa-door-open',
 // };
 
-// TODO
-// npm install @mdi/js
-// <script setup>
-// import { mdiSineWave } from '@mdi/js';
-// </script>
-// <template>
-//   <component :is="mdiSineWave" :style="{ fontSize: '24px', color: 'blue' }"></component>
-// </template>
-
-// npm install @mdi/vue
-// import { createApp } from 'vue';
-// import App from './App.vue';
-// import { Mdi } from '@mdi/vue';
-
-// const app = createApp(App);
-// app.component('Mdi', Mdi); // Register globally
-// app.mount('#app');
-// <template>
-//   <Mdi icon="mdi-sine-wave" :size="36" color="green" />
-// </template>
-
-// const typeToClassMapsensor: KeyValuePair<string> = {
-//   humidity: mdiWaterPercent,
-//   illuminance: mdiWhiteBalanceSunny,
-//   pressure: mdiCloudDownload,
-//   co2: mdiAtomVariant,
-//   voltage: mdiBolt,
-//   state: mdiStarHalfFull,
-//   brightness: mdiWhiteBalanceSunny,
-//   occupancy: mdiWalk,
-//   current: mdiCopyright,
-//   power: mdiPower,
-//   energy: mdiPowerPlug,
-//   frequency: mdiSineWave,
-//   tamper: mdiAlertCircleOutline,
-//   smoke: mdiSmoking,
-//   radiation_dose_per_hour: mdiRadioactive,
-//   radioactive_events_per_minute: mdiRadioactive, // Consider a different icon if needed
-//   power_factor: mdiFactory,
-//   mode: mdiCog,
-//   sound: mdiVolumeHigh,
-//   position: mdiPercent,
-//   alarm: mdiAlert,
-//   color_xy: mdiPalette,
-//   color_hs: mdiPalette,
-//   color_temp: mdiThermometer, // Or a slider icon if more appropriate
-//   illuminance_lux: mdiWhiteBalanceSunny,
-//   soil_moisture: mdiWater, // Or a "water drop" icon
-//   water_leak: mdiWater,
-//   week: mdiCalendarWeek,
-//   workdays_schedule: mdiCalendarCheck,
-//   holidays_schedule: mdiCalendarCheck,
-//   away_mode: mdiAirplane,
-//   vibration: mdiVibrate,
-//   power_outage_count: mdiPowerPlugOff,
-//   angle_x: mdiAxisXArrow,
-//   angle_y: mdiAxisYArrow,
-//   angle_z: mdiAxisZArrow,
-//   side: mdiCubeOutline,
-//   presence: mdiAccount,
-//   contact: mdiDoorOpen,
-// };
-
 const typeToClassMapsensor: KeyValuePair<IconProps> = {
   humidity: {
     name: mdiWaterPercent,
@@ -156,7 +96,9 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
     color: 'yellow',
   },
   pressure: { name: mdiCloudDownload, color: 'gray' },
-  co2: { name: mdiAtomVariant, color: 'gray' },
+  co2: { name: mdiMoleculeCo2, color: 'white' },
+  co: { name: mdiMoleculeCo, color: 'white' },
+  pm25: { name: mdiFactory, color: 'white' },
   voltage: { name: mdiLightningBolt, color: 'orange' },
   state: { name: mdiStarHalfFull, color: 'white' },
   brightness: {
@@ -185,7 +127,7 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
   alarm: { name: mdiAlert, color: 'red' },
   color_xy: { name: mdiPalette, color: 'purple' },
   color_hs: { name: mdiPalette, color: 'purple' },
-  color_temp: { name: mdiThermometer, color: 'orange' },
+  color_temp: { name: mdiTune, color: 'white' },
   illuminance_lux: {
     name: mdiWhiteBalanceSunny,
     color: 'yellow',
@@ -212,7 +154,7 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
   angle_z: { name: mdiAxisZArrow, color: 'gray' },
   side: { name: mdiCubeOutline, color: 'gray' },
   presence: { name: mdiAccount, color: 'green' },
-  contact: { name: mdiDoorOpen, color: 'gray' },
+  contact: { name: mdiDoorOpen, color: 'white' },
 };
 
 // const typeToClassMapsensor: KeyValuePair<string> = {

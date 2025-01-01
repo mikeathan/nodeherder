@@ -8,23 +8,30 @@
       default: {} as IconProps,
       required: true,
     },
+    rotationAngle: {
+      type: String,
+      default: '0',
+      required: false,
+    },
   });
 </script>
 <style scoped>
   .icon {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     vertical-align: middle;
     margin-right: 0.2em;
   }
 </style>
 <template>
   <svg
-    viewBox="0 0 24 24"
+    viewBox="0 0 22 22"
     class="icon"
     :style="{ fill: props.icon.color }"
     :aria-label="props.icon.tooltip">
     <title>{{ props.icon.tooltip }}</title>
-    <path :d="props.icon.name" />
+    <g :transform="`rotate(${rotationAngle} 12 12)`">
+      <path :d="props.icon.name" />
+    </g>
   </svg>
 </template>

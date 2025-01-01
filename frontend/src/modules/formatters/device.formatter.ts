@@ -9,8 +9,20 @@ import {
   mdiBattery20,
   mdiBattery40,
   mdiBattery70,
+  mdiBatteryHigh,
+  mdiBatteryMedium,
+  mdiBatteryLow,
+  mdiBatteryOutline,
+  mdiCloudOffOutline,
 } from '@mdi/js';
 
+export function getOfflineIcon(): IconProps {
+  return {
+    name: mdiCloudOffOutline,
+    color: 'white',
+    tooltip: 'Offline',
+  };
+}
 export function getSignalIcon(value: number): IconProps {
   return {
     name: mdiSignal,
@@ -31,7 +43,7 @@ export function getPowerSourceIcon(
   if (power_source.toLowerCase().includes('mains')) {
     return {
       name: mdiPowerPlug,
-      color: 'gray',
+      color: 'white',
       tooltip: tooltip,
     };
   }
