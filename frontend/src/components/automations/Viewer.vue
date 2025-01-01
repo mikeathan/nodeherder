@@ -3,13 +3,11 @@ import { computed } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { store } from '../../store/index';
 import {
-  Automation,
   Automations,
 } from '@/types/automation';
 import AutomationStatus from './schedule/AutomationStatus.vue';
 
 const router = useRouter();
-
 const automations = computed(() => {
   if (
     !store.getters['automations/initialized']() as Boolean
@@ -33,10 +31,6 @@ function onDeleteAutomationClick(id: string): void {
   });
 }
 
-function getIndex(item: Automation): number {
-  return automations.value.indexOf(item);
-}
-
 const navigateToCreator = () => {
   router.push('/creator');
 };
@@ -44,7 +38,6 @@ const navigateToCreator = () => {
 
 <style scoped>
 .container {
-  max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
 }
@@ -165,8 +158,8 @@ const navigateToCreator = () => {
       </div>
 
       <div class="pt-3"></div>
-      <div class="col md:col-3 sm:col-6">
-        <Button style="width: 99%" icon="pi pi-plus" label="Create automation" @click="navigateToCreator"
+      <div class="col md:col-3 sm:col-6 ">
+        <Button style="width: 60%" icon="pi pi-plus" label="Create automation" @click="navigateToCreator"
           size="small" />
       </div>
     </template>

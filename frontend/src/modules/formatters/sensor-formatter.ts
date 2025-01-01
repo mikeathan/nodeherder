@@ -6,7 +6,7 @@ import {
   mdiWhiteBalanceSunny,
   mdiCloudDownload,
   mdiAtomVariant,
-  mdiBolt,
+  mdiLightningBolt,
   mdiStarHalfFull,
   mdiWalk,
   mdiCopyright,
@@ -147,14 +147,17 @@ import {
 // };
 
 const typeToClassMapsensor: KeyValuePair<IconProps> = {
-  humidity: { name: mdiWaterPercent, color: 'rgba(13,202,240,1)' },
+  humidity: {
+    name: mdiWaterPercent,
+    color: 'rgba(13,202,240,1)',
+  },
   illuminance: {
     name: mdiWhiteBalanceSunny,
     color: 'yellow',
   },
   pressure: { name: mdiCloudDownload, color: 'gray' },
   co2: { name: mdiAtomVariant, color: 'gray' },
-  voltage: { name: mdiBolt, color: 'orange' },
+  voltage: { name: mdiLightningBolt, color: 'orange' },
   state: { name: mdiStarHalfFull, color: 'white' },
   brightness: {
     name: mdiWhiteBalanceSunny,
@@ -312,6 +315,9 @@ const getTemperatureIcon = (
   } else if (temperature <= 10) {
     return { name: mdiThermometerLow, color: '#1E88E5' }; // Low temperature
   } else {
-    return { name: mdiThermometer, color: 'rgb(221, 111, 122)' }; // Normal temperature 
+    return {
+      name: mdiThermometer,
+      color: 'rgb(221, 111, 122)',
+    }; // Normal temperature
   }
 };
