@@ -22,14 +22,14 @@ const props = defineProps({
 </script>
 <style scoped>
 .icon {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     vertical-align: middle;
-    margin-right: 0.5em;
+    margin-right: 0.2em;
 }
 </style>
 <template>
-    <svg viewBox="0 0 24 24" class="icon  " :style="{ fill: props.color }">
-        <path :d="props.name" />
+    <svg viewBox="0 0 24 24" class="icon  " :style="{ fill: props.icon.color }">
+        <path :d="props.icon.name" />
     </svg>
 </template>

@@ -1,4 +1,7 @@
 <script setup lang="ts">
+  import { getSignalIcon } from '@/modules/formatters/device.formatter';
+  import Icon from '../controls/Icon.vue';
+
   const props = defineProps({
     value: Number,
   });
@@ -8,7 +11,7 @@
     key="linkquality"
     className="me-"
     v-if="value !== undefined">
-    <i :class="`fa fa-fw fa-signal fa-fw`"></i>
+    <Icon :icon="getSignalIcon()" />
     {{ value + ' LQI' }}
   </span>
 </template>

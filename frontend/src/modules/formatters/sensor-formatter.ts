@@ -147,7 +147,7 @@ import {
 // };
 
 const typeToClassMapsensor: KeyValuePair<IconProps> = {
-  humidity: { name: mdiWaterPercent, color: 'blue' },
+  humidity: { name: mdiWaterPercent, color: 'rgba(13,202,240,1)' },
   illuminance: {
     name: mdiWhiteBalanceSunny,
     color: 'yellow',
@@ -155,12 +155,12 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
   pressure: { name: mdiCloudDownload, color: 'gray' },
   co2: { name: mdiAtomVariant, color: 'gray' },
   voltage: { name: mdiBolt, color: 'orange' },
-  state: { name: mdiStarHalfFull, color: 'gold' },
+  state: { name: mdiStarHalfFull, color: 'white' },
   brightness: {
     name: mdiWhiteBalanceSunny,
     color: 'yellow',
   },
-  occupancy: { name: mdiWalk, color: 'green' },
+  occupancy: { name: mdiWalk, color: 'white' },
   current: { name: mdiCopyright, color: 'gray' },
   power: { name: mdiPower, color: 'red' },
   energy: { name: mdiPowerPlug, color: 'green' },
@@ -310,8 +310,8 @@ const getTemperatureIcon = (
   if (temperature >= 30) {
     return { name: mdiThermometerHigh, color: 'red' }; // High temperature
   } else if (temperature <= 10) {
-    return { name: mdiThermometerLow, color: 'blue' }; // Low temperature
+    return { name: mdiThermometerLow, color: '#1E88E5' }; // Low temperature
   } else {
-    return { name: mdiThermometer, color: 'white' }; // Normal temperature (no specific color)
+    return { name: mdiThermometer, color: 'rgb(221, 111, 122)' }; // Normal temperature 
   }
 };

@@ -61,11 +61,7 @@ function getUnit() {
 </script>
 <template>
   <div class="me-1">
-    <Icon :name="getSensorIcon(props.expose.name, props.expose.data)" />
-    <!-- <i :class="`${getSensorIcon(
-      props.expose.name,
-      props.expose.data
-    )}`"></i> -->
+    <Icon :icon="getSensorIcon(props.expose.name, props.expose.data)" />
   </div>
   <div class="flex-grow-1">
     {{ getSensorName(props.expose.name) }}

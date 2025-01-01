@@ -4,7 +4,12 @@ import {
   mdiBattery,
   mdiBatteryCharging,
   mdiAlertCircleOutline,
+  mdiSignal,
 } from '@mdi/js';
+
+export function getSignalIcon(): IconProps {
+  return { name: mdiSignal, color: 'white' };
+}
 
 export function getPowerSourceIcon(
   power_source: string,
