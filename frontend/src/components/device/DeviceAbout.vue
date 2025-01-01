@@ -5,13 +5,17 @@
   import PowerSource from '../device/PowerSource.vue';
   import ConnectionType from '../device/ConnectionType.vue';
   import RenameDeviceDialog from '../dialogs/RenameDeviceDialog.vue';
+  import ConfirmDialog from '../dialogs/ConfirmDialog.vue';
+
   import { Device } from '@/types/device';
 
   const props = defineProps({
     id: String,
   });
 
-  const showDialog = ref(false);
+  const showRenameDialog = ref(false);
+  const showInterviewDialog = ref(false);
+  
   const device = computed(() => {
     return store.getters['devices/find'](props.id);
   });
@@ -104,16 +108,20 @@
     icon="pi pi-user-edit"
     variant="text"
     v-tooltip="'Rename device'"
-    @click="showDialog = true" />
+    @click="showRenameDialog = true" />
   <RenameDeviceDialog
     :friendlyName="device.friendly_name"
-    :show="showDialog"
+    :show="showRenameDialog"
     @update:name="renameDevice"
-    @close="showDialog = false" />
+    @close="showRenameDialog = false" />
 
   <Button
     icon="pi pi-sync"
     variant="text"
     v-tooltip="'Interview device'"
-    @click="interviewDevice" />
+    @click="showInterviewDialog = true" />
+  <ConfirmDialog
+    :show="showInterviewDialog"
+    @confirm="interviewDevice"
+    @close="showInterviewDialog = false" />
 </template>
