@@ -11,7 +11,7 @@
     key="linkquality"
     className="me-"
     v-if="value !== undefined">
-    <Icon :icon="getSignalIcon()" />
+    <Icon :icon="getSignalIcon(value)" />
     {{ value + ' LQI' }}
   </span>
 </template>

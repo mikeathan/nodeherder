@@ -26,6 +26,6 @@
   </div>
   <Icon
     v-else
-    :title="`${power_source} ${value}`"
+    
     :icon="getPowerSourceIcon(power_source, value)" />
 </template>
