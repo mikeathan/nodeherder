@@ -40,9 +40,10 @@
     store.dispatch('devices/remove', {
       id: device.value.id,
       force: event.force ?? false,
+      block: event.block ?? false,
     });
   }
-  
+
   const displayProps = computed(() => {
     const device = store.getters['devices/find'](
       props.id

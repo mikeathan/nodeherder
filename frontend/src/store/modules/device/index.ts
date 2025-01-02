@@ -119,10 +119,11 @@ export const DeviceModule: Module<
       );
     },
 
-    remove({ dispatch }, { id, force }) {
+    remove({ dispatch }, { id, force, block }) {
       var payload = {
         id: id,
         force: force,
+        block: block,
       };
       dispatch(
         'ws/emit',
