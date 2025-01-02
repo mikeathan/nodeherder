@@ -4,7 +4,6 @@ import Dashboard from '../components/device-dashboard/DeviceDashboard.vue';
 import AutomationsViewer from '../components/automations/Viewer.vue';
 import AutomationsEditor from '../components/automations/Editor.vue';
 import AutomationsCreator from '../components/automations/Creator.vue';
-import Scheduler from '../components/automations/Scheduler.vue';
 import Settings from '../components/hub/settings/Settings.vue';
 import ConsoleViewer from '../components/hub/console/ConsoleViewer.vue';
 

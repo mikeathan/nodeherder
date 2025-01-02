@@ -16,7 +16,7 @@ export default class ElapsedTimer {
     this.__element = element;
   }
 
-  stopElapsedTimer(timerid) {
+  stopElapsedTimer() {
     if (this.__elapsedTimerId != undefined) {
       clearInterval(this.__elapsedTimerId);
       //console.log("[DEBUG] clearInterval " + this.__elapsedTimerId);
@@ -81,8 +81,4 @@ function nextInterval(diff) {
   d = d % rst;
   d = d ? rst - d : rst;
   return Math.ceil(d);
-}
-
-function isCallback(callback) {
-  return callback && typeof callback == 'function';
 }

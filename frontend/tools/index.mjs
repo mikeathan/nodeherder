@@ -1,20 +1,13 @@
+/* eslint-disable no-console */
 /* eslint-disable indent */
-import path from 'path';
-import { fileURLToPath } from 'url';
 import moment from 'moment';
 import 'moment-timezone';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 import express from 'express';
 import expressWs from 'express-ws';
 import http from 'http';
 import { createRequire } from 'module';
-import { log, timeStamp } from 'console';
 const devicesFullPath = '../../docs/devices.json';
-const automationFullPath =
-  '../../core/config/0x001788010d7d9d3f.json';
 const lightMetricsFullPath = './metrics/light.json';
 const temperatureMetricsFullPath =
   './metrics/temperature.json';
@@ -29,10 +22,8 @@ const humidityMin = 30.0;
 const humidityMax = 100.0;
 
 const luminance_luxMin = 10;
-const luminance_luxMax = 600;
 
 let port = 3000;
-let pingTimer = 0;
 
 let consoleLogIntervalId = 0;
 const logSeverity = [
@@ -287,7 +278,7 @@ var metricsMap = loadMetrics();
 
 var connected = false;
 // Get the /ws websocket route
-app.ws('/ws', async function (ws, req) {
+app.ws('/ws', async function (ws) {
   console.log('client connected');
 
   settings.forEach((s) => {
@@ -483,7 +474,7 @@ app.ws('/ws', async function (ws, req) {
 
 function getAutomations() {
   const items = [];
-  automationMap.forEach((values, k) => {
+  automationMap.forEach((values) => {
     items.push(values);
   });
 
@@ -514,10 +505,6 @@ function sendOperationFailed(ws, message) {
   });
 
   ws.send(msg);
-}
-
-function saveAutomation(ws, automation) {
-  automation1Trigger = automation;
 }
 
 function buildDeviceUpdatedPayload(s) {
