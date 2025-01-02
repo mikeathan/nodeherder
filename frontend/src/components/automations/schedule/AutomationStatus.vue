@@ -1,40 +1,51 @@
 <script setup lang="ts">
-import { computed, PropType, ref } from 'vue';
-import { Automation } from '@/types/automation';
-import { emitOpenSchedulerPanelEvent } from '@/contracts/panel-events';
-import { store } from '../../../store/index';
+  import { computed, PropType, ref } from 'vue';
+  import { Automation } from '@/types/automation';
+  import { emitOpenSchedulerPanelEvent } from '@/contracts/panel-events';
+  import { store } from '../../../store/index';
 
-const emit = defineEmits(['cancel']);
+  const emit = defineEmits(['cancel']);
 
-const props = defineProps({
-  automation: {
-    type: Object as PropType<Automation>,
-    default: {} as Automation,
-    required: true,
-  },
-});
+  const props = defineProps({
+    automation: {
+      type: Object as PropType<Automation>,
+      default: {} as Automation,
+      required: true,
+    },
+  });
 
-const automation = ref<Automation>(props.automation);
-const hasSchedules = computed(
-  () =>
-    automation.value.schedules &&
-    automation.value.schedules.length != 0
-);
+  const automation = ref<Automation>(props.automation);
+  const hasSchedules = computed(
+    () =>
+      automation.value.schedules &&
+      automation.value.schedules.length != 0
+  );
 
-function scheduleClick() {
-  emitOpenSchedulerPanelEvent(automation.value);
-}
-function saveAutomation(): void {
-  store.dispatch('automations/save', automation.value);
-}
-
+  function scheduleClick() {
+    emitOpenSchedulerPanelEvent(automation.value);
+  }
+  function saveAutomation(): void {
+    store.dispatch('automations/save', automation.value);
+  }
 </script>
 <template>
   <div v-if="hasSchedules">
-    <Button label="Scheduled" icon="pi pi-clock" size="small" text @click="scheduleClick()" />
+    <Button
+      label="Scheduled"
+      icon="pi pi-clock"
+      size="small"
+      text
+      @click="scheduleClick()" />
   </div>
   <div v-else>
-    <ToggleButton v-model="automation.enabled" onLabel="Enabled" offLabel="Disabled" onIcon="pi pi-check"
-      offIcon="pi pi-times" severity="success" size="small" v-on:change="saveAutomation" />
+    <ToggleButton
+      v-model="automation.enabled"
+      onLabel="Enabled"
+      offLabel="Disabled"
+      onIcon="pi pi-check"
+      offIcon="pi pi-times"
+      severity="success"
+      size="small"
+      v-on:change="saveAutomation" />
   </div>
 </template>
