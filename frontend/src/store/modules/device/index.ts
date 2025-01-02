@@ -37,7 +37,6 @@ export const DeviceModule: Module<
     add(state: DeviceModuleState, device: Device) {
       state.deviceMap[device.id] = device;
     },
-
     updateList(state: DeviceModuleState, devices: Devices) {
       devices.forEach((device: Device) => {
         if (device.id in state.deviceMap)
@@ -116,6 +115,18 @@ export const DeviceModule: Module<
       dispatch(
         'ws/emit',
         { event: 'deviceInterview', message: { id } },
+        { root: true }
+      );
+    },
+
+    remove({ dispatch }, { id, force }) {
+      var payload = {
+        id: id,
+        force: force,
+      };
+      dispatch(
+        'ws/emit',
+        { event: 'deviceRemove', message: payload },
         { root: true }
       );
     },

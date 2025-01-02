@@ -1,3 +1,4 @@
+/* eslint-disable indent */
 import path from 'path';
 import { fileURLToPath } from 'url';
 import moment from 'moment';
@@ -334,6 +335,7 @@ app.ws('/ws', async function (ws, req) {
         sendMessage(ws, 'deviceUpdated', updatePayload);
 
         break;
+
       case 'saveAutomation':
         var automation = obj.payload;
         automationMap.set(automation.id, automation);
@@ -371,7 +373,9 @@ app.ws('/ws', async function (ws, req) {
         var automation = automationMap.get(aId);
         if (tId >= automation.triggers.length) {
           sendOperationFailed(
-            'trigger index' + tId + ' out of bounds.'
+            'trigger index' +
+              tId +
+              ' out of boudeviceRemovends.'
           );
           return;
         }
@@ -453,6 +457,7 @@ app.ws('/ws', async function (ws, req) {
 
       default:
         console.log('ws unhandled type: ', msg);
+        break;
     }
   });
 
