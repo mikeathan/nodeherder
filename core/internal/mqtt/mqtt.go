@@ -30,9 +30,6 @@ var bridgeTopics = []string{
 }
 
 // TODO
-// bridge/request/device/remove - {"id":"my_bulb","force":true} -
-//  - success response = "data":{"id": "my_bulb","block":false,"force":false},"status":"ok"}
-//  - error response = {"id": "my_bulb","block":false,"force":false},"status":"error","error":"Failed to remove dimmer (Error: AREQ - ZDO - mgmtLeaveRsp after 10000ms)"
 // bridge/request/device/configure - {"id": "deviceID"} - response = {"data":{"id": "my_remote"},"status":"ok"}.
 // bridge/request/permit_join - {"value": true, "time": 20} (will allow joining for 20 seconds).
 // bridge/request/restart - empty payload - response =  {"data":{},"status":"ok"}.

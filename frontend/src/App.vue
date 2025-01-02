@@ -4,6 +4,7 @@
   import Status from './components/controls/Status.vue';
   import Notifications from './components/hub/alerts/Notifications.vue';
   import { useRouter } from 'vue-router';
+import TimerProgressBar from './components/controls/TimerProgressBar.vue';
 
   onBeforeMount(() => {
     store.dispatch('ws/connect');
@@ -98,6 +99,9 @@
 
               <Notifications />
             </div>
+          </template>
+          <template #end>
+            <TimerProgressBar />
           </template>
         </Menubar>
         <div class="content">
