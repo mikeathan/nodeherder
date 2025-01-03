@@ -1,22 +1,32 @@
 <script setup lang="ts">
   import { ref, onMounted, onBeforeUnmount } from 'vue';
-  import ProgressBar from 'primevue/progressbar';
   import { computed } from 'vue';
 
-  const totalTime = 60;
-  const remainingTime = ref(
-    localStorage.getItem('remainingTime') ? parseInt(localStorage.getItem('remainingTime')!) : totalTime
-  );
-  let intervalId: any = null;
+  const props = defineProps({
+    duration: { type: Number, default: 60 },
+    startEvent: {
+      type: Function,
+      default: () => {},
+    },
+    stopEvent: {
+      type: Function,
+      default: () => {},
+    },
+  });
 
+  let intervalId: any = null;
+  const remainingTime = ref(
+    localStorage.getItem('remainingTime') ? parseInt(localStorage.getItem('remainingTime')!) : props.duration
+  );
+
+  const isRunning = ref(localStorage.getItem('isRunning') === 'true' ? true : false);
   const buttonLabel = computed(() => {
     if (isRunning.value) {
-      return 'Disable Join';
+      return `Disable Join [${formattedTime.value}]`;
     }
     return 'Permit Join';
   });
 
-  const isRunning = ref(localStorage.getItem('isRunning') === 'true' ? true : false);
   const formattedTime = computed(() => {
     const minutes = Math.floor(remainingTime.value / 60);
     const seconds = remainingTime.value % 60;
@@ -25,7 +35,6 @@
   });
 
   const startTimer = () => {
-    console.log('Starting timer');
     intervalId = setInterval(() => {
       if (remainingTime.value > 0) {
         remainingTime.value -= 1;
@@ -39,21 +48,38 @@
   const stopTimer = () => {
     clearInterval(intervalId);
     intervalId = null;
-    isRunning.value = false;
-    localStorage.setItem('isRunning', isRunning.value.toString());
-    remainingTime.value = totalTime;
-    localStorage.setItem('remainingTime', remainingTime.value.toString());
+    setIsRunning(false);
+    setRemainingTime(props.duration);
   };
 
+  const setIsRunning = (value: boolean) => {
+    isRunning.value = value;
+    localStorage.setItem('isRunning', isRunning.value.toString());
+  };
+
+  const setRemainingTime = (value: number) => {
+    remainingTime.value = value;
+    localStorage.setItem('remainingTime', remainingTime.value.toString());
+  };
   const toggleTimer = () => {
     isRunning.value = !isRunning.value;
     localStorage.setItem('isRunning', isRunning.value.toString());
 
     if (isRunning.value) {
-      startTimer();
+      onStart();
     } else {
-      stopTimer();
+      onStopped();
     }
+  };
+
+  const onStart = () => {
+    props.startEvent();
+    startTimer();
+  };
+
+  const onStopped = () => {
+    props.stopEvent();
+    stopTimer();
   };
 
   onMounted(() => {
@@ -69,25 +95,17 @@
     align-items: center;
     gap: 8px;
   }
-
-  .time-label {
-    font-size: 14px;
-    margin: 0;
-  }
 </style>
 <template>
-  <div class="content">
-    <p class="time-label" v-if="isRunning">{{ formattedTime }}</p>
-    <Button
-      text
-      severity="secondary"
-      :label="buttonLabel"
-      :class="{
-        'start-btn': !isRunning,
-        'stop-btn': isRunning,
-      }"
-      :icon="isRunning ? 'pi pi-pause' : 'pi pi-play'"
-      @click="toggleTimer"
-      size="small" />
-  </div>
+  <Button
+    text
+    severity="secondary"
+    :label="buttonLabel"
+    :class="{
+      'start-btn': !isRunning,
+      'stop-btn': isRunning,
+    }"
+    :icon="isRunning ? 'pi pi-pause' : 'pi pi-play'"
+    @click="toggleTimer"
+    size="small" />
 </template>

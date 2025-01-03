@@ -4,7 +4,7 @@
   import Status from './components/controls/Status.vue';
   import Notifications from './components/hub/alerts/Notifications.vue';
   import { useRouter } from 'vue-router';
-import TimerProgressBar from './components/controls/TimerProgressBar.vue';
+  import TimerButton from './components/controls/TimerButton.vue';
 
   onBeforeMount(() => {
     store.dispatch('ws/connect');
@@ -81,28 +81,34 @@ import TimerProgressBar from './components/controls/TimerProgressBar.vue';
   <main>
     <div class="app-container">
       <div class="col-12">
+
         <Menubar :model="menuItems">
           <template #start>
             <div class="menu-title">
               <Status />
-              <RouterLink
-                :to="`/`"
-                style="text-decoration: none">
-                <img
-                  src="./assets/images/nodeherder_logo.png"
-                  width="50"
-                  height="50" />
-                <span class="node-herder-text"
-                  >Node-Herder</span
-                >
+              <RouterLink :to="`/`" style="text-decoration: none">
+                <img src="./assets/images/nodeherder_logo.png" width="50" height="50" />
+                <span class="node-herder-text">Node-Herder</span>
               </RouterLink>
-
               <Notifications />
             </div>
           </template>
-          <template #end>
-            <TimerProgressBar />
-          </template>
+          <!-- <template #end>
+             <div class="menu-end-container"> 
+            <TimerButton
+              :duration="60"
+              :start-event="
+                () => {
+                  console.log('start event');
+                }
+              "
+              :stop-event="
+                () => {
+                  console.log('stop event');
+                }
+              " />
+              </div>
+          </template> -->
         </Menubar>
         <div class="content">
           <RouterView />
