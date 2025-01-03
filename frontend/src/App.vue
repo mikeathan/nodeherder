@@ -73,6 +73,7 @@
     .p-menubar {
       display: flex;
       align-items: center;
+      flex-direction: row-reverse;
       justify-content: space-between;
     }
   }
@@ -88,7 +89,7 @@
               <Status />
               <RouterLink :to="`/`" style="text-decoration: none">
                 <img src="./assets/images/nodeherder_logo.png" width="50" height="50" />
-                <span class="node-herder-text">Node-Herder</span>
+                <span class="node-herder-text" >Node-Herder</span>
               </RouterLink>
               <Notifications />
             </div>
