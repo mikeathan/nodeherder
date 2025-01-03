@@ -43,6 +43,6 @@
     :class="status.icon"
     :style="{
       color: status.color,
-      fontSize: '0.75rem',
+      fontSize: '0.5rem',
     }"></i>
 </template>

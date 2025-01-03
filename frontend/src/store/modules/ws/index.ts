@@ -1,15 +1,11 @@
 import { Module } from 'vuex';
 import { RootState } from '../../state';
 import { WSClientState } from './state';
-import {
-  ConnectionStatus,
-  ConnectionStatusType,
-} from '@/types/connection.type';
+import { ConnectionStatus, ConnectionStatusType } from '@/types/connection.type';
 
 function getSocketUri() {
   const devSocketUri = 'ws://localhost:3000/ws';
-  const productionSocketUri =
-    'ws://' + document.location.host + '/ws';
+  const productionSocketUri = 'ws://' + document.location.host + '/ws';
 
   if (process.env.NODE_ENV == 'development') {
     console.info('Enviroment:', process.env.NODE_ENV);
@@ -22,10 +18,7 @@ let reconnectAttempts: number = 0;
 const maxReconnectAttempts = 10;
 const maxReconnectTimeout = 30000; //// Cap the delay at 30 seconds
 
-export const WSClientModule: Module<
-  WSClientState,
-  RootState
-> = {
+export const WSClientModule: Module<WSClientState, RootState> = {
   namespaced: true,
 
   state: () => ({
@@ -41,10 +34,7 @@ export const WSClientModule: Module<
     setSocket(state, socket: WebSocket) {
       state.socket = socket;
     },
-    setConnectionStatus(
-      state,
-      status: ConnectionStatusType
-    ) {
+    setConnectionStatus(state, status: ConnectionStatusType) {
       state.connectionStatus = status;
     },
     sendMessage(state: WSClientState, { event, message }) {
@@ -56,9 +46,7 @@ export const WSClientModule: Module<
       if (state.socket?.readyState === WebSocket.OPEN) {
         state.socket.send(payload);
       } else {
-        console.error(
-          'Cannot send message: WebSocket is not open.'
-        );
+        console.error('Cannot send message: WebSocket is not open.');
       }
     },
   },
@@ -147,25 +135,17 @@ export const WSClientModule: Module<
             });
             break;
           default:
-            console.error(
-              'ws unhandled type: ',
-              event.data
-            );
+            console.error('ws unhandled type: ', event.data);
         }
       };
       socket.onclose = function (event) {
-        console.log('ws close ', event);
+        console.log('ws close ', event, 'reconnectAttempts:', reconnectAttempts);
         commit('setConnectionStatus', 'connecting'); // WIP
 
         if (reconnectAttempts < maxReconnectAttempts) {
-          const backoffDelay = Math.min(
-            1000 * Math.pow(2, reconnectAttempts),
-            maxReconnectTimeout
-          );
+          const backoffDelay = Math.min(1000 * Math.pow(2, reconnectAttempts), maxReconnectTimeout);
           console.log(
-            `(${reconnectAttempts}/${maxReconnectAttempts}) Reconnecting in ${
-              backoffDelay / 1000
-            } seconds... `
+            `(${reconnectAttempts}/${maxReconnectAttempts}) Reconnecting in ${backoffDelay / 1000} seconds... `
           );
           setTimeout(() => {
             reconnectAttempts += 1;
@@ -180,10 +160,7 @@ export const WSClientModule: Module<
 
       socket.onerror = function (event) {
         // no need to log errors when we are already connecting
-        if (
-          state.connectionStatus ===
-          ConnectionStatus.connecting
-        ) {
+        if (state.connectionStatus === ConnectionStatus.connecting) {
           return;
         }
 
