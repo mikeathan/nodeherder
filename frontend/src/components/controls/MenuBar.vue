@@ -68,6 +68,9 @@
 </script>
 <style scoped>
   .menubar {
+    display: flex;
+    align-items: center;
+    width: 100%;
     background: var(--p-menubar-background);
     color: var(--primary-text-color, white);
     border: 1px solid var(--p-menubar-border-color);
@@ -76,16 +79,18 @@
   .menubar-root-list {
     display: flex;
     list-style: none;
+    justify-content: flex-end;
     margin: 0;
     padding: 0;
     background: var(--p-menubar-background);
     color: var(--primary-text-color, white);
+    margin-left: auto;
   }
 
   .menuitem-link {
     display: flex;
     align-items: center;
-    margin: 0px 10px 0px 0px;
+    margin: 0px 15px 0px 0px;
     text-decoration: none;
     color: inherit;
     cursor: pointer;
@@ -101,7 +106,6 @@
   }
 
   @media (max-width: 768px) {
-
     .menubar-root-list {
       flex-direction: column;
     }
@@ -137,8 +141,11 @@
   .menubar-start {
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Distribute space between logo and menu */
     width: 100%;
+    background: var(--p-menubar-background);
+    color: var(--primary-text-color, white);
+    border: 1px solid var(--p-menubar-border-color);
+    border-radius: var(--p-menubar-border-radius);
   }
 
   .menubar-logo {
@@ -147,20 +154,18 @@
 </style>
 
 <template>
-  <Menubar v-if="!isMobileView">
-    <template #start>
-      <div class="menubar-start">
-        <div class="menubar-logo">
-          <Logo />
-        </div>
-        <ul class="menubar-root-list">
-          <li v-for="(item, index) in props.items" :key="index">
-            <component :is="renderMenuItem(item)" />
-          </li>
-        </ul>
+  <div v-if="!isMobileView">
+    <div class="menubar-start">
+      <div class="menubar-logo">
+        <Logo />
       </div>
-    </template>
-  </Menubar>
+      <ul class="menubar-root-list">
+        <li v-for="(item, index) in props.items" :key="index">
+          <component :is="renderMenuItem(item)" />
+        </li>
+      </ul>
+    </div>
+  </div>
 
   <!-- Mobile View -->
   <div v-else>
