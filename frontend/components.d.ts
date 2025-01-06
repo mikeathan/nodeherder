@@ -49,6 +49,7 @@ declare module 'vue' {
     LastSeen: typeof import('./src/components/device/LastSeen.vue')['default']
     LinkQuality: typeof import('./src/components/device/LinkQuality.vue')['default']
     LoggerSettings: typeof import('./src/components/hub/settings/LoggerSettings.vue')['default']
+    Logo: typeof import('./src/components/controls/Logo.vue')['default']
     Menu: typeof import('primevue/menu')['default']
     Menubar: typeof import('primevue/menubar')['default']
     MenuBar: typeof import('./src/components/controls/MenuBar.vue')['default']
