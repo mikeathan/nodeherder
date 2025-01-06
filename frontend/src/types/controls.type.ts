@@ -30,34 +30,20 @@ export function isDropdown(item: ButtonPanelType): boolean {
   return (item as DropDownType).items !== undefined;
 }
 
-export function createButton(
-  name: string,
-  click: ButtonClickEventType,
-  disabled: boolean = false
-): ButtonType {
+export function createButton(name: string, click: ButtonClickEventType, disabled: boolean = false): ButtonType {
   return { name: name, click: click, disabled: disabled };
 }
 
-export function createDropDownItem(
-  name: string,
-  value: string,
-  click: ButtonClickEventType
-): DropDownItemType {
+export function createDropDownItem(name: string, value: string, click: ButtonClickEventType): DropDownItemType {
   return { name: name, value: value, click: click };
 }
 
-export function createDropdown(
-  name: string,
-  items: DropDownItemType[],
-  disabled: boolean = false
-): DropDownType {
+export function createDropdown(name: string, items: DropDownItemType[], disabled: boolean = false): DropDownType {
   return { name: name, items: items, disabled: disabled };
 }
 
 // Select
-export type SelectionItems =
-  | Array<string>
-  | KeyValuePair<string>;
+export type SelectionItems = Array<string> | KeyValuePair<string>;
 
 export type SelectSize = keyof typeof SelectFormSize;
 
@@ -74,3 +60,13 @@ export const LayoutPositions = {
   left: 'left',
   right: 'right',
 } as const;
+
+export type MenuItem = {
+  to?: string;
+  label?: string;
+  icon?: string;
+  command?: () => void;
+  custom?: boolean;
+  isLogo?: boolean;
+  template?: () => void;
+};

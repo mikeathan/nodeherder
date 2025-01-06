@@ -3,18 +3,13 @@
   import Status from '@/components/controls/Status.vue';
 </script>
 <style scoped>
-  body {
-    font-family: 'Roboto', sans-serif !important;
-  }
-
-  .p-component {
-    font-family: 'Roboto', sans-serif !important;
-  }
+ 
 
   .logo-container {
     position: relative;
     display: inline-flex;
     align-items: center;
+    white-space: nowrap;
   }
 
   .logo-text {
