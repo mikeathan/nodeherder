@@ -48,7 +48,7 @@ const renderMenuItem = (item: MenuItem) => {
   } else if (item.template) {
     return (
       <li class="menuitem">
-        <div>{item.template()}</div>
+        <div class="menuitem-text">{item.template()}</div>
       </li>
     );
   }

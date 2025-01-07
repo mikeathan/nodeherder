@@ -91,11 +91,31 @@ onMounted(() => {
 
 <style scoped>
 .toggle-btn {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
   background-color: transparent;
   color: var(--primary-color);
 }
+
+.toggle-btn.p-button:hover {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--primary-color);
+}
+
+.toggle-btn .small-text {
+  font-size: 0.9rem;
+  /* Adjust the value as needed */
+}
+
+.toggle-btn .toggle-icon {
+  margin-right: 0.5rem;
+}
 </style>
 <template>
-  <Button class="toggle-btn" text :label="buttonLabel" :icon="isRunning ? 'pi pi-pause' : 'pi pi-play'"
-    @click="toggleTimer" size="small" />
+  <a class="toggle-btn" href="javascript:void(0)" v-on:click="toggleTimer()">
+    <span class="toggle-icon pi pi-sitemap"></span>
+    <span class="small-text">{{ buttonLabel }}</span>
+  </a>
 </template>
