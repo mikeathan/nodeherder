@@ -4,10 +4,10 @@ export type AppConfig = {
   devices: KeyyValuePair<DeviceSettings>;
   history: HistorySettingsType;
   logger: LoggerSettingsType;
+  bridge: BridgeSettingsType;
 };
 
-export type DeviceSettingsMap =
-  KeyyValuePair<DeviceSettings>;
+export type DeviceSettingsMap = KeyyValuePair<DeviceSettings>;
 
 export const TimeUnits: {
   UnitSeconds: 'seconds';
@@ -23,19 +23,22 @@ export type TimeInterval = {
   unit: TimeUnit;
 };
 
-export type HistorySettingsPropsType =
-  keyof HistorySettingsType;
+export type HistorySettingsPropsType = keyof HistorySettingsType;
 
 export type HistorySettingsType = {
   sleepTimeout: TimeInterval;
   expireAt: TimeInterval;
 };
 
-export type LoggerSettingsTypePropsType =
-  keyof LoggerSettingsType;
+export type LoggerSettingsTypePropsType = keyof LoggerSettingsType;
 
 export type LoggerSettingsType = {
   enableRemoteLogger: boolean;
+};
+
+export type BridgeSettingsType = {
+  permitJoinEnabled: boolean;
+  maxTimeAllowed: TimeInterval;
 };
 
 export type DeviceSettings = {

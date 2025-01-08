@@ -3,6 +3,7 @@ import { RootState } from '../../state';
 import { AppConfigModuleState } from './state';
 import {
   AppConfig,
+  BridgeSettingsType,
   DeviceSettings,
   DeviceSettingsMap,
   HistorySettingsType,
@@ -10,10 +11,7 @@ import {
 } from '@/types/settings';
 import { key } from '@/store';
 
-export const AppConfigModule: Module<
-  AppConfigModuleState,
-  RootState
-> = {
+export const AppConfigModule: Module<AppConfigModuleState, RootState> = {
   namespaced: true,
 
   state: () => ({
@@ -23,18 +21,11 @@ export const AppConfigModule: Module<
   }),
 
   getters: {
-    initialized:
-      (state: AppConfigModuleState) => (): boolean =>
-        state.initialized,
+    initialized: (state: AppConfigModuleState) => (): boolean => state.initialized,
 
-    history:
-      (state: AppConfigModuleState) =>
-      (): HistorySettingsType =>
-        state.appConfig.history,
-    logger:
-      (state: AppConfigModuleState) =>
-      (): LoggerSettingsType =>
-        state.appConfig.logger,
+    history: (state: AppConfigModuleState) => (): HistorySettingsType => state.appConfig.history,
+    logger: (state: AppConfigModuleState) => (): LoggerSettingsType => state.appConfig.logger,
+    bridge: (state: AppConfigModuleState) => (): BridgeSettingsType => state.appConfig.bridge,
     findDeviceSetting:
       (state: AppConfigModuleState) =>
       (id: string): DeviceSettings => {
@@ -43,33 +34,23 @@ export const AppConfigModule: Module<
   },
 
   mutations: {
-    setDeviceSetting(
-      state: AppConfigModuleState,
-      deviceSetting: DeviceSettings
-    ) {
-      state.deviceSettingsMap[deviceSetting.id] =
-        deviceSetting;
+    setDeviceSetting(state: AppConfigModuleState, deviceSetting: DeviceSettings) {
+      state.deviceSettingsMap[deviceSetting.id] = deviceSetting;
     },
 
-    setHistorySettings(
-      state: AppConfigModuleState,
-      historySetting: HistorySettingsType
-    ) {
+    setHistorySettings(state: AppConfigModuleState, historySetting: HistorySettingsType) {
       state.appConfig.history = historySetting;
     },
-    setLoggerSettings(
-      state: AppConfigModuleState,
-      loggerSettings: LoggerSettingsType
-    ) {
+    setLoggerSettings(state: AppConfigModuleState, loggerSettings: LoggerSettingsType) {
       state.appConfig.logger = loggerSettings;
     },
-
+    setBridgeSettings(state: AppConfigModuleState, bridgeSettings: BridgeSettingsType) {
+      state.appConfig.bridge = bridgeSettings;
+    },
     clear(state: AppConfigModuleState) {
-      Object.entries(state.deviceSettingsMap).forEach(
-        ([key, value]) => {
-          delete state.deviceSettingsMap[key];
-        }
-      );
+      Object.entries(state.deviceSettingsMap).forEach(([key, value]) => {
+        delete state.deviceSettingsMap[key];
+      });
 
       state.appConfig = {} as AppConfig;
       state.initialized = false;
@@ -88,10 +69,7 @@ export const AppConfigModule: Module<
       state.initialized = true;
     },
 
-    saveDeviceSettings(
-      { commit, dispatch },
-      deviceSetting: DeviceSettings
-    ) {
+    saveDeviceSettings({ commit, dispatch }, deviceSetting: DeviceSettings) {
       commit('setDeviceSetting', deviceSetting);
       dispatch(
         'ws/emit',
@@ -102,10 +80,7 @@ export const AppConfigModule: Module<
         { root: true }
       );
     },
-    saveHistorySettings(
-      { commit, dispatch },
-      historySettings: HistorySettingsType
-    ) {
+    saveHistorySettings({ commit, dispatch }, historySettings: HistorySettingsType) {
       commit('setHistorySettings', historySettings);
       dispatch(
         'ws/emit',
@@ -116,10 +91,7 @@ export const AppConfigModule: Module<
         { root: true }
       );
     },
-    saveLoggerSettings(
-      { commit, dispatch },
-      loggerSetings: LoggerSettingsType
-    ) {
+    saveLoggerSettings({ commit, dispatch }, loggerSetings: LoggerSettingsType) {
       commit('setLoggerSettings', loggerSetings);
       dispatch(
         'ws/emit',
@@ -129,6 +101,28 @@ export const AppConfigModule: Module<
         },
         { root: true }
       );
+      
     },
+    enablePermitJoin ({ commit, dispatch }, ) {
+      commit('setLoggerSettings', loggerSetings);
+      dispatch(
+        'ws/emit',
+        {
+          event: 'bridgePermitJoin',
+          message: loggerSetings,
+        },
+        { root: true }
+      );
   },
+  disablePermitJoin ({ commit, dispatch }, ) {
+    commit('setLoggerSettings', loggerSetings);
+    dispatch(
+      'ws/emit',
+      {
+        event: 'bridgePermitJoin',
+        message: loggerSetings,
+      },
+      { root: true }
+    );
+}
 };

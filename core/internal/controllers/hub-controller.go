@@ -202,7 +202,7 @@ func (h *HubController) registerEventHubEvents() {
 	})
 
 	h.eventHub.OnBridgePermitJoin(func(p interface{}) error {
-		req := devices.BridgePermitJoinRequest{}
+		req := settings.BridgeConfig{}
 		bytes, _ := json.Marshal(p)
 		err := json.Unmarshal(bytes, &req)
 
