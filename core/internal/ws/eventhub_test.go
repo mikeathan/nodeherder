@@ -938,9 +938,9 @@ func TestHandleBridgePermitJoin(t *testing.T) {
 	wsHub := ws.NewWsHub()
 	wsHub.Start()
 
-	req := devices.NewBridgePerminJoinRequest(true, 10)
+	req := devices.NewBridgePermitJoinRequest(true, 10)
 
-	wsHub.OnBridgePerminJoin(func(p interface{}) error {
+	wsHub.OnBridgePermitJoin(func(p interface{}) error {
 
 		bytes := []byte(p.(string))
 		payload := make(map[string]interface{})
@@ -971,7 +971,7 @@ func TestHandleBridgePermitJoin(t *testing.T) {
 	defer wsConn.Close()
 
 	reqBytes, _ := json.Marshal(req)
-	wsData := &ws.EventMessage{Type: ws.BridgePerminJoin, Payload: reqBytes}
+	wsData := &ws.EventMessage{Type: ws.BridgePermitJoin, Payload: reqBytes}
 	msg, err := wsData.MarshalJSON()
 	if err != nil {
 		t.Fatal(err.Error())

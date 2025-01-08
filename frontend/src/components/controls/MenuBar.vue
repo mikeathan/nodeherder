@@ -16,7 +16,6 @@
 
   const toggleMenu = () => {
     isMenuVisible.value = !isMenuVisible.value;
-    console.log('Menu visibility:', isMenuVisible.value);
   };
   function checkMobileView() {
     isMobileView.value = window.innerWidth <= 768;

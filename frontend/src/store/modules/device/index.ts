@@ -1,18 +1,10 @@
 import { Module } from 'vuex';
 import { RootState } from '../../state';
 import { DeviceModuleState } from './state';
-import {
-  Device,
-  Devices,
-  DeviceMap,
-  DeviceUpdate,
-} from '../../../types/device';
+import { Device, Devices, DeviceMap, DeviceUpdate } from '../../../types/device';
 import { KeyValuePair } from '../../../types/types';
 
-export const DeviceModule: Module<
-  DeviceModuleState,
-  RootState
-> = {
+export const DeviceModule: Module<DeviceModuleState, RootState> = {
   namespaced: true,
 
   state: () => ({ deviceMap: {} as DeviceMap }),
@@ -39,21 +31,13 @@ export const DeviceModule: Module<
     },
     updateList(state: DeviceModuleState, devices: Devices) {
       devices.forEach((device: Device) => {
-        if (device.id in state.deviceMap)
-          state.deviceMap[device.id] = device;
+        if (device.id in state.deviceMap) state.deviceMap[device.id] = device;
       });
     },
 
-    update(
-      state: DeviceModuleState,
-      deviceUpdate: DeviceUpdate
-    ) {
+    update(state: DeviceModuleState, deviceUpdate: DeviceUpdate) {
       if (deviceUpdate.id in state.deviceMap == false) {
-        console.error(
-          'device ',
-          deviceUpdate.id,
-          ' not found'
-        );
+        console.error('device ', deviceUpdate.id, ' not found');
         return;
       }
       var device = state.deviceMap[deviceUpdate.id];
@@ -64,19 +48,16 @@ export const DeviceModule: Module<
       }
       for (var key in deviceUpdate.properties) {
         if (key in device.properties) {
-          device.properties[key] =
-            deviceUpdate.properties[key];
+          device.properties[key] = deviceUpdate.properties[key];
         }
       }
       device.properties.last_seen = deviceUpdate.last_seen;
     },
 
     clear(state: DeviceModuleState) {
-      Object.entries(state.deviceMap).forEach(
-        ([key, value]) => {
-          delete state.deviceMap[key];
-        }
-      );
+      Object.entries(state.deviceMap).forEach(([key, value]) => {
+        delete state.deviceMap[key];
+      });
     },
   },
 
@@ -93,11 +74,7 @@ export const DeviceModule: Module<
     },
 
     setValue({ dispatch }, payload: KeyValuePair<any>) {
-      dispatch(
-        'ws/emit',
-        { event: 'deviceSetValue', message: payload },
-        { root: true }
-      );
+      dispatch('ws/emit', { event: 'deviceSetValue', message: payload }, { root: true });
     },
     rename({ dispatch }, { name, newName }) {
       var payload = {
@@ -105,31 +82,24 @@ export const DeviceModule: Module<
         to: newName,
       };
 
-      dispatch(
-        'ws/emit',
-        { event: 'deviceRename', message: payload },
-        { root: true }
-      );
+      dispatch('ws/emit', { event: 'deviceRename', message: payload }, { root: true });
     },
     interview({ dispatch }, { id }) {
-      dispatch(
-        'ws/emit',
-        { event: 'deviceInterview', message: { id } },
-        { root: true }
-      );
+      dispatch('ws/emit', { event: 'deviceInterview', message: { id } }, { root: true });
     },
-
+    enablePermitJoin({ dispatch }, { time }: { time: number }) {
+      dispatch('ws/emit', { event: 'bridgePermitJoin', message: { value: true, time: time } }, { root: true });
+    },
+    disablePermitJoin({ dispatch }) {
+      dispatch('ws/emit', { event: 'bridgePermitJoin', message: { value: false } }, { root: true });
+    },
     remove({ dispatch }, { id, force, block }) {
       var payload = {
         id: id,
         force: force,
         block: block,
       };
-      dispatch(
-        'ws/emit',
-        { event: 'deviceRemove', message: payload },
-        { root: true }
-      );
+      dispatch('ws/emit', { event: 'deviceRemove', message: payload }, { root: true });
     },
   },
 };

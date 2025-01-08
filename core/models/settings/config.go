@@ -5,6 +5,11 @@ import (
 	"time"
 )
 
+type BridgeConfig struct {
+	MaxTimeAllowed *utils.TimeInterval `json:"maxTimeAllowed"`
+	PermitJoin     bool                `json:"permitJoin"`
+}
+
 type DeviceConfig struct {
 	Id             string `json:"id"`
 	Disabled       bool   `json:"disabled"`
@@ -60,10 +65,18 @@ func DefaultLoggingConfig() *LoggerConfig {
 	}
 }
 
+func DefaultBridgeConfig() *BridgeConfig {
+	return &BridgeConfig{
+		MaxTimeAllowed: utils.IntervalFromSeconds(120),
+		PermitJoin:     false,
+	}
+}
+
 type AppConfig struct {
 	Devices map[string]*DeviceConfig `json:"devices"`
 	History *HistoryConfig           `json:"history"`
 	Logger  *LoggerConfig            `json:"logger"`
+	Bridge  *BridgeConfig            `json:"bridge"`
 }
 
 func NewAppConfig() *AppConfig {
@@ -71,6 +84,7 @@ func NewAppConfig() *AppConfig {
 		Devices: map[string]*DeviceConfig{},
 		History: DefaultHistoryConfig(),
 		Logger:  DefaultLoggingConfig(),
+		Bridge:  DefaultBridgeConfig(),
 	}
 }
 

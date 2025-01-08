@@ -201,20 +201,26 @@ func (h *HubController) registerEventHubEvents() {
 		return nil
 	})
 
-	h.eventHub.OnBridgePerminJoin(func(p interface{}) error {
-		req := devices.BridgePerminJoinRequest{}
+	h.eventHub.OnBridgePermitJoin(func(p interface{}) error {
+		req := devices.BridgePermitJoinRequest{}
 		bytes, _ := json.Marshal(p)
 		err := json.Unmarshal(bytes, &req)
 
 		if err != nil {
-			return errors.New("bridge permit join failed. Invalid payload type")
+			return errors.New("permit join failed. Invalid payload type")
 		}
 
+		if req.Time > 254 {
+			return errors.New("permit join failed. Invalid timeout. (Max 254 seconds)")
+		}
 
-		TODO add some validation of therequest eg time or maybe if permit is already set
-		
 		json, _ := json.Marshal(p)
 		h.mqtt.Publish("bridge/request/permit_join", json)
+
+		TODO
+		// maybe we need to do that in the response handler 
+		return h.store.SaveBridgeConfig(req)
+
 		return nil
 	})
 

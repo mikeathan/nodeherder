@@ -96,8 +96,8 @@ func (w *MockEventHub) OnDeviceInterview(action func(p interface{}) error) {
 	fmt.Println("Empty OnDeviceInterview")
 }
 
-func (w *MockEventHub) OnBridgePerminJoin(action func(p interface{}) error) {
-	fmt.Println("Empty OnBridgePerminJoin")
+func (w *MockEventHub) OnBridgePermitJoin(action func(p interface{}) error) {
+	fmt.Println("Empty OnBridgePermitJoin")
 }
 
 func (w *MockEventHub) OnSaveAutomation(action func(p interface{}) error) {
@@ -264,8 +264,8 @@ func (w *NopWsServer) OnDeviceInterview(event func(p interface{}) error) {
 	fmt.Println("WsServer: Mocked OnDeviceInterview")
 }
 
-func (w *NopWsServer) OnBridgePerminJoin(event func(p interface{}) error) {
-	fmt.Println("WsServer: Mocked OnBridgePerminJoin")
+func (w *NopWsServer) OnBridgePermitJoin(event func(p interface{}) error) {
+	fmt.Println("WsServer: Mocked OnBridgePermitJoin")
 }
 
 func (w *NopWsServer) OnLoadDevice(action func(id string) (interface{}, error)) {
@@ -541,6 +541,11 @@ func (s *NopAppStore) RemoveDeviceById(id string) error {
 func (s *NopAppStore) StoreMetrics(friendlyName string, data map[string]interface{}) error {
 	fmt.Println("Mocked store StoreMetrics")
 
+	return nil
+}
+
+func (s *NopAppStore) SaveBridgeConfig(bridgeConfig *settings.BridgeConfig) error {
+	fmt.Println("Mocked store SaveBridgeConfig")
 	return nil
 }
 

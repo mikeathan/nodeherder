@@ -12,13 +12,13 @@ func NewDeviceRemoveRequest(id string, force bool) *DeviceRemoveRequest {
 	}
 }
 
-type BridgePerminJoinRequest struct {
+type BridgePermitJoinRequest struct {
 	Value bool `json:"value"`
 	Time  int  `json:"time"`
 }
 
-func NewBridgePerminJoinRequest(value bool, time int) *BridgePerminJoinRequest {
-	return &BridgePerminJoinRequest{
+func NewBridgePermitJoinRequest(value bool, time int) *BridgePermitJoinRequest {
+	return &BridgePermitJoinRequest{
 		Value: value,
 		Time:  time,
 	}
