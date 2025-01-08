@@ -372,6 +372,9 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 			case "bridge/response/device/interview":
 				var h = newBridgeDeviceInterviewRequestHandler(m.eventHub, m.mqtt)
 				m.handlers[id] = h
+			case "bridge/response/permit_join":
+				var h = newBridgePermitJoinRequestHandler(m.eventHub, m.mqtt)
+				m.handlers[id] = h
 			case "bridge/devices":
 				var h = newBridgeConfigurationHandler(m.registrar, m.automationEngine, m.mqtt, m.eventHub, m.DeviceAvailabilityTimeoutOverride)
 				m.handlers[id] = h

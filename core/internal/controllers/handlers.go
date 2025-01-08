@@ -205,6 +205,37 @@ func (b *bridgeDeviceInterviewRequestHandler) ProcessPayload(id string, connType
 	return nil
 }
 
+type bridgePermitJoinRequestHandler struct {
+	topic string
+	ws    ws.EventHub
+	mqtt  mqtt.MqttClient
+}
+
+func newBridgePermitJoinRequestHandler(ws ws.EventHub, mqtt mqtt.MqttClient) *bridgePermitJoinRequestHandler {
+	return &bridgePermitJoinRequestHandler{topic: "bridge/response/permit_join", ws: ws, mqtt: mqtt}
+}
+
+func (b *bridgePermitJoinRequestHandler) ProcessPayload(id string, connType string, payload []byte) error {
+	utils.LogDebugf("bridge/response/permit_join: %s", string(payload))
+	if !strings.HasPrefix(id, b.topic) {
+		return nil
+	}
+	resp := new(bridgeResponse)
+	resp.Data = map[string]interface{}{}
+	err := json.Unmarshal(payload, &resp)
+
+	if err != nil {
+		return err
+	}
+
+	if resp.Status == "ok" {
+		b.ws.Broadcast(ws.OperationSuccess, "Bridge permit join successful")
+	} else {
+		b.ws.Broadcast(ws.OperationFailed, resp.Error)
+	}
+	return nil
+}
+
 type bridgeDeviceRenameResponseHandler struct {
 	topic string
 	ws    ws.EventHub
