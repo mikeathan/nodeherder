@@ -1,10 +1,7 @@
 <script setup lang="ts">
-  import { onBeforeMount, ref, h, resolveComponent, computed } from 'vue';
   import Status from '@/components/controls/Status.vue';
 </script>
 <style scoped>
- 
-
   .logo-container {
     position: relative;
     display: inline-flex;

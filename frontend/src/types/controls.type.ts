@@ -61,7 +61,7 @@ export const LayoutPositions = {
   right: 'right',
 } as const;
 
-export type MenuItem = {
+export type MenuBarItem = {
   to?: string;
   label?: string;
   icon?: string;
