@@ -210,6 +210,9 @@ func (h *HubController) registerEventHubEvents() {
 			return errors.New("bridge permit join failed. Invalid payload type")
 		}
 
+
+		TODO add some validation of therequest eg time or maybe if permit is already set
+		
 		json, _ := json.Marshal(p)
 		h.mqtt.Publish("bridge/request/permit_join", json)
 		return nil
