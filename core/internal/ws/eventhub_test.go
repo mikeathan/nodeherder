@@ -18,6 +18,7 @@ import (
 	utils_test "node-herder/testing"
 	"node-herder/utils"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -832,6 +833,9 @@ func TestSaveDeviceConfigMessage(t *testing.T) {
 }
 
 func TestHandleBridgeDeviceRemoveMessage(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
 	wsHub := ws.NewWsHub()
 	wsHub.Start()
 
@@ -841,7 +845,7 @@ func TestHandleBridgeDeviceRemoveMessage(t *testing.T) {
 	wsHub.OnDeviceRemove(func(p interface{}) error {
 
 		bytes := []byte(p.(string))
-		
+
 		req := devices.DeviceRemoveRequest{}
 		err := json.Unmarshal(bytes, &req)
 		if err != nil {
@@ -856,6 +860,7 @@ func TestHandleBridgeDeviceRemoveMessage(t *testing.T) {
 			t.Fatalf("Expected forceRemove %v', got '%v'", forceRemove, req.Force)
 		}
 
+		wg.Done()
 		return nil
 	})
 
@@ -875,23 +880,14 @@ func TestHandleBridgeDeviceRemoveMessage(t *testing.T) {
 
 	SendMessage(t, wsConn, msg)
 
-	_, m, err := wsConn.ReadMessage()
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-
-	var event ws.EventMessage
-	err = json.Unmarshal(m, &event)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if event.Type != ws.OperationSuccess {
-		t.Fatalf("Expected type %v', got '%v'", ws.OperationSuccess, event.Type)
-	}
+	// we dont send back response so just assert the logic in the hanlder
+	wg.Wait()
 }
 
 func TestHandleBridgeDeviceInterviewMessage(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
 	wsHub := ws.NewWsHub()
 	wsHub.Start()
 
@@ -912,6 +908,7 @@ func TestHandleBridgeDeviceInterviewMessage(t *testing.T) {
 			t.Fatalf("Expected device id %v', got '%v'", deviceId, payload["id"])
 
 		}
+		wg.Done()
 		return nil
 	})
 
@@ -930,20 +927,60 @@ func TestHandleBridgeDeviceInterviewMessage(t *testing.T) {
 
 	SendMessage(t, wsConn, msg)
 
-	_, m, err := wsConn.ReadMessage()
+	// we dont send back response so just asset the logic in the hanlder
+	wg.Wait()
+}
+
+func TestHandleBridgePermitJoin(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
+	req := devices.NewBridgePerminJoinRequest(true, 10)
+
+	wsHub.OnBridgePerminJoin(func(p interface{}) error {
+
+		bytes := []byte(p.(string))
+		payload := make(map[string]interface{})
+
+		err := json.Unmarshal(bytes, &payload)
+
+		if err != nil {
+			fmt.Println(err.Error())
+			return errors.New("delete automation trigger failed. Invalid payload type")
+		}
+
+		if payload["value"] != true {
+			t.Fatalf("Expected value %v', got '%v'", true, payload["value"])
+		}
+
+		if payload["time"] != float64(10) {
+			t.Fatalf("Expected time %v', got '%v'", 10, payload["time"])
+		}
+
+		wg.Done()
+		return nil
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	defer s.Close()
+	defer wsConn.Close()
+
+	reqBytes, _ := json.Marshal(req)
+	wsData := &ws.EventMessage{Type: ws.BridgePerminJoin, Payload: reqBytes}
+	msg, err := wsData.MarshalJSON()
 	if err != nil {
-		t.Fatalf("%v", err)
+		t.Fatal(err.Error())
 	}
 
-	var event ws.EventMessage
-	err = json.Unmarshal(m, &event)
-	if err != nil {
-		t.Fatal(err)
-	}
+	SendMessage(t, wsConn, msg)
 
-	if event.Type != ws.OperationSuccess {
-		t.Fatalf("Expected type %v', got '%v'", ws.OperationSuccess, event.Type)
-	}
+	// we dont send back response so just asset the logic in the hanlder
+	wg.Wait()
 }
 
 func TestHandlingEnableRemoteLoggerMessage(t *testing.T) {

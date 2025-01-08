@@ -80,20 +80,24 @@ func (w *MockEventHub) OnLoadDeviceList(action func(names []string) interface{})
 	fmt.Println("Empty OnLoadDeviceList")
 }
 
-func (w *MockEventHub) OnDeviceSetValue(P func(payload interface{}) error) {
+func (w *MockEventHub) OnDeviceSetValue(action func(p interface{}) error) {
 	fmt.Println("Empty OnDeviceSetValue")
 }
 
-func (w *MockEventHub) OnDeviceRename(P func(payload interface{}) error) {
+func (w *MockEventHub) OnDeviceRename(action func(p interface{}) error) {
 	fmt.Println("Empty OnDeviceRename")
 }
 
-func (w *MockEventHub) OnDeviceRemove(P func(payload interface{}) error) {
+func (w *MockEventHub) OnDeviceRemove(action func(p interface{}) error) {
 	fmt.Println("Empty OnDeviceRemove")
 }
 
-func (w *MockEventHub) OnDeviceInterview(P func(payload interface{}) error) {
+func (w *MockEventHub) OnDeviceInterview(action func(p interface{}) error) {
 	fmt.Println("Empty OnDeviceInterview")
+}
+
+func (w *MockEventHub) OnBridgePerminJoin(action func(p interface{}) error) {
+	fmt.Println("Empty OnBridgePerminJoin")
 }
 
 func (w *MockEventHub) OnSaveAutomation(action func(p interface{}) error) {
@@ -248,16 +252,20 @@ func (w *NopWsServer) OnLoadMetrics(action func(interface{}) (interface{}, error
 	fmt.Println("WsServer: Mocked OnLoadMetrics")
 }
 
-func (w *NopWsServer) OnDeviceRename(P func(payload interface{}) error) {
+func (w *NopWsServer) OnDeviceRename(event func(p interface{}) error) {
 	fmt.Println("WsServer: Mocked OnDeviceRename")
 }
 
-func (w *NopWsServer) OnDeviceRemove(P func(payload interface{}) error) {
+func (w *NopWsServer) OnDeviceRemove(event func(p interface{}) error) {
 	fmt.Println("WsServer: Mocked OnDeviceRemove")
 }
 
-func (w *NopWsServer) OnDeviceInterview(P func(payload interface{}) error) {
+func (w *NopWsServer) OnDeviceInterview(event func(p interface{}) error) {
 	fmt.Println("WsServer: Mocked OnDeviceInterview")
+}
+
+func (w *NopWsServer) OnBridgePerminJoin(event func(p interface{}) error) {
+	fmt.Println("WsServer: Mocked OnBridgePerminJoin")
 }
 
 func (w *NopWsServer) OnLoadDevice(action func(id string) (interface{}, error)) {

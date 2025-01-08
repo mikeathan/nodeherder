@@ -22,6 +22,7 @@ const (
 	DeviceRemove            = "deviceRemove"
 	DeviceInterview         = "deviceInterview"
 
+	BridgePerminJoin  = "bridgePerminJoin"
 	SaveLoggerConfig  = "saveLoggerConfig"
 	SaveHistoryConfig = "saveHistoryConfig"
 	SaveDeviceConfig  = "saveDeviceConfig"
@@ -59,6 +60,7 @@ type EventHub interface {
 	OnDeviceRename(func(payload interface{}) error)
 	OnDeviceRemove(func(payload interface{}) error)
 	OnDeviceInterview(func(payload interface{}) error)
+	OnBridgePerminJoin(func(payload interface{}) error)
 	OnSaveAutomation(func(payload interface{}) error)
 	OnDeleteAutomation(func(payload interface{}) (interface{}, error))
 	OnDeleteAutomationTrigger(func(payload interface{}) (interface{}, error))
@@ -82,6 +84,7 @@ type eventHubImpl struct {
 	onDeviceRename            func(interface{}) error
 	onDeviceRemove            func(interface{}) error
 	onDeviceInterview         func(interface{}) error
+	onBridgePerminJoin        func(interface{}) error
 	onDeleteAutomation        func(interface{}) (interface{}, error)
 	onDeleteAutomationTrigger func(interface{}) (interface{}, error)
 	onLoadAppConfig           func() (interface{}, error)
@@ -101,6 +104,7 @@ func NewWsHub() EventHub {
 		onDeviceRename:            func(payload interface{}) error { return nil },
 		onDeviceRemove:            func(payload interface{}) error { return nil },
 		onDeviceInterview:         func(payload interface{}) error { return nil },
+		onBridgePerminJoin:        func(payload interface{}) error { return nil },
 		onLoadDevice:              func(id string) (interface{}, error) { return nil, nil },
 		onLoadDeviceList:          func(ids []string) interface{} { return nil },
 		onLoadDevices:             func() interface{} { return nil },
@@ -130,6 +134,10 @@ func (h *eventHubImpl) OnDeviceRemove(action func(p interface{}) error) {
 
 func (h *eventHubImpl) OnDeviceInterview(action func(p interface{}) error) {
 	h.onDeviceInterview = action
+}
+
+func (h *eventHubImpl) OnBridgePerminJoin(action func(p interface{}) error) {
+	h.onBridgePerminJoin = action
 }
 
 func (h *eventHubImpl) OnLoadAutomations(action func() interface{}) {
@@ -263,10 +271,13 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 		c.executeAction(eventMsg.Payload, c.onDeviceRename, false)
 
 	case DeviceRemove:
-		c.executeAction(eventMsg.Payload, c.onDeviceRemove, true)
+		c.executeAction(eventMsg.Payload, c.onDeviceRemove, false)
 
 	case DeviceInterview:
 		c.executeAction(eventMsg.Payload, c.onDeviceInterview, false)
+		
+	case BridgePerminJoin:
+		c.executeAction(eventMsg.Payload, c.onBridgePerminJoin, false)
 
 	case SaveLoggerConfig:
 		c.executeAction(eventMsg.Payload, c.onSaveLoggerConfig, true)

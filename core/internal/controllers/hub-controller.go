@@ -201,6 +201,20 @@ func (h *HubController) registerEventHubEvents() {
 		return nil
 	})
 
+	h.eventHub.OnBridgePerminJoin(func(p interface{}) error {
+		req := devices.BridgePerminJoinRequest{}
+		bytes, _ := json.Marshal(p)
+		err := json.Unmarshal(bytes, &req)
+
+		if err != nil {
+			return errors.New("bridge permit join failed. Invalid payload type")
+		}
+
+		json, _ := json.Marshal(p)
+		h.mqtt.Publish("bridge/request/permit_join", json)
+		return nil
+	})
+
 	h.eventHub.OnDeleteAutomationTrigger(func(p interface{}) (interface{}, error) {
 
 		// todo:see if we can cast p to string and then to bytes
@@ -353,7 +367,7 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 				var h = newBridgeDeviceRenameResponseHandler(m.eventHub, m.mqtt)
 				m.handlers[id] = h
 			case "bridge/response/device/remove":
-				var h = newBridgeDeviceRemoveResponseHandler(m.registrar,m.eventHub, m.mqtt)
+				var h = newBridgeDeviceRemoveResponseHandler(m.registrar, m.eventHub, m.mqtt)
 				m.handlers[id] = h
 			case "bridge/response/device/interview":
 				var h = newBridgeDeviceInterviewRequestHandler(m.eventHub, m.mqtt)

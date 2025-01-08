@@ -26,6 +26,7 @@ var bridgeTopics = []string{
 	"bridge/response/device/rename",
 	"bridge/response/device/remove",
 	"bridge/response/device/interview",
+	"bridge/response/permit_join",
 	"bridge/logging",
 }
 
