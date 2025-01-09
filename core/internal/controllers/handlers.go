@@ -9,6 +9,7 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/models/logging"
+	"node-herder/store"
 	"node-herder/utils"
 	"strings"
 )
@@ -206,13 +207,18 @@ func (b *bridgeDeviceInterviewRequestHandler) ProcessPayload(id string, connType
 }
 
 type bridgePermitJoinRequestHandler struct {
-	topic string
-	ws    ws.EventHub
-	mqtt  mqtt.MqttClient
+	topic   string
+	ws      ws.EventHub
+	mqtt    mqtt.MqttClient
+	manager *services.PermitJoinManager
 }
 
-func newBridgePermitJoinRequestHandler(ws ws.EventHub, mqtt mqtt.MqttClient) *bridgePermitJoinRequestHandler {
-	return &bridgePermitJoinRequestHandler{topic: "bridge/response/permit_join", ws: ws, mqtt: mqtt}
+func newBridgePermitJoinRequestHandler(store store.AppStore, ws ws.EventHub, mqtt mqtt.MqttClient) *bridgePermitJoinRequestHandler {
+	manager := services.NewPermitJoinManager(func(enabled bool) {
+		store.SaveBridgePermitJoin(enabled)
+	})
+
+	return &bridgePermitJoinRequestHandler{manager: manager, topic: "bridge/response/permit_join", ws: ws, mqtt: mqtt}
 }
 
 func (b *bridgePermitJoinRequestHandler) ProcessPayload(id string, connType string, payload []byte) error {
@@ -229,7 +235,18 @@ func (b *bridgePermitJoinRequestHandler) ProcessPayload(id string, connType stri
 	}
 
 	if resp.Status == "ok" {
-		b.ws.Broadcast(ws.OperationSuccess, "Bridge permit join successful")
+		if enabled, ok := resp.Data["value"].(bool); ok {
+			utils.LogInfof("Bridge Permit join set to %v ", enabled)
+
+			// need to get the timeout somehow
+			err := b.manager.Start(  )
+			if err != nil {
+				utils.LogErrorf("error starting permit join %s", err.Error())
+				b.ws.Broadcast(ws.OperationFailed, fmt.Sprintf("error starting permit join %s", err.Error()))
+				return nil
+			}
+		}
+		b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Bridge Permit join set to %v ", resp.Data["value"]))
 	} else {
 		b.ws.Broadcast(ws.OperationFailed, resp.Error)
 	}

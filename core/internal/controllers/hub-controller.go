@@ -210,16 +210,19 @@ func (h *HubController) registerEventHubEvents() {
 			return errors.New("permit join failed. Invalid payload type")
 		}
 
-		if req.Time > 254 {
+		if req.TimeExpireAt.Value > 254 {
 			return errors.New("permit join failed. Invalid timeout. (Max 254 seconds)")
 		}
 
-		json, _ := json.Marshal(p)
-		h.mqtt.Publish("bridge/request/permit_join", json)
+		if  req.TimeExpireAt.Value == 0{
+			return  errors.New("permit join failed. Invalid timeout. (0 seconds)")
+		}
 
-		TODO
-		// maybe we need to do that in the response handler 
-		return h.store.SaveBridgeConfig(req)
+		// convert it to the expected payload
+		bridgeReq := devices.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value)
+		json, _ := json.Marshal(bridgeReq)
+
+		h.mqtt.Publish("bridge/request/permit_join", json)
 
 		return nil
 	})
@@ -382,7 +385,7 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 				var h = newBridgeDeviceInterviewRequestHandler(m.eventHub, m.mqtt)
 				m.handlers[id] = h
 			case "bridge/response/permit_join":
-				var h = newBridgePermitJoinRequestHandler(m.eventHub, m.mqtt)
+				var h = newBridgePermitJoinRequestHandler(m.store, m.eventHub, m.mqtt)
 				m.handlers[id] = h
 			case "bridge/devices":
 				var h = newBridgeConfigurationHandler(m.registrar, m.automationEngine, m.mqtt, m.eventHub, m.DeviceAvailabilityTimeoutOverride)

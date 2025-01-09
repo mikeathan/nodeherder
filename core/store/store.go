@@ -60,7 +60,7 @@ type AppStore interface {
 	SaveDeviceConfig(deviceconfig *settings.DeviceConfig) error
 	SaveHistoryConfig(historyConfig *settings.HistoryConfig) error
 	SaveLoggerConfig(loggerConfig *settings.LoggerConfig) error
-	SaveBridgeConfig(bridgeConfig *settings.BridgeConfig) error
+	SaveBridgePermitJoin(enabled bool) error
 
 	StoreBridgeInfoList(bridgeInfoList []*devices.BridgeInfo) error
 	FindBridgeInfoByFriendlyName(friendlyName string) (*devices.BridgeInfo, error)
@@ -172,15 +172,15 @@ func (s *appStore) SaveLoggerConfig(loggerConfig *settings.LoggerConfig) error {
 	return s.config.Save(config)
 }
 
-func (s *appStore) SaveBridgeConfig(bridgeConfig *settings.BridgeConfig) error {
+func (s *appStore) SaveBridgePermitJoin(enabled bool) error {
 	config, err := s.config.Load()
 	if err != nil {
 		return err
 	}
 
-	config.Bridge = bridgeConfig
-	
-	//s.reloadTasks(config) 
+	config.Bridge.PermitJoin = enabled
+
+	//s.reloadTasks(config) ??
 
 	return s.config.Save(config)
 }

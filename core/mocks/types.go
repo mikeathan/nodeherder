@@ -544,7 +544,7 @@ func (s *NopAppStore) StoreMetrics(friendlyName string, data map[string]interfac
 	return nil
 }
 
-func (s *NopAppStore) SaveBridgeConfig(bridgeConfig *settings.BridgeConfig) error {
+func (s *NopAppStore) SaveBridgePermitJoin(enabled bool) error {
 	fmt.Println("Mocked store SaveBridgeConfig")
 	return nil
 }

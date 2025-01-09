@@ -6,7 +6,7 @@ import (
 )
 
 type BridgeConfig struct {
-	MaxTimeAllowed *utils.TimeInterval `json:"maxTimeAllowed"`
+	TimeExpireAt *utils.TimeInterval `json:"maxTimeAllowed"`
 	PermitJoin     bool                `json:"permitJoin"`
 }
 
@@ -67,7 +67,7 @@ func DefaultLoggingConfig() *LoggerConfig {
 
 func DefaultBridgeConfig() *BridgeConfig {
 	return &BridgeConfig{
-		MaxTimeAllowed: utils.IntervalFromSeconds(120),
+		TimeExpireAt: utils.IntervalFromSeconds(120),
 		PermitJoin:     false,
 	}
 }
