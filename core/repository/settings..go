@@ -49,6 +49,16 @@ func (s *FileSettingsRepo) Save(value *settings.AppConfig) error {
 	return s.kvdb.Set([]byte(settingsKeyName), buf)
 }
 
+func (s *FileSettingsRepo) SaveAppConfigTestTest(deviceConfig *settings.AppConfigTest) error {
+
+	config, err := s.Load()
+	if err != nil {
+		return err
+	}
+
+	return s.Save(config)
+}
+
 func (s *FileSettingsRepo) FindOrAddDeviceConfigIfNotExists(id string) (*settings.DeviceConfig, error) {
 
 	config, err := s.Load()

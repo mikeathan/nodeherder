@@ -7,7 +7,7 @@ import (
 
 type BridgeConfig struct {
 	TimeExpireAt *utils.TimeInterval `json:"maxTimeAllowed"`
-	PermitJoin     bool                `json:"permitJoin"`
+	PermitJoin   bool                `json:"permitJoin"`
 }
 
 type DeviceConfig struct {
@@ -68,7 +68,32 @@ func DefaultLoggingConfig() *LoggerConfig {
 func DefaultBridgeConfig() *BridgeConfig {
 	return &BridgeConfig{
 		TimeExpireAt: utils.IntervalFromSeconds(120),
-		PermitJoin:     false,
+		PermitJoin:   false,
+	}
+}
+
+type PersistedConfig struct {
+	Devices map[string]*DeviceConfig `json:"devices"`
+	History *HistoryConfig           `json:"history"`
+	Logger  *LoggerConfig            `json:"logger"`
+}
+type InMemoryConfig struct {
+	Bridge *BridgeConfig `json:"bridge"`
+}
+
+type AppConfigTest struct {
+	PersistedConfig *PersistedConfig `json:"persistedConfig"`
+	InMemoryConfig  *InMemoryConfig  `json:"inMemoryConfig"`
+}
+
+func NewAppConfigTest() *AppConfigTest {
+	return &AppConfigTest{
+		PersistedConfig: &PersistedConfig{
+			Devices: map[string]*DeviceConfig{},
+			History: DefaultHistoryConfig(),
+			Logger:  DefaultLoggingConfig(),
+		},
+		InMemoryConfig: &InMemoryConfig{},
 	}
 }
 
