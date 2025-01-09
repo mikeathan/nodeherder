@@ -52,10 +52,10 @@ func (t *MetricsCleanupTask) Start(config *settings.AppConfig) error {
 				return
 
 			default:
-				t.clock.Sleep(config.History.SleepTimeout.Duration())
+				t.clock.Sleep(config.Hub.History.SleepTimeout.Duration())
 				utils.LogInfo("Start metrics cleanup")
 
-				err := t.repo.Prune(config.History.ExpireAt.Duration())
+				err := t.repo.Prune(config.Hub.History.ExpireAt.Duration())
 				if err != nil {
 					utils.LogErrorf("Error during metrics cleanup: %v", err)
 				}
@@ -89,7 +89,7 @@ func (t *RemoteLoggerTask) Start(config *settings.AppConfig) error {
 	defer t.mutex.Unlock()
 	t.mutex.Lock()
 
-	utils.EnableRemoteLoggerHook(config.Logger.EnableRemoteLogger)
+	utils.EnableRemoteLoggerHook(config.Hub.Logger.EnableRemoteLogger)
 
 	return nil
 }

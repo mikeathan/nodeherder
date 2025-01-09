@@ -10,9 +10,11 @@ import (
 const settingsBaseFilename = "settings.db"
 const settingsBucketName = "settings"
 const settingsKeyName = "device_settings"
+const bridgeSettingsKeyName = "bridge_settings"
 
 type FileSettingsRepo struct {
-	kvdb storage.KeyValueDatabase
+	persistantStorage storage.KeyValueDatabase
+	memoryStorage     *MemoryRepo[settings.BridgeConfig]
 }
 
 func NewFileSettingsRepo() (settings.Repository, error) {
@@ -27,36 +29,60 @@ func NewFileSettingsRepoFromFile(filename string) (settings.Repository, error) {
 	}
 
 	return &FileSettingsRepo{
-		kvdb: kvdb,
+		persistantStorage: kvdb,
+		memoryStorage:     NewMemoryRepo[settings.BridgeConfig](),
 	}, nil
 }
 
 func (s *FileSettingsRepo) Close() error {
-	err := s.kvdb.Close()
+	s.memoryStorage.Close()
+
+	err := s.persistantStorage.Close()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *FileSettingsRepo) Save(value *settings.AppConfig) error {
+func (s *FileSettingsRepo) SaveAppConfig(value *settings.AppConfig) error {
 
 	buf, err := json.Marshal(value)
 	if err != nil {
 		return err
 	}
 
-	return s.kvdb.Set([]byte(settingsKeyName), buf)
+	return s.persistantStorage.Set([]byte(settingsKeyName), buf)
 }
 
-func (s *FileSettingsRepo) SaveAppConfigTestTest(deviceConfig *settings.AppConfigTest) error {
+
+func (s *FileSettingsRepo) LoadBridgeConfig() (*settings.biq, error) {
+		buffer, err := s.persistantStorage.Get([]byte(bridgeSettingsKeyName))
+	if err != nil {
+		return nil, err
+	}
+	config := settings.NewBridgeConfig()
+	if buffer != nil {
+		err = json.Unmarshal(buffer, &config)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return config, err
+}
+
+func (s *FileSettingsRepo) SaveHubConfig(hubConfig *settings.HubConfig) error {
 
 	config, err := s.Load()
 	if err != nil {
 		return err
 	}
 
-	return s.Save(config)
+	return s.SaveAppConfig(config)
+}
+
+func (s *FileSettingsRepo) SaveBridgeConfig(bridgeConfig *settings.BridgeConfig) error {
+	_, err := s.memoryStorage.Store(bridgeSettingsKeyName, bridgeConfig)
+	return err
 }
 
 func (s *FileSettingsRepo) FindOrAddDeviceConfigIfNotExists(id string) (*settings.DeviceConfig, error) {
@@ -66,7 +92,7 @@ func (s *FileSettingsRepo) FindOrAddDeviceConfigIfNotExists(id string) (*setting
 		return nil, err
 	}
 
-	if val, ok := config.Devices[id]; ok {
+	if val, ok := config.Hub.Devices[id]; ok {
 		return val, nil
 	}
 
@@ -78,7 +104,24 @@ func (s *FileSettingsRepo) FindOrAddDeviceConfigIfNotExists(id string) (*setting
 	}
 	return cfg, nil
 }
+func (s *FileSettingsRepo) SaveHistoryConfig(historyConfig *settings.HistoryConfig) error {
+	config, err := s.Load()
+	if err != nil {
+		return err
+	}
 
+	config.Hub.History = historyConfig
+	return s.SaveAppConfig(config)
+}
+func (s *FileSettingsRepo) SaveLoggerConfig(loggerConfig *settings.LoggerConfig) error {
+	config, err := s.Load()
+	if err != nil {
+		return err
+	}
+
+	config.Hub.Logger = loggerConfig
+	return s.SaveAppConfig(config)
+}
 func (s *FileSettingsRepo) SaveDeviceConfig(deviceConfig *settings.DeviceConfig) error {
 
 	config, err := s.Load()
@@ -86,13 +129,13 @@ func (s *FileSettingsRepo) SaveDeviceConfig(deviceConfig *settings.DeviceConfig)
 		return err
 	}
 
-	config.Devices[deviceConfig.Id] = deviceConfig
-	return s.Save(config)
+	config.Hub.Devices[deviceConfig.Id] = deviceConfig
+	return s.SaveAppConfig(config)
 }
 
 func (s *FileSettingsRepo) Load() (*settings.AppConfig, error) {
 
-	buffer, err := s.kvdb.Get([]byte(settingsKeyName))
+	buffer, err := s.persistantStorage.Get([]byte(settingsKeyName))
 	if err != nil {
 		return nil, err
 	}

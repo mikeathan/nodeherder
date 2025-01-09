@@ -152,11 +152,11 @@ func (s *appStore) SaveHistoryConfig(historyConfig *settings.HistoryConfig) erro
 		return err
 	}
 
-	config.History = historyConfig
+	config.Hub.History = historyConfig
 
 	s.reloadTasks(config)
 
-	return s.config.Save(config)
+	return s.config.SaveAppConfig(config)
 }
 
 func (s *appStore) SaveLoggerConfig(loggerConfig *settings.LoggerConfig) error {
@@ -165,15 +165,15 @@ func (s *appStore) SaveLoggerConfig(loggerConfig *settings.LoggerConfig) error {
 		return err
 	}
 
-	config.Logger = loggerConfig
+	config.Hub.Logger = loggerConfig
 
 	s.reloadTasks(config)
 
-	return s.config.Save(config)
+	return s.config.SaveAppConfig(config)
 }
 
 func (s *appStore) SaveBridgePermitJoin(enabled bool) error {
-	config, err := s.config.Load()
+	config, err := s.config.LoadHubConfig()
 	if err != nil {
 		return err
 	}
@@ -182,7 +182,7 @@ func (s *appStore) SaveBridgePermitJoin(enabled bool) error {
 
 	//s.reloadTasks(config) ??
 
-	return s.config.Save(config)
+	return s.config.SaveBridgeConfig(config)
 }
 
 func (s *appStore) SaveDeviceConfig(deviceconfig *settings.DeviceConfig) error {

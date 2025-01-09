@@ -5,11 +5,6 @@ import (
 	"time"
 )
 
-type BridgeConfig struct {
-	TimeExpireAt *utils.TimeInterval `json:"maxTimeAllowed"`
-	PermitJoin   bool                `json:"permitJoin"`
-}
-
 type DeviceConfig struct {
 	Id             string `json:"id"`
 	Disabled       bool   `json:"disabled"`
@@ -72,47 +67,61 @@ func DefaultBridgeConfig() *BridgeConfig {
 	}
 }
 
-type PersistedConfig struct {
+type HubConfig struct {
 	Devices map[string]*DeviceConfig `json:"devices"`
 	History *HistoryConfig           `json:"history"`
 	Logger  *LoggerConfig            `json:"logger"`
 }
-type InMemoryConfig struct {
-	Bridge *BridgeConfig `json:"bridge"`
+
+type BridgeConfig struct {
+	TimeExpireAt *utils.TimeInterval `json:"maxTimeAllowed"`
+	PermitJoin   bool                `json:"permitJoin"`
 }
 
-type AppConfigTest struct {
-	PersistedConfig *PersistedConfig `json:"persistedConfig"`
-	InMemoryConfig  *InMemoryConfig  `json:"inMemoryConfig"`
-}
-
-func NewAppConfigTest() *AppConfigTest {
-	return &AppConfigTest{
-		PersistedConfig: &PersistedConfig{
-			Devices: map[string]*DeviceConfig{},
-			History: DefaultHistoryConfig(),
-			Logger:  DefaultLoggingConfig(),
-		},
-		InMemoryConfig: &InMemoryConfig{},
+func NewHubConfig() *HubConfig {
+	return &HubConfig{
+		Devices: map[string]*DeviceConfig{},
+		History: DefaultHistoryConfig(),
+		Logger:  DefaultLoggingConfig(),
 	}
 }
 
 type AppConfig struct {
-	Devices map[string]*DeviceConfig `json:"devices"`
-	History *HistoryConfig           `json:"history"`
-	Logger  *LoggerConfig            `json:"logger"`
-	Bridge  *BridgeConfig            `json:"bridge"`
+	Hub    *HubConfig    `json:"hubConfig"`
+	Bridge *BridgeConfig `json:"bridgeConfig"`
+}
+
+func (s *AppConfig) AddDeviceConfig(cfg *DeviceConfig) {
+	s.Hub.Devices[cfg.Id] = cfg
 }
 
 func NewAppConfig() *AppConfig {
 	return &AppConfig{
-		Devices: map[string]*DeviceConfig{},
-		History: DefaultHistoryConfig(),
-		Logger:  DefaultLoggingConfig(),
-		Bridge:  DefaultBridgeConfig(),
+		Hub: &HubConfig{
+			Devices: map[string]*DeviceConfig{},
+			History: DefaultHistoryConfig(),
+			Logger:  DefaultLoggingConfig(),
+		},
+		Bridge: DefaultBridgeConfig(),
 	}
 }
 
-func (s *AppConfig) Add(cfg *DeviceConfig) {
-	s.Devices[cfg.Id] = cfg
-}
+// type AppConfig struct {
+// 	Devices map[string]*DeviceConfig `json:"devices"`
+// 	History *HistoryConfig           `json:"history"`
+// 	Logger  *LoggerConfig            `json:"logger"`
+// 	Bridge  *BridgeConfig            `json:"bridge"`
+// }
+
+// func NewAppConfig() *AppConfig {
+// 	return &AppConfig{
+// 		Devices: map[string]*DeviceConfig{},
+// 		History: DefaultHistoryConfig(),
+// 		Logger:  DefaultLoggingConfig(),
+// 		Bridge:  DefaultBridgeConfig(),
+// 	}
+// }
+
+// func (s *AppConfig) Add(cfg *DeviceConfig) {
+// 	s.Devices[cfg.Id] = cfg
+// }
