@@ -31,6 +31,7 @@ type HubController struct {
 	automationEngine                  automations.Engine
 	registrar                         *services.HubRegisterService
 	ctx                               context.Context
+	permitJoinManager                  *services.PermitJoinManager // temp sohuld be moved to bridge manager
 }
 
 func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context) *HubController {
@@ -59,6 +60,9 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 		h.processMessage(id, payload, "mqtt")
 	})
 
+	h.permitJoinManager = services.NewPermitJoinManager(func(enabled bool) {
+		h.store.SaveBridgePermitJoin(enabled)
+	})
 	// setup
 	h.mqtt.Connect()
 	h.mqtt.Publish("bridge/devices", nil) //zigbee2mqtt/ get devices for setup stuff
@@ -206,6 +210,10 @@ func (h *HubController) registerEventHubEvents() {
 		bytes, _ := json.Marshal(p)
 		err := json.Unmarshal(bytes, &req)
 
+
+		 check if permnit jois is actiovve already
+		 ifn ot set the timeout 
+		and in respone will start it 
 		if err != nil {
 			return errors.New("permit join failed. Invalid payload type")
 		}
@@ -214,8 +222,8 @@ func (h *HubController) registerEventHubEvents() {
 			return errors.New("permit join failed. Invalid timeout. (Max 254 seconds)")
 		}
 
-		if  req.TimeExpireAt.Value == 0{
-			return  errors.New("permit join failed. Invalid timeout. (0 seconds)")
+		if req.TimeExpireAt.Value == 0 {
+			return errors.New("permit join failed. Invalid timeout. (0 seconds)")
 		}
 
 		// convert it to the expected payload
@@ -385,7 +393,7 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 				var h = newBridgeDeviceInterviewRequestHandler(m.eventHub, m.mqtt)
 				m.handlers[id] = h
 			case "bridge/response/permit_join":
-				var h = newBridgePermitJoinRequestHandler(m.store, m.eventHub, m.mqtt)
+				var h = newBridgePermitJoinRequestHandler(m.permitJoinManager, m.eventHub, m.mqtt)
 				m.handlers[id] = h
 			case "bridge/devices":
 				var h = newBridgeConfigurationHandler(m.registrar, m.automationEngine, m.mqtt, m.eventHub, m.DeviceAvailabilityTimeoutOverride)

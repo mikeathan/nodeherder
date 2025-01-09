@@ -9,7 +9,6 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/models/logging"
-	"node-herder/store"
 	"node-herder/utils"
 	"strings"
 )
@@ -213,10 +212,7 @@ type bridgePermitJoinRequestHandler struct {
 	manager *services.PermitJoinManager
 }
 
-func newBridgePermitJoinRequestHandler(store store.AppStore, ws ws.EventHub, mqtt mqtt.MqttClient) *bridgePermitJoinRequestHandler {
-	manager := services.NewPermitJoinManager(func(enabled bool) {
-		store.SaveBridgePermitJoin(enabled)
-	})
+func newBridgePermitJoinRequestHandler(manager *services.PermitJoinManager, ws ws.EventHub, mqtt mqtt.MqttClient) *bridgePermitJoinRequestHandler {
 
 	return &bridgePermitJoinRequestHandler{manager: manager, topic: "bridge/response/permit_join", ws: ws, mqtt: mqtt}
 }
@@ -239,7 +235,7 @@ func (b *bridgePermitJoinRequestHandler) ProcessPayload(id string, connType stri
 			utils.LogInfof("Bridge Permit join set to %v ", enabled)
 
 			// need to get the timeout somehow
-			err := b.manager.Start(  )
+			err := b.manager.Start()
 			if err != nil {
 				utils.LogErrorf("error starting permit join %s", err.Error())
 				b.ws.Broadcast(ws.OperationFailed, fmt.Sprintf("error starting permit join %s", err.Error()))
