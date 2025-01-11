@@ -931,57 +931,59 @@ func TestHandleBridgeDeviceInterviewMessage(t *testing.T) {
 	wg.Wait()
 }
 
-// func TestHandleBridgePermitJoin(t *testing.T) {
-// 	wg := &sync.WaitGroup{}
-// 	wg.Add(1)
+func TestHandleBridgePermitJoin(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
 
-// 	wsHub := ws.NewWsHub()
-// 	wsHub.Start()
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
 
-// 	req := devices.NewBridgePermitJoinRequest(true, 10)
+	req := make(map[string]interface{})
+	req["value"] = true
+	req["time"] = 10
 
-// 	wsHub.OnBridgePermitJoin(func(p interface{}) error {
+	wsHub.OnBridgePermitJoin(func(p interface{}) error {
 
-// 		bytes := []byte(p.(string))
-// 		payload := make(map[string]interface{})
+		bytes := []byte(p.(string))
+		payload := make(map[string]interface{})
 
-// 		err := json.Unmarshal(bytes, &payload)
+		err := json.Unmarshal(bytes, &payload)
 
-// 		if err != nil {
-// 			fmt.Println(err.Error())
-// 			return errors.New("delete automation trigger failed. Invalid payload type")
-// 		}
+		if err != nil {
+			fmt.Println(err.Error())
+			return errors.New("delete automation trigger failed. Invalid payload type")
+		}
 
-// 		if payload["value"] != true {
-// 			t.Fatalf("Expected value %v', got '%v'", true, payload["value"])
-// 		}
+		if payload["value"] != true {
+			t.Fatalf("Expected value %v', got '%v'", true, payload["value"])
+		}
 
-// 		if payload["time"] != float64(10) {
-// 			t.Fatalf("Expected time %v', got '%v'", 10, payload["time"])
-// 		}
+		if payload["time"] != float64(10) {
+			t.Fatalf("Expected time %v', got '%v'", 10, payload["time"])
+		}
 
-// 		wg.Done()
-// 		return nil
-// 	})
+		wg.Done()
+		return nil
+	})
 
-// 	h := api.NewWsHandler(wsHub)
-// 	s, wsConn := NewTestWsServer(t, h)
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
 
-// 	defer s.Close()
-// 	defer wsConn.Close()
+	defer s.Close()
+	defer wsConn.Close()
 
-// 	reqBytes, _ := json.Marshal(req)
-// 	wsData := &ws.EventMessage{Type: ws.BridgePermitJoin, Payload: reqBytes}
-// 	msg, err := wsData.MarshalJSON()
-// 	if err != nil {
-// 		t.Fatal(err.Error())
-// 	}
+	reqBytes, _ := json.Marshal(req)
+	wsData := &ws.EventMessage{Type: ws.BridgePermitJoin, Payload: reqBytes}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 
-// 	SendMessage(t, wsConn, msg)
+	SendMessage(t, wsConn, msg)
 
-// 	// we dont send back response so just asset the logic in the hanlder
-// 	wg.Wait()
-// }
+	// we dont send back response so just asset the logic in the hanlder
+	wg.Wait()
+}
 
 func TestHandlingEnableRemoteLoggerMessage(t *testing.T) {
 	wsHub := ws.NewWsHub()

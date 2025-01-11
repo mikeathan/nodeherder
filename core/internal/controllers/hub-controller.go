@@ -33,7 +33,7 @@ type HubController struct {
 	automationEngine                  automations.Engine
 	registrar                         *services.HubRegisterService
 	ctx                               context.Context
-	requestQueue                      *repository.MemoryRepo[hub.Request]
+	requestContext                    *repository.MemoryRepo[hub.Request] // Needs Refactoring
 }
 
 func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context) *HubController {
@@ -45,7 +45,7 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 		responseHandlers:                  map[string]handler{},
 		DeviceAvailabilityTimeoutOverride: 3600,
 		ctx:                               ctx,
-		requestQueue:                      repository.NewMemoryRepo[hub.Request](),
+		requestContext:                    repository.NewMemoryRepo[hub.Request](),
 	}
 
 	h.registrar = services.NewHubRegisterService(store, eventHub, 3600)
@@ -222,14 +222,12 @@ func (h *HubController) registerEventHubEvents() {
 			return errors.New("permit join failed. Invalid timeout. (0 seconds)")
 		}
 
-
 		f := func(value bool) error {
 			return h.store.SaveBridgePermitJoin(value)
 		}
 
 		mqttReq := hub.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value, f)
-
-		h.requestQueue.Store(mqttReq.ID(), mqttReq)
+		h.requestContext.Store(mqttReq.ID(), mqttReq)
 
 		json, _ := json.Marshal(mqttReq)
 		h.mqtt.Publish("bridge/request/permit_join", json)
@@ -395,7 +393,7 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 				var h = newBridgeDeviceInterviewResponseHandler(m.eventHub, m.mqtt)
 				m.responseHandlers[id] = h
 			case "bridge/response/permit_join":
-				var h = newBridgePermitJoinResponseHandler(m.requestQueue, m.eventHub, m.mqtt)
+				var h = newBridgePermitJoinResponseHandler(m.requestContext, m.eventHub, m.mqtt)
 				m.responseHandlers[id] = h
 			case "bridge/devices":
 				var h = newBridgeConfigurationHandler(m.registrar, m.automationEngine, m.mqtt, m.eventHub, m.DeviceAvailabilityTimeoutOverride)

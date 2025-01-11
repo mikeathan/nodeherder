@@ -36,11 +36,11 @@ func (s *MemoryRepo[T]) Store(key string, value T) (bool, error) {
 }
 
 func (s *MemoryRepo[T]) Dequeue(key string) (T, error) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
 	if val, ok := s.store[key]; ok {
-		s.Remove(key)
+		delete(s.store, key)
 
 		return val, nil
 	}

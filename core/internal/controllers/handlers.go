@@ -232,9 +232,10 @@ func (b *bridgePermitJoinResponseHandler) ProcessPayload(id string, connType str
 		return err
 	}
 
+	// NOTE:
 	// that will need to be refactor, basically we look in repo for any request object with transaction id key
 	// if we find one then we process it
-	// that will run the timer 
+	// that will run the timer
 	if resp.Status == "ok" {
 		if enabled, ok := resp.Data["value"].(bool); ok {
 			utils.LogInfof("Bridge Permit join set to %v ", enabled)

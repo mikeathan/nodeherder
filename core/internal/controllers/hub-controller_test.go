@@ -747,6 +747,10 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 		t.Fatalf("want %s got %s", want, device.Properties["last_seen"])
 	}
 }
+func TestProcessorHandlesBridgePermitJoin(t *testing.T) {
+	TODO
+
+}
 
 func TestNewDeviceValuesAreBroadcastedOnly(t *testing.T) {
 	name := "device1"
