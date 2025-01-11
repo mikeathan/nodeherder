@@ -100,7 +100,7 @@ func CreateFileStoreWithAppConfig(appConfig *settings.AppConfig, mockClock *mock
 	if err != nil {
 		return nil, nil, err
 	}
-	err = settingsRepo.Save(appConfig)
+	err = settingsRepo.SaveAppConfig(appConfig)
 	if err != nil {
 		return nil, nil, err
 	}

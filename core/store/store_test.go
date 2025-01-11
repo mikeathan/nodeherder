@@ -59,7 +59,7 @@ func TestStoreSavesLoggerConfig(t *testing.T) {
 	})
 
 	appConfig := settings.NewAppConfig()
-	appConfig.History = settings.DefaultHistoryConfig()
+	appConfig.Hub.History = settings.DefaultHistoryConfig()
 	appStore, cleanup, err := utils_test.CreateFileStoreWithAppConfig(appConfig, mockClock)
 	if err != nil {
 		t.Fatalf("CreateFileStore failed. err %v ", err)
@@ -71,7 +71,7 @@ func TestStoreSavesLoggerConfig(t *testing.T) {
 		t.Fatalf("LoadAppConfig failed. err %v ", err)
 	}
 
-	if appConfig.Logger.EnableRemoteLogger != false {
+	if appConfig.Hub.Logger.EnableRemoteLogger != false {
 		t.Fatalf("Logger config EnableRemoteLogger is set")
 	}
 
@@ -83,7 +83,7 @@ func TestStoreSavesLoggerConfig(t *testing.T) {
 		t.Fatalf("LoadAppConfig failed. err %v ", err)
 	}
 
-	if appConfig.Logger.EnableRemoteLogger != true {
+	if appConfig.Hub.Logger.EnableRemoteLogger != true {
 		t.Fatalf("Logger config EnableRemoteLogger is not set")
 	}
 }
@@ -95,7 +95,7 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	})
 
 	appConfig := settings.NewAppConfig()
-	appConfig.History = settings.DefaultHistoryConfig()
+	appConfig.Hub.History = settings.DefaultHistoryConfig()
 	appStore, cleanup, err := utils_test.CreateFileStoreWithAppConfig(appConfig, mockClock)
 	if err != nil {
 		t.Fatalf("CreateFileStore failed. err %v ", err)
@@ -226,8 +226,8 @@ func TestStoreDeviceStoreDoesNotStoreMetricsIfDisabled(t *testing.T) {
 	appConfig := settings.NewAppConfig()
 	deviceConfig := settings.NewDeviceConfig(dev1.Id)
 	deviceConfig.MetricsEnabled = false
-	appConfig.Add(deviceConfig)
-	settingsRepo.Save(appConfig)
+	appConfig.AddDeviceConfig(deviceConfig)
+	settingsRepo.SaveAppConfig(appConfig)
 
 	// create metrics repo
 	var metricsStoreHandler = func(id string, data map[string]any) {
@@ -287,8 +287,8 @@ func TestStoreDeviceUpdateStoresMetricsIfEnabled(t *testing.T) {
 	appConfig := settings.NewAppConfig()
 	deviceConfig := settings.NewDeviceConfig(dev1.Id)
 	deviceConfig.MetricsEnabled = true
-	appConfig.Add(deviceConfig)
-	settingsRepo.Save(appConfig)
+	appConfig.AddDeviceConfig(deviceConfig)
+	settingsRepo.SaveAppConfig(appConfig)
 
 	wg.Add(1)
 	// create metrics repo
@@ -355,8 +355,8 @@ func TestStoreMetricsLimitsDataWithDefaultRateLimiter(t *testing.T) {
 	appConfig := settings.NewAppConfig()
 	deviceConfig := settings.NewDeviceConfig(dev1.Id)
 	deviceConfig.MetricsEnabled = true
-	appConfig.Add(deviceConfig)
-	settingsRepo.Save(appConfig)
+	appConfig.AddDeviceConfig(deviceConfig)
+	settingsRepo.SaveAppConfig(appConfig)
 
 	wg.Add(1)
 	metircsHits := 0
@@ -432,8 +432,8 @@ func TestStoreMetricsLimitsDataWithConfiguredRateLimiter(t *testing.T) {
 	deviceConfig := settings.NewDeviceConfig(dev1.Id)
 	deviceConfig.MetricsEnabled = true
 	deviceConfig.RateLimit = int(time.Millisecond.Milliseconds()) * 100
-	appConfig.Add(deviceConfig)
-	settingsRepo.Save(appConfig)
+	appConfig.AddDeviceConfig(deviceConfig)
+	settingsRepo.SaveAppConfig(appConfig)
 
 	wg.Add(10)
 	metircsHits := 0
@@ -513,8 +513,8 @@ func TestStoreMetricsLimitsDataWithMultipleDevicesConfiguredRateLimiter(t *testi
 	deviceConfig2 := settings.NewDeviceConfig(dev2.Id)
 	deviceConfig2.MetricsEnabled = true
 	deviceConfig2.RateLimit = int(time.Minute.Milliseconds()) // rate limit at 60000 ms
-	appConfig.Add(deviceConfig)
-	settingsRepo.Save(appConfig)
+	appConfig.AddDeviceConfig(deviceConfig)
+	settingsRepo.SaveAppConfig(appConfig)
 
 	expectedHits := map[string]int{}
 	expectedHits[dev1.Id] = 24 // TODO: numbers are wrong - needs redoing

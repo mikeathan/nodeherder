@@ -450,9 +450,7 @@ func (s *NopSettingsrepo) Save(config *settings.AppConfig) error {
 
 func (s *NopSettingsrepo) Load() (*settings.AppConfig, error) {
 	fmt.Println("Mocked settingsRepo Load")
-	return &settings.AppConfig{
-		Devices: map[string]*settings.DeviceConfig{},
-	}, nil
+	return settings.NewAppConfig(), nil
 }
 
 func (s *NopSettingsrepo) FindOrAddDeviceConfigIfNotExists(id string) (*settings.DeviceConfig, error) {
@@ -465,6 +463,27 @@ func (s *NopSettingsrepo) SaveDeviceConfig(deviceConfig *settings.DeviceConfig) 
 }
 func (s *NopSettingsrepo) Close() error {
 	fmt.Println("Mocked settingsRepo Close")
+	return nil
+}
+
+func (s *NopSettingsrepo) LoadBridgeConfig() (*settings.BridgeConfig, error) {
+
+	fmt.Println("Mocked settingsRepo LoadBridgeConfig")
+	return nil, nil
+}
+func (s *NopSettingsrepo) SaveBridgeConfig(bridgeConfig *settings.BridgeConfig) error {
+
+	fmt.Println("Mocked settingsRepo SaveBridgeConfig")
+	return nil
+}
+func (s *NopSettingsrepo) SaveHubConfig(hubConfig *settings.HubConfig) error {
+
+	fmt.Println("Mocked settingsRepo SaveHubConfig")
+	return nil
+}
+
+func (s *NopSettingsrepo) SaveAppConfig(appConfig *settings.AppConfig) error {
+	fmt.Println("Mocked settingsRepo SaveAppConfig")
 	return nil
 }
 

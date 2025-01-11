@@ -22,7 +22,7 @@ func TestFileSettingsRepositoryCanAddAndLoad(t *testing.T) {
 	defer repo.Close()
 
 	appConfig := createMockAppConfig()
-	err = repo.Save(appConfig)
+	err = repo.SaveAppConfig(appConfig)
 	if err != nil {
 		t.Errorf("save failed with %v", err.Error())
 	}
@@ -32,8 +32,8 @@ func TestFileSettingsRepositoryCanAddAndLoad(t *testing.T) {
 		t.Errorf("load failed with %v", err.Error())
 	}
 
-	for key, d := range res.Devices {
-		inputDev := appConfig.Devices[key]
+	for key, d := range res.Hub.Devices {
+		inputDev := appConfig.Hub.Devices[key]
 		if !reflect.DeepEqual(d, inputDev) {
 			t.Error("device config mismatch")
 		}
@@ -53,13 +53,13 @@ func TestFileSettingsRepositoryCanAddAndFindValue(t *testing.T) {
 	defer repo.Close()
 
 	appConfig := createMockAppConfig()
-	err = repo.Save(appConfig)
+	err = repo.SaveAppConfig(appConfig)
 	if err != nil {
 		t.Errorf("save failed with %v", err.Error())
 	}
 
-	dataKeys := make([]string, 0, len(appConfig.Devices))
-	for k := range appConfig.Devices {
+	dataKeys := make([]string, 0, len(appConfig.Hub.Devices))
+	for k := range appConfig.Hub.Devices {
 		dataKeys = append(dataKeys, k)
 	}
 	id := dataKeys[0]
@@ -69,7 +69,7 @@ func TestFileSettingsRepositoryCanAddAndFindValue(t *testing.T) {
 		t.Errorf("load failed with %v", err.Error())
 	}
 
-	input := appConfig.Devices[id]
+	input := appConfig.Hub.Devices[id]
 
 	if !reflect.DeepEqual(input, found) {
 		t.Error("device config mismatch")
@@ -89,7 +89,7 @@ func TestFileSettingsRepositoryCanAddNewDeviceConfig(t *testing.T) {
 	defer repo.Close()
 
 	appConfig := createMockAppConfig()
-	err = repo.Save(appConfig)
+	err = repo.SaveAppConfig(appConfig)
 	if err != nil {
 		t.Errorf("save failed with %v", err.Error())
 	}
@@ -124,7 +124,7 @@ func TestFileSettingsRepositoryCanUpdateExistingDeviceConfig(t *testing.T) {
 	defer repo.Close()
 
 	appConfig := createMockAppConfig()
-	err = repo.Save(appConfig)
+	err = repo.SaveAppConfig(appConfig)
 	if err != nil {
 		t.Errorf("save failed with %v", err.Error())
 	}
@@ -160,28 +160,28 @@ func createMockAppConfig() *settings.AppConfig {
 	cfg.Disabled = false
 	cfg.MetricsEnabled = true
 
-	appconfig.Add(cfg)
+	appconfig.AddDeviceConfig(cfg)
 
 	cfg2 := &settings.DeviceConfig{}
 	cfg2.Id = "x0erp09876"
 	cfg2.Disabled = true
 	cfg2.MetricsEnabled = false
 
-	appconfig.Add(cfg2)
+	appconfig.AddDeviceConfig(cfg2)
 
 	cfg3 := &settings.DeviceConfig{}
 	cfg3.Id = "x0lip1245h"
 	cfg3.Disabled = false
 	cfg3.MetricsEnabled = true
 
-	appconfig.Add(cfg3)
+	appconfig.AddDeviceConfig(cfg3)
 
 	cfg4 := &settings.DeviceConfig{}
 	cfg4.Id = "x9lo0124hggfs"
 	cfg4.Disabled = false
 	cfg4.MetricsEnabled = true
 
-	appconfig.Add(cfg4)
+	appconfig.AddDeviceConfig(cfg4)
 
 	return appconfig
 }
