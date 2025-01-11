@@ -14,7 +14,7 @@ const bridgeSettingsKeyName = "bridge_settings"
 
 type FileSettingsRepo struct {
 	persistantStorage storage.KeyValueDatabase
-	memoryStorage     *MemoryRepo[settings.BridgeConfig]
+	memoryStorage     *MemoryRepo[*settings.BridgeConfig]
 }
 
 func NewFileSettingsRepo() (settings.Repository, error) {
@@ -30,7 +30,7 @@ func NewFileSettingsRepoFromFile(filename string) (settings.Repository, error) {
 
 	return &FileSettingsRepo{
 		persistantStorage: kvdb,
-		memoryStorage:     NewMemoryRepo[settings.BridgeConfig](),
+		memoryStorage:     NewMemoryRepo[*settings.BridgeConfig](),
 	}, nil
 }
 

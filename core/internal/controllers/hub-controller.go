@@ -10,8 +10,10 @@ import (
 	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
+	"node-herder/models/hub"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
+	"node-herder/repository"
 	"node-herder/store"
 	"node-herder/utils/storage"
 	"strconv"
@@ -31,6 +33,7 @@ type HubController struct {
 	automationEngine                  automations.Engine
 	registrar                         *services.HubRegisterService
 	ctx                               context.Context
+	requestQueue                      *repository.MemoryRepo[hub.Request]
 }
 
 func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context) *HubController {
@@ -42,6 +45,7 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 		handlers:                          map[string]handler{},
 		DeviceAvailabilityTimeoutOverride: 3600,
 		ctx:                               ctx,
+		requestQueue:                      repository.NewMemoryRepo[hub.Request](),
 	}
 
 	h.registrar = services.NewHubRegisterService(store, eventHub, 3600)
@@ -57,10 +61,6 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 
 	h.mqtt.OnMessageHandler(func(id string, payload []byte) {
 		h.processMessage(id, payload, "mqtt")
-	})
-
-	h.permitJoinManager = services.NewActiveStateTimer(func(enabled bool) {
-		h.store.SaveBridgePermitJoin(enabled)
 	})
 
 	// setup
@@ -221,22 +221,24 @@ func (h *HubController) registerEventHubEvents() {
 		if req.TimeExpireAt.Value == 0 {
 			return errors.New("permit join failed. Invalid timeout. (0 seconds)")
 		}
-	
+
 		// convert it to the expected payload
 		bridgeReq := devices.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value)
 		json, _ := json.Marshal(bridgeReq)
 
+		// WIP
+
+		id := string(bridgeReq.TransactionId)
 		f := func(value bool) error {
 			return h.store.SaveBridgePermitJoin(value)
 		}
-
-		hubRequestQueue
-		// we need a central object to store pernding requests including the transaction id
-		// thne response reads that
-
-		pass transaction to requewst
 		t := utils.NewActiveStateTimer(f)
+		r := hub.NewActiveStateTimerRequest(id, time.Duration(bridgeReq.Time), t)
 
+		h.requestQueue.Store(id, r)
+
+		
+		
 		h.mqtt.Publish("bridge/request/permit_join", json)
 
 		return nil
@@ -400,7 +402,7 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 				var h = newBridgeDeviceInterviewRequestHandler(m.eventHub, m.mqtt)
 				m.handlers[id] = h
 			case "bridge/response/permit_join":
-				var h = newBridgePermitJoinRequestHandler(m.permitJoinManager, m.eventHub, m.mqtt)
+				var h = newBridgePermitJoinRequestHandler(m.requestQueue, m.eventHub, m.mqtt)
 				m.handlers[id] = h
 			case "bridge/devices":
 				var h = newBridgeConfigurationHandler(m.registrar, m.automationEngine, m.mqtt, m.eventHub, m.DeviceAvailabilityTimeoutOverride)

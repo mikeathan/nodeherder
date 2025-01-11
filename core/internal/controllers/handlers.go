@@ -8,7 +8,9 @@ import (
 	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
+	"node-herder/models/hub"
 	"node-herder/models/logging"
+	"node-herder/repository"
 	"node-herder/utils"
 	"strings"
 )
@@ -206,15 +208,15 @@ func (b *bridgeDeviceInterviewRequestHandler) ProcessPayload(id string, connType
 }
 
 type bridgePermitJoinRequestHandler struct {
-	topic   string
-	ws      ws.EventHub
-	mqtt    mqtt.MqttClient
-	manager *services.ActiveStateTimer
+	topic        string
+	ws           ws.EventHub
+	mqtt         mqtt.MqttClient
+	requestQueue *repository.MemoryRepo[hub.Request]
 }
 
-func newBridgePermitJoinRequestHandler(manager *services.TimerFunc, ws ws.EventHub, mqtt mqtt.MqttClient) *bridgePermitJoinRequestHandler {
+func newBridgePermitJoinRequestHandler(requestQueue *repository.MemoryRepo[hub.Request], ws ws.EventHub, mqtt mqtt.MqttClient) *bridgePermitJoinRequestHandler {
 
-	return &bridgePermitJoinRequestHandler{manager: manager, topic: "bridge/response/permit_join", ws: ws, mqtt: mqtt}
+	return &bridgePermitJoinRequestHandler{requestQueue: requestQueue, topic: "bridge/response/permit_join", ws: ws, mqtt: mqtt}
 }
 
 func (b *bridgePermitJoinRequestHandler) ProcessPayload(id string, connType string, payload []byte) error {
@@ -233,11 +235,20 @@ func (b *bridgePermitJoinRequestHandler) ProcessPayload(id string, connType stri
 	if resp.Status == "ok" {
 		if enabled, ok := resp.Data["value"].(bool); ok {
 
-			resp.Transaction use that 
+			if resp.Transaction != 0 {
+
+				r, err := b.requestQueue.Find(utils.ConvertInt32(resp.Transaction))
+				if err != nil {
+					utils.LogErrorf("error finding request %s", err.Error())
+					return nil
+				}
+				err = r.Process(enabled)
+
+			}
+
 			utils.LogInfof("Bridge Permit join set to %v ", enabled)
 
 			// need to get the timeout somehow
-			err := b.manager.Start()
 			if err != nil {
 				utils.LogErrorf("error starting permit join %s", err.Error())
 				b.ws.Broadcast(ws.OperationFailed, fmt.Sprintf("error starting permit join %s", err.Error()))

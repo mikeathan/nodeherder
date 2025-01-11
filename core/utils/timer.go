@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-
-
 type ActiveStateTimer struct {
 	mutex    sync.Mutex
 	active   bool
@@ -63,7 +61,7 @@ func (p *ActiveStateTimer) Start(duration time.Duration) error {
 	return nil
 }
 
-func (p *ActiveStateTimer) Stop(invokeCallback bool) {
+func (p *ActiveStateTimer) Stop(invokeCallback bool) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
@@ -74,8 +72,13 @@ func (p *ActiveStateTimer) Stop(invokeCallback bool) {
 	p.active = false
 
 	if invokeCallback {
-		p.callback(p.active)
+		err := p.callback(p.active)
+		if err != nil {
+			return err
+		}
 	}
 
 	LogInfof("timer stopped manually")
+
+	return nil
 }

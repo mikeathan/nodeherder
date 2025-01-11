@@ -15,15 +15,15 @@ func NewDeviceRemoveRequest(id string, force bool) *DeviceRemoveRequest {
 }
 
 type BridgePermitJoinRequest struct {
-	Value       bool   `json:"value"`
-	Time        int    `json:"time"`
-	Transaction uint32 `json:"transaction"`
+	Value         bool   `json:"value"`
+	Time          int    `json:"time"`
+	TransactionId uint32 `json:"transaction"`
 }
 
 func NewBridgePermitJoinRequest(value bool, time int) *BridgePermitJoinRequest {
 	return &BridgePermitJoinRequest{
-		Value:       value,
-		Time:        time,
-		Transaction: uuid.New().ID(),
+		Value:         value,
+		Time:          time,
+		TransactionId: uuid.New().ID(),
 	}
 }
