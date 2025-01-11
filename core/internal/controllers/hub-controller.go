@@ -28,7 +28,7 @@ type HubController struct {
 	mqtt                              mqtt.MqttClient
 	store                             store.AppStore
 	wp                                *utils.WorkerPool
-	handlers                          map[string]handler
+	responseHandlers                  map[string]handler
 	DeviceAvailabilityTimeoutOverride int
 	automationEngine                  automations.Engine
 	registrar                         *services.HubRegisterService
@@ -42,7 +42,7 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 		eventHub:                          eventHub,
 		store:                             store,
 		mqtt:                              mqtt,
-		handlers:                          map[string]handler{},
+		responseHandlers:                  map[string]handler{},
 		DeviceAvailabilityTimeoutOverride: 3600,
 		ctx:                               ctx,
 		requestQueue:                      repository.NewMemoryRepo[hub.Request](),
@@ -222,19 +222,16 @@ func (h *HubController) registerEventHubEvents() {
 			return errors.New("permit join failed. Invalid timeout. (0 seconds)")
 		}
 
-		// convert it to the expected payload
-
-		// WIP
 
 		f := func(value bool) error {
 			return h.store.SaveBridgePermitJoin(value)
 		}
 
-		hubReq := hub.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value, f)
+		mqttReq := hub.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value, f)
 
-		h.requestQueue.Store(id, hubReq)
+		h.requestQueue.Store(mqttReq.ID(), mqttReq)
 
-		json, _ := hubReq.ToJson()
+		json, _ := json.Marshal(mqttReq)
 		h.mqtt.Publish("bridge/request/permit_join", json)
 
 		return nil
@@ -384,38 +381,38 @@ func (m *HubController) deviceUpdated(device *devices.Device, data map[string]in
 
 func (m *HubController) processMessage(id string, payload []byte, connType string) error {
 
-	if _, ok := m.handlers[id]; !ok {
+	if _, ok := m.responseHandlers[id]; !ok {
 		if strings.HasPrefix(id, "bridge") {
 			switch id {
 
 			case "bridge/response/device/rename":
 				var h = newBridgeDeviceRenameResponseHandler(m.eventHub, m.mqtt)
-				m.handlers[id] = h
+				m.responseHandlers[id] = h
 			case "bridge/response/device/remove":
 				var h = newBridgeDeviceRemoveResponseHandler(m.registrar, m.eventHub, m.mqtt)
-				m.handlers[id] = h
+				m.responseHandlers[id] = h
 			case "bridge/response/device/interview":
-				var h = newBridgeDeviceInterviewRequestHandler(m.eventHub, m.mqtt)
-				m.handlers[id] = h
+				var h = newBridgeDeviceInterviewResponseHandler(m.eventHub, m.mqtt)
+				m.responseHandlers[id] = h
 			case "bridge/response/permit_join":
-				var h = newBridgePermitJoinRequestHandler(m.requestQueue, m.eventHub, m.mqtt)
-				m.handlers[id] = h
+				var h = newBridgePermitJoinResponseHandler(m.requestQueue, m.eventHub, m.mqtt)
+				m.responseHandlers[id] = h
 			case "bridge/devices":
 				var h = newBridgeConfigurationHandler(m.registrar, m.automationEngine, m.mqtt, m.eventHub, m.DeviceAvailabilityTimeoutOverride)
-				m.handlers[id] = h
+				m.responseHandlers[id] = h
 			case "bridge/logging":
 				var h = newBridgeLoggingHandler(m.eventHub)
-				m.handlers[id] = h
+				m.responseHandlers[id] = h
 			}
 		} else {
 			var h = newDeviceHandler(m.registrar, m.eventHub, m)
 			h.AvailabilityTimeoutInSeconds = m.DeviceAvailabilityTimeoutOverride
-			m.handlers[id] = h
+			m.responseHandlers[id] = h
 		}
 	}
 
-	var h handler = m.handlers[id]
-	return m.wp.AddTask(&messageTask{Id: id, Type: connType, Payload: payload, h: h})
+	var h handler = m.responseHandlers[id]
+	return m.wp.AddTask(&mqttResponseTask{Id: id, Type: connType, Payload: payload, h: h})
 }
 
 func convertToMap(payload []byte) (map[string]interface{}, error) {

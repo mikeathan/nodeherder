@@ -35,6 +35,18 @@ func (s *MemoryRepo[T]) Store(key string, value T) (bool, error) {
 	return !ok, nil
 }
 
+func (s *MemoryRepo[T]) Dequeue(key string) (T, error) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+
+	if val, ok := s.store[key]; ok {
+		s.Remove(key)
+
+		return val, nil
+	}
+	return *new(T), fmt.Errorf("key %v not found", key)
+}
+
 func (s *MemoryRepo[T]) Find(key string) (T, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()

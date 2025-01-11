@@ -15,19 +15,19 @@ import (
 	"strings"
 )
 
-type messageTask struct {
+type mqttResponseTask struct {
 	Id      string
 	Payload []byte
 	Type    string
 	h       handler
 }
 
-func (m *messageTask) OnFailure(err error) {
+func (m *mqttResponseTask) OnFailure(err error) {
 	// TODO: maybe do somethng wit the error
 	utils.LogErrorf("Job: %s Error: %s", m.Id, err.Error())
 }
 
-func (m *messageTask) Process() error {
+func (m *mqttResponseTask) Process() error {
 	return m.h.ProcessPayload(m.Id, m.Type, m.Payload)
 }
 
@@ -128,18 +128,18 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 	return nil
 }
 
-type bridgeDeviceRemoveRequestHandler struct {
+type bridgeDeviceRemoveResponseHandler struct {
 	topic     string
 	ws        ws.EventHub
 	mqtt      mqtt.MqttClient
 	registrar *services.HubRegisterService
 }
 
-func newBridgeDeviceRemoveResponseHandler(registrar *services.HubRegisterService, ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceRemoveRequestHandler {
-	return &bridgeDeviceRemoveRequestHandler{topic: "bridge/response/device/remove", registrar: registrar, ws: ws, mqtt: mqtt}
+func newBridgeDeviceRemoveResponseHandler(registrar *services.HubRegisterService, ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceRemoveResponseHandler {
+	return &bridgeDeviceRemoveResponseHandler{topic: "bridge/response/device/remove", registrar: registrar, ws: ws, mqtt: mqtt}
 }
 
-func (b *bridgeDeviceRemoveRequestHandler) ProcessPayload(id string, connType string, payload []byte) error {
+func (b *bridgeDeviceRemoveResponseHandler) ProcessPayload(id string, connType string, payload []byte) error {
 
 	utils.LogDebugf("bridge/response/device/remove %s", string(payload))
 	if !strings.HasPrefix(id, b.topic) {
@@ -171,17 +171,17 @@ func (b *bridgeDeviceRemoveRequestHandler) ProcessPayload(id string, connType st
 	return nil
 }
 
-type bridgeDeviceInterviewRequestHandler struct {
+type bridgeDeviceInterviewResponseHandler struct {
 	topic string
 	ws    ws.EventHub
 	mqtt  mqtt.MqttClient
 }
 
-func newBridgeDeviceInterviewRequestHandler(ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceInterviewRequestHandler {
-	return &bridgeDeviceInterviewRequestHandler{topic: "bridge/response/device/interview", ws: ws, mqtt: mqtt}
+func newBridgeDeviceInterviewResponseHandler(ws ws.EventHub, mqtt mqtt.MqttClient) *bridgeDeviceInterviewResponseHandler {
+	return &bridgeDeviceInterviewResponseHandler{topic: "bridge/response/device/interview", ws: ws, mqtt: mqtt}
 }
 
-func (b *bridgeDeviceInterviewRequestHandler) ProcessPayload(id string, connType string, payload []byte) error {
+func (b *bridgeDeviceInterviewResponseHandler) ProcessPayload(id string, connType string, payload []byte) error {
 
 	utils.LogDebugf("bridge/response/device/interview: %s", string(payload))
 	if !strings.HasPrefix(id, b.topic) {
@@ -207,19 +207,19 @@ func (b *bridgeDeviceInterviewRequestHandler) ProcessPayload(id string, connType
 	return nil
 }
 
-type bridgePermitJoinRequestHandler struct {
-	topic        string
-	ws           ws.EventHub
-	mqtt         mqtt.MqttClient
-	requestQueue *repository.MemoryRepo[hub.Request]
+type bridgePermitJoinResponseHandler struct {
+	topic string
+	ws    ws.EventHub
+	mqtt  mqtt.MqttClient
+	repo  *repository.MemoryRepo[hub.Request]
 }
 
-func newBridgePermitJoinRequestHandler(requestQueue *repository.MemoryRepo[hub.Request], ws ws.EventHub, mqtt mqtt.MqttClient) *bridgePermitJoinRequestHandler {
+func newBridgePermitJoinResponseHandler(repo *repository.MemoryRepo[hub.Request], ws ws.EventHub, mqtt mqtt.MqttClient) *bridgePermitJoinResponseHandler {
 
-	return &bridgePermitJoinRequestHandler{requestQueue: requestQueue, topic: "bridge/response/permit_join", ws: ws, mqtt: mqtt}
+	return &bridgePermitJoinResponseHandler{repo: repo, topic: "bridge/response/permit_join", ws: ws, mqtt: mqtt}
 }
 
-func (b *bridgePermitJoinRequestHandler) ProcessPayload(id string, connType string, payload []byte) error {
+func (b *bridgePermitJoinResponseHandler) ProcessPayload(id string, connType string, payload []byte) error {
 	utils.LogDebugf("bridge/response/permit_join: %s", string(payload))
 	if !strings.HasPrefix(id, b.topic) {
 		return nil
@@ -232,27 +232,26 @@ func (b *bridgePermitJoinRequestHandler) ProcessPayload(id string, connType stri
 		return err
 	}
 
+	// that will need to be refactor, basically we look in repo for any request object with transaction id key
+	// if we find one then we process it
+	// that will run the timer 
 	if resp.Status == "ok" {
 		if enabled, ok := resp.Data["value"].(bool); ok {
-
+			utils.LogInfof("Bridge Permit join set to %v ", enabled)
 			if resp.Transaction != 0 {
 
-				r, err := b.requestQueue.Find(utils.ConvertInt32(resp.Transaction))
+				req, err := b.repo.Dequeue(utils.ConvertInt32(resp.Transaction))
 				if err != nil {
-					utils.LogErrorf("error finding request %s", err.Error())
+					utils.LogErrorf("error finding permit join request %s", err.Error())
 					return nil
 				}
-				err = r.Process(enabled)
 
-			}
-
-			utils.LogInfof("Bridge Permit join set to %v ", enabled)
-
-			// need to get the timeout somehow
-			if err != nil {
-				utils.LogErrorf("error starting permit join %s", err.Error())
-				b.ws.Broadcast(ws.OperationFailed, fmt.Sprintf("error starting permit join %s", err.Error()))
-				return nil
+				err = req.Process(enabled)
+				if err != nil {
+					utils.LogErrorf("error starting permit join %s", err.Error())
+					b.ws.Broadcast(ws.OperationFailed, fmt.Sprintf("error starting permit join %s", err.Error()))
+					return nil
+				}
 			}
 		}
 		b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Bridge Permit join set to %v ", resp.Data["value"]))

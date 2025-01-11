@@ -1,7 +1,6 @@
 package hub
 
 import (
-	"encoding/json"
 	"errors"
 	"node-herder/utils"
 	"time"
@@ -32,10 +31,6 @@ func NewBridgePermitJoinRequest(value bool, time int, handler func(bool) error) 
 	}
 
 	return br
-}
-
-func (r *BridgePermitJoinRequest) ToJson() ([]byte, error) {
-	return json.Marshal(r)
 }
 
 func (r *BridgePermitJoinRequest) ID() string {
