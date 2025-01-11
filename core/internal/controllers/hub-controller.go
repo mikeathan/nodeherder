@@ -223,22 +223,18 @@ func (h *HubController) registerEventHubEvents() {
 		}
 
 		// convert it to the expected payload
-		bridgeReq := devices.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value)
-		json, _ := json.Marshal(bridgeReq)
 
 		// WIP
 
-		id := string(bridgeReq.TransactionId)
 		f := func(value bool) error {
 			return h.store.SaveBridgePermitJoin(value)
 		}
-		t := utils.NewActiveStateTimer(f)
-		r := hub.NewActiveStateTimerRequest(id, time.Duration(bridgeReq.Time), t)
 
-		h.requestQueue.Store(id, r)
+		hubReq := hub.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value, f)
 
-		
-		
+		h.requestQueue.Store(id, hubReq)
+
+		json, _ := hubReq.ToJson()
 		h.mqtt.Publish("bridge/request/permit_join", json)
 
 		return nil
