@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type PermitJoinManager struct {
+type ActiveStateTimer struct {
 	mutex    sync.Mutex
 	active   bool
 	endTime  time.Time
@@ -15,47 +15,50 @@ type PermitJoinManager struct {
 	callback func(bool)
 }
 
-func NewPermitJoinManager(timeoutHandler func(bool)) *PermitJoinManager {
-	return &PermitJoinManager{
-		callback: timeoutHandler,
+func NewActiveStateTimer(callback func(bool)) *ActiveStateTimer {
+	return &ActiveStateTimer{
+		callback: callback,
 	}
 }
 
-func (p *PermitJoinManager) Start(duration time.Duration) error {
+func (p *ActiveStateTimer) Start(duration time.Duration) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
 	if p.active {
-		return errors.New("permit join already active")
+		return errors.New("state already active")
 	}
 
+	err:= p.callback(p.active)
+
+	check for error
+
 	p.active = true
+	utils.LogInfo("state set to active")
+
 	p.endTime = time.Now().Add(duration)
 
 	if p.timer != nil {
 		p.timer.Stop()
 	}
 
-	// set inital state to true
-	p.callback(p.active)
-
 	p.timer = time.AfterFunc(duration, func() {
 		p.mutex.Lock()
 		defer p.mutex.Unlock()
 
 		p.active = false
-		utils.LogInfo("Permit join timeout")
+		utils.LogInfo("state set to inactive")
 
 		// on timeout set to false
 		p.callback(p.active)
 	})
 
-	utils.LogInfof("Permit join started for %s, ends at %s\n", duration, p.endTime)
+	utils.LogInfof("active state timer started for %s, ends at %s\n", duration, p.endTime)
 
 	return nil
 }
 
-func (p *PermitJoinManager) Stop(invokeCallback bool) {
+func (p *ActiveStateTimer) Stop(invokeCallback bool) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
@@ -69,5 +72,5 @@ func (p *PermitJoinManager) Stop(invokeCallback bool) {
 		p.callback(p.active)
 	}
 
-	utils.LogInfof("Permit join stopped manually")
+	utils.LogInfof("timer stopped manually")
 }

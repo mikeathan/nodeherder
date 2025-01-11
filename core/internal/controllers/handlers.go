@@ -209,10 +209,10 @@ type bridgePermitJoinRequestHandler struct {
 	topic   string
 	ws      ws.EventHub
 	mqtt    mqtt.MqttClient
-	manager *services.PermitJoinManager
+	manager *services.ActiveStateTimer
 }
 
-func newBridgePermitJoinRequestHandler(manager *services.PermitJoinManager, ws ws.EventHub, mqtt mqtt.MqttClient) *bridgePermitJoinRequestHandler {
+func newBridgePermitJoinRequestHandler(manager *services.TimerFunc, ws ws.EventHub, mqtt mqtt.MqttClient) *bridgePermitJoinRequestHandler {
 
 	return &bridgePermitJoinRequestHandler{manager: manager, topic: "bridge/response/permit_join", ws: ws, mqtt: mqtt}
 }

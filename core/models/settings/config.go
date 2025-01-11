@@ -78,6 +78,13 @@ type BridgeConfig struct {
 	PermitJoin   bool                `json:"permitJoin"`
 }
 
+func NewBridgeConfig() *BridgeConfig {
+	return &BridgeConfig{
+		TimeExpireAt: utils.IntervalFromSeconds(120),
+		PermitJoin:   false,
+	}
+}
+
 func NewHubConfig() *HubConfig {
 	return &HubConfig{
 		Devices: map[string]*DeviceConfig{},

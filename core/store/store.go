@@ -91,7 +91,7 @@ func NewAppStore(devices devices.Repository, metrics metrics.Repository, config 
 	}
 
 	deviceConfigs := make(map[string]*settings.DeviceConfig)
-	for _, dev := range appconfig.Devices {
+	for _, dev := range appconfig.Hub.Devices {
 		deviceConfigs[dev.Id] = dev
 	}
 
@@ -173,12 +173,12 @@ func (s *appStore) SaveLoggerConfig(loggerConfig *settings.LoggerConfig) error {
 }
 
 func (s *appStore) SaveBridgePermitJoin(enabled bool) error {
-	config, err := s.config.LoadHubConfig()
+	config, err := s.config.LoadBridgeConfig()
 	if err != nil {
 		return err
 	}
 
-	config.Bridge.PermitJoin = enabled
+	config.PermitJoin = enabled
 
 	//s.reloadTasks(config) ??
 

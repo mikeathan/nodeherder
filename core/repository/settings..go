@@ -55,12 +55,12 @@ func (s *FileSettingsRepo) SaveAppConfig(value *settings.AppConfig) error {
 }
 
 
-func (s *FileSettingsRepo) LoadBridgeConfig() (*settings.biq, error) {
+func (s *FileSettingsRepo) LoadBridgeConfig() (*settings.BridgeConfig, error) {
 		buffer, err := s.persistantStorage.Get([]byte(bridgeSettingsKeyName))
 	if err != nil {
 		return nil, err
 	}
-	config := settings.NewBridgeConfig()
+	config := settings.DefaultBridgeConfig()
 	if buffer != nil {
 		err = json.Unmarshal(buffer, &config)
 		if err != nil {

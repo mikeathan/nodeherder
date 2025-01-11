@@ -31,7 +31,6 @@ type HubController struct {
 	automationEngine                  automations.Engine
 	registrar                         *services.HubRegisterService
 	ctx                               context.Context
-	permitJoinManager                  *services.PermitJoinManager // temp sohuld be moved to bridge manager
 }
 
 func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context) *HubController {
@@ -60,9 +59,10 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 		h.processMessage(id, payload, "mqtt")
 	})
 
-	h.permitJoinManager = services.NewPermitJoinManager(func(enabled bool) {
+	h.permitJoinManager = services.NewActiveStateTimer(func(enabled bool) {
 		h.store.SaveBridgePermitJoin(enabled)
 	})
+
 	// setup
 	h.mqtt.Connect()
 	h.mqtt.Publish("bridge/devices", nil) //zigbee2mqtt/ get devices for setup stuff
@@ -210,10 +210,6 @@ func (h *HubController) registerEventHubEvents() {
 		bytes, _ := json.Marshal(p)
 		err := json.Unmarshal(bytes, &req)
 
-
-		 check if permnit jois is actiovve already
-		 ifn ot set the timeout 
-		and in respone will start it 
 		if err != nil {
 			return errors.New("permit join failed. Invalid payload type")
 		}
@@ -226,9 +222,19 @@ func (h *HubController) registerEventHubEvents() {
 			return errors.New("permit join failed. Invalid timeout. (0 seconds)")
 		}
 
+		// we create a timer callback object
+		//and set it as pendng permit join request
+		// in the reponse we check to see if we have a pending request
+		// and execute it with the value from the response
+		
 		// convert it to the expected payload
 		bridgeReq := devices.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value)
 		json, _ := json.Marshal(bridgeReq)
+
+		we can have a start process callback but then we need more abstractionbridgeReq
+
+		// add pending request to the permit join manager
+	
 
 		h.mqtt.Publish("bridge/request/permit_join", json)
 
