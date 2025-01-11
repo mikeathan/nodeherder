@@ -1,26 +1,30 @@
-package services
+package utils
 
 import (
 	"errors"
-	"node-herder/utils"
 	"sync"
 	"time"
 )
+
+
 
 type ActiveStateTimer struct {
 	mutex    sync.Mutex
 	active   bool
 	endTime  time.Time
 	timer    *time.Timer
-	callback func(bool)
+	callback func(bool) error
 }
 
-func NewActiveStateTimer(callback func(bool)) *ActiveStateTimer {
+func NewActiveStateTimer(callback func(bool) error) *ActiveStateTimer {
 	return &ActiveStateTimer{
 		callback: callback,
 	}
 }
 
+// Timer for active state
+// - if inactive, set state to active and start timer. state is set back to inactive after duration
+// - if active, exit early
 func (p *ActiveStateTimer) Start(duration time.Duration) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
@@ -29,12 +33,13 @@ func (p *ActiveStateTimer) Start(duration time.Duration) error {
 		return errors.New("state already active")
 	}
 
-	err:= p.callback(p.active)
-
-	check for error
+	err := p.callback(p.active)
+	if err != nil {
+		return err
+	}
 
 	p.active = true
-	utils.LogInfo("state set to active")
+	LogInfo("state set to active")
 
 	p.endTime = time.Now().Add(duration)
 
@@ -47,13 +52,13 @@ func (p *ActiveStateTimer) Start(duration time.Duration) error {
 		defer p.mutex.Unlock()
 
 		p.active = false
-		utils.LogInfo("state set to inactive")
+		LogInfo("state set to inactive")
 
 		// on timeout set to false
 		p.callback(p.active)
 	})
 
-	utils.LogInfof("active state timer started for %s, ends at %s\n", duration, p.endTime)
+	LogInfof("active state timer started for %s, ends at %s\n", duration, p.endTime)
 
 	return nil
 }
@@ -72,5 +77,5 @@ func (p *ActiveStateTimer) Stop(invokeCallback bool) {
 		p.callback(p.active)
 	}
 
-	utils.LogInfof("timer stopped manually")
+	LogInfof("timer stopped manually")
 }

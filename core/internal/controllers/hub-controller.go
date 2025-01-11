@@ -221,20 +221,21 @@ func (h *HubController) registerEventHubEvents() {
 		if req.TimeExpireAt.Value == 0 {
 			return errors.New("permit join failed. Invalid timeout. (0 seconds)")
 		}
-
-		// we create a timer callback object
-		//and set it as pendng permit join request
-		// in the reponse we check to see if we have a pending request
-		// and execute it with the value from the response
-		
+	
 		// convert it to the expected payload
 		bridgeReq := devices.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value)
 		json, _ := json.Marshal(bridgeReq)
 
-		we can have a start process callback but then we need more abstractionbridgeReq
+		f := func(value bool) error {
+			return h.store.SaveBridgePermitJoin(value)
+		}
 
-		// add pending request to the permit join manager
-	
+		hubRequestQueue
+		// we need a central object to store pernding requests including the transaction id
+		// thne response reads that
+
+		pass transaction to requewst
+		t := utils.NewActiveStateTimer(f)
 
 		h.mqtt.Publish("bridge/request/permit_join", json)
 

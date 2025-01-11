@@ -232,6 +232,8 @@ func (b *bridgePermitJoinRequestHandler) ProcessPayload(id string, connType stri
 
 	if resp.Status == "ok" {
 		if enabled, ok := resp.Data["value"].(bool); ok {
+
+			resp.Transaction use that 
 			utils.LogInfof("Bridge Permit join set to %v ", enabled)
 
 			// need to get the timeout somehow
@@ -260,9 +262,10 @@ func newBridgeDeviceRenameResponseHandler(ws ws.EventHub, mqtt mqtt.MqttClient) 
 }
 
 type bridgeResponse struct {
-	Data   map[string]interface{} `json:"data"`
-	Status string                 `json:"status"`
-	Error  string                 `json:"error"`
+	Data        map[string]interface{} `json:"data"`
+	Status      string                 `json:"status"`
+	Error       string                 `json:"error"`
+	Transaction uint32                 `json:"transaction"`
 }
 
 type bridgeLoggingResponse struct {
