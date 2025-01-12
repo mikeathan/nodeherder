@@ -748,8 +748,46 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 	}
 }
 func TestProcessorHandlesBridgePermitJoin(t *testing.T) {
-	TODO
+	store := utils_test.CreateStore()
+	mqtt := &mocks.MockMqttClient{}
 
+	broadcast := func(eventName string, data interface{}) error {
+
+		req := settings.BridgeConfig{}
+		bytes, _ := json.Marshal(data)
+		err := json.Unmarshal(bytes, &req)
+		if err != nil {
+			t.Fatalf("failed to unmarshal payload %v", err)
+		}
+
+		response:=controllers.NewBridgeResponse()
+		response.Status = "ok"
+		response.Transaction = 12345
+		response.Data["value"] = req.PermitJoin
+		jsonPayload, _ := json.Marshal(response)
+
+		will need to mock
+		// f := func(value bool) error {
+		// 	return h.store.SaveBridgePermitJoin(value)
+		// }
+
+		// mqttReq := hub.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value, f)
+		// h.requestContext.Store(mqttReq.ID(), mqttReq)
+
+
+		mqtt.Publish("bridge/response/permit_join", jsonPayload)
+
+		// simulate bridge response for permit join
+
+		return nil
+	}
+
+	eventHub := newMockBroadcastEventHub(broadcast)
+	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+
+	req:=settings.NewBridgeConfig()
+	eventHub.Broadcast(ws.BridgePermitJoin, req)
+	time.Sleep(5 * time.Second)
 }
 
 func TestNewDeviceValuesAreBroadcastedOnly(t *testing.T) {

@@ -13,7 +13,6 @@ import (
 	"node-herder/models/hub"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
-	"node-herder/repository"
 	"node-herder/store"
 	"node-herder/utils/storage"
 	"strconv"
@@ -33,7 +32,6 @@ type HubController struct {
 	automationEngine                  automations.Engine
 	registrar                         *services.HubRegisterService
 	ctx                               context.Context
-	requestContext                    *repository.MemoryRepo[hub.Request] // Needs Refactoring
 }
 
 func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context) *HubController {
@@ -45,7 +43,6 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 		responseHandlers:                  map[string]handler{},
 		DeviceAvailabilityTimeoutOverride: 3600,
 		ctx:                               ctx,
-		requestContext:                    repository.NewMemoryRepo[hub.Request](),
 	}
 
 	h.registrar = services.NewHubRegisterService(store, eventHub, 3600)
@@ -227,7 +224,7 @@ func (h *HubController) registerEventHubEvents() {
 		}
 
 		mqttReq := hub.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value, f)
-		h.requestContext.Store(mqttReq.ID(), mqttReq)
+		h.eventHub.Context().Store(mqttReq.ID(), mqttReq)
 
 		json, _ := json.Marshal(mqttReq)
 		h.mqtt.Publish("bridge/request/permit_join", json)
@@ -393,7 +390,7 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 				var h = newBridgeDeviceInterviewResponseHandler(m.eventHub, m.mqtt)
 				m.responseHandlers[id] = h
 			case "bridge/response/permit_join":
-				var h = newBridgePermitJoinResponseHandler(m.requestContext, m.eventHub, m.mqtt)
+				var h = newBridgePermitJoinResponseHandler(m.eventHub, m.mqtt)
 				m.responseHandlers[id] = h
 			case "bridge/devices":
 				var h = newBridgeConfigurationHandler(m.registrar, m.automationEngine, m.mqtt, m.eventHub, m.DeviceAvailabilityTimeoutOverride)

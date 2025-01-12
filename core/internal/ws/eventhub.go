@@ -3,6 +3,8 @@ package ws
 import (
 	"encoding/json"
 	"net/http"
+	"node-herder/models/hub"
+	"node-herder/repository"
 	"node-herder/utils"
 )
 
@@ -70,6 +72,7 @@ type EventHub interface {
 	OnSaveHistoryConfig(func(payload interface{}) error)
 	OnSaveLoggerConfig(func(payload interface{}) error)
 	HandleRequest(w http.ResponseWriter, r *http.Request) error
+	Context() *repository.MemoryRepo[hub.Request]
 }
 
 type eventHubImpl struct {
@@ -91,6 +94,7 @@ type eventHubImpl struct {
 	onSaveDeviceConfig        func(interface{}) error
 	onSaveHistoryConfig       func(interface{}) error
 	onSaveLoggerConfig        func(interface{}) error
+	requestContext            *repository.MemoryRepo[hub.Request]
 }
 
 func NewWsHub() EventHub {
@@ -113,7 +117,12 @@ func NewWsHub() EventHub {
 		onSaveDeviceConfig:        func(payload interface{}) error { return nil },
 		onSaveHistoryConfig:       func(payload interface{}) error { return nil },
 		onSaveLoggerConfig:        func(payload interface{}) error { return nil },
+		requestContext:            repository.NewMemoryRepo[hub.Request](),
 	}
+}
+
+func (h *eventHubImpl) Context() *repository.MemoryRepo[hub.Request] {
+	return h.requestContext
 }
 
 func (h *eventHubImpl) HandleRequest(w http.ResponseWriter, r *http.Request) error {

@@ -8,9 +8,7 @@ import (
 	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
-	"node-herder/models/hub"
 	"node-herder/models/logging"
-	"node-herder/repository"
 	"node-herder/utils"
 	"strings"
 )
@@ -146,7 +144,7 @@ func (b *bridgeDeviceRemoveResponseHandler) ProcessPayload(id string, connType s
 		return nil
 	}
 
-	resp := new(bridgeResponse)
+	resp := new(BridgeResponse)
 	resp.Data = map[string]interface{}{}
 	err := json.Unmarshal(payload, &resp)
 
@@ -188,7 +186,7 @@ func (b *bridgeDeviceInterviewResponseHandler) ProcessPayload(id string, connTyp
 		return nil
 	}
 
-	resp := new(bridgeResponse)
+	resp := new(BridgeResponse)
 	resp.Data = map[string]interface{}{}
 	err := json.Unmarshal(payload, &resp)
 
@@ -211,12 +209,11 @@ type bridgePermitJoinResponseHandler struct {
 	topic string
 	ws    ws.EventHub
 	mqtt  mqtt.MqttClient
-	repo  *repository.MemoryRepo[hub.Request]
 }
 
-func newBridgePermitJoinResponseHandler(repo *repository.MemoryRepo[hub.Request], ws ws.EventHub, mqtt mqtt.MqttClient) *bridgePermitJoinResponseHandler {
+func newBridgePermitJoinResponseHandler(ws ws.EventHub, mqtt mqtt.MqttClient) *bridgePermitJoinResponseHandler {
 
-	return &bridgePermitJoinResponseHandler{repo: repo, topic: "bridge/response/permit_join", ws: ws, mqtt: mqtt}
+	return &bridgePermitJoinResponseHandler{topic: "bridge/response/permit_join", ws: ws, mqtt: mqtt}
 }
 
 func (b *bridgePermitJoinResponseHandler) ProcessPayload(id string, connType string, payload []byte) error {
@@ -224,7 +221,7 @@ func (b *bridgePermitJoinResponseHandler) ProcessPayload(id string, connType str
 	if !strings.HasPrefix(id, b.topic) {
 		return nil
 	}
-	resp := new(bridgeResponse)
+	resp := new(BridgeResponse)
 	resp.Data = map[string]interface{}{}
 	err := json.Unmarshal(payload, &resp)
 
@@ -241,7 +238,7 @@ func (b *bridgePermitJoinResponseHandler) ProcessPayload(id string, connType str
 			utils.LogInfof("Bridge Permit join set to %v ", enabled)
 			if resp.Transaction != 0 {
 
-				req, err := b.repo.Dequeue(utils.ConvertInt32(resp.Transaction))
+				req, err := b.ws.Context().Dequeue(utils.ConvertInt32(resp.Transaction))
 				if err != nil {
 					utils.LogErrorf("error finding permit join request %s", err.Error())
 					return nil
@@ -272,11 +269,20 @@ func newBridgeDeviceRenameResponseHandler(ws ws.EventHub, mqtt mqtt.MqttClient) 
 	return &bridgeDeviceRenameResponseHandler{topic: "bridge/response/device/rename", ws: ws, mqtt: mqtt}
 }
 
-type bridgeResponse struct {
+type BridgeResponse struct {
 	Data        map[string]interface{} `json:"data"`
 	Status      string                 `json:"status"`
 	Error       string                 `json:"error"`
 	Transaction uint32                 `json:"transaction"`
+}
+
+func NewBridgeResponse() *BridgeResponse {
+	return &BridgeResponse{
+		Data:        map[string]interface{}{},
+		Status:      "",
+		Error:       "",
+		Transaction: 0,
+	}
 }
 
 type bridgeLoggingResponse struct {
@@ -291,7 +297,7 @@ func (b *bridgeDeviceRenameResponseHandler) ProcessPayload(id string, connType s
 		return nil
 	}
 
-	resp := new(bridgeResponse)
+	resp := new(BridgeResponse)
 	resp.Data = map[string]interface{}{}
 	err := json.Unmarshal(payload, &resp)
 	if err != nil {
