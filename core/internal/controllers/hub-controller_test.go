@@ -749,11 +749,12 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 	}
 }
 
-func TestProcessorHandlesBridgePermitJoin(t *testing.T) {
+func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {
 	wg := sync.WaitGroup{}
-	wg.Add(1)
+	wg.Add(2)
 
 	callbackCounter := 0
+
 	// we dont need tasks here just using it as it using valid settings repo
 	tasks := []store.Task{}
 	store, cleanup, err := utils_test.CreateStoreWithTasks(tasks)
@@ -780,11 +781,12 @@ func TestProcessorHandlesBridgePermitJoin(t *testing.T) {
 
 		f := func(value bool) error {
 
+			// we are expecting to hit it twice, once initally and another one from the timeout
 			expectedValue := true
 			if callbackCounter == 1 {
 				expectedValue = false
 			}
-			if callbackCounter > 1{
+			if callbackCounter > 1 {
 				t.Fatalf("callbackCounter should be less than 2 got %v", callbackCounter)
 				return fmt.Errorf("failed")
 			}
@@ -822,14 +824,13 @@ func TestProcessorHandlesBridgePermitJoin(t *testing.T) {
 
 	req := settings.NewBridgeConfig()
 	req.PermitJoin = true
-	req.TimeExpireAt.Value = 1
+	req.TimeExpireAt.Value = 1 // 1 second expiration
 
 	eventHub.Broadcast(ws.BridgePermitJoin, req)
 
-	wg.Wait()
+	time.Sleep(200 * time.Millisecond)
 
-	time.Sleep(500 * time.Millisecond)
-
+	// assert bridge permit join is set to true, from initial request callback
 	bridgeConfig, err := store.LoadBridgeConfig()
 	if err != nil {
 		t.Fatalf("error loading bridge config %s", err.Error())
@@ -838,7 +839,123 @@ func TestProcessorHandlesBridgePermitJoin(t *testing.T) {
 		t.Fatalf("want %v got %v", true, bridgeConfig.PermitJoin)
 	}
 
-	time.Sleep(5 * time.Second)
+	wg.Wait()
+
+	//  assert bridge permit join is set to false, from timeout callback
+	bridgeConfig, err = store.LoadBridgeConfig()
+	if err != nil {
+		t.Fatalf("error loading bridge config %s", err.Error())
+	}
+	if bridgeConfig.PermitJoin != false {
+		t.Fatalf("want %v got %v", false, bridgeConfig.PermitJoin)
+	}
+}
+
+func TestProcessorHandlesBridgePermitJoinRejectRequestwhenActive(t *testing.T) {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	callbackCounter := 0
+
+	// we dont need tasks here just using it as it using valid settings repo
+	tasks := []store.Task{}
+	store, cleanup, err := utils_test.CreateStoreWithTasks(tasks)
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+
+	mqtt := &mocks.MockMqttClient{}
+
+	eventHub := mocks.NewMockEventHub()
+	broadcastHandler := func(eventName string, data interface{}) error {
+
+		if eventName != ws.BridgePermitJoin {
+			return nil
+		}
+		req := settings.BridgeConfig{}
+		bytes, _ := json.Marshal(data)
+		err := json.Unmarshal(bytes, &req)
+		if err != nil {
+			t.Fatalf("failed to unmarshal payload %v", err)
+			return err
+		}
+
+		f := func(value bool) error {
+
+			// we are expecting to hit it twice, once initally and another one from the timeout
+			if callbackCounter == 1 {
+				wg.Add(1)
+			}
+			if callbackCounter > 1 {
+				t.Fatalf("callbackCounter should be less than 2 got %v", callbackCounter)
+				return fmt.Errorf("failed")
+			}
+
+			if value != true {
+				t.Fatalf("want %v got %v", true, value)
+				return fmt.Errorf("failed")
+			}
+
+			err = store.SaveBridgePermitJoin(value)
+			callbackCounter++
+			wg.Done()
+
+			return err
+		}
+
+		mqttReq := hub.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value, f)
+		eventHub.Context().Store(mqttReq.ID(), mqttReq)
+
+		response := controllers.NewBridgeResponse()
+		response.Status = "ok"
+		response.Transaction = mqttReq.TransactionId
+		response.Data["value"] = req.PermitJoin
+		jsonPayload, _ := json.Marshal(response)
+
+		mqtt.Publish("bridge/response/permit_join", jsonPayload)
+
+		// simulate bridge response for permit join
+
+		return nil
+	}
+	eventHub.SetMockBroadcastEvent(broadcastHandler)
+
+	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+
+	req := settings.NewBridgeConfig()
+	req.PermitJoin = true
+	req.TimeExpireAt.Value = 120 // 2 min second so we can reject second request
+
+	// send first request
+	eventHub.Broadcast(ws.BridgePermitJoin, req)
+
+	time.Sleep(200 * time.Millisecond)
+
+	// assert bridge permit join is set to true, from initial request callback
+	bridgeConfig, err := store.LoadBridgeConfig()
+	if err != nil {
+		t.Fatalf("error loading bridge config %s", err.Error())
+	}
+	if bridgeConfig.PermitJoin != true {
+		t.Fatalf("want %v got %v", true, bridgeConfig.PermitJoin)
+	}
+
+	wg.Wait()
+
+	// send second request while first one is active
+	eventHub.Broadcast(ws.BridgePermitJoin, req)
+
+	//  assert bridge permit join is still set to true,
+	bridgeConfig, err = store.LoadBridgeConfig()
+	if err != nil {
+		t.Fatalf("error loading bridge config %s", err.Error())
+	}
+	if bridgeConfig.PermitJoin != true {
+		t.Fatalf("want %v got %v", true, bridgeConfig.PermitJoin)
+	}
+
+	wg.Wait()
 
 }
 
