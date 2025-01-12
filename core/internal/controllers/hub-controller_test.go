@@ -10,6 +10,7 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/mocks"
 	"node-herder/models/devices"
+	"node-herder/models/hub"
 	"node-herder/models/logging"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
@@ -751,6 +752,7 @@ func TestProcessorHandlesBridgePermitJoin(t *testing.T) {
 	store := utils_test.CreateStore()
 	mqtt := &mocks.MockMqttClient{}
 
+	eventHub := newMockBroadcastEventHub(broadcast)
 	broadcast := func(eventName string, data interface{}) error {
 
 		req := settings.BridgeConfig{}
@@ -760,20 +762,18 @@ func TestProcessorHandlesBridgePermitJoin(t *testing.T) {
 			t.Fatalf("failed to unmarshal payload %v", err)
 		}
 
-		response:=controllers.NewBridgeResponse()
+		response := controllers.NewBridgeResponse()
 		response.Status = "ok"
 		response.Transaction = 12345
 		response.Data["value"] = req.PermitJoin
 		jsonPayload, _ := json.Marshal(response)
 
-		will need to mock
-		// f := func(value bool) error {
-		// 	return h.store.SaveBridgePermitJoin(value)
-		// }
+		f := func(value bool) error {
+			return store.SaveBridgePermitJoin(value)
+		}
 
-		// mqttReq := hub.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value, f)
-		// h.requestContext.Store(mqttReq.ID(), mqttReq)
-
+		mqttReq := hub.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value, f)
+		eventHub.Context().Store(mqttReq.ID(), mqttReq)
 
 		mqtt.Publish("bridge/response/permit_join", jsonPayload)
 
@@ -782,10 +782,9 @@ func TestProcessorHandlesBridgePermitJoin(t *testing.T) {
 		return nil
 	}
 
-	eventHub := newMockBroadcastEventHub(broadcast)
 	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
 
-	req:=settings.NewBridgeConfig()
+	req := settings.NewBridgeConfig()
 	eventHub.Broadcast(ws.BridgePermitJoin, req)
 	time.Sleep(5 * time.Second)
 }
