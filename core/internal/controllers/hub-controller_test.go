@@ -748,32 +748,67 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 		t.Fatalf("want %s got %s", want, device.Properties["last_seen"])
 	}
 }
+
 func TestProcessorHandlesBridgePermitJoin(t *testing.T) {
-	store := utils_test.CreateStore()
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	callbackCounter := 0
+	// we dont need tasks here just using it as it using valid settings repo
+	tasks := []store.Task{}
+	store, cleanup, err := utils_test.CreateStoreWithTasks(tasks)
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+
 	mqtt := &mocks.MockMqttClient{}
 
-	eventHub := newMockBroadcastEventHub(broadcast)
-	broadcast := func(eventName string, data interface{}) error {
+	eventHub := mocks.NewMockEventHub()
+	broadcastHandler := func(eventName string, data interface{}) error {
 
+		if eventName != ws.BridgePermitJoin {
+			return nil
+		}
 		req := settings.BridgeConfig{}
 		bytes, _ := json.Marshal(data)
 		err := json.Unmarshal(bytes, &req)
 		if err != nil {
 			t.Fatalf("failed to unmarshal payload %v", err)
+			return err
 		}
 
-		response := controllers.NewBridgeResponse()
-		response.Status = "ok"
-		response.Transaction = 12345
-		response.Data["value"] = req.PermitJoin
-		jsonPayload, _ := json.Marshal(response)
-
 		f := func(value bool) error {
-			return store.SaveBridgePermitJoin(value)
+
+			expectedValue := true
+			if callbackCounter == 1 {
+				expectedValue = false
+			}
+			if callbackCounter > 1{
+				t.Fatalf("callbackCounter should be less than 2 got %v", callbackCounter)
+				return fmt.Errorf("failed")
+			}
+
+			if value != expectedValue {
+				t.Fatalf("want %v got %v", expectedValue, value)
+				return fmt.Errorf("failed")
+			}
+
+			err = store.SaveBridgePermitJoin(value)
+			callbackCounter++
+			wg.Done()
+
+			return err
 		}
 
 		mqttReq := hub.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value, f)
 		eventHub.Context().Store(mqttReq.ID(), mqttReq)
+
+		response := controllers.NewBridgeResponse()
+		response.Status = "ok"
+		response.Transaction = mqttReq.TransactionId
+		response.Data["value"] = req.PermitJoin
+		jsonPayload, _ := json.Marshal(response)
 
 		mqtt.Publish("bridge/response/permit_join", jsonPayload)
 
@@ -781,12 +816,30 @@ func TestProcessorHandlesBridgePermitJoin(t *testing.T) {
 
 		return nil
 	}
+	eventHub.SetMockBroadcastEvent(broadcastHandler)
 
 	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
 
 	req := settings.NewBridgeConfig()
+	req.PermitJoin = true
+	req.TimeExpireAt.Value = 1
+
 	eventHub.Broadcast(ws.BridgePermitJoin, req)
+
+	wg.Wait()
+
+	time.Sleep(500 * time.Millisecond)
+
+	bridgeConfig, err := store.LoadBridgeConfig()
+	if err != nil {
+		t.Fatalf("error loading bridge config %s", err.Error())
+	}
+	if bridgeConfig.PermitJoin != true {
+		t.Fatalf("want %v got %v", true, bridgeConfig.PermitJoin)
+	}
+
 	time.Sleep(5 * time.Second)
+
 }
 
 func TestNewDeviceValuesAreBroadcastedOnly(t *testing.T) {

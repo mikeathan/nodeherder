@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"node-herder/internal/automations"
 	"node-herder/models/devices"
+	"node-herder/models/hub"
 	"node-herder/models/logging"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
@@ -27,7 +28,24 @@ import (
 
 // TODO: get rid of this. we only used it to have a differnet mocked implementation of Publish
 type MockEventHub struct {
+	context *repository.MemoryRepo[hub.Request]
+
 	MockBroadcastEvent func(eventName string, data interface{}) error
+}
+
+func NewMockEventHub() *MockEventHub {
+	return &MockEventHub{
+		context: repository.NewMemoryRepo[hub.Request](),
+	}
+}
+func (w *MockEventHub) SetMockBroadcastEvent(mock func(eventName string, data interface{}) error) {
+	w.MockBroadcastEvent = mock
+}
+
+func (w *MockEventHub) Context() *repository.MemoryRepo[hub.Request] {
+
+	fmt.Println("EventHub: Mocked Context")
+	return w.context
 }
 
 func (w *MockEventHub) Start() {
@@ -204,6 +222,17 @@ func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 
 // Mock WsServer
 type NopWsServer struct {
+	context *repository.MemoryRepo[hub.Request]
+}
+
+func NewNoWsServer() *NopWsServer {
+	return &NopWsServer{
+		context: repository.NewMemoryRepo[hub.Request](),
+	}
+}
+func (w *NopWsServer) Context() *repository.MemoryRepo[hub.Request] {
+	fmt.Println("WsServer: Mocked Context")
+	return w.context
 }
 
 func (w *NopWsServer) Start() {
@@ -566,6 +595,11 @@ func (s *NopAppStore) StoreMetrics(friendlyName string, data map[string]interfac
 func (s *NopAppStore) SaveBridgePermitJoin(enabled bool) error {
 	fmt.Println("Mocked store SaveBridgeConfig")
 	return nil
+}
+
+func (s *NopAppStore) LoadBridgeConfig() (*settings.BridgeConfig, error) {
+	fmt.Println("Mocked store LoadBridgeConfig")
+	return nil, nil
 }
 
 func (s *NopAppStore) ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {

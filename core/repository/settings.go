@@ -56,17 +56,13 @@ func (s *FileSettingsRepo) SaveAppConfig(value *settings.AppConfig) error {
 
 
 func (s *FileSettingsRepo) LoadBridgeConfig() (*settings.BridgeConfig, error) {
-		buffer, err := s.persistantStorage.Get([]byte(bridgeSettingsKeyName))
+	config, err := s.memoryStorage.Find(bridgeSettingsKeyName)
 	if err != nil {
-		return nil, err
+		// if not found, create default config
+		config := settings.DefaultBridgeConfig()
+		return config, nil
 	}
-	config := settings.DefaultBridgeConfig()
-	if buffer != nil {
-		err = json.Unmarshal(buffer, &config)
-		if err != nil {
-			return nil, err
-		}
-	}
+	
 	return config, err
 }
 

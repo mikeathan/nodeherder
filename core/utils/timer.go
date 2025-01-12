@@ -31,16 +31,15 @@ func (p *ActiveStateTimer) Start(duration time.Duration) error {
 		return errors.New("state already active")
 	}
 
+	p.active = true
+	LogInfo("state set to active")
+
 	err := p.callback(p.active)
 	if err != nil {
 		return err
 	}
 
-	p.active = true
-	LogInfo("state set to active")
-
 	p.endTime = time.Now().Add(duration)
-
 	if p.timer != nil {
 		p.timer.Stop()
 	}
