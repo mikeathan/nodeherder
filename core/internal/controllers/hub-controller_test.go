@@ -56,7 +56,8 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 	devices := []*devices.Device{doorSensorDevice, alarmDevice}
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
 
-	// register hub
+	// register hub		//todo
+
 	store := utils_test.CreateStore()
 	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
@@ -803,8 +804,8 @@ func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {
 			return err
 		}
 
-		mqttReq := hub.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value, f)
-		eventHub.Context().Store(mqttReq.ID(), mqttReq)
+		mqttReq := hub.NewBridgePermitJoinRequest(&req, f)
+		eventHub.Context().Enqueue(mqttReq)
 
 		response := controllers.NewBridgeResponse()
 		response.Status = "ok"
@@ -871,6 +872,14 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 	broadcastHandler := func(eventName string, data interface{}) error {
 
 		if eventName != ws.BridgePermitJoin {
+			if callbackCounter == 3 && eventName == ws.OperationFailed {
+				// we are expecting to hit it twice. counter is 3 as we have send success event from first call
+				// second we should get back a failure event
+				// as the event cannot start since its active
+				wg.Done()
+				return nil
+			}
+
 			return nil
 		}
 		req := settings.BridgeConfig{}
@@ -883,8 +892,6 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 
 		f := func(value bool) error {
 
-			// we are expecting to hit it twice, once initally and another one from the timeout
-		
 			if callbackCounter > 1 {
 				t.Fatalf("callbackCounter should be less than 2 got %v", callbackCounter)
 				return fmt.Errorf("failed")
@@ -902,12 +909,9 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 			return err
 		}
 
-		mqttReq := hub.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value, f)
+		mqttReq := hub.NewBridgePermitJoinRequest(&req, f)
 
-
-		wrong
-		// is wrong because we have create a new timer with every request
-		eventHub.Context().Store(mqttReq.ID(), mqttReq)
+		eventHub.Context().Enqueue(mqttReq)
 
 		response := controllers.NewBridgeResponse()
 		response.Status = "ok"
@@ -917,8 +921,7 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 
 		mqtt.Publish("bridge/response/permit_join", jsonPayload)
 
-		// simulate bridge response for permit join
-
+		callbackCounter++
 		return nil
 	}
 	eventHub.SetMockBroadcastEvent(broadcastHandler)

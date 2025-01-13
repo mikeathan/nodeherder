@@ -230,7 +230,7 @@ func (b *bridgePermitJoinResponseHandler) ProcessPayload(id string, connType str
 	}
 
 	// NOTE:
-	// that will need to be refactor, basically we look in repo for any request object with transaction id key
+	// we look in repo for any request object with transaction id key
 	// if we find one then we process it
 	// that will run the timer
 	if resp.Status == "ok" {
@@ -238,17 +238,12 @@ func (b *bridgePermitJoinResponseHandler) ProcessPayload(id string, connType str
 			utils.LogInfof("Bridge Permit join set to %v ", enabled)
 			if resp.Transaction != 0 {
 
-				req, err := b.ws.Context().Dequeue(utils.ConvertInt32(resp.Transaction))
-				if err != nil {
-					utils.LogErrorf("error finding permit join request %s", err.Error())
-					return nil
-				}
-
-				err = req.Process(enabled) we dont need that
+				tId := utils.ConvertInt32(resp.Transaction)
+				err := b.ws.Context().Process(tId)
 				if err != nil {
 					utils.LogErrorf("error starting permit join %s", err.Error())
 					b.ws.Broadcast(ws.OperationFailed, fmt.Sprintf("error starting permit join %s", err.Error()))
-					return nil
+					return err
 				}
 			}
 		}

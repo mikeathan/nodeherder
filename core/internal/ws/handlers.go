@@ -1,56 +1,58 @@
 package ws
 
 import (
+	"errors"
 	"node-herder/models/hub"
+	"node-herder/models/settings"
 	"node-herder/repository"
 	"node-herder/utils"
+	"reflect"
 	"time"
 )
 
-// wIP
-type Context struct {
+type RequestContext struct {
 	repo     *repository.MemoryRepo[hub.Request]
 	handlers map[string]RequestHandler
 }
 
-func NewContext() *Context {
-	ctx := &Context{
+func NewRequestContext() hub.Context {
+	ctx := &RequestContext{
 		repo:     repository.NewMemoryRepo[hub.Request](),
 		handlers: map[string]RequestHandler{},
 	}
 
-	ctx.handlers["bridgepermitjoin"] = NewPermitJoinRequestHandler()
+	ctx.handlers[hub.BridgePermitJoin] = NewPermitJoinRequestHandler()
 
 	return ctx
 }
 
-func (p *Context) Enqueue(value hub.Request) {
+func (p *RequestContext) Enqueue(value hub.Request) {
 	p.repo.Store(value.ID(), value)
 }
 
-func (p *Context) Dequeue(key string) (hub.Request, error) {
+func (p *RequestContext) Dequeue(key string) (hub.Request, error) {
 	return p.repo.Dequeue(key)
 }
 
-func (p *Context) Process(key string) error {
+func (p *RequestContext) Process(key string) error {
 	req, err := p.Dequeue(key)
 	if err != nil {
 		return err
 	}
 	handler, ok := p.handlers[req.Type()]
 	if !ok {
-		// we dont have a handler for this request type
+		// we dont have a handler for this request type. exit
 		return nil
 	}
 
 	return handler.Process(req)
 }
 
-// hanlders
 type RequestHandler interface {
 	Process(hub.Request) error
 }
 
+// Handlers
 type PermitJoinRequestHandler struct {
 	activeStateTimer *utils.ActiveStateTimer
 }
@@ -61,15 +63,17 @@ func NewPermitJoinRequestHandler() RequestHandler {
 	}
 }
 
-func (p *PermitJoinRequestHandler) Process(value hub.Request) error {
+func (p *PermitJoinRequestHandler) Process(request hub.Request) error {
 
-	if active, ok := value.(bool); ok {
-		if active {
-			// TODO
-
-			return p.activeStateTimer.Start(value.Action(), time.Duration(r.Time) * time.Second)
-		}
-		return p.activeStateTimer.Stop(true)
+	payload, ok := request.Payload().(*settings.BridgeConfig)
+	if !ok {
+		return errors.New("invalid payload type. expecting settings.BridgeConfig got " + reflect.TypeOf(request.Payload()).String())
 	}
-	return nil
+
+	if payload.PermitJoin {
+		expireAt := time.Duration(payload.TimeExpireAt.Value) * time.Second
+		return p.activeStateTimer.Start(request.Action(), expireAt)
+	}
+
+	return p.activeStateTimer.Stop(true)
 }

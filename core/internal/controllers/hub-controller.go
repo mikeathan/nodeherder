@@ -210,7 +210,6 @@ func (h *HubController) registerEventHubEvents() {
 		if err != nil {
 			return errors.New("permit join failed. Invalid payload type")
 		}
-
 		if req.TimeExpireAt.Value > 254 {
 			return errors.New("permit join failed. Invalid timeout. (Max 254 seconds)")
 		}
@@ -223,8 +222,8 @@ func (h *HubController) registerEventHubEvents() {
 			return h.store.SaveBridgePermitJoin(value)
 		}
 
-		mqttReq := hub.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value, f)
-		h.eventHub.Context().Store(mqttReq.ID(), mqttReq)
+		mqttReq := hub.NewBridgePermitJoinRequest(&req, f)
+		h.eventHub.Context().Enqueue(mqttReq)
 
 		json, _ := json.Marshal(mqttReq)
 		h.mqtt.Publish("bridge/request/permit_join", json)

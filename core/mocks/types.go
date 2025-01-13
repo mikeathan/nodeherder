@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"node-herder/internal/automations"
+	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
 	"node-herder/models/logging"
@@ -28,21 +29,21 @@ import (
 
 // TODO: get rid of this. we only used it to have a differnet mocked implementation of Publish
 type MockEventHub struct {
-	context *repository.MemoryRepo[hub.Request]
+	context hub.Context
 
 	MockBroadcastEvent func(eventName string, data interface{}) error
 }
 
 func NewMockEventHub() *MockEventHub {
 	return &MockEventHub{
-		context: repository.NewMemoryRepo[hub.Request](),
+		context: ws.NewRequestContext(),
 	}
 }
 func (w *MockEventHub) SetMockBroadcastEvent(mock func(eventName string, data interface{}) error) {
 	w.MockBroadcastEvent = mock
 }
 
-func (w *MockEventHub) Context() *repository.MemoryRepo[hub.Request] {
+func (w *MockEventHub) Context() hub.Context {
 
 	fmt.Println("EventHub: Mocked Context")
 	return w.context
@@ -222,15 +223,15 @@ func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 
 // Mock WsServer
 type NopWsServer struct {
-	context *repository.MemoryRepo[hub.Request]
+	context hub.Context
 }
 
 func NewNoWsServer() *NopWsServer {
 	return &NopWsServer{
-		context: repository.NewMemoryRepo[hub.Request](),
+		context: ws.NewRequestContext(),
 	}
 }
-func (w *NopWsServer) Context() *repository.MemoryRepo[hub.Request] {
+func (w *NopWsServer) Context() hub.Context {
 	fmt.Println("WsServer: Mocked Context")
 	return w.context
 }
