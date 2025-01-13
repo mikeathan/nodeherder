@@ -14,16 +14,15 @@ type ActiveStateTimer struct {
 	callback func(bool) error
 }
 
-func NewActiveStateTimer(callback func(bool) error) *ActiveStateTimer {
-	return &ActiveStateTimer{
-		callback: callback,
-	}
+func NewActiveStateTimer() *ActiveStateTimer {
+	return &ActiveStateTimer{}
 }
 
 // Timer for active state
 // - if inactive, set state to active and start timer. state is set back to inactive after duration
 // - if active, exit early
-func (p *ActiveStateTimer) Start(duration time.Duration) error {
+func (p *ActiveStateTimer) Start(callback func(bool) error, duration time.Duration) error {
+
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
@@ -31,6 +30,7 @@ func (p *ActiveStateTimer) Start(duration time.Duration) error {
 		return errors.New("state already active")
 	}
 
+	p.callback = callback
 	p.active = true
 	LogInfo("state set to active")
 

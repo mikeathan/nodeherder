@@ -851,7 +851,7 @@ func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {
 	}
 }
 
-func TestProcessorHandlesBridgePermitJoinRejectRequestwhenActive(t *testing.T) {
+func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
@@ -884,16 +884,14 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestwhenActive(t *testing.T) {
 		f := func(value bool) error {
 
 			// we are expecting to hit it twice, once initally and another one from the timeout
-			if callbackCounter == 1 {
-				wg.Add(1)
-			}
+		
 			if callbackCounter > 1 {
 				t.Fatalf("callbackCounter should be less than 2 got %v", callbackCounter)
 				return fmt.Errorf("failed")
 			}
 
 			if value != true {
-				t.Fatalf("want %v got %v", true, value)
+				t.Fatalf("callback error: want %v got %v", true, value)
 				return fmt.Errorf("failed")
 			}
 
@@ -905,6 +903,10 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestwhenActive(t *testing.T) {
 		}
 
 		mqttReq := hub.NewBridgePermitJoinRequest(req.PermitJoin, req.TimeExpireAt.Value, f)
+
+
+		wrong
+		// is wrong because we have create a new timer with every request
 		eventHub.Context().Store(mqttReq.ID(), mqttReq)
 
 		response := controllers.NewBridgeResponse()
@@ -930,7 +932,7 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestwhenActive(t *testing.T) {
 	// send first request
 	eventHub.Broadcast(ws.BridgePermitJoin, req)
 
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 
 	// assert bridge permit join is set to true, from initial request callback
 	bridgeConfig, err := store.LoadBridgeConfig()
@@ -938,13 +940,14 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestwhenActive(t *testing.T) {
 		t.Fatalf("error loading bridge config %s", err.Error())
 	}
 	if bridgeConfig.PermitJoin != true {
-		t.Fatalf("want %v got %v", true, bridgeConfig.PermitJoin)
+		t.Fatalf("error loading BridgeConfig PermitJoin: want %v got %v", true, bridgeConfig.PermitJoin)
 	}
 
 	wg.Wait()
 
 	// send second request while first one is active
 	eventHub.Broadcast(ws.BridgePermitJoin, req)
+	wg.Add(1)
 
 	//  assert bridge permit join is still set to true,
 	bridgeConfig, err = store.LoadBridgeConfig()

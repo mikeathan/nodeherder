@@ -244,7 +244,7 @@ func (b *bridgePermitJoinResponseHandler) ProcessPayload(id string, connType str
 					return nil
 				}
 
-				err = req.Process(enabled)
+				err = req.Process(enabled) we dont need that
 				if err != nil {
 					utils.LogErrorf("error starting permit join %s", err.Error())
 					b.ws.Broadcast(ws.OperationFailed, fmt.Sprintf("error starting permit join %s", err.Error()))

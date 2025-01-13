@@ -1,50 +1,50 @@
 package hub
 
 import (
-	"errors"
 	"node-herder/utils"
-	"time"
 
 	"github.com/google/uuid"
 )
 
+const (
+	BridgePermitJoin = "bridgePermitJoin"
+)
+
 type Request interface {
 	ID() string
-	Process(value any) error
+	Payload() interface{}
+	Type() string
+	Action() func(bool) error
 }
 
 type BridgePermitJoinRequest struct {
 	Value         bool   `json:"value"`
 	Time          int    `json:"time"`
 	TransactionId uint32 `json:"transaction"`
-	timer         *utils.ActiveStateTimer
+	callback      func(bool) error
 }
 
 func NewBridgePermitJoinRequest(value bool, time int, handler func(bool) error) *BridgePermitJoinRequest {
-
-	transaction := uuid.New()
-	br := &BridgePermitJoinRequest{
+	return &BridgePermitJoinRequest{
 		Value:         value,
 		Time:          time,
-		TransactionId: transaction.ID(),
-		timer:         utils.NewActiveStateTimer(handler),
+		TransactionId: uuid.New().ID(),
+		callback:      handler,
 	}
+}
 
-	return br
+func (r *BridgePermitJoinRequest) Type() interface{} {
+	return BridgePermitJoin
+}
+
+func (r *BridgePermitJoinRequest) Action() func(bool) error {
+	return r.callback
+}
+
+func (r *BridgePermitJoinRequest) Payload() interface{} {
+	return r.Value
 }
 
 func (r *BridgePermitJoinRequest) ID() string {
 	return utils.ConvertInt32(r.TransactionId)
-}
-
-func (r *BridgePermitJoinRequest) Process(value any) error {
-
-	if active, ok := value.(bool); ok {
-		if active {
-			return r.timer.Start(time.Duration(r.Time) * time.Second)
-		}
-		return r.timer.Stop(true)
-	}
-
-	return errors.New("invalid value type")
 }
