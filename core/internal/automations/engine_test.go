@@ -504,6 +504,7 @@ func TestEngineAutomationUpdateShouldStopScheduler(t *testing.T) {
 
 func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 
+	wg := sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
 
 	mqtt.OnMessageHandler(func(topic string, payload []byte) {
@@ -534,10 +535,13 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 	scheduleHandler := automations.NewAutomationScheduler(
 		automations.WithScheduleFunc("enable", func(automation *automations.Device) error {
 			automation.Enabled = true
+			wg.Done()
 			return nil
 		}),
 		automations.WithScheduleFunc("disable", func(automation *automations.Device) error {
 			automation.Enabled = false
+			wg.Done()
+
 			return nil
 		}),
 	)
@@ -545,32 +549,46 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 	engine.WithStorage(storage)
 	engine.Initialize()
 
+	
+	wg.Add(1)
+
+	a, _ := engine.Load(deviceAutomation.Id)
+
 	// make sure automation is disabled when we have scheduler enabled
-	if deviceAutomation.Enabled {
-		t.Fatalf("ERROR automation is enabled")
+	if a.Enabled {
+		t.Fatalf("ERROR automation is enabled (initial state)")
 	}
 
-	time.Sleep(600 * time.Millisecond)
+
 
 	// trigger the automation
 	doorSensorDevice.Exposes["contact"].Data = true
 	engine.HandleDevice(doorSensorDevice)
 	time.Sleep(50 * time.Millisecond)
 
+	// scheduler is enable so any event will enable automation
+	wg.Wait()
+
+	a, _ = engine.Load(deviceAutomation.Id)
+
 	// scheduler should have enabled automation
-	if !deviceAutomation.Enabled {
+	if !a.Enabled {
 		t.Fatalf("ERROR automation is not enabled")
 	}
 
-	time.Sleep(1200 * time.Millisecond)
+	// wait until end of schedule to disable automation
+	wg.Add(1)
+	wg.Wait()
 
 	// trigger the automation
 	doorSensorDevice.Exposes["contact"].Data = true
 	engine.HandleDevice(doorSensorDevice)
 	time.Sleep(50 * time.Millisecond)
 
+	a, _ = engine.Load(deviceAutomation.Id)
+
 	// scheduler should have disabled automation
-	if deviceAutomation.Enabled {
+	if a.Enabled {
 		t.Fatalf("ERROR automation is enabled")
 	}
 }

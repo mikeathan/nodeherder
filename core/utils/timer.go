@@ -15,7 +15,13 @@ type ActiveStateTimer struct {
 }
 
 func NewActiveStateTimer() *ActiveStateTimer {
-	return &ActiveStateTimer{}
+	return &ActiveStateTimer{
+		mutex:    sync.Mutex{},
+		active:   false,
+		endTime:  time.Time{},
+		timer:    nil,
+		callback: func(b bool) error { return nil },
+	}
 }
 
 // Timer for active state

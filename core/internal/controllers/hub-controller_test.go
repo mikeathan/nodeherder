@@ -105,6 +105,8 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 		} else {
 
+			time.Sleep(500 * time.Millisecond)
+			
 			//  alarm should not be triggered as schedule is not due.
 			alarm, _ := store.FindDeviceById("x02222222")
 			if alarm.Exposes["alarm"].Data != false {
