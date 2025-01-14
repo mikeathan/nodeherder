@@ -72,6 +72,10 @@ func (w *MockEventHub) EmitDevice(name string) error {
 	return nil
 }
 
+func (w *MockEventHub) EmitBridgeConfig() {
+	fmt.Println("Empty EmitBridgeConfig")
+}
+
 func (w *MockEventHub) EmitDevices() {
 	fmt.Println("Empty EmitDevices")
 }
@@ -137,7 +141,10 @@ func (w *MockEventHub) OnLoadMetrics(action func(interface{}) (interface{}, erro
 
 func (w *MockEventHub) OnLoadAppConfig(action func() (interface{}, error)) {
 	fmt.Println("Empty OnLoadAppConfig")
+}
 
+func (w *MockEventHub) OnLoadBridgeConfig(action func() (interface{}, error)) {
+	fmt.Println("Empty OnLoadBridgeConfig")
 }
 func (w *MockEventHub) OnSaveDeviceConfig(func(payload interface{}) error) {
 	fmt.Println("Empty OnSaveDeviceConfig")
@@ -262,6 +269,10 @@ func (w *NopWsServer) EmitDevices() {
 	fmt.Println("WsServer: Mocked EmitDevices")
 }
 
+func (w *NopWsServer) EmitBridgeConfig() {
+	fmt.Println("WsServer: Mocked EmitBridgeConfig")
+}
+
 func (w *NopWsServer) EmitDeviceList(names []string) {
 	fmt.Println("WsServer: Mocked EmitDeviceList")
 }
@@ -324,8 +335,12 @@ func (w *NopWsServer) OnDeleteAutomationTrigger(action func(p interface{}) (inte
 
 func (w *NopWsServer) OnLoadAppConfig(action func() (interface{}, error)) {
 	fmt.Println("WsServer: Mocked OnLoadAppConfig")
-
 }
+
+func (w *NopWsServer) OnLoadBridgeConfig(action func() (interface{}, error)) {
+	fmt.Println("WsServer: Mocked OnLoadBridgeConfig")
+}
+
 func (w *NopWsServer) OnSaveDeviceConfig(func(payload interface{}) error) {
 	fmt.Println("WsServer: Mocked OnSaveDeviceConfig")
 }

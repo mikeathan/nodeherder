@@ -71,6 +71,10 @@ func (h *HubController) registerEventHubEvents() {
 		return h.store.LoadAppConfig()
 	})
 
+	h.eventHub.OnLoadBridgeConfig(func() (interface{}, error) {
+		return h.store.LoadBridgeConfig()
+	})
+
 	h.eventHub.OnSaveHistoryConfig(func(p interface{}) error {
 		req := &settings.HistoryConfig{}
 		bytes, _ := json.Marshal(p)
@@ -219,7 +223,14 @@ func (h *HubController) registerEventHubEvents() {
 		}
 
 		f := func(value bool) error {
-			return h.store.SaveBridgePermitJoin(value)
+			err := h.store.SaveBridgePermitJoin(value)
+			if err != nil {
+				return err
+			}
+
+			// emit bridgeConfig back to clients
+			h.eventHub.EmitBridgeConfig()
+			return nil
 		}
 
 		mqttReq := hub.NewBridgePermitJoinRequest(&req, f)

@@ -42,14 +42,16 @@ const (
 	OperationSuccess  = "operationSuccess"
 	AutomationUpdated = "automationUpdated" // returns back upated automation
 
-	Metrics   = "metrics"
-	AppConfig = "appConfig"
+	Metrics      = "metrics"
+	AppConfig    = "appConfig"
+	BridgeConfig = "bridgeConfig"
 )
 
 type EventHub interface {
 	Broadcast(eventName string, data interface{}) error
 	Start()
 	Close() error
+	EmitBridgeConfig()
 	EmitDevices()
 	EmitDeviceList(names []string)
 	EmitDevice(name string) error
@@ -67,6 +69,7 @@ type EventHub interface {
 	OnDeleteAutomationTrigger(func(payload interface{}) (interface{}, error))
 	OnLoadMetrics(action func(interface{}) (interface{}, error))
 	OnLoadAppConfig(action func() (interface{}, error))
+	OnLoadBridgeConfig(action func() (interface{}, error))
 	OnSaveDeviceConfig(func(payload interface{}) error)
 	OnSaveHistoryConfig(func(payload interface{}) error)
 	OnSaveLoggerConfig(func(payload interface{}) error)
@@ -90,6 +93,7 @@ type eventHubImpl struct {
 	onDeleteAutomation        func(interface{}) (interface{}, error)
 	onDeleteAutomationTrigger func(interface{}) (interface{}, error)
 	onLoadAppConfig           func() (interface{}, error)
+	onLoadBridgeConfig        func() (interface{}, error)
 	onSaveDeviceConfig        func(interface{}) error
 	onSaveHistoryConfig       func(interface{}) error
 	onSaveLoggerConfig        func(interface{}) error
@@ -113,6 +117,7 @@ func NewWsHub() EventHub {
 		onLoadDevices:             func() interface{} { return nil },
 		onLoadAutomations:         func() interface{} { return nil },
 		onLoadAppConfig:           func() (interface{}, error) { return nil, nil },
+		onLoadBridgeConfig:        func() (interface{}, error) { return nil, nil },
 		onSaveDeviceConfig:        func(payload interface{}) error { return nil },
 		onSaveHistoryConfig:       func(payload interface{}) error { return nil },
 		onSaveLoggerConfig:        func(payload interface{}) error { return nil },
@@ -160,6 +165,10 @@ func (h *eventHubImpl) OnLoadAppConfig(action func() (interface{}, error)) {
 	h.onLoadAppConfig = action
 }
 
+func (h *eventHubImpl) OnLoadBridgeConfig(action func() (interface{}, error)) {
+	h.onLoadBridgeConfig = action
+}
+
 func (h *eventHubImpl) OnSaveDeviceConfig(action func(payload interface{}) error) {
 	h.onSaveDeviceConfig = action
 }
@@ -202,6 +211,16 @@ func (h *eventHubImpl) EmitDevice(name string) error {
 	}
 	h.Broadcast(Device, msg)
 	return nil
+}
+
+func (h *eventHubImpl) EmitBridgeConfig() {
+	cfg, err := h.onLoadBridgeConfig()
+	if err != nil {
+		utils.LogErrorf("Failed to load bridge config: %v", err)
+		return
+	}
+
+	h.Broadcast(BridgeConfig, cfg)
 }
 
 func (h *eventHubImpl) EmitDeviceList(ids []string) {

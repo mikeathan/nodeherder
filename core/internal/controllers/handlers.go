@@ -247,7 +247,6 @@ func (b *bridgePermitJoinResponseHandler) ProcessPayload(id string, connType str
 				}
 			}
 		}
-		b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Bridge Permit join set to %v ", resp.Data["value"]))
 	} else {
 		b.ws.Broadcast(ws.OperationFailed, resp.Error)
 	}
@@ -305,7 +304,10 @@ func (b *bridgeDeviceRenameResponseHandler) ProcessPayload(id string, connType s
 			if err != nil {
 				return err
 			}
-			b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Device %s renamed to %s", oldName, resp.Data["to"].(string)))
+
+			// emit back to clients updated device name. not tested to see if it works!!!
+			b.ws.EmitDevice(resp.Data["to"].(string))
+			//b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Device %s renamed to %s", oldName, resp.Data["to"].(string)))
 		}
 	} else {
 		b.ws.Broadcast(ws.OperationFailed, resp.Status)
