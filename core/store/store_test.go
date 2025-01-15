@@ -147,6 +147,8 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 			mockClock.SetMockTime(timestamp)
 
 			err := appStore.StoreMetrics(wd.FriendlyName, payload)
+			time.Sleep(time.Millisecond * 5)
+
 			if err != nil {
 				t.Fatalf("error updating device %v error: %v:", wd.FriendlyName, err.Error())
 			}
@@ -156,7 +158,7 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	// reset clock its used in pruning
 	mockClock.SetMockTime(time.Now().UTC())
 
-	time.Sleep(time.Millisecond * 100)
+	time.Sleep(time.Second * 1)
 
 	now := time.Now().UTC()
 	from := time.Date(now.Year(), now.Month(), now.Day()-5, 0, 0, 0, 0, time.UTC)
@@ -166,6 +168,7 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	for _, wd := range wantDevices {
 
 		result, err := appStore.ViewMetrics(wd, from, to)
+		time.Sleep(time.Second * 1)
 		if err != nil {
 			t.Fatalf("error retreiving metrics device %v error: %v:", wd.FriendlyName, err.Error())
 		}
@@ -173,7 +176,7 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 
 			event := metrics.ToNumericExposeResults(expose)
 			if len(event.Data) != numOfEvents {
-				t.Fatalf("error metrics results mismatch. want %v got %v", numOfEvents, len(event.Data))
+				t.Fatalf("error metrics results mismatch for %s. want %v got %v", event.Name, numOfEvents, len(event.Data))
 
 			}
 		}
