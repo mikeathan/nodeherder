@@ -128,7 +128,7 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	defer cleanup()
 
 	// set new history config
-	sleepTimeout := utils.IntervalFromSeconds(1)
+	sleepTimeout := utils.IntervalFromSeconds(3) // start the cleanup after we finished ading and asserting the data. 3 seconds should be enough
 	expireAt := utils.IntervalFromHours(1)
 
 	appStore.SaveHistoryConfig(settings.NewHistoryConfig(sleepTimeout, expireAt))
@@ -158,8 +158,6 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	// reset clock its used in pruning
 	mockClock.SetMockTime(time.Now().UTC())
 
-	time.Sleep(time.Second * 1)
-
 	now := time.Now().UTC()
 	from := time.Date(now.Year(), now.Month(), now.Day()-5, 0, 0, 0, 0, time.UTC)
 	to := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC)
@@ -182,8 +180,6 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 		}
 	}
 
-	time.Sleep(time.Second * 1)
-
 	// assert that metrics are removed
 	for _, wd := range wantDevices {
 
@@ -195,7 +191,6 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 		for _, expose := range result.Exposes {
 
 			event := metrics.ToNumericExposeResults(expose)
-
 			for _, event := range event.Data {
 				timestamp := time.UnixMilli(event.X).UTC()
 

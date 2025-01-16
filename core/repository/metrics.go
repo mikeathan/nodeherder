@@ -2,7 +2,6 @@ package repository
 
 import (
 	"bytes"
-	"fmt"
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
 	"node-herder/utils"
@@ -112,7 +111,6 @@ func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time
 			return nil, err
 		}
 
-		fmt.Println("collecting ", event.Size())
 		if event.Size() == 0 {
 			continue
 		}
