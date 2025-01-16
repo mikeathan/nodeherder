@@ -54,7 +54,6 @@ func (s *FileSettingsRepo) SaveAppConfig(value *settings.AppConfig) error {
 	return s.persistantStorage.Set([]byte(settingsKeyName), buf)
 }
 
-
 func (s *FileSettingsRepo) LoadBridgeConfig() (*settings.BridgeConfig, error) {
 	config, err := s.memoryStorage.Find(bridgeSettingsKeyName)
 	if err != nil {
@@ -62,7 +61,7 @@ func (s *FileSettingsRepo) LoadBridgeConfig() (*settings.BridgeConfig, error) {
 		config := settings.DefaultBridgeConfig()
 		return config, nil
 	}
-	
+
 	return config, err
 }
 
@@ -142,7 +141,10 @@ func (s *FileSettingsRepo) Load() (*settings.AppConfig, error) {
 		if err != nil {
 			return nil, err
 		}
-
 	}
+
+	load bridge config from memory
+
+	and set it to appconfig
 	return settings, err
 }
