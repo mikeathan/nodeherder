@@ -143,8 +143,10 @@ func (s *FileSettingsRepo) Load() (*settings.AppConfig, error) {
 		}
 	}
 
-	load bridge config from memory
+	bridgeCfg, err := s.LoadBridgeConfig()
+	if err == nil {
+		settings.Bridge = bridgeCfg
+	}
 
-	and set it to appconfig
 	return settings, err
 }

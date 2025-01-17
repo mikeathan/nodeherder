@@ -4,6 +4,7 @@ import (
 	"node-herder/models/settings"
 	"node-herder/repository"
 	utils_test "node-herder/testing"
+	"node-herder/utils"
 	"os"
 	"reflect"
 	"testing"
@@ -150,6 +151,49 @@ func TestFileSettingsRepositoryCanUpdateExistingDeviceConfig(t *testing.T) {
 	if updated.MetricsEnabled {
 		t.Error("updated.history value invalid. want false got true")
 
+	}
+}
+
+func TestFileSettingsRepositoryAppConfigContainsBridgeConfig(t *testing.T) {
+
+	tempfile := utils_test.Tempfile()
+	defer os.Remove(tempfile)
+
+	repo, err := repository.NewFileSettingsRepoFromFile(tempfile)
+	if err != nil {
+		t.Error("failed to initialise device file repo", err.Error())
+	}
+
+	defer repo.Close()
+
+	appConfig := createMockAppConfig()
+	err = repo.SaveAppConfig(appConfig)
+	if err != nil {
+		t.Errorf("save failed with %v", err.Error())
+	}
+	res, err := repo.Load()
+	if err != nil {
+		t.Errorf("load failed with %v", err.Error())
+	}
+	if !reflect.DeepEqual(settings.NewBridgeConfig(), res.Bridge) {
+		t.Error("bridge config mismatch")
+	}
+	bridgeCfg:= settings.NewBridgeConfig()
+	bridgeCfg.PermitJoin = true
+	bridgeCfg.TimeExpireAt = &utils.TimeInterval{
+		Value: 10,
+		Unit:     "minutes",
+	}
+
+	repo.SaveBridgeConfig(bridgeCfg)
+
+	res, err = repo.Load()
+	if err != nil {
+		t.Errorf("load failed with %v", err.Error())
+	}
+
+	if !reflect.DeepEqual(bridgeCfg, res.Bridge) {
+		t.Error("bridge config mismatch")
 	}
 }
 
