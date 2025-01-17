@@ -37,8 +37,8 @@ export type LoggerSettingsType = {
 };
 
 export type BridgeSettingsType = {
-  permitJoinEnabled: boolean;
-  timeExpireAt: TimeInterval;
+  permitJoin: boolean;
+  maxTimeAllowed: TimeInterval;
 };
 
 export type DeviceSettings = {

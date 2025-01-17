@@ -101,28 +101,35 @@ export const AppConfigModule: Module<AppConfigModuleState, RootState> = {
         },
         { root: true }
       );
-      
     },
-    enablePermitJoin ({ commit, dispatch }, ) {
-      commit('setLoggerSettings', loggerSetings);
+    enablePermitJoin({ commit, dispatch }, timeout: number) {
+      const cfg: BridgeSettingsType = {
+        permitJoin: true,
+        maxTimeAllowed: { value: timeout, unit: 'seconds' },
+      };
       dispatch(
         'ws/emit',
         {
           event: 'bridgePermitJoin',
-          message: loggerSetings,
+          message: cfg,
         },
         { root: true }
       );
+    },
+    disablePermitJoin({ commit, dispatch }) {
+      const cfg: BridgeSettingsType = {
+        permitJoin: false,
+        maxTimeAllowed: { value: 0, unit: 'seconds' },
+      };
+
+      dispatch(
+        'ws/emit',
+        {
+          event: 'bridgePermitJoin',
+          message: cfg,
+        },
+        { root: true }
+      );
+    },
   },
-  disablePermitJoin ({ commit, dispatch }, ) {
-    commit('setLoggerSettings', loggerSetings);
-    dispatch(
-      'ws/emit',
-      {
-        event: 'bridgePermitJoin',
-        message: loggerSetings,
-      },
-      { root: true }
-    );
-}
 };

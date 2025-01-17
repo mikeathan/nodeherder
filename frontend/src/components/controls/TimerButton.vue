@@ -1,17 +1,23 @@
 <script setup lang="ts">
-  import { ref, onMounted, onBeforeUnmount } from 'vue';
+  import { store } from '@/store';
+  import { BridgeSettingsType } from '@/types/settings';
+  import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
   import { computed } from 'vue';
+
+  const bridgeConfig = computed<BridgeSettingsType>(() => {
+    return store.getters['appconfig/bridge']() as BridgeSettingsType;
+  });
+
+  function enablePermitJoin() {
+    store.dispatch('appconfig/enablePermitJoin', props.duration);
+  }
+
+  function disablePermitJoin() {
+    store.dispatch('appconfig/disablePermitJoin');
+  }
 
   const props = defineProps({
     duration: { type: Number, default: 60 },
-    startEvent: {
-      type: Function,
-      default: () => {},
-    },
-    stopEvent: {
-      type: Function,
-      default: () => {},
-    },
   });
 
   let intervalId: any = null;
@@ -19,7 +25,28 @@
     localStorage.getItem('remainingTime') ? parseInt(localStorage.getItem('remainingTime')!) : props.duration
   );
 
-  const isRunning = ref(localStorage.getItem('isRunning') === 'true' ? true : false);
+  //const isRunning = ref(localStorage.getItem('isRunning') === 'true' ? true : false);
+  const isRunning = ref(false);
+
+  watch(
+    bridgeConfig,
+    (newValue, oldValue) => {
+      console.log('bridgeConfig changed:', newValue, oldValue);
+      if (newValue && newValue.permitJoin !== undefined && newValue.permitJoin !== isRunning.value) {
+        if (newValue) {
+          console.log('bridgeConfig START:', newValue, oldValue);
+          isRunning.value = newValue.permitJoin;
+          startTimer();
+        }
+      } else if (!newValue) {
+        console.log('bridgeConfig END:', newValue, oldValue);
+        isRunning.value = false;
+        stopTimer();
+      }
+    },
+    { deep: true }
+  );
+
   const buttonLabel = computed(() => {
     if (isRunning.value) {
       return `Disable Join [${formattedTime.value}]`;
@@ -53,33 +80,24 @@
   };
 
   const setIsRunning = (value: boolean) => {
-    isRunning.value = value;
-    localStorage.setItem('isRunning', isRunning.value.toString());
+    //isRunning.value = value;
+    // localStorage.setItem('isRunning', isRunning.value.toString());
   };
 
   const setRemainingTime = (value: number) => {
     remainingTime.value = value;
     localStorage.setItem('remainingTime', remainingTime.value.toString());
   };
+
   const toggleTimer = () => {
-    isRunning.value = !isRunning.value;
-    localStorage.setItem('isRunning', isRunning.value.toString());
-
+    // isRunning.value = !isRunning.value;
+    // localStorage.setItem('isRunning', isRunning.value.toString());
+    console.log('toggleTimer ', isRunning.value);
     if (isRunning.value) {
-      onStart();
+      disablePermitJoin();
     } else {
-      onStopped();
+      enablePermitJoin();
     }
-  };
-
-  const onStart = () => {
-    props.startEvent();
-    startTimer();
-  };
-
-  const onStopped = () => {
-    props.stopEvent();
-    stopTimer();
   };
 
   onMounted(() => {

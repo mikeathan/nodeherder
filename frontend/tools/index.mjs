@@ -9,8 +9,7 @@ import http from 'http';
 import { createRequire } from 'module';
 const devicesFullPath = '../../docs/devices.json';
 const lightMetricsFullPath = './metrics/light.json';
-const temperatureMetricsFullPath =
-  './metrics/temperature.json';
+const temperatureMetricsFullPath = './metrics/temperature.json';
 const presenceMetricsFullPath = './metrics/presence.json';
 // temperature
 const temperatureChangeDelaySec = 5;
@@ -26,19 +25,12 @@ const luminance_luxMin = 10;
 let port = 3000;
 
 let consoleLogIntervalId = 0;
-const logSeverity = [
-  'info',
-  'warning',
-  'error',
-  'critical',
-];
+const logSeverity = ['info', 'warning', 'error', 'critical'];
 
 // App and server
 let app = express();
 let server = http.createServer(app).listen(port);
-console.log(
-  '[' + currentTime() + '] server listening at port ' + port
-);
+console.log('[' + currentTime() + '] server listening at port ' + port);
 
 var appConfig = {
   history: {
@@ -47,6 +39,10 @@ var appConfig = {
   },
   logger: {
     enableRemoteLogger: false,
+  },
+  bridgeConfig: {
+    maxTimeAllowed: { value: 120, unit: 'seconds' },
+    permitJoin: false,
   },
   devices: {
     '0xa4c13894070052fc': {
@@ -335,11 +331,7 @@ app.ws('/ws', async function (ws) {
 
       case 'deleteAutomation':
         if (!automationMap.has(obj.payload.id)) {
-          sendOperationFailed(
-            'Delete failed. Automation id ' +
-              obj.payload.id +
-              ' not found'
-          );
+          sendOperationFailed('Delete failed. Automation id ' + obj.payload.id + ' not found');
           return;
         }
 
@@ -353,21 +345,13 @@ app.ws('/ws', async function (ws) {
         var tId = obj.payload.triggerId;
 
         if (!automationMap.has(aId)) {
-          sendOperationFailed(
-            'Delete trigger. automation id ' +
-              aId +
-              ' not found'
-          );
+          sendOperationFailed('Delete trigger. automation id ' + aId + ' not found');
           return;
         }
 
         var automation = automationMap.get(aId);
         if (tId >= automation.triggers.length) {
-          sendOperationFailed(
-            'trigger index' +
-              tId +
-              ' out of boudeviceRemovends.'
-          );
+          sendOperationFailed('trigger index' + tId + ' out of boudeviceRemovends.');
           return;
         }
 
@@ -377,17 +361,55 @@ app.ws('/ws', async function (ws) {
 
       case 'loadAppConfig':
         sendMessage(ws, 'appConfig', appConfig);
+        break;
+      case 'bridgePermitJoin':
+        // add some time delay to simulate reponse from bridge
+        // then emit appConfig event updated with the incoming value
+
+        // if permitjoin is true
+        // need to send back the start of the permitjoin message
+        // then sleep
+        // and send back the end of the permitjoin message
+
+        // else 
+        // sleep for 2 sec and then send back the updated appConfig
+        setTimeout(() => {
+
+
+          if (appConfig.bridgeConfig.permitJoin != obj.payload.v) {
+            appConfig.bridgeConfig = obj.payload;
+            if (appConfig.bridgeConfig.permitJoin) {
+              const timeout = appConfig.bridgeConfig.maxTimeAllowed.value * 1000;
+              console.log('start permitjoin for ', appConfig.bridgeConfig.maxTimeAllowed.value, ' seconds', timeout);
+              setTimeout(() => {
+                // start timer for 10 seconds
+                // then send message back with updated appConfig set permitjoin to false
+                console.log('permitjoin ended');
+
+                appConfig.bridgeConfig.permitJoin = false;
+                sendMessage(ws, 'appConfig', appConfig);
+              }, timeout);
+            } else {
+              setTimeout(() => {
+                console.log('permitjoin stopped');
+                // stop timer as we are currently running permitjoin
+                appConfig.bridgeConfig.permitJoin = false;
+                appConfig.bridgeConfig.maxTimeAllowed.value = 0;
+                sendMessage(ws, 'appConfig', appConfig);
+              }, 2000);
+            }
+          } else {
+            console.log('permitjoin already set to ' + obj.payload.permitJoin);
+            sendOperationFailed(ws, 'Permit join is already set to ' + obj.payload.permitJoin);
+          }
+        }, 2000);
 
         break;
       case 'loadMetrics':
         const payload = metricsMap[obj.payload.id];
 
         if (!payload) {
-          console.log(
-            'Metrics for device id' +
-              obj.payload.id +
-              ' not found'
-          );
+          console.log('Metrics for device id' + obj.payload.id + ' not found');
           // sendOperationFailed(
           //   ws,
           //   'Metrics for device id' +
@@ -415,18 +437,14 @@ app.ws('/ws', async function (ws) {
 
         if (appConfig.logger.enableRemoteLogger) {
           if (consoleLogIntervalId != 0) {
-            console.log(
-              'consoleLogIntervalId already running'
-            );
+            console.log('consoleLogIntervalId already running');
             clearInterval(consoleLogIntervalId);
           }
 
           console.log('enableRemoteLogger');
 
           consoleLogIntervalId = setInterval(() => {
-            const randomIndex = Math.floor(
-              Math.random() * logSeverity.length
-            );
+            const randomIndex = Math.floor(Math.random() * logSeverity.length);
 
             const severity = logSeverity[randomIndex];
             const msg = {
@@ -583,12 +601,9 @@ let settings = [
 let updateDeviceMap = {};
 updateDeviceMap['92fe86b7'] = mockUpdateWeatherNode1v2;
 updateDeviceMap['0x00124b0029207763'] = mockUpdateTH01v2;
-updateDeviceMap['0xa4c13894070052fc'] =
-  mockUpdateHumanPresencev2;
-updateDeviceMap['0x00124b00146c31cd'] =
-  mockUpdateMotionSensorv2;
-updateDeviceMap['0x70ac08fffefafeca'] =
-  mockUpdateAtticLight;
+updateDeviceMap['0xa4c13894070052fc'] = mockUpdateHumanPresencev2;
+updateDeviceMap['0x00124b00146c31cd'] = mockUpdateMotionSensorv2;
+updateDeviceMap['0x70ac08fffefafeca'] = mockUpdateAtticLight;
 
 function mockUpdateAtticLight(settings) {
   var device = {

@@ -87,12 +87,6 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
     interview({ dispatch }, { id }) {
       dispatch('ws/emit', { event: 'deviceInterview', message: { id } }, { root: true });
     },
-    enablePermitJoin({ dispatch }, { time }: { time: number }) {
-      dispatch('ws/emit', { event: 'bridgePermitJoin', message: { value: true, time: time } }, { root: true });
-    },
-    disablePermitJoin({ dispatch }) {
-      dispatch('ws/emit', { event: 'bridgePermitJoin', message: { value: false } }, { root: true });
-    },
     remove({ dispatch }, { id, force, block }) {
       var payload = {
         id: id,
