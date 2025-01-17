@@ -1,141 +1,142 @@
 <script setup lang="ts">
-  import { store } from '@/store';
-  import { BridgeSettingsType } from '@/types/settings';
-  import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
-  import { computed } from 'vue';
+import { store } from '@/store';
+import { BridgeSettingsType } from '@/types/settings';
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
+import { computed } from 'vue';
 
-  const bridgeConfig = computed<BridgeSettingsType>(() => {
-    return store.getters['appconfig/bridge']() as BridgeSettingsType;
-  });
+const bridgeConfig = computed<BridgeSettingsType>(() => {
+  return store.getters['appconfig/bridge']() as BridgeSettingsType;
+});
 
-  function enablePermitJoin() {
-    store.dispatch('appconfig/enablePermitJoin', props.duration);
-  }
+function enablePermitJoin() {
+  store.dispatch('appconfig/enablePermitJoin', props.duration);
+}
 
-  function disablePermitJoin() {
-    store.dispatch('appconfig/disablePermitJoin');
-  }
+function disablePermitJoin() {
+  store.dispatch('appconfig/disablePermitJoin');
+}
 
-  const props = defineProps({
-    duration: { type: Number, default: 60 },
-  });
+const props = defineProps({
+  duration: { type: Number, default: 60 },
+});
 
-  let intervalId: any = null;
-  const remainingTime = ref(
-    localStorage.getItem('remainingTime') ? parseInt(localStorage.getItem('remainingTime')!) : props.duration
-  );
+let intervalId: any = null;
+const remainingTime = ref(
+  localStorage.getItem('remainingTime') ? parseInt(localStorage.getItem('remainingTime')!) : props.duration
+);
 
-  //const isRunning = ref(localStorage.getItem('isRunning') === 'true' ? true : false);
-  const isRunning = ref(false);
+//const isRunning = ref(localStorage.getItem('isRunning') === 'true' ? true : false);
+const isRunning = ref(false);
 
-  watch(
-    bridgeConfig,
-    (newValue, oldValue) => {
-      console.log('bridgeConfig changed:', newValue, oldValue);
-      if (newValue && newValue.permitJoin !== undefined && newValue.permitJoin !== isRunning.value) {
-        if (newValue) {
-          console.log('bridgeConfig START:', newValue, oldValue);
-          isRunning.value = newValue.permitJoin;
-          startTimer();
-        }
-      } else if (!newValue) {
-        console.log('bridgeConfig END:', newValue, oldValue);
-        isRunning.value = false;
-        stopTimer();
+watch(
+  bridgeConfig,
+  (newValue, oldValue) => {
+    console.log('bridgeConfig changed:', newValue, oldValue);
+    if (newValue && newValue.permitJoin !== undefined && newValue.permitJoin !== isRunning.value) {
+      if (newValue) {
+        console.log('bridgeConfig START:', newValue, oldValue);
+        isRunning.value = newValue.permitJoin;
+        startTimer();
       }
-    },
-    { deep: true }
-  );
-
-  const buttonLabel = computed(() => {
-    if (isRunning.value) {
-      return `Disable Join [${formattedTime.value}]`;
+    } else if (!newValue) {
+      console.log('bridgeConfig END:', newValue, oldValue);
+      isRunning.value = false;
+      stopTimer();
     }
-    return 'Permit Join';
-  });
+  },
+  { deep: true }
+);
 
-  const formattedTime = computed(() => {
-    const minutes = Math.floor(remainingTime.value / 60);
-    const seconds = remainingTime.value % 60;
+const buttonLabel = computed(() => {
+  if (isRunning.value) {
+    return `Disable Join [${formattedTime.value}]`;
+  }
+  return 'Permit Join';
+});
 
-    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  });
+const formattedTime = computed(() => {
+  const minutes = Math.floor(remainingTime.value / 60);
+  const seconds = remainingTime.value % 60;
 
-  const startTimer = () => {
-    intervalId = setInterval(() => {
-      if (remainingTime.value > 0) {
-        remainingTime.value -= 1;
-        localStorage.setItem('remainingTime', remainingTime.value.toString());
-      } else {
-        stopTimer();
-      }
-    }, 1000);
-  };
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+});
 
-  const stopTimer = () => {
-    clearInterval(intervalId);
-    intervalId = null;
-    setIsRunning(false);
-    setRemainingTime(props.duration);
-  };
-
-  const setIsRunning = (value: boolean) => {
-    //isRunning.value = value;
-    // localStorage.setItem('isRunning', isRunning.value.toString());
-  };
-
-  const setRemainingTime = (value: number) => {
-    remainingTime.value = value;
-    localStorage.setItem('remainingTime', remainingTime.value.toString());
-  };
-
-  const toggleTimer = () => {
-    // isRunning.value = !isRunning.value;
-    // localStorage.setItem('isRunning', isRunning.value.toString());
-    console.log('toggleTimer ', isRunning.value);
-    if (isRunning.value) {
-      disablePermitJoin();
+const startTimer = () => {
+  intervalId = setInterval(() => {
+    if (remainingTime.value > 0) {
+      remainingTime.value -= 1;
+      localStorage.setItem('remainingTime', remainingTime.value.toString());
     } else {
-      enablePermitJoin();
+      stopTimer();
     }
-  };
+  }, 1000);
+};
 
-  onMounted(() => {
-    if (isRunning.value) {
-      startTimer();
-    }
-  });
+const stopTimer = () => {
+  clearInterval(intervalId);
+  intervalId = null;
+  setIsRunning(false);
+  setRemainingTime(props.duration);
+};
+
+const setIsRunning = (value: boolean) => {
+  //isRunning.value = value;
+  // localStorage.setItem('isRunning', isRunning.value.toString());
+};
+
+const setRemainingTime = (value: number) => {
+  remainingTime.value = value;
+  localStorage.setItem('remainingTime', remainingTime.value.toString());
+};
+
+const toggleTimer = () => {
+  // isRunning.value = !isRunning.value;
+  // localStorage.setItem('isRunning', isRunning.value.toString());
+  console.log('toggleTimer ', isRunning.value);
+  if (isRunning.value) {
+    disablePermitJoin();
+  } else {
+    enablePermitJoin();
+  }
+};
+
+onMounted(() => {
+  if (isRunning.value) {
+    startTimer();
+  }
+});
 </script>
 
 <style scoped>
-  .toggle-btn {
-    text-decoration: none;
-    color: inherit;
-    cursor: pointer;
-    background-color: transparent;
-    color: var(--primary-color);
+.toggle-btn {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  background-color: transparent;
+  color: var(--primary-color);
 
-    display: inline-flex;
-    align-items: center;
-  }
+  display: inline-flex;
+  align-items: center;
+}
 
-  .toggle-btn.p-button:hover {
-    background-color: transparent;
-    border-color: transparent;
-    color: var(--primary-color);
-  }
+.toggle-btn.p-button:hover {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--primary-color);
+}
 
-  .toggle-btn .small-text {
-    font-size: 0.9rem;
-  }
+.toggle-btn .small-text {
+  font-size: 0.9rem;
+}
 
-  .toggle-btn .toggle-icon {
-    margin-right: 0.5rem;
-  }
-  .toggle-btn.running {
-    color: var(--bs-danger-border-subtle);
-    font-weight: 500;
-  }
+.toggle-btn .toggle-icon {
+  margin-right: 0.5rem;
+}
+
+.toggle-btn.running {
+  color: var(--bs-danger-border-subtle);
+  font-weight: 500;
+}
 </style>
 <template>
   <a class="toggle-btn" :class="{ running: isRunning }" href="javascript:void(0)" v-on:click="toggleTimer()">

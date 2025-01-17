@@ -62,6 +62,7 @@ export const AppConfigModule: Module<AppConfigModuleState, RootState> = {
       commit('clear', state);
 
       state.appConfig = appConfig;
+      console.log(state.appConfig);
       Object.values(appConfig.devices).forEach((value) => {
         commit('setDeviceSetting', value);
       });

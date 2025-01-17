@@ -11,6 +11,7 @@ const (
 
 	// requests
 	LoadAutomations = "loadAutomations"
+	LoadHubSate     = "loadHubState"
 	LoadDevices     = "loadDevices"
 	LoadDevice      = "loadDevice"
 	LoadDeviceList  = "loadDeviceList"
@@ -41,6 +42,7 @@ const (
 	OperationFailed   = "operationFailed"
 	OperationSuccess  = "operationSuccess"
 	AutomationUpdated = "automationUpdated" // returns back upated automation
+	HubState          = "hubState"
 
 	Metrics      = "metrics"
 	AppConfig    = "appConfig"
@@ -70,6 +72,7 @@ type EventHub interface {
 	OnLoadMetrics(action func(interface{}) (interface{}, error))
 	OnLoadAppConfig(action func() (interface{}, error))
 	OnLoadBridgeConfig(action func() (interface{}, error))
+	OnLoadHubState(action func() (interface{}, error))
 	OnSaveDeviceConfig(func(payload interface{}) error)
 	OnSaveHistoryConfig(func(payload interface{}) error)
 	OnSaveLoggerConfig(func(payload interface{}) error)
@@ -97,7 +100,9 @@ type eventHubImpl struct {
 	onSaveDeviceConfig        func(interface{}) error
 	onSaveHistoryConfig       func(interface{}) error
 	onSaveLoggerConfig        func(interface{}) error
-	requestContext            hub.Context
+	onLoadHubState            func() (interface{}, error)
+
+	requestContext hub.Context
 }
 
 func NewWsHub() EventHub {
@@ -121,6 +126,7 @@ func NewWsHub() EventHub {
 		onSaveDeviceConfig:        func(payload interface{}) error { return nil },
 		onSaveHistoryConfig:       func(payload interface{}) error { return nil },
 		onSaveLoggerConfig:        func(payload interface{}) error { return nil },
+		onLoadHubState:            func() (interface{}, error) { return nil, nil },
 		requestContext:            NewRequestContext(),
 	}
 }
@@ -131,6 +137,10 @@ func (h *eventHubImpl) Context() hub.Context {
 
 func (h *eventHubImpl) HandleRequest(w http.ResponseWriter, r *http.Request) error {
 	return h.server.HandleRequest(w, r)
+}
+
+func (h *eventHubImpl) OnLoadHubState(action func() (interface{}, error)) {
+	h.onLoadHubState = action
 }
 
 func (h *eventHubImpl) OnDeviceSetValue(action func(p interface{}) error) {
@@ -270,6 +280,15 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 			utils.LogErrorf("Failed to broadcast onLoadDevices %s", err.Error())
 		}
 
+	case LoadHubSate:
+		devices := c.onLoadDevices()
+		appConfig,_:= c.onLoadAppConfig()
+
+		err := c.Broadcast(Devices, msg)
+		if err != nil {
+			utils.LogErrorf("Failed to broadcast onLoadDevices %s", err.Error())
+		}	
+	
 	case LoadMetrics:
 		c.executePayloadActionWithSuccessfullyEvent(eventMsg.Payload, c.onLoadMetrics, Metrics)
 

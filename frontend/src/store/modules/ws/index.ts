@@ -60,6 +60,10 @@ export const WSClientModule: Module<WSClientState, RootState> = {
         reconnectAttempts = 0;
         dispatch('emit', { event: 'loadDevices' });
 
+        ///////////////////////////////////////////////////////////
+        dispatch('emit', { event: 'loadAppConfig' }); // TEMPORARY
+
+        ///////////////////////////////////////////////////////////
         commit('setConnectionStatus', 'connected');
       };
 

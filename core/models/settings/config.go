@@ -1,9 +1,15 @@
 package settings
 
 import (
+	"node-herder/models/devices"
 	"node-herder/utils"
 	"time"
 )
+
+type HubState struct {
+	Config  *AppConfig        `json:"config"`
+	Devices []*devices.Device `json:"devices"`
+}
 
 type DeviceConfig struct {
 	Id             string `json:"id"`

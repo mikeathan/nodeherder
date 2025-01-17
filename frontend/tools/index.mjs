@@ -40,7 +40,7 @@ var appConfig = {
   logger: {
     enableRemoteLogger: false,
   },
-  bridgeConfig: {
+  bridge: {
     maxTimeAllowed: { value: 120, unit: 'seconds' },
     permitJoin: false,
   },
@@ -363,41 +363,9 @@ app.ws('/ws', async function (ws) {
         sendMessage(ws, 'appConfig', appConfig);
         break;
       case 'bridgePermitJoin':
-        // add some time delay to simulate reponse from bridge
-        // then emit appConfig event updated with the incoming value
-
-        // if permitjoin is true
-        // need to send back the start of the permitjoin message
-        // then sleep
-        // and send back the end of the permitjoin message
-
-        // else 
-        // sleep for 2 sec and then send back the updated appConfig
         setTimeout(() => {
-
-
-          if (appConfig.bridgeConfig.permitJoin != obj.payload.v) {
-            appConfig.bridgeConfig = obj.payload;
-            if (appConfig.bridgeConfig.permitJoin) {
-              const timeout = appConfig.bridgeConfig.maxTimeAllowed.value * 1000;
-              console.log('start permitjoin for ', appConfig.bridgeConfig.maxTimeAllowed.value, ' seconds', timeout);
-              setTimeout(() => {
-                // start timer for 10 seconds
-                // then send message back with updated appConfig set permitjoin to false
-                console.log('permitjoin ended');
-
-                appConfig.bridgeConfig.permitJoin = false;
-                sendMessage(ws, 'appConfig', appConfig);
-              }, timeout);
-            } else {
-              setTimeout(() => {
-                console.log('permitjoin stopped');
-                // stop timer as we are currently running permitjoin
-                appConfig.bridgeConfig.permitJoin = false;
-                appConfig.bridgeConfig.maxTimeAllowed.value = 0;
-                sendMessage(ws, 'appConfig', appConfig);
-              }, 2000);
-            }
+          if (appConfig.bridge.permitJoin != obj.payload.permitJoin) {
+            runPermitJoin(ws, obj.payload);
           } else {
             console.log('permitjoin already set to ' + obj.payload.permitJoin);
             sendOperationFailed(ws, 'Permit join is already set to ' + obj.payload.permitJoin);
@@ -777,4 +745,37 @@ function loadLightetrics() {
   const require = createRequire(import.meta.url);
   var data = require(lightMetricsFullPath);
   return data;
+}
+
+function runPermitJoin(ws, bridgeConfig) {
+  if (appConfig.bridge.permitJoin == bridgeConfig.permitJoin) {
+    return;
+  }
+
+  if (bridgeConfig.permitJoin) {
+    const timeout = appConfig.bridge.maxTimeAllowed.value * 1000;
+
+    // send back response that we set permitjoin to true and started timer
+    appConfig.bridge = bridgeConfig;
+    console.log('sending ', appConfig);
+    sendMessage(ws, 'appConfig', appConfig);
+    console.log('permitjoin is true for ', appConfig.bridge.maxTimeAllowed.value, ' seconds', timeout);
+
+    setTimeout(() => {
+      // start timer for 10 seconds
+      // then send message back with updated appConfig set permitjoin to false
+      console.log('permitjoin is false, stopping timer');
+
+      appConfig.bridge.permitJoin = false;
+      sendMessage(ws, 'appConfig', appConfig);
+    }, timeout);
+  } else {
+    setTimeout(() => {
+      console.log('permitjoin is false, manually stopped');
+      // stop timer as we are currently running permitjoin
+      appConfig.bridge.permitJoin = false;
+      appConfig.bridge.maxTimeAllowed.value = 0;
+      sendMessage(ws, 'appConfig', appConfig);
+    }, 2000);
+  }
 }
