@@ -58,12 +58,7 @@ export const WSClientModule: Module<WSClientState, RootState> = {
       socket.onopen = function (event) {
         console.log('ws connected');
         reconnectAttempts = 0;
-        dispatch('emit', { event: 'loadDevices' });
-
-        ///////////////////////////////////////////////////////////
-        dispatch('emit', { event: 'loadAppConfig' }); // TEMPORARY
-
-        ///////////////////////////////////////////////////////////
+        dispatch('emit', { event: 'loadHubState' });
         commit('setConnectionStatus', 'connected');
       };
 
@@ -104,6 +99,11 @@ export const WSClientModule: Module<WSClientState, RootState> = {
               root: true,
             });
             break;
+          case 'hubState':
+            dispatch('hubstate/init', obj.payload, {
+              // TODO !!!!!!!!!!!!!!!!!!!!!!!!!
+              root: true,
+            });
           case 'deviceList':
             dispatch('devices/updateItems', obj.payload, {
               root: true,

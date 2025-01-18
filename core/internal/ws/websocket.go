@@ -90,6 +90,7 @@ func (h *webSocketImpl) Broadcast(eventName string, data interface{}) error {
 		return errors.New("failed to marshal server payload")
 	}
 
+	// TODO : need to segment data if data is too large
 	return h.conn.Broadcast(bytes)
 }
 

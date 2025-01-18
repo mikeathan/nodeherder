@@ -218,6 +218,122 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 	}
 }
 
+func TestHandlingLoadHubStatesMessage(t *testing.T) {
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
+	inputDevices := createTestDevices()
+	wsHub.OnLoadDevices(func() interface{} {
+		return inputDevices
+	})
+
+	inputAppConfig := createAppconfig()
+	wsHub.OnLoadAppConfig(func() (interface{}, error) {
+		return inputAppConfig, nil
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	wsData := &ws.EventMessage{Type: ws.LoadHubSate, Payload: nil}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.HubState {
+		t.Fatalf("Expected type %v', got '%+v'", ws.Devices, event.Type)
+	}
+
+	var hubState *settings.HubState
+
+	bytes, _ := json.Marshal(event.Payload)
+	err = json.Unmarshal(bytes, &hubState)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// assert devices
+	for idx, device := range hubState.Devices {
+
+		inputDevice := inputDevices[idx]
+		if device.Id != inputDevice.Id {
+			t.Fatalf("unexpected device.Id value")
+		}
+		if device.FriendlyName != inputDevice.FriendlyName {
+			t.Fatalf("unexpected device.FriendlyName value")
+		}
+		if device.Description != inputDevice.Description {
+			t.Fatalf("unexpected device.Description value")
+		}
+		if device.ConnectionType != inputDevice.ConnectionType {
+			t.Fatalf("unexpected device.ConnectionType value")
+		}
+		if device.PowerSource != inputDevice.PowerSource {
+			t.Fatalf("unexpected device.PowerSource value")
+		}
+		for eidx, expose := range device.Exposes {
+			inputExpose := inputDevice.Exposes[eidx]
+
+			if expose.Name != inputExpose.Name {
+				t.Fatalf("unexpected expose.Name value")
+			}
+			if expose.Description != inputExpose.Description {
+				t.Fatalf("unexpected expose.Description value")
+			}
+			if expose.Data != inputExpose.Data {
+				t.Fatalf("unexpected expose.Data value")
+			}
+			if expose.Unit != inputExpose.Unit {
+				t.Fatalf("unexpected expose.Unit value")
+			}
+			for pidx, property := range expose.Properties {
+				inputproperty := inputExpose.Properties[pidx]
+				if property != inputproperty {
+					t.Fatalf("unexpected property value")
+				}
+			}
+		}
+	}
+
+	// assert app config
+	if len(hubState.Config.Hub.Devices) != len(inputAppConfig.Hub.Devices) {
+		t.Fatalf("Expected numer of appconfig devices. want %v', got '%v'", len(inputAppConfig.Hub.Devices), len(hubState.Config.Hub.Devices))
+	}
+	for id, d := range inputAppConfig.Hub.Devices {
+		gotDeviceConfig := hubState.Config.Hub.Devices[id]
+		if d.Id != gotDeviceConfig.Id {
+			t.Fatalf("Expected device id %v', got '%v'", d.Id, gotDeviceConfig.Id)
+		}
+		if d.Disabled != gotDeviceConfig.Disabled {
+			t.Fatalf("Expected Disabled %v', got '%v'", d.Disabled, gotDeviceConfig.Disabled)
+		}
+		if d.MetricsEnabled != gotDeviceConfig.MetricsEnabled {
+			t.Fatalf("Expected MetricsEnabled %v', got '%v'", d.MetricsEnabled, gotDeviceConfig.MetricsEnabled)
+		}
+
+		if d.RateLimit != gotDeviceConfig.RateLimit {
+			t.Fatalf("Expected RateLimit %v', got '%v'", d.RateLimit, gotDeviceConfig.RateLimit)
+		}
+	}
+	defer s.Close()
+	defer wsConn.Close()
+	defer wsHub.Close()
+
+}
 func TestHandlingLoadDevicesMessage(t *testing.T) {
 
 	wsHub := ws.NewWsHub()

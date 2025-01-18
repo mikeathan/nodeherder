@@ -306,6 +306,13 @@ app.ws('/ws', async function (ws) {
         sendMessage(ws, 'devices', devicesPayload);
         connected = true;
         break;
+      case 'loadHuState':
+        const hubState = {
+          config: appConfig,
+          devices: devicesPayload,
+        };
+        sendMessage(ws, 'hubState', hubState);
+        break;
       case 'deviceSetValue':
         // Respond back with update value to update UI
         const updatePayload = {

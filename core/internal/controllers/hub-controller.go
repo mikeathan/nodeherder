@@ -67,10 +67,6 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 }
 
 func (h *HubController) registerEventHubEvents() {
-
-	TODO
-	// TODO need to segment websocket response
-	// need to mrege device data and appconfig data
 	h.eventHub.OnLoadAppConfig(func() (interface{}, error) {
 		return h.store.LoadAppConfig()
 	})

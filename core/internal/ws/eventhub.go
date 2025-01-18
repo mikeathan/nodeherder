@@ -3,7 +3,9 @@ package ws
 import (
 	"encoding/json"
 	"net/http"
+	"node-herder/models/devices"
 	"node-herder/models/hub"
+	"node-herder/models/settings"
 	"node-herder/utils"
 )
 
@@ -72,7 +74,6 @@ type EventHub interface {
 	OnLoadMetrics(action func(interface{}) (interface{}, error))
 	OnLoadAppConfig(action func() (interface{}, error))
 	OnLoadBridgeConfig(action func() (interface{}, error))
-	OnLoadHubState(action func() (interface{}, error))
 	OnSaveDeviceConfig(func(payload interface{}) error)
 	OnSaveHistoryConfig(func(payload interface{}) error)
 	OnSaveLoggerConfig(func(payload interface{}) error)
@@ -100,7 +101,6 @@ type eventHubImpl struct {
 	onSaveDeviceConfig        func(interface{}) error
 	onSaveHistoryConfig       func(interface{}) error
 	onSaveLoggerConfig        func(interface{}) error
-	onLoadHubState            func() (interface{}, error)
 
 	requestContext hub.Context
 }
@@ -126,7 +126,6 @@ func NewWsHub() EventHub {
 		onSaveDeviceConfig:        func(payload interface{}) error { return nil },
 		onSaveHistoryConfig:       func(payload interface{}) error { return nil },
 		onSaveLoggerConfig:        func(payload interface{}) error { return nil },
-		onLoadHubState:            func() (interface{}, error) { return nil, nil },
 		requestContext:            NewRequestContext(),
 	}
 }
@@ -137,10 +136,6 @@ func (h *eventHubImpl) Context() hub.Context {
 
 func (h *eventHubImpl) HandleRequest(w http.ResponseWriter, r *http.Request) error {
 	return h.server.HandleRequest(w, r)
-}
-
-func (h *eventHubImpl) OnLoadHubState(action func() (interface{}, error)) {
-	h.onLoadHubState = action
 }
 
 func (h *eventHubImpl) OnDeviceSetValue(action func(p interface{}) error) {
@@ -281,14 +276,24 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 		}
 
 	case LoadHubSate:
-		devices := c.onLoadDevices()
-		appConfig,_:= c.onLoadAppConfig()
+		hubDevices := c.onLoadDevices()
+		ds, ok := hubDevices.([]*devices.Device)
+		if !ok {
+			utils.LogErrorf("LoadHubSate: Failed to cast devices to []Device")
+			return
+		}
+		appConfig, _ := c.onLoadAppConfig()
+		cfg, ok := appConfig.(*settings.AppConfig)
+		if !ok {
+			utils.LogErrorf("LoadHubSate: Failed to cast appConfig to *settings.AppConfig")
+			return
+		}
 
-		err := c.Broadcast(Devices, msg)
+		err := c.Broadcast(HubState, settings.NewHubState(cfg, ds))
 		if err != nil {
 			utils.LogErrorf("Failed to broadcast onLoadDevices %s", err.Error())
-		}	
-	
+		}
+
 	case LoadMetrics:
 		c.executePayloadActionWithSuccessfullyEvent(eventMsg.Payload, c.onLoadMetrics, Metrics)
 
