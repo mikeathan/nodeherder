@@ -103,6 +103,8 @@ export const AppConfigModule: Module<AppConfigModuleState, RootState> = {
         { root: true }
       );
     },
+
+    // TO MOVE - ws !!!!!!!!!!!!!!!!!!!
     enablePermitJoin({ commit, dispatch }, timeout: number) {
       const cfg: BridgeSettingsType = {
         permitJoin: true,
@@ -117,6 +119,7 @@ export const AppConfigModule: Module<AppConfigModuleState, RootState> = {
         { root: true }
       );
     },
+    // TO MOVE - ws !!!!!!!!!!!!!!!!!!!
     disablePermitJoin({ commit, dispatch }) {
       const cfg: BridgeSettingsType = {
         permitJoin: false,

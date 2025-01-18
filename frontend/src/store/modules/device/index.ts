@@ -73,9 +73,13 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
       commit('updateDevices', devices);
     },
 
+        // TO MOVE !!!!!!!!!!!11 - ws
+
     setValue({ dispatch }, payload: KeyValuePair<any>) {
       dispatch('ws/emit', { event: 'deviceSetValue', message: payload }, { root: true });
     },
+
+    // TO MOVE !!!!!!!!!!!11 - ws
     rename({ dispatch }, { name, newName }) {
       var payload = {
         from: name,
@@ -84,9 +88,13 @@ export const DeviceModule: Module<DeviceModuleState, RootState> = {
 
       dispatch('ws/emit', { event: 'deviceRename', message: payload }, { root: true });
     },
+
+    // TO MOVE !!!!!!!!!!!11 - ws
     interview({ dispatch }, { id }) {
       dispatch('ws/emit', { event: 'deviceInterview', message: { id } }, { root: true });
     },
+    // TO MOVE !!!!!!!!!!!11 - ws
+
     remove({ dispatch }, { id, force, block }) {
       var payload = {
         id: id,

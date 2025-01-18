@@ -1,3 +1,4 @@
+import { Device } from './device';
 import { ValueOf } from './types';
 
 export type AppConfig = {
@@ -14,6 +15,11 @@ export const TimeUnits: {
   UnitMinutes: 'minutes';
   UnitHours: 'hours';
   UnitDays: 'days';
+};
+
+export type HubState = {
+  config: AppConfig;
+  devices: Device[];
 };
 
 export type TimeUnit = ValueOf<typeof TimeUnits>;
