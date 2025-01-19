@@ -756,11 +756,10 @@ function runPermitJoin(ws, bridgeConfig) {
   }
 
   if (bridgeConfig.permitJoin) {
-    const timeout = appConfig.bridge.maxTimeAllowed.value * 1000;
-
     // send back response that we set permitjoin to true and started timer
     appConfig.bridge = bridgeConfig;
-    console.log('sending ', appConfig);
+
+    const timeout = appConfig.bridge.maxTimeAllowed.value * 1000;
     sendMessage(ws, 'appConfig', appConfig);
     console.log('permitjoin is true for ', appConfig.bridge.maxTimeAllowed.value, ' seconds', timeout);
 

@@ -75,7 +75,7 @@ const startTimer = () => {
 const stopTimer = () => {
   clearInterval(intervalId);
   intervalId = null;
-  setIsRunning(false);
+ // setIsRunning(false);
   setRemainingTime(props.duration);
 };
 
@@ -139,6 +139,7 @@ onMounted(() => {
 }
 </style>
 <template>
+  {{ remainingTime }}
   <a class="toggle-btn" :class="{ running: isRunning }" href="javascript:void(0)" v-on:click="toggleTimer()">
     <span class="toggle-icon pi pi-sitemap"></span>
     <span class="small-text">{{ buttonLabel }}</span>
