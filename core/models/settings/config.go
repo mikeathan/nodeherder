@@ -10,6 +10,7 @@ type HubState struct {
 	Config  *AppConfig        `json:"config"`
 	Devices []*devices.Device `json:"devices"`
 }
+
 func NewHubState(config *AppConfig, devices []*devices.Device) *HubState {
 	return &HubState{
 		Config:  config,
@@ -106,8 +107,8 @@ func NewHubConfig() *HubConfig {
 }
 
 type AppConfig struct {
-	Hub    *HubConfig    `json:"hubConfig"`
-	Bridge *BridgeConfig `json:"bridgeConfig"`
+	Hub    *HubConfig    `json:"hub"`
+	Bridge *BridgeConfig `json:"bridge"`
 }
 
 func (s *AppConfig) AddDeviceConfig(cfg *DeviceConfig) {

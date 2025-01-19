@@ -83,13 +83,13 @@ func (h *webSocketImpl) HandleRequest(w http.ResponseWriter, r *http.Request) er
 
 func (h *webSocketImpl) Broadcast(eventName string, data interface{}) error {
 	var wsData = EventMessage{Type: eventName, Payload: data}
+
 	bytes, err := json.Marshal(wsData)
 	if err != nil {
 		utils.LogErrorf("WebSocket.Broadcast failed to marshal server payload %s", err.Error())
 
 		return errors.New("failed to marshal server payload")
 	}
-
 	// TODO : need to segment data if data is too large
 	return h.conn.Broadcast(bytes)
 }

@@ -33,36 +33,38 @@ let server = http.createServer(app).listen(port);
 console.log('[' + currentTime() + '] server listening at port ' + port);
 
 var appConfig = {
-  history: {
-    sleepTimeout: { value: 12, unit: 'hours' },
-    expireAt: { value: 10, unit: 'days' },
-  },
-  logger: {
-    enableRemoteLogger: false,
+  hub: {
+    history: {
+      sleepTimeout: { value: 12, unit: 'hours' },
+      expireAt: { value: 10, unit: 'days' },
+    },
+    logger: {
+      enableRemoteLogger: false,
+    },
+    devices: {
+      '0xa4c13894070052fc': {
+        id: '0xa4c13894070052fc',
+        disabled: false,
+        metricsEnabled: false,
+        rateLimit: 10000,
+      },
+      '0x001788010d7d9d3f': {
+        id: '0x001788010d7d9d3f',
+        disabled: false,
+        metricsEnabled: false,
+        rateLimit: 50000,
+      },
+      '0x70ac08fffefafeca': {
+        id: '0x70ac08fffefafeca',
+        disabled: false,
+        metricsEnabled: true,
+        rateLimit: 50000,
+      },
+    },
   },
   bridge: {
     maxTimeAllowed: { value: 120, unit: 'seconds' },
     permitJoin: false,
-  },
-  devices: {
-    '0xa4c13894070052fc': {
-      id: '0xa4c13894070052fc',
-      disabled: false,
-      metricsEnabled: false,
-      rateLimit: 10000,
-    },
-    '0x001788010d7d9d3f': {
-      id: '0x001788010d7d9d3f',
-      disabled: false,
-      metricsEnabled: false,
-      rateLimit: 50000,
-    },
-    '0x70ac08fffefafeca': {
-      id: '0x70ac08fffefafeca',
-      disabled: false,
-      metricsEnabled: true,
-      rateLimit: 50000,
-    },
   },
 };
 var automationMap = new Map([
@@ -773,7 +775,6 @@ function runPermitJoin(ws, bridgeConfig) {
     }, timeout);
   } else {
     setTimeout(() => {
-
       clearInterval(permitJoinTimer);
       console.log('permitjoin is false, manually stopped');
       // stop timer as we are currently running permitjoin

@@ -10,6 +10,7 @@ import (
 	"node-herder/models/devices"
 	"node-herder/models/logging"
 	"node-herder/utils"
+	"reflect"
 	"strings"
 )
 
@@ -228,23 +229,24 @@ func (b *bridgePermitJoinResponseHandler) ProcessPayload(id string, connType str
 	if err != nil {
 		return err
 	}
+	
+	undled type:  {"type":"bridgeConfig","payload":{"maxTimeAllowed":{"value":120,"unit":"seconds"},"permitJoin":true}}
 
 	// NOTE:
 	// we look in repo for any request object with transaction id key
 	// if we find one then we process it
 	// that will run the timer
 	if resp.Status == "ok" {
-		if enabled, ok := resp.Data["value"].(bool); ok {
-			utils.LogInfof("Bridge Permit join set to %v ", enabled)
-			if resp.Transaction != 0 {
-
-				tId := utils.ConvertInt32(resp.Transaction)
-				err := b.ws.Context().Process(tId)
-				if err != nil {
-					utils.LogErrorf("error starting permit join %s", err.Error())
-					b.ws.Broadcast(ws.OperationFailed, fmt.Sprintf("error starting permit join %s", err.Error()))
-					return err
-				}
+		if time, ok := resp.Data["time"].(float64); ok {
+		utils.LogInfof("Bridge Permit join set to %v ", time)
+		}
+		if resp.Transaction != 0 {
+			tId := utils.ConvertInt32(resp.Transaction)
+			err := b.ws.Context().Process(tId)
+			if err != nil {
+				utils.LogErrorf("error starting permit join %s", err.Error())
+				b.ws.Broadcast(ws.OperationFailed, fmt.Sprintf("error starting permit join %s", err.Error()))
+				return err
 			}
 		}
 	} else {

@@ -2,13 +2,17 @@ import { Device } from './device';
 import { ValueOf } from './types';
 
 export type AppConfig = {
-  devices: KeyyValuePair<DeviceSettings>;
-  history: HistorySettingsType;
-  logger: LoggerSettingsType;
+  hub: HubConfigType;
   bridge: BridgeSettingsType;
 };
 
 export type DeviceSettingsMap = KeyyValuePair<DeviceSettings>;
+
+export type HubConfigType = {
+  devices: KeyyValuePair<DeviceSettings>;
+  history: HistorySettingsType;
+  logger: LoggerSettingsType;
+};
 
 export const TimeUnits: {
   UnitSeconds: 'seconds';

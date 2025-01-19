@@ -41,13 +41,13 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     },
 
     // AppConfig getters
-    history: (state) => (): HistorySettingsType => state.appConfig.history,
-    logger: (state) => (): LoggerSettingsType => state.appConfig.logger,
+    history: (state) => (): HistorySettingsType => state.appConfig.hub.history,
+    logger: (state) => (): LoggerSettingsType => state.appConfig.hub.logger,
     bridge: (state) => (): BridgeSettingsType => state.appConfig.bridge,
     findDeviceSetting:
       (state) =>
       (id: string): DeviceSettings | undefined => {
-        return state.appConfig?.devices[id];
+        return state.appConfig?.hub.devices[id];
       },
   },
 
@@ -93,14 +93,14 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     },
     setDeviceSetting(state, setting: DeviceSettings) {
       if (state.appConfig) {
-        state.appConfig.devices[setting.id] = setting;
+        state.appConfig.hub.devices[setting.id] = setting;
       }
     },
     setHistorySettings(state, historySetting: HistorySettingsType) {
-      state.appConfig.history = historySetting;
+      state.appConfig.hub.history = historySetting;
     },
     setLoggerSettings(state, loggerSettings: LoggerSettingsType) {
-      state.appConfig.logger = loggerSettings;
+      state.appConfig.hub.logger = loggerSettings;
     },
     setBridgeSettings(state, bridgeSettings: BridgeSettingsType) {
       state.appConfig.bridge = bridgeSettings;
