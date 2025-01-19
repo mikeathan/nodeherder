@@ -749,7 +749,7 @@ function loadLightetrics() {
   var data = require(lightMetricsFullPath);
   return data;
 }
-
+var permitJoinTimer = null;
 function runPermitJoin(ws, bridgeConfig) {
   if (appConfig.bridge.permitJoin == bridgeConfig.permitJoin) {
     return;
@@ -763,7 +763,7 @@ function runPermitJoin(ws, bridgeConfig) {
     sendMessage(ws, 'appConfig', appConfig);
     console.log('permitjoin is true for ', appConfig.bridge.maxTimeAllowed.value, ' seconds', timeout);
 
-    setTimeout(() => {
+    permitJoinTimer = setTimeout(() => {
       // start timer for 10 seconds
       // then send message back with updated appConfig set permitjoin to false
       console.log('permitjoin is false, stopping timer');
@@ -773,6 +773,8 @@ function runPermitJoin(ws, bridgeConfig) {
     }, timeout);
   } else {
     setTimeout(() => {
+
+      clearInterval(permitJoinTimer);
       console.log('permitjoin is false, manually stopped');
       // stop timer as we are currently running permitjoin
       appConfig.bridge.permitJoin = false;

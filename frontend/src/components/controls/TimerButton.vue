@@ -25,27 +25,20 @@
     localStorage.getItem('remainingTime') ? parseInt(localStorage.getItem('remainingTime')!) : props.duration
   );
 
-  //const isRunning = ref(localStorage.getItem('isRunning') === 'true' ? true : false);
   const isRunning = ref(false);
   const isDisabled = ref(false);
 
   watch(
     bridgeConfig,
     (newValue, oldValue) => {
-      console.log('bridgeConfig changed:', newValue, oldValue);
       if (newValue.permitJoin == isRunning.value) {
         return;
       }
       isDisabled.value = false;
-
+      isRunning.value = newValue.permitJoin;
       if (newValue.permitJoin) {
-        console.log('bridgeConfig START:', newValue, oldValue);
-        isRunning.value = newValue.permitJoin;
-
         startTimer();
       } else {
-        console.log('bridgeConfig END:', newValue, oldValue);
-        isRunning.value = false;
         stopTimer();
       }
     },
@@ -68,6 +61,9 @@
 
   const startTimer = () => {
     intervalId = setInterval(() => {
+      if (isDisabled.value) {
+        return;
+      }
       if (remainingTime.value > 0) {
         remainingTime.value -= 1;
         localStorage.setItem('remainingTime', remainingTime.value.toString());
@@ -77,30 +73,10 @@
     }, 1000);
   };
 
-  // when click start first time
-  // disable button
-  // send event to enable permitjoin
-  // once isRunning iis true
-  // then enable button
-  // and start time
-  // when time ends clear remainingTime
-  // if we get isRunning = false event first, clear remainingTime
-
-  // when click stop
-  // disable button
-  // send event to disable permitjoin
-  // once isRunning iis false clear remainingTime
-
   const stopTimer = () => {
     clearInterval(intervalId);
     intervalId = null;
-    // setIsRunning(false);
     setRemainingTime(props.duration);
-  };
-
-  const setIsRunning = (value: boolean) => {
-    //isRunning.value = value;
-    // localStorage.setItem('isRunning', isRunning.value.toString());
   };
 
   const setRemainingTime = (value: number) => {
@@ -109,9 +85,6 @@
   };
 
   const toggleTimer = () => {
-    // isRunning.value = !isRunning.value;
-    // localStorage.setItem('isRunning', isRunning.value.toString());
-    console.log('toggleTimer ', isRunning.value);
     if (isRunning.value) {
       disablePermitJoin();
     } else {
@@ -139,12 +112,6 @@
     align-items: center;
   }
 
-  .toggle-btn.p-button:hover {
-    background-color: transparent;
-    border-color: transparent;
-    color: var(--primary-color);
-  }
-
   .toggle-btn .small-text {
     font-size: 0.9rem;
   }
@@ -157,10 +124,24 @@
     color: var(--bs-danger-border-subtle);
     font-weight: 500;
   }
+
+  .toggle-btn.disabled {
+    cursor: default;
+    color: var(--bs-border-color);
+    pointer-events: none;
+  }
+  .toggle-btn.p-button:hover {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--primary-color);
+  }
 </style>
 <template>
-  {{ remainingTime }} - {{ isDisabled }}
-  <a class="toggle-btn" :class="{ running: isRunning }" href="#" v-on:click="toggleTimer()" :disabled="isDisabled">
+  <a
+    class="toggle-btn"
+    :class="{ running: isRunning, disabled: isDisabled }"
+    href="#"
+    @click.prevent="isDisabled ? null : toggleTimer()">
     <span class="toggle-icon pi pi-sitemap"></span>
     <span class="small-text">{{ buttonLabel }}</span>
   </a>
