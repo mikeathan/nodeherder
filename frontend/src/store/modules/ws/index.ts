@@ -75,12 +75,12 @@ export const WSClientModule: Module<WSClientState, RootState> = {
         const obj = JSON.parse(event.data);
         switch (obj.type) {
           case 'deviceUpdated':
-            commit('devices/update', obj.payload, {
+            commit('hub/updateDevice', obj.payload, {
               root: true,
             });
             break;
           case 'deviceAdded':
-            commit('devices/add', obj.payload, {
+            commit('hub/addDevice', obj.payload, {
               root: true,
             });
             break;
@@ -96,21 +96,22 @@ export const WSClientModule: Module<WSClientState, RootState> = {
             break;
           case 'devices':
             dispatch('devices/init', obj.payload, {
+              // TODO
               root: true,
             });
             break;
           case 'hubState':
-            dispatch('hubstate/init', obj.payload, {
-              // TODO !!!!!!!!!!!!!!!!!!!!!!!!!
+            dispatch('hub/init', obj.payload, {
               root: true,
             });
           case 'deviceList':
-            dispatch('devices/updateItems', obj.payload, {
+            dispatch('hub/updateDevices', obj.payload, {
               root: true,
             });
             break;
           case 'appConfig':
             dispatch('appconfig/init', obj.payload, {
+              // TODO
               root: true,
             });
             break;

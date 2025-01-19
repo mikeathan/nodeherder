@@ -5,6 +5,7 @@ import {
   Store,
 } from 'vuex';
 import { RootState } from './state';
+import { HubStateModule as hub } from './modules/hub-state/index';
 import { DeviceModule as devices } from './modules/device/index';
 import { AutomationModule as automations } from './modules/automation/index';
 import { WSClientModule as ws } from './modules/ws/index';
@@ -26,9 +27,8 @@ export const store = createStore<RootState>({
   state: {},
   actions: {
     cleanup({ commit }) {
-      commit('devices/clear');
+      commit('hub/clear');
       commit('automations/clear');
-      commit('appconfig/clear');
       commit('metrics/clear');
       commit('alerts/clear');
     },
@@ -40,6 +40,7 @@ export const store = createStore<RootState>({
     metrics,
     console,
     alerts,
+    hub,
     ws,
   },
 });
