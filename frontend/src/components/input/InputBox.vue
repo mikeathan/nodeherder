@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { ref, watch } from 'vue';
 
-  import { InputNumberInputEvent } from 'primevue';
+  import { InputNumberBlurEvent, InputNumberInputEvent } from 'primevue';
 
   const props = defineProps({
     value: null,
@@ -37,11 +37,7 @@
   watch(
     () => props.value,
     () => {
-      if (
-        props.isNumeric &&
-        (typeof props.value !== 'number' ||
-          isNaN(props.value))
-      ) {
+      if (props.isNumeric && (typeof props.value !== 'number' || isNaN(props.value))) {
         inputValue.value = 0;
       } else {
         inputValue.value = props.value;
@@ -50,15 +46,9 @@
     { immediate: true }
   );
 
-  function inputNumberEvent(
-    event: InputNumberInputEvent
-  ): void {
+  function inputNumberEvent(event: InputNumberInputEvent): void {
     const newValue = event.value;
-    if (
-      newValue == null ||
-      typeof newValue === 'string' ||
-      isNaN(newValue)
-    ) {
+    if (newValue == null || typeof newValue === 'string' || isNaN(newValue)) {
       inputValue.value = 0;
     } else {
       inputValue.value = newValue;
@@ -67,13 +57,12 @@
   }
 
   function inputTextEvent(event: Event): void {
-    let value: any = (event.target as HTMLInputElement)
-      .value;
+    let value: any = (event.target as HTMLInputElement).value;
     inputValue.value = value;
     emit('updated', inputValue.value);
   }
 
-  function onLostFocus(event: Event): void {
+  function onLostFocus(event: InputNumberBlurEvent): void {
     emit('lostFocus', inputValue.value);
   }
 </script>
@@ -87,13 +76,10 @@
         :disabled="props.disabled"
         inputId="integeronly"
         @input="inputNumberEvent"
-        :onblur="onLostFocus"
+        @blur="onLostFocus"
         :min="0"
-        :max="100"
         class="w-full" />
-      <label v-if="props.label != ''">{{
-        props.label
-      }}</label>
+      <label v-if="props.label != ''">{{ props.label }}</label>
     </FloatLabel>
   </div>
   <div v-else>
@@ -104,10 +90,8 @@
         :disabled="props.disabled"
         @input="inputTextEvent"
         :class="props.class"
-        :onblur="onLostFocus" />
-      <label v-if="props.label != ''">{{
-        props.label
-      }}</label>
+        @blur="onLostFocus" />
+      <label v-if="props.label != ''">{{ props.label }}</label>
     </FloatLabel>
   </div>
 </template>
