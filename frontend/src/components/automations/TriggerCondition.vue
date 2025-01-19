@@ -33,10 +33,7 @@
     (e: 'update:name', name: string): void;
     (e: 'update:value', property: any): void;
     (e: 'update:operator', data: string): void;
-    (
-      e: 'update',
-      condition: AutomationTriggerCondition
-    ): void;
+    (e: 'update', condition: AutomationTriggerCondition): void;
   }>();
 
   watch(
@@ -92,11 +89,8 @@
       return [];
     }
 
-    var device = store.getters['devices/find'](props.id);
-    if (
-      !device ||
-      device.exposes[name.value] == undefined
-    ) {
+    var device = store.getters['hub/findDevice'](props.id);
+    if (!device || device.exposes[name.value] == undefined) {
       return [];
     }
 
@@ -122,19 +116,10 @@
         :disabled="name != ''" />
     </div>
     <div class="col-sm-3">
-      <Selection
-        :value="operator"
-        @updated="operatorUpdated"
-        :items="exposeOperators"
-        :disabled="name == ''" />
+      <Selection :value="operator" @updated="operatorUpdated" :items="exposeOperators" :disabled="name == ''" />
     </div>
     <div class="col-sm-5">
-      <ExposeDataInput
-        :id="props.id"
-        :name="name"
-        :value="data"
-        @updated="dataUpdated"
-        :disabled="name == ''" />
+      <ExposeDataInput :id="props.id" :name="name" :value="data" @updated="dataUpdated" :disabled="name == ''" />
     </div>
   </div>
 </template>

@@ -43,7 +43,7 @@
     if (props.name == '') {
       return null;
     }
-    var device = store.getters['devices/find'](props.id);
+    var device = store.getters['hub/findDevice'](props.id);
     if (device == undefined) {
       return null;
     }
@@ -51,21 +51,14 @@
     return device.exposes[props.name] as Expose;
   });
 
-  const dataType = computed<ExposeType>(
-    () => deviceExpose.value?.type ?? ExposeTypes.Empty
-  );
+  const dataType = computed<ExposeType>(() => deviceExpose.value?.type ?? ExposeTypes.Empty);
   const inputValue = ref<any>(props.value);
 
   const selectedPreset = ref<any>('');
 
-  const showPresets = computed(
-    () =>
-      props.showPresets && exposePresets.value.length != 0
-  );
+  const showPresets = computed(() => props.showPresets && exposePresets.value.length != 0);
   const exposePresets = computed(() => {
-    return deviceExpose.value?.presets == undefined
-      ? []
-      : deviceExpose.value.presets;
+    return deviceExpose.value?.presets == undefined ? [] : deviceExpose.value.presets;
   });
 
   watch(
@@ -85,13 +78,9 @@
 
   const sequenceData = computed(() => {
     if (dataType.value == ExposeTypes.Binary) {
-      return deviceExpose.value?.properties != null
-        ? Object.values(deviceExpose.value?.properties)
-        : [true, false];
+      return deviceExpose.value?.properties != null ? Object.values(deviceExpose.value?.properties) : [true, false];
     }
-    return deviceExpose.value?.attributes
-      ? Object.values(deviceExpose.value.attributes)
-      : [];
+    return deviceExpose.value?.attributes ? Object.values(deviceExpose.value.attributes) : [];
   });
 
   function sequenceDataSelected(value: any) {
@@ -105,10 +94,7 @@
     try {
       value = parseInt(selected);
     } catch (error) {
-      console.error(
-        'error converting preset value to number ',
-        error
-      );
+      console.error('error converting preset value to number ', error);
     }
 
     inputValue.value = value;
@@ -116,11 +102,7 @@
   }
 </script>
 <template>
-  <div
-    v-if="
-      dataType == ExposeTypes.Binary ||
-      dataType == ExposeTypes.Enum
-    ">
+  <div v-if="dataType == ExposeTypes.Binary || dataType == ExposeTypes.Enum">
     <Selection
       :label="props.label"
       :value="props.value"

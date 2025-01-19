@@ -5,15 +5,15 @@ import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
 import { computed } from 'vue';
 
 const bridgeConfig = computed<BridgeSettingsType>(() => {
-  return store.getters['appconfig/bridge']() as BridgeSettingsType;
+  return store.getters['hub/bridge']() as BridgeSettingsType;
 });
 
 function enablePermitJoin() {
-  store.dispatch('appconfig/enablePermitJoin', props.duration);
+  store.dispatch('hub/enablePermitJoin', props.duration);
 }
 
 function disablePermitJoin() {
-  store.dispatch('appconfig/disablePermitJoin');
+  store.dispatch('hub/disablePermitJoin');
 }
 
 const props = defineProps({

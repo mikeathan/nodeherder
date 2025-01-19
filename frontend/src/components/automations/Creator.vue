@@ -8,7 +8,7 @@
   const selectedDevice = ref('');
   const deviceList = computed(() => {
     const devices = store.getters[
-      'devices/listAll'
+      'hub/listAllDevices'
     ]() as Devices;
     return Object.assign(
       {},

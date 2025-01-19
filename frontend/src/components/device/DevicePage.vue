@@ -17,11 +17,11 @@
   });
 
   const deviceExist = computed<boolean>(() => {
-    return store.getters['devices/exists'](props.id);
+    return store.getters['hub/deviceExists'](props.id);
   });
 
   const device = computed<Device>(() => {
-    return store.getters['devices/find'](props.id);
+    return store.getters['hub/findDevice'](props.id);
   });
 
   const previousPage = computed(() => {
@@ -39,9 +39,7 @@
       <div className="d-flex flex-row">
         <div class="align-self-center me-3">
           <RouterLink :to="`${previousPage}`">
-            <Button
-              icon="pi pi-arrow-left"
-              variant="text" />
+            <Button icon="pi pi-arrow-left" variant="text" />
           </RouterLink>
         </div>
         <div class="h3 align-self-center">
@@ -62,13 +60,8 @@
             </Tab>
           </TabList>
           <TabPanels>
-            <TabPanel
-              v-for="tab in deviceTabComponents"
-              :key="tab.value"
-              :value="tab.value">
-              <component
-                :is="tab.content"
-                v-bind="{ id: props.id }"></component>
+            <TabPanel v-for="tab in deviceTabComponents" :key="tab.value" :value="tab.value">
+              <component :is="tab.content" v-bind="{ id: props.id }"></component>
             </TabPanel>
           </TabPanels>
         </Tabs>

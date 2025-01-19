@@ -10,15 +10,7 @@
   });
 
   const deviceSettings = computed(() => {
-    if (
-      !store.getters['appconfig/initialized']() as Boolean
-    ) {
-      store.dispatch('ws/emit', { event: 'loadAppConfig' });
-    }
-
-    return store.getters['appconfig/findDeviceSetting'](
-      props.id
-    );
+    return store.getters['hub/findDeviceSetting'](props.id);
   });
 
   function toggleChanged(propName: any, propValue: any) {
@@ -26,25 +18,19 @@
   }
 
   function inputLostFocus(propName: any, propValue: any) {
+    console.log('inputLostFocus', propName, propValue);
     save(propName, propValue);
   }
 
   function save(propName: any, propValue: any) {
     if (deviceSettings.value[propName] != propValue) {
       deviceSettings.value[propName] = propValue;
-      store.dispatch(
-        'appconfig/saveDeviceSettings',
-        deviceSettings.value as DeviceSettings
-      );
+      store.dispatch('hub/saveDeviceSettings', deviceSettings.value as DeviceSettings);
     }
   }
-  deviceSettings;
 </script>
 <template>
-  <div
-    class="grid col-12 align-items-center grid-nogutter"
-    v-for="(value, key) in deviceSettings"
-    :key="key">
+  <div class="grid col-12 align-items-center grid-nogutter" v-for="(value, key) in deviceSettings" :key="key">
     <dl class="col-12 md:col-3">
       <dt class="text-secondary">
         <strong> {{ key }}</strong>

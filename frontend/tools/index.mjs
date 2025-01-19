@@ -301,17 +301,13 @@ app.ws('/ws', async function (ws) {
         sendMessage(ws, 'automations', getAutomations());
         break;
 
-      case 'loadDevices':
-        //var payload = buildNewDevicesPayload();
-        sendMessage(ws, 'devices', devicesPayload);
-        connected = true;
-        break;
-      case 'loadHuState':
-        const hubState = {
+      case 'loadHubState':
+        const hubStatePayload = {
           config: appConfig,
           devices: devicesPayload,
         };
-        sendMessage(ws, 'hubState', hubState);
+        sendMessage(ws, 'hubState', hubStatePayload);
+        connected = true;
         break;
       case 'deviceSetValue':
         // Respond back with update value to update UI

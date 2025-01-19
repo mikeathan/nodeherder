@@ -56,11 +56,18 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     addDevice(state, device: Device) {
       state.deviceMap[device.id] = device;
     },
-    updateDevices(state, devices: Devices) {
+    setDevices(state, devices: Devices) {
+      // clear the device map
+      Object.entries(state.deviceMap).forEach(([key, value]) => {
+        delete state.deviceMap[key];
+      });
+
       devices.forEach((device: Device) => {
-        if (device.id in state.deviceMap) state.deviceMap[device.id] = device;
+        //if (device.id in state.deviceMap)
+        state.deviceMap[device.id] = device;
       });
     },
+
     updateDevice(state, deviceUpdate: DeviceUpdate) {
       if (deviceUpdate.id in state.deviceMap == false) {
         console.error('device ', deviceUpdate.id, ' not found');
@@ -83,7 +90,6 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     // AppConfig mutations
     setAppConfig(state, config: AppConfig) {
       state.appConfig = config;
-      state.initialized = true;
     },
     setDeviceSetting(state, setting: DeviceSettings) {
       if (state.appConfig) {
@@ -107,16 +113,25 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       state.appConfig = {} as AppConfig;
       state.initialized = false;
     },
+
+    setInitialized(state, initialized: boolean) {
+      state.initialized = initialized;
+    },
   },
 
   actions: {
     init({ commit }, payload: { devices: Devices; config: AppConfig }) {
       commit('clear');
-      payload.devices.forEach((device) => commit('addDevice', device));
       commit('setAppConfig', payload.config);
+      commit('setDevices', payload.devices);
+      commit('setInitialized', true);
     },
 
     // AppConfig actions
+    setAppConfig({ state, commit }, appConfig: AppConfig) {
+      commit('setAppConfig', appConfig);
+    },
+
     saveDeviceSettings({ commit, dispatch }, deviceSetting: DeviceSettings) {
       commit('setDeviceSetting', deviceSetting);
       dispatch(
@@ -128,6 +143,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         { root: true }
       );
     },
+
     saveHistorySettings({ commit, dispatch }, historySettings: HistorySettingsType) {
       commit('setHistorySettings', historySettings);
       dispatch(
@@ -164,6 +180,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         { root: true }
       );
     },
+
     disablePermitJoin({ dispatch }) {
       const cfg: BridgeSettingsType = {
         permitJoin: false,
@@ -179,7 +196,13 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         { root: true }
       );
     },
+
     // Device actions
+
+    setDevices({ commit, dispatch }, devices: Devices) {
+      commit('setDevices', devices);
+    },
+
     setDeviceValue({ dispatch }, payload: KeyValuePair<any>) {
       dispatch('ws/emit', { event: 'deviceSetValue', message: payload }, { root: true });
     },

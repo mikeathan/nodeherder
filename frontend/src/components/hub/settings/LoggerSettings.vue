@@ -31,7 +31,7 @@
     if (loggerSettings.value[propName] != propValue) {
       loggerSettings.value[propName] = propValue;
       store.dispatch(
-        'appconfig/saveLoggerSettings',
+        'hub/saveLoggerSettings',
         loggerSettings.value
       );
     }
@@ -45,7 +45,7 @@
     }
     loggerSettings.value.enableRemoteLogger = enabled;
     store.dispatch(
-      'appconfig/saveLoggerSettings',
+      'hub/saveLoggerSettings',
       loggerSettings.value
     );
   }

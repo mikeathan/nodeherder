@@ -14,7 +14,6 @@ const (
 	// requests
 	LoadAutomations = "loadAutomations"
 	LoadHubSate     = "loadHubState"
-	LoadDevices     = "loadDevices"
 	LoadDevice      = "loadDevice"
 	LoadDeviceList  = "loadDeviceList"
 
@@ -36,7 +35,6 @@ const (
 
 	// response
 	Automations       = "automations"
-	Devices           = "devices"
 	DeviceList        = "deviceList"
 	Device            = "device"
 	DeviceAdded       = "deviceAdded"
@@ -56,7 +54,6 @@ type EventHub interface {
 	Start()
 	Close() error
 	EmitBridgeConfig()
-	EmitDevices()
 	EmitDeviceList(names []string)
 	EmitDevice(name string) error
 	OnLoadAutomations(action func() interface{})
@@ -234,11 +231,6 @@ func (h *eventHubImpl) EmitDeviceList(ids []string) {
 	h.Broadcast(DeviceList, msg)
 }
 
-func (h *eventHubImpl) EmitDevices() {
-	msg := h.onLoadDevices()
-	h.Broadcast(Devices, msg)
-}
-
 func (h *eventHubImpl) Broadcast(eventName string, data interface{}) error {
 	return h.server.Broadcast(eventName, data)
 }
@@ -266,13 +258,6 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 		err := c.Broadcast(Automations, msg)
 		if err != nil {
 			utils.LogErrorf("Failed to broadcast onLoadAutomations %s", err.Error())
-		}
-
-	case LoadDevices:
-		msg := c.onLoadDevices()
-		err := c.Broadcast(Devices, msg)
-		if err != nil {
-			utils.LogErrorf("Failed to broadcast onLoadDevices %s", err.Error())
 		}
 
 	case LoadHubSate:

@@ -1,10 +1,6 @@
 <script setup lang="ts">
   import { computed, PropType, reactive } from 'vue';
-  import {
-    AutomationTriggerAction,
-    AutomationActionStep,
-    NumericOperator,
-  } from '@/types/automation';
+  import { AutomationTriggerAction, AutomationActionStep, NumericOperator } from '@/types/automation';
   import { store } from '../../../store/index';
   import { Device, Devices } from '@/types/device';
   import { ExposeTypes } from '@/types/device.type';
@@ -40,17 +36,9 @@
   });
 
   const action = reactive({ ...props.action });
-  const dropdownItems = computed(() =>
-    createStepActionOperatorsDropdowitems(
-      (e: NumericOperator) => addStep(e)
-    )
-  );
+  const dropdownItems = computed(() => createStepActionOperatorsDropdowitems((e: NumericOperator) => addStep(e)));
   const buttonPanelItems = computed(() => {
-    const actionIsValid =
-      action.data &&
-      action.property &&
-      action.id &&
-      action.steps.length != 0;
+    const actionIsValid = action.data && action.property && action.id && action.steps.length != 0;
     return createSaveDeleteButtonItems(
       () => saveAction(),
       () => removeAction(),
@@ -64,30 +52,19 @@
     (e: 'delete', action: AutomationTriggerAction): void;
   }>();
 
-  function deviceNameFromId(
-    step: AutomationActionStep
-  ): string {
-    const device = store.getters['devices/find'](
-      step.id
-    ) as Device;
+  function deviceNameFromId(step: AutomationActionStep): string {
+    const device = store.getters['hub/findDevice'](step.id) as Device;
     if (device == undefined) {
       return '';
     }
     return device.friendly_name;
   }
 
-  function stepDeviceSelected(
-    id: string,
-    friendlyName: string,
-    step: AutomationActionStep
-  ) {
+  function stepDeviceSelected(id: string, friendlyName: string, step: AutomationActionStep) {
     step.id = id;
   }
 
-  function stepPropertySelected(
-    value: string,
-    step: AutomationActionStep
-  ) {
+  function stepPropertySelected(value: string, step: AutomationActionStep) {
     if (action.steps.length == 1) {
       action.property = value;
     }
@@ -120,10 +97,7 @@
     action.steps = action.steps.filter((c) => c != step);
   }
 
-  function deviceSelected(
-    deviceId: string,
-    friendlyName: string
-  ) {
+  function deviceSelected(deviceId: string, friendlyName: string) {
     action.id = deviceId;
     action.friendlyname = friendlyName;
     action.steps = [];
@@ -154,15 +128,10 @@
   <!-- data input box  -->
   <div class="row">
     <div class="col-sm-3">
-      <InputBox
-        label="Set value"
-        :is-numeric="true"
-        :value="action.data"
-        @updated="actionDataChanged" />
+      <InputBox label="Set value" :is-numeric="true" :value="action.data" @updated="actionDataChanged" />
     </div>
   </div>
-  <div
-    class="flex align-items-center justify-content-left pt-3">
+  <div class="flex align-items-center justify-content-left pt-3">
     <Dropdown
       :items="dropdownItems"
       :disabled="action.id == ''"
@@ -179,45 +148,18 @@
           <Selection
             :value="slotProps.data.operator"
             :items="NumericOperators"
-            @updated="
-              (o) => (slotProps.data.operator = o)
-            " />
+            @updated="(o) => (slotProps.data.operator = o)" />
         </template>
       </Column>
 
       <Column header="Device">
         <template #body="slotProps">
-          <div
-            v-if="slotProps.data.id == ''"
-            style="
-              display: flex;
-              align-items: center;
-              gap: 0.5rem;
-            ">
+          <div v-if="slotProps.data.id == ''" style="display: flex; align-items: center; gap: 0.5rem">
             <DeviceSelector
-              @updated="
-                (id, name) =>
-                  stepDeviceSelected(
-                    id,
-                    name,
-                    slotProps.data
-                  )
-              "
-              :filter="
-                devicesFilterByActionStep(
-                  props.automationId,
-                  action,
-                  slotProps.data
-                )
-              "></DeviceSelector>
+              @updated="(id, name) => stepDeviceSelected(id, name, slotProps.data)"
+              :filter="devicesFilterByActionStep(props.automationId, action, slotProps.data)"></DeviceSelector>
           </div>
-          <div
-            v-else
-            style="
-              display: flex;
-              align-items: center;
-              gap: 0.5rem;
-            ">
+          <div v-else style="display: flex; align-items: center; gap: 0.5rem">
             {{ deviceNameFromId(slotProps.data) }}
           </div>
         </template>
@@ -225,27 +167,13 @@
 
       <Column header="Expose">
         <template #body="slotProps">
-          <div
-            style="
-              display: flex;
-              align-items: center;
-              gap: 0.5rem;
-            ">
+          <div style="display: flex; align-items: center; gap: 0.5rem">
             <ExposeSelector
               :id="slotProps.data.id"
-              @updated="
-                (v) =>
-                  stepPropertySelected(v, slotProps.data)
-              "
+              @updated="(v) => stepPropertySelected(v, slotProps.data)"
               :value="slotProps.data.property"
-              :filter="
-                exposeFilterByType(ExposeTypes.Numeric)
-              " />
-            <Button
-              icon="pi pi-trash"
-              text
-              iconOnly="true"
-              @click="removeStep(slotProps.data)" />
+              :filter="exposeFilterByType(ExposeTypes.Numeric)" />
+            <Button icon="pi pi-trash" text iconOnly="true" @click="removeStep(slotProps.data)" />
           </div>
         </template>
       </Column>

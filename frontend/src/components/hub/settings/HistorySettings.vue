@@ -1,10 +1,7 @@
 <script setup lang="ts">
   import { PropType, ref } from 'vue';
   import { store } from '../../../store/index';
-  import {
-    HistorySettingsType,
-    HistorySettingsPropsType,
-  } from '@/types/settings';
+  import { HistorySettingsType, HistorySettingsPropsType } from '@/types/settings';
   import InputBox from '../../input/InputBox.vue';
 
   const props = defineProps({
@@ -15,36 +12,24 @@
     },
   });
 
-  const historySettings = ref<HistorySettingsType>(
-    props.settings
-  );
+  const historySettings = ref<HistorySettingsType>(props.settings);
 
   function inputLostFocus(propName: any, propValue: any) {
+    console.log('inputLostFocus', propName, propValue);
     save(propName, propValue);
   }
 
-  function save(
-    propName: HistorySettingsPropsType,
-    propValue: any
-  ) {
-    if (
-      historySettings.value[propName].value != propValue
-    ) {
+  function save(propName: HistorySettingsPropsType, propValue: any) {
+    if (historySettings.value[propName].value != propValue) {
       historySettings.value[propName].value = propValue;
-      store.dispatch(
-        'appconfig/saveHistorySettings',
-        historySettings.value
-      );
+      store.dispatch('hub/saveHistorySettings', historySettings.value);
     }
   }
 </script>
 <template>
   <h3>History</h3>
   <div class="pt-3" />
-  <div
-    class="grid grid-nogutter"
-    v-for="(interval, key) in historySettings"
-    :key="key">
+  <div class="grid grid-nogutter" v-for="(interval, key) in historySettings" :key="key">
     <dl class="col-12 md:col-3 text-secondary">
       <dt>
         <strong>{{ key }}</strong>

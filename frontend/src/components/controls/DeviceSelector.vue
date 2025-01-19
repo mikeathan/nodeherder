@@ -2,11 +2,7 @@
   import { computed, PropType } from 'vue';
   import { getDevices } from '@/contracts/device';
   import { store } from '@/store/index';
-  import {
-    Device,
-    Devices,
-    DeviceFilter,
-  } from '@/types/device';
+  import { Device, Devices, DeviceFilter } from '@/types/device';
   import Selection from '@/components/input/Selection.vue';
 
   const props = defineProps({
@@ -37,9 +33,7 @@
   }>();
 
   const deviceList = computed(() => {
-    var devices = store.getters[
-      'devices/listAll'
-    ]() as Devices;
+    var devices = store.getters['hub/listAllDevices']() as Devices;
     if (devices == undefined) {
       return {};
     }
@@ -47,15 +41,9 @@
   });
 
   function deviceSelected(id: string) {
-    const device = store.getters['devices/find'](
-      id
-    ) as Device;
+    const device = store.getters['hub/findDevice'](id) as Device;
     if (device == undefined) {
-      console.log(
-        'DeviceSelector - device id',
-        id,
-        'not found'
-      );
+      console.log('DeviceSelector - device id', id, 'not found');
       emit('updated', '', '');
       return;
     }

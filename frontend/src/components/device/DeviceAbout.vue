@@ -19,25 +19,25 @@
   const showRemoveDialog = ref(false);
 
   const device = computed(() => {
-    return store.getters['devices/find'](props.id);
+    return store.getters['hub/findDevice'](props.id);
   });
 
   function renameDevice(value: string) {
-    store.dispatch('devices/rename', {
+    store.dispatch('hub/renameDevice', {
       name: device.value.friendly_name,
       newName: value,
     });
   }
 
   function interviewDevice() {
-    store.dispatch('devices/interview', {
+    store.dispatch('hub/interviewDevice', {
       id: device.value.id,
     });
   }
 
   function removeDevice(event: RemoveDeviceEvent) {
     console.log('removeDevice', event);
-    store.dispatch('devices/remove', {
+    store.dispatch('hub/removeDevice', {
       id: device.value.id,
       force: event.force ?? false,
       block: event.block ?? false,
@@ -45,9 +45,7 @@
   }
 
   const displayProps = computed(() => {
-    const device = store.getters['devices/find'](
-      props.id
-    ) as Device;
+    const device = store.getters['hub/findDevice'](props.id) as Device;
     if (device == undefined) {
       return [];
     }
@@ -96,10 +94,7 @@
 </script>
 <template>
   <div>
-    <dl
-      class="grid grid-nogutter"
-      v-for="(prop, idx) in displayProps"
-      :key="idx">
+    <dl class="grid grid-nogutter" v-for="(prop, idx) in displayProps" :key="idx">
       <dt class="col-12 md:col-5 text-secondary">
         {{ prop.key }}
       </dt>
@@ -108,39 +103,22 @@
           <span title="last update">{{ prop.value }}</span>
         </div>
         <template v-else>
-          <component
-            :is="prop.type"
-            v-bind="prop.props"></component>
+          <component :is="prop.type" v-bind="prop.props"></component>
         </template>
       </dd>
     </dl>
   </div>
-  <Button
-    icon="pi pi-user-edit"
-    variant="text"
-    v-tooltip="'Rename device'"
-    @click="showRenameDialog = true" />
+  <Button icon="pi pi-user-edit" variant="text" v-tooltip="'Rename device'" @click="showRenameDialog = true" />
   <RenameDeviceDialog
     :friendlyName="device.friendly_name"
     :show="showRenameDialog"
     @update:name="renameDevice"
     @close="showRenameDialog = false" />
 
-  <Button
-    icon="pi pi-sync"
-    variant="text"
-    v-tooltip="'Interview device'"
-    @click="showInterviewDialog = true" />
-  <ConfirmDialog
-    :show="showInterviewDialog"
-    @confirm="interviewDevice"
-    @close="showInterviewDialog = false" />
+  <Button icon="pi pi-sync" variant="text" v-tooltip="'Interview device'" @click="showInterviewDialog = true" />
+  <ConfirmDialog :show="showInterviewDialog" @confirm="interviewDevice" @close="showInterviewDialog = false" />
 
-  <Button
-    icon="pi pi-trash"
-    variant="text"
-    v-tooltip="'Remove device'"
-    @click="showRemoveDialog = true" />
+  <Button icon="pi pi-trash" variant="text" v-tooltip="'Remove device'" @click="showRemoveDialog = true" />
   <RemoveDeviceDialog
     :friendlyName="device.friendly_name"
     :show="showRemoveDialog"

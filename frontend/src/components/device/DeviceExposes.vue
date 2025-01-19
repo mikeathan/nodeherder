@@ -3,17 +3,11 @@
   import { computed, ref } from 'vue';
   import { Device, Expose } from '@/types/device';
   import { ExposeTypes } from '@/types/device.type';
-  import {
-    getExposeAttribute,
-    getExposeProperty,
-  } from '../../contracts/device';
+  import { getExposeAttribute, getExposeProperty } from '../../contracts/device';
 
   import Toggle from '../input/Toggle.vue';
   import ButtonGroup from '../input/ButtonGroup.vue';
-  import {
-    getSensorUnit,
-    getSensorValue,
-  } from '@/modules/formatters/sensor-formatter';
+  import { getSensorUnit, getSensorValue } from '@/modules/formatters/sensor-formatter';
   import Range from '../input/Range.vue';
 
   const props = defineProps({
@@ -21,9 +15,7 @@
   });
 
   const device = computed(() => {
-    return store.getters['devices/find'](
-      props.id
-    ) as Device;
+    return store.getters['hub/findDevice'](props.id) as Device;
   });
 
   // TEMPORARY QUICK FIX
@@ -32,11 +24,9 @@
     var msg = {
       id: props.id,
       name: expose.name,
-      value: parseInt(
-        (event.target as HTMLInputElement).value
-      ),
+      value: parseInt((event.target as HTMLInputElement).value),
     };
-    store.dispatch('devices/setValue', msg);
+    store.dispatch('hub/setDeviceValue', msg);
   }
 
   function updateValue(expose: Expose, value: any) {
@@ -45,14 +35,11 @@
       name: expose.name,
       value: value,
     };
-    store.dispatch('devices/setValue', msg);
+    store.dispatch('hub/setDeviceValue', msg);
   }
 </script>
 <template>
-  <div
-    class="grid col-12 align-items-center grid-nogutter"
-    v-for="(expose, index) in device.exposes"
-    :item="expose">
+  <div class="grid col-12 align-items-center grid-nogutter" v-for="(expose, index) in device.exposes" :item="expose">
     <dl class="col-12 md:col-3">
       <dt>
         <strong> {{ expose.name }}</strong>
@@ -66,9 +53,7 @@
         {{ getSensorValue(expose.data) }}
         {{ getSensorUnit(expose.name) }}
       </div>
-      <div
-        v-else-if="expose.type == ExposeTypes.Numeric"
-        class="align-items-center">
+      <div v-else-if="expose.type == ExposeTypes.Numeric" class="align-items-center">
         <!-- TODO: refactor -->
         <div class="pt-3"></div>
 
@@ -95,9 +80,7 @@
           @update="(v) => updateValue(expose, v)">
         </Toggle>
       </div>
-      <div v-else-if="expose.type == ExposeTypes.Enum">
-        WIP : {{ expose.data }}
-      </div>
+      <div v-else-if="expose.type == ExposeTypes.Enum">WIP : {{ expose.data }}</div>
     </div>
   </div>
 </template>

@@ -12,28 +12,13 @@
     AutomationTriggerCondition,
     AutomationTriggerConditions,
   } from '@/types/automation';
-  import {
-    isValid,
-    EditableTriggerCondition,
-    EditableActionTrigger,
-    ActionType,
-  } from '../../contracts/automations';
+  import { isValid, EditableTriggerCondition, EditableActionTrigger, ActionType } from '../../contracts/automations';
   import { capitalizeText } from '../../modules/formatters/text.formatter';
-  import {
-    EventActions,
-    OpenPanelEvent,
-  } from '@/types/events.type';
-  import {
-    emitCloseLastPanel,
-    emitClosePanel,
-    emitOpenPanel,
-  } from '@/mixins/useAutomationsEventBus';
+  import { EventActions, OpenPanelEvent } from '@/types/events.type';
+  import { emitCloseLastPanel, emitClosePanel, emitOpenPanel } from '@/mixins/useAutomationsEventBus';
   import ActionViewer from './actions/ActionViewer.vue';
   import ButtonPanel from '@/components/controls/ButtonPanel.vue';
-  import {
-    createButtons,
-    createNewActionDropdownItems,
-  } from '../../configs/automation/trigger-dropdown.config';
+  import { createButtons, createNewActionDropdownItems } from '../../configs/automation/trigger-dropdown.config';
 
   const props = defineProps({
     id: { type: String },
@@ -44,20 +29,12 @@
   });
 
   // TODO: can be refactor to some automation context
-  const conditions = ref<AutomationTriggerConditions>(
-    {} as AutomationTriggerConditions
-  );
-  const actions = ref<AutomationTriggerActions>(
-    {} as AutomationTriggerActions
-  );
+  const conditions = ref<AutomationTriggerConditions>({} as AutomationTriggerConditions);
+  const actions = ref<AutomationTriggerActions>({} as AutomationTriggerActions);
 
   const trigger = ref<AutomationTrigger>(props.trigger);
 
-  const dropDownActionItems = computed(() =>
-    createNewActionDropdownItems((e: ActionType) =>
-      addNewAction(e)
-    )
-  );
+  const dropDownActionItems = computed(() => createNewActionDropdownItems((e: ActionType) => addNewAction(e)));
 
   const buttonPanelItems = computed(() => {
     return createButtons([
@@ -79,18 +56,12 @@
     () => {
       if (
         props.trigger.actions != undefined &&
-        props.trigger.actions.every(
-          (action) => action.id != ''
-        ) // refactor
+        props.trigger.actions.every((action) => action.id != '') // refactor
       ) {
-        actions.value = JSON.parse(
-          JSON.stringify(props.trigger.actions)
-        ) as AutomationTriggerAction[];
+        actions.value = JSON.parse(JSON.stringify(props.trigger.actions)) as AutomationTriggerAction[];
       }
 
-      conditions.value = JSON.parse(
-        JSON.stringify(props.trigger.conditions)
-      ) as AutomationTriggerConditions;
+      conditions.value = JSON.parse(JSON.stringify(props.trigger.conditions)) as AutomationTriggerConditions;
     },
     { immediate: true }
   );
@@ -118,18 +89,12 @@
     conditions.value.push(new EditableTriggerCondition());
   }
 
-  function removeTriggerCondition(
-    condition: AutomationTriggerCondition
-  ) {
-    conditions.value = conditions.value.filter(
-      (c) => c != condition
-    );
+  function removeTriggerCondition(condition: AutomationTriggerCondition) {
+    conditions.value = conditions.value.filter((c) => c != condition);
   }
 
   const exposesList = computed(() => {
-    const device = store.getters['devices/find'](
-      props.id
-    ) as Device;
+    const device = store.getters['hub/findDevice'](props.id) as Device;
     if (device == null) {
       return [];
     }
@@ -145,13 +110,8 @@
     actions.value = [];
   }
 
-  function SaveAction(
-    currentAction: AutomationTriggerAction,
-    updatedAction: AutomationTriggerAction
-  ) {
-    const idx = actions.value.findIndex(
-      (a) => a == currentAction
-    );
+  function SaveAction(currentAction: AutomationTriggerAction, updatedAction: AutomationTriggerAction) {
+    const idx = actions.value.findIndex((a) => a == currentAction);
     if (idx != -1) {
       trigger.value.actions[idx] = updatedAction;
     } else {
@@ -160,17 +120,10 @@
   }
 
   function addNewAction(actionType: ActionType) {
-    emitOpenPanel(
-      createActionOpenPanelEvent(
-        new EditableActionTrigger(actionType),
-        true
-      )
-    );
+    emitOpenPanel(createActionOpenPanelEvent(new EditableActionTrigger(actionType), true));
   }
 
-  const actionEvents = (
-    currentAction: AutomationTriggerAction
-  ): EventActions => {
+  const actionEvents = (currentAction: AutomationTriggerAction): EventActions => {
     return {
       delete: (e) => {
         deleteAction();
@@ -181,10 +134,7 @@
     };
   };
 
-  function createActionOpenPanelEvent(
-    action: AutomationTriggerAction,
-    editMode: boolean
-  ): OpenPanelEvent {
+  function createActionOpenPanelEvent(action: AutomationTriggerAction, editMode: boolean): OpenPanelEvent {
     return {
       name: 'ActionEditor',
       args: {
@@ -217,14 +167,9 @@
     </Selection>
   </div>
   <div class="row" v-else>
-    <h4 class="">
-      Trigger for {{ capitalizeText(trigger.name) }}
-    </h4>
+    <h4 class="">Trigger for {{ capitalizeText(trigger.name) }}</h4>
     <div class="pb-3" />
-    <Fieldset
-      legend="When"
-      :toggleable="true"
-      :collapsed="true">
+    <Fieldset legend="When" :toggleable="true" :collapsed="true">
       <DataTable :value="conditions" selectionMode="single">
         <Column header="Condition">
           <template #body="slotProps">
@@ -233,49 +178,24 @@
               :name="slotProps.data.name"
               :operator="slotProps.data.equality"
               :data="slotProps.data.value"
-              @update:name="
-                (newValue) =>
-                  (slotProps.data.name = newValue)
-              "
-              @update:value="
-                (newValue) =>
-                  (slotProps.data.value = newValue)
-              "
-              @update:operator="
-                (newValue) =>
-                  (slotProps.data.equality = newValue)
-              ">
+              @update:name="(newValue) => (slotProps.data.name = newValue)"
+              @update:value="(newValue) => (slotProps.data.value = newValue)"
+              @update:operator="(newValue) => (slotProps.data.equality = newValue)">
             </TriggerCondition>
           </template>
         </Column>
         <Column class="col-sm-1">
           <template #body="slotProps">
-            <Button
-              icon="pi pi-trash"
-              variant="text"
-              rounded
-              @click="
-                removeTriggerCondition(slotProps.data)
-              " />
+            <Button icon="pi pi-trash" variant="text" rounded @click="removeTriggerCondition(slotProps.data)" />
           </template>
         </Column>
       </DataTable>
-      <div
-        class="pt-4 flex align-items-center justify-content-center">
-        <Button
-          style="width: 99%"
-          icon="pi pi-plus"
-          label="Add condition"
-          @click="addNewCondition"
-          text
-          size="small" />
+      <div class="pt-4 flex align-items-center justify-content-center">
+        <Button style="width: 99%" icon="pi pi-plus" label="Add condition" @click="addNewCondition" text size="small" />
       </div>
     </Fieldset>
     <div class="pt-2"></div>
-    <Fieldset
-      legend="Then"
-      :toggleable="true"
-      :collapsed="true">
+    <Fieldset legend="Then" :toggleable="true" :collapsed="true">
       <DataTable :value="actions" selectionMode="single">
         <Column header="Actions">
           <template #body="slotProps">
@@ -289,17 +209,12 @@
         </Column>
         <Column class="col-sm-1">
           <template #body="slotProps">
-            <Button
-              icon="pi pi-trash"
-              variant="text"
-              rounded
-              @click="deleteAction()" />
+            <Button icon="pi pi-trash" variant="text" rounded @click="deleteAction()" />
           </template>
         </Column>
       </DataTable>
 
-      <div
-        class="pt-4 flex align-items-center justify-content-center">
+      <div class="pt-4 flex align-items-center justify-content-center">
         <Dropdown
           :items="dropDownActionItems"
           :disabled="actions.length != 0"

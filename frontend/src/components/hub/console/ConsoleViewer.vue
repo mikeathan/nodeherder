@@ -19,17 +19,12 @@
   });
 
   const loggerSettings = computed(() => {
-    if (
-      !store.getters['appconfig/initialized']() as Boolean
-    ) {
-      store.dispatch('ws/emit', { event: 'loadAppConfig' });
-    }
-    const set = store.getters['appconfig/logger']();
+    const set = store.getters['hub/logger']();
     if (set == undefined) {
       return {} as LoggerSettingsType;
     }
     return store.getters[
-      'appconfig/logger'
+      'hub/logger'
     ]() as LoggerSettingsType;
   });
 
@@ -66,7 +61,7 @@
     }
     loggerSettings.value.enableRemoteLogger = enabled;
     store.dispatch(
-      'appconfig/saveLoggerSettings',
+      'hub/saveLoggerSettings',
       loggerSettings.value
     );
   }

@@ -5,10 +5,7 @@
     getSensorName,
     getSensorUnit,
   } from '../../modules/formatters/sensor-formatter';
-  import {
-    getExposeProperty,
-    getExposeAttribute,
-  } from '../../contracts/device';
+  import { getExposeProperty, getExposeAttribute } from '../../contracts/device';
   import { PropType } from 'vue';
   import { store } from '../../store/index';
   import { Expose } from '@/types/device';
@@ -31,21 +28,15 @@
       value: event,
     };
 
-    store.dispatch('devices/setValue', msg);
+    store.dispatch('hub/setDeviceValue', msg);
   }
 
   function hasNumericFeatures(): Boolean {
-    return (
-      props.expose.properties != null &&
-      props.expose.type == 'numeric'
-    );
+    return props.expose.properties != null && props.expose.type == 'numeric';
   }
 
   function hasBinaryFeatures() {
-    return (
-      props.expose.properties != null &&
-      props.expose.type == 'binary'
-    );
+    return props.expose.properties != null && props.expose.type == 'binary';
   }
 
   function getValue() {
@@ -61,10 +52,7 @@
 </script>
 <template>
   <div class="me-1">
-    <Icon
-      :icon="
-        getSensorIcon(props.expose.name, props.expose.data)
-      " />
+    <Icon :icon="getSensorIcon(props.expose.name, props.expose.data)" />
   </div>
   <div class="flex-grow-1">
     {{ getSensorName(props.expose.name) }}

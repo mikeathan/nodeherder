@@ -40,9 +40,7 @@
   const selectedExpose = ref<string>(props.value);
 
   const exposeList = computed(() => {
-    const device = store.getters['devices/find'](
-      props.id
-    ) as Device;
+    const device = store.getters['hub/findDevice'](props.id) as Device;
     if (device == undefined) {
       console.log('exposeList empty', props.id);
 
