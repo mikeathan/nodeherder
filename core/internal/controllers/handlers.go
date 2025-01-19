@@ -10,7 +10,6 @@ import (
 	"node-herder/models/devices"
 	"node-herder/models/logging"
 	"node-herder/utils"
-	"reflect"
 	"strings"
 )
 
@@ -229,20 +228,14 @@ func (b *bridgePermitJoinResponseHandler) ProcessPayload(id string, connType str
 	if err != nil {
 		return err
 	}
-	
-	undled type:  {"type":"bridgeConfig","payload":{"maxTimeAllowed":{"value":120,"unit":"seconds"},"permitJoin":true}}
 
-	// NOTE:
-	// we look in repo for any request object with transaction id key
-	// if we find one then we process it
-	// that will run the timer
 	if resp.Status == "ok" {
-		if time, ok := resp.Data["time"].(float64); ok {
-		utils.LogInfof("Bridge Permit join set to %v ", time)
-		}
-		if resp.Transaction != 0 {
-			tId := utils.ConvertInt32(resp.Transaction)
-			err := b.ws.Context().Process(tId)
+		utils.LogInfof("Bridge Permit join set to %v ", resp.Data["time"])
+		if resp.Transaction != "" {
+			// TODO: if we dont have a request item eg the response came from zigbee2mqtt form their ui
+			// then currently we cant update the status. maybe create new request object with state using the resp.Data["time"]
+
+			err := b.ws.Context().Process(resp.Transaction)
 			if err != nil {
 				utils.LogErrorf("error starting permit join %s", err.Error())
 				b.ws.Broadcast(ws.OperationFailed, fmt.Sprintf("error starting permit join %s", err.Error()))
@@ -269,7 +262,7 @@ type BridgeResponse struct {
 	Data        map[string]interface{} `json:"data"`
 	Status      string                 `json:"status"`
 	Error       string                 `json:"error"`
-	Transaction uint32                 `json:"transaction"`
+	Transaction string                 `json:"transaction"`
 }
 
 func NewBridgeResponse() *BridgeResponse {
@@ -277,7 +270,7 @@ func NewBridgeResponse() *BridgeResponse {
 		Data:        map[string]interface{}{},
 		Status:      "",
 		Error:       "",
-		Transaction: 0,
+		Transaction: "",
 	}
 }
 

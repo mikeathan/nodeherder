@@ -2,7 +2,6 @@ package hub
 
 import (
 	"node-herder/models/settings"
-	"node-herder/utils"
 
 	"github.com/google/uuid"
 )
@@ -27,7 +26,7 @@ type Request interface {
 type BridgePermitJoinRequest struct {
 	Value         bool   `json:"value"`
 	Time          int    `json:"time"`
-	TransactionId uint32 `json:"transaction"`
+	TransactionId string `json:"transaction"`
 	callback      func(bool) error
 	payload       *settings.BridgeConfig
 }
@@ -37,7 +36,7 @@ func NewBridgePermitJoinRequest(config *settings.BridgeConfig, handler func(bool
 		payload:       config,
 		Value:         config.PermitJoin,
 		Time:          config.TimeExpireAt.Value,
-		TransactionId: uuid.New().ID(),
+		TransactionId: uuid.New().String(),
 		callback:      handler,
 	}
 }
@@ -54,5 +53,5 @@ func (r *BridgePermitJoinRequest) Action() func(bool) error {
 }
 
 func (r *BridgePermitJoinRequest) ID() string {
-	return utils.ConvertInt32(r.TransactionId)
+	return r.TransactionId
 }

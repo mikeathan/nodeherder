@@ -218,10 +218,6 @@ func (h *HubController) registerEventHubEvents() {
 			return errors.New("permit join failed. Invalid timeout. (Max 254 seconds)")
 		}
 
-		if req.TimeExpireAt.Value == 0 {
-			return errors.New("permit join failed. Invalid timeout. (0 seconds)")
-		}
-
 		f := func(value bool) error {
 			err := h.store.SaveBridgePermitJoin(value)
 			if err != nil {

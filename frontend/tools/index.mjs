@@ -771,7 +771,7 @@ function runPermitJoin(ws, bridgeConfig) {
       console.log('permitjoin is false, stopping timer');
 
       appConfig.bridge.permitJoin = false;
-      sendMessage(ws, 'appConfig', appConfig);
+      sendMessage(ws, 'bridgeConfig', appConfig.bridge);
     }, timeout);
   } else {
     setTimeout(() => {
@@ -780,7 +780,7 @@ function runPermitJoin(ws, bridgeConfig) {
       // stop timer as we are currently running permitjoin
       appConfig.bridge.permitJoin = false;
       appConfig.bridge.maxTimeAllowed.value = 0;
-      sendMessage(ws, 'appConfig', appConfig);
+      sendMessage(ws, 'bridgeConfig', appConfig.bridge);
     }, 2000);
   }
 }
