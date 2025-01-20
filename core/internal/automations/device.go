@@ -51,7 +51,7 @@ type Device struct {
 	Description  string          `json:"description"`
 	Enabled      bool            `json:"enabled"`
 	Triggers     []*Trigger      `json:"triggers"`
-	Schedules    []*TimeSchedule `json:"schedule"`
+	Schedules    []*TimeSchedule `json:"schedules"`
 	ctx          *DeviceContext
 }
 
