@@ -1,66 +1,66 @@
 <script setup lang="ts">
-  import { computed, nextTick, onMounted, ref, watch } from 'vue';
-  import { key, store } from '../../../store/index';
-  import Toggle from '../../input/Toggle.vue';
-  import { consoleCleanupService } from '@/services/console-cleanup.service';
-  import { LogMessageType } from '@/types/console.type';
-  import { formatTimestamp } from '@/utils/date.utils';
-  import { LoggerSettingsType } from '@/types/settings.type.type';
-  import { getConsoleLevelClass } from '@/contracts/console';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { key, store } from '../../../store/index';
+import Toggle from '../../input/Toggle.vue';
+import { consoleCleanupService } from '@/services/console-cleanup.service';
+import { LogMessageType } from '@/types/console.type';
+import { formatTimestamp } from '@/utils/date.utils';
+import { LoggerSettingsType } from '@/types/settings.type';
+import { getConsoleLevelClass } from '@/contracts/console';
 
-  onMounted(() => {
-    consoleCleanupService.startTimer(store);
-  });
+onMounted(() => {
+  consoleCleanupService.startTimer(store);
+});
 
-  const loggerSettings = computed(() => {
-    const set = store.getters['hub/logger']();
-    if (set == undefined) {
-      return {} as LoggerSettingsType;
-    }
-    return store.getters['hub/logger']() as LoggerSettingsType;
-  });
-
-  const messages = computed(() => {
-    return store.getters['console/messages']() as LogMessageType[];
-  });
-
-  const scrollToBottom = () => {
-    if (messageContainer.value) {
-      messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
-    }
-  };
-  const messageContainer = ref<HTMLDivElement | null>(null);
-  watch(
-    messages,
-    (newMessages, oldMessages) => {
-      // if (newMessages.length !== oldMessages?.length) {
-      nextTick(() => scrollToBottom());
-    },
-    { deep: true }
-  );
-  onMounted(() => {
-    scrollToBottom();
-  });
-
-  function enableLogging(enabled: boolean) {
-    if (enabled == loggerSettings.value.enableRemoteLogger) {
-      return;
-    }
-    loggerSettings.value.enableRemoteLogger = enabled;
-    store.dispatch('hub/saveLoggerSettings', loggerSettings.value);
+const loggerSettings = computed(() => {
+  const set = store.getters['hub/logger']();
+  if (set == undefined) {
+    return {} as LoggerSettingsType;
   }
+  return store.getters['hub/logger']() as LoggerSettingsType;
+});
 
-  function clearConsole() {
-    store.commit('console/clear');
+const messages = computed(() => {
+  return store.getters['console/messages']() as LogMessageType[];
+});
+
+const scrollToBottom = () => {
+  if (messageContainer.value) {
+    messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
   }
+};
+const messageContainer = ref<HTMLDivElement | null>(null);
+watch(
+  messages,
+  (newMessages, oldMessages) => {
+    // if (newMessages.length !== oldMessages?.length) {
+    nextTick(() => scrollToBottom());
+  },
+  { deep: true }
+);
+onMounted(() => {
+  scrollToBottom();
+});
+
+function enableLogging(enabled: boolean) {
+  if (enabled == loggerSettings.value.enableRemoteLogger) {
+    return;
+  }
+  loggerSettings.value.enableRemoteLogger = enabled;
+  store.dispatch('hub/saveLoggerSettings', loggerSettings.value);
+}
+
+function clearConsole() {
+  store.commit('console/clear');
+}
 </script>
 
 <style>
-  .message-container {
-    max-height: 200px;
-    overflow-y: auto;
-    padding-right: 10px;
-  }
+.message-container {
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
 </style>
 <template>
   <Card>
@@ -68,11 +68,7 @@
       <h2>Remote logger</h2>
     </template>
     <template #content>
-      <Toggle
-        :minimal="true"
-        :value="loggerSettings.enableRemoteLogger"
-        :valueOn="true"
-        :valueoff="false"
+      <Toggle :value="loggerSettings.enableRemoteLogger" :valueOn="true" :valueOff="false"
         @update="(v: boolean) => enableLogging(v)">
       </Toggle>
       <Button label="Clear" @click="clearConsole" variant="text" icon="pi pi-delete-left" />
