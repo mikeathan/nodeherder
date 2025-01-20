@@ -2,10 +2,6 @@
   import { computed, ref } from 'vue';
   import { store } from '../../store/index';
   import { useRouter } from 'vue-router';
-  import DeviceAbout from './DeviceAbout.vue';
-  import DeviceExposes from './DeviceExposes.vue';
-  import DeviceSettings from './DeviceSettings.vue';
-  import DeviceMetrics from './DeviceMetrics.vue';
   import { deviceTabComponents } from '../../mixins/useTabComponents';
   import { Device } from '@/types/device';
 

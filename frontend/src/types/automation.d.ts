@@ -1,4 +1,4 @@
-import { KeyValuePair, Nullable, ValueOf } from './types';
+import { KeyValuePair, Nullable, ValueOf } from './types.type';
 export type Automations = Array<Automation>;
 export type AutomationMap = KeyValuePair<Automation>;
 

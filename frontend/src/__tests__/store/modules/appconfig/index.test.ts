@@ -10,7 +10,7 @@ import {
   AppConfig,
   DeviceSettings,
   LoggerSettingsType,
-} from '@/types/settings';
+} from '@/types/settings.type';
 
 const mockAppconfig: AppConfig = {
   history: {

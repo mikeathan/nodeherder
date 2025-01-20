@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { KeyValuePair } from '@/types/types';
+  import { KeyValuePair } from '@/types/types.type';
   import { PropType, ref, watch } from 'vue';
 
   const props = defineProps({
@@ -29,10 +29,7 @@
   );
 
   function selectionChanged(value: any) {
-    selectedValue.value =
-      typeof props.value == 'number'
-        ? parseInt(value)
-        : value;
+    selectedValue.value = typeof props.value == 'number' ? parseInt(value) : value;
     emit('update', selectedValue.value);
   }
 

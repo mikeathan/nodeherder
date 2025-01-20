@@ -1,5 +1,5 @@
 import { IconProps } from '@/types/icon.type';
-import { KeyValuePair } from '../../types/types';
+import { KeyValuePair } from '../../types/types.type';
 
 import {
   mdiWaterPercent,

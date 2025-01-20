@@ -1,5 +1,5 @@
 import { AutomationTrigger } from './automation';
-import { KeyValuePair } from './types';
+import { KeyValuePair } from './types.type';
 
 export type SaveTriggerFunc = (
   trigger: AutomationTrigger

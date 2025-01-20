@@ -2,7 +2,7 @@ import { Module } from 'vuex';
 import { RootState } from '../../state';
 import { DeviceModuleState } from './state';
 import { Device, Devices, DeviceMap, DeviceUpdate } from '../../../types/device';
-import { KeyValuePair } from '../../../types/types';
+import { KeyValuePair } from '../../../types/types.type';
 
 export const DeviceModule: Module<DeviceModuleState, RootState> = {
   namespaced: true,

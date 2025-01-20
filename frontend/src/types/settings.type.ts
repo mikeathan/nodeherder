@@ -1,36 +1,29 @@
-import { Device } from './device';
-import { ValueOf } from './types';
+ import { KeyValuePair, ValueOf } from './types.type';
+
+export const TimeUnits = {
+  UnitSeconds: 'seconds',
+  UnitMinutes: 'minutes',
+  UnitHours: 'hours',
+  UnitDays: 'days',
+} as const;
+
+export type TimeUnit = ValueOf<typeof TimeUnits>;
+export type TimeInterval = {
+  value: number;
+  unit: TimeUnit;
+};
 
 export type AppConfig = {
   hub: HubConfigType;
   bridge: BridgeSettingsType;
 };
 
-export type DeviceSettingsMap = KeyyValuePair<DeviceSettings>;
+export type DeviceSettingsMap = KeyValuePair<DeviceSettings>;
 
 export type HubConfigType = {
-  devices: KeyyValuePair<DeviceSettings>;
+  devices: KeyValuePair<DeviceSettings>;
   history: HistorySettingsType;
   logger: LoggerSettingsType;
-};
-
-export const TimeUnits: {
-  UnitSeconds: 'seconds';
-  UnitMinutes: 'minutes';
-  UnitHours: 'hours';
-  UnitDays: 'days';
-};
-
-export type HubState = {
-  config: AppConfig;
-  devices: Device[];
-};
-
-export type TimeUnit = ValueOf<typeof TimeUnits>;
-
-export type TimeInterval = {
-  value: int;
-  unit: TimeUnit;
 };
 
 export type HistorySettingsPropsType = keyof HistorySettingsType;
@@ -55,5 +48,5 @@ export type DeviceSettings = {
   id: string;
   disabled: boolean;
   metricsEnabled: boolean;
-  rateLimit: number;
+  rateLimit: TimeInterval;
 };

@@ -115,7 +115,7 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	for _, wd := range wantDevices {
 		deviceConfig := settings.NewDeviceConfig(wd.Id)
 		deviceConfig.MetricsEnabled = true
-		deviceConfig.RateLimit = 1
+		deviceConfig.RateLimit = utils.IntervalFromMilliseconds(1)
 		appStore.SaveDeviceConfig(deviceConfig)
 		if err != nil {
 			t.Fatalf("error updating device %v error: %v:", wd.FriendlyName, err.Error())
@@ -429,7 +429,7 @@ func TestStoreMetricsLimitsDataWithConfiguredRateLimiter(t *testing.T) {
 	appConfig := settings.NewAppConfig()
 	deviceConfig := settings.NewDeviceConfig(dev1.Id)
 	deviceConfig.MetricsEnabled = true
-	deviceConfig.RateLimit = int(time.Millisecond.Milliseconds()) * 100
+	deviceConfig.RateLimit = utils.IntervalFromMilliseconds(100)
 	appConfig.AddDeviceConfig(deviceConfig)
 	settingsRepo.SaveAppConfig(appConfig)
 
@@ -504,13 +504,13 @@ func TestStoreMetricsLimitsDataWithMultipleDevicesConfiguredRateLimiter(t *testi
 	appConfig := settings.NewAppConfig()
 	deviceConfig := settings.NewDeviceConfig(dev1.Id)
 	deviceConfig.MetricsEnabled = true
-	deviceConfig.RateLimit = int(time.Millisecond.Milliseconds()) * 100 // rate limit at 100 ms
+	deviceConfig.RateLimit = utils.IntervalFromMilliseconds(100)
 
 	// configure 2st device
 	dev2 := wantDevices[1]
 	deviceConfig2 := settings.NewDeviceConfig(dev2.Id)
 	deviceConfig2.MetricsEnabled = true
-	deviceConfig2.RateLimit = int(time.Minute.Milliseconds()) // rate limit at 60000 ms
+	deviceConfig2.RateLimit = utils.IntervalFromMinutes(1)
 	appConfig.AddDeviceConfig(deviceConfig)
 	settingsRepo.SaveAppConfig(appConfig)
 

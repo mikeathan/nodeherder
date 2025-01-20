@@ -4,7 +4,7 @@ import {
   DeviceExposeMetrics,
   MetricsTypes,
 } from '@/types/metrics.type';
-import { KeyValuePair } from '@/types/types';
+import { KeyValuePair } from '@/types/types.type';
 
 export function groupMetricsByType(
   metrics: DeviceMetrics

@@ -1,13 +1,7 @@
 <script setup lang="ts">
-  import { KeyValuePair } from '@/types/types';
+  import { KeyValuePair } from '@/types/types.type';
   import { PropType, ref, watch, watchEffect } from 'vue';
-  import {
-    SelectSize,
-    SelectFormSize,
-    SelectionItems,
-    LayoutPosition,
-    LayoutPositions,
-  } from '@/types/controls.type';
+  import { SelectSize, SelectFormSize, SelectionItems, LayoutPosition, LayoutPositions } from '@/types/controls.type';
   import { SelectChangeEvent } from 'primevue';
 
   const props = defineProps({
@@ -49,9 +43,7 @@
   watch(
     () => props.items,
     (newItems) => {
-      isKeyValuePair.value =
-        !Array.isArray(newItems) &&
-        Object.entries(newItems).length > 0;
+      isKeyValuePair.value = !Array.isArray(newItems) && Object.entries(newItems).length > 0;
     },
     { immediate: true }
   );
@@ -60,21 +52,17 @@
     if (Array.isArray(props.items)) {
       return props.items;
     }
-    return Object.entries(props.items).map(
-      ([key, value]) => ({
-        key,
-        value,
-      })
-    );
+    return Object.entries(props.items).map(([key, value]) => ({
+      key,
+      value,
+    }));
   };
 
   const defaultText = (): string => {
     return props.text != '' ? props.text : 'Select';
   };
 
-  function selectionChanged(
-    event: SelectChangeEvent
-  ): void {
+  function selectionChanged(event: SelectChangeEvent): void {
     selectedValue.value = event.value;
     emit('updated', selectedValue.value);
   }
@@ -89,8 +77,6 @@
       :optionValue="isKeyValuePair ? 'value' : ''"
       @change="selectionChanged"
       class="w-full" />
-    <label v-if="props.label != ''">{{
-      props.label
-    }}</label>
+    <label v-if="props.label != ''">{{ props.label }}</label>
   </FloatLabel>
 </template>

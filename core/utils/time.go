@@ -3,10 +3,11 @@ package utils
 import "time"
 
 const (
-	UnitSeconds = "seconds"
-	UnitMinutes = "minutes"
-	UnitHours   = "hours"
-	UnitDays    = "days"
+	UnitMilliseconds = "milliseconds"
+	UnitSeconds      = "seconds"
+	UnitMinutes      = "minutes"
+	UnitHours        = "hours"
+	UnitDays         = "days"
 )
 
 type Clock interface {
@@ -44,6 +45,10 @@ func IntervalFromSeconds(value int) *TimeInterval {
 	return newTimeInterval(value, UnitSeconds)
 }
 
+func IntervalFromMilliseconds(value int) *TimeInterval {
+	return newTimeInterval(value, UnitMilliseconds)
+}
+
 func IntervalFromMinutes(value int) *TimeInterval {
 	return newTimeInterval(value, UnitMinutes)
 }
@@ -58,6 +63,8 @@ func IntervalFromDays(value int) *TimeInterval {
 
 func (d *TimeInterval) Duration() time.Duration {
 	switch d.Unit {
+	case UnitMilliseconds:
+		return time.Duration(d.Value) * time.Millisecond
 	case UnitSeconds:
 		return time.Duration(d.Value) * time.Second
 	case UnitMinutes:

@@ -1,4 +1,4 @@
-import { KeyValuePair, Nullable } from './types';
+import { KeyValuePair, Nullable } from './types.type';
 
 export type DeviceMap = KeyValuePair<Device>;
 export type Devices = Array<Device>;

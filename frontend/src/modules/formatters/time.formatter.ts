@@ -1,4 +1,4 @@
-import { Nullable } from '@/types/types';
+import { Nullable } from '@/types/types.type';
 
 export function toMillisecs(minutes: number): number {
   return minutes * 60000;

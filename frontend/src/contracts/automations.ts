@@ -9,7 +9,7 @@ import {
   TimeSchedule,
 } from '../types/automation';
 import { ExposeType } from '../types/device';
-import { ValueOf } from '@/types/types';
+import { ValueOf } from '@/types/types.type';
 
 export const EqualityOperators: string[] = [
   '=',

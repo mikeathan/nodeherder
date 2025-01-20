@@ -1,4 +1,4 @@
-import { KeyValuePair } from './types';
+import { KeyValuePair } from './types.type';
 
 export const MetricsTypes = {
   Binary: 'binary',

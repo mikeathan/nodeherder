@@ -1,4 +1,4 @@
-import { ValueOf } from './types';
+import { ValueOf } from './types.type';
 
 export const ConnectionStatus = {
   connected: 'connected',

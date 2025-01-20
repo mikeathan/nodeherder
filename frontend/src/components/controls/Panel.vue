@@ -1,15 +1,9 @@
 <script setup lang="ts">
-  import {
-    ref,
-    watch,
-    PropType,
-    computed,
-    onUnmounted,
-  } from 'vue';
+  import { ref, watch, PropType, computed, onUnmounted } from 'vue';
   import { OpenPanelEvent } from '@/types/events.type';
   import { useAutomationEvents } from '@/mixins/useAutomationsEventBus';
   import { PanelComponents } from '@/mixins/usePanelComponents';
-  import { KeyValuePair } from '@/types/types';
+  import { KeyValuePair } from '@/types/types.type';
 
   const cleanup = useAutomationEvents({
     openPanel(e: OpenPanelEvent) {
@@ -29,9 +23,7 @@
     (e: 'componentDisplayed'): void;
   }>();
 
-  const componentCache = ref<KeyValuePair<OpenPanelEvent>>(
-    {}
-  );
+  const componentCache = ref<KeyValuePair<OpenPanelEvent>>({});
   const presentationQueue = ref<Array<string>>([]);
 
   function openComponent(event: OpenPanelEvent): void {

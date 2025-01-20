@@ -273,8 +273,11 @@ func TestHandlingLoadHubStatesMessage(t *testing.T) {
 			t.Fatalf("Expected MetricsEnabled %v', got '%v'", d.MetricsEnabled, gotDeviceConfig.MetricsEnabled)
 		}
 
-		if d.RateLimit != gotDeviceConfig.RateLimit {
-			t.Fatalf("Expected RateLimit %v', got '%v'", d.RateLimit, gotDeviceConfig.RateLimit)
+		if d.RateLimit.Value != gotDeviceConfig.RateLimit.Value {
+			t.Fatalf("Expected RateLimit.Value %v', got '%v'", d.RateLimit.Value, gotDeviceConfig.RateLimit.Value)
+		}
+		if d.RateLimit.Unit != gotDeviceConfig.RateLimit.Unit {
+			t.Fatalf("Expected RateLimit.Unit %v', got '%v'", d.RateLimit.Unit, gotDeviceConfig.RateLimit.Unit)
 		}
 	}
 	defer s.Close()
@@ -658,8 +661,11 @@ func TestLoadAppConfigMessage(t *testing.T) {
 			t.Fatalf("Expected MetricsEnabled %v', got '%v'", d.MetricsEnabled, gotDeviceConfig.MetricsEnabled)
 		}
 
-		if d.RateLimit != gotDeviceConfig.RateLimit {
-			t.Fatalf("Expected RateLimit %v', got '%v'", d.RateLimit, gotDeviceConfig.RateLimit)
+		if d.RateLimit.Unit != gotDeviceConfig.RateLimit.Unit {
+			t.Fatalf("Expected RateLimit.Unit %v', got '%v'", d.RateLimit.Unit, gotDeviceConfig.RateLimit.Unit)
+		}
+		if d.RateLimit.Value != gotDeviceConfig.RateLimit.Value {
+			t.Fatalf("Expected RateLimit.Value %v', got '%v'", d.RateLimit.Value, gotDeviceConfig.RateLimit.Value)
 		}
 	}
 }
@@ -764,8 +770,11 @@ func TestSaveDeviceConfigMessage(t *testing.T) {
 			t.Fatalf("Expected MetricsEnabled %v', got '%v'", modifiedDevConfig.MetricsEnabled, payload.MetricsEnabled)
 		}
 
-		if payload.RateLimit != modifiedDevConfig.RateLimit {
-			t.Fatalf("Expected RateLimit %v', got '%v'", modifiedDevConfig.RateLimit, payload.RateLimit)
+		if payload.RateLimit.Unit != modifiedDevConfig.RateLimit.Unit {
+			t.Fatalf("Expected RateLimit.Unit %v', got '%v'", modifiedDevConfig.RateLimit.Unit, payload.RateLimit.Unit)
+		}
+		if payload.RateLimit.Value != modifiedDevConfig.RateLimit.Value {
+			t.Fatalf("Expected RateLimit.Value %v', got '%v'", modifiedDevConfig.RateLimit.Value, payload.RateLimit.Value)
 		}
 		return nil
 	})
@@ -1180,16 +1189,16 @@ func createAppconfig() *settings.AppConfig {
 	appConfig := settings.NewAppConfig()
 	deviceConfig := settings.NewDeviceConfig("x01234")
 	deviceConfig.MetricsEnabled = true
-	deviceConfig.RateLimit = int(time.Millisecond.Milliseconds()) * 100 // rate limit at 100 ms
+	deviceConfig.RateLimit = utils.IntervalFromMilliseconds(100)
 
 	deviceConfig2 := settings.NewDeviceConfig("x0111222")
 	deviceConfig2.MetricsEnabled = true
-	deviceConfig2.RateLimit = int(time.Minute.Milliseconds()) // rate limit at 60000 ms
+	deviceConfig2.RateLimit = utils.IntervalFromMinutes(1)
 	appConfig.AddDeviceConfig(deviceConfig)
 
 	deviceConfig3 := settings.NewDeviceConfig("x0333444")
 	deviceConfig3.MetricsEnabled = false
-	deviceConfig3.RateLimit = int(time.Minute.Milliseconds()) * 1111 // rate limit at 60000 ms
+	deviceConfig3.RateLimit = utils.IntervalFromMilliseconds(1111) // rate limit at 60000 ms
 	appConfig.AddDeviceConfig(deviceConfig3)
 	return appConfig
 }

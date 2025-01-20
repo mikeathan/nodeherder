@@ -1,4 +1,4 @@
-import { KeyValuePair } from './types';
+import { KeyValuePair } from './types.type';
 
 export type ButtonPanelType = ButtonType | DropDownType;
 export type ButtonType = {

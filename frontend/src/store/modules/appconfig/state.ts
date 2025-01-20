@@ -1,7 +1,7 @@
 import {
   AppConfig,
   DeviceSettingsMap,
-} from '@/types/settings';
+} from '@/types/settings.type';
 
 export interface AppConfigModuleState {
   deviceSettingsMap: DeviceSettingsMap;

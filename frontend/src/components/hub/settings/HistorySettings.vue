@@ -1,7 +1,8 @@
 <script setup lang="ts">
   import { PropType, ref } from 'vue';
   import { store } from '../../../store/index';
-  import { HistorySettingsType, HistorySettingsPropsType } from '@/types/settings';
+  import { HistorySettingsType, HistorySettingsPropsType } from '@/types/settings.type';
+
   import InputBox from '../../input/InputBox.vue';
 
   const props = defineProps({

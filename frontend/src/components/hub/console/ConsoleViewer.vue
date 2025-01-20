@@ -1,17 +1,11 @@
 <script setup lang="ts">
-  import {
-    computed,
-    nextTick,
-    onMounted,
-    ref,
-    watch,
-  } from 'vue';
+  import { computed, nextTick, onMounted, ref, watch } from 'vue';
   import { key, store } from '../../../store/index';
   import Toggle from '../../input/Toggle.vue';
   import { consoleCleanupService } from '@/services/console-cleanup.service';
   import { LogMessageType } from '@/types/console.type';
   import { formatTimestamp } from '@/utils/date.utils';
-  import { LoggerSettingsType } from '@/types/settings';
+  import { LoggerSettingsType } from '@/types/settings.type.type';
   import { getConsoleLevelClass } from '@/contracts/console';
 
   onMounted(() => {
@@ -23,21 +17,16 @@
     if (set == undefined) {
       return {} as LoggerSettingsType;
     }
-    return store.getters[
-      'hub/logger'
-    ]() as LoggerSettingsType;
+    return store.getters['hub/logger']() as LoggerSettingsType;
   });
 
   const messages = computed(() => {
-    return store.getters[
-      'console/messages'
-    ]() as LogMessageType[];
+    return store.getters['console/messages']() as LogMessageType[];
   });
 
   const scrollToBottom = () => {
     if (messageContainer.value) {
-      messageContainer.value.scrollTop =
-        messageContainer.value.scrollHeight;
+      messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
     }
   };
   const messageContainer = ref<HTMLDivElement | null>(null);
@@ -54,16 +43,11 @@
   });
 
   function enableLogging(enabled: boolean) {
-    if (
-      enabled == loggerSettings.value.enableRemoteLogger
-    ) {
+    if (enabled == loggerSettings.value.enableRemoteLogger) {
       return;
     }
     loggerSettings.value.enableRemoteLogger = enabled;
-    store.dispatch(
-      'hub/saveLoggerSettings',
-      loggerSettings.value
-    );
+    store.dispatch('hub/saveLoggerSettings', loggerSettings.value);
   }
 
   function clearConsole() {
@@ -91,27 +75,13 @@
         :valueoff="false"
         @update="(v: boolean) => enableLogging(v)">
       </Toggle>
-      <Button
-        label="Clear"
-        @click="clearConsole"
-        variant="text"
-        icon="pi pi-delete-left" />
+      <Button label="Clear" @click="clearConsole" variant="text" icon="pi pi-delete-left" />
       <div class="pb-3"></div>
       <div ref="messageContainer" class="message-container">
-        <div
-          v-for="(message, index) in messages"
-          :key="message.timestamp">
-          <span
-            style="width: 60px"
-            :class="`badge ${getConsoleLevelClass(
-              message.level
-            )}`"
-            >{{ message.level }}</span
-          >
+        <div v-for="(message, index) in messages" :key="message.timestamp">
+          <span style="width: 60px" :class="`badge ${getConsoleLevelClass(message.level)}`">{{ message.level }}</span>
           &nbsp;
-          <small class="pe-1">{{
-            formatTimestamp(message.timestamp)
-          }}</small>
+          <small class="pe-1">{{ formatTimestamp(message.timestamp) }}</small>
           &nbsp;
           <code>{{ message.message }}</code>
         </div>

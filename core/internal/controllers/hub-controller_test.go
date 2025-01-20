@@ -106,7 +106,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 		} else {
 
 			time.Sleep(500 * time.Millisecond)
-			
+
 			//  alarm should not be triggered as schedule is not due.
 			alarm, _ := store.FindDeviceById("x02222222")
 			if alarm.Exposes["alarm"].Data != false {
@@ -420,7 +420,7 @@ func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *tes
 	// enable metrics for light device. use its new Id
 	cfg := settings.NewDeviceConfig(d.Id)
 	cfg.MetricsEnabled = true
-	cfg.RateLimit = 10 // 10 ms
+	cfg.RateLimit = utils.IntervalFromMilliseconds(10)
 	store.SaveDeviceConfig(cfg)
 
 	// note:
@@ -517,7 +517,8 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 			t.Fatalf("device not found. err %v ", err)
 		}
 		// update values and store for assertions
-		cfg.RateLimit = (id + 1) * 2 // 10 ms
+		rt := (id + 1) * 2
+		cfg.RateLimit = utils.IntervalFromMilliseconds(rt)
 		cfg.Disabled = true
 		cfg.MetricsEnabled = true
 		store.SaveDeviceConfig(cfg)
@@ -533,8 +534,11 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 		if configs[id].Disabled != cfg.Disabled {
 			t.Fatalf("disabled mismatch want %v got %v", configs[id].Disabled, cfg.Disabled)
 		}
-		if configs[id].RateLimit != cfg.RateLimit {
-			t.Fatalf("rateLimit mismatch want %v got %v", configs[id].RateLimit, cfg.RateLimit)
+		if configs[id].RateLimit.Unit != cfg.RateLimit.Unit {
+			t.Fatalf("rateLimit.Unit mismatch want %v got %v", configs[id].RateLimit.Unit, cfg.RateLimit.Unit)
+		}
+		if configs[id].RateLimit.Value != cfg.RateLimit.Value {
+			t.Fatalf("rateLimit.Value mismatch want %v got %v", configs[id].RateLimit.Value, cfg.RateLimit.Value)
 		}
 		if configs[id].MetricsEnabled != cfg.MetricsEnabled {
 			t.Fatalf("metricsEnabled mismatch want %v got %v", configs[id].MetricsEnabled, cfg.MetricsEnabled)
@@ -581,7 +585,7 @@ func TestProcessorTriggersAutomationsStoresMetricsForExistingDevice(t *testing.T
 
 	// enable metrics for dial device
 	cfg.MetricsEnabled = true
-	cfg.RateLimit = 10 // 10 ms
+	cfg.RateLimit = utils.IntervalFromMilliseconds(10)
 	store.SaveDeviceConfig(cfg)
 
 	// publish light device

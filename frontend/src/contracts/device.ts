@@ -4,7 +4,7 @@ import {
   Device,
 } from '@/types/device';
 import { ExposeTypes } from '@/types/device.type';
-import { KeyValuePair, ValueOf } from '@/types/types';
+import { KeyValuePair, ValueOf } from '@/types/types.type';
 
 export function getExposeAttribute(
   expose: Expose,

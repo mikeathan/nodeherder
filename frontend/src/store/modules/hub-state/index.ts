@@ -8,8 +8,8 @@ import {
   DeviceSettings,
   HistorySettingsType,
   LoggerSettingsType,
-} from '../../../types/settings';
-import { KeyValuePair } from '@/types/types';
+} from '../../../types/settings.type';
+import { KeyValuePair } from '@/types/types.type';
 
 export const HubStateModule: Module<HubStateModuleState, RootState> = {
   namespaced: true,

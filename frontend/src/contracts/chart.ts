@@ -11,7 +11,7 @@ import {
   getLastWeekStartEndDate,
   getWeekStartEndDate,
 } from '@/utils/date.utils';
-import { KeyValuePair } from '@/types/types';
+import { KeyValuePair } from '@/types/types.type';
 import { ColorTypes, ColorValue } from '@/types/color.type';
 
 const HOURS = 24;

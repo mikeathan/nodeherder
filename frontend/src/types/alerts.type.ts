@@ -1,4 +1,4 @@
-import { ValueOf } from './types';
+import { ValueOf } from './types.type';
 
 export type AlertType = ValueOf<typeof AlertTypes>;
 

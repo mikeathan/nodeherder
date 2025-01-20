@@ -1,5 +1,5 @@
 import { ColorValue } from './color.type';
-import { KeyValuePair, ValueOf } from './types';
+import { KeyValuePair, ValueOf } from './types.type';
 
 export type AreaDataPoint = {
   x: number;

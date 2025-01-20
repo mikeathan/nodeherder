@@ -8,7 +8,7 @@ import {
   DeviceSettingsMap,
   HistorySettingsType,
   LoggerSettingsType,
-} from '@/types/settings';
+} from '@/types/settings.type';
 import { key } from '@/store';
 
 export const AppConfigModule: Module<AppConfigModuleState, RootState> = {

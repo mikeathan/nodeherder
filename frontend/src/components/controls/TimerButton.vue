@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { store } from '@/store';
-  import { BridgeSettingsType } from '@/types/settings';
+  import { BridgeSettingsType } from '@/types/settings.type.type';
   import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
   import { computed } from 'vue';
 
