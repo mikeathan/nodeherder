@@ -18,10 +18,13 @@
   }
 
   function inputLostFocus(propName: any, propValue: any) {
-    console.log('inputLostFocus', propName, propValue);
     save(propName, propValue);
   }
-
+  function inputTimeIntervalLostFocus(propName: any, propValue: any) {
+    const timeInterval = deviceSettings.value[propName] as TimeInterval;
+    timeInterval.value = propValue;
+    save(propName, timeInterval);
+  }
   function save(propName: any, propValue: any) {
     if (deviceSettings.value[propName] != propValue) {
       deviceSettings.value[propName] = propValue;
@@ -55,7 +58,7 @@
           :label="value.unit"
           :value="value.value"
           :is-numeric="true"
-          @lost-focus="(f) => inputLostFocus(key, f)" />
+          @lost-focus="(f) => inputTimeIntervalLostFocus(key, f)" />
       </div>
       <div v-else-if="typeof value === 'number'">
         <InputBox
