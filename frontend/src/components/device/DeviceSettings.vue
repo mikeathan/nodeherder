@@ -60,7 +60,7 @@
           :is-numeric="true"
           @lost-focus="(f) => inputTimeIntervalLostFocus(key, f)" />
       </div>
-      <div v-else-if="typeof value === 'number'">
+      <div v-else>
         <InputBox
           :value="value"
           :disabled="typeof value !== 'number'"
