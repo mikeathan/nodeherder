@@ -37,7 +37,7 @@ func NewDeviceConfig(id string) *DeviceConfig {
 		Id:             id,
 		Disabled:       false,
 		MetricsEnabled: false,
-		RateLimit:      utils.IntervalFromMinutes(1), // default to 1 minute
+		RateLimit:      utils.IntervalFromSeconds(60), // default to 60 seconds
 	}
 }
 
