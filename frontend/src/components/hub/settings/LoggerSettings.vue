@@ -1,8 +1,7 @@
 <script setup lang="ts">
   import { PropType, ref } from 'vue';
   import { store } from '../../../store/index';
-  import { LoggerSettingsType, LoggerSettingsTypePropsType } from '@/types/settings.type.type';
-  import InputBox from '../../input/InputBox.vue';
+  import { LoggerSettingsType, LoggerSettingsTypePropsType } from '@/types/settings.type';
   import Toggle from '@/components/input/Toggle.vue';
 
   const props = defineProps({
