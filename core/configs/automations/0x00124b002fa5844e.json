@@ -6,7 +6,13 @@
   "triggers": [
     {
       "name": "contact",
-      "conditions": [],
+      "conditions": [
+        {
+          "name": "contact",
+          "value": true,
+          "equality": "="
+        }
+      ],
       "actions": [
         {
           "id": "0xa4c1389b273366c3",
