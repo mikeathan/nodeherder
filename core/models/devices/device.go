@@ -72,8 +72,11 @@ var exposesWhitelist = map[string]int{
 // }
 
 var customExposeFeaturesPropertyWhitelist = map[string]int{
-	"silence": 1,
-	"alarm":   2,
+	"silence":  1,
+	"alarm":    2,
+	"melody":   3,
+	"duration": 4,
+	"volume":   5, // ??
 }
 
 var propertiesWhitelist = map[string]int{

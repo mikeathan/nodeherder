@@ -117,14 +117,12 @@ store response in metrics store ? needs thinking if we need that
 
 # Logging
 
-add log rotation - DONE
 send mqqt message to enable log type from bridge to be emmited for zigbee2mqtt event logs
-add remote log enable in UI
 add download file log in UI
 
 Backend TODO
-automation schedule - Done
-if automation has schedule then it will be enabled/disabled accordingly during the set hours/days
+
+- RemoveDevice Handler add context request so we can emit back the updated deviceList
 
 device bridge utilize diagnostics category
 api limiter
@@ -137,54 +135,3 @@ METRICS backend TODO
 - index entries = bolt.Bucket.CreateIndex
 
 Check for disalbed items in bridge - see if we can add them if online
-
-and prolem below ?
-
-[INFO]: 2024-09-15 19:50:31 - Start metrics cleanup
-[ERROR]: 2024-09-15 19:50:31 - Error during metrics cleanup: parsing time "brightness2024-08-25T18:04:56." as "2006-01-02T15:04:05.000000000Z": cannot parse "brightness2024-08-25T18:04:56." as "2006"
-[INFO]: 2024-09-15 19:50:31 - End metrics cleanup
-[INFO]: 2024-09-15 19:50:31 - Start metrics cleanup
-[ERROR]: 2024-09-15 19:50:31 - Error during metrics cleanup: parsing time "brightness2024-08-25T18:04:56." as "2006-01-02T15:04:05.000000000Z": cannot parse "brightness2024-08-25T18:04:56." as "2006"
-[INFO]: 2024-09-15 19:50:31 - End metrics cleanup
-
-const iconMapping = {
-humidity: 'pi pi-droplet',
-illuminance: 'pi pi-sun',
-pressure: 'pi pi-cloud-download',
-co2: 'mdi mdi-molecule-co2',
-voltage: 'pi pi-bolt',
-state: 'pi pi-star-half',
-brightness: 'pi pi-sun',
-occupancy: 'mdi mdi-walk',
-current: 'mdi mdi-current-ac',
-power: 'pi pi-power-off',
-energy: 'mdi mdi-lightning-bolt',
-frequency: 'mdi mdi-sine-wave',
-tamper: 'pi pi-exclamation-triangle',
-smoke: 'mdi mdi-smoke',
-radiation_dose_per_hour: 'mdi mdi-radiation',
-radioactive_events_per_minute: 'mdi mdi-radioactive',
-power_factor: 'mdi mdi-chart-line',
-mode: 'pi pi-cog',
-sound: 'pi pi-volume-up',
-position: 'mdi mdi-map-marker',
-alarm: 'pi pi-bell',
-color_xy: 'mdi mdi-palette',
-color_hs: 'mdi mdi-palette',
-color_temp: 'mdi mdi-thermometer',
-illuminance_lux: 'pi pi-sun',
-soil_moisture: 'mdi mdi-water-percent',
-water_leak: 'mdi mdi-leak',
-week: 'pi pi-calendar-clock',
-workdays_schedule: 'pi pi-calendar',
-holidays_schedule: 'pi pi-calendar-times', /
-away_mode: 'pi pi-send',
-vibration: 'mdi mdi-vibrate',
-power_outage_count: 'mdi mdi-power-plug-off',
-angle_x: 'mdi mdi-axis-x-arrow',
-angle_y: 'mdi mdi-axis-y-arrow',
-angle_z: 'mdi mdi-axis-z-arrow',
-side: 'mdi mdi-cube-outline',
-presence: 'mdi mdi-account-check',
-contact: 'mdi mdi-door', // mdi-door-closed, mdi-door-open
-};
