@@ -13,7 +13,7 @@
           "0x00124b002fa5844e": {
             "id": "0x00124b002fa5844e",
             "disabled": false,
-            "history": true,
+            "history": false,
             "rateLimit": { "value": 1, "unit": "minutes" }
           },
           "0x00158d0005a23c38": {
@@ -49,7 +49,7 @@
           "0xa4c1389b273366c3": {
             "id": "0xa4c1389b273366c3",
             "disabled": false,
-            "history": true,
+            "history": false,
             "rateLimit": { "value": 1, "unit": "minutes" }
           },
           "0xa4c138e1b5658e68": {
@@ -238,47 +238,6 @@
         "properties": { "availability": "offline" }
       },
       {
-        "id": "0x70ac08fffefafeca",
-        "friendly_name": "0x70ac08fffefafeca",
-        "description": "Automatically generated definition",
-        "connection_type": "mqtt",
-        "power_source": "Mains (single phase)",
-        "exposes": {
-          "brightness": {
-            "name": "brightness",
-            "description": "Brightness of this light",
-            "data": null,
-            "type": "numeric",
-            "properties": { "brightness": 0 },
-            "attributes": { "max": 254, "min": 0 }
-          },
-          "color_temp": {
-            "name": "color_temp",
-            "description": "Color temperature of this light",
-            "unit": "mired",
-            "data": null,
-            "type": "numeric",
-            "properties": { "color_temp": 0 },
-            "attributes": { "max": 500, "min": 150 },
-            "presets": {
-              "cool": 250,
-              "coolest": 150,
-              "neutral": 370,
-              "warm": 454,
-              "warmest": 500
-            }
-          },
-          "state": {
-            "name": "state",
-            "description": "On/off state of this light",
-            "data": null,
-            "type": "binary",
-            "properties": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
-          }
-        },
-        "properties": { "availability": "offline" }
-      },
-      {
         "id": "0xa4c1381b6fd53fc4",
         "friendly_name": "Attic power socket",
         "description": "Smart plug",
@@ -289,27 +248,27 @@
             "name": "current",
             "description": "Instantaneous measured electrical current",
             "unit": "A",
-            "data": 0.32,
+            "data": null,
             "type": "numeric"
           },
           "energy": {
             "name": "energy",
             "description": "Sum of consumed energy",
             "unit": "kWh",
-            "data": 3.95,
+            "data": null,
             "type": "numeric"
           },
           "power": {
             "name": "power",
             "description": "Instantaneous measured power",
             "unit": "W",
-            "data": 45,
+            "data": null,
             "type": "numeric"
           },
           "state": {
             "name": "state",
             "description": "On/off state of the switch",
-            "data": "ON",
+            "data": null,
             "type": "binary",
             "properties": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
           },
@@ -317,15 +276,11 @@
             "name": "voltage",
             "description": "Measured electrical potential value",
             "unit": "V",
-            "data": 236,
+            "data": null,
             "type": "numeric"
           }
         },
-        "properties": {
-          "availability": "online",
-          "last_seen": "2025-01-21T19:00:39.088Z",
-          "linkquality": 32
-        }
+        "properties": { "availability": "offline" }
       },
       {
         "id": "0xa4c13894070052fc",
@@ -337,15 +292,15 @@
           "presence": {
             "name": "presence",
             "description": "Indicates whether the device detected presence",
-            "data": false,
+            "data": true,
             "type": "binary",
             "attributes": { "off": false, "on": true }
           }
         },
         "properties": {
           "availability": "online",
-          "last_seen": "2025-01-21T19:00:39.388Z",
-          "linkquality": 116
+          "last_seen": "2025-01-21T20:01:51.258Z",
+          "linkquality": 134
         }
       },
       {
@@ -361,11 +316,44 @@
             "type": "binary",
             "properties": { "off": false, "on": true }
           },
+          "duration": {
+            "name": "duration",
+            "unit": "s",
+            "data": null,
+            "type": "numeric",
+            "properties": { "duration": 0 },
+            "attributes": { "max": 1800, "min": 0 }
+          },
+          "melody": {
+            "name": "melody",
+            "data": null,
+            "type": "enum",
+            "properties": {
+              "0": "1",
+              "1": "2",
+              "10": "11",
+              "11": "12",
+              "12": "13",
+              "13": "14",
+              "14": "15",
+              "15": "16",
+              "16": "17",
+              "17": "18",
+              "2": "3",
+              "3": "4",
+              "4": "5",
+              "5": "6",
+              "6": "7",
+              "7": "8",
+              "8": "9",
+              "9": "10"
+            }
+          },
           "volume": {
             "name": "volume",
             "data": null,
             "type": "enum",
-            "attributes": { "high": "high", "low": "low", "medium": "medium" }
+            "properties": { "0": "low", "1": "medium", "2": "high" }
           }
         },
         "properties": { "availability": "offline" }

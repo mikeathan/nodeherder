@@ -7,7 +7,7 @@ import express from 'express';
 import expressWs from 'express-ws';
 import http from 'http';
 import { createRequire } from 'module';
-const devicesFullPath = '../../docs/devices.json';
+const hubStateFullPath = '../../docs/hub-state.json';
 const lightMetricsFullPath = './metrics/light.json';
 const temperatureMetricsFullPath = './metrics/temperature.json';
 const presenceMetricsFullPath = './metrics/presence.json';
@@ -32,41 +32,6 @@ let app = express();
 let server = http.createServer(app).listen(port);
 console.log('[' + currentTime() + '] server listening at port ' + port);
 
-var appConfig = {
-  hub: {
-    history: {
-      sleepTimeout: { value: 12, unit: 'hours' },
-      expireAt: { value: 10, unit: 'days' },
-    },
-    logger: {
-      enableRemoteLogger: false,
-    },
-    devices: {
-      '0xa4c13894070052fc': {
-        id: '0xa4c13894070052fc',
-        disabled: false,
-        metricsEnabled: false,
-        rateLimit: { value: 10, unit: 'seconds' },
-      },
-      '0x001788010d7d9d3f': {
-        id: '0x001788010d7d9d3f',
-        disabled: false,
-        metricsEnabled: false,
-        rateLimit: { value: 50, unit: 'seconds' },
-      },
-      '0x70ac08fffefafeca': {
-        id: '0x70ac08fffefafeca',
-        disabled: false,
-        metricsEnabled: true,
-        rateLimit: { value: 50, unit: 'seconds' },
-      },
-    },
-  },
-  bridge: {
-    maxTimeAllowed: { value: 120, unit: 'seconds' },
-    permitJoin: false,
-  },
-};
 var automationMap = new Map([
   [
     '0xa4c13894070052fc',
@@ -271,7 +236,8 @@ var automationMap = new Map([
 
 expressWs(app, server);
 
-var devicesPayload = loadDevices();
+var hubStatePayload = loadHubState();
+var appConfig = hubStatePayload.appConfig;
 var metricsMap = loadMetrics();
 
 var connected = false;
@@ -304,10 +270,6 @@ app.ws('/ws', async function (ws) {
         break;
 
       case 'loadHubState':
-        const hubStatePayload = {
-          config: appConfig,
-          devices: devicesPayload,
-        };
         sendMessage(ws, 'hubState', hubStatePayload);
         connected = true;
         break;
@@ -719,9 +681,9 @@ function getMockHumidity(settings) {
   return settings.humidity;
 }
 
-function loadDevices() {
+function loadHubState() {
   const require = createRequire(import.meta.url);
-  var data = require(devicesFullPath);
+  var data = require(hubStateFullPath);
   return data.payload;
 }
 

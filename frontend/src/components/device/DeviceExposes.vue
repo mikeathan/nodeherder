@@ -20,15 +20,6 @@ const device = computed(() => {
 
 // TEMPORARY QUICK FIX
 // TODO: do the same we did in Toggle component  so value comes out the correct type eg number
-function update(expose: Expose, event: Event) {
-  var msg = {
-    id: props.id,
-    name: expose.name,
-    value: parseInt((event.target as HTMLInputElement).value),
-  };
-  store.dispatch('hub/setDeviceValue', msg);
-}
-
 function updateValue(expose: Expose, value: any) {
   var msg = {
     id: props.id,
@@ -37,7 +28,14 @@ function updateValue(expose: Expose, value: any) {
   };
   store.dispatch('hub/setDeviceValue', msg);
 }
+
+currently only presets are used in a button grouup
+update it so enums are used with button groups too . since we only hanlde features here expect enum properties to list
+the data
+
 </script>
+
+
 <template>
   <div class="grid col-12 align-items-center grid-nogutter" v-for="(expose, index) in device.exposes" :item="expose">
     <dl class="col-12 md:col-3">

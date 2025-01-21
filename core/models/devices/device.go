@@ -171,6 +171,9 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 	newEntity.Unit = expose.Unit
 	newEntity.Data = data
 	newEntity.Type = expose.Type
+	// NOTE:
+	// exposes are not used to publish events
+	// because of that all expose data are published as device attributes
 
 	// TODO: needs refactoring
 	switch expose.Type {
@@ -203,6 +206,9 @@ func CreateCustomFeatureFromExpose(expose BridgeExpose, data any) (*Entity, erro
 	// NOTE:
 	// create custom feature from devices that can be triggered but dont have feature description
 	// only support alarm for now
+	// Features are used to publish events
+	// because of that all expose data are published as device properties
+
 	if expose.Property == "" {
 		return nil, fmt.Errorf("no expose data")
 	}
@@ -219,6 +225,9 @@ func CreateCustomFeatureFromExpose(expose BridgeExpose, data any) (*Entity, erro
 	newEntity.Data = data
 	newEntity.Type = expose.Type
 
+	// NOTE:
+	// features are used to publish events
+	// because of that all expose data are published as device properties
 	switch expose.Type {
 	case "numeric":
 		newEntity.Attributes["max"] = expose.ValueMax
