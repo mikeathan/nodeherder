@@ -123,7 +123,7 @@ add download file log in UI
 Backend TODO
 
 - RemoveDevice Handler add context request so we can emit back the updated deviceList
-
+- get rid of whitelists for device expose population or refactor it, as expose can change for somereason (eg luminance_lux to luminance)
 device bridge utilize diagnostics category
 api limiter
 cache with expiration
