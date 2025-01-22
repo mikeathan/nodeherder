@@ -64,6 +64,7 @@ var exposesWhitelist = map[string]int{
 	"co":                  31,
 	"carbon_monoxide":     32,
 	"self_test_result":    33,
+	"illuminance":         34,
 }
 
 // var exposesCategoriesBlacklist = map[string]int{
