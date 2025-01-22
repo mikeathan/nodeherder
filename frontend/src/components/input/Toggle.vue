@@ -6,12 +6,10 @@ const emit = defineEmits<{
 }>();
 
 
-
-
 const props = defineProps({
-  value: { type: Object as PropType<any>, require: true },
-  valueOn: { type: Object as PropType<any>, require: true },
-  valueOff: { type: Object as PropType<any>, require: true },
+  value: { type: null, require: true },
+  valueOn: { type: null, require: true },
+  valueOff: { type: null, require: true },
 });
 
 

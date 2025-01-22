@@ -289,6 +289,13 @@
         "connection_type": "mqtt",
         "power_source": "Mains (single phase)",
         "exposes": {
+          "illuminance": {
+            "name": "illuminance",
+            "description": "Measured illuminance",
+            "unit": "lx",
+            "data": 122,
+            "type": "numeric"
+          },
           "presence": {
             "name": "presence",
             "description": "Indicates whether the device detected presence",

@@ -29,13 +29,8 @@ function updateValue(expose: Expose, value: any) {
   store.dispatch('hub/setDeviceValue', msg);
 }
 
-currently only presets are used in a button grouup
-update it so enums are used with button groups too . since we only hanlde features here expect enum properties to list
-the data
 
 </script>
-
-
 <template>
   <div class="grid col-12 align-items-center grid-nogutter" v-for="(expose, index) in device.exposes" :item="expose">
     <dl class="col-12 md:col-3">
@@ -52,9 +47,13 @@ the data
         {{ getSensorUnit(expose.name) }}
       </div>
       <div v-else-if="expose.type == ExposeTypes.Numeric" class="align-items-center">
+
+
+        <!-- if numeric and has min max attributes add a slider here -->
+
+
         <!-- TODO: refactor -->
         <div class="pt-3"></div>
-
         <ButtonGroup v-if="expose.presets != null" :items="(expose.presets as any)" :value="expose.data"
           @update="(v) => updateValue(expose, v)" />
         <div class="pt-3"></div>
@@ -67,7 +66,9 @@ the data
           :value-off="getExposeProperty(expose, 'off')" @update="(v) => updateValue(expose, v)">
         </Toggle>
       </div>
-      <div v-else-if="expose.type == ExposeTypes.Enum">WIP : {{ expose.data }}</div>
+      <div v-else-if="expose.type == ExposeTypes.Enum">
+        <Selection :value="expose.data" :items="expose.properties" />
+      </div>
     </div>
   </div>
 </template>

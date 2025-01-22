@@ -482,31 +482,20 @@ let settings = [
     friendlyName: 'Human presence',
     availability: 'offline',
     method: 'mqtt',
-    luminance_lux_offset: 12,
+    luminance_offset: 12,
     delayInMs: 35000,
-    luminance_lux: luminance_luxMin,
-    luminance_luxLastChanged: moment(),
+    luminance_: luminance_luxMin,
+    luminance_LastChanged: moment(),
     presenceLastChanged: moment(),
   },
   {
-    id: '0x00124b00146c31cd',
-    friendlyName: 'Motion sensor 1',
+    id: '0xa4c1389b273366c3',
+    friendlyName: 'Attic alarm',
     availability: 'offline',
     method: 'mqtt',
-    temperatureOffset: 1.2,
-    delayInMs: 2000,
-    temperature: temperatureMin,
-    temperatureLastChanged: moment(),
-  },
-  {
-    id: '92fe86b7',
-    friendlyName: 'weather node 1',
-    availability: 'offline',
-    method: 'http',
-    delayInMs: 10000,
-    temperatureOffset: 1.2,
-    temperature: temperatureMin,
-    temperatureLastChanged: moment(),
+    alarm: false,
+    delayInMs: 35000,
+    presenceLastChanged: moment(),
   },
   {
     id: '0x00124b0029207763',
@@ -522,8 +511,8 @@ let settings = [
     humidityLastChanged: moment(),
   },
   {
-    id: '0x70ac08fffefafeca',
-    friendlyName: 'Attic Light',
+    id: '0x00158d0005a23c38',
+    friendlyName: 'Living room Light',
     availability: 'offline',
     method: 'mqtt',
     brightness: 60,
@@ -534,11 +523,47 @@ let settings = [
 ];
 
 let updateDeviceMap = {};
-updateDeviceMap['92fe86b7'] = mockUpdateWeatherNode1v2;
 updateDeviceMap['0x00124b0029207763'] = mockUpdateTH01v2;
 updateDeviceMap['0xa4c13894070052fc'] = mockUpdateHumanPresencev2;
-updateDeviceMap['0x00124b00146c31cd'] = mockUpdateMotionSensorv2;
 updateDeviceMap['0x70ac08fffefafeca'] = mockUpdateAtticLight;
+updateDeviceMap['0x00158d0005a23c38'] = mockUpdateLivingRoomLight;
+updateDeviceMap['0xa4c1389b273366c3'] = mockUpdateAtticAlarm;
+
+function mockUpdateAtticAlarm(settings) {
+  var device = {
+    id: '0xa4c1389b273366c3',
+    last_seen: currentTime(),
+    data: {
+      alarm: true,
+      melody: 5,
+    },
+    properties: {},
+  };
+
+  var availability = setDeviceOnline(settings);
+  if (availability != undefined) {
+    device.properties.availability = availability;
+  }
+  return device;
+}
+function mockUpdateLivingRoomLight(settings) {
+  var device = {
+    id: '0x00158d0005a23c38',
+    last_seen: currentTime(),
+    data: {
+      brightness: 61,
+      color_temp: 370,
+      state: 'ON',
+    },
+    properties: {},
+  };
+
+  var availability = setDeviceOnline(settings);
+  if (availability != undefined) {
+    device.properties.availability = availability;
+  }
+  return device;
+}
 
 function mockUpdateAtticLight(settings) {
   var device = {
@@ -564,43 +589,8 @@ function mockUpdateHumanPresencev2(settings) {
     id: '0xa4c13894070052fc',
     last_seen: currentTime(),
     data: {
-      illuminance_lux: 9,
+      illuminance: 9,
       presence: true,
-    },
-    properties: {},
-  };
-
-  var availability = setDeviceOnline(settings);
-  if (availability != undefined) {
-    device.properties.availability = availability;
-  }
-  return device;
-}
-
-function mockUpdateMotionSensorv2(settings) {
-  var device = {
-    id: '0x00124b00146c31cd',
-    last_seen: currentTime(),
-    data: {
-      occupancy: true,
-      temperature: getMockTemperature(settings),
-    },
-    properties: {},
-  };
-  var availability = setDeviceOnline(settings);
-  if (availability != undefined) {
-    device.properties.availability = availability;
-  }
-
-  return device;
-}
-
-function mockUpdateWeatherNode1v2(settings) {
-  var device = {
-    id: '92fe86b7',
-    last_seen: currentTime(),
-    data: {
-      temperature: getMockTemperature(settings),
     },
     properties: {},
   };
