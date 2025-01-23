@@ -493,7 +493,10 @@ let settings = [
     availability: 'offline',
     method: 'mqtt',
     alarm: false,
-    delayInMs: 35000,
+    melody: '6',
+    duration: 1,
+    volume: 'high',
+    delayInMs: 10500,
     presenceLastChanged: moment(),
   },
   {
@@ -533,8 +536,10 @@ function mockUpdateAtticAlarm(settings) {
     id: '0xa4c1389b273366c3',
     last_seen: currentTime(),
     data: {
-      alarm: true,
-      melody: 5,
+      alarm: settings.alarm,
+      melody: settings.melody,
+      duration: settings.duration,
+      volume: settings.volume,
     },
     properties: {},
   };

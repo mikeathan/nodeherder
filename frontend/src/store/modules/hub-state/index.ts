@@ -43,7 +43,6 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
 
     // AppConfig getters
     history: (state) => (): HistorySettingsType => {
-      console.log('store hub getHistory', state.appConfig);
       return state.appConfig.hub.history;
     },
     logger: (state) => (): LoggerSettingsType => state.appConfig.hub.logger,

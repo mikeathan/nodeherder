@@ -1,18 +1,14 @@
 <script setup lang="ts">
-  import { PropType, ref } from 'vue';
+  import { PropType, ref,computed } from 'vue';
   import { store } from '../../../store/index';
   import { LoggerSettingsType, LoggerSettingsTypePropsType } from '@/types/settings.type';
   import Toggle from '@/components/input/Toggle.vue';
 
-  const props = defineProps({
-    settings: {
-      type: Object as PropType<LoggerSettingsType>,
-      default: {},
-      required: true,
-    },
+
+  const loggerSettings = computed(() => {
+    return store.getters['hub/logger']() as LoggerSettingsType;
   });
 
-  const loggerSettings = ref<LoggerSettingsType>(props.settings);
 
   function enableLogging(enabled: any) {
     if (enabled == loggerSettings.value.enableRemoteLogger) {

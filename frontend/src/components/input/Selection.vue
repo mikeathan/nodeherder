@@ -1,5 +1,4 @@
 <script setup lang="ts">
-  import { KeyValuePair } from '@/types/types.type';
   import { PropType, ref, watch, watchEffect } from 'vue';
   import { SelectSize, SelectFormSize, SelectionItems, LayoutPosition, LayoutPositions } from '@/types/controls.type';
   import { SelectChangeEvent } from 'primevue';

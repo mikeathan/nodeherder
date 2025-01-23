@@ -9,6 +9,7 @@ import Toggle from '../input/Toggle.vue';
 import ButtonGroup from '../input/ButtonGroup.vue';
 import { getSensorUnit, getSensorValue } from '@/modules/formatters/sensor-formatter';
 import Range from '../input/Range.vue';
+import Selection from '@/components/input/Selection.vue';
 
 const props = defineProps({
   id: { type: String, required: true },
@@ -29,6 +30,13 @@ function updateValue(expose: Expose, value: any) {
   store.dispatch('hub/setDeviceValue', msg);
 }
 
+// convert keyvaluepair properties to list
+function exposeProperties(expose: Expose): any[] {
+  return expose?.properties ? Object.values(expose.properties) : [];
+};
+
+
+DISABLE CONTROLS IF DEVICE IS NOT ONLINE
 
 </script>
 <template>
@@ -67,7 +75,8 @@ function updateValue(expose: Expose, value: any) {
         </Toggle>
       </div>
       <div v-else-if="expose.type == ExposeTypes.Enum">
-        <Selection :value="expose.data" :items="expose.properties" />
+        <Selection :value="expose.data" :items="exposeProperties(expose)"
+          @updated="(v: any) => updateValue(expose, v)" />
       </div>
     </div>
   </div>
