@@ -45,7 +45,7 @@ function isTimeInterval(value: any): value is TimeInterval {
     </dl>
     <div class="md:col-4">
       <div v-if="typeof value === 'boolean'">
-        <Toggle :minimal="false" :value="value" :valueOn="true" :value-off="false"
+        <Toggle :value="value" :valueOn="true" :valueOff="false"
           @update="(v) => toggleChanged(key, v)">
         </Toggle>
       </div>

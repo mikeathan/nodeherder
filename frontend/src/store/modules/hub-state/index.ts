@@ -10,13 +10,14 @@ import {
   LoggerSettingsType,
 } from '../../../types/settings.type';
 import { KeyValuePair } from '@/types/types.type';
+import { createAppconfig } from '@/contracts/settings';
 
 export const HubStateModule: Module<HubStateModuleState, RootState> = {
   namespaced: true,
 
   state: () => ({
     deviceMap: {} as DeviceMap,
-    appConfig: {} as AppConfig,
+    appConfig: createAppconfig(),
     initialized: false,
   }),
 
@@ -41,7 +42,10 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     },
 
     // AppConfig getters
-    history: (state) => (): HistorySettingsType => state.appConfig.hub.history,
+    history: (state) => (): HistorySettingsType => {
+      console.log('store hub getHistory', state.appConfig);
+      return state.appConfig.hub.history;
+    },
     logger: (state) => (): LoggerSettingsType => state.appConfig.hub.logger,
     bridge: (state) => (): BridgeSettingsType => state.appConfig.bridge,
     findDeviceSetting:

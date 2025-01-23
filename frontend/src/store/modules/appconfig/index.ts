@@ -39,10 +39,10 @@ export const AppConfigModule: Module<AppConfigModuleState, RootState> = {
     },
 
     setHistorySettings(state: AppConfigModuleState, historySetting: HistorySettingsType) {
-      state.appConfig.history = historySetting;
+      state.appConfig.hub.history = historySetting;
     },
     setLoggerSettings(state: AppConfigModuleState, loggerSettings: LoggerSettingsType) {
-      state.appConfig.logger = loggerSettings;
+      state.appConfig.hub.logger = loggerSettings;
     },
     setBridgeSettings(state: AppConfigModuleState, bridgeSettings: BridgeSettingsType) {
       state.appConfig.bridge = bridgeSettings;
@@ -63,7 +63,7 @@ export const AppConfigModule: Module<AppConfigModuleState, RootState> = {
 
       state.appConfig = appConfig;
       console.log(state.appConfig);
-      Object.values(appConfig.devices).forEach((value) => {
+      Object.values(appConfig.hub.devices).forEach((value) => {
         commit('setDeviceSetting', value);
       });
 

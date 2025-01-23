@@ -2,7 +2,7 @@
   import { computed, onMounted, ref, watch } from 'vue';
   import { store } from '../../../store/index';
   import HistorySettings from './HistorySettings.vue';
-  import { HistorySettingsType, LoggerSettingsType } from '@/types/settings.type.type';
+  import { HistorySettingsType, LoggerSettingsType } from '@/types/settings.type';
   import LoggerSettings from './LoggerSettings.vue';
 
   const historySettings = computed(() => {

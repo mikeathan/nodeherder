@@ -94,12 +94,12 @@ export const WSClientModule: Module<WSClientState, RootState> = {
               root: true,
             });
             break;
-            case 'bridgeConfig' :
-              //undled type:  {"type":"bridgeConfig","payload":{"maxTimeAllowed":{"value":120,"unit":"seconds"},"permitJoin":true}}
-              commit('hub/setBridgeSettings', obj.payload, {
-                root: true,
-              });
-              break;
+          case 'bridgeConfig':
+            //undled type:  {"type":"bridgeConfig","payload":{"maxTimeAllowed":{"value":120,"unit":"seconds"},"permitJoin":true}}
+            commit('hub/setBridgeSettings', obj.payload, {
+              root: true,
+            });
+            break;
           case 'deviceAdded':
             commit('hub/addDevice', obj.payload, {
               root: true,

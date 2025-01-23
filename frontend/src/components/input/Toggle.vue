@@ -1,35 +1,27 @@
 <script setup lang="ts">
-import { computed, ref, PropType } from 'vue';
+  import { computed, ref, PropType } from 'vue';
 
-const emit = defineEmits<{
-  (e: 'update', value: any): void;
-}>();
+  const emit = defineEmits<{
+    (e: 'update', value: any): void;
+  }>();
 
+  const props = defineProps({
+    value: { type: null, require: true },
+    valueOn: { type: null, require: true },
+    valueOff: { type: null, require: true },
+  });
 
-const props = defineProps({
-  value: { type: null, require: true },
-  valueOn: { type: null, require: true },
-  valueOff: { type: null, require: true },
-});
+  const hasValue = computed(() => props.value != null || props.value != undefined);
 
-
-const checked = computed(() =>
-  props.value == props.valueOn
-);
-
-const hasValue = computed(
-  () => props.value != null || props.value != undefined
-);
-
-function valueChanged(event: Event): void {
-  emit(
-    'update',
-    (event.target as HTMLInputElement).checked
-      ? props.valueOn
-      : props.valueOff
-  );
-}
+  const isChecked = computed({
+    get() {
+      return props.value === props.valueOn;
+    },
+    set(newValue) {
+      emit('update', newValue ? props.valueOn : props.valueOff);
+    },
+  });
 </script>
 <template>
-  <ToggleSwitch v-model="checked" @change="valueChanged" :disabled="!hasValue" />
+  <ToggleSwitch v-model="isChecked" :disabled="!hasValue" />
 </template>

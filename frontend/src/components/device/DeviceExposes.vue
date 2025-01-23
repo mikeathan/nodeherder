@@ -62,8 +62,8 @@ function updateValue(expose: Expose, value: any) {
         </Range>
       </div>
       <div v-else-if="expose.type == ExposeTypes.Binary">
-        <Toggle :minimal="true" :value="expose.data" :valueOn="getExposeProperty(expose, 'on')"
-          :value-off="getExposeProperty(expose, 'off')" @update="(v) => updateValue(expose, v)">
+        <Toggle :value="expose.data" :valueOn="getExposeProperty(expose, 'on')"
+          :valueOff="getExposeProperty(expose, 'off')" @update="(v) => updateValue(expose, v)">
         </Toggle>
       </div>
       <div v-else-if="expose.type == ExposeTypes.Enum">

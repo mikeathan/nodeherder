@@ -237,7 +237,7 @@ var automationMap = new Map([
 expressWs(app, server);
 
 var hubStatePayload = loadHubState();
-var appConfig = hubStatePayload.appConfig;
+var appConfig = hubStatePayload.config;
 var metricsMap = loadMetrics();
 
 var connected = false;
@@ -363,14 +363,13 @@ app.ws('/ws', async function (ws) {
 
       case 'saveDeviceConfig':
         var deviceId = obj.payload.id;
-        appConfig[deviceId] = obj.payload;
+        appConfig.hub.devices[deviceId] = obj.payload;
         sendOperationSuccess(ws);
         break;
       case 'saveLoggerConfig':
-        console.log('saveLoggerConfig', obj.payload);
-        appConfig.logger = obj.payload;
+        appConfig.hub.logger = obj.payload;
 
-        if (appConfig.logger.enableRemoteLogger) {
+        if (appConfig.hub.logger.enableRemoteLogger) {
           if (consoleLogIntervalId != 0) {
             console.log('consoleLogIntervalId already running');
             clearInterval(consoleLogIntervalId);

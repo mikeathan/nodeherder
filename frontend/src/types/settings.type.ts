@@ -1,6 +1,7 @@
- import { KeyValuePair, ValueOf } from './types.type';
+import { KeyValuePair, ValueOf } from './types.type';
 
 export const TimeUnits = {
+  UnitMilliseconds: 'milliseconds',
   UnitSeconds: 'seconds',
   UnitMinutes: 'minutes',
   UnitHours: 'hours',
