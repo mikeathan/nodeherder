@@ -34,6 +34,13 @@
   function exposeProperties(expose: Expose): any[] {
     return expose?.properties ? Object.values(expose.properties) : [];
   }
+
+  // used for expose properties where data seems to be stored as a string or as number
+  // but in our selection list we pass int aray of strings
+  function convertToString(expose: Expose) {
+    if (expose.data != null) return String(expose.data);
+    return expose.data;
+  }
 </script>
 <template>
   <div class="grid col-12 align-items-center grid-nogutter" v-for="(expose, index) in device.exposes" :item="expose">
@@ -77,9 +84,8 @@
           :disabled="!isDeviceOnline(device)" />
       </div>
       <div v-else-if="expose.type == ExposeTypes.Enum">
-
         <Selection
-          :value="expose.data"
+          :value="convertToString(expose)"
           :items="exposeProperties(expose)"
           @updated="(v: any) => updateValue(expose, v)"
           :disabled="!isDeviceOnline(device)" />

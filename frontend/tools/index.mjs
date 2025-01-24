@@ -493,7 +493,7 @@ let settings = [
     availability: 'offline',
     method: 'mqtt',
     alarm: false,
-    melody: '6',
+    melody: 6,
     duration: 1,
     volume: 'high',
     delayInMs: 10500,
