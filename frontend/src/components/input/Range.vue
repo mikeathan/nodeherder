@@ -1,8 +1,5 @@
 <script setup lang="ts">
-  import {
-    InputNumberInputEvent,
-    SliderSlideEndEvent,
-  } from 'primevue';
+  import { InputNumberInputEvent, SliderSlideEndEvent } from 'primevue';
   import { ref, watch, watchEffect } from 'vue';
   import { prop } from 'vue-class-component';
 
@@ -15,6 +12,7 @@
     min?: number;
     max?: number;
     showInput?: boolean;
+    disabled?: boolean;
   }
 
   const props = withDefaults(defineProps<Props>(), {
@@ -34,10 +32,7 @@
   watch(
     () => props.value,
     () => {
-      if (
-        props.value == null ||
-        typeof props.value != 'number'
-      ) {
+      if (props.value == null || typeof props.value != 'number') {
         value.value = 0;
       } else {
         value.value = props.value;
@@ -61,12 +56,13 @@
     v-model.number="value"
     v-if="props.showInput"
     @input="inputChanged"
+    :disabled="props.disabled"
     class="w-full mb-4" />
   <Slider
     v-model="value"
     @slideend="onSlideEnds"
     :max="max"
     :min="min"
-    :disabled="props.value == null"
+    :disabled="props.disabled"
     class="w-full" />
 </template>

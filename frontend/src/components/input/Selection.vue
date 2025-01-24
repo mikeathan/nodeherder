@@ -75,6 +75,7 @@
       :optionLabel="isKeyValuePair ? 'key' : ''"
       :optionValue="isKeyValuePair ? 'value' : ''"
       @change="selectionChanged"
+      :disabled="props.disabled"
       class="w-full" />
     <label v-if="props.label != ''">{{ props.label }}</label>
   </FloatLabel>

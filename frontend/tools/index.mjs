@@ -281,7 +281,7 @@ app.ws('/ws', async function (ws) {
             [obj.payload.name]: obj.payload.value,
           },
           properties: {
-            availability: true,
+            availability: 'online',
             last_seen: currentTime(),
           },
         };
@@ -543,11 +543,7 @@ function mockUpdateAtticAlarm(settings) {
     },
     properties: {},
   };
-
-  var availability = setDeviceOnline(settings);
-  if (availability != undefined) {
-    device.properties.availability = availability;
-  }
+  device.properties.availability = setDeviceOnline(settings);
   return device;
 }
 function mockUpdateLivingRoomLight(settings) {
@@ -562,10 +558,7 @@ function mockUpdateLivingRoomLight(settings) {
     properties: {},
   };
 
-  var availability = setDeviceOnline(settings);
-  if (availability != undefined) {
-    device.properties.availability = availability;
-  }
+  device.properties.availability = setDeviceOnline(settings);
   return device;
 }
 
@@ -580,11 +573,7 @@ function mockUpdateAtticLight(settings) {
     },
     properties: {},
   };
-
-  var availability = setDeviceOnline(settings);
-  if (availability != undefined) {
-    device.properties.availability = availability;
-  }
+  device.properties.availability = setDeviceOnline(settings);
   return device;
 }
 
@@ -599,10 +588,7 @@ function mockUpdateHumanPresencev2(settings) {
     properties: {},
   };
 
-  var availability = setDeviceOnline(settings);
-  if (availability != undefined) {
-    device.properties.availability = availability;
-  }
+  device.properties.availability = setDeviceOnline(settings);
   return device;
 }
 
@@ -617,10 +603,7 @@ function mockUpdateTH01v2(settings) {
     properties: {},
   };
 
-  var availability = setDeviceOnline(settings);
-  if (availability != undefined) {
-    device.properties.availability = availability;
-  }
+  device.properties.availability = setDeviceOnline(settings);
   return device;
 }
 
@@ -630,7 +613,7 @@ function setDeviceOnline(settings) {
     return settings.availability;
   }
 
-  return undefined;
+  return settings.availability;
 }
 
 function getMockTemperature(settings) {

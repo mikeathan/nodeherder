@@ -201,7 +201,6 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     },
 
     // Device actions
-
     setDevices({ commit, dispatch }, devices: Devices) {
       commit('setDevices', devices);
     },

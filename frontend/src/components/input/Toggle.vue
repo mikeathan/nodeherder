@@ -9,9 +9,10 @@
     value: { type: null, require: true },
     valueOn: { type: null, require: true },
     valueOff: { type: null, require: true },
+    disabled: { type: Boolean, default: false },
   });
 
-  const hasValue = computed(() => props.value != null || props.value != undefined);
+  const hasValue = computed(() => props.value != null || props.value != undefined || props.disabled);
 
   const isChecked = computed({
     get() {

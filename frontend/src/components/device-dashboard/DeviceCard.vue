@@ -12,7 +12,7 @@
 <template>
   <Card
     :class="
-      device.properties.availability == 'offline'
+      device.properties.availability == 'offline' // to fix not working now
         ? 'disabled-card'
         : ''
     ">
