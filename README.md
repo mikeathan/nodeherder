@@ -68,6 +68,8 @@ frontend - Send multiple messages in one mqtt request for same device
 "color": {"x": 0.123, "y": 0.123} // Color in XY
 }
 frontend - some minified view for each device for the main page
+frontend - update icons
+presense use mdiMotionSensorOff/mdiMotionSensor
 
 toggle for live data ? later
 
