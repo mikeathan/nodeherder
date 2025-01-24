@@ -61,6 +61,13 @@ frontend - tabs - load tab on click -(leave for now)
 frontend - add app settings in main page - Done
 frontend - add navigation for pages - use vuetify and redesign layout
 frontend - handle timerange enum colours
+frontend - Send multiple messages in one mqtt request for same device
+{
+"state": "ON", // Or "OFF", "TOGGLE"
+"brightness": 255, // Value between 0 and 255
+"color": {"x": 0.123, "y": 0.123} // Color in XY
+}
+frontend - some minified view for each device for the main page
 
 toggle for live data ? later
 
