@@ -131,7 +131,7 @@ func configureAction(registrar services.DeviceRegistrar, action *MqttAction, cli
 	for _, e := range bridgeInfo.Definition.Exposes {
 		for _, f := range e.Features {
 
-			if action.Property == f.Property {
+			if action.Properties == f.Property {
 
 				sanitizedData, err := f.SanitizeData(action.Data)
 				if err != nil {
@@ -147,7 +147,7 @@ func configureAction(registrar services.DeviceRegistrar, action *MqttAction, cli
 
 		// NOTE:
 		// there are devices tha tcan be triggered in an action but dont have features.
-		if e.Property == action.Property {
+		if e.Property == action.Properties {
 
 			sanitizedData, err := e.SanitizeData(action.Data)
 			if err != nil {
@@ -162,5 +162,5 @@ func configureAction(registrar services.DeviceRegistrar, action *MqttAction, cli
 
 	}
 
-	return fmt.Errorf("property=%s for action=%s not found", action.Property, action.Id)
+	return fmt.Errorf("property=%s for action=%s not found", action.Properties, action.Id)
 }

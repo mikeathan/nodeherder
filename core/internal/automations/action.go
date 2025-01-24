@@ -31,7 +31,7 @@ type Step struct {
 type MqttAction struct {
 	Id           string `json:"id"`
 	FriendlyName string `json:"friendlyname"`
-	Property     string `json:"property"`
+	Properties   []string `json:"property"`
 	Type         string `json:"type"`
 	Data         any    `json:"data,omitempty"`
 	Delay        int    `json:"delay,omitempty"`
@@ -47,7 +47,7 @@ type MqttAction struct {
 }
 
 func NewAction() *MqttAction {
-	return &MqttAction{Delay: 0, Steps: make([]Step, 0)}
+	return &MqttAction{Delay: 0, Steps: make([]Step, 0), Properties: make([]string, 0)}
 }
 
 func (a *MqttAction) Configure(registrar services.DeviceRegistrar) error {
@@ -58,7 +58,7 @@ func (a *MqttAction) Configure(registrar services.DeviceRegistrar) error {
 		return fmt.Errorf("configure action %s failed: %s ", a.Id, err.Error())
 	}
 
-	expose := device.Exposes[a.Property]
+	expose := device.Exposes[a.Properties]
 
 	// configure special action operations
 	switch a.Type {
@@ -173,14 +173,14 @@ func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, erro
 			return nil, err
 		}
 
-		return createJson(a.Property, newValue), nil
+		return createJson(a.Properties, newValue), nil
 	}
 
 	payloadData := a.Data
 	if payloadData == nil {
 		payloadData = ctx.Payload[name].Data
 	}
-	return createJson(a.Property, payloadData), nil
+	return createJson(a.Properties, payloadData), nil
 }
 
 func createJson(property string, data any) []byte {

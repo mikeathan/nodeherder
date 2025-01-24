@@ -113,7 +113,7 @@ func (r *stepOperation) Next(ctx *DeviceContext) (any, error) {
 		}
 	}
 
-	if r.propertyMap[r.action.Property] == result {
+	if r.propertyMap[r.action.Properties] == result {
 		return nil, errors.New("same value, skipping")
 	}
 

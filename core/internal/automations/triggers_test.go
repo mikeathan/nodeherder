@@ -124,9 +124,9 @@ func TestHandleMultipleSameValueTriggerWithDelay(t *testing.T) {
 				if data == nil {
 					t.Fatalf("error unpacking json")
 				}
-				value, ok := data[action.Property]
+				value, ok := data[action.Properties]
 				if !ok {
-					t.Fatalf("property not %s found in payload", action.Property)
+					t.Fatalf("property not %s found in payload", action.Properties)
 				}
 				if value != testCase.presence {
 					t.Fatalf("value mismatch: want %v got %v", testCase.presence, value)
@@ -206,9 +206,9 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 				if data == nil {
 					t.Fatalf("error unpacking json")
 				}
-				value, ok := data[action.Property]
+				value, ok := data[action.Properties]
 				if !ok {
-					t.Fatalf("property not %s found in payload", action.Property)
+					t.Fatalf("property not %s found in payload", action.Properties)
 				}
 				if value != testCase.presence {
 					t.Fatalf("value mismatch: want %v got %v", testCase.presence, value)
@@ -279,7 +279,7 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 	// action = turn off light
 	turnOnAction := &automations.MqttAction{}
 	turnOnAction.FriendlyName = "Attic light"
-	turnOnAction.Property = "state"
+	turnOnAction.Properties = "state"
 	turnOnAction.Data = true
 	turnOnAction.Delay = 0
 	turnOnAction.Client = mqtt
@@ -310,7 +310,7 @@ func createSwitchTriggerWithBindingAction(triggerName string, actionProp string,
 	// action = turn off light
 	brightnessAction := &automations.MqttAction{}
 	brightnessAction.FriendlyName = "Attic light"
-	brightnessAction.Property = actionProp
+	brightnessAction.Properties = actionProp
 	brightnessAction.Client = mqtt
 
 	// Turn off sensor trigger
@@ -325,7 +325,7 @@ func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay t
 	// action = turn off light
 	turnOffAction := &automations.MqttAction{}
 	turnOffAction.FriendlyName = "Attic light"
-	turnOffAction.Property = "state"
+	turnOffAction.Properties = "state"
 	turnOffAction.Data = false
 	turnOffAction.Delay = int(delay.Milliseconds())
 	turnOffAction.Client = mqtt

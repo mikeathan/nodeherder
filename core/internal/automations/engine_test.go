@@ -147,7 +147,7 @@ func TestExportAutomationsFromFile(t *testing.T) {
 					t.Fatalf("ERROR Action.Friendlyname mismatch")
 				}
 
-				if outputAction.Property != inputAction.Property {
+				if outputAction.Properties != inputAction.Properties {
 					t.Fatalf("ERROR Action.Property mismatch")
 				}
 
@@ -549,7 +549,6 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 	engine.WithStorage(storage)
 	engine.Initialize()
 
-	
 	wg.Add(1)
 
 	a, _ := engine.Load(deviceAutomation.Id)
@@ -558,8 +557,6 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 	if a.Enabled {
 		t.Fatalf("ERROR automation is enabled (initial state)")
 	}
-
-
 
 	// trigger the automation
 	doorSensorDevice.Exposes["contact"].Data = true
