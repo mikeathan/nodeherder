@@ -35,6 +35,8 @@ import {
   mdiAxisZArrow,
   mdiCubeOutline,
   mdiAccount,
+  mdiMotionSensorOff,
+  mdiMotionSensor,
   mdiDoorOpen,
   mdiThermometer,
   mdiThermometerHigh,
@@ -223,10 +225,7 @@ export function getSensorValue(value: any): any {
   if (value == null) {
     return '';
   }
-  if (
-    typeof value == 'boolean' ||
-    typeof value == 'string'
-  ) {
+  if (typeof value == 'boolean' || typeof value == 'string') {
     return value;
   }
 
@@ -234,24 +233,24 @@ export function getSensorValue(value: any): any {
   return parseFloat(value.toFixed(1));
 }
 
-export function getSensorIcon(
-  sensor: string,
-  value: number
-): IconProps {
+export function getSensorIcon(sensor: string, value: any): IconProps {
   switch (sensor) {
     case 'device_temperature':
     case 'temperature':
     case 'local_temperature':
       return getTemperatureIcon(value);
-      break;
+    case 'presence':
+      return getPresenceIcon(value);
   }
 
   return typeToClassMapsensor[sensor];
 }
 
-const getTemperatureIcon = (
-  temperature: number
-): IconProps => {
+const getPresenceIcon = (value: boolean): IconProps => {
+  return value ? { name: mdiMotionSensor, color: 'white' } : { name: mdiMotionSensorOff, color: 'white' };
+};
+
+const getTemperatureIcon = (temperature: number): IconProps => {
   if (temperature >= 30) {
     return { name: mdiThermometerHigh, color: 'red' }; // High temperature
   } else if (temperature <= 10) {
