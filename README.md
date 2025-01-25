@@ -95,3 +95,27 @@ METRICS backend TODO
 - index entries = bolt.Bucket.CreateIndex
 
 Check for disalbed items in bridge - see if we can add them if online
+
+TODO:
+same device can have multiple properties with data for same paylod
+Action
+
+- property = melody
+  data = 1
+- property = volume
+  data = high
+- property = duration
+  data = 1120
+- property = alarm
+  data = true
+
+currenlty we have ActionOperations , how to intergrate that or do we need to ?
+maybe we need new action type for this ?
+
+current types:
+
+TriggerAction
+StepAction
+PresetRotationAction
+
+only TriggerAction could have multiple properties

@@ -402,7 +402,7 @@ func TestOperationCycleValue(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	turnOnAction := &automations.MqttAction{}
 	turnOnAction.FriendlyName = "attic light"
-	turnOnAction.Properties = "brightness"
+	turnOnAction.Property = "brightness"
 	turnOnAction.Data = 0
 	turnOnAction.Delay = 0
 	turnOnAction.Client = mqtt
@@ -456,7 +456,7 @@ func createMockLivingRoomButtonStepAction(operation string, stepValue float64) *
 	action := &automations.MqttAction{}
 	action.FriendlyName = "livingroom"
 	action.Id = "x1234"
-	action.Properties = "brightness"
+	action.Property = "brightness"
 	action.Type = automations.StepAction
 	action.Data = stepValue
 	brightnessStep := automations.Step{}
@@ -479,7 +479,7 @@ func createMockLivingRoomStepAction(operation string, stepValue float64) *automa
 	action := &automations.MqttAction{}
 	action.FriendlyName = "livingroom"
 	action.Id = "x1234"
-	action.Properties = "brightness"
+	action.Property = "brightness"
 	action.Type = automations.StepAction
 	action.Data = stepValue
 	brightnessStep := automations.Step{}

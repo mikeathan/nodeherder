@@ -147,7 +147,7 @@ func TestExportAutomationsFromFile(t *testing.T) {
 					t.Fatalf("ERROR Action.Friendlyname mismatch")
 				}
 
-				if outputAction.Properties != inputAction.Properties {
+				if outputAction.Property != inputAction.Property {
 					t.Fatalf("ERROR Action.Property mismatch")
 				}
 
