@@ -6,6 +6,7 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
 	"node-herder/utils"
+	"reflect"
 	"sync"
 	"time"
 )
@@ -28,6 +29,299 @@ type Step struct {
 	Id       string `json:"id"`
 }
 
+//////////////////////////////////////////////////////////////
+
+type MqttTriggerActionExpose struct {
+	Name string `json:"name"`
+	Data any    `json:"data,omitempty"`
+}
+
+type MqttTrigerAction struct {
+	MqttBaseAction
+	Exposes []*MqttTriggerActionExpose `json:"exposes"`
+	Delay   *utils.TimeInterval        `json:"delay"`
+}
+
+func NewTriggerAction() *MqttTrigerAction {
+	return &MqttTrigerAction{
+		Exposes: make([]*MqttTriggerActionExpose, 0),
+		Delay:   utils.IntervalFromMilliseconds(0),
+	}
+}
+
+func (a *MqttTrigerAction) buildPayload() []byte {
+
+	actionData := map[string]any{}
+	for _, expose := range a.Exposes {
+		actionData[expose.Name] = expose.Data
+	}
+
+	payload, _ := json.Marshal(actionData)
+	return payload
+}
+
+func (a *MqttTrigerAction) Execute(ctx *DeviceContext) error {
+	a.mut.Lock()
+	defer a.mut.Unlock()
+
+	if a.isPending {
+		return nil
+	}
+
+	// no delay execution
+	if a.Delay.Value == 0 {
+		defer func() {
+			a.isPending = false
+		}()
+
+		a.isPending = true
+		payload := a.buildPayload()
+
+		a.emit(payload)
+
+		// on success callback
+		// update sensor current value so we dont have to query the device again
+		for _, expose := range a.Exposes {
+			ctx.SetCurrent(expose.Name, expose.Data)
+		}
+
+		return nil
+	}
+
+	// with delay execution
+	a.exit = make(chan bool, 1)
+	go func() {
+
+		var delay = a.Delay.Duration()
+		timestamp := time.Now().Add(delay)
+		diff := time.Until(timestamp).Milliseconds()
+
+		duration := time.Duration(diff)
+		ticker := *time.NewTicker(duration * time.Millisecond)
+		a.isPending = true
+		//utils.LogInfof("time constraint started Delay: %d ms", a.Delay)
+
+		defer func() {
+			close(a.exit)
+			a.isPending = false
+		}()
+
+		select {
+		case <-ticker.C:
+
+			payload := a.buildPayload()
+
+			a.emit(payload)
+
+			// on success callback
+			// update sensor current value so we dont have to query the device again
+			for _, expose := range a.Exposes {
+				ctx.SetCurrent(expose.Name, expose.Data)
+			}
+			//utils.LogInfo("timer constraint finished")
+			return
+
+		case <-a.exit:
+
+			//utils.LogInfo("timer constraint stopped")
+			return
+		}
+	}()
+	return nil
+}
+
+type MqttStepAction struct {
+	MqttBaseAction
+	Property  string  `json:"property"`
+	Steps     []*Step `json:"steps,omitempty"`
+	Data      any     `json:"data,omitempty"`
+	operation actionOperation
+}
+
+func (a *MqttStepAction) Execute(ctx *DeviceContext) error {
+
+	a.mut.Lock()
+	defer a.mut.Unlock()
+
+	if a.isPending {
+		return nil
+	}
+
+	defer func() {
+		a.isPending = false
+	}()
+
+	a.isPending = true
+	newValue, err := a.operation.Next()
+	if err != nil {
+		return err
+	}
+
+	// build payload
+	actionData := map[string]any{
+		a.Property: newValue,
+	}
+
+	payload, _ := json.Marshal(actionData)
+	if err != nil {
+		utils.LogErrorf("step action failed %s ", err.Error())
+		return err
+	}
+
+	a.emit(payload)
+
+	ctx.SetCurrent(a.Property, newValue)
+
+	return nil
+}
+
+type MqttPresetCyclingAction struct {
+	MqttBaseAction
+	Property  string   `json:"property"`
+	Presets   []string `json:"presets,omitempty"`
+	operation actionOperation
+}
+
+func (a *MqttPresetCyclingAction) Execute(ctx *DeviceContext) error {
+	a.mut.Lock()
+	defer a.mut.Unlock()
+
+	if a.isPending {
+		return nil
+	}
+
+	defer func() {
+		a.isPending = false
+	}()
+
+	a.isPending = true
+	newValue, err := a.operation.Next()
+	if err != nil {
+		return err
+	}
+
+	// build payload
+	actionData := map[string]any{
+		a.Property: newValue,
+	}
+
+	payload, _ := json.Marshal(actionData)
+	if err != nil {
+		utils.LogErrorf("preset cycling action failed %s ", err.Error())
+		return err
+	}
+
+	a.emit(payload)
+
+	ctx.SetCurrent(a.Property, newValue)
+	return nil
+}
+
+type MqttBaseAction struct {
+	Id           string                   `json:"id"`
+	FriendlyName string                   `json:"friendlyname"`
+	Type         string                   `json:"type"`
+	Client       mqtt.MqttClient          `json:"-"`
+	registrar    services.DeviceRegistrar `json:"-"`
+	mut          sync.RWMutex             `json:"-"`
+	exit         chan bool                `json:"-"`
+	isPending    bool                     `json:"-"`
+}
+
+func (a *MqttBaseAction) emit(payload []byte) {
+
+	msg := fmt.Sprintf("%s/set", a.FriendlyName)
+	a.Client.Publish(msg, payload)
+
+	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.FriendlyName)
+}
+
+func (b *MqttBaseAction) GetID() string {
+	return b.Id
+}
+
+func (b *MqttBaseAction) GetType() string {
+	return b.Type
+}
+
+func (a *MqttBaseAction) Stop() {
+	if a.isPending {
+		// stop it and exit
+		a.mut.Lock()
+		defer a.mut.Unlock()
+
+		a.exit <- true
+		a.isPending = false
+	}
+}
+
+func (b *MqttBaseAction) ExecuteBase(ctx *DeviceContext) error {
+
+	we need to check if value is still the same and not emit anything new
+	// b.mut.Lock()
+	// defer b.mut.Unlock()
+
+	// if b.isPending {
+	// 		return fmt.Errorf("action %s is already pending", b.Id) // Return an error
+	// }
+
+	// b.isPending = true
+	// defer func() { b.isPending = false }() // Ensure isPending is reset
+
+	return nil
+}
+
+// trigger action
+// could have delay
+// can have multiple exposes to generate payload
+
+// step action
+// has expose property
+// has min/max limits
+// has sinlge expose Daya
+// can have multiple steps
+
+// rotation action
+// has preset
+// has current index for rotation
+
+type MqttActionTest interface {
+	Execute(tx *DeviceContext) error
+	Stop()
+	GetID() string
+	GetType() string
+}
+
+var typeRegistry = map[string]reflect.Type{
+	"trigger":  reflect.TypeOf(MqttTrigerAction{}),
+	"step":     reflect.TypeOf(MqttStepAction{}),
+	"rotation": reflect.TypeOf(MqttPresetCyclingAction{}),
+}
+
+func UnmarshalAction(data []byte) (MqttActionTest, error) {
+	var baseAction MqttBaseAction
+	if err := json.Unmarshal(data, &baseAction); err != nil {
+		return nil, fmt.Errorf("unmarshaling base action: %w", err)
+	}
+
+	// Look up the concrete type in the registry
+	concreteType, ok := typeRegistry[baseAction.Type]
+	if !ok {
+		return nil, fmt.Errorf("unknown action type: %s", baseAction.Type)
+	}
+
+	// Create a new value of the concrete type
+	action := reflect.New(concreteType).Interface().(MqttActionTest)
+
+	// Unmarshal the full JSON into the concrete type
+	if err := json.Unmarshal(data, action); err != nil {
+		return nil, fmt.Errorf("unmarshaling concrete action: %w", err)
+	}
+
+	return action, nil
+}
+
+// ////////////////////////////////////////////////////////////
 type MqttAction struct {
 	Id           string `json:"id"`
 	FriendlyName string `json:"friendlyname"`
@@ -168,7 +462,7 @@ func (a *MqttAction) emit(payload []byte) {
 func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, error) {
 
 	if a.operationAction != nil {
-		newValue, err := a.operationAction.Next(ctx)
+		newValue, err := a.operationAction.Next()
 		if err != nil {
 			return nil, err
 		}

@@ -51,7 +51,7 @@ func toFloat(value any) float32 {
 }
 
 type actionOperation interface {
-	Next(ctx *DeviceContext) (any, error)
+	Next() (any, error)
 }
 
 type rotateOperation struct {
@@ -64,7 +64,7 @@ func newRotateOperation(items []any) actionOperation {
 	return &rotateOperation{items: items, size: len(items)}
 }
 
-func (r *rotateOperation) Next(ctx *DeviceContext) (any, error) {
+func (r *rotateOperation) Next() (any, error) {
 	if r.position >= r.size {
 		r.position = 0
 	}
@@ -90,7 +90,7 @@ func newStepOperation(expose *devices.Entity, action *MqttAction, minLimit float
 	return &stepOperation{expose: expose, action: action, limits: limits, propertyMap: make(map[string]float64, len(action.Steps))}
 }
 
-func (r *stepOperation) Next(ctx *DeviceContext) (any, error) {
+func (r *stepOperation) Next() (any, error) {
 
 	// example:
 	// brightness = 10

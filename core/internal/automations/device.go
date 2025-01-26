@@ -1,6 +1,7 @@
 package automations
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"node-herder/internal/mqtt"
@@ -72,6 +73,48 @@ func NewDevice(id string) *Device {
 	}
 
 	return d
+}
+
+func CreateFromPayload(payload []byte) (*Device, error) {
+
+	device := newDevice()
+	// err := json.Unmarshal(payload, device)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+}
+
+func (d *Device) UnmarshalJSON(data []byte) error {
+	type Alias Device // Prevent infinite recursion
+	aux := &Alias{}
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+
+	d.Id = aux.Id
+	d.FriendlyName = aux.FriendlyName
+	d.Description = aux.Description
+	d.Enabled = aux.Enabled
+	d.Schedules = aux.Schedules
+
+	var rawTriggers []json.RawMessage
+	if err := json.Unmarshal(data, &struct {
+		Triggers *[]json.RawMessage `json:"triggers"`
+	}{Triggers: &rawTriggers}); err != nil {
+		return err
+	}
+
+	d.Triggers = make([]*Trigger, len(rawTriggers))
+	for i, rawTrigger := range rawTriggers {
+		trigger := &Trigger{}
+		if err := json.Unmarshal(rawTrigger, trigger); err != nil { // Crucial: Use Trigger's UnmarshalJSON
+			return fmt.Errorf("unmarshaling trigger %d: %w", i, err)
+		}
+		d.Triggers[i] = trigger
+	}
+
+	return nil
 }
 
 func (d *Device) Evaluate(device *devices.Device) bool {

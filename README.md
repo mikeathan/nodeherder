@@ -119,3 +119,5 @@ StepAction
 PresetRotationAction
 
 only TriggerAction could have multiple properties
+
+maybe we need 3 different structures of actions indentfied the type
