@@ -2,6 +2,7 @@ package automations
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
@@ -58,6 +59,30 @@ func (a *MqttTrigerAction) buildPayload() []byte {
 
 	payload, _ := json.Marshal(actionData)
 	return payload
+}
+
+func (a *MqttTrigerAction) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
+	bridgeInfo, err := registrar.FindBridgeInfo(a.Id)
+	if err != nil {
+		return err
+	}
+	for _, property := range a.Exposes {
+		sanitizedData, err := bridgeInfo.SanitiseProperty(property.Name, property.Data)
+		if err != nil {
+			return errors.Join(fmt.Errorf("failed to sanitize data for action %s: %s", a.Id, err.Error()))
+		}
+		property.Data = sanitizedData
+	}
+
+	
+	device, err := registrar.LookupById(a.Id)
+	if err != nil {
+		return fmt.Errorf("configure action %s failed: %s ", a.Id, err.Error())
+	}
+	a.FriendlyName = device.FriendlyName
+	a.Client = client
+	a.registrar = registrar
+	return nil
 }
 
 func (a *MqttTrigerAction) Execute(ctx *DeviceContext) error {
@@ -174,6 +199,19 @@ func (a *MqttStepAction) Execute(ctx *DeviceContext) error {
 
 	return nil
 }
+func (a *MqttStepAction) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
+
+	a.Client = client
+	a.registrar = registrar
+	device, err := registrar.LookupById(a.Id)
+	if err != nil {
+		return fmt.Errorf("configure action %s failed: %s ", a.Id, err.Error())
+	}
+	a.FriendlyName = device.FriendlyName
+	expose := device.Exposes[a.Property]
+	a.operation = CreateStepOperation(expose, a)
+	return nil
+}
 
 type MqttPresetCyclingAction struct {
 	MqttBaseAction
@@ -217,6 +255,21 @@ func (a *MqttPresetCyclingAction) Execute(ctx *DeviceContext) error {
 	return nil
 }
 
+func (a *MqttPresetCyclingAction) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
+
+	a.Client = client
+	a.registrar = registrar
+	device, err := registrar.LookupById(a.Id)
+	if err != nil {
+		return fmt.Errorf("configure action %s failed: %s ", a.Id, err.Error())
+	}
+
+	expose := device.Exposes[a.Property]
+	a.FriendlyName = device.FriendlyName
+	a.operation = CreateRotateOperation(expose)
+	return nil
+}
+
 type MqttBaseAction struct {
 	Id           string                   `json:"id"`
 	FriendlyName string                   `json:"friendlyname"`
@@ -256,8 +309,9 @@ func (a *MqttBaseAction) Stop() {
 }
 
 func (b *MqttBaseAction) ExecuteBase(ctx *DeviceContext) error {
+	// IMPORTANT !!!!
+	//we need to check if value is still the same and not emit anything new
 
-	we need to check if value is still the same and not emit anything new
 	// b.mut.Lock()
 	// defer b.mut.Unlock()
 
@@ -285,11 +339,12 @@ func (b *MqttBaseAction) ExecuteBase(ctx *DeviceContext) error {
 // has preset
 // has current index for rotation
 
-type MqttActionTest interface {
+type MqttAction interface {
 	Execute(tx *DeviceContext) error
 	Stop()
 	GetID() string
 	GetType() string
+	Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error
 }
 
 var typeRegistry = map[string]reflect.Type{
@@ -298,7 +353,7 @@ var typeRegistry = map[string]reflect.Type{
 	"rotation": reflect.TypeOf(MqttPresetCyclingAction{}),
 }
 
-func UnmarshalAction(data []byte) (MqttActionTest, error) {
+func UnmarshalAction(data []byte) (MqttAction, error) {
 	var baseAction MqttBaseAction
 	if err := json.Unmarshal(data, &baseAction); err != nil {
 		return nil, fmt.Errorf("unmarshaling base action: %w", err)
@@ -311,7 +366,7 @@ func UnmarshalAction(data []byte) (MqttActionTest, error) {
 	}
 
 	// Create a new value of the concrete type
-	action := reflect.New(concreteType).Interface().(MqttActionTest)
+	action := reflect.New(concreteType).Interface().(MqttAction)
 
 	// Unmarshal the full JSON into the concrete type
 	if err := json.Unmarshal(data, action); err != nil {
@@ -322,166 +377,143 @@ func UnmarshalAction(data []byte) (MqttActionTest, error) {
 }
 
 // ////////////////////////////////////////////////////////////
-type MqttAction struct {
-	Id           string `json:"id"`
-	FriendlyName string `json:"friendlyname"`
-	Property     string `json:"property"`
-	Type         string `json:"type"`
-	Data         any    `json:"data,omitempty"`
-	Delay        int    `json:"delay,omitempty"`
-	Steps        []Step `json:"steps,omitempty"`
+// type MqttAction struct {
+// 	Id           string `json:"id"`
+// 	FriendlyName string `json:"friendlyname"`
+// 	Property     string `json:"property"`
+// 	Type         string `json:"type"`
+// 	Data         any    `json:"data,omitempty"`
+// 	Delay        int    `json:"delay,omitempty"`
+// 	Steps        []Step `json:"steps,omitempty"`
 
-	Client    mqtt.MqttClient          `json:"-"`
-	registrar services.DeviceRegistrar `json:"-"`
+// 	Client    mqtt.MqttClient          `json:"-"`
+// 	registrar services.DeviceRegistrar `json:"-"`
 
-	operationAction actionOperation `json:"-"`
-	mut             sync.RWMutex
-	exit            chan bool
-	isPending       bool
-}
+// 	operationAction actionOperation `json:"-"`
+// 	mut             sync.RWMutex
+// 	exit            chan bool
+// 	isPending       bool
+// }
 
-func NewAction() *MqttAction {
-	return &MqttAction{Delay: 0, Steps: make([]Step, 0)}
-}
+// func NewAction() *MqttAction {
+// 	return &MqttAction{Delay: 0, Steps: make([]Step, 0)}
+// }
 
-func (a *MqttAction) Configure(registrar services.DeviceRegistrar) error {
+// func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
 
-	a.registrar = registrar
-	device, err := registrar.LookupById(a.Id)
-	if err != nil {
-		return fmt.Errorf("configure action %s failed: %s ", a.Id, err.Error())
-	}
+// 	a.mut.Lock()
+// 	defer a.mut.Unlock()
 
-	expose := device.Exposes[a.Property]
+// 	if a.isPending {
+// 		return
+// 	}
 
-	// configure special action operations
-	switch a.Type {
-	case TriggerAction:
-		// nothing to do here
-		break
-	case StepAction:
-		a.operationAction = CreateStepOperation(expose, a)
-	case PresetRotationAction:
-		a.operationAction = CreateRotateOperation(expose, a)
-	}
-	return nil
-}
+// 	// no delay execution
+// 	if a.Delay == 0 {
+// 		defer func() {
+// 			a.isPending = false
+// 		}()
 
-func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
+// 		a.isPending = true
+// 		payload, err := a.buildPayload(name, ctx)
+// 		if err != nil {
+// 			utils.LogErrorf("build payload failed: %s", err.Error())
+// 			return
+// 		}
 
-	a.mut.Lock()
-	defer a.mut.Unlock()
+// 		a.emit(payload)
 
-	if a.isPending {
-		return
-	}
+// 		// on success callback
+// 		// update sensor current value
+// 		ctx.SetCurrent(name, ctx.Payload[name].Data)
+// 		return
+// 	}
 
-	// no delay execution
-	if a.Delay == 0 {
-		defer func() {
-			a.isPending = false
-		}()
+// 	// with delay execution
+// 	a.exit = make(chan bool, 1)
+// 	go func() {
 
-		a.isPending = true
-		payload, err := a.buildPayload(name, ctx)
-		if err != nil {
-			utils.LogErrorf("build payload failed: %s", err.Error())
-			return
-		}
+// 		var delay = time.Duration(float64(a.Delay) * float64(time.Millisecond))
+// 		timestamp := time.Now().Add(delay)
+// 		diff := time.Until(timestamp).Milliseconds()
 
-		a.emit(payload)
+// 		duration := time.Duration(diff)
+// 		ticker := *time.NewTicker(duration * time.Millisecond)
+// 		a.isPending = true
+// 		//utils.LogInfof("time constraint started Delay: %d ms", a.Delay)
 
-		// on success callback
-		// update sensor current value
-		ctx.SetCurrent(name, ctx.Payload[name].Data)
-		return
-	}
+// 		defer func() {
+// 			close(a.exit)
+// 			a.isPending = false
+// 		}()
 
-	// with delay execution
-	a.exit = make(chan bool, 1)
-	go func() {
+// 		select {
+// 		case <-ticker.C:
 
-		var delay = time.Duration(float64(a.Delay) * float64(time.Millisecond))
-		timestamp := time.Now().Add(delay)
-		diff := time.Until(timestamp).Milliseconds()
+// 			payload, err := a.buildPayload(name, ctx)
+// 			if err != nil {
+// 				utils.LogErrorf(err.Error())
+// 				return
+// 			}
 
-		duration := time.Duration(diff)
-		ticker := *time.NewTicker(duration * time.Millisecond)
-		a.isPending = true
-		//utils.LogInfof("time constraint started Delay: %d ms", a.Delay)
+// 			a.emit(payload)
+// 			ctx.SetCurrent(name, ctx.Payload[name].Data)
 
-		defer func() {
-			close(a.exit)
-			a.isPending = false
-		}()
+// 			// on success callback
+// 			// update sensor current value
+// 			//utils.LogInfo("timer constraint finished")
+// 			return
 
-		select {
-		case <-ticker.C:
+// 		case <-a.exit:
 
-			payload, err := a.buildPayload(name, ctx)
-			if err != nil {
-				utils.LogErrorf(err.Error())
-				return
-			}
+// 			//utils.LogInfo("timer constraint stopped")
+// 			return
+// 		}
+// 	}()
+// }
 
-			a.emit(payload)
-			ctx.SetCurrent(name, ctx.Payload[name].Data)
+// func (a *MqttAction) Stop() {
+// 	if a.isPending {
+// 		// stop it and exit
+// 		a.mut.Lock()
+// 		defer a.mut.Unlock()
 
-			// on success callback
-			// update sensor current value
-			//utils.LogInfo("timer constraint finished")
-			return
+// 		a.exit <- true
+// 		a.isPending = false
+// 	}
+// }
 
-		case <-a.exit:
+// func (a *MqttAction) emit(payload []byte) {
 
-			//utils.LogInfo("timer constraint stopped")
-			return
-		}
-	}()
-}
+// 	msg := fmt.Sprintf("%s/set", a.FriendlyName)
+// 	a.Client.Publish(msg, payload)
 
-func (a *MqttAction) Stop() {
-	if a.isPending {
-		// stop it and exit
-		a.mut.Lock()
-		defer a.mut.Unlock()
+// 	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.FriendlyName)
+// }
 
-		a.exit <- true
-		a.isPending = false
-	}
-}
+// func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, error) {
 
-func (a *MqttAction) emit(payload []byte) {
+// 	if a.operationAction != nil {
+// 		newValue, err := a.operationAction.Next()
+// 		if err != nil {
+// 			return nil, err
+// 		}
 
-	msg := fmt.Sprintf("%s/set", a.FriendlyName)
-	a.Client.Publish(msg, payload)
+// 		return createJson(a.Property, newValue), nil
+// 	}
 
-	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.FriendlyName)
-}
+// 	payloadData := a.Data
+// 	if payloadData == nil {
+// 		payloadData = ctx.Payload[name].Data
+// 	}
+// 	return createJson(a.Property, payloadData), nil
+// }
 
-func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, error) {
+// func createJson(property string, data any) []byte {
+// 	jp := map[string]any{
+// 		property: data,
+// 	}
 
-	if a.operationAction != nil {
-		newValue, err := a.operationAction.Next()
-		if err != nil {
-			return nil, err
-		}
-
-		return createJson(a.Property, newValue), nil
-	}
-
-	payloadData := a.Data
-	if payloadData == nil {
-		payloadData = ctx.Payload[name].Data
-	}
-	return createJson(a.Property, payloadData), nil
-}
-
-func createJson(property string, data any) []byte {
-	jp := map[string]any{
-		property: data,
-	}
-
-	payload, _ := json.Marshal(jp)
-	return payload
-}
+// 	payload, _ := json.Marshal(jp)
+// 	return payload
+// }

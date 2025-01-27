@@ -80,6 +80,32 @@ func (b *BridgeInfo) IsActive() bool {
 	return !b.Disabled && b.Type != "Coordinator" //&& b.InterviewCompleted
 }
 
+func (b *BridgeInfo) SanitiseProperty(name string, data any) (any, error) {
+	for _, e := range b.Definition.Exposes {
+		for _, f := range e.Features {
+
+			if f.Property == name {
+				sanitizedData, err := f.SanitizeData(data)
+				if err != nil {
+					return nil, errors.Join(fmt.Errorf("failed to sanitize feature data for property %s: %s", name, err.Error()))
+				}
+				return sanitizedData, nil
+			}
+		}
+
+		if e.Property == name {
+			sanitizedData, err := e.SanitizeData(data)
+			if err != nil {
+				return nil, errors.Join(fmt.Errorf("failed to sanitize expose data for property %s: %s", name, err.Error()))
+			}
+			return sanitizedData, nil
+
+		}
+	}
+
+	return nil, fmt.Errorf("ailed to sanitize data. Property=%s not found", name)
+}
+
 func LoadBridgeDevices(payload []byte) ([]*BridgeInfo, error) {
 	var bridgeDevices []*BridgeInfo
 	err := json.Unmarshal(payload, &bridgeDevices)

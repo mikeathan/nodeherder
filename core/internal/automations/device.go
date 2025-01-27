@@ -2,7 +2,6 @@ package automations
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
@@ -78,11 +77,12 @@ func NewDevice(id string) *Device {
 func CreateFromPayload(payload []byte) (*Device, error) {
 
 	device := newDevice()
-	// err := json.Unmarshal(payload, device)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	err := json.Unmarshal(payload, device)
+	if err != nil {
+		return nil, err
+	}
 
+	return device, nil
 }
 
 func (d *Device) UnmarshalJSON(data []byte) error {
@@ -150,7 +150,7 @@ func (d *Device) configure(registrar services.DeviceRegistrar, client mqtt.MqttC
 
 		// validate actions
 		for _, action := range trigger.Actions {
-			err := configureAction(registrar, action, client)
+			err := action.Configure(registrar, client)
 			if err != nil {
 				return err
 			}
@@ -160,50 +160,4 @@ func (d *Device) configure(registrar services.DeviceRegistrar, client mqtt.MqttC
 	d.FriendlyName = bridgeInfo.FriendlyName
 
 	return nil
-}
-
-// TODO:
-// THIS CAN BE AUTOMATION HANDLE
-func configureAction(registrar services.DeviceRegistrar, action *MqttAction, client mqtt.MqttClient) error {
-
-	bridgeInfo, err := registrar.FindBridgeInfo(action.Id)
-	if err != nil {
-		return err
-	}
-
-	for _, e := range bridgeInfo.Definition.Exposes {
-		for _, f := range e.Features {
-
-			if action.Property == f.Property {
-
-				sanitizedData, err := f.SanitizeData(action.Data)
-				if err != nil {
-					return errors.Join(fmt.Errorf("failed to sanitize feature data for action %s: %s", action.Id, err.Error()))
-				}
-				action.Data = sanitizedData
-				action.FriendlyName = bridgeInfo.FriendlyName
-				action.Client = client
-				return action.Configure(registrar)
-			}
-
-		}
-
-		// NOTE:
-		// there are devices tha tcan be triggered in an action but dont have features.
-		if e.Property == action.Property {
-
-			sanitizedData, err := e.SanitizeData(action.Data)
-			if err != nil {
-				return errors.Join(fmt.Errorf("failed to sanitize expose data for action %s: %s", action.Id, err.Error()))
-			}
-			action.Data = sanitizedData
-			action.FriendlyName = bridgeInfo.FriendlyName
-			action.Client = client
-			return action.Configure(registrar)
-
-		}
-
-	}
-
-	return fmt.Errorf("property=%s for action=%s not found", action.Property, action.Id)
 }

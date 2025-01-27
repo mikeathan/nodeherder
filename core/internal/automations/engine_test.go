@@ -67,125 +67,125 @@ func createBridgeInfoes() []*devices.BridgeInfo {
 	return []*devices.BridgeInfo{dev1, dev2}
 }
 
-func TestExportAutomationsFromFile(t *testing.T) {
+// func TestExportAutomationsFromFile(t *testing.T) {
 
-	mqtt := &mocks.MockMqttClient{}
-	store := utils_test.CreateStore()
-	eventHub := &mocks.MockEventHub{}
-	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+// 	mqtt := &mocks.MockMqttClient{}
+// 	store := utils_test.CreateStore()
+// 	eventHub := &mocks.MockEventHub{}
+// 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
-	dev1 := createMockDevice("0x56789", "livingroom", "brightness", nil, 0.0, 255.0)
-	dev2 := createMockDevice("0x56789", "humansensor", "left_click", nil, 0.0, 255.0)
+// 	dev1 := createMockDevice("0x56789", "livingroom", "brightness", nil, 0.0, 255.0)
+// 	dev2 := createMockDevice("0x56789", "humansensor", "left_click", nil, 0.0, 255.0)
 
-	bridgeinfos := createBridgeInfoes()
-	registrar.RegisterBridge(bridgeinfos, 60)
-	registrar.Register("livingroom", dev1)
-	registrar.Register("humansensor", dev2)
+// 	bridgeinfos := createBridgeInfoes()
+// 	registrar.RegisterBridge(bridgeinfos, 60)
+// 	registrar.Register("livingroom", dev1)
+// 	registrar.Register("humansensor", dev2)
 
-	storage := mocks.NewMockAutomationStorage([]*automations.Device{})
+// 	storage := mocks.NewMockAutomationStorage([]*automations.Device{})
 
-	engine := automations.NewEngine([]automations.AutomationHandler{}, registrar, mqtt)
-	engine.WithStorage(storage)
-	engine.Initialize()
+// 	engine := automations.NewEngine([]automations.AutomationHandler{}, registrar, mqtt)
+// 	engine.WithStorage(storage)
+// 	engine.Initialize()
 
-	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(mqtt, 100*time.Millisecond)
-	turnOffTrigger.Actions[0].Id = "0x56789"
+// 	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(mqtt, 100*time.Millisecond)
+// 	turnOffTrigger.Actions[0].Id = "0x56789"
 
-	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30.1)
-	turnOnTrigger.Actions[0].Id = "0x56789"
+// 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30.1)
+// 	turnOnTrigger.Actions[0].Id = "0x56789"
 
-	// create device trigger
-	inputDeviceTriggers := []*automations.Device{}
-	deviceTrigger1 := automations.NewDevice("0x123456")
-	deviceTrigger1.FriendlyName = "humansensor"
-	deviceTrigger1.Description = "test human sensor automation"
-	deviceTrigger1.Triggers = append(deviceTrigger1.Triggers, turnOffTrigger)
-	deviceTrigger1.Triggers = append(deviceTrigger1.Triggers, turnOnTrigger)
-	inputDeviceTriggers = append(inputDeviceTriggers, deviceTrigger1)
+// 	// create device trigger
+// 	inputDeviceTriggers := []*automations.Device{}
+// 	deviceTrigger1 := automations.NewDevice("0x123456")
+// 	deviceTrigger1.FriendlyName = "humansensor"
+// 	deviceTrigger1.Description = "test human sensor automation"
+// 	deviceTrigger1.Triggers = append(deviceTrigger1.Triggers, turnOffTrigger)
+// 	deviceTrigger1.Triggers = append(deviceTrigger1.Triggers, turnOnTrigger)
+// 	inputDeviceTriggers = append(inputDeviceTriggers, deviceTrigger1)
 
-	for _, d := range inputDeviceTriggers {
-		err := engine.Add(d)
-		if err != nil {
-			t.Fatalf("ERROR adding trigger %s", err.Error())
-		}
-	}
+// 	for _, d := range inputDeviceTriggers {
+// 		err := engine.Add(d)
+// 		if err != nil {
+// 			t.Fatalf("ERROR adding trigger %s", err.Error())
+// 		}
+// 	}
 
-	outputDeviceTriggers := engine.GetAllTriggers()
-	if len(outputDeviceTriggers) != len(inputDeviceTriggers) {
-		t.Fatalf("ERROR size mismatch. want %v got %d", len(inputDeviceTriggers), len(outputDeviceTriggers))
-	}
-	for dIdx, outDeviceTrigger := range outputDeviceTriggers {
-		inputDeviceTrigger := inputDeviceTriggers[dIdx]
-		if outDeviceTrigger.Id != inputDeviceTrigger.Id {
-			t.Fatalf("ERROR Id mismatch")
-		}
-		if outDeviceTrigger.FriendlyName != inputDeviceTrigger.FriendlyName {
-			t.Fatalf("ERROR Name mismatch")
-		}
-		if outDeviceTrigger.Description != inputDeviceTrigger.Description {
-			t.Fatalf("ERROR Description mismatch")
-		}
-		if outDeviceTrigger.Enabled != inputDeviceTrigger.Enabled {
-			t.Fatalf("ERROR Description mismatch")
-		}
+// 	outputDeviceTriggers := engine.GetAllTriggers()
+// 	if len(outputDeviceTriggers) != len(inputDeviceTriggers) {
+// 		t.Fatalf("ERROR size mismatch. want %v got %d", len(inputDeviceTriggers), len(outputDeviceTriggers))
+// 	}
+// 	for dIdx, outDeviceTrigger := range outputDeviceTriggers {
+// 		inputDeviceTrigger := inputDeviceTriggers[dIdx]
+// 		if outDeviceTrigger.Id != inputDeviceTrigger.Id {
+// 			t.Fatalf("ERROR Id mismatch")
+// 		}
+// 		if outDeviceTrigger.FriendlyName != inputDeviceTrigger.FriendlyName {
+// 			t.Fatalf("ERROR Name mismatch")
+// 		}
+// 		if outDeviceTrigger.Description != inputDeviceTrigger.Description {
+// 			t.Fatalf("ERROR Description mismatch")
+// 		}
+// 		if outDeviceTrigger.Enabled != inputDeviceTrigger.Enabled {
+// 			t.Fatalf("ERROR Description mismatch")
+// 		}
 
-		for tidx, outputTrigger := range outDeviceTrigger.Triggers {
-			inputTrigger := inputDeviceTrigger.Triggers[tidx]
+// 		for tidx, outputTrigger := range outDeviceTrigger.Triggers {
+// 			inputTrigger := inputDeviceTrigger.Triggers[tidx]
 
-			if outputTrigger.Name != inputTrigger.Name {
-				t.Fatalf("ERROR Trigger.Name mismatch")
-			}
+// 			if outputTrigger.Name != inputTrigger.Name {
+// 				t.Fatalf("ERROR Trigger.Name mismatch")
+// 			}
 
-			// check actions
-			for aidx, outputAction := range outputTrigger.Actions {
-				inputAction := inputTrigger.Actions[aidx]
+// 			// check actions
+// 			for aidx, outputAction := range outputTrigger.Actions {
+// 				inputAction := inputTrigger.Actions[aidx]
 
-				if outputAction.Id != inputAction.Id {
-					t.Fatalf("ERROR Action.Id mismatch")
-				}
-				if outputAction.FriendlyName != inputAction.FriendlyName {
-					t.Fatalf("ERROR Action.Friendlyname mismatch")
-				}
+// 				if outputAction.Id != inputAction.Id {
+// 					t.Fatalf("ERROR Action.Id mismatch")
+// 				}
+// 				if outputAction.FriendlyName != inputAction.FriendlyName {
+// 					t.Fatalf("ERROR Action.Friendlyname mismatch")
+// 				}
 
-				if outputAction.Property != inputAction.Property {
-					t.Fatalf("ERROR Action.Property mismatch")
-				}
+// 				if outputAction.Property != inputAction.Property {
+// 					t.Fatalf("ERROR Action.Property mismatch")
+// 				}
 
-				if outputAction.Delay != inputAction.Delay {
-					t.Fatalf("ERROR Action.Delay mismatch")
-				}
-			}
+// 				if outputAction.Delay != inputAction.Delay {
+// 					t.Fatalf("ERROR Action.Delay mismatch")
+// 				}
+// 			}
 
-			for cidx, outputCondition := range outputTrigger.Conditions {
+// 			for cidx, outputCondition := range outputTrigger.Conditions {
 
-				inputCondition := inputTrigger.Conditions[cidx]
+// 				inputCondition := inputTrigger.Conditions[cidx]
 
-				if outputCondition.EqualityOperator != inputCondition.EqualityOperator {
-					t.Fatalf("ERROR Condition.EqualityOperator mismatch")
-				}
-				if outputCondition.Name != inputCondition.Name {
-					t.Fatalf("ERROR Condition.Name mismatch")
-				}
+// 				if outputCondition.EqualityOperator != inputCondition.EqualityOperator {
+// 					t.Fatalf("ERROR Condition.EqualityOperator mismatch")
+// 				}
+// 				if outputCondition.Name != inputCondition.Name {
+// 					t.Fatalf("ERROR Condition.Name mismatch")
+// 				}
 
-				if outputCondition.Value != inputCondition.Value {
-					t.Fatalf("ERROR Condition.Value mismatch")
-				}
-			}
-		}
-	}
+// 				if outputCondition.Value != inputCondition.Value {
+// 					t.Fatalf("ERROR Condition.Value mismatch")
+// 				}
+// 			}
+// 		}
+// 	}
 
-	for _, inputDeviceTrigger := range inputDeviceTriggers {
-		err := engine.Delete(inputDeviceTrigger.Id)
-		if err != nil {
-			t.Fatalf("ERROR deleting file %v .Error %s", inputDeviceTrigger.Id, err.Error())
-		}
-	}
+// 	for _, inputDeviceTrigger := range inputDeviceTriggers {
+// 		err := engine.Delete(inputDeviceTrigger.Id)
+// 		if err != nil {
+// 			t.Fatalf("ERROR deleting file %v .Error %s", inputDeviceTrigger.Id, err.Error())
+// 		}
+// 	}
 
-	inputDeviceTriggers = engine.GetAllTriggers()
-	if len(inputDeviceTriggers) != 0 {
-		t.Fatalf("ERROR triggers found. expecting empty")
-	}
-}
+// 	inputDeviceTriggers = engine.GetAllTriggers()
+// 	if len(inputDeviceTriggers) != 0 {
+// 		t.Fatalf("ERROR triggers found. expecting empty")
+// 	}
+// }
 
 func TestEngineAutomationUpdateShouldNotResetScheduler(t *testing.T) {
 

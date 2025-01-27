@@ -29,19 +29,20 @@ func (c *Condition) Evaluate(exposes map[string]*devices.Entity) bool {
 }
 
 type Trigger struct {
-	Conditions []*Condition     `json:"conditions"`
-	Actions    []MqttActionTest `json:"actions"`
+	Conditions []*Condition `json:"conditions"`
+	Actions    []MqttAction `json:"actions"`
+	Name       string       `json:"name"`
 }
 
 func NewTrigger(name string) *Trigger {
 	return &Trigger{
 		Conditions: []*Condition{},
-		Actions:    []MqttActionTest{},
+		Actions:    []MqttAction{},
 	}
 }
 
 func (t *Trigger) UnmarshalJSON(data []byte) error {
-	// Define a temporary struct to avoid infinite recursion
+
 	type Alias Trigger
 	aux := &Alias{}
 	if err := json.Unmarshal(data, aux); err != nil {
@@ -51,7 +52,6 @@ func (t *Trigger) UnmarshalJSON(data []byte) error {
 	t.Name = aux.Name
 	t.Conditions = aux.Conditions
 
-	// Unmarshal actions using the custom logic
 	var rawActions []json.RawMessage
 	if err := json.Unmarshal(data, &struct {
 		Actions *[]json.RawMessage `json:"actions"`
@@ -59,7 +59,7 @@ func (t *Trigger) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	t.Actions = make([]MqttActionTest, len(rawActions))
+	t.Actions = make([]MqttAction, len(rawActions))
 	for i, rawAction := range rawActions {
 		action, err := UnmarshalAction(rawAction)
 		if err != nil {
@@ -85,8 +85,6 @@ func (t *Trigger) process(ctx *DeviceContext) {
 			return
 		}
 
-		we are going to move this logic in actio.execute ? 
-		or come up with sth else
 		// avoid calling action again for current trigger if value hasnt changed
 		if t.Name == c.Name && currValue == c.Value {
 			return

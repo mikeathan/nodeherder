@@ -7,7 +7,7 @@ import (
 	"sort"
 )
 
-func CreateStepOperation(expose *devices.Entity, action *MqttAction) actionOperation {
+func CreateStepOperation(expose *devices.Entity, action *MqttStepAction) actionOperation {
 
 	var minLimit float64 = 0
 	var maxLimit float64 = 255
@@ -21,7 +21,7 @@ func CreateStepOperation(expose *devices.Entity, action *MqttAction) actionOpera
 	return newStepOperation(expose, action, minLimit, maxLimit)
 }
 
-func CreateRotateOperation(expose *devices.Entity, action *MqttAction) actionOperation {
+func CreateRotateOperation(expose *devices.Entity) actionOperation {
 
 	var keys []string
 	for k := range expose.Presets {
@@ -76,13 +76,13 @@ func (r *rotateOperation) Next() (any, error) {
 }
 
 type stepOperation struct {
-	action      *MqttAction
+	action      *MqttStepAction
 	expose      *devices.Entity
 	limits      map[string]float64
 	propertyMap map[string]float64
 }
 
-func newStepOperation(expose *devices.Entity, action *MqttAction, minLimit float64, maxLimit float64) actionOperation {
+func newStepOperation(expose *devices.Entity, action *MqttStepAction, minLimit float64, maxLimit float64) actionOperation {
 
 	limits := make(map[string]float64)
 	limits["+"] = maxLimit
