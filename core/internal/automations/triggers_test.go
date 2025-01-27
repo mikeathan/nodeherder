@@ -123,7 +123,7 @@ func TestHandleMultipleSameValueTriggerWithDelay(t *testing.T) {
 				if data == nil {
 					t.Fatalf("error unpacking json")
 				}
-				triggerAction, ok := action.(*automations.MqttTrigerAction)
+				triggerAction, ok := action.(*automations.MqttTriggerAction)
 				if !ok {
 					t.Fatalf("invalid action type")
 				}
@@ -179,19 +179,18 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 	}{
 		{presence: false, sleepdelay: 200, lux: 30, result: true},
 		{presence: false, sleepdelay: 100, lux: 30, result: false},
-		// {presence: false, sleepdelay: 100, lux: 30, result: false},
-		// {presence: true, sleepdelay: 100, lux: 30, result: true},
-		// {presence: false, sleepdelay: 200, lux: 30, result: true},
-		// {presence: true, sleepdelay: 100, lux: 30, result: true},
-		// {presence: false, sleepdelay: 200, lux: 30, result: true},
-		// {presence: true, sleepdelay: 100, lux: 30.1, result: false},
-		// {presence: true, sleepdelay: 100, lux: 29.9, result: true},
-		// {presence: false, sleepdelay: 200, lux: 30, result: true},
-		// {presence: true, sleepdelay: 100, lux: 30.1, result: false},
-		// {presence: true, sleepdelay: 100, lux: 29, result: true},
-
-		// {presence: true, sleepdelay: 100, lux: 7, result: false},
-		// {presence: true, sleepdelay: 100, lux: 15, result: false},
+		{presence: false, sleepdelay: 100, lux: 30, result: false},
+		{presence: true, sleepdelay: 100, lux: 30, result: true},
+		{presence: false, sleepdelay: 200, lux: 30, result: true},
+		{presence: true, sleepdelay: 100, lux: 30, result: true},
+		{presence: false, sleepdelay: 200, lux: 30, result: true},
+		{presence: true, sleepdelay: 100, lux: 30.1, result: false},
+		{presence: true, sleepdelay: 100, lux: 29.9, result: true},
+		{presence: false, sleepdelay: 200, lux: 30, result: true},
+		{presence: true, sleepdelay: 100, lux: 30.1, result: false},
+		{presence: true, sleepdelay: 100, lux: 29, result: true},
+		{presence: true, sleepdelay: 100, lux: 7, result: false},
+		{presence: true, sleepdelay: 100, lux: 15, result: false},
 	}
 
 	for _, testCase := range testCases {
@@ -215,7 +214,7 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 				if data == nil {
 					t.Fatalf("error unpacking json")
 				}
-				triggerAction, ok := action.(*automations.MqttTrigerAction)
+				triggerAction, ok := action.(*automations.MqttTriggerAction)
 				if !ok {
 					t.Fatalf("invalid action type")
 				}
@@ -258,6 +257,7 @@ func TestSwitch(t *testing.T) {
 
 	// todo
 }
+
 func TestEqualityChecks(t *testing.T) {
 	testCases := []struct {
 		op     string

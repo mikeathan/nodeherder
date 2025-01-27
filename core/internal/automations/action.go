@@ -37,20 +37,27 @@ type MqttTriggerActionExpose struct {
 	Data any    `json:"data,omitempty"`
 }
 
-type MqttTrigerAction struct {
+type MqttTriggerAction struct {
 	MqttBaseAction
 	Exposes []*MqttTriggerActionExpose `json:"exposes"`
 	Delay   *utils.TimeInterval        `json:"delay"`
 }
 
-func NewTriggerAction() *MqttTrigerAction {
-	return &MqttTrigerAction{
+func NewTriggerAction() *MqttTriggerAction {
+	return &MqttTriggerAction{
 		Exposes: make([]*MqttTriggerActionExpose, 0),
 		Delay:   utils.IntervalFromMilliseconds(0),
+		MqttBaseAction: MqttBaseAction{
+			Type: TriggerAction,
+		},
 	}
 }
 
-func (a *MqttTrigerAction) buildPayload(ctx *DeviceContext) []byte {
+func (b *MqttTriggerAction) GetType() string {
+	return b.Type
+}
+
+func (a *MqttTriggerAction) buildPayload(ctx *DeviceContext) []byte {
 
 	actionData := map[string]any{}
 	for _, expose := range a.Exposes {
@@ -61,7 +68,7 @@ func (a *MqttTrigerAction) buildPayload(ctx *DeviceContext) []byte {
 	return payload
 }
 
-func (a *MqttTrigerAction) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
+func (a *MqttTriggerAction) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
 	bridgeInfo, err := registrar.FindBridgeInfo(a.Id)
 	if err != nil {
 		return err
@@ -84,7 +91,7 @@ func (a *MqttTrigerAction) Configure(registrar services.DeviceRegistrar, client 
 	return nil
 }
 
-func (a *MqttTrigerAction) Execute(ctx *DeviceContext) error {
+func (a *MqttTriggerAction) Execute(ctx *DeviceContext) error {
 	a.mut.Lock()
 	defer a.mut.Unlock()
 
@@ -162,6 +169,15 @@ type MqttStepAction struct {
 	operation actionOperation
 }
 
+func NewStepAction() *MqttStepAction {
+	return &MqttStepAction{
+		Steps: make([]*Step, 0),
+		MqttBaseAction: MqttBaseAction{
+			Type: StepAction,
+		},
+	}
+}
+
 func (a *MqttStepAction) Execute(ctx *DeviceContext) error {
 
 	a.mut.Lock()
@@ -217,6 +233,15 @@ type MqttPresetCyclingAction struct {
 	Property  string   `json:"property"`
 	Presets   []string `json:"presets,omitempty"`
 	operation actionOperation
+}
+
+func NewPresetCyclingAction() *MqttPresetCyclingAction {
+	return &MqttPresetCyclingAction{
+		Presets: make([]string, 0),
+		MqttBaseAction: MqttBaseAction{
+			Type: PresetRotationAction,
+		},
+	}
 }
 
 func (a *MqttPresetCyclingAction) Execute(ctx *DeviceContext) error {
@@ -352,7 +377,7 @@ type MqttAction interface {
 }
 
 var typeRegistry = map[string]reflect.Type{
-	"trigger":  reflect.TypeOf(MqttTrigerAction{}),
+	"trigger":  reflect.TypeOf(MqttTriggerAction{}),
 	"step":     reflect.TypeOf(MqttStepAction{}),
 	"rotation": reflect.TypeOf(MqttPresetCyclingAction{}),
 }

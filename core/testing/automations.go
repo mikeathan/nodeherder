@@ -7,7 +7,7 @@ import (
 
 func CreateDoorContactWithAlarmTriggerAutomation(doorSensorId string, alarmId string, mqtt mqtt.MqttClient) *automations.Device {
 	// setup automations
-	alarmAction := &automations.MqttTrigerAction{}
+	alarmAction := automations.NewTriggerAction()
 	alarmAction.Id = alarmId
 	alarmAction.FriendlyName = "alarm device"
 
@@ -128,7 +128,7 @@ func CreateDialTriggerStepActionBrightness(lightDeviceId string, dialDeviceId st
 // },
 func CreateSwitchTriggerWithBindingAction(triggerName string, actionProp string, mqtt mqtt.MqttClient) *automations.Trigger {
 	// action = turn off light
-	brightnessAction := &automations.MqttTrigerAction{}
+	brightnessAction := automations.NewTriggerAction()
 	brightnessAction.FriendlyName = "Attic light"
 	brightnessAction.Exposes = []*automations.MqttTriggerActionExpose{
 		{
