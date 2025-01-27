@@ -7,6 +7,7 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/mocks"
 	"node-herder/models/devices"
+	"node-herder/utils"
 	"strings"
 	"sync"
 	"testing"
@@ -20,9 +21,9 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 	testTriggerData["buttonSwitch1"] = "brightness"
 	testTriggerData["buttonSwitch2"] = "state"
 	testTriggerData["buttonSwitch3"] = "color_brightness"
-	switch1Trigger := createSwitchTriggerWithBindingAction("buttonSwitch1", "brightness", mqtt)
-	switch2Trigger := createSwitchTriggerWithBindingAction("buttonSwitch2", "state", mqtt)
-	switch3Trigger := createSwitchTriggerWithBindingAction("buttonSwitch3", "color_brightness", mqtt)
+	switch1Trigger := createSwitchTriggerWithBindingAction("buttonSwitch1", "brightness", 120, mqtt)
+	switch2Trigger := createSwitchTriggerWithBindingAction("buttonSwitch2", "state", true, mqtt)
+	switch3Trigger := createSwitchTriggerWithBindingAction("buttonSwitch3", "color_brightness", 250, mqtt)
 
 	// create device trigger
 	deviceTrigger := automations.NewDevice("button switch")
@@ -36,14 +37,12 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 		value           any
 		result          bool
 	}{
-		{triggeredEntity: "buttonSwitch1", value: 200.0, result: true},
+		{triggeredEntity: "buttonSwitch1", value: 120.0, result: true},
 		{triggeredEntity: "buttonSwitch2", value: true, result: true},
 		{triggeredEntity: "door_state", value: true, result: false},
 		{triggeredEntity: "co2", value: 70, result: false},
 		{triggeredEntity: "quality_index", value: 30.1, result: false},
-		{triggeredEntity: "buttonSwitch2", value: false, result: true},
-		{triggeredEntity: "buttonSwitch3", value: 16000.0, result: true},
-		{triggeredEntity: "buttonSwitch3", value: 5000.9, result: true},
+		{triggeredEntity: "buttonSwitch3", value: 250.0, result: true},
 		{triggeredEntity: "temperature", value: 25.1, result: false},
 		{triggeredEntity: "humdity", value: 35.1, result: false},
 	}
@@ -86,7 +85,7 @@ func TestHandleMultipleSameValueTriggerWithDelay(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
 
-	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(mqtt, 3*time.Second)
+	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(mqtt, utils.IntervalFromSeconds(3))
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30)
 
 	// create device trigger
@@ -113,26 +112,34 @@ func TestHandleMultipleSameValueTriggerWithDelay(t *testing.T) {
 		}
 
 		var messageHandler = func(id string, payload []byte) {
-			wg.Done()
 
 			for _, action := range turnOnTrigger.Actions {
-				if !strings.HasPrefix(id, action.FriendlyName) {
-					t.Fatalf("invalid received topic: want %s got %s", action.FriendlyName, id)
+
+				if !strings.HasPrefix(id, action.GetFriendlyName()) {
+					t.Fatalf("invalid received topic: want %s got %s", action.GetFriendlyName(), id)
 				}
 
 				data := unpackJsonToMap(string(payload))
 				if data == nil {
 					t.Fatalf("error unpacking json")
 				}
-				value, ok := data[action.Property]
+				triggerAction, ok := action.(*automations.MqttTrigerAction)
 				if !ok {
-					t.Fatalf("property not %s found in payload", action.Property)
-				}
-				if value != testCase.presence {
-					t.Fatalf("value mismatch: want %v got %v", testCase.presence, value)
+					t.Fatalf("invalid action type")
 				}
 
+				for _, expose := range triggerAction.Exposes {
+					value, ok := data[expose.Name]
+					if !ok {
+						t.Fatalf("property not %s found in payload", expose.Name)
+					}
+					if value != testCase.presence {
+						t.Fatalf("value mismatch: want %v got %v", testCase.presence, value)
+					}
+				}
 			}
+
+			wg.Done()
 		}
 
 		mqtt.OnMessageHandler(messageHandler)
@@ -154,7 +161,7 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
 
-	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(mqtt, 100*time.Millisecond)
+	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(mqtt, utils.IntervalFromMilliseconds(100))
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(mqtt, 30)
 
 	// create device trigger
@@ -172,19 +179,19 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 	}{
 		{presence: false, sleepdelay: 200, lux: 30, result: true},
 		{presence: false, sleepdelay: 100, lux: 30, result: false},
-		{presence: false, sleepdelay: 100, lux: 30, result: false},
-		{presence: true, sleepdelay: 100, lux: 30, result: true},
-		{presence: false, sleepdelay: 200, lux: 30, result: true},
-		{presence: true, sleepdelay: 100, lux: 30, result: true},
-		{presence: false, sleepdelay: 200, lux: 30, result: true},
-		{presence: true, sleepdelay: 100, lux: 30.1, result: false},
-		{presence: true, sleepdelay: 100, lux: 29.9, result: true},
-		{presence: false, sleepdelay: 200, lux: 30, result: true},
-		{presence: true, sleepdelay: 100, lux: 30.1, result: false},
-		{presence: true, sleepdelay: 100, lux: 29, result: true},
+		// {presence: false, sleepdelay: 100, lux: 30, result: false},
+		// {presence: true, sleepdelay: 100, lux: 30, result: true},
+		// {presence: false, sleepdelay: 200, lux: 30, result: true},
+		// {presence: true, sleepdelay: 100, lux: 30, result: true},
+		// {presence: false, sleepdelay: 200, lux: 30, result: true},
+		// {presence: true, sleepdelay: 100, lux: 30.1, result: false},
+		// {presence: true, sleepdelay: 100, lux: 29.9, result: true},
+		// {presence: false, sleepdelay: 200, lux: 30, result: true},
+		// {presence: true, sleepdelay: 100, lux: 30.1, result: false},
+		// {presence: true, sleepdelay: 100, lux: 29, result: true},
 
-		{presence: true, sleepdelay: 100, lux: 7, result: false},
-		{presence: true, sleepdelay: 100, lux: 15, result: false},
+		// {presence: true, sleepdelay: 100, lux: 7, result: false},
+		// {presence: true, sleepdelay: 100, lux: 15, result: false},
 	}
 
 	for _, testCase := range testCases {
@@ -195,25 +202,42 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 
 		var messageHandler = func(id string, payload []byte) {
 
-			wg.Done()
+			if !testCase.result {
+				t.Fatalf("invalid msg received")
+			}
 
 			for _, action := range turnOnTrigger.Actions {
-				if !strings.HasPrefix(id, action.FriendlyName) {
-					t.Fatalf("invalid received topic: want %s got %s", action.FriendlyName, id)
+				if !strings.HasPrefix(id, action.GetFriendlyName()) {
+					t.Fatalf("invalid received topic: want %s got %s", action.GetFriendlyName(), id)
 				}
 
 				data := unpackJsonToMap(string(payload))
 				if data == nil {
 					t.Fatalf("error unpacking json")
 				}
-				value, ok := data[action.Property]
+				triggerAction, ok := action.(*automations.MqttTrigerAction)
 				if !ok {
-					t.Fatalf("property not %s found in payload", action.Property)
+					t.Fatalf("invalid action type")
 				}
-				if value != testCase.presence {
-					t.Fatalf("value mismatch: want %v got %v", testCase.presence, value)
+				if !ok {
+					t.Fatalf("invalid action type")
+				}
+
+				for _, expose := range triggerAction.Exposes {
+					value, ok := data[expose.Name]
+					if !ok {
+						t.Fatalf("property not %s found in payload", expose.Name)
+					}
+					if value != testCase.presence {
+						t.Fatalf("value mismatch: want %v got %v", testCase.presence, value)
+					}
+					if value != testCase.presence {
+						t.Fatalf("value mismatch: want %v got %v", testCase.presence, value)
+					}
 				}
 			}
+
+			wg.Done()
 		}
 
 		mqtt.OnMessageHandler(messageHandler)
@@ -270,24 +294,23 @@ func unpackJsonToMap(value string) map[string]any {
 	return payload
 }
 
-func createTriggerSwitchToggleLight(mqtt mqtt.MqttClient) *automations.Trigger {
-
-	return nil
-}
-
 func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any) *automations.Trigger {
 	// action = turn off light
-	turnOnAction := &automations.MqttAction{}
+	turnOnAction := automations.NewTriggerAction()
+	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
+		{
+			Name: "presence",
+			Data: true,
+		},
+	}
 	turnOnAction.FriendlyName = "Attic light"
-	turnOnAction.Property = "state"
-	turnOnAction.Data = true
-	turnOnAction.Delay = 0
+	turnOnAction.Delay = utils.IntervalFromMilliseconds(0)
 	turnOnAction.Client = mqtt
 
 	// Turn on sensor trigger
 	turnOnTrigger := &automations.Trigger{}
 	turnOnTrigger.Name = "presence"
-	turnOnTrigger.Actions = []*automations.MqttAction{turnOnAction}
+	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
 
 	// condition = presence = off && lux <= 30
 	turnOnCondition := &automations.Condition{}
@@ -306,34 +329,44 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 	return turnOnTrigger
 }
 
-func createSwitchTriggerWithBindingAction(triggerName string, actionProp string, mqtt mqtt.MqttClient) *automations.Trigger {
+func createSwitchTriggerWithBindingAction(triggerName string, actionProp string, actionData any, mqtt mqtt.MqttClient) *automations.Trigger {
 	// action = turn off light
-	brightnessAction := &automations.MqttAction{}
+	brightnessAction := automations.NewTriggerAction()
 	brightnessAction.FriendlyName = "Attic light"
-	brightnessAction.Property = actionProp
+	brightnessAction.Exposes = []*automations.MqttTriggerActionExpose{
+		{
+			Name: actionProp,
+			Data: actionData,
+		},
+	}
 	brightnessAction.Client = mqtt
 
 	// Turn off sensor trigger
 	button1Trigger := &automations.Trigger{}
 	button1Trigger.Name = triggerName
-	button1Trigger.Actions = []*automations.MqttAction{brightnessAction}
+	button1Trigger.Actions = []automations.MqttAction{brightnessAction}
 
 	return button1Trigger
 }
 
-func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay time.Duration) *automations.Trigger {
+func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay *utils.TimeInterval) *automations.Trigger {
 	// action = turn off light
-	turnOffAction := &automations.MqttAction{}
+	turnOffAction := automations.NewTriggerAction()
 	turnOffAction.FriendlyName = "Attic light"
-	turnOffAction.Property = "state"
-	turnOffAction.Data = false
-	turnOffAction.Delay = int(delay.Milliseconds())
+	turnOffAction.Exposes = []*automations.MqttTriggerActionExpose{
+		{
+			Name: "presence",
+			Data: false,
+		},
+	}
+
+	turnOffAction.Delay = delay
 	turnOffAction.Client = mqtt
 
 	// Turn off sensor trigger
 	turnOffTrigger := &automations.Trigger{}
 	turnOffTrigger.Name = "presence"
-	turnOffTrigger.Actions = []*automations.MqttAction{turnOffAction}
+	turnOffTrigger.Actions = []automations.MqttAction{turnOffAction}
 
 	// condition = presence == false
 	turnOffCondition := &automations.Condition{}

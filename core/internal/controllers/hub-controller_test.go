@@ -172,6 +172,8 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 
 	numTriggers := 10
 
+	rotateStepAction := dialRotateSlowTrigger.Actions[0].(*automations.MqttStepAction)
+
 	wg.Add(numTriggers)
 	for i := 0; i < numTriggers; i++ {
 
@@ -184,7 +186,7 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 
 		// assert. calculate expected value
-		wantvalue := prevValue + (float64(action_time) * dialRotateSlowTrigger.Actions[0].Data.(float64))
+		wantvalue := prevValue + (float64(action_time) * rotateStepAction.Data.(float64))
 		gotValue, _ := light.Exposes["brightness"].Data.(float64)
 
 		wantvalue = math.Min(wantvalue, max)

@@ -50,7 +50,7 @@ func NewTriggerAction() *MqttTrigerAction {
 	}
 }
 
-func (a *MqttTrigerAction) buildPayload() []byte {
+func (a *MqttTrigerAction) buildPayload(ctx *DeviceContext) []byte {
 
 	actionData := map[string]any{}
 	for _, expose := range a.Exposes {
@@ -74,7 +74,6 @@ func (a *MqttTrigerAction) Configure(registrar services.DeviceRegistrar, client 
 		property.Data = sanitizedData
 	}
 
-	
 	device, err := registrar.LookupById(a.Id)
 	if err != nil {
 		return fmt.Errorf("configure action %s failed: %s ", a.Id, err.Error())
@@ -100,7 +99,7 @@ func (a *MqttTrigerAction) Execute(ctx *DeviceContext) error {
 		}()
 
 		a.isPending = true
-		payload := a.buildPayload()
+		payload := a.buildPayload(ctx)
 
 		a.emit(payload)
 
@@ -134,7 +133,7 @@ func (a *MqttTrigerAction) Execute(ctx *DeviceContext) error {
 		select {
 		case <-ticker.C:
 
-			payload := a.buildPayload()
+			payload := a.buildPayload(ctx)
 
 			a.emit(payload)
 
@@ -289,6 +288,10 @@ func (a *MqttBaseAction) emit(payload []byte) {
 	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.FriendlyName)
 }
 
+func (b *MqttBaseAction) GetFriendlyName() string {
+	return b.FriendlyName
+}
+
 func (b *MqttBaseAction) GetID() string {
 	return b.Id
 }
@@ -345,6 +348,7 @@ type MqttAction interface {
 	GetID() string
 	GetType() string
 	Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error
+	GetFriendlyName() string
 }
 
 var typeRegistry = map[string]reflect.Type{

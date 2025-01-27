@@ -7,17 +7,22 @@ import (
 
 func CreateDoorContactWithAlarmTriggerAutomation(doorSensorId string, alarmId string, mqtt mqtt.MqttClient) *automations.Device {
 	// setup automations
-	alarmAction := &automations.MqttAction{}
+	alarmAction := &automations.MqttTrigerAction{}
 	alarmAction.Id = alarmId
 	alarmAction.FriendlyName = "alarm device"
-	alarmAction.Property = "alarm"
+
+	alarmAction.Exposes = []*automations.MqttTriggerActionExpose{
+		{
+			Name: "alarm",
+			Data: true,
+		},
+	}
 	alarmAction.Type = automations.TriggerAction
-	alarmAction.Data = true
 	alarmAction.Client = mqtt
 
 	doorSensorTrigger := &automations.Trigger{}
 	doorSensorTrigger.Name = "contact"
-	doorSensorTrigger.Actions = []*automations.MqttAction{alarmAction}
+	doorSensorTrigger.Actions = []automations.MqttAction{alarmAction}
 
 	deviceAutomation := automations.NewDevice("door sensor")
 	deviceAutomation.Id = doorSensorId
@@ -39,18 +44,18 @@ func CreateDialTriggerActionsBrightness(actionId string, dialActionName string, 
 	step.Operator = "+"
 	step.Property = "brightness"
 
-	action := &automations.MqttAction{}
+	action := &automations.MqttStepAction{}
 	action.Id = actionId
 	action.FriendlyName = "Attic light"
 	action.Property = "brightness"
 	action.Type = "StepAction"
 	action.Data = 0.5
-	action.Steps = []automations.Step{*step}
+	action.Steps = []*automations.Step{step}
 	action.Client = mqtt
 
 	trigger := &automations.Trigger{}
 	trigger.Name = "action"
-	trigger.Actions = []*automations.MqttAction{action}
+	trigger.Actions = []automations.MqttAction{action}
 	trigger.Conditions = []*automations.Condition{condition}
 
 	return trigger
@@ -72,18 +77,18 @@ func CreateDialTriggerStepActionBrightness(lightDeviceId string, dialDeviceId st
 	step2.Operator = "*"
 	step2.Property = "action_time"
 
-	action := &automations.MqttAction{}
+	action := &automations.MqttStepAction{}
 	action.Id = lightDeviceId
 	action.FriendlyName = "Attic light"
 	action.Property = "brightness"
 	action.Type = "StepAction"
 	action.Data = 0.5
-	action.Steps = []automations.Step{*step, *step2}
+	action.Steps = []*automations.Step{step, step2}
 	action.Client = mqtt
 
 	trigger := &automations.Trigger{}
 	trigger.Name = "action"
-	trigger.Actions = []*automations.MqttAction{action}
+	trigger.Actions = []automations.MqttAction{action}
 	trigger.Conditions = []*automations.Condition{condition}
 
 	return trigger
@@ -123,15 +128,20 @@ func CreateDialTriggerStepActionBrightness(lightDeviceId string, dialDeviceId st
 // },
 func CreateSwitchTriggerWithBindingAction(triggerName string, actionProp string, mqtt mqtt.MqttClient) *automations.Trigger {
 	// action = turn off light
-	brightnessAction := &automations.MqttAction{}
+	brightnessAction := &automations.MqttTrigerAction{}
 	brightnessAction.FriendlyName = "Attic light"
-	brightnessAction.Property = actionProp
+	brightnessAction.Exposes = []*automations.MqttTriggerActionExpose{
+		{
+			Name: actionProp,
+			Data: 0,
+		},
+	}
 	brightnessAction.Client = mqtt
 
 	// Turn off sensor trigger
 	button1Trigger := &automations.Trigger{}
 	button1Trigger.Name = triggerName
-	button1Trigger.Actions = []*automations.MqttAction{brightnessAction}
+	button1Trigger.Actions = []automations.MqttAction{brightnessAction}
 
 	return button1Trigger
 }
