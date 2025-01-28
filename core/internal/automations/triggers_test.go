@@ -80,6 +80,53 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 	wg.Wait()
 }
 
+func TestAutomationwithMultipleTriggerActions(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	mqtt := &mocks.MockMqttClient{}
+
+	trigger := createTriggerwithMultipleActions(mqtt, "button1", []string{"brightness", "color_temperature", "color_brightness"}, []any{120, 250, 2000})
+	trigger.Conditions = append(trigger.Conditions, &automations.Condition{  TODO add button1 })
+	automation := automations.NewDevice("Attic light")
+	automation.Triggers = append(automation.Triggers, trigger)
+
+	device := devices.NewDevice(automation.Id)
+
+	var messageHandler = func(id string, payload []byte) {
+
+		for _, action := range trigger.Actions {
+
+			if !strings.HasPrefix(id, action.GetFriendlyName()) {
+				t.Fatalf("invalid received topic: want %s got %s", action.GetFriendlyName(), id)
+			}
+
+			data := unpackJsonToMap(string(payload))
+			if data == nil {
+				t.Fatalf("error unpacking json")
+			}
+			// triggerAction, ok := action.(*automations.MqttTriggerAction)
+			// if !ok {
+			// 	t.Fatalf("invalid action type")
+			// }
+
+		}
+
+		wg.Done()
+	}
+
+	mqtt.OnMessageHandler(messageHandler)
+	wg.Add(1)
+
+	var data = map[string]any{
+		"brightness": 123,
+	}
+	device.Exposes = createExposures(data)
+	automation.Evaluate(device)
+
+	time.Sleep(500 * time.Millisecond)
+
+	wg.Wait()
+}
+
 func TestHandleMultipleSameValueTriggerWithDelay(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
@@ -347,6 +394,27 @@ func createSwitchTriggerWithBindingAction(triggerName string, actionProp string,
 	button1Trigger.Actions = []automations.MqttAction{brightnessAction}
 
 	return button1Trigger
+}
+
+func createTriggerwithMultipleActions(mqtt mqtt.MqttClient, triggerName string, actions []string, data []any) *automations.Trigger {
+	brightnessAction := automations.NewTriggerAction()
+	brightnessAction.FriendlyName = "Attic light"
+	brightnessAction.Id = "0x123456"
+	for i, action := range actions {
+		brightnessAction.Exposes = append(brightnessAction.Exposes, &automations.MqttTriggerActionExpose{
+			Name: action,
+			Data: data[i],
+		})
+	}
+
+	brightnessAction.Client = mqtt
+	trigger := &automations.Trigger{}
+
+	trigger.Name = triggerName
+	trigger.Actions = []automations.MqttAction{brightnessAction}
+	trigger.Conditions = []*automations.Condition{}
+
+	return trigger
 }
 
 func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay *utils.TimeInterval) *automations.Trigger {
