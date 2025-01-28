@@ -86,7 +86,7 @@ func CreateFromPayload(payload []byte) (*Device, error) {
 }
 
 func (d *Device) UnmarshalJSON(data []byte) error {
-	type Alias Device // Prevent infinite recursion
+	type Alias Device
 	aux := &Alias{}
 	if err := json.Unmarshal(data, aux); err != nil {
 		return err
@@ -97,23 +97,7 @@ func (d *Device) UnmarshalJSON(data []byte) error {
 	d.Description = aux.Description
 	d.Enabled = aux.Enabled
 	d.Schedules = aux.Schedules
-
-	var rawTriggers []json.RawMessage
-	if err := json.Unmarshal(data, &struct {
-		Triggers *[]json.RawMessage `json:"triggers"`
-	}{Triggers: &rawTriggers}); err != nil {
-		return err
-	}
-
-	d.Triggers = make([]*Trigger, len(rawTriggers))
-	for i, rawTrigger := range rawTriggers {
-		trigger := &Trigger{}
-		if err := json.Unmarshal(rawTrigger, trigger); err != nil { // Crucial: Use Trigger's UnmarshalJSON
-			return fmt.Errorf("unmarshaling trigger %d: %w", i, err)
-		}
-		d.Triggers[i] = trigger
-	}
-
+	d.Triggers = aux.Triggers
 	return nil
 }
 

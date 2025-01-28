@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"node-herder/models/devices"
 	"node-herder/utils"
+	"reflect"
 )
 
 type Condition struct {
@@ -42,28 +43,36 @@ func NewTrigger(name string) *Trigger {
 }
 
 func (t *Trigger) UnmarshalJSON(data []byte) error {
+	// Unmarshal into a temporary struct to get basic fields
+	var temp struct {
+		Name       string            `json:"name"`
+		Conditions []*Condition      `json:"conditions"`
+		Actions    []json.RawMessage `json:"actions"`
+	}
 
-	type Alias Trigger
-	aux := &Alias{}
-	if err := json.Unmarshal(data, aux); err != nil {
+	if err := json.Unmarshal(data, &temp); err != nil {
 		return err
 	}
 
-	t.Name = aux.Name
-	t.Conditions = aux.Conditions
+	t.Name = temp.Name
+	t.Conditions = temp.Conditions
 
-	var rawActions []json.RawMessage
-	if err := json.Unmarshal(data, &struct {
-		Actions *[]json.RawMessage `json:"actions"`
-	}{Actions: &rawActions}); err != nil {
-		return err
-	}
+	// Handle the Actions using the type registry
+	t.Actions = make([]MqttAction, len(temp.Actions))
+	for i, rawAction := range temp.Actions {
+		baseAction := MqttBaseAction{}
+		if err := json.Unmarshal(rawAction, &baseAction); err != nil {
+			return fmt.Errorf("unmarshaling base action: %w", err)
+		}
 
-	t.Actions = make([]MqttAction, len(rawActions))
-	for i, rawAction := range rawActions {
-		action, err := UnmarshalAction(rawAction)
-		if err != nil {
-			return fmt.Errorf("unmarshaling action %d: %w", i, err)
+		concreteType, ok := typeRegistry[baseAction.Type]
+		if !ok {
+			return fmt.Errorf("unknown action type: %s", baseAction.Type)
+		}
+
+		action := reflect.New(concreteType).Interface().(MqttAction)
+		if err := json.Unmarshal(rawAction, action); err != nil {
+			return fmt.Errorf("unmarshaling concrete action: %w", err)
 		}
 		t.Actions[i] = action
 	}

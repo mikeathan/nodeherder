@@ -377,32 +377,9 @@ type MqttAction interface {
 }
 
 var typeRegistry = map[string]reflect.Type{
-	"trigger":  reflect.TypeOf(MqttTriggerAction{}),
-	"step":     reflect.TypeOf(MqttStepAction{}),
-	"rotation": reflect.TypeOf(MqttPresetCyclingAction{}),
-}
-
-func UnmarshalAction(data []byte) (MqttAction, error) {
-	var baseAction MqttBaseAction
-	if err := json.Unmarshal(data, &baseAction); err != nil {
-		return nil, fmt.Errorf("unmarshaling base action: %w", err)
-	}
-
-	// Look up the concrete type in the registry
-	concreteType, ok := typeRegistry[baseAction.Type]
-	if !ok {
-		return nil, fmt.Errorf("unknown action type: %s", baseAction.Type)
-	}
-
-	// Create a new value of the concrete type
-	action := reflect.New(concreteType).Interface().(MqttAction)
-
-	// Unmarshal the full JSON into the concrete type
-	if err := json.Unmarshal(data, action); err != nil {
-		return nil, fmt.Errorf("unmarshaling concrete action: %w", err)
-	}
-
-	return action, nil
+	TriggerAction:        reflect.TypeOf(MqttTriggerAction{}),
+	StepAction:           reflect.TypeOf(MqttStepAction{}),
+	PresetRotationAction: reflect.TypeOf(MqttPresetCyclingAction{}),
 }
 
 // ////////////////////////////////////////////////////////////

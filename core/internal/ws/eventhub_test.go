@@ -149,8 +149,11 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 					}
 				}
 
-				if sensorTriggerAction.Delay != inputAction.Delay {
-					t.Fatalf("unexpected action.Delay value")
+				if sensorTriggerAction.Delay.Unit != inputAction.Delay.Unit {
+					t.Fatalf("unexpected action.Delay.Unit value")
+				}
+				if sensorTriggerAction.Delay.Value != inputAction.Delay.Value {
+					t.Fatalf("unexpected action.Delay.Value value")
 				}
 			}
 
