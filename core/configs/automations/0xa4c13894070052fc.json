@@ -16,7 +16,6 @@
       "actions": [
         {
           "id": "0x00158d0005a23c38",
-          "friendlyname": "Living room",
           "property": "state",
           "data": "OFF",
           "delay": 300000,
@@ -41,7 +40,6 @@
       "actions": [
         {
           "id": "0x00158d0005a23c38",
-          "friendlyname": "Living room",
           "property": "state",
           "data": "ON",
           "type": "TriggerAction"

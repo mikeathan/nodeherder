@@ -136,9 +136,6 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 			for aidx, action := range sensorTrigger.Actions {
 				sensorTriggerAction := action.(*automations.MqttTriggerAction)
 				inputAction := inputSensorTrigger.Actions[aidx].(*automations.MqttTriggerAction)
-				if sensorTriggerAction.FriendlyName != inputAction.FriendlyName {
-					t.Fatalf("unexpected action.FriendlyName value")
-				}
 
 				for eidx, expose := range inputAction.Exposes {
 					if sensorTriggerAction.Exposes[eidx].Name != expose.Name {
@@ -1307,7 +1304,6 @@ func createTestAutomation() []*automations.Device {
 func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any) *automations.Trigger {
 	// action = turn off light
 	turnOnAction := automations.NewTriggerAction()
-	turnOnAction.FriendlyName = "Attic light"
 	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
 		{
 			Name: "state",
@@ -1343,7 +1339,6 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 func createTriggerTurnOnLightWithPresenceOn(mqtt mqtt.MqttClient) *automations.Trigger {
 	// action = turn off light
 	turnOnAction :=automations.NewTriggerAction()
-	turnOnAction.FriendlyName = "Attic light"
 	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
 		{
 			Name: "state",
@@ -1373,7 +1368,6 @@ func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay *
 
 	// action = turn off light
 	turnOffAction := automations.NewTriggerAction()
-	turnOffAction.FriendlyName = "Attic light"
 	turnOffAction.Exposes = []*automations.MqttTriggerActionExpose{
 		{
 			Name: "state",

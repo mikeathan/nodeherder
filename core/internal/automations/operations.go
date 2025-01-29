@@ -7,6 +7,15 @@ import (
 	"sort"
 )
 
+func CreateTriggerOperation(action *MqttTriggerAction) actionOperation {
+	actionData := map[string]any{}
+	for _, expose := range action.Exposes {
+		actionData[expose.Name] = expose.Data
+	}
+
+	return newTriggerOperation(actionData)
+}
+
 func CreateStepOperation(expose *devices.Entity, action *MqttStepAction) actionOperation {
 
 	var minLimit float64 = 0
@@ -34,7 +43,7 @@ func CreateRotateOperation(expose *devices.Entity) actionOperation {
 		presets = append(presets, expose.Presets[k])
 	}
 
-	return newRotateOperation(presets)
+	return newRotateOperation(expose.Name, presets)
 }
 
 func toFloat(value any) float32 {
@@ -51,28 +60,44 @@ func toFloat(value any) float32 {
 }
 
 type actionOperation interface {
-	Next() (any, error)
+	CreatePayload() (map[string]any, error)
+}
+
+type triggerOperation struct {
+	data map[string]any
+}
+
+func newTriggerOperation(data map[string]any) actionOperation {
+	return &triggerOperation{data: data}
+}
+
+func (t *triggerOperation) CreatePayload() (map[string]any, error) {
+	return t.data, nil
 }
 
 type rotateOperation struct {
+	property string
 	position int
 	size     int
 	items    []any
 }
 
-func newRotateOperation(items []any) actionOperation {
-	return &rotateOperation{items: items, size: len(items)}
+func newRotateOperation(property string, items []any) actionOperation {
+	return &rotateOperation{property: property, items: items, size: len(items)}
 }
 
-func (r *rotateOperation) Next() (any, error) {
+func (r *rotateOperation) CreatePayload() (map[string]any, error) {
 	if r.position >= r.size {
 		r.position = 0
 	}
 
 	v := r.items[r.position]
 	r.position++
-
-	return v, nil
+	
+	payload := map[string]any{
+		r.property: v,
+	}
+	return payload, nil
 }
 
 type stepOperation struct {
@@ -90,7 +115,7 @@ func newStepOperation(expose *devices.Entity, action *MqttStepAction, minLimit f
 	return &stepOperation{expose: expose, action: action, limits: limits, propertyMap: make(map[string]float64, len(action.Steps))}
 }
 
-func (r *stepOperation) Next() (any, error) {
+func (r *stepOperation) CreatePayload() (map[string]any, error) {
 
 	// example:
 	// brightness = 10
@@ -117,7 +142,10 @@ func (r *stepOperation) Next() (any, error) {
 		return nil, errors.New("same value, skipping")
 	}
 
-	return result, nil
+	payload := map[string]any{
+		r.action.Property: result,
+	}
+	return payload, nil
 }
 
 var numericOperations = map[string]func(float64, float64, float64) float64{

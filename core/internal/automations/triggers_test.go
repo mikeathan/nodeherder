@@ -8,7 +8,6 @@ import (
 	"node-herder/mocks"
 	"node-herder/models/devices"
 	"node-herder/utils"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -85,44 +84,57 @@ func TestAutomationwithMultipleTriggerActions(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 
 	trigger := createTriggerwithMultipleActions(mqtt, "button1", []string{"brightness", "color_temperature", "color_brightness"}, []any{120, 250, 2000})
-	trigger.Conditions = append(trigger.Conditions, &automations.Condition{  TODO add button1 })
+	trigger.Conditions = append(trigger.Conditions, &automations.Condition{Name: "button1", Value: "pressed", EqualityOperator: "="})
 	automation := automations.NewDevice("Attic light")
 	automation.Triggers = append(automation.Triggers, trigger)
 
 	device := devices.NewDevice(automation.Id)
 
-	var messageHandler = func(id string, payload []byte) {
+	testCases := []struct {
+		triggeredEntity string
+		value           any
+		result          bool
+	}{
+		{triggeredEntity: "button1", value: "pressed", result: true},
+		{triggeredEntity: "button1", value: "release", result: false},
+		{triggeredEntity: "button1", value: "pressed", result: true},
+	}
 
-		for _, action := range trigger.Actions {
+	for _, testCase := range testCases {
+		var data = map[string]any{
+			"some_data1":             false,
+			"some_data2":             90,
+			testCase.triggeredEntity: testCase.value,
+		}
+		var messageHandler = func(id string, payload []byte) {
 
-			if !strings.HasPrefix(id, action.GetFriendlyName()) {
-				t.Fatalf("invalid received topic: want %s got %s", action.GetFriendlyName(), id)
+			for _, action := range trigger.Actions {
+
+				fmt.Println(action)
+				data := unpackJsonToMap(string(payload))
+				if data == nil {
+					t.Fatalf("error unpacking json")
+				}
+				// triggerAction, ok := action.(*automations.MqttTriggerAction)
+				// if !ok {
+				// 	t.Fatalf("invalid action type")
+				// }
+
 			}
 
-			data := unpackJsonToMap(string(payload))
-			if data == nil {
-				t.Fatalf("error unpacking json")
-			}
-			// triggerAction, ok := action.(*automations.MqttTriggerAction)
-			// if !ok {
-			// 	t.Fatalf("invalid action type")
-			// }
-
+			wg.Done()
 		}
 
-		wg.Done()
+		mqtt.OnMessageHandler(messageHandler)
+
+		if testCase.result {
+			wg.Add(1)
+		}
+		device.Exposes = createExposures(data)
+
+		automation.Evaluate(device)
+		time.Sleep(100 * time.Millisecond)
 	}
-
-	mqtt.OnMessageHandler(messageHandler)
-	wg.Add(1)
-
-	var data = map[string]any{
-		"brightness": 123,
-	}
-	device.Exposes = createExposures(data)
-	automation.Evaluate(device)
-
-	time.Sleep(500 * time.Millisecond)
 
 	wg.Wait()
 }
@@ -161,10 +173,6 @@ func TestHandleMultipleSameValueTriggerWithDelay(t *testing.T) {
 		var messageHandler = func(id string, payload []byte) {
 
 			for _, action := range turnOnTrigger.Actions {
-
-				if !strings.HasPrefix(id, action.GetFriendlyName()) {
-					t.Fatalf("invalid received topic: want %s got %s", action.GetFriendlyName(), id)
-				}
 
 				data := unpackJsonToMap(string(payload))
 				if data == nil {
@@ -253,9 +261,6 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 			}
 
 			for _, action := range turnOnTrigger.Actions {
-				if !strings.HasPrefix(id, action.GetFriendlyName()) {
-					t.Fatalf("invalid received topic: want %s got %s", action.GetFriendlyName(), id)
-				}
 
 				data := unpackJsonToMap(string(payload))
 				if data == nil {
@@ -350,7 +355,6 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 			Data: true,
 		},
 	}
-	turnOnAction.FriendlyName = "Attic light"
 	turnOnAction.Delay = utils.IntervalFromMilliseconds(0)
 	turnOnAction.Client = mqtt
 
@@ -379,7 +383,6 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 func createSwitchTriggerWithBindingAction(triggerName string, actionProp string, actionData any, mqtt mqtt.MqttClient) *automations.Trigger {
 	// action = turn off light
 	brightnessAction := automations.NewTriggerAction()
-	brightnessAction.FriendlyName = "Attic light"
 	brightnessAction.Exposes = []*automations.MqttTriggerActionExpose{
 		{
 			Name: actionProp,
@@ -398,7 +401,6 @@ func createSwitchTriggerWithBindingAction(triggerName string, actionProp string,
 
 func createTriggerwithMultipleActions(mqtt mqtt.MqttClient, triggerName string, actions []string, data []any) *automations.Trigger {
 	brightnessAction := automations.NewTriggerAction()
-	brightnessAction.FriendlyName = "Attic light"
 	brightnessAction.Id = "0x123456"
 	for i, action := range actions {
 		brightnessAction.Exposes = append(brightnessAction.Exposes, &automations.MqttTriggerActionExpose{
@@ -420,7 +422,6 @@ func createTriggerwithMultipleActions(mqtt mqtt.MqttClient, triggerName string, 
 func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay *utils.TimeInterval) *automations.Trigger {
 	// action = turn off light
 	turnOffAction := automations.NewTriggerAction()
-	turnOffAction.FriendlyName = "Attic light"
 	turnOffAction.Exposes = []*automations.MqttTriggerActionExpose{
 		{
 			Name: "presence",

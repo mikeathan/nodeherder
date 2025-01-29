@@ -401,7 +401,6 @@ func TestOperationCycleValue(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
 	turnOnAction := automations.NewTriggerAction()
-	turnOnAction.FriendlyName = "attic light"
 	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
 		{
 			Name: "brightness",
@@ -414,7 +413,7 @@ func TestOperationCycleValue(t *testing.T) {
 	operationAction := automations.CreateRotateOperation(light)
 
 	for i := 0; i < 15; i++ {
-		nextValue, er := operationAction.Next()
+		nextValue, er := operationAction.CreatePayload()
 		if er != nil {
 			t.Fatalf("error %v", er.Error())
 		}
@@ -459,7 +458,6 @@ func createMockDevice(id string, name string, property string, data any, min flo
 
 func createMockLivingRoomButtonStepAction(operation string, stepValue float64) *automations.MqttStepAction {
 	action := automations.NewStepAction()
-	action.FriendlyName = "livingroom"
 	action.Id = "x1234"
 	action.Property = "brightness"
 	action.Type = automations.StepAction
@@ -482,7 +480,6 @@ func createMockLivingRoomButtonStepAction(operation string, stepValue float64) *
 
 func createMockLivingRoomStepAction(operation string, stepValue float64) *automations.MqttStepAction {
 	action := automations.NewStepAction()
-	action.FriendlyName = "livingroom"
 	action.Id = "x1234"
 	action.Property = "brightness"
 	action.Type = automations.StepAction

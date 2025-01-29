@@ -39,8 +39,9 @@ type MqttTriggerActionExpose struct {
 
 type MqttTriggerAction struct {
 	MqttBaseAction
-	Exposes []*MqttTriggerActionExpose `json:"exposes"`
-	Delay   *utils.TimeInterval        `json:"delay"`
+	Exposes   []*MqttTriggerActionExpose `json:"exposes"`
+	Delay     *utils.TimeInterval        `json:"delay"`
+	operation actionOperation
 }
 
 func NewTriggerAction() *MqttTriggerAction {
@@ -51,21 +52,6 @@ func NewTriggerAction() *MqttTriggerAction {
 			Type: TriggerAction,
 		},
 	}
-}
-
-func (b *MqttTriggerAction) GetType() string {
-	return b.Type
-}
-
-func (a *MqttTriggerAction) buildPayload(ctx *DeviceContext) []byte {
-
-	actionData := map[string]any{}
-	for _, expose := range a.Exposes {
-		actionData[expose.Name] = expose.Data
-	}
-
-	payload, _ := json.Marshal(actionData)
-	return payload
 }
 
 func (a *MqttTriggerAction) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
@@ -81,11 +67,16 @@ func (a *MqttTriggerAction) Configure(registrar services.DeviceRegistrar, client
 		property.Data = sanitizedData
 	}
 
+	a.operation = CreateTriggerOperation(a)
+
+	// common logic
 	device, err := registrar.LookupById(a.Id)
 	if err != nil {
 		return fmt.Errorf("configure action %s failed: %s ", a.Id, err.Error())
 	}
-	a.FriendlyName = device.FriendlyName
+	a.Id = device.Id
+	// NOTE: if device is renamed we might need to register the automations again
+	a.friendlyName = device.FriendlyName
 	a.Client = client
 	a.registrar = registrar
 	return nil
@@ -106,14 +97,18 @@ func (a *MqttTriggerAction) Execute(ctx *DeviceContext) error {
 		}()
 
 		a.isPending = true
-		payload := a.buildPayload(ctx)
 
-		a.emit(payload)
+		payload, err := a.operation.CreatePayload()
+		if err != nil {
+			return err
+		}
+		bytes, _ := json.Marshal(payload)
+		a.emit(bytes)
 
 		// on success callback
 		// update sensor current value so we dont have to query the device again
-		for _, expose := range a.Exposes {
-			ctx.SetCurrent(expose.Name, expose.Data)
+		for key, value := range payload {
+			ctx.SetCurrent(key, value)
 		}
 
 		return nil
@@ -140,14 +135,18 @@ func (a *MqttTriggerAction) Execute(ctx *DeviceContext) error {
 		select {
 		case <-ticker.C:
 
-			payload := a.buildPayload(ctx)
+			payload, err := a.operation.CreatePayload()
+			if err != nil {
+				return
+			}
 
-			a.emit(payload)
+			bytes, _ := json.Marshal(payload)
+			a.emit(bytes)
 
 			// on success callback
 			// update sensor current value so we dont have to query the device again
-			for _, expose := range a.Exposes {
-				ctx.SetCurrent(expose.Name, expose.Data)
+			for key, value := range payload {
+				ctx.SetCurrent(key, value)
 			}
 			//utils.LogInfo("timer constraint finished")
 			return
@@ -192,39 +191,40 @@ func (a *MqttStepAction) Execute(ctx *DeviceContext) error {
 	}()
 
 	a.isPending = true
-	newValue, err := a.operation.Next()
+	payload, err := a.operation.CreatePayload()
 	if err != nil {
 		return err
 	}
 
-	// build payload
-	actionData := map[string]any{
-		a.Property: newValue,
-	}
-
-	payload, _ := json.Marshal(actionData)
+	bytes, err := json.Marshal(payload)
 	if err != nil {
 		utils.LogErrorf("step action failed %s ", err.Error())
 		return err
 	}
 
-	a.emit(payload)
+	a.emit(bytes)
 
-	ctx.SetCurrent(a.Property, newValue)
+	for key, value := range payload {
+		ctx.SetCurrent(key, value)
+	}
 
 	return nil
 }
 func (a *MqttStepAction) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
 
-	a.Client = client
-	a.registrar = registrar
 	device, err := registrar.LookupById(a.Id)
 	if err != nil {
 		return fmt.Errorf("configure action %s failed: %s ", a.Id, err.Error())
 	}
-	a.FriendlyName = device.FriendlyName
 	expose := device.Exposes[a.Property]
 	a.operation = CreateStepOperation(expose, a)
+
+	// common logic
+	a.Id = device.Id
+	a.friendlyName = device.FriendlyName
+	a.Client = client
+	a.registrar = registrar
+
 	return nil
 }
 
@@ -257,64 +257,61 @@ func (a *MqttPresetCyclingAction) Execute(ctx *DeviceContext) error {
 	}()
 
 	a.isPending = true
-	newValue, err := a.operation.Next()
+	payload, err := a.operation.CreatePayload()
 	if err != nil {
 		return err
 	}
 
 	// build payload
-	actionData := map[string]any{
-		a.Property: newValue,
-	}
-
-	payload, _ := json.Marshal(actionData)
+	bytes, err := json.Marshal(payload)
 	if err != nil {
 		utils.LogErrorf("preset cycling action failed %s ", err.Error())
 		return err
 	}
 
-	a.emit(payload)
+	a.emit(bytes)
 
-	ctx.SetCurrent(a.Property, newValue)
+	for key, value := range payload {
+		ctx.SetCurrent(key, value)
+	}
 	return nil
 }
 
 func (a *MqttPresetCyclingAction) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
 
-	a.Client = client
-	a.registrar = registrar
 	device, err := registrar.LookupById(a.Id)
 	if err != nil {
 		return fmt.Errorf("configure action %s failed: %s ", a.Id, err.Error())
 	}
 
 	expose := device.Exposes[a.Property]
-	a.FriendlyName = device.FriendlyName
 	a.operation = CreateRotateOperation(expose)
+
+	// common logic
+	a.Id = device.Id
+	a.friendlyName = device.FriendlyName
+	a.Client = client
+	a.registrar = registrar
 	return nil
 }
 
 type MqttBaseAction struct {
 	Id           string                   `json:"id"`
-	FriendlyName string                   `json:"friendlyname"`
 	Type         string                   `json:"type"`
 	Client       mqtt.MqttClient          `json:"-"`
 	registrar    services.DeviceRegistrar `json:"-"`
 	mut          sync.RWMutex             `json:"-"`
 	exit         chan bool                `json:"-"`
 	isPending    bool                     `json:"-"`
+	friendlyName string                   `json:"-"`
 }
 
 func (a *MqttBaseAction) emit(payload []byte) {
 
-	msg := fmt.Sprintf("%s/set", a.FriendlyName)
+	msg := fmt.Sprintf("%s/set", a.friendlyName)
 	a.Client.Publish(msg, payload)
 
-	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.FriendlyName)
-}
-
-func (b *MqttBaseAction) GetFriendlyName() string {
-	return b.FriendlyName
+	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.friendlyName)
 }
 
 func (b *MqttBaseAction) GetID() string {
@@ -353,27 +350,12 @@ func (b *MqttBaseAction) ExecuteBase(ctx *DeviceContext) error {
 	return nil
 }
 
-// trigger action
-// could have delay
-// can have multiple exposes to generate payload
-
-// step action
-// has expose property
-// has min/max limits
-// has sinlge expose Daya
-// can have multiple steps
-
-// rotation action
-// has preset
-// has current index for rotation
-
 type MqttAction interface {
 	Execute(tx *DeviceContext) error
 	Stop()
 	GetID() string
 	GetType() string
 	Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error
-	GetFriendlyName() string
 }
 
 var typeRegistry = map[string]reflect.Type{

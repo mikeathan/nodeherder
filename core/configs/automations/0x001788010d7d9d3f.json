@@ -16,7 +16,6 @@
       "actions": [
         {
           "id": "0x00158d0005a23c38",
-          "friendlyname": "Living Room",
           "property": "state",
           "type": "TriggerAction",
           "data": "TOGGLE"
@@ -35,7 +34,6 @@
       "actions": [
         {
           "id": "0x00158d0005a23c38",
-          "friendlyname": "Living Room",
           "property": "brightness",
           "type": "StepAction",
           "data": 0.5,
@@ -66,7 +64,6 @@
       "actions": [
         {
           "id": "0x00158d0005a23c38",
-          "friendlyname": "Living Room",
           "property": "brightness",
           "type": "StepAction",
           "data": 1,
@@ -97,7 +94,6 @@
       "actions": [
         {
           "id": "0x00158d0005a23c38",
-          "friendlyname": "Living Room",
           "property": "brightness",
           "type": "StepAction",
           "data": 0.5,
@@ -128,7 +124,6 @@
       "actions": [
         {
           "id": "0x00158d0005a23c38",
-          "friendlyname": "Living Room",
           "property": "brightness",
           "type": "StepAction",
           "data": 1,
@@ -159,7 +154,6 @@
       "actions": [
         {
           "id": "0x00158d0005a23c38",
-          "friendlyname": "Living Room",
           "property": "color_temp",
           "type": "PresetRotationAction"
         }

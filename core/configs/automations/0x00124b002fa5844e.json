@@ -16,7 +16,6 @@
       "actions": [
         {
           "id": "0xa4c1389b273366c3",
-          "friendlyname": "Attic alarm",
           "property": "alarm",
           "type": "TriggerAction",
           "data": true
