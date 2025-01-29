@@ -112,7 +112,9 @@ func (m *MqttService) Publish(friendlyName string, payload interface{}) {
 	topic := fmt.Sprintf("%s%s", baseTopic, friendlyName)
 
 	utils.LogDebugf("Publish: %s", topic)
-	m.client.Publish(topic, 0, false, payload)
+	t := m.client.Publish(topic, 0, false, payload)
+	// TEST ##############################
+	fmt.Println("[DEBUG] ", t.Error())
 }
 
 func (m *MqttService) Connect() error {

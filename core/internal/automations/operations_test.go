@@ -413,13 +413,13 @@ func TestOperationCycleValue(t *testing.T) {
 	operationAction := automations.CreateRotateOperation(light)
 
 	for i := 0; i < 15; i++ {
-		nextValue, er := operationAction.CreatePayload()
+		payload, er := operationAction.CreatePayload()
 		if er != nil {
 			t.Fatalf("error %v", er.Error())
 		}
 
 		want := presets[pos].(float64)
-		got := nextValue.(float64)
+		got := payload[].(float64)
 		if got != want {
 			t.Fatalf("invalid operation value: want %v got %v", want, got)
 		}

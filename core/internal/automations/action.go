@@ -30,8 +30,6 @@ type Step struct {
 	Id       string `json:"id"`
 }
 
-//////////////////////////////////////////////////////////////
-
 type MqttTriggerActionExpose struct {
 	Name string `json:"name"`
 	Data any    `json:"data,omitempty"`
@@ -39,9 +37,8 @@ type MqttTriggerActionExpose struct {
 
 type MqttTriggerAction struct {
 	MqttBaseAction
-	Exposes   []*MqttTriggerActionExpose `json:"exposes"`
-	Delay     *utils.TimeInterval        `json:"delay"`
-	operation actionOperation
+	Exposes []*MqttTriggerActionExpose `json:"exposes"`
+	Delay   *utils.TimeInterval        `json:"delay"`
 }
 
 func NewTriggerAction() *MqttTriggerAction {
@@ -75,6 +72,7 @@ func (a *MqttTriggerAction) Configure(registrar services.DeviceRegistrar, client
 		return fmt.Errorf("configure action %s failed: %s ", a.Id, err.Error())
 	}
 	a.Id = device.Id
+
 	// NOTE: if device is renamed we might need to register the automations again
 	a.friendlyName = device.FriendlyName
 	a.Client = client
@@ -83,89 +81,18 @@ func (a *MqttTriggerAction) Configure(registrar services.DeviceRegistrar, client
 }
 
 func (a *MqttTriggerAction) Execute(ctx *DeviceContext) error {
-	a.mut.Lock()
-	defer a.mut.Unlock()
-
-	if a.isPending {
-		return nil
-	}
-
-	// no delay execution
 	if a.Delay.Value == 0 {
-		defer func() {
-			a.isPending = false
-		}()
-
-		a.isPending = true
-
-		payload, err := a.operation.CreatePayload()
-		if err != nil {
-			return err
-		}
-		bytes, _ := json.Marshal(payload)
-		a.emit(bytes)
-
-		// on success callback
-		// update sensor current value so we dont have to query the device again
-		for key, value := range payload {
-			ctx.SetCurrent(key, value)
-		}
-
-		return nil
+		return a.executeBase(ctx)
 	}
 
-	// with delay execution
-	a.exit = make(chan bool, 1)
-	go func() {
-
-		var delay = a.Delay.Duration()
-		timestamp := time.Now().Add(delay)
-		diff := time.Until(timestamp).Milliseconds()
-
-		duration := time.Duration(diff)
-		ticker := *time.NewTicker(duration * time.Millisecond)
-		a.isPending = true
-		//utils.LogInfof("time constraint started Delay: %d ms", a.Delay)
-
-		defer func() {
-			close(a.exit)
-			a.isPending = false
-		}()
-
-		select {
-		case <-ticker.C:
-
-			payload, err := a.operation.CreatePayload()
-			if err != nil {
-				return
-			}
-
-			bytes, _ := json.Marshal(payload)
-			a.emit(bytes)
-
-			// on success callback
-			// update sensor current value so we dont have to query the device again
-			for key, value := range payload {
-				ctx.SetCurrent(key, value)
-			}
-			//utils.LogInfo("timer constraint finished")
-			return
-
-		case <-a.exit:
-
-			//utils.LogInfo("timer constraint stopped")
-			return
-		}
-	}()
-	return nil
+	return a.executeBaseWithDelay(a.Delay, ctx)
 }
 
 type MqttStepAction struct {
 	MqttBaseAction
-	Property  string  `json:"property"`
-	Steps     []*Step `json:"steps,omitempty"`
-	Data      any     `json:"data,omitempty"`
-	operation actionOperation
+	Property string  `json:"property"`
+	Steps    []*Step `json:"steps,omitempty"`
+	Data     any     `json:"data,omitempty"`
 }
 
 func NewStepAction() *MqttStepAction {
@@ -178,38 +105,9 @@ func NewStepAction() *MqttStepAction {
 }
 
 func (a *MqttStepAction) Execute(ctx *DeviceContext) error {
-
-	a.mut.Lock()
-	defer a.mut.Unlock()
-
-	if a.isPending {
-		return nil
-	}
-
-	defer func() {
-		a.isPending = false
-	}()
-
-	a.isPending = true
-	payload, err := a.operation.CreatePayload()
-	if err != nil {
-		return err
-	}
-
-	bytes, err := json.Marshal(payload)
-	if err != nil {
-		utils.LogErrorf("step action failed %s ", err.Error())
-		return err
-	}
-
-	a.emit(bytes)
-
-	for key, value := range payload {
-		ctx.SetCurrent(key, value)
-	}
-
-	return nil
+	return a.executeBase(ctx)
 }
+
 func (a *MqttStepAction) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
 
 	device, err := registrar.LookupById(a.Id)
@@ -219,7 +117,6 @@ func (a *MqttStepAction) Configure(registrar services.DeviceRegistrar, client mq
 	expose := device.Exposes[a.Property]
 	a.operation = CreateStepOperation(expose, a)
 
-	// common logic
 	a.Id = device.Id
 	a.friendlyName = device.FriendlyName
 	a.Client = client
@@ -230,9 +127,8 @@ func (a *MqttStepAction) Configure(registrar services.DeviceRegistrar, client mq
 
 type MqttPresetCyclingAction struct {
 	MqttBaseAction
-	Property  string   `json:"property"`
-	Presets   []string `json:"presets,omitempty"`
-	operation actionOperation
+	Property string   `json:"property"`
+	Presets  []string `json:"presets,omitempty"`
 }
 
 func NewPresetCyclingAction() *MqttPresetCyclingAction {
@@ -245,36 +141,7 @@ func NewPresetCyclingAction() *MqttPresetCyclingAction {
 }
 
 func (a *MqttPresetCyclingAction) Execute(ctx *DeviceContext) error {
-	a.mut.Lock()
-	defer a.mut.Unlock()
-
-	if a.isPending {
-		return nil
-	}
-
-	defer func() {
-		a.isPending = false
-	}()
-
-	a.isPending = true
-	payload, err := a.operation.CreatePayload()
-	if err != nil {
-		return err
-	}
-
-	// build payload
-	bytes, err := json.Marshal(payload)
-	if err != nil {
-		utils.LogErrorf("preset cycling action failed %s ", err.Error())
-		return err
-	}
-
-	a.emit(bytes)
-
-	for key, value := range payload {
-		ctx.SetCurrent(key, value)
-	}
-	return nil
+	return a.executeBase(ctx)
 }
 
 func (a *MqttPresetCyclingAction) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
@@ -304,6 +171,7 @@ type MqttBaseAction struct {
 	exit         chan bool                `json:"-"`
 	isPending    bool                     `json:"-"`
 	friendlyName string                   `json:"-"`
+	operation    actionOperation          `json:"-"`
 }
 
 func (a *MqttBaseAction) emit(payload []byte) {
@@ -312,6 +180,31 @@ func (a *MqttBaseAction) emit(payload []byte) {
 	a.Client.Publish(msg, payload)
 
 	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.friendlyName)
+}
+
+func (b *MqttBaseAction) processAction(ctx *DeviceContext) error {
+	payload, err := b.operation.CreatePayload()
+	if err != nil {
+		return err
+	}
+
+	// build payload
+	bytes, err := json.Marshal(payload)
+	if err != nil {
+		utils.LogErrorf("preset cycling action failed %s ", err.Error())
+		return err
+	}
+
+	// emit message
+	b.emit(bytes)
+
+	// on sucess update device context with new values to avoid querying the device again
+	// ideally we need to do it if publish has succeeded
+	utils.LogInfof("Action triggered. Message %s published in %s", string(bytes), b.friendlyName)
+	for key, value := range payload {
+		ctx.SetCurrent(key, value)
+	}
+	return nil
 }
 
 func (b *MqttBaseAction) GetID() string {
@@ -333,19 +226,69 @@ func (a *MqttBaseAction) Stop() {
 	}
 }
 
-func (b *MqttBaseAction) ExecuteBase(ctx *DeviceContext) error {
-	// IMPORTANT !!!!
-	//we need to check if value is still the same and not emit anything new
+func (b *MqttBaseAction) executeBaseWithDelay(delay *utils.TimeInterval, ctx *DeviceContext) error {
+	b.mut.Lock()
+	defer b.mut.Unlock()
 
-	// b.mut.Lock()
-	// defer b.mut.Unlock()
+	if b.isPending {
+		return nil
+	}
 
-	// if b.isPending {
-	// 		return fmt.Errorf("action %s is already pending", b.Id) // Return an error
-	// }
+	b.exit = make(chan bool, 1)
+	go func() {
 
-	// b.isPending = true
-	// defer func() { b.isPending = false }() // Ensure isPending is reset
+		timestamp := time.Now().Add(delay.Duration())
+		diff := time.Until(timestamp).Milliseconds()
+
+		duration := time.Duration(diff)
+		ticker := *time.NewTicker(duration * time.Millisecond)
+		b.isPending = true
+		//utils.LogInfof("time constraint started Delay: %d ms", a.Delay)
+
+		defer func() {
+			close(b.exit)
+			b.isPending = false
+		}()
+
+		select {
+		case <-ticker.C:
+
+			err := b.processAction(ctx)
+			if err != nil {
+				utils.LogErrorf("trigger action failed %s", err.Error())
+				return
+			}
+			//utils.LogInfo("timer constraint finished")
+			return
+
+		case <-b.exit:
+
+			//utils.LogInfo("timer constraint stopped")
+			return
+		}
+	}()
+
+	return nil
+}
+
+func (b *MqttBaseAction) executeBase(ctx *DeviceContext) error {
+	b.mut.Lock()
+	defer b.mut.Unlock()
+
+	if b.isPending {
+		return nil
+	}
+
+	defer func() {
+		b.isPending = false
+	}()
+
+	b.isPending = true
+
+	err := b.processAction(ctx)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -363,145 +306,3 @@ var typeRegistry = map[string]reflect.Type{
 	StepAction:           reflect.TypeOf(MqttStepAction{}),
 	PresetRotationAction: reflect.TypeOf(MqttPresetCyclingAction{}),
 }
-
-// ////////////////////////////////////////////////////////////
-// type MqttAction struct {
-// 	Id           string `json:"id"`
-// 	FriendlyName string `json:"friendlyname"`
-// 	Property     string `json:"property"`
-// 	Type         string `json:"type"`
-// 	Data         any    `json:"data,omitempty"`
-// 	Delay        int    `json:"delay,omitempty"`
-// 	Steps        []Step `json:"steps,omitempty"`
-
-// 	Client    mqtt.MqttClient          `json:"-"`
-// 	registrar services.DeviceRegistrar `json:"-"`
-
-// 	operationAction actionOperation `json:"-"`
-// 	mut             sync.RWMutex
-// 	exit            chan bool
-// 	isPending       bool
-// }
-
-// func NewAction() *MqttAction {
-// 	return &MqttAction{Delay: 0, Steps: make([]Step, 0)}
-// }
-
-// func (a *MqttAction) Execute(name string, ctx *DeviceContext) {
-
-// 	a.mut.Lock()
-// 	defer a.mut.Unlock()
-
-// 	if a.isPending {
-// 		return
-// 	}
-
-// 	// no delay execution
-// 	if a.Delay == 0 {
-// 		defer func() {
-// 			a.isPending = false
-// 		}()
-
-// 		a.isPending = true
-// 		payload, err := a.buildPayload(name, ctx)
-// 		if err != nil {
-// 			utils.LogErrorf("build payload failed: %s", err.Error())
-// 			return
-// 		}
-
-// 		a.emit(payload)
-
-// 		// on success callback
-// 		// update sensor current value
-// 		ctx.SetCurrent(name, ctx.Payload[name].Data)
-// 		return
-// 	}
-
-// 	// with delay execution
-// 	a.exit = make(chan bool, 1)
-// 	go func() {
-
-// 		var delay = time.Duration(float64(a.Delay) * float64(time.Millisecond))
-// 		timestamp := time.Now().Add(delay)
-// 		diff := time.Until(timestamp).Milliseconds()
-
-// 		duration := time.Duration(diff)
-// 		ticker := *time.NewTicker(duration * time.Millisecond)
-// 		a.isPending = true
-// 		//utils.LogInfof("time constraint started Delay: %d ms", a.Delay)
-
-// 		defer func() {
-// 			close(a.exit)
-// 			a.isPending = false
-// 		}()
-
-// 		select {
-// 		case <-ticker.C:
-
-// 			payload, err := a.buildPayload(name, ctx)
-// 			if err != nil {
-// 				utils.LogErrorf(err.Error())
-// 				return
-// 			}
-
-// 			a.emit(payload)
-// 			ctx.SetCurrent(name, ctx.Payload[name].Data)
-
-// 			// on success callback
-// 			// update sensor current value
-// 			//utils.LogInfo("timer constraint finished")
-// 			return
-
-// 		case <-a.exit:
-
-// 			//utils.LogInfo("timer constraint stopped")
-// 			return
-// 		}
-// 	}()
-// }
-
-// func (a *MqttAction) Stop() {
-// 	if a.isPending {
-// 		// stop it and exit
-// 		a.mut.Lock()
-// 		defer a.mut.Unlock()
-
-// 		a.exit <- true
-// 		a.isPending = false
-// 	}
-// }
-
-// func (a *MqttAction) emit(payload []byte) {
-
-// 	msg := fmt.Sprintf("%s/set", a.FriendlyName)
-// 	a.Client.Publish(msg, payload)
-
-// 	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.FriendlyName)
-// }
-
-// func (a *MqttAction) buildPayload(name string, ctx *DeviceContext) ([]byte, error) {
-
-// 	if a.operationAction != nil {
-// 		newValue, err := a.operationAction.Next()
-// 		if err != nil {
-// 			return nil, err
-// 		}
-
-// 		return createJson(a.Property, newValue), nil
-// 	}
-
-// 	payloadData := a.Data
-// 	if payloadData == nil {
-// 		payloadData = ctx.Payload[name].Data
-// 	}
-// 	return createJson(a.Property, payloadData), nil
-// }
-
-// func createJson(property string, data any) []byte {
-// 	jp := map[string]any{
-// 		property: data,
-// 	}
-
-// 	payload, _ := json.Marshal(jp)
-// 	return payload
-// }
