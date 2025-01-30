@@ -5,6 +5,7 @@ import (
 	"node-herder/internal/mqtt"
 )
 
+
 func CreateDoorContactWithAlarmTriggerAutomation(doorSensorId string, alarmId string, mqtt mqtt.MqttClient) *automations.Device {
 	// setup automations
 	alarmAction := automations.NewTriggerAction()

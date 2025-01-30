@@ -113,6 +113,28 @@ func CreateColorTempPresets() map[string]any {
 	return presets
 }
 
+func CreatePresenceDevice(deviceId string, friendlyName string, property string, value bool) *devices.Device {
+	dev := devices.NewDevice(deviceId)
+	dev.Id = deviceId
+	dev.FriendlyName = friendlyName
+	dev.ConnectionType = "mqtt"
+	dev.Description = fmt.Sprintf("Test device %s description", deviceId)
+	dev.PowerSource = "mains"
+	dev.Properties = map[string]any{}
+	dev.Properties["last_seen"] = time.Now().Format(time.RFC3339)
+	dev.Properties["link_quality"] = 45.0
+
+	expose:= CreateEntity(property, "binary", value)
+	dev.Exposes = make(map[string]*devices.Entity){
+		{
+			property: expose,
+		},
+	}
+
+
+	return dev
+}
+
 func CreateDeviceWithExposes(deviceId string, friendlyName string, exposes []*devices.Entity) *devices.Device {
 
 	dev := devices.NewDevice(deviceId)

@@ -71,10 +71,9 @@ func (a *MqttTriggerAction) Configure(registrar services.DeviceRegistrar, client
 	if err != nil {
 		return fmt.Errorf("configure action %s failed: %s ", a.Id, err.Error())
 	}
-	a.Id = device.Id
-
 	// NOTE: if device is renamed we might need to register the automations again
 	a.friendlyName = device.FriendlyName
+	a.Id = device.Id
 	a.Client = client
 	a.registrar = registrar
 	return nil
@@ -117,6 +116,7 @@ func (a *MqttStepAction) Configure(registrar services.DeviceRegistrar, client mq
 	expose := device.Exposes[a.Property]
 	a.operation = CreateStepOperation(expose, a)
 
+	// common logic
 	a.Id = device.Id
 	a.friendlyName = device.FriendlyName
 	a.Client = client

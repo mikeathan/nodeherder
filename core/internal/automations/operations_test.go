@@ -33,6 +33,7 @@ func TestOperationIncreaseValue(t *testing.T) {
 	action.Client = mqtt
 
 	repo := createMockLivingRoomButtonDevices(0.0, 0.0)
+	
 	store := utils_test.CreateStoreFromDeviceRepo(repo)
 
 	//store devices in map for easy access
@@ -380,7 +381,8 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 
 func TestOperationCycleValue(t *testing.T) {
 
-	light := createEntity("light", "some description", 0.0, "", nil)
+	exposeName := "light"
+	light := createEntity(exposeName, "some description", 0.0, "", nil)
 	light.Presets["cold"] = 255.0
 	light.Presets["hot"] = 123.0
 	light.Presets["colder"] = 89.0
@@ -419,7 +421,7 @@ func TestOperationCycleValue(t *testing.T) {
 		}
 
 		want := presets[pos].(float64)
-		got := payload[].(float64)
+		got := payload[exposeName].(float64)
 		if got != want {
 			t.Fatalf("invalid operation value: want %v got %v", want, got)
 		}
