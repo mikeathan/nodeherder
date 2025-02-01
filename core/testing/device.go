@@ -124,13 +124,9 @@ func CreatePresenceDevice(deviceId string, friendlyName string, property string,
 	dev.Properties["last_seen"] = time.Now().Format(time.RFC3339)
 	dev.Properties["link_quality"] = 45.0
 
-	expose:= CreateEntity(property, "binary", value)
-	dev.Exposes = make(map[string]*devices.Entity){
-		{
-			property: expose,
-		},
-	}
-
+	expose := CreateEntity(property, "binary", value)
+	dev.Exposes = make(map[string]*devices.Entity)
+	dev.Exposes[property] = expose
 
 	return dev
 }
