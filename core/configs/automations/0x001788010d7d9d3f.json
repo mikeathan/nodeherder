@@ -16,9 +16,13 @@
       "actions": [
         {
           "id": "0x00158d0005a23c38",
-          "property": "state",
-          "type": "TriggerAction",
-          "data": "TOGGLE"
+          "exposes": [
+            {
+              "name": "state",
+              "data": "TOGGLE"
+            }
+          ],
+          "type": "TriggerAction"
         }
       ]
     },

@@ -16,9 +16,16 @@
       "actions": [
         {
           "id": "0x00158d0005a23c38",
-          "property": "state",
-          "data": "OFF",
-          "delay": 300000,
+          "exposes": [
+            {
+              "name": "state",
+              "data": "OFF"
+            }
+          ],
+          "delay": {
+            "unit": "minutes",
+            "value": 5
+          },
           "type": "TriggerAction"
         }
       ]
@@ -40,8 +47,12 @@
       "actions": [
         {
           "id": "0x00158d0005a23c38",
-          "property": "state",
-          "data": "ON",
+          "exposes": [
+            {
+              "name": "state",
+              "data": "ON"
+            }
+          ],
           "type": "TriggerAction"
         }
       ]
