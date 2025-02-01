@@ -64,6 +64,7 @@ func (a *MqttTriggerAction) Configure(registrar services.DeviceRegistrar, client
 		property.Data = sanitizedData
 	}
 
+	// NOTE: to refactor and remove from model. add to some handler to perfom the job
 	a.operation = CreateTriggerOperation(a)
 
 	// common logic
@@ -114,6 +115,8 @@ func (a *MqttStepAction) Configure(registrar services.DeviceRegistrar, client mq
 		return fmt.Errorf("configure action %s failed: %s ", a.Id, err.Error())
 	}
 	expose := device.Exposes[a.Property]
+
+	// NOTE: to refactor and remove from model. add to some handler to perfom the job
 	a.operation = CreateStepOperation(expose, a)
 
 	// common logic
@@ -127,13 +130,11 @@ func (a *MqttStepAction) Configure(registrar services.DeviceRegistrar, client mq
 
 type MqttPresetCyclingAction struct {
 	MqttBaseAction
-	Property string   `json:"property"`
-	Presets  []string `json:"presets,omitempty"`
+	Property string `json:"property"`
 }
 
 func NewPresetCyclingAction() *MqttPresetCyclingAction {
 	return &MqttPresetCyclingAction{
-		Presets: make([]string, 0),
 		MqttBaseAction: MqttBaseAction{
 			Type: PresetRotationAction,
 		},
@@ -152,6 +153,8 @@ func (a *MqttPresetCyclingAction) Configure(registrar services.DeviceRegistrar, 
 	}
 
 	expose := device.Exposes[a.Property]
+
+	// NOTE: to refactor and remove from model. add to some handler to perfom the job
 	a.operation = CreateRotateOperation(expose)
 
 	// common logic

@@ -87,6 +87,7 @@ Backend TODO
   device bridge utilize diagnostics category
   api limiter
   cache with expiration
+- mqtt: if cant connect after timeout, exit
 
 METRICS backend TODO
 
