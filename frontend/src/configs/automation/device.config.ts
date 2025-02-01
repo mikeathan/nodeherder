@@ -1,13 +1,5 @@
-import {
-  AutomationActionStep,
-  AutomationTriggerAction,
-} from '@/types/automation';
-import {
-  DeviceFilter,
-  Expose,
-  Device,
-  ExposeType,
-} from '@/types/device';
+import { AutomationActionStep, AutomationStepAction, AutomationTriggerAction } from '@/types/automation';
+import { DeviceFilter, Expose, Device, ExposeType } from '@/types/device';
 import { ExposeTypes } from '@/types/device.type';
 
 export function featureDevicesFilter(): DeviceFilter {
@@ -18,16 +10,11 @@ export function featureDevicesFilter(): DeviceFilter {
 
 export function presetsDevicesFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
-    return (
-      expose.type == ExposeTypes.Enum ||
-      expose.presets != null
-    );
+    return expose.type == ExposeTypes.Enum || expose.presets != null;
   };
 }
 
-export function devicesFilterById(
-  id: string
-): DeviceFilter {
+export function devicesFilterById(id: string): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
     return device.id == id;
   };
@@ -35,7 +22,7 @@ export function devicesFilterById(
 
 export function devicesFilterByActionStep(
   automationId: string,
-  action: AutomationTriggerAction,
+  action: AutomationStepAction,
   step: AutomationActionStep
 ): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
@@ -44,9 +31,7 @@ export function devicesFilterByActionStep(
       return device.id == action.id;
     }
 
-    return (
-      device.id == action.id || device.id == automationId
-    );
+    return device.id == action.id || device.id == automationId;
   };
 }
 
@@ -58,16 +43,11 @@ export function featureExposeFilter(): DeviceFilter {
 
 export function presetExposeFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
-    return (
-      expose.type == ExposeTypes.Enum ||
-      expose.presets != null
-    );
+    return expose.type == ExposeTypes.Enum || expose.presets != null;
   };
 }
 
-export function exposeFilterByType(
-  exposeType: ExposeType
-): DeviceFilter {
+export function exposeFilterByType(exposeType: ExposeType): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
     return expose.type == exposeType;
   };

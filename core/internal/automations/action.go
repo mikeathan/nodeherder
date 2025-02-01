@@ -32,7 +32,7 @@ type Step struct {
 
 type MqttTriggerActionExpose struct {
 	Name string `json:"name"`
-	Data any    `json:"data,omitempty"`
+	Data any    `json:"data"`
 }
 
 type MqttTriggerAction struct {
@@ -91,8 +91,8 @@ func (a *MqttTriggerAction) Execute(ctx *DeviceContext) error {
 type MqttStepAction struct {
 	MqttBaseAction
 	Property string  `json:"property"`
-	Steps    []*Step `json:"steps,omitempty"`
-	Data     any     `json:"data,omitempty"`
+	Steps    []*Step `json:"steps"`
+	Data     any     `json:"data"`
 }
 
 func NewStepAction() *MqttStepAction {

@@ -1,12 +1,11 @@
+import { TimeInterval } from './settings.type';
 import { KeyValuePair, Nullable, ValueOf } from './types.type';
 export type Automations = Array<Automation>;
 export type AutomationMap = KeyValuePair<Automation>;
 
 export type AutomationTriggers = Array<AutomationTrigger>;
-export type AutomationTriggerConditions =
-  Array<AutomationTriggerCondition>;
-export type AutomationTriggerActions =
-  Array<AutomationTriggerAction>;
+export type AutomationTriggerConditions = Array<AutomationTriggerCondition>;
+export type AutomationActions = Array<AutomationAction>;
 
 export type NumericOperator = '+' | '-' | '*';
 
@@ -35,7 +34,7 @@ export type TimeSchedule = {
 export type AutomationTrigger = {
   name: string;
   conditions: AutomationTriggerConditions;
-  actions: AutomationTriggerActions;
+  actions: AutomationActions;
 };
 
 export type AutomationTriggerCondition = {
@@ -44,12 +43,29 @@ export type AutomationTriggerCondition = {
   equality: string;
 };
 
-export type AutomationTriggerAction = {
+type AutomationBaseAction = {
   id: string;
-  friendlyname: string;
-  property: string;
-  data: Nullable<any>;
-  type: ActionType;
-  delay: Nullable<number>;
-  steps: Array<AutomationActionStep>;
+  type: string;
 };
+
+export type AutomationTriggerActionExpose = {
+  name: string;
+  data: any;
+};
+
+export type AutomationTriggerAction = AutomationBaseAction & {
+  exposes: Array<AutomationTriggerActionExpose>;
+  delay: TimeInterval;
+};
+
+export type AutomationStepAction = AutomationBaseAction & {
+  property: string;
+  steps: Array<AutomationActionStep>;
+  data: any;
+};
+
+export type AutomationPresetCyclingAction = AutomationBaseAction & {
+  property: string;
+};
+
+export type AutomationAction = AutomationTriggerAction | AutomationStepAction | AutomationPresetCyclingAction;

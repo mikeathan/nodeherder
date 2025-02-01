@@ -95,13 +95,14 @@ function deviceSelected(
   friendlyName: string
 ) {
   action.id = id;
-  action.friendlyname = friendlyName;
 
   // reset
   action.property = '';
   action.data = null;
-  action.delay = null;
-  action.steps = [];
+  action.delay = {
+    'unit': 'seconds',
+    'value': 0,
+  };
 }
 
 function dataInputChange(value: string) {
@@ -117,8 +118,10 @@ function exposeSelected(name: string) {
 
   // reset
   action.data = null;
-  action.delay = null;
-}
+  action.delay = {
+    'unit': 'seconds',
+    'value': 0,
+  };}
 
 function saveAction() {
   if (action.delay) {

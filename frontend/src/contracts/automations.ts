@@ -7,35 +7,24 @@ import {
   AutomationTriggerConditions,
   AutomationActionStep,
   TimeSchedule,
+  AutomationAction,
+  AutomationBaseAction,
 } from '../types/automation';
 import { ExposeType } from '../types/device';
 import { ValueOf } from '@/types/types.type';
+import { TimeInterval } from '@/types/settings.type';
 
-export const EqualityOperators: string[] = [
-  '=',
-  '<=',
-  '>=',
-  '>',
-  '<',
-];
+export const EqualityOperators: string[] = ['=', '<=', '>=', '>', '<'];
 export const NumericOperators: string[] = ['+', '-', '*'];
 
-export const TimeScheduleTypes: string[] = [
-  'enable',
-  'disable',
-];
+export const TimeScheduleTypes: string[] = ['enable', 'disable'];
 
 export type TriggerAction = 'TriggerAction';
 export type StepAction = 'StepAction';
 export type PresetRotationAction = 'PresetRotationAction';
-export type ActionType =
-  | TriggerAction
-  | StepAction
-  | PresetRotationAction;
+export type ActionType = TriggerAction | StepAction | PresetRotationAction;
 
-export type TriggerActionOperation = ValueOf<
-  typeof TriggerActionOperations
->;
+export type TriggerActionOperation = ValueOf<typeof TriggerActionOperations>;
 export const TriggerActionOperations = {
   Delay: 'delay',
 } as const;
@@ -64,12 +53,10 @@ export class DeviceAutomation implements Automation {
   }
 }
 
-export class EditableAutomationTrigger
-  implements AutomationTrigger
-{
+export class EditableAutomationTrigger implements AutomationTrigger {
   name: string;
   conditions: AutomationTriggerConditions;
-  actions: AutomationTriggerAction[];
+  actions: AutomationAction[];
 
   static create(): AutomationTrigger {
     const trigger = {} as EditableAutomationTrigger;
@@ -83,9 +70,7 @@ export class EditableAutomationTrigger
     return new EditableAutomationTrigger(trigger);
   }
 
-  static createFrom(
-    trigger: AutomationTrigger
-  ): AutomationTrigger {
+  static createFrom(trigger: AutomationTrigger): AutomationTrigger {
     return new EditableAutomationTrigger(trigger);
   }
 
@@ -96,9 +81,7 @@ export class EditableAutomationTrigger
   }
 }
 
-export class EditableTriggerCondition
-  implements AutomationTriggerCondition
-{
+export class EditableTriggerCondition implements AutomationTriggerCondition {
   name: string;
   value: any | null;
   equality: string;
@@ -109,14 +92,12 @@ export class EditableTriggerCondition
   }
 }
 
-export class EditableActionTrigger
-  implements AutomationTriggerAction
-{
+export class EditableActionTrigger implements AutomationBaseAction {
   id: string;
   friendlyname: string;
   property: string;
   data: any | null;
-  delay: number | null;
+  delay: TimeInterval;
   steps: AutomationActionStep[];
   type: ActionType;
 
@@ -125,119 +106,67 @@ export class EditableActionTrigger
     this.friendlyname = '';
     this.property = '';
     this.data = null;
-    this.delay = null;
+    this.delay = {
+      value: 0,
+      unit: 'seconds',
+    };
     this.type = type;
     this.steps = new Array<AutomationActionStep>();
   }
 
-  public setProperty(value: string): void {
-    this.property = value;
-    this.delay = null;
-    this.data = null;
+  static createTriggerAction(): EditableActionTrigger {
+    return new EditableActionTrigger('TriggerAction');
   }
 
-  public setDeviceId(
-    id: string,
-    friendlyname: string
-  ): void {
-    this.id = id;
-    this.friendlyname = friendlyname;
+  static createStepAction(): EditableActionTrigger {
+    return new EditableActionTrigger('StepAction');
+  }
+
+  static createPresetAction(): EditableActionTrigger {
+    return new EditableActionTrigger('PresetRotationAction');
+  }
+
+  toMqttAction(): AutomationAction {
+    switch (this.type) {
+      case 'TriggerAction':
+        return {
+          id: this.id,
+          property: this.property,
+          type: this.type,
+          exposes: [{ name: this.property, data: this.data }],
+          delay: this.delay,
+        };
+      case 'StepAction':
+        return {
+          id: this.id,
+          property: this.property,
+          type: this.type,
+          steps: this.steps,
+          data: this.data,
+        };
+      case 'PresetRotationAction':
+        return {
+          id: this.id,
+          property: this.property,
+          type: this.type,
+        };
+    }
   }
 }
 
-export function getActionType(
-  action: AutomationTriggerAction
-): ActionType {
+export function getActionType(action: AutomationAction): ActionType {
   const editableAction = action as EditableActionTrigger;
   if (editableAction.type != undefined) {
     return editableAction.type;
   }
-  return action.steps.length > 0
-    ? AutomationActionTypes.Step
-    : AutomationActionTypes.Trigger;
+  return action.steps.length > 0 ? AutomationActionTypes.Step : AutomationActionTypes.Trigger;
 }
 
-export function clearAction(
-  action: AutomationTriggerAction
-): void {
-  action.id = '';
-  action.friendlyname = '';
-  action.property = '';
-  action.data = null;
-  action.delay = null;
-}
-
-export function insertTriggerCondition(
-  trigger: AutomationTrigger,
-  newCondition?: AutomationTriggerCondition
-) {
-  trigger.conditions.push(
-    newCondition ?? new EditableTriggerCondition()
-  );
-}
-
-export function insertCondition(
-  conditions: AutomationTriggerConditions,
-  newCondition?: AutomationTriggerCondition
-) {
-  conditions.push(
-    newCondition ?? new EditableTriggerCondition()
-  );
-}
-export function removeTriggerCondition(
-  trigger: AutomationTrigger,
-  condition: AutomationTriggerCondition
-) {
-  trigger.conditions = trigger.conditions.filter(
-    (c) => c != condition
-  );
-}
-
-export function removeCondition(
-  conditions: AutomationTriggerConditions,
-  condition: AutomationTriggerCondition
-) {
-  conditions = conditions.filter((c) => c != condition);
-}
-
-export function isValid(
-  trigger: AutomationTrigger
-): boolean {
+export function isValid(trigger: AutomationTrigger): boolean {
   const r =
     trigger.name != '' &&
     trigger.actions.length > 0 &&
-    trigger.actions.every(
-      (action) => action.id != '' && action.property != ''
-    );
+    trigger.actions.every((action) => action.id != '' && action.property != '');
 
   return r;
-}
-
-export function setDeviceId(
-  action: AutomationTriggerAction,
-  id: string,
-  friendlyname: string
-): void {
-  action.id = id;
-  action.friendlyname = friendlyname;
-}
-
-export function setProperty(
-  action: AutomationTriggerAction,
-  value: string,
-  type: ExposeType
-): void {
-  action.property = value;
-
-  // reset remaining properties
-  action.delay = null;
-
-  if (
-    type == ExposeTypes.Binary ||
-    type == ExposeTypes.Enum
-  ) {
-    action.data = '';
-  } else {
-    action.data = 0;
-  }
 }

@@ -4,19 +4,19 @@
     getActionType,
     ActionType,
   } from '@/contracts/automations';
-  import { AutomationTriggerAction } from '@/types/automation';
+  import { AutomationAction } from '@/types/automation';
   import { emitClosePanel } from '@/mixins/useAutomationsEventBus';
   import { PanelComponents } from '@/mixins/usePanelComponents';
 
   const emit = defineEmits<{
-    (e: 'save', action: AutomationTriggerAction): void;
-    (e: 'delete', action: AutomationTriggerAction): void;
+    (e: 'save', action: AutomationAction): void;
+    (e: 'delete', action: AutomationAction): void;
   }>();
 
   const props = defineProps({
     item: {
-      type: Object as PropType<AutomationTriggerAction>,
-      default: {} as AutomationTriggerAction,
+      type: Object as PropType<AutomationAction>,
+      default: {} as AutomationAction,
       required: true,
     },
     automationId: {
@@ -42,7 +42,7 @@
   );
 
   function saveAction(
-    action: AutomationTriggerAction
+    action: AutomationAction
   ): void {
     currentAction.value = action;
 
@@ -51,7 +51,7 @@
   }
 
   function removeAction(
-    action: AutomationTriggerAction
+    action: AutomationAction
   ): void {
     emit('delete', currentAction.value);
     emitClosePanel('ActionEditor');
