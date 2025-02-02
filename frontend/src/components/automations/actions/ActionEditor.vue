@@ -1,7 +1,6 @@
 <script setup lang="ts">
   import { ref, watch, PropType } from 'vue';
   import {
-    getActionType,
     ActionType,
   } from '@/contracts/automations';
   import { AutomationAction } from '@/types/automation';
@@ -36,7 +35,7 @@
   watch(
     () => props.item,
     () => {
-      actionType.value = getActionType(props.item);
+      actionType.value = props.item.type;
     },
     { immediate: true }
   );

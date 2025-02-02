@@ -13,13 +13,14 @@ import {
   AutomationTriggerConditions,
   AutomationAction,
 } from '@/types/automation';
-import { isValid, EditableTriggerCondition, EditableActionTrigger, ActionType } from '../../contracts/automations';
+import { isValid, EditableTriggerCondition, ActionType, createActionFromType } from '../../contracts/automations';
 import { capitalizeText } from '../../modules/formatters/text.formatter';
 import { EventActions, OpenPanelEvent } from '@/types/events.type';
 import { emitCloseLastPanel, emitClosePanel, emitOpenPanel } from '@/mixins/useAutomationsEventBus';
 import ActionViewer from './actions/ActionViewer.vue';
 import ButtonPanel from '@/components/controls/ButtonPanel.vue';
 import { createButtons, createNewActionDropdownItems } from '../../configs/automation/trigger-dropdown.config';
+import { createEmpty } from '@/utils/object';
 
 const props = defineProps({
   id: { type: String },
@@ -121,7 +122,7 @@ function SaveAction(currentAction: AutomationAction, updatedAction: AutomationAc
 }
 
 function addNewAction(actionType: ActionType) {
-  emitOpenPanel(createActionOpenPanelEvent(new EditableActionTrigger(actionType), true));
+  emitOpenPanel(createActionOpenPanelEvent(createActionFromType(actionType), true));
 }
 
 const actionEvents = (currentAction: AutomationAction): EventActions => {

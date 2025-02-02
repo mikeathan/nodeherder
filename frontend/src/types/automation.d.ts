@@ -45,7 +45,7 @@ export type AutomationTriggerCondition = {
 
 type AutomationBaseAction = {
   id: string;
-  type: string;
+  type: ActionType;
 };
 
 export type AutomationTriggerActionExpose = {

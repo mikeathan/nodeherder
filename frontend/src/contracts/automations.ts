@@ -9,6 +9,8 @@ import {
   TimeSchedule,
   AutomationAction,
   AutomationBaseAction,
+  AutomationStepAction,
+  AutomationPresetCyclingAction,
 } from '../types/automation';
 import { ExposeType } from '../types/device';
 import { ValueOf } from '@/types/types.type';
@@ -92,81 +94,29 @@ export class EditableTriggerCondition implements AutomationTriggerCondition {
   }
 }
 
-export class EditableActionTrigger implements AutomationBaseAction {
-  id: string;
-  friendlyname: string;
-  property: string;
-  data: any | null;
-  delay: TimeInterval;
-  steps: AutomationActionStep[];
-  type: ActionType;
+export function createActionFromType(type: ActionType): AutomationAction {
+  switch (type) {
+    case 'TriggerAction':
+      return {
+        id: '',
+        type: 'TriggerAction',
+        exposes: [],
+        delay: { unit: 'seconds', value: 0 },
+      } as AutomationTriggerAction;
+    case 'StepAction':
+      return { id: '', type: 'StepAction', steps: [], property: '', data: null } as AutomationStepAction;
 
-  constructor(type: ActionType) {
-    this.id = '';
-    this.friendlyname = '';
-    this.property = '';
-    this.data = null;
-    this.delay = {
-      value: 0,
-      unit: 'seconds',
-    };
-    this.type = type;
-    this.steps = new Array<AutomationActionStep>();
+    case 'PresetRotationAction':
+      return {
+        id: '',
+        type: 'PresetRotationAction',
+        property: '',
+      } as AutomationPresetCyclingAction;
   }
-
-  static createTriggerAction(): EditableActionTrigger {
-    return new EditableActionTrigger('TriggerAction');
-  }
-
-  static createStepAction(): EditableActionTrigger {
-    return new EditableActionTrigger('StepAction');
-  }
-
-  static createPresetAction(): EditableActionTrigger {
-    return new EditableActionTrigger('PresetRotationAction');
-  }
-
-  toMqttAction(): AutomationAction {
-    switch (this.type) {
-      case 'TriggerAction':
-        return {
-          id: this.id,
-          property: this.property,
-          type: this.type,
-          exposes: [{ name: this.property, data: this.data }],
-          delay: this.delay,
-        };
-      case 'StepAction':
-        return {
-          id: this.id,
-          property: this.property,
-          type: this.type,
-          steps: this.steps,
-          data: this.data,
-        };
-      case 'PresetRotationAction':
-        return {
-          id: this.id,
-          property: this.property,
-          type: this.type,
-        };
-    }
-  }
-}
-
-export function getActionType(action: AutomationAction): ActionType {
-  const editableAction = action as EditableActionTrigger;
-  if (editableAction.type != undefined) {
-    return editableAction.type;
-  }
-  return action.steps.length > 0 ? AutomationActionTypes.Step : AutomationActionTypes.Trigger;
 }
 
 export function isValid(trigger: AutomationTrigger): boolean {
-  const r =
-    trigger.name != '' &&
-    trigger.actions.length > 0 &&
-    trigger.actions.every((action) => action.id != '' && action.property != '');
+  const r = trigger.name != '' && trigger.actions.length > 0 && trigger.actions.every((action) => action.id != '');
 
   return r;
 }

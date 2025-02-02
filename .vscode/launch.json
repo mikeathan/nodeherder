@@ -8,6 +8,18 @@
       "webRoot": "${workspaceFolder}/src",
       "pathMappings": [
         {
+          "url": "http://localhost:4100/src",
+          "path": "${workspaceFolder}/frontend/src"
+        },
+        {
+          "url": "http://localhost:4100/src",
+          "path": "${workspaceFolder}/frontend/src"
+        },
+        {
+          "url": "http://localhost:4100/src",
+          "path": "${workspaceFolder}/frontend/src"
+        },
+        {
           "url": "webpack://frontend/src/configs",
           "path": "${workspaceFolder}/frontend/src/configs"
         },
