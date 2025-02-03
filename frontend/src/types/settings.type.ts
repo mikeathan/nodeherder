@@ -14,6 +14,7 @@ export type TimeInterval = {
   unit: TimeUnit;
 };
 
+
 export type AppConfig = {
   hub: HubConfigType;
   bridge: BridgeSettingsType;

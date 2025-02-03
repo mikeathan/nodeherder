@@ -3,6 +3,7 @@ import { ref, watch, PropType, computed, h } from 'vue';
 import {
   ActionType,
   AutomationActionTypes,
+  isTriggerAction,
 } from '@/contracts/automations';
 import { AutomationAction, AutomationTriggerAction } from '@/types/automation';
 import {
@@ -11,6 +12,8 @@ import {
 } from '@/types/events.type';
 import { emitOpenPanel } from '@/mixins/useAutomationsEventBus';
 import { toMinutes } from '@/modules/formatters/time.formatter';
+import { store } from '@/store';
+import { Device } from '@/types/device';
 
 const emit = defineEmits<{
   (e: 'delete', action: AutomationTriggerAction): void;
@@ -38,38 +41,63 @@ const props = defineProps({
 const currentAction = ref(props.item);
 const actionType = ref<ActionType>('TriggerAction');
 
-const actionView = computed(() => {
-  // step action type
-  // if (currentAction.value.id) {
-  //   switch (actionType.value) {
-  //     case AutomationActionTypes.Trigger:
-  //       return [
-  //         `Set the ${currentAction.value.friendlyname} ${currentAction.value.property} to ${currentAction.value.data} `,
-  //         currentAction.value.delay
-  //           ? `in ${toMinutes(
-  //               currentAction.value.delay
-  //             )} minutes`
-  //           : null,
-  //       ];
-  //     case AutomationActionTypes.PresetRotation:
-  //       return [
-  //         `Rotate the ${currentAction.value.friendlyname} ${currentAction.value.property}`,
-  //       ];
-  //     case AutomationActionTypes.Step:
-  //       let stepValue = '';
-  //       currentAction.value.steps.forEach((step) => {
-  //         stepValue +=
-  //           step.property + ' ' + step.operator + ' ';
-  //       });
-  //       stepValue += currentAction.value.data;
-  //       return [
-  //         `Adjusting ${currentAction.value.friendlyname} ${currentAction.value.property}`,
-  //         `by [${stepValue}] steps`,
-  //       ];
+problem is in test envrioment we cant find device with id 0x70ac08fffefafeca
+const deviceNameFromId = (currentAction: AutomationAction): string => {
+  const device = store.getters['hub/findDevice'](currentAction.id) as Device;
+  console.log(currentAction, device);
 
-  //     // TODO; appy styles eg = <p>Adjusting <span class="highlight-word">attic light</span> <span class="highlight-word">brightness</span> by [action-time + 10] steps.</p>
-  //   }
-  // }
+  if (device == undefined) {
+    return '';
+  }
+  return device.friendly_name;
+}
+
+const actionView = computed(() => {
+  if (currentAction.value.id) {
+
+    if (isTriggerAction(currentAction.value)) {
+
+      const exposes = currentAction.value.exposes.map((expose) => {
+        return `${expose.name} to ${expose.data} \n`;
+      })
+      return [
+        `Set the ${deviceNameFromId(currentAction.value)} ${exposes}`,
+        currentAction.value.delay
+          ? `in ${currentAction.value.delay.value} ${currentAction.value.delay.unit}`
+          : null,
+      ];
+    }
+
+
+    //   switch (actionType.value) {
+    //     case AutomationActionTypes.Trigger:
+    //       return [
+    //         `Set the ${deviceNameFromId(currentAction.value)} ${currentAction.value.property} to ${currentAction.value.data} `,
+    //         currentAction.value.delay
+    //           ? `in ${toMinutes(
+    //             currentAction.value.delay
+    //           )} minutes`
+    //           : null,
+    //       ];
+    //     case AutomationActionTypes.PresetRotation:
+    //       return [
+    //         `Rotate the ${deviceNameFromId(currentAction.value)} ${currentAction.value.property}`,
+    //       ];
+    //     case AutomationActionTypes.Step:
+    //       let stepValue = '';
+    //       currentAction.value.steps.forEach((step) => {
+    //         stepValue +=
+    //           step.property + ' ' + step.operator + ' ';
+    //       });
+    //       stepValue += currentAction.value.data;
+    //       return [
+    //         `Adjusting ${deviceNameFromId(currentAction.value)} ${currentAction.value.property}`,
+    //         `by [${stepValue}] steps`,
+    //       ];
+
+    //     // TODO; appy styles eg = <p>Adjusting <span class="highlight-word">attic light</span> <span class="highlight-word">brightness</span> by [action-time + 10] steps.</p>
+
+  }
   return [];
 });
 

@@ -12,9 +12,7 @@ import {
   AutomationStepAction,
   AutomationPresetCyclingAction,
 } from '../types/automation';
-import { ExposeType } from '../types/device';
 import { ValueOf } from '@/types/types.type';
-import { TimeInterval } from '@/types/settings.type';
 
 export const EqualityOperators: string[] = ['=', '<=', '>=', '>', '<'];
 export const NumericOperators: string[] = ['+', '-', '*'];
@@ -92,6 +90,17 @@ export class EditableTriggerCondition implements AutomationTriggerCondition {
     this.value = null;
     this.equality = '=';
   }
+}
+export function isTriggerAction(action: AutomationAction | null): action is AutomationTriggerAction {
+  return action?.type === AutomationActionTypes.Trigger;
+}
+
+export function isPresetRotationAction(action: AutomationAction | null): action is AutomationPresetCyclingAction {
+  return action?.type === AutomationActionTypes.PresetRotation;
+}
+
+export function isStepAction(action: AutomationAction | null): action is AutomationStepAction {
+  return action?.type === AutomationActionTypes.Step;
 }
 
 export function createActionFromType(type: ActionType): AutomationAction {
