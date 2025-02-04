@@ -63,7 +63,7 @@ var automationMap = new Map([
           ],
           actions: [
             {
-              id: '0x70ac08fffefafeca',
+              id: '0x00158d0005a23c38',
               exposes: [
                 {
                   name: 'state',
@@ -71,8 +71,8 @@ var automationMap = new Map([
                 },
               ],
               delay: {
-                delay: 300000,
-                unit: 'milliseconds',
+                value: 5,
+                unit: 'minutes',
               },
               type: 'TriggerAction',
             },
@@ -94,13 +94,17 @@ var automationMap = new Map([
           ],
           actions: [
             {
-              id: '0x70ac08fffefafeca',
+              id: '0x00158d0005a23c38',
               exposes: [
                 {
                   name: 'state',
                   data: 'ON',
                 },
               ],
+              delay: {
+                value: 0,
+                unit: 'minutes',
+              },
               type: 'TriggerAction',
             },
           ],
@@ -127,10 +131,13 @@ var automationMap = new Map([
           ],
           actions: [
             {
-              id: '0x70ac08fffefafeca',
+              id: '0x00158d0005a23c38',
               property: 'color_temp',
               data: null,
-              delay: null,
+              delay: {
+                value: 0,
+                unit: 'seconds',
+              },
               steps: [],
               type: 'PresetRotationAction',
             },
@@ -147,7 +154,7 @@ var automationMap = new Map([
           ],
           actions: [
             {
-              id: '0x70ac08fffefafeca',
+              id: '0x00158d0005a23c38',
               exposes: [
                 {
                   name: 'state',
@@ -169,14 +176,14 @@ var automationMap = new Map([
           ],
           actions: [
             {
-              id: '0x70ac08fffefafeca',
+              id: '0x00158d0005a23c38',
               property: 'brightness',
               data: 10,
               steps: [
                 {
                   property: 'brightness',
                   operator: '-',
-                  id: '0x70ac08fffefafeca',
+                  id: '0x00158d0005a23c38',
                 },
                 {
                   operator: '-',
@@ -199,14 +206,14 @@ var automationMap = new Map([
           ],
           actions: [
             {
-              id: '0x70ac08fffefafeca',
+              id: '0x00158d0005a23c38',
               property: 'brightness',
               data: 10,
               steps: [
                 {
                   property: 'brightness',
                   operator: '+',
-                  id: '0x70ac08fffefafeca',
+                  id: '0x00158d0005a23c38',
                 },
                 {
                   operator: '+',
@@ -229,7 +236,7 @@ var automationMap = new Map([
           ],
           actions: [
             {
-              id: '0x70ac08fffefafeca',
+              id: '0x00158d0005a23c38',
               property: 'color_temp',
               steps: [],
               type: 'PresetRotationAction',
@@ -534,7 +541,7 @@ let settings = [
 let updateDeviceMap = {};
 updateDeviceMap['0x00124b0029207763'] = mockUpdateTH01v2;
 updateDeviceMap['0xa4c13894070052fc'] = mockUpdateHumanPresencev2;
-updateDeviceMap['0x70ac08fffefafeca'] = mockUpdateAtticLight;
+//updateDeviceMap['0x70ac08fffefafeca'] = mockUpdateAtticLight;
 updateDeviceMap['0x00158d0005a23c38'] = mockUpdateLivingRoomLight;
 updateDeviceMap['0xa4c1389b273366c3'] = mockUpdateAtticAlarm;
 

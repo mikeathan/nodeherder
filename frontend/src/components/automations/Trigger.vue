@@ -166,7 +166,7 @@ function createActionOpenPanelEvent(action: AutomationAction, editMode: boolean)
   <div class="row" v-else>
     <h4 class="">Trigger for {{ capitalizeText(trigger.name) }}</h4>
     <div class="pb-3" />
-    <Fieldset legend="When" :toggleable="true" :collapsed="true">
+    <Fieldset legend="When" :toggleable="true" :collapsed="conditions.length == 0">
       <DataTable :value="conditions" selectionMode="single">
         <Column header="Condition">
           <template #body="slotProps">
@@ -188,7 +188,7 @@ function createActionOpenPanelEvent(action: AutomationAction, editMode: boolean)
       </div>
     </Fieldset>
     <div class="pt-2"></div>
-    <Fieldset legend="Then" :toggleable="true" :collapsed="true">
+    <Fieldset legend="Then" :toggleable="true" :collapsed="actions.length == 0">
       <DataTable :value="actions" selectionMode="single">
         <Column header="Actions">
           <template #body="slotProps">
