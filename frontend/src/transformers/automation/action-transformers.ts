@@ -3,6 +3,7 @@ import {
   AutomationTriggerAction,
   AutomationPresetCyclingAction,
   AutomationStepAction,
+  AutomationActionStep,
 } from '@/types/automation';
 
 function formatTriggerActionExposes(exposes: AutomationTriggerActionExpose[]): string {
@@ -30,17 +31,34 @@ export function transformPresetCyclingAction(friendlyname: string, action: Autom
   return [`Rotate <strong>${friendlyname}</strong> <ul><li>${action.property}</li></ul>`];
 }
 
-export function transformStepAction(friendlyname:string, action :AutomationStepAction):string[]{
+function formatStepOperations(steps: AutomationActionStep[]): string {
+  const hasPlus = steps.some((op) => op.operator === '+');
+  if (hasPlus) {
+    return 'Increase';
+  }
+  const hasMinus = steps.some((op) => op.operator === '-');
+  if (hasMinus) {
+    return 'Decrease';
+  }
+  return 'Unknown';
+}
 
-  const formattedAction = `Adjust <strong>${friendlyname}</strong>`;
-    //       currentAction.value.steps.forEach((step) => {
-    //         stepValue +=
-    //           step.property + ' ' + step.operator + ' ';
-    //       });
-    //       stepValue += currentAction.value.data;
-    //       return [
-    //         `Adjusting ${deviceNameFromId(currentAction.value)} ${currentAction.value.property}`,
-    //         `by [${stepValue}] steps`,
-    //       ];
-    return []
+function findActionStepProperty(action: AutomationStepAction): string {
+  return action.steps
+    .map((step) => {
+      if (step.id === action.id) {
+        return step.property;
+      }
+    })
+    .join('');
+}
+
+export function transformStepAction(friendlyname: string, action: AutomationStepAction): string[] {
+  const operationType = formatStepOperations(action.steps);
+  const expose = findActionStepProperty(action);
+
+  // TODO add support for icons in operation
+  //<i class="pi pi-plus" style="font-size: 0.5rem;"></i>
+  const formattedAction = `${operationType} <strong>${friendlyname}</strong> <strong>${expose}</strong> by  ${action.data}`;
+  return [formattedAction];
 }

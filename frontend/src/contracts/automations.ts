@@ -103,6 +103,22 @@ export function isStepAction(action: AutomationAction | null): action is Automat
   return action?.type === AutomationActionTypes.Step;
 }
 
+export function findActionExposes(action: AutomationAction): string[] {
+  if (isStepAction(action)) {
+    return action.steps.map((s) => {
+      if (s.id == action.id) return s.property;
+    }) as string[];
+  }
+
+  if (isTriggerAction(action)) {
+    return action.exposes.map((expose) => expose.name);
+  }
+  if (isPresetRotationAction(action)) {
+    return [action.property];
+  }
+
+  return [];
+}
 export function createActionFromType(type: ActionType): AutomationAction {
   switch (type) {
     case 'TriggerAction':
