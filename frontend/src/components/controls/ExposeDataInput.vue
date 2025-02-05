@@ -80,7 +80,10 @@
     if (dataType.value == ExposeTypes.Binary) {
       return deviceExpose.value?.properties != null ? Object.values(deviceExpose.value?.properties) : [true, false];
     }
-    return deviceExpose.value?.attributes ? Object.values(deviceExpose.value.attributes) : [];
+    if (deviceExpose.value?.attributes) {
+      return Object.values(deviceExpose.value.attributes);
+    }
+    return deviceExpose.value?.properties ? Object.values(deviceExpose.value.properties) : [];
   });
 
   function sequenceDataSelected(value: any) {
