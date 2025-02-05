@@ -80,6 +80,20 @@ func (t *Trigger) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+ TODO:
+// automation
+// Trigger 1:
+// Condition -> door open
+//  Action  -> start alarm (low volume, short duration, melody a)
+
+// Trigger 2:
+// Condition -> door open AND (after 3 am) and (before 6 am)
+// 	Action  -> start alarm (high volume, long duration, melody b)
+
+// Need new condition type:
+// timer before 
+// timer after 
+
 func (t *Trigger) process(ctx *DeviceContext) {
 
 	currValue := ctx.GetCurrent(t.Name)
