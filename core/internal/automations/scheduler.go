@@ -109,7 +109,7 @@ func (j *job) getStartAtDuration() (time.Duration, error) {
 		return 0, nil
 	}
 
-	startAtTime, err := parserTime(j.startAtTime)
+	startAtTime, err := ConvertStringToTime(j.startAtTime)
 	if err != nil {
 		utils.LogError("Error parsing start time:", err)
 		return 0, err
@@ -233,7 +233,7 @@ func (s *Scheduler) Do(action func() error) error {
 	return nil
 }
 
-func parserTime(timeString string) (time.Time, error) {
+func ConvertStringToTime(timeString string) (time.Time, error) {
 
 	var layout string
 	if timeWithMilliseconds.MatchString(timeString) {

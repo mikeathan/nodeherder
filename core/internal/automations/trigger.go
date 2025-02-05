@@ -3,31 +3,8 @@ package automations
 import (
 	"encoding/json"
 	"fmt"
-	"node-herder/models/devices"
-	"node-herder/utils"
 	"reflect"
 )
-
-type Condition struct {
-	Name             string `json:"name"`
-	Value            any    `json:"value"`
-	EqualityOperator string `json:"equality"`
-}
-
-func (c *Condition) Evaluate(exposes map[string]*devices.Entity) bool {
-
-	expose, ok := exposes[c.Name]
-	if !ok {
-		utils.LogDebugf("sensor %s not found in payload", c.Name)
-		return false
-	}
-
-	if EqualityOperators[c.EqualityOperator](expose.Data, c.Value) {
-		return true
-	}
-
-	return false
-}
 
 type Trigger struct {
 	Conditions []*Condition `json:"conditions"`
@@ -79,20 +56,6 @@ func (t *Trigger) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
-
- TODO:
-// automation
-// Trigger 1:
-// Condition -> door open
-//  Action  -> start alarm (low volume, short duration, melody a)
-
-// Trigger 2:
-// Condition -> door open AND (after 3 am) and (before 6 am)
-// 	Action  -> start alarm (high volume, long duration, melody b)
-
-// Need new condition type:
-// timer before 
-// timer after 
 
 func (t *Trigger) process(ctx *DeviceContext) {
 
