@@ -10,6 +10,21 @@ const (
 	TimeConditionType   = "time"
 )
 
+var conditionHandlerInitialiser = map[string]func(Condition) error{
+	TimeConditionType: timeConditionInitialiser,
+}
+
+func timeConditionInitialiser(condition Condition) error {
+	tc := condition.(*TimeCondition)
+	t, err := ConvertStringToTime(tc.Value)
+	if err != nil {
+		return err
+	}
+	tc.timeAt = t
+	tc.clock = utils.NewRealClock()
+	return nil
+}
+
 type Condition interface {
 	Evaluate(ctx *DeviceContext) bool
 	GetType() string
@@ -71,13 +86,16 @@ func NewExposeCondition(name string, value any, operation string) *ExposeConditi
 
 type TimeCondition struct {
 	BaseCondition
-	Value string `json:"value"`
-	time  time.Time
+	Value  string `json:"value"`
+	timeAt time.Time
+	clock  utils.Clock
 }
 
 // TimeCondition
 func (t *TimeCondition) Evaluate(ctx *DeviceContext) bool {
-	return false
+
+	result, _ := t.clock.CompareWithNow(t.timeAt, t.EqualityOperator)
+	return result
 }
 
 func (t *TimeCondition) GetType() string {
@@ -88,14 +106,15 @@ func (e *TimeCondition) HasValueChanged(name string, ctx *DeviceContext) bool {
 	return true
 }
 
-func NewTimeCondition(value string, operation string) (*TimeCondition, error) {
+func NewTimeCondition(value string, operation string, clock utils.Clock) (*TimeCondition, error) {
 	t, err := ConvertStringToTime(value)
 	if err != nil {
 		return nil, err
 	}
 	return &TimeCondition{
-		Value: value,
-		time:  t,
+		Value:  value,
+		timeAt: t,
+		clock:  clock,
 		BaseCondition: BaseCondition{
 			Type:             TimeConditionType,
 			EqualityOperator: operation,
@@ -108,24 +127,3 @@ type BaseCondition struct {
 	EqualityOperator string `json:"equality"`
 	Type             string `json:"type"`
 }
-
-// type Condition struct {
-// 	Name             string `json:"name"`
-// 	Value            any    `json:"value"`
-// 	EqualityOperator string `json:"equality"`
-// }
-
-// func (c *Condition) Evaluate(exposes map[string]*devices.Entity) bool {
-
-// 	expose, ok := exposes[c.Name]
-// 	if !ok {
-// 		utils.LogDebugf("sensor %s not found in payload", c.Name)
-// 		return false
-// 	}
-
-// 	if EqualityOperators[c.EqualityOperator](expose.Data, c.Value) {
-// 		return true
-// 	}
-
-// 	return false
-// }

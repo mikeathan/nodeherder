@@ -372,6 +372,14 @@ func Tempfile() string {
 	return f.Name()
 }
 
+func CreateTimeFrom(hour int, minute int, second int) time.Time {
+	now := time.Now()
+	year := now.Year()
+	month := now.Month()
+	day := now.Day()
+	return time.Date(year, month, day, hour, minute, second, 0, time.UTC)
+}
+
 func CreateDateTimeTimestamps(numberOfDays int, numberOfHours int, numberOfMinutes int) []time.Time {
 	var timestamps []time.Time
 	now := time.Now()

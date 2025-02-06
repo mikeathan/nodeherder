@@ -155,16 +155,29 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 			}
 
 			for cidx, condition := range sensorTrigger.Conditions {
-				sensorCondition := condition.(*automations.ExposeCondition)
-				inputCondition := inputSensorTrigger.Conditions[cidx].(*automations.ExposeCondition)
-				if sensorCondition.EqualityOperator != inputCondition.EqualityOperator {
-					t.Fatalf("unexpected condition.EqualityOperator  value")
-				}
-				if sensorCondition.Value != inputCondition.Value {
-					t.Fatalf("unexpected condition.Value  value")
-				}
-				if sensorCondition.Name != inputCondition.Name {
-					t.Fatalf("unexpected condition.Name  value")
+
+				if condition.GetType() == automations.ExposeConditionType {
+					sensorCondition := condition.(*automations.ExposeCondition)
+					inputCondition := inputSensorTrigger.Conditions[cidx].(*automations.ExposeCondition)
+					if sensorCondition.EqualityOperator != inputCondition.EqualityOperator {
+						t.Fatalf("unexpected condition.EqualityOperator  value")
+					}
+					if sensorCondition.Value != inputCondition.Value {
+						t.Fatalf("unexpected condition.Value  value")
+					}
+					if sensorCondition.Name != inputCondition.Name {
+						t.Fatalf("unexpected condition.Name  value")
+					}
+				} else if condition.GetType() == automations.TimeConditionType {
+					sensorCondition := condition.(*automations.TimeCondition)
+					inputCondition := inputSensorTrigger.Conditions[cidx].(*automations.TimeCondition)
+					if sensorCondition.EqualityOperator != inputCondition.EqualityOperator {
+						t.Fatalf("unexpected condition.EqualityOperator  value")
+					}
+					if sensorCondition.Value != inputCondition.Value {
+						t.Fatalf("unexpected condition.Value  value")
+					}
+
 				}
 			}
 		}
@@ -1349,8 +1362,10 @@ func createTriggerTurnOnLightWithPresenceOn(mqtt mqtt.MqttClient) *automations.T
 
 	// condition = presence = off
 	turnOnCondition := automations.NewExposeCondition("presence", true, "=")
-	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
+	turnOnTimeAtCondition, _ := automations.NewTimeCondition("06:40", "<", &mocks.MockClock{})
 
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnTimeAtCondition)
 	return turnOnTrigger
 }
 
@@ -1375,8 +1390,8 @@ func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay *
 
 	// condition = presence == false
 	turnOffCondition := automations.NewExposeCondition("presence", false, "=")
-
+	turnOffTimeAtCondition, _ := automations.NewTimeCondition("11:00", "=", &mocks.MockClock{})
 	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffCondition)
-
+	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffTimeAtCondition)
 	return turnOffTrigger
 }

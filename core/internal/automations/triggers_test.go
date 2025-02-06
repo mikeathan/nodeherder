@@ -365,6 +365,98 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 	wg.Wait()
 }
 
+func TestActionWithTimerConditionLightFromPresence(t *testing.T) {
+
+	wg := &sync.WaitGroup{}
+	mqtt := &mocks.MockMqttClient{}
+	mockClock := &mocks.MockClock{}
+
+	repo := repository.NewMemoryDeviceRepo()
+	store := utils_test.CreateStoreFromDeviceRepo(repo)
+	eventHub := &mocks.MockEventHub{}
+
+	id := "human sensor"
+	device := utils_test.CreatePresenceDevice(id, "sensor device", "presence", false)
+	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(deviceBridgeList, 30000)
+	turnOnTrigger := createTriggerTurnOnLightWithPresenceOn(id, registrar, mqtt)
+
+	timeCondition, _ := automations.NewTimeCondition("11:00", "=", mockClock)
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, timeCondition)
+
+	// create device trigger
+	deviceTrigger := automations.NewDevice(id)
+	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
+
+	testCases := []struct {
+		presence   bool
+		sleepdelay time.Duration
+		timeNow    time.Time
+		result     bool
+	}{
+		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(11, 0, 0), result: true},
+		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(11, 10, 0), result: false},
+		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(11, 10, 0), result: false},
+	}
+
+	for _, testCase := range testCases {
+		var data = map[string]any{
+			"presence": testCase.presence,
+		}
+
+		mockClock.SetMockTime(testCase.timeNow)
+		var messageHandler = func(id string, payload []byte) {
+
+			if !testCase.result {
+				t.Fatalf("invalid msg received")
+			}
+
+			for _, action := range turnOnTrigger.Actions {
+
+				data := unpackJsonToMap(string(payload))
+				if data == nil {
+					t.Fatalf("error unpacking json")
+				}
+				triggerAction, ok := action.(*automations.MqttTriggerAction)
+				if !ok {
+					t.Fatalf("invalid action type")
+				}
+				if !ok {
+					t.Fatalf("invalid action type")
+				}
+
+				for _, expose := range triggerAction.Exposes {
+					value, ok := data[expose.Name]
+					if !ok {
+						t.Fatalf("property not %s found in payload", expose.Name)
+					}
+					if value != testCase.presence {
+						t.Fatalf("value mismatch: want %v got %v", testCase.presence, value)
+					}
+					if value != testCase.presence {
+						t.Fatalf("value mismatch: want %v got %v", testCase.presence, value)
+					}
+				}
+			}
+
+			wg.Done()
+		}
+
+		mqtt.OnMessageHandler(messageHandler)
+		if testCase.result {
+			wg.Add(1)
+		}
+
+		device.Exposes = createExposures(data)
+		deviceTrigger.Evaluate(device)
+
+		time.Sleep(testCase.sleepdelay * time.Millisecond)
+	}
+
+	wg.Wait()
+}
 func TestSwitch(t *testing.T) {
 
 	// todo
@@ -430,6 +522,32 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(id string, registrar services.
 
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, luxCondition)
+
+	return turnOnTrigger
+}
+
+func createTriggerTurnOnLightWithPresenceOn(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *automations.Trigger {
+	// action = turn off light
+	turnOnAction := automations.NewTriggerAction()
+	turnOnAction.Id = id
+	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
+		{
+			Name: "presence",
+			Data: true,
+		},
+	}
+	turnOnAction.Delay = utils.IntervalFromMilliseconds(0)
+	turnOnAction.Configure(registrar, mqtt)
+
+	// Turn on sensor trigger
+	turnOnTrigger := &automations.Trigger{}
+	turnOnTrigger.Name = "presence"
+	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
+
+	// condition = presence = off
+	turnOnCondition := automations.NewExposeCondition("presence", true, "=")
+
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
 
 	return turnOnTrigger
 }

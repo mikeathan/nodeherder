@@ -1,6 +1,9 @@
 package utils
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 const (
 	UnitMilliseconds = "milliseconds"
@@ -13,12 +16,31 @@ const (
 type Clock interface {
 	Now() time.Time
 	Sleep(duration time.Duration)
+	CompareWithNow(t time.Time, operator string) (bool, error)
 }
 
 type RealClock struct{}
 
 func NewRealClock() Clock {
 	return &RealClock{}
+}
+
+func (r *RealClock) CompareWithNow(t time.Time, operator string) (bool, error) {
+	now := r.Now()
+
+	nowStr := now.Format("15:04:05")
+	tStr := t.Format("15:04:05")
+
+	switch operator {
+	case "=":
+		return nowStr == tStr, nil
+	case "<":
+		return nowStr < tStr, nil
+	case ">":
+		return nowStr > tStr, nil
+	default:
+		return false, fmt.Errorf("invalid operator: %s", operator)
+	}
 }
 
 func (r *RealClock) Now() time.Time {

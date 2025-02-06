@@ -57,6 +57,14 @@ func (t *Trigger) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(rawCondition, condition); err != nil {
 			return fmt.Errorf("unmarshaling concrete condition: %w", err)
 		}
+
+		if conditionInitialiser, ok := conditionHandlerInitialiser[condition.GetType()]; ok {
+			err := conditionInitialiser(condition)
+			if err != nil {
+				return err
+			}
+		}
+
 		t.Conditions[i] = condition
 	}
 
