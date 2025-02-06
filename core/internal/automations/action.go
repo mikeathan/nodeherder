@@ -7,7 +7,6 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
 	"node-herder/utils"
-	"reflect"
 	"sync"
 	"time"
 )
@@ -302,10 +301,4 @@ type MqttAction interface {
 	GetID() string
 	GetType() string
 	Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error
-}
-
-var typeRegistry = map[string]reflect.Type{
-	TriggerAction:        reflect.TypeOf(MqttTriggerAction{}),
-	StepAction:           reflect.TypeOf(MqttStepAction{}),
-	PresetRotationAction: reflect.TypeOf(MqttPresetCyclingAction{}),
 }

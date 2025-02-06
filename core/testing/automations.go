@@ -34,11 +34,7 @@ func CreateDoorContactWithAlarmTriggerAutomation(doorSensorId string, alarmId st
 }
 
 func CreateDialTriggerActionsBrightness(actionId string, dialActionName string, mqtt mqtt.MqttClient) *automations.Trigger {
-	condition := &automations.Condition{}
-	condition.EqualityOperator = "="
-	condition.Value = dialActionName
-	condition.Name = "action"
-
+	condition := automations.NewExposeCondition("action", dialActionName, "=")
 	step := &automations.Step{}
 	step.Id = actionId
 	step.Operator = "+"
@@ -55,17 +51,13 @@ func CreateDialTriggerActionsBrightness(actionId string, dialActionName string, 
 	trigger := &automations.Trigger{}
 	trigger.Name = "action"
 	trigger.Actions = []automations.MqttAction{action}
-	trigger.Conditions = []*automations.Condition{condition}
+	trigger.Conditions = []automations.Condition{condition}
 
 	return trigger
 }
 
 func CreateDialTriggerStepActionBrightness(lightDeviceId string, dialDeviceId string, dialActionName string, mqtt mqtt.MqttClient) *automations.Trigger {
-	condition := &automations.Condition{}
-	condition.EqualityOperator = "="
-	condition.Value = dialActionName
-	condition.Name = "action"
-
+	condition := automations.NewExposeCondition("action", dialActionName, "=")
 	step := &automations.Step{}
 	step.Id = lightDeviceId
 	step.Operator = "+"
@@ -87,7 +79,7 @@ func CreateDialTriggerStepActionBrightness(lightDeviceId string, dialDeviceId st
 	trigger := &automations.Trigger{}
 	trigger.Name = "action"
 	trigger.Actions = []automations.MqttAction{action}
-	trigger.Conditions = []*automations.Condition{condition}
+	trigger.Conditions = []automations.Condition{condition}
 
 	return trigger
 }

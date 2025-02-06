@@ -8,6 +8,7 @@
       "name": "presence",
       "conditions": [
         {
+          "type": "expose",
           "name": "presence",
           "value": false,
           "equality": "="
@@ -34,11 +35,13 @@
       "name": "presence",
       "conditions": [
         {
+          "type": "expose",
           "name": "presence",
           "value": true,
           "equality": "="
         },
         {
+          "type": "expose",
           "name": "illuminance",
           "value": 45,
           "equality": "\u003c="

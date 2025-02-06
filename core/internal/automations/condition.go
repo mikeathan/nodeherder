@@ -6,13 +6,14 @@ import (
 )
 
 const (
-	ExposeConditionType = "ExposeCondition"
-	TimeConditionType   = "TimeCondition"
+	ExposeConditionType = "expose"
+	TimeConditionType   = "time"
 )
 
 type Condition interface {
 	Evaluate(ctx *DeviceContext) bool
 	GetType() string
+	HasValueChanged(name string, ctx *DeviceContext) bool
 }
 
 // automation
@@ -35,8 +36,12 @@ type ExposeCondition struct {
 	Value any    `json:"value"`
 }
 
+func (e *ExposeCondition) HasValueChanged(name string, ctx *DeviceContext) bool {
+	return ctx.GetCurrent(name) != e.Value
+}
+
 func (e *ExposeCondition) Evaluate(ctx *DeviceContext) bool {
-	expose, ok := ctx.Payload[e.Name]
+	expose, ok := ctx.GetPayload(e.Name)
 	if !ok {
 		utils.LogDebugf("sensor %s not found in payload", e.Name)
 		return false
@@ -53,10 +58,14 @@ func (e *ExposeCondition) GetType() string {
 	return ExposeConditionType
 }
 
-func NewExposeCondition(name string, value any) *ExposeCondition {
+func NewExposeCondition(name string, value any, operation string) *ExposeCondition {
 	return &ExposeCondition{
 		Name:  name,
 		Value: value,
+		BaseCondition: BaseCondition{
+			Type:             ExposeConditionType,
+			EqualityOperator: operation,
+		},
 	}
 }
 
@@ -75,7 +84,11 @@ func (t *TimeCondition) GetType() string {
 	return TimeConditionType
 }
 
-func NewTimeCondition(value string) (*TimeCondition, error) {
+func (e *TimeCondition) HasValueChanged(name string, ctx *DeviceContext) bool {
+	return true
+}
+
+func NewTimeCondition(value string, operation string) (*TimeCondition, error) {
 	t, err := ConvertStringToTime(value)
 	if err != nil {
 		return nil, err
@@ -83,6 +96,10 @@ func NewTimeCondition(value string) (*TimeCondition, error) {
 	return &TimeCondition{
 		Value: value,
 		time:  t,
+		BaseCondition: BaseCondition{
+			Type:             TimeConditionType,
+			EqualityOperator: operation,
+		},
 	}, nil
 }
 

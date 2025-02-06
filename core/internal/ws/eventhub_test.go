@@ -155,14 +155,15 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 			}
 
 			for cidx, condition := range sensorTrigger.Conditions {
-				inputCondition := inputSensorTrigger.Conditions[cidx]
-				if condition.EqualityOperator != inputCondition.EqualityOperator {
+				sensorCondition := condition.(*automations.ExposeCondition)
+				inputCondition := inputSensorTrigger.Conditions[cidx].(*automations.ExposeCondition)
+				if sensorCondition.EqualityOperator != inputCondition.EqualityOperator {
 					t.Fatalf("unexpected condition.EqualityOperator  value")
 				}
-				if condition.Value != inputCondition.Value {
+				if sensorCondition.Value != inputCondition.Value {
 					t.Fatalf("unexpected condition.Value  value")
 				}
-				if condition.Name != inputCondition.Name {
+				if sensorCondition.Name != inputCondition.Name {
 					t.Fatalf("unexpected condition.Name  value")
 				}
 			}
@@ -1320,15 +1321,8 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
 
 	// condition = presence = off && lux <= 30
-	turnOnCondition := &automations.Condition{}
-	turnOnCondition.Name = "presence"
-	turnOnCondition.EqualityOperator = "="
-	turnOnCondition.Value = true
-
-	luxCondition := &automations.Condition{}
-	luxCondition.Name = "lux"
-	luxCondition.EqualityOperator = "<="
-	luxCondition.Value = lux
+	turnOnCondition := automations.NewExposeCondition("presence", true, "=")
+	luxCondition := automations.NewExposeCondition("lux", lux, "<=")
 
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, luxCondition)
@@ -1338,7 +1332,7 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 
 func createTriggerTurnOnLightWithPresenceOn(mqtt mqtt.MqttClient) *automations.Trigger {
 	// action = turn off light
-	turnOnAction :=automations.NewTriggerAction()
+	turnOnAction := automations.NewTriggerAction()
 	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
 		{
 			Name: "state",
@@ -1354,11 +1348,7 @@ func createTriggerTurnOnLightWithPresenceOn(mqtt mqtt.MqttClient) *automations.T
 	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
 
 	// condition = presence = off
-	turnOnCondition := &automations.Condition{}
-	turnOnCondition.Name = "presence"
-	turnOnCondition.EqualityOperator = "="
-	turnOnCondition.Value = true
-
+	turnOnCondition := automations.NewExposeCondition("presence", true, "=")
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
 
 	return turnOnTrigger
@@ -1384,10 +1374,7 @@ func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay *
 	turnOffTrigger.Actions = []automations.MqttAction{turnOffAction}
 
 	// condition = presence == false
-	turnOffCondition := &automations.Condition{}
-	turnOffCondition.Name = "presence"
-	turnOffCondition.EqualityOperator = "="
-	turnOffCondition.Value = false
+	turnOffCondition := automations.NewExposeCondition("presence", false, "=")
 
 	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffCondition)
 

@@ -6,15 +6,23 @@ import (
 	"reflect"
 )
 
+var typeRegistry = map[string]reflect.Type{
+	TriggerAction:        reflect.TypeOf(MqttTriggerAction{}),
+	StepAction:           reflect.TypeOf(MqttStepAction{}),
+	PresetRotationAction: reflect.TypeOf(MqttPresetCyclingAction{}),
+	ExposeConditionType:  reflect.TypeOf(ExposeCondition{}),
+	TimeConditionType:    reflect.TypeOf(TimeCondition{}),
+}
+
 type Trigger struct {
-	Conditions []*Condition `json:"conditions"`
+	Conditions []Condition  `json:"conditions"`
 	Actions    []MqttAction `json:"actions"`
 	Name       string       `json:"name"`
 }
 
 func NewTrigger(name string) *Trigger {
 	return &Trigger{
-		Conditions: []*Condition{},
+		Conditions: []Condition{},
 		Actions:    []MqttAction{},
 	}
 }
@@ -23,7 +31,7 @@ func (t *Trigger) UnmarshalJSON(data []byte) error {
 	// Unmarshal into a temporary struct to get basic fields
 	var temp struct {
 		Name       string            `json:"name"`
-		Conditions []*Condition      `json:"conditions"`
+		Conditions []json.RawMessage `json:"conditions"`
 		Actions    []json.RawMessage `json:"actions"`
 	}
 
@@ -32,7 +40,25 @@ func (t *Trigger) UnmarshalJSON(data []byte) error {
 	}
 
 	t.Name = temp.Name
-	t.Conditions = temp.Conditions
+
+	// Handle the Conditions using the type registry
+	t.Conditions = make([]Condition, len(temp.Conditions))
+	for i, rawCondition := range temp.Conditions {
+		baseCondition := BaseCondition{}
+		if err := json.Unmarshal(rawCondition, &baseCondition); err != nil {
+			return fmt.Errorf("unmarshaling base condition: %w", err)
+		}
+		concreteType, ok := typeRegistry[baseCondition.Type]
+		if !ok {
+			return fmt.Errorf("unknown condition type: %s", baseCondition.Type)
+		}
+
+		condition := reflect.New(concreteType).Interface().(Condition)
+		if err := json.Unmarshal(rawCondition, condition); err != nil {
+			return fmt.Errorf("unmarshaling concrete condition: %w", err)
+		}
+		t.Conditions[i] = condition
+	}
 
 	// Handle the Actions using the type registry
 	t.Actions = make([]MqttAction, len(temp.Actions))
@@ -57,22 +83,28 @@ func (t *Trigger) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// presence  == true
+// light >= 14
+// turn on light
+
+// presence == false
+// start timer for 5 min
+// turn off light
+
 func (t *Trigger) process(ctx *DeviceContext) {
 
-	currValue := ctx.GetCurrent(t.Name)
 	for _, c := range t.Conditions {
 
-		isMatched := c.Evaluate(ctx.Payload)
+		isMatched := c.Evaluate(ctx)
 		if !isMatched {
-			// reset any pending actions eg if its one a timer
+			// reset any pending actions eg if its a timer
 			for _, action := range t.Actions {
 				action.Stop()
 			}
 			return
 		}
 
-		// avoid calling action again for current trigger if value hasnt changed
-		if t.Name == c.Name && currValue == c.Value {
+		if !c.HasValueChanged(t.Name, ctx) {
 			return
 		}
 	}

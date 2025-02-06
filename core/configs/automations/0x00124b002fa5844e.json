@@ -8,6 +8,7 @@
       "name": "contact",
       "conditions": [
         {
+          "type": "expose",
           "name": "contact",
           "value": true,
           "equality": "="

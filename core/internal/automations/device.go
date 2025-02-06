@@ -6,6 +6,7 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
 	"node-herder/models/devices"
+	"sync"
 )
 
 // examples
@@ -19,21 +20,40 @@ var contextIgnoreList = []string{"action"}
 
 type DeviceContext struct {
 	currentData map[string]any
-	Payload     map[string]*devices.Entity
+	payload     map[string]*devices.Entity
+	mu          sync.RWMutex
 }
 
 func NewDeviceContext() *DeviceContext {
 	return &DeviceContext{
 		currentData: map[string]any{},
-		Payload:     make(map[string]*devices.Entity),
+		payload:     make(map[string]*devices.Entity),
 	}
 }
 
+func (d *DeviceContext) SetPayload(payload map[string]*devices.Entity) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.payload = payload
+}
+
+func (d *DeviceContext) GetPayload(name string) (*devices.Entity, bool) {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	value, exists := d.payload[name]
+	return value, exists
+}
+
 func (d *DeviceContext) GetCurrent(name string) any {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
 	return d.currentData[name]
 }
 
 func (d *DeviceContext) SetCurrent(name string, value any) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
 	// if trigger is in ignore list, we  want to trigger it again
 	for _, item := range contextIgnoreList {
@@ -103,7 +123,7 @@ func (d *Device) UnmarshalJSON(data []byte) error {
 
 func (d *Device) Evaluate(device *devices.Device) bool {
 
-	d.ctx.Payload = device.Exposes
+	d.ctx.SetPayload(device.Exposes)
 
 	// NOTE: a trigger can have multiple conditions.
 	// e.g presence can have multiple conditions for on and off
