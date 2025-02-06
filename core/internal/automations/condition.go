@@ -84,6 +84,7 @@ func NewExposeCondition(name string, value any, operation string) *ExposeConditi
 	}
 }
 
+// TimeCondition
 type TimeCondition struct {
 	BaseCondition
 	Value  string `json:"value"`
@@ -91,7 +92,6 @@ type TimeCondition struct {
 	clock  utils.Clock
 }
 
-// TimeCondition
 func (t *TimeCondition) Evaluate(ctx *DeviceContext) bool {
 
 	result, _ := t.clock.CompareWithNow(t.timeAt, t.EqualityOperator)

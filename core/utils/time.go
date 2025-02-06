@@ -26,23 +26,29 @@ func NewRealClock() Clock {
 }
 
 func (r *RealClock) CompareWithNow(t time.Time, operator string) (bool, error) {
-	now := r.Now()
 
-	nowStr := now.Format("15:04:05")
-	tStr := t.Format("15:04:05")
+	now := r.Now()
+	toTime := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location())
+	return CompareTimeRange(now, toTime, operator)
+}
+
+func CompareTimeRange(from time.Time, to time.Time, operator string) (bool, error) {
 
 	switch operator {
 	case "=":
-		return nowStr == tStr, nil
+		return from.Equal(to), nil
 	case "<":
-		return nowStr < tStr, nil
+		return from.Before(to), nil
+	case "<=":
+		return from.Before(to) || from.Equal(to), nil
 	case ">":
-		return nowStr > tStr, nil
+		return from.After(to), nil
+	case ">=":
+		return from.After(to) || from.Equal(to), nil
 	default:
 		return false, fmt.Errorf("invalid operator: %s", operator)
 	}
 }
-
 func (r *RealClock) Now() time.Time {
 	return time.Now().UTC()
 }

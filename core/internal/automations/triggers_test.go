@@ -383,7 +383,7 @@ func TestActionWithTimerConditionLightFromPresence(t *testing.T) {
 	registrar.RegisterBridge(deviceBridgeList, 30000)
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOn(id, registrar, mqtt)
 
-	timeCondition, _ := automations.NewTimeCondition("11:00", "=", mockClock)
+	timeCondition, _ := automations.NewTimeCondition("11:00", ">=", mockClock)
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, timeCondition)
 
 	// create device trigger
@@ -397,8 +397,8 @@ func TestActionWithTimerConditionLightFromPresence(t *testing.T) {
 		result     bool
 	}{
 		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(11, 0, 0), result: true},
-		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(11, 10, 0), result: false},
-		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(11, 10, 0), result: false},
+		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(9, 10, 0), result: false},
+		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(4, 10, 0), result: false},
 	}
 
 	for _, testCase := range testCases {

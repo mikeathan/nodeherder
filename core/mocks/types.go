@@ -14,6 +14,7 @@ import (
 	"node-herder/models/settings"
 	"node-herder/repository"
 	"node-herder/store"
+	"node-herder/utils"
 	"node-herder/utils/storage"
 	"os"
 	"path/filepath"
@@ -783,19 +784,10 @@ func (m *MockClock) SetMockSleepDuration(d time.Duration) {
 
 func (r *MockClock) CompareWithNow(t time.Time, operator string) (bool, error) {
 	now := r.Now()
-	nowStr := now.Format("15:04:05")
-	tStr := t.Format("15:04:05")
+	toTime := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location())
 
-	switch operator {
-	case "=":
-		return nowStr == tStr, nil
-	case "<":
-		return nowStr < tStr, nil
-	case ">":
-		return nowStr > tStr, nil
-	default:
-		return false, fmt.Errorf("invalid operator: %s", operator)
-	}
+	return utils.CompareTimeRange(now, toTime, operator)
+
 }
 func (m *MockClock) Now() time.Time {
 	return m.callback()
