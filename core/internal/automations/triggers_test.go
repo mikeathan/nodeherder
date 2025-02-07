@@ -330,9 +330,6 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 				if !ok {
 					t.Fatalf("invalid action type")
 				}
-				if !ok {
-					t.Fatalf("invalid action type")
-				}
 
 				for _, expose := range triggerAction.Exposes {
 					value, ok := data[expose.Name]
@@ -383,12 +380,18 @@ func TestActionWithTimerConditionLightFromPresence(t *testing.T) {
 	registrar.RegisterBridge(deviceBridgeList, 30000)
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOn(id, registrar, mqtt)
 
-	timeCondition, _ := automations.NewTimeCondition("11:00", ">=", mockClock)
-	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, timeCondition)
+	turnOnTimeCondition, _ := automations.NewTimeCondition("11:00", ">=", mockClock)
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnTimeCondition)
+
+	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(id, registrar, mqtt, utils.IntervalFromMilliseconds(0))
+
+	turnOffTimeCondition, _ := automations.NewTimeCondition("09:00", "<=", mockClock)
+	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffTimeCondition)
 
 	// create device trigger
 	deviceTrigger := automations.NewDevice(id)
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
+	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOffTrigger)
 
 	testCases := []struct {
 		presence   bool
@@ -397,10 +400,11 @@ func TestActionWithTimerConditionLightFromPresence(t *testing.T) {
 		result     bool
 	}{
 		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(11, 0, 0), result: true},
-		{presence: false, sleepdelay: 100, timeNow: utils_test.CreateTimeFrom(9, 10, 0), result: false},
-		{presence: true, sleepdelay: 100, timeNow: utils_test.CreateTimeFrom(4, 10, 0), result: false},
-		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(1, 4, 0), result: false},
+		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(9, 10, 0), result: false},
+		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(4, 10, 0), result: false},
+		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(9, 0, 0), result: true},
 		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(11, 40, 0), result: true},
+TODO add more cases and ranges
 	}
 
 	for i, testCase := range testCases {
@@ -455,6 +459,8 @@ func TestActionWithTimerConditionLightFromPresence(t *testing.T) {
 		}
 
 		device.Exposes = createExposures(data)
+
+		fmt.Println("emiting presence", testCase.presence)
 		deviceTrigger.Evaluate(device)
 
 		time.Sleep(testCase.sleepdelay * time.Millisecond)
