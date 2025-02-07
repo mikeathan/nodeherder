@@ -397,15 +397,20 @@ func TestActionWithTimerConditionLightFromPresence(t *testing.T) {
 		result     bool
 	}{
 		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(11, 0, 0), result: true},
-		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(9, 10, 0), result: false},
-		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(4, 10, 0), result: false},
+		{presence: false, sleepdelay: 100, timeNow: utils_test.CreateTimeFrom(9, 10, 0), result: false},
+		{presence: true, sleepdelay: 100, timeNow: utils_test.CreateTimeFrom(4, 10, 0), result: false},
+		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(1, 4, 0), result: false},
+		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(11, 40, 0), result: true},
 	}
 
-	for _, testCase := range testCases {
+	for i, testCase := range testCases {
 		var data = map[string]any{
 			"presence": testCase.presence,
 		}
 
+		if i == 3 {
+			fmt.Println("test case debug")
+		}
 		mockClock.SetMockTime(testCase.timeNow)
 		var messageHandler = func(id string, payload []byte) {
 
