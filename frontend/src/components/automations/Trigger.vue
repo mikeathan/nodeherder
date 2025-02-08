@@ -12,7 +12,7 @@ import {
   AutomationTriggerConditions,
   AutomationAction,
   ActionType,
-} from '@/types/automation.type.type';
+} from '@/types/automation.type.js';
 import { isValid, EditableTriggerCondition, createActionFromType } from '../../contracts/automations';
 import { capitalizeText } from '../../modules/formatters/text.formatter';
 import { EventActions, OpenPanelEvent } from '@/types/events.type';
@@ -58,7 +58,7 @@ watch(
   () => {
     if (
       props.trigger.actions != undefined &&
-      props.trigger.actions.every((action) => action.id != '') // refactor
+      props.trigger.actions.every((action: AutomationAction) => action.id != '') // refactor
     ) {
       actions.value = JSON.parse(JSON.stringify(props.trigger.actions)) as AutomationAction[];
     }
@@ -92,7 +92,7 @@ function addNewCondition() {
 }
 
 function removeTriggerCondition(condition: AutomationCondition) {
-  conditions.value = conditions.value.filter((c) => c != condition);
+  conditions.value = conditions.value.filter((c: AutomationCondition) => c != condition);
 }
 
 const exposesList = computed(() => {
@@ -113,7 +113,7 @@ function deleteAction() {
 }
 
 function SaveAction(currentAction: AutomationAction, updatedAction: AutomationAction) {
-  const idx = actions.value.findIndex((a) => a == currentAction);
+  const idx = actions.value.findIndex((a: AutomationAction) => a == currentAction);
   if (idx != -1) {
     trigger.value.actions[idx] = updatedAction;
   } else {
@@ -170,11 +170,12 @@ function createActionOpenPanelEvent(action: AutomationAction, editMode: boolean)
       <DataTable :value="conditions" selectionMode="single">
         <Column header="Condition">
           <template #body="slotProps">
-            <TriggerCondition :id="props.id" :name="slotProps.data.name" :operator="slotProps.data.equality"
-              :data="slotProps.data.value" @update:name="(newValue) => (slotProps.data.name = newValue)"
+            <TriggerCondition :item="slotProps.data" :id="props.id" :name="slotProps.data.name"
+              :operator="slotProps.data.equality" :data="slotProps.data.value"
+              @update:name="(newValue) => (slotProps.data.name = newValue)"
               @update:value="(newValue) => (slotProps.data.value = newValue)"
-              @update:operator="(newValue) => (slotProps.data.equality = newValue)">
-            </TriggerCondition>
+              @update:operator="(newValue) => (slotProps.data.equality = newValue)"
+              @save="(item)=>slotProps.data = item" />
           </template>
         </Column>
         <Column class="col-sm-1">

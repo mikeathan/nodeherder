@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, PropType } from 'vue';
 import { EqualityOperators } from '../../contracts/automations';
 import { AutomationCondition } from '../../types/automation.type.js';
 import { store } from '../../store/index';
@@ -9,6 +9,11 @@ import Selection from '../input/Selection.vue';
 import ExposeSelector from '@/components/controls/ExposeSelector.vue';
 
 const props = defineProps({
+  item: {
+    type: Object as PropType<AutomationCondition>,
+    default: {} as AutomationCondition,
+    required: true,
+  },
   id: {
     type: String,
     default: '',
@@ -34,6 +39,8 @@ const emit = defineEmits<{
   (e: 'update:value', property: any): void;
   (e: 'update:operator', data: string): void;
   (e: 'update', condition: AutomationCondition): void;
+  (e: 'save', action: AutomationCondition): void;
+  (e: 'delete', action: AutomationCondition): void
 }>();
 
 watch(
@@ -75,6 +82,14 @@ function operatorUpdated(event: string): void {
   emit('update:operator', event);
 }
 
+function saveCondition() {
+  // emit('save', {
+  //   name: name.value,
+  //   operator: operator.value,
+  //   data: data.value,
+  // });
+}
+
 function dataUpdated(value: any): void {
   // cast true/false to boolean
   if (value == 'true' || value == 'false') {
@@ -106,6 +121,7 @@ const exposeOperators = computed(() => {
 </script>
 
 <template>
+  {{ props.item }} two types of conditions - expose and time . 
   <div class="row">
     <div class="col-sm-4">
       <ExposeSelector :id="props.id" :value="name" @updated="exposeSelected" :filter="allExposeFilter()"
