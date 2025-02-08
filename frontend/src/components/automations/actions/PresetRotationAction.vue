@@ -65,7 +65,7 @@ function removeAction(): void {
     </div>
   </div>
 
-  <h4>Rotate Action</h4>
+  <h4>Preset Cycle Action</h4>
   <div class="pb-3" />
 
   <div class="row pb-3">

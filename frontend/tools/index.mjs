@@ -56,6 +56,7 @@ var automationMap = new Map([
           name: 'presence',
           conditions: [
             {
+              type: 'expose',
               name: 'presence',
               value: false,
               equality: '=',
@@ -74,7 +75,7 @@ var automationMap = new Map([
                 value: 5,
                 unit: 'minutes',
               },
-              type: 'TriggerAction',
+              type: 'trigger',
             },
           ],
         },
@@ -82,6 +83,7 @@ var automationMap = new Map([
           name: 'presence',
           conditions: [
             {
+              type: 'expose',
               name: 'presence',
               value: true,
               equality: '=',
@@ -105,7 +107,7 @@ var automationMap = new Map([
                 value: 0,
                 unit: 'minutes',
               },
-              type: 'TriggerAction',
+              type: 'trigger',
             },
           ],
         },
@@ -124,6 +126,7 @@ var automationMap = new Map([
           name: 'action_direction',
           conditions: [
             {
+              type: 'expose',
               name: 'action',
               value: 'button_2_press',
               equality: '=',
@@ -139,7 +142,7 @@ var automationMap = new Map([
                 unit: 'seconds',
               },
               steps: [],
-              type: 'PresetRotationAction',
+              type: 'preset',
             },
           ],
         },
@@ -147,6 +150,7 @@ var automationMap = new Map([
           name: 'action',
           conditions: [
             {
+              type: 'expose',
               name: 'action',
               value: 'button_1_press_release',
               equality: '=',
@@ -161,7 +165,7 @@ var automationMap = new Map([
                   data: 'TOGGLE',
                 },
               ],
-              type: 'TriggerAction',
+              type: 'trigger',
             },
           ],
         },
@@ -169,6 +173,7 @@ var automationMap = new Map([
           name: 'action',
           conditions: [
             {
+              type: 'expose',
               name: 'action',
               value: 'dial_rotate_right_slow',
               equality: '=',
@@ -191,7 +196,7 @@ var automationMap = new Map([
                   id: '0x001788010d7d9d3f',
                 },
               ],
-              type: 'StepAction',
+              type: 'step',
             },
           ],
         },
@@ -199,6 +204,7 @@ var automationMap = new Map([
           name: 'action',
           conditions: [
             {
+              type: 'expose',
               name: 'action',
               value: 'dial_rotate_left_slow',
               equality: '=',
@@ -221,7 +227,7 @@ var automationMap = new Map([
                   id: '0x001788010d7d9d3f',
                 },
               ],
-              type: 'StepAction',
+              type: 'step',
             },
           ],
         },
@@ -229,6 +235,7 @@ var automationMap = new Map([
           name: 'action',
           conditions: [
             {
+              type: 'expose',
               name: 'action',
               value: 'button_2_press_release',
               equality: '=',
@@ -239,7 +246,7 @@ var automationMap = new Map([
               id: '0x00158d0005a23c38',
               property: 'color_temp',
               steps: [],
-              type: 'PresetRotationAction',
+              type: 'preset',
             },
           ],
         },

@@ -1,16 +1,16 @@
-import { ExposeTypes } from '@/types/device.type';
 import {
   Automation,
   AutomationTrigger,
-  AutomationTriggerCondition,
+  AutomationCondition,
   AutomationTriggerAction,
   AutomationTriggerConditions,
-  AutomationActionStep,
   TimeSchedule,
   AutomationAction,
-  AutomationBaseAction,
   AutomationStepAction,
   AutomationPresetCyclingAction,
+  AutomationActionTypes,
+  ActionType,
+  ConditionType,
 } from '../types/automation';
 import { ValueOf } from '@/types/types.type';
 
@@ -19,20 +19,10 @@ export const NumericOperators: string[] = ['+', '-', '*'];
 
 export const TimeScheduleTypes: string[] = ['enable', 'disable'];
 
-export type TriggerAction = 'TriggerAction';
-export type StepAction = 'StepAction';
-export type PresetRotationAction = 'PresetRotationAction';
-export type ActionType = TriggerAction | StepAction | PresetRotationAction;
 
 export type TriggerActionOperation = ValueOf<typeof TriggerActionOperations>;
 export const TriggerActionOperations = {
   Delay: 'delay',
-} as const;
-
-export const AutomationActionTypes = {
-  Trigger: 'TriggerAction',
-  Step: 'StepAction',
-  PresetRotation: 'PresetRotationAction',
 } as const;
 
 export class DeviceAutomation implements Automation {
@@ -81,11 +71,13 @@ export class EditableAutomationTrigger implements AutomationTrigger {
   }
 }
 
-export class EditableTriggerCondition implements AutomationTriggerCondition {
+export class EditableTriggerCondition implements AutomationCondition {
+  type: ConditionType;
   name: string;
   value: any | null;
   equality: string;
   constructor() {
+    this.type = 'expose';
     this.name = '';
     this.value = null;
     this.equality = '=';
@@ -95,8 +87,8 @@ export function isTriggerAction(action: AutomationAction | null): action is Auto
   return action?.type === AutomationActionTypes.Trigger;
 }
 
-export function isPresetRotationAction(action: AutomationAction | null): action is AutomationPresetCyclingAction {
-  return action?.type === AutomationActionTypes.PresetRotation;
+export function isPresetCyclingAction(action: AutomationAction | null): action is AutomationPresetCyclingAction {
+  return action?.type === AutomationActionTypes.PresetCycling;
 }
 
 export function isStepAction(action: AutomationAction | null): action is AutomationStepAction {
@@ -113,7 +105,7 @@ export function findActionExposes(action: AutomationAction): string[] {
   if (isTriggerAction(action)) {
     return action.exposes.map((expose) => expose.name);
   }
-  if (isPresetRotationAction(action)) {
+  if (isPresetCyclingAction(action)) {
     return [action.property];
   }
 
@@ -121,20 +113,20 @@ export function findActionExposes(action: AutomationAction): string[] {
 }
 export function createActionFromType(type: ActionType): AutomationAction {
   switch (type) {
-    case 'TriggerAction':
+    case AutomationActionTypes.Trigger:
       return {
         id: '',
-        type: 'TriggerAction',
+        type: AutomationActionTypes.Trigger,
         exposes: [],
         delay: { unit: 'seconds', value: 0 },
       } as AutomationTriggerAction;
-    case 'StepAction':
-      return { id: '', type: 'StepAction', steps: [], property: '', data: null } as AutomationStepAction;
+    case AutomationActionTypes.Step:
+      return { id: '', type: AutomationActionTypes.Step, steps: [], property: '', data: null } as AutomationStepAction;
 
-    case 'PresetRotationAction':
+    case AutomationActionTypes.PresetCycling:
       return {
         id: '',
-        type: 'PresetRotationAction',
+        type: AutomationActionTypes.PresetCycling,
         property: '',
       } as AutomationPresetCyclingAction;
   }

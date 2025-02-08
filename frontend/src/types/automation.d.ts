@@ -4,10 +4,28 @@ export type Automations = Array<Automation>;
 export type AutomationMap = KeyValuePair<Automation>;
 
 export type AutomationTriggers = Array<AutomationTrigger>;
-export type AutomationTriggerConditions = Array<AutomationTriggerCondition>;
+export type AutomationTriggerConditions = Array<AutomationCondition>;
 export type AutomationActions = Array<AutomationAction>;
 
 export type NumericOperator = '+' | '-' | '*';
+
+export type TriggerAction = 'trigger';
+export type StepAction = 'step';
+export type PresetCyclingAction = 'preset';
+export type ActionType = TriggerAction | StepAction | PresetCyclingAction;
+export const AutomationActionTypes = {
+  Trigger: 'trigger',
+  Step: 'step',
+  PresetCycling: 'preset',
+} as const;
+
+export type ExposeConditionType = 'expose';
+export type TimeCondition = 'time';
+export type ConditionType = ExposeConditionType | TimeCondition;
+export const AutomationConditionTypes = {
+  Expose: 'expose',
+  Time: 'time',
+} as const;
 
 export type AutomationActionStep = {
   id: string;
@@ -37,7 +55,8 @@ export type AutomationTrigger = {
   actions: AutomationActions;
 };
 
-export type AutomationTriggerCondition = {
+export type AutomationCondition = {
+  type: ConditionType;
   name: string;
   value: Nullable<any>;
   equality: string;

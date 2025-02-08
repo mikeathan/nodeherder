@@ -1,16 +1,14 @@
 <script setup lang="ts">
   import { ref, watch, PropType, computed, h } from 'vue';
+  import { isPresetCyclingAction, isStepAction, isTriggerAction } from '@/contracts/automations';
   import {
     ActionType,
+    AutomationAction,
     AutomationActionTypes,
-    isPresetRotationAction,
-    isStepAction,
-    isTriggerAction,
-  } from '@/contracts/automations';
-  import { AutomationAction, AutomationTriggerAction, AutomationTriggerActionExpose } from '@/types/automation';
+    AutomationTriggerAction,
+  } from '@/types/automation';
   import { EventActions, OpenPanelEvent } from '@/types/events.type';
   import { emitOpenPanel } from '@/mixins/useAutomationsEventBus';
-  import { toMinutes } from '@/modules/formatters/time.formatter';
   import { store } from '@/store';
   import { Device } from '@/types/device';
   import {
@@ -43,7 +41,7 @@
   });
 
   const currentAction = ref(props.item);
-  const actionType = ref<ActionType>('TriggerAction');
+  const actionType = ref<ActionType>(AutomationActionTypes.Trigger);
 
   const deviceNameFromId = (currentAction: AutomationAction): string => {
     const device = store.getters['hub/findDevice'](currentAction.id) as Device;
@@ -60,7 +58,7 @@
       if (isTriggerAction(currentAction.value)) {
         return transformTriggerAction(friendlyName, currentAction.value);
       }
-      if (isPresetRotationAction(currentAction.value)) {
+      if (isPresetCyclingAction(currentAction.value)) {
         return transformPresetCyclingAction(friendlyName, currentAction.value);
       }
 

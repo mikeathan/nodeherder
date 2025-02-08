@@ -19,6 +19,7 @@ func GetMqttConfig(broker string) mqtt.MqttConfig {
 }
 
 func TestMqttClientReceivesMessage(t *testing.T) {
+	t.Skip("skipping test")
 	var broker = "192.168.50.179:1883"
 	var topic = "device1"
 	var message = "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"

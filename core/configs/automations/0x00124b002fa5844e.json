@@ -23,7 +23,7 @@
               "data": true
             }
           ],
-          "type": "TriggerAction"
+          "type": "trigger"
         }
       ]
     }

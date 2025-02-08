@@ -27,7 +27,7 @@
             "unit": "minutes",
             "value": 5
           },
-          "type": "TriggerAction"
+          "type": "trigger"
         }
       ]
     },
@@ -56,7 +56,7 @@
               "data": "ON"
             }
           ],
-          "type": "TriggerAction"
+          "type": "trigger"
         }
       ]
     }

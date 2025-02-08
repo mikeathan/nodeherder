@@ -28,7 +28,7 @@ export function transformTriggerAction(friendlyname: string, triggerAction: Auto
 }
 
 export function transformPresetCyclingAction(friendlyname: string, action: AutomationPresetCyclingAction): string[] {
-  return [`Rotate <strong>${friendlyname}</strong> <ul><li>${action.property}</li></ul>`];
+  return [`Cycle <strong>${action.property}</strong> presets in <strong>${friendlyname}</strong>`];
 }
 
 function formatStepOperations(steps: AutomationActionStep[]): string {

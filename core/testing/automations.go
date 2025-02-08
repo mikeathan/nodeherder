@@ -5,7 +5,6 @@ import (
 	"node-herder/internal/mqtt"
 )
 
-
 func CreateDoorContactWithAlarmTriggerAutomation(doorSensorId string, alarmId string, mqtt mqtt.MqttClient) *automations.Device {
 	// setup automations
 	alarmAction := automations.NewTriggerAction()
@@ -43,7 +42,7 @@ func CreateDialTriggerActionsBrightness(actionId string, dialActionName string, 
 	action := &automations.MqttStepAction{}
 	action.Id = actionId
 	action.Property = "brightness"
-	action.Type = "StepAction"
+	action.Type = "step"
 	action.Data = 0.5
 	action.Steps = []*automations.Step{step}
 	action.Client = mqtt
@@ -71,7 +70,7 @@ func CreateDialTriggerStepActionBrightness(lightDeviceId string, dialDeviceId st
 	action := &automations.MqttStepAction{}
 	action.Id = lightDeviceId
 	action.Property = "brightness"
-	action.Type = "StepAction"
+	action.Type = "step"
 	action.Data = 0.5
 	action.Steps = []*automations.Step{step, step2}
 	action.Client = mqtt
@@ -99,7 +98,7 @@ func CreateDialTriggerStepActionBrightness(lightDeviceId string, dialDeviceId st
 //	  "id": "0x00158d0005a23c38",
 //	  "friendlyname": "Living Room",
 //	  "property": "brightness",
-//	  "type": "StepAction",
+//	  "type": "step",
 //	  "data": 0.5,
 //	  "steps": [
 //		{

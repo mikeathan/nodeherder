@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { ref, computed, watch } from 'vue';
   import { EqualityOperators } from '../../contracts/automations';
-  import { AutomationTriggerCondition } from '../../types/automation';
+  import { AutomationCondition } from '../../types/automation';
   import { store } from '../../store/index';
   import { allExposeFilter } from '@/configs/automation/device.config';
   import ExposeDataInput from '../controls/ExposeDataInput.vue';
@@ -33,7 +33,7 @@
     (e: 'update:name', name: string): void;
     (e: 'update:value', property: any): void;
     (e: 'update:operator', data: string): void;
-    (e: 'update', condition: AutomationTriggerCondition): void;
+    (e: 'update', condition: AutomationCondition): void;
   }>();
 
   watch(

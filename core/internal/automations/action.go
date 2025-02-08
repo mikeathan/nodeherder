@@ -18,9 +18,9 @@ import (
 // action set brighness  +/- some other numeric combination  eg direction_time * 0.5
 
 const (
-	TriggerAction        = "TriggerAction"
-	StepAction           = "StepAction"
-	PresetRotationAction = "PresetRotationAction"
+	TriggerAction       = "trigger"
+	StepAction          = "step"
+	PresetCyclingAction = "preset"
 )
 
 type Step struct {
@@ -135,7 +135,7 @@ type MqttPresetCyclingAction struct {
 func NewPresetCyclingAction() *MqttPresetCyclingAction {
 	return &MqttPresetCyclingAction{
 		MqttBaseAction: MqttBaseAction{
-			Type: PresetRotationAction,
+			Type: PresetCyclingAction,
 		},
 	}
 }

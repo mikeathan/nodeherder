@@ -109,16 +109,3 @@ Action
   data = 1120
 - property = alarm
   data = true
-
-currenlty we have ActionOperations , how to intergrate that or do we need to ?
-maybe we need new action type for this ?
-
-current types:
-
-TriggerAction
-StepAction
-PresetRotationAction
-
-only TriggerAction could have multiple properties
-
-maybe we need 3 different structures of actions indentfied the type

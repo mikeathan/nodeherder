@@ -1,9 +1,6 @@
 <script setup lang="ts">
   import { ref, watch, PropType } from 'vue';
-  import {
-    ActionType,
-  } from '@/contracts/automations';
-  import { AutomationAction } from '@/types/automation';
+  import { ActionType, AutomationAction, AutomationActionTypes } from '@/types/automation';
   import { emitClosePanel } from '@/mixins/useAutomationsEventBus';
   import { PanelComponents } from '@/mixins/usePanelComponents';
 
@@ -30,7 +27,7 @@
   });
 
   const currentAction = ref(props.item);
-  const actionType = ref<ActionType>('TriggerAction');
+  const actionType = ref<ActionType>(AutomationActionTypes.Trigger);
 
   watch(
     () => props.item,
@@ -40,18 +37,14 @@
     { immediate: true }
   );
 
-  function saveAction(
-    action: AutomationAction
-  ): void {
+  function saveAction(action: AutomationAction): void {
     currentAction.value = action;
 
     emit('save', currentAction.value);
     emitClosePanel('ActionEditor');
   }
 
-  function removeAction(
-    action: AutomationAction
-  ): void {
+  function removeAction(action: AutomationAction): void {
     emit('delete', currentAction.value);
     emitClosePanel('ActionEditor');
   }
