@@ -362,7 +362,7 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 	wg.Wait()
 }
 
-func TestActionWithTimerConditionLightFromPresence(t *testing.T) {
+func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
@@ -380,13 +380,18 @@ func TestActionWithTimerConditionLightFromPresence(t *testing.T) {
 	registrar.RegisterBridge(deviceBridgeList, 30000)
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOn(id, registrar, mqtt)
 
-	turnOnTimeCondition, _ := automations.NewTimeCondition("11:00", ">=", mockClock)
-	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnTimeCondition)
+	turnOnFromTimeCondition, _ := automations.NewTimeCondition("11:00", ">=", mockClock)
+	turnOnToTimeCondition, _ := automations.NewTimeCondition("17:00", "<", mockClock)
+
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnFromTimeCondition)
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnToTimeCondition)
 
 	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(id, registrar, mqtt, utils.IntervalFromMilliseconds(0))
 
-	turnOffTimeCondition, _ := automations.NewTimeCondition("09:00", "<=", mockClock)
-	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffTimeCondition)
+	turnOffFromTimeCondition, _ := automations.NewTimeCondition("09:00", "<=", mockClock)
+	turnOffToTimeCondition, _ := automations.NewTimeCondition("06:25", "<", mockClock)
+	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffFromTimeCondition)
+	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffToTimeCondition)
 
 	// create device trigger
 	deviceTrigger := automations.NewDevice(id)
@@ -400,11 +405,15 @@ func TestActionWithTimerConditionLightFromPresence(t *testing.T) {
 		result     bool
 	}{
 		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(11, 0, 0), result: true},
-		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(9, 10, 0), result: false},
-		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(4, 10, 0), result: false},
-		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(9, 0, 0), result: true},
-		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(11, 40, 0), result: true},
-TODO add more cases and ranges
+		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(5, 0, 0), result: true},
+		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(17, 0, 0), result: false},
+		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(16, 59, 0), result: true},
+		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(6, 25, 0), result: false},
+		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(6, 24, 0), result: true},
+		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(10, 59, 0), result: false},
+		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(12, 25, 0), result: true},
+		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(8, 59, 0), result: false},
+		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(4, 25, 0), result: true},
 	}
 
 	for i, testCase := range testCases {
@@ -468,6 +477,7 @@ TODO add more cases and ranges
 
 	wg.Wait()
 }
+
 func TestSwitch(t *testing.T) {
 
 	// todo
