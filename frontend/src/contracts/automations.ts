@@ -11,19 +11,12 @@ import {
   AutomationActionTypes,
   ActionType,
   ConditionType,
-} from '../types/automation';
-import { ValueOf } from '@/types/types.type';
+} from '../types/automation.type.js';
 
 export const EqualityOperators: string[] = ['=', '<=', '>=', '>', '<'];
 export const NumericOperators: string[] = ['+', '-', '*'];
 
 export const TimeScheduleTypes: string[] = ['enable', 'disable'];
-
-
-export type TriggerActionOperation = ValueOf<typeof TriggerActionOperations>;
-export const TriggerActionOperations = {
-  Delay: 'delay',
-} as const;
 
 export class DeviceAutomation implements Automation {
   id: string;

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, PropType, reactive } from 'vue';
-import { AutomationPresetCyclingAction } from '@/types/automation';
+import { AutomationPresetCyclingAction } from '@/types/automation.type.type';
 import ButtonPanel from '@/components/controls/ButtonPanel.vue';
 import { createSaveDeleteButtonItems } from '../../../configs/automation/trigger-dropdown.config';
 import DeviceSelector from '@/components/controls/DeviceSelector.vue';

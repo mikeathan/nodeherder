@@ -12,7 +12,7 @@ import { default as automation2 } from '../../../../../../core/configs/automatio
 import {
   Automation,
   Automations,
-} from '../../../../types/automation';
+} from '../../../../types/automation.type';
 
 describe('test automation module', () => {
   beforeEach(() => {

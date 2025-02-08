@@ -1,5 +1,4 @@
-import { TimeInterval } from './settings.type';
-import { KeyValuePair, Nullable, ValueOf } from './types.type';
+import { KeyValuePair, Nullable, TimeInterval, ValueOf } from './types.type';
 export type Automations = Array<Automation>;
 export type AutomationMap = KeyValuePair<Automation>;
 
@@ -17,6 +16,11 @@ export const AutomationActionTypes = {
   Trigger: 'trigger',
   Step: 'step',
   PresetCycling: 'preset',
+} as const;
+
+export type TriggerActionOperation = ValueOf<typeof TriggerActionOperations>;
+export const TriggerActionOperations = {
+  Delay: 'delay',
 } as const;
 
 export type ExposeConditionType = 'expose';

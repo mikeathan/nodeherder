@@ -1,19 +1,4 @@
-import { KeyValuePair, ValueOf } from './types.type';
-
-export const TimeUnits = {
-  UnitMilliseconds: 'milliseconds',
-  UnitSeconds: 'seconds',
-  UnitMinutes: 'minutes',
-  UnitHours: 'hours',
-  UnitDays: 'days',
-} as const;
-
-export type TimeUnit = ValueOf<typeof TimeUnits>;
-export type TimeInterval = {
-  value: number;
-  unit: TimeUnit;
-};
-
+import { KeyValuePair, TimeInterval, ValueOf } from './types.type';
 
 export type AppConfig = {
   hub: HubConfigType;

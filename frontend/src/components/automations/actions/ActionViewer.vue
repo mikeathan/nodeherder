@@ -1,96 +1,96 @@
 <script setup lang="ts">
-  import { ref, watch, PropType, computed, h } from 'vue';
-  import { isPresetCyclingAction, isStepAction, isTriggerAction } from '@/contracts/automations';
-  import {
-    ActionType,
-    AutomationAction,
-    AutomationActionTypes,
-    AutomationTriggerAction,
-  } from '@/types/automation';
-  import { EventActions, OpenPanelEvent } from '@/types/events.type';
-  import { emitOpenPanel } from '@/mixins/useAutomationsEventBus';
-  import { store } from '@/store';
-  import { Device } from '@/types/device';
-  import {
-    transformPresetCyclingAction,
-    transformStepAction,
-    transformTriggerAction,
-  } from '@/transformers/automation/action-transformers';
+import { ref, watch, PropType, computed, h } from 'vue';
+import { isPresetCyclingAction, isStepAction, isTriggerAction } from '@/contracts/automations';
+import {
+  ActionType,
+  AutomationAction,
+  AutomationActionTypes,
+  AutomationTriggerAction,
+} from '@/types/automation.type.js';
+import { EventActions, OpenPanelEvent } from '@/types/events.type';
+import { emitOpenPanel } from '@/mixins/useAutomationsEventBus';
+import { store } from '@/store';
+import { Device } from '@/types/device';
+import {
+  transformPresetCyclingAction,
+  transformStepAction,
+  transformTriggerAction,
+} from '@/transformers/automation/action-transformers';
 
-  const emit = defineEmits<{
-    (e: 'delete', action: AutomationTriggerAction): void;
-    (e: 'edit', events: EventActions): void;
-  }>();
+const emit = defineEmits<{
+  (e: 'delete', action: AutomationTriggerAction): void;
+  (e: 'edit', events: EventActions): void;
+}>();
 
-  const props = defineProps({
-    item: {
-      type: Object as PropType<AutomationAction>,
-      default: {} as AutomationAction,
-      required: true,
-    },
-    editEvents: {
-      type: Object as PropType<EventActions>,
-      default: {} as EventActions,
-      required: true,
-    },
-    automationId: {
-      type: String,
-      default: '',
-      required: false,
-    },
-  });
+const props = defineProps({
+  item: {
+    type: Object as PropType<AutomationAction>,
+    default: {} as AutomationAction,
+    required: true,
+  },
+  editEvents: {
+    type: Object as PropType<EventActions>,
+    default: {} as EventActions,
+    required: true,
+  },
+  automationId: {
+    type: String,
+    default: '',
+    required: false,
+  },
+});
 
-  const currentAction = ref(props.item);
-  const actionType = ref<ActionType>(AutomationActionTypes.Trigger);
+const currentAction = ref(props.item);
+const actionType = ref<ActionType>(AutomationActionTypes.Trigger);
 
-  const deviceNameFromId = (currentAction: AutomationAction): string => {
-    const device = store.getters['hub/findDevice'](currentAction.id) as Device;
-    if (device == undefined) {
-      return '';
+const deviceNameFromId = (currentAction: AutomationAction): string => {
+  const device = store.getters['hub/findDevice'](currentAction.id) as Device;
+  if (device == undefined) {
+    return '';
+  }
+  return device.friendly_name;
+};
+
+const actionView = computed(() => {
+  if (currentAction.value.id) {
+    const friendlyName = deviceNameFromId(currentAction.value);
+
+    if (isTriggerAction(currentAction.value)) {
+      return transformTriggerAction(friendlyName, currentAction.value);
     }
-    return device.friendly_name;
+    if (isPresetCyclingAction(currentAction.value)) {
+      return transformPresetCyclingAction(friendlyName, currentAction.value);
+    }
+
+    if (isStepAction(currentAction.value)) {
+      return transformStepAction(friendlyName, currentAction.value);
+    }
+  }
+  return [];
+});
+
+watch(
+  () => props.item,
+  () => {
+    actionType.value = props.item.type;
+  },
+  { immediate: true }
+);
+
+function openEditor(): void {
+  emitOpenPanel(createActionEditorOpenPanelEvent(currentAction.value));
+}
+
+function createActionEditorOpenPanelEvent(action: AutomationAction): OpenPanelEvent {
+  return {
+    name: 'ActionEditor',
+    args: {
+      automationId: props.automationId,
+      item: action,
+    },
+    events: props.editEvents,
   };
-
-  const actionView = computed(() => {
-    if (currentAction.value.id) {
-      const friendlyName = deviceNameFromId(currentAction.value);
-
-      if (isTriggerAction(currentAction.value)) {
-        return transformTriggerAction(friendlyName, currentAction.value);
-      }
-      if (isPresetCyclingAction(currentAction.value)) {
-        return transformPresetCyclingAction(friendlyName, currentAction.value);
-      }
-
-      if (isStepAction(currentAction.value)) {
-        return transformStepAction(friendlyName, currentAction.value);
-      }
-    }
-    return [];
-  });
-
-  watch(
-    () => props.item,
-    () => {
-      actionType.value = props.item.type;
-    },
-    { immediate: true }
-  );
-
-  function openEditor(): void {
-    emitOpenPanel(createActionEditorOpenPanelEvent(currentAction.value));
-  }
-
-  function createActionEditorOpenPanelEvent(action: AutomationAction): OpenPanelEvent {
-    return {
-      name: 'ActionEditor',
-      args: {
-        automationId: props.automationId,
-        item: action,
-      },
-      events: props.editEvents,
-    };
-  }
+}
 </script>
 <template>
   <div class="" @click="openEditor()">

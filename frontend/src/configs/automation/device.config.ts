@@ -1,4 +1,4 @@
-import { AutomationActionStep, AutomationStepAction, AutomationTriggerAction } from '@/types/automation';
+import { AutomationActionStep, AutomationStepAction, AutomationTriggerAction } from '@/types/automation.type';
 import { DeviceFilter, Expose, Device, ExposeType } from '@/types/device';
 import { ExposeTypes } from '@/types/device.type';
 

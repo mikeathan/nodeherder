@@ -3,7 +3,7 @@ import {
   Automation,
   AutomationTrigger,
   TimeSchedule,
-} from '@/types/automation';
+} from '@/types/automation.type';
 import {
   DeleteTriggerFunc,
   EventActions,

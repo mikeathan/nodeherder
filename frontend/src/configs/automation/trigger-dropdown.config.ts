@@ -1,8 +1,4 @@
-import {
-  AutomationActionTypes,
-  NumericOperators,
-  TriggerActionOperations,
-} from '@/contracts/automations';
+import { NumericOperators } from '@/contracts/automations';
 import {
   DropDownItemType,
   createDropDownItem,
@@ -11,67 +7,40 @@ import {
   createButton,
   DropDownType,
   ButtonPanelType,
-  isDropdown,
 } from '../../types/controls.type';
+import { AutomationActionTypes, TriggerActionOperations } from '@/types/automation.type.js';
 
-export function createNewActionDropdownItems(
-  event: ButtonClickEventType
-): DropDownItemType[] {
+export function createNewActionDropdownItems(event: ButtonClickEventType): DropDownItemType[] {
   let items: DropDownItemType[] = [];
 
-  Object.values(AutomationActionTypes).forEach(
-    (actionType) =>
-      items.push(
-        createDropDownItem(
-          `New ${actionType}`,
-          actionType,
-          event
-        )
-      )
+  Object.values(AutomationActionTypes).forEach((actionType) =>
+    items.push(createDropDownItem(`New ${actionType}`, actionType, event))
   );
 
   return items;
 }
 
-export function createTriggerActionOperatorsDropdowitems(
-  event: ButtonClickEventType
-): DropDownItemType[] {
+export function createTriggerActionOperatorsDropdowitems(event: ButtonClickEventType): DropDownItemType[] {
   let items: DropDownItemType[] = [];
 
-  Object.values(TriggerActionOperations).forEach(
-    (operator) =>
-      items.push(
-        createDropDownItem(
-          `Add ${operator}`,
-          operator,
-          event
-        )
-      )
+  Object.values(TriggerActionOperations).forEach((operator) =>
+    items.push(createDropDownItem(`Add ${operator}`, operator, event))
   );
 
   return items;
 }
 
-export function createStepActionOperatorsDropdowitems(
-  event: ButtonClickEventType
-): DropDownItemType[] {
+export function createStepActionOperatorsDropdowitems(event: ButtonClickEventType): DropDownItemType[] {
   let items: DropDownItemType[] = [];
 
-  Object.values(NumericOperators).forEach((operator) =>
-    items.push(
-      createDropDownItem(operator, operator, event)
-    )
-  );
+  Object.values(NumericOperators).forEach((operator) => items.push(createDropDownItem(operator, operator, event)));
 
   return items;
 }
 
-export function createButtons(
-  buttons: ButtonType[]
-): ButtonType[] {
+export function createButtons(buttons: ButtonType[]): ButtonType[] {
   return buttons.map(
-    (item: ButtonType) =>
-      createButton(item.name, item.click, item.disabled)
+    (item: ButtonType) => createButton(item.name, item.click, item.disabled)
     // const node = isDropdown(item)
     //   ? createDropdown(item as DropDownType)
     //   : createButton(item.name, item.event, item.disabled);
@@ -84,10 +53,7 @@ export function createSaveDeleteButtonItems(
   isSaveDisabled?: boolean,
   isDeleteDisabled?: boolean
 ): ButtonType[] {
-  return [
-    createButton('Save', saveEvent, isSaveDisabled),
-    createButton('Delete', deleteEvent, isDeleteDisabled),
-  ];
+  return [createButton('Save', saveEvent, isSaveDisabled), createButton('Delete', deleteEvent, isDeleteDisabled)];
 }
 export function createEditAutomationButtonItems(
   saveEvent: ButtonClickEventType,
@@ -100,11 +66,7 @@ export function createEditAutomationButtonItems(
   return [
     createButton('Save', saveEvent, isSaveDisabled),
     createButton('Delete', deleteEvent, isDeleteDisabled),
-    createButton(
-      'Schedules',
-      scheduleEvent,
-      isScheduleEnabled
-    ),
+    createButton('Schedules', scheduleEvent, isScheduleEnabled),
   ];
 }
 export function createSaveDeleteCancelButtonItems(
@@ -133,18 +95,10 @@ export function createStepActionButtonItems(
   return [
     createButton('Save', saveEvent, isSaveDisabled),
     createButton('Delete', deleteEvent, isDeleteDisabled),
-    createDropdown(
-      'Add Operation',
-      dropDownItems,
-      isDropdownDisabled
-    ),
+    createDropdown('Add Operation', dropDownItems, isDropdownDisabled),
   ];
 }
 
-export function createDropdown(
-  name: string,
-  items: DropDownItemType[],
-  disabled: boolean = false
-): DropDownType {
+export function createDropdown(name: string, items: DropDownItemType[], disabled: boolean = false): DropDownType {
   return { name: name, items: items, disabled: disabled };
 }

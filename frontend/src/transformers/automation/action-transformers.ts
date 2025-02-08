@@ -4,7 +4,7 @@ import {
   AutomationPresetCyclingAction,
   AutomationStepAction,
   AutomationActionStep,
-} from '@/types/automation';
+} from '@/types/automation.type';
 
 function formatTriggerActionExposes(exposes: AutomationTriggerActionExpose[]): string {
   const listItems = exposes
