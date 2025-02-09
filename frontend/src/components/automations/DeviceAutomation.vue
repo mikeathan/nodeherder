@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import InputBox from '../input/InputBox.vue';
 import { store } from '../../store/index';
 import { Device } from '@/types/device';
-import { Automation, AutomationAction, AutomationTrigger } from '@/types/automation.type.type';
+import { Automation, AutomationAction, AutomationTrigger } from '@/types/automation.type.js';
 import { EditableAutomationTrigger, DeviceAutomation, findActionExposes } from '../../contracts/automations';
 import AutomationStatus from '@/components/automations/schedule/AutomationStatus.vue';
 import Panel from '../controls/Panel.vue';
@@ -112,7 +112,7 @@ function deleteAutomation() {
 }
 
 function deleteTrigger(trigger: AutomationTrigger): void {
-  automation.value.triggers = automation.value.triggers.filter((e, i) => e != trigger);
+  automation.value.triggers = automation.value.triggers.filter((e: AutomationTrigger) => e != trigger);
 }
 
 function saveTrigger(trigger: AutomationTrigger): void {
@@ -147,11 +147,11 @@ const deviceNameFromId = (id: string): string => {
 };
 
 function getActionDescription(trigger: AutomationTrigger): string {
-  if (trigger.actions.every((a) => a.id == '')) {
+  if (trigger.actions.every((a: AutomationAction) => a.id == '')) {
     return '<EMPTY>';
   }
 
-  const res = trigger.actions.map((a) => `${deviceNameFromId(a.id)}.${findActionExposes(a).join('')}`);
+  const res = trigger.actions.map((a: AutomationAction) => `${deviceNameFromId(a.id)}.${findActionExposes(a).join('')}`);
   return res.join(',');
 }
 </script>

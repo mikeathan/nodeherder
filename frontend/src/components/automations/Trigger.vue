@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, watch, ref, PropType } from 'vue';
-import TriggerCondition from './TriggerCondition.vue';
+import ConditionEditor from './conditions/ConditionEditor..vue';
 import Selection from '../input/Selection.vue';
 import Dropdown from '../controls/Dropdown.vue';
 import { store } from '../../store/index';
@@ -12,15 +12,15 @@ import {
   AutomationTriggerConditions,
   AutomationAction,
   ActionType,
+  ConditionType,
 } from '@/types/automation.type.js';
-import { isValid, EditableTriggerCondition, createActionFromType } from '../../contracts/automations';
+import { isValid, createActionFromType, createConditionFromType } from '../../contracts/automations';
 import { capitalizeText } from '../../modules/formatters/text.formatter';
 import { EventActions, OpenPanelEvent } from '@/types/events.type';
-import { emitCloseLastPanel, emitClosePanel, emitOpenPanel } from '@/mixins/useAutomationsEventBus';
+import { emitClosePanel, emitOpenPanel } from '@/mixins/useAutomationsEventBus';
 import ActionViewer from './actions/ActionViewer.vue';
 import ButtonPanel from '@/components/controls/ButtonPanel.vue';
-import { createButtons, createNewActionDropdownItems } from '../../configs/automation/trigger-dropdown.config';
-import { createEmpty } from '@/utils/object';
+import { createButtons, createNewActionDropdownItems, createNewConditionDropdownItems } from '../../configs/automation/trigger-dropdown.config';
 
 const props = defineProps({
   id: { type: String },
@@ -37,6 +37,8 @@ const actions = ref<AutomationActions>({} as AutomationActions);
 const trigger = ref<AutomationTrigger>(props.trigger);
 
 const dropDownActionItems = computed(() => createNewActionDropdownItems((e: ActionType) => addNewAction(e)));
+const dropDownConditionItems = computed(() => createNewConditionDropdownItems((e: ConditionType) => addNewCondition(e)));
+
 
 const buttonPanelItems = computed(() => {
   return createButtons([
@@ -87,12 +89,16 @@ function remove() {
   emitClosePanel('Trigger');
 }
 
-function addNewCondition() {
-  conditions.value.push(new EditableTriggerCondition());
+function addNewCondition(type: ConditionType) {
+  conditions.value.push(createConditionFromType(type));
 }
 
 function removeTriggerCondition(condition: AutomationCondition) {
   conditions.value = conditions.value.filter((c: AutomationCondition) => c != condition);
+}
+
+function updateCondition(condition: AutomationCondition, newCondition: AutomationCondition) {
+  condition = newCondition;
 }
 
 const exposesList = computed(() => {
@@ -170,12 +176,8 @@ function createActionOpenPanelEvent(action: AutomationAction, editMode: boolean)
       <DataTable :value="conditions" selectionMode="single">
         <Column header="Condition">
           <template #body="slotProps">
-            <TriggerCondition :item="slotProps.data" :id="props.id" :name="slotProps.data.name"
-              :operator="slotProps.data.equality" :data="slotProps.data.value"
-              @update:name="(newValue) => (slotProps.data.name = newValue)"
-              @update:value="(newValue) => (slotProps.data.value = newValue)"
-              @update:operator="(newValue) => (slotProps.data.equality = newValue)"
-              @save="(item)=>slotProps.data = item" />
+            <ConditionEditor :item="slotProps.data" :id="props.id"
+              @update="(item: AutomationCondition) => updateCondition(slotProps.data, item)" />
           </template>
         </Column>
         <Column class="col-sm-1">
@@ -185,7 +187,7 @@ function createActionOpenPanelEvent(action: AutomationAction, editMode: boolean)
         </Column>
       </DataTable>
       <div class="pt-4 flex align-items-center justify-content-center">
-        <Button style="width: 99%" icon="pi pi-plus" label="Add condition" @click="addNewCondition" text size="small" />
+        <Dropdown :items="dropDownConditionItems" text label="New Condition" icon="pi pi-plus" size="small" />
       </div>
     </Fieldset>
     <div class="pt-2"></div>

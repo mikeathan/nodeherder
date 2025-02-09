@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, PropType, reactive } from 'vue';
-import { AutomationActionStep, NumericOperator, AutomationStepAction } from '@/types/automation.type.type';
+import { AutomationActionStep, NumericOperator, AutomationStepAction } from '@/types/automation.type.js';
 import { store } from '../../../store/index';
 import { Device } from '@/types/device';
 import { ExposeTypes } from '@/types/device.type';

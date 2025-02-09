@@ -8,12 +8,22 @@ import {
   DropDownType,
   ButtonPanelType,
 } from '../../types/controls.type';
-import { AutomationActionTypes, TriggerActionOperations } from '@/types/automation.type.js';
+import { AutomationActionTypes, AutomationConditionTypes, TriggerActionOperations } from '@/types/automation.type.js';
 
 export function createNewActionDropdownItems(event: ButtonClickEventType): DropDownItemType[] {
   let items: DropDownItemType[] = [];
 
   Object.values(AutomationActionTypes).forEach((actionType) =>
+    items.push(createDropDownItem(`New ${actionType}`, actionType, event))
+  );
+
+  return items;
+}
+
+export function createNewConditionDropdownItems(event: ButtonClickEventType): DropDownItemType[] {
+  let items: DropDownItemType[] = [];
+
+  Object.values(AutomationConditionTypes).forEach((actionType) =>
     items.push(createDropDownItem(`New ${actionType}`, actionType, event))
   );
 

@@ -3,7 +3,7 @@ import { ref, watch, PropType, computed } from 'vue';
 import ButtonPanel from '@/components/controls/ButtonPanel.vue';
 import Selection from '@/components/input/Selection.vue';
 import { createButtons } from '@/configs/automation/trigger-dropdown.config';
-import { TimeSchedule } from '@/types/automation.type.type';
+import { TimeSchedule } from '@/types/automation.type.js';
 import { TimeScheduleTypes } from '@/contracts/automations';
 import TimePicker from '@/components/input/TimePicker.vue';
 import { convertTimeToDate, toHourMinuteString, getNowTime } from '@/contracts/controls';

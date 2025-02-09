@@ -20,7 +20,12 @@ const props = defineProps({
     type: Object as PropType<AutomationTriggerAction>,
     default: {} as AutomationTriggerAction,
     required: true,
-  }
+  },
+  automationId: {
+    type: String,
+    default: '',
+    required: false,
+  },
 });
 
 const emit = defineEmits<{

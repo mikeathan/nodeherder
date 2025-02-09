@@ -11,6 +11,7 @@ import {
   AutomationActionTypes,
   ActionType,
   ConditionType,
+  AutomationConditionTypes,
 } from '../types/automation.type.js';
 
 export const EqualityOperators: string[] = ['=', '<=', '>=', '>', '<'];
@@ -64,18 +65,6 @@ export class EditableAutomationTrigger implements AutomationTrigger {
   }
 }
 
-export class EditableTriggerCondition implements AutomationCondition {
-  type: ConditionType;
-  name: string;
-  value: any | null;
-  equality: string;
-  constructor() {
-    this.type = 'expose';
-    this.name = '';
-    this.value = null;
-    this.equality = '=';
-  }
-}
 export function isTriggerAction(action: AutomationAction | null): action is AutomationTriggerAction {
   return action?.type === AutomationActionTypes.Trigger;
 }
@@ -104,22 +93,41 @@ export function findActionExposes(action: AutomationAction): string[] {
 
   return [];
 }
+export function createConditionFromType(type: ConditionType): AutomationCondition {
+  switch (type) {
+    case AutomationConditionTypes.Expose:
+      return {
+        type: type,
+        name: '',
+        value: null,
+        equality: '=',
+      } as AutomationCondition;
+    case AutomationConditionTypes.Time:
+      return {
+        type: type,
+        name: '',
+        value: null,
+        equality: '=',
+      } as AutomationCondition;
+  }
+}
+
 export function createActionFromType(type: ActionType): AutomationAction {
   switch (type) {
     case AutomationActionTypes.Trigger:
       return {
         id: '',
-        type: AutomationActionTypes.Trigger,
+        type: type,
         exposes: [],
         delay: { unit: 'seconds', value: 0 },
       } as AutomationTriggerAction;
     case AutomationActionTypes.Step:
-      return { id: '', type: AutomationActionTypes.Step, steps: [], property: '', data: null } as AutomationStepAction;
+      return { id: '', type: type, steps: [], property: '', data: null } as AutomationStepAction;
 
     case AutomationActionTypes.PresetCycling:
       return {
         id: '',
-        type: AutomationActionTypes.PresetCycling,
+        type: type,
         property: '',
       } as AutomationPresetCyclingAction;
   }

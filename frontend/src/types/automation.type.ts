@@ -24,8 +24,8 @@ export const TriggerActionOperations = {
 } as const;
 
 export type ExposeConditionType = 'expose';
-export type TimeCondition = 'time';
-export type ConditionType = ExposeConditionType | TimeCondition;
+export type TimeConditionType = 'time';
+export type ConditionType = ExposeConditionType | TimeConditionType;
 export const AutomationConditionTypes = {
   Expose: 'expose',
   Time: 'time',
@@ -59,12 +59,21 @@ export type AutomationTrigger = {
   actions: AutomationActions;
 };
 
-export type AutomationCondition = {
+export type ExposeCondition = {
   type: ConditionType;
   name: string;
   value: Nullable<any>;
   equality: string;
 };
+
+export type TimeCondition = {
+  type: ConditionType;
+  name: string;
+  value: string;
+  equality: string;
+};
+
+export type AutomationCondition = ExposeCondition | TimeCondition;
 
 type AutomationBaseAction = {
   id: string;
