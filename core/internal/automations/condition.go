@@ -49,6 +49,14 @@ type ExposeCondition struct {
 	BaseCondition
 	Name  string `json:"name"`
 	Value any    `json:"value"`
+	timer timeRange `json:"timer"`
+}
+
+timeRange{
+	from:string,
+	fromOperation:string
+	to:string,
+	toOperation:string
 }
 
 func (e *ExposeCondition) HasValueChanged(name string, ctx *DeviceContext) bool {
