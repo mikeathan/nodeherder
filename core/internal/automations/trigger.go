@@ -11,7 +11,6 @@ var typeRegistry = map[string]reflect.Type{
 	StepAction:          reflect.TypeOf(MqttStepAction{}),
 	PresetCyclingAction: reflect.TypeOf(MqttPresetCyclingAction{}),
 	ExposeConditionType: reflect.TypeOf(ExposeCondition{}),
-	TimeConditionType:   reflect.TypeOf(TimeCondition{}),
 }
 
 type Trigger struct {

@@ -6,23 +6,32 @@ import (
 
 const (
 	ExposeConditionType = "expose"
-	TimeConditionType   = "time"
 )
 
 var conditionHandlerInitialiser = map[string]func(Condition) error{
-	TimeConditionType: timeConditionInitialiser,
+	ExposeConditionType: exposeConditionInitialiser,
 }
 
-// func timeConditionInitialiser(condition Condition) error {
-// 	tc := condition.(*TimeCondition)
-// 	t, err := ConvertStringToTime(tc.Value)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	tc.timeAt = t
-// 	tc.clock = utils.NewRealClock()
-// 	return nil
-// }
+func exposeConditionInitialiser(condition Condition) error {
+	ec := condition.(*ExposeCondition)
+
+	for _, schedule := range ec.schedules {
+		t, err := ConvertStringToTime(schedule.StartAt)
+		if err != nil {
+			return err
+		}
+
+		we need some condtinion timer hanlder 
+		that can check to see if we are in the time range
+		alos is it a scheduler or a timer that we are using ????
+
+	// ec.timeAt = t
+	// ec.clock = utils.NewRealClock()
+	}
+
+	
+	return nil
+}
 
 type Condition interface {
 	Evaluate(ctx *DeviceContext) bool
