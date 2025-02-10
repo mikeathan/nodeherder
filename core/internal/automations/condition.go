@@ -2,7 +2,6 @@ package automations
 
 import (
 	"node-herder/utils"
-	"time"
 )
 
 const (
@@ -14,16 +13,16 @@ var conditionHandlerInitialiser = map[string]func(Condition) error{
 	TimeConditionType: timeConditionInitialiser,
 }
 
-func timeConditionInitialiser(condition Condition) error {
-	tc := condition.(*TimeCondition)
-	t, err := ConvertStringToTime(tc.Value)
-	if err != nil {
-		return err
-	}
-	tc.timeAt = t
-	tc.clock = utils.NewRealClock()
-	return nil
-}
+// func timeConditionInitialiser(condition Condition) error {
+// 	tc := condition.(*TimeCondition)
+// 	t, err := ConvertStringToTime(tc.Value)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	tc.timeAt = t
+// 	tc.clock = utils.NewRealClock()
+// 	return nil
+// }
 
 type Condition interface {
 	Evaluate(ctx *DeviceContext) bool
@@ -31,32 +30,18 @@ type Condition interface {
 	HasValueChanged(name string, ctx *DeviceContext) bool
 }
 
-// automation
-// Trigger 1:
-// Condition -> door open
-//  Action  -> start alarm (low volume, short duration, melody a)
-
-// Trigger 2:
-// Condition -> door open AND (after 3 am) and (before 6 am)
-// 	Action  -> start alarm (high volume, long duration, melody b)
-
-// Need new condition type:
-// timer before
-// timer after
+// BaseCondition
+type BaseCondition struct {
+	EqualityOperator string `json:"equality"`
+	Type             string `json:"type"`
+}
 
 // ExposeCondition
 type ExposeCondition struct {
 	BaseCondition
-	Name  string `json:"name"`
-	Value any    `json:"value"`
-	timer timeRange `json:"timer"`
-}
-
-timeRange{
-	from:string,
-	fromOperation:string
-	to:string,
-	toOperation:string
+	Name      string          `json:"name"`
+	Value     any             `json:"value"`
+	schedules []*TimeSchedule `json:"schedules"`
 }
 
 func (e *ExposeCondition) HasValueChanged(name string, ctx *DeviceContext) bool {
@@ -83,8 +68,9 @@ func (e *ExposeCondition) GetType() string {
 
 func NewExposeCondition(name string, value any, operation string) *ExposeCondition {
 	return &ExposeCondition{
-		Name:  name,
-		Value: value,
+		Name:      name,
+		Value:     value,
+		schedules: []*TimeSchedule{},
 		BaseCondition: BaseCondition{
 			Type:             ExposeConditionType,
 			EqualityOperator: operation,
@@ -93,45 +79,39 @@ func NewExposeCondition(name string, value any, operation string) *ExposeConditi
 }
 
 // TimeCondition
-type TimeCondition struct {
-	BaseCondition
-	Value  string `json:"value"`
-	timeAt time.Time
-	clock  utils.Clock
-}
+// type TimeCondition struct {
+// 	BaseCondition
+// 	Value  string `json:"value"`
+// 	timeAt time.Time
+// 	clock  utils.Clock
+// }
 
-func (t *TimeCondition) Evaluate(ctx *DeviceContext) bool {
+// func (t *TimeCondition) Evaluate(ctx *DeviceContext) bool {
 
-	result, _ := t.clock.CompareWithNow(t.timeAt, t.EqualityOperator)
-	return result
-}
+// 	result, _ := t.clock.CompareWithNow(t.timeAt, t.EqualityOperator)
+// 	return result
+// }
 
-func (t *TimeCondition) GetType() string {
-	return TimeConditionType
-}
+// func (t *TimeCondition) GetType() string {
+// 	return TimeConditionType
+// }
 
-func (e *TimeCondition) HasValueChanged(name string, ctx *DeviceContext) bool {
-	return true
-}
+// func (e *TimeCondition) HasValueChanged(name string, ctx *DeviceContext) bool {
+// 	return true
+// }
 
-func NewTimeCondition(value string, operation string, clock utils.Clock) (*TimeCondition, error) {
-	t, err := ConvertStringToTime(value)
-	if err != nil {
-		return nil, err
-	}
-	return &TimeCondition{
-		Value:  value,
-		timeAt: t,
-		clock:  clock,
-		BaseCondition: BaseCondition{
-			Type:             TimeConditionType,
-			EqualityOperator: operation,
-		},
-	}, nil
-}
-
-// BaseCondition
-type BaseCondition struct {
-	EqualityOperator string `json:"equality"`
-	Type             string `json:"type"`
-}
+// func NewTimeCondition(value string, operation string, clock utils.Clock) (*TimeCondition, error) {
+// 	t, err := ConvertStringToTime(value)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return &TimeCondition{
+// 		Value:  value,
+// 		timeAt: t,
+// 		clock:  clock,
+// 		BaseCondition: BaseCondition{
+// 			Type:             TimeConditionType,
+// 			EqualityOperator: operation,
+// 		},
+// 	}, nil
+// }
