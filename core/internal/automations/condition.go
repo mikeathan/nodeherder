@@ -1,7 +1,9 @@
 package automations
 
 import (
+	"fmt"
 	"node-herder/utils"
+	"time"
 )
 
 const (
@@ -14,23 +16,95 @@ var conditionHandlerInitialiser = map[string]func(Condition) error{
 
 func exposeConditionInitialiser(condition Condition) error {
 	ec := condition.(*ExposeCondition)
-
-	for _, schedule := range ec.schedules {
-		t, err := ConvertStringToTime(schedule.StartAt)
+	if ec.TimeRange != nil {
+		handler, err := NewTimeRangeHandler(ec.TimeRange, utils.NewRealClock())
 		if err != nil {
 			return err
 		}
-
-		we need some condtinion timer hanlder 
-		that can check to see if we are in the time range
-		alos is it a scheduler or a timer that we are using ????
-
-	// ec.timeAt = t
-	// ec.clock = utils.NewRealClock()
+		ec.handlers = append(ec.handlers, handler)
 	}
 
-	
+	eh, err := NewExposeHandler(ec)
+	if err != nil {
+		return err
+	}
+
+	ec.handlers = append(ec.handlers, eh)
 	return nil
+}
+
+// Expose Handler
+type ExposeHandler struct {
+	Name      string
+	Operation string
+	Value     any
+}
+
+func NewExposeHandler(cond *ExposeCondition) (*ExposeHandler, error) {
+	if _, ok := EqualityOperators[cond.EqualityOperator]; ok {
+		return nil, fmt.Errorf("invalid operation %s", cond.EqualityOperator)
+	}
+
+	if cond.Value == nil {
+		return nil, fmt.Errorf("value cannot be nil")
+	}
+	if cond.Name == "" {
+		return nil, fmt.Errorf("name cannot be empty")
+	}
+
+	return &ExposeHandler{
+		Name:      cond.Name,
+		Value:     cond.Value,
+		Operation: cond.EqualityOperator,
+	}, nil
+}
+
+func (e *ExposeHandler) Evaluate(ctx *DeviceContext) bool {
+	expose, ok := ctx.GetPayload(e.Name)
+	if !ok {
+		utils.LogDebugf("sensor %s not found in payload", e.Name)
+		return false
+	}
+
+	if EqualityOperators[e.Operation](expose.Data, e.Value) {
+		return true
+	}
+
+	return false
+}
+
+// TimeRange Handler
+type TimeRangeHandler struct {
+	startTime time.Time
+	endTime   time.Time
+	clock     utils.Clock
+}
+
+func (t *TimeRangeHandler) Evaluate(ctx *DeviceContext) bool {
+	now := t.clock.Now()
+	return now.After(t.startTime) && now.Before(t.endTime)
+}
+
+func NewTimeRangeHandler(timeRange *TimeRange, clock utils.Clock) (*TimeRangeHandler, error) {
+	st, err := ConvertStringToTime(timeRange.StartAt)
+	if err != nil {
+		return nil, fmt.Errorf("invalid TimeRangeHandler.StartAt format %s", err.Error())
+	}
+
+	et, err := ConvertStringToTime(timeRange.EndAt)
+	if err != nil {
+		return nil, fmt.Errorf("invalid TimeRangeHandler.EndAt format %s", err.Error())
+	}
+
+	return &TimeRangeHandler{
+		startTime: st,
+		endTime:   et,
+		clock:     clock,
+	}, nil
+}
+
+type ConditionHandler interface {
+	Evaluate(ctx *DeviceContext) bool
 }
 
 type Condition interface {
@@ -45,12 +119,25 @@ type BaseCondition struct {
 	Type             string `json:"type"`
 }
 
+type TimeRange struct {
+	StartAt string `json:"startAt"`
+	EndAt   string `json:"endAt"`
+}
+
+func NewTimeRange(startAt string, endAt string) *TimeRange {
+	return &TimeRange{
+		StartAt: startAt,
+		EndAt:   endAt,
+	}
+}
+
 // ExposeCondition
 type ExposeCondition struct {
 	BaseCondition
-	Name      string          `json:"name"`
-	Value     any             `json:"value"`
-	schedules []*TimeSchedule `json:"schedules"`
+	Name      string     `json:"name"`
+	Value     any        `json:"value"`
+	TimeRange *TimeRange `json:"timeRange,omitempty"`
+	handlers  []ConditionHandler
 }
 
 func (e *ExposeCondition) HasValueChanged(name string, ctx *DeviceContext) bool {
@@ -58,17 +145,12 @@ func (e *ExposeCondition) HasValueChanged(name string, ctx *DeviceContext) bool 
 }
 
 func (e *ExposeCondition) Evaluate(ctx *DeviceContext) bool {
-	expose, ok := ctx.GetPayload(e.Name)
-	if !ok {
-		utils.LogDebugf("sensor %s not found in payload", e.Name)
-		return false
+	for _, handler := range e.handlers {
+		if !handler.Evaluate(ctx) {
+			return false
+		}
 	}
-
-	if EqualityOperators[e.EqualityOperator](expose.Data, e.Value) {
-		return true
-	}
-
-	return false
+	return true
 }
 
 func (e *ExposeCondition) GetType() string {
@@ -79,7 +161,20 @@ func NewExposeCondition(name string, value any, operation string) *ExposeConditi
 	return &ExposeCondition{
 		Name:      name,
 		Value:     value,
-		schedules: []*TimeSchedule{},
+		TimeRange: nil,
+		handlers:  []ConditionHandler{},
+		BaseCondition: BaseCondition{
+			Type:             ExposeConditionType,
+			EqualityOperator: operation,
+		},
+	}
+}
+func NewExposeConditionwithTimeRange(name string, value any, operation string, timeRange *TimeRange) *ExposeCondition {
+	return &ExposeCondition{
+		Name:      name,
+		Value:     value,
+		TimeRange: timeRange,
+		handlers:  []ConditionHandler{},
 		BaseCondition: BaseCondition{
 			Type:             ExposeConditionType,
 			EqualityOperator: operation,

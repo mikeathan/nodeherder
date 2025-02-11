@@ -198,7 +198,7 @@ func TestHandleMultipleSameValueTriggerWithDelay(t *testing.T) {
 
 	registrar.RegisterBridge(deviceBridgeList, 30000)
 
-	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(triggerId, registrar, mqtt, utils.IntervalFromSeconds(3))
+	turnOffTrigger := createTriggerDelayTurnOffLight(triggerId, registrar, mqtt, utils.IntervalFromSeconds(3))
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(triggerId, registrar, mqtt, 30)
 
 	// create device trigger
@@ -278,7 +278,7 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 	registrar.RegisterBridge(deviceBridgeList, 30000)
-	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(id, registrar, mqtt, utils.IntervalFromMilliseconds(100))
+	turnOffTrigger := createTriggerDelayTurnOffLight(id, registrar, mqtt, utils.IntervalFromMilliseconds(100))
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(id, registrar, mqtt, 30)
 
 	// create device trigger
@@ -378,20 +378,29 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 	registrar.RegisterBridge(deviceBridgeList, 30000)
-	turnOnTrigger := createTriggerTurnOnLightWithPresenceOn(id, registrar, mqtt)
+	turnOnTrigger := createTriggerTurnOnLight(id, registrar, mqtt)
 
-	turnOnFromTimeCondition, _ := automations.NewTimeCondition("11:00", ">=", mockClock)
-	turnOnToTimeCondition, _ := automations.NewTimeCondition("17:00", "<", mockClock)
 
-	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnFromTimeCondition)
-	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnToTimeCondition)
+	Need to pass mockClock somewhere !!!!!
+ maybe create the hanlders here and add them to condition
+
+	onTimeRange:= automations.NewTimeRange("11:00", "17:00")
+	turnOnCondition := automations.NewExposeConditionwithTimeRange("presence", true, "=", onTimeRange)
+
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
+
+
 
 	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(id, registrar, mqtt, utils.IntervalFromMilliseconds(0))
 
-	turnOffFromTimeCondition, _ := automations.NewTimeCondition("09:00", "<=", mockClock)
-	turnOffToTimeCondition, _ := automations.NewTimeCondition("06:25", "<", mockClock)
-	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffFromTimeCondition)
-	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffToTimeCondition)
+
+	Need to pass mockClock somewhere !!!!!
+
+	offTimeRange:= automations.NewTimeRange("09:00", "06:25")
+
+	turnOffCondition := automations.NewExposeConditionwithTimeRange("presence", false, "=", offTimeRange)
+	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffCondition)
+
 
 	// create device trigger
 	deviceTrigger := automations.NewDevice(id)
@@ -547,7 +556,7 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(id string, registrar services.
 	return turnOnTrigger
 }
 
-func createTriggerTurnOnLightWithPresenceOn(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *automations.Trigger {
+func createTriggerTurnOnLight(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *automations.Trigger {
 	// action = turn off light
 	turnOnAction := automations.NewTriggerAction()
 	turnOnAction.Id = id
@@ -566,9 +575,7 @@ func createTriggerTurnOnLightWithPresenceOn(id string, registrar services.Device
 	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
 
 	// condition = presence = off
-	turnOnCondition := automations.NewExposeCondition("presence", true, "=")
-
-	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
+	
 
 	return turnOnTrigger
 }
@@ -613,7 +620,7 @@ func createTriggerwithMultipleActions(id string, registrar services.DeviceRegist
 	return trigger
 }
 
-func createTriggerDelayTurnOffLightWithPresenceOff(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, delay *utils.TimeInterval) *automations.Trigger {
+func createTriggerDelayTurnOffLight(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, delay *utils.TimeInterval) *automations.Trigger {
 	// action = turn off light
 	turnOffAction := automations.NewTriggerAction()
 	turnOffAction.Id = id
@@ -634,10 +641,6 @@ func createTriggerDelayTurnOffLightWithPresenceOff(id string, registrar services
 	turnOffTrigger := &automations.Trigger{}
 	turnOffTrigger.Name = "presence"
 	turnOffTrigger.Actions = []automations.MqttAction{turnOffAction}
-
-	// condition = presence == false
-	turnOffCondition := automations.NewExposeCondition("presence", false, "=")
-	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffCondition)
 
 	return turnOffTrigger
 }
