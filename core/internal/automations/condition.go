@@ -10,6 +10,8 @@ const (
 	ExposeConditionType = "expose"
 )
 
+var exposeHandlerInitializer = newConditionHandlerInitialiser()
+
 type ConditionHandlerOption func(*ConditionHandlerOptions)
 type ConditionHandlerOptions struct {
 	Clock utils.Clock
@@ -21,7 +23,7 @@ func WithClock(clock utils.Clock) func(*ConditionHandlerOptions) {
 	}
 }
 
-func NewConditionHandlerInitialiser(opts ...ConditionHandlerOption) map[string]func(Condition) error {
+func newConditionHandlerInitialiser(opts ...ConditionHandlerOption) map[string]func(Condition) error {
 	options := &ConditionHandlerOptions{}
 	for _, opt := range opts {
 		opt(options)
@@ -57,12 +59,12 @@ func exposeConditionInitialiser(condition Condition, opts *ConditionHandlerOptio
 // Expose Handler
 type ExposeHandler struct {
 	Name      string
-	Operation string
+	Operation EqualityOperator
 	Value     any
 }
 
 func NewExposeHandler(cond *ExposeCondition) (*ExposeHandler, error) {
-	if _, ok := EqualityOperators[cond.EqualityOperator]; ok {
+	if _, ok := EqualityOperators[cond.EqualityOperator]; !ok {
 		return nil, fmt.Errorf("invalid operation %s", cond.EqualityOperator)
 	}
 
@@ -103,7 +105,11 @@ type TimeRangeHandler struct {
 
 func (t *TimeRangeHandler) Evaluate(ctx *DeviceContext) bool {
 	now := t.clock.Now()
-	return now.After(t.startTime) && now.Before(t.endTime)
+	res:= now.After(t.startTime) && now.Before(t.endTime)
+
+	 	result, _ := t.clock.CompareWithNow(t.timeAt, t.EqualityOperator)
+
+	return res
 }
 
 func NewTimeRangeHandler(timeRange *TimeRange, clock utils.Clock) (*TimeRangeHandler, error) {
@@ -136,7 +142,7 @@ type Condition interface {
 
 // BaseCondition
 type BaseCondition struct {
-	EqualityOperator string `json:"equality"`
+	EqualityOperator EqualityOperator `json:"equality"`
 	Type             string `json:"type"`
 }
 
@@ -179,7 +185,7 @@ func (e *ExposeCondition) GetType() string {
 }
 
 func NewExposeCondition(name string, value any, operation string) *ExposeCondition {
-	return &ExposeCondition{
+	cond := &ExposeCondition{
 		Name:      name,
 		Value:     value,
 		TimeRange: nil,
@@ -189,9 +195,18 @@ func NewExposeCondition(name string, value any, operation string) *ExposeConditi
 			EqualityOperator: operation,
 		},
 	}
+
+	err := exposeHandlerInitializer[cond.Type](cond)
+	if err != nil {
+		utils.LogErrorf("error initialising expose condition %s", err.Error())
+		return nil
+	}
+
+	return cond
 }
-func NewExposeConditionwithTimeRange(name string, value any, operation string, timeRange *TimeRange) *ExposeCondition {
-	return &ExposeCondition{
+func NewExposeConditionwithTimeRange(name string, value any, operation string, timeRange *TimeRange, clock utils.Clock) *ExposeCondition {
+
+	cond := &ExposeCondition{
 		Name:      name,
 		Value:     value,
 		TimeRange: timeRange,
@@ -201,6 +216,14 @@ func NewExposeConditionwithTimeRange(name string, value any, operation string, t
 			EqualityOperator: operation,
 		},
 	}
+
+	initialiser := newConditionHandlerInitialiser(WithClock(clock))
+	err := initialiser[cond.Type](cond)
+	if err != nil {
+		utils.LogErrorf("initialising expose timeRange failed. Error: %s", err.Error())
+		return nil
+	}
+	return cond
 }
 
 // TimeCondition

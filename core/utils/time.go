@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -16,7 +15,8 @@ const (
 type Clock interface {
 	Now() time.Time
 	Sleep(duration time.Duration)
-	CompareWithNow(t time.Time, operator string) (bool, error)
+	CompareWithNow(t time.Time, operator EqualityOperator) (bool, error)
+	IsInRange(start time.Time, end time.Time) bool
 }
 
 type RealClock struct{}
@@ -32,23 +32,34 @@ func (r *RealClock) CompareWithNow(t time.Time, operator string) (bool, error) {
 	return CompareTimeRange(now, toTime, operator)
 }
 
-func CompareTimeRange(from time.Time, to time.Time, operator string) (bool, error) {
+func (r *RealClock) IsInRange(from time.Time, to time.Time) bool {
+	now := r.Now()
+	fromTime := time.Date(now.Year(), now.Month(), now.Day(), from.Hour(), from.Minute(), from.Second(), from.Nanosecond(), from.Location())
+	toTime := time.Date(now.Year(), now.Month(), now.Day(), to.Hour(), to.Minute(), to.Second(), to.Nanosecond(), to.Location())
+
+	res1, _ := CompareTimeRange(now, fromTime, ">=")
+	res2, _ := CompareTimeRange(now, toTime, "<=")
+
+	return res1 && res2
+}
+
+func CompareTimeRange(from time.Time, to time.Time, operator EqualityOperator) bool {
 
 	switch operator {
-	case "=":
-		return from.Equal(to), nil
-	case "<":
-		return from.Before(to), nil
-	case "<=":
-		return from.Before(to) || from.Equal(to), nil
-	case ">":
-		return from.After(to), nil
-	case ">=":
-		return from.After(to) || from.Equal(to), nil
-	default:
-		return false, fmt.Errorf("invalid operator: %s", operator)
+	case Equals:
+		return from.Equal(to)
+	case LessThan:
+		return from.Before(to)
+	case LessThanEqual:
+		return from.Before(to) || from.Equal(to)
+	case GreaterThan:
+		return from.After(to)
+	case GreaterThanEqual:
+		return from.After(to) || from.Equal(to)
+
 	}
 }
+
 func (r *RealClock) Now() time.Time {
 	return time.Now().UTC()
 }

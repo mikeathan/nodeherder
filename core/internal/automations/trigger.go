@@ -57,8 +57,8 @@ func (t *Trigger) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(rawCondition, condition); err != nil {
 			return fmt.Errorf("unmarshaling concrete condition: %w", err)
 		}
-		
-		handlerInitialiser := NewConditionHandlerInitialiser(WithClock(utils.NewRealClock()))
+
+		handlerInitialiser := newConditionHandlerInitialiser(WithClock(utils.NewRealClock()))
 		if conditionInitialiser, ok := handlerInitialiser[condition.GetType()]; ok {
 			err := conditionInitialiser(condition)
 			if err != nil {

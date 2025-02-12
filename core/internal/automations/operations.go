@@ -46,18 +46,6 @@ func CreateRotateOperation(expose *devices.Entity) actionOperation {
 	return newRotateOperation(expose.Name, presets)
 }
 
-func toFloat(value any) float32 {
-	switch v := value.(type) {
-	case int:
-		return float32(v)
-	case float64:
-		return float32(v)
-	case float32:
-		return float32(v)
-	default:
-		return float32(0)
-	}
-}
 
 type actionOperation interface {
 	CreatePayload() (map[string]any, error)
@@ -93,7 +81,7 @@ func (r *rotateOperation) CreatePayload() (map[string]any, error) {
 
 	v := r.items[r.position]
 	r.position++
-	
+
 	payload := map[string]any{
 		r.property: v,
 	}
@@ -165,23 +153,5 @@ var numericOperations = map[string]func(float64, float64, float64) float64{
 		return newValue
 	}, "*": func(v1 float64, v2 float64, limit float64) float64 {
 		return v1 * v2
-	},
-}
-
-var EqualityOperators = map[string]func(any, any) bool{
-	"=": func(v1 any, v2 any) bool {
-		return v1 == v2
-	},
-	">=": func(v1 any, v2 any) bool {
-		return toFloat(v1) >= toFloat(v2)
-	},
-	"<=": func(v1 any, v2 any) bool {
-		return toFloat(v1) <= toFloat(v2)
-	},
-	">": func(v1 any, v2 any) bool {
-		return toFloat(v1) > toFloat(v2)
-	},
-	"<": func(v1 any, v2 any) bool {
-		return toFloat(v1) < toFloat(v2)
 	},
 }

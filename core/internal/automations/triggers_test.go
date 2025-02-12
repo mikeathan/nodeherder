@@ -129,10 +129,8 @@ func TestAutomationwithMultipleTriggerActions(t *testing.T) {
 	registrar.RegisterBridge(deviceBridgeList, 30000)
 
 	trigger := createTriggerwithMultipleActions(triggerId, registrar, mqtt, "button1", []string{"brightness", "color_temperature", "color_brightness"}, []any{120, 250, 2000})
-	
-	needs fixing - eveything will need to go via teh expose condition initializer
-	
 	trigger.Conditions = append(trigger.Conditions, automations.NewExposeCondition("button1", "pressed", "="))
+
 	automation := automations.NewDevice(triggerId)
 	automation.Triggers = append(automation.Triggers, trigger)
 
@@ -382,18 +380,13 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 	registrar.RegisterBridge(deviceBridgeList, 30000)
 
-	handlerInitializer := automations.NewConditionHandlerInitialiser(automations.WithClock(mockClock))
-
 	// create turn on trigger
 	turnOnTrigger := createTriggerTurnOnLight(id, registrar, mqtt)
 
 	// initialize turn on condition
 	onTimeRange := automations.NewTimeRange("11:00", "17:00")
-	turnOnCondition := automations.NewExposeConditionwithTimeRange("presence", true, "=", onTimeRange)
-	err := handlerInitializer["expose"](turnOnCondition)
-	if err != nil {
-		t.Fatalf("error initializing turn on condition")
-	}
+	turnOnCondition := automations.NewExposeConditionwithTimeRange("presence", true, "=", onTimeRange, mockClock)
+
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
 
 	// create turn off trigger
@@ -401,11 +394,8 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 
 	// initialize turn off condition
 	offTimeRange := automations.NewTimeRange("09:00", "06:25")
-	turnOffCondition := automations.NewExposeConditionwithTimeRange("presence", false, "=", offTimeRange)
-	err = handlerInitializer["expose"](turnOffCondition)
-	if err != nil {
-		t.Fatalf("error initializing turn off condition")
-	}
+	turnOffCondition := automations.NewExposeConditionwithTimeRange("presence", false, "=", offTimeRange, mockClock)
+
 	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffCondition)
 
 	// create device trigger
