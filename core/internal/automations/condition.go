@@ -10,14 +10,35 @@ const (
 	ExposeConditionType = "expose"
 )
 
-var conditionHandlerInitialiser = map[string]func(Condition) error{
-	ExposeConditionType: exposeConditionInitialiser,
+type ConditionHandlerOption func(*ConditionHandlerOptions)
+type ConditionHandlerOptions struct {
+	Clock utils.Clock
 }
 
-func exposeConditionInitialiser(condition Condition) error {
+func WithClock(clock utils.Clock) func(*ConditionHandlerOptions) {
+	return func(opts *ConditionHandlerOptions) {
+		opts.Clock = clock
+	}
+}
+
+func NewConditionHandlerInitialiser(opts ...ConditionHandlerOption) map[string]func(Condition) error {
+	options := &ConditionHandlerOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
+
+	return map[string]func(Condition) error{
+		ExposeConditionType: func(condition Condition) error {
+			return exposeConditionInitialiser(condition, options)
+		},
+	}
+}
+
+func exposeConditionInitialiser(condition Condition, opts *ConditionHandlerOptions) error {
 	ec := condition.(*ExposeCondition)
 	if ec.TimeRange != nil {
-		handler, err := NewTimeRangeHandler(ec.TimeRange, utils.NewRealClock())
+
+		handler, err := NewTimeRangeHandler(ec.TimeRange, opts.Clock)
 		if err != nil {
 			return err
 		}

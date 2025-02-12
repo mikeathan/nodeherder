@@ -3,6 +3,7 @@ package automations
 import (
 	"encoding/json"
 	"fmt"
+	"node-herder/utils"
 	"reflect"
 )
 
@@ -56,8 +57,9 @@ func (t *Trigger) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(rawCondition, condition); err != nil {
 			return fmt.Errorf("unmarshaling concrete condition: %w", err)
 		}
-
-		if conditionInitialiser, ok := conditionHandlerInitialiser[condition.GetType()]; ok {
+		
+		handlerInitialiser := NewConditionHandlerInitialiser(WithClock(utils.NewRealClock()))
+		if conditionInitialiser, ok := handlerInitialiser[condition.GetType()]; ok {
 			err := conditionInitialiser(condition)
 			if err != nil {
 				return err
