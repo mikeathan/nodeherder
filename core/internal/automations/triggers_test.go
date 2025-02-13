@@ -279,8 +279,8 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 	registrar.RegisterBridge(deviceBridgeList, 30000)
-	turnOffTrigger := createTriggerDelayTurnOffLight(id, registrar, mqtt, utils.IntervalFromMilliseconds(100))
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(id, registrar, mqtt, 30)
+	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(id, registrar, mqtt, utils.IntervalFromMilliseconds(100))
 
 	// create device trigger
 	deviceTrigger := automations.NewDevice(id)
@@ -340,9 +340,6 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 					if value != testCase.presence {
 						t.Fatalf("value mismatch: want %v got %v", testCase.presence, value)
 					}
-					if value != testCase.presence {
-						t.Fatalf("value mismatch: want %v got %v", testCase.presence, value)
-					}
 				}
 			}
 
@@ -393,7 +390,7 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 	turnOffTrigger := createTriggerDelayTurnOffLight(id, registrar, mqtt, utils.IntervalFromMilliseconds(0))
 
 	// initialize turn off condition
-	offTimeRange := automations.NewTimeRange("09:00", "06:25")
+	offTimeRange := automations.NewTimeRange("09:00", "13:25")
 	turnOffCondition := automations.NewExposeConditionwithTimeRange("presence", false, "=", offTimeRange, mockClock)
 
 	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffCondition)
@@ -410,15 +407,15 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 		result     bool
 	}{
 		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(11, 0, 0), result: true},
-		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(5, 0, 0), result: true},
-		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(17, 0, 0), result: false},
-		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(16, 59, 0), result: true},
+		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(12, 15, 0), result: true},
+		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(17, 1, 0), result: false},
+		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(13, 24, 0), result: true},
 		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(6, 25, 0), result: false},
-		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(6, 24, 0), result: true},
+		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(9, 1, 0), result: true},
 		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(10, 59, 0), result: false},
 		{presence: true, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(12, 25, 0), result: true},
 		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(8, 59, 0), result: false},
-		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(4, 25, 0), result: true},
+		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(11, 25, 0), result: true},
 	}
 
 	for i, testCase := range testCases {
@@ -490,7 +487,7 @@ func TestSwitch(t *testing.T) {
 
 func TestEqualityChecks(t *testing.T) {
 	testCases := []struct {
-		op     string
+		op     utils.EqualityOperator
 		value1 any
 		value2 any
 		result bool
@@ -509,7 +506,7 @@ func TestEqualityChecks(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		res := automations.EqualityOperators[testCase.op](testCase.value1, testCase.value2)
+		res := utils.EqualityOperators[testCase.op](testCase.value1, testCase.value2)
 		if res != testCase.result {
 			t.Fatalf("operation result mismatch: want %v got %v in  %v %s %v", testCase.result, res, testCase.value1, testCase.op, testCase.value2)
 		}
@@ -550,6 +547,17 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(id string, registrar services.
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, luxCondition)
 
 	return turnOnTrigger
+}
+
+func createTriggerDelayTurnOffLightWithPresenceOff(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, delay *utils.TimeInterval) *automations.Trigger {
+
+	turnOffTrigger := createTriggerDelayTurnOffLight(id, registrar, mqtt, delay)
+
+	turnOffCondition := automations.NewExposeCondition("presence", false, "=")
+
+	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffCondition)
+
+	return turnOffTrigger
 }
 
 func createTriggerTurnOnLight(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *automations.Trigger {

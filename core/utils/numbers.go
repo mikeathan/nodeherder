@@ -19,8 +19,6 @@ func ConvertInt32(value uint32) string {
 	return strconv.FormatUint(uint64(value), 10)
 }
 
-
-
 type EqualityOperator string
 
 const (
@@ -61,4 +59,3 @@ func ToFloat(value any) float32 {
 		return float32(0)
 	}
 }
-

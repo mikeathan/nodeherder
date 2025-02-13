@@ -782,7 +782,18 @@ func (m *MockClock) SetMockSleepDuration(d time.Duration) {
 	m.sleepDuration = d
 }
 
-func (r *MockClock) CompareWithNow(t time.Time, operator string) (bool, error) {
+// needs refactoring - shouldnt replicate the logic
+func (m *MockClock) IsInRange(from time.Time, to time.Time) bool {
+	now := m.Now()
+	fromTime := time.Date(now.Year(), now.Month(), now.Day(), from.Hour(), from.Minute(), from.Second(), from.Nanosecond(), from.Location())
+	toTime := time.Date(now.Year(), now.Month(), now.Day(), to.Hour(), to.Minute(), to.Second(), to.Nanosecond(), to.Location())
+
+	return utils.CompareTimeRange(now, fromTime, utils.GreaterThanEqual) && utils.CompareTimeRange(now, toTime, utils.LessThanEqual)
+}
+
+// needs refactoring - shouldnt replicate the logic
+
+func (r *MockClock) CompareWithNow(t time.Time, operator utils.EqualityOperator) bool {
 	now := r.Now()
 	toTime := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location())
 

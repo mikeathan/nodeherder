@@ -15,7 +15,7 @@ const (
 type Clock interface {
 	Now() time.Time
 	Sleep(duration time.Duration)
-	CompareWithNow(t time.Time, operator EqualityOperator) (bool, error)
+	CompareWithNow(t time.Time, operator EqualityOperator) bool
 	IsInRange(start time.Time, end time.Time) bool
 }
 
@@ -25,7 +25,7 @@ func NewRealClock() Clock {
 	return &RealClock{}
 }
 
-func (r *RealClock) CompareWithNow(t time.Time, operator string) (bool, error) {
+func (r *RealClock) CompareWithNow(t time.Time, operator EqualityOperator) bool {
 
 	now := r.Now()
 	toTime := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location())
@@ -37,10 +37,7 @@ func (r *RealClock) IsInRange(from time.Time, to time.Time) bool {
 	fromTime := time.Date(now.Year(), now.Month(), now.Day(), from.Hour(), from.Minute(), from.Second(), from.Nanosecond(), from.Location())
 	toTime := time.Date(now.Year(), now.Month(), now.Day(), to.Hour(), to.Minute(), to.Second(), to.Nanosecond(), to.Location())
 
-	res1, _ := CompareTimeRange(now, fromTime, ">=")
-	res2, _ := CompareTimeRange(now, toTime, "<=")
-
-	return res1 && res2
+	return CompareTimeRange(now, fromTime, GreaterThanEqual) && CompareTimeRange(now, toTime, LessThanEqual)
 }
 
 func CompareTimeRange(from time.Time, to time.Time, operator EqualityOperator) bool {
@@ -56,8 +53,8 @@ func CompareTimeRange(from time.Time, to time.Time, operator EqualityOperator) b
 		return from.After(to)
 	case GreaterThanEqual:
 		return from.After(to) || from.Equal(to)
-
 	}
+	return false
 }
 
 func (r *RealClock) Now() time.Time {
