@@ -49,6 +49,7 @@ declare module 'vue' {
     FloatLabel: typeof import('primevue/floatlabel')['default']
     HistorySettings: typeof import('./src/components/hub/settings/HistorySettings.vue')['default']
     Icon: typeof import('./src/components/controls/Icon.vue')['default']
+    IftaLabel: typeof import('primevue/iftalabel')['default']
     InputBox: typeof import('./src/components/input/InputBox.vue')['default']
     InputNumber: typeof import('primevue/inputnumber')['default']
     InputText: typeof import('primevue/inputtext')['default']
