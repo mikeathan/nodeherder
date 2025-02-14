@@ -22,13 +22,11 @@ export type TriggerActionOperation = ValueOf<typeof TriggerActionOperations>;
 export const TriggerActionOperations = {
   Delay: 'delay',
 } as const;
-
 export type ExposeConditionType = 'expose';
-export type TimeConditionType = 'time';
-export type ConditionType = ExposeConditionType | TimeConditionType;
+
+export type ConditionType = ExposeConditionType;
 export const AutomationConditionTypes = {
   Expose: 'expose',
-  Time: 'time',
 } as const;
 
 export type AutomationActionStep = {
@@ -44,6 +42,11 @@ export type Automation = {
   enabled: boolean;
   schedules: TimeSchedule[];
   triggers: AutomationTriggers;
+};
+
+export type TimeRange = {
+  startAt: string;
+  endAt: string;
 };
 
 export type TimeScheduleType = 'enable' | 'disable';
@@ -64,16 +67,10 @@ export type ExposeCondition = {
   name: string;
   value: Nullable<any>;
   equality: string;
+  timeRange: TimeRange | null;
 };
 
-export type TimeCondition = {
-  type: ConditionType;
-  name: string;
-  value: string;
-  equality: string;
-};
-
-export type AutomationCondition = ExposeCondition | TimeCondition;
+export type AutomationCondition = ExposeCondition;
 
 type AutomationBaseAction = {
   id: string;

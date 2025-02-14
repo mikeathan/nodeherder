@@ -102,13 +102,6 @@ export function createConditionFromType(type: ConditionType): AutomationConditio
         value: null,
         equality: '=',
       } as AutomationCondition;
-    case AutomationConditionTypes.Time:
-      return {
-        type: type,
-        name: '',
-        value: null,
-        equality: '=',
-      } as AutomationCondition;
   }
 }
 
