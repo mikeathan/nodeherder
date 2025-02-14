@@ -7,6 +7,8 @@
   import ExposeDataInput from '../../controls/ExposeDataInput.vue';
   import Selection from '../../input/Selection.vue';
   import ExposeSelector from '@/components/controls/ExposeSelector.vue';
+  import TimePicker from '@/components/input/TimePicker.vue';
+  import { convertTimeToDate } from '@/contracts/controls';
 
   const props = defineProps({
     item: {
@@ -88,16 +90,28 @@
     emit('delete');
   }
 
+  const hasTimeRange = computed(() => {
+    return condition.value.timeRange != null;
+  });
+
   function onAddTimeRange(): void {
-    // condition.value.timeRange = {
-    //   startAt: '',
-    //   endAt: '',
-    // };
+    condition.value.timeRange = {
+      startAt: '',
+      endAt: '',
+    };
+  }
+
+  function onRemoveTimeRange(): void {
+    condition.value.timeRange = null;
   }
 </script>
-
+<style scoped>
+  .p-accordion .p-accordion-header {
+    height: 10px; /* Adjust the height as needed */
+    line-height: 20px; /* Adjust the line height as needed */
+  }
+</style>
 <template>
-  {{ condition }}
   <div class="row">
     <div class="col-sm-4">
       <ExposeSelector
@@ -123,9 +137,24 @@
         :disabled="!hasExposeName()" />
     </div>
     <div class="col-sm-1 d-flex">
-      <Button icon="pi pi-plus-circle" variant="text" rounded small @click="onAddTimeRange" />
+      <Button v-if="!hasTimeRange" icon="pi pi-plus-circle" variant="text" rounded small @click="onAddTimeRange" />
+      <Button v-else icon="pi pi-minus-circle" variant="text" rounded small @click="onRemoveTimeRange" />
       <Button icon="pi pi-trash" variant="text" rounded small @click="onDelete" />
     </div>
   </div>
-  <div v-if="condition.timeRange" class="row"></div>
+  <div v-if="condition.timeRange" class="row">
+    <Accordion value="0">
+      <AccordionHeader> Time Range </AccordionHeader>
+      <AccordionContent>
+        <div class="row">
+          <div class="col-sm-4">
+            <TimePicker :value="convertTimeToDate(condition.timeRange.startAt)" />
+          </div>
+          <div class="col-sm-4">
+            <TimePicker :value="convertTimeToDate(condition.timeRange.endAt)" />
+          </div>
+        </div>
+      </AccordionContent>
+    </Accordion>
+  </div>
 </template>
