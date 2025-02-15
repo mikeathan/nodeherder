@@ -25,6 +25,10 @@ const props = defineProps({
 
 const condition = ref<ExposeCondition>({} as ExposeCondition);
 
+const isExpanded = ref(false);
+function toggleExpanded(): void {
+  isExpanded.value = !isExpanded.value;
+}
 const emit = defineEmits<{
   (e: 'update', condition: AutomationCondition): void;
   (e: 'delete'): void;
@@ -101,12 +105,12 @@ function onAddTimeRange(): void {
   };
 }
 
+
 function onRemoveTimeRange(): void {
   condition.value.timeRange = null;
 }
 
 function getEndAtTime(): string {
-
   if (!condition.value.timeRange) {
     return '';
   }
@@ -127,16 +131,22 @@ function getEndAtTime(): string {
     <div class="col-sm-5">
       <ExposeDataInput :id="props.id" :name="condition.name" :value="condition.value" @updated="dataUpdated"
         :disabled="!hasExposeName()" />
-    </div>
+    </div>pi-chevron-circle-down
     <div class="col-sm-1 d-flex">
+
+      <Button :icon="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" @click="toggleExpanded"
+        class="p-0 border-0 bg-transparent" />
+
       <Button v-if="!hasTimeRange" icon="pi pi-plus-circle" variant="text" rounded small @click="onAddTimeRange" />
       <Button v-else icon="pi pi-minus-circle" variant="text" rounded small @click="onRemoveTimeRange" />
       <Button icon="pi pi-trash" variant="text" rounded small @click="onDelete" />
+
     </div>
   </div>
-  <div v-if="condition.timeRange" class="row">
+  <div v-if="isExpanded" class="row mt-2">
     <div class="col-sm-4">
-      <div class="row">
+      <label class="col-form-label">Time Range Activation:</label>
+      <div class="row mt-1">
         <div class="col-sm-6">
           <TimePicker label="Start At" :value="convertTimeToDate(condition.timeRange.startAt)" />
         </div>
