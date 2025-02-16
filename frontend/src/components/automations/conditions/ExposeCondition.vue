@@ -8,7 +8,7 @@ import ExposeDataInput from '../../controls/ExposeDataInput.vue';
 import Selection from '../../input/Selection.vue';
 import ExposeSelector from '@/components/controls/ExposeSelector.vue';
 import TimePicker from '@/components/input/TimePicker.vue';
-import { convertTimeToDate } from '@/contracts/controls';
+import { convertTimeToDate, toHourMinuteString } from '@/contracts/controls';
 
 const props = defineProps({
   item: {
@@ -95,7 +95,7 @@ function onDelete(): void {
 }
 
 const hasTimeRange = computed(() => {
-  return condition.value.timeRange != null;
+  return condition.value.timeRange != undefined;
 });
 
 function onAddTimeRange(): void {
@@ -105,20 +105,51 @@ function onAddTimeRange(): void {
   };
 }
 
-
 function onRemoveTimeRange(): void {
-  condition.value.timeRange = null;
+  condition.value.timeRange = undefined;
 }
 
-function getEndAtTime(): string {
+function getStartAtTime(): Date {
   if (!condition.value.timeRange) {
-    return '';
+    return new Date();
   }
-  return condition.value.timeRange?.endAt == '' ? '23:59' : condition.value.timeRange?.endAt;
+  return convertTimeToDate(condition.value.timeRange?.startAt);
+
 }
+function getEndAtTime(): Date {
+  if (!condition.value.timeRange) {
+    return convertTimeToDate('00:00');
+  }
+  const endAt = condition.value.timeRange?.endAt == '' ? '00:00' : condition.value.timeRange?.endAt;
+  return convertTimeToDate(endAt);
+}
+
+function updateStartAtTime(value: Date) {
+  let startAt = condition.value.timeRange?.startAt;
+  console.log("updateStartAtTime", startAt);
+  if (startAt != undefined) {
+    startAt = toHourMinuteString(value);
+    emit('update', condition.value);
+    console.log(condition.value);
+
+  }
+}
+
+function updateEndAtTime(value: Date) {
+  let endAt = condition.value.timeRange?.endAt;
+  console.log("updateEndAtTime", endAt);
+  if (endAt != undefined) {
+    endAt = toHourMinuteString(value);
+    emit('update', condition.value);
+
+    console.log(condition.value);
+  }
+}
+
 </script>
 
 <template>
+  {{ condition }}
   <div class="row">
     <div class="col-sm-4">
       <ExposeSelector :id="props.id" :value="condition.name" @updated="exposeSelected" :filter="allExposeFilter()"
@@ -131,14 +162,10 @@ function getEndAtTime(): string {
     <div class="col-sm-5">
       <ExposeDataInput :id="props.id" :name="condition.name" :value="condition.value" @updated="dataUpdated"
         :disabled="!hasExposeName()" />
-    </div>pi-chevron-circle-down
+    </div>
     <div class="col-sm-1 d-flex">
-
-      <Button :icon="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" @click="toggleExpanded"
-        class="p-0 border-0 bg-transparent" />
-
-      <Button v-if="!hasTimeRange" icon="pi pi-plus-circle" variant="text" rounded small @click="onAddTimeRange" />
-      <Button v-else icon="pi pi-minus-circle" variant="text" rounded small @click="onRemoveTimeRange" />
+      <Button :icon="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" variant="text" rounded small
+        @click="toggleExpanded" />
       <Button icon="pi pi-trash" variant="text" rounded small @click="onDelete" />
 
     </div>
@@ -147,11 +174,17 @@ function getEndAtTime(): string {
     <div class="col-sm-4">
       <label class="col-form-label">Time Range Activation:</label>
       <div class="row mt-1">
-        <div class="col-sm-6">
-          <TimePicker label="Start At" :value="convertTimeToDate(condition.timeRange.startAt)" />
+        <div class="col-sm-4">
+          <TimePicker label="Start At" :value="getStartAtTime()" :disabled="!hasTimeRange"
+            @updated="e => updateStartAtTime(e)" />
         </div>
-        <div class="col-sm-6">
-          <TimePicker label="End At" :value="convertTimeToDate(getEndAtTime())" />
+        <div class="col-sm-4">
+          <TimePicker label="End At" :value="getEndAtTime()" :disabled="!hasTimeRange"
+            @updated="e => updateEndAtTime(e)" />
+        </div>
+        <div class="col-sm-4">
+          <Button v-if="!hasTimeRange" icon="pi pi-plus-circle" variant="text" rounded small @click="onAddTimeRange" />
+          <Button v-else icon="pi pi-minus-circle" variant="text" rounded small @click="onRemoveTimeRange" />
         </div>
       </div>
     </div>

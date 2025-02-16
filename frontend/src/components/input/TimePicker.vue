@@ -12,6 +12,11 @@ const props = defineProps({
     default: '',
     required: false,
   },
+  disabled:{
+    type: Boolean,
+    default: false,
+    required: false,
+  }
 });
 
 const selectedTime = ref<Date>(props.value);
@@ -42,7 +47,7 @@ function handleEnterKey() {
   <IftaLabel>
 
     <DatePicker inputId="date" id="datepicker-timeonly" v-model="selectedTime" showIcon fluid iconDisplay="input"
-      timeOnly @blur="handleEnterKey">
+      timeOnly @blur="handleEnterKey" :disabled="props.disabled">
       <template #inputicon="slotProps">
         <i class="pi pi-clock" @click="slotProps.clickCallback" />
       </template>

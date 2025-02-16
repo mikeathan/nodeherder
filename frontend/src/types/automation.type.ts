@@ -67,7 +67,7 @@ export type ExposeCondition = {
   name: string;
   value: Nullable<any>;
   equality: string;
-  timeRange: TimeRange | null;
+  timeRange?: TimeRange;
 };
 
 export type AutomationCondition = ExposeCondition;

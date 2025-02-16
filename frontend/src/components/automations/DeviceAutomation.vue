@@ -40,7 +40,6 @@ const buttonPanelItems = computed(() => {
 watch(
   () => props.id,
   () => {
-    console.log('automation id changed', props.id);
     var sourceAutomation = store.getters['automations/find'](props.id) as Device;
     if (sourceAutomation != undefined) {
       // make a deep copy to make it not reactive
