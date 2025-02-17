@@ -128,6 +128,8 @@ function getConditionsDescription(trigger: AutomationTrigger): string {
   if (conditions.length == 0) {
     return '';
   }
+  TODO
+  include timer range or maybe add icon
   var condition = conditions[0];
   var description = condition.name + ' ' + condition.equality + ' ' + condition.value;
   if (conditions.length > 1) {
