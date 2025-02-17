@@ -77,7 +77,6 @@ const emit = defineEmits<{
 
 function save() {
   trigger.value.conditions = conditions.value;
-
   trigger.value.actions = actions.value;
 
   emit('save', trigger.value);
@@ -97,9 +96,8 @@ function removeTriggerCondition(condition: AutomationCondition) {
   conditions.value = conditions.value.filter((c: AutomationCondition) => c != condition);
 }
 
-function updateCondition(condition: AutomationCondition, newCondition: AutomationCondition) {
-  condition.value = newCondition;
-
+function updateCondition(idx: number, newCondition: AutomationCondition) {
+  conditions.value[idx] = newCondition;
 }
 
 const exposesList = computed(() => {
@@ -178,7 +176,7 @@ function createActionOpenPanelEvent(action: AutomationAction, editMode: boolean)
         <Column header="Condition">
           <template #body="slotProps">
             <ConditionEditor :item="slotProps.data" :id="props.id"
-              @update="(item: AutomationCondition) => updateCondition(slotProps.data, item)"
+              @update="(item: AutomationCondition) => updateCondition(slotProps.index, item)"
               @delete="removeTriggerCondition(slotProps.data)" />
           </template>
         </Column>

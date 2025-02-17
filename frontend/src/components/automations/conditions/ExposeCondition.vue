@@ -25,19 +25,24 @@ const props = defineProps({
 
 const condition = ref<ExposeCondition>({} as ExposeCondition);
 
+const hasTimeRange = computed(() => {
+  return condition.value.timeRange != undefined;
+});
+
 const isExpanded = ref(false);
 function toggleExpanded(): void {
   isExpanded.value = !isExpanded.value;
 }
 const emit = defineEmits<{
-  (e: 'update', condition: AutomationCondition): void;
+  (e: 'update', condition: ExposeCondition): void;
   (e: 'delete'): void;
 }>();
 
 watch(
   () => props.item,
   () => {
-    condition.value = props.item;
+    condition.value = JSON.parse(JSON.stringify(props.item)) as ExposeCondition;
+    isExpanded.value = condition.value.timeRange != undefined; // on initial load, expand if timerange set 
   },
   { immediate: true }
 );
@@ -94,19 +99,19 @@ function onDelete(): void {
   emit('delete');
 }
 
-const hasTimeRange = computed(() => {
-  return condition.value.timeRange != undefined;
-});
 
 function onAddTimeRange(): void {
   condition.value.timeRange = {
-    startAt: '',
-    endAt: '',
+    startAt: toHourMinuteString(new Date()),
+    endAt: toHourMinuteString(convertTimeToDate('00:00')),
   };
+
+  emit('update', condition.value);
 }
 
 function onRemoveTimeRange(): void {
   condition.value.timeRange = undefined;
+  emit('update', condition.value);
 }
 
 function getStartAtTime(): Date {
@@ -125,27 +130,14 @@ function getEndAtTime(): Date {
 }
 
 function updateStartAtTime(value: Date) {
-  let startAt = condition.value.timeRange?.startAt;
-  console.log("updateStartAtTime", startAt);
-  if (startAt != undefined) {
-    startAt = toHourMinuteString(value);
-    emit('update', condition.value);
-    console.log(condition.value);
-
-  }
+  condition.value.timeRange!.startAt = toHourMinuteString(value);
+  emit('update', condition.value);
 }
 
 function updateEndAtTime(value: Date) {
-  let endAt = condition.value.timeRange?.endAt;
-  console.log("updateEndAtTime", endAt);
-  if (endAt != undefined) {
-    endAt = toHourMinuteString(value);
-    emit('update', condition.value);
-
-    console.log(condition.value);
-  }
+  condition.value.timeRange!.endAt = toHourMinuteString(value);
+  emit('update', condition.value);
 }
-
 </script>
 
 <template>
@@ -167,7 +159,6 @@ function updateEndAtTime(value: Date) {
       <Button :icon="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" variant="text" rounded small
         @click="toggleExpanded" />
       <Button icon="pi pi-trash" variant="text" rounded small @click="onDelete" />
-
     </div>
   </div>
   <div v-if="isExpanded" class="row mt-2">
