@@ -141,7 +141,6 @@ function updateEndAtTime(value: Date) {
 </script>
 
 <template>
-  {{ condition }}
   <div class="row">
     <div class="col-sm-4">
       <ExposeSelector :id="props.id" :value="condition.name" @updated="exposeSelected" :filter="allExposeFilter()"

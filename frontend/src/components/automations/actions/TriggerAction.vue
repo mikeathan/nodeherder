@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch, PropType, reactive } from 'vue';
+import { computed, ref, watch, PropType } from 'vue';
 import { AutomationTriggerAction, AutomationTriggerActionExpose, TriggerActionOperation } from '@/types/automation.type.js';
-import { toMillisecs, toMinutes } from '@/modules/formatters/time.formatter';
 import ButtonPanel from '@/components/controls/ButtonPanel.vue';
 import {
   createSaveDeleteButtonItems,

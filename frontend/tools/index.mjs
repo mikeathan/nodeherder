@@ -89,7 +89,8 @@ var automationMap = new Map([
               equality: '=',
             },
             {
-              name: 'illuminance_lux',
+              type: 'expose',
+              name: 'illuminance',
               value: 30,
               equality: '<=',
             },

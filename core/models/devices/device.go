@@ -27,6 +27,7 @@ var units = map[string]string{
 	"voltage":         "mV",
 	"linkquality":     "LQI",
 	"illuminance_lux": "lux",
+	"illuminance":     "lux",
 	"battpercentage":  "%",
 	"co":              "ppm",
 }

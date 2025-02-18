@@ -208,6 +208,7 @@ const sensorUnits: KeyValuePair<string> = {
   voltage: 'mV',
   linkquality: 'LQI',
   illuminance_lux: 'lux',
+  illuminance: 'lux',
 };
 
 export function getSensorUnit(sensor: string): string {

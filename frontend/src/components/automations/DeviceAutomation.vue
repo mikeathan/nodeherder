@@ -13,6 +13,8 @@ import { createEditAutomationButtonItems } from '../../configs/automation/trigge
 import { emitCloseLastPanel } from '@/mixins/useAutomationsEventBus';
 import { emitOpenSchedulerPanelEvent, emitOpenTriggerPanelEvent } from '@/contracts/panel-events';
 import { DataTableRowClickEvent } from 'primevue';
+import { formatTriggerConditions } from '@/transformers/automation/trigger-transformers';
+
 
 const emit = defineEmits(['cancel']);
 
@@ -128,8 +130,7 @@ function getConditionsDescription(trigger: AutomationTrigger): string {
   if (conditions.length == 0) {
     return '';
   }
-  TODO
-  include timer range or maybe add icon
+
   var condition = conditions[0];
   var description = condition.name + ' ' + condition.equality + ' ' + condition.value;
   if (conditions.length > 1) {
@@ -190,7 +191,8 @@ function getActionDescription(trigger: AutomationTrigger): string {
       </Column>
       <Column field="conditions" header="Conditions">
         <template #body="slotProps">
-          {{ getConditionsDescription(slotProps.data) }}
+
+          <span v-html="formatTriggerConditions(slotProps.data)"></span>
         </template>
       </Column>
       <Column class="col-sm-1">
