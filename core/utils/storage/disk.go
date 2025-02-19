@@ -51,8 +51,9 @@ func (d *JsonDiskStorage[T]) Initialize() ([]*T, error) {
 
 		item, err := d.loadFile(path)
 		if err != nil {
+			// we dont want to return error as it will stop loading next item
 			utils.LogErrorf("Error loading item %s %s", path, err.Error())
-			return err
+			return nil
 		}
 
 		name := filenameWithoutExtension(path)

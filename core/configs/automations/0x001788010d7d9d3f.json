@@ -165,7 +165,7 @@
         {
           "id": "0x00158d0005a23c38",
           "property": "color_temp",
-          "type": "PresetCyclingAction"
+          "type": "preset"
         }
       ]
     }

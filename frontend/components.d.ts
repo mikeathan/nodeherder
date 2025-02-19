@@ -7,10 +7,6 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    Accordion: typeof import('primevue/accordion')['default']
-    AccordionContent: typeof import('primevue/accordioncontent')['default']
-    AccordionHeader: typeof import('primevue/accordionheader')['default']
-    AccordionTab: typeof import('primevue/accordiontab')['default']
     ActionEditor: typeof import('./src/components/automations/actions/ActionEditor.vue')['default']
     ActionViewer: typeof import('./src/components/automations/actions/ActionViewer.vue')['default']
     AreaChart: typeof import('./src/components/chart/types/AreaChart.vue')['default']
@@ -82,7 +78,6 @@ declare module 'vue' {
     TabPanel: typeof import('primevue/tabpanel')['default']
     TabPanels: typeof import('primevue/tabpanels')['default']
     Tabs: typeof import('primevue/tabs')['default']
-    TimeCondition: typeof import('./src/components/automations/conditions/TimeCondition.vue')['default']
     TimelineChart: typeof import('./src/components/chart/types/TimelineChart.vue')['default']
     TimePicker: typeof import('./src/components/input/TimePicker.vue')['default']
     TimeRangeChart: typeof import('./src/components/chart/TimeRangeChart.vue')['default']
@@ -92,7 +87,6 @@ declare module 'vue' {
     ToggleSwitch: typeof import('primevue/toggleswitch')['default']
     Trigger: typeof import('./src/components/automations/Trigger.vue')['default']
     TriggerAction: typeof import('./src/components/automations/actions/TriggerAction.vue')['default']
-    TriggerCondition: typeof import('./src/components/automations/TriggerCondition.vue')['default']
     Viewer: typeof import('./src/components/automations/Viewer.vue')['default']
   }
   export interface ComponentCustomProperties {
