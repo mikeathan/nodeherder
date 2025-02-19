@@ -37,7 +37,7 @@ type MqttTriggerActionExpose struct {
 type MqttTriggerAction struct {
 	MqttBaseAction
 	Exposes []*MqttTriggerActionExpose `json:"exposes"`
-	Delay   *utils.TimeInterval        `json:"delay"`
+	Delay   *utils.TimeInterval        `json:"delay,omitempty"`
 }
 
 func NewTriggerAction() *MqttTriggerAction {
@@ -80,7 +80,11 @@ func (a *MqttTriggerAction) Configure(registrar services.DeviceRegistrar, client
 }
 
 func (a *MqttTriggerAction) Execute(ctx *DeviceContext) error {
-	if a.Delay.Value == 0 {
+
+	TODO: check if delay is nill
+	also whne confguring action if delay is not null and is zero rejecta
+	
+	if a.Delay != nil  { // a.Delay.Value == 0
 		return a.executeBase(ctx)
 	}
 

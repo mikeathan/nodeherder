@@ -40,7 +40,7 @@ watch(
   () => props.action,
   () => {
     action.value = JSON.parse(JSON.stringify(props.action)) as AutomationTriggerAction;
-    if (props.action.delay.value != 0) {
+    if (props.action.delay) {
       operations.value.push('delay');
     }
   },
@@ -84,7 +84,7 @@ function deviceSelected(id: string, friendlyName: string) {
   // reset
   action.value.exposes = [];
   operations.value = [];
-  action.value.delay = createTimeIntervalFromSeconds(0);
+  action.value.delay = undefined;
 }
 
 function dataInputChange(expose: AutomationTriggerActionExpose, value: string) {
@@ -92,7 +92,7 @@ function dataInputChange(expose: AutomationTriggerActionExpose, value: string) {
 }
 
 function delayInputChange(value: string) {
-  action.value.delay.value = parseInt(value);
+  action.value.delay!.value = parseInt(value);
 }
 
 function exposeSelected(expose: AutomationTriggerActionExpose, name: string) {
@@ -154,7 +154,7 @@ function operationsAllowed() {
   </div>
 
   <div v-for="operation in operations">
-    <div style="display: flex; align-items: center; gap: 0.5rem">
+    <div v-if="action[operation]" style="display: flex; align-items: center; gap: 0.5rem">
       <InputBox :label="`Delay in ${action[operation].unit}`" :is-numeric="true" :disabled="action.exposes.length == 0"
         @updated="delayInputChange" :value="action[operation].value" />
 

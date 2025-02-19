@@ -84,7 +84,7 @@ export type AutomationTriggerActionExpose = {
 
 export type AutomationTriggerAction = AutomationBaseAction & {
   exposes: Array<AutomationTriggerActionExpose>;
-  delay: TimeInterval;
+  delay?: TimeInterval;
 };
 
 export type AutomationStepAction = AutomationBaseAction & {
