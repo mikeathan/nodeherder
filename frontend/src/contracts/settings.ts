@@ -1,4 +1,5 @@
-import { AppConfig, DeviceSettings, DeviceSettingsMap, TimeInterval, TimeUnit } from '@/types/settings.type';
+import { AppConfig, DeviceSettings, DeviceSettingsMap } from '@/types/settings.type';
+import { TimeInterval, TimeUnit } from '@/types/types.type';
 
 export function createDeviceSettings(
   id: string,
@@ -20,6 +21,9 @@ export function createTimeinterval(value: number, unit: TimeUnit): TimeInterval 
 
 export function createTimeIntervalFromSeconds(seconds: number): TimeInterval {
   return { value: seconds, unit: 'seconds' };
+}
+export function createTimeIntervalFromMinutes(minutes: number): TimeInterval {
+  return { value: minutes, unit: 'minutes' };
 }
 
 export function createAppconfig(): AppConfig {

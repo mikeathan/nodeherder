@@ -14,7 +14,7 @@ function formatTriggerActionExposes(exposes: AutomationTriggerActionExpose[]): s
 }
 
 function formatTriggerActionOperations(triggerAction: AutomationTriggerAction): string {
-  if (!triggerAction.delay.value) {
+  if (!triggerAction.delay) {
     return '';
   }
   return `Delay: ${triggerAction.delay.value} ${triggerAction.delay.unit}`;

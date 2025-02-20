@@ -104,10 +104,6 @@ var automationMap = new Map([
                   data: 'ON',
                 },
               ],
-              delay: {
-                value: 0,
-                unit: 'minutes',
-              },
               type: 'trigger',
             },
           ],
