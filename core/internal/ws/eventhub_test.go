@@ -146,11 +146,13 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 					}
 				}
 
-				if sensorTriggerAction.Delay.Unit != inputAction.Delay.Unit {
-					t.Fatalf("unexpected action.Delay.Unit value")
-				}
-				if sensorTriggerAction.Delay.Value != inputAction.Delay.Value {
-					t.Fatalf("unexpected action.Delay.Value value")
+				if inputAction.Delay != nil {
+					if sensorTriggerAction.Delay.Unit != inputAction.Delay.Unit {
+						t.Fatalf("unexpected action.Delay.Unit value")
+					}
+					if sensorTriggerAction.Delay.Value != inputAction.Delay.Value {
+						t.Fatalf("unexpected action.Delay.Value value")
+					}
 				}
 			}
 
@@ -1325,7 +1327,7 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 		},
 	}
 
-	turnOnAction.Delay = utils.IntervalFromMilliseconds(0)
+	turnOnAction.Delay = nil
 	turnOnAction.Client = mqtt
 
 	// Turn on sensor trigger
@@ -1352,7 +1354,7 @@ func createTriggerTurnOnLightWithPresenceOn(mqtt mqtt.MqttClient) *automations.T
 			Data: true,
 		},
 	}
-	turnOnAction.Delay = utils.IntervalFromMilliseconds(0)
+	turnOnAction.Delay = nil
 	turnOnAction.Client = mqtt
 
 	// Turn on sensor trigger

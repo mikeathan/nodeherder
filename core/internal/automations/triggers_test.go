@@ -387,7 +387,7 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
 
 	// create turn off trigger
-	turnOffTrigger := createTriggerDelayTurnOffLight(id, registrar, mqtt, utils.IntervalFromMilliseconds(0))
+	turnOffTrigger := createTriggerDelayTurnOffLight(id, registrar, mqtt, nil)
 
 	// initialize turn off condition
 	offTimeRange := automations.NewTimeRange("09:00", "13:25")
@@ -531,7 +531,7 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(id string, registrar services.
 			Data: true,
 		},
 	}
-	turnOnAction.Delay = utils.IntervalFromMilliseconds(0)
+	turnOnAction.Delay = nil
 	turnOnAction.Configure(registrar, mqtt)
 
 	// Turn on sensor trigger
@@ -570,7 +570,7 @@ func createTriggerTurnOnLight(id string, registrar services.DeviceRegistrar, mqt
 			Data: true,
 		},
 	}
-	turnOnAction.Delay = utils.IntervalFromMilliseconds(0)
+	turnOnAction.Delay = nil
 	turnOnAction.Configure(registrar, mqtt)
 
 	// Turn on sensor trigger

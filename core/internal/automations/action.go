@@ -43,7 +43,7 @@ type MqttTriggerAction struct {
 func NewTriggerAction() *MqttTriggerAction {
 	return &MqttTriggerAction{
 		Exposes: make([]*MqttTriggerActionExpose, 0),
-		Delay:   utils.IntervalFromMilliseconds(0),
+		Delay:   nil,
 		MqttBaseAction: MqttBaseAction{
 			Type: TriggerAction,
 		},
@@ -63,6 +63,10 @@ func (a *MqttTriggerAction) Configure(registrar services.DeviceRegistrar, client
 		property.Data = sanitizedData
 	}
 
+	if a.Delay != nil && a.Delay.Value == 0 {
+		return fmt.Errorf("delay must be greater than zero")
+	}
+
 	// NOTE: to refactor and remove from model. add to some handler to perfom the job
 	a.operation = CreateTriggerOperation(a)
 
@@ -80,11 +84,7 @@ func (a *MqttTriggerAction) Configure(registrar services.DeviceRegistrar, client
 }
 
 func (a *MqttTriggerAction) Execute(ctx *DeviceContext) error {
-
-	TODO: check if delay is nill
-	also whne confguring action if delay is not null and is zero rejecta
-	
-	if a.Delay != nil  { // a.Delay.Value == 0
+	if a.Delay == nil {
 		return a.executeBase(ctx)
 	}
 
