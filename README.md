@@ -58,15 +58,11 @@ TODO
 - metrics repo - keep for x days - DONE
 
 frontend - tabs - load tab on click -(leave for now)
-frontend - add app settings in main page - Done
-frontend - add navigation for pages - use vuetify and redesign layout
 frontend - handle timerange enum colours
-frontend - Send multiple messages in one mqtt request for same device
-{
-"state": "ON", // Or "OFF", "TOGGLE"
-"brightness": 255, // Value between 0 and 255
-"color": {"x": 0.123, "y": 0.123} // Color in XY
-}
+frontend - add app settings in main page - DONE
+frontend - add navigation for pages - use vuetify and redesign layout - DONE
+frontend - Send multiple messages in one mqtt request for same device - DONE
+
 frontend - some minified view for each device for the main page
 frontend - update icons match homeassistant
 
@@ -88,6 +84,7 @@ Backend TODO
   api limiter
   cache with expiration
 - mqtt: if cant connect after timeout, exit
+- use device type to identify if its diagnostic, feature or expose
 
 METRICS backend TODO
 
@@ -96,16 +93,3 @@ METRICS backend TODO
 - index entries = bolt.Bucket.CreateIndex
 
 Check for disalbed items in bridge - see if we can add them if online
-
-TODO:
-same device can have multiple properties with data for same paylod
-Action
-
-- property = melody
-  data = 1
-- property = volume
-  data = high
-- property = duration
-  data = 1120
-- property = alarm
-  data = true
