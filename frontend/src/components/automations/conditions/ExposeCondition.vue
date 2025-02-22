@@ -23,12 +23,14 @@ const props = defineProps({
   },
 });
 
-const condition = ref<ExposeCondition>({} as ExposeCondition);
-
+const defaultEndTime = '23:59'
 const hasTimeRange = computed(() => {
   return condition.value.timeRange != undefined;
 });
 
+const condition = ref<ExposeCondition>({} as ExposeCondition);
+const startTimeIsEnabled = ref(hasTimeRange.value);
+const endTimeIsEnabled = ref(hasTimeRange.value);
 const isExpanded = ref(false);
 function toggleExpanded(): void {
   isExpanded.value = !isExpanded.value;
@@ -102,8 +104,10 @@ function onDelete(): void {
 function onAddTimeRange(): void {
   condition.value.timeRange = {
     startAt: toHourMinuteString(new Date()),
-    endAt: toHourMinuteString(convertTimeToDate('00:00')),
+    endAt: toHourMinuteString(convertTimeToDate(defaultEndTime)),
   };
+
+  startTimeIsEnabled.value = true;
 
   emit('update', condition.value);
 }
@@ -122,9 +126,9 @@ function getStartAtTime(): Date {
 
 function getEndAtTime(): Date {
   if (!condition.value.timeRange) {
-    return convertTimeToDate('00:00');
+    return convertTimeToDate(defaultEndTime);
   }
-  const endAt = condition.value.timeRange?.endAt == '' ? '00:00' : condition.value.timeRange?.endAt;
+  const endAt = condition.value.timeRange?.endAt == '' ? defaultEndTime : condition.value.timeRange?.endAt;
   return convertTimeToDate(endAt);
 }
 
@@ -141,17 +145,21 @@ function validateStartTime(startAtTime: Date): string | null {
   const endMinutes = endAtTime.getMinutes();
 
   if (startHour > endHour) {
+    endTimeIsEnabled.value = false;
     return 'Start time must be before end time';
   }
 
   if (startHour === endHour) {
     if (startMinutes >= endMinutes) {
+      endTimeIsEnabled.value = false;
       return 'Start time must be before end time';
     }
   }
 
+  endTimeIsEnabled.value = true;
   return null;
 }
+
 
 function validateEndTime(endAtTime: Date): string | null {
   const startAtTime = getStartAtTime();
@@ -161,15 +169,19 @@ function validateEndTime(endAtTime: Date): string | null {
   const endMinutes = endAtTime.getMinutes();
 
   if (endHour < startHour) {
+    startTimeIsEnabled.value = false;
     return 'End time must be after start time';
   }
 
   if (endHour === startHour) {
     if (endMinutes <= startMinutes) {
+      startTimeIsEnabled.value = false;
+
       return 'End time must be after start time';
     }
   }
 
+  startTimeIsEnabled.value = true;
   return null;
 }
 
@@ -204,11 +216,11 @@ function updateEndAtTime(endAtTime: Date) {
       <label class="col-form-label">Time Range Activation:</label>
       <div class="row mt-1">
         <div class="col-sm-4">
-          <TimePicker label="Start At" :value="getStartAtTime()" :disabled="!hasTimeRange"
+          <TimePicker label="Start At" :value="getStartAtTime()" :disabled="!startTimeIsEnabled"
             @updated="(e) => updateStartAtTime(e)" :validation="validateStartTime" />
         </div>
         <div class="col-sm-4">
-          <TimePicker label="End At" :value="getEndAtTime()" :disabled="!hasTimeRange"
+          <TimePicker label="End At" :value="getEndAtTime()" :disabled="!endTimeIsEnabled"
             @updated="(e) => updateEndAtTime(e)" :validation="validateEndTime" />
         </div>
         <div class="col-sm-4">
