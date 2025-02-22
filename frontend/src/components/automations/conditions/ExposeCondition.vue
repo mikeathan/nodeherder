@@ -29,8 +29,8 @@ const hasTimeRange = computed(() => {
 });
 
 const condition = ref<ExposeCondition>({} as ExposeCondition);
-const startTimeIsEnabled = ref(hasTimeRange.value);
-const endTimeIsEnabled = ref(hasTimeRange.value);
+const startTimeIsEnabled = ref(false);
+const endTimeIsEnabled = ref(false);
 const isExpanded = ref(false);
 function toggleExpanded(): void {
   isExpanded.value = !isExpanded.value;
@@ -45,6 +45,8 @@ watch(
   () => {
     condition.value = JSON.parse(JSON.stringify(props.item)) as ExposeCondition;
     isExpanded.value = condition.value.timeRange != undefined; // on initial load, expand if timerange set
+    startTimeIsEnabled.value = condition.value.timeRange != undefined;
+    endTimeIsEnabled.value = condition.value.timeRange != undefined;
   },
   { immediate: true }
 );
