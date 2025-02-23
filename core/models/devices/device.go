@@ -68,10 +68,42 @@ var exposesWhitelist = map[string]int{
 	"illuminance":         34,
 }
 
-// var exposesCategoriesBlacklist = map[string]int{
-// 	"diagnostics": 1,
-// 	"test":        2,
-// }
+type ExposeType = string
+
+const (
+	NumericExposeType ExposeType = "numeric"
+	EnumExposeType    ExposeType = "enum"
+	BinaryExposeType  ExposeType = "binary"
+)
+
+type FeatureAccessMode = int
+
+const (
+	UnknownAccessMode FeatureAccessMode = 0b000
+	StateAccessMode   FeatureAccessMode = 0b001
+	WriteAccessMode   FeatureAccessMode = 0b010
+	ReadAccessMode    FeatureAccessMode = 0b100
+)
+
+func ToFeatureAccessMode(access int) (FeatureAccessMode, bool) {
+	convertedAccess := FeatureAccessMode(access)
+	return convertedAccess, (convertedAccess&StateAccessMode | ReadAccessMode | WriteAccessMode) != 0
+}
+
+func isUknownAccessMode(entity *Entity) bool {
+	return entity.AccessMode&UnknownAccessMode != 0
+}
+
+func isWriteableAccessMode(entity *Entity) bool {
+	return entity.AccessMode&WriteAccessMode != 0
+
+}
+func isReadAccessMode(entity *Entity) bool {
+	return entity.AccessMode&ReadAccessMode != 0
+}
+func isStateAccessMode(entity *Entity) bool {
+	return entity.AccessMode&StateAccessMode != 0
+}
 
 var customExposeFeaturesPropertyWhitelist = map[string]int{
 	"silence":  1,
@@ -143,14 +175,15 @@ type EntityPreset struct {
 }
 
 type Entity struct {
-	Name        string         `json:"name"`
-	Description string         `json:"description,omitempty"`
-	Unit        string         `json:"unit,omitempty"`
-	Data        any            `json:"data"`
-	Type        string         `json:"type,omitempty"`
-	Properties  map[string]any `json:"properties,omitempty"`
-	Attributes  map[string]any `json:"attributes,omitempty"`
-	Presets     map[string]any `json:"presets,omitempty"`
+	Name        string            `json:"name"`
+	Description string            `json:"description,omitempty"`
+	Unit        string            `json:"unit,omitempty"`
+	Data        any               `json:"data"`
+	Type        ExposeType        `json:"type"`
+	AccessMode  FeatureAccessMode `json:"access_mode"`
+	Properties  map[string]any    `json:"properties,omitempty"`
+	Attributes  map[string]any    `json:"attributes,omitempty"`
+	Presets     map[string]any    `json:"presets,omitempty"`
 }
 
 func newEntity() *Entity {
@@ -167,19 +200,26 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 		return nil, fmt.Errorf("expose property %v is blacklisted", expose.Property)
 	}
 
+	accessMode, ok := ToFeatureAccessMode(expose.Access)
+	if !ok {
+		return nil, fmt.Errorf("invalid device feature access mode %v", expose.Access)
+	}
+
 	newEntity := newEntity()
+	newEntity.AccessMode = accessMode
 	newEntity.Name = expose.Property
 	newEntity.Description = expose.Description
 	newEntity.Unit = expose.Unit
 	newEntity.Data = data
 	newEntity.Type = expose.Type
+
 	// NOTE:
 	// exposes are not used to publish events
 	// because of that all expose data are published as device attributes
 
 	// TODO: needs refactoring
 	switch expose.Type {
-	case "numeric":
+	case NumericExposeType:
 		if expose.ValueMax != nil {
 			newEntity.Attributes["max"] = expose.ValueMax
 		}
@@ -187,7 +227,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 			newEntity.Attributes["min"] = expose.ValueMin
 		}
 
-	case "binary":
+	case BinaryExposeType:
 		if expose.ValueOn != nil {
 			newEntity.Attributes["on"] = expose.ValueOn
 		}
@@ -195,7 +235,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 			newEntity.Attributes["off"] = expose.ValueOff
 		}
 
-	case "enum":
+	case EnumExposeType:
 		for _, item := range expose.Values {
 			newEntity.Attributes[item] = item
 		}
@@ -219,7 +259,12 @@ func CreateCustomFeatureFromExpose(expose BridgeExpose, data any) (*Entity, erro
 		return nil, fmt.Errorf("custom expose property %v is blacklisted", expose.Property)
 	}
 
+	accessMode, ok := ToFeatureAccessMode(expose.Access)
+	if !ok {
+		return nil, fmt.Errorf("invalid device feature access mode %v", expose.Access)
+	}
 	newEntity := newEntity()
+	newEntity.AccessMode = accessMode
 	newEntity.Data = data
 	newEntity.Name = expose.Name
 	newEntity.Unit = expose.Unit
@@ -231,16 +276,16 @@ func CreateCustomFeatureFromExpose(expose BridgeExpose, data any) (*Entity, erro
 	// features are used to publish events
 	// because of that all expose data are published as device properties
 	switch expose.Type {
-	case "numeric":
+	case NumericExposeType:
 		newEntity.Attributes["max"] = expose.ValueMax
 		newEntity.Attributes["min"] = expose.ValueMin
 		newEntity.Properties[expose.Name] = 0
 
-	case "binary":
+	case BinaryExposeType:
 		newEntity.Properties["on"] = expose.ValueOn
 		newEntity.Properties["off"] = expose.ValueOff
 
-	case "enum":
+	case EnumExposeType:
 		for index, item := range expose.Values {
 			newEntity.Properties[fmt.Sprintf("%d", index)] = item
 		}
@@ -249,14 +294,23 @@ func CreateCustomFeatureFromExpose(expose BridgeExpose, data any) (*Entity, erro
 
 }
 
+todo
+// create a single entity constructor driven by the AccessMode 
+
 func CreateEntityFromFeature(feature BridgeInfoFeature, data any) (*Entity, error) {
 
 	if _, ok := exposesWhitelist[feature.Property]; !ok {
 		return nil, fmt.Errorf("feature property %v is blacklisted", feature.Property)
 	}
 
+	accessMode, ok := ToFeatureAccessMode(feature.Access)
+	if !ok {
+		return nil, fmt.Errorf("invalid device feature access mode %v", feature.Access)
+	}
+
 	newEntity := newEntity()
 	newEntity.Data = data
+	newEntity.AccessMode = accessMode
 	newEntity.Name = feature.Name
 	newEntity.Unit = feature.Unit
 	newEntity.Description = feature.Description
@@ -272,17 +326,17 @@ func CreateEntityFromFeature(feature BridgeInfoFeature, data any) (*Entity, erro
 	}
 
 	switch feature.Type {
-	case "numeric":
+	case NumericExposeType:
 		newEntity.Attributes["max"] = feature.ValueMax
 		newEntity.Attributes["min"] = feature.ValueMin
 		newEntity.Properties[feature.Name] = 0
 
-	case "binary":
+	case BinaryExposeType:
 		newEntity.Properties["on"] = feature.ValueOn
 		newEntity.Properties["off"] = feature.ValueOff
 		newEntity.Properties["toggle"] = feature.ValueToggle
 
-	case "enum":
+	case EnumExposeType:
 		for index, item := range feature.Values {
 			newEntity.Properties[fmt.Sprintf("%d", index)] = item
 		}
@@ -317,10 +371,11 @@ func createExposures(data map[string]interface{}) map[string]*Entity {
 		}
 
 		newEntity := newEntity()
+		newEntity.AccessMode = UnknownAccessMode
 		newEntity.Name = key
 		newEntity.Data = value
 		newEntity.Unit = units[key]
-		newEntity.Type = "numeric" // TODO: make this dynamic
+		newEntity.Type = NumericExposeType // TODO: make this dynamic
 		entities[key] = newEntity
 	}
 	return entities

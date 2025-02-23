@@ -105,6 +105,12 @@ func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo
 			d = devices.NewDevice(bridgeInfo.IeeeAddress)
 			d.ConnectionType = "mqtt"
 
+			TODO
+			// load exposes if any
+			// load features if any
+			// both using a single constructor function
+			// then categorise to correct type expose or feature (possibly rename) using AccessMode
+
 			// load exposes
 			for _, expose := range bridgeInfo.Definition.Exposes {
 				entity, err := devices.CreateEntityFromExpose(expose, nil)
