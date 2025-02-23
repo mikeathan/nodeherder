@@ -190,6 +190,45 @@ func newEntity() *Entity {
 	return &Entity{Attributes: make(map[string]any), Properties: map[string]any{}}
 }
 
+func CreateEntityFromExposeTEST(expose BridgeExpose, data any) (*Entity, error) {
+
+	if expose.Property == "" {
+		return nil, fmt.Errorf("no expose data")
+	}
+
+	// if _, ok := exposesWhitelist[expose.Property]; !ok {
+	// 	return nil, fmt.Errorf("expose property %v is blacklisted", expose.Property)
+	// }
+
+	accessMode, ok := ToFeatureAccessMode(expose.Access)
+	if !ok {
+		return nil, fmt.Errorf("invalid device feature access mode %v", expose.Access)
+	}
+
+	newEntity := newEntity()
+	newEntity.AccessMode = accessMode
+	newEntity.Name = expose.Property
+	newEntity.Description = expose.Description
+	newEntity.Unit = expose.Unit
+	newEntity.Data = data
+	newEntity.Type = expose.Type
+
+	
+	// examples to handle !!!!!!
+	// also we have state accesstype which could be for controlling the device, confirm !!!!
+
+	// illumination (read)
+	
+	// brightness (write)
+	// min/max properties renamed from attributes
+
+	// state (read)
+	// on/off properties renamed from attributes
+
+	// state_on (write)
+	// on/off/toggle properties renamed from attributes
+
+}
 func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 
 	if expose.Property == "" {
@@ -293,9 +332,6 @@ func CreateCustomFeatureFromExpose(expose BridgeExpose, data any) (*Entity, erro
 	return newEntity, nil
 
 }
-
-todo
-// create a single entity constructor driven by the AccessMode 
 
 func CreateEntityFromFeature(feature BridgeInfoFeature, data any) (*Entity, error) {
 

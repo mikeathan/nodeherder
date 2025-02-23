@@ -105,7 +105,7 @@ func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo
 			d = devices.NewDevice(bridgeInfo.IeeeAddress)
 			d.ConnectionType = "mqtt"
 
-			TODO
+			
 			// load exposes if any
 			// load features if any
 			// both using a single constructor function
