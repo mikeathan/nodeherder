@@ -6,40 +6,46 @@ import (
 	"fmt"
 )
 
-type BridgeInfoFeature struct {
-	Access      int    `json:"access"`
-	Description string `json:"description"`
-	Name        string `json:"name"`
-	Property    string `json:"property"`
-	Type        string `json:"type"`
-	ValueOff    any    `json:"value_off,omitempty"`
-	ValueOn     any    `json:"value_on,omitempty"`
-	ValueToggle string `json:"value_toggle,omitempty"`
-	ValueMax    any    `json:"value_max,omitempty"`
-	ValueMin    any    `json:"value_min,omitempty"`
-	Values      []any  `json:"values,omitempty"`
+// type BridgeInfoFeature struct {
+// 	Access      int    `json:"access"`
+// 	Description string `json:"description"`
+// 	Name        string `json:"name"`
+// 	Property    string `json:"property"`
+// 	Type        string `json:"type"`
+// 	ValueOff    any    `json:"value_off,omitempty"`
+// 	ValueOn     any    `json:"value_on,omitempty"`
+// 	ValueToggle string `json:"value_toggle,omitempty"`
+// 	ValueMax    any    `json:"value_max,omitempty"`
+// 	ValueMin    any    `json:"value_min,omitempty"`
+// 	Values      []any  `json:"values,omitempty"`
+// 	Presets     []struct {
+// 		Description string `json:"description"`
+// 		Name        string `json:"name"`
+// 		Value       int    `json:"value"`
+// 	} `json:"presets,omitempty"`
+// 	Unit string `json:"unit,omitempty"`
+// }
+
+type BridgeExpose struct {
+	Type        string   `json:"type"`
+	Access      int      `json:"access,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Category    string   `json:"category,omitempty"`
+	Name        string   `json:"name,omitempty"`
+	Property    string   `json:"property,omitempty"`
+	Values      []string `json:"values,omitempty"`
+	ValueOff    any      `json:"value_off,omitempty"`
+	ValueOn     any      `json:"value_on,omitempty"`
+	ValueToggle string   `json:"value_toggle,omitempty"`
+	ValueMax    any      `json:"value_max,omitempty"`
+	ValueMin    any      `json:"value_min,omitempty"`
 	Presets     []struct {
 		Description string `json:"description"`
 		Name        string `json:"name"`
 		Value       int    `json:"value"`
 	} `json:"presets,omitempty"`
-	Unit string `json:"unit,omitempty"`
-}
-
-type BridgeExpose struct {
-	Features    []BridgeInfoFeature `json:"features,omitempty"`
-	Type        string              `json:"type"`
-	Access      int                 `json:"access,omitempty"`
-	Description string              `json:"description,omitempty"`
-	Category    string              `json:"category,omitempty"`
-	Name        string              `json:"name,omitempty"`
-	Property    string              `json:"property,omitempty"`
-	Values      []string            `json:"values,omitempty"`
-	ValueOff    any                 `json:"value_off,omitempty"`
-	ValueOn     any                 `json:"value_on,omitempty"`
-	ValueMax    any                 `json:"value_max,omitempty"`
-	ValueMin    any                 `json:"value_min,omitempty"`
-	Unit        string              `json:"unit,omitempty"`
+	Unit     string         `json:"unit,omitempty"`
+	Features []BridgeExpose `json:"features,omitempty"`
 }
 
 type BridgeInfo struct {
@@ -145,38 +151,6 @@ func FindByExposeType(payload []byte, exposeType string) (*BridgeInfo, error) {
 		}
 	}
 	return nil, errors.New("exposeType not found")
-}
-
-func (f *BridgeInfoFeature) SanitizeData(data any) (any, error) {
-
-	if f.Type == "binary" {
-		if value, ok := data.(bool); ok {
-			if value {
-				return f.ValueOn, nil
-			} else {
-				return f.ValueOff, nil
-			}
-		}
-	} else if f.Type == "numeric" {
-		if value, ok := data.(int); ok {
-
-			if min, ok := f.ValueMin.(int); ok {
-				if value < min {
-					return nil, fmt.Errorf("value=%d smaller than Minimum %d", value, min)
-				}
-			}
-
-			if max, ok := f.ValueMax.(int); ok {
-				if value > max {
-					return nil, fmt.Errorf("value=%d bigger than Maximum %d", value, max)
-				}
-			}
-		}
-	} else {
-		return nil, fmt.Errorf("type=%s  not implemented", f.Type)
-	}
-
-	return data, nil
 }
 
 func (e *BridgeExpose) SanitizeData(data any) (any, error) {
