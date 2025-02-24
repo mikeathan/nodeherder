@@ -68,40 +68,42 @@ var exposesWhitelist = map[string]int{
 	"illuminance":         34,
 }
 
-type ExposeType = string
+type ExposeDataType = string
+type ExposeCategory = string
+type ExposeAccessMode = int
 
 const (
-	NumericExposeType ExposeType = "numeric"
-	EnumExposeType    ExposeType = "enum"
-	BinaryExposeType  ExposeType = "binary"
+	UnknownAccessMode ExposeAccessMode = 0b000
+	StateAccessMode   ExposeAccessMode = 0b001 // although ican request, the device send updates about its value
+	WriteAccessMode   ExposeAccessMode = 0b010 // it will request to set the value to device
+	ReadAccessMode    ExposeAccessMode = 0b100 // it will request the read the value from device
+
+	MeasurementCategory ExposeCategory = "measurement"
+	DiagnosticCategory  ExposeCategory = "diagnostic"
+	ConfigCategory      ExposeCategory = "config"
+
+	NumericDataType ExposeDataType = "numeric"
+	EnumDataType    ExposeDataType = "enum"
+	BinaryDataType  ExposeDataType = "binary"
 )
 
-type FeatureAccessMode = int
-
-const (
-	UnknownAccessMode FeatureAccessMode = 0b000
-	StateAccessMode   FeatureAccessMode = 0b001
-	WriteAccessMode   FeatureAccessMode = 0b010
-	ReadAccessMode    FeatureAccessMode = 0b100
-)
-
-func ToFeatureAccessMode(access int) (FeatureAccessMode, bool) {
-	convertedAccess := FeatureAccessMode(access)
+func ToFeatureAccessMode(access int) (ExposeAccessMode, bool) {
+	convertedAccess := ExposeAccessMode(access)
 	return convertedAccess, (convertedAccess&StateAccessMode | ReadAccessMode | WriteAccessMode) != 0
 }
 
-func isUknownAccessMode(entity *Entity) bool {
+func IsUknownAccessMode(entity *Entity) bool {
 	return entity.AccessMode&UnknownAccessMode != 0
 }
 
-func isWriteableAccessMode(entity *Entity) bool {
+func IsWriteableAccessMode(entity *Entity) bool {
 	return entity.AccessMode&WriteAccessMode != 0
 
 }
-func isReadAccessMode(entity *Entity) bool {
+func IsReadAccessMode(entity *Entity) bool {
 	return entity.AccessMode&ReadAccessMode != 0
 }
-func isStateAccessMode(entity *Entity) bool {
+func IsStateAccessMode(entity *Entity) bool {
 	return entity.AccessMode&StateAccessMode != 0
 }
 
@@ -174,61 +176,109 @@ type EntityPreset struct {
 	Value       int    `json:"value"`
 }
 
+// measurement - if category not exists
+// diagnostic
+// config
+
+todo
+// for properties and attributes
+
+// maybe can have 
+// values = [on, off, toggle] - does it need to be a map ? or array is fine
+// constraints =[
+// min = 0
+// max = 255]
+
+
 type Entity struct {
-	Name        string            `json:"name"`
-	Description string            `json:"description,omitempty"`
-	Unit        string            `json:"unit,omitempty"`
-	Data        any               `json:"data"`
-	Type        ExposeType        `json:"type"`
-	AccessMode  FeatureAccessMode `json:"access_mode"`
-	Properties  map[string]any    `json:"properties,omitempty"`
-	Attributes  map[string]any    `json:"attributes,omitempty"`
-	Presets     map[string]any    `json:"presets,omitempty"`
+	Name        string           `json:"name"`
+	Description string           `json:"description,omitempty"`
+	Unit        string           `json:"unit,omitempty"`
+	Data        any              `json:"data"`
+	Type        ExposeDataType   `json:"type"`
+	AccessMode  ExposeAccessMode `json:"access_mode"`
+	Category    ExposeCategory   `json:"category,omitempty"`
+	Properties  map[string]any   `json:"properties,omitempty"`
+	Attributes  map[string]any   `json:"attributes,omitempty"`
+	Presets     map[string]any   `json:"presets,omitempty"`
 }
 
 func newEntity() *Entity {
 	return &Entity{Attributes: make(map[string]any), Properties: map[string]any{}}
 }
 
-func CreateEntityFromExposeTEST(expose BridgeExpose, data any) (*Entity, error) {
+// func CreateEntityFromExposeTEST(expose BridgeExpose, data any) (*Entity, error) {
 
-	if expose.Property == "" {
-		return nil, fmt.Errorf("no expose data")
-	}
+// 	if expose.Property == "" {
+// 		return nil, fmt.Errorf("no expose data")
+// 	}
 
-	// if _, ok := exposesWhitelist[expose.Property]; !ok {
-	// 	return nil, fmt.Errorf("expose property %v is blacklisted", expose.Property)
-	// }
+// 	// if _, ok := exposesWhitelist[expose.Property]; !ok {
+// 	// 	return nil, fmt.Errorf("expose property %v is blacklisted", expose.Property)
+// 	// }
 
-	accessMode, ok := ToFeatureAccessMode(expose.Access)
-	if !ok {
-		return nil, fmt.Errorf("invalid device feature access mode %v", expose.Access)
-	}
+// 	accessMode, ok := ToFeatureAccessMode(expose.Access)
+// 	if !ok {
+// 		return nil, fmt.Errorf("invalid device feature access mode %v", expose.Access)
+// 	}
 
-	newEntity := newEntity()
-	newEntity.AccessMode = accessMode
-	newEntity.Name = expose.Property
-	newEntity.Description = expose.Description
-	newEntity.Unit = expose.Unit
-	newEntity.Data = data
-	newEntity.Type = expose.Type
+// 	newEntity := newEntity()
+// 	newEntity.AccessMode = accessMode
+// 	newEntity.Name = expose.Property
+// 	newEntity.Description = expose.Description
+// 	newEntity.Unit = expose.Unit
+// 	newEntity.Data = data
+// 	newEntity.Type = expose.Type
 
-	
-	// examples to handle !!!!!!
-	// also we have state accesstype which could be for controlling the device, confirm !!!!
+// 	if isReadAccessMode(newEntity) {
+// 		return buildReadAccessModeExpose(expose, newEntity), nil
+// 	}
+// 	// examples to handle !!!!!!
+// 	// also we have state accesstype which could be for controlling the device, confirm !!!!
 
-	// illumination (read)
-	
-	// brightness (write)
-	// min/max properties renamed from attributes
+// 	// illumination (read)
 
-	// state (read)
-	// on/off properties renamed from attributes
+// 	// brightness (write)
+// 	// min/max properties renamed from attributes
 
-	// state_on (write)
-	// on/off/toggle properties renamed from attributes
+// 	// state (read)
+// 	// on/off properties renamed from attributes
 
-}
+// 	// state_on (write)
+// 	// on/off/toggle properties renamed from attributes
+
+// }
+
+// func buildReadAccessModeExpose(expose BridgeExpose, newEntity *Entity) *Entity {
+// 	switch expose.Type {
+// 	case NumericExposeType:
+// 		if expose.ValueMax != nil {
+// 			newEntity.Attributes["max"] = expose.ValueMax
+// 		}
+// 		if expose.ValueMin != nil {
+// 			newEntity.Attributes["min"] = expose.ValueMin
+// 		}
+
+// 	case BinaryExposeType:
+// 		if expose.ValueOn != nil {
+// 			newEntity.Attributes["on"] = expose.ValueOn
+// 		}
+// 		if expose.ValueOff != nil {
+// 			newEntity.Attributes["off"] = expose.ValueOff
+// 		}
+
+// 	case EnumExposeType:
+// 		for _, item := range expose.Values {
+// 			newEntity.Attributes[item] = item
+// 		}
+// 	}
+// 	return newEntity
+// }
+
+// func buildWriteAccessModeExpose(expose BridgeExpose, newEntity *Entity) *Entity {
+
+// }
+
 func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 
 	if expose.Property == "" {
@@ -258,7 +308,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 
 	// TODO: needs refactoring
 	switch expose.Type {
-	case NumericExposeType:
+	case NumericDataType:
 		if expose.ValueMax != nil {
 			newEntity.Attributes["max"] = expose.ValueMax
 		}
@@ -266,7 +316,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 			newEntity.Attributes["min"] = expose.ValueMin
 		}
 
-	case BinaryExposeType:
+	case BinaryDataType:
 		if expose.ValueOn != nil {
 			newEntity.Attributes["on"] = expose.ValueOn
 		}
@@ -274,7 +324,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 			newEntity.Attributes["off"] = expose.ValueOff
 		}
 
-	case EnumExposeType:
+	case EnumDataType:
 		for _, item := range expose.Values {
 			newEntity.Attributes[item] = item
 		}
@@ -315,16 +365,16 @@ func CreateCustomFeatureFromExpose(expose BridgeExpose, data any) (*Entity, erro
 	// features are used to publish events
 	// because of that all expose data are published as device properties
 	switch expose.Type {
-	case NumericExposeType:
+	case NumericDataType:
 		newEntity.Attributes["max"] = expose.ValueMax
 		newEntity.Attributes["min"] = expose.ValueMin
 		newEntity.Properties[expose.Name] = 0
 
-	case BinaryExposeType:
+	case BinaryDataType:
 		newEntity.Properties["on"] = expose.ValueOn
 		newEntity.Properties["off"] = expose.ValueOff
 
-	case EnumExposeType:
+	case EnumDataType:
 		for index, item := range expose.Values {
 			newEntity.Properties[fmt.Sprintf("%d", index)] = item
 		}
@@ -362,17 +412,17 @@ func CreateEntityFromFeature(feature BridgeInfoFeature, data any) (*Entity, erro
 	}
 
 	switch feature.Type {
-	case NumericExposeType:
+	case NumericDataType:
 		newEntity.Attributes["max"] = feature.ValueMax
 		newEntity.Attributes["min"] = feature.ValueMin
 		newEntity.Properties[feature.Name] = 0
 
-	case BinaryExposeType:
+	case BinaryDataType:
 		newEntity.Properties["on"] = feature.ValueOn
 		newEntity.Properties["off"] = feature.ValueOff
 		newEntity.Properties["toggle"] = feature.ValueToggle
 
-	case EnumExposeType:
+	case EnumDataType:
 		for index, item := range feature.Values {
 			newEntity.Properties[fmt.Sprintf("%d", index)] = item
 		}
@@ -411,7 +461,7 @@ func createExposures(data map[string]interface{}) map[string]*Entity {
 		newEntity.Name = key
 		newEntity.Data = value
 		newEntity.Unit = units[key]
-		newEntity.Type = NumericExposeType // TODO: make this dynamic
+		newEntity.Type = NumericDataType // TODO: make this dynamic
 		entities[key] = newEntity
 	}
 	return entities
