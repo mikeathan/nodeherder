@@ -92,19 +92,26 @@ func ToFeatureAccessMode(access int) (ExposeAccessMode, bool) {
 	return convertedAccess, (convertedAccess&StateAccessMode | ReadAccessMode | WriteAccessMode) != 0
 }
 
-func IsUknownAccessMode(entity *Entity) bool {
-	return entity.AccessMode&UnknownAccessMode != 0
+func IsUknownAccessMode(entity BridgeExpose) bool {
+	return entity.Access&UnknownAccessMode != 0
 }
 
-func IsWriteableAccessMode(entity *Entity) bool {
-	return entity.AccessMode&WriteAccessMode != 0
+func IsWriteableAccessMode(entity BridgeExpose) bool {
+	return entity.Access&WriteAccessMode != 0
 
 }
-func IsReadAccessMode(entity *Entity) bool {
-	return entity.AccessMode&ReadAccessMode != 0
+func IsReadAccessMode(entity BridgeExpose) bool {
+	return entity.Access&ReadAccessMode != 0
 }
-func IsStateAccessMode(entity *Entity) bool {
-	return entity.AccessMode&StateAccessMode != 0
+func IsStateAccessMode(entity *BridgeExpose) bool {
+	return entity.Access&StateAccessMode != 0
+}
+
+func getExposeCategory(entity BridgeExpose) string {
+	if entity.Category == "" {
+		return MeasurementCategory
+	}
+	return entity.Category
 }
 
 var customExposeFeaturesPropertyWhitelist = map[string]int{
@@ -203,7 +210,7 @@ type Entity struct {
 }
 
 func newEntity() *Entity {
-	return &Entity{Attributes: make(map[string]any), Properties: map[string]any{}}
+	return &Entity{Attributes: make(map[string]any), Properties: map[string]any{}, Values: make(map[string]any)}
 }
 
 func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
@@ -223,6 +230,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 
 	newEntity := newEntity()
 	newEntity.AccessMode = accessMode
+	newEntity.Category = getExposeCategory(expose)
 	newEntity.Name = expose.Property
 	newEntity.Description = expose.Description
 	newEntity.Unit = expose.Unit
@@ -252,7 +260,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 		newEntity.Values["on"] = expose.ValueOn
 		newEntity.Values["off"] = expose.ValueOff
 
-		if IsWriteableAccessMode(newEntity) {
+		if IsWriteableAccessMode(expose) && expose.ValueToggle != "" {
 			newEntity.Values["toggle"] = expose.ValueToggle
 		}
 
@@ -435,7 +443,7 @@ func createProperties(data map[string]interface{}) map[string]any {
 	return props
 }
 
-func createExposures(data map[string]interface{}) map[string]*Entity {
+func createExpose(data map[string]interface{}) map[string]*Entity {
 	var entities = make(map[string]*Entity)
 	for key, value := range data {
 		if _, ok := exposesWhitelist[key]; !ok {
@@ -453,7 +461,7 @@ func createExposures(data map[string]interface{}) map[string]*Entity {
 	return entities
 }
 
-func createExposuresFromBridge(data map[string]interface{}, bridgeInfo *BridgeInfo) map[string]*Entity {
+func createExposeFromBridge(data map[string]interface{}, bridgeInfo *BridgeInfo) map[string]*Entity {
 
 	var entities = map[string]*Entity{}
 	for _, expose := range bridgeInfo.Definition.Exposes {
@@ -498,9 +506,9 @@ func CreateNewDevice(id string, friendlyName string, connType string, bridgeInfo
 	}
 
 	if bridgeInfo != nil {
-		newDevice.Exposes = createExposuresFromBridge(data, bridgeInfo)
+		newDevice.Exposes = createExposeFromBridge(data, bridgeInfo)
 	} else { // device not in hub bridge
-		newDevice.Exposes = createExposures(data)
+		newDevice.Exposes = createExpose(data)
 	}
 
 	newDevice.Properties = createProperties(data)

@@ -136,7 +136,83 @@ func FindByFriendlyName(payload []byte, friendlyName string) (*BridgeInfo, error
 	return nil, errors.New("friendlyName not found")
 }
 
-func FindByExposeType(payload []byte, exposeType string) (*BridgeInfo, error) {
+func FindAllExposesByCategory(payload []byte, category ExposeCategory) ([]*BridgeExpose, error) {
+	bridgeDevices, err := LoadBridgeDevices(payload)
+	if err != nil {
+		return nil, err
+	}
+	exposes := []*BridgeExpose{}
+	for _, device := range bridgeDevices {
+		for _, expose := range device.Definition.Exposes {
+
+			if expose.Category == "" && category == MeasurementCategory {
+				exposes = append(exposes, &expose)
+				continue
+			}
+
+			if expose.Category == category {
+				exposes = append(exposes, &expose)
+				continue
+			}
+		}
+
+		for _, expose := range device.Definition.Exposes {
+
+			for _, feature := range expose.Features {
+				if feature.Category == "" && category == MeasurementCategory {
+					exposes = append(exposes, &feature)
+					continue
+				}
+
+				if feature.Category == category {
+					exposes = append(exposes, &feature)
+					continue
+				}
+			}
+		}
+
+	}
+
+	return exposes, nil
+}
+
+func FindAllExposesByAccessMode(payload []byte, accesMode ExposeAccessMode) ([]*BridgeInfo, error) {
+	bridgeDevices, err := LoadBridgeDevices(payload)
+	if err != nil {
+		return nil, err
+	}
+	devices := []*BridgeInfo{}
+	for _, device := range bridgeDevices {
+		for _, e := range device.Definition.Exposes {
+
+			if e.Access == accesMode {
+				devices = append(devices, device)
+				continue
+			}
+		}
+	}
+	return devices, nil
+}
+
+func FindAllExposesByDataType(payload []byte, dataType ExposeDataType) ([]*BridgeInfo, error) {
+	bridgeDevices, err := LoadBridgeDevices(payload)
+	if err != nil {
+		return nil, err
+	}
+	devices := []*BridgeInfo{}
+	for _, device := range bridgeDevices {
+		for _, e := range device.Definition.Exposes {
+
+			if e.Type == dataType {
+				devices = append(devices, device)
+				continue
+			}
+		}
+	}
+	return devices, nil
+}
+
+func FindByExposeType(payload []byte, exposeType ExposeDataType) (*BridgeInfo, error) {
 	bridgeDevices, err := LoadBridgeDevices(payload)
 	if err != nil {
 		return nil, err

@@ -154,26 +154,4 @@ func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo
 		// register device
 		s.store.StoreDevice(d.FriendlyName, d)
 	}
-
-	d, _ := s.store.AllDevices()
-	fmt.Printf("DEBUG devices: %v\n\n", d)
-	for _, d := range d {
-		fmt.Printf("Device: %s\n", d.FriendlyName)
-		for k, v := range d.Exposes {
-
-			desc := ""
-			if devices.IsStateAccessMode(v) {
-				desc += "state "
-			}
-			if devices.IsReadAccessMode(v) {
-				desc += " read "
-			}
-			if devices.IsWriteableAccessMode(v) {
-				desc += " write "
-			}
-
-			fmt.Printf("Expose: %s accessMode: %s\n", k, desc)
-		}
-		fmt.Printf("\n")
-	}
 }
