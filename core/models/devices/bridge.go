@@ -136,22 +136,31 @@ func FindByFriendlyName(payload []byte, friendlyName string) (*BridgeInfo, error
 	return nil, errors.New("friendlyName not found")
 }
 
-func FindAllExposesByCategory(payload []byte, category ExposeCategory) ([]*BridgeExpose, error) {
+func FindAllExposesByCategory(payload []byte, category ExposeCategory) ([]BridgeExpose, error) {
 	bridgeDevices, err := LoadBridgeDevices(payload)
 	if err != nil {
 		return nil, err
 	}
-	exposes := []*BridgeExpose{}
+	exposes := []BridgeExpose{}
 	for _, device := range bridgeDevices {
 		for _, expose := range device.Definition.Exposes {
 
+			if expose.Name == "" {
+				continue
+			}
+
+			// unhanlded type
+			if expose.Type == CompositeDataType {
+				continue
+			}
+
 			if expose.Category == "" && category == MeasurementCategory {
-				exposes = append(exposes, &expose)
+				exposes = append(exposes, expose)
 				continue
 			}
 
 			if expose.Category == category {
-				exposes = append(exposes, &expose)
+				exposes = append(exposes, expose)
 				continue
 			}
 		}
@@ -159,13 +168,18 @@ func FindAllExposesByCategory(payload []byte, category ExposeCategory) ([]*Bridg
 		for _, expose := range device.Definition.Exposes {
 
 			for _, feature := range expose.Features {
+
+				// unhanlded type
+				if feature.Type == CompositeDataType {
+					continue
+				}
 				if feature.Category == "" && category == MeasurementCategory {
-					exposes = append(exposes, &feature)
+					exposes = append(exposes, feature)
 					continue
 				}
 
 				if feature.Category == category {
-					exposes = append(exposes, &feature)
+					exposes = append(exposes, feature)
 					continue
 				}
 			}

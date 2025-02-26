@@ -82,9 +82,10 @@ const (
 	DiagnosticCategory  ExposeCategory = "diagnostic"
 	ConfigCategory      ExposeCategory = "config"
 
-	NumericDataType ExposeDataType = "numeric"
-	EnumDataType    ExposeDataType = "enum"
-	BinaryDataType  ExposeDataType = "binary"
+	NumericDataType   ExposeDataType = "numeric"
+	EnumDataType      ExposeDataType = "enum"
+	BinaryDataType    ExposeDataType = "binary"
+	CompositeDataType ExposeDataType = "composite"
 )
 
 func ToFeatureAccessMode(access int) (ExposeAccessMode, bool) {
