@@ -136,12 +136,12 @@ func FindByFriendlyName(payload []byte, friendlyName string) (*BridgeInfo, error
 	return nil, errors.New("friendlyName not found")
 }
 
-func FindAllExposesByCategory(payload []byte, category ExposeCategory) ([]BridgeExpose, error) {
+func FindAllExposesByCategory(payload []byte, category ExposeCategory) (map[string][]BridgeExpose, error) {
 	bridgeDevices, err := LoadBridgeDevices(payload)
 	if err != nil {
 		return nil, err
 	}
-	exposes := []BridgeExpose{}
+	exposeMap := make(map[string][]BridgeExpose)
 	for _, device := range bridgeDevices {
 		for _, expose := range device.Definition.Exposes {
 
@@ -154,14 +154,12 @@ func FindAllExposesByCategory(payload []byte, category ExposeCategory) ([]Bridge
 				continue
 			}
 
-			if expose.Category == "" && category == MeasurementCategory {
-				exposes = append(exposes, expose)
-				continue
-			}
-
-			if expose.Category == category {
-				exposes = append(exposes, expose)
-				continue
+			if expose.Category == category ||
+				(expose.Category == "" && category == MeasurementCategory) {
+				if _, ok := exposeMap[device.IeeeAddress]; !ok {
+					exposeMap[device.IeeeAddress] = []BridgeExpose{}
+				}
+				exposeMap[device.IeeeAddress] = append(exposeMap[device.IeeeAddress], expose)
 			}
 		}
 
@@ -173,21 +171,21 @@ func FindAllExposesByCategory(payload []byte, category ExposeCategory) ([]Bridge
 				if feature.Type == CompositeDataType {
 					continue
 				}
-				if feature.Category == "" && category == MeasurementCategory {
-					exposes = append(exposes, feature)
-					continue
-				}
 
-				if feature.Category == category {
-					exposes = append(exposes, feature)
-					continue
+				if feature.Category == category ||
+					(feature.Category == "" && category == MeasurementCategory) {
+
+					if _, ok := exposeMap[device.IeeeAddress]; !ok {
+						exposeMap[device.IeeeAddress] = []BridgeExpose{}
+					}
+					exposeMap[device.IeeeAddress] = append(exposeMap[device.IeeeAddress], feature)
 				}
 			}
 		}
 
 	}
 
-	return exposes, nil
+	return exposeMap, nil
 }
 
 func FindAllExposesByAccessMode(payload []byte, accesMode ExposeAccessMode) ([]*BridgeInfo, error) {
