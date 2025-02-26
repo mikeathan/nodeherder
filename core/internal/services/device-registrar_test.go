@@ -51,9 +51,27 @@ func TestRegisterBridge(t *testing.T) {
 		found := false
 		for _, device := range storeDevices {
 			for _, expose := range device.Exposes {
+				
+				need to match the device that bridgeExpose is coming from so we can assert all data
+
 				if expose.Name == bridgeExpose.Name {
 					if expose.Category != devices.MeasurementCategory {
 						t.Errorf("Error measurement device mismatch want: %s got: %s", bridgeExpose.Name, expose.Name)
+					}
+
+					if expose.AccessMode != bridgeExpose.Access {
+						t.Errorf("Error measurement device access mismatch want: %v got: %v", bridgeExpose.Access, expose.AccessMode)
+					}
+
+					if expose.Type != bridgeExpose.Type {
+						t.Errorf("Error measurement device type mismatch want: %v got: %v", bridgeExpose.Type, expose.Type)
+					}
+
+					if expose.Unit != bridgeExpose.Unit {
+						t.Errorf("Error measurement device unit mismatch want: %v got: %v", bridgeExpose.Unit, expose.Unit)
+					}
+					if expose.Description != bridgeExpose.Description {
+						t.Errorf("Error measurement device description mismatch want: %v got: %v", bridgeExpose.Description, expose.Description)
 					}
 
 					found = true
