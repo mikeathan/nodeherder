@@ -85,6 +85,7 @@ func TestRegisterBridge(t *testing.T) {
 						assetExpose(bridgeExpose, expose, devices.DiagnosticCategory, t)
 						assertDataType(bridgeExpose, expose, t)
 
+
 						found = true
 					}
 				}
@@ -115,6 +116,7 @@ func TestRegisterBridge(t *testing.T) {
 					if deviceBridgeId == device.Id && expose.Name == bridgeExpose.Name {
 						assetExpose(bridgeExpose, expose, devices.ConfigCategory, t)
 						assertDataType(bridgeExpose, expose, t)
+
 
 						found = true
 					}

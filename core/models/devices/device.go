@@ -9,13 +9,9 @@ import (
 )
 
 var availabilityKey = "availability"
-var linkQualityKey = "linkquality"
 var mainsKey = "mains"
-var powerSourceKey = "power_source"
 var batterKey = "battery"
 var lastSeenKey = "last_seen"
-var idKey = "id"
-var connectionTypeMqtt = "mqtt"
 
 const online = "online"
 const offline = "offline"
@@ -115,14 +111,6 @@ func getExposeCategory(entity BridgeExpose) string {
 	return entity.Category
 }
 
-var customExposeFeaturesPropertyWhitelist = map[string]int{
-	"silence":  1,
-	"alarm":    2,
-	"melody":   3,
-	"duration": 4,
-	"volume":   5, // ??
-}
-
 var propertiesWhitelist = map[string]int{
 	"battery":        1,
 	"linkquality":    2,
@@ -184,18 +172,6 @@ type EntityPreset struct {
 	Value       int    `json:"value"`
 }
 
-// measurement - if category not exists
-// diagnostic
-// config
-
-// for properties and attributes
-
-// maybe can have
-// values = [on, off, toggle] - does it need to be a map ? or array is fine
-// constraints =[
-// min = 0
-// max = 255]
-
 type Entity struct {
 	Name        string           `json:"name"`
 	Description string           `json:"description,omitempty"`
@@ -204,14 +180,14 @@ type Entity struct {
 	Type        ExposeDataType   `json:"type"`
 	AccessMode  ExposeAccessMode `json:"access_mode"`
 	Category    ExposeCategory   `json:"category,omitempty"`
-	Properties  map[string]any   `json:"properties,omitempty"`
+	Properties  map[string]any   `json:"properties,omitempty"` // NEEDS REMOVING !!!!!!!!!!!!!!!!!!1
 	Attributes  map[string]any   `json:"attributes,omitempty"`
 	Presets     map[string]any   `json:"presets,omitempty"`
 	Values      map[string]any
 }
 
 func newEntity() *Entity {
-	return &Entity{Attributes: make(map[string]any), Properties: map[string]any{}, Values: make(map[string]any)}
+	return &Entity{Attributes: make(map[string]any), Values: make(map[string]any)}
 }
 
 func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
@@ -274,165 +250,21 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 	return newEntity, nil
 }
 
-// func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
-
-// 	if expose.Property == "" {
-// 		return nil, fmt.Errorf("no expose data")
-// 	}
-
-// 	if _, ok := exposesWhitelist[expose.Property]; !ok {
-// 		return nil, fmt.Errorf("expose property %v is blacklisted", expose.Property)
-// 	}
-
-// 	accessMode, ok := ToFeatureAccessMode(expose.Access)
-// 	if !ok {
-// 		return nil, fmt.Errorf("invalid device feature access mode %v", expose.Access)
-// 	}
-
-// 	newEntity := newEntity()
-// 	newEntity.AccessMode = accessMode
-// 	newEntity.Name = expose.Property
-// 	newEntity.Description = expose.Description
-// 	newEntity.Unit = expose.Unit
-// 	newEntity.Data = data
-// 	newEntity.Type = expose.Type
-
-// 	// NOTE:
-// 	// exposes are not used to publish events
-// 	// because of that all expose data are published as device attributes
-
-// 	// TODO: needs refactoring
-// 	switch expose.Type {
-// 	case NumericDataType:
-// 		if expose.ValueMax != nil {
-// 			newEntity.Attributes["max"] = expose.ValueMax
-// 		}
-// 		if expose.ValueMin != nil {
-// 			newEntity.Attributes["min"] = expose.ValueMin
-// 		}
-
-// 	case BinaryDataType:
-// 		if expose.ValueOn != nil {
-// 			newEntity.Attributes["on"] = expose.ValueOn
-// 		}
-// 		if expose.ValueOff != nil {
-// 			newEntity.Attributes["off"] = expose.ValueOff
-// 		}
-
-// 	case EnumDataType:
-// 		for _, item := range expose.Values {
-// 			newEntity.Attributes[item] = item
-// 		}
-// 	}
-// 	return newEntity, nil
-// }
-
-// func CreateCustomFeatureFromExpose(expose BridgeExpose, data any) (*Entity, error) {
-
-// 	// NOTE:
-// 	// create custom feature from devices that can be triggered but dont have feature description
-// 	// only support alarm for now
-// 	// Features are used to publish events
-// 	// because of that all expose data are published as device properties
-
-// 	if expose.Property == "" {
-// 		return nil, fmt.Errorf("no expose data")
-// 	}
-
-// 	if _, ok := customExposeFeaturesPropertyWhitelist[expose.Property]; !ok {
-// 		return nil, fmt.Errorf("custom expose property %v is blacklisted", expose.Property)
-// 	}
-
-// 	accessMode, ok := ToFeatureAccessMode(expose.Access)
-// 	if !ok {
-// 		return nil, fmt.Errorf("invalid device feature access mode %v", expose.Access)
-// 	}
-// 	newEntity := newEntity()
-// 	newEntity.AccessMode = accessMode
-// 	newEntity.Data = data
-// 	newEntity.Name = expose.Name
-// 	newEntity.Unit = expose.Unit
-// 	newEntity.Description = expose.Description
-// 	newEntity.Data = data
-// 	newEntity.Type = expose.Type
-
-// 	// NOTE:
-// 	// features are used to publish events
-// 	// because of that all expose data are published as device properties
-// 	switch expose.Type {
-// 	case NumericDataType:
-// 		newEntity.Attributes["max"] = expose.ValueMax
-// 		newEntity.Attributes["min"] = expose.ValueMin
-// 		newEntity.Properties[expose.Name] = 0
-
-// 	case BinaryDataType:
-// 		newEntity.Properties["on"] = expose.ValueOn
-// 		newEntity.Properties["off"] = expose.ValueOff
-
-// 	case EnumDataType:
-// 		for index, item := range expose.Values {
-// 			newEntity.Properties[fmt.Sprintf("%d", index)] = item
-// 		}
-// 	}
-// 	return newEntity, nil
-
-// }
-
-// func CreateEntityFromFeature(feature BridgeInfoFeature, data any) (*Entity, error) {
-
-// 	if _, ok := exposesWhitelist[feature.Property]; !ok {
-// 		return nil, fmt.Errorf("feature property %v is blacklisted", feature.Property)
-// 	}
-
-// 	accessMode, ok := ToFeatureAccessMode(feature.Access)
-// 	if !ok {
-// 		return nil, fmt.Errorf("invalid device feature access mode %v", feature.Access)
-// 	}
-
-// 	newEntity := newEntity()
-// 	newEntity.Data = data
-// 	newEntity.AccessMode = accessMode
-// 	newEntity.Name = feature.Name
-// 	newEntity.Unit = feature.Unit
-// 	newEntity.Description = feature.Description
-// 	newEntity.Data = data
-// 	newEntity.Type = feature.Type
-
-// 	// populate feature presets
-// 	if len(feature.Presets) != 0 {
-// 		newEntity.Presets = make(map[string]any)
-// 		for _, preset := range feature.Presets {
-// 			newEntity.Presets[preset.Name] = preset.Value
-// 		}
-// 	}
-
-// 	switch feature.Type {
-// 	case NumericDataType:
-// 		newEntity.Attributes["max"] = feature.ValueMax
-// 		newEntity.Attributes["min"] = feature.ValueMin
-// 		newEntity.Properties[feature.Name] = 0
-
-// 	case BinaryDataType:
-// 		newEntity.Properties["on"] = feature.ValueOn
-// 		newEntity.Properties["off"] = feature.ValueOff
-// 		newEntity.Properties["toggle"] = feature.ValueToggle
-
-// 	case EnumDataType:
-// 		for index, item := range feature.Values {
-// 			newEntity.Properties[fmt.Sprintf("%d", index)] = item
-// 		}
-// 	}
-// 	return newEntity, nil
-// }
-
-func createProperties(data map[string]interface{}) map[string]any {
+func createProperties(device *Device, data map[string]interface{}) map[string]any {
 
 	var props = map[string]any{}
-	for key, value := range data {
-		if _, ok := propertiesWhitelist[key]; ok {
-			props[key] = value
-		}
-	}
+
+	we dont need properties, we could have last seen and availability props
+	// for key, value := range data {
+
+	// 	if expose, ok := device.Exposes[key]; ok {
+
+	// 		// add diagnostic exposes to device properties
+	// 		if expose.Category == DiagnosticCategory {
+	// 			props[key] = value
+	// 		}
+	// 	}
+	// }
 
 	if _, ok := data[lastSeenKey]; !ok {
 		data[lastSeenKey] = getCurrentTime()
@@ -447,7 +279,7 @@ func createProperties(data map[string]interface{}) map[string]any {
 func createExpose(data map[string]interface{}) map[string]*Entity {
 	var entities = make(map[string]*Entity)
 	for key, value := range data {
-		if _, ok := exposesWhitelist[key]; !ok {
+		if _, ok := exposesWhitelist[key]; !ok { 
 			continue
 		}
 
@@ -512,7 +344,7 @@ func CreateNewDevice(id string, friendlyName string, connType string, bridgeInfo
 		newDevice.Exposes = createExpose(data)
 	}
 
-	newDevice.Properties = createProperties(data)
+	newDevice.Properties = createProperties(newDevice, data)
 	if len(newDevice.Exposes) == 0 {
 		return nil, errors.New("invalid payload - no exposed entries found")
 	}
