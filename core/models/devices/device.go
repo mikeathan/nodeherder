@@ -13,8 +13,13 @@ var mainsKey = "mains"
 var batterKey = "battery"
 var lastSeenKey = "last_seen"
 
-const online = "online"
-const offline = "offline"
+type AvailabilityType string
+
+const (
+	UnknownAvailability AvailabilityType = "unknown"
+	OnlineAvailability  AvailabilityType = "online"
+	OfflineAvailability AvailabilityType = "offline"
+)
 
 var units = map[string]string{
 	"temperature":     "°C",
@@ -127,6 +132,8 @@ type Device struct {
 	PowerSource             string             `json:"power_source"`
 	Exposes                 map[string]*Entity `json:"exposes"`
 	Properties              map[string]any     `json:"properties"`
+	LastSeenString          string             `json:"last_seen"` // TO FIX  maybe it can be a time.Time
+	Availability            AvailabilityType   `json:"availability"`
 	availabilityTicker      time.Ticker
 	availablityDone         chan bool
 	availabilityTimeoutSecs int
@@ -141,6 +148,8 @@ func NewDevice(id string) *Device {
 		Description:             "",
 		ConnectionType:          "",
 		PowerSource:             "",
+		Availability:            UnknownAvailability,
+		LastSeenString:          "",
 		Exposes:                 map[string]*Entity{},
 		Properties:              map[string]any{},
 		availabilityTicker:      time.Ticker{},
@@ -152,14 +161,14 @@ func NewDevice(id string) *Device {
 
 type PackageData map[string]any
 type UpdatePackage struct {
-	Id         string         `json:"id"`
-	LastSeen   string         `json:"last_seen"`
-	Data       PackageData    `json:"data"`
-	Properties map[string]any `json:"properties"`
+	Id           string           `json:"id"`
+	LastSeen     string           `json:"last_seen"` // time.time ??
+	Availability AvailabilityType `json:"availability"`
+	Data         PackageData      `json:"data"`
 }
 
 func newUpdatePackage(id string) *UpdatePackage {
-	return &UpdatePackage{Id: id, LastSeen: getCurrentTime(), Data: make(map[string]any), Properties: make(map[string]any)}
+	return &UpdatePackage{Id: id, LastSeen: getCurrentTime(), Data: make(map[string]any)}
 }
 
 func (u *UpdatePackage) HasData() bool {
@@ -254,7 +263,6 @@ func createProperties(device *Device, data map[string]interface{}) map[string]an
 
 	var props = map[string]any{}
 
-	we dont need properties, we could have last seen and availability props
 	// for key, value := range data {
 
 	// 	if expose, ok := device.Exposes[key]; ok {
@@ -279,7 +287,7 @@ func createProperties(device *Device, data map[string]interface{}) map[string]an
 func createExpose(data map[string]interface{}) map[string]*Entity {
 	var entities = make(map[string]*Entity)
 	for key, value := range data {
-		if _, ok := exposesWhitelist[key]; !ok { 
+		if _, ok := exposesWhitelist[key]; !ok {
 			continue
 		}
 
