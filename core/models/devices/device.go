@@ -259,31 +259,6 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 	return newEntity, nil
 }
 
-func createProperties(device *Device, data map[string]interface{}) map[string]any {
-
-	var props = map[string]any{}
-
-	// for key, value := range data {
-
-	// 	if expose, ok := device.Exposes[key]; ok {
-
-	// 		// add diagnostic exposes to device properties
-	// 		if expose.Category == DiagnosticCategory {
-	// 			props[key] = value
-	// 		}
-	// 	}
-	// }
-
-	if _, ok := data[lastSeenKey]; !ok {
-		data[lastSeenKey] = getCurrentTime()
-	}
-
-	props[lastSeenKey] = data[lastSeenKey]
-	props[availabilityKey] = online
-
-	return props
-}
-
 func createExpose(data map[string]interface{}) map[string]*Entity {
 	var entities = make(map[string]*Entity)
 	for key, value := range data {
@@ -352,12 +327,24 @@ func CreateNewDevice(id string, friendlyName string, connType string, bridgeInfo
 		newDevice.Exposes = createExpose(data)
 	}
 
-	newDevice.Properties = createProperties(newDevice, data)
 	if len(newDevice.Exposes) == 0 {
 		return nil, errors.New("invalid payload - no exposed entries found")
 	}
 
+	newDevice.LastSeenString = getLastSeen(data)
+	newDevice.Availability = OnlineAvailability
 	return newDevice, nil
+}
+
+// TODO: do we need to sanitize/valdate time?
+func getLastSeen(data map[string]interface{}) string {
+	if val, ok := data[lastSeenKey]; ok {
+		if strVal, ok := val.(string); ok {
+			return strVal
+		}
+	}
+	utils.LogDebug("lastSeen not in payload, using current time.")
+	return getCurrentTime()
 }
 
 func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
@@ -386,19 +373,17 @@ func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
 		}
 	}
 
-	if device.Properties[availabilityKey] != online {
-		device.Properties[availabilityKey] = online
-		updatePackage.Properties[availabilityKey] = online // we handle it manually for now
-
+	do we need to update lastseen in updatedPackage ???
+	if device.Availability == OfflineAvailability {
+		device.Availability = OnlineAvailability
+		updatePackage.Availability = OnlineAvailability // we handle it manually for now
+		
 		utils.LogInfof("device [%s] %s is online", device.Id, device.FriendlyName)
 		device.resetAvailabilityTimer()
 	}
 
-	if _, ok := payload[lastSeenKey]; !ok {
-		payload[lastSeenKey] = getCurrentTime()
-	}
 
-	device.Properties[lastSeenKey] = payload[lastSeenKey] // we need that.
+	device.LastSeenString = getLastSeen(payload) // we need that.
 	return updatePackage
 }
 
