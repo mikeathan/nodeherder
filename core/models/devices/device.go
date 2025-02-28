@@ -116,14 +116,6 @@ func getExposeCategory(entity BridgeExpose) string {
 	return entity.Category
 }
 
-var propertiesWhitelist = map[string]int{
-	"battery":        1,
-	"linkquality":    2,
-	"battpercentage": 3,
-	//"availability": 3,handled manually
-	//"last_seen":    4,handled manually
-}
-
 type Device struct {
 	Id                      string             `json:"id"`
 	FriendlyName            string             `json:"friendly_name"`
@@ -132,7 +124,7 @@ type Device struct {
 	PowerSource             string             `json:"power_source"`
 	Exposes                 map[string]*Entity `json:"exposes"`
 	Properties              map[string]any     `json:"properties"`
-	LastSeenString          string             `json:"last_seen"` // TO FIX  maybe it can be a time.Time
+	LastSeen                string             `json:"last_seen"`
 	Availability            AvailabilityType   `json:"availability"`
 	availabilityTicker      time.Ticker
 	availablityDone         chan bool
@@ -149,7 +141,7 @@ func NewDevice(id string) *Device {
 		ConnectionType:          "",
 		PowerSource:             "",
 		Availability:            UnknownAvailability,
-		LastSeenString:          "",
+		LastSeen:                "",
 		Exposes:                 map[string]*Entity{},
 		Properties:              map[string]any{},
 		availabilityTicker:      time.Ticker{},
@@ -162,8 +154,8 @@ func NewDevice(id string) *Device {
 type PackageData map[string]any
 type UpdatePackage struct {
 	Id           string           `json:"id"`
-	LastSeen     string           `json:"last_seen"` // time.time ??
-	Availability AvailabilityType `json:"availability"`
+	LastSeen     string           `json:"last_seen"`
+	Availability AvailabilityType `json:"availability,omitempty"`
 	Data         PackageData      `json:"data"`
 }
 
@@ -331,7 +323,7 @@ func CreateNewDevice(id string, friendlyName string, connType string, bridgeInfo
 		return nil, errors.New("invalid payload - no exposed entries found")
 	}
 
-	newDevice.LastSeenString = getLastSeen(data)
+	newDevice.LastSeen = getLastSeen(data)
 	newDevice.Availability = OnlineAvailability
 	return newDevice, nil
 }
@@ -350,44 +342,48 @@ func getLastSeen(data map[string]interface{}) string {
 func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
 
 	var updatePackage = newUpdatePackage(device.Id)
-	for name, currValue := range device.Exposes {
-		if newValue, ok := payload[name]; ok && newValue != currValue.Data {
+	for name, newValue := range payload {
+		if expose, ok := device.Exposes[name]; ok && expose.Data != newValue {
+
+			// we only care about measurements to determine
+			// if there has been sensor changes. if we do have new sensor data
+			// then collect everything that has changed
+
+			if len(updatePackage.Data) != 0 {
+				updatePackage.Data[name] = newValue
+			} else if expose.Category == MeasurementCategory {
+				updatePackage.Data[name] = newValue
+			}
+
+			// update device expose with updated data
 			device.Exposes[name].Data = newValue
-			updatePackage.Data[name] = newValue
 		}
 	}
 
-	// Update device properties
 	defer device.mutex.Unlock()
 	device.mutex.Lock()
 
 	if updatePackage.HasData() {
-
-		for name := range propertiesWhitelist {
-			currValue := device.Properties[name]
-			if newValue, ok := payload[name]; ok && newValue != currValue {
-
-				device.Properties[name] = newValue
-				updatePackage.Properties[name] = newValue
-			}
-		}
+		updatePackage.LastSeen = getLastSeen(payload)
 	}
 
-	do we need to update lastseen in updatedPackage ???
 	if device.Availability == OfflineAvailability {
 		device.Availability = OnlineAvailability
-		updatePackage.Availability = OnlineAvailability // we handle it manually for now
-		
+
+		// TODO: handle this below better
+		// updatePackage contains Avaailability only if we have a change oin Device Availability. else its ommited.
+		// thats because we use updatePackage for either measurement data or device availability change
+		updatePackage.Availability = OnlineAvailability // we handle it manually for now.
+
 		utils.LogInfof("device [%s] %s is online", device.Id, device.FriendlyName)
 		device.resetAvailabilityTimer()
 	}
 
-
-	device.LastSeenString = getLastSeen(payload) // we need that.
+	device.LastSeen = getLastSeen(payload) // we need that.
 	return updatePackage
 }
 
-func (device *Device) LastSeen() (time.Time, error) {
+func (device *Device) LastSeenTime() (time.Time, error) {
 
 	defer device.mutex.RUnlock()
 	device.mutex.RLock()
@@ -406,7 +402,7 @@ func (device *Device) isAvailable() bool {
 	defer device.mutex.RUnlock()
 	device.mutex.RLock()
 
-	return device.Properties[availabilityKey] == online
+	return device.Availability == OnlineAvailability
 }
 
 func (device *Device) setAvailable(value bool) {
@@ -414,9 +410,9 @@ func (device *Device) setAvailable(value bool) {
 	defer device.mutex.Unlock()
 	device.mutex.Lock()
 	if value {
-		device.Properties[availabilityKey] = online
+		device.Availability = OnlineAvailability
 	} else {
-		device.Properties[availabilityKey] = offline
+		device.Availability = OfflineAvailability
 	}
 }
 
@@ -447,7 +443,7 @@ func (device *Device) Monitor(timeoutInSecs int, onChangeCallback func(p interfa
 				// todo: move it in one place
 				if onChangeCallback != nil {
 					p := newUpdatePackage(device.Id)
-					p.Properties[availabilityKey] = offline
+					p.Availability = OfflineAvailability
 					onChangeCallback(p)
 				}
 
@@ -459,7 +455,7 @@ func (device *Device) Monitor(timeoutInSecs int, onChangeCallback func(p interfa
 					return
 				}
 
-				lastSeen, err := device.LastSeen()
+				lastSeen, err := device.LastSeenTime()
 				if err != nil {
 					utils.LogErrorf("device %s failed to parse time %s", device.Id, err.Error())
 
@@ -476,7 +472,7 @@ func (device *Device) Monitor(timeoutInSecs int, onChangeCallback func(p interfa
 					// todo: move it in one place
 					if onChangeCallback != nil {
 						p := newUpdatePackage(device.Id)
-						p.Properties[availabilityKey] = offline
+						p.Availability = OfflineAvailability
 						onChangeCallback(p)
 					}
 
