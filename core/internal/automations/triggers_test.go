@@ -658,9 +658,9 @@ func createExposures(data map[string]interface{}) map[string]*devices.Entity {
 	return entities
 }
 
-func createEntity(name string, description string, data any, unit string, props map[string]any) *devices.Entity {
-	if props == nil {
-		props = make(map[string]any)
+func createEntity(name string, description string, data any, unit string, attributes map[string]any) *devices.Entity {
+	if attributes == nil {
+		attributes = make(map[string]any)
 	}
 
 	newEntity := &devices.Entity{}
@@ -670,6 +670,6 @@ func createEntity(name string, description string, data any, unit string, props 
 	newEntity.Name = name
 	newEntity.Unit = unit
 	newEntity.Description = description
-	newEntity.Properties = props
+	newEntity.Attributes = attributes
 	return newEntity
 }

@@ -126,17 +126,47 @@ func validateDevice(t *testing.T, dev1 *devices.Device, dev2 *devices.Device) {
 		}
 
 		if equalityCheck(expose.Data, inputExpose.Data) == false {
-			t.Fatalf("unexpected expose.Data value")
+			t.Fatalf("unexpected expose.Data ")
 		}
 		if expose.Unit != inputExpose.Unit {
-			t.Fatalf("unexpected expose.Unit value")
+
+			t.Fatalf("unexpected expose.Unit")
 		}
-		for pidx, property := range expose.Properties {
-			inputproperty := inputExpose.Properties[pidx]
-			if property != inputproperty {
-				t.Fatalf("unexpected property value")
+		if expose.Type != inputExpose.Type {
+			t.Fatalf("unexpected expose.Type")
+		}
+
+		if expose.AccessMode != inputExpose.AccessMode {
+			t.Fatalf("unexpected expose.AccessMode")
+		}
+		if expose.Category != inputExpose.Category {
+			t.Fatalf("unexpected expose.Category")
+		}
+
+		for idx, value := range expose.Values {
+			if value != inputExpose.Values[idx] {
+				t.Fatalf("unexpected expose.Value %d", value)
 			}
 		}
+
+		for idx, value := range expose.Attributes {
+			if value != inputExpose.Attributes[idx] {
+				t.Fatalf("unexpected expose.Atrribute %d", value)
+			}
+		}
+		if len(inputExpose.Presets) != 0 {
+
+			if len(expose.Presets) != len(inputExpose.Presets) {
+				t.Fatalf("unexpected expose.Presets length")
+			}
+
+			for idx, value := range expose.Presets {
+				if value != inputExpose.Presets[idx] {
+					t.Fatalf("unexpected expose.Preset %d", value)
+				}
+			}
+		}
+
 	}
 }
 

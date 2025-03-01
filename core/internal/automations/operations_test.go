@@ -450,9 +450,7 @@ func createMockDevice(id string, name string, property string, data any, min flo
 	device1.ConnectionType = "mqtt"
 	device1.Description = fmt.Sprintf("Test device %s description", id)
 	device1.PowerSource = "mains"
-	device1.Properties = map[string]any{}
-	device1.Properties["last_seen"] = time.Now().Format(time.RFC3339)
-	device1.Properties["link_quality"] = 45.0
+	device1.LastSeen = time.Now().Format(time.RFC3339)
 	device1.Exposes = make(map[string]*devices.Entity)
 
 	ent1 := &devices.Entity{}

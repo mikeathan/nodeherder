@@ -749,13 +749,14 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 		t.Fatalf("want %s got %s", name, device.Id)
 	}
 
-	if device.Properties["last_seen"] == nil {
+	if device.LastSeen == "" {
 		t.Fatalf("want %s got %s", "last_seen", "nil")
 	}
 
-	if device.Properties["last_seen"] != want {
-		t.Fatalf("want %s got %s", want, device.Properties["last_seen"])
+	if device.LastSeen != want {
+		t.Fatalf("want %s got %s", want, device.LastSeen)
 	}
+
 }
 
 func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {
@@ -1123,12 +1124,12 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	if device.Properties["availability"] != "online" {
+	if device.Availability != devices.OnlineAvailability {
 		t.Fatalf("want online got offline")
 	}
 
 	time.Sleep(1100 * time.Millisecond)
-	if device.Properties["availability"] != "offline" {
+	if device.Availability != devices.OfflineAvailability {
 		t.Fatalf("want offline got online")
 	}
 
@@ -1138,7 +1139,7 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 	id = utils.HashName(name)
 	device1, _ := store.FindDeviceById(id)
 
-	if device1.Properties["availability"] != "online" {
+	if device1.Availability != devices.OnlineAvailability {
 		t.Fatalf("want online got offline")
 	}
 }
@@ -1162,14 +1163,14 @@ func TestAvailabilityIsDisposed(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 
-	if device.Properties["availability"] != "online" {
+	if device.Availability != devices.OnlineAvailability {
 		t.Fatalf("want online got offline")
 	}
 
 	device.Dispose()
 	time.Sleep(100 * time.Millisecond)
 
-	if device.Properties["availability"] != "offline" {
+	if device.Availability != devices.OfflineAvailability {
 		t.Fatalf("want offline got online")
 	}
 }

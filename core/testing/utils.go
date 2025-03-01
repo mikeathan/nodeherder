@@ -159,12 +159,15 @@ func ValidateDevice(t *testing.T, dev1 *devices.Device, dev2 *devices.Device) {
 		if expose.Unit != inputExpose.Unit {
 			t.Fatalf("unexpected expose.Unit value")
 		}
-		for pidx, property := range expose.Properties {
-			inputproperty := inputExpose.Properties[pidx]
-			if property != inputproperty {
-				t.Fatalf("unexpected property value")
-			}
+		if expose.Type != inputExpose.Type {
+			t.Fatalf("unexpected expose.Type value")
+		}
+		if expose.Category != inputExpose.Category {
+			t.Fatalf("unexpected expose.Category value")
+		}
 
+		if expose.AccessMode != inputExpose.AccessMode {
+			t.Fatalf("unexpected expose.AccessMode value")
 		}
 	}
 }
@@ -287,9 +290,7 @@ func CreateDevice(deviceId string, friendlyName string, property string, data an
 	device1.ConnectionType = "mqtt"
 	device1.Description = fmt.Sprintf("Test device %s description", deviceId)
 	device1.PowerSource = "mains"
-	device1.Properties = map[string]any{}
-	device1.Properties["last_seen"] = time.Now().Format(time.RFC3339)
-	device1.Properties["link_quality"] = 45.0
+	device1.LastSeen = time.Now().Format(time.RFC3339)
 	device1.Exposes = make(map[string]*devices.Entity)
 
 	ent1 := &devices.Entity{}

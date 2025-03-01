@@ -118,7 +118,7 @@ func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo
 					continue
 				}
 				d.Exposes[entity.Name] = entity
-				d.Properties["availability"] = "offline"
+				d.Availability = devices.OfflineAvailability
 			}
 
 			// load features
@@ -132,7 +132,7 @@ func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo
 					}
 
 					d.Exposes[entity.Name] = entity
-					d.Properties["availability"] = "offline"
+					d.Availability = devices.OfflineAvailability
 				}
 
 			}

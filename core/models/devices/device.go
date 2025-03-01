@@ -123,7 +123,6 @@ type Device struct {
 	ConnectionType          string             `json:"connection_type"`
 	PowerSource             string             `json:"power_source"`
 	Exposes                 map[string]*Entity `json:"exposes"`
-	Properties              map[string]any     `json:"properties"`
 	LastSeen                string             `json:"last_seen"`
 	Availability            AvailabilityType   `json:"availability"`
 	availabilityTicker      time.Ticker
@@ -143,7 +142,6 @@ func NewDevice(id string) *Device {
 		Availability:            UnknownAvailability,
 		LastSeen:                "",
 		Exposes:                 map[string]*Entity{},
-		Properties:              map[string]any{},
 		availabilityTicker:      time.Ticker{},
 		availablityDone:         make(chan bool, 1),
 		availabilityTimeoutSecs: 3600,
@@ -181,7 +179,6 @@ type Entity struct {
 	Type        ExposeDataType   `json:"type"`
 	AccessMode  ExposeAccessMode `json:"access_mode"`
 	Category    ExposeCategory   `json:"category,omitempty"`
-	Properties  map[string]any   `json:"properties,omitempty"` // NEEDS REMOVING !!!!!!!!!!!!!!!!!!1
 	Attributes  map[string]any   `json:"attributes,omitempty"`
 	Presets     map[string]any   `json:"presets,omitempty"`
 	Values      map[string]any
@@ -388,8 +385,7 @@ func (device *Device) LastSeenTime() (time.Time, error) {
 	defer device.mutex.RUnlock()
 	device.mutex.RLock()
 
-	lastSeenStr, _ := device.Properties[lastSeenKey].(string)
-	lastSeen, err := time.Parse(time.RFC3339, lastSeenStr)
+	lastSeen, err := time.Parse(time.RFC3339, device.LastSeen)
 	if err != nil {
 		return time.Time{}, err
 	}
