@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestRegisterBridge(t *testing.T) {
@@ -85,7 +86,6 @@ func TestRegisterBridge(t *testing.T) {
 						assetExpose(bridgeExpose, expose, devices.DiagnosticCategory, t)
 						assertDataType(bridgeExpose, expose, t)
 
-
 						found = true
 					}
 				}
@@ -117,7 +117,6 @@ func TestRegisterBridge(t *testing.T) {
 						assetExpose(bridgeExpose, expose, devices.ConfigCategory, t)
 						assertDataType(bridgeExpose, expose, t)
 
-
 						found = true
 					}
 				}
@@ -128,6 +127,56 @@ func TestRegisterBridge(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestCreateNewDevice(t *testing.T) {
+
+	bridgeInfoFile := filepath.Join("../../../docs", "device_bridge.json")
+	data, err := os.ReadFile(bridgeInfoFile)
+	if err != nil {
+		t.Fatal("Error reading file:", err)
+		return
+	}
+	bridgeInfoes, err := devices.LoadBridgeDevices(data)
+	if err != nil {
+		t.Fatal("Error parsing bridge info data:", err)
+		return
+	}
+
+	repo := repository.NewMemoryDeviceRepo()
+	store := utils_test.CreateStoreFromDeviceRepo(repo)
+	eventHub := &mocks.MockEventHub{}
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(bridgeInfoes, 30000)
+
+	deviceName := "Living room light"
+
+	// check to see if it exists in bridge 
+	lightBridgeInfo := &devices.BridgeInfo{}
+	for _, bridgeInfo := range bridgeInfoes {
+		if bridgeInfo.FriendlyName == deviceName {
+			lightBridgeInfo = bridgeInfo
+			break
+		}
+	}
+
+	if lightBridgeInfo == nil {
+		t.Errorf("Error not found bridge info for device %s", deviceName)
+	}
+
+	payload := map[string]interface{}{}
+	payload["brightness"] = 120.1
+	payload["color_temp"] = 100
+	payload["lastSeen"] = time.Now().Format(time.RFC3339)
+	newDevice, err := registrar.CreateNewDevice(deviceName, "mqtt", payload)
+
+	if err != nil {
+		t.Errorf("Error creating new device: %s", err)
+	}
+
+	TODO
+
 }
 
 func assetExpose(bridgeExpose devices.BridgeExpose, expose *devices.Entity, category devices.ExposeCategory, t *testing.T) {
@@ -161,10 +210,18 @@ func assertDataType(bridgeExpose devices.BridgeExpose, expose *devices.Entity, t
 		if expose.Values["off"] != bridgeExpose.ValueOff {
 			t.Errorf("Error %s device value mismatch want: %v got: %v", bridgeExpose.Name, bridgeExpose.ValueOff, expose.Values["off"])
 		}
+
+		if devices.IsWriteableAccessMode(bridgeExpose) && bridgeExpose.ValueToggle != "" {
+			if expose.Values["toggle"] != bridgeExpose.ValueToggle {
+				t.Errorf("Error %s device value mismatch want: %v got: %v", bridgeExpose.Name, bridgeExpose.ValueToggle, expose.Values["toggle"])
+			}
+		}
+
 		if bridgeExpose.ValueToggle != "" && expose.Values["toggle"] != bridgeExpose.ValueToggle {
 			t.Errorf("Error %s device value mismatch want: %v got: %v", bridgeExpose.Name, bridgeExpose.ValueToggle, expose.Values["toggle"])
 		}
 	}
+
 	if expose.Type == devices.EnumDataType {
 		for id, item := range bridgeExpose.Values {
 			if expose.Values[fmt.Sprintf("%d", id)] != item {
