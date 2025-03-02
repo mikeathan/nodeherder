@@ -248,6 +248,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 	return newEntity, nil
 }
 
+// Not used yet, is for handling non bridge devices which we havent tested yet
 func createExpose(data map[string]interface{}) map[string]*Entity {
 	var entities = make(map[string]*Entity)
 	for key, value := range data {
@@ -286,11 +287,11 @@ func createExposeFromBridge(data map[string]interface{}, bridgeInfo *BridgeInfo)
 		for _, feature := range expose.Features {
 			if value, ok := data[feature.Property]; ok {
 
-				entity, err := CreateEntityFromExpose(expose, value)
+				entity, err := CreateEntityFromExpose(feature, value)
 				if err != nil {
 					continue
 				}
-				entities[expose.Property] = entity
+				entities[feature.Property] = entity
 			}
 		}
 	}

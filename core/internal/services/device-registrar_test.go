@@ -152,7 +152,7 @@ func TestCreateNewDevice(t *testing.T) {
 
 	deviceName := "Living room light"
 
-	// check to see if it exists in bridge 
+	// check to see if it exists in bridge
 	lightBridgeInfo := &devices.BridgeInfo{}
 	for _, bridgeInfo := range bridgeInfoes {
 		if bridgeInfo.FriendlyName == deviceName {
@@ -165,18 +165,50 @@ func TestCreateNewDevice(t *testing.T) {
 		t.Errorf("Error not found bridge info for device %s", deviceName)
 	}
 
+	lastSeen := time.Now().Format(time.RFC3339)
 	payload := map[string]interface{}{}
 	payload["brightness"] = 120.1
-	payload["color_temp"] = 100
-	payload["lastSeen"] = time.Now().Format(time.RFC3339)
+	payload["color_temp"] = 100.1
+	payload["last_seen"] = lastSeen
+	payload["battery"] = 100
 	newDevice, err := registrar.CreateNewDevice(deviceName, "mqtt", payload)
 
 	if err != nil {
 		t.Errorf("Error creating new device: %s", err)
 	}
 
-	TODO
+	if newDevice.FriendlyName != deviceName {
+		t.Errorf("Error device name mismatch want: %s got: %s", deviceName, newDevice.FriendlyName)
+	}
 
+	if newDevice.LastSeen != lastSeen {
+		t.Errorf("Error device last seen mismatch want: %s got: %s", lastSeen, newDevice.LastSeen)
+	}
+
+	if newDevice.Availability != devices.OnlineAvailability {
+		t.Errorf("Error device availability mismatch want: %v got: %v", devices.OnlineAvailability, newDevice.Availability)
+	}
+
+	if newDevice.ConnectionType != "mqtt" {
+		t.Errorf("Error device connection type mismatch want: %s got: %s", "mqtt", newDevice.ConnectionType)
+	}
+
+	if newDevice.PowerSource != "battery" {
+		t.Errorf("Error device power source mismatch want: %v got: %v", "battery", newDevice.PowerSource)
+	}
+
+	if newDevice.Exposes["brightness"].Data != 120.1 {
+		t.Errorf("Error device brightness mismatch want: %v got: %v", 120.1, newDevice.Exposes["brightness"].Data)
+	}
+
+	if newDevice.Exposes["color_temp"].Data != 100.1 {
+		t.Errorf("Error device color temp mismatch want: %v got: %v", 100.1, newDevice.Exposes["color_temp"].Data)
+	}
+}
+
+func TestUpdateDevice(t *testing.T) {
+
+	TODO
 }
 
 func assetExpose(bridgeExpose devices.BridgeExpose, expose *devices.Entity, category devices.ExposeCategory, t *testing.T) {
