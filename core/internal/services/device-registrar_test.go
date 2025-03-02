@@ -152,23 +152,11 @@ func TestCreateNewDevice(t *testing.T) {
 
 	deviceName := "Living room light"
 
-	// check to see if it exists in bridge
-	lightBridgeInfo := &devices.BridgeInfo{}
-	for _, bridgeInfo := range bridgeInfoes {
-		if bridgeInfo.FriendlyName == deviceName {
-			lightBridgeInfo = bridgeInfo
-			break
-		}
-	}
-
-	if lightBridgeInfo == nil {
-		t.Errorf("Error not found bridge info for device %s", deviceName)
-	}
-
 	lastSeen := time.Now().Format(time.RFC3339)
 	payload := map[string]interface{}{}
 	payload["brightness"] = 120.1
 	payload["color_temp"] = 100.1
+	payload["state"] = "on"
 	payload["last_seen"] = lastSeen
 	payload["battery"] = 100
 	newDevice, err := registrar.CreateNewDevice(deviceName, "mqtt", payload)
@@ -177,12 +165,84 @@ func TestCreateNewDevice(t *testing.T) {
 		t.Errorf("Error creating new device: %s", err)
 	}
 
+	assertDevicePayload(newDevice, deviceName, payload, t)
+}
+
+func TestUpdateDevice(t *testing.T) {
+
+	bridgeInfoFile := filepath.Join("../../../docs", "device_bridge.json")
+	data, err := os.ReadFile(bridgeInfoFile)
+	if err != nil {
+		t.Fatal("Error reading file:", err)
+		return
+	}
+	bridgeInfoes, err := devices.LoadBridgeDevices(data)
+	if err != nil {
+		t.Fatal("Error parsing bridge info data:", err)
+		return
+	}
+
+	repo := repository.NewMemoryDeviceRepo()
+	store := utils_test.CreateStoreFromDeviceRepo(repo)
+	eventHub := &mocks.MockEventHub{}
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(bridgeInfoes, 30000)
+
+	deviceName := "Living room light"
+
+	payload := map[string]interface{}{}
+	payload["brightness"] = 120.1
+	payload["color_temp"] = 100.1
+	payload["state"] = "on"
+	payload["last_seen"] = time.Now().Format(time.RFC3339)
+	payload["battery"] = 100
+
+	newDevice, err := registrar.CreateNewDevice(deviceName, "mqtt", payload)
+	if err != nil {
+		t.Errorf("Error creating new device: %s", err)
+	}
+
+	assertDevicePayload(newDevice, deviceName, payload, t)
+
+	updatePayload := map[string]interface{}{}
+	updatePayload["brightness"] = 0
+	updatePayload["color_temp"] = 201.5
+	updatePayload["state"] = "off"
+	updatePayload["last_seen"] = time.Now().Format(time.RFC3339)
+	updatePayload["battery"] = 99.2
+
+	updatePackage := newDevice.Update(updatePayload)
+}
+func assertDeviceUpdatePackage(device *devices.Device, updatePackage *devices.UpdatePackage, t *testing.T) {
+
+	if device.Id != updatePackage.Id {
+		t.Errorf("Error device name mismatch want: %s got: %s", updatePackage.Id, device.Id)
+	}
+	if device.LastSeen != updatePackage.LastSeen {
+		t.Errorf("Error device last seen mismatch want: %s got: %s", updatePackage.LastSeen, device.LastSeen)
+	}
+	if device.Availability != updatePackage.Availability {
+		t.Errorf("Error device availability mismatch want: %v got: %v", updatePackage.Availability, device.Availability)
+	}
+
+	for name, value := range updatePackage.Data {
+		if exposeValue, ok := device.Exposes[name]; ok {
+
+			if exposeValue != value {
+				t.Errorf("Error device expose value mismatch want: %v got: %v", exposeValue, value)
+			}
+		}
+	}
+}
+
+func assertDevicePayload(newDevice *devices.Device, deviceName string, payload map[string]interface{}, t *testing.T) {
 	if newDevice.FriendlyName != deviceName {
 		t.Errorf("Error device name mismatch want: %s got: %s", deviceName, newDevice.FriendlyName)
 	}
 
-	if newDevice.LastSeen != lastSeen {
-		t.Errorf("Error device last seen mismatch want: %s got: %s", lastSeen, newDevice.LastSeen)
+	if newDevice.LastSeen != payload["last_seen"] {
+		t.Errorf("Error device last seen mismatch want: %s got: %s", payload["last_seen"], newDevice.LastSeen)
 	}
 
 	if newDevice.Availability != devices.OnlineAvailability {
@@ -204,13 +264,11 @@ func TestCreateNewDevice(t *testing.T) {
 	if newDevice.Exposes["color_temp"].Data != 100.1 {
 		t.Errorf("Error device color temp mismatch want: %v got: %v", 100.1, newDevice.Exposes["color_temp"].Data)
 	}
+
+	if newDevice.Exposes["state"].Data != "on" {
+		t.Errorf("Error device state mismatch want: %v got: %v", "on", newDevice.Exposes["state"].Data)
+	}
 }
-
-func TestUpdateDevice(t *testing.T) {
-
-	TODO
-}
-
 func assetExpose(bridgeExpose devices.BridgeExpose, expose *devices.Entity, category devices.ExposeCategory, t *testing.T) {
 	if expose.Category != category {
 		t.Errorf("Error %s device mismatch want: %s got: %s", category, bridgeExpose.Name, expose.Name)
