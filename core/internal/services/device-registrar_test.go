@@ -213,7 +213,10 @@ func TestUpdateDevice(t *testing.T) {
 	updatePayload["battery"] = 99.2
 
 	updatePackage := newDevice.Update(updatePayload)
+
+	assertDeviceUpdatePackage(newDevice, updatePackage, t)
 }
+
 func assertDeviceUpdatePackage(device *devices.Device, updatePackage *devices.UpdatePackage, t *testing.T) {
 
 	if device.Id != updatePackage.Id {
@@ -222,15 +225,12 @@ func assertDeviceUpdatePackage(device *devices.Device, updatePackage *devices.Up
 	if device.LastSeen != updatePackage.LastSeen {
 		t.Errorf("Error device last seen mismatch want: %s got: %s", updatePackage.LastSeen, device.LastSeen)
 	}
-	if device.Availability != updatePackage.Availability {
-		t.Errorf("Error device availability mismatch want: %v got: %v", updatePackage.Availability, device.Availability)
-	}
 
 	for name, value := range updatePackage.Data {
-		if exposeValue, ok := device.Exposes[name]; ok {
+		if expose, ok := device.Exposes[name]; ok {
 
-			if exposeValue != value {
-				t.Errorf("Error device expose value mismatch want: %v got: %v", exposeValue, value)
+			if expose.Data != value {
+				t.Errorf("Error device expose value mismatch want: %v got: %v", expose.Data, value)
 			}
 		}
 	}

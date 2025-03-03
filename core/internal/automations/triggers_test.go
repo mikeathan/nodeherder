@@ -128,7 +128,7 @@ func TestAutomationwithMultipleTriggerActions(t *testing.T) {
 	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
 	registrar.RegisterBridge(deviceBridgeList, 30000)
 
-	trigger := createTriggerwithMultipleActions(triggerId, registrar, mqtt, "button1", []string{"brightness", "color_temperature", "color_brightness"}, []any{120, 250, 2000})
+	trigger := createTriggerwithMultipleActions(triggerId, registrar, mqtt, "button1", []string{"brightness", "color_temperature", "color_brightness"}, []any{120, 250, 200})
 	trigger.Conditions = append(trigger.Conditions, automations.NewExposeCondition("button1", "pressed", "="))
 
 	automation := automations.NewDevice(triggerId)
@@ -613,7 +613,12 @@ func createTriggerwithMultipleActions(id string, registrar services.DeviceRegist
 		})
 	}
 
-	brightnessAction.Configure(registrar, mqtt)
+	err := brightnessAction.Configure(registrar, mqtt)
+	if err != nil {
+		fmt.Println("[ERROR] configuring action", err)
+		return nil
+	}
+
 	trigger := &automations.Trigger{}
 
 	trigger.Name = triggerName
