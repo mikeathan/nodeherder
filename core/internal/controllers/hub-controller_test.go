@@ -7,6 +7,7 @@ import (
 	"math"
 	"node-herder/internal/automations"
 	"node-herder/internal/controllers"
+	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/mocks"
 	"node-herder/models/devices"
@@ -14,9 +15,12 @@ import (
 	"node-herder/models/logging"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
+	"node-herder/repository"
 	"node-herder/store"
 	utils_test "node-herder/testing"
 	"node-herder/utils"
+	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -974,68 +978,90 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 
 }
 
-to fix - is broken
+func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 
-func TestNewDeviceValuesAreBroadcastedOnly(t *testing.T) {
-	name := "device1"
+	bridgeInfoFile := filepath.Join("../../../docs", "device_bridge.json")
+	data, err := os.ReadFile(bridgeInfoFile)
+	if err != nil {
+		t.Fatal("Error reading file:", err)
+		return
+	}
+	bridgeInfoes, err := devices.LoadBridgeDevices(data)
+	if err != nil {
+		t.Fatal("Error parsing bridge info data:", err)
+		return
+	}
+
+	repo := repository.NewMemoryDeviceRepo()
+	store := utils_test.CreateStoreFromDeviceRepo(repo)
+	eventHub := &mocks.MockEventHub{}
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(bridgeInfoes, 30000)
+
 	wg := &sync.WaitGroup{}
-	var payload = createMockPayload()
+
+	deviceName := "Living room light"
 
 	testCases := []struct {
 		key       string
 		value     any
 		broadcast bool
 	}{
-		{key: "temperature", value: 15.6, broadcast: true},
-		{key: "temperature", value: 15.6, broadcast: false},
-		{key: "temperature", value: 18.5, broadcast: true},
-		{key: "humidity", value: 70.3, broadcast: true},
-		{key: "humidity", value: 70.3, broadcast: false},
+		{key: "brightness", value: 15.6, broadcast: true},
+		{key: "brightness", value: 15.6, broadcast: false},
+		{key: "brightness", value: 18.5, broadcast: true},
+		{key: "color_temp", value: 70.3, broadcast: true},
+		{key: "color_temp", value: 70.1, broadcast: true},
 		{key: "linkquality", value: 120, broadcast: false},
 		{key: "linkquality", value: 14, broadcast: false},
+		{key: "battery", value: 100, broadcast: false},
 		{key: "battery", value: 70, broadcast: false},
-		{key: "temperature", value: 18.5, broadcast: false},
-		{key: "temperature", value: 21, broadcast: true},
-		{key: "temperature", value: 21, broadcast: false},
-		{key: "temperature", value: 21, broadcast: false},
+		{key: "brightness", value: 18.5, broadcast: false},
+		{key: "brightness", value: 21, broadcast: true},
+		{key: "brightness", value: 21, broadcast: false},
+		{key: "brightness", value: 21, broadcast: false},
 	}
 
-	broadcast := func(eventName string, data interface{}) error {
+	broadcastHandler := func(eventName string, data interface{}) error {
 		wg.Done()
 		return nil
 	}
 
-	ws := newMockBroadcastEventHub(broadcast)
-	store := utils_test.CreateStore()
-
 	mqtt := &mocks.MockMqttClient{}
+	eventHub.SetMockBroadcastEvent(broadcastHandler)
 
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
 	for _, testCase := range testCases {
-		// reset
-		// use test case for updating sensor values
-		payload[testCase.key] = testCase.value
-		data, err := json.Marshal(payload)
-		if err != nil {
-			panic(err)
-		}
-		mqtt.Publish(name, []byte(data))
 
-		time.Sleep(100 * time.Millisecond)
+		lastSeen := time.Now().Format(time.RFC3339)
+		payload := map[string]interface{}{}
+		payload[testCase.key] = testCase.value
+		payload["last_seen"] = lastSeen
+
+		payloadBytes, err := json.Marshal(payload)
+		if err != nil {
+			t.Fatalf("failed to marshal payload %v", err)
+		}
 
 		if testCase.broadcast {
-			wg.Wait()
+			wg.Add(1)
 		}
 
-		// if testCase.broadcast != messageBroadcasted {
-		// 	t.Fatalf("idx %d,key %s, value %v, broadcast want %v got %v", idx, testCase.key, testCase.value, testCase.broadcast, messageBroadcasted)
-		// }
+		mqtt.Publish(deviceName, []byte(payloadBytes))
+
+		time.Sleep(100 * time.Millisecond)
+		wg.Wait()
 	}
 }
+
+
+wrong - needs fixing
 
 func TestDevicesBroadcastDeviceEvent(t *testing.T) {
 	var payload = createMockPayload()
 
+	wg:=&sync.WaitGroup{}
 	testCases := []struct {
 		key   string
 		value any
@@ -1071,6 +1097,7 @@ func TestDevicesBroadcastDeviceEvent(t *testing.T) {
 		if eventName != expectedEvent {
 			t.Fatalf("invalid broadcasted event:  want %s got %s", expectedEvent, eventName)
 		}
+		wg.Done()
 		return nil
 	}
 
@@ -1086,10 +1113,12 @@ func TestDevicesBroadcastDeviceEvent(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
+		wg.Add(1)
 		mqtt.Publish(testCase.key, []byte(data))
 
 		time.Sleep(100 * time.Millisecond)
 		eventIdx++
+		wg.Wait()
 	}
 }
 
