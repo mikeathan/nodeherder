@@ -56,7 +56,7 @@ type AppStore interface {
 	AllDevices() ([]*devices.Device, error)
 
 	LoadAppConfig() (*settings.AppConfig, error)
-	FindDeviceConfig(id string) (*settings.DeviceConfig, error)
+	LoadDeviceConfig(id string) (*settings.DeviceConfig, error)
 	SaveDeviceConfig(deviceconfig *settings.DeviceConfig) error
 	SaveHistoryConfig(historyConfig *settings.HistoryConfig) error
 	SaveLoggerConfig(loggerConfig *settings.LoggerConfig) error
@@ -179,6 +179,7 @@ func (s *appStore) LoadBridgeConfig() (*settings.BridgeConfig, error) {
 	}
 	return config, nil
 }
+
 func (s *appStore) SaveBridgePermitJoin(enabled bool) error {
 	config, err := s.config.LoadBridgeConfig()
 	if err != nil {
@@ -194,9 +195,20 @@ func (s *appStore) SaveBridgePermitJoin(enabled bool) error {
 
 func (s *appStore) SaveDeviceConfig(deviceconfig *settings.DeviceConfig) error {
 
+	// we keep stae in memory for quick access
 	s.deviceConfigs[deviceconfig.Id] = deviceconfig
 
 	return s.config.SaveDeviceConfig(deviceconfig)
+}
+
+func (s *appStore) LoadDeviceConfig(id string) (*settings.DeviceConfig, error) {
+
+	// we keep stae in memory for quick access
+	if config, ok := s.deviceConfigs[id]; ok {
+		return config, nil
+	}
+
+	return s.config.FindOrAddDeviceConfigIfNotExists(id)
 }
 
 func (s *appStore) StoreMetrics(friendlyName string, data map[string]any) error {
@@ -213,10 +225,6 @@ func (s *appStore) StoreMetrics(friendlyName string, data map[string]any) error 
 	}
 
 	return nil
-}
-
-func (s *appStore) FindDeviceConfig(id string) (*settings.DeviceConfig, error) {
-	return s.config.FindOrAddDeviceConfigIfNotExists(id)
 }
 
 func (s *appStore) RemoveDeviceById(id string) error {

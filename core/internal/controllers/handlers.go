@@ -377,6 +377,7 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 		c.hub.deviceAdded(device, dataMap)
 	} else {
 
+		// debounce needs to happen here 
 		updatedData := device.Update(dataMap)
 		if !updatedData.HasData() {
 			return nil

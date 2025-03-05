@@ -274,8 +274,14 @@ func assetExpose(bridgeExpose devices.BridgeExpose, expose *devices.Entity, cate
 		t.Errorf("Error %s device mismatch want: %s got: %s", category, bridgeExpose.Name, expose.Name)
 	}
 
-	if expose.AccessMode != bridgeExpose.Access {
-		t.Errorf("Error %s device access mismatch want: %v got: %v", category, bridgeExpose.Access, expose.AccessMode)
+	if devices.HasWriteAccessMode(&bridgeExpose) && expose.AccessMode != devices.WriteAccessMode {
+		t.Errorf("Error %s device access mismatch want: %v got: %v", category, devices.WriteAccessMode, expose.AccessMode)
+	}
+	if devices.HasReadWriteAccessMode(&bridgeExpose) && expose.AccessMode != devices.ReadWriteAccessMode {
+		t.Errorf("Error %s device access mismatch want: %v got: %v", category, devices.ReadWriteAccessMode, expose.AccessMode)
+	}
+	if devices.HasReadAccessMode(&bridgeExpose) && expose.AccessMode != devices.ReadAccessMode {
+		t.Errorf("Error %s device access mismatch want: %v got: %v", category, devices.ReadAccessMode, expose.AccessMode)
 	}
 
 	if expose.Type != bridgeExpose.Type {
@@ -301,7 +307,7 @@ func assertDataType(bridgeExpose devices.BridgeExpose, expose *devices.Entity, t
 			t.Errorf("Error %s device value mismatch want: %v got: %v", bridgeExpose.Name, bridgeExpose.ValueOff, expose.Values["off"])
 		}
 
-		if devices.IsWriteableAccessMode(bridgeExpose) && bridgeExpose.ValueToggle != "" {
+		if bridgeExpose.ValueToggle != "" {
 			if expose.Values["toggle"] != bridgeExpose.ValueToggle {
 				t.Errorf("Error %s device value mismatch want: %v got: %v", bridgeExpose.Name, bridgeExpose.ValueToggle, expose.Values["toggle"])
 			}

@@ -6,25 +6,33 @@ import (
 	"fmt"
 )
 
-// type BridgeInfoFeature struct {
-// 	Access      int    `json:"access"`
-// 	Description string `json:"description"`
-// 	Name        string `json:"name"`
-// 	Property    string `json:"property"`
-// 	Type        string `json:"type"`
-// 	ValueOff    any    `json:"value_off,omitempty"`
-// 	ValueOn     any    `json:"value_on,omitempty"`
-// 	ValueToggle string `json:"value_toggle,omitempty"`
-// 	ValueMax    any    `json:"value_max,omitempty"`
-// 	ValueMin    any    `json:"value_min,omitempty"`
-// 	Values      []any  `json:"values,omitempty"`
-// 	Presets     []struct {
-// 		Description string `json:"description"`
-// 		Name        string `json:"name"`
-// 		Value       int    `json:"value"`
-// 	} `json:"presets,omitempty"`
-// 	Unit string `json:"unit,omitempty"`
-// }
+type BridgeExposeAccessMode = int
+
+const (
+	UnknownBridgeAccessMode BridgeExposeAccessMode = 0b000
+	StateBridgeAccessMode   BridgeExposeAccessMode = 0b001 // although it can request, the device send updates about its value
+	WriteBridgeAccessMode   BridgeExposeAccessMode = 0b010 // it will request to set the value to device
+	ReadBridgeAccessMode    BridgeExposeAccessMode = 0b100 // it will request the read the value from device
+)
+
+func IsUknownAccessMode(entity *BridgeExpose) bool {
+	return entity.Access&UnknownBridgeAccessMode != 0
+}
+
+func HasReadWriteAccessMode(entity *BridgeExpose) bool {
+	return entity.Access&WriteBridgeAccessMode != 0 &&
+		entity.Access&ReadBridgeAccessMode != 0
+}
+
+func HasWriteAccessMode(entity *BridgeExpose) bool {
+	return entity.Access&WriteBridgeAccessMode != 0 && entity.Access&ReadBridgeAccessMode == 0
+
+}
+func HasReadAccessMode(entity *BridgeExpose) bool {
+	return (entity.Access&ReadBridgeAccessMode != 0 ||
+		entity.Access&StateBridgeAccessMode != 0) &&
+		entity.Access&WriteBridgeAccessMode == 0
+}
 
 type BridgeExpose struct {
 	Type        string   `json:"type"`
@@ -188,7 +196,7 @@ func FindAllExposesByCategory(payload []byte, category ExposeCategory) (map[stri
 	return exposeMap, nil
 }
 
-func FindAllExposesByAccessMode(payload []byte, accesMode ExposeAccessMode) ([]*BridgeInfo, error) {
+func FindAllExposesByAccessMode(payload []byte, accesMode BridgeExposeAccessMode) ([]*BridgeInfo, error) {
 	bridgeDevices, err := LoadBridgeDevices(payload)
 	if err != nil {
 		return nil, err

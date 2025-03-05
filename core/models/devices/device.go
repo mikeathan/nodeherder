@@ -3,6 +3,7 @@ package devices
 import (
 	"errors"
 	"fmt"
+	"node-herder/models/events"
 	"node-herder/utils"
 	"sync"
 	"time"
@@ -71,13 +72,13 @@ var exposesWhitelist = map[string]int{
 
 type ExposeDataType = string
 type ExposeCategory = string
-type ExposeAccessMode = int
+type ExposeAccessMode = string
 
 const (
-	UnknownAccessMode ExposeAccessMode = 0b000
-	StateAccessMode   ExposeAccessMode = 0b001 // although ican request, the device send updates about its value
-	WriteAccessMode   ExposeAccessMode = 0b010 // it will request to set the value to device
-	ReadAccessMode    ExposeAccessMode = 0b100 // it will request the read the value from device
+	ReadAccessMode      ExposeAccessMode = "read"
+	WriteAccessMode     ExposeAccessMode = "write"
+	ReadWriteAccessMode ExposeAccessMode = "readwrite"
+	UnknownAccessMode   ExposeAccessMode = "unknown"
 
 	MeasurementCategory ExposeCategory = "measurement"
 	DiagnosticCategory  ExposeCategory = "diagnostic"
@@ -89,24 +90,19 @@ const (
 	CompositeDataType ExposeDataType = "composite"
 )
 
-func ToFeatureAccessMode(access int) (ExposeAccessMode, bool) {
-	convertedAccess := ExposeAccessMode(access)
-	return convertedAccess, (convertedAccess&StateAccessMode | ReadAccessMode | WriteAccessMode) != 0
-}
+func getExposeAccessMode(entity *BridgeExpose) ExposeAccessMode {
 
-func IsUknownAccessMode(entity BridgeExpose) bool {
-	return entity.Access&UnknownAccessMode != 0
-}
+	if HasReadWriteAccessMode(entity) {
+		return ReadWriteAccessMode
+	}
+	if HasWriteAccessMode(entity) {
+		return WriteAccessMode
+	}
+	if HasReadAccessMode(entity) {
+		return ReadAccessMode
+	}
 
-func IsWriteableAccessMode(entity BridgeExpose) bool {
-	return entity.Access&WriteAccessMode != 0
-
-}
-func IsReadAccessMode(entity BridgeExpose) bool {
-	return entity.Access&ReadAccessMode != 0
-}
-func IsStateAccessMode(entity *BridgeExpose) bool {
-	return entity.Access&StateAccessMode != 0
+	return UnknownAccessMode
 }
 
 func getExposeCategory(entity BridgeExpose) string {
@@ -198,9 +194,14 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 	// 	return nil, fmt.Errorf("expose property %v is blacklisted", expose.Property)
 	// }
 
-	accessMode, ok := ToFeatureAccessMode(expose.Access)
-	if !ok {
+	accessMode := getExposeAccessMode(&expose)
+	if accessMode == UnknownAccessMode {
 		return nil, fmt.Errorf("invalid device feature access mode %v", expose.Access)
+	}
+
+	// DEBUG
+	if expose.Name == "target_distance" {
+		fmt.Println("target_distance")
 	}
 
 	newEntity := newEntity()
@@ -235,7 +236,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 		newEntity.Values["on"] = expose.ValueOn
 		newEntity.Values["off"] = expose.ValueOff
 
-		if IsWriteableAccessMode(expose) && expose.ValueToggle != "" {
+		if expose.ValueToggle != "" {
 			newEntity.Values["toggle"] = expose.ValueToggle
 		}
 
@@ -337,10 +338,20 @@ func getLastSeen(data map[string]interface{}) string {
 	return getCurrentTime()
 }
 
-func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
+// we basically need to update our local device with any new data
+// but also generate a UpdatePackage object to send back to clients (if any)
+// the debounce needs to happen on the UpdatePackage collection
+// for that we need the deviceconfig that could contain debounce expose value
+
+
+func (device *Device) Update(payload map[string]interface{}, handler events.UpdateHandler) *UpdatePackage {
 
 	var updatePackage = newUpdatePackage(device.Id)
 	for name, newValue := range payload {
+
+		// TODO:
+		// debounce needs to happen here for each expose hat has debounce value
+
 		if expose, ok := device.Exposes[name]; ok && expose.Data != newValue {
 
 			// we only care about measurements to determine
@@ -349,7 +360,7 @@ func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
 
 			if len(updatePackage.Data) != 0 {
 				updatePackage.Data[name] = newValue
-			} else if expose.Category == MeasurementCategory {
+			} else if expose.Category == MeasurementCategory && debounce == false {
 				updatePackage.Data[name] = newValue
 			}
 
@@ -369,7 +380,7 @@ func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
 		device.Availability = OnlineAvailability
 
 		// TODO: handle this below better
-		// updatePackage contains Avaailability only if we have a change oin Device Availability. else its ommited.
+		// updatePackage contains Availability only if we have a change on Device Availability. else its ommited.
 		// thats because we use updatePackage for either measurement data or device availability change
 		updatePackage.Availability = OnlineAvailability // we handle it manually for now.
 

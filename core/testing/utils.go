@@ -327,7 +327,7 @@ func CreateBridgeInfoList(deviceList []*devices.Device) []*devices.BridgeInfo {
 		for _, expose := range dev.Exposes {
 			f := devices.BridgeExpose{}
 			f.Name = expose.Name
-			f.Access = devices.WriteAccessMode
+			f.Access = devices.WriteBridgeAccessMode
 			f.Property = expose.Name
 			f.Type = expose.Type
 			f.Unit = expose.Unit

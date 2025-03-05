@@ -13,6 +13,7 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/mocks"
 	"node-herder/models/devices"
+	"node-herder/models/hub"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	utils_test "node-herder/testing"
@@ -203,7 +204,7 @@ func TestHandlingLoadHubStatesMessage(t *testing.T) {
 	h := api.NewWsHandler(wsHub)
 	s, wsConn := NewTestWsServer(t, h)
 
-	wsData := &ws.EventMessage{Type: ws.LoadHubSate, Payload: nil}
+	wsData := &ws.EventMessage{Type: ws.LoadHubState, Payload: nil}
 	msg, err := wsData.MarshalJSON()
 	if err != nil {
 		t.Fatal(err.Error())
@@ -226,7 +227,7 @@ func TestHandlingLoadHubStatesMessage(t *testing.T) {
 		t.Fatalf("Expected type %v', got '%+v'", ws.HubState, event.Type)
 	}
 
-	var hubState *settings.HubState
+	var hubState *hub.HubState
 
 	bytes, _ := json.Marshal(event.Payload)
 	err = json.Unmarshal(bytes, &hubState)

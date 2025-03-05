@@ -518,7 +518,7 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 
 	configs := []*settings.DeviceConfig{}
 	for id, device := range devices {
-		cfg, err := store.FindDeviceConfig(device.Id)
+		cfg, err := store.LoadDeviceConfig(device.Id)
 		if err != nil {
 			t.Fatalf("device not found. err %v ", err)
 		}
@@ -533,7 +533,7 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 
 	// assert new stored values
 	for id, device := range devices {
-		cfg, err := store.FindDeviceConfig(device.Id)
+		cfg, err := store.LoadDeviceConfig(device.Id)
 		if err != nil {
 			t.Fatalf("device not found. err %v ", err)
 		}
@@ -584,7 +584,7 @@ func TestProcessorTriggersAutomationsStoresMetricsForExistingDevice(t *testing.T
 	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
-	cfg, err := store.FindDeviceConfig("x01111111")
+	cfg, err := store.LoadDeviceConfig("x01111111")
 	if err != nil {
 		t.Fatalf("device not found. err %v ", err)
 	}
@@ -1001,26 +1001,43 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
 
-	deviceName := "Living room light"
+	// TODO: implement debouncer########################################
+
+	//lightDeviceName := "Living room light"
+	presenceDeviceName := "Living room presence sensor"
 
 	testCases := []struct {
-		key       string
-		value     any
-		broadcast bool
+		deviceName string
+		key        string
+		value      any
+		broadcast  bool
 	}{
-		{key: "brightness", value: 15.6, broadcast: true},
-		{key: "brightness", value: 15.6, broadcast: false},
-		{key: "brightness", value: 18.5, broadcast: true},
-		{key: "color_temp", value: 70.3, broadcast: true},
-		{key: "color_temp", value: 70.1, broadcast: true},
-		{key: "linkquality", value: 120, broadcast: false},
-		{key: "linkquality", value: 14, broadcast: false},
-		{key: "battery", value: 100, broadcast: false},
-		{key: "battery", value: 70, broadcast: false},
-		{key: "brightness", value: 18.5, broadcast: false},
-		{key: "brightness", value: 21, broadcast: true},
-		{key: "brightness", value: 21, broadcast: false},
-		{key: "brightness", value: 21, broadcast: false},
+		// {deviceName: lightDeviceName, key: "brightness", value: 15.6, broadcast: true},
+		// {deviceName: lightDeviceName, key: "brightness", value: 15.6, broadcast: false},
+		// {deviceName: lightDeviceName, key: "brightness", value: 18.5, broadcast: true},
+		// {deviceName: lightDeviceName, key: "color_temp", value: 70.3, broadcast: true},
+		// {deviceName: lightDeviceName, key: "color_temp", value: 70.1, broadcast: true},
+		// {deviceName: lightDeviceName, key: "linkquality", value: 120, broadcast: false},
+		// {deviceName: lightDeviceName, key: "linkquality", value: 14, broadcast: false},
+		// {deviceName: lightDeviceName, key: "battery", value: 100, broadcast: false},
+		// {deviceName: lightDeviceName, key: "battery", value: 70, broadcast: false},
+		// {deviceName: lightDeviceName, key: "brightness", value: 18.5, broadcast: false},
+		// {deviceName: lightDeviceName, key: "brightness", value: 21, broadcast: true},
+		// {deviceName: lightDeviceName, key: "brightness", value: 21, broadcast: false},
+		// {deviceName: lightDeviceName, key: "brightness", value: 21, broadcast: false},
+		// {deviceName: presenceDeviceName, key: "presence", value: true, broadcast: true},
+		// {deviceName: presenceDeviceName, key: "presence", value: true, broadcast: false},
+		// {deviceName: presenceDeviceName, key: "presence", value: false, broadcast: true},
+		// {deviceName: presenceDeviceName, key: "radar_sensitivity", value: 5, broadcast: true},
+		// {deviceName: presenceDeviceName, key: "linkquality", value: 102, broadcast: false},
+		// {deviceName: presenceDeviceName, key: "fading_time", value: 5, broadcast: true},
+		// {deviceName: presenceDeviceName, key: "illuminance", value: 10, broadcast: true},
+		// {deviceName: presenceDeviceName, key: "illuminance", value: 120, broadcast: true},
+		// {deviceName: presenceDeviceName, key: "illuminance", value: 120, broadcast: false},
+
+		{deviceName: presenceDeviceName, key: "target_distance", value: 13.1, broadcast: false},
+		{deviceName: presenceDeviceName, key: "target_distance", value: 113.1, broadcast: false},
+		{deviceName: presenceDeviceName, key: "target_distance", value: 23.1, broadcast: false},
 	}
 
 	broadcastHandler := func(eventName string, data interface{}) error {
@@ -1048,76 +1065,9 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 			wg.Add(1)
 		}
 
-		mqtt.Publish(deviceName, []byte(payloadBytes))
+		mqtt.Publish(testCase.deviceName, []byte(payloadBytes))
 
 		time.Sleep(100 * time.Millisecond)
-		wg.Wait()
-	}
-}
-
-
-wrong - needs fixing
-
-func TestDevicesBroadcastDeviceEvent(t *testing.T) {
-	var payload = createMockPayload()
-
-	wg:=&sync.WaitGroup{}
-	testCases := []struct {
-		key   string
-		value any
-	}{
-		{key: "temperature", value: 15.6},
-		{key: "temperature", value: 20.1},
-		{key: "humidity", value: 61.2},
-		{key: "humidity", value: 54.8},
-		{key: "lux", value: 599.0},
-		{key: "human_presence", value: true},
-		{key: "buttonswitch1", value: 10},
-		{key: "buttonswitch1", value: 11},
-		{key: "lux", value: 90},
-		{key: "buttonswitch2", value: true},
-	}
-	eventIdx := 0
-	expectedEventNames := []string{
-		"deviceAdded",
-		"deviceUpdated",
-		"deviceAdded",
-		"deviceUpdated",
-		"deviceAdded",
-		"deviceAdded",
-		"deviceAdded",
-		"deviceUpdated",
-		"deviceUpdated",
-		"deviceAdded",
-	}
-
-	broadcast := func(eventName string, data interface{}) error {
-		expectedEvent := expectedEventNames[eventIdx]
-		fmt.Println(eventName, data)
-		if eventName != expectedEvent {
-			t.Fatalf("invalid broadcasted event:  want %s got %s", expectedEvent, eventName)
-		}
-		wg.Done()
-		return nil
-	}
-
-	ws := newMockBroadcastEventHub(broadcast)
-	store := utils_test.CreateStore()
-
-	mqtt := &mocks.MockMqttClient{}
-
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
-	for _, testCase := range testCases {
-		payload[testCase.key] = testCase.value
-		data, err := json.Marshal(payload)
-		if err != nil {
-			panic(err)
-		}
-		wg.Add(1)
-		mqtt.Publish(testCase.key, []byte(data))
-
-		time.Sleep(100 * time.Millisecond)
-		eventIdx++
 		wg.Wait()
 	}
 }

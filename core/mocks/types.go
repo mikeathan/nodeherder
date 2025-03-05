@@ -569,8 +569,8 @@ func (s *NopAppStore) SaveHistoryConfig(historyConfig *settings.HistoryConfig) e
 	return nil
 }
 
-func (s *NopAppStore) FindDeviceConfig(id string) (*settings.DeviceConfig, error) {
-	fmt.Println("Mocked store LoaFindDeviceConfigdAppConfig")
+func (s *NopAppStore) LoadDeviceConfig(id string) (*settings.DeviceConfig, error) {
+	fmt.Println("Mocked store LoaLoadDeviceConfigdAppConfig")
 	return nil, nil
 }
 
