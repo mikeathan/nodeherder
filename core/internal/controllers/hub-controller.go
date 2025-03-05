@@ -22,6 +22,10 @@ import (
 	"strings"
 )
 
+var (
+	ErrorEmptyPayload = fmt.Errorf("empty payload")
+)
+
 type HubController struct {
 	eventHub                          ws.EventHub
 	mqtt                              mqtt.MqttClient
@@ -418,10 +422,15 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 
 func convertToMap(payload []byte) (map[string]interface{}, error) {
 
+	if len(payload) == 0 {
+		return nil, ErrorEmptyPayload
+	}
+
 	deviceMap := make(map[string]interface{})
 	err := json.Unmarshal(payload, &deviceMap)
 	if err != nil {
-		return nil, errors.New("invalid device data")
+		return nil, err
 	}
+
 	return deviceMap, nil
 }

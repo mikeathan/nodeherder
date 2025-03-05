@@ -1,53 +1,54 @@
 package services
 
 import (
-	"node-herder/models/settings"
 	"node-herder/store"
 	"node-herder/utils"
+	"time"
 )
 
-type DeviceDebouncer struct {
-	clock     utils.Clock
-	store     store.AppStore
-	configMap map[string]*settings.DeviceConfig
+type ExposeDebouncer struct {
+	lastEvent    time.Time
+	debounceTime time.Duration
 }
 
-func NewDeviceDebouncer(store store.AppStore, clock utils.Clock) *DeviceDebouncer {
-	app, err := store.LoadAppConfig()
+ we will have a deviceconfigurationProcessor or handler
 
-	if err != nil {
-		// DO STH
-	}
+ that will keep the debouncer Map per expose
+ and will be updated when we update device config
+ will be passed here and we wont need to do many ifs, just one
+type DeviceDebouncer struct {
+	clock            utils.Clock
+	store            store.AppStore
+	id               string
+	debounceMap      map[string]time.Time
+
+}
+
+func NewDeviceDebouncer(deviceId string, store store.AppStore, clock utils.Clock) *DeviceDebouncer {
 
 	return &DeviceDebouncer{
-		clock:     clock,
-		store:     store,
-		configMap: app.Hub.Devices,
+		id:          deviceId,
+		clock:       clock,
+		store:       store,
+		debounceMap: map[string]time.Time{},
 	}
 }
 
-func (d *DeviceDebouncer) Debounce(friendlyName string, payload map[string]interface{}, processFunc func() error) error {
-	deviceId := d.store.ResolveFriendlyName(friendlyName)
-	if cfg, err := d.store.LoadDeviceConfig(deviceId); err == nil {
-		now := d.clock.Now()
+func (d *DeviceDebouncer) DebounceExpose(exposeName string) bool {
 
-		// if cfg, ok := d.configMap[id]; ok {
+	// 3 ifs not sure is good !!!!!
+	if cfg, err := d.store.LoadDeviceConfig(d.id); err == nil {
+		if debounce, ok := cfg.Debounce[exposeName]; ok {
 
-		// 	if now.Sub(d.lastEvent) < d.debounceTime {
-		// 		// Event within debounce window, ignore
-		// 		return
-		// 	}
-		// }
-		d.lastEvent = d.clock.Now()
+			now := d.clock.Now()
+
+			if lastEvent, ok := d.debounceMap[exposeName]; ok {
+				if now.Sub(lastEvent) < debounce.Duration() {
+					return true
+				}
+			}
+			d.debounceMap[exposeName] = now
+		}
 	}
-
-	return processFunc()
-
-	if eventTime.Sub(d.lastEvent) < d.debounceTime {
-		// Event within debounce window, ignore
-		return
-	}
-
-	d.lastEvent = eventTime
-	processFunc()
+	return false
 }

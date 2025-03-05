@@ -344,6 +344,10 @@ func getLastSeen(data map[string]interface{}) string {
 // for that we need the deviceconfig that could contain debounce expose value
 
 
+// device has config
+// config could have debounce map for each expose
+// if debounce expose exists use it to debounce
+
 func (device *Device) Update(payload map[string]interface{}, handler events.UpdateHandler) *UpdatePackage {
 
 	var updatePackage = newUpdatePackage(device.Id)

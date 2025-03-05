@@ -357,17 +357,14 @@ func newDeviceHandler(registrar *services.HubRegisterService, eventHub ws.EventH
 
 func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, payload []byte) error {
 
-	if len(payload) == 0 {
-		return nil
-	}
 	dataMap, err := convertToMap(payload)
 	if err != nil {
-		return err
+		utils.LogErrorf("error converting payload to map %s", err.Error())
+		return nil
 	}
 
 	device, _ := c.registrar.LookupByName(friendlyName)
 	if device == nil {
-
 		device, err = c.registrar.CreateNewDevice(friendlyName, connType, dataMap)
 		if err != nil {
 			return err
@@ -376,8 +373,8 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 		c.eventHub.Broadcast(ws.DeviceAdded, device)
 		c.hub.deviceAdded(device, dataMap)
 	} else {
-
-		// debounce needs to happen here 
+		
+		// debounce needs to happen here
 		updatedData := device.Update(dataMap)
 		if !updatedData.HasData() {
 			return nil
