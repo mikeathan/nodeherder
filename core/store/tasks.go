@@ -8,12 +8,7 @@ import (
 	"sync"
 )
 
-type Task interface {
-	Start(cfg *settings.AppConfig) error
-	Stop() error
-}
-
-func NewMetricsCleanupTask(ctx context.Context, repo metrics.Repository) Task {
+func NewMetricsCleanupTask(ctx context.Context, repo metrics.Repository) settings.Task {
 	return &MetricsCleanupTask{
 		clock: utils.NewRealClock(),
 		repo:  repo,
@@ -29,7 +24,7 @@ type MetricsCleanupTask struct {
 	wg    sync.WaitGroup
 }
 
-func DefaultMetricsCleanupTask(ctx context.Context, repo metrics.Repository) Task {
+func DefaultMetricsCleanupTask(ctx context.Context, repo metrics.Repository) settings.Task {
 	return &MetricsCleanupTask{
 		clock: utils.NewRealClock(),
 		repo:  repo,
@@ -79,7 +74,7 @@ type RemoteLoggerTask struct {
 	mutex sync.RWMutex
 }
 
-func DefaultRemoteLoggerTask() Task {
+func DefaultRemoteLoggerTask() settings.Task {
 	return &RemoteLoggerTask{
 		mutex: sync.RWMutex{},
 	}

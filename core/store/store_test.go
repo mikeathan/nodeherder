@@ -66,7 +66,7 @@ func TestStoreSavesLoggerConfig(t *testing.T) {
 	}
 	defer cleanup()
 
-	appConfig, err = appStore.LoadAppConfig()
+	cfg := appStore.AppConfig()
 	if err != nil {
 		t.Fatalf("LoadAppConfig failed. err %v ", err)
 	}
@@ -76,12 +76,9 @@ func TestStoreSavesLoggerConfig(t *testing.T) {
 	}
 
 	mockLoggerConfig := settings.NewLoggerConfig(true)
-	appStore.SaveLoggerConfig(mockLoggerConfig)
+	cfg.SaveLoggerConfig(mockLoggerConfig)
 
-	appConfig, err = appStore.LoadAppConfig()
-	if err != nil {
-		t.Fatalf("LoadAppConfig failed. err %v ", err)
-	}
+	cfg = appStore.AppConfig()
 
 	if appConfig.Hub.Logger.EnableRemoteLogger != true {
 		t.Fatalf("Logger config EnableRemoteLogger is not set")
@@ -111,12 +108,13 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 		t.Fatalf("error storing BridgeInfoList: %v", err.Error())
 	}
 
+	cfg := appStore.AppConfig()
 	//Enable metrics for all devices
 	for _, wd := range wantDevices {
 		deviceConfig := settings.NewDeviceConfig(wd.Id)
 		deviceConfig.MetricsEnabled = true
 		deviceConfig.RateLimit = utils.IntervalFromMilliseconds(1)
-		appStore.SaveDeviceConfig(deviceConfig)
+		cfg.SetDeviceConfig(deviceConfig)
 		if err != nil {
 			t.Fatalf("error updating device %v error: %v:", wd.FriendlyName, err.Error())
 		}
@@ -131,7 +129,7 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	sleepTimeout := utils.IntervalFromSeconds(3) // start the cleanup after we finished ading and asserting the data. 3 seconds should be enough
 	expireAt := utils.IntervalFromHours(1)
 
-	appStore.SaveHistoryConfig(settings.NewHistoryConfig(sleepTimeout, expireAt))
+	cfg.SaveHistoryConfig(settings.NewHistoryConfig(sleepTimeout, expireAt))
 
 	timestamps := utils_test.CreateDateTimeTimestamps(3, 24, 1)
 

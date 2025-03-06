@@ -1,6 +1,9 @@
 package settings
 
-import "time"
+import (
+	"node-herder/utils"
+	"time"
+)
 
 type Cache[T any] interface {
 	Get(key string) (T, bool)
@@ -15,12 +18,7 @@ type DeviceConfigCache struct {
 	exposeDebounce map[string]time.Duration
 }
 
-func NewDeviceConfigCache(store Repository) (*DeviceConfigCache, error) {
-	appconfig, err := store.Load()
-	if err != nil {
-		return nil, err
-	}
-
+func NewDeviceConfigCache(appconfig *AppConfig) *DeviceConfigCache {
 	deviceConfigs := make(map[string]*DeviceConfig)
 	for _, dev := range appconfig.Hub.Devices {
 		deviceConfigs[dev.Id] = dev
@@ -36,7 +34,7 @@ func NewDeviceConfigCache(store Repository) (*DeviceConfigCache, error) {
 	return &DeviceConfigCache{
 		deviceConfigs:  deviceConfigs,
 		exposeDebounce: exposeDebounce,
-	}, nil
+	}
 }
 
 func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, bool) {
@@ -67,20 +65,26 @@ func (d *DeviceConfigCache) GetExposeDebounce(expose string) (time.Duration, boo
 // AppConfigCache
 
 type AppConfigCache struct {
-	deviceCache Cache[*DeviceConfig]
+	deviceCache *DeviceConfigCache
 	store       Repository
+	tasks       []Task
 }
 
-func NewAppConfigCache(store Repository) (*AppConfigCache, error) {
+func NewAppConfigCache(store Repository, task []Task) (*AppConfigCache, error) {
 
-	deviceCache, err := NewDeviceConfigCache(store)
+	config, err := store.Load()
 	if err != nil {
 		return nil, err
 	}
-	return &AppConfigCache{
-		deviceCache: deviceCache,
+
+	cache := &AppConfigCache{
+		deviceCache: NewDeviceConfigCache(config),
 		store:       store,
-	}, nil
+		tasks:       task,
+	}
+
+	cache.startTasks(config)
+	return cache, nil
 }
 
 func (s *AppConfigCache) LoadAppConfig() (*AppConfig, error) {
@@ -119,6 +123,8 @@ func (s *AppConfigCache) SaveLoggerConfig(loggerConfig *LoggerConfig) (*AppConfi
 		return nil, err
 	}
 
+	s.reloadTasks(config)
+
 	return config, nil
 }
 
@@ -134,6 +140,8 @@ func (s *AppConfigCache) SaveHistoryConfig(historyConfig *HistoryConfig) (*AppCo
 	if err != nil {
 		return nil, err
 	}
+
+	s.reloadTasks(config)
 
 	return config, nil
 }
@@ -156,4 +164,30 @@ func (d *AppConfigCache) GetDeviceConfig(id string) (*DeviceConfig, error) {
 
 	// load from db
 	return d.store.FindOrAddDeviceConfigIfNotExists(id)
+}
+
+func (s *AppConfigCache) startTasks(config *AppConfig) {
+
+	for _, task := range s.tasks {
+		err := task.Start(config)
+		if err != nil {
+			utils.LogErrorf("Error starting task: %v\n", err)
+		}
+	}
+}
+
+func (s *AppConfigCache) reloadTasks(config *AppConfig) {
+
+	for _, task := range s.tasks {
+		err := task.Stop()
+		if err != nil {
+			utils.LogErrorf("Error stopping task: %v\n", err)
+			continue
+		}
+
+		err = task.Start(config)
+		if err != nil {
+			utils.LogErrorf("Error starting task: %v\n", err)
+		}
+	}
 }

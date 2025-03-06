@@ -217,7 +217,7 @@ func TestHubEnableRemoteLogger(t *testing.T) {
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices) // NEED TO FIX, currently i make all devices features which is not right!!!!
 
 	// register hub
-	tasks := []store.Task{store.DefaultRemoteLoggerTask()}
+	tasks := []settings.Task{store.DefaultRemoteLoggerTask()}
 
 	store, cleanup, err := utils_test.CreateStoreWithTasks(tasks)
 	if err != nil {
@@ -225,6 +225,7 @@ func TestHubEnableRemoteLogger(t *testing.T) {
 	}
 	defer cleanup()
 
+	appCfg := store.AppConfig()
 	expectedEventName := "logger"
 
 	index := 0
@@ -278,7 +279,7 @@ func TestHubEnableRemoteLogger(t *testing.T) {
 	for _, enabled := range testCases {
 
 		logger := settings.NewLoggerConfig(enabled)
-		store.SaveLoggerConfig(logger)
+		appCfg.SaveLoggerConfig(logger)
 		if enabled {
 			utils.LogInfo("Remote hook enabled: true")
 		}
@@ -401,6 +402,7 @@ func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *tes
 	}
 	defer cleanup()
 
+	appCfg := store.AppConfig()
 	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
@@ -427,7 +429,7 @@ func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *tes
 	cfg := settings.NewDeviceConfig(d.Id)
 	cfg.MetricsEnabled = true
 	cfg.RateLimit = utils.IntervalFromMilliseconds(10)
-	store.SaveDeviceConfig(cfg)
+	appCfg.SetDeviceConfig(cfg)
 
 	// note:
 	// publish new device again- This SHOULD be stored as metrics NOW
@@ -510,6 +512,7 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 	}
 	defer cleanup()
 
+	appCfg := store.AppConfig()
 	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
@@ -518,7 +521,7 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 
 	configs := []*settings.DeviceConfig{}
 	for id, device := range devices {
-		cfg, err := store.LoadDeviceConfig(device.Id)
+		cfg, err := appCfg.GetDeviceConfig(device.Id)
 		if err != nil {
 			t.Fatalf("device not found. err %v ", err)
 		}
@@ -527,13 +530,13 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 		cfg.RateLimit = utils.IntervalFromMilliseconds(rt)
 		cfg.Disabled = true
 		cfg.MetricsEnabled = true
-		store.SaveDeviceConfig(cfg)
+		appCfg.SetDeviceConfig(cfg)
 		configs = append(configs, cfg)
 	}
 
 	// assert new stored values
 	for id, device := range devices {
-		cfg, err := store.LoadDeviceConfig(device.Id)
+		cfg, err := appCfg.GetDeviceConfig(device.Id)
 		if err != nil {
 			t.Fatalf("device not found. err %v ", err)
 		}
@@ -578,13 +581,14 @@ func TestProcessorTriggersAutomationsStoresMetricsForExistingDevice(t *testing.T
 	}
 	defer cleanup()
 
+	appCfg := store.AppConfig()
 	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
-	cfg, err := store.LoadDeviceConfig("x01111111")
+	cfg, err := appCfg.GetDeviceConfig("x01111111")
 	if err != nil {
 		t.Fatalf("device not found. err %v ", err)
 	}
@@ -592,7 +596,7 @@ func TestProcessorTriggersAutomationsStoresMetricsForExistingDevice(t *testing.T
 	// enable metrics for dial device
 	cfg.MetricsEnabled = true
 	cfg.RateLimit = utils.IntervalFromMilliseconds(10)
-	store.SaveDeviceConfig(cfg)
+	appCfg.SetDeviceConfig(cfg)
 
 	// publish light device
 	payload := map[string]any{"brightness": 10.0, "color_temp": 100}
@@ -770,13 +774,14 @@ func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {
 	callbackCounter := 0
 
 	// we dont need tasks here just using it as it using valid settings repo
-	tasks := []store.Task{}
+	tasks := []settings.Task{}
 	store, cleanup, err := utils_test.CreateStoreWithTasks(tasks)
 	if err != nil {
 		t.Fatalf("CreateFileStore failed. err %v ", err)
 	}
 	defer cleanup()
 
+	cfg := store.AppConfig()
 	mqtt := &mocks.MockMqttClient{}
 
 	eventHub := mocks.NewMockEventHub()
@@ -810,7 +815,7 @@ func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {
 				return fmt.Errorf("failed")
 			}
 
-			err = store.SaveBridgePermitJoin(value)
+			err = cfg.SaveBridgePermitJoin(value)
 			callbackCounter++
 			wg.Done()
 
@@ -845,7 +850,7 @@ func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 
 	// assert bridge permit join is set to true, from initial request callback
-	bridgeConfig, err := store.LoadBridgeConfig()
+	bridgeConfig, err := cfg.LoadBridgeConfig()
 	if err != nil {
 		t.Fatalf("error loading bridge config %s", err.Error())
 	}
@@ -856,7 +861,7 @@ func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {
 	wg.Wait()
 
 	//  assert bridge permit join is set to false, from timeout callback
-	bridgeConfig, err = store.LoadBridgeConfig()
+	bridgeConfig, err = cfg.LoadBridgeConfig()
 	if err != nil {
 		t.Fatalf("error loading bridge config %s", err.Error())
 	}
@@ -872,13 +877,14 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 	callbackCounter := 0
 
 	// we dont need tasks here just using it as it using valid settings repo
-	tasks := []store.Task{}
+	tasks := []settings.Task{}
 	store, cleanup, err := utils_test.CreateStoreWithTasks(tasks)
 	if err != nil {
 		t.Fatalf("CreateFileStore failed. err %v ", err)
 	}
 	defer cleanup()
 
+	cfg := store.AppConfig()
 	mqtt := &mocks.MockMqttClient{}
 
 	eventHub := mocks.NewMockEventHub()
@@ -915,7 +921,7 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 				return fmt.Errorf("failed")
 			}
 
-			err = store.SaveBridgePermitJoin(value)
+			err = cfg.SaveBridgePermitJoin(value)
 			callbackCounter++
 			wg.Done()
 
@@ -951,7 +957,7 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	// assert bridge permit join is set to true, from initial request callback
-	bridgeConfig, err := store.LoadBridgeConfig()
+	bridgeConfig, err := cfg.LoadBridgeConfig()
 	if err != nil {
 		t.Fatalf("error loading bridge config %s", err.Error())
 	}
@@ -966,7 +972,7 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 	wg.Add(1)
 
 	//  assert bridge permit join is still set to true,
-	bridgeConfig, err = store.LoadBridgeConfig()
+	bridgeConfig, err = cfg.LoadBridgeConfig()
 	if err != nil {
 		t.Fatalf("error loading bridge config %s", err.Error())
 	}

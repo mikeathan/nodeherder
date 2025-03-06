@@ -71,12 +71,14 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 }
 
 func (h *HubController) registerEventHubEvents() {
+	appconfig := h.store.AppConfig()
+
 	h.eventHub.OnLoadAppConfig(func() (interface{}, error) {
-		return h.store.LoadAppConfig()
+		return appconfig.LoadAppConfig()
 	})
 
 	h.eventHub.OnLoadBridgeConfig(func() (interface{}, error) {
-		return h.store.LoadBridgeConfig()
+		return appconfig.LoadBridgeConfig()
 	})
 
 	h.eventHub.OnSaveHistoryConfig(func(p interface{}) error {
@@ -87,7 +89,9 @@ func (h *HubController) registerEventHubEvents() {
 		if err != nil {
 			return fmt.Errorf("OnSaveAppOnSaveHistoryConfigConfig failed. Invalid payload type : %v ", err.Error())
 		}
-		return h.store.SaveHistoryConfig(req)
+
+		_, err = appconfig.SaveHistoryConfig(req)
+		return err
 	})
 
 	h.eventHub.OnSaveDeviceConfig(func(p interface{}) error {
@@ -98,7 +102,7 @@ func (h *HubController) registerEventHubEvents() {
 		if err != nil {
 			return fmt.Errorf("OnSaveDeviceConfig failed. Invalid payload type : %v ", err.Error())
 		}
-		return h.store.SaveDeviceConfig(req)
+		return appconfig.SetDeviceConfig(req)
 	})
 
 	h.eventHub.OnLoadAutomations(func() interface{} {
@@ -223,7 +227,8 @@ func (h *HubController) registerEventHubEvents() {
 		}
 
 		f := func(value bool) error {
-			err := h.store.SaveBridgePermitJoin(value)
+
+			err := appconfig.SaveBridgePermitJoin(value)
 			if err != nil {
 				return err
 			}
@@ -328,7 +333,12 @@ func (h *HubController) registerEventHubEvents() {
 		if err != nil {
 			return errors.New("enable remote logger failed. Invalid payload type")
 		}
-		h.store.SaveLoggerConfig(req)
+
+		_, err = appconfig.SaveLoggerConfig(req)
+		if err != nil {
+			return err
+		}
+
 		utils.LogInfof("Remote logger enabled: %v", req.EnableRemoteLogger)
 		return nil
 	})
