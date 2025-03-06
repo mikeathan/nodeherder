@@ -14,6 +14,7 @@ import (
 	"node-herder/models/settings"
 	"node-herder/repository"
 	"node-herder/store"
+	"node-herder/utils"
 	"os"
 	"reflect"
 	"testing"
@@ -30,8 +31,15 @@ func CreateStore() store.AppStore {
 	metricsRepo := mocks.NopMetricsRepo{}
 	settingsRepo := mocks.NopSettingsrepo{}
 
+	configCache, err := settings.NewAppConfigCache(&settingsRepo)
+	if err != nil {
+		utils.LogErrorf("Error creating settings cache: %v", err.Error())
+		return nil
+	}
+
 	defer repo.Close()
-	store, _ := store.NewAppStore(repo, &metricsRepo, &settingsRepo, []store.Task{})
+
+	store, _ := store.NewAppStore(repo, &metricsRepo, configCache, []store.Task{})
 	return store
 }
 
@@ -48,9 +56,14 @@ func CreateStoreWithTasks(tasks []store.Task) (store.AppStore, func(), error) {
 	cleanup := func() {
 		os.Remove(settingsTempFile)
 	}
+	configCache, err := settings.NewAppConfigCache(settingsRepo)
+	if err != nil {
+		utils.LogErrorf("Error creating settings cache: %v", err.Error())
+		return nil, nil, err
+	}
 
 	defer repo.Close()
-	store, _ := store.NewAppStore(repo, &metricsRepo, settingsRepo, tasks)
+	store, _ := store.NewAppStore(repo, &metricsRepo, configCache, tasks)
 	return store, cleanup, nil
 }
 
@@ -75,8 +88,14 @@ func CreateFileStore() (store.AppStore, func(), error) {
 		return nil, nil, err
 	}
 
+	configCache, err := settings.NewAppConfigCache(settingsRepo)
+	if err != nil {
+		utils.LogErrorf("Error creating settings cache: %v", err.Error())
+		return nil, nil, err
+	}
+
 	defer repo.Close()
-	store, _ := store.NewAppStore(repo, metricsRepo, settingsRepo, []store.Task{})
+	store, _ := store.NewAppStore(repo, metricsRepo, configCache, []store.Task{})
 	return store, cleanup, nil
 }
 
@@ -105,23 +124,42 @@ func CreateFileStoreWithAppConfig(appConfig *settings.AppConfig, mockClock *mock
 		return nil, nil, err
 	}
 
+	configCache, err := settings.NewAppConfigCache(settingsRepo)
+	if err != nil {
+		utils.LogErrorf("Error creating settings cache: %v", err.Error())
+		return nil, nil, err
+	}
 	defer repo.Close()
 
 	tasks := []store.Task{
 		store.NewMetricsCleanupTask(context.Background(), metricsRepo),
 	}
-	store, _ := store.NewAppStore(repo, metricsRepo, settingsRepo, tasks)
+	store, _ := store.NewAppStore(repo, metricsRepo, configCache, tasks)
 	return store, cleanup, nil
 }
+
 func CreateStoreFromDeviceRepo(repo devices.Repository) store.AppStore {
 	metricsRepo := mocks.NopMetricsRepo{}
 	settingsRepo := mocks.NopSettingsrepo{}
-	store, _ := store.NewAppStore(repo, &metricsRepo, &settingsRepo, []store.Task{})
+	configCache, err := settings.NewAppConfigCache(&settingsRepo)
+	if err != nil {
+		utils.LogErrorf("Error creating settings cache: %v", err.Error())
+		return nil
+	}
+
+	store, _ := store.NewAppStore(repo, &metricsRepo, configCache, []store.Task{})
 	return store
 }
 
 func CreateStoreFromRepos(deviceRepo devices.Repository, metricsRepo metrics.Repository, settingsRepo settings.Repository) store.AppStore {
-	store, _ := store.NewAppStore(deviceRepo, metricsRepo, settingsRepo, []store.Task{})
+
+	configCache, err := settings.NewAppConfigCache(settingsRepo)
+	if err != nil {
+		utils.LogErrorf("Error creating settings cache: %v", err.Error())
+		return nil
+	}
+
+	store, _ := store.NewAppStore(deviceRepo, metricsRepo, configCache, []store.Task{})
 	return store
 }
 

@@ -1,7 +1,7 @@
 package services
 
 import (
-	"node-herder/store"
+	"node-herder/models/settings"
 	"node-herder/utils"
 	"time"
 )
@@ -11,44 +11,39 @@ type ExposeDebouncer struct {
 	debounceTime time.Duration
 }
 
- we will have a deviceconfigurationProcessor or handler
-
- that will keep the debouncer Map per expose
- and will be updated when we update device config
- will be passed here and we wont need to do many ifs, just one
 type DeviceDebouncer struct {
-	clock            utils.Clock
-	store            store.AppStore
-	id               string
-	debounceMap      map[string]time.Time
+	clock utils.Clock
 
+	configCache *settings.DeviceConfigCache
+	id          string
+	debounceMap map[string]time.Time
 }
 
-func NewDeviceDebouncer(deviceId string, store store.AppStore, clock utils.Clock) *DeviceDebouncer {
+func NewDeviceDebouncer(deviceId string, configCache *settings.DeviceConfigCache, clock utils.Clock) *DeviceDebouncer {
 
 	return &DeviceDebouncer{
 		id:          deviceId,
 		clock:       clock,
-		store:       store,
+		configCache: configCache,
 		debounceMap: map[string]time.Time{},
 	}
 }
 
 func (d *DeviceDebouncer) DebounceExpose(exposeName string) bool {
+	duration, ok := d.configCache.GetExposeDebounce(exposeName)
+	if !ok {
+		// no debounce time set, so don't debounce
+		return false
+	}
 
-	// 3 ifs not sure is good !!!!!
-	if cfg, err := d.store.LoadDeviceConfig(d.id); err == nil {
-		if debounce, ok := cfg.Debounce[exposeName]; ok {
-
-			now := d.clock.Now()
-
-			if lastEvent, ok := d.debounceMap[exposeName]; ok {
-				if now.Sub(lastEvent) < debounce.Duration() {
-					return true
-				}
-			}
-			d.debounceMap[exposeName] = now
+	now := d.clock.Now()
+	if lastEvent, ok := d.debounceMap[exposeName]; ok {
+		if now.Sub(lastEvent) < duration {
+			return true
 		}
 	}
+
+	// update the last event time
+	d.debounceMap[exposeName] = now
 	return false
 }

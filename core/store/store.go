@@ -76,16 +76,15 @@ type AppStore interface {
 type appStore struct {
 	metrics        metrics.Repository
 	devices        devices.Repository
-	config         settings.Repository
-	deviceConfigs  map[string]*settings.DeviceConfig
+	config         *settings.AppConfigCache
 	deviceIdMapper *repository.DeviceIdMapper
 	rateLimiter    *rateLimiter
 	tasks          []Task
 }
 
-func NewAppStore(devices devices.Repository, metrics metrics.Repository, config settings.Repository, tasks []Task) (AppStore, error) {
+func NewAppStore(devices devices.Repository, metrics metrics.Repository, config *settings.AppConfigCache, tasks []Task) (AppStore, error) {
 
-	appconfig, err := config.Load()
+	appconfig, err := config.LoadAppConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +98,6 @@ func NewAppStore(devices devices.Repository, metrics metrics.Repository, config 
 		metrics:        metrics,
 		devices:        devices,
 		config:         config,
-		deviceConfigs:  deviceConfigs,
 		deviceIdMapper: repository.NewDeviceIdMapper(devices),
 		rateLimiter:    NewRateLimiter(nil),
 		tasks:          tasks,
@@ -138,38 +136,36 @@ func (s *appStore) reloadTasks(config *settings.AppConfig) {
 		}
 	}
 }
+
 func (s *appStore) ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 	return s.metrics.ViewDeviceTimeRange(device, from, to)
 }
 
 func (s *appStore) LoadAppConfig() (*settings.AppConfig, error) {
-	return s.config.Load()
+	return s.config.LoadAppConfig()
 }
 
 func (s *appStore) SaveHistoryConfig(historyConfig *settings.HistoryConfig) error {
-	config, err := s.config.Load()
+
+	app, err := s.config.SaveHistoryConfig(historyConfig)
 	if err != nil {
 		return err
 	}
 
-	config.Hub.History = historyConfig
+	s.reloadTasks(app)
 
-	s.reloadTasks(config)
-
-	return s.config.SaveAppConfig(config)
+	return nil
 }
 
 func (s *appStore) SaveLoggerConfig(loggerConfig *settings.LoggerConfig) error {
-	config, err := s.config.Load()
+	app, err := s.config.SaveLoggerConfig(loggerConfig)
 	if err != nil {
 		return err
 	}
 
-	config.Hub.Logger = loggerConfig
+	s.reloadTasks(app)
 
-	s.reloadTasks(config)
-
-	return s.config.SaveAppConfig(config)
+	return nil
 }
 
 func (s *appStore) LoadBridgeConfig() (*settings.BridgeConfig, error) {
@@ -181,41 +177,26 @@ func (s *appStore) LoadBridgeConfig() (*settings.BridgeConfig, error) {
 }
 
 func (s *appStore) SaveBridgePermitJoin(enabled bool) error {
-	config, err := s.config.LoadBridgeConfig()
-	if err != nil {
-		return err
-	}
-
-	config.PermitJoin = enabled
-
-	//s.reloadTasks(config) ??
-
-	return s.config.SaveBridgeConfig(config)
+	return s.config.SaveBridgePermitJoin(enabled)
 }
 
 func (s *appStore) SaveDeviceConfig(deviceconfig *settings.DeviceConfig) error {
-
-	// we keep stae in memory for quick access
-	s.deviceConfigs[deviceconfig.Id] = deviceconfig
-
-	return s.config.SaveDeviceConfig(deviceconfig)
+	return s.config.SetDeviceConfig(deviceconfig)
 }
 
 func (s *appStore) LoadDeviceConfig(id string) (*settings.DeviceConfig, error) {
-
-	// we keep stae in memory for quick access
-	if config, ok := s.deviceConfigs[id]; ok {
-		return config, nil
-	}
-
-	return s.config.FindOrAddDeviceConfigIfNotExists(id)
+	return s.config.GetDeviceConfig(id)
 }
 
 func (s *appStore) StoreMetrics(friendlyName string, data map[string]any) error {
 	id := s.ResolveFriendlyName(friendlyName)
 
-	if config, ok := s.deviceConfigs[id]; ok &&
-		config.MetricsEnabled &&
+	config, err := s.LoadDeviceConfig(id)
+	if err != nil {
+		return nil
+	}
+
+	if config.MetricsEnabled &&
 		s.rateLimiter.AllowWrite(id, config.RateLimitDuration()) {
 
 		err := s.metrics.Store(id, data)
@@ -241,7 +222,7 @@ func (s *appStore) StoreDevice(friendlyName string, device *devices.Device) erro
 
 	if isNew {
 		// make sure new device has a configuration if added for first time
-		_, err := s.config.FindOrAddDeviceConfigIfNotExists(id)
+		_, err := s.config.GetDeviceConfig(id)
 		if err != nil {
 			return err
 		}
