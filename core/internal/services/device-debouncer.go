@@ -15,6 +15,7 @@ type DeviceDebouncer struct {
 	clock utils.Clock
 
 	configCache *settings.DeviceConfigCache
+	debounce    *DeviceDebouncer
 	id          string
 	debounceMap map[string]time.Time
 }
@@ -30,7 +31,7 @@ func NewDeviceDebouncer(deviceId string, configCache *settings.DeviceConfigCache
 }
 
 func (d *DeviceDebouncer) DebounceExpose(exposeName string) bool {
-	duration, ok := d.configCache.GetExposeDebounce(exposeName)
+	duration, ok := d.configCache.GetDebounce(d.id, exposeName)
 	if !ok {
 		// no debounce time set, so don't debounce
 		return false

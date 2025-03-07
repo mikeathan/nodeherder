@@ -3,7 +3,6 @@ package devices
 import (
 	"errors"
 	"fmt"
-	"node-herder/models/events"
 	"node-herder/utils"
 	"sync"
 	"time"
@@ -343,12 +342,11 @@ func getLastSeen(data map[string]interface{}) string {
 // the debounce needs to happen on the UpdatePackage collection
 // for that we need the deviceconfig that could contain debounce expose value
 
-
 // device has config
 // config could have debounce map for each expose
 // if debounce expose exists use it to debounce
 
-func (device *Device) Update(payload map[string]interface{}, handler events.UpdateHandler) *UpdatePackage {
+func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
 
 	var updatePackage = newUpdatePackage(device.Id)
 	for name, newValue := range payload {
@@ -364,7 +362,7 @@ func (device *Device) Update(payload map[string]interface{}, handler events.Upda
 
 			if len(updatePackage.Data) != 0 {
 				updatePackage.Data[name] = newValue
-			} else if expose.Category == MeasurementCategory && debounce == false {
+			} else if expose.Category == MeasurementCategory {
 				updatePackage.Data[name] = newValue
 			}
 

@@ -2,6 +2,7 @@ package settings
 
 import (
 	"node-herder/utils"
+	"sync"
 	"time"
 )
 
@@ -13,9 +14,34 @@ type Cache[T any] interface {
 
 // DeviceConfigCache
 
+type DeviceDebounce struct {
+	exposeDebounce map[string]time.Duration
+}
+
+func NewDeviceDebounce(config *DeviceConfig) *DeviceDebounce {
+
+	exposeDebounce := map[string]time.Duration{}
+	for expose, debounce := range config.Debounce {
+		exposeDebounce[expose] = debounce.Duration()
+	}
+	return &DeviceDebounce{
+		exposeDebounce: exposeDebounce,
+	}
+}
+
+func (d *DeviceDebounce) GetDebounce(expose string) (time.Duration, bool) {
+	debounce, ok := d.exposeDebounce[expose]
+	return debounce, ok
+}
+
+func (d *DeviceDebounce) SetDebounce(expose string, debounce time.Duration) {
+	d.exposeDebounce[expose] = debounce
+}
+
 type DeviceConfigCache struct {
 	deviceConfigs  map[string]*DeviceConfig
-	exposeDebounce map[string]time.Duration
+	deviceDebounce map[string]*DeviceDebounce
+	mutex          sync.RWMutex
 }
 
 func NewDeviceConfigCache(appconfig *AppConfig) *DeviceConfigCache {
@@ -31,13 +57,22 @@ func NewDeviceConfigCache(appconfig *AppConfig) *DeviceConfigCache {
 		}
 	}
 
+	deviceDebounce := map[string]*DeviceDebounce{}
+	for _, deviceConfig := range deviceConfigs {
+		deviceDebounce[deviceConfig.Id] = NewDeviceDebounce(deviceConfig)
+	}
+
 	return &DeviceConfigCache{
 		deviceConfigs:  deviceConfigs,
-		exposeDebounce: exposeDebounce,
+		deviceDebounce: deviceDebounce,
 	}
 }
 
 func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, bool) {
+
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
 	if deviceConfig, ok := d.deviceConfigs[id]; ok {
 		return deviceConfig, true
 	}
@@ -46,20 +81,33 @@ func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, bool) {
 }
 
 func (d *DeviceConfigCache) Set(deviceConfig *DeviceConfig) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
 	d.deviceConfigs[deviceConfig.Id] = deviceConfig
 
 	for expose, debounce := range deviceConfig.Debounce {
-		d.exposeDebounce[expose] = debounce.Duration()
+		d.deviceDebounce[deviceConfig.Id].SetDebounce(expose, debounce.Duration())
 	}
 }
 
 func (d *DeviceConfigCache) Delete(name string) {
 	// not implemented
+
+	utils.LogDebugf("NOT IMPLEMENTED - DeviceConfigCache.Delete(%v)", name)
 }
 
-func (d *DeviceConfigCache) GetExposeDebounce(expose string) (time.Duration, bool) {
-	debounce, ok := d.exposeDebounce[expose]
-	return debounce, ok
+func (d *DeviceConfigCache) GetDebounce(id string, exposeName string) (time.Duration, bool) {
+
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
+	deviceDebounce, ok := d.deviceDebounce[id]
+	if !ok {
+		return 0, false
+	}
+
+	return deviceDebounce.GetDebounce(exposeName)
 }
 
 // AppConfigCache
@@ -96,6 +144,7 @@ func (s *AppConfigCache) LoadBridgeConfig() (*BridgeConfig, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return config, nil
 }
 
