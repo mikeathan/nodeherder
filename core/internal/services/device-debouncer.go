@@ -3,21 +3,16 @@ package services
 import (
 	"node-herder/models/settings"
 	"node-herder/utils"
+	"sync"
 	"time"
 )
 
-type ExposeDebouncer struct {
-	lastEvent    time.Time
-	debounceTime time.Duration
-}
-
 type DeviceDebouncer struct {
-	clock utils.Clock
-
+	clock       utils.Clock
 	configCache *settings.DeviceConfigCache
-	debounce    *DeviceDebouncer
 	id          string
 	debounceMap map[string]time.Time
+	mutex       sync.RWMutex
 }
 
 func NewDeviceDebouncer(deviceId string, configCache *settings.DeviceConfigCache, clock utils.Clock) *DeviceDebouncer {
@@ -27,6 +22,7 @@ func NewDeviceDebouncer(deviceId string, configCache *settings.DeviceConfigCache
 		clock:       clock,
 		configCache: configCache,
 		debounceMap: map[string]time.Time{},
+		mutex:       sync.RWMutex{},
 	}
 }
 
@@ -36,6 +32,9 @@ func (d *DeviceDebouncer) DebounceExpose(exposeName string) bool {
 		// no debounce time set, so don't debounce
 		return false
 	}
+
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 
 	now := d.clock.Now()
 	if lastEvent, ok := d.debounceMap[exposeName]; ok {

@@ -39,9 +39,9 @@ func (d *DeviceDebounce) SetDebounce(expose string, debounce time.Duration) {
 }
 
 type DeviceConfigCache struct {
-	deviceConfigs  map[string]*DeviceConfig
-	deviceDebounce map[string]*DeviceDebounce
-	mutex          sync.RWMutex
+	devicesConfigs  map[string]*DeviceConfig
+	devicesDebounce map[string]*DeviceDebounce
+	mutex           sync.RWMutex
 }
 
 func NewDeviceConfigCache(appconfig *AppConfig) *DeviceConfigCache {
@@ -63,8 +63,8 @@ func NewDeviceConfigCache(appconfig *AppConfig) *DeviceConfigCache {
 	}
 
 	return &DeviceConfigCache{
-		deviceConfigs:  deviceConfigs,
-		deviceDebounce: deviceDebounce,
+		devicesConfigs:  deviceConfigs,
+		devicesDebounce: deviceDebounce,
 	}
 }
 
@@ -73,7 +73,7 @@ func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, bool) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
-	if deviceConfig, ok := d.deviceConfigs[id]; ok {
+	if deviceConfig, ok := d.devicesConfigs[id]; ok {
 		return deviceConfig, true
 	}
 
@@ -84,17 +84,31 @@ func (d *DeviceConfigCache) Set(deviceConfig *DeviceConfig) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	d.deviceConfigs[deviceConfig.Id] = deviceConfig
+	d.devicesConfigs[deviceConfig.Id] = deviceConfig
 
 	for expose, debounce := range deviceConfig.Debounce {
-		d.deviceDebounce[deviceConfig.Id].SetDebounce(expose, debounce.Duration())
+		d.devicesDebounce[deviceConfig.Id].SetDebounce(expose, debounce.Duration())
 	}
 }
 
-func (d *DeviceConfigCache) Delete(name string) {
-	// not implemented
+func (d *DeviceConfigCache) Delete(id string) {
 
-	utils.LogDebugf("NOT IMPLEMENTED - DeviceConfigCache.Delete(%v)", name)
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	delete(d.devicesConfigs, id)
+	delete(d.devicesDebounce, id)
+}
+
+func (d *DeviceConfigCache) DeleteDebounce(id string, exposeName string) bool {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	if deviceDebounce, ok := d.devicesDebounce[id]; ok {
+		delete(deviceDebounce.exposeDebounce, exposeName)
+		return true
+	}
+	return false
 }
 
 func (d *DeviceConfigCache) GetDebounce(id string, exposeName string) (time.Duration, bool) {
@@ -102,7 +116,7 @@ func (d *DeviceConfigCache) GetDebounce(id string, exposeName string) (time.Dura
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
-	deviceDebounce, ok := d.deviceDebounce[id]
+	deviceDebounce, ok := d.devicesDebounce[id]
 	if !ok {
 		return 0, false
 	}

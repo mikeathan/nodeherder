@@ -560,7 +560,7 @@ func NewMockAppStoreFromDevicesRepo(devicesRepo devices.Repository) store.AppSto
 	return &NopAppStore{
 		devices:        devicesRepo,
 		metrics:        metricsRepo,
-		config:       config,
+		config:         config,
 		deviceIdMapper: repository.NewDeviceIdMapper(devicesRepo),
 	}
 }
@@ -580,7 +580,7 @@ func (s *NopAppStore) SaveLoggerConfig(loggerConfig *settings.LoggerConfig) erro
 	return nil
 }
 
-func (s *NopAppStore) AppConfig() (*settings.AppConfigCache) {
+func (s *NopAppStore) AppConfig() *settings.AppConfigCache {
 	fmt.Println("Mocked store AppConfig")
 	return nil
 }
