@@ -376,8 +376,10 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 	} else {
 
 		appConfig := c.hub.store.AppConfig()
-		
-		need to get the deviceConfigCache somehow
+
+		we should pass debouncer here or 
+		when creating the device eg device.setDebouncer maybe ?
+		or we create new service for device instead of using model
 		
 		updatedData := device.Update(dataMap)
 		if !updatedData.HasData() {
