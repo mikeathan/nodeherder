@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-
-todo
 func TestDeviceDebouncer_DebounceExpose(t *testing.T) {
 
 	now := time.Now()
@@ -29,9 +27,10 @@ func TestDeviceDebouncer_DebounceExpose(t *testing.T) {
 	appConfig.AddDeviceConfig(d1)
 	d2 := settings.NewDeviceConfig("device2")
 	d2.Debounce = map[string]*utils.TimeInterval{
-		"expose3": utils.IntervalFromMilliseconds(3000),
-		"expose4": utils.IntervalFromMilliseconds(4000),
+		"expose3": utils.IntervalFromSeconds(3),
+		"expose4": utils.IntervalFromSeconds(4),
 	}
+
 	appConfig.AddDeviceConfig(d2)
 
 	cache := settings.NewDeviceConfigCache(appConfig)
@@ -39,19 +38,21 @@ func TestDeviceDebouncer_DebounceExpose(t *testing.T) {
 	debouncer := services.NewDeviceDebouncer("device1", cache, mockClock)
 
 	// Test First Event
-	if debouncer.DebounceExpose("expose1") {
+	if debouncer.DebounceExpose("expose1") == true { // First event should not be debounced
 		t.Error("First event should not be debounced")
 	}
 
 	// Test Debounced Event (within duration)
-	mockClock.SetMockTime(now.Add(500 * time.Millisecond))
-	if !debouncer.DebounceExpose("expose1") {
+	now = now.Add(500 * time.Millisecond)
+	mockClock.SetMockTime(now)
+	if debouncer.DebounceExpose("expose1") == false { // Event within duration should be debounced
 		t.Error("Event within duration should be debounced")
 	}
 
 	// Test After Duration
-	mockClock.SetMockTime(now.Add(600 * time.Millisecond))
-	if debouncer.DebounceExpose("expose1") {
+	now = now.Add(500 * time.Millisecond)
+	mockClock.SetMockTime(now)
+	if debouncer.DebounceExpose("expose1") == true { // Event after duration should not be debounced
 		t.Error("Event after duration should not be debounced")
 	}
 
@@ -63,9 +64,27 @@ func TestDeviceDebouncer_DebounceExpose(t *testing.T) {
 	if debouncer.DebounceExpose("expose2") {
 		t.Error("First expose2 event should not be debounced")
 	}
-	mockClock.SetMockTime(now.Add(1 * time.Second))
+
+	now = now.Add(1 * time.Second)
+	mockClock.SetMockTime(now)
 
 	if !debouncer.DebounceExpose("expose2") {
 		t.Error("expose2 event within duration should be debounced")
+	}
+
+	// second device
+	now2 := time.Now()
+	mockClock.SetMockTime(now2)
+	debouncer2 := services.NewDeviceDebouncer("device2", cache, mockClock)
+
+	if debouncer2.DebounceExpose("expose4") {
+		t.Error("First expose4 event should not be debounced")
+	}
+
+	now2 = now2.Add(3 * time.Second)
+	mockClock.SetMockTime(now2)
+
+	if !debouncer2.DebounceExpose("expose4") {
+		t.Error("Second expose4 event should be debounced")
 	}
 }

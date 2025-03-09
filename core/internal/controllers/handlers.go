@@ -347,6 +347,7 @@ type deviceHandler struct {
 }
 
 func newDeviceHandler(registrar *services.HubRegisterService, eventHub ws.EventHub, hub *HubController) *deviceHandler {
+
 	return &deviceHandler{
 		registrar:                    registrar,
 		eventHub:                     eventHub,
@@ -373,8 +374,11 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 		c.eventHub.Broadcast(ws.DeviceAdded, device)
 		c.hub.deviceAdded(device, dataMap)
 	} else {
+
+		appConfig := c.hub.store.AppConfig()
 		
-		// debounce needs to happen here
+		need to get the deviceConfigCache somehow
+		
 		updatedData := device.Update(dataMap)
 		if !updatedData.HasData() {
 			return nil
