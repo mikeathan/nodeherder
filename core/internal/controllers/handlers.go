@@ -375,11 +375,10 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 
 		// WIP ##################
 		appConfig := c.hub.store.AppConfig()
-		cache := appConfig.GetDeviceConfigCache(device.Id)
-		debouncer := services.NewDeviceDebouncer(device.Id, cache, utils.NewRealClock())
+		debouncer := services.NewDeviceDebouncer(device.Id, appConfig.GetDeviceConfigCache(device.Id), utils.NewRealClock())
 		
 		s := services.NewDeviceService(device, debouncer)
-		s.Monitor(c.AvailabilityTimeoutInSeconds, func(p interface{}) {
+		s.Monitor(c.AvailabilityTimeoutInSeconds, func(p any) {
 			c.eventHub.Broadcast(ws.DeviceUpdated, p)
 		})
 
