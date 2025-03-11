@@ -75,9 +75,9 @@ func (s *HubRegisterService) CreateNewDevice(friendlyName string, connType strin
 		return nil, err
 	}
 
-	device.Monitor(s.deviceAvailabilityTimeout, func(p interface{}) {
-		s.eventHub.Broadcast(ws.DeviceUpdated, p)
-	})
+	// s.Monitor(s.deviceAvailabilityTimeout, func(p interface{}) {
+	// 	s.eventHub.Broadcast(ws.DeviceUpdated, p)
+	// })
 
 	return device, nil
 }
@@ -142,9 +142,9 @@ func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo
 				continue
 			}
 
-			d.Monitor(deviceAvailabilityTimeoutOverride, func(p interface{}) {
-				s.eventHub.Broadcast(ws.DeviceUpdated, p)
-			})
+			// d.Monitor(deviceAvailabilityTimeoutOverride, func(p interface{}) {
+			// 	s.eventHub.Broadcast(ws.DeviceUpdated, p)
+			// })
 		}
 
 		d.Description = bridgeInfo.Definition.Description

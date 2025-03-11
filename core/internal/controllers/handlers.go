@@ -344,6 +344,7 @@ type deviceHandler struct {
 	registrar                    *services.HubRegisterService
 	eventHub                     ws.EventHub
 	hub                          *HubController
+	deviceServices               map[string]*services.DeviceService
 }
 
 func newDeviceHandler(registrar *services.HubRegisterService, eventHub ws.EventHub, hub *HubController) *deviceHandler {
@@ -367,21 +368,31 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 	device, _ := c.registrar.LookupByName(friendlyName)
 	if device == nil {
 		device, err = c.registrar.CreateNewDevice(friendlyName, connType, dataMap)
+
 		if err != nil {
 			return err
 		}
+
+		// WIP ##################
+		appConfig := c.hub.store.AppConfig()
+		cache := appConfig.GetDeviceConfigCache(device.Id)
+		debouncer := services.NewDeviceDebouncer(device.Id, cache, utils.NewRealClock())
+		
+		s := services.NewDeviceService(device, debouncer)
+		s.Monitor(c.AvailabilityTimeoutInSeconds, func(p interface{}) {
+			c.eventHub.Broadcast(ws.DeviceUpdated, p)
+		})
+
+		c.deviceServices[device.Id] = s
+		//
 
 		c.eventHub.Broadcast(ws.DeviceAdded, device)
 		c.hub.deviceAdded(device, dataMap)
 	} else {
 
-		appConfig := c.hub.store.AppConfig()
+		updatedData := c.deviceServices[device.Id].Update(dataMap)
 
-		we should pass debouncer here or 
-		when creating the device eg device.setDebouncer maybe ?
-		or we create new service for device instead of using model
-		
-		updatedData := device.Update(dataMap)
+		//updatedData := device.Update(dataMap)
 		if !updatedData.HasData() {
 			return nil
 		}

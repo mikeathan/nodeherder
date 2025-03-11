@@ -149,6 +149,10 @@ func NewAppConfigCache(store Repository, task []Task) (*AppConfigCache, error) {
 	return cache, nil
 }
 
+func (s *AppConfigCache) GetDeviceConfigCache(id string) *DeviceConfigCache {
+	return s.deviceCache
+}
+
 func (s *AppConfigCache) LoadAppConfig() (*AppConfig, error) {
 	return s.store.Load()
 }

@@ -152,7 +152,7 @@ type UpdatePackage struct {
 	Data         PackageData      `json:"data"`
 }
 
-func newUpdatePackage(id string) *UpdatePackage {
+func NewUpdatePackage(id string) *UpdatePackage {
 	return &UpdatePackage{Id: id, LastSeen: getCurrentTime(), Data: make(map[string]any)}
 }
 
@@ -326,7 +326,6 @@ func CreateNewDevice(id string, friendlyName string, connType string, bridgeInfo
 	return newDevice, nil
 }
 
-// TODO: do we need to sanitize/valdate time?
 func getLastSeen(data map[string]interface{}) string {
 	if val, ok := data[lastSeenKey]; ok {
 		if strVal, ok := val.(string); ok {
@@ -337,62 +336,100 @@ func getLastSeen(data map[string]interface{}) string {
 	return getCurrentTime()
 }
 
-// we basically need to update our local device with any new data
-// but also generate a UpdatePackage object to send back to clients (if any)
-// the debounce needs to happen on the UpdatePackage collection
-// for that we need the deviceconfig that could contain debounce expose value
-
-// device has config
-// config could have debounce map for each expose
-// if debounce expose exists use it to debounce
-
-func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
-
-	var updatePackage = newUpdatePackage(device.Id)
-	for name, newValue := range payload {
-
-		// TODO:
-		// debounce needs to happen here for each expose hat has debounce value
-
-		if expose, ok := device.Exposes[name]; ok && expose.Data != newValue {
-
-			// we only care about measurements to determine
-			// if there has been sensor changes. if we do have new sensor data
-			// then collect everything that has changed
-
-			if len(updatePackage.Data) != 0 {
-				updatePackage.Data[name] = newValue
-			} else if expose.Category == MeasurementCategory {
-				updatePackage.Data[name] = newValue
-			}
-
-			// update device expose with updated data
-			device.Exposes[name].Data = newValue
-		}
-	}
-
-	defer device.mutex.Unlock()
-	device.mutex.Lock()
-
-	if updatePackage.HasData() {
-		updatePackage.LastSeen = getLastSeen(payload)
-	}
-
-	if device.Availability == OfflineAvailability {
-		device.Availability = OnlineAvailability
-
-		// TODO: handle this below better
-		// updatePackage contains Availability only if we have a change on Device Availability. else its ommited.
-		// thats because we use updatePackage for either measurement data or device availability change
-		updatePackage.Availability = OnlineAvailability // we handle it manually for now.
-
-		utils.LogInfof("device [%s] %s is online", device.Id, device.FriendlyName)
-		device.resetAvailabilityTimer()
-	}
-
-	device.LastSeen = getLastSeen(payload) // we need that.
-	return updatePackage
+func getCurrentTime() string {
+	return time.Now().Format(time.RFC3339)
 }
+
+func (d *Device) GetFriendlyName() string {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
+	return d.FriendlyName
+}
+
+func (d *Device) GetExpose(name string) (*Entity, bool) {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
+	expose, ok := d.Exposes[name]
+	return expose, ok
+}
+
+func (d *Device) SetExposeData(name string, data interface{}) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	d.Exposes[name].Data = data
+}
+
+func (d *Device) GetAvailability() AvailabilityType {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
+	return d.Availability
+}
+
+func (d *Device) SetAvailability(availability AvailabilityType) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	d.Availability = availability
+}
+
+func (d *Device) SetLastSeen(lastSeen string) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	d.LastSeen = lastSeen
+}
+
+func (d *Device) ResetAvailabilityTimer() {
+	d.availabilityTicker.Reset(1 * time.Second)
+}
+
+// func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
+
+// 	var updatePackage = NewUpdatePackage(device.Id)
+// 	for name, newValue := range payload {
+
+// 		// TODO:
+// 		// debounce needs to happen here for each expose hat has debounce value
+
+// 		if expose, ok := device.Exposes[name]; ok && expose.Data != newValue {
+
+// 			if len(updatePackage.Data) != 0 {
+// 				updatePackage.Data[name] = newValue
+// 			} else if expose.Category == MeasurementCategory {
+// 				updatePackage.Data[name] = newValue
+// 			}
+
+// 			// update device expose with updated data
+// 			device.Exposes[name].Data = newValue
+// 		}
+// 	}
+
+// 	defer device.mutex.Unlock()
+// 	device.mutex.Lock()
+
+// 	if updatePackage.HasData() {
+// 		updatePackage.LastSeen = getLastSeen(payload)
+// 	}
+
+// 	if device.Availability == OfflineAvailability {
+// 		device.Availability = OnlineAvailability
+
+// 		// TODO: handle this below better
+// 		// updatePackage contains Availability only if we have a change on Device Availability. else its ommited.
+// 		// thats because we use updatePackage for either measurement data or device availability change
+// 		updatePackage.Availability = OnlineAvailability // we handle it manually for now.
+
+// 		utils.LogInfof("device [%s] %s is online", device.Id, device.FriendlyName)
+// 		device.resetAvailabilityTimer()
+// 	}
+
+// 	device.LastSeen = getLastSeen(payload) // we need that.
+// 	return updatePackage
+// }
 
 func (device *Device) LastSeenTime() (time.Time, error) {
 
@@ -407,7 +444,7 @@ func (device *Device) LastSeenTime() (time.Time, error) {
 	return lastSeen, nil
 }
 
-func (device *Device) isAvailable() bool {
+func (device *Device) IsAvailable() bool {
 
 	defer device.mutex.RUnlock()
 	device.mutex.RLock()
@@ -415,7 +452,7 @@ func (device *Device) isAvailable() bool {
 	return device.Availability == OnlineAvailability
 }
 
-func (device *Device) setAvailable(value bool) {
+func (device *Device) SetAvailable(value bool) {
 
 	defer device.mutex.Unlock()
 	device.mutex.Lock()
@@ -432,68 +469,59 @@ func (device *Device) Dispose() {
 	utils.LogDebugf("device %s disposed", device.Id)
 }
 
-func (device *Device) resetAvailabilityTimer() {
+// func (device *Device) Monitor(timeoutInSecs int, onChangeCallback func(p interface{})) {
 
-	device.availabilityTicker.Reset(1 * time.Second)
-}
+// 	device.availabilityTicker = *time.NewTicker(1 * time.Second)
 
-func (device *Device) Monitor(timeoutInSecs int, onChangeCallback func(p interface{})) {
+// 	go func() {
+// 		defer close(device.availablityDone)
+// 		for {
+// 			select {
+// 			case <-device.availablityDone:
 
-	device.availabilityTicker = *time.NewTicker(1 * time.Second)
+// 				device.setAvailable(false)
+// 				utils.LogInfof("device %s availability timer killed", device.Id)
 
-	go func() {
-		defer close(device.availablityDone)
-		for {
-			select {
-			case <-device.availablityDone:
+// 				// todo: move it in one place
+// 				if onChangeCallback != nil {
+// 					p := newUpdatePackage(device.Id)
+// 					p.Availability = OfflineAvailability
+// 					onChangeCallback(p)
+// 				}
 
-				device.setAvailable(false)
-				utils.LogInfof("device %s availability timer killed", device.Id)
+// 				return
 
-				// todo: move it in one place
-				if onChangeCallback != nil {
-					p := newUpdatePackage(device.Id)
-					p.Availability = OfflineAvailability
-					onChangeCallback(p)
-				}
+// 			case <-device.availabilityTicker.C:
 
-				return
+// 				if !device.isAvailable() {
+// 					return
+// 				}
 
-			case <-device.availabilityTicker.C:
+// 				lastSeen, err := device.LastSeenTime()
+// 				if err != nil {
+// 					utils.LogErrorf("device %s failed to parse time %s", device.Id, err.Error())
 
-				if !device.isAvailable() {
-					return
-				}
+// 					device.Dispose()
+// 				}
 
-				lastSeen, err := device.LastSeenTime()
-				if err != nil {
-					utils.LogErrorf("device %s failed to parse time %s", device.Id, err.Error())
+// 				now := time.Now()
+// 				diff := now.Sub(lastSeen)
+// 				if diff.Seconds() >= float64(timeoutInSecs) {
 
-					device.Dispose()
-				}
+// 					device.setAvailable(false)
+// 					utils.LogInfof("device %s is offine", device.Id)
 
-				now := time.Now()
-				diff := now.Sub(lastSeen)
-				if diff.Seconds() >= float64(timeoutInSecs) {
+// 					// todo: move it in one place
+// 					if onChangeCallback != nil {
+// 						p := newUpdatePackage(device.Id)
+// 						p.Availability = OfflineAvailability
+// 						onChangeCallback(p)
+// 					}
 
-					device.setAvailable(false)
-					utils.LogInfof("device %s is offine", device.Id)
+// 					device.availabilityTicker.Stop()
+// 				}
 
-					// todo: move it in one place
-					if onChangeCallback != nil {
-						p := newUpdatePackage(device.Id)
-						p.Availability = OfflineAvailability
-						onChangeCallback(p)
-					}
-
-					device.availabilityTicker.Stop()
-				}
-
-			}
-		}
-	}()
-}
-
-func getCurrentTime() string {
-	return time.Now().Format(time.RFC3339)
-}
+// 			}
+// 		}
+// 	}()
+// }
