@@ -8,8 +8,6 @@ import (
 	"node-herder/utils"
 )
 
-
-
 type DeviceProcessor struct {
 	registrar           *HubRegisterService
 	deviceServices      map[string]*DeviceLifetimeService
@@ -23,18 +21,17 @@ func NewDeviceProcessor(registrar *HubRegisterService, store store.AppStore, eve
 	return &DeviceProcessor{
 		registrar:           registrar,
 		deviceServices:      make(map[string]*DeviceLifetimeService),
-		hub:                 hub,
 		eventHub:            eventHub,
 		availabilityTimeout: timeout,
-		store: store,
+		store:               store,
 		events:              events,
 	}
 }
 
-func (dm *DeviceProcessor) CreateOrUpdateDevice(friendlyName, connType string, dataMap map[string]interface{}) (*devices.Device, error) {
+func (dm *DeviceProcessor) CreateOrUpdateDevice(friendlyName, connType string, dataMap map[string]interface{}) error {
 	device, err := dm.registrar.LookupByName(friendlyName)
 	if err != nil {
-		return nil, fmt.Errorf("error looking up device: %w", err)
+		return fmt.Errorf("error looking up device: %w", err)
 	}
 
 	if device == nil {
@@ -44,50 +41,44 @@ func (dm *DeviceProcessor) CreateOrUpdateDevice(friendlyName, connType string, d
 	return dm.updateExistingDevice(device, dataMap)
 }
 
-func (dm *DeviceProcessor) createNewDevice(friendlyName, connType string, dataMap map[string]interface{}) (*devices.Device, error) {
+func (dm *DeviceProcessor) createNewDevice(friendlyName, connType string, dataMap map[string]interface{}) error {
 	device, err := dm.registrar.CreateNewDevice(friendlyName, connType, dataMap)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create new device: %w", err)
+		return fmt.Errorf("failed to create new device: %w", err)
 	}
 
-	if err := dm.createDeviceService(device); err != nil {
-		return nil, err
-	}
+	dm.createDeviceService(device, dataMap)
 
-	dm.eventHub.Broadcast(ws.DeviceAdded, device)
-	dm.hub.deviceAdded(device, dataMap)
+	// dm.eventHub.Broadcast(ws.DeviceAdded, device)
+	// dm.hub.deviceAdded(device, dataMap)
 
-	return device, nil
+	return nil
 }
 
-func (dm *DeviceProcessor) createDeviceService(device *devices.Device) error {
+func (dm *DeviceProcessor) createDeviceService(device *devices.Device, dataMap map[string]interface{}) {
 	appConfig := dm.store.AppConfig()
 	debouncer := NewDeviceDebouncer(device.Id, appConfig.GetDeviceConfigCache(device.Id), utils.NewRealClock())
 
 	s := NewDeviceLifetimeService(device, dm.events, debouncer)
-	s.Start(nil)
-	s.Monitor(dm.availabilityTimeout, func(p any) {
-		dm.eventHub.Broadcast(ws.DeviceUpdated, p)
-	})
+	s.Start(dataMap)
 
 	dm.deviceServices[device.Id] = s
-	return nil
 }
 
-func (dm *DeviceProcessor) updateExistingDevice(device *devices.Device, dataMap map[string]interface{}) (*devices.Device, error) {
+func (dm *DeviceProcessor) updateExistingDevice(device *devices.Device, dataMap map[string]interface{}) error {
 	deviceService, ok := dm.deviceServices[device.Id]
 	if !ok {
-		return nil, fmt.Errorf("device service not found for device ID: %s", device.Id)
+		return fmt.Errorf("device service not found for device ID: %s", device.Id)
 	}
 
-	updatedData := deviceService.Update(dataMap)
-	if updatedData.HasData() {
-		return device, nil
-	}
+	deviceService.Update(dataMap)
+	// if updatedData.HasData() {
+	// 	return device, nil
+	// }
 
-	dm.eventHub.Broadcast(ws.DeviceUpdated, updatedData)
-	dm.hub.deviceUpdated(device, updatedData.Data)
-	return device, nil
+	// dm.eventHub.Broadcast(ws.DeviceUpdated, updatedData)
+	// dm.hub.deviceUpdated(device, updatedData.Data)
+	return nil
 }
 
 func (dm *DeviceProcessor) OnNewDevice(action func(device *devices.Device, dataMap map[string]interface{})) {

@@ -368,6 +368,7 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 		return nil
 	}
 
+	
 	p := services.NewDeviceProcessor(c.registrar, nil, c.eventHub, 0)
 	pu, err := p.CreateOrUpdateDevice(friendlyName, connType, dataMap)
 	newDeviceEvent := func(device *devices.Device, data map[string]interface{}) {

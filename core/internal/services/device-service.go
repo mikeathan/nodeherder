@@ -34,11 +34,12 @@ func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequ
 
 func (d *DeviceLifetimeService) Start(payload map[string]interface{}) {
 
-	d.events.OnNewDevice(d.device, payload)
 	
-	d.monitor(0, func(p any) {
+	d.startAvailabilityMonitoring(0, func(p any) {
 		d.events.OnDeviceAvailabilityChanged(payload)
 	})
+
+	d.events.OnNewDevice(d.device, payload)
 }
 
 func (d *DeviceLifetimeService) Update(payload map[string]interface{}) *devices.UpdatePackage {
@@ -84,13 +85,13 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) *devices.
 	d.device.LastSeen = getLastSeen(payload) // we need that.
 
 	if updatePackage.HasData() {
-		d.events.OnDeviceUpdated(d.device, updatePackage.Data)
+		d.events.OnDeviceUpdated(d.device, updatePackage)
 	}
 
 	return updatePackage
 }
 
-func (s *DeviceLifetimeService) monitor(timeoutInSecs int, onChangeCallback func(p interface{})) {
+func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutInSecs int, onChangeCallback func(p interface{})) {
 
 	s.availabilityTicker = time.NewTicker(1 * time.Second)
 	s.availablityDone = make(chan bool)
