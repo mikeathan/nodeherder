@@ -344,16 +344,18 @@ type deviceHandler struct {
 	registrar                    *services.HubRegisterService
 	eventHub                     ws.EventHub
 	hub                          *HubController
-	deviceServices               map[string]*services.DeviceService
+	deviceServices               map[string]*services.DeviceLifetimeService
+	automationEngine             automations.Engine
 }
 
-func newDeviceHandler(registrar *services.HubRegisterService, eventHub ws.EventHub, hub *HubController) *deviceHandler {
+func newDeviceHandler(registrar *services.HubRegisterService, eventHub ws.EventHub, hub *HubController, automationEngine automations.Engine) *deviceHandler {
 
 	return &deviceHandler{
 		registrar:                    registrar,
 		eventHub:                     eventHub,
 		hub:                          hub,
 		AvailabilityTimeoutInSeconds: 3600, // 1 Hour
+		automationEngine:             automationEngine,
 	}
 }
 
@@ -376,8 +378,8 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 		// WIP ##################
 		appConfig := c.hub.store.AppConfig()
 		debouncer := services.NewDeviceDebouncer(device.Id, appConfig.GetDeviceConfigCache(device.Id), utils.NewRealClock())
-		
-		s := services.NewDeviceService(device, debouncer)
+
+		s := services.NewDeviceLifetimeService(device, debouncer)
 		s.Monitor(c.AvailabilityTimeoutInSeconds, func(p any) {
 			c.eventHub.Broadcast(ws.DeviceUpdated, p)
 		})
@@ -402,4 +404,30 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 	}
 
 	return nil
+}
+
+func (d *deviceHandler) HandleDeviceAdded(device *devices.Device, data map[string]interface{}) error {
+	// todo: execute in worker pool
+	// 	action()
+	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
+
+	if err := d.registrar.Register(device.FriendlyName, device); err != nil {
+		return err
+	}
+
+	return d.registrar.StoreMetrics(device.FriendlyName, data)
+}
+
+func (d *deviceHandler) HandleDeviceUpdated(device *devices.Device, data map[string]interface{}) error {
+
+	// todo: execute in worker pool
+	// 	action()
+	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
+
+	d.automationEngine.HandleDevice(device)
+	if err := d.registrar.Register(device.FriendlyName, device); err != nil {
+		return err
+	}
+
+	return d.registrar.StoreMetrics(device.FriendlyName, data)
 }

@@ -50,6 +50,7 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 	}
 
 	h.registrar = services.NewHubRegisterService(store, eventHub, 3600)
+
 	scheduleHandler := automations.NewAutomationScheduler(
 		automations.WithContext(ctx),
 		automations.WithAutomationsFuncs())
@@ -420,7 +421,10 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 				m.responseHandlers[id] = h
 			}
 		} else {
-			var h = newDeviceHandler(m.registrar, m.eventHub, m)
+			// pass DeviceEventHandler
+			d := services.NewDeviceProcessor(c.registrar, nil, m.eventHub, 0)
+
+			var h = newDeviceHandler(m.registrar, m.eventHub, , m.automationEngine)
 			h.AvailabilityTimeoutInSeconds = m.DeviceAvailabilityTimeoutOverride
 			m.responseHandlers[id] = h
 		}

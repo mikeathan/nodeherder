@@ -11,7 +11,7 @@ const (
 	lastSeenKey                       = "last_seen"
 )
 
-type DeviceService struct {
+type DeviceLifetimeService struct {
 	device           *devices.Device
 	debouncerService *DeviceDebouncer
 
@@ -19,9 +19,9 @@ type DeviceService struct {
 	availablityDone    chan bool
 }
 
-func NewDeviceService(device *devices.Device, debouncerService *DeviceDebouncer) *DeviceService {
+func NewDeviceLifetimeService(device *devices.Device, debouncerService *DeviceDebouncer) *DeviceLifetimeService {
 
-	s := &DeviceService{
+	s := &DeviceLifetimeService{
 		device:           device,
 		debouncerService: debouncerService,
 		availablityDone:  make(chan bool),
@@ -30,7 +30,7 @@ func NewDeviceService(device *devices.Device, debouncerService *DeviceDebouncer)
 	return s
 }
 
-func (d *DeviceService) Update(payload map[string]interface{}) *devices.UpdatePackage {
+func (d *DeviceLifetimeService) Update(payload map[string]interface{}) *devices.UpdatePackage {
 
 	var updatePackage = devices.NewUpdatePackage(d.device.Id)
 	for name, newValue := range payload {
@@ -74,7 +74,7 @@ func (d *DeviceService) Update(payload map[string]interface{}) *devices.UpdatePa
 	return updatePackage
 }
 
-func (s *DeviceService) Monitor(timeoutInSecs int, onChangeCallback func(p interface{})) {
+func (s *DeviceLifetimeService) Monitor(timeoutInSecs int, onChangeCallback func(p interface{})) {
 
 	s.availabilityTicker = time.NewTicker(1 * time.Second)
 	s.availablityDone = make(chan bool)
@@ -132,7 +132,7 @@ func (s *DeviceService) Monitor(timeoutInSecs int, onChangeCallback func(p inter
 	}()
 }
 
-func (s *DeviceService) Dispose() {
+func (s *DeviceLifetimeService) Dispose() {
 	s.availablityDone <- true
 	s.availabilityTicker.Stop()
 
