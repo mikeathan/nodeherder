@@ -4,24 +4,30 @@ import (
 	"fmt"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
+	"node-herder/store"
 	"node-herder/utils"
 )
+
+
 
 type DeviceProcessor struct {
 	registrar           *HubRegisterService
 	deviceServices      map[string]*DeviceLifetimeService
-	hub                 *Hub // needs fixing
+	store               store.AppStore
+	events              *devices.DeviceRequestEvents
 	eventHub            ws.EventHub
 	availabilityTimeout int
 }
 
-func NewDeviceProcessor(registrar *HubRegisterService, hub *Hub, eventHub ws.EventHub, timeout int) *DeviceProcessor {
+func NewDeviceProcessor(registrar *HubRegisterService, store store.AppStore, events *devices.DeviceRequestEvents, eventHub ws.EventHub, timeout int) *DeviceProcessor {
 	return &DeviceProcessor{
 		registrar:           registrar,
 		deviceServices:      make(map[string]*DeviceLifetimeService),
 		hub:                 hub,
 		eventHub:            eventHub,
 		availabilityTimeout: timeout,
+		store: store,
+		events:              events,
 	}
 }
 
@@ -55,10 +61,11 @@ func (dm *DeviceProcessor) createNewDevice(friendlyName, connType string, dataMa
 }
 
 func (dm *DeviceProcessor) createDeviceService(device *devices.Device) error {
-	appConfig := dm.hub.store.AppConfig()
+	appConfig := dm.store.AppConfig()
 	debouncer := NewDeviceDebouncer(device.Id, appConfig.GetDeviceConfigCache(device.Id), utils.NewRealClock())
 
-	s := NewDeviceLifetimeService(device, debouncer)
+	s := NewDeviceLifetimeService(device, dm.events, debouncer)
+	s.Start(nil)
 	s.Monitor(dm.availabilityTimeout, func(p any) {
 		dm.eventHub.Broadcast(ws.DeviceUpdated, p)
 	})
@@ -74,11 +81,18 @@ func (dm *DeviceProcessor) updateExistingDevice(device *devices.Device, dataMap 
 	}
 
 	updatedData := deviceService.Update(dataMap)
-	if updatedData.IsEmpty() {
+	if updatedData.HasData() {
 		return device, nil
 	}
 
 	dm.eventHub.Broadcast(ws.DeviceUpdated, updatedData)
 	dm.hub.deviceUpdated(device, updatedData.Data)
 	return device, nil
+}
+
+func (dm *DeviceProcessor) OnNewDevice(action func(device *devices.Device, dataMap map[string]interface{})) {
+
+}
+func (dm *DeviceProcessor) OnDeviceUpdated(action func(device *devices.Device, dataMap map[string]interface{})) {
+
 }

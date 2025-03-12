@@ -11,3 +11,32 @@ func NewDeviceRemoveRequest(id string, force bool) *DeviceRemoveRequest {
 		Force: force,
 	}
 }
+
+type DeviceRequestEvents struct {
+	OnNewDevice                 func(device *Device, dataMap map[string]interface{})
+	OnDeviceUpdated             func(device *Device, dataMap map[string]interface{})
+	OnDeviceAvailabilityChanged func(dataMap map[string]interface{})
+}
+
+func NewDeviceLifetimeEvents() *DeviceRequestEvents {
+	return &DeviceRequestEvents{
+		OnNewDevice:                 nil,
+		OnDeviceUpdated:             nil,
+		OnDeviceAvailabilityChanged: nil,
+	}
+}
+
+func (d *DeviceRequestEvents) WithOnDeviceAvailabilityChanged(f func(dataMap map[string]interface{})) *DeviceRequestEvents {
+	d.OnDeviceAvailabilityChanged = f
+	return d
+}
+
+func (d *DeviceRequestEvents) WithOnNewDevice(f func(device *Device, dataMap map[string]interface{})) *DeviceRequestEvents {
+	d.OnNewDevice = f
+	return d
+}
+
+func (d *DeviceRequestEvents) WithOnDeviceUpdated(f func(device *Device, dataMap map[string]interface{})) *DeviceRequestEvents {
+	d.OnDeviceUpdated = f
+	return d
+}

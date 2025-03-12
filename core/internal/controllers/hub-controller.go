@@ -422,9 +422,8 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 			}
 		} else {
 			// pass DeviceEventHandler
-			d := services.NewDeviceProcessor(c.registrar, nil, m.eventHub, 0)
-
-			var h = newDeviceHandler(m.registrar, m.eventHub, , m.automationEngine)
+			d := services.NewDeviceProcessor(m.registrar, m.store, m.eventHub, m.DeviceAvailabilityTimeoutOverride)
+			var h = newDeviceHandler(m.registrar, m.eventHub, m.store, m.automationEngine)
 			h.AvailabilityTimeoutInSeconds = m.DeviceAvailabilityTimeoutOverride
 			m.responseHandlers[id] = h
 		}

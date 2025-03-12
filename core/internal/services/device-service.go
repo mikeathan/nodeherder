@@ -17,17 +17,28 @@ type DeviceLifetimeService struct {
 
 	availabilityTicker *time.Ticker
 	availablityDone    chan bool
+	events *devices.DeviceRequestEvents
 }
 
-func NewDeviceLifetimeService(device *devices.Device, debouncerService *DeviceDebouncer) *DeviceLifetimeService {
+func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequestEvents, debouncerService *DeviceDebouncer) *DeviceLifetimeService {
 
 	s := &DeviceLifetimeService{
 		device:           device,
 		debouncerService: debouncerService,
+		events:           events,
 		availablityDone:  make(chan bool),
 	}
 
 	return s
+}
+
+func (d *DeviceLifetimeService) Start(payload map[string]interface{}) {
+
+	d.events.OnNewDevice(d.device, payload)
+	
+	d.monitor(0, func(p any) {
+		d.events.OnDeviceAvailabilityChanged(payload)
+	})
 }
 
 func (d *DeviceLifetimeService) Update(payload map[string]interface{}) *devices.UpdatePackage {
@@ -71,10 +82,15 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) *devices.
 	}
 
 	d.device.LastSeen = getLastSeen(payload) // we need that.
+
+	if updatePackage.HasData() {
+		d.events.OnDeviceUpdated(d.device, updatePackage.Data)
+	}
+
 	return updatePackage
 }
 
-func (s *DeviceLifetimeService) Monitor(timeoutInSecs int, onChangeCallback func(p interface{})) {
+func (s *DeviceLifetimeService) monitor(timeoutInSecs int, onChangeCallback func(p interface{})) {
 
 	s.availabilityTicker = time.NewTicker(1 * time.Second)
 	s.availablityDone = make(chan bool)
