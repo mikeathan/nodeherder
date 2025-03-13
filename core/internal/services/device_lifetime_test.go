@@ -6,6 +6,7 @@ import (
 	"node-herder/models/devices"
 	"node-herder/models/settings"
 	utils_test "node-herder/testing"
+	"node-herder/utils"
 	"sync"
 	"testing"
 	"time"
@@ -108,7 +109,8 @@ func TestDeviceLifetimeService_UpdateWithSameData(t *testing.T) {
 			t.Error("OnDeviceUpdated should not be called")
 		},
 	}
-	debouncer := &settings.DeviceDebouncer{}
+
+	debouncer := utils_test.CreateDebouncer("x01234")
 	service := services.NewDeviceLifetimeService(device, events, debouncer)
 	payload := map[string]interface{}{"brigthness": 124.2, "last_seen": "2023-01-01T00:00:00Z"}
 
@@ -124,6 +126,69 @@ func TestDeviceLifetimeService_UpdateWithSameData(t *testing.T) {
 	if device.LastSeen != "2023-01-01T00:00:00Z" {
 		t.Errorf("Device last seen not updated")
 	}
+}
+
+func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
+
+	device := utils_test.CreateLightDevice("x01234", "testDevice", "brigthness", 124.2)
+	device.Availability = devices.OfflineAvailability
+
+	events := &devices.DeviceRequestEvents{
+		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
+			t.Error("OnDeviceUpdated should not be called")
+		},
+	}
+	now := time.Now()
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return now
+	})
+	appConfig := settings.NewAppConfig()
+	d1 := settings.NewDeviceConfig("device1")
+	d1.Debounce = map[string]*utils.TimeInterval{
+		"brigthness": utils.IntervalFromSeconds(2),
+	}
+
+	debouncer := utils_test.CreateDebouncerFromAppConfig("x01234", appConfig, mockClock)
+	service := services.NewDeviceLifetimeService(device, events, debouncer)
+
+	testCases := []struct {
+		payload      map[string]interface{}
+		shouldUpdate bool
+	}{
+		{
+			payload:      map[string]interface{}{"brigthness": 124.2, "last_seen": createLastSeen(11, 05, 10)},
+			shouldUpdate: true,
+		},
+		{
+			payload:      map[string]interface{}{"brigthness": 124.5, "last_seen": createLastSeen(11, 05, 11)},
+			shouldUpdate: false,
+		},
+		{
+			payload:      map[string]interface{}{"brigthness": 124.6, "last_seen": createLastSeen(11, 05, 12)},
+			shouldUpdate: true,
+		},
+	}
+
+	for _, tc := range testCases {
+
+		currValue := device.Exposes["brigthness"].Data
+		now = now.Add(time.Second * 1)
+		mockClock.SetMockTime(now)
+
+		service.Update(tc.payload)
+		time.Sleep(50 * time.Millisecond)
+
+		if tc.shouldUpdate {
+			if device.Exposes["brigthness"].Data != tc.payload["brigthness"] {
+				t.Errorf("Device value not updated. want %v, got %v", tc.payload["brigthness"], device.Exposes["brigthness"].Data)
+			}
+		} else {
+			if device.Exposes["brigthness"].Data != currValue {
+				t.Errorf("Device value not updated. want %v, got %v", currValue, device.Exposes["brigthness"].Data)
+			}
+		}
+	}
+
 }
 
 func TestDeviceLifetimeService_Availability(t *testing.T) {
@@ -168,4 +233,9 @@ func TestDeviceLifetimeService_Availability(t *testing.T) {
 	if device.Availability != devices.OfflineAvailability {
 		t.Errorf("Device availability not changed to offline")
 	}
+}
+
+func createLastSeen(hour, minute, second int) string {
+	now := time.Now()
+	return time.Date(now.Year(), now.Month(), now.Day(), hour, minute, second, 0, now.Location()).Format(time.RFC3339)
 }
