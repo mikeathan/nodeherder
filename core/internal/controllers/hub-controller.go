@@ -411,8 +411,8 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 	events.WithOnDeviceUpdated(func(device *devices.Device, p *devices.UpdatePackage) {
 		d.handleDeviceUpdated(device, p)
 	})
-	events.WithOnDeviceAvailabilityChanged(func(data map[string]interface{}) {
-		d.handleDeviceAvailabilityChanged(data)
+	events.WithOnDeviceAvailabilityChanged(func( p *devices.UpdatePackage) {
+		d.handleDeviceAvailabilityChanged(p)
 	})
 
 	return services.NewDeviceProcessor(d.registrar, d.store, events)
@@ -447,8 +447,8 @@ func (d *HubController) handleDeviceUpdated(device *devices.Device, p *devices.U
 	return d.registrar.StoreMetrics(device.FriendlyName, p.Data)
 }
 
-func (d *HubController) handleDeviceAvailabilityChanged(data map[string]interface{}) {
-	d.eventHub.Broadcast(ws.DeviceUpdated, data)
+func (d *HubController) handleDeviceAvailabilityChanged( p *devices.UpdatePackage) {
+	d.eventHub.Broadcast(ws.DeviceUpdated, p)
 }
 
 func convertToMap(payload []byte) (map[string]interface{}, error) {

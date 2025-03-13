@@ -383,9 +383,9 @@ func (d *Device) SetLastSeen(lastSeen string) {
 	d.LastSeen = lastSeen
 }
 
-func (d *Device) ResetAvailabilityTimer() {
-	d.availabilityTicker.Reset(1 * time.Second)
-}
+// func (d *Device) ResetAvailabilityTimer() {
+// 	d.availabilityTicker.Reset(1 * time.Second)
+// }
 
 // func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
 

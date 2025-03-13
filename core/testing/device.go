@@ -136,6 +136,22 @@ func CreatePresenceDevice(deviceId string, friendlyName string, property string,
 	return dev
 }
 
+func CreateLightDevice(deviceId string, friendlyName string, property string, value float64) *devices.Device {
+	dev := devices.NewDevice(deviceId)
+	dev.Id = deviceId
+	dev.FriendlyName = friendlyName
+	dev.ConnectionType = "mqtt"
+	dev.Description = fmt.Sprintf("Test device %s description", deviceId)
+	dev.PowerSource = "mains"
+	dev.LastSeen = time.Now().Format(time.RFC3339)
+
+	expose := CreateEntity(property, "numeric", value)
+	dev.Exposes = make(map[string]*devices.Entity)
+	dev.Exposes[property] = expose
+
+	return dev
+}
+
 func CreateDeviceWithExposes(deviceId string, friendlyName string, exposes []*devices.Entity) *devices.Device {
 
 	dev := devices.NewDevice(deviceId)

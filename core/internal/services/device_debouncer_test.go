@@ -1,7 +1,6 @@
 package services_test
 
 import (
-	"node-herder/internal/services"
 	"node-herder/mocks"
 	"node-herder/models/settings"
 	"node-herder/utils"
@@ -35,7 +34,7 @@ func TestDeviceDebouncer_DebounceExpose(t *testing.T) {
 
 	cache := settings.NewDeviceConfigCache(appConfig)
 
-	debouncer := services.NewDeviceDebouncer("device1", cache, mockClock)
+	debouncer := settings.NewDeviceDebouncer("device1", cache, mockClock)
 
 	// Test First Event
 	if debouncer.DebounceExpose("expose1") == true { // First event should not be debounced
@@ -75,7 +74,7 @@ func TestDeviceDebouncer_DebounceExpose(t *testing.T) {
 	// second device
 	now2 := time.Now()
 	mockClock.SetMockTime(now2)
-	debouncer2 := services.NewDeviceDebouncer("device2", cache, mockClock)
+	debouncer2 := settings.NewDeviceDebouncer("device2", cache, mockClock)
 
 	if debouncer2.DebounceExpose("expose4") {
 		t.Error("First expose4 event should not be debounced")

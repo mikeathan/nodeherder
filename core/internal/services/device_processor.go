@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"node-herder/models/devices"
+	"node-herder/models/settings"
 	"node-herder/store"
 	"node-herder/utils"
 )
@@ -48,7 +49,7 @@ func (dm *DeviceProcessor) createNewDevice(friendlyName, connType string, dataMa
 
 func (dm *DeviceProcessor) createDeviceService(device *devices.Device, dataMap map[string]interface{}) {
 	appConfig := dm.store.AppConfig()
-	debouncer := NewDeviceDebouncer(device.Id, appConfig.GetDeviceConfigCache(device.Id), utils.NewRealClock())
+	debouncer := settings.NewDeviceDebouncer(device.Id, appConfig.GetDeviceConfigCache(device.Id), utils.NewRealClock())
 
 	ls := NewDeviceLifetimeService(device, dm.events, debouncer)
 	ls.Start(dataMap)
@@ -65,4 +66,3 @@ func (dm *DeviceProcessor) updateExistingDevice(device *devices.Device, dataMap 
 	deviceService.Update(dataMap)
 	return nil
 }
-

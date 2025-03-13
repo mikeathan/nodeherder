@@ -2,6 +2,7 @@ package services
 
 import (
 	"node-herder/models/devices"
+	"node-herder/models/settings"
 	"node-herder/utils"
 	"time"
 )
@@ -13,26 +14,26 @@ const (
 
 type DeviceLifetimeService struct {
 	device           *devices.Device
-	debouncerService *DeviceDebouncer
+	debouncerService *settings.DeviceDebouncer
 
 	availabilityTicker *time.Ticker
 	availablityDone    chan bool
 	events             *devices.DeviceRequestEvents
 }
 
-func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequestEvents, debouncerService *DeviceDebouncer) *DeviceLifetimeService {
+func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequestEvents, debouncerService *settings.DeviceDebouncer) *DeviceLifetimeService {
 	return &DeviceLifetimeService{
 		device:           device,
 		debouncerService: debouncerService,
 		events:           events,
-		availablityDone:  make(chan bool),
+		availablityDone:  make(chan bool, 1),
 	}
 }
 
 func (d *DeviceLifetimeService) Start(payload map[string]interface{}) {
 
-	d.startAvailabilityMonitoring(d.events.AvailabilityTimeout, func(p any) {
-		d.events.OnDeviceAvailabilityChanged(payload)
+	d.startAvailabilityMonitoring(d.events.AvailabilityTimeout, func(p *devices.UpdatePackage) {
+		d.events.OnDeviceAvailabilityChanged(p)
 	})
 
 	d.events.OnNewDevice(d.device, payload)
@@ -43,10 +44,9 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 	var updatePackage = devices.NewUpdatePackage(d.device.Id)
 	for name, newValue := range payload {
 
-		// TODO:
-		// debounce needs to happen here for each expose hat has debounce value
-
-		if expose, ok := d.device.GetExpose(name); ok && expose.Data != newValue {
+		if expose, ok := d.device.GetExpose(name); ok &&
+			expose.Data != newValue &&
+			!d.debouncerService.DebounceExpose(name) {
 
 			if len(updatePackage.Data) != 0 {
 				updatePackage.Data[name] = newValue
@@ -55,12 +55,10 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 			}
 
 			// update device expose with updated data
+			// we might need to have a mutex here or handle this better
 			d.device.Exposes[name].Data = newValue
 		}
 	}
-
-	// defer device.mutex.Unlock()
-	// device.mutex.Lock()
 
 	if updatePackage.HasData() {
 		updatePackage.LastSeen = getLastSeen(payload)
@@ -70,12 +68,13 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 		d.device.Availability = devices.OnlineAvailability
 
 		// TODO: handle this below better
-		// updatePackage contains Availability only if we have a change on Device Availability. else its ommited.
+		// -updatePackage contains Availability only if we have a change on Device Availability. else its ommited.
 		// thats because we use updatePackage for either measurement data or device availability change
+		// -if everything is debounced then we wont emit anything. so need to think about that
 		updatePackage.Availability = devices.OnlineAvailability // we handle it manually for now.
 
 		utils.LogInfof("device [%s] %s is online", d.device.Id, d.device.FriendlyName)
-		d.device.ResetAvailabilityTimer()
+		d.resetAvailabilityTimer()
 	}
 
 	d.device.LastSeen = getLastSeen(payload) // we need that.
@@ -85,13 +84,13 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 	}
 }
 
-func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutInSecs int, onChangeCallback func(p interface{})) {
+func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutInSecs int, onChangeCallback func(p *devices.UpdatePackage)) {
 
 	s.availabilityTicker = time.NewTicker(1 * time.Second)
-	s.availablityDone = make(chan bool)
 
 	go func() {
 		defer close(s.availablityDone)
+
 		for {
 			select {
 			case <-s.availablityDone:
@@ -141,6 +140,13 @@ func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutInSecs int, o
 			}
 		}
 	}()
+}
+func (d *DeviceLifetimeService) resetAvailabilityTimer() {
+	if d.availabilityTicker != nil {
+		d.availabilityTicker.Reset(1 * time.Second)
+	} else {
+		utils.LogDebugf("device %s availability ticker not initialized, cannot reset", d.device.Id)
+	}
 }
 
 func (s *DeviceLifetimeService) Dispose() {
