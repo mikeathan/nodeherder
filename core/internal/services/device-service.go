@@ -17,32 +17,28 @@ type DeviceLifetimeService struct {
 
 	availabilityTicker *time.Ticker
 	availablityDone    chan bool
-	events *devices.DeviceRequestEvents
+	events             *devices.DeviceRequestEvents
 }
 
 func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequestEvents, debouncerService *DeviceDebouncer) *DeviceLifetimeService {
-
-	s := &DeviceLifetimeService{
+	return &DeviceLifetimeService{
 		device:           device,
 		debouncerService: debouncerService,
 		events:           events,
 		availablityDone:  make(chan bool),
 	}
-
-	return s
 }
 
 func (d *DeviceLifetimeService) Start(payload map[string]interface{}) {
 
-	
-	d.startAvailabilityMonitoring(0, func(p any) {
+	d.startAvailabilityMonitoring(d.events.AvailabilityTimeout, func(p any) {
 		d.events.OnDeviceAvailabilityChanged(payload)
 	})
 
 	d.events.OnNewDevice(d.device, payload)
 }
 
-func (d *DeviceLifetimeService) Update(payload map[string]interface{}) *devices.UpdatePackage {
+func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 
 	var updatePackage = devices.NewUpdatePackage(d.device.Id)
 	for name, newValue := range payload {
@@ -87,8 +83,6 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) *devices.
 	if updatePackage.HasData() {
 		d.events.OnDeviceUpdated(d.device, updatePackage)
 	}
-
-	return updatePackage
 }
 
 func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutInSecs int, onChangeCallback func(p interface{})) {

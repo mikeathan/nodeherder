@@ -2,29 +2,24 @@ package services
 
 import (
 	"fmt"
-	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/store"
 	"node-herder/utils"
 )
 
 type DeviceProcessor struct {
-	registrar           *HubRegisterService
-	deviceServices      map[string]*DeviceLifetimeService
-	store               store.AppStore
-	events              *devices.DeviceRequestEvents
-	eventHub            ws.EventHub
-	availabilityTimeout int
+	registrar      *HubRegisterService
+	deviceServices map[string]*DeviceLifetimeService
+	store          store.AppStore
+	events         *devices.DeviceRequestEvents
 }
 
-func NewDeviceProcessor(registrar *HubRegisterService, store store.AppStore, events *devices.DeviceRequestEvents, eventHub ws.EventHub, timeout int) *DeviceProcessor {
+func NewDeviceProcessor(registrar *HubRegisterService, store store.AppStore, events *devices.DeviceRequestEvents) *DeviceProcessor {
 	return &DeviceProcessor{
-		registrar:           registrar,
-		deviceServices:      make(map[string]*DeviceLifetimeService),
-		eventHub:            eventHub,
-		availabilityTimeout: timeout,
-		store:               store,
-		events:              events,
+		registrar:      registrar,
+		deviceServices: make(map[string]*DeviceLifetimeService),
+		store:          store,
+		events:         events,
 	}
 }
 
@@ -48,10 +43,6 @@ func (dm *DeviceProcessor) createNewDevice(friendlyName, connType string, dataMa
 	}
 
 	dm.createDeviceService(device, dataMap)
-
-	// dm.eventHub.Broadcast(ws.DeviceAdded, device)
-	// dm.hub.deviceAdded(device, dataMap)
-
 	return nil
 }
 
@@ -59,10 +50,10 @@ func (dm *DeviceProcessor) createDeviceService(device *devices.Device, dataMap m
 	appConfig := dm.store.AppConfig()
 	debouncer := NewDeviceDebouncer(device.Id, appConfig.GetDeviceConfigCache(device.Id), utils.NewRealClock())
 
-	s := NewDeviceLifetimeService(device, dm.events, debouncer)
-	s.Start(dataMap)
+	ls := NewDeviceLifetimeService(device, dm.events, debouncer)
+	ls.Start(dataMap)
 
-	dm.deviceServices[device.Id] = s
+	dm.deviceServices[device.Id] = ls
 }
 
 func (dm *DeviceProcessor) updateExistingDevice(device *devices.Device, dataMap map[string]interface{}) error {
@@ -72,18 +63,6 @@ func (dm *DeviceProcessor) updateExistingDevice(device *devices.Device, dataMap 
 	}
 
 	deviceService.Update(dataMap)
-	// if updatedData.HasData() {
-	// 	return device, nil
-	// }
-
-	// dm.eventHub.Broadcast(ws.DeviceUpdated, updatedData)
-	// dm.hub.deviceUpdated(device, updatedData.Data)
 	return nil
 }
 
-func (dm *DeviceProcessor) OnNewDevice(action func(device *devices.Device, dataMap map[string]interface{})) {
-
-}
-func (dm *DeviceProcessor) OnDeviceUpdated(action func(device *devices.Device, dataMap map[string]interface{})) {
-
-}

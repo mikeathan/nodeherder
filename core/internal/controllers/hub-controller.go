@@ -39,7 +39,6 @@ type HubController struct {
 }
 
 func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context) *HubController {
-
 	h := &HubController{
 		eventHub:                          eventHub,
 		store:                             store,
@@ -365,36 +364,6 @@ func (m *HubController) TriggerAutomation(device *devices.Device) {
 	m.automationEngine.HandleDevice(device)
 }
 
-func (m *HubController) deviceAdded(device *devices.Device, data map[string]interface{}) {
-	//d := device
-	action := func() error {
-		err := m.registrar.Register(device.FriendlyName, device)
-		if err != nil {
-			return err
-		}
-		m.registrar.StoreMetrics(device.FriendlyName, data)
-		return nil
-	}
-	action()
-	//m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
-}
-
-func (m *HubController) deviceUpdated(device *devices.Device, data map[string]interface{}) {
-
-	//d := device
-	action := func() error {
-		m.automationEngine.HandleDevice(device)
-		err := m.registrar.Register(device.FriendlyName, device)
-		if err != nil {
-			return err
-		}
-		m.registrar.StoreMetrics(device.FriendlyName, data)
-		return nil
-	}
-	action()
-	//m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
-}
-
 func (m *HubController) processMessage(id string, payload []byte, connType string) error {
 
 	if _, ok := m.responseHandlers[id]; !ok {
@@ -414,23 +383,72 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 				var h = newBridgePermitJoinResponseHandler(m.eventHub, m.mqtt)
 				m.responseHandlers[id] = h
 			case "bridge/devices":
-				var h = newBridgeConfigurationHandler(m.registrar, m.automationEngine, m.mqtt, m.eventHub, m.DeviceAvailabilityTimeoutOverride)
+				var h = newBridgeConfigurationHandler(m.registrar, m.automationEngine, m.mqtt, m.eventHub)
 				m.responseHandlers[id] = h
 			case "bridge/logging":
 				var h = newBridgeLoggingHandler(m.eventHub)
 				m.responseHandlers[id] = h
 			}
 		} else {
-			// pass DeviceEventHandler
-			d := services.NewDeviceProcessor(m.registrar, m.store, m.eventHub, m.DeviceAvailabilityTimeoutOverride)
-			var h = newDeviceHandler(m.registrar, m.eventHub, m.store, m.automationEngine)
-			h.AvailabilityTimeoutInSeconds = m.DeviceAvailabilityTimeoutOverride
+
+			processor := m.createDeviceProcessor()
+			var h = newDeviceHandler(processor)
 			m.responseHandlers[id] = h
 		}
 	}
 
 	var h handler = m.responseHandlers[id]
 	return m.wp.AddTask(&mqttResponseTask{Id: id, Type: connType, Payload: payload, h: h})
+}
+
+// TODO: can be refactored to use a factory. for now we will keep it simple
+func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
+	events := devices.NewDeviceRequestEvents(d.DeviceAvailabilityTimeoutOverride)
+	events.WithOnNewDevice(func(device *devices.Device, data map[string]interface{}) {
+		d.handleDeviceAdded(device, data)
+	})
+
+	events.WithOnDeviceUpdated(func(device *devices.Device, p *devices.UpdatePackage) {
+		d.handleDeviceUpdated(device, p)
+	})
+	events.WithOnDeviceAvailabilityChanged(func(data map[string]interface{}) {
+		d.handleDeviceAvailabilityChanged(data)
+	})
+
+	return services.NewDeviceProcessor(d.registrar, d.store, events)
+}
+
+func (d *HubController) handleDeviceAdded(device *devices.Device, data map[string]interface{}) error {
+	// todo: execute in worker pool
+	// 	action()
+	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
+
+	d.eventHub.Broadcast(ws.DeviceAdded, device)
+
+	if err := d.registrar.Register(device.FriendlyName, device); err != nil {
+		return err
+	}
+
+	return d.registrar.StoreMetrics(device.FriendlyName, data)
+}
+
+func (d *HubController) handleDeviceUpdated(device *devices.Device, p *devices.UpdatePackage) error {
+
+	// todo: execute in worker pool
+	// 	action()
+	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
+	d.eventHub.Broadcast(ws.DeviceUpdated, p)
+
+	d.automationEngine.HandleDevice(device)
+	if err := d.registrar.Register(device.FriendlyName, device); err != nil {
+		return err
+	}
+
+	return d.registrar.StoreMetrics(device.FriendlyName, p.Data)
+}
+
+func (d *HubController) handleDeviceAvailabilityChanged(data map[string]interface{}) {
+	d.eventHub.Broadcast(ws.DeviceUpdated, data)
 }
 
 func convertToMap(payload []byte) (map[string]interface{}, error) {

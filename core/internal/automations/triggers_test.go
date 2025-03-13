@@ -42,7 +42,7 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 
 	device := utils_test.CreateDeviceWithExposes(triggerId, "dial device", entities)
 	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
-	registrar.RegisterBridge(deviceBridgeList, 30000)
+	registrar.RegisterBridge(deviceBridgeList)
 
 	testTriggerData := map[string]string{}
 	testTriggerData["buttonSwitch1"] = "brightness"
@@ -126,7 +126,7 @@ func TestAutomationwithMultipleTriggerActions(t *testing.T) {
 	}
 	device := utils_test.CreateDeviceWithExposes(triggerId, "sensor device", entities)
 	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
-	registrar.RegisterBridge(deviceBridgeList, 30000)
+	registrar.RegisterBridge(deviceBridgeList)
 
 	trigger := createTriggerwithMultipleActions(triggerId, registrar, mqtt, "button1", []string{"brightness", "color_temperature", "color_brightness"}, []any{120, 250, 200})
 	trigger.Conditions = append(trigger.Conditions, automations.NewExposeCondition("button1", "pressed", "="))
@@ -197,7 +197,7 @@ func TestHandleMultipleSameValueTriggerWithDelay(t *testing.T) {
 
 	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
 
-	registrar.RegisterBridge(deviceBridgeList, 30000)
+	registrar.RegisterBridge(deviceBridgeList)
 
 	turnOffTrigger := createTriggerDelayTurnOffLight(triggerId, registrar, mqtt, utils.IntervalFromSeconds(3))
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(triggerId, registrar, mqtt, 30)
@@ -278,7 +278,7 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
 
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
-	registrar.RegisterBridge(deviceBridgeList, 30000)
+	registrar.RegisterBridge(deviceBridgeList)
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(id, registrar, mqtt, 30)
 	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(id, registrar, mqtt, utils.IntervalFromMilliseconds(100))
 
@@ -375,8 +375,7 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
 
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
-	registrar.RegisterBridge(deviceBridgeList, 30000)
-
+	registrar.RegisterBridge(deviceBridgeList)
 	// create turn on trigger
 	turnOnTrigger := createTriggerTurnOnLight(id, registrar, mqtt)
 

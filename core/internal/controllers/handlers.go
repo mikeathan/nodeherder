@@ -9,7 +9,6 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/models/logging"
-	"node-herder/store"
 	"node-herder/utils"
 	"strings"
 )
@@ -49,16 +48,14 @@ type bridgeConfigurationHandler struct {
 	registrar                 *services.HubRegisterService
 	automationEngine          automations.Engine
 	bridgeHash                *bridgeHash
-	deviceAvailabilityTimeout int
 }
 
-func newBridgeConfigurationHandler(registrar *services.HubRegisterService, engine automations.Engine, mqtt mqtt.MqttClient, ws ws.EventHub, deviceAvailabilityTimeout int) *bridgeConfigurationHandler {
+func newBridgeConfigurationHandler(registrar *services.HubRegisterService, engine automations.Engine, mqtt mqtt.MqttClient, ws ws.EventHub) *bridgeConfigurationHandler {
 	return &bridgeConfigurationHandler{
 		registrar:                 registrar,
 		automationEngine:          engine,
 		ws:                        ws,
 		mqtt:                      mqtt,
-		deviceAvailabilityTimeout: deviceAvailabilityTimeout,
 		bridgeHash:                newBridgeHash()}
 }
 
@@ -84,7 +81,7 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 
 	var updatedDeviceMap map[string]string = make(map[string]string)
 
-	b.registrar.RegisterBridge(bridgeInfoList, b.deviceAvailabilityTimeout)
+	b.registrar.RegisterBridge(bridgeInfoList)
 	b.automationEngine.Initialize()
 
 	for _, device := range bridgeInfoList {
@@ -341,22 +338,13 @@ func (b *bridgeLoggingHandler) ProcessPayload(id string, connType string, payloa
 }
 
 type deviceHandler struct {
-	AvailabilityTimeoutInSeconds int
-	registrar                    *services.HubRegisterService
-	eventHub                     ws.EventHub
-	deviceServices               map[string]*services.DeviceLifetimeService
-	automationEngine             automations.Engine
-	store                        store.AppStore
+	deviceProcessor *services.DeviceProcessor
 }
 
-func newDeviceHandler(registrar *services.HubRegisterService, eventHub ws.EventHub, store store.AppStore, automationEngine automations.Engine) *deviceHandler {
+func newDeviceHandler(deviceProcessor *services.DeviceProcessor) *deviceHandler {
 
 	return &deviceHandler{
-		registrar:                    registrar,
-		eventHub:                     eventHub,
-		AvailabilityTimeoutInSeconds: 3600, // 1 Hour
-		automationEngine:             automationEngine,
-		store:                        store,
+		deviceProcessor: deviceProcessor,
 	}
 }
 
@@ -368,82 +356,44 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 		return nil
 	}
 
-	
-	p := services.NewDeviceProcessor(c.registrar, nil, c.eventHub, 0)
-	pu, err := p.CreateOrUpdateDevice(friendlyName, connType, dataMap)
-	newDeviceEvent := func(device *devices.Device, data map[string]interface{}) {
-		c.HandleDeviceAdded(device, data)
-	}
-	//p.OnNewDevice(newDeviceEvent)
-	updateDeviceEvent := func(device *devices.Device, data map[string]interface{}) {
-		c.HandleDeviceUpdated(device, data)
-	}
-	//p.OnDeviceUpdated(updateDeviceEvent)
-	if err != nil {
-		return err
-	}
+	return c.deviceProcessor.CreateOrUpdateDevice(friendlyName, connType, dataMap)
 
-	device, _ := c.registrar.LookupByName(friendlyName)
-	if device == nil {
-		device, err = c.registrar.CreateNewDevice(friendlyName, connType, dataMap)
+	// if err != nil {
+	// 	return err
+	// }
 
-		if err != nil {
-			return err
-		}
+	// device, _ := c.registrar.LookupByName(friendlyName)
+	// if device == nil {
+	// 	device, err = c.registrar.CreateNewDevice(friendlyName, connType, dataMap)
 
-		// WIP ##################
-		appConfig := c.store.AppConfig()
-		debouncer := services.NewDeviceDebouncer(device.Id, appConfig.GetDeviceConfigCache(device.Id), utils.NewRealClock())
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		s := services.NewDeviceLifetimeService(device, debouncer)
-		s.Monitor(c.AvailabilityTimeoutInSeconds, func(p any) {
-			c.eventHub.Broadcast(ws.DeviceUpdated, p)
-		})
+	// 	// WIP ##################
+	// 	appConfig := c.store.AppConfig()
+	// 	debouncer := services.NewDeviceDebouncer(device.Id, appConfig.GetDeviceConfigCache(device.Id), utils.NewRealClock())
 
-		c.deviceServices[device.Id] = s
-		//
+	// 	s := services.NewDeviceLifetimeService(device, debouncer)
+	// 	s.Start(dataMap)
+	// 	c.deviceServices[device.Id] = s
+	// 	//
 
-		c.eventHub.Broadcast(ws.DeviceAdded, device)
-		c.HandleDeviceAdded(device, dataMap)
-	} else {
+	// 	c.eventHub.Broadcast(ws.DeviceAdded, device)
+	// 	c.HandleDeviceAdded(device, dataMap)
+	// } else {
 
-		updatedData := c.deviceServices[device.Id].Update(dataMap)
+	// 	updatedData := c.deviceServices[device.Id].Update(dataMap)
 
-		//updatedData := device.Update(dataMap)
-		if !updatedData.HasData() {
-			return nil
-		}
+	// 	//updatedData := device.Update(dataMap)
+	// 	if !updatedData.HasData() {
+	// 		return nil
+	// 	}
 
-		// check to see if we have an automation for current device
-		c.eventHub.Broadcast(ws.DeviceUpdated, updatedData)
-		c.HandleDeviceUpdated(device, updatedData.Data)
-	}
+	// 	// check to see if we have an automation for current device
+	// 	c.eventHub.Broadcast(ws.DeviceUpdated, updatedData)
+	// 	c.HandleDeviceUpdated(device, updatedData.Data)
+	// }
 
-	return nil
-}
-
-func (d *deviceHandler) HandleDeviceAdded(device *devices.Device, data map[string]interface{}) error {
-	// todo: execute in worker pool
-	// 	action()
-	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
-
-	if err := d.registrar.Register(device.FriendlyName, device); err != nil {
-		return err
-	}
-
-	return d.registrar.StoreMetrics(device.FriendlyName, data)
-}
-
-func (d *deviceHandler) HandleDeviceUpdated(device *devices.Device, data map[string]interface{}) error {
-
-	// todo: execute in worker pool
-	// 	action()
-	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
-
-	d.automationEngine.HandleDevice(device)
-	if err := d.registrar.Register(device.FriendlyName, device); err != nil {
-		return err
-	}
-
-	return d.registrar.StoreMetrics(device.FriendlyName, data)
+	//return nil
 }

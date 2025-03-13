@@ -1003,7 +1003,7 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 	eventHub := &mocks.MockEventHub{}
 
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
-	registrar.RegisterBridge(bridgeInfoes, 30000)
+	registrar.RegisterBridge(bridgeInfoes)
 
 	wg := &sync.WaitGroup{}
 

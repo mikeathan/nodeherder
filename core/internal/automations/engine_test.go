@@ -152,7 +152,7 @@ func TestEngineAutomationUpdateShouldNotResetScheduler(t *testing.T) {
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
-	registrar.RegisterBridge(deviceBridgeList, 60)
+	registrar.RegisterBridge(deviceBridgeList)
 
 	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
@@ -226,7 +226,7 @@ func TestEngineAutomationUpdateShouldResetAndTriggerAgainScheduler(t *testing.T)
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
-	registrar.RegisterBridge(deviceBridgeList, 60)
+	registrar.RegisterBridge(deviceBridgeList)
 
 	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
@@ -307,7 +307,7 @@ func TestEngineAutomationUpdateShouldResetScheduler(t *testing.T) {
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
-	registrar.RegisterBridge(deviceBridgeList, 60)
+	registrar.RegisterBridge(deviceBridgeList)
 
 	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
@@ -388,7 +388,7 @@ func TestEngineAutomationUpdateShouldStopScheduler(t *testing.T) {
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
-	registrar.RegisterBridge(deviceBridgeList, 60)
+	registrar.RegisterBridge(deviceBridgeList)
 
 	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
@@ -466,7 +466,7 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
-	registrar.RegisterBridge(deviceBridgeList, 60)
+	registrar.RegisterBridge(deviceBridgeList)
 
 	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 

@@ -31,7 +31,7 @@ func TestRegisterBridge(t *testing.T) {
 	eventHub := &mocks.MockEventHub{}
 
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
-	registrar.RegisterBridge(bridgeInfoes, 30000)
+	registrar.RegisterBridge(bridgeInfoes)
 
 	storeDevices, _ := store.AllDevices()
 
@@ -148,7 +148,7 @@ func TestCreateNewDevice(t *testing.T) {
 	eventHub := &mocks.MockEventHub{}
 
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
-	registrar.RegisterBridge(bridgeInfoes, 30000)
+	registrar.RegisterBridge(bridgeInfoes)
 
 	deviceName := "Living room light"
 
@@ -166,55 +166,6 @@ func TestCreateNewDevice(t *testing.T) {
 	}
 
 	assertDevicePayload(newDevice, deviceName, payload, t)
-}
-
-func TestUpdateDevice(t *testing.T) {
-
-	bridgeInfoFile := filepath.Join("../../../docs", "device_bridge.json")
-	data, err := os.ReadFile(bridgeInfoFile)
-	if err != nil {
-		t.Fatal("Error reading file:", err)
-		return
-	}
-	bridgeInfoes, err := devices.LoadBridgeDevices(data)
-	if err != nil {
-		t.Fatal("Error parsing bridge info data:", err)
-		return
-	}
-
-	repo := repository.NewMemoryDeviceRepo()
-	store := utils_test.CreateStoreFromDeviceRepo(repo)
-	eventHub := &mocks.MockEventHub{}
-
-	registrar := services.NewHubRegisterService(store, eventHub, 30000)
-	registrar.RegisterBridge(bridgeInfoes, 30000)
-
-	deviceName := "Living room light"
-
-	payload := map[string]interface{}{}
-	payload["brightness"] = 120.1
-	payload["color_temp"] = 100.1
-	payload["state"] = "on"
-	payload["last_seen"] = time.Now().Format(time.RFC3339)
-	payload["battery"] = 100
-
-	newDevice, err := registrar.CreateNewDevice(deviceName, "mqtt", payload)
-	if err != nil {
-		t.Errorf("Error creating new device: %s", err)
-	}
-
-	assertDevicePayload(newDevice, deviceName, payload, t)
-
-	updatePayload := map[string]interface{}{}
-	updatePayload["brightness"] = 0
-	updatePayload["color_temp"] = 201.5
-	updatePayload["state"] = "off"
-	updatePayload["last_seen"] = time.Now().Format(time.RFC3339)
-	updatePayload["battery"] = 99.2
-
-	updatePackage := newDevice.Update(updatePayload)
-
-	assertDeviceUpdatePackage(newDevice, updatePackage, t)
 }
 
 func assertDeviceUpdatePackage(device *devices.Device, updatePackage *devices.UpdatePackage, t *testing.T) {

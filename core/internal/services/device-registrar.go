@@ -14,7 +14,7 @@ type DeviceRegistrar interface {
 	RetrieveEntityData(id string, property string) (any, error)
 	CreateNewDevice(friendlyName string, connType string, data map[string]interface{}) (*devices.Device, error)
 	FindBridgeInfo(id string) (*devices.BridgeInfo, error)
-	RegisterBridge(bridgeInfoList []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int)
+	RegisterBridge(bridgeInfoList []*devices.BridgeInfo)
 	StoreMetrics(friendlyName string, data map[string]interface{}) error
 }
 
@@ -86,7 +86,7 @@ func (a *HubRegisterService) FindBridgeInfo(id string) (*devices.BridgeInfo, err
 	return a.store.FindBridgeInfoById(id)
 }
 
-func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo, deviceAvailabilityTimeoutOverride int) {
+func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo) {
 
 	err := s.store.StoreBridgeInfoList(bridgeInfoList)
 	if err != nil {
