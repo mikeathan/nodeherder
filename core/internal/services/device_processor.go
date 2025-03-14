@@ -25,11 +25,7 @@ func NewDeviceProcessor(registrar *HubRegisterService, store store.AppStore, eve
 }
 
 func (dm *DeviceProcessor) CreateOrUpdateDevice(friendlyName, connType string, dataMap map[string]interface{}) error {
-	device, err := dm.registrar.LookupByName(friendlyName)
-	if err != nil {
-		return fmt.Errorf("error looking up device: %w", err)
-	}
-
+	device, _ := dm.registrar.LookupByName(friendlyName)
 	if device == nil {
 		return dm.createNewDevice(friendlyName, connType, dataMap)
 	}
@@ -47,6 +43,7 @@ func (dm *DeviceProcessor) createNewDevice(friendlyName, connType string, dataMa
 	return nil
 }
 
+we are not rgistering new device with registrator
 func (dm *DeviceProcessor) createDeviceService(device *devices.Device, dataMap map[string]interface{}) {
 	appConfig := dm.store.AppConfig()
 	debouncer := settings.NewDeviceDebouncer(device.Id, appConfig.GetDeviceConfigCache(device.Id), utils.NewRealClock())

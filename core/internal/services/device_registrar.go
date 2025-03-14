@@ -75,10 +75,6 @@ func (s *HubRegisterService) CreateNewDevice(friendlyName string, connType strin
 		return nil, err
 	}
 
-	// s.Monitor(s.deviceAvailabilityTimeout, func(p interface{}) {
-	// 	s.eventHub.Broadcast(ws.DeviceUpdated, p)
-	// })
-
 	return device, nil
 }
 
