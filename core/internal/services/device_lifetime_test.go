@@ -1,7 +1,6 @@
 package services_test
 
 import (
-	"fmt"
 	"node-herder/internal/services"
 	"node-herder/mocks"
 	"node-herder/models/devices"
@@ -129,11 +128,9 @@ func TestDeviceLifetimeService_UpdateWithSameData(t *testing.T) {
 	}
 }
 
-to fix
-
 func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 
-	device := utils_test.CreateLightDevice("x01234", "testDevice", "brigthness", 124.2)
+	device := utils_test.CreateLightDevice("x01234", "testDevice", "brigthness", 124.1)
 	device.Availability = devices.OfflineAvailability
 
 	events := &devices.DeviceRequestEvents{
@@ -148,7 +145,7 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 	appConfig := settings.NewAppConfig()
 	d1 := settings.NewDeviceConfig("x01234")
 	d1.Debounce = map[string]*utils.TimeInterval{
-		"brigthness": utils.IntervalFromSeconds(2),
+		"brigthness": utils.IntervalFromSeconds(3),
 	}
 	appConfig.AddDeviceConfig(d1)
 
@@ -157,43 +154,58 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 
 	testCases := []struct {
 		payload      map[string]interface{}
+		timestamp    time.Time
 		shouldUpdate bool
 	}{
 		{
-			payload:      map[string]interface{}{"brigthness": 124.2, "last_seen": createLastSeen(11, 05, 10)},
+			payload:      map[string]interface{}{"brigthness": 124.2},
+			timestamp:    createTimestamp(11, 05, 10),
 			shouldUpdate: true,
 		},
 		{
-			payload:      map[string]interface{}{"brigthness": 124.5, "last_seen": createLastSeen(11, 05, 11)},
+			payload:      map[string]interface{}{"brigthness": 124.5},
+			timestamp:    createTimestamp(11, 05, 11),
 			shouldUpdate: false,
 		},
 		{
-			payload:      map[string]interface{}{"brigthness": 124.6, "last_seen": createLastSeen(11, 05, 13)},
+			payload:      map[string]interface{}{"brigthness": 124.6},
+			timestamp:    createTimestamp(11, 05, 14),
 			shouldUpdate: true,
+		},
+		{
+			payload:      map[string]interface{}{"brigthness": 124.7},
+			timestamp:    createTimestamp(11, 05, 17),
+			shouldUpdate: true,
+		},
+		{
+			payload:      map[string]interface{}{"brigthness": 124.8},
+			timestamp:    createTimestamp(11, 05, 18),
+			shouldUpdate: false,
+		},
+		{
+			payload:      map[string]interface{}{"brigthness": 124.9},
+			timestamp:    createTimestamp(11, 05, 19),
+			shouldUpdate: false,
 		},
 	}
 
-	for idx, tc := range testCases {
+	for _, tc := range testCases {
 
 		currValue := device.Exposes["brigthness"].Data
-		lastSeen := tc.payload["last_seen"].(string)
-		nextTimestamp, _ := time.Parse(time.RFC3339, lastSeen)
-		mockClock.SetMockTime(nextTimestamp)
+		mockClock.SetMockTime(tc.timestamp)
 
 		service.Update(tc.payload)
 		time.Sleep(50 * time.Millisecond)
 
 		if tc.shouldUpdate {
-			fmt.Printf("shouldUpdate=true idx %v last seen %v \n",idx, device.LastSeen)
 
 			if device.Exposes["brigthness"].Data != tc.payload["brigthness"] {
 				t.Errorf("Device value not updated. want %v, got %v", tc.payload["brigthness"], device.Exposes["brigthness"].Data)
 			}
 		} else {
-			fmt.Printf("shouldUpdate=false idx %v last seen %v \n",idx, device.LastSeen)
 
 			if device.Exposes["brigthness"].Data != currValue {
-				t.Errorf("Device value not updated. want %v, got %v", currValue, device.Exposes["brigthness"].Data)
+				t.Errorf("Error: Device value updated. want %v, got %v", currValue, device.Exposes["brigthness"].Data)
 			}
 		}
 	}
@@ -237,14 +249,12 @@ func TestDeviceLifetimeService_Availability(t *testing.T) {
 	service.Start(payload)
 	wg.Wait()
 
-	service.Dispose()
-
 	if device.Availability != devices.OfflineAvailability {
 		t.Errorf("Device availability not changed to offline")
 	}
 }
 
-func createLastSeen(hour, minute, second int) string {
+func createTimestamp(hour, minute, second int) time.Time {
 	now := time.Now()
-	return time.Date(now.Year(), now.Month(), now.Day(), hour, minute, second, 0, now.Location()).Format(time.RFC3339)
+	return time.Date(now.Year(), now.Month(), now.Day(), hour, minute, second, 0, now.Location())
 }
