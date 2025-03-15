@@ -36,8 +36,14 @@ func TestDeviceProcessor_CreateOrUpdateDevice_NewDevice(t *testing.T) {
 
 	events := &devices.DeviceRequestEvents{
 		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
+			if err := registrar.Register(d.FriendlyName, d); err != nil {
+				t.Errorf("Error registering device update: %s", err)
+			}
 		},
 		OnNewDevice: func(d *devices.Device, p map[string]interface{}) {
+			if err := registrar.Register(d.FriendlyName, d); err != nil {
+				t.Errorf("Error registering device add: %s", err)
+			}
 		},
 		OnDeviceAvailabilityChanged: func(p *devices.UpdatePackage) {
 		},
@@ -66,7 +72,7 @@ func TestDeviceProcessor_CreateOrUpdateDevice_NewDevice(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error finding device: %s", err)
 	}
-	
+
 	if d.FriendlyName != deviceName {
 		t.Errorf("Device FriendlyName mismatch want: %s got: %s", deviceName, d.FriendlyName)
 	}

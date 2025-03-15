@@ -43,7 +43,6 @@ func (dm *DeviceProcessor) createNewDevice(friendlyName, connType string, dataMa
 	return nil
 }
 
-we are not rgistering new device with registrator
 func (dm *DeviceProcessor) createDeviceService(device *devices.Device, dataMap map[string]interface{}) {
 	appConfig := dm.store.AppConfig()
 	debouncer := settings.NewDeviceDebouncer(device.Id, appConfig.GetDeviceConfigCache(device.Id), utils.NewRealClock())
