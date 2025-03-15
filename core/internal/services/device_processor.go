@@ -56,7 +56,12 @@ func (dm *DeviceProcessor) createDeviceService(device *devices.Device, dataMap m
 func (dm *DeviceProcessor) updateExistingDevice(device *devices.Device, dataMap map[string]interface{}) error {
 	deviceService, ok := dm.deviceServices[device.Id]
 	if !ok {
-		return fmt.Errorf("device service not found for device ID: %s", device.Id)
+
+		refactor here better
+		// we are here because device is registered via bridge 
+		// but we dont have a device lifetime service created yet
+		dm.createDeviceService(device, dataMap)
+		deviceService = dm.deviceServices[device.Id]
 	}
 
 	deviceService.Update(dataMap)
