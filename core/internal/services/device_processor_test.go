@@ -27,9 +27,9 @@ func TestDeviceProcessor_CreateOrUpdateDevice_NewDevice(t *testing.T) {
 			t.Errorf("Error: OnDeviceUpdated called for new device")
 		},
 		OnNewDevice: func(d *devices.Device, p map[string]interface{}) {
-			if err := registrar.Register(d.FriendlyName, d); err != nil {
-				t.Errorf("Error registering device add: %s", err)
-			}
+			// if err := registrar.Register(d.FriendlyName, d); err != nil {
+			// 	t.Errorf("Error registering device add: %s", err)
+			// }
 			wg.Done()
 		},
 		OnDeviceAvailabilityChanged: func(p *devices.UpdatePackage) {
@@ -107,15 +107,15 @@ func TestDeviceProcessor_CreateOrUpdateDevice_ExistingDevice(t *testing.T) {
 
 	events := &devices.DeviceRequestEvents{
 		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
-			if err := registrar.Register(d.FriendlyName, d); err != nil {
-				t.Errorf("Error registering device update: %s", err)
-			}
+			// if err := registrar.Register(d.FriendlyName, d); err != nil {
+			// 	t.Errorf("Error registering device update: %s", err)
+			// }
 			wg.Done()
 		},
 		OnNewDevice: func(d *devices.Device, p map[string]interface{}) {
-			if err := registrar.Register(d.FriendlyName, d); err != nil {
-				t.Errorf("Error registering device add: %s", err)
-			}
+			// if err := registrar.Register(d.FriendlyName, d); err != nil {
+			// 	t.Errorf("Error registering device add: %s", err)
+			// }
 			wg.Done()
 		},
 		OnDeviceAvailabilityChanged: func(p *devices.UpdatePackage) {

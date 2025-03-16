@@ -411,7 +411,7 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 	events.WithOnDeviceUpdated(func(device *devices.Device, p *devices.UpdatePackage) {
 		d.handleDeviceUpdated(device, p)
 	})
-	events.WithOnDeviceAvailabilityChanged(func( p *devices.UpdatePackage) {
+	events.WithOnDeviceAvailabilityChanged(func(p *devices.UpdatePackage) {
 		d.handleDeviceAvailabilityChanged(p)
 	})
 
@@ -425,9 +425,9 @@ func (d *HubController) handleDeviceAdded(device *devices.Device, data map[strin
 
 	d.eventHub.Broadcast(ws.DeviceAdded, device)
 
-	if err := d.registrar.Register(device.FriendlyName, device); err != nil {
-		return err
-	}
+	// if err := d.registrar.Register(device.FriendlyName, device); err != nil {
+	// 	return err
+	// }
 
 	return d.registrar.StoreMetrics(device.FriendlyName, data)
 }
@@ -440,14 +440,14 @@ func (d *HubController) handleDeviceUpdated(device *devices.Device, p *devices.U
 	d.eventHub.Broadcast(ws.DeviceUpdated, p)
 
 	d.automationEngine.HandleDevice(device)
-	if err := d.registrar.Register(device.FriendlyName, device); err != nil {
-		return err
-	}
+	// if err := d.registrar.Register(device.FriendlyName, device); err != nil {
+	// 	return err
+	// }
 
 	return d.registrar.StoreMetrics(device.FriendlyName, p.Data)
 }
 
-func (d *HubController) handleDeviceAvailabilityChanged( p *devices.UpdatePackage) {
+func (d *HubController) handleDeviceAvailabilityChanged(p *devices.UpdatePackage) {
 	d.eventHub.Broadcast(ws.DeviceUpdated, p)
 }
 
