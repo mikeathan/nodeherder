@@ -425,11 +425,11 @@ func (d *HubController) handleDeviceAdded(device *devices.Device, data map[strin
 
 	d.eventHub.Broadcast(ws.DeviceAdded, device)
 
-	// if err := d.registrar.Register(device.FriendlyName, device); err != nil {
-	// 	return err
-	// }
+	if err := d.store.StoreDevice(device.FriendlyName, device); err != nil {
+		return err
+	}
 
-	return d.registrar.StoreMetrics(device.FriendlyName, data)
+	return d.store.StoreMetrics(device.FriendlyName, data)
 }
 
 func (d *HubController) handleDeviceUpdated(device *devices.Device, p *devices.UpdatePackage) error {
@@ -440,11 +440,11 @@ func (d *HubController) handleDeviceUpdated(device *devices.Device, p *devices.U
 	d.eventHub.Broadcast(ws.DeviceUpdated, p)
 
 	d.automationEngine.HandleDevice(device)
-	// if err := d.registrar.Register(device.FriendlyName, device); err != nil {
-	// 	return err
-	// }
+	if err := d.store.StoreDevice(device.FriendlyName, device); err != nil {
+		return err
+	}
 
-	return d.registrar.StoreMetrics(device.FriendlyName, p.Data)
+	return d.store.StoreMetrics(device.FriendlyName, p.Data)
 }
 
 func (d *HubController) handleDeviceAvailabilityChanged(p *devices.UpdatePackage) {
