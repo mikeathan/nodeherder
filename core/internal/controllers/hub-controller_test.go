@@ -30,16 +30,6 @@ const device1BatterySource = `{"id":"device 1","conn":"mqtt","power_source":"bat
 const device2 = `{"battery":98, "humidity":71.2,  "linkquality":36.1,"temperature":17.1,"voltage":2999}`
 const device3NoLastSeen = `{"id":"device 1","conn":"mqtt","power_source":"battery","humidity":91.12,"temperature":19.000000000000004,"availability":"online","linkquality":47,"battery":67}`
 
-func createMockPayload() map[string]interface{} {
-	return map[string]interface{}{
-		"battery":     98,
-		"humidity":    71.2,
-		"last_seen":   time.Now().Format(time.RFC3339),
-		"linkquality": 36.1,
-		"temperature": 17.1,
-	}
-}
-
 func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
@@ -1177,8 +1167,4 @@ func createMockDialAndLightDevices(dialName string, lightName string) []*devices
 	lightDevice := utils_test.CreateDeviceWithExposes(lightName, "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
 
 	return []*devices.Device{dialDevice, lightDevice}
-}
-
-func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data interface{}) error) ws.EventHub {
-	return &mocks.MockEventHub{MockBroadcastEvent: mockBroadcastEvent}
 }
