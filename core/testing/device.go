@@ -26,6 +26,7 @@ func CreateEnumEntity(name string, enums map[string]any) *devices.Entity {
 	newEntity.Name = name
 	newEntity.Type = "enum"
 	newEntity.Unit = "unit_test"
+	newEntity.Category = devices.MeasurementCategory
 	newEntity.Description = fmt.Sprintf("description for expose: %s ", name)
 	newEntity.Attributes = map[string]any{"min": 0, "max": 255}
 

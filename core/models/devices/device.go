@@ -8,7 +8,6 @@ import (
 	"time"
 )
 
-var availabilityKey = "availability"
 var mainsKey = "mains"
 var batterKey = "battery"
 var lastSeenKey = "last_seen"
@@ -112,35 +111,29 @@ func getExposeCategory(entity BridgeExpose) string {
 }
 
 type Device struct {
-	Id                      string             `json:"id"`
-	FriendlyName            string             `json:"friendly_name"`
-	Description             string             `json:"description,omitempty"`
-	ConnectionType          string             `json:"connection_type"`
-	PowerSource             string             `json:"power_source"`
-	Exposes                 map[string]*Entity `json:"exposes"`
-	LastSeen                string             `json:"last_seen"`
-	Availability            AvailabilityType   `json:"availability"`
-	availabilityTicker      time.Ticker
-	availablityDone         chan bool
-	availabilityTimeoutSecs int
-	mutex                   sync.RWMutex
+	Id             string             `json:"id"`
+	FriendlyName   string             `json:"friendly_name"`
+	Description    string             `json:"description,omitempty"`
+	ConnectionType string             `json:"connection_type"`
+	PowerSource    string             `json:"power_source"`
+	Exposes        map[string]*Entity `json:"exposes"`
+	LastSeen       string             `json:"last_seen"`
+	Availability   AvailabilityType   `json:"availability"`
+	mutex          sync.RWMutex
 }
 
 func NewDevice(id string) *Device {
 
 	return &Device{
-		Id:                      id,
-		FriendlyName:            "",
-		Description:             "",
-		ConnectionType:          "",
-		PowerSource:             "",
-		Availability:            UnknownAvailability,
-		LastSeen:                "",
-		Exposes:                 map[string]*Entity{},
-		availabilityTicker:      time.Ticker{},
-		availablityDone:         make(chan bool, 1),
-		availabilityTimeoutSecs: 3600,
-		mutex:                   sync.RWMutex{},
+		Id:             id,
+		FriendlyName:   "",
+		Description:    "",
+		ConnectionType: "",
+		PowerSource:    "",
+		Availability:   UnknownAvailability,
+		LastSeen:       "",
+		Exposes:        map[string]*Entity{},
+		mutex:          sync.RWMutex{},
 	}
 }
 
@@ -258,6 +251,7 @@ func createExpose(data map[string]interface{}) map[string]*Entity {
 
 		newEntity := newEntity()
 		newEntity.AccessMode = UnknownAccessMode
+		newEntity.Category = MeasurementCategory
 		newEntity.Name = key
 		newEntity.Data = value
 		newEntity.Unit = units[key]
@@ -462,66 +456,3 @@ func (device *Device) SetAvailable(value bool) {
 		device.Availability = OfflineAvailability
 	}
 }
-
-func (device *Device) Dispose() {
-	device.availablityDone <- true
-	device.availabilityTicker.Stop()
-	utils.LogDebugf("device %s disposed", device.Id)
-}
-
-// func (device *Device) Monitor(timeoutInSecs int, onChangeCallback func(p interface{})) {
-
-// 	device.availabilityTicker = *time.NewTicker(1 * time.Second)
-
-// 	go func() {
-// 		defer close(device.availablityDone)
-// 		for {
-// 			select {
-// 			case <-device.availablityDone:
-
-// 				device.setAvailable(false)
-// 				utils.LogInfof("device %s availability timer killed", device.Id)
-
-// 				// todo: move it in one place
-// 				if onChangeCallback != nil {
-// 					p := newUpdatePackage(device.Id)
-// 					p.Availability = OfflineAvailability
-// 					onChangeCallback(p)
-// 				}
-
-// 				return
-
-// 			case <-device.availabilityTicker.C:
-
-// 				if !device.isAvailable() {
-// 					return
-// 				}
-
-// 				lastSeen, err := device.LastSeenTime()
-// 				if err != nil {
-// 					utils.LogErrorf("device %s failed to parse time %s", device.Id, err.Error())
-
-// 					device.Dispose()
-// 				}
-
-// 				now := time.Now()
-// 				diff := now.Sub(lastSeen)
-// 				if diff.Seconds() >= float64(timeoutInSecs) {
-
-// 					device.setAvailable(false)
-// 					utils.LogInfof("device %s is offine", device.Id)
-
-// 					// todo: move it in one place
-// 					if onChangeCallback != nil {
-// 						p := newUpdatePackage(device.Id)
-// 						p.Availability = OfflineAvailability
-// 						onChangeCallback(p)
-// 					}
-
-// 					device.availabilityTicker.Stop()
-// 				}
-
-// 			}
-// 		}
-// 	}()
-// }

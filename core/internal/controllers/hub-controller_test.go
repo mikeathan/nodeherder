@@ -373,65 +373,7 @@ func TestHubTriggersRemoteLogger(t *testing.T) {
 		t.Errorf("expected %d log messages, got %d", len(expectedRemoteLogMessages), index)
 	}
 }
-func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridgeTEST(t *testing.T) {
-	mqtt := &mocks.MockMqttClient{}
-	ws := &mocks.NopWsServer{}
-	var messageHandler = func(id string, payload []byte) {
-		fmt.Println("messageHandler", string(payload))
-	}
 
-	mqtt.OnMessageHandler(messageHandler)
-	// setup device
-	allDevices := createMockDialAndLightDevices("x01111111", "0x02222222")
-
-	dialDevice := allDevices[0]
-	lightDevice := allDevices[1]
-	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{dialDevice})
-
-	// register hub
-	store, cleanup, err := utils_test.CreateFileStore()
-	if err != nil {
-		t.Fatalf("CreateFileStore failed. err %v ", err)
-	}
-	defer cleanup()
-	appCfg := store.AppConfig()
-
-	//appCfg := store.AppConfig()
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
-
-	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(1 * time.Second) // give it time to configure bridgeInfo
-
-	// note:
-	// publish new device that is not in Bridge - eg via HTTP . it will be registered here and generate new Id
-	payload := map[string]any{"brightness": 10.0, "color_temp": 100}
-	mqtt.Publish(lightDevice.FriendlyName, payload)
-	time.Sleep(1 * time.Second)
-
-	time.Sleep(500 * time.Millisecond)
-	d, err := store.FindDeviceByFriendlyName("Attic light")
-	if err != nil {
-		t.Fatalf("device not found. err %v ", err)
-	}
-	if d.FriendlyName != "Attic light" {
-		t.Fatalf("device not found. err %v ", err)
-	}
-
-	cfg := settings.NewDeviceConfig(lightDevice.Id)
-	cfg.MetricsEnabled = true
-	cfg.RateLimit = utils.IntervalFromMilliseconds(10)
-	appCfg.SetDeviceConfig(cfg)
-
-	// note:
-	// publish new device again- This SHOULD be stored as metrics NOW
-	payload = map[string]any{"brightness": 220.0, "color_temp": 120.0}
-	mqtt.Publish(lightDevice.FriendlyName, payload)
-
-	time.Sleep(5 * time.Second)
-
-	time.Sleep(500 * time.Second)
-
-}
 func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
@@ -469,15 +411,13 @@ func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *tes
 	mqtt.Publish(lightDevice.FriendlyName, payload)
 
 	time.Sleep(500 * time.Millisecond)
-	// d, err := store.FindDeviceByFriendlyName("Attic light")
-	// if err != nil {
-	// 	t.Fatalf("device not found. err %v ", err)
-	// }
+	d, err := store.FindDeviceByFriendlyName("Attic light")
+	if err != nil {
+		t.Fatalf("device not found. err %v ", err)
+	}
 
-	// enable metrics for light device. use its new Id
-
-	problemn here  id is differnt as its using the mapper
-	cfg,err := appCfg.GetDeviceConfig(lightDevice.Id)
+	// enable metrics for light device.
+	cfg, err := appCfg.GetDeviceConfig(d.Id)
 	if err != nil {
 		t.Fatalf("device not found. err %v ", err)
 	}
@@ -489,12 +429,12 @@ func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *tes
 	// note:
 	// publish new device again- This SHOULD be stored as metrics NOW
 	payload = map[string]any{"brightness": 20.0, "color_temp": 110.0}
-	mqtt.Publish(dialDevice.FriendlyName, payload)
-	time.Sleep(1 * time.Second)
+	mqtt.Publish(d.FriendlyName, payload)
+	time.Sleep(500 * time.Millisecond)
 
 	from := time.Now().Add(-time.Minute * 2).UTC()
 	to := time.Now().UTC()
-	lightMetrics, err := store.ViewMetrics(dialDevice, from, to)
+	lightMetrics, err := store.ViewMetrics(d, from, to)
 	if err != nil {
 		t.Fatalf("ViewMetrics failed. err %v ", err)
 	}
@@ -749,7 +689,7 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 	id := utils.HashName(name)
 	device, err := store.FindDeviceById(id)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatalf("FindDeviceById failed. err %v ", err)
 	}
 	if device == nil {
 		t.Fatalf("want %s got %s", name, "nil")
@@ -777,7 +717,7 @@ func TestProcessorUpdatesExistingDevice(t *testing.T) {
 
 	device, err := store.FindDeviceById(id)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatalf("FindDeviceById failed. err %v ", err)
 	}
 	if device == nil {
 		t.Fatalf("want %s got %s", "device", "nil")
@@ -1167,7 +1107,7 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 	id := utils.HashName(name)
 	device, err := store.FindDeviceById(id)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatalf("FindDeviceById failed. err %v ", err)
 	}
 
 	if device.Availability != devices.OnlineAvailability {
@@ -1206,15 +1146,14 @@ func TestAvailabilityIsDisposed(t *testing.T) {
 	id := utils.HashName(name)
 	device, err := store.FindDeviceById(id)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatalf("FindDeviceById failed. err %v ", err)
 	}
 
 	if device.Availability != devices.OnlineAvailability {
 		t.Fatalf("want online got offline")
 	}
 
-	device.Dispose()
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(1500 * time.Millisecond)
 
 	if device.Availability != devices.OfflineAvailability {
 		t.Fatalf("want offline got online")
@@ -1225,10 +1164,16 @@ func createMockDialAndLightDevices(dialName string, lightName string) []*devices
 
 	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
 	device1Expose2 := utils_test.CreateNumericEntity("action_time", 0)
+	device1Expose1.Category = devices.MeasurementCategory
+	device1Expose2.Category = devices.MeasurementCategory
+
 	dialDevice := utils_test.CreateDeviceWithExposes(dialName, "Dial button", []*devices.Entity{device1Expose1, device1Expose2})
 
 	device2Expose1 := utils_test.CreateEntity("brightness", "numeric", nil)
 	device2Expose2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
+	device2Expose1.Category = devices.MeasurementCategory
+	device2Expose2.Category = devices.MeasurementCategory
+
 	lightDevice := utils_test.CreateDeviceWithExposes(lightName, "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
 
 	return []*devices.Device{dialDevice, lightDevice}
