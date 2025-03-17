@@ -6,6 +6,7 @@ import (
 	"node-herder/models/settings"
 	"node-herder/store"
 	"node-herder/utils"
+	"sync"
 )
 
 type DeviceProcessor struct {
@@ -13,6 +14,7 @@ type DeviceProcessor struct {
 	deviceServices map[string]*DeviceLifetimeService
 	store          store.AppStore
 	events         *devices.DeviceRequestEvents
+	mutex          *sync.RWMutex
 }
 
 func NewDeviceProcessor(registrar *HubRegisterService, store store.AppStore, events *devices.DeviceRequestEvents) *DeviceProcessor {
@@ -21,6 +23,7 @@ func NewDeviceProcessor(registrar *HubRegisterService, store store.AppStore, eve
 		deviceServices: make(map[string]*DeviceLifetimeService),
 		store:          store,
 		events:         events,
+		mutex:          &sync.RWMutex{},
 	}
 }
 
@@ -45,7 +48,10 @@ func (dm *DeviceProcessor) createNewDevice(friendlyName, connType string, dataMa
 	return nil
 }
 
-func (dm *DeviceProcessor) createDeviceService(device *devices.Device, dataMap map[string]interface{}) {
+func (dm *DeviceProcessor) createDeviceService(device *devices.Device, dataMap map[string]interface{}) *DeviceLifetimeService {
+	dm.mutex.Lock()
+	defer dm.mutex.Unlock()
+
 	appConfig := dm.store.AppConfig()
 	debouncer := settings.NewDeviceDebouncer(device.Id, appConfig.GetDeviceConfigCache(device.Id), utils.NewRealClock())
 
@@ -53,16 +59,27 @@ func (dm *DeviceProcessor) createDeviceService(device *devices.Device, dataMap m
 	ls.Start(dataMap)
 
 	dm.deviceServices[device.Id] = ls
+
+	return ls
 }
 
+func (dm *DeviceProcessor) getDeviceLifetime(device *devices.Device) (*DeviceLifetimeService, bool) {
+	dm.mutex.RLock()
+	defer dm.mutex.RUnlock()
+
+	ls, ok := dm.deviceServices[device.Id]
+	return ls, ok
+
+}
 func (dm *DeviceProcessor) updateExistingDevice(device *devices.Device, dataMap map[string]interface{}) {
 
-	_, ok := dm.deviceServices[device.Id]
-	if !ok {
-		// we are here because device is registered via bridge
-		// but we dont have a device lifetime service created yet
-		dm.createDeviceService(device, dataMap)
+	if lf, ok := dm.getDeviceLifetime(device); ok {
+		lf.Update(dataMap)
+		return
 	}
-
-	dm.deviceServices[device.Id].Update(dataMap)
+	
+	// we are here because device is registered via bridge
+	// but we dont have a device lifetime service created yet
+	lf := dm.createDeviceService(device, dataMap)
+	lf.Update(dataMap)
 }

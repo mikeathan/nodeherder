@@ -56,7 +56,7 @@ func CreateStoreWithTasks(tasks []settings.Task) (store.AppStore, func(), error)
 	cleanup := func() {
 		os.Remove(settingsTempFile)
 	}
-	configCache, err := settings.NewAppConfigCache(settingsRepo, []settings.Task{})
+	configCache, err := settings.NewAppConfigCache(settingsRepo, tasks)
 	if err != nil {
 		utils.LogErrorf("Error creating settings cache: %v", err.Error())
 		return nil, nil, err

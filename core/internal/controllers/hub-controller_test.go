@@ -373,7 +373,65 @@ func TestHubTriggersRemoteLogger(t *testing.T) {
 		t.Errorf("expected %d log messages, got %d", len(expectedRemoteLogMessages), index)
 	}
 }
+func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridgeTEST(t *testing.T) {
+	mqtt := &mocks.MockMqttClient{}
+	ws := &mocks.NopWsServer{}
+	var messageHandler = func(id string, payload []byte) {
+		fmt.Println("messageHandler", string(payload))
+	}
 
+	mqtt.OnMessageHandler(messageHandler)
+	// setup device
+	allDevices := createMockDialAndLightDevices("x01111111", "0x02222222")
+
+	dialDevice := allDevices[0]
+	lightDevice := allDevices[1]
+	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{dialDevice})
+
+	// register hub
+	store, cleanup, err := utils_test.CreateFileStore()
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+	appCfg := store.AppConfig()
+
+	//appCfg := store.AppConfig()
+	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+
+	mqtt.Publish("bridge/devices", deviceBridgeList)
+	time.Sleep(1 * time.Second) // give it time to configure bridgeInfo
+
+	// note:
+	// publish new device that is not in Bridge - eg via HTTP . it will be registered here and generate new Id
+	payload := map[string]any{"brightness": 10.0, "color_temp": 100}
+	mqtt.Publish(lightDevice.FriendlyName, payload)
+	time.Sleep(1 * time.Second)
+
+	time.Sleep(500 * time.Millisecond)
+	d, err := store.FindDeviceByFriendlyName("Attic light")
+	if err != nil {
+		t.Fatalf("device not found. err %v ", err)
+	}
+	if d.FriendlyName != "Attic light" {
+		t.Fatalf("device not found. err %v ", err)
+	}
+
+	cfg := settings.NewDeviceConfig(lightDevice.Id)
+	cfg.MetricsEnabled = true
+	cfg.RateLimit = utils.IntervalFromMilliseconds(10)
+	appCfg.SetDeviceConfig(cfg)
+
+	// note:
+	// publish new device again- This SHOULD be stored as metrics NOW
+	payload = map[string]any{"brightness": 220.0, "color_temp": 120.0}
+	mqtt.Publish(lightDevice.FriendlyName, payload)
+
+	time.Sleep(5 * time.Second)
+
+	time.Sleep(500 * time.Second)
+
+}
 func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
@@ -403,6 +461,7 @@ func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *tes
 	// update dial button device - This should NOT be stored as metrics
 	payload := map[string]any{"action": "button_2_hold"}
 	mqtt.Publish(dialDevice.FriendlyName, payload)
+	time.Sleep(500 * time.Millisecond)
 
 	// note:
 	// publish new device that is not in Bridge - eg via HTTP . it will be registered here and generate new Id
@@ -410,26 +469,32 @@ func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *tes
 	mqtt.Publish(lightDevice.FriendlyName, payload)
 
 	time.Sleep(500 * time.Millisecond)
-	d, err := store.FindDeviceByFriendlyName("Attic light")
+	// d, err := store.FindDeviceByFriendlyName("Attic light")
+	// if err != nil {
+	// 	t.Fatalf("device not found. err %v ", err)
+	// }
+
+	// enable metrics for light device. use its new Id
+
+	problemn here  id is differnt as its using the mapper
+	cfg,err := appCfg.GetDeviceConfig(lightDevice.Id)
 	if err != nil {
 		t.Fatalf("device not found. err %v ", err)
 	}
-
-	// enable metrics for light device. use its new Id
-	cfg := settings.NewDeviceConfig(d.Id)
 	cfg.MetricsEnabled = true
 	cfg.RateLimit = utils.IntervalFromMilliseconds(10)
 	appCfg.SetDeviceConfig(cfg)
+	time.Sleep(500 * time.Millisecond)
 
 	// note:
 	// publish new device again- This SHOULD be stored as metrics NOW
 	payload = map[string]any{"brightness": 20.0, "color_temp": 110.0}
-	mqtt.Publish(d.FriendlyName, payload)
-	time.Sleep(5 * time.Second)
+	mqtt.Publish(dialDevice.FriendlyName, payload)
+	time.Sleep(1 * time.Second)
 
 	from := time.Now().Add(-time.Minute * 2).UTC()
 	to := time.Now().UTC()
-	lightMetrics, err := store.ViewMetrics(d, from, to)
+	lightMetrics, err := store.ViewMetrics(dialDevice, from, to)
 	if err != nil {
 		t.Fatalf("ViewMetrics failed. err %v ", err)
 	}
