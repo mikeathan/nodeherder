@@ -1000,6 +1000,13 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 	registrar.RegisterBridge(bridgeInfoes)
 
+	config, err := store.AppConfig().GetDeviceConfig("0xa4c13894070052fc")
+	if err != nil {
+		t.Fatalf("error loading device config %s", err.Error())
+	}
+	TODO
+
+	config.Debounce["target_distance"] = utils.IntervalFromMilliseconds(500)
 	wg := &sync.WaitGroup{}
 
 	// TODO: implement debouncer########################################
