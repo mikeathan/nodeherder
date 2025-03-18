@@ -1000,20 +1000,22 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 	registrar.RegisterBridge(bridgeInfoes)
 
-	config, err := store.AppConfig().GetDeviceConfig("0xa4c13894070052fc")
+	appConfig := store.AppConfig()
+	config, err := appConfig.GetDeviceConfig("0xa4c13894070052fc")
 	if err != nil {
 		t.Fatalf("error loading device config %s", err.Error())
 	}
-	TODO
 
 	config.Debounce["target_distance"] = utils.IntervalFromMilliseconds(500)
+	appConfig.SetDeviceConfig(config)
 	wg := &sync.WaitGroup{}
 
-	// TODO: implement debouncer########################################
+	 TODO: implement debouncer########################################
 
 	//lightDeviceName := "Living room light"
 	presenceDeviceName := "Living room presence sensor"
 
+	counter := 0
 	testCases := []struct {
 		deviceName string
 		key        string
@@ -1043,12 +1045,15 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 		// {deviceName: presenceDeviceName, key: "illuminance", value: 120, broadcast: true},
 		// {deviceName: presenceDeviceName, key: "illuminance", value: 120, broadcast: false},
 
-		{deviceName: presenceDeviceName, key: "target_distance", value: 13.1, broadcast: false},
-		{deviceName: presenceDeviceName, key: "target_distance", value: 113.1, broadcast: false},
-		{deviceName: presenceDeviceName, key: "target_distance", value: 23.1, broadcast: false},
+		{deviceName: presenceDeviceName, key: "target_distance", value: 13.1, broadcast: true},
+		{deviceName: presenceDeviceName, key: "target_distance", value: 113.1, broadcast: true},
+		{deviceName: presenceDeviceName, key: "target_distance", value: 23.1, broadcast: true},
 	}
 
 	broadcastHandler := func(eventName string, data interface{}) error {
+
+		counter++
+		fmt.Println("event name: ", eventName, "ID:", counter , data)
 		wg.Done()
 		return nil
 	}
@@ -1057,6 +1062,8 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
 
 	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+	wg.Add(1) // this is for the hubregister service
+
 	for _, testCase := range testCases {
 
 		lastSeen := time.Now().Format(time.RFC3339)
@@ -1075,9 +1082,11 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 
 		mqtt.Publish(testCase.deviceName, []byte(payloadBytes))
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 		wg.Wait()
+
 	}
+
 }
 
 // // TODO: test if presence is converted to 0 and 1

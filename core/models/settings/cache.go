@@ -136,6 +136,11 @@ func (d *DeviceConfigCache) Set(deviceConfig *DeviceConfig) {
 	d.devicesConfigs[deviceConfig.Id] = deviceConfig
 
 	for expose, debounce := range deviceConfig.Debounce {
+		if _, ok := d.devicesDebounce[deviceConfig.Id]; !ok {
+			d.devicesDebounce[deviceConfig.Id] = NewDeviceDebounce(deviceConfig)
+			continue
+		}
+
 		d.devicesDebounce[deviceConfig.Id].SetDebounce(expose, debounce.Duration())
 	}
 }
