@@ -1,11 +1,11 @@
 import { KeyValuePair, Nullable } from './types.type';
+import { ExposeAccessModes, ExposeCategories, ExposeTypes } from './expose.type';
 
 export type DeviceMap = KeyValuePair<Device>;
 export type Devices = Array<Device>;
 export type ExposeAttributes = Nullable<KeyValuePair<any>>;
-export type ExposePresets = Nullable<KeyValuePair<any>>;
-export type ExposeProperties = Nullable<KeyValuePair<any>>;
 export type DeviceProperties = KeyValuePair<any>;
+export type ExposeValues = Nullable<KeyValuePair<any>>;
 
 export type DeviceFilter = (
   device: Device,
@@ -22,6 +22,8 @@ export type Device = {
   properties: KeyValuePair<any>;
 };
 
+
+
 export type ExposeType = keyof ExposeTypes;
 export type Expose = {
   name: string;
@@ -29,9 +31,12 @@ export type Expose = {
   unit: string;
   data: any | null;
   type: ExposeType;
+  access_mode: ExposeAccessMode;
+  category: ExposeCategory;
+
   attributes: ExposeAttributes;
-  presets: ExposePresets;
-  properties: ExposeProperties;
+  values: ExposeValues;
+
 };
 
 export type DeviceUpdate = {
@@ -40,3 +45,5 @@ export type DeviceUpdate = {
   data: KeyValuePair<any>;
   properties: DeviceProperties;
 };
+
+{"type":"deviceUpdated","payload":{"id":"0xa4c138e1b5658e68","last_seen":"2025-03-19T15:54:25.090Z","data":{"co2":476,"formaldehyd":26,"pm25":5,"temperature":16.7,"voc":128}}}
