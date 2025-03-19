@@ -8,62 +8,99 @@
             "id": "0x00124b0029207763",
             "disabled": false,
             "history": false,
-            "rateLimit": { "value": 1, "unit": "minutes" }
+            "rateLimit": { "value": 60, "unit": "seconds" },
+            "debounce": {}
           },
           "0x00124b002fa5844e": {
             "id": "0x00124b002fa5844e",
             "disabled": false,
             "history": false,
-            "rateLimit": { "value": 1, "unit": "minutes" }
+            "rateLimit": { "value": 60, "unit": "seconds" },
+            "debounce": {}
           },
           "0x00158d0005a23c38": {
             "id": "0x00158d0005a23c38",
             "disabled": false,
             "history": false,
-            "rateLimit": { "value": 1, "unit": "minutes" }
+            "rateLimit": { "value": 60, "unit": "seconds" },
+            "debounce": {}
           },
           "0x001788010d7d9d3f": {
             "id": "0x001788010d7d9d3f",
             "disabled": false,
             "history": false,
-            "rateLimit": { "value": 1, "unit": "minutes" }
+            "rateLimit": { "value": 60, "unit": "seconds" },
+            "debounce": {}
+          },
+          "0x08ddebfffee9b068": {
+            "id": "0x08ddebfffee9b068",
+            "disabled": false,
+            "history": false,
+            "rateLimit": { "value": 60, "unit": "seconds" },
+            "debounce": {}
           },
           "0x70ac08fffefafeca": {
             "id": "0x70ac08fffefafeca",
             "disabled": false,
             "history": false,
-            "rateLimit": { "value": 1, "unit": "minutes" }
+            "rateLimit": { "value": 60, "unit": "seconds" },
+            "debounce": {}
+          },
+          "0x70b3d52b60136661": {
+            "id": "0x70b3d52b60136661",
+            "disabled": false,
+            "history": false,
+            "rateLimit": { "value": 60, "unit": "seconds" },
+            "debounce": {}
           },
           "0xa4c1381b6fd53fc4": {
             "id": "0xa4c1381b6fd53fc4",
             "disabled": false,
             "history": false,
-            "rateLimit": { "value": 1, "unit": "minutes" }
+            "rateLimit": { "value": 60, "unit": "seconds" },
+            "debounce": {}
+          },
+          "0xa4c1384582432edd": {
+            "id": "0xa4c1384582432edd",
+            "disabled": false,
+            "history": false,
+            "rateLimit": { "value": 60, "unit": "seconds" },
+            "debounce": {}
           },
           "0xa4c13894070052fc": {
             "id": "0xa4c13894070052fc",
             "disabled": false,
             "history": false,
-            "rateLimit": { "value": 1, "unit": "minutes" }
+            "rateLimit": { "value": 60, "unit": "seconds" },
+            "debounce": {}
           },
           "0xa4c1389b273366c3": {
             "id": "0xa4c1389b273366c3",
             "disabled": false,
             "history": false,
-            "rateLimit": { "value": 1, "unit": "minutes" }
+            "rateLimit": { "value": 60, "unit": "seconds" },
+            "debounce": {}
+          },
+          "0xa4c138c383ac3fc8": {
+            "id": "0xa4c138c383ac3fc8",
+            "disabled": false,
+            "history": false,
+            "rateLimit": { "value": 60, "unit": "seconds" },
+            "debounce": {}
           },
           "0xa4c138e1b5658e68": {
             "id": "0xa4c138e1b5658e68",
             "disabled": false,
             "history": false,
-            "rateLimit": { "value": 1, "unit": "minutes" }
+            "rateLimit": { "value": 60, "unit": "seconds" },
+            "debounce": {}
           }
         },
         "history": {
           "sleeptTmeout": { "value": 12, "unit": "hours" },
           "expireAt": { "value": 10, "unit": "days" }
         },
-        "logger": { "enableRemoteLogger": true }
+        "logger": { "enableRemoteLogger": false }
       },
       "bridge": {
         "maxTimeAllowed": { "value": 120, "unit": "seconds" },
@@ -78,29 +115,61 @@
         "connection_type": "mqtt",
         "power_source": "Battery",
         "exposes": {
+          "battery": {
+            "name": "battery",
+            "description": "Remaining battery in %, can take up to 24 hours before reported",
+            "unit": "%",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "attributes": { "max": 100, "min": 0 },
+            "Values": { "battery": 0 }
+          },
           "humidity": {
             "name": "humidity",
             "description": "Measured relative humidity",
             "unit": "%",
             "data": null,
-            "type": "numeric"
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "humidity": 0 }
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "Values": { "linkquality": 0 }
           },
           "temperature": {
             "name": "temperature",
             "description": "Measured temperature value",
             "unit": "°C",
             "data": null,
-            "type": "numeric"
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "temperature": 0 }
           },
           "voltage": {
             "name": "voltage",
             "description": "Voltage of the battery in millivolts",
             "unit": "mV",
             "data": null,
-            "type": "numeric"
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "Values": { "voltage": 0 }
           }
         },
-        "properties": { "availability": "offline" }
+        "last_seen": "",
+        "availability": "offline"
       },
       {
         "id": "0x00124b002fa5844e",
@@ -109,22 +178,59 @@
         "connection_type": "mqtt",
         "power_source": "Battery",
         "exposes": {
+          "battery": {
+            "name": "battery",
+            "description": "Remaining battery in %",
+            "unit": "%",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "attributes": { "max": 100, "min": 0 },
+            "Values": { "battery": 0 }
+          },
+          "battery_low": {
+            "name": "battery_low",
+            "description": "Indicates whether the battery of the device is almost empty",
+            "data": null,
+            "type": "binary",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "Values": { "off": false, "on": true }
+          },
           "contact": {
             "name": "contact",
             "description": "Indicates whether the device is opened or closed",
             "data": null,
             "type": "binary",
-            "attributes": { "off": true, "on": false }
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "off": true, "on": false }
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "Values": { "linkquality": 0 }
           },
           "voltage": {
             "name": "voltage",
             "description": "Reported battery voltage in millivolts",
             "unit": "mV",
             "data": null,
-            "type": "numeric"
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "Values": { "voltage": 0 }
           }
         },
-        "properties": { "availability": "offline" }
+        "last_seen": "",
+        "availability": "offline"
       },
       {
         "id": "0x00158d0005a23c38",
@@ -138,8 +244,19 @@
             "description": "Brightness of this light",
             "data": null,
             "type": "numeric",
-            "properties": { "brightness": 0 },
-            "attributes": { "max": 254, "min": 0 }
+            "access_mode": "readwrite",
+            "category": "measurement",
+            "attributes": { "max": 254, "min": 0 },
+            "Values": { "brightness": 0 }
+          },
+          "color": {
+            "name": "color",
+            "description": "Color of this light in the CIE 1931 color space (x/y)",
+            "data": null,
+            "type": "composite",
+            "access_mode": "readwrite",
+            "category": "measurement",
+            "Values": {}
           },
           "color_temp": {
             "name": "color_temp",
@@ -147,9 +264,10 @@
             "unit": "mired",
             "data": null,
             "type": "numeric",
-            "properties": { "color_temp": 0 },
+            "access_mode": "readwrite",
+            "category": "measurement",
             "attributes": { "max": 500, "min": 150 },
-            "presets": {
+            "Values": {
               "cool": 250,
               "coolest": 150,
               "neutral": 370,
@@ -157,15 +275,74 @@
               "warmest": 500
             }
           },
+          "color_temp_startup": {
+            "name": "color_temp_startup",
+            "description": "Color temperature after cold power on of this light",
+            "unit": "mired",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "readwrite",
+            "category": "measurement",
+            "attributes": { "max": 500, "min": 150 },
+            "Values": {
+              "cool": 250,
+              "coolest": 150,
+              "neutral": 370,
+              "previous": 65535,
+              "warm": 454,
+              "warmest": 500
+            }
+          },
+          "effect": {
+            "name": "effect",
+            "description": "Triggers an effect on the light (e.g. make light blink for a few seconds)",
+            "data": null,
+            "type": "enum",
+            "access_mode": "write",
+            "category": "measurement",
+            "Values": {
+              "0": "blink",
+              "1": "breathe",
+              "2": "okay",
+              "3": "channel_change",
+              "4": "finish_effect",
+              "5": "stop_effect",
+              "6": "colorloop",
+              "7": "stop_colorloop"
+            }
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "Values": { "linkquality": 0 }
+          },
+          "power_on_behavior": {
+            "name": "power_on_behavior",
+            "description": "Controls the behavior when the device is powered on after power loss",
+            "data": null,
+            "type": "enum",
+            "access_mode": "readwrite",
+            "category": "config",
+            "Values": { "0": "off", "1": "on", "2": "toggle", "3": "previous" }
+          },
           "state": {
             "name": "state",
             "description": "On/off state of this light",
             "data": null,
             "type": "binary",
-            "properties": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
+            "access_mode": "readwrite",
+            "category": "measurement",
+            "Values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
           }
         },
-        "properties": { "availability": "offline" }
+        "last_seen": "",
+        "availability": "offline"
       },
       {
         "id": "0x001788010d7d9d3f",
@@ -179,31 +356,33 @@
             "description": "Triggered action (e.g. a button click)",
             "data": null,
             "type": "enum",
-            "attributes": {
-              "brightness_step_down": "brightness_step_down",
-              "brightness_step_up": "brightness_step_up",
-              "button_1_hold": "button_1_hold",
-              "button_1_hold_release": "button_1_hold_release",
-              "button_1_press": "button_1_press",
-              "button_1_press_release": "button_1_press_release",
-              "button_2_hold": "button_2_hold",
-              "button_2_hold_release": "button_2_hold_release",
-              "button_2_press": "button_2_press",
-              "button_2_press_release": "button_2_press_release",
-              "button_3_hold": "button_3_hold",
-              "button_3_hold_release": "button_3_hold_release",
-              "button_3_press": "button_3_press",
-              "button_3_press_release": "button_3_press_release",
-              "button_4_hold": "button_4_hold",
-              "button_4_hold_release": "button_4_hold_release",
-              "button_4_press": "button_4_press",
-              "button_4_press_release": "button_4_press_release",
-              "dial_rotate_left_fast": "dial_rotate_left_fast",
-              "dial_rotate_left_slow": "dial_rotate_left_slow",
-              "dial_rotate_left_step": "dial_rotate_left_step",
-              "dial_rotate_right_fast": "dial_rotate_right_fast",
-              "dial_rotate_right_slow": "dial_rotate_right_slow",
-              "dial_rotate_right_step": "dial_rotate_right_step"
+            "access_mode": "read",
+            "category": "diagnostic",
+            "Values": {
+              "0": "button_1_press",
+              "1": "button_1_press_release",
+              "10": "button_3_hold",
+              "11": "button_3_hold_release",
+              "12": "button_4_press",
+              "13": "button_4_press_release",
+              "14": "button_4_hold",
+              "15": "button_4_hold_release",
+              "16": "dial_rotate_left_step",
+              "17": "dial_rotate_left_slow",
+              "18": "dial_rotate_left_fast",
+              "19": "dial_rotate_right_step",
+              "2": "button_1_hold",
+              "20": "dial_rotate_right_slow",
+              "21": "dial_rotate_right_fast",
+              "22": "brightness_step_up",
+              "23": "brightness_step_down",
+              "3": "button_1_hold_release",
+              "4": "button_2_press",
+              "5": "button_2_press_release",
+              "6": "button_2_hold",
+              "7": "button_2_hold_release",
+              "8": "button_3_press",
+              "9": "button_3_press_release"
             }
           },
           "action_direction": {
@@ -211,35 +390,347 @@
             "description": "Direction in which the dial was turned",
             "data": null,
             "type": "enum",
-            "attributes": { "left": "left", "right": "right" }
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "0": "right", "1": "left" }
+          },
+          "action_step_size": {
+            "name": "action_step_size",
+            "description": "amount of steps the last action took on the dial exposed as a posive value from 0-255",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "measurement",
+            "attributes": { "max": 255, "min": 0 },
+            "Values": { "action_step_size": 0 }
           },
           "action_time": {
             "name": "action_time",
             "description": "value in seconds representing the amount of time the last action took",
             "data": null,
             "type": "numeric",
-            "attributes": { "max": 255, "min": 0 }
+            "access_mode": "read",
+            "category": "measurement",
+            "attributes": { "max": 255, "min": 0 },
+            "Values": { "action_time": 0 }
           },
           "action_type": {
             "name": "action_type",
             "description": "Type of the rotation, value in the first message is `step` and in the next messages value is `rotate`",
             "data": null,
             "type": "enum",
-            "attributes": { "rotate": "rotate", "step": "step" }
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "0": "step", "1": "rotate" }
+          },
+          "battery": {
+            "name": "battery",
+            "description": "Remaining battery in %, can take up to 24 hours before reported",
+            "unit": "%",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "attributes": { "max": 100, "min": 0 },
+            "Values": { "battery": 0 }
           },
           "brightness": {
             "name": "brightness",
             "description": "Raw rotation state value of the dial which represents brightness from 0-255",
             "data": null,
             "type": "numeric",
-            "attributes": { "max": 255, "min": 0 }
+            "access_mode": "read",
+            "category": "measurement",
+            "attributes": { "max": 255, "min": 0 },
+            "Values": { "brightness": 0 }
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "Values": { "linkquality": 0 }
           }
         },
-        "properties": { "availability": "offline" }
+        "last_seen": "",
+        "availability": "offline"
+      },
+      {
+        "id": "0x08ddebfffee9b068",
+        "friendly_name": "0x08ddebfffee9b068",
+        "description": "Zigbee occupancy sensor",
+        "connection_type": "mqtt",
+        "power_source": "DC Source",
+        "exposes": {
+          "illumination": {
+            "name": "illumination",
+            "description": "Only updated when occupancy is detected",
+            "data": null,
+            "type": "enum",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "0": "dim", "1": "bright" }
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "Values": { "linkquality": 0 }
+          },
+          "occupancy": {
+            "name": "occupancy",
+            "description": "Indicates whether the device detected occupancy",
+            "data": null,
+            "type": "binary",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "off": false, "on": true }
+          },
+          "occupancy_sensitivity": {
+            "name": "occupancy_sensitivity",
+            "description": "Sensitivity of human presence detection",
+            "data": null,
+            "type": "enum",
+            "access_mode": "readwrite",
+            "category": "measurement",
+            "Values": { "0": "low", "1": "medium", "2": "high" }
+          },
+          "occupancy_timeout": {
+            "name": "occupancy_timeout",
+            "description": "Unoccupied to occupied delay",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "readwrite",
+            "category": "measurement",
+            "attributes": { "max": 65535, "min": 15 },
+            "Values": { "occupancy_timeout": 0 }
+          }
+        },
+        "last_seen": "",
+        "availability": "offline"
+      },
+      {
+        "id": "0x70ac08fffefafeca",
+        "friendly_name": "Attic Light",
+        "description": "Automatically generated definition",
+        "connection_type": "mqtt",
+        "power_source": "Mains (single phase)",
+        "exposes": {
+          "brightness": {
+            "name": "brightness",
+            "description": "Brightness of this light",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "readwrite",
+            "category": "measurement",
+            "attributes": { "max": 254, "min": 0 },
+            "Values": { "brightness": 0 }
+          },
+          "color": {
+            "name": "color",
+            "description": "Color of this light expressed as hue/saturation",
+            "data": null,
+            "type": "composite",
+            "access_mode": "readwrite",
+            "category": "measurement",
+            "Values": {}
+          },
+          "color_temp": {
+            "name": "color_temp",
+            "description": "Color temperature of this light",
+            "unit": "mired",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "readwrite",
+            "category": "measurement",
+            "attributes": { "max": 500, "min": 150 },
+            "Values": {
+              "cool": 250,
+              "coolest": 150,
+              "neutral": 370,
+              "warm": 454,
+              "warmest": 500
+            }
+          },
+          "color_temp_startup": {
+            "name": "color_temp_startup",
+            "description": "Color temperature after cold power on of this light",
+            "unit": "mired",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "readwrite",
+            "category": "measurement",
+            "attributes": { "max": 500, "min": 150 },
+            "Values": {
+              "cool": 250,
+              "coolest": 150,
+              "neutral": 370,
+              "previous": 65535,
+              "warm": 454,
+              "warmest": 500
+            }
+          },
+          "effect": {
+            "name": "effect",
+            "description": "Triggers an effect on the light (e.g. make light blink for a few seconds)",
+            "data": null,
+            "type": "enum",
+            "access_mode": "write",
+            "category": "measurement",
+            "Values": {
+              "0": "blink",
+              "1": "breathe",
+              "2": "okay",
+              "3": "channel_change",
+              "4": "finish_effect",
+              "5": "stop_effect",
+              "6": "colorloop",
+              "7": "stop_colorloop"
+            }
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "Values": { "linkquality": 0 }
+          },
+          "power_on_behavior": {
+            "name": "power_on_behavior",
+            "description": "Controls the behavior when the device is powered on after power loss",
+            "data": null,
+            "type": "enum",
+            "access_mode": "readwrite",
+            "category": "config",
+            "Values": { "0": "off", "1": "on", "2": "toggle", "3": "previous" }
+          },
+          "state": {
+            "name": "state",
+            "description": "On/off state of this light",
+            "data": null,
+            "type": "binary",
+            "access_mode": "readwrite",
+            "category": "measurement",
+            "Values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
+          }
+        },
+        "last_seen": "",
+        "availability": "offline"
+      },
+      {
+        "id": "0x70b3d52b60136661",
+        "friendly_name": "Dining room power socket",
+        "description": "Smart plug (with power monitoring by polling)",
+        "connection_type": "mqtt",
+        "power_source": "Mains (single phase)",
+        "exposes": {
+          "child_lock": {
+            "name": "child_lock",
+            "description": "Enables/disables physical input on the device",
+            "data": null,
+            "type": "binary",
+            "access_mode": "write",
+            "category": "measurement",
+            "Values": { "off": "UNLOCK", "on": "LOCK" }
+          },
+          "current": {
+            "name": "current",
+            "description": "Instantaneous measured electrical current",
+            "unit": "A",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "Values": { "current": 0 }
+          },
+          "energy": {
+            "name": "energy",
+            "description": "Sum of consumed energy",
+            "unit": "kWh",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "energy": 0 }
+          },
+          "indicator_mode": {
+            "name": "indicator_mode",
+            "description": "LED indicator mode",
+            "data": null,
+            "type": "enum",
+            "access_mode": "readwrite",
+            "category": "measurement",
+            "Values": { "0": "off", "1": "off/on", "2": "on/off", "3": "on" }
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "Values": { "linkquality": 0 }
+          },
+          "power": {
+            "name": "power",
+            "description": "Instantaneous measured power",
+            "unit": "W",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "Values": { "power": 0 }
+          },
+          "power_outage_memory": {
+            "name": "power_outage_memory",
+            "description": "Recover state after power outage",
+            "data": null,
+            "type": "enum",
+            "access_mode": "readwrite",
+            "category": "measurement",
+            "Values": { "0": "on", "1": "off", "2": "restore" }
+          },
+          "state": {
+            "name": "state",
+            "description": "On/off state of the switch",
+            "data": null,
+            "type": "binary",
+            "access_mode": "readwrite",
+            "category": "measurement",
+            "Values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
+          },
+          "voltage": {
+            "name": "voltage",
+            "description": "Measured electrical potential value",
+            "unit": "V",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "Values": { "voltage": 0 }
+          }
+        },
+        "last_seen": "",
+        "availability": "offline"
       },
       {
         "id": "0xa4c1381b6fd53fc4",
-        "friendly_name": "Attic power socket",
+        "friendly_name": "Attic room power socket",
         "description": "Smart plug",
         "connection_type": "mqtt",
         "power_source": "Mains (single phase)",
@@ -248,39 +739,137 @@
             "name": "current",
             "description": "Instantaneous measured electrical current",
             "unit": "A",
-            "data": null,
-            "type": "numeric"
+            "data": 0.43,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "Values": { "current": 0 }
           },
           "energy": {
             "name": "energy",
             "description": "Sum of consumed energy",
             "unit": "kWh",
-            "data": null,
-            "type": "numeric"
+            "data": 18.06,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "energy": 0 }
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": 116,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "Values": { "linkquality": 0 }
           },
           "power": {
             "name": "power",
             "description": "Instantaneous measured power",
             "unit": "W",
-            "data": null,
-            "type": "numeric"
+            "data": 75,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "Values": { "power": 0 }
+          },
+          "power_on_behavior": {
+            "name": "power_on_behavior",
+            "description": "Controls the behavior when the device is powered on after power loss",
+            "data": "previous",
+            "type": "enum",
+            "access_mode": "readwrite",
+            "category": "config",
+            "Values": { "0": "off", "1": "on", "2": "toggle", "3": "previous" }
           },
           "state": {
             "name": "state",
             "description": "On/off state of the switch",
-            "data": null,
+            "data": "ON",
             "type": "binary",
-            "properties": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
+            "access_mode": "readwrite",
+            "category": "measurement",
+            "Values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
           },
           "voltage": {
             "name": "voltage",
             "description": "Measured electrical potential value",
             "unit": "V",
-            "data": null,
-            "type": "numeric"
+            "data": 244,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "Values": { "voltage": 0 }
           }
         },
-        "properties": { "availability": "offline" }
+        "last_seen": "2025-03-19T15:53:12.846Z",
+        "availability": "online"
+      },
+      {
+        "id": "0xa4c1384582432edd",
+        "friendly_name": "Garden temperature",
+        "description": "Temperature \u0026 humidity sensor with display",
+        "connection_type": "mqtt",
+        "power_source": "Battery",
+        "exposes": {
+          "battery": {
+            "name": "battery",
+            "description": "Remaining battery in %, can take up to 24 hours before reported",
+            "unit": "%",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "attributes": { "max": 100, "min": 0 },
+            "Values": { "battery": 0 }
+          },
+          "humidity": {
+            "name": "humidity",
+            "description": "Measured relative humidity",
+            "unit": "%",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "humidity": 0 }
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "Values": { "linkquality": 0 }
+          },
+          "temperature": {
+            "name": "temperature",
+            "description": "Measured temperature value",
+            "unit": "°C",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "temperature": 0 }
+          },
+          "voltage": {
+            "name": "voltage",
+            "description": "Voltage of the battery in millivolts",
+            "unit": "mV",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "Values": { "voltage": 0 }
+          }
+        },
+        "last_seen": "",
+        "availability": "offline"
       },
       {
         "id": "0xa4c13894070052fc",
@@ -289,26 +878,103 @@
         "connection_type": "mqtt",
         "power_source": "Mains (single phase)",
         "exposes": {
+          "detection_delay": {
+            "name": "detection_delay",
+            "description": "Detection delay",
+            "unit": "s",
+            "data": 0.1,
+            "type": "numeric",
+            "access_mode": "write",
+            "category": "measurement",
+            "attributes": { "max": 10, "min": 0 },
+            "Values": { "detection_delay": 0 }
+          },
+          "fading_time": {
+            "name": "fading_time",
+            "description": "Fading time",
+            "unit": "s",
+            "data": 30,
+            "type": "numeric",
+            "access_mode": "write",
+            "category": "measurement",
+            "attributes": { "max": 1500, "min": 0.5 },
+            "Values": { "fading_time": 0 }
+          },
           "illuminance": {
             "name": "illuminance",
             "description": "Measured illuminance",
             "unit": "lx",
-            "data": 122,
-            "type": "numeric"
+            "data": 148,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "illuminance": 0 }
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": 120,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "Values": { "linkquality": 0 }
+          },
+          "maximum_range": {
+            "name": "maximum_range",
+            "description": "Maximum range",
+            "unit": "m",
+            "data": 5,
+            "type": "numeric",
+            "access_mode": "write",
+            "category": "measurement",
+            "attributes": { "max": 9.5, "min": 0 },
+            "Values": { "maximum_range": 0 }
+          },
+          "minimum_range": {
+            "name": "minimum_range",
+            "description": "Minimum range",
+            "unit": "m",
+            "data": 0.1,
+            "type": "numeric",
+            "access_mode": "write",
+            "category": "measurement",
+            "attributes": { "max": 9.5, "min": 0 },
+            "Values": { "minimum_range": 0 }
           },
           "presence": {
             "name": "presence",
             "description": "Indicates whether the device detected presence",
-            "data": true,
+            "data": false,
             "type": "binary",
-            "attributes": { "off": false, "on": true }
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "off": false, "on": true }
+          },
+          "radar_sensitivity": {
+            "name": "radar_sensitivity",
+            "description": "sensitivity of the radar",
+            "data": 5,
+            "type": "numeric",
+            "access_mode": "write",
+            "category": "measurement",
+            "attributes": { "max": 9, "min": 0 },
+            "Values": { "radar_sensitivity": 0 }
+          },
+          "target_distance": {
+            "name": "target_distance",
+            "description": "Distance to target",
+            "unit": "m",
+            "data": 0,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "target_distance": 0 }
           }
         },
-        "properties": {
-          "availability": "online",
-          "last_seen": "2025-01-21T20:01:51.258Z",
-          "linkquality": 134
-        }
+        "last_seen": "2025-03-19T15:53:17.390Z",
+        "availability": "online"
       },
       {
         "id": "0xa4c1389b273366c3",
@@ -321,21 +987,56 @@
             "name": "alarm",
             "data": null,
             "type": "binary",
-            "properties": { "off": false, "on": true }
+            "access_mode": "write",
+            "category": "measurement",
+            "Values": { "off": false, "on": true }
+          },
+          "battery_low": {
+            "name": "battery_low",
+            "description": "Indicates if the battery of this device is almost empty",
+            "data": null,
+            "type": "binary",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "Values": { "off": false, "on": true }
+          },
+          "battpercentage": {
+            "name": "battpercentage",
+            "unit": "%",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "battpercentage": 0 }
           },
           "duration": {
             "name": "duration",
             "unit": "s",
             "data": null,
             "type": "numeric",
-            "properties": { "duration": 0 },
-            "attributes": { "max": 1800, "min": 0 }
+            "access_mode": "write",
+            "category": "measurement",
+            "attributes": { "max": 1800, "min": 0 },
+            "Values": { "duration": 0 }
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "Values": { "linkquality": 0 }
           },
           "melody": {
             "name": "melody",
             "data": null,
             "type": "enum",
-            "properties": {
+            "access_mode": "write",
+            "category": "measurement",
+            "Values": {
               "0": "1",
               "1": "2",
               "10": "11",
@@ -360,10 +1061,92 @@
             "name": "volume",
             "data": null,
             "type": "enum",
-            "properties": { "0": "low", "1": "medium", "2": "high" }
+            "access_mode": "write",
+            "category": "measurement",
+            "Values": { "0": "low", "1": "medium", "2": "high" }
           }
         },
-        "properties": { "availability": "offline" }
+        "last_seen": "",
+        "availability": "offline"
+      },
+      {
+        "id": "0xa4c138c383ac3fc8",
+        "friendly_name": "Attic smoke alarm",
+        "description": "Photoelectric smoke detector",
+        "connection_type": "mqtt",
+        "power_source": "Battery",
+        "exposes": {
+          "battery": {
+            "name": "battery",
+            "description": "Remaining battery in %, can take up to 24 hours before reported",
+            "unit": "%",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "attributes": { "max": 100, "min": 0 },
+            "Values": { "battery": 0 }
+          },
+          "device_fault": {
+            "name": "device_fault",
+            "description": "Indicates a fault with the device",
+            "data": null,
+            "type": "binary",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "off": false, "on": true }
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "Values": { "linkquality": 0 }
+          },
+          "silence": {
+            "name": "silence",
+            "description": "Silence the alarm",
+            "data": null,
+            "type": "binary",
+            "access_mode": "write",
+            "category": "measurement",
+            "Values": { "off": false, "on": true }
+          },
+          "smoke": {
+            "name": "smoke",
+            "description": "Indicates whether the device detected smoke",
+            "data": null,
+            "type": "binary",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "off": false, "on": true }
+          },
+          "smoke_concentration": {
+            "name": "smoke_concentration",
+            "description": "Parts per million of smoke detected",
+            "unit": "ppm",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "smoke_concentration": 0 }
+          },
+          "test": {
+            "name": "test",
+            "description": "Indicates whether the device is being tested",
+            "data": null,
+            "type": "binary",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "off": false, "on": true }
+          }
+        },
+        "last_seen": "",
+        "availability": "offline"
       },
       {
         "id": "0xa4c138e1b5658e68",
@@ -372,12 +1155,46 @@
         "connection_type": "mqtt",
         "power_source": "Mains (single phase)",
         "exposes": {
+          "co2": {
+            "name": "co2",
+            "description": "The measured CO2 (carbon dioxide) value",
+            "unit": "ppm",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "co2": 0 }
+          },
+          "formaldehyd": {
+            "name": "formaldehyd",
+            "description": "The measured formaldehyd value",
+            "unit": "µg/m³",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "formaldehyd": 0 }
+          },
           "humidity": {
             "name": "humidity",
             "description": "Measured relative humidity",
             "unit": "%",
             "data": null,
-            "type": "numeric"
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "humidity": 0 }
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "Values": { "linkquality": 0 }
           },
           "pm25": {
             "name": "pm25",
@@ -385,24 +1202,34 @@
             "unit": "µg/m³",
             "data": null,
             "type": "numeric",
-            "attributes": { "max": 999, "min": 0 }
+            "access_mode": "read",
+            "category": "measurement",
+            "attributes": { "max": 999, "min": 0 },
+            "Values": { "pm25": 0 }
           },
           "temperature": {
             "name": "temperature",
             "description": "Measured temperature value",
             "unit": "°C",
             "data": null,
-            "type": "numeric"
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "temperature": 0 }
           },
           "voc": {
             "name": "voc",
             "description": "Measured VOC value",
             "unit": "ppb",
             "data": null,
-            "type": "numeric"
+            "type": "numeric",
+            "access_mode": "read",
+            "category": "measurement",
+            "Values": { "voc": 0 }
           }
         },
-        "properties": { "availability": "offline" }
+        "last_seen": "",
+        "availability": "offline"
       }
     ]
   }

@@ -377,53 +377,6 @@ func (d *Device) SetLastSeen(lastSeen string) {
 	d.LastSeen = lastSeen
 }
 
-// func (d *Device) ResetAvailabilityTimer() {
-// 	d.availabilityTicker.Reset(1 * time.Second)
-// }
-
-// func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
-
-// 	var updatePackage = NewUpdatePackage(device.Id)
-// 	for name, newValue := range payload {
-
-// 		// TODO:
-// 		// debounce needs to happen here for each expose hat has debounce value
-
-// 		if expose, ok := device.Exposes[name]; ok && expose.Data != newValue {
-
-// 			if len(updatePackage.Data) != 0 {
-// 				updatePackage.Data[name] = newValue
-// 			} else if expose.Category == MeasurementCategory {
-// 				updatePackage.Data[name] = newValue
-// 			}
-
-// 			// update device expose with updated data
-// 			device.Exposes[name].Data = newValue
-// 		}
-// 	}
-
-// 	defer device.mutex.Unlock()
-// 	device.mutex.Lock()
-
-// 	if updatePackage.HasData() {
-// 		updatePackage.LastSeen = getLastSeen(payload)
-// 	}
-
-// 	if device.Availability == OfflineAvailability {
-// 		device.Availability = OnlineAvailability
-
-// 		// TODO: handle this below better
-// 		// updatePackage contains Availability only if we have a change on Device Availability. else its ommited.
-// 		// thats because we use updatePackage for either measurement data or device availability change
-// 		updatePackage.Availability = OnlineAvailability // we handle it manually for now.
-
-// 		utils.LogInfof("device [%s] %s is online", device.Id, device.FriendlyName)
-// 		device.resetAvailabilityTimer()
-// 	}
-
-// 	device.LastSeen = getLastSeen(payload) // we need that.
-// 	return updatePackage
-// }
 
 func (device *Device) LastSeenTime() (time.Time, error) {
 
