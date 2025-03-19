@@ -249,6 +249,14 @@ func (s *AppConfigCache) SaveLoggerConfig(loggerConfig *LoggerConfig) (*AppConfi
 	return config, nil
 }
 
+func (s *AppConfigCache) LoadLoggerConfig() (*LoggerConfig, error) {
+	config, err := s.store.Load()
+	if err != nil {
+		return nil, err
+	}
+	return config.Hub.Logger, nil
+}
+
 func (s *AppConfigCache) SaveHistoryConfig(historyConfig *HistoryConfig) (*AppConfig, error) {
 	config, err := s.LoadAppConfig()
 	if err != nil {

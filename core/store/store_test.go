@@ -67,20 +67,23 @@ func TestStoreSavesLoggerConfig(t *testing.T) {
 	defer cleanup()
 
 	cfg := appStore.AppConfig()
+	l, err := cfg.LoadLoggerConfig()
 	if err != nil {
 		t.Fatalf("LoadAppConfig failed. err %v ", err)
 	}
 
-	if appConfig.Hub.Logger.EnableRemoteLogger != false {
+	if l.EnableRemoteLogger != false {
 		t.Fatalf("Logger config EnableRemoteLogger is set")
 	}
 
 	mockLoggerConfig := settings.NewLoggerConfig(true)
 	cfg.SaveLoggerConfig(mockLoggerConfig)
 
-	cfg = appStore.AppConfig()
-
-	if appConfig.Hub.Logger.EnableRemoteLogger != true {
+	l, err = cfg.LoadLoggerConfig()
+	if err != nil {
+		t.Fatalf("LoadAppConfig failed. err %v ", err)
+	}
+	if l.EnableRemoteLogger != true {
 		t.Fatalf("Logger config EnableRemoteLogger is not set")
 	}
 }
@@ -154,6 +157,7 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	}
 
 	// reset clock its used in pruning
+
 	mockClock.SetMockTime(time.Now().UTC())
 
 	now := time.Now().UTC()

@@ -292,10 +292,6 @@ func TestEngineAutomationUpdateShouldResetScheduler(t *testing.T) {
 	wg := sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
 
-	mqtt.OnMessageHandler(func(topic string, payload []byte) {
-		fmt.Printf("Received message on topic %s\n", topic)
-	})
-
 	store := utils_test.CreateStore()
 	eventHub := &mocks.MockEventHub{}
 
@@ -322,7 +318,6 @@ func TestEngineAutomationUpdateShouldResetScheduler(t *testing.T) {
 	// first event is on startup
 	// after we update the automation schedule, the second event ashould not be trigger on time
 	wg.Add(1)
-
 	scheduleHandler := automations.NewAutomationScheduler(
 		automations.WithScheduleFunc("enable", func(automation *automations.Device) error {
 			automation.Enabled = true
@@ -373,9 +368,9 @@ func TestEngineAutomationUpdateShouldStopScheduler(t *testing.T) {
 	wg := sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
 
-	mqtt.OnMessageHandler(func(topic string, payload []byte) {
-		fmt.Printf("Received message on topic %s\n", topic)
-	})
+	// mqtt.OnMessageHandler(func(topic string, payload []byte) {
+	// 	fmt.Printf("Received message on topic %s\n", topic)
+	// })
 
 	store := utils_test.CreateStore()
 	eventHub := &mocks.MockEventHub{}

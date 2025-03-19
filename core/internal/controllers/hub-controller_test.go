@@ -1008,52 +1008,37 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 
 	config.Debounce["target_distance"] = utils.IntervalFromMilliseconds(500)
 	appConfig.SetDeviceConfig(config)
-	wg := &sync.WaitGroup{}
 
-	 TODO: implement debouncer########################################
+	wg := &sync.WaitGroup{}
 
 	//lightDeviceName := "Living room light"
 	presenceDeviceName := "Living room presence sensor"
 
-	counter := 0
 	testCases := []struct {
 		deviceName string
 		key        string
 		value      any
 		broadcast  bool
 	}{
-		// {deviceName: lightDeviceName, key: "brightness", value: 15.6, broadcast: true},
-		// {deviceName: lightDeviceName, key: "brightness", value: 15.6, broadcast: false},
-		// {deviceName: lightDeviceName, key: "brightness", value: 18.5, broadcast: true},
-		// {deviceName: lightDeviceName, key: "color_temp", value: 70.3, broadcast: true},
-		// {deviceName: lightDeviceName, key: "color_temp", value: 70.1, broadcast: true},
-		// {deviceName: lightDeviceName, key: "linkquality", value: 120, broadcast: false},
-		// {deviceName: lightDeviceName, key: "linkquality", value: 14, broadcast: false},
-		// {deviceName: lightDeviceName, key: "battery", value: 100, broadcast: false},
-		// {deviceName: lightDeviceName, key: "battery", value: 70, broadcast: false},
-		// {deviceName: lightDeviceName, key: "brightness", value: 18.5, broadcast: false},
-		// {deviceName: lightDeviceName, key: "brightness", value: 21, broadcast: true},
-		// {deviceName: lightDeviceName, key: "brightness", value: 21, broadcast: false},
-		// {deviceName: lightDeviceName, key: "brightness", value: 21, broadcast: false},
-		// {deviceName: presenceDeviceName, key: "presence", value: true, broadcast: true},
-		// {deviceName: presenceDeviceName, key: "presence", value: true, broadcast: false},
-		// {deviceName: presenceDeviceName, key: "presence", value: false, broadcast: true},
-		// {deviceName: presenceDeviceName, key: "radar_sensitivity", value: 5, broadcast: true},
-		// {deviceName: presenceDeviceName, key: "linkquality", value: 102, broadcast: false},
-		// {deviceName: presenceDeviceName, key: "fading_time", value: 5, broadcast: true},
-		// {deviceName: presenceDeviceName, key: "illuminance", value: 10, broadcast: true},
-		// {deviceName: presenceDeviceName, key: "illuminance", value: 120, broadcast: true},
-		// {deviceName: presenceDeviceName, key: "illuminance", value: 120, broadcast: false},
-
 		{deviceName: presenceDeviceName, key: "target_distance", value: 13.1, broadcast: true},
-		{deviceName: presenceDeviceName, key: "target_distance", value: 113.1, broadcast: true},
+		{deviceName: presenceDeviceName, key: "target_distance", value: 113.1, broadcast: false}, // debounced
+		{deviceName: presenceDeviceName, key: "target_distance", value: 23.1, broadcast: false},  // debounced
 		{deviceName: presenceDeviceName, key: "target_distance", value: 23.1, broadcast: true},
+		{deviceName: presenceDeviceName, key: "presence", value: true, broadcast: true},
+		{deviceName: presenceDeviceName, key: "presence", value: true, broadcast: false},
+		{deviceName: presenceDeviceName, key: "presence", value: false, broadcast: true},
+		{deviceName: presenceDeviceName, key: "presence", value: false, broadcast: false},
+		{deviceName: presenceDeviceName, key: "linkquality", value: 102, broadcast: false}, // not a measurement expose
+		{deviceName: presenceDeviceName, key: "illuminance", value: 10, broadcast: true},
+		{deviceName: presenceDeviceName, key: "illuminance", value: 143, broadcast: true},
+		{deviceName: presenceDeviceName, key: "presence", value: false, broadcast: false},
+		{deviceName: presenceDeviceName, key: "target_distance", value: 3.1, broadcast: true},
+		{deviceName: presenceDeviceName, key: "radar_sensitivity", value: 5, broadcast: true},
+		
 	}
 
 	broadcastHandler := func(eventName string, data interface{}) error {
 
-		counter++
-		fmt.Println("event name: ", eventName, "ID:", counter , data)
 		wg.Done()
 		return nil
 	}
@@ -1082,7 +1067,7 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 
 		mqtt.Publish(testCase.deviceName, []byte(payloadBytes))
 
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 		wg.Wait()
 
 	}
