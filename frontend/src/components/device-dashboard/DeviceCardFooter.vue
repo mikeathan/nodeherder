@@ -1,26 +1,23 @@
-<script setup>
-  import LinkQuality from '../device/LinkQuality.vue';
-  import PowerSource from '../device/PowerSource.vue';
-  import LastSeen from '../device/LastSeen.vue';
-  import { getOfflineIcon } from '@/modules/formatters/device.formatter';
-  import Icon from '../controls/Icon.vue';
+<script setup lang="ts">
+import LinkQuality from '../device/LinkQuality.vue';
+import PowerSource from '../device/PowerSource.vue';
+import LastSeen from '../device/LastSeen.vue';
+import { ref, watch, PropType } from 'vue';
 
-  const props = defineProps({
-    device: Object,
-  });
+import { getOfflineIcon } from '@/modules/formatters/device.formatter';
+import Icon from '../controls/Icon.vue';
+import { Device, Expose } from '@/types/device';
+
+const props = defineProps({
+  device: Object as PropType<Device>,
+});
 </script>
 <template>
-  <div
-    class="grid justify-content-between align-items-center">
-    <LastSeen
-      :timestamp="device.properties.last_seen"></LastSeen>
-    <div
-      class="text-truncate"
-      v-if="device.properties.availability === 'online'">
+  <div class="grid justify-content-between align-items-center">
+    <LastSeen :timestamp="device.last_seen" />
+    <div class="text-truncate" v-if="device.availability === 'online'">
       <LinkQuality :value="device.properties.linkquality" />
-      <PowerSource
-        :power_source="device.power_source"
-        :value="device.properties.battery" />
+      <PowerSource :power_source="device.power_source" :value="device.properties.battery" /> todo
     </div>
     <div className="col-auto text-truncate" v-else>
       <Icon :icon="getOfflineIcon()" />
