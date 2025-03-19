@@ -43,20 +43,20 @@ func newBridgeHash() *bridgeHash {
 }
 
 type bridgeConfigurationHandler struct {
-	ws                        ws.EventHub
-	mqtt                      mqtt.MqttClient
-	registrar                 *services.HubRegisterService
-	automationEngine          automations.Engine
-	bridgeHash                *bridgeHash
+	ws               ws.EventHub
+	mqtt             mqtt.MqttClient
+	registrar        *services.HubRegisterService
+	automationEngine automations.Engine
+	bridgeHash       *bridgeHash
 }
 
 func newBridgeConfigurationHandler(registrar *services.HubRegisterService, engine automations.Engine, mqtt mqtt.MqttClient, ws ws.EventHub) *bridgeConfigurationHandler {
 	return &bridgeConfigurationHandler{
-		registrar:                 registrar,
-		automationEngine:          engine,
-		ws:                        ws,
-		mqtt:                      mqtt,
-		bridgeHash:                newBridgeHash()}
+		registrar:        registrar,
+		automationEngine: engine,
+		ws:               ws,
+		mqtt:             mqtt,
+		bridgeHash:       newBridgeHash()}
 }
 
 func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, payload []byte) error {
@@ -357,43 +357,4 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 	}
 
 	return c.deviceProcessor.CreateOrUpdateDevice(friendlyName, connType, dataMap)
-
-	// if err != nil {
-	// 	return err
-	// }
-
-	// device, _ := c.registrar.LookupByName(friendlyName)
-	// if device == nil {
-	// 	device, err = c.registrar.CreateNewDevice(friendlyName, connType, dataMap)
-
-	// 	if err != nil {
-	// 		return err
-	// 	}
-
-	// 	// WIP ##################
-	// 	appConfig := c.store.AppConfig()
-	// 	debouncer := services.NewDeviceDebouncer(device.Id, appConfig.GetDeviceConfigCache(device.Id), utils.NewRealClock())
-
-	// 	s := services.NewDeviceLifetimeService(device, debouncer)
-	// 	s.Start(dataMap)
-	// 	c.deviceServices[device.Id] = s
-	// 	//
-
-	// 	c.eventHub.Broadcast(ws.DeviceAdded, device)
-	// 	c.HandleDeviceAdded(device, dataMap)
-	// } else {
-
-	// 	updatedData := c.deviceServices[device.Id].Update(dataMap)
-
-	// 	//updatedData := device.Update(dataMap)
-	// 	if !updatedData.HasData() {
-	// 		return nil
-	// 	}
-
-	// 	// check to see if we have an automation for current device
-	// 	c.eventHub.Broadcast(ws.DeviceUpdated, updatedData)
-	// 	c.HandleDeviceUpdated(device, updatedData.Data)
-	// }
-
-	//return nil
 }

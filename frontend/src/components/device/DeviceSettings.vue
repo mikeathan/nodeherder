@@ -3,7 +3,8 @@ import { store } from '../../store/index';
 import { computed } from 'vue';
 import Toggle from '../input/Toggle.vue';
 import InputBox from '../input/InputBox.vue';
-import { DeviceSettings, TimeInterval } from '@/types/settings.type';
+import { DeviceSettings } from '@/types/settings.type';
+import { TimeInterval } from '@/types/types.type';
 
 const props = defineProps({
   id: { type: String, required: true },

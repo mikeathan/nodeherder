@@ -18,10 +18,9 @@ func CreateExposuresFromMap(data map[string]interface{}) map[string]*devices.Ent
 func CreateEnumEntity(name string, enums map[string]any) *devices.Entity {
 
 	newEntity := &devices.Entity{}
-	newEntity.Attributes = enums
+	newEntity.Values = enums
 	newEntity.Category = devices.MeasurementCategory
 
-	newEntity.Presets = map[string]any{}
 	newEntity.Data = nil
 	newEntity.Name = name
 	newEntity.Type = "enum"
@@ -37,8 +36,7 @@ func CreatePresetsEntity(name string, presets map[string]any) *devices.Entity {
 	newEntity := &devices.Entity{}
 	newEntity.Category = devices.MeasurementCategory
 
-	newEntity.Attributes = map[string]any{"min": 0.0, "max": 255.0}
-	newEntity.Presets = presets
+	newEntity.Values = presets
 	newEntity.Data = nil
 	newEntity.Name = name
 	newEntity.Type = "numeric"
@@ -70,7 +68,7 @@ func CreateEntity(name string, propType string, data any) *devices.Entity {
 	newEntity := &devices.Entity{}
 	newEntity.Category = devices.MeasurementCategory
 	newEntity.Attributes = map[string]any{"min": 0.0, "max": 255.0}
-	newEntity.Presets = make(map[string]any)
+	newEntity.Values = make(map[string]any)
 	newEntity.Data = data
 	newEntity.Name = name
 	newEntity.Type = propType
@@ -179,7 +177,7 @@ func createEntity(name string, description string, data any, unit string, attrib
 
 	newEntity := &devices.Entity{}
 	newEntity.Attributes = map[string]any{}
-	newEntity.Presets = map[string]any{}
+	newEntity.Values = map[string]any{}
 	newEntity.Data = data
 	newEntity.Name = name
 	newEntity.Unit = unit

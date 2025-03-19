@@ -32,7 +32,7 @@
 
   // convert keyvaluepair properties to list
   function exposeProperties(expose: Expose): any[] {
-    return expose?.properties ? Object.values(expose.properties) : [];
+    return expose?.values ? Object.values(expose.values) : [];
   }
 
   // used for expose properties where data seems to be stored as a string or as number
@@ -53,7 +53,7 @@
       </dd>
     </dl>
     <div class="col-12 md:col-9">
-      <div v-if="expose.properties == null">
+      <div v-if="expose.access_mode == 'read'">
         {{ getSensorValue(expose.data) }}
         {{ getSensorUnit(expose.name) }}
       </div>
@@ -62,8 +62,8 @@
         <!-- TODO: refactor -->
         <div class="pt-3"></div>
         <ButtonGroup
-          v-if="expose.presets != null"
-          :items="(expose.presets as any)"
+          v-if="expose.values != null"
+          :items="(expose.values as any)"
           :value="expose.data"
           @update="(v) => updateValue(expose, v)" />
         <div class="pt-3"></div>

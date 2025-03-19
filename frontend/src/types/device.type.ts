@@ -17,6 +17,12 @@ export const ExposeCategories = {
   Config: 'config',
 } as const;
 
+export const DeviceAvailabilityTypes = {
+  Unknown: 'unknown',
+  Online: 'online',
+  Offline: 'offline',
+} as const;
+
 export const alllowedExposeList: string[] = [
   'temperature',
   'humidity',

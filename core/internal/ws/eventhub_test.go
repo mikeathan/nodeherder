@@ -292,15 +292,15 @@ func TestHandlingLoadHubStatesMessage(t *testing.T) {
 				}
 			}
 
-			if len(inputExpose.Presets) != 0 {
+			if len(inputExpose.Values) != 0 {
 
-				if len(expose.Presets) != len(inputExpose.Presets) {
-					t.Fatalf("unexpected expose.Presets length")
+				if len(expose.Values) != len(inputExpose.Values) {
+					t.Fatalf("unexpected expose.Values length")
 				}
 
-				for idx, value := range expose.Presets {
-					if value != inputExpose.Presets[idx] {
-						t.Fatalf("unexpected expose.Preset %d", value)
+				for idx, value := range expose.Values {
+					if value != inputExpose.Values[idx] {
+						t.Fatalf("unexpected expose.Values %d", value)
 					}
 				}
 			}

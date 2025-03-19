@@ -153,11 +153,6 @@ func (u *UpdatePackage) HasData() bool {
 	return len(u.Data) != 0
 }
 
-type EntityPreset struct {
-	Description string `json:"description"`
-	Name        string `json:"name"`
-	Value       int    `json:"value"`
-}
 
 type Entity struct {
 	Name        string           `json:"name"`
@@ -168,7 +163,6 @@ type Entity struct {
 	AccessMode  ExposeAccessMode `json:"access_mode"`
 	Category    ExposeCategory   `json:"category,omitempty"`
 	Attributes  map[string]any   `json:"attributes,omitempty"`
-	Presets     map[string]any   `json:"presets,omitempty"`
 	Values      map[string]any
 }
 
@@ -191,10 +185,6 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 		return nil, fmt.Errorf("invalid device feature access mode %v", expose.Access)
 	}
 
-	// DEBUG
-	if expose.Name == "target_distance" {
-		fmt.Println("target_distance")
-	}
 
 	newEntity := newEntity()
 	newEntity.AccessMode = accessMode
@@ -215,13 +205,13 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 		}
 
 		if len(expose.Presets) != 0 {
-			newEntity.Presets = make(map[string]any)
 			for _, preset := range expose.Presets {
 				newEntity.Values[preset.Name] = preset.Value
 			}
-		} else {
-			newEntity.Values[expose.Name] = 0 // ????????? - i dont think i need this
-		}
+		} 
+		// else {
+		// 	newEntity.Values[expose.Name] = 0 // ????????? - i dont think i need this
+		// }
 
 	case BinaryDataType:
 

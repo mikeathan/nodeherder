@@ -32,11 +32,11 @@ function updateValue(event: any): void {
 }
 
 function hasNumericFeatures(): Boolean {
-  return props.expose.properties != null && props.expose.type == 'numeric';
+  return props.expose.type == 'numeric';
 }
 
 function hasBinaryFeatures() {
-  return props.expose.properties != null && props.expose.type == 'binary';
+  return props.expose.type == 'binary';
 }
 
 function getValue() {

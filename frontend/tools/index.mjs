@@ -584,14 +584,13 @@ function mockUpdateAtticLight(settings) {
   var device = {
     id: '0x70ac08fffefafeca',
     last_seen: currentTime(),
+    availability : setDeviceOnline(settings),
     data: {
       brightness: 61,
       color_temp: 370,
       state: 'ON',
     },
-    properties: {},
   };
-  device.properties.availability = setDeviceOnline(settings);
   return device;
 }
 
@@ -599,14 +598,13 @@ function mockUpdateHumanPresencev2(settings) {
   var device = {
     id: '0xa4c13894070052fc',
     last_seen: currentTime(),
+    availability : setDeviceOnline(settings),
     data: {
       illuminance: 9,
       presence: true,
     },
-    properties: {},
   };
 
-  device.properties.availability = setDeviceOnline(settings);
   return device;
 }
 
@@ -614,14 +612,13 @@ function mockUpdateTH01v2(settings) {
   var device = {
     id: '0x00124b0029207763',
     last_seen: currentTime(),
+    availability : setDeviceOnline(settings),
     data: {
       temperature: getMockTemperature(settings),
       humidity: getMockHumidity(settings),
     },
-    properties: {},
   };
 
-  device.properties.availability = setDeviceOnline(settings);
   return device;
 }
 
