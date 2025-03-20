@@ -4,13 +4,13 @@ import { ExposeTypes } from '@/types/device.type';
 
 export function featureDevicesFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
-    return expose.properties != undefined;
+    return expose.category == 'measurement';
   };
 }
 
 export function presetsDevicesFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
-    return expose.type == ExposeTypes.Enum || expose.presets != null;
+    return expose.type == ExposeTypes.Enum || expose.values?.length > 0;
   };
 }
 
@@ -37,13 +37,13 @@ export function devicesFilterByActionStep(
 
 export function featureExposeFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
-    return expose.properties != undefined;
+    return expose.category == 'measurement';
   };
 }
 
 export function presetExposeFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
-    return expose.type == ExposeTypes.Enum || expose.presets != null;
+    return expose.type == ExposeTypes.Enum || expose.values?.length > 0;
   };
 }
 

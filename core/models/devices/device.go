@@ -3,6 +3,7 @@ package devices
 import (
 	"errors"
 	"fmt"
+	"iter"
 	"node-herder/utils"
 	"sync"
 	"time"
@@ -90,6 +91,11 @@ const (
 
 func getExposeAccessMode(entity *BridgeExpose) ExposeAccessMode {
 
+	TODO hanlde - do we need to pre categorise them or keep the AccessMode for it
+	// 2 acess type is config
+	// 1,5, 7 is for device card and if type is binary or numeric
+
+	
 	if HasReadWriteAccessMode(entity) {
 		return ReadWriteAccessMode
 	}
@@ -153,7 +159,6 @@ func (u *UpdatePackage) HasData() bool {
 	return len(u.Data) != 0
 }
 
-
 type Entity struct {
 	Name        string           `json:"name"`
 	Description string           `json:"description,omitempty"`
@@ -185,7 +190,6 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 		return nil, fmt.Errorf("invalid device feature access mode %v", expose.Access)
 	}
 
-
 	newEntity := newEntity()
 	newEntity.AccessMode = accessMode
 	newEntity.Category = getExposeCategory(expose)
@@ -208,7 +212,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 			for _, preset := range expose.Presets {
 				newEntity.Values[preset.Name] = preset.Value
 			}
-		} 
+		}
 		// else {
 		// 	newEntity.Values[expose.Name] = 0 // ????????? - i dont think i need this
 		// }
@@ -255,7 +259,6 @@ func createExposeFromBridge(data map[string]interface{}, bridgeInfo *BridgeInfo)
 
 	var entities = map[string]*Entity{}
 	for _, expose := range bridgeInfo.Definition.Exposes {
-
 		// load exposes
 		if expose.Property != "" {
 			if value, ok := data[expose.Property]; ok {
@@ -366,7 +369,6 @@ func (d *Device) SetLastSeen(lastSeen string) {
 
 	d.LastSeen = lastSeen
 }
-
 
 func (device *Device) LastSeenTime() (time.Time, error) {
 

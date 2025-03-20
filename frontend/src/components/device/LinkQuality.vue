@@ -10,8 +10,8 @@
   <span
     key="linkquality"
     className="me-"
-    v-if="value !== undefined">
-    <Icon :icon="getSignalIcon(value)" />
-    {{ value + ' LQI' }}
+    v-if="props.value !== undefined">
+    <Icon :icon="getSignalIcon(props.value)" />
+    {{ props.value + ' LQI' }}
   </span>
 </template>

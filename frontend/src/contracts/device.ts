@@ -56,6 +56,12 @@ export function getFeatureDevices(devices: Device[]): KeyValuePair<string> {
 
   return list;
 }
+export function getPowerSourceValue(device: Device): string {
+  if (device.power_source == 'battery') {
+    return device.exposes['battery'].data;
+  }
+  return device.exposes['voltage']?.data ?? '';
+}
 
 export function getExposes(device: Device, filter: DeviceFilter): Array<string> {
   return Object.entries(device.exposes)
