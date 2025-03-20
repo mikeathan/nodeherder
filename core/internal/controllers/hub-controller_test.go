@@ -1006,7 +1006,7 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 		t.Fatalf("error loading device config %s", err.Error())
 	}
 
-	config.Debounce["target_distance"] = utils.IntervalFromMilliseconds(500)
+	config.Debounce["illuminance"] = utils.IntervalFromMilliseconds(500)
 	appConfig.SetDeviceConfig(config)
 
 	wg := &sync.WaitGroup{}
@@ -1020,21 +1020,19 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 		value      any
 		broadcast  bool
 	}{
-		{deviceName: presenceDeviceName, key: "target_distance", value: 13.1, broadcast: true},
-		{deviceName: presenceDeviceName, key: "target_distance", value: 113.1, broadcast: false}, // debounced
-		{deviceName: presenceDeviceName, key: "target_distance", value: 23.1, broadcast: false},  // debounced
-		{deviceName: presenceDeviceName, key: "target_distance", value: 23.1, broadcast: true},
+		{deviceName: presenceDeviceName, key: "target_distance", value: 13.1, broadcast: false}, // blacklisted
 		{deviceName: presenceDeviceName, key: "presence", value: true, broadcast: true},
 		{deviceName: presenceDeviceName, key: "presence", value: true, broadcast: false},
 		{deviceName: presenceDeviceName, key: "presence", value: false, broadcast: true},
 		{deviceName: presenceDeviceName, key: "presence", value: false, broadcast: false},
-		{deviceName: presenceDeviceName, key: "linkquality", value: 102, broadcast: false}, // not a measurement expose
 		{deviceName: presenceDeviceName, key: "illuminance", value: 10, broadcast: true},
-		{deviceName: presenceDeviceName, key: "illuminance", value: 143, broadcast: true},
+		{deviceName: presenceDeviceName, key: "illuminance", value: 143, broadcast: false}, // debounced
+		{deviceName: presenceDeviceName, key: "illuminance", value: 142, broadcast: false}, // debounced
+		{deviceName: presenceDeviceName, key: "illuminance", value: 129, broadcast: true},
 		{deviceName: presenceDeviceName, key: "presence", value: false, broadcast: false},
-		{deviceName: presenceDeviceName, key: "target_distance", value: 3.1, broadcast: true},
-		{deviceName: presenceDeviceName, key: "radar_sensitivity", value: 5, broadcast: true},
-		
+		{deviceName: presenceDeviceName, key: "presence", value: true, broadcast: true},
+		{deviceName: presenceDeviceName, key: "illuminance", value: 321, broadcast: true},
+		 {deviceName: presenceDeviceName, key: "radar_sensitivity", value: 5, broadcast: true},
 	}
 
 	broadcastHandler := func(eventName string, data interface{}) error {
