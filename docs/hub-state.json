@@ -123,8 +123,7 @@
             "type": "numeric",
             "access_mode": "read",
             "category": "diagnostic",
-            "attributes": { "max": 100, "min": 0 },
-            "Values": { "battery": 0 }
+            "attributes": { "max": 100, "min": 0 }
           },
           "humidity": {
             "name": "humidity",
@@ -133,8 +132,7 @@
             "data": null,
             "type": "numeric",
             "access_mode": "read",
-            "category": "measurement",
-            "Values": { "humidity": 0 }
+            "category": "measurement"
           },
           "linkquality": {
             "name": "linkquality",
@@ -144,8 +142,7 @@
             "type": "numeric",
             "access_mode": "read",
             "category": "diagnostic",
-            "attributes": { "max": 255, "min": 0 },
-            "Values": { "linkquality": 0 }
+            "attributes": { "max": 255, "min": 0 }
           },
           "temperature": {
             "name": "temperature",
@@ -154,8 +151,7 @@
             "data": null,
             "type": "numeric",
             "access_mode": "read",
-            "category": "measurement",
-            "Values": { "temperature": 0 }
+            "category": "measurement"
           },
           "voltage": {
             "name": "voltage",
@@ -164,8 +160,7 @@
             "data": null,
             "type": "numeric",
             "access_mode": "read",
-            "category": "diagnostic",
-            "Values": { "voltage": 0 }
+            "category": "diagnostic"
           }
         },
         "last_seen": "",
@@ -186,8 +181,7 @@
             "type": "numeric",
             "access_mode": "read",
             "category": "diagnostic",
-            "attributes": { "max": 100, "min": 0 },
-            "Values": { "battery": 0 }
+            "attributes": { "max": 100, "min": 0 }
           },
           "battery_low": {
             "name": "battery_low",
@@ -196,7 +190,7 @@
             "type": "binary",
             "access_mode": "read",
             "category": "diagnostic",
-            "Values": { "off": false, "on": true }
+            "values": { "off": false, "on": true }
           },
           "contact": {
             "name": "contact",
@@ -205,7 +199,7 @@
             "type": "binary",
             "access_mode": "read",
             "category": "measurement",
-            "Values": { "off": true, "on": false }
+            "values": { "off": true, "on": false }
           },
           "linkquality": {
             "name": "linkquality",
@@ -215,8 +209,7 @@
             "type": "numeric",
             "access_mode": "read",
             "category": "diagnostic",
-            "attributes": { "max": 255, "min": 0 },
-            "Values": { "linkquality": 0 }
+            "attributes": { "max": 255, "min": 0 }
           },
           "voltage": {
             "name": "voltage",
@@ -225,8 +218,7 @@
             "data": null,
             "type": "numeric",
             "access_mode": "read",
-            "category": "diagnostic",
-            "Values": { "voltage": 0 }
+            "category": "diagnostic"
           }
         },
         "last_seen": "",
@@ -246,8 +238,7 @@
             "type": "numeric",
             "access_mode": "readwrite",
             "category": "measurement",
-            "attributes": { "max": 254, "min": 0 },
-            "Values": { "brightness": 0 }
+            "attributes": { "max": 254, "min": 0 }
           },
           "color": {
             "name": "color",
@@ -255,8 +246,7 @@
             "data": null,
             "type": "composite",
             "access_mode": "readwrite",
-            "category": "measurement",
-            "Values": {}
+            "category": "config"
           },
           "color_temp": {
             "name": "color_temp",
@@ -267,7 +257,7 @@
             "access_mode": "readwrite",
             "category": "measurement",
             "attributes": { "max": 500, "min": 150 },
-            "Values": {
+            "values": {
               "cool": 250,
               "coolest": 150,
               "neutral": 370,
@@ -282,9 +272,9 @@
             "data": null,
             "type": "numeric",
             "access_mode": "readwrite",
-            "category": "measurement",
+            "category": "config",
             "attributes": { "max": 500, "min": 150 },
-            "Values": {
+            "values": {
               "cool": 250,
               "coolest": 150,
               "neutral": 370,
@@ -299,8 +289,8 @@
             "data": null,
             "type": "enum",
             "access_mode": "write",
-            "category": "measurement",
-            "Values": {
+            "category": "config",
+            "values": {
               "0": "blink",
               "1": "breathe",
               "2": "okay",
@@ -319,8 +309,7 @@
             "type": "numeric",
             "access_mode": "read",
             "category": "diagnostic",
-            "attributes": { "max": 255, "min": 0 },
-            "Values": { "linkquality": 0 }
+            "attributes": { "max": 255, "min": 0 }
           },
           "power_on_behavior": {
             "name": "power_on_behavior",
@@ -329,7 +318,7 @@
             "type": "enum",
             "access_mode": "readwrite",
             "category": "config",
-            "Values": { "0": "off", "1": "on", "2": "toggle", "3": "previous" }
+            "values": { "0": "off", "1": "on", "2": "toggle", "3": "previous" }
           },
           "state": {
             "name": "state",
@@ -338,7 +327,7 @@
             "type": "binary",
             "access_mode": "readwrite",
             "category": "measurement",
-            "Values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
+            "values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
           }
         },
         "last_seen": "",
@@ -358,7 +347,7 @@
             "type": "enum",
             "access_mode": "read",
             "category": "diagnostic",
-            "Values": {
+            "values": {
               "0": "button_1_press",
               "1": "button_1_press_release",
               "10": "button_3_hold",
@@ -392,7 +381,7 @@
             "type": "enum",
             "access_mode": "read",
             "category": "measurement",
-            "Values": { "0": "right", "1": "left" }
+            "values": { "0": "right", "1": "left" }
           },
           "action_step_size": {
             "name": "action_step_size",
@@ -401,8 +390,7 @@
             "type": "numeric",
             "access_mode": "read",
             "category": "measurement",
-            "attributes": { "max": 255, "min": 0 },
-            "Values": { "action_step_size": 0 }
+            "attributes": { "max": 255, "min": 0 }
           },
           "action_time": {
             "name": "action_time",
@@ -411,8 +399,7 @@
             "type": "numeric",
             "access_mode": "read",
             "category": "measurement",
-            "attributes": { "max": 255, "min": 0 },
-            "Values": { "action_time": 0 }
+            "attributes": { "max": 255, "min": 0 }
           },
           "action_type": {
             "name": "action_type",
@@ -421,7 +408,7 @@
             "type": "enum",
             "access_mode": "read",
             "category": "measurement",
-            "Values": { "0": "step", "1": "rotate" }
+            "values": { "0": "step", "1": "rotate" }
           },
           "battery": {
             "name": "battery",
@@ -431,8 +418,7 @@
             "type": "numeric",
             "access_mode": "read",
             "category": "diagnostic",
-            "attributes": { "max": 100, "min": 0 },
-            "Values": { "battery": 0 }
+            "attributes": { "max": 100, "min": 0 }
           },
           "brightness": {
             "name": "brightness",
@@ -441,8 +427,7 @@
             "type": "numeric",
             "access_mode": "read",
             "category": "measurement",
-            "attributes": { "max": 255, "min": 0 },
-            "Values": { "brightness": 0 }
+            "attributes": { "max": 255, "min": 0 }
           },
           "linkquality": {
             "name": "linkquality",
@@ -452,8 +437,7 @@
             "type": "numeric",
             "access_mode": "read",
             "category": "diagnostic",
-            "attributes": { "max": 255, "min": 0 },
-            "Values": { "linkquality": 0 }
+            "attributes": { "max": 255, "min": 0 }
           }
         },
         "last_seen": "",
@@ -473,7 +457,7 @@
             "type": "enum",
             "access_mode": "read",
             "category": "measurement",
-            "Values": { "0": "dim", "1": "bright" }
+            "values": { "0": "dim", "1": "bright" }
           },
           "linkquality": {
             "name": "linkquality",
@@ -483,8 +467,7 @@
             "type": "numeric",
             "access_mode": "read",
             "category": "diagnostic",
-            "attributes": { "max": 255, "min": 0 },
-            "Values": { "linkquality": 0 }
+            "attributes": { "max": 255, "min": 0 }
           },
           "occupancy": {
             "name": "occupancy",
@@ -493,7 +476,7 @@
             "type": "binary",
             "access_mode": "read",
             "category": "measurement",
-            "Values": { "off": false, "on": true }
+            "values": { "off": false, "on": true }
           },
           "occupancy_sensitivity": {
             "name": "occupancy_sensitivity",
@@ -501,8 +484,8 @@
             "data": null,
             "type": "enum",
             "access_mode": "readwrite",
-            "category": "measurement",
-            "Values": { "0": "low", "1": "medium", "2": "high" }
+            "category": "config",
+            "values": { "0": "low", "1": "medium", "2": "high" }
           },
           "occupancy_timeout": {
             "name": "occupancy_timeout",
@@ -510,9 +493,8 @@
             "data": null,
             "type": "numeric",
             "access_mode": "readwrite",
-            "category": "measurement",
-            "attributes": { "max": 65535, "min": 15 },
-            "Values": { "occupancy_timeout": 0 }
+            "category": "config",
+            "attributes": { "max": 65535, "min": 15 }
           }
         },
         "last_seen": "",
@@ -532,8 +514,7 @@
             "type": "numeric",
             "access_mode": "readwrite",
             "category": "measurement",
-            "attributes": { "max": 254, "min": 0 },
-            "Values": { "brightness": 0 }
+            "attributes": { "max": 254, "min": 0 }
           },
           "color": {
             "name": "color",
@@ -541,8 +522,7 @@
             "data": null,
             "type": "composite",
             "access_mode": "readwrite",
-            "category": "measurement",
-            "Values": {}
+            "category": "config"
           },
           "color_temp": {
             "name": "color_temp",
@@ -553,7 +533,7 @@
             "access_mode": "readwrite",
             "category": "measurement",
             "attributes": { "max": 500, "min": 150 },
-            "Values": {
+            "values": {
               "cool": 250,
               "coolest": 150,
               "neutral": 370,
@@ -568,9 +548,9 @@
             "data": null,
             "type": "numeric",
             "access_mode": "readwrite",
-            "category": "measurement",
+            "category": "config",
             "attributes": { "max": 500, "min": 150 },
-            "Values": {
+            "values": {
               "cool": 250,
               "coolest": 150,
               "neutral": 370,
@@ -585,8 +565,8 @@
             "data": null,
             "type": "enum",
             "access_mode": "write",
-            "category": "measurement",
-            "Values": {
+            "category": "config",
+            "values": {
               "0": "blink",
               "1": "breathe",
               "2": "okay",
@@ -605,8 +585,7 @@
             "type": "numeric",
             "access_mode": "read",
             "category": "diagnostic",
-            "attributes": { "max": 255, "min": 0 },
-            "Values": { "linkquality": 0 }
+            "attributes": { "max": 255, "min": 0 }
           },
           "power_on_behavior": {
             "name": "power_on_behavior",
@@ -615,7 +594,7 @@
             "type": "enum",
             "access_mode": "readwrite",
             "category": "config",
-            "Values": { "0": "off", "1": "on", "2": "toggle", "3": "previous" }
+            "values": { "0": "off", "1": "on", "2": "toggle", "3": "previous" }
           },
           "state": {
             "name": "state",
@@ -624,7 +603,7 @@
             "type": "binary",
             "access_mode": "readwrite",
             "category": "measurement",
-            "Values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
+            "values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
           }
         },
         "last_seen": "",
@@ -643,28 +622,26 @@
             "data": null,
             "type": "binary",
             "access_mode": "write",
-            "category": "measurement",
-            "Values": { "off": "UNLOCK", "on": "LOCK" }
+            "category": "config",
+            "values": { "off": "UNLOCK", "on": "LOCK" }
           },
           "current": {
             "name": "current",
             "description": "Instantaneous measured electrical current",
             "unit": "A",
-            "data": null,
+            "data": 0.03,
             "type": "numeric",
             "access_mode": "read",
-            "category": "diagnostic",
-            "Values": { "current": 0 }
+            "category": "diagnostic"
           },
           "energy": {
             "name": "energy",
             "description": "Sum of consumed energy",
             "unit": "kWh",
-            "data": null,
+            "data": 1.02,
             "type": "numeric",
             "access_mode": "read",
-            "category": "measurement",
-            "Values": { "energy": 0 }
+            "category": "measurement"
           },
           "indicator_mode": {
             "name": "indicator_mode",
@@ -672,29 +649,27 @@
             "data": null,
             "type": "enum",
             "access_mode": "readwrite",
-            "category": "measurement",
-            "Values": { "0": "off", "1": "off/on", "2": "on/off", "3": "on" }
+            "category": "config",
+            "values": { "0": "off", "1": "off/on", "2": "on/off", "3": "on" }
           },
           "linkquality": {
             "name": "linkquality",
             "description": "Link quality (signal strength)",
             "unit": "lqi",
-            "data": null,
+            "data": 0,
             "type": "numeric",
             "access_mode": "read",
             "category": "diagnostic",
-            "attributes": { "max": 255, "min": 0 },
-            "Values": { "linkquality": 0 }
+            "attributes": { "max": 255, "min": 0 }
           },
           "power": {
             "name": "power",
             "description": "Instantaneous measured power",
             "unit": "W",
-            "data": null,
+            "data": 0,
             "type": "numeric",
             "access_mode": "read",
-            "category": "diagnostic",
-            "Values": { "power": 0 }
+            "category": "diagnostic"
           },
           "power_outage_memory": {
             "name": "power_outage_memory",
@@ -702,31 +677,30 @@
             "data": null,
             "type": "enum",
             "access_mode": "readwrite",
-            "category": "measurement",
-            "Values": { "0": "on", "1": "off", "2": "restore" }
+            "category": "config",
+            "values": { "0": "on", "1": "off", "2": "restore" }
           },
           "state": {
             "name": "state",
             "description": "On/off state of the switch",
-            "data": null,
+            "data": "ON",
             "type": "binary",
             "access_mode": "readwrite",
             "category": "measurement",
-            "Values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
+            "values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
           },
           "voltage": {
             "name": "voltage",
             "description": "Measured electrical potential value",
             "unit": "V",
-            "data": null,
+            "data": 243,
             "type": "numeric",
             "access_mode": "read",
-            "category": "diagnostic",
-            "Values": { "voltage": 0 }
+            "category": "diagnostic"
           }
         },
-        "last_seen": "",
-        "availability": "offline"
+        "last_seen": "2025-03-21T16:40:31.362Z",
+        "availability": "online"
       },
       {
         "id": "0xa4c1381b6fd53fc4",
@@ -739,42 +713,38 @@
             "name": "current",
             "description": "Instantaneous measured electrical current",
             "unit": "A",
-            "data": 0.43,
+            "data": 0.34,
             "type": "numeric",
             "access_mode": "read",
-            "category": "diagnostic",
-            "Values": { "current": 0 }
+            "category": "diagnostic"
           },
           "energy": {
             "name": "energy",
             "description": "Sum of consumed energy",
             "unit": "kWh",
-            "data": 18.06,
+            "data": 19.35,
             "type": "numeric",
             "access_mode": "read",
-            "category": "measurement",
-            "Values": { "energy": 0 }
+            "category": "measurement"
           },
           "linkquality": {
             "name": "linkquality",
             "description": "Link quality (signal strength)",
             "unit": "lqi",
-            "data": 116,
+            "data": 18,
             "type": "numeric",
             "access_mode": "read",
             "category": "diagnostic",
-            "attributes": { "max": 255, "min": 0 },
-            "Values": { "linkquality": 0 }
+            "attributes": { "max": 255, "min": 0 }
           },
           "power": {
             "name": "power",
             "description": "Instantaneous measured power",
             "unit": "W",
-            "data": 75,
+            "data": 52,
             "type": "numeric",
             "access_mode": "read",
-            "category": "diagnostic",
-            "Values": { "power": 0 }
+            "category": "diagnostic"
           },
           "power_on_behavior": {
             "name": "power_on_behavior",
@@ -783,7 +753,7 @@
             "type": "enum",
             "access_mode": "readwrite",
             "category": "config",
-            "Values": { "0": "off", "1": "on", "2": "toggle", "3": "previous" }
+            "values": { "0": "off", "1": "on", "2": "toggle", "3": "previous" }
           },
           "state": {
             "name": "state",
@@ -792,7 +762,7 @@
             "type": "binary",
             "access_mode": "readwrite",
             "category": "measurement",
-            "Values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
+            "values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
           },
           "voltage": {
             "name": "voltage",
@@ -801,11 +771,10 @@
             "data": 244,
             "type": "numeric",
             "access_mode": "read",
-            "category": "diagnostic",
-            "Values": { "voltage": 0 }
+            "category": "diagnostic"
           }
         },
-        "last_seen": "2025-03-19T15:53:12.846Z",
+        "last_seen": "2025-03-21T16:40:30.363Z",
         "availability": "online"
       },
       {
@@ -823,8 +792,7 @@
             "type": "numeric",
             "access_mode": "read",
             "category": "diagnostic",
-            "attributes": { "max": 100, "min": 0 },
-            "Values": { "battery": 0 }
+            "attributes": { "max": 100, "min": 0 }
           },
           "humidity": {
             "name": "humidity",
@@ -833,8 +801,7 @@
             "data": null,
             "type": "numeric",
             "access_mode": "read",
-            "category": "measurement",
-            "Values": { "humidity": 0 }
+            "category": "measurement"
           },
           "linkquality": {
             "name": "linkquality",
@@ -844,8 +811,7 @@
             "type": "numeric",
             "access_mode": "read",
             "category": "diagnostic",
-            "attributes": { "max": 255, "min": 0 },
-            "Values": { "linkquality": 0 }
+            "attributes": { "max": 255, "min": 0 }
           },
           "temperature": {
             "name": "temperature",
@@ -854,8 +820,7 @@
             "data": null,
             "type": "numeric",
             "access_mode": "read",
-            "category": "measurement",
-            "Values": { "temperature": 0 }
+            "category": "measurement"
           },
           "voltage": {
             "name": "voltage",
@@ -864,8 +829,7 @@
             "data": null,
             "type": "numeric",
             "access_mode": "read",
-            "category": "diagnostic",
-            "Values": { "voltage": 0 }
+            "category": "diagnostic"
           }
         },
         "last_seen": "",
@@ -885,9 +849,8 @@
             "data": 0.1,
             "type": "numeric",
             "access_mode": "write",
-            "category": "measurement",
-            "attributes": { "max": 10, "min": 0 },
-            "Values": { "detection_delay": 0 }
+            "category": "config",
+            "attributes": { "max": 10, "min": 0 }
           },
           "fading_time": {
             "name": "fading_time",
@@ -896,30 +859,27 @@
             "data": 30,
             "type": "numeric",
             "access_mode": "write",
-            "category": "measurement",
-            "attributes": { "max": 1500, "min": 0.5 },
-            "Values": { "fading_time": 0 }
+            "category": "config",
+            "attributes": { "max": 1500, "min": 0.5 }
           },
           "illuminance": {
             "name": "illuminance",
             "description": "Measured illuminance",
             "unit": "lx",
-            "data": 148,
+            "data": 61,
             "type": "numeric",
             "access_mode": "read",
-            "category": "measurement",
-            "Values": { "illuminance": 0 }
+            "category": "measurement"
           },
           "linkquality": {
             "name": "linkquality",
             "description": "Link quality (signal strength)",
             "unit": "lqi",
-            "data": 120,
+            "data": 123,
             "type": "numeric",
             "access_mode": "read",
             "category": "diagnostic",
-            "attributes": { "max": 255, "min": 0 },
-            "Values": { "linkquality": 0 }
+            "attributes": { "max": 255, "min": 0 }
           },
           "maximum_range": {
             "name": "maximum_range",
@@ -928,9 +888,8 @@
             "data": 5,
             "type": "numeric",
             "access_mode": "write",
-            "category": "measurement",
-            "attributes": { "max": 9.5, "min": 0 },
-            "Values": { "maximum_range": 0 }
+            "category": "config",
+            "attributes": { "max": 9.5, "min": 0 }
           },
           "minimum_range": {
             "name": "minimum_range",
@@ -939,9 +898,8 @@
             "data": 0.1,
             "type": "numeric",
             "access_mode": "write",
-            "category": "measurement",
-            "attributes": { "max": 9.5, "min": 0 },
-            "Values": { "minimum_range": 0 }
+            "category": "config",
+            "attributes": { "max": 9.5, "min": 0 }
           },
           "presence": {
             "name": "presence",
@@ -950,7 +908,7 @@
             "type": "binary",
             "access_mode": "read",
             "category": "measurement",
-            "Values": { "off": false, "on": true }
+            "values": { "off": false, "on": true }
           },
           "radar_sensitivity": {
             "name": "radar_sensitivity",
@@ -958,9 +916,8 @@
             "data": 5,
             "type": "numeric",
             "access_mode": "write",
-            "category": "measurement",
-            "attributes": { "max": 9, "min": 0 },
-            "Values": { "radar_sensitivity": 0 }
+            "category": "config",
+            "attributes": { "max": 9, "min": 0 }
           },
           "target_distance": {
             "name": "target_distance",
@@ -969,11 +926,10 @@
             "data": 0,
             "type": "numeric",
             "access_mode": "read",
-            "category": "measurement",
-            "Values": { "target_distance": 0 }
+            "category": "config"
           }
         },
-        "last_seen": "2025-03-19T15:53:17.390Z",
+        "last_seen": "2025-03-21T16:40:33.668Z",
         "availability": "online"
       },
       {
@@ -989,7 +945,7 @@
             "type": "binary",
             "access_mode": "write",
             "category": "measurement",
-            "Values": { "off": false, "on": true }
+            "values": { "off": false, "on": true }
           },
           "battery_low": {
             "name": "battery_low",
@@ -998,7 +954,7 @@
             "type": "binary",
             "access_mode": "read",
             "category": "diagnostic",
-            "Values": { "off": false, "on": true }
+            "values": { "off": false, "on": true }
           },
           "battpercentage": {
             "name": "battpercentage",
@@ -1006,8 +962,7 @@
             "data": null,
             "type": "numeric",
             "access_mode": "read",
-            "category": "measurement",
-            "Values": { "battpercentage": 0 }
+            "category": "measurement"
           },
           "duration": {
             "name": "duration",
@@ -1015,9 +970,8 @@
             "data": null,
             "type": "numeric",
             "access_mode": "write",
-            "category": "measurement",
-            "attributes": { "max": 1800, "min": 0 },
-            "Values": { "duration": 0 }
+            "category": "config",
+            "attributes": { "max": 1800, "min": 0 }
           },
           "linkquality": {
             "name": "linkquality",
@@ -1027,16 +981,15 @@
             "type": "numeric",
             "access_mode": "read",
             "category": "diagnostic",
-            "attributes": { "max": 255, "min": 0 },
-            "Values": { "linkquality": 0 }
+            "attributes": { "max": 255, "min": 0 }
           },
           "melody": {
             "name": "melody",
             "data": null,
             "type": "enum",
             "access_mode": "write",
-            "category": "measurement",
-            "Values": {
+            "category": "config",
+            "values": {
               "0": "1",
               "1": "2",
               "10": "11",
@@ -1062,8 +1015,8 @@
             "data": null,
             "type": "enum",
             "access_mode": "write",
-            "category": "measurement",
-            "Values": { "0": "low", "1": "medium", "2": "high" }
+            "category": "config",
+            "values": { "0": "low", "1": "medium", "2": "high" }
           }
         },
         "last_seen": "",
@@ -1084,8 +1037,7 @@
             "type": "numeric",
             "access_mode": "read",
             "category": "diagnostic",
-            "attributes": { "max": 100, "min": 0 },
-            "Values": { "battery": 0 }
+            "attributes": { "max": 100, "min": 0 }
           },
           "device_fault": {
             "name": "device_fault",
@@ -1094,7 +1046,7 @@
             "type": "binary",
             "access_mode": "read",
             "category": "measurement",
-            "Values": { "off": false, "on": true }
+            "values": { "off": false, "on": true }
           },
           "linkquality": {
             "name": "linkquality",
@@ -1104,8 +1056,7 @@
             "type": "numeric",
             "access_mode": "read",
             "category": "diagnostic",
-            "attributes": { "max": 255, "min": 0 },
-            "Values": { "linkquality": 0 }
+            "attributes": { "max": 255, "min": 0 }
           },
           "silence": {
             "name": "silence",
@@ -1113,8 +1064,8 @@
             "data": null,
             "type": "binary",
             "access_mode": "write",
-            "category": "measurement",
-            "Values": { "off": false, "on": true }
+            "category": "config",
+            "values": { "off": false, "on": true }
           },
           "smoke": {
             "name": "smoke",
@@ -1123,7 +1074,7 @@
             "type": "binary",
             "access_mode": "read",
             "category": "measurement",
-            "Values": { "off": false, "on": true }
+            "values": { "off": false, "on": true }
           },
           "smoke_concentration": {
             "name": "smoke_concentration",
@@ -1132,8 +1083,7 @@
             "data": null,
             "type": "numeric",
             "access_mode": "read",
-            "category": "measurement",
-            "Values": { "smoke_concentration": 0 }
+            "category": "measurement"
           },
           "test": {
             "name": "test",
@@ -1142,7 +1092,7 @@
             "type": "binary",
             "access_mode": "read",
             "category": "measurement",
-            "Values": { "off": false, "on": true }
+            "values": { "off": false, "on": true }
           }
         },
         "last_seen": "",
@@ -1159,77 +1109,70 @@
             "name": "co2",
             "description": "The measured CO2 (carbon dioxide) value",
             "unit": "ppm",
-            "data": null,
+            "data": 720,
             "type": "numeric",
             "access_mode": "read",
-            "category": "measurement",
-            "Values": { "co2": 0 }
+            "category": "measurement"
           },
           "formaldehyd": {
             "name": "formaldehyd",
             "description": "The measured formaldehyd value",
             "unit": "µg/m³",
-            "data": null,
+            "data": 71,
             "type": "numeric",
             "access_mode": "read",
-            "category": "measurement",
-            "Values": { "formaldehyd": 0 }
+            "category": "measurement"
           },
           "humidity": {
             "name": "humidity",
             "description": "Measured relative humidity",
             "unit": "%",
-            "data": null,
+            "data": 75.5,
             "type": "numeric",
             "access_mode": "read",
-            "category": "measurement",
-            "Values": { "humidity": 0 }
+            "category": "measurement"
           },
           "linkquality": {
             "name": "linkquality",
             "description": "Link quality (signal strength)",
             "unit": "lqi",
-            "data": null,
+            "data": 18,
             "type": "numeric",
             "access_mode": "read",
             "category": "diagnostic",
-            "attributes": { "max": 255, "min": 0 },
-            "Values": { "linkquality": 0 }
+            "attributes": { "max": 255, "min": 0 }
           },
           "pm25": {
             "name": "pm25",
             "description": "Measured PM2.5 (particulate matter) concentration",
             "unit": "µg/m³",
-            "data": null,
+            "data": 8,
             "type": "numeric",
             "access_mode": "read",
             "category": "measurement",
-            "attributes": { "max": 999, "min": 0 },
-            "Values": { "pm25": 0 }
+            "attributes": { "max": 999, "min": 0 }
           },
           "temperature": {
             "name": "temperature",
             "description": "Measured temperature value",
             "unit": "°C",
-            "data": null,
+            "data": 18.9,
             "type": "numeric",
             "access_mode": "read",
-            "category": "measurement",
-            "Values": { "temperature": 0 }
+            "category": "measurement"
           },
           "voc": {
             "name": "voc",
             "description": "Measured VOC value",
             "unit": "ppb",
-            "data": null,
+            "data": 396,
             "type": "numeric",
             "access_mode": "read",
-            "category": "measurement",
-            "Values": { "voc": 0 }
+            "category": "measurement"
           }
         },
-        "last_seen": "",
-        "availability": "offline"
+        "last_seen": "2025-03-21T16:40:33.428Z",
+        "availability": "online"
       }
     ]
   }

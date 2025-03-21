@@ -12,16 +12,6 @@ const (
 	lastSeenKey                       = "last_seen"
 )
 
-// blacklist for exposed properties that we dont want to be used during payload sensor updates
-// this is to prevent the device from detecting updates very frequently
-// eg linkquality or target_disatnec can go up and down constatly
-var exposeUpdateBlacklist = map[string]int{
-	"linkquality":     1,
-	"power":           2,
-	"voltage":         3,
-	"target_distance": 4,
-}
-
 type DeviceLifetimeService struct {
 	device           *devices.Device
 	debouncerService *settings.DeviceDebouncer
@@ -58,10 +48,11 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 			expose.Data != newValue &&
 			!d.debouncerService.DebounceExpose(name) {
 
-			// if we are already collecting sensor updates ignore the blacklist
+			// only look for measurement expose changes unless we are
+			// already collecting measurement updates
 			if len(updatePackage.Data) != 0 {
 				updatePackage.Data[name] = newValue
-			} else if _, ok := exposeUpdateBlacklist[name]; !ok {
+			} else if expose.Category == devices.MeasurementCategory {
 				updatePackage.Data[name] = newValue
 			}
 

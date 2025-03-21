@@ -3,7 +3,6 @@ package devices
 import (
 	"errors"
 	"fmt"
-	"iter"
 	"node-herder/utils"
 	"sync"
 	"time"
@@ -32,7 +31,7 @@ var units = map[string]string{
 	"battpercentage":  "%",
 	"co":              "ppm",
 }
-var exposesWhitelist = map[string]int{
+var nonBridgeExposesWhitelist = map[string]int{
 	"temperature":         1,
 	"humidity":            2,
 	"pressure":            3,
@@ -69,6 +68,38 @@ var exposesWhitelist = map[string]int{
 	"illuminance":         34,
 }
 
+var measurementWhitelist = map[string]int{
+	"state":            1,
+	"brightness":       2,
+	"color_temp":       3,
+	"mode":             4,
+	"sound":            5,
+	"occupancy":        6,
+	"tamper":           7,
+	"alarm":            8,
+	"action":           9,
+	"action_direction": 10,
+	"action_type":      11,
+	"action_time":      12,
+}
+
+var configWhitelist = map[string]int{
+	"color_temp_startup": 1,
+	"color_temp_max":     2,
+	"color_temp_min":     3,
+	"color_options":      4,
+	"options":            5,
+	"target_distance":    6,
+}
+var diagnosticWhitelist = map[string]int{
+	"linkquality":   1,
+	"battery":       2,
+	"voltage":       3,
+	"battery_low":   4,
+	"battery_state": 5,
+	"strength":      6,
+}
+
 type ExposeDataType = string
 type ExposeCategory = string
 type ExposeAccessMode = string
@@ -89,13 +120,50 @@ const (
 	CompositeDataType ExposeDataType = "composite"
 )
 
+// read access mode is set as measurement category
+// unless is in blacklist
+
+// write access mode is set as config category
+// unless is in the whitelist
+
+// if diagnostics is set in expose check if is in blacklist so it can be moved to measurmeent eg switch action
+
+// categories
+// measurement
+// exposes that can be shown in a card as a sensor value
+
+// diagnostics
+// exposes	that have diagnostics information (battery, link, voltage, batterypercentage tc...))
+
+// config
+// exposes that are used to configure the device
+
+func getExposeCategory(entity BridgeExpose) string {
+	if entity.Category == "" {
+
+		if _, ok := configWhitelist[entity.Property]; ok {
+			return ConfigCategory
+		}
+		if _, ok := diagnosticWhitelist[entity.Property]; ok {
+			return DiagnosticCategory
+		}
+		if _, ok := measurementWhitelist[entity.Property]; ok {
+			return MeasurementCategory
+		}
+		if entity.Access&WriteBridgeAccessMode != 0 {
+			return ConfigCategory
+		}
+
+		if entity.Access&ReadBridgeAccessMode != 0 || entity.Access&StateBridgeAccessMode != 0 {
+
+			return MeasurementCategory
+		}
+	}
+	return entity.Category
+}
+
 func getExposeAccessMode(entity *BridgeExpose) ExposeAccessMode {
 
-	TODO hanlde - do we need to pre categorise them or keep the AccessMode for it
-	// 2 acess type is config
-	// 1,5, 7 is for device card and if type is binary or numeric
-
-	
 	if HasReadWriteAccessMode(entity) {
 		return ReadWriteAccessMode
 	}
@@ -107,13 +175,6 @@ func getExposeAccessMode(entity *BridgeExpose) ExposeAccessMode {
 	}
 
 	return UnknownAccessMode
-}
-
-func getExposeCategory(entity BridgeExpose) string {
-	if entity.Category == "" {
-		return MeasurementCategory
-	}
-	return entity.Category
 }
 
 type Device struct {
@@ -168,7 +229,7 @@ type Entity struct {
 	AccessMode  ExposeAccessMode `json:"access_mode"`
 	Category    ExposeCategory   `json:"category,omitempty"`
 	Attributes  map[string]any   `json:"attributes,omitempty"`
-	Values      map[string]any
+	Values      map[string]any   `json:"values,omitempty"`
 }
 
 func newEntity() *Entity {
@@ -239,7 +300,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 func createExpose(data map[string]interface{}) map[string]*Entity {
 	var entities = make(map[string]*Entity)
 	for key, value := range data {
-		if _, ok := exposesWhitelist[key]; !ok {
+		if _, ok := nonBridgeExposesWhitelist[key]; !ok {
 			continue
 		}
 
