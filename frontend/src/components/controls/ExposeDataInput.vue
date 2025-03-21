@@ -58,7 +58,7 @@
 
   const showPresets = computed(() => props.showPresets && exposePresets.value.length != 0);
   const exposePresets = computed(() => {
-    return deviceExpose.value?.presets == undefined ? [] : deviceExpose.value.presets;
+    return deviceExpose.value?.values == undefined ? [] : deviceExpose.value.values;
   });
 
   watch(
@@ -78,12 +78,12 @@
 
   const sequenceData = computed(() => {
     if (dataType.value == ExposeTypes.Binary) {
-      return deviceExpose.value?.properties != null ? Object.values(deviceExpose.value?.properties) : [true, false];
+      return deviceExpose.value?.values != null ? Object.values(deviceExpose.value?.values) : [true, false];
     }
     if (deviceExpose.value?.attributes) {
       return Object.values(deviceExpose.value.attributes);
     }
-    return deviceExpose.value?.properties ? Object.values(deviceExpose.value.properties) : [];
+    return deviceExpose.value?.values ? Object.values(deviceExpose.value.values) : [];
   });
 
   function sequenceDataSelected(value: any) {

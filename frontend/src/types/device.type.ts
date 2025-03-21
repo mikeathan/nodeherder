@@ -5,12 +5,6 @@ export const ExposeTypes = {
   Numeric: 'numeric',
 } as const;
 
-export const ExposeAccessModes = {
-  Read: 'read',
-  Write: 'write',
-  ReadWrite: 'readwrite',
-} as const;
-
 export const ExposeCategories = {
   Measurement: 'measurement',
   Diagnostic: 'diagnostic',

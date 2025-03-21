@@ -553,30 +553,28 @@ function mockUpdateAtticAlarm(settings) {
   var device = {
     id: '0xa4c1389b273366c3',
     last_seen: currentTime(),
+    availability : setDeviceOnline(settings),
     data: {
       alarm: settings.alarm,
       melody: settings.melody,
       duration: settings.duration,
       volume: settings.volume,
     },
-    properties: {},
   };
-  device.properties.availability = setDeviceOnline(settings);
   return device;
 }
 function mockUpdateLivingRoomLight(settings) {
   var device = {
     id: '0x00158d0005a23c38',
     last_seen: currentTime(),
+    availability : setDeviceOnline(settings),
     data: {
       brightness: 61,
       color_temp: 370,
       state: 'ON',
     },
-    properties: {},
   };
 
-  device.properties.availability = setDeviceOnline(settings);
   return device;
 }
 

@@ -42,20 +42,6 @@ export function getDevices(devices: Device[], allowedFilter: DeviceFilter): KeyV
   return list;
 }
 
-export function getFeatureDevices(devices: Device[]): KeyValuePair<string> {
-  let list: KeyValuePair<string> = {};
-  for (const [key, device] of Object.entries(devices)) {
-    for (const [key, expose] of Object.entries(device.exposes)) {
-      if (expose.access_mode != 'read') {
-        // TODO:  rewrite and use filter
-        list[device.friendly_name] = device.id;
-        break;
-      }
-    }
-  }
-
-  return list;
-}
 export function getPowerSourceValue(device: Device): string {
   if (device.power_source == 'battery') {
     return device.exposes['battery'].data;
@@ -69,23 +55,8 @@ export function getExposes(device: Device, filter: DeviceFilter): Array<string> 
     .map(([i, e]) => e.name);
 }
 
-export function getDeviceFeatures(device: Device): Array<string> {
-  return Object.entries(device.exposes)
-    .filter(([id, entity]) => entity.access_mode != 'read')
-    .map(([i, e]) => e.name);
-}
-
 export function getPropertiesByExposeType(device: Device, exposeType: ValueOf<typeof ExposeTypes>): Array<string> {
   return Object.entries(device.exposes)
     .filter(([id, entity]) => entity.type == exposeType)
     .map(([i, e]) => e.name);
-}
-
-export function getDeviceFeaturesByType(device: Device, exposeType: ValueOf<typeof ExposeTypes>): Array<string> {
-  return Object.assign(
-    {},
-    ...Object.values(device.exposes)
-      .filter((f) => f.access_mode != 'read' && f.type == exposeType)
-      .map((f) => f.name)
-  );
 }

@@ -29,7 +29,6 @@ export type Expose = {
   unit: string;
   data: any | null;
   type: ExposeType;
-  access_mode: ExposeAccessMode;
   category: ExposeCategory;
 
   attributes: ExposeAttributes;
