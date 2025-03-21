@@ -225,16 +225,6 @@ func assetExpose(bridgeExpose devices.BridgeExpose, expose *devices.Entity, cate
 		t.Errorf("Error %s device mismatch want: %s got: %s", category, bridgeExpose.Name, expose.Name)
 	}
 
-	if devices.HasWriteAccessMode(&bridgeExpose) && expose.AccessMode != devices.WriteAccessMode {
-		t.Errorf("Error %s device access mismatch want: %v got: %v", category, devices.WriteAccessMode, expose.AccessMode)
-	}
-	if devices.HasReadWriteAccessMode(&bridgeExpose) && expose.AccessMode != devices.ReadWriteAccessMode {
-		t.Errorf("Error %s device access mismatch want: %v got: %v", category, devices.ReadWriteAccessMode, expose.AccessMode)
-	}
-	if devices.HasReadAccessMode(&bridgeExpose) && expose.AccessMode != devices.ReadAccessMode {
-		t.Errorf("Error %s device access mismatch want: %v got: %v", category, devices.ReadAccessMode, expose.AccessMode)
-	}
-
 	if expose.Type != bridgeExpose.Type {
 		t.Errorf("Error %s device type mismatch want: %v got: %v", category, bridgeExpose.Type, expose.Type)
 	}

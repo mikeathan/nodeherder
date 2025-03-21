@@ -121,7 +121,6 @@
             "unit": "%",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic",
             "attributes": { "max": 100, "min": 0 }
           },
@@ -131,7 +130,6 @@
             "unit": "%",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "measurement"
           },
           "linkquality": {
@@ -140,7 +138,6 @@
             "unit": "lqi",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 }
           },
@@ -150,7 +147,6 @@
             "unit": "°C",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "measurement"
           },
           "voltage": {
@@ -159,7 +155,6 @@
             "unit": "mV",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic"
           }
         },
@@ -179,7 +174,6 @@
             "unit": "%",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic",
             "attributes": { "max": 100, "min": 0 }
           },
@@ -188,7 +182,6 @@
             "description": "Indicates whether the battery of the device is almost empty",
             "data": null,
             "type": "binary",
-            "access_mode": "read",
             "category": "diagnostic",
             "values": { "off": false, "on": true }
           },
@@ -197,7 +190,6 @@
             "description": "Indicates whether the device is opened or closed",
             "data": null,
             "type": "binary",
-            "access_mode": "read",
             "category": "measurement",
             "values": { "off": true, "on": false }
           },
@@ -207,7 +199,6 @@
             "unit": "lqi",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 }
           },
@@ -217,7 +208,6 @@
             "unit": "mV",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic"
           }
         },
@@ -236,7 +226,6 @@
             "description": "Brightness of this light",
             "data": null,
             "type": "numeric",
-            "access_mode": "readwrite",
             "category": "measurement",
             "attributes": { "max": 254, "min": 0 }
           },
@@ -245,7 +234,6 @@
             "description": "Color of this light in the CIE 1931 color space (x/y)",
             "data": null,
             "type": "composite",
-            "access_mode": "readwrite",
             "category": "config"
           },
           "color_temp": {
@@ -254,7 +242,6 @@
             "unit": "mired",
             "data": null,
             "type": "numeric",
-            "access_mode": "readwrite",
             "category": "measurement",
             "attributes": { "max": 500, "min": 150 },
             "values": {
@@ -271,7 +258,6 @@
             "unit": "mired",
             "data": null,
             "type": "numeric",
-            "access_mode": "readwrite",
             "category": "config",
             "attributes": { "max": 500, "min": 150 },
             "values": {
@@ -288,7 +274,6 @@
             "description": "Triggers an effect on the light (e.g. make light blink for a few seconds)",
             "data": null,
             "type": "enum",
-            "access_mode": "write",
             "category": "config",
             "values": {
               "0": "blink",
@@ -307,7 +292,6 @@
             "unit": "lqi",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 }
           },
@@ -316,7 +300,6 @@
             "description": "Controls the behavior when the device is powered on after power loss",
             "data": null,
             "type": "enum",
-            "access_mode": "readwrite",
             "category": "config",
             "values": { "0": "off", "1": "on", "2": "toggle", "3": "previous" }
           },
@@ -325,7 +308,6 @@
             "description": "On/off state of this light",
             "data": null,
             "type": "binary",
-            "access_mode": "readwrite",
             "category": "measurement",
             "values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
           }
@@ -345,7 +327,6 @@
             "description": "Triggered action (e.g. a button click)",
             "data": null,
             "type": "enum",
-            "access_mode": "read",
             "category": "diagnostic",
             "values": {
               "0": "button_1_press",
@@ -379,7 +360,6 @@
             "description": "Direction in which the dial was turned",
             "data": null,
             "type": "enum",
-            "access_mode": "read",
             "category": "measurement",
             "values": { "0": "right", "1": "left" }
           },
@@ -388,7 +368,6 @@
             "description": "amount of steps the last action took on the dial exposed as a posive value from 0-255",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "measurement",
             "attributes": { "max": 255, "min": 0 }
           },
@@ -397,7 +376,6 @@
             "description": "value in seconds representing the amount of time the last action took",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "measurement",
             "attributes": { "max": 255, "min": 0 }
           },
@@ -406,7 +384,6 @@
             "description": "Type of the rotation, value in the first message is `step` and in the next messages value is `rotate`",
             "data": null,
             "type": "enum",
-            "access_mode": "read",
             "category": "measurement",
             "values": { "0": "step", "1": "rotate" }
           },
@@ -416,7 +393,6 @@
             "unit": "%",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic",
             "attributes": { "max": 100, "min": 0 }
           },
@@ -425,7 +401,6 @@
             "description": "Raw rotation state value of the dial which represents brightness from 0-255",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "measurement",
             "attributes": { "max": 255, "min": 0 }
           },
@@ -435,7 +410,6 @@
             "unit": "lqi",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 }
           }
@@ -455,7 +429,6 @@
             "description": "Only updated when occupancy is detected",
             "data": null,
             "type": "enum",
-            "access_mode": "read",
             "category": "measurement",
             "values": { "0": "dim", "1": "bright" }
           },
@@ -465,7 +438,6 @@
             "unit": "lqi",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 }
           },
@@ -474,7 +446,6 @@
             "description": "Indicates whether the device detected occupancy",
             "data": null,
             "type": "binary",
-            "access_mode": "read",
             "category": "measurement",
             "values": { "off": false, "on": true }
           },
@@ -483,7 +454,6 @@
             "description": "Sensitivity of human presence detection",
             "data": null,
             "type": "enum",
-            "access_mode": "readwrite",
             "category": "config",
             "values": { "0": "low", "1": "medium", "2": "high" }
           },
@@ -492,7 +462,6 @@
             "description": "Unoccupied to occupied delay",
             "data": null,
             "type": "numeric",
-            "access_mode": "readwrite",
             "category": "config",
             "attributes": { "max": 65535, "min": 15 }
           }
@@ -512,7 +481,6 @@
             "description": "Brightness of this light",
             "data": null,
             "type": "numeric",
-            "access_mode": "readwrite",
             "category": "measurement",
             "attributes": { "max": 254, "min": 0 }
           },
@@ -521,7 +489,6 @@
             "description": "Color of this light expressed as hue/saturation",
             "data": null,
             "type": "composite",
-            "access_mode": "readwrite",
             "category": "config"
           },
           "color_temp": {
@@ -530,7 +497,6 @@
             "unit": "mired",
             "data": null,
             "type": "numeric",
-            "access_mode": "readwrite",
             "category": "measurement",
             "attributes": { "max": 500, "min": 150 },
             "values": {
@@ -547,7 +513,6 @@
             "unit": "mired",
             "data": null,
             "type": "numeric",
-            "access_mode": "readwrite",
             "category": "config",
             "attributes": { "max": 500, "min": 150 },
             "values": {
@@ -564,7 +529,6 @@
             "description": "Triggers an effect on the light (e.g. make light blink for a few seconds)",
             "data": null,
             "type": "enum",
-            "access_mode": "write",
             "category": "config",
             "values": {
               "0": "blink",
@@ -583,7 +547,6 @@
             "unit": "lqi",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 }
           },
@@ -592,7 +555,6 @@
             "description": "Controls the behavior when the device is powered on after power loss",
             "data": null,
             "type": "enum",
-            "access_mode": "readwrite",
             "category": "config",
             "values": { "0": "off", "1": "on", "2": "toggle", "3": "previous" }
           },
@@ -601,7 +563,6 @@
             "description": "On/off state of this light",
             "data": null,
             "type": "binary",
-            "access_mode": "readwrite",
             "category": "measurement",
             "values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
           }
@@ -621,7 +582,6 @@
             "description": "Enables/disables physical input on the device",
             "data": null,
             "type": "binary",
-            "access_mode": "write",
             "category": "config",
             "values": { "off": "UNLOCK", "on": "LOCK" }
           },
@@ -629,18 +589,16 @@
             "name": "current",
             "description": "Instantaneous measured electrical current",
             "unit": "A",
-            "data": 0.03,
+            "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic"
           },
           "energy": {
             "name": "energy",
             "description": "Sum of consumed energy",
             "unit": "kWh",
-            "data": 1.02,
+            "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "measurement"
           },
           "indicator_mode": {
@@ -648,7 +606,6 @@
             "description": "LED indicator mode",
             "data": null,
             "type": "enum",
-            "access_mode": "readwrite",
             "category": "config",
             "values": { "0": "off", "1": "off/on", "2": "on/off", "3": "on" }
           },
@@ -656,9 +613,8 @@
             "name": "linkquality",
             "description": "Link quality (signal strength)",
             "unit": "lqi",
-            "data": 0,
+            "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 }
           },
@@ -666,9 +622,8 @@
             "name": "power",
             "description": "Instantaneous measured power",
             "unit": "W",
-            "data": 0,
+            "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic"
           },
           "power_outage_memory": {
@@ -676,16 +631,14 @@
             "description": "Recover state after power outage",
             "data": null,
             "type": "enum",
-            "access_mode": "readwrite",
             "category": "config",
             "values": { "0": "on", "1": "off", "2": "restore" }
           },
           "state": {
             "name": "state",
             "description": "On/off state of the switch",
-            "data": "ON",
+            "data": null,
             "type": "binary",
-            "access_mode": "readwrite",
             "category": "measurement",
             "values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
           },
@@ -693,14 +646,13 @@
             "name": "voltage",
             "description": "Measured electrical potential value",
             "unit": "V",
-            "data": 243,
+            "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic"
           }
         },
-        "last_seen": "2025-03-21T16:40:31.362Z",
-        "availability": "online"
+        "last_seen": "",
+        "availability": "offline"
       },
       {
         "id": "0xa4c1381b6fd53fc4",
@@ -713,27 +665,24 @@
             "name": "current",
             "description": "Instantaneous measured electrical current",
             "unit": "A",
-            "data": 0.34,
+            "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic"
           },
           "energy": {
             "name": "energy",
             "description": "Sum of consumed energy",
             "unit": "kWh",
-            "data": 19.35,
+            "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "measurement"
           },
           "linkquality": {
             "name": "linkquality",
             "description": "Link quality (signal strength)",
             "unit": "lqi",
-            "data": 18,
+            "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 }
           },
@@ -741,26 +690,23 @@
             "name": "power",
             "description": "Instantaneous measured power",
             "unit": "W",
-            "data": 52,
+            "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic"
           },
           "power_on_behavior": {
             "name": "power_on_behavior",
             "description": "Controls the behavior when the device is powered on after power loss",
-            "data": "previous",
+            "data": null,
             "type": "enum",
-            "access_mode": "readwrite",
             "category": "config",
             "values": { "0": "off", "1": "on", "2": "toggle", "3": "previous" }
           },
           "state": {
             "name": "state",
             "description": "On/off state of the switch",
-            "data": "ON",
+            "data": null,
             "type": "binary",
-            "access_mode": "readwrite",
             "category": "measurement",
             "values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
           },
@@ -768,14 +714,13 @@
             "name": "voltage",
             "description": "Measured electrical potential value",
             "unit": "V",
-            "data": 244,
+            "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic"
           }
         },
-        "last_seen": "2025-03-21T16:40:30.363Z",
-        "availability": "online"
+        "last_seen": "",
+        "availability": "offline"
       },
       {
         "id": "0xa4c1384582432edd",
@@ -790,7 +735,6 @@
             "unit": "%",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic",
             "attributes": { "max": 100, "min": 0 }
           },
@@ -800,7 +744,6 @@
             "unit": "%",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "measurement"
           },
           "linkquality": {
@@ -809,7 +752,6 @@
             "unit": "lqi",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 }
           },
@@ -819,7 +761,6 @@
             "unit": "°C",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "measurement"
           },
           "voltage": {
@@ -828,7 +769,6 @@
             "unit": "mV",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic"
           }
         },
@@ -848,7 +788,6 @@
             "unit": "s",
             "data": 0.1,
             "type": "numeric",
-            "access_mode": "write",
             "category": "config",
             "attributes": { "max": 10, "min": 0 }
           },
@@ -858,7 +797,6 @@
             "unit": "s",
             "data": 30,
             "type": "numeric",
-            "access_mode": "write",
             "category": "config",
             "attributes": { "max": 1500, "min": 0.5 }
           },
@@ -866,9 +804,8 @@
             "name": "illuminance",
             "description": "Measured illuminance",
             "unit": "lx",
-            "data": 61,
+            "data": 142,
             "type": "numeric",
-            "access_mode": "read",
             "category": "measurement"
           },
           "linkquality": {
@@ -877,7 +814,6 @@
             "unit": "lqi",
             "data": 123,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 }
           },
@@ -887,7 +823,6 @@
             "unit": "m",
             "data": 5,
             "type": "numeric",
-            "access_mode": "write",
             "category": "config",
             "attributes": { "max": 9.5, "min": 0 }
           },
@@ -897,16 +832,14 @@
             "unit": "m",
             "data": 0.1,
             "type": "numeric",
-            "access_mode": "write",
             "category": "config",
             "attributes": { "max": 9.5, "min": 0 }
           },
           "presence": {
             "name": "presence",
             "description": "Indicates whether the device detected presence",
-            "data": false,
+            "data": true,
             "type": "binary",
-            "access_mode": "read",
             "category": "measurement",
             "values": { "off": false, "on": true }
           },
@@ -915,7 +848,6 @@
             "description": "sensitivity of the radar",
             "data": 5,
             "type": "numeric",
-            "access_mode": "write",
             "category": "config",
             "attributes": { "max": 9, "min": 0 }
           },
@@ -923,13 +855,12 @@
             "name": "target_distance",
             "description": "Distance to target",
             "unit": "m",
-            "data": 0,
+            "data": 2.53,
             "type": "numeric",
-            "access_mode": "read",
             "category": "config"
           }
         },
-        "last_seen": "2025-03-21T16:40:33.668Z",
+        "last_seen": "2025-03-21T19:49:34.372Z",
         "availability": "online"
       },
       {
@@ -943,7 +874,6 @@
             "name": "alarm",
             "data": null,
             "type": "binary",
-            "access_mode": "write",
             "category": "measurement",
             "values": { "off": false, "on": true }
           },
@@ -952,7 +882,6 @@
             "description": "Indicates if the battery of this device is almost empty",
             "data": null,
             "type": "binary",
-            "access_mode": "read",
             "category": "diagnostic",
             "values": { "off": false, "on": true }
           },
@@ -961,7 +890,6 @@
             "unit": "%",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "measurement"
           },
           "duration": {
@@ -969,7 +897,6 @@
             "unit": "s",
             "data": null,
             "type": "numeric",
-            "access_mode": "write",
             "category": "config",
             "attributes": { "max": 1800, "min": 0 }
           },
@@ -979,7 +906,6 @@
             "unit": "lqi",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 }
           },
@@ -987,7 +913,6 @@
             "name": "melody",
             "data": null,
             "type": "enum",
-            "access_mode": "write",
             "category": "config",
             "values": {
               "0": "1",
@@ -1014,7 +939,6 @@
             "name": "volume",
             "data": null,
             "type": "enum",
-            "access_mode": "write",
             "category": "config",
             "values": { "0": "low", "1": "medium", "2": "high" }
           }
@@ -1035,7 +959,6 @@
             "unit": "%",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic",
             "attributes": { "max": 100, "min": 0 }
           },
@@ -1044,7 +967,6 @@
             "description": "Indicates a fault with the device",
             "data": null,
             "type": "binary",
-            "access_mode": "read",
             "category": "measurement",
             "values": { "off": false, "on": true }
           },
@@ -1054,7 +976,6 @@
             "unit": "lqi",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 }
           },
@@ -1063,7 +984,6 @@
             "description": "Silence the alarm",
             "data": null,
             "type": "binary",
-            "access_mode": "write",
             "category": "config",
             "values": { "off": false, "on": true }
           },
@@ -1072,7 +992,6 @@
             "description": "Indicates whether the device detected smoke",
             "data": null,
             "type": "binary",
-            "access_mode": "read",
             "category": "measurement",
             "values": { "off": false, "on": true }
           },
@@ -1082,7 +1001,6 @@
             "unit": "ppm",
             "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "measurement"
           },
           "test": {
@@ -1090,7 +1008,6 @@
             "description": "Indicates whether the device is being tested",
             "data": null,
             "type": "binary",
-            "access_mode": "read",
             "category": "measurement",
             "values": { "off": false, "on": true }
           }
@@ -1109,36 +1026,32 @@
             "name": "co2",
             "description": "The measured CO2 (carbon dioxide) value",
             "unit": "ppm",
-            "data": 720,
+            "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "measurement"
           },
           "formaldehyd": {
             "name": "formaldehyd",
             "description": "The measured formaldehyd value",
             "unit": "µg/m³",
-            "data": 71,
+            "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "measurement"
           },
           "humidity": {
             "name": "humidity",
             "description": "Measured relative humidity",
             "unit": "%",
-            "data": 75.5,
+            "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "measurement"
           },
           "linkquality": {
             "name": "linkquality",
             "description": "Link quality (signal strength)",
             "unit": "lqi",
-            "data": 18,
+            "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 }
           },
@@ -1146,9 +1059,8 @@
             "name": "pm25",
             "description": "Measured PM2.5 (particulate matter) concentration",
             "unit": "µg/m³",
-            "data": 8,
+            "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "measurement",
             "attributes": { "max": 999, "min": 0 }
           },
@@ -1156,23 +1068,21 @@
             "name": "temperature",
             "description": "Measured temperature value",
             "unit": "°C",
-            "data": 18.9,
+            "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "measurement"
           },
           "voc": {
             "name": "voc",
             "description": "Measured VOC value",
             "unit": "ppb",
-            "data": 396,
+            "data": null,
             "type": "numeric",
-            "access_mode": "read",
             "category": "measurement"
           }
         },
-        "last_seen": "2025-03-21T16:40:33.428Z",
-        "availability": "online"
+        "last_seen": "",
+        "availability": "offline"
       }
     ]
   }

@@ -136,9 +136,6 @@ func validateDevice(t *testing.T, dev1 *devices.Device, dev2 *devices.Device) {
 			t.Fatalf("unexpected expose.Type")
 		}
 
-		if expose.AccessMode != inputExpose.AccessMode {
-			t.Fatalf("unexpected expose.AccessMode")
-		}
 		if expose.Category != inputExpose.Category {
 			t.Fatalf("unexpected expose.Category")
 		}

@@ -222,15 +222,14 @@ func (u *UpdatePackage) HasData() bool {
 }
 
 type Entity struct {
-	Name        string           `json:"name"`
-	Description string           `json:"description,omitempty"`
-	Unit        string           `json:"unit,omitempty"`
-	Data        any              `json:"data"`
-	Type        ExposeDataType   `json:"type"`
-	AccessMode  ExposeAccessMode `json:"access_mode"`
-	Category    ExposeCategory   `json:"category,omitempty"`
-	Attributes  map[string]any   `json:"attributes,omitempty"`
-	Values      map[string]any   `json:"values,omitempty"`
+	Name        string         `json:"name"`
+	Description string         `json:"description,omitempty"`
+	Unit        string         `json:"unit,omitempty"`
+	Data        any            `json:"data"`
+	Type        ExposeDataType `json:"type"`
+	Category    ExposeCategory `json:"category,omitempty"`
+	Attributes  map[string]any `json:"attributes,omitempty"`
+	Values      map[string]any `json:"values,omitempty"`
 }
 
 func newEntity() *Entity {
@@ -253,7 +252,6 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 	}
 
 	newEntity := newEntity()
-	newEntity.AccessMode = accessMode
 	newEntity.Category = getExposeCategory(expose)
 	newEntity.Name = expose.Property
 	newEntity.Description = expose.Description
@@ -306,7 +304,6 @@ func createExpose(data map[string]interface{}) map[string]*Entity {
 		}
 
 		newEntity := newEntity()
-		newEntity.AccessMode = UnknownAccessMode
 		newEntity.Category = MeasurementCategory
 		newEntity.Name = key
 		newEntity.Data = value

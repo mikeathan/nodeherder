@@ -272,9 +272,7 @@ func TestHandlingLoadHubStatesMessage(t *testing.T) {
 			if expose.Type != inputExpose.Type {
 				t.Fatalf("unexpected expose.Type value")
 			}
-			if expose.AccessMode != inputExpose.AccessMode {
-				t.Fatalf("unexpected expose.AccessMode value")
-			}
+
 			if expose.Category != inputExpose.Category {
 				t.Fatalf("unexpected expose.Category value")
 			}
