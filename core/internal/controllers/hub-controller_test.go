@@ -69,7 +69,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 		mqtt.Publish(doorSensorDevice.FriendlyName, payload)
 		time.Sleep(500 * time.Millisecond)
 
-		// alarm should be trigger only when schedule is due
+		// alarm should be triggered only when schedule is due
 		if i == 0 {
 			alarm, _ := store.FindDeviceById("x02222222")
 			if alarm.Exposes["alarm"].Data != true {
@@ -1020,7 +1020,7 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 		value      any
 		broadcast  bool
 	}{
-		{deviceName: presenceDeviceName, key: "target_distance", value: 13.1, broadcast: false}, // blacklisted
+		{deviceName: presenceDeviceName, key: "target_distance", value: 13.1, broadcast: false}, // config type ignored
 		{deviceName: presenceDeviceName, key: "presence", value: true, broadcast: true},
 		{deviceName: presenceDeviceName, key: "presence", value: true, broadcast: false},
 		{deviceName: presenceDeviceName, key: "presence", value: false, broadcast: true},
@@ -1032,7 +1032,9 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 		{deviceName: presenceDeviceName, key: "presence", value: false, broadcast: false},
 		{deviceName: presenceDeviceName, key: "presence", value: true, broadcast: true},
 		{deviceName: presenceDeviceName, key: "illuminance", value: 321, broadcast: true},
-		 {deviceName: presenceDeviceName, key: "radar_sensitivity", value: 5, broadcast: true},
+		{deviceName: presenceDeviceName, key: "radar_sensitivity", value: 5, broadcast: false}, // config type ignored
+		{deviceName: presenceDeviceName, key: "illuminance", value: 22, broadcast: false},      // debounced
+		{deviceName: presenceDeviceName, key: "illuminance", value: 22, broadcast: true},
 	}
 
 	broadcastHandler := func(eventName string, data interface{}) error {

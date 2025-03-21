@@ -81,6 +81,7 @@ var measurementWhitelist = map[string]int{
 	"action_direction": 10,
 	"action_type":      11,
 	"action_time":      12,
+	"contact":          13,
 }
 
 var configWhitelist = map[string]int{

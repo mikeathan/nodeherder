@@ -162,8 +162,8 @@ func FindAllExposesByCategory(payload []byte, category ExposeCategory) (map[stri
 				continue
 			}
 
-			if expose.Category == category ||
-				(expose.Category == "" && category == MeasurementCategory) {
+			exposeCategory := getExposeCategory(expose)
+			if exposeCategory == category {
 				if _, ok := exposeMap[device.IeeeAddress]; !ok {
 					exposeMap[device.IeeeAddress] = []BridgeExpose{}
 				}
@@ -180,8 +180,8 @@ func FindAllExposesByCategory(payload []byte, category ExposeCategory) (map[stri
 					continue
 				}
 
-				if feature.Category == category ||
-					(feature.Category == "" && category == MeasurementCategory) {
+				featureCategory := getExposeCategory(expose)
+				if featureCategory == category {
 
 					if _, ok := exposeMap[device.IeeeAddress]; !ok {
 						exposeMap[device.IeeeAddress] = []BridgeExpose{}
