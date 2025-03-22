@@ -53,7 +53,7 @@
       </dd>
     </dl>
     <div class="col-12 md:col-9">
-      <div v-if="expose.access_mode == 'read'">
+      <div v-if="expose.category == 'diagnostic'"> we need accesstype == read here
         {{ getSensorValue(expose.data) }}
         {{ getSensorUnit(expose.name) }}
       </div>

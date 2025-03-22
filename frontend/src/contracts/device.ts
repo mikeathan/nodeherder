@@ -4,7 +4,7 @@ import { KeyValuePair, ValueOf } from '@/types/types.type';
 import { toInt } from '@/utils/numbers';
 
 export function isDeviceOnline(device: Device): boolean {
-  return device.properties.availability == 'online';
+  return device.availability == 'online';
 }
 
 export function getExposeAttribute(expose: Expose, name: string): any {
