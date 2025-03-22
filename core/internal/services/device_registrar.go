@@ -6,6 +6,7 @@ import (
 	"node-herder/models/devices"
 	"node-herder/store"
 	"node-herder/utils"
+	"strings"
 )
 
 type DeviceRegistrar interface {
@@ -142,7 +143,7 @@ func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo
 
 		d.Description = bridgeInfo.Definition.Description
 		d.FriendlyName = bridgeInfo.FriendlyName
-		d.PowerSource = bridgeInfo.PowerSource
+		d.PowerSource = strings.ToLower(bridgeInfo.PowerSource)
 
 		// register device
 		s.store.StoreDevice(d.FriendlyName, d)

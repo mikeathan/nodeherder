@@ -113,7 +113,7 @@
         "friendly_name": "Attic temperature sensor",
         "description": "Temperature and humidity sensor",
         "connection_type": "mqtt",
-        "power_source": "Battery",
+        "power_source": "battery",
         "exposes": {
           "battery": {
             "name": "battery",
@@ -166,7 +166,7 @@
         "friendly_name": "Front door sensor",
         "description": "Contact sensor",
         "connection_type": "mqtt",
-        "power_source": "Battery",
+        "power_source": "battery",
         "exposes": {
           "battery": {
             "name": "battery",
@@ -219,7 +219,7 @@
         "friendly_name": "Living room light",
         "description": "AOne 9.5W smart RGBW GLS E27/B22",
         "connection_type": "mqtt",
-        "power_source": "Mains (single phase)",
+        "power_source": "mains (single phase)",
         "exposes": {
           "brightness": {
             "name": "brightness",
@@ -320,7 +320,7 @@
         "friendly_name": "Living room switch dial",
         "description": "Hue Tap dial switch",
         "connection_type": "mqtt",
-        "power_source": "Battery",
+        "power_source": "battery",
         "exposes": {
           "action": {
             "name": "action",
@@ -422,7 +422,7 @@
         "friendly_name": "0x08ddebfffee9b068",
         "description": "Zigbee occupancy sensor",
         "connection_type": "mqtt",
-        "power_source": "DC Source",
+        "power_source": "dc source",
         "exposes": {
           "illumination": {
             "name": "illumination",
@@ -474,7 +474,7 @@
         "friendly_name": "Attic Light",
         "description": "Automatically generated definition",
         "connection_type": "mqtt",
-        "power_source": "Mains (single phase)",
+        "power_source": "mains (single phase)",
         "exposes": {
           "brightness": {
             "name": "brightness",
@@ -575,7 +575,7 @@
         "friendly_name": "Dining room power socket",
         "description": "Smart plug (with power monitoring by polling)",
         "connection_type": "mqtt",
-        "power_source": "Mains (single phase)",
+        "power_source": "mains (single phase)",
         "exposes": {
           "child_lock": {
             "name": "child_lock",
@@ -659,13 +659,13 @@
         "friendly_name": "Attic room power socket",
         "description": "Smart plug",
         "connection_type": "mqtt",
-        "power_source": "Mains (single phase)",
+        "power_source": "mains (single phase)",
         "exposes": {
           "current": {
             "name": "current",
             "description": "Instantaneous measured electrical current",
             "unit": "A",
-            "data": null,
+            "data": 0.25,
             "type": "numeric",
             "category": "diagnostic"
           },
@@ -673,7 +673,7 @@
             "name": "energy",
             "description": "Sum of consumed energy",
             "unit": "kWh",
-            "data": null,
+            "data": 19.86,
             "type": "numeric",
             "category": "measurement"
           },
@@ -681,7 +681,7 @@
             "name": "linkquality",
             "description": "Link quality (signal strength)",
             "unit": "lqi",
-            "data": null,
+            "data": 18,
             "type": "numeric",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 }
@@ -690,14 +690,14 @@
             "name": "power",
             "description": "Instantaneous measured power",
             "unit": "W",
-            "data": null,
+            "data": 33,
             "type": "numeric",
             "category": "diagnostic"
           },
           "power_on_behavior": {
             "name": "power_on_behavior",
             "description": "Controls the behavior when the device is powered on after power loss",
-            "data": null,
+            "data": "previous",
             "type": "enum",
             "category": "config",
             "values": { "0": "off", "1": "on", "2": "toggle", "3": "previous" }
@@ -705,7 +705,7 @@
           "state": {
             "name": "state",
             "description": "On/off state of the switch",
-            "data": null,
+            "data": "ON",
             "type": "binary",
             "category": "measurement",
             "values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
@@ -714,20 +714,20 @@
             "name": "voltage",
             "description": "Measured electrical potential value",
             "unit": "V",
-            "data": null,
+            "data": 240,
             "type": "numeric",
             "category": "diagnostic"
           }
         },
-        "last_seen": "",
-        "availability": "offline"
+        "last_seen": "2025-03-22T19:38:56.663Z",
+        "availability": "online"
       },
       {
         "id": "0xa4c1384582432edd",
         "friendly_name": "Garden temperature",
         "description": "Temperature \u0026 humidity sensor with display",
         "connection_type": "mqtt",
-        "power_source": "Battery",
+        "power_source": "battery",
         "exposes": {
           "battery": {
             "name": "battery",
@@ -780,7 +780,7 @@
         "friendly_name": "Living room presence sensor",
         "description": "Mini human breathe sensor",
         "connection_type": "mqtt",
-        "power_source": "Mains (single phase)",
+        "power_source": "mains (single phase)",
         "exposes": {
           "detection_delay": {
             "name": "detection_delay",
@@ -804,7 +804,7 @@
             "name": "illuminance",
             "description": "Measured illuminance",
             "unit": "lx",
-            "data": 142,
+            "data": 3,
             "type": "numeric",
             "category": "measurement"
           },
@@ -812,7 +812,7 @@
             "name": "linkquality",
             "description": "Link quality (signal strength)",
             "unit": "lqi",
-            "data": 123,
+            "data": 112,
             "type": "numeric",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 }
@@ -838,7 +838,7 @@
           "presence": {
             "name": "presence",
             "description": "Indicates whether the device detected presence",
-            "data": true,
+            "data": false,
             "type": "binary",
             "category": "measurement",
             "values": { "off": false, "on": true }
@@ -855,12 +855,12 @@
             "name": "target_distance",
             "description": "Distance to target",
             "unit": "m",
-            "data": 2.53,
+            "data": 0,
             "type": "numeric",
             "category": "config"
           }
         },
-        "last_seen": "2025-03-21T19:49:34.372Z",
+        "last_seen": "2025-03-22T19:38:56.693Z",
         "availability": "online"
       },
       {
@@ -868,7 +868,7 @@
         "friendly_name": "Attic alarm",
         "description": "Alarm",
         "connection_type": "mqtt",
-        "power_source": "Mains (single phase)",
+        "power_source": "mains (single phase)",
         "exposes": {
           "alarm": {
             "name": "alarm",
@@ -951,7 +951,7 @@
         "friendly_name": "Attic smoke alarm",
         "description": "Photoelectric smoke detector",
         "connection_type": "mqtt",
-        "power_source": "Battery",
+        "power_source": "battery",
         "exposes": {
           "battery": {
             "name": "battery",
@@ -1020,7 +1020,7 @@
         "friendly_name": "Attic air sensor",
         "description": "Smart air house keeper",
         "connection_type": "mqtt",
-        "power_source": "Mains (single phase)",
+        "power_source": "mains (single phase)",
         "exposes": {
           "co2": {
             "name": "co2",

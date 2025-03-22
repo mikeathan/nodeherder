@@ -44,12 +44,11 @@ export function getDevices(devices: Device[], allowedFilter: DeviceFilter): KeyV
 }
 
 export function getPowerSourceValue(device: Device): number {
-  console.log(device.power_source, device.exposes);
 
   if (device.power_source == 'battery') {
-    return toInt(device.exposes['battery'].data) ?? 0;
+    return device.exposes['battery']?.data ?? 0;
   }
-  return toInt(device.exposes['voltage']?.data) ?? 0;
+  return device.exposes['voltage']?.data ?? 0;
 }
 
 export function getExposes(device: Device, filter: DeviceFilter): Array<string> {

@@ -616,6 +616,7 @@ function mockUpdateTH01v2(settings) {
     data: {
       temperature: getMockTemperature(settings),
       humidity: getMockHumidity(settings),
+      battery: 92,
     },
   };
 
