@@ -163,21 +163,6 @@ func getExposeCategory(entity BridgeExpose) string {
 	return entity.Category
 }
 
-func getExposeAccessMode(entity *BridgeExpose) ExposeAccessMode {
-
-	if HasReadWriteAccessMode(entity) {
-		return ReadWriteAccessMode
-	}
-	if HasWriteAccessMode(entity) {
-		return WriteAccessMode
-	}
-	if HasReadAccessMode(entity) {
-		return ReadAccessMode
-	}
-
-	return UnknownAccessMode
-}
-
 type Device struct {
 	Id             string             `json:"id"`
 	FriendlyName   string             `json:"friendly_name"`
@@ -222,18 +207,23 @@ func (u *UpdatePackage) HasData() bool {
 }
 
 type Entity struct {
-	Name        string         `json:"name"`
-	Description string         `json:"description,omitempty"`
-	Unit        string         `json:"unit,omitempty"`
-	Data        any            `json:"data"`
-	Type        ExposeDataType `json:"type"`
-	Category    ExposeCategory `json:"category,omitempty"`
-	Attributes  map[string]any `json:"attributes,omitempty"`
-	Values      map[string]any `json:"values,omitempty"`
+	Name        string           `json:"name"`
+	Description string           `json:"description,omitempty"`
+	Unit        string           `json:"unit,omitempty"`
+	Data        any              `json:"data"`
+	Type        ExposeDataType   `json:"type"`
+	Category    ExposeCategory   `json:"category,omitempty"`
+	Attributes  map[string]any   `json:"attributes,omitempty"`
+	AccessMode  ExposeAccessMode `json:"access_mode"`
+	Values      map[string]any   `json:"values,omitempty"`
 }
 
 func newEntity() *Entity {
-	return &Entity{Attributes: make(map[string]any), Values: make(map[string]any)}
+	return &Entity{
+		Attributes: make(map[string]any),
+		AccessMode: UnknownAccessMode,
+		Values:     make(map[string]any),
+	}
 }
 
 func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
@@ -246,7 +236,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 	// 	return nil, fmt.Errorf("expose property %v is blacklisted", expose.Property)
 	// }
 
-	accessMode := getExposeAccessMode(&expose)
+	accessMode := expose.AccessMode()
 	if accessMode == UnknownAccessMode {
 		return nil, fmt.Errorf("invalid device feature access mode %v", expose.Access)
 	}
@@ -254,6 +244,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 	newEntity := newEntity()
 	newEntity.Category = getExposeCategory(expose)
 	newEntity.Name = expose.Property
+	newEntity.AccessMode = accessMode
 	newEntity.Description = expose.Description
 	newEntity.Unit = expose.Unit
 	newEntity.Data = data
@@ -306,6 +297,7 @@ func createExpose(data map[string]interface{}) map[string]*Entity {
 		newEntity := newEntity()
 		newEntity.Category = MeasurementCategory
 		newEntity.Name = key
+		newEntity.AccessMode = ReadAccessMode
 		newEntity.Data = value
 		newEntity.Unit = units[key]
 		newEntity.Type = NumericDataType // TODO: make this dynamic

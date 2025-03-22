@@ -15,20 +15,20 @@ const (
 	ReadBridgeAccessMode    BridgeExposeAccessMode = 0b100 // it will request the read the value from device
 )
 
-func IsUknownAccessMode(entity *BridgeExpose) bool {
+func isUknownAccessMode(entity *BridgeExpose) bool {
 	return entity.Access&UnknownBridgeAccessMode != 0
 }
 
-func HasReadWriteAccessMode(entity *BridgeExpose) bool {
+func hasReadWriteAccessMode(entity *BridgeExpose) bool {
 	return entity.Access&WriteBridgeAccessMode != 0 &&
 		entity.Access&ReadBridgeAccessMode != 0
 }
 
-func HasWriteAccessMode(entity *BridgeExpose) bool {
+func hasWriteAccessMode(entity *BridgeExpose) bool {
 	return entity.Access&WriteBridgeAccessMode != 0 && entity.Access&ReadBridgeAccessMode == 0
 
 }
-func HasReadAccessMode(entity *BridgeExpose) bool {
+func hasReadAccessMode(entity *BridgeExpose) bool {
 	return (entity.Access&ReadBridgeAccessMode != 0 ||
 		entity.Access&StateBridgeAccessMode != 0) &&
 		entity.Access&WriteBridgeAccessMode == 0
@@ -247,6 +247,21 @@ func FindByExposeType(payload []byte, exposeType ExposeDataType) (*BridgeInfo, e
 		}
 	}
 	return nil, errors.New("exposeType not found")
+}
+
+func (b *BridgeExpose) AccessMode() ExposeAccessMode {
+
+	if hasReadWriteAccessMode(b) {
+		return ReadWriteAccessMode
+	}
+	if hasWriteAccessMode(b) {
+		return WriteAccessMode
+	}
+	if hasReadAccessMode(b) {
+		return ReadAccessMode
+	}
+
+	return UnknownAccessMode
 }
 
 func (e *BridgeExpose) SanitizeData(data any) (any, error) {
