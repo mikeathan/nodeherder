@@ -30,7 +30,7 @@ export type Expose = {
   data: any | null;
   type: ExposeType;
   category: ExposeCategory;
-
+  access_mode: ExposeAccessModes;
   attributes: ExposeAttributes;
   values: ExposeValues;
 };

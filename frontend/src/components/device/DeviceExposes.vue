@@ -2,7 +2,7 @@
   import { store } from '../../store/index';
   import { computed, ref } from 'vue';
   import { Device, Expose } from '@/types/device';
-  import { ExposeTypes } from '@/types/device.type';
+  import { ExposeAccessModes, ExposeTypes } from '@/types/device.type';
   import { getExposeAttribute, getExposeProperty, isDeviceOnline } from '../../contracts/device';
 
   import Toggle from '../input/Toggle.vue';
@@ -53,7 +53,7 @@
       </dd>
     </dl>
     <div class="col-12 md:col-9">
-      <div v-if="expose.category == 'diagnostic'"> we need accesstype == read here
+      <div v-if="expose.access_mode == ExposeAccessModes.Read">
         {{ getSensorValue(expose.data) }}
         {{ getSensorUnit(expose.name) }}
       </div>
