@@ -7,6 +7,7 @@ import express from 'express';
 import expressWs from 'express-ws';
 import http from 'http';
 import { createRequire } from 'module';
+import { link } from 'fs';
 const hubStateFullPath = '../../docs/hub-state.json';
 const lightMetricsFullPath = './metrics/light.json';
 const temperatureMetricsFullPath = './metrics/temperature.json';
@@ -553,12 +554,13 @@ function mockUpdateAtticAlarm(settings) {
   var device = {
     id: '0xa4c1389b273366c3',
     last_seen: currentTime(),
-    availability : setDeviceOnline(settings),
+    availability: setDeviceOnline(settings),
     data: {
       alarm: settings.alarm,
       melody: settings.melody,
       duration: settings.duration,
       volume: settings.volume,
+      linkquality: 100,
     },
   };
   return device;
@@ -567,7 +569,7 @@ function mockUpdateLivingRoomLight(settings) {
   var device = {
     id: '0x00158d0005a23c38',
     last_seen: currentTime(),
-    availability : setDeviceOnline(settings),
+    availability: setDeviceOnline(settings),
     data: {
       brightness: 61,
       color_temp: 370,
@@ -582,7 +584,7 @@ function mockUpdateAtticLight(settings) {
   var device = {
     id: '0x70ac08fffefafeca',
     last_seen: currentTime(),
-    availability : setDeviceOnline(settings),
+    availability: setDeviceOnline(settings),
     data: {
       brightness: 61,
       color_temp: 370,
@@ -596,7 +598,7 @@ function mockUpdateHumanPresencev2(settings) {
   var device = {
     id: '0xa4c13894070052fc',
     last_seen: currentTime(),
-    availability : setDeviceOnline(settings),
+    availability: setDeviceOnline(settings),
     data: {
       illuminance: 9,
       presence: true,
@@ -610,7 +612,7 @@ function mockUpdateTH01v2(settings) {
   var device = {
     id: '0x00124b0029207763',
     last_seen: currentTime(),
-    availability : setDeviceOnline(settings),
+    availability: setDeviceOnline(settings),
     data: {
       temperature: getMockTemperature(settings),
       humidity: getMockHumidity(settings),
