@@ -1,6 +1,7 @@
 import { Expose, DeviceFilter, Device } from '@/types/device';
 import { ExposeTypes } from '@/types/device.type';
 import { KeyValuePair, ValueOf } from '@/types/types.type';
+import { toInt } from '@/utils/numbers';
 
 export function isDeviceOnline(device: Device): boolean {
   return device.properties.availability == 'online';
@@ -42,11 +43,13 @@ export function getDevices(devices: Device[], allowedFilter: DeviceFilter): KeyV
   return list;
 }
 
-export function getPowerSourceValue(device: Device): string {
+export function getPowerSourceValue(device: Device): number {
+  console.log(device.power_source, device.exposes);
+
   if (device.power_source == 'battery') {
-    return device.exposes['battery'].data;
+    return toInt(device.exposes['battery'].data) ?? 0;
   }
-  return device.exposes['voltage']?.data ?? '';
+  return toInt(device.exposes['voltage']?.data) ?? 0;
 }
 
 export function getExposes(device: Device, filter: DeviceFilter): Array<string> {
