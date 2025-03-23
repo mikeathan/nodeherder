@@ -1,8 +1,12 @@
 <script setup lang="ts">
-  import { computed, PropType, ref } from 'vue';
+  import { computed, PropType, ref, watchEffect } from 'vue';
   import { DeviceDebounce } from '@/types/settings.type';
   import Selection from '../input/Selection.vue';
-  import { store } from '../../store/index';
+  import ExposeSelectionDialog from '../dialogs/ExposeSelectionDialog.vue';
+  import TimeIntervalEditor from '../controls/TimeInterval.vue';
+  import { createTimeIntervalFromSeconds } from '@/contracts/settings';
+  import { watch } from 'vue';
+  import { TimeInterval } from '@/types/types.type';
 
   const props = defineProps({
     id: {
@@ -17,12 +21,29 @@
   const emit = defineEmits<{
     (e: 'update', value: DeviceDebounce): void;
   }>();
-
+  const selectedExpose = ref<string | null>();
+  const showSelectExposeDialog = ref(false);
   const items = ref<DeviceDebounce>(props.value);
-  const selectedExpose = ref<string | null>(Object.keys(items.value)[0]);
-  const exposeDebounce = computed(() => {
-    return Object.keys(props.value);
-  });
+  const exposeList = ref<string[]>([]);
+   watchEffect(() => (exposeList.value = Object.keys(items.value)));
+
+  watch(
+    () => props.value,
+    () => {
+      if (!props.value) {
+        return;
+      }
+      const keys = Object.keys(props.value);
+      if (keys.length > 0) {
+        selectedExpose.value = keys[0];
+      } else {
+        selectedExpose.value = null;
+      }
+      exposeList.value = keys;
+    },
+    { immediate: true }
+  );
+
   function removeSelectedExposeDebounce() {
     if (!selectedExpose.value) {
       return;
@@ -32,12 +53,37 @@
     selectedExpose.value = null;
     emit('update', items.value);
   }
+
+  function addNewExposeDebounce(expose: string) {
+    if (!expose) {
+      return;
+    }
+
+    items.value[expose] = createTimeIntervalFromSeconds(0);
+    console.log('addNewExposeDebounce', items.value);
+    selectedExpose.value = expose;
+
+    emit('update', items.value);
+  }
+
+  function updateExposeDebounce(debounce: TimeInterval) {
+    if (!selectedExpose.value) {
+      return;
+    }
+    items.value[selectedExpose.value] = debounce;
+    emit('update', items.value);
+  }
 </script>
 
 <template>
   <div class="grid">
     <div class="col-12 sm:col-10 flex items-center">
-      <Selection label="expose" :value="selectedExpose" text="Expose" :items="exposeDebounce" />
+      <Selection
+        label="expose"
+        :value="selectedExpose"
+        text="Expose"
+        :items="exposeList"
+        @updated="(value:any)=>{selectedExpose=value}" />
       <div class="flex ml-2">
         <Button
           icon="pi pi-trash"
@@ -46,26 +92,16 @@
           size="small"
           :disabled="!selectedExpose"
           @click="removeSelectedExposeDebounce()" />
-        <Button icon="pi pi-plus" variant="text" rounded size="small" />
+        <Button icon="pi pi-plus" variant="text" rounded size="small" @click="showSelectExposeDialog = true" />
       </div>
     </div>
   </div>
   <div v-if="selectedExpose">
-    <TimeInterval :id="id" :value="value[selectedExpose]" />
+    <TimeIntervalEditor :id="id" :value="items[selectedExpose]" @update="(v) => updateExposeDebounce(v)" />
   </div>
+  <ExposeSelectionDialog
+    :id="props.id"
+    :show="showSelectExposeDialog"
+    @update="(value) => addNewExposeDebounce(value)"
+    @close="showSelectExposeDialog = false" />
 </template>
-
-<!-- <Button icon="pi pi-trash" variant="text" rounded @click="removeTriggerExpose(expose)" />
-      </div>
-    </div>
-  </div>
-
-  <div class="pt-4 flex align-items-center justify-content-center">
-    <Button
-      style="width: 99%"
-      icon="pi pi-plus"
-      label="Add Expose"
-      @click="addNewExpose()"
-      text
-      size="small"
-      :disabled="action.id == ''" /> -->

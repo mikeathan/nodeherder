@@ -39,6 +39,12 @@
   const selectedValue = ref<any>(props.value);
   const isKeyValuePair = ref<boolean>(false);
 
+  watchEffect(() => {
+    if (props.value != null) {
+      selectedValue.value = props.value;
+    }
+  });
+  
   watch(
     () => props.items,
     (newItems) => {

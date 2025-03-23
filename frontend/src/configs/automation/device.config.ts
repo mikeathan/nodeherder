@@ -35,7 +35,7 @@ export function devicesFilterByActionStep(
   };
 }
 
-export function featureExposeFilter(): DeviceFilter {
+export function measurementExposeFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
     return expose.category == 'measurement';
   };

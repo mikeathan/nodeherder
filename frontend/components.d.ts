@@ -41,6 +41,7 @@ declare module 'vue' {
     Editor: typeof import('./src/components/automations/Editor.vue')['default']
     ExposeCondition: typeof import('./src/components/automations/conditions/ExposeCondition.vue')['default']
     ExposeDataInput: typeof import('./src/components/controls/ExposeDataInput.vue')['default']
+    ExposeSelectionDialog: typeof import('./src/components/dialogs/ExposeSelectionDialog.vue')['default']
     ExposeSelector: typeof import('./src/components/controls/ExposeSelector.vue')['default']
     Fieldset: typeof import('primevue/fieldset')['default']
     FloatLabel: typeof import('primevue/floatlabel')['default']

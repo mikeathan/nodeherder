@@ -14,7 +14,7 @@
   import ExposeSelector from '@/components/controls/ExposeSelector.vue';
   import InputBox from '@/components/input/InputBox.vue';
   import Dropdown from '@/components/controls/Dropdown.vue';
-  import { featureDevicesFilter, featureExposeFilter } from '@/configs/automation/device.config';
+  import { featureDevicesFilter, measurementExposeFilter } from '@/configs/automation/device.config';
   import ExposeDataInput from '@/components/controls/ExposeDataInput.vue';
   import { createTimeIntervalFromMinutes } from '@/contracts/settings';
 
@@ -162,7 +162,7 @@
           label="Expose"
           @updated="(e) => exposeSelected(expose, e)"
           :value="expose.name"
-          :filter="featureExposeFilter()" />
+          :filter="measurementExposeFilter()" />
       </div>
       <div class="col sm:col-4">
         <ExposeDataInput
