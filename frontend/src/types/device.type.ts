@@ -10,6 +10,7 @@ export const ExposeAccessModes = {
   Readwrite: 'readwrite',
   Write: 'write',
 } as const;
+
 export const ExposeCategories = {
   Measurement: 'measurement',
   Diagnostic: 'diagnostic',

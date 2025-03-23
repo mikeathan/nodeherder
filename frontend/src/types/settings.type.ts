@@ -22,6 +22,7 @@ export type HistorySettingsType = {
 
 export type LoggerSettingsTypePropsType = keyof LoggerSettingsType;
 
+export type DeviceDebounce = KeyValuePair<TimeInterval>;
 export type LoggerSettingsType = {
   enableRemoteLogger: boolean;
 };
@@ -36,4 +37,5 @@ export type DeviceSettings = {
   disabled: boolean;
   metricsEnabled: boolean;
   rateLimit: TimeInterval;
+  debounce: DeviceDebounce;
 };

@@ -9,7 +9,9 @@
             "disabled": false,
             "history": false,
             "rateLimit": { "value": 60, "unit": "seconds" },
-            "debounce": {}
+            "debounce": {
+              "temperature": { "value": 1, "unit": "seconds" }
+            }
           },
           "0x00124b002fa5844e": {
             "id": "0x00124b002fa5844e",
