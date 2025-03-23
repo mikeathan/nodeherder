@@ -2,6 +2,7 @@
   import { computed, PropType, ref } from 'vue';
   import { DeviceDebounce } from '@/types/settings.type';
   import Selection from '../input/Selection.vue';
+  import { store } from '../../store/index';
 
   const props = defineProps({
     id: {
@@ -17,13 +18,19 @@
     (e: 'update', value: DeviceDebounce): void;
   }>();
 
-  const selectedExpose = ref<string | null>(Object.keys(props.value)[0] || null);
+  const items = ref<DeviceDebounce>(props.value);
+  const selectedExpose = ref<string | null>(Object.keys(items.value)[0]);
   const exposeDebounce = computed(() => {
     return Object.keys(props.value);
   });
-  function removeExposeDebounce(expose: string) {
-    delete exposeDebounce.value[expose];
-    // emit('update', value);
+  function removeSelectedExposeDebounce() {
+    if (!selectedExpose.value) {
+      return;
+    }
+
+    delete items.value[selectedExpose.value];
+    selectedExpose.value = null;
+    emit('update', items.value);
   }
 </script>
 
@@ -38,7 +45,7 @@
           rounded
           size="small"
           :disabled="!selectedExpose"
-          @click="removeExposeDebounce(selectedExpose)" />
+          @click="removeSelectedExposeDebounce()" />
         <Button icon="pi pi-plus" variant="text" rounded size="small" />
       </div>
     </div>
