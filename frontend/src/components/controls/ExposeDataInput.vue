@@ -58,7 +58,7 @@
 
   const showPresets = computed(() => props.showPresets && exposePresets.value.length != 0);
   const exposePresets = computed(() => {
-    return deviceExpose.value?.values == undefined ? [] : deviceExpose.value.values;
+    return dataType.value == ExposeTypes.Numeric && deviceExpose.value?.values ? deviceExpose.value.values : [];
   });
 
   watch(
