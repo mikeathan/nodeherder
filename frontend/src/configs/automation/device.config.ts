@@ -1,6 +1,6 @@
 import { AutomationActionStep, AutomationStepAction, AutomationTriggerAction } from '@/types/automation.type';
 import { DeviceFilter, Expose, Device, ExposeType } from '@/types/device';
-import { ExposeTypes } from '@/types/device.type';
+import { ExposeAccessModes, ExposeTypes } from '@/types/device.type';
 
 export function featureDevicesFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
@@ -10,9 +10,16 @@ export function featureDevicesFilter(): DeviceFilter {
 
 export function presetsDevicesFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
-    return expose.type == ExposeTypes.Enum || expose.values?.length > 0;
+    return (expose.type == ExposeTypes.Enum || expose.type == ExposeTypes.Numeric) && hasExposeValues(expose);
   };
 }
+
+export const hasExposeValues = (expose: Expose): boolean => {
+  if (!expose.values) {
+    return false;
+  }
+  return Object.keys(expose.values).length > 0;
+};
 
 export function devicesFilterById(id: string): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
@@ -43,7 +50,7 @@ export function measurementExposeFilter(): DeviceFilter {
 
 export function presetExposeFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
-    return expose.type == ExposeTypes.Enum || expose.values?.length > 0;
+    return (expose.type == ExposeTypes.Enum || expose.type == ExposeTypes.Numeric) && hasExposeValues(expose);
   };
 }
 
