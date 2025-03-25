@@ -23,6 +23,10 @@
       type: Object as PropType<Expose>,
       default: {} as Expose,
     },
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
   });
 
   function updateValue(event: any): void {
@@ -63,16 +67,18 @@
       :value="getValue()"
       :min="getExposeAttribute(props.expose, 'min')"
       :max="getExposeAttribute(props.expose, 'max')"
-      @update="updateValue">
-    </Range>
+      @update="updateValue"
+      :disabled="props.disabled"/>
+    
   </div>
   <div v-else-if="hasBinaryFeatures()">
     <Toggle
       :value="props.expose.data"
       :valueOn="getExposeProperty(props.expose, 'on')"
       :valueOff="getExposeProperty(props.expose, 'off')"
-      @update="(v) => updateValue(v)">
-    </Toggle>
+      @update="(v) => updateValue(v)"
+      :disabled="props.disabled"
+      />
   </div>
   <div v-else>
     {{ getValue() }}

@@ -65,7 +65,8 @@
           v-if="expose.values != null"
           :items="(expose.values as any)"
           :value="expose.data"
-          @update="(v) => updateValue(expose, v)" />
+          @update="(v) => updateValue(expose, v)"
+          :disabled="!isDeviceOnline(device)" />
         <div class="pt-3"></div>
         <Range
           :value="expose.data"

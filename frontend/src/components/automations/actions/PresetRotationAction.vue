@@ -59,7 +59,6 @@ function removeAction(): void {
 }
 </script>
 
-need to filter the correct expose for presets
 <template>
   <div class="row pb-3">
     <div class="col">

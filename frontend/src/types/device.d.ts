@@ -23,6 +23,8 @@ export type Device = {
 };
 
 export type ExposeType = keyof ExposeTypes;
+export type ExposeCategory = keyof ExposeCategories;
+
 export type Expose = {
   name: string;
   description: string;

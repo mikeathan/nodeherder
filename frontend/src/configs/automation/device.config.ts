@@ -1,25 +1,26 @@
 import { AutomationActionStep, AutomationStepAction, AutomationTriggerAction } from '@/types/automation.type';
-import { DeviceFilter, Expose, Device, ExposeType } from '@/types/device';
+import { DeviceFilter, Expose, Device, ExposeType, ExposeCategory } from '@/types/device';
 import { ExposeAccessModes, ExposeTypes } from '@/types/device.type';
 
 export function featureDevicesFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
-    return expose.category == 'measurement';
+    return expose.access_mode != ExposeAccessModes.Read;
   };
 }
-
-export function presetsDevicesFilter(): DeviceFilter {
-  return (device: Device, expose: Expose): boolean => {
-    return (expose.type == ExposeTypes.Enum || expose.type == ExposeTypes.Numeric) && hasExposeValues(expose);
-  };
-}
-
-export const hasExposeValues = (expose: Expose): boolean => {
+export const isPresetExpose = (expose: Expose): boolean => {
   if (!expose.values) {
     return false;
   }
-  return Object.keys(expose.values).length > 0;
+  return (
+    (expose.type == ExposeTypes.Enum || expose.type == ExposeTypes.Numeric) && Object.keys(expose.values).length > 0
+  );
 };
+
+export function presetsDevicesFilter(): DeviceFilter {
+  return (device: Device, expose: Expose): boolean => {
+    return isPresetExpose(expose);
+  };
+}
 
 export function devicesFilterById(id: string): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
@@ -42,15 +43,15 @@ export function devicesFilterByActionStep(
   };
 }
 
-export function measurementExposeFilter(): DeviceFilter {
+export function featureExposeFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
-    return expose.category == 'measurement';
+    return expose.access_mode != ExposeAccessModes.Read;
   };
 }
 
 export function presetExposeFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
-    return (expose.type == ExposeTypes.Enum || expose.type == ExposeTypes.Numeric) && hasExposeValues(expose);
+    return isPresetExpose(expose);
   };
 }
 
@@ -60,6 +61,11 @@ export function exposeFilterByType(exposeType: ExposeType): DeviceFilter {
   };
 }
 
+export function exposeFilterByTypeAndCategory(exposeType: ExposeType, category: ExposeCategory): DeviceFilter {
+  return (device: Device, expose: Expose): boolean => {
+    return expose.type == exposeType && expose.category == category;
+  };
+}
 export function allExposeFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
     return true;
