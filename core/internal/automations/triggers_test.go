@@ -42,7 +42,7 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 
 	device := utils_test.CreateDeviceWithExposes(triggerId, "dial device", entities)
 	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
-	registrar.RegisterBridge(deviceBridgeList, 30000)
+	registrar.RegisterBridge(deviceBridgeList)
 
 	testTriggerData := map[string]string{}
 	testTriggerData["buttonSwitch1"] = "brightness"
@@ -126,9 +126,9 @@ func TestAutomationwithMultipleTriggerActions(t *testing.T) {
 	}
 	device := utils_test.CreateDeviceWithExposes(triggerId, "sensor device", entities)
 	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
-	registrar.RegisterBridge(deviceBridgeList, 30000)
+	registrar.RegisterBridge(deviceBridgeList)
 
-	trigger := createTriggerwithMultipleActions(triggerId, registrar, mqtt, "button1", []string{"brightness", "color_temperature", "color_brightness"}, []any{120, 250, 2000})
+	trigger := createTriggerwithMultipleActions(triggerId, registrar, mqtt, "button1", []string{"brightness", "color_temperature", "color_brightness"}, []any{120, 250, 200})
 	trigger.Conditions = append(trigger.Conditions, automations.NewExposeCondition("button1", "pressed", "="))
 
 	automation := automations.NewDevice(triggerId)
@@ -197,7 +197,7 @@ func TestHandleMultipleSameValueTriggerWithDelay(t *testing.T) {
 
 	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
 
-	registrar.RegisterBridge(deviceBridgeList, 30000)
+	registrar.RegisterBridge(deviceBridgeList)
 
 	turnOffTrigger := createTriggerDelayTurnOffLight(triggerId, registrar, mqtt, utils.IntervalFromSeconds(3))
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(triggerId, registrar, mqtt, 30)
@@ -278,7 +278,7 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
 
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
-	registrar.RegisterBridge(deviceBridgeList, 30000)
+	registrar.RegisterBridge(deviceBridgeList)
 	turnOnTrigger := createTriggerTurnOnLightWithPresenceOnAndLux(id, registrar, mqtt, 30)
 	turnOffTrigger := createTriggerDelayTurnOffLightWithPresenceOff(id, registrar, mqtt, utils.IntervalFromMilliseconds(100))
 
@@ -375,8 +375,7 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
 
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
-	registrar.RegisterBridge(deviceBridgeList, 30000)
-
+	registrar.RegisterBridge(deviceBridgeList)
 	// create turn on trigger
 	turnOnTrigger := createTriggerTurnOnLight(id, registrar, mqtt)
 
@@ -613,7 +612,12 @@ func createTriggerwithMultipleActions(id string, registrar services.DeviceRegist
 		})
 	}
 
-	brightnessAction.Configure(registrar, mqtt)
+	err := brightnessAction.Configure(registrar, mqtt)
+	if err != nil {
+		fmt.Println("[ERROR] configuring action", err)
+		return nil
+	}
+
 	trigger := &automations.Trigger{}
 
 	trigger.Name = triggerName
@@ -658,18 +662,18 @@ func createExposures(data map[string]interface{}) map[string]*devices.Entity {
 	return entities
 }
 
-func createEntity(name string, description string, data any, unit string, props map[string]any) *devices.Entity {
-	if props == nil {
-		props = make(map[string]any)
+func createEntity(name string, description string, data any, unit string, attributes map[string]any) *devices.Entity {
+	if attributes == nil {
+		attributes = make(map[string]any)
 	}
 
 	newEntity := &devices.Entity{}
 	newEntity.Attributes = map[string]any{}
-	newEntity.Presets = map[string]any{}
+	newEntity.Values = map[string]any{}
 	newEntity.Data = data
 	newEntity.Name = name
 	newEntity.Unit = unit
 	newEntity.Description = description
-	newEntity.Properties = props
+	newEntity.Attributes = attributes
 	return newEntity
 }

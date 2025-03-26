@@ -152,7 +152,7 @@ func TestEngineAutomationUpdateShouldNotResetScheduler(t *testing.T) {
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
-	registrar.RegisterBridge(deviceBridgeList, 60)
+	registrar.RegisterBridge(deviceBridgeList)
 
 	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
@@ -226,7 +226,7 @@ func TestEngineAutomationUpdateShouldResetAndTriggerAgainScheduler(t *testing.T)
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
-	registrar.RegisterBridge(deviceBridgeList, 60)
+	registrar.RegisterBridge(deviceBridgeList)
 
 	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
@@ -292,10 +292,6 @@ func TestEngineAutomationUpdateShouldResetScheduler(t *testing.T) {
 	wg := sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
 
-	mqtt.OnMessageHandler(func(topic string, payload []byte) {
-		fmt.Printf("Received message on topic %s\n", topic)
-	})
-
 	store := utils_test.CreateStore()
 	eventHub := &mocks.MockEventHub{}
 
@@ -307,7 +303,7 @@ func TestEngineAutomationUpdateShouldResetScheduler(t *testing.T) {
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
-	registrar.RegisterBridge(deviceBridgeList, 60)
+	registrar.RegisterBridge(deviceBridgeList)
 
 	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
@@ -322,7 +318,6 @@ func TestEngineAutomationUpdateShouldResetScheduler(t *testing.T) {
 	// first event is on startup
 	// after we update the automation schedule, the second event ashould not be trigger on time
 	wg.Add(1)
-
 	scheduleHandler := automations.NewAutomationScheduler(
 		automations.WithScheduleFunc("enable", func(automation *automations.Device) error {
 			automation.Enabled = true
@@ -373,9 +368,9 @@ func TestEngineAutomationUpdateShouldStopScheduler(t *testing.T) {
 	wg := sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
 
-	mqtt.OnMessageHandler(func(topic string, payload []byte) {
-		fmt.Printf("Received message on topic %s\n", topic)
-	})
+	// mqtt.OnMessageHandler(func(topic string, payload []byte) {
+	// 	fmt.Printf("Received message on topic %s\n", topic)
+	// })
 
 	store := utils_test.CreateStore()
 	eventHub := &mocks.MockEventHub{}
@@ -388,7 +383,7 @@ func TestEngineAutomationUpdateShouldStopScheduler(t *testing.T) {
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
-	registrar.RegisterBridge(deviceBridgeList, 60)
+	registrar.RegisterBridge(deviceBridgeList)
 
 	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
@@ -466,7 +461,7 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
-	registrar.RegisterBridge(deviceBridgeList, 60)
+	registrar.RegisterBridge(deviceBridgeList)
 
 	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 

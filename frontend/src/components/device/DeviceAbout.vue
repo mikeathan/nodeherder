@@ -9,6 +9,7 @@
   import RemoveDeviceDialog from '../dialogs/RemoveDeviceDialog.vue';
   import { Device } from '@/types/device';
   import { RemoveDeviceEvent } from '@/types/dialog.type';
+  import { getPowerSourceValue } from '@/contracts/device';
 
   const props = defineProps({
     id: String,
@@ -65,13 +66,13 @@
       },
       {
         key: 'Availability:',
-        value: device.properties.availability,
+        value: device.availability,
       },
       {
         key: 'Last seen:',
         type: LastSeen,
         props: {
-          timestamp: device.properties.last_seen,
+          timestamp: device.last_seen,
         },
       },
       {
@@ -79,7 +80,7 @@
         type: PowerSource,
         props: {
           power_source: device.power_source,
-          value: device.properties.battery,
+          value: getPowerSourceValue(device),
         },
       },
       {

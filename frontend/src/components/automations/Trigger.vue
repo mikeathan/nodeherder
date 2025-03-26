@@ -25,6 +25,7 @@ import {
   createNewActionDropdownItems,
   createNewConditionDropdownItems,
 } from '../../configs/automation/trigger-dropdown.config';
+import { ExposeCategories } from '@/types/device.type';
 
 const props = defineProps({
   id: { type: String },
@@ -107,9 +108,11 @@ const exposesList = computed(() => {
   }
   return Object.assign(
     {},
-    ...Object.values(device.exposes).map((e) => ({
-      [e.name]: e.name,
-    }))
+    ...Object.values(device.exposes)
+      .filter(ex => ex.category != ExposeCategories.Config)
+      .map((e) => ({
+        [e.name]: e.name,
+      }))
   );
 });
 

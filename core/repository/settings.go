@@ -94,6 +94,7 @@ func (s *FileSettingsRepo) FindOrAddDeviceConfigIfNotExists(id string) (*setting
 	// if device config not found, create one with default values
 	cfg := settings.NewDeviceConfig(id)
 	err = s.SaveDeviceConfig(cfg)
+	
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialise new device config for id %v", id)
 	}

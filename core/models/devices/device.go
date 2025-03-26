@@ -8,17 +8,17 @@ import (
 	"time"
 )
 
-var availabilityKey = "availability"
-var linkQualityKey = "linkquality"
 var mainsKey = "mains"
-var powerSourceKey = "power_source"
 var batterKey = "battery"
 var lastSeenKey = "last_seen"
-var idKey = "id"
-var connectionTypeMqtt = "mqtt"
 
-const online = "online"
-const offline = "offline"
+type AvailabilityType string
+
+const (
+	UnknownAvailability AvailabilityType = "unknown"
+	OnlineAvailability  AvailabilityType = "online"
+	OfflineAvailability AvailabilityType = "offline"
+)
 
 var units = map[string]string{
 	"temperature":     "°C",
@@ -31,7 +31,7 @@ var units = map[string]string{
 	"battpercentage":  "%",
 	"co":              "ppm",
 }
-var exposesWhitelist = map[string]int{
+var nonBridgeExposesWhitelist = map[string]int{
 	"temperature":         1,
 	"humidity":            2,
 	"pressure":            3,
@@ -68,127 +68,143 @@ var exposesWhitelist = map[string]int{
 	"illuminance":         34,
 }
 
+var measurementWhitelist = map[string]int{
+	"state":            1,
+	"brightness":       2,
+	"color_temp":       3,
+	"mode":             4,
+	"sound":            5,
+	"occupancy":        6,
+	"tamper":           7,
+	"alarm":            8,
+	"action":           9,
+	"action_direction": 10,
+	"action_type":      11,
+	"action_time":      12,
+	"contact":          13,
+}
+
+var configWhitelist = map[string]int{
+	"color_temp_startup": 1,
+	"color_temp_max":     2,
+	"color_temp_min":     3,
+	"color_options":      4,
+	"options":            5,
+	"target_distance":    6,
+}
+var diagnosticWhitelist = map[string]int{
+	"linkquality":   1,
+	"battery":       2,
+	"voltage":       3,
+	"battery_low":   4,
+	"battery_state": 5,
+	"strength":      6,
+}
+
 type ExposeDataType = string
 type ExposeCategory = string
-type ExposeAccessMode = int
+type ExposeAccessMode = string
 
 const (
-	UnknownAccessMode ExposeAccessMode = 0b000
-	StateAccessMode   ExposeAccessMode = 0b001 // although ican request, the device send updates about its value
-	WriteAccessMode   ExposeAccessMode = 0b010 // it will request to set the value to device
-	ReadAccessMode    ExposeAccessMode = 0b100 // it will request the read the value from device
+	ReadAccessMode      ExposeAccessMode = "read"
+	WriteAccessMode     ExposeAccessMode = "write"
+	ReadWriteAccessMode ExposeAccessMode = "readwrite"
+	UnknownAccessMode   ExposeAccessMode = "unknown"
 
 	MeasurementCategory ExposeCategory = "measurement"
 	DiagnosticCategory  ExposeCategory = "diagnostic"
 	ConfigCategory      ExposeCategory = "config"
 
-	NumericDataType ExposeDataType = "numeric"
-	EnumDataType    ExposeDataType = "enum"
-	BinaryDataType  ExposeDataType = "binary"
+	NumericDataType   ExposeDataType = "numeric"
+	EnumDataType      ExposeDataType = "enum"
+	BinaryDataType    ExposeDataType = "binary"
+	CompositeDataType ExposeDataType = "composite"
 )
 
-func ToFeatureAccessMode(access int) (ExposeAccessMode, bool) {
-	convertedAccess := ExposeAccessMode(access)
-	return convertedAccess, (convertedAccess&StateAccessMode | ReadAccessMode | WriteAccessMode) != 0
-}
+// read access mode is set as measurement category
+// unless is in blacklist
 
-func IsUknownAccessMode(entity *Entity) bool {
-	return entity.AccessMode&UnknownAccessMode != 0
-}
+// write access mode is set as config category
+// unless is in the whitelist
 
-func IsWriteableAccessMode(entity *Entity) bool {
-	return entity.AccessMode&WriteAccessMode != 0
+// if diagnostics is set in expose check if is in blacklist so it can be moved to measurmeent eg switch action
 
-}
-func IsReadAccessMode(entity *Entity) bool {
-	return entity.AccessMode&ReadAccessMode != 0
-}
-func IsStateAccessMode(entity *Entity) bool {
-	return entity.AccessMode&StateAccessMode != 0
-}
+// categories
+// measurement
+// exposes that can be shown in a card as a sensor value
 
-var customExposeFeaturesPropertyWhitelist = map[string]int{
-	"silence":  1,
-	"alarm":    2,
-	"melody":   3,
-	"duration": 4,
-	"volume":   5, // ??
-}
+// diagnostics
+// exposes	that have diagnostics information (battery, link, voltage, batterypercentage tc...))
 
-var propertiesWhitelist = map[string]int{
-	"battery":        1,
-	"linkquality":    2,
-	"battpercentage": 3,
-	//"availability": 3,handled manually
-	//"last_seen":    4,handled manually
+// config
+// exposes that are used to configure the device
+
+func getExposeCategory(entity BridgeExpose) string {
+	if entity.Category == "" {
+
+		if _, ok := configWhitelist[entity.Property]; ok {
+			return ConfigCategory
+		}
+		if _, ok := diagnosticWhitelist[entity.Property]; ok {
+			return DiagnosticCategory
+		}
+		if _, ok := measurementWhitelist[entity.Property]; ok {
+			return MeasurementCategory
+		}
+		if entity.Access&WriteBridgeAccessMode != 0 {
+			return ConfigCategory
+		}
+
+		if entity.Access&ReadBridgeAccessMode != 0 || entity.Access&StateBridgeAccessMode != 0 {
+
+			return MeasurementCategory
+		}
+	}
+	return entity.Category
 }
 
 type Device struct {
-	Id                      string             `json:"id"`
-	FriendlyName            string             `json:"friendly_name"`
-	Description             string             `json:"description,omitempty"`
-	ConnectionType          string             `json:"connection_type"`
-	PowerSource             string             `json:"power_source"`
-	Exposes                 map[string]*Entity `json:"exposes"`
-	Properties              map[string]any     `json:"properties"`
-	availabilityTicker      time.Ticker
-	availablityDone         chan bool
-	availabilityTimeoutSecs int
-	mutex                   sync.RWMutex
+	Id             string             `json:"id"`
+	FriendlyName   string             `json:"friendly_name"`
+	Description    string             `json:"description,omitempty"`
+	ConnectionType string             `json:"connection_type"`
+	PowerSource    string             `json:"power_source"`
+	Exposes        map[string]*Entity `json:"exposes"`
+	LastSeen       string             `json:"last_seen"`
+	Availability   AvailabilityType   `json:"availability"`
+	mutex          sync.RWMutex
 }
 
 func NewDevice(id string) *Device {
 
 	return &Device{
-		Id:                      id,
-		FriendlyName:            "",
-		Description:             "",
-		ConnectionType:          "",
-		PowerSource:             "",
-		Exposes:                 map[string]*Entity{},
-		Properties:              map[string]any{},
-		availabilityTicker:      time.Ticker{},
-		availablityDone:         make(chan bool, 1),
-		availabilityTimeoutSecs: 3600,
-		mutex:                   sync.RWMutex{},
+		Id:             id,
+		FriendlyName:   "",
+		Description:    "",
+		ConnectionType: "",
+		PowerSource:    "",
+		Availability:   UnknownAvailability,
+		LastSeen:       "",
+		Exposes:        map[string]*Entity{},
+		mutex:          sync.RWMutex{},
 	}
 }
 
 type PackageData map[string]any
 type UpdatePackage struct {
-	Id         string         `json:"id"`
-	LastSeen   string         `json:"last_seen"`
-	Data       PackageData    `json:"data"`
-	Properties map[string]any `json:"properties"`
+	Id           string           `json:"id"`
+	LastSeen     string           `json:"last_seen"`
+	Availability AvailabilityType `json:"availability,omitempty"`
+	Data         PackageData      `json:"data"`
 }
 
-func newUpdatePackage(id string) *UpdatePackage {
-	return &UpdatePackage{Id: id, LastSeen: getCurrentTime(), Data: make(map[string]any), Properties: make(map[string]any)}
+func NewUpdatePackage(id string) *UpdatePackage {
+	return &UpdatePackage{Id: id, LastSeen: getCurrentTime(), Data: make(map[string]any)}
 }
 
 func (u *UpdatePackage) HasData() bool {
 	return len(u.Data) != 0
 }
-
-type EntityPreset struct {
-	Description string `json:"description"`
-	Name        string `json:"name"`
-	Value       int    `json:"value"`
-}
-
-// measurement - if category not exists
-// diagnostic
-// config
-
-todo
-// for properties and attributes
-
-// maybe can have 
-// values = [on, off, toggle] - does it need to be a map ? or array is fine
-// constraints =[
-// min = 0
-// max = 255]
-
 
 type Entity struct {
 	Name        string           `json:"name"`
@@ -196,88 +212,19 @@ type Entity struct {
 	Unit        string           `json:"unit,omitempty"`
 	Data        any              `json:"data"`
 	Type        ExposeDataType   `json:"type"`
-	AccessMode  ExposeAccessMode `json:"access_mode"`
 	Category    ExposeCategory   `json:"category,omitempty"`
-	Properties  map[string]any   `json:"properties,omitempty"`
 	Attributes  map[string]any   `json:"attributes,omitempty"`
-	Presets     map[string]any   `json:"presets,omitempty"`
+	AccessMode  ExposeAccessMode `json:"access_mode"`
+	Values      map[string]any   `json:"values,omitempty"`
 }
 
 func newEntity() *Entity {
-	return &Entity{Attributes: make(map[string]any), Properties: map[string]any{}}
+	return &Entity{
+		Attributes: make(map[string]any),
+		AccessMode: UnknownAccessMode,
+		Values:     make(map[string]any),
+	}
 }
-
-// func CreateEntityFromExposeTEST(expose BridgeExpose, data any) (*Entity, error) {
-
-// 	if expose.Property == "" {
-// 		return nil, fmt.Errorf("no expose data")
-// 	}
-
-// 	// if _, ok := exposesWhitelist[expose.Property]; !ok {
-// 	// 	return nil, fmt.Errorf("expose property %v is blacklisted", expose.Property)
-// 	// }
-
-// 	accessMode, ok := ToFeatureAccessMode(expose.Access)
-// 	if !ok {
-// 		return nil, fmt.Errorf("invalid device feature access mode %v", expose.Access)
-// 	}
-
-// 	newEntity := newEntity()
-// 	newEntity.AccessMode = accessMode
-// 	newEntity.Name = expose.Property
-// 	newEntity.Description = expose.Description
-// 	newEntity.Unit = expose.Unit
-// 	newEntity.Data = data
-// 	newEntity.Type = expose.Type
-
-// 	if isReadAccessMode(newEntity) {
-// 		return buildReadAccessModeExpose(expose, newEntity), nil
-// 	}
-// 	// examples to handle !!!!!!
-// 	// also we have state accesstype which could be for controlling the device, confirm !!!!
-
-// 	// illumination (read)
-
-// 	// brightness (write)
-// 	// min/max properties renamed from attributes
-
-// 	// state (read)
-// 	// on/off properties renamed from attributes
-
-// 	// state_on (write)
-// 	// on/off/toggle properties renamed from attributes
-
-// }
-
-// func buildReadAccessModeExpose(expose BridgeExpose, newEntity *Entity) *Entity {
-// 	switch expose.Type {
-// 	case NumericExposeType:
-// 		if expose.ValueMax != nil {
-// 			newEntity.Attributes["max"] = expose.ValueMax
-// 		}
-// 		if expose.ValueMin != nil {
-// 			newEntity.Attributes["min"] = expose.ValueMin
-// 		}
-
-// 	case BinaryExposeType:
-// 		if expose.ValueOn != nil {
-// 			newEntity.Attributes["on"] = expose.ValueOn
-// 		}
-// 		if expose.ValueOff != nil {
-// 			newEntity.Attributes["off"] = expose.ValueOff
-// 		}
-
-// 	case EnumExposeType:
-// 		for _, item := range expose.Values {
-// 			newEntity.Attributes[item] = item
-// 		}
-// 	}
-// 	return newEntity
-// }
-
-// func buildWriteAccessModeExpose(expose BridgeExpose, newEntity *Entity) *Entity {
-
-// }
 
 func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 
@@ -285,28 +232,24 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 		return nil, fmt.Errorf("no expose data")
 	}
 
-	if _, ok := exposesWhitelist[expose.Property]; !ok {
-		return nil, fmt.Errorf("expose property %v is blacklisted", expose.Property)
-	}
+	// if _, ok := exposesWhitelist[expose.Property]; !ok {
+	// 	return nil, fmt.Errorf("expose property %v is blacklisted", expose.Property)
+	// }
 
-	accessMode, ok := ToFeatureAccessMode(expose.Access)
-	if !ok {
+	accessMode := expose.AccessMode()
+	if accessMode == UnknownAccessMode {
 		return nil, fmt.Errorf("invalid device feature access mode %v", expose.Access)
 	}
 
 	newEntity := newEntity()
-	newEntity.AccessMode = accessMode
+	newEntity.Category = getExposeCategory(expose)
 	newEntity.Name = expose.Property
+	newEntity.AccessMode = accessMode
 	newEntity.Description = expose.Description
 	newEntity.Unit = expose.Unit
 	newEntity.Data = data
 	newEntity.Type = expose.Type
 
-	// NOTE:
-	// exposes are not used to publish events
-	// because of that all expose data are published as device attributes
-
-	// TODO: needs refactoring
 	switch expose.Type {
 	case NumericDataType:
 		if expose.ValueMax != nil {
@@ -316,149 +259,45 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 			newEntity.Attributes["min"] = expose.ValueMin
 		}
 
-	case BinaryDataType:
-		if expose.ValueOn != nil {
-			newEntity.Attributes["on"] = expose.ValueOn
+		if len(expose.Presets) != 0 {
+			for _, preset := range expose.Presets {
+				newEntity.Values[preset.Name] = preset.Value
+			}
 		}
-		if expose.ValueOff != nil {
-			newEntity.Attributes["off"] = expose.ValueOff
+		// else {
+		// 	newEntity.Values[expose.Name] = 0 // ????????? - i dont think i need this
+		// }
+
+	case BinaryDataType:
+
+		newEntity.Values["on"] = expose.ValueOn
+		newEntity.Values["off"] = expose.ValueOff
+
+		if expose.ValueToggle != "" {
+			newEntity.Values["toggle"] = expose.ValueToggle
 		}
 
 	case EnumDataType:
-		for _, item := range expose.Values {
-			newEntity.Attributes[item] = item
+		for id, item := range expose.Values {
+			newEntity.Values[fmt.Sprintf("%d", id)] = item
 		}
 	}
+
 	return newEntity, nil
 }
 
-func CreateCustomFeatureFromExpose(expose BridgeExpose, data any) (*Entity, error) {
-
-	// NOTE:
-	// create custom feature from devices that can be triggered but dont have feature description
-	// only support alarm for now
-	// Features are used to publish events
-	// because of that all expose data are published as device properties
-
-	if expose.Property == "" {
-		return nil, fmt.Errorf("no expose data")
-	}
-
-	if _, ok := customExposeFeaturesPropertyWhitelist[expose.Property]; !ok {
-		return nil, fmt.Errorf("custom expose property %v is blacklisted", expose.Property)
-	}
-
-	accessMode, ok := ToFeatureAccessMode(expose.Access)
-	if !ok {
-		return nil, fmt.Errorf("invalid device feature access mode %v", expose.Access)
-	}
-	newEntity := newEntity()
-	newEntity.AccessMode = accessMode
-	newEntity.Data = data
-	newEntity.Name = expose.Name
-	newEntity.Unit = expose.Unit
-	newEntity.Description = expose.Description
-	newEntity.Data = data
-	newEntity.Type = expose.Type
-
-	// NOTE:
-	// features are used to publish events
-	// because of that all expose data are published as device properties
-	switch expose.Type {
-	case NumericDataType:
-		newEntity.Attributes["max"] = expose.ValueMax
-		newEntity.Attributes["min"] = expose.ValueMin
-		newEntity.Properties[expose.Name] = 0
-
-	case BinaryDataType:
-		newEntity.Properties["on"] = expose.ValueOn
-		newEntity.Properties["off"] = expose.ValueOff
-
-	case EnumDataType:
-		for index, item := range expose.Values {
-			newEntity.Properties[fmt.Sprintf("%d", index)] = item
-		}
-	}
-	return newEntity, nil
-
-}
-
-func CreateEntityFromFeature(feature BridgeInfoFeature, data any) (*Entity, error) {
-
-	if _, ok := exposesWhitelist[feature.Property]; !ok {
-		return nil, fmt.Errorf("feature property %v is blacklisted", feature.Property)
-	}
-
-	accessMode, ok := ToFeatureAccessMode(feature.Access)
-	if !ok {
-		return nil, fmt.Errorf("invalid device feature access mode %v", feature.Access)
-	}
-
-	newEntity := newEntity()
-	newEntity.Data = data
-	newEntity.AccessMode = accessMode
-	newEntity.Name = feature.Name
-	newEntity.Unit = feature.Unit
-	newEntity.Description = feature.Description
-	newEntity.Data = data
-	newEntity.Type = feature.Type
-
-	// populate feature presets
-	if len(feature.Presets) != 0 {
-		newEntity.Presets = make(map[string]any)
-		for _, preset := range feature.Presets {
-			newEntity.Presets[preset.Name] = preset.Value
-		}
-	}
-
-	switch feature.Type {
-	case NumericDataType:
-		newEntity.Attributes["max"] = feature.ValueMax
-		newEntity.Attributes["min"] = feature.ValueMin
-		newEntity.Properties[feature.Name] = 0
-
-	case BinaryDataType:
-		newEntity.Properties["on"] = feature.ValueOn
-		newEntity.Properties["off"] = feature.ValueOff
-		newEntity.Properties["toggle"] = feature.ValueToggle
-
-	case EnumDataType:
-		for index, item := range feature.Values {
-			newEntity.Properties[fmt.Sprintf("%d", index)] = item
-		}
-	}
-	return newEntity, nil
-}
-
-func createProperties(data map[string]interface{}) map[string]any {
-
-	var props = map[string]any{}
-	for key, value := range data {
-		if _, ok := propertiesWhitelist[key]; ok {
-			props[key] = value
-		}
-	}
-
-	if _, ok := data[lastSeenKey]; !ok {
-		data[lastSeenKey] = getCurrentTime()
-	}
-
-	props[lastSeenKey] = data[lastSeenKey]
-	props[availabilityKey] = online
-
-	return props
-}
-
-func createExposures(data map[string]interface{}) map[string]*Entity {
+// Not used yet, is for handling non bridge devices which we havent tested yet
+func createExpose(data map[string]interface{}) map[string]*Entity {
 	var entities = make(map[string]*Entity)
 	for key, value := range data {
-		if _, ok := exposesWhitelist[key]; !ok {
+		if _, ok := nonBridgeExposesWhitelist[key]; !ok {
 			continue
 		}
 
 		newEntity := newEntity()
-		newEntity.AccessMode = UnknownAccessMode
+		newEntity.Category = MeasurementCategory
 		newEntity.Name = key
+		newEntity.AccessMode = ReadAccessMode
 		newEntity.Data = value
 		newEntity.Unit = units[key]
 		newEntity.Type = NumericDataType // TODO: make this dynamic
@@ -467,11 +306,10 @@ func createExposures(data map[string]interface{}) map[string]*Entity {
 	return entities
 }
 
-func createExposuresFromBridge(data map[string]interface{}, bridgeInfo *BridgeInfo) map[string]*Entity {
+func createExposeFromBridge(data map[string]interface{}, bridgeInfo *BridgeInfo) map[string]*Entity {
 
 	var entities = map[string]*Entity{}
 	for _, expose := range bridgeInfo.Definition.Exposes {
-
 		// load exposes
 		if expose.Property != "" {
 			if value, ok := data[expose.Property]; ok {
@@ -487,11 +325,11 @@ func createExposuresFromBridge(data map[string]interface{}, bridgeInfo *BridgeIn
 		for _, feature := range expose.Features {
 			if value, ok := data[feature.Property]; ok {
 
-				entity, err := CreateEntityFromExpose(expose, value)
+				entity, err := CreateEntityFromExpose(feature, value)
 				if err != nil {
 					continue
 				}
-				entities[expose.Property] = entity
+				entities[feature.Property] = entity
 			}
 		}
 	}
@@ -512,68 +350,83 @@ func CreateNewDevice(id string, friendlyName string, connType string, bridgeInfo
 	}
 
 	if bridgeInfo != nil {
-		newDevice.Exposes = createExposuresFromBridge(data, bridgeInfo)
+		newDevice.Exposes = createExposeFromBridge(data, bridgeInfo)
 	} else { // device not in hub bridge
-		newDevice.Exposes = createExposures(data)
+		newDevice.Exposes = createExpose(data)
 	}
 
-	newDevice.Properties = createProperties(data)
 	if len(newDevice.Exposes) == 0 {
 		return nil, errors.New("invalid payload - no exposed entries found")
 	}
 
+	newDevice.LastSeen = getLastSeen(data)
+	newDevice.Availability = OnlineAvailability
 	return newDevice, nil
 }
 
-func (device *Device) Update(payload map[string]interface{}) *UpdatePackage {
-
-	var updatePackage = newUpdatePackage(device.Id)
-	for name, currValue := range device.Exposes {
-		if newValue, ok := payload[name]; ok && newValue != currValue.Data {
-			device.Exposes[name].Data = newValue
-			updatePackage.Data[name] = newValue
+func getLastSeen(data map[string]interface{}) string {
+	if val, ok := data[lastSeenKey]; ok {
+		if strVal, ok := val.(string); ok {
+			return strVal
 		}
 	}
-
-	// Update device properties
-	defer device.mutex.Unlock()
-	device.mutex.Lock()
-
-	if updatePackage.HasData() {
-
-		for name := range propertiesWhitelist {
-			currValue := device.Properties[name]
-			if newValue, ok := payload[name]; ok && newValue != currValue {
-
-				device.Properties[name] = newValue
-				updatePackage.Properties[name] = newValue
-			}
-		}
-	}
-
-	if device.Properties[availabilityKey] != online {
-		device.Properties[availabilityKey] = online
-		updatePackage.Properties[availabilityKey] = online // we handle it manually for now
-
-		utils.LogInfof("device [%s] %s is online", device.Id, device.FriendlyName)
-		device.resetAvailabilityTimer()
-	}
-
-	if _, ok := payload[lastSeenKey]; !ok {
-		payload[lastSeenKey] = getCurrentTime()
-	}
-
-	device.Properties[lastSeenKey] = payload[lastSeenKey] // we need that.
-	return updatePackage
+	utils.LogDebug("lastSeen not in payload, using current time.")
+	return getCurrentTime()
 }
 
-func (device *Device) LastSeen() (time.Time, error) {
+func getCurrentTime() string {
+	return time.Now().Format(time.RFC3339)
+}
+
+func (d *Device) GetFriendlyName() string {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
+	return d.FriendlyName
+}
+
+func (d *Device) GetExpose(name string) (*Entity, bool) {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
+	expose, ok := d.Exposes[name]
+	return expose, ok
+}
+
+func (d *Device) SetExposeData(name string, data interface{}) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	d.Exposes[name].Data = data
+}
+
+func (d *Device) GetAvailability() AvailabilityType {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+
+	return d.Availability
+}
+
+func (d *Device) SetAvailability(availability AvailabilityType) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	d.Availability = availability
+}
+
+func (d *Device) SetLastSeen(lastSeen string) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	d.LastSeen = lastSeen
+}
+
+func (device *Device) LastSeenTime() (time.Time, error) {
 
 	defer device.mutex.RUnlock()
 	device.mutex.RLock()
 
-	lastSeenStr, _ := device.Properties[lastSeenKey].(string)
-	lastSeen, err := time.Parse(time.RFC3339, lastSeenStr)
+	lastSeen, err := time.Parse(time.RFC3339, device.LastSeen)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -581,93 +434,21 @@ func (device *Device) LastSeen() (time.Time, error) {
 	return lastSeen, nil
 }
 
-func (device *Device) isAvailable() bool {
+func (device *Device) IsAvailable() bool {
 
 	defer device.mutex.RUnlock()
 	device.mutex.RLock()
 
-	return device.Properties[availabilityKey] == online
+	return device.Availability == OnlineAvailability
 }
 
-func (device *Device) setAvailable(value bool) {
+func (device *Device) SetAvailable(value bool) {
 
 	defer device.mutex.Unlock()
 	device.mutex.Lock()
 	if value {
-		device.Properties[availabilityKey] = online
+		device.Availability = OnlineAvailability
 	} else {
-		device.Properties[availabilityKey] = offline
+		device.Availability = OfflineAvailability
 	}
-}
-
-func (device *Device) Dispose() {
-	device.availablityDone <- true
-	device.availabilityTicker.Stop()
-	utils.LogDebugf("device %s disposed", device.Id)
-}
-
-func (device *Device) resetAvailabilityTimer() {
-
-	device.availabilityTicker.Reset(1 * time.Second)
-}
-
-func (device *Device) Monitor(timeoutInSecs int, onChangeCallback func(p interface{})) {
-
-	device.availabilityTicker = *time.NewTicker(1 * time.Second)
-
-	go func() {
-		defer close(device.availablityDone)
-		for {
-			select {
-			case <-device.availablityDone:
-
-				device.setAvailable(false)
-				utils.LogInfof("device %s availability timer killed", device.Id)
-
-				// todo: move it in one place
-				if onChangeCallback != nil {
-					p := newUpdatePackage(device.Id)
-					p.Properties[availabilityKey] = offline
-					onChangeCallback(p)
-				}
-
-				return
-
-			case <-device.availabilityTicker.C:
-
-				if !device.isAvailable() {
-					return
-				}
-
-				lastSeen, err := device.LastSeen()
-				if err != nil {
-					utils.LogErrorf("device %s failed to parse time %s", device.Id, err.Error())
-
-					device.Dispose()
-				}
-
-				now := time.Now()
-				diff := now.Sub(lastSeen)
-				if diff.Seconds() >= float64(timeoutInSecs) {
-
-					device.setAvailable(false)
-					utils.LogInfof("device %s is offine", device.Id)
-
-					// todo: move it in one place
-					if onChangeCallback != nil {
-						p := newUpdatePackage(device.Id)
-						p.Properties[availabilityKey] = offline
-						onChangeCallback(p)
-					}
-
-					device.availabilityTicker.Stop()
-				}
-
-			}
-		}
-	}()
-}
-
-func getCurrentTime() string {
-	return time.Now().Format(time.RFC3339)
 }

@@ -15,6 +15,7 @@
       if (lastSeenElement.value == undefined) {
         return;
       }
+
       elapsedTimer.Format(newlastSeen);
     },
     { immediate: true }

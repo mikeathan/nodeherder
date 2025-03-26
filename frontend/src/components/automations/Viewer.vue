@@ -2,8 +2,8 @@
 import { computed } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { store } from '../../store/index';
-import { Automations } from '@/types/automation.type.type';
 import AutomationStatus from './schedule/AutomationStatus.vue';
+import { Automations } from '@/types/automation.type';
 
 const router = useRouter();
 const automations = computed(() => {

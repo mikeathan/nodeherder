@@ -7,6 +7,7 @@ import (
 	"math"
 	"node-herder/internal/automations"
 	"node-herder/internal/controllers"
+	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/mocks"
 	"node-herder/models/devices"
@@ -14,9 +15,12 @@ import (
 	"node-herder/models/logging"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
+	"node-herder/repository"
 	"node-herder/store"
 	utils_test "node-herder/testing"
 	"node-herder/utils"
+	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -25,16 +29,6 @@ import (
 const device1BatterySource = `{"id":"device 1","conn":"mqtt","power_source":"battery","humidity":92.49999999999999,"temperature":19.000000000000004,"availability":"online","last_seen":"2023-07-20T19:48:35+01:00","linkquality":47,"battery":98}`
 const device2 = `{"battery":98, "humidity":71.2,  "linkquality":36.1,"temperature":17.1,"voltage":2999}`
 const device3NoLastSeen = `{"id":"device 1","conn":"mqtt","power_source":"battery","humidity":91.12,"temperature":19.000000000000004,"availability":"online","linkquality":47,"battery":67}`
-
-func createMockPayload() map[string]interface{} {
-	return map[string]interface{}{
-		"battery":     98,
-		"humidity":    71.2,
-		"last_seen":   time.Now().Format(time.RFC3339),
-		"linkquality": 36.1,
-		"temperature": 17.1,
-	}
-}
 
 func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
@@ -75,7 +69,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 		mqtt.Publish(doorSensorDevice.FriendlyName, payload)
 		time.Sleep(500 * time.Millisecond)
 
-		// alarm should be trigger only when schedule is due
+		// alarm should be triggered only when schedule is due
 		if i == 0 {
 			alarm, _ := store.FindDeviceById("x02222222")
 			if alarm.Exposes["alarm"].Data != true {
@@ -213,7 +207,7 @@ func TestHubEnableRemoteLogger(t *testing.T) {
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices) // NEED TO FIX, currently i make all devices features which is not right!!!!
 
 	// register hub
-	tasks := []store.Task{store.DefaultRemoteLoggerTask()}
+	tasks := []settings.Task{store.DefaultRemoteLoggerTask()}
 
 	store, cleanup, err := utils_test.CreateStoreWithTasks(tasks)
 	if err != nil {
@@ -221,6 +215,7 @@ func TestHubEnableRemoteLogger(t *testing.T) {
 	}
 	defer cleanup()
 
+	appCfg := store.AppConfig()
 	expectedEventName := "logger"
 
 	index := 0
@@ -274,7 +269,7 @@ func TestHubEnableRemoteLogger(t *testing.T) {
 	for _, enabled := range testCases {
 
 		logger := settings.NewLoggerConfig(enabled)
-		store.SaveLoggerConfig(logger)
+		appCfg.SaveLoggerConfig(logger)
 		if enabled {
 			utils.LogInfo("Remote hook enabled: true")
 		}
@@ -397,6 +392,7 @@ func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *tes
 	}
 	defer cleanup()
 
+	appCfg := store.AppConfig()
 	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
@@ -407,6 +403,7 @@ func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *tes
 	// update dial button device - This should NOT be stored as metrics
 	payload := map[string]any{"action": "button_2_hold"}
 	mqtt.Publish(dialDevice.FriendlyName, payload)
+	time.Sleep(500 * time.Millisecond)
 
 	// note:
 	// publish new device that is not in Bridge - eg via HTTP . it will be registered here and generate new Id
@@ -419,17 +416,21 @@ func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *tes
 		t.Fatalf("device not found. err %v ", err)
 	}
 
-	// enable metrics for light device. use its new Id
-	cfg := settings.NewDeviceConfig(d.Id)
+	// enable metrics for light device.
+	cfg, err := appCfg.GetDeviceConfig(d.Id)
+	if err != nil {
+		t.Fatalf("device not found. err %v ", err)
+	}
 	cfg.MetricsEnabled = true
 	cfg.RateLimit = utils.IntervalFromMilliseconds(10)
-	store.SaveDeviceConfig(cfg)
+	appCfg.SetDeviceConfig(cfg)
+	time.Sleep(500 * time.Millisecond)
 
 	// note:
 	// publish new device again- This SHOULD be stored as metrics NOW
 	payload = map[string]any{"brightness": 20.0, "color_temp": 110.0}
 	mqtt.Publish(d.FriendlyName, payload)
-	time.Sleep(5 * time.Second)
+	time.Sleep(500 * time.Millisecond)
 
 	from := time.Now().Add(-time.Minute * 2).UTC()
 	to := time.Now().UTC()
@@ -506,6 +507,7 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 	}
 	defer cleanup()
 
+	appCfg := store.AppConfig()
 	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
@@ -514,7 +516,7 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 
 	configs := []*settings.DeviceConfig{}
 	for id, device := range devices {
-		cfg, err := store.FindDeviceConfig(device.Id)
+		cfg, err := appCfg.GetDeviceConfig(device.Id)
 		if err != nil {
 			t.Fatalf("device not found. err %v ", err)
 		}
@@ -523,13 +525,13 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 		cfg.RateLimit = utils.IntervalFromMilliseconds(rt)
 		cfg.Disabled = true
 		cfg.MetricsEnabled = true
-		store.SaveDeviceConfig(cfg)
+		appCfg.SetDeviceConfig(cfg)
 		configs = append(configs, cfg)
 	}
 
 	// assert new stored values
 	for id, device := range devices {
-		cfg, err := store.FindDeviceConfig(device.Id)
+		cfg, err := appCfg.GetDeviceConfig(device.Id)
 		if err != nil {
 			t.Fatalf("device not found. err %v ", err)
 		}
@@ -574,13 +576,14 @@ func TestProcessorTriggersAutomationsStoresMetricsForExistingDevice(t *testing.T
 	}
 	defer cleanup()
 
+	appCfg := store.AppConfig()
 	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
-	cfg, err := store.FindDeviceConfig("x01111111")
+	cfg, err := appCfg.GetDeviceConfig("x01111111")
 	if err != nil {
 		t.Fatalf("device not found. err %v ", err)
 	}
@@ -588,7 +591,7 @@ func TestProcessorTriggersAutomationsStoresMetricsForExistingDevice(t *testing.T
 	// enable metrics for dial device
 	cfg.MetricsEnabled = true
 	cfg.RateLimit = utils.IntervalFromMilliseconds(10)
-	store.SaveDeviceConfig(cfg)
+	appCfg.SetDeviceConfig(cfg)
 
 	// publish light device
 	payload := map[string]any{"brightness": 10.0, "color_temp": 100}
@@ -686,7 +689,7 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 	id := utils.HashName(name)
 	device, err := store.FindDeviceById(id)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatalf("FindDeviceById failed. err %v ", err)
 	}
 	if device == nil {
 		t.Fatalf("want %s got %s", name, "nil")
@@ -714,7 +717,7 @@ func TestProcessorUpdatesExistingDevice(t *testing.T) {
 
 	device, err := store.FindDeviceById(id)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatalf("FindDeviceById failed. err %v ", err)
 	}
 	if device == nil {
 		t.Fatalf("want %s got %s", "device", "nil")
@@ -749,13 +752,14 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 		t.Fatalf("want %s got %s", name, device.Id)
 	}
 
-	if device.Properties["last_seen"] == nil {
+	if device.LastSeen == "" {
 		t.Fatalf("want %s got %s", "last_seen", "nil")
 	}
 
-	if device.Properties["last_seen"] != want {
-		t.Fatalf("want %s got %s", want, device.Properties["last_seen"])
+	if device.LastSeen != want {
+		t.Fatalf("want %s got %s", want, device.LastSeen)
 	}
+
 }
 
 func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {
@@ -765,13 +769,14 @@ func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {
 	callbackCounter := 0
 
 	// we dont need tasks here just using it as it using valid settings repo
-	tasks := []store.Task{}
+	tasks := []settings.Task{}
 	store, cleanup, err := utils_test.CreateStoreWithTasks(tasks)
 	if err != nil {
 		t.Fatalf("CreateFileStore failed. err %v ", err)
 	}
 	defer cleanup()
 
+	cfg := store.AppConfig()
 	mqtt := &mocks.MockMqttClient{}
 
 	eventHub := mocks.NewMockEventHub()
@@ -805,7 +810,7 @@ func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {
 				return fmt.Errorf("failed")
 			}
 
-			err = store.SaveBridgePermitJoin(value)
+			err = cfg.SaveBridgePermitJoin(value)
 			callbackCounter++
 			wg.Done()
 
@@ -840,7 +845,7 @@ func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {
 	time.Sleep(200 * time.Millisecond)
 
 	// assert bridge permit join is set to true, from initial request callback
-	bridgeConfig, err := store.LoadBridgeConfig()
+	bridgeConfig, err := cfg.LoadBridgeConfig()
 	if err != nil {
 		t.Fatalf("error loading bridge config %s", err.Error())
 	}
@@ -851,7 +856,7 @@ func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {
 	wg.Wait()
 
 	//  assert bridge permit join is set to false, from timeout callback
-	bridgeConfig, err = store.LoadBridgeConfig()
+	bridgeConfig, err = cfg.LoadBridgeConfig()
 	if err != nil {
 		t.Fatalf("error loading bridge config %s", err.Error())
 	}
@@ -867,13 +872,14 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 	callbackCounter := 0
 
 	// we dont need tasks here just using it as it using valid settings repo
-	tasks := []store.Task{}
+	tasks := []settings.Task{}
 	store, cleanup, err := utils_test.CreateStoreWithTasks(tasks)
 	if err != nil {
 		t.Fatalf("CreateFileStore failed. err %v ", err)
 	}
 	defer cleanup()
 
+	cfg := store.AppConfig()
 	mqtt := &mocks.MockMqttClient{}
 
 	eventHub := mocks.NewMockEventHub()
@@ -910,7 +916,7 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 				return fmt.Errorf("failed")
 			}
 
-			err = store.SaveBridgePermitJoin(value)
+			err = cfg.SaveBridgePermitJoin(value)
 			callbackCounter++
 			wg.Done()
 
@@ -946,7 +952,7 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 	time.Sleep(500 * time.Millisecond)
 
 	// assert bridge permit join is set to true, from initial request callback
-	bridgeConfig, err := store.LoadBridgeConfig()
+	bridgeConfig, err := cfg.LoadBridgeConfig()
 	if err != nil {
 		t.Fatalf("error loading bridge config %s", err.Error())
 	}
@@ -961,7 +967,7 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 	wg.Add(1)
 
 	//  assert bridge permit join is still set to true,
-	bridgeConfig, err = store.LoadBridgeConfig()
+	bridgeConfig, err = cfg.LoadBridgeConfig()
 	if err != nil {
 		t.Fatalf("error loading bridge config %s", err.Error())
 	}
@@ -973,117 +979,99 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 
 }
 
-func TestNewDeviceValuesAreBroadcastedOnly(t *testing.T) {
-	name := "device1"
-	var payload = createMockPayload()
+func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 
-	testCases := []struct {
-		key       string
-		value     any
-		broadcast bool
-	}{
-		{key: "temperature", value: 15.6, broadcast: true},
-		{key: "temperature", value: 15.6, broadcast: false},
-		{key: "temperature", value: 18.5, broadcast: true},
-		{key: "humidity", value: 70.3, broadcast: true},
-		{key: "humidity", value: 70.3, broadcast: false},
-		{key: "linkquality", value: 120, broadcast: false},
-		{key: "linkquality", value: 14, broadcast: false},
-		{key: "battery", value: 70, broadcast: false},
-		{key: "temperature", value: 18.5, broadcast: false},
-		{key: "temperature", value: 21, broadcast: true},
-		{key: "temperature", value: 21, broadcast: false},
-		{key: "temperature", value: 21, broadcast: false},
+	bridgeInfoFile := filepath.Join("../../../docs", "device_bridge.json")
+	data, err := os.ReadFile(bridgeInfoFile)
+	if err != nil {
+		t.Fatal("Error reading file:", err)
+		return
+	}
+	bridgeInfoes, err := devices.LoadBridgeDevices(data)
+	if err != nil {
+		t.Fatal("Error parsing bridge info data:", err)
+		return
 	}
 
-	var messageBroadcasted = false
-	broadcast := func(eventName string, data interface{}) error {
-		messageBroadcasted = true
+	repo := repository.NewMemoryDeviceRepo()
+	store := utils_test.CreateStoreFromDeviceRepo(repo)
+	eventHub := &mocks.MockEventHub{}
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(bridgeInfoes)
+
+	appConfig := store.AppConfig()
+	config, err := appConfig.GetDeviceConfig("0xa4c13894070052fc")
+	if err != nil {
+		t.Fatalf("error loading device config %s", err.Error())
+	}
+
+	config.Debounce["illuminance"] = utils.IntervalFromMilliseconds(500)
+	appConfig.SetDeviceConfig(config)
+
+	wg := &sync.WaitGroup{}
+
+	//lightDeviceName := "Living room light"
+	presenceDeviceName := "Living room presence sensor"
+
+	testCases := []struct {
+		deviceName string
+		key        string
+		value      any
+		broadcast  bool
+	}{
+		{deviceName: presenceDeviceName, key: "target_distance", value: 13.1, broadcast: false}, // config type ignored
+		{deviceName: presenceDeviceName, key: "presence", value: true, broadcast: true},
+		{deviceName: presenceDeviceName, key: "presence", value: true, broadcast: false},
+		{deviceName: presenceDeviceName, key: "presence", value: false, broadcast: true},
+		{deviceName: presenceDeviceName, key: "presence", value: false, broadcast: false},
+		{deviceName: presenceDeviceName, key: "illuminance", value: 10, broadcast: true},
+		{deviceName: presenceDeviceName, key: "illuminance", value: 143, broadcast: false}, // debounced
+		{deviceName: presenceDeviceName, key: "illuminance", value: 142, broadcast: false}, // debounced
+		{deviceName: presenceDeviceName, key: "illuminance", value: 129, broadcast: true},
+		{deviceName: presenceDeviceName, key: "presence", value: false, broadcast: false},
+		{deviceName: presenceDeviceName, key: "presence", value: true, broadcast: true},
+		{deviceName: presenceDeviceName, key: "illuminance", value: 321, broadcast: true},
+		{deviceName: presenceDeviceName, key: "radar_sensitivity", value: 5, broadcast: false}, // config type ignored
+		{deviceName: presenceDeviceName, key: "illuminance", value: 22, broadcast: false},      // debounced
+		{deviceName: presenceDeviceName, key: "illuminance", value: 22, broadcast: true},
+	}
+
+	broadcastHandler := func(eventName string, data interface{}) error {
+
+		wg.Done()
 		return nil
 	}
 
-	ws := newMockBroadcastEventHub(broadcast)
-	store := utils_test.CreateStore()
-
 	mqtt := &mocks.MockMqttClient{}
+	eventHub.SetMockBroadcastEvent(broadcastHandler)
 
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
-	for idx, testCase := range testCases {
-		// reset
-		messageBroadcasted = false
-		// use test case for updating sensor values
-		payload[testCase.key] = testCase.value
-		data, err := json.Marshal(payload)
-		if err != nil {
-			panic(err)
-		}
-		mqtt.Publish(name, []byte(data))
+	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+	wg.Add(1) // this is for the hubregister service
 
-		time.Sleep(100 * time.Millisecond)
-		if testCase.broadcast != messageBroadcasted {
-			t.Fatalf("idx %d,key %s, value %v, broadcast want %v got %v", idx, testCase.key, testCase.value, testCase.broadcast, messageBroadcasted)
-		}
-	}
-}
-
-func TestDevicesBroadcastDeviceEvent(t *testing.T) {
-	var payload = createMockPayload()
-
-	testCases := []struct {
-		key   string
-		value any
-	}{
-		{key: "temperature", value: 15.6},
-		{key: "temperature", value: 20.1},
-		{key: "humidity", value: 61.2},
-		{key: "humidity", value: 54.8},
-		{key: "lux", value: 599.0},
-		{key: "human_presence", value: true},
-		{key: "buttonswitch1", value: 10},
-		{key: "buttonswitch1", value: 11},
-		{key: "lux", value: 90},
-		{key: "buttonswitch2", value: true},
-	}
-	eventIdx := 0
-	expectedEventNames := []string{
-		"deviceAdded",
-		"deviceUpdated",
-		"deviceAdded",
-		"deviceUpdated",
-		"deviceAdded",
-		"deviceAdded",
-		"deviceAdded",
-		"deviceUpdated",
-		"deviceUpdated",
-		"deviceAdded",
-	}
-
-	broadcast := func(eventName string, data interface{}) error {
-		expectedEvent := expectedEventNames[eventIdx]
-		fmt.Println(eventName, data)
-		if eventName != expectedEvent {
-			t.Fatalf("invalid broadcasted event:  want %s got %s", expectedEvent, eventName)
-		}
-		return nil
-	}
-
-	ws := newMockBroadcastEventHub(broadcast)
-	store := utils_test.CreateStore()
-
-	mqtt := &mocks.MockMqttClient{}
-
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	for _, testCase := range testCases {
-		payload[testCase.key] = testCase.value
-		data, err := json.Marshal(payload)
-		if err != nil {
-			panic(err)
-		}
-		mqtt.Publish(testCase.key, []byte(data))
 
-		time.Sleep(100 * time.Millisecond)
-		eventIdx++
+		lastSeen := time.Now().Format(time.RFC3339)
+		payload := map[string]interface{}{}
+		payload[testCase.key] = testCase.value
+		payload["last_seen"] = lastSeen
+
+		payloadBytes, err := json.Marshal(payload)
+		if err != nil {
+			t.Fatalf("failed to marshal payload %v", err)
+		}
+
+		if testCase.broadcast {
+			wg.Add(1)
+		}
+
+		mqtt.Publish(testCase.deviceName, []byte(payloadBytes))
+
+		time.Sleep(200 * time.Millisecond)
+		wg.Wait()
+
 	}
+
 }
 
 // // TODO: test if presence is converted to 0 and 1
@@ -1120,15 +1108,15 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 	id := utils.HashName(name)
 	device, err := store.FindDeviceById(id)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatalf("FindDeviceById failed. err %v ", err)
 	}
 
-	if device.Properties["availability"] != "online" {
+	if device.Availability != devices.OnlineAvailability {
 		t.Fatalf("want online got offline")
 	}
 
 	time.Sleep(1100 * time.Millisecond)
-	if device.Properties["availability"] != "offline" {
+	if device.Availability != devices.OfflineAvailability {
 		t.Fatalf("want offline got online")
 	}
 
@@ -1138,7 +1126,7 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 	id = utils.HashName(name)
 	device1, _ := store.FindDeviceById(id)
 
-	if device1.Properties["availability"] != "online" {
+	if device1.Availability != devices.OnlineAvailability {
 		t.Fatalf("want online got offline")
 	}
 }
@@ -1159,17 +1147,16 @@ func TestAvailabilityIsDisposed(t *testing.T) {
 	id := utils.HashName(name)
 	device, err := store.FindDeviceById(id)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatalf("FindDeviceById failed. err %v ", err)
 	}
 
-	if device.Properties["availability"] != "online" {
+	if device.Availability != devices.OnlineAvailability {
 		t.Fatalf("want online got offline")
 	}
 
-	device.Dispose()
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(1500 * time.Millisecond)
 
-	if device.Properties["availability"] != "offline" {
+	if device.Availability != devices.OfflineAvailability {
 		t.Fatalf("want offline got online")
 	}
 }
@@ -1178,15 +1165,17 @@ func createMockDialAndLightDevices(dialName string, lightName string) []*devices
 
 	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
 	device1Expose2 := utils_test.CreateNumericEntity("action_time", 0)
+	device1Expose1.Category = devices.MeasurementCategory
+	device1Expose2.Category = devices.MeasurementCategory
+
 	dialDevice := utils_test.CreateDeviceWithExposes(dialName, "Dial button", []*devices.Entity{device1Expose1, device1Expose2})
 
 	device2Expose1 := utils_test.CreateEntity("brightness", "numeric", nil)
 	device2Expose2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
+	device2Expose1.Category = devices.MeasurementCategory
+	device2Expose2.Category = devices.MeasurementCategory
+
 	lightDevice := utils_test.CreateDeviceWithExposes(lightName, "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
 
 	return []*devices.Device{dialDevice, lightDevice}
-}
-
-func newMockBroadcastEventHub(mockBroadcastEvent func(eventName string, data interface{}) error) ws.EventHub {
-	return &mocks.MockEventHub{MockBroadcastEvent: mockBroadcastEvent}
 }

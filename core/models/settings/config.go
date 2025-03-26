@@ -1,28 +1,16 @@
 package settings
 
 import (
-	"node-herder/models/devices"
 	"node-herder/utils"
 	"time"
 )
 
-type HubState struct {
-	Config  *AppConfig        `json:"config"`
-	Devices []*devices.Device `json:"devices"`
-}
-
-func NewHubState(config *AppConfig, devices []*devices.Device) *HubState {
-	return &HubState{
-		Config:  config,
-		Devices: devices,
-	}
-}
-
 type DeviceConfig struct {
-	Id             string              `json:"id"`
-	Disabled       bool                `json:"disabled"`
-	MetricsEnabled bool                `json:"history"`
-	RateLimit      *utils.TimeInterval `json:"rateLimit"`
+	Id             string                         `json:"id"`
+	Disabled       bool                           `json:"disabled"`
+	MetricsEnabled bool                           `json:"history"`
+	RateLimit      *utils.TimeInterval            `json:"rateLimit"`
+	Debounce       map[string]*utils.TimeInterval `json:"debounce"`
 }
 
 func (d *DeviceConfig) RateLimitDuration() time.Duration {
@@ -38,6 +26,7 @@ func NewDeviceConfig(id string) *DeviceConfig {
 		Disabled:       false,
 		MetricsEnabled: false,
 		RateLimit:      utils.IntervalFromSeconds(60), // default to 60 seconds
+		Debounce:       map[string]*utils.TimeInterval{},
 	}
 }
 

@@ -126,17 +126,44 @@ func validateDevice(t *testing.T, dev1 *devices.Device, dev2 *devices.Device) {
 		}
 
 		if equalityCheck(expose.Data, inputExpose.Data) == false {
-			t.Fatalf("unexpected expose.Data value")
+			t.Fatalf("unexpected expose.Data ")
 		}
 		if expose.Unit != inputExpose.Unit {
-			t.Fatalf("unexpected expose.Unit value")
+
+			t.Fatalf("unexpected expose.Unit")
 		}
-		for pidx, property := range expose.Properties {
-			inputproperty := inputExpose.Properties[pidx]
-			if property != inputproperty {
-				t.Fatalf("unexpected property value")
+		if expose.Type != inputExpose.Type {
+			t.Fatalf("unexpected expose.Type")
+		}
+
+		if expose.Category != inputExpose.Category {
+			t.Fatalf("unexpected expose.Category")
+		}
+
+		for idx, value := range expose.Values {
+			if value != inputExpose.Values[idx] {
+				t.Fatalf("unexpected expose.Value %d", value)
 			}
 		}
+
+		for idx, value := range expose.Attributes {
+			if value != inputExpose.Attributes[idx] {
+				t.Fatalf("unexpected expose.Atrribute %d", value)
+			}
+		}
+		if len(inputExpose.Values) != 0 {
+
+			if len(expose.Values) != len(inputExpose.Values) {
+				t.Fatalf("unexpected expose.Values length")
+			}
+
+			for idx, value := range expose.Values {
+				if value != inputExpose.Values[idx] {
+					t.Fatalf("unexpected expose.Values %d", value)
+				}
+			}
+		}
+
 	}
 }
 
