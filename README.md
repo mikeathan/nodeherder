@@ -65,6 +65,8 @@ frontend - Send multiple messages in one mqtt request for same device - DONE
 
 frontend - some minified view for each device for the main page
 frontend - update icons match homeassistant
+frontend - add device list for devices not shown in dashboad
+frontend - add device groups to be shown in dashboard instead of current dashboard
 
 toggle for live data ? later
 
@@ -84,7 +86,7 @@ Backend TODO
   api limiter
   cache with expiration
 - mqtt: if cant connect after timeout, exit
-- use device type to identify if its diagnostic, feature or expose
+- use device type to identify if its diagnostic, feature or expose - DONE
 
 METRICS backend TODO
 
