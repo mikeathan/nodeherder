@@ -1,16 +1,24 @@
 import { AutomationActionStep, AutomationStepAction, AutomationTriggerAction } from '@/types/automation.type';
-import { DeviceFilter, Expose, Device, ExposeType } from '@/types/device';
-import { ExposeTypes } from '@/types/device.type';
+import { DeviceFilter, Expose, Device, ExposeType, ExposeCategory } from '@/types/device';
+import { ExposeAccessModes, ExposeTypes } from '@/types/device.type';
 
 export function featureDevicesFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
-    return expose.properties != undefined;
+    return expose.access_mode != ExposeAccessModes.Read;
   };
 }
+export const isPresetExpose = (expose: Expose): boolean => {
+  if (!expose.values) {
+    return false;
+  }
+  return (
+    (expose.type == ExposeTypes.Enum || expose.type == ExposeTypes.Numeric) && Object.keys(expose.values).length > 0
+  );
+};
 
 export function presetsDevicesFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
-    return expose.type == ExposeTypes.Enum || expose.presets != null;
+    return isPresetExpose(expose);
   };
 }
 
@@ -37,13 +45,13 @@ export function devicesFilterByActionStep(
 
 export function featureExposeFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
-    return expose.properties != undefined;
+    return expose.access_mode != ExposeAccessModes.Read;
   };
 }
 
 export function presetExposeFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
-    return expose.type == ExposeTypes.Enum || expose.presets != null;
+    return isPresetExpose(expose);
   };
 }
 
@@ -53,6 +61,11 @@ export function exposeFilterByType(exposeType: ExposeType): DeviceFilter {
   };
 }
 
+export function exposeFilterByTypeAndCategory(exposeType: ExposeType, category: ExposeCategory): DeviceFilter {
+  return (device: Device, expose: Expose): boolean => {
+    return expose.type == exposeType && expose.category == category;
+  };
+}
 export function allExposeFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
     return true;

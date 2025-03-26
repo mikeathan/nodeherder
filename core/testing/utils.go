@@ -14,6 +14,7 @@ import (
 	"node-herder/models/settings"
 	"node-herder/repository"
 	"node-herder/store"
+	"node-herder/utils"
 	"os"
 	"reflect"
 	"testing"
@@ -30,12 +31,19 @@ func CreateStore() store.AppStore {
 	metricsRepo := mocks.NopMetricsRepo{}
 	settingsRepo := mocks.NopSettingsrepo{}
 
+	configCache, err := settings.NewAppConfigCache(&settingsRepo, []settings.Task{})
+	if err != nil {
+		utils.LogErrorf("Error creating settings cache: %v", err.Error())
+		return nil
+	}
+
 	defer repo.Close()
-	store, _ := store.NewAppStore(repo, &metricsRepo, &settingsRepo, []store.Task{})
+
+	store, _ := store.NewAppStore(repo, &metricsRepo, configCache)
 	return store
 }
 
-func CreateStoreWithTasks(tasks []store.Task) (store.AppStore, func(), error) {
+func CreateStoreWithTasks(tasks []settings.Task) (store.AppStore, func(), error) {
 	settingsTempFile := tempfile()
 
 	repo := repository.NewMemoryDeviceRepo()
@@ -48,9 +56,14 @@ func CreateStoreWithTasks(tasks []store.Task) (store.AppStore, func(), error) {
 	cleanup := func() {
 		os.Remove(settingsTempFile)
 	}
+	configCache, err := settings.NewAppConfigCache(settingsRepo, tasks)
+	if err != nil {
+		utils.LogErrorf("Error creating settings cache: %v", err.Error())
+		return nil, nil, err
+	}
 
 	defer repo.Close()
-	store, _ := store.NewAppStore(repo, &metricsRepo, settingsRepo, tasks)
+	store, _ := store.NewAppStore(repo, &metricsRepo, configCache)
 	return store, cleanup, nil
 }
 
@@ -75,8 +88,14 @@ func CreateFileStore() (store.AppStore, func(), error) {
 		return nil, nil, err
 	}
 
+	configCache, err := settings.NewAppConfigCache(settingsRepo, []settings.Task{})
+	if err != nil {
+		utils.LogErrorf("Error creating settings cache: %v", err.Error())
+		return nil, nil, err
+	}
+
 	defer repo.Close()
-	store, _ := store.NewAppStore(repo, metricsRepo, settingsRepo, []store.Task{})
+	store, _ := store.NewAppStore(repo, metricsRepo, configCache)
 	return store, cleanup, nil
 }
 
@@ -105,23 +124,42 @@ func CreateFileStoreWithAppConfig(appConfig *settings.AppConfig, mockClock *mock
 		return nil, nil, err
 	}
 
-	defer repo.Close()
-
-	tasks := []store.Task{
+	tasks := []settings.Task{
 		store.NewMetricsCleanupTask(context.Background(), metricsRepo),
 	}
-	store, _ := store.NewAppStore(repo, metricsRepo, settingsRepo, tasks)
+	configCache, err := settings.NewAppConfigCache(settingsRepo, tasks)
+	if err != nil {
+		utils.LogErrorf("Error creating settings cache: %v", err.Error())
+		return nil, nil, err
+	}
+	defer repo.Close()
+
+	store, _ := store.NewAppStore(repo, metricsRepo, configCache)
 	return store, cleanup, nil
 }
+
 func CreateStoreFromDeviceRepo(repo devices.Repository) store.AppStore {
 	metricsRepo := mocks.NopMetricsRepo{}
 	settingsRepo := mocks.NopSettingsrepo{}
-	store, _ := store.NewAppStore(repo, &metricsRepo, &settingsRepo, []store.Task{})
+	configCache, err := settings.NewAppConfigCache(&settingsRepo, []settings.Task{})
+	if err != nil {
+		utils.LogErrorf("Error creating settings cache: %v", err.Error())
+		return nil
+	}
+
+	store, _ := store.NewAppStore(repo, &metricsRepo, configCache)
 	return store
 }
 
 func CreateStoreFromRepos(deviceRepo devices.Repository, metricsRepo metrics.Repository, settingsRepo settings.Repository) store.AppStore {
-	store, _ := store.NewAppStore(deviceRepo, metricsRepo, settingsRepo, []store.Task{})
+
+	configCache, err := settings.NewAppConfigCache(settingsRepo, []settings.Task{})
+	if err != nil {
+		utils.LogErrorf("Error creating settings cache: %v", err.Error())
+		return nil
+	}
+
+	store, _ := store.NewAppStore(deviceRepo, metricsRepo, configCache)
 	return store
 }
 
@@ -159,12 +197,11 @@ func ValidateDevice(t *testing.T, dev1 *devices.Device, dev2 *devices.Device) {
 		if expose.Unit != inputExpose.Unit {
 			t.Fatalf("unexpected expose.Unit value")
 		}
-		for pidx, property := range expose.Properties {
-			inputproperty := inputExpose.Properties[pidx]
-			if property != inputproperty {
-				t.Fatalf("unexpected property value")
-			}
-
+		if expose.Type != inputExpose.Type {
+			t.Fatalf("unexpected expose.Type value")
+		}
+		if expose.Category != inputExpose.Category {
+			t.Fatalf("unexpected expose.Category value")
 		}
 	}
 }
@@ -287,9 +324,7 @@ func CreateDevice(deviceId string, friendlyName string, property string, data an
 	device1.ConnectionType = "mqtt"
 	device1.Description = fmt.Sprintf("Test device %s description", deviceId)
 	device1.PowerSource = "mains"
-	device1.Properties = map[string]any{}
-	device1.Properties["last_seen"] = time.Now().Format(time.RFC3339)
-	device1.Properties["link_quality"] = 45.0
+	device1.LastSeen = time.Now().Format(time.RFC3339)
 	device1.Exposes = make(map[string]*devices.Entity)
 
 	ent1 := &devices.Entity{}
@@ -324,8 +359,9 @@ func CreateBridgeInfoList(deviceList []*devices.Device) []*devices.BridgeInfo {
 
 		// NOTE: We make all features for now
 		for _, expose := range dev.Exposes {
-			f := devices.BridgeInfoFeature{}
+			f := devices.BridgeExpose{}
 			f.Name = expose.Name
+			f.Access = devices.WriteBridgeAccessMode
 			f.Property = expose.Name
 			f.Type = expose.Type
 			f.Unit = expose.Unit

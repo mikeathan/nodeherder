@@ -165,12 +165,12 @@ func TestProcessorHandleRootPayloadWithTimestamp(t *testing.T) {
 		t.Fatalf("want %s got %s", id, device.Id)
 	}
 
-	if device.Properties["last_seen"] == nil {
+	if device.LastSeen == "" {
 		t.Fatalf("want %s got %s", "last_seen", "nil")
 	}
 
-	if device.Properties["last_seen"] != want {
-		t.Fatalf("want %s got %s", want, device.Properties["last_seen"])
+	if device.LastSeen != want {
+		t.Fatalf("want %s got %s", want, device.LastSeen)
 	}
 }
 

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, PropType, ref } from 'vue';
-import { Automation } from '@/types/automation.type.type';
 import { emitOpenSchedulerPanelEvent } from '@/contracts/panel-events';
 import { store } from '../../../store/index';
+import { Automation } from '@/types/automation.type';
 
 const emit = defineEmits(['cancel']);
 

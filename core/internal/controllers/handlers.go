@@ -43,22 +43,20 @@ func newBridgeHash() *bridgeHash {
 }
 
 type bridgeConfigurationHandler struct {
-	ws                        ws.EventHub
-	mqtt                      mqtt.MqttClient
-	registrar                 *services.HubRegisterService
-	automationEngine          automations.Engine
-	bridgeHash                *bridgeHash
-	deviceAvailabilityTimeout int
+	ws               ws.EventHub
+	mqtt             mqtt.MqttClient
+	registrar        *services.HubRegisterService
+	automationEngine automations.Engine
+	bridgeHash       *bridgeHash
 }
 
-func newBridgeConfigurationHandler(registrar *services.HubRegisterService, engine automations.Engine, mqtt mqtt.MqttClient, ws ws.EventHub, deviceAvailabilityTimeout int) *bridgeConfigurationHandler {
+func newBridgeConfigurationHandler(registrar *services.HubRegisterService, engine automations.Engine, mqtt mqtt.MqttClient, ws ws.EventHub) *bridgeConfigurationHandler {
 	return &bridgeConfigurationHandler{
-		registrar:                 registrar,
-		automationEngine:          engine,
-		ws:                        ws,
-		mqtt:                      mqtt,
-		deviceAvailabilityTimeout: deviceAvailabilityTimeout,
-		bridgeHash:                newBridgeHash()}
+		registrar:        registrar,
+		automationEngine: engine,
+		ws:               ws,
+		mqtt:             mqtt,
+		bridgeHash:       newBridgeHash()}
 }
 
 func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, payload []byte) error {
@@ -83,7 +81,7 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 
 	var updatedDeviceMap map[string]string = make(map[string]string)
 
-	b.registrar.RegisterBridge(bridgeInfoList, b.deviceAvailabilityTimeout)
+	b.registrar.RegisterBridge(bridgeInfoList)
 	b.automationEngine.Initialize()
 
 	for _, device := range bridgeInfoList {
@@ -340,52 +338,23 @@ func (b *bridgeLoggingHandler) ProcessPayload(id string, connType string, payloa
 }
 
 type deviceHandler struct {
-	AvailabilityTimeoutInSeconds int
-	registrar                    *services.HubRegisterService
-	eventHub                     ws.EventHub
-	hub                          *HubController
+	deviceProcessor *services.DeviceProcessor
 }
 
-func newDeviceHandler(registrar *services.HubRegisterService, eventHub ws.EventHub, hub *HubController) *deviceHandler {
+func newDeviceHandler(deviceProcessor *services.DeviceProcessor) *deviceHandler {
+
 	return &deviceHandler{
-		registrar:                    registrar,
-		eventHub:                     eventHub,
-		hub:                          hub,
-		AvailabilityTimeoutInSeconds: 3600, // 1 Hour
+		deviceProcessor: deviceProcessor,
 	}
 }
 
 func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, payload []byte) error {
 
-	if len(payload) == 0 {
-		return nil
-	}
 	dataMap, err := convertToMap(payload)
 	if err != nil {
-		return err
+		utils.LogErrorf("error converting payload to map %s", err.Error())
+		return nil
 	}
 
-	device, _ := c.registrar.LookupByName(friendlyName)
-	if device == nil {
-
-		device, err = c.registrar.CreateNewDevice(friendlyName, connType, dataMap)
-		if err != nil {
-			return err
-		}
-
-		c.eventHub.Broadcast(ws.DeviceAdded, device)
-		c.hub.deviceAdded(device, dataMap)
-	} else {
-
-		updatedData := device.Update(dataMap)
-		if !updatedData.HasData() {
-			return nil
-		}
-
-		// check to see if we have an automation for current device
-		c.eventHub.Broadcast(ws.DeviceUpdated, updatedData)
-		c.hub.deviceUpdated(device, updatedData.Data)
-	}
-
-	return nil
+	return c.deviceProcessor.CreateOrUpdateDevice(friendlyName, connType, dataMap)
 }

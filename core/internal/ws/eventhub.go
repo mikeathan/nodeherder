@@ -13,7 +13,7 @@ const (
 
 	// requests
 	LoadAutomations = "loadAutomations"
-	LoadHubSate     = "loadHubState"
+	LoadHubState    = "loadHubState"
 	LoadDevice      = "loadDevice"
 	LoadDeviceList  = "loadDeviceList"
 
@@ -260,7 +260,7 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 			utils.LogErrorf("Failed to broadcast onLoadAutomations %s", err.Error())
 		}
 
-	case LoadHubSate:
+	case LoadHubState:
 		hubDevices := c.onLoadDevices()
 		ds, ok := hubDevices.([]*devices.Device)
 		if !ok {
@@ -274,7 +274,7 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 			return
 		}
 
-		err := c.Broadcast(HubState, settings.NewHubState(cfg, ds))
+		err := c.Broadcast(HubState, hub.NewHubState(cfg, ds))
 		if err != nil {
 			utils.LogErrorf("Failed to broadcast onLoadDevices %s", err.Error())
 		}

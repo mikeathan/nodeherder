@@ -13,6 +13,7 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/mocks"
 	"node-herder/models/devices"
+	"node-herder/models/hub"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	utils_test "node-herder/testing"
@@ -203,7 +204,7 @@ func TestHandlingLoadHubStatesMessage(t *testing.T) {
 	h := api.NewWsHandler(wsHub)
 	s, wsConn := NewTestWsServer(t, h)
 
-	wsData := &ws.EventMessage{Type: ws.LoadHubSate, Payload: nil}
+	wsData := &ws.EventMessage{Type: ws.LoadHubState, Payload: nil}
 	msg, err := wsData.MarshalJSON()
 	if err != nil {
 		t.Fatal(err.Error())
@@ -226,7 +227,7 @@ func TestHandlingLoadHubStatesMessage(t *testing.T) {
 		t.Fatalf("Expected type %v', got '%+v'", ws.HubState, event.Type)
 	}
 
-	var hubState *settings.HubState
+	var hubState *hub.HubState
 
 	bytes, _ := json.Marshal(event.Payload)
 	err = json.Unmarshal(bytes, &hubState)
@@ -268,10 +269,37 @@ func TestHandlingLoadHubStatesMessage(t *testing.T) {
 			if expose.Unit != inputExpose.Unit {
 				t.Fatalf("unexpected expose.Unit value")
 			}
-			for pidx, property := range expose.Properties {
-				inputproperty := inputExpose.Properties[pidx]
+			if expose.Type != inputExpose.Type {
+				t.Fatalf("unexpected expose.Type value")
+			}
+
+			if expose.Category != inputExpose.Category {
+				t.Fatalf("unexpected expose.Category value")
+			}
+			for pidx, property := range expose.Attributes {
+				inputproperty := inputExpose.Attributes[pidx]
 				if property != inputproperty {
-					t.Fatalf("unexpected property value")
+					t.Fatalf("unexpected attribute value")
+				}
+			}
+
+			for pidx, value := range expose.Values {
+				inputValue := inputExpose.Values[pidx]
+				if value != inputValue {
+					t.Fatalf("unexpected value")
+				}
+			}
+
+			if len(inputExpose.Values) != 0 {
+
+				if len(expose.Values) != len(inputExpose.Values) {
+					t.Fatalf("unexpected expose.Values length")
+				}
+
+				for idx, value := range expose.Values {
+					if value != inputExpose.Values[idx] {
+						t.Fatalf("unexpected expose.Values %d", value)
+					}
 				}
 			}
 		}
@@ -1236,9 +1264,7 @@ func createDevice1() *devices.Device {
 	device1.ConnectionType = "mqtt"
 	device1.Description = "some test dev 1 description"
 	device1.PowerSource = "mains"
-	device1.Properties = map[string]any{}
-	device1.Properties["last_seen"] = time.Now().Format(time.RFC3339)
-	device1.Properties["link_quality"] = 45.0
+	device1.LastSeen = time.Now().Format(time.RFC3339)
 	device1.Exposes = make(map[string]*devices.Entity)
 
 	ent1 := &devices.Entity{}
@@ -1265,19 +1291,18 @@ func createDevice2() *devices.Device {
 	device.ConnectionType = "http"
 	device.Description = "some test dev 2 description"
 	device.PowerSource = "power"
-	device.Properties = map[string]any{}
-	device.Properties["last_seen"] = time.Now().Format(time.RFC3339)
-	device.Properties["link_quality"] = 89.0
+	device.LastSeen = time.Now().Format(time.RFC3339)
 	device.Exposes = make(map[string]*devices.Entity)
 
 	ent1 := &devices.Entity{}
 	ent1.Description = "smart light livining room"
 	ent1.Name = "brightness"
 	ent1.Data = 78.0
-	ent1.Properties = make(map[string]any)
-	ent1.Properties["type"] = "numeric"
-	ent1.Properties["max"] = 255.0
-	ent1.Properties["min"] = 0.0
+	ent1.Category = devices.MeasurementCategory
+	ent1.Attributes = make(map[string]any)
+	ent1.Type = devices.NumericDataType
+	ent1.Attributes["max"] = 255.0
+	ent1.Attributes["min"] = 0.0
 
 	device.Exposes["1"] = ent1
 

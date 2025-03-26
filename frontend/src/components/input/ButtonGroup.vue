@@ -12,6 +12,10 @@
       type: Object as PropType<KeyValuePair<any>>,
       required: true,
     },
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
   });
 
   const emit = defineEmits<{
@@ -43,6 +47,7 @@
     v-for="(key, value) in props.items"
     :key="key"
     :label="value as string"
+    :disabled="props.disabled"
     size="small"
     @click="selectionChanged(key)"
     :class="{

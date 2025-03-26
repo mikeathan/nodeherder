@@ -1,17 +1,19 @@
-import { AppConfig, DeviceSettings, DeviceSettingsMap } from '@/types/settings.type';
+import { AppConfig, DeviceDebounce, DeviceSettings, DeviceSettingsMap } from '@/types/settings.type';
 import { TimeInterval, TimeUnit } from '@/types/types.type';
 
 export function createDeviceSettings(
   id: string,
   enabled: boolean = true,
   metricsEnabled: boolean = false,
-  rateLimit: number = 50000
+  rateLimit: number = 50000,
+  debounce: DeviceDebounce = {}
 ): DeviceSettings {
   return {
     id: id,
     disabled: !enabled,
     metricsEnabled: metricsEnabled,
     rateLimit: { value: rateLimit, unit: 'milliseconds' },
+    debounce: debounce,
   };
 }
 

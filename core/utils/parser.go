@@ -3,6 +3,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"regexp"
 	"strconv"
 	"time"
@@ -99,6 +100,22 @@ func contains[T comparable](s []T, e T) bool {
 		if v == e {
 			return true
 		}
+	}
+	return false
+}
+
+func ComparePayloadValues(a interface{}, b interface{}) bool {
+	if isPrimitive(a) && isPrimitive(b) {
+		return a == b
+	}
+
+	return reflect.DeepEqual(a, b)
+}
+
+func isPrimitive(data interface{}) bool {
+	switch data.(type) {
+	case string, int, int64, int32, float64, float32, bool, uint, uint64, uint32:
+		return true
 	}
 	return false
 }
