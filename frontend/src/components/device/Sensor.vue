@@ -12,7 +12,7 @@
   import Range from '../input/Range.vue';
   import Toggle from '../input/Toggle.vue';
   import Icon from '../controls/Icon.vue';
-  import { ExposeTypes } from '@/types/device.type';
+  import { ExposeAccessModes, ExposeTypes } from '@/types/device.type';
 
   const props = defineProps({
     id: {
@@ -39,6 +39,10 @@
     store.dispatch('hub/setDeviceValue', msg);
   }
 
+  function isReadOnly(): boolean {
+    return props.expose.access_mode == ExposeAccessModes.Read;
+  }
+
   function hasNumericFeatures(): Boolean {
     return props.expose.type == ExposeTypes.Numeric;
   }
@@ -62,14 +66,17 @@
   <div class="flex-grow-1">
     {{ getSensorName(props.expose.name) }}
   </div>
-  <div v-if="hasNumericFeatures()" class="col-7">
+  <div v-if="isReadOnly()">
+    {{ getValue() }}
+    {{ getUnit() }}
+  </div>
+  <div v-else-if="hasNumericFeatures()" class="col-7">
     <Range
       :value="getValue()"
       :min="getExposeAttribute(props.expose, 'min')"
       :max="getExposeAttribute(props.expose, 'max')"
       @update="updateValue"
-      :disabled="props.disabled"/>
-    
+      :disabled="props.disabled" />
   </div>
   <div v-else-if="hasBinaryFeatures()">
     <Toggle
@@ -77,12 +84,7 @@
       :valueOn="getExposeProperty(props.expose, 'on')"
       :valueOff="getExposeProperty(props.expose, 'off')"
       @update="(v) => updateValue(v)"
-      :disabled="props.disabled"
-      />
+      :disabled="props.disabled" />
   </div>
-  <div v-else>
-    {{ getValue() }}
-    {{ getUnit() }}
-  </div>
-  <!-- <div v-else>NA</div> -->
+  <div v-else>N/A</div>
 </template>

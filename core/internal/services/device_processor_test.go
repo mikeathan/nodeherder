@@ -153,8 +153,8 @@ func TestDeviceProcessor_CreateOrUpdateDevice_ExistingDevice(t *testing.T) {
 	if d.ConnectionType != "mqtt" {
 		t.Errorf("Device ConnectionType mismatch want: %s got: %s", "mqtt", d.ConnectionType)
 	}
-	if d.PowerSource != "Mains (single phase)" {
-		t.Errorf("Device PowerSource mismatch want: %s got: %s", "Mains (single phase)", d.PowerSource)
+	if d.PowerSource != "mains (single phase)" {
+		t.Errorf("Device PowerSource mismatch want: %s got: %s", "mains (single phase)", d.PowerSource)
 	}
 	if d.Exposes["brightness"].Data != 10.1 {
 		t.Errorf("Device Expose brightness mismatch want: %f got: %f", 10.1, d.Exposes["brightness"].Data)

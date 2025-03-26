@@ -45,8 +45,8 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 	for name, newValue := range payload {
 
 		if expose, ok := d.device.GetExpose(name); ok &&
-			expose.Data != newValue &&
-			!d.debouncerService.DebounceExpose(name) {
+			!d.debouncerService.DebounceExpose(name) &&
+			!utils.ComparePayloadValues(expose.Data, newValue) {
 
 			// only look for measurement expose changes unless we are
 			// already collecting measurement updates
