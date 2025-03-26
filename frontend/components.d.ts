@@ -31,6 +31,7 @@ declare module 'vue' {
     DeviceCardFooter: typeof import('./src/components/device-dashboard/DeviceCardFooter.vue')['default']
     DeviceDashboard: typeof import('./src/components/device-dashboard/DeviceDashboard.vue')['default']
     DeviceExposes: typeof import('./src/components/device/DeviceExposes.vue')['default']
+    DeviceList: typeof import('./src/components/device-list/DeviceList.vue')['default']
     DeviceMetrics: typeof import('./src/components/device/DeviceMetrics.vue')['default']
     DevicePage: typeof import('./src/components/device/DevicePage.vue')['default']
     DeviceSelector: typeof import('./src/components/controls/DeviceSelector.vue')['default']
