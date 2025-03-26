@@ -58,6 +58,7 @@ function removeAction(): void {
   emit('delete', action);
 }
 </script>
+
 <template>
   <div class="row pb-3">
     <div class="col">

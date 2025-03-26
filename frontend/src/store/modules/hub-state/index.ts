@@ -82,12 +82,10 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
           device.exposes[key].data = deviceUpdate.data[key];
         }
       }
-      for (var key in deviceUpdate.properties) {
-        if (key in device.properties) {
-          device.properties[key] = deviceUpdate.properties[key];
-        }
+      device.last_seen = deviceUpdate.last_seen;
+      if (deviceUpdate.availability) {
+        device.availability = deviceUpdate.availability;
       }
-      device.properties.last_seen = deviceUpdate.last_seen;
     },
 
     // AppConfig mutations

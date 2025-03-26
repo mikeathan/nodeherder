@@ -616,9 +616,7 @@ func createMockDeviceWithExposes(id string, name string, exposeNames []string, e
 	device1.ConnectionType = "mqtt"
 	device1.Description = fmt.Sprintf("Test device %s description", id)
 	device1.PowerSource = "mains"
-	device1.Properties = map[string]any{}
-	device1.Properties["last_seen"] = timestamp.Format(time.RFC3339)
-	device1.Properties["link_quality"] = 45.0
+	device1.LastSeen = timestamp.Format(time.RFC3339)
 	device1.Exposes = make(map[string]*devices.Entity)
 
 	for i := 0; i < len(exposeNames); i++ {
@@ -648,9 +646,7 @@ func createMockDevice(id string, name string, numOfExposes int, exposeType strin
 	device1.ConnectionType = "mqtt"
 	device1.Description = fmt.Sprintf("Test device %s description", id)
 	device1.PowerSource = "mains"
-	device1.Properties = map[string]any{}
-	device1.Properties["last_seen"] = timestamp.Format(time.RFC3339)
-	device1.Properties["link_quality"] = 45.0
+	device1.LastSeen = timestamp.Format(time.RFC3339)
 	device1.Exposes = make(map[string]*devices.Entity)
 
 	for i := 0; i < numOfExposes; i++ {

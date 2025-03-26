@@ -252,7 +252,8 @@ func createMockBridgeInfo() []*devices.BridgeInfo {
 
 	e2 := devices.BridgeExpose{}
 	e2.Type = "light"
-	b2f1 := devices.BridgeInfoFeature{}
+	b2f1 := devices.BridgeExpose{}
+	b2f1.Access = devices.WriteBridgeAccessMode
 	b2f1.Description = "On/off state of this light"
 	b2f1.Name = "state"
 	b2f1.Property = "state"
@@ -260,7 +261,8 @@ func createMockBridgeInfo() []*devices.BridgeInfo {
 	b2f1.ValueOff = "OFF"
 	b2f1.ValueOn = "ON"
 
-	b2f2 := devices.BridgeInfoFeature{}
+	b2f2 := devices.BridgeExpose{}
+	b2f2.Access = devices.WriteBridgeAccessMode
 	b2f2.Description = "Brightness of this light"
 	b2f2.Name = "brightness"
 	b2f2.Property = "brightness"

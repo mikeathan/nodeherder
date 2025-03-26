@@ -2,10 +2,8 @@ import { InjectionKey } from 'vue';
 import { createStore, useStore as baseUseStore, Store } from 'vuex';
 import { RootState } from './state';
 import { HubStateModule as hub } from './modules/hub-state/index';
-import { DeviceModule as devices } from './modules/device/index';
 import { AutomationModule as automations } from './modules/automation/index';
 import { WSClientModule as ws } from './modules/ws/index';
-import { AppConfigModule as appconfig } from './modules/appconfig/index';
 import { MetricsModule as metrics } from './modules/metrics/index';
 import { ConsoleModule as console } from './modules/console/index';
 import { AlertsModule as alerts } from './modules/alerts/index';
@@ -30,9 +28,7 @@ export const store = createStore<RootState>({
     },
   },
   modules: {
-    devices,
     automations,
-    appconfig,
     metrics,
     console,
     alerts,

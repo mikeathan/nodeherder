@@ -1,39 +1,37 @@
 <script setup lang="ts">
-import { store } from '../../store/index';
-import { computed } from 'vue';
-import Toggle from '../input/Toggle.vue';
-import InputBox from '../input/InputBox.vue';
-import { DeviceSettings, TimeInterval } from '@/types/settings.type';
+  import { store } from '../../store/index';
+  import { computed } from 'vue';
+  import Toggle from '../input/Toggle.vue';
+  import InputBox from '../input/InputBox.vue';
+  import { DeviceSettings } from '@/types/settings.type';
+  import { ExposeSettingsComponents } from '@/mixins/useSettingsComponents';
 
-const props = defineProps({
-  id: { type: String, required: true },
-});
+  const props = defineProps({
+    id: { type: String, required: true },
+  });
 
-const deviceSettings = computed(() => {
-  return store.getters['hub/findDeviceSetting'](props.id);
-});
+  const deviceSettings = computed(() => {
+    return store.getters['hub/findDeviceSetting'](props.id);
+  });
 
-function toggleChanged(propName: any, propValue: any) {
-  save(propName, propValue);
-}
-
-function inputLostFocus(propName: any, propValue: any) {
-  save(propName, propValue);
-}
-function inputTimeIntervalLostFocus(propName: any, propValue: any) {
-  const timeInterval = deviceSettings.value[propName] as TimeInterval;
-  timeInterval.value = propValue;
-  save(propName, timeInterval);
-}
-function save(propName: any, propValue: any) {
-  if (deviceSettings.value[propName] != propValue) {
-    deviceSettings.value[propName] = propValue;
-    store.dispatch('hub/saveDeviceSettings', deviceSettings.value as DeviceSettings);
+  function toggleChanged(propName: any, propValue: any) {
+    save(propName, propValue);
   }
-}
-function isTimeInterval(value: any): value is TimeInterval {
-  return typeof value === 'object' && value !== null && 'value' in value && 'unit' in value;
-}
+
+  function inputLostFocus(propName: any, propValue: any) {
+    save(propName, propValue);
+  }
+
+  function save(propName: any, propValue: any) {
+    if (deviceSettings.value[propName] != propValue) {
+      deviceSettings.value[propName] = propValue;
+      store.dispatch('hub/saveDeviceSettings', deviceSettings.value as DeviceSettings);
+    }
+  }
+
+  function inputUpdated(propName: any, propValue: any) {
+    save(propName, propValue);
+  }
 </script>
 
 <template>
@@ -44,17 +42,23 @@ function isTimeInterval(value: any): value is TimeInterval {
       </dt>
     </dl>
     <div class="md:col-4">
-      <div v-if="typeof value === 'boolean'">
-        <Toggle :value="value" :valueOn="true" :valueOff="false"
-          @update="(v) => toggleChanged(key, v)">
-        </Toggle>
+      <div v-if="ExposeSettingsComponents[key]">
+        <component
+          :is="ExposeSettingsComponents[key]"
+          v-bind="{
+            id: props.id,
+            value: value,
+          }"
+          @update="(v:any) => inputUpdated(key, v)" />
       </div>
-      <div v-else-if="isTimeInterval(value)">
-        <InputBox :label="value.unit" :value="value.value" :is-numeric="true"
-          @lost-focus="(f) => inputTimeIntervalLostFocus(key, f)" />
+      <div v-else-if="typeof value === 'boolean'">
+        <Toggle :value="value" :valueOn="true" :valueOff="false" @update="(v) => toggleChanged(key, v)"> </Toggle>
       </div>
       <div v-else>
-        <InputBox :value="value" :disabled="typeof value !== 'number'" :is-numeric="typeof value === 'number'"
+        <InputBox
+          :value="value"
+          :disabled="typeof value !== 'number'"
+          :is-numeric="typeof value === 'number'"
           @lost-focus="(f) => inputLostFocus(key, f)">
         </InputBox>
       </div>

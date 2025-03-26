@@ -501,7 +501,7 @@ func (s *NopSettingsrepo) Load() (*settings.AppConfig, error) {
 
 func (s *NopSettingsrepo) FindOrAddDeviceConfigIfNotExists(id string) (*settings.DeviceConfig, error) {
 	fmt.Println("Mocked settingsRepo FindOrAddDeviceConfigIfnotExists")
-	return nil, nil
+	return settings.NewDeviceConfig(id), nil
 }
 func (s *NopSettingsrepo) SaveDeviceConfig(deviceConfig *settings.DeviceConfig) error {
 	fmt.Println("Mocked settingsRepo SaveDeviceConfig")
@@ -537,29 +537,30 @@ func (s *NopSettingsrepo) SaveAppConfig(appConfig *settings.AppConfig) error {
 type NopAppStore struct {
 	devices        devices.Repository
 	metrics        metrics.Repository
-	settings       settings.Repository
+	config         *settings.AppConfigCache
 	deviceIdMapper *repository.DeviceIdMapper
 }
 
 func NewMockAppStore() store.AppStore {
 	devicesRepo := NopRepository{}
 	metricsRepo := NopMetricsRepo{}
-	settingsRepo := NopSettingsrepo{}
+	config := &settings.AppConfigCache{}
+
 	return &NopAppStore{
 		devices:        &devicesRepo,
 		metrics:        &metricsRepo,
-		settings:       &settingsRepo,
+		config:         config,
 		deviceIdMapper: repository.NewDeviceIdMapper(&devicesRepo),
 	}
 }
 
 func NewMockAppStoreFromDevicesRepo(devicesRepo devices.Repository) store.AppStore {
 	metricsRepo := &NopMetricsRepo{}
-	settingsRepo := &NopSettingsrepo{}
+	config := &settings.AppConfigCache{}
 	return &NopAppStore{
 		devices:        devicesRepo,
 		metrics:        metricsRepo,
-		settings:       settingsRepo,
+		config:         config,
 		deviceIdMapper: repository.NewDeviceIdMapper(devicesRepo),
 	}
 }
@@ -569,8 +570,8 @@ func (s *NopAppStore) SaveHistoryConfig(historyConfig *settings.HistoryConfig) e
 	return nil
 }
 
-func (s *NopAppStore) FindDeviceConfig(id string) (*settings.DeviceConfig, error) {
-	fmt.Println("Mocked store LoaFindDeviceConfigdAppConfig")
+func (s *NopAppStore) LoadDeviceConfig(id string) (*settings.DeviceConfig, error) {
+	fmt.Println("Mocked store LoaLoadDeviceConfigdAppConfig")
 	return nil, nil
 }
 
@@ -579,13 +580,9 @@ func (s *NopAppStore) SaveLoggerConfig(loggerConfig *settings.LoggerConfig) erro
 	return nil
 }
 
-func (s *NopAppStore) AddTask(task store.Task) {
-	fmt.Println("Mocked store AddTask")
-}
-
-func (s *NopAppStore) LoadAppConfig() (*settings.AppConfig, error) {
-	fmt.Println("Mocked store LoadAppConfig")
-	return nil, nil
+func (s *NopAppStore) AppConfig() *settings.AppConfigCache {
+	fmt.Println("Mocked store AppConfig")
+	return nil
 }
 
 func (s *NopAppStore) SaveDeviceConfig(deviceconfig *settings.DeviceConfig) error {

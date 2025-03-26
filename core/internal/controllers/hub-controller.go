@@ -22,6 +22,10 @@ import (
 	"strings"
 )
 
+var (
+	ErrorEmptyPayload = fmt.Errorf("empty payload")
+)
+
 type HubController struct {
 	eventHub                          ws.EventHub
 	mqtt                              mqtt.MqttClient
@@ -35,7 +39,6 @@ type HubController struct {
 }
 
 func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context) *HubController {
-
 	h := &HubController{
 		eventHub:                          eventHub,
 		store:                             store,
@@ -46,6 +49,7 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 	}
 
 	h.registrar = services.NewHubRegisterService(store, eventHub, 3600)
+
 	scheduleHandler := automations.NewAutomationScheduler(
 		automations.WithContext(ctx),
 		automations.WithAutomationsFuncs())
@@ -67,12 +71,14 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 }
 
 func (h *HubController) registerEventHubEvents() {
+	appconfig := h.store.AppConfig()
+
 	h.eventHub.OnLoadAppConfig(func() (interface{}, error) {
-		return h.store.LoadAppConfig()
+		return appconfig.LoadAppConfig()
 	})
 
 	h.eventHub.OnLoadBridgeConfig(func() (interface{}, error) {
-		return h.store.LoadBridgeConfig()
+		return appconfig.LoadBridgeConfig()
 	})
 
 	h.eventHub.OnSaveHistoryConfig(func(p interface{}) error {
@@ -83,7 +89,9 @@ func (h *HubController) registerEventHubEvents() {
 		if err != nil {
 			return fmt.Errorf("OnSaveAppOnSaveHistoryConfigConfig failed. Invalid payload type : %v ", err.Error())
 		}
-		return h.store.SaveHistoryConfig(req)
+
+		_, err = appconfig.SaveHistoryConfig(req)
+		return err
 	})
 
 	h.eventHub.OnSaveDeviceConfig(func(p interface{}) error {
@@ -94,7 +102,7 @@ func (h *HubController) registerEventHubEvents() {
 		if err != nil {
 			return fmt.Errorf("OnSaveDeviceConfig failed. Invalid payload type : %v ", err.Error())
 		}
-		return h.store.SaveDeviceConfig(req)
+		return appconfig.SetDeviceConfig(req)
 	})
 
 	h.eventHub.OnLoadAutomations(func() interface{} {
@@ -219,7 +227,8 @@ func (h *HubController) registerEventHubEvents() {
 		}
 
 		f := func(value bool) error {
-			err := h.store.SaveBridgePermitJoin(value)
+
+			err := appconfig.SaveBridgePermitJoin(value)
 			if err != nil {
 				return err
 			}
@@ -324,7 +333,12 @@ func (h *HubController) registerEventHubEvents() {
 		if err != nil {
 			return errors.New("enable remote logger failed. Invalid payload type")
 		}
-		h.store.SaveLoggerConfig(req)
+
+		_, err = appconfig.SaveLoggerConfig(req)
+		if err != nil {
+			return err
+		}
+
 		utils.LogInfof("Remote logger enabled: %v", req.EnableRemoteLogger)
 		return nil
 	})
@@ -350,36 +364,6 @@ func (m *HubController) TriggerAutomation(device *devices.Device) {
 	m.automationEngine.HandleDevice(device)
 }
 
-func (m *HubController) deviceAdded(device *devices.Device, data map[string]interface{}) {
-	//d := device
-	action := func() error {
-		err := m.registrar.Register(device.FriendlyName, device)
-		if err != nil {
-			return err
-		}
-		m.registrar.StoreMetrics(device.FriendlyName, data)
-		return nil
-	}
-	action()
-	//m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
-}
-
-func (m *HubController) deviceUpdated(device *devices.Device, data map[string]interface{}) {
-
-	//d := device
-	action := func() error {
-		m.automationEngine.HandleDevice(device)
-		err := m.registrar.Register(device.FriendlyName, device)
-		if err != nil {
-			return err
-		}
-		m.registrar.StoreMetrics(device.FriendlyName, data)
-		return nil
-	}
-	action()
-	//m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
-}
-
 func (m *HubController) processMessage(id string, payload []byte, connType string) error {
 
 	if _, ok := m.responseHandlers[id]; !ok {
@@ -399,15 +383,16 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 				var h = newBridgePermitJoinResponseHandler(m.eventHub, m.mqtt)
 				m.responseHandlers[id] = h
 			case "bridge/devices":
-				var h = newBridgeConfigurationHandler(m.registrar, m.automationEngine, m.mqtt, m.eventHub, m.DeviceAvailabilityTimeoutOverride)
+				var h = newBridgeConfigurationHandler(m.registrar, m.automationEngine, m.mqtt, m.eventHub)
 				m.responseHandlers[id] = h
 			case "bridge/logging":
 				var h = newBridgeLoggingHandler(m.eventHub)
 				m.responseHandlers[id] = h
 			}
 		} else {
-			var h = newDeviceHandler(m.registrar, m.eventHub, m)
-			h.AvailabilityTimeoutInSeconds = m.DeviceAvailabilityTimeoutOverride
+
+			processor := m.createDeviceProcessor()
+			var h = newDeviceHandler(processor)
 			m.responseHandlers[id] = h
 		}
 	}
@@ -416,12 +401,67 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 	return m.wp.AddTask(&mqttResponseTask{Id: id, Type: connType, Payload: payload, h: h})
 }
 
+// TODO: can be refactored to use a factory. for now we will keep it simple
+func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
+	events := devices.NewDeviceRequestEvents(d.DeviceAvailabilityTimeoutOverride)
+	events.WithOnNewDevice(func(device *devices.Device, data map[string]interface{}) {
+		d.handleDeviceAdded(device, data)
+	})
+
+	events.WithOnDeviceUpdated(func(device *devices.Device, p *devices.UpdatePackage) {
+		d.handleDeviceUpdated(device, p)
+	})
+	events.WithOnDeviceAvailabilityChanged(func(p *devices.UpdatePackage) {
+		d.handleDeviceAvailabilityChanged(p)
+	})
+
+	return services.NewDeviceProcessor(d.registrar, d.store, events)
+}
+
+func (d *HubController) handleDeviceAdded(device *devices.Device, data map[string]interface{}) error {
+	// todo: execute in worker pool
+	// 	action()
+	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
+
+	d.eventHub.Broadcast(ws.DeviceAdded, device)
+
+	if err := d.store.StoreDevice(device.FriendlyName, device); err != nil {
+		return err
+	}
+
+	return d.store.StoreMetrics(device.FriendlyName, data)
+}
+
+func (d *HubController) handleDeviceUpdated(device *devices.Device, p *devices.UpdatePackage) error {
+
+	// todo: execute in worker pool
+	// 	action()
+	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
+	d.eventHub.Broadcast(ws.DeviceUpdated, p)
+
+	d.automationEngine.HandleDevice(device)
+	if err := d.store.StoreDevice(device.FriendlyName, device); err != nil {
+		return err
+	}
+
+	return d.store.StoreMetrics(device.FriendlyName, p.Data)
+}
+
+func (d *HubController) handleDeviceAvailabilityChanged(p *devices.UpdatePackage) {
+	d.eventHub.Broadcast(ws.DeviceUpdated, p)
+}
+
 func convertToMap(payload []byte) (map[string]interface{}, error) {
+
+	if len(payload) == 0 {
+		return nil, ErrorEmptyPayload
+	}
 
 	deviceMap := make(map[string]interface{})
 	err := json.Unmarshal(payload, &deviceMap)
 	if err != nil {
-		return nil, errors.New("invalid device data")
+		return nil, err
 	}
+
 	return deviceMap, nil
 }

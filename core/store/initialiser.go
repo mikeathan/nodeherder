@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"node-herder/models/settings"
 	"node-herder/repository"
 )
 
@@ -14,13 +15,19 @@ func Create(ctx context.Context) (AppStore, error) {
 		return nil, fmt.Errorf("loading metrics repository failed: %v", err.Error())
 	}
 
-	settings, err := repository.NewFileSettingsRepo()
+	// To Refactor
+	config, err := repository.NewFileSettingsRepo()
 	if err != nil {
 		return nil, fmt.Errorf("loading settings repository failed: %v", err.Error())
 	}
-
 	// Build Tasks
-	tasks := []Task{DefaultMetricsCleanupTask(ctx, metricsRepo), DefaultRemoteLoggerTask()}
+	tasks := []settings.Task{DefaultMetricsCleanupTask(ctx, metricsRepo), DefaultRemoteLoggerTask()}
 
-	return NewAppStore(devicesRepo, metricsRepo, settings, tasks)
+	configCache, err := settings.NewAppConfigCache(config, tasks)
+	if err != nil {
+		return nil, fmt.Errorf("loading settings cache failed: %v", err.Error())
+	}
+	///
+
+	return NewAppStore(devicesRepo, metricsRepo, configCache)
 }

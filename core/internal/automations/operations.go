@@ -33,14 +33,14 @@ func CreateStepOperation(expose *devices.Entity, action *MqttStepAction) actionO
 func CreateRotateOperation(expose *devices.Entity) actionOperation {
 
 	var keys []string
-	for k := range expose.Presets {
+	for k := range expose.Values {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 
 	var presets []any
 	for _, k := range keys {
-		presets = append(presets, expose.Presets[k])
+		presets = append(presets, expose.Values[k])
 	}
 
 	return newRotateOperation(expose.Name, presets)

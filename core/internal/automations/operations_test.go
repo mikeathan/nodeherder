@@ -393,21 +393,21 @@ func TestOperationCycleValue(t *testing.T) {
 
 	exposeName := "light"
 	light := createEntity(exposeName, "some description", 0.0, "", nil)
-	light.Presets["cold"] = 255.0
-	light.Presets["hot"] = 123.0
-	light.Presets["colder"] = 89.0
-	light.Presets["hotter"] = 67.0
-	light.Presets["natural"] = 43.0
+	light.Values["cold"] = 255.0
+	light.Values["hot"] = 123.0
+	light.Values["colder"] = 89.0
+	light.Values["hotter"] = 67.0
+	light.Values["natural"] = 43.0
 
 	var keys []string
-	for k := range light.Presets {
+	for k := range light.Values {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 	var pos int = 0
 	var presets []any
 	for _, k := range keys {
-		presets = append(presets, light.Presets[k])
+		presets = append(presets, light.Values[k])
 
 	}
 
@@ -450,9 +450,7 @@ func createMockDevice(id string, name string, property string, data any, min flo
 	device1.ConnectionType = "mqtt"
 	device1.Description = fmt.Sprintf("Test device %s description", id)
 	device1.PowerSource = "mains"
-	device1.Properties = map[string]any{}
-	device1.Properties["last_seen"] = time.Now().Format(time.RFC3339)
-	device1.Properties["link_quality"] = 45.0
+	device1.LastSeen = time.Now().Format(time.RFC3339)
 	device1.Exposes = make(map[string]*devices.Entity)
 
 	ent1 := &devices.Entity{}

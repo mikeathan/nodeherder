@@ -5,6 +5,24 @@ export const ExposeTypes = {
   Numeric: 'numeric',
 } as const;
 
+export const ExposeAccessModes = {
+  Read: 'read',
+  Readwrite: 'readwrite',
+  Write: 'write',
+} as const;
+
+export const ExposeCategories = {
+  Measurement: 'measurement',
+  Diagnostic: 'diagnostic',
+  Config: 'config',
+} as const;
+
+export const DeviceAvailabilityTypes = {
+  Unknown: 'unknown',
+  Online: 'online',
+  Offline: 'offline',
+} as const;
+
 export const alllowedExposeList: string[] = [
   'temperature',
   'humidity',
@@ -38,10 +56,4 @@ export const alllowedExposeList: string[] = [
 export type ExposeBinaryColor = {
   on: string;
   off: string;
-};
-
-export const binaryExposeTypes = {
-  Presence: 'presence',
-  State: 'state',
-  Tamper: 'tamper',
 };

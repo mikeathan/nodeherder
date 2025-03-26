@@ -3,7 +3,7 @@ import { computed, PropType, reactive } from 'vue';
 import { AutomationActionStep, NumericOperator, AutomationStepAction } from '@/types/automation.type.js';
 import { store } from '../../../store/index';
 import { Device } from '@/types/device';
-import { ExposeTypes } from '@/types/device.type';
+import { ExposeCategories, ExposeTypes } from '@/types/device.type';
 import Dropdown from '@/components/controls/Dropdown.vue';
 import ButtonPanel from '@/components/controls/ButtonPanel.vue';
 import Selection from '@/components/input/Selection.vue';
@@ -16,7 +16,7 @@ import DeviceSelector from '@/components/controls/DeviceSelector.vue';
 import ExposeSelector from '@/components/controls/ExposeSelector.vue';
 import {
   featureDevicesFilter,
-  exposeFilterByType,
+  exposeFilterByTypeAndCategory,
   devicesFilterByActionStep,
 } from '@/configs/automation/device.config';
 import InputBox from '@/components/input/InputBox.vue';
@@ -108,6 +108,7 @@ function deviceSelected(deviceId: string) {
   <!-- action controls -->
   <div class="row pb-3">
     <div class="col">
+
       <ButtonPanel :buttons="buttonPanelItems" />
     </div>
   </div>
@@ -157,7 +158,7 @@ function deviceSelected(deviceId: string) {
         <template #body="slotProps">
           <div style="display: flex; align-items: center; gap: 0.5rem">
             <ExposeSelector :id="slotProps.data.id" @updated="(v) => stepPropertySelected(v, slotProps.data)"
-              :value="slotProps.data.property" :filter="exposeFilterByType(ExposeTypes.Numeric)" />
+              :value="slotProps.data.property" :filter="exposeFilterByTypeAndCategory(ExposeTypes.Numeric, ExposeCategories.Measurement)" />
             <Button icon="pi pi-trash" text iconOnly="true" @click="removeStep(slotProps.data)" />
           </div>
         </template>

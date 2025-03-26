@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { PropType, ref, watch, watchEffect } from 'vue';
-  import { SelectSize, SelectFormSize, SelectionItems, LayoutPosition, LayoutPositions } from '@/types/controls.type';
+  import { SelectSize, SelectFormSize, SelectionItems } from '@/types/controls.type';
   import { SelectChangeEvent } from 'primevue';
 
   const props = defineProps({
@@ -10,11 +10,6 @@
       required: true,
     },
     value: null,
-    text: {
-      type: String,
-      default: '',
-      required: false,
-    },
     label: {
       type: String,
       default: '',
@@ -39,6 +34,12 @@
   const selectedValue = ref<any>(props.value);
   const isKeyValuePair = ref<boolean>(false);
 
+  watchEffect(() => {
+    if (props.value != null) {
+      selectedValue.value = props.value;
+    }
+  });
+
   watch(
     () => props.items,
     (newItems) => {
@@ -55,10 +56,6 @@
       key,
       value,
     }));
-  };
-
-  const defaultText = (): string => {
-    return props.text != '' ? props.text : 'Select';
   };
 
   function selectionChanged(event: SelectChangeEvent): void {
