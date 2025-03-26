@@ -140,23 +140,23 @@ const (
 // exposes that are used to configure the device
 
 func getExposeCategory(entity BridgeExpose) string {
+
+	if _, ok := configWhitelist[entity.Property]; ok {
+		return ConfigCategory
+	}
+	if _, ok := diagnosticWhitelist[entity.Property]; ok {
+		return DiagnosticCategory
+	}
+	if _, ok := measurementWhitelist[entity.Property]; ok {
+		return MeasurementCategory
+	}
+	if entity.Access&WriteBridgeAccessMode != 0 {
+		return ConfigCategory
+	}
+
 	if entity.Category == "" {
 
-		if _, ok := configWhitelist[entity.Property]; ok {
-			return ConfigCategory
-		}
-		if _, ok := diagnosticWhitelist[entity.Property]; ok {
-			return DiagnosticCategory
-		}
-		if _, ok := measurementWhitelist[entity.Property]; ok {
-			return MeasurementCategory
-		}
-		if entity.Access&WriteBridgeAccessMode != 0 {
-			return ConfigCategory
-		}
-
 		if entity.Access&ReadBridgeAccessMode != 0 || entity.Access&StateBridgeAccessMode != 0 {
-
 			return MeasurementCategory
 		}
 	}
