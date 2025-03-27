@@ -6,6 +6,7 @@ import AutomationsEditor from '../components/automations/Editor.vue';
 import AutomationsCreator from '../components/automations/Creator.vue';
 import Settings from '../components/hub/settings/Settings.vue';
 import ConsoleViewer from '../components/hub/console/ConsoleViewer.vue';
+import DeviceList from '../components/device-list/DeviceList.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -16,6 +17,14 @@ const router = createRouter({
       component: Dashboard,
       meta: {
         title: 'Node-herder - Home',
+      },
+    },
+    {
+      path: '/devicelist',
+      name: 'deicelist',
+      component: DeviceList,
+      meta: {
+        title: 'Node-herder - Device List',
       },
     },
     {
