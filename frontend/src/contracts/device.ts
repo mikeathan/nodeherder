@@ -44,9 +44,8 @@ export function getDevices(devices: Device[], allowedFilter: DeviceFilter): KeyV
 }
 
 export function getPowerSourceValue(device: Device): number {
-
   if (device.power_source == 'battery') {
-    return device.exposes['battery']?.data ?? 0;
+    return device.exposes['battery']?.data ?? device.exposes['battpercentage']?.data ?? 0;
   }
   return device.exposes['voltage']?.data ?? 0;
 }
