@@ -68,6 +68,16 @@ frontend - update icons match homeassistant
 frontend - add device list for devices not shown in dashboad - DONE
 frontend - add device groups to be shown in dashboard instead of current dashboard
 
+TODO:
+
+- create group
+- group needs to be stored somewhere in backend
+- we need group editor
+- select group
+- add expose to group
+- expose has a new component card when clicked it opens a dialog to modify the value is its writable
+- group viewer - list of exposes in group
+
 toggle for live data ? later
 
 once we send the request
