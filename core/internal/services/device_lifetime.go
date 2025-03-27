@@ -65,6 +65,7 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 	trigger store metrics events here so we can filter the data 
 	but we will need to check if device is enabled for store metrics
 	so we need device config
+	https://claude.ai/chat/680fb7f2-ee4f-408f-866d-8b68aecd8bb9
 
 	if updatePackage.HasData() {
 		updatePackage.LastSeen = getLastSeen(payload)
