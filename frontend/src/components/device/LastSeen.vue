@@ -28,6 +28,8 @@
 
   onUnmounted(() => {
     elapsedTimer.dispose();
+    // DO I NEED THAT
+    // elapsedTimer = null; // Clear reference
   });
 </script>
 <template>
