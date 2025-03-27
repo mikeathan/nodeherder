@@ -70,6 +70,7 @@ frontend - add device groups to be shown in dashboard instead of current dashboa
 
 TODO:
 
+- remove non measurement exposes from metrics !!!!
 - create group
 - group needs to be stored somewhere in backend
 - we need group editor
