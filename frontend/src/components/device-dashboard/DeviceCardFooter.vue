@@ -2,11 +2,12 @@
   import LinkQuality from '../device/LinkQuality.vue';
   import PowerSource from '../device/PowerSource.vue';
   import LastSeen from '../device/LastSeen.vue';
-  import { ref, watch, PropType } from 'vue';
+  import { PropType } from 'vue';
   import { getOfflineIcon } from '@/modules/formatters/device.formatter';
   import Icon from '../controls/Icon.vue';
-  import { Device, Expose } from '@/types/device';
+  import { Device } from '@/types/device';
   import { computed } from 'vue';
+import { getPowerSourceValue } from '@/contracts/device';
 
   const props = defineProps({
     device: Object as PropType<Device>,
@@ -19,7 +20,7 @@
     <LastSeen :timestamp="device.last_seen" />
     <div class="text-truncate" v-if="device.availability === 'online'">
       <LinkQuality :value="device.exposes['linkquality']?.data" />
-      <PowerSource :power_source="device.power_source" :value="device.exposes['battery']?.data" />
+      <PowerSource :power_source="device.power_source" :value="getPowerSourceValue(device)" />
     </div>
     <div className="col-auto text-truncate" v-else>
       <Icon :icon="getOfflineIcon()" />

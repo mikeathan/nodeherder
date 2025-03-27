@@ -29,6 +29,7 @@ declare module 'vue' {
     DeviceAutomation: typeof import('./src/components/automations/DeviceAutomation.vue')['default']
     DeviceCard: typeof import('./src/components/device-dashboard/DeviceCard.vue')['default']
     DeviceCardFooter: typeof import('./src/components/device-dashboard/DeviceCardFooter.vue')['default']
+    DeviceControl: typeof import('./src/components/device/DeviceControl.vue')['default']
     DeviceDashboard: typeof import('./src/components/device-dashboard/DeviceDashboard.vue')['default']
     DeviceExposes: typeof import('./src/components/device/DeviceExposes.vue')['default']
     DeviceList: typeof import('./src/components/device-list/DeviceList.vue')['default']
