@@ -430,6 +430,7 @@ func (d *HubController) handleDeviceAdded(device *devices.Device, data map[strin
 	}
 
 	// TODO: refactor code is repeated
+	// do we want to do that only if metrics are enabled ?
 	// filter out any non measurement data for storing in metrics
 	for k := range data {
 		if e, ok := device.Exposes[k]; ok && e.Category != devices.MeasurementCategory {
@@ -453,6 +454,7 @@ func (d *HubController) handleDeviceUpdated(device *devices.Device, p *devices.U
 	}
 
 	// TODO: refactor code is repeated
+	// do we want to do that only if metrics are enabled ?
 	// filter out any non measurement data for storing in metrics
 	for k := range p.Data {
 		if e, ok := device.Exposes[k]; ok && e.Category != devices.MeasurementCategory {
