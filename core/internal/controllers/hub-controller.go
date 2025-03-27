@@ -429,6 +429,14 @@ func (d *HubController) handleDeviceAdded(device *devices.Device, data map[strin
 		return err
 	}
 
+	// TODO: refactor code is repeated
+	// filter out any non measurement data for storing in metrics
+	for k := range data {
+		if e, ok := device.Exposes[k]; ok && e.Category != devices.MeasurementCategory {
+			delete(data, k)
+		}
+	}
+
 	return d.store.StoreMetrics(device.FriendlyName, data)
 }
 
@@ -444,6 +452,13 @@ func (d *HubController) handleDeviceUpdated(device *devices.Device, p *devices.U
 		return err
 	}
 
+	// TODO: refactor code is repeated
+	// filter out any non measurement data for storing in metrics
+	for k := range p.Data {
+		if e, ok := device.Exposes[k]; ok && e.Category != devices.MeasurementCategory {
+			delete(p.Data, k)
+		}
+	}
 	return d.store.StoreMetrics(device.FriendlyName, p.Data)
 }
 
