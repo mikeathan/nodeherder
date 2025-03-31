@@ -44,7 +44,7 @@ func (d *DeviceRequestEvents) WithOnDeviceUpdated(f func(device *Device, data *U
 	return d
 }
 
-func (d *DeviceRequestEvents) WithOnDeviceMetricsAvailabed(f func(device *Device, dataMap map[string]interface{})) *DeviceRequestEvents {
+func (d *DeviceRequestEvents) WithOnDeviceMetricsAvailable(f func(device *Device, dataMap map[string]interface{})) *DeviceRequestEvents {
 	d.OnDeviceMetricsAvailable = f
 	return d
 }

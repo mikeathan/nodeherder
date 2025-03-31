@@ -415,58 +415,42 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 		d.handleDeviceAvailabilityChanged(p)
 	})
 
+	events.WithOnDeviceMetricsAvailable(func(device *devices.Device, p map[string]interface{}) {
+		d.handleDeviceMetricsAvailable(device, p)
+	})
+
 	return services.NewDeviceProcessor(d.registrar, d.store, events)
 }
 
-func (d *HubController) handleDeviceAdded(device *devices.Device, data map[string]interface{}) error {
+func (d *HubController) handleDeviceAdded(device *devices.Device, payload map[string]interface{}) error {
 	// todo: execute in worker pool
 	// 	action()
 	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
 
 	d.eventHub.Broadcast(ws.DeviceAdded, device)
 
-	if err := d.store.StoreDevice(device.FriendlyName, device); err != nil {
-		return err
-	}
-
-	// TODO: refactor code is repeated
-	// do we want to do that only if metrics are enabled ?
-	// filter out any non measurement data for storing in metrics
-	for k := range data {
-		if e, ok := device.Exposes[k]; ok && e.Category != devices.MeasurementCategory {
-			delete(data, k)
-		}
-	}
-
-	return d.store.StoreMetrics(device.FriendlyName, data)
+	return d.store.StoreDevice(device.FriendlyName, device)
 }
 
-func (d *HubController) handleDeviceUpdated(device *devices.Device, p *devices.UpdatePackage) error {
+func (d *HubController) handleDeviceUpdated(device *devices.Device, payload *devices.UpdatePackage) error {
 
 	// todo: execute in worker pool
 	// 	action()
 	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
 	
-	d.eventHub.Broadcast(ws.DeviceUpdated, p)
+	d.eventHub.Broadcast(ws.DeviceUpdated, payload)
 
 	d.automationEngine.HandleDevice(device)
-	if err := d.store.StoreDevice(device.FriendlyName, device); err != nil {
-		return err
-	}
-
-	// TODO: refactor code is repeated
-	// do we want to do that only if metrics are enabled ?
-	// filter out any non measurement data for storing in metrics
-	for k := range p.Data {
-		if e, ok := device.Exposes[k]; ok && e.Category != devices.MeasurementCategory {
-			delete(p.Data, k)
-		}
-	}
-	return d.store.StoreMetrics(device.FriendlyName, p.Data)
+	
+	return d.store.StoreDevice(device.FriendlyName, device);
 }
 
 func (d *HubController) handleDeviceAvailabilityChanged(p *devices.UpdatePackage) {
 	d.eventHub.Broadcast(ws.DeviceUpdated, p)
+}
+
+func (d *HubController) handleDeviceMetricsAvailable(device *devices.Device, payload map[string]interface{}) error {
+	return d.store.StoreMetrics(device.FriendlyName, payload)
 }
 
 func convertToMap(payload []byte) (map[string]interface{}, error) {

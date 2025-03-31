@@ -113,6 +113,7 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 	}
 
 	if d.config.MetricsEnabled {
+		// send measurement updates to metrics store
 		measumementUpdateData := map[string]any{}
 		for name, value := range updatePackage.Data {
 			if e, ok := d.device.Exposes[name]; ok && e.Category == devices.MeasurementCategory {
@@ -121,13 +122,15 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 		}
 
 		if len(measumementUpdateData) > 0 {
-			d.events.OnDeviceMetricsAvailable(d.device, measumementUpdateData)
+			go d.events.OnDeviceMetricsAvailable(d.device, measumementUpdateData)
 		}
 	}
 
 	// if we are here even with no expose changes, it still means that he device is online
 	if d.device.Availability == devices.OfflineAvailability {
 		d.device.Availability = devices.OnlineAvailability
+
+		maybe use 		d.events.OnDeviceAvailabilityChanged(p)
 
 		// TODO: handle this below better
 		// -updatePackage contains Availability only if we have a change on Device Availability. else its ommited.
@@ -142,7 +145,7 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 	d.device.LastSeen = getLastSeen(payload) // we need that.
 
 	if updatePackage.HasData() {
-		d.events.OnDeviceUpdated(d.device, updatePackage)
+		go d.events.OnDeviceUpdated(d.device, updatePackage)
 	}
 }
 
