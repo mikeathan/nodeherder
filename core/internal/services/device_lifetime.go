@@ -19,12 +19,16 @@ type DeviceLifetimeService struct {
 	availabilityTicker *time.Ticker
 	availablityDone    chan bool
 	events             *devices.DeviceRequestEvents
+	config             *settings.DeviceConfig
 }
 
-func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequestEvents, debouncerService *settings.DeviceDebouncer) *DeviceLifetimeService {
+func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequestEvents, configCache *settings.DeviceConfigCache, clock utils.Clock) *DeviceLifetimeService {
+
+	config, _ := configCache.Get(device.Id)
 	return &DeviceLifetimeService{
+		config:           config,
+		debouncerService: settings.NewDeviceDebouncer(device.Id, configCache, clock),
 		device:           device,
-		debouncerService: debouncerService,
 		events:           events,
 		availablityDone:  make(chan bool, 1),
 	}
@@ -44,33 +48,84 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 	var updatePackage = devices.NewUpdatePackage(d.device.Id)
 	for name, newValue := range payload {
 
-		if expose, ok := d.device.GetExpose(name); ok &&
-			!d.debouncerService.DebounceExpose(name) &&
-			!utils.ComparePayloadValues(expose.Data, newValue) {
-
-			// only look for measurement expose changes unless we are
-			// already collecting measurement updates
-			if len(updatePackage.Data) != 0 {
-				updatePackage.Data[name] = newValue
-			} else if expose.Category == devices.MeasurementCategory {
-				updatePackage.Data[name] = newValue
-			}
-
-			// update device expose with updated data
-			// we might need to have a mutex here or handle this better
-			d.device.Exposes[name].Data = newValue
+		// DEBUG WIP
+		expose, ok := d.device.GetExpose(name)
+		if !ok {
+			continue
 		}
+
+		if d.debouncerService.DebounceExpose(name) {
+			continue
+		}
+
+		if utils.ComparePayloadValues(expose.Data, newValue) {
+			continue
+		}
+
+		updatePackage.Data[name] = newValue
+
+		// problem to solve
+		// we can gather all changes with debouncer set for diagnotics to 1-5 seconds
+		// we can send all to frontend
+		// but we still need to send only measurement changes to metrics store
+
+		// do we have 2 maps, all changes and only measurement changes ?
+		// do we have logic to filter out changes that are not measurements and then send the to metrics store ?
+		// solution https://claude.ai/chat/bbe4e762-1236-4ed8-9846-149abe243ce4
+		//
+		// solution
+		// copy all chnages with diagnotics having 1-5 seconds debounce
+		// then filter measurement changes and send to metrics store
+		// then send the rest to frontend
+		// both send events to use subroutines
+		// DEBUG
+
+		// if expose, ok := d.device.GetExpose(name); ok &&
+		// 	!d.debouncerService.DebounceExpose(name) &&
+		// 	!utils.ComparePayloadValues(expose.Data, newValue) {
+
+		// 	// only look for measurement expose changes unless we are
+		// 	// already collecting measurement updates
+		// 	if len(updatePackage.Data) != 0 {
+		// 		updatePackage.Data[name] = newValue
+		// 	} else if expose.Category == devices.MeasurementCategory {
+		// 		updatePackage.Data[name] = newValue
+		// 	}
+
+		// 	// update device expose with updated data
+		// 	// we might need to have a mutex here or handle this better
+		// 	d.device.Exposes[name].Data = newValue
+		// }
 	}
 
-	trigger store metrics events here so we can filter the data 
-	but we will need to check if device is enabled for store metrics
-	so we need device config
-	https://claude.ai/chat/680fb7f2-ee4f-408f-866d-8b68aecd8bb9
+	// trigger store metrics events here so we can filter the data
+	// but we will need to check if device is enabled for store metrics
+	// so we need device config
+	// https://claude.ai/chat/680fb7f2-ee4f-408f-866d-8b68aecd8bb9
 
 	if updatePackage.HasData() {
 		updatePackage.LastSeen = getLastSeen(payload)
+
+		// update device with expose changes
+		for expose, value := range updatePackage.Data {
+			d.device.Exposes[expose].Data = value
+		}
 	}
 
+	if d.config.MetricsEnabled {
+		measumementUpdateData := map[string]any{}
+		for name, value := range updatePackage.Data {
+			if e, ok := d.device.Exposes[name]; ok && e.Category == devices.MeasurementCategory {
+				measumementUpdateData[name] = value
+			}
+		}
+
+		if len(measumementUpdateData) > 0 {
+			d.events.OnDeviceMetricsAvailable(d.device, measumementUpdateData)
+		}
+	}
+
+	// if we are here even with no expose changes, it still means that he device is online
 	if d.device.Availability == devices.OfflineAvailability {
 		d.device.Availability = devices.OnlineAvailability
 

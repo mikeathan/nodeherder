@@ -446,6 +446,7 @@ func (d *HubController) handleDeviceUpdated(device *devices.Device, p *devices.U
 	// todo: execute in worker pool
 	// 	action()
 	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
+	
 	d.eventHub.Broadcast(ws.DeviceUpdated, p)
 
 	d.automationEngine.HandleDevice(device)

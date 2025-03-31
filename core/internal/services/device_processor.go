@@ -3,7 +3,6 @@ package services
 import (
 	"fmt"
 	"node-herder/models/devices"
-	"node-herder/models/settings"
 	"node-herder/store"
 	"node-herder/utils"
 	"sync"
@@ -53,9 +52,7 @@ func (dm *DeviceProcessor) createDeviceService(device *devices.Device, dataMap m
 	defer dm.mutex.Unlock()
 
 	appConfig := dm.store.AppConfig()
-	debouncer := settings.NewDeviceDebouncer(device.Id, appConfig.GetDeviceConfigCache(device.Id), utils.NewRealClock())
-
-	ls := NewDeviceLifetimeService(device, dm.events, debouncer)
+	ls := NewDeviceLifetimeService(device, dm.events, appConfig.GetDeviceConfigCache(device.Id), utils.NewRealClock())
 	ls.Start(dataMap)
 
 	dm.deviceServices[device.Id] = ls
@@ -77,7 +74,7 @@ func (dm *DeviceProcessor) updateExistingDevice(device *devices.Device, dataMap 
 		lf.Update(dataMap)
 		return
 	}
-	
+
 	// we are here because device is registered via bridge
 	// but we dont have a device lifetime service created yet
 	lf := dm.createDeviceService(device, dataMap)

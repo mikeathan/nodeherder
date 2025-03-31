@@ -165,6 +165,19 @@ func (d *DeviceConfigCache) DeleteDebounce(id string, exposeName string) bool {
 	return false
 }
 
+func (d *DeviceConfigCache) SetDebounce(id string, exposeName string, timeInterval *utils.TimeInterval) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+	if deviceDebounce, ok := d.devicesDebounce[id]; ok {
+		deviceDebounce.SetDebounce(exposeName, timeInterval.Duration())
+	} else {
+
+		deviceDebounce = NewDeviceDebounce(NewDeviceConfig(id))
+		deviceDebounce.SetDebounce(exposeName, timeInterval.Duration())
+		d.devicesDebounce[id] = deviceDebounce
+	}
+}
+
 func (d *DeviceConfigCache) GetDebounce(id string, exposeName string) (time.Duration, bool) {
 
 	d.mutex.RLock()

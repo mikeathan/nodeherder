@@ -45,9 +45,9 @@ func TestDeviceLifetimeService_Start(t *testing.T) {
 			wg.Done()
 		}}
 
-	debouncer := utils_test.CreateDebouncer("x01234")
-
-	service := services.NewDeviceLifetimeService(device, events, debouncer)
+	app := settings.NewAppConfig()
+	cache := settings.NewDeviceConfigCache(app)
+	service := services.NewDeviceLifetimeService(device, events, cache, utils.NewRealClock())
 	payload := map[string]interface{}{"brigthness": 10.2}
 
 	wg.Add(2)
@@ -80,8 +80,9 @@ func TestDeviceLifetimeService_UpdateWithNewData(t *testing.T) {
 		},
 	}
 
-	debouncer := utils_test.CreateDebouncer("x01234")
-	service := services.NewDeviceLifetimeService(device, events, debouncer)
+	app := settings.NewAppConfig()
+	cache := settings.NewDeviceConfigCache(app)
+	service := services.NewDeviceLifetimeService(device, events, cache, utils.NewRealClock())
 	payload := map[string]interface{}{"brigthness": 35.4, "last_seen": "2023-01-01T00:00:00Z"}
 
 	service.Update(payload)
@@ -110,8 +111,9 @@ func TestDeviceLifetimeService_UpdateWithSameData(t *testing.T) {
 		},
 	}
 
-	debouncer := utils_test.CreateDebouncer("x01234")
-	service := services.NewDeviceLifetimeService(device, events, debouncer)
+	app := settings.NewAppConfig()
+	cache := settings.NewDeviceConfigCache(app)
+	service := services.NewDeviceLifetimeService(device, events, cache, utils.NewRealClock())
 	payload := map[string]interface{}{"brigthness": 124.2, "last_seen": "2023-01-01T00:00:00Z"}
 
 	service.Update(payload)
@@ -148,9 +150,9 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 		"brigthness": utils.IntervalFromSeconds(3),
 	}
 	appConfig.AddDeviceConfig(d1)
+	cache := settings.NewDeviceConfigCache(appConfig)
 
-	debouncer := utils_test.CreateDebouncerFromAppConfig("x01234", appConfig, mockClock)
-	service := services.NewDeviceLifetimeService(device, events, debouncer)
+	service := services.NewDeviceLifetimeService(device, events, cache, mockClock)
 
 	testCases := []struct {
 		payload      map[string]interface{}
@@ -238,9 +240,7 @@ func TestDeviceLifetimeService_Availability(t *testing.T) {
 
 	app := settings.NewAppConfig()
 	cache := settings.NewDeviceConfigCache(app)
-	debouncer := settings.NewDeviceDebouncer("testDevice", cache, mocks.NewMockClock(func() time.Time { return time.Now() }))
-
-	service := services.NewDeviceLifetimeService(device, events, debouncer)
+	service := services.NewDeviceLifetimeService(device, events, cache, mocks.NewMockClock(func() time.Time { return time.Now() }))
 	payload := map[string]interface{}{"test": "data"}
 
 	// make last seen 11 seconds ago as our availability timeout is 10 seconds

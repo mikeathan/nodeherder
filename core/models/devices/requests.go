@@ -16,6 +16,7 @@ type DeviceRequestEvents struct {
 	AvailabilityTimeout int
 	OnNewDevice                 func(device *Device, dataMap map[string]interface{})
 	OnDeviceUpdated             func(device *Device, data *UpdatePackage)
+	OnDeviceMetricsAvailable     func(device *Device, dataMap map[string]interface{}) 
 	OnDeviceAvailabilityChanged func(p *UpdatePackage)
 }
 
@@ -40,5 +41,10 @@ func (d *DeviceRequestEvents) WithOnNewDevice(f func(device *Device, dataMap map
 
 func (d *DeviceRequestEvents) WithOnDeviceUpdated(f func(device *Device, data *UpdatePackage)) *DeviceRequestEvents {
 	d.OnDeviceUpdated = f
+	return d
+}
+
+func (d *DeviceRequestEvents) WithOnDeviceMetricsAvailabed(f func(device *Device, dataMap map[string]interface{})) *DeviceRequestEvents {
+	d.OnDeviceMetricsAvailable = f
 	return d
 }
