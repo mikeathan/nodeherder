@@ -14,7 +14,7 @@ import (
 
 func TestDeviceLifetimeService_Start(t *testing.T) {
 	wg := sync.WaitGroup{}
-	device := utils_test.CreateDevice("x01234", "testDevice", "brigthness", 124, 0.0, 255.0)
+	device := utils_test.CreateDevice("x01234", "testDevice", "brightness", 124, 0.0, 255.0)
 	device.Availability = devices.OnlineAvailability
 
 	events := &devices.DeviceRequestEvents{
@@ -27,8 +27,8 @@ func TestDeviceLifetimeService_Start(t *testing.T) {
 				t.Errorf("OnNewDevice id = %v, want %v", d.Id, "x01234")
 			}
 
-			if p["brigthness"] != 10.2 {
-				t.Errorf("OnNewDevice payload = %v, want %v", p["brigthness"], 10.2)
+			if p["brightness"] != 10.2 {
+				t.Errorf("OnNewDevice payload = %v, want %v", p["brightness"], 10.2)
 			}
 
 			wg.Done()
@@ -48,7 +48,7 @@ func TestDeviceLifetimeService_Start(t *testing.T) {
 	app := settings.NewAppConfig()
 	cache := settings.NewDeviceConfigCache(app)
 	service := services.NewDeviceLifetimeService(device, events, cache, utils.NewRealClock())
-	payload := map[string]interface{}{"brigthness": 10.2}
+	payload := map[string]interface{}{"brightness": 10.2}
 
 	wg.Add(2)
 	service.Start(payload)
@@ -62,7 +62,7 @@ func TestDeviceLifetimeService_UpdateWithNewData(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
-	device := utils_test.CreateLightDevice("x01234", "testDevice", "brigthness", 124.2)
+	device := utils_test.CreateLightDevice("x01234", "testDevice", "brightness", 124.2)
 	device.Availability = devices.OfflineAvailability
 
 	events := &devices.DeviceRequestEvents{
@@ -70,8 +70,8 @@ func TestDeviceLifetimeService_UpdateWithNewData(t *testing.T) {
 			if d != device {
 				t.Errorf("OnDeviceUpdated device = %v, want %v", d, device)
 			}
-			if p.Data["brigthness"] != 35.4 {
-				t.Errorf("OnDeviceUpdated payload.Exposes[brigthness].Data = %v, want %v", p.Data["brigthness"], 35.4)
+			if p.Data["brightness"] != 35.4 {
+				t.Errorf("OnDeviceUpdated payload.Exposes[brightness].Data = %v, want %v", p.Data["brightness"], 35.4)
 			}
 			if p.Availability != devices.OnlineAvailability {
 				t.Errorf("OnDeviceUpdated availability = %v, want %v", p.Availability, devices.OnlineAvailability)
@@ -80,15 +80,18 @@ func TestDeviceLifetimeService_UpdateWithNewData(t *testing.T) {
 		},
 	}
 
+	// needs refacoring !!!!!!
 	app := settings.NewAppConfig()
+	d1 := settings.NewDeviceConfig("x01234")
+	app.AddDeviceConfig(d1)
 	cache := settings.NewDeviceConfigCache(app)
 	service := services.NewDeviceLifetimeService(device, events, cache, utils.NewRealClock())
-	payload := map[string]interface{}{"brigthness": 35.4, "last_seen": "2023-01-01T00:00:00Z"}
+	payload := map[string]interface{}{"brightness": 35.4, "last_seen": "2023-01-01T00:00:00Z"}
 
 	service.Update(payload)
 
 	wg.Wait()
-	if device.Exposes["brigthness"].Data != 35.4 {
+	if device.Exposes["brightness"].Data != 35.4 {
 		t.Errorf("Device value not updated")
 	}
 
@@ -102,7 +105,7 @@ func TestDeviceLifetimeService_UpdateWithNewData(t *testing.T) {
 
 func TestDeviceLifetimeService_UpdateWithSameData(t *testing.T) {
 
-	device := utils_test.CreateLightDevice("x01234", "testDevice", "brigthness", 124.2)
+	device := utils_test.CreateLightDevice("x01234", "testDevice", "brightness", 124.2)
 	device.Availability = devices.OfflineAvailability
 
 	events := &devices.DeviceRequestEvents{
@@ -111,14 +114,18 @@ func TestDeviceLifetimeService_UpdateWithSameData(t *testing.T) {
 		},
 	}
 
+	// needs refacoring !!!!!!
 	app := settings.NewAppConfig()
+	d1 := settings.NewDeviceConfig("x01234")
+	app.AddDeviceConfig(d1)
 	cache := settings.NewDeviceConfigCache(app)
+
 	service := services.NewDeviceLifetimeService(device, events, cache, utils.NewRealClock())
-	payload := map[string]interface{}{"brigthness": 124.2, "last_seen": "2023-01-01T00:00:00Z"}
+	payload := map[string]interface{}{"brightness": 124.2, "last_seen": "2023-01-01T00:00:00Z"}
 
 	service.Update(payload)
 	time.Sleep(1 * time.Second)
-	if device.Exposes["brigthness"].Data != 124.2 {
+	if device.Exposes["brightness"].Data != 124.2 {
 		t.Errorf("Device value not updated")
 	}
 
@@ -132,7 +139,7 @@ func TestDeviceLifetimeService_UpdateWithSameData(t *testing.T) {
 
 func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 
-	device := utils_test.CreateLightDevice("x01234", "testDevice", "brigthness", 124.1)
+	device := utils_test.CreateLightDevice("x01234", "testDevice", "brightness", 124.1)
 	device.Availability = devices.OfflineAvailability
 
 	events := &devices.DeviceRequestEvents{
@@ -147,7 +154,7 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 	appConfig := settings.NewAppConfig()
 	d1 := settings.NewDeviceConfig("x01234")
 	d1.Debounce = map[string]*utils.TimeInterval{
-		"brigthness": utils.IntervalFromSeconds(3),
+		"brightness": utils.IntervalFromSeconds(3),
 	}
 	appConfig.AddDeviceConfig(d1)
 	cache := settings.NewDeviceConfigCache(appConfig)
@@ -160,32 +167,32 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 		shouldUpdate bool
 	}{
 		{
-			payload:      map[string]interface{}{"brigthness": 124.2},
+			payload:      map[string]interface{}{"brightness": 124.2},
 			timestamp:    createTimestamp(11, 05, 10),
 			shouldUpdate: true,
 		},
 		{
-			payload:      map[string]interface{}{"brigthness": 124.5},
+			payload:      map[string]interface{}{"brightness": 124.5},
 			timestamp:    createTimestamp(11, 05, 11),
 			shouldUpdate: false,
 		},
 		{
-			payload:      map[string]interface{}{"brigthness": 124.6},
+			payload:      map[string]interface{}{"brightness": 124.6},
 			timestamp:    createTimestamp(11, 05, 14),
 			shouldUpdate: true,
 		},
 		{
-			payload:      map[string]interface{}{"brigthness": 124.7},
+			payload:      map[string]interface{}{"brightness": 124.7},
 			timestamp:    createTimestamp(11, 05, 17),
 			shouldUpdate: true,
 		},
 		{
-			payload:      map[string]interface{}{"brigthness": 124.8},
+			payload:      map[string]interface{}{"brightness": 124.8},
 			timestamp:    createTimestamp(11, 05, 18),
 			shouldUpdate: false,
 		},
 		{
-			payload:      map[string]interface{}{"brigthness": 124.9},
+			payload:      map[string]interface{}{"brightness": 124.9},
 			timestamp:    createTimestamp(11, 05, 19),
 			shouldUpdate: false,
 		},
@@ -193,7 +200,7 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		currValue := device.Exposes["brigthness"].Data
+		currValue := device.Exposes["brightness"].Data
 		mockClock.SetMockTime(tc.timestamp)
 
 		service.Update(tc.payload)
@@ -201,13 +208,13 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 
 		if tc.shouldUpdate {
 
-			if device.Exposes["brigthness"].Data != tc.payload["brigthness"] {
-				t.Errorf("Device value not updated. want %v, got %v", tc.payload["brigthness"], device.Exposes["brigthness"].Data)
+			if device.Exposes["brightness"].Data != tc.payload["brightness"] {
+				t.Errorf("Device value not updated. want %v, got %v", tc.payload["brightness"], device.Exposes["brightness"].Data)
 			}
 		} else {
 
-			if device.Exposes["brigthness"].Data != currValue {
-				t.Errorf("Error: Device value updated. want %v, got %v", currValue, device.Exposes["brigthness"].Data)
+			if device.Exposes["brightness"].Data != currValue {
+				t.Errorf("Error: Device value updated. want %v, got %v", currValue, device.Exposes["brightness"].Data)
 			}
 		}
 	}
@@ -218,6 +225,7 @@ func TestDeviceLifetimeService_Availability(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 	device := &devices.Device{Id: "testDevice", Availability: devices.OnlineAvailability}
+
 	events := &devices.DeviceRequestEvents{
 		AvailabilityTimeout: 10,
 		OnNewDevice: func(d *devices.Device, p map[string]interface{}) {
@@ -252,6 +260,45 @@ func TestDeviceLifetimeService_Availability(t *testing.T) {
 	if device.Availability != devices.OfflineAvailability {
 		t.Errorf("Device availability not changed to offline")
 	}
+}
+
+
+todo add more test cases here
+func TestDeviceLifetimeService_MetricsAvailability(t *testing.T) {
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
+	device := utils_test.CreateLightDevice("x01234", "testDevice", "brigthness", 124.1)
+	device.Availability = devices.OfflineAvailability
+
+	events := &devices.DeviceRequestEvents{
+		AvailabilityTimeout: 30000,
+		
+		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
+			if d != device {
+				t.Errorf("OnDeviceUpdated device = %v, want %v", d, device)
+			}
+			wg.Done()
+		},
+		OnDeviceMetricsAvailable: func(d *devices.Device, p map[string]interface{}) {
+
+			if p["brigthness"] != 34.5 {
+				t.Errorf("OnDeviceMetricsAvailable value = %v, want %v", p["brigthness"], 34.5)
+			}
+			wg.Done()
+		},
+	}
+
+	app := settings.NewAppConfig()
+	d1 := settings.NewDeviceConfig("x01234")
+	d1.MetricsEnabled = true
+	app.AddDeviceConfig(d1)
+	cache := settings.NewDeviceConfigCache(app)
+	service := services.NewDeviceLifetimeService(device, events, cache, mocks.NewMockClock(func() time.Time { return time.Now() }))
+	payload := map[string]interface{}{"test": "data", "brigthness": 34.5}
+
+	service.Update(payload)
+	wg.Wait()
 }
 
 func createTimestamp(hour, minute, second int) time.Time {
