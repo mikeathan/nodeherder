@@ -81,10 +81,6 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 	d.device.LastSeen = getLastSeen(payload) // we need that.
 
 	if updatePackage.HasData() {
-
-		//
-		// do we need goroutine here or use the worker pool ???
-		//
 		updatePackage.LastSeen = d.device.LastSeen
 
 		// update device with expose changes
@@ -94,7 +90,6 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 
 		// this will update device in store and emit ws event to connected clients
 		d.events.OnDeviceUpdated(d.device, updatePackage)
-		//
 
 		if d.config.MetricsEnabled {
 
@@ -107,10 +102,6 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 			}
 
 			if len(measumementUpdateData) > 0 {
-				//
-				// do we need goroutine here or use the worker pool ???
-				//
-
 				// this will update metrics store with update measurement data
 				d.events.OnDeviceMetricsAvailable(d.device, measumementUpdateData)
 			}

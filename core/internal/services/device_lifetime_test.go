@@ -1,6 +1,7 @@
 package services_test
 
 import (
+	"fmt"
 	"node-herder/internal/services"
 	"node-herder/mocks"
 	"node-herder/models/devices"
@@ -262,18 +263,24 @@ func TestDeviceLifetimeService_Availability(t *testing.T) {
 	}
 }
 
-
-todo add more test cases here
 func TestDeviceLifetimeService_MetricsAvailability(t *testing.T) {
 	wg := sync.WaitGroup{}
-	wg.Add(2)
 
-	device := utils_test.CreateLightDevice("x01234", "testDevice", "brigthness", 124.1)
+	brightness := utils_test.CreateEntity("brightness", "number", 12.5)
+	brightness.Category = devices.MeasurementCategory
+	battery := utils_test.CreateEntity("battery", "number", 80)
+	battery.Category = devices.DiagnosticCategory
+	color_temp := utils_test.CreateEntity("color_temp", "number", 156)
+	color_temp.Category = devices.MeasurementCategory
+	linkquality := utils_test.CreateEntity("linkquality", "number", 112)
+	linkquality.Category = devices.DiagnosticCategory
+
+	device := utils_test.CreateDeviceWithExposes("x01234", "testDevice", []*devices.Entity{brightness, battery, color_temp, linkquality})
 	device.Availability = devices.OfflineAvailability
 
 	events := &devices.DeviceRequestEvents{
 		AvailabilityTimeout: 30000,
-		
+
 		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
 			if d != device {
 				t.Errorf("OnDeviceUpdated device = %v, want %v", d, device)
@@ -282,8 +289,11 @@ func TestDeviceLifetimeService_MetricsAvailability(t *testing.T) {
 		},
 		OnDeviceMetricsAvailable: func(d *devices.Device, p map[string]interface{}) {
 
-			if p["brigthness"] != 34.5 {
-				t.Errorf("OnDeviceMetricsAvailable value = %v, want %v", p["brigthness"], 34.5)
+			_, ok1 := p["brightness"]
+			_, ok2 := p["color_temp"]
+
+			if !ok1 && !ok2 {
+				t.Errorf("OnDeviceMetricsAvailable metrics = %v, want brightness and/or color_temp", p)
 			}
 			wg.Done()
 		},
@@ -292,13 +302,59 @@ func TestDeviceLifetimeService_MetricsAvailability(t *testing.T) {
 	app := settings.NewAppConfig()
 	d1 := settings.NewDeviceConfig("x01234")
 	d1.MetricsEnabled = true
+	d1.Debounce["battery"] = utils.IntervalFromMilliseconds(5000)
+	d1.Debounce["linkquality"] = utils.IntervalFromMilliseconds(5000)
+
 	app.AddDeviceConfig(d1)
 	cache := settings.NewDeviceConfigCache(app)
 	service := services.NewDeviceLifetimeService(device, events, cache, mocks.NewMockClock(func() time.Time { return time.Now() }))
-	payload := map[string]interface{}{"test": "data", "brigthness": 34.5}
 
-	service.Update(payload)
-	wg.Wait()
+	testCases := []struct {
+		payload         map[string]interface{}
+		expectedUpdates int
+	}{
+		{
+			payload:         map[string]interface{}{"battery": 34, "brightness": 34.5},
+			expectedUpdates: 2,
+		},
+		{
+			payload:         map[string]interface{}{"battery": 23, "brightness": 120},
+			expectedUpdates: 2,
+		},
+		{
+			payload:         map[string]interface{}{"battery": 12, "brightness": 120}, // debounced and no changes
+			expectedUpdates: 0,
+		},
+		{
+			payload:      map[string]interface{}{"battery": 34, "linkquality": 12.5}, // 1st debounced and 2nd change
+			expectedUpdates: 1,
+		},
+		{
+			payload:      map[string]interface{}{"battery": 34, "linkquality": 12.5, "color_temp": 106.5}, //1 st changed, 2nd debounced and 3rd changed
+			expectedUpdates: 2,
+		},
+		{
+			payload:      map[string]interface{}{"battery": 34, "linkquality": 12.5, "color_temp": 12.5, "brightness": 12}, 
+			expectedUpdates: 2,
+		},
+	}
+
+	for id, tc := range testCases {
+
+		payload := tc.payload
+
+		if id == 2{
+			fmt.Println("")
+		}
+		if tc.expectedUpdates > 0 {
+			wg.Add(tc.expectedUpdates)
+		}
+		service.Update(payload)
+
+		if tc.expectedUpdates > 0 {
+			wg.Wait()
+		}
+	}
 }
 
 func createTimestamp(hour, minute, second int) time.Time {
