@@ -52,7 +52,7 @@ func (dm *DeviceProcessor) createDeviceService(device *devices.Device, dataMap m
 	defer dm.mutex.Unlock()
 
 	appConfig := dm.store.AppConfig()
-	ls := NewDeviceLifetimeService(device, dm.events, appConfig.GetDeviceConfigCache(device.Id), utils.NewRealClock())
+	ls := NewDeviceLifetimeService(device, dm.events, appConfig.GetDeviceConfigCache(), utils.NewRealClock())
 	ls.Start(dataMap)
 
 	dm.deviceServices[device.Id] = ls

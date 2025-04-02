@@ -47,7 +47,8 @@ func TestDeviceLifetimeService_Start(t *testing.T) {
 		}}
 
 	app := settings.NewAppConfig()
-	cache := settings.NewDeviceConfigCache(app)
+	repo := mocks.NopSettingsrepo{}
+	cache := settings.NewDeviceConfigCache(&repo, app)
 	service := services.NewDeviceLifetimeService(device, events, cache, utils.NewRealClock())
 	payload := map[string]interface{}{"brightness": 10.2}
 
@@ -85,7 +86,8 @@ func TestDeviceLifetimeService_UpdateWithNewData(t *testing.T) {
 	app := settings.NewAppConfig()
 	d1 := settings.NewDeviceConfig("x01234")
 	app.AddDeviceConfig(d1)
-	cache := settings.NewDeviceConfigCache(app)
+	repo := mocks.NopSettingsrepo{}
+	cache := settings.NewDeviceConfigCache(&repo, app)
 	service := services.NewDeviceLifetimeService(device, events, cache, utils.NewRealClock())
 	payload := map[string]interface{}{"brightness": 35.4, "last_seen": "2023-01-01T00:00:00Z"}
 
@@ -119,7 +121,8 @@ func TestDeviceLifetimeService_UpdateWithSameData(t *testing.T) {
 	app := settings.NewAppConfig()
 	d1 := settings.NewDeviceConfig("x01234")
 	app.AddDeviceConfig(d1)
-	cache := settings.NewDeviceConfigCache(app)
+	repo := mocks.NopSettingsrepo{}
+	cache := settings.NewDeviceConfigCache(&repo, app)
 
 	service := services.NewDeviceLifetimeService(device, events, cache, utils.NewRealClock())
 	payload := map[string]interface{}{"brightness": 124.2, "last_seen": "2023-01-01T00:00:00Z"}
@@ -152,14 +155,14 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 	mockClock := mocks.NewMockClock(func() time.Time {
 		return now
 	})
-	appConfig := settings.NewAppConfig()
+	app := settings.NewAppConfig()
 	d1 := settings.NewDeviceConfig("x01234")
 	d1.Debounce = map[string]*utils.TimeInterval{
 		"brightness": utils.IntervalFromSeconds(3),
 	}
-	appConfig.AddDeviceConfig(d1)
-	cache := settings.NewDeviceConfigCache(appConfig)
-
+	app.AddDeviceConfig(d1)
+	repo := mocks.NopSettingsrepo{}
+	cache := settings.NewDeviceConfigCache(&repo, app)
 	service := services.NewDeviceLifetimeService(device, events, cache, mockClock)
 
 	testCases := []struct {
@@ -248,7 +251,8 @@ func TestDeviceLifetimeService_Availability(t *testing.T) {
 	}
 
 	app := settings.NewAppConfig()
-	cache := settings.NewDeviceConfigCache(app)
+	repo := mocks.NopSettingsrepo{}
+	cache := settings.NewDeviceConfigCache(&repo, app)
 	service := services.NewDeviceLifetimeService(device, events, cache, mocks.NewMockClock(func() time.Time { return time.Now() }))
 	payload := map[string]interface{}{"test": "data"}
 
@@ -306,7 +310,8 @@ func TestDeviceLifetimeService_MetricsAvailability(t *testing.T) {
 	d1.Debounce["linkquality"] = utils.IntervalFromMilliseconds(5000)
 
 	app.AddDeviceConfig(d1)
-	cache := settings.NewDeviceConfigCache(app)
+	repo := mocks.NopSettingsrepo{}
+	cache := settings.NewDeviceConfigCache(&repo, app)
 	service := services.NewDeviceLifetimeService(device, events, cache, mocks.NewMockClock(func() time.Time { return time.Now() }))
 
 	testCases := []struct {
@@ -326,15 +331,15 @@ func TestDeviceLifetimeService_MetricsAvailability(t *testing.T) {
 			expectedUpdates: 0,
 		},
 		{
-			payload:      map[string]interface{}{"battery": 34, "linkquality": 12.5}, // 1st debounced and 2nd change
+			payload:         map[string]interface{}{"battery": 34, "linkquality": 12.5}, // 1st debounced and 2nd change
 			expectedUpdates: 1,
 		},
 		{
-			payload:      map[string]interface{}{"battery": 34, "linkquality": 12.5, "color_temp": 106.5}, //1 st changed, 2nd debounced and 3rd changed
+			payload:         map[string]interface{}{"battery": 34, "linkquality": 12.5, "color_temp": 106.5}, //1 st changed, 2nd debounced and 3rd changed
 			expectedUpdates: 2,
 		},
 		{
-			payload:      map[string]interface{}{"battery": 34, "linkquality": 12.5, "color_temp": 12.5, "brightness": 12}, 
+			payload:         map[string]interface{}{"battery": 34, "linkquality": 12.5, "color_temp": 12.5, "brightness": 12},
 			expectedUpdates: 2,
 		},
 	}
@@ -343,7 +348,7 @@ func TestDeviceLifetimeService_MetricsAvailability(t *testing.T) {
 
 		payload := tc.payload
 
-		if id == 2{
+		if id == 2 {
 			fmt.Println("")
 		}
 		if tc.expectedUpdates > 0 {

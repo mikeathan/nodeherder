@@ -85,9 +85,10 @@ type DeviceConfigCache struct {
 	devicesConfigs  map[string]*DeviceConfig
 	devicesDebounce map[string]*DeviceDebounce
 	mutex           sync.RWMutex
+	store           Repository
 }
 
-func NewDeviceConfigCache(appconfig *AppConfig) *DeviceConfigCache {
+func NewDeviceConfigCache(store Repository, appconfig *AppConfig) *DeviceConfigCache {
 	deviceConfigs := make(map[string]*DeviceConfig)
 	for _, dev := range appconfig.Hub.Devices {
 		deviceConfigs[dev.Id] = dev
@@ -106,6 +107,7 @@ func NewDeviceConfigCache(appconfig *AppConfig) *DeviceConfigCache {
 	}
 
 	return &DeviceConfigCache{
+		store:           store,
 		devicesConfigs:  deviceConfigs,
 		devicesDebounce: deviceDebounce,
 	}
@@ -117,19 +119,20 @@ func (d *DeviceConfigCache) Size() int {
 	return len(d.devicesConfigs)
 }
 
-func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, bool) {
+func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, error) {
 
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
 	if deviceConfig, ok := d.devicesConfigs[id]; ok {
-		return deviceConfig, true
+		return deviceConfig, nil
 	}
 
-	return nil, false
+	// load from db
+	return d.store.FindOrAddDeviceConfigIfNotExists(id)
 }
 
-func (d *DeviceConfigCache) Set(deviceConfig *DeviceConfig) {
+func (d *DeviceConfigCache) Set(deviceConfig *DeviceConfig) error {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
@@ -143,15 +146,9 @@ func (d *DeviceConfigCache) Set(deviceConfig *DeviceConfig) {
 
 		d.devicesDebounce[deviceConfig.Id].SetDebounce(expose, debounce.Duration())
 	}
-}
 
-func (d *DeviceConfigCache) Delete(id string) {
-
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-
-	delete(d.devicesConfigs, id)
-	delete(d.devicesDebounce, id)
+	// store in db
+	return d.store.SaveDeviceConfig(deviceConfig)
 }
 
 func (d *DeviceConfigCache) DeleteDebounce(id string, exposeName string) bool {
@@ -207,7 +204,7 @@ func NewAppConfigCache(store Repository, task []Task) (*AppConfigCache, error) {
 	}
 
 	cache := &AppConfigCache{
-		deviceCache: NewDeviceConfigCache(config),
+		deviceCache: NewDeviceConfigCache(store, config),
 		store:       store,
 		tasks:       task,
 	}
@@ -216,7 +213,7 @@ func NewAppConfigCache(store Repository, task []Task) (*AppConfigCache, error) {
 	return cache, nil
 }
 
-func (s *AppConfigCache) GetDeviceConfigCache(id string) *DeviceConfigCache {
+func (s *AppConfigCache) GetDeviceConfigCache() *DeviceConfigCache {
 	return s.deviceCache
 }
 
@@ -289,23 +286,11 @@ func (s *AppConfigCache) SaveHistoryConfig(historyConfig *HistoryConfig) (*AppCo
 }
 
 func (d *AppConfigCache) SetDeviceConfig(deviceConfig *DeviceConfig) error {
-
-	// store in cache first
-	d.deviceCache.Set(deviceConfig)
-
-	// store in db
-	return d.store.SaveDeviceConfig(deviceConfig)
+	return d.deviceCache.Set(deviceConfig)
 }
 
 func (d *AppConfigCache) GetDeviceConfig(id string) (*DeviceConfig, error) {
-
-	// check if device config is cached
-	if deviceConfig, ok := d.deviceCache.Get(id); ok {
-		return deviceConfig, nil
-	}
-
-	// load from db
-	return d.store.FindOrAddDeviceConfigIfNotExists(id)
+	return d.deviceCache.Get(id)
 }
 
 func (s *AppConfigCache) startTasks(config *AppConfig) {
