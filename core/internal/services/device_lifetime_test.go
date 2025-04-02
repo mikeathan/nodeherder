@@ -79,6 +79,8 @@ func TestDeviceLifetimeService_UpdateWithNewData(t *testing.T) {
 				t.Errorf("OnDeviceUpdated availability = %v, want %v", p.Availability, devices.OnlineAvailability)
 			}
 			wg.Done()
+		}, OnDeviceMeasurementsUpdated: func(d *devices.Device, p map[string]interface{}) {
+
 		},
 	}
 
@@ -149,6 +151,9 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 	events := &devices.DeviceRequestEvents{
 		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
 			//t.Error("OnDeviceUpdated should not be called")
+		},
+		OnDeviceMeasurementsUpdated: func(d *devices.Device, p map[string]interface{}) {
+
 		},
 	}
 	now := time.Now()
@@ -291,7 +296,7 @@ func TestDeviceLifetimeService_MetricsAvailability(t *testing.T) {
 			}
 			wg.Done()
 		},
-		OnDeviceMetricsAvailable: func(d *devices.Device, p map[string]interface{}) {
+		OnDeviceMeasurementsUpdated: func(d *devices.Device, p map[string]interface{}) {
 
 			_, ok1 := p["brightness"]
 			_, ok2 := p["color_temp"]

@@ -119,6 +119,9 @@ func TestDeviceProcessor_CreateOrUpdateDevice_ExistingDevice(t *testing.T) {
 		},
 		OnDeviceAvailabilityChanged: func(p *devices.UpdatePackage) {
 		},
+		OnDeviceMeasurementsUpdated:func(d *devices.Device, p map[string]interface{}){
+
+		},
 		AvailabilityTimeout: 1,
 	}
 	deviceName := "Living room light"

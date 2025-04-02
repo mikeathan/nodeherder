@@ -88,24 +88,27 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 			d.device.Exposes[expose].Data = value
 		}
 
-		// this will update device in store and emit ws event to connected clients
-		d.events.OnDeviceUpdated(d.device, updatePackage)
+		// TODO: optimizations
+		// we want to check if automation is enabled for this device (problem with that is automation is stored in automation engine)
+		// or metrics is enabled and then do logic below
+		// if d.config.MetricsEnabled {
 
-		if d.config.MetricsEnabled {
-
-			// send measurement updates to metrics store
-			measumementUpdateData := map[string]any{}
-			for name, value := range updatePackage.Data {
-				if e, ok := d.device.Exposes[name]; ok && e.Category == devices.MeasurementCategory {
-					measumementUpdateData[name] = value
-				}
-			}
-
-			if len(measumementUpdateData) > 0 {
-				// this will update metrics store with update measurement data
-				d.events.OnDeviceMetricsAvailable(d.device, measumementUpdateData)
+		// send measurement updates to metrics store
+		measumementUpdateData := map[string]any{}
+		for name, value := range updatePackage.Data {
+			if e, ok := d.device.Exposes[name]; ok && e.Category == devices.MeasurementCategory {
+				measumementUpdateData[name] = value
 			}
 		}
+
+		if len(measumementUpdateData) > 0 {
+			// this will attempt to run automation (if enabled) and store to metrics store (if enabled)
+			d.events.OnDeviceMeasurementsUpdated(d.device, measumementUpdateData)
+		}
+		//	}
+
+		// this will update device in store and emit ws event to connected clients
+		d.events.OnDeviceUpdated(d.device, updatePackage)
 
 	}
 }

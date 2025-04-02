@@ -90,15 +90,15 @@ var configWhitelist = map[string]int{
 	"color_temp_min":     3,
 	"color_options":      4,
 	"options":            5,
-	"target_distance":    6,
 }
 var diagnosticWhitelist = map[string]int{
-	"linkquality":   1,
-	"battery":       2,
-	"voltage":       3,
-	"battery_low":   4,
-	"battery_state": 5,
-	"strength":      6,
+	"linkquality":     1,
+	"battery":         2,
+	"voltage":         3,
+	"battery_low":     4,
+	"battery_state":   5,
+	"strength":        6,
+	"target_distance": 7,
 }
 
 type ExposeDataType = string

@@ -415,8 +415,8 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 		d.handleDeviceAvailabilityChanged(p)
 	})
 
-	events.WithOnDeviceMetricsAvailable(func(device *devices.Device, p map[string]interface{}) {
-		d.handleDeviceMetricsAvailable(device, p)
+	events.WithOnDeviceMeasurementsUpdated(func(device *devices.Device, p map[string]interface{}) {
+		d.handleDeviceMeasurementsUpdated(device, p)
 	})
 
 	return services.NewDeviceProcessor(d.registrar, d.store, events)
@@ -437,19 +437,20 @@ func (d *HubController) handleDeviceUpdated(device *devices.Device, payload *dev
 	// todo: execute in worker pool
 	// 	action()
 	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
-	
+
 	d.eventHub.Broadcast(ws.DeviceUpdated, payload)
 
-	d.automationEngine.HandleDevice(device)
-	
-	return d.store.StoreDevice(device.FriendlyName, device);
+	return d.store.StoreDevice(device.FriendlyName, device)
 }
 
 func (d *HubController) handleDeviceAvailabilityChanged(p *devices.UpdatePackage) {
 	d.eventHub.Broadcast(ws.DeviceUpdated, p)
 }
 
-func (d *HubController) handleDeviceMetricsAvailable(device *devices.Device, payload map[string]interface{}) error {
+func (d *HubController) handleDeviceMeasurementsUpdated(device *devices.Device, payload map[string]interface{}) error {
+
+	d.automationEngine.HandleDevice(device)
+
 	return d.store.StoreMetrics(device.FriendlyName, payload)
 }
 
