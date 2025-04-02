@@ -16,14 +16,14 @@ func Create(ctx context.Context) (AppStore, error) {
 	}
 
 	// To Refactor
-	config, err := repository.NewFileSettingsRepo()
+	configRepo, err := repository.NewFileSettingsRepo()
 	if err != nil {
 		return nil, fmt.Errorf("loading settings repository failed: %v", err.Error())
 	}
 	// Build Tasks
 	tasks := []settings.Task{DefaultMetricsCleanupTask(ctx, metricsRepo), DefaultRemoteLoggerTask()}
 
-	configCache, err := settings.NewAppConfigCache(config, tasks)
+	configCache, err := settings.NewAppConfigCache(configRepo, tasks)
 	if err != nil {
 		return nil, fmt.Errorf("loading settings cache failed: %v", err.Error())
 	}
