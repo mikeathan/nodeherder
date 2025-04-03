@@ -759,6 +759,19 @@ func (d *MockAutomationEngine[T]) deleteFromCache(name string) {
 	delete(d.cache, name)
 }
 
+// Mock  Automation Device Querier
+type MockAutomationDeviceQuerier struct {
+}
+
+func NewMockAutomationDeviceQuerier() *MockAutomationDeviceQuerier {
+	return &MockAutomationDeviceQuerier{}
+}
+
+func (s *MockAutomationDeviceQuerier) IsAutomationEnabled(id string) bool {
+	fmt.Println("Mocked AutomationDeviceQuerier IsAutomationEnabled")
+	return false
+}
+
 // Mock Clock
 type MockClock struct {
 	callback      func() time.Time

@@ -164,12 +164,10 @@ func (d *JsonDiskStorage[T]) Load(name string) (*T, error) {
 }
 
 func (d *JsonDiskStorage[T]) addToCache(name string, item *T) {
-	name = sanitize(name)
 	d.cache[name] = item
 }
 
 func (d *JsonDiskStorage[T]) loadFromCache(name string) *T {
-	name = sanitize(name)
 	if item, ok := d.cache[name]; ok {
 		return item
 	}
@@ -178,14 +176,10 @@ func (d *JsonDiskStorage[T]) loadFromCache(name string) *T {
 }
 
 func (d *JsonDiskStorage[T]) deleteFromCache(name string) {
-	name = sanitize(name)
 	delete(d.cache, name)
 }
 
 func (d *JsonDiskStorage[T]) saveFile(item *T, name string, pretty bool) error {
-
-	//sanitize
-	name = sanitize(name)
 	filePath := d.getFilePath(name)
 
 	data, err := json.Marshal(item)
@@ -263,7 +257,6 @@ func createDirIfNotExists(name string) {
 
 func (d *JsonDiskStorage[T]) deleteFile(name string) error {
 	// sanitize
-	name = sanitize(name)
 	filePath := d.getFilePath(name)
 
 	err := os.Remove(filePath)

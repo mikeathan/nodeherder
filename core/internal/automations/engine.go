@@ -20,6 +20,7 @@ type Engine interface { // TODO: might need to move it to Models????
 	DeleteTrigger(id string, triggerId int) error
 	Initialize()
 	Load(id string) (*Device, error)
+	IsAutomationEnabled(id string) bool
 	GetAllTriggers() []*Device
 	WithStorage(storage storage.Storage[Device])
 }
@@ -45,6 +46,15 @@ func NewEngine(handlers []AutomationHandler, registrar services.DeviceRegistrar,
 
 func (a *AutomationEngine) WithStorage(storage storage.Storage[Device]) {
 	a.storage = storage
+}
+
+func (a *AutomationEngine) IsAutomationEnabled(id string) bool {
+	automation, err := a.storage.LoadFromCache(id)
+	if err == nil {
+		return automation.Enabled
+	}
+
+	return false
 }
 
 func (a *AutomationEngine) HandleDevice(device *devices.Device) {

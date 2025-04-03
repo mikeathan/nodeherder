@@ -419,7 +419,13 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 		d.handleDeviceMeasurementsUpdated(device, p)
 	})
 
-	return services.NewDeviceProcessor(d.registrar, d.store, events)
+	return services.NewDeviceProcessorBuilder().
+		WithRegistrar(d.registrar).
+		WithStore(d.store).
+		WithEvents(events).
+		WithAutomationDeviceQuerier(d.automationEngine).
+		Build()
+
 }
 
 func (d *HubController) handleDeviceAdded(device *devices.Device, payload map[string]interface{}) error {
@@ -432,50 +438,7 @@ func (d *HubController) handleDeviceAdded(device *devices.Device, payload map[st
 	return d.store.StoreDevice(device.FriendlyName, device)
 }
 
-
-TODO
-
-type DeviceProcessorBuilder struct {
-    registrar        services.DeviceRegistrar
-    store            store.Store
-    events           events.EventEmitter
-    automationService automations.AutomationService
-}
-
-func NewDeviceProcessorBuilder() *DeviceProcessorBuilder {
-    return &DeviceProcessorBuilder{}
-}
-
-func (b *DeviceProcessorBuilder) WithRegistrar(r services.DeviceRegistrar) *DeviceProcessorBuilder {
-    b.registrar = r
-    return b
-}
-
-func (b *DeviceProcessorBuilder) WithStore(s store.Store) *DeviceProcessorBuilder {
-    b.store = s
-    return b
-}
-
-func (b *DeviceProcessorBuilder) WithEvents(e events.EventEmitter) *DeviceProcessorBuilder {
-    b.events = e
-    return b
-}
-
-func (b *DeviceProcessorBuilder) WithAutomationService(a automations.AutomationService) *DeviceProcessorBuilder {
-    b.automationService = a
-    return b
-}
-
-func (b *DeviceProcessorBuilder) Build() *DeviceProcessor {
-    return &DeviceProcessor{
-        registrar:        b.registrar,
-        store:            b.store,
-        events:           b.events,
-        automationService: b.automationService,
-    }
-}
-
-///
+// /
 func (d *HubController) handleDeviceUpdated(device *devices.Device, payload *devices.UpdatePackage) error {
 
 	// todo: execute in worker pool

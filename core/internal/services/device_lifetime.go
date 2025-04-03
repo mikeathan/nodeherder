@@ -1,6 +1,7 @@
 package services
 
 import (
+	"node-herder/models/automations"
 	"node-herder/models/devices"
 	"node-herder/models/settings"
 	"node-herder/utils"
@@ -20,17 +21,19 @@ type DeviceLifetimeService struct {
 	availablityDone    chan bool
 	events             *devices.DeviceRequestEvents
 	config             *settings.DeviceConfig
+	automationQueries  automations.DeviceQuerier
 }
 
-func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequestEvents, configCache *settings.DeviceConfigCache, clock utils.Clock) *DeviceLifetimeService {
+func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequestEvents, configCache *settings.DeviceConfigCache, automationQueries automations.DeviceQuerier, clock utils.Clock) *DeviceLifetimeService {
 
 	config, _ := configCache.Get(device.Id)
 	return &DeviceLifetimeService{
-		config:           config,
-		debouncerService: settings.NewDeviceDebouncer(device.Id, configCache, clock),
-		device:           device,
-		events:           events,
-		availablityDone:  make(chan bool, 1),
+		config:            config,
+		debouncerService:  settings.NewDeviceDebouncer(device.Id, configCache, clock),
+		device:            device,
+		events:            events,
+		automationQueries: automationQueries,
+		availablityDone:   make(chan bool, 1),
 	}
 }
 
@@ -88,28 +91,25 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 			d.device.Exposes[expose].Data = value
 		}
 
-		// TODO: optimizations
-		// we want to check if automation is enabled for this device (problem with that is automation is stored in automation engine)
-		// or metrics is enabled and then do logic below
-		// if d.config.MetricsEnabled {
+		if d.config.MetricsEnabled ||
+			d.automationQueries.IsAutomationEnabled(d.device.Id) {
 
-		// send measurement updates to metrics store
-		measumementUpdateData := map[string]any{}
-		for name, value := range updatePackage.Data {
-			if e, ok := d.device.Exposes[name]; ok && e.Category == devices.MeasurementCategory {
-				measumementUpdateData[name] = value
+			// send measurement updates to metrics store
+			measumementUpdateData := map[string]any{}
+			for name, value := range updatePackage.Data {
+				if e, ok := d.device.Exposes[name]; ok && e.Category == devices.MeasurementCategory {
+					measumementUpdateData[name] = value
+				}
+			}
+
+			if len(measumementUpdateData) > 0 {
+				// this will attempt to run automation (if enabled) and store to metrics store (if enabled)
+				d.events.OnDeviceMeasurementsUpdated(d.device, measumementUpdateData)
 			}
 		}
 
-		if len(measumementUpdateData) > 0 {
-			// this will attempt to run automation (if enabled) and store to metrics store (if enabled)
-			d.events.OnDeviceMeasurementsUpdated(d.device, measumementUpdateData)
-		}
-		//	}
-
 		// this will update device in store and emit ws event to connected clients
 		d.events.OnDeviceUpdated(d.device, updatePackage)
-
 	}
 }
 
