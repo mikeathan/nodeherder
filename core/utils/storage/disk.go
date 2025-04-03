@@ -257,9 +257,9 @@ func createDirIfNotExists(name string) {
 	}
 }
 
-func sanitize(name string) string {
-	return strings.Replace(name, " ", "_", -1)
-}
+// func sanitize(name string) string {
+// 	return strings.Replace(name, " ", "_", -1)
+// }
 
 func (d *JsonDiskStorage[T]) deleteFile(name string) error {
 	// sanitize
