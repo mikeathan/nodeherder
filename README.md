@@ -71,6 +71,8 @@ frontend - add device groups to be shown in dashboard instead of current dashboa
 
 TODO:
 
+- create defauls for some device settings so we dont repeat alot of same info
+
 - remove non measurement exposes from metrics - done
 - create group
 - group needs to be stored somewhere in backend
@@ -120,7 +122,6 @@ items:[
 }
 
 store in Hub.ExposeGroup
-
 
 in frontend we have a new page for groups
 
