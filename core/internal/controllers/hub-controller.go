@@ -415,40 +415,50 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 		d.handleDeviceAvailabilityChanged(p)
 	})
 
-	return services.NewDeviceProcessor(d.registrar, d.store, events)
+	events.WithOnDeviceMeasurementsUpdated(func(device *devices.Device, p map[string]interface{}) {
+		d.handleDeviceMeasurementsUpdated(device, p)
+	})
+
+	return services.NewDeviceProcessorBuilder().
+		WithRegistrar(d.registrar).
+		WithStore(d.store).
+		WithEvents(events).
+		WithAutomationQuerier(d.automationEngine).
+		Build()
+
 }
 
-func (d *HubController) handleDeviceAdded(device *devices.Device, data map[string]interface{}) error {
+func (d *HubController) handleDeviceAdded(device *devices.Device, payload map[string]interface{}) error {
 	// todo: execute in worker pool
 	// 	action()
 	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
 
 	d.eventHub.Broadcast(ws.DeviceAdded, device)
 
-	if err := d.store.StoreDevice(device.FriendlyName, device); err != nil {
-		return err
-	}
-
-	return d.store.StoreMetrics(device.FriendlyName, data)
+	return d.store.StoreDevice(device.FriendlyName, device)
 }
 
-func (d *HubController) handleDeviceUpdated(device *devices.Device, p *devices.UpdatePackage) error {
+// /
+func (d *HubController) handleDeviceUpdated(device *devices.Device, payload *devices.UpdatePackage) error {
 
 	// todo: execute in worker pool
 	// 	action()
 	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
-	d.eventHub.Broadcast(ws.DeviceUpdated, p)
 
-	d.automationEngine.HandleDevice(device)
-	if err := d.store.StoreDevice(device.FriendlyName, device); err != nil {
-		return err
-	}
+	d.eventHub.Broadcast(ws.DeviceUpdated, payload)
 
-	return d.store.StoreMetrics(device.FriendlyName, p.Data)
+	return d.store.StoreDevice(device.FriendlyName, device)
 }
 
 func (d *HubController) handleDeviceAvailabilityChanged(p *devices.UpdatePackage) {
 	d.eventHub.Broadcast(ws.DeviceUpdated, p)
+}
+
+func (d *HubController) handleDeviceMeasurementsUpdated(device *devices.Device, payload map[string]interface{}) error {
+
+	d.automationEngine.HandleDevice(device)
+
+	return d.store.StoreMetrics(device.FriendlyName, payload)
 }
 
 func convertToMap(payload []byte) (map[string]interface{}, error) {

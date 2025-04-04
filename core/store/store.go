@@ -5,6 +5,7 @@ import (
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	"node-herder/repository"
+	"node-herder/utils"
 	"sync"
 	"time"
 )
@@ -137,14 +138,33 @@ func (s *appStore) StoreDevice(friendlyName string, device *devices.Device) erro
 	}
 
 	if isNew {
-		// make sure new device has a configuration if added for first time
-		_, err := s.config.GetDeviceConfig(id)
+		err := s.initialiseDeviceConfig(device)
 		if err != nil {
 			return err
 		}
 	}
 
 	s.deviceIdMapper.UpdateId(friendlyName, id)
+	return nil
+}
+
+func (s *appStore) initialiseDeviceConfig(device *devices.Device) error {
+
+	// make sure new device has a configuration if added for first time
+	deviceConfig, err := s.config.GetDeviceConfig(device.Id)
+	if err != nil {
+		return err
+	}
+	// for diagnostic entities, set default debounce to 5 seconds
+	for _, entity := range device.Exposes {
+		if entity.Category == devices.DiagnosticCategory {
+
+			if _, ok := deviceConfig.Debounce[entity.Name]; !ok {
+				deviceConfig.Debounce[entity.Name] = utils.IntervalFromSeconds(5)
+				s.config.SetDeviceConfig(deviceConfig)
+			}
+		}
+	}
 	return nil
 }
 
