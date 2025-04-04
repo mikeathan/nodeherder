@@ -302,6 +302,38 @@ func (s *AppConfigCache) SaveHistoryConfig(historyConfig *HistoryConfig) (*AppCo
 	return config, nil
 }
 
+func (s *AppConfigCache) SaveExposeGroup(name string, exposeGroup *ExposeGroup) (*AppConfig, error) {
+	config, err := s.LoadAppConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	config.Hub.Groups[name] = exposeGroup
+
+	err = s.store.SaveAppConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return config, nil
+}
+
+func (s *AppConfigCache) DeleteExposeGroup(name string, exposeGroup *ExposeGroup) (*AppConfig, error) {
+	config, err := s.LoadAppConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	delete(config.Hub.Groups, name)
+
+	err = s.store.SaveAppConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return config, nil
+}
+
 func (d *AppConfigCache) SetDeviceConfig(deviceConfig *DeviceConfig) error {
 	return d.deviceCache.Set(deviceConfig)
 }

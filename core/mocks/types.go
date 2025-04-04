@@ -159,6 +159,14 @@ func (w MockEventHub) OnSaveLoggerConfig(action func(payload interface{}) error)
 	fmt.Println("WsServer: Mocked OnSaveLoggerConfig")
 }
 
+func (h *MockEventHub) OnSaveExposeGroup(action func(id string) error) {
+	fmt.Println("WsServer OnSaveExposeGroup")
+}
+
+func (h *MockEventHub) OnDeleteExposeGroup(action func(id string) error) {
+	fmt.Println("WsServer OnDeleteExposeGroup")
+}
+
 // Mock MqttClient
 type MockMqttClient struct {
 	messageHandler func(string, []byte)

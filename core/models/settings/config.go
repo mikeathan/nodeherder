@@ -72,6 +72,8 @@ func DefaultBridgeConfig() *BridgeConfig {
 	}
 }
 
+type ExposeGroups map[string]*ExposeGroup
+
 type ExposeGroup struct {
 	Id      string            `json:"id"`
 	Name    string            `json:"name"`
@@ -89,7 +91,7 @@ type HubConfig struct {
 	Devices map[string]*DeviceConfig `json:"devices"`
 	History *HistoryConfig           `json:"history"`
 	Logger  *LoggerConfig            `json:"logger"`
-	Groups  []*ExposeGroup           `json:"groups"`
+	Groups  map[string]*ExposeGroup  `json:"groups"`
 }
 
 type BridgeConfig struct {
@@ -109,7 +111,7 @@ func NewHubConfig() *HubConfig {
 		Devices: map[string]*DeviceConfig{},
 		History: DefaultHistoryConfig(),
 		Logger:  DefaultLoggingConfig(),
-		Groups:  []*ExposeGroup{},
+		Groups:  map[string]*ExposeGroup{},
 	}
 }
 

@@ -31,6 +31,9 @@ const (
 	SaveDeviceConfig  = "saveDeviceConfig"
 	LoadAppconfig     = "loadAppConfig"
 
+	SaveExposeGroup   = "saveExposeGroup"
+	DeleteExposeGroup = "deleteExposeGroup"
+
 	LoadMetrics = "loadMetrics"
 
 	// response
@@ -74,6 +77,8 @@ type EventHub interface {
 	OnSaveDeviceConfig(func(payload interface{}) error)
 	OnSaveHistoryConfig(func(payload interface{}) error)
 	OnSaveLoggerConfig(func(payload interface{}) error)
+	OnSaveExposeGroup(action func(id string) error)
+	OnDeleteExposeGroup(action func(id string) error)
 	HandleRequest(w http.ResponseWriter, r *http.Request) error
 	Context() hub.Context
 }
@@ -98,6 +103,8 @@ type eventHubImpl struct {
 	onSaveDeviceConfig        func(interface{}) error
 	onSaveHistoryConfig       func(interface{}) error
 	onSaveLoggerConfig        func(interface{}) error
+	onSaveExposeGroup         func(id string) error
+	onDeleteExposeGroup       func(id string) error
 
 	requestContext hub.Context
 }
@@ -123,6 +130,8 @@ func NewWsHub() EventHub {
 		onSaveDeviceConfig:        func(payload interface{}) error { return nil },
 		onSaveHistoryConfig:       func(payload interface{}) error { return nil },
 		onSaveLoggerConfig:        func(payload interface{}) error { return nil },
+		onSaveExposeGroup:         func(id string) error { return nil },
+		onDeleteExposeGroup:       func(id string) error { return nil },
 		requestContext:            NewRequestContext(),
 	}
 }
@@ -202,8 +211,17 @@ func (h *eventHubImpl) OnDeleteAutomation(action func(p interface{}) (interface{
 func (h *eventHubImpl) OnDeleteAutomationTrigger(action func(p interface{}) (interface{}, error)) {
 	h.onDeleteAutomationTrigger = action
 }
+
 func (h *eventHubImpl) OnSaveLoggerConfig(action func(payload interface{}) error) {
 	h.onSaveLoggerConfig = action
+}
+
+func (h *eventHubImpl) OnSaveExposeGroup(action func(id string) error) {
+	h.onSaveExposeGroup = action
+}
+
+func (h *eventHubImpl) OnDeleteExposeGroup(action func(id string) error) {
+	h.onDeleteExposeGroup = action
 }
 
 func (h *eventHubImpl) EmitDevice(name string) error {
