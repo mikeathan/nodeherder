@@ -374,7 +374,7 @@ func TestHubTriggersRemoteLogger(t *testing.T) {
 	}
 }
 
-func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *testing.T) {
+func TestProcessorStoresMetricsForNewNonBridgeDevice(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
 
@@ -550,7 +550,7 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 	}
 }
 
-func TestProcessorTriggersAutomationsStoresMetricsForExistingDevice(t *testing.T) {
+func TestProcessorStoresMetricsForExistingDevice(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}

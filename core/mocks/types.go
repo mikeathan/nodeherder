@@ -760,15 +760,30 @@ func (d *MockAutomationEngine[T]) deleteFromCache(name string) {
 }
 
 // Mock  Automation Device Querier
+
 type MockAutomationDeviceQuerier struct {
+	mockReturnValues map[string]bool
 }
 
+// NewMockAutomationDeviceQuerier creates a new mock instance with predefined return values
+func NewMockAutomationDeviceQuerierWithValues(mockReturnValues map[string]bool) *MockAutomationDeviceQuerier {
+	return &MockAutomationDeviceQuerier{
+		mockReturnValues: mockReturnValues,
+	}
+}
 func NewMockAutomationDeviceQuerier() *MockAutomationDeviceQuerier {
-	return &MockAutomationDeviceQuerier{}
+	return &MockAutomationDeviceQuerier{
+		mockReturnValues: map[string]bool{},
+	}
 }
 
 func (s *MockAutomationDeviceQuerier) IsAutomationEnabled(id string) bool {
+
 	fmt.Println("Mocked AutomationDeviceQuerier IsAutomationEnabled")
+
+	if value, ok := s.mockReturnValues[id]; ok {
+		return value
+	}
 	return false
 }
 

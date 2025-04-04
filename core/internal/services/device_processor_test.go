@@ -51,7 +51,7 @@ func TestDeviceProcessor_CreateOrUpdateDevice_NewDevice(t *testing.T) {
 		WithRegistrar(registrar).
 		WithStore(store).
 		WithEvents(events).
-		WithAutomationDeviceQuerier(deviceQuerier).
+		WithAutomationQuerier(deviceQuerier).
 		Build()
 
 	err := processor.CreateOrUpdateDevice(deviceName, "wifi", payload)
@@ -138,7 +138,7 @@ func TestDeviceProcessor_CreateOrUpdateDevice_ExistingDevice(t *testing.T) {
 		WithRegistrar(registrar).
 		WithStore(store).
 		WithEvents(events).
-		WithAutomationDeviceQuerier(deviceQuerier).
+		WithAutomationQuerier(deviceQuerier).
 		Build()
 	lastSeen := time.Now().Format(time.RFC3339)
 	updatePayload := map[string]interface{}{}

@@ -11,22 +11,22 @@ import (
 )
 
 type DeviceProcessor struct {
-	registrar           *HubRegisterService
-	deviceServices      map[string]*DeviceLifetimeService
-	store               store.AppStore
-	events              *devices.DeviceRequestEvents
-	automationQueries automations.DeviceQuerier
-	mutex               *sync.RWMutex
+	registrar         *HubRegisterService
+	deviceServices    map[string]*DeviceLifetimeService
+	store             store.AppStore
+	events            *devices.DeviceRequestEvents
+	automationQueries automations.AutomationQuerier
+	mutex             *sync.RWMutex
 }
 
-func newDeviceProcessor(registrar *HubRegisterService, store store.AppStore, events *devices.DeviceRequestEvents, automationRetreiver automations.DeviceQuerier) *DeviceProcessor {
+func newDeviceProcessor(registrar *HubRegisterService, store store.AppStore, events *devices.DeviceRequestEvents, automationRetreiver automations.AutomationQuerier) *DeviceProcessor {
 	return &DeviceProcessor{
-		registrar:           registrar,
-		deviceServices:      make(map[string]*DeviceLifetimeService),
-		store:               store,
-		events:              events,
+		registrar:         registrar,
+		deviceServices:    make(map[string]*DeviceLifetimeService),
+		store:             store,
+		events:            events,
 		automationQueries: automationRetreiver,
-		mutex:               &sync.RWMutex{},
+		mutex:             &sync.RWMutex{},
 	}
 }
 
@@ -91,7 +91,7 @@ type DeviceProcessorBuilder struct {
 	registrar           *HubRegisterService
 	store               store.AppStore
 	events              *devices.DeviceRequestEvents
-	automationRetreiver automations.DeviceQuerier
+	automationRetreiver automations.AutomationQuerier
 }
 
 func NewDeviceProcessorBuilder() *DeviceProcessorBuilder {
@@ -113,7 +113,7 @@ func (b *DeviceProcessorBuilder) WithEvents(e *devices.DeviceRequestEvents) *Dev
 	return b
 }
 
-func (b *DeviceProcessorBuilder) WithAutomationDeviceQuerier(a automations.DeviceQuerier) *DeviceProcessorBuilder {
+func (b *DeviceProcessorBuilder) WithAutomationQuerier(a automations.AutomationQuerier) *DeviceProcessorBuilder {
 	b.automationRetreiver = a
 	return b
 }

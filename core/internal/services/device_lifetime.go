@@ -20,15 +20,14 @@ type DeviceLifetimeService struct {
 	availabilityTicker *time.Ticker
 	availablityDone    chan bool
 	events             *devices.DeviceRequestEvents
-	config             *settings.DeviceConfig
-	automationQueries  automations.DeviceQuerier
+	configCache        *settings.DeviceConfigCache
+	automationQueries  automations.AutomationQuerier
 }
 
-func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequestEvents, configCache *settings.DeviceConfigCache, automationQueries automations.DeviceQuerier, clock utils.Clock) *DeviceLifetimeService {
+func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequestEvents, configCache *settings.DeviceConfigCache, automationQueries automations.AutomationQuerier, clock utils.Clock) *DeviceLifetimeService {
 
-	config, _ := configCache.Get(device.Id)
 	return &DeviceLifetimeService{
-		config:            config,
+		configCache:       configCache,
 		debouncerService:  settings.NewDeviceDebouncer(device.Id, configCache, clock),
 		device:            device,
 		events:            events,
@@ -91,7 +90,8 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 			d.device.Exposes[expose].Data = value
 		}
 
-		if d.config.MetricsEnabled ||
+		// collect measurement data only if below conditions are enabled
+		if d.configCache.IsMetricsEnabled(d.device.Id) ||
 			d.automationQueries.IsAutomationEnabled(d.device.Id) {
 
 			// send measurement updates to metrics store

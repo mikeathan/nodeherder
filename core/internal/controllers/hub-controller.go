@@ -423,7 +423,7 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 		WithRegistrar(d.registrar).
 		WithStore(d.store).
 		WithEvents(events).
-		WithAutomationDeviceQuerier(d.automationEngine).
+		WithAutomationQuerier(d.automationEngine).
 		Build()
 
 }

@@ -48,8 +48,10 @@ func TestDeviceLifetimeService_Start(t *testing.T) {
 
 	app := settings.NewAppConfig()
 	repo := mocks.NopSettingsrepo{}
+	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
+
 	cache := settings.NewDeviceConfigCache(&repo, app)
-	service := services.NewDeviceLifetimeService(device, events, cache, utils.NewRealClock())
+	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, utils.NewRealClock())
 	payload := map[string]interface{}{"brightness": 10.2}
 
 	wg.Add(2)
@@ -89,8 +91,10 @@ func TestDeviceLifetimeService_UpdateWithNewData(t *testing.T) {
 	d1 := settings.NewDeviceConfig("x01234")
 	app.AddDeviceConfig(d1)
 	repo := mocks.NopSettingsrepo{}
+	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
+
 	cache := settings.NewDeviceConfigCache(&repo, app)
-	service := services.NewDeviceLifetimeService(device, events, cache, utils.NewRealClock())
+	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, utils.NewRealClock())
 	payload := map[string]interface{}{"brightness": 35.4, "last_seen": "2023-01-01T00:00:00Z"}
 
 	service.Update(payload)
@@ -124,9 +128,11 @@ func TestDeviceLifetimeService_UpdateWithSameData(t *testing.T) {
 	d1 := settings.NewDeviceConfig("x01234")
 	app.AddDeviceConfig(d1)
 	repo := mocks.NopSettingsrepo{}
+	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
+
 	cache := settings.NewDeviceConfigCache(&repo, app)
 
-	service := services.NewDeviceLifetimeService(device, events, cache, utils.NewRealClock())
+	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, utils.NewRealClock())
 	payload := map[string]interface{}{"brightness": 124.2, "last_seen": "2023-01-01T00:00:00Z"}
 
 	service.Update(payload)
@@ -167,8 +173,10 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 	}
 	app.AddDeviceConfig(d1)
 	repo := mocks.NopSettingsrepo{}
+	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
+
 	cache := settings.NewDeviceConfigCache(&repo, app)
-	service := services.NewDeviceLifetimeService(device, events, cache, mockClock)
+	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, mockClock)
 
 	testCases := []struct {
 		payload      map[string]interface{}
@@ -256,9 +264,10 @@ func TestDeviceLifetimeService_Availability(t *testing.T) {
 	}
 
 	app := settings.NewAppConfig()
+	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
 	repo := mocks.NopSettingsrepo{}
 	cache := settings.NewDeviceConfigCache(&repo, app)
-	service := services.NewDeviceLifetimeService(device, events, cache, mocks.NewMockClock(func() time.Time { return time.Now() }))
+	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, mocks.NewMockClock(func() time.Time { return time.Now() }))
 	payload := map[string]interface{}{"test": "data"}
 
 	// make last seen 11 seconds ago as our availability timeout is 10 seconds
@@ -272,7 +281,7 @@ func TestDeviceLifetimeService_Availability(t *testing.T) {
 	}
 }
 
-func TestDeviceLifetimeService_MetricsAvailability(t *testing.T) {
+func TestDeviceLifetimeService_MetricsAvailabilityWithMetricsEnabled(t *testing.T) {
 	wg := sync.WaitGroup{}
 
 	brightness := utils_test.CreateEntity("brightness", "number", 12.5)
@@ -316,8 +325,10 @@ func TestDeviceLifetimeService_MetricsAvailability(t *testing.T) {
 
 	app.AddDeviceConfig(d1)
 	repo := mocks.NopSettingsrepo{}
+	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
+
 	cache := settings.NewDeviceConfigCache(&repo, app)
-	service := services.NewDeviceLifetimeService(device, events, cache, mocks.NewMockClock(func() time.Time { return time.Now() }))
+	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, mocks.NewMockClock(func() time.Time { return time.Now() }))
 
 	testCases := []struct {
 		payload         map[string]interface{}
@@ -356,6 +367,100 @@ func TestDeviceLifetimeService_MetricsAvailability(t *testing.T) {
 		if id == 2 {
 			fmt.Println("")
 		}
+		if tc.expectedUpdates > 0 {
+			wg.Add(tc.expectedUpdates)
+		}
+		service.Update(payload)
+
+		if tc.expectedUpdates > 0 {
+			wg.Wait()
+		}
+	}
+}
+
+func TestDeviceLifetimeService_MetricsAvailabilityWithAutomationEnabled(t *testing.T) {
+	wg := sync.WaitGroup{}
+
+	brightness := utils_test.CreateEntity("brightness", "number", 12.5)
+	brightness.Category = devices.MeasurementCategory
+	battery := utils_test.CreateEntity("battery", "number", 80)
+	battery.Category = devices.DiagnosticCategory
+	color_temp := utils_test.CreateEntity("color_temp", "number", 156)
+	color_temp.Category = devices.MeasurementCategory
+	linkquality := utils_test.CreateEntity("linkquality", "number", 112)
+	linkquality.Category = devices.DiagnosticCategory
+
+	device := utils_test.CreateDeviceWithExposes("x01234", "testDevice", []*devices.Entity{brightness, battery, color_temp, linkquality})
+	device.Availability = devices.OfflineAvailability
+
+	events := &devices.DeviceRequestEvents{
+		AvailabilityTimeout: 30000,
+
+		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
+			if d != device {
+				t.Errorf("OnDeviceUpdated device = %v, want %v", d, device)
+			}
+			wg.Done()
+		},
+		OnDeviceMeasurementsUpdated: func(d *devices.Device, p map[string]interface{}) {
+
+			_, ok1 := p["brightness"]
+			_, ok2 := p["color_temp"]
+
+			if !ok1 && !ok2 {
+				t.Errorf("OnDeviceMetricsAvailable metrics = %v, want brightness and/or color_temp", p)
+			}
+			wg.Done()
+		},
+	}
+
+	app := settings.NewAppConfig()
+	d1 := settings.NewDeviceConfig("x01234")
+	d1.Debounce["battery"] = utils.IntervalFromMilliseconds(5000)
+	d1.Debounce["linkquality"] = utils.IntervalFromMilliseconds(5000)
+
+	app.AddDeviceConfig(d1)
+	repo := mocks.NopSettingsrepo{}
+
+	// enable automation for device so we can collect measurement data changes
+	deviceQuerier := mocks.NewMockAutomationDeviceQuerierWithValues(map[string]bool{"x01234": true})
+	cache := settings.NewDeviceConfigCache(&repo, app)
+	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, mocks.NewMockClock(func() time.Time { return time.Now() }))
+
+	testCases := []struct {
+		payload         map[string]interface{}
+		expectedUpdates int
+	}{
+		{
+			payload:         map[string]interface{}{"battery": 34, "brightness": 34.5},
+			expectedUpdates: 2,
+		},
+		{
+			payload:         map[string]interface{}{"battery": 23, "brightness": 120},
+			expectedUpdates: 2,
+		},
+		{
+			payload:         map[string]interface{}{"battery": 12, "brightness": 120}, // debounced and no changes
+			expectedUpdates: 0,
+		},
+		{
+			payload:         map[string]interface{}{"battery": 34, "linkquality": 12.5}, // 1st debounced and 2nd change
+			expectedUpdates: 1,
+		},
+		{
+			payload:         map[string]interface{}{"battery": 34, "linkquality": 12.5, "color_temp": 106.5}, //1 st changed, 2nd debounced and 3rd changed
+			expectedUpdates: 2,
+		},
+		{
+			payload:         map[string]interface{}{"battery": 34, "linkquality": 12.5, "color_temp": 12.5, "brightness": 12},
+			expectedUpdates: 2,
+		},
+	}
+
+	for _, tc := range testCases {
+
+		payload := tc.payload
+
 		if tc.expectedUpdates > 0 {
 			wg.Add(tc.expectedUpdates)
 		}

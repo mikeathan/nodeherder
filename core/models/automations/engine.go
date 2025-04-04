@@ -1,5 +1,5 @@
 package automations
 
-type DeviceQuerier interface {
+type AutomationQuerier interface {
 	IsAutomationEnabled(id string) bool
 }

@@ -119,6 +119,16 @@ func (d *DeviceConfigCache) Size() int {
 	return len(d.devicesConfigs)
 }
 
+func (d *DeviceConfigCache) IsMetricsEnabled(deviceId string) bool {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	config, err := d.Get(deviceId)
+	if err != nil {
+		return false
+	}
+	return config.MetricsEnabled
+}
+
 func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, error) {
 
 	d.mutex.RLock()
@@ -129,7 +139,14 @@ func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, error) {
 	}
 
 	// load from db
-	return d.store.FindOrAddDeviceConfigIfNotExists(id)
+	config, err := d.store.FindOrAddDeviceConfigIfNotExists(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// store in cache
+	d.devicesConfigs[id] = config
+	return config, nil
 }
 
 func (d *DeviceConfigCache) Set(deviceConfig *DeviceConfig) error {
