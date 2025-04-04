@@ -25,6 +25,7 @@ TODO:
 - do we need to unsubsribe from removed/renamed topic ??
 - Test new logic in RegisterBridge
 - backup automations
+- device lifetime optimization : check if automations or metrics is enabled for device before sending event
 
 ## Features
 

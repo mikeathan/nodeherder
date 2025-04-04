@@ -129,7 +129,7 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	defer cleanup()
 
 	// set new history config
-	sleepTimeout := utils.IntervalFromSeconds(3) // start the cleanup after we finished ading and asserting the data. 3 seconds should be enough
+	sleepTimeout := utils.IntervalFromSeconds(2) // start the cleanup after we finished ading and asserting the data. 2 seconds should be enough
 	expireAt := utils.IntervalFromHours(1)
 
 	cfg.SaveHistoryConfig(settings.NewHistoryConfig(sleepTimeout, expireAt))

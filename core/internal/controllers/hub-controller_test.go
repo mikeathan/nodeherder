@@ -374,7 +374,7 @@ func TestHubTriggersRemoteLogger(t *testing.T) {
 	}
 }
 
-func TestProcessorTriggersAutomationsStoresMetricsForNewDeviceNotInBridge(t *testing.T) {
+func TestProcessorStoresMetricsForNewNonBridgeDevice(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
 
@@ -550,7 +550,7 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 	}
 }
 
-func TestProcessorTriggersAutomationsStoresMetricsForExistingDevice(t *testing.T) {
+func TestProcessorStoresMetricsForExistingDevice(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
@@ -1011,7 +1011,6 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
 
-	//lightDeviceName := "Living room light"
 	presenceDeviceName := "Living room presence sensor"
 
 	testCases := []struct {
@@ -1020,7 +1019,11 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 		value      any
 		broadcast  bool
 	}{
-		{deviceName: presenceDeviceName, key: "target_distance", value: 13.1, broadcast: false}, // config type ignored
+		{deviceName: presenceDeviceName, key: "target_distance", value: 13.4, broadcast: true},
+		{deviceName: presenceDeviceName, key: "target_distance", value: 12.1, broadcast: false}, // diagnostics debounced
+		{deviceName: presenceDeviceName, key: "target_distance", value: 16.3, broadcast: false}, // diagnostics debounced
+		{deviceName: presenceDeviceName, key: "target_distance", value: 20.3, broadcast: false}, // diagnostics debounced
+
 		{deviceName: presenceDeviceName, key: "presence", value: true, broadcast: true},
 		{deviceName: presenceDeviceName, key: "presence", value: true, broadcast: false},
 		{deviceName: presenceDeviceName, key: "presence", value: false, broadcast: true},
@@ -1032,9 +1035,10 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 		{deviceName: presenceDeviceName, key: "presence", value: false, broadcast: false},
 		{deviceName: presenceDeviceName, key: "presence", value: true, broadcast: true},
 		{deviceName: presenceDeviceName, key: "illuminance", value: 321, broadcast: true},
-		{deviceName: presenceDeviceName, key: "radar_sensitivity", value: 5, broadcast: false}, // config type ignored
-		{deviceName: presenceDeviceName, key: "illuminance", value: 22, broadcast: false},      // debounced
+		{deviceName: presenceDeviceName, key: "radar_sensitivity", value: 5, broadcast: true},
+		{deviceName: presenceDeviceName, key: "radar_sensitivity", value: 5, broadcast: false},
 		{deviceName: presenceDeviceName, key: "illuminance", value: 22, broadcast: true},
+		{deviceName: presenceDeviceName, key: "illuminance", value: 21, broadcast: false},
 	}
 
 	broadcastHandler := func(eventName string, data interface{}) error {
