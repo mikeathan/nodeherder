@@ -214,8 +214,8 @@ func TestDefaultDebounceforDiagnosticExposes(t *testing.T) {
 				if !ok {
 					t.Errorf("Error diagnostic expose %s debounce is 0", expose.Name)
 				}
-				if d.Value != 5 {
-					t.Errorf("Error diagnostic expose %s debounce is not 5", expose.Name)
+				if d.Value != 300 {
+					t.Errorf("Error diagnostic expose %s debounce is not 300. got %v", expose.Name, d.Value)
 				}
 				if d.Unit != "seconds" {
 					t.Errorf("Error diagnostic expose %s debounce unit is not seconds", d.Unit)
