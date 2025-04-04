@@ -20,6 +20,7 @@ func TestDeviceProcessor_CreateOrUpdateDevice_NewDevice(t *testing.T) {
 	repo := repository.NewMemoryDeviceRepo()
 	store := utils_test.CreateStoreFromDeviceRepo(repo)
 	eventHub := &mocks.MockEventHub{}
+	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
 	events := &devices.DeviceRequestEvents{
@@ -46,7 +47,12 @@ func TestDeviceProcessor_CreateOrUpdateDevice_NewDevice(t *testing.T) {
 	payload["last_seen"] = lastSeen
 	payload["battery"] = 100
 
-	processor := services.NewDeviceProcessor(registrar, store, events)
+	processor := services.NewDeviceProcessorBuilder().
+		WithRegistrar(registrar).
+		WithStore(store).
+		WithEvents(events).
+		WithAutomationQuerier(deviceQuerier).
+		Build()
 
 	err := processor.CreateOrUpdateDevice(deviceName, "wifi", payload)
 
@@ -101,6 +107,8 @@ func TestDeviceProcessor_CreateOrUpdateDevice_ExistingDevice(t *testing.T) {
 	repo := repository.NewMemoryDeviceRepo()
 	store := utils_test.CreateStoreFromDeviceRepo(repo)
 	eventHub := &mocks.MockEventHub{}
+	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
+
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 	registrar.RegisterBridge(bridgeInfoes)
 
@@ -119,12 +127,19 @@ func TestDeviceProcessor_CreateOrUpdateDevice_ExistingDevice(t *testing.T) {
 		},
 		OnDeviceAvailabilityChanged: func(p *devices.UpdatePackage) {
 		},
+		OnDeviceMeasurementsUpdated: func(d *devices.Device, p map[string]interface{}) {
+
+		},
 		AvailabilityTimeout: 1,
 	}
 	deviceName := "Living room light"
 
-	processor := services.NewDeviceProcessor(registrar, store, events)
-
+	processor := services.NewDeviceProcessorBuilder().
+		WithRegistrar(registrar).
+		WithStore(store).
+		WithEvents(events).
+		WithAutomationQuerier(deviceQuerier).
+		Build()
 	lastSeen := time.Now().Format(time.RFC3339)
 	updatePayload := map[string]interface{}{}
 	updatePayload["brightness"] = 10.1

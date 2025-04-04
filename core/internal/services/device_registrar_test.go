@@ -168,6 +168,64 @@ func TestCreateNewDevice(t *testing.T) {
 	assertDevicePayload(newDevice, deviceName, payload, t)
 }
 
+func TestDefaultDebounceforDiagnosticExposes(t *testing.T) {
+
+	bridgeInfoFile := filepath.Join("../../../docs", "device_bridge.json")
+	data, err := os.ReadFile(bridgeInfoFile)
+	if err != nil {
+		t.Fatal("Error reading file:", err)
+		return
+	}
+	bridgeInfoes, err := devices.LoadBridgeDevices(data)
+	if err != nil {
+		t.Fatal("Error parsing bridge info data:", err)
+		return
+	}
+
+	store, cleanup, err := utils_test.CreateFileStore()
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+	eventHub := &mocks.MockEventHub{}
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(bridgeInfoes)
+
+	ds, err := store.AllDevices()
+	if err != nil {
+		t.Errorf("Error loading devices: %s", err)
+	}
+
+	if len(ds) == 0 {
+		t.Errorf("Error not found any devices")
+	}
+
+	appConfig := store.AppConfig()
+
+	for _, device := range ds {
+		deviceConfig, err := appConfig.GetDeviceConfig(device.Id)
+		if err != nil {
+			t.Errorf("Error getting device config: %s", err)
+		}
+		for _, expose := range device.Exposes {
+			if expose.Category == devices.DiagnosticCategory {
+				d, ok := deviceConfig.Debounce[expose.Name]
+				if !ok {
+					t.Errorf("Error diagnostic expose %s debounce is 0", expose.Name)
+				}
+				if d.Value != 5 {
+					t.Errorf("Error diagnostic expose %s debounce is not 5", expose.Name)
+				}
+				if d.Unit != "seconds" {
+					t.Errorf("Error diagnostic expose %s debounce unit is not seconds", d.Unit)
+				}
+			}
+		}
+	}
+
+}
+
 func assertDeviceUpdatePackage(device *devices.Device, updatePackage *devices.UpdatePackage, t *testing.T) {
 
 	if device.Id != updatePackage.Id {

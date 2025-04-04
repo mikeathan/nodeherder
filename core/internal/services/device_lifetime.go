@@ -1,6 +1,7 @@
 package services
 
 import (
+	"node-herder/models/automations"
 	"node-herder/models/devices"
 	"node-herder/models/settings"
 	"node-herder/utils"
@@ -19,14 +20,19 @@ type DeviceLifetimeService struct {
 	availabilityTicker *time.Ticker
 	availablityDone    chan bool
 	events             *devices.DeviceRequestEvents
+	configCache        *settings.DeviceConfigCache
+	automationQueries  automations.AutomationQuerier
 }
 
-func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequestEvents, debouncerService *settings.DeviceDebouncer) *DeviceLifetimeService {
+func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequestEvents, configCache *settings.DeviceConfigCache, automationQueries automations.AutomationQuerier, clock utils.Clock) *DeviceLifetimeService {
+
 	return &DeviceLifetimeService{
-		device:           device,
-		debouncerService: debouncerService,
-		events:           events,
-		availablityDone:  make(chan bool, 1),
+		configCache:       configCache,
+		debouncerService:  settings.NewDeviceDebouncer(device.Id, configCache, clock),
+		device:            device,
+		events:            events,
+		automationQueries: automationQueries,
+		availablityDone:   make(chan bool, 1),
 	}
 }
 
@@ -44,28 +50,23 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 	var updatePackage = devices.NewUpdatePackage(d.device.Id)
 	for name, newValue := range payload {
 
-		if expose, ok := d.device.GetExpose(name); ok &&
-			!d.debouncerService.DebounceExpose(name) &&
-			!utils.ComparePayloadValues(expose.Data, newValue) {
-
-			// only look for measurement expose changes unless we are
-			// already collecting measurement updates
-			if len(updatePackage.Data) != 0 {
-				updatePackage.Data[name] = newValue
-			} else if expose.Category == devices.MeasurementCategory {
-				updatePackage.Data[name] = newValue
-			}
-
-			// update device expose with updated data
-			// we might need to have a mutex here or handle this better
-			d.device.Exposes[name].Data = newValue
+		expose, ok := d.device.GetExpose(name)
+		if !ok {
+			continue
 		}
+
+		if d.debouncerService.DebounceExpose(name) {
+			continue
+		}
+
+		if utils.ComparePayloadValues(expose.Data, newValue) {
+			continue
+		}
+
+		updatePackage.Data[name] = newValue
 	}
 
-	if updatePackage.HasData() {
-		updatePackage.LastSeen = getLastSeen(payload)
-	}
-
+	// if we are here even with no expose changes, it still means that the device is online
 	if d.device.Availability == devices.OfflineAvailability {
 		d.device.Availability = devices.OnlineAvailability
 
@@ -82,6 +83,32 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 	d.device.LastSeen = getLastSeen(payload) // we need that.
 
 	if updatePackage.HasData() {
+		updatePackage.LastSeen = d.device.LastSeen
+
+		// update device with expose changes
+		for expose, value := range updatePackage.Data {
+			d.device.Exposes[expose].Data = value
+		}
+
+		// collect measurement data only if below conditions are enabled
+		if d.configCache.IsMetricsEnabled(d.device.Id) ||
+			d.automationQueries.IsAutomationEnabled(d.device.Id) {
+
+			// send measurement updates to metrics store
+			measumementUpdateData := map[string]any{}
+			for name, value := range updatePackage.Data {
+				if e, ok := d.device.Exposes[name]; ok && e.Category == devices.MeasurementCategory {
+					measumementUpdateData[name] = value
+				}
+			}
+
+			if len(measumementUpdateData) > 0 {
+				// this will attempt to run automation (if enabled) and store to metrics store (if enabled)
+				d.events.OnDeviceMeasurementsUpdated(d.device, measumementUpdateData)
+			}
+		}
+
+		// this will update device in store and emit ws event to connected clients
 		d.events.OnDeviceUpdated(d.device, updatePackage)
 	}
 }

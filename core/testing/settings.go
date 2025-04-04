@@ -8,12 +8,14 @@ import (
 )
 
 func CreateDebouncer(id string) *settings.DeviceDebouncer {
+	repo := mocks.NopSettingsrepo{}
 	app := settings.NewAppConfig()
-	cache := settings.NewDeviceConfigCache(app)
+	cache := settings.NewDeviceConfigCache(&repo, app)
 	return settings.NewDeviceDebouncer(id, cache, mocks.NewMockClock(func() time.Time { return time.Now() }))
 }
 
 func CreateDebouncerFromAppConfig(id string, appConfig *settings.AppConfig, clock utils.Clock) *settings.DeviceDebouncer {
-	cache := settings.NewDeviceConfigCache(appConfig)
+	repo := mocks.NopSettingsrepo{}
+	cache := settings.NewDeviceConfigCache(&repo, appConfig)
 	return settings.NewDeviceDebouncer(id, cache, clock)
 }
