@@ -77,7 +77,7 @@ type EventHub interface {
 	OnSaveDeviceConfig(func(payload interface{}) error)
 	OnSaveHistoryConfig(func(payload interface{}) error)
 	OnSaveLoggerConfig(func(payload interface{}) error)
-	OnSaveExposeGroup(action func(id string) error)
+	OnSaveExposeGroup(action func(id string, payload interface{}) error)
 	OnDeleteExposeGroup(action func(id string) error)
 	HandleRequest(w http.ResponseWriter, r *http.Request) error
 	Context() hub.Context
@@ -87,7 +87,7 @@ type eventHubImpl struct {
 	server                    WebSocket
 	onLoadAutomations         func() interface{}
 	onLoadDevices             func() interface{}
-	onLoadDeviceList          (func(ids []string) interface{})
+	onLoadDeviceList          (func([]string) interface{})
 	onLoadDevice              func(id string) (interface{}, error)
 	onLoadMetrics             func(interface{}) (interface{}, error)
 	onSaveAutomation          func(interface{}) error
@@ -103,8 +103,8 @@ type eventHubImpl struct {
 	onSaveDeviceConfig        func(interface{}) error
 	onSaveHistoryConfig       func(interface{}) error
 	onSaveLoggerConfig        func(interface{}) error
-	onSaveExposeGroup         func(id string) error
-	onDeleteExposeGroup       func(id string) error
+	onSaveExposeGroup         func(string, interface{}) error
+	onDeleteExposeGroup       func(string) error
 
 	requestContext hub.Context
 }
@@ -130,7 +130,7 @@ func NewWsHub() EventHub {
 		onSaveDeviceConfig:        func(payload interface{}) error { return nil },
 		onSaveHistoryConfig:       func(payload interface{}) error { return nil },
 		onSaveLoggerConfig:        func(payload interface{}) error { return nil },
-		onSaveExposeGroup:         func(id string) error { return nil },
+		onSaveExposeGroup:         func(id string, payload interface{}) error { return nil },
 		onDeleteExposeGroup:       func(id string) error { return nil },
 		requestContext:            NewRequestContext(),
 	}
@@ -216,7 +216,7 @@ func (h *eventHubImpl) OnSaveLoggerConfig(action func(payload interface{}) error
 	h.onSaveLoggerConfig = action
 }
 
-func (h *eventHubImpl) OnSaveExposeGroup(action func(id string) error) {
+func (h *eventHubImpl) OnSaveExposeGroup(action func(id string, payload interface{}) error) {
 	h.onSaveExposeGroup = action
 }
 
@@ -335,6 +335,12 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 
 	case SaveLoggerConfig:
 		c.executeAction(eventMsg.Payload, c.onSaveLoggerConfig, true)
+
+	case SaveExposeGroup:
+		c.executeAction(eventMsg.Payload, c.onSaveExposeGroup, true)
+
+	case DeleteExposeGroup:
+		c.executeAction(eventMsg.Payload, c.onDeleteExposeGroup, true)
 
 	default:
 

@@ -105,6 +105,29 @@ func (h *HubController) registerEventHubEvents() {
 		return appconfig.SetDeviceConfig(req)
 	})
 
+	h.eventHub.OnSaveExposeGroup(func(id string, payload interface{}) error {
+		req := &settings.ExposeGroup{}
+		bytes, _ := json.Marshal(req)
+		err := json.Unmarshal(bytes, &req)
+		if err != nil {
+			return fmt.Errorf("OnSaveExposeGroup failed. Invalid payload type : %v ", err.Error())
+		}
+
+		// validate request
+		for id := range req.Exposes {
+			_, err := h.registrar.LookupById(id)
+			if err != nil {
+				return fmt.Errorf("OnSaveExposeGroup failed. Invalid expose id : %v ", err.Error())
+			}
+		}
+
+		return appconfig.SaveExposeGroup(id, nil)
+	})
+
+	h.eventHub.OnDeleteExposeGroup(func(id string) error {
+		return appconfig.DeleteExposeGroup(id)
+	})
+
 	h.eventHub.OnLoadAutomations(func() interface{} {
 		return h.automationEngine.GetAllTriggers()
 	})
