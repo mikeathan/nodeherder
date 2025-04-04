@@ -22,15 +22,13 @@
     save(propName, propValue);
   }
 
-  function save(propName: any, propValue: any) {
-    if (deviceSettings.value[propName] != propValue) {
-      deviceSettings.value[propName] = propValue;
-      store.dispatch('hub/saveDeviceSettings', deviceSettings.value as DeviceSettings);
-    }
+  // TODO: needs refactoring to emit only if sth has changed but i have problesm with new debouncer map prop
+  function save(propName: string, propValue: any) {
+    store.dispatch('hub/saveDeviceSettings', deviceSettings.value as DeviceSettings);
   }
 
   function inputUpdated(propName: any, propValue: any) {
-    save(propName, propValue);
+    save(propName, { ...propValue });
   }
 </script>
 
