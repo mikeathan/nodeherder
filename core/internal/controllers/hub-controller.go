@@ -105,38 +105,38 @@ func (h *HubController) registerEventHubEvents() {
 		return appconfig.SetDeviceConfig(req)
 	})
 
-	h.eventHub.OnSaveDeviceGroup(func(payload interface{}) error {
+	h.eventHub.OnSaveDashboardGroup(func(payload interface{}) error {
 		req := &settings.DashboardGroup{}
 		bytes, _ := json.Marshal(payload)
 		err := json.Unmarshal(bytes, &req)
 		if err != nil {
-			return fmt.Errorf("OnSaveDeviceGroup failed. Invalid payload type : %v ", err.Error())
+			return fmt.Errorf("OnSaveDashboardGroup failed. Invalid payload type : %v ", err.Error())
 		}
 
 		// validate request
 		for id := range req.DeviceGroup {
 			_, err := h.registrar.LookupById(id)
 			if err != nil {
-				return fmt.Errorf("OnSaveDeviceGroup failed. Invalid expose id : %v ", err.Error())
+				return fmt.Errorf("OnSaveDashboardGroup failed. Invalid expose id : %v ", err.Error())
 			}
 		}
 
-		return appconfig.SaveExposeGroup(req)
+		return appconfig.SaveDashboardGroup(req)
 	})
 
-	h.eventHub.OnDeleteDeviceGroup(func(p interface{}) error {
+	h.eventHub.OnDeleteDashboardGroup(func(p interface{}) error {
 		bytes, _ := json.Marshal(p)
 		payload := make(map[string]interface{})
 		err := json.Unmarshal(bytes, &payload)
 		if err != nil {
-			return fmt.Errorf("OnDeleteDeviceGroup failed. Invalid payload type : %v ", err.Error())
+			return fmt.Errorf("OnDeleteDashboardGroup failed. Invalid payload type : %v ", err.Error())
 		}
 
 		id, ok := payload["groupName"].(string)
 		if !ok {
-			return fmt.Errorf("OnDeleteDeviceGroup failed. Invalid payload type missing group id")
+			return fmt.Errorf("OnDeleteDashboardGroup failed. Invalid payload type missing group id")
 		}
-		return appconfig.DeleteExposeGroup(id)
+		return appconfig.DeleteDashboardGroup(id)
 	})
 
 	h.eventHub.OnLoadAutomations(func() interface{} {

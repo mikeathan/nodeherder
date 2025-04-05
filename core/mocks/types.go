@@ -159,12 +159,12 @@ func (w MockEventHub) OnSaveLoggerConfig(action func(payload interface{}) error)
 	fmt.Println("WsServer: Mocked OnSaveLoggerConfig")
 }
 
-func (h *MockEventHub) OnSaveDeviceGroup(action func(payload interface{}) error) {
-	fmt.Println("WsServer OnSaveDeviceGroup")
+func (h *MockEventHub) OnSaveDashboardGroup(action func(payload interface{}) error) {
+	fmt.Println("WsServer OnSaveDashboardGroup")
 }
 
-func (h *MockEventHub) OnDeleteDeviceGroup(action func(payload interface{}) error) {
-	fmt.Println("WsServer OnDeleteDeviceGroup")
+func (h *MockEventHub) OnDeleteDashboardGroup(action func(payload interface{}) error) {
+	fmt.Println("WsServer OnDeleteDashboardGroup")
 }
 
 // Mock MqttClient
@@ -361,12 +361,12 @@ func (w NopWsServer) OnSaveLoggerConfig(action func(payload interface{}) error) 
 	fmt.Println("WsServer: Mocked OnSaveLoggerConfig")
 }
 
-func (h *NopWsServer) OnSaveDeviceGroup(action func(payload interface{}) error) {
-	fmt.Println("WsServer OnSaveDeviceGroup")
+func (h *NopWsServer) OnSaveDashboardGroup(action func(payload interface{}) error) {
+	fmt.Println("WsServer OnSaveDashboardGroup")
 }
 
-func (h *NopWsServer) OnDeleteDeviceGroup(action func(payload interface{}) error) {
-	fmt.Println("WsServer OnDeleteExpoOnDeleteDeviceGroupseGroup")
+func (h *NopWsServer) OnDeleteDashboardGroup(action func(payload interface{}) error) {
+	fmt.Println("WsServer OnDeleteExpoOnDeleteDashboardGroupseGroup")
 }
 
 // Mock devices Repository

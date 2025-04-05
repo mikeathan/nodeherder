@@ -716,7 +716,7 @@ func TestSaveExposeGroupIsValidated(t *testing.T) {
 		bytes, _ := json.Marshal(data)
 		err := json.Unmarshal(bytes, &req)
 		if err != nil {
-			return fmt.Errorf("OnSaveExposeGroup failed. Invalid payload type : %v ", err.Error())
+			return fmt.Errorf("OnSaveDashboardGroup failed. Invalid payload type : %v ", err.Error())
 		}
 
 		// validate request
@@ -724,15 +724,15 @@ func TestSaveExposeGroupIsValidated(t *testing.T) {
 			_, err := registrar.LookupById(id)
 
 			if err != nil {
-				t.Fatalf("OnSaveExposeGroup failed. Invalid device id : %v ", err.Error())
-				return fmt.Errorf("OnSaveExposeGroup failed. Invalid expose id : %v ", err.Error())
+				t.Fatalf("OnSaveDashboardGroup failed. Invalid device id : %v ", err.Error())
+				return fmt.Errorf("OnSaveEOnSaveDashboardGroupxposeGroup failed. Invalid expose id : %v ", err.Error())
 			}
 		}
 
-		err = cfg.SaveExposeGroup(req)
+		err = cfg.SaveDashboardGroup(req)
 		if err != nil {
-			t.Fatalf("OnSaveExposeGroup failed. %v ", err.Error())
-			return fmt.Errorf("OnSaveExposeGroup failed. %v ", err.Error())
+			t.Fatalf("OnSaveDashboardGroup failed. %v ", err.Error())
+			return fmt.Errorf("OnSaveDashboardGroup failed. %v ", err.Error())
 		}
 
 		wg.Done()
@@ -800,7 +800,7 @@ func TestDeleteExposeGroupRemovesGroup(t *testing.T) {
 	newGroup.AddDeviceExpose("0xa4c13894070052fc", "presence")
 	newGroup.AddDeviceExpose("0xa4c13894070052fc", "illuminance")
 
-	cfg.SaveExposeGroup(newGroup)
+	cfg.SaveDashboardGroup(newGroup)
 	mqtt := &mocks.MockMqttClient{}
 
 	eventHub := mocks.NewMockEventHub()
@@ -828,7 +828,7 @@ func TestDeleteExposeGroupRemovesGroup(t *testing.T) {
 		if !ok {
 			return fmt.Errorf("OnDeleteExposeGroup failed. Invalid payload type missing group id")
 		}
-		err = cfg.DeleteExposeGroup(id)
+		err = cfg.DeleteDashboardGroup(id)
 		if err != nil {
 			return fmt.Errorf("OnDeleteExposeGroup failed. %v ", err.Error())
 		}
