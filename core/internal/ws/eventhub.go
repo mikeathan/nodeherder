@@ -77,8 +77,8 @@ type EventHub interface {
 	OnSaveDeviceConfig(func(payload interface{}) error)
 	OnSaveHistoryConfig(func(payload interface{}) error)
 	OnSaveLoggerConfig(func(payload interface{}) error)
-	OnSaveExposeGroup(action func(id string, payload interface{}) error)
-	OnDeleteExposeGroup(action func(id string) error)
+	OnSaveExposeGroup(action func(payload interface{}) error)
+	OnDeleteExposeGroup(action func(payload interface{}) error)
 	HandleRequest(w http.ResponseWriter, r *http.Request) error
 	Context() hub.Context
 }
@@ -103,8 +103,8 @@ type eventHubImpl struct {
 	onSaveDeviceConfig        func(interface{}) error
 	onSaveHistoryConfig       func(interface{}) error
 	onSaveLoggerConfig        func(interface{}) error
-	onSaveExposeGroup         func(string, interface{}) error
-	onDeleteExposeGroup       func(string) error
+	onSaveExposeGroup         func(interface{}) error
+	onDeleteExposeGroup       func(payload interface{}) error
 
 	requestContext hub.Context
 }
@@ -130,8 +130,8 @@ func NewWsHub() EventHub {
 		onSaveDeviceConfig:        func(payload interface{}) error { return nil },
 		onSaveHistoryConfig:       func(payload interface{}) error { return nil },
 		onSaveLoggerConfig:        func(payload interface{}) error { return nil },
-		onSaveExposeGroup:         func(id string, payload interface{}) error { return nil },
-		onDeleteExposeGroup:       func(id string) error { return nil },
+		onSaveExposeGroup:         func(payload interface{}) error { return nil },
+		onDeleteExposeGroup:       func(payload interface{}) error { return nil },
 		requestContext:            NewRequestContext(),
 	}
 }
@@ -216,11 +216,11 @@ func (h *eventHubImpl) OnSaveLoggerConfig(action func(payload interface{}) error
 	h.onSaveLoggerConfig = action
 }
 
-func (h *eventHubImpl) OnSaveExposeGroup(action func(id string, payload interface{}) error) {
+func (h *eventHubImpl) OnSaveExposeGroup(action func(payload interface{}) error) {
 	h.onSaveExposeGroup = action
 }
 
-func (h *eventHubImpl) OnDeleteExposeGroup(action func(id string) error) {
+func (h *eventHubImpl) OnDeleteExposeGroup(action func(payload interface{}) error) {
 	h.onDeleteExposeGroup = action
 }
 

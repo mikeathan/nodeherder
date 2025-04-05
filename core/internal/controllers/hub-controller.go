@@ -105,8 +105,8 @@ func (h *HubController) registerEventHubEvents() {
 		return appconfig.SetDeviceConfig(req)
 	})
 
-	h.eventHub.OnSaveExposeGroup(func(id string, payload interface{}) error {
-		req := &settings.ExposeGroup{}
+	h.eventHub.OnSaveExposeGroup(func(payload interface{}) error {
+		req := &settings.DashboardGroup{}
 		bytes, _ := json.Marshal(req)
 		err := json.Unmarshal(bytes, &req)
 		if err != nil {
@@ -114,17 +114,29 @@ func (h *HubController) registerEventHubEvents() {
 		}
 
 		// validate request
-		for id := range req.Exposes {
+		for id := range req.DeviceGroup {
 			_, err := h.registrar.LookupById(id)
 			if err != nil {
 				return fmt.Errorf("OnSaveExposeGroup failed. Invalid expose id : %v ", err.Error())
 			}
 		}
 
-		return appconfig.SaveExposeGroup(id, nil)
+		return appconfig.SaveExposeGroup(req)
 	})
 
-	h.eventHub.OnDeleteExposeGroup(func(id string) error {
+	h.eventHub.OnDeleteExposeGroup(func(payload interface{}) error {
+		bytes, _ := json.Marshal(payload)
+		data := make(map[string]interface{})
+		err := json.Unmarshal(bytes, &payload)
+
+		if err != nil {
+			return fmt.Errorf("OnDeleteExposeGroup failed. Invalid payload type : %v ", err.Error())
+		}
+
+		id, ok := data["id"].(string)
+		if !ok {
+			return fmt.Errorf("OnDeleteExposeGroup failed. Invalid payload type missing group id")
+		}
 		return appconfig.DeleteExposeGroup(id)
 	})
 

@@ -673,6 +673,55 @@ func TestProcessorStoresMetricsForExistingDevice(t *testing.T) {
 	}
 }
 
+func TestSaveExposeGroupIsValidated(t *testing.T) {
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	// we dont need tasks here just using it as it using valid settings repo
+	tasks := []settings.Task{}
+	store, cleanup, err := utils_test.CreateStoreWithTasks(tasks)
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+
+	cfg := store.AppConfig()
+	mqtt := &mocks.MockMqttClient{}
+
+	//eventHub := mocks.NewMockEventHub()
+	eventHub := &mocks.NopWsServer{}
+	// broadcastHandler := func(eventName string, data interface{}) error {
+
+	// 	if eventName != ws.SaveExposeGroup {
+	// 		t.Fatalf("invalid event name want %v got %v", ws.SaveExposeGroup, eventName)
+	// 		return fmt.Errorf("invalid event name %v", eventName)
+	// 	}
+
+	// 	wg.Done()
+	// 	return nil
+	// }
+	//eventHub.SetMockBroadcastEvent(broadcastHandler)
+	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+
+	// create new expose group
+	newGroup := settings.NewDashboardGroup("living room group")
+	newGroup.AddDeviceExpose("0x00158d0005a23c38", "brightness")
+	newGroup.AddDeviceExpose("0x001788010d7d9d3f", "action")
+	newGroup.AddDeviceExpose("0xa4c13894070052fc", "presence")
+	newGroup.AddDeviceExpose("0xa4c13894070052fc", "illuminance")
+
+	to fix 
+	eventHub.Broadcast(ws.SaveExposeGroup, newGroup)
+	wg.Wait()
+
+	c, _ := cfg.LoadAppConfig()
+
+	if len(c.Hub.DashboardGroup) != 1 {
+		t.Fatalf("want %v got %v", 1, len(c.Hub.DashboardGroup))
+	}
+
+}
+
 func TestProcessorAddsNewDevice(t *testing.T) {
 
 	name := "device 1"
@@ -745,7 +794,7 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 
 	device, err := store.FindDeviceById(id)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatalf("FindDeviceById failed. err %v ", err)
 	}
 
 	if device.FriendlyName != name {

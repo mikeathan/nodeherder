@@ -302,13 +302,13 @@ func (s *AppConfigCache) SaveHistoryConfig(historyConfig *HistoryConfig) (*AppCo
 	return config, nil
 }
 
-func (s *AppConfigCache) SaveExposeGroup(name string, exposeGroup *ExposeGroup) error {
+func (s *AppConfigCache) SaveExposeGroup(exposeGroup *DashboardGroup) error {
 	config, err := s.LoadAppConfig()
 	if err != nil {
 		return err
 	}
 
-	config.Hub.Groups[name] = exposeGroup
+	config.Hub.DashboardGroup[exposeGroup.Name] = exposeGroup
 
 	err = s.store.SaveAppConfig(config)
 	if err != nil {
@@ -324,7 +324,7 @@ func (s *AppConfigCache) DeleteExposeGroup(name string) error {
 		return err
 	}
 
-	delete(config.Hub.Groups, name)
+	delete(config.Hub.DashboardGroup, name)
 
 	err = s.store.SaveAppConfig(config)
 	if err != nil {

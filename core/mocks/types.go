@@ -159,11 +159,11 @@ func (w MockEventHub) OnSaveLoggerConfig(action func(payload interface{}) error)
 	fmt.Println("WsServer: Mocked OnSaveLoggerConfig")
 }
 
-func (h *MockEventHub) OnSaveExposeGroup(action func(id string, payload interface{}) error) {
+func (h *MockEventHub) OnSaveExposeGroup(action func(payload interface{}) error) {
 	fmt.Println("WsServer OnSaveExposeGroup")
 }
 
-func (h *MockEventHub) OnDeleteExposeGroup(action func(id string) error) {
+func (h *MockEventHub) OnDeleteExposeGroup(action func(payload interface{}) error) {
 	fmt.Println("WsServer OnDeleteExposeGroup")
 }
 
@@ -361,11 +361,11 @@ func (w NopWsServer) OnSaveLoggerConfig(action func(payload interface{}) error) 
 	fmt.Println("WsServer: Mocked OnSaveLoggerConfig")
 }
 
-func (h *NopWsServer) OnSaveExposeGroup(action func(id string, payload interface{}) error) {
+func (h *NopWsServer) OnSaveExposeGroup(action func(payload interface{}) error) {
 	fmt.Println("WsServer OnSaveExposeGroup")
 }
 
-func (h *NopWsServer) OnDeleteExposeGroup(action func(id string) error) {
+func (h *NopWsServer) OnDeleteExposeGroup(action func(payload interface{}) error) {
 	fmt.Println("WsServer OnDeleteExposeGroup")
 }
 
