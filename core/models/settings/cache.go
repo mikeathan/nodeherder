@@ -302,6 +302,7 @@ func (s *AppConfigCache) SaveHistoryConfig(historyConfig *HistoryConfig) (*AppCo
 	return config, nil
 }
 
+something is weird here- confirm with naming and whats gets saved where
 func (s *AppConfigCache) SaveExposeGroup(exposeGroup *DashboardGroup) error {
 	config, err := s.LoadAppConfig()
 	if err != nil {

@@ -77,8 +77,8 @@ type EventHub interface {
 	OnSaveDeviceConfig(func(payload interface{}) error)
 	OnSaveHistoryConfig(func(payload interface{}) error)
 	OnSaveLoggerConfig(func(payload interface{}) error)
-	OnSaveExposeGroup(action func(payload interface{}) error)
-	OnDeleteExposeGroup(action func(payload interface{}) error)
+	OnSaveDeviceGroup(action func(payload interface{}) error)
+	OnDeleteDeviceGroup(action func(payload interface{}) error)
 	HandleRequest(w http.ResponseWriter, r *http.Request) error
 	Context() hub.Context
 }
@@ -103,8 +103,8 @@ type eventHubImpl struct {
 	onSaveDeviceConfig        func(interface{}) error
 	onSaveHistoryConfig       func(interface{}) error
 	onSaveLoggerConfig        func(interface{}) error
-	onSaveExposeGroup         func(interface{}) error
-	onDeleteExposeGroup       func(payload interface{}) error
+	onSaveDeviceGroup         func(interface{}) error
+	onDeleteDeviceGroup       func(payload interface{}) error
 
 	requestContext hub.Context
 }
@@ -130,8 +130,8 @@ func NewWsHub() EventHub {
 		onSaveDeviceConfig:        func(payload interface{}) error { return nil },
 		onSaveHistoryConfig:       func(payload interface{}) error { return nil },
 		onSaveLoggerConfig:        func(payload interface{}) error { return nil },
-		onSaveExposeGroup:         func(payload interface{}) error { return nil },
-		onDeleteExposeGroup:       func(payload interface{}) error { return nil },
+		onSaveDeviceGroup:         func(payload interface{}) error { return nil },
+		onDeleteDeviceGroup:       func(payload interface{}) error { return nil },
 		requestContext:            NewRequestContext(),
 	}
 }
@@ -216,12 +216,12 @@ func (h *eventHubImpl) OnSaveLoggerConfig(action func(payload interface{}) error
 	h.onSaveLoggerConfig = action
 }
 
-func (h *eventHubImpl) OnSaveExposeGroup(action func(payload interface{}) error) {
-	h.onSaveExposeGroup = action
+func (h *eventHubImpl) OnSaveDeviceGroup(action func(payload interface{}) error) {
+	h.onSaveDeviceGroup = action
 }
 
-func (h *eventHubImpl) OnDeleteExposeGroup(action func(payload interface{}) error) {
-	h.onDeleteExposeGroup = action
+func (h *eventHubImpl) OnDeleteDeviceGroup(action func(payload interface{}) error) {
+	h.onDeleteDeviceGroup = action
 }
 
 func (h *eventHubImpl) EmitDevice(name string) error {
@@ -261,6 +261,8 @@ func (h *eventHubImpl) Start() {
 	h.server.Start(func(message []byte) { h.handleHubEvents(message) })
 }
 
+// TODO: abstract this so we can mock it
+// https://gemini.google.com/app/b3118f0d9cdcdba6
 func (c *eventHubImpl) handleHubEvents(message []byte) {
 	var eventMsg = &EventMessage{}
 
@@ -337,10 +339,10 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 		c.executeAction(eventMsg.Payload, c.onSaveLoggerConfig, true)
 
 	case SaveExposeGroup:
-		c.executeAction(eventMsg.Payload, c.onSaveExposeGroup, true)
+		c.executeAction(eventMsg.Payload, c.onSaveDeviceGroup, true)
 
 	case DeleteExposeGroup:
-		c.executeAction(eventMsg.Payload, c.onDeleteExposeGroup, true)
+		c.executeAction(eventMsg.Payload, c.onDeleteDeviceGroup, true)
 
 	default:
 

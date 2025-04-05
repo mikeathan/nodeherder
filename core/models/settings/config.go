@@ -112,9 +112,10 @@ func (s *AppConfig) AddDeviceConfig(cfg *DeviceConfig) {
 func NewAppConfig() *AppConfig {
 	return &AppConfig{
 		Hub: &HubConfig{
-			Devices: map[string]*DeviceConfig{},
-			History: DefaultHistoryConfig(),
-			Logger:  DefaultLoggingConfig(),
+			Devices:        map[string]*DeviceConfig{},
+			History:        DefaultHistoryConfig(),
+			Logger:         DefaultLoggingConfig(),
+			DashboardGroup: map[string]*DashboardGroup{},
 		},
 		Bridge: DefaultBridgeConfig(),
 	}

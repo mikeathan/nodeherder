@@ -678,8 +678,19 @@ func TestSaveExposeGroupIsValidated(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	// we dont need tasks here just using it as it using valid settings repo
-	tasks := []settings.Task{}
-	store, cleanup, err := utils_test.CreateStoreWithTasks(tasks)
+	bridgeInfoFile := filepath.Join("../../../docs", "device_bridge.json")
+	data, err := os.ReadFile(bridgeInfoFile)
+	if err != nil {
+		t.Fatal("Error reading file:", err)
+		return
+	}
+	bridgeInfoes, err := devices.LoadBridgeDevices(data)
+	if err != nil {
+		t.Fatal("Error parsing bridge info data:", err)
+		return
+	}
+
+	store, cleanup, err := utils_test.CreateFileStore()
 	if err != nil {
 		t.Fatalf("CreateFileStore failed. err %v ", err)
 	}
@@ -688,19 +699,46 @@ func TestSaveExposeGroupIsValidated(t *testing.T) {
 	cfg := store.AppConfig()
 	mqtt := &mocks.MockMqttClient{}
 
-	//eventHub := mocks.NewMockEventHub()
-	eventHub := &mocks.NopWsServer{}
-	// broadcastHandler := func(eventName string, data interface{}) error {
+	eventHub := mocks.NewMockEventHub()
 
-	// 	if eventName != ws.SaveExposeGroup {
-	// 		t.Fatalf("invalid event name want %v got %v", ws.SaveExposeGroup, eventName)
-	// 		return fmt.Errorf("invalid event name %v", eventName)
-	// 	}
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(bridgeInfoes)
 
-	// 	wg.Done()
-	// 	return nil
-	// }
-	//eventHub.SetMockBroadcastEvent(broadcastHandler)
+	// for now replicate the hub-controller logic handling this until we can mock the event hub
+	broadcastHandler := func(eventName string, data interface{}) error {
+
+		if eventName != ws.SaveExposeGroup {
+			t.Fatalf("invalid event name want %v got %v", ws.SaveExposeGroup, eventName)
+			return fmt.Errorf("invalid event name %v", eventName)
+		}
+
+		req := &settings.DashboardGroup{}
+		bytes, _ := json.Marshal(data)
+		err := json.Unmarshal(bytes, &req)
+		if err != nil {
+			return fmt.Errorf("OnSaveExposeGroup failed. Invalid payload type : %v ", err.Error())
+		}
+
+		// validate request
+		for id := range req.DeviceGroup {
+			_, err := registrar.LookupById(id)
+
+			if err != nil {
+				t.Fatalf("OnSaveExposeGroup failed. Invalid device id : %v ", err.Error())
+				return fmt.Errorf("OnSaveExposeGroup failed. Invalid expose id : %v ", err.Error())
+			}
+		}
+
+		err = cfg.SaveExposeGroup(req)
+		if err != nil {
+			t.Fatalf("OnSaveExposeGroup failed. %v ", err.Error())
+			return fmt.Errorf("OnSaveExposeGroup failed. %v ", err.Error())
+		}
+
+		wg.Done()
+		return nil
+	}
+	eventHub.SetMockBroadcastEvent(broadcastHandler)
 	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
 
 	// create new expose group
@@ -710,7 +748,6 @@ func TestSaveExposeGroupIsValidated(t *testing.T) {
 	newGroup.AddDeviceExpose("0xa4c13894070052fc", "presence")
 	newGroup.AddDeviceExpose("0xa4c13894070052fc", "illuminance")
 
-	to fix 
 	eventHub.Broadcast(ws.SaveExposeGroup, newGroup)
 	wg.Wait()
 
@@ -718,6 +755,101 @@ func TestSaveExposeGroupIsValidated(t *testing.T) {
 
 	if len(c.Hub.DashboardGroup) != 1 {
 		t.Fatalf("want %v got %v", 1, len(c.Hub.DashboardGroup))
+	}
+
+	for _, group := range c.Hub.DashboardGroup {
+		if group.Name != newGroup.Name {
+			t.Fatalf("want %v got %v", newGroup.Name, group.Name)
+		}
+		for id, expose := range group.DeviceGroup {
+
+			if newGroup.DeviceGroup[id].DeviceId != expose.DeviceId {
+				t.Fatalf("want %v got %v", expose.DeviceId, newGroup.DeviceGroup[id].DeviceId)
+			}
+		}
+	}
+}
+
+func TestDeleteExposeGroupRemovesGroup(t *testing.T) {
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	// we dont need tasks here just using it as it using valid settings repo
+	bridgeInfoFile := filepath.Join("../../../docs", "device_bridge.json")
+	data, err := os.ReadFile(bridgeInfoFile)
+	if err != nil {
+		t.Fatal("Error reading file:", err)
+		return
+	}
+	bridgeInfoes, err := devices.LoadBridgeDevices(data)
+	if err != nil {
+		t.Fatal("Error parsing bridge info data:", err)
+		return
+	}
+
+	store, cleanup, err := utils_test.CreateFileStore()
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+
+	cfg := store.AppConfig()
+	newGroup := settings.NewDashboardGroup("living room group")
+	newGroup.AddDeviceExpose("0x00158d0005a23c38", "brightness")
+	newGroup.AddDeviceExpose("0x001788010d7d9d3f", "action")
+	newGroup.AddDeviceExpose("0xa4c13894070052fc", "presence")
+	newGroup.AddDeviceExpose("0xa4c13894070052fc", "illuminance")
+
+	cfg.SaveExposeGroup(newGroup)
+	mqtt := &mocks.MockMqttClient{}
+
+	eventHub := mocks.NewMockEventHub()
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(bridgeInfoes)
+
+	// for now replicate the hub-controller logic handling this until we can mock the event hub
+	broadcastHandler := func(eventName string, p interface{}) error {
+
+		if eventName != ws.DeleteExposeGroup {
+			t.Fatalf("invalid event name want %v got %v", ws.SaveExposeGroup, eventName)
+			return fmt.Errorf("invalid event name %v", eventName)
+		}
+
+		bytes, _ := json.Marshal(p)
+		payload := make(map[string]interface{})
+		err := json.Unmarshal(bytes, &payload)
+
+		if err != nil {
+			return fmt.Errorf("OnDeleteExposeGroup failed. Invalid payload type : %v ", err.Error())
+		}
+
+		id, ok := payload["groupName"].(string)
+		if !ok {
+			return fmt.Errorf("OnDeleteExposeGroup failed. Invalid payload type missing group id")
+		}
+		err = cfg.DeleteExposeGroup(id)
+		if err != nil {
+			return fmt.Errorf("OnDeleteExposeGroup failed. %v ", err.Error())
+		}
+
+		wg.Done()
+		return nil
+	}
+	eventHub.SetMockBroadcastEvent(broadcastHandler)
+	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+
+	payload := map[string]string{
+		"groupName": "living room group",
+	}
+
+	eventHub.Broadcast(ws.DeleteExposeGroup, payload)
+	wg.Wait()
+
+	c, _ := cfg.LoadAppConfig()
+
+	if len(c.Hub.DashboardGroup) != 0 {
+		t.Fatalf("want %v got %v", 0, len(c.Hub.DashboardGroup))
 	}
 
 }

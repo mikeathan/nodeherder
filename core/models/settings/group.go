@@ -34,3 +34,4 @@ func (e *DashboardGroup) AddDeviceExpose(deviceId string, expose string) {
 	}
 	e.DeviceGroup[deviceId].AddExpose(expose)
 }
+
