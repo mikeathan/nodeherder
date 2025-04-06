@@ -308,7 +308,7 @@ func (s *AppConfigCache) SaveDashboardGroup(exposeGroup *DashboardGroup) error {
 		return err
 	}
 
-	config.Hub.DashboardGroup[exposeGroup.Name] = exposeGroup
+	config.Hub.DashboardGroups[exposeGroup.Name] = exposeGroup
 
 	err = s.store.SaveAppConfig(config)
 	if err != nil {
@@ -324,7 +324,7 @@ func (s *AppConfigCache) DeleteDashboardGroup(name string) error {
 		return err
 	}
 
-	delete(config.Hub.DashboardGroup, name)
+	delete(config.Hub.DashboardGroups, name)
 
 	err = s.store.SaveAppConfig(config)
 	if err != nil {

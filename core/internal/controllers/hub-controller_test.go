@@ -753,11 +753,11 @@ func TestSaveExposeGroupIsValidated(t *testing.T) {
 
 	c, _ := cfg.LoadAppConfig()
 
-	if len(c.Hub.DashboardGroup) != 1 {
-		t.Fatalf("want %v got %v", 1, len(c.Hub.DashboardGroup))
+	if len(c.Hub.DashboardGroups) != 1 {
+		t.Fatalf("want %v got %v", 1, len(c.Hub.DashboardGroups))
 	}
 
-	for _, group := range c.Hub.DashboardGroup {
+	for _, group := range c.Hub.DashboardGroups {
 		if group.Name != newGroup.Name {
 			t.Fatalf("want %v got %v", newGroup.Name, group.Name)
 		}
@@ -848,8 +848,8 @@ func TestDeleteExposeGroupRemovesGroup(t *testing.T) {
 
 	c, _ := cfg.LoadAppConfig()
 
-	if len(c.Hub.DashboardGroup) != 0 {
-		t.Fatalf("want %v got %v", 0, len(c.Hub.DashboardGroup))
+	if len(c.Hub.DashboardGroups) != 0 {
+		t.Fatalf("want %v got %v", 0, len(c.Hub.DashboardGroups))
 	}
 
 }
