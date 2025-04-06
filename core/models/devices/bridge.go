@@ -290,6 +290,8 @@ func (e *BridgeExpose) SanitizeData(data any) (any, error) {
 			}
 		}
 	} else {
+
+		TODO - fix
 		return nil, fmt.Errorf("type=%s  not implemented", e.Type)
 	}
 
