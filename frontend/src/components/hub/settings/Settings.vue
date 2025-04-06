@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import HistorySettings from './HistorySettings.vue';
-import LoggerSettings from './LoggerSettings.vue';
-
+  import HistorySettings from './HistorySettings.vue';
+  import LoggerSettings from './LoggerSettings.vue';
+  import DashboardGroupSettings from './DashboardGroupSettings.vue';
 </script>
 
 <template>
@@ -15,6 +15,9 @@ import LoggerSettings from './LoggerSettings.vue';
       </div>
       <div class="pt-3">
         <LoggerSettings />
+      </div>
+      <div class="pt-3">
+        <DashboardGroupSettings />
       </div>
     </template>
   </Card>

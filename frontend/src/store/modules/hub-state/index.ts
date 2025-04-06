@@ -5,6 +5,7 @@ import { Device, Devices, DeviceMap, DeviceUpdate } from '../../../types/device'
 import {
   AppConfig,
   BridgeSettingsType,
+  DashboardGroups,
   DeviceSettings,
   HistorySettingsType,
   LoggerSettingsType,
@@ -47,6 +48,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     },
     logger: (state) => (): LoggerSettingsType => state.appConfig.hub.logger,
     bridge: (state) => (): BridgeSettingsType => state.appConfig.bridge,
+    dashboardGroups: (state) => (): DashboardGroups => state.appConfig.hub.dashboardGroups,
     findDeviceSetting:
       (state) =>
       (id: string): DeviceSettings | undefined => {

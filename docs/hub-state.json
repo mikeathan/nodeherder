@@ -3,6 +3,25 @@
   "payload": {
     "config": {
       "hub": {
+        "dashboardGroups": {
+          "living room group": {
+            "name": "living room group",
+            "deviceGroup": {
+              "0x00158d0005a23c38": {
+                "deviceId": "0x00158d0005a23c38",
+                "exposes": ["brightness"]
+              },
+              "0x001788010d7d9d3f": {
+                "deviceId": "0x001788010d7d9d3f",
+                "exposes": ["action"]
+              },
+              "0xa4c13894070052fc": {
+                "deviceId": "0xa4c13894070052fc",
+                "exposes": ["presence", "illuminance"]
+              }
+            }
+          }
+        },
         "devices": {
           "0x00124b0029207763": {
             "id": "0x00124b0029207763",

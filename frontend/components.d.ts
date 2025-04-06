@@ -7,6 +7,8 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    Accordion: typeof import('primevue/accordion')['default']
+    AccordionTab: typeof import('primevue/accordiontab')['default']
     ActionEditor: typeof import('./src/components/automations/actions/ActionEditor.vue')['default']
     ActionViewer: typeof import('./src/components/automations/actions/ActionViewer.vue')['default']
     AreaChart: typeof import('./src/components/chart/types/AreaChart.vue')['default']
@@ -16,12 +18,14 @@ declare module 'vue' {
     ButtonGroup: typeof import('./src/components/input/ButtonGroup.vue')['default']
     ButtonPanel: typeof import('./src/components/controls/ButtonPanel.vue')['default']
     Card: typeof import('primevue/card')['default']
+    Chip: typeof import('primevue/chip')['default']
     Column: typeof import('primevue/column')['default']
     'ConditionEditor.': typeof import('./src/components/automations/conditions/ConditionEditor..vue')['default']
     ConfirmDialog: typeof import('./src/components/dialogs/ConfirmDialog.vue')['default']
     ConnectionType: typeof import('./src/components/device/ConnectionType.vue')['default']
     ConsoleViewer: typeof import('./src/components/hub/console/ConsoleViewer.vue')['default']
     Creator: typeof import('./src/components/automations/Creator.vue')['default']
+    DashboardGroupSettings: typeof import('./src/components/hub/settings/DashboardGroupSettings.vue')['default']
     DataTable: typeof import('primevue/datatable')['default']
     DatePicker: typeof import('primevue/datepicker')['default']
     DebounceSettings: typeof import('./src/components/settings/DebounceSettings.vue')['default']
