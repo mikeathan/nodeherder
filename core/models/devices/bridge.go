@@ -289,10 +289,19 @@ func (e *BridgeExpose) SanitizeData(data any) (any, error) {
 				}
 			}
 		}
+	} else if e.Type == "enum" {
+		found := false
+		for _, v := range e.Values {
+			if v == data {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("value=%v not found in Values", data)
+		}
 	} else {
-
-		TODO - fix
-		return nil, fmt.Errorf("type=%s  not implemented", e.Type)
+		return nil, fmt.Errorf("type=%s not supported", e.Type)
 	}
 
 	return data, nil
