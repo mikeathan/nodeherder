@@ -171,24 +171,21 @@ const getDashboardGroups = computed(() => {
 
   <div class="p-4">
     <Card>
-      <template #title>
-        TITLE: {{ firstDeviceGroupArray }}
-      </template>
       <template #content>
-        <DataView :value="firstDeviceGroupArray" layout="grid" data-key="deviceId">
+        <DataView :value="firstDeviceGroupArray" data-key="deviceId">
           <template #list="slotProps">
             <div v-for="(item, index) in slotProps.items" :key="index">
               {{ item.deviceId }}
-              <div class="col-12 md:col-6 lg:col-4 xl:col-3 p-2">
-                <div class="p-4 border-1 surface-border border-round surface-card h-full flex flex-column">
-                  <div class="mb-3">
-                    <strong class="block mb-1">Device ID:</strong>
+              <div class="col-12 md:col-6 lg:col-4 xl:col-3 ">
+                <div class="p-4 border-1 ">
+                  <div class="mb-1">
+                    <strong class=" mb-1">Device ID:</strong>
                     <span class="text-color-secondary">{{ item.deviceId }}</span>
                   </div>
                   <div>
-                    <strong class="block mb-2">Exposed Properties:</strong>
+                    <strong class="block mb-2">Exposes:</strong>
                     <div class="flex flex-wrap gap-1">
-                      <Tag v-for="prop in item.exposes" :key="prop" :value="prop" severity="info" class="mr-1 mb-1" />
+                      <Tag v-for="prop in item.exposes" :key="prop" :value="prop" severity="info"  />
                     </div>
                   </div>
                 </div>
