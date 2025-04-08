@@ -3,10 +3,21 @@ import { computed, ref } from 'vue';
 import { store } from '../../../store/index';
 import { DashboardGroups, DashboardGroup, DeviceGroup } from '@/types/settings.type';
 import Panel from 'primevue/panel';
+import { Device } from '@/types/device';
 
 const dashboardGroups = computed(() => {
   return store.getters['hub/dashboardGroups']() as DashboardGroups;
 });
+
+
+function deviceNameFromId(id: string): string {
+  const device = store.getters['hub/findDevice'](id) as Device;
+  if (device == undefined) {
+    return '';
+  }
+  return device.friendly_name;
+}
+
 
 // Form states
 const displayGroupDialog = ref(false);
@@ -164,42 +175,41 @@ const getDashboardGroups = computed(() => {
   return Object.values(dashboardGroups.value);
 });
 </script>
-
 <style scoped></style>
+
 <template>
   <h3>Dashboard Groups</h3>
 
   <div class="p-4">
-    <Card>
-      <template #content>
-        <DataView :value="firstDeviceGroupArray" data-key="deviceId">
-          <template #list="slotProps">
-            <div v-for="(item, index) in slotProps.items" :key="index">
-              {{ item.deviceId }}
-              <div class="col-12 md:col-6 lg:col-4 xl:col-3 ">
-                <div class="p-4 border-1 ">
-                  <div class="mb-1">
-                    <strong class=" mb-1">Device ID:</strong>
-                    <span class="text-color-secondary">{{ item.deviceId }}</span>
+
+    <Panel v-for="(group, index) in getDashboardGroups" :key="index" :header="group.name" toggleable>
+      <DataView :value="getDeviceGroupArray(group)" data-key="deviceId">
+        <template #list="slotProps">
+          <div v-for="(item, index) in slotProps.items" :key="index">
+            <div class="col-12 md:col-6 lg:col-4 xl:col-4">
+              <div class=" ">
+                <div class="flex flex-wrap md:flex-nowrap gap-4 items-start">
+                  <div class="w-full md:w-1/2">
+                    <div class="text-color-secondary">{{ deviceNameFromId(item.deviceId) }}</div>
                   </div>
-                  <div>
-                    <strong class="block mb-2">Exposes:</strong>
+
+                  <div class="w-full md:w-1/2">
                     <div class="flex flex-wrap gap-1">
-                      <Tag v-for="prop in item.exposes" :key="prop" :value="prop" severity="info"  />
+                      <Tag v-for="(prop, propIndex) in item.exposes" :key="prop" severity="info"
+                        class="flex items-center gap-1 pr-2">
+                        <span>{{ prop }}</span>
+                        <i class="pi pi-times-circle text-sm cursor-pointer"></i>
+                      </Tag>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+        </template>
+      </DataView>
+    </Panel>
 
-          </template>
-
-          <template #empty>
-            <div class="p-4 text-center">No devices found.</div>
-          </template>
-        </DataView>
-      </template>
-    </Card>
   </div>
 
 
