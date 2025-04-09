@@ -20,6 +20,27 @@
                 "exposes": ["presence", "illuminance"]
               }
             }
+          },
+          "attic room group": {
+            "name": "attic room group",
+            "deviceGroup": {
+              "0x00124b0029207763": {
+                "deviceId": "0x00124b0029207763",
+                "exposes": ["temperature", "humidity"]
+              },
+              "0xa4c1389b273366c3": {
+                "deviceId": "0xa4c1389b273366c3",
+                "exposes": ["alarm"]
+              },
+              "0xa4c138c383ac3fc8": {
+                "deviceId": "0xa4c138c383ac3fc8",
+                "exposes": ["smoke"]
+              },
+              "0x70ac08fffefafeca": {
+                "deviceId": "0x70ac08fffefafeca",
+                "exposes": ["brightness", "color_temp"]
+              }
+            }
           }
         },
         "devices": {

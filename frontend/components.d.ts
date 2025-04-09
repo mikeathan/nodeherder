@@ -36,6 +36,7 @@ declare module 'vue' {
     DeviceControl: typeof import('./src/components/device/DeviceControl.vue')['default']
     DeviceDashboard: typeof import('./src/components/device-dashboard/DeviceDashboard.vue')['default']
     DeviceExposes: typeof import('./src/components/device/DeviceExposes.vue')['default']
+    DeviceGroupSettings: typeof import('./src/components/hub/settings/DeviceGroupSettings.vue')['default']
     DeviceList: typeof import('./src/components/device-list/DeviceList.vue')['default']
     DeviceMetrics: typeof import('./src/components/device/DeviceMetrics.vue')['default']
     DevicePage: typeof import('./src/components/device/DevicePage.vue')['default']
