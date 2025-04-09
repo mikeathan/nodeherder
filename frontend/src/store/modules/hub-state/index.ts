@@ -99,6 +99,9 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         state.appConfig.hub.devices[setting.id] = setting;
       }
     },
+    setDashboardGroups(state, dashboardGroups: DashboardGroups) {
+      state.appConfig.hub.dashboardGroups = dashboardGroups;
+    },
     setHistorySettings(state, historySetting: HistorySettingsType) {
       state.appConfig.hub.history = historySetting;
     },
@@ -142,6 +145,17 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         {
           event: 'saveDeviceConfig',
           message: deviceSetting,
+        },
+        { root: true }
+      );
+    },
+    saveDashboardGroups({ commit, dispatch }, dashboardGroups: DashboardGroups) {
+      commit('setDashboardGroups', dashboardGroups);
+      dispatch(
+        'ws/emit',
+        {
+          event: 'saveDashboardGroups', TO create backend ws event
+          message: dashboardGroups,
         },
         { root: true }
       );
