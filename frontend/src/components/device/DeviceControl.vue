@@ -32,7 +32,6 @@
   }
 
   function removeDevice(event: RemoveDeviceEvent) {
-    console.log('removeDevice', event);
     store.dispatch('hub/removeDevice', {
       id: device.value.id,
       force: event.force ?? false,

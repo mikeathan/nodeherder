@@ -1,50 +1,51 @@
 <script setup lang="ts">
-  import { computed, ref } from 'vue';
-  import { store } from '../../../store/index';
-  import { DashboardGroups, DashboardGroup, DeviceGroup } from '@/types/settings.type';
+    import { computed, ref } from 'vue';
+    import { store } from '../../../store/index';
+    import { DashboardGroup, DeviceGroup } from '@/types/settings.type';
 
-  import { Device } from '@/types/device';
+    import { Device } from '@/types/device';
 
-  const props = defineProps<{
-    dashboardGroup: DashboardGroup;
-  }>();
+    const props = defineProps<{
+      dashboardGroup: DashboardGroup;
+    }>();
 
-  const emit = defineEmits<{
-    (e: 'update', dashboardGroup: DashboardGroup): void;
-    (e: 'insert', deviceId: string): void;
-  }>();
+    const emit = defineEmits<{
+      (e: 'update', dashboardGroup: DashboardGroup): void;
+      (e: 'insert', deviceId: string): void;
+    }>();
 
-  const dashboardGroup = ref<DashboardGroup>(props.dashboardGroup);
-  function deviceNameFromId(id: string): string {
-    const device = store.getters['hub/findDevice'](id) as Device;
-    if (device == undefined) {
-      return '';
+    const dashboardGroup = ref<DashboardGroup>(props.dashboardGroup);
+    function deviceNameFromId(id: string): string {
+      const device = store.getters['hub/findDevice'](id) as Device;
+      if (device == undefined) {
+        return '';
+      }
+      return device.friendly_name;
     }
-    return device.friendly_name;
-  }
 
-  const getDeviceGroupArray = (group: DashboardGroup) => {
-    return Object.values(group.deviceGroup);
-  };
+    const getDeviceGroupArray = (group: DashboardGroup) => {
+      return Object.values(group.deviceGroup);
+    };
 
-  function insertExpose(deviceGroup: DeviceGroup) {
-    emit('insert', deviceGroup.deviceId);
-  }
+    function insertExpose(deviceGroup: DeviceGroup) {
+      emit('insert', deviceGroup.deviceId);
+    }
 
-  const deleteExpose = (deviceGroup: DeviceGroup, expose: string) => {
-    deviceGroup.exposes = deviceGroup.exposes.filter((e: string) => e != expose);
-    dashboardGroup.value.deviceGroup[deviceGroup.deviceId] = deviceGroup;
+    cant delete expose if its last one
+  maybe add a dialog to confirm and remove dialog group instead
+    const deleteExpose = (deviceGroup: DeviceGroup, expose: string) => {
+      deviceGroup.exposes = deviceGroup.exposes.filter((e: string) => e != expose);
+      dashboardGroup.value.deviceGroup[deviceGroup.deviceId] = deviceGroup;
 
-    emit('update', { ...dashboardGroup.value });
-  };
+      emit('update', { ...dashboardGroup.value });
+    };
 
-  const deleteDeviceGroup = (deviceGroup: DeviceGroup) => {
-    delete dashboardGroup.value.deviceGroup[deviceGroup.deviceId];
+    const deleteDeviceGroup = (deviceGroup: DeviceGroup) => {
+      delete dashboardGroup.value.deviceGroup[deviceGroup.deviceId];
 
-    emit('update', { ...dashboardGroup.value });
-  };
+      emit('update', { ...dashboardGroup.value });
+    };
 </script>
-<style scoped></style>
 
 <template>
   <DataView :value="getDeviceGroupArray(props.dashboardGroup)" data-key="deviceId">

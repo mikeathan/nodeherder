@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import HistorySettings from './HistorySettings.vue';
   import LoggerSettings from './LoggerSettings.vue';
-  import DashboardGroupSettings from './DashboardGroupSettings.vue';
+  import DashboardGroupSettings from './DashboardGroupsSettings.vue';
 </script>
 
 <template>

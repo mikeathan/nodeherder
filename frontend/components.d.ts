@@ -26,6 +26,7 @@ declare module 'vue' {
     Creator: typeof import('./src/components/automations/Creator.vue')['default']
     DashboardGroup: typeof import('./src/components/hub/settings/DashboardGroup.vue')['default']
     DashboardGroupSettings: typeof import('./src/components/hub/settings/DashboardGroupSettings.vue')['default']
+    DashboardGroupsSettings: typeof import('./src/components/hub/settings/DashboardGroupsSettings.vue')['default']
     DataTable: typeof import('primevue/datatable')['default']
     DataView: typeof import('primevue/dataview')['default']
     DatePicker: typeof import('primevue/datepicker')['default']
