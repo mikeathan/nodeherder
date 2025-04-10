@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
   import { store } from '../../../store/index';
-  import { DashboardGroups, DashboardGroup, DeviceGroup } from '@/types/settings.type';
+  import { DashboardGroups, DashboardGroup } from '@/types/settings.type';
   import ExposeSelectionDialog from '../../dialogs/ExposeSelectionDialog.vue';
   import DashboardGroupComponent from './DashboardGroup.vue';
 
@@ -23,6 +23,9 @@
   // TODO: refactor to use event bus
 
   const getDashboardGroups = computed(() => {
+    if (!dashboardGroups.value) {
+      return [];
+    }
     return Object.values(dashboardGroups.value);
   });
 
