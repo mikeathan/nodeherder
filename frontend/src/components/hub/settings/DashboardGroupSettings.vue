@@ -11,26 +11,20 @@
     return store.getters['hub/dashboardGroups']() as DashboardGroups;
   });
 
-  const showSelectExposeDialog = ref(false);
-
   // TODO
   // temporary: will need to be refactored so dialog is placed in app
   // and controlled via eventbus events
+  const showSelectExposeDialog = ref(false);
+  const showConfirmDialog = ref(false);
+
   const dialogDeviceGroupId = ref<string>('');
   const dialogDashboardGroup = ref<DashboardGroup | null>(null);
+  const dialogDeviceGroupName = ref<string>('');
+  // TODO: refactor to use event bus
 
   const getDashboardGroups = computed(() => {
     return Object.values(dashboardGroups.value);
   });
-
-  function addDeviceExpose(expose: string) {
-    if (!expose || !dialogDashboardGroup.value || !dialogDeviceGroupId.value) {
-      return;
-    }
-
-    dialogDashboardGroup.value.deviceGroup[dialogDeviceGroupId.value].exposes.push(expose);
-    store.dispatch('hub/saveDashboardGroup', dialogDashboardGroup.value as DashboardGroup);
-  }
 
   function openExposeDialog(dashboardroup: DashboardGroup, deviceId: string) {
     dialogDeviceGroupId.value = deviceId;
@@ -45,6 +39,25 @@
     dialogDeviceGroupId.value = '';
     dialogDashboardGroup.value = null;
   }
+
+  function openDeleteDeviceGroupConfirmationDialog(groupName: string) {
+    showConfirmDialog.value = true;
+    dialogDeviceGroupName.value = groupName;
+  }
+
+  const addDeviceExpose = (expose: string) => {
+    if (!expose || !dialogDashboardGroup.value || !dialogDeviceGroupId.value) {
+      return;
+    }
+
+    dialogDashboardGroup.value.deviceGroup[dialogDeviceGroupId.value].exposes.push(expose);
+    store.dispatch('hub/saveDashboardGroup', dialogDashboardGroup.value as DashboardGroup);
+  };
+
+  const deleteDeviceGroup = (groupName: string) => {
+    delete dashboardGroups.value[groupName];
+    store.dispatch('hub/deleteDashboardGroup', groupName);
+  };
 
   const updateDeviceGroup = (group: DashboardGroup) => {
     dashboardGroups.value[group.name] = group;
@@ -63,9 +76,10 @@
         <div class="flex items-center w-full">
           <span class="flex items-center cursor-pointer">
             <Button
-                icon="pi pi-trash"
-                class="p-button-text p-button-rounded p-button-danger pb-5"
-                aria-label="Delete" />
+              icon="pi pi-trash"
+              class="p-button-text p-button-rounded p-button-danger pb-5"
+              aria-label="Delete"
+              @click="openDeleteDeviceGroupConfirmationDialog(group.name)" />
             <!-- <i class="pi pi-trash small  me-3 mt-1 cursor-pointer"  style="color: #e74c3c;font-size: 1rem" /> -->
             {{ group.name }}
           </span>
@@ -82,4 +96,8 @@
     :show="showSelectExposeDialog"
     @update="addDeviceExpose"
     @close="closeExposeDialog" />
+  <ConfirmDialog
+    :show="showConfirmDialog"
+    @confirm="deleteDeviceGroup(dialogDeviceGroupName)"
+    @close="showConfirmDialog = false" />
 </template>
