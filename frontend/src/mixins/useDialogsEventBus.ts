@@ -1,8 +1,18 @@
 import mitt, { Emitter } from 'mitt';
 import { onUnmounted } from 'vue';
-TODO
+
+const DialogEventTypes = {
+  confirm: 'confirm',
+  input: 'input',
+  renameDevice: 'renameDevice',
+  removeDevice: 'removeDevice',
+  exposeSelection: 'exposeSelection',
+} as const;
+
+type DialogEventType = keyof typeof DialogEventTypes;
+
 export type OpenDialogEvent = {
-  type: string; // e.g., 'confirm', 'nameDialog', etc.
+  type: DialogEventType; // e.g., 'confirm', 'nameDialog', etc.
   props?: Record<string, unknown>; // dynamic props for each dialog type
 };
 
