@@ -59,6 +59,7 @@ declare module 'vue' {
     Icon: typeof import('./src/components/controls/Icon.vue')['default']
     IftaLabel: typeof import('primevue/iftalabel')['default']
     InputBox: typeof import('./src/components/input/InputBox.vue')['default']
+    InputDialog: typeof import('./src/components/dialogs/InputDialog.vue')['default']
     InputNumber: typeof import('primevue/inputnumber')['default']
     InputText: typeof import('primevue/inputtext')['default']
     LastSeen: typeof import('./src/components/device/LastSeen.vue')['default']

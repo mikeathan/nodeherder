@@ -4,6 +4,8 @@
   import { DashboardGroups, DashboardGroup } from '@/types/settings.type';
   import ExposeSelectionDialog from '../../dialogs/ExposeSelectionDialog.vue';
   import DashboardGroupComponent from './DashboardGroup.vue';
+  import ConfirmDialog from '../../dialogs/ConfirmDialog.vue';
+  import InputDialog from '../../dialogs/InputDialog.vue';
 
   import Panel from 'primevue/panel';
 
@@ -16,6 +18,7 @@
   // and controlled via eventbus events
   const showSelectExposeDialog = ref(false);
   const showConfirmDialog = ref(false);
+  const showInputDialog = ref(false);
 
   const dialogDeviceGroupId = ref<string>('');
   const dialogDashboardGroup = ref<DashboardGroup | null>(null);
@@ -48,6 +51,10 @@
     dialogDeviceGroupName.value = groupName;
   }
 
+  function openCreateNewDashboardGroupDialog() {
+    showInputDialog.value = true;
+  }
+
   const addDeviceExpose = (expose: string) => {
     if (!expose || !dialogDashboardGroup.value || !dialogDeviceGroupId.value) {
       return;
@@ -67,33 +74,48 @@
 
     store.dispatch('hub/saveDashboardGroup', group);
   };
+
+  const createNewDashboardGroup = (groupName: string) => {
+    dashboardGroups.value[groupName] = {
+      name: groupName,
+      deviceGroup: {},
+    };
+  };
 </script>
 <style scoped></style>
 
 <template>
   <h3>Dashboard Groups</h3>
 
-  <div class="p-4">
-    <Panel v-for="(group, index) in getDashboardGroups" :key="index" toggleable :collapsed="true">
-      <template #header>
-        <div class="flex items-center w-full">
-          <span class="flex items-center cursor-pointer">
-            <Button
-              icon="pi pi-trash"
-              class="p-button-text p-button-rounded p-button-danger pb-5"
-              aria-label="Delete"
-              @click="openDeleteDeviceGroupConfirmationDialog(group.name)" />
-            <!-- <i class="pi pi-trash small  me-3 mt-1 cursor-pointer"  style="color: #e74c3c;font-size: 1rem" /> -->
-            {{ group.name }}
-          </span>
-        </div>
-      </template>
-      <DashboardGroupComponent
-        :dashboardGroup="group"
-        @update="(g) => updateDeviceGroup(g)"
-        @insert="(id) => openExposeDialog(group, id)" />
-    </Panel>
+  <div class="flex justify-end mb-4 mt-4">
+    <Button
+      icon="pi pi-plus"
+      text
+      label="Add Group"
+      class="p-button-sm p-button-outlined"
+      @click="openCreateNewDashboardGroupDialog" />
   </div>
+
+  <Panel v-for="(group, index) in getDashboardGroups" :key="index" toggleable :collapsed="true">
+    <template #header>
+      <div class="flex items-center w-full">
+        we need new button to add new device group
+
+        <span class="flex items-center cursor-pointer">
+          <Button
+            icon="pi pi-trash"
+            class="p-button-text p-button-rounded p-button-danger pb-5"
+            aria-label="Delete"
+            @click="openDeleteDeviceGroupConfirmationDialog(group.name)" />
+          {{ group.name }}
+        </span>
+      </div>
+    </template>
+    <DashboardGroupComponent
+      :dashboardGroup="group"
+      @update="(g) => updateDeviceGroup(g)"
+      @insert="(id) => openExposeDialog(group, id)" />
+  </Panel>
   <ExposeSelectionDialog
     :id="dialogDeviceGroupId"
     :show="showSelectExposeDialog"
@@ -103,4 +125,11 @@
     :show="showConfirmDialog"
     @confirm="deleteDeviceGroup(dialogDeviceGroupName)"
     @close="showConfirmDialog = false" />
+
+  <InputDialog
+    :show="showInputDialog"
+    title="New Group"
+    message="Enter the dashboard group name"
+    @confirm="createNewDashboardGroup"
+    @close="showInputDialog = false" />
 </template>
