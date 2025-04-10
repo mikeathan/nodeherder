@@ -1,64 +1,56 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { store } from '../../../store/index';
-import { DashboardGroups, DashboardGroup, DeviceGroup } from '@/types/settings.type';
-import ExposeSelectionDialog from '../../dialogs/ExposeSelectionDialog.vue';
-import DashboardGroupComponent from './DashboardGroup.vue';
+  import { computed, ref } from 'vue';
+  import { store } from '../../../store/index';
+  import { DashboardGroups, DashboardGroup, DeviceGroup } from '@/types/settings.type';
+  import ExposeSelectionDialog from '../../dialogs/ExposeSelectionDialog.vue';
+  import DashboardGroupComponent from './DashboardGroup.vue';
 
-import Panel from 'primevue/panel';
+  import Panel from 'primevue/panel';
 
-const dashboardGroups = computed(() => {
-  return store.getters['hub/dashboardGroups']() as DashboardGroups;
-});
+  const dashboardGroups = computed(() => {
+    return store.getters['hub/dashboardGroups']() as DashboardGroups;
+  });
 
-const showSelectExposeDialog = ref(false);
+  const showSelectExposeDialog = ref(false);
 
-// TODO
-// temporary: will need to be refactored so dialog is placed in app
-// and controlled via eventbus events
-const dialogDeviceGroupId = ref<string>('');
-const dialogDashboardGroup = ref<DashboardGroup | null>(null);
+  // TODO
+  // temporary: will need to be refactored so dialog is placed in app
+  // and controlled via eventbus events
+  const dialogDeviceGroupId = ref<string>('');
+  const dialogDashboardGroup = ref<DashboardGroup | null>(null);
 
-const getDashboardGroups = computed(() => {
-  return Object.values(dashboardGroups.value);
-});
+  const getDashboardGroups = computed(() => {
+    return Object.values(dashboardGroups.value);
+  });
 
-function addDeviceExpose(expose: string) {
+  function addDeviceExpose(expose: string) {
+    if (!expose || !dialogDashboardGroup.value || !dialogDeviceGroupId.value) {
+      return;
+    }
 
-  if (!expose ||
-    !dialogDashboardGroup.value ||
-    !dialogDeviceGroupId.value) {
-    return
+    dialogDashboardGroup.value.deviceGroup[dialogDeviceGroupId.value].exposes.push(expose);
+    store.dispatch('hub/saveDashboardGroup', dialogDashboardGroup.value as DashboardGroup);
   }
 
-  dialogDashboardGroup.value.deviceGroup[dialogDeviceGroupId.value].exposes.push(expose);
+  function openExposeDialog(dashboardroup: DashboardGroup, deviceId: string) {
+    dialogDeviceGroupId.value = deviceId;
+    dialogDashboardGroup.value = dashboardroup;
 
-  // emit update store
-}
+    // Show the dialog
+    showSelectExposeDialog.value = true;
+  }
 
-function openExposeDialog(dashboardroup: DashboardGroup, deviceId: string) {
+  function closeExposeDialog() {
+    showSelectExposeDialog.value = false;
+    dialogDeviceGroupId.value = '';
+    dialogDashboardGroup.value = null;
+  }
 
-  dialogDeviceGroupId.value = deviceId;
-  dialogDashboardGroup.value = dashboardroup;
+  const updateDeviceGroup = (group: DashboardGroup) => {
+    dashboardGroups.value[group.name] = group;
 
-  // Show the dialog
-  showSelectExposeDialog.value = true;
-}
-
-
-function closeExposeDialog() {
-  showSelectExposeDialog.value = false;
-  dialogDeviceGroupId.value = '';
-  dialogDashboardGroup.value = null;
-}
-
-
-const updateDeviceGroup = (group: DashboardGroup) => {
-  dashboardGroups.value[group.name] = group;
-
-  // emit update store
-};
-
+    store.dispatch('hub/saveDashboardGroup', group);
+  };
 </script>
 <style scoped></style>
 
@@ -66,12 +58,28 @@ const updateDeviceGroup = (group: DashboardGroup) => {
   <h3>Dashboard Groups</h3>
 
   <div class="p-4">
-    <Panel v-for="(group, index) in getDashboardGroups" :key="index" :header="group.name" toggleable :collapsed="true">
-      <DashboardGroupComponent :dashboardGroup="group" @update="(g) => updateDeviceGroup(g)"
+    <Panel v-for="(group, index) in getDashboardGroups" :key="index" toggleable :collapsed="true">
+      <template #header>
+        <div class="flex items-center w-full">
+          <span class="flex items-center cursor-pointer">
+            <Button
+                icon="pi pi-trash"
+                class="p-button-text p-button-rounded p-button-danger pb-5"
+                aria-label="Delete" />
+            <!-- <i class="pi pi-trash small  me-3 mt-1 cursor-pointer"  style="color: #e74c3c;font-size: 1rem" /> -->
+            {{ group.name }}
+          </span>
+        </div>
+      </template>
+      <DashboardGroupComponent
+        :dashboardGroup="group"
+        @update="(g) => updateDeviceGroup(g)"
         @insert="(id) => openExposeDialog(group, id)" />
     </Panel>
   </div>
-  <ExposeSelectionDialog :id="dialogDeviceGroupId" :show="showSelectExposeDialog" @update="addDeviceExpose"
-    @close="closeExposeDialog" />>
-
+  <ExposeSelectionDialog
+    :id="dialogDeviceGroupId"
+    :show="showSelectExposeDialog"
+    @update="addDeviceExpose"
+    @close="closeExposeDialog" />
 </template>

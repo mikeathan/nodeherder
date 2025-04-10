@@ -25,11 +25,13 @@ const (
 	DeviceRemove            = "deviceRemove"
 	DeviceInterview         = "deviceInterview"
 
-	BridgePermitJoin  = "bridgePermitJoin"
-	SaveLoggerConfig  = "saveLoggerConfig"
-	SaveHistoryConfig = "saveHistoryConfig"
-	SaveDeviceConfig  = "saveDeviceConfig"
-	LoadAppconfig     = "loadAppConfig"
+	BridgePermitJoin     = "bridgePermitJoin"
+	SaveLoggerConfig     = "saveLoggerConfig"
+	SaveHistoryConfig    = "saveHistoryConfig"
+	SaveDeviceConfig     = "saveDeviceConfig"
+	SaveDashboardGroup   = "saveDashboardGroup"
+	DeleteDashboardGroup = "deleteDashboardGroup"
+	LoadAppconfig        = "loadAppConfig"
 
 	SaveExposeGroup   = "saveExposeGroup"
 	DeleteExposeGroup = "deleteExposeGroup"
@@ -307,6 +309,9 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 
 	case SaveDeviceConfig:
 		c.executeAction(eventMsg.Payload, c.onSaveDeviceConfig, true)
+
+	case SaveDashboardGroup:
+		c.executeAction(eventMsg.Payload, c.onSaveDashboardGroup, true)
 
 	case SaveHistoryConfig:
 		c.executeAction(eventMsg.Payload, c.onSaveHistoryConfig, true)

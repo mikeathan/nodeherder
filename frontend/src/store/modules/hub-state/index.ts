@@ -5,6 +5,7 @@ import { Device, Devices, DeviceMap, DeviceUpdate } from '../../../types/device'
 import {
   AppConfig,
   BridgeSettingsType,
+  DashboardGroup,
   DashboardGroups,
   DeviceSettings,
   HistorySettingsType,
@@ -99,8 +100,11 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         state.appConfig.hub.devices[setting.id] = setting;
       }
     },
-    setDashboardGroups(state, dashboardGroups: DashboardGroups) {
-      state.appConfig.hub.dashboardGroups = dashboardGroups;
+    setDashboardGroup(state, dashboardGroup: DashboardGroup) {
+      state.appConfig.hub.dashboardGroups[dashboardGroup.name] = dashboardGroup;
+    },
+    removeDashboardGroup(state, name: string) {
+      delete state.appConfig.hub.dashboardGroups[name];
     },
     setHistorySettings(state, historySetting: HistorySettingsType) {
       state.appConfig.hub.history = historySetting;
@@ -149,13 +153,29 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         { root: true }
       );
     },
-    saveDashboardGroups({ commit, dispatch }, dashboardGroups: DashboardGroups) {
-      commit('setDashboardGroups', dashboardGroups);
+    saveDashboardGroup({ commit, dispatch }, dashboardGroup: DashboardGroup) {
+      commit('setDashboardGroup', dashboardGroup);
       dispatch(
         'ws/emit',
         {
-          event: 'saveDashboardGroups', TO create backend ws event
-          message: dashboardGroups,
+          event: 'saveDashboardGroup',
+          message: dashboardGroup,
+        },
+        { root: true }
+      );
+    },
+
+    deleteDashboardGroup({ commit, dispatch }, name: string) {
+      commit('removeDashboardGroup', name);
+
+      var payload = {
+        groupName: name,
+      };
+      dispatch(
+        'ws/emit',
+        {
+          event: 'deleteDashboardGroup',
+          message: payload,
         },
         { root: true }
       );

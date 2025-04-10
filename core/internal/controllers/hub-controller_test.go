@@ -673,7 +673,7 @@ func TestProcessorStoresMetricsForExistingDevice(t *testing.T) {
 	}
 }
 
-func TestSaveExposeGroupIsValidated(t *testing.T) {
+func TestSaveDashboardGroupIsValidated(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -770,7 +770,7 @@ func TestSaveExposeGroupIsValidated(t *testing.T) {
 	}
 }
 
-func TestDeleteExposeGroupRemovesGroup(t *testing.T) {
+func TestDeleteDashboardGroupRemovesGroup(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
