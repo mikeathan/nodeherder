@@ -38,8 +38,6 @@
 
 <template>
   <Dialog v-model:visible="showDialog" modal :header="dialogTitle()" :style="{ width: '25rem' }">
-    showDialog = {{ showDialog }}
-
     <div v-if="dialogMessage()" class="mb-3 text-sm text-color-secondary">
       {{ dialogMessage() }}
     </div>

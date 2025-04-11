@@ -1,48 +1,47 @@
 <script setup lang="ts">
-  import { ref, watchEffect, computed } from 'vue';
-  import { store } from '../../store/index';
-  import { Device } from '@/types/device';
-  import Selection from '@/components/input/Selection.vue';
+import { ref, watchEffect, computed } from 'vue';
+import { store } from '../../store/index';
+import { Device } from '@/types/device';
+import Selection from '@/components/input/Selection.vue';
 
-  const props = defineProps<{
-    id: string;
-    show: boolean;
-    title?: string;
-    message?: string;
-  }>();
+const props = defineProps<{
+  id: string;
+  show: boolean;
+  title?: string;
+  message?: string;
+}>();
 
-  const emit = defineEmits(['update', 'close']);
+const emit = defineEmits(['confirm', 'close']);
 
-  function select() {
-    emit('update', selectedExpose.value);
-    close();
+function select() {
+  emit('confirm', selectedExpose.value);
+  close();
+}
+
+const selectedExpose = ref<string | null>(null);
+const showDialog = ref<boolean>(props.show);
+const exposeList = computed(() => {
+  const device = store.getters['hub/findDevice'](props.id) as Device;
+  if (device == undefined) {
+    console.log('exposeList empty', props.id);
+    return Array<string>();
   }
 
-  const selectedExpose = ref<string | null>(null);
-  const showDialog = ref<boolean>(props.show);
-  const exposeList = computed(() => {
-    const device = store.getters['hub/findDevice'](props.id) as Device;
-    if (device == undefined) {
-      console.log('exposeList empty', props.id);
+  return Object.entries(device.exposes).map(([i, e]) => e.name);
+});
 
-      return Array<string>();
-    }
+watchEffect(() => (showDialog.value = props.show));
 
-    return Object.entries(device.exposes).map(([i, e]) => e.name);
-  });
+function close() {
+  emit('close', false);
+  showDialog.value = false;
+}
 
-  watchEffect(() => (showDialog.value = props.show));
-
-  function close() {
-    emit('close', false);
-    showDialog.value = false;
-  }
-
-  function isValid() {
-    return selectedExpose.value != null;
-  }
-  const dialogTitle = () => props.title ?? 'Selection';
-  const dialogMessage = () => props.message ?? '';
+function isValid() {
+  return selectedExpose.value != null;
+}
+const dialogTitle = () => props.title ?? 'Selection';
+const dialogMessage = () => props.message ?? '';
 </script>
 
 <template>

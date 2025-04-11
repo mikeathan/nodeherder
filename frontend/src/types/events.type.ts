@@ -1,12 +1,9 @@
 import { AutomationTrigger } from './automation.type';
 import { KeyValuePair } from './types.type';
 
-export type SaveTriggerFunc = (
-  trigger: AutomationTrigger
-) => void;
-export type DeleteTriggerFunc = (
-  trigger: AutomationTrigger
-) => void;
+// Automation panel events
+export type SaveTriggerFunc = (trigger: AutomationTrigger) => void;
+export type DeleteTriggerFunc = (trigger: AutomationTrigger) => void;
 
 export type EventAction = (...args: any) => void;
 export type EventActions = KeyValuePair<EventAction>;
@@ -23,3 +20,29 @@ export type Events = {
   closePanel: string;
   closeLastPanel: void;
 };
+
+// Dialog events
+export const DialogEventTypes = {
+  confirm: 'confirm',
+  input: 'input',
+  renameDevice: 'renameDevice',
+  removeDevice: 'removeDevice',
+  exposeSelection: 'exposeSelection',
+} as const;
+
+export type CloseDialogFunc = () => void;
+export type BaseDialogProps = {
+  title?: string;
+  message?: string;
+};
+
+export type ExposeSelectionDialogProps = {
+  id: string,
+  title?: string;
+  message?: string;
+};
+
+
+
+export type DialogEventAction = (...args: any) => void;
+export type DialogEventActions = KeyValuePair<DialogEventAction>;

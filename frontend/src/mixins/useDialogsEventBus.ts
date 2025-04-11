@@ -1,20 +1,8 @@
-import { KeyValuePair } from '@/types/types.type';
-import mitt, { Emitter } from 'mitt';
+import { DialogEventTypes, DialogEventActions } from '@/types/events.type';
+import mitt from 'mitt';
 import { onUnmounted } from 'vue';
 
-const DialogEventTypes = {
-  confirm: 'confirm',
-  input: 'input',
-  renameDevice: 'renameDevice',
-  removeDevice: 'removeDevice',
-  exposeSelection: 'exposeSelection',
-} as const;
 
-export type CloseDialogFunc = (
-) => void;
-
-export type DialogEventAction = (...args: any) => void;
-export type DialogEventActions = KeyValuePair<DialogEventAction>;
 
 export type DialogEventType = keyof typeof DialogEventTypes;
 
@@ -22,7 +10,6 @@ export type OpenDialogEvent = {
   type: DialogEventType;
   props?: Record<string, any>;
   events: DialogEventActions;
-
 };
 
 export type DialogEvents = {
@@ -62,4 +49,6 @@ export function useDialogEvents(handlers: DialogEventHandlers) {
   return cleanup;
 }
 
-export default dialogEventBus;
+export function createOpenDialogEvent(type: DialogEventType, props: any, events: DialogEventActions): OpenDialogEvent {
+  return { type, props, events };
+}
