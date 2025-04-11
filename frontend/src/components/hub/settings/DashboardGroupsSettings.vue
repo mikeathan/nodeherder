@@ -20,15 +20,6 @@
     return store.getters['hub/dashboardGroups']() as DashboardGroups;
   });
 
-  // TODO
-  // temporary: will need to be refactored so dialog is placed in app
-  // and controlled via eventbus events
-
-  const dialogDeviceGroupId = ref<string>('');
-  const dialogDashboardGroup = ref<DashboardGroup | null>(null);
-  const dialogDeviceGroupName = ref<string>('');
-  // TODO: refactor to use event bus
-
   const getDashboardGroups = computed(() => {
     if (!dashboardGroups.value) {
       return [];
@@ -36,15 +27,24 @@
     return Object.values(dashboardGroups.value);
   });
 
-  function closeExposeDialog() {
-    // showSelectExposeDialog.value = false;
-    dialogDeviceGroupId.value = '';
-    dialogDashboardGroup.value = null;
-  }
-
   function openDeleteDeviceGroupConfirmationDialog(groupName: string) {
-    // showConfirmDialog.value = true;
-    dialogDeviceGroupName.value = groupName;
+    const events: DialogEventActions = {
+      close: () => emitCloseDialog(),
+      confirm: (args: any) => {
+        delete dashboardGroups.value[groupName];
+        store.dispatch('hub/deleteDashboardGroup', groupName);
+      },
+    };
+    const event: OpenDialogEvent = {
+      type: 'confirm',
+      props: {
+        title: 'Question',
+        message: 'Are you sure?',
+        show: true,
+      },
+      events: events,
+    };
+    emitOpenDialog(event);
   }
 
   function openCreateNewDashboardGroupDialog() {
@@ -91,11 +91,6 @@
     };
     emitOpenDialog(event);
   }
-
-  const deleteDeviceGroup = (groupName: string) => {
-    delete dashboardGroups.value[groupName];
-    store.dispatch('hub/deleteDashboardGroup', groupName);
-  };
 
   const updateDeviceGroup = (group: DashboardGroup) => {
     dashboardGroups.value[group.name] = group;
