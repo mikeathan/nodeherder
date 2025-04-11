@@ -1,45 +1,42 @@
 <script setup lang="ts">
+  import { ref, onUnmounted } from 'vue';
+  import { DialogComponents } from '@/mixins/useDialogComponents';
+  import { OpenDialogEvent, useDialogEvents, emitCloseDialog } from '@/mixins/useDialogsEventBus';
 
+  const cleanup = useDialogEvents({
+    openDialog: (event: OpenDialogEvent) => {
+      openDialog(event);
+    },
 
-import { ref, onMounted, onUnmounted } from 'vue';
-import emitter from './event-bus';
+    closeDialog: () => {
+      closeDialog();
+    },
+  });
 
-// Import all your dialog components
-import ConfirmDialog from './dialogs/ConfirmDialog.vue';
-import NameDialog from './dialogs/NameDialog.vue';
+  function closeDialog() {
+    if (currentDialogComponent.value != null) {
+      currentDialogComponent.value = null;
+    }
+  }
 
-const currentDialogComponent = ref(null);
-const currentDialogProps = ref({});
+  function openDialog(event: OpenDialogEvent): void {
+    if (currentDialogComponent.value == null) {
+      currentDialogComponent.value = event;
+    }
+  }
 
-const dialogMap = {
-    confirm: ConfirmDialog,
-    name: NameDialog,
-    // add more dialog types here
-};
+  const currentDialogComponent = ref<OpenDialogEvent | null>(null);
 
-function openDialog({ type, props }) {
-    currentDialogComponent.value = dialogMap[type];
-    currentDialogProps.value = props || {};
-}
-
-function closeDialog() {
+  onUnmounted(() => {
+    cleanup();
     currentDialogComponent.value = null;
-    currentDialogProps.value = {};
-}
-
-onMounted(() => {
-    emitter.on('dialog:open', openDialog);
-    emitter.on('dialog:close', closeDialog);
-});
-
-onUnmounted(() => {
-    emitter.off('dialog:open', openDialog);
-    emitter.off('dialog:close', closeDialog);
-});
+  });
 </script>
 
-
 <template>
-    <component :is="currentDialogComponent" v-if="currentDialogComponent" v-bind="currentDialogProps"
-        @close="closeDialog" />
+  <component
+    v-if="currentDialogComponent != null"
+    :is="DialogComponents[currentDialogComponent.type]"
+    v-bind="currentDialogComponent.props"
+    v-on="currentDialogComponent.events" />
 </template>

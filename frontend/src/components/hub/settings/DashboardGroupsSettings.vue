@@ -8,6 +8,13 @@
   import InputDialog from '../../dialogs/InputDialog.vue';
 
   import Panel from 'primevue/panel';
+  import {
+    DialogEventAction,
+    DialogEventActions,
+    emitCloseDialog,
+    emitOpenDialog,
+    OpenDialogEvent,
+  } from '@/mixins/useDialogsEventBus';
 
   const dashboardGroups = computed(() => {
     return store.getters['hub/dashboardGroups']() as DashboardGroups;
@@ -16,9 +23,6 @@
   // TODO
   // temporary: will need to be refactored so dialog is placed in app
   // and controlled via eventbus events
-  const showSelectExposeDialog = ref(false);
-  const showConfirmDialog = ref(false);
-  const showInputDialog = ref(false);
 
   const dialogDeviceGroupId = ref<string>('');
   const dialogDashboardGroup = ref<DashboardGroup | null>(null);
@@ -32,37 +36,61 @@
     return Object.values(dashboardGroups.value);
   });
 
-  function openExposeDialog(dashboardroup: DashboardGroup, deviceId: string) {
-    dialogDeviceGroupId.value = deviceId;
-    dialogDashboardGroup.value = dashboardroup;
-
-    // Show the dialog
-    showSelectExposeDialog.value = true;
-  }
-
   function closeExposeDialog() {
-    showSelectExposeDialog.value = false;
+    // showSelectExposeDialog.value = false;
     dialogDeviceGroupId.value = '';
     dialogDashboardGroup.value = null;
   }
 
   function openDeleteDeviceGroupConfirmationDialog(groupName: string) {
-    showConfirmDialog.value = true;
+    // showConfirmDialog.value = true;
     dialogDeviceGroupName.value = groupName;
   }
 
   function openCreateNewDashboardGroupDialog() {
-    showInputDialog.value = true;
+    const events: DialogEventActions = {
+      close: () => emitCloseDialog(),
+      confirm: (args: any) => {
+        dashboardGroups.value[args] = {
+          name: args,
+          deviceGroup: {},
+        };
+      },
+    };
+    const event: OpenDialogEvent = {
+      type: 'input',
+      props: {
+        title: 'Create',
+        message: 'Create New Dashboard Group',
+        show: true,
+      },
+      events: events,
+    };
+    emitOpenDialog(event);
   }
 
-  const addDeviceExpose = (expose: string) => {
-    if (!expose || !dialogDashboardGroup.value || !dialogDeviceGroupId.value) {
-      return;
-    }
-
-    dialogDashboardGroup.value.deviceGroup[dialogDeviceGroupId.value].exposes.push(expose);
-    store.dispatch('hub/saveDashboardGroup', dialogDashboardGroup.value as DashboardGroup);
-  };
+  function openExposeDialog(dashboardroup: DashboardGroup, deviceId: string) {
+    const events: DialogEventActions = {
+      close: () => emitCloseDialog(),
+      update: (args: any) => {
+        if (args) {
+          dashboardroup.deviceGroup[deviceId].exposes.push(args);
+          store.dispatch('hub/saveDashboardGroup', dashboardroup as DashboardGroup);
+        }
+      },
+    };
+    const event: OpenDialogEvent = {
+      type: 'exposeSelection',
+      props: {
+        title: 'Select',
+        message: 'Select Expose',
+        id: deviceId,
+        show: true,
+      },
+      events: events,
+    };
+    emitOpenDialog(event);
+  }
 
   const deleteDeviceGroup = (groupName: string) => {
     delete dashboardGroups.value[groupName];
@@ -116,7 +144,7 @@
       @update="(g) => updateDeviceGroup(g)"
       @insert="(id) => openExposeDialog(group, id)" />
   </Panel>
-  <ExposeSelectionDialog
+  <!-- <ExposeSelectionDialog
     :id="dialogDeviceGroupId"
     :show="showSelectExposeDialog"
     @update="addDeviceExpose"
@@ -131,5 +159,5 @@
     title="New Group"
     message="Enter the dashboard group name"
     @confirm="createNewDashboardGroup"
-    @close="showInputDialog = false" />
+    @close="showInputDialog = false" /> -->
 </template>
