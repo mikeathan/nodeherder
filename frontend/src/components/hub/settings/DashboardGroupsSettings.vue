@@ -6,7 +6,7 @@ import DashboardGroupComponent from './DashboardGroup.vue';
 
 import Panel from 'primevue/panel';
 
-import { emitOpenConfirmationDialog, emitOpenExposeSelectionDialog, emitOpenInputDialogEvent } from '@/contracts/dialog-events';
+import { emitOpenConfirmationDialog, emitOpenExposeSelectionDialog, emitOpenInputDialogEvent, emitOpenDeviceSelectionDialog } from '@/contracts/dialog-events';
 
 const dashboardGroups = computed(() => {
   return store.getters['hub/dashboardGroups']() as DashboardGroups;
@@ -27,12 +27,20 @@ function openDeleteDeviceGroupConfirmationDialog(groupName: string) {
   emitOpenConfirmationDialog(() => deleteDeviceGroup(groupName), props)
 }
 
+function openAddDeviceGroupConfirmationDialog(groupName: string) {
+  const props = {
+    title: 'Input',
+    message: 'Add device group'
+  }
+  emitOpenDeviceSelectionDialog((args) => createNewDeviceGroup(groupName, args), props)
+}
+
 function openCreateNewDashboardGroupDialog() {
   const props = {
     title: 'Create New Dashboard Group',
     message: 'Enter Group Name',
   }
-  emitOpenInputDialogEvent(createNewDeviceGroup, props);
+  emitOpenInputDialogEvent(createNewDashboardGroup, props);
 }
 
 
@@ -56,7 +64,19 @@ function deleteDeviceGroup(groupName: string) {
   store.dispatch('hub/deleteDashboardGroup', groupName);
 }
 
-function createNewDeviceGroup(groupName: string) {
+function createNewDeviceGroup(groupName: string, deviceId: string) {
+  if (!deviceId) {
+    console.log('deviceId is empty');
+    return;
+  }
+
+  dashboardGroups.value[groupName].deviceGroup[deviceId] = {
+    deviceId: deviceId,
+    exposes: [],
+  };
+}
+
+function createNewDashboardGroup(groupName: string) {
   if (!groupName) {
     console.log('groupName is empty');
     return;
@@ -83,9 +103,7 @@ const updateDeviceGroup = (group: DashboardGroup) => {
   store.dispatch('hub/saveDashboardGroup', group);
 };
 
-TODO
-we need new button to add new device group
-and update dialogs in other components
+
 </script>
 <style scoped></style>
 
@@ -100,10 +118,13 @@ and update dialogs in other components
   <Panel v-for="(group, index) in getDashboardGroups" :key="index" toggleable :collapsed="true">
     <template #header>
       <div class="flex items-center w-full">
-
-        <span class="flex items-center cursor-pointer">
-          <Button icon="pi pi-trash" class="p-button-text p-button-rounded p-button-danger pb-5" aria-label="Delete"
-            @click="openDeleteDeviceGroupConfirmationDialog(group.name)" />
+        <span class="flex items-center cursor-pointer ">
+          <span @click="openAddDeviceGroupConfirmationDialog(group.name)" class="mr-3 ">
+            <i class="pi pi-plus-circle text-md" style="color: #f44336" />
+          </span>
+          <span @click="openDeleteDeviceGroupConfirmationDialog(group.name)" class="mr-3">
+            <i class="pi pi-trash text-md" style="color: #f44336" />
+          </span>
           {{ group.name }}
         </span>
       </div>

@@ -9,4 +9,5 @@ export const DialogComponents: Map = {
   renameDevice: defineAsyncComponent(() => import('../components/dialogs/RenameDeviceDialog.vue')),
   removeDevice: defineAsyncComponent(() => import('../components/dialogs/RemoveDeviceDialog.vue')),
   exposeSelection: defineAsyncComponent(() => import('../components/dialogs/ExposeSelectionDialog.vue')),
+  deviceSelection: defineAsyncComponent(() => import('../components/dialogs/DeviceSelectionDialog.vue')),
 };

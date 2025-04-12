@@ -28,6 +28,7 @@ export const DialogEventTypes = {
   renameDevice: 'renameDevice',
   removeDevice: 'removeDevice',
   exposeSelection: 'exposeSelection',
+  deviceSelection: 'deviceSelection',
 } as const;
 
 export type CloseDialogFunc = () => void;

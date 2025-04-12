@@ -41,6 +41,23 @@ export function emitOpenExposeSelectionDialog(confirm: DialogEventAction, props:
   emitOpenDialog(event);
 }
 
+export function emitOpenDeviceSelectionDialog(confirm: DialogEventAction, props: BaseDialogProps) {
+  const events: DialogEventActions = {
+    close: () => emitCloseDialog(),
+    confirm,
+  };
+  const event: OpenDialogEvent = {
+    type: 'deviceSelection',
+    props: {
+      show: true,
+      ...props,
+    },
+    events: events,
+  };
+
+  emitOpenDialog(event);
+}
+
 export function emitOpenConfirmationDialog(confirm: DialogEventAction, props?: BaseDialogProps) {
   const events: DialogEventActions = {
     close: () => emitCloseDialog(),
