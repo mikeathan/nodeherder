@@ -1,9 +1,12 @@
 import { emitCloseDialog, emitOpenDialog, OpenDialogEvent } from '@/mixins/useDialogsEventBus';
 import {
   BaseDialogProps,
+  DeleteDeviceDialogProps,
+  DeleteDeviceEventAction,
   DialogEventAction,
   DialogEventActions,
   ExposeSelectionDialogProps,
+  RenameDeviceDialogProps,
 } from '@/types/events.type';
 
 export function emitOpenInputDialogEvent(confirm: DialogEventAction, props?: BaseDialogProps) {
@@ -55,6 +58,38 @@ export function emitOpenDeviceSelectionDialog(confirm: DialogEventAction, props:
     events: events,
   };
 
+  emitOpenDialog(event);
+}
+
+export  function emitOpenRenameDeviceDialog(confirm: DialogEventAction, props: RenameDeviceDialogProps) {
+  const events: DialogEventActions = {
+    close: () => emitCloseDialog(),
+    confirm,
+  };
+  const event: OpenDialogEvent = {
+    type: 'renameDevice',
+    props: {
+      show: true,
+      ...props,
+    },
+    events: events,
+  };
+  emitOpenDialog(event);
+}
+
+export function emitOpenDeleteDeviceDialog(confirm: DeleteDeviceEventAction, props: DeleteDeviceDialogProps) {
+  const events: DialogEventActions = {
+    close: () => emitCloseDialog(),
+    confirm,
+  };
+  const event: OpenDialogEvent = {
+    type: 'removeDevice',
+    props: {
+      show: true,
+      ...props,
+    },
+    events: events,
+  };
   emitOpenDialog(event);
 }
 

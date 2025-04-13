@@ -25,7 +25,7 @@
 </script>
 
 <template>
-  <Dialog v-model:visible="showDialog" modal header="Confirm dialog" :style="{ width: '20rem' }">
+  <Dialog v-model:visible="showDialog" modal header="Confirm dialog" :style="{ width: '20rem' }" @hide="close()">
     <div class="flex items-center gap-4 mb-4">
       <label class="font-semibold w-15">{{ dialogMessage() }}</label>
     </div>

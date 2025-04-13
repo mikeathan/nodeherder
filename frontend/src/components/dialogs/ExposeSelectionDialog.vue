@@ -45,7 +45,7 @@ const dialogMessage = () => props.message ?? '';
 </script>
 
 <template>
-  <Dialog v-model:visible="showDialog" modal :header="dialogTitle()" :style="{ width: '25rem' }">
+  <Dialog v-model:visible="showDialog" modal :header="dialogTitle()" :style="{ width: '25rem' }"@hide="close()">
     <div v-if="dialogMessage()" class="mb-3 text-sm text-color-secondary">
       {{ dialogMessage() }}
     </div>
