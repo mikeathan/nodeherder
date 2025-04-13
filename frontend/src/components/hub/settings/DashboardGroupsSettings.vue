@@ -93,6 +93,12 @@ function addNewDeviceExpose(dashboardroup: DashboardGroup, deviceId: string, exp
     console.log('exposeName is empty');
     return;
   }
+  const exists = dashboardroup.deviceGroup[deviceId].exposes.some(e => e == exposeName)
+  if (exists) {
+    console.log('expose ', exposeName, ' already exists');
+    // TODO: show error message
+    return;
+  }
   dashboardroup.deviceGroup[deviceId].exposes.push(exposeName);
   store.dispatch('hub/saveDashboardGroup', dashboardroup as DashboardGroup);
 }
