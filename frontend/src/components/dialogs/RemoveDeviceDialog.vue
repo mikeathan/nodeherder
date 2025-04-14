@@ -9,12 +9,12 @@
   }>();
 
   const emit = defineEmits<{
-    (e: 'remove', event: RemoveDeviceEvent): void;
+    (e: 'confirm', event: RemoveDeviceEvent): void;
     (e: 'close'): void;
   }>();
 
   function onRemove() {
-    emit('remove', {
+    emit('confirm', {
       friendlyName: friendlyName.value,
       force: forceRemove.value,
       block: blockJoin.value,
@@ -44,7 +44,7 @@
     v-model:visible="showDialog"
     modal
     header="Rename device"
-    :style="{ width: '25rem' }">
+    :style="{ width: '25rem' }" @hide="close()">
     <div class="flex items-center gap-4 mb-4">
       {{ props.friendlyName }}
     </div>

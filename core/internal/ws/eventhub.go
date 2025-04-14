@@ -25,11 +25,16 @@ const (
 	DeviceRemove            = "deviceRemove"
 	DeviceInterview         = "deviceInterview"
 
-	BridgePermitJoin  = "bridgePermitJoin"
-	SaveLoggerConfig  = "saveLoggerConfig"
-	SaveHistoryConfig = "saveHistoryConfig"
-	SaveDeviceConfig  = "saveDeviceConfig"
-	LoadAppconfig     = "loadAppConfig"
+	BridgePermitJoin     = "bridgePermitJoin"
+	SaveLoggerConfig     = "saveLoggerConfig"
+	SaveHistoryConfig    = "saveHistoryConfig"
+	SaveDeviceConfig     = "saveDeviceConfig"
+	SaveDashboardGroup   = "saveDashboardGroup"
+	DeleteDashboardGroup = "deleteDashboardGroup"
+	LoadAppconfig        = "loadAppConfig"
+
+	SaveExposeGroup   = "saveExposeGroup"
+	DeleteExposeGroup = "deleteExposeGroup"
 
 	LoadMetrics = "loadMetrics"
 
@@ -74,6 +79,8 @@ type EventHub interface {
 	OnSaveDeviceConfig(func(payload interface{}) error)
 	OnSaveHistoryConfig(func(payload interface{}) error)
 	OnSaveLoggerConfig(func(payload interface{}) error)
+	OnSaveDashboardGroup(action func(payload interface{}) error)
+	OnDeleteDashboardGroup(action func(payload interface{}) error)
 	HandleRequest(w http.ResponseWriter, r *http.Request) error
 	Context() hub.Context
 }
@@ -82,7 +89,7 @@ type eventHubImpl struct {
 	server                    WebSocket
 	onLoadAutomations         func() interface{}
 	onLoadDevices             func() interface{}
-	onLoadDeviceList          (func(ids []string) interface{})
+	onLoadDeviceList          (func([]string) interface{})
 	onLoadDevice              func(id string) (interface{}, error)
 	onLoadMetrics             func(interface{}) (interface{}, error)
 	onSaveAutomation          func(interface{}) error
@@ -98,6 +105,8 @@ type eventHubImpl struct {
 	onSaveDeviceConfig        func(interface{}) error
 	onSaveHistoryConfig       func(interface{}) error
 	onSaveLoggerConfig        func(interface{}) error
+	onSaveDashboardGroup      func(interface{}) error
+	onDeleteDashboardGroup    func(payload interface{}) error
 
 	requestContext hub.Context
 }
@@ -123,6 +132,8 @@ func NewWsHub() EventHub {
 		onSaveDeviceConfig:        func(payload interface{}) error { return nil },
 		onSaveHistoryConfig:       func(payload interface{}) error { return nil },
 		onSaveLoggerConfig:        func(payload interface{}) error { return nil },
+		onSaveDashboardGroup:      func(payload interface{}) error { return nil },
+		onDeleteDashboardGroup:    func(payload interface{}) error { return nil },
 		requestContext:            NewRequestContext(),
 	}
 }
@@ -202,8 +213,17 @@ func (h *eventHubImpl) OnDeleteAutomation(action func(p interface{}) (interface{
 func (h *eventHubImpl) OnDeleteAutomationTrigger(action func(p interface{}) (interface{}, error)) {
 	h.onDeleteAutomationTrigger = action
 }
+
 func (h *eventHubImpl) OnSaveLoggerConfig(action func(payload interface{}) error) {
 	h.onSaveLoggerConfig = action
+}
+
+func (h *eventHubImpl) OnSaveDashboardGroup(action func(payload interface{}) error) {
+	h.onSaveDashboardGroup = action
+}
+
+func (h *eventHubImpl) OnDeleteDashboardGroup(action func(payload interface{}) error) {
+	h.onDeleteDashboardGroup = action
 }
 
 func (h *eventHubImpl) EmitDevice(name string) error {
@@ -243,6 +263,8 @@ func (h *eventHubImpl) Start() {
 	h.server.Start(func(message []byte) { h.handleHubEvents(message) })
 }
 
+// TODO: abstract this so we can mock it
+// https://gemini.google.com/app/b3118f0d9cdcdba6
 func (c *eventHubImpl) handleHubEvents(message []byte) {
 	var eventMsg = &EventMessage{}
 
@@ -288,6 +310,9 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 	case SaveDeviceConfig:
 		c.executeAction(eventMsg.Payload, c.onSaveDeviceConfig, true)
 
+	case SaveDashboardGroup:
+		c.executeAction(eventMsg.Payload, c.onSaveDashboardGroup, true)
+
 	case SaveHistoryConfig:
 		c.executeAction(eventMsg.Payload, c.onSaveHistoryConfig, true)
 
@@ -317,6 +342,12 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 
 	case SaveLoggerConfig:
 		c.executeAction(eventMsg.Payload, c.onSaveLoggerConfig, true)
+
+	case SaveExposeGroup:
+		c.executeAction(eventMsg.Payload, c.onSaveDashboardGroup, true)
+
+	case DeleteExposeGroup:
+		c.executeAction(eventMsg.Payload, c.onDeleteDashboardGroup, true)
 
 	default:
 

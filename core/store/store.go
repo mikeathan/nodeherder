@@ -155,12 +155,12 @@ func (s *appStore) initialiseDeviceConfig(device *devices.Device) error {
 	if err != nil {
 		return err
 	}
-	// for diagnostic entities, set default debounce to 5 seconds
+	// for diagnostic entities, set default debounce to 5 min
 	for _, entity := range device.Exposes {
 		if entity.Category == devices.DiagnosticCategory {
 
 			if _, ok := deviceConfig.Debounce[entity.Name]; !ok {
-				deviceConfig.Debounce[entity.Name] = utils.IntervalFromSeconds(5)
+				deviceConfig.Debounce[entity.Name] = utils.IntervalFromSeconds(300)
 				s.config.SetDeviceConfig(deviceConfig)
 			}
 		}

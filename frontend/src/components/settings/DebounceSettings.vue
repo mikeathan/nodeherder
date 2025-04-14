@@ -1,12 +1,12 @@
 <script setup lang="ts">
   import { PropType, ref, watchEffect } from 'vue';
   import Selection from '../input/Selection.vue';
-  import ExposeSelectionDialog from '../dialogs/ExposeSelectionDialog.vue';
   import TimeIntervalEditor from '../controls/TimeInterval.vue';
   import { createTimeIntervalFromSeconds } from '@/contracts/settings';
   import { watch } from 'vue';
   import { DeviceDebounce } from '@/types/settings.type';
   import { TimeInterval } from '@/types/types.type';
+import { emitOpenExposeSelectionDialog } from '@/contracts/dialog-events';
 
   const props = defineProps({
     id: {
@@ -23,7 +23,6 @@
   }>();
 
   const selectedExpose = ref<string | null>();
-  const showSelectExposeDialog = ref(false);
   const items = ref<DeviceDebounce>(props.value);
   const exposeList = ref<string[]>([]);
 
@@ -53,6 +52,7 @@
 
   function addNewExposeDebounce(expose: string) {
     if (!expose) {
+      console.error('Expose is required');
       return;
     }
 
@@ -74,6 +74,16 @@
     items.value[selectedExpose.value] = debounce;
     emit('update', { ...items.value });
   }
+
+  function openAddDeviceExposeDialog() {
+  const dlgProps = {
+    id: props.id,
+    title: 'Select Expose',
+    message: 'Select Expose',
+  }
+  emitOpenExposeSelectionDialog((args) => addNewExposeDebounce(args), dlgProps);
+}
+
 </script>
 
 <template>
@@ -93,16 +103,11 @@
           size="small"
           :disabled="!selectedExpose"
           @click="removeSelectedExposeDebounce()" />
-        <Button icon="pi pi-plus" variant="text" rounded size="small" @click="showSelectExposeDialog = true" />
+        <Button icon="pi pi-plus" variant="text" rounded size="small" @click="openAddDeviceExposeDialog" />
       </div>
     </div>
   </div>
   <div v-if="selectedExpose">
     <TimeIntervalEditor :id="id" :value="items[selectedExpose]" @update="updateExposeDebounce" />
   </div>
-  <ExposeSelectionDialog
-    :id="props.id"
-    :show="showSelectExposeDialog"
-    @update="addNewExposeDebounce"
-    @close="showSelectExposeDialog = false" />
 </template>

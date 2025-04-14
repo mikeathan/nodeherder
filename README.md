@@ -71,7 +71,9 @@ frontend - add device groups to be shown in dashboard instead of current dashboa
 
 TODO:
 
-- remove non measurement exposes from metrics !!!!
+- create defauls for some device settings so we dont repeat alot of same info
+- frontend -manage the dialogs via event messages - done
+- remove non measurement exposes from metrics - done
 - create group
 - group needs to be stored somewhere in backend
 - we need group editor
@@ -105,3 +107,23 @@ METRICS backend TODO
 - index entries = bolt.Bucket.CreateIndex
 
 Check for disalbed items in bridge - see if we can add them if online
+
+device groups TODO --------------------------
+
+we need a a group eg living room or kitchen etc..
+add expose to that group eg brightness or temperature
+
+config data
+
+group: "living room":{
+items:[
+[device-id]: expose-name,
+]
+}
+
+store in Hub.ExposeGroup
+
+in frontend we have a new page for groups
+
+card has the group name and udnerneath the expose in the group
+each expose will have a diferent component more simplified and more like homeassistant

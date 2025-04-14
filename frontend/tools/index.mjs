@@ -379,7 +379,14 @@ app.ws('/ws', async function (ws) {
         appConfig.history = obj.payload;
         sendOperationSuccess(ws);
         break;
-
+      case 'deleteDashboardGroup':
+        const name = obj.payload.groupName;
+        delete appConfig.hub.dashboardGroups[name];
+        break;
+      case 'saveDashboardGroup':
+        const dashboardGroup = obj.payload;
+        appConfig.hub.dashboardGroups[dashboardGroup.name] = dashboardGroup;
+        break;
       case 'saveDeviceConfig':
         var deviceId = obj.payload.id;
         appConfig.hub.devices[deviceId] = obj.payload;
