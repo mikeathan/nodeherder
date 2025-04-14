@@ -1,4 +1,4 @@
-VERSION := 0.5.10
+VERSION := 0.6.0
 
 node-herder-deploy:	
 	$(MAKE) all	

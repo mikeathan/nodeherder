@@ -159,6 +159,14 @@ func (w MockEventHub) OnSaveLoggerConfig(action func(payload interface{}) error)
 	fmt.Println("WsServer: Mocked OnSaveLoggerConfig")
 }
 
+func (h *MockEventHub) OnSaveDashboardGroup(action func(payload interface{}) error) {
+	fmt.Println("WsServer OnSaveDashboardGroup")
+}
+
+func (h *MockEventHub) OnDeleteDashboardGroup(action func(payload interface{}) error) {
+	fmt.Println("WsServer OnDeleteDashboardGroup")
+}
+
 // Mock MqttClient
 type MockMqttClient struct {
 	messageHandler func(string, []byte)
@@ -351,6 +359,14 @@ func (w *NopWsServer) OnSaveHistoryConfig(func(payload interface{}) error) {
 
 func (w NopWsServer) OnSaveLoggerConfig(action func(payload interface{}) error) {
 	fmt.Println("WsServer: Mocked OnSaveLoggerConfig")
+}
+
+func (h *NopWsServer) OnSaveDashboardGroup(action func(payload interface{}) error) {
+	fmt.Println("WsServer OnSaveDashboardGroup")
+}
+
+func (h *NopWsServer) OnDeleteDashboardGroup(action func(payload interface{}) error) {
+	fmt.Println("WsServer OnDeleteExpoOnDeleteDashboardGroupseGroup")
 }
 
 // Mock devices Repository

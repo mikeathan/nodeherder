@@ -73,9 +73,10 @@ func DefaultBridgeConfig() *BridgeConfig {
 }
 
 type HubConfig struct {
-	Devices map[string]*DeviceConfig `json:"devices"`
-	History *HistoryConfig           `json:"history"`
-	Logger  *LoggerConfig            `json:"logger"`
+	Devices         map[string]*DeviceConfig   `json:"devices"`
+	History         *HistoryConfig             `json:"history"`
+	Logger          *LoggerConfig              `json:"logger"`
+	DashboardGroups map[string]*DashboardGroup `json:"dashboardGroups"`
 }
 
 type BridgeConfig struct {
@@ -92,9 +93,10 @@ func NewBridgeConfig() *BridgeConfig {
 
 func NewHubConfig() *HubConfig {
 	return &HubConfig{
-		Devices: map[string]*DeviceConfig{},
-		History: DefaultHistoryConfig(),
-		Logger:  DefaultLoggingConfig(),
+		Devices:         map[string]*DeviceConfig{},
+		History:         DefaultHistoryConfig(),
+		Logger:          DefaultLoggingConfig(),
+		DashboardGroups: map[string]*DashboardGroup{},
 	}
 }
 
@@ -110,9 +112,10 @@ func (s *AppConfig) AddDeviceConfig(cfg *DeviceConfig) {
 func NewAppConfig() *AppConfig {
 	return &AppConfig{
 		Hub: &HubConfig{
-			Devices: map[string]*DeviceConfig{},
-			History: DefaultHistoryConfig(),
-			Logger:  DefaultLoggingConfig(),
+			Devices:         map[string]*DeviceConfig{},
+			History:         DefaultHistoryConfig(),
+			Logger:          DefaultLoggingConfig(),
+			DashboardGroups: map[string]*DashboardGroup{},
 		},
 		Bridge: DefaultBridgeConfig(),
 	}

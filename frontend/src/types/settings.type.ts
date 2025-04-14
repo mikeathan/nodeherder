@@ -6,11 +6,13 @@ export type AppConfig = {
 };
 
 export type DeviceSettingsMap = KeyValuePair<DeviceSettings>;
+export type DashboardGroups = KeyValuePair<DashboardGroup>;
 
 export type HubConfigType = {
   devices: KeyValuePair<DeviceSettings>;
   history: HistorySettingsType;
   logger: LoggerSettingsType;
+  dashboardGroups: DashboardGroups;
 };
 
 export type HistorySettingsPropsType = keyof HistorySettingsType;
@@ -38,4 +40,14 @@ export type DeviceSettings = {
   metricsEnabled: boolean;
   rateLimit: TimeInterval;
   debounce: DeviceDebounce;
+};
+
+export type DashboardGroup = {
+  name: string;
+  deviceGroup: KeyValuePair<DeviceGroup>;
+};
+
+export type DeviceGroup = {
+  deviceId: string;
+  exposes: string[];
 };

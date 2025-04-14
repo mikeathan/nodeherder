@@ -302,6 +302,38 @@ func (s *AppConfigCache) SaveHistoryConfig(historyConfig *HistoryConfig) (*AppCo
 	return config, nil
 }
 
+func (s *AppConfigCache) SaveDashboardGroup(exposeGroup *DashboardGroup) error {
+	config, err := s.LoadAppConfig()
+	if err != nil {
+		return err
+	}
+
+	config.Hub.DashboardGroups[exposeGroup.Name] = exposeGroup
+
+	err = s.store.SaveAppConfig(config)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *AppConfigCache) DeleteDashboardGroup(name string) error {
+	config, err := s.LoadAppConfig()
+	if err != nil {
+		return err
+	}
+
+	delete(config.Hub.DashboardGroups, name)
+
+	err = s.store.SaveAppConfig(config)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (d *AppConfigCache) SetDeviceConfig(deviceConfig *DeviceConfig) error {
 	return d.deviceCache.Set(deviceConfig)
 }

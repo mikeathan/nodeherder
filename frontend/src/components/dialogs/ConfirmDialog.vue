@@ -1,8 +1,8 @@
 <script setup lang="ts">
-  import { ref, watchEffect, onMounted, watch } from 'vue';
-  import { prop } from 'vue-class-component';
+  import { ref, watchEffect } from 'vue';
 
   const props = defineProps<{
+    message?: string;
     show: boolean;
   }>();
 
@@ -20,29 +20,18 @@
     emit('close', false);
     showDialog.value = false;
   }
+
+  const dialogMessage = () => props.message ?? 'Are you sure?';
 </script>
 
 <template>
-  <Dialog
-    v-model:visible="showDialog"
-    modal
-    header="Confirm dialog"
-    :style="{ width: '20rem' }">
+  <Dialog v-model:visible="showDialog" modal header="Confirm dialog" :style="{ width: '20rem' }" @hide="close()">
     <div class="flex items-center gap-4 mb-4">
-      <label class="font-semibold w-15"
-        >Are you sure?</label
-      >
+      <label class="font-semibold w-15">{{ dialogMessage() }}</label>
     </div>
     <div class="flex justify-end gap-2">
-      <Button
-        type="button"
-        label="Cancel"
-        severity="secondary"
-        @click="close()"></Button>
-      <Button
-        type="button"
-        label="Ok"
-        @click="(e) => onConfirm()"></Button>
+      <Button type="button" label="Cancel" severity="secondary" @click="close()"></Button>
+      <Button type="button" label="Ok" @click="(e) => onConfirm()"></Button>
     </div>
   </Dialog>
 </template>

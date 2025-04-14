@@ -7,10 +7,10 @@
     show: boolean;
   }>();
 
-  const emit = defineEmits(['update:name', 'close']);
+  const emit = defineEmits(['confirm', 'close']);
 
   function rename() {
-    emit('update:name', friendlyName.value);
+    emit('confirm', friendlyName.value);
     close();
   }
 
@@ -39,7 +39,7 @@
     v-model:visible="showDialog"
     modal
     header="Rename device"
-    :style="{ width: '25rem' }">
+    :style="{ width: '25rem' }" @hide="close()">
     <div class="flex items-center gap-4 mb-4">
       <label for="friendlyNameId" class="font-semibold w-24"
         >Friendly name</label
