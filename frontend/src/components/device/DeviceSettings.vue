@@ -24,8 +24,19 @@
 
   // TODO: needs refactoring to emit only if sth has changed but i have problesm with new debouncer map prop
   function save(propName: string, propValue: any) {
+    if (!isObject(deviceSettings.value[propName])) {
+      if (deviceSettings.value[propName] != propValue) {
+        deviceSettings.value[propName] = propValue;
+      }
+    }
+
     store.dispatch('hub/saveDeviceSettings', deviceSettings.value as DeviceSettings);
   }
+
+  function isObject(value: any): value is object {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+  }
+  // TODO: needs refactoring to emit only if sth has changed but i have problesm with new debouncer map prop
 
   function inputUpdated(propName: any, propValue: any) {
     save(propName, { ...propValue });
