@@ -73,6 +73,7 @@ TODO:
 
 - create defauls for some device settings so we dont repeat alot of same info
 - frontend -manage the dialogs via event messages - done
+- frontend - add expose selection dialog multiple selection
 - remove non measurement exposes from metrics - done
 - create group
 - group needs to be stored somewhere in backend

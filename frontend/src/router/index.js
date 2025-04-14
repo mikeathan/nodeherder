@@ -7,16 +7,25 @@ import AutomationsCreator from '../components/automations/Creator.vue';
 import Settings from '../components/hub/settings/Settings.vue';
 import ConsoleViewer from '../components/hub/console/ConsoleViewer.vue';
 import DeviceList from '../components/device-list/DeviceList.vue';
+import GroupDashboard from '../components/group-dashboard/GroupDashboard.vue';
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
-      path: '/',
+      path: '/deviceDashboard',
       name: 'home',
       component: Dashboard,
       meta: {
-        title: 'Node-herder - Home',
+        title: 'Node-herder - Device Dashboard',
+      },
+    },
+    {
+      path: '/',
+      name: 'groups',
+      component: GroupDashboard,
+      meta: {
+        title: 'Node-herder - Groups Dashboard',
       },
     },
     {
