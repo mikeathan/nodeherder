@@ -5,6 +5,8 @@ import { Device, Devices, DeviceMap, DeviceUpdate } from '../../../types/device'
 import {
   AppConfig,
   BridgeSettingsType,
+  DashboardGroup,
+  DashboardGroups,
   DeviceSettings,
   HistorySettingsType,
   LoggerSettingsType,
@@ -47,6 +49,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     },
     logger: (state) => (): LoggerSettingsType => state.appConfig.hub.logger,
     bridge: (state) => (): BridgeSettingsType => state.appConfig.bridge,
+    dashboardGroups: (state) => (): DashboardGroups => state.appConfig.hub.dashboardGroups,
     findDeviceSetting:
       (state) =>
       (id: string): DeviceSettings | undefined => {
@@ -97,6 +100,12 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         state.appConfig.hub.devices[setting.id] = setting;
       }
     },
+    setDashboardGroup(state, dashboardGroup: DashboardGroup) {
+      state.appConfig.hub.dashboardGroups[dashboardGroup.name] = dashboardGroup;
+    },
+    removeDashboardGroup(state, name: string) {
+      delete state.appConfig.hub.dashboardGroups[name];
+    },
     setHistorySettings(state, historySetting: HistorySettingsType) {
       state.appConfig.hub.history = historySetting;
     },
@@ -140,6 +149,33 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         {
           event: 'saveDeviceConfig',
           message: deviceSetting,
+        },
+        { root: true }
+      );
+    },
+    saveDashboardGroup({ commit, dispatch }, dashboardGroup: DashboardGroup) {
+      commit('setDashboardGroup', dashboardGroup);
+      dispatch(
+        'ws/emit',
+        {
+          event: 'saveDashboardGroup',
+          message: dashboardGroup,
+        },
+        { root: true }
+      );
+    },
+
+    deleteDashboardGroup({ commit, dispatch }, name: string) {
+      commit('removeDashboardGroup', name);
+
+      var payload = {
+        groupName: name,
+      };
+      dispatch(
+        'ws/emit',
+        {
+          event: 'deleteDashboardGroup',
+          message: payload,
         },
         { root: true }
       );

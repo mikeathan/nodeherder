@@ -27,6 +27,7 @@ export function emitCloseLastPanel() {
   automationEventBus.emit('closeLastPanel');
 }
 
+
 export function useAutomationEvents(
   handlers: EventHandlers<Events>
 ) {
