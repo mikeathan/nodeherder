@@ -1,54 +1,83 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import Slider from 'primevue/slider';
+import { ref, computed } from 'vue'
 
-const brightness = ref(50); // Initialize with a default brightness value
+const brightness = ref(50)
+
+const trackFill = computed(() => {
+  const percent = brightness.value
+  return {
+    background: `linear-gradient(to right, #ffc107 ${percent}%, #fff4cc ${percent}%)`
+  }
+})
 </script>
 
-<style scoped>
-.spotlight-brightness .my-slider.p-slider {
-
-  background-color: #ffc107 !important;
-}
-
-/* The colored progress range (left side of slider) */
-.spotlight-brightness .my-slider.p-slider .p-slider-range {
-  background-color: #ffc107 !important;
-}
-
-/* Handle/thumb of the slider */
-.spotlight-brightness .my-slider.p-slider .p-slider-handle {
-  background: white;
-  border-color: #ffc107;
-}
-
-:root {
-  --primary-color: #ffc107;
-  --primary-color-text: #212529;
-}
-
-.my-slider.p-slider {
-  /* Target the main slider container */
-  height: 42px !important;
-  background-color: #ffc107 !important;
-  /* Set the overall background */
-  background: #ffc107 !important;
-  border: none !important;
-  border-radius: 8px !important;
-  position: relative !important;
-  overflow: hidden !important;
-}
-
-.my-slider .p-slider-range {
-  /* Target the selected range (left side) */
-  background-color: #ffc107 !important;
-  background: #ffc107 !important;
-}
-</style>
 <template>
-  <div class="spotlight-brightness">
-    <!-- <input type="number" v-model.number="brightness" min="0" max="100" class="spotlight-number-input" />
-    <span class="spotlight-unit">%</span> -->
-    <Slider v-model="brightness" :min="0" :max="100" class="my-slider" />
+  <div class="slider-wrapper">
+    <div class="track-background" :style="trackFill"></div>
+    <input type="range" min="0" max="100" v-model="brightness" class="slider" />
   </div>
 </template>
+
+<style scoped>
+.slider-wrapper {
+  position: relative;
+  width: 280px;
+  height: 42px;
+  border-radius: 21px;
+  overflow: hidden;
+}
+
+/* background fill (independent layer) */
+.track-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 21px;
+  pointer-events: none;
+}
+
+/* input layer */
+.slider {
+  appearance: none;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  position: relative;
+  z-index: 1;
+  cursor: pointer;
+  outline: none;
+}
+
+/* Webkit thumb */
+/* .slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 32px;
+  height: 6px;
+  background: white;
+  border-radius: 3px;
+  margin-top: calc((42px - 6px) / 2);
+  cursor: pointer;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 0 1px rgba(0, 0, 0, 0.2);
+} */
+
+/* Firefox track & thumb */
+.slider::-moz-range-track {
+  height: 100%;
+  background: transparent;
+  border: none;
+}
+
+.slider::-moz-range-thumb {
+  width: 6px;
+  height: 25px;
+
+  background: rgb(92, 105, 218);
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+</style>
