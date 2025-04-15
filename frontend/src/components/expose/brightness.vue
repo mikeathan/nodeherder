@@ -73,11 +73,11 @@ const trackFill = computed(() => {
 
 .slider::-moz-range-thumb {
   width: 6px;
-  height: 25px;
-
-  background: rgb(92, 105, 218);
+  height: 30px;
+  background: white;
   border: none;
   border-radius: 3px;
   cursor: pointer;
+  transform: translateX(-10px); /* Shift left by 2 pixels */
 }
 </style>
