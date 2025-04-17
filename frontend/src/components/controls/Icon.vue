@@ -1,34 +1,38 @@
 <script setup lang="ts">
-  import { PropType } from 'vue';
-  import { IconProps } from '../../types/icon.type';
+import { PropType } from 'vue';
+import { IconProps } from '../../types/icon.type';
 
-  const props = defineProps({
-    icon: {
-      type: Object as PropType<IconProps>,
-      default: {} as IconProps,
-      required: true,
-    },
-    rotationAngle: {
-      type: String,
-      default: '0',
-      required: false,
-    },
-  });
+const props = defineProps({
+  icon: {
+    type: Object as PropType<IconProps>,
+    default: {} as IconProps,
+    required: true,
+  },
+  rotationAngle: {
+    type: String,
+    default: '0',
+    required: false,
+  },
+  width: {
+    type: String,
+    default: '20px',
+  },
+  height: {
+    type: String,
+    default: '20px',
+  },
+});
+
 </script>
 <style scoped>
-  .icon {
-    width: 20px;
-    height: 20px;
-    vertical-align: middle;
-    margin-right: 0.2em;
-  }
+/* Temporary */
+.align-middle {
+  margin-right: 0.2em;
+}
 </style>
 <template>
-  <svg
-    viewBox="0 0 22 22"
-    class="icon"
-    :style="{ fill: props.icon.color }"
-    :aria-label="props.icon.tooltip">
+  <svg :width="width" :height="height" viewBox="0 0 22 22" :style="{ fill: props.icon.color }"
+    :aria-label="props.icon.tooltip" class="align-middle">
     <title>{{ props.icon.tooltip }}</title>
     <g :transform="`rotate(${rotationAngle} 12 12)`">
       <path :d="props.icon.name" />
