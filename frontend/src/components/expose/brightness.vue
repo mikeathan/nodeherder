@@ -1,10 +1,16 @@
 <script setup lang="ts">
   import { ref, computed } from 'vue';
-
-  const brightness = ref(50);
+import { prop } from 'vue-class-component';
+  const props = defineProps({
+  value: {
+    type: Number,
+    default: 50,
+  },
+});
+  const value = ref(props.value);
 
   const trackFill = computed(() => {
-    const percent = brightness.value;
+    const percent = value.value;
     return {
       background: `linear-gradient(to right, #ffc107 ${percent}%, #fff4cc ${percent}%)`,
     };
@@ -14,7 +20,7 @@
 <template>
   <div class="slider-wrapper">
     <div class="track-background" :style="trackFill"></div>
-    <input type="range" min="0" max="100" v-model="brightness" class="slider" />
+    <input type="range" min="0" max="100" v-model="value" class="slider" />
   </div>
 </template>
 
