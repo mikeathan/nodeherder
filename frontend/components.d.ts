@@ -81,6 +81,7 @@ declare module 'vue' {
     Select: typeof import('primevue/select')['default']
     Selection: typeof import('./src/components/input/Selection.vue')['default']
     Sensor: typeof import('./src/components/device/Sensor.vue')['default']
+    SensorView: typeof import('./src/components/expose/SensorView.vue')['default']
     Settings: typeof import('./src/components/hub/settings/Settings.vue')['default']
     Slider: typeof import('primevue/slider')['default']
     SplitButton: typeof import('primevue/splitbutton')['default']

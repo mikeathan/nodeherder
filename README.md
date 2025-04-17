@@ -110,21 +110,19 @@ METRICS backend TODO
 Check for disalbed items in bridge - see if we can add them if online
 
 device groups TODO --------------------------
+ligth control
+when click on panel it opens the bigger view
+when clikc on the icon it toggles the light
+if ligth has color temp
+the we need color picker
 
-we need a a group eg living room or kitchen etc..
-add expose to that group eg brightness or temperature
+also at the top here is link for metrics view , when it was on/of
 
-config data
+General control
+displays icon, value and unit
 
-group: "living room":{
-items:[
-[device-id]: expose-name,
-]
-}
+if binary clicking on icon toggles value aand cion color is grey if off
 
-store in Hub.ExposeGroup
+maybe we can have a view that lists the values in a minimal view ?
 
-in frontend we have a new page for groups
-
-card has the group name and udnerneath the expose in the group
-each expose will have a diferent component more simplified and more like homeassistant
+so 
