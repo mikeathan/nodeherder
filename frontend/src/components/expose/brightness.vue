@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+  import { ref, computed } from 'vue';
 
-const brightness = ref(50)
+  const brightness = ref(50);
 
-const trackFill = computed(() => {
-  const percent = brightness.value
-  return {
-    background: `linear-gradient(to right, #ffc107 ${percent}%, #fff4cc ${percent}%)`
-  }
-})
+  const trackFill = computed(() => {
+    const percent = brightness.value;
+    return {
+      background: `linear-gradient(to right, #ffc107 ${percent}%, #fff4cc ${percent}%)`,
+    };
+  });
 </script>
 
 <template>
@@ -19,39 +19,37 @@ const trackFill = computed(() => {
 </template>
 
 <style scoped>
-.slider-wrapper {
-  position: relative;
-  width: 280px;
-  height: 42px;
-  border-radius: 21px;
-  overflow: hidden;
-}
+  .slider-wrapper {
+    position: relative;
+    width: 280px;
+    height: 50px;
+    overflow: hidden;
+  }
 
-/* background fill (independent layer) */
-.track-background {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  border-radius: 21px;
-  pointer-events: none;
-}
+  .track-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 10px / 10px;
+    pointer-events: none;
+  }
 
-/* input layer */
-.slider {
-  appearance: none;
-  width: 100%;
-  height: 100%;
-  background: transparent;
-  position: relative;
-  z-index: 1;
-  cursor: pointer;
-  outline: none;
-}
+  /* input layer */
+  .slider {
+    appearance: none;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+    outline: none;
+  }
 
-/* Webkit thumb */
-/* .slider::-webkit-slider-thumb {
+  /* Webkit thumb */
+  /* .slider::-webkit-slider-thumb {
   appearance: none;
   width: 32px;
   height: 6px;
@@ -64,20 +62,20 @@ const trackFill = computed(() => {
   box-shadow: 0 0 1px rgba(0, 0, 0, 0.2);
 } */
 
-/* Firefox track & thumb */
-.slider::-moz-range-track {
-  height: 100%;
-  background: transparent;
-  border: none;
-}
+  /* Firefox track & thumb */
+  .slider::-moz-range-track {
+    height: 100%;
+    background: transparent;
+    border: none;
+  }
 
-.slider::-moz-range-thumb {
-  width: 6px;
-  height: 30px;
-  background: white;
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
-  transform: translateX(-10px); /* Shift left by 2 pixels */
-}
+  .slider::-moz-range-thumb {
+    width: 6px;
+    height: 30px;
+    background: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transform: translateX(-10px); /* Shift left by 2 pixels */
+  }
 </style>
