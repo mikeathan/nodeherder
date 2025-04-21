@@ -1,24 +1,28 @@
 <script setup lang="ts">
-  import { ref, computed } from 'vue';
-  import Brightness from '../expose/Brightness.vue';
-
+  import { getSensorValue, getSensorIcon, getSensorUnit } from '../../modules/formatters/sensor-formatter';
+  import { getEntityIcon } from '../../modules/formatters/entity.formatter';
+  import { store } from '../../store/index';
+  import { computed, ref } from 'vue';
+  import { Device, Expose } from '@/types/device';
+  import Icon from '../controls/Icon.vue';
   import { mdiCeilingLightMultiple } from '@mdi/js';
 
   const props = defineProps({
-    value: {
-      type: Number,
-      default: 50,
-    },
+    id: { type: String, required: true },
+    name: { type: String, required: true },
   });
-  const value = ref(props.value);
-  const lightOn = ref(true);
 
-  function updateValue(newValue: number): void {
-    value.value = newValue;
-  }
+  const expose = computed(() => {
+    const device = store.getters['hub/findDevice'](props.id) as Device;
+    //if (!device) return null;
+
+    return device.exposes[props.name] as Expose;
+  });
+
   function handleIconClick(): void {
-    lightOn.value = !lightOn.value;
+    console.log('handleIconClick');
   }
+  const lightOn = ref(true);
 </script>
 
 <style scoped>
@@ -73,27 +77,27 @@
     transition: background-color 0.2s;
   }
 </style>
-
 <template>
-
   <Card>
     <template #title>
       <div class="entity-header">
         <div class="entity-icon" @click="handleIconClick">
+          <!-- <Icon :icon="getEntityIcon(expose.name, expose.data)" width="28" height="28" /> -->
+
           <Icon
             :icon="{ name: mdiCeilingLightMultiple, color: lightOn ? '#ffc107' : '#9e9e9e' }"
             width="28"
             height="28" />
         </div>
         <div class="entity-labels">
-          <div class="entity-title">Brightness</div>
-          <div class="entity-value">{{ value }}%</div>
+          <div class="entity-title">{{ expose.name }}</div>
+          <div class="entity-value">{{ expose.data }}</div>
         </div>
       </div>
     </template>
     <template #content>
       <div>
-        <Brightness :value="value" @update="updateValue" :min="0" :max="100" />
+        <!-- <Brightness :value="value" @update="updateValue" :min="0" :max="100" /> -->
       </div>
     </template>
   </Card>
