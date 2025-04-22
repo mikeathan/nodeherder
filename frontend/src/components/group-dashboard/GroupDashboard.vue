@@ -9,8 +9,7 @@
   });
 
   // TESTING just get first expose of thefirst group
-  function getDeviceFromGroup(): DeviceGroup {
-    const group = Object.entries(dashboardGroups.value).at(0)?.[1] as DashboardGroup;
+  function getDeviceFromGroup(group: DashboardGroup): DeviceGroup {
     const deviceGroup = Object.entries(group.deviceGroup).at(0)?.[1];
 
     return deviceGroup as DeviceGroup;
@@ -27,8 +26,12 @@
 
 <template>
   <div class="grid">
-    <div class="col-12 md:col-6 lg:col-3 xg:col-2" v-for="group in dashboardGroups" :key="group.name" >
-      <EntityCard :id="getDeviceFromGroup().deviceId" :name="getDeviceFromGroup().exposes[0]" />
+    <div class="col-12 md:col-6 lg:col-3 xg:col-2" v-for="group in dashboardGroups" :key="group.name">
+      <div v-for="device in group.deviceGroup" :key="device.deviceId">
+        <div v-for="expose in device.exposes" :key="expose">
+          <EntityCard :id="device.deviceId" :name="expose" />
+        </div>
+      </div>
     </div>
   </div>
 </template>

@@ -65,29 +65,28 @@
     margin-top: 0.2em;
   }
 
-  .entity-icon {
+  /* .entity-icon {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background-color: #fff8e1;
     cursor: pointer;
     transition: background-color 0.2s;
-  }
+  } */
 </style>
 <template>
   <Card>
     <template #title>
       <div class="entity-header">
         <div class="entity-icon" @click="handleIconClick">
-          <!-- <Icon :icon="getEntityIcon(expose.name, expose.data)" width="28" height="28" /> -->
+          <Icon :icon="getEntityIcon(expose.name, expose.data)" size="50" background="red" />
 
-          <Icon
+          <!-- <Icon
             :icon="{ name: mdiCeilingLightMultiple, color: lightOn ? '#ffc107' : '#9e9e9e' }"
             width="28"
-            height="28" />
+            height="28" /> -->
         </div>
         <div class="entity-labels">
           <div class="entity-title">{{ expose.name }}</div>

@@ -45,7 +45,8 @@ import {
   mdiCeilingLightMultiple
 } from '@mdi/js';
 
-
+const lampColor = '#ffc107';
+const greyBackground ='#363636'
 const typeToClassMapsensor: KeyValuePair<IconProps> = {
   humidity: {
     name: mdiWaterPercent,
@@ -53,7 +54,7 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
   },
   illuminance: {
     name: mdiWhiteBalanceSunny,
-    color: 'yellow',
+    color: lampColor,
   },
   pressure: { name: mdiCloudDownload, color: 'gray' },
   co2: { name: mdiMoleculeCo2, color: 'white' },
@@ -63,7 +64,7 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
   state: { name: mdiStarHalfFull, color: 'white' },
   brightness: {
     name: mdiCeilingLightMultiple,
-    color: 'yellow',
+    color: lampColor,
   },
   occupancy: { name: mdiWalk, color: 'white' },
   current: { name: mdiCopyright, color: 'gray' },
@@ -113,7 +114,7 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
   angle_y: { name: mdiAxisYArrow, color: 'gray' },
   angle_z: { name: mdiAxisZArrow, color: 'gray' },
   side: { name: mdiCubeOutline, color: 'gray' },
-  presence: { name: mdiAccount, color: 'green' },
+  presence: { name: mdiAccount, color: 'black' },
   contact: { name: mdiDoorOpen, color: 'white' },
 };
 
@@ -172,6 +173,7 @@ const sensorUnits: KeyValuePair<string> = {
 
 
 export function getEntityIcon(sensor: string, value: any): IconProps {
+
   switch (sensor) {
     case 'device_temperature':
     case 'temperature':
@@ -185,7 +187,7 @@ export function getEntityIcon(sensor: string, value: any): IconProps {
 }
 
 const getPresenceIcon = (value: boolean): IconProps => {
-  return value ? { name: mdiMotionSensor, color: 'white' } : { name: mdiMotionSensorOff, color: 'white' };
+  return value ? { name: mdiMotionSensor, color: '#1E88E5' } : { name: mdiMotionSensorOff, color: 'grey' };
 };
 
 const getTemperatureIcon = (temperature: number): IconProps => {
