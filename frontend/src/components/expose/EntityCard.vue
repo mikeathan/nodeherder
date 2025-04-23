@@ -5,15 +5,21 @@
   import { computed, ref } from 'vue';
   import { Device, Expose } from '@/types/device';
   import Icon from '../controls/Icon.vue';
-  import { mdiCeilingLightMultiple } from '@mdi/js';
   import { ExposeAccessModes, ExposeCategories, ExposeTypes } from '@/types/device.type';
   import { getExposes } from '@/contracts/device';
-  import { featureDevicesFilter } from '@/configs/automation/device.config';
+  import { stateDevicesFilter } from '@/configs/automation/device.config';
+
+  // we check if device has state expose and is not the current one
+  // if we have we wire the state to icon click
+  // if current expose is numeric and writable we show the slider
+  // which updates the value
+  // but toggle enables/disables the entity
 
   const props = defineProps({
     id: { type: String, required: true },
     name: { type: String, required: true },
   });
+
   const device = computed(() => {
     const device = store.getters['hub/findDevice'](props.id) as Device;
     //if (!device) return null;
@@ -21,19 +27,29 @@
     return device as Device;
   });
 
+  const stateExpose = computed(() => {
+    const device = store.getters['hub/findDevice'](props.id) as Device;
+    if (!device) return null;
+    var stateExposes = getExposes(device, stateDevicesFilter());
+
+    // for now we only support one state expose
+    if (stateExposes.length > 0) {
+      if (stateExposes.length > 1) {
+        console.error('More than one state expose found: ', stateExposes);
+      }
+      return device.exposes[stateExposes[0]] as Expose;
+    }
+
+    return null;
+  });
+
+  //if (!device) return null;
   const expose = computed(() => {
     const device = store.getters['hub/findDevice'](props.id) as Device;
     //if (!device) return null;
 
     return device.exposes[props.name] as Expose;
   });
-
-  // const exposeValue = computed(() => {
-  //   if (expose.value?.data) {
-  //     return getSensorValue(expose.value.data);
-  //   }
-  //   return null;
-  // });
 
   const iconProps = computed(() => {
     const icon = getEntityIcon(expose.value.name, expose.value.data);
@@ -51,6 +67,10 @@
 
   function isDisabled() {
     if (device.value.availability == 'offline') {
+      return true;
+    }
+
+    if (stateExpose.value?.data === false) {
       return true;
     }
 
@@ -80,24 +100,11 @@
     if (expose.value.type == ExposeTypes.Binary && !isReadOnly()) {
       updateValue(!expose.value.data);
     } else {
-      // we can do that but how do we check if now the state is off the brightness is 0?
-      // maybe check first for the stae here if entty has this configuration and that drives the control
-
-      ???
-      var filtered = getExposes(
-        device.value,
-        (device: Device, expose: Expose): boolean =>
-          expose.type == ExposeTypes.Binary &&
-          expose.access_mode != ExposeAccessModes.Read &&
-          expose.category == ExposeCategories.Measurement
-      );
-      console.log(filtered);
-      if (filtered.length > 0) {
-        const toggle = filtered[0];
+      if (stateExpose.value && stateExpose.value.data != null) {
         var msg = {
           id: props.id,
-          name: toggle,
-          value: !device.value.exposes[toggle].data,
+          name: stateExpose.value.name,
+          value: !stateExpose.value.data,
         };
 
         store.dispatch('hub/setDeviceValue', msg);
@@ -170,7 +177,9 @@
     </template>
     <template #content>
       <div v-if="hasNumericFeatures() && !isReadOnly()">
-        <Brightness :value="expose.data" @update="updateValue" :min="0" :max="100" />
+
+        wire up disabled in brightness so we make it all grey
+        <Brightness :value="expose.data" @update="updateValue" :min="0" :max="100" :disabled="isDisabled()" />
       </div>
     </template>
   </Card>

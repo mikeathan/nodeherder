@@ -1,12 +1,23 @@
 import { AutomationActionStep, AutomationStepAction, AutomationTriggerAction } from '@/types/automation.type';
 import { DeviceFilter, Expose, Device, ExposeType, ExposeCategory } from '@/types/device';
-import { ExposeAccessModes, ExposeTypes } from '@/types/device.type';
+import { ExposeAccessModes, ExposeCategories, ExposeTypes } from '@/types/device.type';
 
 export function featureDevicesFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
     return expose.access_mode != ExposeAccessModes.Read;
   };
 }
+
+export function stateDevicesFilter(): DeviceFilter {
+  return (device: Device, expose: Expose): boolean => {
+    return (
+      expose.type == ExposeTypes.Binary &&
+      expose.access_mode != ExposeAccessModes.Read &&
+      expose.category == ExposeCategories.Measurement
+    );
+  };
+}
+
 export const isPresetExpose = (expose: Expose): boolean => {
   if (!expose.values) {
     return false;
