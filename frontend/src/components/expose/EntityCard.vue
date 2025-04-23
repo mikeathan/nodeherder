@@ -6,7 +6,7 @@
   import { Device, Expose } from '@/types/device';
   import Icon from '../controls/Icon.vue';
   import { mdiCeilingLightMultiple } from '@mdi/js';
-  import { ExposeAccessModes, ExposeTypes } from '@/types/device.type';
+  import { ExposeAccessModes, ExposeCategories, ExposeTypes } from '@/types/device.type';
   import { getExposes } from '@/contracts/device';
   import { featureDevicesFilter } from '@/configs/automation/device.config';
 
@@ -77,13 +77,31 @@
     }
     // check if device has state and toggle
 
-    var filtered = getExposes(device.value,device: Device, expose: Expose): boolean => {
-    return expose.access_mode != ExposeAccessModes.Read;
-  };
-    console.log(filtered);
-
     if (expose.value.type == ExposeTypes.Binary && !isReadOnly()) {
       updateValue(!expose.value.data);
+    } else {
+      // we can do that but how do we check if now the state is off the brightness is 0?
+      // maybe check first for the stae here if entty has this configuration and that drives the control
+
+      ???
+      var filtered = getExposes(
+        device.value,
+        (device: Device, expose: Expose): boolean =>
+          expose.type == ExposeTypes.Binary &&
+          expose.access_mode != ExposeAccessModes.Read &&
+          expose.category == ExposeCategories.Measurement
+      );
+      console.log(filtered);
+      if (filtered.length > 0) {
+        const toggle = filtered[0];
+        var msg = {
+          id: props.id,
+          name: toggle,
+          value: !device.value.exposes[toggle].data,
+        };
+
+        store.dispatch('hub/setDeviceValue', msg);
+      }
     }
   }
   function hasNumericFeatures(): Boolean {
