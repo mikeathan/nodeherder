@@ -14,6 +14,14 @@
               "0xa4c13894070052fc": {
                 "deviceId": "0xa4c13894070052fc",
                 "exposes": ["presence", "illuminance"]
+              },
+              "0xa4c1389b273366c3": {
+                "deviceId": "0xa4c1389b273366c3",
+                "exposes": ["alarm"]
+              },
+              "0x00124b0029207763": {
+                "deviceId": "0x00124b0029207763",
+                "exposes": ["temperature", "humidity"]
               }
             }
           }

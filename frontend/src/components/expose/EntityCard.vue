@@ -6,10 +6,19 @@
   import { Device, Expose } from '@/types/device';
   import Icon from '../controls/Icon.vue';
   import { mdiCeilingLightMultiple } from '@mdi/js';
+  import { ExposeAccessModes, ExposeTypes } from '@/types/device.type';
+  import { getExposes } from '@/contracts/device';
+  import { featureDevicesFilter } from '@/configs/automation/device.config';
 
   const props = defineProps({
     id: { type: String, required: true },
     name: { type: String, required: true },
+  });
+  const device = computed(() => {
+    const device = store.getters['hub/findDevice'](props.id) as Device;
+    //if (!device) return null;
+
+    return device as Device;
   });
 
   const expose = computed(() => {
@@ -19,23 +28,78 @@
     return device.exposes[props.name] as Expose;
   });
 
-  function handleIconClick(): void {
-    console.log('handleIconClick');
+  // const exposeValue = computed(() => {
+  //   if (expose.value?.data) {
+  //     return getSensorValue(expose.value.data);
+  //   }
+  //   return null;
+  // });
+
+  const iconProps = computed(() => {
+    const icon = getEntityIcon(expose.value.name, expose.value.data);
+
+    if (isDisabled()) {
+      return { ...icon, color: '#9e9e9e' };
+    }
+
+    return icon;
+  });
+
+  function isReadOnly(): boolean {
+    return expose.value.access_mode == ExposeAccessModes.Read;
   }
-  const lightOn = ref(true);
+
+  function isDisabled() {
+    if (device.value.availability == 'offline') {
+      return true;
+    }
+
+    if (expose.value.type == ExposeTypes.Numeric && expose.value.data == 0) {
+      return true;
+    }
+    if (expose.value.type == ExposeTypes.Binary && expose.value.data == false) {
+      return true;
+    }
+  }
+  function updateValue(newValue: any): void {
+    var msg = {
+      id: props.id,
+      name: expose.value.name,
+      value: newValue,
+    };
+
+    store.dispatch('hub/setDeviceValue', msg);
+  }
+
+  function handleIconClick(): void {
+    if (device.value.availability == 'offline') {
+      return;
+    }
+    // check if device has state and toggle
+
+    var filtered = getExposes(device.value,device: Device, expose: Expose): boolean => {
+    return expose.access_mode != ExposeAccessModes.Read;
+  };
+    console.log(filtered);
+
+    if (expose.value.type == ExposeTypes.Binary && !isReadOnly()) {
+      updateValue(!expose.value.data);
+    }
+  }
+  function hasNumericFeatures(): Boolean {
+    return expose.value.type == ExposeTypes.Numeric;
+  }
+  function getUnit() {
+    return expose.value.unit == undefined ? getSensorUnit(expose.value.name) : expose.value.unit;
+  }
 </script>
 
 <style scoped>
   .entity-card {
-    padding: 1em;
-    background: #fff;
     border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    display: flex;
-    flex-direction: column;
-    gap: 1em;
-  }
 
+    border: 1px solid wheat;
+  }
   .entity-header {
     display: flex;
     align-items: center;
@@ -65,38 +129,30 @@
     margin-top: 0.2em;
   }
 
-  /* .entity-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
+  .entity-icon {
     cursor: pointer;
     transition: background-color 0.2s;
+  }
+  /* .entity-icon:hover svg path {
+    fill: #42a5f5 !important; 
   } */
 </style>
 <template>
-  <Card>
+  <Card class="entity-card">
     <template #title>
       <div class="entity-header">
         <div class="entity-icon" @click="handleIconClick">
-          <Icon :icon="getEntityIcon(expose.name, expose.data)" size="50" background="red" />
-
-          <!-- <Icon
-            :icon="{ name: mdiCeilingLightMultiple, color: lightOn ? '#ffc107' : '#9e9e9e' }"
-            width="28"
-            height="28" /> -->
+          <Icon :icon="iconProps" size="38" background="#363636" />
         </div>
         <div class="entity-labels">
           <div class="entity-title">{{ expose.name }}</div>
-          <div class="entity-value">{{ expose.data }}</div>
+          <div class="entity-value">{{ getSensorValue(expose.data) }} {{ getUnit() }}</div>
         </div>
       </div>
     </template>
     <template #content>
-      <div>
-        <!-- <Brightness :value="value" @update="updateValue" :min="0" :max="100" /> -->
+      <div v-if="hasNumericFeatures() && !isReadOnly()">
+        <Brightness :value="expose.data" @update="updateValue" :min="0" :max="100" />
       </div>
     </template>
   </Card>

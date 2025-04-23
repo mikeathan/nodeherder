@@ -1,7 +1,6 @@
 import { Expose, DeviceFilter, Device } from '@/types/device';
 import { ExposeTypes } from '@/types/device.type';
 import { KeyValuePair, ValueOf } from '@/types/types.type';
-import { toInt } from '@/utils/numbers';
 
 export function isDeviceOnline(device: Device): boolean {
   return device.availability == 'online';
