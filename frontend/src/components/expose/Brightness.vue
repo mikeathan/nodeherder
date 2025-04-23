@@ -14,23 +14,46 @@
       type: Number,
       default: 100,
     },
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
   });
   const emit = defineEmits<{
     (e: 'update', value: number): void;
   }>();
 
   const value = ref(props.value);
+  const lastKnownValue = ref(props.value);
 
   const trackFill = computed(() => {
     const percent = ((value.value - props.min) / (props.max - props.min)) * 100;
+    const color = props.disabled ? '#ccc' : '#ffc107';
+    const bgColor = props.disabled ? '#eee' : '#fff4cc';
     return {
-      background: `linear-gradient(to right, #ffc107 ${percent}%, #fff4cc ${percent}%)`,
+      background: `linear-gradient(to right, ${color} ${percent}%, ${bgColor} ${percent}%)`,
     };
   });
+  
   watch(
     () => props.value,
     (newVal) => {
-      value.value = newVal;
+      if (!props.disabled) {
+        value.value = newVal;
+        lastKnownValue.value = newVal;
+      }
+    }
+  );
+
+  watch(
+    () => props.disabled,
+    (isDisabled) => {
+      if (isDisabled) {
+        lastKnownValue.value = value.value;
+        value.value = props.min;
+      } else {
+        value.value = lastKnownValue.value;
+      }
     }
   );
   function updateValue(event: any): void {
@@ -106,5 +129,8 @@
     cursor: pointer;
     transform: translateX(-10px);
     /* Shift left by 2 pixels */
+  }
+  .slider:disabled {
+    opacity: 0.6;
   }
 </style>

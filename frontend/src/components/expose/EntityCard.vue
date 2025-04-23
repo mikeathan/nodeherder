@@ -6,7 +6,12 @@
   import { Device, Expose } from '@/types/device';
   import Icon from '../controls/Icon.vue';
   import { ExposeAccessModes, ExposeCategories, ExposeTypes } from '@/types/device.type';
-  import { getExposes } from '@/contracts/device';
+  import {
+    getExposeBinaryProperty,
+    getExposeBinaryPropertyValue,
+    getExposes,
+    toggleExposeBinaryProperty,
+  } from '@/contracts/device';
   import { stateDevicesFilter } from '@/configs/automation/device.config';
 
   // we check if device has state expose and is not the current one
@@ -54,7 +59,7 @@
   const iconProps = computed(() => {
     const icon = getEntityIcon(expose.value.name, expose.value.data);
 
-    if (isDisabled()) {
+    if (!isEnabled()) {
       return { ...icon, color: '#9e9e9e' };
     }
 
@@ -65,21 +70,25 @@
     return expose.value.access_mode == ExposeAccessModes.Read;
   }
 
-  function isDisabled() {
+  looks like tha then we toggle th estate it doesnt return bakc the updated value
+  function isEnabled() {
     if (device.value.availability == 'offline') {
-      return true;
-    }
-
-    if (stateExpose.value?.data === false) {
-      return true;
+      return false;
     }
 
     if (expose.value.type == ExposeTypes.Numeric && expose.value.data == 0) {
-      return true;
+      return false;
     }
-    if (expose.value.type == ExposeTypes.Binary && expose.value.data == false) {
-      return true;
+    if (expose.value.type == ExposeTypes.Binary) {
+      console.log('expose.value.Binary', getExposeBinaryProperty(expose.value));
+
+      return getExposeBinaryProperty(expose.value);
     }
+    if (stateExpose.value) {
+      console.log('stateExpose.value.data', getExposeBinaryProperty(expose.value));
+      return getExposeBinaryProperty(expose.value);
+    }
+    return true;
   }
   function updateValue(newValue: any): void {
     var msg = {
@@ -98,13 +107,16 @@
     // check if device has state and toggle
 
     if (expose.value.type == ExposeTypes.Binary && !isReadOnly()) {
-      updateValue(!expose.value.data);
+      const value = toggleExposeBinaryProperty(expose.value);
+      updateValue(value);
     } else {
       if (stateExpose.value && stateExpose.value.data != null) {
+        const value = toggleExposeBinaryProperty(stateExpose.value);
+
         var msg = {
           id: props.id,
           name: stateExpose.value.name,
-          value: !stateExpose.value.data,
+          value: value,
         };
 
         store.dispatch('hub/setDeviceValue', msg);
@@ -119,6 +131,27 @@
   }
 </script>
 
+<template>
+  exposedata {{ expose.data }} - statedata {{ stateExpose?.data }} - {{ isEnabled() }}
+  <Card class="entity-card">
+    <template #title>
+      <div class="entity-header">
+        <div class="entity-icon" @click="handleIconClick">
+          <Icon :icon="iconProps" size="38" background="#363636" />
+        </div>
+        <div class="entity-labels">
+          <div class="entity-title">{{ expose.name }}</div>
+          <div class="entity-value">{{ getSensorValue(expose.data) }} {{ getUnit() }}</div>
+        </div>
+      </div>
+    </template>
+    <template #content>
+      <div v-if="hasNumericFeatures() && !isReadOnly()">
+        <Brightness :value="expose.data" @update="updateValue" :min="0" :max="100" :disabled="!isEnabled()" />
+      </div>
+    </template>
+  </Card>
+</template>
 <style scoped>
   .entity-card {
     border-radius: 8px;
@@ -162,25 +195,3 @@
     fill: #42a5f5 !important; 
   } */
 </style>
-<template>
-  <Card class="entity-card">
-    <template #title>
-      <div class="entity-header">
-        <div class="entity-icon" @click="handleIconClick">
-          <Icon :icon="iconProps" size="38" background="#363636" />
-        </div>
-        <div class="entity-labels">
-          <div class="entity-title">{{ expose.name }}</div>
-          <div class="entity-value">{{ getSensorValue(expose.data) }} {{ getUnit() }}</div>
-        </div>
-      </div>
-    </template>
-    <template #content>
-      <div v-if="hasNumericFeatures() && !isReadOnly()">
-
-        wire up disabled in brightness so we make it all grey
-        <Brightness :value="expose.data" @update="updateValue" :min="0" :max="100" :disabled="isDisabled()" />
-      </div>
-    </template>
-  </Card>
-</template>

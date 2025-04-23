@@ -29,6 +29,19 @@ export function getExposeBinaryProperty(expose: Expose): boolean {
   return false;
 }
 
+export function toggleExposeBinaryProperty(expose: Expose): any {
+  if (expose.values == null) {
+    return false;
+  }
+
+  const value = !getExposeBinaryProperty(expose);
+  if (value) {
+    return expose.values['on'];
+  }
+
+  return expose.values['off'];
+}
+
 export function getDevices(devices: Device[], allowedFilter: DeviceFilter): KeyValuePair<string> {
   let list: KeyValuePair<string> = {};
   for (const [key, device] of Object.entries(devices)) {
