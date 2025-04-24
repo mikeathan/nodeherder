@@ -1,12 +1,17 @@
 <script setup lang="ts">
-  import { getSensorValue, getSensorIcon, getSensorUnit } from '../../modules/formatters/sensor-formatter';
+  import { getFormattedSensorValue, getSensorIcon, getSensorUnit } from '../../modules/formatters/sensor-formatter';
   import { getEntityIcon } from '../../modules/formatters/entity.formatter';
   import { store } from '../../store/index';
   import { computed, ref } from 'vue';
   import { Device, Expose } from '@/types/device';
   import Icon from '../controls/Icon.vue';
   import { ExposeAccessModes, ExposeCategories, ExposeTypes } from '@/types/device.type';
-  import { getExposeBinaryProperty, getExposes, toggleExposeBinaryProperty } from '@/contracts/device';
+  import {
+    getExposeAttribute,
+    getExposeBinaryProperty,
+    getExposes,
+    toggleExposeBinaryProperty,
+  } from '@/contracts/device';
   import { stateDevicesFilter } from '@/configs/automation/device.config';
 
   // we check if device has state expose and is not the current one
@@ -97,7 +102,6 @@
     if (device.value.availability == 'offline') {
       return;
     }
-    // check if device has state and toggle
 
     if (expose.value.type == ExposeTypes.Binary && !isReadOnly()) {
       const value = toggleExposeBinaryProperty(expose.value);
@@ -112,28 +116,32 @@
   function hasNumericFeatures(): Boolean {
     return expose.value.type == ExposeTypes.Numeric;
   }
-  function getUnit() {
-    return expose.value.unit == undefined ? getSensorUnit(expose.value.name) : expose.value.unit;
+  function isToggleable(): Boolean {
+    return expose.value.type == ExposeTypes.Binary || stateExpose.value != null;
   }
 </script>
 
 <template>
-  exposedata {{ expose.data }} - statedata {{ stateExpose?.data }} - isEnabled:{{ isEnabled() }}
   <Card class="entity-card">
     <template #title>
       <div class="entity-header">
         <div class="entity-icon" @click="handleIconClick">
-          <Icon :icon="iconProps" size="38" background="#363636" />
+          <Icon :icon="iconProps" size="38" background="#363636"  />
         </div>
         <div class="entity-labels">
           <div class="entity-title">{{ expose.name }}</div>
-          <div class="entity-value">{{ getSensorValue(expose.data) }} {{ getUnit() }}</div>
+          <div class="entity-value">{{ getFormattedSensorValue(expose) }}</div>
         </div>
       </div>
     </template>
     <template #content>
       <div v-if="hasNumericFeatures() && !isReadOnly()">
-        <Brightness :value="expose.data" @update="updateValue" :min="0" :max="100" :disabled="!isEnabled()" />
+        <Brightness
+          :value="expose.data"
+          @update="updateValue(expose.name, $event)"
+          :min="getExposeAttribute(expose, 'min')"
+          :max="getExposeAttribute(expose, 'max')"
+          :disabled="!isEnabled()" />
       </div>
     </template>
   </Card>

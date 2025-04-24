@@ -43,6 +43,7 @@ import {
   mdiThermometerLow,
   mdiTune,
 } from '@mdi/js';
+import { Expose } from '@/types/device';
 
 // const typeToClassMapsensor: KeyValuePair<string> = {
 //   humidity: 'text-info fa-tint',
@@ -202,6 +203,7 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
 // };
 
 const sensorUnits: KeyValuePair<string> = {
+  brightness: '%',
   temperature: '°C',
   pressure: 'hPa',
   humidity: '%',
@@ -210,6 +212,14 @@ const sensorUnits: KeyValuePair<string> = {
   illuminance_lux: 'lux',
   illuminance: 'lux',
 };
+
+export function getFormattedSensorValue(expose: Expose): string {
+  if (expose.name == null) {
+    return '';
+  }
+  const unit = expose.unit ?? getSensorUnit(expose.name);
+  return `${getSensorValue(expose.data)} ${unit}`;
+}
 
 export function getSensorUnit(sensor: string): string {
   if (sensor in sensorUnits === false) {

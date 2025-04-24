@@ -22,6 +22,11 @@
       type: String,
       default: '#ccc',
     },
+
+    isclicable: { aaa
+      type: Boolean,
+      default: false,
+    },
   });
 </script>
 <style scoped></style>
