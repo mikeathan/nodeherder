@@ -34,7 +34,7 @@
       background: `linear-gradient(to right, ${color} ${percent}%, ${bgColor} ${percent}%)`,
     };
   });
-  
+
   watch(
     () => props.value,
     (newVal) => {
@@ -65,7 +65,16 @@
 <template>
   <div class="slider-wrapper">
     <div class="track-background" :style="trackFill"></div>
-    <input type="range" :min="props.min" :max="props.max" v-model="value" class="slider" @change="updateValue" />
+    <input
+      type="range"
+      :min="props.min"
+      :max="props.max"
+      v-model="value"
+      class="slider"
+      @change.stop="updateValue"
+      @click.stop
+      @mousedown.stop
+      @pointerdown.stop />
   </div>
 </template>
 

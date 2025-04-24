@@ -113,21 +113,26 @@
       }
     }
   }
-  function hasNumericFeatures(): Boolean {
+  function hasNumericFeatures(): boolean {
     return expose.value.type == ExposeTypes.Numeric;
   }
-  function isToggleable(): Boolean {
-    return expose.value.type == ExposeTypes.Binary || stateExpose.value != null;
+  function isToggleable(): boolean {
+    return (
+      (expose.value.type == ExposeTypes.Binary && expose.value.access_mode != ExposeAccessModes.Read) ||
+      stateExpose.value != null
+    );
+  }
+
+  function handleCardClick(): void {
+    console.log('handleCardClick ', expose.value.name);
   }
 </script>
 
 <template>
-  <Card class="entity-card">
+  <Card class="entity-card" @click="handleCardClick">
     <template #title>
       <div class="entity-header">
-        <div class="entity-icon" @click="handleIconClick">
-          <Icon :icon="iconProps" size="38" background="#363636"  />
-        </div>
+        <Icon :icon="iconProps" size="38" background="#363636" :clickable="isToggleable()" @click="handleIconClick" />
         <div class="entity-labels">
           <div class="entity-title">{{ expose.name }}</div>
           <div class="entity-value">{{ getFormattedSensorValue(expose) }}</div>
@@ -149,8 +154,12 @@
 <style scoped>
   .entity-card {
     border-radius: 8px;
-
+    cursor: pointer;
     border: 1px solid wheat;
+    user-select: none;
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* Internet Explorer/Edge */
   }
   .entity-header {
     display: flex;
@@ -180,12 +189,4 @@
     color: #777;
     margin-top: 0.2em;
   }
-
-  .entity-icon {
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  /* .entity-icon:hover svg path {
-    fill: #42a5f5 !important; 
-  } */
 </style>

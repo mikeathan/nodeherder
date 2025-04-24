@@ -22,21 +22,43 @@
       type: String,
       default: '#ccc',
     },
-
-    isclicable: { aaa
+    clickable: {
       type: Boolean,
       default: false,
     },
   });
+
+  const emit = defineEmits<{
+    (e: 'click'): void;
+  }>();
+
+  function handleClick() {
+    if (props.clickable) {
+      emit('click');
+    }
+  }
 </script>
-<style scoped></style>
+<style scoped>
+  svg.clickable {
+    cursor: pointer;
+  }
+
+  svg.clickable:hover circle {
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+  }
+</style>
 <template>
-  <svg :width="props.size" :height="props.size" viewBox="0 0 24 24" :aria-label="props.icon.tooltip">
+  <svg
+    :width="props.size"
+    :height="props.size"
+    viewBox="0 0 24 24"
+    :aria-label="props.icon.tooltip"
+    @click.stop="handleClick"
+    :class="{ clickable }">
     <title>{{ props.icon.tooltip }}</title>
 
-    <!-- Circle background -->
-    <circle cx="12" cy="12" r="12" :fill="background" />
-
+    <circle cx="12" cy="12" r="12" :fill="background" v-if="clickable" />
     <!-- Icon path, centered and scaled -->
     <g :transform="`rotate(${rotationAngle} 12 12) scale(0.8)`">
       <path :d="props.icon.name" :fill="props.icon.color || 'black'" transform="translate(2.4, 2.4)" />
