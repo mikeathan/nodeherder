@@ -6,12 +6,7 @@
   import { Device, Expose } from '@/types/device';
   import Icon from '../controls/Icon.vue';
   import { ExposeAccessModes, ExposeCategories, ExposeTypes } from '@/types/device.type';
-  import {
-    getExposeBinaryProperty,
-    getExposeBinaryPropertyValue,
-    getExposes,
-    toggleExposeBinaryProperty,
-  } from '@/contracts/device';
+  import { getExposeBinaryProperty, getExposes, toggleExposeBinaryProperty } from '@/contracts/device';
   import { stateDevicesFilter } from '@/configs/automation/device.config';
 
   // we check if device has state expose and is not the current one
@@ -70,7 +65,6 @@
     return expose.value.access_mode == ExposeAccessModes.Read;
   }
 
-  looks like tha then we toggle th estate it doesnt return bakc the updated value
   function isEnabled() {
     if (device.value.availability == 'offline') {
       return false;
@@ -79,21 +73,20 @@
     if (expose.value.type == ExposeTypes.Numeric && expose.value.data == 0) {
       return false;
     }
-    if (expose.value.type == ExposeTypes.Binary) {
-      console.log('expose.value.Binary', getExposeBinaryProperty(expose.value));
 
+    if (expose.value.type == ExposeTypes.Binary) {
       return getExposeBinaryProperty(expose.value);
     }
     if (stateExpose.value) {
-      console.log('stateExpose.value.data', getExposeBinaryProperty(expose.value));
-      return getExposeBinaryProperty(expose.value);
+      return getExposeBinaryProperty(stateExpose.value);
     }
     return true;
   }
-  function updateValue(newValue: any): void {
+
+  function updateValue(exposeName: string, newValue: any): void {
     var msg = {
       id: props.id,
-      name: expose.value.name,
+      name: exposeName,
       value: newValue,
     };
 
@@ -108,18 +101,11 @@
 
     if (expose.value.type == ExposeTypes.Binary && !isReadOnly()) {
       const value = toggleExposeBinaryProperty(expose.value);
-      updateValue(value);
+      updateValue(expose.value.name, value);
     } else {
-      if (stateExpose.value && stateExpose.value.data != null) {
+      if (stateExpose.value?.data) {
         const value = toggleExposeBinaryProperty(stateExpose.value);
-
-        var msg = {
-          id: props.id,
-          name: stateExpose.value.name,
-          value: value,
-        };
-
-        store.dispatch('hub/setDeviceValue', msg);
+        updateValue(stateExpose.value.name, value);
       }
     }
   }
@@ -132,7 +118,7 @@
 </script>
 
 <template>
-  exposedata {{ expose.data }} - statedata {{ stateExpose?.data }} - {{ isEnabled() }}
+  exposedata {{ expose.data }} - statedata {{ stateExpose?.data }} - isEnabled:{{ isEnabled() }}
   <Card class="entity-card">
     <template #title>
       <div class="entity-header">
