@@ -166,6 +166,9 @@
     border: 1px solid wheat;
     user-select: none;
 
+    width: 100%; /* Ensure the card takes the full width */
+    height: auto; /* Allow the height to be determined by content */
+    box-sizing: border-box; /* Include padding and borders in width/height */
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
     -ms-user-select: none; /* Internet Explorer/Edge */
@@ -176,9 +179,9 @@
   }
   .entity-header {
     display: flex;
-    min-height: 50px; /* consistent height */
-    align-items: flex-end; 
-    gap: 0.90rem;
+    min-height: 50px; /* Consistent header size */
+    align-items: flex-end;
+    gap: 0.9rem;
   }
 
   .entity-labels {
