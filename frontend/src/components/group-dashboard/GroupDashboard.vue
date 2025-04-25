@@ -44,5 +44,64 @@
         </div>
       </div>
     </div>
+
+    <div class="flex">
+      <div
+        class="flex-initial flex align-items-center justify-content-center bg-primary font-bold m-2 px-5 py-3 border-round border-solid">
+        Prime
+      </div>
+      <div
+        class="flex-initial flex align-items-center justify-content-center bg-primary font-bold m-2 px-5 py-3 border-round border-solid">
+        Prime and PrimeFlex
+      </div>
+    </div>
+    <div class="flex">
+      <div
+        class="flex-initial flex align-items-center justify-content-center bg-primary font-bold m-2 px-5 py-3 border-round border-solid">
+        Prime
+      </div>
+      <div
+        class="flex-initial flex align-items-center justify-content-center bg-primary font-bold m-2 px-5 py-3 border-round border-solid">
+        Prime and PrimeFlex
+      </div>
+      <div
+        class="flex-initial flex align-items-center justify-content-center bg-primary font-bold m-2 px-5 py-3 border-round border-solid">
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
+        magna aliqua.{' '}
+      </div>
+    </div>
+    --------------------------
+    <div class="flex flex-row flex-wrap">
+      <div
+        class="flex align-items-center justify-content-center w-4rem h-4rem bg-primary font-bold border-round m-2 border-solid">
+        1
+      </div>
+      <div
+        class="flex align-items-center justify-content-center w-4rem h-4rem bg-primary font-bold border-round m-2 border-solid">
+        2
+      </div>
+      <div
+        class="flex align-items-center justify-content-center w-4rem h-4rem bg-primary font-bold border-round m-2 border-solid">
+        3
+      </div>
+    </div>
+    --------------------------
+    <div class="flex flex-wrap" style="max-width: 500px">
+      <div
+        class="flex align-items-center justify-content-center bg-primary font-bold m-2 border-round border-solid"
+        style="min-width: 150px; min-height: 100px">
+        1
+      </div>
+      <div
+        class="flex align-items-center justify-content-center bg-primary font-bold m-2 border-round border-solid"
+        style="min-width: 150px; min-height: 100px">
+        2
+      </div>
+      <div
+        class="flex align-items-center justify-content-center bg-primary font-bold m-2 border-round border-solid"
+        style="min-width: 150px; min-height: 100px">
+        3
+      </div>
+    </div>
   </div>
 </template>
