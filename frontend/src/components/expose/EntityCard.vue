@@ -23,6 +23,7 @@
   const props = defineProps({
     id: { type: String, required: true },
     name: { type: String, required: true },
+    compact: { type: Boolean, required: false, default: false },
   });
 
   const device = computed(() => {
@@ -126,10 +127,17 @@
   function handleCardClick(): void {
     console.log('handleCardClick ', expose.value.name);
   }
+
+  const cardStyle = computed(() => {
+    if (props.compact) {
+      return 'padding: 0.5rem';
+    }
+    return '';
+  });
 </script>
 
 <template>
-  <Card class="entity-card" @click="handleCardClick">
+  <Card class="entity-card" @click="handleCardClick" :pt="{ body: { style: cardStyle } }">
     <template #title>
       <div class="entity-header">
         <Icon :icon="iconProps" size="38" background="#363636" :clickable="isToggleable()" @click="handleIconClick" />
@@ -157,20 +165,20 @@
     cursor: pointer;
     border: 1px solid wheat;
     user-select: none;
+
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
     -ms-user-select: none; /* Internet Explorer/Edge */
   }
+
+  .entity-card:hover {
+    background-color: rgba(0, 0, 0, 0.01);
+  }
   .entity-header {
     display: flex;
-    align-items: center;
-    gap: 0.75em;
-  }
-
-  .entity-labels {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    min-height: 50px; /* consistent height */
+    align-items: flex-end; 
+    gap: 0.90rem;
   }
 
   .entity-labels {
@@ -185,8 +193,7 @@
   }
 
   .entity-value {
-    font-size: 0.75rem;
-    color: #777;
-    margin-top: 0.2em;
+    font-size: 0.8rem;
+    color: #ccc;
   }
 </style>

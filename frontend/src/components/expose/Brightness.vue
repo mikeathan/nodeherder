@@ -81,9 +81,10 @@
 <style scoped>
   .slider-wrapper {
     position: relative;
-    width: 280px;
     height: 50px;
     overflow: hidden;
+    opacity: 1 !important;
+    transition: none !important;
   }
 
   .track-background {

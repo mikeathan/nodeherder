@@ -25,11 +25,22 @@
 </style>
 
 <template>
-  <div class="grid">
-    <div class="col-12 md:col-6 lg:col-3 xg:col-2" v-for="group in dashboardGroups" :key="group.name">
+  <!-- <div class="grid gap-2 p-2" style="margin: 0; padding: 0.5rem">
+    <div class="col-12 sm:col-6 md:col-4 lg:col-3 xl:col-2" v-for="group in dashboardGroups" :key="group.name">
       <div v-for="device in group.deviceGroup" :key="device.deviceId">
         <div v-for="expose in device.exposes" :key="expose">
-          <EntityCard :id="device.deviceId" :name="expose" />
+          <EntityCard :id="device.deviceId" :name="expose" compact />
+        </div>
+      </div>
+    </div>
+  </div>  -->
+
+  <div v-for="group in dashboardGroups" :key="group.name" class="mb-4">
+    <h4 class="mt-2">{{ group.name }}</h4>
+    <div>
+      <div v-for="device in group.deviceGroup" :key="device.deviceId" class="grid w-full">
+        <div v-for="expose in device.exposes" :key="expose" class="col-12 sm:col-6 md:col-4">
+          <EntityCard :id="device.deviceId" :name="expose" compact />
         </div>
       </div>
     </div>

@@ -32,8 +32,11 @@
     (e: 'click'): void;
   }>();
 
-  function handleClick() {
+  function handleClick(event: MouseEvent) {
     if (props.clickable) {
+      // Stop the event from bubbling up to parent elements
+      // only when the icon itself is handling the click.
+      event.stopPropagation();
       emit('click');
     }
   }
@@ -54,12 +57,12 @@
     :height="props.size"
     viewBox="0 0 24 24"
     :aria-label="props.icon.tooltip"
-    @click.stop="handleClick"
+    @click="handleClick"
     :class="{ clickable }">
     <title>{{ props.icon.tooltip }}</title>
 
     <circle cx="12" cy="12" r="12" :fill="background" v-if="clickable" />
-    <!-- Icon path, centered and scaled -->
+    
     <g :transform="`rotate(${rotationAngle} 12 12) scale(0.8)`">
       <path :d="props.icon.name" :fill="props.icon.color || 'black'" transform="translate(2.4, 2.4)" />
     </g>
