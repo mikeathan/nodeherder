@@ -25,34 +25,37 @@
   }
   // TESTING
 </script>
-<style scoped>
-  /* .dashboard {
-  background-color: var(--p-card-background);
-  height: 100vh;
-  overflow: auto;
-} */
-</style>
-
 <template>
-  <!-- <div class="grid gap-2 p-2" style="margin: 0; padding: 0.5rem">
-    <div class="col-12 sm:col-6 md:col-4 lg:col-3 xl:col-2" v-for="group in dashboardGroups" :key="group.name">
-      <div v-for="device in group.deviceGroup" :key="device.deviceId">
-        <div v-for="expose in device.exposes" :key="expose">
-          <EntityCard :id="device.deviceId" :name="expose" compact />
-        </div>
-      </div>
-    </div>
-  </div>  -->
-
   <div v-for="group in dashboardGroups" :key="group.name" class="mb-4">
     <h4 class="mt-2">{{ group.name }}</h4>
-    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; width: max-content">
-      <div
-        v-for="item in flattenDeviceGroup(group)"
-        :key="item.deviceId + '-' + item.expose"
-        style="display: flex; align-items: flex-end">
+    <div class="grid-container">
+      <div v-for="item in flattenDeviceGroup(group)" :key="item.deviceId + '-' + item.expose" class="grid-item">
         <EntityCard :id="item.deviceId" :name="item.expose" compact />
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+  .grid-container {
+    
+    column-count: 2;  /* Define number of columns */
+    column-gap: 8px;  /* Define gap between columns */
+
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  .grid-item {
+    
+    /* Add vertical spacing between items (replaces row-gap) */
+    margin-bottom: 8px;
+
+    /* Required for proper sizing and layout within columns */
+    width: 100%;
+    display: inline-block; /* Treat item like a block, but flow inline */
+  }
+
+ 
+  
+</style>

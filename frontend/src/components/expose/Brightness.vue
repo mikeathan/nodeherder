@@ -81,10 +81,11 @@
 <style scoped>
   .slider-wrapper {
     position: relative;
-    height: 50px;
+    height: 40px; /* Adjust the height of the slider */
     overflow: hidden;
     opacity: 1 !important;
     transition: none !important;
+    margin-top: 8px; /* Add some top margin for spacing */
   }
 
   .track-background {
