@@ -23,6 +23,15 @@
       }))
     );
   }
+
+  // to use for dynamically setting the column count
+  //   :style="{ columnCount: calculateColumnCount(flattenDeviceGroup(group).length) }"
+  function calculateColumnCount(length: number): number {
+    if (length >= 6) return 3;
+    if (length >= 3) return 2;
+    return 1;
+  }
+
   // TESTING
 </script>
 <template>
@@ -38,24 +47,16 @@
 
 <style scoped>
   .grid-container {
-    
-    column-count: 2;  /* Define number of columns */
-    column-gap: 8px;  /* Define gap between columns */
-
+    column-count: 3;
+    column-gap: 0.5rem;
     max-width: 520px;
     margin: 0 auto;
   }
 
   .grid-item {
-    
-    /* Add vertical spacing between items (replaces row-gap) */
-    margin-bottom: 8px;
-
-    /* Required for proper sizing and layout within columns */
+    margin-bottom: 0.5rem;
     width: 100%;
-    display: inline-block; /* Treat item like a block, but flow inline */
+    display: inline-block;
+    break-inside: avoid;
   }
-
- 
-  
 </style>
