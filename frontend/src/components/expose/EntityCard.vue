@@ -130,14 +130,20 @@
 
   const cardStyle = computed(() => {
     if (props.compact) {
-      return 'padding: 0.5rem';
+      return 'padding: 0.4rem';
     }
     return '';
   });
 </script>
 
 <template>
-  <Card class="entity-card" @click="handleCardClick" :pt="{ body: { style: cardStyle } }">
+  <Card
+    class="entity-card"
+    @click="handleCardClick"
+    :pt="{
+      body: { style: cardStyle },
+      root: { style: { '--p-card-body-gap': '0.0rem' } }, // remove card padding
+    }">
     <template #title>
       <div class="entity-header">
         <Icon :icon="iconProps" size="38" background="#363636" :clickable="isToggleable()" @click="handleIconClick" />
@@ -148,7 +154,7 @@
       </div>
     </template>
     <template #content>
-      <div v-if="hasNumericFeatures() && !isReadOnly()">
+      <div v-if="hasNumericFeatures() && !isReadOnly()" class="entity-content">
         <Brightness
           :value="expose.data"
           @update="updateValue(expose.name, $event)"
@@ -161,12 +167,19 @@
 </template>
 <style scoped>
   .entity-card {
-  
     cursor: pointer;
     user-select: none;
 
-    width: 100%; /* Ensure the card takes the full width */
-    height: auto; /* Allow the height to be determined by content */
+    width: 100%;
+    height: auto;
+
+    min-height: 2rem;
+    max-height: 10rem;
+    max-width: 208px;
+    
+    margin: 0 auto;
+    border: 1px solid rgba(0, 0, 0, 0.38);
+    border-radius: 12px;
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
     -ms-user-select: none; /* Internet Explorer/Edge */
@@ -177,7 +190,6 @@
   }
   .entity-header {
     display: flex;
-    min-height: 10px; /* Consistent header size */
     align-items: flex-end;
     gap: 0.9rem;
   }
@@ -196,5 +208,10 @@
   .entity-value {
     font-size: 0.8rem;
     color: #ccc;
+    min-height: 1.2rem;
+  }
+
+  .entity-content {
+    margin-top: 1.5rem;
   }
 </style>
