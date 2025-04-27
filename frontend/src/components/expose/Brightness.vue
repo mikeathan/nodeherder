@@ -81,11 +81,12 @@
 <style scoped>
   .slider-wrapper {
     position: relative;
-    height: 40px; /* Adjust the height of the slider */
+    height: 46px;
     overflow: hidden;
     opacity: 1 !important;
     transition: none !important;
-    margin-top: 8px; /* Add some top margin for spacing */
+    
+    weneed som pading
   }
 
   .track-background {
@@ -94,8 +95,9 @@
     left: 0;
     right: 0;
     bottom: 0;
-    border-radius: 10px / 10px;
+    border-radius: 12px;
     pointer-events: none;
+   
   }
 
   /* input layer */

@@ -175,7 +175,7 @@
 
     min-height: 2rem;
     max-height: 10rem;
-    max-width: 208px;
+    /* max-width: 240px; */
     
     margin: 0 auto;
     border: 1px solid rgba(0, 0, 0, 0.38);
@@ -212,6 +212,6 @@
   }
 
   .entity-content {
-    margin-top: 1.5rem;
+    margin-top: 1.3rem;
   }
 </style>

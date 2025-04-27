@@ -61,7 +61,7 @@
   .grid-container {
     column-count: 2;
     column-gap: 0.5rem;
-    max-width: 450px;
+    max-width: 500px;
     /* margin: 0 auto; */
   }
 
