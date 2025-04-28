@@ -14,12 +14,6 @@
   } from '@/contracts/device';
   import { stateDevicesFilter } from '@/configs/automation/device.config';
 
-  // we check if device has state expose and is not the current one
-  // if we have we wire the state to icon click
-  // if current expose is numeric and writable we show the slider
-  // which updates the value
-  // but toggle enables/disables the entity
-
   const props = defineProps({
     id: { type: String, required: true },
     name: { type: String, required: true },
@@ -28,7 +22,7 @@
 
   const device = computed(() => {
     const device = store.getters['hub/findDevice'](props.id) as Device;
-    //if (!device) return null;
+    if (!device) return null;
 
     return device as Device;
   });
@@ -49,10 +43,9 @@
     return null;
   });
 
-  //if (!device) return null;
   const expose = computed(() => {
     const device = store.getters['hub/findDevice'](props.id) as Device;
-    //if (!device) return null;
+    if (!device) return {} as Expose;
 
     return device.exposes[props.name] as Expose;
   });
@@ -72,7 +65,7 @@
   }
 
   function isEnabled() {
-    if (device.value.availability == 'offline') {
+    if (device.value?.availability == 'offline') {
       return false;
     }
 
@@ -100,7 +93,7 @@
   }
 
   function handleIconClick(): void {
-    if (device.value.availability == 'offline') {
+    if (device.value?.availability == 'offline') {
       return;
     }
 
@@ -137,7 +130,9 @@
 </script>
 
 <template>
+  dont display ifdevice cant be found - display empty card
   <Card
+    v-if="device"
     class="entity-card"
     @click="handleCardClick"
     :pt="{
@@ -176,7 +171,7 @@
     min-height: 2rem;
     max-height: 10rem;
     /* max-width: 240px; */
-    
+
     margin: 0 auto;
     border: 1px solid rgba(0, 0, 0, 0.38);
     border-radius: 12px;
@@ -188,7 +183,7 @@
   .entity-card:hover {
     background-color: rgba(0, 0, 0, 0.1);
   }
-  
+
   .entity-header {
     display: flex;
     align-items: flex-end;
@@ -213,8 +208,8 @@
   }
 
   .entity-content {
-    margin-top: 1.0rem;
+    margin-top: 1rem;
     margin-bottom: 0.3rem;
-    margin-left: 0.0rem;
+    margin-left: 0rem;
   }
 </style>

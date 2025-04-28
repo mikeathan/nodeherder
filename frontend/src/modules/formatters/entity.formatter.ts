@@ -45,6 +45,7 @@ import {
   mdiCeilingLightMultiple,
   mdiAlarmLight,
   mdiAlarmLightOff,
+  mdiCrosshairsQuestion,
 } from '@mdi/js';
 
 const lampColor = '#ffc107';
@@ -184,8 +185,13 @@ export function getEntityIcon(sensor: string, value: any): IconProps {
       return getPresenceIcon(value);
   }
 
-  return typeToClassMapsensor[sensor];
+  const icon = typeToClassMapsensor[sensor];
+  return icon ?? getUnknownEntityIcon();
 }
+
+const getUnknownEntityIcon = (): IconProps => {
+  return { name: mdiCrosshairsQuestion, color: 'grey' };
+};
 
 const getPresenceIcon = (value: boolean): IconProps => {
   return value ? { name: mdiMotionSensor, color: '#1E88E5' } : { name: mdiMotionSensorOff, color: 'grey' };

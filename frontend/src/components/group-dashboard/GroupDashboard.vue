@@ -29,8 +29,8 @@
   <div class="dashboard-container">
     <div v-for="group in dashboardGroups" :key="group.name" class="dashboard-group">
       <h4 class="dashboard-title">{{ group.name }}</h4>
-      <div class="grid-container">
-        <div v-for="item in flattenDeviceGroup(group)" :key="`${item.deviceId}-${item.expose}`" class="grid-item">
+      <div class="card-container">
+        <div v-for="item in flattenDeviceGroup(group)" :key="`${item.deviceId}-${item.expose}`" class="card-item">
           <EntityCard :id="item.deviceId" :name="item.expose" compact />
         </div>
       </div>
@@ -42,7 +42,7 @@
   .dashboard-container {
     display: grid;
     gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+    card-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
     justify-items: stretch;
   }
 
@@ -58,14 +58,14 @@
     margin-bottom: 1rem;
   }
 
-  .grid-container {
+  .card-container {
     column-count: 2;
     column-gap: 0.5rem;
     max-width: 400px;
     /* margin: 0 auto; */
   }
 
-  .grid-item {
+  .card-item {
     margin-bottom: 0.5rem;
     width: 100%;
     display: inline-block;
