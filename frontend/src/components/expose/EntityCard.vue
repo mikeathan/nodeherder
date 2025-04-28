@@ -186,8 +186,9 @@
   }
 
   .entity-card:hover {
-    background-color: rgba(0, 0, 0, 0.01);
+    background-color: rgba(0, 0, 0, 0.1);
   }
+  
   .entity-header {
     display: flex;
     align-items: flex-end;
@@ -212,6 +213,8 @@
   }
 
   .entity-content {
-    margin-top: 1.3rem;
+    margin-top: 1.0rem;
+    margin-bottom: 0.3rem;
+    margin-left: 0.0rem;
   }
 </style>

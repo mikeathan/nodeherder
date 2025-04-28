@@ -29,9 +29,10 @@
   const trackFill = computed(() => {
     const percent = ((value.value - props.min) / (props.max - props.min)) * 100;
     const color = props.disabled ? '#ccc' : '#ffc107';
-    const bgColor = props.disabled ? '#eee' : '#fff4cc';
+    const bgColor = props.disabled ? '#ccc' : '#fff2cc';
     return {
       background: `linear-gradient(to right, ${color} ${percent}%, ${bgColor} ${percent}%)`,
+      opacity: props.disabled ? 0.5 : 1,
     };
   });
 
@@ -81,12 +82,10 @@
 <style scoped>
   .slider-wrapper {
     position: relative;
-    height: 46px;
+    height: 46px;    
     overflow: hidden;
     opacity: 1 !important;
     transition: none !important;
-    
-    weneed som pading
   }
 
   .track-background {
@@ -97,7 +96,6 @@
     bottom: 0;
     border-radius: 12px;
     pointer-events: none;
-   
   }
 
   /* input layer */

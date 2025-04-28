@@ -42,11 +42,13 @@ import {
   mdiThermometerHigh,
   mdiThermometerLow,
   mdiTune,
-  mdiCeilingLightMultiple
+  mdiCeilingLightMultiple,
+  mdiAlarmLight,
+  mdiAlarmLightOff,
 } from '@mdi/js';
 
 const lampColor = '#ffc107';
-const greyBackground ='#363636'
+const greyBackground = '#363636';
 const typeToClassMapsensor: KeyValuePair<IconProps> = {
   humidity: {
     name: mdiWaterPercent,
@@ -170,15 +172,14 @@ const sensorUnits: KeyValuePair<string> = {
   illuminance: 'lux',
 };
 
-
-
 export function getEntityIcon(sensor: string, value: any): IconProps {
-
   switch (sensor) {
     case 'device_temperature':
     case 'temperature':
     case 'local_temperature':
       return getTemperatureIcon(value);
+    case 'alarm':
+      return getAlarmIcon(value);
     case 'presence':
       return getPresenceIcon(value);
   }
@@ -188,6 +189,10 @@ export function getEntityIcon(sensor: string, value: any): IconProps {
 
 const getPresenceIcon = (value: boolean): IconProps => {
   return value ? { name: mdiMotionSensor, color: '#1E88E5' } : { name: mdiMotionSensorOff, color: 'grey' };
+};
+
+const getAlarmIcon = (value: boolean): IconProps => {
+  return value ? { name: mdiAlarmLight, color: 'red' } : { name: mdiAlarmLightOff, color: 'grey' };
 };
 
 const getTemperatureIcon = (temperature: number): IconProps => {
