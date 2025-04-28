@@ -229,6 +229,9 @@ export function getSensorUnit(sensor: string): string {
 }
 
 export function getSensorName(sensor: string): string {
+  if (!sensor) {
+    return 'Sensor not found';
+  }
   return sensor.charAt(0).toUpperCase() + sensor.slice(1); // TODO: load name  from resources file
 }
 

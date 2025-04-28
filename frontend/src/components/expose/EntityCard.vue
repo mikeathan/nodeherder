@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { getFormattedSensorValue, getSensorIcon, getSensorUnit } from '../../modules/formatters/sensor-formatter';
+  import { getFormattedSensorValue, getSensorName, getSensorUnit } from '../../modules/formatters/sensor-formatter';
   import { getEntityIcon } from '../../modules/formatters/entity.formatter';
   import { store } from '../../store/index';
   import { computed, ref } from 'vue';
@@ -13,6 +13,7 @@
     toggleExposeBinaryProperty,
   } from '@/contracts/device';
   import { stateDevicesFilter } from '@/configs/automation/device.config';
+  import { emitOpenEntityViewDialog } from '@/contracts/dialog-events';
 
   const props = defineProps({
     id: { type: String, required: true },
@@ -44,10 +45,9 @@
   });
 
   const expose = computed(() => {
-    const device = store.getters['hub/findDevice'](props.id) as Device;
-    if (!device) return {} as Expose;
+    if (!device.value) return {} as Expose;
 
-    return device.exposes[props.name] as Expose;
+    return device.value.exposes[props.name] as Expose;
   });
 
   const iconProps = computed(() => {
@@ -118,7 +118,14 @@
   }
 
   function handleCardClick(): void {
+    const eventProps = {
+      id: props.id,
+      name: expose.value.name,
+    };
     console.log('handleCardClick ', expose.value.name);
+    emitOpenEntityViewDialog(() => {
+      console.log('dialog closed');
+    }, eventProps);
   }
 
   const cardStyle = computed(() => {
@@ -130,9 +137,7 @@
 </script>
 
 <template>
-  dont display ifdevice cant be found - display empty card
   <Card
-    v-if="device"
     class="entity-card"
     @click="handleCardClick"
     :pt="{
@@ -143,7 +148,7 @@
       <div class="entity-header">
         <Icon :icon="iconProps" size="38" background="#363636" :clickable="isToggleable()" @click="handleIconClick" />
         <div class="entity-labels">
-          <div class="entity-title">{{ expose.name }}</div>
+          <div class="entity-title">{{ getSensorName(expose.name) }}</div>
           <div class="entity-value">{{ getFormattedSensorValue(expose) }}</div>
         </div>
       </div>

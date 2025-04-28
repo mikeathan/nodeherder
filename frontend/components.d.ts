@@ -49,6 +49,7 @@ declare module 'vue' {
     Editor: typeof import('./src/components/automations/Editor.vue')['default']
     EntityCard: typeof import('./src/components/expose/EntityCard.vue')['default']
     EntityDialog: typeof import('./src/components/dialogs/EntityDialog.vue')['default']
+    EntityViewDialog: typeof import('./src/components/dialogs/EntityViewDialog.vue')['default']
     ExposeCondition: typeof import('./src/components/automations/conditions/ExposeCondition.vue')['default']
     ExposeDataInput: typeof import('./src/components/controls/ExposeDataInput.vue')['default']
     ExposeSelectionDialog: typeof import('./src/components/dialogs/ExposeSelectionDialog.vue')['default']
