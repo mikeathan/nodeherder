@@ -3,7 +3,6 @@
   import { store } from '../../store/index';
   import { Device } from '@/types/device';
   import Selection from '@/components/input/Selection.vue';
-  import { KeyValuePair } from '@/types/types.type';
 
   const props = defineProps<{
     show: boolean;
@@ -14,18 +13,6 @@
   const emit = defineEmits(['close']);
 
   const showDialog = ref<boolean>(props.show);
-  // const deviceList = computed(() => {
-  //   const devices = store.getters['hub/listAllDevices']() as Device[];
-  //   if (devices == undefined) {
-  //     console.log('no devices found devices');
-  //     return {} as KeyValuePair<string>;
-  //   }
-
-  //   return devices.reduce<KeyValuePair<string>>((acc, item) => {
-  //     acc[item.friendly_name] = item.id;
-  //     return acc;
-  //   }, {});
-  // });
 
   watchEffect(() => (showDialog.value = props.show));
 
@@ -36,16 +23,48 @@
 
   const dialogTitle = () => 'Title';
   const dialogMessage = () => 'Message';
+  /* Dynamically compute the styles */
+const dialogStyle = computed(() => {
+  // Mobile screen styling
+  if (window.innerWidth <= 640) {
+    return {
+      width: '100vw',
+      height: '100vh',
+      maxHeight: '100vh',
+      margin: '0',
+      padding: '0',
+      transform: 'none',
+      borderRadius: '0',
+      zIndex: '9999',
+    };
+  }
+  // Default desktop styles
+  return {
+    width: '500px',
+    maxHeight: '80vh',
+    overflow: 'auto',
+    borderRadius: '1rem',
+  };
+});
 </script>
 
 <template>
-  <Dialog v-model:visible="showDialog" modal :header="dialogTitle()" :style="{ width: '25rem' }" @hide="close()">
-    <div v-if="dialogMessage()" class="mb-3 text-sm text-color-secondary">
-      {{ dialogMessage() }}
-    </div>
-
-    <div class="flex justify-end gap-2">
-      <Button type="button" label="Close" severity="secondary" @click="close()" />
+  <Dialog
+    v-model:visible="showDialog"
+    :draggable="false"
+    :dismissableMask="true"
+    :blockScroll="true"
+    modal
+    :header="dialogTitle()"
+    class="p-dialog-custom entity-modal"
+    :breakpoints="{ '640px': '100vw' }"
+    :style="dialogStyle"
+    @hide="close()">
+    <div class="modal-body">
+      <p><strong>Name:</strong> {{ dialogMessage() }}</p>
     </div>
   </Dialog>
 </template>
+<style scoped>
+
+</style>
