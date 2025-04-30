@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { ref, computed, watch } from 'vue';
-  import { prop } from 'vue-class-component';
+
   const props = defineProps({
     value: {
       type: Number,
@@ -23,6 +23,7 @@
       default: 'horizontal',
     },
   });
+
   const emit = defineEmits<{
     (e: 'update', value: number): void;
   }>();
@@ -34,8 +35,10 @@
     const percent = ((value.value - props.min) / (props.max - props.min)) * 100;
     const color = props.disabled ? '#ccc' : '#ffc107';
     const bgColor = props.disabled ? '#ccc' : '#fff2cc';
+    const direction = props.direction === 'vertical' ? 'top' : 'right';
+
     return {
-      background: `linear-gradient(to right, ${color} ${percent}%, ${bgColor} ${percent}%)`,
+      background: `linear-gradient(to ${direction}, ${color} ${percent}%, ${bgColor} ${percent}%)`,
       opacity: props.disabled ? 0.5 : 1,
     };
   });
@@ -61,26 +64,20 @@
       }
     }
   );
+
   function updateValue(event: any): void {
     const newValue = parseInt(event.target.value);
     emit('update', newValue);
   }
 </script>
-<!-- :style="{
-  display: 'flex',
- 
-  width: props.direction === 'horizontal' ? '200px' : '40px',
-  height: props.direction === 'horizontal' ? '40px' : '200px',
-  transform: props.direction === 'vertical' ? 'rotate(-90deg)' : '',
-}" 
 
-
-   :style="{
-        width: props.direction === 'horizontal' ? '100%' : '200px',
-        height: '6px',
-      }"-->
 <template>
-  <div class="slider-wrapper">
+  <div
+    :class="[
+      'slider-wrapper',
+      props.direction === 'vertical' ? 'vertical' : 'horizontal',
+      { disabled: props.disabled },
+    ]">
     <div class="track-background" :style="trackFill"></div>
     <input
       type="range"
@@ -99,9 +96,12 @@
   .slider-wrapper {
     position: relative;
     height: 46px;
-    overflow: hidden;
-    opacity: 1 !important;
-    transition: none !important;
+    overflow: visible;
+  }
+
+  .slider-wrapper.vertical {
+    height: 200px;
+    width: 70px;
   }
 
   .track-background {
@@ -114,7 +114,7 @@
     pointer-events: none;
   }
 
-  /* input layer */
+  /* Input layer */
   .slider {
     appearance: none;
     width: 100%;
@@ -126,19 +126,25 @@
     outline: none;
   }
 
-  /* Webkit thumb */
-  /* .slider::-webkit-slider-thumb {
-  appearance: none;
-  width: 32px;
-  height: 6px;
-  background: white;
-  border-radius: 3px;
-  margin-top: calc((42px - 6px) / 2);
-  cursor: pointer;
-  position: relative;
-  z-index: 2;
-  box-shadow: 0 0 1px rgba(0, 0, 0, 0.2);
-} */
+  .vertical .slider {
+    transform: rotate(-90deg) translateY(-65px);
+    transform-origin: center;
+    width: 200px;
+    position: relative;
+  }
+
+  /* Webkit thumb styling */
+  .slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 6px;
+    height: 30px;
+    background: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transform: translateX(-10px); /* Shift left by 2 pixels */
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+  }
 
   /* Firefox track & thumb */
   .slider::-moz-range-track {
@@ -154,9 +160,9 @@
     border: none;
     border-radius: 3px;
     cursor: pointer;
-    transform: translateX(-10px);
-    /* Shift left by 2 pixels */
+    transform: translateX(-10px); /* Shift left by 2 pixels */
   }
+
   .slider:disabled {
     opacity: 0.6;
   }

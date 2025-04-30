@@ -127,4 +127,9 @@
     align-items: center;
     width: 100%;
   }
+  .modal-body{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 </style>
