@@ -123,6 +123,8 @@
       name: expose.value.name,
     };
     console.log('handleCardClick ', expose.value.name);
+
+    ///send title name to include dashboardgroupName + entity name
     emitOpenEntityViewDialog(() => {
       console.log('dialog closed');
     }, eventProps);
