@@ -18,6 +18,10 @@
       type: Boolean,
       default: false,
     },
+    direction: {
+      type: String as () => 'horizontal' | 'vertical',
+      default: 'horizontal',
+    },
   });
   const emit = defineEmits<{
     (e: 'update', value: number): void;
@@ -62,7 +66,19 @@
     emit('update', newValue);
   }
 </script>
+<!-- :style="{
+  display: 'flex',
+ 
+  width: props.direction === 'horizontal' ? '200px' : '40px',
+  height: props.direction === 'horizontal' ? '40px' : '200px',
+  transform: props.direction === 'vertical' ? 'rotate(-90deg)' : '',
+}" 
 
+
+   :style="{
+        width: props.direction === 'horizontal' ? '100%' : '200px',
+        height: '6px',
+      }"-->
 <template>
   <div class="slider-wrapper">
     <div class="track-background" :style="trackFill"></div>
@@ -82,7 +98,7 @@
 <style scoped>
   .slider-wrapper {
     position: relative;
-    height: 46px;    
+    height: 46px;
     overflow: hidden;
     opacity: 1 !important;
     transition: none !important;

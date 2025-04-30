@@ -42,6 +42,7 @@ export type BaseDialogProps = {
 export type EntityViewDialogProps = {
   id: string;
   name: string;
+  title?: string;
 };
 
 export type ExposeSelectionDialogProps = {

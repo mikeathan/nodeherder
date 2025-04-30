@@ -14,6 +14,7 @@
 
   const props = defineProps<{
     show: boolean;
+    title?: string;
     id: string;
     name: string;
   }>();
@@ -61,8 +62,7 @@
     showDialog.value = false;
   }
 
-  const dialogTitle = () => 'Title';
-  const dialogMessage = () => 'Message';
+  const dialogTitle = () => props.title ?? expose.value.name;
   const dialogStyle = computed(() => {
     // Mobile screen styling
     if (window.innerWidth <= 640) {
@@ -99,42 +99,28 @@
     :blockScroll="true"
     :closable="false"
     modal
-    :header="dialogTitle()"
     class="p-dialog-custom entity-modal"
     :breakpoints="{ '640px': '100vw' }"
     :style="dialogStyle"
     @hide="close()">
     <template #header>
       <div class="dialog-header">
-        <span>My Custom Header</span>
+        <span>{{ dialogTitle() }}</span>
         <Button icon="pi pi-times" class="p-button-text" @click="close()" />
       </div>
     </template>
     <div class="modal-body">
-      <p><strong>Name:</strong> {{ dialogMessage() }}</p>
-
-      <div v-if="hasNumericFeatures() && !isReadOnly()" class="rotate-wrapper ">
+      <div v-if="hasNumericFeatures() && !isReadOnly()">
         <Brightness
+          direction="vertical"
           :value="expose.data"
-        
           :min="getExposeAttribute(expose, 'min')"
-          :max="getExposeAttribute(expose, 'max')"
-     />
+          :max="getExposeAttribute(expose, 'max')" />
       </div>
     </div>
   </Dialog>
 </template>
 <style scoped>
-
-.rotate-wrapper {
-  display: inline-block;
-  transform: rotate(90deg);
-  transform-origin: center center;
-  width: fit-content;
-  height: fit-content;
-  overflow: visible;
-}
-
   .dialog-header {
     display: flex;
     justify-content: space-between;

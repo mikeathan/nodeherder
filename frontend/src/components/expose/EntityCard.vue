@@ -121,6 +121,7 @@
     const eventProps = {
       id: props.id,
       name: expose.value.name,
+      title: getSensorName(expose.value.name),
     };
     console.log('handleCardClick ', expose.value.name);
 
