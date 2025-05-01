@@ -1,74 +1,82 @@
 <script setup lang="ts">
-  import { ref, computed, watch } from 'vue';
+    import { ref, computed, watch } from 'vue';
 
-  const props = defineProps({
-    value: {
-      type: Number,
-      default: 50,
-    },
-    min: {
-      type: Number,
-      default: 0,
-    },
-    max: {
-      type: Number,
-      default: 100,
-    },
-    disabled: {
-      type: Boolean,
-      default: false,
-    },
-    direction: {
-      type: String as () => 'horizontal' | 'vertical',
-      default: 'horizontal',
-    },
-  });
+    const props = defineProps({
+      value: {
+        type: Number,
+        default: 50,
+      },
+      min: {
+        type: Number,
+        default: 0,
+      },
+      max: {
+        type: Number,
+        default: 100,
+      },
+      disabled: {
+        type: Boolean,
+        default: false,
+      },
+      direction: {
+        type: String as () => 'horizontal' | 'vertical',
+        default: 'horizontal',
+      },
+    });
 
-  const emit = defineEmits<{
-    (e: 'update', value: number): void;
-  }>();
+    const emit = defineEmits<{
+      (e: 'update', value: number): void;
+    }>();
 
-  const value = ref(props.value);
-  const lastKnownValue = ref(props.value);
+    const value = ref(props.value);
+    const lastKnownValue = ref(props.value);
 
-  const trackFill = computed(() => {
-    const percent = ((value.value - props.min) / (props.max - props.min)) * 100;
-    const color = props.disabled ? '#ccc' : '#ffc107';
-    const bgColor = props.disabled ? '#ccc' : '#fff2cc';
-    const direction = props.direction === 'vertical' ? 'top' : 'right';
+    const trackFill = computed(() => {
+      const percent = ((value.value - props.min) / (props.max - props.min)) * 100;
+      const color = props.disabled ? '#ccc' : '#ffc107';
+      const bgColor = props.disabled ? '#ccc' : '#fff2cc';
+      const direction = props.direction === 'vertical' ? 'top' : 'right';
 
-    return {
-      background: `linear-gradient(to ${direction}, ${color} ${percent}%, ${bgColor} ${percent}%)`,
-      opacity: props.disabled ? 0.5 : 1,
-    };
-  });
+      return {
+        background: `linear-gradient(to ${direction}, ${color} ${percent}%, ${bgColor} ${percent}%)`,
+        opacity: props.disabled ? 0.5 : 1,
+      };
+    });
 
-  watch(
-    () => props.value,
-    (newVal) => {
-      if (!props.disabled) {
-        value.value = newVal;
-        lastKnownValue.value = newVal;
+    watch(
+      () => props.value,
+      (newVal) => {
+        if (!props.disabled) {
+          value.value = newVal;
+          lastKnownValue.value = newVal;
+        }
       }
-    }
-  );
+    );
 
-  watch(
-    () => props.disabled,
-    (isDisabled) => {
-      if (isDisabled) {
-        lastKnownValue.value = value.value;
-        value.value = props.min;
-      } else {
-        value.value = lastKnownValue.value;
+    watch(
+      () => props.disabled,
+      (isDisabled) => {
+        if (isDisabled) {
+          lastKnownValue.value = value.value;
+          value.value = props.min;
+        } else {
+          value.value = lastKnownValue.value;
+        }
       }
-    }
-  );
+    );
 
-  function updateValue(event: any): void {
-    const newValue = parseInt(event.target.value);
-    emit('update', newValue);
-  }
+    function updateValue(event: any): void {
+      const newValue = parseInt(event.target.value);
+      emit('update', newValue);
+    }
+
+    todo sth similar to get the right classanme
+
+    const trackClasses = computed(() => ({
+    'track-background': true,
+    'vertical': props.direction === 'vertical',
+    'horizontal': props.direction === 'horizontal',
+  }));
 </script>
 
 <template>
@@ -78,7 +86,9 @@
       props.direction === 'vertical' ? 'vertical' : 'horizontal',
       { disabled: props.disabled },
     ]">
-    <div class="track-background" :style="trackFill"></div>
+    <div
+      :class="['track-background', props.direction === 'vertical' ? 'vertical' : 'horizontal']"
+      :style="trackFill"></div>
     <input
       type="range"
       :min="props.min"
@@ -100,8 +110,8 @@
   }
 
   .slider-wrapper.vertical {
-    height: 200px;
-    width: 70px;
+    height: 320px;
+    width: 130px;
   }
 
   .track-background {
@@ -110,10 +120,15 @@
     left: 0;
     right: 0;
     bottom: 0;
-    border-radius: 12px;
     pointer-events: none;
   }
 
+  .track-background.vertical {
+    border-radius: 36px;
+  }
+  .track-background.horizontal {
+    border-radius: 12px;
+  }
   /* Input layer */
   .slider {
     appearance: none;
@@ -127,10 +142,33 @@
   }
 
   .vertical .slider {
-    transform: rotate(-90deg) translateY(-65px);
-    transform-origin: center;
-    width: 200px;
-    position: relative;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--wrapper-height, 320px);
+    height: var(--wrapper-width, 130px);
+    margin: 0;
+    transform-origin: center center;
+    /* Center precisely, then rotate */
+    transform: translate(-50%, -50%) rotate(-90deg);
+  }
+
+  .horizontal .slider::-webkit-slider-thumb {
+    margin-top: -5px;
+    transform: none;
+  }
+  .horizontal .slider::-moz-range-thumb {
+    transform: none;
+  }
+
+  .vertical .slider::-webkit-slider-thumb {
+    margin-top: 0;
+    height: 60px;
+  }
+
+  .vertical .slider::-moz-range-thumb {
+    margin-top: 0;
+    height: 60px;
   }
 
   /* Webkit thumb styling */
@@ -139,11 +177,10 @@
     width: 6px;
     height: 30px;
     background: white;
-    border: none;
-    border-radius: 3px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
     cursor: pointer;
-    transform: translateX(-10px); /* Shift left by 2 pixels */
-    box-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
+    transform: translateX(-2px);
   }
 
   /* Firefox track & thumb */
@@ -154,13 +191,14 @@
   }
 
   .slider::-moz-range-thumb {
+    appearance: none;
     width: 6px;
     height: 30px;
     background: white;
-    border: none;
-    border-radius: 3px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
     cursor: pointer;
-    transform: translateX(-10px); /* Shift left by 2 pixels */
+    transform: translateX(-2px);
   }
 
   .slider:disabled {
