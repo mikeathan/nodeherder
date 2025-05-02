@@ -48,6 +48,12 @@
     return null;
   });
 
+  function isToggleable(): boolean {
+    return (
+      (expose.value.type == ExposeTypes.Binary && expose.value.access_mode != ExposeAccessModes.Read) ||
+      stateExpose.value != null
+    );
+  }
   const expose = computed(() => {
     if (!device.value) return {} as Expose;
 
@@ -110,16 +116,15 @@
       </div>
     </template>
     <div class="modal-body">
-
-      <!-- // pi-power-off -->
       <div v-if="hasNumericFeatures() && !isReadOnly()">
         <Brightness
           direction="vertical"
           :value="expose.data"
           :min="getExposeAttribute(expose, 'min')"
           :max="getExposeAttribute(expose, 'max')" />
-
-          we need toggle button
+        <div v-if="isToggleable()">
+          <Button icon="pi pi-power-off " size="large" variant="text" rounded class="toggle-button" />
+        </div>
       </div>
     </div>
   </Dialog>
@@ -131,7 +136,12 @@
     align-items: center;
     width: 100%;
   }
-  .modal-body{
+  .modal-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .toggle-button {
     display: flex;
     align-items: center;
     justify-content: center;
