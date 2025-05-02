@@ -1,94 +1,85 @@
 <script setup lang="ts">
-    import { ref, computed, watch } from 'vue';
+  import { ref, computed, watch } from 'vue';
 
-    const props = defineProps({
-      value: {
-        type: Number,
-        default: 50,
-      },
-      min: {
-        type: Number,
-        default: 0,
-      },
-      max: {
-        type: Number,
-        default: 100,
-      },
-      disabled: {
-        type: Boolean,
-        default: false,
-      },
-      direction: {
-        type: String as () => 'horizontal' | 'vertical',
-        default: 'horizontal',
-      },
-    });
+  const props = defineProps({
+    value: {
+      type: Number,
+      default: 50,
+    },
+    min: {
+      type: Number,
+      default: 0,
+    },
+    max: {
+      type: Number,
+      default: 100,
+    },
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
+    direction: {
+      type: String as () => 'horizontal' | 'vertical',
+      default: 'horizontal',
+    },
+  });
 
-    const emit = defineEmits<{
-      (e: 'update', value: number): void;
-    }>();
+  const emit = defineEmits<{
+    (e: 'update', value: number): void;
+  }>();
 
-    const value = ref(props.value);
-    const lastKnownValue = ref(props.value);
+  const value = ref(props.value);
+  const lastKnownValue = ref(props.value);
 
-    const trackFill = computed(() => {
-      const percent = ((value.value - props.min) / (props.max - props.min)) * 100;
-      const color = props.disabled ? '#ccc' : '#ffc107';
-      const bgColor = props.disabled ? '#ccc' : '#fff2cc';
-      const direction = props.direction === 'vertical' ? 'top' : 'right';
+  const trackFill = computed(() => {
+    const percent = ((value.value - props.min) / (props.max - props.min)) * 100;
+    const color = props.disabled ? '#ccc' : '#ffc107';
+    const bgColor = props.disabled ? '#ccc' : '#fff2cc';
+    const direction = props.direction === 'vertical' ? 'top' : 'right';
 
-      return {
-        background: `linear-gradient(to ${direction}, ${color} ${percent}%, ${bgColor} ${percent}%)`,
-        opacity: props.disabled ? 0.5 : 1,
-      };
-    });
+    return {
+      background: `linear-gradient(to ${direction}, ${color} ${percent}%, ${bgColor} ${percent}%)`,
+      opacity: props.disabled ? 0.5 : 1,
+    };
+  });
 
-    watch(
-      () => props.value,
-      (newVal) => {
-        if (!props.disabled) {
-          value.value = newVal;
-          lastKnownValue.value = newVal;
-        }
+  watch(
+    () => props.value,
+    (newVal) => {
+      if (!props.disabled) {
+        value.value = newVal;
+        lastKnownValue.value = newVal;
       }
-    );
-
-    watch(
-      () => props.disabled,
-      (isDisabled) => {
-        if (isDisabled) {
-          lastKnownValue.value = value.value;
-          value.value = props.min;
-        } else {
-          value.value = lastKnownValue.value;
-        }
-      }
-    );
-
-    function updateValue(event: any): void {
-      const newValue = parseInt(event.target.value);
-      emit('update', newValue);
     }
+  );
 
-    todo sth similar to get the right classanme
+  watch(
+    () => props.disabled,
+    (isDisabled) => {
+      if (isDisabled) {
+        lastKnownValue.value = value.value;
+        value.value = props.min;
+      } else {
+        value.value = lastKnownValue.value;
+      }
+    }
+  );
 
-    const trackClasses = computed(() => ({
-    'track-background': true,
-    'vertical': props.direction === 'vertical',
-    'horizontal': props.direction === 'horizontal',
-  }));
+  function updateValue(event: any): void {
+    const newValue = parseInt(event.target.value);
+    emit('update', newValue);
+  }
+  
+  const generateDirectionalClass = (baseClass: string) => [
+    baseClass,
+    props.direction === 'vertical' ? 'vertical' : 'horizontal',
+    { disabled: props.disabled },
+  ];
 </script>
 
 <template>
-  <div
-    :class="[
-      'slider-wrapper',
-      props.direction === 'vertical' ? 'vertical' : 'horizontal',
-      { disabled: props.disabled },
-    ]">
-    <div
-      :class="['track-background', props.direction === 'vertical' ? 'vertical' : 'horizontal']"
-      :style="trackFill"></div>
+  <div :class="generateDirectionalClass('slider-wrapper')">
+    <div :class="generateDirectionalClass('track-background')" :style="trackFill"></div>
     <input
       type="range"
       :min="props.min"

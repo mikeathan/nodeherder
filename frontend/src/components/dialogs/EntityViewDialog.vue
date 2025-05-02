@@ -110,12 +110,16 @@
       </div>
     </template>
     <div class="modal-body">
+
+      <!-- // pi-power-off -->
       <div v-if="hasNumericFeatures() && !isReadOnly()">
         <Brightness
           direction="vertical"
           :value="expose.data"
           :min="getExposeAttribute(expose, 'min')"
           :max="getExposeAttribute(expose, 'max')" />
+
+          we need toggle button
       </div>
     </div>
   </Dialog>
