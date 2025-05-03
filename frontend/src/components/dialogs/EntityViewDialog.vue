@@ -122,8 +122,14 @@
           :value="expose.data"
           :min="getExposeAttribute(expose, 'min')"
           :max="getExposeAttribute(expose, 'max')" />
-        <div v-if="isToggleable()">
-          <Button icon="pi pi-power-off " size="large" variant="text" rounded class="toggle-button" />
+        <div v-if="isToggleable()" class="toggle-wrapper">
+          <Button
+            style="font-size: 1.5rem"
+            variant="text"
+            rounded
+            >
+            <i class="pi pi-power-off toggle-button" style="font-size: 1.5rem"></i>
+          </Button>
         </div>
       </div>
     </div>
@@ -141,9 +147,11 @@
     align-items: center;
     justify-content: center;
   }
-  .toggle-button {
+  .toggle-wrapper {
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
+    margin-top: 0.5rem;
+    width: 100%;
   }
 </style>
