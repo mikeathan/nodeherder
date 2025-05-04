@@ -123,12 +123,8 @@
           :min="getExposeAttribute(expose, 'min')"
           :max="getExposeAttribute(expose, 'max')" />
         <div v-if="isToggleable()" class="toggle-wrapper">
-          <Button
-            style="font-size: 1.5rem"
-            variant="text"
-            rounded
-            >
-            <i class="pi pi-power-off toggle-button" style="font-size: 1.5rem"></i>
+          <Button class="toggle-button">
+            <i class="pi pi-power-off" style="font-size: 1.3rem" />
           </Button>
         </div>
       </div>
@@ -143,15 +139,37 @@
     width: 100%;
   }
   .modal-body {
+    flex-grow: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
   }
+
+  .toggle-button {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50% !important;
+    border-color: #222222;
+    background-color: #222222;
+    padding: 0;
+  }
+
+  .toggle-button.p-button:hover {
+    box-shadow: none !important;
+    background-color: inherit !important;
+    border-color: inherit !important;
+  }
+
+  .toggle-button i {
+    color: white;
+  }
+
   .toggle-wrapper {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-top: 0.5rem;
+    margin-top: 1.5rem;
     width: 100%;
   }
 </style>
