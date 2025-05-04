@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, watchEffect, computed } from 'vue';
+  import { ref, watchEffect, computed, onMounted, onUnmounted } from 'vue';
   import { store } from '../../store/index';
   import { Device, Expose } from '@/types/device';
   import Selection from '@/components/input/Selection.vue';
@@ -48,6 +48,27 @@
     return null;
   });
 
+  const isMobile = ref(false);
+
+  const checkMobile = () => {
+    if (typeof window !== 'undefined') {
+      isMobile.value = window.innerWidth <= 640;
+    } else {
+      isMobile.value = false; // Default for SSR or environments without window
+    }
+  };
+
+  onMounted(() => {
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+  });
+
+  onUnmounted(() => {
+    window.removeEventListener('resize', checkMobile);
+  });
+
+  watchEffect(() => (showDialog.value = props.show));
+
   function isToggleable(): boolean {
     return (
       (expose.value.type == ExposeTypes.Binary && expose.value.access_mode != ExposeAccessModes.Read) ||
@@ -70,25 +91,30 @@
 
   const dialogTitle = () => props.title ?? expose.value.name;
   const dialogStyle = computed(() => {
-    // Mobile screen styling
-    if (window.innerWidth <= 640) {
+    if (isMobile.value) {
       return {
         width: '100vw',
-        height: '100vh',
-        maxHeight: '100vh',
+        height: '100dvh', // Use dynamic viewport height for mobile
+        maxHeight: '100dvh', // Match height
         margin: '0',
-        padding: '0',
         transform: 'none',
         borderRadius: '0',
         zIndex: '9999',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
       };
     }
-    // Default desktop styles
+    // Default desktop styles (remain the same)
     return {
       width: '30vw',
+      minWidth: '300px',
       height: '60vh',
+      minHeight: '300px',
       borderRadius: '1rem',
-      overflow: 'auto',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
     };
   });
 
@@ -116,16 +142,18 @@
       </div>
     </template>
     <div class="modal-body">
-      <div v-if="hasNumericFeatures() && !isReadOnly()">
-        <Brightness
-          direction="vertical"
-          :value="expose.data"
-          :min="getExposeAttribute(expose, 'min')"
-          :max="getExposeAttribute(expose, 'max')" />
-        <div v-if="isToggleable()" class="toggle-wrapper">
-          <Button class="toggle-button">
-            <i class="pi pi-power-off" style="font-size: 1.3rem" />
-          </Button>
+      <div class="content-aligner">
+        <div v-if="hasNumericFeatures() && !isReadOnly()">
+          <Brightness
+            direction="vertical"
+            :value="expose.data"
+            :min="getExposeAttribute(expose, 'min')"
+            :max="getExposeAttribute(expose, 'max')" />
+          <div v-if="isToggleable()" class="toggle-wrapper">
+            <Button class="toggle-button">
+              <i class="pi pi-power-off" style="font-size: 1.3rem" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -137,13 +165,29 @@
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid #e9ecef;
+    flex-shrink: 0;
   }
   .modal-body {
-    flex-grow: 1;
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    padding: 1rem;
+    box-sizing: border-box;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .content-aligner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin-top: auto; /* THIS is the key change to push it down */
+    padding-bottom: 1rem; /* Add some padding at the bottom of the content */
   }
 
   .toggle-button {
