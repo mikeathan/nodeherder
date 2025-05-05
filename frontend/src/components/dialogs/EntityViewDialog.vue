@@ -158,6 +158,18 @@
           :value="expose.data"
           :min="getExposeAttribute(expose, 'min')"
           :max="getExposeAttribute(expose, 'max')" />
+          
+        <div class="button-panel">
+          <button class="btn">
+            <span class="icon">⏻</span>
+          </button>
+          <button class="btn active">
+            <span class="icon">⚙️</span>
+          </button>
+          <button class="btn">
+            <span class="icon">🌇</span>
+          </button>
+        </div>
         <div v-if="isToggleable()" class="toggle-wrapper">
           <Button class="toggle-button">
             <i class="pi pi-power-off" />
@@ -168,6 +180,38 @@
   </Dialog>
 </template>
 <style scoped>
+  .button-panel {
+    display: flex;
+    background: #222222 ;
+    padding: 6px 10px;
+    border-radius: 999px;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: background 0.2s;
+  }
+
+  .btn:hover {
+    background: #e0e0e0;
+  }
+
+  .btn.active {
+    background: #1e1e1e;
+    color: white;
+  }
+
   .dialog-header {
     display: flex;
     justify-content: space-between;
