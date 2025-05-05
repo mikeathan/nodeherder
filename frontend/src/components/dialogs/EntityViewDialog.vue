@@ -75,12 +75,17 @@
 
   watchEffect(() => (showDialog.value = props.show));
 
-  function isToggleable(): boolean {
+  function hasToggle(): boolean {
     return (
       (expose.value.type == ExposeTypes.Binary && expose.value.access_mode != ExposeAccessModes.Read) ||
       stateExpose.value != null
     );
   }
+
+  TODO: get a list of items that can be added in the button panel
+  // function hasTest(): boolean {
+  //   return expose.value.type == ExposeTypes.Test;
+  // }
   const expose = computed(() => {
     if (!device.value) return {} as Expose;
 
@@ -146,35 +151,22 @@
         <Button icon="pi pi-times" class="p-button-text" @click="close()" />
       </div>
     </template>
-    <div class="modal-body">
-      <div class="modal-content-header">
-        <div class="modal-value">{{ getFormattedSensorValue(expose) }}</div>
-        <LastSeen :timestamp="lastSeen" class="modal-last-seen" />
-      </div>
+    <div class="modal-content-header">
+      <div class="modal-value">{{ getFormattedSensorValue(expose) }}</div>
+      <LastSeen :timestamp="lastSeen" class="modal-last-seen" />
+    </div>
 
-      <div v-if="hasNumericFeatures() && !isReadOnly()">
-        <Brightness
-          direction="vertical"
-          :value="expose.data"
-          :min="getExposeAttribute(expose, 'min')"
-          :max="getExposeAttribute(expose, 'max')" />
-          
-        <div class="button-panel">
-          <button class="btn">
-            <span class="icon">⏻</span>
-          </button>
-          <button class="btn active">
-            <span class="icon">⚙️</span>
-          </button>
-          <button class="btn">
-            <span class="icon">🌇</span>
-          </button>
-        </div>
-        <div v-if="isToggleable()" class="toggle-wrapper">
-          <Button class="toggle-button">
-            <i class="pi pi-power-off" />
-          </Button>
-        </div>
+    <div v-if="hasNumericFeatures() && !isReadOnly()" class="modal-content">
+      <Brightness
+        direction="vertical"
+        :value="expose.data"
+        :min="getExposeAttribute(expose, 'min')"
+        :max="getExposeAttribute(expose, 'max')" />
+
+      <div v-if="hasToggle()" class="button-panel">
+        <Button class="toggle-button">
+          <i class="pi pi-power-off" />
+        </Button>
       </div>
     </div>
   </Dialog>
@@ -182,34 +174,14 @@
 <style scoped>
   .button-panel {
     display: flex;
-    background: #222222 ;
-    padding: 6px 10px;
+    background: #222222;
     border-radius: 999px;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: white;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
     justify-content: center;
-    font-size: 16px;
-    transition: background 0.2s;
-  }
-
-  .btn:hover {
-    background: #e0e0e0;
-  }
-
-  .btn.active {
-    background: #1e1e1e;
-    color: white;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    align-self: center;
+    width: fit-content;
   }
 
   .dialog-header {
@@ -220,7 +192,7 @@
     user-select: none;
   }
 
-  .modal-body {
+  .modal-content {
     display: flex;
     flex-direction: column;
     align-items: center;
