@@ -218,7 +218,7 @@ export function getFormattedSensorValue(expose: Expose): string {
     return '';
   }
   const unit = expose.unit ?? getSensorUnit(expose.name);
-  return `${getSensorValue(expose.data)} ${unit}`;
+  return `${getSensorValue(expose.data)}${unit}`;
 }
 
 export function getSensorUnit(sensor: string): string {
