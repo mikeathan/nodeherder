@@ -12,7 +12,9 @@
     getExposes,
     toggleExposeBinaryProperty,
   } from '@/contracts/device';
-  import { stateDevicesFilter } from '@/configs/automation/device.config';
+  import { stateDevicesFilter, writableExposesDeviceFilter } from '@/configs/automation/device.config';
+  import { getEntityIcon } from '@/modules/formatters/entity.formatter';
+  import Icon from '../controls/Icon.vue';
 
   const props = defineProps<{
     show: boolean;
@@ -82,10 +84,14 @@
     );
   }
 
-  TODO: get a list of items that can be added in the button panel
-  // function hasTest(): boolean {
-  //   return expose.value.type == ExposeTypes.Test;
-  // }
+  const controlExposes = computed(() => {
+    const device = store.getters['hub/findDevice'](props.id) as Device;
+    if (!device) return [];
+
+    const exposeNameList = getExposes(device, writableExposesDeviceFilter());
+    return exposeNameList.map((exposeName) => device.exposes[exposeName] as Expose);
+  });
+
   const expose = computed(() => {
     if (!device.value) return {} as Expose;
 
@@ -163,6 +169,11 @@
         :min="getExposeAttribute(expose, 'min')"
         :max="getExposeAttribute(expose, 'max')" />
 
+      <div class="button-panel">
+        <template v-for="expose in controlExposes" :key="expose.name">
+          <Icon :icon="getEntityIcon(expose.name, expose.data)" background="white" :size="32" :circleRadius="24"/>
+        </template>
+      </div>
       <div v-if="hasToggle()" class="button-panel">
         <Button class="toggle-button">
           <i class="pi pi-power-off" />
@@ -226,7 +237,7 @@
   .toggle-button {
     width: 3rem;
     height: 3rem;
-    border-radius: 50% !important;
+    border-radius: 50%;
     border-color: #222222;
     background-color: #222222;
     transition: background-color 0.3s ease, border-color 0.3s ease;

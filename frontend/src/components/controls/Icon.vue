@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { PropType, ref, watch } from 'vue';
   import { IconProps } from '../../types/icon.type';
+  import { prop } from 'vue-class-component';
 
   const props = defineProps({
     icon: {
@@ -14,8 +15,8 @@
       required: false,
     },
     size: {
-      type: String,
-      default: '20px',
+      type: Number,
+      default: '20',
     },
 
     background: {
@@ -25,6 +26,10 @@
     clickable: {
       type: Boolean,
       default: false,
+    },
+    circleRadius: {
+      type: Number,
+      default: 12,
     },
   });
 
@@ -62,7 +67,7 @@
     <title>{{ props.icon.tooltip }}</title>
 
     <circle cx="12" cy="12" r="12" :fill="background" v-if="clickable" />
-    
+
     <g :transform="`rotate(${rotationAngle} 12 12) scale(0.8)`">
       <path :d="props.icon.name" :fill="props.icon.color || 'black'" transform="translate(2.4, 2.4)" />
     </g>

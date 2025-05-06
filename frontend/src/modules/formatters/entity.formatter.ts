@@ -46,6 +46,7 @@ import {
   mdiAlarmLight,
   mdiAlarmLightOff,
   mdiCrosshairsQuestion,
+  mdiBrightness6,
 } from '@mdi/js';
 
 const lampColor = '#ffc107';
@@ -64,7 +65,7 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
   co: { name: mdiMoleculeCo, color: 'white' },
   pm25: { name: mdiFactory, color: 'white' },
   voltage: { name: mdiLightningBolt, color: 'orange' },
-  state: { name: mdiStarHalfFull, color: 'white' },
+  state: { name: mdiPower, color: 'white' },
   brightness: {
     name: mdiCeilingLightMultiple,
     color: lampColor,

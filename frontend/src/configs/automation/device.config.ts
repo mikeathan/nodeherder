@@ -10,13 +10,35 @@ export function featureDevicesFilter(): DeviceFilter {
 
 export function stateDevicesFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
-    return (
-      expose.type == ExposeTypes.Binary &&
-      expose.access_mode != ExposeAccessModes.Read &&
-      expose.category == ExposeCategories.Measurement
-    );
+    return isStateExpose(expose);
   };
 }
+
+export function writableExposesDeviceFilter(): DeviceFilter {
+  return (device: Device, expose: Expose): boolean => {
+    return isWritablePresetExpose(expose) || isStateExpose(expose) || isWritableEnumExpose(expose);
+  };
+}
+
+export const isStateExpose = (expose: Expose): boolean => {
+  return (
+    expose.type == ExposeTypes.Binary &&
+    expose.access_mode != ExposeAccessModes.Read &&
+    expose.category == ExposeCategories.Measurement
+  );
+};
+
+export const isWritableEnumExpose = (expose: Expose): boolean => {
+  return (
+    expose.type == ExposeTypes.Enum &&
+    expose.access_mode != ExposeAccessModes.Read &&
+    expose.category == ExposeCategories.Measurement
+  );
+};
+
+export const isWritablePresetExpose = (expose: Expose): boolean => {
+  return isPresetExpose(expose) && expose.category == ExposeCategories.Measurement;
+};
 
 export const isPresetExpose = (expose: Expose): boolean => {
   if (!expose.values) {
