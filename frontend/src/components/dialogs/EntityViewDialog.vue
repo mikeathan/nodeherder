@@ -171,7 +171,8 @@
 
       <div class="button-panel">
         <template v-for="expose in controlExposes" :key="expose.name">
-          <Icon :icon="getEntityIcon(expose.name, expose.data)" background="white" :size="32" :circleRadius="24"/>
+          we need a onclikcbackground prop or we calculate form background color
+          <Icon :icon="getEntityIcon(expose.name, expose.data)" clickable background="#222222" :size="38"  />
         </template>
       </div>
       <div v-if="hasToggle()" class="button-panel">

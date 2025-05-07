@@ -149,7 +149,13 @@
     }">
     <template #title>
       <div class="entity-header">
-        <Icon :icon="iconProps" :size="38" background="#363636" :clickable="isToggleable()" @click="handleIconClick" />
+        <Icon
+          :icon="iconProps"
+          :size="38"
+          :circle-radius="18"
+          background="#363636"
+          :clickable="isToggleable()"
+          @click="handleIconClick" />
         <div class="entity-labels">
           <div class="entity-title">{{ getSensorName(expose.name) }}</div>
           <div class="entity-value">{{ getFormattedSensorValue(expose) }}</div>
