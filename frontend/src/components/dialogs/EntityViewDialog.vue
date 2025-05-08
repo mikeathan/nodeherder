@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, watchEffect, computed, onMounted, onUnmounted } from 'vue';
+  import { ref, watchEffect, computed, onMounted, onUnmounted, h } from 'vue';
   import LastSeen from '../device/LastSeen.vue';
 
   import { store } from '../../store/index';
@@ -40,22 +40,6 @@
     return device.value ? device.value.last_seen : '';
   });
 
-  const stateExpose = computed(() => {
-    const device = store.getters['hub/findDevice'](props.id) as Device;
-    if (!device) return null;
-    var stateExposes = getExposes(device, stateDevicesFilter());
-
-    // for now we only support one state expose
-    if (stateExposes.length > 0) {
-      if (stateExposes.length > 1) {
-        console.error('More than one state expose found: ', stateExposes);
-      }
-      return device.exposes[stateExposes[0]] as Expose;
-    }
-
-    return null;
-  });
-
   const isMobile = ref(false);
 
   const checkMobile = () => {
@@ -77,13 +61,11 @@
 
   watchEffect(() => (showDialog.value = props.show));
 
-  function hasToggle(): boolean {
-    return (
-      (expose.value.type == ExposeTypes.Binary && expose.value.access_mode != ExposeAccessModes.Read) ||
-      stateExpose.value != null
-    );
-  }
-
+  // todo get Effects from device
+  // maybe effects with color temp are at the buttom ofthe button panel?
+  // or color temp is shown in brigthness slider with different range and background color of orange
+  // and a side info when dragged
+  //also maybe we dont show brigthness in the entity card and we only show it in the modal
   const controlExposes = computed(() => {
     const device = store.getters['hub/findDevice'](props.id) as Device;
     if (!device) return [];
@@ -97,8 +79,33 @@
 
     return device.value.exposes[props.name] as Expose;
   });
+
   function isReadOnly(): boolean {
     return expose.value.access_mode == ExposeAccessModes.Read;
+  }
+
+  function isEnabled() {
+    if (device.value?.availability == 'offline') {
+      return false;
+    }
+
+    if (expose.value.type == ExposeTypes.Numeric && expose.value.data == 0) {
+      return false;
+    }
+
+    if (expose.value.type == ExposeTypes.Binary) {
+      return getExposeBinaryProperty(expose.value);
+    }
+
+    if (controlExposes.value) {
+      // temporary fix for state control
+      return controlExposes.value.some((expose) => {
+        if (expose.type == ExposeTypes.Binary) {
+          return getExposeBinaryProperty(expose);
+        }
+      });
+    }
+    return true;
   }
 
   function close() {
@@ -136,6 +143,28 @@
     };
   });
 
+  function handleClick(expose: Expose) {
+    if (device.value?.availability == 'offline') {
+      return;
+    }
+    if (expose.type == ExposeTypes.Binary) {
+      const value = toggleExposeBinaryProperty(expose);
+      updateValue(expose.name, value);
+    } else {
+      console.log('not handled');
+    }
+  }
+
+  function updateValue(exposeName: string, newValue: any): void {
+    var msg = {
+      id: props.id,
+      name: exposeName,
+      value: newValue,
+    };
+
+    store.dispatch('hub/setDeviceValue', msg);
+  }
+
   function hasNumericFeatures(): boolean {
     return expose.value.type == ExposeTypes.Numeric;
   }
@@ -166,19 +195,20 @@
       <Brightness
         direction="vertical"
         :value="expose.data"
+        @update="updateValue(expose.name, $event)"
         :min="getExposeAttribute(expose, 'min')"
-        :max="getExposeAttribute(expose, 'max')" />
+        :max="getExposeAttribute(expose, 'max')"
+        :disabled="!isEnabled()" />
 
       <div class="button-panel">
         <template v-for="expose in controlExposes" :key="expose.name">
-          we need a onclikcbackground prop or we calculate form background color
-          <Icon :icon="getEntityIcon(expose.name, expose.data)" clickable background="#222222" :size="38"  />
+          <Icon
+            :icon="getEntityIcon(expose.name, expose.data)"
+            clickable
+            background="#222222"
+            :size="38"
+            @click="handleClick(expose)" />
         </template>
-      </div>
-      <div v-if="hasToggle()" class="button-panel">
-        <Button class="toggle-button">
-          <i class="pi pi-power-off" />
-        </Button>
       </div>
     </div>
   </Dialog>
@@ -226,36 +256,5 @@
   .modal-last-seen {
     font-size: 16px;
     font-weight: 500;
-  }
-
-  .toggle-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 1.5rem;
-  }
-
-  .toggle-button {
-    width: 3rem;
-    height: 3rem;
-    border-radius: 50%;
-    border-color: #222222;
-    background-color: #222222;
-    transition: background-color 0.3s ease, border-color 0.3s ease;
-  }
-  .toggle-button.p-button:hover {
-    background-color: #222222 !important;
-    border-color: #222222 !important;
-    box-shadow: none !important;
-  }
-
-  .toggle-button.p-button:active {
-    background-color: #4e4e4e !important;
-    border-color: #4e4e4e !important;
-  }
-
-  .toggle-button i {
-    color: white;
-    font-size: 1.3rem;
   }
 </style>

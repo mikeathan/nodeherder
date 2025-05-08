@@ -63,24 +63,11 @@
       cursor: 'pointer',
     };
   });
-
-  // const wrapperStyle = computed(() => {
-  //   if (props.circleRadius === 0) return {};
-
-  //   return {
-  //     backgroundColor: props.clickable ? props.background : 'transparent',
-  //     width: `${props.circleRadius * 2}px`,
-  //     height: `${props.circleRadius * 2}px`,
-  //     borderRadius: '50%',
-  //     display: 'flex',
-  //     alignItems: 'center',
-  //     justifyContent: 'center',
-  //   };
-  // });
 </script>
 <style scoped>
   .icon-wrapper.clickable {
     cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
   }
 
   .icon-wrapper.clickable:hover {
@@ -88,7 +75,8 @@
   }
 
   .icon-wrapper.clickable:active {
-    opacity: 0.5;
+    background-color: #4e4e4e !important;
+    border-color: #4e4e4e !important;
   }
 </style>
 <template>
