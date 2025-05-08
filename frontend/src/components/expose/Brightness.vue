@@ -18,6 +18,11 @@
       type: Boolean,
       default: false,
     },
+    color: {
+      type: String,
+      default: '#ffc107',
+    },
+
     direction: {
       type: String as () => 'horizontal' | 'vertical',
       default: 'horizontal',
@@ -31,11 +36,23 @@
   const value = ref(props.value);
   const lastKnownValue = ref(props.value);
 
+  //   const trackFill = computed(() => {
+  //   const colorStart = props.disabled ? '#ccc' : props.color;
+  //   const colorEnd = props.disabled ? '#ccc' : '#fff2cc';
+  //   const direction = props.direction === 'vertical' ? 'to top' : 'to right';
+
+  //   return {
+  //     background: `linear-gradient(${direction}, ${colorStart}, ${colorEnd})`,
+  //     opacity: props.disabled ? 0.5 : 1,
+  //   };
+  // });
   const trackFill = computed(() => {
     const percent = ((value.value - props.min) / (props.max - props.min)) * 100;
-    const color = props.disabled ? '#ccc' : '#ffc107';
+    const color = props.disabled ? '#ccc' : props.color;
     const bgColor = props.disabled ? '#ccc' : '#fff2cc';
     const direction = props.direction === 'vertical' ? 'top' : 'right';
+
+    // //     background: `linear-gradient(${direction}, ${colorStart}, ${colorEnd})`,
 
     return {
       background: `linear-gradient(to ${direction}, ${color} ${percent}%, ${bgColor} ${percent}%)`,
@@ -69,7 +86,7 @@
     const newValue = parseInt(event.target.value);
     emit('update', newValue);
   }
-  
+
   const generateDirectionalClass = (baseClass: string) => [
     baseClass,
     props.direction === 'vertical' ? 'vertical' : 'horizontal',

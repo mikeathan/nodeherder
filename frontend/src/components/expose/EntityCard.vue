@@ -163,14 +163,14 @@
       </div>
     </template>
     <template #content>
-      <div v-if="hasNumericFeatures() && !isReadOnly()" class="entity-content">
+      <!-- <div v-if="hasNumericFeatures() && !isReadOnly()" class="entity-content">
         <Brightness
           :value="expose.data"
           @update="updateValue(expose.name, $event)"
           :min="getExposeAttribute(expose, 'min')"
           :max="getExposeAttribute(expose, 'max')"
           :disabled="!isEnabled()" />
-      </div>
+      </div> -->
     </template>
   </Card>
 </template>
