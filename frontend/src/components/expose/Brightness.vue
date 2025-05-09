@@ -22,7 +22,10 @@
       type: String,
       default: '#ffc107',
     },
-
+    trackFilled: {
+      type: Boolean,
+      default: false,
+    },
     direction: {
       type: String as () => 'horizontal' | 'vertical',
       default: 'horizontal',
@@ -36,31 +39,28 @@
   const value = ref(props.value);
   const lastKnownValue = ref(props.value);
 
-  const trackFill = computed(() => {
-    const colorStart = props.disabled ? '#ccc' : props.color;
-    const colorEnd = props.disabled ? '#ccc' : '#fff2cc';
-    const direction = props.direction === 'vertical' ? 'to top' : 'to right';
+  const calculateTrackPercent = () => {
+    if (!props.trackFilled) return '';
 
-    return {
-      background: `linear-gradient(${direction}, ${colorStart}, ${colorEnd})`,
-      opacity: props.disabled ? 0.5 : 1,
-    };
-  });
-  const trackFil2l = computed(() => {
-    const percent = ((value.value - props.min) / (props.max - props.min)) * 100;
+    const { min, max } = props;
+    const clampedValue = Math.min(Math.max(value.value, min), max);
+    const range = max - min;
+
+    if (range === 0) return '0%';
+
+    const percent = ((clampedValue - min) / range) * 100;
+    return `${percent.toFixed(1)}%`;
+  };
+
+  const trackFill = computed(() => {
     const color = props.disabled ? '#ccc' : props.color;
     const bgColor = props.disabled ? '#ccc' : '#fff2cc';
-    const direction = props.direction === 'vertical' ? 'top' : 'right';
-    const colorStart = props.disabled ? '#ccc' : props.color;
-    const colorEnd = props.disabled ? '#ccc' : '#fff2cc';
-    // //     background: `linear-gradient(${direction}, ${colorStart}, ${colorEnd})`,
 
-    // return {
-    //   background: `linear-gradient(to ${direction}, ${color} ${percent}%, ${bgColor} ${percent}%)`,
-    //   opacity: props.disabled ? 0.5 : 1,
-    // };
+    const direction = props.direction === 'vertical' ? 'to top' : 'to right';
+    const percent = calculateTrackPercent();
+
     return {
-      background: `linear-gradient(${direction}, ${colorStart}, ${colorEnd})`,
+      background: `linear-gradient(${direction}, ${color} ${percent}, ${bgColor} ${percent})`,
       opacity: props.disabled ? 0.5 : 1,
     };
   });
@@ -176,12 +176,12 @@
 
   .vertical .slider::-webkit-slider-thumb {
     margin-top: 0;
-    height: 60px;
+    height: 50%;
   }
 
   .vertical .slider::-moz-range-thumb {
     margin-top: 0;
-    height: 60px;
+    height: 50%;
   }
 
   /* Webkit thumb styling */
@@ -213,7 +213,8 @@
     cursor: pointer;
     transform: translateX(-2px);
   }
-
+  /* border: 15px solid #4caf50;
+  border-radius: 8px; */
   .slider:disabled {
     opacity: 0.6;
   }
