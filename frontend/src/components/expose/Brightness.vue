@@ -24,7 +24,7 @@
     },
     trackFilled: {
       type: Boolean,
-      default: false,
+      default: true,
     },
     direction: {
       type: String as () => 'horizontal' | 'vertical',
@@ -52,6 +52,11 @@
     return `${percent.toFixed(1)}%`;
   };
 
+  const trackPercentRaw = computed(() => {
+    const { min, max } = props;
+    const clamped = Math.min(Math.max(value.value, min), max);
+    return ((clamped - min) / (max - min)) * 100;
+  });
   const trackFill = computed(() => {
     const color = props.disabled ? '#ccc' : props.color;
     const bgColor = props.disabled ? '#ccc' : '#fff2cc';
@@ -102,6 +107,15 @@
 <template>
   <div :class="generateDirectionalClass('slider-wrapper')">
     <div :class="generateDirectionalClass('track-background')" :style="trackFill"></div>
+    <div
+      class="tap-indicator"
+      :class="[props.direction, props.trackFilled ? 'filled' : 'tap']"
+      :style="{
+        '--indicator-percent': `${trackPercentRaw}%`,
+        '--indicator-color': props.color,
+      }"
+      v-show="true" />
+
     <input
       type="range"
       :min="props.min"
@@ -166,7 +180,45 @@
     transform: translate(-50%, -50%) rotate(-90deg);
   }
 
-  .horizontal .slider::-webkit-slider-thumb {
+  /* Hide the default thumb */
+  .slider::-webkit-slider-thumb,
+  .slider::-moz-range-thumb {
+    visibility: hidden;
+    width: 0;
+    height: 0;
+    border: none;
+  }
+
+  /* Webkit thumb styling */
+  /*.slider::-webkit-slider-thumb {
+    /* appearance: none;
+    width: 6px;
+    height: 30px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    transform: translateX(-2px);
+  } */
+
+  /* Firefox track & thumb */
+  /* .slider::-moz-range-track {
+    height: 100%;
+    background: transparent;
+    border: none;
+  } */
+
+  /* .slider::-moz-range-thumb {
+    appearance: none;
+    width: 5px;
+    height: 30px;
+    background: white;
+    border: 1px solid black;
+    border-radius: 20px;
+    cursor: pointer;
+    transform: translateX(-2px);
+  } */
+  /* .horizontal .slider::-webkit-slider-thumb {
     margin-top: -5px;
     transform: none;
   }
@@ -176,45 +228,64 @@
 
   .vertical .slider::-webkit-slider-thumb {
     margin-top: 0;
-    height: 50%;
+    height: 0%;
   }
 
   .vertical .slider::-moz-range-thumb {
     margin-top: 0;
-    height: 50%;
+    height: 0%;
+  } */
+
+  .tap-indicator {
+    position: absolute;
+    pointer-events: none;
+    z-index: 2;
+    background-color: var(--indicator-color, #ccc);
   }
 
-  /* Webkit thumb styling */
-  .slider::-webkit-slider-thumb {
-    appearance: none;
-    width: 6px;
+  /* === Horizontal === */
+  .tap-indicator.horizontal.tap {
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    left: calc(var(--indicator-percent));
+    transform: translateX(-1px);
+  }
+
+  .tap-indicator.horizontal.filled {
     height: 30px;
-    background: white;
+    width: 5px;
+    border-radius: 20px;
     border: 1px solid #ccc;
-    border-radius: 4px;
-    cursor: pointer;
-    transform: translateX(-2px);
+    background-color: white;
+
+    left: calc(var(--indicator-percent));
+    top: 50%;
+    transform: translate(-50%, -50%);
   }
 
-  /* Firefox track & thumb */
-  .slider::-moz-range-track {
-    height: 100%;
-    background: transparent;
-    border: none;
+  /* === Vertical === */
+  .tap-indicator.vertical.tap {
+    left: 0;
+    right: 0;
+    height: 2px;
+    top: calc(100% - var(--indicator-percent));
+    transform: translateY(-1px);
   }
 
-  .slider::-moz-range-thumb {
-    appearance: none;
-    width: 6px;
-    height: 30px;
-    background: white;
+  .tap-indicator.vertical.filled {
+    /* Size & shape */
+    width: 60px;
+    height: 5px;
+    border-radius: 20px;
     border: 1px solid #ccc;
-    border-radius: 4px;
-    cursor: pointer;
-    transform: translateX(-2px);
+    background-color: white;
+    margin-top: 5px;
+    /* Position */
+    top: calc(100% - var(--indicator-percent));
+    left: 50%;
+    transform: translate(-50%, -50%);
   }
-  /* border: 15px solid #4caf50;
-  border-radius: 8px; */
   .slider:disabled {
     opacity: 0.6;
   }
