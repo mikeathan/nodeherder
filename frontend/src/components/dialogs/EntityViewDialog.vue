@@ -201,7 +201,8 @@
         :disabled="!isEnabled()" />
 
       <div class="button-panel">
-        <template v-for="expose in controlExposes" :key="expose.name">
+      type: Boolean,
+      <template v-for="expose in controlExposes" :key="expose.name">
           <Icon
             :icon="getEntityIcon(expose.name, expose.data)"
             clickable

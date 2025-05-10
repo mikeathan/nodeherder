@@ -24,7 +24,7 @@
     },
     trackFilled: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     direction: {
       type: String as () => 'horizontal' | 'vertical',
@@ -38,6 +38,7 @@
 
   const value = ref(props.value);
   const lastKnownValue = ref(props.value);
+
 
   const calculateTrackPercent = () => {
     if (!props.trackFilled) return '';
@@ -266,22 +267,39 @@
 
   /* === Vertical === */
   .tap-indicator.vertical.tap {
-    left: 0;
-    right: 0;
-    height: 2px;
+    width: 100%;
+    height: 40px;
+    background: white;
+    border-radius: 8px;
+    margin-top: 5px;
+    box-shadow: 0 4px 6px -4px rgba(0, 0, 0, 0.2), /* bottom shadow */ inset 0 10px 15px -10px rgba(255, 165, 0, 0.6),
+      /* inner top orange */ inset 0 -10px 15px -10px rgba(255, 165, 0, 0.6); /* inner bottom orange */
+
     top: calc(100% - var(--indicator-percent));
-    transform: translateY(-1px);
+    left: 50%;
+    transform: translate(-50%, -50%);
   }
 
+  .tap-indicator.vertical.tap::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 25%;
+    width: 50%;
+    height: 4px;
+    background-color: #555; /* or black */
+    border-radius: 2px;
+    transform: translateY(-50%);
+  }
+
+
   .tap-indicator.vertical.filled {
-    /* Size & shape */
     width: 60px;
     height: 5px;
     border-radius: 20px;
     border: 1px solid #ccc;
     background-color: white;
     margin-top: 5px;
-    /* Position */
     top: calc(100% - var(--indicator-percent));
     left: 50%;
     transform: translate(-50%, -50%);
