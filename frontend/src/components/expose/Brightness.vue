@@ -24,7 +24,7 @@
     },
     trackFilled: {
       type: Boolean,
-      default: false,
+      default: true,
     },
     direction: {
       type: String as () => 'horizontal' | 'vertical',
@@ -38,7 +38,6 @@
 
   const value = ref(props.value);
   const lastKnownValue = ref(props.value);
-
 
   const calculateTrackPercent = () => {
     if (!props.trackFilled) return '';
@@ -131,33 +130,36 @@
 </template>
 
 <style scoped>
+  /* === Slider Wrapper === */
   .slider-wrapper {
     position: relative;
     height: 46px;
-    overflow: visible;
+    border-radius: 12px;
+    overflow: hidden;
   }
 
   .slider-wrapper.vertical {
     height: 320px;
     width: 130px;
+    border-radius: 36px;
   }
 
+  /* === Track Background === */
   .track-background {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     pointer-events: none;
+  }
+
+  .track-background.horizontal {
+    border-radius: 12px;
   }
 
   .track-background.vertical {
     border-radius: 36px;
   }
-  .track-background.horizontal {
-    border-radius: 12px;
-  }
-  /* Input layer */
+
+  /* === Slider Input Layer === */
   .slider {
     appearance: none;
     width: 100%;
@@ -169,19 +171,19 @@
     outline: none;
   }
 
+  /* Vertical slider positioning via rotation */
   .vertical .slider {
     position: absolute;
     top: 50%;
     left: 50%;
     width: var(--wrapper-height, 320px);
     height: var(--wrapper-width, 130px);
+    transform: translate(-50%, -50%) rotate(-90deg);
     margin: 0;
     transform-origin: center center;
-    /* Center precisely, then rotate */
-    transform: translate(-50%, -50%) rotate(-90deg);
   }
 
-  /* Hide the default thumb */
+  /* Hide default slider thumbs */
   .slider::-webkit-slider-thumb,
   .slider::-moz-range-thumb {
     visibility: hidden;
@@ -190,53 +192,11 @@
     border: none;
   }
 
-  /* Webkit thumb styling */
-  /*.slider::-webkit-slider-thumb {
-    /* appearance: none;
-    width: 6px;
-    height: 30px;
-    background: white;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    cursor: pointer;
-    transform: translateX(-2px);
-  } */
-
-  /* Firefox track & thumb */
-  /* .slider::-moz-range-track {
-    height: 100%;
-    background: transparent;
-    border: none;
-  } */
-
-  /* .slider::-moz-range-thumb {
-    appearance: none;
-    width: 5px;
-    height: 30px;
-    background: white;
-    border: 1px solid black;
-    border-radius: 20px;
-    cursor: pointer;
-    transform: translateX(-2px);
-  } */
-  /* .horizontal .slider::-webkit-slider-thumb {
-    margin-top: -5px;
-    transform: none;
-  }
-  .horizontal .slider::-moz-range-thumb {
-    transform: none;
+  .slider:disabled {
+    opacity: 0.6;
   }
 
-  .vertical .slider::-webkit-slider-thumb {
-    margin-top: 0;
-    height: 0%;
-  }
-
-  .vertical .slider::-moz-range-thumb {
-    margin-top: 0;
-    height: 0%;
-  } */
-
+  /* === Tap Indicator (Common Base) === */
   .tap-indicator {
     position: absolute;
     pointer-events: none;
@@ -244,40 +204,69 @@
     background-color: var(--indicator-color, #ccc);
   }
 
-  /* === Horizontal === */
+  /* === Horizontal Tap Indicator Styles === */
   .tap-indicator.horizontal.tap {
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    left: calc(var(--indicator-percent));
-    transform: translateX(-1px);
+    width: 40px;
+    height: 100%;
+    background: white;
+    box-shadow: 4px 0 6px -4px rgba(0, 0, 0, 0.2), inset 10px 0 15px -10px rgba(255, 165, 0, 0.6),
+      inset -10px 0 15px -10px rgba(255, 165, 0, 0.6);
+    left: var(--indicator-percent);
+    top: 50%;
+    transform: translate(-50%, -50%);
+
+    /* Edge-aware rounded corners */
+    --at-left-edge: max(0, min(1, (10% - var(--indicator-percent)) / 10%));
+    --at-right-edge: max(0, min(1, (var(--indicator-percent) - 90%) / 10%));
+    border-top-left-radius: calc(8px + (var(--at-left-edge) * 28px));
+    border-bottom-left-radius: calc(8px + (var(--at-left-edge) * 28px));
+    border-top-right-radius: calc(8px + (var(--at-right-edge) * 28px));
+    border-bottom-right-radius: calc(8px + (var(--at-right-edge) * 28px));
   }
 
+  .tap-indicator.horizontal.tap::before {
+    content: '';
+    position: absolute;
+    top: 25%;
+    left: 50%;
+    width: 4px;
+    height: 50%;
+    background-color: #555;
+    border-radius: 2px;
+    transform: translateX(-50%);
+  }
+
+  /* Horizontal Filled Variant */
   .tap-indicator.horizontal.filled {
     height: 30px;
     width: 5px;
     border-radius: 20px;
+    margin-left: -5px;
     border: 1px solid #ccc;
     background-color: white;
-
-    left: calc(var(--indicator-percent));
+    left: var(--indicator-percent);
     top: 50%;
     transform: translate(-50%, -50%);
   }
 
-  /* === Vertical === */
+  /* === Vertical Tap Indicator Styles === */
   .tap-indicator.vertical.tap {
     width: 100%;
     height: 40px;
     background: white;
-    border-radius: 8px;
-    margin-top: 5px;
-    box-shadow: 0 4px 6px -4px rgba(0, 0, 0, 0.2), /* bottom shadow */ inset 0 10px 15px -10px rgba(255, 165, 0, 0.6),
-      /* inner top orange */ inset 0 -10px 15px -10px rgba(255, 165, 0, 0.6); /* inner bottom orange */
-
+    box-shadow: 0 4px 6px -4px rgba(0, 0, 0, 0.2), inset 0 10px 15px -10px rgba(255, 165, 0, 0.6),
+      inset 0 -10px 15px -10px rgba(255, 165, 0, 0.6);
     top: calc(100% - var(--indicator-percent));
     left: 50%;
     transform: translate(-50%, -50%);
+
+    /* Edge-aware rounded corners */
+    --at-top-edge: max(0, min(1, (10% - var(--indicator-percent)) / 10%));
+    --at-bottom-edge: max(0, min(1, (var(--indicator-percent) - 90%) / 10%));
+    border-top-left-radius: calc(8px + (var(--at-top-edge) * 28px));
+    border-top-right-radius: calc(8px + (var(--at-top-edge) * 28px));
+    border-bottom-left-radius: calc(8px + (var(--at-bottom-edge) * 28px));
+    border-bottom-right-radius: calc(8px + (var(--at-bottom-edge) * 28px));
   }
 
   .tap-indicator.vertical.tap::before {
@@ -287,12 +276,12 @@
     left: 25%;
     width: 50%;
     height: 4px;
-    background-color: #555; /* or black */
+    background-color: #555;
     border-radius: 2px;
     transform: translateY(-50%);
   }
 
-
+  /* Vertical Filled Variant */
   .tap-indicator.vertical.filled {
     width: 60px;
     height: 5px;
@@ -304,6 +293,7 @@
     left: 50%;
     transform: translate(-50%, -50%);
   }
+
   .slider:disabled {
     opacity: 0.6;
   }
