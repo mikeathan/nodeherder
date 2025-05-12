@@ -24,7 +24,7 @@
     },
     trackFilled: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     direction: {
       type: String as () => 'horizontal' | 'vertical',
@@ -209,8 +209,7 @@
     width: 40px;
     height: 100%;
     background: white;
-    box-shadow: 4px 0 6px -4px rgba(0, 0, 0, 0.2), inset 10px 0 15px -10px rgba(255, 165, 0, 0.6),
-      inset -10px 0 15px -10px rgba(255, 165, 0, 0.6);
+    box-shadow: 4px 0 6px -4px;
     left: var(--indicator-percent);
     top: 50%;
     transform: translate(-50%, -50%);
@@ -254,8 +253,7 @@
     width: 100%;
     height: 40px;
     background: white;
-    box-shadow: 0 4px 6px -4px rgba(0, 0, 0, 0.2), inset 0 10px 15px -10px rgba(255, 165, 0, 0.6),
-      inset 0 -10px 15px -10px rgba(255, 165, 0, 0.6);
+    box-shadow: 0 4px 6px -4px;
     top: calc(100% - var(--indicator-percent));
     left: 50%;
     transform: translate(-50%, -50%);
@@ -283,12 +281,11 @@
 
   /* Vertical Filled Variant */
   .tap-indicator.vertical.filled {
-    width: 60px;
+    width: 70px;
     height: 5px;
-    border-radius: 20px;
-    border: 1px solid #ccc;
+    border-radius: 30px;
     background-color: white;
-    margin-top: 5px;
+    margin-top: 8px;
     top: calc(100% - var(--indicator-percent));
     left: 50%;
     transform: translate(-50%, -50%);

@@ -98,6 +98,7 @@
     }
 
     if (controlExposes.value) {
+     
       // temporary fix for state control
       return controlExposes.value.some((expose) => {
         if (expose.type == ExposeTypes.Binary) {
@@ -200,9 +201,12 @@
         :max="getExposeAttribute(expose, 'max')"
         :disabled="!isEnabled()" />
 
+        need to link the icon clicks to different modules
+        eg temperature and brightness
+
       <div class="button-panel">
-      type: Boolean,
       <template v-for="expose in controlExposes" :key="expose.name">
+        {{ expose.name }}
           <Icon
             :icon="getEntityIcon(expose.name, expose.data)"
             clickable
