@@ -42,8 +42,11 @@ import {
   mdiThermometerHigh,
   mdiThermometerLow,
   mdiTune,
+  mdiCeilingLightMultiple
 } from '@mdi/js';
 import { Expose } from '@/types/device';
+
+const lampColor = '#ffc107';
 
 // const typeToClassMapsensor: KeyValuePair<string> = {
 //   humidity: 'text-info fa-tint',
@@ -105,8 +108,8 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
   voltage: { name: mdiLightningBolt, color: 'orange' },
   state: { name: mdiStarHalfFull, color: 'white' },
   brightness: {
-    name: mdiWhiteBalanceSunny,
-    color: 'yellow',
+    name: mdiCeilingLightMultiple,
+    color: lampColor,
   },
   occupancy: { name: mdiWalk, color: 'white' },
   current: { name: mdiCopyright, color: 'gray' },

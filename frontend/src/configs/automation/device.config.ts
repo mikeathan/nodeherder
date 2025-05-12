@@ -16,7 +16,7 @@ export function stateDevicesFilter(): DeviceFilter {
 
 export function writableExposesDeviceFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
-    return isWritablePresetExpose(expose) || isStateExpose(expose) || isWritableEnumExpose(expose);
+    return isWritablePresetExpose(expose) || isStateExpose(expose) || isWritableEnumExpose(expose) || isWritableMumericExpose(expose);
   };
 }
 
@@ -31,6 +31,15 @@ export const isStateExpose = (expose: Expose): boolean => {
 export const isWritableEnumExpose = (expose: Expose): boolean => {
   return (
     expose.type == ExposeTypes.Enum &&
+    expose.access_mode != ExposeAccessModes.Read &&
+    expose.category == ExposeCategories.Measurement
+  );
+};
+
+
+export const isWritableMumericExpose = (expose: Expose): boolean => {
+  return (
+    expose.type == ExposeTypes.Numeric &&
     expose.access_mode != ExposeAccessModes.Read &&
     expose.category == ExposeCategories.Measurement
   );

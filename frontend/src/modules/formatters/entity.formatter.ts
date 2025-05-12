@@ -67,8 +67,8 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
   voltage: { name: mdiLightningBolt, color: 'orange' },
   state: { name: mdiPower, color: 'white' },
   brightness: {
-    name: mdiCeilingLightMultiple,
-    color: lampColor,
+    name: mdiBrightness6,
+    color: 'white',
   },
   occupancy: { name: mdiWalk, color: 'white' },
   current: { name: mdiCopyright, color: 'gray' },

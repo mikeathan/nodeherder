@@ -1,6 +1,6 @@
 <script setup lang="ts">
-  import { getFormattedSensorValue, getSensorName, getSensorUnit } from '../../modules/formatters/sensor-formatter';
-  import { getEntityIcon } from '../../modules/formatters/entity.formatter';
+  import { getFormattedSensorValue, getSensorName } from '../../modules/formatters/sensor-formatter';
+  import { getSensorIcon } from '../../modules/formatters/sensor-formatter';
   import { store } from '../../store/index';
   import { computed, ref } from 'vue';
   import { Device, Expose } from '@/types/device';
@@ -51,7 +51,7 @@
   });
 
   const iconProps = computed(() => {
-    const icon = getEntityIcon(expose.value.name, expose.value.data);
+    const icon = getSensorIcon(expose.value.name, expose.value.data);
 
     if (!isEnabled()) {
       return { ...icon, color: '#9e9e9e' };
