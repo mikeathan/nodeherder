@@ -12,9 +12,10 @@
     getExposes,
     toggleExposeBinaryProperty,
   } from '@/contracts/device';
-  import {  writableExposesDeviceFilter } from '@/configs/automation/device.config';
+  import { writableExposesDeviceFilter } from '@/configs/automation/device.config';
   import { getEntityIcon } from '@/modules/formatters/entity.formatter';
   import Icon from '../controls/Icon.vue';
+  import StyledSlider from '../input/StyledSlider.vue';
 
   const props = defineProps<{
     show: boolean;
@@ -98,7 +99,6 @@
     }
 
     if (controlExposes.value) {
-     
       // temporary fix for state control
       return controlExposes.value.some((expose) => {
         if (expose.type == ExposeTypes.Binary) {
@@ -191,10 +191,9 @@
       <div class="modal-value">{{ getFormattedSensorValue(expose) }}</div>
       <LastSeen :timestamp="lastSeen" class="modal-last-seen" />
     </div>
-we need some map for the icons when clicked to set the brigthness to different mode, 
-brightness now becomes styled entity numberic slider
+
     <div v-if="hasNumericFeatures() && !isReadOnly()" class="modal-content">
-      <Brightness
+      <StyledSlider
         direction="vertical"
         :value="expose.data"
         @update="updateValue(expose.name, $event)"
@@ -203,7 +202,8 @@ brightness now becomes styled entity numberic slider
         :disabled="!isEnabled()" />
 
       <div class="button-panel">
-      <template v-for="expose in controlExposes" :key="expose.name">
+        <template v-for="expose in controlExposes" :key="expose.name">
+          {{expose.name}} -{{ expose.access_mode }} - {{ expose.type }} - {{expose.values}}
           <Icon
             :icon="getEntityIcon(expose.name, expose.data)"
             clickable

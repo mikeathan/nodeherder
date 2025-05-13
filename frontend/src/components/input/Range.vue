@@ -1,7 +1,6 @@
 <script setup lang="ts">
   import { InputNumberInputEvent, SliderSlideEndEvent } from 'primevue';
   import { ref, watch, watchEffect } from 'vue';
-  import { prop } from 'vue-class-component';
 
   const emit = defineEmits<{
     (e: 'update', id: number): void;

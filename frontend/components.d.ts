@@ -90,6 +90,7 @@ declare module 'vue' {
     SplitButton: typeof import('primevue/splitbutton')['default']
     Status: typeof import('./src/components/controls/Status.vue')['default']
     StepAction: typeof import('./src/components/automations/actions/StepAction.vue')['default']
+    StyledSlider: typeof import('./src/components/input/StyledSlider.vue')['default']
     Tab: typeof import('primevue/tab')['default']
     TabList: typeof import('primevue/tablist')['default']
     TabPanel: typeof import('primevue/tabpanel')['default']
