@@ -7,7 +7,9 @@ type Map = { [key: DialogKey]: (props?: any) => ReturnType<typeof h> };
 
 const StyledSlider = defineAsyncComponent(() => import('../components/input/StyledSlider.vue'));
 
-TODO;
+type EntityInputParams = 'slider-pick' | 'slider-fill';
+
+
 function getExposeParams(expose: Expose): string {
   switch (expose.type) {
     case ExposeTypes.Numeric:
@@ -22,7 +24,9 @@ function getExposeParams(expose: Expose): string {
 export const EntityInputComponents: Map = {
   numeric: (props) => h(StyledSlider, { ...props }),
 };
-
+export const EntityInputComponents2=():string=>{
+  return ''
+}
 // const tesmap = {
 //     "temperature": "tap",
 //     "brightness":"fill"
