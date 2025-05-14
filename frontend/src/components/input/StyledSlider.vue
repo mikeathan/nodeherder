@@ -1,36 +1,27 @@
 <script setup lang="ts">
   import { ref, computed, watch } from 'vue';
+  import { StyledSliderInputType, StyledSliderInputTypes } from '@/types/controls.type';
 
-  const props = defineProps({
-    value: {
-      type: Number,
-      default: 50,
-    },
-    min: {
-      type: Number,
-      default: 0,
-    },
-    max: {
-      type: Number,
-      default: 100,
-    },
-    disabled: {
-      type: Boolean,
-      default: false,
-    },
-    color: {
-      type: String,
-      default: '#ffc107',
-    },
-    trackFilled: {
-      type: Boolean,
-      default: false,
-    },
-    direction: {
-      type: String as () => 'horizontal' | 'vertical',
-      default: 'horizontal',
-    },
-  });
+  const props = withDefaults(
+    defineProps<{
+      value?: number;
+      min?: number;
+      max?: number;
+      disabled?: boolean;
+      color?: string;
+      type: StyledSliderInputType;
+      direction?: 'horizontal' | 'vertical';
+    }>(),
+    {
+      value: 50,
+      min: 0,
+      max: 100,
+      disabled: false,
+      color: '#ffc107',
+      input: StyledSliderInputTypes.Fill,
+      direction: 'horizontal',
+    }
+  );
 
   const emit = defineEmits<{
     (e: 'update', value: number): void;
@@ -40,7 +31,7 @@
   const lastKnownValue = ref(props.value);
 
   const calculateTrackPercent = () => {
-    if (!props.trackFilled) return '';
+    if (props.type == StyledSliderInputTypes.Pick) return '';
 
     const { min, max } = props;
     const clampedValue = Math.min(Math.max(value.value, min), max);
@@ -109,7 +100,7 @@
     <div :class="generateDirectionalClass('track-background')" :style="trackFill"></div>
     <div
       class="tap-indicator"
-      :class="[props.direction, props.trackFilled ? 'filled' : 'tap']"
+      :class="[props.direction, props.type == StyledSliderInputTypes.Fill ? 'filled' : 'tap']"
       :style="{
         '--indicator-percent': `${trackPercentRaw}%`,
         '--indicator-color': props.color,
