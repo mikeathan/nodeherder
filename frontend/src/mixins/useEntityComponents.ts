@@ -1,34 +1,33 @@
 import { StyledSliderInputType } from '@/types/controls.type';
-import { Expose, ExposeType } from '@/types/device';
+import { Expose } from '@/types/device';
 import { ExposeTypes } from '@/types/device.type';
-import { Style } from 'primevue';
 import { h, defineAsyncComponent } from 'vue';
 
 type DialogKey = string;
-type Map = { [key: DialogKey]: (props?: any) => ReturnType<typeof h> };
+type Map = { [key: DialogKey]: (props?: EntityInputProps) => ReturnType<typeof h> };
 
 const StyledSlider = defineAsyncComponent(() => import('../components/input/StyledSlider.vue'));
 
+type EntityInputTypes = StyledSliderInputType;
+type EntityInputProps = {
+  type: EntityInputTypes;
+};
 
-
-function getExposeParams(expose: Expose): StyledSliderInputType |null{
+function getExposeParams(expose: Expose): EntityInputProps {
   switch (expose.type) {
     case ExposeTypes.Numeric:
       if (expose.values?.length > 0) {
-        return 'Pick';
+        return { type: 'Pick' };
       }
-      return 'Fill';
+      return { type: 'Fill' };
   }
-  return null;
+  return {} as EntityInputProps;
 }
 
-// export const EntityInputComponents: Map = {
-//   numeric: (props) => h(StyledSlider, { ...props }),
-// };
 export const EntityInputComponents = (expose: Expose): Map => {
-  const props: StyledSliderInputType| null = getExposeParams(expose);
+  const props: EntityInputProps = getExposeParams(expose);
   return {
-    numeric: () => h(StyledSlider, { ...props }),
+    numeric: () => h(StyledSlider, props),
   };
 };
 
