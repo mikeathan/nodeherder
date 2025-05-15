@@ -1,4 +1,5 @@
-import { StyledSliderInputType } from '@/types/controls.type';
+import { getExposeAttribute } from '@/contracts/device';
+import { ControlDirection, StyledSliderInputType } from '@/types/controls.type';
 import { Expose } from '@/types/device';
 import { ExposeTypes } from '@/types/device.type';
 import { h, defineAsyncComponent } from 'vue';
@@ -11,24 +12,34 @@ const StyledSlider = defineAsyncComponent(() => import('../components/input/Styl
 type EntityInputTypes = StyledSliderInputType;
 type EntityInputProps = {
   type: EntityInputTypes;
+  direction?: ControlDirection;
+  min?: number;
+  max?: number;
 };
 
 function getExposeParams(expose: Expose): EntityInputProps {
   switch (expose.type) {
     case ExposeTypes.Numeric:
-      if (expose.values?.length > 0) {
-        return { type: 'Pick' };
+      const props = {
+        min: getExposeAttribute(expose, 'min'),
+        max: getExposeAttribute(expose, 'max'),
+        direction: 'vertical' as ControlDirection,
+      };
+
+      if (!expose.values) {
+        return { ...props, type: 'Pick' };
       }
-      return { type: 'Fill' };
+      return { ...props, type: 'Fill' };
   }
   return {} as EntityInputProps;
 }
 
-export const EntityInputComponents = (expose: Expose): Map => {
+export const EntityInputComponents = (expose: Expose): ReturnType<typeof h> | null => {
   const props: EntityInputProps = getExposeParams(expose);
-  return {
-    numeric: () => h(StyledSlider, props),
-  };
+  if (expose.type == ExposeTypes.Numeric) {
+    return h(StyledSlider, props);
+  }
+  return null;
 };
 
 //<component :is="EntityInputComponents['numeric']({ modelValue: 50, min: 0, max: 100 })" />

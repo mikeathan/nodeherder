@@ -16,6 +16,7 @@
   import { getEntityIcon } from '@/modules/formatters/entity.formatter';
   import Icon from '../controls/Icon.vue';
   import StyledSlider from '../input/StyledSlider.vue';
+  import { EntityInputComponents } from '@/mixins/useEntityComponents';
 
   const props = defineProps<{
     show: boolean;
@@ -73,6 +74,12 @@
 
     const exposeNameList = getExposes(device, writableExposesDeviceFilter());
     return exposeNameList.map((exposeName) => device.exposes[exposeName] as Expose);
+  });
+
+  const selectedExpose = ref<Expose>();
+  const selectedComponent = computed(() => {
+    if (!selectedExpose.value) return null;
+    return EntityInputComponents(selectedExpose.value) ?? null;
   });
 
   const expose = computed(() => {
@@ -152,7 +159,7 @@
       const value = toggleExposeBinaryProperty(expose);
       updateValue(expose.name, value);
     } else {
-      console.log('not handled');
+      selectedExpose.value = expose;
     }
   }
 
@@ -192,18 +199,19 @@
       <LastSeen :timestamp="lastSeen" class="modal-last-seen" />
     </div>
 
-    <div v-if="hasNumericFeatures() && !isReadOnly()" class="modal-content">
-      <StyledSlider
+    <div class="modal-content">
+      <component v-if="selectedComponent" :is="selectedComponent" :value="selectedExpose?.data" />
+
+      <!-- <StyledSlider
         direction="vertical"
         :value="expose.data"
         @update="updateValue(expose.name, $event)"
         :min="getExposeAttribute(expose, 'min')"
         :max="getExposeAttribute(expose, 'max')"
-        :disabled="!isEnabled()" />
+        :disabled="!isEnabled()" /> -->
 
       <div class="button-panel">
         <template v-for="expose in controlExposes" :key="expose.name">
-          {{expose.name}} -{{ expose.access_mode }} - {{ expose.type }} - {{expose.values}}
           <Icon
             :icon="getEntityIcon(expose.name, expose.data)"
             clickable

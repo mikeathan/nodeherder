@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { ref, computed, watch } from 'vue';
-  import { StyledSliderInputType, StyledSliderInputTypes } from '@/types/controls.type';
+  import { ControlDirection, StyledSliderInputType, StyledSliderInputTypes } from '@/types/controls.type';
 
   const props = withDefaults(
     defineProps<{
@@ -9,8 +9,8 @@
       max?: number;
       disabled?: boolean;
       color?: string;
-      type: StyledSliderInputType;
-      direction?: 'horizontal' | 'vertical';
+      type?: StyledSliderInputType;
+      direction?: ControlDirection;
     }>(),
     {
       value: 50,
@@ -18,7 +18,7 @@
       max: 100,
       disabled: false,
       color: '#ffc107',
-      input: StyledSliderInputTypes.Fill,
+      type: StyledSliderInputTypes.Fill,
       direction: 'horizontal',
     }
   );
