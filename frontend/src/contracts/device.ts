@@ -15,6 +15,7 @@ export function getExposeProperty(expose: Expose, name: string): any {
 }
 
 export function getExposeBinaryProperty(expose: Expose): boolean {
+ 
   if (expose.values == null) {
     return false;
   }
@@ -22,6 +23,7 @@ export function getExposeBinaryProperty(expose: Expose): boolean {
   if (expose.data == expose.values['on']) {
     return true;
   }
+
   // if (expose.data == expose.properties["off"]) {
   //   return false;
   // }

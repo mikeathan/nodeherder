@@ -4,8 +4,8 @@
 
   import { store } from '../../store/index';
   import { Device, Expose } from '@/types/device';
-  import { getFormattedSensorValue, getSensorName, getSensorUnit } from '../../modules/formatters/sensor-formatter';
-  import { ExposeAccessModes, ExposeCategories, ExposeTypes } from '@/types/device.type';
+  import { getFormattedSensorValue } from '../../modules/formatters/sensor-formatter';
+  import {  ExposeTypes } from '@/types/device.type';
   import {
     getExposeAttribute,
     getExposeBinaryProperty,
@@ -15,7 +15,6 @@
   import { writableExposesDeviceFilter } from '@/configs/automation/device.config';
   import { getEntityIcon } from '@/modules/formatters/entity.formatter';
   import Icon from '../controls/Icon.vue';
-  import StyledSlider from '../input/StyledSlider.vue';
   import { EntityInputComponents } from '@/mixins/useEntityComponents';
 
   const props = defineProps<{
@@ -36,8 +35,6 @@
   // and a side info when dragged
   //also maybe we dont show brigthness in the entity card and we only show it in the modal
 
-  todo;
-  // need to wire up disabled
   const controlExposes = computed(() => {
     const device = store.getters['hub/findDevice'](props.id) as Device;
     if (!device) return [];
@@ -48,7 +45,12 @@
 
   const selectedComponent = computed(() => {
     if (!selectedExpose.value) return null;
-    return EntityInputComponents(selectedExpose.value) ?? null;
+
+    return (
+      EntityInputComponents(selectedExpose.value, {
+        update: (e: any) => updateValue(selectedExpose.value!.name, e),
+      }) ?? null
+    );
   });
 
   watchEffect(() => (showDialog.value = props.show));
@@ -112,10 +114,6 @@
     return device.value.exposes[props.name] as Expose;
   });
 
-  function isReadOnly(): boolean {
-    return expose.value.access_mode == ExposeAccessModes.Read;
-  }
-
   function isEnabled() {
     if (device.value?.availability == 'offline') {
       return false;
@@ -125,9 +123,6 @@
       return false;
     }
 
-    if (expose.value.type == ExposeTypes.Binary) {
-      return getExposeBinaryProperty(expose.value);
-    }
 
     if (controlExposes.value) {
       // temporary fix for state control
@@ -189,7 +184,7 @@
   }
 
   function updateValue(exposeName: string, newValue: any): void {
-    var msg = {
+    const msg = {
       id: props.id,
       name: exposeName,
       value: newValue,
@@ -197,10 +192,7 @@
 
     store.dispatch('hub/setDeviceValue', msg);
   }
-
-  function hasNumericFeatures(): boolean {
-    return expose.value.type == ExposeTypes.Numeric;
-  }
+ 
 </script>
 
 <template>
@@ -225,15 +217,8 @@
     </div>
 
     <div class="modal-content">
-      <component v-if="selectedComponent" :is="selectedComponent" :value="selectedExpose?.data" />
-
-      <!-- <StyledSlider
-        direction="vertical"
-        :value="expose.data"
-        @update="updateValue(expose.name, $event)"
-        :min="getExposeAttribute(expose, 'min')"
-        :max="getExposeAttribute(expose, 'max')"
-        :disabled="!isEnabled()" /> -->
+      
+      <component v-if="selectedComponent" :is="selectedComponent" :value="selectedExpose?.data" :disabled="!isEnabled()" />
 
       <div class="button-panel">
         <template v-for="expose in controlExposes" :key="expose.name">

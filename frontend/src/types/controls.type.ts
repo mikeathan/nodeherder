@@ -7,6 +7,9 @@ export const StyledSliderInputTypes = {
 export type StyledSliderInputType = keyof typeof StyledSliderInputTypes;
 
 export type ControlDirection = 'horizontal' | 'vertical';
+
+
+
 export type ButtonPanelType = ButtonType | DropDownType;
 export type ButtonType = {
   name: string;
