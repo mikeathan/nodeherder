@@ -26,7 +26,7 @@ function getExposeParams(expose: Expose): EntityInputProps {
         direction: 'vertical' as ControlDirection,
       };
 
-      if (!expose.values) {
+      if (expose.values) {
         return { ...props, type: 'Pick' };
       }
       return { ...props, type: 'Fill' };

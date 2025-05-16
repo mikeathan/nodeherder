@@ -28,8 +28,51 @@
   const emit = defineEmits(['close']);
 
   const showDialog = ref<boolean>(props.show);
+  const selectedExpose = ref<Expose | null>(null);
+
+  // todo get Effects from device
+  // maybe effects with color temp are at the buttom ofthe button panel?
+  // or color temp is shown in brigthness slider with different range and background color of orange
+  // and a side info when dragged
+  //also maybe we dont show brigthness in the entity card and we only show it in the modal
+
+  todo;
+  // need to wire up disabled
+  const controlExposes = computed(() => {
+    const device = store.getters['hub/findDevice'](props.id) as Device;
+    if (!device) return [];
+
+    const exposeNameList = getExposes(device, writableExposesDeviceFilter());
+    return exposeNameList.map((exposeName) => device.exposes[exposeName] as Expose);
+  });
+
+  const selectedComponent = computed(() => {
+    if (!selectedExpose.value) return null;
+    return EntityInputComponents(selectedExpose.value) ?? null;
+  });
 
   watchEffect(() => (showDialog.value = props.show));
+  watchEffect(() => {
+    // pre select expose control using priority order
+    if (!selectedExpose.value) {
+      const selected = controlExposes.value.reduce<Expose | null>((acc, expose) => {
+        if (acc) return acc;
+
+        if (expose.type === ExposeTypes.Numeric) {
+          if (expose.values === null) {
+            return expose; // Highest priority
+          }
+
+          // Lower-priority fallback
+          return acc ?? expose;
+        }
+
+        return acc;
+      }, null);
+
+      selectedExpose.value = selected;
+    }
+  });
 
   const device = computed(() => {
     const device = store.getters['hub/findDevice'](props.id) as Device;
@@ -62,25 +105,6 @@
   });
 
   watchEffect(() => (showDialog.value = props.show));
-
-  // todo get Effects from device
-  // maybe effects with color temp are at the buttom ofthe button panel?
-  // or color temp is shown in brigthness slider with different range and background color of orange
-  // and a side info when dragged
-  //also maybe we dont show brigthness in the entity card and we only show it in the modal
-  const controlExposes = computed(() => {
-    const device = store.getters['hub/findDevice'](props.id) as Device;
-    if (!device) return [];
-
-    const exposeNameList = getExposes(device, writableExposesDeviceFilter());
-    return exposeNameList.map((exposeName) => device.exposes[exposeName] as Expose);
-  });
-
-  const selectedExpose = ref<Expose>();
-  const selectedComponent = computed(() => {
-    if (!selectedExpose.value) return null;
-    return EntityInputComponents(selectedExpose.value) ?? null;
-  });
 
   const expose = computed(() => {
     if (!device.value) return {} as Expose;
@@ -119,6 +143,7 @@
   function close() {
     emit('close', false);
     showDialog.value = false;
+    selectedExpose.value = null;
   }
 
   const dialogTitle = () => props.title ?? expose.value.name;
