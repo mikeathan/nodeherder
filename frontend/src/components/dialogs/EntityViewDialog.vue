@@ -27,7 +27,7 @@
   const emit = defineEmits(['close']);
 
   const showDialog = ref<boolean>(props.show);
-  const selectedExpose = ref<Expose | null>(null);
+  const selectedControlExpose = ref<Expose | null>(null);
 
   // todo get Effects from device
   // maybe effects with color temp are at the buttom ofthe button panel?
@@ -44,11 +44,11 @@
   });
 
   const selectedComponent = computed(() => {
-    if (!selectedExpose.value) return null;
+    if (!selectedControlExpose.value) return null;
 
     return (
-      EntityInputComponents(selectedExpose.value, {
-        update: (e: any) => updateValue(selectedExpose.value!.name, e),
+      EntityInputComponents(selectedControlExpose.value, {
+        update: (e: any) => updateValue(selectedControlExpose.value!.name, e),
       }) ?? null
     );
   });
@@ -56,7 +56,7 @@
   watchEffect(() => (showDialog.value = props.show));
   watchEffect(() => {
     // pre select expose control using priority order
-    if (!selectedExpose.value) {
+    if (!selectedControlExpose.value) {
       const selected = controlExposes.value.reduce<Expose | null>((acc, expose) => {
         if (acc) return acc;
 
@@ -72,7 +72,7 @@
         return acc;
       }, null);
 
-      selectedExpose.value = selected;
+      selectedControlExpose.value = selected;
     }
   });
 
@@ -138,7 +138,7 @@
   function close() {
     emit('close', false);
     showDialog.value = false;
-    selectedExpose.value = null;
+    selectedControlExpose.value = null;
   }
 
   const dialogTitle = () => props.title ?? expose.value.name;
@@ -179,7 +179,7 @@
       const value = toggleExposeBinaryProperty(expose);
       updateValue(expose.name, value);
     } else {
-      selectedExpose.value = expose;
+      selectedControlExpose.value = expose;
     }
   }
 
@@ -218,7 +218,7 @@
 
     <div class="modal-content">
       
-      <component v-if="selectedComponent" :is="selectedComponent" :value="selectedExpose?.data" :disabled="!isEnabled()" />
+      <component v-if="selectedComponent" :is="selectedComponent" :value="selectedControlExpose?.data" :disabled="!isEnabled()" />
 
       <div class="button-panel">
         <template v-for="expose in controlExposes" :key="expose.name">

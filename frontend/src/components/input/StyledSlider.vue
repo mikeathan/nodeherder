@@ -96,31 +96,48 @@
 </script>
 
 <template>
-  <div :class="generateDirectionalClass('slider-wrapper')">
-    <div :class="generateDirectionalClass('track-background')" :style="trackFill"></div>
-    <div
-      class="tap-indicator"
-      :class="[props.direction, props.type == StyledSliderInputTypes.Fill ? 'filled' : 'tap']"
-      :style="{
-        '--indicator-percent': `${trackPercentRaw}%`,
-        '--indicator-color': props.color,
-      }"
-      v-show="true" />
+  <div class="slider-container" :class="props.direction">
+    <div :class="generateDirectionalClass('slider-wrapper')">
+      <div :class="generateDirectionalClass('track-background')" :style="trackFill"></div>
+      <div
+        class="tap-indicator"
+        :class="[props.direction, props.type == StyledSliderInputTypes.Fill ? 'filled' : 'tap']"
+        :style="{
+          '--indicator-percent': `${trackPercentRaw}%`,
+          '--indicator-color': props.color,
+        }"
+        v-show="true" />
 
-    <input
-      type="range"
-      :min="props.min"
-      :max="props.max"
-      v-model="value"
-      class="slider"
-      @change.stop="updateValue"
-      @click.stop
-      @mousedown.stop
-      @pointerdown.stop />
+      <input
+        type="range"
+        :min="props.min"
+        :max="props.max"
+        v-model="value"
+        class="slider"
+        @change.stop="updateValue"
+        @click.stop
+        @mousedown.stop
+        @pointerdown.stop />
+    </div>
+
+    <!-- Vertical -->
+    <div v-if="props.direction === 'vertical'" class="value-marker vertical" :style="{ bottom: `${trackPercentRaw}%` }">
+      — {{ value }} —
+    </div>
   </div>
 </template>
 
 <style scoped>
+  .slider-container {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+  }
+
+  .slider-container.vertical {
+    height: 320px;
+    width: auto;
+  }
   /* === Slider Wrapper === */
   .slider-wrapper {
     position: relative;
@@ -284,5 +301,61 @@
 
   .slider:disabled {
     opacity: 0.6;
+  }
+
+  /* TEST */
+  .value-marker {
+    position: absolute;
+    color:white;
+    font-size: 12px;
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 1000;
+    white-space: nowrap;
+  }
+
+  /* Horizontal: show below or above the slider */
+  .value-marker.horizontal {
+    top: 100%; 
+    margin-top: 6px;
+    transform: translateX(-50%);
+  }
+
+  /* Vertical: show to the left of the slider */
+  .value-marker.vertical {
+    left: -50px;
+    transform: translateY(50%);
+    border: 2px solid red;
+  }
+
+  /* Marks Container */
+  .slider-marks {
+    position: absolute;
+    pointer-events: none;
+    font-size: 10px;
+    color: #333;
+  }
+
+  .slider-marks.horizontal {
+    width: 100%;
+    bottom: -10px;
+    display: flex;
+    justify-content: space-between;
+    position: absolute;
+  }
+
+  .slider-marks.vertical {
+    height: 100%;
+    right: -10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: absolute;
+  }
+
+  /* Individual mark */
+  .mark {
+    position: absolute;
+    white-space: nowrap;
   }
 </style>

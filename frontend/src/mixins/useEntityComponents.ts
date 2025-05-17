@@ -1,4 +1,4 @@
-import { getExposeAttribute, getExposeBinaryProperty } from '@/contracts/device';
+import { getExposeAttribute } from '@/contracts/device';
 import { buildEventHandlers } from '@/contracts/events';
 import { ControlDirection, StyledSliderInputType } from '@/types/controls.type';
 import { Expose } from '@/types/device';
