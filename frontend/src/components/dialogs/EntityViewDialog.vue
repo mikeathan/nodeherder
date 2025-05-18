@@ -1,11 +1,12 @@
 <script setup lang="ts">
   import { ref, watchEffect, computed, onMounted, onUnmounted, h } from 'vue';
   import LastSeen from '../device/LastSeen.vue';
+  import { ControlDirection } from '@/types/controls.type';
 
   import { store } from '../../store/index';
   import { Device, Expose } from '@/types/device';
   import { getFormattedSensorValue } from '../../modules/formatters/sensor-formatter';
-  import {  ExposeTypes } from '@/types/device.type';
+  import { ExposeTypes } from '@/types/device.type';
   import {
     getExposeAttribute,
     getExposeBinaryProperty,
@@ -47,7 +48,7 @@
     if (!selectedControlExpose.value) return null;
 
     return (
-      EntityInputComponents(selectedControlExpose.value, {
+      EntityInputComponents(selectedControlExpose.value, 'vertical', {
         update: (e: any) => updateValue(selectedControlExpose.value!.name, e),
       }) ?? null
     );
@@ -123,7 +124,6 @@
       return false;
     }
 
-
     if (controlExposes.value) {
       // temporary fix for state control
       return controlExposes.value.some((expose) => {
@@ -192,7 +192,6 @@
 
     store.dispatch('hub/setDeviceValue', msg);
   }
- 
 </script>
 
 <template>
@@ -217,8 +216,11 @@
     </div>
 
     <div class="modal-content">
-      
-      <component v-if="selectedComponent" :is="selectedComponent" :value="selectedControlExpose?.data" :disabled="!isEnabled()" />
+      <component
+        v-if="selectedComponent"
+        :is="selectedComponent"
+        :value="selectedControlExpose?.data"
+        :disabled="!isEnabled()" />
 
       <div class="button-panel">
         <template v-for="expose in controlExposes" :key="expose.name">

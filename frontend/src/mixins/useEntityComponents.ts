@@ -18,34 +18,38 @@ const componentResolvers: Record<ExposeType, ComponentResolver> = {
   },
 };
 
-
 type EntityInputProps = {
   direction?: ControlDirection;
   min?: number;
   max?: number;
   disabled?: boolean;
+  unit?: string;
 };
 
-function buildExposeParams(expose: Expose): EntityInputProps {
+function buildExposeParams(expose: Expose, direction: ControlDirection): EntityInputProps {
   switch (expose.type) {
     case ExposeTypes.Numeric:
       const props = {
         min: getExposeAttribute(expose, 'min'),
         max: getExposeAttribute(expose, 'max'),
-        direction: 'vertical' as ControlDirection,
+        direction: direction,
+        unit: expose.unit,
         // disabled: expose.data == 0,
       };
-    
+
       return { ...props };
   }
   return {} as EntityInputProps;
 }
 
-export const EntityInputComponents = (expose: Expose, events: EventActions): ReturnType<typeof h> | null => {
-  const props: EntityInputProps = buildExposeParams(expose);
+export const EntityInputComponents = (
+  expose: Expose,
+  direction: ControlDirection,
+  events: EventActions
+): ReturnType<typeof h> | null => {
+  const props: EntityInputProps = buildExposeParams(expose, direction);
   const eventHandlers = buildEventHandlers(events);
 
   const Component = componentResolvers[expose.type](expose);
-  return Component? h(Component, { ...props, ...eventHandlers }): null;
+  return Component ? h(Component, { ...props, ...eventHandlers }) : null;
 };
-
