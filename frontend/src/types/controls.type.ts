@@ -1,14 +1,6 @@
 import { KeyValuePair } from './types.type';
 
-export const StyledSliderInputTypes = {
-  Pick: 'Pick',
-  Fill: 'Fill',
-} as const;
-export type StyledSliderInputType = keyof typeof StyledSliderInputTypes;
-
 export type ControlDirection = 'horizontal' | 'vertical';
-
-
 
 export type ButtonPanelType = ButtonType | DropDownType;
 export type ButtonType = {

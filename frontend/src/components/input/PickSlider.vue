@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { ref, computed, watch } from 'vue';
-  import { ControlDirection, StyledSliderInputType, StyledSliderInputTypes } from '@/types/controls.type';
+  import { ControlDirection} from '@/types/controls.type';
 
   const props = withDefaults(
     defineProps<{
@@ -9,7 +9,6 @@
       max?: number;
       disabled?: boolean;
       color?: string;
-      type?: StyledSliderInputType;
       direction?: ControlDirection;
     }>(),
     {
@@ -18,7 +17,6 @@
       max: 100,
       disabled: false,
       color: '#ffc107',
-      type: StyledSliderInputTypes.Fill,
       direction: 'horizontal',
     }
   );
@@ -30,33 +28,21 @@
   const value = ref(props.value);
   const lastKnownValue = ref(props.value);
 
-  const calculateTrackPercent = () => {
-    if (props.type == StyledSliderInputTypes.Pick) return '';
-
-    const { min, max } = props;
-    const clampedValue = Math.min(Math.max(value.value, min), max);
-    const range = max - min;
-
-    if (range === 0) return '0%';
-
-    const percent = ((clampedValue - min) / range) * 100;
-    return `${percent.toFixed(1)}%`;
-  };
 
   const trackPercentRaw = computed(() => {
     const { min, max } = props;
     const clamped = Math.min(Math.max(value.value, min), max);
     return ((clamped - min) / (max - min)) * 100;
   });
+
   const trackFill = computed(() => {
     const color = props.disabled ? '#ccc' : props.color;
     const bgColor = props.disabled ? '#ccc' : '#fff2cc';
 
     const direction = props.direction === 'vertical' ? 'to top' : 'to right';
-    const percent = calculateTrackPercent();
 
     return {
-      background: `linear-gradient(${direction}, ${color} ${percent}, ${bgColor} ${percent})`,
+      background: `linear-gradient(${direction}, ${color}, ${bgColor})`,
       opacity: props.disabled ? 0.5 : 1,
     };
   });
@@ -101,7 +87,7 @@
       <div :class="generateDirectionalClass('track-background')" :style="trackFill"></div>
       <div
         class="tap-indicator"
-        :class="[props.direction, props.type == StyledSliderInputTypes.Fill ? 'filled' : 'tap']"
+        :class="[props.direction, 'tap']"
         :style="{
           '--indicator-percent': `${trackPercentRaw}%`,
           '--indicator-color': props.color,
@@ -243,18 +229,6 @@
     transform: translateX(-50%);
   }
 
-  /* Horizontal Filled Variant */
-  .tap-indicator.horizontal.filled {
-    height: 30px;
-    width: 5px;
-    border-radius: 20px;
-    margin-left: -5px;
-    border: 1px solid #ccc;
-    background-color: white;
-    left: var(--indicator-percent);
-    top: 50%;
-    transform: translate(-50%, -50%);
-  }
 
   /* === Vertical Tap Indicator Styles === */
   .tap-indicator.vertical.tap {
@@ -285,18 +259,6 @@
     background-color: #555;
     border-radius: 2px;
     transform: translateY(-50%);
-  }
-
-  /* Vertical Filled Variant */
-  .tap-indicator.vertical.filled {
-    width: 70px;
-    height: 5px;
-    border-radius: 30px;
-    background-color: white;
-    margin-top: 8px;
-    top: calc(100% - var(--indicator-percent));
-    left: 50%;
-    transform: translate(-50%, -50%);
   }
 
   .slider:disabled {

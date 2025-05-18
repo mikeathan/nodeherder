@@ -1,16 +1,25 @@
 import { getExposeAttribute } from '@/contracts/device';
 import { buildEventHandlers } from '@/contracts/events';
-import { ControlDirection, StyledSliderInputType } from '@/types/controls.type';
-import { Expose } from '@/types/device';
+import { ControlDirection } from '@/types/controls.type';
+import { Expose, ExposeType } from '@/types/device';
 import { ExposeTypes } from '@/types/device.type';
 import { EventActions } from '@/types/events.type';
 import { h, defineAsyncComponent } from 'vue';
 
-const StyledSlider = defineAsyncComponent(() => import('../components/input/StyledSlider.vue'));
+const FillSlider = defineAsyncComponent(() => import('../components/input/FillSlider.vue'));
+const PickSlider = defineAsyncComponent(() => import('../components/input/PickSlider.vue'));
 
-type EntityInputTypes = StyledSliderInputType;
+type ComponentResolver = (expose: Expose) => ReturnType<typeof defineAsyncComponent> | null;
+
+const componentResolvers: Record<ExposeType, ComponentResolver> = {
+  [ExposeTypes.Numeric]: (expose) => {
+    const Component = expose.values ? PickSlider : FillSlider;
+    return Component;
+  },
+};
+
+
 type EntityInputProps = {
-  type: EntityInputTypes;
   direction?: ControlDirection;
   min?: number;
   max?: number;
@@ -26,11 +35,8 @@ function buildExposeParams(expose: Expose): EntityInputProps {
         direction: 'vertical' as ControlDirection,
         // disabled: expose.data == 0,
       };
-
-      if (expose.values) {
-        return { ...props, type: 'Pick' };
-      }
-      return { ...props, type: 'Fill' };
+    
+      return { ...props };
   }
   return {} as EntityInputProps;
 }
@@ -39,8 +45,7 @@ export const EntityInputComponents = (expose: Expose, events: EventActions): Ret
   const props: EntityInputProps = buildExposeParams(expose);
   const eventHandlers = buildEventHandlers(events);
 
-  if (expose.type == ExposeTypes.Numeric) {
-    return h(StyledSlider, { ...props, ...eventHandlers });
-  }
-  return null;
+  const Component = componentResolvers[expose.type](expose);
+  return Component? h(Component, { ...props, ...eventHandlers }): null;
 };
+
