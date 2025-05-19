@@ -1,6 +1,6 @@
 import { getExposeAttribute } from '@/contracts/device';
 import { buildEventHandlers } from '@/contracts/events';
-import { ControlDirection } from '@/types/controls.type';
+import { ControlDirection, SliderTick } from '@/types/controls.type';
 import { Expose, ExposeType } from '@/types/device';
 import { ExposeTypes } from '@/types/device.type';
 import { EventActions } from '@/types/events.type';
@@ -24,7 +24,18 @@ type EntityInputProps = {
   max?: number;
   disabled?: boolean;
   unit?: string;
+  ticks?: SliderTick[];
 };
+
+function getSliderTicks(expose: Expose): SliderTick[] {
+  if (!expose.values) {
+    return [];
+  }
+  return Object.entries(expose.values).map(([label, value]) => ({
+    label,
+    value,
+  }));
+}
 
 function buildExposeParams(expose: Expose, direction: ControlDirection): EntityInputProps {
   switch (expose.type) {
@@ -34,10 +45,11 @@ function buildExposeParams(expose: Expose, direction: ControlDirection): EntityI
         max: getExposeAttribute(expose, 'max'),
         direction: direction,
         unit: expose.unit,
-        ticks:expose.values
+        ticks: getSliderTicks(expose),
         // disabled: expose.data == 0,
       };
 
+      console.log(props);
       return { ...props };
   }
   return {} as EntityInputProps;

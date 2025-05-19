@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { ref, computed, watch } from 'vue';
-  import { ControlDirection } from '@/types/controls.type';
+  import { ControlDirection, SliderTick } from '@/types/controls.type';
 
   const props = withDefaults(
     defineProps<{
@@ -11,7 +11,7 @@
       disabled?: boolean;
       color?: string;
       direction?: ControlDirection;
-      ticks?: number[];
+      ticks?: SliderTick[];
     }>(),
     {
       value: 50,
@@ -25,6 +25,10 @@
   );
 
   const emit = defineEmits<{
+    (e: 'update', value: number): void;
+    (e: 'mousedown', ev: MouseEvent): void;
+    (e: 'touchstart', ev: TouchEvent): void;
+    (e: 'click', ev: MouseEvent): void;
     (e: 'update', value: number): void;
   }>();
 
@@ -96,26 +100,30 @@
     { disabled: props.disabled },
   ];
 
-  const handleTickClick = (tick: number) => {
+  const handleTickClick = (tick: SliderTick) => {
     if (!props.disabled) {
-      value.value = tick;
-      emit('update', tick);
+      value.value = tick.value;
+      emit('update', tick.value);
     }
   };
 
-  const calculateTickPosition = (tick: number) => {
+  const calculateTickPosition = (tick: SliderTick) => {
     const { min, max } = props;
-    const percent = ((tick - min) / (max - min)) * 100;
+    const percent = ((tick.value - min) / (max - min)) * 100;
     return percent;
   };
 </script>
 
 <template>
+  <div
+    @mousedown="$emit('mousedown', $event)"
+    @touchstart="$emit('touchstart', $event)"
+    @click="$emit('click', $event)">
     <!-- Ticks -->
     <div v-if="showTicks" :class="generateDirectionalClass('tick-container')">
       <div
         v-for="tick in props.ticks"
-        :key="tick"
+        :key="tick.value"
         class="tick"
         :class="props.direction"
         :style="
@@ -124,30 +132,30 @@
             : { left: `${calculateTickPosition(tick)}%` }
         "
         @click="handleTickClick(tick)">
-        {{ tick }}
+        {{ tick.label ?? tick.value }}
       </div>
     </div>
-    
-  <div :class="generateDirectionalClass('slider-wrapper')">
-  
-    <div :class="generateDirectionalClass('track-background')" :style="trackFill">
-      <slot name="track" :track-percent-raw="trackPercentRaw"></slot>
+
+    <div :class="generateDirectionalClass('slider-wrapper')">
+      <div :class="generateDirectionalClass('track-background')" :style="trackFill">
+        <slot name="track" :track-percent-raw="trackPercentRaw"></slot>
+      </div>
+
+      <slot name="indicator" :track-percent-raw="trackPercentRaw" :direction="props.direction" :color="props.color">
+      </slot>
+
+      <input
+        type="range"
+        :min="props.min"
+        :max="props.max"
+        v-model="value"
+        :disabled="props.disabled"
+        class="slider"
+        @change.stop="updateValue"
+        @click.stop />
+
+      <slot name="extra" :value="value" :track-percent-raw="trackPercentRaw"></slot>
     </div>
-
-    <slot name="indicator" :track-percent-raw="trackPercentRaw" :direction="props.direction" :color="props.color">
-    </slot>
-
-    <input
-      type="range"
-      :min="props.min"
-      :max="props.max"
-      v-model="value"
-      :disabled="props.disabled"
-      class="slider"
-      @change.stop="updateValue"
-      @click.stop />
-
-    <slot name="extra" :value="value" :track-percent-raw="trackPercentRaw"></slot>
   </div>
 </template>
 
@@ -221,7 +229,7 @@
   .tick-container {
     position: absolute;
     font-size: 12px;
-    color: #444;
+    color: white;
     pointer-events: all;
     user-select: none;
     z-index: 2;
@@ -229,13 +237,12 @@
 
   .tick-container.vertical {
     height: 100%;
-    width: 40px;
-    left: -40px;
+    left: -50px;
+
   }
 
   .tick-container.horizontal {
     width: 100%;
-    height: 20px;
     bottom: -20px;
   }
 
@@ -247,7 +254,6 @@
 
   .tick.vertical {
     left: 0;
-    transform: translateY(50%);
   }
 
   .tick.horizontal {

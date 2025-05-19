@@ -214,7 +214,6 @@
       <div class="modal-value">{{ getFormattedSensorValue(expose) }}</div>
       <LastSeen :timestamp="lastSeen" class="modal-last-seen" />
     </div>
-
     <div class="modal-content">
       <component
         v-if="selectedComponent"
@@ -224,6 +223,7 @@
 
       <div class="button-panel">
         <template v-for="expose in controlExposes" :key="expose.name">
+          
           <Icon
             :icon="getEntityIcon(expose.name, expose.data)"
             clickable

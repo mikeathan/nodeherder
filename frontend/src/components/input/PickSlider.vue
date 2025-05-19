@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { ref, watch } from 'vue';
-  import { ControlDirection } from '@/types/controls.type';
+  import { ControlDirection, SliderTick } from '@/types/controls.type';
   import BaseSlider from './BaseSlider.vue';
 
   const props = withDefaults(
@@ -12,7 +12,7 @@
       disabled?: boolean;
       color?: string;
       direction?: ControlDirection;
-      ticks?: number[];
+      ticks?: SliderTick[];
     }>(),
     {
       value: 50,
@@ -71,6 +71,7 @@
       :disabled="disabled"
       :color="color"
       :direction="direction"
+      :ticks="ticks"
       @mousedown="handlePointerDown"
       @touchstart="handlePointerDown"
       @click="showMarkerWithTimeout"
