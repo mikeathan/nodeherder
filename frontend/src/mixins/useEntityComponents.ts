@@ -34,6 +34,7 @@ function buildExposeParams(expose: Expose, direction: ControlDirection): EntityI
         max: getExposeAttribute(expose, 'max'),
         direction: direction,
         unit: expose.unit,
+        ticks:expose.values
         // disabled: expose.data == 0,
       };
 
