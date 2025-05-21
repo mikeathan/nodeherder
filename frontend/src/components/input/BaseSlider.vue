@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { ref, computed, watch } from 'vue';
-  import { ControlDirection, SliderTick } from '@/types/controls.type';
+  import { ControlDirection } from '@/types/controls.type';
 
   const props = withDefaults(
     defineProps<{
@@ -11,7 +11,6 @@
       disabled?: boolean;
       color?: string;
       direction?: ControlDirection;
-      ticks?: SliderTick[];
     }>(),
     {
       value: 50,
@@ -20,7 +19,6 @@
       disabled: false,
       color: '#ffc107',
       direction: 'horizontal',
-      ticks: () => [],
     }
   );
 
@@ -85,10 +83,7 @@
     }
   );
 
-  const showTicks = computed(() => {
-    return props.ticks?.length > 0;
-  });
-
+ 
   function updateValue(event: any): void {
     const newValue = parseInt(event.target.value);
     emit('update', newValue);
@@ -100,18 +95,7 @@
     { disabled: props.disabled },
   ];
 
-  const handleTickClick = (tick: SliderTick) => {
-    if (!props.disabled) {
-      value.value = tick.value;
-      emit('update', tick.value);
-    }
-  };
 
-  const calculateTickPosition = (tick: SliderTick) => {
-    const { min, max } = props;
-    const percent = ((tick.value - min) / (max - min)) * 100;
-    return percent;
-  };
 </script>
 
 <template>
@@ -119,22 +103,6 @@
     @mousedown="$emit('mousedown', $event)"
     @touchstart="$emit('touchstart', $event)"
     @click="$emit('click', $event)">
-    <!-- Ticks -->
-    <div v-if="showTicks" :class="generateDirectionalClass('tick-container')">
-      <div
-        v-for="tick in props.ticks"
-        :key="tick.value"
-        class="tick"
-        :class="props.direction"
-        :style="
-          props.direction === 'vertical'
-            ? { bottom: `${calculateTickPosition(tick)}%` }
-            : { left: `${calculateTickPosition(tick)}%` }
-        "
-        @click="handleTickClick(tick)">
-        {{ tick.label ?? tick.value }}
-      </div>
-    </div>
 
     <div :class="generateDirectionalClass('slider-wrapper')">
       <div :class="generateDirectionalClass('track-background')" :style="trackFill">
@@ -225,39 +193,5 @@
   .slider:disabled {
     opacity: 0.6;
   }
-  /* === Tick Container === */
-  .tick-container {
-    position: absolute;
-    font-size: 12px;
-    color: white;
-    pointer-events: all;
-    user-select: none;
-    z-index: 2;
-  }
 
-  .tick-container.vertical {
-    height: 100%;
-    left: -50px;
-
-  }
-
-  .tick-container.horizontal {
-    width: 100%;
-    bottom: -20px;
-  }
-
-  .tick {
-    position: absolute;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  .tick.vertical {
-    left: 0;
-  }
-
-  .tick.horizontal {
-    bottom: 0;
-    transform: translateX(-50%);
-  }
 </style>

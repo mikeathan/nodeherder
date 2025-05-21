@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { ref, watch } from 'vue';
-  import { ControlDirection, SliderTick } from '@/types/controls.type';
+  import { ControlDirection } from '@/types/controls.type';
   import BaseSlider from './BaseSlider.vue';
 
   const props = withDefaults(
@@ -12,7 +12,6 @@
       disabled?: boolean;
       color?: string;
       direction?: ControlDirection;
-      ticks?: SliderTick[];
     }>(),
     {
       value: 50,
@@ -21,7 +20,6 @@
       disabled: false,
       color: '#ff9800',
       direction: 'horizontal',
-      ticks: () => [],
     }
   );
 
@@ -71,7 +69,6 @@
       :disabled="disabled"
       :color="color"
       :direction="direction"
-      :ticks="ticks"
       @mousedown="handlePointerDown"
       @touchstart="handlePointerDown"
       @click="showMarkerWithTimeout"
@@ -118,7 +115,7 @@
     width: auto;
   }
 
-  /* === Tap Indicator (Common Base) === */
+  /* === Tap Indicator (Common) === */
   .tap-indicator {
     position: absolute;
     pointer-events: none;
