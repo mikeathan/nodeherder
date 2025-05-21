@@ -1,23 +1,20 @@
 <script setup lang="ts">
   import { ref, watchEffect, computed, onMounted, onUnmounted, h } from 'vue';
   import LastSeen from '../device/LastSeen.vue';
-  import { ControlDirection } from '@/types/controls.type';
-
+  import { ControlDirection, createDropDownItem } from '@/types/controls.type';
   import { store } from '../../store/index';
   import { Device, Expose } from '@/types/device';
   import { getFormattedSensorValue } from '../../modules/formatters/sensor-formatter';
   import { ExposeTypes } from '@/types/device.type';
-  import {
-    getExposeAttribute,
-    getExposeBinaryProperty,
-    getExposes,
-    toggleExposeBinaryProperty,
-  } from '@/contracts/device';
-  import { writableExposesDeviceFilter } from '@/configs/automation/device.config';
+  import { DropDownItemType } from '@/types/controls.type';
+  import { getExposeBinaryProperty, getExposes, toggleExposeBinaryProperty } from '@/contracts/device';
+  import { writableConfigExposesDeviceFilter, writableExposesDeviceFilter } from '@/configs/automation/device.config';
   import { getEntityIcon } from '@/modules/formatters/entity.formatter';
   import Icon from '../controls/Icon.vue';
   import { EntityInputComponents } from '@/mixins/useEntityComponents';
-
+  import Dropdown from '@/components/controls/Dropdown.vue';
+  import { createTriggerActionOperatorsDropdowitems } from '@/configs/automation/trigger-dropdown.config';
+  import Menu from 'primevue/menu';
   const props = defineProps<{
     show: boolean;
     title?: string;
@@ -30,12 +27,20 @@
   const showDialog = ref<boolean>(props.show);
   const selectedControlExpose = ref<Expose | null>(null);
 
-  // todo get Effects from device
-  // maybe effects with color temp are at the buttom ofthe button panel?
-  // or color temp is shown in brigthness slider with different range and background color of orange
-  // and a side info when dragged
-  //also maybe we dont show brigthness in the entity card and we only show it in the modal
+  const configExposes = computed(() => {
+    const device = store.getters['hub/findDevice'](props.id) as Device;
+    if (!device) return [];
 
+    const exposeNameList = getExposes(device, writableConfigExposesDeviceFilter());
+    return exposeNameList.map((exposeName) => device.exposes[exposeName] as Expose);
+  });
+  const dropdownItems = computed(() => {
+    let items: DropDownItemType[] = [];
+    Object.values(configExposes.value).forEach((expose) =>
+      items.push(createDropDownItem(expose.name, expose.name, () => {}))
+    );
+    return items;
+  });
   const controlExposes = computed(() => {
     const device = store.getters['hub/findDevice'](props.id) as Device;
     if (!device) return [];
@@ -192,6 +197,22 @@
 
     store.dispatch('hub/setDeviceValue', msg);
   }
+  const menu = ref<InstanceType<typeof Menu> | null>(null);
+  const toggleMenu = (event: Event) => {
+    menu.value?.toggle(event);
+  };
+  const items = [
+    {
+      label: 'Option 1',
+      icon: 'pi pi-check',
+      command: () => console.log('Option 1 selected'),
+    },
+    {
+      label: 'Option 2',
+      icon: 'pi pi-times',
+      command: () => console.log('Option 2 selected'),
+    },
+  ];
 </script>
 
 <template>
@@ -223,7 +244,6 @@
 
       <div class="button-panel">
         <template v-for="expose in controlExposes" :key="expose.name">
-          
           <Icon
             :icon="getEntityIcon(expose.name, expose.data)"
             clickable
@@ -232,6 +252,21 @@
             @click="handleClick(expose)" />
         </template>
       </div>
+
+      TODO add dropdown to icon or crete a new component for it - IconMenu  or IconDropdown
+        <div class="relative inline-block">
+          <Icon
+            :icon="getEntityIcon(configExposes[0].name, configExposes[0].data)"
+            clickable
+            background="#222222"
+            :size="38"
+            @click="(e) => toggleMenu(e)"
+         />
+          <Menu ref="menu" :model="items" popup />
+        </div>
+      <template v-for="expose in configExposes" :key="expose.name">
+    
+      </template>
     </div>
   </Dialog>
 </template>

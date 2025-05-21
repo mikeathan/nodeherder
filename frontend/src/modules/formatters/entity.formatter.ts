@@ -42,12 +42,13 @@ import {
   mdiThermometerHigh,
   mdiThermometerLow,
   mdiTune,
-  mdiCeilingLightMultiple,
+  mdiCreation,
   mdiAlarmLight,
   mdiAlarmLightOff,
   mdiCrosshairsQuestion,
   mdiBrightness6,
 } from '@mdi/js';
+import { effect } from 'vue';
 
 const lampColor = '#ffc107';
 const greyBackground = '#363636';
@@ -93,6 +94,7 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
   color_xy: { name: mdiPalette, color: 'purple' },
   color_hs: { name: mdiPalette, color: 'purple' },
   color_temp: { name: mdiTune, color: 'white' },
+  effect: { name: mdiCreation, color: 'gray' },
   illuminance_lux: {
     name: mdiWhiteBalanceSunny,
     color: 'yellow',

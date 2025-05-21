@@ -33,7 +33,7 @@
   });
 
   const emit = defineEmits<{
-    (e: 'click'): void;
+    (e: 'click', event: MouseEvent): void;
   }>();
 
   function handleClick(event: MouseEvent) {
@@ -41,7 +41,7 @@
       // Stop the event from bubbling up to parent elements
       // only when the icon itself is handling the click.
       event.stopPropagation();
-      emit('click');
+      emit('click', event);
     }
   }
   const wrapperStyle = computed(() => {
