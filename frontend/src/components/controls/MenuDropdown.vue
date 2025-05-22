@@ -11,6 +11,11 @@
       default: [],
       required: true,
     },
+    text: {
+      type: String,
+      default: '',
+      required: false,
+    },
     backgroundColor: {
       type: String,
       default: 'var(--surface-card)',
@@ -41,14 +46,26 @@
 
 <template>
   <div class="relative inline-block">
-    <div
-      class="flex items-center gap-2 px-3 py-2 rounded cursor-pointer hover:opacity-80 transition-opacity"
-      :style="{ backgroundColor }"
-      @click="toggleMenu">
-      <Icon :icon="icon" :size="size" :background="'transparent'" />
-      <span class="text-sm font-medium whitespace-nowrap"> Menu </span>
+    <div class="button-content" :style="{ backgroundColor }" @click="toggleMenu">
+      <Icon :icon="icon" :size="size" background="transparent" />
+      <span class="text-md font-medium whitespace-nowrap"> {{ text }} </span>
     </div>
-    <Menu ref="menu" :model="children" popup />
+    <Menu ref="menu" :model="children" popup appendTo="body" />
   </div>
 </template>
-<style scoped></style>
+<style scoped>
+  .button-content {
+    display: flex;
+    gap: 3px;
+    padding: 4px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: opacity 0.3s ease;
+    align-items: center;
+  }
+
+  .button-content:hover {
+    opacity: 0.8; 
+  }
+
+</style>

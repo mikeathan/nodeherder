@@ -67,7 +67,6 @@ declare module 'vue' {
     LoggerSettings: typeof import('./src/components/hub/settings/LoggerSettings.vue')['default']
     Logo: typeof import('./src/components/controls/Logo.vue')['default']
     Menu: typeof import('primevue/menu')['default']
-    MenuBar: typeof import('./src/components/controls/MenuBar.vue')['default']
     MenuDropdown: typeof import('./src/components/controls/MenuDropdown.vue')['default']
     NavigationBar: typeof import('./src/components/controls/NavigationBar.vue')['default']
     NavigationVar: typeof import('./src/components/controls/NavigationVar.vue')['default']

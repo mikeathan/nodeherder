@@ -1,10 +1,10 @@
 <script setup lang="ts">
   import { ref, watchEffect, computed, onMounted, onUnmounted, h } from 'vue';
   import LastSeen from '../device/LastSeen.vue';
-  import { ControlDirection, createDropDownItem } from '@/types/controls.type';
+  import { createDropDownItem } from '@/types/controls.type';
   import { store } from '../../store/index';
   import { Device, Expose } from '@/types/device';
-  import { getFormattedSensorValue } from '../../modules/formatters/sensor-formatter';
+  import { getFormattedSensorValue, getSensorName } from '../../modules/formatters/sensor-formatter';
   import { ExposeTypes } from '@/types/device.type';
   import { DropDownItemType } from '@/types/controls.type';
   import { getExposeBinaryProperty, getExposes, toggleExposeBinaryProperty } from '@/contracts/device';
@@ -12,7 +12,6 @@
   import { getEntityIcon } from '@/modules/formatters/entity.formatter';
   import Icon from '../controls/Icon.vue';
   import { EntityInputComponents } from '@/mixins/useEntityComponents';
-  import Dropdown from '@/components/controls/Dropdown.vue';
   import Menu from 'primevue/menu';
   import MenuDropdown from '../controls/MenuDropdown.vue';
   const props = defineProps<{
@@ -252,15 +251,17 @@
             @click="handleClick(expose)" />
         </template>
       </div>
-
-      <template v-for="expose in configExposes" :key="expose.name">
-         <MenuDropdown
-        backgroundColor="#222222"
-        :size="38"
-        :children="items"
-        @click="toggleMenu"
-        :icon="getEntityIcon(expose.name, expose.data)" />
-      </template>
+      <div class="pt-2">
+        <template v-for="expose in configExposes" :key="expose.name">
+          <MenuDropdown
+            backgroundColor="#222222"
+            :size="38"
+            :text="getSensorName(expose.name)"
+            :children="items"
+            @click="toggleMenu"
+            :icon="getEntityIcon(expose.name, expose.data)" />
+        </template>
+      </div>
     </div>
   </Dialog>
 </template>
