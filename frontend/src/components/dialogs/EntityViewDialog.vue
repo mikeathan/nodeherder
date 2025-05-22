@@ -13,8 +13,8 @@
   import Icon from '../controls/Icon.vue';
   import { EntityInputComponents } from '@/mixins/useEntityComponents';
   import Dropdown from '@/components/controls/Dropdown.vue';
-  import { createTriggerActionOperatorsDropdowitems } from '@/configs/automation/trigger-dropdown.config';
   import Menu from 'primevue/menu';
+  import MenuDropdown from '../controls/MenuDropdown.vue';
   const props = defineProps<{
     show: boolean;
     title?: string;
@@ -253,19 +253,13 @@
         </template>
       </div>
 
-      TODO add dropdown to icon or crete a new component for it - IconMenu  or IconDropdown
-        <div class="relative inline-block">
-          <Icon
-            :icon="getEntityIcon(configExposes[0].name, configExposes[0].data)"
-            clickable
-            background="#222222"
-            :size="38"
-            @click="(e) => toggleMenu(e)"
-         />
-          <Menu ref="menu" :model="items" popup />
-        </div>
       <template v-for="expose in configExposes" :key="expose.name">
-    
+         <MenuDropdown
+        backgroundColor="#222222"
+        :size="38"
+        :children="items"
+        @click="toggleMenu"
+        :icon="getEntityIcon(expose.name, expose.data)" />
       </template>
     </div>
   </Dialog>

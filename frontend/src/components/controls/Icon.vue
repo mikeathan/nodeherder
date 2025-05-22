@@ -83,6 +83,7 @@
   <div class="icon-wrapper" :class="{ clickable }" @click="handleClick" :style="wrapperStyle">
     <svg :width="props.size" :height="props.size" viewBox="0 0 24 24" :aria-label="props.icon.tooltip">
       <title>{{ props.icon.tooltip }}</title>
+     
       <g :transform="`rotate(${rotationAngle} 12 12) scale(0.8)`">
         <path :d="props.icon.name" :fill="props.icon.color || 'black'" transform="translate(2.4, 2.4)" />
       </g>

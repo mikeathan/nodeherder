@@ -24,6 +24,7 @@
   const logoItem = computed(() => {
     return props.items.find((item) => item.isLogo);
   });
+  
   const renderMenuItem = (item: MenuBarItem) => {
     if (item.isLogo) return null; // Logo items are handled separately
     if (!item.custom) {
