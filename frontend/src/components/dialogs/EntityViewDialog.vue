@@ -1,14 +1,15 @@
 <script setup lang="ts">
-  import { ref, watchEffect, computed, onMounted, onUnmounted, h } from 'vue';
+  import { ref, watchEffect, computed, onMounted, onUnmounted } from 'vue';
   import LastSeen from '../device/LastSeen.vue';
-  import { createDropDownItem } from '@/types/controls.type';
   import { store } from '../../store/index';
   import { Device, Expose } from '@/types/device';
   import { getFormattedSensorValue, getSensorName } from '../../modules/formatters/sensor-formatter';
   import { ExposeTypes } from '@/types/device.type';
-  import { DropDownItemType } from '@/types/controls.type';
   import { getExposeBinaryProperty, getExposes, toggleExposeBinaryProperty } from '@/contracts/device';
-  import { writableConfigExposesDeviceFilter, writableExposesDeviceFilter } from '@/configs/automation/device.config';
+  import {
+    writableConfigPresetsExposesDeviceFilter,
+    writableExposesDeviceFilter,
+  } from '@/configs/automation/device.config';
   import { getEntityIcon } from '@/modules/formatters/entity.formatter';
   import Icon from '../controls/Icon.vue';
   import { EntityInputComponents } from '@/mixins/useEntityComponents';
@@ -28,21 +29,19 @@
 
   const configExposes = computed(() => {
     const device = store.getters['hub/findDevice'](props.id) as Device;
-    if (!device) return [];
+    if (!device) {
+      return [];
+    }
 
-    const exposeNameList = getExposes(device, writableConfigExposesDeviceFilter());
+    const exposeNameList = getExposes(device, writableConfigPresetsExposesDeviceFilter());
     return exposeNameList.map((exposeName) => device.exposes[exposeName] as Expose);
   });
-  const dropdownItems = computed(() => {
-    let items: DropDownItemType[] = [];
-    Object.values(configExposes.value).forEach((expose) =>
-      items.push(createDropDownItem(expose.name, expose.name, () => {}))
-    );
-    return items;
-  });
+
   const controlExposes = computed(() => {
     const device = store.getters['hub/findDevice'](props.id) as Device;
-    if (!device) return [];
+    if (!device) {
+      return [];
+    }
 
     const exposeNameList = getExposes(device, writableExposesDeviceFilter());
     return exposeNameList.map((exposeName) => device.exposes[exposeName] as Expose);
@@ -102,13 +101,21 @@
     }
   };
 
+  const handleEscape = (event: KeyboardEvent) => {
+    if (event.key === 'Escape' && showDialog.value) {
+      close();
+    }
+  };
+
   onMounted(() => {
     checkMobile();
     window.addEventListener('resize', checkMobile);
+    window.addEventListener('keydown', handleEscape);
   });
 
   onUnmounted(() => {
     window.removeEventListener('resize', checkMobile);
+    window.removeEventListener('keydown', handleEscape);
   });
 
   watchEffect(() => (showDialog.value = props.show));
@@ -200,18 +207,20 @@
   const toggleMenu = (event: Event) => {
     menu.value?.toggle(event);
   };
-  const items = [
-    {
-      label: 'Option 1',
-      icon: 'pi pi-check',
-      command: () => console.log('Option 1 selected'),
-    },
-    {
-      label: 'Option 2',
-      icon: 'pi pi-times',
-      command: () => console.log('Option 2 selected'),
-    },
-  ];
+
+  function buildMenuItems(expose: Expose) {
+    if (!expose.values) {
+      return [];
+    }
+    return Object.values(expose.values).map((value: any) => {
+      return {
+        label: value,
+        command: () => {
+          updateValue(expose.name, value);
+        },
+      };
+    });
+  }
 </script>
 
 <template>
@@ -226,7 +235,7 @@
     @hide="close()">
     <template #header>
       <div class="dialog-header">
-        <span>{{ dialogTitle() }}</span>
+        <span>{{ dialogTitle() }}</span> TODO on lick got to devicepage/0x00158d0005a23c38
         <Button icon="pi pi-times" class="p-button-text" @click="close()" />
       </div>
     </template>
@@ -257,7 +266,7 @@
             backgroundColor="#222222"
             :size="38"
             :text="getSensorName(expose.name)"
-            :children="items"
+            :children="buildMenuItems(expose)"
             @click="toggleMenu"
             :icon="getEntityIcon(expose.name, expose.data)" />
         </template>

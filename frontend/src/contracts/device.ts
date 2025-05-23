@@ -75,3 +75,4 @@ export function getPropertiesByExposeType(device: Device, exposeType: ValueOf<ty
     .filter(([id, entity]) => entity.type == exposeType)
     .map(([i, e]) => e.name);
 }
+

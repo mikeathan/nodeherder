@@ -25,9 +25,13 @@ export function writableExposesDeviceFilter(): DeviceFilter {
   };
 }
 
-export function writableConfigExposesDeviceFilter(): DeviceFilter {
+export function writableConfigPresetsExposesDeviceFilter(): DeviceFilter {
   return (device: Device, expose: Expose): boolean => {
-    return expose.access_mode == ExposeAccessModes.Write && expose.category == ExposeCategories.Config;
+    return (
+      expose.access_mode == ExposeAccessModes.Write &&
+      expose.category == ExposeCategories.Config &&
+      expose.values != null
+    );
   };
 }
 
