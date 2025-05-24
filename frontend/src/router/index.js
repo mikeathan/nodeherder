@@ -1,13 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import DevicePage from '../components/device/DevicePage.vue';
-import Dashboard from '../components/device-dashboard/DeviceDashboard.vue';
+import Dashboard from '../components/dashboards/DeviceDashboard.vue';
 import AutomationsViewer from '../components/automations/Viewer.vue';
 import AutomationsEditor from '../components/automations/Editor.vue';
 import AutomationsCreator from '../components/automations/Creator.vue';
 import Settings from '../components/hub/settings/Settings.vue';
 import ConsoleViewer from '../components/hub/console/ConsoleViewer.vue';
 import DeviceList from '../components/device-list/DeviceList.vue';
-import GroupDashboard from '../components/group-dashboard/GroupDashboard.vue';
+import GroupDashboard from '../components/dashboards/GroupDashboard.vue';
 
 const router = createRouter({
   history: createWebHistory(),

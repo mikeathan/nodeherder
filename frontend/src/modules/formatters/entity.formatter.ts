@@ -21,6 +21,7 @@ import {
   mdiFactory,
   mdiCog,
   mdiVolumeHigh,
+  mdiVolumeMedium,
   mdiPercent,
   mdiAlert,
   mdiPalette,
@@ -47,6 +48,7 @@ import {
   mdiAlarmLightOff,
   mdiCrosshairsQuestion,
   mdiBrightness6,
+  mdiMusicNote,
 } from '@mdi/js';
 import { effect } from 'vue';
 
@@ -88,7 +90,9 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
   },
   power_factor: { name: mdiFactory, color: 'gray' },
   mode: { name: mdiCog, color: 'gray' },
+  melody: { name: mdiMusicNote, color: 'purple' },
   sound: { name: mdiVolumeHigh, color: 'blue' },
+  volume: { name: mdiVolumeMedium, color: 'SteelBlue' },
   position: { name: mdiPercent, color: 'blue' },
   alarm: { name: mdiAlert, color: 'red' },
   color_xy: { name: mdiPalette, color: 'purple' },

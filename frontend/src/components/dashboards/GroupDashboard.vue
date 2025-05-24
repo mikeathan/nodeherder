@@ -2,7 +2,7 @@
   import { computed } from 'vue';
   import { store } from '@/store';
   import { DashboardGroup, DashboardGroups, DeviceGroup } from '@/types/settings.type';
-  import EntityCard from '../expose/EntityCard.vue';
+  import EntityCard from './cards/EntityCard.vue';
 
   const dashboardGroups = computed(() => {
     return store.getters['hub/dashboardGroups']() as DashboardGroups;
@@ -40,16 +40,14 @@
 
 <style scoped>
   .dashboard-container {
-    display: grid;
-    gap: 1rem;
-    card-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
-    justify-items: stretch;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-width: 100%;
   }
 
   .dashboard-group {
-    padding: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 0.8rem;
   }
 
   .dashboard-title {

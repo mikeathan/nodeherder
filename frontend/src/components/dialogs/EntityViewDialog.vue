@@ -7,8 +7,8 @@
   import { ExposeTypes } from '@/types/device.type';
   import { getExposeBinaryProperty, getExposes, toggleExposeBinaryProperty } from '@/contracts/device';
   import {
-    writableConfigPresetsExposesDeviceFilter,
     writableExposesDeviceFilter,
+    writableConfigPresetsExposesDeviceFilter,
   } from '@/configs/automation/device.config';
   import { getEntityIcon } from '@/modules/formatters/entity.formatter';
   import Icon from '../controls/Icon.vue';
@@ -169,14 +169,13 @@
       };
     }
     return {
-      width: '30vw',
-      minWidth: '580px',
+      width: 'auto',
+      minWidth: '460px',
       maxWidth: '90vw',
       height: 'auto',
-      minHeight: '580px',
       maxHeight: '90vh',
       borderRadius: '1rem',
-      overflow: 'hidden',
+      overflow: 'auto',
       display: 'flex',
       flexDirection: 'column',
     };
@@ -235,7 +234,11 @@
     @hide="close()">
     <template #header>
       <div class="dialog-header">
-        <span>{{ dialogTitle() }}</span> TODO on lick got to devicepage/0x00158d0005a23c38
+        <RouterLink :to="`/devicepage/${id}`">
+          <Button label="Link" variant="link" class="ps-0" @click="close()">
+            {{ dialogTitle() }}
+          </Button>
+        </RouterLink>
         <Button icon="pi pi-times" class="p-button-text" @click="close()" />
       </div>
     </template>
@@ -250,7 +253,7 @@
         :value="selectedControlExpose?.data"
         :disabled="!isEnabled()" />
 
-      <div class="button-panel">
+      <div class="modal-control-buttons">
         <template v-for="expose in controlExposes" :key="expose.name">
           <Icon
             :icon="getEntityIcon(expose.name, expose.data)"
@@ -260,7 +263,7 @@
             @click="handleClick(expose)" />
         </template>
       </div>
-      <div class="pt-2">
+      <div class="modal-config-buttons">
         <template v-for="expose in configExposes" :key="expose.name">
           <MenuDropdown
             backgroundColor="#222222"
@@ -275,7 +278,7 @@
   </Dialog>
 </template>
 <style scoped>
-  .button-panel {
+  .modal-control-buttons {
     display: flex;
     background: #222222;
     border-radius: 999px;
@@ -285,6 +288,14 @@
     margin-top: 1.5rem;
     align-self: center;
     width: fit-content;
+  }
+
+  .modal-config-buttons {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
   }
 
   .dialog-header {
@@ -308,6 +319,7 @@
     align-items: center;
     gap: 0.2rem;
     padding-bottom: 2rem;
+    user-select: none;
   }
 
   .modal-value {

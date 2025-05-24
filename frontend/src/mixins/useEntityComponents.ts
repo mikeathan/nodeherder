@@ -38,7 +38,6 @@ function buildExposeParams(expose: Expose, direction: ControlDirection): EntityI
         // disabled: expose.data == 0,
       };
 
-      console.log(props);
       return { ...props };
   }
   return {} as EntityInputProps;

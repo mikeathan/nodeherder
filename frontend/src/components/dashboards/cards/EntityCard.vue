@@ -1,17 +1,12 @@
 <script setup lang="ts">
-  import { getFormattedSensorValue, getSensorName } from '../../modules/formatters/sensor-formatter';
-  import { getSensorIcon } from '../../modules/formatters/sensor-formatter';
-  import { store } from '../../store/index';
+  import { getFormattedSensorValue, getSensorName } from '../../../modules/formatters/sensor-formatter';
+  import { getSensorIcon } from '../../../modules/formatters/sensor-formatter';
+  import { store } from '../../../store/index';
   import { computed, ref } from 'vue';
   import { Device, Expose } from '@/types/device';
-  import Icon from '../controls/Icon.vue';
-  import { ExposeAccessModes, ExposeCategories, ExposeTypes } from '@/types/device.type';
-  import {
-    getExposeAttribute,
-    getExposeBinaryProperty,
-    getExposes,
-    toggleExposeBinaryProperty,
-  } from '@/contracts/device';
+  import Icon from '../../controls/Icon.vue';
+  import { ExposeAccessModes, ExposeTypes } from '@/types/device.type';
+  import { getExposeBinaryProperty, getExposes, toggleExposeBinaryProperty } from '@/contracts/device';
   import { stateDevicesFilter } from '@/configs/automation/device.config';
   import { emitOpenEntityViewDialog } from '@/contracts/dialog-events';
 
@@ -107,9 +102,7 @@
       }
     }
   }
-  function hasNumericFeatures(): boolean {
-    return expose.value.type == ExposeTypes.Numeric;
-  }
+
   function isToggleable(): boolean {
     return (
       (expose.value.type == ExposeTypes.Binary && expose.value.access_mode != ExposeAccessModes.Read) ||
@@ -123,12 +116,10 @@
       name: expose.value.name,
       title: getSensorName(expose.value.name),
     };
-    console.log('handleCardClick ', expose.value.name);
 
+    // TODO:
     ///send title name to include dashboardgroupName + entity name
-    emitOpenEntityViewDialog(() => {
-      console.log('dialog closed');
-    }, eventProps);
+    emitOpenEntityViewDialog(() => {}, eventProps);
   }
 
   const cardStyle = computed(() => {
