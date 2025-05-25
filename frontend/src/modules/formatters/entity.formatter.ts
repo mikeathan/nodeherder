@@ -49,6 +49,8 @@ import {
   mdiCrosshairsQuestion,
   mdiBrightness6,
   mdiMusicNote,
+  mdiVolumeVibrate,
+  mdiLockOutline,
 } from '@mdi/js';
 import { effect } from 'vue';
 
@@ -125,6 +127,8 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
   angle_z: { name: mdiAxisZArrow, color: 'gray' },
   side: { name: mdiCubeOutline, color: 'gray' },
   presence: { name: mdiAccount, color: 'black' },
+  silence: { name: mdiVolumeVibrate, color: 'white' },
+  child_lock: { name: mdiLockOutline, color: 'white' },
   contact: { name: mdiDoorOpen, color: 'white' },
 };
 

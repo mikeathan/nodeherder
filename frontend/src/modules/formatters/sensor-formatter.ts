@@ -42,7 +42,9 @@ import {
   mdiThermometerHigh,
   mdiThermometerLow,
   mdiTune,
-  mdiCeilingLightMultiple
+  mdiCeilingLightMultiple,
+  mdiVolumeVibrate,
+  mdiLockOutline,
 } from '@mdi/js';
 import { Expose } from '@/types/device';
 
@@ -161,6 +163,8 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
   side: { name: mdiCubeOutline, color: 'gray' },
   presence: { name: mdiAccount, color: 'green' },
   contact: { name: mdiDoorOpen, color: 'white' },
+  silence: { name: mdiVolumeVibrate, color: 'white' },
+  child_lock: { name: mdiLockOutline, color: 'white' },
 };
 
 // const typeToClassMapsensor: KeyValuePair<string> = {

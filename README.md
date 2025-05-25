@@ -75,13 +75,6 @@ TODO:
 - frontend -manage the dialogs via event messages - done
 - frontend - add expose selection dialog multiple selection
 - remove non measurement exposes from metrics - done
-- create group
-- group needs to be stored somewhere in backend
-- we need group editor
-- select group
-- add expose to group
-- expose has a new component card when clicked it opens a dialog to modify the value is its writable
-- group viewer - list of exposes in group
 
 toggle for live data ? later
 
@@ -107,22 +100,8 @@ METRICS backend TODO
 - consider sampling data if too large data set ?
 - index entries = bolt.Bucket.CreateIndex
 
-Check for disalbed items in bridge - see if we can add them if online
+Check for disabled items in bridge - see if we can add them if online
 
 device groups TODO --------------------------
-ligth control
-when click on panel it opens the bigger view
-when clikc on the icon it toggles the light
-if ligth has color temp
-the we need color picker
 
-also at the top here is link for metrics view , when it was on/of
-
-General control
-displays icon, value and unit
-
-if binary clicking on icon toggles value aand cion color is grey if off
-
-maybe we can have a view that lists the values in a minimal view ?
-
-so 
+add,remove, edit expose and groups from ui
