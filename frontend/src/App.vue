@@ -14,9 +14,15 @@
   const menuItems = [
     {
       to: '/',
-      label: 'dashboard',
+      label: 'group dashboard',
       icon: 'pi pi-home',
       command: () => router.push('/'),
+    },
+    {
+      to: '/',
+      label: 'device dashboard',
+      icon: 'pi pi-mobile',
+      command: () => router.push('/devicedashboard'),
     },
     {
       to: '/',
