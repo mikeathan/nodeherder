@@ -10,11 +10,11 @@
     writableExposesDeviceFilter,
     writableConfigPresetsExposesDeviceFilter,
   } from '@/configs/automation/device.config';
-  import { getEntityIcon } from '@/modules/formatters/entity.formatter';
   import Icon from '../controls/Icon.vue';
   import { EntityInputComponents } from '@/mixins/useEntityComponents';
   import Menu from 'primevue/menu';
   import MenuDropdown from '../controls/MenuDropdown.vue';
+import { getSensorIcon } from '../../modules/formatters/sensor-formatter';
   const props = defineProps<{
     show: boolean;
     title?: string;
@@ -256,7 +256,7 @@
       <div class="modal-control-buttons">
         <template v-for="expose in controlExposes" :key="expose.name">
           <Icon
-            :icon="getEntityIcon(expose.name, expose.data)"
+            :icon="getSensorIcon(expose.name, expose.data)"
             clickable
             background="#222222"
             :size="38"
@@ -271,7 +271,7 @@
             :text="getSensorName(expose.name)"
             :children="buildMenuItems(expose)"
             @click="toggleMenu"
-            :icon="getEntityIcon(expose.name, expose.data)" />
+            :icon="getSensorIcon(expose.name, expose.data)" />
         </template>
       </div>
     </div>

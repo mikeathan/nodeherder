@@ -42,62 +42,33 @@ import {
   mdiThermometerHigh,
   mdiThermometerLow,
   mdiTune,
-  mdiCeilingLightMultiple,
   mdiVolumeVibrate,
   mdiLockOutline,
+  mdiIntegratedCircuitChip,
+  mdiBattery80,
+  mdiBattery60,
+  mdiBattery40,
+  mdiBattery20,
+  mdiBatteryAlert,
+  mdiRadar,
+  mdiAlarmLight,
+  mdiAlarmLightOff,
+  mdiCrosshairsQuestion,
+  mdiBrightness6,
+  mdiCreation,
 } from '@mdi/js';
 import { Expose } from '@/types/device';
 
 const lampColor = '#ffc107';
 
-// const typeToClassMapsensor: KeyValuePair<string> = {
-//   humidity: 'text-info fa-tint',
-//   illuminance: 'fa-sun',
-//   pressure: 'fa-cloud-download-alt',
-//   co2: 'fa-atom text-warning',
-//   voltage: 'fa-bolt text-success',
-//   state: 'fa-star-half-alt',
-//   brightness: 'fa-sun',
-//   occupancy: 'text-warning fa-walking',
-//   current: 'fa-copyright text-warning',
-//   power: 'fa-power-off text-success',
-//   energy: 'fa-plug text-info',
-//   frequency: 'fa-wave-square',
-//   tamper: 'text-warning fa-exclamation-circle text-danger',
-//   smoke: 'fa-smoking text-danger',
-//   radiation_dose_per_hour: 'fa-radiation text-danger',
-//   radioactive_events_per_minute:
-//     'fa-radiation-alt text-warning',
-//   power_factor: 'fa-industry text-danger',
-//   mode: 'fa-user-cog text-warning',
-//   sound: 'fa-volume-up text-info',
-//   position: 'fa-percent text-info',
-//   alarm: 'fa-exclamation-triangle text-danger',
-//   color_xy: 'fa-palette',
-//   color_hs: 'fa-palette',
-//   color_temp: 'fa-sliders-h',
-//   illuminance_lux: 'fa-sun',
-//   soil_moisture: 'fa-fill-drip',
-//   water_leak: 'fa-beat-fade text-primary fa-water',
-//   week: 'fa-calendar-week',
-//   workdays_schedule: 'fa-calendar-day text-info',
-//   holidays_schedule: 'fa-calendar-day text-danger',
-//   away_mode: 'fa-plane text-info',
-//   vibration:
-//     'fa-shake fa-rotate-270 text-primary fa-water fa-rotate-270',
-//   power_outage_count: 'fa-plug-circle-xmark',
-//   angle_x: 'fa-x',
-//   angle_y: 'fa-y',
-//   angle_z: 'fa-z',
-//   side: 'fa-cube',
-//   presence: 'fa-light fa-person',
-//   contact: 'fa-fw fa-door-open',
-// };
-
 const typeToClassMapsensor: KeyValuePair<IconProps> = {
   humidity: {
     name: mdiWaterPercent,
     color: 'rgba(13,202,240,1)',
+  },
+  device_fault: {
+    name: mdiIntegratedCircuitChip,
+    color: 'red',
   },
   illuminance: {
     name: mdiWhiteBalanceSunny,
@@ -108,9 +79,11 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
   co: { name: mdiMoleculeCo, color: 'white' },
   pm25: { name: mdiFactory, color: 'white' },
   voltage: { name: mdiLightningBolt, color: 'orange' },
-  state: { name: mdiStarHalfFull, color: 'white' },
+  state: { name: mdiPower, color: 'white' },
+  effect: { name: mdiCreation, color: 'gray' },
+
   brightness: {
-    name: mdiCeilingLightMultiple,
+    name: mdiBrightness6,
     color: lampColor,
   },
   occupancy: { name: mdiWalk, color: 'white' },
@@ -157,6 +130,7 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
     name: mdiPowerPlugOff,
     color: 'red',
   },
+  target_distance: { name: mdiRadar, color: 'white' },
   angle_x: { name: mdiAxisXArrow, color: 'gray' },
   angle_y: { name: mdiAxisYArrow, color: 'gray' },
   angle_z: { name: mdiAxisZArrow, color: 'gray' },
@@ -197,7 +171,8 @@ export function getSensorName(sensor: string): string {
   if (!sensor) {
     return 'Sensor not found';
   }
-  return sensor.replace('_', ' ').charAt(0).toUpperCase() + sensor.slice(1);
+  const formatted = sensor.replace('_', ' ');
+  return `${formatted.charAt(0).toUpperCase()}${formatted.slice(1)}`;
 }
 
 export function getSensorValue(value: any): any {
@@ -214,19 +189,46 @@ export function getSensorValue(value: any): any {
 
 export function getSensorIcon(sensor: string, value: any): IconProps {
   switch (sensor) {
+    case 'alarm':
+      return getAlarmIcon(value);
     case 'device_temperature':
     case 'temperature':
     case 'local_temperature':
       return getTemperatureIcon(value);
+    case 'battery':
+    case 'battpercentage':
+      return getBatteryIcon(value);
     case 'presence':
       return getPresenceIcon(value);
   }
-
-  return typeToClassMapsensor[sensor];
+  const icon = typeToClassMapsensor[sensor];
+  return icon ?? getUnknownEntityIcon();
 }
 
+const getUnknownEntityIcon = (): IconProps => {
+  return { name: mdiCrosshairsQuestion, color: 'grey' };
+};
+
 const getPresenceIcon = (value: boolean): IconProps => {
-  return value ? { name: mdiMotionSensor, color: 'white' } : { name: mdiMotionSensorOff, color: 'white' };
+  return value ? { name: mdiMotionSensor, color: '#1E88E5' } : { name: mdiMotionSensorOff, color: 'grey' };
+};
+
+const getBatteryIcon = (value: number): IconProps => {
+  if (value >= 80) {
+    return { name: mdiBattery80, color: 'red' };
+  } else if (value >= 60) {
+    return { name: mdiBattery60, color: 'orange' };
+  } else if (value >= 40) {
+    return { name: mdiBattery40, color: 'yellow' };
+  } else if (value >= 20) {
+    return { name: mdiBattery20, color: 'yellow' };
+  } else {
+    return { name: mdiBatteryAlert, color: 'red' };
+  }
+};
+
+const getAlarmIcon = (value: boolean): IconProps => {
+  return value ? { name: mdiAlarmLight, color: 'red' } : { name: mdiAlarmLightOff, color: 'grey' };
 };
 
 const getTemperatureIcon = (temperature: number): IconProps => {

@@ -24,6 +24,27 @@
                 "exposes": ["temperature", "humidity"]
               }
             }
+          },
+          "attic room": {
+            "name": "attic room",
+            "deviceGroup": {
+              "0x00124b0029207763": {
+                "deviceId": "0x00124b0029207763",
+                "exposes": ["temperature", "humidity"]
+              },
+              "0x70ac08fffefafeca": {
+                "deviceId": "0x70ac08fffefafeca",
+                "exposes": ["brightness"]
+              },
+              "0xa4c13894070052fc": {
+                "deviceId": "0xa4c13894070052fc",
+                "exposes": ["presence", "illuminance", "target_distance"]
+              },
+              "0xa4c138c383ac3fc8": {
+                "deviceId": "0xa4c138c383ac3fc8",
+                "exposes": ["battery", "device_fault", "smoke", "silence"]
+              }
+            }
           }
         },
         "devices": {
