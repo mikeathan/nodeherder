@@ -5,6 +5,7 @@ import {
   DeleteDeviceEventAction,
   DialogEventAction,
   DialogEventActions,
+  EntityViewDialogProps,
   ExposeSelectionDialogProps,
   RenameDeviceDialogProps,
 } from '@/types/events.type';
@@ -34,6 +35,23 @@ export function emitOpenExposeSelectionDialog(confirm: DialogEventAction, props:
   };
   const event: OpenDialogEvent = {
     type: 'exposeSelection',
+    props: {
+      show: true,
+      ...props,
+    },
+    events: events,
+  };
+
+  emitOpenDialog(event);
+}
+
+export function emitOpenEntityViewDialog(confirm: DialogEventAction, props: EntityViewDialogProps) {
+  const events: DialogEventActions = {
+    close: () => emitCloseDialog(),
+    confirm,
+  };
+  const event: OpenDialogEvent = {
+    type: 'entityView',
     props: {
       show: true,
       ...props,

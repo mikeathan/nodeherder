@@ -1,7 +1,6 @@
 import { Expose, DeviceFilter, Device } from '@/types/device';
 import { ExposeTypes } from '@/types/device.type';
 import { KeyValuePair, ValueOf } from '@/types/types.type';
-import { toInt } from '@/utils/numbers';
 
 export function isDeviceOnline(device: Device): boolean {
   return device.availability == 'online';
@@ -16,6 +15,7 @@ export function getExposeProperty(expose: Expose, name: string): any {
 }
 
 export function getExposeBinaryProperty(expose: Expose): boolean {
+ 
   if (expose.values == null) {
     return false;
   }
@@ -23,11 +23,25 @@ export function getExposeBinaryProperty(expose: Expose): boolean {
   if (expose.data == expose.values['on']) {
     return true;
   }
+
   // if (expose.data == expose.properties["off"]) {
   //   return false;
   // }
 
   return false;
+}
+
+export function toggleExposeBinaryProperty(expose: Expose): any {
+  if (expose.values == null) {
+    return false;
+  }
+
+  const value = !getExposeBinaryProperty(expose);
+  if (value) {
+    return expose.values['on'];
+  }
+
+  return expose.values['off'];
 }
 
 export function getDevices(devices: Device[], allowedFilter: DeviceFilter): KeyValuePair<string> {
@@ -61,3 +75,4 @@ export function getPropertiesByExposeType(device: Device, exposeType: ValueOf<ty
     .filter(([id, entity]) => entity.type == exposeType)
     .map(([i, e]) => e.name);
 }
+

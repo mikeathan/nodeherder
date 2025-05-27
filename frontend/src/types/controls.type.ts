@@ -1,5 +1,7 @@
 import { KeyValuePair } from './types.type';
 
+export type ControlDirection = 'horizontal' | 'vertical';
+
 export type ButtonPanelType = ButtonType | DropDownType;
 export type ButtonType = {
   name: string;

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-  import LinkQuality from '../device/LinkQuality.vue';
-  import PowerSource from '../device/PowerSource.vue';
-  import LastSeen from '../device/LastSeen.vue';
+  import LinkQuality from '../../device/LinkQuality.vue';
+  import PowerSource from '../../device/PowerSource.vue';
+  import LastSeen from '../../device/LastSeen.vue';
   import { PropType } from 'vue';
   import { getOfflineIcon } from '@/modules/formatters/device.formatter';
-  import Icon from '../controls/Icon.vue';
+  import Icon from '../../controls/Icon.vue';
   import { Device } from '@/types/device';
   import { computed } from 'vue';
 import { getPowerSourceValue } from '@/contracts/device';

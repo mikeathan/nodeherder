@@ -43,3 +43,5 @@ export type DeviceUpdate = {
   availability: ?DeviceAvailabilityTypes;
   data: KeyValuePair<any>;
 };
+
+
