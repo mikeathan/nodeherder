@@ -30,12 +30,19 @@ export const DialogEventTypes = {
   removeDevice: 'removeDevice',
   exposeSelection: 'exposeSelection',
   deviceSelection: 'deviceSelection',
+  entityView: 'entityView',
 } as const;
 
 export type CloseDialogFunc = () => void;
 export type BaseDialogProps = {
   title?: string;
   message?: string;
+};
+
+export type EntityViewDialogProps = {
+  id: string;
+  name: string;
+  title?: string;
 };
 
 export type ExposeSelectionDialogProps = {

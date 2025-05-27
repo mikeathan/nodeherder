@@ -4,7 +4,7 @@
   import Notifications from './components/hub/alerts/Notifications.vue';
   import { useRouter } from 'vue-router';
   import TimerButton from './components/controls/TimerButton.vue';
-  import MenuBar from '@/components/controls/MenuBar.vue';
+  import NavigationBar from '@/components/controls/NavigationBar.vue';
   import Logo from '@/components/controls/Logo.vue';
   import DialogHost from './components/dialogs/DialogHost.vue';
 
@@ -14,9 +14,15 @@
   const menuItems = [
     {
       to: '/',
-      label: 'dashboard',
+      label: 'group dashboard',
       icon: 'pi pi-home',
       command: () => router.push('/'),
+    },
+    {
+      to: '/',
+      label: 'device dashboard',
+      icon: 'pi pi-mobile',
+      command: () => router.push('/devicedashboard'),
     },
     {
       to: '/',
@@ -70,7 +76,7 @@
   <main>
     <div class="app-container">
       <div class="col-12">
-        <MenuBar :items="menuItems" />
+        <NavigationBar :items="menuItems" />
         <Notifications />
         <DialogHost />
 

@@ -548,6 +548,16 @@ let settings = [
     state: 'ON',
     delayInMs: 15000,
   },
+  {
+    id: '0xa4c138c383ac3fc8',
+    friendlyName: 'Smoke alarm',
+    availability: 'offline',
+    method: 'mqtt',
+    smoke: false,
+    device_fault: false,
+    silence: false,
+    delayInMs: 9000,
+  },
 ];
 
 let updateDeviceMap = {};
@@ -556,7 +566,7 @@ updateDeviceMap['0xa4c13894070052fc'] = mockUpdateHumanPresencev2;
 //updateDeviceMap['0x70ac08fffefafeca'] = mockUpdateAtticLight;
 updateDeviceMap['0x00158d0005a23c38'] = mockUpdateLivingRoomLight;
 updateDeviceMap['0xa4c1389b273366c3'] = mockUpdateAtticAlarm;
-
+updateDeviceMap['0xa4c138c383ac3fc8'] = mockSmokeAlarm;
 function mockUpdateAtticAlarm(settings) {
   var device = {
     id: '0xa4c1389b273366c3',
@@ -598,6 +608,21 @@ function mockUpdateAtticLight(settings) {
       state: 'ON',
     },
   };
+  return device;
+}
+
+function mockSmokeAlarm(settings) {
+  var device = {
+    id: '0xa4c138c383ac3fc8',
+    last_seen: currentTime(),
+    availability: setDeviceOnline(settings),
+    data: {
+      smoke: !settings.smoke,
+      device_fault: !settings.device_fault,
+      silence: !settings.silence,
+    },
+  };
+
   return device;
 }
 

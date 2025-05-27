@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed } from 'vue';
-  import DeviceCard from './DeviceCard.vue';
+  import DeviceCard from './cards/DeviceCard.vue';
   import { Devices } from '@/types/device';
   import { store } from '../../store/index';
 
