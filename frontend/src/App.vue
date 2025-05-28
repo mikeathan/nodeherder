@@ -7,7 +7,7 @@
   import NavigationBar from '@/components/controls/NavigationBar.vue';
   import Logo from '@/components/controls/Logo.vue';
   import DialogHost from './components/dialogs/DialogHost.vue';
-import { Button } from 'primevue';
+  import { Button } from 'primevue';
 
   const router = useRouter();
   const permitJoinDuration = 120;
@@ -46,24 +46,31 @@ import { Button } from 'primevue';
       command: () => router.push('/consoleviewer'),
     },
     {
-      to: '/settings',
       label: 'settings',
       icon: 'pi pi-cog',
-      command: () => router.push('/settings'),
+      children: [
+        {
+          to: '/settings',
+          label: 'settings',
+          icon: 'pi pi-cog',
+          command: () => router.push('/settings'),
+        },
+        {
+          label: 'permit join',
+          icon: 'pi pi-sitemap',
+          command: () => {},
+        },
+      ],
     },
-    {
-      custom: true,
-      template: () => h(TimerButton, { duration: permitJoinDuration }),
-    },
+    // {
+    //   custom: true,
+    //   template: () => h(TimerButton, { duration: permitJoinDuration }),
+    // },
     {
       isLogo: true,
       template: () => h(Logo),
     },
   ];
-
-  TODO:
-  settings is dropdown and has pair Buttonwhich when clicked start a countdown somewhere
-  
 
   onBeforeMount(() => {
     store.dispatch('ws/connect');
