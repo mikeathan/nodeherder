@@ -31,9 +31,8 @@
       <h4 class="dashboard-title">{{ group.name }}</h4>
       <div class="card-container">
         <div v-if="isEditMode" class="tools">
-          <span class="icon">⠿</span>
-          <span class="icon">✏️</span>
-          <span class="icon">🗑️</span>
+          <span class="pi pi-pen-to-square"/>
+          <span class="pi pi-trash"/>
         </div>
         <div v-for="item in flattenDeviceGroup(group)" :key="`${item.deviceId}-${item.expose}`" class="card-item">
           <EntityCard :id="item.deviceId" :name="item.expose" compact />

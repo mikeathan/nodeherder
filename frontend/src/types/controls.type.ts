@@ -71,4 +71,5 @@ export type MenuBarItem = {
   custom?: boolean;
   isLogo?: boolean;
   template?: () => void;
+  children?: MenuBarItem[];
 };

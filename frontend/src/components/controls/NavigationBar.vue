@@ -21,10 +21,26 @@
     isMobileView.value = window.innerWidth <= 768;
   }
 
+  const menuItems = computed(() =>
+    props.items
+      .filter((item) => !item.custom && !item.isLogo)
+      .map((item) => ({
+        label: item.label,
+        icon: item.icon,
+        command: item.command,
+        items: item.children?.map((child) => ({
+          label: child.label,
+          icon: child.icon,
+          command: child.command,
+        })),
+      }))
+  );
+  const timerItem = computed(() => props.items.find((item) => item.custom));
+
   const logoItem = computed(() => {
     return props.items.find((item) => item.isLogo);
   });
-  
+
   const renderMenuItem = (item: MenuBarItem) => {
     if (item.isLogo) return null; // Logo items are handled separately
     if (!item.custom) {
@@ -117,9 +133,18 @@
   .hamburger i {
     font-size: 1.5rem;
   }
+
+  .custom-menubar {
+    justify-content: space-between !important;
+  }
 </style>
 
 <template>
+   <Menubar :model="menuItems" class="custom-menubar">
+    <template #start>
+      <component :is="logoItem?.template" />
+    </template>
+  </Menubar>
   <!-- Desktop View -->
   <div v-if="!isMobileView">
     <div class="menubar">

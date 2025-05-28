@@ -7,6 +7,7 @@
   import NavigationBar from '@/components/controls/NavigationBar.vue';
   import Logo from '@/components/controls/Logo.vue';
   import DialogHost from './components/dialogs/DialogHost.vue';
+import { Button } from 'primevue';
 
   const router = useRouter();
   const permitJoinDuration = 120;
@@ -16,13 +17,15 @@
       to: '/',
       label: 'group dashboard',
       icon: 'pi pi-home',
+      children: [
+        {
+          to: '/',
+          label: 'device dashboard',
+          icon: 'pi pi-mobile',
+          command: () => router.push('/devicedashboard'),
+        },
+      ],
       command: () => router.push('/'),
-    },
-    {
-      to: '/',
-      label: 'device dashboard',
-      icon: 'pi pi-mobile',
-      command: () => router.push('/devicedashboard'),
     },
     {
       to: '/',
@@ -57,6 +60,10 @@
       template: () => h(Logo),
     },
   ];
+
+  TODO:
+  settings is dropdown and has pair Buttonwhich when clicked start a countdown somewhere
+  
 
   onBeforeMount(() => {
     store.dispatch('ws/connect');
