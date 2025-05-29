@@ -140,12 +140,13 @@
 </style>
 
 <template>
-   <Menubar :model="menuItems" class="custom-menubar">
+  <Menubar :model="menuItems" class="custom-menubar">
     <template #start>
       <component :is="logoItem?.template" />
     </template>
   </Menubar>
-  <!-- Desktop View -->
+
+  <!-- 
   <div v-if="!isMobileView">
     <div class="menubar">
       <template v-if="logoItem">
@@ -158,7 +159,6 @@
       </ul>
     </div>
   </div>
-  <!-- Mobile View -->
   <div v-else>
     <div class="menubar">
       <template v-if="logoItem">
@@ -175,5 +175,5 @@
         </li>
       </ul>
     </transition>
-  </div>
+  </div> -->
 </template>

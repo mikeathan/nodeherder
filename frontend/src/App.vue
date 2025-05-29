@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { onBeforeMount, h } from 'vue';
+  import { onBeforeMount, h, ref } from 'vue';
   import { store } from './store/index';
   import Notifications from './components/hub/alerts/Notifications.vue';
   import { useRouter } from 'vue-router';
@@ -8,9 +8,15 @@
   import Logo from '@/components/controls/Logo.vue';
   import DialogHost from './components/dialogs/DialogHost.vue';
   import { Button } from 'primevue';
+import TimerPanel from './components/controls/TimerPanel.vue';
 
   const router = useRouter();
   const permitJoinDuration = 120;
+
+  const permitJoinLabel = ref<string>('');
+  const permitJoinEnabled = ref<boolean>(false);
+  function enablePermitJoin() {
+  }
 
   const menuItems = [
     {
@@ -46,21 +52,15 @@
       command: () => router.push('/consoleviewer'),
     },
     {
+      to: '/settings',
       label: 'settings',
       icon: 'pi pi-cog',
-      children: [
-        {
-          to: '/settings',
-          label: 'settings',
-          icon: 'pi pi-cog',
-          command: () => router.push('/settings'),
-        },
-        {
-          label: 'permit join',
-          icon: 'pi pi-sitemap',
-          command: () => {},
-        },
-      ],
+      command: () => router.push('/settings'),
+    },
+    {
+      label: 'permit join',
+      icon: 'pi pi-sitemap',
+      // command: () => router.push('/settings'),
     },
     // {
     //   custom: true,
@@ -91,6 +91,7 @@
     <div class="app-container">
       <div class="col-12">
         <NavigationBar :items="menuItems" />
+        <TimerPanel :duration="permitJoinDuration" :start="true"/>
         <Notifications />
         <DialogHost />
 
