@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { store } from '@/store';
   import { BridgeSettingsType } from '@/types/settings.type';
-  import { ref, onMounted, watch } from 'vue';
+  import { ref, onMounted, watch, watchEffect } from 'vue';
   import { computed } from 'vue';
 
   const bridgeConfig = computed<BridgeSettingsType>(() => {
@@ -29,6 +29,14 @@
   const isRunning = ref(false);
   const isDisabled = ref(false);
 
+  WIP needs testing
+  watchEffect(() => {
+
+    if(props.show && !isRunning.value){
+      toggleTimer();
+    }
+  });
+   
   watch(
     bridgeConfig,
     (newValue, oldValue) => {
@@ -114,11 +122,12 @@
   }
 </style>
 <template>
-   <a v-if="isRunning"
+  <a
+    v-if="isRunning"
     class="content toggle-btn"
     :class="{ running: isRunning, disabled: isDisabled }"
     href="#"
     @click.prevent="isDisabled ? null : toggleTimer()">
     <span class="small-text">{{ buttonLabel }}</span>
-  </a> 
+  </a>
 </template>
