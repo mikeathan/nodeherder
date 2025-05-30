@@ -18,7 +18,7 @@
 
   const props = defineProps({
     duration: { type: Number, default: 60 },
-    start: { type: Boolean, default: false },
+    show: { type: Boolean, default: false },
   });
 
   let intervalId: any = null;
@@ -114,13 +114,11 @@
   }
 </style>
 <template>
-  <div v-if="start" class="content">TIMER HERE</div>
-  <!-- <a
-    class="toggle-btn"
+   <a v-if="isRunning"
+    class="content toggle-btn"
     :class="{ running: isRunning, disabled: isDisabled }"
     href="#"
     @click.prevent="isDisabled ? null : toggleTimer()">
-    <span class="toggle-icon pi pi-sitemap"></span>
     <span class="small-text">{{ buttonLabel }}</span>
-  </a> -->
+  </a> 
 </template>

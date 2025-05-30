@@ -60,7 +60,7 @@ import TimerPanel from './components/controls/TimerPanel.vue';
     {
       label: 'permit join',
       icon: 'pi pi-sitemap',
-      // command: () => router.push('/settings'),
+       command: () => { permitJoinEnabled.value = true; },
     },
     // {
     //   custom: true,
@@ -91,7 +91,7 @@ import TimerPanel from './components/controls/TimerPanel.vue';
     <div class="app-container">
       <div class="col-12">
         <NavigationBar :items="menuItems" />
-        <TimerPanel :duration="permitJoinDuration" :start="true"/>
+        <TimerPanel :duration="permitJoinDuration" :show="permitJoinEnabled"/> or click event ?
         <Notifications />
         <DialogHost />
 
