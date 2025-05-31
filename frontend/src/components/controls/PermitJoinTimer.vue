@@ -15,10 +15,13 @@
   function disablePermitJoin() {
     store.dispatch('hub/disablePermitJoin');
   }
+  const emit = defineEmits<{
+    (e: 'statusUpdated', value: boolean): void;
+  }>();
 
   const props = defineProps({
     duration: { type: Number, default: 60 },
-    show: { type: Boolean, default: false },
+    allowJoin: { type: Boolean, default: false },
   });
 
   let intervalId: any = null;
@@ -29,14 +32,23 @@
   const isRunning = ref(false);
   const isDisabled = ref(false);
 
-  WIP needs testing
-  watchEffect(() => {
+  watch(
+    () => props.allowJoin,
+    (newValue) => {
 
-    if(props.show && !isRunning.value){
-      toggleTimer();
+      need to guard agains same status changes
+      console.log('watch allowJoin:', props.allowJoin, ' newValue:', newValue);
+
+      if (newValue) {
+        enablePermitJoin();
+        console.log('enablePermitJoin');
+      } else {
+        disablePermitJoin();
+        console.log('disablePermitJoin');
+      }
     }
-  });
-   
+  );
+
   watch(
     bridgeConfig,
     (newValue, oldValue) => {
@@ -45,6 +57,7 @@
       }
       isDisabled.value = false;
       isRunning.value = newValue.permitJoin;
+      emit('statusUpdated',  isRunning.value); ???
       if (newValue.permitJoin) {
         startTimer();
       } else {
@@ -96,13 +109,16 @@
   const toggleTimer = () => {
     if (isRunning.value) {
       disablePermitJoin();
+      console.log('disablePermitJoin');
     } else {
       enablePermitJoin();
+      console.log('enablePermitJoin');
     }
     isDisabled.value = true;
   };
 
   onMounted(() => {
+    console.log('onMounted isRunning:', isRunning.value);
     if (isRunning.value) {
       startTimer();
     }

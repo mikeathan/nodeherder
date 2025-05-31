@@ -8,15 +8,14 @@
   import Logo from '@/components/controls/Logo.vue';
   import DialogHost from './components/dialogs/DialogHost.vue';
   import { Button } from 'primevue';
-import TimerPanel from './components/controls/TimerPanel.vue';
+import PermitJoinTimer from './components/controls/PermitJoinTimer.vue';
 
   const router = useRouter();
   const permitJoinDuration = 120;
 
   const permitJoinLabel = ref<string>('');
   const permitJoinEnabled = ref<boolean>(false);
-  function enablePermitJoin() {
-  }
+  function enablePermitJoin() {}
 
   const menuItems = [
     {
@@ -60,7 +59,10 @@ import TimerPanel from './components/controls/TimerPanel.vue';
     {
       label: 'permit join',
       icon: 'pi pi-sitemap',
-       command: () => { permitJoinEnabled.value = true; },
+      command: () => {
+        permitJoinEnabled.value = !permitJoinEnabled.value ;
+        console.log('permitJoinEnabled', permitJoinEnabled.value);
+      },
     },
     // {
     //   custom: true,
@@ -91,7 +93,7 @@ import TimerPanel from './components/controls/TimerPanel.vue';
     <div class="app-container">
       <div class="col-12">
         <NavigationBar :items="menuItems" />
-        <TimerPanel :duration="permitJoinDuration" :show="permitJoinEnabled"/> or click event ?
+        <PermitJoinTimer :duration="permitJoinDuration" :allow-join="permitJoinEnabled" @statusUpdated="permitJoinEnabled = $event" />
         <Notifications />
         <DialogHost />
 

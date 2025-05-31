@@ -75,6 +75,7 @@ declare module 'vue' {
     Notifications: typeof import('./src/components/hub/alerts/Notifications.vue')['default']
     NumericChart: typeof import('./src/components/chart/NumericChart.vue')['default']
     Panel: typeof import('./src/components/controls/Panel.vue')['default']
+    PermitJoinTimer: typeof import('./src/components/controls/PermitJoinTimer.vue')['default']
     PickSlider: typeof import('./src/components/input/PickSlider.vue')['default']
     PowerSource: typeof import('./src/components/device/PowerSource.vue')['default']
     PresetRotationAction: typeof import('./src/components/automations/actions/PresetRotationAction.vue')['default']
