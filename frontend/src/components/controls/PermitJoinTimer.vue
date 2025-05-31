@@ -1,8 +1,17 @@
 <script setup lang="ts">
   import { store } from '@/store';
   import { BridgeSettingsType } from '@/types/settings.type';
-  import { ref, onMounted, watch, watchEffect } from 'vue';
+  import { ref, onMounted, watch } from 'vue';
   import { computed } from 'vue';
+
+  const emit = defineEmits<{
+    (e: 'statusUpdated', value: boolean): void;
+  }>();
+
+  const props = defineProps({
+    duration: { type: Number, default: 60 },
+    allowJoin: { type: Boolean, default: false },
+  });
 
   const bridgeConfig = computed<BridgeSettingsType>(() => {
     return store.getters['hub/bridge']() as BridgeSettingsType;
@@ -15,14 +24,6 @@
   function disablePermitJoin() {
     store.dispatch('hub/disablePermitJoin');
   }
-  const emit = defineEmits<{
-    (e: 'statusUpdated', value: boolean): void;
-  }>();
-
-  const props = defineProps({
-    duration: { type: Number, default: 60 },
-    allowJoin: { type: Boolean, default: false },
-  });
 
   let intervalId: any = null;
   const remainingTime = ref(
@@ -65,7 +66,7 @@
 
   const buttonLabel = computed(() => {
     if (isRunning.value) {
-      return `Disable Join [${formattedTime.value}]`;
+      return `Disable Join`;
     }
     return 'Permit Join';
   });
@@ -121,24 +122,64 @@
 </script>
 
 <style scoped>
-  .content {
+  .join-control {
     display: flex;
     align-items: center;
+    justify-content: center;
+
     width: 100%;
-    background: var(--p-content-background);
-    color: var(--p-content-color);
-    border: 1px solid var(--bs-border-color);
-    padding: var(--p-list-option-padding);
-    border-radius: var(--p-border-radius-md);
+    padding: 0.5rem;
+    border-radius: 8px;
+
+    background-color: #2c2f36;
+    color: #e0e0e0;
+    border: 1px solid #41444b;
+    text-decoration: none;
+
+    font-size: 1rem;
+    font-weight: 500;
+
+    transition: background-color 0.3s, border-color 0.3s;
+    gap: 0.75rem;
+  }
+
+  .join-control:hover {
+    background-color: #34383f;
+    border-color: #555960;
+  }
+
+  .join-control.running {
+    background-color: #37424b;
+    border-color: #5a6670;
+  }
+
+  .join-control.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  .join-label {
+    font-size: 1rem;
+  }
+
+  .join-timer {
+    font-family: monospace;
+    background-color: #1f252b;
+    padding: 0.2rem 0.75rem;
+    border-radius: 4px;
+    border: 1px solid #3b3f46;
+    color: #cbd5e1;
   }
 </style>
+
 <template>
   <a
     v-if="isRunning"
-    class="content toggle-btn"
-    :class="{ running: isRunning, disabled: isDisabled }"
+    class="join-control running"
+    :class="{ disabled: isDisabled }"
     href="#"
     @click.prevent="isDisabled ? null : toggleTimer()">
-    <span class="small-text">{{ buttonLabel }}</span>
+    <span class="join-label">{{ buttonLabel }}</span>
+    <span class="join-timer">{{ formattedTime }}</span>
   </a>
 </template>

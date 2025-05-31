@@ -32,7 +32,7 @@
         {
           label: 'edit',
           icon: 'pi pi-mobile',
-          command: () => {},
+          command: () => router.push('/ TODO pass editmode '), TODO
         },
       ],
     },

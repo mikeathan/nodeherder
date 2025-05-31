@@ -16,7 +16,9 @@
       }))
     );
   }
-  const isEditMode = ref(true);
+  const props = defineProps({
+    editMode: { type: Boolean, default: false },
+  });
   // to use for dynamically setting the column count
   //   :style="{ columnCount: calculateColumnCount(flattenDeviceGroup(group).length) }"
   // function calculateColumnCount(length: number): number {
@@ -29,10 +31,10 @@
   <div class="dashboard-container">
     <div v-for="group in dashboardGroups" :key="group.name" class="dashboard-group">
       <h4 class="dashboard-title">{{ group.name }}</h4>
-      <div class="card-container">
-        <div v-if="isEditMode" class="tools">
-          <span class="pi pi-pen-to-square"/>
-          <span class="pi pi-trash"/>
+      <div class="card-container" :class="{ 'edit-mode': editMode }">
+        <div v-if="editMode" class="tools">
+          <span class="pi pi-pen-to-square" />
+          <span class="pi pi-trash" />
         </div>
         <div v-for="item in flattenDeviceGroup(group)" :key="`${item.deviceId}-${item.expose}`" class="card-item">
           <EntityCard :id="item.deviceId" :name="item.expose" compact />
@@ -65,11 +67,15 @@
     column-gap: 0.5rem;
     max-width: 400px;
     /* margin: 0 auto; */
-    border: 2px dotted #d3d3d3;
+
     border-radius: 12px;
     padding: 16px;
     position: relative;
     margin-bottom: 20px;
+  }
+
+  .card-container.edit-mode {
+    border: 2px dotted #d3d3d3;
   }
 
   .card-item {
