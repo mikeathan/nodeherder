@@ -1,39 +1,43 @@
 <script setup lang="ts">
-  import { onBeforeMount, h, ref } from 'vue';
+  import { onBeforeMount, h, ref, computed } from 'vue';
   import { store } from './store/index';
   import Notifications from './components/hub/alerts/Notifications.vue';
   import { useRouter } from 'vue-router';
-  import TimerButton from './components/controls/TimerButton.vue';
   import NavigationBar from '@/components/controls/NavigationBar.vue';
   import Logo from '@/components/controls/Logo.vue';
   import DialogHost from './components/dialogs/DialogHost.vue';
-  import { Button } from 'primevue';
-import PermitJoinTimer from './components/controls/PermitJoinTimer.vue';
+  import PermitJoinTimer from './components/controls/PermitJoinTimer.vue';
+  import { MenuBarItem } from './types/controls.type';
 
   const router = useRouter();
   const permitJoinDuration = 120;
 
-  const permitJoinLabel = ref<string>('');
   const permitJoinEnabled = ref<boolean>(false);
-  function enablePermitJoin() {}
 
-  const menuItems = [
+  const menuItems = computed<MenuBarItem[]>(() => [
     {
-      to: '/',
-      label: 'group dashboard',
+      label: 'dashboards',
       icon: 'pi pi-home',
       children: [
         {
-          to: '/',
-          label: 'device dashboard',
+          label: 'devices',
           icon: 'pi pi-mobile',
-          command: () => router.push('/devicedashboard'),
+          command: () => router.push('/deviceDashboard'),
+        },
+        {
+          label: 'groups',
+          icon: 'pi pi-mobile',
+          command: () => router.push('/'),
+        },
+        {
+          label: 'edit',
+          icon: 'pi pi-mobile',
+          command: () => {},
         },
       ],
-      command: () => router.push('/'),
     },
     {
-      to: '/',
+      to: '/devicelist',
       label: 'device list',
       icon: 'pi pi-list',
       command: () => router.push('/devicelist'),
@@ -57,22 +61,18 @@ import PermitJoinTimer from './components/controls/PermitJoinTimer.vue';
       command: () => router.push('/settings'),
     },
     {
-      label: 'permit join',
+      label: permitJoinEnabled.value ? 'join enabled' : 'permit Join',
       icon: 'pi pi-sitemap',
+      disabled: permitJoinEnabled.value,
       command: () => {
-        permitJoinEnabled.value = !permitJoinEnabled.value ;
-        console.log('permitJoinEnabled', permitJoinEnabled.value);
+        permitJoinEnabled.value = !permitJoinEnabled.value;
       },
     },
-    // {
-    //   custom: true,
-    //   template: () => h(TimerButton, { duration: permitJoinDuration }),
-    // },
     {
       isLogo: true,
       template: () => h(Logo),
     },
-  ];
+  ]);
 
   onBeforeMount(() => {
     store.dispatch('ws/connect');
@@ -93,7 +93,10 @@ import PermitJoinTimer from './components/controls/PermitJoinTimer.vue';
     <div class="app-container">
       <div class="col-12">
         <NavigationBar :items="menuItems" />
-        <PermitJoinTimer :duration="permitJoinDuration" :allow-join="permitJoinEnabled" @statusUpdated="permitJoinEnabled = $event" />
+        <PermitJoinTimer
+          :duration="permitJoinDuration"
+          :allow-join="permitJoinEnabled"
+          @statusUpdated="permitJoinEnabled = $event" />
         <Notifications />
         <DialogHost />
 

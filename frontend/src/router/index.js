@@ -13,8 +13,8 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
-      path: '/deviceDashboard',
-      name: 'home',
+      path: '/devicedashboard',
+      name: 'devices',
       component: Dashboard,
       meta: {
         title: 'Node-herder - Device Dashboard',
@@ -85,15 +85,8 @@ const router = createRouter({
       meta: {
         title: 'Node-herder - Device page',
       },
-    },
-    {
-      path: '/dashboard',
-      name: 'dashboard',
-      component: Dashboard,
-      meta: {
-        title: 'Node-herder - Dashboard',
-      },
-    },
+    }
+   
   ],
 });
 export default router;

@@ -35,16 +35,10 @@
   watch(
     () => props.allowJoin,
     (newValue) => {
-
-      need to guard agains same status changes
-      console.log('watch allowJoin:', props.allowJoin, ' newValue:', newValue);
-
-      if (newValue) {
+      if (newValue && !isRunning.value) {
         enablePermitJoin();
-        console.log('enablePermitJoin');
-      } else {
+      } else if (!newValue && isRunning.value) {
         disablePermitJoin();
-        console.log('disablePermitJoin');
       }
     }
   );
@@ -57,9 +51,11 @@
       }
       isDisabled.value = false;
       isRunning.value = newValue.permitJoin;
-      emit('statusUpdated',  isRunning.value); ???
+
       if (newValue.permitJoin) {
         startTimer();
+
+        emit('statusUpdated', isRunning.value);
       } else {
         stopTimer();
       }
@@ -99,6 +95,8 @@
     clearInterval(intervalId);
     intervalId = null;
     setRemainingTime(props.duration);
+
+    emit('statusUpdated', isRunning.value);
   };
 
   const setRemainingTime = (value: number) => {
@@ -109,16 +107,13 @@
   const toggleTimer = () => {
     if (isRunning.value) {
       disablePermitJoin();
-      console.log('disablePermitJoin');
     } else {
       enablePermitJoin();
-      console.log('enablePermitJoin');
     }
     isDisabled.value = true;
   };
 
   onMounted(() => {
-    console.log('onMounted isRunning:', isRunning.value);
     if (isRunning.value) {
       startTimer();
     }

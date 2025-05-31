@@ -67,6 +67,7 @@ export type MenuBarItem = {
   to?: string;
   label?: string;
   icon?: string;
+  disabled?: boolean;
   command?: () => void;
   custom?: boolean;
   isLogo?: boolean;
