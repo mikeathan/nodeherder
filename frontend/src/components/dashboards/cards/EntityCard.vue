@@ -199,6 +199,10 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 
   .entity-title {

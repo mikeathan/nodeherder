@@ -8,7 +8,7 @@
   import DialogHost from './components/dialogs/DialogHost.vue';
   import PermitJoinTimer from './components/controls/PermitJoinTimer.vue';
   import { MenuBarItem } from './types/controls.type';
-
+  import { DashboardModes } from '@/types/controls.type';
   const router = useRouter();
   const permitJoinDuration = 120;
 
@@ -36,10 +36,12 @@
         {
           label: 'edit',
           icon: 'pi pi-mobile',
-            props: (route) => ({ editMode: route.query.editMode === 'true' }),
           command: () => {
             toggleEditMode();
-            router.push({ name: 'groupdashboard', query: { editMode: dashboardEditMode.value.toString() } });
+            router.push({
+              name: 'groupdashboard',
+              params: { mode: dashboardEditMode.value ? DashboardModes.editMode : '' },
+            });
           },
         },
       ],

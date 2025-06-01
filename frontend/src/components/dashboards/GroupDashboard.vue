@@ -19,26 +19,22 @@
   const props = defineProps({
     editMode: { type: Boolean, default: false },
   });
-  // to use for dynamically setting the column count
-  //   :style="{ columnCount: calculateColumnCount(flattenDeviceGroup(group).length) }"
-  // function calculateColumnCount(length: number): number {
-  //   if (length >= 6) return 3;
-  //   if (length >= 3) return 2;
-  //   return 1;
-  // }
 </script>
 <template>
   <div class="dashboard-container">
-    {{ editMode }}
     <div v-for="group in dashboardGroups" :key="group.name" class="dashboard-group">
       <h4 class="dashboard-title">{{ group.name }}</h4>
       <div class="card-container" :class="{ 'edit-mode': editMode }">
         <div v-if="editMode" class="tools">
           <span class="pi pi-pen-to-square" />
           <span class="pi pi-trash" />
+          <span class="pi pi-plus add-icon" /> ?? maybethey can all move to the bottom ?
         </div>
         <div v-for="item in flattenDeviceGroup(group)" :key="`${item.deviceId}-${item.expose}`" class="card-item">
           <EntityCard :id="item.deviceId" :name="item.expose" compact />
+        </div>
+        <div v-if="editMode" class="add-icon-tool">
+          <span class="pi pi-plus add-icon" />
         </div>
       </div>
     </div>
@@ -94,6 +90,19 @@
     display: flex;
     gap: 6px;
     align-items: center;
+  }
+
+  .add-icon-tool {
+    border: 2px dotted #d3d3d3;
+    border-radius: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+    margin-top: 0.5rem;
+    margin-left: -1rem;
   }
 
   .icon {
