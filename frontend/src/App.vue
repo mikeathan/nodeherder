@@ -13,6 +13,10 @@
   const permitJoinDuration = 120;
 
   const permitJoinEnabled = ref<boolean>(false);
+  const dashboardEditMode = ref<boolean>(false);
+  const toggleEditMode = () => {
+    dashboardEditMode.value = !dashboardEditMode.value;
+  };
 
   const menuItems = computed<MenuBarItem[]>(() => [
     {
@@ -32,7 +36,11 @@
         {
           label: 'edit',
           icon: 'pi pi-mobile',
-          command: () => router.push('/ TODO pass editmode '), TODO
+            props: (route) => ({ editMode: route.query.editMode === 'true' }),
+          command: () => {
+            toggleEditMode();
+            router.push({ name: 'groupdashboard', query: { editMode: dashboardEditMode.value.toString() } });
+          },
         },
       ],
     },

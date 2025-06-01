@@ -29,6 +29,15 @@ const router = createRouter({
       },
     },
     {
+      path: '/groupdashboard',
+      name: 'groupdashboard',
+      component: GroupDashboard,
+      props: true,
+      meta: {
+        title: 'Node-herder - Groups Dashboard',
+      },
+    },
+    {
       path: '/devicelist',
       name: 'deicelist',
       component: DeviceList,
@@ -85,8 +94,7 @@ const router = createRouter({
       meta: {
         title: 'Node-herder - Device page',
       },
-    }
-   
+    },
   ],
 });
 export default router;

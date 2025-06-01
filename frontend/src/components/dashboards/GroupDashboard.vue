@@ -29,6 +29,7 @@
 </script>
 <template>
   <div class="dashboard-container">
+    {{ editMode }}
     <div v-for="group in dashboardGroups" :key="group.name" class="dashboard-group">
       <h4 class="dashboard-title">{{ group.name }}</h4>
       <div class="card-container" :class="{ 'edit-mode': editMode }">
