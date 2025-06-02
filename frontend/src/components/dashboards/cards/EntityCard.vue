@@ -206,7 +206,7 @@
   }
 
   .entity-title {
-    font-size: 1rem;
+    font-size:14px;
     font-weight: 500;
   }
 

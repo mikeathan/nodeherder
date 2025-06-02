@@ -25,16 +25,13 @@
     <div v-for="group in dashboardGroups" :key="group.name" class="dashboard-group">
       <h4 class="dashboard-title">{{ group.name }}</h4>
       <div class="card-container" :class="{ 'edit-mode': editMode }">
-        <div v-if="editMode" class="tools">
-          <span class="pi pi-pen-to-square" />
-          <span class="pi pi-trash" />
-          <span class="pi pi-plus add-icon" /> ?? maybethey can all move to the bottom ?
-        </div>
         <div v-for="item in flattenDeviceGroup(group)" :key="`${item.deviceId}-${item.expose}`" class="card-item">
           <EntityCard :id="item.deviceId" :name="item.expose" compact />
         </div>
-        <div v-if="editMode" class="add-icon-tool">
-          <span class="pi pi-plus add-icon" />
+        <div v-if="editMode" class="icon-tools">
+          <span class="edit-icon pi pi-pen-to-square" />
+          <span class="edit-icon pi pi-trash" />
+          <span class="edit-icon pi pi-plus" />
         </div>
       </div>
     </div>
@@ -45,14 +42,25 @@
   .dashboard-container {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.8rem;
     max-width: 100%;
+    padding-top: 1rem;
   }
 
+  /* Deskop view */
   .dashboard-group {
-    padding: 0.8rem;
+    padding: 0.1rem;
   }
 
+  /* Mobile view */
+  @media (max-width: 768px) {
+    .dashboard-group {
+      padding: 0;
+      flex: 1 1 200px;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+  }
   .dashboard-title {
     font-size: 1.2rem;
     font-weight: bold;
@@ -63,18 +71,12 @@
     column-count: 2;
     column-gap: 0.5rem;
     max-width: 400px;
-    /* margin: 0 auto; */
 
     border-radius: 12px;
     padding: 16px;
     position: relative;
     margin-bottom: 20px;
   }
-
-  .card-container.edit-mode {
-    border: 2px dotted #d3d3d3;
-  }
-
   .card-item {
     margin-bottom: 0.5rem;
     width: 100%;
@@ -82,31 +84,22 @@
     break-inside: avoid;
   }
 
-  .tools {
-    position: absolute;
-    top: -30px;
-    right: -10px;
-    padding: 4px 8px;
-    display: flex;
-    gap: 6px;
-    align-items: center;
+  .card-container.edit-mode {
+    border: 2px dotted #d3d3d3;
   }
 
-  .add-icon-tool {
+  .icon-tools {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .edit-icon {
     border: 2px dotted #d3d3d3;
     border-radius: 8px;
-    padding: 10px 12px;
+    padding: 12px 14px;
     cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    font-size: 16px;
     transition: background-color 0.2s ease;
-    margin-top: 0.5rem;
-    margin-left: -1rem;
-  }
-
-  .icon {
-    font-size: 14px;
-    cursor: pointer;
   }
 </style>
