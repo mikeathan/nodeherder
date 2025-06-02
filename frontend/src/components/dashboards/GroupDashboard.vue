@@ -77,6 +77,7 @@
     position: relative;
     margin-bottom: 20px;
   }
+  
   .card-item {
     margin-bottom: 0.5rem;
     width: 100%;
@@ -89,9 +90,13 @@
   }
 
   .icon-tools {
-    display: flex;
+   display: flex;
+    justify-content: flex-start;
     gap: 12px;
     margin-top: 12px;
+    width: 100%;
+    column-span: all;
+                
   }
 
   .edit-icon {
