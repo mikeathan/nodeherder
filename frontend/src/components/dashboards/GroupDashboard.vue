@@ -29,8 +29,7 @@
   function openAddDeviceExposeDialog(dashboardroup: DashboardGroup) {
     const props = {
       dashboardGroup: dashboardroup,
-      title: 'Select Expose',
-      message: 'Select Expose',
+      title: 'Select Device group entities',
     };
     emitOpenDeviceGroupSelectionDialog((args) => addNewDeviceExpose(dashboardroup, args), props);
   }

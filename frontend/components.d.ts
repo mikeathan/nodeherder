@@ -72,6 +72,8 @@ declare module 'vue' {
     Menubar: typeof import('primevue/menubar')['default']
     MenuDropdown: typeof import('./src/components/controls/MenuDropdown.vue')['default']
     Message: typeof import('primevue/message')['default']
+    MultiSelect: typeof import('primevue/multiselect')['default']
+    MultiSelection: typeof import('./src/components/input/MultiSelection.vue')['default']
     NavigationBar: typeof import('./src/components/controls/NavigationBar.vue')['default']
     Notifications: typeof import('./src/components/hub/alerts/Notifications.vue')['default']
     NumericChart: typeof import('./src/components/chart/NumericChart.vue')['default']
