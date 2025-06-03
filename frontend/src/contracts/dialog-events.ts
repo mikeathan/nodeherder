@@ -3,6 +3,7 @@ import {
   BaseDialogProps,
   DeleteDeviceDialogProps,
   DeleteDeviceEventAction,
+  DeviceGroupSelectionDialogProps,
   DialogEventAction,
   DialogEventActions,
   EntityViewDialogProps,
@@ -102,6 +103,22 @@ export function emitOpenDeleteDeviceDialog(confirm: DeleteDeviceEventAction, pro
   };
   const event: OpenDialogEvent = {
     type: 'removeDevice',
+    props: {
+      show: true,
+      ...props,
+    },
+    events: events,
+  };
+  emitOpenDialog(event);
+}
+
+export function emitOpenDeviceGroupSelectionDialog(confirm: DialogEventAction, props: DeviceGroupSelectionDialogProps) {
+  const events: DialogEventActions = {
+    close: () => emitCloseDialog(),
+    confirm,
+  };
+  const event: OpenDialogEvent = {
+    type: 'deviceGroupSelection',
     props: {
       show: true,
       ...props,

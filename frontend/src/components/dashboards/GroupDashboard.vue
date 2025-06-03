@@ -1,8 +1,14 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
   import { store } from '@/store';
-  import { DashboardGroup, DashboardGroups, DeviceGroup } from '@/types/settings.type';
+  import { DashboardGroup, DashboardGroups } from '@/types/settings.type';
   import EntityCard from './cards/EntityCard.vue';
+  import {
+    emitOpenConfirmationDialog,
+    emitOpenDeviceGroupSelectionDialog,
+    emitOpenDeviceSelectionDialog,
+    emitOpenExposeSelectionDialog,
+  } from '@/contracts/dialog-events';
 
   const dashboardGroups = computed(() => {
     return store.getters['hub/dashboardGroups']() as DashboardGroups;
@@ -19,6 +25,48 @@
   const props = defineProps({
     editMode: { type: Boolean, default: false },
   });
+
+  function openAddDeviceExposeDialog(dashboardroup: DashboardGroup) {
+    const props = {
+      dashboardGroup: dashboardroup,
+      title: 'Select Expose',
+      message: 'Select Expose',
+    };
+    emitOpenDeviceGroupSelectionDialog((args) => addNewDeviceExpose(dashboardroup, args), props);
+  }
+
+  function addNewDeviceExpose(dashboardroup: DashboardGroup, exposeName: string) {
+    // if (!exposeName) {
+    //   console.log('exposeName is empty');
+    //   return;
+    // }
+    // const exists = dashboardroup.deviceGroup[deviceId].exposes.some((e) => e == exposeName);
+    // if (exists) {
+    //   console.log('expose ', exposeName, ' already exists');
+    //   // TODO: show error message
+    //   return;
+    // }
+    // dashboardroup.deviceGroup[deviceId].exposes.push(exposeName);
+    // store.dispatch('hub/saveDashboardGroup', dashboardroup as DashboardGroup);
+  }
+
+  function openDeleteDeviceGroupConfirmationDialog(groupName: string) {
+    const props = {
+      title: 'Question',
+      message: 'Are you sure?',
+    };
+    emitOpenConfirmationDialog(() => deleteDeviceGroup(groupName), props);
+  }
+
+  function deleteDeviceGroup(groupName: string) {
+    if (!groupName) {
+      console.log('groupName is empty');
+      return;
+    }
+
+    delete dashboardGroups.value[groupName];
+    store.dispatch('hub/deleteDashboardGroup', groupName);
+  }
 </script>
 <template>
   <div class="dashboard-container">
@@ -30,8 +78,8 @@
         </div>
         <div v-if="editMode" class="icon-tools">
           <span class="edit-icon pi pi-pen-to-square" />
-          <span class="edit-icon pi pi-trash" />
-          <span class="edit-icon pi pi-plus" />
+          <span class="edit-icon pi pi-trash" @click="openDeleteDeviceGroupConfirmationDialog(group.name)" />
+          <span class="edit-icon pi pi-plus" @click="openAddDeviceExposeDialog(group)" />
         </div>
       </div>
     </div>
@@ -77,7 +125,11 @@
     position: relative;
     margin-bottom: 20px;
   }
-  
+
+  .card-container.edit-mode {
+    border: 2px dotted #d3d3d3;
+  }
+
   .card-item {
     margin-bottom: 0.5rem;
     width: 100%;
@@ -85,18 +137,13 @@
     break-inside: avoid;
   }
 
-  .card-container.edit-mode {
-    border: 2px dotted #d3d3d3;
-  }
-
   .icon-tools {
-   display: flex;
+    display: flex;
     justify-content: flex-start;
     gap: 12px;
     margin-top: 12px;
     width: 100%;
     column-span: all;
-                
   }
 
   .edit-icon {
