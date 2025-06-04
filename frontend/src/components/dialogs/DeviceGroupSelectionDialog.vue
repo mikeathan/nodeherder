@@ -4,8 +4,8 @@
   import { Device } from '@/types/device';
   import Selection from '@/components/input/Selection.vue';
   import { KeyValuePair } from '@/types/types.type';
-  import { DashboardGroup } from '@/types/settings.type';
-import MultiSelection from '../input/MultiSelection.vue';
+  import { DashboardGroup, DeviceGroup } from '@/types/settings.type';
+  import MultiSelection from '../input/MultiSelection.vue';
 
   const props = defineProps<{
     show: boolean;
@@ -14,18 +14,20 @@ import MultiSelection from '../input/MultiSelection.vue';
     dashboardGroup: DashboardGroup;
   }>();
 
-  const emit = defineEmits(['confirm', 'close']);
+  const emit = defineEmits<{
+    (e: 'confirm', deviceGroup: DeviceGroup): void;
+    (e: 'close', value: boolean): void;
+  }>();
 
   function select() {
-    //   emit('confirm', selectedDevice.value);
+    //   emit('confirm', selectedDevice.value); DeviceGroup
     close();
   }
 
   const dialogTitle = () => props.title ?? 'Selection';
   const dialogMessage = () => props.message ?? '';
 
-  const selectedDevice = ref<string | null>(null);
-  const selectedExposes = ref<string[]>(Array<string>());;
+  const selectedDeviceGroup = ref<DeviceGroup>({} as DeviceGroup);
 
   const showDialog = ref<boolean>(props.show);
   watchEffect(() => (showDialog.value = props.show));
@@ -44,33 +46,45 @@ import MultiSelection from '../input/MultiSelection.vue';
   });
 
   const exposeList = computed(() => {
-    if (selectedDevice.value == null) {
+    if (selectedDeviceGroup.value == null) {
       return Array<string>();
     }
-    const device = store.getters['hub/findDevice'](selectedDevice.value) as Device;
+    const deviceId = selectedDeviceGroup.value.deviceId;
+    const device = store.getters['hub/findDevice'](deviceId) as Device;
     if (device == undefined) {
-      console.log('exposeList empty', selectedDevice.value);
+      console.log('exposeList empty', deviceId);
       return Array<string>();
     }
-
-      TODO
-    // TODO use dashboardGroup to preselect exposes for selected device
-    
 
     return Object.entries(device.exposes).map(([i, e]) => e.name);
   });
 
-    function selectDevice(deviceId: string) {
-      selectedDevice.value = deviceId;
-      selectedExposes.value = [];
-    }
+  function selectDevice(deviceId: string) {
+    selectedDeviceGroup.value = {
+      deviceId: deviceId,
+      exposes: props.dashboardGroup.deviceGroup[deviceId]?.exposes ?? [],
+    };
+    console.log('selectDevice', deviceId, selectedDeviceGroup.value);
+  }
+
   function close() {
     emit('close', false);
     showDialog.value = false;
   }
 
   function isValid(): boolean {
-    return false;
+    const group = selectedDeviceGroup.value;
+    if (group?.deviceId == null || group.exposes?.length == 0) { to fix here
+      console.log('emty selection', group);
+      return false;
+    }
+
+    const existingExposes = props.dashboardGroup.deviceGroup?.[group.deviceId]?.exposes;
+    if (existingExposes) {
+      return !group?.exposes.every((e) => existingExposes.includes(e));
+    }
+
+    return true;
   }
 </script>
 
@@ -80,10 +94,19 @@ import MultiSelection from '../input/MultiSelection.vue';
       {{ dialogMessage() }}
     </div>
     <div class="flex items-center gap-4 mt-2 mb-4">
-      <Selection label="Select device" :value="selectedDevice" :items="deviceList" @updated="selectDevice" />
+      <Selection
+        label="Select device"
+        :value="selectedDeviceGroup.deviceId"
+        :items="deviceList"
+        @updated="selectDevice" />
     </div>
     <div class="flex items-center gap-4 mb-4">
-      <MultiSelection label="Select entities" showClear :values="selectedExposes" :items="exposeList" @updated="(values: any) => { selectedExposes= values }" />
+      <MultiSelection
+        label="Select entities"
+        showClear
+        :values="selectedDeviceGroup.exposes"
+        :items="exposeList"
+        @updated="(values: any) => { selectedDeviceGroup.exposes= values }" />
     </div>
     <div class="flex justify-end gap-2">
       <Button type="button" label="Cancel" severity="secondary" @click="close()" />
