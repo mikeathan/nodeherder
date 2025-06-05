@@ -1,6 +1,6 @@
 import { AutomationTrigger } from './automation.type';
 import { RemoveDeviceEvent } from './dialog.type';
-import { DashboardGroup } from './settings.type';
+import { DashboardGroup, DeviceGroup } from './settings.type';
 import { KeyValuePair } from './types.type';
 
 // Automation panel events
@@ -74,3 +74,4 @@ export type DeviceGroupSelectionDialogProps = {
 export type DialogEventAction = (...args: any) => void;
 export type DeleteDeviceEventAction = (args: RemoveDeviceEvent) => void;
 export type DialogEventActions = KeyValuePair<DialogEventAction>;
+export type DeviceGroupEventAction = (args: DeviceGroup) => void;

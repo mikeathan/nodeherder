@@ -14,8 +14,16 @@
     id: { type: String, required: true },
     name: { type: String, required: true },
     compact: { type: Boolean, required: false, default: false },
+    editMode: { type: Boolean, required: false, default: false },
   });
 
+  const emit = defineEmits(['delete']);
+  function emitDelete() {
+    emit('delete', {
+      id: props.id,
+      name: props.name,
+    });
+  }
   const device = computed(() => {
     const device = store.getters['hub/findDevice'](props.id) as Device;
     if (!device) return null;
@@ -111,6 +119,10 @@
   }
 
   function handleCardClick(): void {
+    if (props.editMode) {
+      return;
+    }
+
     const eventProps = {
       id: props.id,
       name: expose.value.name,
@@ -131,6 +143,9 @@
 </script>
 
 <template>
+
+  to deicde how to show delete icon per card
+  maybe when click card show the delete icon and hide when loose focus
   <Card
     class="entity-card"
     @click="handleCardClick"
@@ -151,6 +166,11 @@
           <div class="entity-title">{{ getSensorName(expose.name) }}</div>
           <div class="entity-value">{{ getFormattedSensorValue(expose) }}</div>
         </div>
+        <span
+          v-if="props.editMode"
+          class="delete-icon pi pi-trash"
+          @click.stop="emitDelete"
+          title="Remove from group" />
       </div>
     </template>
     <template #content>
@@ -206,7 +226,7 @@
   }
 
   .entity-title {
-    font-size:14px;
+    font-size: 14px;
     font-weight: 500;
   }
 
@@ -220,5 +240,16 @@
     margin-top: 1rem;
     margin-bottom: 0.3rem;
     margin-left: 0rem;
+  }
+
+  .delete-icon {
+    margin-left: auto;
+    font-size: 1.2rem;
+    color: #ff5c5c;
+    cursor: pointer;
+    transition: color 0.2s ease-in-out;
+  }
+  .delete-icon:hover {
+    color: #ff1f1f;
   }
 </style>

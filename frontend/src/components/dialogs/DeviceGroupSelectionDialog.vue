@@ -20,7 +20,7 @@
   }>();
 
   function select() {
-    //   emit('confirm', selectedDevice.value); DeviceGroup
+    emit('confirm', selectedDeviceGroup.value);
     close();
   }
 
@@ -74,14 +74,13 @@
 
   function isValid(): boolean {
     const group = selectedDeviceGroup.value;
-    if (group?.deviceId == null || group.exposes?.length == 0) { to fix here
-      console.log('emty selection', group);
+    if (group?.deviceId == null || group.exposes == null || group.exposes?.length == 0) {
       return false;
     }
 
     const existingExposes = props.dashboardGroup.deviceGroup?.[group.deviceId]?.exposes;
     if (existingExposes) {
-      return !group?.exposes.every((e) => existingExposes.includes(e));
+      return !group.exposes.every((e) => existingExposes.includes(e));
     }
 
     return true;

@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
   import { store } from '@/store';
-  import { DashboardGroup, DashboardGroups } from '@/types/settings.type';
+  import { DashboardGroup, DashboardGroups, DeviceGroup } from '@/types/settings.type';
   import EntityCard from './cards/EntityCard.vue';
   import {
     emitOpenConfirmationDialog,
@@ -9,6 +9,7 @@
     emitOpenDeviceSelectionDialog,
     emitOpenExposeSelectionDialog,
   } from '@/contracts/dialog-events';
+  import { DeviceGroupEventAction } from '@/types/events.type';
 
   const dashboardGroups = computed(() => {
     return store.getters['hub/dashboardGroups']() as DashboardGroups;
@@ -31,22 +32,13 @@
       dashboardGroup: dashboardroup,
       title: 'Select Device group entities',
     };
-    emitOpenDeviceGroupSelectionDialog((args) => addNewDeviceExpose(dashboardroup, args), props);
+    emitOpenDeviceGroupSelectionDialog((args: DeviceGroup) => addNewDeviceExpose(dashboardroup, args), props);
   }
 
-  function addNewDeviceExpose(dashboardroup: DashboardGroup, exposeName: string) {
-    // if (!exposeName) {
-    //   console.log('exposeName is empty');
-    //   return;
-    // }
-    // const exists = dashboardroup.deviceGroup[deviceId].exposes.some((e) => e == exposeName);
-    // if (exists) {
-    //   console.log('expose ', exposeName, ' already exists');
-    //   // TODO: show error message
-    //   return;
-    // }
-    // dashboardroup.deviceGroup[deviceId].exposes.push(exposeName);
-    // store.dispatch('hub/saveDashboardGroup', dashboardroup as DashboardGroup);
+  function addNewDeviceExpose(dashboardGroup: DashboardGroup, deviceGroup: DeviceGroup) {
+    const deviceId = deviceGroup.deviceId;
+    dashboardGroup.deviceGroup[deviceId] = deviceGroup;
+    store.dispatch('hub/saveDashboardGroup', dashboardGroup as DashboardGroup);
   }
 
   function openDeleteDeviceGroupConfirmationDialog(groupName: string) {
@@ -73,7 +65,7 @@
       <h4 class="dashboard-title">{{ group.name }}</h4>
       <div class="card-container" :class="{ 'edit-mode': editMode }">
         <div v-for="item in flattenDeviceGroup(group)" :key="`${item.deviceId}-${item.expose}`" class="card-item">
-          <EntityCard :id="item.deviceId" :name="item.expose" compact />
+          <EntityCard :id="item.deviceId" :name="item.expose" compact :edit-mode="editMode"/>
         </div>
         <div v-if="editMode" class="icon-tools">
           <span class="edit-icon pi pi-pen-to-square" />
