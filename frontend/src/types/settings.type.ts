@@ -47,6 +47,7 @@ export type DashboardGroup = {
   deviceGroup: KeyValuePair<DeviceGroup>;
 };
 
+
 export type DeviceGroup = {
   deviceId: string;
   exposes: string[];

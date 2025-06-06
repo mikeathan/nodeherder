@@ -2,6 +2,7 @@
   import { computed, ref } from 'vue';
   import { store } from '@/store';
   import { DashboardGroup, DashboardGroups, DeviceGroup } from '@/types/settings.type';
+  import { getDeviceGroupId } from '@/contracts/device-group';
   import EntityCard from './cards/EntityCard.vue';
   import {
     emitOpenConfirmationDialog,
@@ -26,6 +27,16 @@
   const props = defineProps({
     editMode: { type: Boolean, default: false },
   });
+
+  const selectedCard = ref<string | null>(null); // This holds the ID of the single selected card
+
+  function handleCardSelected(id: string) {
+    if (selectedCard.value === id) {
+      selectedCard.value = null;
+    } else {
+      selectedCard.value = id;
+    }
+  }
 
   function openAddDeviceExposeDialog(dashboardroup: DashboardGroup) {
     const props = {
@@ -65,7 +76,12 @@
       <h4 class="dashboard-title">{{ group.name }}</h4>
       <div class="card-container" :class="{ 'edit-mode': editMode }">
         <div v-for="item in flattenDeviceGroup(group)" :key="`${item.deviceId}-${item.expose}`" class="card-item">
-          <EntityCard :id="item.deviceId" :name="item.expose" compact :edit-mode="editMode"/>
+          <EntityCard
+            :id="item.deviceId"
+            :name="item.expose"
+            compact
+            :is-selected="editMode && selectedCard == getDeviceGroupId(item.deviceId, item.expose)"
+            @selected="handleCardSelected" />
         </div>
         <div v-if="editMode" class="icon-tools">
           <span class="edit-icon pi pi-pen-to-square" />

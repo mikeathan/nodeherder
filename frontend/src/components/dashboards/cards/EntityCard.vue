@@ -2,28 +2,34 @@
   import { getFormattedSensorValue, getSensorName } from '../../../modules/formatters/sensor-formatter';
   import { getSensorIcon } from '../../../modules/formatters/sensor-formatter';
   import { store } from '../../../store/index';
-  import { computed, ref } from 'vue';
+  import { computed, nextTick, ref } from 'vue';
   import { Device, Expose } from '@/types/device';
   import Icon from '../../controls/Icon.vue';
   import { ExposeAccessModes, ExposeTypes } from '@/types/device.type';
   import { getExposeBinaryProperty, getExposes, toggleExposeBinaryProperty } from '@/contracts/device';
   import { stateDevicesFilter } from '@/configs/automation/device.config';
   import { emitOpenEntityViewDialog } from '@/contracts/dialog-events';
+import { getDeviceGroupId } from '@/contracts/device-group';
 
   const props = defineProps({
     id: { type: String, required: true },
     name: { type: String, required: true },
     compact: { type: Boolean, required: false, default: false },
-    editMode: { type: Boolean, required: false, default: false },
+    isSelected: { type: Boolean, required: false, default: false },
   });
 
-  const emit = defineEmits(['delete']);
+  const emit = defineEmits<{
+    (e: 'delete', value: { id: string; name: string }): void;
+    (e: 'selected', id: string): void;
+  }>();
+
   function emitDelete() {
     emit('delete', {
       id: props.id,
       name: props.name,
     });
   }
+
   const device = computed(() => {
     const device = store.getters['hub/findDevice'](props.id) as Device;
     if (!device) return null;
@@ -119,19 +125,22 @@
   }
 
   function handleCardClick(): void {
-    if (props.editMode) {
-      return;
-    }
+    emit('selected', getDeviceGroupId(props.id, props.name));
 
-    const eventProps = {
-      id: props.id,
-      name: expose.value.name,
-      title: getSensorName(expose.value.name),
-    };
+    nextTick(() => {
+      if (!props.isSelected) {
+        const eventProps = {
+          id: props.id,
+          name: expose.value.name,
+          title: getSensorName(expose.value.name),
+        };
 
-    // TODO:
-    ///send title name to include dashboardgroupName + entity name
-    emitOpenEntityViewDialog(() => {}, eventProps);
+        // TODO:
+        ///send title name to include dashboardgroupName + entity name
+
+        emitOpenEntityViewDialog(() => {}, eventProps);
+      }
+    });
   }
 
   const cardStyle = computed(() => {
@@ -143,12 +152,10 @@
 </script>
 
 <template>
-
-  to deicde how to show delete icon per card
-  maybe when click card show the delete icon and hide when loose focus
   <Card
     class="entity-card"
     @click="handleCardClick"
+    :class="{ 'is-selected': props.isSelected }"
     :pt="{
       body: { style: cardStyle },
       root: { style: { '--p-card-body-gap': '0.0rem' } }, // remove card padding
@@ -166,11 +173,7 @@
           <div class="entity-title">{{ getSensorName(expose.name) }}</div>
           <div class="entity-value">{{ getFormattedSensorValue(expose) }}</div>
         </div>
-        <span
-          v-if="props.editMode"
-          class="delete-icon pi pi-trash"
-          @click.stop="emitDelete"
-          title="Remove from group" />
+        <span class="delete-icon pi pi-trash" @click.stop="emitDelete" title="Remove from group" />
       </div>
     </template>
     <template #content>
@@ -209,6 +212,12 @@
     background-color: rgba(0, 0, 0, 0.1);
   }
 
+  .entity-card.is-selected {
+    border: 2px solid #007bff;
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+    background-color: #eaf6ff;
+    cursor: default;
+  }
   .entity-header {
     display: flex;
     align-items: flex-end;
