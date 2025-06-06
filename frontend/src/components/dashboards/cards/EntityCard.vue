@@ -127,6 +127,7 @@ import { getDeviceGroupId } from '@/contracts/device-group';
   function handleCardClick(): void {
     emit('selected', getDeviceGroupId(props.id, props.name));
 
+    // we need to wait for the next tick to allow consumer to set isSelected
     nextTick(() => {
       if (!props.isSelected) {
         const eventProps = {
@@ -137,7 +138,6 @@ import { getDeviceGroupId } from '@/contracts/device-group';
 
         // TODO:
         ///send title name to include dashboardgroupName + entity name
-
         emitOpenEntityViewDialog(() => {}, eventProps);
       }
     });
@@ -173,7 +173,7 @@ import { getDeviceGroupId } from '@/contracts/device-group';
           <div class="entity-title">{{ getSensorName(expose.name) }}</div>
           <div class="entity-value">{{ getFormattedSensorValue(expose) }}</div>
         </div>
-        <span class="delete-icon pi pi-trash" @click.stop="emitDelete" title="Remove from group" />
+        <span v-if="isSelected" class="delete-icon pi pi-trash" @click.stop="emitDelete" title="Remove from group" />
       </div>
     </template>
     <template #content>
@@ -215,7 +215,7 @@ import { getDeviceGroupId } from '@/contracts/device-group';
   .entity-card.is-selected {
     border: 2px solid #007bff;
     box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
-    background-color: #eaf6ff;
+    background-color: rgba(0, 123, 255, 0.1);
     cursor: default;
   }
   .entity-header {

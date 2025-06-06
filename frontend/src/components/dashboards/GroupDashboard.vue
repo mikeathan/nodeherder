@@ -28,14 +28,10 @@
     editMode: { type: Boolean, default: false },
   });
 
-  const selectedCard = ref<string | null>(null); // This holds the ID of the single selected card
+  const selectedCard = ref<string | null>(null);
 
   function handleCardSelected(id: string) {
-    if (selectedCard.value === id) {
-      selectedCard.value = null;
-    } else {
-      selectedCard.value = id;
-    }
+    selectedCard.value = id;
   }
 
   function openAddDeviceExposeDialog(dashboardroup: DashboardGroup) {
