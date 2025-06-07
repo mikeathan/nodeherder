@@ -9,7 +9,7 @@
   import { getExposeBinaryProperty, getExposes, toggleExposeBinaryProperty } from '@/contracts/device';
   import { stateDevicesFilter } from '@/configs/automation/device.config';
   import { emitOpenEntityViewDialog } from '@/contracts/dialog-events';
-import { getDeviceGroupId } from '@/contracts/device-group';
+  import { getDeviceGroupId } from '@/contracts/device-group';
 
   const props = defineProps({
     id: { type: String, required: true },
@@ -222,6 +222,7 @@ import { getDeviceGroupId } from '@/contracts/device-group';
     display: flex;
     align-items: flex-end;
     gap: 0.9rem;
+    position: relative; 
   }
 
   .entity-labels {
@@ -252,8 +253,9 @@ import { getDeviceGroupId } from '@/contracts/device-group';
   }
 
   .delete-icon {
-    margin-left: auto;
-    font-size: 1.2rem;
+    position: absolute;
+    top: 0;
+    right: 0;
     color: #ff5c5c;
     cursor: pointer;
     transition: color 0.2s ease-in-out;
