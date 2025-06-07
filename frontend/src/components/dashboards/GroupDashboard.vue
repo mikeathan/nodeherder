@@ -51,9 +51,32 @@
   function openDeleteDeviceGroupConfirmationDialog(groupName: string) {
     const props = {
       title: 'Question',
-      message: 'Are you sure?',
+      message: `Delete group ${groupName} ?`,
     };
     emitOpenConfirmationDialog(() => deleteDeviceGroup(groupName), props);
+  }
+
+  function openDeleteDeviceExposeConfirmationDialog(groupName: string, deviceId: string, exposeName: string) {
+    const props = {
+      title: 'Question',
+      message: `Delete expose ${exposeName} ?`,
+    };
+    emitOpenConfirmationDialog(() => deleteDeviceExpose(groupName, deviceId, exposeName), props);
+  }
+
+  function deleteDeviceExpose(groupName: string, deviceId: string, exposeName: string) {
+    if (!groupName || !deviceId || !exposeName) {
+      console.log('groupName or deviceId or exposeName is empty');
+      return;
+    }
+    const deviceGroupExposes = dashboardGroups.value[groupName].deviceGroup[deviceId].exposes;
+    const idx = deviceGroupExposes.indexOf(exposeName);
+    if (idx === -1) {
+      console.log('exposeName not found');
+      return;
+    }
+    deviceGroupExposes.splice(idx, 1);
+    store.dispatch('hub/saveDashboardGroup', dashboardGroups.value[groupName] as DashboardGroup);
   }
 
   function deleteDeviceGroup(groupName: string) {
@@ -77,10 +100,11 @@
             :name="item.expose"
             compact
             :is-selected="editMode && selectedCard == getDeviceGroupId(item.deviceId, item.expose)"
-            @selected="handleCardSelected" />
+            @selected="handleCardSelected"
+            @delete="openDeleteDeviceExposeConfirmationDialog(group.name, $event.id, $event.name)" />
         </div>
         <div v-if="editMode" class="icon-tools">
-          <span class="edit-icon pi pi-pen-to-square" />
+          <!-- <span class="edit-icon pi pi-pen-to-square" /> -->
           <span class="edit-icon pi pi-trash" @click="openDeleteDeviceGroupConfirmationDialog(group.name)" />
           <span class="edit-icon pi pi-plus" @click="openAddDeviceExposeDialog(group)" />
         </div>

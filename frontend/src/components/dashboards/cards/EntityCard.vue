@@ -174,6 +174,7 @@
           <div class="entity-value">{{ getFormattedSensorValue(expose) }}</div>
         </div>
         <span v-if="isSelected" class="delete-icon pi pi-trash" @click.stop="emitDelete" title="Remove from group" />
+        <!-- <span v-if="isSelected" class="pi pi-ellipsis-v" /> -->
       </div>
     </template>
     <template #content>
@@ -213,7 +214,7 @@
   }
 
   .entity-card.is-selected {
-    border: 2px solid #007bff;
+    border-color: #007bff;
     box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
     background-color: rgba(0, 123, 255, 0.1);
     cursor: default;
@@ -222,7 +223,7 @@
     display: flex;
     align-items: flex-end;
     gap: 0.9rem;
-    position: relative; 
+    position: relative;
   }
 
   .entity-labels {
