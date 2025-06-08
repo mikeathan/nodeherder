@@ -31,13 +31,13 @@
     return props.items.find((item) => item.isLogo);
   });
 
-
 </script>
 
 <style scoped>
-  .custom-menubar {
+   .custom-menubar {
     justify-content: space-between !important;
-  }
+  } 
+ 
 </style>
 
 <template>
@@ -46,4 +46,5 @@
       <component :is="logoItem?.template" />
     </template>
   </Menubar>
+
 </template>

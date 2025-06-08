@@ -167,6 +167,10 @@
         </div>
         <span v-if="isSelected" class="delete-icon pi pi-trash" @click.stop="emitDelete" title="Remove from group" />
         <!-- <span v-if="isSelected" class="pi pi-ellipsis-v" /> -->
+
+        <!-- TO use pop up for edit Icon -->
+<!-- <Button type="button" icon="pi pi-ellipsis-v" @click="toggle" aria-haspopup="true" aria-controls="overlay_menu" />
+<Menu ref="menu" id="overlay_menu" :model="items" :popup="true" /> -->
       </div>
     </template>
     <template #content>

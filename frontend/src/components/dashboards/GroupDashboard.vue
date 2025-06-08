@@ -92,12 +92,12 @@
 <template>
   <div class="dashboard-container">
     <div class="dashboard-toolbar">
-      <div class="toolbar-title">Device Dashboard</div>
+      <div class="dashboard-toolbar-title">Device Dashboard</div>
       <span class="pi pi-cog settings-icon" />
     </div>
 
     <div v-for="group in dashboardGroups" :key="group.name" class="dashboard-group">
-      <h4 class="dashboard-title">{{ group.name }}</h4> TO FIX the name stlyes etc... 
+      <div class="dashboard-title">{{ group.name }}</div>
       <div class="card-container" :class="{ 'edit-mode': editMode }">
         <div v-for="item in flattenDeviceGroup(group)" :key="`${item.deviceId}-${item.expose}`" class="card-item">
           <EntityCard
@@ -122,39 +122,39 @@
   .dashboard-container {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.8rem;
-    max-width: 100%;
-    padding-top: 1rem;
+    gap: 0.2rem;
   }
-  /* Dashboard toolbar and header*/
-  .toolbar-title {
-    font-weight: bold;
-    font-size: 1rem;
-    flex-grow: 1;
-  }
+
 
   .dashboard-toolbar {
     display: flex;
-    justify-content: flex-end;
     align-items: center;
+    justify-content: space-between;
     width: 100%;
-    padding: 0.5rem 0.75rem;
-    box-sizing: border-box;
-    margin-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  
+  }
+  
+  /* Dashboard toolbar and header*/
+  .dashboard-toolbar-title {
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: #ccc;
   }
 
+
   .settings-icon {
-    font-size: 1.2rem;
+    font-size: 1rem;
+    color: #999;
     cursor: pointer;
     padding: 6px;
-    border-radius: 6px;
+    border-radius: 4px;
     transition: background-color 0.2s ease;
   }
 
   .settings-icon:hover {
-    background-color: rgba(255, 255, 255, 0.1); /* subtle hover */
+    background-color: #2a2a2a;
   }
+
   /* Deskop view */
   .dashboard-group {
     padding: 0.1rem;
@@ -170,20 +170,22 @@
     }
   }
   .dashboard-title {
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin-bottom: 1rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    padding: 0 8px;
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+    color: #e0e0e0;
+    letter-spacing: 0.25px;
   }
 
   .card-container {
     column-count: 2;
     column-gap: 0.5rem;
     max-width: 400px;
-
     border-radius: 12px;
-    padding: 16px;
+    padding: 8px;
     position: relative;
-    margin-bottom: 20px;
   }
 
   .card-container.edit-mode {

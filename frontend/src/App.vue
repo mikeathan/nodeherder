@@ -3,7 +3,7 @@
   import { store } from './store/index';
   import Notifications from './components/hub/alerts/Notifications.vue';
   import { useRouter } from 'vue-router';
-  import NavigationBar from '@/components/controls/NavigationBar.vue';
+  import NavigationDrawer from '@/components/controls/NavigationDrawer.vue';
   import Logo from '@/components/controls/Logo.vue';
   import DialogHost from './components/dialogs/DialogHost.vue';
   import PermitJoinTimer from './components/controls/PermitJoinTimer.vue';
@@ -26,7 +26,10 @@
         {
           label: 'devices',
           icon: 'pi pi-mobile',
-          command: () => router.push('/deviceDashboard'),
+          // command: () => router.push('/deviceDashboard'),
+          command: () => {visible.value =!visible.value},
+          // <Button icon="pi pi-bars" @click="visible = !visible" />
+          
         },
         {
           label: 'groups',
@@ -81,9 +84,11 @@
     {
       isLogo: true,
       template: () => h(Logo),
+  
     },
   ]);
 
+  const visible = ref(true);
   onBeforeMount(() => {
     store.dispatch('ws/connect');
   });
@@ -102,7 +107,7 @@
   <main>
     <div class="app-container">
       <div class="col-12">
-        <NavigationBar :items="menuItems" />
+        <NavigationDrawer :items="menuItems"  />
         <PermitJoinTimer
           :duration="permitJoinDuration"
           :allow-join="permitJoinEnabled"
