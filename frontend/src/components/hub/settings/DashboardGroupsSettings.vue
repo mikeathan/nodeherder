@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<!-- <script setup lang="ts">
 import { computed } from 'vue';
 import { store } from '../../../store/index';
 import { DashboardGroups, DashboardGroup } from '@/types/settings.type';
@@ -139,4 +139,4 @@ const updateDeviceGroup = (group: DashboardGroup) => {
       @insert="(id) => openAddDeviceExposeDialog(group, id)" />
   </Panel>
 
-</template>
+</template> -->

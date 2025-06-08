@@ -10,7 +10,7 @@
   import { stateDevicesFilter } from '@/configs/automation/device.config';
   import { emitOpenEntityViewDialog } from '@/contracts/dialog-events';
   import { getDeviceGroupId } from '@/contracts/device-group';
-  
+
   const props = defineProps({
     id: { type: String, required: true },
     name: { type: String, required: true },
@@ -133,31 +133,14 @@
         const eventProps = {
           id: props.id,
           name: expose.value.name,
-          title: getSensorName(expose.value.name),
+          title: `${getSensorName(expose.value.name)} (${device.value?.friendly_name})`,
         };
 
-        // TODO:
-        ///send title name to include dashboardgroupName + entity name
         emitOpenEntityViewDialog(() => {}, eventProps);
       }
     });
   }
-
-  const cardStyle = computed(() => {
-    if (props.compact) {
-      return 'padding: 0.4rem';
-    }
-    return '';
-  });
-
-  const items = [
-    {
-      label: 'Update',
-    },
-    {
-      label: 'Delete',
-    },
-  ];
+ 
 </script>
 
 <template>
@@ -166,7 +149,7 @@
     @click="handleCardClick"
     :class="{ 'is-selected': props.isSelected }"
     :pt="{
-      body: { style: cardStyle },
+      body: { style: compact ? 'padding: 0.4rem' : '' },
       root: { style: { '--p-card-body-gap': '0.0rem' } }, // remove card padding
     }">
     <template #title>

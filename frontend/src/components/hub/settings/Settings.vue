@@ -16,9 +16,7 @@
       <div class="pt-3">
         <LoggerSettings />
       </div>
-      <div class="pt-3">
-        <DashboardGroupSettings />
-      </div>
+      
     </template>
   </Card>
 </template>

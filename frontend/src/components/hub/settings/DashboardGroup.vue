@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<!-- <script setup lang="ts">
   import { computed, ref } from 'vue';
   import { store } from '../../../store/index';
   import { DashboardGroup, DeviceGroup } from '@/types/settings.type';
@@ -31,8 +31,6 @@
     emit('insert', deviceGroup.deviceId);
   }
 
-  // TODO: if there is only one expose and user wants to delete it,
-  // message to say that the devicegroup will be remove and then remove it
   const deleteExpose = (deviceGroup: DeviceGroup, expose: string) => {
     deviceGroup.exposes = deviceGroup.exposes.filter((e: string) => e != expose);
     dashboardGroup.value.deviceGroup[deviceGroup.deviceId] = deviceGroup;
@@ -52,12 +50,10 @@
     <template #list="slotProps">
       <div v-for="(item, index) in slotProps.items" :key="index" class="col-12">
         <div class="flex flex-wrap md:flex-nowrap gap-4 items-start">
-          <!-- Device  -->
           <div class="w-full md:w-auto flex-shrink-0">
             <div class="text-color-secondary font-semibold">{{ deviceNameFromId(item.deviceId) }}</div>
           </div>
 
-          <!-- Exposes -->
           <div class="w-full md:w-auto flex-grow-1">
             <div class="flex flex-wrap gap-1 **justify-content-start**">
               <Tag
@@ -71,7 +67,6 @@
             </div>
           </div>
 
-          <!-- Button Actions -->
           <div class="flex flex-wrap gap-1 justify-content-center">
             <div class="flex">
               <Button
@@ -90,4 +85,4 @@
       </div>
     </template>
   </DataView>
-</template>
+</template> -->
