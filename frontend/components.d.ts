@@ -11,6 +11,7 @@ declare module 'vue' {
     ActionViewer: typeof import('./src/components/automations/actions/ActionViewer.vue')['default']
     AreaChart: typeof import('./src/components/chart/types/AreaChart.vue')['default']
     AutomationStatus: typeof import('./src/components/automations/schedule/AutomationStatus.vue')['default']
+    Avatar: typeof import('primevue/avatar')['default']
     BarNavigation: typeof import('./src/components/controls/BarNavigation.vue')['default']
     BaseChart: typeof import('./src/components/chart/BaseChart.vue')['default']
     BaseSlider: typeof import('./src/components/input/BaseSlider.vue')['default']
@@ -48,6 +49,7 @@ declare module 'vue' {
     Dialog: typeof import('primevue/dialog')['default']
     DialogHost: typeof import('./src/components/dialogs/DialogHost.vue')['default']
     Divider: typeof import('primevue/divider')['default']
+    Drawer: typeof import('primevue/drawer')['default']
     Dropdown: typeof import('./src/components/controls/Dropdown.vue')['default']
     Editor: typeof import('./src/components/automations/Editor.vue')['default']
     EntityCard: typeof import('./src/components/dashboards/cards/EntityCard.vue')['default']
@@ -122,6 +124,8 @@ declare module 'vue' {
     Viewer: typeof import('./src/components/automations/Viewer.vue')['default']
   }
   export interface ComponentCustomProperties {
+    Ripple: typeof import('primevue/ripple')['default']
+    StyleClass: typeof import('primevue/styleclass')['default']
     Tooltip: typeof import('primevue/tooltip')['default']
   }
 }

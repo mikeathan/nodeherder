@@ -1,103 +1,137 @@
-<script setup lang="tsx">
-import { computed, PropType, ref } from 'vue';
-import { MenuBarItem } from '@/types/controls.type';
+<script setup lang="ts">
+  import { computed, ref, PropType, onMounted, onUnmounted, watch } from 'vue';
+  import { MenuBarItem } from '@/types/controls.type';
 
-const props = defineProps({
-  items: {
-    type: Object as PropType<MenuBarItem[]>,
-    default: () => [],
-    required: true,
-  },
-});
+  const props = defineProps({
+    items: {
+      type: Object as PropType<MenuBarItem[]>,
+      default: () => [],
+      required: true,
+    },
+    isMinimised: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+  });
+  const emit = defineEmits<{
+    (e: 'widthChanged', width: number): void;
+  }>();
+  const menuItems = computed(() =>
+    props.items
+      .filter((item) => !item.custom && !item.isLogo)
+      .map((item) => ({
+        label: item.label,
+        icon: item.icon,
+        disabled: item.disabled,
+        command: item.command,
+        items: item.children?.map((child) => ({
+          label: child.label,
+          icon: child.icon,
+          command: child.command,
+        })),
+      }))
+  );
 
-const menuItems = computed(() =>
-  props.items
-    .filter((item) => !item.custom && !item.isLogo)
-    .map((item) => ({
-      label: item.label,
-      icon: item.icon,
-      disabled: item.disabled,
-      command: item.command,
-      items: item.children?.map((child) => ({
-        label: child.label,
-        icon: child.icon,
-        command: child.command,
-      })),
-    }))
-);
+  const logoItem = computed(() => props.items.find((item) => item.isLogo));
+  const minimized = ref(props.isMinimised);
 
-const logoItem = computed(() => props.items.find((item) => item.isLogo));
+  const windowWidth = ref(window.innerWidth);
+  const isMobile = computed(() => windowWidth.value < 768);
 
-const minimized = ref(false);
-function toggleMinimize() {
-  minimized.value = !minimized.value;
-}
+  const toggleMinimize = () => {
+    minimized.value = !minimized.value;
+    emit('widthChanged', minimized.value ? 60 : 250);
+  };
+
+  const drawerWidth = computed(() => {
+    if (isMobile.value) return 0;
+    return minimized.value ? 60 : 250;
+  });
+
+  const onResize = () => {
+    windowWidth.value = window.innerWidth;
+  };
+
+  onMounted(() => {
+    window.addEventListener('resize', onResize);
+    emitDrawerWidth();
+  });
+
+  onUnmounted(() => {
+    window.removeEventListener('resize', onResize);
+  });
+
+  const emitDrawerWidth = () => {
+    emit('widthChanged', drawerWidth.value);
+  };
+  watch([drawerWidth, isMobile, minimized], emitDrawerWidth);
 </script>
+<template>
+  <div v-if="!isMobile" :class="['floating-sidebar', { minimized }]">
+    <div class="top-bar">
+      <component :is="logoItem?.template" v-if="!minimized" />
+      <Button icon="pi pi-bars" @click="toggleMinimize" rounded text />
+    </div>
+
+    <div class="menu-area">
+      <!-- Minimized buttons -->
+      <div v-if="minimized" class="minimized-buttons">
+        <Button
+          v-for="item in menuItems"
+          :key="item.label"
+          :icon="item.icon"
+          @click="item.command"
+          :disabled="item.disabled"
+          v-tooltip.right="item.label"
+          text
+          rounded />
+      </div>
+      <!-- Full menu -->
+      <PanelMenu v-else :model="menuItems" class="menu-panel" />
+    </div>
+  </div>
+</template>
 
 <style scoped>
-.custom-sidebar {
-  background-color: #1b1b1b;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
-  transition: width 0.3s ease;
-  overflow: hidden;
-  color: white;
-  height: 100vh;
-  position: relative;
-}
+  .floating-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    background-color: #1b1b1b;
+    color: white;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    width: 250px;
+    transition: width 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+  }
 
-.logo-container {
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  position: relative;
-}
+  .floating-sidebar.minimized {
+    width: 60px;
+  }
 
-.toggle-btn {
-  position: absolute;
-  right: 10px;
-  top: 10px;
-  cursor: pointer;
-  background: none;
-  border: none;
-  color: white;
-  font-size: 18px;
-}
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
 
-.menu-panel.minimized .p-menuitem-text {
-  display: none !important; /* hide labels */
-}
+  .menu-area {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+  }
 
-.menu-panel.minimized .p-menuitem-icon {
-  margin: 0 auto !important; /* center icons */
-  display: block !important;
-}
+  .minimized-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
 </style>
-
-<template>
-  <!-- <Sidebar
-    :visible="true"
-    position="left"
-    :style="{ width: minimized ? '60px' : '250px' }"
-    class="custom-sidebar"
-    :modal="false"
-    :dismissable="false"
-    :showCloseIcon="false"
-  >
-    <div class="logo-container">
-      <component :is="logoItem?.template" />
-      <button class="toggle-btn" @click="toggleMinimize">
-        {{ minimized ? '▶' : '◀' }}
-      </button>
-    </div>
-    <PanelMenu :model="menuItems" :class="{ minimized: minimized }" class="menu-panel" />
-  </Sidebar> -->
-
-  <div class="card flex justify-content-center">
-    <Sidebar v-model:visible="minimized" header="Sidebar">
-        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
-    </Sidebar>
-    <Button icon="pi pi-arrow-right" @click="minimized = true" />
-</div>
-</template>

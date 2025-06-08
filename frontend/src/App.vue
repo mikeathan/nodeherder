@@ -14,6 +14,12 @@
 
   const permitJoinEnabled = ref<boolean>(false);
   const dashboardEditMode = ref<boolean>(false);
+  const drawerWidth = ref(0);
+  const isDrawerMinimised = ref(true);
+
+  const handleDrawerWidthChanged = (width: number) => {
+    drawerWidth.value = width;
+  };
   const toggleEditMode = () => {
     dashboardEditMode.value = !dashboardEditMode.value;
   };
@@ -27,9 +33,10 @@
           label: 'devices',
           icon: 'pi pi-mobile',
           // command: () => router.push('/deviceDashboard'),
-          command: () => {visible.value =!visible.value},
+          command: () => {
+            isDrawerMinimised.value = !isDrawerMinimised.value;
+          },
           // <Button icon="pi pi-bars" @click="visible = !visible" />
-          
         },
         {
           label: 'groups',
@@ -84,11 +91,9 @@
     {
       isLogo: true,
       template: () => h(Logo),
-  
     },
   ]);
 
-  const visible = ref(true);
   onBeforeMount(() => {
     store.dispatch('ws/connect');
   });
@@ -101,24 +106,22 @@
   .p-component {
     font-family: 'Roboto', sans-serif !important;
   }
+  .main-content {
+    transition: margin-left 0.3s ease;
+    padding: 1rem;
+  }
 </style>
 
 <template>
-  <main>
-    <div class="app-container">
-      <div class="col-12">
-        <NavigationDrawer :items="menuItems"  />
-        <PermitJoinTimer
-          :duration="permitJoinDuration"
-          :allow-join="permitJoinEnabled"
-          @statusUpdated="permitJoinEnabled = $event" />
-        <Notifications />
-        <DialogHost />
+  <NavigationDrawer :items="menuItems" :is-minimised="isDrawerMinimised" @widthChanged="handleDrawerWidthChanged" />
+  <div class="main-content" :style="{ marginLeft: `${drawerWidth}px` }">
+    <PermitJoinTimer
+      :duration="permitJoinDuration"
+      :allow-join="permitJoinEnabled"
+      @statusUpdated="permitJoinEnabled = $event" />
+    <Notifications />
+    <DialogHost />
 
-        <div class="content">
-          <RouterView />
-        </div>
-      </div>
-    </div>
-  </main>
+    <RouterView />
+  </div>
 </template>
