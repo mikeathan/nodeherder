@@ -1,43 +1,4 @@
 <script setup lang="tsx">
-  import { computed, PropType, ref } from 'vue';
-  import { MenuBarItem } from '@/types/controls.type';
-
-  const props = defineProps({
-    items: {
-      type: Object as PropType<MenuBarItem[]>,
-      default: [],
-      required: true,
-    },
-  });
-
-  const menuItems = computed(() =>
-    props.items
-      .filter((item) => !item.custom && !item.isLogo)
-      .map((item) => ({
-        label: item.label,
-        icon: item.icon,
-        disabled: item.disabled,
-        command: item.command,
-        items: item.children?.map((child) => ({
-          label: child.label,
-          icon: child.icon,
-          command: child.command,
-        })),
-      }))
-  );
-
-  const logoItem = computed(() => {
-    return props.items.find((item) => item.isLogo);
-  });
-
-  const visible = ref(true);
-  const minimized = ref(false);
-  function toggleMinimize() {
-    minimized.value = !minimized.value;
-  }
-</script>
-
-<script setup lang="tsx">
 import { computed, PropType, ref } from 'vue';
 import { MenuBarItem } from '@/types/controls.type';
 
@@ -115,7 +76,7 @@ function toggleMinimize() {
 </style>
 
 <template>
-  <Sidebar
+  <!-- <Sidebar
     :visible="true"
     position="left"
     :style="{ width: minimized ? '60px' : '250px' }"
@@ -131,5 +92,12 @@ function toggleMinimize() {
       </button>
     </div>
     <PanelMenu :model="menuItems" :class="{ minimized: minimized }" class="menu-panel" />
-  </Sidebar>
+  </Sidebar> -->
+
+  <div class="card flex justify-content-center">
+    <Sidebar v-model:visible="minimized" header="Sidebar">
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+    </Sidebar>
+    <Button icon="pi pi-arrow-right" @click="minimized = true" />
+</div>
 </template>
