@@ -9,6 +9,7 @@
   import PermitJoinTimer from './components/controls/PermitJoinTimer.vue';
   import { MenuBarItem } from './types/controls.type';
   import { DashboardModes } from '@/types/controls.type';
+  import NavigationBar from './components/controls/NavigationBar.vue';
   const router = useRouter();
   const permitJoinDuration = 120;
 
@@ -24,7 +25,26 @@
     dashboardEditMode.value = !dashboardEditMode.value;
   };
 
-  const menuItems = computed<MenuBarItem[]>(() => [
+  const topNavigattionItems = computed<MenuBarItem[]>(() => [
+    {
+      isLogo: true,
+      template: () => h(Logo),
+    },
+    {
+      label: 'edit',
+      icon: 'pi pi-cog',
+      command: () => router.push('/settings'),
+    },
+    {
+      label: permitJoinEnabled.value ? 'join enabled' : 'permit Join',
+      icon: 'pi pi-sitemap',
+      disabled: permitJoinEnabled.value,
+      command: () => {
+        permitJoinEnabled.value = !permitJoinEnabled.value;
+      },
+    },
+  ]);
+  const sideNavigationItems = computed<MenuBarItem[]>(() => [
     {
       label: 'dashboards',
       icon: 'pi pi-home',
@@ -32,11 +52,7 @@
         {
           label: 'devices',
           icon: 'pi pi-mobile',
-          // command: () => router.push('/deviceDashboard'),
-          command: () => {
-            isDrawerMinimised.value = !isDrawerMinimised.value;
-          },
-          // <Button icon="pi pi-bars" @click="visible = !visible" />
+          command: () => router.push('/deviceDashboard'),
         },
         {
           label: 'groups',
@@ -88,10 +104,6 @@
         permitJoinEnabled.value = !permitJoinEnabled.value;
       },
     },
-    {
-      isLogo: true,
-      template: () => h(Logo),
-    },
   ]);
 
   onBeforeMount(() => {
@@ -113,7 +125,11 @@
 </style>
 
 <template>
-  <NavigationDrawer :items="menuItems" :is-minimised="isDrawerMinimised" @widthChanged="handleDrawerWidthChanged" />
+  <NavigationBar :items="topNavigattionItems" />
+  <NavigationDrawer
+    :items="sideNavigationItems"
+    :is-minimised="isDrawerMinimised"
+    @widthChanged="handleDrawerWidthChanged" />
   <div class="main-content" :style="{ marginLeft: `${drawerWidth}px` }">
     <PermitJoinTimer
       :duration="permitJoinDuration"
