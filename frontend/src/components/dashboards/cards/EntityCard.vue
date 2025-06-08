@@ -10,8 +10,6 @@
   import { stateDevicesFilter } from '@/configs/automation/device.config';
   import { emitOpenEntityViewDialog } from '@/contracts/dialog-events';
   import { getDeviceGroupId } from '@/contracts/device-group';
-  import MenuDropdown from '../../controls/MenuDropdown.vue';
-  import { getIcon } from '@/modules/formatters/general-icons.formatter';
   
   const props = defineProps({
     id: { type: String, required: true },
@@ -186,7 +184,6 @@
         </div>
         <span v-if="isSelected" class="delete-icon pi pi-trash" @click.stop="emitDelete" title="Remove from group" />
         <!-- <span v-if="isSelected" class="pi pi-ellipsis-v" /> -->
-        <MenuDropdown backgroundColor="#222222" :size="38" :children="items" :icon="getIcon('')" />
       </div>
     </template>
     <template #content>
