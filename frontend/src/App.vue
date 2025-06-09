@@ -31,16 +31,21 @@
       template: () => h(Logo),
     },
     {
-      label: 'edit',
-      icon: 'pi pi-cog',
-      command: () => router.push('/settings'),
-    },
-    {
-      label: permitJoinEnabled.value ? 'join enabled' : 'permit Join',
+      //label: permitJoinEnabled.value ? 'join enabled' : 'permit Join',
       icon: 'pi pi-sitemap',
       disabled: permitJoinEnabled.value,
       command: () => {
         permitJoinEnabled.value = !permitJoinEnabled.value;
+      },
+    },
+    {
+      icon: 'pi pi-cog',
+      command: () => {
+        toggleEditMode();
+        router.push({
+          name: 'groupdashboard',
+          params: { mode: dashboardEditMode.value ? DashboardModes.editMode : '' },
+        });
       },
     },
   ]);
@@ -58,17 +63,6 @@
           label: 'groups',
           icon: 'pi pi-mobile',
           command: () => router.push('/'),
-        },
-        {
-          label: 'edit',
-          icon: 'pi pi-mobile',
-          command: () => {
-            toggleEditMode();
-            router.push({
-              name: 'groupdashboard',
-              params: { mode: dashboardEditMode.value ? DashboardModes.editMode : '' },
-            });
-          },
         },
       ],
     },

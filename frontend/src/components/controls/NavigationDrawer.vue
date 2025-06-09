@@ -71,7 +71,7 @@
   <div v-if="!isMobile" :class="['floating-sidebar', { minimized }]">
     <div class="top-bar">
       <component :is="logoItem?.template" v-if="!minimized" />
-      <Button icon="pi pi-bars" @click="toggleMinimize" rounded text />
+      <Button :icon="minimized ? 'pi pi-bars' : 'pi pi-times'" @click="toggleMinimize" rounded text />
     </div>
 
     <div class="menu-area">

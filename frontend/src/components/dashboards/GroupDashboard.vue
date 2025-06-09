@@ -91,11 +91,6 @@
 </script>
 <template>
   <div class="dashboard-container">
-    <div class="dashboard-toolbar">
-      <div class="dashboard-toolbar-title">Device Dashboard</div>
-      <span class="pi pi-cog settings-icon" />
-    </div>
-
     <div v-for="group in dashboardGroups" :key="group.name" class="dashboard-group">
       <div class="dashboard-title">{{ group.name }}</div>
       <div class="card-container" :class="{ 'edit-mode': editMode }">
@@ -125,35 +120,6 @@
     gap: 0.2rem;
   }
 
-
-  .dashboard-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-  
-  }
-  
-  /* Dashboard toolbar and header*/
-  .dashboard-toolbar-title {
-    font-size: 1.3rem;
-    font-weight: 500;
-    color: #ccc;
-  }
-
-
-  .settings-icon {
-    font-size: 1rem;
-    color: #999;
-    cursor: pointer;
-    padding: 6px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-  }
-
-  .settings-icon:hover {
-    background-color: #2a2a2a;
-  }
 
   /* Deskop view */
   .dashboard-group {
