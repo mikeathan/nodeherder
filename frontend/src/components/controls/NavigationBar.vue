@@ -10,7 +10,7 @@
     },
   });
   const emit = defineEmits<{
-    (e: 'expanded', value: boolean): void;
+    (e: 'minimised', value: boolean): void;
   }>();
 
   const menuItems = computed(() =>
@@ -53,16 +53,17 @@
   const windowWidth = ref(window.innerWidth);
   const isMobile = computed(() => windowWidth.value < 768);
 
-  const minimized = ref(false);
+  const isMinimised = ref(false);
 
   const onResize = () => {
     windowWidth.value = window.innerWidth;
   };
 
   const toggleExpanded = () => {
-    minimized.value = !minimized.value;
-    emit('expanded', minimized.value);
+    isMinimised.value = !isMinimised.value;
+    emit('minimised', isMinimised.value);
   };
+  
   onMounted(() => {
     window.addEventListener('resize', onResize);
   });
@@ -95,7 +96,7 @@
   <Menubar ref="menubarRef" :model="menuItems" class="custom-menubar">
     <template #start>
       <div v-if="isMobile">
-        <i  :class="minimized ? 'pi pi-times' : 'pi pi-bars'" class="left-menu" @click="toggleExpanded" />
+        <i  :class="isMinimised ? 'pi pi-times' : 'pi pi-bars'" class="left-menu" @click="toggleExpanded" />
       </div>
       <component :is="logoItem?.template" />
     </template>

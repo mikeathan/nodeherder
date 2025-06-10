@@ -119,10 +119,11 @@
 </style>
 
 <template>
-  <NavigationBar :items="topNavigattionItems" @expanded="isDrawerMinimised = $event" />
+  {{ isDrawerMinimised }}
+  <NavigationBar :items="topNavigattionItems" @minimised="isDrawerMinimised = $event" />
   <NavigationDrawer
     :items="sideNavigationItems"
-    :is-minimised="isDrawerMinimised"
+    :minimised="isDrawerMinimised"
     @widthChanged="handleDrawerWidthChanged" />
   <div class="main-content" :style="{ marginLeft: `${drawerWidth}px` }">
     <PermitJoinTimer

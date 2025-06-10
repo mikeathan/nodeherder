@@ -9,7 +9,7 @@
       default: () => [],
       required: true,
     },
-    isMinimised: {
+    minimised: {
       type: Boolean,
       required: false,
       default: false,
@@ -35,19 +35,19 @@
   );
 
   const logoItem = computed(() => props.items.find((item) => item.isLogo));
-  const minimized = ref(props.isMinimised);
+  const isMinimised = ref(props.minimised);
 
   const windowWidth = ref(window.innerWidth);
   const isMobile = computed(() => windowWidth.value < 768);
 
   const toggleMinimize = () => {
-    minimized.value = !minimized.value;
-    emit('widthChanged', minimized.value ? 60 : 250);
+    isMinimised.value = !isMinimised.value;
+    emit('widthChanged', isMinimised.value ? 60 : 250);
   };
 
   const drawerWidth = computed(() => {
     if (isMobile.value) return 0;
-    return minimized.value ? 60 : 250;
+    return isMinimised.value ? 60 : 250;
   });
 
   const onResize = () => {
@@ -66,18 +66,19 @@
   const emitDrawerWidth = () => {
     emit('widthChanged', drawerWidth.value);
   };
-  watch([drawerWidth, isMobile, minimized], emitDrawerWidth);
-  watchEffect(() => (minimized.value = props.isMinimised));
+  watch([drawerWidth, isMobile, isMinimised], emitDrawerWidth);
+  watchEffect(() => (isMinimised.value = props.minimised));
 </script>
 <template>
-  <div v-if="!isMobile" :class="['floating-sidebar', { minimized }]">
+{{ isMinimised }}
+  <div v-if="!isMobile" :class="['floating-sidebar', { isMinimised }]">
     <div class="top-bar">
-      <Button :icon="minimized ? 'pi pi-bars' : 'pi pi-times'" @click="toggleMinimize" rounded text />
+      <Button :icon="isMinimised ? 'pi pi-bars' : 'pi pi-times'" @click="toggleMinimize" rounded text />
     </div>
 
     <div class="menu-area">
       <!-- Minimized buttons -->
-      <div v-if="minimized" class="minimized-buttons">
+      <div v-if="isMinimised" class="minimized-buttons">
         <Button
           v-for="item in menuItems"
           :key="item.label"
@@ -92,10 +93,15 @@
       <PanelMenu v-else :model="menuItems" class="menu-panel" />
     </div>
   </div>
-  TEST
-  <div v-else-if="!minimized">
-    <PanelMenu :model="menuItems" class="menu-panel" />
-  </div>
+  <!-- Mobile drawer sliding in from right -->
+  <transition name="slide-left">
+    <div v-if="isMobile && !isMinimised" class="mobile-drawer">
+      <div class="top-bar">
+        <Button icon="pi pi-times" @click="toggleMinimize" rounded text />
+      </div>
+      <PanelMenu :model="menuItems" class="menu-panel" />
+    </div>
+  </transition>
 </template>
 
 <style scoped>
@@ -139,4 +145,33 @@
     gap: 0.75rem;
     margin-top: 1rem;
   }
+
+  .mobile-drawer {
+  position: fixed;
+  top: 0;
+  left: 0; /* Position on left */
+  width: 250px;
+  height: 100vh;
+  background-color: #1b1b1b;
+  color: white;
+  border-right: 1px solid rgba(255, 255, 255, 0.1); /* border on right side */
+  display: flex;
+  flex-direction: column;
+  z-index: 1100;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5); /* shadow on right */
+}
+
+/* Animation for sliding in from left */
+.slide-left-enter-active,
+.slide-left-leave-active {
+  transition: transform 0.3s ease;
+}
+.slide-left-enter-from,
+.slide-left-leave-to {
+  transform: translateX(-100%); /* offscreen left */
+}
+.slide-left-enter-to,
+.slide-left-leave-from {
+  transform: translateX(0); /* fully visible */
+}
 </style>
