@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { computed, ref, PropType, onMounted, onUnmounted, watch } from 'vue';
   import { MenuBarItem } from '@/types/controls.type';
+  import { watchEffect } from 'vue';
 
   const props = defineProps({
     items: {
@@ -66,11 +67,11 @@
     emit('widthChanged', drawerWidth.value);
   };
   watch([drawerWidth, isMobile, minimized], emitDrawerWidth);
+  watchEffect(() => (minimized.value = props.isMinimised));
 </script>
 <template>
   <div v-if="!isMobile" :class="['floating-sidebar', { minimized }]">
     <div class="top-bar">
-      <component :is="logoItem?.template" v-if="!minimized" />
       <Button :icon="minimized ? 'pi pi-bars' : 'pi pi-times'" @click="toggleMinimize" rounded text />
     </div>
 
@@ -90,6 +91,10 @@
       <!-- Full menu -->
       <PanelMenu v-else :model="menuItems" class="menu-panel" />
     </div>
+  </div>
+  TEST
+  <div v-else-if="!minimized">
+    <PanelMenu :model="menuItems" class="menu-panel" />
   </div>
 </template>
 

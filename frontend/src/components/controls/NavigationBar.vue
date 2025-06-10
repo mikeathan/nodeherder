@@ -9,6 +9,9 @@
       required: true,
     },
   });
+  const emit = defineEmits<{
+    (e: 'expanded', value: boolean): void;
+  }>();
 
   const menuItems = computed(() =>
     props.items
@@ -40,16 +43,25 @@
       el.classList.toggle('p-menubar-mobile-active', mobileMenuActive.value);
     }
   };
-  const isMobile = computed(() => window.innerWidth < 768);
+
+  function closeMobileMenu() {
+    console.log('closeMobileMenu');
+    mobileMenuActive.value = false;
+    menubarRef.value?.$el?.classList.remove('p-menubar-mobile-active');
+  }
+
   const windowWidth = ref(window.innerWidth);
+  const isMobile = computed(() => windowWidth.value < 768);
+
   const minimized = ref(false);
 
   const onResize = () => {
     windowWidth.value = window.innerWidth;
   };
 
-  const toggleMinimize = () => {
+  const toggleExpanded = () => {
     minimized.value = !minimized.value;
+    emit('expanded', minimized.value);
   };
   onMounted(() => {
     window.addEventListener('resize', onResize);
@@ -67,29 +79,28 @@
   .custom-menubar :deep(.p-menubar-button) {
     display: none !important;
   }
+  .left-menu {
+    display: flex;
+    align-items: center;
+    padding-right: 1rem;
+  }
+  .right-menu {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
 </style>
 
 <template>
   <Menubar ref="menubarRef" :model="menuItems" class="custom-menubar">
     <template #start>
-      <div v-if="isMobile" :class="['floating-sidebar', { minimized }]">
-        <Button :icon="minimized ? 'pi pi-times' : 'pi pi-bars'" @click="toggleMinimize" rounded text />
+      <div v-if="isMobile">
+        <i  :class="minimized ? 'pi pi-times' : 'pi pi-bars'" class="left-menu" @click="toggleExpanded" />
       </div>
-      <div v-if="isMobile" :class="['floating-sidebar', { minimized }]">
-        <Button icon="pi pi-ellipsis-v" @click="toggleMobileMenu" rounded text />
-      </div>
-
       <component :is="logoItem?.template" />
     </template>
-    <!-- <template #end>
-      <div class="custom-mobile-menu" v-if="isMobile">
-        <Button icon="pi pi-ellipsis-v" text rounded aria-label="Menu" />
-      </div>
-    </template> -->
+    <template #end v-if="isMobile">
+      <i class="pi pi-ellipsis-v right-menu" @click="toggleMobileMenu" />
+    </template>
   </Menubar>
-
-  <i class="pi pi-ellipsis-v" style="font-size: 2rem; color: red"></i>
-  <!-- 
-<  Button type="button" icon="pi pi-ellipsis-v" @click="toggle" aria-haspopup="true" aria-controls="overlay_menu" />
-<Menu ref="menu" id="overlay_menu" :model="items" :popup="true" /> -->
 </template>

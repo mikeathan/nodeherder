@@ -119,7 +119,7 @@
 </style>
 
 <template>
-  <NavigationBar :items="topNavigattionItems" />
+  <NavigationBar :items="topNavigattionItems" @expanded="isDrawerMinimised = $event" />
   <NavigationDrawer
     :items="sideNavigationItems"
     :is-minimised="isDrawerMinimised"
