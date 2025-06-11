@@ -16,9 +16,10 @@
   const permitJoinEnabled = ref<boolean>(false);
   const dashboardEditMode = ref<boolean>(false);
   const drawerWidth = ref(0);
-  const isDrawerMinimised = ref(true);
+  const isDrawerVisible = ref(false);
 
   const handleDrawerWidthChanged = (width: number) => {
+    console.log('drawer width :', width);
     drawerWidth.value = width;
   };
   const toggleEditMode = () => {
@@ -103,7 +104,32 @@
   onBeforeMount(() => {
     store.dispatch('ws/connect');
   });
+
+  function setDrawerVisibility(visible: boolean) {
+    console.log('drawer visibility :', isDrawerVisible.value, visible);
+
+    isDrawerVisible.value = visible;
+  }
 </script>
+
+<template>
+  <NavigationBar :items="topNavigattionItems" @minimised="setDrawerVisibility($event)" />
+  <NavigationDrawer
+    :items="sideNavigationItems"
+    :is-expanded="isDrawerVisible"
+    @widthChanged="handleDrawerWidthChanged" />
+  <div class="main-content" :style="{ marginLeft: `${drawerWidth}px` }">
+    <PermitJoinTimer
+      :duration="permitJoinDuration"
+      :allow-join="permitJoinEnabled"
+      @statusUpdated="permitJoinEnabled = $event" />
+    <Notifications />
+    <DialogHost />
+
+    <RouterView />
+  </div>
+</template>
+
 <style scoped>
   body {
     font-family: 'Roboto', sans-serif !important;
@@ -117,22 +143,3 @@
     padding: 1rem;
   }
 </style>
-
-<template>
-  {{ isDrawerMinimised }}
-  <NavigationBar :items="topNavigattionItems" @minimised="isDrawerMinimised = $event" />
-  <NavigationDrawer
-    :items="sideNavigationItems"
-    :minimised="isDrawerMinimised"
-    @widthChanged="handleDrawerWidthChanged" />
-  <div class="main-content" :style="{ marginLeft: `${drawerWidth}px` }">
-    <PermitJoinTimer
-      :duration="permitJoinDuration"
-      :allow-join="permitJoinEnabled"
-      @statusUpdated="permitJoinEnabled = $event" />
-    <Notifications />
-    <DialogHost />
-
-    <RouterView />
-  </div>
-</template>

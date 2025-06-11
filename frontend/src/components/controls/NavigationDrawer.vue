@@ -9,7 +9,7 @@
       default: () => [],
       required: true,
     },
-    minimised: {
+    isExpanded: {
       type: Boolean,
       required: false,
       default: false,
@@ -34,20 +34,20 @@
       }))
   );
 
-  const logoItem = computed(() => props.items.find((item) => item.isLogo));
-  const isMinimised = ref(props.minimised);
+  const expanded = ref(props.isExpanded);
 
   const windowWidth = ref(window.innerWidth);
   const isMobile = computed(() => windowWidth.value < 768);
 
   const toggleMinimize = () => {
-    isMinimised.value = !isMinimised.value;
-    emit('widthChanged', isMinimised.value ? 60 : 250);
+    expanded.value = !expanded.value;
+    console.log('toggleMinimize', expanded.value);
+    emit('widthChanged', expanded.value ? 250 : 60);
   };
 
   const drawerWidth = computed(() => {
     if (isMobile.value) return 0;
-    return isMinimised.value ? 60 : 250;
+    return expanded.value ? 250 : 60;
   });
 
   const onResize = () => {
@@ -66,19 +66,22 @@
   const emitDrawerWidth = () => {
     emit('widthChanged', drawerWidth.value);
   };
-  watch([drawerWidth, isMobile, isMinimised], emitDrawerWidth);
-  watchEffect(() => (isMinimised.value = props.minimised));
+  watch([drawerWidth, isMobile, expanded], emitDrawerWidth);
+  watchEffect(() => (expanded.value = props.isExpanded));
 </script>
 <template>
-{{ isMinimised }}
-  <div v-if="!isMobile" :class="['floating-sidebar', { isMinimised }]">
+  <!-- Desktop Sidebar -->
+  <div v-if="!isMobile" :class="['floating-sidebar', { expanded }]">
     <div class="top-bar">
-      <Button :icon="isMinimised ? 'pi pi-bars' : 'pi pi-times'" @click="toggleMinimize" rounded text />
+      <Button :icon="expanded ? 'pi pi-times' : 'pi pi-bars'" @click="toggleMinimize" rounded text />
     </div>
 
     <div class="menu-area">
-      <!-- Minimized buttons -->
-      <div v-if="isMinimised" class="minimized-buttons">
+      <!-- Expanded View -->
+      <PanelMenu v-if="expanded" :model="menuItems" class="menu-panel" />
+
+      <!-- Minimized View -->
+      <div v-else class="minimized-buttons">
         <Button
           v-for="item in menuItems"
           :key="item.label"
@@ -89,16 +92,16 @@
           text
           rounded />
       </div>
-      <!-- Full menu -->
-      <PanelMenu v-else :model="menuItems" class="menu-panel" />
     </div>
   </div>
-  <!-- Mobile drawer sliding in from right -->
+
+  <!-- Mobile Drawer -->
   <transition name="slide-left">
-    <div v-if="isMobile && !isMinimised" class="mobile-drawer">
+    <div v-if="isMobile && !expanded" class="mobile-drawer">
       <div class="top-bar">
         <Button icon="pi pi-times" @click="toggleMinimize" rounded text />
       </div>
+
       <PanelMenu :model="menuItems" class="menu-panel" />
     </div>
   </transition>
@@ -110,18 +113,18 @@
     top: 0;
     left: 0;
     height: 100vh;
+    width: 60px;
     background-color: #1b1b1b;
     color: white;
     border-right: 1px solid rgba(255, 255, 255, 0.1);
-    width: 250px;
     transition: width 0.3s ease;
     display: flex;
     flex-direction: column;
     z-index: 1000;
   }
 
-  .floating-sidebar.minimized {
-    width: 60px;
+  .floating-sidebar.expanded {
+    width: 250px;
   }
 
   .top-bar {
@@ -147,31 +150,31 @@
   }
 
   .mobile-drawer {
-  position: fixed;
-  top: 0;
-  left: 0; /* Position on left */
-  width: 250px;
-  height: 100vh;
-  background-color: #1b1b1b;
-  color: white;
-  border-right: 1px solid rgba(255, 255, 255, 0.1); /* border on right side */
-  display: flex;
-  flex-direction: column;
-  z-index: 1100;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5); /* shadow on right */
-}
+    position: fixed;
+    top: 0;
+    left: 0; /* Position on left */
+    width: 250px;
+    height: 100vh;
+    background-color: #1b1b1b;
+    color: white;
+    border-right: 1px solid rgba(255, 255, 255, 0.1); /* border on right side */
+    display: flex;
+    flex-direction: column;
+    z-index: 1100;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5); /* shadow on right */
+  }
 
-/* Animation for sliding in from left */
-.slide-left-enter-active,
-.slide-left-leave-active {
-  transition: transform 0.3s ease;
-}
-.slide-left-enter-from,
-.slide-left-leave-to {
-  transform: translateX(-100%); /* offscreen left */
-}
-.slide-left-enter-to,
-.slide-left-leave-from {
-  transform: translateX(0); /* fully visible */
-}
+  /* Animation for sliding in from left */
+  .slide-left-enter-active,
+  .slide-left-leave-active {
+    transition: transform 0.3s ease;
+  }
+  .slide-left-enter-from,
+  .slide-left-leave-to {
+    transform: translateX(-100%); /* offscreen left */
+  }
+  .slide-left-enter-to,
+  .slide-left-leave-from {
+    transform: translateX(0); /* fully visible */
+  }
 </style>

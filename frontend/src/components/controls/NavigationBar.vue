@@ -36,6 +36,7 @@
   const mobileMenuActive = ref(false);
 
   const toggleMobileMenu = () => {
+    console.log('toggleMobileMenu');
     mobileMenuActive.value = !mobileMenuActive.value;
 
     const el = menubarRef.value?.$el || null;
@@ -60,6 +61,7 @@
   };
 
   const toggleExpanded = () => {
+    console.log('toggleExpanded');
     isMinimised.value = !isMinimised.value;
     emit('minimised', isMinimised.value);
   };
@@ -72,6 +74,26 @@
     window.removeEventListener('resize', onResize);
   });
 </script>
+
+
+
+<template>
+  
+  <Menubar ref="menubarRef" :model="menuItems" class="custom-menubar">
+    <template #start>
+      <div v-if="isMobile">
+        <i  :class="isMinimised ? 'pi pi-bars' : 'pi pi-times'" class="left-menu" @click="toggleExpanded" />
+      </div>
+      <component :is="logoItem?.template" />
+    </template>
+    <template #end v-if="isMobile">
+       <div>
+        {{ isMinimised }}
+      </div>
+      <i class="pi pi-ellipsis-v right-menu" @click="toggleMobileMenu" />
+    </template>
+  </Menubar>
+</template>
 
 <style scoped>
   .custom-menubar {
@@ -91,17 +113,3 @@
     cursor: pointer;
   }
 </style>
-
-<template>
-  <Menubar ref="menubarRef" :model="menuItems" class="custom-menubar">
-    <template #start>
-      <div v-if="isMobile">
-        <i  :class="isMinimised ? 'pi pi-times' : 'pi pi-bars'" class="left-menu" @click="toggleExpanded" />
-      </div>
-      <component :is="logoItem?.template" />
-    </template>
-    <template #end v-if="isMobile">
-      <i class="pi pi-ellipsis-v right-menu" @click="toggleMobileMenu" />
-    </template>
-  </Menubar>
-</template>
