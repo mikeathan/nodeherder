@@ -18,6 +18,7 @@
   const emit = defineEmits<{
     (e: 'widthChanged', width: number): void;
   }>();
+  
   const menuItems = computed(() =>
     props.items
       .filter((item) => !item.custom && !item.isLogo)
@@ -35,19 +36,21 @@
   );
 
   const expanded = ref(props.isExpanded);
-
   const windowWidth = ref(window.innerWidth);
   const isMobile = computed(() => windowWidth.value < 768);
 
+  const getExpandedWidth = () => {
+    return expanded.value ? 250 : 60;
+  };
+
   const toggleMinimize = () => {
     expanded.value = !expanded.value;
-    console.log('toggleMinimize', expanded.value);
-    emit('widthChanged', expanded.value ? 250 : 60);
+    emit('widthChanged', getExpandedWidth());
   };
 
   const drawerWidth = computed(() => {
     if (isMobile.value) return 0;
-    return expanded.value ? 250 : 60;
+    return getExpandedWidth();
   });
 
   const onResize = () => {
@@ -66,8 +69,9 @@
   const emitDrawerWidth = () => {
     emit('widthChanged', drawerWidth.value);
   };
+
   watch([drawerWidth, isMobile, expanded], emitDrawerWidth);
-  watchEffect(() => (expanded.value = props.isExpanded));
+  // watchEffect(() => (expanded.value = props.isExpanded));
 </script>
 <template>
   <!-- Desktop Sidebar -->
@@ -97,7 +101,7 @@
 
   <!-- Mobile Drawer -->
   <transition name="slide-left">
-    <div v-if="isMobile && !expanded" class="mobile-drawer">
+    <div v-if="isMobile && expanded" class="mobile-drawer">
       <div class="top-bar">
         <Button icon="pi pi-times" @click="toggleMinimize" rounded text />
       </div>
