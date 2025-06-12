@@ -19,9 +19,9 @@
   const isDrawerVisible = ref(false);
 
   const handleDrawerWidthChanged = (width: number) => {
-    console.log('drawer width :', width);
     drawerWidth.value = width;
   };
+
   const toggleEditMode = () => {
     dashboardEditMode.value = !dashboardEditMode.value;
   };
@@ -106,17 +106,19 @@
   });
 
   function setDrawerVisibility(visible: boolean) {
-    console.log('drawer visibility :', isDrawerVisible.value, visible);
-
     isDrawerVisible.value = visible;
   }
 </script>
 
 <template>
-  <NavigationBar :items="topNavigattionItems" @minimised="setDrawerVisibility($event)" />
+  <NavigationBar
+    :style="{ marginLeft: `${drawerWidth}px` }"
+    :items="topNavigattionItems"
+    @click="setDrawerVisibility($event)" />
   <NavigationDrawer
     :items="sideNavigationItems"
     :is-expanded="isDrawerVisible"
+    @toggle="isDrawerVisible = !isDrawerVisible"
     @widthChanged="handleDrawerWidthChanged" />
   <div class="main-content" :style="{ marginLeft: `${drawerWidth}px` }">
     <PermitJoinTimer
@@ -139,7 +141,8 @@
     font-family: 'Roboto', sans-serif !important;
   }
   .main-content {
-    transition: margin-left 0.3s ease;
+    transition: margin-left 0.5s ease;
     padding: 1rem;
   }
+
 </style>

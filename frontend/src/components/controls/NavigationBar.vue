@@ -10,7 +10,7 @@
     },
   });
   const emit = defineEmits<{
-    (e: 'minimised', value: boolean): void;
+    (e: 'click', value: boolean): void;
   }>();
 
   const menuItems = computed(() =>
@@ -36,7 +36,6 @@
   const mobileMenuActive = ref(false);
 
   const toggleMobileMenu = () => {
-    console.log('toggleMobileMenu');
     mobileMenuActive.value = !mobileMenuActive.value;
 
     const el = menubarRef.value?.$el || null;
@@ -45,27 +44,22 @@
     }
   };
 
-  function closeMobileMenu() {
-    console.log('closeMobileMenu');
-    mobileMenuActive.value = false;
-    menubarRef.value?.$el?.classList.remove('p-menubar-mobile-active');
-  }
+  // function closeMobileMenu() {
+  //   console.log('closeMobileMenu');
+  //   mobileMenuActive.value = false;
+  //   menubarRef.value?.$el?.classList.remove('p-menubar-mobile-active');
+  // }
 
   const windowWidth = ref(window.innerWidth);
   const isMobile = computed(() => windowWidth.value < 768);
-
-  const isMinimised = ref(false);
 
   const onResize = () => {
     windowWidth.value = window.innerWidth;
   };
 
-  const toggleExpanded = () => {
-    console.log('toggleExpanded');
-    isMinimised.value = !isMinimised.value;
-    emit('minimised', isMinimised.value);
+  const onDrawerToggle = () => {
+    emit('click', true);
   };
-  
   onMounted(() => {
     window.addEventListener('resize', onResize);
   });
@@ -75,21 +69,15 @@
   });
 </script>
 
-
-
 <template>
-  
   <Menubar ref="menubarRef" :model="menuItems" class="custom-menubar">
     <template #start>
       <div v-if="isMobile">
-        <i  :class="isMinimised ? 'pi pi-bars' : 'pi pi-times'" class="left-menu" @click="toggleExpanded" />
+        <i class="pi pi-bars left-menu" @click="onDrawerToggle" />
       </div>
       <component :is="logoItem?.template" />
     </template>
     <template #end v-if="isMobile">
-       <div>
-        {{ isMinimised }}
-      </div>
       <i class="pi pi-ellipsis-v right-menu" @click="toggleMobileMenu" />
     </template>
   </Menubar>
@@ -106,6 +94,7 @@
     display: flex;
     align-items: center;
     padding-right: 1rem;
+    cursor: pointer;
   }
   .right-menu {
     display: flex;
