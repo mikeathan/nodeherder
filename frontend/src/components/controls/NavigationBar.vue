@@ -1,6 +1,8 @@
 <script setup lang="tsx">
-  import { ComponentPublicInstance, computed, onMounted, onUnmounted, PropType, ref } from 'vue';
+  import { ComponentPublicInstance, computed, onUnmounted, PropType, ref } from 'vue';
   import { MenuBarItem } from '@/types/controls.type';
+  import { useWindowSize } from '@/mixins/composables/useWindowsSize';
+import { useMenuItems } from '@/mixins/composables/useMenuItems';
 
   const props = defineProps({
     items: {
@@ -12,26 +14,8 @@
   const emit = defineEmits<{
     (e: 'click', value: boolean): void;
   }>();
-
-  const menuItems = computed(() =>
-    props.items
-      .filter((item) => !item.custom && !item.isLogo)
-      .map((item) => ({
-        label: item.label,
-        icon: item.icon,
-        disabled: item.disabled,
-        command: item.command,
-        items: item.children?.map((child) => ({
-          label: child.label,
-          icon: child.icon,
-          command: child.command,
-        })),
-      }))
-  );
-
-  const logoItem = computed(() => {
-    return props.items.find((item) => item.isLogo);
-  });
+  
+  const { menuItems, logoItem } = useMenuItems(props.items);
   const menubarRef = ref<ComponentPublicInstance | null>(null);
   const mobileMenuActive = ref(false);
 
@@ -44,29 +28,11 @@
     }
   };
 
-  // function closeMobileMenu() {
-  //   console.log('closeMobileMenu');
-  //   mobileMenuActive.value = false;
-  //   menubarRef.value?.$el?.classList.remove('p-menubar-mobile-active');
-  // }
-
-  const windowWidth = ref(window.innerWidth);
-  const isMobile = computed(() => windowWidth.value < 768);
-
-  const onResize = () => {
-    windowWidth.value = window.innerWidth;
-  };
+  const { isMobile } = useWindowSize();
 
   const onDrawerToggle = () => {
     emit('click', true);
   };
-  onMounted(() => {
-    window.addEventListener('resize', onResize);
-  });
-
-  onUnmounted(() => {
-    window.removeEventListener('resize', onResize);
-  });
 </script>
 
 <template>
