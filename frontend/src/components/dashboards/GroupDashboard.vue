@@ -114,11 +114,17 @@
     store.dispatch('hub/deleteDashboardGroup', groupName);
   }
 </script>
+
+NEED rename device group group icon TODO 
 <template>
+  <div v-if="editMode" class="toolbar">
+    <button class="toolbar-btn" @click="openNewDashboardGroupDialog">
+      <i class="pi pi-plus" />
+      <span>New Group</span>
+    </button>
+  </div>
+
   <div class="dashboard-container">
-    <div v-if="editMode" class="edit-toolbar">
-      <span class="edit-icon pi pi-plus" @click="openNewDashboardGroupDialog" />
-    </div>
     <div v-for="group in dashboardGroups" :key="group.name" class="dashboard-group">
       <div class="dashboard-title">{{ group.name }}</div>
       <div class="card-container" :class="{ 'edit-mode': editMode }">
@@ -192,11 +198,33 @@
     break-inside: avoid;
   }
 
-  .edit-toolbar {
-    width: 100%;
+  .toolbar {
     display: flex;
-    justify-content: flex-start;
-    padding: 0.5rem 0.2rem;
+    align-items: center;
+    padding: 0.5rem;
+    background: #1f1f1f;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    gap: 0.5rem;
+    width: auto;
+  }
+
+  .toolbar-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #1f1f1f;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.2s ease;
+  }
+
+  .toolbar-btn:hover {
+    background: #3a3a3a;
   }
 
   .icon-tools {
