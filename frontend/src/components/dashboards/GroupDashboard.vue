@@ -7,10 +7,7 @@
   import {
     emitOpenConfirmationDialog,
     emitOpenDeviceGroupSelectionDialog,
-    emitOpenDeviceSelectionDialog,
-    emitOpenExposeSelectionDialog,
   } from '@/contracts/dialog-events';
-  import { DeviceGroupEventAction } from '@/types/events.type';
 
   const dashboardGroups = computed(() => {
     return store.getters['hub/dashboardGroups']() as DashboardGroups;
@@ -123,13 +120,13 @@
 
   /* Deskop view */
   .dashboard-group {
-    padding: 0.1rem;
+    padding: 1rem 0.1rem;
   }
 
   /* Mobile view */
   @media (max-width: 768px) {
     .dashboard-group {
-      padding: 0;
+      padding: 1rem 0;
       flex: 1 1 200px;
       max-width: 100%;
       box-sizing: border-box;

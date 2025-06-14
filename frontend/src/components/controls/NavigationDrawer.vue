@@ -1,8 +1,8 @@
 <script setup lang="ts">
-  import { computed, onMounted, PropType, watch } from 'vue';
+  import { PropType } from 'vue';
   import { MenuBarItem } from '@/types/controls.type';
-  import { useWindowSize } from '@/mixins/composables/useWindowsSize';
   import { useMenuItems } from '@/mixins/composables/useMenuItems';
+  import { useDrawer } from '@/mixins/composables/useDrawer';
 
   const props = defineProps({
     items: {
@@ -22,18 +22,13 @@
   }>();
 
   const { menuItems } = useMenuItems(props.items);
-  const { isMobile } = useWindowSize(() => emitDrawerWidth());
-  const drawerWidth = computed(() => (isMobile.value ? 0 : props.isExpanded ? 250 : 60));
+  const { isMobile } = useDrawer(
+    () => props.isExpanded,
+    (w) => emit('widthChanged', w)
+  );
 
   const toggleDrawer = () => emit('toggle');
   const closeDrawer = () => emit('toggle');
-  const emitDrawerWidth = () => emit('widthChanged', drawerWidth.value);
-
-  onMounted(() => {
-    emitDrawerWidth();
-  });
-
-  watch([() => props.isExpanded, isMobile], emitDrawerWidth);
 </script>
 
 <template>

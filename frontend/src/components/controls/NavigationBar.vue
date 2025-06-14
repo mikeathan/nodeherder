@@ -1,5 +1,5 @@
 <script setup lang="tsx">
-  import { ComponentPublicInstance, onUnmounted, PropType, ref } from 'vue';
+  import { ComponentPublicInstance, PropType, ref } from 'vue';
   import { MenuBarItem } from '@/types/controls.type';
   import { useWindowSize } from '@/mixins/composables/useWindowsSize';
   import { useMenuItems } from '@/mixins/composables/useMenuItems';

@@ -1,6 +1,7 @@
 <script setup lang="tsx">
-  import { computed, PropType } from 'vue';
+  import {  PropType } from 'vue';
   import { MenuBarItem } from '@/types/controls.type';
+  import { useMenuItems } from '@/mixins/composables/useMenuItems';
 
   const props = defineProps({
     items: {
@@ -10,25 +11,7 @@
     },
   });
 
-  const menuItems = computed(() =>
-    props.items
-      .filter((item) => !item.custom && !item.isLogo)
-      .map((item) => ({
-        label: item.label,
-        icon: item.icon,
-        disabled: item.disabled,
-        command: item.command,
-        items: item.children?.map((child) => ({
-          label: child.label,
-          icon: child.icon,
-          command: child.command,
-        })),
-      }))
-  );
-
-  const logoItem = computed(() => {
-    return props.items.find((item) => item.isLogo);
-  });
+  const { menuItems, logoItem } = useMenuItems(props.items);
 </script>
 
 <style scoped>

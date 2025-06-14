@@ -35,9 +35,7 @@
       //label: permitJoinEnabled.value ? 'join enabled' : 'permit Join',
       icon: 'pi pi-sitemap',
       disabled: permitJoinEnabled.value,
-      command: () => {
-        permitJoinEnabled.value = !permitJoinEnabled.value;
-      },
+      command: () => (permitJoinEnabled.value = !permitJoinEnabled.value),
     },
     {
       icon: 'pi pi-cog',
@@ -50,22 +48,17 @@
       },
     },
   ]);
+
   const sideNavigationItems = computed<MenuBarItem[]>(() => [
     {
-      label: 'dashboards',
+      label: 'groups',
       icon: 'pi pi-home',
-      children: [
-        {
-          label: 'devices',
-          icon: 'pi pi-mobile',
-          command: () => router.push('/deviceDashboard'),
-        },
-        {
-          label: 'groups',
-          icon: 'pi pi-mobile',
-          command: () => router.push('/'),
-        },
-      ],
+      command: () => router.push('/'),
+    },
+    {
+      label: 'devices',
+      icon: 'pi pi-mobile',
+      command: () => router.push('/deviceDashboard'),
     },
     {
       to: '/devicelist',
@@ -94,27 +87,21 @@
     {
       label: permitJoinEnabled.value ? 'join enabled' : 'permit Join',
       icon: 'pi pi-sitemap',
-      disabled: permitJoinEnabled.value,
-      command: () => {
-        permitJoinEnabled.value = !permitJoinEnabled.value;
-      },
+      disabled: permitJoinEnabled.value, // todo set enable once permit join is enabled
+      command: () => (permitJoinEnabled.value = !permitJoinEnabled.value)
     },
   ]);
 
   onBeforeMount(() => {
     store.dispatch('ws/connect');
   });
-
-  function setDrawerVisibility(visible: boolean) {
-    isDrawerVisible.value = visible;
-  }
 </script>
 
 <template>
   <NavigationBar
     :style="{ marginLeft: `${drawerWidth}px` }"
     :items="topNavigattionItems"
-    @click="setDrawerVisibility($event)" />
+    @click="isDrawerVisible = $event" />
   <NavigationDrawer
     :items="sideNavigationItems"
     :is-expanded="isDrawerVisible"
@@ -142,7 +129,6 @@
   }
   .main-content {
     transition: margin-left 0.5s ease;
-    padding: 1rem;
+    padding: 0 0.1rem ;
   }
-
 </style>
