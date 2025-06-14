@@ -7,6 +7,7 @@
   import {
     emitOpenConfirmationDialog,
     emitOpenDeviceGroupSelectionDialog,
+    emitOpenInputDialogEvent,
   } from '@/contracts/dialog-events';
 
   const dashboardGroups = computed(() => {
@@ -29,6 +30,13 @@
 
   function handleCardSelected(id: string) {
     selectedCard.value = id;
+  }
+
+  function openNewDashboardGroupDialog() {
+    const props = {
+      title: 'create new dashboard group',
+    };
+    emitOpenInputDialogEvent((value) => addNewDashboardGroup(value), props);
   }
 
   function openAddDeviceExposeDialog(dashboardroup: DashboardGroup) {
@@ -61,6 +69,26 @@
     emitOpenConfirmationDialog(() => deleteDeviceExpose(groupName, deviceId, exposeName), props);
   }
 
+  function addNewDashboardGroup(grouName: string) {
+    if (!grouName) {
+      // TODO: emit error message
+      console.log('groupName is empty');
+      return;
+    }
+
+    if (dashboardGroups.value[grouName]) {
+      console.log('groupName already exists');
+
+      // TODO: emit error message
+      return;
+    }
+
+    dashboardGroups.value[grouName] = {
+      name: grouName,
+      deviceGroup: {},
+    };
+  }
+
   function deleteDeviceExpose(groupName: string, deviceId: string, exposeName: string) {
     if (!groupName || !deviceId || !exposeName) {
       console.log('groupName or deviceId or exposeName is empty');
@@ -88,6 +116,9 @@
 </script>
 <template>
   <div class="dashboard-container">
+    <div v-if="editMode" class="edit-toolbar">
+      <span class="edit-icon pi pi-plus" @click="openNewDashboardGroupDialog" />
+    </div>
     <div v-for="group in dashboardGroups" :key="group.name" class="dashboard-group">
       <div class="dashboard-title">{{ group.name }}</div>
       <div class="card-container" :class="{ 'edit-mode': editMode }">
@@ -116,7 +147,6 @@
     flex-wrap: wrap;
     gap: 0.2rem;
   }
-
 
   /* Deskop view */
   .dashboard-group {
@@ -160,6 +190,13 @@
     width: 100%;
     display: inline-block;
     break-inside: avoid;
+  }
+
+  .edit-toolbar {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    padding: 0.5rem 0.2rem;
   }
 
   .icon-tools {
