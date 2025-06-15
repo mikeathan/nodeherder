@@ -32,6 +32,14 @@
     selectedCard.value = id;
   }
 
+  function openRenameDashboardGroupDialog(groupName: string) {
+    const props = {
+      title: 'Rename Dashboard Group',
+      message: 'Enter new name',
+      value: groupName,
+    };
+    emitOpenInputDialogEvent((value) => renameDashboardGroup(groupName, value), props);
+  }
   function openNewDashboardGroupDialog() {
     const props = {
       title: 'create new dashboard group',
@@ -89,6 +97,22 @@
     };
   }
 
+  function renameDashboardGroup(groupName: string, newName: string) {
+    if (!groupName || !newName) {
+      console.log('groupName or newName is empty');
+      return;
+    }
+    if (dashboardGroups.value[newName]) {
+      console.log('newName already exists');
+      return;
+    }
+    const group = dashboardGroups.value[groupName];
+    delete dashboardGroups.value[groupName];
+    
+    group.name = newName;
+    dashboardGroups.value[newName] = group;
+  }
+
   function deleteDeviceExpose(groupName: string, deviceId: string, exposeName: string) {
     if (!groupName || !deviceId || !exposeName) {
       console.log('groupName or deviceId or exposeName is empty');
@@ -115,7 +139,6 @@
   }
 </script>
 
-NEED rename device group group icon TODO 
 <template>
   <div v-if="editMode" class="toolbar">
     <button class="toolbar-btn" @click="openNewDashboardGroupDialog">
@@ -138,7 +161,7 @@ NEED rename device group group icon TODO
             @delete="openDeleteDeviceExposeConfirmationDialog(group.name, $event.id, $event.name)" />
         </div>
         <div v-if="editMode" class="icon-tools">
-          <!-- <span class="edit-icon pi pi-pen-to-square" /> -->
+          <span class="edit-icon pi pi-pen-to-square" @click="openRenameDashboardGroupDialog(group.name)" />
           <span class="edit-icon pi pi-trash" @click="openDeleteDeviceGroupConfirmationDialog(group.name)" />
           <span class="edit-icon pi pi-plus" @click="openAddDeviceExposeDialog(group)" />
         </div>
@@ -206,7 +229,8 @@ NEED rename device group group icon TODO
     border-radius: 10px;
     margin-bottom: 1rem;
     gap: 0.5rem;
-    width: auto;
+    width: fit-content;
+    box-sizing: border-box;
   }
 
   .toolbar-btn {

@@ -9,10 +9,11 @@ import {
   DialogEventActions,
   EntityViewDialogProps,
   ExposeSelectionDialogProps,
+  InputDialogProps,
   RenameDeviceDialogProps,
 } from '@/types/events.type';
 
-export function emitOpenInputDialogEvent(confirm: DialogEventAction, props?: BaseDialogProps) {
+export function emitOpenInputDialogEvent(confirm: DialogEventAction, props?: InputDialogProps) {
   const events: DialogEventActions = {
     close: () => emitCloseDialog(),
     confirm,

@@ -40,6 +40,9 @@ export type BaseDialogProps = {
   title?: string;
   message?: string;
 };
+export type InputDialogProps = {
+  value?: string;
+} & BaseDialogProps;
 
 export type EntityViewDialogProps = {
   id: string;
@@ -49,27 +52,19 @@ export type EntityViewDialogProps = {
 
 export type ExposeSelectionDialogProps = {
   id: string;
-  title?: string;
-  message?: string;
-};
+} & BaseDialogProps;
 
 export type RenameDeviceDialogProps = {
   friendlyName: string;
-  title?: string;
-  message?: string;
-};
+} & BaseDialogProps;
 
 export type DeleteDeviceDialogProps = {
   friendlyName: string;
-  title?: string;
-  message?: string;
-};
+} & BaseDialogProps;
 
 export type DeviceGroupSelectionDialogProps = {
   dashboardGroup: DashboardGroup;
-  title?: string;
-  message?: string;
-};
+} & BaseDialogProps;
 
 export type DialogEventAction = (...args: any) => void;
 export type DeleteDeviceEventAction = (args: RemoveDeviceEvent) => void;

@@ -5,7 +5,7 @@
     title?: string;
     message?: string;
     show: boolean;
-    defaultValue?: string;
+    value?: string;
   }>();
 
   const emit = defineEmits<{
@@ -13,13 +13,13 @@
     (e: 'close'): void;
   }>();
 
-  const inputValue = ref(props.defaultValue ?? '');
+  const inputValue = ref(props.value ?? '');
   const showDialog = ref<boolean>(props.show);
 
   // Watch for prop changes
   watchEffect(() => {
     showDialog.value = props.show;
-    inputValue.value = props.defaultValue ?? '';
+    inputValue.value = props.value ?? '';
   });
 
   function confirm() {
@@ -34,6 +34,7 @@
 
   const dialogTitle = () => props.title ?? 'Input';
   const dialogMessage = () => props.message ?? '';
+  const isValid = () => inputValue.value.length > 0 && inputValue.value != props.value;
 </script>
 
 <template>
@@ -46,7 +47,7 @@
 
     <div class="flex justify-end gap-2">
       <Button type="button" label="Cancel" severity="secondary" @click="close()" />
-      <Button type="button" label="OK" @click="confirm()" />
+      <Button type="button" label="OK" @click="confirm()" :disabled="!isValid()" />
     </div>
   </Dialog>
 </template>
