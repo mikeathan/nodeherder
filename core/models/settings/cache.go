@@ -90,7 +90,7 @@ type DeviceConfigCache struct {
 
 func NewDeviceConfigCache(store Repository, appconfig *AppConfig) *DeviceConfigCache {
 	deviceConfigs := make(map[string]*DeviceConfig)
-	for _, dev := range appconfig.Hub.Devices {
+	for _, dev := range appconfig.Hub.Devices.Config {
 		deviceConfigs[dev.Id] = dev
 	}
 

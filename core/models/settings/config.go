@@ -1,16 +1,16 @@
 package settings
 
 import (
+	"node-herder/models/bridge"
 	"node-herder/utils"
 	"time"
 )
 
-// /Hub.Devices.
 type DeviceBaseConfig struct {
-	Disabled        bool                           `json:"disabled"`
-	MetricsEnabled  bool                           `json:"history"`
-	RateLimit       *utils.TimeInterval            `json:"rateLimit"`
-	DefaultDebounce map[string]*utils.TimeInterval `json:"defaultDebounce"`
+	Disabled         bool                                          `json:"disabled"`
+	MetricsEnabled   bool                                          `json:"history"`
+	RateLimit        *utils.TimeInterval                           `json:"rateLimit"`
+	CategoryDebounce map[bridge.ExposeCategory]*utils.TimeInterval `json:"categoryDebounce"`
 }
 
 //eg
@@ -29,18 +29,47 @@ type DeviceBaseConfig struct {
 // else empty
 // deviceConfig.Debounce[entity.Name] = utils.IntervalFromSeconds(300)
 
-func NewDeviceBaseConfig() *DeviceBaseConfig {
+func DefaultDeviceBaseConfig() *DeviceBaseConfig {
 	return &DeviceBaseConfig{
-		Disabled:        false,
-		MetricsEnabled:  false,
-		RateLimit:       utils.IntervalFromSeconds(60), // default to 60 seconds
-		DefaultDebounce: map[string]*utils.TimeInterval{},
+		Disabled:         false,
+		MetricsEnabled:   false,
+		RateLimit:        utils.IntervalFromSeconds(60), // default to 60 seconds
+		CategoryDebounce: map[bridge.ExposeCategory]*utils.TimeInterval{bridge.DiagnosticCategory: utils.IntervalFromSeconds(300)},
 	}
 }
 
 type DevicesConfig struct {
-	BaseConfig *DeviceConfig            `json:"baseConfig"`
-	Config     map[string]*DeviceConfig `json:"config"`
+	BaseConfig *DeviceBaseConfig `json:"baseConfig"`
+	Config     []*DeviceConfig   `json:"config"`
+}
+
+func (d *DevicesConfig) Find(id string) *DeviceConfig {
+	for _, device := range d.Config {
+		if device.Id == id {
+			return device
+		}
+	}
+	return nil
+}
+
+func (d *DevicesConfig) Save(deviceConfig *DeviceConfig) {
+
+	cfg := d.Find(deviceConfig.Id)
+	if cfg != nil {
+		// update
+		*cfg = *deviceConfig
+		return
+	}
+
+	// add new
+	d.Config = append(d.Config, deviceConfig)
+}
+
+func NewDevicesConfig() *DevicesConfig {
+	return &DevicesConfig{
+		BaseConfig: DefaultDeviceBaseConfig(),
+		Config:     []*DeviceConfig{},
+	}
 }
 
 type DeviceConfig struct {
@@ -63,7 +92,7 @@ func NewDeviceConfig(id string) *DeviceConfig {
 		Id:             id,
 		Disabled:       false,
 		MetricsEnabled: false,
-		RateLimit:      utils.IntervalFromSeconds(60), // default to 60 seconds
+		RateLimit:      &utils.TimeInterval{}, // default to 60 seconds
 		Debounce:       map[string]*utils.TimeInterval{},
 	}
 }
@@ -111,7 +140,8 @@ func DefaultBridgeConfig() *BridgeConfig {
 }
 
 type HubConfig struct {
-	Devices         map[string]*DeviceConfig   `json:"devices"`
+	//Devices         map[string]*DeviceConfig   `json:"devices"`
+	Devices         *DevicesConfig             `json:"devices"`
 	History         *HistoryConfig             `json:"history"`
 	Logger          *LoggerConfig              `json:"logger"`
 	DashboardGroups map[string]*DashboardGroup `json:"dashboardGroups"`
@@ -131,7 +161,7 @@ func NewBridgeConfig() *BridgeConfig {
 
 func NewHubConfig() *HubConfig {
 	return &HubConfig{
-		Devices:         map[string]*DeviceConfig{},
+		Devices:         NewDevicesConfig(),
 		History:         DefaultHistoryConfig(),
 		Logger:          DefaultLoggingConfig(),
 		DashboardGroups: map[string]*DashboardGroup{},
@@ -144,13 +174,15 @@ type AppConfig struct {
 }
 
 func (s *AppConfig) AddDeviceConfig(cfg *DeviceConfig) {
-	s.Hub.Devices[cfg.Id] = cfg
+
+	s.Hub.Devices.Config = append(s.Hub.Devices.Config, cfg)
+	//s.Hub.Devices[cfg.Id] = cfg
 }
 
 func NewAppConfig() *AppConfig {
 	return &AppConfig{
 		Hub: &HubConfig{
-			Devices:         map[string]*DeviceConfig{},
+			Devices:         NewDevicesConfig(),
 			History:         DefaultHistoryConfig(),
 			Logger:          DefaultLoggingConfig(),
 			DashboardGroups: map[string]*DashboardGroup{},

@@ -83,7 +83,7 @@ func NewAppStore(devices devices.Repository, metrics metrics.Repository, config 
 	}
 
 	deviceConfigs := make(map[string]*settings.DeviceConfig)
-	for _, dev := range appconfig.Hub.Devices {
+	for _, dev := range appconfig.Hub.Devices.Config {
 		deviceConfigs[dev.Id] = dev
 	}
 

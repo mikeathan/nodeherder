@@ -2,7 +2,6 @@ package repository
 
 import (
 	"encoding/json"
-	"fmt"
 	"node-herder/models/settings"
 	"node-herder/utils/storage"
 )
@@ -87,19 +86,30 @@ func (s *FileSettingsRepo) FindOrAddDeviceConfigIfNotExists(id string) (*setting
 		return nil, err
 	}
 
-	if val, ok := config.Hub.Devices[id]; ok {
-		return val, nil
+	cfg := config.Hub.Devices.Find(id)
+	if cfg != nil {
+		return cfg, nil
 	}
 
+	 problem is that we return a device config
+	 but if not found we want to use the base config
+	 but base config has a debouncer on categories
+	 this is used in the lifetime service 
+
+	return config.Hub.Devices.BaseConfig, nil
+	// DEBUG
+	// TODO: NEEDS REMOVING WE DONT NEED WITH NEW LOGIC
+	// DEBUG
 	// if device config not found, create one with default values
-	cfg := settings.NewDeviceConfig(id)
-	err = s.SaveDeviceConfig(cfg)
-	
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialise new device config for id %v", id)
-	}
-	return cfg, nil
+	// cfg := settings.NewDeviceConfig(id)
+	// err = s.SaveDeviceConfig(cfg)
+
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to initialise new device config for id %v", id)
+	// }
+	// return cfg, nil
 }
+
 func (s *FileSettingsRepo) SaveHistoryConfig(historyConfig *settings.HistoryConfig) error {
 	config, err := s.Load()
 	if err != nil {
@@ -125,7 +135,7 @@ func (s *FileSettingsRepo) SaveDeviceConfig(deviceConfig *settings.DeviceConfig)
 		return err
 	}
 
-	config.Hub.Devices[deviceConfig.Id] = deviceConfig
+	config.Hub.Devices.Save(deviceConfig)
 	return s.SaveAppConfig(config)
 }
 
