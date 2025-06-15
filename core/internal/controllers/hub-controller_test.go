@@ -707,8 +707,8 @@ func TestSaveDashboardGroupIsValidated(t *testing.T) {
 	// for now replicate the hub-controller logic handling this until we can mock the event hub
 	broadcastHandler := func(eventName string, data interface{}) error {
 
-		if eventName != ws.SaveExposeGroup {
-			t.Fatalf("invalid event name want %v got %v", ws.SaveExposeGroup, eventName)
+		if eventName != ws.SaveDashboardGroup {
+			t.Fatalf("invalid event name want %v got %v", ws.SaveDashboardGroup, eventName)
 			return fmt.Errorf("invalid event name %v", eventName)
 		}
 
@@ -748,7 +748,7 @@ func TestSaveDashboardGroupIsValidated(t *testing.T) {
 	newGroup.AddDeviceExpose("0xa4c13894070052fc", "presence")
 	newGroup.AddDeviceExpose("0xa4c13894070052fc", "illuminance")
 
-	eventHub.Broadcast(ws.SaveExposeGroup, newGroup)
+	eventHub.Broadcast(ws.SaveDashboardGroup, newGroup)
 	wg.Wait()
 
 	c, _ := cfg.LoadAppConfig()
@@ -811,8 +811,8 @@ func TestDeleteDashboardGroupRemovesGroup(t *testing.T) {
 	// for now replicate the hub-controller logic handling this until we can mock the event hub
 	broadcastHandler := func(eventName string, p interface{}) error {
 
-		if eventName != ws.DeleteExposeGroup {
-			t.Fatalf("invalid event name want %v got %v", ws.SaveExposeGroup, eventName)
+		if eventName != ws.DeleteDashboardGroup {
+			t.Fatalf("invalid event name want %v got %v", ws.SaveDashboardGroup, eventName)
 			return fmt.Errorf("invalid event name %v", eventName)
 		}
 
@@ -843,7 +843,7 @@ func TestDeleteDashboardGroupRemovesGroup(t *testing.T) {
 		"groupName": "living room group",
 	}
 
-	eventHub.Broadcast(ws.DeleteExposeGroup, payload)
+	eventHub.Broadcast(ws.DeleteDashboardGroup, payload)
 	wg.Wait()
 
 	c, _ := cfg.LoadAppConfig()
