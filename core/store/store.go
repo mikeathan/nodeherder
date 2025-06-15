@@ -1,6 +1,7 @@
 package store
 
 import (
+	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
@@ -157,7 +158,7 @@ func (s *appStore) initialiseDeviceConfig(device *devices.Device) error {
 	}
 	// for diagnostic entities, set default debounce to 5 min
 	for _, entity := range device.Exposes {
-		if entity.Category == devices.DiagnosticCategory {
+		if entity.Category == bridge.DiagnosticCategory {
 
 			if _, ok := deviceConfig.Debounce[entity.Name]; !ok {
 				deviceConfig.Debounce[entity.Name] = utils.IntervalFromSeconds(300)

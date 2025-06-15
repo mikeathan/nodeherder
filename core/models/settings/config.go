@@ -5,6 +5,44 @@ import (
 	"time"
 )
 
+// /Hub.Devices.
+type DeviceBaseConfig struct {
+	Disabled        bool                           `json:"disabled"`
+	MetricsEnabled  bool                           `json:"history"`
+	RateLimit       *utils.TimeInterval            `json:"rateLimit"`
+	DefaultDebounce map[string]*utils.TimeInterval `json:"defaultDebounce"`
+}
+
+//eg
+//DefaultDebounce map[ExposeCategory]*utils.TimeInterval `json:"defaultDebounce"`
+//DefaultDebounce[ExposeCategory.DiagnosticCategory] = utils.IntervalFromSeconds(300)
+
+// certain types can have default debouncer eg diagnostic
+// TODO: remove id from DeviceConfig - we dont need it
+
+// default values:
+// 		disabled": false,
+// 		"history": false,
+// 		RateLimit default to 60 seconds
+
+//// for diagnostic entities, set default debounce to 5 min
+// else empty
+// deviceConfig.Debounce[entity.Name] = utils.IntervalFromSeconds(300)
+
+func NewDeviceBaseConfig() *DeviceBaseConfig {
+	return &DeviceBaseConfig{
+		Disabled:        false,
+		MetricsEnabled:  false,
+		RateLimit:       utils.IntervalFromSeconds(60), // default to 60 seconds
+		DefaultDebounce: map[string]*utils.TimeInterval{},
+	}
+}
+
+type DevicesConfig struct {
+	BaseConfig *DeviceConfig            `json:"baseConfig"`
+	Config     map[string]*DeviceConfig `json:"config"`
+}
+
 type DeviceConfig struct {
 	Id             string                         `json:"id"`
 	Disabled       bool                           `json:"disabled"`

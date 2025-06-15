@@ -2,6 +2,7 @@ package utils_test
 
 import (
 	"fmt"
+	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"time"
 )
@@ -19,13 +20,13 @@ func CreateEnumEntity(name string, enums map[string]any) *devices.Entity {
 
 	newEntity := &devices.Entity{}
 	newEntity.Values = enums
-	newEntity.Category = devices.MeasurementCategory
+	newEntity.Category = bridge.MeasurementCategory
 
 	newEntity.Data = nil
 	newEntity.Name = name
 	newEntity.Type = "enum"
 	newEntity.Unit = "unit_test"
-	newEntity.Category = devices.MeasurementCategory
+	newEntity.Category = bridge.MeasurementCategory
 	newEntity.Description = fmt.Sprintf("description for expose: %s ", name)
 	newEntity.Attributes = map[string]any{"min": 0, "max": 255}
 
@@ -34,7 +35,7 @@ func CreateEnumEntity(name string, enums map[string]any) *devices.Entity {
 func CreatePresetsEntity(name string, presets map[string]any) *devices.Entity {
 
 	newEntity := &devices.Entity{}
-	newEntity.Category = devices.MeasurementCategory
+	newEntity.Category = bridge.MeasurementCategory
 
 	newEntity.Values = presets
 	newEntity.Data = nil
@@ -50,7 +51,7 @@ func CreatePresetsEntity(name string, presets map[string]any) *devices.Entity {
 func CreateNumericEntity(name string, data any) *devices.Entity {
 
 	newEntity := &devices.Entity{}
-	newEntity.Category = devices.MeasurementCategory
+	newEntity.Category = bridge.MeasurementCategory
 
 	newEntity.Attributes = map[string]any{"max": 0.0, "min": 255.0}
 	newEntity.Data = data
@@ -66,7 +67,7 @@ func CreateNumericEntity(name string, data any) *devices.Entity {
 func CreateEntity(name string, propType string, data any) *devices.Entity {
 
 	newEntity := &devices.Entity{}
-	newEntity.Category = devices.MeasurementCategory
+	newEntity.Category = bridge.MeasurementCategory
 	newEntity.Attributes = map[string]any{"min": 0.0, "max": 255.0}
 	newEntity.Values = make(map[string]any)
 	newEntity.Data = data

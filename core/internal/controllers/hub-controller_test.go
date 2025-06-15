@@ -10,6 +10,7 @@ import (
 	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/mocks"
+	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
 	"node-herder/models/logging"
@@ -1350,15 +1351,15 @@ func createMockDialAndLightDevices(dialName string, lightName string) []*devices
 
 	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
 	device1Expose2 := utils_test.CreateNumericEntity("action_time", 0)
-	device1Expose1.Category = devices.MeasurementCategory
-	device1Expose2.Category = devices.MeasurementCategory
+	device1Expose1.Category = bridge.MeasurementCategory
+	device1Expose2.Category = bridge.MeasurementCategory
 
 	dialDevice := utils_test.CreateDeviceWithExposes(dialName, "Dial button", []*devices.Entity{device1Expose1, device1Expose2})
 
 	device2Expose1 := utils_test.CreateEntity("brightness", "numeric", nil)
 	device2Expose2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
-	device2Expose1.Category = devices.MeasurementCategory
-	device2Expose2.Category = devices.MeasurementCategory
+	device2Expose1.Category = bridge.MeasurementCategory
+	device2Expose2.Category = bridge.MeasurementCategory
 
 	lightDevice := utils_test.CreateDeviceWithExposes(lightName, "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
 

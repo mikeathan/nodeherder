@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"node-herder/internal/services"
 	"node-herder/mocks"
+	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"node-herder/models/settings"
 	utils_test "node-herder/testing"
@@ -285,13 +286,13 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithMetricsEnabled(t *testing.
 	wg := sync.WaitGroup{}
 
 	brightness := utils_test.CreateEntity("brightness", "number", 12.5)
-	brightness.Category = devices.MeasurementCategory
+	brightness.Category = bridge.MeasurementCategory
 	battery := utils_test.CreateEntity("battery", "number", 80)
-	battery.Category = devices.DiagnosticCategory
+	battery.Category = bridge.DiagnosticCategory
 	color_temp := utils_test.CreateEntity("color_temp", "number", 156)
-	color_temp.Category = devices.MeasurementCategory
+	color_temp.Category = bridge.MeasurementCategory
 	linkquality := utils_test.CreateEntity("linkquality", "number", 112)
-	linkquality.Category = devices.DiagnosticCategory
+	linkquality.Category = bridge.DiagnosticCategory
 
 	device := utils_test.CreateDeviceWithExposes("x01234", "testDevice", []*devices.Entity{brightness, battery, color_temp, linkquality})
 	device.Availability = devices.OfflineAvailability
@@ -382,13 +383,13 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithAutomationEnabled(t *testi
 	wg := sync.WaitGroup{}
 
 	brightness := utils_test.CreateEntity("brightness", "number", 12.5)
-	brightness.Category = devices.MeasurementCategory
+	brightness.Category = bridge.MeasurementCategory
 	battery := utils_test.CreateEntity("battery", "number", 80)
-	battery.Category = devices.DiagnosticCategory
+	battery.Category = bridge.DiagnosticCategory
 	color_temp := utils_test.CreateEntity("color_temp", "number", 156)
-	color_temp.Category = devices.MeasurementCategory
+	color_temp.Category = bridge.MeasurementCategory
 	linkquality := utils_test.CreateEntity("linkquality", "number", 112)
-	linkquality.Category = devices.DiagnosticCategory
+	linkquality.Category = bridge.DiagnosticCategory
 
 	device := utils_test.CreateDeviceWithExposes("x01234", "testDevice", []*devices.Entity{brightness, battery, color_temp, linkquality})
 	device.Availability = devices.OfflineAvailability

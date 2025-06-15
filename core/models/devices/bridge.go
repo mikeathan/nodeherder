@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"node-herder/models/bridge"
 )
 
 type BridgeExposeAccessMode = int
@@ -144,7 +145,7 @@ func FindByFriendlyName(payload []byte, friendlyName string) (*BridgeInfo, error
 	return nil, errors.New("friendlyName not found")
 }
 
-func FindAllExposesByCategory(payload []byte, category ExposeCategory) (map[string][]BridgeExpose, error) {
+func FindAllExposesByCategory(payload []byte, category bridge.ExposeCategory) (map[string][]BridgeExpose, error) {
 	bridgeDevices, err := LoadBridgeDevices(payload)
 	if err != nil {
 		return nil, err
@@ -158,7 +159,7 @@ func FindAllExposesByCategory(payload []byte, category ExposeCategory) (map[stri
 			}
 
 			// unhanlded type
-			if expose.Type == CompositeDataType {
+			if expose.Type == bridge.CompositeDataType {
 				continue
 			}
 
@@ -176,7 +177,7 @@ func FindAllExposesByCategory(payload []byte, category ExposeCategory) (map[stri
 			for _, feature := range expose.Features {
 
 				// unhanlded type
-				if feature.Type == CompositeDataType {
+				if feature.Type == bridge.CompositeDataType {
 					continue
 				}
 
@@ -214,7 +215,7 @@ func FindAllExposesByAccessMode(payload []byte, accesMode BridgeExposeAccessMode
 	return devices, nil
 }
 
-func FindAllExposesByDataType(payload []byte, dataType ExposeDataType) ([]*BridgeInfo, error) {
+func FindAllExposesByDataType(payload []byte, dataType bridge.ExposeDataType) ([]*BridgeInfo, error) {
 	bridgeDevices, err := LoadBridgeDevices(payload)
 	if err != nil {
 		return nil, err
@@ -232,7 +233,7 @@ func FindAllExposesByDataType(payload []byte, dataType ExposeDataType) ([]*Bridg
 	return devices, nil
 }
 
-func FindByExposeType(payload []byte, exposeType ExposeDataType) (*BridgeInfo, error) {
+func FindByExposeType(payload []byte, exposeType bridge.ExposeDataType) (*BridgeInfo, error) {
 	bridgeDevices, err := LoadBridgeDevices(payload)
 	if err != nil {
 		return nil, err
@@ -249,19 +250,19 @@ func FindByExposeType(payload []byte, exposeType ExposeDataType) (*BridgeInfo, e
 	return nil, errors.New("exposeType not found")
 }
 
-func (b *BridgeExpose) AccessMode() ExposeAccessMode {
+func (b *BridgeExpose) AccessMode() bridge.ExposeAccessMode {
 
 	if hasReadWriteAccessMode(b) {
-		return ReadWriteAccessMode
+		return bridge.ReadWriteAccessMode
 	}
 	if hasWriteAccessMode(b) {
-		return WriteAccessMode
+		return bridge.WriteAccessMode
 	}
 	if hasReadAccessMode(b) {
-		return ReadAccessMode
+		return bridge.ReadAccessMode
 	}
 
-	return UnknownAccessMode
+	return bridge.UnknownAccessMode
 }
 
 func (e *BridgeExpose) SanitizeData(data any) (any, error) {

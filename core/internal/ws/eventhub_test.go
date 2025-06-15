@@ -12,6 +12,7 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
 	"node-herder/mocks"
+	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
 	"node-herder/models/metrics"
@@ -1298,9 +1299,9 @@ func createDevice2() *devices.Device {
 	ent1.Description = "smart light livining room"
 	ent1.Name = "brightness"
 	ent1.Data = 78.0
-	ent1.Category = devices.MeasurementCategory
+	ent1.Category = bridge.MeasurementCategory
 	ent1.Attributes = make(map[string]any)
-	ent1.Type = devices.NumericDataType
+	ent1.Type = bridge.NumericDataType
 	ent1.Attributes["max"] = 255.0
 	ent1.Attributes["min"] = 0.0
 

@@ -2,6 +2,7 @@ package services
 
 import (
 	"node-herder/models/automations"
+	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"node-herder/models/settings"
 	"node-herder/utils"
@@ -97,7 +98,7 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 			// send measurement updates to metrics store
 			measumementUpdateData := map[string]any{}
 			for name, value := range updatePackage.Data {
-				if e, ok := d.device.Exposes[name]; ok && e.Category == devices.MeasurementCategory {
+				if e, ok := d.device.Exposes[name]; ok && e.Category == bridge.MeasurementCategory {
 					measumementUpdateData[name] = value
 				}
 			}
