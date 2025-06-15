@@ -8,13 +8,14 @@ import Settings from '../components/hub/settings/Settings.vue';
 import ConsoleViewer from '../components/hub/console/ConsoleViewer.vue';
 import DeviceList from '../components/device-list/DeviceList.vue';
 import GroupDashboard from '../components/dashboards/GroupDashboard.vue';
+import { DashboardModes } from '@/types/controls.type';
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
-      path: '/deviceDashboard',
-      name: 'home',
+      path: '/devicedashboard',
+      name: 'devices',
       component: Dashboard,
       meta: {
         title: 'Node-herder - Device Dashboard',
@@ -24,6 +25,15 @@ const router = createRouter({
       path: '/',
       name: 'groups',
       component: GroupDashboard,
+      meta: {
+        title: 'Node-herder - Groups Dashboard',
+      },
+    },
+    {
+      path: '/groupdashboard/:mode?',
+      name: 'groupdashboard',
+      component: GroupDashboard,
+      props: (route) => ({ editMode: route.params.mode === DashboardModes.editMode }),
       meta: {
         title: 'Node-herder - Groups Dashboard',
       },
@@ -84,14 +94,6 @@ const router = createRouter({
       props: true,
       meta: {
         title: 'Node-herder - Device page',
-      },
-    },
-    {
-      path: '/dashboard',
-      name: 'dashboard',
-      component: Dashboard,
-      meta: {
-        title: 'Node-herder - Dashboard',
       },
     },
   ],

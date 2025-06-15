@@ -2,19 +2,33 @@
   import { getFormattedSensorValue, getSensorName } from '../../../modules/formatters/sensor-formatter';
   import { getSensorIcon } from '../../../modules/formatters/sensor-formatter';
   import { store } from '../../../store/index';
-  import { computed, ref } from 'vue';
+  import { computed, nextTick, ref } from 'vue';
   import { Device, Expose } from '@/types/device';
   import Icon from '../../controls/Icon.vue';
   import { ExposeAccessModes, ExposeTypes } from '@/types/device.type';
   import { getExposeBinaryProperty, getExposes, toggleExposeBinaryProperty } from '@/contracts/device';
   import { stateDevicesFilter } from '@/configs/automation/device.config';
   import { emitOpenEntityViewDialog } from '@/contracts/dialog-events';
+  import { getDeviceGroupId } from '@/contracts/device-group';
 
   const props = defineProps({
     id: { type: String, required: true },
     name: { type: String, required: true },
     compact: { type: Boolean, required: false, default: false },
+    isSelected: { type: Boolean, required: false, default: false },
   });
+
+  const emit = defineEmits<{
+    (e: 'delete', value: { id: string; name: string }): void;
+    (e: 'selected', id: string): void;
+  }>();
+
+  function emitDelete() {
+    emit('delete', {
+      id: props.id,
+      name: props.name,
+    });
+  }
 
   const device = computed(() => {
     const device = store.getters['hub/findDevice'](props.id) as Device;
@@ -111,31 +125,31 @@
   }
 
   function handleCardClick(): void {
-    const eventProps = {
-      id: props.id,
-      name: expose.value.name,
-      title: getSensorName(expose.value.name),
-    };
+    emit('selected', getDeviceGroupId(props.id, props.name));
 
-    // TODO:
-    ///send title name to include dashboardgroupName + entity name
-    emitOpenEntityViewDialog(() => {}, eventProps);
+    // we need to wait for the next tick to allow consumer to set isSelected
+    nextTick(() => {
+      if (!props.isSelected) {
+        const eventProps = {
+          id: props.id,
+          name: expose.value.name,
+          title: `${getSensorName(expose.value.name)} (${device.value?.friendly_name})`,
+        };
+
+        emitOpenEntityViewDialog(() => {}, eventProps);
+      }
+    });
   }
-
-  const cardStyle = computed(() => {
-    if (props.compact) {
-      return 'padding: 0.4rem';
-    }
-    return '';
-  });
+ 
 </script>
 
 <template>
   <Card
     class="entity-card"
     @click="handleCardClick"
+    :class="{ 'is-selected': props.isSelected }"
     :pt="{
-      body: { style: cardStyle },
+      body: { style: compact ? 'padding: 0.4rem' : '' },
       root: { style: { '--p-card-body-gap': '0.0rem' } }, // remove card padding
     }">
     <template #title>
@@ -151,6 +165,12 @@
           <div class="entity-title">{{ getSensorName(expose.name) }}</div>
           <div class="entity-value">{{ getFormattedSensorValue(expose) }}</div>
         </div>
+        <span v-if="isSelected" class="delete-icon pi pi-trash" @click.stop="emitDelete" title="Remove from group" />
+        <!-- <span v-if="isSelected" class="pi pi-ellipsis-v" /> -->
+
+        <!-- TO use pop up for edit Icon -->
+<!-- <Button type="button" icon="pi pi-ellipsis-v" @click="toggle" aria-haspopup="true" aria-controls="overlay_menu" />
+<Menu ref="menu" id="overlay_menu" :model="items" :popup="true" /> -->
       </div>
     </template>
     <template #content>
@@ -189,20 +209,31 @@
     background-color: rgba(0, 0, 0, 0.1);
   }
 
+  .entity-card.is-selected {
+    border-color: #007bff;
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+    background-color: rgba(0, 123, 255, 0.1);
+    cursor: default;
+  }
   .entity-header {
     display: flex;
     align-items: flex-end;
     gap: 0.9rem;
+    position: relative;
   }
 
   .entity-labels {
     display: flex;
     flex-direction: column;
     justify-content: center;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 
   .entity-title {
-    font-size: 1rem;
+    font-size: 14px;
     font-weight: 500;
   }
 
@@ -216,5 +247,17 @@
     margin-top: 1rem;
     margin-bottom: 0.3rem;
     margin-left: 0rem;
+  }
+
+  .delete-icon {
+    position: absolute;
+    top: 0;
+    right: 0;
+    color: #ff5c5c;
+    cursor: pointer;
+    transition: color 0.2s ease-in-out;
+  }
+  .delete-icon:hover {
+    color: #ff1f1f;
   }
 </style>

@@ -1,6 +1,12 @@
-import { KeyValuePair } from './types.type';
+import { KeyValuePair, ValueOf } from './types.type';
 
 export type ControlDirection = 'horizontal' | 'vertical';
+export const DashboardModes= {
+  editMode: 'editmode',
+  viewMode: 'viewmode',
+} as const;
+
+export type DashboardMode = ValueOf<typeof DashboardModes>;
 
 export type ButtonPanelType = ButtonType | DropDownType;
 export type ButtonType = {
@@ -67,8 +73,10 @@ export type MenuBarItem = {
   to?: string;
   label?: string;
   icon?: string;
+  disabled?: boolean;
   command?: () => void;
   custom?: boolean;
   isLogo?: boolean;
   template?: () => void;
+  children?: MenuBarItem[];
 };

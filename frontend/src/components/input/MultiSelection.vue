@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { PropType, ref, watch, watchEffect } from 'vue';
   import { SelectSize, SelectFormSize, SelectionItems } from '@/types/controls.type';
-  import { SelectChangeEvent } from 'primevue';
+  import { MultiSelect, MultiSelectChangeEvent } from 'primevue';
 
   const props = defineProps({
     items: {
@@ -9,7 +9,7 @@
       default: [],
       required: true,
     },
-    value: null,
+    values: null,
     label: {
       type: String,
       default: '',
@@ -33,15 +33,15 @@
   });
 
   const emit = defineEmits<{
-    (e: 'updated', value: any): void;
+    (e: 'updated', value: string[]): void;
   }>();
 
-  const selectedValue = ref<any>(props.value);
+  const selectedValues = ref<any[]>(props.values);
   const isKeyValuePair = ref<boolean>(false);
 
   watchEffect(() => {
-    if (props.value != null) {
-      selectedValue.value = props.value;
+    if (props.values != null) {
+      selectedValues.value = props.values;
     }
   });
 
@@ -63,16 +63,16 @@
     }));
   };
 
-  function selectionChanged(event: SelectChangeEvent): void {
-    selectedValue.value = event.value;
-    emit('updated', selectedValue.value);
+  function selectionChanged(event: MultiSelectChangeEvent): void {
+    selectedValues.value = event.value;
+    emit('updated', selectedValues.value);
   }
 </script>
 
 <template>
   <FloatLabel class="w-full md:w-56" variant="on">
-    <Select
-      v-model="selectedValue"
+    <MultiSelect
+      v-model="selectedValues"
       :showClear="props.showClear"
       :options="selectionItems()"
       :optionLabel="isKeyValuePair ? 'key' : ''"

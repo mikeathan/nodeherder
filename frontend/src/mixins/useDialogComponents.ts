@@ -11,4 +11,5 @@ export const DialogComponents: Map = {
   exposeSelection: defineAsyncComponent(() => import('../components/dialogs/ExposeSelectionDialog.vue')),
   deviceSelection: defineAsyncComponent(() => import('../components/dialogs/DeviceSelectionDialog.vue')),
   entityView: defineAsyncComponent(() => import('../components/dialogs/EntityViewDialog.vue')),
+  deviceGroupSelection: defineAsyncComponent(() => import('../components/dialogs/DeviceGroupSelectionDialog.vue')),
 };

@@ -1,31 +1,67 @@
 <script setup lang="ts">
-  import { onBeforeMount, h } from 'vue';
+  import { onBeforeMount, h, ref, computed } from 'vue';
   import { store } from './store/index';
   import Notifications from './components/hub/alerts/Notifications.vue';
   import { useRouter } from 'vue-router';
-  import TimerButton from './components/controls/TimerButton.vue';
-  import NavigationBar from '@/components/controls/NavigationBar.vue';
+  import NavigationDrawer from '@/components/controls/NavigationDrawer.vue';
   import Logo from '@/components/controls/Logo.vue';
   import DialogHost from './components/dialogs/DialogHost.vue';
-
+  import PermitJoinTimer from './components/controls/PermitJoinTimer.vue';
+  import { MenuBarItem } from './types/controls.type';
+  import { DashboardModes } from '@/types/controls.type';
+  import NavigationBar from './components/controls/NavigationBar.vue';
   const router = useRouter();
   const permitJoinDuration = 120;
 
-  const menuItems = [
+  const permitJoinEnabled = ref<boolean>(false);
+  const dashboardEditMode = ref<boolean>(false);
+  const drawerWidth = ref(0);
+  const isDrawerVisible = ref(false);
+
+  const handleDrawerWidthChanged = (width: number) => {
+    drawerWidth.value = width;
+  };
+
+  const toggleEditMode = () => {
+    dashboardEditMode.value = !dashboardEditMode.value;
+  };
+
+  const topNavigattionItems = computed<MenuBarItem[]>(() => [
     {
-      to: '/',
-      label: 'group dashboard',
+      isLogo: true,
+      template: () => h(Logo),
+    },
+    {
+      //label: permitJoinEnabled.value ? 'join enabled' : 'permit Join',
+      icon: 'pi pi-sitemap',
+      disabled: permitJoinEnabled.value,
+      command: () => (permitJoinEnabled.value = !permitJoinEnabled.value),
+    },
+    {
+      icon: 'pi pi-cog',
+      command: () => {
+        toggleEditMode();
+        router.push({
+          name: 'groupdashboard',
+          params: { mode: dashboardEditMode.value ? DashboardModes.editMode : '' },
+        });
+      },
+    },
+  ]);
+
+  const sideNavigationItems = computed<MenuBarItem[]>(() => [
+    {
+      label: 'groups',
       icon: 'pi pi-home',
       command: () => router.push('/'),
     },
     {
-      to: '/',
-      label: 'device dashboard',
+      label: 'devices',
       icon: 'pi pi-mobile',
-      command: () => router.push('/devicedashboard'),
+      command: () => router.push('/deviceDashboard'),
     },
     {
-      to: '/',
+      to: '/devicelist',
       label: 'device list',
       icon: 'pi pi-list',
       command: () => router.push('/devicelist'),
@@ -49,19 +85,40 @@
       command: () => router.push('/settings'),
     },
     {
-      custom: true,
-      template: () => h(TimerButton, { duration: permitJoinDuration }),
+      label: permitJoinEnabled.value ? 'join enabled' : 'permit Join',
+      icon: 'pi pi-sitemap',
+      disabled: permitJoinEnabled.value, // todo set enable once permit join is enabled
+      command: () => (permitJoinEnabled.value = !permitJoinEnabled.value)
     },
-    {
-      isLogo: true,
-      template: () => h(Logo),
-    },
-  ];
+  ]);
 
   onBeforeMount(() => {
     store.dispatch('ws/connect');
   });
 </script>
+
+<template>
+  <NavigationBar
+    :style="{ marginLeft: `${drawerWidth}px` }"
+    :items="topNavigattionItems"
+    @click="isDrawerVisible = $event" />
+  <NavigationDrawer
+    :items="sideNavigationItems"
+    :is-expanded="isDrawerVisible"
+    @toggle="isDrawerVisible = !isDrawerVisible"
+    @widthChanged="handleDrawerWidthChanged" />
+  <div class="main-content" :style="{ marginLeft: `${drawerWidth}px` }">
+    <PermitJoinTimer
+      :duration="permitJoinDuration"
+      :allow-join="permitJoinEnabled"
+      @statusUpdated="permitJoinEnabled = $event" />
+    <Notifications />
+    <DialogHost />
+
+    <RouterView />
+  </div>
+</template>
+
 <style scoped>
   body {
     font-family: 'Roboto', sans-serif !important;
@@ -70,20 +127,8 @@
   .p-component {
     font-family: 'Roboto', sans-serif !important;
   }
+  .main-content {
+    transition: margin-left 0.5s ease;
+    padding: 0 0.1rem ;
+  }
 </style>
-
-<template>
-  <main>
-    <div class="app-container">
-      <div class="col-12">
-        <NavigationBar :items="menuItems" />
-        <Notifications />
-        <DialogHost />
-
-        <div class="content">
-          <RouterView />
-        </div>
-      </div>
-    </div>
-  </main>
-</template>
