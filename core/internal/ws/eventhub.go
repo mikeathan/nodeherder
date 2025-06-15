@@ -33,9 +33,6 @@ const (
 	DeleteDashboardGroup = "deleteDashboardGroup"
 	LoadAppconfig        = "loadAppConfig"
 
-	SaveExposeGroup   = "saveExposeGroup"
-	DeleteExposeGroup = "deleteExposeGroup"
-
 	LoadMetrics = "loadMetrics"
 
 	// response
@@ -310,9 +307,6 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 	case SaveDeviceConfig:
 		c.executeAction(eventMsg.Payload, c.onSaveDeviceConfig, true)
 
-	case SaveDashboardGroup:
-		c.executeAction(eventMsg.Payload, c.onSaveDashboardGroup, true)
-
 	case SaveHistoryConfig:
 		c.executeAction(eventMsg.Payload, c.onSaveHistoryConfig, true)
 
@@ -343,10 +337,10 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 	case SaveLoggerConfig:
 		c.executeAction(eventMsg.Payload, c.onSaveLoggerConfig, true)
 
-	case SaveExposeGroup:
+	case SaveDashboardGroup:
 		c.executeAction(eventMsg.Payload, c.onSaveDashboardGroup, true)
 
-	case DeleteExposeGroup:
+	case DeleteDashboardGroup:
 		c.executeAction(eventMsg.Payload, c.onDeleteDashboardGroup, true)
 
 	default:
