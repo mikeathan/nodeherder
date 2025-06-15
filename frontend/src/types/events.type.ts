@@ -1,5 +1,6 @@
 import { AutomationTrigger } from './automation.type';
 import { RemoveDeviceEvent } from './dialog.type';
+import { DashboardGroup, DeviceGroup } from './settings.type';
 import { KeyValuePair } from './types.type';
 
 // Automation panel events
@@ -31,6 +32,7 @@ export const DialogEventTypes = {
   exposeSelection: 'exposeSelection',
   deviceSelection: 'deviceSelection',
   entityView: 'entityView',
+  deviceGroupSelection: 'deviceGroupSelection',
 } as const;
 
 export type CloseDialogFunc = () => void;
@@ -38,6 +40,9 @@ export type BaseDialogProps = {
   title?: string;
   message?: string;
 };
+export type InputDialogProps = {
+  value?: string;
+} & BaseDialogProps;
 
 export type EntityViewDialogProps = {
   id: string;
@@ -47,22 +52,21 @@ export type EntityViewDialogProps = {
 
 export type ExposeSelectionDialogProps = {
   id: string;
-  title?: string;
-  message?: string;
-};
+} & BaseDialogProps;
 
 export type RenameDeviceDialogProps = {
   friendlyName: string;
-  title?: string;
-  message?: string;
-};
+} & BaseDialogProps;
 
 export type DeleteDeviceDialogProps = {
   friendlyName: string;
-  title?: string;
-  message?: string;
-};
+} & BaseDialogProps;
+
+export type DeviceGroupSelectionDialogProps = {
+  dashboardGroup: DashboardGroup;
+} & BaseDialogProps;
 
 export type DialogEventAction = (...args: any) => void;
 export type DeleteDeviceEventAction = (args: RemoveDeviceEvent) => void;
 export type DialogEventActions = KeyValuePair<DialogEventAction>;
+export type DeviceGroupEventAction = (args: DeviceGroup) => void;
