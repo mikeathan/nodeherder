@@ -96,6 +96,8 @@ func (s *FileSettingsRepo) FindOrAddDeviceConfigIfNotExists(id string) (*setting
 	 but base config has a debouncer on categories
 	 this is used in the lifetime service 
 
+	 maybe device config and base config is same but have two types of debouncer, onefor string and one for categories ???????
+
 	return config.Hub.Devices.BaseConfig, nil
 	// DEBUG
 	// TODO: NEEDS REMOVING WE DONT NEED WITH NEW LOGIC
