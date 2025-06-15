@@ -77,6 +77,8 @@ func (d *DeviceDebounce) GetDebounce(expose string) (time.Duration, bool) {
 	return debounce, ok
 }
 
+
+HERE NEED TO DO STH - OR AROUND HERE
 func (d *DeviceDebounce) SetDebounce(expose string, debounce time.Duration) {
 	d.exposeDebounce[expose] = debounce
 }
