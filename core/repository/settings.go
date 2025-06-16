@@ -93,7 +93,7 @@ func (s *FileSettingsRepo) FindOrAddDeviceConfigIfNotExists(id string) (*setting
 	}
 
 	//create a new device config in memory
-	deviceConfig := settings.NewDeviceConfig(id)
+	deviceConfig := settings.NewDeviceConfig(id) //use cf.Default props HERE ---------------------------------------
 
 	// Don't save yet - only save when actually modified
 	return deviceConfig, nil

@@ -77,15 +77,15 @@ type appStore struct {
 
 func NewAppStore(devices devices.Repository, metrics metrics.Repository, config *settings.AppConfigCache) (AppStore, error) {
 
-	appconfig, err := config.LoadAppConfig()
-	if err != nil {
-		return nil, err
-	}
+	// appconfig, err := config.LoadAppConfig()
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	deviceConfigs := make(map[string]*settings.DeviceConfig)
-	for _, dev := range appconfig.Hub.Devices.Config {
-		deviceConfigs[dev.Id] = dev
-	}
+	// deviceConfigs := make(map[string]*settings.DeviceConfig)
+	// for _, dev := range appconfig.Hub.Devices.Devices {
+	// 	deviceConfigs[dev.Id] = dev
+	// }
 
 	app := &appStore{
 		metrics:        metrics,

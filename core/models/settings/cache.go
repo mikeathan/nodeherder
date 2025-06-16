@@ -64,7 +64,7 @@ type DeviceDebounce struct {
 func NewDeviceDebounce(config *DeviceConfig) *DeviceDebounce {
 
 	exposeDebounce := map[string]time.Duration{}
-	for expose, debounce := range config.Debounce {
+	for expose, debounce := range config.DebounceOverrides {
 		exposeDebounce[expose] = debounce.Duration()
 	}
 	return &DeviceDebounce{
@@ -74,9 +74,12 @@ func NewDeviceDebounce(config *DeviceConfig) *DeviceDebounce {
 
 func (d *DeviceDebounce) GetDebounce(expose string) (time.Duration, bool) {
 	debounce, ok := d.exposeDebounce[expose]
+
+	TODO
+	// here we have a key value pair for expose and debounce
+	// wew need to chnage is we can run condition logic for the expose category as well not just expose name
 	return debounce, ok
 }
-
 
 func (d *DeviceDebounce) SetDebounce(expose string, debounce time.Duration) {
 	d.exposeDebounce[expose] = debounce
@@ -91,13 +94,13 @@ type DeviceConfigCache struct {
 
 func NewDeviceConfigCache(store Repository, appconfig *AppConfig) *DeviceConfigCache {
 	deviceConfigs := make(map[string]*DeviceConfig)
-	for _, dev := range appconfig.Hub.Devices.Config {
+	for _, dev := range appconfig.Hub.Devices.Devices {
 		deviceConfigs[dev.Id] = dev
 	}
 
 	exposeDebounce := map[string]time.Duration{}
 	for _, deviceConfig := range deviceConfigs {
-		for expose, debounce := range deviceConfig.Debounce {
+		for expose, debounce := range deviceConfig.DebounceOverrides {
 			exposeDebounce[expose] = debounce.Duration()
 		}
 	}
@@ -156,7 +159,7 @@ func (d *DeviceConfigCache) Set(deviceConfig *DeviceConfig) error {
 
 	d.devicesConfigs[deviceConfig.Id] = deviceConfig
 
-	for expose, debounce := range deviceConfig.Debounce {
+	for expose, debounce := range deviceConfig.DebounceOverrides {
 		if _, ok := d.devicesDebounce[deviceConfig.Id]; !ok {
 			d.devicesDebounce[deviceConfig.Id] = NewDeviceDebounce(deviceConfig)
 			continue
