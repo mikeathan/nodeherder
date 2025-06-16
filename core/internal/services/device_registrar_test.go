@@ -211,7 +211,7 @@ func TestDefaultDebounceforDiagnosticExposes(t *testing.T) {
 		}
 		for _, expose := range device.Exposes {
 			if expose.Category == bridge.DiagnosticCategory {
-				d, ok := deviceConfig.Debounce[expose.Name]
+				d, ok := deviceConfig.DebounceOverrides[expose.Name]
 				if !ok {
 					t.Errorf("Error diagnostic expose %s debounce is 0", expose.Name)
 				}

@@ -6,78 +6,74 @@ import (
 	"time"
 )
 
-type DeviceBaseConfig struct {
-	Disabled         bool                                          `json:"disabled"`
-	MetricsEnabled   bool                                          `json:"history"`
-	RateLimit        *utils.TimeInterval                           `json:"rateLimit"`
-	CategoryDebounce map[bridge.ExposeCategory]*utils.TimeInterval `json:"categoryDebounce"`
+type DeviceSettings struct {
+	Default *DeviceConfig            `json:"default"`
+	Devices map[string]*DeviceConfig `json:"devices"`
 }
 
-//eg
-//DefaultDebounce map[ExposeCategory]*utils.TimeInterval `json:"defaultDebounce"`
-//DefaultDebounce[ExposeCategory.DiagnosticCategory] = utils.IntervalFromSeconds(300)
-
-// certain types can have default debouncer eg diagnostic
-// TODO: remove id from DeviceConfig - we dont need it
-
-// default values:
-// 		disabled": false,
-// 		"history": false,
-// 		RateLimit default to 60 seconds
-
-//// for diagnostic entities, set default debounce to 5 min
-// else empty
-// deviceConfig.Debounce[entity.Name] = utils.IntervalFromSeconds(300)
-
-func DefaultDeviceBaseConfig() *DeviceBaseConfig {
-	return &DeviceBaseConfig{
-		Disabled:         false,
-		MetricsEnabled:   false,
-		RateLimit:        utils.IntervalFromSeconds(60), // default to 60 seconds
-		CategoryDebounce: map[bridge.ExposeCategory]*utils.TimeInterval{bridge.DiagnosticCategory: utils.IntervalFromSeconds(300)},
+func (d *DeviceSettings) GetEffectiveConfig(deviceId string) *DeviceConfig {
+	if override, exists := d.Devices[deviceId]; exists {
+		return override
 	}
+	return d.Default
 }
 
-type DevicesConfig struct {
-	BaseConfig *DeviceBaseConfig `json:"baseConfig"`
-	Config     []*DeviceConfig   `json:"config"`
-}
-
-func (d *DevicesConfig) Find(id string) *DeviceConfig {
-	for _, device := range d.Config {
-		if device.Id == id {
-			return device
+func (d *DeviceSettings) GetDebounceForEntity(deviceId, entityName string, entityCategory bridge.ExposeCategory) *utils.TimeInterval {
+	// First check if device has entity specific override
+	if deviceOverride, exists := d.Devices[deviceId]; exists {
+		if debounce, exists := deviceOverride.DebounceOverrides[entityName]; exists {
+			return debounce
 		}
 	}
+
+	//  Fall back to category default from base config
+	if debounce, exists := d.Default.DefaultDebounceByCategory[entityCategory]; exists {
+		return debounce
+	}
+
 	return nil
 }
 
-func (d *DevicesConfig) Save(deviceConfig *DeviceConfig) {
+func (d *DeviceSettings) IsEntityDebounced(deviceId, entityName string, entityCategory bridge.ExposeCategory) bool {
+	return d.GetDebounceForEntity(deviceId, entityName, entityCategory) != nil
+}
 
-	cfg := d.Find(deviceConfig.Id)
-	if cfg != nil {
-		// update
-		*cfg = *deviceConfig
+func (d *DeviceSettings) AddOverride(deviceConfig *DeviceConfig) {
+	if deviceConfig.Id == "" {
 		return
 	}
 
-	// add new
-	d.Config = append(d.Config, deviceConfig)
+	if deviceConfig.DebounceOverrides == nil {
+		deviceConfig.DebounceOverrides = make(map[string]*utils.TimeInterval)
+	}
+
+	d.Devices[deviceConfig.Id] = deviceConfig
 }
 
-func NewDevicesConfig() *DevicesConfig {
-	return &DevicesConfig{
-		BaseConfig: DefaultDeviceBaseConfig(),
-		Config:     []*DeviceConfig{},
+func NewDeviceSettings() *DeviceSettings {
+	return &DeviceSettings{
+		Default: DefaultDeviceBaseConfig(),
+		Devices: map[string]*DeviceConfig{},
+	}
+}
+
+func DefaultDeviceBaseConfig() *DeviceConfig {
+	return &DeviceConfig{
+		Disabled:                  false,
+		MetricsEnabled:            false,
+		RateLimit:                 utils.IntervalFromSeconds(60),
+		DefaultDebounceByCategory: map[bridge.ExposeCategory]*utils.TimeInterval{bridge.DiagnosticCategory: utils.IntervalFromSeconds(300)},
+		DebounceOverrides:         map[string]*utils.TimeInterval{},
 	}
 }
 
 type DeviceConfig struct {
-	Id             string                         `json:"id"`
-	Disabled       bool                           `json:"disabled"`
-	MetricsEnabled bool                           `json:"history"`
-	RateLimit      *utils.TimeInterval            `json:"rateLimit"`
-	Debounce       map[string]*utils.TimeInterval `json:"debounce"`
+	Id                        string                                        `json:"id,omitempty"`
+	Disabled                  bool                                          `json:"disabled"`
+	MetricsEnabled            bool                                          `json:"history"`
+	RateLimit                 *utils.TimeInterval                           `json:"rateLimit"`
+	DefaultDebounceByCategory map[bridge.ExposeCategory]*utils.TimeInterval `json:"defaultDebounceByCategory,omitempty"`
+	DebounceOverrides         map[string]*utils.TimeInterval                `json:"debounce,omitempty"`
 }
 
 func (d *DeviceConfig) RateLimitDuration() time.Duration {
@@ -89,11 +85,12 @@ func (d *DeviceConfig) RateLimitDuration() time.Duration {
 
 func NewDeviceConfig(id string) *DeviceConfig {
 	return &DeviceConfig{
-		Id:             id,
-		Disabled:       false,
-		MetricsEnabled: false,
-		RateLimit:      &utils.TimeInterval{}, // default to 60 seconds
-		Debounce:       map[string]*utils.TimeInterval{},
+		Id:                        id,
+		Disabled:                  false,
+		MetricsEnabled:            false,
+		RateLimit:                  utils.IntervalFromSeconds(60), // default to 60 seconds
+		DebounceOverrides:         map[string]*utils.TimeInterval{},
+		DefaultDebounceByCategory: map[bridge.ExposeCategory]*utils.TimeInterval{},
 	}
 }
 
@@ -140,8 +137,7 @@ func DefaultBridgeConfig() *BridgeConfig {
 }
 
 type HubConfig struct {
-	//Devices         map[string]*DeviceConfig   `json:"devices"`
-	Devices         *DevicesConfig             `json:"devices"`
+	Devices         *DeviceSettings            `json:"devices"`
 	History         *HistoryConfig             `json:"history"`
 	Logger          *LoggerConfig              `json:"logger"`
 	DashboardGroups map[string]*DashboardGroup `json:"dashboardGroups"`
@@ -161,7 +157,7 @@ func NewBridgeConfig() *BridgeConfig {
 
 func NewHubConfig() *HubConfig {
 	return &HubConfig{
-		Devices:         NewDevicesConfig(),
+		Devices:         NewDeviceSettings(),
 		History:         DefaultHistoryConfig(),
 		Logger:          DefaultLoggingConfig(),
 		DashboardGroups: map[string]*DashboardGroup{},
@@ -174,15 +170,13 @@ type AppConfig struct {
 }
 
 func (s *AppConfig) AddDeviceConfig(cfg *DeviceConfig) {
-
-	s.Hub.Devices.Config = append(s.Hub.Devices.Config, cfg)
-	//s.Hub.Devices[cfg.Id] = cfg
+	s.Hub.Devices.AddOverride(cfg)
 }
 
 func NewAppConfig() *AppConfig {
 	return &AppConfig{
 		Hub: &HubConfig{
-			Devices:         NewDevicesConfig(),
+			Devices:         NewDeviceSettings(),
 			History:         DefaultHistoryConfig(),
 			Logger:          DefaultLoggingConfig(),
 			DashboardGroups: map[string]*DashboardGroup{},

@@ -169,7 +169,7 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 	})
 	app := settings.NewAppConfig()
 	d1 := settings.NewDeviceConfig("x01234")
-	d1.Debounce = map[string]*utils.TimeInterval{
+	d1.DebounceOverrides = map[string]*utils.TimeInterval{
 		"brightness": utils.IntervalFromSeconds(3),
 	}
 	app.AddDeviceConfig(d1)
@@ -321,8 +321,8 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithMetricsEnabled(t *testing.
 	app := settings.NewAppConfig()
 	d1 := settings.NewDeviceConfig("x01234")
 	d1.MetricsEnabled = true
-	d1.Debounce["battery"] = utils.IntervalFromMilliseconds(5000)
-	d1.Debounce["linkquality"] = utils.IntervalFromMilliseconds(5000)
+	d1.DebounceOverrides["battery"] = utils.IntervalFromMilliseconds(5000)
+	d1.DebounceOverrides["linkquality"] = utils.IntervalFromMilliseconds(5000)
 
 	app.AddDeviceConfig(d1)
 	repo := mocks.NopSettingsrepo{}
@@ -417,8 +417,8 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithAutomationEnabled(t *testi
 
 	app := settings.NewAppConfig()
 	d1 := settings.NewDeviceConfig("x01234")
-	d1.Debounce["battery"] = utils.IntervalFromMilliseconds(5000)
-	d1.Debounce["linkquality"] = utils.IntervalFromMilliseconds(5000)
+	d1.DebounceOverrides["battery"] = utils.IntervalFromMilliseconds(5000)
+	d1.DebounceOverrides["linkquality"] = utils.IntervalFromMilliseconds(5000)
 
 	app.AddDeviceConfig(d1)
 	repo := mocks.NopSettingsrepo{}

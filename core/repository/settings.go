@@ -81,35 +81,22 @@ func (s *FileSettingsRepo) SaveBridgeConfig(bridgeConfig *settings.BridgeConfig)
 
 func (s *FileSettingsRepo) FindOrAddDeviceConfigIfNotExists(id string) (*settings.DeviceConfig, error) {
 
-	config, err := s.Load()
+	appConfig, err := s.Load()
 	if err != nil {
 		return nil, err
 	}
 
-	cfg := config.Hub.Devices.Find(id)
+	// check if device config has an override
+	cfg := appConfig.Hub.Devices.Devices[id]
 	if cfg != nil {
 		return cfg, nil
 	}
 
-	 problem is that we return a device config
-	 but if not found we want to use the base config
-	 but base config has a debouncer on categories
-	 this is used in the lifetime service 
+	//create a new device config in memory
+	deviceConfig := settings.NewDeviceConfig(id)
 
-	 maybe device config and base config is same but have two types of debouncer, onefor string and one for categories ???????
-
-	return config.Hub.Devices.BaseConfig, nil
-	// DEBUG
-	// TODO: NEEDS REMOVING WE DONT NEED WITH NEW LOGIC
-	// DEBUG
-	// if device config not found, create one with default values
-	// cfg := settings.NewDeviceConfig(id)
-	// err = s.SaveDeviceConfig(cfg)
-
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to initialise new device config for id %v", id)
-	// }
-	// return cfg, nil
+	// Don't save yet - only save when actually modified
+	return deviceConfig, nil
 }
 
 func (s *FileSettingsRepo) SaveHistoryConfig(historyConfig *settings.HistoryConfig) error {
@@ -121,6 +108,7 @@ func (s *FileSettingsRepo) SaveHistoryConfig(historyConfig *settings.HistoryConf
 	config.Hub.History = historyConfig
 	return s.SaveAppConfig(config)
 }
+
 func (s *FileSettingsRepo) SaveLoggerConfig(loggerConfig *settings.LoggerConfig) error {
 	config, err := s.Load()
 	if err != nil {
@@ -137,7 +125,7 @@ func (s *FileSettingsRepo) SaveDeviceConfig(deviceConfig *settings.DeviceConfig)
 		return err
 	}
 
-	config.Hub.Devices.Save(deviceConfig)
+	config.Hub.Devices.AddOverride(deviceConfig)
 	return s.SaveAppConfig(config)
 }
 
