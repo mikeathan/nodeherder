@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"node-herder/models/bridge"
 	"node-herder/utils"
 	"sync"
 	"time"
@@ -26,8 +27,8 @@ func NewDeviceDebouncer(deviceId string, configCache *DeviceConfigCache, clock u
 	}
 }
 
-func (d *DeviceDebouncer) DebounceExpose(exposeName string) bool {
-	duration, ok := d.configCache.GetDebounce(d.id, exposeName)
+func (d *DeviceDebouncer) DebounceExpose(exposeName string, category bridge.ExposeCategory) bool {
+	duration, ok := d.configCache.GetDebounce(d.id, exposeName, category)
 	if !ok {
 		// no debounce time set, so don't debounce
 		return false
@@ -57,55 +58,54 @@ type Cache[T any] interface {
 }
 
 // DeviceConfigCache
-type DeviceDebounce struct {
-	exposeDebounce map[string]time.Duration
+type DeviceDebounceDuration struct {
+	debounceMap map[string]time.Duration
 }
 
-func NewDeviceDebounce(config *DeviceConfig) *DeviceDebounce {
+func NewDeviceDebounce(config *DeviceConfig) *DeviceDebounceDuration {
 
-	exposeDebounce := map[string]time.Duration{}
+	debounceMap := map[string]time.Duration{}
 	for expose, debounce := range config.DebounceOverrides {
-		exposeDebounce[expose] = debounce.Duration()
+		debounceMap[expose] = debounce.Duration()
 	}
-	return &DeviceDebounce{
-		exposeDebounce: exposeDebounce,
+	return &DeviceDebounceDuration{
+		debounceMap: debounceMap,
 	}
 }
 
-func (d *DeviceDebounce) GetDebounce(expose string) (time.Duration, bool) {
-	debounce, ok := d.exposeDebounce[expose]
+func (d *DeviceDebounceDuration) GetDebounce(expose string, category bridge.ExposeCategory) (time.Duration, bool) {
+	debounce, ok := d.debounceMap[expose]
 
-	TODO
+	if !ok {
+
+	}
+	//TODO
 	// here we have a key value pair for expose and debounce
 	// wew need to chnage is we can run condition logic for the expose category as well not just expose name
 	return debounce, ok
 }
 
-func (d *DeviceDebounce) SetDebounce(expose string, debounce time.Duration) {
-	d.exposeDebounce[expose] = debounce
+func (d *DeviceDebounceDuration) SetDebounce(expose string, debounce time.Duration) {
+	d.debounceMap[expose] = debounce
 }
 
 type DeviceConfigCache struct {
 	devicesConfigs  map[string]*DeviceConfig
-	devicesDebounce map[string]*DeviceDebounce
+	devicesDebounce map[string]*DeviceDebounceDuration
 	mutex           sync.RWMutex
 	store           Repository
 }
 
+check solution
+https://chatgpt.com/c/68530cf9-3000-8006-8fe9-ffcbc36bb4dc
 func NewDeviceConfigCache(store Repository, appconfig *AppConfig) *DeviceConfigCache {
 	deviceConfigs := make(map[string]*DeviceConfig)
 	for _, dev := range appconfig.Hub.Devices.Devices {
 		deviceConfigs[dev.Id] = dev
 	}
 
-	exposeDebounce := map[string]time.Duration{}
-	for _, deviceConfig := range deviceConfigs {
-		for expose, debounce := range deviceConfig.DebounceOverrides {
-			exposeDebounce[expose] = debounce.Duration()
-		}
-	}
 
-	deviceDebounce := map[string]*DeviceDebounce{}
+	deviceDebounce := map[string]*DeviceDebounceDuration{}
 	for _, deviceConfig := range deviceConfigs {
 		deviceDebounce[deviceConfig.Id] = NewDeviceDebounce(deviceConfig)
 	}
@@ -177,7 +177,7 @@ func (d *DeviceConfigCache) DeleteDebounce(id string, exposeName string) bool {
 	defer d.mutex.Unlock()
 
 	if deviceDebounce, ok := d.devicesDebounce[id]; ok {
-		delete(deviceDebounce.exposeDebounce, exposeName)
+		delete(deviceDebounce.debounceMap, exposeName)
 		return true
 	}
 	return false
@@ -196,17 +196,21 @@ func (d *DeviceConfigCache) SetDebounce(id string, exposeName string, timeInterv
 	}
 }
 
-func (d *DeviceConfigCache) GetDebounce(id string, exposeName string) (time.Duration, bool) {
+func (d *DeviceConfigCache) GetDebounce(id string, exposeName string, category bridge.ExposeCategory) (time.Duration, bool) {
 
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
+
+	// if _, ok := d.appconfig.Hub.Devices.Default.DefaultDebounceByCategory[category]; ok {
+	// 	return d.appconfig.Hub.Devices.Default.DefaultDebounceByCategory[category].Duration(), true
+	// }
 
 	deviceDebounce, ok := d.devicesDebounce[id]
 	if !ok {
 		return 0, false
 	}
 
-	return deviceDebounce.GetDebounce(exposeName)
+	return deviceDebounce.GetDebounce(exposeName, category)
 }
 
 // AppConfigCache

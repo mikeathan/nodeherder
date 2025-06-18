@@ -56,7 +56,7 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 			continue
 		}
 
-		if d.debouncerService.DebounceExpose(name) {
+		if d.debouncerService.DebounceExpose(name, expose.Category) {
 			continue
 		}
 
