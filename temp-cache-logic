@@ -17,6 +17,7 @@ type DeviceDebouncer struct {
 }
 
 func NewDeviceDebouncer(deviceId string, configCache *DeviceConfigCache, clock utils.Clock) *DeviceDebouncer {
+
 	return &DeviceDebouncer{
 		id:          deviceId,
 		clock:       clock,
@@ -32,6 +33,7 @@ func (d *DeviceDebouncer) DebounceExpose(exposeName string, category bridge.Expo
 		// no debounce time set, so don't debounce
 		return false
 	}
+
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
@@ -47,9 +49,52 @@ func (d *DeviceDebouncer) DebounceExpose(exposeName string, category bridge.Expo
 	return false
 }
 
+// cache
+type Cache[T any] interface {
+	Get(key string) (T, bool)
+	Set(value T)
+	Size() int
+	Delete(key string)
+}
+
+// DeviceConfigCache
+type DeviceDebounceDuration struct {
+	exposeDebounce    map[string]time.Duration
+	defaultByCategory map[bridge.ExposeCategory]*utils.TimeInterval
+}
+
+func NewDeviceDebounceDuration(config *DeviceConfig, defaultByCategory map[bridge.ExposeCategory]*utils.TimeInterval) *DeviceDebounceDuration {
+
+	debounceMap := map[string]time.Duration{}
+	for expose, debounce := range config.DebounceOverrides {
+		debounceMap[expose] = debounce.Duration()
+	}
+	return &DeviceDebounceDuration{
+		exposeDebounce:    debounceMap,
+		defaultByCategory: defaultByCategory,
+	}
+}
+
+func (d *DeviceDebounceDuration) GetDebounce(expose string, category bridge.ExposeCategory) (time.Duration, bool) {
+	if debounce, ok := d.exposeDebounce[expose]; ok {
+		return debounce, true
+	}
+
+	if defaultDebounce, ok := d.defaultByCategory[category]; ok {
+		return defaultDebounce.Duration(), true
+	}
+
+	return 0, false
+}
+
+func (d *DeviceDebounceDuration) SetDebounce(expose string, debounce time.Duration) {
+	d.exposeDebounce[expose] = debounce
+}
+
 type DeviceConfigCache struct {
 	devicesConfigs            map[string]*DeviceConfig
-	defaultDebounceByCategory map[bridge.ExposeCategory]*utils.TimeInterval
+	devicesDebounce           map[string]*DeviceDebounceDuration
+	defaultDebounceByCatetogy map[bridge.ExposeCategory]*utils.TimeInterval
 	mutex                     sync.RWMutex
 	store                     Repository
 }
@@ -60,11 +105,18 @@ func NewDeviceConfigCache(store Repository, appconfig *AppConfig) *DeviceConfigC
 		deviceConfigs[dev.Id] = dev
 	}
 
+	defaultCategoryMap := appconfig.Hub.Devices.Default.DefaultDebounceByCategory
+	deviceDebounce := map[string]*DeviceDebounceDuration{}
+	for _, deviceConfig := range deviceConfigs {
+		deviceDebounce[deviceConfig.Id] = NewDeviceDebounceDuration(deviceConfig, defaultCategoryMap)
+	}
+
 	return &DeviceConfigCache{
 		store:                     store,
 		devicesConfigs:            deviceConfigs,
+		devicesDebounce:           deviceDebounce,
 		mutex:                     sync.RWMutex{},
-		defaultDebounceByCategory: appconfig.Hub.Devices.Default.DefaultDebounceByCategory,
+		defaultDebounceByCatetogy: defaultCategoryMap,
 	}
 }
 
@@ -101,14 +153,25 @@ func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, error) {
 
 	// store in cache
 	d.devicesConfigs[id] = config
-	d.mutex.Unlock()
 	return config, nil
 }
 
 func (d *DeviceConfigCache) Set(deviceConfig *DeviceConfig) error {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
+
 	d.devicesConfigs[deviceConfig.Id] = deviceConfig
+
+	for expose, debounce := range deviceConfig.DebounceOverrides {
+		if _, ok := d.devicesDebounce[deviceConfig.Id]; !ok {
+			d.devicesDebounce[deviceConfig.Id] = NewDeviceDebounceDuration(deviceConfig, d.defaultDebounceByCatetogy)
+			continue
+		}
+
+		d.devicesDebounce[deviceConfig.Id].SetDebounce(expose, debounce.Duration())
+	}
+
+	// store in db
 	return d.store.SaveDeviceConfig(deviceConfig)
 }
 
@@ -116,45 +179,40 @@ func (d *DeviceConfigCache) DeleteDebounce(id string, exposeName string) bool {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	config, exists := d.devicesConfigs[id]
-	if !exists {
-		return false
+	if deviceDebounce, ok := d.devicesDebounce[id]; ok {
+		delete(deviceDebounce.exposeDebounce, exposeName)
+		return true
 	}
-	delete(config.DebounceOverrides, exposeName)
-	return true
+	return false
 }
 
 func (d *DeviceConfigCache) SetDebounce(id string, exposeName string, timeInterval *utils.TimeInterval) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
+	if deviceDebounce, ok := d.devicesDebounce[id]; ok {
+		deviceDebounce.SetDebounce(exposeName, timeInterval.Duration())
+	} else {
 
-	config, exists := d.devicesConfigs[id]
-	if !exists {
-		config = NewDeviceConfig(id)
-		d.devicesConfigs[id] = config
+		deviceDebounce = NewDeviceDebounceDuration(NewDeviceConfig(id), d.defaultDebounceByCatetogy)
+		deviceDebounce.SetDebounce(exposeName, timeInterval.Duration())
+		d.devicesDebounce[id] = deviceDebounce
 	}
-	config.DebounceOverrides[exposeName] = timeInterval
 }
 
 func (d *DeviceConfigCache) GetDebounce(id string, exposeName string, category bridge.ExposeCategory) (time.Duration, bool) {
+
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
-	config, exists := d.devicesConfigs[id]
-	if !exists {
+	debounceDuration, ok := d.devicesDebounce[id]
+	if !ok {
 		return 0, false
 	}
 
-	if interval, ok := config.DebounceOverrides[exposeName]; ok {
-		return interval.Duration(), true
-	}
-
-	if defaultInterval, ok := d.defaultDebounceByCategory[category]; ok {
-		return defaultInterval.Duration(), true
-	}
-
-	return 0, false
+	return debounceDuration.GetDebounce(exposeName, category)
 }
+
+// AppConfigCache
 
 type AppConfigCache struct {
 	deviceCache *DeviceConfigCache
