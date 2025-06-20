@@ -56,7 +56,7 @@ type DeviceConfigCache struct {
 
 func NewDeviceConfigCache(store Repository, appconfig *AppConfig) *DeviceConfigCache {
 	deviceConfigs := make(map[string]*DeviceConfig)
-	for _, dev := range appconfig.Hub.Devices.Devices {
+	for _, dev := range appconfig.Hub.Devices.Overrides {
 		deviceConfigs[dev.Id] = dev
 	}
 
@@ -94,7 +94,7 @@ func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, error) {
 	}
 
 	// load from db
-	config, err := d.store.FindOrAddDeviceConfigIfNotExists(id)
+	config, err := d.store.LoadOrDefaultDeviceConfig(id)
 	if err != nil {
 		return nil, err
 	}
@@ -108,6 +108,7 @@ func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, error) {
 func (d *DeviceConfigCache) Set(deviceConfig *DeviceConfig) error {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
+
 	d.devicesConfigs[deviceConfig.Id] = deviceConfig
 	return d.store.SaveDeviceConfig(deviceConfig)
 }

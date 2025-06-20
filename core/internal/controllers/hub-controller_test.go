@@ -1188,7 +1188,7 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 		t.Fatalf("error loading device config %s", err.Error())
 	}
 
-	config.Debounce["illuminance"] = utils.IntervalFromMilliseconds(500)
+	config.DebounceOverrides["illuminance"] = utils.IntervalFromMilliseconds(500)
 	appConfig.SetDeviceConfig(config)
 
 	wg := &sync.WaitGroup{}

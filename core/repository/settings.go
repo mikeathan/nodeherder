@@ -79,27 +79,22 @@ func (s *FileSettingsRepo) SaveBridgeConfig(bridgeConfig *settings.BridgeConfig)
 	return err
 }
 
-func (s *FileSettingsRepo) FindOrAddDeviceConfigIfNotExists(id string) (*settings.DeviceConfig, error) {
+func (s *FileSettingsRepo) LoadOrDefaultDeviceConfig(id string) (*settings.DeviceConfig, error) {
 
 	appConfig, err := s.Load()
 	if err != nil {
 		return nil, err
 	}
 
-	// check if device config has an override
-	cfg := appConfig.Hub.Devices.Devices[id]
+	// return override if exists
+	cfg := appConfig.Hub.Devices.Overrides[id]
 	if cfg != nil {
 		return cfg, nil
-		
+
 	}
 
-	TOOD HERE
-
-	//create a new device config in memory
-	deviceConfig := settings.NewDeviceConfig(id) //use cf.Default props HERE ---------------------------------------
-
-	// Don't save yet - only save when actually modified
-	return deviceConfig, nil
+	// return default device config
+	return appConfig.Hub.Devices.Default, nil
 }
 
 func (s *FileSettingsRepo) SaveHistoryConfig(historyConfig *settings.HistoryConfig) error {

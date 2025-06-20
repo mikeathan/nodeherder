@@ -33,8 +33,8 @@ func TestFileSettingsRepositoryCanAddAndLoad(t *testing.T) {
 		t.Errorf("load failed with %v", err.Error())
 	}
 
-	for key, d := range res.Hub.Devices {
-		inputDev := appConfig.Hub.Devices[key]
+	for key, d := range res.Hub.Devices.Overrides {
+		inputDev := appConfig.Hub.Devices.Overrides[key]
 		if !reflect.DeepEqual(d, inputDev) {
 			t.Error("device config mismatch")
 		}
@@ -59,18 +59,18 @@ func TestFileSettingsRepositoryCanAddAndFindValue(t *testing.T) {
 		t.Errorf("save failed with %v", err.Error())
 	}
 
-	dataKeys := make([]string, 0, len(appConfig.Hub.Devices))
-	for k := range appConfig.Hub.Devices {
+	dataKeys := make([]string, 0, len(appConfig.Hub.Devices.Overrides))
+	for k := range appConfig.Hub.Devices.Overrides {
 		dataKeys = append(dataKeys, k)
 	}
 	id := dataKeys[0]
 
-	found, err := repo.FindOrAddDeviceConfigIfNotExists(id)
+	found, err := repo.LoadOrDefaultDeviceConfig(id)
 	if err != nil {
 		t.Errorf("load failed with %v", err.Error())
 	}
 
-	input := appConfig.Hub.Devices[id]
+	input := appConfig.Hub.Devices.Overrides[id]
 
 	if !reflect.DeepEqual(input, found) {
 		t.Error("device config mismatch")
@@ -102,7 +102,7 @@ func TestFileSettingsRepositoryCanAddNewDeviceConfig(t *testing.T) {
 
 	repo.SaveDeviceConfig(newCfg)
 
-	found, err := repo.FindOrAddDeviceConfigIfNotExists(newCfg.Id)
+	found, err := repo.LoadOrDefaultDeviceConfig(newCfg.Id)
 	if err != nil {
 		t.Errorf("load failed with %v", err.Error())
 	}
@@ -130,7 +130,7 @@ func TestFileSettingsRepositoryCanUpdateExistingDeviceConfig(t *testing.T) {
 		t.Errorf("save failed with %v", err.Error())
 	}
 
-	found, err := repo.FindOrAddDeviceConfigIfNotExists("x01234567")
+	found, err := repo.LoadOrDefaultDeviceConfig("x01234567")
 	if err != nil {
 		t.Errorf("load failed with %v", err.Error())
 	}
@@ -144,7 +144,7 @@ func TestFileSettingsRepositoryCanUpdateExistingDeviceConfig(t *testing.T) {
 	if err != nil {
 		t.Errorf("save failed with %v", err.Error())
 	}
-	updated, err := repo.FindOrAddDeviceConfigIfNotExists("x01234567")
+	updated, err := repo.LoadOrDefaultDeviceConfig("x01234567")
 	if err != nil {
 		t.Errorf("load failed with %v", err.Error())
 	}

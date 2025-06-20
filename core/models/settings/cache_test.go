@@ -2,6 +2,7 @@ package settings_test
 
 import (
 	"node-herder/mocks"
+	"node-herder/models/bridge"
 	"node-herder/models/settings"
 	"node-herder/utils"
 	"testing"
@@ -13,14 +14,14 @@ func TestNewDeviceConfigCache(t *testing.T) {
 	appConfig := settings.NewAppConfig()
 
 	d1 := settings.NewDeviceConfig("device1")
-	d1.Debounce = map[string]*utils.TimeInterval{
+	d1.DebounceOverrides = map[string]*utils.TimeInterval{
 		"expose1": utils.IntervalFromMilliseconds(1000),
 		"expose2": utils.IntervalFromMilliseconds(2000),
 	}
 
 	appConfig.AddDeviceConfig(d1)
 	d2 := settings.NewDeviceConfig("device2")
-	d2.Debounce = map[string]*utils.TimeInterval{
+	d2.DebounceOverrides = map[string]*utils.TimeInterval{
 		"expose3": utils.IntervalFromMilliseconds(3000),
 		"expose4": utils.IntervalFromMilliseconds(4000),
 	}
@@ -33,14 +34,14 @@ func TestNewDeviceConfigCache(t *testing.T) {
 		t.Errorf("Expected cache to have 2 devices, got %d", cache.Size())
 	}
 
-	expose1Debounce, ok := cache.GetDebounce("device1", "expose1")
+	expose1Debounce, ok := cache.GetDebounce("device1", "expose1", bridge.MeasurementCategory)
 	if !ok {
 		t.Errorf("Expected expose1 debounce to be found, got %v", ok)
 	}
 	if expose1Debounce != 1000*time.Millisecond {
 		t.Errorf("Expected expose1 debounce to be 1000ms, got %v", expose1Debounce)
 	}
-	expose2Debounce, ok := cache.GetDebounce("device1", "expose2")
+	expose2Debounce, ok := cache.GetDebounce("device1", "expose2", bridge.MeasurementCategory)
 	if !ok {
 		t.Errorf("Expected expose2 debounce to be found, got %v", ok)
 	}
@@ -48,14 +49,14 @@ func TestNewDeviceConfigCache(t *testing.T) {
 		t.Errorf("Expected expose2 debounce to be 2000ms, got %v", expose2Debounce)
 	}
 
-	expose3Debounce, ok := cache.GetDebounce("device2", "expose3")
+	expose3Debounce, ok := cache.GetDebounce("device2", "expose3", bridge.MeasurementCategory)
 	if !ok {
 		t.Errorf("Expected expose3 debounce to be found, got %v", ok)
 	}
 	if expose3Debounce != 3000*time.Millisecond {
 		t.Errorf("Expected expose3 debounce to be 3000ms, got %v", expose3Debounce)
 	}
-	expose4Debounce, ok := cache.GetDebounce("device2", "expose4")
+	expose4Debounce, ok := cache.GetDebounce("device2", "expose4", bridge.MeasurementCategory)
 	if !ok {
 		t.Errorf("Expected expose4 debounce to be found, got %v", ok)
 	}
@@ -87,25 +88,25 @@ func TestDeviceConfigCache_Set(t *testing.T) {
 	repo := mocks.NopSettingsrepo{}
 	appConfig := settings.NewAppConfig()
 	device1 := settings.NewDeviceConfig("device1")
-	device1.Debounce = map[string]*utils.TimeInterval{
+	device1.DebounceOverrides = map[string]*utils.TimeInterval{
 		"expose1": utils.IntervalFromMilliseconds(1000),
 	}
 	appConfig.AddDeviceConfig(device1)
 	cache := settings.NewDeviceConfigCache(&repo, appConfig)
 
 	// add a second debounce to device1 after initialization
-	device1.Debounce = map[string]*utils.TimeInterval{
+	device1.DebounceOverrides = map[string]*utils.TimeInterval{
 		"expose2": utils.IntervalFromMilliseconds(2000),
 	}
 	cache.Set(device1)
-	debounce, ok := cache.GetDebounce("device1", "expose1")
+	debounce, ok := cache.GetDebounce("device1", "expose1", bridge.MeasurementCategory)
 	if !ok {
 		t.Errorf("Expected expose1 debounce to be set")
 	}
 	if debounce != 1*time.Second {
 		t.Errorf("Expected expose1 debounce to be set")
 	}
-	debounce, ok = cache.GetDebounce("device1", "expose2")
+	debounce, ok = cache.GetDebounce("device1", "expose2", bridge.MeasurementCategory)
 	if !ok {
 		t.Errorf("Expected expose2 debounce to be set")
 	}
@@ -118,7 +119,7 @@ func TestDeviceConfigCache_DeleteDebounce(t *testing.T) {
 	repo := mocks.NopSettingsrepo{}
 	app := settings.NewAppConfig()
 	device1 := settings.NewDeviceConfig("device1")
-	device1.Debounce = map[string]*utils.TimeInterval{
+	device1.DebounceOverrides = map[string]*utils.TimeInterval{
 		"expose1": utils.IntervalFromMilliseconds(1000),
 		"expose2": utils.IntervalFromMilliseconds(2000),
 	}
@@ -128,14 +129,14 @@ func TestDeviceConfigCache_DeleteDebounce(t *testing.T) {
 	cache.Set(device1)
 
 	// assert that the debounce is set
-	debounce, ok := cache.GetDebounce("device1", "expose1")
+	debounce, ok := cache.GetDebounce("device1", "expose1", bridge.MeasurementCategory)
 	if !ok {
 		t.Errorf("Expected expose1 debounce to be set")
 	}
 	if debounce != 1*time.Second {
 		t.Errorf("Expected expose1 debounce to be set")
 	}
-	debounce, ok = cache.GetDebounce("device1", "expose2")
+	debounce, ok = cache.GetDebounce("device1", "expose2", bridge.MeasurementCategory)
 	if !ok {
 		t.Errorf("Expected expose2 debounce to be set")
 	}
@@ -150,13 +151,13 @@ func TestDeviceConfigCache_DeleteDebounce(t *testing.T) {
 	}
 
 	// assert that the expose1 debounce is deleted
-	_, ok = cache.GetDebounce("device1", "expose2")
+	_, ok = cache.GetDebounce("device1", "expose2", bridge.MeasurementCategory)
 	if ok {
 		t.Errorf("Expected expose2 debounce to be deleted")
 	}
 
 	// assert that the expose2 debounce is still set
-	_, ok = cache.GetDebounce("device1", "expose1")
+	_, ok = cache.GetDebounce("device1", "expose1", bridge.MeasurementCategory)
 	if !ok {
 		t.Errorf("Expected expose1 debounce to be set")
 	}
@@ -172,14 +173,14 @@ func TestDeviceDebouncer_DebounceExpose(t *testing.T) {
 	appConfig := settings.NewAppConfig()
 
 	d1 := settings.NewDeviceConfig("device1")
-	d1.Debounce = map[string]*utils.TimeInterval{
+	d1.DebounceOverrides = map[string]*utils.TimeInterval{
 		"expose1": utils.IntervalFromSeconds(1),
 		"expose2": utils.IntervalFromSeconds(2),
 	}
 
 	appConfig.AddDeviceConfig(d1)
 	d2 := settings.NewDeviceConfig("device2")
-	d2.Debounce = map[string]*utils.TimeInterval{
+	d2.DebounceOverrides = map[string]*utils.TimeInterval{
 		"expose3": utils.IntervalFromSeconds(3),
 		"expose4": utils.IntervalFromSeconds(4),
 	}
@@ -191,37 +192,37 @@ func TestDeviceDebouncer_DebounceExpose(t *testing.T) {
 	debouncer := settings.NewDeviceDebouncer("device1", cache, mockClock)
 
 	// Test First Event
-	if debouncer.DebounceExpose("expose1") == true { // First event should not be debounced
+	if debouncer.DebounceExpose("expose1", bridge.MeasurementCategory) == true { // First event should not be debounced
 		t.Error("First event should not be debounced")
 	}
 
 	// Test Debounced Event (within duration)
 	now = now.Add(500 * time.Millisecond)
 	mockClock.SetMockTime(now)
-	if debouncer.DebounceExpose("expose1") == false { // Event within duration should be debounced
+	if debouncer.DebounceExpose("expose1", bridge.MeasurementCategory) == false { // Event within duration should be debounced
 		t.Error("Event within duration should be debounced")
 	}
 
 	// Test After Duration
 	now = now.Add(500 * time.Millisecond)
 	mockClock.SetMockTime(now)
-	if debouncer.DebounceExpose("expose1") == true { // Event after duration should not be debounced
+	if debouncer.DebounceExpose("expose1", bridge.MeasurementCategory) == true { // Event after duration should not be debounced
 		t.Error("Event after duration should not be debounced")
 	}
 
 	// Test No Debounce Config
-	if debouncer.DebounceExpose("expose3") {
+	if debouncer.DebounceExpose("expose3", bridge.MeasurementCategory) {
 		t.Error("Event with no debounce config should not be debounced")
 	}
 	//Test multiple exposes.
-	if debouncer.DebounceExpose("expose2") {
+	if debouncer.DebounceExpose("expose2", bridge.MeasurementCategory) {
 		t.Error("First expose2 event should not be debounced")
 	}
 
 	now = now.Add(1 * time.Second)
 	mockClock.SetMockTime(now)
 
-	if !debouncer.DebounceExpose("expose2") {
+	if !debouncer.DebounceExpose("expose2", bridge.MeasurementCategory) {
 		t.Error("expose2 event within duration should be debounced")
 	}
 
@@ -230,14 +231,14 @@ func TestDeviceDebouncer_DebounceExpose(t *testing.T) {
 	mockClock.SetMockTime(now2)
 	debouncer2 := settings.NewDeviceDebouncer("device2", cache, mockClock)
 
-	if debouncer2.DebounceExpose("expose4") {
+	if debouncer2.DebounceExpose("expose4", bridge.MeasurementCategory) {
 		t.Error("First expose4 event should not be debounced")
 	}
 
 	now2 = now2.Add(3 * time.Second)
 	mockClock.SetMockTime(now2)
 
-	if !debouncer2.DebounceExpose("expose4") {
+	if !debouncer2.DebounceExpose("expose4", bridge.MeasurementCategory) {
 		t.Error("Second expose4 event should be debounced")
 	}
 }

@@ -7,12 +7,12 @@ import (
 )
 
 type DeviceSettings struct {
-	Default *DeviceConfig            `json:"default"`
-	Devices map[string]*DeviceConfig `json:"devices"`
+	Default   *DeviceConfig            `json:"default"`
+	Overrides map[string]*DeviceConfig `json:"overrides"`
 }
 
 func (d *DeviceSettings) GetEffectiveConfig(deviceId string) *DeviceConfig {
-	if override, exists := d.Devices[deviceId]; exists {
+	if override, exists := d.Overrides[deviceId]; exists {
 		return override
 	}
 	return d.Default
@@ -20,7 +20,7 @@ func (d *DeviceSettings) GetEffectiveConfig(deviceId string) *DeviceConfig {
 
 func (d *DeviceSettings) GetDebounceForEntity(deviceId, entityName string, entityCategory bridge.ExposeCategory) *utils.TimeInterval {
 	// First check if device has entity specific override
-	if deviceOverride, exists := d.Devices[deviceId]; exists {
+	if deviceOverride, exists := d.Overrides[deviceId]; exists {
 		if debounce, exists := deviceOverride.DebounceOverrides[entityName]; exists {
 			return debounce
 		}
@@ -47,17 +47,17 @@ func (d *DeviceSettings) AddOverride(deviceConfig *DeviceConfig) {
 		deviceConfig.DebounceOverrides = make(map[string]*utils.TimeInterval)
 	}
 
-	d.Devices[deviceConfig.Id] = deviceConfig
+	d.Overrides[deviceConfig.Id] = deviceConfig
 }
 
 func NewDeviceSettings() *DeviceSettings {
 	return &DeviceSettings{
-		Default: DefaultDeviceBaseConfig(),
-		Devices: map[string]*DeviceConfig{},
+		Default:   DefaultDeviceConfig(),
+		Overrides: map[string]*DeviceConfig{},
 	}
 }
 
-func DefaultDeviceBaseConfig() *DeviceConfig {
+func DefaultDeviceConfig() *DeviceConfig {
 	return &DeviceConfig{
 		Disabled:                  false,
 		MetricsEnabled:            false,
@@ -88,7 +88,7 @@ func NewDeviceConfig(id string) *DeviceConfig {
 		Id:                        id,
 		Disabled:                  false,
 		MetricsEnabled:            false,
-		RateLimit:                  utils.IntervalFromSeconds(60), // default to 60 seconds
+		RateLimit:                 utils.IntervalFromSeconds(60), // default to 60 seconds
 		DebounceOverrides:         map[string]*utils.TimeInterval{},
 		DefaultDebounceByCategory: map[bridge.ExposeCategory]*utils.TimeInterval{},
 	}

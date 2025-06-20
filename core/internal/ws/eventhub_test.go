@@ -307,11 +307,11 @@ func TestHandlingLoadHubStatesMessage(t *testing.T) {
 	}
 
 	// assert app config
-	if len(hubState.Config.Hub.Devices.Devices) != len(inputAppConfig.Hub.Devices.Devices) {
-		t.Fatalf("Expected numer of appconfig devices. want %v', got '%v'", len(inputAppConfig.Hub.Devices.Devices), len(hubState.Config.Hub.Devices.Devices))
+	if len(hubState.Config.Hub.Devices.Overrides) != len(inputAppConfig.Hub.Devices.Overrides) {
+		t.Fatalf("Expected numer of appconfig devices. want %v', got '%v'", len(inputAppConfig.Hub.Devices.Overrides), len(hubState.Config.Hub.Devices.Overrides))
 	}
-	for id, d := range inputAppConfig.Hub.Devices.Devices {
-		gotDeviceConfig := hubState.Config.Hub.Devices.Devices[id]
+	for id, d := range inputAppConfig.Hub.Devices.Overrides {
+		gotDeviceConfig := hubState.Config.Hub.Devices.Overrides[id]
 		if d.Id != gotDeviceConfig.Id {
 			t.Fatalf("Expected device id %v', got '%v'", d.Id, gotDeviceConfig.Id)
 		}
@@ -695,11 +695,11 @@ func TestLoadAppConfigMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(resultAppConfig.Hub.Devices.Devices) != len(inputAppConfig.Hub.Devices.Devices) {
-		t.Fatalf("Expected numer of appconfig devices. want %v', got '%v'", len(inputAppConfig.Hub.Devices.Devices), len(resultAppConfig.Hub.Devices.Devices))
+	if len(resultAppConfig.Hub.Devices.Overrides) != len(inputAppConfig.Hub.Devices.Overrides) {
+		t.Fatalf("Expected numer of appconfig devices. want %v', got '%v'", len(inputAppConfig.Hub.Devices.Overrides), len(resultAppConfig.Hub.Devices.Overrides))
 	}
-	for id, d := range inputAppConfig.Hub.Devices.Devices {
-		gotDeviceConfig := resultAppConfig.Hub.Devices.Devices[id]
+	for id, d := range inputAppConfig.Hub.Devices.Overrides {
+		gotDeviceConfig := resultAppConfig.Hub.Devices.Overrides[id]
 		if d.Id != gotDeviceConfig.Id {
 			t.Fatalf("Expected device id %v', got '%v'", d.Id, gotDeviceConfig.Id)
 		}
@@ -793,7 +793,7 @@ func TestSaveDeviceConfigMessage(t *testing.T) {
 
 	inputAppConfig := createAppconfig()
 
-	modifiedDevConfig := inputAppConfig.Hub.Devices.Devices["x0333444"]
+	modifiedDevConfig := inputAppConfig.Hub.Devices.Overrides["x0333444"]
 	wsHub := ws.NewWsHub()
 	wsHub.Start()
 
