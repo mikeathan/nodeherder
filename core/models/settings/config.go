@@ -72,8 +72,8 @@ type DeviceConfig struct {
 	Disabled                  bool                                          `json:"disabled"`
 	MetricsEnabled            bool                                          `json:"history"`
 	RateLimit                 *utils.TimeInterval                           `json:"rateLimit"`
-	DefaultDebounceByCategory map[bridge.ExposeCategory]*utils.TimeInterval `json:"defaultDebounceByCategory,omitempty"`
-	DebounceOverrides         map[string]*utils.TimeInterval                `json:"debounce,omitempty"`
+	DefaultDebounceByCategory map[bridge.ExposeCategory]*utils.TimeInterval `json:"defaultDebounceByCategory"`
+	DebounceOverrides         map[string]*utils.TimeInterval                `json:"debounce"`
 }
 
 func (d *DeviceConfig) RateLimitDuration() time.Duration {

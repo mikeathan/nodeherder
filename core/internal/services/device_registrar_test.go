@@ -209,22 +209,20 @@ func TestDefaultDebounceforDiagnosticExposes(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error getting device config: %s", err)
 		}
-		for _, expose := range device.Exposes {
-			if expose.Category == bridge.DiagnosticCategory {
-				d, ok := deviceConfig.DebounceOverrides[expose.Name]
-				if !ok {
-					t.Errorf("Error diagnostic expose %s debounce is 0", expose.Name)
-				}
-				if d.Value != 300 {
-					t.Errorf("Error diagnostic expose %s debounce is not 300. got %v", expose.Name, d.Value)
-				}
-				if d.Unit != "seconds" {
-					t.Errorf("Error diagnostic expose %s debounce unit is not seconds", d.Unit)
-				}
-			}
+		// we are expecting the defaults to be loaded here
+		if len(deviceConfig.DebounceOverrides) != 0 {
+			t.Errorf("Error device config debounce overrides should be nil")
+		}
+
+		if _, ok := deviceConfig.DefaultDebounceByCategory[bridge.DiagnosticCategory]; !ok {
+			t.Errorf("Error device config debounce overrides should be nil")
+		}
+
+		debounce := deviceConfig.DefaultDebounceByCategory[bridge.DiagnosticCategory]
+		if debounce.Value != 300 {
+			t.Errorf("Error device config debounce overrides should be 300. got %v", debounce.Value)
 		}
 	}
-
 }
 
 func assertDeviceUpdatePackage(device *devices.Device, updatePackage *devices.UpdatePackage, t *testing.T) {

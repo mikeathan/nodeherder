@@ -101,7 +101,6 @@ func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, error) {
 
 	// store in cache
 	d.devicesConfigs[id] = config
-	d.mutex.Unlock()
 	return config, nil
 }
 

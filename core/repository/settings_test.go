@@ -95,8 +95,7 @@ func TestFileSettingsRepositoryCanAddNewDeviceConfig(t *testing.T) {
 		t.Errorf("save failed with %v", err.Error())
 	}
 
-	newCfg := &settings.DeviceConfig{}
-	newCfg.Id = "x055555555"
+	newCfg := settings.NewDeviceConfig("x055555555")
 	newCfg.Disabled = true
 	newCfg.MetricsEnabled = false
 
@@ -178,11 +177,11 @@ func TestFileSettingsRepositoryAppConfigContainsBridgeConfig(t *testing.T) {
 	if !reflect.DeepEqual(settings.NewBridgeConfig(), res.Bridge) {
 		t.Error("bridge config mismatch")
 	}
-	bridgeCfg:= settings.NewBridgeConfig()
+	bridgeCfg := settings.NewBridgeConfig()
 	bridgeCfg.PermitJoin = true
 	bridgeCfg.TimeExpireAt = &utils.TimeInterval{
 		Value: 10,
-		Unit:     "minutes",
+		Unit:  "minutes",
 	}
 
 	repo.SaveBridgeConfig(bridgeCfg)
@@ -199,29 +198,25 @@ func TestFileSettingsRepositoryAppConfigContainsBridgeConfig(t *testing.T) {
 
 func createMockAppConfig() *settings.AppConfig {
 	appconfig := settings.NewAppConfig()
-	cfg := &settings.DeviceConfig{}
-	cfg.Id = "x01234567"
+	cfg := settings.NewDeviceConfig("x01234567")
 	cfg.Disabled = false
 	cfg.MetricsEnabled = true
 
 	appconfig.AddDeviceConfig(cfg)
 
-	cfg2 := &settings.DeviceConfig{}
-	cfg2.Id = "x0erp09876"
+	cfg2 := settings.NewDeviceConfig("x0erp09876")
 	cfg2.Disabled = true
 	cfg2.MetricsEnabled = false
 
 	appconfig.AddDeviceConfig(cfg2)
 
-	cfg3 := &settings.DeviceConfig{}
-	cfg3.Id = "x0lip1245h"
+	cfg3 := settings.NewDeviceConfig("x0lip1245h")
 	cfg3.Disabled = false
 	cfg3.MetricsEnabled = true
 
 	appconfig.AddDeviceConfig(cfg3)
 
-	cfg4 := &settings.DeviceConfig{}
-	cfg4.Id = "x9lo0124hggfs"
+	cfg4 := settings.NewDeviceConfig("x9lo0124hggfs")
 	cfg4.Disabled = false
 	cfg4.MetricsEnabled = true
 

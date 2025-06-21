@@ -95,9 +95,8 @@ func TestDeviceConfigCache_Set(t *testing.T) {
 	cache := settings.NewDeviceConfigCache(&repo, appConfig)
 
 	// add a second debounce to device1 after initialization
-	device1.DebounceOverrides = map[string]*utils.TimeInterval{
-		"expose2": utils.IntervalFromMilliseconds(2000),
-	}
+	device1.DebounceOverrides["expose2"] = utils.IntervalFromMilliseconds(2000)
+
 	cache.Set(device1)
 	debounce, ok := cache.GetDebounce("device1", "expose1", bridge.MeasurementCategory)
 	if !ok {
