@@ -256,28 +256,67 @@ func TestDeviceDebouncer_DiagnosticsDebouncerWhenOverrideIsNotAvailable(t *testi
 	d1.DebounceOverrides = map[string]*utils.TimeInterval{
 		"expose1": utils.IntervalFromSeconds(1),
 	}
-	d1.DefaultDebounceByCategory[bridge.DiagnosticCategory] = utils.IntervalFromSeconds(5)
+	appConfig.Hub.Devices.Default.DefaultDebounceByCategory[bridge.DiagnosticCategory] = utils.IntervalFromSeconds(5)
 
 	appConfig.AddDeviceConfig(d1)
 	cache := settings.NewDeviceConfigCache(&repo, appConfig)
 	debouncer := settings.NewDeviceDebouncer("device1", cache, mockClock)
 
+	// Test expose 1 event with debounce overrides
+	// ############################################################################
+	if debouncer.DebounceExpose("expose1", bridge.MeasurementCategory) == true { // First event should not be debounced
+		t.Error("First expose event should not be debounced")
+	}
+
 	now = now.Add(100 * time.Millisecond)
 	mockClock.SetMockTime(now)
-
-
-	first ime it doesnt exist in debounce map so it gets rejected. iut could be correct ?
-	ok := debouncer.DebounceExpose("expose1", bridge.MeasurementCategory)
-	if ok {
-		t.Errorf("expose1 debounce: want=%s, got=%v", "false", ok)
-	}
-	ok = debouncer.DebounceExpose("expose1", bridge.MeasurementCategory)
-	if !ok {
-		t.Errorf("expose1 debounce: want=%s, got=%v", "true", ok)
+	if debouncer.DebounceExpose("expose1", bridge.MeasurementCategory) == false {
+		t.Error("Second expose event should be debounced")
 	}
 
-	// ok = debouncer.DebounceExpose("expose2", bridge.DiagnosticCategory)
-	// if !ok {
-	// 	t.Error("Expected to return true")
-	// }
+	now = now.Add(1 * time.Second)
+	mockClock.SetMockTime(now)
+
+	if debouncer.DebounceExpose("expose1", bridge.MeasurementCategory) == true {
+		t.Error("Third expose event should be not debounced")
+	}
+
+	// now test diagnostics expose with no override but using default debounce
+	// ############################################################################
+	if debouncer.DebounceExpose("expose2", bridge.DiagnosticCategory) == true {
+		t.Error("First expose2 event should not be debounced")
+	}
+	now = now.Add(2 * time.Second)
+	mockClock.SetMockTime(now)
+
+	if debouncer.DebounceExpose("expose2", bridge.DiagnosticCategory) == false {
+		t.Error("Second expose2 event should be debounced")
+	}
+
+	now = now.Add(4 * time.Second)
+	mockClock.SetMockTime(now)
+
+	if debouncer.DebounceExpose("expose2", bridge.DiagnosticCategory) == true {
+		t.Error("Third expose2 event should not be debounced")
+	}
+
+	// now test non-diagnostics expose with no override, it should not be debounced
+	// ############################################################################
+	if debouncer.DebounceExpose("expose3", bridge.MeasurementCategory) == true {
+		t.Error("First expose3 event should not be debounced")
+	}
+
+	now = now.Add(1 * time.Second)
+	mockClock.SetMockTime(now)
+
+	if debouncer.DebounceExpose("expose3", bridge.MeasurementCategory) == true {
+		t.Error("Second expose3 event should not be debounced")
+	}
+
+	now = now.Add(2 * time.Second)
+	mockClock.SetMockTime(now)
+
+	if debouncer.DebounceExpose("expose3", bridge.MeasurementCategory) == true {
+		t.Error("Second expose3 event should not be debounced")
+	}
 }
