@@ -1,0 +1,1030 @@
+{
+  "type": "hubState",
+  "payload": {
+    "config": {
+      "hub": {
+        "devices": {
+          "default": {
+            "disabled": false,
+            "history": false,
+            "rateLimit": { "value": 60, "unit": "seconds" },
+            "defaultDebounceByCategory": {
+              "diagnostic": { "value": 300, "unit": "seconds" }
+            },
+            "debounce": {}
+          },
+          "overrides": {}
+        },
+        "history": {
+          "sleeptTmeout": { "value": 12, "unit": "hours" },
+          "expireAt": { "value": 10, "unit": "days" }
+        },
+        "logger": { "enableRemoteLogger": false },
+        "dashboardGroups": {}
+      },
+      "bridge": {
+        "maxTimeAllowed": { "value": 120, "unit": "seconds" },
+        "permitJoin": false
+      }
+    },
+    "devices": [
+      {
+        "id": "0x00124b0029207763",
+        "friendly_name": "Attic temperature sensor",
+        "description": "Temperature and humidity sensor",
+        "connection_type": "mqtt",
+        "power_source": "battery",
+        "exposes": {
+          "battery": {
+            "name": "battery",
+            "description": "Remaining battery in %, can take up to 24 hours before reported",
+            "unit": "%",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "attributes": { "max": 100, "min": 0 },
+            "access_mode": "read"
+          },
+          "humidity": {
+            "name": "humidity",
+            "description": "Measured relative humidity",
+            "unit": "%",
+            "data": null,
+            "type": "numeric",
+            "category": "measurement",
+            "access_mode": "read"
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "access_mode": "read"
+          },
+          "temperature": {
+            "name": "temperature",
+            "description": "Measured temperature value",
+            "unit": "°C",
+            "data": null,
+            "type": "numeric",
+            "category": "measurement",
+            "access_mode": "read"
+          },
+          "voltage": {
+            "name": "voltage",
+            "description": "Voltage of the battery in millivolts",
+            "unit": "mV",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "access_mode": "read"
+          }
+        },
+        "last_seen": "",
+        "availability": "offline"
+      },
+      {
+        "id": "0x00124b002fa5844e",
+        "friendly_name": "Front door sensor",
+        "description": "Contact sensor",
+        "connection_type": "mqtt",
+        "power_source": "battery",
+        "exposes": {
+          "battery": {
+            "name": "battery",
+            "description": "Remaining battery in %",
+            "unit": "%",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "attributes": { "max": 100, "min": 0 },
+            "access_mode": "read"
+          },
+          "battery_low": {
+            "name": "battery_low",
+            "description": "Indicates whether the battery of the device is almost empty",
+            "data": null,
+            "type": "binary",
+            "category": "diagnostic",
+            "access_mode": "read",
+            "values": { "off": false, "on": true }
+          },
+          "contact": {
+            "name": "contact",
+            "description": "Indicates whether the device is opened or closed",
+            "data": null,
+            "type": "binary",
+            "category": "measurement",
+            "access_mode": "read",
+            "values": { "off": true, "on": false }
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "access_mode": "read"
+          },
+          "voltage": {
+            "name": "voltage",
+            "description": "Reported battery voltage in millivolts",
+            "unit": "mV",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "access_mode": "read"
+          }
+        },
+        "last_seen": "",
+        "availability": "offline"
+      },
+      {
+        "id": "0x00158d0005a23c38",
+        "friendly_name": "Living room light",
+        "description": "AOne 9.5W smart RGBW GLS E27/B22",
+        "connection_type": "mqtt",
+        "power_source": "mains (single phase)",
+        "exposes": {
+          "brightness": {
+            "name": "brightness",
+            "description": "Brightness of this light",
+            "data": null,
+            "type": "numeric",
+            "category": "measurement",
+            "attributes": { "max": 254, "min": 0 },
+            "access_mode": "readwrite"
+          },
+          "color": {
+            "name": "color",
+            "description": "Color of this light in the CIE 1931 color space (x/y)",
+            "data": null,
+            "type": "composite",
+            "category": "config",
+            "access_mode": "readwrite"
+          },
+          "color_temp": {
+            "name": "color_temp",
+            "description": "Color temperature of this light",
+            "unit": "mired",
+            "data": null,
+            "type": "numeric",
+            "category": "measurement",
+            "attributes": { "max": 500, "min": 150 },
+            "access_mode": "readwrite",
+            "values": {
+              "cool": 250,
+              "coolest": 150,
+              "neutral": 370,
+              "warm": 454,
+              "warmest": 500
+            }
+          },
+          "color_temp_startup": {
+            "name": "color_temp_startup",
+            "description": "Color temperature after cold power on of this light",
+            "unit": "mired",
+            "data": null,
+            "type": "numeric",
+            "category": "config",
+            "attributes": { "max": 500, "min": 150 },
+            "access_mode": "readwrite",
+            "values": {
+              "cool": 250,
+              "coolest": 150,
+              "neutral": 370,
+              "previous": 65535,
+              "warm": 454,
+              "warmest": 500
+            }
+          },
+          "effect": {
+            "name": "effect",
+            "description": "Triggers an effect on the light (e.g. make light blink for a few seconds)",
+            "data": null,
+            "type": "enum",
+            "category": "config",
+            "access_mode": "write",
+            "values": {
+              "0": "blink",
+              "1": "breathe",
+              "2": "okay",
+              "3": "channel_change",
+              "4": "finish_effect",
+              "5": "stop_effect",
+              "6": "colorloop",
+              "7": "stop_colorloop"
+            }
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "access_mode": "read"
+          },
+          "power_on_behavior": {
+            "name": "power_on_behavior",
+            "description": "Controls the behavior when the device is powered on after power loss",
+            "data": null,
+            "type": "enum",
+            "category": "config",
+            "access_mode": "readwrite",
+            "values": { "0": "off", "1": "on", "2": "toggle", "3": "previous" }
+          },
+          "state": {
+            "name": "state",
+            "description": "On/off state of this light",
+            "data": null,
+            "type": "binary",
+            "category": "measurement",
+            "access_mode": "readwrite",
+            "values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
+          }
+        },
+        "last_seen": "",
+        "availability": "offline"
+      },
+      {
+        "id": "0x001788010d7d9d3f",
+        "friendly_name": "Living room switch dial",
+        "description": "Hue Tap dial switch",
+        "connection_type": "mqtt",
+        "power_source": "battery",
+        "exposes": {
+          "action": {
+            "name": "action",
+            "description": "Triggered action (e.g. a button click)",
+            "data": null,
+            "type": "enum",
+            "category": "measurement",
+            "access_mode": "read",
+            "values": {
+              "0": "button_1_press",
+              "1": "button_1_press_release",
+              "10": "button_3_hold",
+              "11": "button_3_hold_release",
+              "12": "button_4_press",
+              "13": "button_4_press_release",
+              "14": "button_4_hold",
+              "15": "button_4_hold_release",
+              "16": "dial_rotate_left_step",
+              "17": "dial_rotate_left_slow",
+              "18": "dial_rotate_left_fast",
+              "19": "dial_rotate_right_step",
+              "2": "button_1_hold",
+              "20": "dial_rotate_right_slow",
+              "21": "dial_rotate_right_fast",
+              "22": "brightness_step_up",
+              "23": "brightness_step_down",
+              "3": "button_1_hold_release",
+              "4": "button_2_press",
+              "5": "button_2_press_release",
+              "6": "button_2_hold",
+              "7": "button_2_hold_release",
+              "8": "button_3_press",
+              "9": "button_3_press_release"
+            }
+          },
+          "action_direction": {
+            "name": "action_direction",
+            "description": "Direction in which the dial was turned",
+            "data": null,
+            "type": "enum",
+            "category": "measurement",
+            "access_mode": "read",
+            "values": { "0": "right", "1": "left" }
+          },
+          "action_step_size": {
+            "name": "action_step_size",
+            "description": "amount of steps the last action took on the dial exposed as a posive value from 0-255",
+            "data": null,
+            "type": "numeric",
+            "category": "measurement",
+            "attributes": { "max": 255, "min": 0 },
+            "access_mode": "read"
+          },
+          "action_time": {
+            "name": "action_time",
+            "description": "value in seconds representing the amount of time the last action took",
+            "data": null,
+            "type": "numeric",
+            "category": "measurement",
+            "attributes": { "max": 255, "min": 0 },
+            "access_mode": "read"
+          },
+          "action_type": {
+            "name": "action_type",
+            "description": "Type of the rotation, value in the first message is `step` and in the next messages value is `rotate`",
+            "data": null,
+            "type": "enum",
+            "category": "measurement",
+            "access_mode": "read",
+            "values": { "0": "step", "1": "rotate" }
+          },
+          "battery": {
+            "name": "battery",
+            "description": "Remaining battery in %, can take up to 24 hours before reported",
+            "unit": "%",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "attributes": { "max": 100, "min": 0 },
+            "access_mode": "read"
+          },
+          "brightness": {
+            "name": "brightness",
+            "description": "Raw rotation state value of the dial which represents brightness from 0-255",
+            "data": null,
+            "type": "numeric",
+            "category": "measurement",
+            "attributes": { "max": 255, "min": 0 },
+            "access_mode": "read"
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "access_mode": "read"
+          }
+        },
+        "last_seen": "",
+        "availability": "offline"
+      },
+      {
+        "id": "0x70ac08fffefafeca",
+        "friendly_name": "Attic Light",
+        "description": "Automatically generated definition",
+        "connection_type": "mqtt",
+        "power_source": "mains (single phase)",
+        "exposes": {
+          "brightness": {
+            "name": "brightness",
+            "description": "Brightness of this light",
+            "data": null,
+            "type": "numeric",
+            "category": "measurement",
+            "attributes": { "max": 254, "min": 0 },
+            "access_mode": "readwrite"
+          },
+          "color_temp": {
+            "name": "color_temp",
+            "description": "Color temperature of this light",
+            "unit": "mired",
+            "data": null,
+            "type": "numeric",
+            "category": "measurement",
+            "attributes": { "max": 370, "min": 153 },
+            "access_mode": "readwrite",
+            "values": {
+              "cool": 250,
+              "coolest": 153,
+              "neutral": 370,
+              "warmest": 370
+            }
+          },
+          "color_temp_startup": {
+            "name": "color_temp_startup",
+            "description": "Color temperature after cold power on of this light",
+            "unit": "mired",
+            "data": null,
+            "type": "numeric",
+            "category": "config",
+            "attributes": { "max": 370, "min": 153 },
+            "access_mode": "readwrite",
+            "values": {
+              "cool": 250,
+              "coolest": 153,
+              "neutral": 370,
+              "previous": 65535,
+              "warmest": 370
+            }
+          },
+          "effect": {
+            "name": "effect",
+            "description": "Triggers an effect on the light (e.g. make light blink for a few seconds)",
+            "data": null,
+            "type": "enum",
+            "category": "config",
+            "access_mode": "write",
+            "values": {
+              "0": "blink",
+              "1": "breathe",
+              "2": "okay",
+              "3": "channel_change",
+              "4": "finish_effect",
+              "5": "stop_effect"
+            }
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "access_mode": "read"
+          },
+          "power_on_behavior": {
+            "name": "power_on_behavior",
+            "description": "Controls the behavior when the device is powered on after power loss",
+            "data": null,
+            "type": "enum",
+            "category": "config",
+            "access_mode": "readwrite",
+            "values": { "0": "off", "1": "on", "2": "toggle", "3": "previous" }
+          },
+          "state": {
+            "name": "state",
+            "description": "On/off state of this light",
+            "data": null,
+            "type": "binary",
+            "category": "measurement",
+            "access_mode": "readwrite",
+            "values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
+          }
+        },
+        "last_seen": "",
+        "availability": "offline"
+      },
+      {
+        "id": "0x70b3d52b60136661",
+        "friendly_name": "kitchen power socket",
+        "description": "Smart plug (with power monitoring by polling)",
+        "connection_type": "mqtt",
+        "power_source": "mains (single phase)",
+        "exposes": {
+          "child_lock": {
+            "name": "child_lock",
+            "description": "Enables/disables physical input on the device",
+            "data": null,
+            "type": "binary",
+            "category": "config",
+            "access_mode": "write",
+            "values": { "off": "UNLOCK", "on": "LOCK" }
+          },
+          "current": {
+            "name": "current",
+            "description": "Instantaneous measured electrical current",
+            "unit": "A",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "access_mode": "read"
+          },
+          "energy": {
+            "name": "energy",
+            "description": "Sum of consumed energy",
+            "unit": "kWh",
+            "data": null,
+            "type": "numeric",
+            "category": "measurement",
+            "access_mode": "read"
+          },
+          "indicator_mode": {
+            "name": "indicator_mode",
+            "description": "LED indicator mode",
+            "data": null,
+            "type": "enum",
+            "category": "config",
+            "access_mode": "readwrite",
+            "values": { "0": "off", "1": "off/on", "2": "on/off", "3": "on" }
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "access_mode": "read"
+          },
+          "power": {
+            "name": "power",
+            "description": "Instantaneous measured power",
+            "unit": "W",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "access_mode": "read"
+          },
+          "power_outage_memory": {
+            "name": "power_outage_memory",
+            "description": "Recover state after power outage",
+            "data": null,
+            "type": "enum",
+            "category": "config",
+            "access_mode": "readwrite",
+            "values": { "0": "on", "1": "off", "2": "restore" }
+          },
+          "state": {
+            "name": "state",
+            "description": "On/off state of the switch",
+            "data": null,
+            "type": "binary",
+            "category": "measurement",
+            "access_mode": "readwrite",
+            "values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
+          },
+          "voltage": {
+            "name": "voltage",
+            "description": "Measured electrical potential value",
+            "unit": "V",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "access_mode": "read"
+          }
+        },
+        "last_seen": "",
+        "availability": "offline"
+      },
+      {
+        "id": "0xa4c1381b6fd53fc4",
+        "friendly_name": "Attic room power socket",
+        "description": "Smart plug",
+        "connection_type": "mqtt",
+        "power_source": "mains (single phase)",
+        "exposes": {
+          "current": {
+            "name": "current",
+            "description": "Instantaneous measured electrical current",
+            "unit": "A",
+            "data": 0.35,
+            "type": "numeric",
+            "category": "diagnostic",
+            "access_mode": "read"
+          },
+          "energy": {
+            "name": "energy",
+            "description": "Sum of consumed energy",
+            "unit": "kWh",
+            "data": 637.29,
+            "type": "numeric",
+            "category": "measurement",
+            "access_mode": "read"
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": 21,
+            "type": "numeric",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "access_mode": "read"
+          },
+          "power": {
+            "name": "power",
+            "description": "Instantaneous measured power",
+            "unit": "W",
+            "data": 57,
+            "type": "numeric",
+            "category": "diagnostic",
+            "access_mode": "read"
+          },
+          "power_on_behavior": {
+            "name": "power_on_behavior",
+            "description": "Controls the behavior when the device is powered on after power loss",
+            "data": "previous",
+            "type": "enum",
+            "category": "config",
+            "access_mode": "readwrite",
+            "values": { "0": "off", "1": "on", "2": "toggle", "3": "previous" }
+          },
+          "state": {
+            "name": "state",
+            "description": "On/off state of the switch",
+            "data": "ON",
+            "type": "binary",
+            "category": "measurement",
+            "access_mode": "readwrite",
+            "values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
+          },
+          "voltage": {
+            "name": "voltage",
+            "description": "Measured electrical potential value",
+            "unit": "V",
+            "data": 241,
+            "type": "numeric",
+            "category": "diagnostic",
+            "access_mode": "read"
+          }
+        },
+        "last_seen": "2025-06-22T18:54:09+01:00",
+        "availability": "online"
+      },
+      {
+        "id": "0xa4c1384582432edd",
+        "friendly_name": "Garden temperature",
+        "description": "Temperature \u0026 humidity sensor with display",
+        "connection_type": "mqtt",
+        "power_source": "battery",
+        "exposes": {
+          "battery": {
+            "name": "battery",
+            "description": "Remaining battery in %, can take up to 24 hours before reported",
+            "unit": "%",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "attributes": { "max": 100, "min": 0 },
+            "access_mode": "read"
+          },
+          "humidity": {
+            "name": "humidity",
+            "description": "Measured relative humidity",
+            "unit": "%",
+            "data": null,
+            "type": "numeric",
+            "category": "measurement",
+            "access_mode": "read"
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "access_mode": "read"
+          },
+          "temperature": {
+            "name": "temperature",
+            "description": "Measured temperature value",
+            "unit": "°C",
+            "data": null,
+            "type": "numeric",
+            "category": "measurement",
+            "access_mode": "read"
+          },
+          "voltage": {
+            "name": "voltage",
+            "description": "Voltage of the battery in millivolts",
+            "unit": "mV",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "access_mode": "read"
+          }
+        },
+        "last_seen": "",
+        "availability": "offline"
+      },
+      {
+        "id": "0xa4c13894070052fc",
+        "friendly_name": "Living room presence sensor",
+        "description": "Mini human breathe sensor",
+        "connection_type": "mqtt",
+        "power_source": "mains (single phase)",
+        "exposes": {
+          "detection_delay": {
+            "name": "detection_delay",
+            "description": "Detection delay",
+            "unit": "s",
+            "data": 0.1,
+            "type": "numeric",
+            "category": "config",
+            "attributes": { "max": 10, "min": 0 },
+            "access_mode": "write"
+          },
+          "fading_time": {
+            "name": "fading_time",
+            "description": "Fading time",
+            "unit": "s",
+            "data": 30,
+            "type": "numeric",
+            "category": "config",
+            "attributes": { "max": 1500, "min": 0.5 },
+            "access_mode": "write"
+          },
+          "illuminance": {
+            "name": "illuminance",
+            "description": "Measured illuminance",
+            "unit": "lx",
+            "data": 54,
+            "type": "numeric",
+            "category": "measurement",
+            "access_mode": "read"
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": 98,
+            "type": "numeric",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "access_mode": "read"
+          },
+          "maximum_range": {
+            "name": "maximum_range",
+            "description": "Maximum range",
+            "unit": "m",
+            "data": 5,
+            "type": "numeric",
+            "category": "config",
+            "attributes": { "max": 9.5, "min": 0 },
+            "access_mode": "write"
+          },
+          "minimum_range": {
+            "name": "minimum_range",
+            "description": "Minimum range",
+            "unit": "m",
+            "data": 0.1,
+            "type": "numeric",
+            "category": "config",
+            "attributes": { "max": 9.5, "min": 0 },
+            "access_mode": "write"
+          },
+          "presence": {
+            "name": "presence",
+            "description": "Indicates whether the device detected presence",
+            "data": false,
+            "type": "binary",
+            "category": "measurement",
+            "access_mode": "read",
+            "values": { "off": false, "on": true }
+          },
+          "radar_sensitivity": {
+            "name": "radar_sensitivity",
+            "description": "sensitivity of the radar",
+            "data": 5,
+            "type": "numeric",
+            "category": "config",
+            "attributes": { "max": 9, "min": 0 },
+            "access_mode": "write"
+          },
+          "target_distance": {
+            "name": "target_distance",
+            "description": "Distance to target",
+            "unit": "m",
+            "data": 0,
+            "type": "numeric",
+            "category": "diagnostic",
+            "access_mode": "read"
+          }
+        },
+        "last_seen": "2025-06-22T18:54:13+01:00",
+        "availability": "online"
+      },
+      {
+        "id": "0xa4c1389b273366c3",
+        "friendly_name": "Attic alarm",
+        "description": "Alarm",
+        "connection_type": "mqtt",
+        "power_source": "mains (single phase)",
+        "exposes": {
+          "alarm": {
+            "name": "alarm",
+            "data": null,
+            "type": "binary",
+            "category": "measurement",
+            "access_mode": "write",
+            "values": { "off": false, "on": true }
+          },
+          "battery_low": {
+            "name": "battery_low",
+            "description": "Indicates if the battery of this device is almost empty",
+            "data": null,
+            "type": "binary",
+            "category": "diagnostic",
+            "access_mode": "read",
+            "values": { "off": false, "on": true }
+          },
+          "battpercentage": {
+            "name": "battpercentage",
+            "unit": "%",
+            "data": null,
+            "type": "numeric",
+            "category": "measurement",
+            "access_mode": "read"
+          },
+          "duration": {
+            "name": "duration",
+            "unit": "s",
+            "data": null,
+            "type": "numeric",
+            "category": "config",
+            "attributes": { "max": 1800, "min": 0 },
+            "access_mode": "write"
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "access_mode": "read"
+          },
+          "melody": {
+            "name": "melody",
+            "data": null,
+            "type": "enum",
+            "category": "config",
+            "access_mode": "write",
+            "values": {
+              "0": "1",
+              "1": "2",
+              "10": "11",
+              "11": "12",
+              "12": "13",
+              "13": "14",
+              "14": "15",
+              "15": "16",
+              "16": "17",
+              "17": "18",
+              "2": "3",
+              "3": "4",
+              "4": "5",
+              "5": "6",
+              "6": "7",
+              "7": "8",
+              "8": "9",
+              "9": "10"
+            }
+          },
+          "volume": {
+            "name": "volume",
+            "data": null,
+            "type": "enum",
+            "category": "config",
+            "access_mode": "write",
+            "values": { "0": "low", "1": "medium", "2": "high" }
+          }
+        },
+        "last_seen": "",
+        "availability": "offline"
+      },
+      {
+        "id": "0xa4c138c383ac3fc8",
+        "friendly_name": "Attic smoke alarm",
+        "description": "Photoelectric smoke detector",
+        "connection_type": "mqtt",
+        "power_source": "battery",
+        "exposes": {
+          "battery": {
+            "name": "battery",
+            "description": "Remaining battery in %, can take up to 24 hours before reported",
+            "unit": "%",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "attributes": { "max": 100, "min": 0 },
+            "access_mode": "read"
+          },
+          "device_fault": {
+            "name": "device_fault",
+            "description": "Indicates a fault with the device",
+            "data": null,
+            "type": "binary",
+            "category": "measurement",
+            "access_mode": "read",
+            "values": { "off": false, "on": true }
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "access_mode": "read"
+          },
+          "silence": {
+            "name": "silence",
+            "description": "Silence the alarm",
+            "data": null,
+            "type": "binary",
+            "category": "config",
+            "access_mode": "write",
+            "values": { "off": false, "on": true }
+          },
+          "smoke": {
+            "name": "smoke",
+            "description": "Indicates whether the device detected smoke",
+            "data": null,
+            "type": "binary",
+            "category": "measurement",
+            "access_mode": "read",
+            "values": { "off": false, "on": true }
+          },
+          "smoke_concentration": {
+            "name": "smoke_concentration",
+            "description": "Parts per million of smoke detected",
+            "unit": "ppm",
+            "data": null,
+            "type": "numeric",
+            "category": "measurement",
+            "access_mode": "read"
+          },
+          "test": {
+            "name": "test",
+            "description": "Indicates whether the device is being tested",
+            "data": null,
+            "type": "binary",
+            "category": "measurement",
+            "access_mode": "read",
+            "values": { "off": false, "on": true }
+          }
+        },
+        "last_seen": "",
+        "availability": "offline"
+      },
+      {
+        "id": "0xa4c138e1b5658e68",
+        "friendly_name": "Attic air sensor",
+        "description": "Smart air house keeper",
+        "connection_type": "mqtt",
+        "power_source": "mains (single phase)",
+        "exposes": {
+          "co2": {
+            "name": "co2",
+            "description": "The measured CO2 (carbon dioxide) value",
+            "unit": "ppm",
+            "data": 355,
+            "type": "numeric",
+            "category": "measurement",
+            "access_mode": "read"
+          },
+          "formaldehyd": {
+            "name": "formaldehyd",
+            "description": "The measured formaldehyd value",
+            "unit": "µg/m³",
+            "data": 4,
+            "type": "numeric",
+            "category": "measurement",
+            "access_mode": "read"
+          },
+          "humidity": {
+            "name": "humidity",
+            "description": "Measured relative humidity",
+            "unit": "%",
+            "data": 58.9,
+            "type": "numeric",
+            "category": "measurement",
+            "access_mode": "read"
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": 32,
+            "type": "numeric",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "access_mode": "read"
+          },
+          "pm25": {
+            "name": "pm25",
+            "description": "Measured PM2.5 (particulate matter) concentration",
+            "unit": "µg/m³",
+            "data": 7,
+            "type": "numeric",
+            "category": "measurement",
+            "attributes": { "max": 999, "min": 0 },
+            "access_mode": "read"
+          },
+          "temperature": {
+            "name": "temperature",
+            "description": "Measured temperature value",
+            "unit": "°C",
+            "data": 27.1,
+            "type": "numeric",
+            "category": "measurement",
+            "access_mode": "read"
+          },
+          "voc": {
+            "name": "voc",
+            "description": "Measured VOC value",
+            "unit": "ppb",
+            "data": 5,
+            "type": "numeric",
+            "category": "measurement",
+            "access_mode": "read"
+          }
+        },
+        "last_seen": "2025-06-22T18:54:01+01:00",
+        "availability": "online"
+      }
+    ]
+  }
+}
