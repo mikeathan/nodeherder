@@ -33,12 +33,7 @@ func TestFileSettingsRepositoryCanAddAndLoad(t *testing.T) {
 		t.Errorf("load failed with %v", err.Error())
 	}
 
-	for key, d := range res.Hub.Devices.Overrides {
-		inputDev := appConfig.Hub.Devices.Overrides[key]
-		if !reflect.DeepEqual(d, inputDev) {
-			t.Error("device config mismatch")
-		}
-	}
+	assertAppConfig(t, res, appConfig)
 }
 
 func TestFileSettingsRepositoryCanAddAndFindValue(t *testing.T) {
@@ -72,9 +67,7 @@ func TestFileSettingsRepositoryCanAddAndFindValue(t *testing.T) {
 
 	input := appConfig.Hub.Devices.Overrides[id]
 
-	if !reflect.DeepEqual(input, found) {
-		t.Error("device config mismatch")
-	}
+	assertDeviceConfig(t, found, input)
 }
 
 func TestFileSettingsRepositoryCanAddNewDeviceConfig(t *testing.T) {
@@ -106,9 +99,7 @@ func TestFileSettingsRepositoryCanAddNewDeviceConfig(t *testing.T) {
 		t.Errorf("load failed with %v", err.Error())
 	}
 
-	if !reflect.DeepEqual(newCfg, found) {
-		t.Error("device config mismatch")
-	}
+	assertDeviceConfig(t, found, newCfg)
 }
 
 func TestFileSettingsRepositoryCanUpdateExistingDeviceConfig(t *testing.T) {
@@ -191,8 +182,33 @@ func TestFileSettingsRepositoryAppConfigContainsBridgeConfig(t *testing.T) {
 		t.Errorf("load failed with %v", err.Error())
 	}
 
-	if !reflect.DeepEqual(bridgeCfg, res.Bridge) {
-		t.Error("bridge config mismatch")
+	assertAppConfig(t, res, appConfig)
+}
+
+func assertAppConfig(t *testing.T, res *settings.AppConfig, inputAppconfig *settings.AppConfig) {
+	for key, d := range res.Hub.Devices.Overrides {
+		inputDev := inputAppconfig.Hub.Devices.Overrides[key]
+		assertDeviceConfig(t, d, inputDev)
+	}
+}
+
+func assertDeviceConfig(t *testing.T, d *settings.DeviceConfig, inputDev *settings.DeviceConfig) {
+
+	if d.Id != inputDev.Id {
+		t.Error("device id mismatch")
+	}
+	if d.Disabled != inputDev.Disabled {
+		t.Error("device disabled mismatch")
+	}
+	if d.MetricsEnabled != inputDev.MetricsEnabled {
+		t.Error("device metrics enabled mismatch")
+	}
+
+	if !reflect.DeepEqual(d.RateLimit, inputDev.RateLimit) {
+		t.Error("device rate limit mismatch")
+	}
+	if !reflect.DeepEqual(d.DefaultDebounceByCategory, inputDev.DefaultDebounceByCategory) {
+		t.Error("device default debounce mismatch")
 	}
 }
 

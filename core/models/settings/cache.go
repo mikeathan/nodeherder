@@ -64,7 +64,7 @@ func NewDeviceConfigCache(store Repository, appconfig *AppConfig) *DeviceConfigC
 		store:                     store,
 		devicesConfigs:            deviceConfigs,
 		mutex:                     sync.RWMutex{},
-		defaultDebounceByCategory: appconfig.Hub.Devices.Default.DefaultDebounceByCategory,
+		defaultDebounceByCategory: appconfig.Hub.Devices.Defaults.DefaultDebounceByCategory,
 	}
 }
 

@@ -4,14 +4,13 @@
     "config": {
       "hub": {
         "devices": {
-          "default": {
+          "defaults": {
             "disabled": false,
             "history": false,
             "rateLimit": { "value": 60, "unit": "seconds" },
             "defaultDebounceByCategory": {
               "diagnostic": { "value": 300, "unit": "seconds" }
-            },
-            "debounce": {}
+            }
           },
           "overrides": {}
         },
@@ -39,7 +38,7 @@
             "name": "battery",
             "description": "Remaining battery in %, can take up to 24 hours before reported",
             "unit": "%",
-            "data": null,
+            "data": 90.5,
             "type": "numeric",
             "category": "diagnostic",
             "attributes": { "max": 100, "min": 0 },
@@ -49,7 +48,7 @@
             "name": "humidity",
             "description": "Measured relative humidity",
             "unit": "%",
-            "data": null,
+            "data": 61.26,
             "type": "numeric",
             "category": "measurement",
             "access_mode": "read"
@@ -58,7 +57,7 @@
             "name": "linkquality",
             "description": "Link quality (signal strength)",
             "unit": "lqi",
-            "data": null,
+            "data": 29,
             "type": "numeric",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 },
@@ -68,7 +67,7 @@
             "name": "temperature",
             "description": "Measured temperature value",
             "unit": "°C",
-            "data": null,
+            "data": 26.26,
             "type": "numeric",
             "category": "measurement",
             "access_mode": "read"
@@ -77,14 +76,14 @@
             "name": "voltage",
             "description": "Voltage of the battery in millivolts",
             "unit": "mV",
-            "data": null,
+            "data": 2900,
             "type": "numeric",
             "category": "diagnostic",
             "access_mode": "read"
           }
         },
-        "last_seen": "",
-        "availability": "offline"
+        "last_seen": "2025-06-22T19:32:38+01:00",
+        "availability": "online"
       },
       {
         "id": "0x00124b002fa5844e",
@@ -564,7 +563,7 @@
             "name": "current",
             "description": "Instantaneous measured electrical current",
             "unit": "A",
-            "data": 0.35,
+            "data": 0.36,
             "type": "numeric",
             "category": "diagnostic",
             "access_mode": "read"
@@ -573,7 +572,7 @@
             "name": "energy",
             "description": "Sum of consumed energy",
             "unit": "kWh",
-            "data": 637.29,
+            "data": 637.73,
             "type": "numeric",
             "category": "measurement",
             "access_mode": "read"
@@ -582,7 +581,7 @@
             "name": "linkquality",
             "description": "Link quality (signal strength)",
             "unit": "lqi",
-            "data": 21,
+            "data": 29,
             "type": "numeric",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 },
@@ -592,7 +591,7 @@
             "name": "power",
             "description": "Instantaneous measured power",
             "unit": "W",
-            "data": 57,
+            "data": 66,
             "type": "numeric",
             "category": "diagnostic",
             "access_mode": "read"
@@ -619,13 +618,13 @@
             "name": "voltage",
             "description": "Measured electrical potential value",
             "unit": "V",
-            "data": 241,
+            "data": 237,
             "type": "numeric",
             "category": "diagnostic",
             "access_mode": "read"
           }
         },
-        "last_seen": "2025-06-22T18:54:09+01:00",
+        "last_seen": "2025-06-22T19:32:36+01:00",
         "availability": "online"
       },
       {
@@ -717,7 +716,7 @@
             "name": "illuminance",
             "description": "Measured illuminance",
             "unit": "lx",
-            "data": 54,
+            "data": 68,
             "type": "numeric",
             "category": "measurement",
             "access_mode": "read"
@@ -726,7 +725,7 @@
             "name": "linkquality",
             "description": "Link quality (signal strength)",
             "unit": "lqi",
-            "data": 98,
+            "data": 102,
             "type": "numeric",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 },
@@ -780,7 +779,7 @@
             "access_mode": "read"
           }
         },
-        "last_seen": "2025-06-22T18:54:13+01:00",
+        "last_seen": "2025-06-22T19:32:37+01:00",
         "availability": "online"
       },
       {
@@ -960,7 +959,7 @@
             "name": "co2",
             "description": "The measured CO2 (carbon dioxide) value",
             "unit": "ppm",
-            "data": 355,
+            "data": null,
             "type": "numeric",
             "category": "measurement",
             "access_mode": "read"
@@ -969,7 +968,7 @@
             "name": "formaldehyd",
             "description": "The measured formaldehyd value",
             "unit": "µg/m³",
-            "data": 4,
+            "data": null,
             "type": "numeric",
             "category": "measurement",
             "access_mode": "read"
@@ -978,7 +977,7 @@
             "name": "humidity",
             "description": "Measured relative humidity",
             "unit": "%",
-            "data": 58.9,
+            "data": null,
             "type": "numeric",
             "category": "measurement",
             "access_mode": "read"
@@ -987,7 +986,7 @@
             "name": "linkquality",
             "description": "Link quality (signal strength)",
             "unit": "lqi",
-            "data": 32,
+            "data": null,
             "type": "numeric",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 },
@@ -997,7 +996,7 @@
             "name": "pm25",
             "description": "Measured PM2.5 (particulate matter) concentration",
             "unit": "µg/m³",
-            "data": 7,
+            "data": null,
             "type": "numeric",
             "category": "measurement",
             "attributes": { "max": 999, "min": 0 },
@@ -1007,7 +1006,7 @@
             "name": "temperature",
             "description": "Measured temperature value",
             "unit": "°C",
-            "data": 27.1,
+            "data": null,
             "type": "numeric",
             "category": "measurement",
             "access_mode": "read"
@@ -1016,14 +1015,14 @@
             "name": "voc",
             "description": "Measured VOC value",
             "unit": "ppb",
-            "data": 5,
+            "data": null,
             "type": "numeric",
             "category": "measurement",
             "access_mode": "read"
           }
         },
-        "last_seen": "2025-06-22T18:54:01+01:00",
-        "availability": "online"
+        "last_seen": "",
+        "availability": "offline"
       }
     ]
   }

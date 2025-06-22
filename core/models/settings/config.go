@@ -7,7 +7,7 @@ import (
 )
 
 type DeviceSettings struct {
-	Default   *DeviceConfig            `json:"default"`
+	Defaults  *DeviceConfig            `json:"defaults"`
 	Overrides map[string]*DeviceConfig `json:"overrides"`
 }
 
@@ -15,7 +15,7 @@ func (d *DeviceSettings) GetEffectiveConfig(deviceId string) *DeviceConfig {
 	if override, exists := d.Overrides[deviceId]; exists {
 		return override
 	}
-	return d.Default
+	return d.Defaults
 }
 
 func (d *DeviceSettings) GetDebounceForEntity(deviceId, entityName string, entityCategory bridge.ExposeCategory) *utils.TimeInterval {
@@ -27,7 +27,7 @@ func (d *DeviceSettings) GetDebounceForEntity(deviceId, entityName string, entit
 	}
 
 	//  Fall back to category default from base config
-	if debounce, exists := d.Default.DefaultDebounceByCategory[entityCategory]; exists {
+	if debounce, exists := d.Defaults.DefaultDebounceByCategory[entityCategory]; exists {
 		return debounce
 	}
 
@@ -52,7 +52,7 @@ func (d *DeviceSettings) AddOverride(deviceConfig *DeviceConfig) {
 
 func NewDeviceSettings() *DeviceSettings {
 	return &DeviceSettings{
-		Default:   DefaultDeviceConfig(),
+		Defaults:  DefaultDeviceConfig(),
 		Overrides: map[string]*DeviceConfig{},
 	}
 }
@@ -63,7 +63,7 @@ func DefaultDeviceConfig() *DeviceConfig {
 		MetricsEnabled:            false,
 		RateLimit:                 utils.IntervalFromSeconds(60),
 		DefaultDebounceByCategory: map[bridge.ExposeCategory]*utils.TimeInterval{bridge.DiagnosticCategory: utils.IntervalFromSeconds(300)},
-		DebounceOverrides:         map[string]*utils.TimeInterval{},
+		DebounceOverrides:         nil,
 	}
 }
 
@@ -72,8 +72,8 @@ type DeviceConfig struct {
 	Disabled                  bool                                          `json:"disabled"`
 	MetricsEnabled            bool                                          `json:"history"`
 	RateLimit                 *utils.TimeInterval                           `json:"rateLimit"`
-	DefaultDebounceByCategory map[bridge.ExposeCategory]*utils.TimeInterval `json:"defaultDebounceByCategory"`
-	DebounceOverrides         map[string]*utils.TimeInterval                `json:"debounce"`
+	DefaultDebounceByCategory map[bridge.ExposeCategory]*utils.TimeInterval `json:"defaultDebounceByCategory,omitempty"`
+	DebounceOverrides         map[string]*utils.TimeInterval                `json:"debounceOverrides,omitempty"`
 }
 
 func (d *DeviceConfig) RateLimitDuration() time.Duration {
@@ -90,7 +90,7 @@ func NewDeviceConfig(id string) *DeviceConfig {
 		MetricsEnabled:            false,
 		RateLimit:                 utils.IntervalFromSeconds(60), // default to 60 seconds
 		DebounceOverrides:         map[string]*utils.TimeInterval{},
-		DefaultDebounceByCategory: map[bridge.ExposeCategory]*utils.TimeInterval{},
+		DefaultDebounceByCategory: nil,
 	}
 }
 

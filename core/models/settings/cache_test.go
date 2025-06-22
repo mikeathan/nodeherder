@@ -256,7 +256,7 @@ func TestDeviceDebouncer_DiagnosticsDebouncerWhenOverrideIsNotAvailable(t *testi
 	d1.DebounceOverrides = map[string]*utils.TimeInterval{
 		"expose1": utils.IntervalFromSeconds(1),
 	}
-	appConfig.Hub.Devices.Default.DefaultDebounceByCategory[bridge.DiagnosticCategory] = utils.IntervalFromSeconds(5)
+	appConfig.Hub.Devices.Defaults.DefaultDebounceByCategory[bridge.DiagnosticCategory] = utils.IntervalFromSeconds(5)
 
 	appConfig.AddDeviceConfig(d1)
 	cache := settings.NewDeviceConfigCache(&repo, appConfig)
