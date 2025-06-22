@@ -241,3 +241,36 @@ func TestDeviceDebouncer_DebounceExpose(t *testing.T) {
 		t.Error("Second expose4 event should be debounced")
 	}
 }
+
+func TestDeviceDebouncer_DiagnosticsDebouncerWhenOverrideIsNotAvailable(t *testing.T) {
+	repo := mocks.NopSettingsrepo{}
+	now := time.Now()
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return now
+	})
+
+	appConfig := settings.NewAppConfig()
+
+	d1 := settings.NewDeviceConfig("device1")
+	d1.DebounceOverrides = map[string]*utils.TimeInterval{
+		"expose1": utils.IntervalFromSeconds(1),
+	}
+	d1.DefaultDebounceByCategory[bridge.DiagnosticCategory] = utils.IntervalFromSeconds(5)
+	appConfig.AddDeviceConfig(d1)
+	cache := settings.NewDeviceConfigCache(&repo, appConfig)
+	debouncer := settings.NewDeviceDebouncer("device1", cache, mockClock)
+
+
+	// Test Debounced Event (within duration)
+	now = now.Add(1000 * time.Millisecond)
+	mockClock.SetMockTime(now)
+	ok := debouncer.DebounceExpose("expose1", bridge.MeasurementCategory)
+	if !ok {
+		t.Error("Expected to return true")
+	}
+	ok = debouncer.DebounceExpose("expose2", bridge.DiagnosticCategory)
+	if !ok {
+		t.Error("Expected to return true")
+	}
+
+}
