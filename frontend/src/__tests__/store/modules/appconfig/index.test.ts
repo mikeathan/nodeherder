@@ -1,16 +1,7 @@
 import 'jest';
-import {
-  describe,
-  expect,
-  test,
-  beforeEach,
-} from '@jest/globals';
+import { describe, expect, test, beforeEach } from '@jest/globals';
 import { store } from '../../../../store/index';
-import {
-  AppConfig,
-  DeviceSettings,
-  LoggerSettingsType,
-} from '@/types/settings.type';
+import { AppConfig, DeviceConfig, LoggerSettingsType } from '@/types/settings.type';
 
 const mockAppconfig: AppConfig = {
   history: {
@@ -48,25 +39,17 @@ describe('test appconfig module', () => {
   });
 
   test('test appconfig gets initialized', () => {
-    var result = store.getters[
-      'appconfig/initialized'
-    ]() as boolean;
+    var result = store.getters['appconfig/initialized']() as boolean;
     expect(result).toEqual(false);
 
     store.dispatch('appconfig/init', mockAppconfig);
-    var result = store.getters[
-      'appconfig/initialized'
-    ]() as boolean;
+    var result = store.getters['appconfig/initialized']() as boolean;
     expect(result).toEqual(true);
 
-    Object.values(mockAppconfig.devices).forEach(
-      (value) => {
-        const deviceSetting = store.getters[
-          'appconfig/findDeviceSetting'
-        ]((value as DeviceSettings).id) as DeviceSettings;
-        expect(value).toEqual(deviceSetting);
-      }
-    );
+    Object.values(mockAppconfig.devices).forEach((value) => {
+      const deviceSetting = store.getters['appconfig/findDeviceSetting']((value as DeviceConfig).id) as DeviceConfig;
+      expect(value).toEqual(deviceSetting);
+    });
   });
 
   test('test save device settigs saves the device settigs changes', () => {
@@ -80,9 +63,7 @@ describe('test appconfig module', () => {
 
     store.commit('appconfig/setDeviceSetting', dev);
 
-    var deviceSetting = store.getters[
-      'appconfig/findDeviceSetting'
-    ]('x2222222') as DeviceSettings;
+    var deviceSetting = store.getters['appconfig/findDeviceSetting']('x2222222') as DeviceConfig;
 
     expect(deviceSetting.id).toEqual('x2222222');
     expect(deviceSetting.disabled).toEqual(true);
@@ -91,27 +72,19 @@ describe('test appconfig module', () => {
   });
 
   test('test clear device settings, clears the device settings', () => {
-    var result = store.getters[
-      'appconfig/initialized'
-    ]() as boolean;
+    var result = store.getters['appconfig/initialized']() as boolean;
     expect(result).toEqual(false);
     store.dispatch('appconfig/init', mockAppconfig);
 
-    var result = store.getters[
-      'appconfig/initialized'
-    ]() as boolean;
+    var result = store.getters['appconfig/initialized']() as boolean;
     expect(result).toEqual(true);
 
     store.commit('appconfig/clear');
 
-    var result = store.getters[
-      'appconfig/initialized'
-    ]() as boolean;
+    var result = store.getters['appconfig/initialized']() as boolean;
     expect(result).toEqual(false);
 
-    var deviceSetting = store.getters[
-      'appconfig/findDeviceSetting'
-    ]('x2222222') as DeviceSettings;
+    var deviceSetting = store.getters['appconfig/findDeviceSetting']('x2222222') as DeviceConfig;
 
     expect(deviceSetting).toBeUndefined();
   });
@@ -121,14 +94,9 @@ describe('test appconfig module', () => {
 
     mockAppconfig.logger.enableRemoteLogger = true;
 
-    store.commit(
-      'appconfig/setLoggerSettings',
-      mockAppconfig.logger
-    );
+    store.commit('appconfig/setLoggerSettings', mockAppconfig.logger);
 
-    var loggerSetting = store.getters[
-      'appconfig/logger'
-    ]() as LoggerSettingsType;
+    var loggerSetting = store.getters['appconfig/logger']() as LoggerSettingsType;
 
     expect(loggerSetting.enableRemoteLogger).toEqual(true);
   });

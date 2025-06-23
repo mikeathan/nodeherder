@@ -3,7 +3,7 @@
   import { computed } from 'vue';
   import Toggle from '../input/Toggle.vue';
   import InputBox from '../input/InputBox.vue';
-  import { DeviceSettings } from '@/types/settings.type';
+  import { DeviceConfig } from '@/types/settings.type';
   import { ExposeSettingsComponents } from '@/mixins/useSettingsComponents';
 
   const props = defineProps({
@@ -30,7 +30,7 @@
       }
     }
 
-    store.dispatch('hub/saveDeviceSettings', deviceSettings.value as DeviceSettings);
+    store.dispatch('hub/saveDeviceSettings', deviceSettings.value as DeviceConfig);
   }
 
   function isObject(value: any): value is object {

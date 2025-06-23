@@ -8,7 +8,7 @@ import expressWs from 'express-ws';
 import http from 'http';
 import { createRequire } from 'module';
 import { link } from 'fs';
-const hubStateFullPath = '../../docs/hub-state.json';
+const hubStateFullPath = '../../docs/hub_state_new.json';
 const lightMetricsFullPath = './metrics/light.json';
 const temperatureMetricsFullPath = './metrics/temperature.json';
 const presenceMetricsFullPath = './metrics/presence.json';

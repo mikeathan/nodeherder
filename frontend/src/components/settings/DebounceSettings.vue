@@ -4,9 +4,9 @@
   import TimeIntervalEditor from '../controls/TimeInterval.vue';
   import { createTimeIntervalFromSeconds } from '@/contracts/settings';
   import { watch } from 'vue';
-  import { DeviceDebounce } from '@/types/settings.type';
   import { TimeInterval } from '@/types/types.type';
-import { emitOpenExposeSelectionDialog } from '@/contracts/dialog-events';
+  import { emitOpenExposeSelectionDialog } from '@/contracts/dialog-events';
+import { DeviceDebounce } from '@/types/settings.type';
 
   const props = defineProps({
     id: {
@@ -76,14 +76,13 @@ import { emitOpenExposeSelectionDialog } from '@/contracts/dialog-events';
   }
 
   function openAddDeviceExposeDialog() {
-  const dlgProps = {
-    id: props.id,
-    title: 'Select Expose',
-    message: 'Select Expose',
+    const dlgProps = {
+      id: props.id,
+      title: 'Select Expose',
+      message: 'Select Expose',
+    };
+    emitOpenExposeSelectionDialog((args) => addNewExposeDebounce(args), dlgProps);
   }
-  emitOpenExposeSelectionDialog((args) => addNewExposeDebounce(args), dlgProps);
-}
-
 </script>
 
 <template>

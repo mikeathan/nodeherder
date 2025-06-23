@@ -73,6 +73,7 @@ export const WSClientModule: Module<WSClientState, RootState> = {
         }
 
         const obj = JSON.parse(event.data);
+
         switch (obj.type) {
           case 'automations':
             dispatch('automations/init', obj.payload, {

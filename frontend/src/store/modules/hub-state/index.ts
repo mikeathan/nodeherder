@@ -7,7 +7,7 @@ import {
   BridgeSettingsType,
   DashboardGroup,
   DashboardGroups,
-  DeviceSettings,
+  DeviceConfig,
   HistorySettingsType,
   LoggerSettingsType,
 } from '../../../types/settings.type';
@@ -24,6 +24,10 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
   }),
 
   getters: {
+    isInitialized: (state) => (): boolean => {
+      return state.initialized;
+    },
+
     // Device getters
     listAllDevices: (state) => (): Devices => {
       return Object.values(state.deviceMap) as Devices;
@@ -39,8 +43,8 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         return state.deviceMap[id] != null;
       },
 
-    isInitialized: (state) => (): boolean => {
-      return state.initialized;
+    deviceDefaults: (state) => (): DeviceConfig => {
+      return state.appConfig?.hub.devices?.defaults;
     },
 
     // AppConfig getters
@@ -52,8 +56,8 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     dashboardGroups: (state) => (): DashboardGroups => state.appConfig.hub.dashboardGroups,
     findDeviceSetting:
       (state) =>
-      (id: string): DeviceSettings | undefined => {
-        return state.appConfig?.hub.devices[id];
+      (id: string): DeviceConfig | undefined => {
+        return state.appConfig?.hub.devices?.overrides[id];
       },
   },
 
@@ -95,9 +99,9 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     setAppConfig(state, config: AppConfig) {
       state.appConfig = config;
     },
-    setDeviceSetting(state, setting: DeviceSettings) {
+    setDeviceSetting(state, setting: DeviceConfig) {
       if (state.appConfig) {
-        state.appConfig.hub.devices[setting.id] = setting;
+        state.appConfig.hub.devices.overrides[setting.id] = setting;
       }
     },
     setDashboardGroup(state, dashboardGroup: DashboardGroup) {
@@ -142,7 +146,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       commit('setAppConfig', appConfig);
     },
 
-    saveDeviceSettings({ commit, dispatch }, deviceSetting: DeviceSettings) {
+    saveDeviceSettings({ commit, dispatch }, deviceSetting: DeviceConfig) {
       commit('setDeviceSetting', deviceSetting);
       dispatch(
         'ws/emit',

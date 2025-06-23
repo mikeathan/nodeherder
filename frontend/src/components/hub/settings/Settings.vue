@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import HistorySettings from './HistorySettings.vue';
   import LoggerSettings from './LoggerSettings.vue';
-  import DashboardGroupSettings from './DashboardGroupsSettings.vue';
+  import DeviceDefaultSettings from './DeviceDefaultSettings.vue';
 </script>
 
 <template>
@@ -11,12 +11,14 @@
     </template>
     <template #content>
       <div class="pt-3">
+        <DeviceDefaultSettings />
+      </div>
+      <div class="pt-3">
         <HistorySettings />
       </div>
       <div class="pt-3">
         <LoggerSettings />
       </div>
-      
     </template>
   </Card>
 </template>
