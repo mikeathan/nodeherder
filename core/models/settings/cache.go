@@ -287,6 +287,11 @@ func (d *AppConfigCache) SetDeviceConfig(deviceConfig *DeviceConfig) error {
 	return d.deviceCache.Set(deviceConfig)
 }
 
+func (d *AppConfigCache) SetDeviceConfigDefaults() error {
+	// TODO
+
+}
+
 func (d *AppConfigCache) GetDeviceConfig(id string) (*DeviceConfig, error) {
 	return d.deviceCache.Get(id)
 }

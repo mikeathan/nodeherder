@@ -94,17 +94,27 @@ func (h *HubController) registerEventHubEvents() {
 		return err
 	})
 
-	h.eventHub.OnSaveDeviceConfig(func(p interface{}) error {
+	h.eventHub.OnSaveDeviceConfigOverrides(func(p interface{}) error {
 		req := &settings.DeviceConfig{}
 		bytes, _ := json.Marshal(p)
 		err := json.Unmarshal(bytes, &req)
 
 		if err != nil {
-			return fmt.Errorf("OnSaveDeviceConfig failed. Invalid payload type : %v ", err.Error())
+			return fmt.Errorf("OnSaveDeviceConfigOverrides failed. Invalid payload type : %v ", err.Error())
 		}
 		return appconfig.SetDeviceConfig(req)
 	})
 
+
+	h.eventHub.OnSaveDeviceConfigDefaults(func(p interface{}) error {
+		req := &settings.DeviceConfig{}
+		bytes, _ := json.Marshal(p)
+		err := json.Unmarshal(bytes, &req)
+		if err != nil {
+			return fmt.Errorf("OnSaveDeviceConfigDefaults failed. Invalid payload type : %v ", err.Error())
+		}
+		return appconfig.SetDeviceConfigDefaults(req)
+	});
 	h.eventHub.OnSaveDashboardGroup(func(payload interface{}) error {
 		req := &settings.DashboardGroup{}
 		bytes, _ := json.Marshal(payload)

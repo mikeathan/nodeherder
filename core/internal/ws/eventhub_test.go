@@ -789,7 +789,7 @@ func TestSaveConfigMessage(t *testing.T) {
 	}
 }
 
-func TestSaveDeviceConfigMessage(t *testing.T) {
+func TestSaveDeviceConfigOverridesMessage(t *testing.T) {
 
 	inputAppConfig := createAppconfig()
 
@@ -797,7 +797,7 @@ func TestSaveDeviceConfigMessage(t *testing.T) {
 	wsHub := ws.NewWsHub()
 	wsHub.Start()
 
-	wsHub.OnSaveDeviceConfig(func(p interface{}) error {
+	wsHub.OnSaveDeviceConfigOverrides(func(p interface{}) error {
 
 		bytes := []byte(p.(string))
 		payload := &settings.DeviceConfig{}
@@ -835,7 +835,7 @@ func TestSaveDeviceConfigMessage(t *testing.T) {
 	defer wsConn.Close()
 
 	reqBytes, _ := json.Marshal(modifiedDevConfig)
-	wsData := &ws.EventMessage{Type: ws.SaveDeviceConfig, Payload: reqBytes}
+	wsData := &ws.EventMessage{Type: ws.SaveDeviceConfigOverrides, Payload: reqBytes}
 	msg, err := wsData.MarshalJSON()
 	if err != nil {
 		t.Fatal(err.Error())

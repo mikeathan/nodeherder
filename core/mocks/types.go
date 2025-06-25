@@ -147,8 +147,12 @@ func (w *MockEventHub) OnLoadAppConfig(action func() (interface{}, error)) {
 func (w *MockEventHub) OnLoadBridgeConfig(action func() (interface{}, error)) {
 	fmt.Println("Empty OnLoadBridgeConfig")
 }
-func (w *MockEventHub) OnSaveDeviceConfig(func(payload interface{}) error) {
-	fmt.Println("Empty OnSaveDeviceConfig")
+
+func (w *MockEventHub) OnSaveDeviceConfigOverrides(func(payload interface{}) error) {
+	fmt.Println("Empty OnSaveDeviceConfigOverrides")
+}
+func (w *MockEventHub) OnSaveDeviceConfigDefaults(action func(p interface{}) error) {
+	fmt.Println("Empty OnSaveDeviceConfigDefaults")
 }
 
 func (w *MockEventHub) OnSaveHistoryConfig(func(payload interface{}) error) {
@@ -350,8 +354,12 @@ func (w *NopWsServer) OnLoadBridgeConfig(action func() (interface{}, error)) {
 	fmt.Println("WsServer: Mocked OnLoadBridgeConfig")
 }
 
-func (w *NopWsServer) OnSaveDeviceConfig(func(payload interface{}) error) {
-	fmt.Println("WsServer: Mocked OnSaveDeviceConfig")
+func (w *NopWsServer) OnSaveDeviceConfigOverrides(func(payload interface{}) error) {
+	fmt.Println("WsServer: Mocked OnSaveDeviceConfigOverrides")
+}
+
+func (w *NopWsServer) OnSaveDeviceConfigDefaults(action func(payload interface{}) error) {
+	fmt.Println("WsServer: Mocked OnSaveDeviceConfigDefaults")
 }
 func (w *NopWsServer) OnSaveHistoryConfig(func(payload interface{}) error) {
 	fmt.Println("WsServer: Mocked OnSaveHistoryConfig")
