@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { computed } from 'vue';
   import { store } from '../../../store/index';
-  import { HistorySettingsType, HistorySettingsPropsType, DeviceConfig } from '@/types/settings.type';
+  import { HistorySettingsType, HistorySettingsPropsType, DeviceConfig, DeviceSettings } from '@/types/settings.type';
   import InputBox from '../../input/InputBox.vue';
   import Toggle from '@/components/input/Toggle.vue';
   import { isTimeInterval, isDeviceDebounce } from '@/contracts/settings';
@@ -12,27 +12,24 @@
   });
 
   function inputLostFocus(propName: any, propValue: any) {
-    console.log('inputLostFocus', propName, propValue);
-    // save(propName, propValue);
+    save(propName, propValue);
   }
 
-  // function save(propName: HistorySettingsPropsType, propValue: any) {
-  //   if (deviceDefaultSettings.value[propName].value != propValue) {
-  //     deviceDefaultSettings.value[propName].value = propValue;
-  //     store.dispatch('hub/saveHistorySettings', deviceDefaultSettings.value);
-  //   }
-  // }
+  function save<K extends keyof DeviceConfig>(propValue: DeviceConfig[K], key: K) {
+    if (deviceDefaultSettings.value[key] != propValue) {
+      deviceDefaultSettings.value[key] = propValue;
+      console.log('save', key, propValue);
+      store.dispatch('hub/saveDeviceDefaults', deviceDefaultSettings.value);
+    }
+  }
+
   function updateState<K extends keyof DeviceConfig>(enabled: DeviceConfig[K], key: K) {
-    if (enabled === deviceDefaultSettings.value[key]) return;
-
-    deviceDefaultSettings.value[key] = enabled;
+    save(enabled, key);
   }
-
-  TODO;
 </script>
 
 <template>
-  <h3>Device</h3>
+  <h3>Device Defaults</h3>
   <div class="pt-3" />
   <div class="grid grid-nogutter" v-for="(value, key) in deviceDefaultSettings" :key="key">
     <dl class="col-12 md:col-3 text-secondary">
@@ -55,7 +52,7 @@
           @lost-focus="(f) => inputLostFocus(key, f)" />
       </template>
       <template v-else-if="isDeviceDebounce(value)">
-        <DebounceSettings :id="key" :value="value" />
+        <DebounceSettings :id="key" :value="value" :disabled="true" />
       </template>
     </div>
   </div>

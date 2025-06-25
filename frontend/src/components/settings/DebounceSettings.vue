@@ -6,7 +6,7 @@
   import { watch } from 'vue';
   import { TimeInterval } from '@/types/types.type';
   import { emitOpenExposeSelectionDialog } from '@/contracts/dialog-events';
-import { DeviceDebounce } from '@/types/settings.type';
+  import { DeviceDebounce } from '@/types/settings.type';
 
   const props = defineProps({
     id: {
@@ -16,6 +16,10 @@ import { DeviceDebounce } from '@/types/settings.type';
     value: {
       type: Object as PropType<DeviceDebounce>,
       required: true,
+    },
+    disabled: {
+      type: Boolean,
+      default: false,
     },
   });
   const emit = defineEmits<{
@@ -93,20 +97,26 @@ import { DeviceDebounce } from '@/types/settings.type';
         :value="selectedExpose"
         :items="exposeList"
         @updated="(value: any) => { selectedExpose = value }"
-        :disabled="!exposeList.length" />
+        :disabled="!exposeList.length || disabled" />
       <div class="flex ml-2">
         <Button
           icon="pi pi-trash"
           variant="text"
           rounded
           size="small"
-          :disabled="!selectedExpose"
+          :disabled="!selectedExpose || disabled"
           @click="removeSelectedExposeDebounce()" />
-        <Button icon="pi pi-plus" variant="text" rounded size="small" @click="openAddDeviceExposeDialog" />
+        <Button
+          icon="pi pi-plus"
+          variant="text"
+          rounded
+          size="small"
+          @click="openAddDeviceExposeDialog"
+          :disabled="disabled" />
       </div>
     </div>
   </div>
   <div v-if="selectedExpose">
-    <TimeIntervalEditor :id="id" :value="items[selectedExpose]" @update="updateExposeDebounce" />
+    <TimeIntervalEditor :id="id" :value="items[selectedExpose]" @update="updateExposeDebounce" :disabled="disabled" />
   </div>
 </template>

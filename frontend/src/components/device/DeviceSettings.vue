@@ -30,7 +30,7 @@
       }
     }
 
-    store.dispatch('hub/saveDeviceSettings', deviceSettings.value as DeviceConfig);
+    store.dispatch('hub/saveDeviceConfigOverrides', deviceSettings.value as DeviceConfig);
   }
 
   function isObject(value: any): value is object {
