@@ -424,7 +424,7 @@ func TestProcessorStoresMetricsForNewNonBridgeDevice(t *testing.T) {
 	}
 	cfg.MetricsEnabled = true
 	cfg.RateLimit = utils.IntervalFromMilliseconds(10)
-	appCfg.SetDeviceConfig(cfg)
+	appCfg.SetDeviceConfigOverrides(cfg)
 	time.Sleep(500 * time.Millisecond)
 
 	// note:
@@ -526,7 +526,7 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 		cfg.RateLimit = utils.IntervalFromMilliseconds(rt)
 		cfg.Disabled = true
 		cfg.MetricsEnabled = true
-		appCfg.SetDeviceConfig(cfg)
+		appCfg.SetDeviceConfigOverrides(cfg)
 		configs = append(configs, cfg)
 	}
 
@@ -592,7 +592,7 @@ func TestProcessorStoresMetricsForExistingDevice(t *testing.T) {
 	// enable metrics for dial device
 	cfg.MetricsEnabled = true
 	cfg.RateLimit = utils.IntervalFromMilliseconds(10)
-	appCfg.SetDeviceConfig(cfg)
+	appCfg.SetDeviceConfigOverrides(cfg)
 
 	// publish light device
 	payload := map[string]any{"brightness": 10.0, "color_temp": 100}
@@ -1189,7 +1189,7 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 	}
 
 	config.DebounceOverrides["illuminance"] = utils.IntervalFromMilliseconds(500)
-	appConfig.SetDeviceConfig(config)
+	appConfig.SetDeviceConfigOverrides(config)
 
 	wg := &sync.WaitGroup{}
 

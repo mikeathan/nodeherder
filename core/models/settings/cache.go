@@ -283,13 +283,24 @@ func (s *AppConfigCache) DeleteDashboardGroup(name string) error {
 	return nil
 }
 
-func (d *AppConfigCache) SetDeviceConfig(deviceConfig *DeviceConfig) error {
+func (d *AppConfigCache) SetDeviceConfigOverrides(deviceConfig *DeviceConfig) error {
 	return d.deviceCache.Set(deviceConfig)
 }
 
-func (d *AppConfigCache) SetDeviceConfigDefaults() error {
-	// TODO
+func (s *AppConfigCache) SetDeviceConfigDefaults(deviceDefaults *DeviceConfig) error {
 
+	config, err := s.LoadAppConfig()
+	if err != nil {
+		return err
+	}
+
+	config.Hub.Devices.Defaults = deviceDefaults
+	err = s.store.SaveAppConfig(config)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (d *AppConfigCache) GetDeviceConfig(id string) (*DeviceConfig, error) {

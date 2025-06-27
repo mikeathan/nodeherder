@@ -859,6 +859,85 @@ func TestSaveDeviceConfigOverridesMessage(t *testing.T) {
 	}
 }
 
+func TestSaveDeviceConfigDefaulsMessage(t *testing.T) {
+
+	appConfig := settings.NewAppConfig()
+
+	defaults:=settings.DefaultDeviceConfig()
+	defaults.Disabled = true
+	defaults.MetricsEnabled = true
+	appConfig.Hub.Devices.Defaults = defaults
+
+
+
+	TODO
+
+	
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
+	wsHub.OnSaveDeviceConfigOverrides(func(p interface{}) error {
+
+		bytes := []byte(p.(string))
+		payload := &settings.DeviceConfig{}
+
+		err := json.Unmarshal(bytes, &payload)
+		if err != nil {
+			fmt.Println(err.Error())
+			return errors.New("save device config failed. Invalid payload type")
+		}
+
+		if payload.Id != modifiedDevConfig.Id {
+			t.Fatalf("Expected device id %v', got '%v'", modifiedDevConfig.Id, payload.Id)
+		}
+		if payload.Disabled != modifiedDevConfig.Disabled {
+			t.Fatalf("Expected disabled%v', got '%v'", modifiedDevConfig.Disabled, payload.Disabled)
+		}
+
+		if payload.MetricsEnabled != modifiedDevConfig.MetricsEnabled {
+			t.Fatalf("Expected MetricsEnabled %v', got '%v'", modifiedDevConfig.MetricsEnabled, payload.MetricsEnabled)
+		}
+
+		if payload.RateLimit.Unit != modifiedDevConfig.RateLimit.Unit {
+			t.Fatalf("Expected RateLimit.Unit %v', got '%v'", modifiedDevConfig.RateLimit.Unit, payload.RateLimit.Unit)
+		}
+		if payload.RateLimit.Value != modifiedDevConfig.RateLimit.Value {
+			t.Fatalf("Expected RateLimit.Value %v', got '%v'", modifiedDevConfig.RateLimit.Value, payload.RateLimit.Value)
+		}
+		return nil
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	defer s.Close()
+	defer wsConn.Close()
+
+	reqBytes, _ := json.Marshal(modifiedDevConfig)
+	wsData := &ws.EventMessage{Type: ws.SaveDeviceConfigOverrides, Payload: reqBytes}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.OperationSuccess {
+		t.Fatalf("Expected type %v', got '%v'", ws.OperationSuccess, event.Type)
+	}
+}
+
 func TestHandleBridgeDeviceRemoveMessage(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
