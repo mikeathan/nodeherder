@@ -19,6 +19,7 @@ import (
 	"node-herder/models/settings"
 	utils_test "node-herder/testing"
 	"node-herder/utils"
+	"reflect"
 	"strconv"
 	"sync"
 	"testing"
@@ -863,20 +864,16 @@ func TestSaveDeviceConfigDefaulsMessage(t *testing.T) {
 
 	appConfig := settings.NewAppConfig()
 
-	defaults:=settings.DefaultDeviceConfig()
+	defaults := settings.DefaultDeviceConfig()
 	defaults.Disabled = true
 	defaults.MetricsEnabled = true
+
 	appConfig.Hub.Devices.Defaults = defaults
 
-
-
-	TODO
-
-	
 	wsHub := ws.NewWsHub()
 	wsHub.Start()
 
-	wsHub.OnSaveDeviceConfigOverrides(func(p interface{}) error {
+	wsHub.OnSaveDeviceConfigDefaults(func(p interface{}) error {
 
 		bytes := []byte(p.(string))
 		payload := &settings.DeviceConfig{}
@@ -887,22 +884,30 @@ func TestSaveDeviceConfigDefaulsMessage(t *testing.T) {
 			return errors.New("save device config failed. Invalid payload type")
 		}
 
-		if payload.Id != modifiedDevConfig.Id {
-			t.Fatalf("Expected device id %v', got '%v'", modifiedDevConfig.Id, payload.Id)
+		if payload.Id != defaults.Id {
+			t.Fatalf("Expected device id %v', got '%v'", defaults.Id, payload.Id)
 		}
-		if payload.Disabled != modifiedDevConfig.Disabled {
-			t.Fatalf("Expected disabled%v', got '%v'", modifiedDevConfig.Disabled, payload.Disabled)
-		}
-
-		if payload.MetricsEnabled != modifiedDevConfig.MetricsEnabled {
-			t.Fatalf("Expected MetricsEnabled %v', got '%v'", modifiedDevConfig.MetricsEnabled, payload.MetricsEnabled)
+		if payload.Disabled != defaults.Disabled {
+			t.Fatalf("Expected disabled%v', got '%v'", defaults.Disabled, payload.Disabled)
 		}
 
-		if payload.RateLimit.Unit != modifiedDevConfig.RateLimit.Unit {
-			t.Fatalf("Expected RateLimit.Unit %v', got '%v'", modifiedDevConfig.RateLimit.Unit, payload.RateLimit.Unit)
+		if payload.MetricsEnabled != defaults.MetricsEnabled {
+			t.Fatalf("Expected MetricsEnabled %v', got '%v'", defaults.MetricsEnabled, payload.MetricsEnabled)
 		}
-		if payload.RateLimit.Value != modifiedDevConfig.RateLimit.Value {
-			t.Fatalf("Expected RateLimit.Value %v', got '%v'", modifiedDevConfig.RateLimit.Value, payload.RateLimit.Value)
+
+		if payload.RateLimit.Unit != defaults.RateLimit.Unit {
+			t.Fatalf("Expected RateLimit.Unit %v', got '%v'", defaults.RateLimit.Unit, payload.RateLimit.Unit)
+		}
+		if payload.RateLimit.Value != defaults.RateLimit.Value {
+			t.Fatalf("Expected RateLimit.Value %v', got '%v'", defaults.RateLimit.Value, payload.RateLimit.Value)
+		}
+
+		if !reflect.DeepEqual(payload.DefaultDebounceByCategory, defaults.DefaultDebounceByCategory) {
+			t.Fatalf("Expected DefaultDebounceByCategory %v', got '%v'", defaults.DefaultDebounceByCategory, payload.DefaultDebounceByCategory)
+		}
+
+		if payload.DebounceOverrides != nil {
+			t.Fatalf("Expected DebounceOverrides %v', got '%v'", defaults.DebounceOverrides, payload.DebounceOverrides)
 		}
 		return nil
 	})
@@ -913,8 +918,8 @@ func TestSaveDeviceConfigDefaulsMessage(t *testing.T) {
 	defer s.Close()
 	defer wsConn.Close()
 
-	reqBytes, _ := json.Marshal(modifiedDevConfig)
-	wsData := &ws.EventMessage{Type: ws.SaveDeviceConfigOverrides, Payload: reqBytes}
+	reqBytes, _ := json.Marshal(defaults)
+	wsData := &ws.EventMessage{Type: ws.SaveDeviceConfigDefaults, Payload: reqBytes}
 	msg, err := wsData.MarshalJSON()
 	if err != nil {
 		t.Fatal(err.Error())
