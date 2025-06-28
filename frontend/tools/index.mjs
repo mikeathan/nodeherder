@@ -387,9 +387,12 @@ app.ws('/ws', async function (ws) {
         const dashboardGroup = obj.payload;
         appConfig.hub.dashboardGroups[dashboardGroup.name] = dashboardGroup;
         break;
-      case 'saveDeviceConfig':
-        var deviceId = obj.payload.id;
-        appConfig.hub.devices[deviceId] = obj.payload;
+      case 'saveDeviceConfigOverrides':
+        appConfig.hub.devices.overrides[deviceId] = obj.payload;
+        sendOperationSuccess(ws);
+        break;
+      case 'saveDeviceConfigDefaults':
+        appConfig.hub.devices.defaults = obj.payload;
         sendOperationSuccess(ws);
         break;
       case 'saveLoggerConfig':

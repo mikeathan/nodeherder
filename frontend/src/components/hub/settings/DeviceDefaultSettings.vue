@@ -19,7 +19,7 @@
     if (deviceDefaultSettings.value[key] != propValue) {
       deviceDefaultSettings.value[key] = propValue;
       console.log('save', key, propValue);
-      store.dispatch('hub/saveDeviceDefaults', deviceDefaultSettings.value);
+      store.dispatch('hub/saveDeviceConfigDefaults', deviceDefaultSettings.value);
     }
   }
 

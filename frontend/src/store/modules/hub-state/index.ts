@@ -100,7 +100,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     setAppConfig(state, config: AppConfig) {
       state.appConfig = config;
     },
-    setDeviceDefaults(state, defaults: DeviceConfig) {
+    setDeviceDeConfigfaults(state, defaults: DeviceConfig) {
       state.appConfig.hub.devices.defaults = defaults;
     },
     setDeviceConfigOverrides(state, setting: DeviceConfig) {
@@ -155,8 +155,19 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       dispatch(
         'ws/emit',
         {
-          event: 'saveDeviceConfig', ????
+          event: 'saveDeviceConfigOverrides',
           message: deviceSetting,
+        },
+        { root: true }
+      );
+    },
+    saveDeviceConfigDefaults({ commit, dispatch }, config: DeviceConfig) {
+      commit('setDeviceDeConfigfaults', config);
+      dispatch(
+        'ws/emit',
+        {
+          event: 'saveDeviceConfigDefaults',
+          message: config,
         },
         { root: true }
       );
@@ -199,19 +210,6 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         },
         { root: true }
       );
-    },
-
-    saveDeviceDefaults({ commit, dispatch }, config: DeviceConfig) {
-      commit('setDeviceDefaults', config);
-      console.log('TODO: emit saveDeviceDefaults or save hub ');
-      // dispatch(
-      //   'ws/emit',
-      //   {
-      //     event: '',
-      //     message: config,
-      //   },
-      //   { root: true }
-      // );
     },
     saveLoggerSettings({ commit, dispatch }, loggerSetings: LoggerSettingsType) {
       commit('setLoggerSettings', loggerSetings);
