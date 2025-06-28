@@ -12,7 +12,17 @@
               "diagnostic": { "value": 300, "unit": "seconds" }
             }
           },
-          "overrides": {}
+          "overrides": {
+            "0x00124b0029207763": {
+              "id": "0x00124b0029207763",
+              "disabled": true,
+              "history": false,
+              "rateLimit": { "value": 50, "unit": "seconds" },
+              "debounceOverrides": {
+                "linkquality": { "value": 5, "unit": "seconds" }
+              }
+            }
+          }
         },
         "history": {
           "sleeptTmeout": { "value": 12, "unit": "hours" },

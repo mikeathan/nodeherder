@@ -42,7 +42,6 @@
     save(propName, { ...propValue });
   }
 
-  todo;
 </script>
 
 <template>
