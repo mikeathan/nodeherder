@@ -388,12 +388,25 @@ app.ws('/ws', async function (ws) {
         appConfig.hub.dashboardGroups[dashboardGroup.name] = dashboardGroup;
         break;
       case 'saveDeviceConfigOverrides':
-        appConfig.hub.devices.overrides[deviceId] = obj.payload;
-        sendOperationSuccess(ws);
+        {
+          const deviceId = obj.payload.id;
+          if (deviceId in appConfig.hub.devices.overrides == false) {
+            appConfig.hub.devices.overrides[deviceId] = {};
+          }
+          appConfig.hub.devices.overrides[deviceId] = obj.payload;
+          sendOperationSuccess(ws);
+        }
         break;
       case 'saveDeviceConfigDefaults':
         appConfig.hub.devices.defaults = obj.payload;
         sendOperationSuccess(ws);
+        break;
+      case 'deleteDeviceConfigOverrides':
+        {
+          const deviceId = obj.payload;
+          delete appConfig.hub.devices.overrides[deviceId];
+          sendOperationSuccess(ws);
+        }
         break;
       case 'saveLoggerConfig':
         appConfig.hub.logger = obj.payload;

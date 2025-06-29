@@ -25,14 +25,15 @@ const (
 	DeviceRemove            = "deviceRemove"
 	DeviceInterview         = "deviceInterview"
 
-	BridgePermitJoin          = "bridgePermitJoin"
-	SaveLoggerConfig          = "saveLoggerConfig"
-	SaveHistoryConfig         = "saveHistoryConfig"
-	SaveDeviceConfigOverrides = "saveDeviceConfigOverrides"
-	SaveDeviceConfigDefaults  = "saveDeviceConfigDefaults"
-	SaveDashboardGroup        = "saveDashboardGroup"
-	DeleteDashboardGroup      = "deleteDashboardGroup"
-	LoadAppconfig             = "loadAppConfig"
+	BridgePermitJoin            = "bridgePermitJoin"
+	SaveLoggerConfig            = "saveLoggerConfig"
+	SaveHistoryConfig           = "saveHistoryConfig"
+	SaveDeviceConfigOverrides   = "saveDeviceConfigOverrides"
+	DeleteDeviceConfigOverrides = "deleteDeviceConfigOverrides"
+	SaveDeviceConfigDefaults    = "saveDeviceConfigDefaults"
+	SaveDashboardGroup          = "saveDashboardGroup"
+	DeleteDashboardGroup        = "deleteDashboardGroup"
+	LoadAppconfig               = "loadAppConfig"
 
 	LoadMetrics = "loadMetrics"
 
@@ -75,6 +76,7 @@ type EventHub interface {
 	OnLoadAppConfig(action func() (interface{}, error))
 	OnLoadBridgeConfig(action func() (interface{}, error))
 	OnSaveDeviceConfigOverrides(func(payload interface{}) error)
+	OnDeleteDeviceConfigOverrides(func(payload interface{}) error)
 	OnSaveDeviceConfigDefaults(func(payload interface{}) error)
 	OnSaveHistoryConfig(func(payload interface{}) error)
 	OnSaveLoggerConfig(func(payload interface{}) error)
@@ -85,57 +87,59 @@ type EventHub interface {
 }
 
 type eventHubImpl struct {
-	server                      WebSocket
-	onLoadAutomations           func() interface{}
-	onLoadDevices               func() interface{}
-	onLoadDeviceList            (func([]string) interface{})
-	onLoadDevice                func(id string) (interface{}, error)
-	onLoadMetrics               func(interface{}) (interface{}, error)
-	onSaveAutomation            func(interface{}) error
-	onDeviceSetValue            func(interface{}) error
-	onDeviceRename              func(interface{}) error
-	onDeviceRemove              func(interface{}) error
-	onDeviceInterview           func(interface{}) error
-	onBridgePermitJoin          func(interface{}) error
-	onDeleteAutomation          func(interface{}) (interface{}, error)
-	onDeleteAutomationTrigger   func(interface{}) (interface{}, error)
-	onLoadAppConfig             func() (interface{}, error)
-	onLoadBridgeConfig          func() (interface{}, error)
-	onSaveDeviceConfigOverrides func(interface{}) error
-	onSaveDeviceConfigDefaults  func(interface{}) error
-	onSaveHistoryConfig         func(interface{}) error
-	onSaveLoggerConfig          func(interface{}) error
-	onSaveDashboardGroup        func(interface{}) error
-	onDeleteDashboardGroup      func(payload interface{}) error
+	server                        WebSocket
+	onLoadAutomations             func() interface{}
+	onLoadDevices                 func() interface{}
+	onLoadDeviceList              (func([]string) interface{})
+	onLoadDevice                  func(id string) (interface{}, error)
+	onLoadMetrics                 func(interface{}) (interface{}, error)
+	onSaveAutomation              func(interface{}) error
+	onDeviceSetValue              func(interface{}) error
+	onDeviceRename                func(interface{}) error
+	onDeviceRemove                func(interface{}) error
+	onDeviceInterview             func(interface{}) error
+	onBridgePermitJoin            func(interface{}) error
+	onDeleteAutomation            func(interface{}) (interface{}, error)
+	onDeleteAutomationTrigger     func(interface{}) (interface{}, error)
+	onLoadAppConfig               func() (interface{}, error)
+	onLoadBridgeConfig            func() (interface{}, error)
+	onSaveDeviceConfigOverrides   func(interface{}) error
+	onDeleteDeviceConfigOverrides func(interface{}) error
+	onSaveDeviceConfigDefaults    func(interface{}) error
+	onSaveHistoryConfig           func(interface{}) error
+	onSaveLoggerConfig            func(interface{}) error
+	onSaveDashboardGroup          func(interface{}) error
+	onDeleteDashboardGroup        func(payload interface{}) error
 
 	requestContext hub.Context
 }
 
 func NewWsHub() EventHub {
 	return &eventHubImpl{
-		server:                      NewWebSocket(),
-		onSaveAutomation:            func(payload interface{}) error { return nil },
-		onLoadMetrics:               func(interface{}) (interface{}, error) { return nil, nil },
-		onDeleteAutomation:          func(payload interface{}) (interface{}, error) { return nil, nil },
-		onDeleteAutomationTrigger:   func(payload interface{}) (interface{}, error) { return nil, nil },
-		onDeviceSetValue:            func(payload interface{}) error { return nil },
-		onDeviceRename:              func(payload interface{}) error { return nil },
-		onDeviceRemove:              func(payload interface{}) error { return nil },
-		onDeviceInterview:           func(payload interface{}) error { return nil },
-		onBridgePermitJoin:          func(payload interface{}) error { return nil },
-		onLoadDevice:                func(id string) (interface{}, error) { return nil, nil },
-		onLoadDeviceList:            func(ids []string) interface{} { return nil },
-		onLoadDevices:               func() interface{} { return nil },
-		onLoadAutomations:           func() interface{} { return nil },
-		onLoadAppConfig:             func() (interface{}, error) { return nil, nil },
-		onLoadBridgeConfig:          func() (interface{}, error) { return nil, nil },
-		onSaveDeviceConfigOverrides: func(payload interface{}) error { return nil },
-		onSaveDeviceConfigDefaults:  func(payload interface{}) error { return nil },
-		onSaveHistoryConfig:         func(payload interface{}) error { return nil },
-		onSaveLoggerConfig:          func(payload interface{}) error { return nil },
-		onSaveDashboardGroup:        func(payload interface{}) error { return nil },
-		onDeleteDashboardGroup:      func(payload interface{}) error { return nil },
-		requestContext:              NewRequestContext(),
+		server:                        NewWebSocket(),
+		onSaveAutomation:              func(payload interface{}) error { return nil },
+		onLoadMetrics:                 func(interface{}) (interface{}, error) { return nil, nil },
+		onDeleteAutomation:            func(payload interface{}) (interface{}, error) { return nil, nil },
+		onDeleteAutomationTrigger:     func(payload interface{}) (interface{}, error) { return nil, nil },
+		onDeviceSetValue:              func(payload interface{}) error { return nil },
+		onDeviceRename:                func(payload interface{}) error { return nil },
+		onDeviceRemove:                func(payload interface{}) error { return nil },
+		onDeviceInterview:             func(payload interface{}) error { return nil },
+		onBridgePermitJoin:            func(payload interface{}) error { return nil },
+		onLoadDevice:                  func(id string) (interface{}, error) { return nil, nil },
+		onLoadDeviceList:              func(ids []string) interface{} { return nil },
+		onLoadDevices:                 func() interface{} { return nil },
+		onLoadAutomations:             func() interface{} { return nil },
+		onLoadAppConfig:               func() (interface{}, error) { return nil, nil },
+		onLoadBridgeConfig:            func() (interface{}, error) { return nil, nil },
+		onSaveDeviceConfigOverrides:   func(payload interface{}) error { return nil },
+		onDeleteDeviceConfigOverrides: func(payload interface{}) error { return nil },
+		onSaveDeviceConfigDefaults:    func(payload interface{}) error { return nil },
+		onSaveHistoryConfig:           func(payload interface{}) error { return nil },
+		onSaveLoggerConfig:            func(payload interface{}) error { return nil },
+		onSaveDashboardGroup:          func(payload interface{}) error { return nil },
+		onDeleteDashboardGroup:        func(payload interface{}) error { return nil },
+		requestContext:                NewRequestContext(),
 	}
 }
 
@@ -185,6 +189,10 @@ func (h *eventHubImpl) OnLoadBridgeConfig(action func() (interface{}, error)) {
 
 func (h *eventHubImpl) OnSaveDeviceConfigOverrides(action func(payload interface{}) error) {
 	h.onSaveDeviceConfigOverrides = action
+}
+
+func (h *eventHubImpl) OnDeleteDeviceConfigOverrides(action func(payload interface{}) error) {
+	h.onDeleteDeviceConfigOverrides = action
 }
 
 func (h *eventHubImpl) OnSaveDeviceConfigDefaults(action func(payload interface{}) error) {
@@ -314,6 +322,9 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 
 	case SaveDeviceConfigOverrides:
 		c.executeAction(eventMsg.Payload, c.onSaveDeviceConfigOverrides, true)
+
+	case DeleteDeviceConfigOverrides:
+		c.executeAction(eventMsg.Payload, c.onDeleteDeviceConfigOverrides, true)
 
 	case SaveDeviceConfigDefaults:
 		c.executeAction(eventMsg.Payload, c.onSaveDeviceConfigDefaults, true)

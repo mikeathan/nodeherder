@@ -103,6 +103,11 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     setDeviceDeConfigfaults(state, defaults: DeviceConfig) {
       state.appConfig.hub.devices.defaults = defaults;
     },
+    removeDeviceConfigOverrides(state, setting: DeviceConfig) {
+      if (state.appConfig) {
+        delete state.appConfig.hub.devices.overrides[setting.id];
+      }
+    },
     setDeviceConfigOverrides(state, setting: DeviceConfig) {
       if (state.appConfig) {
         state.appConfig.hub.devices.overrides[setting.id] = setting;
@@ -161,6 +166,18 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         { root: true }
       );
     },
+    deleteDeviceConfigOverrides({ commit, dispatch }, deviceSetting: DeviceConfig) {
+      commit('removeDeviceConfigOverrides', deviceSetting);
+      dispatch(
+        'ws/emit',
+        {
+          event: 'deleteDeviceConfigOverrides',
+          message: deviceSetting.id,
+        },
+        { root: true }
+      );
+    },
+
     saveDeviceConfigDefaults({ commit, dispatch }, config: DeviceConfig) {
       commit('setDeviceDeConfigfaults', config);
       dispatch(

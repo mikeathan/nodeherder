@@ -2,6 +2,7 @@ package repository
 
 import (
 	"encoding/json"
+	"errors"
 	"node-herder/models/settings"
 	"node-herder/utils/storage"
 )
@@ -124,6 +125,19 @@ func (s *FileSettingsRepo) SaveDeviceConfig(deviceConfig *settings.DeviceConfig)
 	}
 
 	config.Hub.Devices.AddOverride(deviceConfig)
+	return s.SaveAppConfig(config)
+}
+
+func (s *FileSettingsRepo) DeleteDeviceConfig(id string) error {
+	config, err := s.Load()
+	if err != nil {
+		return err
+	}
+
+	if ok := config.Hub.Devices.DeleteOverride(id); !ok {
+		return errors.New("device config not found")
+	}
+
 	return s.SaveAppConfig(config)
 }
 

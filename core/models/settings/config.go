@@ -50,6 +50,15 @@ func (d *DeviceSettings) AddOverride(deviceConfig *DeviceConfig) {
 	d.Overrides[deviceConfig.Id] = deviceConfig
 }
 
+func (d *DeviceSettings) DeleteOverride(deviceId string) bool {
+	if _, ok := d.Overrides[deviceId]; !ok {
+		return false
+	}
+
+	delete(d.Overrides, deviceId)
+	return true
+}
+
 func NewDeviceSettings() *DeviceSettings {
 	return &DeviceSettings{
 		Defaults:  DefaultDeviceConfig(),

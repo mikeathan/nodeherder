@@ -8,5 +8,6 @@ type Repository interface {
 	SaveHubConfig(hubConfig *HubConfig) error
 	LoadOrDefaultDeviceConfig(id string) (*DeviceConfig, error)
 	SaveDeviceConfig(deviceConfig *DeviceConfig) error
+	DeleteDeviceConfig(id string) error
 	Close() error
 }

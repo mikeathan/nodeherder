@@ -112,6 +112,19 @@ func (d *DeviceConfigCache) Set(deviceConfig *DeviceConfig) error {
 	return d.store.SaveDeviceConfig(deviceConfig)
 }
 
+func (d *DeviceConfigCache) Delete(id string) error {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	err := d.store.DeleteDeviceConfig(id)
+	if err != nil {
+		return err
+	}
+
+	delete(d.devicesConfigs, id)
+	return nil
+}
+
 func (d *DeviceConfigCache) DeleteDebounce(id string, exposeName string) bool {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
@@ -287,6 +300,11 @@ func (d *AppConfigCache) SetDeviceConfigOverrides(deviceConfig *DeviceConfig) er
 	return d.deviceCache.Set(deviceConfig)
 }
 
+func (d *AppConfigCache) DeleteDeviceConfigOverrides(id string) error {
+
+	return d.deviceCache.Delete(id)
+
+}
 func (s *AppConfigCache) SetDeviceConfigDefaults(deviceDefaults *DeviceConfig) error {
 
 	config, err := s.LoadAppConfig()

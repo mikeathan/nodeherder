@@ -73,6 +73,10 @@
   function isObject(value: any): value is object {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
   }
+  function deleteOverride() {
+    localOverride.value = null;
+    store.dispatch('hub/deleteDeviceConfigOverrides', props.id);
+  }
 
   // TODO: needs refactoring to emit only if sth has changed but i have problesm with new debouncer map prop
   function inputUpdated(propName: keyof DeviceConfig, propValue: any) {
@@ -84,33 +88,36 @@
   <div v-if="!deviceSettings">
     <Button @click="createOverride" icon="pi pi-plus" label="Create Override" size="small" />
   </div>
-  <div v-else class="grid col-12 align-items-center grid-nogutter" v-for="(value, key) in filteredSettings" :key="key">
-    <dl class="col-12 md:col-3">
-      <dt class="text-secondary">
-        <strong> {{ key }}</strong>
-      </dt>
-    </dl>
-    <div class="md:col-4">
-      <div v-if="ExposeSettingsComponents[key]">
-        <component
-          :is="ExposeSettingsComponents[key]"
-          v-bind="{
-            id: props.id,
-            value: value,
-          }"
-          @update="(v:any) => inputUpdated(key as keyof DeviceConfig, v)" />
-      </div>
-      <div v-else-if="typeof value === 'boolean'">
-        <Toggle :value="value" :valueOn="true" :valueOff="false" @update="(v) => toggleChanged(key, v)"> </Toggle>
-      </div>
-      <div v-else>
-        <InputBox
-          :value="value"
-          :disabled="typeof value !== 'number'"
-          :is-numeric="typeof value === 'number'"
-          @lost-focus="(f) => inputLostFocus(key, f)">
-        </InputBox>
+  <div v-else>
+    <div class="grid col-12 align-items-center grid-nogutter" v-for="(value, key) in filteredSettings" :key="key">
+      <dl class="col-12 md:col-3">
+        <dt class="text-secondary">
+          <strong> {{ key }}</strong>
+        </dt>
+      </dl>
+      <div class="md:col-4">
+        <div v-if="ExposeSettingsComponents[key]">
+          <component
+            :is="ExposeSettingsComponents[key]"
+            v-bind="{
+              id: props.id,
+              value: value,
+            }"
+            @update="(v:any) => inputUpdated(key as keyof DeviceConfig, v)" />
+        </div>
+        <div v-else-if="typeof value === 'boolean'">
+          <Toggle :value="value" :valueOn="true" :valueOff="false" @update="(v) => toggleChanged(key, v)"> </Toggle>
+        </div>
+        <div v-else>
+          <InputBox
+            :value="value"
+            :disabled="typeof value !== 'number'"
+            :is-numeric="typeof value === 'number'"
+            @lost-focus="(f) => inputLostFocus(key, f)">
+          </InputBox>
+        </div>
       </div>
     </div>
+    <Button label="Delete Override" icon="pi pi-trash" size="small" severity="danger" @click="deleteOverride" />
   </div>
 </template>
