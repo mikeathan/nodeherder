@@ -1,4 +1,4 @@
-import { AppConfig, DeviceDebounce, DeviceSettings } from '@/types/settings.type';
+import { AppConfig, DeviceConfig, DeviceDebounce, DeviceSettings } from '@/types/settings.type';
 import { TimeInterval, TimeUnit } from '@/types/types.type';
 
 export function isTimeInterval(obj: any): obj is TimeInterval {
@@ -22,6 +22,16 @@ export function createTimeIntervalFromMinutes(minutes: number): TimeInterval {
   return { value: minutes, unit: 'minutes' };
 }
 
+export function createDeviceConfigOverride(id:string): DeviceConfig {
+  return {
+    id: id,
+    disabled: false,
+    metricsEnabled: false,
+    rateLimit: createTimeIntervalFromSeconds(5),
+    defaultDebounceByCategory: {},
+    debounceOverrides: {},
+  } as DeviceConfig;
+}
 export function createAppconfig(): AppConfig {
   return {
     hub: {
