@@ -105,19 +105,19 @@ func (h *HubController) registerEventHubEvents() {
 		return appconfig.SetDeviceConfigOverrides(req)
 	})
 
-	h.eventHub.OnSaveDeviceConfigDefaults((func(p interface{}) error {
+	h.eventHub.OnDeleteDeviceConfigOverrides((func(p interface{}) error {
 		bytes, _ := json.Marshal(p)
 		payload := make(map[string]interface{})
 		err := json.Unmarshal(bytes, &payload)
 		if err != nil {
-			return fmt.Errorf("OnSaveDeviceConfigDefaults failed. Invalid payload type : %v ", err.Error())
+			return fmt.Errorf("OnDeleteDeviceConfigOverrides failed. Invalid payload type : %v ", err.Error())
 		}
 
 		id, ok := payload["id"].(string)
 		if !ok {
-			return fmt.Errorf("OnSaveDeviceConfigDefaults failed. Invalid payload type missing group id")
+			return fmt.Errorf("OnDeleteDeviceConfigOverrides failed. Invalid payload type missing group id")
 		}
-		return appconfig.(req)
+		return appconfig.DeleteDeviceConfigOverrides(id)
 	}))
 
 	h.eventHub.OnSaveDeviceConfigDefaults(func(p interface{}) error {

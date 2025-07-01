@@ -155,6 +155,10 @@ func (w *MockEventHub) OnSaveDeviceConfigDefaults(action func(p interface{}) err
 	fmt.Println("Empty OnSaveDeviceConfigDefaults")
 }
 
+func (w *MockEventHub) OnDeleteDeviceConfigOverrides(action func(p interface{}) error) {
+	fmt.Println("Empty OnDeleteDeviceConfigOverrides")
+}
+
 func (w *MockEventHub) OnSaveHistoryConfig(func(payload interface{}) error) {
 	fmt.Println("Empty OnSaveHistoryConfig")
 }
@@ -364,7 +368,9 @@ func (w *NopWsServer) OnSaveDeviceConfigDefaults(action func(payload interface{}
 func (w *NopWsServer) OnSaveHistoryConfig(func(payload interface{}) error) {
 	fmt.Println("WsServer: Mocked OnSaveHistoryConfig")
 }
-
+func (w *NopWsServer) OnDeleteDeviceConfigOverrides(action func(payload interface{}) error) {
+	fmt.Println("WsServer: Mocked OnSavOnDeleteDeviceConfigOverrideseDeviceConfig")
+}
 func (w NopWsServer) OnSaveLoggerConfig(action func(payload interface{}) error) {
 	fmt.Println("WsServer: Mocked OnSaveLoggerConfig")
 }
@@ -531,6 +537,12 @@ func (s *NopSettingsrepo) SaveDeviceConfig(deviceConfig *settings.DeviceConfig) 
 	fmt.Println("Mocked settingsRepo SaveDeviceConfig")
 	return nil
 }
+
+func (s *NopSettingsrepo) DeleteDeviceConfig(id string) error {
+	fmt.Println("Mocked settingsRepo DeleteDeviceConfig")
+	return nil
+}
+
 func (s *NopSettingsrepo) Close() error {
 	fmt.Println("Mocked settingsRepo Close")
 	return nil
@@ -613,6 +625,7 @@ func (s *NopAppStore) SaveDeviceConfig(deviceconfig *settings.DeviceConfig) erro
 	fmt.Println("Mocked store SaveDeviceConfig")
 	return nil
 }
+
 func (s *NopAppStore) StoreDevice(friendlyName string, device *devices.Device) error {
 	fmt.Println("Mocked store StoreDevice")
 

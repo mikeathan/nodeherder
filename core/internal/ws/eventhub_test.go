@@ -860,6 +860,63 @@ func TestSaveDeviceConfigOverridesMessage(t *testing.T) {
 	}
 }
 
+func TestDeleteDeviceConfigOverridesMessage(t *testing.T) {
+
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
+	req := make(map[string]interface{})
+	req["id"] = "x0333444"
+	wsHub.OnDeleteDeviceConfigOverrides(func(p interface{}) error {
+
+		bytes := []byte(p.(string))
+		payload := make(map[string]interface{})
+
+		err := json.Unmarshal(bytes, &payload)
+
+		if err != nil {
+			fmt.Println(err.Error())
+			return errors.New("OnDeleteDeviceConfigOverrides failed. Invalid payload type")
+		}
+
+		id := payload["id"].(string)
+		if id != "x0333444" {
+			t.Fatalf("Expected device id %v', got '%v'", "x0333444", id)
+		}
+		return nil
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	defer s.Close()
+	defer wsConn.Close()
+
+	reqBytes, _ := json.Marshal(req)
+	wsData := &ws.EventMessage{Type: ws.DeleteDeviceConfigOverrides, Payload: reqBytes}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.OperationSuccess {
+		t.Fatalf("Expected type %v', got '%v'", ws.OperationSuccess, event.Type)
+	}
+}
+
 func TestSaveDeviceConfigDefaulsMessage(t *testing.T) {
 
 	appConfig := settings.NewAppConfig()

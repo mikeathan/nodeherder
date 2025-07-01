@@ -95,7 +95,7 @@ func (s *FileSettingsRepo) LoadOrDefaultDeviceConfig(id string) (*settings.Devic
 	}
 
 	// return default device config
-	return appConfig.Hub.Devices.Defaults, nil
+	return appConfig.Hub.Devices.Defaults, nil WRONG HERE 
 }
 
 func (s *FileSettingsRepo) SaveHistoryConfig(historyConfig *settings.HistoryConfig) error {
