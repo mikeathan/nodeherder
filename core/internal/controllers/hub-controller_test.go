@@ -551,8 +551,8 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 	}
 }
 
-TO FIX
 
+to fix
 func TestHubDeletesgDeviceConfigOverride(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}

@@ -103,6 +103,17 @@ func NewDeviceConfig(id string) *DeviceConfig {
 	}
 }
 
+func NewDeviceConfigFrom(config *DeviceConfig) *DeviceConfig {
+	return &DeviceConfig{
+		Id:                        config.Id,
+		Disabled:                  config.Disabled,
+		MetricsEnabled:            config.MetricsEnabled,
+		RateLimit:                 config.RateLimit,
+		DebounceOverrides:         config.DebounceOverrides,
+		DefaultDebounceByCategory: config.DefaultDebounceByCategory,
+	}
+}
+
 type HistoryConfig struct {
 	SleepTimeout *utils.TimeInterval `json:"sleeptTmeout"`
 	ExpireAt     *utils.TimeInterval `json:"expireAt"`
