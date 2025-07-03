@@ -321,7 +321,7 @@ func (s *AppConfigCache) SetDeviceConfigDefaults(deviceDefaults *DeviceConfig) e
 	return nil
 }
 
-func (d *AppConfigCache) GetDeviceConfigOverrides(id string) (*DeviceConfig, error) {
+func (d *AppConfigCache) GetDeviceConfig(id string) (*DeviceConfig, error) {
 	return d.deviceCache.Get(id)
 }
 

@@ -418,7 +418,7 @@ func TestProcessorStoresMetricsForNewNonBridgeDevice(t *testing.T) {
 	}
 
 	// enable metrics for light device.
-	cfg, err := appCfg.GetDeviceConfigOverrides(d.Id)
+	cfg, err := appCfg.GetDeviceConfig(d.Id)
 	if err != nil {
 		t.Fatalf("device not found. err %v ", err)
 	}
@@ -517,7 +517,7 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 
 	configs := []*settings.DeviceConfig{}
 	for id, device := range devices {
-		cfg, err := appCfg.GetDeviceConfigOverrides(device.Id)
+		cfg, err := appCfg.GetDeviceConfig(device.Id)
 		if err != nil {
 			t.Fatalf("device not found. err %v ", err)
 		}
@@ -532,7 +532,7 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 
 	// assert new stored values
 	for id, device := range devices {
-		cfg, err := appCfg.GetDeviceConfigOverrides(device.Id)
+		cfg, err := appCfg.GetDeviceConfig(device.Id)
 		if err != nil {
 			t.Fatalf("device not found. err %v ", err)
 		}
@@ -551,9 +551,7 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 	}
 }
 
-
-to fix
-func TestHubDeletesgDeviceConfigOverride(t *testing.T) {
+func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
@@ -578,7 +576,7 @@ func TestHubDeletesgDeviceConfigOverride(t *testing.T) {
 	}
 	defer cleanup()
 
-	appCfg := store.AppConfig()
+	appCache := store.AppConfig()
 	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
@@ -586,7 +584,7 @@ func TestHubDeletesgDeviceConfigOverride(t *testing.T) {
 	//  SETUP END
 
 	for id, device := range devices {
-		cfg, err := appCfg.GetDeviceConfigOverrides(device.Id)
+		cfg, err := appCache.GetDeviceConfig(device.Id)
 		if err != nil {
 			t.Fatalf("device not found. err %v ", err)
 		}
@@ -595,25 +593,114 @@ func TestHubDeletesgDeviceConfigOverride(t *testing.T) {
 		cfg.RateLimit = utils.IntervalFromMilliseconds(rt)
 		cfg.Disabled = true
 		cfg.MetricsEnabled = true
-		appCfg.SetDeviceConfigOverrides(cfg)
+		appCache.SetDeviceConfigOverrides(cfg)
 	}
 
-	//assert config override exists
-	cfg, err := appCfg.GetDeviceConfigOverrides(dialDevice.Id)
+	// assert config override exists
+	cfg, err := appCache.GetDeviceConfig(dialDevice.Id)
 	if err != nil {
 		t.Fatalf("device not found. err %v ", err)
 	}
 
-	fmt.Print(cfg)
-
-	err = appCfg.DeleteDeviceConfigOverrides(dialDevice.Id)
+	// expected device config values to match with expected overrides values
+	expectedMilliseconds := 2
+	expectedDisabled := true
+	expectedMetricsEnabled := true
+	if cfg.Disabled != expectedDisabled && cfg.MetricsEnabled != expectedMetricsEnabled && cfg.RateLimit.Value != expectedMilliseconds {
+		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", expectedMilliseconds, cfg.RateLimit.Value)
+		t.Fatalf("invalid config override. want expectedDisabled %v got %v", expectedDisabled, cfg.Disabled)
+		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", expectedMetricsEnabled, cfg.MetricsEnabled)
+	}
+	err = appCache.DeleteDeviceConfigOverrides(dialDevice.Id)
 	if err != nil {
 		t.Fatalf("device not found. err %v ", err)
 	}
 
-	_, err = appCfg.GetDeviceConfigOverrides(dialDevice.Id)
-	if err == nil {
-		t.Fatalf("device found. err %v ", err)
+	cfg, err = appCache.GetDeviceConfig(dialDevice.Id)
+	if err != nil {
+		t.Fatalf("device not found. err %v ", err)
+	}
+
+	// load appconfig to gt device defaults
+	app, err := appCache.LoadAppConfig()
+	if err != nil {
+		t.Fatalf("app not found. err %v ", err)
+	}
+	// assert device config has default values
+	defaults := app.Hub.Devices.Defaults
+	if cfg.Disabled != defaults.Disabled && cfg.MetricsEnabled != defaults.MetricsEnabled && cfg.RateLimit.Value != defaults.RateLimit.Value {
+		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", defaults.RateLimit.Value, cfg.RateLimit.Value)
+		t.Fatalf("invalid config override. want expectedDisabled %v got %v", defaults.Disabled, cfg.Disabled)
+		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", defaults.MetricsEnabled, cfg.MetricsEnabled)
+	}
+}
+
+func TestHubSaveDeviceConfigDefaults(t *testing.T) {
+
+	mqtt := &mocks.MockMqttClient{}
+	ws := &mocks.NopWsServer{}
+
+	// setup device
+	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
+	device1Expose2 := utils_test.CreateNumericEntity("action_time", 0)
+	dialDevice := utils_test.CreateDeviceWithExposes("x01111111", "Dial button", []*devices.Entity{device1Expose1, device1Expose2})
+
+	device2Expose1 := utils_test.CreateEntity("brightness", "numeric", nil)
+	device2Expose2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
+	lightDevice := utils_test.CreateDeviceWithExposes("x02222222", "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
+
+	// setup bridgeInfo List
+	devices := []*devices.Device{dialDevice, lightDevice}
+	deviceBridgeList := utils_test.CreateBridgeInfoList(devices) // NEED TO FIX, currently i make all devices features which is not right!!!!
+
+	// register hub
+	store, cleanup, err := utils_test.CreateFileStore()
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+
+	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+
+	mqtt.Publish("bridge/devices", deviceBridgeList)
+	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	//  SETUP END
+
+	appCache := store.AppConfig()
+	app, err := appCache.LoadAppConfig()
+	if err != nil {
+		t.Fatalf("app not found. err %v ", err)
+	}
+	// assert that device config has expcted default values
+	expectedDefaults := settings.DefaultDeviceConfig()
+	deviceDefaults := app.Hub.Devices.Defaults
+
+	if expectedDefaults.Disabled != deviceDefaults.Disabled && expectedDefaults.MetricsEnabled != deviceDefaults.MetricsEnabled && expectedDefaults.RateLimit.Value != deviceDefaults.RateLimit.Value {
+		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", expectedDefaults.RateLimit.Value, deviceDefaults.RateLimit.Value)
+		t.Fatalf("invalid config override. want expectedDisabled %v got %v", expectedDefaults.Disabled, deviceDefaults.Disabled)
+		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", expectedDefaults.MetricsEnabled, deviceDefaults.MetricsEnabled)
+	}
+
+	// update device config defaults
+	expectedNewdDeviceDeufalts := &settings.DeviceConfig{
+		Disabled:       true,
+		MetricsEnabled: true,
+		RateLimit:      utils.IntervalFromMilliseconds(500),
+	}
+
+	appCache.SetDeviceConfigDefaults(expectedNewdDeviceDeufalts)
+
+	// assert that device config has expcted updated default values
+	app, err = appCache.LoadAppConfig()
+	if err != nil {
+		t.Fatalf("app not found. err %v ", err)
+	}
+	deviceDefaults = app.Hub.Devices.Defaults
+	
+	if expectedNewdDeviceDeufalts.Disabled != deviceDefaults.Disabled && expectedNewdDeviceDeufalts.MetricsEnabled != deviceDefaults.MetricsEnabled && expectedNewdDeviceDeufalts.RateLimit.Value != deviceDefaults.RateLimit.Value {
+		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", expectedNewdDeviceDeufalts.RateLimit.Value, deviceDefaults.RateLimit.Value)
+		t.Fatalf("invalid config override. want expectedDisabled %v got %v", expectedNewdDeviceDeufalts.Disabled, deviceDefaults.Disabled)
+		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", expectedNewdDeviceDeufalts.MetricsEnabled, deviceDefaults.MetricsEnabled)
 	}
 }
 
@@ -650,7 +737,7 @@ func TestProcessorStoresMetricsForExistingDevice(t *testing.T) {
 	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
-	cfg, err := appCfg.GetDeviceConfigOverrides("x01111111")
+	cfg, err := appCfg.GetDeviceConfig("x01111111")
 	if err != nil {
 		t.Fatalf("device not found. err %v ", err)
 	}
@@ -1249,7 +1336,7 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 	registrar.RegisterBridge(bridgeInfoes)
 
 	appConfig := store.AppConfig()
-	config, err := appConfig.GetDeviceConfigOverrides("0xa4c13894070052fc")
+	config, err := appConfig.GetDeviceConfig("0xa4c13894070052fc")
 	if err != nil {
 		t.Fatalf("error loading device config %s", err.Error())
 	}

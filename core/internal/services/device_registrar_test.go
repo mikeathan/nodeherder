@@ -205,7 +205,7 @@ func TestDefaultDebounceforDiagnosticExposes(t *testing.T) {
 	appConfig := store.AppConfig()
 
 	for _, device := range ds {
-		deviceConfig, err := appConfig.GetDeviceConfigOverrides(device.Id)
+		deviceConfig, err := appConfig.GetDeviceConfig(device.Id)
 		if err != nil {
 			t.Errorf("Error getting device config: %s", err)
 		}

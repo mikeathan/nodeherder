@@ -917,7 +917,7 @@ func TestDeleteDeviceConfigOverridesMessage(t *testing.T) {
 	}
 }
 
-func TestSaveDeviceConfigDefaulsMessage(t *testing.T) {
+func TestSaveDeviceConfigDefaultsMessage(t *testing.T) {
 
 	appConfig := settings.NewAppConfig()
 

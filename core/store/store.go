@@ -97,7 +97,7 @@ func (s *appStore) AppConfig() *settings.AppConfigCache {
 func (s *appStore) StoreMetrics(friendlyName string, data map[string]any) error {
 	id := s.ResolveFriendlyName(friendlyName)
 
-	config, err := s.config.GetDeviceConfigOverrides(id)
+	config, err := s.config.GetDeviceConfig(id)
 	if err != nil {
 		return nil
 	}
