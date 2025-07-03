@@ -483,7 +483,7 @@ func TestProcessorStoresMetricsForNewNonBridgeDevice(t *testing.T) {
 
 }
 
-func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
+func TestHubSaveDeviceConfigOverrides(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
@@ -526,6 +526,13 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 		cfg.RateLimit = utils.IntervalFromMilliseconds(rt)
 		cfg.Disabled = true
 		cfg.MetricsEnabled = true
+
+		// set debounce overrides
+		cfg.DebounceOverrides = map[string]*utils.TimeInterval{}
+		for _, expose := range device.Exposes {
+			cfg.DebounceOverrides[expose.Name] = utils.IntervalFromMinutes(id + 1)
+		}
+
 		appCfg.SetDeviceConfigOverrides(cfg)
 		configs = append(configs, cfg)
 	}
@@ -548,9 +555,21 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 		if configs[id].MetricsEnabled != cfg.MetricsEnabled {
 			t.Fatalf("metricsEnabled mismatch want %v got %v", configs[id].MetricsEnabled, cfg.MetricsEnabled)
 		}
+		if len(configs[id].DebounceOverrides) != len(cfg.DebounceOverrides) {
+			t.Fatalf("debounceOverrides mismatch want %v got %v", len(configs[id].DebounceOverrides), len(cfg.DebounceOverrides))
+		}
+		for name, debounce := range configs[id].DebounceOverrides {
+			if debounce.Unit != cfg.DebounceOverrides[name].Unit {
+				t.Fatalf("debounceOverrides.Unit mismatch want %v got %v", debounce.Unit, cfg.DebounceOverrides[name].Unit)
+			}
+			if debounce.Value != cfg.DebounceOverrides[name].Value {
+				t.Fatalf("debounceOverrides.Value mismatch want %v got %v", debounce.Value, cfg.DebounceOverrides[name].Value)
+			}
+		}
 	}
 }
 
+TODO test debounce overrides and default by categoryo overrides here
 func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
@@ -696,7 +715,7 @@ func TestHubSaveDeviceConfigDefaults(t *testing.T) {
 		t.Fatalf("app not found. err %v ", err)
 	}
 	deviceDefaults = app.Hub.Devices.Defaults
-	
+
 	if expectedNewdDeviceDeufalts.Disabled != deviceDefaults.Disabled && expectedNewdDeviceDeufalts.MetricsEnabled != deviceDefaults.MetricsEnabled && expectedNewdDeviceDeufalts.RateLimit.Value != deviceDefaults.RateLimit.Value {
 		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", expectedNewdDeviceDeufalts.RateLimit.Value, deviceDefaults.RateLimit.Value)
 		t.Fatalf("invalid config override. want expectedDisabled %v got %v", expectedNewdDeviceDeufalts.Disabled, deviceDefaults.Disabled)
