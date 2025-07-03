@@ -22,6 +22,7 @@ import (
 	"node-herder/utils"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -569,7 +570,6 @@ func TestHubSaveDeviceConfigOverrides(t *testing.T) {
 	}
 }
 
-TODO test debounce overrides and default by categoryo overrides here
 func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
@@ -700,11 +700,22 @@ func TestHubSaveDeviceConfigDefaults(t *testing.T) {
 		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", expectedDefaults.MetricsEnabled, deviceDefaults.MetricsEnabled)
 	}
 
+	if !reflect.DeepEqual(expectedDefaults.DebounceOverrides, deviceDefaults.DebounceOverrides) {
+		t.Fatalf("invalid config override. want expectedDebounceOverrides %v got %v", expectedDefaults.DebounceOverrides, deviceDefaults.DebounceOverrides)
+	}
+	if !reflect.DeepEqual(expectedDefaults.DefaultDebounceByCategory, deviceDefaults.DefaultDebounceByCategory) {
+		t.Fatalf("invalid config override. want expectedDefaultDebounceByCategory %v got %v", expectedDefaults.DefaultDebounceByCategory, deviceDefaults.DefaultDebounceByCategory)
+	}
+
 	// update device config defaults
 	expectedNewdDeviceDeufalts := &settings.DeviceConfig{
 		Disabled:       true,
 		MetricsEnabled: true,
 		RateLimit:      utils.IntervalFromMilliseconds(500),
+		DefaultDebounceByCategory: map[bridge.ExposeCategory]*utils.TimeInterval{
+			bridge.ConfigCategory: utils.IntervalFromMilliseconds(1000),
+			bridge.MeasurementCategory: utils.IntervalFromMinutes(6),
+		},
 	}
 
 	appCache.SetDeviceConfigDefaults(expectedNewdDeviceDeufalts)
@@ -720,6 +731,15 @@ func TestHubSaveDeviceConfigDefaults(t *testing.T) {
 		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", expectedNewdDeviceDeufalts.RateLimit.Value, deviceDefaults.RateLimit.Value)
 		t.Fatalf("invalid config override. want expectedDisabled %v got %v", expectedNewdDeviceDeufalts.Disabled, deviceDefaults.Disabled)
 		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", expectedNewdDeviceDeufalts.MetricsEnabled, deviceDefaults.MetricsEnabled)
+	}
+
+	if !reflect.DeepEqual(expectedNewdDeviceDeufalts.DebounceOverrides, deviceDefaults.DebounceOverrides) {
+		t.Fatalf("invalid config override. want expectedDebounceOverrides %v got %v", expectedNewdDeviceDeufalts.DebounceOverrides, deviceDefaults.DebounceOverrides)
+	}
+
+	to fix it contians 3 items instead of 2
+	if !reflect.DeepEqual(expectedNewdDeviceDeufalts.DefaultDebounceByCategory, deviceDefaults.DefaultDebounceByCategory) {
+		t.Fatalf("invalid config override. want expectedDefaultDebounceByCategory %v got %v", expectedNewdDeviceDeufalts.DefaultDebounceByCategory, deviceDefaults.DefaultDebounceByCategory)
 	}
 }
 
