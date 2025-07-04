@@ -397,10 +397,6 @@ app.ws('/ws', async function (ws) {
           sendOperationSuccess(ws);
         }
         break;
-      case 'saveDeviceConfigDefaults':
-        appConfig.hub.devices.defaults = obj.payload;
-        sendOperationSuccess(ws);
-        break;
       case 'deleteDeviceConfigOverrides':
         {
           const deviceId = obj.payload;
@@ -408,6 +404,11 @@ app.ws('/ws', async function (ws) {
           sendOperationSuccess(ws);
         }
         break;
+      case 'saveDeviceConfigDefaults':
+        appConfig.hub.devices.defaults = obj.payload;
+        sendOperationSuccess(ws);
+        break;
+
       case 'saveLoggerConfig':
         appConfig.hub.logger = obj.payload;
 
