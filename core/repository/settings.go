@@ -149,10 +149,12 @@ func (s *FileSettingsRepo) Load() (*settings.AppConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	settings := settings.NewAppConfig()
-	if buffer != nil {
-		err = json.Unmarshal(buffer, &settings)
+	
+	app := &settings.AppConfig{}
+	if buffer == nil {
+		app = settings.NewAppConfig()
+	} else {
+		err = json.Unmarshal(buffer, &app)
 		if err != nil {
 			return nil, err
 		}
@@ -160,8 +162,8 @@ func (s *FileSettingsRepo) Load() (*settings.AppConfig, error) {
 
 	bridgeCfg, err := s.LoadBridgeConfig()
 	if err == nil {
-		settings.Bridge = bridgeCfg
+		app.Bridge = bridgeCfg
 	}
 
-	return settings, err
+	return app, err
 }

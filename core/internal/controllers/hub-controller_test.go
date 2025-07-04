@@ -612,6 +612,12 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 		cfg.RateLimit = utils.IntervalFromMilliseconds(rt)
 		cfg.Disabled = true
 		cfg.MetricsEnabled = true
+		cfg.DebounceOverrides = map[string]*utils.TimeInterval{}
+		eIdx := 0
+		for _, expose := range device.Exposes {
+			eIdx++
+			cfg.DebounceOverrides[expose.Name] = utils.IntervalFromMinutes(eIdx)
+		}
 		appCache.SetDeviceConfigOverrides(cfg)
 	}
 
@@ -622,6 +628,7 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 	}
 
 	// expected device config values to match with expected overrides values
+	expectedDebounceUnit := "minutes"
 	expectedMilliseconds := 2
 	expectedDisabled := true
 	expectedMetricsEnabled := true
@@ -630,6 +637,20 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 		t.Fatalf("invalid config override. want expectedDisabled %v got %v", expectedDisabled, cfg.Disabled)
 		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", expectedMetricsEnabled, cfg.MetricsEnabled)
 	}
+
+	eIdx := 0
+	for name := range dialDevice.Exposes {
+		eIdx++
+		debounce := cfg.DebounceOverrides[name]
+		if debounce.Unit != expectedDebounceUnit {
+			t.Fatalf("debounceOverrides.Unit mismatch want %v got %v", expectedDebounceUnit, debounce.Unit)
+		}
+		expectedValue := eIdx
+		if debounce.Value != expectedValue {
+			t.Fatalf("debounceOverrides.Value mismatch want %v got %v", expectedValue, debounce.Value)
+		}
+	}
+
 	err = appCache.DeleteDeviceConfigOverrides(dialDevice.Id)
 	if err != nil {
 		t.Fatalf("device not found. err %v ", err)
@@ -652,6 +673,15 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 		t.Fatalf("invalid config override. want expectedDisabled %v got %v", defaults.Disabled, cfg.Disabled)
 		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", defaults.MetricsEnabled, cfg.MetricsEnabled)
 	}
+
+	if cfg.DebounceOverrides != nil {
+		t.Fatalf("debounceOverrides should be nil")
+	}
+
+	if !reflect.DeepEqual(cfg.DefaultDebounceByCategory, defaults.DefaultDebounceByCategory) {
+		t.Fatalf("invalid config override. want expectedDefaultDebounceByCategory %v got %v", defaults.DefaultDebounceByCategory, cfg.DefaultDebounceByCategory)
+	}
+
 }
 
 func TestHubSaveDeviceConfigDefaults(t *testing.T) {
@@ -713,7 +743,7 @@ func TestHubSaveDeviceConfigDefaults(t *testing.T) {
 		MetricsEnabled: true,
 		RateLimit:      utils.IntervalFromMilliseconds(500),
 		DefaultDebounceByCategory: map[bridge.ExposeCategory]*utils.TimeInterval{
-			bridge.ConfigCategory: utils.IntervalFromMilliseconds(1000),
+			bridge.ConfigCategory:      utils.IntervalFromMilliseconds(1000),
 			bridge.MeasurementCategory: utils.IntervalFromMinutes(6),
 		},
 	}
@@ -726,7 +756,6 @@ func TestHubSaveDeviceConfigDefaults(t *testing.T) {
 		t.Fatalf("app not found. err %v ", err)
 	}
 	deviceDefaults = app.Hub.Devices.Defaults
-
 	if expectedNewdDeviceDeufalts.Disabled != deviceDefaults.Disabled && expectedNewdDeviceDeufalts.MetricsEnabled != deviceDefaults.MetricsEnabled && expectedNewdDeviceDeufalts.RateLimit.Value != deviceDefaults.RateLimit.Value {
 		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", expectedNewdDeviceDeufalts.RateLimit.Value, deviceDefaults.RateLimit.Value)
 		t.Fatalf("invalid config override. want expectedDisabled %v got %v", expectedNewdDeviceDeufalts.Disabled, deviceDefaults.Disabled)
@@ -737,7 +766,6 @@ func TestHubSaveDeviceConfigDefaults(t *testing.T) {
 		t.Fatalf("invalid config override. want expectedDebounceOverrides %v got %v", expectedNewdDeviceDeufalts.DebounceOverrides, deviceDefaults.DebounceOverrides)
 	}
 
-	to fix it contians 3 items instead of 2
 	if !reflect.DeepEqual(expectedNewdDeviceDeufalts.DefaultDebounceByCategory, deviceDefaults.DefaultDebounceByCategory) {
 		t.Fatalf("invalid config override. want expectedDefaultDebounceByCategory %v got %v", expectedNewdDeviceDeufalts.DefaultDebounceByCategory, deviceDefaults.DefaultDebounceByCategory)
 	}
