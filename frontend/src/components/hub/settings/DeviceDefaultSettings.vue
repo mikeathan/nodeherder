@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { computed } from 'vue';
   import { store } from '../../../store/index';
-  import { HistorySettingsType, HistorySettingsPropsType, DeviceConfig, DeviceSettings } from '@/types/settings.type';
+  import { DeviceConfig, DeviceSettings } from '@/types/settings.type';
   import InputBox from '../../input/InputBox.vue';
   import Toggle from '@/components/input/Toggle.vue';
   import { isTimeInterval, isDeviceDebounce } from '@/contracts/settings';
