@@ -15,29 +15,14 @@
   }
 
   function save<K extends keyof DeviceConfig>(propValue: DeviceConfig[K], key: K) {
-
-  //   if (!deviceSettings.value) return;
-
-  //   if (!localOverride.value) {
-  //     localOverride.value = { ...deviceSettings.value };
-  //   }
-
-  //   if (!isObject(localOverride.value[propName])) {
-  //     if (localOverride.value[propName] !== propValue) {
-  //       (localOverride.value as any)[propName] = propValue;
-  //     }
-  //   }
-
-  //   store.dispatch('hub/saveDeviceConfigOverrides', localOverride.value as DeviceConfig);
-  // }
-    if (deviceDefaultSettings.value[key] != propValue) {
-      deviceDefaultSettings.value[key] = propValue;
-
-      store.dispatch('hub/saveDeviceConfigDefaults', deviceDefaultSettings.value);
+    if (deviceDefaultSettings.value[key] !== propValue) {
+      (deviceDefaultSettings.value as any)[key] = propValue;
+      store.dispatch('hub/saveDeviceConfigDefaults', deviceDefaultSettings.value as DeviceConfig);
     }
   }
+
   function inputUpdated(propName: keyof DeviceConfig, propValue: any) {
-    save(propName, propValue);
+    save(propValue, propName);
   }
   function updateState<K extends keyof DeviceConfig>(enabled: DeviceConfig[K], key: K) {
     save(enabled, key);
