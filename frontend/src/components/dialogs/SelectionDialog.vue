@@ -8,12 +8,15 @@
     message?: string;
     show: boolean;
     value?: string;
+    items: string[];
   }>();
 
   const emit = defineEmits<{
     (e: 'confirm', value: string): void;
     (e: 'close'): void;
   }>();
+
+  const selected = ref<string | null>(null);
 
   const inputValue = ref(props.value ?? '');
   const showDialog = ref<boolean>(props.show);
@@ -24,10 +27,10 @@
     inputValue.value = props.value ?? '';
   });
 
-  function confirm() {
-    emit('confirm', inputValue.value);
-    close();
-  }
+  function select() {
+  emit('confirm', selected.value);
+  close();
+}
 
   function close() {
     emit('close');
@@ -44,12 +47,12 @@
     <div v-if="dialogMessage()" class="mb-3 text-sm text-color-secondary">
       {{ dialogMessage() }}
     </div>
-
-    <InputText v-model="inputValue" class="w-full mb-4" />
-
+    <div class="flex items-center gap-4 mb-4">
+      <Selection :value="value" :items="items" @updated="(v: any) => { selected = v }" />
+    </div>
     <div class="flex justify-end gap-2">
-      <Button type="button" label="Cancel" severity="secondary" @click="close()" />
-      <Button type="button" label="OK" @click="confirm()" :disabled="!isValid()" />
+      <Button type="button" label="Cancel" severity="secondary" @click="close()"></Button>
+      <Button type="button" label="Save" :disabled="isValid() == false" @click="select()"></Button>
     </div>
   </Dialog>
 </template>
