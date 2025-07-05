@@ -4,7 +4,6 @@
   import { TimeInterval } from '../../types/types.type';
 
   const props = defineProps({
-    id: { type: String, required: true },
     value: {
       type: Object as PropType<TimeInterval>,
       required: true,

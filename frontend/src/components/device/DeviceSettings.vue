@@ -5,7 +5,7 @@
   import InputBox from '../input/InputBox.vue';
   import { DeviceConfig } from '@/types/settings.type';
   import { createDeviceConfigOverride } from '@/contracts/settings';
-  import { ExposeSettingsComponents } from '@/mixins/useSettingsComponents';
+  import { DeviceConfigOverrideComponents } from '@/mixins/useSettingsComponents';
 
   const props = defineProps({
     id: { type: String, required: true },
@@ -28,7 +28,7 @@
     for (const key in settings) {
       const value = settings[key as keyof DeviceConfig];
 
-      const hasComponent = !!ExposeSettingsComponents[key];
+      const hasComponent = !!DeviceConfigOverrideComponents[key];
       const isBoolean = typeof value === 'boolean';
       const isPrimitive = typeof value === 'string' || typeof value === 'number';
 
@@ -96,9 +96,9 @@
         </dt>
       </dl>
       <div class="md:col-4">
-        <div v-if="ExposeSettingsComponents[key]">
+        <div v-if="DeviceConfigOverrideComponents[key]">
           <component
-            :is="ExposeSettingsComponents[key]"
+            :is="DeviceConfigOverrideComponents[key]"
             v-bind="{
               id: props.id,
               value: value,

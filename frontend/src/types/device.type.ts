@@ -17,6 +17,8 @@ export const ExposeCategories = {
   Config: 'config',
 } as const;
 
+export const DefaultExposeCategoryList = Object.values(ExposeCategories);
+
 export const DeviceAvailabilityTypes = {
   Unknown: 'unknown',
   Online: 'online',
