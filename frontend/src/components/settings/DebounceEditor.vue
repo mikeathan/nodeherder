@@ -16,7 +16,7 @@
 
   const emit = defineEmits<{
     (e: 'update', value: DebounceMap): void;
-    (e: 'add-key', cb: (key: string) => void): void;
+    (e: 'add-key', callback: (key: string) => void): void;
   }>();
 
   const selectedKey = ref<string | null>();
@@ -50,6 +50,7 @@
 
   function addNewKey(key: string) {
     if (!key) return;
+
     items.value[key] = createTimeIntervalFromSeconds(1);
     selectedKey.value = key;
     emit('update', { ...items.value });
@@ -57,6 +58,7 @@
 
   function updateDebounce(val: TimeInterval) {
     if (!selectedKey.value) return;
+
     items.value[selectedKey.value] = val;
     emit('update', { ...items.value });
   }

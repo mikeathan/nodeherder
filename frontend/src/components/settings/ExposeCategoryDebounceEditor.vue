@@ -3,6 +3,8 @@
   import { DeviceDebounce } from '@/types/settings.type';
   import { DefaultExposeCategoryList } from '@/types/device.type';
   import { PropType } from 'vue';
+  import { emitOpenSelectionDialog } from '@/contracts/dialog-events';
+  import { key } from '@/store';
 
   const props = defineProps({
     value: { type: Object as PropType<DeviceDebounce>, required: true },
@@ -17,14 +19,19 @@
     (e: 'update', value: DeviceDebounce): void;
   }>();
 
-  function handleAddCategory(cb: (key: string) => void) {
-    const cat = prompt('Enter category name', '');
-    if (cat && !props.value[cat]) {
-      cb(cat);
-    }
-  }
+  function handleAddCategory(callback: (key: string) => void) {
 
-  
+    // filter out used keys
+    const usedKeys = Object.keys(props.value);
+    const availableKeys = props.categories.filter((k) => !usedKeys.includes(k));
+
+    const dlgProps = {
+      title: 'Selection',
+      message: 'Add new expose category',
+      items: availableKeys,
+    };
+    emitOpenSelectionDialog((key: string) => callback(key), dlgProps);
+  }
 </script>
 
 <template>

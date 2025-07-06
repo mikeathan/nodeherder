@@ -13,13 +13,13 @@ const emit = defineEmits<{
   (e: 'update', value: DeviceDebounce): void;
 }>();
 
-function handleAddExpose(cb: (key: string) => void) {
+function handleAddExpose(callback: (key: string) => void) {
   const dlgProps = {
     id: props.id,
     title: 'Select Expose',
     message: 'Select Expose',
   };
-  emitOpenExposeSelectionDialog((key: string) => cb(key), dlgProps);
+  emitOpenExposeSelectionDialog((key: string) => callback(key), dlgProps);
 }
 </script>
 

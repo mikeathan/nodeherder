@@ -11,6 +11,7 @@ import {
   ExposeSelectionDialogProps,
   InputDialogProps,
   RenameDeviceDialogProps,
+  SelectionDialogProps,
 } from '@/types/events.type';
 
 export function emitOpenInputDialogEvent(confirm: DialogEventAction, props?: InputDialogProps) {
@@ -28,6 +29,23 @@ export function emitOpenInputDialogEvent(confirm: DialogEventAction, props?: Inp
     events: events,
   };
 
+  emitOpenDialog(event);
+}
+
+export function emitOpenSelectionDialog(confirm: DialogEventAction, props: SelectionDialogProps) {
+  const events: DialogEventActions = {
+    close: () => emitCloseDialog(),
+    confirm,
+  };
+  const event: OpenDialogEvent = {
+    type: 'selection',
+    props: {
+      show: true,
+      ...props,
+    },
+    events: events,
+  };
+  
   emitOpenDialog(event);
 }
 

@@ -1,7 +1,6 @@
 <script setup lang="ts">
   import { ref, watchEffect } from 'vue';
-
-  TODO;
+import Selection from '@/components/input/Selection.vue';
 
   const props = defineProps<{
     title?: string;
@@ -17,20 +16,21 @@
   }>();
 
   const selected = ref<string | null>(null);
-
-  const inputValue = ref(props.value ?? '');
   const showDialog = ref<boolean>(props.show);
 
-  // Watch for prop changes
   watchEffect(() => {
     showDialog.value = props.show;
-    inputValue.value = props.value ?? '';
   });
 
   function select() {
-  emit('confirm', selected.value);
-  close();
-}
+    if (!selected.value) {
+      alert('Please select an item');
+      return;
+    }
+
+    emit('confirm', selected.value);
+    close();
+  }
 
   function close() {
     emit('close');
@@ -39,7 +39,7 @@
 
   const dialogTitle = () => props.title ?? 'Input';
   const dialogMessage = () => props.message ?? '';
-  const isValid = () => inputValue.value.length > 0 && inputValue.value != props.value;
+  const isValid = () => selected.value != '';
 </script>
 
 <template>
@@ -48,7 +48,7 @@
       {{ dialogMessage() }}
     </div>
     <div class="flex items-center gap-4 mb-4">
-      <Selection :value="value" :items="items" @updated="(v: any) => { selected = v }" />
+      <Selection :value="selected" :items="items" @updated="(v: any) => { selected = v }" />
     </div>
     <div class="flex justify-end gap-2">
       <Button type="button" label="Cancel" severity="secondary" @click="close()"></Button>

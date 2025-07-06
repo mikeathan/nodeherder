@@ -1,6 +1,5 @@
 <script setup lang="ts">
-  import { ref, watchEffect, onMounted, watch } from 'vue';
-  import { prop } from 'vue-class-component';
+  import { ref, watchEffect, watch } from 'vue';
 
   const props = defineProps<{
     friendlyName: string;
