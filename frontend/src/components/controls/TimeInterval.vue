@@ -16,6 +16,8 @@
   const timeInterval = computed(() => props.value);
 
   function inputTimeIntervalLostFocus(propValue: any) {
+    if (!timeInterval.value || timeInterval.value.value === propValue) return;
+
     timeInterval.value.value = propValue;
     emit('update', { ...timeInterval.value });
   }
