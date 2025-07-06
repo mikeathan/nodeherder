@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { ref, watchEffect } from 'vue';
-import Selection from '@/components/input/Selection.vue';
+  import Selection from '@/components/input/Selection.vue';
 
   const props = defineProps<{
     title?: string;
@@ -37,7 +37,7 @@ import Selection from '@/components/input/Selection.vue';
     showDialog.value = false;
   }
 
-  const dialogTitle = () => props.title ?? 'Input';
+  const dialogTitle = () => props.title ?? 'Select';
   const dialogMessage = () => props.message ?? '';
   const isValid = () => selected.value != '';
 </script>
