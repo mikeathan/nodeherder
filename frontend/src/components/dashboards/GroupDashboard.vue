@@ -192,10 +192,11 @@
       box-sizing: border-box;
     }
   }
+  
   .dashboard-title {
     font-size: 0.95rem;
     font-weight: 500;
-    padding: 0 8px;
+    padding:  8px;
     margin-bottom: 0.5rem;
     line-height: 1.4;
     color: #e0e0e0;
@@ -207,7 +208,7 @@
     column-gap: 0.5rem;
     max-width: 400px;
     border-radius: 12px;
-    padding: 8px;
+    padding: 8px 10px 8px 10px;
     position: relative;
   }
 

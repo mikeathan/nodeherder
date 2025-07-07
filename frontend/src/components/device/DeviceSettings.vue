@@ -6,6 +6,7 @@
   import { DeviceConfig } from '@/types/settings.type';
   import { createDeviceConfigOverride } from '@/contracts/settings';
   import { DeviceConfigOverrideComponents } from '@/mixins/useSettingsComponents';
+  import { emitOpenConfirmationDialog } from '@/contracts/dialog-events';
 
   const props = defineProps({
     id: { type: String, required: true },
@@ -53,7 +54,6 @@
     save(propName, propValue);
   }
 
-  // TODO: needs refactoring to emit only if sth has changed but i have problesm with new debouncer map prop
   function save(propName: keyof DeviceConfig, propValue: any) {
     if (!deviceSettings.value) return;
 
@@ -73,12 +73,19 @@
   function isObject(value: any): value is object {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
   }
+
   function deleteOverride() {
-    localOverride.value = null;
-    store.dispatch('hub/deleteDeviceConfigOverrides', props.id);
+    const dlgProps = {
+      title: 'Delete',
+      message: `Are you sure?`,
+    };
+
+    emitOpenConfirmationDialog(() => {
+      localOverride.value = null;
+      store.dispatch('hub/deleteDeviceConfigOverrides', props.id);
+    }, dlgProps);
   }
 
-  // TODO: needs refactoring to emit only if sth has changed but i have problesm with new debouncer map prop
   function inputUpdated(propName: keyof DeviceConfig, propValue: any) {
     save(propName, { ...propValue });
   }
