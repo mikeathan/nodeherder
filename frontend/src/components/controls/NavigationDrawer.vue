@@ -41,9 +41,9 @@
 
 <template>
   <!-- Desktop Sidebar -->
-  <div v-show="!isMobile" :class="['floating-sidebar', { expanded: isExpanded }]" v-click-outside="handleOutsideClick">
+  <div v-if="!isMobile" :class="['floating-sidebar', { expanded: isExpanded }]">
     <div class="top-bar">
-      <Button :icon="isExpanded ? 'pi pi-times' : 'pi pi-bars'" @mousedown="toggleDrawer" rounded text />
+      <Button :icon="isExpanded ? 'pi pi-times' : 'pi pi-bars'" @click="toggleDrawer" rounded text />
     </div>
     <div class="menu-area">
       <PanelMenu v-if="isExpanded" :model="menuItems" class="menu-panel" />
@@ -63,16 +63,28 @@
 
   <!-- Mobile Drawer -->
   <transition name="slide-left">
-    <div v-show="isMobile && isExpanded" class="mobile-drawer" v-click-outside="handleOutsideClick">
+    <div v-if="isMobile && isExpanded" class="mobile-drawer">
       <div class="top-bar">
-        <Button icon="pi pi-times" @mousedown="closeDrawer" rounded text />
+        <Button icon="pi pi-times" @click="closeDrawer" rounded text />
       </div>
       <PanelMenu :model="menuItems" class="menu-panel" />
     </div>
   </transition>
+
+  <!-- Overlay to catch outside clicks -->
+  <div v-if="isExpanded" class="drawer-overlay" @click="closeDrawer"></div>
 </template>
 
 <style scoped>
+  .drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1050; 
+    background: transparent; 
+  }
   .floating-sidebar {
     position: fixed;
     top: 0;
