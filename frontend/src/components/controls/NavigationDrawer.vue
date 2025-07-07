@@ -29,13 +29,21 @@
 
   const toggleDrawer = () => emit('toggle');
   const closeDrawer = () => emit('toggle');
+
+  function handleOutsideClick() {
+    console.log('outsideClose');
+    if (props.isExpanded) {
+      console.log('closeDrawer');
+      closeDrawer();
+    }
+  }
 </script>
 
 <template>
   <!-- Desktop Sidebar -->
-  <div v-if="!isMobile" :class="['floating-sidebar', { expanded: isExpanded }]">
+  <div v-show="!isMobile" :class="['floating-sidebar', { expanded: isExpanded }]" v-click-outside="handleOutsideClick">
     <div class="top-bar">
-      <Button :icon="isExpanded ? 'pi pi-times' : 'pi pi-bars'" @click="toggleDrawer" rounded text />
+      <Button :icon="isExpanded ? 'pi pi-times' : 'pi pi-bars'" @mousedown="toggleDrawer" rounded text />
     </div>
     <div class="menu-area">
       <PanelMenu v-if="isExpanded" :model="menuItems" class="menu-panel" />
@@ -55,9 +63,9 @@
 
   <!-- Mobile Drawer -->
   <transition name="slide-left">
-    <div v-if="isMobile && isExpanded" class="mobile-drawer">
+    <div v-show="isMobile && isExpanded" class="mobile-drawer" v-click-outside="handleOutsideClick">
       <div class="top-bar">
-        <Button icon="pi pi-times" @click="closeDrawer" rounded text />
+        <Button icon="pi pi-times" @mousedown="closeDrawer" rounded text />
       </div>
       <PanelMenu :model="menuItems" class="menu-panel" />
     </div>
