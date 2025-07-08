@@ -146,6 +146,10 @@
       <i class="pi pi-plus" />
       <span>New Group</span>
     </button>
+    <button class="toolbar-btn">
+      <i class="pi pi-download" />
+      <span>Export Groups</span> TODO
+    </button>
   </div>
 
   <div class="dashboard-container">
@@ -192,11 +196,11 @@
       box-sizing: border-box;
     }
   }
-  
+
   .dashboard-title {
     font-size: 0.95rem;
     font-weight: 500;
-    padding:  8px;
+    padding: 8px;
     margin-bottom: 0.5rem;
     line-height: 1.4;
     color: #e0e0e0;
