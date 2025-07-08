@@ -21,22 +21,14 @@
     (e: 'toggle'): void;
   }>();
 
-  const { menuItems } = useMenuItems(props.items);
+  const toggleDrawer = () => emit('toggle');
+  const closeDrawer = () => emit('toggle');
+
+  const { menuItems } = useMenuItems(props.items, closeDrawer);
   const { isMobile } = useDrawer(
     () => props.isExpanded,
     (w) => emit('widthChanged', w)
   );
-
-  const toggleDrawer = () => emit('toggle');
-  const closeDrawer = () => emit('toggle');
-
-  function handleOutsideClick() {
-    console.log('outsideClose');
-    if (props.isExpanded) {
-      console.log('closeDrawer');
-      closeDrawer();
-    }
-  }
 </script>
 
 <template>
@@ -82,8 +74,8 @@
     left: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 1050; 
-    background: transparent; 
+    z-index: 999;
+    background: rgba(0, 0, 0, 0.2);
   }
   .floating-sidebar {
     position: fixed;
