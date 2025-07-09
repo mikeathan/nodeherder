@@ -80,12 +80,12 @@
   function addNewDashboardGroup(grouName: string) {
     if (!grouName) {
       // TODO: emit error message
-      console.log('groupName is empty');
+      alert('groupName is empty');
       return;
     }
 
     if (dashboardGroups.value[grouName]) {
-      console.log('groupName already exists');
+      alert('groupName already exists');
 
       // TODO: emit error message
       return;
@@ -99,11 +99,11 @@
 
   function renameDashboardGroup(groupName: string, newName: string) {
     if (!groupName || !newName) {
-      console.log('groupName or newName is empty');
+      alert('groupName or newName is empty');
       return;
     }
     if (dashboardGroups.value[newName]) {
-      console.log('newName already exists');
+      alert('newName already exists');
       return;
     }
     const group = dashboardGroups.value[groupName];
@@ -116,13 +116,13 @@
 
   function deleteDeviceExpose(groupName: string, deviceId: string, exposeName: string) {
     if (!groupName || !deviceId || !exposeName) {
-      console.log('groupName or deviceId or exposeName is empty');
+      alert('groupName or deviceId or exposeName is empty');
       return;
     }
     const deviceGroupExposes = dashboardGroups.value[groupName].deviceGroup[deviceId].exposes;
     const idx = deviceGroupExposes.indexOf(exposeName);
     if (idx === -1) {
-      console.log('exposeName not found');
+      alert('exposeName not found');
       return;
     }
     deviceGroupExposes.splice(idx, 1);
@@ -131,12 +131,47 @@
 
   function deleteDeviceGroup(groupName: string) {
     if (!groupName) {
-      console.log('groupName is empty');
+      alert('groupName is empty');
       return;
     }
 
     delete dashboardGroups.value[groupName];
     store.dispatch('hub/deleteDashboardGroup', groupName);
+  }
+
+  function exportDashboardGroups() {
+    const dashboardGroupsJson = JSON.stringify({ dashboardGroups: dashboardGroups.value }, null, 2);
+
+    const blob = new Blob([dashboardGroupsJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'dashboard-groups.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importDashboardGroups() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (!file) {
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dashboardGroupsJson = JSON.parse(event.target?.result as string);
+        store.dispatch('hub/saveDashboardGroups', dashboardGroupsJson.dashboardGroups);
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }
+
+  function allowExport(): boolean {
+    return Object.keys(dashboardGroups.value).length > 0;
   }
 </script>
 
@@ -146,9 +181,14 @@
       <i class="pi pi-plus" />
       <span>New Group</span>
     </button>
-    <button class="toolbar-btn">
+    <button class="toolbar-btn" @click="exportDashboardGroups" :disabled="!allowExport()">
       <i class="pi pi-download" />
-      <span>Export Groups</span> TODO
+      <span>Export Groups</span>
+    </button>
+
+    <button class="toolbar-btn" @click="importDashboardGroups">
+      <i class="pi pi-upload" />
+      <span>Import Groups</span>
     </button>
   </div>
 
@@ -253,6 +293,10 @@
     transition: background 0.2s ease;
   }
 
+  .toolbar-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
   .toolbar-btn:hover {
     background: #3a3a3a;
   }

@@ -387,6 +387,10 @@ app.ws('/ws', async function (ws) {
         const dashboardGroup = obj.payload;
         appConfig.hub.dashboardGroups[dashboardGroup.name] = dashboardGroup;
         break;
+      case 'saveDashboardGroups':
+        Object.entries(obj.payload).forEach(([name, dashboardGroup]) => {
+          appConfig.hub.dashboardGroups[name] = dashboardGroup;
+        });
       case 'saveDeviceConfigOverrides':
         {
           const deviceId = obj.payload.id;

@@ -113,6 +113,11 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         state.appConfig.hub.devices.overrides[setting.id] = setting;
       }
     },
+    setDashboardGroups(state, dashboardGroups: DashboardGroups) {
+      Object.entries(dashboardGroups).forEach(([name, dashboardGroup]) => {
+        state.appConfig.hub.dashboardGroups[name] = dashboardGroup;
+      });
+    },
     setDashboardGroup(state, dashboardGroup: DashboardGroup) {
       state.appConfig.hub.dashboardGroups[dashboardGroup.name] = dashboardGroup;
     },
@@ -189,6 +194,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         { root: true }
       );
     },
+
     saveDashboardGroup({ commit, dispatch }, dashboardGroup: DashboardGroup) {
       commit('setDashboardGroup', dashboardGroup);
       dispatch(
@@ -201,6 +207,17 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       );
     },
 
+    saveDashboardGroups({ commit, dispatch }, dashboardGroups: DashboardGroups) {
+      commit('setDashboardGroups', dashboardGroups);
+      dispatch(
+        'ws/emit',
+        {
+          event: 'saveDashboardGroups',
+          message: dashboardGroups,
+        },
+        { root: true }
+      );
+    },
     deleteDashboardGroup({ commit, dispatch }, name: string) {
       commit('removeDashboardGroup', name);
 
