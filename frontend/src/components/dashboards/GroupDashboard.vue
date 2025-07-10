@@ -77,6 +77,14 @@
     emitOpenConfirmationDialog(() => deleteDeviceExpose(groupName, deviceId, exposeName), props);
   }
 
+  function openImportDashboardGroupsConfirmationDialog() {
+    const props = {
+      title: 'Import Dashboard Groups',
+      message: `Import new dashboard groups from file.\n\nAre you sure you want to continue?`,
+    };
+    emitOpenConfirmationDialog(importDashboardGroups, props);
+  }
+
   function addNewDashboardGroup(grouName: string) {
     if (!grouName) {
       // TODO: emit error message
@@ -163,7 +171,7 @@
       const reader = new FileReader();
       reader.onload = (event) => {
         const dashboardGroupsJson = JSON.parse(event.target?.result as string);
-        store.dispatch('hub/saveDashboardGroups', dashboardGroupsJson.dashboardGroups);
+        store.dispatch('hub/importDashboardGroups', dashboardGroupsJson.dashboardGroups);
       };
       reader.readAsText(file);
     };
@@ -186,7 +194,7 @@
       <span>Export Groups</span>
     </button>
 
-    <button class="toolbar-btn" @click="importDashboardGroups">
+    <button class="toolbar-btn" @click="openImportDashboardGroupsConfirmationDialog()">
       <i class="pi pi-upload" />
       <span>Import Groups</span>
     </button>
