@@ -33,7 +33,9 @@ const (
 	SaveDeviceConfigDefaults    = "saveDeviceConfigDefaults"
 	SaveDashboardGroup          = "saveDashboardGroup"
 	DeleteDashboardGroup        = "deleteDashboardGroup"
-	LoadAppconfig               = "loadAppConfig"
+	ImportDashboardGroups       = "importDashboardGroups"
+	LoadDashboardGroups         = "loadDashboardGroups"
+	LoadAppconfig = "loadAppConfig"
 
 	LoadMetrics = "loadMetrics"
 
@@ -48,9 +50,10 @@ const (
 	AutomationUpdated = "automationUpdated" // returns back upated automation
 	HubState          = "hubState"
 
-	Metrics      = "metrics"
-	AppConfig    = "appConfig"
-	BridgeConfig = "bridgeConfig"
+	Metrics         = "metrics"
+	AppConfig       = "appConfig"
+	BridgeConfig    = "bridgeConfig"
+	DashboardGroups = "dashboardGroups"
 )
 
 type EventHub interface {
@@ -81,6 +84,8 @@ type EventHub interface {
 	OnSaveHistoryConfig(func(payload interface{}) error)
 	OnSaveLoggerConfig(func(payload interface{}) error)
 	OnSaveDashboardGroup(action func(payload interface{}) error)
+	OnImportDashboardGroups(action func(payload interface{}) error)
+	OnLoadDashboardGroups(action func() (interface{}, error))
 	OnDeleteDashboardGroup(action func(payload interface{}) error)
 	HandleRequest(w http.ResponseWriter, r *http.Request) error
 	Context() hub.Context
@@ -110,6 +115,8 @@ type eventHubImpl struct {
 	onSaveLoggerConfig            func(interface{}) error
 	onSaveDashboardGroup          func(interface{}) error
 	onDeleteDashboardGroup        func(payload interface{}) error
+	onImportDashboardGroups       func(payload interface{}) error
+	onLoadDashboardGroups         func() (interface{}, error)
 
 	requestContext hub.Context
 }
@@ -139,6 +146,8 @@ func NewWsHub() EventHub {
 		onSaveLoggerConfig:            func(payload interface{}) error { return nil },
 		onSaveDashboardGroup:          func(payload interface{}) error { return nil },
 		onDeleteDashboardGroup:        func(payload interface{}) error { return nil },
+		onImportDashboardGroups:       func(payload interface{}) error { return nil },
+		onLoadDashboardGroups:         func() (interface{}, error) { return nil, nil },
 		requestContext:                NewRequestContext(),
 	}
 }
@@ -237,6 +246,14 @@ func (h *eventHubImpl) OnSaveDashboardGroup(action func(payload interface{}) err
 
 func (h *eventHubImpl) OnDeleteDashboardGroup(action func(payload interface{}) error) {
 	h.onDeleteDashboardGroup = action
+}
+
+func (h *eventHubImpl) OnImportDashboardGroups(action func(payload interface{}) error) {
+	h.onImportDashboardGroups = action
+}
+
+func (h *eventHubImpl) OnLoadDashboardGroups(action func() (interface{}, error)) {
+	h.onLoadDashboardGroups = action
 }
 
 func (h *eventHubImpl) EmitDevice(name string) error {
@@ -364,6 +381,12 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 
 	case DeleteDashboardGroup:
 		c.executeAction(eventMsg.Payload, c.onDeleteDashboardGroup, true)
+
+	case ImportDashboardGroups:
+		c.executeAction(eventMsg.Payload, c.onImportDashboardGroups, true)
+
+	case LoadDashboardGroups:
+		c.executeActionWithEvent(c.onLoadDashboardGroups, DashboardGroups)
 
 	default:
 

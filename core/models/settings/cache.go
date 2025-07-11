@@ -296,6 +296,31 @@ func (s *AppConfigCache) DeleteDashboardGroup(name string) error {
 	return nil
 }
 
+func (s *AppConfigCache) ImportDashboardGroups(groups map[string]*DashboardGroup) error {
+	config, err := s.LoadAppConfig()
+	if err != nil {
+		return err
+	}
+	// delete all
+	for name, _ := range config.Hub.DashboardGroups {
+		if _, ok := groups[name]; !ok {
+			delete(config.Hub.DashboardGroups, name)
+		}
+	}
+
+	// import new groups
+	for name, group := range groups {
+		config.Hub.DashboardGroups[name] = group
+	}
+
+	err = s.store.SaveAppConfig(config)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (d *AppConfigCache) SetDeviceConfigOverrides(deviceConfig *DeviceConfig) error {
 	return d.deviceCache.Set(deviceConfig)
 }

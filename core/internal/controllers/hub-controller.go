@@ -164,6 +164,27 @@ func (h *HubController) registerEventHubEvents() {
 		return appconfig.DeleteDashboardGroup(id)
 	})
 
+	h.eventHub.OnImportDashboardGroups(func(payload interface{}) error {
+		req := make(map[string]*settings.DashboardGroup)
+		bytes, _ := json.Marshal(payload)
+		err := json.Unmarshal(bytes, &req)
+		if err != nil {
+			return fmt.Errorf("OnImportDashboardGroups failed. Invalid payload type : %v ", err.Error())
+		}
+
+		return appconfig.ImportDashboardGroups(req)
+	})
+
+	h.eventHub.OnLoadDashboardGroups(func() (interface{}, error) {
+
+		appConfig, err := appconfig.LoadAppConfig()
+		if err != nil {
+			return nil, err
+		}
+
+		return appConfig.Hub.DashboardGroups, nil
+	})
+
 	h.eventHub.OnLoadAutomations(func() interface{} {
 		return h.automationEngine.GetAllTriggers()
 	})

@@ -207,8 +207,6 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       );
     },
 
-    we need a new ws event  that will broadcast back the dashboard groups only so i dont have to manual set tha state here and it happens dynamically
-
     importDashboardGroups({ commit, dispatch }, dashboardGroups: DashboardGroups) {
       dispatch(
         'ws/emit',
