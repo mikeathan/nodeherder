@@ -1101,43 +1101,66 @@ func TestHandlerLoadDashboardGroupsMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if gotDashboardGroups == nil {
-		t.Fatal("Expected dashboard groups, got nil")
-	}
-
-	if len(gotDashboardGroups) != len(wantDashboardGroups) {
-		t.Fatalf("Expected dashboard groups %v', got '%v'", len(wantDashboardGroups), len(gotDashboardGroups))
-	}
-
-	for _, wantGroup := range wantDashboardGroups {
-		gotDashboardGroup, ok := gotDashboardGroups[wantGroup.Name]
-		if !ok {
-			t.Fatalf("Expected dashboard group %v', got '%v'", wantGroup.Name, gotDashboardGroup)
-		}
-		if gotDashboardGroup.Name != wantGroup.Name {
-			t.Fatalf("Expected dashboard group name %v', got '%v'", wantGroup.Name, gotDashboardGroup.Name)
-		}
-		for _, deviceGroup := range wantGroup.DeviceGroup {
-			group, ok := gotDashboardGroup.DeviceGroup[deviceGroup.DeviceId]
-			if !ok {
-				t.Fatalf("Expected device group id %v', got '%v'", deviceGroup.DeviceId, group.DeviceId)
-			}
-
-			if group.DeviceId != deviceGroup.DeviceId {
-				t.Fatalf("Expected device group id %v', got '%v'", deviceGroup.DeviceId, group.DeviceId)
-			}
-
-			for idx := range deviceGroup.Exposes {
-				if group.Exposes[idx] != deviceGroup.Exposes[idx] {
-					t.Fatalf("Expected expose %v', got '%v'", group.Exposes[idx], deviceGroup.Exposes[idx])
-				}
-			}
-		}
-	}
+	utils_test.CompareDashboardGroups(t, wantDashboardGroups, gotDashboardGroups)
 }
 
+func TestHandlerImportDashboardGroupsMessage(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
 
-ADD MORE TESTS HERE
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
+	wantDashboardGroups := utils_test.CreateDashboardGroups()
+	wsHub.OnImportDashboardGroups(func(p interface{}) error {
+
+		bytes := []byte(p.(string))
+
+		gotDashboardGroups := map[string]*settings.DashboardGroup{}
+		err := json.Unmarshal(bytes, &gotDashboardGroups)
+		if err != nil {
+			return errors.New("import dashboard groups failed. Invalid payload type")
+		}
+
+		utils_test.CompareDashboardGroups(t, wantDashboardGroups, gotDashboardGroups)
+		wg.Done()
+
+		return nil
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	defer s.Close()
+	defer wsConn.Close()
+
+	reqBytes, _ := json.Marshal(wantDashboardGroups)
+
+	wsData := &ws.EventMessage{Type: ws.ImportDashboardGroups, Payload: reqBytes}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.OperationSuccess {
+		t.Fatalf("Expected type %v', got '%v'", ws.OperationSuccess, event.Type)
+	}
+
+	wg.Wait()
+
+}
 
 func TestHandleBridgeDeviceInterviewMessage(t *testing.T) {
 	wg := &sync.WaitGroup{}

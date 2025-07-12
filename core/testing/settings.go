@@ -4,6 +4,7 @@ import (
 	"node-herder/mocks"
 	"node-herder/models/settings"
 	"node-herder/utils"
+	"testing"
 	"time"
 )
 
@@ -70,4 +71,41 @@ func CreateDashboardGroups() map[string]*settings.DashboardGroup {
 	groups["group1"] = group1
 	groups["group2"] = group2
 	return groups
+}
+
+func CompareDashboardGroups(t *testing.T, gotDashboardGroups map[string]*settings.DashboardGroup, wantDashboardGroups map[string]*settings.DashboardGroup) {
+
+	if gotDashboardGroups == nil {
+		t.Fatal("Expected dashboard groups, got nil")
+	}
+
+	if len(gotDashboardGroups) != len(wantDashboardGroups) {
+		t.Fatalf("Expected dashboard groups %v', got '%v'", len(wantDashboardGroups), len(gotDashboardGroups))
+	}
+
+	for _, wantGroup := range wantDashboardGroups {
+		gotDashboardGroup, ok := gotDashboardGroups[wantGroup.Name]
+		if !ok {
+			t.Fatalf("Expected dashboard group %v', got '%v'", wantGroup.Name, gotDashboardGroup)
+		}
+		if gotDashboardGroup.Name != wantGroup.Name {
+			t.Fatalf("Expected dashboard group name %v', got '%v'", wantGroup.Name, gotDashboardGroup.Name)
+		}
+		for _, deviceGroup := range wantGroup.DeviceGroup {
+			group, ok := gotDashboardGroup.DeviceGroup[deviceGroup.DeviceId]
+			if !ok {
+				t.Fatalf("Expected device group id %v', got '%v'", deviceGroup.DeviceId, group.DeviceId)
+			}
+
+			if group.DeviceId != deviceGroup.DeviceId {
+				t.Fatalf("Expected device group id %v', got '%v'", deviceGroup.DeviceId, group.DeviceId)
+			}
+
+			for idx := range deviceGroup.Exposes {
+				if group.Exposes[idx] != deviceGroup.Exposes[idx] {
+					t.Fatalf("Expected expose %v', got '%v'", group.Exposes[idx], deviceGroup.Exposes[idx])
+				}
+			}
+		}
+	}
 }

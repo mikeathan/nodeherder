@@ -14,6 +14,19 @@
     return store.getters['hub/dashboardGroups']() as DashboardGroups;
   });
 
+  // const automations = computed(() => {
+  //   if (
+  //     !store.getters['automations/initialized']() as Boolean
+  //   ) {
+  //     store.dispatch('ws/emit', {
+  //       event: 'loadAutomations',
+  //     });
+  //   }
+  //   return store.getters[
+  //     'automations/listAll'
+  //   ]() as Automations;
+  // });
+
   function flattenDeviceGroup(group: DashboardGroup): any[] {
     return Object.entries(group.deviceGroup).flatMap(([key, value]) =>
       value.exposes.map((expose) => ({
@@ -40,6 +53,7 @@
     };
     emitOpenInputDialogEvent((value) => renameDashboardGroup(groupName, value), props);
   }
+  
   function openNewDashboardGroupDialog() {
     const props = {
       title: 'create new dashboard group',

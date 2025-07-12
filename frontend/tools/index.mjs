@@ -379,6 +379,9 @@ app.ws('/ws', async function (ws) {
         appConfig.history = obj.payload;
         sendOperationSuccess(ws);
         break;
+      case 'loadDashboardGroups':
+        sendMessage(ws, 'dashboardGroups', appConfig.hub.dashboardGroups);
+        break;
       case 'deleteDashboardGroup':
         const name = obj.payload.groupName;
         delete appConfig.hub.dashboardGroups[name];

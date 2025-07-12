@@ -121,6 +121,11 @@ export const WSClientModule: Module<WSClientState, RootState> = {
               root: true,
             });
             break;
+          case 'dashboardGroups':
+            commit('hub/setDashboardGroups', obj.payload, {
+              root: true,
+            });
+            break;
           case 'logger':
             dispatch('console/addMessage', obj.payload, {
               root: true,

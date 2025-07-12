@@ -894,6 +894,100 @@ func TestProcessorStoresMetricsForExistingDevice(t *testing.T) {
 	}
 }
 
+func TestImportDashboardGroupsMessage(t *testing.T) {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	// we dont need tasks here just using it as it using valid settings repo
+	bridgeInfoFile := filepath.Join("../../../docs", "device_bridge.json")
+	data, err := os.ReadFile(bridgeInfoFile)
+	if err != nil {
+		t.Fatal("Error reading file:", err)
+		return
+	}
+	bridgeInfoes, err := devices.LoadBridgeDevices(data)
+	if err != nil {
+		t.Fatal("Error parsing bridge info data:", err)
+		return
+	}
+
+	store, cleanup, err := utils_test.CreateFileStore()
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+
+	cfg := store.AppConfig()
+	mqtt := &mocks.MockMqttClient{}
+
+	eventHub := mocks.NewMockEventHub()
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(bridgeInfoes)
+
+	broadcastHandler := func(eventName string, data interface{}) error {
+
+		if eventName != ws.ImportDashboardGroups {
+			t.Fatalf("invalid event name want %v got %v", ws.ImportDashboardGroups, eventName)
+			return fmt.Errorf("invalid event name %v", eventName)
+		}
+
+		req := map[string]*settings.DashboardGroup{}
+		bytes, _ := json.Marshal(data)
+		err := json.Unmarshal(bytes, &req)
+		if err != nil {
+			return fmt.Errorf("OnImportDashboardGroups failed. Invalid payload type : %v ", err.Error())
+		}
+
+		// validate request
+		for _, group := range req {
+			for _, devGroup := range group.DeviceGroup {
+				_, err := registrar.LookupById(devGroup.DeviceId)
+
+				if err != nil {
+					t.Fatalf("OnImportDashboardGroups failed. Invalid device id %v : %v ", devGroup.DeviceId, err.Error())
+					return fmt.Errorf("OnImportDashboardGroups failed. Invalid expose id : %v ", err.Error())
+				}
+			}
+
+		}
+		err = cfg.ImportDashboardGroups(req)
+		wg.Done()
+
+		return err
+	}
+
+	eventHub.SetMockBroadcastEvent(broadcastHandler)
+	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+
+	// create new expose group
+	newGroup := settings.NewDashboardGroup("living room group")
+	newGroup.AddDeviceExpose("0x00158d0005a23c38", "brightness")
+	newGroup.AddDeviceExpose("0x001788010d7d9d3f", "action")
+	newGroup.AddDeviceExpose("0xa4c13894070052fc", "presence")
+	newGroup.AddDeviceExpose("0xa4c13894070052fc", "illuminance")
+
+	newGroup2 := settings.NewDashboardGroup("attic room group")
+	newGroup2.AddDeviceExpose("0x00124b0029207763", "temperature")
+	newGroup2.AddDeviceExpose("0xa4c1389b273366c3", "alarm")
+	newGroup2.AddDeviceExpose("0xa4c1381b6fd53fc4", "energy")
+
+	wantDashboardGroups := map[string]*settings.DashboardGroup{
+		"living room group": newGroup,
+		"attic room group":  newGroup2,
+	}
+	eventHub.Broadcast(ws.ImportDashboardGroups, wantDashboardGroups)
+	wg.Wait()
+
+	c, _ := cfg.LoadAppConfig()
+
+	if len(c.Hub.DashboardGroups) != 2 {
+		t.Fatalf("want %v got %v", 2, len(c.Hub.DashboardGroups))
+	}
+
+	utils_test.CompareDashboardGroups(t, c.Hub.DashboardGroups, wantDashboardGroups)
+}
+
 func TestSaveDashboardGroupIsValidated(t *testing.T) {
 
 	wg := sync.WaitGroup{}
