@@ -19,3 +19,55 @@ func CreateDebouncerFromAppConfig(id string, appConfig *settings.AppConfig, cloc
 	cache := settings.NewDeviceConfigCache(&repo, appConfig)
 	return settings.NewDeviceDebouncer(id, cache, clock)
 }
+
+func CreateDashboardGroups() map[string]*settings.DashboardGroup {
+	groups := map[string]*settings.DashboardGroup{}
+
+	// Group 1
+	group1 := settings.NewDashboardGroup("group1")
+	group1.Name = "group1"
+	group1.DeviceGroup = map[string]*settings.DeviceGroup{}
+
+	g1d1 := settings.NewDeviceGroup("DeviceId1")
+	g1d1.DeviceId = "DeviceId1"
+	g1d1.Exposes = []string{"temperature", "humidity", "battery"}
+
+	g1d2 := settings.NewDeviceGroup("DeviceId2")
+	g1d2.DeviceId = "DeviceId2"
+	g1d2.Exposes = []string{"alarm", "silence alarm", "battery"}
+
+	g1d3 := settings.NewDeviceGroup("DeviceId3")
+	g1d3.DeviceId = "DeviceId3"
+	g1d3.Exposes = []string{"contact", "battery"}
+
+	g1d4 := settings.NewDeviceGroup("DeviceId4")
+	g1d4.DeviceId = "DeviceId4"
+	g1d4.Exposes = []string{"presence", "illuminance", "battery"}
+
+	group1.DeviceGroup["DeviceId1"] = g1d1
+	group1.DeviceGroup["DeviceId2"] = g1d2
+	group1.DeviceGroup["DeviceId3"] = g1d3
+	group1.DeviceGroup["DeviceId4"] = g1d4
+
+	// Group 2
+	group2 := settings.NewDashboardGroup("group2")
+	group2.Name = "group2"
+	group2.DeviceGroup = map[string]*settings.DeviceGroup{}
+
+	group2.DeviceGroup["DeviceId5"] = settings.NewDeviceGroup("DeviceId5")
+	group2.DeviceGroup["DeviceId5"].DeviceId = "DeviceId5"
+	group2.DeviceGroup["DeviceId5"].Exposes = []string{"temperature", "humidity", "battery"}
+
+	group2.DeviceGroup["DeviceId6"] = settings.NewDeviceGroup("DeviceId6")
+	group2.DeviceGroup["DeviceId6"].DeviceId = "DeviceId6"
+	group2.DeviceGroup["DeviceId6"].Exposes = []string{"alarm", "silence alarm", "battery"}
+
+	group2.DeviceGroup["DeviceId7"] = settings.NewDeviceGroup("DeviceId7")
+	group2.DeviceGroup["DeviceId7"].DeviceId = "DeviceId7"
+	group2.DeviceGroup["DeviceId7"].Exposes = []string{"contact", "battery"}
+
+	// Assign groups to map
+	groups["group1"] = group1
+	groups["group2"] = group2
+	return groups
+}

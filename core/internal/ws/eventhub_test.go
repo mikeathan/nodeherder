@@ -1059,37 +1059,86 @@ func TestHandlerLoadDashboardGroupsMessage(t *testing.T) {
 	wsHub := ws.NewWsHub()
 	wsHub.Start()
 
-	groups := map[string]*settings.DashboardGroup{}
-	groups["1"] = settings.NewDashboardGroup("1")
+	wantDashboardGroups := utils_test.CreateDashboardGroups()
+	wsHub.OnLoadDashboardGroups(func() (interface{}, error) {
+		return wantDashboardGroups, nil
+	})
 
-	group1 := settings.NewDashboardGroup("1")
-	group1.Name = "group1"
-	group1.DeviceGroup = map[string]*settings.DeviceGroup{}
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
 
-	g1d1 := settings.NewDeviceGroup("DeviceId1")
-	g1d1.DeviceId = "DeviceId1"
-	g1d1.Exposes = []string{"temperature", "humidity", "battery"}
+	defer s.Close()
+	defer wsConn.Close()
 
-	g1d2 := settings.NewDeviceGroup("DeviceId2")
-	g1d2.DeviceId = "DeviceId2"
-	g1d2.Exposes = []string{"alarm", "silence alarm", "battery"}
+	wsData := &ws.EventMessage{Type: ws.LoadDashboardGroups, Payload: nil}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 
-	g1d3 := settings.NewDeviceGroup("DeviceId3")
-	g1d3.DeviceId = "DeviceId3"
-	g1d3.Exposes = []string{"contact", "battery"}
+	SendMessage(t, wsConn, msg)
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
 
-	g1d4 := settings.NewDeviceGroup("DeviceId4")
-	g1d4.DeviceId = "DeviceId4"
-	g1d4.Exposes = []string{"presence", "illuminance", "battery"}
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	group1.DeviceGroup["DeviceId1"] = g1d1
-	group1.DeviceGroup["DeviceId2"] = g1d2
-	group1.DeviceGroup["DeviceId3"] = g1d3
-	group1.DeviceGroup["DeviceId4"] = g1d4
+	if event.Type != ws.DashboardGroups {
+		t.Fatalf("Expected type %v', got '%v'", ws.DashboardGroups, event.Type)
+	}
 
+	// parse response
+	var gotDashboardGroups map[string]*settings.DashboardGroup
 
-	TODO
+	bytes, _ := json.Marshal(event.Payload)
+	err = json.Unmarshal(bytes, &gotDashboardGroups)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if gotDashboardGroups == nil {
+		t.Fatal("Expected dashboard groups, got nil")
+	}
+
+	if len(gotDashboardGroups) != len(wantDashboardGroups) {
+		t.Fatalf("Expected dashboard groups %v', got '%v'", len(wantDashboardGroups), len(gotDashboardGroups))
+	}
+
+	for _, wantGroup := range wantDashboardGroups {
+		gotDashboardGroup, ok := gotDashboardGroups[wantGroup.Name]
+		if !ok {
+			t.Fatalf("Expected dashboard group %v', got '%v'", wantGroup.Name, gotDashboardGroup)
+		}
+		if gotDashboardGroup.Name != wantGroup.Name {
+			t.Fatalf("Expected dashboard group name %v', got '%v'", wantGroup.Name, gotDashboardGroup.Name)
+		}
+		for _, deviceGroup := range wantGroup.DeviceGroup {
+			group, ok := gotDashboardGroup.DeviceGroup[deviceGroup.DeviceId]
+			if !ok {
+				t.Fatalf("Expected device group id %v', got '%v'", deviceGroup.DeviceId, group.DeviceId)
+			}
+
+			if group.DeviceId != deviceGroup.DeviceId {
+				t.Fatalf("Expected device group id %v', got '%v'", deviceGroup.DeviceId, group.DeviceId)
+			}
+
+			for idx := range deviceGroup.Exposes {
+				if group.Exposes[idx] != deviceGroup.Exposes[idx] {
+					t.Fatalf("Expected expose %v', got '%v'", group.Exposes[idx], deviceGroup.Exposes[idx])
+				}
+			}
+		}
+	}
 }
+
+
+ADD MORE TESTS HERE
+
 func TestHandleBridgeDeviceInterviewMessage(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
