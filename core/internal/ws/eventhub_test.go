@@ -1052,6 +1052,44 @@ func TestHandleBridgeDeviceRemoveMessage(t *testing.T) {
 	wg.Wait()
 }
 
+func TestHandlerLoadDashboardGroupsMessage(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
+	groups := map[string]*settings.DashboardGroup{}
+	groups["1"] = settings.NewDashboardGroup("1")
+
+	group1 := settings.NewDashboardGroup("1")
+	group1.Name = "group1"
+	group1.DeviceGroup = map[string]*settings.DeviceGroup{}
+
+	g1d1 := settings.NewDeviceGroup("DeviceId1")
+	g1d1.DeviceId = "DeviceId1"
+	g1d1.Exposes = []string{"temperature", "humidity", "battery"}
+
+	g1d2 := settings.NewDeviceGroup("DeviceId2")
+	g1d2.DeviceId = "DeviceId2"
+	g1d2.Exposes = []string{"alarm", "silence alarm", "battery"}
+
+	g1d3 := settings.NewDeviceGroup("DeviceId3")
+	g1d3.DeviceId = "DeviceId3"
+	g1d3.Exposes = []string{"contact", "battery"}
+
+	g1d4 := settings.NewDeviceGroup("DeviceId4")
+	g1d4.DeviceId = "DeviceId4"
+	g1d4.Exposes = []string{"presence", "illuminance", "battery"}
+
+	group1.DeviceGroup["DeviceId1"] = g1d1
+	group1.DeviceGroup["DeviceId2"] = g1d2
+	group1.DeviceGroup["DeviceId3"] = g1d3
+	group1.DeviceGroup["DeviceId4"] = g1d4
+
+
+	TODO
+}
 func TestHandleBridgeDeviceInterviewMessage(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)

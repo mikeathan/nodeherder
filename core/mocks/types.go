@@ -74,107 +74,114 @@ func (w *MockEventHub) EmitDevice(name string) error {
 }
 
 func (w *MockEventHub) EmitBridgeConfig() {
-	fmt.Println("Empty EmitBridgeConfig")
+	fmt.Println("MockEventHub: EmitBridgeConfig")
 }
 
 func (w *MockEventHub) EmitDevices() {
-	fmt.Println("Empty EmitDevices")
+	fmt.Println("MockEventHub: EmitDevices")
 }
 
 func (w *MockEventHub) EmitDeviceList(names []string) {
-	fmt.Println("Empty EmitDeviceList")
+	fmt.Println("EMockEventHub:mpty EmitDeviceList")
 }
 
 func (w *MockEventHub) RegisterNewClient(conn *websocket.Conn) {
-	fmt.Println("Empty RegisterNewClient")
+	fmt.Println("MockEventHub: RegisterNewClient")
 }
 
 func (w *MockEventHub) OnLoadAutomations(onLoadAutomations func() interface{}) {
-	fmt.Println("Empty OnLoadAutomations")
+	fmt.Println("MockEventHub: OnLoadAutomations")
 }
 
 func (w *MockEventHub) OnLoadDevice(action func(id string) (interface{}, error)) {
-	fmt.Println("Empty OnLoadDevice")
+	fmt.Println("MockEventHub: OnLoadDevice")
 }
 func (w *MockEventHub) OnLoadDevices(action func() interface{}) {
-	fmt.Println("Empty OnLoadDevices")
+	fmt.Println("MockEventHub: OnLoadDevices")
 }
 
 func (w *MockEventHub) OnLoadDeviceList(action func(names []string) interface{}) {
-	fmt.Println("Empty OnLoadDeviceList")
+	fmt.Println("MockEventHub: OnLoadDeviceList")
 }
 
 func (w *MockEventHub) OnDeviceSetValue(action func(p interface{}) error) {
-	fmt.Println("Empty OnDeviceSetValue")
+	fmt.Println("MockEventHub: OnDeviceSetValue")
 }
 
 func (w *MockEventHub) OnDeviceRename(action func(p interface{}) error) {
-	fmt.Println("Empty OnDeviceRename")
+	fmt.Println("MockEventHub: OnDeviceRename")
 }
 
 func (w *MockEventHub) OnDeviceRemove(action func(p interface{}) error) {
-	fmt.Println("Empty OnDeviceRemove")
+	fmt.Println("MockEventHub: OnDeviceRemove")
 }
 
 func (w *MockEventHub) OnDeviceInterview(action func(p interface{}) error) {
-	fmt.Println("Empty OnDeviceInterview")
+	fmt.Println("MockEventHub: OnDeviceInterview")
 }
 
 func (w *MockEventHub) OnBridgePermitJoin(action func(p interface{}) error) {
-	fmt.Println("Empty OnBridgePermitJoin")
+	fmt.Println("MockEventHub: OnBridgePermitJoin")
 }
 
 func (w *MockEventHub) OnSaveAutomation(action func(p interface{}) error) {
-	fmt.Println("Empty OnSaveAutomation")
+	fmt.Println("MockEventHub: OnSaveAutomation")
 }
 
 func (w *MockEventHub) OnDeleteAutomation(action func(p interface{}) (interface{}, error)) {
-	fmt.Println("Empty OnDeleteAutomation")
+	fmt.Println("MockEventHub: OnDeleteAutomation")
 }
 
 func (w *MockEventHub) OnDeleteAutomationTrigger(action func(p interface{}) (interface{}, error)) {
-	fmt.Println("Empty OnDeleteAutomationTrigger")
+	fmt.Println("MockEventHub: OnDeleteAutomationTrigger")
 }
 
 func (w *MockEventHub) OnLoadMetrics(action func(interface{}) (interface{}, error)) {
-	fmt.Println("Empty OnLoadMetrics")
+	fmt.Println("MockEventHub: OnLoadMetrics")
 }
 
 func (w *MockEventHub) OnLoadAppConfig(action func() (interface{}, error)) {
-	fmt.Println("Empty OnLoadAppConfig")
+	fmt.Println("MockEventHub: OnLoadAppConfig")
 }
 
 func (w *MockEventHub) OnLoadBridgeConfig(action func() (interface{}, error)) {
-	fmt.Println("Empty OnLoadBridgeConfig")
+	fmt.Println("MockEventHub: OnLoadBridgeConfig")
 }
 
 func (w *MockEventHub) OnSaveDeviceConfigOverrides(func(payload interface{}) error) {
-	fmt.Println("Empty OnSaveDeviceConfigOverrides")
+	fmt.Println("MockEventHub: OnSaveDeviceConfigOverrides")
 }
 func (w *MockEventHub) OnSaveDeviceConfigDefaults(action func(p interface{}) error) {
-	fmt.Println("Empty OnSaveDeviceConfigDefaults")
+	fmt.Println("MockEventHub: OnSaveDeviceConfigDefaults")
 }
 
 func (w *MockEventHub) OnDeleteDeviceConfigOverrides(action func(p interface{}) error) {
-	fmt.Println("Empty OnDeleteDeviceConfigOverrides")
+	fmt.Println("MockEventHub: OnDeleteDeviceConfigOverrides")
 }
 
 func (w *MockEventHub) OnSaveHistoryConfig(func(payload interface{}) error) {
-	fmt.Println("Empty OnSaveHistoryConfig")
+	fmt.Println("MockEventHub: OnSaveHistoryConfig")
 }
 
 func (w MockEventHub) OnSaveLoggerConfig(action func(payload interface{}) error) {
-	fmt.Println("WsServer: Mocked OnSaveLoggerConfig")
+	fmt.Println("MockEventHub: OnSaveLoggerConfig")
 }
 
 func (h *MockEventHub) OnSaveDashboardGroup(action func(payload interface{}) error) {
-	fmt.Println("WsServer OnSaveDashboardGroup")
+	fmt.Println("MockEventHub OnSaveDashboardGroup")
 }
 
 func (h *MockEventHub) OnDeleteDashboardGroup(action func(payload interface{}) error) {
-	fmt.Println("WsServer OnDeleteDashboardGroup")
+	fmt.Println("MockEventHub OnDeleteDashboardGroup")
 }
 
+func (h *MockEventHub) OnImportDashboardGroups(action func(payload interface{}) error) {
+	fmt.Println("MockEventHub OnImportDashboardGroups")
+}
+
+func (h *MockEventHub) OnLoadDashboardGroups(action func() (interface{}, error)) {
+	fmt.Println("MockEventHub OnLoadDashboardGroups")
+}
 // Mock MqttClient
 type MockMqttClient struct {
 	messageHandler func(string, []byte)
@@ -381,6 +388,14 @@ func (h *NopWsServer) OnSaveDashboardGroup(action func(payload interface{}) erro
 
 func (h *NopWsServer) OnDeleteDashboardGroup(action func(payload interface{}) error) {
 	fmt.Println("WsServer OnDeleteExpoOnDeleteDashboardGroupseGroup")
+}
+
+func (h *NopWsServer) OnImportDashboardGroups(action func(payload interface{}) error) {
+	fmt.Println("WsServer OnImportDashboardGroups")
+}
+
+func (h *NopWsServer) OnLoadDashboardGroups(action func() (interface{}, error)) {
+	fmt.Println("WsServer OnLoadDashboardGroups")
 }
 
 // Mock devices Repository
@@ -685,6 +700,7 @@ func (s *NopAppStore) FindBridgeInfoByFriendlyName(friendlyName string) (*device
 	fmt.Println("Mocked store FindBridgeInfoByFriendlyName")
 	return &devices.BridgeInfo{}, nil
 }
+
 func (s *NopAppStore) FindBridgeInfoById(id string) (*devices.BridgeInfo, error) {
 	fmt.Println("Mocked store FindBridgeInfoById")
 	return &devices.BridgeInfo{}, nil
