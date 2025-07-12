@@ -35,7 +35,7 @@ const (
 	DeleteDashboardGroup        = "deleteDashboardGroup"
 	ImportDashboardGroups       = "importDashboardGroups"
 	LoadDashboardGroups         = "loadDashboardGroups"
-	LoadAppconfig = "loadAppConfig"
+	LoadAppconfig               = "loadAppConfig"
 
 	LoadMetrics = "loadMetrics"
 
@@ -383,7 +383,32 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 		c.executeAction(eventMsg.Payload, c.onDeleteDashboardGroup, true)
 
 	case ImportDashboardGroups:
-		c.executeAction(eventMsg.Payload, c.onImportDashboardGroups, true)
+		// will need refactoring
+		err := c.onImportDashboardGroups(eventMsg.Payload)
+		if err != nil {
+			utils.LogErrorf("Failed to import dashboard groups: %v", err)
+			c.Broadcast(OperationFailed, err.Error())
+			return
+		}
+		res, err := c.onLoadDashboardGroups()
+		if err != nil {
+			utils.LogErrorf("Failed to load dashboard groups: %v", err)
+			c.Broadcast(OperationFailed, err.Error())
+
+			return
+		}
+		ds, ok := res.(map[string]*settings.DashboardGroup)
+		if !ok {
+			utils.LogErrorf("onLoadDashboardGroups: Failed to cast to map[string]*settings.DashboardGroup")
+			c.Broadcast(OperationFailed, err.Error())
+			return
+		}
+
+		err = c.Broadcast(DashboardGroups, ds)
+		if err != nil {
+			utils.LogErrorf("Failed to broadcast onLoadDashboardGroups %s", err.Error())
+			c.Broadcast(OperationFailed, err.Error())
+		}
 
 	case LoadDashboardGroups:
 		c.executeActionWithEvent(c.onLoadDashboardGroups, DashboardGroups)

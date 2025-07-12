@@ -1111,6 +1111,9 @@ func TestHandlerImportDashboardGroupsMessage(t *testing.T) {
 	wsHub := ws.NewWsHub()
 	wsHub.Start()
 
+
+	to test import return all dashboardgroups now
+	
 	wantDashboardGroups := utils_test.CreateDashboardGroups()
 	wsHub.OnImportDashboardGroups(func(p interface{}) error {
 
