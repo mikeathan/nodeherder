@@ -22,33 +22,33 @@
     drawerWidth.value = width;
   };
 
+  const toggleDrawer = () => {
+    isDrawerVisible.value = !isDrawerVisible.value;
+  }
   const toggleEditMode = () => {
     dashboardEditMode.value = !dashboardEditMode.value;
   };
   const onPermitJoinStatusUpdated = (status: boolean) => {
     isPermitJoinActive.value = status;
-    console.log('onPermitJoinStatusUpdated', isPermitJoinActive.value);
   };
 
-// todo make it a method
-  const getSideNavigationItems = () => {
+  const startPermitJoinTimer = () => {
+    if (!isPermitJoinActive.value) {
+      isPermitJoinActive.value = true;
+    }
+  };
 
-    
-  const topNavigattionItems: MenuBarItem[] = [
+  const topNavigattionItems = computed<MenuBarItem[]>(() => [
     {
       isLogo: true,
       template: () => h(Logo),
     },
     {
       icon: 'pi pi-sitemap',
-      disabled: isPermitJoinActive.value,
-      command: () => {
-        console.log('ispermitJoinActive', isPermitJoinActive.value);
-        if (!isPermitJoinActive.value) {
-          console.log('START ispermitJoinActive', isPermitJoinActive.value);
-          isPermitJoinActive.value = true;
-        }
+      get disabled() {
+        return isPermitJoinActive.value;
       },
+      command: () => startPermitJoinTimer(),
     },
     {
       icon: 'pi pi-cog',
@@ -60,7 +60,7 @@
         });
       },
     },
-  ];
+  ]);
 
   const sideNavigationItems = computed<MenuBarItem[]>(() => [
     {
@@ -98,10 +98,12 @@
       command: () => router.push('/settings'),
     },
     {
-      label: isPermitJoinActive.value ? 'join enabled' : 'permit Join',
+      label: 'permit Join',
       icon: 'pi pi-sitemap',
-      disabled: isPermitJoinActive.value, // todo set enable once permit join is enabled
-      command: () => (isPermitJoinActive.value = !isPermitJoinActive.value),
+      get disabled() {
+        return isPermitJoinActive.value;
+      },
+      command: () => startPermitJoinTimer(),
     },
   ]);
 
@@ -118,7 +120,7 @@
   <NavigationDrawer
     :items="sideNavigationItems"
     :is-expanded="isDrawerVisible"
-    @toggle="isDrawerVisible = !isDrawerVisible"
+    @toggle="toggleDrawer"
     @widthChanged="handleDrawerWidthChanged" />
   <div class="main-content" :style="{ marginLeft: `${drawerWidth}px` }">
     <PermitJoinTimer
