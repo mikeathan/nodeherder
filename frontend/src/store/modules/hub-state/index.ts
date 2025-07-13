@@ -114,9 +114,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       }
     },
     setDashboardGroups(state, dashboardGroups: DashboardGroups) {
-      Object.entries(dashboardGroups).forEach(([name, dashboardGroup]) => {
-        state.appConfig.hub.dashboardGroups[name] = dashboardGroup;
-      });
+      state.appConfig.hub.dashboardGroups = dashboardGroups;
     },
     setDashboardGroup(state, dashboardGroup: DashboardGroup) {
       state.appConfig.hub.dashboardGroups[dashboardGroup.name] = dashboardGroup;

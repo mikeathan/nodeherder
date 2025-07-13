@@ -382,14 +382,17 @@ app.ws('/ws', async function (ws) {
       case 'loadDashboardGroups':
         sendMessage(ws, 'dashboardGroups', appConfig.hub.dashboardGroups);
         break;
+        
       case 'deleteDashboardGroup':
         const name = obj.payload.groupName;
         delete appConfig.hub.dashboardGroups[name];
         break;
+
       case 'saveDashboardGroup':
         const dashboardGroup = obj.payload;
         appConfig.hub.dashboardGroups[dashboardGroup.name] = dashboardGroup;
         break;
+
       case 'importDashboardGroups':
         appConfig.hub.dashboardGroups = {};
         Object.entries(obj.payload).forEach(([name, dashboardGroup]) => {
