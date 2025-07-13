@@ -1106,14 +1106,11 @@ func TestHandlerLoadDashboardGroupsMessage(t *testing.T) {
 
 func TestHandlerImportDashboardGroupsMessage(t *testing.T) {
 	wg := &sync.WaitGroup{}
-	wg.Add(1)
+	wg.Add(2)
 
 	wsHub := ws.NewWsHub()
 	wsHub.Start()
 
-
-	to test import return all dashboardgroups now
-	
 	wantDashboardGroups := utils_test.CreateDashboardGroups()
 	wsHub.OnImportDashboardGroups(func(p interface{}) error {
 
@@ -1129,6 +1126,12 @@ func TestHandlerImportDashboardGroupsMessage(t *testing.T) {
 		wg.Done()
 
 		return nil
+	})
+
+	wsHub.OnLoadDashboardGroups(func() (interface{}, error) {
+		
+		wg.Done()
+		return wantDashboardGroups, nil
 	})
 
 	h := api.NewWsHandler(wsHub)
@@ -1157,12 +1160,20 @@ func TestHandlerImportDashboardGroupsMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if event.Type != ws.OperationSuccess {
-		t.Fatalf("Expected type %v', got '%v'", ws.OperationSuccess, event.Type)
+	if event.Type != ws.DashboardGroups {
+		t.Fatalf("Expected type %v', got '%v'", ws.DashboardGroups, event.Type)
 	}
 
-	wg.Wait()
+	// parse response
+	var gotDashboardGroups map[string]*settings.DashboardGroup
 
+	bytes, _ := json.Marshal(event.Payload)
+	err = json.Unmarshal(bytes, &gotDashboardGroups)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	utils_test.CompareDashboardGroups(t, wantDashboardGroups, gotDashboardGroups)
 }
 
 func TestHandleBridgeDeviceInterviewMessage(t *testing.T) {
