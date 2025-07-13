@@ -187,23 +187,12 @@
 </script>
 
 <template>
-  <div class="toolbar">
-    <button class="toolbar-btn" @click="toggleEditMode">
-      <i class="pi pi-cog" />
-    </button>
+  <div>
+    <Button icon="pi pi-cog" severity="secondary" size="small" @click="toggleEditMode" />
     <template v-if="isEditMode">
-      <button class="toolbar-btn" @click="openNewDashboardGroupDialog">
-        <i class="pi pi-plus" />
-        <span>New Group</span>
-      </button>
-      <button class="toolbar-btn" @click="exportDashboardGroups" :disabled="!allowExport()">
-        <i class="pi pi-download" />
-        <span>Export</span>
-      </button>
-      <button class="toolbar-btn" @click="openImportDashboardGroupsConfirmationDialog()">
-        <i class="pi pi-upload" />
-        <span>Import</span>
-      </button>
+      <Button icon="pi pi-plus" severity="secondary" size="small" @click="openNewDashboardGroupDialog" label="New Group"/>
+      <Button icon="pi pi-download" severity="secondary" size="small" @click="exportDashboardGroups" :disabled="!allowExport()" label="Export"/>
+      <Button icon="pi pi-upload" severity="secondary" size="small" @click="openImportDashboardGroupsConfirmationDialog()" label="Import"/>
     </template>
   </div>
 
@@ -280,41 +269,6 @@
     width: 100%;
     display: inline-block;
     break-inside: avoid;
-  }
-
-  .toolbar {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem;
-    background: #1f1f1f;
-    border-radius: 10px;
-    margin-bottom: 0.5rem;
-    margin-left: 0.2rem;
-    gap: 0.5rem;
-    width: fit-content;
-    box-sizing: border-box;
-  }
-
-  .toolbar-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: #1f1f1f;
-    color: #fff;
-    padding: 3px 8px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    font-size: 0.8rem;
-    transition: background 0.2s ease;
-  }
-
-  .toolbar-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  .toolbar-btn:hover {
-    background: #3a3a3a;
   }
 
   .icon-tools {
