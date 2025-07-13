@@ -13,7 +13,7 @@
   const router = useRouter();
   const permitJoinDuration = 120;
 
-  const permitJoinEnabled = ref<boolean>(false);
+  const isPermitJoinActive = ref<boolean>(false);
   const dashboardEditMode = ref<boolean>(false);
   const drawerWidth = ref(0);
   const isDrawerVisible = ref(false);
@@ -25,17 +25,30 @@
   const toggleEditMode = () => {
     dashboardEditMode.value = !dashboardEditMode.value;
   };
+  const onPermitJoinStatusUpdated = (status: boolean) => {
+    isPermitJoinActive.value = status;
+    console.log('onPermitJoinStatusUpdated', isPermitJoinActive.value);
+  };
 
-  const topNavigattionItems = computed<MenuBarItem[]>(() => [
+// todo make it a method
+  const getSideNavigationItems = () => {
+
+    
+  const topNavigattionItems: MenuBarItem[] = [
     {
       isLogo: true,
       template: () => h(Logo),
     },
     {
-      //label: permitJoinEnabled.value ? 'join enabled' : 'permit Join',
       icon: 'pi pi-sitemap',
-      disabled: permitJoinEnabled.value,
-      command: () => (permitJoinEnabled.value = !permitJoinEnabled.value),
+      disabled: isPermitJoinActive.value,
+      command: () => {
+        console.log('ispermitJoinActive', isPermitJoinActive.value);
+        if (!isPermitJoinActive.value) {
+          console.log('START ispermitJoinActive', isPermitJoinActive.value);
+          isPermitJoinActive.value = true;
+        }
+      },
     },
     {
       icon: 'pi pi-cog',
@@ -47,7 +60,7 @@
         });
       },
     },
-  ]);
+  ];
 
   const sideNavigationItems = computed<MenuBarItem[]>(() => [
     {
@@ -85,10 +98,10 @@
       command: () => router.push('/settings'),
     },
     {
-      label: permitJoinEnabled.value ? 'join enabled' : 'permit Join',
+      label: isPermitJoinActive.value ? 'join enabled' : 'permit Join',
       icon: 'pi pi-sitemap',
-      disabled: permitJoinEnabled.value, // todo set enable once permit join is enabled
-      command: () => (permitJoinEnabled.value = !permitJoinEnabled.value)
+      disabled: isPermitJoinActive.value, // todo set enable once permit join is enabled
+      command: () => (isPermitJoinActive.value = !isPermitJoinActive.value),
     },
   ]);
 
@@ -110,8 +123,8 @@
   <div class="main-content" :style="{ marginLeft: `${drawerWidth}px` }">
     <PermitJoinTimer
       :duration="permitJoinDuration"
-      :allow-join="permitJoinEnabled"
-      @statusUpdated="permitJoinEnabled = $event" />
+      :allow-join="isPermitJoinActive"
+      @statusUpdated="onPermitJoinStatusUpdated" />
     <Notifications />
     <DialogHost />
 
@@ -129,6 +142,6 @@
   }
   .main-content {
     transition: margin-left 0.5s ease;
-    padding: 0 0.1rem ;
+    padding: 0 0.1rem;
   }
 </style>
