@@ -14,19 +14,6 @@
     return store.getters['hub/dashboardGroups']() as DashboardGroups;
   });
 
-  // const automations = computed(() => {
-  //   if (
-  //     !store.getters['automations/initialized']() as Boolean
-  //   ) {
-  //     store.dispatch('ws/emit', {
-  //       event: 'loadAutomations',
-  //     });
-  //   }
-  //   return store.getters[
-  //     'automations/listAll'
-  //   ]() as Automations;
-  // });
-
   function flattenDeviceGroup(group: DashboardGroup): any[] {
     return Object.entries(group.deviceGroup).flatMap(([key, value]) =>
       value.exposes.map((expose) => ({
@@ -35,10 +22,8 @@
       }))
     );
   }
-  const props = defineProps({
-    editMode: { type: Boolean, default: false },
-  });
 
+  const isEditMode = ref(false);
   const selectedCard = ref<string | null>(null);
 
   function handleCardSelected(id: string) {
@@ -53,7 +38,7 @@
     };
     emitOpenInputDialogEvent((value) => renameDashboardGroup(groupName, value), props);
   }
-  
+
   function openNewDashboardGroupDialog() {
     const props = {
       title: 'create new dashboard group',
@@ -195,39 +180,47 @@
   function allowExport(): boolean {
     return Object.keys(dashboardGroups.value).length > 0;
   }
+
+  function toggleEditMode() {
+    isEditMode.value = !isEditMode.value;
+  }
 </script>
 
 <template>
-  <div v-if="editMode" class="toolbar">
-    <button class="toolbar-btn" @click="openNewDashboardGroupDialog">
-      <i class="pi pi-plus" />
-      <span>New Group</span>
+  <div class="toolbar">
+    <button class="toolbar-btn" @click="toggleEditMode">
+      <i class="pi pi-cog" />
     </button>
-    <button class="toolbar-btn" @click="exportDashboardGroups" :disabled="!allowExport()">
-      <i class="pi pi-download" />
-      <span>Export Groups</span>
-    </button>
-
-    <button class="toolbar-btn" @click="openImportDashboardGroupsConfirmationDialog()">
-      <i class="pi pi-upload" />
-      <span>Import Groups</span>
-    </button>
+    <template v-if="isEditMode">
+      <button class="toolbar-btn" @click="openNewDashboardGroupDialog">
+        <i class="pi pi-plus" />
+        <span>New Group</span>
+      </button>
+      <button class="toolbar-btn" @click="exportDashboardGroups" :disabled="!allowExport()">
+        <i class="pi pi-download" />
+        <span>Export</span>
+      </button>
+      <button class="toolbar-btn" @click="openImportDashboardGroupsConfirmationDialog()">
+        <i class="pi pi-upload" />
+        <span>Import</span>
+      </button>
+    </template>
   </div>
 
   <div class="dashboard-container">
     <div v-for="group in dashboardGroups" :key="group.name" class="dashboard-group">
       <div class="dashboard-title">{{ group.name }}</div>
-      <div class="card-container" :class="{ 'edit-mode': editMode }">
+      <div class="card-container" :class="{ 'edit-mode': isEditMode }">
         <div v-for="item in flattenDeviceGroup(group)" :key="`${item.deviceId}-${item.expose}`" class="card-item">
           <EntityCard
             :id="item.deviceId"
             :name="item.expose"
             compact
-            :is-selected="editMode && selectedCard == getDeviceGroupId(item.deviceId, item.expose)"
+            :is-selected="isEditMode && selectedCard == getDeviceGroupId(item.deviceId, item.expose)"
             @selected="handleCardSelected"
             @delete="openDeleteDeviceExposeConfirmationDialog(group.name, $event.id, $event.name)" />
         </div>
-        <div v-if="editMode" class="icon-tools">
+        <div v-if="isEditMode" class="icon-tools">
           <span class="edit-icon pi pi-pen-to-square" @click="openRenameDashboardGroupDialog(group.name)" />
           <span class="edit-icon pi pi-trash" @click="openDeleteDeviceGroupConfirmationDialog(group.name)" />
           <span class="edit-icon pi pi-plus" @click="openAddDeviceExposeDialog(group)" />
@@ -262,8 +255,8 @@
   .dashboard-title {
     font-size: 0.95rem;
     font-weight: 500;
-    padding: 8px;
-    margin-bottom: 0.5rem;
+    padding-left: 12px;
+    padding-bottom: 5px;
     line-height: 1.4;
     color: #e0e0e0;
     letter-spacing: 0.25px;
@@ -274,7 +267,7 @@
     column-gap: 0.5rem;
     max-width: 400px;
     border-radius: 12px;
-    padding: 8px 10px 8px 10px;
+    padding: 5px 10px 5px 10px;
     position: relative;
   }
 
@@ -295,7 +288,8 @@
     padding: 0.5rem;
     background: #1f1f1f;
     border-radius: 10px;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
+    margin-left: 0.2rem;
     gap: 0.5rem;
     width: fit-content;
     box-sizing: border-box;
@@ -307,11 +301,11 @@
     gap: 6px;
     background: #1f1f1f;
     color: #fff;
-    padding: 6px 12px;
+    padding: 3px 8px;
     border-radius: 8px;
     border: none;
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     transition: background 0.2s ease;
   }
 

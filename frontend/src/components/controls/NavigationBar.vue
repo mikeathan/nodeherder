@@ -41,7 +41,7 @@
         </div>
         <component :is="logoItem?.template" />
       </template>
-      <template #end v-if="isMobile">
+      <template #end v-if="isMobile && menuItems.length > 0">
         <i class="pi pi-ellipsis-v right-menu" @click="toggleMobileMenu" />
       </template>
     </Menubar>

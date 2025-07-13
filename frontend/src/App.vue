@@ -42,24 +42,7 @@
     {
       isLogo: true,
       template: () => h(Logo),
-    },
-    {
-      icon: 'pi pi-sitemap',
-      get disabled() {
-        return isPermitJoinActive.value;
-      },
-      command: () => startPermitJoinTimer(),
-    },
-    {
-      icon: 'pi pi-cog',
-      command: () => {
-        toggleEditMode();
-        router.push({
-          name: 'groupdashboard',
-          params: { mode: dashboardEditMode.value ? DashboardModes.editMode : '' },
-        });
-      },
-    },
+    }
   ]);
 
   const sideNavigationItems = computed<MenuBarItem[]>(() => [

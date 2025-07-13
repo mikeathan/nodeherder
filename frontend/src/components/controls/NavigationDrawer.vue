@@ -24,7 +24,12 @@
   const toggleDrawer = () => emit('toggle');
   const closeDrawer = () => emit('toggle');
 
-  const { menuItems } = useMenuItems(props.items, closeDrawer);
+  const onMenuItemClick = () => {
+    if (props.isExpanded) {
+      closeDrawer();
+    }
+  };
+  const { menuItems } = useMenuItems(props.items, onMenuItemClick);
   const { isMobile } = useDrawer(
     () => props.isExpanded,
     (w) => emit('widthChanged', w)
