@@ -152,11 +152,16 @@ const sensorUnits: KeyValuePair<string> = {
   illuminance: 'lux',
 };
 
+todo
 export function getFormattedSensorValue(expose: Expose): string {
   if (expose.name == null) {
     return '';
   }
   const unit = expose.unit ?? getSensorUnit(expose.name);
+  switch(expose.name){
+    case "presence":
+      return expose.data ? 'Present' : 'Clear';
+  }
   return `${getSensorValue(expose.data)}${unit}`;
 }
 
@@ -174,6 +179,7 @@ export function getSensorName(sensor: string): string {
   const formatted = sensor.replace('_', ' ');
   return `${formatted.charAt(0).toUpperCase()}${formatted.slice(1)}`;
 }
+
 
 export function getSensorValue(value: any): any {
   if (value == null) {
