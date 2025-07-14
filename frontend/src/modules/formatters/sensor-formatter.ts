@@ -90,8 +90,8 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
   },
   occupancy: { name: mdiWalk, color: 'white' },
   current: { name: mdiCopyright, color: 'gray' },
-  power: { name: mdiPower, color: 'red' },
-  energy: { name: mdiFlash, color: 'green' },
+  power: { name: mdiLightningBolt, color: 'red' },
+  energy: { name: mdiFlash, color: '#49b970' },
   frequency: { name: mdiSineWave, color: 'purple' },
   tamper: { name: mdiAlertCircleOutline, color: 'red' },
   smoke: { name: mdiSmoking, color: 'red' },
@@ -225,7 +225,8 @@ const getUnknownEntityIcon = (): IconProps => {
 };
 
 const getStateIcon = (value: boolean): IconProps => {
-  return value ? { name: mdiPower, color: '#1E88E5' } : { name: mdiPower, color: 'grey' };
+  // TOOD: check for TRUE/FALSE
+  return value ? { name: mdiPower, color: '#1E88E5' } : { name: mdiPowerOff, color: 'grey' };
 };
 
 const getPresenceIcon = (value: boolean): IconProps => {
