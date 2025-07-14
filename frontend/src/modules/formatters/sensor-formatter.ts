@@ -58,6 +58,7 @@ import {
   mdiCreation,
   mdiPowerOff,
   mdiFlash,
+  mdiFlashOutline,
 } from '@mdi/js';
 import { Expose } from '@/types/device';
 
@@ -90,7 +91,7 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
   },
   occupancy: { name: mdiWalk, color: 'white' },
   current: { name: mdiCopyright, color: 'gray' },
-  power: { name: mdiLightningBolt, color: 'red' },
+  power: { name: mdiFlashOutline, color: 'red' },
   energy: { name: mdiFlash, color: '#49b970' },
   frequency: { name: mdiSineWave, color: 'purple' },
   tamper: { name: mdiAlertCircleOutline, color: 'red' },
