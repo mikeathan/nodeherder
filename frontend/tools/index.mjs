@@ -382,7 +382,7 @@ app.ws('/ws', async function (ws) {
       case 'loadDashboardGroups':
         sendMessage(ws, 'dashboardGroups', appConfig.hub.dashboardGroups);
         break;
-        
+
       case 'deleteDashboardGroup':
         const name = obj.payload.groupName;
         delete appConfig.hub.dashboardGroups[name];
@@ -412,8 +412,7 @@ app.ws('/ws', async function (ws) {
         break;
       case 'deleteDeviceConfigOverrides':
         {
-          const deviceId = obj.payload;
-          delete appConfig.hub.devices.overrides[deviceId];
+          delete appConfig.hub.devices.overrides[obj.payload.id];
           sendOperationSuccess(ws);
         }
         break;

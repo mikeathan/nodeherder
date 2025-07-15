@@ -171,11 +171,15 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     },
     deleteDeviceConfigOverrides({ commit, dispatch }, id: string) {
       commit('removeDeviceConfigOverrides', id);
+
+      var payload = {
+        id: id,
+      };
       dispatch(
         'ws/emit',
         {
           event: 'deleteDeviceConfigOverrides',
-          message: id,
+          message: payload,
         },
         { root: true }
       );
