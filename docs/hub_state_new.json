@@ -6,7 +6,7 @@
         "devices": {
           "defaults": {
             "disabled": false,
-            "history": false,
+            "metricsEnabled": false,
             "rateLimit": { "value": 60, "unit": "seconds" },
             "defaultDebounceByCategory": {
               "diagnostic": { "value": 300, "unit": "seconds" }
@@ -16,7 +16,7 @@
             "0x00124b0029207763": {
               "id": "0x00124b0029207763",
               "disabled": true,
-              "history": false,
+              "metricsEnabled": false,
               "rateLimit": { "value": 50, "unit": "seconds" },
               "debounceOverrides": {
                 "linkquality": { "value": 5, "unit": "seconds" }
