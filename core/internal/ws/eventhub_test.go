@@ -12,12 +12,14 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
 	"node-herder/mocks"
+	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	utils_test "node-herder/testing"
 	"node-herder/utils"
+	"reflect"
 	"strconv"
 	"sync"
 	"testing"
@@ -306,11 +308,11 @@ func TestHandlingLoadHubStatesMessage(t *testing.T) {
 	}
 
 	// assert app config
-	if len(hubState.Config.Hub.Devices) != len(inputAppConfig.Hub.Devices) {
-		t.Fatalf("Expected numer of appconfig devices. want %v', got '%v'", len(inputAppConfig.Hub.Devices), len(hubState.Config.Hub.Devices))
+	if len(hubState.Config.Hub.Devices.Overrides) != len(inputAppConfig.Hub.Devices.Overrides) {
+		t.Fatalf("Expected numer of appconfig devices. want %v', got '%v'", len(inputAppConfig.Hub.Devices.Overrides), len(hubState.Config.Hub.Devices.Overrides))
 	}
-	for id, d := range inputAppConfig.Hub.Devices {
-		gotDeviceConfig := hubState.Config.Hub.Devices[id]
+	for id, d := range inputAppConfig.Hub.Devices.Overrides {
+		gotDeviceConfig := hubState.Config.Hub.Devices.Overrides[id]
 		if d.Id != gotDeviceConfig.Id {
 			t.Fatalf("Expected device id %v', got '%v'", d.Id, gotDeviceConfig.Id)
 		}
@@ -694,11 +696,11 @@ func TestLoadAppConfigMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(resultAppConfig.Hub.Devices) != len(inputAppConfig.Hub.Devices) {
-		t.Fatalf("Expected numer of appconfig devices. want %v', got '%v'", len(inputAppConfig.Hub.Devices), len(resultAppConfig.Hub.Devices))
+	if len(resultAppConfig.Hub.Devices.Overrides) != len(inputAppConfig.Hub.Devices.Overrides) {
+		t.Fatalf("Expected numer of appconfig devices. want %v', got '%v'", len(inputAppConfig.Hub.Devices.Overrides), len(resultAppConfig.Hub.Devices.Overrides))
 	}
-	for id, d := range inputAppConfig.Hub.Devices {
-		gotDeviceConfig := resultAppConfig.Hub.Devices[id]
+	for id, d := range inputAppConfig.Hub.Devices.Overrides {
+		gotDeviceConfig := resultAppConfig.Hub.Devices.Overrides[id]
 		if d.Id != gotDeviceConfig.Id {
 			t.Fatalf("Expected device id %v', got '%v'", d.Id, gotDeviceConfig.Id)
 		}
@@ -788,15 +790,15 @@ func TestSaveConfigMessage(t *testing.T) {
 	}
 }
 
-func TestSaveDeviceConfigMessage(t *testing.T) {
+func TestSaveDeviceConfigOverridesMessage(t *testing.T) {
 
 	inputAppConfig := createAppconfig()
 
-	modifiedDevConfig := inputAppConfig.Hub.Devices["x0333444"]
+	modifiedDevConfig := inputAppConfig.Hub.Devices.Overrides["x0333444"]
 	wsHub := ws.NewWsHub()
 	wsHub.Start()
 
-	wsHub.OnSaveDeviceConfig(func(p interface{}) error {
+	wsHub.OnSaveDeviceConfigOverrides(func(p interface{}) error {
 
 		bytes := []byte(p.(string))
 		payload := &settings.DeviceConfig{}
@@ -834,7 +836,147 @@ func TestSaveDeviceConfigMessage(t *testing.T) {
 	defer wsConn.Close()
 
 	reqBytes, _ := json.Marshal(modifiedDevConfig)
-	wsData := &ws.EventMessage{Type: ws.SaveDeviceConfig, Payload: reqBytes}
+	wsData := &ws.EventMessage{Type: ws.SaveDeviceConfigOverrides, Payload: reqBytes}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.OperationSuccess {
+		t.Fatalf("Expected type %v', got '%v'", ws.OperationSuccess, event.Type)
+	}
+}
+
+func TestDeleteDeviceConfigOverridesMessage(t *testing.T) {
+
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
+	req := make(map[string]interface{})
+	req["id"] = "x0333444"
+	wsHub.OnDeleteDeviceConfigOverrides(func(p interface{}) error {
+
+		bytes := []byte(p.(string))
+		payload := make(map[string]interface{})
+
+		err := json.Unmarshal(bytes, &payload)
+
+		if err != nil {
+			fmt.Println(err.Error())
+			return errors.New("OnDeleteDeviceConfigOverrides failed. Invalid payload type")
+		}
+
+		id := payload["id"].(string)
+		if id != "x0333444" {
+			t.Fatalf("Expected device id %v', got '%v'", "x0333444", id)
+		}
+		return nil
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	defer s.Close()
+	defer wsConn.Close()
+
+	reqBytes, _ := json.Marshal(req)
+	wsData := &ws.EventMessage{Type: ws.DeleteDeviceConfigOverrides, Payload: reqBytes}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.OperationSuccess {
+		t.Fatalf("Expected type %v', got '%v'", ws.OperationSuccess, event.Type)
+	}
+}
+
+func TestSaveDeviceConfigDefaultsMessage(t *testing.T) {
+
+	appConfig := settings.NewAppConfig()
+
+	defaults := settings.DefaultDeviceConfig()
+	defaults.Disabled = true
+	defaults.MetricsEnabled = true
+
+	appConfig.Hub.Devices.Defaults = defaults
+
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
+	wsHub.OnSaveDeviceConfigDefaults(func(p interface{}) error {
+
+		bytes := []byte(p.(string))
+		payload := &settings.DeviceConfig{}
+
+		err := json.Unmarshal(bytes, &payload)
+		if err != nil {
+			fmt.Println(err.Error())
+			return errors.New("save device config failed. Invalid payload type")
+		}
+
+		if payload.Id != defaults.Id {
+			t.Fatalf("Expected device id %v', got '%v'", defaults.Id, payload.Id)
+		}
+		if payload.Disabled != defaults.Disabled {
+			t.Fatalf("Expected disabled%v', got '%v'", defaults.Disabled, payload.Disabled)
+		}
+
+		if payload.MetricsEnabled != defaults.MetricsEnabled {
+			t.Fatalf("Expected MetricsEnabled %v', got '%v'", defaults.MetricsEnabled, payload.MetricsEnabled)
+		}
+
+		if payload.RateLimit.Unit != defaults.RateLimit.Unit {
+			t.Fatalf("Expected RateLimit.Unit %v', got '%v'", defaults.RateLimit.Unit, payload.RateLimit.Unit)
+		}
+		if payload.RateLimit.Value != defaults.RateLimit.Value {
+			t.Fatalf("Expected RateLimit.Value %v', got '%v'", defaults.RateLimit.Value, payload.RateLimit.Value)
+		}
+
+		if !reflect.DeepEqual(payload.DefaultDebounceByCategory, defaults.DefaultDebounceByCategory) {
+			t.Fatalf("Expected DefaultDebounceByCategory %v', got '%v'", defaults.DefaultDebounceByCategory, payload.DefaultDebounceByCategory)
+		}
+
+		if payload.DebounceOverrides != nil {
+			t.Fatalf("Expected DebounceOverrides %v', got '%v'", defaults.DebounceOverrides, payload.DebounceOverrides)
+		}
+		return nil
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	defer s.Close()
+	defer wsConn.Close()
+
+	reqBytes, _ := json.Marshal(defaults)
+	wsData := &ws.EventMessage{Type: ws.SaveDeviceConfigDefaults, Payload: reqBytes}
 	msg, err := wsData.MarshalJSON()
 	if err != nil {
 		t.Fatal(err.Error())
@@ -908,6 +1050,130 @@ func TestHandleBridgeDeviceRemoveMessage(t *testing.T) {
 
 	// we dont send back response so just assert the logic in the hanlder
 	wg.Wait()
+}
+
+func TestHandlerLoadDashboardGroupsMessage(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
+	wantDashboardGroups := utils_test.CreateDashboardGroups()
+	wsHub.OnLoadDashboardGroups(func() (interface{}, error) {
+		return wantDashboardGroups, nil
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	defer s.Close()
+	defer wsConn.Close()
+
+	wsData := &ws.EventMessage{Type: ws.LoadDashboardGroups, Payload: nil}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.DashboardGroups {
+		t.Fatalf("Expected type %v', got '%v'", ws.DashboardGroups, event.Type)
+	}
+
+	// parse response
+	var gotDashboardGroups map[string]*settings.DashboardGroup
+
+	bytes, _ := json.Marshal(event.Payload)
+	err = json.Unmarshal(bytes, &gotDashboardGroups)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	utils_test.CompareDashboardGroups(t, wantDashboardGroups, gotDashboardGroups)
+}
+
+func TestHandlerImportDashboardGroupsMessage(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
+	wantDashboardGroups := utils_test.CreateDashboardGroups()
+	wsHub.OnImportDashboardGroups(func(p interface{}) error {
+
+		bytes := []byte(p.(string))
+
+		gotDashboardGroups := map[string]*settings.DashboardGroup{}
+		err := json.Unmarshal(bytes, &gotDashboardGroups)
+		if err != nil {
+			return errors.New("import dashboard groups failed. Invalid payload type")
+		}
+
+		utils_test.CompareDashboardGroups(t, wantDashboardGroups, gotDashboardGroups)
+		wg.Done()
+
+		return nil
+	})
+
+	wsHub.OnLoadDashboardGroups(func() (interface{}, error) {
+		
+		wg.Done()
+		return wantDashboardGroups, nil
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	defer s.Close()
+	defer wsConn.Close()
+
+	reqBytes, _ := json.Marshal(wantDashboardGroups)
+
+	wsData := &ws.EventMessage{Type: ws.ImportDashboardGroups, Payload: reqBytes}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.DashboardGroups {
+		t.Fatalf("Expected type %v', got '%v'", ws.DashboardGroups, event.Type)
+	}
+
+	// parse response
+	var gotDashboardGroups map[string]*settings.DashboardGroup
+
+	bytes, _ := json.Marshal(event.Payload)
+	err = json.Unmarshal(bytes, &gotDashboardGroups)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	utils_test.CompareDashboardGroups(t, wantDashboardGroups, gotDashboardGroups)
 }
 
 func TestHandleBridgeDeviceInterviewMessage(t *testing.T) {
@@ -1298,9 +1564,9 @@ func createDevice2() *devices.Device {
 	ent1.Description = "smart light livining room"
 	ent1.Name = "brightness"
 	ent1.Data = 78.0
-	ent1.Category = devices.MeasurementCategory
+	ent1.Category = bridge.MeasurementCategory
 	ent1.Attributes = make(map[string]any)
-	ent1.Type = devices.NumericDataType
+	ent1.Type = bridge.NumericDataType
 	ent1.Attributes["max"] = 255.0
 	ent1.Attributes["min"] = 0.0
 

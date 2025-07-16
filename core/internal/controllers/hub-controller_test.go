@@ -10,6 +10,7 @@ import (
 	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/mocks"
+	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
 	"node-herder/models/logging"
@@ -21,6 +22,7 @@ import (
 	"node-herder/utils"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -423,7 +425,7 @@ func TestProcessorStoresMetricsForNewNonBridgeDevice(t *testing.T) {
 	}
 	cfg.MetricsEnabled = true
 	cfg.RateLimit = utils.IntervalFromMilliseconds(10)
-	appCfg.SetDeviceConfig(cfg)
+	appCfg.SetDeviceConfigOverrides(cfg)
 	time.Sleep(500 * time.Millisecond)
 
 	// note:
@@ -482,7 +484,7 @@ func TestProcessorStoresMetricsForNewNonBridgeDevice(t *testing.T) {
 
 }
 
-func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
+func TestHubSaveDeviceConfigOverrides(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
@@ -525,7 +527,14 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 		cfg.RateLimit = utils.IntervalFromMilliseconds(rt)
 		cfg.Disabled = true
 		cfg.MetricsEnabled = true
-		appCfg.SetDeviceConfig(cfg)
+
+		// set debounce overrides
+		cfg.DebounceOverrides = map[string]*utils.TimeInterval{}
+		for _, expose := range device.Exposes {
+			cfg.DebounceOverrides[expose.Name] = utils.IntervalFromMinutes(id + 1)
+		}
+
+		appCfg.SetDeviceConfigOverrides(cfg)
 		configs = append(configs, cfg)
 	}
 
@@ -547,6 +556,218 @@ func TestHubCreatesNewDeviceConfigurationsForNewDevices(t *testing.T) {
 		if configs[id].MetricsEnabled != cfg.MetricsEnabled {
 			t.Fatalf("metricsEnabled mismatch want %v got %v", configs[id].MetricsEnabled, cfg.MetricsEnabled)
 		}
+		if len(configs[id].DebounceOverrides) != len(cfg.DebounceOverrides) {
+			t.Fatalf("debounceOverrides mismatch want %v got %v", len(configs[id].DebounceOverrides), len(cfg.DebounceOverrides))
+		}
+		for name, debounce := range configs[id].DebounceOverrides {
+			if debounce.Unit != cfg.DebounceOverrides[name].Unit {
+				t.Fatalf("debounceOverrides.Unit mismatch want %v got %v", debounce.Unit, cfg.DebounceOverrides[name].Unit)
+			}
+			if debounce.Value != cfg.DebounceOverrides[name].Value {
+				t.Fatalf("debounceOverrides.Value mismatch want %v got %v", debounce.Value, cfg.DebounceOverrides[name].Value)
+			}
+		}
+	}
+}
+
+func TestHubDeletesDeviceConfigOverride(t *testing.T) {
+
+	mqtt := &mocks.MockMqttClient{}
+	ws := &mocks.NopWsServer{}
+
+	// setup device
+	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
+	device1Expose2 := utils_test.CreateNumericEntity("action_time", 0)
+	dialDevice := utils_test.CreateDeviceWithExposes("x01111111", "Dial button", []*devices.Entity{device1Expose1, device1Expose2})
+
+	device2Expose1 := utils_test.CreateEntity("brightness", "numeric", nil)
+	device2Expose2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
+	lightDevice := utils_test.CreateDeviceWithExposes("x02222222", "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
+
+	// setup bridgeInfo List
+	devices := []*devices.Device{dialDevice, lightDevice}
+	deviceBridgeList := utils_test.CreateBridgeInfoList(devices) // NEED TO FIX, currently i make all devices features which is not right!!!!
+
+	// register hub
+	store, cleanup, err := utils_test.CreateFileStore()
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+
+	appCache := store.AppConfig()
+	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+
+	mqtt.Publish("bridge/devices", deviceBridgeList)
+	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	//  SETUP END
+
+	for id, device := range devices {
+		cfg, err := appCache.GetDeviceConfig(device.Id)
+		if err != nil {
+			t.Fatalf("device not found. err %v ", err)
+		}
+		// update values and store for assertions
+		rt := (id + 1) * 2
+		cfg.RateLimit = utils.IntervalFromMilliseconds(rt)
+		cfg.Disabled = true
+		cfg.MetricsEnabled = true
+		cfg.DebounceOverrides = map[string]*utils.TimeInterval{}
+		eIdx := 0
+		for _, expose := range device.Exposes {
+			eIdx++
+			cfg.DebounceOverrides[expose.Name] = utils.IntervalFromMinutes(eIdx)
+		}
+		appCache.SetDeviceConfigOverrides(cfg)
+	}
+
+	// assert config override exists
+	cfg, err := appCache.GetDeviceConfig(dialDevice.Id)
+	if err != nil {
+		t.Fatalf("device not found. err %v ", err)
+	}
+
+	// expected device config values to match with expected overrides values
+	expectedDebounceUnit := "minutes"
+	expectedMilliseconds := 2
+	expectedDisabled := true
+	expectedMetricsEnabled := true
+	if cfg.Disabled != expectedDisabled && cfg.MetricsEnabled != expectedMetricsEnabled && cfg.RateLimit.Value != expectedMilliseconds {
+		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", expectedMilliseconds, cfg.RateLimit.Value)
+		t.Fatalf("invalid config override. want expectedDisabled %v got %v", expectedDisabled, cfg.Disabled)
+		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", expectedMetricsEnabled, cfg.MetricsEnabled)
+	}
+
+	eIdx := 0
+	for name := range dialDevice.Exposes {
+		eIdx++
+		debounce := cfg.DebounceOverrides[name]
+		if debounce.Unit != expectedDebounceUnit {
+			t.Fatalf("debounceOverrides.Unit mismatch want %v got %v", expectedDebounceUnit, debounce.Unit)
+		}
+		expectedValue := eIdx
+		if debounce.Value != expectedValue {
+			t.Fatalf("debounceOverrides.Value mismatch want %v got %v", expectedValue, debounce.Value)
+		}
+	}
+
+	err = appCache.DeleteDeviceConfigOverrides(dialDevice.Id)
+	if err != nil {
+		t.Fatalf("device not found. err %v ", err)
+	}
+
+	cfg, err = appCache.GetDeviceConfig(dialDevice.Id)
+	if err != nil {
+		t.Fatalf("device not found. err %v ", err)
+	}
+
+	// load appconfig to gt device defaults
+	app, err := appCache.LoadAppConfig()
+	if err != nil {
+		t.Fatalf("app not found. err %v ", err)
+	}
+	// assert device config has default values
+	defaults := app.Hub.Devices.Defaults
+	if cfg.Disabled != defaults.Disabled && cfg.MetricsEnabled != defaults.MetricsEnabled && cfg.RateLimit.Value != defaults.RateLimit.Value {
+		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", defaults.RateLimit.Value, cfg.RateLimit.Value)
+		t.Fatalf("invalid config override. want expectedDisabled %v got %v", defaults.Disabled, cfg.Disabled)
+		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", defaults.MetricsEnabled, cfg.MetricsEnabled)
+	}
+
+	if cfg.DebounceOverrides != nil {
+		t.Fatalf("debounceOverrides should be nil")
+	}
+
+	if !reflect.DeepEqual(cfg.DefaultDebounceByCategory, defaults.DefaultDebounceByCategory) {
+		t.Fatalf("invalid config override. want expectedDefaultDebounceByCategory %v got %v", defaults.DefaultDebounceByCategory, cfg.DefaultDebounceByCategory)
+	}
+
+}
+
+func TestHubSaveDeviceConfigDefaults(t *testing.T) {
+
+	mqtt := &mocks.MockMqttClient{}
+	ws := &mocks.NopWsServer{}
+
+	// setup device
+	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
+	device1Expose2 := utils_test.CreateNumericEntity("action_time", 0)
+	dialDevice := utils_test.CreateDeviceWithExposes("x01111111", "Dial button", []*devices.Entity{device1Expose1, device1Expose2})
+
+	device2Expose1 := utils_test.CreateEntity("brightness", "numeric", nil)
+	device2Expose2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
+	lightDevice := utils_test.CreateDeviceWithExposes("x02222222", "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
+
+	// setup bridgeInfo List
+	devices := []*devices.Device{dialDevice, lightDevice}
+	deviceBridgeList := utils_test.CreateBridgeInfoList(devices) // NEED TO FIX, currently i make all devices features which is not right!!!!
+
+	// register hub
+	store, cleanup, err := utils_test.CreateFileStore()
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+
+	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+
+	mqtt.Publish("bridge/devices", deviceBridgeList)
+	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	//  SETUP END
+
+	appCache := store.AppConfig()
+	app, err := appCache.LoadAppConfig()
+	if err != nil {
+		t.Fatalf("app not found. err %v ", err)
+	}
+	// assert that device config has expcted default values
+	expectedDefaults := settings.DefaultDeviceConfig()
+	deviceDefaults := app.Hub.Devices.Defaults
+
+	if expectedDefaults.Disabled != deviceDefaults.Disabled && expectedDefaults.MetricsEnabled != deviceDefaults.MetricsEnabled && expectedDefaults.RateLimit.Value != deviceDefaults.RateLimit.Value {
+		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", expectedDefaults.RateLimit.Value, deviceDefaults.RateLimit.Value)
+		t.Fatalf("invalid config override. want expectedDisabled %v got %v", expectedDefaults.Disabled, deviceDefaults.Disabled)
+		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", expectedDefaults.MetricsEnabled, deviceDefaults.MetricsEnabled)
+	}
+
+	if !reflect.DeepEqual(expectedDefaults.DebounceOverrides, deviceDefaults.DebounceOverrides) {
+		t.Fatalf("invalid config override. want expectedDebounceOverrides %v got %v", expectedDefaults.DebounceOverrides, deviceDefaults.DebounceOverrides)
+	}
+	if !reflect.DeepEqual(expectedDefaults.DefaultDebounceByCategory, deviceDefaults.DefaultDebounceByCategory) {
+		t.Fatalf("invalid config override. want expectedDefaultDebounceByCategory %v got %v", expectedDefaults.DefaultDebounceByCategory, deviceDefaults.DefaultDebounceByCategory)
+	}
+
+	// update device config defaults
+	expectedNewdDeviceDeufalts := &settings.DeviceConfig{
+		Disabled:       true,
+		MetricsEnabled: true,
+		RateLimit:      utils.IntervalFromMilliseconds(500),
+		DefaultDebounceByCategory: map[bridge.ExposeCategory]*utils.TimeInterval{
+			bridge.ConfigCategory:      utils.IntervalFromMilliseconds(1000),
+			bridge.MeasurementCategory: utils.IntervalFromMinutes(6),
+		},
+	}
+
+	appCache.SetDeviceConfigDefaults(expectedNewdDeviceDeufalts)
+
+	// assert that device config has expcted updated default values
+	app, err = appCache.LoadAppConfig()
+	if err != nil {
+		t.Fatalf("app not found. err %v ", err)
+	}
+	deviceDefaults = app.Hub.Devices.Defaults
+	if expectedNewdDeviceDeufalts.Disabled != deviceDefaults.Disabled && expectedNewdDeviceDeufalts.MetricsEnabled != deviceDefaults.MetricsEnabled && expectedNewdDeviceDeufalts.RateLimit.Value != deviceDefaults.RateLimit.Value {
+		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", expectedNewdDeviceDeufalts.RateLimit.Value, deviceDefaults.RateLimit.Value)
+		t.Fatalf("invalid config override. want expectedDisabled %v got %v", expectedNewdDeviceDeufalts.Disabled, deviceDefaults.Disabled)
+		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", expectedNewdDeviceDeufalts.MetricsEnabled, deviceDefaults.MetricsEnabled)
+	}
+
+	if !reflect.DeepEqual(expectedNewdDeviceDeufalts.DebounceOverrides, deviceDefaults.DebounceOverrides) {
+		t.Fatalf("invalid config override. want expectedDebounceOverrides %v got %v", expectedNewdDeviceDeufalts.DebounceOverrides, deviceDefaults.DebounceOverrides)
+	}
+
+	if !reflect.DeepEqual(expectedNewdDeviceDeufalts.DefaultDebounceByCategory, deviceDefaults.DefaultDebounceByCategory) {
+		t.Fatalf("invalid config override. want expectedDefaultDebounceByCategory %v got %v", expectedNewdDeviceDeufalts.DefaultDebounceByCategory, deviceDefaults.DefaultDebounceByCategory)
 	}
 }
 
@@ -591,7 +812,7 @@ func TestProcessorStoresMetricsForExistingDevice(t *testing.T) {
 	// enable metrics for dial device
 	cfg.MetricsEnabled = true
 	cfg.RateLimit = utils.IntervalFromMilliseconds(10)
-	appCfg.SetDeviceConfig(cfg)
+	appCfg.SetDeviceConfigOverrides(cfg)
 
 	// publish light device
 	payload := map[string]any{"brightness": 10.0, "color_temp": 100}
@@ -671,6 +892,100 @@ func TestProcessorStoresMetricsForExistingDevice(t *testing.T) {
 	if err == nil {
 		t.Fatalf("found light device metrics. It should not be stored")
 	}
+}
+
+func TestImportDashboardGroupsMessage(t *testing.T) {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	// we dont need tasks here just using it as it using valid settings repo
+	bridgeInfoFile := filepath.Join("../../../docs", "device_bridge.json")
+	data, err := os.ReadFile(bridgeInfoFile)
+	if err != nil {
+		t.Fatal("Error reading file:", err)
+		return
+	}
+	bridgeInfoes, err := devices.LoadBridgeDevices(data)
+	if err != nil {
+		t.Fatal("Error parsing bridge info data:", err)
+		return
+	}
+
+	store, cleanup, err := utils_test.CreateFileStore()
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+
+	cfg := store.AppConfig()
+	mqtt := &mocks.MockMqttClient{}
+
+	eventHub := mocks.NewMockEventHub()
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(bridgeInfoes)
+
+	broadcastHandler := func(eventName string, data interface{}) error {
+
+		if eventName != ws.ImportDashboardGroups {
+			t.Fatalf("invalid event name want %v got %v", ws.ImportDashboardGroups, eventName)
+			return fmt.Errorf("invalid event name %v", eventName)
+		}
+
+		req := map[string]*settings.DashboardGroup{}
+		bytes, _ := json.Marshal(data)
+		err := json.Unmarshal(bytes, &req)
+		if err != nil {
+			return fmt.Errorf("OnImportDashboardGroups failed. Invalid payload type : %v ", err.Error())
+		}
+
+		// validate request
+		for _, group := range req {
+			for _, devGroup := range group.DeviceGroup {
+				_, err := registrar.LookupById(devGroup.DeviceId)
+
+				if err != nil {
+					t.Fatalf("OnImportDashboardGroups failed. Invalid device id %v : %v ", devGroup.DeviceId, err.Error())
+					return fmt.Errorf("OnImportDashboardGroups failed. Invalid expose id : %v ", err.Error())
+				}
+			}
+
+		}
+		err = cfg.ImportDashboardGroups(req)
+		wg.Done()
+
+		return err
+	}
+
+	eventHub.SetMockBroadcastEvent(broadcastHandler)
+	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+
+	// create new expose group
+	newGroup := settings.NewDashboardGroup("living room group")
+	newGroup.AddDeviceExpose("0x00158d0005a23c38", "brightness")
+	newGroup.AddDeviceExpose("0x001788010d7d9d3f", "action")
+	newGroup.AddDeviceExpose("0xa4c13894070052fc", "presence")
+	newGroup.AddDeviceExpose("0xa4c13894070052fc", "illuminance")
+
+	newGroup2 := settings.NewDashboardGroup("attic room group")
+	newGroup2.AddDeviceExpose("0x00124b0029207763", "temperature")
+	newGroup2.AddDeviceExpose("0xa4c1389b273366c3", "alarm")
+	newGroup2.AddDeviceExpose("0xa4c1381b6fd53fc4", "energy")
+
+	wantDashboardGroups := map[string]*settings.DashboardGroup{
+		"living room group": newGroup,
+		"attic room group":  newGroup2,
+	}
+	eventHub.Broadcast(ws.ImportDashboardGroups, wantDashboardGroups)
+	wg.Wait()
+
+	c, _ := cfg.LoadAppConfig()
+
+	if len(c.Hub.DashboardGroups) != 2 {
+		t.Fatalf("want %v got %v", 2, len(c.Hub.DashboardGroups))
+	}
+
+	utils_test.CompareDashboardGroups(t, c.Hub.DashboardGroups, wantDashboardGroups)
 }
 
 func TestSaveDashboardGroupIsValidated(t *testing.T) {
@@ -1187,8 +1502,8 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 		t.Fatalf("error loading device config %s", err.Error())
 	}
 
-	config.Debounce["illuminance"] = utils.IntervalFromMilliseconds(500)
-	appConfig.SetDeviceConfig(config)
+	config.DebounceOverrides["illuminance"] = utils.IntervalFromMilliseconds(500)
+	appConfig.SetDeviceConfigOverrides(config)
 
 	wg := &sync.WaitGroup{}
 
@@ -1350,15 +1665,15 @@ func createMockDialAndLightDevices(dialName string, lightName string) []*devices
 
 	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
 	device1Expose2 := utils_test.CreateNumericEntity("action_time", 0)
-	device1Expose1.Category = devices.MeasurementCategory
-	device1Expose2.Category = devices.MeasurementCategory
+	device1Expose1.Category = bridge.MeasurementCategory
+	device1Expose2.Category = bridge.MeasurementCategory
 
 	dialDevice := utils_test.CreateDeviceWithExposes(dialName, "Dial button", []*devices.Entity{device1Expose1, device1Expose2})
 
 	device2Expose1 := utils_test.CreateEntity("brightness", "numeric", nil)
 	device2Expose2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
-	device2Expose1.Category = devices.MeasurementCategory
-	device2Expose2.Category = devices.MeasurementCategory
+	device2Expose1.Category = bridge.MeasurementCategory
+	device2Expose2.Category = bridge.MeasurementCategory
 
 	lightDevice := utils_test.CreateDeviceWithExposes(lightName, "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
 

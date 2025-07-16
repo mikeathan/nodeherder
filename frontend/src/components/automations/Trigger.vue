@@ -23,7 +23,6 @@ import ButtonPanel from '@/components/controls/ButtonPanel.vue';
 import {
   createButtons,
   createNewActionDropdownItems,
-  createNewConditionDropdownItems,
 } from '../../configs/automation/trigger-dropdown.config';
 import { ExposeCategories } from '@/types/device.type';
 

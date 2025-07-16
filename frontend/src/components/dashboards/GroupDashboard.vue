@@ -22,10 +22,8 @@
       }))
     );
   }
-  const props = defineProps({
-    editMode: { type: Boolean, default: false },
-  });
 
+  const isEditMode = ref(false);
   const selectedCard = ref<string | null>(null);
 
   function handleCardSelected(id: string) {
@@ -40,6 +38,7 @@
     };
     emitOpenInputDialogEvent((value) => renameDashboardGroup(groupName, value), props);
   }
+
   function openNewDashboardGroupDialog() {
     const props = {
       title: 'create new dashboard group',
@@ -77,15 +76,23 @@
     emitOpenConfirmationDialog(() => deleteDeviceExpose(groupName, deviceId, exposeName), props);
   }
 
+  function openImportDashboardGroupsConfirmationDialog() {
+    const props = {
+      title: 'Import Dashboard Groups',
+      message: `Import new dashboard groups from file.\n\nAre you sure you want to continue?`,
+    };
+    emitOpenConfirmationDialog(importDashboardGroups, props);
+  }
+
   function addNewDashboardGroup(grouName: string) {
     if (!grouName) {
       // TODO: emit error message
-      console.log('groupName is empty');
+      alert('groupName is empty');
       return;
     }
 
     if (dashboardGroups.value[grouName]) {
-      console.log('groupName already exists');
+      alert('groupName already exists');
 
       // TODO: emit error message
       return;
@@ -99,11 +106,11 @@
 
   function renameDashboardGroup(groupName: string, newName: string) {
     if (!groupName || !newName) {
-      console.log('groupName or newName is empty');
+      alert('groupName or newName is empty');
       return;
     }
     if (dashboardGroups.value[newName]) {
-      console.log('newName already exists');
+      alert('newName already exists');
       return;
     }
     const group = dashboardGroups.value[groupName];
@@ -116,13 +123,13 @@
 
   function deleteDeviceExpose(groupName: string, deviceId: string, exposeName: string) {
     if (!groupName || !deviceId || !exposeName) {
-      console.log('groupName or deviceId or exposeName is empty');
+      alert('groupName or deviceId or exposeName is empty');
       return;
     }
     const deviceGroupExposes = dashboardGroups.value[groupName].deviceGroup[deviceId].exposes;
     const idx = deviceGroupExposes.indexOf(exposeName);
     if (idx === -1) {
-      console.log('exposeName not found');
+      alert('exposeName not found');
       return;
     }
     deviceGroupExposes.splice(idx, 1);
@@ -131,37 +138,78 @@
 
   function deleteDeviceGroup(groupName: string) {
     if (!groupName) {
-      console.log('groupName is empty');
+      alert('groupName is empty');
       return;
     }
 
     delete dashboardGroups.value[groupName];
     store.dispatch('hub/deleteDashboardGroup', groupName);
   }
+
+  function exportDashboardGroups() {
+    const dashboardGroupsJson = JSON.stringify({ dashboardGroups: dashboardGroups.value }, null, 2);
+
+    const blob = new Blob([dashboardGroupsJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'dashboard-groups.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importDashboardGroups() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (!file) {
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dashboardGroupsJson = JSON.parse(event.target?.result as string);
+        store.dispatch('hub/importDashboardGroups', dashboardGroupsJson.dashboardGroups);
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }
+
+  function allowExport(): boolean {
+    return Object.keys(dashboardGroups.value).length > 0;
+  }
+
+  function toggleEditMode() {
+    isEditMode.value = !isEditMode.value;
+  }
 </script>
 
 <template>
-  <div v-if="editMode" class="toolbar">
-    <button class="toolbar-btn" @click="openNewDashboardGroupDialog">
-      <i class="pi pi-plus" />
-      <span>New Group</span>
-    </button>
+  <div>
+    <Button icon="pi pi-cog" severity="secondary" size="small" @click="toggleEditMode" />
+    <template v-if="isEditMode">
+      <Button icon="pi pi-plus" severity="secondary" size="small" @click="openNewDashboardGroupDialog" label="New Group"/>
+      <Button icon="pi pi-download" severity="secondary" size="small" @click="exportDashboardGroups" :disabled="!allowExport()" label="Export"/>
+      <Button icon="pi pi-upload" severity="secondary" size="small" @click="openImportDashboardGroupsConfirmationDialog()" label="Import"/>
+    </template>
   </div>
 
   <div class="dashboard-container">
     <div v-for="group in dashboardGroups" :key="group.name" class="dashboard-group">
       <div class="dashboard-title">{{ group.name }}</div>
-      <div class="card-container" :class="{ 'edit-mode': editMode }">
+      <div class="card-container" :class="{ 'edit-mode': isEditMode }">
         <div v-for="item in flattenDeviceGroup(group)" :key="`${item.deviceId}-${item.expose}`" class="card-item">
           <EntityCard
             :id="item.deviceId"
             :name="item.expose"
             compact
-            :is-selected="editMode && selectedCard == getDeviceGroupId(item.deviceId, item.expose)"
+            :is-selected="isEditMode && selectedCard == getDeviceGroupId(item.deviceId, item.expose)"
             @selected="handleCardSelected"
             @delete="openDeleteDeviceExposeConfirmationDialog(group.name, $event.id, $event.name)" />
         </div>
-        <div v-if="editMode" class="icon-tools">
+        <div v-if="isEditMode" class="icon-tools">
           <span class="edit-icon pi pi-pen-to-square" @click="openRenameDashboardGroupDialog(group.name)" />
           <span class="edit-icon pi pi-trash" @click="openDeleteDeviceGroupConfirmationDialog(group.name)" />
           <span class="edit-icon pi pi-plus" @click="openAddDeviceExposeDialog(group)" />
@@ -192,11 +240,12 @@
       box-sizing: border-box;
     }
   }
+
   .dashboard-title {
     font-size: 0.95rem;
     font-weight: 500;
-    padding: 0 8px;
-    margin-bottom: 0.5rem;
+    padding-left: 12px;
+    padding-bottom: 5px;
     line-height: 1.4;
     color: #e0e0e0;
     letter-spacing: 0.25px;
@@ -207,7 +256,7 @@
     column-gap: 0.5rem;
     max-width: 400px;
     border-radius: 12px;
-    padding: 8px;
+    padding: 5px 10px 5px 10px;
     position: relative;
   }
 
@@ -220,36 +269,6 @@
     width: 100%;
     display: inline-block;
     break-inside: avoid;
-  }
-
-  .toolbar {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem;
-    background: #1f1f1f;
-    border-radius: 10px;
-    margin-bottom: 1rem;
-    gap: 0.5rem;
-    width: fit-content;
-    box-sizing: border-box;
-  }
-
-  .toolbar-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: #1f1f1f;
-    color: #fff;
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: none;
-    cursor: pointer;
-    font-size: 0.85rem;
-    transition: background 0.2s ease;
-  }
-
-  .toolbar-btn:hover {
-    background: #3a3a3a;
   }
 
   .icon-tools {

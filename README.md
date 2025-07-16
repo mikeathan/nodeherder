@@ -64,16 +64,15 @@ frontend - add app settings in main page - DONE
 frontend - add navigation for pages - use vuetify and redesign layout - DONE
 frontend - Send multiple messages in one mqtt request for same device - DONE
 
-frontend - some minified view for each device for the main page
-frontend - update icons match homeassistant
+frontend - update icons match homeassistant - DONE
 frontend - add device list for devices not shown in dashboad - DONE
-frontend - add device groups to be shown in dashboard instead of current dashboard
+frontend - add device groups to be shown in dashboard instead of current dashboard - DONE
 
 TODO:
 
-- create defauls for some device settings so we dont repeat alot of same info
+- create defauls for some device settings so we dont repeat alot of same info - WORK IN PROGRESS
 - frontend -manage the dialogs via event messages - done
-- frontend - add expose selection dialog multiple selection
+- frontend - add expose selection dialog multiple selection - done
 - remove non measurement exposes from metrics - done
 
 toggle for live data ? later
@@ -101,7 +100,3 @@ METRICS backend TODO
 - index entries = bolt.Bucket.CreateIndex
 
 Check for disabled items in bridge - see if we can add them if online
-
-device groups TODO --------------------------
-
-add,remove, edit expose and groups from ui

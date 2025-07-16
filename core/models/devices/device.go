@@ -3,6 +3,7 @@ package devices
 import (
 	"errors"
 	"fmt"
+	"node-herder/models/bridge"
 	"node-herder/utils"
 	"sync"
 	"time"
@@ -101,26 +102,6 @@ var diagnosticWhitelist = map[string]int{
 	"target_distance": 7,
 }
 
-type ExposeDataType = string
-type ExposeCategory = string
-type ExposeAccessMode = string
-
-const (
-	ReadAccessMode      ExposeAccessMode = "read"
-	WriteAccessMode     ExposeAccessMode = "write"
-	ReadWriteAccessMode ExposeAccessMode = "readwrite"
-	UnknownAccessMode   ExposeAccessMode = "unknown"
-
-	MeasurementCategory ExposeCategory = "measurement"
-	DiagnosticCategory  ExposeCategory = "diagnostic"
-	ConfigCategory      ExposeCategory = "config"
-
-	NumericDataType   ExposeDataType = "numeric"
-	EnumDataType      ExposeDataType = "enum"
-	BinaryDataType    ExposeDataType = "binary"
-	CompositeDataType ExposeDataType = "composite"
-)
-
 // read access mode is set as measurement category
 // unless is in blacklist
 
@@ -142,22 +123,22 @@ const (
 func getExposeCategory(entity BridgeExpose) string {
 
 	if _, ok := configWhitelist[entity.Property]; ok {
-		return ConfigCategory
+		return bridge.ConfigCategory
 	}
 	if _, ok := diagnosticWhitelist[entity.Property]; ok {
-		return DiagnosticCategory
+		return bridge.DiagnosticCategory
 	}
 	if _, ok := measurementWhitelist[entity.Property]; ok {
-		return MeasurementCategory
+		return bridge.MeasurementCategory
 	}
 	if entity.Access&WriteBridgeAccessMode != 0 {
-		return ConfigCategory
+		return bridge.ConfigCategory
 	}
 
 	if entity.Category == "" {
 
 		if entity.Access&ReadBridgeAccessMode != 0 || entity.Access&StateBridgeAccessMode != 0 {
-			return MeasurementCategory
+			return bridge.MeasurementCategory
 		}
 	}
 	return entity.Category
@@ -207,21 +188,21 @@ func (u *UpdatePackage) HasData() bool {
 }
 
 type Entity struct {
-	Name        string           `json:"name"`
-	Description string           `json:"description,omitempty"`
-	Unit        string           `json:"unit,omitempty"`
-	Data        any              `json:"data"`
-	Type        ExposeDataType   `json:"type"`
-	Category    ExposeCategory   `json:"category,omitempty"`
-	Attributes  map[string]any   `json:"attributes,omitempty"`
-	AccessMode  ExposeAccessMode `json:"access_mode"`
-	Values      map[string]any   `json:"values,omitempty"`
+	Name        string                  `json:"name"`
+	Description string                  `json:"description,omitempty"`
+	Unit        string                  `json:"unit,omitempty"`
+	Data        any                     `json:"data"`
+	Type        bridge.ExposeDataType   `json:"type"`
+	Category    bridge.ExposeCategory   `json:"category,omitempty"`
+	Attributes  map[string]any          `json:"attributes,omitempty"`
+	AccessMode  bridge.ExposeAccessMode `json:"access_mode"`
+	Values      map[string]any          `json:"values,omitempty"`
 }
 
 func newEntity() *Entity {
 	return &Entity{
 		Attributes: make(map[string]any),
-		AccessMode: UnknownAccessMode,
+		AccessMode: bridge.UnknownAccessMode,
 		Values:     make(map[string]any),
 	}
 }
@@ -237,7 +218,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 	// }
 
 	accessMode := expose.AccessMode()
-	if accessMode == UnknownAccessMode {
+	if accessMode == bridge.UnknownAccessMode {
 		return nil, fmt.Errorf("invalid device feature access mode %v", expose.Access)
 	}
 
@@ -251,7 +232,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 	newEntity.Type = expose.Type
 
 	switch expose.Type {
-	case NumericDataType:
+	case bridge.NumericDataType:
 		if expose.ValueMax != nil {
 			newEntity.Attributes["max"] = expose.ValueMax
 		}
@@ -268,7 +249,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 		// 	newEntity.Values[expose.Name] = 0 // ????????? - i dont think i need this
 		// }
 
-	case BinaryDataType:
+	case bridge.BinaryDataType:
 
 		newEntity.Values["on"] = expose.ValueOn
 		newEntity.Values["off"] = expose.ValueOff
@@ -277,7 +258,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 			newEntity.Values["toggle"] = expose.ValueToggle
 		}
 
-	case EnumDataType:
+	case bridge.EnumDataType:
 		for id, item := range expose.Values {
 			newEntity.Values[fmt.Sprintf("%d", id)] = item
 		}
@@ -295,12 +276,12 @@ func createExpose(data map[string]interface{}) map[string]*Entity {
 		}
 
 		newEntity := newEntity()
-		newEntity.Category = MeasurementCategory
+		newEntity.Category = bridge.MeasurementCategory
 		newEntity.Name = key
-		newEntity.AccessMode = ReadAccessMode
+		newEntity.AccessMode = bridge.ReadAccessMode
 		newEntity.Data = value
 		newEntity.Unit = units[key]
-		newEntity.Type = NumericDataType // TODO: make this dynamic
+		newEntity.Type = bridge.NumericDataType // TODO: make this dynamic
 		entities[key] = newEntity
 	}
 	return entities

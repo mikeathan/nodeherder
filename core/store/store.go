@@ -5,7 +5,6 @@ import (
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	"node-herder/repository"
-	"node-herder/utils"
 	"sync"
 	"time"
 )
@@ -76,16 +75,6 @@ type appStore struct {
 
 func NewAppStore(devices devices.Repository, metrics metrics.Repository, config *settings.AppConfigCache) (AppStore, error) {
 
-	appconfig, err := config.LoadAppConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	deviceConfigs := make(map[string]*settings.DeviceConfig)
-	for _, dev := range appconfig.Hub.Devices {
-		deviceConfigs[dev.Id] = dev
-	}
-
 	app := &appStore{
 		metrics:        metrics,
 		devices:        devices,
@@ -132,41 +121,41 @@ func (s *appStore) RemoveDeviceById(id string) error {
 func (s *appStore) StoreDevice(friendlyName string, device *devices.Device) error {
 	id := s.ResolveFriendlyName(friendlyName)
 
-	isNew, err := s.devices.Store(id, device)
+	_, err := s.devices.Store(id, device)
 	if err != nil {
 		return err
 	}
 
-	if isNew {
-		err := s.initialiseDeviceConfig(device)
-		if err != nil {
-			return err
-		}
-	}
+	// if isNew {
+	// 	err := s.initialiseDeviceConfig(device)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	s.deviceIdMapper.UpdateId(friendlyName, id)
 	return nil
 }
 
-func (s *appStore) initialiseDeviceConfig(device *devices.Device) error {
+// func (s *appStore) initialiseDeviceConfig(device *devices.Device) error {
 
-	// make sure new device has a configuration if added for first time
-	deviceConfig, err := s.config.GetDeviceConfig(device.Id)
-	if err != nil {
-		return err
-	}
-	// for diagnostic entities, set default debounce to 5 min
-	for _, entity := range device.Exposes {
-		if entity.Category == devices.DiagnosticCategory {
+// 	// make sure new device has a configuration if added for first time
+// 	deviceConfig, err := s.config.GetDeviceConfig(device.Id)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	// for diagnostic entities, set default debounce to 5 min
+// 	for _, entity := range device.Exposes {
+// 		if entity.Category == bridge.DiagnosticCategory {
 
-			if _, ok := deviceConfig.Debounce[entity.Name]; !ok {
-				deviceConfig.Debounce[entity.Name] = utils.IntervalFromSeconds(300)
-				s.config.SetDeviceConfig(deviceConfig)
-			}
-		}
-	}
-	return nil
-}
+// 			if _, ok := deviceConfig.Debounce[entity.Name]; !ok {
+// 				deviceConfig.Debounce[entity.Name] = utils.IntervalFromSeconds(300)
+// 				s.config.SetDeviceConfig(deviceConfig)
+// 			}
+// 		}
+// 	}
+// 	return nil
+// }
 
 func (s *appStore) StoreBridgeInfoList(bridgeInfoList []*devices.BridgeInfo) error {
 	err := s.devices.StoreBridge(bridgeInfoList)

@@ -94,15 +94,40 @@ func (h *HubController) registerEventHubEvents() {
 		return err
 	})
 
-	h.eventHub.OnSaveDeviceConfig(func(p interface{}) error {
+	h.eventHub.OnSaveDeviceConfigOverrides(func(p interface{}) error {
 		req := &settings.DeviceConfig{}
 		bytes, _ := json.Marshal(p)
 		err := json.Unmarshal(bytes, &req)
 
 		if err != nil {
-			return fmt.Errorf("OnSaveDeviceConfig failed. Invalid payload type : %v ", err.Error())
+			return fmt.Errorf("OnSaveDeviceConfigOverrides failed. Invalid payload type : %v ", err.Error())
 		}
-		return appconfig.SetDeviceConfig(req)
+		return appconfig.SetDeviceConfigOverrides(req)
+	})
+
+	h.eventHub.OnDeleteDeviceConfigOverrides((func(p interface{}) error {
+		bytes, _ := json.Marshal(p)
+		payload := make(map[string]interface{})
+		err := json.Unmarshal(bytes, &payload)
+		if err != nil {
+			return fmt.Errorf("OnDeleteDeviceConfigOverrides failed. Invalid payload type : %v ", err.Error())
+		}
+
+		id, ok := payload["id"].(string)
+		if !ok {
+			return fmt.Errorf("OnDeleteDeviceConfigOverrides failed. Invalid payload type missing group id")
+		}
+		return appconfig.DeleteDeviceConfigOverrides(id)
+	}))
+
+	h.eventHub.OnSaveDeviceConfigDefaults(func(p interface{}) error {
+		req := &settings.DeviceConfig{}
+		bytes, _ := json.Marshal(p)
+		err := json.Unmarshal(bytes, &req)
+		if err != nil {
+			return fmt.Errorf("OnSaveDeviceConfigDefaults failed. Invalid payload type : %v ", err.Error())
+		}
+		return appconfig.SetDeviceConfigDefaults(req)
 	})
 
 	h.eventHub.OnSaveDashboardGroup(func(payload interface{}) error {
@@ -137,6 +162,27 @@ func (h *HubController) registerEventHubEvents() {
 			return fmt.Errorf("OnDeleteDashboardGroup failed. Invalid payload type missing group id")
 		}
 		return appconfig.DeleteDashboardGroup(id)
+	})
+
+	h.eventHub.OnImportDashboardGroups(func(payload interface{}) error {
+		req := make(map[string]*settings.DashboardGroup)
+		bytes, _ := json.Marshal(payload)
+		err := json.Unmarshal(bytes, &req)
+		if err != nil {
+			return fmt.Errorf("OnImportDashboardGroups failed. Invalid payload type : %v ", err.Error())
+		}
+
+		return appconfig.ImportDashboardGroups(req)
+	})
+
+	h.eventHub.OnLoadDashboardGroups(func() (interface{}, error) {
+
+		appConfig, err := appconfig.LoadAppConfig()
+		if err != nil {
+			return nil, err
+		}
+
+		return appConfig.Hub.DashboardGroups, nil
 	})
 
 	h.eventHub.OnLoadAutomations(func() interface{} {

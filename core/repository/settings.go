@@ -2,7 +2,7 @@ package repository
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"node-herder/models/settings"
 	"node-herder/utils/storage"
 )
@@ -80,26 +80,26 @@ func (s *FileSettingsRepo) SaveBridgeConfig(bridgeConfig *settings.BridgeConfig)
 	return err
 }
 
-func (s *FileSettingsRepo) FindOrAddDeviceConfigIfNotExists(id string) (*settings.DeviceConfig, error) {
+func (s *FileSettingsRepo) LoadOrDefaultDeviceConfig(id string) (*settings.DeviceConfig, error) {
 
-	config, err := s.Load()
+	appConfig, err := s.Load()
 	if err != nil {
 		return nil, err
 	}
 
-	if val, ok := config.Hub.Devices[id]; ok {
-		return val, nil
+	// return override if exists
+	cfg := appConfig.Hub.Devices.Overrides[id]
+	if cfg != nil {
+		return cfg, nil
+
 	}
 
-	// if device config not found, create one with default values
-	cfg := settings.NewDeviceConfig(id)
-	err = s.SaveDeviceConfig(cfg)
-	
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialise new device config for id %v", id)
-	}
-	return cfg, nil
+	defaultConfig := settings.NewDeviceConfigFrom(appConfig.Hub.Devices.Defaults)
+	defaultConfig.Id = id
+	// return default device config
+	return defaultConfig, nil
 }
+
 func (s *FileSettingsRepo) SaveHistoryConfig(historyConfig *settings.HistoryConfig) error {
 	config, err := s.Load()
 	if err != nil {
@@ -109,6 +109,7 @@ func (s *FileSettingsRepo) SaveHistoryConfig(historyConfig *settings.HistoryConf
 	config.Hub.History = historyConfig
 	return s.SaveAppConfig(config)
 }
+
 func (s *FileSettingsRepo) SaveLoggerConfig(loggerConfig *settings.LoggerConfig) error {
 	config, err := s.Load()
 	if err != nil {
@@ -125,7 +126,20 @@ func (s *FileSettingsRepo) SaveDeviceConfig(deviceConfig *settings.DeviceConfig)
 		return err
 	}
 
-	config.Hub.Devices[deviceConfig.Id] = deviceConfig
+	config.Hub.Devices.AddOverride(deviceConfig)
+	return s.SaveAppConfig(config)
+}
+
+func (s *FileSettingsRepo) DeleteDeviceConfig(id string) error {
+	config, err := s.Load()
+	if err != nil {
+		return err
+	}
+
+	if ok := config.Hub.Devices.DeleteOverride(id); !ok {
+		return errors.New("device config not found")
+	}
+
 	return s.SaveAppConfig(config)
 }
 
@@ -135,10 +149,12 @@ func (s *FileSettingsRepo) Load() (*settings.AppConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	settings := settings.NewAppConfig()
-	if buffer != nil {
-		err = json.Unmarshal(buffer, &settings)
+	
+	app := &settings.AppConfig{}
+	if buffer == nil {
+		app = settings.NewAppConfig()
+	} else {
+		err = json.Unmarshal(buffer, &app)
 		if err != nil {
 			return nil, err
 		}
@@ -146,8 +162,8 @@ func (s *FileSettingsRepo) Load() (*settings.AppConfig, error) {
 
 	bridgeCfg, err := s.LoadBridgeConfig()
 	if err == nil {
-		settings.Bridge = bridgeCfg
+		app.Bridge = bridgeCfg
 	}
 
-	return settings, err
+	return app, err
 }

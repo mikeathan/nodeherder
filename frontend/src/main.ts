@@ -10,7 +10,7 @@ import { store, key } from './store/index';
 import mitt from 'mitt';
 import { Events } from '@/types/events.type';
 import VueApexCharts from 'vue3-apexcharts';
-
+import ClickOutside from './directives//click-outside';
 import PrimeVue from 'primevue/config';
 import Aura from '@primevue/themes/aura';
 import Material from '@primevue/themes/material';
@@ -33,6 +33,7 @@ app.use(PrimeVue, {
   },
 });
 
+app.directive('click-outside', ClickOutside);
 app.use(ToastService);
 app.use(store, key);
 app.use(router);

@@ -86,7 +86,6 @@ func TestDeviceProcessor_CreateOrUpdateDevice_NewDevice(t *testing.T) {
 	if d.Exposes["state"].Data != "on" {
 		t.Errorf("Device Expose state mismatch want: %s got: %s", "on", d.Exposes["state"].Data)
 	}
-
 }
 
 func TestDeviceProcessor_CreateOrUpdateDevice_ExistingDevice(t *testing.T) {

@@ -6,6 +6,7 @@ type Map = { [key: DialogKey]: any };
 export const DialogComponents: Map = {
   confirm: defineAsyncComponent(() => import('../components/dialogs/ConfirmDialog.vue')),
   input: defineAsyncComponent(() => import('../components/dialogs/InputDialog.vue')),
+  selection: defineAsyncComponent(() => import('../components/dialogs/SelectionDialog.vue')),
   renameDevice: defineAsyncComponent(() => import('../components/dialogs/RenameDeviceDialog.vue')),
   removeDevice: defineAsyncComponent(() => import('../components/dialogs/RemoveDeviceDialog.vue')),
   exposeSelection: defineAsyncComponent(() => import('../components/dialogs/ExposeSelectionDialog.vue')),

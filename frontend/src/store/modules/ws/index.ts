@@ -73,6 +73,7 @@ export const WSClientModule: Module<WSClientState, RootState> = {
         }
 
         const obj = JSON.parse(event.data);
+
         switch (obj.type) {
           case 'automations':
             dispatch('automations/init', obj.payload, {
@@ -117,6 +118,11 @@ export const WSClientModule: Module<WSClientState, RootState> = {
             break;
           case 'metrics':
             dispatch('metrics/store', obj.payload, {
+              root: true,
+            });
+            break;
+          case 'dashboardGroups':
+            commit('hub/setDashboardGroups', obj.payload, {
               root: true,
             });
             break;

@@ -28,6 +28,7 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, ctx c
 	// file routing
 	fs := api.NewFileServer("../frontend/dist")
 	router.GET("/consoleviewer", fs.Resolve(false))
+	router.GET("/deviceDashboard", fs.Resolve(false))
 	router.GET("/settings", fs.Resolve(false))
 	router.GET("/viewer", fs.Resolve(false))
 	router.GET("/creator", fs.Resolve(false))

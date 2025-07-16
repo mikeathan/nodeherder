@@ -5,8 +5,9 @@ type Repository interface {
 	Load() (*AppConfig, error)
 	LoadBridgeConfig() (*BridgeConfig, error)
 	SaveBridgeConfig(bridgeConfig *BridgeConfig) error
-	SaveHubConfig(hubConfig *HubConfig) error 
-	FindOrAddDeviceConfigIfNotExists(id string) (*DeviceConfig, error)
+	SaveHubConfig(hubConfig *HubConfig) error
+	LoadOrDefaultDeviceConfig(id string) (*DeviceConfig, error)
 	SaveDeviceConfig(deviceConfig *DeviceConfig) error
+	DeleteDeviceConfig(id string) error
 	Close() error
 }
