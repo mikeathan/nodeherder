@@ -22,12 +22,12 @@ export function createTimeIntervalFromMinutes(minutes: number): TimeInterval {
   return { value: minutes, unit: 'minutes' };
 }
 
-export function createDeviceConfigOverride(id:string): DeviceConfig {
+export function createDeviceConfigOverride(id: string): DeviceConfig {
   return {
     id: id,
     disabled: false,
     metricsEnabled: false,
-    rateLimit: createTimeIntervalFromSeconds(5),
+    rateLimit: createTimeIntervalFromSeconds(60),
     defaultDebounceByCategory: {},
     debounceOverrides: {},
   } as DeviceConfig;
