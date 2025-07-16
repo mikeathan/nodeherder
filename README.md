@@ -13,8 +13,8 @@ TODO:
 
 - add type in device.expose for http data
 - add refresh functionality to ping mqtt device for when we just started server an we want to awake devices ?
-- add remove /force remove/block functionality
-- add configure exposes device functionality
+- add remove /force remove/block functionality - DONE
+- add configure exposes device functionality - DONE
 
 - add auth0
 - add support for https and websocket TLS
@@ -44,22 +44,17 @@ BUGS:
   because it hasnt Id, we build one Id on regisration. So we cant store it in metrics straighr away.
   we would have to set it up afterwards
   Also not sure if server is restarted that we have stored that information eg device id in the store, TO be tested
--
-
-TODO
+- Device config overrides on create they dont save the setting first time !!!
 
 - frontend - device settings component - DONE
 - frontend - test metrics graph - need mocked data in test node server ! - DONE
 - metrics results could have property from/to so we know the range for ui purposes - DONE
 
-- automation viewer - enable/disable doesnt save update
 -
 - Non bridge devices . eg HTTP need more investigation/testing
 - error reporting - important - Done
 - metrics repo - keep for x days - DONE
 
-frontend - tabs - load tab on click -(leave for now)
-frontend - handle timerange enum colours
 frontend - add app settings in main page - DONE
 frontend - add navigation for pages - use vuetify and redesign layout - DONE
 frontend - Send multiple messages in one mqtt request for same device - DONE
@@ -67,15 +62,18 @@ frontend - Send multiple messages in one mqtt request for same device - DONE
 frontend - update icons match homeassistant - DONE
 frontend - add device list for devices not shown in dashboad - DONE
 frontend - add device groups to be shown in dashboard instead of current dashboard - DONE
+frontend/backend - create defauls for some device settings so we dont repeat alot of same info - DONE
 
 TODO:
 
-- create defauls for some device settings so we dont repeat alot of same info - WORK IN PROGRESS
 - frontend -manage the dialogs via event messages - done
 - frontend - add expose selection dialog multiple selection - done
 - remove non measurement exposes from metrics - done
+- automation viewer - enable/disable doesnt save update
 
-toggle for live data ? later
+- frontend - tabs - load tab on click -(leave for now)
+- frontend - handle timerange enum colours
+- toggle for live data ? later
 
 once we send the request
 store response in metrics store ? needs thinking if we need that
