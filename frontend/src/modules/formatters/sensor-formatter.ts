@@ -56,6 +56,9 @@ import {
   mdiCrosshairsQuestion,
   mdiBrightness6,
   mdiCreation,
+  mdiPowerOff,
+  mdiFlash,
+  mdiFlashOutline,
 } from '@mdi/js';
 import { Expose } from '@/types/device';
 
@@ -88,8 +91,8 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
   },
   occupancy: { name: mdiWalk, color: 'white' },
   current: { name: mdiCopyright, color: 'gray' },
-  power: { name: mdiPower, color: 'red' },
-  energy: { name: mdiPowerPlug, color: 'green' },
+  power: { name: mdiFlashOutline, color: 'red' },
+  energy: { name: mdiFlash, color: '#49b970' },
   frequency: { name: mdiSineWave, color: 'purple' },
   tamper: { name: mdiAlertCircleOutline, color: 'red' },
   smoke: { name: mdiSmoking, color: 'red' },
@@ -153,10 +156,16 @@ const sensorUnits: KeyValuePair<string> = {
 };
 
 export function getFormattedSensorValue(expose: Expose): string {
-  if (expose.name == null) {
-    return '';
+  if (expose.name == null || expose.data == null) {
+    return '-';
   }
   const unit = expose.unit ?? getSensorUnit(expose.name);
+  switch (expose.name) {
+    case 'presence':
+      return expose.data ? 'Detected' : 'Clear';
+    case 'contact':
+      return expose.data ? 'Closed' : 'Open';
+  }
   return `${getSensorValue(expose.data)}${unit}`;
 }
 
@@ -198,15 +207,27 @@ export function getSensorIcon(sensor: string, value: any): IconProps {
     case 'battery':
     case 'battpercentage':
       return getBatteryIcon(value);
+    case 'state':
+      return getStateIcon(value);
     case 'presence':
       return getPresenceIcon(value);
   }
+
+  if (sensor?.startsWith('energy')) {
+    return typeToClassMapsensor['energy'];
+  }
+
   const icon = typeToClassMapsensor[sensor];
   return icon ?? getUnknownEntityIcon();
 }
 
 const getUnknownEntityIcon = (): IconProps => {
   return { name: mdiCrosshairsQuestion, color: 'grey' };
+};
+
+const getStateIcon = (value: boolean): IconProps => {
+  // TOOD: check for TRUE/FALSE
+  return value ? { name: mdiPower, color: '#1E88E5' } : { name: mdiPowerOff, color: 'grey' };
 };
 
 const getPresenceIcon = (value: boolean): IconProps => {

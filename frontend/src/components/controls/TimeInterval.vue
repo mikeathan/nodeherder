@@ -4,7 +4,6 @@
   import { TimeInterval } from '../../types/types.type';
 
   const props = defineProps({
-    id: { type: String, required: true },
     value: {
       type: Object as PropType<TimeInterval>,
       required: true,
@@ -17,6 +16,8 @@
   const timeInterval = computed(() => props.value);
 
   function inputTimeIntervalLostFocus(propValue: any) {
+    if (!timeInterval.value || timeInterval.value.value === propValue) return;
+
     timeInterval.value.value = propValue;
     emit('update', { ...timeInterval.value });
   }

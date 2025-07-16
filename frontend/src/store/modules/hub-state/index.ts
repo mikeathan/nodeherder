@@ -7,6 +7,7 @@ import {
   BridgeSettingsType,
   DashboardGroup,
   DashboardGroups,
+  DeviceConfig,
   DeviceSettings,
   HistorySettingsType,
   LoggerSettingsType,
@@ -24,6 +25,10 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
   }),
 
   getters: {
+    isInitialized: (state) => (): boolean => {
+      return state.initialized;
+    },
+
     // Device getters
     listAllDevices: (state) => (): Devices => {
       return Object.values(state.deviceMap) as Devices;
@@ -39,8 +44,8 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         return state.deviceMap[id] != null;
       },
 
-    isInitialized: (state) => (): boolean => {
-      return state.initialized;
+    deviceDefaults: (state) => (): DeviceConfig => {
+      return state.appConfig?.hub.devices?.defaults;
     },
 
     // AppConfig getters
@@ -52,8 +57,8 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     dashboardGroups: (state) => (): DashboardGroups => state.appConfig.hub.dashboardGroups,
     findDeviceSetting:
       (state) =>
-      (id: string): DeviceSettings | undefined => {
-        return state.appConfig?.hub.devices[id];
+      (id: string): DeviceConfig | undefined => {
+        return state.appConfig?.hub.devices?.overrides[id];
       },
   },
 
@@ -95,10 +100,21 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     setAppConfig(state, config: AppConfig) {
       state.appConfig = config;
     },
-    setDeviceSetting(state, setting: DeviceSettings) {
+    setDeviceDeConfigfaults(state, defaults: DeviceConfig) {
+      state.appConfig.hub.devices.defaults = defaults;
+    },
+    removeDeviceConfigOverrides(state, id: string) {
       if (state.appConfig) {
-        state.appConfig.hub.devices[setting.id] = setting;
+        delete state.appConfig.hub.devices.overrides[id];
       }
+    },
+    setDeviceConfigOverrides(state, setting: DeviceConfig) {
+      if (state.appConfig) {
+        state.appConfig.hub.devices.overrides[setting.id] = setting;
+      }
+    },
+    setDashboardGroups(state, dashboardGroups: DashboardGroups) {
+      state.appConfig.hub.dashboardGroups = dashboardGroups;
     },
     setDashboardGroup(state, dashboardGroup: DashboardGroup) {
       state.appConfig.hub.dashboardGroups[dashboardGroup.name] = dashboardGroup;
@@ -142,17 +158,45 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       commit('setAppConfig', appConfig);
     },
 
-    saveDeviceSettings({ commit, dispatch }, deviceSetting: DeviceSettings) {
-      commit('setDeviceSetting', deviceSetting);
+    saveDeviceConfigOverrides({ commit, dispatch }, deviceSetting: DeviceConfig) {
+      commit('setDeviceConfigOverrides', deviceSetting);
       dispatch(
         'ws/emit',
         {
-          event: 'saveDeviceConfig',
+          event: 'saveDeviceConfigOverrides',
           message: deviceSetting,
         },
         { root: true }
       );
     },
+    deleteDeviceConfigOverrides({ commit, dispatch }, id: string) {
+      commit('removeDeviceConfigOverrides', id);
+
+      var payload = {
+        id: id,
+      };
+      dispatch(
+        'ws/emit',
+        {
+          event: 'deleteDeviceConfigOverrides',
+          message: payload,
+        },
+        { root: true }
+      );
+    },
+
+    saveDeviceConfigDefaults({ commit, dispatch }, config: DeviceConfig) {
+      commit('setDeviceDeConfigfaults', config);
+      dispatch(
+        'ws/emit',
+        {
+          event: 'saveDeviceConfigDefaults',
+          message: config,
+        },
+        { root: true }
+      );
+    },
+
     saveDashboardGroup({ commit, dispatch }, dashboardGroup: DashboardGroup) {
       commit('setDashboardGroup', dashboardGroup);
       dispatch(
@@ -165,6 +209,16 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       );
     },
 
+    importDashboardGroups({ commit, dispatch }, dashboardGroups: DashboardGroups) {
+      dispatch(
+        'ws/emit',
+        {
+          event: 'importDashboardGroups',
+          message: dashboardGroups,
+        },
+        { root: true }
+      );
+    },
     deleteDashboardGroup({ commit, dispatch }, name: string) {
       commit('removeDashboardGroup', name);
 

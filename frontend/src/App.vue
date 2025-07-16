@@ -13,7 +13,7 @@
   const router = useRouter();
   const permitJoinDuration = 120;
 
-  const permitJoinEnabled = ref<boolean>(false);
+  const isPermitJoinActive = ref<boolean>(false);
   const dashboardEditMode = ref<boolean>(false);
   const drawerWidth = ref(0);
   const isDrawerVisible = ref(false);
@@ -22,31 +22,27 @@
     drawerWidth.value = width;
   };
 
+  const toggleDrawer = () => {
+    isDrawerVisible.value = !isDrawerVisible.value;
+  }
   const toggleEditMode = () => {
     dashboardEditMode.value = !dashboardEditMode.value;
+  };
+  const onPermitJoinStatusUpdated = (status: boolean) => {
+    isPermitJoinActive.value = status;
+  };
+
+  const startPermitJoinTimer = () => {
+    if (!isPermitJoinActive.value) {
+      isPermitJoinActive.value = true;
+    }
   };
 
   const topNavigattionItems = computed<MenuBarItem[]>(() => [
     {
       isLogo: true,
       template: () => h(Logo),
-    },
-    {
-      //label: permitJoinEnabled.value ? 'join enabled' : 'permit Join',
-      icon: 'pi pi-sitemap',
-      disabled: permitJoinEnabled.value,
-      command: () => (permitJoinEnabled.value = !permitJoinEnabled.value),
-    },
-    {
-      icon: 'pi pi-cog',
-      command: () => {
-        toggleEditMode();
-        router.push({
-          name: 'groupdashboard',
-          params: { mode: dashboardEditMode.value ? DashboardModes.editMode : '' },
-        });
-      },
-    },
+    }
   ]);
 
   const sideNavigationItems = computed<MenuBarItem[]>(() => [
@@ -85,10 +81,12 @@
       command: () => router.push('/settings'),
     },
     {
-      label: permitJoinEnabled.value ? 'join enabled' : 'permit Join',
+      label: 'permit Join',
       icon: 'pi pi-sitemap',
-      disabled: permitJoinEnabled.value, // todo set enable once permit join is enabled
-      command: () => (permitJoinEnabled.value = !permitJoinEnabled.value)
+      get disabled() {
+        return isPermitJoinActive.value;
+      },
+      command: () => startPermitJoinTimer(),
     },
   ]);
 
@@ -105,13 +103,13 @@
   <NavigationDrawer
     :items="sideNavigationItems"
     :is-expanded="isDrawerVisible"
-    @toggle="isDrawerVisible = !isDrawerVisible"
+    @toggle="toggleDrawer"
     @widthChanged="handleDrawerWidthChanged" />
   <div class="main-content" :style="{ marginLeft: `${drawerWidth}px` }">
     <PermitJoinTimer
       :duration="permitJoinDuration"
-      :allow-join="permitJoinEnabled"
-      @statusUpdated="permitJoinEnabled = $event" />
+      :allow-join="isPermitJoinActive"
+      @statusUpdated="onPermitJoinStatusUpdated" />
     <Notifications />
     <DialogHost />
 
@@ -129,6 +127,6 @@
   }
   .main-content {
     transition: margin-left 0.5s ease;
-    padding: 0 0.1rem ;
+    padding: 0 0.1rem;
   }
 </style>

@@ -21,14 +21,19 @@
     (e: 'toggle'): void;
   }>();
 
-  const { menuItems } = useMenuItems(props.items);
+  const toggleDrawer = () => emit('toggle');
+  const closeDrawer = () => emit('toggle');
+
+  const onMenuItemClick = () => {
+    if (props.isExpanded) {
+      closeDrawer();
+    }
+  };
+  const { menuItems } = useMenuItems(props.items, onMenuItemClick);
   const { isMobile } = useDrawer(
     () => props.isExpanded,
     (w) => emit('widthChanged', w)
   );
-
-  const toggleDrawer = () => emit('toggle');
-  const closeDrawer = () => emit('toggle');
 </script>
 
 <template>
@@ -62,9 +67,21 @@
       <PanelMenu :model="menuItems" class="menu-panel" />
     </div>
   </transition>
+
+  <!-- Overlay to catch outside clicks -->
+  <div v-if="isExpanded" class="drawer-overlay" @click="closeDrawer"></div>
 </template>
 
 <style scoped>
+  .drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 999;
+    background: rgba(0, 0, 0, 0.2);
+  }
   .floating-sidebar {
     position: fixed;
     top: 0;

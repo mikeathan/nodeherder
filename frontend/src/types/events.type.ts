@@ -27,6 +27,7 @@ export type Events = {
 export const DialogEventTypes = {
   confirm: 'confirm',
   input: 'input',
+  selection: 'selection',
   renameDevice: 'renameDevice',
   removeDevice: 'removeDevice',
   exposeSelection: 'exposeSelection',
@@ -42,6 +43,11 @@ export type BaseDialogProps = {
 };
 export type InputDialogProps = {
   value?: string;
+} & BaseDialogProps;
+
+export type SelectionDialogProps = {
+  value?: string;
+  items: string[];
 } & BaseDialogProps;
 
 export type EntityViewDialogProps = {

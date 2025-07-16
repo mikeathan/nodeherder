@@ -33,12 +33,7 @@ func TestFileSettingsRepositoryCanAddAndLoad(t *testing.T) {
 		t.Errorf("load failed with %v", err.Error())
 	}
 
-	for key, d := range res.Hub.Devices {
-		inputDev := appConfig.Hub.Devices[key]
-		if !reflect.DeepEqual(d, inputDev) {
-			t.Error("device config mismatch")
-		}
-	}
+	assertAppConfig(t, res, appConfig)
 }
 
 func TestFileSettingsRepositoryCanAddAndFindValue(t *testing.T) {
@@ -59,22 +54,20 @@ func TestFileSettingsRepositoryCanAddAndFindValue(t *testing.T) {
 		t.Errorf("save failed with %v", err.Error())
 	}
 
-	dataKeys := make([]string, 0, len(appConfig.Hub.Devices))
-	for k := range appConfig.Hub.Devices {
+	dataKeys := make([]string, 0, len(appConfig.Hub.Devices.Overrides))
+	for k := range appConfig.Hub.Devices.Overrides {
 		dataKeys = append(dataKeys, k)
 	}
 	id := dataKeys[0]
 
-	found, err := repo.FindOrAddDeviceConfigIfNotExists(id)
+	found, err := repo.LoadOrDefaultDeviceConfig(id)
 	if err != nil {
 		t.Errorf("load failed with %v", err.Error())
 	}
 
-	input := appConfig.Hub.Devices[id]
+	input := appConfig.Hub.Devices.Overrides[id]
 
-	if !reflect.DeepEqual(input, found) {
-		t.Error("device config mismatch")
-	}
+	assertDeviceConfig(t, found, input)
 }
 
 func TestFileSettingsRepositoryCanAddNewDeviceConfig(t *testing.T) {
@@ -95,21 +88,18 @@ func TestFileSettingsRepositoryCanAddNewDeviceConfig(t *testing.T) {
 		t.Errorf("save failed with %v", err.Error())
 	}
 
-	newCfg := &settings.DeviceConfig{}
-	newCfg.Id = "x055555555"
+	newCfg := settings.NewDeviceConfig("x055555555")
 	newCfg.Disabled = true
 	newCfg.MetricsEnabled = false
 
 	repo.SaveDeviceConfig(newCfg)
 
-	found, err := repo.FindOrAddDeviceConfigIfNotExists(newCfg.Id)
+	found, err := repo.LoadOrDefaultDeviceConfig(newCfg.Id)
 	if err != nil {
 		t.Errorf("load failed with %v", err.Error())
 	}
 
-	if !reflect.DeepEqual(newCfg, found) {
-		t.Error("device config mismatch")
-	}
+	assertDeviceConfig(t, found, newCfg)
 }
 
 func TestFileSettingsRepositoryCanUpdateExistingDeviceConfig(t *testing.T) {
@@ -130,7 +120,7 @@ func TestFileSettingsRepositoryCanUpdateExistingDeviceConfig(t *testing.T) {
 		t.Errorf("save failed with %v", err.Error())
 	}
 
-	found, err := repo.FindOrAddDeviceConfigIfNotExists("x01234567")
+	found, err := repo.LoadOrDefaultDeviceConfig("x01234567")
 	if err != nil {
 		t.Errorf("load failed with %v", err.Error())
 	}
@@ -144,7 +134,7 @@ func TestFileSettingsRepositoryCanUpdateExistingDeviceConfig(t *testing.T) {
 	if err != nil {
 		t.Errorf("save failed with %v", err.Error())
 	}
-	updated, err := repo.FindOrAddDeviceConfigIfNotExists("x01234567")
+	updated, err := repo.LoadOrDefaultDeviceConfig("x01234567")
 	if err != nil {
 		t.Errorf("load failed with %v", err.Error())
 	}
@@ -178,11 +168,11 @@ func TestFileSettingsRepositoryAppConfigContainsBridgeConfig(t *testing.T) {
 	if !reflect.DeepEqual(settings.NewBridgeConfig(), res.Bridge) {
 		t.Error("bridge config mismatch")
 	}
-	bridgeCfg:= settings.NewBridgeConfig()
+	bridgeCfg := settings.NewBridgeConfig()
 	bridgeCfg.PermitJoin = true
 	bridgeCfg.TimeExpireAt = &utils.TimeInterval{
 		Value: 10,
-		Unit:     "minutes",
+		Unit:  "minutes",
 	}
 
 	repo.SaveBridgeConfig(bridgeCfg)
@@ -192,36 +182,57 @@ func TestFileSettingsRepositoryAppConfigContainsBridgeConfig(t *testing.T) {
 		t.Errorf("load failed with %v", err.Error())
 	}
 
-	if !reflect.DeepEqual(bridgeCfg, res.Bridge) {
-		t.Error("bridge config mismatch")
+	assertAppConfig(t, res, appConfig)
+}
+
+func assertAppConfig(t *testing.T, res *settings.AppConfig, inputAppconfig *settings.AppConfig) {
+	for key, d := range res.Hub.Devices.Overrides {
+		inputDev := inputAppconfig.Hub.Devices.Overrides[key]
+		assertDeviceConfig(t, d, inputDev)
+	}
+}
+
+func assertDeviceConfig(t *testing.T, d *settings.DeviceConfig, inputDev *settings.DeviceConfig) {
+
+	if d.Id != inputDev.Id {
+		t.Error("device id mismatch")
+	}
+	if d.Disabled != inputDev.Disabled {
+		t.Error("device disabled mismatch")
+	}
+	if d.MetricsEnabled != inputDev.MetricsEnabled {
+		t.Error("device metrics enabled mismatch")
+	}
+
+	if !reflect.DeepEqual(d.RateLimit, inputDev.RateLimit) {
+		t.Error("device rate limit mismatch")
+	}
+	if !reflect.DeepEqual(d.DefaultDebounceByCategory, inputDev.DefaultDebounceByCategory) {
+		t.Error("device default debounce mismatch")
 	}
 }
 
 func createMockAppConfig() *settings.AppConfig {
 	appconfig := settings.NewAppConfig()
-	cfg := &settings.DeviceConfig{}
-	cfg.Id = "x01234567"
+	cfg := settings.NewDeviceConfig("x01234567")
 	cfg.Disabled = false
 	cfg.MetricsEnabled = true
 
 	appconfig.AddDeviceConfig(cfg)
 
-	cfg2 := &settings.DeviceConfig{}
-	cfg2.Id = "x0erp09876"
+	cfg2 := settings.NewDeviceConfig("x0erp09876")
 	cfg2.Disabled = true
 	cfg2.MetricsEnabled = false
 
 	appconfig.AddDeviceConfig(cfg2)
 
-	cfg3 := &settings.DeviceConfig{}
-	cfg3.Id = "x0lip1245h"
+	cfg3 := settings.NewDeviceConfig("x0lip1245h")
 	cfg3.Disabled = false
 	cfg3.MetricsEnabled = true
 
 	appconfig.AddDeviceConfig(cfg3)
 
-	cfg4 := &settings.DeviceConfig{}
-	cfg4.Id = "x9lo0124hggfs"
+	cfg4 := settings.NewDeviceConfig("x9lo0124hggfs")
 	cfg4.Disabled = false
 	cfg4.MetricsEnabled = true
 

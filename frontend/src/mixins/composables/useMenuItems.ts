@@ -1,7 +1,7 @@
 import { computed } from 'vue';
 import type { MenuBarItem } from '@/types/controls.type';
 
-export function useMenuItems(items: MenuBarItem[]) {
+export function useMenuItems(items: MenuBarItem[], onItemSelected?: () => void) {
   const menuItems = computed(() =>
     items
       .filter((item) => !item.custom && !item.isLogo)
@@ -9,11 +9,17 @@ export function useMenuItems(items: MenuBarItem[]) {
         label: item.label,
         icon: item.icon,
         disabled: item.disabled,
-        command: item.command,
+        command: () => {
+          item.command?.();
+          onItemSelected?.();
+        },
         items: item.children?.map((child) => ({
           label: child.label,
           icon: child.icon,
-          command: child.command,
+          command: () => {
+            child.command?.();
+            onItemSelected?.();
+          },
         })),
       }))
   );

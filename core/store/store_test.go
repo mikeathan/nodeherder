@@ -117,7 +117,7 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 		deviceConfig := settings.NewDeviceConfig(wd.Id)
 		deviceConfig.MetricsEnabled = true
 		deviceConfig.RateLimit = utils.IntervalFromMilliseconds(1)
-		cfg.SetDeviceConfig(deviceConfig)
+		cfg.SetDeviceConfigOverrides(deviceConfig)
 		if err != nil {
 			t.Fatalf("error updating device %v error: %v:", wd.FriendlyName, err.Error())
 		}

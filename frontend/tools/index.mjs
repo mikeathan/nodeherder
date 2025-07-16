@@ -8,7 +8,7 @@ import expressWs from 'express-ws';
 import http from 'http';
 import { createRequire } from 'module';
 import { link } from 'fs';
-const hubStateFullPath = '../../docs/hub-state.json';
+const hubStateFullPath = '../../docs/hub_state_new.json';
 const lightMetricsFullPath = './metrics/light.json';
 const temperatureMetricsFullPath = './metrics/temperature.json';
 const presenceMetricsFullPath = './metrics/presence.json';
@@ -379,19 +379,48 @@ app.ws('/ws', async function (ws) {
         appConfig.history = obj.payload;
         sendOperationSuccess(ws);
         break;
+      case 'loadDashboardGroups':
+        sendMessage(ws, 'dashboardGroups', appConfig.hub.dashboardGroups);
+        break;
+
       case 'deleteDashboardGroup':
         const name = obj.payload.groupName;
         delete appConfig.hub.dashboardGroups[name];
         break;
+
       case 'saveDashboardGroup':
         const dashboardGroup = obj.payload;
         appConfig.hub.dashboardGroups[dashboardGroup.name] = dashboardGroup;
         break;
-      case 'saveDeviceConfig':
-        var deviceId = obj.payload.id;
-        appConfig.hub.devices[deviceId] = obj.payload;
+
+      case 'importDashboardGroups':
+        appConfig.hub.dashboardGroups = {};
+        Object.entries(obj.payload).forEach(([name, dashboardGroup]) => {
+          appConfig.hub.dashboardGroups[name] = dashboardGroup;
+        });
+        sendMessage(ws, 'dashboardGroups', appConfig.hub.dashboardGroups);
+
+      case 'saveDeviceConfigOverrides':
+        {
+          const deviceId = obj.payload.id;
+          if (deviceId in appConfig.hub.devices.overrides == false) {
+            appConfig.hub.devices.overrides[deviceId] = {};
+          }
+          appConfig.hub.devices.overrides[deviceId] = obj.payload;
+          sendOperationSuccess(ws);
+        }
+        break;
+      case 'deleteDeviceConfigOverrides':
+        {
+          delete appConfig.hub.devices.overrides[obj.payload.id];
+          sendOperationSuccess(ws);
+        }
+        break;
+      case 'saveDeviceConfigDefaults':
+        appConfig.hub.devices.defaults = obj.payload;
         sendOperationSuccess(ws);
         break;
+
       case 'saveLoggerConfig':
         appConfig.hub.logger = obj.payload;
 

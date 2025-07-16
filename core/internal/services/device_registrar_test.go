@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"node-herder/internal/services"
 	"node-herder/mocks"
+	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"node-herder/repository"
 	utils_test "node-herder/testing"
@@ -36,7 +37,7 @@ func TestRegisterBridge(t *testing.T) {
 	storeDevices, _ := store.AllDevices()
 
 	// assert measurement devices
-	measureExposes, err := devices.FindAllExposesByCategory(data, devices.MeasurementCategory)
+	measureExposes, err := devices.FindAllExposesByCategory(data, bridge.MeasurementCategory)
 	if err != nil {
 		t.Fatal("Error loading MeasurementCategory devices:", err)
 		return
@@ -52,7 +53,7 @@ func TestRegisterBridge(t *testing.T) {
 			for _, device := range storeDevices {
 				for _, expose := range device.Exposes {
 					if deviceridgeId == device.Id && expose.Name == bridgeExpose.Name {
-						assetExpose(bridgeExpose, expose, devices.MeasurementCategory, t)
+						assetExpose(bridgeExpose, expose, bridge.MeasurementCategory, t)
 						assertDataType(bridgeExpose, expose, t)
 
 						found = true
@@ -67,7 +68,7 @@ func TestRegisterBridge(t *testing.T) {
 	}
 
 	// assert diagnostic devices
-	diagnosticExposes, err := devices.FindAllExposesByCategory(data, devices.DiagnosticCategory)
+	diagnosticExposes, err := devices.FindAllExposesByCategory(data, bridge.DiagnosticCategory)
 	if err != nil {
 		t.Fatal("Error loading DiagnosticCategory devices:", err)
 		return
@@ -83,7 +84,7 @@ func TestRegisterBridge(t *testing.T) {
 			for _, device := range storeDevices {
 				for _, expose := range device.Exposes {
 					if deviceBridgeId == device.Id && expose.Name == bridgeExpose.Name {
-						assetExpose(bridgeExpose, expose, devices.DiagnosticCategory, t)
+						assetExpose(bridgeExpose, expose, bridge.DiagnosticCategory, t)
 						assertDataType(bridgeExpose, expose, t)
 
 						found = true
@@ -98,7 +99,7 @@ func TestRegisterBridge(t *testing.T) {
 	}
 
 	// // assert config devices
-	configExposes, err := devices.FindAllExposesByCategory(data, devices.ConfigCategory)
+	configExposes, err := devices.FindAllExposesByCategory(data, bridge.ConfigCategory)
 	if err != nil {
 		t.Fatal("Error loading ConfigCategory devices:", err)
 		return
@@ -114,7 +115,7 @@ func TestRegisterBridge(t *testing.T) {
 			for _, device := range storeDevices {
 				for _, expose := range device.Exposes {
 					if deviceBridgeId == device.Id && expose.Name == bridgeExpose.Name {
-						assetExpose(bridgeExpose, expose, devices.ConfigCategory, t)
+						assetExpose(bridgeExpose, expose, bridge.ConfigCategory, t)
 						assertDataType(bridgeExpose, expose, t)
 
 						found = true
@@ -208,22 +209,20 @@ func TestDefaultDebounceforDiagnosticExposes(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error getting device config: %s", err)
 		}
-		for _, expose := range device.Exposes {
-			if expose.Category == devices.DiagnosticCategory {
-				d, ok := deviceConfig.Debounce[expose.Name]
-				if !ok {
-					t.Errorf("Error diagnostic expose %s debounce is 0", expose.Name)
-				}
-				if d.Value != 300 {
-					t.Errorf("Error diagnostic expose %s debounce is not 300. got %v", expose.Name, d.Value)
-				}
-				if d.Unit != "seconds" {
-					t.Errorf("Error diagnostic expose %s debounce unit is not seconds", d.Unit)
-				}
-			}
+		// we are expecting the defaults to be loaded here
+		if len(deviceConfig.DebounceOverrides) != 0 {
+			t.Errorf("Error device config debounce overrides should be nil")
+		}
+
+		if _, ok := deviceConfig.DefaultDebounceByCategory[bridge.DiagnosticCategory]; !ok {
+			t.Errorf("Error device config debounce overrides should be nil")
+		}
+
+		debounce := deviceConfig.DefaultDebounceByCategory[bridge.DiagnosticCategory]
+		if debounce.Value != 300 {
+			t.Errorf("Error device config debounce overrides should be 300. got %v", debounce.Value)
 		}
 	}
-
 }
 
 func assertDeviceUpdatePackage(device *devices.Device, updatePackage *devices.UpdatePackage, t *testing.T) {
@@ -278,7 +277,7 @@ func assertDevicePayload(newDevice *devices.Device, deviceName string, payload m
 		t.Errorf("Error device state mismatch want: %v got: %v", "on", newDevice.Exposes["state"].Data)
 	}
 }
-func assetExpose(bridgeExpose devices.BridgeExpose, expose *devices.Entity, category devices.ExposeCategory, t *testing.T) {
+func assetExpose(bridgeExpose devices.BridgeExpose, expose *devices.Entity, category bridge.ExposeCategory, t *testing.T) {
 	if expose.Category != category {
 		t.Errorf("Error %s device mismatch want: %s got: %s", category, bridgeExpose.Name, expose.Name)
 	}
@@ -297,7 +296,7 @@ func assetExpose(bridgeExpose devices.BridgeExpose, expose *devices.Entity, cate
 }
 
 func assertDataType(bridgeExpose devices.BridgeExpose, expose *devices.Entity, t *testing.T) {
-	if expose.Type == devices.BinaryDataType {
+	if expose.Type == bridge.BinaryDataType {
 
 		if expose.Values["on"] != bridgeExpose.ValueOn {
 			t.Errorf("Error %s device value mismatch want: %v got: %v", bridgeExpose.Name, bridgeExpose.ValueOn, expose.Values["on"])
@@ -317,7 +316,7 @@ func assertDataType(bridgeExpose devices.BridgeExpose, expose *devices.Entity, t
 		}
 	}
 
-	if expose.Type == devices.EnumDataType {
+	if expose.Type == bridge.EnumDataType {
 		for id, item := range bridgeExpose.Values {
 			if expose.Values[fmt.Sprintf("%d", id)] != item {
 				t.Errorf("Error %s device value mismatch want: %v got: %v", bridgeExpose.Name, item, expose.Values[fmt.Sprintf("%d", id)])
@@ -325,7 +324,7 @@ func assertDataType(bridgeExpose devices.BridgeExpose, expose *devices.Entity, t
 		}
 	}
 
-	if expose.Type == devices.NumericDataType {
+	if expose.Type == bridge.NumericDataType {
 		if bridgeExpose.ValueMin != nil && expose.Attributes["min"] != bridgeExpose.ValueMin {
 			t.Errorf("Error %s device value mismatch want: %v got: %v", bridgeExpose.Name, bridgeExpose.ValueMin, expose.Attributes["min"])
 		}
