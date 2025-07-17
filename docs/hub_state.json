@@ -3,6 +3,32 @@
   "payload": {
     "config": {
       "hub": {
+        "devices": {
+          "defaults": {
+            "disabled": false,
+            "metricsEnabled": false,
+            "rateLimit": { "value": 60, "unit": "seconds" },
+            "defaultDebounceByCategory": {
+              "diagnostic": { "value": 300, "unit": "seconds" }
+            }
+          },
+          "overrides": {
+            "0x00124b0029207763": {
+              "id": "0x00124b0029207763",
+              "disabled": true,
+              "metricsEnabled": false,
+              "rateLimit": { "value": 50, "unit": "seconds" },
+              "debounceOverrides": {
+                "linkquality": { "value": 5, "unit": "seconds" }
+              }
+            }
+          }
+        },
+        "history": {
+          "sleeptTmeout": { "value": 12, "unit": "hours" },
+          "expireAt": { "value": 10, "unit": "days" }
+        },
+        "logger": { "enableRemoteLogger": false },
         "dashboardGroups": {
           "living room group": {
             "name": "living room group",
@@ -46,140 +72,7 @@
               }
             }
           }
-        },
-        "devices": {
-          "0x00124b0029207763": {
-            "id": "0x00124b0029207763",
-            "disabled": false,
-            "history": false,
-            "rateLimit": { "value": 60, "unit": "seconds" },
-            "debounce": {
-              "battery": { "value": 5, "unit": "seconds" },
-              "linkquality": { "value": 5, "unit": "seconds" },
-              "voltage": { "value": 5, "unit": "seconds" }
-            }
-          },
-          "0x00124b002fa5844e": {
-            "id": "0x00124b002fa5844e",
-            "disabled": false,
-            "history": false,
-            "rateLimit": { "value": 60, "unit": "seconds" },
-            "debounce": {
-              "battery": { "value": 5, "unit": "seconds" },
-              "battery_low": { "value": 5, "unit": "seconds" },
-              "linkquality": { "value": 5, "unit": "seconds" },
-              "voltage": { "value": 5, "unit": "seconds" }
-            }
-          },
-          "0x00158d0005a23c38": {
-            "id": "0x00158d0005a23c38",
-            "disabled": false,
-            "history": false,
-            "rateLimit": { "value": 60, "unit": "seconds" },
-            "debounce": { "linkquality": { "value": 5, "unit": "seconds" } }
-          },
-          "0x001788010d7d9d3f": {
-            "id": "0x001788010d7d9d3f",
-            "disabled": false,
-            "history": false,
-            "rateLimit": { "value": 60, "unit": "seconds" },
-            "debounce": {
-              "battery": { "value": 5, "unit": "seconds" },
-              "linkquality": { "value": 5, "unit": "seconds" }
-            }
-          },
-          "0x08ddebfffee9b068": {
-            "id": "0x08ddebfffee9b068",
-            "disabled": false,
-            "history": false,
-            "rateLimit": { "value": 60, "unit": "seconds" },
-            "debounce": {}
-          },
-          "0x70ac08fffefafeca": {
-            "id": "0x70ac08fffefafeca",
-            "disabled": false,
-            "history": true,
-            "rateLimit": { "value": 60, "unit": "seconds" },
-            "debounce": { "linkquality": { "value": 5, "unit": "seconds" } }
-          },
-          "0x70b3d52b60136661": {
-            "id": "0x70b3d52b60136661",
-            "disabled": false,
-            "history": false,
-            "rateLimit": { "value": 60, "unit": "seconds" },
-            "debounce": {
-              "current": { "value": 5, "unit": "seconds" },
-              "linkquality": { "value": 5, "unit": "seconds" },
-              "power": { "value": 5, "unit": "seconds" },
-              "voltage": { "value": 5, "unit": "seconds" }
-            }
-          },
-          "0xa4c1381b6fd53fc4": {
-            "id": "0xa4c1381b6fd53fc4",
-            "disabled": false,
-            "history": false,
-            "rateLimit": { "value": 60, "unit": "seconds" },
-            "debounce": {
-              "current": { "value": 5, "unit": "seconds" },
-              "linkquality": { "value": 5, "unit": "seconds" },
-              "power": { "value": 5, "unit": "seconds" },
-              "voltage": { "value": 5, "unit": "seconds" }
-            }
-          },
-          "0xa4c1384582432edd": {
-            "id": "0xa4c1384582432edd",
-            "disabled": false,
-            "history": false,
-            "rateLimit": { "value": 60, "unit": "seconds" },
-            "debounce": {
-              "battery": { "value": 5, "unit": "seconds" },
-              "linkquality": { "value": 5, "unit": "seconds" },
-              "voltage": { "value": 5, "unit": "seconds" }
-            }
-          },
-          "0xa4c13894070052fc": {
-            "id": "0xa4c13894070052fc",
-            "disabled": false,
-            "history": false,
-            "rateLimit": { "value": 60, "unit": "seconds" },
-            "debounce": {
-              "linkquality": { "value": 5, "unit": "seconds" },
-              "target_distance": { "value": 5, "unit": "seconds" }
-            }
-          },
-          "0xa4c1389b273366c3": {
-            "id": "0xa4c1389b273366c3",
-            "disabled": false,
-            "history": false,
-            "rateLimit": { "value": 60, "unit": "seconds" },
-            "debounce": {
-              "battery_low": { "value": 5, "unit": "seconds" },
-              "linkquality": { "value": 5, "unit": "seconds" }
-            }
-          },
-          "0xa4c138c383ac3fc8": {
-            "id": "0xa4c138c383ac3fc8",
-            "disabled": false,
-            "history": false,
-            "rateLimit": { "value": 60, "unit": "seconds" },
-            "debounce": {
-              "battery": { "value": 5, "unit": "seconds" },
-              "linkquality": { "value": 5, "unit": "seconds" }
-            }
-          },
-          "0xa4c138e1b5658e68": {
-            "id": "0xa4c138e1b5658e68",
-            "disabled": false,
-            "history": false,
-            "rateLimit": { "value": 60, "unit": "seconds" },
-            "debounce": { "linkquality": { "value": 5, "unit": "seconds" } }
-          }
-        },
-        "history": {
-          "sleeptTmeout": { "value": 12, "unit": "hours" },
-          "expireAt": { "value": 10, "unit": "days" }
-        },
-        "logger": { "enableRemoteLogger": false }
+        }
       },
       "bridge": {
         "maxTimeAllowed": { "value": 120, "unit": "seconds" },
@@ -198,7 +91,7 @@
             "name": "battery",
             "description": "Remaining battery in %, can take up to 24 hours before reported",
             "unit": "%",
-            "data": null,
+            "data": 90.5,
             "type": "numeric",
             "category": "diagnostic",
             "attributes": { "max": 100, "min": 0 },
@@ -208,7 +101,7 @@
             "name": "humidity",
             "description": "Measured relative humidity",
             "unit": "%",
-            "data": null,
+            "data": 61.26,
             "type": "numeric",
             "category": "measurement",
             "access_mode": "read"
@@ -217,7 +110,7 @@
             "name": "linkquality",
             "description": "Link quality (signal strength)",
             "unit": "lqi",
-            "data": null,
+            "data": 29,
             "type": "numeric",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 },
@@ -227,7 +120,7 @@
             "name": "temperature",
             "description": "Measured temperature value",
             "unit": "°C",
-            "data": null,
+            "data": 26.26,
             "type": "numeric",
             "category": "measurement",
             "access_mode": "read"
@@ -236,14 +129,14 @@
             "name": "voltage",
             "description": "Voltage of the battery in millivolts",
             "unit": "mV",
-            "data": null,
+            "data": 2900,
             "type": "numeric",
             "category": "diagnostic",
             "access_mode": "read"
           }
         },
-        "last_seen": "",
-        "availability": "offline"
+        "last_seen": "2025-06-22T19:32:38+01:00",
+        "availability": "online"
       },
       {
         "id": "0x00124b002fa5844e",
@@ -313,7 +206,7 @@
           "brightness": {
             "name": "brightness",
             "description": "Brightness of this light",
-            "data": 254,
+            "data": null,
             "type": "numeric",
             "category": "measurement",
             "attributes": { "max": 254, "min": 0 },
@@ -331,7 +224,7 @@
             "name": "color_temp",
             "description": "Color temperature of this light",
             "unit": "mired",
-            "data": 250,
+            "data": null,
             "type": "numeric",
             "category": "measurement",
             "attributes": { "max": 500, "min": 150 },
@@ -384,7 +277,7 @@
             "name": "linkquality",
             "description": "Link quality (signal strength)",
             "unit": "lqi",
-            "data": 58,
+            "data": null,
             "type": "numeric",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 },
@@ -402,15 +295,15 @@
           "state": {
             "name": "state",
             "description": "On/off state of this light",
-            "data": "OFF",
+            "data": null,
             "type": "binary",
             "category": "measurement",
             "access_mode": "readwrite",
             "values": { "off": "OFF", "on": "ON", "toggle": "TOGGLE" }
           }
         },
-        "last_seen": "2025-04-04T14:04:15.568Z",
-        "availability": "online"
+        "last_seen": "",
+        "availability": "offline"
       },
       {
         "id": "0x001788010d7d9d3f",
@@ -538,14 +431,6 @@
             "attributes": { "max": 254, "min": 0 },
             "access_mode": "readwrite"
           },
-          "color": {
-            "name": "color",
-            "description": "Color of this light expressed as hue/saturation",
-            "data": null,
-            "type": "composite",
-            "category": "config",
-            "access_mode": "readwrite"
-          },
           "color_temp": {
             "name": "color_temp",
             "description": "Color temperature of this light",
@@ -553,14 +438,13 @@
             "data": null,
             "type": "numeric",
             "category": "measurement",
-            "attributes": { "max": 500, "min": 150 },
+            "attributes": { "max": 370, "min": 153 },
             "access_mode": "readwrite",
             "values": {
               "cool": 250,
-              "coolest": 150,
+              "coolest": 153,
               "neutral": 370,
-              "warm": 454,
-              "warmest": 500
+              "warmest": 370
             }
           },
           "color_temp_startup": {
@@ -570,15 +454,14 @@
             "data": null,
             "type": "numeric",
             "category": "config",
-            "attributes": { "max": 500, "min": 150 },
+            "attributes": { "max": 370, "min": 153 },
             "access_mode": "readwrite",
             "values": {
               "cool": 250,
-              "coolest": 150,
+              "coolest": 153,
               "neutral": 370,
               "previous": 65535,
-              "warm": 454,
-              "warmest": 500
+              "warmest": 370
             }
           },
           "effect": {
@@ -594,9 +477,7 @@
               "2": "okay",
               "3": "channel_change",
               "4": "finish_effect",
-              "5": "stop_effect",
-              "6": "colorloop",
-              "7": "stop_colorloop"
+              "5": "stop_effect"
             }
           },
           "linkquality": {
@@ -633,7 +514,7 @@
       },
       {
         "id": "0x70b3d52b60136661",
-        "friendly_name": "Dining room power socket",
+        "friendly_name": "kitchen power socket",
         "description": "Smart plug (with power monitoring by polling)",
         "connection_type": "mqtt",
         "power_source": "mains (single phase)",
@@ -651,7 +532,7 @@
             "name": "current",
             "description": "Instantaneous measured electrical current",
             "unit": "A",
-            "data": 0.03,
+            "data": null,
             "type": "numeric",
             "category": "diagnostic",
             "access_mode": "read"
@@ -660,7 +541,7 @@
             "name": "energy",
             "description": "Sum of consumed energy",
             "unit": "kWh",
-            "data": 2.75,
+            "data": null,
             "type": "numeric",
             "category": "measurement",
             "access_mode": "read"
@@ -678,7 +559,7 @@
             "name": "linkquality",
             "description": "Link quality (signal strength)",
             "unit": "lqi",
-            "data": 58,
+            "data": null,
             "type": "numeric",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 },
@@ -688,7 +569,7 @@
             "name": "power",
             "description": "Instantaneous measured power",
             "unit": "W",
-            "data": 0,
+            "data": null,
             "type": "numeric",
             "category": "diagnostic",
             "access_mode": "read"
@@ -705,7 +586,7 @@
           "state": {
             "name": "state",
             "description": "On/off state of the switch",
-            "data": "ON",
+            "data": null,
             "type": "binary",
             "category": "measurement",
             "access_mode": "readwrite",
@@ -715,14 +596,14 @@
             "name": "voltage",
             "description": "Measured electrical potential value",
             "unit": "V",
-            "data": 244,
+            "data": null,
             "type": "numeric",
             "category": "diagnostic",
             "access_mode": "read"
           }
         },
-        "last_seen": "2025-04-04T14:04:11.013Z",
-        "availability": "online"
+        "last_seen": "",
+        "availability": "offline"
       },
       {
         "id": "0xa4c1381b6fd53fc4",
@@ -744,7 +625,7 @@
             "name": "energy",
             "description": "Sum of consumed energy",
             "unit": "kWh",
-            "data": 249.98,
+            "data": 637.73,
             "type": "numeric",
             "category": "measurement",
             "access_mode": "read"
@@ -753,7 +634,7 @@
             "name": "linkquality",
             "description": "Link quality (signal strength)",
             "unit": "lqi",
-            "data": 7,
+            "data": 29,
             "type": "numeric",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 },
@@ -763,7 +644,7 @@
             "name": "power",
             "description": "Instantaneous measured power",
             "unit": "W",
-            "data": 60,
+            "data": 66,
             "type": "numeric",
             "category": "diagnostic",
             "access_mode": "read"
@@ -790,13 +671,13 @@
             "name": "voltage",
             "description": "Measured electrical potential value",
             "unit": "V",
-            "data": 244,
+            "data": 237,
             "type": "numeric",
             "category": "diagnostic",
             "access_mode": "read"
           }
         },
-        "last_seen": "2025-04-04T14:04:18.903Z",
+        "last_seen": "2025-06-22T19:32:36+01:00",
         "availability": "online"
       },
       {
@@ -888,7 +769,7 @@
             "name": "illuminance",
             "description": "Measured illuminance",
             "unit": "lx",
-            "data": 233,
+            "data": 68,
             "type": "numeric",
             "category": "measurement",
             "access_mode": "read"
@@ -897,7 +778,7 @@
             "name": "linkquality",
             "description": "Link quality (signal strength)",
             "unit": "lqi",
-            "data": 112,
+            "data": 102,
             "type": "numeric",
             "category": "diagnostic",
             "attributes": { "max": 255, "min": 0 },
@@ -951,7 +832,7 @@
             "access_mode": "read"
           }
         },
-        "last_seen": "2025-04-04T14:04:29.177Z",
+        "last_seen": "2025-06-22T19:32:37+01:00",
         "availability": "online"
       },
       {
