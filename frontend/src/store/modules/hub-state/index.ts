@@ -8,7 +8,6 @@ import {
   DashboardGroup,
   DashboardGroups,
   DeviceConfig,
-  DeviceSettings,
   HistorySettingsType,
   LoggerSettingsType,
 } from '../../../types/settings.type';

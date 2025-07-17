@@ -621,6 +621,8 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 		appCache.SetDeviceConfigOverrides(cfg)
 	}
 
+	time.Sleep(500 * time.Millisecond)
+
 	// assert config override exists
 	cfg, err := appCache.GetDeviceConfig(dialDevice.Id)
 	if err != nil {

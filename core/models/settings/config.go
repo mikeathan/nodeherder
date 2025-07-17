@@ -79,7 +79,7 @@ func DefaultDeviceConfig() *DeviceConfig {
 type DeviceConfig struct {
 	Id                        string                                        `json:"id,omitempty"`
 	Disabled                  bool                                          `json:"disabled"`
-	MetricsEnabled            bool                                          `json:"history"`
+	MetricsEnabled            bool                                          `json:"metricsEnabled"`
 	RateLimit                 *utils.TimeInterval                           `json:"rateLimit"`
 	DefaultDebounceByCategory map[bridge.ExposeCategory]*utils.TimeInterval `json:"defaultDebounceByCategory,omitempty"`
 	DebounceOverrides         map[string]*utils.TimeInterval                `json:"debounceOverrides,omitempty"`
@@ -115,7 +115,7 @@ func NewDeviceConfigFrom(config *DeviceConfig) *DeviceConfig {
 }
 
 type HistoryConfig struct {
-	SleepTimeout *utils.TimeInterval `json:"sleeptTmeout"`
+	SleepTimeout *utils.TimeInterval `json:"sleepTmeout"`
 	ExpireAt     *utils.TimeInterval `json:"expireAt"`
 }
 
