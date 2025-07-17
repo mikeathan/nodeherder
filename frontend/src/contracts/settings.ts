@@ -26,7 +26,7 @@ export function createDeviceConfigOverride(id: string): DeviceConfig {
   return {
     id: id,
     disabled: false,
-    history: false,
+    metricsEnabled: false,
     rateLimit: createTimeIntervalFromSeconds(60),
     defaultDebounceByCategory: {},
     debounceOverrides: {},
