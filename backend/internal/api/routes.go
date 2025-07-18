@@ -10,6 +10,7 @@ import (
 	"node-herder/models/logging"
 	"node-herder/utils"
 	"regexp"
+	"sync"
 )
 
 type Route struct {
@@ -238,4 +239,64 @@ func NewFileHandler(path string, redirectPath string) *FileHandler {
 	})
 
 	return fh
+}
+
+type HubStateHandler struct {
+	hub            *controllers.HubController
+	cachedHubState []byte
+	hubStateDirty  bool
+
+	mu sync.RWMutex
+}
+
+func NewHubStateHandler(hub *controllers.HubController) *HubStateHandler {
+
+	sh := &HubStateHandler{
+		cachedHubState: []byte{},
+		hubStateDirty:  false,
+		hub:            hub,
+		mu:             sync.RWMutex{},
+	}
+
+	return sh
+}
+
+func NotifyHubStateChanged() {
+	mu.Lock()
+	hubStateDirty = true
+	mu.Unlock()
+}
+
+func (h *HubStateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if os.Getenv("APP_ENV") == "development" {
+        w.Header().Set("Access-Control-Allow-Origin", "*")
+    } else {
+        w.Header().Set("Access-Control-Allow-Origin", "https://your-production-frontend.com")
+    }
+
+	h.mu.RLock()
+	dirty := h.hubStateDirty
+	h.mu.RUnlock()
+
+	if dirty {
+		// GetHubState() is your function from another package
+		state := h.hub.GetHubState()
+		data, err := json.Marshal(state)
+		if err != nil {
+			http.Error(w, "Failed to encode hub state", http.StatusInternalServerError)
+			return
+		}
+		h.mu.Lock()
+		h.cachedHubState = data
+		h.hubStateDirty = false
+		h.mu.Unlock()
+	}
+
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	w.Write(h.cachedHubState)
+
 }
