@@ -6,8 +6,8 @@ import {
   beforeEach,
 } from '@jest/globals';
 import { store } from '../../../../store/index';
-import { default as automation1 } from '../../../../../../core/configs/automations/0x001788010d7d9d3f.json';
-import { default as automation2 } from '../../../../../../core/configs/automations/0xa4c13894070052fc.json';
+import { default as automation1 } from '../../../../../../backend/configs/automations/0x001788010d7d9d3f.json';
+import { default as automation2 } from '../../../../../../backend/configs/automations/0xa4c13894070052fc.json';
 
 import {
   Automation,
