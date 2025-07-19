@@ -3,7 +3,6 @@ package ws
 import (
 	"encoding/json"
 	"net/http"
-	"node-herder/models/devices"
 	"node-herder/models/hub"
 	"node-herder/models/settings"
 	"node-herder/utils"
@@ -77,6 +76,7 @@ type EventHub interface {
 	OnDeleteAutomationTrigger(func(payload interface{}) (interface{}, error))
 	OnLoadMetrics(action func(interface{}) (interface{}, error))
 	OnLoadAppConfig(action func() (interface{}, error))
+	OnLoadHubState(action func() (interface{}, error))
 	OnLoadBridgeConfig(action func() (interface{}, error))
 	OnSaveDeviceConfigOverrides(func(payload interface{}) error)
 	OnDeleteDeviceConfigOverrides(func(payload interface{}) error)
@@ -117,8 +117,8 @@ type eventHubImpl struct {
 	onDeleteDashboardGroup        func(payload interface{}) error
 	onImportDashboardGroups       func(payload interface{}) error
 	onLoadDashboardGroups         func() (interface{}, error)
-
-	requestContext hub.Context
+	onLoadHubState                func() (interface{}, error)
+	requestContext                hub.Context
 }
 
 func NewWsHub() EventHub {
@@ -148,6 +148,7 @@ func NewWsHub() EventHub {
 		onDeleteDashboardGroup:        func(payload interface{}) error { return nil },
 		onImportDashboardGroups:       func(payload interface{}) error { return nil },
 		onLoadDashboardGroups:         func() (interface{}, error) { return nil, nil },
+		onLoadHubState:                func() (interface{}, error) { return nil, nil },
 		requestContext:                NewRequestContext(),
 	}
 }
@@ -256,6 +257,10 @@ func (h *eventHubImpl) OnLoadDashboardGroups(action func() (interface{}, error))
 	h.onLoadDashboardGroups = action
 }
 
+func (h *eventHubImpl) OnLoadHubState(action func() (interface{}, error)) {
+	h.onLoadHubState = action
+}
+
 func (h *eventHubImpl) EmitDevice(name string) error {
 	msg, err := h.onLoadDevice(name)
 	if err != nil {
@@ -313,23 +318,7 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 		}
 
 	case LoadHubState:
-		hubDevices := c.onLoadDevices()
-		ds, ok := hubDevices.([]*devices.Device)
-		if !ok {
-			utils.LogErrorf("LoadHubSate: Failed to cast devices to []Device")
-			return
-		}
-		appConfig, _ := c.onLoadAppConfig()
-		cfg, ok := appConfig.(*settings.AppConfig)
-		if !ok {
-			utils.LogErrorf("LoadHubSate: Failed to cast appConfig to *settings.AppConfig")
-			return
-		}
-
-		err := c.Broadcast(HubState, hub.NewHubState(cfg, ds))
-		if err != nil {
-			utils.LogErrorf("Failed to broadcast onLoadDevices %s", err.Error())
-		}
+		c.executeActionWithEvent(c.onLoadHubState, HubState)
 
 	case LoadMetrics:
 		c.executePayloadActionWithSuccessfullyEvent(eventMsg.Payload, c.onLoadMetrics, Metrics)
@@ -400,7 +389,7 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 		ds, ok := res.(map[string]*settings.DashboardGroup)
 		if !ok {
 			utils.LogErrorf("onLoadDashboardGroups: Failed to cast to map[string]*settings.DashboardGroup")
-			c.Broadcast(OperationFailed, err.Error())
+			c.Broadcast(OperationFailed, "Failed to cast to map[string]*settings.DashboardGroup")
 			return
 		}
 

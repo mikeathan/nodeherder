@@ -89,6 +89,10 @@ func (w *MockEventHub) RegisterNewClient(conn *websocket.Conn) {
 	fmt.Println("MockEventHub: RegisterNewClient")
 }
 
+func (w *MockEventHub) OnLoadHubState(action func() (interface{}, error)) {
+	fmt.Println("MockEventHub: OnLoadHubState")
+}
+
 func (w *MockEventHub) OnLoadAutomations(onLoadAutomations func() interface{}) {
 	fmt.Println("MockEventHub: OnLoadAutomations")
 }
@@ -182,6 +186,7 @@ func (h *MockEventHub) OnImportDashboardGroups(action func(payload interface{}) 
 func (h *MockEventHub) OnLoadDashboardGroups(action func() (interface{}, error)) {
 	fmt.Println("MockEventHub OnLoadDashboardGroups")
 }
+
 // Mock MqttClient
 type MockMqttClient struct {
 	messageHandler func(string, []byte)
@@ -307,6 +312,10 @@ func (w *NopWsServer) RegisterNewClient(conn *websocket.Conn) {
 
 func (w *NopWsServer) OnLoadAutomations(action func() interface{}) {
 	fmt.Println("WsServer: Mocked OnLoadAutomations")
+}
+
+func (w *NopWsServer) OnLoadHubState(event func() (interface{}, error)) {
+	fmt.Println("WsServer: Mocked OnLoadHubState")
 }
 
 func (w *NopWsServer) OnDeviceSetValue(action func(payload interface{}) error) {
@@ -586,12 +595,30 @@ func (s *NopSettingsrepo) SaveAppConfig(appConfig *settings.AppConfig) error {
 
 // Mock appstore
 type NopAppStore struct {
-	devices        devices.Repository
-	metrics        metrics.Repository
-	config         *settings.AppConfigCache
-	deviceIdMapper *repository.DeviceIdMapper
+	devices             devices.Repository
+	metrics             metrics.Repository
+	config              *settings.AppConfigCache
+	deviceIdMapper      *repository.DeviceIdMapper
+	loadHubStateFunc    func() (*hub.HubState, error)
+	registerIsDirtyFunc func()
 }
 
+func NewMockAppStoreWithLoadStateFunc(loadHubStateFunc func() (*hub.HubState, error), isDirtyFunc func()) store.AppStore {
+
+	devicesRepo := NopRepository{}
+	metricsRepo := NopMetricsRepo{}
+	config := &settings.AppConfigCache{}
+	return &NopAppStore{
+		devices:        &devicesRepo,
+		metrics:        &metricsRepo,
+		config:         config,
+		deviceIdMapper: repository.NewDeviceIdMapper(&devicesRepo),
+		registerIsDirtyFunc: isDirtyFunc,
+		loadHubStateFunc: func() (*hub.HubState, error) {
+			return loadHubStateFunc()
+		},
+	}
+}
 func NewMockAppStore() store.AppStore {
 	devicesRepo := NopRepository{}
 	metricsRepo := NopMetricsRepo{}
@@ -605,6 +632,14 @@ func NewMockAppStore() store.AppStore {
 	}
 }
 
+func (s *NopAppStore) WithLoadHubStateFunc(loadHubStateFunc func() (*hub.HubState, error)) {
+	s.loadHubStateFunc = loadHubStateFunc
+}
+
+func (s *NopAppStore) WithRegisterIsDirtyFunc(registerIsDirtyFunc func()) {
+	s.registerIsDirtyFunc = registerIsDirtyFunc
+}
+
 func NewMockAppStoreFromDevicesRepo(devicesRepo devices.Repository) store.AppStore {
 	metricsRepo := &NopMetricsRepo{}
 	config := &settings.AppConfigCache{}
@@ -616,6 +651,23 @@ func NewMockAppStoreFromDevicesRepo(devicesRepo devices.Repository) store.AppSto
 	}
 }
 
+func (s *NopAppStore) RegisterIsDirtyCallback(cb store.AppStoreDirtyFlagCallback) {
+	fmt.Println("Mocked store RegisterIsDirtyCallback")
+
+	if s.registerIsDirtyFunc != nil {
+		s.registerIsDirtyFunc()
+	}
+}
+
+func (s *NopAppStore) LoadHubState() (*hub.HubState, error) {
+
+	fmt.Println("Mocked store LoadHubState")
+	if s.loadHubStateFunc != nil {
+		return s.loadHubStateFunc()
+	}
+
+	return nil, nil
+}
 func (s *NopAppStore) SaveHistoryConfig(historyConfig *settings.HistoryConfig) error {
 	fmt.Println("Mocked store SaveHistoryConfig")
 	return nil

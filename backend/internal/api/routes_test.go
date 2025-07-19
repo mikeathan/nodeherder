@@ -10,6 +10,7 @@ import (
 	"node-herder/internal/controllers"
 	"node-herder/internal/fs"
 	"node-herder/mocks"
+	"node-herder/models/hub"
 	"node-herder/models/logging"
 	utils_test "node-herder/testing"
 	"node-herder/utils"
@@ -307,5 +308,69 @@ func TestHandleListLogFiles(t *testing.T) {
 		if resultFiles[i] != mockeFiles[i] {
 			t.Errorf("error reading body got %v want %v", resultFiles[i], mockeFiles[i])
 		}
+	}
+}
+
+func TestHubStateHandler_ReturnsHubState(t *testing.T) {
+
+	// load devices from file
+	store, err := utils_test.CreateStoreWithDevices()
+	if err != nil {
+		t.Fatalf("error creating store: %v", err)
+	}
+
+	handler := api.NewHubStateHandler(store, 5*time.Minute)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rr.Code)
+	}
+
+	var resp *hub.HubState
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to decode JSON: %v", err)
+	}
+
+	if resp == nil || resp.Devices == nil || resp.Config == nil {
+		t.Fatalf("expected hub state, got nil")
+	}
+}
+
+func TestHubStateHandler_ReturnsCacheedState(t *testing.T) {
+	callCount := 0
+
+	isDirtFunc := func() {
+		callCount++
+	}
+
+	loadHubStateFunc := (func() (*hub.HubState, error) {
+		callCount++
+		return &hub.HubState{
+			// fill with dummy test data as needed
+		}, nil
+	})
+	mockStore := mocks.NewMockAppStoreWithLoadStateFunc(loadHubStateFunc, isDirtFunc)
+
+	handler := api.NewHubStateHandler(mockStore, 5*time.Minute)
+
+	// First call: loads state
+	req1 := httptest.NewRequest(http.MethodGet, "/", nil)
+	rr1 := httptest.NewRecorder()
+	handler.ServeHTTP(rr1, req1)
+
+	// Reset loaded flag to confirm cache is reused
+	mock.loaded = false
+
+	// Second call: should reuse cache
+	req2 := httptest.NewRequest(http.MethodGet, "/", nil)
+	rr2 := httptest.NewRecorder()
+	handler.ServeHTTP(rr2, req2)
+
+	if mock.loaded {
+		t.Error("expected cache to be used, but LoadHubState was called again")
 	}
 }
