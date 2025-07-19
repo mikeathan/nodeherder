@@ -361,8 +361,7 @@ func TestHubStateHandler_ReturnsCacheedState(t *testing.T) {
 		return hubState, nil
 	})
 
-	mockStore := mocks.NewMockAppStoreWithLoadStateFunc(loadHubStateFunc, func() {
-	})
+	mockStore := mocks.NewMockAppStoreWithLoadStateFunc(loadHubStateFunc)
 
 	handler := api.NewHubStateHandler(mockStore, 5*time.Minute)
 
@@ -391,22 +390,17 @@ func TestHubStateHandler_ReturnsCacheedState(t *testing.T) {
 	}
 }
 
-todo
 func TestHubStateHandler_DirtyFlagTriggersReload(t *testing.T) {
 	store, err := utils_test.CreateStoreWithDevices()
 	if err != nil {
 		t.Fatalf("error creating store: %v", err)
 	}
 
-	isDirtyFunc := func() {
-
-		fmt.Print("dirty")
-	}
+	
 
 	hubState, err := store.LoadHubState()
 	if err != nil {
 		t.Fatalf("error loading hub state: %v", err)
-
 	}
 	// now configure mock store to assert that the hub state is loaded only once
 	callCount := 0
@@ -415,7 +409,7 @@ func TestHubStateHandler_DirtyFlagTriggersReload(t *testing.T) {
 		return hubState, nil
 	})
 
-	mockStore := mocks.NewMockAppStoreWithLoadStateFunc(loadHubStateFunc, isDirtyFunc)
+	mockStore := mocks.NewMockAppStoreWithLoadStateFunc(loadHubStateFunc)
 
 	handler := api.NewHubStateHandler(mockStore, 5*time.Minute)
 
@@ -423,7 +417,7 @@ func TestHubStateHandler_DirtyFlagTriggersReload(t *testing.T) {
 	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
 
 	// Trigger dirty
-	// handler.SetDirty()
+	mockStore.TriggerDirty()
 
 	// Should reload
 	rr := httptest.NewRecorder()

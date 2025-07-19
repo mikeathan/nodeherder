@@ -601,22 +601,31 @@ type NopAppStore struct {
 	deviceIdMapper      *repository.DeviceIdMapper
 	loadHubStateFunc    func() (*hub.HubState, error)
 	registerIsDirtyFunc func()
+	TriggerDirty        func()
 }
 
-func NewMockAppStoreWithLoadStateFunc(loadHubStateFunc func() (*hub.HubState, error), isDirtyFunc func()) store.AppStore {
+func NewMockAppStoreWithLoadStateFunc(loadHubStateFunc func() (*NopAppStore, error)) store.AppStore {
 
 	devicesRepo := NopRepository{}
 	metricsRepo := NopMetricsRepo{}
 	config := &settings.AppConfigCache{}
-	return &NopAppStore{
-		devices:             &devicesRepo,
-		metrics:             &metricsRepo,
-		config:              config,
-		deviceIdMapper:      repository.NewDeviceIdMapper(&devicesRepo),
-		registerIsDirtyFunc: isDirtyFunc,
-		loadHubStateFunc:    loadHubStateFunc,
+	store := &NopAppStore{
+		devices:          &devicesRepo,
+		metrics:          &metricsRepo,
+		config:           config,
+		deviceIdMapper:   repository.NewDeviceIdMapper(&devicesRepo),
+		loadHubStateFunc: loadHubStateFunc,
 	}
+
+	store.TriggerDirty = func() {
+		if store.registerIsDirtyFunc != nil {
+			store.registerIsDirtyFunc()
+		}
+	}
+
+	return store
 }
+
 func NewMockAppStore() store.AppStore {
 	devicesRepo := NopRepository{}
 	metricsRepo := NopMetricsRepo{}
@@ -634,10 +643,6 @@ func (s *NopAppStore) WithLoadHubStateFunc(loadHubStateFunc func() (*hub.HubStat
 	s.loadHubStateFunc = loadHubStateFunc
 }
 
-func (s *NopAppStore) WithRegisterIsDirtyFunc(registerIsDirtyFunc func()) {
-	s.registerIsDirtyFunc = registerIsDirtyFunc
-}
-
 func NewMockAppStoreFromDevicesRepo(devicesRepo devices.Repository) store.AppStore {
 	metricsRepo := &NopMetricsRepo{}
 	config := &settings.AppConfigCache{}
@@ -651,10 +656,8 @@ func NewMockAppStoreFromDevicesRepo(devicesRepo devices.Repository) store.AppSto
 
 func (s *NopAppStore) RegisterIsDirtyCallback(cb store.AppStoreDirtyFlagCallback) {
 	fmt.Println("Mocked store RegisterIsDirtyCallback")
+	s.registerIsDirtyFunc = cb
 
-	if s.registerIsDirtyFunc != nil {
-		s.registerIsDirtyFunc()
-	}
 }
 
 func (s *NopAppStore) LoadHubState() (*hub.HubState, error) {
