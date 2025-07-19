@@ -3,6 +3,7 @@ package api_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -341,19 +342,27 @@ func TestHubStateHandler_ReturnsHubState(t *testing.T) {
 }
 
 func TestHubStateHandler_ReturnsCacheedState(t *testing.T) {
-	callCount := 0
 
-	isDirtFunc := func() {
-		callCount++
+	// load real store to get readl hubstate data
+	store, err := utils_test.CreateStoreWithDevices()
+	if err != nil {
+		t.Fatalf("error creating store: %v", err)
 	}
 
+	hubState, err := store.LoadHubState()
+	if err != nil {
+		t.Fatalf("error loading hub state: %v", err)
+
+	}
+	// now configure mock store to assert that the hub state is loaded only once
+	callCount := 0
 	loadHubStateFunc := (func() (*hub.HubState, error) {
 		callCount++
-		return &hub.HubState{
-			// fill with dummy test data as needed
-		}, nil
+		return hubState, nil
 	})
-	mockStore := mocks.NewMockAppStoreWithLoadStateFunc(loadHubStateFunc, isDirtFunc)
+
+	mockStore := mocks.NewMockAppStoreWithLoadStateFunc(loadHubStateFunc, func() {
+	})
 
 	handler := api.NewHubStateHandler(mockStore, 5*time.Minute)
 
@@ -362,15 +371,98 @@ func TestHubStateHandler_ReturnsCacheedState(t *testing.T) {
 	rr1 := httptest.NewRecorder()
 	handler.ServeHTTP(rr1, req1)
 
-	// Reset loaded flag to confirm cache is reused
-	mock.loaded = false
+	if rr1.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rr1.Code)
+	}
 
+	if callCount != 1 {
+		t.Fatalf("expected call count 1, got %d", callCount)
+	}
 	// Second call: should reuse cache
 	req2 := httptest.NewRequest(http.MethodGet, "/", nil)
 	rr2 := httptest.NewRecorder()
 	handler.ServeHTTP(rr2, req2)
 
-	if mock.loaded {
-		t.Error("expected cache to be used, but LoadHubState was called again")
+	if rr2.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rr2.Code)
+	}
+	if callCount != 1 {
+		t.Fatalf("expected call count 1, got %d", callCount)
 	}
 }
+
+todo
+func TestHubStateHandler_DirtyFlagTriggersReload(t *testing.T) {
+	store, err := utils_test.CreateStoreWithDevices()
+	if err != nil {
+		t.Fatalf("error creating store: %v", err)
+	}
+
+	isDirtyFunc := func() {
+
+		fmt.Print("dirty")
+	}
+
+	hubState, err := store.LoadHubState()
+	if err != nil {
+		t.Fatalf("error loading hub state: %v", err)
+
+	}
+	// now configure mock store to assert that the hub state is loaded only once
+	callCount := 0
+	loadHubStateFunc := (func() (*hub.HubState, error) {
+		callCount++
+		return hubState, nil
+	})
+
+	mockStore := mocks.NewMockAppStoreWithLoadStateFunc(loadHubStateFunc, isDirtyFunc)
+
+	handler := api.NewHubStateHandler(mockStore, 5*time.Minute)
+
+	// Initial load
+	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
+
+	// Trigger dirty
+	// handler.SetDirty()
+
+	// Should reload
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
+
+}
+
+// func TestServeHTTP_ExpirationTriggersReload(t *testing.T) {
+// 	mock := &mockAppStore{
+// 		state: &hub.HubState{Version: "stale"},
+// 	}
+// 	handler := handler.NewHubStateHandler(mock, 1*time.Millisecond)
+
+// 	// Initial load
+// 	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
+// 	mock.loaded = false
+
+// 	time.Sleep(5 * time.Millisecond)
+
+// 	// Should reload due to TTL expiry
+// 	rr := httptest.NewRecorder()
+// 	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
+
+// 	if !mock.loaded {
+// 		t.Error("expected LoadHubState to be called after TTL expiration")
+// 	}
+// }
+
+// func TestServeHTTP_LoadError(t *testing.T) {
+// 	mock := &mockAppStore{
+// 		err: errors.New("boom"),
+// 	}
+
+// 	handler := handler.NewHubStateHandler(mock, 5*time.Minute)
+
+// 	rr := httptest.NewRecorder()
+// 	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
+
+// 	if rr.Code != http.StatusInternalServerError {
+// 		t.Errorf("expected 500, got %d", rr.Code)
+// 	}
+// }

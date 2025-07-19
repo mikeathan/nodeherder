@@ -609,14 +609,12 @@ func NewMockAppStoreWithLoadStateFunc(loadHubStateFunc func() (*hub.HubState, er
 	metricsRepo := NopMetricsRepo{}
 	config := &settings.AppConfigCache{}
 	return &NopAppStore{
-		devices:        &devicesRepo,
-		metrics:        &metricsRepo,
-		config:         config,
-		deviceIdMapper: repository.NewDeviceIdMapper(&devicesRepo),
+		devices:             &devicesRepo,
+		metrics:             &metricsRepo,
+		config:              config,
+		deviceIdMapper:      repository.NewDeviceIdMapper(&devicesRepo),
 		registerIsDirtyFunc: isDirtyFunc,
-		loadHubStateFunc: func() (*hub.HubState, error) {
-			return loadHubStateFunc()
-		},
+		loadHubStateFunc:    loadHubStateFunc,
 	}
 }
 func NewMockAppStore() store.AppStore {
