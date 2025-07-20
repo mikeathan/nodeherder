@@ -9,9 +9,10 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/store"
 	"node-herder/utils"
+	"time"
 )
 
-func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, ctx context.Context) *api.ApiServer {
+func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store store.AppStore, ctx context.Context) *api.ApiServer {
 
 	router := api.NewRouter()
 	fservice := fs.NewFileSystem()
@@ -24,17 +25,18 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, ctx c
 
 	router.POST("/logfile", api.NewLogFileHandler(fservice))
 	router.GET("/listlogs", api.NewListFileLogsHandler(fservice))
+	router.GET("/hubstate", api.NewHubStateHandler(store, 15*time.Minute))
 
 	// file routing
-	fs := api.NewFileServer("../frontend/dist")
-	router.GET("/consoleviewer", fs.Resolve(false))
-	router.GET("/deviceDashboard", fs.Resolve(false))
-	router.GET("/settings", fs.Resolve(false))
-	router.GET("/viewer", fs.Resolve(false))
-	router.GET("/creator", fs.Resolve(false))
-	router.GET("/devicepage", fs.Resolve(false))
-	router.GET("/editor", fs.Resolve(false))
-	router.GET("/", fs.Resolve(true))
+	// fs := api.NewFileServer("../frontend/dist")
+	// router.GET("/consoleviewer", fs.Resolve(false))
+	// router.GET("/deviceDashboard", fs.Resolve(false))
+	// router.GET("/settings", fs.Resolve(false))
+	// router.GET("/viewer", fs.Resolve(false))
+	// router.GET("/creator", fs.Resolve(false))
+	// router.GET("/devicepage", fs.Resolve(false))
+	// router.GET("/editor", fs.Resolve(false))
+	// router.GET("/", fs.Resolve(true))
 
 	apiServer := api.NewHttpServer(
 		port,
@@ -55,5 +57,5 @@ func Register(port int, store store.AppStore, config mqtt.MqttConfig, ctx contex
 	mqtt := mqtt.NewMqttClient(config)
 	hub := controllers.RegisterHubController(ws, store, mqtt, ctx)
 
-	return registerApi(port, ws, hub, ctx)
+	return registerApi(port, ws, hub, store, ctx)
 }
