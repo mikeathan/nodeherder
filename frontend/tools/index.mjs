@@ -268,7 +268,6 @@ app.use(
   })
 );
 
-
 // Register HTTP GET route for /hubstate
 app.get('/api/hubstate', (req, res) => {
   console.log('hubstate GET request');
@@ -293,6 +292,7 @@ app.ws('/ws', async function (ws) {
         type: 'deviceUpdated',
         payload: updatePayload,
       });
+
       ws.send(d);
     }, s.delayInMs);
   });
@@ -306,10 +306,6 @@ app.ws('/ws', async function (ws) {
         sendMessage(ws, 'automations', getAutomations());
         break;
 
-      // case 'loadHubState':
-      //   sendMessage(ws, 'hubState', hubStatePayload);
-      //   connected = true;
-      //   break;
       case 'deviceSetValue':
         // Respond back with update value to update UI
         const updatePayload = {

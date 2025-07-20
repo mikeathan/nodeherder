@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { onBeforeMount, h, ref, computed } from 'vue';
+  import {  h, ref, computed, onMounted } from 'vue';
   import { store } from './store/index';
   import Notifications from './components/hub/alerts/Notifications.vue';
   import { useRouter } from 'vue-router';
@@ -91,7 +91,7 @@
     },
   ]);
 
-  onBeforeMount(() => {
+  onMounted(() => {
     fetchHubState()
       .then((state) => {
         store.dispatch('hub/init', state);
