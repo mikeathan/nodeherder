@@ -85,14 +85,6 @@ export const WSClientModule: Module<WSClientState, RootState> = {
               root: true,
             });
             break;
-
-            TODO;
-          // TODO: that needs to move to the get hubstate response
-          // case 'hubState':
-          //   dispatch('hub/init', obj.payload, {
-          //     root: true,
-          //   });
-          //   break;
           case 'deviceUpdated':
             commit('hub/updateDevice', obj.payload, {
               root: true,

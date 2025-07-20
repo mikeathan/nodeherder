@@ -10,6 +10,7 @@
   import { MenuBarItem } from './types/controls.type';
   import { DashboardModes } from '@/types/controls.type';
   import NavigationBar from './components/controls/NavigationBar.vue';
+  import { fetchHubState } from './services/hubstate.service';
   const router = useRouter();
   const permitJoinDuration = 120;
 
@@ -24,7 +25,7 @@
 
   const toggleDrawer = () => {
     isDrawerVisible.value = !isDrawerVisible.value;
-  }
+  };
   const toggleEditMode = () => {
     dashboardEditMode.value = !dashboardEditMode.value;
   };
@@ -42,7 +43,7 @@
     {
       isLogo: true,
       template: () => h(Logo),
-    }
+    },
   ]);
 
   const sideNavigationItems = computed<MenuBarItem[]>(() => [
@@ -90,8 +91,16 @@
     },
   ]);
 
-  onBeforeMount(() => {
-    store.dispatch('ws/connect');
+  onBeforeMount(async () => {
+    fetchHubState()
+      .then((state) => {
+        store.dispatch('hub/init', state);
+        store.dispatch('ws/connect');
+      })
+      .catch((err) => {
+        console.error('Failed to fetch hub state or connect WebSocket:', err);
+        store.commit('ws/setConnectionStatus', 'disconnected');
+      });
   });
 </script>
 
