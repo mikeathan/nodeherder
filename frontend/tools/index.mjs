@@ -259,11 +259,19 @@ var hubStatePayload = loadHubState();
 var appConfig = hubStatePayload.config;
 var metricsMap = loadMetrics();
 
+// Register HTTP GET route for /hubstate
+app.get('/hubstate', (req, res) => {
+  res.json(hubStatePayload);
+});
+
 var connected = false;
-// Get the /ws websocket route
+
+// Register web socket events
 app.ws('/ws', async function (ws) {
   console.log('client connected');
+  connected = true;
 
+  
   settings.forEach((s) => {
     setInterval(function () {
       if (!connected) {
@@ -288,10 +296,10 @@ app.ws('/ws', async function (ws) {
         sendMessage(ws, 'automations', getAutomations());
         break;
 
-      case 'loadHubState':
-        sendMessage(ws, 'hubState', hubStatePayload);
-        connected = true;
-        break;
+      // case 'loadHubState':
+      //   sendMessage(ws, 'hubState', hubStatePayload);
+      //   connected = true;
+      //   break;
       case 'deviceSetValue':
         // Respond back with update value to update UI
         const updatePayload = {

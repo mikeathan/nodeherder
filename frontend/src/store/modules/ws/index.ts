@@ -58,7 +58,7 @@ export const WSClientModule: Module<WSClientState, RootState> = {
       socket.onopen = function (event) {
         console.log('ws connected');
         reconnectAttempts = 0;
-        dispatch('emit', { event: 'loadHubState' });
+        // dispatch('emit', { event: 'loadHubState' });
         commit('setConnectionStatus', 'connected');
       };
 
@@ -85,11 +85,14 @@ export const WSClientModule: Module<WSClientState, RootState> = {
               root: true,
             });
             break;
-          case 'hubState':
-            dispatch('hub/init', obj.payload, {
-              root: true,
-            });
-            break;
+
+            TODO;
+          // TODO: that needs to move to the get hubstate response
+          // case 'hubState':
+          //   dispatch('hub/init', obj.payload, {
+          //     root: true,
+          //   });
+          //   break;
           case 'deviceUpdated':
             commit('hub/updateDevice', obj.payload, {
               root: true,
