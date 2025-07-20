@@ -12,9 +12,9 @@ const (
 
 	// requests
 	LoadAutomations = "loadAutomations"
-	LoadHubState    = "loadHubState"
-	LoadDevice      = "loadDevice"
-	LoadDeviceList  = "loadDeviceList"
+	//LoadHubState    = "loadHubState"
+	LoadDevice     = "loadDevice"
+	LoadDeviceList = "loadDeviceList"
 
 	SaveAutomation          = "saveAutomation"
 	DeleteAutomation        = "deleteAutomation"
@@ -47,7 +47,7 @@ const (
 	OperationFailed   = "operationFailed"
 	OperationSuccess  = "operationSuccess"
 	AutomationUpdated = "automationUpdated" // returns back upated automation
-	HubState          = "hubState"
+	//HubState          = "hubState"
 
 	Metrics         = "metrics"
 	AppConfig       = "appConfig"
@@ -76,7 +76,7 @@ type EventHub interface {
 	OnDeleteAutomationTrigger(func(payload interface{}) (interface{}, error))
 	OnLoadMetrics(action func(interface{}) (interface{}, error))
 	OnLoadAppConfig(action func() (interface{}, error))
-	OnLoadHubState(action func() (interface{}, error))
+	//OnLoadHubState(action func() (interface{}, error))
 	OnLoadBridgeConfig(action func() (interface{}, error))
 	OnSaveDeviceConfigOverrides(func(payload interface{}) error)
 	OnDeleteDeviceConfigOverrides(func(payload interface{}) error)
@@ -117,8 +117,8 @@ type eventHubImpl struct {
 	onDeleteDashboardGroup        func(payload interface{}) error
 	onImportDashboardGroups       func(payload interface{}) error
 	onLoadDashboardGroups         func() (interface{}, error)
-	onLoadHubState                func() (interface{}, error)
-	requestContext                hub.Context
+	//onLoadHubState                func() (interface{}, error)
+	requestContext hub.Context
 }
 
 func NewWsHub() EventHub {
@@ -148,8 +148,8 @@ func NewWsHub() EventHub {
 		onDeleteDashboardGroup:        func(payload interface{}) error { return nil },
 		onImportDashboardGroups:       func(payload interface{}) error { return nil },
 		onLoadDashboardGroups:         func() (interface{}, error) { return nil, nil },
-		onLoadHubState:                func() (interface{}, error) { return nil, nil },
-		requestContext:                NewRequestContext(),
+		//onLoadHubState:                func() (interface{}, error) { return nil, nil },
+		requestContext: NewRequestContext(),
 	}
 }
 
@@ -257,9 +257,9 @@ func (h *eventHubImpl) OnLoadDashboardGroups(action func() (interface{}, error))
 	h.onLoadDashboardGroups = action
 }
 
-func (h *eventHubImpl) OnLoadHubState(action func() (interface{}, error)) {
-	h.onLoadHubState = action
-}
+// func (h *eventHubImpl) OnLoadHubState(action func() (interface{}, error)) {
+// 	h.onLoadHubState = action
+// }
 
 func (h *eventHubImpl) EmitDevice(name string) error {
 	msg, err := h.onLoadDevice(name)
@@ -317,8 +317,8 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 			utils.LogErrorf("Failed to broadcast onLoadAutomations %s", err.Error())
 		}
 
-	case LoadHubState:
-		c.executeActionWithEvent(c.onLoadHubState, HubState)
+	// case LoadHubState:
+	// 	c.executeActionWithEvent(c.onLoadHubState, HubState)
 
 	case LoadMetrics:
 		c.executePayloadActionWithSuccessfullyEvent(eventMsg.Payload, c.onLoadMetrics, Metrics)

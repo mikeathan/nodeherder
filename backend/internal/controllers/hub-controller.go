@@ -73,9 +73,9 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 func (h *HubController) registerEventHubEvents() {
 	appconfig := h.store.AppConfig()
 
-	h.eventHub.OnLoadHubState(func() (interface{}, error) {
-		return h.store.LoadHubState()
-	})
+	// h.eventHub.OnLoadHubState(func() (interface{}, error) {
+	// 	return h.store.LoadHubState()
+	// })
 
 	h.eventHub.OnLoadAppConfig(func() (interface{}, error) {
 		return appconfig.LoadAppConfig()
