@@ -39,7 +39,7 @@
     }
   };
 
-  const topNavigattionItems = computed<MenuBarItem[]>(() => [
+  const topNavigationItems = computed<MenuBarItem[]>(() => [
     {
       isLogo: true,
       template: () => h(Logo),
@@ -91,14 +91,14 @@
     },
   ]);
 
-  onBeforeMount(async () => {
+  onBeforeMount(() => {
     fetchHubState()
       .then((state) => {
         store.dispatch('hub/init', state);
         store.dispatch('ws/connect');
       })
       .catch((err) => {
-        console.error('Failed to fetch hub state or connect WebSocket:', err);
+        console.error('Failed to init hub state:', err);
         store.commit('ws/setConnectionStatus', 'disconnected');
       });
   });
@@ -107,7 +107,7 @@
 <template>
   <NavigationBar
     :style="{ marginLeft: `${drawerWidth}px` }"
-    :items="topNavigattionItems"
+    :items="topNavigationItems"
     @click="isDrawerVisible = $event" />
   <NavigationDrawer
     :items="sideNavigationItems"

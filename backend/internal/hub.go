@@ -25,7 +25,7 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 
 	router.POST("/logfile", api.NewLogFileHandler(fservice))
 	router.GET("/listlogs", api.NewListFileLogsHandler(fservice))
-	router.GET("/hubstate", api.NewHubStateHandler(store, 15*time.Minute))
+	router.GET("/api/hubstate", api.NewHubStateHandler(store, 15*time.Minute))
 
 	// file routing
 	// fs := api.NewFileServer("../frontend/dist")

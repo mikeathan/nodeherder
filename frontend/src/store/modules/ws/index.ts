@@ -4,16 +4,10 @@ import { WSClientState } from './state';
 import { ConnectionStatus, ConnectionStatusType } from '@/types/connection.type';
 
 function getSocketUri() {
-  const devSocketUri = 'ws://localhost:3000/ws';
-  const productionSocketUri = 'ws://' + document.location.host + '/ws';
-
-  if (process.env.NODE_ENV == 'development') {
-    console.info('Enviroment:', process.env.NODE_ENV);
-    return devSocketUri;
-  }
-
-  return productionSocketUri;
+  const wsBaseUrl = import.meta.env.VITE_WS_BASE_URL;
+  return `${wsBaseUrl}/ws`;
 }
+
 let reconnectAttempts: number = 0;
 const maxReconnectAttempts = 10;
 const maxReconnectTimeout = 30000; //// Cap the delay at 30 seconds
