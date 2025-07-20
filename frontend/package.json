@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test-server": "node ./tools/index.mjs",
+    "start": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

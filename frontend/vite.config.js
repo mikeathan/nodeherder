@@ -14,6 +14,9 @@ export default defineConfig({
   server: {
     port: 4100,
   },
+  preview: {
+    port: 4100,
+  },
   resolve: {
     alias: {
       '@': resolve(__dirname, './src'),
