@@ -3,7 +3,6 @@ package api_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -396,8 +395,6 @@ func TestHubStateHandler_DirtyFlagTriggersReload(t *testing.T) {
 		t.Fatalf("error creating store: %v", err)
 	}
 
-	
-
 	hubState, err := store.LoadHubState()
 	if err != nil {
 		t.Fatalf("error loading hub state: %v", err)
@@ -416,6 +413,9 @@ func TestHubStateHandler_DirtyFlagTriggersReload(t *testing.T) {
 	// Initial load
 	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
 
+	if callCount != 1 {
+		t.Fatalf("expected call count 1, got %d", callCount)
+	}
 	// Trigger dirty
 	mockStore.TriggerDirty()
 
@@ -423,40 +423,45 @@ func TestHubStateHandler_DirtyFlagTriggersReload(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
 
+	if callCount != 2 {
+		t.Fatalf("expected call count 2, got %d", callCount)
+	}
 }
 
-// func TestServeHTTP_ExpirationTriggersReload(t *testing.T) {
-// 	mock := &mockAppStore{
-// 		state: &hub.HubState{Version: "stale"},
-// 	}
-// 	handler := handler.NewHubStateHandler(mock, 1*time.Millisecond)
+func TestHubStateHandler_ExpirationTriggersReload(t *testing.T) {
+	store, err := utils_test.CreateStoreWithDevices()
+	if err != nil {
+		t.Fatalf("error creating store: %v", err)
+	}
 
-// 	// Initial load
-// 	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
-// 	mock.loaded = false
+	hubState, err := store.LoadHubState()
+	if err != nil {
+		t.Fatalf("error loading hub state: %v", err)
+	}
 
-// 	time.Sleep(5 * time.Millisecond)
+	callCount := 0
+	loadHubStateFunc := (func() (*hub.HubState, error) {
+		callCount++
+		return hubState, nil
+	})
 
-// 	// Should reload due to TTL expiry
-// 	rr := httptest.NewRecorder()
-// 	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
+	mockStore := mocks.NewMockAppStoreWithLoadStateFunc(loadHubStateFunc)
 
-// 	if !mock.loaded {
-// 		t.Error("expected LoadHubState to be called after TTL expiration")
-// 	}
-// }
+	handler := api.NewHubStateHandler(mockStore, 1*time.Millisecond)
 
-// func TestServeHTTP_LoadError(t *testing.T) {
-// 	mock := &mockAppStore{
-// 		err: errors.New("boom"),
-// 	}
+	// Initial load
+	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
 
-// 	handler := handler.NewHubStateHandler(mock, 5*time.Minute)
+	if callCount != 1 {
+		t.Fatalf("expected call count 1, got %d", callCount)
+	}
+	time.Sleep(2 * time.Millisecond)
 
-// 	rr := httptest.NewRecorder()
-// 	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
+	// Should reload due to TTL expiry
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
+	if callCount != 2 {
+		t.Fatalf("expected call count 2, got %d", callCount)
+	}
 
-// 	if rr.Code != http.StatusInternalServerError {
-// 		t.Errorf("expected 500, got %d", rr.Code)
-// 	}
-// }
+}

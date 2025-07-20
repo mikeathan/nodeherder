@@ -604,7 +604,7 @@ type NopAppStore struct {
 	TriggerDirty        func()
 }
 
-func NewMockAppStoreWithLoadStateFunc(loadHubStateFunc func() (*NopAppStore, error)) store.AppStore {
+func NewMockAppStoreWithLoadStateFunc(loadHubStateFunc func() (*hub.HubState, error)) *NopAppStore {
 
 	devicesRepo := NopRepository{}
 	metricsRepo := NopMetricsRepo{}
