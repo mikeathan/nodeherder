@@ -59,7 +59,11 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	method := req.Method
 
 	handler := r.getHandler(method, path)
-
+	if handler == nil {
+		utils.LogErrorf("Failed to find handler for path: %s", path)
+		http.NotFound(w, req)
+		return
+	}
 	handler.ServeHTTP(w, req)
 }
 
@@ -307,6 +311,7 @@ func (h *HubStateHandler) refreshCacheIfNeeded() error {
 func (h *HubStateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := h.refreshCacheIfNeeded(); err != nil {
+		utils.LogErrorf("HubStateHandler: Failed to load hub state %s", err.Error())
 		http.Error(w, "Failed to load hub state", http.StatusInternalServerError)
 		return
 	}
