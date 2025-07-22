@@ -10,7 +10,6 @@ import (
 	"node-herder/models/logging"
 	"node-herder/store"
 	"node-herder/utils"
-	"os"
 	"regexp"
 	"sync"
 	"time"
@@ -272,7 +271,7 @@ func (h *HubStateHandler) setDirty() {
 	defer h.mu.Unlock()
 	h.mu.Lock()
 	h.hubStateIsDirty = true
-	
+
 }
 
 func (h *HubStateHandler) isStaleOrDirty() bool {
@@ -307,13 +306,6 @@ func (h *HubStateHandler) refreshCacheIfNeeded() error {
 
 func (h *HubStateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	if os.Getenv("APP_ENV") == "development" {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-	} else {
-		w.Header().Set("Access-Control-Allow-Origin", "https://your-production-frontend.com")
-	}
-
 	if err := h.refreshCacheIfNeeded(); err != nil {
 		http.Error(w, "Failed to load hub state", http.StatusInternalServerError)
 		return

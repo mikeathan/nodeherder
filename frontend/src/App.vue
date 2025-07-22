@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import {  h, ref, computed, onMounted } from 'vue';
+  import { h, ref, computed, onMounted } from 'vue';
   import { store } from './store/index';
   import Notifications from './components/hub/alerts/Notifications.vue';
   import { useRouter } from 'vue-router';
@@ -94,6 +94,7 @@
   onMounted(() => {
     fetchHubState()
       .then((state) => {
+        console.log('Hub state initialized:', state);
         store.dispatch('hub/init', state);
         store.dispatch('ws/connect');
       })

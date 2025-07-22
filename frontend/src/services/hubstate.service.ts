@@ -4,7 +4,10 @@ const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
 export async function fetchHubState(): Promise<{ devices: Device[]; config: AppConfig }> {
   const res = await fetch(`${baseUrl}/api/hubstate`);
-  if (!res.ok) throw new Error('hubstate fetch failed');
+  if (!res.ok) {
+    console.error('[DEBUG]hubstate fetch failed', res);
+    throw new Error('hubstate fetch failed');
+  }
 
   return await res.json();
 }

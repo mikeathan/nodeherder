@@ -42,6 +42,12 @@ func main() {
 	utils.InitFileLogger()
 	utils.SetLogLevel(args.logLevel)
 
+	err := utils.LoadEnviromentConfig()
+	if err != nil {
+		utils.LogErrorf("error loading enviroment config: %v", err.Error())
+		os.Exit(-1)
+	}
+
 	ctx, cancelCtx := context.WithCancel(context.Background())
 
 	utils.LogInfo("starting up server")

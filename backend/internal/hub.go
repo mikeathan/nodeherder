@@ -17,6 +17,9 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	router := api.NewRouter()
 	fservice := fs.NewFileSystem()
 
+	//middleware
+	router.Use(api.CORS)
+
 	//websocket routing
 	router.GET("/ws", api.NewWsHandler(ws))
 
@@ -25,6 +28,7 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 
 	router.POST("/logfile", api.NewLogFileHandler(fservice))
 	router.GET("/listlogs", api.NewListFileLogsHandler(fservice))
+
 	router.GET("/api/hubstate", api.NewHubStateHandler(store, 15*time.Minute))
 
 	// file routing
