@@ -25,7 +25,7 @@ const humidityMax = 100.0;
 
 const luminance_luxMin = 10;
 
-let port = 3000;
+let port = 4110;
 
 let consoleLogIntervalId = 0;
 const logSeverity = ['info', 'warning', 'error', 'critical'];

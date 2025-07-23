@@ -14,8 +14,6 @@ func CORS(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-		println("origin: ", origin)
-		println("frontendURL: ", frontendURL)
 		if origin == frontendURL {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Vary", "Origin")
