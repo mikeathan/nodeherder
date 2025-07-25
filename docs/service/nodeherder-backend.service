@@ -6,6 +6,7 @@ After=network-online.target
 [Service]
 User=mikeathan
 WorkingDirectory=/home/mikeathan/dev/node-herder/backend
+Environment=APP_ENV=production
 ExecStart=/home/mikeathan/dev/node-herder/backend/nodeherder -port 9080
 Restart=always
 RestartSec=5

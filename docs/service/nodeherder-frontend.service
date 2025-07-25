@@ -6,10 +6,10 @@ After=network-online.target
 [Service]
 User=mikeathan
 WorkingDirectory=/home/mikeathan/dev/node-herder/frontend
+Environment=NODE_ENV=production
 ExecStart=/usr/bin/npm start
 Restart=always
 RestartSec=5
-Environment=NODE_ENV=production
 
 [Install]
 WantedBy=nodeherder.target
