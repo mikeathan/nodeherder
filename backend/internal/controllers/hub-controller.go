@@ -492,6 +492,7 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 		d.handleDeviceAdded(device, data)
 	})
 
+	events.withOnDeviceDsiabled
 	events.WithOnDeviceUpdated(func(device *devices.Device, p *devices.UpdatePackage) {
 		d.handleDeviceUpdated(device, p)
 	})
