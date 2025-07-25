@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test-server": "node ./tools/index.mjs",
-    "start": "vite preview",
+    "start": "http-server dist -p 4100",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -36,6 +36,7 @@
     "eslint-plugin-import": "^2.31.0",
     "express": "^4.18.2",
     "express-ws": "^5.0.2",
+    "http-server": "^14.1.1",
     "mitt": "^3.0.1",
     "moment": "^2.30.1",
     "moment-timezone": "^0.5.43",

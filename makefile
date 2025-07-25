@@ -8,11 +8,11 @@ build_backend:
 	@echo "Cleaning previous backend binary"
 	@rm -f ./nodeherder
 	@echo "Building node-herder backend"
-	@cd backend && go build -o ../nodeherder main.go
+	@cd backend && go build -o ./nodeherder main.go
 	
 run_backend: build_backend
 	@echo "Running backend"
-	@./nodeherder
+	@cd backend && ./nodeherder
 
 # Frontend
 build_frontend:
@@ -25,13 +25,13 @@ run_frontend:
 	@echo "Running frontend in production mode"
 	@cd frontend && npm start
 
-# Combined
 build: build_backend build_frontend
 
-run: run_backend run_frontend
+# run:
+# 	@echo "Starting backend and frontend in the background"
+# 	@parallel ::: "$(MAKE) run_backend" "$(MAKE) run_frontend"
 
-# Optional cleanup
 clean:
 	@echo "Removing built artifacts"
-	@rm -f ./nodeherder
+	@rm -f ./backend/nodeherder
 	@rm -rf ./frontend/dist
