@@ -15,4 +15,4 @@ const port = process.env.FRONTEND_PORT;
 console.log(`Using env file: ${envFile}`);
 console.log(`Starting serve on port ${port}`);
 
-execSync(`serve -s dist -l ${port}`, { stdio: 'inherit' });
+execSync(`serve -s dist -l tcp://0.0.0.0:${port}`, { stdio: 'inherit' });
