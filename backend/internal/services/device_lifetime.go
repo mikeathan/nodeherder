@@ -32,6 +32,7 @@ func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequ
 		debouncerService:  settings.NewDeviceDebouncer(device.Id, configCache, clock),
 		device:            device,
 		events:            events,
+		stopped:           false,
 		automationQueries: automationQueries,
 		availablityDone:   make(chan bool, 1),
 	}
@@ -46,14 +47,13 @@ func (d *DeviceLifetimeService) Start(payload map[string]interface{}) {
 	d.events.OnNewDevice(d.device, payload)
 }
 
-func (d *DeviceLifetimeService) ConfigUpdated(cfg *settings.DeviceConfig) {
+func (d *DeviceLifetimeService) OnConfigUpdated(cfg *settings.DeviceConfig) {
 
 	if cfg.Disabled == d.stopped {
 		return
 	}
 
 	if cfg.Disabled {
-
 		d.stopped = true
 		d.stopAvailabilityMonitoring()
 		return

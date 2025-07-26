@@ -473,6 +473,53 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithAutomationEnabled(t *testi
 	}
 }
 
+func TestOnConfigUpdated_ShouldDisableDevice(t *testing.T) {
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+
+	device := utils_test.CreateDevice("x01234", "testDevice", "brightness", 124, 0.0, 255.0)
+	device.Availability = devices.OnlineAvailability
+
+	events := &devices.DeviceRequestEvents{
+		OnNewDevice: func(d *devices.Device, p map[string]interface{}) {
+			if d != device {
+				t.Errorf("OnNewDevice device = %v, want %v", d, device)
+				return
+			}
+			wg.Done()
+		},
+		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
+			// we should not get this event as we have disabled the device
+			t.Errorf("OnDeviceUpdated should not be called")
+		},
+		OnDeviceMeasurementsUpdated: func(d *devices.Device, p map[string]interface{}) {
+			t.Errorf("OnDeviceMeasurementsUpdated should not be called")
+		},
+		OnDeviceAvailabilityChanged: func(p *devices.UpdatePackage) {
+
+		},
+	}
+
+	app := settings.NewAppConfig()
+	repo := mocks.NopSettingsrepo{}
+	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
+
+	cache := settings.NewDeviceConfigCache(&repo, app)
+	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, utils.NewRealClock())
+	payload := map[string]interface{}{"brightness": 10.2}
+
+	service.Start(payload)
+
+	newConfig := settings.NewDeviceConfig("x01234")
+	newConfig.Disabled = true
+	service.OnConfigUpdated(newConfig)
+
+	time.Sleep(200 * time.Millisecond)
+	service.Update(map[string]interface{}{"brightness": 20.5})
+	
+	wg.Wait()
+}
+
 func createTimestamp(hour, minute, second int) time.Time {
 	now := time.Now()
 	return time.Date(now.Year(), now.Month(), now.Day(), hour, minute, second, 0, now.Location())

@@ -50,7 +50,7 @@ func (dm *DeviceProcessor) notifyDeviceLifetime(id string, cfg *settings.DeviceC
 		return
 	}
 
-	ls.ConfigUpdated(cfg)
+	ls.OnConfigUpdated(cfg)
 }
 
 func (dm *DeviceProcessor) CreateOrUpdateDevice(friendlyName, connType string, dataMap map[string]interface{}) error {
