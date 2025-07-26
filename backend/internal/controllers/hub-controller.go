@@ -474,7 +474,6 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 				m.responseHandlers[id] = h
 			}
 		} else {
-
 			processor := m.createDeviceProcessor()
 			var h = newDeviceHandler(processor)
 			m.responseHandlers[id] = h
@@ -513,6 +512,8 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 
 	appconfig := d.store.AppConfig()
 	appconfig.RegisterDeviceConfigUpdateListener(func(cfg *settings.DeviceConfig) {
+
+		fmt.Println("[DEBUG]RegisterDeviceConfigUpdateListener: ", cfg.Id, cfg.Disabled)
 		processor.OnDeviceConfigUpdated(cfg)
 	})
 
