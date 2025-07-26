@@ -10,6 +10,7 @@ import (
 	"node-herder/internal/controllers"
 	"node-herder/internal/fs"
 	"node-herder/mocks"
+	"node-herder/models/hub"
 	"node-herder/models/logging"
 	utils_test "node-herder/testing"
 	"node-herder/utils"
@@ -307,5 +308,183 @@ func TestHandleListLogFiles(t *testing.T) {
 		if resultFiles[i] != mockeFiles[i] {
 			t.Errorf("error reading body got %v want %v", resultFiles[i], mockeFiles[i])
 		}
+	}
+}
+
+func TestHubStateHandler_ReturnsHubState(t *testing.T) {
+
+	// load devices from file
+	store, err := utils_test.CreateStoreWithDevices()
+	if err != nil {
+		t.Fatalf("error creating store: %v", err)
+	}
+
+	handler := api.NewHubStateHandler(store, 5*time.Minute)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rr.Code)
+	}
+
+	var resp *hub.HubState
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to decode JSON: %v", err)
+	}
+
+	if resp == nil || resp.Devices == nil || resp.Config == nil {
+		t.Fatalf("expected hub state, got nil")
+	}
+
+		// assert app config
+// 	if len(hubState.Config.Hub.Devices.Overrides) != len(inputAppConfig.Hub.Devices.Overrides) {
+// 		t.Fatalf("Expected numer of appconfig devices. want %v', got '%v'", len(inputAppConfig.Hub.Devices.Overrides), len(hubState.Config.Hub.Devices.Overrides))
+// 	}
+// 	for id, d := range inputAppConfig.Hub.Devices.Overrides {
+// 		gotDeviceConfig := hubState.Config.Hub.Devices.Overrides[id]
+// 		if d.Id != gotDeviceConfig.Id {
+// 			t.Fatalf("Expected device id %v', got '%v'", d.Id, gotDeviceConfig.Id)
+// 		}
+// 		if d.Disabled != gotDeviceConfig.Disabled {
+// 			t.Fatalf("Expected Disabled %v', got '%v'", d.Disabled, gotDeviceConfig.Disabled)
+// 		}
+// 		if d.MetricsEnabled != gotDeviceConfig.MetricsEnabled {
+// 			t.Fatalf("Expected MetricsEnabled %v', got '%v'", d.MetricsEnabled, gotDeviceConfig.MetricsEnabled)
+// 		}
+
+// 		if d.RateLimit.Value != gotDeviceConfig.RateLimit.Value {
+// 			t.Fatalf("Expected RateLimit.Value %v', got '%v'", d.RateLimit.Value, gotDeviceConfig.RateLimit.Value)
+// 		}
+// 		if d.RateLimit.Unit != gotDeviceConfig.RateLimit.Unit {
+// 			t.Fatalf("Expected RateLimit.Unit %v', got '%v'", d.RateLimit.Unit, gotDeviceConfig.RateLimit.Unit)
+// 		}
+// 	}
+}
+
+func TestHubStateHandler_ReturnsCacheedState(t *testing.T) {
+
+	// load real store to get readl hubstate data
+	store, err := utils_test.CreateStoreWithDevices()
+	if err != nil {
+		t.Fatalf("error creating store: %v", err)
+	}
+
+	hubState, err := store.LoadHubState()
+	if err != nil {
+		t.Fatalf("error loading hub state: %v", err)
+
+	}
+	// now configure mock store to assert that the hub state is loaded only once
+	callCount := 0
+	loadHubStateFunc := (func() (*hub.HubState, error) {
+		callCount++
+		return hubState, nil
+	})
+
+	mockStore := mocks.NewMockAppStoreWithLoadStateFunc(loadHubStateFunc)
+
+	handler := api.NewHubStateHandler(mockStore, 5*time.Minute)
+
+	// First call: loads state
+	req1 := httptest.NewRequest(http.MethodGet, "/", nil)
+	rr1 := httptest.NewRecorder()
+	handler.ServeHTTP(rr1, req1)
+
+	if rr1.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rr1.Code)
+	}
+
+	if callCount != 1 {
+		t.Fatalf("expected call count 1, got %d", callCount)
+	}
+	// Second call: should reuse cache
+	req2 := httptest.NewRequest(http.MethodGet, "/", nil)
+	rr2 := httptest.NewRecorder()
+	handler.ServeHTTP(rr2, req2)
+
+	if rr2.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", rr2.Code)
+	}
+	if callCount != 1 {
+		t.Fatalf("expected call count 1, got %d", callCount)
+	}
+}
+
+func TestHubStateHandler_DirtyFlagTriggersReload(t *testing.T) {
+	store, err := utils_test.CreateStoreWithDevices()
+	if err != nil {
+		t.Fatalf("error creating store: %v", err)
+	}
+
+	hubState, err := store.LoadHubState()
+	if err != nil {
+		t.Fatalf("error loading hub state: %v", err)
+	}
+	// now configure mock store to assert that the hub state is loaded only once
+	callCount := 0
+	loadHubStateFunc := (func() (*hub.HubState, error) {
+		callCount++
+		return hubState, nil
+	})
+
+	mockStore := mocks.NewMockAppStoreWithLoadStateFunc(loadHubStateFunc)
+
+	handler := api.NewHubStateHandler(mockStore, 5*time.Minute)
+
+	// Initial load
+	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
+
+	if callCount != 1 {
+		t.Fatalf("expected call count 1, got %d", callCount)
+	}
+	// Trigger dirty
+	mockStore.TriggerDirty()
+
+	// Should reload
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
+
+	if callCount != 2 {
+		t.Fatalf("expected call count 2, got %d", callCount)
+	}
+}
+
+func TestHubStateHandler_ExpirationTriggersReload(t *testing.T) {
+	store, err := utils_test.CreateStoreWithDevices()
+	if err != nil {
+		t.Fatalf("error creating store: %v", err)
+	}
+
+	hubState, err := store.LoadHubState()
+	if err != nil {
+		t.Fatalf("error loading hub state: %v", err)
+	}
+
+	callCount := 0
+	loadHubStateFunc := (func() (*hub.HubState, error) {
+		callCount++
+		return hubState, nil
+	})
+
+	mockStore := mocks.NewMockAppStoreWithLoadStateFunc(loadHubStateFunc)
+
+	handler := api.NewHubStateHandler(mockStore, 1*time.Millisecond)
+
+	// Initial load
+	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
+
+	if callCount != 1 {
+		t.Fatalf("expected call count 1, got %d", callCount)
+	}
+	time.Sleep(2 * time.Millisecond)
+
+	// Should reload due to TTL expiry
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
+	if callCount != 2 {
+		t.Fatalf("expected call count 2, got %d", callCount)
 	}
 }

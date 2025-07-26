@@ -15,8 +15,8 @@ ENV GO111MODULE=on \
     GOOS=linux \
     GOARCH=amd64
 
-WORKDIR /core
-COPY core/ ./
+WORKDIR /backend
+COPY backend/ ./
 RUN go mod download
 COPY *.go ./
 RUN go build -o /nodeherder main.go
@@ -24,7 +24,7 @@ RUN go build -o /nodeherder main.go
 
 # Stage 3: Final image
 FROM alpine:latest
-WORKDIR /core
+WORKDIR /backend
 COPY --from=frontend-builder /frontend/dist ./dist
 COPY --from=backend-builder /nodeherder .
 
