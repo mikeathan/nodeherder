@@ -19,7 +19,7 @@ export default defineConfig({
     port: 4100,
   },
   preview: {
-    port: 4100,
+    port: 9080,
   },
   resolve: {
     alias: {
