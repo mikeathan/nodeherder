@@ -48,6 +48,16 @@ func (d *DeviceLifetimeService) Start(payload map[string]interface{}) {
 
 func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 
+	TODO
+	//  WIP, 
+	config,_:=d.configCache.Get(d.device.Id)
+
+	if config.Disabled{
+		return
+	}
+	/// 
+
+
 	var updatePackage = devices.NewUpdatePackage(d.device.Id)
 	for name, newValue := range payload {
 
