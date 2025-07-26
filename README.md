@@ -26,6 +26,7 @@ TODO:
 - Test new logic in RegisterBridge
 - backup automations
 - device lifetime optimization : check if automations or metrics is enabled for device before sending event
+- device disabled not working !!!!
 
 ## Features
 
@@ -49,6 +50,7 @@ BUGS:
 - frontend - device settings component - DONE
 - frontend - test metrics graph - need mocked data in test node server ! - DONE
 - metrics results could have property from/to so we know the range for ui purposes - DONE
+- device disabled not working !!!!
 
 -
 - Non bridge devices . eg HTTP need more investigation/testing

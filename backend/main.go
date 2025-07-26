@@ -21,7 +21,7 @@ type cmdArgs struct {
 
 func readArgs() *cmdArgs {
 
-	port := flag.Int("port", 4100, "port number")
+	port := flag.Int("port", 4110, "port number")
 	buildType := flag.String("buildType", "", "client build type")
 	logLevel := flag.String("logLevel", "info", "client build type")
 
@@ -41,6 +41,12 @@ func main() {
 
 	utils.InitFileLogger()
 	utils.SetLogLevel(args.logLevel)
+
+	err := utils.LoadEnviromentConfig()
+	if err != nil {
+		utils.LogErrorf("error loading enviroment config: %v", err.Error())
+		os.Exit(-1)
+	}
 
 	ctx, cancelCtx := context.WithCancel(context.Background())
 

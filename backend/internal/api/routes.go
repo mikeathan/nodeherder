@@ -8,8 +8,11 @@ import (
 	"node-herder/internal/fs"
 	"node-herder/internal/ws"
 	"node-herder/models/logging"
+	"node-herder/store"
 	"node-herder/utils"
 	"regexp"
+	"sync"
+	"time"
 )
 
 type Route struct {
@@ -56,7 +59,11 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	method := req.Method
 
 	handler := r.getHandler(method, path)
-
+	if handler == nil {
+		utils.LogErrorf("Failed to find handler for path: %s", path)
+		http.NotFound(w, req)
+		return
+	}
 	handler.ServeHTTP(w, req)
 }
 
@@ -238,4 +245,78 @@ func NewFileHandler(path string, redirectPath string) *FileHandler {
 	})
 
 	return fh
+}
+
+type HubStateHandler struct {
+	store            store.AppStore
+	cachedHubState   []byte
+	hubStateIsDirty  bool
+	cacheLastUpdated time.Time
+	cacheExpiration  time.Duration
+	mu               sync.RWMutex
+}
+
+func NewHubStateHandler(appStore store.AppStore, cacheExpiration time.Duration) *HubStateHandler {
+	sh := &HubStateHandler{
+		cachedHubState:  []byte{},
+		hubStateIsDirty: false,
+		store:           appStore,
+		cacheExpiration: cacheExpiration,
+		mu:              sync.RWMutex{},
+	}
+
+	sh.store.RegisterIsDirtyCallback(func() {
+		sh.setDirty()
+	})
+	return sh
+}
+
+func (h *HubStateHandler) setDirty() {
+	defer h.mu.Unlock()
+	h.mu.Lock()
+	h.hubStateIsDirty = true
+
+}
+
+func (h *HubStateHandler) isStaleOrDirty() bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return h.hubStateIsDirty || time.Since(h.cacheLastUpdated) > h.cacheExpiration || len(h.cachedHubState) == 0
+}
+
+func (h *HubStateHandler) refreshCacheIfNeeded() error {
+	if !h.isStaleOrDirty() {
+		return nil
+	}
+
+	state, err := h.store.LoadHubState()
+	if err != nil {
+		return err
+	}
+
+	data, err := json.Marshal(state)
+	if err != nil {
+		return err
+	}
+
+	h.mu.Lock()
+	h.cachedHubState = data
+	h.cacheLastUpdated = time.Now()
+	h.hubStateIsDirty = false
+	h.mu.Unlock()
+
+	return nil
+}
+
+func (h *HubStateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if err := h.refreshCacheIfNeeded(); err != nil {
+		utils.LogErrorf("HubStateHandler: Failed to load hub state %s", err.Error())
+		http.Error(w, "Failed to load hub state", http.StatusInternalServerError)
+		return
+	}
+
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	w.Write(h.cachedHubState)
 }

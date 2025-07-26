@@ -64,7 +64,6 @@
       deviceId: deviceId,
       exposes: props.dashboardGroup.deviceGroup[deviceId]?.exposes ?? [],
     };
-    console.log('selectDevice', deviceId, selectedDeviceGroup.value);
   }
 
   function close() {

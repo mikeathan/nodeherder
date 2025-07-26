@@ -3,6 +3,7 @@
   import { MenuBarItem } from '@/types/controls.type';
   import { useWindowSize } from '@/mixins/composables/useWindowsSize';
   import { useMenuItems } from '@/mixins/composables/useMenuItems';
+  const version = __APP_VERSION__;
 
   const props = defineProps({
     items: {
@@ -45,6 +46,7 @@
         <i class="pi pi-ellipsis-v right-menu" @click="toggleMobileMenu" />
       </template>
     </Menubar>
+    <div class="app-version">v{{ version }}</div>
     <div v-if="isMobile && mobileMenuActive" class="drawer-overlay" @click="toggleMobileMenu"></div>
   </div>
 </template>
@@ -77,5 +79,20 @@
     align-items: center;
     cursor: pointer;
     border-radius: 4px;
+  }
+  .app-version {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.875rem;
+    color: #666;
+    user-select: none;
+    pointer-events: none;
+    opacity: 0.7;
+  }
+  .navigation-wrapper {
+    position: relative;
+    user-select: none;
   }
 </style>

@@ -1,16 +1,15 @@
 [Unit]
-Description=Node-Herder service
+Description=Node-Herder Backend Service
 Wants=network-online.target
 After=network-online.target
 
 [Service]
 User=mikeathan
-Type=simple
 WorkingDirectory=/home/mikeathan/dev/node-herder/backend
+Environment=APP_ENV=production
 ExecStart=/home/mikeathan/dev/node-herder/backend/nodeherder -port 9080
-
 Restart=always
+RestartSec=5
 
 [Install]
-WantedBy=multi-user.target
-
+WantedBy=nodeherder.target

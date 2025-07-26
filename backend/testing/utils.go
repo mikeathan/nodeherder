@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"math"
 	"math/rand"
+	"node-herder/internal/services"
 	"node-herder/mocks"
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
@@ -16,6 +17,7 @@ import (
 	"node-herder/store"
 	"node-herder/utils"
 	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
@@ -149,6 +151,28 @@ func CreateStoreFromDeviceRepo(repo devices.Repository) store.AppStore {
 
 	store, _ := store.NewAppStore(repo, &metricsRepo, configCache)
 	return store
+}
+
+func CreateStoreWithDevices() (store.AppStore, error) {
+	bridgeInfoFile := filepath.Join("../../../docs", "device_bridge.json")
+	data, err := os.ReadFile(bridgeInfoFile)
+	if err != nil {
+		return nil, err
+
+	}
+	bridgeInfoes, err := devices.LoadBridgeDevices(data)
+	if err != nil {
+		return nil, err
+	}
+
+	repo := repository.NewMemoryDeviceRepo()
+	store := CreateStoreFromDeviceRepo(repo)
+	eventHub := &mocks.MockEventHub{}
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(bridgeInfoes)
+
+	return store, nil
 }
 
 func CreateStoreFromRepos(deviceRepo devices.Repository, metricsRepo metrics.Repository, settingsRepo settings.Repository) store.AppStore {

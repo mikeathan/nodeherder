@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { onBeforeMount, h, ref, computed } from 'vue';
+  import { h, ref, computed, onMounted } from 'vue';
   import { store } from './store/index';
   import Notifications from './components/hub/alerts/Notifications.vue';
   import { useRouter } from 'vue-router';
@@ -10,6 +10,7 @@
   import { MenuBarItem } from './types/controls.type';
   import { DashboardModes } from '@/types/controls.type';
   import NavigationBar from './components/controls/NavigationBar.vue';
+  import { fetchHubState } from './services/hubstate.service';
   const router = useRouter();
   const permitJoinDuration = 120;
 
@@ -24,7 +25,7 @@
 
   const toggleDrawer = () => {
     isDrawerVisible.value = !isDrawerVisible.value;
-  }
+  };
   const toggleEditMode = () => {
     dashboardEditMode.value = !dashboardEditMode.value;
   };
@@ -38,11 +39,11 @@
     }
   };
 
-  const topNavigattionItems = computed<MenuBarItem[]>(() => [
+  const topNavigationItems = computed<MenuBarItem[]>(() => [
     {
       isLogo: true,
       template: () => h(Logo),
-    }
+    },
   ]);
 
   const sideNavigationItems = computed<MenuBarItem[]>(() => [
@@ -90,15 +91,24 @@
     },
   ]);
 
-  onBeforeMount(() => {
-    store.dispatch('ws/connect');
+  onMounted(() => {
+    fetchHubState()
+      .then((state) => {
+        console.log('Hub state initialized:', state);
+        store.dispatch('hub/init', state);
+        store.dispatch('ws/connect');
+      })
+      .catch((err) => {
+        console.error('Failed to init hub state:', err);
+        store.commit('ws/setConnectionStatus', 'disconnected');
+      });
   });
 </script>
 
 <template>
   <NavigationBar
     :style="{ marginLeft: `${drawerWidth}px` }"
-    :items="topNavigattionItems"
+    :items="topNavigationItems"
     @click="isDrawerVisible = $event" />
   <NavigationDrawer
     :items="sideNavigationItems"

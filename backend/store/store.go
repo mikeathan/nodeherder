@@ -1,13 +1,17 @@
 package store
 
 import (
+	"fmt"
 	"node-herder/models/devices"
+	"node-herder/models/hub"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	"node-herder/repository"
 	"sync"
 	"time"
 )
+
+type AppStoreDirtyFlagCallback func()
 
 type rateLimiter struct {
 	mutex     sync.Mutex
@@ -54,6 +58,7 @@ type AppStore interface {
 	FindDeviceByIds(ids []string) ([]*devices.Device, error)
 	AllDevices() ([]*devices.Device, error)
 
+	LoadHubState() (*hub.HubState, error)
 	AppConfig() *settings.AppConfigCache
 
 	StoreBridgeInfoList(bridgeInfoList []*devices.BridgeInfo) error
@@ -63,27 +68,53 @@ type AppStore interface {
 	StoreMetrics(friendlyName string, data map[string]any) error
 	ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error)
 	ResolveFriendlyName(friendlyName string) string
+	RegisterIsDirtyCallback(cb AppStoreDirtyFlagCallback)
 }
 
 type appStore struct {
-	metrics        metrics.Repository
-	devices        devices.Repository
-	config         *settings.AppConfigCache
-	deviceIdMapper *repository.DeviceIdMapper
-	rateLimiter    *rateLimiter
+	metrics          metrics.Repository
+	devices          devices.Repository
+	config           *settings.AppConfigCache
+	deviceIdMapper   *repository.DeviceIdMapper
+	rateLimiter      *rateLimiter
+	isDirtyCallbacks []AppStoreDirtyFlagCallback
 }
 
 func NewAppStore(devices devices.Repository, metrics metrics.Repository, config *settings.AppConfigCache) (AppStore, error) {
 
 	app := &appStore{
-		metrics:        metrics,
-		devices:        devices,
-		config:         config,
-		deviceIdMapper: repository.NewDeviceIdMapper(devices),
-		rateLimiter:    NewRateLimiter(nil),
+		metrics:          metrics,
+		devices:          devices,
+		config:           config,
+		deviceIdMapper:   repository.NewDeviceIdMapper(devices),
+		rateLimiter:      NewRateLimiter(nil),
+		isDirtyCallbacks: []AppStoreDirtyFlagCallback{},
 	}
 
 	return app, nil
+}
+
+func (s *appStore) RegisterIsDirtyCallback(cb AppStoreDirtyFlagCallback) {
+	s.isDirtyCallbacks = append(s.isDirtyCallbacks, cb)
+}
+
+func (s *appStore) markDirty() {
+	for _, cb := range s.isDirtyCallbacks {
+		cb()
+	}
+}
+
+func (s *appStore) LoadHubState() (*hub.HubState, error) {
+	devs, err := s.AllDevices()
+	if err != nil {
+		return nil, fmt.Errorf("OnLoadHubState failed during loading devices. Error: %v ", err.Error())
+	}
+	appConfig, err := s.config.LoadAppConfig()
+	if err != nil {
+		return nil, fmt.Errorf("OnLoadHubState failed during loading appconfig. Error: %v ", err.Error())
+	}
+
+	return hub.NewHubState(appConfig, devs), nil
 }
 
 func (s *appStore) ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
@@ -115,7 +146,13 @@ func (s *appStore) StoreMetrics(friendlyName string, data map[string]any) error 
 }
 
 func (s *appStore) RemoveDeviceById(id string) error {
-	return s.devices.Remove(id)
+	err := s.devices.Remove(id)
+	if err != nil {
+		return err
+	}
+
+	s.markDirty()
+	return nil
 }
 
 func (s *appStore) StoreDevice(friendlyName string, device *devices.Device) error {
@@ -134,28 +171,11 @@ func (s *appStore) StoreDevice(friendlyName string, device *devices.Device) erro
 	// }
 
 	s.deviceIdMapper.UpdateId(friendlyName, id)
+
+	s.markDirty()
+
 	return nil
 }
-
-// func (s *appStore) initialiseDeviceConfig(device *devices.Device) error {
-
-// 	// make sure new device has a configuration if added for first time
-// 	deviceConfig, err := s.config.GetDeviceConfig(device.Id)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	// for diagnostic entities, set default debounce to 5 min
-// 	for _, entity := range device.Exposes {
-// 		if entity.Category == bridge.DiagnosticCategory {
-
-// 			if _, ok := deviceConfig.Debounce[entity.Name]; !ok {
-// 				deviceConfig.Debounce[entity.Name] = utils.IntervalFromSeconds(300)
-// 				s.config.SetDeviceConfig(deviceConfig)
-// 			}
-// 		}
-// 	}
-// 	return nil
-// }
 
 func (s *appStore) StoreBridgeInfoList(bridgeInfoList []*devices.BridgeInfo) error {
 	err := s.devices.StoreBridge(bridgeInfoList)

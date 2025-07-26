@@ -1,0 +1,4 @@
+[Unit]
+Description=Node-Herder Application Stack
+Requires=nodeherder-backend.service nodeherder-frontend.service
+After=nodeherder-backend.service nodeherder-frontend.service

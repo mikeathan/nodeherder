@@ -8,6 +8,8 @@ import expressWs from 'express-ws';
 import http from 'http';
 import { createRequire } from 'module';
 import { link } from 'fs';
+import cors from 'cors';
+
 const hubStateFullPath = '../../docs/hub_state.json';
 const lightMetricsFullPath = './metrics/light.json';
 const temperatureMetricsFullPath = './metrics/temperature.json';
@@ -23,7 +25,7 @@ const humidityMax = 100.0;
 
 const luminance_luxMin = 10;
 
-let port = 3000;
+let port = 4110;
 
 let consoleLogIntervalId = 0;
 const logSeverity = ['info', 'warning', 'error', 'critical'];
@@ -259,10 +261,25 @@ var hubStatePayload = loadHubState();
 var appConfig = hubStatePayload.config;
 var metricsMap = loadMetrics();
 
+// Allow CORS from frontend origin
+app.use(
+  cors({
+    origin: 'http://localhost:4100',
+  })
+);
+
+// Register HTTP GET route for /hubstate
+app.get('/api/hubstate', (req, res) => {
+  console.log('hubstate GET request');
+  res.json(hubStatePayload);
+});
+
 var connected = false;
-// Get the /ws websocket route
+
+// Register web socket events
 app.ws('/ws', async function (ws) {
   console.log('client connected');
+  connected = true;
 
   settings.forEach((s) => {
     setInterval(function () {
@@ -275,6 +292,7 @@ app.ws('/ws', async function (ws) {
         type: 'deviceUpdated',
         payload: updatePayload,
       });
+
       ws.send(d);
     }, s.delayInMs);
   });
@@ -288,10 +306,6 @@ app.ws('/ws', async function (ws) {
         sendMessage(ws, 'automations', getAutomations());
         break;
 
-      case 'loadHubState':
-        sendMessage(ws, 'hubState', hubStatePayload);
-        connected = true;
-        break;
       case 'deviceSetValue':
         // Respond back with update value to update UI
         const updatePayload = {
