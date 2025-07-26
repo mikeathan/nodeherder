@@ -2,6 +2,7 @@
 Description=Node-Herder Frontend Service
 Wants=network-online.target
 After=network-online.target
+PartOf=nodeherder.target
 
 [Service]
 User=mikeathan
