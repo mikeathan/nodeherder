@@ -487,6 +487,7 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 
 // TODO: can be refactored to use a factory. for now we will keep it simple
 func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
+
 	events := devices.NewDeviceRequestEvents(d.DeviceAvailabilityTimeoutOverride)
 	events.WithOnNewDevice(func(device *devices.Device, data map[string]interface{}) {
 		d.handleDeviceAdded(device, data)
@@ -503,16 +504,23 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 		d.handleDeviceMeasurementsUpdated(device, p)
 	})
 
-	return services.NewDeviceProcessorBuilder().
+	processor := services.NewDeviceProcessorBuilder().
 		WithRegistrar(d.registrar).
 		WithStore(d.store).
 		WithEvents(events).
 		WithAutomationQuerier(d.automationEngine).
 		Build()
 
+	appconfig := d.store.AppConfig()
+	appconfig.RegisterDeviceConfigUpdateListener(func(cfg *settings.DeviceConfig) {
+		processor.OnDeviceConfigUpdated(cfg)
+	})
+
+	return processor
+
 }
 
-func (d *HubController) handleDeviceAdded(device *devices.Device, payload map[string]interface{}) error {
+func (d *HubController) handleDeviceAdded(device *devices.Device, _ map[string]interface{}) error {
 	// todo: execute in worker pool
 	// 	action()
 	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))

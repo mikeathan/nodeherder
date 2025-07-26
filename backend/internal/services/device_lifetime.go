@@ -15,9 +15,9 @@ const (
 )
 
 type DeviceLifetimeService struct {
-	device           *devices.Device
-	debouncerService *settings.DeviceDebouncer
-
+	device             *devices.Device
+	debouncerService   *settings.DeviceDebouncer
+	stopped            bool
 	availabilityTicker *time.Ticker
 	availablityDone    chan bool
 	events             *devices.DeviceRequestEvents
@@ -46,17 +46,30 @@ func (d *DeviceLifetimeService) Start(payload map[string]interface{}) {
 	d.events.OnNewDevice(d.device, payload)
 }
 
-func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
+func (d *DeviceLifetimeService) ConfigUpdated(cfg *settings.DeviceConfig) {
 
-	TODO
-	//  WIP, 
-	config,_:=d.configCache.Get(d.device.Id)
-
-	if config.Disabled{
+	if cfg.Disabled == d.stopped {
 		return
 	}
-	/// 
 
+	if cfg.Disabled {
+
+		d.stopped = true
+		d.stopAvailabilityMonitoring()
+		return
+	}
+
+	d.stopped = false
+	d.startAvailabilityMonitoring(d.events.AvailabilityTimeout, func(p *devices.UpdatePackage) {
+		d.events.OnDeviceAvailabilityChanged(p)
+	})
+
+}
+
+func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
+	if d.stopped {
+		return
+	}
 
 	var updatePackage = devices.NewUpdatePackage(d.device.Id)
 	for name, newValue := range payload {
@@ -157,7 +170,7 @@ func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutInSecs int, o
 				if err != nil {
 					utils.LogErrorf("device %s failed to parse time %s", s.device.Id, err.Error())
 
-					s.Dispose()
+					s.stopAvailabilityMonitoring()
 				}
 
 				now := time.Now()
@@ -189,7 +202,7 @@ func (d *DeviceLifetimeService) resetAvailabilityTimer() {
 	}
 }
 
-func (s *DeviceLifetimeService) Dispose() {
+func (s *DeviceLifetimeService) stopAvailabilityMonitoring() {
 	s.availablityDone <- true
 	s.availabilityTicker.Stop()
 

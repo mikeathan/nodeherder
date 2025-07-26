@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"node-herder/models/automations"
 	"node-herder/models/devices"
+	"node-herder/models/settings"
 
 	"node-herder/store"
 	"node-herder/utils"
@@ -28,6 +29,28 @@ func newDeviceProcessor(registrar *HubRegisterService, store store.AppStore, eve
 		automationQueries: automationRetreiver,
 		mutex:             &sync.RWMutex{},
 	}
+}
+func (dm *DeviceProcessor) OnDeviceConfigUpdated(cfg *settings.DeviceConfig) {
+
+	if cfg.Id == "" {
+		// defaults
+		for id, _ := range dm.deviceServices {
+			dm.notifyDeviceLifetime(id, cfg)
+		}
+	}
+
+	// overrides
+	dm.notifyDeviceLifetime(cfg.Id, cfg)
+}
+
+func (dm *DeviceProcessor) notifyDeviceLifetime(id string, cfg *settings.DeviceConfig) {
+
+	ls, ok := dm.deviceServices[id]
+	if !ok {
+		return
+	}
+
+	ls.ConfigUpdated(cfg)
 }
 
 func (dm *DeviceProcessor) CreateOrUpdateDevice(friendlyName, connType string, dataMap map[string]interface{}) error {

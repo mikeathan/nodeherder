@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+type DeviceConfigUpdateListener func(cfg *DeviceConfig)
+
 // Debouncer
 type DeviceDebouncer struct {
 	clock       utils.Clock
@@ -170,9 +172,10 @@ func (d *DeviceConfigCache) GetDebounce(id string, exposeName string, category b
 }
 
 type AppConfigCache struct {
-	deviceCache *DeviceConfigCache
-	store       Repository
-	tasks       []Task
+	deviceCache           *DeviceConfigCache
+	store                 Repository
+	tasks                 []Task
+	configUpdateListeners []DeviceConfigUpdateListener
 }
 
 func NewAppConfigCache(store Repository, task []Task) (*AppConfigCache, error) {
@@ -183,13 +186,18 @@ func NewAppConfigCache(store Repository, task []Task) (*AppConfigCache, error) {
 	}
 
 	cache := &AppConfigCache{
-		deviceCache: NewDeviceConfigCache(store, config),
-		store:       store,
-		tasks:       task,
+		deviceCache:           NewDeviceConfigCache(store, config),
+		store:                 store,
+		tasks:                 task,
+		configUpdateListeners: []DeviceConfigUpdateListener{},
 	}
 
 	cache.startTasks(config)
 	return cache, nil
+}
+
+func (s *AppConfigCache) RegisterDeviceConfigUpdateListener(listener DeviceConfigUpdateListener) {
+	s.configUpdateListeners = append(s.configUpdateListeners, listener)
 }
 
 func (s *AppConfigCache) GetDeviceConfigCache() *DeviceConfigCache {
@@ -322,14 +330,26 @@ func (s *AppConfigCache) ImportDashboardGroups(groups map[string]*DashboardGroup
 }
 
 func (d *AppConfigCache) SetDeviceConfigOverrides(deviceConfig *DeviceConfig) error {
-	return d.deviceCache.Set(deviceConfig)
+
+	err := d.deviceCache.Set(deviceConfig)
+	if err != nil {
+		return err
+	}
+
+	d.setDirty(deviceConfig)
+	return nil
 }
 
 func (d *AppConfigCache) DeleteDeviceConfigOverrides(id string) error {
-
 	return d.deviceCache.Delete(id)
-
 }
+
+func (s *AppConfigCache) setDirty(cfg *DeviceConfig) {
+	for _, listener := range s.configUpdateListeners {
+		listener(cfg)
+	}
+}
+
 func (s *AppConfigCache) SetDeviceConfigDefaults(deviceDefaults *DeviceConfig) error {
 
 	config, err := s.LoadAppConfig()
@@ -343,6 +363,7 @@ func (s *AppConfigCache) SetDeviceConfigDefaults(deviceDefaults *DeviceConfig) e
 		return err
 	}
 
+	s.setDirty(deviceDefaults)
 	return nil
 }
 
