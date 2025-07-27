@@ -12,7 +12,7 @@ export function getIconForType(type: IconType): IconProps {
       return { name: mdiCancel, color: 'grey' };
 
     case 'offline':
-      return { name: mdiCloudOffOutline, color: 'grey' };
+      return { name: mdiCloudOffOutline, color: 'white' };
 
     default:
       return { name: mdiCrosshairsQuestion, color: 'grey' };
