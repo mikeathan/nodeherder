@@ -6,6 +6,8 @@
   import Card from 'primevue/card';
   import { Device, Expose } from '@/types/device';
   import { isDeviceOnline } from '@/contracts/device';
+  import { store } from '@/store';
+  import { DeviceConfig } from '@/types/settings.type';
 
   const props = defineProps({
     device: {
@@ -13,6 +15,13 @@
       default: {} as Device,
     },
   });
+
+  const deviceConfig = computed(() => {
+    return store.getters['hub/findDeviceSetting'](props.device.id) as DeviceConfig;
+  });
+
+  const isDisabled = computed(() => deviceConfig.value?.disabled === true);
+
   const device = ref<Device>(props.device);
   const measurementExposes = computed(() => {
     return Object.fromEntries(
@@ -20,33 +29,22 @@
     );
   });
 </script>
-<!-- <style scoped>
-.disabled-card {
-  opacity: 0.6;
-  pointer-events: none;
-  filter: grayscale(80%);
-  transition: opacity 0.3s ease, filter 0.3s ease;
-  position: relative;
-}
-
-.disabled-card::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(200, 200, 200, 0.2);
-  z-index: 0;
-}
-</style> -->
+<style scoped>
+  .disabled-card {
+    opacity: 0.5;
+    filter: grayscale(90%);
+    position: relative;
+  }
+  .disabled-overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-bottom: 0.5rem;
+    text-align: center;
+  }
+</style>
 <template>
-  <Card
-    :class="
-      device.availability == 'offline' // to fix not working now
-        ? 'disabled-card'
-        : ''
-    ">
+  <Card :class="{ 'disabled-card': isDisabled }">
     <template #title>
       <RouterLink :to="`/devicepage/${device.id}`">
         <Button label="Link" variant="link" class="ps-0">
@@ -55,11 +53,17 @@
       </RouterLink>
     </template>
     <template #content>
-      <div class="flex align-items-center" v-for="(_, sensor) in measurementExposes">
-        <Sensor :id="device.id" :expose="device.exposes[sensor]" :disabled="!isDeviceOnline(device)" />
+      <div v-if="isDisabled" class="flex align-items-center disabled-overlay">
+        <i class="pi pi-ban" style="font-size: 2rem; color: gray"></i>
+        <span>Device is disabled</span>
       </div>
+      <template v-else>
+        <div class="flex align-items-center" v-for="(_, sensor) in measurementExposes" :key="sensor">
+          <Sensor :id="device.id" :expose="device.exposes[sensor]" :disabled="!isDeviceOnline(device)" />
+        </div>
+      </template>
     </template>
-    <template #footer>
+    <template v-if="!isDisabled" #footer>
       <DeviceFooter :device="device" />
     </template>
   </Card>

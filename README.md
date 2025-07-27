@@ -52,6 +52,10 @@ BUGS:
 - metrics results could have property from/to so we know the range for ui purposes - DONE
 - device disabled not working !!!!
 
+Improvements:
+
+- device config defaults cant override existing device config overrides (do we care)
+
 -
 - Non bridge devices . eg HTTP need more investigation/testing
 - error reporting - important - Done
