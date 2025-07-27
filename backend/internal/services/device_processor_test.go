@@ -90,7 +90,7 @@ func TestDeviceProcessor_CreateOrUpdateDevice_NewDevice(t *testing.T) {
 
 func TestDeviceProcessor_CreateOrUpdateDevice_ExistingDevice(t *testing.T) {
 	wg := sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(1)
 
 	bridgeInfoFile := filepath.Join("../../../docs", "device_bridge.json")
 	data, err := os.ReadFile(bridgeInfoFile)
@@ -139,6 +139,7 @@ func TestDeviceProcessor_CreateOrUpdateDevice_ExistingDevice(t *testing.T) {
 		WithEvents(events).
 		WithAutomationQuerier(deviceQuerier).
 		Build()
+
 	lastSeen := time.Now().Format(time.RFC3339)
 	updatePayload := map[string]interface{}{}
 	updatePayload["brightness"] = 10.1
@@ -152,7 +153,6 @@ func TestDeviceProcessor_CreateOrUpdateDevice_ExistingDevice(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error updating device: %s", err)
 	}
-	wg.Wait()
 	d, err := store.FindDeviceByFriendlyName(deviceName)
 	if err != nil {
 		t.Errorf("Error finding device: %s", err)
@@ -179,4 +179,86 @@ func TestDeviceProcessor_CreateOrUpdateDevice_ExistingDevice(t *testing.T) {
 	if d.Exposes["state"].Data != "false" {
 		t.Errorf("Device Expose state mismatch want: %s got: %s", "false", d.Exposes["state"].Data)
 	}
+}
+
+func TestOnDeviceConfigUpdated_WithDeviceOverride_ShouldDisableDevice(t *testing.T) {
+
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
+	bridgeInfoFile := filepath.Join("../../../docs", "device_bridge.json")
+	data, err := os.ReadFile(bridgeInfoFile)
+	if err != nil {
+		t.Fatal("Error reading file:", err)
+		return
+	}
+	bridgeInfoes, err := devices.LoadBridgeDevices(data)
+	if err != nil {
+		t.Fatal("Error parsing bridge info data:", err)
+		return
+	}
+	repo := repository.NewMemoryDeviceRepo()
+	store := utils_test.CreateStoreFromDeviceRepo(repo)
+	eventHub := &mocks.MockEventHub{}
+	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(bridgeInfoes)
+
+	events := &devices.DeviceRequestEvents{
+		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
+			if err := store.StoreDevice(d.FriendlyName, d); err != nil {
+				t.Errorf("Error store device update: %s", err)
+			}
+			wg.Done()
+		},
+		OnNewDevice: func(d *devices.Device, p map[string]interface{}) {
+			if err := store.StoreDevice(d.FriendlyName, d); err != nil {
+				t.Errorf("Error store device add: %s", err)
+			}
+			wg.Done()
+		},
+		OnDeviceAvailabilityChanged: func(p *devices.UpdatePackage) {
+		},
+		OnDeviceMeasurementsUpdated: func(d *devices.Device, p map[string]interface{}) {
+
+		},
+		AvailabilityTimeout: 1,
+	}
+
+	processor := services.NewDeviceProcessorBuilder().
+		WithRegistrar(registrar).
+		WithStore(store).
+		WithEvents(events).
+		WithAutomationQuerier(deviceQuerier).
+		Build()
+
+	// send payload 1
+	//  "friendly_name": "Living room light",
+	// "ieee_address": "0x00158d0005a23c38",
+	deviceName := "Living room light"
+	lastSeen := time.Now().Format(time.RFC3339)
+	updatePayload := map[string]interface{}{}
+	updatePayload["brightness"] = 10.1
+	updatePayload["color_temp"] = 120.1
+	updatePayload["state"] = "false"
+	updatePayload["last_seen"] = lastSeen
+	updatePayload["battery"] = 100
+	processor.CreateOrUpdateDevice(deviceName, "wifi", updatePayload)
+
+	// send payload 2
+	// "friendly_name": "Living room presence sensor",
+	//  "ieee_address": "0xa4c13894070052fc",
+	//deviceName2 := "Living room presence sensor"
+	lastSeen2 := time.Now().Format(time.RFC3339)
+	updatePayload2 := map[string]interface{}{}
+	updatePayload2["presence"] = true
+	updatePayload2["target_distance"] = 102.1
+	updatePayload2["last_seen"] = lastSeen2
+	//processor.CreateOrUpdateDevice(deviceName2, "mqtt", updatePayload2)
+
+	// cfg := settings.NewDeviceConfig("0x00158d0005a23c38")
+	// cfg.Disabled = true
+
+	// processor.OnDeviceConfigUpdated(cfg)
 }

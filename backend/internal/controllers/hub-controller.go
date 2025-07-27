@@ -521,13 +521,14 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 
 }
 
-func (d *HubController) handleDeviceAdded(device *devices.Device, _ map[string]interface{}) error {
+func (d *HubController) handleDeviceAdded(device *devices.Device, payload map[string]interface{}) error {
 	// todo: execute in worker pool
 	// 	action()
 	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
 
 	d.eventHub.Broadcast(ws.DeviceAdded, device)
 
+	 we need to update the device with the payload
 	return d.store.StoreDevice(device.FriendlyName, device)
 }
 

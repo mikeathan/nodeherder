@@ -86,6 +86,16 @@ func (d *DeviceConfigCache) IsMetricsEnabled(deviceId string) bool {
 	return config.MetricsEnabled
 }
 
+func (d *DeviceConfigCache) IsDeviceDisabled(deviceId string) bool {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
+	config, err := d.Get(deviceId)
+	if err != nil {
+		return false
+	}
+	return config.Disabled
+}
+
 func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, error) {
 
 	d.mutex.RLock()

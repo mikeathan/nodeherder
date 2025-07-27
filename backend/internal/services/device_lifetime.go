@@ -40,11 +40,20 @@ func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequ
 
 func (d *DeviceLifetimeService) Start(payload map[string]interface{}) {
 
+	if d.configCache.IsDeviceDisabled(d.device.Id) {
+		d.stopped = true
+		return
+	}
+
 	d.startAvailabilityMonitoring(d.events.AvailabilityTimeout, func(p *devices.UpdatePackage) {
 		d.events.OnDeviceAvailabilityChanged(p)
 	})
 
-	d.events.OnNewDevice(d.device, payload)
+	we need to update the device with the payload
+   else device has empty data 
+
+   maybe we can merge start with update ????
+	d.events.OnNewDevice(d.device, payload) 
 }
 
 func (d *DeviceLifetimeService) OnConfigUpdated(cfg *settings.DeviceConfig) {

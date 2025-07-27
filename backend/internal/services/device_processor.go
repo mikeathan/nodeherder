@@ -33,17 +33,17 @@ func newDeviceProcessor(registrar *HubRegisterService, store store.AppStore, eve
 func (dm *DeviceProcessor) OnDeviceConfigUpdated(cfg *settings.DeviceConfig) {
 
 	if cfg.Id == "" {
-		// defaults
-		for id, _ := range dm.deviceServices {
-			dm.notifyDeviceLifetime(id, cfg)
+		// device config defaults
+		for id := range dm.deviceServices {
+			dm.configureDeviceLifetime(id, cfg)
 		}
 	}
 
-	// overrides
-	dm.notifyDeviceLifetime(cfg.Id, cfg)
+	// device config overrides
+	dm.configureDeviceLifetime(cfg.Id, cfg)
 }
 
-func (dm *DeviceProcessor) notifyDeviceLifetime(id string, cfg *settings.DeviceConfig) {
+func (dm *DeviceProcessor) configureDeviceLifetime(id string, cfg *settings.DeviceConfig) {
 
 	ls, ok := dm.deviceServices[id]
 	if !ok {
@@ -70,7 +70,6 @@ func (dm *DeviceProcessor) createNewDevice(friendlyName, connType string, dataMa
 	}
 
 	dm.createDeviceService(device, dataMap)
-
 	return nil
 }
 
@@ -83,7 +82,6 @@ func (dm *DeviceProcessor) createDeviceService(device *devices.Device, dataMap m
 	ls.Start(dataMap)
 
 	dm.deviceServices[device.Id] = ls
-
 	return ls
 }
 
@@ -104,8 +102,7 @@ func (dm *DeviceProcessor) updateExistingDevice(device *devices.Device, dataMap 
 
 	// we are here because device is registered via bridge
 	// but we dont have a device lifetime service created yet
-	lf := dm.createDeviceService(device, dataMap)
-	lf.Update(dataMap)
+	dm.createDeviceService(device, dataMap)
 }
 
 // DeviceProcessor builder
