@@ -18,7 +18,7 @@
 <template>
   <div class="device-status-overlay">
     <Icon :icon="icon" :size="32" :circle-radius="30" :clickable="true" background="#363636" />
-    <p class="status-text">{{ text }}</p>
+    <p v-if="text" class="status-text">{{ text }}</p>
   </div>
 </template>
 

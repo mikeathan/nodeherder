@@ -4,7 +4,7 @@
   import Sensor from '../../device/Sensor.vue';
   import { RouterLink } from 'vue-router';
   import Card from 'primevue/card';
-  import { Device, Expose } from '@/types/device';
+  import { Device } from '@/types/device';
   import { isDeviceOnline } from '@/contracts/device';
   import { store } from '@/store';
   import { DeviceConfig } from '@/types/settings.type';
@@ -51,8 +51,8 @@
       </div>
     </template>
     <template #content>
-      <DeviceStatusOverlay v-if="isDisabled" :icon="getIconForType('disabled')" text="This device is disabled" />
-      <DeviceStatusOverlay v-else-if="isOffline" :icon="getIconForType('offline')" text="This device is offline" />
+      <DeviceStatusOverlay v-if="isDisabled" :icon="getIconForType('disabled')" text="Device is disabled" />
+      <DeviceStatusOverlay v-else-if="isOffline" :icon="getIconForType('offline')" text="Device is offline" />
       <template v-else>
         <div class="flex align-items-center" v-for="(_, sensor) in measurementExposes" :key="sensor">
           <Sensor :id="device.id" :expose="device.exposes[sensor]" :disabled="isOffline" />

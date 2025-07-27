@@ -9,7 +9,7 @@ export function getIconForType(type: IconType): IconProps {
       return { name: mdiDotsVertical, color: 'grey' };
 
     case 'disabled':
-      return { name: mdiCancel, color: 'grey' };
+      return { name: mdiCancel, color: 'white' };
 
     case 'offline':
       return { name: mdiCloudOffOutline, color: 'white' };

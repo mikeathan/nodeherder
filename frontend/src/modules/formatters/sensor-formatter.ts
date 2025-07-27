@@ -169,6 +169,7 @@ export function getFormattedSensorValue(expose: Expose): string {
   return `${getSensorValue(expose.data)}${unit}`;
 }
 
+
 export function getSensorUnit(sensor: string): string {
   if (sensor in sensorUnits === false) {
     return '';
