@@ -8,6 +8,8 @@
   import { isDeviceOnline } from '@/contracts/device';
   import { store } from '@/store';
   import { DeviceConfig } from '@/types/settings.type';
+  import DeviceStatusOverlay from '@/components/device/DeviceStatusOverlay.vue';
+  import { getIconForType } from '@/modules/formatters/icon.formatter';
 
   const props = defineProps({
     device: {
@@ -21,6 +23,7 @@
   });
 
   const isDisabled = computed(() => deviceConfig.value?.disabled === true);
+  const isOffline = computed(() => !isDeviceOnline(device.value));
 
   const device = ref<Device>(props.device);
   const measurementExposes = computed(() => {
@@ -30,40 +33,33 @@
   });
 </script>
 <style scoped>
-  .disabled-card {
-    opacity: 0.5;
-    filter: grayscale(90%);
-    position: relative;
-  }
-  .disabled-overlay {
+  .card-title {
     display: flex;
-    flex-direction: column;
+    justify-content: center;
     align-items: center;
-    padding-bottom: 0.5rem;
-    text-align: center;
   }
 </style>
 <template>
-  <Card :class="{ 'disabled-card': isDisabled }">
+  <Card>
     <template #title>
-      <RouterLink :to="`/devicepage/${device.id}`">
-        <Button label="Link" variant="link" class="ps-0">
-          <h4>{{ device.friendly_name }}</h4>
-        </Button>
-      </RouterLink>
+      <div class="card-title">
+        <RouterLink :to="`/devicepage/${device.id}`">
+          <Button label="Link" variant="link" class="ps-0">
+            <h4>{{ device.friendly_name }}</h4>
+          </Button>
+        </RouterLink>
+      </div>
     </template>
     <template #content>
-      <div v-if="isDisabled" class="flex align-items-center disabled-overlay">
-        <i class="pi pi-ban" style="font-size: 2rem; color: gray"></i>
-        <span>Device is disabled</span>
-      </div>
+      <DeviceStatusOverlay v-if="isDisabled" :icon="getIconForType('disabled')" text="This device is disabled" />
+      <DeviceStatusOverlay v-else-if="isOffline" :icon="getIconForType('offline')" text="This device is offline" />
       <template v-else>
         <div class="flex align-items-center" v-for="(_, sensor) in measurementExposes" :key="sensor">
-          <Sensor :id="device.id" :expose="device.exposes[sensor]" :disabled="!isDeviceOnline(device)" />
+          <Sensor :id="device.id" :expose="device.exposes[sensor]" :disabled="isOffline" />
         </div>
       </template>
     </template>
-    <template v-if="!isDisabled" #footer>
+    <template v-if="!isDisabled && !isOffline" #footer>
       <DeviceFooter :device="device" />
     </template>
   </Card>
