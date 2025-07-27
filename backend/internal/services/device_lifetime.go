@@ -200,7 +200,6 @@ func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutInSecs int, o
 	s.availabilityTicker = time.NewTicker(1 * time.Second)
 
 	go func() {
-		defer close(s.availabilityDone)
 
 		for {
 			select {
@@ -260,9 +259,13 @@ func (d *DeviceLifetimeService) resetAvailabilityTimer() {
 }
 
 func (s *DeviceLifetimeService) stopAvailabilityMonitoring() {
-	s.availabilityDone <- true
-	s.availabilityTicker.Stop()
-
+	select {
+	case s.availabilityDone <- true:
+	default:
+	}
+	if s.availabilityTicker != nil {
+		s.availabilityTicker.Stop()
+	}
 	utils.LogDebugf("device %s disposed", s.device.Id)
 }
 

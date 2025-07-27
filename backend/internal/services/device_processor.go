@@ -37,6 +37,7 @@ func (dm *DeviceProcessor) OnDeviceConfigUpdated(cfg *settings.DeviceConfig) {
 		for id := range dm.deviceServices {
 			dm.configureDeviceLifetime(id, cfg)
 		}
+		return
 	}
 
 	// device config overrides

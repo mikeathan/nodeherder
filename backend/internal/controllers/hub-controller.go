@@ -16,6 +16,7 @@ import (
 	"node-herder/store"
 	"node-herder/utils/storage"
 	"strconv"
+	"sync"
 	"time"
 
 	"node-herder/utils"
@@ -36,6 +37,7 @@ type HubController struct {
 	automationEngine                  automations.Engine
 	registrar                         *services.HubRegisterService
 	ctx                               context.Context
+	getDeviceProcessor                func() *services.DeviceProcessor
 }
 
 func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context) *HubController {
@@ -64,6 +66,16 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 		h.processMessage(id, payload, "mqtt")
 	})
 
+	//
+	var once sync.Once
+	var deviceProcessor *services.DeviceProcessor
+	h.getDeviceProcessor = func() *services.DeviceProcessor {
+		once.Do(func() {
+			deviceProcessor = h.createDeviceProcessor()
+		})
+		return deviceProcessor
+	}
+
 	// setup
 	h.mqtt.Connect()
 	h.mqtt.Publish("bridge/devices", nil) //zigbee2mqtt/ get devices for setup stuff
@@ -72,10 +84,6 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 
 func (h *HubController) registerEventHubEvents() {
 	appconfig := h.store.AppConfig()
-
-	// h.eventHub.OnLoadHubState(func() (interface{}, error) {
-	// 	return h.store.LoadHubState()
-	// })
 
 	h.eventHub.OnLoadAppConfig(func() (interface{}, error) {
 		return appconfig.LoadAppConfig()
@@ -474,7 +482,8 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 				m.responseHandlers[id] = h
 			}
 		} else {
-			processor := m.createDeviceProcessor()
+
+			processor := m.getDeviceProcessor()
 			var h = newDeviceHandler(processor)
 			m.responseHandlers[id] = h
 		}
@@ -512,13 +521,10 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 
 	appconfig := d.store.AppConfig()
 	appconfig.RegisterDeviceConfigUpdateListener(func(cfg *settings.DeviceConfig) {
-
-		fmt.Println("[DEBUG]RegisterDeviceConfigUpdateListener: ", cfg.Id, cfg.Disabled)
 		processor.OnDeviceConfigUpdated(cfg)
 	})
 
 	return processor
-
 }
 
 func (d *HubController) handleDeviceAdded(device *devices.Device) error {
