@@ -4,6 +4,7 @@ import (
 	"node-herder/internal/services"
 	"node-herder/mocks"
 	"node-herder/models/devices"
+	"node-herder/models/settings"
 	"node-herder/repository"
 	utils_test "node-herder/testing"
 	"os"
@@ -27,7 +28,7 @@ func TestDeviceProcessor_CreateOrUpdateDevice_NewDevice(t *testing.T) {
 		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
 			t.Errorf("Error: OnDeviceUpdated called for new device")
 		},
-		OnNewDevice: func(d *devices.Device, p map[string]interface{}) {
+		OnNewDevice: func(d *devices.Device) {
 			if err := store.StoreDevice(d.FriendlyName, d); err != nil {
 				t.Errorf("Error store device add: %s", err)
 			}
@@ -118,7 +119,7 @@ func TestDeviceProcessor_CreateOrUpdateDevice_ExistingDevice(t *testing.T) {
 			}
 			wg.Done()
 		},
-		OnNewDevice: func(d *devices.Device, p map[string]interface{}) {
+		OnNewDevice: func(d *devices.Device) {
 			if err := store.StoreDevice(d.FriendlyName, d); err != nil {
 				t.Errorf("Error store device add: %s", err)
 			}
@@ -207,12 +208,9 @@ func TestOnDeviceConfigUpdated_WithDeviceOverride_ShouldDisableDevice(t *testing
 
 	events := &devices.DeviceRequestEvents{
 		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
-			if err := store.StoreDevice(d.FriendlyName, d); err != nil {
-				t.Errorf("Error store device update: %s", err)
-			}
-			wg.Done()
+			t.Errorf("Error	should 	not call OnDeviceUpdated for disabled device")
 		},
-		OnNewDevice: func(d *devices.Device, p map[string]interface{}) {
+		OnNewDevice: func(d *devices.Device) {
 			if err := store.StoreDevice(d.FriendlyName, d); err != nil {
 				t.Errorf("Error store device add: %s", err)
 			}
@@ -233,8 +231,8 @@ func TestOnDeviceConfigUpdated_WithDeviceOverride_ShouldDisableDevice(t *testing
 		WithAutomationQuerier(deviceQuerier).
 		Build()
 
-	// send payload 1
-	//  "friendly_name": "Living room light",
+	//  Send payload 1
+	// "friendly_name": "Living room light",
 	// "ieee_address": "0x00158d0005a23c38",
 	deviceName := "Living room light"
 	lastSeen := time.Now().Format(time.RFC3339)
@@ -246,19 +244,23 @@ func TestOnDeviceConfigUpdated_WithDeviceOverride_ShouldDisableDevice(t *testing
 	updatePayload["battery"] = 100
 	processor.CreateOrUpdateDevice(deviceName, "wifi", updatePayload)
 
-	// send payload 2
+	//  Send payload 2
 	// "friendly_name": "Living room presence sensor",
-	//  "ieee_address": "0xa4c13894070052fc",
-	//deviceName2 := "Living room presence sensor"
+	// "ieee_address": "0xa4c13894070052fc",
+	deviceName2 := "Living room presence sensor"
 	lastSeen2 := time.Now().Format(time.RFC3339)
 	updatePayload2 := map[string]interface{}{}
 	updatePayload2["presence"] = true
 	updatePayload2["target_distance"] = 102.1
 	updatePayload2["last_seen"] = lastSeen2
-	//processor.CreateOrUpdateDevice(deviceName2, "mqtt", updatePayload2)
+	processor.CreateOrUpdateDevice(deviceName2, "mqtt", updatePayload2)
 
-	// cfg := settings.NewDeviceConfig("0x00158d0005a23c38")
-	// cfg.Disabled = true
+	cfg := settings.NewDeviceConfig("0xa4c13894070052fc")
+	cfg.Disabled = true
 
-	// processor.OnDeviceConfigUpdated(cfg)
+	processor.OnDeviceConfigUpdated(cfg)
+
+	time.Sleep(200 * time.Millisecond)
 }
+
+TODO needs to test config defaults change

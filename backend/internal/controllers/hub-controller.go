@@ -488,8 +488,8 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 
 	events := devices.NewDeviceRequestEvents(d.DeviceAvailabilityTimeoutOverride)
-	events.WithOnNewDevice(func(device *devices.Device, data map[string]interface{}) {
-		d.handleDeviceAdded(device, data)
+	events.WithOnNewDevice(func(device *devices.Device) {
+		d.handleDeviceAdded(device)
 	})
 
 	events.WithOnDeviceUpdated(func(device *devices.Device, p *devices.UpdatePackage) {
@@ -521,14 +521,13 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 
 }
 
-func (d *HubController) handleDeviceAdded(device *devices.Device, payload map[string]interface{}) error {
+func (d *HubController) handleDeviceAdded(device *devices.Device) error {
 	// todo: execute in worker pool
 	// 	action()
 	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
 
 	d.eventHub.Broadcast(ws.DeviceAdded, device)
 
-	 we need to update the device with the payload
 	return d.store.StoreDevice(device.FriendlyName, device)
 }
 

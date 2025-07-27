@@ -19,7 +19,7 @@ type DeviceLifetimeService struct {
 	debouncerService   *settings.DeviceDebouncer
 	stopped            bool
 	availabilityTicker *time.Ticker
-	availablityDone    chan bool
+	availabilityDone   chan bool
 	events             *devices.DeviceRequestEvents
 	configCache        *settings.DeviceConfigCache
 	automationQueries  automations.AutomationQuerier
@@ -34,11 +34,11 @@ func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequ
 		events:            events,
 		stopped:           false,
 		automationQueries: automationQueries,
-		availablityDone:   make(chan bool, 1),
+		availabilityDone:  make(chan bool, 1),
 	}
 }
 
-func (d *DeviceLifetimeService) Start(payload map[string]interface{}) {
+func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
 
 	if d.configCache.IsDeviceDisabled(d.device.Id) {
 		d.stopped = true
@@ -49,11 +49,17 @@ func (d *DeviceLifetimeService) Start(payload map[string]interface{}) {
 		d.events.OnDeviceAvailabilityChanged(p)
 	})
 
-	we need to update the device with the payload
-   else device has empty data 
+	// update device with initial data
+	d.device.ApplyUpdateData(payload)
 
-   maybe we can merge start with update ????
-	d.events.OnNewDevice(d.device, payload) 
+	d.device.LastSeen = getLastSeen(payload)
+
+	if d.device.Availability != devices.OfflineAvailability {
+		d.device.Availability = devices.OnlineAvailability
+		utils.LogInfof("device [%s] %s is online", d.device.Id, d.device.FriendlyName)
+	}
+
+	d.events.OnNewDevice(d.device)
 }
 
 func (d *DeviceLifetimeService) OnConfigUpdated(cfg *settings.DeviceConfig) {
@@ -122,7 +128,6 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 		for expose, value := range updatePackage.Data {
 			d.device.Exposes[expose].Data = value
 		}
-
 		// collect measurement data only if below conditions are enabled
 		if d.configCache.IsMetricsEnabled(d.device.Id) ||
 			d.automationQueries.IsAutomationEnabled(d.device.Id) {
@@ -148,14 +153,19 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 
 func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutInSecs int, onChangeCallback func(p *devices.UpdatePackage)) {
 
+	if s.availabilityTicker != nil {
+		utils.LogDebugf("device %s availability monitor already running", s.device.Id)
+		return
+	}
+
 	s.availabilityTicker = time.NewTicker(1 * time.Second)
 
 	go func() {
-		defer close(s.availablityDone)
+		defer close(s.availabilityDone)
 
 		for {
 			select {
-			case <-s.availablityDone:
+			case <-s.availabilityDone:
 
 				s.device.SetAvailable(false)
 				utils.LogInfof("device %s availability timer killed", s.device.Id)
@@ -177,9 +187,8 @@ func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutInSecs int, o
 
 				lastSeen, err := s.device.LastSeenTime()
 				if err != nil {
-					utils.LogErrorf("device %s failed to parse time %s", s.device.Id, err.Error())
-
-					s.stopAvailabilityMonitoring()
+					lastSeen = time.Now()
+					utils.LogErrorf("device %s failed to parse time %s. fallback to now()", s.device.Id, err.Error())
 				}
 
 				now := time.Now()
@@ -212,7 +221,7 @@ func (d *DeviceLifetimeService) resetAvailabilityTimer() {
 }
 
 func (s *DeviceLifetimeService) stopAvailabilityMonitoring() {
-	s.availablityDone <- true
+	s.availabilityDone <- true
 	s.availabilityTicker.Stop()
 
 	utils.LogDebugf("device %s disposed", s.device.Id)

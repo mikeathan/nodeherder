@@ -79,7 +79,7 @@ func (dm *DeviceProcessor) createDeviceService(device *devices.Device, dataMap m
 
 	appConfig := dm.store.AppConfig()
 	ls := NewDeviceLifetimeService(device, dm.events, appConfig.GetDeviceConfigCache(), dm.automationQueries, utils.NewRealClock())
-	ls.Start(dataMap)
+	ls.Seed(dataMap)
 
 	dm.deviceServices[device.Id] = ls
 	return ls
@@ -106,7 +106,6 @@ func (dm *DeviceProcessor) updateExistingDevice(device *devices.Device, dataMap 
 }
 
 // DeviceProcessor builder
-
 type DeviceProcessorBuilder struct {
 	registrar           *HubRegisterService
 	store               store.AppStore
