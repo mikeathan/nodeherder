@@ -287,7 +287,7 @@ func TestHubTriggersRemoteLogger(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
-
+	wg := sync.WaitGroup{}
 	// cleanup any previous remote logger hooks
 	utils.RemoveRemoteLoggerHook()
 
@@ -343,6 +343,7 @@ func TestHubTriggersRemoteLogger(t *testing.T) {
 		}
 		index++
 
+		wg.Done()
 		return nil
 	}
 
@@ -358,16 +359,17 @@ func TestHubTriggersRemoteLogger(t *testing.T) {
 
 	utils.EnableRemoteLoggerHook(true)
 
+	wg.Add(1)
+	// publish light device
 	payload := map[string]any{"brightness": 10.0, "color_temp": 100}
 	mqtt.Publish(lightDevice.FriendlyName, payload)
+	wg.Wait()
 
-	time.Sleep(100 * time.Millisecond)
-
+	wg.Add(1)
 	// publish dial button device
 	payload = map[string]any{"action": "button_2_hold"}
 	mqtt.Publish(dialDevice.FriendlyName, payload)
-
-	time.Sleep(100 * time.Millisecond)
+	wg.Wait()
 
 	utils.EnableRemoteLoggerHook(false)
 
@@ -683,7 +685,6 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 	if !reflect.DeepEqual(cfg.DefaultDebounceByCategory, defaults.DefaultDebounceByCategory) {
 		t.Fatalf("invalid config override. want expectedDefaultDebounceByCategory %v got %v", defaults.DefaultDebounceByCategory, cfg.DefaultDebounceByCategory)
 	}
-
 }
 
 func TestHubSaveDeviceConfigDefaults(t *testing.T) {
@@ -1168,7 +1169,6 @@ func TestDeleteDashboardGroupRemovesGroup(t *testing.T) {
 	if len(c.Hub.DashboardGroups) != 0 {
 		t.Fatalf("want %v got %v", 0, len(c.Hub.DashboardGroups))
 	}
-
 }
 
 func TestProcessorAddsNewDevice(t *testing.T) {
@@ -1474,7 +1474,6 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 	}
 
 	wg.Wait()
-
 }
 
 func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
@@ -1549,7 +1548,6 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
 
 	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
-	wg.Add(1) // this is for the hubregister service
 
 	for _, testCase := range testCases {
 

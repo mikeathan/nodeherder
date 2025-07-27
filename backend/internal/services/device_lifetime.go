@@ -50,15 +50,27 @@ func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
 	})
 
 	// update device with initial data
-	d.device.ApplyUpdateData(payload)
+	for name, value := range payload {
+		expose, ok := d.device.GetExpose(name)
+		if !ok {
+			continue
+		}
+
+		// skip if debounced, we need that to initialise the first debouncer timer
+		// so that we can debounce the next updates
+		if d.debouncerService.DebounceExpose(name, expose.Category) {
+			continue
+		}
+
+		d.device.Exposes[name].Data = value
+	}
 
 	d.device.LastSeen = getLastSeen(payload)
 
-	if d.device.Availability != devices.OfflineAvailability {
-		d.device.Availability = devices.OnlineAvailability
-		utils.LogInfof("device [%s] %s is online", d.device.Id, d.device.FriendlyName)
-	}
+	d.device.Availability = devices.OnlineAvailability
+	utils.LogInfof("device [%s] %s is online", d.device.Id, d.device.FriendlyName)
 
+	d.attempToEmitMeasurementUpdate(payload)
 	d.events.OnNewDevice(d.device)
 }
 
@@ -128,28 +140,55 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 		for expose, value := range updatePackage.Data {
 			d.device.Exposes[expose].Data = value
 		}
-		// collect measurement data only if below conditions are enabled
-		if d.configCache.IsMetricsEnabled(d.device.Id) ||
-			d.automationQueries.IsAutomationEnabled(d.device.Id) {
 
-			// send measurement updates to metrics store
-			measumementUpdateData := map[string]any{}
-			for name, value := range updatePackage.Data {
-				if e, ok := d.device.Exposes[name]; ok && e.Category == bridge.MeasurementCategory {
-					measumementUpdateData[name] = value
-				}
-			}
-
-			if len(measumementUpdateData) > 0 {
-				// this will attempt to run automation (if enabled) and store to metrics store (if enabled)
-				d.events.OnDeviceMeasurementsUpdated(d.device, measumementUpdateData)
-			}
-		}
+		d.attempToEmitMeasurementUpdate(updatePackage.Data)
 
 		// this will update device in store and emit ws event to connected clients
 		d.events.OnDeviceUpdated(d.device, updatePackage)
 	}
 }
+
+func (d *DeviceLifetimeService) attempToEmitMeasurementUpdate(payload map[string]interface{}) {
+
+	// collect measurement data only if below conditions are enabled
+	if !d.configCache.IsMetricsEnabled(d.device.Id) && !d.automationQueries.IsAutomationEnabled(d.device.Id) {
+		return
+	}
+
+	// send measurement updates to metrics store
+	data := map[string]interface{}{}
+	for name, value := range payload {
+		if expose, ok := d.device.Exposes[name]; ok && expose.Category == bridge.MeasurementCategory {
+			data[name] = value
+		}
+	}
+
+	if len(data) > 0 {
+		// this will attempt to run automation (if enabled) and store to metrics store (if enabled)
+		d.events.OnDeviceMeasurementsUpdated(d.device, data)
+	}
+}
+
+// func emitMeasurementsUpdateEvent(d *DeviceLifetimeService, updatePackage *devices.UpdatePackage) {
+// 	// collect measurement data only if below conditions are enabled
+
+// 	if d.configCache.IsMetricsEnabled(d.device.Id) ||
+// 		d.automationQueries.IsAutomationEnabled(d.device.Id) {
+
+// 		// send measurement updates to metrics store
+// 		measumementUpdateData := map[string]any{}
+// 		for name, value := range updatePackage.Data {
+// 			if e, ok := d.device.Exposes[name]; ok && e.Category == bridge.MeasurementCategory {
+// 				measumementUpdateData[name] = value
+// 			}
+// 		}
+
+// 		if len(measumementUpdateData) > 0 {
+// 			// this will attempt to run automation (if enabled) and store to metrics store (if enabled)
+// 			d.events.OnDeviceMeasurementsUpdated(d.device, measumementUpdateData)
+// 		}
+// 	}
+// }
 
 func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutInSecs int, onChangeCallback func(p *devices.UpdatePackage)) {
 

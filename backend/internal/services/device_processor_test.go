@@ -262,5 +262,3 @@ func TestOnDeviceConfigUpdated_WithDeviceOverride_ShouldDisableDevice(t *testing
 
 	time.Sleep(200 * time.Millisecond)
 }
-
-TODO needs to test config defaults change

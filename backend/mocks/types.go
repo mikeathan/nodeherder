@@ -923,7 +923,6 @@ func (m *MockClock) IsInRange(from time.Time, to time.Time) bool {
 }
 
 // needs refactoring - shouldnt replicate the logic
-
 func (r *MockClock) CompareWithNow(t time.Time, operator utils.EqualityOperator) bool {
 	now := r.Now()
 	toTime := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location())
