@@ -20,13 +20,14 @@
     compact: { type: Boolean, required: false, default: false },
     isSelected: { type: Boolean, required: false, default: false },
   });
+  
   const deviceConfig = computed(() => {
     return store.getters['hub/findDeviceSetting'](props.id) as DeviceConfig;
   });
 
   const isDisabled = computed(() => deviceConfig.value?.disabled === true);
   const isOffline = computed(() => device.value && !isDeviceOnline(device.value));
-  const showDisplay = computed(() => !isOffline.value && !isDisabled.value);
+  const showValue = computed(() => !isOffline.value && !isDisabled.value);
 
   const emit = defineEmits<{
     (e: 'delete', value: { id: string; name: string }): void;
@@ -174,14 +175,11 @@
           <div class="entity-title">
             {{ getSensorName(expose.name) }}
           </div>
-          <div  class="entity-value">
-            <template v-if="showDisplay">
-              {{ getFormattedSensorValue(expose) }}
-            </template>
-            <Icon v-else-if="isDisabled" :icon="getIconForType('disabled')" :size="18" />
-            <Icon v-else-if="isOffline" :icon="getIconForType('offline')" :size="18" />
+          <div class="entity-value">
+            <template v-if="showValue">{{ getFormattedSensorValue(expose) }}</template>
+            <DeviceStatusOverlay v-else-if="isDisabled" :icon="getIconForType('disabled')" :size="18" />
+            <DeviceStatusOverlay v-else-if="isOffline" :icon="getIconForType('offline')" :size="18" />
           </div>
-         
         </div>
         <span v-if="isSelected" class="delete-icon pi pi-trash" @click.stop="emitDelete" title="Remove from group" />
       </div>
@@ -246,7 +244,6 @@
     color: #ccc;
     min-height: 1.2rem;
     display: flex;
-    align-items: center;
     gap: 0.25rem;
   }
 
