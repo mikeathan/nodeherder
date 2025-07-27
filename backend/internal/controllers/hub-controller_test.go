@@ -1675,24 +1675,32 @@ func TestHub_DeviceConfigDefaults_DisableDevices(t *testing.T) {
 
 	payload := map[string]any{"brightness": 10.0, "color_temp": 100}
 	mqtt.Publish(lightDevice.FriendlyName, payload)
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	// // publish dial button device
 	payload = map[string]any{"action": "button_2_hold"}
 	mqtt.Publish(dialDevice.FriendlyName, payload)
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
+	d, _ := store.FindDeviceById("x01111111")
+	if d.Exposes["action"].Data != "button_2_hold" {
+		t.Errorf("expected dial device action to be button_2_hold, got %s", d.Exposes["action"].Data)
+	}
 
 	appCache := store.AppConfig()
 	// create defaults and set devices disabled
 	defaults := settings.DefaultDeviceConfig()
 	defaults.Disabled = true
 	appCache.SetDeviceConfigDefaults(defaults)
-
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	payload = map[string]any{"action": "button_1_hold"}
 	mqtt.Publish(dialDevice.FriendlyName, payload)
-	time.Sleep(200 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
+
+	d, _ = store.FindDeviceById("x01111111")
+	if d.Exposes["action"].Data == "button_1_hold" {
+		t.Errorf("expected dial device action to be disabled, got %s", d.Exposes["action"].Data)
+	}
 }
 
 func createMockDialAndLightDevices(dialName string, lightName string) []*devices.Device {

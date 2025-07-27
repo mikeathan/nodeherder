@@ -494,6 +494,7 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 }
 
 // TODO: can be refactored to use a factory. for now we will keep it simple
+// will have to create some shared context for hub controller so i can add that thre as well with the others
 func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 
 	events := devices.NewDeviceRequestEvents(d.DeviceAvailabilityTimeoutOverride)
