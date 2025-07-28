@@ -73,7 +73,9 @@ func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
 	d.attempToEmitMeasurementUpdate(payload)
 	d.events.OnNewDevice(d.device)
 }
-
+default disable not working
+when enabled they all appear offline and then they slowing come bakck tto life
+also if device has existing override and then delete it seems to be enabled when defaults is disable for all devices
 func (d *DeviceLifetimeService) OnConfigUpdated(cfg *settings.DeviceConfig) {
 
 	if cfg.Disabled == d.stopped {
