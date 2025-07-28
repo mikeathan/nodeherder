@@ -2,7 +2,7 @@
   import { PropType } from 'vue';
   import Icon from '@/components/controls/Icon.vue';
   import type { IconProps } from '@/types/icon.type';
-import { mdiSizeL } from '@mdi/js';
+  import { mdiSizeL } from '@mdi/js';
 
   const props = defineProps({
     icon: {
@@ -29,7 +29,7 @@ import { mdiSizeL } from '@mdi/js';
     <Icon :icon="icon" :size="size" :circle-radius="30" :clickable="rounded" background="#363636" />
     <p v-if="text" class="status-text">{{ text }}</p>
   </div>
-</template>ext="Device is disabled" 
+</template>
 
 <style scoped>
   .device-status-overlay {
