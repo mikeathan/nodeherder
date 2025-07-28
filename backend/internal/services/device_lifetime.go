@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"node-herder/models/automations"
 	"node-herder/models/bridge"
 	"node-herder/models/devices"
@@ -19,10 +20,12 @@ type DeviceLifetimeService struct {
 	debouncerService   *settings.DeviceDebouncer
 	stopped            bool
 	availabilityTicker *time.Ticker
-	availabilityDone   chan bool
+	//availabilityDone   chan bool
 	events             *devices.DeviceRequestEvents
 	configCache        *settings.DeviceConfigCache
 	automationQueries  automations.AutomationQuerier
+	availabilityCtx    context.Context
+	availabilityCancel context.CancelFunc
 }
 
 func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequestEvents, configCache *settings.DeviceConfigCache, automationQueries automations.AutomationQuerier, clock utils.Clock) *DeviceLifetimeService {
@@ -34,7 +37,9 @@ func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequ
 		events:            events,
 		stopped:           false,
 		automationQueries: automationQueries,
-		availabilityDone:  make(chan bool, 1),
+		//		availabilityDone:   make(chan bool, 1),
+		availabilityCtx:    context.Background(),
+		availabilityCancel: func() {},
 	}
 }
 
@@ -73,12 +78,7 @@ func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
 	d.attempToEmitMeasurementUpdate(payload)
 	d.events.OnNewDevice(d.device)
 }
-default disable not working
-when enabled they all appear offline and then they slowing come bakck tto life
-also if device has existing override and then delete it seems to be enabled when defaults is disable for all devices
 
-
-problem is that it disposes the timer and then its set as offline which is not right
 func (d *DeviceLifetimeService) OnConfigUpdated(cfg *settings.DeviceConfig) {
 
 	if cfg.Disabled == d.stopped {
@@ -174,27 +174,6 @@ func (d *DeviceLifetimeService) attempToEmitMeasurementUpdate(payload map[string
 	}
 }
 
-// func emitMeasurementsUpdateEvent(d *DeviceLifetimeService, updatePackage *devices.UpdatePackage) {
-// 	// collect measurement data only if below conditions are enabled
-
-// 	if d.configCache.IsMetricsEnabled(d.device.Id) ||
-// 		d.automationQueries.IsAutomationEnabled(d.device.Id) {
-
-// 		// send measurement updates to metrics store
-// 		measumementUpdateData := map[string]any{}
-// 		for name, value := range updatePackage.Data {
-// 			if e, ok := d.device.Exposes[name]; ok && e.Category == bridge.MeasurementCategory {
-// 				measumementUpdateData[name] = value
-// 			}
-// 		}
-
-// 		if len(measumementUpdateData) > 0 {
-// 			// this will attempt to run automation (if enabled) and store to metrics store (if enabled)
-// 			d.events.OnDeviceMeasurementsUpdated(d.device, measumementUpdateData)
-// 		}
-// 	}
-// }
-
 func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutInSecs int, onChangeCallback func(p *devices.UpdatePackage)) {
 
 	if s.availabilityTicker != nil {
@@ -203,23 +182,26 @@ func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutInSecs int, o
 	}
 
 	s.availabilityTicker = time.NewTicker(1 * time.Second)
+	s.availabilityCtx, s.availabilityCancel = context.WithCancel(context.Background())
 
 	go func() {
 
 		for {
 			select {
-			case <-s.availabilityDone:
+			case <-s.availabilityCtx.Done():
 
-				s.device.SetAvailable(false)
-				utils.LogInfof("device %s availability timer killed", s.device.Id)
+				s.availabilityTicker.Stop()
+				s.availabilityTicker = nil
+				//s.device.SetAvailable(false)
+				utils.LogDebugf("device %s availability ticker cancelled", s.device.Id)
+				//utils.LogInfof("device %s availability timer killed", s.device.Id)
 
-				// todo: move it in one place
-				if onChangeCallback != nil {
-					p := devices.NewUpdatePackage(s.device.Id)
-					p.Availability = devices.OfflineAvailability
-					onChangeCallback(p)
-				}
-
+				// // todo: move it in one place
+				// if onChangeCallback != nil {
+				// 	p := devices.NewUpdatePackage(s.device.Id)
+				// 	p.Availability = devices.OfflineAvailability
+				// 	onChangeCallback(p)
+				// }
 				return
 
 			case <-s.availabilityTicker.C:
@@ -264,14 +246,18 @@ func (d *DeviceLifetimeService) resetAvailabilityTimer() {
 }
 
 func (s *DeviceLifetimeService) stopAvailabilityMonitoring() {
-	select {
-	case s.availabilityDone <- true:
-	default:
+	// select {
+	// case s.availabilityDone <- true:
+	// default:
+	// }
+	// if s.availabilityTicker != nil {
+	// 	s.availabilityTicker.Stop()
+	// }
+	if s.availabilityCancel != nil {
+		s.availabilityCancel()
+		s.availabilityCancel = nil
 	}
-	if s.availabilityTicker != nil {
-		s.availabilityTicker.Stop()
-	}
-	utils.LogDebugf("device %s disposed", s.device.Id)
+	utils.LogDebugf("device %s monitoring stopped", s.device.Id)
 }
 
 func getLastSeen(data map[string]interface{}) string {
