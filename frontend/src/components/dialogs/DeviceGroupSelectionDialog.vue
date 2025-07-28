@@ -96,10 +96,12 @@
         label="Select device"
         :value="selectedDeviceGroup.deviceId"
         :items="deviceList"
-        @updated="selectDevice" />
+        @updated="selectDevice"
+        :filter="true" />
     </div>
     <div class="flex items-center gap-4 mb-4">
       <MultiSelection
+        :filter="true"
         label="Select entities"
         showClear
         :values="selectedDeviceGroup.exposes"

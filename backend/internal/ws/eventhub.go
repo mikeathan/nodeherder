@@ -257,10 +257,6 @@ func (h *eventHubImpl) OnLoadDashboardGroups(action func() (interface{}, error))
 	h.onLoadDashboardGroups = action
 }
 
-// func (h *eventHubImpl) OnLoadHubState(action func() (interface{}, error)) {
-// 	h.onLoadHubState = action
-// }
-
 func (h *eventHubImpl) EmitDevice(name string) error {
 	msg, err := h.onLoadDevice(name)
 	if err != nil {

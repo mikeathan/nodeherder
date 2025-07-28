@@ -259,6 +259,8 @@ expressWs(app, server);
 
 var hubStatePayload = loadHubState();
 var appConfig = hubStatePayload.config;
+
+hubStatePayload.devices.sort((a, b) => a.friendly_name.localeCompare(b.friendly_name));
 var metricsMap = loadMetrics();
 
 // Allow CORS from frontend origin
