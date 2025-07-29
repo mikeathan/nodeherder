@@ -26,6 +26,7 @@
     const settings = deviceSettings.value;
     const result: Record<string, any> = {};
     if (!settings) return result;
+    
     for (const key in settings) {
       const value = settings[key as keyof DeviceConfig];
 

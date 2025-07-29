@@ -19,6 +19,10 @@
     return store.getters['hub/findDevice'](props.id) as Device;
   });
 
+  const exposes = computed(() => {
+    return device.value ? device.value.exposes : [];
+  });
+
   // TEMPORARY QUICK FIX
   // TODO: do the same we did in Toggle component  so value comes out the correct type eg number
   function updateValue(expose: Expose, value: any) {
@@ -43,7 +47,7 @@
   }
 </script>
 <template>
-  <div class="grid col-12 align-items-center grid-nogutter" v-for="(expose, index) in device.exposes" :item="expose">
+  <div class="grid col-12 align-items-center grid-nogutter" v-for="(expose, index) in exposes" :item="expose">
     <dl class="col-12 md:col-3">
       <dt>
         <strong> {{ expose.name }}</strong>

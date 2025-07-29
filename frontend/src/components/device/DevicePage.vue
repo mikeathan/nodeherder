@@ -12,12 +12,7 @@
     },
   });
 
-  const deviceExist = computed<boolean>(() => {
-    return store.getters['hub/deviceExists'](props.id);
-  });
-
   const device = computed<Device>(() => {
-    console.log('Fetching device with ID:', props.id);
     return store.getters['hub/findDevice'](props.id);
   });
 

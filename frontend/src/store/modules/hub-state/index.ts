@@ -57,9 +57,9 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     findDeviceSetting:
       (state) =>
       (id: string): DeviceConfig | undefined => {
-        console.log('findDeviceSetting:', state.appConfig?.hub.devices);
 
-        problem here is empty on page refresh
+        here is a problem and the overrides are deleted but they still appear in the ui
+        if (!state.appConfig?.hub.devices.overrides) return undefined;
         return state.appConfig?.hub.devices?.overrides[id] ?? state.appConfig?.hub.devices?.defaults;
       },
   },
@@ -76,7 +76,6 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       });
 
       devices.forEach((device: Device) => {
-        //if (device.id in state.deviceMap)
         state.deviceMap[device.id] = device;
       });
     },
@@ -106,14 +105,10 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       state.appConfig.hub.devices.defaults = defaults;
     },
     removeDeviceConfigOverrides(state, id: string) {
-      if (state.appConfig) {
-        delete state.appConfig.hub.devices.overrides[id];
-      }
+      delete state.appConfig.hub.devices.overrides[id];
     },
     setDeviceConfigOverrides(state, setting: DeviceConfig) {
-      if (state.appConfig) {
-        state.appConfig.hub.devices.overrides[setting.id] = setting;
-      }
+      state.appConfig.hub.devices.overrides[setting.id] = setting;
     },
     setDashboardGroups(state, dashboardGroups: DashboardGroups) {
       state.appConfig.hub.dashboardGroups = dashboardGroups;
@@ -161,7 +156,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     },
 
     saveDeviceConfigOverrides({ commit, dispatch }, deviceSetting: DeviceConfig) {
-      commit('setDeviceConfigOverrides', deviceSetting);
+      console.log('saveDeviceConfigOverrides', deviceSetting);
       dispatch(
         'ws/emit',
         {
