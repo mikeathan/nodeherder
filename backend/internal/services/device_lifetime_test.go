@@ -236,10 +236,9 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 			}
 		}
 	}
-
 }
 
-func TestDeviceLifetimeService_Availability(t *testing.T) {
+func TestDeviceLifetimeService_ShouldChangeAvailability_ToOffline(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 	device := &devices.Device{Id: "testDevice", Availability: devices.OnlineAvailability}
@@ -271,7 +270,7 @@ func TestDeviceLifetimeService_Availability(t *testing.T) {
 	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, mocks.NewMockClock(func() time.Time { return time.Now() }))
 	payload := map[string]interface{}{"test": "data"}
 
-	// make last seen 11 seconds ago as our availability timeout is 10 seconds
+	// make last_seen 11 seconds ago as our availability timeout is 10 seconds
 	device.LastSeen = time.Now().Add(-11 * time.Second).Format(time.RFC3339)
 
 	service.Seed(payload)

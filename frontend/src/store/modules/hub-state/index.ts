@@ -57,7 +57,10 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     findDeviceSetting:
       (state) =>
       (id: string): DeviceConfig | undefined => {
-        return state.appConfig?.hub.devices?.overrides[id];
+        console.log('findDeviceSetting:', state.appConfig?.hub.devices);
+
+        problem here is empty on page refresh
+        return state.appConfig?.hub.devices?.overrides[id] ?? state.appConfig?.hub.devices?.defaults;
       },
   },
 

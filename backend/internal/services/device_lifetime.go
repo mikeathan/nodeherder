@@ -20,7 +20,6 @@ type DeviceLifetimeService struct {
 	debouncerService   *settings.DeviceDebouncer
 	stopped            bool
 	availabilityTicker *time.Ticker
-	//availabilityDone   chan bool
 	events             *devices.DeviceRequestEvents
 	configCache        *settings.DeviceConfigCache
 	automationQueries  automations.AutomationQuerier
@@ -37,7 +36,6 @@ func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequ
 		events:            events,
 		stopped:           false,
 		automationQueries: automationQueries,
-		//		availabilityDone:   make(chan bool, 1),
 		availabilityCtx:    context.Background(),
 		availabilityCancel: func() {},
 	}
@@ -194,14 +192,7 @@ func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutInSecs int, o
 				s.availabilityTicker = nil
 				//s.device.SetAvailable(false)
 				utils.LogDebugf("device %s availability ticker cancelled", s.device.Id)
-				//utils.LogInfof("device %s availability timer killed", s.device.Id)
-
-				// // todo: move it in one place
-				// if onChangeCallback != nil {
-				// 	p := devices.NewUpdatePackage(s.device.Id)
-				// 	p.Availability = devices.OfflineAvailability
-				// 	onChangeCallback(p)
-				// }
+		
 				return
 
 			case <-s.availabilityTicker.C:
@@ -246,13 +237,7 @@ func (d *DeviceLifetimeService) resetAvailabilityTimer() {
 }
 
 func (s *DeviceLifetimeService) stopAvailabilityMonitoring() {
-	// select {
-	// case s.availabilityDone <- true:
-	// default:
-	// }
-	// if s.availabilityTicker != nil {
-	// 	s.availabilityTicker.Stop()
-	// }
+
 	if s.availabilityCancel != nil {
 		s.availabilityCancel()
 		s.availabilityCancel = nil

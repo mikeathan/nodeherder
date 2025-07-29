@@ -51,8 +51,8 @@
       </div>
     </template>
     <template #content>
-      <DeviceStatusOverlay v-if="isDisabled" :icon="getIconForType('disabled')" text="Device is disabled" rounded/>
-      <DeviceStatusOverlay v-else-if="isOffline" :icon="getIconForType('offline')" text="Device is offline" rounded/>
+      <DeviceStatusOverlay v-if="isDisabled" :icon="getIconForType('disabled')" text="Device is disabled" rounded />
+      <DeviceStatusOverlay v-else-if="isOffline" :icon="getIconForType('offline')" text="Device is offline" rounded />
       <template v-else>
         <div class="flex align-items-center" v-for="(_, sensor) in measurementExposes" :key="sensor">
           <Sensor :id="device.id" :expose="device.exposes[sensor]" :disabled="isOffline" />
