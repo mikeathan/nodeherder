@@ -59,9 +59,6 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       (id: string): DeviceConfig | undefined => {
         var override = state.appConfig?.hub.devices?.overrides?.[id];
         var defaults = state.appConfig?.hub.devices?.defaults;
-
-        console.log('override', override);
-        console.log('defaults', defaults);
         return override ?? defaults;
       },
     hasDeviceConfigOverride:
