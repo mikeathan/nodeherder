@@ -92,8 +92,6 @@ func (h *HubController) registerEventHubEvents() {
 			return nil, err
 		}
 
-		fmt.Printf("OnLoadAppConfig %v \n", cfg.Hub.Devices)
-
 		return cfg, nil
 	})
 
@@ -123,8 +121,6 @@ func (h *HubController) registerEventHubEvents() {
 			return fmt.Errorf("OnSaveDeviceConfigOverride failed. Invalid payload type : %v ", err.Error())
 		}
 
-		fmt.Printf("SetDeviceConfigOverride %v \n", req)
-
 		return appconfig.SetDeviceConfigOverrides(req)
 	})
 
@@ -141,7 +137,6 @@ func (h *HubController) registerEventHubEvents() {
 			return fmt.Errorf("OnDeleteDeviceConfigOverrides failed. Invalid payload type missing group id")
 		}
 
-		fmt.Printf("DeleteDeviceConfigOverrides %v \n", id)
 		return appconfig.DeleteDeviceConfigOverrides(id)
 	}))
 
@@ -153,7 +148,6 @@ func (h *HubController) registerEventHubEvents() {
 			return fmt.Errorf("OnSaveDeviceConfigDefaults failed. Invalid payload type : %v ", err.Error())
 		}
 
-		fmt.Printf("SetDeviceConfigDefaults %v \n", req)
 		return appconfig.SetDeviceConfigDefaults(req)
 	})
 

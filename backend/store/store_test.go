@@ -10,6 +10,7 @@ import (
 	utils_test "node-herder/testing"
 	"node-herder/utils"
 	"os"
+	"sort"
 	"sync"
 	"testing"
 	"time"
@@ -18,7 +19,9 @@ import (
 func TestStoreLoadAllDevices(t *testing.T) {
 
 	wantDevices := createMockLivingRoomButtonDevices(255.0, 0.0)
-
+	sort.Slice(wantDevices, func(i, j int) bool {
+		return wantDevices[i].FriendlyName < wantDevices[j].FriendlyName
+	})
 	store := utils_test.CreateStore()
 
 	// NOTE:
@@ -575,6 +578,9 @@ func TestStoreMetricsLimitsDataWithMultipleDevicesConfiguredRateLimiter(t *testi
 func TestStoreUpdateDevice(t *testing.T) {
 
 	wantDevices := createMockLivingRoomButtonDevices(255.0, 0.0)
+	sort.Slice(wantDevices, func(i, j int) bool {
+		return wantDevices[i].FriendlyName < wantDevices[j].FriendlyName
+	})
 	store := utils_test.CreateStore()
 
 	// NOTE:
