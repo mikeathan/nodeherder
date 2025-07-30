@@ -16,6 +16,7 @@ import (
 	"node-herder/store"
 	"node-herder/utils/storage"
 	"strconv"
+	"sync"
 	"time"
 
 	"node-herder/utils"
@@ -36,6 +37,7 @@ type HubController struct {
 	automationEngine                  automations.Engine
 	registrar                         *services.HubRegisterService
 	ctx                               context.Context
+	getDeviceProcessor                func() *services.DeviceProcessor
 }
 
 func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context) *HubController {
@@ -64,6 +66,16 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 		h.processMessage(id, payload, "mqtt")
 	})
 
+	//
+	var once sync.Once
+	var deviceProcessor *services.DeviceProcessor
+	h.getDeviceProcessor = func() *services.DeviceProcessor {
+		once.Do(func() {
+			deviceProcessor = h.createDeviceProcessor()
+		})
+		return deviceProcessor
+	}
+
 	// setup
 	h.mqtt.Connect()
 	h.mqtt.Publish("bridge/devices", nil) //zigbee2mqtt/ get devices for setup stuff
@@ -73,12 +85,14 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 func (h *HubController) registerEventHubEvents() {
 	appconfig := h.store.AppConfig()
 
-	// h.eventHub.OnLoadHubState(func() (interface{}, error) {
-	// 	return h.store.LoadHubState()
-	// })
-
 	h.eventHub.OnLoadAppConfig(func() (interface{}, error) {
-		return appconfig.LoadAppConfig()
+
+		cfg, err := appconfig.LoadAppConfig()
+		if err != nil {
+			return nil, err
+		}
+
+		return cfg, nil
 	})
 
 	h.eventHub.OnLoadBridgeConfig(func() (interface{}, error) {
@@ -98,18 +112,19 @@ func (h *HubController) registerEventHubEvents() {
 		return err
 	})
 
-	h.eventHub.OnSaveDeviceConfigOverrides(func(p interface{}) error {
+	h.eventHub.OnSaveDeviceConfigOverride(func(p interface{}) error {
 		req := &settings.DeviceConfig{}
 		bytes, _ := json.Marshal(p)
 		err := json.Unmarshal(bytes, &req)
 
 		if err != nil {
-			return fmt.Errorf("OnSaveDeviceConfigOverrides failed. Invalid payload type : %v ", err.Error())
+			return fmt.Errorf("OnSaveDeviceConfigOverride failed. Invalid payload type : %v ", err.Error())
 		}
+
 		return appconfig.SetDeviceConfigOverrides(req)
 	})
 
-	h.eventHub.OnDeleteDeviceConfigOverrides((func(p interface{}) error {
+	h.eventHub.OnDeleteDeviceConfigOverride((func(p interface{}) error {
 		bytes, _ := json.Marshal(p)
 		payload := make(map[string]interface{})
 		err := json.Unmarshal(bytes, &payload)
@@ -121,6 +136,7 @@ func (h *HubController) registerEventHubEvents() {
 		if !ok {
 			return fmt.Errorf("OnDeleteDeviceConfigOverrides failed. Invalid payload type missing group id")
 		}
+
 		return appconfig.DeleteDeviceConfigOverrides(id)
 	}))
 
@@ -131,6 +147,7 @@ func (h *HubController) registerEventHubEvents() {
 		if err != nil {
 			return fmt.Errorf("OnSaveDeviceConfigDefaults failed. Invalid payload type : %v ", err.Error())
 		}
+
 		return appconfig.SetDeviceConfigDefaults(req)
 	})
 
@@ -180,7 +197,6 @@ func (h *HubController) registerEventHubEvents() {
 	})
 
 	h.eventHub.OnLoadDashboardGroups(func() (interface{}, error) {
-
 		appConfig, err := appconfig.LoadAppConfig()
 		if err != nil {
 			return nil, err
@@ -475,7 +491,7 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 			}
 		} else {
 
-			processor := m.createDeviceProcessor()
+			processor := m.getDeviceProcessor()
 			var h = newDeviceHandler(processor)
 			m.responseHandlers[id] = h
 		}
@@ -486,10 +502,12 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 }
 
 // TODO: can be refactored to use a factory. for now we will keep it simple
+// will have to create some shared context for hub controller so i can add that thre as well with the others
 func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
+
 	events := devices.NewDeviceRequestEvents(d.DeviceAvailabilityTimeoutOverride)
-	events.WithOnNewDevice(func(device *devices.Device, data map[string]interface{}) {
-		d.handleDeviceAdded(device, data)
+	events.WithOnNewDevice(func(device *devices.Device) {
+		d.handleDeviceAdded(device)
 	})
 
 	events.WithOnDeviceUpdated(func(device *devices.Device, p *devices.UpdatePackage) {
@@ -503,16 +521,22 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 		d.handleDeviceMeasurementsUpdated(device, p)
 	})
 
-	return services.NewDeviceProcessorBuilder().
+	processor := services.NewDeviceProcessorBuilder().
 		WithRegistrar(d.registrar).
 		WithStore(d.store).
 		WithEvents(events).
 		WithAutomationQuerier(d.automationEngine).
 		Build()
 
+	appconfig := d.store.AppConfig()
+	appconfig.RegisterDeviceConfigUpdateListener(func(cfg *settings.DeviceConfig) {
+		processor.OnDeviceConfigUpdated(cfg)
+	})
+
+	return processor
 }
 
-func (d *HubController) handleDeviceAdded(device *devices.Device, payload map[string]interface{}) error {
+func (d *HubController) handleDeviceAdded(device *devices.Device) error {
 	// todo: execute in worker pool
 	// 	action()
 	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))

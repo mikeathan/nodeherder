@@ -287,7 +287,7 @@ func TestHubTriggersRemoteLogger(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
-
+	wg := sync.WaitGroup{}
 	// cleanup any previous remote logger hooks
 	utils.RemoveRemoteLoggerHook()
 
@@ -343,6 +343,7 @@ func TestHubTriggersRemoteLogger(t *testing.T) {
 		}
 		index++
 
+		wg.Done()
 		return nil
 	}
 
@@ -358,16 +359,17 @@ func TestHubTriggersRemoteLogger(t *testing.T) {
 
 	utils.EnableRemoteLoggerHook(true)
 
+	wg.Add(1)
+	// publish light device
 	payload := map[string]any{"brightness": 10.0, "color_temp": 100}
 	mqtt.Publish(lightDevice.FriendlyName, payload)
+	wg.Wait()
 
-	time.Sleep(100 * time.Millisecond)
-
+	wg.Add(1)
 	// publish dial button device
 	payload = map[string]any{"action": "button_2_hold"}
 	mqtt.Publish(dialDevice.FriendlyName, payload)
-
-	time.Sleep(100 * time.Millisecond)
+	wg.Wait()
 
 	utils.EnableRemoteLoggerHook(false)
 
@@ -683,7 +685,6 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 	if !reflect.DeepEqual(cfg.DefaultDebounceByCategory, defaults.DefaultDebounceByCategory) {
 		t.Fatalf("invalid config override. want expectedDefaultDebounceByCategory %v got %v", defaults.DefaultDebounceByCategory, cfg.DefaultDebounceByCategory)
 	}
-
 }
 
 func TestHubSaveDeviceConfigDefaults(t *testing.T) {
@@ -1168,7 +1169,6 @@ func TestDeleteDashboardGroupRemovesGroup(t *testing.T) {
 	if len(c.Hub.DashboardGroups) != 0 {
 		t.Fatalf("want %v got %v", 0, len(c.Hub.DashboardGroups))
 	}
-
 }
 
 func TestProcessorAddsNewDevice(t *testing.T) {
@@ -1474,7 +1474,6 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 	}
 
 	wg.Wait()
-
 }
 
 func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
@@ -1549,7 +1548,6 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
 
 	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
-	wg.Add(1) // this is for the hubregister service
 
 	for _, testCase := range testCases {
 
@@ -1573,26 +1571,7 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 		wg.Wait()
 
 	}
-
 }
-
-// // TODO: test if presence is converted to 0 and 1
-// func TestDevicePackageData(t *testing.T) {
-
-// 	p := &devices.UpdatePackage{Id: "x0111", LastSeen: time.Now().String(), Data: make(map[string]any), Properties: make(map[string]any)}
-
-// 	p.Data["temperature"] = 15.6
-// 	p.Data["humidity"] = 61.2
-// 	p.Data["lux"] = 599.0
-// 	p.Data["human_presence"] = "on"
-
-// 	temp, err := json.Marshal(p.Data)
-// 	if err == nil {
-// 		fmt.Println(string(temp))
-// 	} else {
-// 		fmt.Println(err.Error())
-// 	}
-// }
 
 func TestAvailabilityStatusIsUpdated(t *testing.T) {
 
@@ -1660,6 +1639,67 @@ func TestAvailabilityIsDisposed(t *testing.T) {
 
 	if device.Availability != devices.OfflineAvailability {
 		t.Fatalf("want offline got online")
+	}
+}
+
+func TestHub_DeviceConfigDefaults_DisableDevices(t *testing.T) {
+
+	mqtt := &mocks.MockMqttClient{}
+	ws := &mocks.NopWsServer{}
+
+	// setup device
+	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
+	device1Expose2 := utils_test.CreateNumericEntity("action_time", 0)
+	dialDevice := utils_test.CreateDeviceWithExposes("x01111111", "Dial button", []*devices.Entity{device1Expose1, device1Expose2})
+
+	device2Expose1 := utils_test.CreateEntity("brightness", "numeric", nil)
+	device2Expose2 := utils_test.CreateEnumEntity("color_temp", utils_test.CreateColorTempPresets())
+	lightDevice := utils_test.CreateDeviceWithExposes("x02222222", "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
+
+	// setup bridgeInfo List
+	devices := []*devices.Device{dialDevice, lightDevice}
+	deviceBridgeList := utils_test.CreateBridgeInfoList(devices) // NEED TO FIX, currently i make all devices features which is not right!!!!
+
+	// register hub
+	store, cleanup, err := utils_test.CreateFileStore()
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+
+	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+
+	mqtt.Publish("bridge/devices", deviceBridgeList)
+	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	//  SETUP END
+
+	payload := map[string]any{"brightness": 10.0, "color_temp": 100}
+	mqtt.Publish(lightDevice.FriendlyName, payload)
+	time.Sleep(100 * time.Millisecond)
+
+	// // publish dial button device
+	payload = map[string]any{"action": "button_2_hold"}
+	mqtt.Publish(dialDevice.FriendlyName, payload)
+	time.Sleep(100 * time.Millisecond)
+	d, _ := store.FindDeviceById("x01111111")
+	if d.Exposes["action"].Data != "button_2_hold" {
+		t.Errorf("expected dial device action to be button_2_hold, got %s", d.Exposes["action"].Data)
+	}
+
+	appCache := store.AppConfig()
+	// create defaults and set devices disabled
+	defaults := settings.DefaultDeviceConfig()
+	defaults.Disabled = true
+	appCache.SetDeviceConfigDefaults(defaults)
+	time.Sleep(100 * time.Millisecond)
+
+	payload = map[string]any{"action": "button_1_hold"}
+	mqtt.Publish(dialDevice.FriendlyName, payload)
+	time.Sleep(100 * time.Millisecond)
+
+	d, _ = store.FindDeviceById("x01111111")
+	if d.Exposes["action"].Data == "button_1_hold" {
+		t.Errorf("expected dial device action to be disabled, got %s", d.Exposes["action"].Data)
 	}
 }
 

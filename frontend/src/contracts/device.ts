@@ -15,7 +15,6 @@ export function getExposeProperty(expose: Expose, name: string): any {
 }
 
 export function getExposeBinaryProperty(expose: Expose): boolean {
- 
   if (expose.values == null) {
     return false;
   }
@@ -46,7 +45,7 @@ export function toggleExposeBinaryProperty(expose: Expose): any {
 
 export function getDevices(devices: Device[], allowedFilter: DeviceFilter): KeyValuePair<string> {
   let list: KeyValuePair<string> = {};
-  for (const [key, device] of Object.entries(devices)) {
+  for (const [key, device] of Object.entries(devices).sort()) {
     for (const [key, expose] of Object.entries(device.exposes)) {
       if (allowedFilter(device, expose)) {
         list[device.friendly_name] = device.id;
@@ -67,12 +66,13 @@ export function getPowerSourceValue(device: Device): number {
 export function getExposes(device: Device, filter: DeviceFilter): Array<string> {
   return Object.entries(device.exposes)
     .filter(([id, expose]) => filter(device, expose))
-    .map(([i, e]) => e.name);
+    .map(([i, e]) => e.name)
+    .sort();
 }
 
 export function getPropertiesByExposeType(device: Device, exposeType: ValueOf<typeof ExposeTypes>): Array<string> {
   return Object.entries(device.exposes)
     .filter(([id, entity]) => entity.type == exposeType)
-    .map(([i, e]) => e.name);
+    .map(([i, e]) => e.name)
+    .sort();
 }
-

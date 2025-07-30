@@ -374,13 +374,6 @@ func (d *Device) GetExpose(name string) (*Entity, bool) {
 	return expose, ok
 }
 
-func (d *Device) SetExposeData(name string, data interface{}) {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-
-	d.Exposes[name].Data = data
-}
-
 func (d *Device) GetAvailability() AvailabilityType {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()

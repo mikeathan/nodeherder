@@ -25,6 +25,11 @@
       default: false,
       required: false,
     },
+    filter:{
+      type: Boolean,
+      default: false,
+      required: false,
+    },
     showClear: {
       type: Boolean,
       default: false,
@@ -78,7 +83,8 @@
       :optionLabel="isKeyValuePair ? 'key' : ''"
       :optionValue="isKeyValuePair ? 'value' : ''"
       @change="selectionChanged"
-      :disabled="props.disabled"
+      :disabled="props.disabled" 
+      :filter="props.filter"   
       class="w-full" />
     <label v-if="props.label != ''">{{ props.label }}</label>
   </FloatLabel>

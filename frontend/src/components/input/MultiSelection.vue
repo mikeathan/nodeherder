@@ -25,6 +25,11 @@
       default: false,
       required: false,
     },
+    filter: {
+      type: Boolean,
+      default: false,
+      required: false,
+    },
     showClear: {
       type: Boolean,
       default: false,
@@ -72,6 +77,7 @@
 <template>
   <FloatLabel class="w-full md:w-56" variant="on">
     <MultiSelect
+      :filter="props.filter"
       v-model="selectedValues"
       :showClear="props.showClear"
       :options="selectionItems()"

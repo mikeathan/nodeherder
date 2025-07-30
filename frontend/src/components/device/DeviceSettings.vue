@@ -22,14 +22,21 @@
     },
   });
 
+  const hasOverride = computed(() => {
+    return store.getters['hub/hasDeviceConfigOverride'](props.id);
+  });
+
   const filteredSettings = computed(() => {
     const settings = deviceSettings.value;
     const result: Record<string, any> = {};
     if (!settings) return result;
+
     for (const key in settings) {
       const value = settings[key as keyof DeviceConfig];
 
       const hasComponent = !!DeviceConfigOverrideComponents[key];
+
+      // we only want overidde properties even if config is loaded from defaults
       const isBoolean = typeof value === 'boolean';
       const isPrimitive = typeof value === 'string' || typeof value === 'number';
 
@@ -44,6 +51,7 @@
   function createOverride() {
     const newOverride = createDeviceConfigOverride(props.id);
     deviceSettings.value = newOverride;
+    store.dispatch('hub/saveDeviceConfigOverride', deviceSettings.value as DeviceConfig);
   }
 
   function toggleChanged(propName: any, propValue: any) {
@@ -67,7 +75,7 @@
       }
     }
 
-    store.dispatch('hub/saveDeviceConfigOverrides', localOverride.value as DeviceConfig);
+    store.dispatch('hub/saveDeviceConfigOverride', localOverride.value as DeviceConfig);
   }
 
   function isObject(value: any): value is object {
@@ -82,7 +90,7 @@
 
     emitOpenConfirmationDialog(() => {
       localOverride.value = null;
-      store.dispatch('hub/deleteDeviceConfigOverrides', props.id);
+      store.dispatch('hub/deleteDeviceConfigOverride', props.id);
     }, dlgProps);
   }
 
@@ -92,10 +100,7 @@
 </script>
 
 <template>
-  <div v-if="!deviceSettings">
-    <Button @click="createOverride" icon="pi pi-plus" label="Create Override" size="small" />
-  </div>
-  <div v-else>
+  <div v-if="hasOverride || localOverride">
     <div class="grid col-12 align-items-center grid-nogutter" v-for="(value, key) in filteredSettings" :key="key">
       <dl class="col-12 md:col-3">
         <dt class="text-secondary">
@@ -126,5 +131,9 @@
       </div>
     </div>
     <Button label="Delete Override" icon="pi pi-trash" size="small" severity="danger" @click="deleteOverride" />
+  </div>
+  <div v-else>
+    <p>No override settings found for this device.</p>
+    <Button @click="createOverride" icon="pi pi-plus" label="Create Override" size="small" />
   </div>
 </template>
