@@ -86,7 +86,15 @@ func (h *HubController) registerEventHubEvents() {
 	appconfig := h.store.AppConfig()
 
 	h.eventHub.OnLoadAppConfig(func() (interface{}, error) {
-		return appconfig.LoadAppConfig()
+
+		cfg, err := appconfig.LoadAppConfig()
+		if err != nil {
+			return nil, err
+		}
+
+		fmt.Printf("OnLoadAppConfig %v \n", cfg.Hub.Devices)
+
+		return cfg, nil
 	})
 
 	h.eventHub.OnLoadBridgeConfig(func() (interface{}, error) {
@@ -106,18 +114,21 @@ func (h *HubController) registerEventHubEvents() {
 		return err
 	})
 
-	h.eventHub.OnSaveDeviceConfigOverrides(func(p interface{}) error {
+	h.eventHub.OnSaveDeviceConfigOverride(func(p interface{}) error {
 		req := &settings.DeviceConfig{}
 		bytes, _ := json.Marshal(p)
 		err := json.Unmarshal(bytes, &req)
 
 		if err != nil {
-			return fmt.Errorf("OnSaveDeviceConfigOverrides failed. Invalid payload type : %v ", err.Error())
+			return fmt.Errorf("OnSaveDeviceConfigOverride failed. Invalid payload type : %v ", err.Error())
 		}
+
+		fmt.Printf("SetDeviceConfigOverride %v \n", req)
+
 		return appconfig.SetDeviceConfigOverrides(req)
 	})
 
-	h.eventHub.OnDeleteDeviceConfigOverrides((func(p interface{}) error {
+	h.eventHub.OnDeleteDeviceConfigOverride((func(p interface{}) error {
 		bytes, _ := json.Marshal(p)
 		payload := make(map[string]interface{})
 		err := json.Unmarshal(bytes, &payload)
@@ -129,6 +140,8 @@ func (h *HubController) registerEventHubEvents() {
 		if !ok {
 			return fmt.Errorf("OnDeleteDeviceConfigOverrides failed. Invalid payload type missing group id")
 		}
+
+		fmt.Printf("DeleteDeviceConfigOverrides %v \n", id)
 		return appconfig.DeleteDeviceConfigOverrides(id)
 	}))
 
@@ -139,6 +152,8 @@ func (h *HubController) registerEventHubEvents() {
 		if err != nil {
 			return fmt.Errorf("OnSaveDeviceConfigDefaults failed. Invalid payload type : %v ", err.Error())
 		}
+
+		fmt.Printf("SetDeviceConfigDefaults %v \n", req)
 		return appconfig.SetDeviceConfigDefaults(req)
 	})
 
@@ -188,7 +203,6 @@ func (h *HubController) registerEventHubEvents() {
 	})
 
 	h.eventHub.OnLoadDashboardGroups(func() (interface{}, error) {
-
 		appConfig, err := appconfig.LoadAppConfig()
 		if err != nil {
 			return nil, err

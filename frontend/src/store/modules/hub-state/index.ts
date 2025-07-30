@@ -57,10 +57,17 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     findDeviceSetting:
       (state) =>
       (id: string): DeviceConfig | undefined => {
+        var override = state.appConfig?.hub.devices?.overrides?.[id];
+        var defaults = state.appConfig?.hub.devices?.defaults;
 
-        here is a problem and the overrides are deleted but they still appear in the ui
-        if (!state.appConfig?.hub.devices.overrides) return undefined;
-        return state.appConfig?.hub.devices?.overrides[id] ?? state.appConfig?.hub.devices?.defaults;
+        console.log('override', override);
+        console.log('defaults', defaults);
+        return override ?? defaults;
+      },
+    hasDeviceConfigOverride:
+      (state) =>
+      (id: string): boolean => {
+        return state.appConfig?.hub.devices?.overrides?.[id] != null;
       },
   },
 
@@ -104,10 +111,10 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     setDeviceDeConfigfaults(state, defaults: DeviceConfig) {
       state.appConfig.hub.devices.defaults = defaults;
     },
-    removeDeviceConfigOverrides(state, id: string) {
+    removeDeviceConfigOverride(state, id: string) {
       delete state.appConfig.hub.devices.overrides[id];
     },
-    setDeviceConfigOverrides(state, setting: DeviceConfig) {
+    setDeviceConfigOverride(state, setting: DeviceConfig) {
       state.appConfig.hub.devices.overrides[setting.id] = setting;
     },
     setDashboardGroups(state, dashboardGroups: DashboardGroups) {
@@ -155,19 +162,19 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       commit('setAppConfig', appConfig);
     },
 
-    saveDeviceConfigOverrides({ commit, dispatch }, deviceSetting: DeviceConfig) {
-      console.log('saveDeviceConfigOverrides', deviceSetting);
+    saveDeviceConfigOverride({ commit, dispatch }, deviceSetting: DeviceConfig) {
+      commit('setDeviceConfigOverride', deviceSetting);
       dispatch(
         'ws/emit',
         {
-          event: 'saveDeviceConfigOverrides',
+          event: 'saveDeviceConfigOverride',
           message: deviceSetting,
         },
         { root: true }
       );
     },
-    deleteDeviceConfigOverrides({ commit, dispatch }, id: string) {
-      commit('removeDeviceConfigOverrides', id);
+    deleteDeviceConfigOverride({ commit, dispatch }, id: string) {
+      commit('removeDeviceConfigOverride', id);
 
       var payload = {
         id: id,
@@ -175,7 +182,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       dispatch(
         'ws/emit',
         {
-          event: 'deleteDeviceConfigOverrides',
+          event: 'deleteDeviceConfigOverride',
           message: payload,
         },
         { root: true }

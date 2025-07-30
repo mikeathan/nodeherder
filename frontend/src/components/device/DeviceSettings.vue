@@ -22,11 +22,15 @@
     },
   });
 
+  const hasOverride = computed(() => {
+    return store.getters['hub/hasDeviceConfigOverride'](props.id);
+  });
+
   const filteredSettings = computed(() => {
     const settings = deviceSettings.value;
     const result: Record<string, any> = {};
     if (!settings) return result;
-    
+
     for (const key in settings) {
       const value = settings[key as keyof DeviceConfig];
 
@@ -68,7 +72,8 @@
       }
     }
 
-    store.dispatch('hub/saveDeviceConfigOverrides', localOverride.value as DeviceConfig);
+    console.log(localOverride.value);
+    store.dispatch('hub/saveDeviceConfigOverride', localOverride.value as DeviceConfig);
   }
 
   function isObject(value: any): value is object {
@@ -83,7 +88,7 @@
 
     emitOpenConfirmationDialog(() => {
       localOverride.value = null;
-      store.dispatch('hub/deleteDeviceConfigOverrides', props.id);
+      store.dispatch('hub/deleteDeviceConfigOverride', props.id);
     }, dlgProps);
   }
 
@@ -93,10 +98,11 @@
 </script>
 
 <template>
-  <div v-if="!deviceSettings">
+  {{ filteredSettings }} -- {{ deviceSettings }}
+  <!-- <div v-if="!hasOverride">
     <Button @click="createOverride" icon="pi pi-plus" label="Create Override" size="small" />
-  </div>
-  <div v-else>
+  </div> -->
+  <div>
     <div class="grid col-12 align-items-center grid-nogutter" v-for="(value, key) in filteredSettings" :key="key">
       <dl class="col-12 md:col-3">
         <dt class="text-secondary">
@@ -126,6 +132,13 @@
         </div>
       </div>
     </div>
-    <Button label="Delete Override" icon="pi pi-trash" size="small" severity="danger" @click="deleteOverride" />
+    <Button
+      v-if="hasOverride"
+      label="Delete Override"
+      icon="pi pi-trash"
+      size="small"
+      severity="danger"
+      @click="deleteOverride" />
+    <Button v-else @click="createOverride" icon="pi pi-plus" label="Create Override" size="small" />
   </div>
 </template>

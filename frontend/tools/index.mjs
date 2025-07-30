@@ -416,17 +416,18 @@ app.ws('/ws', async function (ws) {
         });
         sendMessage(ws, 'dashboardGroups', appConfig.hub.dashboardGroups);
 
-      case 'saveDeviceConfigOverrides':
+      case 'saveDeviceConfigOverride':
         {
           const deviceId = obj.payload.id;
-          if (deviceId in appConfig.hub.devices.overrides == false) {
+          if (!deviceId in appConfig.hub.devices.overrides) {
             appConfig.hub.devices.overrides[deviceId] = {};
           }
+
           appConfig.hub.devices.overrides[deviceId] = obj.payload;
           sendOperationSuccess(ws);
         }
         break;
-      case 'deleteDeviceConfigOverrides':
+      case 'deleteDeviceConfigOverride':
         {
           delete appConfig.hub.devices.overrides[obj.payload.id];
           sendOperationSuccess(ws);
