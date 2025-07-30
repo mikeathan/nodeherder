@@ -12,10 +12,6 @@
     },
   });
 
-  const deviceExist = computed<boolean>(() => {
-    return store.getters['hub/deviceExists'](props.id);
-  });
-
   const device = computed<Device>(() => {
     return store.getters['hub/findDevice'](props.id);
   });
@@ -39,7 +35,7 @@
           </RouterLink>
         </div>
         <div class="h3 align-self-center">
-          {{ device.friendly_name }}
+          {{ device?.friendly_name || 'friendly_Name not found' }}
         </div>
       </div>
     </template>

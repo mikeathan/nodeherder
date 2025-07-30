@@ -152,15 +152,15 @@ func (w *MockEventHub) OnLoadBridgeConfig(action func() (interface{}, error)) {
 	fmt.Println("MockEventHub: OnLoadBridgeConfig")
 }
 
-func (w *MockEventHub) OnSaveDeviceConfigOverrides(func(payload interface{}) error) {
-	fmt.Println("MockEventHub: OnSaveDeviceConfigOverrides")
+func (w *MockEventHub) OnSaveDeviceConfigOverride(func(payload interface{}) error) {
+	fmt.Println("MockEventHub: OnSaveDeviceConfigOverride")
 }
 func (w *MockEventHub) OnSaveDeviceConfigDefaults(action func(p interface{}) error) {
 	fmt.Println("MockEventHub: OnSaveDeviceConfigDefaults")
 }
 
-func (w *MockEventHub) OnDeleteDeviceConfigOverrides(action func(p interface{}) error) {
-	fmt.Println("MockEventHub: OnDeleteDeviceConfigOverrides")
+func (w *MockEventHub) OnDeleteDeviceConfigOverride(action func(p interface{}) error) {
+	fmt.Println("MockEventHub: OnDeleteDeviceConfigOverride")
 }
 
 func (w *MockEventHub) OnSaveHistoryConfig(func(payload interface{}) error) {
@@ -374,8 +374,8 @@ func (w *NopWsServer) OnLoadBridgeConfig(action func() (interface{}, error)) {
 	fmt.Println("WsServer: Mocked OnLoadBridgeConfig")
 }
 
-func (w *NopWsServer) OnSaveDeviceConfigOverrides(func(payload interface{}) error) {
-	fmt.Println("WsServer: Mocked OnSaveDeviceConfigOverrides")
+func (w *NopWsServer) OnSaveDeviceConfigOverride(func(payload interface{}) error) {
+	fmt.Println("WsServer: Mocked OnSaveDeviceConfigOverride")
 }
 
 func (w *NopWsServer) OnSaveDeviceConfigDefaults(action func(payload interface{}) error) {
@@ -384,8 +384,8 @@ func (w *NopWsServer) OnSaveDeviceConfigDefaults(action func(payload interface{}
 func (w *NopWsServer) OnSaveHistoryConfig(func(payload interface{}) error) {
 	fmt.Println("WsServer: Mocked OnSaveHistoryConfig")
 }
-func (w *NopWsServer) OnDeleteDeviceConfigOverrides(action func(payload interface{}) error) {
-	fmt.Println("WsServer: Mocked OnSavOnDeleteDeviceConfigOverrideseDeviceConfig")
+func (w *NopWsServer) OnDeleteDeviceConfigOverride(action func(payload interface{}) error) {
+	fmt.Println("WsServer: Mocked OnDeleteDeviceConfigOverride")
 }
 func (w NopWsServer) OnSaveLoggerConfig(action func(payload interface{}) error) {
 	fmt.Println("WsServer: Mocked OnSaveLoggerConfig")
@@ -923,7 +923,6 @@ func (m *MockClock) IsInRange(from time.Time, to time.Time) bool {
 }
 
 // needs refactoring - shouldnt replicate the logic
-
 func (r *MockClock) CompareWithNow(t time.Time, operator utils.EqualityOperator) bool {
 	now := r.Now()
 	toTime := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location())

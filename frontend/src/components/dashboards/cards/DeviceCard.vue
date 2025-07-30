@@ -4,8 +4,12 @@
   import Sensor from '../../device/Sensor.vue';
   import { RouterLink } from 'vue-router';
   import Card from 'primevue/card';
-  import { Device, Expose } from '@/types/device';
+  import { Device } from '@/types/device';
   import { isDeviceOnline } from '@/contracts/device';
+  import { store } from '@/store';
+  import { DeviceConfig } from '@/types/settings.type';
+  import DeviceStatusOverlay from '@/components/device/DeviceStatusOverlay.vue';
+  import { getIconForType } from '@/modules/formatters/icon.formatter';
 
   const props = defineProps({
     device: {
@@ -13,6 +17,14 @@
       default: {} as Device,
     },
   });
+
+  const deviceConfig = computed(() => {
+    return store.getters['hub/findDeviceSetting'](props.device.id) as DeviceConfig;
+  });
+
+  const isDisabled = computed(() => deviceConfig.value?.disabled === true);
+  const isOffline = computed(() => !isDeviceOnline(device.value));
+
   const device = ref<Device>(props.device);
   const measurementExposes = computed(() => {
     return Object.fromEntries(
@@ -20,46 +32,34 @@
     );
   });
 </script>
-<!-- <style scoped>
-.disabled-card {
-  opacity: 0.6;
-  pointer-events: none;
-  filter: grayscale(80%);
-  transition: opacity 0.3s ease, filter 0.3s ease;
-  position: relative;
-}
-
-.disabled-card::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(200, 200, 200, 0.2);
-  z-index: 0;
-}
-</style> -->
+<style scoped>
+  .card-title {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+</style>
 <template>
-  <Card
-    :class="
-      device.availability == 'offline' // to fix not working now
-        ? 'disabled-card'
-        : ''
-    ">
+  <Card>
     <template #title>
-      <RouterLink :to="`/devicepage/${device.id}`">
-        <Button label="Link" variant="link" class="ps-0">
-          <h4>{{ device.friendly_name }}</h4>
-        </Button>
-      </RouterLink>
-    </template>
-    <template #content>
-      <div class="flex align-items-center" v-for="(_, sensor) in measurementExposes">
-        <Sensor :id="device.id" :expose="device.exposes[sensor]" :disabled="!isDeviceOnline(device)" />
+      <div class="card-title">
+        <RouterLink :to="`/devicepage/${device.id}`">
+          <Button label="Link" variant="link" class="ps-0">
+            <h4>{{ device.friendly_name }}</h4>
+          </Button>
+        </RouterLink>
       </div>
     </template>
-    <template #footer>
+    <template #content>
+      <DeviceStatusOverlay v-if="isDisabled" :icon="getIconForType('disabled')" text="Device is disabled" rounded />
+      <DeviceStatusOverlay v-else-if="isOffline" :icon="getIconForType('offline')" text="Device is offline" rounded />
+      <template v-else>
+        <div class="flex align-items-center" v-for="(_, sensor) in measurementExposes" :key="sensor">
+          <Sensor :id="device.id" :expose="device.exposes[sensor]" :disabled="isOffline" />
+        </div>
+      </template>
+    </template>
+    <template v-if="!isDisabled && !isOffline" #footer>
       <DeviceFooter :device="device" />
     </template>
   </Card>

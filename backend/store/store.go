@@ -7,6 +7,7 @@ import (
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	"node-herder/repository"
+	"sort"
 	"sync"
 	"time"
 )
@@ -213,7 +214,18 @@ func (s *appStore) FindDeviceByIds(ids []string) ([]*devices.Device, error) {
 }
 
 func (s *appStore) AllDevices() ([]*devices.Device, error) {
-	return s.devices.AllDevices()
+
+	devs, err := s.devices.AllDevices()
+
+	// maybe that can by done in differntway, with specific query for ordering ?
+	if err == nil {
+		// sort by friendly name
+		sort.Slice(devs, func(i, j int) bool {
+			return devs[i].FriendlyName < devs[j].FriendlyName
+		})
+	}
+
+	return devs, err
 }
 
 func (a *appStore) ResolveFriendlyName(friendlyName string) string {

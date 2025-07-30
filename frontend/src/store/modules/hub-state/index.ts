@@ -57,7 +57,14 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     findDeviceSetting:
       (state) =>
       (id: string): DeviceConfig | undefined => {
-        return state.appConfig?.hub.devices?.overrides[id];
+        var override = state.appConfig?.hub.devices?.overrides?.[id];
+        var defaults = state.appConfig?.hub.devices?.defaults;
+        return override ?? defaults;
+      },
+    hasDeviceConfigOverride:
+      (state) =>
+      (id: string): boolean => {
+        return state.appConfig?.hub.devices?.overrides?.[id] != null;
       },
   },
 
@@ -73,7 +80,6 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       });
 
       devices.forEach((device: Device) => {
-        //if (device.id in state.deviceMap)
         state.deviceMap[device.id] = device;
       });
     },
@@ -102,15 +108,11 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     setDeviceDeConfigfaults(state, defaults: DeviceConfig) {
       state.appConfig.hub.devices.defaults = defaults;
     },
-    removeDeviceConfigOverrides(state, id: string) {
-      if (state.appConfig) {
-        delete state.appConfig.hub.devices.overrides[id];
-      }
+    removeDeviceConfigOverride(state, id: string) {
+      delete state.appConfig.hub.devices.overrides[id];
     },
-    setDeviceConfigOverrides(state, setting: DeviceConfig) {
-      if (state.appConfig) {
-        state.appConfig.hub.devices.overrides[setting.id] = setting;
-      }
+    setDeviceConfigOverride(state, setting: DeviceConfig) {
+      state.appConfig.hub.devices.overrides[setting.id] = setting;
     },
     setDashboardGroups(state, dashboardGroups: DashboardGroups) {
       state.appConfig.hub.dashboardGroups = dashboardGroups;
@@ -157,19 +159,19 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       commit('setAppConfig', appConfig);
     },
 
-    saveDeviceConfigOverrides({ commit, dispatch }, deviceSetting: DeviceConfig) {
-      commit('setDeviceConfigOverrides', deviceSetting);
+    saveDeviceConfigOverride({ commit, dispatch }, deviceSetting: DeviceConfig) {
+      commit('setDeviceConfigOverride', deviceSetting);
       dispatch(
         'ws/emit',
         {
-          event: 'saveDeviceConfigOverrides',
+          event: 'saveDeviceConfigOverride',
           message: deviceSetting,
         },
         { root: true }
       );
     },
-    deleteDeviceConfigOverrides({ commit, dispatch }, id: string) {
-      commit('removeDeviceConfigOverrides', id);
+    deleteDeviceConfigOverride({ commit, dispatch }, id: string) {
+      commit('removeDeviceConfigOverride', id);
 
       var payload = {
         id: id,
@@ -177,7 +179,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       dispatch(
         'ws/emit',
         {
-          event: 'deleteDeviceConfigOverrides',
+          event: 'deleteDeviceConfigOverride',
           message: payload,
         },
         { root: true }

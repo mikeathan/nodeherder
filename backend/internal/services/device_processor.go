@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"node-herder/models/automations"
 	"node-herder/models/devices"
+	"node-herder/models/settings"
 
 	"node-herder/store"
 	"node-herder/utils"
@@ -29,6 +30,29 @@ func newDeviceProcessor(registrar *HubRegisterService, store store.AppStore, eve
 		mutex:             &sync.RWMutex{},
 	}
 }
+func (dm *DeviceProcessor) OnDeviceConfigUpdated(cfg *settings.DeviceConfig) {
+
+	if cfg.Id == "" {
+		// device config defaults
+		for id := range dm.deviceServices {
+			dm.configureDeviceLifetime(id, cfg)
+		}
+		return
+	}
+
+	// device config overrides
+	dm.configureDeviceLifetime(cfg.Id, cfg)
+}
+
+func (dm *DeviceProcessor) configureDeviceLifetime(id string, cfg *settings.DeviceConfig) {
+
+	ls, ok := dm.deviceServices[id]
+	if !ok {
+		return
+	}
+
+	ls.OnConfigUpdated(cfg)
+}
 
 func (dm *DeviceProcessor) CreateOrUpdateDevice(friendlyName, connType string, dataMap map[string]interface{}) error {
 	device, _ := dm.registrar.LookupByName(friendlyName)
@@ -47,7 +71,6 @@ func (dm *DeviceProcessor) createNewDevice(friendlyName, connType string, dataMa
 	}
 
 	dm.createDeviceService(device, dataMap)
-
 	return nil
 }
 
@@ -57,10 +80,9 @@ func (dm *DeviceProcessor) createDeviceService(device *devices.Device, dataMap m
 
 	appConfig := dm.store.AppConfig()
 	ls := NewDeviceLifetimeService(device, dm.events, appConfig.GetDeviceConfigCache(), dm.automationQueries, utils.NewRealClock())
-	ls.Start(dataMap)
+	ls.Seed(dataMap)
 
 	dm.deviceServices[device.Id] = ls
-
 	return ls
 }
 
@@ -81,12 +103,10 @@ func (dm *DeviceProcessor) updateExistingDevice(device *devices.Device, dataMap 
 
 	// we are here because device is registered via bridge
 	// but we dont have a device lifetime service created yet
-	lf := dm.createDeviceService(device, dataMap)
-	lf.Update(dataMap)
+	dm.createDeviceService(device, dataMap)
 }
 
 // DeviceProcessor builder
-
 type DeviceProcessorBuilder struct {
 	registrar           *HubRegisterService
 	store               store.AppStore

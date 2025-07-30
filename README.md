@@ -45,12 +45,16 @@ BUGS:
   because it hasnt Id, we build one Id on regisration. So we cant store it in metrics straighr away.
   we would have to set it up afterwards
   Also not sure if server is restarted that we have stored that information eg device id in the store, TO be tested
-- Device config overrides on create they dont save the setting first time !!!
 
+- Device config overrides on create they dont save the setting first time - DONE
 - frontend - device settings component - DONE
 - frontend - test metrics graph - need mocked data in test node server ! - DONE
 - metrics results could have property from/to so we know the range for ui purposes - DONE
-- device disabled not working !!!!
+- device disabled not working - DONE
+
+Improvements:
+
+- device config defaults cant override existing device config overrides (do we care)
 
 -
 - Non bridge devices . eg HTTP need more investigation/testing

@@ -52,5 +52,6 @@ func LoadEnviromentConfig() error {
 		return err
 	}
 
+	LogInfo("loaded env file: " + envFile)
 	return nil
 }

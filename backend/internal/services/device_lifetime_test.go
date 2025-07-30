@@ -14,13 +14,13 @@ import (
 	"time"
 )
 
-func TestDeviceLifetimeService_Start(t *testing.T) {
+func TestDeviceLifetimeService_Seed(t *testing.T) {
 	wg := sync.WaitGroup{}
 	device := utils_test.CreateDevice("x01234", "testDevice", "brightness", 124, 0.0, 255.0)
 	device.Availability = devices.OnlineAvailability
 
 	events := &devices.DeviceRequestEvents{
-		OnNewDevice: func(d *devices.Device, p map[string]interface{}) {
+		OnNewDevice: func(d *devices.Device) {
 			if d != device {
 				t.Errorf("OnNewDevice device = %v, want %v", d, device)
 				return
@@ -29,8 +29,8 @@ func TestDeviceLifetimeService_Start(t *testing.T) {
 				t.Errorf("OnNewDevice id = %v, want %v", d.Id, "x01234")
 			}
 
-			if p["brightness"] != 10.2 {
-				t.Errorf("OnNewDevice payload = %v, want %v", p["brightness"], 10.2)
+			if d.Exposes["brightness"].Data != 10.2 {
+				t.Errorf("OnNewDevice payload = %v, want %v", d.Exposes["brightness"].Data, 10.2)
 			}
 
 			wg.Done()
@@ -56,7 +56,7 @@ func TestDeviceLifetimeService_Start(t *testing.T) {
 	payload := map[string]interface{}{"brightness": 10.2}
 
 	wg.Add(2)
-	service.Start(payload)
+	service.Seed(payload)
 
 	// wait until it becomes offline and assert it
 	wg.Wait()
@@ -236,17 +236,16 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 			}
 		}
 	}
-
 }
 
-func TestDeviceLifetimeService_Availability(t *testing.T) {
+func TestDeviceLifetimeService_ShouldChangeAvailability_ToOffline(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 	device := &devices.Device{Id: "testDevice", Availability: devices.OnlineAvailability}
 
 	events := &devices.DeviceRequestEvents{
 		AvailabilityTimeout: 10,
-		OnNewDevice: func(d *devices.Device, p map[string]interface{}) {
+		OnNewDevice: func(d *devices.Device) {
 			if d.Availability != devices.OnlineAvailability {
 				t.Errorf("OnNewDevice availability = %v, want %v", d.Availability, devices.OfflineAvailability)
 				return
@@ -271,10 +270,10 @@ func TestDeviceLifetimeService_Availability(t *testing.T) {
 	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, mocks.NewMockClock(func() time.Time { return time.Now() }))
 	payload := map[string]interface{}{"test": "data"}
 
-	// make last seen 11 seconds ago as our availability timeout is 10 seconds
+	// make last_seen 11 seconds ago as our availability timeout is 10 seconds
 	device.LastSeen = time.Now().Add(-11 * time.Second).Format(time.RFC3339)
 
-	service.Start(payload)
+	service.Seed(payload)
 	wg.Wait()
 
 	if device.Availability != devices.OfflineAvailability {
@@ -471,6 +470,113 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithAutomationEnabled(t *testi
 			wg.Wait()
 		}
 	}
+}
+
+func TestOnConfigUpdated_ShouldDisableDevice(t *testing.T) {
+	wg := sync.WaitGroup{}
+
+	device := utils_test.CreateDevice("x01234", "testDevice", "brightness", 124, 0.0, 255.0)
+	device.Availability = devices.OnlineAvailability
+
+	events := &devices.DeviceRequestEvents{
+		OnNewDevice: func(d *devices.Device) {
+			if d != device {
+				t.Errorf("OnNewDevice device = %v, want %v", d, device)
+				return
+			}
+			wg.Done()
+		},
+		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
+			// we should only get here before the device config disabled is set
+			wg.Done()
+
+		},
+		OnDeviceMeasurementsUpdated: func(d *devices.Device, p map[string]interface{}) {
+			t.Errorf("OnDeviceMeasurementsUpdated should not be called")
+		},
+		OnDeviceAvailabilityChanged: func(p *devices.UpdatePackage) {
+		},
+	}
+
+	app := settings.NewAppConfig()
+	repo := mocks.NopSettingsrepo{}
+	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
+
+	cache := settings.NewDeviceConfigCache(&repo, app)
+	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, utils.NewRealClock())
+	payload := map[string]interface{}{"brightness": 10.2}
+
+	// one event for device added and one for device updated
+	wg.Add(2)
+	service.Seed(payload)
+
+	time.Sleep(200 * time.Millisecond)
+	service.Update(map[string]interface{}{"brightness": 12.5})
+	wg.Wait()
+
+	// we expect no events after disabled is true
+	newConfig := settings.NewDeviceConfig("x01234")
+	newConfig.Disabled = true
+	service.OnConfigUpdated(newConfig)
+
+	service.Update(map[string]interface{}{"brightness": 20.5})
+	time.Sleep(200 * time.Millisecond)
+}
+
+func TestOnConfigUpdated_ShouldDisableDevice_OnStartUp(t *testing.T) {
+	wg := sync.WaitGroup{}
+
+	device := utils_test.CreateDevice("x01234", "testDevice", "brightness", 124, 0.0, 255.0)
+	device.Availability = devices.OnlineAvailability
+
+	events := &devices.DeviceRequestEvents{
+		OnNewDevice: func(d *devices.Device) {
+			if d != device {
+				t.Errorf("OnNewDevice device = %v, want %v", d, device)
+				return
+			}
+			wg.Done()
+		},
+		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
+			// we should only get here before the device config disabled is set
+			wg.Done()
+
+		},
+		OnDeviceMeasurementsUpdated: func(d *devices.Device, p map[string]interface{}) {
+			t.Errorf("OnDeviceMeasurementsUpdated should not be called")
+		},
+		OnDeviceAvailabilityChanged: func(p *devices.UpdatePackage) {
+		},
+	}
+
+	app := settings.NewAppConfig()
+
+	newConfig := settings.NewDeviceConfig("x01234")
+	newConfig.Disabled = true
+
+	app.AddDeviceConfig(newConfig)
+	repo := mocks.NopSettingsrepo{}
+	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
+
+	cache := settings.NewDeviceConfigCache(&repo, app)
+	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, utils.NewRealClock())
+	payload := map[string]interface{}{"brightness": 10.2}
+
+	// one event for device added and one for device updated
+	service.Seed(payload)
+
+	time.Sleep(200 * time.Millisecond)
+	service.Update(map[string]interface{}{"brightness": 12.5})
+
+	wg.Add(1)
+
+	newConfig.Disabled = false
+	service.OnConfigUpdated(newConfig)
+
+	time.Sleep(200 * time.Millisecond)
+	service.Update(map[string]interface{}{"brightness": 20.5})
+
+	wg.Wait()
 }
 
 func createTimestamp(hour, minute, second int) time.Time {

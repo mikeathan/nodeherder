@@ -57,5 +57,6 @@
     :value="props.id"
     :disabled="props.disabled"
     @updated="(v) => deviceSelected(v)"
+    :filter="true"
     :items="deviceList" />
 </template>

@@ -94,7 +94,6 @@
   onMounted(() => {
     fetchHubState()
       .then((state) => {
-        console.log('Hub state initialized:', state);
         store.dispatch('hub/init', state);
         store.dispatch('ws/connect');
       })

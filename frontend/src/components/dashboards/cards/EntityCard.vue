@@ -10,13 +10,24 @@
   import { stateDevicesFilter } from '@/configs/automation/device.config';
   import { emitOpenEntityViewDialog } from '@/contracts/dialog-events';
   import { getDeviceGroupId } from '@/contracts/device-group';
-
+  import DeviceStatusOverlay from '@/components/device/DeviceStatusOverlay.vue';
+  import { DeviceConfig } from '@/types/settings.type';
+  import { getIconForType } from '@/modules/formatters/icon.formatter';
+  import { isDeviceOnline } from '@/contracts/device';
   const props = defineProps({
     id: { type: String, required: true },
     name: { type: String, required: true },
     compact: { type: Boolean, required: false, default: false },
     isSelected: { type: Boolean, required: false, default: false },
   });
+  
+  const deviceConfig = computed(() => {
+    return store.getters['hub/findDeviceSetting'](props.id) as DeviceConfig;
+  });
+
+  const isDisabled = computed(() => deviceConfig.value?.disabled === true);
+  const isOffline = computed(() => device.value && !isDeviceOnline(device.value));
+  const showValue = computed(() => !isOffline.value && !isDisabled.value);
 
   const emit = defineEmits<{
     (e: 'delete', value: { id: string; name: string }): void;
@@ -140,7 +151,6 @@
       }
     });
   }
- 
 </script>
 
 <template>
@@ -162,27 +172,19 @@
           :clickable="isToggleable()"
           @click="handleIconClick" />
         <div class="entity-labels">
-          <div class="entity-title">{{ getSensorName(expose.name) }}</div>
-          <div class="entity-value">{{ getFormattedSensorValue(expose) }}</div>
+          <div class="entity-title">
+            {{ getSensorName(expose.name) }}
+          </div>
+          <div class="entity-value">
+            <template v-if="showValue">{{ getFormattedSensorValue(expose) }}</template>
+            <DeviceStatusOverlay v-else-if="isDisabled" :icon="getIconForType('disabled')" :size="18" />
+            <DeviceStatusOverlay v-else-if="isOffline" :icon="getIconForType('offline')" :size="18" />
+          </div>
         </div>
         <span v-if="isSelected" class="delete-icon pi pi-trash" @click.stop="emitDelete" title="Remove from group" />
-        <!-- <span v-if="isSelected" class="pi pi-ellipsis-v" /> -->
-
-        <!-- TO use pop up for edit Icon -->
-<!-- <Button type="button" icon="pi pi-ellipsis-v" @click="toggle" aria-haspopup="true" aria-controls="overlay_menu" />
-<Menu ref="menu" id="overlay_menu" :model="items" :popup="true" /> -->
       </div>
     </template>
-    <template #content>
-      <!-- <div v-if="hasNumericFeatures() && !isReadOnly()" class="entity-content">
-        <Brightness
-          :value="expose.data"
-          @update="updateValue(expose.name, $event)"
-          :min="getExposeAttribute(expose, 'min')"
-          :max="getExposeAttribute(expose, 'max')"
-          :disabled="!isEnabled()" />
-      </div> -->
-    </template>
+    <template #content> </template>
   </Card>
 </template>
 <style scoped>
@@ -241,6 +243,8 @@
     font-size: 0.8rem;
     color: #ccc;
     min-height: 1.2rem;
+    display: flex;
+    gap: 0.25rem;
   }
 
   .entity-content {

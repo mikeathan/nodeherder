@@ -14,7 +14,7 @@ func NewDeviceRemoveRequest(id string, force bool) *DeviceRemoveRequest {
 
 type DeviceRequestEvents struct {
 	AvailabilityTimeout         int
-	OnNewDevice                 func(device *Device, dataMap map[string]interface{})
+	OnNewDevice                 func(device *Device)
 	OnDeviceUpdated             func(device *Device, data *UpdatePackage)
 	OnDeviceMeasurementsUpdated func(device *Device, dataMap map[string]interface{})
 	OnDeviceAvailabilityChanged func(p *UpdatePackage)
@@ -34,7 +34,7 @@ func (d *DeviceRequestEvents) WithOnDeviceAvailabilityChanged(f func(p *UpdatePa
 	return d
 }
 
-func (d *DeviceRequestEvents) WithOnNewDevice(f func(device *Device, dataMap map[string]interface{})) *DeviceRequestEvents {
+func (d *DeviceRequestEvents) WithOnNewDevice(f func(device *Device)) *DeviceRequestEvents {
 	d.OnNewDevice = f
 	return d
 }
