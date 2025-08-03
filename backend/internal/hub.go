@@ -24,23 +24,13 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	router.GET("/ws", api.NewWsHandler(ws))
 
 	// api routing
-	router.POST("/collect", api.NewDataCollectorHandler(hub))
+	router.POST("/api/collect", api.NewDataCollectorHandler(hub))
 
-	router.POST("/logfile", api.NewLogFileHandler(fservice))
-	router.GET("/listlogs", api.NewListFileLogsHandler(fservice))
+	router.POST("/api/logfile", api.NewLogFileHandler(fservice))
+	router.GET("/api/listlogs", api.NewListFileLogsHandler(fservice))
 
 	router.GET("/api/hubstate", api.NewHubStateHandler(store, 15*time.Minute))
 
-	// file routing
-	// fs := api.NewFileServer("../frontend/dist")
-	// router.GET("/consoleviewer", fs.Resolve(false))
-	// router.GET("/deviceDashboard", fs.Resolve(false))
-	// router.GET("/settings", fs.Resolve(false))
-	// router.GET("/viewer", fs.Resolve(false))
-	// router.GET("/creator", fs.Resolve(false))
-	// router.GET("/devicepage", fs.Resolve(false))
-	// router.GET("/editor", fs.Resolve(false))
-	// router.GET("/", fs.Resolve(true))
 
 	apiServer := api.NewHttpServer(
 		port,
