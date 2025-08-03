@@ -86,6 +86,13 @@ func CreateAlarmDevice(id string, name string, value bool) *devices.Device {
 	return CreateDeviceWithExposes(id, name, []*devices.Entity{device2Expose1})
 }
 
+func CreateAlarmDeviceWithDuration(id string, name string, state bool, duration int) *devices.Device {
+
+	expose1 := CreateEntity("alarm", "binary", state)
+	expose2 := CreateEntity("duration", "numeric", duration)
+	return CreateDeviceWithExposes(id, name, []*devices.Entity{expose1, expose2})
+}
+
 func CreateDoorSensorDevice(id string, name string, value bool) *devices.Device {
 
 	device1Expose1 := CreateEntity("contact", "binary", value)

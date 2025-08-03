@@ -36,20 +36,18 @@ func TestDoorTriggersAlarm(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
 
-	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
-
+	deviceAutomation := utils_test.CreateDoorContactDurationWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
 	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
 	// setup device
-	alarmDevice := utils_test.CreateAlarmDevice("x02222222", "alarm device", false)
+	alarmDevice := utils_test.CreateAlarmDeviceWithDuration("x02222222", "alarm device", false, 0)
 	doorSensorDevice := utils_test.CreateDoorSensorDevice("x01111111", "front door sensor", false)
 
 	// setup bridgeInfo List
 	devices := []*devices.Device{doorSensorDevice, alarmDevice}
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
 
-	// register hub		//todo
-
+	// register hub
 	store := utils_test.CreateStore()
 	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
@@ -58,18 +56,21 @@ func TestDoorTriggersAlarm(t *testing.T) {
 	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	numOfEvents := 1
 	for i := 0; i < numOfEvents; i++ {
 
 		payload := map[string]any{"contact": true}
 		mqtt.Publish(doorSensorDevice.FriendlyName, payload)
-		time.Sleep(200 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 
 		alarm, _ := store.FindDeviceById("x02222222")
 		if alarm.Exposes["alarm"].Data != true {
 			t.Errorf("alarm should be ON when door sensor triggers")
+		}
+		if alarm.Exposes["duration"].Data != float64(2) {
+			t.Errorf("alarm duration should be 2 got %v", alarm.Exposes["duration"].Data)
 		}
 	}
 }
@@ -104,7 +105,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	numOfEvents := 2
 	for i := 0; i < numOfEvents; i++ {
@@ -192,7 +193,7 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 	hub.WithAutomationStorage(automationStorage) // overide storage
 	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
 	// publish light device
@@ -306,7 +307,7 @@ func TestHubEnableRemoteLogger(t *testing.T) {
 
 	// find a way to test the remote logger
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 
 	expectedEnabledMessages := 5
 	testCases := []bool{true, false, true, false, true, false, true, false, true, false}
@@ -397,7 +398,7 @@ func TestHubTriggersRemoteLogger(t *testing.T) {
 
 	// find a way to test the remote logger
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 
 	utils.EnableRemoteLoggerHook(true)
 
@@ -442,7 +443,7 @@ func TestProcessorStoresMetricsForNewNonBridgeDevice(t *testing.T) {
 	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
 	// note:
@@ -557,7 +558,7 @@ func TestHubSaveDeviceConfigOverrides(t *testing.T) {
 	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
 	configs := []*settings.DeviceConfig{}
@@ -643,7 +644,7 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
 	for id, device := range devices {
@@ -758,7 +759,7 @@ func TestHubSaveDeviceConfigDefaults(t *testing.T) {
 	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
 	appCache := store.AppConfig()
@@ -847,7 +848,7 @@ func TestProcessorStoresMetricsForExistingDevice(t *testing.T) {
 	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
 	cfg, err := appCfg.GetDeviceConfig("x01111111")
@@ -1713,7 +1714,7 @@ func TestHub_DeviceConfigDefaults_DisableDevices(t *testing.T) {
 	controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
 	payload := map[string]any{"brightness": 10.0, "color_temp": 100}

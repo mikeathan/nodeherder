@@ -32,6 +32,37 @@ func CreateDoorContactWithAlarmTriggerAutomation(doorSensorId string, alarmId st
 	return deviceAutomation
 }
 
+func CreateDoorContactDurationWithAlarmTriggerAutomation(doorSensorId string, alarmId string, mqtt mqtt.MqttClient) *automations.Device {
+	// setup automations
+	alarmAction := automations.NewTriggerAction()
+	alarmAction.Id = alarmId
+
+	alarmAction.Exposes = []*automations.MqttTriggerActionExpose{
+		{
+			Name: "alarm",
+			Data: true,
+		},
+		{
+			Name: "duration",
+			Data: 2,
+		},
+	}
+	alarmAction.Type = automations.TriggerAction
+	alarmAction.Client = mqtt
+
+	doorSensorTrigger := &automations.Trigger{}
+	doorSensorTrigger.Name = "contact"
+	doorSensorTrigger.Actions = []automations.MqttAction{alarmAction}
+
+	deviceAutomation := automations.NewDevice("door sensor")
+	deviceAutomation.Id = doorSensorId
+	deviceAutomation.FriendlyName = "front door sensor"
+	deviceAutomation.Enabled = true
+	deviceAutomation.Triggers = []*automations.Trigger{doorSensorTrigger}
+
+	return deviceAutomation
+}
+
 func CreateDialTriggerActionsBrightness(actionId string, dialActionName string, mqtt mqtt.MqttClient) *automations.Trigger {
 	condition := automations.NewExposeCondition("action", dialActionName, "=")
 	step := &automations.Step{}
