@@ -32,6 +32,48 @@ const device1BatterySource = `{"id":"device 1","conn":"mqtt","power_source":"bat
 const device2 = `{"battery":98, "humidity":71.2,  "linkquality":36.1,"temperature":17.1,"voltage":2999}`
 const device3NoLastSeen = `{"id":"device 1","conn":"mqtt","power_source":"battery","humidity":91.12,"temperature":19.000000000000004,"availability":"online","linkquality":47,"battery":67}`
 
+func TestDoorTriggersAlarm(t *testing.T) {
+	mqtt := &mocks.MockMqttClient{}
+	ws := &mocks.NopWsServer{}
+
+	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
+
+
+	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+	// setup device
+	alarmDevice := utils_test.CreateAlarmDevice("x02222222", "alarm device", false)
+	doorSensorDevice := utils_test.CreateDoorSensorDevice("x01111111", "front door sensor", false)
+
+	// setup bridgeInfo List
+	devices := []*devices.Device{doorSensorDevice, alarmDevice}
+	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
+
+	// register hub		//todo
+
+	store := utils_test.CreateStore()
+	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+
+	hub.WithAutomationStorage(automationStorage) // overide storage
+
+	//  publish deviceBridgeList to configure hub with devices
+	mqtt.Publish("bridge/devices", deviceBridgeList)
+
+	time.Sleep(500 * time.Millisecond)
+
+	numOfEvents := 1
+	for i := 0; i < numOfEvents; i++ {
+
+		payload := map[string]any{"contact": true}
+		mqtt.Publish(doorSensorDevice.FriendlyName, payload)
+		time.Sleep(200 * time.Millisecond)
+
+		alarm, _ := store.FindDeviceById("x02222222")
+		if alarm.Exposes["alarm"].Data != true {
+			t.Errorf("alarm should be ON when door sensor triggers")
+		}
+	}
+}
+
 func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
@@ -62,7 +104,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 
-	time.Sleep(600 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 
 	numOfEvents := 2
 	for i := 0; i < numOfEvents; i++ {
@@ -621,15 +663,16 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 			cfg.DebounceOverrides[expose.Name] = utils.IntervalFromMinutes(eIdx)
 		}
 		appCache.SetDeviceConfigOverrides(cfg)
-	}
+		time.Sleep(100 * time.Millisecond)
 
-	time.Sleep(500 * time.Millisecond)
+	}
 
 	// assert config override exists
 	cfg, err := appCache.GetDeviceConfig(dialDevice.Id)
 	if err != nil {
 		t.Fatalf("device not found. err %v ", err)
 	}
+	time.Sleep(100 * time.Millisecond)
 
 	// expected device config values to match with expected overrides values
 	expectedDebounceUnit := "minutes"
