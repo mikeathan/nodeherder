@@ -32,7 +32,7 @@ func TestHandleMissingDeviceIdPayload(t *testing.T) {
 
 	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	bodyReader := strings.NewReader(string(missingDeviceIdPayload))
-	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
+	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -57,7 +57,7 @@ func TestHandleInvalidDataPayload(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	bodyReader := strings.NewReader(string("test"))
-	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
+	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -79,7 +79,7 @@ func TestHandleSuccesfullyRootPayload(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	bodyReader := strings.NewReader(string(device1RootPayloadBatterySource))
-	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
+	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -113,7 +113,7 @@ func TestHandleInvalidRootPayload(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	bodyReader := strings.NewReader(string(device1InvalidRootPayloadBatterySource))
-	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
+	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -145,7 +145,7 @@ func TestProcessorHandleRootPayloadWithTimestamp(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	bodyReader := strings.NewReader(string(device1RootPayload))
-	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
+	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -183,7 +183,7 @@ func TestHandleSuccesfullyPayload(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 	bodyReader := strings.NewReader(string(gasNodePayload))
-	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
+	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -221,7 +221,7 @@ func TestHandleUnsuportedMediaType(t *testing.T) {
 	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
 	bodyReader := strings.NewReader(string(device1BatterySource))
-	req := httptest.NewRequest(http.MethodPost, "/collect", bodyReader)
+	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	w := httptest.NewRecorder()
 
 	h := api.NewDataCollectorHandler(hub)
@@ -255,7 +255,7 @@ func TestLoadLogFileHandler(t *testing.T) {
 		t.Errorf("error reading body got %v want nil", err)
 	}
 	bodyReader := strings.NewReader(string(reqJson))
-	req := httptest.NewRequest(http.MethodPost, "/logfile", bodyReader)
+	req := httptest.NewRequest(http.MethodPost, "/api/logfile", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
 
 	w := httptest.NewRecorder()
@@ -283,7 +283,7 @@ func TestHandleListLogFiles(t *testing.T) {
 		fs.WithFileLoader(mocks.NewMockFileLoader(mockFileBuffer)),
 		fs.WithFileWalker(mocks.NewMockWalker(mockeFiles)))
 
-	req := httptest.NewRequest(http.MethodGet, "/listlogs", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/listlogs", nil)
 	w := httptest.NewRecorder()
 
 	h := api.NewListFileLogsHandler(fs)
