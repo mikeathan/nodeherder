@@ -295,13 +295,14 @@ func (s *Scheduler) stopJobs() {
 	s.jobsLock.RLock()
 	defer s.jobsLock.RUnlock()
 	for _, job := range s.jobs {
+		utils.LogDebug("Scheduler stopping job: ", job.Name)
 		job.Stop()
 	}
 }
 func (s *Scheduler) Stop() error {
 
 	if !s.IsRunning() {
-		return fmt.Errorf("scheduler is not running")
+		return fmt.Errorf("Scheduler is not running")
 	}
 
 	if len(s.jobs) == 0 {

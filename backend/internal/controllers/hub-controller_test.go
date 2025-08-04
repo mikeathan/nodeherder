@@ -119,6 +119,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	time.Sleep(500 * time.Millisecond)
 
+	needs to run asynchronous else the stopping of scheluder dont work
 	testCases := []struct {
 		name                 string
 		value                bool
