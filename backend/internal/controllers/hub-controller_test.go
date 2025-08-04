@@ -51,27 +51,40 @@ func TestDoorTriggersAlarm(t *testing.T) {
 	store := utils_test.CreateStore()
 	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
-	hub.WithAutomationStorage(automationStorage) // overide storage
+	hub.WithAutomationStorage(automationStorage)
 
 	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 
 	time.Sleep(100 * time.Millisecond)
 
-	numOfEvents := 1
-	for i := 0; i < numOfEvents; i++ {
+	testCases := []struct {
+		name           string
+		value          bool
+		expectedResult bool
+	}{
+		{"contact", true, true},
+		{"contact", false, false},
+		{"contact", true, true},
+	}
 
-		payload := map[string]any{"contact": true}
+	for _, testCase := range testCases {
+
+		expose := testCase.name
+		value := testCase.value
+		expectedResult := testCase.expectedResult
+		payload := map[string]any{expose: value}
 		mqtt.Publish(doorSensorDevice.FriendlyName, payload)
 		time.Sleep(100 * time.Millisecond)
 
 		alarm, _ := store.FindDeviceById("x02222222")
-		if alarm.Exposes["alarm"].Data != true {
-			t.Errorf("alarm should be ON when door sensor triggers")
+		if alarm.Exposes["alarm"].Data != expectedResult {
+			t.Errorf("alarm should be %v when door sensor triggers", expectedResult)
 		}
 		if alarm.Exposes["duration"].Data != float64(2) {
 			t.Errorf("alarm duration should be 2 got %v", alarm.Exposes["duration"].Data)
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 

@@ -34,10 +34,17 @@ func CreateDoorContactWithAlarmTriggerAutomation(doorSensorId string, alarmId st
 
 func CreateDoorContactDurationWithAlarmTriggerAutomation(doorSensorId string, alarmId string, mqtt mqtt.MqttClient) *automations.Device {
 	// setup automations
-	alarmAction := automations.NewTriggerAction()
-	alarmAction.Id = alarmId
 
-	alarmAction.Exposes = []*automations.MqttTriggerActionExpose{
+	// door open triggers alarm
+	openDoorTrigger := &automations.Trigger{}
+	openDoorTrigger.Name = "contact"
+	openDoorTrigger.Conditions = []automations.Condition{
+		automations.NewExposeCondition("contact", true, "="),
+	}
+
+	alarmOnAction := automations.NewTriggerAction()
+	alarmOnAction.Id = alarmId
+	alarmOnAction.Exposes = []*automations.MqttTriggerActionExpose{
 		{
 			Name: "alarm",
 			Data: true,
@@ -47,18 +54,34 @@ func CreateDoorContactDurationWithAlarmTriggerAutomation(doorSensorId string, al
 			Data: 2,
 		},
 	}
-	alarmAction.Type = automations.TriggerAction
-	alarmAction.Client = mqtt
+	alarmOnAction.Type = automations.TriggerAction
+	alarmOnAction.Client = mqtt
+	openDoorTrigger.Actions = []automations.MqttAction{alarmOnAction}
 
-	doorSensorTrigger := &automations.Trigger{}
-	doorSensorTrigger.Name = "contact"
-	doorSensorTrigger.Actions = []automations.MqttAction{alarmAction}
+	// door close turns off alarm
+	closeDoorTrigger := &automations.Trigger{}
+	closeDoorTrigger.Name = "contact"
+	closeDoorTrigger.Conditions = []automations.Condition{
+		automations.NewExposeCondition("contact", false, "="),
+	}
+	alarmOffAction := automations.NewTriggerAction()
+	alarmOffAction.Id = alarmId
+	alarmOffAction.Exposes = []*automations.MqttTriggerActionExpose{
+		{
+			Name: "alarm",
+			Data: false,
+		},
+	}
+	alarmOffAction.Type = automations.TriggerAction
+	alarmOffAction.Client = mqtt
+	closeDoorTrigger.Actions = []automations.MqttAction{alarmOffAction}
 
+	// create device automation
 	deviceAutomation := automations.NewDevice("door sensor")
 	deviceAutomation.Id = doorSensorId
 	deviceAutomation.FriendlyName = "front door sensor"
 	deviceAutomation.Enabled = true
-	deviceAutomation.Triggers = []*automations.Trigger{doorSensorTrigger}
+	deviceAutomation.Triggers = []*automations.Trigger{openDoorTrigger, closeDoorTrigger}
 
 	return deviceAutomation
 }
