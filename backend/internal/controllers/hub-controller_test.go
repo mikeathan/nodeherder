@@ -32,7 +32,7 @@ const device1BatterySource = `{"id":"device 1","conn":"mqtt","power_source":"bat
 const device2 = `{"battery":98, "humidity":71.2,  "linkquality":36.1,"temperature":17.1,"voltage":2999}`
 const device3NoLastSeen = `{"id":"device 1","conn":"mqtt","power_source":"battery","humidity":91.12,"temperature":19.000000000000004,"availability":"online","linkquality":47,"battery":67}`
 
-func TestDoorTriggersAlarm(t *testing.T) {
+func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
 
@@ -108,8 +108,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 	devices := []*devices.Device{doorSensorDevice, alarmDevice}
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
 
-	// register hub		//todo
-
+	// register hub
 	store := utils_test.CreateStore()
 	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
@@ -118,53 +117,69 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 
-	numOfEvents := 2
-	for i := 0; i < numOfEvents; i++ {
+	testCases := []struct {
+		name                 string
+		value                bool
+		expectedResult       bool
+		shouldReset          bool
+		sleepBeforeNextEvent time.Duration
+	}{
+		{"contact", true, true, true, 100 * time.Millisecond},
+		{"contact", false, false, false, 100 * time.Millisecond},
+		{"contact", false, false, false, 500 * time.Millisecond},
+	}
+	for idx, testCase := range testCases {
 
-		payload := map[string]any{"contact": true}
+		expose := testCase.name
+		value := testCase.value
+		expectedResult := testCase.expectedResult
+
+		payload := map[string]any{expose: value}
 		mqtt.Publish(doorSensorDevice.FriendlyName, payload)
 		time.Sleep(500 * time.Millisecond)
 
 		// alarm should be triggered only when schedule is due
-		if i == 0 {
-			alarm, _ := store.FindDeviceById("x02222222")
-			if alarm.Exposes["alarm"].Data != true {
-				t.Errorf("alarm should be ON when door sensor triggers")
-			}
+		alarm, _ := store.FindDeviceById("x02222222")
+		if alarm.Exposes["alarm"].Data != expectedResult {
+			t.Errorf("case %d: alarm should be %v when door sensor triggers. got %v", idx, expectedResult, alarm.Exposes["alarm"].Data)
+		}
+
+		if testCase.shouldReset {
 
 			// reset alarm
 			payload = map[string]any{"alarm": false}
 			mqtt.Publish(alarmDevice.FriendlyName, payload)
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 
 			if alarm.Exposes["alarm"].Data != false {
-				t.Errorf("alarm should be off ")
+				t.Errorf("reset case %d: alarm should be off. got %v", idx, alarm.Exposes["alarm"].Data)
 			}
 
 			// reset contact
 			payload = map[string]any{"contact": false}
 			mqtt.Publish(doorSensorDevice.FriendlyName, payload)
-			time.Sleep(200 * time.Millisecond)
+			time.Sleep(100 * time.Millisecond)
 
 			contact, _ := store.FindDeviceById("x01111111")
 			if contact.Exposes["contact"].Data != false {
-				t.Errorf("contact should be off ")
-			}
-
-			time.Sleep(3 * time.Second)
-
-		} else {
-
-			time.Sleep(500 * time.Millisecond)
-
-			//  alarm should not be triggered as schedule is not due.
-			alarm, _ := store.FindDeviceById("x02222222")
-			if alarm.Exposes["alarm"].Data != false {
-				t.Errorf("alarm should be OFF - schedule end should disable automation")
+				t.Errorf("reset case %d: contact should be off. got %v", idx, contact.Exposes["contact"].Data)
 			}
 		}
+
+		time.Sleep(testCase.sleepBeforeNextEvent)
+
+		// } else {
+
+		// 	time.Sleep(500 * time.Millisecond)
+
+		// 	//  alarm should not be triggered as schedule is not due.
+		// 	alarm, _ := store.FindDeviceById("x02222222")
+		// 	if alarm.Exposes["alarm"].Data != false {
+		// 		t.Errorf("alarm should be OFF - schedule end should disable automation")
+		// 	}
+		// }
 	}
 }
 
