@@ -88,11 +88,6 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 	}
 }
 
-
-The issue is likely StartAt parses to a time in the past, so the scheduler defers execution to next day, which your test never waits for.
-
-✅ Fix it by setting StartAt to 00:00:01 or modifying StartAtDuration directly to a short duration in your test.
-
 func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
@@ -124,7 +119,6 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	time.Sleep(500 * time.Millisecond)
 
-	needs to run asynchronous else the stopping of scheluder dont work
 	testCases := []struct {
 		name                 string
 		value                bool

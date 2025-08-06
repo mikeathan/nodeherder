@@ -67,10 +67,12 @@ type AutomationScheduler struct {
 var scheduleFuncMap = map[string]ScheduleFunc{
 	"enable": NewAutomationScheduleFunc(EnableScheduleType, func(a *Device) error {
 		a.Enabled = true
+		utils.LogDebugf("AutomationScheduler: enable automation %s", a.Id)
 		return nil
 	}),
 	"disable": NewAutomationScheduleFunc(DisableScheduleType, func(a *Device) error {
 		a.Enabled = false
+		utils.LogDebugf("AutomationScheduler: disable automation %s", a.Id)
 		return nil
 	}),
 }

@@ -27,6 +27,14 @@ var (
 	ErrorEmptyPayload = fmt.Errorf("empty payload")
 )
 
+type HubControllerOption func(*HubController)
+
+func WithAutomationSchedulerFactory(factory func(ctx context.Context) automations.AutomationHandler) HubControllerOption {
+	return func(h *HubController) {
+		h.schedulerFactory = factory
+	}
+}
+
 type HubController struct {
 	eventHub                          ws.EventHub
 	mqtt                              mqtt.MqttClient
@@ -38,9 +46,10 @@ type HubController struct {
 	registrar                         *services.HubRegisterService
 	ctx                               context.Context
 	getDeviceProcessor                func() *services.DeviceProcessor
+	schedulerFactory                  func(ctx context.Context) automations.AutomationHandler
 }
 
-func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context) *HubController {
+func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context, opts ...HubControllerOption) *HubController {
 	h := &HubController{
 		eventHub:                          eventHub,
 		store:                             store,
@@ -52,11 +61,19 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 
 	h.registrar = services.NewHubRegisterService(store, eventHub, 3600)
 
-	scheduleHandler := automations.NewAutomationScheduler(
-		automations.WithContext(ctx),
-		automations.WithAutomationsFuncs())
+	for _, opt := range opts {
+		opt(h)
+	}
 
-	h.automationEngine = automations.NewEngine([]automations.AutomationHandler{scheduleHandler}, h.registrar, mqtt)
+	if h.schedulerFactory == nil {
+		h.schedulerFactory = func(ctx context.Context) automations.AutomationHandler {
+			return automations.NewAutomationScheduler(
+				automations.WithContext(ctx),
+				automations.WithAutomationsFuncs())
+		}
+	}
+
+	h.automationEngine = automations.NewEngine([]automations.AutomationHandler{h.schedulerFactory(ctx)}, h.registrar, mqtt)
 	h.wp = utils.NewWorkerPool(4, ctx)
 	h.wp.Run()
 
