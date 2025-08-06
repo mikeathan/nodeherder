@@ -324,14 +324,3 @@ func (s *Scheduler) Stop() error {
 	return nil
 }
 
-// type DaySchedule struct {
-// 	Start int `json:"start"`
-// 	End   int `json:"end"`
-// }
-// day schedule
-// start day
-// end day
-
-// time schedule
-// start time
-// end time
