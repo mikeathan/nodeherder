@@ -64,6 +64,15 @@ type AutomationScheduler struct {
 	ctx            context.Context
 }
 
+func DefaultAutomationHandlers(ctx context.Context) []AutomationHandler {
+	return []AutomationHandler{
+		NewAutomationScheduler(
+			WithContext(ctx),
+			WithAutomationsFuncs(),
+		),
+	}
+}
+
 var scheduleFuncMap = map[string]ScheduleFunc{
 	"enable": NewAutomationScheduleFunc(EnableScheduleType, func(a *Device) error {
 		a.Enabled = true

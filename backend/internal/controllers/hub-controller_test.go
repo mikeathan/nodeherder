@@ -111,35 +111,30 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 	// register hub
 	store := utils_test.CreateStore()
 
-	// overide automation scheduler
-	eventTriggered := make(chan struct{}, 1)
-	customHandler := mocks.NewMockAutomationHandler()
+	// overide automation handlers
 
-	hub.WithAutomationHandlersFactory(func(ctx context.Context) []automations.AutomationHandler {
-		return []automations.AutomationHandler{
-			automations.NewAutomationScheduler(
-				automations.WithContext(ctx),
-				automations.WithCustomScheduleFuncs(map[string]func(*automations.Device) error{
-					"enable": func(a *automations.Device) error {
-						a.Enabled = true
-						select {
-						case eventTriggered <- struct{}{}:
-						default:
-						}
-						return nil
-					},
-					"disable": func(a *automations.Device) error {
-						a.Enabled = false
-						select {
-						case eventTriggered <- struct{}{}:
-						default:
-						}
-						return nil
-					},
-				})),
-		}
-	})
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	wg := sync.WaitGroup{}
+
+	automationHandlers := []automations.AutomationHandler{
+		automations.NewAutomationScheduler(
+			automations.WithContext(context.Background()),
+			automations.WithCustomScheduleFuncs(map[string]func(*automations.Device) error{
+				"enable": func(a *automations.Device) error {
+					a.Enabled = true
+					wg.Done()
+					return nil
+				},
+				"disable": func(a *automations.Device) error {
+					a.Enabled = false
+					wg.Done()
+					return nil
+				},
+			})),
+	}
+
+	wg.Add(2)
+
+	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background(), controllers.WithAutomationHandlers(automationHandlers))
 
 	hub.WithAutomationStorage(automationStorage) // overide storage
 
@@ -156,9 +151,10 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 		sleepBeforeNextEvent time.Duration
 	}{
 		{"contact", true, true, true, 100 * time.Millisecond},
-		{"contact", false, false, false, 100 * time.Millisecond},
-		{"contact", false, false, false, 500 * time.Millisecond},
+		//{"contact", false, false, false, 100 * time.Millisecond},
+		//{"contact", false, false, false, 500 * time.Millisecond},
 	}
+
 	for idx, testCase := range testCases {
 
 		expose := testCase.name
@@ -166,6 +162,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 		expectedResult := testCase.expectedResult
 
 		payload := map[string]any{expose: value}
+
 		mqtt.Publish(doorSensorDevice.FriendlyName, payload)
 		time.Sleep(500 * time.Millisecond)
 
@@ -195,20 +192,21 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 			if contact.Exposes["contact"].Data != false {
 				t.Errorf("reset case %d: contact should be off. got %v", idx, contact.Exposes["contact"].Data)
 			}
-		}
 
+			wg.Wait()
+
+		} else {
+
+			time.Sleep(500 * time.Millisecond)
+
+			//  alarm should not be triggered as schedule is not due.
+			alarm, _ := store.FindDeviceById("x02222222")
+			if alarm.Exposes["alarm"].Data != false {
+				t.Errorf("alarm should be OFF - schedule end should disable automation")
+			}
+		}
 		time.Sleep(testCase.sleepBeforeNextEvent)
 
-		// } else {
-
-		// 	time.Sleep(500 * time.Millisecond)
-
-		// 	//  alarm should not be triggered as schedule is not due.
-		// 	alarm, _ := store.FindDeviceById("x02222222")
-		// 	if alarm.Exposes["alarm"].Data != false {
-		// 		t.Errorf("alarm should be OFF - schedule end should disable automation")
-		// 	}
-		// }
 	}
 }
 

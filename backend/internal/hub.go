@@ -3,6 +3,7 @@ package hub
 import (
 	"context"
 	"node-herder/internal/api"
+	"node-herder/internal/automations"
 	"node-herder/internal/controllers"
 	"node-herder/internal/fs"
 	"node-herder/internal/mqtt"
@@ -49,7 +50,8 @@ func Register(port int, store store.AppStore, config mqtt.MqttConfig, ctx contex
 
 	mqtt := mqtt.NewMqttClient(config)
 
-	hub := controllers.RegisterHubController(ws, store, mqtt, ctx)
+	automationHandlers := automations.DefaultAutomationHandlers(ctx)
+	hub := controllers.RegisterHubController(ws, store, mqtt, ctx, controllers.WithAutomationHandlers(automationHandlers))
 
 	return registerApi(port, ws, hub, store, ctx)
 }
