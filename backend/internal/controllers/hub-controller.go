@@ -38,10 +38,17 @@ type HubController struct {
 	registrar                         *services.HubRegisterService
 	ctx                               context.Context
 	getDeviceProcessor                func() *services.DeviceProcessor
-	schedulerFactory                  func(ctx context.Context) automations.AutomationHandler
+	automationHandlers                []automations.AutomationHandler
+}
+type HubControllerOption func(*HubController)
+
+func WithAutomationHandlers(handlers []automations.AutomationHandler) HubControllerOption {
+	return func(h *HubController) {
+		h.automationHandlers = handlers
+	}
 }
 
-func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context) *HubController {
+func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context, options ...HubControllerOption) *HubController {
 	h := &HubController{
 		eventHub:                          eventHub,
 		store:                             store,
@@ -49,16 +56,29 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 		responseHandlers:                  map[string]handler{},
 		DeviceAvailabilityTimeoutOverride: 3600,
 		ctx:                               ctx,
+		automationHandlers: []automations.AutomationHandler{
+			automations.NewAutomationScheduler(
+				automations.WithContext(ctx),
+				automations.WithAutomationsFuncs(),
+			),
+		},
+	}
+
+	for _, option := range options {
+		option(h)
 	}
 
 	h.registrar = services.NewHubRegisterService(store, eventHub, 3600)
-	h.schedulerFactory = func(ctx context.Context) automations.AutomationHandler {
-		return automations.NewAutomationScheduler(
-			automations.WithContext(ctx),
-			automations.WithAutomationsFuncs())
-	}
 
-	h.automationEngine = automations.NewEngine([]automations.AutomationHandler{h.schedulerFactory(ctx)}, h.registrar, mqtt)
+	if h.automationEngine == nil {
+		h.automationHandlers = []automations.AutomationHandler{
+			automations.NewAutomationScheduler(
+				automations.WithContext(ctx),
+				automations.WithAutomationsFuncs()),
+		}
+
+		h.automationEngine = automations.NewEngine(h.automationHandlers, h.registrar, mqtt)
+	}
 	h.wp = utils.NewWorkerPool(4, ctx)
 	h.wp.Run()
 
@@ -450,10 +470,6 @@ func (h *HubController) registerEventHubEvents() {
 // we only use that to override the default automation storage, lame but we cant easily refactor as weget alot of cyclic dependencies
 func (h *HubController) WithAutomationStorage(storage storage.Storage[automations.Device]) {
 	h.automationEngine.WithStorage(storage)
-}
-
-func (h *HubController) WithSchedulerFactory(factory func(ctx context.Context) automations.AutomationHandler) {
-	h.schedulerFactory = factory
 }
 
 func (c *HubController) Enqueue(id string, payload map[string]interface{}, connType string) error {

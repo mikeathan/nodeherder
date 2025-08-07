@@ -31,7 +31,6 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 
 	router.GET("/api/hubstate", api.NewHubStateHandler(store, 15*time.Minute))
 
-
 	apiServer := api.NewHttpServer(
 		port,
 		api.WithContext(ctx),
@@ -49,6 +48,7 @@ func Register(port int, store store.AppStore, config mqtt.MqttConfig, ctx contex
 	utils.RegisterRemoteLoggerHook(ws)
 
 	mqtt := mqtt.NewMqttClient(config)
+
 	hub := controllers.RegisterHubController(ws, store, mqtt, ctx)
 
 	return registerApi(port, ws, hub, store, ctx)
