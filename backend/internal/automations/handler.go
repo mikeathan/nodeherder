@@ -84,6 +84,15 @@ func WithAutomationsFuncs() func(*AutomationScheduler) {
 		}
 	}
 }
+
+func WithCustomScheduleFuncs(funcMap map[string]func(*Device) error) func(*AutomationScheduler) {
+	return func(as *AutomationScheduler) {
+		for name, fn := range funcMap {
+			as.actionsMap[name] = NewAutomationScheduleFunc(name, fn)
+		}
+	}
+}
+
 func WithScheduleFunc(name string, action func(a *Device) error) func(*AutomationScheduler) {
 	return func(as *AutomationScheduler) {
 		as.actionsMap[name] = NewAutomationScheduleFunc(name, action)

@@ -114,6 +114,33 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	hub.WithAutomationStorage(automationStorage) // overide storage
 
+	TODO
+	// overide scheduler storage
+
+	eventTriggered := make(chan struct{}, 1)
+	hub.WithSchedulerFactory(func(ctx context.Context) automations.AutomationHandler {
+		return automations.NewAutomationScheduler(
+			automations.WithContext(ctx),
+			automations.WithCustomScheduleFuncs(map[string]func(*automations.Device) error{
+				"enable": func(a *automations.Device) error {
+					a.Enabled = true
+					select {
+					case eventTriggered <- struct{}{}:
+					default:
+					}
+					return nil
+				},
+				"disable": func(a *automations.Device) error {
+					a.Enabled = false
+					select {
+					case eventTriggered <- struct{}{}:
+					default:
+					}
+					return nil
+				},
+			}))
+	})
+
 	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 

@@ -27,14 +27,6 @@ var (
 	ErrorEmptyPayload = fmt.Errorf("empty payload")
 )
 
-type HubControllerOption func(*HubController)
-
-func WithAutomationSchedulerFactory(factory func(ctx context.Context) automations.AutomationHandler) HubControllerOption {
-	return func(h *HubController) {
-		h.schedulerFactory = factory
-	}
-}
-
 type HubController struct {
 	eventHub                          ws.EventHub
 	mqtt                              mqtt.MqttClient
@@ -49,7 +41,7 @@ type HubController struct {
 	schedulerFactory                  func(ctx context.Context) automations.AutomationHandler
 }
 
-func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context, opts ...HubControllerOption) *HubController {
+func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context) *HubController {
 	h := &HubController{
 		eventHub:                          eventHub,
 		store:                             store,
@@ -60,17 +52,10 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 	}
 
 	h.registrar = services.NewHubRegisterService(store, eventHub, 3600)
-
-	for _, opt := range opts {
-		opt(h)
-	}
-
-	if h.schedulerFactory == nil {
-		h.schedulerFactory = func(ctx context.Context) automations.AutomationHandler {
-			return automations.NewAutomationScheduler(
-				automations.WithContext(ctx),
-				automations.WithAutomationsFuncs())
-		}
+	h.schedulerFactory = func(ctx context.Context) automations.AutomationHandler {
+		return automations.NewAutomationScheduler(
+			automations.WithContext(ctx),
+			automations.WithAutomationsFuncs())
 	}
 
 	h.automationEngine = automations.NewEngine([]automations.AutomationHandler{h.schedulerFactory(ctx)}, h.registrar, mqtt)
@@ -465,6 +450,10 @@ func (h *HubController) registerEventHubEvents() {
 // we only use that to override the default automation storage, lame but we cant easily refactor as weget alot of cyclic dependencies
 func (h *HubController) WithAutomationStorage(storage storage.Storage[automations.Device]) {
 	h.automationEngine.WithStorage(storage)
+}
+
+func (h *HubController) WithSchedulerFactory(factory func(ctx context.Context) automations.AutomationHandler) {
+	h.schedulerFactory = factory
 }
 
 func (c *HubController) Enqueue(id string, payload map[string]interface{}, connType string) error {
