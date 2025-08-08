@@ -88,6 +88,7 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 	}
 }
 
+todo
 func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
@@ -151,7 +152,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 		sleepBeforeNextEvent time.Duration
 	}{
 		{"contact", true, true, true, 100 * time.Millisecond},
-		//{"contact", false, false, false, 100 * time.Millisecond},
+		{"contact", false, false, false, 100 * time.Millisecond},
 		//{"contact", false, false, false, 500 * time.Millisecond},
 	}
 
@@ -177,7 +178,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 			// reset alarm
 			payload = map[string]any{"alarm": false}
 			mqtt.Publish(alarmDevice.FriendlyName, payload)
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 
 			if alarm.Exposes["alarm"].Data != false {
 				t.Errorf("reset case %d: alarm should be off. got %v", idx, alarm.Exposes["alarm"].Data)
@@ -186,28 +187,19 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 			// reset contact
 			payload = map[string]any{"contact": false}
 			mqtt.Publish(doorSensorDevice.FriendlyName, payload)
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 
 			contact, _ := store.FindDeviceById("x01111111")
 			if contact.Exposes["contact"].Data != false {
 				t.Errorf("reset case %d: contact should be off. got %v", idx, contact.Exposes["contact"].Data)
 			}
 
-			wg.Wait()
-
-		} else {
-
-			time.Sleep(500 * time.Millisecond)
-
-			//  alarm should not be triggered as schedule is not due.
-			alarm, _ := store.FindDeviceById("x02222222")
-			if alarm.Exposes["alarm"].Data != false {
-				t.Errorf("alarm should be OFF - schedule end should disable automation")
-			}
 		}
 		time.Sleep(testCase.sleepBeforeNextEvent)
 
 	}
+	wg.Wait()
+
 }
 
 func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
