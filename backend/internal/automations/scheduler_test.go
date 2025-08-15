@@ -4,6 +4,7 @@ import (
 	"context"
 	"node-herder/internal/automations"
 	utils_test "node-herder/testing"
+	"node-herder/utils"
 	"sync"
 	"testing"
 	"time"
@@ -21,7 +22,7 @@ func TestAddTimeSchedule(t *testing.T) {
 	end := now.Add(2000 * time.Millisecond)
 
 	schedules := utils_test.CreateTimeSchedules(start, end)
-	s := automations.NewScheduler(context.Background())
+	s := automations.NewScheduler(utils.NewRealClock(), context.Background())
 	// add start job
 	err := s.Name("Start job").At(schedules[0].StartAt).Every(time.Second * 4).Do(func() error {
 		done <- 1
@@ -68,7 +69,7 @@ func TestStopTimeSchedule(t *testing.T) {
 	end := start.Add(2000 * time.Millisecond)
 
 	schedules := utils_test.CreateTimeSchedules(start, end)
-	s := automations.NewScheduler(context.Background())
+	s := automations.NewScheduler(utils.NewRealClock(), context.Background())
 
 	// add start job
 	err := s.Name("Start job").At(schedules[0].StartAt).Every(time.Second * 1).Do(func() error {
@@ -113,7 +114,7 @@ func TestTimeScheduleContextCancellation(t *testing.T) {
 	end := start.Add(2000 * time.Millisecond)
 
 	schedules := utils_test.CreateTimeSchedules(start, end)
-	s := automations.NewScheduler(ctx)
+	s := automations.NewScheduler(utils.NewRealClock(), ctx)
 
 	// add start job
 	err := s.Name("Start job").At(schedules[0].StartAt).Every(time.Second * 1).Do(func() error {
@@ -175,7 +176,7 @@ func TestTimeScheduleCSupportFileFormats(t *testing.T) {
 		end := start.Add(2000 * time.Millisecond)
 
 		schedules := utils_test.CreateTimeSchedulesWithTimeFormat(start, end, tc.format)
-		s := automations.NewScheduler(ctx)
+		s := automations.NewScheduler(utils.NewRealClock(), ctx)
 		err := s.Name("Start job").At(schedules[0].StartAt).Every(time.Second * 1).Do(func() error {
 			t.Errorf("Start job executed")
 

@@ -62,6 +62,7 @@ type AutomationScheduler struct {
 	actionsMap     map[string]ScheduleFunc
 	schedulers     map[string]*Scheduler
 	ctx            context.Context
+	clock          utils.Clock
 }
 
 func DefaultAutomationHandlers(ctx context.Context) []AutomationHandler {
@@ -114,6 +115,11 @@ func WithContext(ctx context.Context) func(*AutomationScheduler) {
 	}
 }
 
+func WithSchedulerClock(clock utils.Clock) func(*AutomationScheduler) {
+	return func(as *AutomationScheduler) {
+		as.clock = clock
+	}
+}
 func WithRepeatDuration(duration time.Duration) func(*AutomationScheduler) {
 	return func(as *AutomationScheduler) {
 		as.repeatDuration = duration
@@ -127,7 +133,9 @@ func NewAutomationScheduler(opts ...func(as *AutomationScheduler)) AutomationHan
 		actionsMap:     make(map[string]ScheduleFunc),
 		schedulers:     map[string]*Scheduler{},
 		ctx:            context.Background(),
+		clock:          utils.NewRealClock(),
 	}
+
 	for _, opt := range opts {
 		opt(as)
 	}
@@ -191,7 +199,7 @@ func (a *AutomationScheduler) Process(automation *Device) error {
 	}
 
 	// new scheduler
-	scheduler = NewScheduler(a.ctx)
+	scheduler = NewScheduler(a.clock, a.ctx)
 
 	// disable automation and configure scheduler
 	automation.Enabled = false

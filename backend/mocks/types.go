@@ -897,6 +897,7 @@ func (s *MockAutomationDeviceQuerier) IsAutomationEnabled(id string) bool {
 type MockClock struct {
 	callback      func() time.Time
 	sleepDuration time.Duration
+	timers        []*mockTimer
 }
 
 func NewMockClock(callback func() time.Time) *MockClock {
@@ -936,6 +937,29 @@ func (m *MockClock) Now() time.Time {
 
 func (m *MockClock) Sleep(d time.Duration) {
 	time.Sleep(m.sleepDuration) // ignore the passed in duration and use the mock duration
+}
+
+func (m *MockClock) AfterFunc(d time.Duration, f func()) utils.Timer {
+	mt := &mockTimer{duration: d, f: f}
+	m.timers = append(m.timers, mt)
+	return mt
+}
+
+type mockTimer struct {
+	duration time.Duration
+	f        func()
+	fired    bool
+}
+
+func (t *mockTimer) Stop() bool {
+	t.fired = true
+	return true
+}
+
+func (t *mockTimer) Reset(d time.Duration) bool {
+	t.duration = d
+	t.fired = false
+	return true
 }
 
 // Mock RemoteLogger emitter
