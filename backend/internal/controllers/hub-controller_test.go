@@ -89,32 +89,36 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 }
 
 func TestProcessorTriggerScheduledAutomation(t *testing.T) {
-	fakeNow := time.Now().UTC()
-	clock := &mocks.MockClock{}
+
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
 
-	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
-	start := fakeNow.Add(200 * time.Millisecond)
-	end := fakeNow.Add(400 * time.Millisecond)
+	deviceAutomation := utils_test.CreateDoorContactDurationWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
+
+	clock := utils.NewRealClock()
+	now := time.Now().UTC()
+	start := now.Add(1000 * time.Millisecond)
+	end := now.Add(3000 * time.Millisecond)
+
 	deviceAutomation.Schedules = utils_test.CreateTimeSchedules(start, end)
-
 	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
-
+	// setup device
 	alarmDevice := utils_test.CreateAlarmDevice("x02222222", "alarm device", false)
 	doorSensorDevice := utils_test.CreateDoorSensorDevice("x01111111", "front door sensor", false)
+	// setup bridgeInfo List
 	devices := []*devices.Device{doorSensorDevice, alarmDevice}
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
+
+	// register hub
 	store := utils_test.CreateStore()
 
+	// overide automation handlers
 	wg := sync.WaitGroup{}
-	wg.Add(2)
 
 	automationHandlers := []automations.AutomationHandler{
 		automations.NewAutomationScheduler(
 			automations.WithContext(context.Background()),
 			automations.WithSchedulerClock(clock),
-
 			automations.WithCustomScheduleFuncs(map[string]func(*automations.Device) error{
 				"enable": func(a *automations.Device) error {
 					a.Enabled = true
@@ -129,45 +133,51 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 			})),
 	}
 
-	hub := controllers.RegisterHubController(
-		ws, store, mqtt, context.Background(),
-		controllers.WithAutomationHandlers(automationHandlers),
-	)
-	hub.WithAutomationStorage(automationStorage)
+	wg.Add(2)
 
+	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background(), controllers.WithAutomationHandlers(automationHandlers))
+
+	hub.WithAutomationStorage(automationStorage) // overide storage
+
+	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 
-	// trigger contact ON at schedule start
-	fakeNow = fakeNow.Add(250 * time.Millisecond)
-	clock.SetMockTime(fakeNow)
+	time.Sleep(100 * time.Millisecond)
 
-	mqtt.Publish(doorSensorDevice.FriendlyName, map[string]any{"contact": true})
-
-	// trigger contact OFF at schedule end
-	fakeNow = fakeNow.Add(450 * time.Millisecond)
-	clock.SetMockTime(fakeNow)
-	mqtt.Publish(doorSensorDevice.FriendlyName, map[string]any{"contact": false})
-
-	done := make(chan struct{})
-	go func() {
-		wg.Wait()
-		close(done)
-	}()
-
-	select {
-	case <-done:
-		// pass
-	case <-time.After(1 * time.Second):
-		t.Fatal("timeout waiting for enable/disable events")
+	testCases := []struct {
+		name                 string
+		value                bool
+		expectedResult       bool
+		sleepBeforeNextEvent time.Duration
+	}{
+		{"contact", true, true, 1000 * time.Millisecond},
+		{"contact", false, false, 500 * time.Millisecond},
+		{"contact", true, false, 1500 * time.Millisecond}, // this should not trigger automation chain as it should be disabled by schedule
 	}
 
-	// verify final states
-	alarm, _ := store.FindDeviceById("x02222222")
-	if alarm.Exposes["alarm"].Data != false {
-		t.Errorf("expected alarm OFF at end, got %v", alarm.Exposes["alarm"].Data)
+	for idx, testCase := range testCases {
+
+		expose := testCase.name
+		value := testCase.value
+		expectedResult := testCase.expectedResult
+
+		time.Sleep(testCase.sleepBeforeNextEvent) // sleep first to allow automation schedule to run
+
+		payload := map[string]any{expose: value}
+
+		mqtt.Publish(doorSensorDevice.FriendlyName, payload)
+		time.Sleep(50 * time.Millisecond)
+
+		// alarm should be triggered only when schedule is due
+		alarm, _ := store.FindDeviceById("x02222222")
+		if alarm.Exposes["alarm"].Data != expectedResult {
+			t.Errorf("case %d: alarm should be %v when door sensor triggers. got %v", idx, expectedResult, alarm.Exposes["alarm"].Data)
+		}
 	}
+
+	wg.Wait()
+
 }
-
 func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
