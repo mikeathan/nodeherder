@@ -40,7 +40,7 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 
 	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
 	// setup device
-	alarmDevice := utils_test.CreateAlarmDeviceWithDuration("x02222222", "alarm device", false, 0)
+	alarmDevice := utils_test.CreateAlarmDeviceWithDuration("x02222222", "alarm device", false, 1)
 	doorSensorDevice := utils_test.CreateDoorSensorDevice("x01111111", "front door sensor", false)
 
 	// setup bridgeInfo List
@@ -51,6 +51,7 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 	store := utils_test.CreateStore()
 	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
+	
 	hub.WithAutomationStorage(automationStorage)
 
 	//  publish deviceBridgeList to configure hub with devices
@@ -75,7 +76,7 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 		expectedResult := testCase.expectedResult
 		payload := map[string]any{expose: value}
 		mqtt.Publish(doorSensorDevice.FriendlyName, payload)
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 
 		alarm, _ := store.FindDeviceById("x02222222")
 		if alarm.Exposes["alarm"].Data != expectedResult {
@@ -95,7 +96,9 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	deviceAutomation := utils_test.CreateDoorContactDurationWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
-	clock := utils.NewRealClock()
+	clock := mocks.NewMockClock(func() time.Time {
+		return time.Now().UTC()
+	})
 	now := time.Now().UTC()
 	start := now.Add(1000 * time.Millisecond)
 	end := now.Add(3000 * time.Millisecond)
@@ -103,7 +106,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 	deviceAutomation.Schedules = utils_test.CreateTimeSchedules(start, end)
 	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
 	// setup device
-	alarmDevice := utils_test.CreateAlarmDevice("x02222222", "alarm device", false)
+	alarmDevice := utils_test.CreateAlarmDeviceWithDuration("x02222222", "alarm device", false, 2)
 	doorSensorDevice := utils_test.CreateDoorSensorDevice("x01111111", "front door sensor", false)
 	// setup bridgeInfo List
 	devices := []*devices.Device{doorSensorDevice, alarmDevice}
@@ -161,12 +164,12 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 		value := testCase.value
 		expectedResult := testCase.expectedResult
 
-		time.Sleep(testCase.sleepBeforeNextEvent) // sleep first to allow automation schedule to run
+		clock.Advance(testCase.sleepBeforeNextEvent)
 
 		payload := map[string]any{expose: value}
 
 		mqtt.Publish(doorSensorDevice.FriendlyName, payload)
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(20 * time.Millisecond)
 
 		// alarm should be triggered only when schedule is due
 		alarm, _ := store.FindDeviceById("x02222222")

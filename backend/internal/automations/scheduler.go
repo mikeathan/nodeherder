@@ -80,27 +80,6 @@ func (j *job) Start() error {
 		return j.Error
 	}
 
-	// j.timer = time.AfterFunc(j.StartAtDuration, func() {
-
-	// 	utils.LogInfo("Executing job ", j.Name)
-
-	// 	err := j.Action()
-	// 	if err != nil {
-	// 		utils.LogErrorf("Job %s failed: %s", j.Name, err.Error())
-	// 		j.Error = errors.Join(j.Error, err)
-	// 	}
-
-	// 	if j.RepeatEvery > 0 {
-	// 		nexStartAtDuration, err := j.getStartAtDuration()
-	// 		if err != nil {
-	// 			j.Error = errors.Join(j.Error, err)
-	// 			return
-	// 		}
-
-	// 		j.timer.Reset(nexStartAtDuration)
-	// 	}
-	// })
-
 	j.timer = j.clock.AfterFunc(j.StartAtDuration, func() {
 		utils.LogInfo("Executing job ", j.Name)
 
@@ -137,8 +116,8 @@ func (j *job) getStartAtDuration() (time.Duration, error) {
 	}
 
 	now := j.clock.Now()
-	startTime := time.Date(now.Year(), now.Month(), now.Day(), startAtTime.Hour(), startAtTime.Minute(), startAtTime.Second(), 0, time.UTC)
 
+	startTime := time.Date(now.Year(), now.Month(), now.Day(), startAtTime.Hour(), startAtTime.Minute(), startAtTime.Second(), 0, now.Location())
 	if startTime.Before(now) {
 		nextTime := now.Truncate(time.Second).Add(j.RepeatEvery)
 		nextDuration := nextTime.Sub(now)

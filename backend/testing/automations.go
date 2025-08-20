@@ -49,10 +49,10 @@ func CreateDoorContactDurationWithAlarmTriggerAutomation(doorSensorId string, al
 			Name: "alarm",
 			Data: true,
 		},
-		// {
-		// 	Name: "duration", TODO
-		// 	Data: 2,
-		// },
+		{
+			Name: "duration",
+			Data: 2,
+		},
 	}
 	alarmOnAction.Type = automations.TriggerAction
 	alarmOnAction.Client = mqtt

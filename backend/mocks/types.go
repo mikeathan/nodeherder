@@ -904,6 +904,29 @@ func NewMockClock(callback func() time.Time) *MockClock {
 	return &MockClock{callback: callback}
 }
 
+func (m *MockClock) Advance(duration time.Duration) {
+	oldNow := m.Now()
+	newNow := oldNow.Add(duration)
+
+	// update Now()
+	m.callback = func() time.Time { return newNow }
+
+	// tick timers
+	var remaining []*mockTimer
+	for _, t := range m.timers {
+		if !t.fired {
+			if t.duration <= duration {
+				t.fired = true
+				t.f() // run inline for determinism
+			} else {
+				t.duration -= duration
+				remaining = append(remaining, t)
+			}
+		}
+	}
+	m.timers = remaining
+}
+
 func (m *MockClock) SetMockTime(t time.Time) {
 	m.callback = func() time.Time {
 		return t
@@ -936,11 +959,12 @@ func (m *MockClock) Now() time.Time {
 }
 
 func (m *MockClock) Sleep(d time.Duration) {
-	time.Sleep(m.sleepDuration) // ignore the passed in duration and use the mock duration
+	//time.Sleep(m.sleepDuration) // ignore the passed in duration and use the mock duration
+	m.Advance(d)
 }
 
 func (m *MockClock) AfterFunc(d time.Duration, f func()) utils.Timer {
-	mt := &mockTimer{duration: d, f: f}
+	mt := &mockTimer{duration: d, f: f, parent: m}
 	m.timers = append(m.timers, mt)
 	return mt
 }
@@ -949,9 +973,13 @@ type mockTimer struct {
 	duration time.Duration
 	f        func()
 	fired    bool
+	parent   *MockClock
 }
 
 func (t *mockTimer) Stop() bool {
+	if t.fired {
+		return false
+	}
 	t.fired = true
 	return true
 }
@@ -959,6 +987,8 @@ func (t *mockTimer) Stop() bool {
 func (t *mockTimer) Reset(d time.Duration) bool {
 	t.duration = d
 	t.fired = false
+	// put it back into parent’s active timers
+	t.parent.timers = append(t.parent.timers, t)
 	return true
 }
 

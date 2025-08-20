@@ -48,6 +48,8 @@ func WithAutomationHandlers(handlers []automations.AutomationHandler) HubControl
 	}
 }
 
+
+
 func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context, options ...HubControllerOption) *HubController {
 	h := &HubController{
 		eventHub:                          eventHub,
