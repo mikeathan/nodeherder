@@ -17,13 +17,15 @@
     },
   });
 
-  const schedules = ref<TimeSchedule[]>({} as TimeSchedule[]);
+  const schedules = ref<TimeSchedule[]>([] as TimeSchedule[]);
 
   watch(
     () => props.schedules,
     () => {
-      // make a deep copy to make it not reactive
-      schedules.value = JSON.parse(JSON.stringify(props.schedules)) as TimeSchedule[];
+      if (props.schedules) {
+        // make a deep copy to make it not reactive
+        schedules.value = JSON.parse(JSON.stringify(props.schedules)) as TimeSchedule[];
+      }
     },
     { immediate: true }
   );

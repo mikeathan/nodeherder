@@ -1,22 +1,22 @@
 {
   "id": "0xa4c13894070052fc",
-  "friendlyname": "Human presence",
+  "friendlyname": "Living room presence sensor",
   "description": "Attic light test automation",
   "enabled": true,
   "triggers": [
     {
-      "name": "presence",
       "conditions": [
         {
+          "equality": "=",
           "type": "expose",
           "name": "presence",
-          "value": false,
-          "equality": "="
+          "value": false
         }
       ],
       "actions": [
         {
           "id": "0x00158d0005a23c38",
+          "type": "trigger",
           "exposes": [
             {
               "name": "state",
@@ -24,41 +24,42 @@
             }
           ],
           "delay": {
-            "unit": "minutes",
-            "value": 5
-          },
-          "type": "trigger"
+            "value": 5,
+            "unit": "minutes"
+          }
         }
-      ]
+      ],
+      "name": "presence"
     },
     {
-      "name": "presence",
       "conditions": [
         {
+          "equality": "=",
           "type": "expose",
           "name": "presence",
-          "value": true,
-          "equality": "="
+          "value": true
         },
         {
+          "equality": "\u003c=",
           "type": "expose",
           "name": "illuminance",
-          "value": 45,
-          "equality": "\u003c="
+          "value": 45
         }
       ],
       "actions": [
         {
           "id": "0x00158d0005a23c38",
+          "type": "trigger",
           "exposes": [
             {
               "name": "state",
               "data": "ON"
             }
-          ],
-          "type": "trigger"
+          ]
         }
-      ]
+      ],
+      "name": "presence"
     }
-  ]
+  ],
+  "schedules": null
 }

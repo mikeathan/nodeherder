@@ -23,7 +23,7 @@ export function emitOpenSchedulerPanelEvent(
 
   const openPanelEvent: OpenPanelEvent = {
     name: 'Scheduler',
-    args: { schedules: automation.schedules },
+    args: { schedules: automation.schedules  ?? []},
     events: events,
   };
 

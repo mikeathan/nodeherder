@@ -5,28 +5,36 @@
   "enabled": false,
   "triggers": [
     {
-      "name": "contact",
       "conditions": [
         {
+          "equality": "=",
           "type": "expose",
           "name": "contact",
-          "value": true,
-          "equality": "="
+          "value": false
         }
       ],
       "actions": [
         {
           "id": "0xa4c1389b273366c3",
+          "type": "trigger",
           "exposes": [
             {
               "name": "alarm",
               "data": true
+            },
+            {
+              "name": "duration",
+              "data": 2
+            },
+            {
+              "name": "volume",
+              "data": "medium"
             }
-          ],
-          "type": "trigger"
+          ]
         }
-      ]
+      ],
+      "name": "contact"
     }
   ],
-  "schedule": []
+  "schedules": null
 }
