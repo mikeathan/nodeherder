@@ -149,14 +149,11 @@ func NewScheduler(clock utils.Clock, ctx context.Context) *Scheduler {
 	}
 
 	go func() {
-		select {
-		case <-ctx.Done():
-			utils.LogError("Scheduler context cancel requested")
-			err := s.Stop()
-			if err != nil {
-				utils.LogError("Error stopping scheduler: ", err)
-			}
-			return
+		<-ctx.Done()
+		utils.LogError("Scheduler context cancel requested")
+		err := s.Stop()
+		if err != nil {
+			utils.LogError("Error stopping scheduler: ", err)
 		}
 	}()
 
