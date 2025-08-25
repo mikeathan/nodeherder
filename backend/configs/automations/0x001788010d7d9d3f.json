@@ -15,7 +15,7 @@
       ],
       "actions": [
         {
-          "id": "0x00158d0005a23c38",
+          "id": "0x001788010ba4328e",
           "type": "trigger",
           "exposes": [
             {
@@ -38,14 +38,14 @@
       ],
       "actions": [
         {
-          "id": "0x00158d0005a23c38",
+          "id": "0x001788010ba4328e",
           "type": "step",
           "property": "brightness",
           "steps": [
             {
               "property": "brightness",
               "operator": "+",
-              "id": "0x00158d0005a23c38"
+              "id": "0x001788010ba4328e"
             },
             {
               "property": "action_time",
@@ -69,14 +69,14 @@
       ],
       "actions": [
         {
-          "id": "0x00158d0005a23c38",
+          "id": "0x001788010ba4328e",
           "type": "step",
           "property": "brightness",
           "steps": [
             {
               "property": "brightness",
               "operator": "+",
-              "id": "0x00158d0005a23c38"
+              "id": "0x001788010ba4328e"
             },
             {
               "property": "action_time",
@@ -100,14 +100,14 @@
       ],
       "actions": [
         {
-          "id": "0x00158d0005a23c38",
+          "id": "0x001788010ba4328e",
           "type": "step",
           "property": "brightness",
           "steps": [
             {
               "property": "brightness",
               "operator": "-",
-              "id": "0x00158d0005a23c38"
+              "id": "0x001788010ba4328e"
             },
             {
               "property": "action_time",
@@ -131,14 +131,14 @@
       ],
       "actions": [
         {
-          "id": "0x00158d0005a23c38",
+          "id": "0x001788010ba4328e",
           "type": "step",
           "property": "brightness",
           "steps": [
             {
               "property": "brightness",
               "operator": "-",
-              "id": "0x00158d0005a23c38"
+              "id": "0x001788010ba4328e"
             },
             {
               "property": "action_time",
@@ -162,7 +162,7 @@
       ],
       "actions": [
         {
-          "id": "0x00158d0005a23c38",
+          "id": "0x001788010ba4328e",
           "type": "preset",
           "property": "color_temp"
         }

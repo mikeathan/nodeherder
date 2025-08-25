@@ -15,7 +15,7 @@
       ],
       "actions": [
         {
-          "id": "0x00158d0005a23c38",
+          "id": "0x001788010ba4328e",
           "type": "trigger",
           "exposes": [
             {
@@ -48,7 +48,7 @@
       ],
       "actions": [
         {
-          "id": "0x00158d0005a23c38",
+          "id": "0x001788010ba4328e",
           "type": "trigger",
           "exposes": [
             {
