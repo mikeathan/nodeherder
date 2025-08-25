@@ -1103,10 +1103,10 @@ func TestHandlerLoadDashboardGroupsMessage(t *testing.T) {
 	utils_test.CompareDashboardGroups(t, wantDashboardGroups, gotDashboardGroups)
 }
 
-func TestHandlerRenameDashboardGroupsMessage(t *testing.T){
+func TestHandlerRenameDashboardGroupsMessage(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
-	wg.Add(2)
+	wg.Add(1)
 
 	wsHub := ws.NewWsHub()
 	wsHub.Start()
@@ -1114,17 +1114,25 @@ func TestHandlerRenameDashboardGroupsMessage(t *testing.T){
 	wantDashboardGroups := utils_test.CreateDashboardGroups()
 	wsHub.OnRenameDashboardGroup(func(p interface{}) error {
 		req := devices.DashboardGroupRenameRequest{}
-		bytes, _ := json.Marshal(p)
+		bytes := []byte(p.(string))
 		err := json.Unmarshal(bytes, &req)
 		if err != nil {
 			return fmt.Errorf("OnRenameDashboardGroup failed. Invalid payload type : %v ", err.Error())
 		}
+
+		if req.NewName != "new_group1" {
+			t.Fatalf("Expected new name %v', got '%v'", "new_group1", req.NewName)
+		}
+		if req.OldName != "group1" {
+			t.Fatalf("Expected old name %v', got '%v'", "group1", req.OldName)
+		}
+
+		wantDashboardGroups["new_group1"] = wantDashboardGroups["group1"]
+		delete(wantDashboardGroups, "group1")
+
+		wg.Done()
 		return nil
 	})
-
-
-
-	TODO
 
 	h := api.NewWsHandler(wsHub)
 	s, wsConn := NewTestWsServer(t, h)
@@ -1132,9 +1140,15 @@ func TestHandlerRenameDashboardGroupsMessage(t *testing.T){
 	defer s.Close()
 	defer wsConn.Close()
 
-	reqBytes, _ := json.Marshal(wantDashboardGroups)
+	req := devices.DashboardGroupRenameRequest{}
+	req.OldName = "group1"
+	req.NewName = "new_group1"
+	reqBytes, err := json.Marshal(req)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
 
-	wsData := &ws.EventMessage{Type: ws.ImportDashboardGroups, Payload: reqBytes}
+	wsData := &ws.EventMessage{Type: ws.RenameDashboardGroup, Payload: reqBytes}
 	msg, err := wsData.MarshalJSON()
 	if err != nil {
 		t.Fatal(err.Error())
@@ -1152,12 +1166,20 @@ func TestHandlerRenameDashboardGroupsMessage(t *testing.T){
 		t.Fatal(err)
 	}
 
-	if event.Type != ws.DashboardGroups {
-		t.Fatalf("Expected type %v', got '%v'", ws.DashboardGroups, event.Type)
+	if event.Type != ws.OperationSuccess {
+		t.Fatalf("Expected type %v', got '%v'", ws.OperationSuccess, event.Type)
 	}
 
-}
+	if wantDashboardGroups["new_group1"] == nil {
+		t.Fatalf("Expected group %v to be present", "new_group1")
+	}
 
+	if wantDashboardGroups["group1"] != nil {
+		t.Fatalf("Expected group %v to be deleted", "group1")
+	}
+	
+	wg.Wait()
+}
 
 func TestHandlerImportDashboardGroupsMessage(t *testing.T) {
 	wg := &sync.WaitGroup{}

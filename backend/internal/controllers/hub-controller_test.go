@@ -51,7 +51,6 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 	store := utils_test.CreateStore()
 	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
 
-	
 	hub.WithAutomationStorage(automationStorage)
 
 	//  publish deviceBridgeList to configure hub with devices
@@ -1156,6 +1155,93 @@ func TestSaveDashboardGroupIsValidated(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestRenameDashboardGroup(t *testing.T) {
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	// we dont need tasks here just using it as it using valid settings repo
+	bridgeInfoFile := filepath.Join("../../../docs", "device_bridge.json")
+	data, err := os.ReadFile(bridgeInfoFile)
+	if err != nil {
+		t.Fatal("Error reading file:", err)
+		return
+	}
+	bridgeInfoes, err := devices.LoadBridgeDevices(data)
+	if err != nil {
+		t.Fatal("Error parsing bridge info data:", err)
+		return
+	}
+
+	store, cleanup, err := utils_test.CreateFileStore()
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+
+	cfg := store.AppConfig()
+	newGroup := settings.NewDashboardGroup("living room group")
+	newGroup.AddDeviceExpose("0x00158d0005a23c38", "brightness")
+	newGroup.AddDeviceExpose("0x001788010d7d9d3f", "action")
+	newGroup.AddDeviceExpose("0xa4c13894070052fc", "presence")
+	newGroup.AddDeviceExpose("0xa4c13894070052fc", "illuminance")
+
+	cfg.SaveDashboardGroup(newGroup)
+	mqtt := &mocks.MockMqttClient{}
+
+	eventHub := mocks.NewMockEventHub()
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(bridgeInfoes)
+
+	// for now replicate the hub-controller logic handling this until we can mock the event hub
+	broadcastHandler := func(eventName string, data interface{}) error {
+
+		if eventName != ws.RenameDashboardGroup {
+			t.Fatalf("invalid event name want %v got %v", ws.RenameDashboardGroup, eventName)
+			return fmt.Errorf("invalid event name %v", eventName)
+		}
+
+		req := &devices.DashboardGroupRenameRequest{}
+		bytes, _ := json.Marshal(data)
+		err := json.Unmarshal(bytes, &req)
+		if err != nil {
+			return fmt.Errorf("OnRenameDashboardGroup failed. Invalid payload type : %v ", err.Error())
+		}
+
+		err = cfg.RenameDashboardGroup(req.OldName, req.NewName)
+		if err != nil {
+			t.Fatalf("OnRenameDashboardGroup failed. %v ", err.Error())
+			return fmt.Errorf("OnRenameDashboardGroup failed. %v ", err.Error())
+		}
+
+		wg.Done()
+		return nil
+	}
+	eventHub.SetMockBroadcastEvent(broadcastHandler)
+	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+
+	req := &devices.DashboardGroupRenameRequest{}
+	req.OldName = "living room group"
+	req.NewName = "new living room group"
+
+	eventHub.Broadcast(ws.RenameDashboardGroup, req)
+	wg.Wait()
+
+	c, _ := cfg.LoadAppConfig()
+
+	if len(c.Hub.DashboardGroups) != 1 {
+		t.Fatalf("want %v got %v", 1, len(c.Hub.DashboardGroups))
+	}
+
+	for _, group := range c.Hub.DashboardGroups {
+		if group.Name != "new living room group" {
+			t.Fatalf("want %v got %v", "new living room group", group.Name)
+		}
+
+	}
+
 }
 
 func TestDeleteDashboardGroupRemovesGroup(t *testing.T) {

@@ -305,6 +305,7 @@ func (s *AppConfigCache) RenameDashboardGroup(oldName string, newName string) er
 
 	return nil
 }
+
 func (s *AppConfigCache) SaveDashboardGroup(exposeGroup *DashboardGroup) error {
 	config, err := s.LoadAppConfig()
 	if err != nil {
