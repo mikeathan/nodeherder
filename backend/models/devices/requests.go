@@ -1,5 +1,10 @@
 package devices
 
+type DashboardGroupRenameRequest struct {
+	OldName string `json:"oldName"`
+	NewName string `json:"newName"`
+}
+
 type DeviceRemoveRequest struct {
 	ID    string `json:"id"`
 	Force bool   `json:"force,omitempty"`

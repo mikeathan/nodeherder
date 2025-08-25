@@ -12,7 +12,6 @@ const (
 
 	// requests
 	LoadAutomations = "loadAutomations"
-	//LoadHubState    = "loadHubState"
 	LoadDevice     = "loadDevice"
 	LoadDeviceList = "loadDeviceList"
 
@@ -31,6 +30,7 @@ const (
 	DeleteDeviceConfigOverride = "deleteDeviceConfigOverride"
 	SaveDeviceConfigDefaults   = "saveDeviceConfigDefaults"
 	SaveDashboardGroup         = "saveDashboardGroup"
+	RenameDashboardGroup       = "renameDashboardGroup"
 	DeleteDashboardGroup       = "deleteDashboardGroup"
 	ImportDashboardGroups      = "importDashboardGroups"
 	LoadDashboardGroups        = "loadDashboardGroups"
@@ -47,7 +47,6 @@ const (
 	OperationFailed   = "operationFailed"
 	OperationSuccess  = "operationSuccess"
 	AutomationUpdated = "automationUpdated" // returns back upated automation
-	//HubState          = "hubState"
 
 	Metrics         = "metrics"
 	AppConfig       = "appConfig"
@@ -76,7 +75,6 @@ type EventHub interface {
 	OnDeleteAutomationTrigger(func(payload interface{}) (interface{}, error))
 	OnLoadMetrics(action func(interface{}) (interface{}, error))
 	OnLoadAppConfig(action func() (interface{}, error))
-	//OnLoadHubState(action func() (interface{}, error))
 	OnLoadBridgeConfig(action func() (interface{}, error))
 	OnSaveDeviceConfigOverride(func(payload interface{}) error)
 	OnDeleteDeviceConfigOverride(func(payload interface{}) error)
@@ -84,6 +82,7 @@ type EventHub interface {
 	OnSaveHistoryConfig(func(payload interface{}) error)
 	OnSaveLoggerConfig(func(payload interface{}) error)
 	OnSaveDashboardGroup(action func(payload interface{}) error)
+	OnRenameDashboardGroup(action func(payload interface{}) error)
 	OnImportDashboardGroups(action func(payload interface{}) error)
 	OnLoadDashboardGroups(action func() (interface{}, error))
 	OnDeleteDashboardGroup(action func(payload interface{}) error)
@@ -114,10 +113,10 @@ type eventHubImpl struct {
 	onSaveHistoryConfig          func(interface{}) error
 	onSaveLoggerConfig           func(interface{}) error
 	onSaveDashboardGroup         func(interface{}) error
+	onRenameDashboardGroup       func(interface{}) error
 	onDeleteDashboardGroup       func(payload interface{}) error
 	onImportDashboardGroups      func(payload interface{}) error
 	onLoadDashboardGroups        func() (interface{}, error)
-	//onLoadHubState                func() (interface{}, error)
 	requestContext hub.Context
 }
 
@@ -146,9 +145,9 @@ func NewWsHub() EventHub {
 		onSaveLoggerConfig:           func(payload interface{}) error { return nil },
 		onSaveDashboardGroup:         func(payload interface{}) error { return nil },
 		onDeleteDashboardGroup:       func(payload interface{}) error { return nil },
+		onRenameDashboardGroup:       func(payload interface{}) error { return nil },
 		onImportDashboardGroups:      func(payload interface{}) error { return nil },
 		onLoadDashboardGroups:        func() (interface{}, error) { return nil, nil },
-		//onLoadHubState:                func() (interface{}, error) { return nil, nil },
 		requestContext: NewRequestContext(),
 	}
 }
@@ -245,6 +244,10 @@ func (h *eventHubImpl) OnSaveDashboardGroup(action func(payload interface{}) err
 	h.onSaveDashboardGroup = action
 }
 
+func (h *eventHubImpl) OnRenameDashboardGroup(action func(payload interface{}) error) {
+	h.onRenameDashboardGroup = action
+}
+
 func (h *eventHubImpl) OnDeleteDashboardGroup(action func(payload interface{}) error) {
 	h.onDeleteDashboardGroup = action
 }
@@ -313,9 +316,6 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 			utils.LogErrorf("Failed to broadcast onLoadAutomations %s", err.Error())
 		}
 
-	// case LoadHubState:
-	// 	c.executeActionWithEvent(c.onLoadHubState, HubState)
-
 	case LoadMetrics:
 		c.executePayloadActionWithSuccessfullyEvent(eventMsg.Payload, c.onLoadMetrics, Metrics)
 
@@ -363,6 +363,8 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 
 	case SaveDashboardGroup:
 		c.executeAction(eventMsg.Payload, c.onSaveDashboardGroup, true)
+	case RenameDashboardGroup:
+		c.executeAction(eventMsg.Payload, c.onRenameDashboardGroup, true)
 
 	case DeleteDashboardGroup:
 		c.executeAction(eventMsg.Payload, c.onDeleteDashboardGroup, true)

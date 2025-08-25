@@ -1103,6 +1103,62 @@ func TestHandlerLoadDashboardGroupsMessage(t *testing.T) {
 	utils_test.CompareDashboardGroups(t, wantDashboardGroups, gotDashboardGroups)
 }
 
+func TestHandlerRenameDashboardGroupsMessage(t *testing.T){
+
+	wg := &sync.WaitGroup{}
+	wg.Add(2)
+
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
+	wantDashboardGroups := utils_test.CreateDashboardGroups()
+	wsHub.OnRenameDashboardGroup(func(p interface{}) error {
+		req := devices.DashboardGroupRenameRequest{}
+		bytes, _ := json.Marshal(p)
+		err := json.Unmarshal(bytes, &req)
+		if err != nil {
+			return fmt.Errorf("OnRenameDashboardGroup failed. Invalid payload type : %v ", err.Error())
+		}
+		return nil
+	})
+
+
+
+	TODO
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	defer s.Close()
+	defer wsConn.Close()
+
+	reqBytes, _ := json.Marshal(wantDashboardGroups)
+
+	wsData := &ws.EventMessage{Type: ws.ImportDashboardGroups, Payload: reqBytes}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.DashboardGroups {
+		t.Fatalf("Expected type %v', got '%v'", ws.DashboardGroups, event.Type)
+	}
+
+}
+
+
 func TestHandlerImportDashboardGroupsMessage(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
