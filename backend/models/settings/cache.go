@@ -283,15 +283,15 @@ func (s *AppConfigCache) SaveHistoryConfig(historyConfig *HistoryConfig) (*AppCo
 	return config, nil
 }
 
-func (s *AppConfigCache) RenameDashboardGroup(oldName string, newName string) error {
+func (s *AppConfigCache) RenameDashboardGroup(oldName string, newName string) (*DashboardGroup, error) {
 	config, err := s.LoadAppConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	group, ok := config.Hub.DashboardGroups[oldName]
 	if !ok {
-		return fmt.Errorf("dashboard group %q not found", oldName)
+		return nil, fmt.Errorf("dashboard group %q not found", oldName)
 	}
 
 	delete(config.Hub.DashboardGroups, oldName)
@@ -300,10 +300,10 @@ func (s *AppConfigCache) RenameDashboardGroup(oldName string, newName string) er
 
 	err = s.store.SaveAppConfig(config)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return group, nil
 }
 
 func (s *AppConfigCache) SaveDashboardGroup(exposeGroup *DashboardGroup) error {

@@ -113,12 +113,13 @@
       alert('newName already exists');
       return;
     }
+    
     const group = dashboardGroups.value[groupName];
     delete dashboardGroups.value[groupName];
 
     group.name = newName;
     dashboardGroups.value[newName] = group;
-    store.dispatch('hub/saveDashboardGroup', dashboardGroups.value[newName] as DashboardGroup);
+    store.dispatch('hub/renameDashboardGroup', { oldName: groupName, newName: newName });
   }
 
   function deleteDeviceExpose(groupName: string, deviceId: string, exposeName: string) {

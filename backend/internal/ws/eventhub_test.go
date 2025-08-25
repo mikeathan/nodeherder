@@ -1112,12 +1112,12 @@ func TestHandlerRenameDashboardGroupsMessage(t *testing.T) {
 	wsHub.Start()
 
 	wantDashboardGroups := utils_test.CreateDashboardGroups()
-	wsHub.OnRenameDashboardGroup(func(p interface{}) error {
+	wsHub.OnRenameDashboardGroup(func(p interface{}) (interface{}, error) {
 		req := devices.DashboardGroupRenameRequest{}
 		bytes := []byte(p.(string))
 		err := json.Unmarshal(bytes, &req)
 		if err != nil {
-			return fmt.Errorf("OnRenameDashboardGroup failed. Invalid payload type : %v ", err.Error())
+			return nil, fmt.Errorf("OnRenameDashboardGroup failed. Invalid payload type : %v ", err.Error())
 		}
 
 		if req.NewName != "new_group1" {
@@ -1131,7 +1131,7 @@ func TestHandlerRenameDashboardGroupsMessage(t *testing.T) {
 		delete(wantDashboardGroups, "group1")
 
 		wg.Done()
-		return nil
+		return wantDashboardGroups["new_group1"],nil
 	})
 
 	h := api.NewWsHandler(wsHub)

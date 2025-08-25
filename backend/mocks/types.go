@@ -175,7 +175,7 @@ func (h *MockEventHub) OnSaveDashboardGroup(action func(payload interface{}) err
 	fmt.Println("MockEventHub OnSaveDashboardGroup")
 }
 
-func (h *MockEventHub) OnRenameDashboardGroup(action func(payload interface{}) error) {
+func (h *MockEventHub) OnRenameDashboardGroup(action func(payload interface{}) (interface{}, error)) {
 	fmt.Println("MockEventHub OnRenameDashboardGroup")
 }
 
@@ -399,12 +399,12 @@ func (h *NopWsServer) OnSaveDashboardGroup(action func(payload interface{}) erro
 	fmt.Println("WsServer OnSaveDashboardGroup")
 }
 
-func (h *NopWsServer) OnRenameDashboardGroup(action func(payload interface{}) error) {
+func (h *NopWsServer) OnRenameDashboardGroup(action func(payload interface{}) (interface{}, error)) {
 	fmt.Println("WsServer OnRenameDashboardGroup")
 }
 
 func (h *NopWsServer) OnDeleteDashboardGroup(action func(payload interface{}) error) {
-	fmt.Println("WsServer OnDeleteExpoOnDeleteDashboardGroupseGroup")
+	fmt.Println("WsServer OnDeleteDashboardGroup")
 }
 
 func (h *NopWsServer) OnImportDashboardGroups(action func(payload interface{}) error) {

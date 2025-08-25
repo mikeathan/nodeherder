@@ -198,6 +198,18 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       );
     },
 
+    renameDashboardGroup({ commit, dispatch }, { oldName, newName }: { oldName: string; newName: string }) {
+      commit('renameDashboardGroup', { oldName, newName });
+      dispatch(
+        'ws/emit',
+        {
+          event: 'renameDashboardGroup',
+          message: { oldName, newName },
+        },
+        { root: true }
+      );
+    },
+
     saveDashboardGroup({ commit, dispatch }, dashboardGroup: DashboardGroup) {
       commit('setDashboardGroup', dashboardGroup);
       dispatch(
@@ -220,6 +232,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         { root: true }
       );
     },
+    
     deleteDashboardGroup({ commit, dispatch }, name: string) {
       commit('removeDashboardGroup', name);
 

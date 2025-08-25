@@ -1210,15 +1210,27 @@ func TestRenameDashboardGroup(t *testing.T) {
 			return fmt.Errorf("OnRenameDashboardGroup failed. Invalid payload type : %v ", err.Error())
 		}
 
-		err = cfg.RenameDashboardGroup(req.OldName, req.NewName)
+		dashgroup, err := cfg.RenameDashboardGroup(req.OldName, req.NewName)
 		if err != nil {
 			t.Fatalf("OnRenameDashboardGroup failed. %v ", err.Error())
 			return fmt.Errorf("OnRenameDashboardGroup failed. %v ", err.Error())
 		}
 
+		if dashgroup.Name != req.NewName {
+			t.Fatalf("OnRenameDashboardGroup failed. name mismatch want %v got %v ", req.NewName, dashgroup.Name)
+		}
+
+		for id, expose := range dashgroup.DeviceGroup {
+
+			if newGroup.DeviceGroup[id].DeviceId != expose.DeviceId {
+				t.Fatalf("want %v got %v", expose.DeviceId, newGroup.DeviceGroup[id].DeviceId)
+			}
+		}
+
 		wg.Done()
 		return nil
 	}
+	
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
 	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
 

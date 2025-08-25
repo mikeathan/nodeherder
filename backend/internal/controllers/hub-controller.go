@@ -185,13 +185,13 @@ func (h *HubController) registerEventHubEvents() {
 		return appconfig.SaveDashboardGroup(req)
 	})
 
-	h.eventHub.OnRenameDashboardGroup(func(p interface{}) error {
+	h.eventHub.OnRenameDashboardGroup(func(p interface{}) (interface{}, error) {
 
 		req := devices.DashboardGroupRenameRequest{}
 		bytes, _ := json.Marshal(p)
 		err := json.Unmarshal(bytes, &req)
 		if err != nil {
-			return fmt.Errorf("OnRenameDashboardGroup failed. Invalid payload type : %v ", err.Error())
+			return nil, fmt.Errorf("OnRenameDashboardGroup failed. Invalid payload type : %v ", err.Error())
 		}
 
 		return appconfig.RenameDashboardGroup(req.OldName, req.NewName)

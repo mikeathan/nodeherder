@@ -52,6 +52,8 @@ const (
 	AppConfig       = "appConfig"
 	BridgeConfig    = "bridgeConfig"
 	DashboardGroups = "dashboardGroups"
+
+	need to return back the renamed dashgboard group 
 )
 
 type EventHub interface {
@@ -82,7 +84,7 @@ type EventHub interface {
 	OnSaveHistoryConfig(func(payload interface{}) error)
 	OnSaveLoggerConfig(func(payload interface{}) error)
 	OnSaveDashboardGroup(action func(payload interface{}) error)
-	OnRenameDashboardGroup(action func(payload interface{}) error)
+	OnRenameDashboardGroup(action func(payload interface{}) (interface{},error))
 	OnImportDashboardGroups(action func(payload interface{}) error)
 	OnLoadDashboardGroups(action func() (interface{}, error))
 	OnDeleteDashboardGroup(action func(payload interface{}) error)
@@ -113,7 +115,7 @@ type eventHubImpl struct {
 	onSaveHistoryConfig          func(interface{}) error
 	onSaveLoggerConfig           func(interface{}) error
 	onSaveDashboardGroup         func(interface{}) error
-	onRenameDashboardGroup       func(interface{}) error
+	onRenameDashboardGroup       func(interface{}) (interface{}, error)
 	onDeleteDashboardGroup       func(payload interface{}) error
 	onImportDashboardGroups      func(payload interface{}) error
 	onLoadDashboardGroups        func() (interface{}, error)
@@ -145,7 +147,7 @@ func NewWsHub() EventHub {
 		onSaveLoggerConfig:           func(payload interface{}) error { return nil },
 		onSaveDashboardGroup:         func(payload interface{}) error { return nil },
 		onDeleteDashboardGroup:       func(payload interface{}) error { return nil },
-		onRenameDashboardGroup:       func(payload interface{}) error { return nil },
+		onRenameDashboardGroup:       func(payload interface{}) (interface{}, error) { return nil, nil },
 		onImportDashboardGroups:      func(payload interface{}) error { return nil },
 		onLoadDashboardGroups:        func() (interface{}, error) { return nil, nil },
 		requestContext: NewRequestContext(),
@@ -244,7 +246,7 @@ func (h *eventHubImpl) OnSaveDashboardGroup(action func(payload interface{}) err
 	h.onSaveDashboardGroup = action
 }
 
-func (h *eventHubImpl) OnRenameDashboardGroup(action func(payload interface{}) error) {
+func (h *eventHubImpl) OnRenameDashboardGroup(action func(payload interface{}) (interface{}, error)) {
 	h.onRenameDashboardGroup = action
 }
 
@@ -364,7 +366,7 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 	case SaveDashboardGroup:
 		c.executeAction(eventMsg.Payload, c.onSaveDashboardGroup, true)
 	case RenameDashboardGroup:
-		c.executeAction(eventMsg.Payload, c.onRenameDashboardGroup, true)
+		c.executePayloadActionWithEvent(eventMsg.Payload, c.onRenameDashboardGroup, OperationSuccess)
 
 	case DeleteDashboardGroup:
 		c.executeAction(eventMsg.Payload, c.onDeleteDashboardGroup, true)
