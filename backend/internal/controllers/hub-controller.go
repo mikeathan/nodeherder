@@ -48,8 +48,6 @@ func WithAutomationHandlers(handlers []automations.AutomationHandler) HubControl
 	}
 }
 
-
-
 func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context, options ...HubControllerOption) *HubController {
 	h := &HubController{
 		eventHub:                          eventHub,
@@ -179,7 +177,8 @@ func (h *HubController) registerEventHubEvents() {
 		for id := range req.DeviceGroup {
 			_, err := h.registrar.LookupById(id)
 			if err != nil {
-				return fmt.Errorf("OnSaveDashboardGroup failed. Invalid expose id : %v ", err.Error())
+				utils.LogErrorf("OnSaveDashboardGroup. Deleting invalid expose id : %v ", err.Error())
+				delete(req.DeviceGroup, id)
 			}
 		}
 
