@@ -113,7 +113,8 @@
       alert('newName already exists');
       return;
     }
-    
+
+    // TODO: this is wrong, this should be done in the ws event response in case the request is not successful
     const group = dashboardGroups.value[groupName];
     delete dashboardGroups.value[groupName];
 
@@ -127,6 +128,8 @@
       alert('groupName or deviceId or exposeName is empty');
       return;
     }
+
+    // TODO: this is wrong, this should be done in the ws event response in case the request is not successful
     const deviceGroupExposes = dashboardGroups.value[groupName].deviceGroup[deviceId].exposes;
     const idx = deviceGroupExposes.indexOf(exposeName);
     if (idx === -1) {
@@ -143,6 +146,7 @@
       return;
     }
 
+    // TODO: this is wrong, this should be done in the ws event response in case the request is not successful
     delete dashboardGroups.value[groupName];
     store.dispatch('hub/deleteDashboardGroup', groupName);
   }
@@ -191,9 +195,25 @@
   <div>
     <Button icon="pi pi-cog" severity="secondary" size="small" @click="toggleEditMode" />
     <template v-if="isEditMode">
-      <Button icon="pi pi-plus" severity="secondary" size="small" @click="openNewDashboardGroupDialog" label="New Group"/>
-      <Button icon="pi pi-download" severity="secondary" size="small" @click="exportDashboardGroups" :disabled="!allowExport()" label="Export"/>
-      <Button icon="pi pi-upload" severity="secondary" size="small" @click="openImportDashboardGroupsConfirmationDialog()" label="Import"/>
+      <Button
+        icon="pi pi-plus"
+        severity="secondary"
+        size="small"
+        @click="openNewDashboardGroupDialog"
+        label="New Group" />
+      <Button
+        icon="pi pi-download"
+        severity="secondary"
+        size="small"
+        @click="exportDashboardGroups"
+        :disabled="!allowExport()"
+        label="Export" />
+      <Button
+        icon="pi pi-upload"
+        severity="secondary"
+        size="small"
+        @click="openImportDashboardGroupsConfirmationDialog()"
+        label="Import" />
     </template>
   </div>
 

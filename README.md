@@ -26,7 +26,8 @@ TODO:
 - Test new logic in RegisterBridge
 - backup automations
 - device lifetime optimization : check if automations or metrics is enabled for device before sending event
-- device disabled not working !!!!
+- device disabled not working - DONE
+- refactor executePayloadActionWithEvent and similar calls
 
 ## Features
 
@@ -37,6 +38,8 @@ TODO:
 - add type in device.expose for http data ?
 - add functionality to enable/disable a trigger
 - add log window in frontend
+- update frontend store in the dashboard groups in the ws response for rename,delete etc. in case the request is not successful
+- Same for other ws requests
 
 BUGS:
 
