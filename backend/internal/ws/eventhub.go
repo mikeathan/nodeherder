@@ -54,6 +54,8 @@ const (
 	DashboardGroups = "dashboardGroups"
 )
 
+
+
 type EventHub interface {
 	Broadcast(eventName string, data interface{}) error
 	Start()
@@ -88,6 +90,17 @@ type EventHub interface {
 	OnDeleteDashboardGroup(action func(payload interface{}) error)
 	HandleRequest(w http.ResponseWriter, r *http.Request) error
 	Context() hub.Context
+}
+
+type eventAction func(payload interface{}) (interface{}, error)
+
+type eventExecutorOptions struct {
+	Payload         interface{}
+	Action          eventAction
+	SuccessEvent    string
+	ReportResult    bool
+	FailEvent       string
+	TransformResult func(interface{}) interface{}
 }
 
 type eventHubImpl struct {
@@ -404,6 +417,81 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 
 		utils.LogWarnf("Unknown event type: %s", eventMsg.Type)
 		return
+	}
+}
+
+
+// action func() (interface{}, error) - no payload
+// action func(interface{}) (interface{}, error) - payload
+// action func(interface{}) (interface{}, error) - payload
+// action func(interface{}) error - payload
+
+TODO:
+
+func adaptNoPayload(action func() (interface{}, error)) eventAction {
+	return func(_ interface{}) (interface{}, error) {
+		return action()
+	}
+}
+
+func adaptPayloadWithResult(action func(interface{}) (interface{}, error)) eventAction {
+	return eventAction(action)
+}
+
+// 3. Payload, no result (just error)
+func adaptPayloadNoResult(action func(interface{}) error) eventAction {
+	return func(payload interface{}) (interface{}, error) {
+		return nil, action(payload)
+	}
+}
+
+TODO
+func (c *eventHubImpl) execute(opts *ExecutorOptions) {
+
+if action == nil {
+		return
+	}
+
+	result, err := action(payload)
+	if err != nil {
+		if failEvent == "" {
+			failEvent = OperationFailed
+		}
+		c.Broadcast(failEvent, err.Error())
+		return
+	}
+}
+TODO
+
+func (c *eventHubImpl) execute(
+	action genericAction,
+	payload interface{},
+	successEvent string,
+	reportResult bool,
+	failEvent string,
+	transform func(interface{}) interface{},
+) {
+	if action == nil {
+		return
+	}
+
+	result, err := action(payload)
+	if err != nil {
+		if failEvent == "" {
+			failEvent = OperationFailed
+		}
+		c.Broadcast(failEvent, err.Error())
+		return
+	}
+
+	if successEvent != "" {
+		if transform != nil {
+			result = transform(result)
+		}
+		if !reportResult {
+			result = nil
+		}
+		c.Broadcast(successEvent, result)
 	}
 }
 
