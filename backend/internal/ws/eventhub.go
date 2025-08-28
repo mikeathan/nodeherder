@@ -54,8 +54,6 @@ const (
 	DashboardGroups = "dashboardGroups"
 )
 
-
-
 type EventHub interface {
 	Broadcast(eventName string, data interface{}) error
 	Start()
@@ -93,15 +91,6 @@ type EventHub interface {
 }
 
 type eventAction func(payload interface{}) (interface{}, error)
-
-type eventExecutorOptions struct {
-	Payload         interface{}
-	Action          eventAction
-	SuccessEvent    string
-	ReportResult    bool
-	FailEvent       string
-	TransformResult func(interface{}) interface{}
-}
 
 type eventHubImpl struct {
 	server                       WebSocket
@@ -420,13 +409,18 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 	}
 }
 
-
 // action func() (interface{}, error) - no payload
 // action func(interface{}) (interface{}, error) - payload
 // action func(interface{}) (interface{}, error) - payload
 // action func(interface{}) error - payload
 
-TODO:
+type eventExecutorOptions struct {
+	Payload      interface{}
+	Action       eventAction
+	SuccessEvent string
+	ReportResult bool
+	ReportError  bool
+}
 
 func adaptNoPayload(action func() (interface{}, error)) eventAction {
 	return func(_ interface{}) (interface{}, error) {
@@ -438,62 +432,82 @@ func adaptPayloadWithResult(action func(interface{}) (interface{}, error)) event
 	return eventAction(action)
 }
 
-// 3. Payload, no result (just error)
 func adaptPayloadNoResult(action func(interface{}) error) eventAction {
 	return func(payload interface{}) (interface{}, error) {
 		return nil, action(payload)
 	}
 }
 
-TODO
-func (c *eventHubImpl) execute(opts *ExecutorOptions) {
+func (c *eventHubImpl) execute(opts *eventExecutorOptions) {
 
-if action == nil {
+	if opts.Action == nil {
 		return
 	}
 
-	result, err := action(payload)
+
+	if we expect payload and is empty the
+	// if payload == nil {
+	// 	c.Broadcast(OperationFailed, "payload is empty")
+	// 	return
+	// }
+
+	result, err := opts.Action(opts.Payload)
 	if err != nil {
-		if failEvent == "" {
-			failEvent = OperationFailed
+		if opts.ReportError {
+			err = c.Broadcast(OperationFailed, err.Error())
+			if err != nil {
+				utils.LogErrorf("Failed to broadcast OperationFailed %s", err.Error())
+			}
 		}
-		c.Broadcast(failEvent, err.Error())
 		return
+	}
+
+	var reportResult any = nil
+	if opts.ReportResult {
+		reportResult = result
+	}
+	
+	var successEvent = opts.SuccessEvent
+	if successEvent == "" {
+		successEvent = OperationSuccess
+	}
+	err = c.Broadcast(successEvent, reportResult)
+	if err != nil {
+		utils.LogErrorf("Failed to broadcast successEvent %s. Error: %s", successEvent, err.Error())
 	}
 }
-TODO
 
-func (c *eventHubImpl) execute(
-	action genericAction,
-	payload interface{},
-	successEvent string,
-	reportResult bool,
-	failEvent string,
-	transform func(interface{}) interface{},
-) {
-	if action == nil {
-		return
-	}
+// func (c *eventHubImpl) execute(
+// 	action genericAction,
+// 	payload interface{},
+// 	successEvent string,
+// 	reportResult bool,
+// 	failEvent string,
+// 	transform func(interface{}) interface{},
+// ) {
+// 	if action == nil {
+// 		return
+// 	}
 
-	result, err := action(payload)
-	if err != nil {
-		if failEvent == "" {
-			failEvent = OperationFailed
-		}
-		c.Broadcast(failEvent, err.Error())
-		return
-	}
+// 	result, err := action(payload)
+// 	if err != nil {
+// 		if failEvent == "" {
+// 			failEvent = OperationFailed
+// 		}
+// 		c.Broadcast(failEvent, err.Error())
+// 		return
+// 	}
 
-	if successEvent != "" {
-		if transform != nil {
-			result = transform(result)
-		}
-		if !reportResult {
-			result = nil
-		}
-		c.Broadcast(successEvent, result)
-	}
-}
+// 	if successEvent != "" {
+// 		if transform != nil {
+// 			result = transform(result)
+// 		}
+// 		if !reportResult {
+// 			result = nil
+// 		}
+// 		c.Broadcast(successEvent, result)
+// 	}
+// }
 
 // TODO: needs refactoring
 func (c *eventHubImpl) executeActionWithEvent(action func() (interface{}, error), successEvent string) {
