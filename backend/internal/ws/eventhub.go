@@ -90,8 +90,6 @@ type EventHub interface {
 	Context() hub.Context
 }
 
-type eventAction func(payload interface{}) (interface{}, error)
-
 type eventHubImpl struct {
 	server                       WebSocket
 	onLoadAutomations            func() interface{}
@@ -319,201 +317,59 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 		}
 
 	case LoadMetrics:
-		c.execute(&eventExecutorOptions{
-			Payload:       eventMsg.Payload,
-			Action:        adaptPayloadWithResult(c.onLoadMetrics),
-			SuccessEvent:  Metrics,
-			ReportResult:  true,
-			ReportSuccess: true,
-			ReportError:   false,
-		})
-		//c.executePayloadActionWithSuccessfullyEvent(eventMsg.Payload, c.onLoadMetrics, Metrics)
+		// TODO: dont report error here. needs refactoring
+		c.execute(eventExecutorOptionsWithResult(eventMsg.Payload, wrapPayloadWithResult(c.onLoadMetrics), Metrics))
 
 	case LoadAppconfig:
-		c.execute(&eventExecutorOptions{
-			Action:        wrapNoPayload(c.onLoadAppConfig),
-			SuccessEvent:  AppConfig,
-			ReportSuccess: true,
-			ReportError:   true,
-		})
-
-		//c.executeActionWithEvent(c.onLoadAppConfig, AppConfig)
+		c.execute(eventExecutorOptionsWithResult(nil, wrapNoPayload(c.onLoadAppConfig), AppConfig))
 
 	case SaveDeviceConfigOverride:
-		c.execute(&eventExecutorOptions{
-			Payload:       eventMsg.Payload,
-			Action:        adaptPayloadNoResult(c.onSaveDeviceConfigOverride),
-			SuccessEvent:  OperationSuccess,
-			ReportSuccess: true,
-			ReportResult:  false,
-			ReportError:   true,
-		})
-		//c.executeAction(eventMsg.Payload, c.onSaveDeviceConfigOverride, true)
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onSaveDeviceConfigOverride)))
 
 	case DeleteDeviceConfigOverride:
-		c.execute(&eventExecutorOptions{
-			Payload:       eventMsg.Payload,
-			Action:        adaptPayloadNoResult(c.onDeleteDeviceConfigOverride),
-			SuccessEvent:  OperationSuccess,
-			ReportSuccess: true,
-			ReportResult:  false,
-			ReportError:   true,
-		})
-		//c.executeAction(eventMsg.Payload, c.onDeleteDeviceConfigOverride, true)
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onDeleteDeviceConfigOverride)))
 
 	case SaveDeviceConfigDefaults:
-		c.execute(&eventExecutorOptions{
-			Payload:       eventMsg.Payload,
-			Action:        adaptPayloadNoResult(c.onSaveDeviceConfigDefaults),
-			SuccessEvent:  OperationSuccess,
-			ReportSuccess: true,
-			ReportResult:  false,
-			ReportError:   true,
-		})
-		//c.executeAction(eventMsg.Payload, c.onSaveDeviceConfigDefaults, true)
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onSaveDeviceConfigDefaults)))
 
 	case SaveHistoryConfig:
-		c.execute(&eventExecutorOptions{
-			Payload:       eventMsg.Payload,
-			Action:        adaptPayloadNoResult(c.onSaveHistoryConfig),
-			SuccessEvent:  OperationSuccess,
-			ReportSuccess: true,
-			ReportResult:  false,
-			ReportError:   true,
-		})
-		//c.executeAction(eventMsg.Payload, c.onSaveHistoryConfig, true)
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onSaveHistoryConfig)))
 
 	case SaveAutomation:
-		c.execute(&eventExecutorOptions{
-			Payload:       eventMsg.Payload,
-			Action:        adaptPayloadNoResult(c.onSaveAutomation),
-			SuccessEvent:  OperationSuccess,
-			ReportSuccess: true,
-			ReportResult:  false,
-			ReportError:   true,
-		})
-		//c.executeAction(eventMsg.Payload, c.onSaveAutomation, true)
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onSaveAutomation)))
 
 	case DeleteAutomation:
-
-		c.execute(&eventExecutorOptions{
-			Payload:       eventMsg.Payload,
-			Action:        adaptPayloadWithResult(c.onDeleteAutomation),
-			SuccessEvent:  Automations,
-			ReportResult:  true,
-			ReportSuccess: true,
-			ReportError:   true,
-		})
-		//c.executePayloadActionWithEvent(eventMsg.Payload, c.onDeleteAutomation, Automations, true)
+		c.execute(eventExecutorOptionsWithResult(eventMsg.Payload, wrapPayloadWithResult(c.onDeleteAutomation), Automations))
 
 	case DeleteAutomationTrigger:
-		c.execute(&eventExecutorOptions{
-			Payload:       eventMsg.Payload,
-			Action:        adaptPayloadWithResult(c.onDeleteAutomationTrigger),
-			SuccessEvent:  AutomationUpdated,
-			ReportResult:  true,
-			ReportSuccess: true,
-			ReportError:   true,
-		})
-		//c.executePayloadActionWithEvent(eventMsg.Payload, c.onDeleteAutomationTrigger, AutomationUpdated, true)
+		c.execute(eventExecutorOptionsWithResult(eventMsg.Payload, wrapPayloadWithResult(c.onDeleteAutomationTrigger), AutomationUpdated))
 
 	case DeviceSetValue:
-		c.execute(&eventExecutorOptions{
-			Payload:       eventMsg.Payload,
-			Action:        adaptPayloadNoResult(c.onDeviceSetValue),
-			SuccessEvent:  OperationSuccess,
-			ReportSuccess: true,
-			ReportResult:  false,
-			ReportError:   true,
-		})
-		//c.executeAction(eventMsg.Payload, c.onDeviceSetValue, false)
+		c.execute(eventExecutorOptionsWithoutSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onDeviceSetValue)))
 
 	case DeviceRename:
-		c.execute(&eventExecutorOptions{
-			Payload:       eventMsg.Payload,
-			Action:        adaptPayloadNoResult(c.onDeviceRename),
-			SuccessEvent:  OperationSuccess,
-			ReportSuccess: true,
-			ReportResult:  false,
-			ReportError:   true,
-		})
-		//c.executeAction(eventMsg.Payload, c.onDeviceRename, false)
+		c.execute(eventExecutorOptionsWithoutSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onDeviceRename)))
 
 	case DeviceRemove:
-		c.execute(&eventExecutorOptions{
-			Payload:       eventMsg.Payload,
-			Action:        adaptPayloadNoResult(c.onDeviceRemove),
-			SuccessEvent:  OperationSuccess,
-			ReportSuccess: true,
-			ReportResult:  false,
-			ReportError:   true,
-		})
-		//c.executeAction(eventMsg.Payload, c.onDeviceRemove, false)
+		c.execute(eventExecutorOptionsWithoutSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onDeviceRemove)))
 
 	case DeviceInterview:
-		c.execute(&eventExecutorOptions{
-			Payload:       eventMsg.Payload,
-			Action:        adaptPayloadNoResult(c.onDeviceInterview),
-			SuccessEvent:  OperationSuccess,
-			ReportSuccess: true,
-			ReportResult:  false,
-			ReportError:   true,
-		})
-		//c.executeAction(eventMsg.Payload, c.onDeviceInterview, false)
+		c.execute(eventExecutorOptionsWithoutSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onDeviceInterview)))
 
 	case BridgePermitJoin:
-		c.execute(&eventExecutorOptions{
-			Payload:       eventMsg.Payload,
-			Action:        adaptPayloadNoResult(c.onBridgePermitJoin),
-			ReportSuccess: false,
-			ReportResult:  false,
-			ReportError:   true,
-		})
-		//c.executeAction(eventMsg.Payload, c.onBridgePermitJoin, false)
+		c.execute(eventExecutorOptionsWithoutSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onBridgePermitJoin)))
 
 	case SaveLoggerConfig:
-
-		c.execute(&eventExecutorOptions{
-			Payload:       eventMsg.Payload,
-			Action:        adaptPayloadNoResult(c.onSaveLoggerConfig),
-			SuccessEvent:  OperationSuccess,
-			ReportSuccess: true,
-			ReportResult:  false,
-			ReportError:   true,
-		})
-		//c.executeAction(eventMsg.Payload, c.onSaveLoggerConfig, true)
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onSaveLoggerConfig)))
 
 	case SaveDashboardGroup:
-		c.execute(&eventExecutorOptions{
-			Payload:       eventMsg.Payload,
-			Action:        adaptPayloadNoResult(c.onSaveDashboardGroup),
-			SuccessEvent:  OperationSuccess,
-			ReportSuccess: true,
-			ReportResult:  false,
-			ReportError:   true,
-		})
-		//c.executeAction(eventMsg.Payload, c.onSaveDashboardGroup, true)
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onSaveDashboardGroup)))
+
 	case RenameDashboardGroup:
-		c.execute(&eventExecutorOptions{
-			Payload:       eventMsg.Payload,
-			Action:        adaptPayloadWithResult(c.onRenameDashboardGroup),
-			SuccessEvent:  OperationSuccess,
-			ReportResult:  false,
-			ReportSuccess: true,
-			ReportError:   true,
-		})
-		//c.executePayloadActionWithEvent(eventMsg.Payload, c.onRenameDashboardGroup, OperationSuccess, false)
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadWithResult(c.onRenameDashboardGroup)))
 
 	case DeleteDashboardGroup:
-		c.execute(&eventExecutorOptions{
-			Payload:       eventMsg.Payload,
-			Action:        adaptPayloadNoResult(c.onDeleteDashboardGroup),
-			SuccessEvent:  OperationSuccess,
-			ReportSuccess: true,
-			ReportResult:  false,
-			ReportError:   true,
-		})
-		//c.executeAction(eventMsg.Payload, c.onDeleteDashboardGroup, true)
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onDeleteDashboardGroup)))
 
 	case ImportDashboardGroups:
 		// will need refactoring
@@ -544,51 +400,12 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 		}
 
 	case LoadDashboardGroups:
-
-		c.execute(&eventExecutorOptions{
-			Action:        wrapNoPayload(c.onLoadDashboardGroups),
-			SuccessEvent:  DashboardGroups,
-			ReportSuccess: true,
-			ReportError:   true,
-		})
-		//c.executeActionWithEvent(c.onLoadDashboardGroups, DashboardGroups)
+		c.execute(eventExecutorOptionsWithResult(nil, wrapNoPayload(c.onLoadDashboardGroups), DashboardGroups))
 
 	default:
 
 		utils.LogWarnf("Unknown event type: %s", eventMsg.Type)
 		return
-	}
-}
-
-// action func() (interface{}, error) - no payload
-// action func(interface{}) (interface{}, error) - payload
-// action func(interface{}) (interface{}, error) - payload
-// action func(interface{}) error - payload
-
-type eventExecutorOptions struct {
-	Payload       interface{}
-	Action        eventAction
-	SuccessEvent  string
-	ReportResult  bool
-	ReportSuccess bool
-	ReportError   bool
-}
-
-func wrapNoPayload(action func() (interface{}, error)) eventAction {
-	return func(_ interface{}) (interface{}, error) {
-		return action()
-	}
-}
-
-func adaptPayloadWithResult(action func(interface{}) (interface{}, error)) eventAction {
-	return func(payload interface{}) (interface{}, error) {
-		return action(payload)
-	}
-}
-
-func adaptPayloadNoResult(action func(interface{}) error) eventAction {
-	return func(payload interface{}) (interface{}, error) {
-		return nil, action(payload)
 	}
 }
 
@@ -632,118 +449,66 @@ func (c *eventHubImpl) execute(opts *eventExecutorOptions) {
 	if err != nil {
 		utils.LogErrorf("Failed to broadcast successEvent %s. Error: %s", successEvent, err.Error())
 	}
-
 }
 
-// func (c *eventHubImpl) execute(
-// 	action genericAction,
-// 	payload interface{},
-// 	successEvent string,
-// 	reportResult bool,
-// 	failEvent string,
-// 	transform func(interface{}) interface{},
-// ) {
-// 	if action == nil {
-// 		return
-// 	}
+// Event Executors
 
-// 	result, err := action(payload)
-// 	if err != nil {
-// 		if failEvent == "" {
-// 			failEvent = OperationFailed
-// 		}
-// 		c.Broadcast(failEvent, err.Error())
-// 		return
-// 	}
+type eventAction func(payload interface{}) (interface{}, error)
+type eventExecutorOptions struct {
+	Payload       interface{}
+	Action        eventAction
+	SuccessEvent  string
+	ReportResult  bool
+	ReportSuccess bool
+	ReportError   bool
+}
 
-// 	if successEvent != "" {
-// 		if transform != nil {
-// 			result = transform(result)
-// 		}
-// 		if !reportResult {
-// 			result = nil
-// 		}
-// 		c.Broadcast(successEvent, result)
-// 	}
-// }
-
-// TODO: needs refactoring
-func (c *eventHubImpl) executeActionWithEvent(action func() (interface{}, error), successEvent string) {
-
-	result, err := action()
-	if err != nil {
-		err = c.Broadcast(OperationFailed, err.Error())
-		if err != nil {
-			utils.LogErrorf("Failed to broadcast OperationFailed %s", err.Error())
-		}
-	} else {
-		err = c.Broadcast(successEvent, result)
-		if err != nil {
-			utils.LogErrorf("Failed to broadcast successEvent %s", err.Error())
-		}
+func eventExecutorOptionsWithSuccess(payload interface{}, event eventAction) *eventExecutorOptions {
+	return &eventExecutorOptions{
+		Action:        event,
+		Payload:       payload,
+		SuccessEvent:  OperationSuccess,
+		ReportResult:  false,
+		ReportSuccess: true,
+		ReportError:   true,
 	}
 }
 
-// TODO: needs refactoring
-func (c *eventHubImpl) executePayloadActionWithSuccessfullyEvent(payload interface{}, action func(interface{}) (interface{}, error), successEvent string) {
-
-	if payload == nil {
-		c.Broadcast(OperationFailed, "payload is empty")
-		return
-	}
-
-	result, err := action(payload)
-	if err == nil {
-		err = c.Broadcast(successEvent, result)
-		if err != nil {
-			utils.LogErrorf("Failed to broadcast successEvent %s", err.Error())
-		}
+func eventExecutorOptionsWithResult(payload interface{}, event eventAction, successEvent string) *eventExecutorOptions {
+	return &eventExecutorOptions{
+		Action:        event,
+		Payload:       payload,
+		SuccessEvent:  successEvent,
+		ReportResult:  true,
+		ReportSuccess: true,
+		ReportError:   true,
 	}
 }
 
-// TODO: needs refactoring
-func (c *eventHubImpl) executePayloadActionWithEvent(payload interface{}, action func(interface{}) (interface{}, error), successEvent string, reportSuccess bool) {
-
-	if payload == nil {
-		c.Broadcast(OperationFailed, "payload is empty")
-		return
-	}
-
-	result, err := action(payload)
-	if err != nil {
-		err = c.Broadcast(OperationFailed, err.Error())
-		if err != nil {
-			utils.LogErrorf("Failed to broadcast OperationFailed %s", err.Error())
-		}
-	} else {
-
-		reportResult := result
-		if !reportSuccess {
-			reportResult = nil
-		}
-		err = c.Broadcast(successEvent, reportResult)
-		if err != nil {
-			utils.LogErrorf("Failed to broadcast OperationSuccess %s", err.Error())
-		}
+func eventExecutorOptionsWithoutSuccess(payload interface{}, event eventAction) *eventExecutorOptions {
+	return &eventExecutorOptions{
+		Action:        event,
+		Payload:       payload,
+		ReportResult:  false,
+		ReportSuccess: false,
+		ReportError:   true,
 	}
 }
 
-func (c *eventHubImpl) executeAction(payload interface{}, action func(interface{}) error, reportSuccess bool) {
-	if payload == nil {
-		c.Broadcast(OperationFailed, "payload is empty")
-		return
+func wrapNoPayload(action func() (interface{}, error)) eventAction {
+	return func(_ interface{}) (interface{}, error) {
+		return action()
 	}
+}
 
-	err := action(payload)
-	if err != nil {
-		err = c.Broadcast(OperationFailed, err.Error())
-		if err != nil {
-			utils.LogErrorf("Failed to broadcast OperationFailed %s", err.Error())
-		}
-	} else if reportSuccess {
-		err = c.Broadcast(OperationSuccess, nil)
-		if err != nil {
-			utils.LogErrorf("Failed to broadcast OperationSuccess %s", err.Error())
-		}
+func wrapPayloadWithResult(action func(interface{}) (interface{}, error)) eventAction {
+	return func(payload interface{}) (interface{}, error) {
+		return action(payload)
+	}
+}
+
+func wrapPayloadNoResult(action func(interface{}) error) eventAction {
+	return func(payload interface{}) (interface{}, error) {
+		return nil, action(payload)
 	}
 }
