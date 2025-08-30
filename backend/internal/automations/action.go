@@ -36,8 +36,9 @@ type MqttTriggerActionExpose struct {
 
 type MqttTriggerAction struct {
 	MqttBaseAction
-	Exposes []*MqttTriggerActionExpose `json:"exposes"`
-	Delay   *utils.TimeInterval        `json:"delay,omitempty"`
+	Exposes       []*MqttTriggerActionExpose `json:"exposes"`
+	Delay         *utils.TimeInterval        `json:"delay,omitempty"`
+	SplitCommands bool                       `json:"splitCommands,omitempty"`
 }
 
 func NewTriggerAction() *MqttTriggerAction {
@@ -186,31 +187,42 @@ func (a *MqttBaseAction) emit(payload []byte) {
 	a.Client.Publish(msg, payload)
 
 	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.friendlyName)
+
 }
 
 func (b *MqttBaseAction) processAction(ctx *DeviceContext) error {
 
-	 we need something here to send multiple messages at once if configured
-	 
 	payload, err := b.operation.CreatePayload()
 	if err != nil {
 		return err
 	}
 
-	// build payload
-	bytes, err := json.Marshal(payload)
-	if err != nil {
-		utils.LogErrorf("preset cycling action failed %s ", err.Error())
-		return err
-	}
+	if payload.SplitCommands {
+		for key, value := range payload.Commands {
+			single := map[string]any{key: value}
 
-	// emit message
-	b.emit(bytes)
+			bytes, err := json.Marshal(single)
+			if err != nil {
+				utils.LogErrorf("Action triggered. Failed to marshal command %s: %s", key, err.Error())
+				return err
+			}
+			// emit message
+			b.emit(bytes)
+		}
+	} else {
+		bytes, err := json.Marshal(payload.Commands)
+		if err != nil {
+			utils.LogErrorf("Action triggered. Failed to marshal payload: %s", err.Error())
+			return err
+		}
+
+		// emit message
+		b.emit(bytes)
+	}
 
 	// on sucess update device context with new values to avoid querying the device again
 	// ideally we need to do it if publish has succeeded
-	utils.LogInfof("Action triggered. Message %s published in %s", string(bytes), b.friendlyName)
-	for key, value := range payload {
+	for key, value := range payload.Commands {
 		ctx.SetCurrent(key, value)
 	}
 	return nil

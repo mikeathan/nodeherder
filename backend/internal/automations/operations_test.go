@@ -431,7 +431,7 @@ func TestOperationCycleValue(t *testing.T) {
 		}
 
 		want := presets[pos].(float64)
-		got := payload[exposeName].(float64)
+		got := payload.Commands[exposeName].(float64)
 		if got != want {
 			t.Fatalf("invalid operation value: want %v got %v", want, got)
 		}
