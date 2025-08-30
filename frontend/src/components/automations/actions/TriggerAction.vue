@@ -81,7 +81,7 @@
       name: '',
       data: null,
     };
-    action.value.exposes.push(expose);
+    action.value.exposes = [...action.value.exposes, expose];
   }
 
   function removeOperation(operation: TriggerActionOperation) {
@@ -166,6 +166,8 @@
         icon="pi pi-plus"
         size="small"
         :disabled="!operationsAllowed()" />
+
+        
     </div>
 
     <ReorderableList
@@ -208,7 +210,7 @@
       <!-- Toggle with label -->
       <div class="flex items-center gap-2">
         <Checkbox inputId="ingredient4" name="pizza" value="Onion" />
-        <label for="ingredient4"> Commands </label>
+        <label for="ingredient4"> Split Commands </label>
       </div>
     </div>
 
