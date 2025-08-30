@@ -150,12 +150,15 @@
       events: actionEvents(action),
     };
   }
+
+  function onRowReorder(e: { value: AutomationCondition[] }) {
+    conditions.value = e.value;
+  }
 </script>
 
 <template>
   <!-- TODO:  -->
   <!-- if automation for device exists message user else we overwrite it -->
-
   <div class="row pb-3">
     <div class="col">
       <ButtonPanel :buttons="buttonPanelItems" />
@@ -175,7 +178,12 @@
     <h4 class="">Trigger for {{ capitalizeText(trigger.name) }}</h4>
     <div class="pb-3" />
     <Fieldset legend="When" :toggleable="true" :collapsed="conditions.length == 0">
-      <DataTable :value="conditions" selectionMode="single" :reorderableRows="true" dataKey="name">
+      <DataTable
+        :value="conditions"
+        selectionMode="single"
+        :reorderableRows="true"
+        @row-reorder="onRowReorder"
+        dataKey="name">
         <Column rowReorder style="width: 3rem" />
         <Column header="Condition">
           <template #body="slotProps">
