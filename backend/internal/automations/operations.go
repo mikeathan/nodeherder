@@ -46,7 +46,6 @@ func CreateRotateOperation(expose *devices.Entity) actionOperation {
 	return newRotateOperation(expose.Name, presets)
 }
 
-
 type actionOperation interface {
 	CreatePayload() (map[string]any, error)
 }

@@ -189,6 +189,9 @@ func (a *MqttBaseAction) emit(payload []byte) {
 }
 
 func (b *MqttBaseAction) processAction(ctx *DeviceContext) error {
+
+	 we need something here to send multiple messages at once if configured
+	 
 	payload, err := b.operation.CreatePayload()
 	if err != nil {
 		return err

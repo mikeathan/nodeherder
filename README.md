@@ -27,7 +27,6 @@ TODO:
 - backup automations
 - device lifetime optimization : check if automations or metrics is enabled for device before sending event
 - device disabled not working - DONE
-- refactor executePayloadActionWithEvent and similar calls
 
 ## Features
 

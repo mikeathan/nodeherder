@@ -414,6 +414,7 @@ func (c *eventHubImpl) execute(opts *eventExecutorOptions) {
 		return
 	}
 
+	// TODO:
 	//if we expect payload and is empty the
 	// if payload == nil {
 	// 	c.Broadcast(OperationFailed, "payload is empty")
@@ -451,7 +452,6 @@ func (c *eventHubImpl) execute(opts *eventExecutorOptions) {
 }
 
 // Event Executors
-
 type eventAction func(payload interface{}) (interface{}, error)
 type eventExecutorOptions struct {
 	Payload       interface{}
