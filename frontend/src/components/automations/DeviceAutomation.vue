@@ -191,7 +191,6 @@ function getActionDescription(trigger: AutomationTrigger): string {
       </Column>
       <Column field="conditions" header="Conditions">
         <template #body="slotProps">
-
           <span v-html="formatTriggerConditions(slotProps.data)"></span>
         </template>
       </Column>
