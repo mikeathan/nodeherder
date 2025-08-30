@@ -317,8 +317,7 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 		}
 
 	case LoadMetrics:
-		// TODO: dont report error here. needs refactoring
-		c.execute(eventExecutorOptionsWithResult(eventMsg.Payload, wrapPayloadWithResult(c.onLoadMetrics), Metrics))
+		c.execute(eventExecutorOptionsWithResultNoError(eventMsg.Payload, wrapPayloadWithResult(c.onLoadMetrics), Metrics))
 
 	case LoadAppconfig:
 		c.execute(eventExecutorOptionsWithResult(nil, wrapNoPayload(c.onLoadAppConfig), AppConfig))
@@ -471,6 +470,16 @@ func eventExecutorOptionsWithSuccess(payload interface{}, event eventAction) *ev
 		ReportResult:  false,
 		ReportSuccess: true,
 		ReportError:   true,
+	}
+}
+func eventExecutorOptionsWithResultNoError(payload interface{}, event eventAction, successEvent string) *eventExecutorOptions {
+	return &eventExecutorOptions{
+		Action:        event,
+		Payload:       payload,
+		SuccessEvent:  successEvent,
+		ReportResult:  true,
+		ReportSuccess: true,
+		ReportError:   false,
 	}
 }
 
