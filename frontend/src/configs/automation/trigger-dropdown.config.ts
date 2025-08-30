@@ -8,7 +8,12 @@ import {
   DropDownType,
   ButtonPanelType,
 } from '../../types/controls.type';
-import { AutomationActionTypes, AutomationConditionTypes, TriggerActionExposeBroadcastModes, TriggerActionOperations } from '@/types/automation.type.js';
+import {
+  AutomationActionTypes,
+  AutomationConditionTypes,
+  TriggerActionExposeBroadcastModes,
+  TriggerActionOperations,
+} from '@/types/automation.type.js';
 
 export function createNewActionDropdownItems(event: ButtonClickEventType): DropDownItemType[] {
   let items: DropDownItemType[] = [];
@@ -40,12 +45,16 @@ export function createTriggerActionOperatorsDropdowitems(event: ButtonClickEvent
   return items;
 }
 
-export function createTriggerActionModesDropdowItems(event: ButtonClickEventType): DropDownItemType[] {
+export function createTriggerActionModesDropdowItems(
+  event: ButtonClickEventType,
+  selected: boolean
+): DropDownItemType[] {
   let items: DropDownItemType[] = [];
 
-  Object.entries(TriggerActionExposeBroadcastModes).forEach(([key, mode]) =>
-    items.push(createDropDownItem(`${key}`, mode, event))
-  );
+  Object.entries(TriggerActionExposeBroadcastModes).forEach(([key, mode]) => {
+    console.log('createTriggerActionModesDropdowItems', key, mode, selected);
+    items.push(createDropDownItem(`${key}`, mode, event));
+  });
 
   return items;
 }

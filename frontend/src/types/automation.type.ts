@@ -14,7 +14,7 @@ export type PresetCyclingAction = 'preset';
 export type ActionType = TriggerAction | StepAction | PresetCyclingAction;
 
 export type TriggerActionExposeBroadcastMode = ValueOf<typeof TriggerActionExposeBroadcastModes>;
-export const TriggerActionExposeBroadcastModes = { Batch: 'batch', Individual: 'individual' } as const;
+export const TriggerActionExposeBroadcastModes = { Batch: false, Single: true } as const;
 export const AutomationActionTypes = {
   Trigger: 'trigger',
   Step: 'step',
@@ -88,7 +88,7 @@ export type AutomationTriggerActionExpose = {
 export type AutomationTriggerAction = AutomationBaseAction & {
   exposes: Array<AutomationTriggerActionExpose>;
   delay?: TimeInterval | undefined;
-  splitCommands: boolean | undefined;
+  splitCommands: boolean;
 };
 
 export type AutomationStepAction = AutomationBaseAction & {

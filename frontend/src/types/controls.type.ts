@@ -23,7 +23,7 @@ export type DropDownType = {
 
 export type DropDownItemType = {
   name: string;
-  value: string;
+  value: boolean | string;
   click: ButtonClickEventType;
   icon?: string;
 };
@@ -43,7 +43,8 @@ export function createButton(name: string, click: ButtonClickEventType, disabled
   return { name: name, click: click, disabled: disabled };
 }
 
-export function createDropDownItem(name: string, value: string, click: ButtonClickEventType): DropDownItemType {
+
+export function createDropDownItem(name: string, value: string | boolean, click: ButtonClickEventType): DropDownItemType {
   return { name: name, value: value, click: click };
 }
 

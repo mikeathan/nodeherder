@@ -12,6 +12,10 @@
       type: String as PropType<'small' | 'large' | undefined>,
       default: 'small',
     },
+    selected: {
+      type: Object as PropType<String | Boolean | null>, to fix 
+      default: null,
+    },
     icon: {
       type: String,
       default: '',
@@ -39,12 +43,13 @@
       default: 'primary',
     },
   });
-  const selected = ref<string | null>(null);
+  const selected = ref<string | boolean | null>(props.selected);
+
   function convert() {
     return props.items.map((item) => {
       return {
         label: item.name,
-        icon: selected.value === item.value ? 'pi pi-check' : '',
+        icon: selected?.value === item.value ? 'pi pi-check' : '',
         command: () => {
           selected.value = item.value;
           item.click(item.value);

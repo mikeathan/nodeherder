@@ -70,8 +70,11 @@
     createTriggerActionOperatorsDropdowitems((e: TriggerActionOperation) => addOperation(e))
   );
 
-  const modesDropdownItems = computed(() =>
-    createTriggerActionModesDropdowItems((e: TriggerActionExposeBroadcastMode) => setSplitCommands(e))
+  const broadcastModeDropdownItems = computed(() =>
+    createTriggerActionModesDropdowItems(
+      (e: TriggerActionExposeBroadcastMode) => setBroadcastMode(e),
+      action.value.splitCommands ?? false
+    )
   );
   function addOperation(operation: TriggerActionOperation) {
     // TODO: handle more operations when needed
@@ -123,12 +126,8 @@
     expose.data = null;
   }
 
-  function setSplitCommands(value: TriggerActionExposeBroadcastMode) {
-    if (value == TriggerActionExposeBroadcastModes.Batch) {
-      action.value.splitCommands = undefined;
-    } else {
-      action.value.splitCommands = true;
-    }
+  function setBroadcastMode(value: boolean) {
+    action.value.splitCommands = value;
   }
 
   function saveAction() {
@@ -160,6 +159,7 @@
 
 <template>
   <div>
+    {{ action }}
     <ButtonPanel :buttons="buttonPanelItems" />
 
     <div class="pb-3" />
@@ -191,7 +191,13 @@
         size="small"
         :disabled="!operationsAllowed()" />
 
-      <Dropdown :items="modesDropdownItems" severity="secondary" label="Modes" size="small" />
+      <Dropdown
+        :items="broadcastModeDropdownItems"
+        :selected="action.splitCommands"
+        icon="pi pi-send"
+        severity="secondary"
+        label="Broadcast"
+        size="small" />
     </div>
 
     <!-- <div class="flex items-center pt-4">

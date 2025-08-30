@@ -17,7 +17,6 @@ declare module 'vue' {
     ButtonGroup: typeof import('./src/components/input/ButtonGroup.vue')['default']
     ButtonPanel: typeof import('./src/components/controls/ButtonPanel.vue')['default']
     Card: typeof import('primevue/card')['default']
-    Checkbox: typeof import('primevue/checkbox')['default']
     Column: typeof import('primevue/column')['default']
     'ConditionEditor.': typeof import('./src/components/automations/conditions/ConditionEditor..vue')['default']
     ConfirmDialog: typeof import('./src/components/dialogs/ConfirmDialog.vue')['default']
