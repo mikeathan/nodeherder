@@ -9,9 +9,7 @@
       required: true,
     },
     size: {
-      type: String as PropType<
-        'small' | 'large' | undefined
-      >,
+      type: String as PropType<'small' | 'large' | undefined>,
       default: 'small',
     },
     icon: {
@@ -30,6 +28,16 @@
       type: String,
       default: '',
     },
+    text:{  
+      type: Boolean,
+      default: false,
+    },
+    severity: {
+      type: String as PropType<
+        'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'help' | 'danger' | undefined
+      >,
+      default: 'primary',
+    },
   });
 
   function convert() {
@@ -46,7 +54,8 @@
     :label="props.label"
     :model="convert()"
     :disabled="props.disabled"
-    text
     :icon="props.icon"
-    :size="props.size" />
+    :size="props.size"
+    :severity="props.severity"
+    :text="props.text" />
 </template>
