@@ -10,7 +10,9 @@
     valueOn: { type: null, require: true },
     valueOff: { type: null, require: true },
     disabled: { type: Boolean, default: false },
-    label: { type: String, default: '' },
+    leftLabel: { type: String, default: '' },
+    rightLabel: { type: String, default: '' },
+    showIcon: { type: Boolean, default: false },
   });
 
   const hasValue = computed(() => props.value != null || props.value != undefined || props.disabled);
@@ -26,6 +28,13 @@
 </script>
 <style scoped></style>
 <template>
-  <ToggleSwitch v-model="isChecked" :disabled="!hasValue || props.disabled" />
-  <span v-if="props.label" class="text-sm">{{ props.label }}</span>
+  <div class="flex items-center gap-2">
+    <span v-if="props.leftLabel" class="text-sm">{{ props.leftLabel }}</span>
+    <ToggleSwitch v-model="isChecked" :disabled="!hasValue || props.disabled">
+      <template v-if="showIcon" #handle="{ checked }">
+        <i :class="['!text-xs pi', { 'pi-check': checked, 'pi-times': !checked }]" />
+      </template>
+    </ToggleSwitch>
+    <span v-if="props.rightLabel" class="text-sm">{{ props.rightLabel }}</span>
+  </div>
 </template>

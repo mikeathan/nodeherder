@@ -25,6 +25,7 @@ export type DropDownItemType = {
   name: string;
   value: string;
   click: ButtonClickEventType;
+  icon?: string;
 };
 
 export type ButtonClickEventType = (e: any) => void;

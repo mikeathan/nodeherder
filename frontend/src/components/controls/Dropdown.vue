@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { PropType } from 'vue';
+  import { PropType, ref } from 'vue';
   import { DropDownItemType } from '../../types/controls.type';
 
   const props = defineProps({
@@ -28,7 +28,7 @@
       type: String,
       default: '',
     },
-    text:{  
+    text: {
       type: Boolean,
       default: false,
     },
@@ -39,12 +39,16 @@
       default: 'primary',
     },
   });
-
+  const selected = ref<string | null>(null);
   function convert() {
     return props.items.map((item) => {
       return {
         label: item.name,
-        command: () => item.click(item.value),
+        icon: selected.value === item.value ? 'pi pi-check' : '',
+        command: () => {
+          selected.value = item.value;
+          item.click(item.value);
+        },
       };
     });
   }
