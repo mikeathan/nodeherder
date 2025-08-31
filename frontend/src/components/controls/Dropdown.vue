@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { computed, PropType, ref } from 'vue';
+  import { computed, PropType, ref, watch } from 'vue';
   import { DropDownItemType } from '../../types/controls.type';
 
   const props = defineProps({
@@ -43,20 +43,26 @@
       default: 'primary',
     },
   });
-  const selected = ref<string | boolean | null>(props.selected);
+  const selected = ref<any>(props.selected);
 
   const convert = computed(() => {
     return props.items.map((item) => {
       return {
-        label: item.name,
+        label: item.label,
         icon: selected?.value === item.value ? 'pi pi-check' : '',
         command: () => {
           selected.value = item.value;
-          item.click(item.value);
+          item.command(item.value);
         },
       };
     });
   });
+  watch(
+    () => props.selected,
+    (val) => {
+      selected.value = val;
+    }
+  );
 </script>
 <style scoped>
   /* Safety: ensure long labels dxon’t break layout */

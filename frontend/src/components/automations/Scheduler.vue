@@ -43,18 +43,18 @@
 
     return createButtons([
       {
-        name: 'Save',
-        click: save,
+        label: 'Save',
+        command: save,
         disabled: false,
       },
       {
-        name: 'Add',
-        click: addSchedule,
+        label: 'Add',
+        command: addSchedule,
         disabled: !canAdd,
       },
       {
-        name: 'Clear',
-        click: clear,
+        label: 'Clear',
+        command: clear,
         disabled: !canClear,
       },
     ]);

@@ -23,6 +23,7 @@
   import Toggle from '@/components/input/Toggle.vue';
   import { getIconForType } from '@/modules/formatters/icon.formatter';
   import Menu from 'primevue/menu';
+  import { DropDownItemType, MenuBarItem } from '@/types/controls.type';
 
   const props = defineProps({
     action: {
@@ -68,38 +69,16 @@
     );
   });
 
-  function operationDropdownItems() {
-    //return createTriggerActionOperatorsDropdowitems((e: TriggerActionOperation) => addOperation(e));
-    return [
-      { label: 'Option 1', command: () => console.log('Clicked 1') },
-      { label: 'Option 2', command: () => console.log('Clicked 2') },
-    ];
+  function operationDropdownItems(): DropDownItemType[] {
+    return createTriggerActionOperatorsDropdowitems((e: TriggerActionOperation) => addOperation(e));
   }
 
-  function broadcastModeDropdownItems() {
-    // return createTriggerActionModesDropdowItems(
-    //   (e: TriggerActionExposeBroadcastMode) => setBroadcastMode(e),
-    //   action.value.splitCommands ?? false
-    // );
-    return [
-      { label: 'Option 1', command: () => console.log('Clicked 1') },
-      { label: 'Option 2', command: () => console.log('Clicked 2') },
-    ];
+  function broadcastModeDropdownItems(): DropDownItemType[] {
+    return createTriggerActionModesDropdowItems(
+      (e: TriggerActionExposeBroadcastMode) => setBroadcastMode(e),
+      action.value.splitCommands ?? false
+    );
   }
-
-  //  function buildMenuItems(expose: Expose) {
-  //   if (!expose.values) {
-  //     return [];
-  //   }
-  //   return Object.values(expose.values).map((value: any) => {
-  //     return {
-  //       label: value,
-  //       command: () => {
-  //         updateValue(expose.name, value);
-  //       },
-  //     };
-  //   });
-  // }
   function addOperation(operation: TriggerActionOperation) {
     // TODO: handle more operations when needed
     if (operation != 'delay') {
@@ -172,10 +151,6 @@
   function hasMultipleExposes() {
     return action.value.exposes.length > 1;
   }
-  const menu = ref<InstanceType<typeof Menu> | null>(null);
-  const toggleMenu = (event: Event) => {
-    menu.value?.toggle(event);
-  };
 </script>
 
 <style scoped>
@@ -191,6 +166,7 @@
 
 <template>
   <div>
+    {{ action }}
     <ButtonPanel :buttons="buttonPanelItems" />
 
     <div class="pb-3" />
@@ -220,13 +196,17 @@
         :size="10"
         text="Operations"
         :children="operationDropdownItems()"
-        :icon="getIconForType('settings')" />
+        :icon="getIconForType('settings')"
+        :disabled="!operationsAllowed()" />
+        {{ splitCommands }} - {{ props.action.splitCommands  }}
       <MenuDropdown
         backgroundColor="#222222"
         :size="10"
         text="Broadcast"
         :children="broadcastModeDropdownItems()"
-        :icon="getIconForType('settings')" />
+        :selected="splitCommands"
+        :icon="getIconForType('settings')"
+        :disabled="!hasMultipleExposes()" />
       <!-- <Dropdown
         class="basis-1/3 min-w-0 w-0"
         :items="operationDropdownItems"
@@ -244,10 +224,6 @@
         size="small"
         :disabled="!hasMultipleExposes()" /> -->
     </div>
-
-    <!-- <div class="flex align-items-center justify-content-left pb-3">
-      <Dropdown :items="operationDropdownItems" text label="Operations" size="small" :disabled="!operationsAllowed()" />
-    </div> -->
 
     <ReorderableList
       v-model:items="action.exposes"

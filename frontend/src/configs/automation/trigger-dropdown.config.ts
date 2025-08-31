@@ -68,7 +68,7 @@ export function createStepActionOperatorsDropdowitems(event: ButtonClickEventTyp
 
 export function createButtons(buttons: ButtonType[]): ButtonType[] {
   return buttons.map(
-    (item: ButtonType) => createButton(item.name, item.click, item.disabled)
+    (item: ButtonType) => createButton(item.label, item.command, item.disabled)
     // const node = isDropdown(item)
     //   ? createDropdown(item as DropDownType)
     //   : createButton(item.name, item.event, item.disabled);
@@ -128,5 +128,5 @@ export function createStepActionButtonItems(
 }
 
 export function createDropdown(name: string, items: DropDownItemType[], disabled: boolean = false): DropDownType {
-  return { name: name, items: items, disabled: disabled };
+  return { label: name, items: items, disabled: disabled };
 }

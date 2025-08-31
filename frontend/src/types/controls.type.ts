@@ -1,7 +1,7 @@
 import { KeyValuePair, ValueOf } from './types.type';
 
 export type ControlDirection = 'horizontal' | 'vertical';
-export const DashboardModes= {
+export const DashboardModes = {
   editMode: 'editmode',
   viewMode: 'viewmode',
 } as const;
@@ -10,21 +10,21 @@ export type DashboardMode = ValueOf<typeof DashboardModes>;
 
 export type ButtonPanelType = ButtonType | DropDownType;
 export type ButtonType = {
-  name: string;
-  click: ButtonClickEventType;
+  label: string;
+  command: ButtonClickEventType;
   disabled: boolean;
 };
 
 export type DropDownType = {
-  name: string;
+  label: string;
   items: DropDownItemType[];
   disabled: boolean;
 };
 
 export type DropDownItemType = {
-  name: string;
+  label: string;
   value: boolean | string;
-  click: ButtonClickEventType;
+  command: ButtonClickEventType;
   icon?: string;
 };
 
@@ -40,16 +40,19 @@ export function isDropdown(item: ButtonPanelType): boolean {
 }
 
 export function createButton(name: string, click: ButtonClickEventType, disabled: boolean = false): ButtonType {
-  return { name: name, click: click, disabled: disabled };
+  return { label: name, command: click, disabled: disabled };
 }
 
-
-export function createDropDownItem(name: string, value: string | boolean, click: ButtonClickEventType): DropDownItemType {
-  return { name: name, value: value, click: click };
+export function createDropDownItem(
+  label: string,
+  value: string | boolean,
+  command: ButtonClickEventType
+): DropDownItemType {
+  return { label: label, value: value, command: command };
 }
 
-export function createDropdown(name: string, items: DropDownItemType[], disabled: boolean = false): DropDownType {
-  return { name: name, items: items, disabled: disabled };
+export function createDropdown(label: string, items: DropDownItemType[], disabled: boolean = false): DropDownType {
+  return { label: label, items: items, disabled: disabled };
 }
 
 // Select
@@ -76,7 +79,7 @@ export type MenuBarItem = {
   label?: string;
   icon?: string;
   disabled?: boolean;
-  command?: () => void;
+  command?: ButtonClickEventType;
   custom?: boolean;
   isLogo?: boolean;
   template?: () => void;

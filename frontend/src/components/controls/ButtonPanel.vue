@@ -59,39 +59,26 @@
   //   );
   // }
 
-  function isButtonType(
-    item: ButtonPanelType
-  ): item is ButtonType {
-    return (
-      item.hasOwnProperty('name') &&
-      !item.hasOwnProperty('items')
-    );
+  function isButtonType(item: ButtonPanelType): item is ButtonType {
+    return item.hasOwnProperty('label') && !item.hasOwnProperty('items');
   }
-  function isDropdownType(
-    item: ButtonPanelType
-  ): item is DropDownType {
-    return (
-      item.hasOwnProperty('name') &&
-      item.hasOwnProperty('items')
-    );
+  function isDropdownType(item: ButtonPanelType): item is DropDownType {
+    return item.hasOwnProperty('label') && item.hasOwnProperty('items');
   }
 
   function createEvent(event: Event, button: ButtonType) {
     event.preventDefault();
     try {
-      button.click(event);
+      button.command(event);
     } catch (error) {
       console.error('Error during button click:', error);
     }
   }
 
-  function createDropEvent(
-    event: Event,
-    button: DropDownItemType
-  ) {
+  function createDropEvent(event: Event, button: DropDownItemType) {
     event.preventDefault();
     try {
-      button.click(event);
+      button.command(event);
     } catch (error) {
       console.error('Error during button click:', error);
     }
@@ -101,11 +88,11 @@
 <!-- // if button is dropdown use <SplitButton label="Save" @click="save" :model="items" /> -->
 <template>
   <div class="grid grid-cols-4 gap-1">
-    <div v-for="item in props.buttons" :key="item.name">
+    <div v-for="item in props.buttons" :key="item.label">
       <template v-if="isButtonType(item)">
         <Button
-          :key="item.name"
-          :label="item.name"
+          :key="item.label"
+          :label="item.label"
           severity="secondary"
           variant="outlined"
           :disabled="item.disabled"
@@ -115,11 +102,9 @@
       <template v-else-if="isDropdownType(item)">
         <SplitButton
           v-for="dropdownItem in item.items"
-          :key="dropdownItem.name"
-          :label="dropdownItem.name"
-          @click="
-            (event) => createDropEvent(event, dropdownItem)
-          " />
+          :key="dropdownItem.label"
+          :label="dropdownItem.label"
+          @click="(event) => createDropEvent(event, dropdownItem)" />
       </template>
     </div>
     <!-- <Button

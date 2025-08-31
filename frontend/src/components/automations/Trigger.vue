@@ -40,13 +40,13 @@
   const buttonPanelItems = computed(() => {
     return createButtons([
       {
-        name: 'Save',
-        click: save,
+        label: 'Save',
+        command: save,
         disabled: isValid(trigger.value) == false,
       },
       {
-        name: 'Delete',
-        click: remove,
+        label: 'Delete',
+        command: remove,
         disabled: isValid(trigger.value) == false,
       },
     ]);
