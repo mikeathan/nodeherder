@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { PropType, ref } from 'vue';
+  import { computed, PropType, ref } from 'vue';
   import { DropDownItemType } from '../../types/controls.type';
 
   const props = defineProps({
@@ -13,7 +13,7 @@
       default: 'small',
     },
     selected: {
-      type: Object as PropType<String | Boolean | null>, to fix 
+      type: [Object, String, Number, Boolean, Array] as PropType<any>,
       default: null,
     },
     icon: {
@@ -45,7 +45,7 @@
   });
   const selected = ref<string | boolean | null>(props.selected);
 
-  function convert() {
+  const convert = computed(() => {
     return props.items.map((item) => {
       return {
         label: item.name,
@@ -56,15 +56,31 @@
         },
       };
     });
-  }
+  });
 </script>
+<style scoped>
+  /* Safety: ensure long labels dxon’t break layout */
+  :deep(.p-button .p-button-label) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+</style>
 <template>
   <SplitButton
+    :pt="{
+      root: { class: 'w-full' },
+      button: { class: 'w-full justify-center px-2 py-1 text-xs' },
+      menuButton: { class: 'px-2 py-1 text-xs' },
+    }"
     :label="props.label"
-    :model="convert()"
+    :model="convert"
     :disabled="props.disabled"
     :icon="props.icon"
     :size="props.size"
     :severity="props.severity"
-    :text="props.text" />
+    :text="props.text"
+    :class="['w-full', props.className]"
+    :buttonProps="{ class: 'w-full justify-center px-2 py-1 text-xs' }"
+    :menuButtonProps="{ class: 'px-2 py-1 text-xs' }" />
 </template>

@@ -52,7 +52,6 @@ export function createTriggerActionModesDropdowItems(
   let items: DropDownItemType[] = [];
 
   Object.entries(TriggerActionExposeBroadcastModes).forEach(([key, mode]) => {
-    console.log('createTriggerActionModesDropdowItems', key, mode, selected);
     items.push(createDropDownItem(`${key}`, mode, event));
   });
 

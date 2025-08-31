@@ -21,6 +21,8 @@
   import ExposeDataInput from '@/components/controls/ExposeDataInput.vue';
   import { createTimeIntervalFromMinutes } from '@/contracts/settings';
   import Toggle from '@/components/input/Toggle.vue';
+  import { getIconForType } from '@/modules/formatters/icon.formatter';
+  import Menu from 'primevue/menu';
 
   const props = defineProps({
     action: {
@@ -66,16 +68,38 @@
     );
   });
 
-  const operationDropdownItems = computed(() =>
-    createTriggerActionOperatorsDropdowitems((e: TriggerActionOperation) => addOperation(e))
-  );
+  function operationDropdownItems() {
+    //return createTriggerActionOperatorsDropdowitems((e: TriggerActionOperation) => addOperation(e));
+    return [
+      { label: 'Option 1', command: () => console.log('Clicked 1') },
+      { label: 'Option 2', command: () => console.log('Clicked 2') },
+    ];
+  }
 
-  const broadcastModeDropdownItems = computed(() =>
-    createTriggerActionModesDropdowItems(
-      (e: TriggerActionExposeBroadcastMode) => setBroadcastMode(e),
-      action.value.splitCommands ?? false
-    )
-  );
+  function broadcastModeDropdownItems() {
+    // return createTriggerActionModesDropdowItems(
+    //   (e: TriggerActionExposeBroadcastMode) => setBroadcastMode(e),
+    //   action.value.splitCommands ?? false
+    // );
+    return [
+      { label: 'Option 1', command: () => console.log('Clicked 1') },
+      { label: 'Option 2', command: () => console.log('Clicked 2') },
+    ];
+  }
+
+  //  function buildMenuItems(expose: Expose) {
+  //   if (!expose.values) {
+  //     return [];
+  //   }
+  //   return Object.values(expose.values).map((value: any) => {
+  //     return {
+  //       label: value,
+  //       command: () => {
+  //         updateValue(expose.name, value);
+  //       },
+  //     };
+  //   });
+  // }
   function addOperation(operation: TriggerActionOperation) {
     // TODO: handle more operations when needed
     if (operation != 'delay') {
@@ -144,6 +168,14 @@
   function operationsAllowed() {
     return action.value.id != '' && operations.value.length == 0 && action.value.exposes.length != 0;
   }
+
+  function hasMultipleExposes() {
+    return action.value.exposes.length > 1;
+  }
+  const menu = ref<InstanceType<typeof Menu> | null>(null);
+  const toggleMenu = (event: Event) => {
+    menu.value?.toggle(event);
+  };
 </script>
 
 <style scoped>
@@ -159,7 +191,6 @@
 
 <template>
   <div>
-    {{ action }}
     <ButtonPanel :buttons="buttonPanelItems" />
 
     <div class="pb-3" />
@@ -176,6 +207,7 @@
 
     <div class="flex align-items-center pb-3 gap-1">
       <Button
+        class="text-xs"
         icon="pi pi-plus"
         label="Create"
         @click="addNewExpose()"
@@ -183,36 +215,39 @@
         severity="secondary"
         :disabled="action.id == ''" />
 
-      <Dropdown
+      <MenuDropdown
+        backgroundColor="#222222"
+        :size="10"
+        text="Operations"
+        :children="operationDropdownItems()"
+        :icon="getIconForType('settings')" />
+      <MenuDropdown
+        backgroundColor="#222222"
+        :size="10"
+        text="Broadcast"
+        :children="broadcastModeDropdownItems()"
+        :icon="getIconForType('settings')" />
+      <!-- <Dropdown
+        class="basis-1/3 min-w-0 w-0"
         :items="operationDropdownItems"
-        icon="pi pi-calculator"
         label="Operations"
         severity="secondary"
         size="small"
         :disabled="!operationsAllowed()" />
 
       <Dropdown
+        class="basis-1/3 min-w-0 w-0"
         :items="broadcastModeDropdownItems"
-        :selected="action.splitCommands"
-        icon="pi pi-send"
+        :selected="splitCommands"
         severity="secondary"
         label="Broadcast"
-        size="small" />
+        size="small"
+        :disabled="!hasMultipleExposes()" /> -->
     </div>
 
-    <!-- <div class="flex items-center pt-4">
-      <Toggle
-        :value="splitCommands"
-        @update="updateSplitCommands"
-        :valueOn="true"
-        :valueOff="false"
-        left-label="Batch"
-        right-label="Individual" />
-    </div> -->
-
-    <div class="flex align-items-center justify-content-left pb-3">
+    <!-- <div class="flex align-items-center justify-content-left pb-3">
       <Dropdown :items="operationDropdownItems" text label="Operations" size="small" :disabled="!operationsAllowed()" />
-    </div>
+    </div> -->
 
     <ReorderableList
       v-model:items="action.exposes"
