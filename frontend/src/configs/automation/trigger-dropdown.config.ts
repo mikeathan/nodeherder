@@ -46,13 +46,12 @@ export function createTriggerActionOperatorsDropdowitems(event: ButtonClickEvent
 }
 
 export function createTriggerActionModesDropdowItems(
-  event: ButtonClickEventType,
-  selected: boolean
+  command: ButtonClickEventType
 ): DropDownItemType[] {
   let items: DropDownItemType[] = [];
 
   Object.entries(TriggerActionExposeBroadcastModes).forEach(([key, mode]) => {
-    items.push(createDropDownItem(`${key}`, mode, event));
+    items.push(createDropDownItem(`${key}`, mode, command));
   });
 
   return items;

@@ -4,7 +4,6 @@
   import Icon from '../controls/Icon.vue';
   import Menu from 'primevue/menu';
   import { IconProps } from '@/types/icon.type';
-  import { MenuItem } from 'primevue/menuitem';
 
   const props = defineProps({
     icon: {
@@ -51,7 +50,7 @@
     menu.value?.toggle(event);
   };
 
-  const selected = ref<any>(props.selected);
+  const selected = ref<any | null>(props.selected);
 
   watch(
     () => props.selected,
@@ -60,11 +59,20 @@
     }
   );
 
-  function selectItem(item: MenuItem) {
-    console.log('selectItem', item);
-    selected.value = item.value; to fix here
-    close();
-  }
+  const convertedChildren = computed(() => {
+    return props.children.map((item) => ({
+      ...item,
+      command: () => {
+        // we only want to update selectd value if its been provided
+        // as the menu can select items or just on click to only trigger command
+        if (selected.value) {
+          selected.value = item.value;
+        }
+        item.command(item.value);
+        close();
+      },
+    }));
+  });
 </script>
 
 <template>
@@ -76,11 +84,11 @@
       <Icon :icon="icon" :size="size" background="transparent" />
       <span class="text-md font-medium whitespace-nowrap"> {{ text }} </span>
     </div>
-    <Menu ref="menu" :model="children" popup appendTo="body">
+    <Menu ref="menu" :model="convertedChildren" popup appendTo="body">
       <template #item="{ item }">
-        <div class="flex justify-between items-center cursor-pointer" @click="selectItem(item)">
+        <div class="flex justify-between items-center w-full">
           <span>{{ item.label }}</span>
-          <span v-if="item.value === selected">✔</span>
+          <i v-if="selected !== null && selected === item.value" class="pi pi-check ml-2"></i>
         </div>
       </template>
     </Menu>

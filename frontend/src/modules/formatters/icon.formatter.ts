@@ -1,7 +1,14 @@
 import { IconProps } from '@/types/icon.type';
-import { mdiDotsVertical, mdiCrosshairsQuestion, mdiCancel, mdiCloudOffOutline } from '@mdi/js';
+import {
+  mdiDotsVertical,
+  mdiCrosshairsQuestion,
+  mdiCancel,
+  mdiCloudOffOutline,
+  mdiAppleKeyboardCommand,
+  mdiBroadcast,
+} from '@mdi/js';
 
-export type IconType = 'settings' | 'disabled' | 'offline';
+export type IconType = 'settings' | 'disabled' | 'offline' | 'command' | 'broadcast';
 
 export function getIconForType(type: IconType): IconProps {
   switch (type) {
@@ -13,6 +20,11 @@ export function getIconForType(type: IconType): IconProps {
 
     case 'offline':
       return { name: mdiCloudOffOutline, color: 'white' };
+
+    case 'command':
+      return { name: mdiAppleKeyboardCommand, color: 'white' };
+    case 'broadcast':
+      return { name: mdiBroadcast, color: 'white' };
 
     default:
       return { name: mdiCrosshairsQuestion, color: 'grey' };

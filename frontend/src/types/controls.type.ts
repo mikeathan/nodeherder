@@ -79,7 +79,8 @@ export type MenuBarItem = {
   label?: string;
   icon?: string;
   disabled?: boolean;
-  command?: ButtonClickEventType;
+  value: string | boolean;
+  command: ButtonClickEventType;
   custom?: boolean;
   isLogo?: boolean;
   template?: () => void;

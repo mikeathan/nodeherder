@@ -23,7 +23,7 @@
   import Toggle from '@/components/input/Toggle.vue';
   import { getIconForType } from '@/modules/formatters/icon.formatter';
   import Menu from 'primevue/menu';
-  import { DropDownItemType, MenuBarItem } from '@/types/controls.type';
+  import { ButtonClickEventType, DropDownItemType } from '@/types/controls.type';
 
   const props = defineProps({
     action: {
@@ -74,10 +74,7 @@
   }
 
   function broadcastModeDropdownItems(): DropDownItemType[] {
-    return createTriggerActionModesDropdowItems(
-      (e: TriggerActionExposeBroadcastMode) => setBroadcastMode(e),
-      action.value.splitCommands ?? false
-    );
+    return createTriggerActionModesDropdowItems((e: any) => setBroadcastMode(e));
   }
   function addOperation(operation: TriggerActionOperation) {
     // TODO: handle more operations when needed
@@ -166,7 +163,6 @@
 
 <template>
   <div>
-    {{ action }}
     <ButtonPanel :buttons="buttonPanelItems" />
 
     <div class="pb-3" />
@@ -183,7 +179,7 @@
 
     <div class="flex align-items-center pb-3 gap-1">
       <Button
-        class="text-xs"
+        class="text-sm"
         icon="pi pi-plus"
         label="Create"
         @click="addNewExpose()"
@@ -192,37 +188,20 @@
         :disabled="action.id == ''" />
 
       <MenuDropdown
-        backgroundColor="#222222"
-        :size="10"
+        backgroundColor="var(--p-button-secondary-background)"
+        :size="16"
         text="Operations"
         :children="operationDropdownItems()"
-        :icon="getIconForType('settings')"
+        :icon="getIconForType('command')"
         :disabled="!operationsAllowed()" />
-        {{ splitCommands }} - {{ props.action.splitCommands  }}
       <MenuDropdown
-        backgroundColor="#222222"
-        :size="10"
+        backgroundColor="var(--p-button-secondary-background)"
+        :size="16"
         text="Broadcast"
         :children="broadcastModeDropdownItems()"
         :selected="splitCommands"
-        :icon="getIconForType('settings')"
+        :icon="getIconForType('broadcast')"
         :disabled="!hasMultipleExposes()" />
-      <!-- <Dropdown
-        class="basis-1/3 min-w-0 w-0"
-        :items="operationDropdownItems"
-        label="Operations"
-        severity="secondary"
-        size="small"
-        :disabled="!operationsAllowed()" />
-
-      <Dropdown
-        class="basis-1/3 min-w-0 w-0"
-        :items="broadcastModeDropdownItems"
-        :selected="splitCommands"
-        severity="secondary"
-        label="Broadcast"
-        size="small"
-        :disabled="!hasMultipleExposes()" /> -->
     </div>
 
     <ReorderableList
