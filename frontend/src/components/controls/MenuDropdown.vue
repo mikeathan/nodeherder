@@ -65,7 +65,7 @@
       command: () => {
         // we only want to update selectd value if its been provided
         // as the menu can select items or just on click to only trigger command
-        if (selected.value) {
+        if (selected.value != null) {
           selected.value = item.value;
         }
         item.command(item.value);
@@ -103,9 +103,15 @@
     cursor: pointer;
     transition: opacity 0.3s ease;
     align-items: center;
+
+    background-color: var(--p-button-secondary-bg);
+    color: var(--p-button-secondary-color);
+    border: 1px solid var(--p-button-secondary-border-color, transparent);
   }
 
   .button-content:hover {
-    opacity: 0.8;
+    background-color: var(--p-button-secondary-hover-bg);
+    color: var(--p-button-secondary-hover-color);
+    border-color: var(--p-button-secondary-hover-border-color, transparent);
   }
 </style>

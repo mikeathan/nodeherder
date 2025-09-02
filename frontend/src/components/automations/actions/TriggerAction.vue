@@ -186,7 +186,6 @@
         size="small"
         severity="secondary"
         :disabled="action.id == ''" />
-
       <MenuDropdown
         backgroundColor="var(--p-button-secondary-background)"
         :size="16"

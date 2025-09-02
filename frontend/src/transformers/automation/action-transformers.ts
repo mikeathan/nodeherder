@@ -24,6 +24,11 @@ export function transformTriggerAction(friendlyname: string, triggerAction: Auto
   const exposes = formatTriggerActionExposes(triggerAction.exposes);
   const action = `Trigger <strong>${friendlyname}</strong> ${exposes}`;
   const operations = formatTriggerActionOperations(triggerAction);
+
+  if (triggerAction.splitCommands) {
+    const broadcastMode = 'SplitCommands: True';
+    return [action, operations, broadcastMode];
+  }
   return [action, operations];
 }
 
