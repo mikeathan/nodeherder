@@ -124,7 +124,6 @@
 
   function updateExposes(exposes: AutomationTriggerActionExpose[]) {
 
-    console.log TODO
     action.value.exposes = exposes;
   }
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { defineProps, defineEmits, reactive, watch } from 'vue';
+  import { defineProps, defineEmits, watch, ref } from 'vue';
   import draggable from 'vuedraggable';
 
   interface Props<T> {
@@ -14,17 +14,18 @@
     (e: 'update:items', value: any[]): void;
     (e: 'delete-item', item: any): void;
   }>();
-  const localItems = reactive([...props.items]);
+  
+  const localItems = ref([...props.items]);
 
   watch(
     () => props.items,
     (newItems) => {
-      localItems.splice(0, localItems.length, ...newItems);
+      localItems.value = [...newItems];
     }
   );
 
   function onReorder() {
-    emit('update:items', [...localItems]);
+    emit('update:items', [...localItems.value]);
   }
 </script>
 
