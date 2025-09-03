@@ -19,16 +19,16 @@
           "type": "trigger",
           "exposes": [
             {
-              "name": "alarm",
-              "data": true
-            },
-            {
               "name": "duration",
               "data": 2
             },
             {
               "name": "volume",
               "data": "low"
+            },
+            {
+              "name": "alarm",
+              "data": true
             }
           ],
           "splitCommands": true
