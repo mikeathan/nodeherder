@@ -122,6 +122,12 @@
     action.value.delay!.value = parseInt(value);
   }
 
+  function updateExposes(exposes: AutomationTriggerActionExpose[]) {
+
+    console.log TODO
+    action.value.exposes = exposes;
+  }
+
   function exposeSelected(expose: AutomationTriggerActionExpose, name: string) {
     expose.name = name;
     expose.data = null;
@@ -216,6 +222,7 @@
       v-model:items="action.exposes"
       item-key="name"
       :show-handle="true"
+      @update:items="updateExposes"
       @delete-item="openDeleteExposeConfirmationDialog">
       <template #default="{ item }">
         <div class="col sm:col-4">

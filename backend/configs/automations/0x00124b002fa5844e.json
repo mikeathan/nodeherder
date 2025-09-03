@@ -30,7 +30,8 @@
               "name": "volume",
               "data": "low"
             }
-          ]
+          ],
+          "splitCommands": true
         }
       ],
       "name": "contact"
