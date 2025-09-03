@@ -6,6 +6,9 @@ export const DashboardModes = {
   viewMode: 'viewmode',
 } as const;
 
+export type Severity = 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'help' | 'danger' | undefined;
+export type Size = 'small' | 'large' | undefined;
+
 export type DashboardMode = ValueOf<typeof DashboardModes>;
 
 export type ButtonPanelType = ButtonType | DropDownType;

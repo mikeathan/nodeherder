@@ -102,7 +102,7 @@
   <div>
     <h2>Schedules</h2>
     <div class="pt-3"></div>
-    <ButtonPanel :buttons="buttonPanelItems" />
+    <ButtonPanel :buttons="buttonPanelItems" severity="secondary" />
     <div class="pt-3"></div>
     <div v-for="schedule in schedules" :key="schedule.type">
       <div class="row">

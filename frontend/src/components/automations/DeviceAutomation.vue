@@ -196,7 +196,7 @@
         </div>
       </div>
     </div>
-    <ButtonPanel :buttons="buttonPanelItems" class="pb-3 pt-3" />
+    <ButtonPanel :buttons="buttonPanelItems" class="pb-3 pt-3" severity="secondary" />
     <DataTable :value="automation.triggers" @row-click="rowClicked" selectionMode="single">
       <Column field="action" header="Action">
         <template #body="slotProps">

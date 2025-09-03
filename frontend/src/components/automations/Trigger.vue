@@ -161,7 +161,7 @@
   <!-- if automation for device exists message user else we overwrite it -->
   <div class="row pb-3">
     <div class="col">
-      <ButtonPanel :buttons="buttonPanelItems" />
+      <ButtonPanel :buttons="buttonPanelItems" severity="secondary" />
     </div>
   </div>
   <div class="row" v-if="trigger.name == ''">

@@ -1,13 +1,6 @@
 <script setup lang="ts">
-  import { PropType, h, VNode } from 'vue';
-  import {
-    ButtonPanelType,
-    ButtonType,
-    isDropdown,
-    DropDownType,
-    ButtonClickEventType,
-    DropDownItemType,
-  } from '@/types/controls.type';
+  import { PropType } from 'vue';
+  import { ButtonPanelType, ButtonType, DropDownType, DropDownItemType, Severity, Size } from '@/types/controls.type';
 
   const props = defineProps({
     buttons: {
@@ -15,49 +8,14 @@
       default: [],
       required: true,
     },
+    severity: {
+      type: String as PropType<Severity>,
+      default: 'primary',
+    },
+    size: {
+      type: String as PropType<Size>,
+    }
   });
-
-  // function Panel() {
-  //   return props.buttons.map((item: ButtonPanelType) =>
-  //     isDropdown(item)
-  //       ? createDropdown(item as DropDownType)
-  //       : createButton(item as ButtonType),
-  //   );
-  // }
-
-  // function createDropdown(dropDown: DropDownType): VNode {
-  //   return h(
-  //     'Dropdown',
-  //     {
-  //       className: 'btn-light',
-  //       disabled: dropDown.disabled,
-  //       items: dropDown.items,
-  //     },
-  //     dropDown.name,
-  //   );
-  // }
-
-  // function createButton(button: ButtonType): VNode {
-  //   return h(
-  //     'button',
-  //     {
-  //       class: 'btn btn-light',
-  //       disabled: button.disabled,
-  //       onClick: (event: any) => {
-  //         event.preventDefault();
-  //         try {
-  //           button.click(event);
-  //         } catch (error) {
-  //           console.error(
-  //             'Error during button click:',
-  //             error,
-  //           );
-  //         }
-  //       },
-  //     },
-  //     button.name,
-  //   );
-  // }
 
   function isButtonType(item: ButtonPanelType): item is ButtonType {
     return item.hasOwnProperty('label') && !item.hasOwnProperty('items');
@@ -93,7 +51,7 @@
         <Button
           :key="item.label"
           :label="item.label"
-          severity="secondary"
+          :severity="props.severity"
           variant="outlined"
           :disabled="item.disabled"
           @click="(event) => createEvent(event, item)"

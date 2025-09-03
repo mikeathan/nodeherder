@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { computed, PropType, ref, watch } from 'vue';
-  import { DropDownItemType } from '../../types/controls.type';
+  import { DropDownItemType, Severity, Size } from '../../types/controls.type';
 
   const props = defineProps({
     items: {
@@ -9,7 +9,7 @@
       required: true,
     },
     size: {
-      type: String as PropType<'small' | 'large' | undefined>,
+      type: String as PropType<Size>,
       default: 'small',
     },
     selected: {
@@ -37,9 +37,7 @@
       default: false,
     },
     severity: {
-      type: String as PropType<
-        'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'help' | 'danger' | undefined
-      >,
+      type: String as PropType<Severity>,
       default: 'primary',
     },
   });

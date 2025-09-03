@@ -123,7 +123,6 @@
   }
 
   function updateExposes(exposes: AutomationTriggerActionExpose[]) {
-
     action.value.exposes = exposes;
   }
 
@@ -177,8 +176,7 @@
 
 <template>
   <div>
-    <ButtonPanel :buttons="buttonPanelItems" />
-
+    <ButtonPanel :buttons="buttonPanelItems" severity="secondary" />
     <div class="pb-3" />
     <h4>Trigger Action</h4>
     <div class="pb-3" />
