@@ -1,170 +1,181 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
-import InputBox from '../input/InputBox.vue';
-import { store } from '../../store/index';
-import { Device } from '@/types/device';
-import { Automation, AutomationAction, AutomationTrigger } from '@/types/automation.type.js';
-import { EditableAutomationTrigger, DeviceAutomation, findActionExposes } from '../../contracts/automations';
-import AutomationStatus from '@/components/automations/schedule/AutomationStatus.vue';
-import Panel from '../controls/Panel.vue';
-import ButtonPanel from '@/components/controls/ButtonPanel.vue';
-import { createEditAutomationButtonItems } from '../../configs/automation/trigger-dropdown.config';
-import { emitCloseLastPanel } from '@/mixins/useAutomationsEventBus';
-import { emitOpenSchedulerPanelEvent, emitOpenTriggerPanelEvent } from '@/contracts/panel-events';
-import { DataTableRowClickEvent } from 'primevue';
-import { formatTriggerConditions } from '@/transformers/automation/trigger-transformers';
+  import { computed, ref, watch } from 'vue';
+  import { useRouter } from 'vue-router';
+  import InputBox from '../input/InputBox.vue';
+  import { store } from '../../store/index';
+  import { Device } from '@/types/device';
+  import { Automation, AutomationAction, AutomationTrigger } from '@/types/automation.type.js';
+  import { EditableAutomationTrigger, DeviceAutomation, findActionExposes } from '../../contracts/automations';
+  import AutomationStatus from '@/components/automations/schedule/AutomationStatus.vue';
+  import Panel from '../controls/Panel.vue';
+  import ButtonPanel from '@/components/controls/ButtonPanel.vue';
+  import { createEditAutomationButtonItems } from '../../configs/automation/trigger-dropdown.config';
+  import { emitCloseLastPanel } from '@/mixins/useAutomationsEventBus';
+  import { emitOpenSchedulerPanelEvent, emitOpenTriggerPanelEvent } from '@/contracts/panel-events';
+  import { DataTableRowClickEvent } from 'primevue';
+  import { formatTriggerConditions } from '@/transformers/automation/trigger-transformers';
+  import { emitOpenConfirmationDialog } from '@/contracts/dialog-events';
 
+  const emit = defineEmits(['cancel']);
 
-const emit = defineEmits(['cancel']);
+  const props = defineProps({
+    id: String,
+  });
 
-const props = defineProps({
-  id: String,
-});
+  const router = useRouter();
+  const automation = ref<Automation>({} as Automation);
+  const isInViewMode = ref<boolean>(true);
+  const buttonPanelItems = computed(() => {
+    const isActionValid =
+      automation.value.triggers.length == 0 &&
+      automation.value.triggers.filter((k) => k.actions.length != 0).length == automation.value.triggers.length;
+    return createEditAutomationButtonItems(
+      () => saveAutomation(),
+      () => deleteAutomation(),
+      () => openScheduler(automation.value),
+      isActionValid,
+      isActionValid,
+      isActionValid
+    );
+  });
 
-const router = useRouter();
-const automation = ref<Automation>({} as Automation);
-const isInViewMode = ref<boolean>(true);
-const buttonPanelItems = computed(() => {
-  const isActionValid =
-    automation.value.triggers.length == 0 &&
-    automation.value.triggers.filter((k) => k.actions.length != 0).length == automation.value.triggers.length;
-  return createEditAutomationButtonItems(
-    () => saveAutomation(),
-    () => deleteAutomation(),
-    () => openScheduler(automation.value),
-    isActionValid,
-    isActionValid,
-    isActionValid
-  );
-});
+  watch(
+    () => props.id,
+    () => {
+      var sourceAutomation = store.getters['automations/find'](props.id) as Device;
+      if (sourceAutomation != undefined) {
+        // make a deep copy to make it not reactive
+        automation.value = JSON.parse(JSON.stringify(sourceAutomation)) as DeviceAutomation;
+      } else {
+        automation.value = new DeviceAutomation();
+        var device = store.getters['hub/findDevice'](props.id) as Device;
+        if (device != undefined) {
+          automation.value.id = device.id;
+          automation.value.friendlyname = device.friendly_name;
+        }
 
-watch(
-  () => props.id,
-  () => {
-    var sourceAutomation = store.getters['automations/find'](props.id) as Device;
-    if (sourceAutomation != undefined) {
-      // make a deep copy to make it not reactive
-      automation.value = JSON.parse(JSON.stringify(sourceAutomation)) as DeviceAutomation;
-    } else {
-      automation.value = new DeviceAutomation();
-      var device = store.getters['hub/findDevice'](props.id) as Device;
-      if (device != undefined) {
-        automation.value.id = device.id;
-        automation.value.friendlyname = device.friendly_name;
+        createNewTrigger();
       }
+    },
+    { immediate: true }
+  );
 
-      createNewTrigger();
-    }
-  },
-  { immediate: true }
-);
+  function createNewTrigger() {
+    const newTrigger = EditableAutomationTrigger.create();
 
-function createNewTrigger() {
-  const newTrigger = EditableAutomationTrigger.create();
-
-  emitOpenTriggerPanelEvent(automation.value.id, newTrigger, saveTrigger, deleteTrigger);
-}
-
-function openScheduler(automation: Automation) {
-  emitOpenSchedulerPanelEvent(automation);
-}
-
-function cancel() {
-  if (isInViewMode.value) {
-    emit('cancel');
-  } else {
-    createCloseLastPanelEvent();
+    emitOpenTriggerPanelEvent(automation.value.id, newTrigger, saveTrigger, deleteTrigger);
   }
-}
 
-function rowClicked(event: DataTableRowClickEvent): void {
-  const trigger = automation.value.triggers[event.index];
+  function openScheduler(automation: Automation) {
+    emitOpenSchedulerPanelEvent(automation);
+  }
 
-  emitOpenTriggerPanelEvent(automation.value.id, trigger, saveTrigger, deleteTrigger);
-}
+  function cancel() {
+    if (isInViewMode.value) {
+      emit('cancel');
+    } else {
+      createCloseLastPanelEvent();
+    }
+  }
 
-function onDeleteTriggerClick(event: Event, trgger: AutomationTrigger): void {
-  deleteTrigger(trgger);
-}
+  function rowClicked(event: DataTableRowClickEvent): void {
+    const trigger = automation.value.triggers[event.index];
 
-function onComponentDisplayed() {
-  isInViewMode.value = false;
-}
-function onComponentHidden() {
-  isInViewMode.value = true;
-}
-function createCloseLastPanelEvent() {
-  emitCloseLastPanel();
-}
+    emitOpenTriggerPanelEvent(automation.value.id, trigger, saveTrigger, deleteTrigger);
+  }
 
-function saveAutomation() {
-  store.dispatch('automations/save', automation.value as Automation);
-  router.push('/viewer');
-}
+  function onDeleteTriggerClick(event: Event, trigger: AutomationTrigger): void {
+    deleteTrigger(trigger);
+  }
 
-function deleteAutomation() {
-  var sourceAutomation = store.getters['automations/find'](props.id);
-  if (sourceAutomation != undefined) {
-    store.dispatch('automations/delete', automation.value.id);
-    // todo; alert message box to ask user
+  function onComponentDisplayed() {
+    isInViewMode.value = false;
+  }
+  function onComponentHidden() {
+    isInViewMode.value = true;
+  }
+  function createCloseLastPanelEvent() {
+    emitCloseLastPanel();
+  }
+
+  function saveAutomation() {
+    store.dispatch('automations/save', automation.value as Automation);
     router.push('/viewer');
   }
-}
 
-function deleteTrigger(trigger: AutomationTrigger): void {
-  automation.value.triggers = automation.value.triggers.filter((e: AutomationTrigger) => e != trigger);
-}
-
-function saveTrigger(trigger: AutomationTrigger): void {
-  const idx = automation.value.triggers.indexOf(trigger);
-  if (idx == -1) {
-    automation.value.triggers.push(trigger);
-  } else {
-    automation.value.triggers[idx] = trigger;
-  }
-}
-
-function getConditionsDescription(trigger: AutomationTrigger): string {
-  var conditions = trigger.conditions;
-  if (conditions.length == 0) {
-    return '';
+  function deleteAutomation() {
+    var sourceAutomation = store.getters['automations/find'](props.id);
+    if (sourceAutomation != undefined) {
+      store.dispatch('automations/delete', automation.value.id);
+      // todo; alert message box to ask user
+      router.push('/viewer');
+    }
   }
 
-  var condition = conditions[0];
-  var description = condition.name + ' ' + condition.equality + ' ' + condition.value;
-  if (conditions.length > 1) {
-    description += '...';
+  function deleteTrigger(trigger: AutomationTrigger): void {
+    automation.value.triggers = automation.value.triggers.filter((e: AutomationTrigger) => e != trigger);
   }
 
-  return description;
-}
-
-const deviceNameFromId = (id: string): string => {
-  const device = store.getters['hub/findDevice'](id) as Device;
-  if (device == undefined) {
-    return '';
-  }
-  return device.friendly_name;
-};
-
-function getActionDescription(trigger: AutomationTrigger): string {
-  if (trigger.actions.every((a: AutomationAction) => a.id == '')) {
-    return '<EMPTY>';
+  function saveTrigger(trigger: AutomationTrigger): void {
+    const idx = automation.value.triggers.indexOf(trigger);
+    if (idx == -1) {
+      automation.value.triggers.push(trigger);
+    } else {
+      automation.value.triggers[idx] = trigger;
+    }
   }
 
-  const res = trigger.actions.map((a: AutomationAction) => `${deviceNameFromId(a.id)}.${findActionExposes(a).join('')}`);
-  return res.join(',');
-}
+  function getConditionsDescription(trigger: AutomationTrigger): string {
+    var conditions = trigger.conditions;
+    if (conditions.length == 0) {
+      return '';
+    }
+
+    var condition = conditions[0];
+    var description = condition.name + ' ' + condition.equality + ' ' + condition.value;
+    if (conditions.length > 1) {
+      description += '...';
+    }
+
+    return description;
+  }
+
+  const deviceNameFromId = (id: string): string => {
+    const device = store.getters['hub/findDevice'](id) as Device;
+    if (device == undefined) {
+      return '';
+    }
+    return device.friendly_name;
+  };
+
+  function getActionDescription(trigger: AutomationTrigger): string {
+    if (trigger.actions.every((a: AutomationAction) => a.id == '')) {
+      return '<EMPTY>';
+    }
+
+    const res = trigger.actions.map(
+      (a: AutomationAction) => `${deviceNameFromId(a.id)}.${findActionExposes(a).join('')}`
+    );
+    return res.join(',');
+  }
+
+  function openDeleteTriggerConfirmationDialog(trigger: AutomationTrigger) {
+    const props = {
+      title: 'Question',
+      message: `Delete trigger ${trigger.name} ?`,
+    };
+    emitOpenConfirmationDialog(() => deleteTrigger(trigger), props);
+  }
 </script>
 
 <template>
   <!-- TODO: find better way to do this
     we have 2 components that use the same template and toggle from the if isinVieMode -->
   <Button icon="pi pi-times" size="large" variant="text" rounded class="float-end" @click="cancel()" />
-  <div v-bind:style="{
-    display: isInViewMode ? 'block' : 'none',
-  }">
+  <div
+    v-bind:style="{
+      display: isInViewMode ? 'block' : 'none',
+    }">
     <div class="grid">
       <div class="row">
         <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
@@ -174,7 +185,10 @@ function getActionDescription(trigger: AutomationTrigger): string {
           <InputBox label="Friendly Name" :disabled="true" :value="automation.friendlyname" class="w-full" />
         </div>
         <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
-          <InputBox label="Description" @updated="(v) => (automation.description = v)" :value="automation.description"
+          <InputBox
+            label="Description"
+            @updated="(v) => (automation.description = v)"
+            :value="automation.description"
             class="w-full" />
         </div>
         <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
@@ -199,7 +213,7 @@ function getActionDescription(trigger: AutomationTrigger): string {
           <Button icon="pi pi-plus" variant="text" rounded @click="createNewTrigger()" />
         </template>
         <template #body="slotProps">
-          <Button icon="pi pi-trash" variant="text" rounded @click="onDeleteTriggerClick($event, slotProps.data)" />
+          <Button icon="pi pi-trash" variant="text" rounded @click="openDeleteTriggerConfirmationDialog(slotProps.data)" />
         </template>
       </Column>
     </DataTable>
@@ -207,9 +221,10 @@ function getActionDescription(trigger: AutomationTrigger): string {
       <Button style="width: 99%" icon="pi pi-plus" label="Add Trigger" @click="createNewTrigger()" text size="small" />
     </div>
   </div>
-  <div v-bind:style="{
-    display: isInViewMode == false ? 'block' : 'none',
-  }">
+  <div
+    v-bind:style="{
+      display: isInViewMode == false ? 'block' : 'none',
+    }">
     <Panel @close="onComponentHidden" @component-displayed="onComponentDisplayed"> </Panel>
   </div>
 </template>

@@ -209,11 +209,12 @@ import { getSensorIcon } from '../../modules/formatters/sensor-formatter';
 
   function buildMenuItems(expose: Expose) {
     if (!expose.values) {
-      return [];
+      return [] ;
     }
     return Object.values(expose.values).map((value: any) => {
       return {
         label: value,
+        value: value,
         command: () => {
           updateValue(expose.name, value);
         },

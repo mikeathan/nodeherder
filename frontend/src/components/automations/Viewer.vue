@@ -4,6 +4,7 @@
   import { store } from '../../store/index';
   import AutomationStatus from './schedule/AutomationStatus.vue';
   import { Automations } from '@/types/automation.type';
+  import { emitOpenConfirmationDialog } from '@/contracts/dialog-events';
 
   const router = useRouter();
 
@@ -13,6 +14,14 @@
     }
     return store.getters['automations/listAll']() as Automations;
   });
+
+  function openDeleteAutomationConfirmationDialog(id: string) {
+    const props = {
+      title: 'Question',
+      message: `Delete automation ${id} ?`,
+    };
+    emitOpenConfirmationDialog(() => onDeleteAutomationClick(id), props);
+  }
 
   function onDeleteAutomationClick(id: string): void {
     store.dispatch('ws/emit', {
@@ -63,8 +72,11 @@
           <!-- Actions -->
           <div class="flex align-items-center gap-2">
             <AutomationStatus :automation="automation" />
-            <Button icon="pi pi-trash" variant="text" rounded @click="onDeleteAutomationClick(automation.id)" /> add
-            dialog to confirm user
+            <Button
+              icon="pi pi-trash"
+              variant="text"
+              rounded
+              @click="openDeleteAutomationConfirmationDialog(automation.id)" />
           </div>
         </li>
       </ul>

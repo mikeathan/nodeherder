@@ -24,6 +24,7 @@
   import { getIconForType } from '@/modules/formatters/icon.formatter';
   import Menu from 'primevue/menu';
   import { ButtonClickEventType, DropDownItemType } from '@/types/controls.type';
+  import { emitOpenConfirmationDialog } from '@/contracts/dialog-events';
 
   const props = defineProps({
     action: {
@@ -137,6 +138,14 @@
     emit('delete', action.value);
   }
 
+  function openDeleteExposeConfirmationDialog(expose: AutomationTriggerActionExpose) {
+    const props = {
+      title: 'Question',
+      message: `Delete expose ${expose.name} ?`,
+    };
+    emitOpenConfirmationDialog(() => removeTriggerExpose(expose), props);
+  }
+
   function removeTriggerExpose(expose: AutomationTriggerActionExpose) {
     action.value.exposes = action.value.exposes.filter((e) => e != expose);
   }
@@ -207,7 +216,7 @@
       v-model:items="action.exposes"
       item-key="name"
       :show-handle="true"
-      @delete-item="removeTriggerExpose">
+      @delete-item="openDeleteExposeConfirmationDialog">
       <template #default="{ item }">
         <div class="col sm:col-4">
           <ExposeSelector
