@@ -1,22 +1,12 @@
 <script setup lang="ts">
-  import { computed, watch } from 'vue';
   import { useRouter } from 'vue-router';
   import { store } from '../../store/index';
   import AutomationStatus from './schedule/AutomationStatus.vue';
   import { emitOpenConfirmationDialog } from '@/contracts/dialog-events';
+  import { useAutomationsLoader } from '@/mixins/composables/useAutomationLoader';
 
   const router = useRouter();
-  const automations = computed(() => store.getters['automations/listAll']());
-
-  watch(
-    () => store.getters['ws/getConnectionStatus'],
-    (status) => {
-      if (status === 'connected' && !store.getters['automations/initialized']()) {
-        store.dispatch('ws/emit', { event: 'loadAutomations' });
-      }
-    },
-    { immediate: true }
-  );
+  const { automations } = useAutomationsLoader();
 
   function openDeleteAutomationConfirmationDialog(id: string) {
     const props = {
