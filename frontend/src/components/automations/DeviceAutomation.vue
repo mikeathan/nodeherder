@@ -15,6 +15,7 @@
   import { DataTableRowClickEvent } from 'primevue';
   import { formatTriggerConditions } from '@/transformers/automation/trigger-transformers';
   import { emitOpenConfirmationDialog } from '@/contracts/dialog-events';
+  import { useAutomationsLoader } from '@/mixins/composables/useAutomationLoader';
 
   const emit = defineEmits(['cancel']);
 
@@ -25,35 +26,42 @@
   const router = useRouter();
   const automation = ref<Automation>({} as Automation);
   const isInViewMode = ref<boolean>(true);
-  const buttonPanelItems = computed(() => {
-    const isActionValid =
-      automation.value.triggers.length == 0 &&
-      automation.value.triggers.filter((k) => k.actions.length != 0).length == automation.value.triggers.length;
-    return createEditAutomationButtonItems(
-      () => saveAutomation(),
-      () => deleteAutomation(),
-      () => openScheduler(automation.value),
-      isActionValid,
-      isActionValid,
-      isActionValid
-    );
-  });
+  // const buttonPanelItems = computed(() => {
+  //   const isActionValid =
+  //     automation.value != null &&
+  //     automation.value.triggers.length == 0 &&
+  //     automation.value.triggers.filter((k) => k.actions.length != 0).length == automation.value.triggers.length;
+  //   return createEditAutomationButtonItems(
+  //     () => saveAutomation(),
+  //     () => deleteAutomation(),
+  //     () => openScheduler(automation.value),
+  //     isActionValid,
+  //     isActionValid,
+  //     isActionValid
+  //   );
+  // });
 
+  const automations = useAutomationsLoader();
+
+  to fix 
   watch(
-    () => props.id,
-    () => {
-      var sourceAutomation = store.getters['automations/find'](props.id) as Device;
-      if (sourceAutomation != undefined) {
-        // make a deep copy to make it not reactive
-        automation.value = JSON.parse(JSON.stringify(sourceAutomation)) as DeviceAutomation;
-      } else {
-        automation.value = new DeviceAutomation();
-        var device = store.getters['hub/findDevice'](props.id) as Device;
-        if (device != undefined) {
-          automation.value.id = device.id;
-          automation.value.friendlyname = device.friendly_name;
-        }
+    [() => props.id, automations],
+    ([id, autos]) => {
+      if (!id || autos.length === 0) return;
 
+      const found = autos.find((a) => a.id === id) as Automation | undefined;
+      if (found) {
+        // deep clone so editing doesn’t mutate the loader’s source
+        automation.value = JSON.parse(JSON.stringify(found)) as DeviceAutomation;
+      } else {
+        // if automation doesn’t exist yet, create new one
+        const device = store.getters['hub/findDevice'](id) as Device | undefined;
+        const fresh = new DeviceAutomation();
+        if (device) {
+          fresh.id = device.id;
+          fresh.friendlyname = device.friendly_name;
+        }
+        automation.value = fresh;
         createNewTrigger();
       }
     },
@@ -196,7 +204,7 @@
         </div>
       </div>
     </div>
-    <ButtonPanel :buttons="buttonPanelItems" class="pb-3 pt-3" severity="secondary" />
+    <!-- <ButtonPanel :buttons="buttonPanelItems" class="pb-3 pt-3" severity="secondary" /> -->
     <DataTable :value="automation.triggers" @row-click="rowClicked" selectionMode="single">
       <Column field="action" header="Action">
         <template #body="slotProps">
@@ -213,7 +221,11 @@
           <Button icon="pi pi-plus" variant="text" rounded @click="createNewTrigger()" />
         </template>
         <template #body="slotProps">
-          <Button icon="pi pi-trash" variant="text" rounded @click="openDeleteTriggerConfirmationDialog(slotProps.data)" />
+          <Button
+            icon="pi pi-trash"
+            variant="text"
+            rounded
+            @click="openDeleteTriggerConfirmationDialog(slotProps.data)" />
         </template>
       </Column>
     </DataTable>

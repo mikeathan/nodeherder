@@ -1,8 +1,9 @@
 import { computed, watch } from 'vue';
 import { store } from '@/store/index';
+import { Automations } from '@/types/automation.type';
 
 export function useAutomationsLoader() {
-  const automations = computed(() => store.getters['automations/listAll']());
+  const automations = computed(() => store.getters['automations/listAll']() as Automations);
 
   watch(
     () => store.getters['ws/getConnectionStatus'],
@@ -14,5 +15,5 @@ export function useAutomationsLoader() {
     { immediate: true }
   );
 
-  return { automations };
+  return automations;
 }

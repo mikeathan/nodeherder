@@ -6,7 +6,7 @@
   import { useAutomationsLoader } from '@/mixins/composables/useAutomationLoader';
 
   const router = useRouter();
-  const { automations } = useAutomationsLoader();
+  const automations = useAutomationsLoader();
 
   function openDeleteAutomationConfirmationDialog(id: string) {
     const props = {
