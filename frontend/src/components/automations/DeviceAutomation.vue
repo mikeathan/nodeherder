@@ -26,42 +26,42 @@
   const router = useRouter();
   const automation = ref<Automation>({} as Automation);
   const isInViewMode = ref<boolean>(true);
-  // const buttonPanelItems = computed(() => {
-  //   const isActionValid =
-  //     automation.value != null &&
-  //     automation.value.triggers.length == 0 &&
-  //     automation.value.triggers.filter((k) => k.actions.length != 0).length == automation.value.triggers.length;
-  //   return createEditAutomationButtonItems(
-  //     () => saveAutomation(),
-  //     () => deleteAutomation(),
-  //     () => openScheduler(automation.value),
-  //     isActionValid,
-  //     isActionValid,
-  //     isActionValid
-  //   );
-  // });
+
+  const buttonPanelItems = computed(() => {
+    const isActionValid =
+      automation.value.triggers?.length == 0 &&
+      automation.value.triggers?.filter((k) => k.actions.length != 0).length == automation.value.triggers.length;
+    return createEditAutomationButtonItems(
+      () => saveAutomation(),
+      () => deleteAutomation(),
+      () => openScheduler(automation.value),
+      isActionValid,
+      isActionValid,
+      isActionValid
+    );
+  });
 
   const automations = useAutomationsLoader();
 
-  to fix 
+  // look for changes in props.id or store automations
   watch(
     [() => props.id, automations],
-    ([id, autos]) => {
-      if (!id || autos.length === 0) return;
+    ([id, updatedAutomations]) => {
+      if (!id || updatedAutomations.length === 0) return;
 
-      const found = autos.find((a) => a.id === id) as Automation | undefined;
+      const found = updatedAutomations.find((a) => a.id === id) as Automation | undefined;
       if (found) {
-        // deep clone so editing doesn’t mutate the loader’s source
+        // deep clone so editing doesn’t mutate the  source
         automation.value = JSON.parse(JSON.stringify(found)) as DeviceAutomation;
       } else {
         // if automation doesn’t exist yet, create new one
         const device = store.getters['hub/findDevice'](id) as Device | undefined;
-        const fresh = new DeviceAutomation();
+        const newAutomation = new DeviceAutomation();
         if (device) {
-          fresh.id = device.id;
-          fresh.friendlyname = device.friendly_name;
+          newAutomation.id = device.id;
+          newAutomation.friendlyname = device.friendly_name;
         }
-        automation.value = fresh;
+        automation.value = newAutomation;
         createNewTrigger();
       }
     },
@@ -204,7 +204,7 @@
         </div>
       </div>
     </div>
-    <!-- <ButtonPanel :buttons="buttonPanelItems" class="pb-3 pt-3" severity="secondary" /> -->
+    <ButtonPanel :buttons="buttonPanelItems" class="pb-3 pt-3" severity="secondary" />
     <DataTable :value="automation.triggers" @row-click="rowClicked" selectionMode="single">
       <Column field="action" header="Action">
         <template #body="slotProps">
