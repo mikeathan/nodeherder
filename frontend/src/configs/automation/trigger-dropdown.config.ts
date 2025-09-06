@@ -11,7 +11,7 @@ import {
 import {
   AutomationActionTypes,
   AutomationConditionTypes,
-  TriggerActionExposeBroadcastModes,
+  PublishModes,
   TriggerActionOperations,
 } from '@/types/automation.type.js';
 
@@ -50,10 +50,10 @@ export function createTriggerActionModesDropdowItems(
 ): DropDownItemType[] {
   let items: DropDownItemType[] = [];
 
-  Object.entries(TriggerActionExposeBroadcastModes).forEach(([key, mode]) => {
-    items.push(createDropDownItem(`${key}`, mode, command));
+  Object.entries(PublishModes).forEach(([key, mode]) => {
+    items.push(createDropDownItem(mode, mode, command));
   });
-
+  
   return items;
 }
 

@@ -17,6 +17,13 @@ import (
 // action set brighness +/- some value = [value_source] [arithmetic operator] [step_value]
 // action set brighness  +/- some other numeric combination  eg direction_time * 0.5
 
+type PublishMode string
+
+const (
+	PublishBatch  PublishMode = "batch"  // all commands in one payload
+	PublishSingle PublishMode = "single" // one payload per command
+)
+
 const (
 	TriggerAction       = "trigger"
 	StepAction          = "step"
@@ -38,7 +45,7 @@ type MqttTriggerAction struct {
 	MqttBaseAction
 	Exposes       []*MqttTriggerActionExpose `json:"exposes"`
 	Delay         *utils.TimeInterval        `json:"delay,omitempty"`
-	SplitCommands bool                       `json:"splitCommands,omitempty"`
+	PublishMode   PublishMode                `json:"publishMode,omitempty"`
 }
 
 func NewTriggerAction() *MqttTriggerAction {
@@ -197,7 +204,7 @@ func (b *MqttBaseAction) processAction(ctx *DeviceContext) error {
 		return err
 	}
 
-	if payload.SplitCommands {
+	if payload.PublishMode == PublishSingle {
 		for key, value := range payload.Commands {
 			single := map[string]any{key: value}
 

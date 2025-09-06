@@ -1,11 +1,10 @@
 <script setup lang="ts">
   import { computed, ref, watch, PropType } from 'vue';
   import {
-    TriggerActionExposeBroadcastMode,
-    TriggerActionExposeBroadcastModes,
     AutomationTriggerAction,
     AutomationTriggerActionExpose,
     TriggerActionOperation,
+    PublishMode,
   } from '@/types/automation.type.js';
   import ButtonPanel from '@/components/controls/ButtonPanel.vue';
   import {
@@ -48,7 +47,7 @@
 
   const operations = ref<TriggerActionOperation[]>([]);
 
-  const splitCommands = ref<boolean>(props.action.splitCommands ?? false);
+  const publishMode = ref<PublishMode>(props.action.publishMode ?? 'batch');
   watch(
     () => props.action,
     () => {
@@ -131,8 +130,8 @@
     expose.data = null;
   }
 
-  function setBroadcastMode(value: boolean) {
-    action.value.splitCommands = value;
+  function setBroadcastMode(value: PublishMode) {
+    action.value.publishMode = value;
   }
 
   function saveAction() {
@@ -210,7 +209,7 @@
         :size="16"
         text="Broadcast"
         :children="broadcastModeDropdownItems()"
-        :selected="splitCommands"
+        :selected="publishMode"
         :icon="getIconForType('broadcast')"
         :disabled="!hasMultipleExposes()" />
     </div>

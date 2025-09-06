@@ -13,7 +13,7 @@ func CreateTriggerOperation(action *MqttTriggerAction) actionOperation {
 		actionData[expose.Name] = expose.Data
 	}
 
-	return newTriggerOperation(actionData, action.SplitCommands)
+	return newTriggerOperation(actionData, action.PublishMode)
 }
 
 func CreateStepOperation(expose *devices.Entity, action *MqttStepAction) actionOperation {
@@ -48,7 +48,8 @@ func CreateRotateOperation(expose *devices.Entity) actionOperation {
 
 type actionPayload struct {
 	Commands      map[string]any
-	SplitCommands bool
+	PublishMode   PublishMode
+	
 }
 
 type actionOperation interface {
@@ -57,15 +58,15 @@ type actionOperation interface {
 
 type triggerOperation struct {
 	data          map[string]any
-	splitCommands bool
+	publishMode   PublishMode
 }
 
-func newTriggerOperation(data map[string]any, splitCommands bool) actionOperation {
-	return &triggerOperation{data: data, splitCommands: splitCommands}
+func newTriggerOperation(data map[string]any, publishMode PublishMode) actionOperation {
+	return &triggerOperation{data: data, publishMode: publishMode}
 }
 
 func (t *triggerOperation) CreatePayload() (actionPayload, error) {
-	return actionPayload{Commands: t.data, SplitCommands: t.splitCommands}, nil
+	return actionPayload{Commands: t.data, PublishMode: t.publishMode}, nil
 }
 
 type rotateOperation struct {
