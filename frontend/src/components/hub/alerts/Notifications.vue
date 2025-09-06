@@ -9,9 +9,7 @@
   const toast = useToast();
 
   watchEffect(() => {
-    const messages = store.getters[
-      'alerts/messages'
-    ]() as AlertMessage[];
+    const messages = store.getters['alerts/messages']() as AlertMessage[];
 
     messages.forEach((alert: AlertMessage) => {
       if (alert.visible) return;
@@ -26,8 +24,20 @@
     });
   });
 </script>
-<style scoped></style>
+<style>
+  .toaster {
+    max-width: 90vw;
+  }
 
+  @media (max-width: 768px) {
+    .toaster {
+      width: 90vw !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      right: auto !important;
+    }
+  }
+</style>
 <template>
-  <Toast position="top-right" />
+  <Toast position="top-right" class="toaster" />
 </template>
