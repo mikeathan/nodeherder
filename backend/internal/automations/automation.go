@@ -21,6 +21,14 @@ var automationTypeRegistry = map[AutomationType]reflect.Type{
 
 type TriggerEvent interface{}
 
+type Automation interface {
+	Evaluate(event TriggerEvent) bool
+	Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error
+	GetId() string
+	GetFriendlyName() string
+	GetEnabled() bool
+}
+
 type BaseAutomation struct {
 	Id           string          `json:"id"`
 	Type         AutomationType  `json:"type"`
@@ -42,18 +50,7 @@ func NewBaseAutomation() *BaseAutomation {
 		Schedules:    []*TimeSchedule{},
 	}
 }
-https://chatgpt.com/c/68bda3b2-0b44-8322-98ea-c2217aa2e20a
-func (d *BaseCondition) Evaluate(event TriggerEvent) bool {
-
-	// d.ctx.SetPayload(device.Exposes)
-
-	// // NOTE: a trigger can have multiple conditions.
-	// // e.g presence can have multiple conditions for on and off
-	// for _, trigger := range d.Triggers {
-	// 	if _, ok := device.Exposes[trigger.Name]; ok {
-	// 		trigger.process(d.ctx)
-	// 	}
-	// }
+func (d *BaseAutomation) Evaluate(event TriggerEvent) bool {
 	return false
 }
 

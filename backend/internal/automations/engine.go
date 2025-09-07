@@ -28,7 +28,7 @@ type Engine interface { // TODO: might need to move it to Models????
 type AutomationEngine struct {
 	mqttClient mqtt.MqttClient
 	registrar  services.DeviceRegistrar
-	storage    storage.Storage[BaseAutomation]
+	storage    storage.Storage[Automation]
 	handlers   []AutomationHandler
 }
 
@@ -37,21 +37,21 @@ func NewEngine(handlerFactory []AutomationHandler, registrar services.DeviceRegi
 	return &AutomationEngine{
 		mqttClient: mqtt,
 		registrar:  registrar,
-		storage: storage.NewJsonDiskStorage(automationDir, func() *BaseAutomation {
+		storage: storage.NewJsonDiskStorage(automationDir, func() Automation {
 			return NewBaseAutomation()
 		}),
 		handlers: handlerFactory,
 	}
 }
 
-func (a *AutomationEngine) WithStorage(storage storage.Storage[BaseAutomation]) {
+func (a *AutomationEngine) WithStorage(storage storage.Storage[Automation]) {
 	a.storage = storage
 }
 
 func (a *AutomationEngine) IsAutomationEnabled(id string) bool {
 	automation, err := a.storage.LoadFromCache(id)
 	if err == nil {
-		return automation.Enabled
+		return automation.GetEnabled()
 	}
 
 	return false
@@ -59,20 +59,20 @@ func (a *AutomationEngine) IsAutomationEnabled(id string) bool {
 
 func (a *AutomationEngine) HandleDevice(device *devices.Device) {
 	automation, err := a.storage.LoadFromCache(device.Id)
-	if err == nil && automation.Enabled {
-		automation.Evaluate(device)
+	if err == nil && automation.GetEnabled() {
+		automation.Evaluate(&DeviceEvent{Device: device})
 	}
 }
 
-func (a *AutomationEngine) GetAllTriggers() []*BaseAutomation {
+func (a *AutomationEngine) GetAllTriggers() []Automation {
 	return a.storage.LoadAll()
 }
 
-func (a *AutomationEngine) Load(id string) (*BaseAutomation, error) {
+func (a *AutomationEngine) Load(id string) (Automation, error) {
 	return a.storage.Load(id)
 }
 
-func (a *AutomationEngine) Add(automation *BaseAutomation) error {
+func (a *AutomationEngine) Add(automation Automation) error {
 
 	utils.LogInfof("adding automation id=%s, friendlyName=%s, enabled=%v", automation.Id, automation.FriendlyName, automation.Enabled)
 	err := a.configureAutomation(automation)
@@ -131,7 +131,7 @@ func (a *AutomationEngine) Initialize() {
 	}
 }
 
-func (a *AutomationEngine) configureAutomation(automation *BaseAutomation) error {
+func (a *AutomationEngine) configureAutomation(automation Automation) error {
 
 	err := automation.Configure(a.registrar, a.mqttClient)
 	if err != nil {

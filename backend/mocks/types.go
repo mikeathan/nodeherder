@@ -773,34 +773,34 @@ func (s *NopAppStore) ResolveFriendlyName(friendlyName string) string {
 }
 
 // Mock engine
-type MockAutomationEngine[T any] struct {
-	cache    map[string]*automations.Device
-	mockData []*automations.Device
+type MockAutomationEngine[T automations.Automation] struct {
+	cache    map[string]automations.Automation
+	mockData []automations.Automation
 }
 
-func NewMockAutomationStorage[T automations.Device](mockData []*automations.Device) storage.Storage[automations.Device] {
-	d := new(MockAutomationEngine[automations.Device])
-	d.cache = make(map[string]*automations.Device)
+func NewMockAutomationStorage[T automations.Automation](mockData []automations.Automation) storage.Storage[automations.Automation] {
+	d := new(MockAutomationEngine[T])
+	d.cache = make(map[string]automations.Automation)
 	d.mockData = mockData
 	return d
 }
 
-func (d *MockAutomationEngine[T]) Initialize() ([]*automations.Device, error) {
+func (d *MockAutomationEngine[T]) Initialize() ([]automations.Automation, error) {
 
 	d.ClearCache()
 
 	// initialize with mock data
 	for _, mockItem := range d.mockData {
-		d.Store(mockItem.Id, mockItem)
+		d.Store(mockItem.GetId(), mockItem)
 	}
 
 	return d.LoadAll(), nil
 }
 
-func (d *MockAutomationEngine[T]) LoadAll() []*automations.Device {
+func (d *MockAutomationEngine[T]) LoadAll() []automations.Automation {
 
 	keys := make([]string, 0, len(d.cache))
-	values := make([]*automations.Device, 0, len(d.cache))
+	values := make([]automations.Automation, 0, len(d.cache))
 
 	for k, _ := range d.cache {
 		keys = append(keys, k)
@@ -827,12 +827,12 @@ func (d *MockAutomationEngine[T]) ClearCache() {
 	}
 }
 
-func (d *MockAutomationEngine[T]) Store(name string, item *automations.Device) error {
+func (d *MockAutomationEngine[T]) Store(name string, item automations.Automation) error {
 
 	d.addToCache(name, item)
 	return nil
 }
-func (d *MockAutomationEngine[T]) LoadFromCache(name string) (*automations.Device, error) {
+func (d *MockAutomationEngine[T]) LoadFromCache(name string) (automations.Automation, error) {
 	item := d.loadFromCache(name)
 	if item != nil {
 		return item, nil
@@ -841,7 +841,7 @@ func (d *MockAutomationEngine[T]) LoadFromCache(name string) (*automations.Devic
 	return nil, errors.New("not in cache")
 }
 
-func (d *MockAutomationEngine[T]) Load(name string) (*automations.Device, error) {
+func (d *MockAutomationEngine[T]) Load(name string) (automations.Automation, error) {
 
 	item := d.loadFromCache(name)
 	if item != nil {
@@ -849,7 +849,7 @@ func (d *MockAutomationEngine[T]) Load(name string) (*automations.Device, error)
 	}
 
 	for _, mockItem := range d.mockData {
-		if mockItem.Id == name {
+		if mockItem.GetId() == name {
 			return mockItem, nil
 		}
 	}
@@ -857,11 +857,11 @@ func (d *MockAutomationEngine[T]) Load(name string) (*automations.Device, error)
 	return nil, errors.New("item not found")
 }
 
-func (d *MockAutomationEngine[T]) addToCache(name string, item *automations.Device) {
+func (d *MockAutomationEngine[T]) addToCache(name string, item automations.Automation) {
 	d.cache[name] = item
 }
 
-func (d *MockAutomationEngine[T]) loadFromCache(name string) *automations.Device {
+func (d *MockAutomationEngine[T]) loadFromCache(name string) automations.Automation {
 	if item, ok := d.cache[name]; ok {
 		return item
 	}

@@ -38,8 +38,8 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 
 	deviceAutomation := utils_test.CreateDoorContactDurationWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
-	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
-	// setup device
+	automationStorage := mocks.NewMockAutomationStorage([]automations.Automation{deviceAutomation})
+	// stup device
 	alarmDevice := utils_test.CreateAlarmDeviceWithDuration("x02222222", "alarm device", false, 1)
 	doorSensorDevice := utils_test.CreateDoorSensorDevice("x01111111", "front door sensor", false)
 
@@ -121,13 +121,13 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 		automations.NewAutomationScheduler(
 			automations.WithContext(context.Background()),
 			automations.WithSchedulerClock(clock),
-			automations.WithCustomScheduleFuncs(map[string]func(*automations.Device) error{
-				"enable": func(a *automations.Device) error {
+			automations.WithCustomScheduleFuncs(map[string]func(*automations.BaseAutomation) error{
+				"enable": func(a *automations.BaseAutomation) error {
 					a.Enabled = true
 					wg.Done()
 					return nil
 				},
-				"disable": func(a *automations.Device) error {
+				"disable": func(a *automations.BaseAutomation) error {
 					a.Enabled = false
 					wg.Done()
 					return nil
@@ -1230,7 +1230,7 @@ func TestRenameDashboardGroup(t *testing.T) {
 		wg.Done()
 		return nil
 	}
-	
+
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
 	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
 

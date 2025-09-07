@@ -52,9 +52,9 @@ func (s *AutomationScheduleFunc) Do(a *BaseAutomation) func() error {
 }
 
 type AutomationHandler interface {
-	Process(automation *BaseAutomation) error
+	Process(automation Automation) error
 	Type() string
-	IsRunning(automation *BaseAutomation) bool
+	IsRunning(automation Automation) bool
 }
 
 type AutomationScheduler struct {
@@ -146,8 +146,8 @@ func (a *AutomationScheduler) Type() string {
 	return "scheduler"
 }
 
-func (a *AutomationScheduler) IsRunning(automation *BaseAutomation) bool {
-	if scheduler := a.schedulers[automation.Id]; scheduler != nil {
+func (a *AutomationScheduler) IsRunning(automation Automation) bool {
+	if scheduler := a.schedulers[automation.GetId()]; scheduler != nil {
 		return scheduler.IsRunning()
 	}
 	return false

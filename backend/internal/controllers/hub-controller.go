@@ -402,7 +402,7 @@ func (h *HubController) registerEventHubEvents() {
 
 		// TODO: move that in automations package
 		// pass payload and return model
-		automation := automations.NewDevice("")
+		automation := automations.NewBaseAutomation()
 		bytes, _ := json.Marshal(p)
 		err := json.Unmarshal(bytes, &automation)
 		if err != nil {
@@ -473,7 +473,7 @@ func (h *HubController) registerEventHubEvents() {
 }
 
 // we only use that to override the default automation storage, lame but we cant easily refactor as weget alot of cyclic dependencies
-func (h *HubController) WithAutomationStorage(storage storage.Storage[automations.Device]) {
+func (h *HubController) WithAutomationStorage(storage storage.Storage[automations.BaseAutomation]) {
 	h.automationEngine.WithStorage(storage)
 }
 
