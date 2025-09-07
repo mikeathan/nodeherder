@@ -29,6 +29,32 @@ type BaseAutomation struct {
 	Schedules    []*TimeSchedule `json:"schedules"`
 }
 
+func NewBaseAutomation() *BaseAutomation {
+	return &BaseAutomation{
+		Id:           "",
+		Type:         "",
+		FriendlyName: "",
+		Description:  "",
+		Enabled:      false,
+		Triggers:     []*Trigger{},
+		Schedules:    []*TimeSchedule{},
+	}
+}
+
+func (d *BaseCondition) Evaluate(device *devices.Device) bool {
+
+	// d.ctx.SetPayload(device.Exposes)
+
+	// // NOTE: a trigger can have multiple conditions.
+	// // e.g presence can have multiple conditions for on and off
+	// for _, trigger := range d.Triggers {
+	// 	if _, ok := device.Exposes[trigger.Name]; ok {
+	// 		trigger.process(d.ctx)
+	// 	}
+	// }
+	return false
+}
+
 func (a *BaseAutomation) UnmarshalJSON(data []byte) error {
 	var temp map[string]json.RawMessage
 	if err := json.Unmarshal(data, &temp); err != nil {
@@ -57,6 +83,7 @@ func (a *BaseAutomation) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
+
 func (d *BaseAutomation) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
 
 	// validate conditions
