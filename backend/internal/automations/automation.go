@@ -19,6 +19,8 @@ var automationTypeRegistry = map[AutomationType]reflect.Type{
 	"device": reflect.TypeOf(Device{}),
 }
 
+type TriggerEvent interface{}
+
 type BaseAutomation struct {
 	Id           string          `json:"id"`
 	Type         AutomationType  `json:"type"`
@@ -40,8 +42,8 @@ func NewBaseAutomation() *BaseAutomation {
 		Schedules:    []*TimeSchedule{},
 	}
 }
-
-func (d *BaseCondition) Evaluate(device *devices.Device) bool {
+https://chatgpt.com/c/68bda3b2-0b44-8322-98ea-c2217aa2e20a
+func (d *BaseCondition) Evaluate(event TriggerEvent) bool {
 
 	// d.ctx.SetPayload(device.Exposes)
 
