@@ -19,22 +19,22 @@ const ext = ".json"
 
 type JsonDiskStorage[T any] struct {
 	rootDir string
-	cache   map[string]*T
+	cache   map[string]T
 	mutex   sync.RWMutex
-	creator func() *T
+	creator func() T
 }
 
-func NewJsonDiskStorage[T any](baseDir string, ctor func() *T) Storage[T] {
+func NewJsonDiskStorage[T any](baseDir string, ctor func() T) Storage[T] {
 	d := new(JsonDiskStorage[T])
 	d.rootDir = baseDir
-	d.cache = map[string]*T{}
+	d.cache = map[string]T{}
 	d.mutex = sync.RWMutex{}
 	d.creator = ctor
 
 	return d
 }
 
-func (d *JsonDiskStorage[T]) Initialize() ([]*T, error) {
+func (d *JsonDiskStorage[T]) Initialize() ([]T, error) {
 	defer d.mutex.Unlock()
 	d.mutex.Lock()
 
@@ -68,16 +68,16 @@ func (d *JsonDiskStorage[T]) Initialize() ([]*T, error) {
 	return d.findAll(), nil
 }
 
-func (d *JsonDiskStorage[T]) LoadAll() []*T {
+func (d *JsonDiskStorage[T]) LoadAll() []T {
 	defer d.mutex.RUnlock()
 	d.mutex.RLock()
 
 	return d.findAll()
 }
 
-func (d *JsonDiskStorage[T]) findAll() []*T {
+func (d *JsonDiskStorage[T]) findAll() []T {
 	keys := make([]string, 0, len(d.cache))
-	values := make([]*T, 0, len(d.cache))
+	values := make([]T, 0, len(d.cache))
 
 	for k, _ := range d.cache {
 		keys = append(keys, k)
@@ -116,7 +116,7 @@ func (d *JsonDiskStorage[T]) deleteCache() {
 		delete(d.cache, k)
 	}
 }
-func (d *JsonDiskStorage[T]) Store(name string, item *T) error {
+func (d *JsonDiskStorage[T]) Store(name string, item T) error {
 
 	defer d.mutex.Unlock()
 	d.mutex.Lock()
@@ -130,26 +130,26 @@ func (d *JsonDiskStorage[T]) Store(name string, item *T) error {
 	return nil
 }
 
-func (d *JsonDiskStorage[T]) LoadFromCache(name string) (*T, error) {
+func (d *JsonDiskStorage[T]) LoadFromCache(name string) (T, error) {
 
 	defer d.mutex.RUnlock()
 	d.mutex.RLock()
 
-	item := d.loadFromCache(name)
-	if item != nil {
+	item, ok := d.loadFromCache(name)
+	if ok {
 		return item, nil
 	}
 	//utils.LogDebugf("item %s not in cache", name)
-	return nil, fmt.Errorf("item %s not in cache", name)
+	return zeroValue[T](), fmt.Errorf("item %s not in cache", name)
 }
 
-func (d *JsonDiskStorage[T]) Load(name string) (*T, error) {
+func (d *JsonDiskStorage[T]) Load(name string) (T, error) {
 
 	defer d.mutex.RUnlock()
 	d.mutex.RLock()
 
-	item := d.loadFromCache(name)
-	if item != nil {
+	item, ok := d.loadFromCache(name)
+	if ok {
 		return item, nil
 	}
 
@@ -157,29 +157,29 @@ func (d *JsonDiskStorage[T]) Load(name string) (*T, error) {
 	item, err := d.loadFile(filePath)
 	if err != nil {
 		utils.LogInfof("Error loading item %s %s", name, err.Error())
-		return nil, err
+		return item, err
 	}
 
 	return item, nil
 }
 
-func (d *JsonDiskStorage[T]) addToCache(name string, item *T) {
+func (d *JsonDiskStorage[T]) addToCache(name string, item T) {
 	d.cache[name] = item
 }
 
-func (d *JsonDiskStorage[T]) loadFromCache(name string) *T {
+func (d *JsonDiskStorage[T]) loadFromCache(name string) (T, bool) {
 	if item, ok := d.cache[name]; ok {
-		return item
+		return item, true
 	}
 
-	return nil
+	return zeroValue[T](), false
 }
 
 func (d *JsonDiskStorage[T]) deleteFromCache(name string) {
 	delete(d.cache, name)
 }
 
-func (d *JsonDiskStorage[T]) saveFile(item *T, name string, pretty bool) error {
+func (d *JsonDiskStorage[T]) saveFile(item T, name string, pretty bool) error {
 	filePath := d.getFilePath(name)
 
 	data, err := json.Marshal(item)
@@ -218,24 +218,24 @@ func filenameWithoutExtension(fullPath string) string {
 	return strings.TrimSuffix(fileName, path.Ext(fileName))
 }
 
-func (d *JsonDiskStorage[T]) loadFile(filePath string) (*T, error) {
+func (d *JsonDiskStorage[T]) loadFile(filePath string) (T, error) {
 
 	jsonFile, err := os.Open(filePath)
 	if err != nil {
 
-		return nil, err
+		return zeroValue[T](), err
 	}
 
 	data, err := io.ReadAll(jsonFile)
 	if err != nil {
-		return nil, err
+		return zeroValue[T](), err
 	}
 	defer jsonFile.Close()
 
 	item := d.creator()
 	err = json.Unmarshal(data, &item)
 	if err != nil {
-		return nil, err
+		return zeroValue[T](), err
 	}
 
 	return item, nil
@@ -251,9 +251,10 @@ func createDirIfNotExists(name string) {
 	}
 }
 
-// func sanitize(name string) string {
-// 	return strings.Replace(name, " ", "_", -1)
-// }
+func zeroValue[T any]() T {
+	var zero T
+	return zero
+}
 
 func (d *JsonDiskStorage[T]) deleteFile(name string) error {
 	// sanitize

@@ -32,6 +32,7 @@ type Automation interface {
 
 	AddTrigger(trigger *Trigger) error
 	RemoveTrigger(index int) error
+	SetEnabled(enabled bool)
 }
 
 type BaseAutomation struct {
@@ -56,11 +57,12 @@ func NewBaseAutomation() *BaseAutomation {
 	}
 }
 
-func (b *BaseAutomation) GetID() string                 { return b.Id }
+func (b *BaseAutomation) GetId() string                 { return b.Id }
 func (b *BaseAutomation) GetFriendlyName() string       { return b.FriendlyName }
 func (b *BaseAutomation) GetEnabled() bool              { return b.Enabled }
 func (b *BaseAutomation) GetTriggers() []*Trigger       { return b.Triggers }
 func (b *BaseAutomation) GetSchedules() []*TimeSchedule { return b.Schedules }
+func (b *BaseAutomation) SetEnabled(enabled bool)       { b.Enabled = enabled }
 
 func (b *BaseAutomation) AddTrigger(trigger *Trigger) error {
 	b.Triggers = append(b.Triggers, trigger)

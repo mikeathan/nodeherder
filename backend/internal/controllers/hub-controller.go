@@ -473,7 +473,7 @@ func (h *HubController) registerEventHubEvents() {
 }
 
 // we only use that to override the default automation storage, lame but we cant easily refactor as weget alot of cyclic dependencies
-func (h *HubController) WithAutomationStorage(storage storage.Storage[automations.BaseAutomation]) {
+func (h *HubController) WithAutomationStorage(storage storage.Storage[automations.Automation]) {
 	h.automationEngine.WithStorage(storage)
 }
 

@@ -26,15 +26,15 @@ func NewTimeSchedule() *TimeSchedule {
 
 type ScheduleFunc interface {
 	Name() string
-	Do(a *BaseAutomation) func() error
+	Do(automation Automation) func() error
 }
 
 type AutomationScheduleFunc struct {
-	action func(a *BaseAutomation) error
+	action func(automation Automation) error
 	name   string
 }
 
-func NewAutomationScheduleFunc(name string, action func(a *BaseAutomation) error) ScheduleFunc {
+func NewAutomationScheduleFunc(name string, action func(automation Automation) error) ScheduleFunc {
 	return &AutomationScheduleFunc{
 		action: action,
 		name:   name,
@@ -45,9 +45,9 @@ func (s *AutomationScheduleFunc) Name() string {
 	return s.name
 }
 
-func (s *AutomationScheduleFunc) Do(a *BaseAutomation) func() error {
+func (s *AutomationScheduleFunc) Do(automation Automation) func() error {
 	return func() error {
-		return s.action(a)
+		return s.action(automation)
 	}
 }
 
@@ -75,14 +75,14 @@ func DefaultAutomationHandlers(ctx context.Context) []AutomationHandler {
 }
 
 var scheduleFuncMap = map[string]ScheduleFunc{
-	"enable": NewAutomationScheduleFunc(EnableScheduleType, func(a *BaseAutomation) error {
-		a.Enabled = true
-		utils.LogDebugf("AutomationScheduler: enable automation %s", a.Id)
+	"enable": NewAutomationScheduleFunc(EnableScheduleType, func(automation Automation) error {
+		automation.SetEnabled(true)
+		utils.LogDebugf("AutomationScheduler: enable automation %s", automation.GetId())
 		return nil
 	}),
-	"disable": NewAutomationScheduleFunc(DisableScheduleType, func(a *BaseAutomation) error {
-		a.Enabled = false
-		utils.LogDebugf("AutomationScheduler: disable automation %s", a.Id)
+	"disable": NewAutomationScheduleFunc(DisableScheduleType, func(automation Automation) error {
+		automation.SetEnabled(false)
+		utils.LogDebugf("AutomationScheduler: disable automation %s", automation.GetId())
 		return nil
 	}),
 }
@@ -95,7 +95,7 @@ func WithAutomationsFuncs() func(*AutomationScheduler) {
 	}
 }
 
-func WithCustomScheduleFuncs(funcMap map[string]func(*BaseAutomation) error) func(*AutomationScheduler) {
+func WithCustomScheduleFuncs(funcMap map[string]func(automation Automation) error) func(*AutomationScheduler) {
 	return func(as *AutomationScheduler) {
 		for name, fn := range funcMap {
 			as.actionsMap[name] = NewAutomationScheduleFunc(name, fn)
@@ -103,7 +103,7 @@ func WithCustomScheduleFuncs(funcMap map[string]func(*BaseAutomation) error) fun
 	}
 }
 
-func WithScheduleFunc(name string, action func(a *BaseAutomation) error) func(*AutomationScheduler) {
+func WithScheduleFunc(name string, action func(automation Automation) error) func(*AutomationScheduler) {
 	return func(as *AutomationScheduler) {
 		as.actionsMap[name] = NewAutomationScheduleFunc(name, action)
 	}
@@ -153,17 +153,17 @@ func (a *AutomationScheduler) IsRunning(automation Automation) bool {
 	return false
 }
 
-func (a *AutomationScheduler) Process(automation *BaseAutomation) error {
+func (a *AutomationScheduler) Process(automation Automation) error {
 
-	scheduler := a.schedulers[automation.Id]
+	scheduler := a.schedulers[automation.GetId()]
 
-	if len(automation.Schedules) == 0 {
+	if len(automation.GetSchedules()) == 0 {
 
 		// remove scheduler if exists
 		if scheduler != nil {
 
 			scheduler.Stop()
-			delete(a.schedulers, automation.Id)
+			delete(a.schedulers, automation.GetId())
 		}
 
 		return nil
@@ -173,7 +173,7 @@ func (a *AutomationScheduler) Process(automation *BaseAutomation) error {
 
 		scheduleUpdated := false
 
-		for _, schedule := range automation.Schedules {
+		for _, schedule := range automation.GetSchedules() {
 			job := scheduler.FindJobByStartTime(schedule.StartAt)
 			if job == nil {
 				scheduleUpdated = true
@@ -194,7 +194,7 @@ func (a *AutomationScheduler) Process(automation *BaseAutomation) error {
 
 			// delete and configure new scheduler
 			scheduler = nil
-			delete(a.schedulers, automation.Id)
+			delete(a.schedulers, automation.GetId())
 		}
 	}
 
@@ -202,11 +202,11 @@ func (a *AutomationScheduler) Process(automation *BaseAutomation) error {
 	scheduler = NewScheduler(a.clock, a.ctx)
 
 	// disable automation and configure scheduler
-	automation.Enabled = false
+	automation.SetEnabled(false)
 
-	for _, schedule := range automation.Schedules {
+	for _, schedule := range automation.GetSchedules() {
 
-		name := fmt.Sprintf("%s-%s", automation.Id, schedule.Type)
+		name := fmt.Sprintf("%s-%s", automation.GetId(), schedule.Type)
 
 		actionFunc := a.actionsMap[schedule.Type]
 		if actionFunc == nil {
@@ -227,7 +227,7 @@ func (a *AutomationScheduler) Process(automation *BaseAutomation) error {
 	}
 
 	scheduler.Start()
-	a.schedulers[automation.Id] = scheduler
+	a.schedulers[automation.GetId()] = scheduler
 
 	return nil
 }

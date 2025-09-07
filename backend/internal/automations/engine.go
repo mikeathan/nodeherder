@@ -15,14 +15,14 @@ const (
 
 type Engine interface { // TODO: might need to move it to Models????
 	HandleDevice(device *devices.Device)
-	Add(automation *BaseAutomation) error
+	Add(automation Automation) error
 	Delete(id string) error
 	DeleteTrigger(id string, triggerId int) error
 	Initialize()
-	Load(id string) (*BaseAutomation, error)
+	Load(id string) (Automation, error)
 	IsAutomationEnabled(id string) bool
-	GetAllTriggers() []*BaseAutomation
-	WithStorage(storage storage.Storage[BaseAutomation])
+	GetAllTriggers() []Automation
+	WithStorage(storage storage.Storage[Automation])
 }
 
 type AutomationEngine struct {
