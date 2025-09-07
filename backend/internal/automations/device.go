@@ -18,6 +18,7 @@ import (
 
 var contextIgnoreList = []string{"action"}
 
+// Device Context
 type DeviceContext struct {
 	currentData map[string]any
 	payload     map[string]*devices.Entity
@@ -64,6 +65,8 @@ func (d *DeviceContext) SetCurrent(name string, value any) {
 
 	d.currentData[name] = value
 }
+
+// Device Automation
 
 type Device struct {
 	BaseAutomation
@@ -133,9 +136,7 @@ func (d *Device) Evaluate(device *devices.Device) bool {
 	return false
 }
 
-// TODO:
-// THIS CAN BE AUTOMATION HANDLE
-func (d *Device) configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
+func (d *Device) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
 
 	//  check if device with automation id exists. friendyname can change
 	bridgeInfo, err := registrar.FindBridgeInfo(d.Id)
@@ -147,19 +148,7 @@ func (d *Device) configure(registrar services.DeviceRegistrar, client mqtt.MqttC
 		return fmt.Errorf("device %s is disabled ", bridgeInfo.FriendlyName)
 	}
 
-	// validate conditions
-	for _, trigger := range d.Triggers {
-
-		// validate actions
-		for _, action := range trigger.Actions {
-			err := action.Configure(registrar, client)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
 	d.FriendlyName = bridgeInfo.FriendlyName
 
-	return nil
+	return d.BaseAutomation.Configure(registrar, client)
 }
