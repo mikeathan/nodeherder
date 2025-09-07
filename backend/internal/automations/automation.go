@@ -27,6 +27,11 @@ type Automation interface {
 	GetId() string
 	GetFriendlyName() string
 	GetEnabled() bool
+	GetTriggers() []*Trigger
+	GetSchedules() []*TimeSchedule
+
+	AddTrigger(trigger *Trigger) error
+	RemoveTrigger(index int) error
 }
 
 type BaseAutomation struct {
@@ -50,7 +55,28 @@ func NewBaseAutomation() *BaseAutomation {
 		Schedules:    []*TimeSchedule{},
 	}
 }
-func (d *BaseAutomation) Evaluate(event TriggerEvent) bool {
+
+func (b *BaseAutomation) GetID() string                 { return b.Id }
+func (b *BaseAutomation) GetFriendlyName() string       { return b.FriendlyName }
+func (b *BaseAutomation) GetEnabled() bool              { return b.Enabled }
+func (b *BaseAutomation) GetTriggers() []*Trigger       { return b.Triggers }
+func (b *BaseAutomation) GetSchedules() []*TimeSchedule { return b.Schedules }
+
+func (b *BaseAutomation) AddTrigger(trigger *Trigger) error {
+	b.Triggers = append(b.Triggers, trigger)
+	return nil
+}
+
+func (b *BaseAutomation) RemoveTrigger(index int) error {
+	if index >= len(b.Triggers) {
+		return fmt.Errorf("trigger index out of bounds")
+	}
+
+	b.Triggers = append(b.Triggers[:index], b.Triggers[index+1:]...)
+	return nil
+}
+
+func (b *BaseAutomation) Evaluate(event TriggerEvent) bool {
 	return false
 }
 

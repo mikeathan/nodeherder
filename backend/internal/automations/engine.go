@@ -74,14 +74,14 @@ func (a *AutomationEngine) Load(id string) (Automation, error) {
 
 func (a *AutomationEngine) Add(automation Automation) error {
 
-	utils.LogInfof("adding automation id=%s, friendlyName=%s, enabled=%v", automation.Id, automation.FriendlyName, automation.Enabled)
+	utils.LogInfof("adding automation id=%s, friendlyName=%s, enabled=%v", automation.GetId(), automation.GetFriendlyName(), automation.GetEnabled())
 	err := a.configureAutomation(automation)
 	if err != nil {
-		utils.LogErrorf("configure automation id %s failed. Error=%s", automation.Id, err.Error())
+		utils.LogErrorf("configure automation id %s failed. Error=%s", automation.GetId(), err.Error())
 		return err
 	}
 
-	a.storage.Store(automation.Id, automation)
+	a.storage.Store(automation.GetId(), automation)
 
 	return nil
 }
@@ -92,15 +92,17 @@ func (a *AutomationEngine) DeleteTrigger(id string, triggerId int) error {
 		return err
 	}
 
-	if triggerId >= len(automation.Triggers) {
+	if triggerId >= len(automation.GetTriggers()) {
 		return errors.New("trigger index out of bounds")
 	}
 
 	// remove trigger
-	automation.Triggers = append(automation.Triggers[:triggerId], automation.Triggers[triggerId+1:]...)
+	if err := automation.RemoveTrigger(triggerId); err != nil {
+		return err
+	}
 
 	// store
-	a.storage.Store(id, automation)
+	a.storage.Store(automation.GetId(), automation)
 	return nil
 }
 
@@ -121,11 +123,11 @@ func (a *AutomationEngine) Initialize() {
 
 	for _, automation := range automations {
 
-		utils.LogInfof("Loading automation id= %s, friendlyName=%s, Enabled=%t", automation.Id, automation.FriendlyName, automation.Enabled)
+		utils.LogInfof("Loading automation id= %s, friendlyName=%s, Enabled=%t", automation.GetId(), automation.GetFriendlyName(), automation.GetEnabled())
 
 		err := a.configureAutomation(automation)
 		if err != nil {
-			utils.LogErrorf("configure automation id %s failed. Error=%s", automation.Id, err.Error())
+			utils.LogErrorf("configure automation id %s failed. Error=%s", automation.GetId(), err.Error())
 			continue
 		}
 	}
