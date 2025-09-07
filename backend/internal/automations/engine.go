@@ -1,17 +1,68 @@
 package automations
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
 	"node-herder/models/devices"
 	"node-herder/utils"
 	"node-herder/utils/storage"
+	"reflect"
 )
 
+type AutomationType string
+
 const (
-	automationDir = "configs/automations"
+	automationDir                       = "configs/automations"
+	DeviceAutomationType AutomationType = "device"
+	SystemAutomationType AutomationType = "system"
 )
+
+var automationTypeRegistry = map[AutomationType]reflect.Type{
+	"device": reflect.TypeOf(Device{}),
+}
+
+type BaseAutomation struct {
+	Id           string          `json:"id"`
+	Type         AutomationType  `json:"type"`
+	FriendlyName string          `json:"friendlyname"`
+	Description  string          `json:"description"`
+	Enabled      bool            `json:"enabled"`
+	Triggers     []*Trigger      `json:"triggers"`
+	Schedules    []*TimeSchedule `json:"schedules"`
+}
+
+func (a *BaseAutomation) UnmarshalJSON(data []byte) error {
+	// Temporary struct to read the type
+	var temp struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &temp); err != nil {
+		return err
+	}
+
+	concreteType, ok := automationTypeRegistry[AutomationType(temp.Type)]
+	if !ok {
+		return fmt.Errorf("unknown automation type: %s", temp.Type)
+	}
+
+	// Allocate a concrete struct
+	concrete := reflect.New(concreteType).Interface()
+
+	// Unmarshal into concrete type
+	if err := json.Unmarshal(data, concrete); err != nil {
+		return err
+	}
+
+	// Copy all fields back into BaseAutomation
+	if conv, ok := concrete.(interface{ Base() *BaseAutomation }); ok {
+		*a = *conv.Base()
+	}
+
+	return nil
+}
 
 type Engine interface { // TODO: might need to move it to Models????
 	HandleDevice(device *devices.Device)
@@ -37,7 +88,7 @@ func NewEngine(handlerFactory []AutomationHandler, registrar services.DeviceRegi
 	return &AutomationEngine{
 		mqttClient: mqtt,
 		registrar:  registrar,
-		storage: storage.NewJsonDiskStorage[Device](automationDir, func() *Device {
+		storage: storage.NewJsonDiskStorage(automationDir, func() *Device {
 			return newDevice()
 		}),
 		handlers: handlerFactory,

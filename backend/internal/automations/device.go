@@ -65,15 +65,9 @@ func (d *DeviceContext) SetCurrent(name string, value any) {
 	d.currentData[name] = value
 }
 
-will have here a custom automation, not linked to a Device. to start it can be like a Button click or sth or web hook ?
 type Device struct {
-	Id           string          `json:"id"`
-	FriendlyName string          `json:"friendlyname"`
-	Description  string          `json:"description"`
-	Enabled      bool            `json:"enabled"`
-	Triggers     []*Trigger      `json:"triggers"`
-	Schedules    []*TimeSchedule `json:"schedules"`
-	ctx          *DeviceContext
+	BaseAutomation
+	ctx *DeviceContext
 }
 
 func newDevice() *Device {
@@ -83,13 +77,16 @@ func newDevice() *Device {
 func NewDevice(id string) *Device {
 
 	d := &Device{
-		Id:           id,
-		FriendlyName: "",
-		Description:  "",
-		Enabled:      false,
-		Triggers:     []*Trigger{},
-		Schedules:    []*TimeSchedule{},
-		ctx:          NewDeviceContext(),
+		BaseAutomation: BaseAutomation{
+			Id:           id,
+			Type:         DeviceAutomationType,
+			FriendlyName: "",
+			Description:  "",
+			Enabled:      false,
+			Triggers:     []*Trigger{},
+			Schedules:    []*TimeSchedule{},
+		},
+		ctx: NewDeviceContext(),
 	}
 
 	return d
