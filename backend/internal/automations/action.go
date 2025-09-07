@@ -43,9 +43,9 @@ type MqttTriggerActionExpose struct {
 
 type MqttTriggerAction struct {
 	MqttBaseAction
-	Exposes       []*MqttTriggerActionExpose `json:"exposes"`
-	Delay         *utils.TimeInterval        `json:"delay,omitempty"`
-	PublishMode   PublishMode                `json:"publishMode,omitempty"`
+	Exposes     []*MqttTriggerActionExpose `json:"exposes"`
+	Delay       *utils.TimeInterval        `json:"delay,omitempty"`
+	PublishMode PublishMode                `json:"publishMode,omitempty"`
 }
 
 func NewTriggerAction() *MqttTriggerAction {
