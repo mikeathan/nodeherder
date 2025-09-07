@@ -65,6 +65,7 @@ func (d *DeviceContext) SetCurrent(name string, value any) {
 	d.currentData[name] = value
 }
 
+will have here a custom automation, not linked to a Device. to start it can be like a Button click or sth or web hook ?
 type Device struct {
 	Id           string          `json:"id"`
 	FriendlyName string          `json:"friendlyname"`
