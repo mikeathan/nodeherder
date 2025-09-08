@@ -2,6 +2,7 @@
   "id": "0xa4c13894070052fc",
   "friendlyname": "Living room presence sensor",
   "description": "Attic light test automation",
+  "type": "device",
   "enabled": true,
   "triggers": [
     {

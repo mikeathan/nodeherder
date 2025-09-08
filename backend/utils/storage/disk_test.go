@@ -16,16 +16,16 @@ type testItem struct {
 	internalData map[string]int
 }
 
-func ctr() *testItem {
-	return &testItem{internalData: make(map[string]int)}
+func ctr() testItem {
+	return testItem{internalData: make(map[string]int)}
 }
 
-func newTestitem(id string, value int) *testItem {
-	return &testItem{Id: id, Value: value, internalData: make(map[string]int)}
+func newTestitem(id string, value int) testItem {
+	return testItem{Id: id, Value: value, internalData: make(map[string]int)}
 }
 
 func createDiskStorage() storage.Storage[testItem] {
-	ctr := func() *testItem {
+	ctr := func() testItem {
 		return ctr()
 	}
 	return storage.NewJsonDiskStorage[testItem]("temp", ctr)
@@ -34,7 +34,7 @@ func createDiskStorage() storage.Storage[testItem] {
 func TestInitializeFromDisk(t *testing.T) {
 
 	// add some files in root dir
-	items := []*testItem{}
+	items := []testItem{}
 	items = append(items, newTestitem("some file 1", 1))
 	items = append(items, newTestitem("some file 2", 2))
 
@@ -92,9 +92,9 @@ func TestInitializeFromDisk(t *testing.T) {
 }
 
 func TestLoadingFromDisk(t *testing.T) {
-	items := []*testItem{}
-	items = append(items, &testItem{Id: "test1", Value: 1})
-	items = append(items, &testItem{Id: "test2", Value: 2})
+	items := []testItem{}
+	items = append(items, newTestitem("test1", 1))
+	items = append(items, newTestitem("test2", 2))
 	disk := createDiskStorage()
 
 	for _, item := range items {
@@ -143,9 +143,9 @@ func TestLoadingFromDisk(t *testing.T) {
 }
 
 func TestLoadingFromCache(t *testing.T) {
-	items := []*testItem{}
-	items = append(items, &testItem{Id: "test5", Value: 5})
-	items = append(items, &testItem{Id: "test6", Value: 6})
+	items := []testItem{}
+	items = append(items, newTestitem("test5", 5))
+	items = append(items, newTestitem("test6", 6))
 	disk := createDiskStorage()
 
 	for _, item := range items {

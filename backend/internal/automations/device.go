@@ -19,7 +19,20 @@ import (
 var contextIgnoreList = []string{"action"}
 
 type DeviceEvent struct {
-	Device *devices.Device
+	TriggerEvent
+	device *devices.Device
+}
+
+func NewDeviceEvent(device *devices.Device) *DeviceEvent {
+	return &DeviceEvent{device: device}
+}
+
+func (de *DeviceEvent) Device() *devices.Device {
+	return de.device
+}
+
+func (de *DeviceEvent) Type() string {
+	return "device"
 }
 
 // Device Context
@@ -133,12 +146,13 @@ func (d *Device) Evaluate(event TriggerEvent) bool {
 		return false
 	}
 
-	d.ctx.SetPayload(deviceEvent.Device.Exposes)
+	device := deviceEvent.Device()
+	d.ctx.SetPayload(device.Exposes)
 
 	// NOTE: a trigger can have multiple conditions.
 	// e.g presence can have multiple conditions for on and off
 	for _, trigger := range d.Triggers {
-		if _, ok := deviceEvent.Device.Exposes[trigger.Name]; ok {
+		if _, ok := device.Exposes[trigger.Name]; ok {
 			trigger.process(d.ctx)
 		}
 	}

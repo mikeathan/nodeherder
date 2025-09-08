@@ -51,7 +51,7 @@ func (a *AutomationEngine) WithStorage(storage storage.Storage[Automation]) {
 func (a *AutomationEngine) IsAutomationEnabled(id string) bool {
 	automation, err := a.storage.LoadFromCache(id)
 	if err == nil {
-		return automation.GetEnabled()
+		return automation.IsEnabled()
 	}
 
 	return false
@@ -59,8 +59,8 @@ func (a *AutomationEngine) IsAutomationEnabled(id string) bool {
 
 func (a *AutomationEngine) HandleDevice(device *devices.Device) {
 	automation, err := a.storage.LoadFromCache(device.Id)
-	if err == nil && automation.GetEnabled() {
-		automation.Evaluate(&DeviceEvent{Device: device})
+	if err == nil && automation.IsEnabled() {
+		automation.Evaluate(NewDeviceEvent(device))
 	}
 }
 
@@ -74,7 +74,7 @@ func (a *AutomationEngine) Load(id string) (Automation, error) {
 
 func (a *AutomationEngine) Add(automation Automation) error {
 
-	utils.LogInfof("adding automation id=%s, friendlyName=%s, enabled=%v", automation.GetId(), automation.GetFriendlyName(), automation.GetEnabled())
+	utils.LogInfof("adding automation id=%s, friendlyName=%s, enabled=%v", automation.GetId(), automation.GetFriendlyName(), automation.IsEnabled())
 	err := a.configureAutomation(automation)
 	if err != nil {
 		utils.LogErrorf("configure automation id %s failed. Error=%s", automation.GetId(), err.Error())
@@ -123,7 +123,7 @@ func (a *AutomationEngine) Initialize() {
 
 	for _, automation := range automations {
 
-		utils.LogInfof("Loading automation id= %s, friendlyName=%s, Enabled=%t", automation.GetId(), automation.GetFriendlyName(), automation.GetEnabled())
+		utils.LogInfof("Loading automation id= %s, friendlyName=%s, Enabled=%t", automation.GetId(), automation.GetFriendlyName(), automation.IsEnabled())
 
 		err := a.configureAutomation(automation)
 		if err != nil {

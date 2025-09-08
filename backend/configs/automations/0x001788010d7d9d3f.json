@@ -2,6 +2,7 @@
   "id": "0x001788010d7d9d3f",
   "friendlyname": "Living room switch dial",
   "description": "Light switch automation",
+  "type": "device",
   "enabled": true,
   "triggers": [
     {

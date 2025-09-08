@@ -3,6 +3,7 @@
   "friendlyname": "Front door sensor",
   "description": "test",
   "enabled": true,
+  "type":"device",
   "triggers": [
     {
       "conditions": [

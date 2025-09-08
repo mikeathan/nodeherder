@@ -100,7 +100,7 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 		}
 		device.Exposes = createExposures(data)
 
-		deviceTrigger.Evaluate(device)
+		deviceTrigger.Evaluate(automations.NewDeviceEvent(device))
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -176,7 +176,7 @@ func TestAutomationwithMultipleTriggerActions(t *testing.T) {
 		}
 		device.Exposes = createExposures(data)
 
-		automation.Evaluate(device)
+		automation.Evaluate(automations.NewDeviceEvent(device))
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -256,7 +256,7 @@ func TestHandleMultipleSameValueTriggerWithDelay(t *testing.T) {
 		}
 
 		device.Exposes = createExposures(data)
-		deviceTrigger.Evaluate(device)
+		deviceTrigger.Evaluate(automations.NewDeviceEvent(device))
 
 		time.Sleep(500 * time.Millisecond)
 	}
@@ -352,7 +352,7 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 		}
 
 		device.Exposes = createExposures(data)
-		deviceTrigger.Evaluate(device)
+		deviceTrigger.Evaluate(automations.NewDeviceEvent(device))
 
 		time.Sleep(testCase.sleepdelay * time.Millisecond)
 	}
@@ -471,7 +471,7 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 		device.Exposes = createExposures(data)
 
 		fmt.Println("emiting presence", testCase.presence)
-		deviceTrigger.Evaluate(device)
+		deviceTrigger.Evaluate(automations.NewDeviceEvent(device))
 
 		time.Sleep(testCase.sleepdelay * time.Millisecond)
 	}

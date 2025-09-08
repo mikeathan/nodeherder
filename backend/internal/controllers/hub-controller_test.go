@@ -38,8 +38,9 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 
 	deviceAutomation := utils_test.CreateDoorContactDurationWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
-	automationStorage := mocks.NewMockAutomationStorage([]automations.Automation{deviceAutomation})
-	// stup device
+	automationStorage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{deviceAutomation})
+
+	// setup device
 	alarmDevice := utils_test.CreateAlarmDeviceWithDuration("x02222222", "alarm device", false, 1)
 	doorSensorDevice := utils_test.CreateDoorSensorDevice("x01111111", "front door sensor", false)
 
@@ -103,7 +104,8 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 	end := now.Add(3000 * time.Millisecond)
 
 	deviceAutomation.Schedules = utils_test.CreateTimeSchedules(start, end)
-	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+	automationStorage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{deviceAutomation})
+
 	// setup device
 	alarmDevice := utils_test.CreateAlarmDeviceWithDuration("x02222222", "alarm device", false, 2)
 	doorSensorDevice := utils_test.CreateDoorSensorDevice("x01111111", "front door sensor", false)
@@ -121,14 +123,14 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 		automations.NewAutomationScheduler(
 			automations.WithContext(context.Background()),
 			automations.WithSchedulerClock(clock),
-			automations.WithCustomScheduleFuncs(map[string]func(*automations.BaseAutomation) error{
-				"enable": func(a *automations.BaseAutomation) error {
-					a.Enabled = true
+			automations.WithCustomScheduleFuncs(map[string]func(automations.Automation) error{
+				"enable": func(a automations.Automation) error {
+					a.SetEnabled(true)
 					wg.Done()
 					return nil
 				},
-				"disable": func(a *automations.BaseAutomation) error {
-					a.Enabled = false
+				"disable": func(a automations.Automation) error {
+					a.SetEnabled(false)
 					wg.Done()
 					return nil
 				},
@@ -197,7 +199,7 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 	deviceAutomation.FriendlyName = "dial button"
 	deviceAutomation.Enabled = true
 	deviceAutomation.Triggers = []*automations.Trigger{dialRotateSlowTrigger, btn1PressTrigger, btn2PressTrigger}
-	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+	automationStorage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{deviceAutomation})
 
 	// setup device
 	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())

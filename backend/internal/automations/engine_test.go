@@ -161,18 +161,18 @@ func TestEngineAutomationUpdateShouldNotResetScheduler(t *testing.T) {
 	end := now.Add(1 * time.Hour)
 
 	deviceAutomation.Schedules = utils_test.CreateTimeSchedules(start, end)
-	storage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+	storage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{deviceAutomation})
 
 	wg.Add(1) // we expect only one event to be triggered
 
 	scheduleHandler := automations.NewAutomationScheduler(
-		automations.WithScheduleFunc("enable", func(automation *automations.Device) error {
-			automation.Enabled = true
+		automations.WithScheduleFunc("enable", func(automation automations.Automation) error {
+			automation.SetEnabled(true)
 			wg.Done()
 			return nil
 		}),
-		automations.WithScheduleFunc("disable", func(automation *automations.Device) error {
-			automation.Enabled = false
+		automations.WithScheduleFunc("disable", func(automation automations.Automation) error {
+			automation.SetEnabled(false)
 			return nil
 		}),
 	)
@@ -235,7 +235,7 @@ func TestEngineAutomationUpdateShouldResetAndTriggerAgainScheduler(t *testing.T)
 	end := now.Add(1 * time.Hour)
 
 	deviceAutomation.Schedules = utils_test.CreateTimeSchedules(start, end)
-	storage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+	storage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{deviceAutomation})
 
 	// we expect only 2 event to be triggered
 	// first event is on startup
@@ -243,13 +243,13 @@ func TestEngineAutomationUpdateShouldResetAndTriggerAgainScheduler(t *testing.T)
 	wg.Add(2)
 
 	scheduleHandler := automations.NewAutomationScheduler(
-		automations.WithScheduleFunc("enable", func(automation *automations.Device) error {
-			automation.Enabled = true
+		automations.WithScheduleFunc("enable", func(automation automations.Automation) error {
+			automation.SetEnabled(true)
 			wg.Done()
 			return nil
 		}),
-		automations.WithScheduleFunc("disable", func(automation *automations.Device) error {
-			automation.Enabled = false
+		automations.WithScheduleFunc("disable", func(automation automations.Automation) error {
+			automation.SetEnabled(false)
 			return nil
 		}),
 	)
@@ -312,20 +312,20 @@ func TestEngineAutomationUpdateShouldResetScheduler(t *testing.T) {
 	end := now.Add(1 * time.Hour)
 
 	deviceAutomation.Schedules = utils_test.CreateTimeSchedules(start, end)
-	storage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+	storage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{deviceAutomation})
 
 	// we expect only 1 event to be triggered
 	// first event is on startup
 	// after we update the automation schedule, the second event ashould not be trigger on time
 	wg.Add(1)
 	scheduleHandler := automations.NewAutomationScheduler(
-		automations.WithScheduleFunc("enable", func(automation *automations.Device) error {
-			automation.Enabled = true
+		automations.WithScheduleFunc("enable", func(automation automations.Automation) error {
+			automation.SetEnabled(true)
 			wg.Done()
 			return nil
 		}),
-		automations.WithScheduleFunc("disable", func(automation *automations.Device) error {
-			automation.Enabled = false
+		automations.WithScheduleFunc("disable", func(automation automations.Automation) error {
+			automation.SetEnabled(false)
 			return nil
 		}),
 	)
@@ -392,7 +392,7 @@ func TestEngineAutomationUpdateShouldStopScheduler(t *testing.T) {
 	end := now.Add(1 * time.Hour)
 
 	deviceAutomation.Schedules = utils_test.CreateTimeSchedules(start, end)
-	storage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+	storage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{deviceAutomation})
 
 	// we expect only 1 event to be triggered
 	// first event is on startup
@@ -400,13 +400,13 @@ func TestEngineAutomationUpdateShouldStopScheduler(t *testing.T) {
 	wg.Add(1)
 
 	scheduleHandler := automations.NewAutomationScheduler(
-		automations.WithScheduleFunc("enable", func(automation *automations.Device) error {
-			automation.Enabled = true
+		automations.WithScheduleFunc("enable", func(automation automations.Automation) error {
+			automation.SetEnabled(true)
 			wg.Done()
 			return nil
 		}),
-		automations.WithScheduleFunc("disable", func(automation *automations.Device) error {
-			automation.Enabled = false
+		automations.WithScheduleFunc("disable", func(automation automations.Automation) error {
+			automation.SetEnabled(false)
 			return nil
 		}),
 	)
@@ -470,16 +470,16 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 	end := now.Add(1500 * time.Millisecond)
 
 	deviceAutomation.Schedules = utils_test.CreateTimeSchedules(start, end)
-	storage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+	storage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{deviceAutomation})
 
 	scheduleHandler := automations.NewAutomationScheduler(
-		automations.WithScheduleFunc("enable", func(automation *automations.Device) error {
-			automation.Enabled = true
+		automations.WithScheduleFunc("enable", func(automation automations.Automation) error {
+			automation.SetEnabled(true)
 			wg.Done()
 			return nil
 		}),
-		automations.WithScheduleFunc("disable", func(automation *automations.Device) error {
-			automation.Enabled = false
+		automations.WithScheduleFunc("disable", func(automation automations.Automation) error {
+			automation.SetEnabled(false)
 			wg.Done()
 
 			return nil
@@ -494,7 +494,7 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 	a, _ := engine.Load(deviceAutomation.Id)
 
 	// make sure automation is disabled when we have scheduler enabled
-	if a.Enabled {
+	if a.IsEnabled() {
 		t.Fatalf("ERROR automation is enabled (initial state)")
 	}
 
@@ -509,7 +509,7 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 	a, _ = engine.Load(deviceAutomation.Id)
 
 	// scheduler should have enabled automation
-	if !a.Enabled {
+	if !a.IsEnabled() {
 		t.Fatalf("ERROR automation is not enabled")
 	}
 
@@ -525,7 +525,7 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 	a, _ = engine.Load(deviceAutomation.Id)
 
 	// scheduler should have disabled automation
-	if a.Enabled {
+	if a.IsEnabled() {
 		t.Fatalf("ERROR automation is enabled")
 	}
 }
