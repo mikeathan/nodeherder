@@ -41,6 +41,7 @@ export type AutomationActionStep = {
 export type Automation = {
   id: string;
   friendlyname: string;
+  type: string;
   description: string;
   enabled: boolean;
   schedules: TimeSchedule[];

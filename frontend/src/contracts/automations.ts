@@ -21,6 +21,7 @@ export const TimeScheduleTypes: string[] = ['enable', 'disable'];
 
 export class DeviceAutomation implements Automation {
   id: string;
+  type: string;
   friendlyname: string;
   description: string;
   enabled: boolean;
@@ -29,6 +30,7 @@ export class DeviceAutomation implements Automation {
 
   constructor() {
     this.id = '';
+    this.type = 'device';
     this.friendlyname = '';
     this.description = '';
     this.enabled = false;
