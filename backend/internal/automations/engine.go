@@ -37,8 +37,8 @@ func NewEngine(handlerFactory []AutomationHandler, registrar services.DeviceRegi
 	return &AutomationEngine{
 		mqttClient: mqtt,
 		registrar:  registrar,
-		storage: storage.NewJsonDiskStorage(automationDir, func() Automation {
-			return NewBaseAutomation()
+		storage: storage.NewJsonDiskStorage[Automation](automationDir, func() Automation {
+			return &automationSerialiser{}
 		}),
 		handlers: handlerFactory,
 	}

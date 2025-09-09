@@ -84,64 +84,6 @@ func (b *BaseAutomation) Evaluate(event TriggerEvent) bool {
 	return false
 }
 
-
-TODO
-func UnmarshalAutomation(data []byte) (Automation, error) {
-    var temp struct {
-        Type string `json:"type"`
-    }
-    if err := json.Unmarshal(data, &temp); err != nil {
-        return nil, err
-    }
-
-    concreteType, ok := automationTypeRegistry[AutomationType(temp.Type)]
-    if !ok {
-        return nil, fmt.Errorf("unknown automation type: %s", temp.Type)
-    }
-
-    concrete := reflect.New(concreteType).Interface()
-    if err := json.Unmarshal(data, concrete); err != nil {
-        return nil, err
-    }
-
-    return concrete.(Automation), nil
-}
-
-func (a *BaseAutomation) UnmarshalJSON(data []byte) error {
-	var temp map[string]json.RawMessage
-	if err := json.Unmarshal(data, &temp); err != nil {
-		return err
-	}
-
-	var typ string
-	if t, ok := temp["type"]; ok {
-		if err := json.Unmarshal(t, &typ); err != nil {
-			return err
-		}
-	} else {
-		return fmt.Errorf("missing type field in automation")
-	}
-
-	concreteType, ok := automationTypeRegistry[AutomationType(typ)]
-	if !ok {
-		return fmt.Errorf("unknown automation type: %s", typ)
-	}
-
-	// prevent recursive call by aliasing BaseAutomation
-	type baseAlias BaseAutomation
-	var base baseAlias
-	if err := json.Unmarshal(data, &base); err != nil {
-		return err
-	}
-	*a = BaseAutomation(base)
-
-	concrete := reflect.New(concreteType).Interface()
-	if err := json.Unmarshal(data, concrete); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (d *BaseAutomation) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
 
 	// validate conditions
@@ -156,5 +98,33 @@ func (d *BaseAutomation) Configure(registrar services.DeviceRegistrar, client mq
 		}
 	}
 
+	return nil
+}
+
+// AutomationSerialiser
+// This is used in storage loader to deserialise the object back to supported automation type
+type automationSerialiser struct {
+	Automation
+}
+
+func (w *automationSerialiser) UnmarshalJSON(data []byte) error {
+	var temp struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &temp); err != nil {
+		return err
+	}
+
+	concreteType, ok := automationTypeRegistry[AutomationType(temp.Type)]
+	if !ok {
+		return fmt.Errorf("unknown automation type: %s", temp.Type)
+	}
+
+	concrete := reflect.New(concreteType).Interface().(Automation)
+	if err := json.Unmarshal(data, concrete); err != nil {
+		return err
+	}
+
+	w.Automation = concrete
 	return nil
 }
