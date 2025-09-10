@@ -114,7 +114,7 @@ export function createActionFromType(type: ActionType): AutomationAction {
         id: '',
         type: type,
         exposes: [],
-        splitCommands: false,
+        publishMode: 'batch',
         delay: { unit: 'seconds', value: 0 },
       } as AutomationTriggerAction;
     case AutomationActionTypes.Step:

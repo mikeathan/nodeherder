@@ -131,11 +131,16 @@ func (d *Device) UnmarshalJSON(data []byte) error {
 	}
 
 	d.Id = aux.Id
+	d.Type = aux.Type
 	d.FriendlyName = aux.FriendlyName
 	d.Description = aux.Description
 	d.Enabled = aux.Enabled
 	d.Schedules = aux.Schedules
 	d.Triggers = aux.Triggers
+
+	if d.ctx == nil {
+		d.ctx = NewDeviceContext()
+	}
 	return nil
 }
 
