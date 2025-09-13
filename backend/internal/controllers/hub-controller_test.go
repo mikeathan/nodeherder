@@ -198,7 +198,7 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 	deviceAutomation.Id = "x01111111"
 	deviceAutomation.FriendlyName = "dial button"
 	deviceAutomation.Enabled = true
-	deviceAutomation.Triggers = []*automations.Trigger{dialRotateSlowTrigger, btn1PressTrigger, btn2PressTrigger}
+	deviceAutomation.Triggers = []*automations.BaseTrigger{dialRotateSlowTrigger, btn1PressTrigger, btn2PressTrigger}
 	automationStorage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{deviceAutomation})
 
 	// setup device

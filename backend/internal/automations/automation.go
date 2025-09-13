@@ -12,7 +12,7 @@ type AutomationType string
 
 const (
 	DeviceAutomationType AutomationType = "device"
-	SystemAutomationType AutomationType = "system"
+	ManualAutomationType AutomationType = "manual"
 )
 
 var automationTypeRegistry = map[AutomationType]reflect.Type{
@@ -29,10 +29,10 @@ type Automation interface {
 	GetId() string
 	GetFriendlyName() string
 	IsEnabled() bool
-	GetTriggers() []*Trigger
+	GetTriggers() []*BaseTrigger
 	GetSchedules() []*TimeSchedule
 
-	AddTrigger(trigger *Trigger) error
+	AddTrigger(trigger *BaseTrigger) error
 	RemoveTrigger(index int) error
 	SetEnabled(enabled bool)
 }
@@ -43,7 +43,7 @@ type BaseAutomation struct {
 	FriendlyName string          `json:"friendlyname"`
 	Description  string          `json:"description"`
 	Enabled      bool            `json:"enabled"`
-	Triggers     []*Trigger      `json:"triggers"`
+	Triggers     []*BaseTrigger  `json:"triggers"`
 	Schedules    []*TimeSchedule `json:"schedules"`
 }
 
@@ -54,7 +54,7 @@ func NewBaseAutomation() *BaseAutomation {
 		FriendlyName: "",
 		Description:  "",
 		Enabled:      false,
-		Triggers:     []*Trigger{},
+		Triggers:     []*BaseTrigger{},
 		Schedules:    []*TimeSchedule{},
 	}
 }
@@ -62,11 +62,11 @@ func NewBaseAutomation() *BaseAutomation {
 func (b *BaseAutomation) GetId() string                 { return b.Id }
 func (b *BaseAutomation) GetFriendlyName() string       { return b.FriendlyName }
 func (b *BaseAutomation) IsEnabled() bool               { return b.Enabled }
-func (b *BaseAutomation) GetTriggers() []*Trigger       { return b.Triggers }
+func (b *BaseAutomation) GetTriggers() []*BaseTrigger   { return b.Triggers }
 func (b *BaseAutomation) GetSchedules() []*TimeSchedule { return b.Schedules }
 func (b *BaseAutomation) SetEnabled(enabled bool)       { b.Enabled = enabled }
 
-func (b *BaseAutomation) AddTrigger(trigger *Trigger) error {
+func (b *BaseAutomation) AddTrigger(trigger *BaseTrigger) error {
 	b.Triggers = append(b.Triggers, trigger)
 	return nil
 }
@@ -146,4 +146,10 @@ func (w *automationSerialiser) UnmarshalJSON(data []byte) error {
 		}
 	}
 	return nil
+}
+
+// Manual Automation
+// we wll have type of triggers
+type ManualAutomation struct {
+	BaseAutomation
 }

@@ -1131,7 +1131,7 @@ func TestHandlerRenameDashboardGroupsMessage(t *testing.T) {
 		delete(wantDashboardGroups, "group1")
 
 		wg.Done()
-		return wantDashboardGroups["new_group1"],nil
+		return wantDashboardGroups["new_group1"], nil
 	})
 
 	h := api.NewWsHandler(wsHub)
@@ -1177,7 +1177,7 @@ func TestHandlerRenameDashboardGroupsMessage(t *testing.T) {
 	if wantDashboardGroups["group1"] != nil {
 		t.Fatalf("Expected group %v to be deleted", "group1")
 	}
-	
+
 	wg.Wait()
 }
 
@@ -1662,7 +1662,7 @@ func createTestAutomation() []*automations.Device {
 
 	deviceTrigger := automations.NewDevice("human sensor")
 	deviceTrigger.Description = "test human sensor automation"
-	deviceTrigger.Triggers = []*automations.Trigger{}
+	deviceTrigger.Triggers = []*automations.BaseTrigger{}
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOffTrigger)
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTriggerWithLux)
 
@@ -1685,7 +1685,7 @@ func createTestAutomation() []*automations.Device {
 	return triggers
 }
 
-func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any) *automations.Trigger {
+func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any) *automations.BaseTrigger {
 	// action = turn off light
 	turnOnAction := automations.NewTriggerAction()
 	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
@@ -1699,7 +1699,7 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 	turnOnAction.Client = mqtt
 
 	// Turn on sensor trigger
-	turnOnTrigger := &automations.Trigger{}
+	turnOnTrigger := &automations.BaseTrigger{}
 	turnOnTrigger.Name = "presence"
 	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
 
@@ -1713,7 +1713,7 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 	return turnOnTrigger
 }
 
-func createTriggerTurnOnLightWithPresenceOn(mqtt mqtt.MqttClient) *automations.Trigger {
+func createTriggerTurnOnLightWithPresenceOn(mqtt mqtt.MqttClient) *automations.BaseTrigger {
 	// action = turn off light
 	turnOnAction := automations.NewTriggerAction()
 	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
@@ -1726,7 +1726,7 @@ func createTriggerTurnOnLightWithPresenceOn(mqtt mqtt.MqttClient) *automations.T
 	turnOnAction.Client = mqtt
 
 	// Turn on sensor trigger
-	turnOnTrigger := &automations.Trigger{}
+	turnOnTrigger := &automations.BaseTrigger{}
 	turnOnTrigger.Name = "presence"
 	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
 
@@ -1737,7 +1737,7 @@ func createTriggerTurnOnLightWithPresenceOn(mqtt mqtt.MqttClient) *automations.T
 	return turnOnTrigger
 }
 
-func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay *utils.TimeInterval) *automations.Trigger {
+func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay *utils.TimeInterval) *automations.BaseTrigger {
 
 	// action = turn off light
 	turnOffAction := automations.NewTriggerAction()
@@ -1752,7 +1752,7 @@ func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay *
 	turnOffAction.Client = mqtt
 
 	// Turn off sensor trigger
-	turnOffTrigger := &automations.Trigger{}
+	turnOffTrigger := &automations.BaseTrigger{}
 	turnOffTrigger.Name = "presence"
 	turnOffTrigger.Actions = []automations.MqttAction{turnOffAction}
 

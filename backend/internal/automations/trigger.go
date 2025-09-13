@@ -14,20 +14,32 @@ var typeRegistry = map[string]reflect.Type{
 	ExposeConditionType: reflect.TypeOf(ExposeCondition{}),
 }
 
-type Trigger struct {
+type TriggerType string
+
+const (
+	DeviceTriggerType TriggerType = "device"
+	ManualTriggerType TriggerType = "manual"
+)
+
+TODO
+type DeviceTrigger struct {
+	BaseTrigger
 	Conditions []Condition  `json:"conditions"`
+}
+type BaseTrigger struct {
+	Type       TriggerType  `json:"type"`
 	Actions    []MqttAction `json:"actions"`
 	Name       string       `json:"name"`
 }
 
-func NewTrigger(name string) *Trigger {
-	return &Trigger{
+func NewTrigger(name string) *BaseTrigger {
+	return &BaseTrigger{
 		Conditions: []Condition{},
 		Actions:    []MqttAction{},
 	}
 }
 
-func (t *Trigger) UnmarshalJSON(data []byte) error {
+func (t *BaseTrigger) UnmarshalJSON(data []byte) error {
 	// Unmarshal into a temporary struct to get basic fields
 	var temp struct {
 		Name       string            `json:"name"`
@@ -100,7 +112,7 @@ func (t *Trigger) UnmarshalJSON(data []byte) error {
 // start timer for 5 min
 // turn off light
 
-func (t *Trigger) process(ctx *DeviceContext) {
+func (t *BaseTrigger) process(ctx *DeviceContext) {
 
 	for _, c := range t.Conditions {
 
