@@ -104,33 +104,46 @@ func (d *BaseAutomation) Configure(registrar services.DeviceRegistrar, client mq
 // AutomationSerialiser
 // This is used in storage loader to deserialise the object back to supported automation type
 type automationSerialiser struct {
+	BaseAutomation
 	Automation Automation `json:"-"`
 }
 
-??
-
 func (w *automationSerialiser) MarshalJSON() ([]byte, error) {
-    return json.Marshal(w.Automation)
+	if w.Automation != nil {
+		return json.Marshal(w.Automation)
+	}
+	// fallback: marshal the embedded BaseAutomation
+	return json.Marshal(w.BaseAutomation)
 }
 
 func (w *automationSerialiser) UnmarshalJSON(data []byte) error {
 	var temp struct {
-        Type string `json:"type"`
-    }
-    if err := json.Unmarshal(data, &temp); err != nil {
-        return err
-    }
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &temp); err != nil {
+		return err
+	}
 
-    concreteType, ok := automationTypeRegistry[AutomationType(temp.Type)]
-    if !ok {
-        return fmt.Errorf("unknown automation type: %s", temp.Type)
-    }
+	concreteType, ok := automationTypeRegistry[AutomationType(temp.Type)]
+	if !ok {
+		return fmt.Errorf("unknown automation type: %s", temp.Type)
+	}
 
-    concrete := reflect.New(concreteType).Interface().(Automation)
-    if err := json.Unmarshal(data, concrete); err != nil {
-        return err
-    }
+	concrete := reflect.New(concreteType).Interface().(Automation)
+	if err := json.Unmarshal(data, concrete); err != nil {
+		return err
+	}
 
-    w.Automation = concrete
-    return nil
+	w.Automation = concrete
+
+	// copy all fields from concrete into the embedded BaseAutomation to satisfy Automation
+	dstVal := reflect.ValueOf(&w.BaseAutomation).Elem()
+	srcVal := reflect.ValueOf(concrete).Elem()
+	for i := 0; i < srcVal.NumField(); i++ {
+		field := srcVal.Type().Field(i)
+		if dstField := dstVal.FieldByName(field.Name); dstField.IsValid() && dstField.CanSet() {
+			dstField.Set(srcVal.Field(i))
+		}
+	}
+	return nil
 }
