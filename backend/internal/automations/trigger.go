@@ -16,26 +16,36 @@ var typeRegistry = map[string]reflect.Type{
 
 type TriggerType string
 
+type Trigger interface {
+	GetType() TriggerType
+	GetName() string
+	Process(ctx AutomationContext)
+	GetActions() []MqttAction
+}
+
 const (
 	DeviceTriggerType TriggerType = "device"
 	ManualTriggerType TriggerType = "manual"
 )
 
-TODO
 type DeviceTrigger struct {
 	BaseTrigger
-	Conditions []Condition  `json:"conditions"`
+	Conditions []Condition `json:"conditions"`
 }
 type BaseTrigger struct {
-	Type       TriggerType  `json:"type"`
-	Actions    []MqttAction `json:"actions"`
-	Name       string       `json:"name"`
+	Type    TriggerType  `json:"type"`
+	Actions []MqttAction `json:"actions"`
+	Name    string       `json:"name"`
 }
 
-func NewTrigger(name string) *BaseTrigger {
-	return &BaseTrigger{
+func NewTrigger(name string) *DeviceTrigger {
+	return &DeviceTrigger{
+		BaseTrigger: BaseTrigger{
+			Actions: []MqttAction{},
+			Type:    DeviceTriggerType,
+			Name:    name,
+		},
 		Conditions: []Condition{},
-		Actions:    []MqttAction{},
 	}
 }
 
@@ -112,7 +122,7 @@ func (t *BaseTrigger) UnmarshalJSON(data []byte) error {
 // start timer for 5 min
 // turn off light
 
-func (t *BaseTrigger) process(ctx *DeviceContext) {
+func (t *DeviceTrigger) Process(ctx AutomationContext) {
 
 	for _, c := range t.Conditions {
 

@@ -91,7 +91,7 @@ func (a *MqttTriggerAction) Configure(registrar services.DeviceRegistrar, client
 	return nil
 }
 
-func (a *MqttTriggerAction) Execute(ctx *DeviceContext) error {
+func (a *MqttTriggerAction) Execute(ctx AutomationContext) error {
 	if a.Delay == nil {
 		return a.executeBase(ctx)
 	}
@@ -115,7 +115,7 @@ func NewStepAction() *MqttStepAction {
 	}
 }
 
-func (a *MqttStepAction) Execute(ctx *DeviceContext) error {
+func (a *MqttStepAction) Execute(ctx AutomationContext) error {
 	return a.executeBase(ctx)
 }
 
@@ -152,7 +152,7 @@ func NewPresetCyclingAction() *MqttPresetCyclingAction {
 	}
 }
 
-func (a *MqttPresetCyclingAction) Execute(ctx *DeviceContext) error {
+func (a *MqttPresetCyclingAction) Execute(ctx AutomationContext) error {
 	return a.executeBase(ctx)
 }
 
@@ -197,7 +197,7 @@ func (a *MqttBaseAction) emit(payload []byte) {
 
 }
 
-func (b *MqttBaseAction) processAction(ctx *DeviceContext) error {
+func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
 
 	payload, err := b.operation.CreatePayload()
 	if err != nil {
@@ -254,7 +254,7 @@ func (a *MqttBaseAction) Stop() {
 	}
 }
 
-func (b *MqttBaseAction) executeBaseWithDelay(delay *utils.TimeInterval, ctx *DeviceContext) error {
+func (b *MqttBaseAction) executeBaseWithDelay(delay *utils.TimeInterval, ctx AutomationContext) error {
 	b.mut.Lock()
 	defer b.mut.Unlock()
 
@@ -299,7 +299,7 @@ func (b *MqttBaseAction) executeBaseWithDelay(delay *utils.TimeInterval, ctx *De
 	return nil
 }
 
-func (b *MqttBaseAction) executeBase(ctx *DeviceContext) error {
+func (b *MqttBaseAction) executeBase(ctx AutomationContext) error {
 	b.mut.Lock()
 	defer b.mut.Unlock()
 
@@ -322,7 +322,7 @@ func (b *MqttBaseAction) executeBase(ctx *DeviceContext) error {
 }
 
 type MqttAction interface {
-	Execute(tx *DeviceContext) error
+	Execute(ctx AutomationContext) error
 	Stop()
 	GetID() string
 	GetType() string

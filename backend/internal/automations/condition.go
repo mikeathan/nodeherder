@@ -82,7 +82,7 @@ func NewExposeHandler(cond *ExposeCondition) (*ExposeHandler, error) {
 	}, nil
 }
 
-func (e *ExposeHandler) Evaluate(ctx *DeviceContext) bool {
+func (e *ExposeHandler) Evaluate(ctx AutomationContext) bool {
 	expose, ok := ctx.GetPayload(e.Name)
 	if !ok {
 		utils.LogDebugf("sensor %s not found in payload", e.Name)
@@ -103,7 +103,7 @@ type TimeRangeHandler struct {
 	clock     utils.Clock
 }
 
-func (t *TimeRangeHandler) Evaluate(ctx *DeviceContext) bool {
+func (t *TimeRangeHandler) Evaluate(ctx AutomationContext) bool {
 	return t.clock.IsInRange(t.startTime, t.endTime)
 }
 
@@ -129,13 +129,13 @@ func NewTimeRangeHandler(timeRange *TimeRange, clock utils.Clock) (*TimeRangeHan
 }
 
 type ConditionHandler interface {
-	Evaluate(ctx *DeviceContext) bool
+	Evaluate(ctx AutomationContext) bool
 }
 
 type Condition interface {
-	Evaluate(ctx *DeviceContext) bool
+	Evaluate(ctx AutomationContext) bool
 	GetType() string
-	HasValueChanged(name string, ctx *DeviceContext) bool
+	HasValueChanged(name string, ctx AutomationContext) bool
 }
 
 // BaseCondition
@@ -165,11 +165,11 @@ type ExposeCondition struct {
 	handlers  []ConditionHandler
 }
 
-func (e *ExposeCondition) HasValueChanged(name string, ctx *DeviceContext) bool {
+func (e *ExposeCondition) HasValueChanged(name string, ctx AutomationContext) bool {
 	return ctx.GetCurrent(name) != e.Value
 }
 
-func (e *ExposeCondition) Evaluate(ctx *DeviceContext) bool {
+func (e *ExposeCondition) Evaluate(ctx AutomationContext) bool {
 	for _, handler := range e.handlers {
 		if !handler.Evaluate(ctx) {
 			return false

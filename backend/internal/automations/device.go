@@ -87,7 +87,7 @@ func (d *DeviceContext) SetCurrent(name string, value any) {
 
 type Device struct {
 	BaseAutomation
-	ctx *DeviceContext
+	ctx AutomationContext
 }
 
 func newDevice() *Device {
@@ -103,7 +103,7 @@ func NewDevice(id string) *Device {
 			FriendlyName: "",
 			Description:  "",
 			Enabled:      false,
-			Triggers:     []*BaseTrigger{},
+			Triggers:     []*DeviceTrigger{},
 			Schedules:    []*TimeSchedule{},
 		},
 		ctx: NewDeviceContext(),
@@ -157,8 +157,8 @@ func (d *Device) Evaluate(event TriggerEvent) bool {
 	// NOTE: a trigger can have multiple conditions.
 	// e.g presence can have multiple conditions for on and off
 	for _, trigger := range d.Triggers {
-		if _, ok := device.Exposes[trigger.Name]; ok {
-			trigger.process(d.ctx)
+		if _, ok := device.Exposes[trigger.GetName()]; ok {
+			trigger.Process(d.ctx)
 		}
 	}
 	return false

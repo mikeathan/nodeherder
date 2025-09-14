@@ -43,7 +43,7 @@ type BaseAutomation struct {
 	FriendlyName string          `json:"friendlyname"`
 	Description  string          `json:"description"`
 	Enabled      bool            `json:"enabled"`
-	Triggers     []*BaseTrigger  `json:"triggers"`
+	Triggers     []Trigger  `json:"triggers"`
 	Schedules    []*TimeSchedule `json:"schedules"`
 }
 
@@ -54,7 +54,7 @@ func NewBaseAutomation() *BaseAutomation {
 		FriendlyName: "",
 		Description:  "",
 		Enabled:      false,
-		Triggers:     []*BaseTrigger{},
+		Triggers:     []Trigger{},
 		Schedules:    []*TimeSchedule{},
 	}
 }
@@ -62,11 +62,11 @@ func NewBaseAutomation() *BaseAutomation {
 func (b *BaseAutomation) GetId() string                 { return b.Id }
 func (b *BaseAutomation) GetFriendlyName() string       { return b.FriendlyName }
 func (b *BaseAutomation) IsEnabled() bool               { return b.Enabled }
-func (b *BaseAutomation) GetTriggers() []*BaseTrigger   { return b.Triggers }
+func (b *BaseAutomation) GetTriggers() []Trigger   { return b.Triggers }
 func (b *BaseAutomation) GetSchedules() []*TimeSchedule { return b.Schedules }
 func (b *BaseAutomation) SetEnabled(enabled bool)       { b.Enabled = enabled }
 
-func (b *BaseAutomation) AddTrigger(trigger *BaseTrigger) error {
+func (b *BaseAutomation) AddTrigger(trigger Trigger) error {
 	b.Triggers = append(b.Triggers, trigger)
 	return nil
 }
@@ -90,7 +90,7 @@ func (d *BaseAutomation) Configure(registrar services.DeviceRegistrar, client mq
 	for _, trigger := range d.Triggers {
 
 		// validate actions
-		for _, action := range trigger.Actions {
+		for _, action := range trigger.GetActions() {
 			err := action.Configure(registrar, client)
 			if err != nil {
 				return err
