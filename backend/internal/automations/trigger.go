@@ -49,6 +49,21 @@ func NewTrigger(name string) *DeviceTrigger {
 	}
 }
 
+func (t *BaseTrigger) GetType() TriggerType {
+	return t.Type
+}
+
+func (t *BaseTrigger) GetName() string {
+	return t.Name
+}
+
+func (t *BaseTrigger) Process(ctx AutomationContext) {
+}
+
+func (t *BaseTrigger) GetActions() []MqttAction {
+	return t.Actions
+}
+
 func (t *BaseTrigger) UnmarshalJSON(data []byte) error {
 	// Unmarshal into a temporary struct to get basic fields
 	var temp struct {
