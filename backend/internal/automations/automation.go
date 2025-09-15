@@ -29,10 +29,10 @@ type Automation interface {
 	GetId() string
 	GetFriendlyName() string
 	IsEnabled() bool
-	GetTriggers() []*BaseTrigger
+	GetTriggers() TriggerList
 	GetSchedules() []*TimeSchedule
 
-	AddTrigger(trigger *BaseTrigger) error
+	AddTrigger(trigger Trigger) error
 	RemoveTrigger(index int) error
 	SetEnabled(enabled bool)
 }
@@ -43,7 +43,7 @@ type BaseAutomation struct {
 	FriendlyName string          `json:"friendlyname"`
 	Description  string          `json:"description"`
 	Enabled      bool            `json:"enabled"`
-	Triggers     []Trigger  `json:"triggers"`
+	Triggers     TriggerList     `json:"triggers"`
 	Schedules    []*TimeSchedule `json:"schedules"`
 }
 
@@ -54,7 +54,7 @@ func NewBaseAutomation() *BaseAutomation {
 		FriendlyName: "",
 		Description:  "",
 		Enabled:      false,
-		Triggers:     []Trigger{},
+		Triggers:     TriggerList{},
 		Schedules:    []*TimeSchedule{},
 	}
 }
@@ -62,7 +62,7 @@ func NewBaseAutomation() *BaseAutomation {
 func (b *BaseAutomation) GetId() string                 { return b.Id }
 func (b *BaseAutomation) GetFriendlyName() string       { return b.FriendlyName }
 func (b *BaseAutomation) IsEnabled() bool               { return b.Enabled }
-func (b *BaseAutomation) GetTriggers() []Trigger   { return b.Triggers }
+func (b *BaseAutomation) GetTriggers() TriggerList      { return b.Triggers }
 func (b *BaseAutomation) GetSchedules() []*TimeSchedule { return b.Schedules }
 func (b *BaseAutomation) SetEnabled(enabled bool)       { b.Enabled = enabled }
 

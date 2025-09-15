@@ -131,13 +131,13 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 		for sidx, sensorTrigger := range trigger.Triggers {
 			inputSensorTrigger := inputTrigger.Triggers[sidx]
 
-			if sensorTrigger.Name != inputSensorTrigger.Name {
+			if sensorTrigger.GetName() != inputSensorTrigger.GetName() {
 				t.Fatalf("unexpected sensorTrigger.Name value")
 			}
 
-			for aidx, action := range sensorTrigger.Actions {
+			for aidx, action := range sensorTrigger.GetActions() {
 				sensorTriggerAction := action.(*automations.MqttTriggerAction)
-				inputAction := inputSensorTrigger.Actions[aidx].(*automations.MqttTriggerAction)
+				inputAction := inputSensorTrigger.GetActions()[aidx].(*automations.MqttTriggerAction)
 
 				for eidx, expose := range inputAction.Exposes {
 					if sensorTriggerAction.Exposes[eidx].Name != expose.Name {
@@ -158,11 +158,10 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 				}
 			}
 
-			for cidx, condition := range sensorTrigger.Conditions {
-
+			for cidx, condition := range sensorTrigger.GetConditions() {
 				if condition.GetType() == automations.ExposeConditionType {
 					sensorCondition := condition.(*automations.ExposeCondition)
-					inputCondition := inputSensorTrigger.Conditions[cidx].(*automations.ExposeCondition)
+					inputCondition := inputSensorTrigger.GetConditions()[cidx].(*automations.ExposeCondition)
 					if sensorCondition.EqualityOperator != inputCondition.EqualityOperator {
 						t.Fatalf("unexpected condition.EqualityOperator  value")
 					}
@@ -1662,7 +1661,7 @@ func createTestAutomation() []*automations.Device {
 
 	deviceTrigger := automations.NewDevice("human sensor")
 	deviceTrigger.Description = "test human sensor automation"
-	deviceTrigger.Triggers = []*automations.BaseTrigger{}
+	deviceTrigger.Triggers = []automations.Trigger{}
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOffTrigger)
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTriggerWithLux)
 

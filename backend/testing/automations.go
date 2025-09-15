@@ -27,7 +27,7 @@ func CreateDoorContactWithAlarmTriggerAutomation(doorSensorId string, alarmId st
 	deviceAutomation.Id = doorSensorId
 	deviceAutomation.FriendlyName = "front door sensor"
 	deviceAutomation.Enabled = true
-	deviceAutomation.Triggers = []*automations.BaseTrigger{doorSensorTrigger}
+	deviceAutomation.Triggers = []automations.Trigger{doorSensorTrigger}
 
 	return deviceAutomation
 }
@@ -81,7 +81,7 @@ func CreateDoorContactDurationWithAlarmTriggerAutomation(doorSensorId string, al
 	deviceAutomation.Id = doorSensorId
 	deviceAutomation.FriendlyName = "front door sensor"
 	deviceAutomation.Enabled = true
-	deviceAutomation.Triggers = []*automations.BaseTrigger{openDoorTrigger, closeDoorTrigger}
+	deviceAutomation.Triggers = []automations.Trigger{openDoorTrigger, closeDoorTrigger}
 
 	return deviceAutomation
 }

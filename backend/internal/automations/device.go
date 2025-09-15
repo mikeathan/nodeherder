@@ -103,7 +103,7 @@ func NewDevice(id string) *Device {
 			FriendlyName: "",
 			Description:  "",
 			Enabled:      false,
-			Triggers:     []*DeviceTrigger{},
+			Triggers:     TriggerList{},
 			Schedules:    []*TimeSchedule{},
 		},
 		ctx: NewDeviceContext(),

@@ -7,6 +7,7 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
 	"node-herder/utils"
+	"reflect"
 	"sync"
 	"time"
 )
@@ -19,16 +20,24 @@ import (
 
 type PublishMode string
 
+type ActionType string
+
 const (
 	PublishBatch  PublishMode = "batch"  // all commands in one payload
 	PublishSingle PublishMode = "single" // one payload per command
 )
 
 const (
-	TriggerAction       = "trigger"
-	StepAction          = "step"
-	PresetCyclingAction = "preset"
+	TriggerAction       ActionType = "trigger"
+	StepAction          ActionType = "step"
+	PresetCyclingAction ActionType = "preset"
 )
+
+var actionTypeRegistry = map[ActionType]reflect.Type{
+	TriggerAction:       reflect.TypeOf(&MqttTriggerAction{}),
+	StepAction:          reflect.TypeOf(&MqttStepAction{}),
+	PresetCyclingAction: reflect.TypeOf(&MqttPresetCyclingAction{}),
+}
 
 type Step struct {
 	Property string `json:"property"`
@@ -178,7 +187,7 @@ func (a *MqttPresetCyclingAction) Configure(registrar services.DeviceRegistrar, 
 
 type MqttBaseAction struct {
 	Id           string                   `json:"id"`
-	Type         string                   `json:"type"`
+	Type         ActionType               `json:"type"`
 	Client       mqtt.MqttClient          `json:"-"`
 	registrar    services.DeviceRegistrar `json:"-"`
 	mut          sync.RWMutex             `json:"-"`
@@ -239,7 +248,7 @@ func (b *MqttBaseAction) GetID() string {
 	return b.Id
 }
 
-func (b *MqttBaseAction) GetType() string {
+func (b *MqttBaseAction) GetType() ActionType {
 	return b.Type
 }
 
@@ -325,6 +334,6 @@ type MqttAction interface {
 	Execute(ctx AutomationContext) error
 	Stop()
 	GetID() string
-	GetType() string
+	GetType() ActionType
 	Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error
 }

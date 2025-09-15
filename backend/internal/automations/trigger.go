@@ -7,20 +7,15 @@ import (
 	"reflect"
 )
 
-var typeRegistry = map[string]reflect.Type{
-	TriggerAction:       reflect.TypeOf(MqttTriggerAction{}),
-	StepAction:          reflect.TypeOf(MqttStepAction{}),
-	PresetCyclingAction: reflect.TypeOf(MqttPresetCyclingAction{}),
-	ExposeConditionType: reflect.TypeOf(ExposeCondition{}),
-}
-
 type TriggerType string
+type TriggerList []Trigger
 
 type Trigger interface {
 	GetType() TriggerType
 	GetName() string
 	Process(ctx AutomationContext)
 	GetActions() []MqttAction
+	GetConditions() []Condition
 }
 
 const (
@@ -28,24 +23,28 @@ const (
 	ManualTriggerType TriggerType = "manual"
 )
 
+var triggerTypeRegistry = map[TriggerType]reflect.Type{
+	DeviceTriggerType: reflect.TypeOf(&DeviceTrigger{}),
+}
+
 type DeviceTrigger struct {
 	BaseTrigger
-	Conditions []Condition `json:"conditions"`
 }
 type BaseTrigger struct {
-	Type    TriggerType  `json:"type"`
-	Actions []MqttAction `json:"actions"`
-	Name    string       `json:"name"`
+	Type       TriggerType  `json:"type"`
+	Actions    []MqttAction `json:"actions"`
+	Name       string       `json:"name"`
+	Conditions []Condition  `json:"conditions"`
 }
 
 func NewTrigger(name string) *DeviceTrigger {
 	return &DeviceTrigger{
 		BaseTrigger: BaseTrigger{
-			Actions: []MqttAction{},
-			Type:    DeviceTriggerType,
-			Name:    name,
+			Actions:    []MqttAction{},
+			Type:       DeviceTriggerType,
+			Conditions: []Condition{},
+			Name:       name,
 		},
-		Conditions: []Condition{},
 	}
 }
 
@@ -62,6 +61,10 @@ func (t *BaseTrigger) Process(ctx AutomationContext) {
 
 func (t *BaseTrigger) GetActions() []MqttAction {
 	return t.Actions
+}
+
+func (t *BaseTrigger) GetConditions() []Condition {
+	return t.Conditions
 }
 
 func (t *BaseTrigger) UnmarshalJSON(data []byte) error {
@@ -85,7 +88,7 @@ func (t *BaseTrigger) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(rawCondition, &baseCondition); err != nil {
 			return fmt.Errorf("unmarshaling base condition: %w", err)
 		}
-		concreteType, ok := typeRegistry[baseCondition.Type]
+		concreteType, ok := conditionTypeRegistry[baseCondition.Type]
 		if !ok {
 			return fmt.Errorf("unknown condition type: %s", baseCondition.Type)
 		}
@@ -114,7 +117,7 @@ func (t *BaseTrigger) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("unmarshaling base action: %w", err)
 		}
 
-		concreteType, ok := typeRegistry[baseAction.Type]
+		concreteType, ok := actionTypeRegistry[baseAction.Type]
 		if !ok {
 			return fmt.Errorf("unknown action type: %s", baseAction.Type)
 		}
@@ -158,4 +161,35 @@ func (t *DeviceTrigger) Process(ctx AutomationContext) {
 	for _, action := range t.Actions {
 		action.Execute(ctx)
 	}
+}
+
+// TriggerList, wrapper to control the unmarshalling of different Trigger types
+func (tl *TriggerList) UnmarshalJSON(data []byte) error {
+	var rawList []json.RawMessage
+	if err := json.Unmarshal(data, &rawList); err != nil {
+		return err
+	}
+
+	for _, raw := range rawList {
+		var peek struct {
+			Type TriggerType `json:"type"`
+		}
+		if err := json.Unmarshal(raw, &peek); err != nil {
+			return fmt.Errorf("unmarshal type: %w", err)
+		}
+
+		concreteType, ok := triggerTypeRegistry[peek.Type]
+		if !ok {
+			return fmt.Errorf("unknown trigger type: %s", peek.Type)
+		}
+
+		trigger := reflect.New(concreteType.Elem()).Interface()
+		
+		if err := json.Unmarshal(raw, trigger); err != nil {
+			return fmt.Errorf("unmarshal %s: %w", peek.Type, err)
+		}
+
+		*tl = append(*tl, trigger.(Trigger))
+	}
+	return nil
 }

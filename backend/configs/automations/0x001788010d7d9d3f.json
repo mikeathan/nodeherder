@@ -26,6 +26,7 @@
           ]
         }
       ],
+      "type": "device",
       "name": "action"
     },
     {
@@ -57,6 +58,7 @@
           "data": 0.5
         }
       ],
+      "type": "device",
       "name": "action"
     },
     {
