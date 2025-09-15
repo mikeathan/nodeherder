@@ -19,7 +19,7 @@ func CreateDoorContactWithAlarmTriggerAutomation(doorSensorId string, alarmId st
 	alarmAction.Type = automations.TriggerAction
 	alarmAction.Client = mqtt
 
-	doorSensorTrigger := &automations.BaseTrigger{}
+	doorSensorTrigger := &automations.DeviceTrigger{}
 	doorSensorTrigger.Name = "contact"
 	doorSensorTrigger.Actions = []automations.MqttAction{alarmAction}
 
@@ -36,7 +36,7 @@ func CreateDoorContactDurationWithAlarmTriggerAutomation(doorSensorId string, al
 	// setup automations
 
 	// door open triggers alarm
-	openDoorTrigger := &automations.BaseTrigger{}
+	openDoorTrigger := &automations.DeviceTrigger{}
 	openDoorTrigger.Name = "contact"
 	openDoorTrigger.Conditions = []automations.Condition{
 		automations.NewExposeCondition("contact", true, "="),
@@ -59,7 +59,7 @@ func CreateDoorContactDurationWithAlarmTriggerAutomation(doorSensorId string, al
 	openDoorTrigger.Actions = []automations.MqttAction{alarmOnAction}
 
 	// door close turns off alarm
-	closeDoorTrigger := &automations.BaseTrigger{}
+	closeDoorTrigger := &automations.DeviceTrigger{}
 	closeDoorTrigger.Name = "contact"
 	closeDoorTrigger.Conditions = []automations.Condition{
 		automations.NewExposeCondition("contact", false, "="),
@@ -86,7 +86,7 @@ func CreateDoorContactDurationWithAlarmTriggerAutomation(doorSensorId string, al
 	return deviceAutomation
 }
 
-func CreateDialTriggerActionsBrightness(actionId string, dialActionName string, mqtt mqtt.MqttClient) *automations.BaseTrigger {
+func CreateDialTriggerActionsBrightness(actionId string, dialActionName string, mqtt mqtt.MqttClient) *automations.DeviceTrigger {
 	condition := automations.NewExposeCondition("action", dialActionName, "=")
 	step := &automations.Step{}
 	step.Id = actionId
@@ -101,7 +101,7 @@ func CreateDialTriggerActionsBrightness(actionId string, dialActionName string, 
 	action.Steps = []*automations.Step{step}
 	action.Client = mqtt
 
-	trigger := &automations.BaseTrigger{}
+	trigger := &automations.DeviceTrigger{}
 	trigger.Name = "action"
 	trigger.Actions = []automations.MqttAction{action}
 	trigger.Conditions = []automations.Condition{condition}
@@ -109,7 +109,7 @@ func CreateDialTriggerActionsBrightness(actionId string, dialActionName string, 
 	return trigger
 }
 
-func CreateDialTriggerStepActionBrightness(lightDeviceId string, dialDeviceId string, dialActionName string, mqtt mqtt.MqttClient) *automations.BaseTrigger {
+func CreateDialTriggerStepActionBrightness(lightDeviceId string, dialDeviceId string, dialActionName string, mqtt mqtt.MqttClient) *automations.DeviceTrigger {
 	condition := automations.NewExposeCondition("action", dialActionName, "=")
 	step := &automations.Step{}
 	step.Id = lightDeviceId
@@ -129,7 +129,7 @@ func CreateDialTriggerStepActionBrightness(lightDeviceId string, dialDeviceId st
 	action.Steps = []*automations.Step{step, step2}
 	action.Client = mqtt
 
-	trigger := &automations.BaseTrigger{}
+	trigger := &automations.DeviceTrigger{}
 	trigger.Name = "action"
 	trigger.Actions = []automations.MqttAction{action}
 	trigger.Conditions = []automations.Condition{condition}
@@ -169,7 +169,7 @@ func CreateDialTriggerStepActionBrightness(lightDeviceId string, dialDeviceId st
 //	}
 //
 // },
-func CreateSwitchTriggerWithBindingAction(triggerName string, actionProp string, mqtt mqtt.MqttClient) *automations.BaseTrigger {
+func CreateSwitchTriggerWithBindingAction(triggerName string, actionProp string, mqtt mqtt.MqttClient) *automations.DeviceTrigger {
 	// action = turn off light
 	brightnessAction := automations.NewTriggerAction()
 	brightnessAction.Exposes = []*automations.MqttTriggerActionExpose{
@@ -181,7 +181,7 @@ func CreateSwitchTriggerWithBindingAction(triggerName string, actionProp string,
 	brightnessAction.Client = mqtt
 
 	// Turn off sensor trigger
-	button1Trigger := &automations.BaseTrigger{}
+	button1Trigger := &automations.DeviceTrigger{}
 	button1Trigger.Name = triggerName
 	button1Trigger.Actions = []automations.MqttAction{brightnessAction}
 

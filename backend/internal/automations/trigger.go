@@ -27,6 +27,11 @@ var triggerTypeRegistry = map[TriggerType]reflect.Type{
 	DeviceTriggerType: reflect.TypeOf(&DeviceTrigger{}),
 }
 
+TODO
+
+type ManualTrigger struct{
+	BaseTrigger
+}
 type DeviceTrigger struct {
 	BaseTrigger
 }
@@ -132,13 +137,6 @@ func (t *BaseTrigger) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// presence  == true
-// light >= 14
-// turn on light
-
-// presence == false
-// start timer for 5 min
-// turn off light
 
 func (t *DeviceTrigger) Process(ctx AutomationContext) {
 
@@ -163,7 +161,9 @@ func (t *DeviceTrigger) Process(ctx AutomationContext) {
 	}
 }
 
-// TriggerList, wrapper to control the unmarshalling of different Trigger types
+// TriggerList
+// Wrapper to control the unmarshalling of different Trigger types
+
 func (tl *TriggerList) UnmarshalJSON(data []byte) error {
 	var rawList []json.RawMessage
 	if err := json.Unmarshal(data, &rawList); err != nil {
@@ -184,7 +184,7 @@ func (tl *TriggerList) UnmarshalJSON(data []byte) error {
 		}
 
 		trigger := reflect.New(concreteType.Elem()).Interface()
-		
+
 		if err := json.Unmarshal(raw, trigger); err != nil {
 			return fmt.Errorf("unmarshal %s: %w", peek.Type, err)
 		}
