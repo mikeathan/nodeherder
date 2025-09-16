@@ -42,36 +42,42 @@ type HubController struct {
 }
 type HubControllerOption func(*HubController)
 
+func WithContext(ctx context.Context) HubControllerOption {
+	return func(h *HubController) {
+		h.ctx = ctx
+	}
+}
 func WithAutomationHandlers(handlers []automations.AutomationHandler) HubControllerOption {
 	return func(h *HubController) {
 		h.automationHandlers = handlers
 	}
 }
 
-func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context, options ...HubControllerOption) *HubController {
+func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, options ...HubControllerOption) *HubController {
 	h := &HubController{
 		eventHub:                          eventHub,
 		store:                             store,
 		mqtt:                              mqtt,
 		responseHandlers:                  map[string]handler{},
 		DeviceAvailabilityTimeoutOverride: 3600,
-		ctx:                               ctx,
-		automationHandlers: []automations.AutomationHandler{
-			automations.NewAutomationScheduler(
-				automations.WithContext(ctx),
-				automations.WithAutomationsFuncs(),
-			),
-		},
+		ctx:                               context.Background(),
+		automationHandlers:                []automations.AutomationHandler{},
 	}
 
 	for _, option := range options {
 		option(h)
 	}
 
-	h.registrar = services.NewHubRegisterService(store, eventHub, 3600)
+	h.automationHandlers = []automations.AutomationHandler{
+		automations.NewAutomationScheduler(
+			automations.WithContext(h.ctx),
+			automations.WithAutomationsFuncs(),
+		),
+	}
 
+	h.registrar = services.NewHubRegisterService(store, eventHub, 3600) // 3600 - is not used!!!!!!!!!!!!!!!!
 	h.automationEngine = automations.NewEngine(h.automationHandlers, h.registrar, mqtt)
-	h.wp = utils.NewWorkerPool(4, ctx)
+	h.wp = utils.NewWorkerPool(4, h.ctx)
 	h.wp.Run()
 
 	h.registerEventHubEvents()
@@ -489,6 +495,10 @@ func (c *HubController) Enqueue(id string, payload map[string]interface{}, connT
 
 func (m *HubController) TriggerAutomation(device *devices.Device) {
 	m.automationEngine.HandleDevice(device)
+}
+
+func (m *HubController) TriggerManual(automationID string, triggerName string) {
+	m.automationEngine.HandleManual(automationID, triggerName)
 }
 
 func (m *HubController) processMessage(id string, payload []byte, connType string) error {

@@ -86,6 +86,7 @@ func (r *Router) getHandler(method, path string) http.Handler {
 	return http.NotFoundHandler()
 }
 
+// Web socket
 type WsHandler struct {
 	hub ws.EventHub
 }
@@ -106,6 +107,7 @@ func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	utils.LogInfo("WsHandler: client connected")
 }
 
+// List file logs
 type ListFileLogsHandler struct {
 	fs fs.FileSystem
 }
@@ -134,6 +136,7 @@ func (h *ListFileLogsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// Log file
 type LogFileHandler struct {
 	fs fs.FileSystem
 }
@@ -229,6 +232,7 @@ func (h *DataCollectorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	w.Write([]byte("Success"))
 }
 
+// File
 type FileHandler struct {
 	handlerFunc func(http.ResponseWriter, *http.Request)
 }
@@ -247,6 +251,7 @@ func NewFileHandler(path string, redirectPath string) *FileHandler {
 	return fh
 }
 
+// Hub State
 type HubStateHandler struct {
 	store            store.AppStore
 	cachedHubState   []byte
@@ -319,4 +324,28 @@ func (h *HubStateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	w.Write(h.cachedHubState)
+}
+
+// Automation Trigger
+type AutomationTriggerHandler struct {
+	hub *controllers.HubController
+}
+
+func NewAutomationTriggerHandler(hub *controllers.HubController) *AutomationTriggerHandler {
+	sh := &AutomationTriggerHandler{
+		hub: hub,
+	}
+
+	return sh
+}
+
+func (h *AutomationTriggerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	automationID := r.URL.Query().Get("automationId")
+	triggerName := r.URL.Query().Get("triggerName")
+	if automationID == "" || triggerName == "" {
+		http.Error(w, "missing automationId or triggerName", http.StatusBadRequest)
+		return
+	}
+
+	h.hub.TriggerManual(automationID, triggerName)
 }

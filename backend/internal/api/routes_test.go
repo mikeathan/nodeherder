@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -30,7 +29,7 @@ func TestHandleMissingDeviceIdPayload(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	store := utils_test.CreateStore()
 
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 	bodyReader := strings.NewReader(string(missingDeviceIdPayload))
 	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
@@ -55,7 +54,7 @@ func TestHandleInvalidDataPayload(t *testing.T) {
 	store := utils_test.CreateStore()
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 	bodyReader := strings.NewReader(string("test"))
 	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
@@ -77,7 +76,7 @@ func TestHandleSuccesfullyRootPayload(t *testing.T) {
 	store := utils_test.CreateStore()
 
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 	bodyReader := strings.NewReader(string(device1RootPayloadBatterySource))
 	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
@@ -111,7 +110,7 @@ func TestHandleInvalidRootPayload(t *testing.T) {
 	ws := &mocks.NopWsServer{}
 
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 	bodyReader := strings.NewReader(string(device1InvalidRootPayloadBatterySource))
 	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
@@ -143,7 +142,7 @@ func TestProcessorHandleRootPayloadWithTimestamp(t *testing.T) {
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 	bodyReader := strings.NewReader(string(device1RootPayload))
 	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
@@ -181,7 +180,7 @@ func TestHandleSuccesfullyPayload(t *testing.T) {
 	store := utils_test.CreateStore()
 
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 	bodyReader := strings.NewReader(string(gasNodePayload))
 	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
@@ -218,7 +217,7 @@ func TestHandleUnsuportedMediaType(t *testing.T) {
 	ws := &mocks.NopWsServer{}
 
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 
 	bodyReader := strings.NewReader(string(device1BatterySource))
 	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
@@ -339,29 +338,29 @@ func TestHubStateHandler_ReturnsHubState(t *testing.T) {
 		t.Fatalf("expected hub state, got nil")
 	}
 
-		// assert app config
-// 	if len(hubState.Config.Hub.Devices.Overrides) != len(inputAppConfig.Hub.Devices.Overrides) {
-// 		t.Fatalf("Expected numer of appconfig devices. want %v', got '%v'", len(inputAppConfig.Hub.Devices.Overrides), len(hubState.Config.Hub.Devices.Overrides))
-// 	}
-// 	for id, d := range inputAppConfig.Hub.Devices.Overrides {
-// 		gotDeviceConfig := hubState.Config.Hub.Devices.Overrides[id]
-// 		if d.Id != gotDeviceConfig.Id {
-// 			t.Fatalf("Expected device id %v', got '%v'", d.Id, gotDeviceConfig.Id)
-// 		}
-// 		if d.Disabled != gotDeviceConfig.Disabled {
-// 			t.Fatalf("Expected Disabled %v', got '%v'", d.Disabled, gotDeviceConfig.Disabled)
-// 		}
-// 		if d.MetricsEnabled != gotDeviceConfig.MetricsEnabled {
-// 			t.Fatalf("Expected MetricsEnabled %v', got '%v'", d.MetricsEnabled, gotDeviceConfig.MetricsEnabled)
-// 		}
+	// assert app config
+	// 	if len(hubState.Config.Hub.Devices.Overrides) != len(inputAppConfig.Hub.Devices.Overrides) {
+	// 		t.Fatalf("Expected numer of appconfig devices. want %v', got '%v'", len(inputAppConfig.Hub.Devices.Overrides), len(hubState.Config.Hub.Devices.Overrides))
+	// 	}
+	// 	for id, d := range inputAppConfig.Hub.Devices.Overrides {
+	// 		gotDeviceConfig := hubState.Config.Hub.Devices.Overrides[id]
+	// 		if d.Id != gotDeviceConfig.Id {
+	// 			t.Fatalf("Expected device id %v', got '%v'", d.Id, gotDeviceConfig.Id)
+	// 		}
+	// 		if d.Disabled != gotDeviceConfig.Disabled {
+	// 			t.Fatalf("Expected Disabled %v', got '%v'", d.Disabled, gotDeviceConfig.Disabled)
+	// 		}
+	// 		if d.MetricsEnabled != gotDeviceConfig.MetricsEnabled {
+	// 			t.Fatalf("Expected MetricsEnabled %v', got '%v'", d.MetricsEnabled, gotDeviceConfig.MetricsEnabled)
+	// 		}
 
-// 		if d.RateLimit.Value != gotDeviceConfig.RateLimit.Value {
-// 			t.Fatalf("Expected RateLimit.Value %v', got '%v'", d.RateLimit.Value, gotDeviceConfig.RateLimit.Value)
-// 		}
-// 		if d.RateLimit.Unit != gotDeviceConfig.RateLimit.Unit {
-// 			t.Fatalf("Expected RateLimit.Unit %v', got '%v'", d.RateLimit.Unit, gotDeviceConfig.RateLimit.Unit)
-// 		}
-// 	}
+	//		if d.RateLimit.Value != gotDeviceConfig.RateLimit.Value {
+	//			t.Fatalf("Expected RateLimit.Value %v', got '%v'", d.RateLimit.Value, gotDeviceConfig.RateLimit.Value)
+	//		}
+	//		if d.RateLimit.Unit != gotDeviceConfig.RateLimit.Unit {
+	//			t.Fatalf("Expected RateLimit.Unit %v', got '%v'", d.RateLimit.Unit, gotDeviceConfig.RateLimit.Unit)
+	//		}
+	//	}
 }
 
 func TestHubStateHandler_ReturnsCacheedState(t *testing.T) {

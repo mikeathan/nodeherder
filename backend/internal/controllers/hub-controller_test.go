@@ -50,7 +50,7 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 
 	// register hub
 	store := utils_test.CreateStore()
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 
 	hub.WithAutomationStorage(automationStorage)
 
@@ -139,7 +139,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	wg.Add(2)
 
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background(), controllers.WithAutomationHandlers(automationHandlers))
+	hub := controllers.RegisterHubController(ws, store, mqtt, controllers.WithAutomationHandlers(automationHandlers))
 
 	hub.WithAutomationStorage(automationStorage) // overide storage
 
@@ -216,7 +216,7 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 
 	// register hub
 	store := utils_test.CreateStore()
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 	hub.WithAutomationStorage(automationStorage) // overide storage
 	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
@@ -330,7 +330,7 @@ func TestHubEnableRemoteLogger(t *testing.T) {
 	remoteLogEmitter := mocks.NewMockRemoteLoggerEmitter(handler)
 	utils.RegisterRemoteLoggerHook(remoteLogEmitter)
 
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 
 	// find a way to test the remote logger
 	mqtt.Publish("bridge/devices", deviceBridgeList)
@@ -421,7 +421,7 @@ func TestHubTriggersRemoteLogger(t *testing.T) {
 	remoteLogEmitter := mocks.NewMockRemoteLoggerEmitter(handler)
 	utils.RegisterRemoteLoggerHook(remoteLogEmitter)
 
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 
 	// find a way to test the remote logger
 	mqtt.Publish("bridge/devices", deviceBridgeList)
@@ -467,7 +467,7 @@ func TestProcessorStoresMetricsForNewNonBridgeDevice(t *testing.T) {
 	defer cleanup()
 
 	appCfg := store.AppConfig()
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
@@ -582,7 +582,7 @@ func TestHubSaveDeviceConfigOverrides(t *testing.T) {
 	defer cleanup()
 
 	appCfg := store.AppConfig()
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
@@ -668,7 +668,7 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 	defer cleanup()
 
 	appCache := store.AppConfig()
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
@@ -783,7 +783,7 @@ func TestHubSaveDeviceConfigDefaults(t *testing.T) {
 	}
 	defer cleanup()
 
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
@@ -872,7 +872,7 @@ func TestProcessorStoresMetricsForExistingDevice(t *testing.T) {
 	defer cleanup()
 
 	appCfg := store.AppConfig()
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
@@ -1032,7 +1032,7 @@ func TestImportDashboardGroupsMessage(t *testing.T) {
 	}
 
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
-	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+	controllers.RegisterHubController(eventHub, store, mqtt)
 
 	// create new expose group
 	newGroup := settings.NewDashboardGroup("living room group")
@@ -1128,7 +1128,7 @@ func TestSaveDashboardGroupIsValidated(t *testing.T) {
 		return nil
 	}
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
-	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+	controllers.RegisterHubController(eventHub, store, mqtt)
 
 	// create new expose group
 	newGroup := settings.NewDashboardGroup("living room group")
@@ -1234,7 +1234,7 @@ func TestRenameDashboardGroup(t *testing.T) {
 	}
 
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
-	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+	controllers.RegisterHubController(eventHub, store, mqtt)
 
 	req := &devices.DashboardGroupRenameRequest{}
 	req.OldName = "living room group"
@@ -1325,7 +1325,7 @@ func TestDeleteDashboardGroupRemovesGroup(t *testing.T) {
 		return nil
 	}
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
-	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+	controllers.RegisterHubController(eventHub, store, mqtt)
 
 	payload := map[string]string{
 		"groupName": "living room group",
@@ -1349,7 +1349,7 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
 
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 	mqtt.Publish(name, []byte(device1BatterySource))
 
 	time.Sleep(500 * time.Millisecond)
@@ -1374,7 +1374,7 @@ func TestProcessorUpdatesExistingDevice(t *testing.T) {
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 	mqtt.Publish("device1", []byte(device1BatterySource))
 	mqtt.Publish("device2", []byte(device2))
 	mqtt.Publish("device2", []byte(device1BatterySource))
@@ -1404,7 +1404,7 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 	mqtt.Publish(name, []byte(device3NoLastSeen))
 
 	want := time.Now().Format(time.RFC3339)
@@ -1502,7 +1502,7 @@ func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {
 	}
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
 
-	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+	controllers.RegisterHubController(eventHub, store, mqtt)
 
 	req := settings.NewBridgeConfig()
 	req.PermitJoin = true
@@ -1608,7 +1608,7 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 	}
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
 
-	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+	controllers.RegisterHubController(eventHub, store, mqtt)
 
 	req := settings.NewBridgeConfig()
 	req.PermitJoin = true
@@ -1717,7 +1717,7 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
 
-	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+	controllers.RegisterHubController(eventHub, store, mqtt)
 
 	for _, testCase := range testCases {
 
@@ -1750,7 +1750,7 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 	hub.DeviceAvailabilityTimeoutOverride = 1
 
 	mqtt.Publish(name, []byte(device1BatterySource))
@@ -1789,7 +1789,7 @@ func TestAvailabilityIsDisposed(t *testing.T) {
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 	hub.DeviceAvailabilityTimeoutOverride = 1
 
 	mqtt.Publish(name, []byte(device1BatterySource))
@@ -1837,7 +1837,7 @@ func TestHub_DeviceConfigDefaults_DisableDevices(t *testing.T) {
 	}
 	defer cleanup()
 
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo

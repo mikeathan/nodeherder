@@ -15,6 +15,7 @@ const (
 
 type Engine interface { // TODO: might need to move it to Models????
 	HandleDevice(device *devices.Device)
+	HandleManual(automationID string, triggerName string)
 	Add(automation Automation) error
 	Delete(id string) error
 	DeleteTrigger(id string, triggerId int) error
@@ -61,6 +62,13 @@ func (a *AutomationEngine) HandleDevice(device *devices.Device) {
 	automation, err := a.storage.LoadFromCache(device.Id)
 	if err == nil && automation.IsEnabled() {
 		automation.Evaluate(NewDeviceEvent(device))
+	}
+}
+
+func (a *AutomationEngine) HandleManual(automationID string, triggerName string) {
+	automation, err := a.storage.LoadFromCache(automationID)
+	if err == nil && automation.IsEnabled() {
+		//automation.Evaluate(NewManualEvent(triggerName))
 	}
 }
 

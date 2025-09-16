@@ -31,9 +31,11 @@ var triggerTypeRegistry = map[TriggerType]reflect.Type{
 type ManualTrigger struct {
 	BaseTrigger
 }
+
 type DeviceTrigger struct {
 	BaseTrigger
 }
+
 type BaseTrigger struct {
 	Type       TriggerType  `json:"type"`
 	Actions    []MqttAction `json:"actions"`
@@ -41,16 +43,6 @@ type BaseTrigger struct {
 	Conditions []Condition  `json:"conditions"`
 }
 
-func NewTrigger(name string) *DeviceTrigger {
-	return &DeviceTrigger{
-		BaseTrigger: BaseTrigger{
-			Actions:    []MqttAction{},
-			Type:       DeviceTriggerType,
-			Conditions: []Condition{},
-			Name:       name,
-		},
-	}
-}
 
 func (t *BaseTrigger) GetType() TriggerType {
 	return t.Type
@@ -138,6 +130,18 @@ func (t *BaseTrigger) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// DeviceTrigger
+func NewDeviceTrigger(name string) *DeviceTrigger {
+	return &DeviceTrigger{
+		BaseTrigger: BaseTrigger{
+			Actions:    []MqttAction{},
+			Type:       DeviceTriggerType,
+			Conditions: []Condition{},
+			Name:       name,
+		},
+	}
+}
+
 func (t *DeviceTrigger) Process(ctx AutomationContext) {
 
 	for _, c := range t.Conditions {
@@ -160,6 +164,15 @@ func (t *DeviceTrigger) Process(ctx AutomationContext) {
 		action.Execute(ctx)
 	}
 }
+
+
+// ManualTrigger
+func (t *ManualTrigger) Process(ctx AutomationContext) {
+	for _, action := range t.Actions {
+		action.Execute(ctx)
+	}
+}
+
 
 // TriggerList
 // Wrapper to control the unmarshalling of different Trigger types
