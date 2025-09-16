@@ -161,7 +161,7 @@ func (d *Device) Evaluate(event TriggerEvent) bool {
 			trigger.Process(d.ctx)
 		}
 	}
-	return false
+	return true
 }
 
 func (d *Device) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
