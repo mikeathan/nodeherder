@@ -19,17 +19,16 @@ type Trigger interface {
 }
 
 const (
-	DeviceTriggerType TriggerType = "device"
-	ManualTriggerType TriggerType = "manual"
+	DeviceTriggerType TriggerType = "deviceTrigger"
+	ManualTriggerType TriggerType = "manualTrigger"
 )
 
 var triggerTypeRegistry = map[TriggerType]reflect.Type{
 	DeviceTriggerType: reflect.TypeOf(&DeviceTrigger{}),
+	ManualTriggerType: reflect.TypeOf(&ManualTrigger{}),
 }
 
-TODO
-
-type ManualTrigger struct{
+type ManualTrigger struct {
 	BaseTrigger
 }
 type DeviceTrigger struct {
@@ -76,6 +75,7 @@ func (t *BaseTrigger) UnmarshalJSON(data []byte) error {
 	// Unmarshal into a temporary struct to get basic fields
 	var temp struct {
 		Name       string            `json:"name"`
+		Type       TriggerType       `json:"type"`
 		Conditions []json.RawMessage `json:"conditions"`
 		Actions    []json.RawMessage `json:"actions"`
 	}
@@ -85,6 +85,7 @@ func (t *BaseTrigger) UnmarshalJSON(data []byte) error {
 	}
 
 	t.Name = temp.Name
+	t.Type = temp.Type
 
 	// Handle the Conditions using the type registry
 	t.Conditions = make([]Condition, len(temp.Conditions))
@@ -136,7 +137,6 @@ func (t *BaseTrigger) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
-
 
 func (t *DeviceTrigger) Process(ctx AutomationContext) {
 

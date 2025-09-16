@@ -14,7 +14,7 @@ const (
 )
 
 var conditionTypeRegistry = map[ConditionType]reflect.Type{
-	ExposeConditionType: reflect.TypeOf(&ExposeCondition{}),
+	ExposeConditionType: reflect.TypeOf(ExposeCondition{}),
 }
 
 // BaseCondition

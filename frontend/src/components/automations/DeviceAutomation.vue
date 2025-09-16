@@ -70,7 +70,6 @@
 
   function createNewTrigger() {
     const newTrigger = EditableAutomationTrigger.create();
-
     emitOpenTriggerPanelEvent(automation.value.id, newTrigger, saveTrigger, deleteTrigger);
   }
 
@@ -90,10 +89,6 @@
     const trigger = automation.value.triggers[event.index];
 
     emitOpenTriggerPanelEvent(automation.value.id, trigger, saveTrigger, deleteTrigger);
-  }
-
-  function onDeleteTriggerClick(event: Event, trigger: AutomationTrigger): void {
-    deleteTrigger(trigger);
   }
 
   function onComponentDisplayed() {
@@ -125,6 +120,7 @@
   }
 
   function saveTrigger(trigger: AutomationTrigger): void {
+
     const idx = automation.value.triggers.indexOf(trigger);
     if (idx == -1) {
       automation.value.triggers.push(trigger);
@@ -133,20 +129,6 @@
     }
   }
 
-  function getConditionsDescription(trigger: AutomationTrigger): string {
-    var conditions = trigger.conditions;
-    if (conditions.length == 0) {
-      return '';
-    }
-
-    var condition = conditions[0];
-    var description = condition.name + ' ' + condition.equality + ' ' + condition.value;
-    if (conditions.length > 1) {
-      description += '...';
-    }
-
-    return description;
-  }
 
   const deviceNameFromId = (id: string): string => {
     const device = store.getters['hub/findDevice'](id) as Device;

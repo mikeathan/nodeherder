@@ -12,6 +12,8 @@ import {
   ActionType,
   ConditionType,
   AutomationConditionTypes,
+  TriggerType,
+  TriggerTypes,
 } from '../types/automation.type.js';
 
 export const EqualityOperators: string[] = ['=', '<=', '>=', '>', '<'];
@@ -41,12 +43,14 @@ export class DeviceAutomation implements Automation {
 
 export class EditableAutomationTrigger implements AutomationTrigger {
   name: string;
+  type: TriggerType;
   conditions: AutomationTriggerConditions;
   actions: AutomationAction[];
 
   static create(): AutomationTrigger {
     const trigger = {} as EditableAutomationTrigger;
     trigger.name = '';
+    trigger.type = TriggerTypes.DeviceTrigger;
     trigger.conditions = [];
     // trigger.action = new EditableActionTrigger(
     //   AutomationActionTypes.Trigger,
@@ -64,6 +68,7 @@ export class EditableAutomationTrigger implements AutomationTrigger {
     this.name = trigger.name;
     this.conditions = trigger.conditions;
     this.actions = trigger.actions;
+    this.type = trigger.type;
   }
 }
 

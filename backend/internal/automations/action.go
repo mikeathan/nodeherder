@@ -34,9 +34,9 @@ const (
 )
 
 var actionTypeRegistry = map[ActionType]reflect.Type{
-	TriggerAction:       reflect.TypeOf(&MqttTriggerAction{}),
-	StepAction:          reflect.TypeOf(&MqttStepAction{}),
-	PresetCyclingAction: reflect.TypeOf(&MqttPresetCyclingAction{}),
+	TriggerAction:       reflect.TypeOf(MqttTriggerAction{}),
+	StepAction:          reflect.TypeOf(MqttStepAction{}),
+	PresetCyclingAction: reflect.TypeOf(MqttPresetCyclingAction{}),
 }
 
 type Step struct {

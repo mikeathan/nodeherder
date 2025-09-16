@@ -8,6 +8,14 @@ export type AutomationActions = Array<AutomationAction>;
 
 export type NumericOperator = '+' | '-' | '*';
 
+// Triggers
+export type TriggerType = ValueOf<typeof TriggerTypes>;
+export const TriggerTypes = {
+  DeviceTrigger: 'deviceTrigger',
+  ManualTrigger: 'manualTrigger',
+} as const;
+
+// Actions
 export type TriggerAction = 'trigger';
 export type StepAction = 'step';
 export type PresetCyclingAction = 'preset';
@@ -21,10 +29,12 @@ export const AutomationActionTypes = {
   PresetCycling: 'preset',
 } as const;
 
+// Operations
 export type TriggerActionOperation = ValueOf<typeof TriggerActionOperations>;
 export const TriggerActionOperations = {
   Delay: 'delay',
 } as const;
+
 export type ExposeConditionType = 'expose';
 
 export type ConditionType = ExposeConditionType;
@@ -32,12 +42,7 @@ export const AutomationConditionTypes = {
   Expose: 'expose',
 } as const;
 
-export type AutomationActionStep = {
-  id: string;
-  property: string;
-  operator: NumericOperator;
-};
-
+// Automations
 export type Automation = {
   id: string;
   friendlyname: string;
@@ -60,8 +65,15 @@ export type TimeSchedule = {
   type: TimeScheduleType;
 };
 
+export type AutomationActionStep = {
+  id: string;
+  property: string;
+  operator: NumericOperator;
+};
+
 export type AutomationTrigger = {
   name: string;
+  type: TriggerType;
   conditions: AutomationTriggerConditions;
   actions: AutomationActions;
 };

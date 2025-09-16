@@ -74,7 +74,6 @@
   function save() {
     trigger.value.conditions = conditions.value;
     trigger.value.actions = actions.value;
-
     emit('save', trigger.value);
     emitClosePanel('Trigger');
   }
