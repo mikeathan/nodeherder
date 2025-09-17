@@ -3,6 +3,7 @@ package utils_test
 import (
 	"node-herder/internal/automations"
 	"node-herder/internal/mqtt"
+	"node-herder/utils"
 )
 
 func CreateDoorContactWithAlarmTriggerAutomation(doorSensorId string, alarmId string, mqtt mqtt.MqttClient) *automations.Device {
@@ -19,8 +20,7 @@ func CreateDoorContactWithAlarmTriggerAutomation(doorSensorId string, alarmId st
 	alarmAction.Type = automations.TriggerAction
 	alarmAction.Client = mqtt
 
-	doorSensorTrigger := &automations.DeviceTrigger{}
-	doorSensorTrigger.Name = "contact"
+	doorSensorTrigger := automations.NewDeviceTrigger("contact")
 	doorSensorTrigger.Actions = []automations.MqttAction{alarmAction}
 
 	deviceAutomation := automations.NewDevice("door sensor")
@@ -36,10 +36,9 @@ func CreateDoorContactDurationWithAlarmTriggerAutomation(doorSensorId string, al
 	// setup automations
 
 	// door open triggers alarm
-	openDoorTrigger := &automations.DeviceTrigger{}
-	openDoorTrigger.Name = "contact"
+	openDoorTrigger := automations.NewDeviceTrigger("contact")
 	openDoorTrigger.Conditions = []automations.Condition{
-		automations.NewExposeCondition("contact", true, "="),
+		NewExposeCondition("contact", true, "="),
 	}
 
 	alarmOnAction := automations.NewTriggerAction()
@@ -59,10 +58,9 @@ func CreateDoorContactDurationWithAlarmTriggerAutomation(doorSensorId string, al
 	openDoorTrigger.Actions = []automations.MqttAction{alarmOnAction}
 
 	// door close turns off alarm
-	closeDoorTrigger := &automations.DeviceTrigger{}
-	closeDoorTrigger.Name = "contact"
+	closeDoorTrigger := automations.NewDeviceTrigger("contact")
 	closeDoorTrigger.Conditions = []automations.Condition{
-		automations.NewExposeCondition("contact", false, "="),
+		NewExposeCondition("contact", false, "="),
 	}
 	alarmOffAction := automations.NewTriggerAction()
 	alarmOffAction.Id = alarmId
@@ -87,7 +85,7 @@ func CreateDoorContactDurationWithAlarmTriggerAutomation(doorSensorId string, al
 }
 
 func CreateDialTriggerActionsBrightness(actionId string, dialActionName string, mqtt mqtt.MqttClient) *automations.DeviceTrigger {
-	condition := automations.NewExposeCondition("action", dialActionName, "=")
+	condition := NewExposeCondition("action", dialActionName, "=")
 	step := &automations.Step{}
 	step.Id = actionId
 	step.Operator = "+"
@@ -101,8 +99,7 @@ func CreateDialTriggerActionsBrightness(actionId string, dialActionName string, 
 	action.Steps = []*automations.Step{step}
 	action.Client = mqtt
 
-	trigger := &automations.DeviceTrigger{}
-	trigger.Name = "action"
+	trigger := automations.NewDeviceTrigger("action")
 	trigger.Actions = []automations.MqttAction{action}
 	trigger.Conditions = []automations.Condition{condition}
 
@@ -110,7 +107,7 @@ func CreateDialTriggerActionsBrightness(actionId string, dialActionName string, 
 }
 
 func CreateDialTriggerStepActionBrightness(lightDeviceId string, dialDeviceId string, dialActionName string, mqtt mqtt.MqttClient) *automations.DeviceTrigger {
-	condition := automations.NewExposeCondition("action", dialActionName, "=")
+	condition := NewExposeCondition("action", dialActionName, "=")
 	step := &automations.Step{}
 	step.Id = lightDeviceId
 	step.Operator = "+"
@@ -129,8 +126,7 @@ func CreateDialTriggerStepActionBrightness(lightDeviceId string, dialDeviceId st
 	action.Steps = []*automations.Step{step, step2}
 	action.Client = mqtt
 
-	trigger := &automations.DeviceTrigger{}
-	trigger.Name = "action"
+	trigger := automations.NewDeviceTrigger("action")
 	trigger.Actions = []automations.MqttAction{action}
 	trigger.Conditions = []automations.Condition{condition}
 
@@ -181,9 +177,54 @@ func CreateSwitchTriggerWithBindingAction(triggerName string, actionProp string,
 	brightnessAction.Client = mqtt
 
 	// Turn off sensor trigger
-	button1Trigger := &automations.DeviceTrigger{}
-	button1Trigger.Name = triggerName
+	button1Trigger := automations.NewDeviceTrigger(triggerName)
 	button1Trigger.Actions = []automations.MqttAction{brightnessAction}
 
 	return button1Trigger
+}
+
+// Conditions
+func NewExposeConditionwithTimeRange(name string, value any, operation utils.EqualityOperator, timeRange *automations.TimeRange, clock utils.Clock) *automations.ExposeCondition {
+	cond := &automations.ExposeCondition{
+		Name:          name,
+		Value:         value,
+		BaseCondition: *automations.NewBaseCondition(automations.ExposeConditionType, operation, timeRange),
+	}
+
+	err := cond.InitHandlers(clock)
+	if err != nil {
+		utils.LogErrorf("initialising expose timeRange failed. Error: %s", err.Error())
+		return nil
+	}
+	return cond
+}
+
+func NewExposeCondition(name string, value any, operation utils.EqualityOperator) *automations.ExposeCondition {
+	cond := &automations.ExposeCondition{
+		Name:          name,
+		Value:         value,
+		BaseCondition: *automations.NewBaseCondition(automations.ExposeConditionType, operation, nil),
+	}
+
+	err := cond.InitHandlers(utils.NewRealClock())
+	if err != nil {
+		utils.LogErrorf("error initialising expose condition %s", err.Error())
+		return nil
+	}
+
+	return cond
+}
+
+func NewManualCondition(timeRange *automations.TimeRange, clock utils.Clock) *automations.ManualCondition {
+	cond := &automations.ManualCondition{
+		BaseCondition: *automations.NewBaseCondition(automations.ManualConditionType, utils.Equals, timeRange),
+	}
+
+	err := cond.InitHandlers(clock)
+	if err != nil {
+		utils.LogErrorf("error initialising expose condition %s", err.Error())
+		return nil
+	}
+
+	return cond
 }

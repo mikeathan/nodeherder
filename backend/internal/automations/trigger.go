@@ -20,16 +20,10 @@ type Trigger interface {
 
 const (
 	DeviceTriggerType TriggerType = "deviceTrigger"
-	ManualTriggerType TriggerType = "manualTrigger"
 )
 
 var triggerTypeRegistry = map[TriggerType]reflect.Type{
 	DeviceTriggerType: reflect.TypeOf(&DeviceTrigger{}),
-	ManualTriggerType: reflect.TypeOf(&ManualTrigger{}),
-}
-
-type ManualTrigger struct {
-	BaseTrigger
 }
 
 type DeviceTrigger struct {
@@ -42,7 +36,6 @@ type BaseTrigger struct {
 	Name       string       `json:"name"`
 	Conditions []Condition  `json:"conditions"`
 }
-
 
 func (t *BaseTrigger) GetType() TriggerType {
 	return t.Type
@@ -96,13 +89,17 @@ func (t *BaseTrigger) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("unmarshaling concrete condition: %w", err)
 		}
 
-		handlerInitialiser := newConditionHandlerInitialiser(WithClock(utils.NewRealClock()))
-		if conditionInitialiser, ok := handlerInitialiser[condition.GetType()]; ok {
-			err := conditionInitialiser(condition)
-			if err != nil {
-				return err
-			}
+		err := condition.InitHandlers(utils.NewRealClock())
+		if err != nil {
+			return err
 		}
+		// handlerInitialiser := newConditionHandlerInitialiser(WithClock(utils.NewRealClock()))
+		// if conditionInitialiser, ok := handlerInitialiser[condition.GetType()]; ok {
+		// 	err := conditionInitialiser(condition)
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// }
 
 		t.Conditions[i] = condition
 	}
@@ -165,18 +162,8 @@ func (t *DeviceTrigger) Process(ctx AutomationContext) {
 	}
 }
 
-
-// ManualTrigger
-func (t *ManualTrigger) Process(ctx AutomationContext) {
-	for _, action := range t.Actions {
-		action.Execute(ctx)
-	}
-}
-
-
 // TriggerList
 // Wrapper to control the unmarshalling of different Trigger types
-
 func (tl *TriggerList) UnmarshalJSON(data []byte) error {
 	var rawList []json.RawMessage
 	if err := json.Unmarshal(data, &rawList); err != nil {

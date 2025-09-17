@@ -12,12 +12,10 @@ type AutomationType string
 
 const (
 	DeviceAutomationType AutomationType = "device"
-	ManualAutomationType AutomationType = "manual"
 )
 
 var automationTypeRegistry = map[AutomationType]reflect.Type{
 	"device": reflect.TypeOf(Device{}),
-	"manual": reflect.TypeOf(ManualAutomation{}),
 }
 
 type TriggerEvent interface {
@@ -147,63 +145,4 @@ func (w *automationSerialiser) UnmarshalJSON(data []byte) error {
 		}
 	}
 	return nil
-}
-
-// Manual Automation
-
-type ManualEvent struct {
-	TriggerEvent
-	triggerName string
-}
-
-func NewManualEvent(triggerName string) *ManualEvent {
-	return &ManualEvent{triggerName: triggerName}
-}
-
-func (de *ManualEvent) GetTriggerName() string {
-	return de.triggerName
-}
-
-func (de *ManualEvent) Type() string {
-	return "manual"
-}
-
-type ManualAutomation struct {
-	BaseAutomation
-	ctx AutomationContext
-}
-
-func NewManualAutomation(id string) *ManualAutomation {
-	d := &ManualAutomation{
-		BaseAutomation: BaseAutomation{
-			Id:           id,
-			Type:         ManualAutomationType,
-			FriendlyName: "",
-			Description:  "",
-			Enabled:      false,
-			Triggers:     TriggerList{},
-			Schedules:    []*TimeSchedule{},
-		},
-		ctx: NewDeviceContext(),
-	}
-
-	return d
-}
-
-needto find a way to link the manual event to a device id as we need it for the context which gets used in conditions
-
-func (d *ManualAutomation) Evaluate(event TriggerEvent) bool {
-	// only handle device events
-	manualEvent, ok := event.(*ManualEvent)
-	if !ok {
-		return false
-	}
-
-	for _, trigger := range d.Triggers {
-		if trigger.GetName() == manualEvent.GetTriggerName() {
-			trigger.Process(d.ctx)
-		}
-	}
-
-	return true
 }

@@ -129,7 +129,7 @@ func TestAutomationwithMultipleTriggerActions(t *testing.T) {
 	registrar.RegisterBridge(deviceBridgeList)
 
 	trigger := createTriggerwithMultipleActions(triggerId, registrar, mqtt, "button1", []string{"brightness", "color_temperature", "color_brightness"}, []any{120, 250, 200})
-	trigger.Conditions = append(trigger.Conditions, automations.NewExposeCondition("button1", "pressed", "="))
+	trigger.Conditions = append(trigger.Conditions, utils_test.NewExposeCondition("button1", "pressed", "="))
 
 	automation := automations.NewDevice(triggerId)
 	automation.Triggers = append(automation.Triggers, trigger)
@@ -381,7 +381,7 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 
 	// initialize turn on condition
 	onTimeRange := automations.NewTimeRange("11:00", "17:00")
-	turnOnCondition := automations.NewExposeConditionwithTimeRange("presence", true, "=", onTimeRange, mockClock)
+	turnOnCondition := utils_test.NewExposeConditionwithTimeRange("presence", true, "=", onTimeRange, mockClock)
 
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
 
@@ -390,7 +390,7 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 
 	// initialize turn off condition
 	offTimeRange := automations.NewTimeRange("09:00", "13:25")
-	turnOffCondition := automations.NewExposeConditionwithTimeRange("presence", false, "=", offTimeRange, mockClock)
+	turnOffCondition := utils_test.NewExposeConditionwithTimeRange("presence", false, "=", offTimeRange, mockClock)
 
 	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffCondition)
 
@@ -539,8 +539,8 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(id string, registrar services.
 	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
 
 	// condition = presence = off && lux <= 30
-	turnOnCondition := automations.NewExposeCondition("presence", true, "=")
-	luxCondition := automations.NewExposeCondition("lux", lux, "<=")
+	turnOnCondition := utils_test.NewExposeCondition("presence", true, "=")
+	luxCondition := utils_test.NewExposeCondition("lux", lux, "<=")
 
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, luxCondition)
@@ -552,7 +552,7 @@ func createTriggerDelayTurnOffLightWithPresenceOff(id string, registrar services
 
 	turnOffTrigger := createTriggerDelayTurnOffLight(id, registrar, mqtt, delay)
 
-	turnOffCondition := automations.NewExposeCondition("presence", false, "=")
+	turnOffCondition := utils_test.NewExposeCondition("presence", false, "=")
 
 	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffCondition)
 
