@@ -89,6 +89,7 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 	}
 }
 
+fix 
 func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
@@ -180,8 +181,8 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 	}
 
 	wg.Wait()
-
 }
+
 func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 
 	wg := &sync.WaitGroup{}

@@ -534,8 +534,7 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(id string, registrar services.
 	turnOnAction.Configure(registrar, mqtt)
 
 	// Turn on sensor trigger
-	turnOnTrigger := &automations.DeviceTrigger{}
-	turnOnTrigger.Name = "presence"
+	turnOnTrigger := automations.NewDeviceTrigger("presence")
 	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
 
 	// condition = presence = off && lux <= 30
@@ -573,8 +572,7 @@ func createTriggerTurnOnLight(id string, registrar services.DeviceRegistrar, mqt
 	turnOnAction.Configure(registrar, mqtt)
 
 	// Turn on sensor trigger
-	turnOnTrigger := &automations.DeviceTrigger{}
-	turnOnTrigger.Name = "presence"
+	turnOnTrigger := automations.NewDeviceTrigger("presence")
 	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
 
 	// condition = presence = off
@@ -595,8 +593,7 @@ func createSwitchTriggerWithBindingAction(id string, registrar services.DeviceRe
 	brightnessAction.Configure(registrar, mqtt)
 
 	// Turn off sensor trigger
-	button1Trigger := &automations.DeviceTrigger{}
-	button1Trigger.Name = triggerName
+	button1Trigger := automations.NewDeviceTrigger(triggerName)
 	button1Trigger.Actions = []automations.MqttAction{brightnessAction}
 
 	return button1Trigger
@@ -618,9 +615,7 @@ func createTriggerwithMultipleActions(id string, registrar services.DeviceRegist
 		return nil
 	}
 
-	trigger := &automations.DeviceTrigger{}
-
-	trigger.Name = triggerName
+	trigger := automations.NewDeviceTrigger(triggerName)
 	trigger.Actions = []automations.MqttAction{brightnessAction}
 	trigger.Conditions = []automations.Condition{}
 
@@ -645,8 +640,7 @@ func createTriggerDelayTurnOffLight(id string, registrar services.DeviceRegistra
 	}
 
 	// Turn off sensor trigger
-	turnOffTrigger := &automations.DeviceTrigger{}
-	turnOffTrigger.Name = "presence"
+	turnOffTrigger := automations.NewDeviceTrigger("presence")
 	turnOffTrigger.Actions = []automations.MqttAction{turnOffAction}
 
 	return turnOffTrigger

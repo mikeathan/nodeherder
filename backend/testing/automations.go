@@ -200,6 +200,7 @@ func NewExposeConditionwithTimeRange(name string, value any, operation utils.Equ
 }
 
 func NewExposeCondition(name string, value any, operation utils.EqualityOperator) *automations.ExposeCondition {
+	
 	cond := &automations.ExposeCondition{
 		Name:          name,
 		Value:         value,
