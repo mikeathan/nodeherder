@@ -89,7 +89,6 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 	}
 }
 
-fix 
 func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}

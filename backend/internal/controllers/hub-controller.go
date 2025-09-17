@@ -64,17 +64,17 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 		automationHandlers:                []automations.AutomationHandler{},
 	}
 
-	for _, option := range options {
-		option(h)
-	}
-
 	h.automationHandlers = []automations.AutomationHandler{
 		automations.NewAutomationScheduler(
 			automations.WithContext(h.ctx),
 			automations.WithAutomationsFuncs(),
 		),
 	}
-
+	
+	for _, option := range options {
+		option(h)
+	}
+	
 	h.registrar = services.NewHubRegisterService(store, eventHub, 3600) // 3600 - is not used!!!!!!!!!!!!!!!!
 	h.automationEngine = automations.NewEngine(h.automationHandlers, h.registrar, mqtt)
 	h.wp = utils.NewWorkerPool(4, h.ctx)
