@@ -11,12 +11,12 @@ type ConditionType string
 
 const (
 	ExposeConditionType ConditionType = "expose"
-	ManualConditionType ConditionType = "manual"
+	TimeConditionType   ConditionType = "time"
 )
 
 var conditionTypeRegistry = map[ConditionType]reflect.Type{
 	ExposeConditionType: reflect.TypeOf(ExposeCondition{}),
-	ManualConditionType: reflect.TypeOf(ManualCondition{}),
+	TimeConditionType:   reflect.TypeOf(TimeCondition{}),
 }
 
 type Condition interface {
@@ -104,7 +104,6 @@ func (e *ExposeCondition) InitHandlers(clock utils.Clock) error {
 	e.handlers = append(e.handlers, eh)
 	return nil
 }
-
 
 // Expose Handler
 type ExposeHandler struct {
@@ -194,17 +193,21 @@ func NewTimeRange(startAt string, endAt string) *TimeRange {
 	}
 }
 
-// ManualCondition
-type ManualCondition struct {
+// TimeCondition
+type TimeCondition struct {
 	BaseCondition
 }
 
-
-func (e *ManualCondition) HasValueChanged(name string, ctx AutomationContext) bool {
+func (e *TimeCondition) HasValueChanged(name string, ctx AutomationContext) bool {
 	return true
 }
 
-func (e *ManualCondition) Evaluate(ctx AutomationContext) bool {
+func (e *TimeCondition) Evaluate(ctx AutomationContext) bool {
+	if len(e.handlers) == 0 {
+		utils.LogError("no handlers found for time condition")
+		return false
+	}
+
 	for _, handler := range e.handlers {
 		if !handler.Evaluate(ctx) {
 			return false
@@ -213,8 +216,8 @@ func (e *ManualCondition) Evaluate(ctx AutomationContext) bool {
 	return true
 }
 
-func (e *ManualCondition) GetType() ConditionType {
-	return ManualConditionType
+func (e *TimeCondition) GetType() ConditionType {
+	return TimeConditionType
 }
 
 // TimeCondition

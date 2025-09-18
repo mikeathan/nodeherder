@@ -175,7 +175,7 @@ func (d *Device) EvaluateTrigger(event TriggerEvent, triggerName string) bool {
 	d.ctx.SetPayload(device.Exposes)
 
 	for _, trigger := range d.Triggers {
-		if _, ok := device.Exposes[triggerName]; ok {
+		if trigger.GetName() == triggerName {
 			trigger.Process(d.ctx)
 		}
 	}

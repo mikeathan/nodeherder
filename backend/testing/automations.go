@@ -199,9 +199,8 @@ func NewExposeConditionwithTimeRange(name string, value any, operation utils.Equ
 	return cond
 }
 
-
 func NewExposeCondition(name string, value any, operation utils.EqualityOperator) *automations.ExposeCondition {
-	
+
 	cond := &automations.ExposeCondition{
 		Name:          name,
 		Value:         value,
@@ -217,9 +216,9 @@ func NewExposeCondition(name string, value any, operation utils.EqualityOperator
 	return cond
 }
 
-func NewManualCondition(timeRange *automations.TimeRange, clock utils.Clock) *automations.ManualCondition {
-	cond := &automations.ManualCondition{
-		BaseCondition: *automations.NewBaseCondition(automations.ManualConditionType, utils.Equals, timeRange),
+func NewTimeCondition(timeRange *automations.TimeRange, clock utils.Clock) *automations.TimeCondition {
+	cond := &automations.TimeCondition{
+		BaseCondition: *automations.NewBaseCondition(automations.TimeConditionType, utils.Equals, timeRange),
 	}
 
 	err := cond.InitHandlers(clock)

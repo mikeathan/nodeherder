@@ -195,7 +195,6 @@ func (tl *TriggerList) UnmarshalJSON(data []byte) error {
 
 
 // ManualTrigger
-
 func NewManualTrigger(name string) *ManualTrigger {
 	return &ManualTrigger{
 		BaseTrigger: BaseTrigger{
