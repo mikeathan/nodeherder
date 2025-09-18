@@ -67,8 +67,15 @@ func (a *AutomationEngine) HandleDevice(device *devices.Device) {
 
 func (a *AutomationEngine) HandleManual(automationID string, triggerName string) {
 	automation, err := a.storage.LoadFromCache(automationID)
+	
 	if err == nil && automation.IsEnabled() {
-		//automation.Evaluate(NewManualEvent(triggerName))
+
+		device, err := a.registrar.LookupById(automationID)
+		if err != nil {
+			utils.LogErrorf("Failed to lookup device with id %s. Error=%s", automationID, err.Error())
+		}
+
+		automation.EvaluateTrigger(NewDeviceEvent(device), triggerName)
 	}
 }
 

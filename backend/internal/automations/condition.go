@@ -91,33 +91,6 @@ func (e *ExposeCondition) GetType() ConditionType {
 	return ExposeConditionType
 }
 
-
-//var exposeHandlerInitializer = newConditionHandlerInitialiser()
-
-// type ConditionHandlerOption func(*ConditionHandlerOptions)
-// type ConditionHandlerOptions struct {
-// 	Clock utils.Clock
-// }
-
-// func WithClock(clock utils.Clock) func(*ConditionHandlerOptions) {
-// 	return func(opts *ConditionHandlerOptions) {
-// 		opts.Clock = clock
-// 	}
-// }
-
-// func newConditionHandlerInitialiser(opts ...ConditionHandlerOption) map[ConditionType]func(Condition) error {
-// 	options := &ConditionHandlerOptions{}
-// 	for _, opt := range opts {
-// 		opt(options)
-// 	}
-
-// 	return map[ConditionType]func(Condition) error{
-// 		ExposeConditionType: func(condition Condition) error {
-// 			return exposeConditionInitialiser(condition, options)
-// 		},
-// 	}
-// }
-
 func (e *ExposeCondition) InitHandlers(clock utils.Clock) error {
 	if err := e.BaseCondition.InitHandlers(clock); err != nil {
 		return err
@@ -132,25 +105,6 @@ func (e *ExposeCondition) InitHandlers(clock utils.Clock) error {
 	return nil
 }
 
-// func exposeConditionInitialiser(condition Condition, opts *ConditionHandlerOptions) error {
-// 	ec := condition.(*BaseCondition)
-// 	if ec.TimeRange != nil {
-
-// 		handler, err := NewTimeRangeHandler(ec.TimeRange, opts.Clock)
-// 		if err != nil {
-// 			return err
-// 		}
-// 		ec.handlers = append(ec.handlers, handler)
-// 	}
-
-// 	eh, err := NewExposeHandler(ec)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	ec.handlers = append(ec.handlers, eh)
-// 	return nil
-// }
 
 // Expose Handler
 type ExposeHandler struct {

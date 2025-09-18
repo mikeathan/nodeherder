@@ -20,13 +20,19 @@ type Trigger interface {
 
 const (
 	DeviceTriggerType TriggerType = "deviceTrigger"
+	ManualTriggerType TriggerType = "manualTrigger"
 )
 
 var triggerTypeRegistry = map[TriggerType]reflect.Type{
 	DeviceTriggerType: reflect.TypeOf(&DeviceTrigger{}),
+	ManualTriggerType: reflect.TypeOf(&ManualTrigger{}),
 }
 
 type DeviceTrigger struct {
+	BaseTrigger
+}
+
+type ManualTrigger struct {
 	BaseTrigger
 }
 
@@ -93,13 +99,6 @@ func (t *BaseTrigger) UnmarshalJSON(data []byte) error {
 		if err != nil {
 			return err
 		}
-		// handlerInitialiser := newConditionHandlerInitialiser(WithClock(utils.NewRealClock()))
-		// if conditionInitialiser, ok := handlerInitialiser[condition.GetType()]; ok {
-		// 	err := conditionInitialiser(condition)
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// }
 
 		t.Conditions[i] = condition
 	}
@@ -192,4 +191,24 @@ func (tl *TriggerList) UnmarshalJSON(data []byte) error {
 		*tl = append(*tl, trigger.(Trigger))
 	}
 	return nil
+}
+
+
+// ManualTrigger
+
+func NewManualTrigger(name string) *ManualTrigger {
+	return &ManualTrigger{
+		BaseTrigger: BaseTrigger{
+			Actions:    []MqttAction{},
+			Type:       ManualTriggerType,
+			Conditions: []Condition{},
+			Name:       name,
+		},
+	}
+}
+
+func (t *ManualTrigger) Process(ctx AutomationContext) {
+	for _, action := range t.Actions {
+		action.Execute(ctx)
+	}
 }

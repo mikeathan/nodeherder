@@ -342,6 +342,7 @@ func NewAutomationTriggerHandler(hub *controllers.HubController) *AutomationTrig
 func (h *AutomationTriggerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	automationID := r.URL.Query().Get("automationId")
 	triggerName := r.URL.Query().Get("triggerName")
+	
 	if automationID == "" || triggerName == "" {
 		http.Error(w, "missing automationId or triggerName", http.StatusBadRequest)
 		return

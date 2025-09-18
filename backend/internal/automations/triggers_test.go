@@ -479,6 +479,59 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 	wg.Wait()
 }
 
+func TestTriggerWithManualCondition(t *testing.T) {
+
+	wg := &sync.WaitGroup{}
+	mqtt := &mocks.MockMqttClient{}
+
+	repo := repository.NewMemoryDeviceRepo()
+	store := utils_test.CreateStoreFromDeviceRepo(repo)
+	eventHub := &mocks.MockEventHub{}
+
+	id := "Light attic"
+	device := utils_test.CreatePresenceDevice(id, "light device", "state", false)
+	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(deviceBridgeList)
+	turnOnTrigger := createManualTriggeTrunOnLight(id, registrar, mqtt)
+
+	// create device trigger
+	deviceTrigger := automations.NewDevice(id)
+	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
+
+	var messageHandler = func(id string, payload []byte) {
+		wg.Done()
+		// for _, action := range turnOnTrigger.Actions {
+
+		// 	data := unpackJsonToMap(string(payload))
+		// 	if data == nil {
+		// 		t.Fatalf("error unpacking json")
+		// 	}
+		// 	// triggerAction, ok := action.(*automations.MqttTriggerAction)
+		// 	// if !ok {
+		// 	// 	t.Fatalf("invalid action type")
+		// 	// }
+		// 	// if !ok {
+		// 	// 	t.Fatalf("invalid action type")
+		// 	// }
+
+		// }
+	}
+
+	
+
+	mqtt.OnMessageHandler(messageHandler)
+	wg.Add(1)
+	var data = map[string]any{
+		"state": false,
+	}
+
+	device.Exposes = createExposures(data)
+	deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device), "presence")
+	wg.Wait()
+}
+
 func TestSwitch(t *testing.T) {
 
 	// todo
@@ -547,6 +600,30 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(id string, registrar services.
 	return turnOnTrigger
 }
 
+func createManualTriggeTrunOnLight(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *automations.DeviceTrigger {
+
+	// Turn on sensor trigger
+	turnOnTrigger := automations.NewDeviceTrigger("brightness")
+
+	// condition
+	manualCondition := utils_test.NewManualCondition(nil, utils.NewRealClock())
+
+	// action = turn off light
+	turnOnAction := automations.NewTriggerAction()
+	turnOnAction.Id = id
+	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
+		{
+			Name: "state",
+			Data: true,
+		},
+	}
+	turnOnAction.Delay = nil
+	turnOnAction.Configure(registrar, mqtt)
+	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, manualCondition)
+
+	return turnOnTrigger
+}
 func createTriggerDelayTurnOffLightWithPresenceOff(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, delay *utils.TimeInterval) *automations.DeviceTrigger {
 
 	turnOffTrigger := createTriggerDelayTurnOffLight(id, registrar, mqtt, delay)

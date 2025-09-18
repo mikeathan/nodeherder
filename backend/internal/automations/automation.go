@@ -24,6 +24,7 @@ type TriggerEvent interface {
 
 type Automation interface {
 	Evaluate(event TriggerEvent) bool
+	EvaluateTrigger(event TriggerEvent, triggerName string) bool
 	Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error
 	GetId() string
 	GetFriendlyName() string
@@ -80,6 +81,10 @@ func (b *BaseAutomation) RemoveTrigger(index int) error {
 }
 
 func (b *BaseAutomation) Evaluate(event TriggerEvent) bool {
+	return false
+}
+
+func (b *BaseAutomation) EvaluateTrigger(event TriggerEvent, triggerName string) bool {
 	return false
 }
 

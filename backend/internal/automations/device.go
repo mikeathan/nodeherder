@@ -164,6 +164,25 @@ func (d *Device) Evaluate(event TriggerEvent) bool {
 	return true
 }
 
+func (d *Device) EvaluateTrigger(event TriggerEvent, triggerName string) bool {
+
+	deviceEvent, ok := event.(*DeviceEvent)
+	if !ok {
+		return false
+	}
+
+	device := deviceEvent.Device()
+	d.ctx.SetPayload(device.Exposes)
+
+	for _, trigger := range d.Triggers {
+		if _, ok := device.Exposes[triggerName]; ok {
+			trigger.Process(d.ctx)
+		}
+	}
+
+	return true
+}
+
 func (d *Device) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
 
 	//  check if device with automation id exists. friendyname can change
