@@ -36,10 +36,12 @@ export const TriggerActionOperations = {
 } as const;
 
 export type ExposeConditionType = 'expose';
+export type TimeConditionType = 'time';
+export type ConditionType = ExposeConditionType | TimeConditionType;
 
-export type ConditionType = ExposeConditionType;
 export const AutomationConditionTypes = {
   Expose: 'expose',
+  Time: 'time',
 } as const;
 
 // Automations
@@ -86,7 +88,12 @@ export type ExposeCondition = {
   timeRange?: TimeRange;
 };
 
-export type AutomationCondition = ExposeCondition;
+export type TimeCondition = {
+  type: ConditionType;
+  timeRange?: TimeRange;
+};
+
+export type AutomationCondition = ExposeCondition | TimeCondition;
 
 type AutomationBaseAction = {
   id: string;

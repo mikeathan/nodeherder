@@ -497,8 +497,8 @@ func (m *HubController) TriggerAutomation(device *devices.Device) {
 	m.automationEngine.HandleDevice(device)
 }
 
-func (m *HubController) TriggerManual(automationID string, triggerName string) {
-	m.automationEngine.HandleManual(automationID, triggerName)
+func (m *HubController) TriggerManual(automationId string, triggerName string) {
+	m.automationEngine.HandleManual(automationId, triggerName)
 }
 
 func (m *HubController) processMessage(id string, payload []byte, connType string) error {

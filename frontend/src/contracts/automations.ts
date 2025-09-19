@@ -14,6 +14,7 @@ import {
   AutomationConditionTypes,
   TriggerType,
   TriggerTypes,
+  TimeCondition,
 } from '../types/automation.type.js';
 
 export const EqualityOperators: string[] = ['=', '<=', '>=', '>', '<'];
@@ -100,6 +101,7 @@ export function findActionExposes(action: AutomationAction): string[] {
 
   return [];
 }
+
 export function createConditionFromType(type: ConditionType): AutomationCondition {
   switch (type) {
     case AutomationConditionTypes.Expose:
@@ -108,6 +110,15 @@ export function createConditionFromType(type: ConditionType): AutomationConditio
         name: '',
         value: null,
         equality: '=',
+      } as AutomationCondition;
+
+    case AutomationConditionTypes.Time:
+      return {
+        type: type,
+        timeRange: {
+          startAt: '',
+          endAt: '',
+        },
       } as AutomationCondition;
   }
 }
