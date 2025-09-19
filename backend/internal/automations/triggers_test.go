@@ -552,8 +552,50 @@ func TestManualTriggerTurnsOnLight(t *testing.T) {
 
 func TestManualTriggerWithScheduleTurnsOnLight(t *testing.T) {
 
-	createManualTriggerWithScheduleTurnOnLight
+	wg := &sync.WaitGroup{}
+	mqtt := &mocks.MockMqttClient{}
+	mockClock := &mocks.MockClock{}
+	repo := repository.NewMemoryDeviceRepo()
+	store := utils_test.CreateStoreFromDeviceRepo(repo)
+	eventHub := &mocks.MockEventHub{}
+
+	id := "Light attic"
+	device := utils_test.CreatePresenceDevice(id, "Attic Light", "state", false)
+	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(deviceBridgeList)
+	// create turn on trigger
+
+	onTimeRange := automations.NewTimeRange("11:00", "17:00")
+
+	todo
+	// we probably need an override in the ui to trigger it directly via the trigger route rather than having diffent types.
+	//turnOnTrigger := createManualTriggerWithScheduleTurnOnLight(id, onTimeRange, registrar, mqtt, mockClock)
+	turnOnTrigger := createDeviceTriggerWithScheduleTurnOnLight(id, onTimeRange, registrar, mqtt, mockClock)
+	deviceTrigger := automations.NewDevice(id)
+	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
+
+	timeNow := utils_test.CreateTimeFrom(17, 0, 0)
+	mockClock.SetMockTime(timeNow)
+
+	var data = map[string]any{
+		"presence": true,
+	}
+
+	var messageHandler = func(id string, payload []byte) {
+		wg.Done()
+	}
+
+	mqtt.OnMessageHandler(messageHandler)
+	wg.Add(1)
+
+	device.Exposes = createExposures(data)
+	deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device), turnOnTrigger.Name)
+	wg.Wait()
+
 }
+
 func TestSwitch(t *testing.T) {
 
 	// todo
@@ -647,6 +689,31 @@ func createManualTriggerWithScheduleTurnOnLight(id string, timeRange *automation
 
 	// Turn on sensor trigger
 	turnOnTrigger := automations.NewManualTrigger("manual-trigger-1")
+
+	// action = turn off light
+	turnOnAction := automations.NewTriggerAction()
+	turnOnAction.Id = id
+	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
+		{
+			Name: "state",
+			Data: true,
+		},
+	}
+	turnOnAction.Delay = nil
+	turnOnAction.Configure(registrar, mqtt)
+	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
+
+	// schedule condition
+	scheduleCondition := utils_test.NewTimeCondition(timeRange, clock)
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, scheduleCondition)
+
+	return turnOnTrigger
+}
+
+func createDeviceTriggerWithScheduleTurnOnLight(id string, timeRange *automations.TimeRange, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, clock utils.Clock) *automations.DeviceTrigger {
+
+	// Turn on sensor trigger
+	turnOnTrigger := automations.NewDeviceTrigger(id)
 
 	// action = turn off light
 	turnOnAction := automations.NewTriggerAction()

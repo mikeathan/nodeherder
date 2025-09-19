@@ -207,6 +207,22 @@ func NewManualTrigger(name string) *ManualTrigger {
 }
 
 func (t *ManualTrigger) Process(ctx AutomationContext) {
+	// we only accept time condition
+	for _, c := range t.Conditions {
+
+		isMatched := c.Evaluate(ctx)
+		if !isMatched {
+			for _, action := range t.Actions {
+				action.Stop()
+			}
+			return
+		}
+
+		if !c.HasValueChanged(t.Name, ctx) {
+			return
+		}
+	}
+	
 	for _, action := range t.Actions {
 		action.Execute(ctx)
 	}
