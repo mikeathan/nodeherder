@@ -489,12 +489,12 @@ func TestManualTriggerTurnsOnLight(t *testing.T) {
 	eventHub := &mocks.MockEventHub{}
 
 	id := "Light attic"
-	device := utils_test.CreatePresenceDevice(id, "light device", "state", false)
+	device := utils_test.CreatePresenceDevice(id, "light device", "presence", false)
 	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
 
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 	registrar.RegisterBridge(deviceBridgeList)
-	turnOnTrigger := createManualTriggerTurnOnLight(id, registrar, mqtt)
+	turnOnTrigger := createTriggerTurnOnLight(id, registrar, mqtt)
 
 	// create device trigger
 	deviceTrigger := automations.NewDevice(id)
@@ -566,34 +566,47 @@ func TestManualTriggerWithScheduleTurnsOnLight(t *testing.T) {
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 	registrar.RegisterBridge(deviceBridgeList)
 	// create turn on trigger
-
 	onTimeRange := automations.NewTimeRange("11:00", "17:00")
 
-	todo
-	// we probably need an override in the ui to trigger it directly via the trigger route rather than having diffent types.
-	//turnOnTrigger := createManualTriggerWithScheduleTurnOnLight(id, onTimeRange, registrar, mqtt, mockClock)
 	turnOnTrigger := createDeviceTriggerWithScheduleTurnOnLight(id, onTimeRange, registrar, mqtt, mockClock)
 	deviceTrigger := automations.NewDevice(id)
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
 
-	timeNow := utils_test.CreateTimeFrom(17, 0, 0)
-	mockClock.SetMockTime(timeNow)
-
-	var data = map[string]any{
-		"presence": true,
+	testCases := []struct {
+		timeNow time.Time
+		result  bool
+	}{
+		{timeNow: utils_test.CreateTimeFrom(10, 59, 0), result: false},
+		{timeNow: utils_test.CreateTimeFrom(11, 0, 0), result: true},
+		{timeNow: utils_test.CreateTimeFrom(12, 15, 0), result: true},
+		{timeNow: utils_test.CreateTimeFrom(13, 36, 0), result: true},
+		{timeNow: utils_test.CreateTimeFrom(14, 7, 10), result: true},
+		{timeNow: utils_test.CreateTimeFrom(17, 0, 0), result: true},
+		{timeNow: utils_test.CreateTimeFrom(17, 0, 1), result: false},
+		{timeNow: utils_test.CreateTimeFrom(18, 10, 30), result: false},
 	}
 
-	var messageHandler = func(id string, payload []byte) {
-		wg.Done()
+	for _, testCase := range testCases {
+		mockClock.SetMockTime(testCase.timeNow)
+
+		var data = map[string]any{
+			"presence": true,
+		}
+
+		var messageHandler = func(id string, payload []byte) {
+			wg.Done()
+		}
+
+		mqtt.OnMessageHandler(messageHandler)
+		if testCase.result {
+			wg.Add(1)
+		}
+
+		device.Exposes = createExposures(data)
+		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device), turnOnTrigger.Name)
+
+		wg.Wait()
 	}
-
-	mqtt.OnMessageHandler(messageHandler)
-	wg.Add(1)
-
-	device.Exposes = createExposures(data)
-	deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device), turnOnTrigger.Name)
-	wg.Wait()
-
 }
 
 func TestSwitch(t *testing.T) {
@@ -660,52 +673,6 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(id string, registrar services.
 
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, luxCondition)
-
-	return turnOnTrigger
-}
-
-func createManualTriggerTurnOnLight(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *automations.ManualTrigger {
-
-	// Turn on sensor trigger
-	turnOnTrigger := automations.NewManualTrigger("manual-trigger-1")
-
-	// action = turn off light
-	turnOnAction := automations.NewTriggerAction()
-	turnOnAction.Id = id
-	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
-		{
-			Name: "state",
-			Data: true,
-		},
-	}
-	turnOnAction.Delay = nil
-	turnOnAction.Configure(registrar, mqtt)
-	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
-
-	return turnOnTrigger
-}
-
-func createManualTriggerWithScheduleTurnOnLight(id string, timeRange *automations.TimeRange, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, clock utils.Clock) *automations.ManualTrigger {
-
-	// Turn on sensor trigger
-	turnOnTrigger := automations.NewManualTrigger("manual-trigger-1")
-
-	// action = turn off light
-	turnOnAction := automations.NewTriggerAction()
-	turnOnAction.Id = id
-	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
-		{
-			Name: "state",
-			Data: true,
-		},
-	}
-	turnOnAction.Delay = nil
-	turnOnAction.Configure(registrar, mqtt)
-	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
-
-	// schedule condition
-	scheduleCondition := utils_test.NewTimeCondition(timeRange, clock)
-	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, scheduleCondition)
 
 	return turnOnTrigger
 }
