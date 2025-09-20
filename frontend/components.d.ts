@@ -106,6 +106,7 @@ declare module 'vue' {
     TabPanel: typeof import('primevue/tabpanel')['default']
     TabPanels: typeof import('primevue/tabpanels')['default']
     Tabs: typeof import('primevue/tabs')['default']
+    Tag: typeof import('primevue/tag')['default']
     TimeCondition: typeof import('./src/components/automations/conditions/TimeCondition.vue')['default']
     TimeInterval: typeof import('./src/components/controls/TimeInterval.vue')['default']
     TimelineChart: typeof import('./src/components/chart/types/TimelineChart.vue')['default']

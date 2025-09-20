@@ -195,39 +195,11 @@
         </Column>
       </DataTable>
 
-      add pill
+        <Tag severity="secondary" value="Add expose" rounded/>
+        <Tag severity="secondary" value="Add timer" rounded/>
 
-      <!-- <div class="flex flex-wrap gap-3 justify-content-center w-full">
-  <Button
-    label="Expose"
-    icon="pi pi-bolt"
-    outlined
-    rounded
-    size="small"
-    class="p-button-outlined p-button-sm w-10rem"
-    @click="addNewCondition('expose')"
-  />
-  <Button
-    label="Timer"
-    icon="pi pi-clock"
-    outlined
-    rounded
-    size="small"
-    class="p-button-outlined p-button-sm w-10rem"
-    @click="addNewCondition('timer')"
-  />
-  <!-- ready for future types -->
-  <Button
-    label="Manual"
-    icon="pi pi-hand-point-up"
-    outlined
-    rounded
-    size="small"
-    class="p-button-outlined p-button-sm w-10rem"
-    @click="addNewCondition('manual')"
-  />
-</div> -->
       <div class="pt-4 flex align-items-center justify-content-center">
+
         <Button
           style="width: 99%"
           icon="pi pi-plus"
