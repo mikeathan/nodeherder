@@ -120,7 +120,6 @@
   }
 
   function saveTrigger(trigger: AutomationTrigger): void {
-
     const idx = automation.value.triggers.indexOf(trigger);
     if (idx == -1) {
       automation.value.triggers.push(trigger);
@@ -128,7 +127,6 @@
       automation.value.triggers[idx] = trigger;
     }
   }
-
 
   const deviceNameFromId = (id: string): string => {
     const device = store.getters['hub/findDevice'](id) as Device;
@@ -195,7 +193,8 @@
       </Column>
       <Column field="conditions" header="Conditions">
         <template #body="slotProps">
-          <span v-html="formatTriggerConditions(slotProps.data)"></span>
+          <div v-if="slotProps.data.conditions.length == 0">Fire - TODO</div>
+          <span v-else v-html="formatTriggerConditions(slotProps.data)"></span>
         </template>
       </Column>
       <Column class="col-sm-1">
@@ -211,8 +210,8 @@
         </template>
       </Column>
     </DataTable>
-    <div class="pt-4 flex align-items-center justify-content-center">
-      <Button style="width: 99%" icon="pi pi-plus" label="Add Trigger" @click="createNewTrigger()" text size="small" />
+    <div class="pt-4 flex gap-2">
+      <Button label="Add Trigger" outlined rounded size="small" @click="createNewTrigger()" />
     </div>
   </div>
   <div
