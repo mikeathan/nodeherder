@@ -194,16 +194,21 @@
               @delete="removeTriggerCondition(slotProps.data)" />
           </template>
         </Column>
+        <!-- <Column header="Actions" style="width: 3rem; text-align: center">
+    <template #body="slotProps">
+      <Button
+        icon="pi pi-trash"
+        variant="text"
+        rounded
+        small
+        @click="removeTriggerCondition(slotProps.data)" />
+    </template>
+  </Column> -->
       </DataTable>
 
       <div class="pt-4 flex align-items-center justify-content-center gap-2">
         <div v-for="type in getConditionTypes()" :key="type">
-          <Button
-            :label="'Add ' + type"
-            outlined
-            rounded
-            size="small"
-            @click="addNewCondition(type)" />
+          <Button :label="'Add ' + type" outlined rounded size="small" @click="addNewCondition(type)" />
         </div>
       </div>
     </Fieldset>
