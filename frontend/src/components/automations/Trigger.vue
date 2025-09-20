@@ -14,6 +14,7 @@
     ActionType,
     ConditionType,
   } from '@/types/automation.type.js';
+  import { getConditionTypes } from '../../contracts/automations';
   import { isValid, createActionFromType, createConditionFromType } from '../../contracts/automations';
   import { capitalizeText } from '../../modules/formatters/text.formatter';
   import { EventActions, OpenPanelEvent } from '@/types/events.type';
@@ -195,18 +196,15 @@
         </Column>
       </DataTable>
 
-        <Tag severity="secondary" value="Add expose" rounded/>
-        <Tag severity="secondary" value="Add timer" rounded/>
-
-      <div class="pt-4 flex align-items-center justify-content-center">
-
-        <Button
-          style="width: 99%"
-          icon="pi pi-plus"
-          label="Add condition"
-          @click="addNewCondition('expose')"
-          text
-          size="small" />
+      <div class="pt-4 flex align-items-center justify-content-center gap-2">
+        <div v-for="type in getConditionTypes()" :key="type">
+          <Button
+            :label="'Add ' + type"
+            outlined
+            rounded
+            size="small"
+            @click="addNewCondition(type)" />
+        </div>
       </div>
     </Fieldset>
     <div class="pt-2"></div>

@@ -102,6 +102,10 @@ export function findActionExposes(action: AutomationAction): string[] {
   return [];
 }
 
+export const getConditionTypes = (): ConditionType[] => {
+  return Object.values(AutomationConditionTypes);
+};
+
 export function createConditionFromType(type: ConditionType): AutomationCondition {
   switch (type) {
     case AutomationConditionTypes.Expose:
