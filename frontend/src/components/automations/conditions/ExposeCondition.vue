@@ -23,18 +23,18 @@ const props = defineProps({
   },
 });
 
-const defaultEndTime = '23:59'
-const hasTimeRange = computed(() => {
-  return condition.value.timeRange != undefined;
-});
+// const defaultEndTime = '23:59'
+// const hasTimeRange = computed(() => {
+//   return condition.value.timeRange != undefined;
+// });
 
 const condition = ref<ExposeCondition>({} as ExposeCondition);
-const startTimeIsEnabled = ref(false);
-const endTimeIsEnabled = ref(false);
-const isExpanded = ref(false);
-function toggleExpanded(): void {
-  isExpanded.value = !isExpanded.value;
-}
+// const startTimeIsEnabled = ref(false);
+// const endTimeIsEnabled = ref(false);
+// const isExpanded = ref(false);
+// function toggleExpanded(): void {
+//   isExpanded.value = !isExpanded.value;
+// }
 const emit = defineEmits<{
   (e: 'update', condition: ExposeCondition): void;
   (e: 'delete'): void;
@@ -44,9 +44,9 @@ watch(
   () => props.item,
   () => {
     condition.value = JSON.parse(JSON.stringify(props.item)) as ExposeCondition;
-    isExpanded.value = condition.value.timeRange != undefined; // on initial load, expand if timerange set
-    startTimeIsEnabled.value = condition.value.timeRange != undefined;
-    endTimeIsEnabled.value = condition.value.timeRange != undefined;
+    // isExpanded.value = condition.value.timeRange != undefined; // on initial load, expand if timerange set
+    // startTimeIsEnabled.value = condition.value.timeRange != undefined;
+    // endTimeIsEnabled.value = condition.value.timeRange != undefined;
   },
   { immediate: true }
 );
@@ -99,98 +99,95 @@ function hasExposeName(): boolean {
   return condition.value.name != '';
 }
 
-function onDelete(): void {
-  emit('delete');
-}
 
-function onAddTimeRange(): void {
-  condition.value.timeRange = {
-    startAt: toHourMinuteString(new Date()),
-    endAt: toHourMinuteString(convertTimeToDate(defaultEndTime)),
-  };
+// function onAddTimeRange(): void {
+//   condition.value.timeRange = {
+//     startAt: toHourMinuteString(new Date()),
+//     endAt: toHourMinuteString(convertTimeToDate(defaultEndTime)),
+//   };
 
-  startTimeIsEnabled.value = true;
+//   startTimeIsEnabled.value = true;
 
-  emit('update', condition.value);
-}
+//   emit('update', condition.value);
+// }
 
-function onRemoveTimeRange(): void {
-  condition.value.timeRange = undefined;
-  emit('update', condition.value);
-}
+// function onRemoveTimeRange(): void {
+//   condition.value.timeRange = undefined;
+//   emit('update', condition.value);
+// }
 
-function getStartAtTime(): Date {
-  if (!condition.value.timeRange) {
-    return getNowTime();
-  }
-  return convertTimeToDate(condition.value.timeRange?.startAt);
-}
+// function getStartAtTime(): Date {
+//   if (!condition.value.timeRange) {
+//     return getNowTime();
+//   }
+//   return convertTimeToDate(condition.value.timeRange?.startAt);
+// }
 
-function getEndAtTime(): Date {
-  if (!condition.value.timeRange) {
-    return convertTimeToDate(defaultEndTime);
-  }
-  const endAt = condition.value.timeRange?.endAt == '' ? defaultEndTime : condition.value.timeRange?.endAt;
-  return convertTimeToDate(endAt);
-}
+// function getEndAtTime(): Date {
+//   if (!condition.value.timeRange) {
+//     return convertTimeToDate(defaultEndTime);
+//   }
+//   const endAt = condition.value.timeRange?.endAt == '' ? defaultEndTime : condition.value.timeRange?.endAt;
+//   return convertTimeToDate(endAt);
+// }
 
-function updateStartAtTime(startAtTime: Date) {
-  condition.value.timeRange!.startAt = toHourMinuteString(startAtTime);
-  emit('update', condition.value);
-}
+// function updateStartAtTime(startAtTime: Date) {
+//   condition.value.timeRange!.startAt = toHourMinuteString(startAtTime);
+//   emit('update', condition.value);
+// }
 
-function validateStartTime(startAtTime: Date): string | null {
-  const endAtTime = getEndAtTime();
-  const startHour = startAtTime.getHours();
-  const endHour = endAtTime.getHours();
-  const startMinutes = startAtTime.getMinutes();
-  const endMinutes = endAtTime.getMinutes();
+// function validateStartTime(startAtTime: Date): string | null {
+//   const endAtTime = getEndAtTime();
+//   const startHour = startAtTime.getHours();
+//   const endHour = endAtTime.getHours();
+//   const startMinutes = startAtTime.getMinutes();
+//   const endMinutes = endAtTime.getMinutes();
 
-  if (startHour > endHour) {
-    endTimeIsEnabled.value = false;
-    return 'Start time must be before end time';
-  }
+//   if (startHour > endHour) {
+//     endTimeIsEnabled.value = false;
+//     return 'Start time must be before end time';
+//   }
 
-  if (startHour === endHour) {
-    if (startMinutes >= endMinutes) {
-      endTimeIsEnabled.value = false;
-      return 'Start time must be before end time';
-    }
-  }
+//   if (startHour === endHour) {
+//     if (startMinutes >= endMinutes) {
+//       endTimeIsEnabled.value = false;
+//       return 'Start time must be before end time';
+//     }
+//   }
 
-  endTimeIsEnabled.value = true;
-  return null;
-}
+//   endTimeIsEnabled.value = true;
+//   return null;
+// }
 
 
-function validateEndTime(endAtTime: Date): string | null {
-  const startAtTime = getStartAtTime();
-  const startHour = startAtTime.getHours();
-  const endHour = endAtTime.getHours();
-  const startMinutes = startAtTime.getMinutes();
-  const endMinutes = endAtTime.getMinutes();
+// function validateEndTime(endAtTime: Date): string | null {
+//   const startAtTime = getStartAtTime();
+//   const startHour = startAtTime.getHours();
+//   const endHour = endAtTime.getHours();
+//   const startMinutes = startAtTime.getMinutes();
+//   const endMinutes = endAtTime.getMinutes();
 
-  if (endHour < startHour) {
-    startTimeIsEnabled.value = false;
-    return 'End time must be after start time';
-  }
+//   if (endHour < startHour) {
+//     startTimeIsEnabled.value = false;
+//     return 'End time must be after start time';
+//   }
 
-  if (endHour === startHour) {
-    if (endMinutes <= startMinutes) {
-      startTimeIsEnabled.value = false;
+//   if (endHour === startHour) {
+//     if (endMinutes <= startMinutes) {
+//       startTimeIsEnabled.value = false;
 
-      return 'End time must be after start time';
-    }
-  }
+//       return 'End time must be after start time';
+//     }
+//   }
 
-  startTimeIsEnabled.value = true;
-  return null;
-}
+//   startTimeIsEnabled.value = true;
+//   return null;
+// }
 
-function updateEndAtTime(endAtTime: Date) {
-  condition.value.timeRange!.endAt = toHourMinuteString(endAtTime);
-  emit('update', condition.value);
-}
+// function updateEndAtTime(endAtTime: Date) {
+//   condition.value.timeRange!.endAt = toHourMinuteString(endAtTime);
+//   emit('update', condition.value);
+// }
 </script>
 
 <template>
@@ -207,13 +204,12 @@ function updateEndAtTime(endAtTime: Date) {
       <ExposeDataInput :id="props.id" :name="condition.name" :value="condition.value" @updated="dataUpdated"
         :disabled="!hasExposeName()" />
     </div>
-    <div class="col-sm-1 d-flex">
+    <!-- <div class="col-sm-1 d-flex">
       <Button :icon="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" variant="text" rounded small
         @click="toggleExpanded" />
-      <Button icon="pi pi-trash" variant="text" rounded small @click="onDelete" />
-    </div>
+    </div> -->
   </div>
-  <div v-if="isExpanded" class="row mt-2">
+  <!-- <div v-if="isExpanded" class="row mt-2">
     <div class="col-sm-4">
       <label class="col-form-label">Time Range Activation:</label>
       <div class="row mt-1">
@@ -231,5 +227,5 @@ function updateEndAtTime(endAtTime: Date) {
         </div>
       </div>
     </div>
-  </div>
+  </div> -->
 </template>

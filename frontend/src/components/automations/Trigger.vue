@@ -14,14 +14,14 @@
     ActionType,
     ConditionType,
   } from '@/types/automation.type.js';
-  import { getConditionTypes } from '../../contracts/automations';
+  import { getActionTypes, getConditionTypes } from '../../contracts/automations';
   import { isValid, createActionFromType, createConditionFromType } from '../../contracts/automations';
   import { capitalizeText } from '../../modules/formatters/text.formatter';
   import { EventActions, OpenPanelEvent } from '@/types/events.type';
   import { emitClosePanel, emitOpenPanel } from '@/mixins/useAutomationsEventBus';
   import ActionViewer from './actions/ActionViewer.vue';
   import ButtonPanel from '@/components/controls/ButtonPanel.vue';
-  import { createButtons, createNewActionDropdownItems } from '../../configs/automation/trigger-dropdown.config';
+  import { createButtons } from '../../configs/automation/trigger-dropdown.config';
   import { ExposeCategories } from '@/types/device.type';
 
   const props = defineProps({
@@ -37,7 +37,6 @@
   const actions = ref<AutomationActions>({} as AutomationActions);
   const trigger = ref<AutomationTrigger>(props.trigger);
 
-  const dropDownActionItems = computed(() => createNewActionDropdownItems((e: ActionType) => addNewAction(e)));
   const buttonPanelItems = computed(() => {
     return createButtons([
       {
@@ -175,9 +174,12 @@
     </Selection>
   </div>
   <div class="row" v-else>
-    <h4 class="">Trigger for {{ capitalizeText(trigger.name) }}</h4>
-    <div class="pb-3" />
-    <Fieldset legend="When" :toggleable="true" :collapsed="conditions.length == 0">
+    <h4>Trigger for {{ capitalizeText(trigger.name) }}</h4>
+    <div class="pt-2" />
+
+    <!-- Conditions -->
+
+    <Fieldset legend="Conditions" :toggleable="true" :collapsed="conditions.length == 0">
       <DataTable
         :value="conditions"
         selectionMode="single"
@@ -185,7 +187,7 @@
         @row-reorder="onRowReorder"
         dataKey="name">
         <Column rowReorder style="width: 3rem" />
-        <Column header="Condition">
+        <Column>
           <template #body="slotProps">
             <ConditionEditor
               :item="slotProps.data"
@@ -194,28 +196,25 @@
               @delete="removeTriggerCondition(slotProps.data)" />
           </template>
         </Column>
-        <!-- <Column header="Actions" style="width: 3rem; text-align: center">
-    <template #body="slotProps">
-      <Button
-        icon="pi pi-trash"
-        variant="text"
-        rounded
-        small
-        @click="removeTriggerCondition(slotProps.data)" />
-    </template>
-  </Column> -->
+        <Column style="width: 1rem; text-align: center">
+          <template #body="slotProps">
+            <Button icon="pi pi-trash" variant="text" rounded small @click="removeTriggerCondition(slotProps.data)" />
+          </template>
+        </Column>
       </DataTable>
-
-      <div class="pt-4 flex align-items-center justify-content-center gap-2">
+      <div class="pt-4 flex gap-2">
         <div v-for="type in getConditionTypes()" :key="type">
           <Button :label="'Add ' + type" outlined rounded size="small" @click="addNewCondition(type)" />
         </div>
       </div>
     </Fieldset>
-    <div class="pt-2"></div>
-    <Fieldset legend="Then" :toggleable="true" :collapsed="actions.length == 0">
+    <div class="pt-2" />
+
+    <!-- Actions -->
+
+    <Fieldset legend="Actions" :toggleable="true" :collapsed="actions.length == 0">
       <DataTable :value="actions" selectionMode="single">
-        <Column header="Actions">
+        <Column>
           <template #body="slotProps">
             <ActionViewer
               :automation-id="props.id"
@@ -231,16 +230,12 @@
           </template>
         </Column>
       </DataTable>
-
-      <div class="pt-4 flex align-items-center justify-content-center">
-        <Dropdown
-          :items="dropDownActionItems"
-          :disabled="actions.length != 0"
-          text
-          label="New Action"
-          icon="pi pi-plus"
-          size="small" />
+      <div v-if="actions.length == 0" class="pt-4 flex gap-2">
+        <div v-for="type in getActionTypes()" :key="type">
+          <Button :label="'Add ' + type" outlined rounded size="small" @click="addNewAction(type)" />
+        </div>
       </div>
+
     </Fieldset>
   </div>
 </template>

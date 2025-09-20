@@ -62,11 +62,6 @@
     emit('update', condition.value);
   }
 
-  function onRemoveTimeRange(): void {
-    condition.value.timeRange = undefined;
-    emit('update', condition.value);
-  }
-
   function getStartAtTime(): Date {
     if (!condition.value.timeRange) {
       return getNowTime();
@@ -157,9 +152,6 @@
         :disabled="!endTimeIsEnabled"
         @updated="(e) => updateEndAtTime(e)"
         :validation="validateEndTime" />
-    </div>
-    <div class="col-sm-1 d-flex">
-      <Button icon="pi pi-trash" variant="text" rounded small @click="onDelete" />
-    </div>
+    </div>   
   </div>
 </template>

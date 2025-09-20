@@ -58,11 +58,12 @@ function handleEnterKey() {
 .error-icon {
   color: #F44336 !important;
 }
+
 </style>
 <template>
   <IftaLabel>
     <div class="date-picker-container" :class="{ 'has-error': hasError }">
-      <DatePicker inputId="date" id="datepicker-timeonly" v-model="selectedTime" showIcon fluid iconDisplay="input"
+      <DatePicker inputId="date" id="datepicker-timeonly" v-model="selectedTime" showIcon fluid  iconDisplay="input"
         timeOnly @blur="handleEnterKey"
         @keyup.enter="handleEnterKey" 
          :disabled="props.disabled" :class="{ 'error-overlay': hasError }">
