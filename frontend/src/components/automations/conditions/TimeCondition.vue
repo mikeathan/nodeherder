@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, computed, watch, PropType } from 'vue';
+  import { ref, computed, watch, PropType, onMounted } from 'vue';
   import { EqualityOperators } from '../../../contracts/automations';
   import { AutomationCondition, ExposeCondition, TimeCondition } from '../../../types/automation.type.js';
   import { store } from '../../../store/index';
@@ -24,10 +24,6 @@
   });
 
   const defaultEndTime = '23:59';
-  const hasTimeRange = computed(() => {
-    return condition.value.timeRange != undefined;
-  });
-
   const condition = ref<TimeCondition>({} as TimeCondition);
   const startTimeIsEnabled = ref(false);
   const endTimeIsEnabled = ref(false);
@@ -41,12 +37,21 @@
     () => props.item,
     () => {
       condition.value = JSON.parse(JSON.stringify(props.item)) as TimeCondition;
-      startTimeIsEnabled.value = condition.value.timeRange != undefined;
-      endTimeIsEnabled.value = condition.value.timeRange != undefined;
+
+      // initialise startAt and endAt time and send update event to configure condition
+      if (!condition.value.timeRange.startAt || !condition.value.timeRange.endAt) {
+        condition.value.timeRange = {
+          startAt: toHourMinuteString(getStartAtTime()),
+          endAt: toHourMinuteString(getEndAtTime()),
+        };
+        emit('update', condition.value);
+      }
+
+      startTimeIsEnabled.value = !!condition.value.timeRange;
+      endTimeIsEnabled.value = !!condition.value.timeRange;
     },
     { immediate: true }
   );
-
 
   function getStartAtTime(): Date {
     if (!condition.value.timeRange) {
@@ -138,6 +143,6 @@
         :disabled="!endTimeIsEnabled"
         @updated="(e) => updateEndAtTime(e)"
         :validation="validateEndTime" />
-    </div>   
+    </div>
   </div>
 </template>

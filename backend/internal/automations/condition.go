@@ -28,7 +28,7 @@ type Condition interface {
 
 // BaseCondition
 type BaseCondition struct {
-	EqualityOperator utils.EqualityOperator `json:"equality"`
+	EqualityOperator utils.EqualityOperator `json:"equality,omitempty"`
 	Type             ConditionType          `json:"type"`
 	handlers         []ConditionHandler
 }
@@ -187,7 +187,7 @@ func NewTimeRange(startAt string, endAt string) *TimeRange {
 // TimeCondition
 type TimeCondition struct {
 	BaseCondition
-	TimeRange        *TimeRange             `json:"timeRange"`
+	TimeRange *TimeRange `json:"timeRange"`
 }
 
 func (e *TimeCondition) HasValueChanged(name string, ctx AutomationContext) bool {
@@ -223,4 +223,3 @@ func (b *TimeCondition) InitHandlers(clock utils.Clock) error {
 	}
 	return nil
 }
-

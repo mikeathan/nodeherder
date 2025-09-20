@@ -70,11 +70,11 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 			automations.WithAutomationsFuncs(),
 		),
 	}
-	
+
 	for _, option := range options {
 		option(h)
 	}
-	
+
 	h.registrar = services.NewHubRegisterService(store, eventHub, 3600) // 3600 - is not used!!!!!!!!!!!!!!!!
 	h.automationEngine = automations.NewEngine(h.automationHandlers, h.registrar, mqtt)
 	h.wp = utils.NewWorkerPool(4, h.ctx)
@@ -410,6 +410,7 @@ func (h *HubController) registerEventHubEvents() {
 		// pass payload and return model
 		automation := automations.NewBaseAutomation()
 		bytes, _ := json.Marshal(p)
+
 		err := json.Unmarshal(bytes, &automation)
 		if err != nil {
 			utils.LogErrorf("Save automation failed. Invalid payload type")
