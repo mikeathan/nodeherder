@@ -45,6 +45,7 @@ declare module 'vue' {
     DeviceSelector: typeof import('./src/components/controls/DeviceSelector.vue')['default']
     DeviceSettings: typeof import('./src/components/device/DeviceSettings.vue')['default']
     DeviceStatusOverlay: typeof import('./src/components/device/DeviceStatusOverlay.vue')['default']
+    Dialog: typeof import('primevue/dialog')['default']
     DialogHost: typeof import('./src/components/dialogs/DialogHost.vue')['default']
     Dropdown: typeof import('./src/components/controls/Dropdown.vue')['default']
     Editor: typeof import('./src/components/automations/Editor.vue')['default']

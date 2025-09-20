@@ -47,20 +47,6 @@
     { immediate: true }
   );
 
-  function onDelete(): void {
-    emit('delete');
-  }
-
-  function onAddTimeRange(): void {
-    condition.value.timeRange = {
-      startAt: toHourMinuteString(new Date()),
-      endAt: toHourMinuteString(convertTimeToDate(defaultEndTime)),
-    };
-
-    startTimeIsEnabled.value = true;
-
-    emit('update', condition.value);
-  }
 
   function getStartAtTime(): Date {
     if (!condition.value.timeRange) {

@@ -23,6 +23,7 @@
   import ButtonPanel from '@/components/controls/ButtonPanel.vue';
   import { createButtons } from '../../configs/automation/trigger-dropdown.config';
   import { ExposeCategories } from '@/types/device.type';
+  import { emitOpenConfirmationDialog } from '@/contracts/dialog-events';
 
   const props = defineProps({
     id: { type: String },
@@ -51,6 +52,22 @@
       },
     ]);
   });
+
+  function openDeleteConditionConfirmationDialog(condition: AutomationCondition) {
+    const props = {
+      title: 'Question',
+      message: `Delete condition ${condition.type} ?`,
+    };
+    emitOpenConfirmationDialog(() => removeTriggerCondition(condition), props);
+  }
+
+  function openDeleteActionConfirmationDialog() {
+    const props = {
+      title: 'Question',
+      message: `Delete action ?`,
+    };
+    emitOpenConfirmationDialog(() => deleteAction(), props);
+  }
 
   watch(
     () => props.trigger,
@@ -198,7 +215,12 @@
         </Column>
         <Column style="width: 1rem; text-align: center">
           <template #body="slotProps">
-            <Button icon="pi pi-trash" variant="text" rounded small @click="removeTriggerCondition(slotProps.data)" />
+            <Button
+              icon="pi pi-trash"
+              variant="text"
+              rounded
+              small
+              @click="openDeleteConditionConfirmationDialog(slotProps.data)" />
           </template>
         </Column>
       </DataTable>
@@ -220,13 +242,13 @@
               :automation-id="props.id"
               :item="slotProps.data"
               :edit-events="actionEvents(slotProps.data)"
-              @delete="deleteAction()">
+              @delete="openDeleteActionConfirmationDialog()">
             </ActionViewer>
           </template>
         </Column>
         <Column class="col-sm-1">
           <template #body="slotProps">
-            <Button icon="pi pi-trash" variant="text" rounded @click="deleteAction()" />
+            <Button icon="pi pi-trash" variant="text" rounded @click="openDeleteActionConfirmationDialog()" />
           </template>
         </Column>
       </DataTable>
@@ -235,7 +257,6 @@
           <Button :label="'Add ' + type" outlined rounded size="small" @click="addNewAction(type)" />
         </div>
       </div>
-
     </Fieldset>
   </div>
 </template>
