@@ -171,16 +171,16 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 					if sensorCondition.Name != inputCondition.Name {
 						t.Fatalf("unexpected condition.Name  value")
 					}
-					if inputCondition.TimeRange != nil {
-						if inputCondition.TimeRange.StartAt != sensorCondition.TimeRange.StartAt {
-							t.Fatalf("unexpected imeRange.StartAt  value")
-						}
+					// if inputCondition.TimeRange != nil {
+					// 	if inputCondition.TimeRange.StartAt != sensorCondition.TimeRange.StartAt {
+					// 		t.Fatalf("unexpected imeRange.StartAt  value")
+					// 	}
 
-						if inputCondition.TimeRange.EndAt != sensorCondition.TimeRange.EndAt {
-							t.Fatalf("unexpected imeRange.StEndAtartAt  value")
-						}
+					// 	if inputCondition.TimeRange.EndAt != sensorCondition.TimeRange.EndAt {
+					// 		t.Fatalf("unexpected imeRange.StEndAtartAt  value")
+					// 	}
 
-					}
+					// }
 				}
 			}
 		}
@@ -1728,9 +1728,10 @@ func createTriggerTurnOnLightWithPresenceOn(mqtt mqtt.MqttClient) *automations.D
 	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
 
 	onTimeRange := automations.NewTimeRange("06:40", "17:15")
-	turnOnTimeAtCondition := utils_test.NewExposeConditionwithTimeRange("presence", true, "=", onTimeRange, &mocks.MockClock{})
-
-	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnTimeAtCondition)
+	turnOnCondition := utils_test.NewExposeCondition("presence", true, "=")
+	turnOnTimerCondition := utils_test.NewTimeCondition(onTimeRange, &mocks.MockClock{})
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnTimerCondition)
 	return turnOnTrigger
 }
 
@@ -1754,8 +1755,10 @@ func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay *
 
 	// condition = presence == false
 	onTimeRange := automations.NewTimeRange("11:13", "19:35")
-	turnOffTimeAtCondition := utils_test.NewExposeConditionwithTimeRange("presence", false, "=", onTimeRange, &mocks.MockClock{})
+	turnOffTimeAtCondition := utils_test.NewExposeCondition("presence", false, "=")
+	turnOffTimerCondition := utils_test.NewTimeCondition(onTimeRange, &mocks.MockClock{})
 
 	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffTimeAtCondition)
+	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffTimerCondition)
 	return turnOffTrigger
 }

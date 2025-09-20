@@ -30,7 +30,6 @@ type Condition interface {
 type BaseCondition struct {
 	EqualityOperator utils.EqualityOperator `json:"equality"`
 	Type             ConditionType          `json:"type"`
-	TimeRange        *TimeRange             `json:"timeRange,omitempty"`
 	handlers         []ConditionHandler
 }
 
@@ -48,21 +47,13 @@ func (e *BaseCondition) HasValueChanged(name string, ctx AutomationContext) bool
 
 func (b *BaseCondition) InitHandlers(clock utils.Clock) error {
 
-	if b.TimeRange != nil {
-		trHandler, err := NewTimeRangeHandler(b.TimeRange, clock)
-		if err != nil {
-			return err
-		}
-		b.handlers = append(b.handlers, trHandler)
-	}
 	return nil
 }
 
-func NewBaseCondition(conditionType ConditionType, operator utils.EqualityOperator, timeRange *TimeRange) *BaseCondition {
+func NewBaseCondition(conditionType ConditionType, operator utils.EqualityOperator) *BaseCondition {
 	return &BaseCondition{
 		Type:             conditionType,
 		EqualityOperator: operator,
-		TimeRange:        timeRange,
 		handlers:         []ConditionHandler{},
 	}
 }
@@ -196,6 +187,7 @@ func NewTimeRange(startAt string, endAt string) *TimeRange {
 // TimeCondition
 type TimeCondition struct {
 	BaseCondition
+	TimeRange        *TimeRange             `json:"timeRange"`
 }
 
 func (e *TimeCondition) HasValueChanged(name string, ctx AutomationContext) bool {
@@ -220,40 +212,15 @@ func (e *TimeCondition) GetType() ConditionType {
 	return TimeConditionType
 }
 
-// TimeCondition
-// type TimeCondition struct {
-// 	BaseCondition
-// 	Value  string `json:"value"`
-// 	timeAt time.Time
-// 	clock  utils.Clock
-// }
+func (b *TimeCondition) InitHandlers(clock utils.Clock) error {
 
-// func (t *TimeCondition) Evaluate(ctx *DeviceContext) bool {
+	if b.TimeRange != nil {
+		trHandler, err := NewTimeRangeHandler(b.TimeRange, clock)
+		if err != nil {
+			return err
+		}
+		b.handlers = append(b.handlers, trHandler)
+	}
+	return nil
+}
 
-// 	result, _ := t.clock.CompareWithNow(t.timeAt, t.EqualityOperator)
-// 	return result
-// }
-
-// func (t *TimeCondition) GetType() string {
-// 	return TimeConditionType
-// }
-
-// func (e *TimeCondition) HasValueChanged(name string, ctx *DeviceContext) bool {
-// 	return true
-// }
-
-// func NewTimeCondition(value string, operation string, clock utils.Clock) (*TimeCondition, error) {
-// 	t, err := ConvertStringToTime(value)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &TimeCondition{
-// 		Value:  value,
-// 		timeAt: t,
-// 		clock:  clock,
-// 		BaseCondition: BaseCondition{
-// 			Type:             TimeConditionType,
-// 			EqualityOperator: operation,
-// 		},
-// 	}, nil
-// }

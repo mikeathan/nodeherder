@@ -379,20 +379,22 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 	// create turn on trigger
 	turnOnTrigger := createTriggerTurnOnLight(id, registrar, mqtt)
 
-	// initialize turn on condition
+	// initialize turn on condition with timer
 	onTimeRange := automations.NewTimeRange("11:00", "17:00")
-	turnOnCondition := utils_test.NewExposeConditionwithTimeRange("presence", true, "=", onTimeRange, mockClock)
-
+	turnOnCondition := utils_test.NewExposeCondition("presence", true, "=")
+	turnOnTimerCondition := utils_test.NewTimeCondition(onTimeRange, mockClock)
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnTimerCondition)
 
 	// create turn off trigger
 	turnOffTrigger := createTriggerDelayTurnOffLight(id, registrar, mqtt, nil)
 
-	// initialize turn off condition
+	// initialize turn off condition with timer
 	offTimeRange := automations.NewTimeRange("09:00", "13:25")
-	turnOffCondition := utils_test.NewExposeConditionwithTimeRange("presence", false, "=", offTimeRange, mockClock)
-
+	turnOffCondition := utils_test.NewExposeCondition("presence", false, "=")
+	turnOffTimerCondition := utils_test.NewTimeCondition(offTimeRange, mockClock)
 	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffCondition)
+	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffTimerCondition)
 
 	// create device trigger
 	deviceTrigger := automations.NewDevice(id)

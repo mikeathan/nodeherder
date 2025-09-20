@@ -184,27 +184,12 @@ func CreateSwitchTriggerWithBindingAction(triggerName string, actionProp string,
 }
 
 // Conditions
-func NewExposeConditionwithTimeRange(name string, value any, operation utils.EqualityOperator, timeRange *automations.TimeRange, clock utils.Clock) *automations.ExposeCondition {
-	cond := &automations.ExposeCondition{
-		Name:          name,
-		Value:         value,
-		BaseCondition: *automations.NewBaseCondition(automations.ExposeConditionType, operation, timeRange),
-	}
-
-	err := cond.InitHandlers(clock)
-	if err != nil {
-		utils.LogErrorf("initialising expose timeRange failed. Error: %s", err.Error())
-		return nil
-	}
-	return cond
-}
-
 func NewExposeCondition(name string, value any, operation utils.EqualityOperator) *automations.ExposeCondition {
 
 	cond := &automations.ExposeCondition{
 		Name:          name,
 		Value:         value,
-		BaseCondition: *automations.NewBaseCondition(automations.ExposeConditionType, operation, nil),
+		BaseCondition: *automations.NewBaseCondition(automations.ExposeConditionType, operation),
 	}
 
 	err := cond.InitHandlers(utils.NewRealClock())
@@ -218,7 +203,8 @@ func NewExposeCondition(name string, value any, operation utils.EqualityOperator
 
 func NewTimeCondition(timeRange *automations.TimeRange, clock utils.Clock) *automations.TimeCondition {
 	cond := &automations.TimeCondition{
-		BaseCondition: *automations.NewBaseCondition(automations.TimeConditionType, utils.Equals, timeRange),
+		BaseCondition: *automations.NewBaseCondition(automations.TimeConditionType, utils.Equals),
+		TimeRange:     timeRange,
 	}
 
 	err := cond.InitHandlers(clock)
