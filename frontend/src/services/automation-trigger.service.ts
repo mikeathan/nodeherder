@@ -1,9 +1,19 @@
 import { Automation } from '@/types/automation.type';
-import axios from 'axios';
+const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
-const triggerAutomation = async (automation: Automation, triggerName: string) => {
-  var triggerId = triggerName;
-  var automationId = automation.id;
-  const response = await axios.post('/api/automation/trigger', { triggerId, automationId });
-  return response.data;
+export const triggerAutomation = async (automation: Automation, triggerName: string) => {
+  const automationId = automation.id;
+  const res = await fetch(`${baseUrl}/api/automation/trigger`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ triggerName, automationId }),
+  });
+
+  if (!res.ok) {
+    console.error('Failed to trigger automation', res);
+    throw new Error('Failed to trigger automation');
+  }
+  return await res.json();
 };

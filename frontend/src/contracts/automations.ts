@@ -110,6 +110,13 @@ export const getActionTypes = (): ActionType[] => {
   return Object.values(AutomationActionTypes);
 };
 
+export const canTriggerManually = (trigger: AutomationTrigger): boolean => {
+  return (
+    trigger.conditions.length == 0 ||
+    trigger.conditions.every((condition) => condition.type === AutomationConditionTypes.Time)
+  );
+};
+
 export function createConditionFromType(type: ConditionType): AutomationCondition {
   switch (type) {
     case AutomationConditionTypes.Expose:

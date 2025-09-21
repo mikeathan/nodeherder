@@ -31,7 +31,6 @@
     "@primevue/themes": "^4.2.3",
     "@vue/babel-plugin-jsx": "^1.2.5",
     "apexcharts": "^4.0.0",
-    "axios": "^1.12.2",
     "bootstrap": "^5.3.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",

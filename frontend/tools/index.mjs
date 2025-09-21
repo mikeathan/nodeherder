@@ -276,6 +276,15 @@ app.get('/api/hubstate', (req, res) => {
   res.json(hubStatePayload);
 });
 
+app.post('/api/automation/trigger', (req, res) => {
+  console.log('automation trigger POST request');
+  console.log(req.body);
+  const { triggerName, automationId } = req.body;
+  console.log('triggerName: ' + triggerName);
+  console.log('automationId: ' + automationId);
+  res.json({ success: true });
+});
+
 var connected = false;
 
 // Register web socket events

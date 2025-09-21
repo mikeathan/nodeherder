@@ -23,10 +23,6 @@ const props = defineProps({
   },
 });
 
-// const defaultEndTime = '23:59'
-// const hasTimeRange = computed(() => {
-//   return condition.value.timeRange != undefined;
-// });
 
 const condition = ref<ExposeCondition>({} as ExposeCondition);
 
