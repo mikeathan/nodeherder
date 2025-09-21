@@ -16,7 +16,7 @@
     isLoading.value = true;
     try {
       const success = await props.action();
-      store.dispatch('alerts/showSuccess', 'Action successful');
+      store.dispatch('alerts/showSuccess');
     } catch (e) {
       console.error(e);
       store.dispatch('alerts/showError', `Action failed: ${e}`);
