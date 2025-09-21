@@ -3,7 +3,7 @@
   import ConditionEditor from './conditions/ConditionEditor..vue';
   import Selection from '../input/Selection.vue';
   import Dropdown from '../controls/Dropdown.vue';
-  import { store } from '../../store/index';
+  import { store } from '@/store';
   import { Device } from '@/types/device';
   import {
     AutomationTrigger,

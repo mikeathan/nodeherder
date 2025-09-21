@@ -3,6 +3,7 @@ const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
 export const triggerAutomation = async (automation: Automation, triggerName: string): Promise<boolean> => {
   const automationId = automation.id;
+  console.info(`Triggering automation: ${automationId} with target: ${triggerName}`);
   const res = await fetch(`${baseUrl}/api/automation/trigger`, {
     method: 'POST',
     headers: {

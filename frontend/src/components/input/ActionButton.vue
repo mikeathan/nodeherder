@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { ref } from 'vue';
+  import { store } from '@/store';
 
   const props = defineProps<{
     label: string;
@@ -15,8 +16,10 @@
     isLoading.value = true;
     try {
       const success = await props.action();
+      store.dispatch('alerts/showSuccess', 'Action successful');
     } catch (e) {
       console.error(e);
+      store.dispatch('alerts/showError', `Action failed: ${e}`);
     } finally {
       isLoading.value = false;
     }
