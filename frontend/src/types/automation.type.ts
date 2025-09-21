@@ -21,7 +21,10 @@ export type StepAction = 'step';
 export type PresetCyclingAction = 'preset';
 export type ActionType = TriggerAction | StepAction | PresetCyclingAction;
 
-export const PublishModes = ['batch', 'single'] as const;
+export const PublishModes = {
+  Batch: 'batch',
+  Single: 'single',
+} as const;
 export type PublishMode = ValueOf<typeof PublishModes>;
 export const AutomationActionTypes = {
   Trigger: 'trigger',

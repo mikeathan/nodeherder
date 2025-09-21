@@ -10,6 +10,7 @@
   import { getSensorUnit, getSensorValue } from '@/modules/formatters/sensor-formatter';
   import Range from '../input/Range.vue';
   import Selection from '@/components/input/Selection.vue';
+  import { KeyValuePair } from '@/types/types.type';
 
   const props = defineProps({
     id: { type: String, required: true },
@@ -20,7 +21,7 @@
   });
 
   const exposes = computed(() => {
-    return device.value ? device.value.exposes : [];
+    return device.value ? device.value.exposes : ({} as KeyValuePair<Expose>);
   });
 
   // TEMPORARY QUICK FIX

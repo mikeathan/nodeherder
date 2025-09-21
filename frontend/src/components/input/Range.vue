@@ -41,7 +41,7 @@
   );
 
   function onSlideEnds(event: SliderSlideEndEvent) {
-    emit('update', event.value);
+    emit('update', event.value as number);
   }
 
   function inputChanged(event: InputNumberInputEvent) {

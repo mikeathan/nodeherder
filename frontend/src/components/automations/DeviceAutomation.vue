@@ -201,17 +201,13 @@
       </Column>
       <Column field="conditions" header="Conditions">
         <template #body="slotProps">
-          <!-- check if we can trigger it manually, if so  display a button -->
-          <div v-if="canTriggerManually(slotProps.data)">
-            <div class="flex align-items-center gap-2">
-              <ActionButton
-                label="Run"
-                icon="pi pi-play"
-                :action="() => triggerAutomation(automation, slotProps.data.name)" />
-            </div>
-          </div>
-          <!-- else display condition -->
-          <span v-else v-html="formatTriggerConditions(slotProps.data)"></span>
+          <span v-html="formatTriggerConditions(slotProps.data)" />
+          <!-- show action button if we can trigger automation manually -->
+          <ActionButton
+            v-if="canTriggerManually(slotProps.data)"
+            label="Run"
+            icon="pi pi-play"
+            :action="() => triggerAutomation(automation, slotProps.data.name)" />
         </template>
       </Column>
       <Column class="col-sm-1">

@@ -6,9 +6,10 @@ export function formatTriggerConditions(trigger: AutomationTrigger): string {
     return '';
   }
 
-  let description = '';
   const condition = conditions[0];
   const hasTimeCondition = conditions.some((e) => e.type == AutomationConditionTypes.Time);
+  let description = '';
+
   if (hasTimeCondition) {
     description += '<i class="pi pi-stopwatch pe-2" aria-label="Time Range Set"></i>';
   }
@@ -18,6 +19,5 @@ export function formatTriggerConditions(trigger: AutomationTrigger): string {
       description += ` <span class="ml-1"><span >+${conditions.length - 1}</span></span>`;
     }
   }
-
   return description;
 }

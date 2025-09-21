@@ -82,7 +82,7 @@ export type MenuBarItem = {
   label?: string;
   icon?: string;
   disabled?: boolean;
-  value: string | boolean;
+  value?: string | boolean;
   command: ButtonClickEventType;
   custom?: boolean;
   isLogo?: boolean;

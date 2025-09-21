@@ -15,6 +15,7 @@ import {
   TriggerType,
   TriggerTypes,
   TimeCondition,
+  PublishModes,
 } from '../types/automation.type.js';
 
 export const EqualityOperators: string[] = ['=', '<=', '>=', '>', '<'];
@@ -145,7 +146,7 @@ export function createActionFromType(type: ActionType): AutomationAction {
         id: '',
         type: type,
         exposes: [],
-        publishMode: 'batch',
+        publishMode: PublishModes.Batch,
         delay: { unit: 'seconds', value: 0 },
       } as AutomationTriggerAction;
     case AutomationActionTypes.Step:

@@ -11,7 +11,8 @@
     "format": "prettier --write .",
     "test": "jest",
     "dev": "vite",
-    "build": "vite build",
+    "type-check": "vue-tsc --noEmit --watch",
+    "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview"
   },
   "jest": {
@@ -70,7 +71,8 @@
     "typescript-eslint": "^8.18.2",
     "unplugin-vue-components": "^0.28.0",
     "vite": "^6.0.6",
-    "vite-plugin-eslint": "^1.8.1"
+    "vite-plugin-eslint": "^1.8.1",
+    "vue-tsc": "^3.0.7"
   },
   "eslintConfig": {
     "root": true,

@@ -5,6 +5,7 @@
     AutomationTriggerActionExpose,
     TriggerActionOperation,
     PublishMode,
+    PublishModes,
   } from '@/types/automation.type.js';
   import ButtonPanel from '@/components/controls/ButtonPanel.vue';
   import {
@@ -47,7 +48,7 @@
 
   const operations = ref<TriggerActionOperation[]>([]);
 
-  const publishMode = ref<PublishMode>(props.action.publishMode ?? 'batch');
+  const publishMode = ref<PublishMode>(props.action.publishMode ?? PublishModes.Batch);
   watch(
     () => props.action,
     () => {
