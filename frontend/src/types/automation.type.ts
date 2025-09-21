@@ -92,6 +92,14 @@ export type TimeCondition = {
   timeRange: TimeRange;
 };
 
+export const isExposeCondition = (condition: AutomationCondition): condition is ExposeCondition => {
+  return condition.type === 'expose';
+};
+
+export const isTimeCondition = (condition: AutomationCondition): condition is TimeCondition => {
+  return condition.type === 'time';
+};
+
 export type AutomationCondition = ExposeCondition | TimeCondition;
 
 type AutomationBaseAction = {

@@ -6,6 +6,7 @@
   import { Device } from '@/types/device';
   import { Automation, AutomationAction, AutomationTrigger } from '@/types/automation.type.js';
   import AutomationStatus from '@/components/automations/schedule/AutomationStatus.vue';
+  import ActionButton from '../input/ActionButton.vue';
   import Panel from '../controls/Panel.vue';
   import ButtonPanel from '@/components/controls/ButtonPanel.vue';
   import { createEditAutomationButtonItems } from '../../configs/automation/trigger-dropdown.config';
@@ -200,17 +201,16 @@
       </Column>
       <Column field="conditions" header="Conditions">
         <template #body="slotProps">
-          <!-- check if we can trigger it manually and display a button -->
+          <!-- check if we can trigger it manually, if so  display a button -->
           <div v-if="canTriggerManually(slotProps.data)">
             <div class="flex align-items-center gap-2">
-              <Button
-                icon="pi pi-play"
-                size="small"
-                severity="primary"
+              <ActionButton
                 label="Run"
-                @click="triggerAutomation(automation, slotProps.data.name)" />
+                icon="pi pi-play"
+                :action="() => triggerAutomation(automation, slotProps.data.name)" />
             </div>
           </div>
+          <!-- else display condition -->
           <span v-else v-html="formatTriggerConditions(slotProps.data)"></span>
         </template>
       </Column>

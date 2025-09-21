@@ -32,6 +32,7 @@ const logSeverity = ['info', 'warning', 'error', 'critical'];
 
 // App and server
 let app = express();
+
 let server = http.createServer(app).listen(port);
 console.log('[' + currentTime() + '] server listening at port ' + port);
 
@@ -269,6 +270,7 @@ app.use(
     origin: 'http://localhost:4100',
   })
 );
+app.use(express.json());
 
 // Register HTTP GET route for /hubstate
 app.get('/api/hubstate', (req, res) => {
@@ -278,7 +280,6 @@ app.get('/api/hubstate', (req, res) => {
 
 app.post('/api/automation/trigger', (req, res) => {
   console.log('automation trigger POST request');
-  console.log(req.body);
   const { triggerName, automationId } = req.body;
   console.log('triggerName: ' + triggerName);
   console.log('automationId: ' + automationId);
