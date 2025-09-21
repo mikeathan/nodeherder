@@ -62,7 +62,11 @@
     emit('updated', inputValue.value);
   }
 
-  function onLostFocus(event: InputNumberBlurEvent): void {
+  function onInputNuberLostFocus(event: InputNumberBlurEvent): void {
+    emit('lostFocus', inputValue.value);
+  }
+
+  function onInputTextLostFocus(event: FocusEvent): void {
     emit('lostFocus', inputValue.value);
   }
 </script>
@@ -76,7 +80,7 @@
         :disabled="props.disabled"
         inputId="integeronly"
         @input="inputNumberEvent"
-        @blur="onLostFocus"
+        @blur="onInputNuberLostFocus"
         :min="0"
         class="w-full" />
       <label v-if="props.label != ''">{{ props.label }}</label>
@@ -90,7 +94,7 @@
         :disabled="props.disabled"
         @input="inputTextEvent"
         :class="props.class"
-        @blur="onLostFocus" />
+        @blur="onInputTextLostFocus" />
       <label v-if="props.label != ''">{{ props.label }}</label>
     </FloatLabel>
   </div>
