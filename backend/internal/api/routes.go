@@ -70,10 +70,10 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func (r *Router) getHandler(method, path string) http.Handler {
+
 	for _, route := range r.routes {
 		re := regexp.MustCompile(route.pattern)
-		if route.method == method && re.MatchString(path) {
-
+		if re.MatchString(path) && (route.method == method || method == http.MethodOptions) {
 			handler := route.handler
 
 			// chain handler with middleware
@@ -345,20 +345,32 @@ func NewAutomationTriggerHandler(hub automations.AutomationTrigger, rateLimit ti
 }
 
 func (h *AutomationTriggerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	automationId := r.URL.Query().Get("automationId")
-	triggerName := r.URL.Query().Get("triggerName")
-
-	if automationId == "" || triggerName == "" {
-		http.Error(w, "missing automationId or triggerName", http.StatusBadRequest)
+	if r.Header.Get("Content-Type") != "application/json" {
+		http.Error(w, "Content-Type must be application/json", http.StatusUnsupportedMediaType)
 		return
 	}
+
+	// Read body
+	var payload struct {
+		AutomationId string `json:"automationId"`
+		TriggerName  string `json:"triggerName"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		http.Error(w, "invalid JSON body", http.StatusBadRequest)
+		return
+	}
+
+	automationId := payload.AutomationId
+	triggerName := payload.TriggerName
 
 	if !h.limiter.AllowWrite(automationId, h.rateLimit) {
 		http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
 		return
 	}
 
-	err := h.hub.TriggerManual(automationId, triggerName)
+	err = h.hub.TriggerManual(automationId, triggerName)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

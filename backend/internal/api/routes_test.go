@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -509,39 +510,39 @@ func TestAutomationTriggerHandler_MissingParams(t *testing.T) {
 
 func TestAutomationTriggerHandler_Cases(t *testing.T) {
 	cases := []struct {
-		name         string
-		automationId string
-		triggerName  string
-		rateLimit    time.Duration
-		shouldSucceed    bool 
+		name          string
+		automationId  string
+		triggerName   string
+		rateLimit     time.Duration
+		shouldSucceed bool
 	}{
 		{
-			name:         "success case",
-			automationId: "123",
-			triggerName:  "test",
-			rateLimit:    1 * time.Second,
-			shouldSucceed:    true,
+			name:          "success case",
+			automationId:  "123",
+			triggerName:   "test",
+			rateLimit:     1 * time.Second,
+			shouldSucceed: true,
 		},
 		{
-			name:         "missing automationId",
-			automationId: "",
-			triggerName:  "test",
-			rateLimit:    1 * time.Second,
-			shouldSucceed:    false,
+			name:          "missing automationId",
+			automationId:  "",
+			triggerName:   "test",
+			rateLimit:     1 * time.Second,
+			shouldSucceed: false,
 		},
 		{
-			name:         "missing triggerName",
-			automationId: "123",
-			triggerName:  "",
-			rateLimit:    1 * time.Second,
-			shouldSucceed:    false,
+			name:          "missing triggerName",
+			automationId:  "123",
+			triggerName:   "",
+			rateLimit:     1 * time.Second,
+			shouldSucceed: false,
 		},
 		{
-			name:         "rate limit exceeded",
-			automationId: "123",
-			triggerName:  "test",
-			rateLimit:    1 * time.Hour, 
-			shouldSucceed:    false,
+			name:          "rate limit exceeded",
+			automationId:  "123",
+			triggerName:   "test",
+			rateLimit:     1 * time.Hour,
+			shouldSucceed: false,
 		},
 	}
 
@@ -556,7 +557,10 @@ func TestAutomationTriggerHandler_Cases(t *testing.T) {
 			handler := api.NewAutomationTriggerHandler(mock, c.rateLimit)
 
 			if c.name == "rate limit exceeded" {
-				req1 := httptest.NewRequest("GET", "/automation/trigger?automationId=123&triggerName=test", nil)
+				body := map[string]string{"automationId": "123", "triggerName": "test"}
+				b, _ := json.Marshal(body)
+				req1 := httptest.NewRequest("POST", "/automation/trigger", bytes.NewReader(b))
+				req1.Header.Set("Content-Type", "application/json")
 				w1 := httptest.NewRecorder()
 				handler.ServeHTTP(w1, req1)
 				if w1.Code != http.StatusOK {
@@ -564,8 +568,10 @@ func TestAutomationTriggerHandler_Cases(t *testing.T) {
 				}
 			}
 
-			url := "/automation/trigger?automationId=" + c.automationId + "&triggerName=" + c.triggerName
-			req := httptest.NewRequest("GET", url, nil)
+			payload := map[string]string{"automationId": c.automationId, "triggerName": c.triggerName}
+			b, _ := json.Marshal(payload)
+			req := httptest.NewRequest("POST", "/automation/trigger", bytes.NewReader(b))
+			req.Header.Set("Content-Type", "application/json")
 			w := httptest.NewRecorder()
 
 			handler.ServeHTTP(w, req)
