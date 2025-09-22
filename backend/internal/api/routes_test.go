@@ -487,3 +487,66 @@ func TestHubStateHandler_ExpirationTriggersReload(t *testing.T) {
 		t.Fatalf("expected call count 2, got %d", callCount)
 	}
 }
+
+func TestAutomationTriggerHandler_MissingParams(t *testing.T) {
+	ws := &mocks.NopWsServer{}
+	mqtt := &mocks.MockMqttClient{}
+	store := utils_test.CreateStore()
+
+	hub := controllers.RegisterHubController(ws, store, mqtt)
+
+	handler := api.NewAutomationTriggerHandler((*controllers.HubController)(hub), 1*time.Second)
+
+	req := httptest.NewRequest("GET", "/automation/trigger", nil) // no params
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", w.Code)
+	}
+}
+
+
+func TestAutomationTriggerHandler_Success(t *testing.T) {
+	ws := &mocks.NopWsServer{}
+	mqtt := &mocks.MockMqttClient{}
+	store := utils_test.CreateStore()
+
+	hub := controllers.RegisterHubController(ws, store, mqtt)
+
+	handler := api.NewAutomationTriggerHandler((*controllers.HubController)(hub), 1*time.Second)
+	req := httptest.NewRequest("GET", "/automation/trigger?automationId=123&triggerName=test", nil)
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", w.Code)
+	}
+}
+
+func TestAutomationTriggerHandler_RateLimited(t *testing.T) {
+	ws := &mocks.NopWsServer{}
+	mqtt := &mocks.MockMqttClient{}
+	store := utils_test.CreateStore()
+
+	hub := controllers.RegisterHubController(ws, store, mqtt)
+	handler := api.NewAutomationTriggerHandler((*controllers.HubController)(hub), 1*time.Second)
+
+	// First request should succeed
+	req1 := httptest.NewRequest("GET", "/automation/trigger?automationId=123&triggerName=test", nil)
+	w1 := httptest.NewRecorder()
+	handler.ServeHTTP(w1, req1)
+	if w1.Code != http.StatusOK {
+		t.Errorf("expected first request 200, got %d", w1.Code)
+	}
+
+	// Second request immediately should be blocked
+	req2 := httptest.NewRequest("GET", "/automation/trigger?automationId=123&triggerName=test", nil)
+	w2 := httptest.NewRecorder()
+	handler.ServeHTTP(w2, req2)
+	if w2.Code != http.StatusTooManyRequests {
+		t.Errorf("expected second request 429, got %d", w2.Code)
+	}
+}

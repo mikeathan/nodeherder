@@ -15,7 +15,7 @@ const (
 
 type Engine interface { // TODO: might need to move it to Models????
 	HandleDevice(device *devices.Device)
-	HandleManual(automationID string, triggerName string)
+	HandleManual(automationID string, triggerName string) error
 	Add(automation Automation) error
 	Delete(id string) error
 	DeleteTrigger(id string, triggerId int) error
@@ -65,18 +65,24 @@ func (a *AutomationEngine) HandleDevice(device *devices.Device) {
 	}
 }
 
-func (a *AutomationEngine) HandleManual(automationID string, triggerName string) {
+func (a *AutomationEngine) HandleManual(automationID string, triggerName string) error {
 	automation, err := a.storage.LoadFromCache(automationID)
-	
-	if err == nil && automation.IsEnabled() {
+	if err != nil {
+		return err
+	}
 
+	if automation.IsEnabled() {
 		device, err := a.registrar.LookupById(automationID)
 		if err != nil {
 			utils.LogErrorf("Failed to lookup device with id %s. Error=%s", automationID, err.Error())
+			return err
 		}
 
-		automation.EvaluateTrigger(NewDeviceEvent(device), triggerName)
+		if !automation.EvaluateTrigger(NewDeviceEvent(device), triggerName) {
+			return errors.New("automation trigger failed to run")
+		}
 	}
+	return nil
 }
 
 func (a *AutomationEngine) GetAllTriggers() []Automation {

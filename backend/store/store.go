@@ -2,53 +2,17 @@ package store
 
 import (
 	"fmt"
+	"node-herder/internal/ratelimiter"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
 	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	"node-herder/repository"
 	"sort"
-	"sync"
 	"time"
 )
 
 type AppStoreDirtyFlagCallback func()
-
-type rateLimiter struct {
-	mutex     sync.Mutex
-	lastWrite time.Time
-	appConfig *settings.AppConfig
-	store     map[string]time.Time // In-memory store for device IDs and last write times
-}
-
-func NewRateLimiter(appConfig *settings.AppConfig) *rateLimiter {
-	return &rateLimiter{
-		mutex:     sync.Mutex{},
-		lastWrite: time.Time{},
-		appConfig: appConfig,
-		store:     map[string]time.Time{},
-	}
-}
-
-func (rl *rateLimiter) AllowWrite(id string, rateLimit time.Duration) bool {
-	rl.mutex.Lock()
-	defer rl.mutex.Unlock()
-
-	currentTime := time.Now()
-
-	// Check if device exists in the in-memory store
-	if lastWrite, ok := rl.store[id]; ok {
-		if currentTime.Sub(lastWrite) < rateLimit {
-			return false // Rate limit exceeded
-		}
-	}
-
-	// Update lastWrite time and store in map
-	rl.lastWrite = currentTime
-	rl.store[id] = currentTime
-
-	return true
-}
 
 type AppStore interface {
 	StoreDevice(friendlyName string, device *devices.Device) error
@@ -77,7 +41,7 @@ type appStore struct {
 	devices          devices.Repository
 	config           *settings.AppConfigCache
 	deviceIdMapper   *repository.DeviceIdMapper
-	rateLimiter      *rateLimiter
+	rateLimiter      *ratelimiter.RateLimiter
 	isDirtyCallbacks []AppStoreDirtyFlagCallback
 }
 
@@ -88,7 +52,7 @@ func NewAppStore(devices devices.Repository, metrics metrics.Repository, config 
 		devices:          devices,
 		config:           config,
 		deviceIdMapper:   repository.NewDeviceIdMapper(devices),
-		rateLimiter:      NewRateLimiter(nil),
+		rateLimiter:      ratelimiter.NewRateLimiter(),
 		isDirtyCallbacks: []AppStoreDirtyFlagCallback{},
 	}
 

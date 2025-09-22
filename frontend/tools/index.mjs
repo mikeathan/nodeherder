@@ -85,6 +85,26 @@ var automationMap = new Map([
         },
         {
           name: 'presence',
+          conditions: [],
+          actions: [
+            {
+              id: '0x00158d0005a23c38',
+              exposes: [
+                {
+                  name: 'state',
+                  data: 'OFF',
+                },
+              ],
+              delay: {
+                value: 5,
+                unit: 'minutes',
+              },
+              type: 'trigger',
+            },
+          ],
+        },
+        {
+          name: 'presence',
           conditions: [
             {
               type: 'expose',

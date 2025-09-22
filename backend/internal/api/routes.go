@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"node-herder/internal/controllers"
 	"node-herder/internal/fs"
+	"node-herder/internal/ratelimiter"
 	"node-herder/internal/ws"
 	"node-herder/models/logging"
 	"node-herder/store"
@@ -328,25 +329,37 @@ func (h *HubStateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Automation Trigger
 type AutomationTriggerHandler struct {
-	hub *controllers.HubController
+	hub       *controllers.HubController
+	limiter   *ratelimiter.RateLimiter
+	rateLimit time.Duration
 }
 
-func NewAutomationTriggerHandler(hub *controllers.HubController) *AutomationTriggerHandler {
+func NewAutomationTriggerHandler(hub *controllers.HubController, rateLimit time.Duration) *AutomationTriggerHandler {
 	sh := &AutomationTriggerHandler{
-		hub: hub,
+		hub:       hub,
+		limiter:   ratelimiter.NewRateLimiter(),
+		rateLimit: rateLimit,
 	}
-
 	return sh
 }
 
 func (h *AutomationTriggerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	automationId := r.URL.Query().Get("automationId")
 	triggerName := r.URL.Query().Get("triggerName")
-	
+
 	if automationId == "" || triggerName == "" {
 		http.Error(w, "missing automationId or triggerName", http.StatusBadRequest)
 		return
 	}
 
-	h.hub.TriggerManual(automationId, triggerName)
+	if !h.limiter.AllowWrite(automationId, h.rateLimit) {
+		http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
+		return
+	}
+
+	err := h.hub.TriggerManual(automationId, triggerName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
