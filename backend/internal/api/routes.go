@@ -364,6 +364,15 @@ func (h *AutomationTriggerHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 
 	automationId := payload.AutomationId
 	triggerName := payload.TriggerName
+	if automationId == "" || triggerName == "" {
+		http.Error(w, "missing automationId or triggerName", http.StatusBadRequest)
+		return
+	}
+
+	if !h.limiter.AllowWrite(automationId, h.rateLimit) {
+		http.Error(w, "automation ", http.StatusBadRequest)
+		return
+	}
 
 	if !h.limiter.AllowWrite(automationId, h.rateLimit) {
 		http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
