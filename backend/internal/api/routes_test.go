@@ -563,8 +563,8 @@ func TestAutomationTriggerHandler_Cases(t *testing.T) {
 				req1.Header.Set("Content-Type", "application/json")
 				w1 := httptest.NewRecorder()
 				handler.ServeHTTP(w1, req1)
-				if w1.Code != http.StatusOK {
-					t.Errorf("setup call expected 200 OK, got %d", w1.Code)
+				if w1.Code != http.StatusTooManyRequests {
+					t.Errorf("setup call expected 429, got %d", w1.Code)
 				}
 			}
 
