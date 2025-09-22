@@ -507,46 +507,75 @@ func TestAutomationTriggerHandler_MissingParams(t *testing.T) {
 	}
 }
 
-
-func TestAutomationTriggerHandler_Success(t *testing.T) {
-	ws := &mocks.NopWsServer{}
-	mqtt := &mocks.MockMqttClient{}
-	store := utils_test.CreateStore()
-
-	hub := controllers.RegisterHubController(ws, store, mqtt)
-
-	handler := api.NewAutomationTriggerHandler((*controllers.HubController)(hub), 1*time.Second)
-	req := httptest.NewRequest("GET", "/automation/trigger?automationId=123&triggerName=test", nil)
-	w := httptest.NewRecorder()
-
-	handler.ServeHTTP(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected 200, got %d", w.Code)
+func TestAutomationTriggerHandler_Cases(t *testing.T) {
+	cases := []struct {
+		name         string
+		automationId string
+		triggerName  string
+		rateLimit    time.Duration
+		shouldSucceed    bool 
+	}{
+		{
+			name:         "success case",
+			automationId: "123",
+			triggerName:  "test",
+			rateLimit:    1 * time.Second,
+			shouldSucceed:    true,
+		},
+		{
+			name:         "missing automationId",
+			automationId: "",
+			triggerName:  "test",
+			rateLimit:    1 * time.Second,
+			shouldSucceed:    false,
+		},
+		{
+			name:         "missing triggerName",
+			automationId: "123",
+			triggerName:  "",
+			rateLimit:    1 * time.Second,
+			shouldSucceed:    false,
+		},
+		{
+			name:         "rate limit exceeded",
+			automationId: "123",
+			triggerName:  "test",
+			rateLimit:    1 * time.Hour, 
+			shouldSucceed:    false,
+		},
 	}
-}
 
-func TestAutomationTriggerHandler_RateLimited(t *testing.T) {
-	ws := &mocks.NopWsServer{}
-	mqtt := &mocks.MockMqttClient{}
-	store := utils_test.CreateStore()
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			callCount := 0
+			mock := mocks.NewMockAutomationTrigger(func(automationId, triggerName string) error {
+				callCount++
+				return nil
+			})
 
-	hub := controllers.RegisterHubController(ws, store, mqtt)
-	handler := api.NewAutomationTriggerHandler((*controllers.HubController)(hub), 1*time.Second)
+			handler := api.NewAutomationTriggerHandler(mock, c.rateLimit)
 
-	// First request should succeed
-	req1 := httptest.NewRequest("GET", "/automation/trigger?automationId=123&triggerName=test", nil)
-	w1 := httptest.NewRecorder()
-	handler.ServeHTTP(w1, req1)
-	if w1.Code != http.StatusOK {
-		t.Errorf("expected first request 200, got %d", w1.Code)
-	}
+			if c.name == "rate limit exceeded" {
+				req1 := httptest.NewRequest("GET", "/automation/trigger?automationId=123&triggerName=test", nil)
+				w1 := httptest.NewRecorder()
+				handler.ServeHTTP(w1, req1)
+				if w1.Code != http.StatusOK {
+					t.Errorf("setup call expected 200 OK, got %d", w1.Code)
+				}
+			}
 
-	// Second request immediately should be blocked
-	req2 := httptest.NewRequest("GET", "/automation/trigger?automationId=123&triggerName=test", nil)
-	w2 := httptest.NewRecorder()
-	handler.ServeHTTP(w2, req2)
-	if w2.Code != http.StatusTooManyRequests {
-		t.Errorf("expected second request 429, got %d", w2.Code)
+			url := "/automation/trigger?automationId=" + c.automationId + "&triggerName=" + c.triggerName
+			req := httptest.NewRequest("GET", url, nil)
+			w := httptest.NewRecorder()
+
+			handler.ServeHTTP(w, req)
+
+			if c.shouldSucceed && w.Code != http.StatusOK {
+				t.Errorf("expected 200 OK, got %d", w.Code)
+			}
+			if !c.shouldSucceed && w.Code == http.StatusOK {
+				t.Errorf("expected failure, got 200 OK")
+			}
+		})
 	}
 }

@@ -1069,3 +1069,16 @@ func (f MockFileLoader) Load(file string) ([]byte, error) {
 	}
 	return f.fileBuffer, nil
 }
+
+// Automation trigger handler
+type MockAutomationTrigger struct {
+	callback func(automationId string, triggerName string) error
+}
+
+func NewMockAutomationTrigger(callback func(automationId string, triggerName string) error) *MockAutomationTrigger {
+	return &MockAutomationTrigger{callback: callback}
+}
+
+func (m *MockAutomationTrigger) TriggerManual(automationId string, triggerName string) error {
+	return m.callback(automationId, triggerName)
+}

@@ -8,6 +8,7 @@ import (
 	"node-herder/internal/fs"
 	"node-herder/internal/ratelimiter"
 	"node-herder/internal/ws"
+	"node-herder/models/automations"
 	"node-herder/models/logging"
 	"node-herder/store"
 	"node-herder/utils"
@@ -329,12 +330,12 @@ func (h *HubStateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Automation Trigger
 type AutomationTriggerHandler struct {
-	hub       *controllers.HubController
+	hub       automations.AutomationTrigger
 	limiter   *ratelimiter.RateLimiter
 	rateLimit time.Duration
 }
 
-func NewAutomationTriggerHandler(hub *controllers.HubController, rateLimit time.Duration) *AutomationTriggerHandler {
+func NewAutomationTriggerHandler(hub automations.AutomationTrigger, rateLimit time.Duration) *AutomationTriggerHandler {
 	sh := &AutomationTriggerHandler{
 		hub:       hub,
 		limiter:   ratelimiter.NewRateLimiter(),
