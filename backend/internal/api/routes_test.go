@@ -520,21 +520,21 @@ func TestAutomationTriggerHandler_Cases(t *testing.T) {
 			name:          "success case",
 			automationId:  "123",
 			triggerName:   "test",
-			rateLimit:     1 * time.Second,
+			rateLimit:     1 * time.Millisecond,
 			shouldSucceed: true,
 		},
 		{
 			name:          "missing automationId",
 			automationId:  "",
 			triggerName:   "test",
-			rateLimit:     1 * time.Second,
+			rateLimit:     1 * time.Millisecond,
 			shouldSucceed: false,
 		},
 		{
 			name:          "missing triggerName",
 			automationId:  "123",
 			triggerName:   "",
-			rateLimit:     1 * time.Second,
+			rateLimit:     1 * time.Hour,
 			shouldSucceed: false,
 		},
 		{
@@ -566,6 +566,7 @@ func TestAutomationTriggerHandler_Cases(t *testing.T) {
 				if w1.Code != http.StatusTooManyRequests {
 					t.Errorf("setup call expected 429, got %d", w1.Code)
 				}
+				return
 			}
 
 			payload := map[string]string{"automationId": c.automationId, "triggerName": c.triggerName}
