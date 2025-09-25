@@ -35,14 +35,16 @@ type AutomationEngine struct {
 
 func NewEngine(handlerFactory []AutomationHandler, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *AutomationEngine {
 
+	serializer := NewAutomationSerialiser()
+	storage := storage.NewJsonDiskStorage(automationDir, nil, serializer.Unmarshal)
+
 	return &AutomationEngine{
 		mqttClient: mqtt,
 		registrar:  registrar,
-		storage: storage.NewJsonDiskStorage[Automation](automationDir, func() Automation {
-			return &automationSerialiser{}
-		}),
-		handlers: handlerFactory,
+		storage:    storage,
+		handlers:   handlerFactory,
 	}
+
 }
 
 func (a *AutomationEngine) WithStorage(storage storage.Storage[Automation]) {

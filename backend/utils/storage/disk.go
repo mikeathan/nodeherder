@@ -22,14 +22,16 @@ type JsonDiskStorage[T any] struct {
 	cache   map[string]T
 	mutex   sync.RWMutex
 	creator func() T
+	loader  func(data []byte) (T, error)
 }
 
-func NewJsonDiskStorage[T any](baseDir string, ctor func() T) Storage[T] {
+func NewJsonDiskStorage[T any](baseDir string, ctor func() T, loader func(data []byte) (T, error)) Storage[T] {
 	d := new(JsonDiskStorage[T])
 	d.rootDir = baseDir
 	d.cache = map[string]T{}
 	d.mutex = sync.RWMutex{}
 	d.creator = ctor
+	d.loader = loader
 
 	return d
 }
@@ -232,12 +234,14 @@ func (d *JsonDiskStorage[T]) loadFile(filePath string) (T, error) {
 	}
 	defer jsonFile.Close()
 
-	item := d.creator()
-	err = json.Unmarshal(data, &item)
-	if err != nil {
-		return zeroValue[T](), err
+	if d.loader != nil {
+		return d.loader(data) 
 	}
 
+	item := d.creator()
+	if err := json.Unmarshal(data, item); err != nil {
+		return zeroValue[T](), err
+	}
 	return item, nil
 }
 
