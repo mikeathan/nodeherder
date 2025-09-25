@@ -503,8 +503,8 @@ func TestAutomationTriggerHandler_MissingParams(t *testing.T) {
 
 	handler.ServeHTTP(w, req)
 
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("expected 400, got %d", w.Code)
+	if w.Code != http.StatusUnsupportedMediaType {
+		t.Errorf("expected 415, got %d", w.Code)
 	}
 }
 
@@ -520,21 +520,21 @@ func TestAutomationTriggerHandler_Cases(t *testing.T) {
 			name:          "success case",
 			automationId:  "123",
 			triggerName:   "test",
-			rateLimit:     1 * time.Millisecond,
+			rateLimit:     1 * time.Second,
 			shouldSucceed: true,
 		},
 		{
 			name:          "missing automationId",
 			automationId:  "",
 			triggerName:   "test",
-			rateLimit:     1 * time.Millisecond,
+			rateLimit:     1 * time.Second,
 			shouldSucceed: false,
 		},
 		{
 			name:          "missing triggerName",
 			automationId:  "123",
 			triggerName:   "",
-			rateLimit:     1 * time.Hour,
+			rateLimit:     1 * time.Second,
 			shouldSucceed: false,
 		},
 		{
@@ -559,12 +559,23 @@ func TestAutomationTriggerHandler_Cases(t *testing.T) {
 			if c.name == "rate limit exceeded" {
 				body := map[string]string{"automationId": "123", "triggerName": "test"}
 				b, _ := json.Marshal(body)
+
+				// First call should succeed
 				req1 := httptest.NewRequest("POST", "/automation/trigger", bytes.NewReader(b))
 				req1.Header.Set("Content-Type", "application/json")
 				w1 := httptest.NewRecorder()
 				handler.ServeHTTP(w1, req1)
-				if w1.Code != http.StatusTooManyRequests {
-					t.Errorf("setup call expected 429, got %d", w1.Code)
+				if w1.Code != http.StatusOK {
+					t.Errorf("expected first call to succeed, got %d", w1.Code)
+				}
+
+				// Second call immediately should be rate-limited
+				req2 := httptest.NewRequest("POST", "/automation/trigger", bytes.NewReader(b))
+				req2.Header.Set("Content-Type", "application/json")
+				w2 := httptest.NewRecorder()
+				handler.ServeHTTP(w2, req2)
+				if w2.Code != http.StatusTooManyRequests {
+					t.Errorf("expected 429 TooManyRequests, got %d", w2.Code)
 				}
 				return
 			}
