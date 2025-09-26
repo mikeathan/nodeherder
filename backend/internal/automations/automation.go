@@ -15,8 +15,7 @@ const (
 )
 
 var automationTypeRegistry = map[AutomationType]reflect.Type{
-	"device": reflect.TypeOf(Device{}),
-}
+	DeviceAutomationType: reflect.TypeOf(&Device{})}
 
 type TriggerEvent interface {
 	Type() string

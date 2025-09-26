@@ -48,7 +48,13 @@ func (s *Serializer[K, T]) Unmarshal(data []byte) (T, error) {
 		return zero, fmt.Errorf("unknown type: %v", k)
 	}
 
-	instance := reflect.New(concreteType).Interface().(T)
+	// Handle pointer vs value type
+	var instance T
+	if concreteType.Kind() == reflect.Ptr {
+		instance = reflect.New(concreteType.Elem()).Interface().(T)
+	} else {
+		instance = reflect.New(concreteType).Interface().(T)
+	}
 
 	if err := json.Unmarshal(data, instance); err != nil {
 		return zero, err
