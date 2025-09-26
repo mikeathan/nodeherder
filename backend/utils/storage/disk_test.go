@@ -28,7 +28,7 @@ func createDiskStorage() storage.Storage[testItem] {
 	ctr := func() testItem {
 		return ctr()
 	}
-	return storage.NewJsonDiskStorage[testItem]("temp", ctr)
+	return storage.NewJsonDiskStorage[testItem]("temp", ctr, nil)
 }
 
 func TestInitializeFromDisk(t *testing.T) {

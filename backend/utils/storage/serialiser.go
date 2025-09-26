@@ -33,11 +33,14 @@ func (s *Serializer[K, T]) Unmarshal(data []byte) (T, error) {
 	}
 
 	var k K
-	switch any(k).(type) {
-	case string:
-		k = any(key).(K)
-	default:
-		return zero, fmt.Errorf("unsupported key type %T", k)
+	kt := reflect.TypeOf(k)
+
+	// only allow string or string aliases
+	if kt.Kind() == reflect.String {
+		kv := reflect.ValueOf(key).Convert(kt)
+		k = kv.Interface().(K)
+	} else {
+		return zero, fmt.Errorf("unsupported key type %s", kt.Kind())
 	}
 
 	concreteType, ok := s.TypeRegistry[k]

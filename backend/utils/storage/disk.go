@@ -235,11 +235,11 @@ func (d *JsonDiskStorage[T]) loadFile(filePath string) (T, error) {
 	defer jsonFile.Close()
 
 	if d.loader != nil {
-		return d.loader(data) 
+		return d.loader(data)
 	}
 
 	item := d.creator()
-	if err := json.Unmarshal(data, item); err != nil {
+	if err := json.Unmarshal(data, &item); err != nil {
 		return zeroValue[T](), err
 	}
 	return item, nil
