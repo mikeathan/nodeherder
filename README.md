@@ -106,12 +106,3 @@ METRICS backend TODO
 - index entries = bolt.Bucket.CreateIndex
 
 Check for disabled items in bridge - see if we can add them if online
-
-Automations types
-device
-
-- devices
-  manual
-- webhooks
-- trigger_manual
-- future support for other webhooks
