@@ -555,9 +555,6 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 		d.handleDeviceAvailabilityChanged(p)
 	})
 
-	if any change happesn we endup here and we then attempt to trigger automation
-	need to think. 
-
 	events.WithOnDeviceMeasurementsUpdated(func(device *devices.Device, p map[string]interface{}) {
 		d.handleDeviceMeasurementsUpdated(device, p)
 	})

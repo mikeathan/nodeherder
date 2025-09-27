@@ -194,11 +194,19 @@ func (h *MockEventHub) OnLoadDashboardGroups(action func() (interface{}, error))
 // Mock MqttClient
 type MockMqttClient struct {
 	messageHandler func(string, []byte)
+	responses      map[string]interface{}
 }
 
 func (m *MockMqttClient) Connect() error {
 	fmt.Println("Mock Connect")
 	return nil
+}
+
+func (m *MockMqttClient) AddResponse(topic string, payload interface{}) {
+	if m.responses == nil {
+		m.responses = make(map[string]interface{})
+	}
+	m.responses[topic] = payload
 }
 
 func (m *MockMqttClient) WithMessageHandler(messageHandler func(client mqtt.Client, msg mqtt.Message)) {
@@ -257,6 +265,14 @@ func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 			return
 		}
 		m.messagePubHandler()(topic, bytes)
+
+		// Auto-response 
+		if resp, ok := m.responses[topic]; ok {
+			go func() {
+				time.Sleep(10 * time.Millisecond) 
+				m.Publish(topic, resp)            
+			}()
+		}
 	}
 
 }
