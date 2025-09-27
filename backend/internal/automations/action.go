@@ -220,7 +220,10 @@ func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
 
 	for key, value := range payload.Commands {
 		currValue := ctx.GetCurrent(key)
-		 check if bool and toggle - for testing
+		testing
+		if currValue.(bool) && value == "TOGGLE" {
+			value = !currValue.(bool)
+		}
 		ctx.SetPending(key, value)
 	}
 
