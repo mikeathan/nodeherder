@@ -6,5 +6,6 @@ type AutomationContext interface {
 	SetPayload(payload map[string]*devices.Entity)
 	GetPayload(name string) (*devices.Entity, bool)
 	GetCurrent(name string) any
+	SetPending(name string, value any)
 	SetCurrent(name string, value any)
 }

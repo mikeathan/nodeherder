@@ -213,6 +213,17 @@ func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
 		return err
 	}
 
+	// TODO:
+	// if payload is toggle get current value and toggle it
+	// then set the pending value map in context
+	// if more that one items in payload not sure what to do yet
+
+	for key, value := range payload.Commands {
+		currValue := ctx.GetCurrent(key)
+		 check if bool and toggle - for testing
+		ctx.SetPending(key, value)
+	}
+
 	if payload.PublishMode == PublishSingle {
 		for key, value := range payload.Commands {
 			single := map[string]any{key: value}

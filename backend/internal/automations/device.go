@@ -39,6 +39,7 @@ func (de *DeviceEvent) Type() string {
 type DeviceContext struct {
 	currentData map[string]any
 	payload     map[string]*devices.Entity
+	pendingData map[string]any
 	mu          sync.RWMutex
 }
 
@@ -46,6 +47,7 @@ func NewDeviceContext() *DeviceContext {
 	return &DeviceContext{
 		currentData: map[string]any{},
 		payload:     make(map[string]*devices.Entity),
+		pendingData: map[string]any{},
 	}
 }
 
@@ -53,6 +55,12 @@ func (d *DeviceContext) SetPayload(payload map[string]*devices.Entity) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.payload = payload
+}
+
+func (d *DeviceContext) SetPending(name string, value any) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.pendingData[name] = value
 }
 
 func (d *DeviceContext) GetPayload(name string) (*devices.Entity, bool) {

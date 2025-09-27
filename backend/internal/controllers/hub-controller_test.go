@@ -89,7 +89,6 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 	}
 }
 
-TO FIX
 func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 
 	ws := &mocks.NopWsServer{}
@@ -100,6 +99,9 @@ func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 
 	id := "Light attic"
 	name := "light device"
+
+	// create mqtt response for device with specified data
+	// to simulate loop feedback
 	mqtt.AddResponse(name, map[string]any{"state": true})
 
 	entity := utils_test.CreateEntity("state", bridge.BinaryDataType, false)
@@ -111,7 +113,7 @@ func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 	registrar.RegisterBridge(deviceBridgeList)
 	toggleLightTrigger := utils_test.CreateTriggerToggleLight(id, registrar, mqtt)
 
-	// create device trigger
+	// create device trigger automation without condition
 	lightAutomation := automations.NewDevice(id)
 	lightAutomation.Enabled = true
 	lightAutomation.Triggers = append(lightAutomation.Triggers, toggleLightTrigger)
