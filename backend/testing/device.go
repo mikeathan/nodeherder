@@ -2,6 +2,9 @@ package utils_test
 
 import (
 	"fmt"
+	"node-herder/internal/automations"
+	"node-herder/internal/mqtt"
+	"node-herder/internal/services"
 	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"time"
@@ -97,6 +100,50 @@ func CreateDoorSensorDevice(id string, name string, value bool) *devices.Device 
 
 	device1Expose1 := CreateEntity("contact", "binary", value)
 	return CreateDeviceWithExposes(id, name, []*devices.Entity{device1Expose1})
+}
+
+func CreateTriggerTurnOnLight(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *automations.DeviceTrigger {
+	// action = turn off light
+	turnOnAction := automations.NewTriggerAction()
+	turnOnAction.Id = id
+	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
+		{
+			Name: "presence",
+			Data: true,
+		},
+	}
+	turnOnAction.Delay = nil
+	turnOnAction.Configure(registrar, mqtt)
+
+	// Turn on sensor trigger
+	turnOnTrigger := automations.NewDeviceTrigger("presence")
+	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
+
+	// condition = presence = off
+
+	return turnOnTrigger
+}
+
+func CreateTriggerToggleLight(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *automations.DeviceTrigger {
+	// action = turn off light
+	turnOnAction := automations.NewTriggerAction()
+	turnOnAction.Id = id
+	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
+		{
+			Name: "presence",
+			Data: "TOGGLE",
+		},
+	}
+	turnOnAction.Delay = nil
+	turnOnAction.Configure(registrar, mqtt)
+
+	// Turn on sensor trigger
+	turnOnTrigger := automations.NewDeviceTrigger("presence")
+	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
+
+	// condition = presence = off
+
+	return turnOnTrigger
 }
 
 func CreateDialActionEnums() map[string]any {

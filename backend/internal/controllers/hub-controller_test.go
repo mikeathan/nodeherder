@@ -89,6 +89,47 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 	}
 }
 
+func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
+
+	ws := &mocks.NopWsServer{}
+	wg := &sync.WaitGroup{}
+	mqtt := &mocks.MockMqttClient{}
+
+	repo := repository.NewMemoryDeviceRepo()
+	store := utils_test.CreateStoreFromDeviceRepo(repo)
+	eventHub := &mocks.MockEventHub{}
+
+	id := "Light attic"
+
+	utils_test.CreateDeviceWithExposes(id, "light device", []*devices.Entity{device.Exposes["state"]})
+	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(deviceBridgeList)
+	toggleLightTrigger := utils_test.CreateTriggerToggleLight(id, registrar, mqtt)
+
+	// create device trigger
+	lightAutomation := automations.NewDevice(id)
+	lightAutomation.Triggers = append(lightAutomation.Triggers, toggleLightTrigger)
+
+	automationStorage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{lightAutomation})
+
+	mqtt.AddResponse("light attic", map[string]any{"state": true})
+
+	// // setup device
+	// lightDevice := utils_test.CreateAlarmDeviceWithDuration("light device", "light device", false, 1)
+
+	// // setup bridgeInfo List
+	// devices := []*devices.Device{lightDevice}
+	// deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
+
+	// // register hub
+	// store := utils_test.CreateStore()
+	hub := controllers.RegisterHubController(ws, store, mqtt)
+
+	hub.WithAutomationStorage(automationStorage)
+
+}
 func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
