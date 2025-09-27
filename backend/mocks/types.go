@@ -250,31 +250,46 @@ func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 
 	// handle setter mqtt messages. strip set and publish, it then gets handled as device update
 	topic = strings.Replace(topic, "/set", "", -1)
-	if payload == nil {
-		data := []byte("mock payload")
-		if p, ok := payload.([]byte); ok {
-			data = p
-		}
-		m.messagePubHandler()(topic, data)
-	} else if value, ok := payload.([]byte); ok {
-		m.messagePubHandler()(topic, value)
-	} else {
-		bytes, err := json.Marshal(payload)
+
+	var data []byte
+	switch v := payload.(type) {
+	case nil:
+		data = []byte("mock payload")
+	case []byte:
+		data = v
+	default:
+		b, err := json.Marshal(v)
 		if err != nil {
 			fmt.Println("Mock Publish error:", err.Error())
 			return
 		}
-		m.messagePubHandler()(topic, bytes)
-
-		// Auto-response 
-		if resp, ok := m.responses[topic]; ok {
-			go func() {
-				time.Sleep(10 * time.Millisecond) 
-				m.Publish(topic, resp)            
-			}()
-		}
+		data = b
 	}
 
+	// push original message
+	m.messagePubHandler()(topic, data)
+
+	// Auto-response
+	if resp, ok := m.responses[topic]; ok {
+		go func() {
+			time.Sleep(1 * time.Second)
+
+			var respBytes []byte
+			switch v := resp.(type) {
+			case []byte:
+				respBytes = v
+			default:
+				b, err := json.Marshal(v)
+				if err != nil {
+					fmt.Println("Mock Auto-response error:", err)
+					return
+				}
+				respBytes = b
+			}
+
+			m.messagePubHandler()(topic, respBytes)
+		}()
+	}
 }
 
 // Mock WsServer

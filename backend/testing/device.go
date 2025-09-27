@@ -130,7 +130,7 @@ func CreateTriggerToggleLight(id string, registrar services.DeviceRegistrar, mqt
 	turnOnAction.Id = id
 	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
 		{
-			Name: "presence",
+			Name: "state",
 			Data: "TOGGLE",
 		},
 	}
@@ -138,7 +138,7 @@ func CreateTriggerToggleLight(id string, registrar services.DeviceRegistrar, mqt
 	turnOnAction.Configure(registrar, mqtt)
 
 	// Turn on sensor trigger
-	turnOnTrigger := automations.NewDeviceTrigger("presence")
+	turnOnTrigger := automations.NewDeviceTrigger("state")
 	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
 
 	// condition = presence = off

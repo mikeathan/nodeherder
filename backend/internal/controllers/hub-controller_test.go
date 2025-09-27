@@ -89,45 +89,48 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 	}
 }
 
+TO FIX
 func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 
 	ws := &mocks.NopWsServer{}
-	wg := &sync.WaitGroup{}
+	//wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
 
-	repo := repository.NewMemoryDeviceRepo()
-	store := utils_test.CreateStoreFromDeviceRepo(repo)
 	eventHub := &mocks.MockEventHub{}
 
 	id := "Light attic"
+	name := "light device"
+	mqtt.AddResponse(name, map[string]any{"state": true})
 
-	utils_test.CreateDeviceWithExposes(id, "light device", []*devices.Entity{device.Exposes["state"]})
+	entity := utils_test.CreateEntity("state", bridge.BinaryDataType, false)
+	device := utils_test.CreateDeviceWithExposes(id, name, []*devices.Entity{entity})
 	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
 
+	store := utils_test.CreateStore()
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 	registrar.RegisterBridge(deviceBridgeList)
 	toggleLightTrigger := utils_test.CreateTriggerToggleLight(id, registrar, mqtt)
 
 	// create device trigger
 	lightAutomation := automations.NewDevice(id)
+	lightAutomation.Enabled = true
 	lightAutomation.Triggers = append(lightAutomation.Triggers, toggleLightTrigger)
 
 	automationStorage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{lightAutomation})
 
-	mqtt.AddResponse("light attic", map[string]any{"state": true})
-
-	// // setup device
-	// lightDevice := utils_test.CreateAlarmDeviceWithDuration("light device", "light device", false, 1)
-
-	// // setup bridgeInfo List
-	// devices := []*devices.Device{lightDevice}
-	// deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
-
-	// // register hub
-	// store := utils_test.CreateStore()
 	hub := controllers.RegisterHubController(ws, store, mqtt)
-
 	hub.WithAutomationStorage(automationStorage)
+
+	//  publish deviceBridgeList to configure hub with devices
+	mqtt.Publish("bridge/devices", deviceBridgeList)
+
+	time.Sleep(100 * time.Millisecond)
+
+	payload := map[string]any{"state": "TOGGLE"}
+
+	mqtt.Publish(name, payload)
+
+	time.Sleep(5 * time.Minute)
 
 }
 func TestProcessorTriggerScheduledAutomation(t *testing.T) {

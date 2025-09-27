@@ -154,6 +154,9 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 func (d *DeviceLifetimeService) attempToEmitMeasurementUpdate(payload map[string]interface{}) {
 
 	// collect measurement data only if below conditions are enabled
+	
+	// TODO: BUG!
+	// bug here if device is not from bridge then id will be auto geerated and wont find if automation is enabld
 	if !d.configCache.IsMetricsEnabled(d.device.Id) && !d.automationQueries.IsAutomationEnabled(d.device.Id) {
 		return
 	}
