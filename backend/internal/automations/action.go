@@ -253,20 +253,22 @@ func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
 	// ideally we need to do it if publish has succeeded
 
 	for key, value := range payload.Commands {
-		ctx.SetCurrent(key, value)
+		ctx.SetCurrentState(key, value)
 	}
 
 	// for key, value := range payload.Commands {
+
+	// 	// TODO: refactor
 	// 	if value == "TOGGLE" {
-	// 		currValue := ctx.GetCurrent(key)
+	// 		currValue := ctx.GetCurrentState(key)
 	// 		if currValue != nil {
 	// 			value = !currValue.(bool)
 	// 		} else {
 	// 			value = true
 	// 		}
 	// 	}
-	// 	ctx.SetPending(key, value)
-	// 	//ctx.SetCurrent(key, value) // we dont need that , it should be pending
+	// 	ctx.SetPendingState(key, value)
+	// 	//ctx.SetCurrentState(key, value)
 	// }
 	return nil
 }

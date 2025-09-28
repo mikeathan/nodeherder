@@ -66,8 +66,7 @@ type ExposeCondition struct {
 }
 
 func (e *ExposeCondition) HasValueChanged(name string, ctx AutomationContext) bool {
-
-	return ctx.GetCurrent(e.Name) != e.Value
+	return ctx.GetCurrentState(e.Name) != e.Value
 }
 
 func (e *ExposeCondition) Evaluate(ctx AutomationContext) bool {
@@ -124,7 +123,7 @@ func NewExposeHandler(cond *ExposeCondition) (*ExposeHandler, error) {
 }
 
 func (e *ExposeHandler) Evaluate(ctx AutomationContext) bool {
-	expose, ok := ctx.GetPayload(e.Name)
+	expose, ok := ctx.GetDevicePayload(e.Name)
 	if !ok {
 		utils.LogDebugf("sensor %s not found in payload", e.Name)
 		return false

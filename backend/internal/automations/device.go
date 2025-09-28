@@ -101,7 +101,7 @@ func (d *Device) Evaluate(event TriggerEvent) bool {
 	}
 
 	device := deviceEvent.Device()
-	d.ctx.SetPayload(device.Exposes)
+	d.ctx.SetDevicePayload(device.Exposes)
 
 	// NOTE: a trigger can have multiple conditions.
 	// e.g presence can have multiple conditions for on and off
@@ -124,7 +124,7 @@ func (d *Device) EvaluateTrigger(event TriggerEvent, triggerName string) bool {
 
 	// TODO: can pass the Device event directly
 	// payload is the current device expose
-	d.ctx.SetPayload(device.Exposes) // rename to set currentData
+	d.ctx.SetDevicePayload(device.Exposes) // rename to set currentData
 
 	for _, trigger := range d.Triggers {
 		if trigger.GetName() == triggerName {

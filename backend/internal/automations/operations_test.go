@@ -91,7 +91,7 @@ func TestOperationIncreaseValue(t *testing.T) {
 
 			// action_time property of button is not really used for calculation,
 			// is just a triggering device so we can publish the payload
-			ctx.SetPayload(map[string]*devices.Entity{
+			ctx.SetDevicePayload(map[string]*devices.Entity{
 				"action_time": dd["button"].Exposes["action_time"],
 			})
 
@@ -184,7 +184,7 @@ func TestOperationDecreaseValue(t *testing.T) {
 			// action_time property of button is not really used for calculation,
 			// is just a triggering device so we can publish the payload
 
-			ctx.SetPayload(map[string]*devices.Entity{
+			ctx.SetDevicePayload(map[string]*devices.Entity{
 				"action_time": dd["button"].Exposes["action_time"],
 			})
 
@@ -274,7 +274,7 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 		for _, t := range action_times {
 			// update both device and payload as they are used
 			dd["button"].Exposes["action_time"].Data = float64(t)
-			ctx.SetPayload(map[string]*devices.Entity{
+			ctx.SetDevicePayload(map[string]*devices.Entity{
 				"action_time": dd["button"].Exposes["action_time"],
 			})
 			action.Execute(ctx)
@@ -288,7 +288,7 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	// we are expecting to have reached the max value of the 'brightness' property
 	// so next payload event shoud not publish new mqqt message. if it does it should error in the handler
 	dd["button"].Exposes["action_time"].Data = float64(30)
-	ctx.SetPayload(map[string]*devices.Entity{
+	ctx.SetDevicePayload(map[string]*devices.Entity{
 		"action_time": dd["button"].Exposes["action_time"],
 	})
 	action.Execute(ctx)
@@ -367,7 +367,7 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 		for _, t := range action_times {
 			// update both device and payload as they are used
 			dd["button"].Exposes["action_time"].Data = float64(t)
-			ctx.SetPayload(map[string]*devices.Entity{
+			ctx.SetDevicePayload(map[string]*devices.Entity{
 				"action_time": dd["button"].Exposes["action_time"],
 			})
 			action.Execute(ctx)
@@ -381,7 +381,7 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 	// we are expecting to have reached the max value of the 'brightness' property
 	// so next payload event shoud not publish new mqqt message. if it does it should error in the handler
 	dd["button"].Exposes["action_time"].Data = float64(30)
-	ctx.SetPayload(map[string]*devices.Entity{
+	ctx.SetDevicePayload(map[string]*devices.Entity{
 		"action_time": dd["button"].Exposes["action_time"],
 	})
 

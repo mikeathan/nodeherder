@@ -134,18 +134,20 @@ func NewDeviceTrigger(name string) *DeviceTrigger {
 
 func (t *DeviceTrigger) Process(ctx AutomationContext) {
 
-	if len(t.Conditions) == 0 {
-		pendingData := ctx.GetPending(t.Name)
+	// if len(t.Conditions) == 0 {
+	// 	pendingData := ctx.GetPendingState(t.Name)
 
-		if entity, ok := ctx.GetPayload(t.Name); ok {
-			requestData := entity.Data
-			if requestData != pendingData {
-				fmt.Println(pendingData, requestData)
-			}
-		}
+	// 	if entity, ok := ctx.GetDevicePayload(t.Name); ok {
+	// 		requestData := entity.Data
+	// 		if requestData == pendingData {
+	// 			ctx.SetCurrentState(t.Name, requestData)
+	// 			ctx.SetPendingState(t.Name, nil) // clear
+	// 			return
+	// 		}
+	// 	}
 
-		//return
-	}
+	// 	//return
+	// }
 
 	for _, c := range t.Conditions {
 

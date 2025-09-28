@@ -93,7 +93,7 @@ func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 
 	ws := &mocks.NopWsServer{}
 	//wg := &sync.WaitGroup{}
-	mqtt := &mocks.MockMqttClient{}
+	mqtt := mocks.NewMockAdvanceMqttClient()
 
 	eventHub := &mocks.MockEventHub{}
 
@@ -102,9 +102,9 @@ func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 
 	// create mqtt response for device with specified data
 	// to simulate loop feedback
-	mqtt.AddResponse(name, map[string]any{"state": true})
+	mqtt.AddResponse(name, map[string]any{"state": "ON"})
 
-	entity := utils_test.CreateEntity("state", bridge.BinaryDataType, false)
+	entity := utils_test.CreateEntity("state", bridge.BinaryDataType, "OFF")
 	device := utils_test.CreateDeviceWithExposes(id, name, []*devices.Entity{entity})
 	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
 
@@ -129,8 +129,8 @@ func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	payload := map[string]any{"state": "TOGGLE"}
-
-	mqtt.Publish(name, payload)
+	action := fmt.Sprintf("%s/set", device.FriendlyName)
+	mqtt.Publish(action, payload)
 
 	time.Sleep(5 * time.Minute)
 
