@@ -67,8 +67,7 @@ type ExposeCondition struct {
 
 func (e *ExposeCondition) HasValueChanged(name string, ctx AutomationContext) bool {
 
-	we should use GetPayload here but need to use the ignore list 
-	return ctx.GetCurrent(name) != e.Value
+	return ctx.GetCurrent(e.Name) != e.Value
 }
 
 func (e *ExposeCondition) Evaluate(ctx AutomationContext) bool {

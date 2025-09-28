@@ -6,7 +6,6 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
 	"node-herder/models/devices"
-	"sync"
 )
 
 // examples
@@ -15,8 +14,6 @@ import (
 // presence = (false) && timer condition = turn off
 // presence = true = turn on
 // presence = false = turn off
-
-var contextIgnoreList = []string{"action"}
 
 type DeviceEvent struct {
 	TriggerEvent
@@ -33,84 +30,6 @@ func (de *DeviceEvent) Device() *devices.Device {
 
 func (de *DeviceEvent) Type() string {
 	return "device"
-}
-
-// Device Context
-type DeviceContext struct {
-	currentData map[string]any
-	payload     map[string]*devices.Entity
-	pendingData map[string]any
-	mu          sync.RWMutex
-}
-
-func NewDeviceContext() *DeviceContext {
-	return &DeviceContext{
-		currentData: map[string]any{},
-		payload:     make(map[string]*devices.Entity),
-		pendingData: map[string]any{},
-	}
-}
-
-func (d *DeviceContext) SetPayload(payload map[string]*devices.Entity) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	//d.payload = payload
-
-	// ??????
-	// TO TEST
-	!!
-	for _, expose := range payload {
-		for _, item := range contextIgnoreList {
-			if item == expose.Name {
-				continue
-			}
-		}
-		d.currentData[expose.Name] = expose.Data
-	}
-
-}
-
-// wIP
-func (d *DeviceContext) SetPending(name string, value any) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.pendingData[name] = value
-}
-
-func (d *DeviceContext) GetPending(name string) any {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	return d.pendingData[name]
-}
-
-// wIP
-
-func (d *DeviceContext) GetPayload(name string) (*devices.Entity, bool) {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-
-	value, exists := d.payload[name]
-	return value, exists
-}
-
-func (d *DeviceContext) GetCurrent(name string) any {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	return d.currentData[name]
-}
-
-func (d *DeviceContext) SetCurrent(name string, value any) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	// if trigger is in ignore list, we  want to trigger it again
-	for _, item := range contextIgnoreList {
-		if item == name {
-			return
-		}
-	}
-
-	d.currentData[name] = value
 }
 
 // Device Automation
