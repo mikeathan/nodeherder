@@ -137,7 +137,7 @@ func (t *DeviceTrigger) Process(ctx AutomationContext) {
 	// if len(t.Conditions) == 0 {
 	// 	pendingData := ctx.GetPendingState(t.Name)
 
-	// 	if entity, ok := ctx.GetDevicePayload(t.Name); ok {
+	// 	if entity, ok := ctx.GetDevicePayload(t.Name); ok && pendingData != nil {
 	// 		requestData := entity.Data
 	// 		if requestData == pendingData {
 	// 			ctx.SetCurrentState(t.Name, requestData)

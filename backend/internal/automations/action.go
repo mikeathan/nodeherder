@@ -256,12 +256,19 @@ func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
 		ctx.SetCurrentState(key, value)
 	}
 
+	Need to decide if we store binary as true/false or ON/OFF
+	keep in mind that each device is different
+	some have true/false some have ON/OFF
+	main reason is the toggle state 
+	so we need to have some resolver
 	// for key, value := range payload.Commands {
 
+	// 	// check that we store for binary true or ON
+	// 	// then check if we can
 	// 	// TODO: refactor
 	// 	if value == "TOGGLE" {
 	// 		currValue := ctx.GetCurrentState(key)
-	// 		if currValue != nil {
+	// 		if currValue != nil  {
 	// 			value = !currValue.(bool)
 	// 		} else {
 	// 			value = true
