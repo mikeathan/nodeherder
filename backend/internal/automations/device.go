@@ -57,6 +57,7 @@ func (d *DeviceContext) SetPayload(payload map[string]*devices.Entity) {
 	d.payload = payload
 }
 
+// wIP
 func (d *DeviceContext) SetPending(name string, value any) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -68,6 +69,8 @@ func (d *DeviceContext) GetPending(name string) any {
 	defer d.mu.RUnlock()
 	return d.pendingData[name]
 }
+// wIP
+
 
 func (d *DeviceContext) GetPayload(name string) (*devices.Entity, bool) {
 	d.mu.RLock()
@@ -189,7 +192,7 @@ func (d *Device) EvaluateTrigger(event TriggerEvent, triggerName string) bool {
 
 	// TODO: can pass the Device event directly
 	// payload is the current device expose
-	d.ctx.SetPayload(device.Exposes)
+	d.ctx.SetPayload(device.Exposes) // rename to set currentData 
 
 	for _, trigger := range d.Triggers {
 		if trigger.GetName() == triggerName {

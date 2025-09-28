@@ -251,6 +251,11 @@ func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
 
 	// on sucess update device context with new values to avoid querying the device again
 	// ideally we need to do it if publish has succeeded
+
+	for key, value := range payload.Commands {
+		ctx.SetCurrent(key, value)
+	}
+
 	// for key, value := range payload.Commands {
 	// 	if value == "TOGGLE" {
 	// 		currValue := ctx.GetCurrent(key)
