@@ -134,6 +134,19 @@ func NewDeviceTrigger(name string) *DeviceTrigger {
 
 func (t *DeviceTrigger) Process(ctx AutomationContext) {
 
+	if len(t.Conditions) == 0 {
+		pendingData := ctx.GetPending(t.Name)
+
+		if entity, ok := ctx.GetPayload(t.Name); ok {
+			requestData := entity.Data
+			if requestData != pendingData {
+				fmt.Println(pendingData, requestData)
+			}
+		}
+
+		//return
+	}
+
 	for _, c := range t.Conditions {
 
 		isMatched := c.Evaluate(ctx)
@@ -149,6 +162,15 @@ func (t *DeviceTrigger) Process(ctx AutomationContext) {
 			return
 		}
 	}
+	//currValue := ctx.GetCurrent(t.Name)
+
+	// if entity, ok := ctx.GetPayloadForEntity(t.Name); ok && entity.Data != nil && currValue != nil {
+	// 	value := entity.Data
+	// 	if currValue.(bool) && value == "TOGGLE" {
+	// 		value = !currValue.(bool)
+	// 	}
+	// 	ctx.SetPending(t.Name, value)
+	// }
 
 	for _, action := range t.Actions {
 		action.Execute(ctx)

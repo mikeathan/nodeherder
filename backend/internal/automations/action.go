@@ -218,14 +218,13 @@ func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
 	// then set the pending value map in context
 	// if more that one items in payload not sure what to do yet
 
-	for key, value := range payload.Commands {
-		currValue := ctx.GetCurrent(key)
-		testing
-		if currValue.(bool) && value == "TOGGLE" {
-			value = !currValue.(bool)
-		}
-		ctx.SetPending(key, value)
-	}
+	// for key, value := range payload.Commands {
+	// 	currValue := ctx.GetCurrent(key)
+	// 	if currValue.(bool) && value == "TOGGLE" {
+	// 		value = !currValue.(bool)
+	// 	}
+	// 	ctx.SetPending(key, value)
+	// }
 
 	if payload.PublishMode == PublishSingle {
 		for key, value := range payload.Commands {
@@ -252,9 +251,18 @@ func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
 
 	// on sucess update device context with new values to avoid querying the device again
 	// ideally we need to do it if publish has succeeded
-	for key, value := range payload.Commands {
-		ctx.SetCurrent(key, value)
-	}
+	// for key, value := range payload.Commands {
+	// 	if value == "TOGGLE" {
+	// 		currValue := ctx.GetCurrent(key)
+	// 		if currValue != nil {
+	// 			value = !currValue.(bool)
+	// 		} else {
+	// 			value = true
+	// 		}
+	// 	}
+	// 	ctx.SetPending(key, value)
+	// 	//ctx.SetCurrent(key, value) // we dont need that , it should be pending
+	// }
 	return nil
 }
 
