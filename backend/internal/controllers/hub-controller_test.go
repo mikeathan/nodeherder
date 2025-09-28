@@ -93,7 +93,7 @@ func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 
 	ws := &mocks.NopWsServer{}
 	//wg := &sync.WaitGroup{}
-	mqtt := mocks.NewMockAdvanceMqttClient()
+	mqtt := &mocks.MockMqttClient{}
 
 	eventHub := &mocks.MockEventHub{}
 
@@ -128,10 +128,7 @@ func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	payload := map[string]any{"state": "TOGGLE"}
-	action := fmt.Sprintf("%s/set", device.FriendlyName)
-	mqtt.Publish(action, payload)
-
+	hub.TriggerManual(id, "state")
 	time.Sleep(5 * time.Minute)
 
 }
