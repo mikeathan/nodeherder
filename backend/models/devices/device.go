@@ -1,6 +1,7 @@
 package devices
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"node-herder/models/bridge"
@@ -192,6 +193,7 @@ type Entity struct {
 	Description string                  `json:"description,omitempty"`
 	Unit        string                  `json:"unit,omitempty"`
 	Data        any                     `json:"data"`
+	data        any                     TEMP TESTING 
 	Type        bridge.ExposeDataType   `json:"type"`
 	Category    bridge.ExposeCategory   `json:"category,omitempty"`
 	Attributes  map[string]any          `json:"attributes,omitempty"`
@@ -206,6 +208,42 @@ func newEntity() *Entity {
 		Values:     make(map[string]any),
 	}
 }
+
+func (e *Entity) GetData() any {
+	return e.data
+}
+
+// Setter
+func (e *Entity) SetData(v any) {
+	e.data = v
+}
+
+// type EntityData struct {
+//     val any
+// }
+
+// func (d EntityData) Value() any {
+//     return d.val
+// }
+
+// func (d *EntityData) SetValue(v any) {
+//     d.val = v
+// }
+
+// // MarshalJSON makes sure EntityData serialises as the inner value
+// func (d EntityData) MarshalJSON() ([]byte, error) {
+//     return json.Marshal(d.val)
+// }
+
+// // UnmarshalJSON stores the raw JSON into val
+// func (d *EntityData) UnmarshalJSON(b []byte) error {
+//     var v any
+//     if err := json.Unmarshal(b, &v); err != nil {
+//         return err
+//     }
+//     d.val = v
+//     return nil
+// }
 
 func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 
@@ -287,6 +325,33 @@ func (e *Entity) Sanitize(raw any) any {
 		}
 	}
 	return raw
+}
+
+func (e Entity) MarshalJSON() ([]byte, error) {
+	type Alias Entity
+	return json.Marshal(&struct {
+		Data any `json:"data"`
+		*Alias
+	}{
+		Data:  e.data,
+		Alias: (*Alias)(&e),
+	})
+}
+
+// Custom unmarshal
+func (e *Entity) UnmarshalJSON(b []byte) error {
+	type Alias Entity
+	aux := &struct {
+		Data any `json:"data"`
+		*Alias
+	}{
+		Alias: (*Alias)(e),
+	}
+	if err := json.Unmarshal(b, &aux); err != nil {
+		return err
+	}
+	e.data = aux.Data
+	return nil
 }
 
 // Not used yet, is for handling non bridge devices which we havent tested yet
