@@ -245,9 +245,6 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 				newEntity.Values[preset.Name] = preset.Value
 			}
 		}
-		// else {
-		// 	newEntity.Values[expose.Name] = 0 // ????????? - i dont think i need this
-		// }
 
 	case bridge.BinaryDataType:
 
@@ -265,6 +262,31 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 	}
 
 	return newEntity, nil
+}
+
+func (e *Entity) Sanitize(raw any) any {
+
+	if raw == nil {
+		return nil
+	}
+
+	switch e.Type {
+	case bridge.BinaryDataType:
+		if b, ok := raw.(bool); ok {
+			return b
+		}
+
+		// check if matches ON/OFF from Values
+		if s, ok := raw.(string); ok {
+			if valOn, ok := e.Values["on"]; ok && s == valOn {
+				return true
+			}
+			if valOff, ok := e.Values["off"]; ok && s == valOff {
+				return false
+			}
+		}
+	}
+	return raw
 }
 
 // Not used yet, is for handling non bridge devices which we havent tested yet

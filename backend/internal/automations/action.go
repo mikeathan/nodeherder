@@ -213,19 +213,6 @@ func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
 		return err
 	}
 
-	// TODO:
-	// if payload is toggle get current value and toggle it
-	// then set the pending value map in context
-	// if more that one items in payload not sure what to do yet
-
-	// for key, value := range payload.Commands {
-	// 	currValue := ctx.GetCurrent(key)
-	// 	if currValue.(bool) && value == "TOGGLE" {
-	// 		value = !currValue.(bool)
-	// 	}
-	// 	ctx.SetPending(key, value)
-	// }
-
 	if payload.PublishMode == PublishSingle {
 		for key, value := range payload.Commands {
 			single := map[string]any{key: value}
@@ -256,11 +243,11 @@ func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
 		ctx.SetCurrentState(key, value)
 	}
 
-	Need to decide if we store binary as true/false or ON/OFF
-	keep in mind that each device is different
-	some have true/false some have ON/OFF
-	main reason is the toggle state 
-	so we need to have some resolver
+	// Need to decide if we store binary as true/false or ON/OFF
+	// keep in mind that each device is different
+	// some have true/false some have ON/OFF
+	// main reason is the toggle state 
+	// so we need to have some resolver
 	// for key, value := range payload.Commands {
 
 	// 	// check that we store for binary true or ON
