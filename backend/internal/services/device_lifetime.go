@@ -30,12 +30,12 @@ type DeviceLifetimeService struct {
 func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequestEvents, configCache *settings.DeviceConfigCache, automationQueries automations.AutomationQuerier, clock utils.Clock) *DeviceLifetimeService {
 
 	return &DeviceLifetimeService{
-		configCache:       configCache,
-		debouncerService:  settings.NewDeviceDebouncer(device.Id, configCache, clock),
-		device:            device,
-		events:            events,
-		stopped:           false,
-		automationQueries: automationQueries,
+		configCache:        configCache,
+		debouncerService:   settings.NewDeviceDebouncer(device.Id, configCache, clock),
+		device:             device,
+		events:             events,
+		stopped:            false,
+		automationQueries:  automationQueries,
 		availabilityCtx:    context.Background(),
 		availabilityCancel: func() {},
 	}
@@ -65,7 +65,7 @@ func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
 			continue
 		}
 
-		d.device.Exposes[name].Data = value
+		d.device.Exposes[name].Data.SetValue(value)
 	}
 
 	d.device.LastSeen = getLastSeen(payload)
@@ -141,7 +141,7 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 
 		// update device with expose changes
 		for expose, value := range updatePackage.Data {
-			d.device.Exposes[expose].Data = value
+			d.device.Exposes[expose].Data.SetValue(value)
 		}
 
 		d.attempToEmitMeasurementUpdate(updatePackage.Data)
@@ -154,7 +154,7 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 func (d *DeviceLifetimeService) attempToEmitMeasurementUpdate(payload map[string]interface{}) {
 
 	// collect measurement data only if below conditions are enabled
-	
+
 	// TODO: BUG!
 	// bug here if device is not from bridge then id will be auto geerated and wont find if automation is enabld
 	if !d.configCache.IsMetricsEnabled(d.device.Id) && !d.automationQueries.IsAutomationEnabled(d.device.Id) {
@@ -195,7 +195,7 @@ func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutInSecs int, o
 				s.availabilityTicker = nil
 				//s.device.SetAvailable(false)
 				utils.LogDebugf("device %s availability ticker cancelled", s.device.Id)
-		
+
 				return
 
 			case <-s.availabilityTicker.C:

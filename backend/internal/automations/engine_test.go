@@ -499,7 +499,7 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 	}
 
 	// trigger the automation
-	doorSensorDevice.Exposes["contact"].Data = true
+	doorSensorDevice.Exposes["contact"].Data.SetValue(true)
 	engine.HandleDevice(doorSensorDevice)
 	time.Sleep(50 * time.Millisecond)
 
@@ -518,7 +518,7 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 	wg.Wait()
 
 	// trigger the automation
-	doorSensorDevice.Exposes["contact"].Data = true
+	doorSensorDevice.Exposes["contact"].Data.SetValue(false)
 	engine.HandleDevice(doorSensorDevice)
 	time.Sleep(50 * time.Millisecond)
 

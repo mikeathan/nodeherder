@@ -25,7 +25,7 @@ func CreateEnumEntity(name string, enums map[string]any) *devices.Entity {
 	newEntity.Values = enums
 	newEntity.Category = bridge.MeasurementCategory
 
-	newEntity.Data = nil
+	newEntity.Data.SetValue(nil)
 	newEntity.Name = name
 	newEntity.Type = "enum"
 	newEntity.Unit = "unit_test"
@@ -41,7 +41,7 @@ func CreatePresetsEntity(name string, presets map[string]any) *devices.Entity {
 	newEntity.Category = bridge.MeasurementCategory
 
 	newEntity.Values = presets
-	newEntity.Data = nil
+	newEntity.Data.SetValue(nil)
 	newEntity.Name = name
 	newEntity.Type = "numeric"
 	newEntity.Unit = "unit_test"
@@ -57,7 +57,7 @@ func CreateNumericEntity(name string, data any) *devices.Entity {
 	newEntity.Category = bridge.MeasurementCategory
 
 	newEntity.Attributes = map[string]any{"max": 0.0, "min": 255.0}
-	newEntity.Data = data
+	newEntity.Data.SetValue(data)
 	newEntity.Name = name
 	newEntity.Type = "numeric"
 	newEntity.Unit = "unit_test"
@@ -73,7 +73,7 @@ func CreateEntity(name string, propType string, data any) *devices.Entity {
 	newEntity.Category = bridge.MeasurementCategory
 	newEntity.Attributes = map[string]any{"min": 0.0, "max": 255.0}
 	newEntity.Values = make(map[string]any)
-	newEntity.Data = data
+	newEntity.Data.SetValue(data)
 	newEntity.Name = name
 	newEntity.Type = propType
 	newEntity.Unit = "unit_test"
@@ -233,7 +233,7 @@ func createEntity(name string, description string, data any, unit string, attrib
 	newEntity := &devices.Entity{}
 	newEntity.Attributes = map[string]any{}
 	newEntity.Values = map[string]any{}
-	newEntity.Data = data
+	newEntity.Data.SetValue(data)
 	newEntity.Name = name
 	newEntity.Unit = unit
 	newEntity.Description = description

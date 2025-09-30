@@ -79,11 +79,11 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 
 		alarm, _ := store.FindDeviceById("x02222222")
-		if alarm.Exposes["alarm"].Data != expectedResult {
+		if alarm.Exposes["alarm"].Data.Value() != expectedResult {
 			t.Errorf("alarm should be %v when door sensor triggers", expectedResult)
 		}
-		if alarm.Exposes["duration"].Data != float64(2) {
-			t.Errorf("alarm duration should be 2 got %v", alarm.Exposes["duration"].Data)
+		if alarm.Exposes["duration"].Data.Value() != float64(2) {
+			t.Errorf("alarm duration should be 2 got %v", alarm.Exposes["duration"].Data.Value())
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
@@ -217,8 +217,8 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 		// alarm should be triggered only when schedule is due
 		alarm, _ := store.FindDeviceById("x02222222")
-		if alarm.Exposes["alarm"].Data != expectedResult {
-			t.Errorf("case %d: alarm should be %v when door sensor triggers. got %v", idx, expectedResult, alarm.Exposes["alarm"].Data)
+		if alarm.Exposes["alarm"].Data.Value() != expectedResult {
+			t.Errorf("case %d: alarm should be %v when door sensor triggers. got %v", idx, expectedResult, alarm.Exposes["alarm"].Data.Value())
 		}
 	}
 
@@ -286,7 +286,7 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 	wg.Add(numTriggers)
 	for i := 0; i < numTriggers; i++ {
 
-		prevValue, _ := light.Exposes["brightness"].Data.(float64)
+		prevValue := light.Exposes["brightness"].Data.Value().(float64)
 
 		action_time := 10 + (i * 2)
 		payload = map[string]any{"action": "dial_rotate_left_slow", "action_direction": "left", "action_time": action_time, "action_type": "step"}
@@ -296,7 +296,7 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 
 		// assert. calculate expected value
 		wantvalue := prevValue + (float64(action_time) * rotateStepAction.Data.(float64))
-		gotValue, _ := light.Exposes["brightness"].Data.(float64)
+		gotValue := light.Exposes["brightness"].Data.Value().(float64)
 
 		wantvalue = math.Min(wantvalue, max)
 
@@ -1895,8 +1895,8 @@ func TestHub_DeviceConfigDefaults_DisableDevices(t *testing.T) {
 	mqtt.Publish(dialDevice.FriendlyName, payload)
 	time.Sleep(100 * time.Millisecond)
 	d, _ := store.FindDeviceById("x01111111")
-	if d.Exposes["action"].Data != "button_2_hold" {
-		t.Errorf("expected dial device action to be button_2_hold, got %s", d.Exposes["action"].Data)
+	if d.Exposes["action"].Data.Value() != "button_2_hold" {
+		t.Errorf("expected dial device action to be button_2_hold, got %s", d.Exposes["action"].Data.Value())
 	}
 
 	appCache := store.AppConfig()
@@ -1911,8 +1911,8 @@ func TestHub_DeviceConfigDefaults_DisableDevices(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	d, _ = store.FindDeviceById("x01111111")
-	if d.Exposes["action"].Data == "button_1_hold" {
-		t.Errorf("expected dial device action to be disabled, got %s", d.Exposes["action"].Data)
+	if d.Exposes["action"].Data.Value() == "button_1_hold" {
+		t.Errorf("expected dial device action to be disabled, got %s", d.Exposes["action"].Data.Value())
 	}
 }
 

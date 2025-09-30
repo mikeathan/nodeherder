@@ -1613,13 +1613,13 @@ func createDevice1() *devices.Device {
 	ent1.Description = "temperature readings"
 	ent1.Name = "temperature"
 	ent1.Unit = "*c"
-	ent1.Data = 50.0
+	ent1.Data.SetValue(50.0)
 
 	ent2 := &devices.Entity{}
 	ent2.Description = "humidity readings"
 	ent2.Name = "humidity"
 	ent2.Unit = "%"
-	ent2.Data = 64.1
+	ent2.Data.SetValue(64.1)
 	device1.Exposes["1"] = ent1
 	device1.Exposes["2"] = ent2
 
@@ -1639,7 +1639,7 @@ func createDevice2() *devices.Device {
 	ent1 := &devices.Entity{}
 	ent1.Description = "smart light livining room"
 	ent1.Name = "brightness"
-	ent1.Data = 78.0
+	ent1.Data.SetValue(78.0)
 	ent1.Category = bridge.MeasurementCategory
 	ent1.Attributes = make(map[string]any)
 	ent1.Type = bridge.NumericDataType

@@ -78,14 +78,14 @@ func TestDeviceProcessor_CreateOrUpdateDevice_NewDevice(t *testing.T) {
 	if d.PowerSource != "battery" {
 		t.Errorf("Device PowerSource mismatch want: %s got: %s", "battery", d.PowerSource)
 	}
-	if d.Exposes["brightness"].Data != 120.1 {
-		t.Errorf("Device Expose brightness mismatch want: %f got: %f", 120.1, d.Exposes["brightness"].Data)
+	if d.Exposes["brightness"].Data.Value() != 120.1 {
+		t.Errorf("Device Expose brightness mismatch want: %f got: %f", 120.1, d.Exposes["brightness"].Data.Value())
 	}
-	if d.Exposes["color_temp"].Data != 100.1 {
-		t.Errorf("Device Expose color_temp mismatch want: %f got: %f", 100.1, d.Exposes["color_temp"].Data)
+	if d.Exposes["color_temp"].Data.Value() != 100.1 {
+		t.Errorf("Device Expose color_temp mismatch want: %f got: %f", 100.1, d.Exposes["color_temp"].Data.Value())
 	}
-	if d.Exposes["state"].Data != "on" {
-		t.Errorf("Device Expose state mismatch want: %s got: %s", "on", d.Exposes["state"].Data)
+	if d.Exposes["state"].Data.Value() != "on" {
+		t.Errorf("Device Expose state mismatch want: %s got: %s", "on", d.Exposes["state"].Data.Value())
 	}
 }
 
@@ -171,14 +171,14 @@ func TestDeviceProcessor_CreateOrUpdateDevice_ExistingDevice(t *testing.T) {
 	if d.PowerSource != "mains (single phase)" {
 		t.Errorf("Device PowerSource mismatch want: %s got: %s", "mains (single phase)", d.PowerSource)
 	}
-	if d.Exposes["brightness"].Data != 10.1 {
-		t.Errorf("Device Expose brightness mismatch want: %f got: %f", 10.1, d.Exposes["brightness"].Data)
+	if d.Exposes["brightness"].Data.Value() != 10.1 {
+		t.Errorf("Device Expose brightness mismatch want: %f got: %f", 10.1, d.Exposes["brightness"].Data.Value())
 	}
-	if d.Exposes["color_temp"].Data != 120.1 {
-		t.Errorf("Device Expose color_temp mismatch want: %f got: %f", 120.1, d.Exposes["color_temp"].Data)
+	if d.Exposes["color_temp"].Data.Value() != 120.1 {
+		t.Errorf("Device Expose color_temp mismatch want: %f got: %f", 120.1, d.Exposes["color_temp"].Data.Value())
 	}
-	if d.Exposes["state"].Data != "false" {
-		t.Errorf("Device Expose state mismatch want: %s got: %s", "false", d.Exposes["state"].Data)
+	if d.Exposes["state"].Data.Value() != "false" {
+		t.Errorf("Device Expose state mismatch want: %s got: %s", "false", d.Exposes["state"].Data.Value())
 	}
 }
 

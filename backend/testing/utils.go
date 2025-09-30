@@ -355,7 +355,7 @@ func CreateDevice(deviceId string, friendlyName string, property string, data an
 	ent1.Description = fmt.Sprintf("%s readings", property)
 	ent1.Name = property
 	ent1.Unit = "test"
-	ent1.Data = data
+	ent1.Data.SetValue(data)
 	ent1.Type = "numeric"
 
 	device1.Exposes[property] = ent1
@@ -393,7 +393,7 @@ func CreateBridgeInfoList(deviceList []*devices.Device) []*devices.BridgeInfo {
 			f.ValueMax = expose.Attributes["max"]
 
 			if f.Type == "binary" {
-				if _, ok := expose.Data.(bool); ok {
+				if _, ok := expose.Data.Value().(bool); ok {
 					f.ValueOn = true
 					f.ValueOff = false
 				}
@@ -413,7 +413,7 @@ func CreateBridgeInfoList(deviceList []*devices.Device) []*devices.BridgeInfo {
 func Payload(device *devices.Device) map[string]any {
 	payload := map[string]any{}
 	for k, v := range device.Exposes {
-		payload[k] = v.Data
+		payload[k] = v.Data.Value()
 	}
 	return payload
 }

@@ -188,12 +188,42 @@ func (u *UpdatePackage) HasData() bool {
 	return len(u.Data) != 0
 }
 
+func NewEntityData(val any) *EntityData {
+	return &EntityData{val: val}
+}
+
+type EntityData struct {
+	val any
+}
+
+func (d EntityData) Value() any {
+	return d.val
+}
+
+func (d *EntityData) SetValue(v any) {
+	d.val = v
+}
+
+// MarshalJSON makes sure EntityData serialises as the inner value
+func (d EntityData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.val)
+}
+
+// UnmarshalJSON stores the raw JSON into val
+func (d *EntityData) UnmarshalJSON(b []byte) error {
+	var v any
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	d.val = v
+	return nil
+}
+
 type Entity struct {
 	Name        string                  `json:"name"`
 	Description string                  `json:"description,omitempty"`
 	Unit        string                  `json:"unit,omitempty"`
-	Data        any                     `json:"data"`
-	data        any                     TEMP TESTING 
+	Data        *EntityData             `json:"data"`
 	Type        bridge.ExposeDataType   `json:"type"`
 	Category    bridge.ExposeCategory   `json:"category,omitempty"`
 	Attributes  map[string]any          `json:"attributes,omitempty"`
@@ -210,40 +240,13 @@ func newEntity() *Entity {
 }
 
 func (e *Entity) GetData() any {
-	return e.data
+	return e.Data.Value()
 }
 
 // Setter
 func (e *Entity) SetData(v any) {
-	e.data = v
+	e.Data.SetValue(v)
 }
-
-// type EntityData struct {
-//     val any
-// }
-
-// func (d EntityData) Value() any {
-//     return d.val
-// }
-
-// func (d *EntityData) SetValue(v any) {
-//     d.val = v
-// }
-
-// // MarshalJSON makes sure EntityData serialises as the inner value
-// func (d EntityData) MarshalJSON() ([]byte, error) {
-//     return json.Marshal(d.val)
-// }
-
-// // UnmarshalJSON stores the raw JSON into val
-// func (d *EntityData) UnmarshalJSON(b []byte) error {
-//     var v any
-//     if err := json.Unmarshal(b, &v); err != nil {
-//         return err
-//     }
-//     d.val = v
-//     return nil
-// }
 
 func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 
@@ -266,7 +269,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 	newEntity.AccessMode = accessMode
 	newEntity.Description = expose.Description
 	newEntity.Unit = expose.Unit
-	newEntity.Data = data
+	newEntity.Data.SetValue(data)
 	newEntity.Type = expose.Type
 
 	switch expose.Type {
@@ -327,32 +330,32 @@ func (e *Entity) Sanitize(raw any) any {
 	return raw
 }
 
-func (e Entity) MarshalJSON() ([]byte, error) {
-	type Alias Entity
-	return json.Marshal(&struct {
-		Data any `json:"data"`
-		*Alias
-	}{
-		Data:  e.data,
-		Alias: (*Alias)(&e),
-	})
-}
+// func (e Entity) MarshalJSON() ([]byte, error) {
+// 	type Alias Entity
+// 	return json.Marshal(&struct {
+// 		Data any `json:"data"`
+// 		*Alias
+// 	}{
+// 		Data:  e.data,
+// 		Alias: (*Alias)(&e),
+// 	})
+// }
 
-// Custom unmarshal
-func (e *Entity) UnmarshalJSON(b []byte) error {
-	type Alias Entity
-	aux := &struct {
-		Data any `json:"data"`
-		*Alias
-	}{
-		Alias: (*Alias)(e),
-	}
-	if err := json.Unmarshal(b, &aux); err != nil {
-		return err
-	}
-	e.data = aux.Data
-	return nil
-}
+// // Custom unmarshal
+// func (e *Entity) UnmarshalJSON(b []byte) error {
+// 	type Alias Entity
+// 	aux := &struct {
+// 		Data any `json:"data"`
+// 		*Alias
+// 	}{
+// 		Alias: (*Alias)(e),
+// 	}
+// 	if err := json.Unmarshal(b, &aux); err != nil {
+// 		return err
+// 	}
+// 	e.data = aux.Data
+// 	return nil
+// }
 
 // Not used yet, is for handling non bridge devices which we havent tested yet
 func createExpose(data map[string]interface{}) map[string]*Entity {
@@ -366,7 +369,7 @@ func createExpose(data map[string]interface{}) map[string]*Entity {
 		newEntity.Category = bridge.MeasurementCategory
 		newEntity.Name = key
 		newEntity.AccessMode = bridge.ReadAccessMode
-		newEntity.Data = value
+		newEntity.Data.SetValue(value)
 		newEntity.Unit = units[key]
 		newEntity.Type = bridge.NumericDataType // TODO: make this dynamic
 		entities[key] = newEntity

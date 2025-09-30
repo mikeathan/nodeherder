@@ -144,7 +144,7 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	for i, timestamp := range timestamps {
 		for id, wd := range wantDevices {
 			for _, we := range wd.Exposes {
-				we.Data = float32((i + 1) + id*2)
+				we.Data.SetValue(float32((i + 1) + id*2))
 			}
 
 			payload := utils_test.Payload(wd)
@@ -256,7 +256,7 @@ func TestStoreDeviceStoreDoesNotStoreMetricsIfDisabled(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		for id, wd := range wantDevices {
 			for _, we := range wd.Exposes {
-				we.Data = (i + 1) + id*2
+				we.Data.SetValue(float32((i + 1) + id*2))
 			}
 
 			payload := utils_test.Payload(wd)
@@ -322,7 +322,7 @@ func TestStoreDeviceUpdateStoresMetricsIfEnabled(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		for id, wd := range wantDevices {
 			for _, we := range wd.Exposes {
-				we.Data = (i + 1) + id*2
+				we.Data.SetValue(float32((i + 1) + id*2))
 			}
 
 			payload := utils_test.Payload(wd)
@@ -398,7 +398,7 @@ func TestStoreMetricsLimitsDataWithDefaultRateLimiter(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		for id, wd := range wantDevices {
 			for _, we := range wd.Exposes {
-				we.Data = (i + 1) + id*2
+				we.Data.SetValue(float32((i + 1) + id*2))
 			}
 
 			payload := utils_test.Payload(wd)
@@ -475,7 +475,7 @@ func TestStoreMetricsLimitsDataWithConfiguredRateLimiter(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		for id, wd := range wantDevices {
 			for _, we := range wd.Exposes {
-				we.Data = (i + 1) + id*2
+				we.Data.SetValue(float32((i + 1) + id*2))
 			}
 
 			payload := utils_test.Payload(wd)
@@ -560,7 +560,7 @@ func TestStoreMetricsLimitsDataWithMultipleDevicesConfiguredRateLimiter(t *testi
 	for i := 0; i < 10; i++ {
 		for id, wd := range wantDevices {
 			for _, we := range wd.Exposes {
-				we.Data = (i + 1) + id*2
+				we.Data.SetValue(float32((i + 1) + id*2))
 			}
 
 			payload := utils_test.Payload(wd)
@@ -605,7 +605,7 @@ func TestStoreUpdateDevice(t *testing.T) {
 		wd.ConnectionType = "test connection type"
 		wd.PowerSource = "test power source"
 		for _, we := range wd.Exposes {
-			we.Data = id * 2
+			we.Data.SetValue(id * 2)
 		}
 
 		err := store.StoreDevice(wd.FriendlyName, wd)

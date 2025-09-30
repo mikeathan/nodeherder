@@ -47,9 +47,8 @@ func CreateRotateOperation(expose *devices.Entity) actionOperation {
 }
 
 type actionPayload struct {
-	Commands      map[string]any
-	PublishMode   PublishMode
-	
+	Commands    map[string]any
+	PublishMode PublishMode
 }
 
 type actionOperation interface {
@@ -57,8 +56,8 @@ type actionOperation interface {
 }
 
 type triggerOperation struct {
-	data          map[string]any
-	publishMode   PublishMode
+	data        map[string]any
+	publishMode PublishMode
 }
 
 func newTriggerOperation(data map[string]any, publishMode PublishMode) actionOperation {
@@ -120,10 +119,10 @@ func (r *stepOperation) CreatePayload() (actionPayload, error) {
 	result := r.action.Data.(float64) // coefficient
 	for i := len(r.action.Steps) - 1; i >= 0; i-- {
 		step := r.action.Steps[i]
-		if value, err := r.action.registrar.RetrieveEntityData(step.Id, step.Property); err == nil {
+		if entityData, err := r.action.registrar.RetrieveEntityData(step.Id, step.Property); err == nil {
 			r.propertyMap[step.Property] = 0
 
-			if stepValue, ok := value.(float64); ok {
+			if stepValue, ok := entityData.Value().(float64); ok {
 				result = numericOperations[step.Operator](stepValue, result, r.limits[step.Operator])
 
 				// Cache value for equality check.  temp needs refactoring
