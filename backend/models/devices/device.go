@@ -204,12 +204,10 @@ func (d *EntityData) SetValue(v any) {
 	d.val = v
 }
 
-// MarshalJSON makes sure EntityData serialises as the inner value
 func (d EntityData) MarshalJSON() ([]byte, error) {
 	return json.Marshal(d.val)
 }
 
-// UnmarshalJSON stores the raw JSON into val
 func (d *EntityData) UnmarshalJSON(b []byte) error {
 	var v any
 	if err := json.Unmarshal(b, &v); err != nil {
@@ -231,11 +229,12 @@ type Entity struct {
 	Values      map[string]any          `json:"values,omitempty"`
 }
 
-func newEntity() *Entity {
+func NewEntity() *Entity {
 	return &Entity{
 		Attributes: make(map[string]any),
 		AccessMode: bridge.UnknownAccessMode,
 		Values:     make(map[string]any),
+		Data:       NewEntityData(nil),
 	}
 }
 
@@ -263,7 +262,7 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 		return nil, fmt.Errorf("invalid device feature access mode %v", expose.Access)
 	}
 
-	newEntity := newEntity()
+	newEntity := NewEntity()
 	newEntity.Category = getExposeCategory(expose)
 	newEntity.Name = expose.Property
 	newEntity.AccessMode = accessMode
@@ -365,7 +364,7 @@ func createExpose(data map[string]interface{}) map[string]*Entity {
 			continue
 		}
 
-		newEntity := newEntity()
+		newEntity := NewEntity()
 		newEntity.Category = bridge.MeasurementCategory
 		newEntity.Name = key
 		newEntity.AccessMode = bridge.ReadAccessMode

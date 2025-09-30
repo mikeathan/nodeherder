@@ -113,7 +113,7 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 			continue
 		}
 
-		if utils.ComparePayloadValues(expose.Data, newValue) {
+		if utils.ComparePayloadValues(expose.Data.Value(), newValue) {
 			continue
 		}
 
