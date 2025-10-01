@@ -141,7 +141,7 @@ func (t *DeviceTrigger) Process(ctx AutomationContext) {
 		if entity, ok := ctx.GetDevicePayload(t.Name); ok && pendingData != nil {
 			// Get the actual incoming value from the entity
 			incomingValue := entity.Data.Value()
-			
+
 			// Check if incoming value matches what we're expecting (pending)
 			if t.valuesMatch(incomingValue, pendingData) {
 				utils.LogDebugf("Feedback loop detected for trigger %s: incoming=%v matches pending=%v, skipping", t.Name, incomingValue, pendingData)

@@ -243,7 +243,7 @@ func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
 		// Set pending state for feedback loop prevention
 		resolvedValue := b.resolveValue(key, value, ctx)
 		ctx.SetPendingState(key, resolvedValue)
-		
+
 		// Also update current state
 		ctx.SetCurrentState(key, resolvedValue)
 	}
@@ -257,14 +257,14 @@ func (b *MqttBaseAction) resolveValue(key string, value any, ctx AutomationConte
 	if valueStr, ok := value.(string); ok && valueStr == "TOGGLE" {
 		// Get current state to determine what TOGGLE should become
 		currentState := ctx.GetCurrentState(key)
-		
+
 		// For binary states, toggle the boolean value
 		if key == "state" {
 			currentBool := b.toBool(currentState)
-			return !currentBool  // Return the toggled boolean value
+			return !currentBool // Return the toggled boolean value
 		}
 	}
-	
+
 	return value
 }
 
