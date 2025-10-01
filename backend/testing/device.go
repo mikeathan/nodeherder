@@ -21,12 +21,11 @@ func CreateExposuresFromMap(data map[string]interface{}) map[string]*devices.Ent
 }
 func CreateEnumEntity(name string, enums map[string]any) *devices.Entity {
 
-	newEntity := devices.NewEntity()
+	newEntity := devices.NewEntity(name)
 	newEntity.Values = enums
 	newEntity.Category = bridge.MeasurementCategory
 
 	newEntity.Data.SetValue(nil)
-	newEntity.Name = name
 	newEntity.Type = "enum"
 	newEntity.Unit = "unit_test"
 	newEntity.Category = bridge.MeasurementCategory
@@ -37,12 +36,11 @@ func CreateEnumEntity(name string, enums map[string]any) *devices.Entity {
 }
 func CreatePresetsEntity(name string, presets map[string]any) *devices.Entity {
 
-	newEntity := devices.NewEntity()
+	newEntity := devices.NewEntity(name)
 	newEntity.Category = bridge.MeasurementCategory
 
 	newEntity.Values = presets
 	newEntity.Data.SetValue(nil)
-	newEntity.Name = name
 	newEntity.Type = "numeric"
 	newEntity.Unit = "unit_test"
 	newEntity.Description = fmt.Sprintf("description for expose: %s ", name)
@@ -53,12 +51,11 @@ func CreatePresetsEntity(name string, presets map[string]any) *devices.Entity {
 
 func CreateNumericEntity(name string, data any) *devices.Entity {
 
-	newEntity := devices.NewEntity()
+	newEntity := devices.NewEntity(name)
 	newEntity.Category = bridge.MeasurementCategory
 
 	newEntity.Attributes = map[string]any{"max": 0.0, "min": 255.0}
 	newEntity.Data.SetValue(data)
-	newEntity.Name = name
 	newEntity.Type = "numeric"
 	newEntity.Unit = "unit_test"
 	newEntity.Description = fmt.Sprintf("description for expose: %s ", name)
@@ -69,12 +66,11 @@ func CreateNumericEntity(name string, data any) *devices.Entity {
 
 func CreateEntity(name string, propType string, data any) *devices.Entity {
 
-	newEntity := devices.NewEntity()
+	newEntity := devices.NewEntity(name)
 	newEntity.Category = bridge.MeasurementCategory
 	newEntity.Attributes = map[string]any{"min": 0.0, "max": 255.0}
 	newEntity.Values = make(map[string]any)
 	newEntity.Data.SetValue(data)
-	newEntity.Name = name
 	newEntity.Type = propType
 	newEntity.Unit = "unit_test"
 	newEntity.Description = fmt.Sprintf("description for expose: %s ", name)
@@ -230,11 +226,10 @@ func createEntity(name string, description string, data any, unit string, attrib
 		attributes = make(map[string]any)
 	}
 
-	newEntity := devices.NewEntity()
+	newEntity := devices.NewEntity(name)
 	newEntity.Attributes = map[string]any{}
 	newEntity.Values = map[string]any{}
 	newEntity.Data.SetValue(data)
-	newEntity.Name = name
 	newEntity.Unit = unit
 	newEntity.Description = description
 	newEntity.Attributes = attributes

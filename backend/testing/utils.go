@@ -351,9 +351,8 @@ func CreateDevice(deviceId string, friendlyName string, property string, data an
 	device1.LastSeen = time.Now().Format(time.RFC3339)
 	device1.Exposes = make(map[string]*devices.Entity)
 
-	ent1 := devices.NewEntity()
+	ent1 := devices.NewEntity(property)
 	ent1.Description = fmt.Sprintf("%s readings", property)
-	ent1.Name = property
 	ent1.Unit = "test"
 	ent1.Data.SetValue(data)
 	ent1.Type = "numeric"

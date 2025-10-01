@@ -11,8 +11,8 @@ type AutomationContext interface {
 	GetDevicePayload(name string) (*devices.Entity, bool)
 
 	// stores automation state across all devices, if included.
-	SetCurrentState(name string, value any)
-	GetCurrentState(name string) any
+	SetCurrentState(name string, data *devices.EntityData)
+	GetCurrentState(name string) *devices.EntityData
 
 	// stores pending state
 	SetPendingState(name string, value any)
@@ -23,7 +23,7 @@ var ContextIgnoreList = []string{"action"}
 
 // Device Context
 type DeviceContext struct {
-	currentData map[string]any
+	currentData map[string]*devices.EntityData
 	payload     map[string]*devices.Entity
 	pendingData map[string]any
 	mu          sync.RWMutex
@@ -31,7 +31,7 @@ type DeviceContext struct {
 
 func NewDeviceContext() *DeviceContext {
 	return &DeviceContext{
-		currentData: map[string]any{},
+		currentData: map[string]*devices.EntityData{},
 		payload:     make(map[string]*devices.Entity),
 		pendingData: map[string]any{},
 	}
@@ -66,13 +66,13 @@ func (d *DeviceContext) GetDevicePayload(name string) (*devices.Entity, bool) {
 	return value, exists
 }
 
-func (d *DeviceContext) GetCurrentState(name string) any {
+func (d *DeviceContext) GetCurrentState(name string) *devices.EntityData {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	return d.currentData[name]
 }
 
-func (d *DeviceContext) SetCurrentState(name string, value any) {
+func (d *DeviceContext) SetCurrentState(name string, data *devices.EntityData) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
@@ -83,5 +83,5 @@ func (d *DeviceContext) SetCurrentState(name string, value any) {
 		}
 	}
 
-	d.currentData[name] = value
+	d.currentData[name] = data
 }

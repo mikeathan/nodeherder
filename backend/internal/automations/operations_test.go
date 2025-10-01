@@ -457,11 +457,11 @@ func createMockDevice(id string, name string, property string, data any, min flo
 	device1.LastSeen = time.Now().Format(time.RFC3339)
 	device1.Exposes = make(map[string]*devices.Entity)
 
-	ent1 := &devices.Entity{}
+	ent1 := devices.NewEntity(property)
+
 	ent1.Description = fmt.Sprintf("%s readings", property)
-	ent1.Name = property
 	ent1.Unit = "test"
-	ent1.Data = devices.NewEntityData(data)
+	ent1.Data.SetValue(data)
 
 	device1.Exposes[property] = ent1
 	device1.Exposes[property].Attributes = make(map[string]any)

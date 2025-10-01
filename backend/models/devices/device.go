@@ -188,24 +188,57 @@ func (u *UpdatePackage) HasData() bool {
 	return len(u.Data) != 0
 }
 
-func NewEntityData(val any) *EntityData {
-	return &EntityData{val: val}
+func NewEntityData(value any, name string) *EntityData {
+	return &EntityData{value: value, name: name}
 }
 
 type EntityData struct {
-	val any
+	value any
+	name  string
 }
 
 func (d EntityData) Value() any {
-	return d.val
+	return d.value
 }
 
 func (d *EntityData) SetValue(v any) {
-	d.val = v
+	d.value = v
+}
+
+func (d *EntityData) valuesMatch(incoming, pending any) bool {
+	if incoming == pending {
+		return true
+	}
+
+	// Handle binary state equivalents
+	if d.name == "state" {
+		// Convert both to boolean for comparison
+		incomingBool := d.toBool(incoming)
+		pendingBool := d.toBool(pending)
+		return incomingBool == pendingBool
+	}
+
+	return false
+}
+
+// toBool converts various representations to boolean
+func (d *EntityData) toBool(value any) bool {
+	switch v := value.(type) {
+	case bool:
+		return v
+	case string:
+		return v == "ON" || v == "true"
+	case int:
+		return v != 0
+	case float64:
+		return v != 0
+	default:
+		return false
+	}
 }
 
 func (d EntityData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(d.val)
+	return json.Marshal(d.value)
 }
 
 func (d *EntityData) UnmarshalJSON(b []byte) error {
@@ -213,7 +246,7 @@ func (d *EntityData) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &v); err != nil {
 		return err
 	}
-	d.val = v
+	d.value = v
 	return nil
 }
 
@@ -229,12 +262,13 @@ type Entity struct {
 	Values      map[string]any          `json:"values,omitempty"`
 }
 
-func NewEntity() *Entity {
+func NewEntity(name string) *Entity {
 	return &Entity{
 		Attributes: make(map[string]any),
 		AccessMode: bridge.UnknownAccessMode,
 		Values:     make(map[string]any),
-		Data:       NewEntityData(nil),
+		Data:       NewEntityData(nil, name),
+		Name:       name,
 	}
 }
 
@@ -262,9 +296,8 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 		return nil, fmt.Errorf("invalid device feature access mode %v", expose.Access)
 	}
 
-	newEntity := NewEntity()
+	newEntity := NewEntity(expose.Property)
 	newEntity.Category = getExposeCategory(expose)
-	newEntity.Name = expose.Property
 	newEntity.AccessMode = accessMode
 	newEntity.Description = expose.Description
 	newEntity.Unit = expose.Unit
@@ -364,9 +397,8 @@ func createExpose(data map[string]interface{}) map[string]*Entity {
 			continue
 		}
 
-		newEntity := NewEntity()
+		newEntity := NewEntity(key)
 		newEntity.Category = bridge.MeasurementCategory
-		newEntity.Name = key
 		newEntity.AccessMode = bridge.ReadAccessMode
 		newEntity.Data.SetValue(value)
 		newEntity.Unit = units[key]

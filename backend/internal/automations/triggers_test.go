@@ -818,11 +818,10 @@ func createEntity(name string, description string, data any, unit string, attrib
 		attributes = make(map[string]any)
 	}
 
-	newEntity := devices.NewEntity()
+	newEntity := devices.NewEntity(name)
 	newEntity.Attributes = map[string]any{}
 	newEntity.Values = map[string]any{}
 	newEntity.Data.SetValue(data)
-	newEntity.Name = name
 	newEntity.Unit = unit
 	newEntity.Description = description
 	newEntity.Attributes = attributes
