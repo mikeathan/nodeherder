@@ -205,14 +205,13 @@ func (d *EntityData) SetValue(v any) {
 	d.value = v
 }
 
-func (d *EntityData) valuesMatch(incoming, pending any) bool {
+func (d *EntityData) ValuesMatch(incoming, pending any) bool {
 	if incoming == pending {
 		return true
 	}
 
 	// Handle binary state equivalents
 	if d.name == "state" {
-		// Convert both to boolean for comparison
 		incomingBool := d.toBool(incoming)
 		pendingBool := d.toBool(pending)
 		return incomingBool == pendingBool
