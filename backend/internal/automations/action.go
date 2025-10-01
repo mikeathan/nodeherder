@@ -236,35 +236,52 @@ func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
 		b.emit(bytes)
 	}
 
-	// on sucess update device context with new values to avoid querying the device again
+	// on success update device context with new values to avoid querying the device again
 	// ideally we need to do it if publish has succeeded
 
 	for key, value := range payload.Commands {
-		ctx.SetCurrentState(key, value)
+		// Set pending state for feedback loop prevention
+		resolvedValue := b.resolveValue(key, value, ctx)
+		ctx.SetPendingState(key, resolvedValue)
+		
+		// Also update current state
+		ctx.SetCurrentState(key, resolvedValue)
 	}
 
-	// Need to decide if we store binary as true/false or ON/OFF
-	// keep in mind that each device is different
-	// some have true/false some have ON/OFF
-	// main reason is the toggle state 
-	// so we need to have some resolver
-	// for key, value := range payload.Commands {
-
-	// 	// check that we store for binary true or ON
-	// 	// then check if we can
-	// 	// TODO: refactor
-	// 	if value == "TOGGLE" {
-	// 		currValue := ctx.GetCurrentState(key)
-	// 		if currValue != nil  {
-	// 			value = !currValue.(bool)
-	// 		} else {
-	// 			value = true
-	// 		}
-	// 	}
-	// 	ctx.SetPendingState(key, value)
-	// 	//ctx.SetCurrentState(key, value)
-	// }
 	return nil
+}
+
+// resolveValue resolves special values like TOGGLE to their actual expected values
+func (b *MqttBaseAction) resolveValue(key string, value any, ctx AutomationContext) any {
+	// Handle TOGGLE for binary states
+	if valueStr, ok := value.(string); ok && valueStr == "TOGGLE" {
+		// Get current state to determine what TOGGLE should become
+		currentState := ctx.GetCurrentState(key)
+		
+		// For binary states, toggle the boolean value
+		if key == "state" {
+			currentBool := b.toBool(currentState)
+			return !currentBool  // Return the toggled boolean value
+		}
+	}
+	
+	return value
+}
+
+// toBool converts various representations to boolean (same as in trigger.go)
+func (b *MqttBaseAction) toBool(value any) bool {
+	switch v := value.(type) {
+	case bool:
+		return v
+	case string:
+		return v == "ON" || v == "true"
+	case int:
+		return v != 0
+	case float64:
+		return v != 0
+	default:
+		return false
+	}
 }
 
 func (b *MqttBaseAction) GetID() string {

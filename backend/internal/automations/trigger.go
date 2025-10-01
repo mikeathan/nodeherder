@@ -134,20 +134,23 @@ func NewDeviceTrigger(name string) *DeviceTrigger {
 
 func (t *DeviceTrigger) Process(ctx AutomationContext) {
 
-	// if len(t.Conditions) == 0 {
-	// 	pendingData := ctx.GetPendingState(t.Name)
+	// Feedback loop prevention: Check if this is a response to our own action
+	if len(t.Conditions) == 0 {
+		pendingData := ctx.GetPendingState(t.Name)
 
-	// 	if entity, ok := ctx.GetDevicePayload(t.Name); ok && pendingData != nil {
-	// 		requestData := entity.Data
-	// 		if requestData == pendingData {
-	// 			ctx.SetCurrentState(t.Name, requestData)
-	// 			ctx.SetPendingState(t.Name, nil) // clear
-	// 			return
-	// 		}
-	// 	}
-
-	// 	//return
-	// }
+		if entity, ok := ctx.GetDevicePayload(t.Name); ok && pendingData != nil {
+			// Get the actual incoming value from the entity
+			incomingValue := entity.Data.Value()
+			
+			// Check if incoming value matches what we're expecting (pending)
+			if t.valuesMatch(incomingValue, pendingData) {
+				utils.LogDebugf("Feedback loop detected for trigger %s: incoming=%v matches pending=%v, skipping", t.Name, incomingValue, pendingData)
+				ctx.SetCurrentState(t.Name, incomingValue)
+				ctx.SetPendingState(t.Name, nil) // clear pending state
+				return
+			}
+		}
+	}
 
 	for _, c := range t.Conditions {
 
@@ -176,6 +179,40 @@ func (t *DeviceTrigger) Process(ctx AutomationContext) {
 
 	for _, action := range t.Actions {
 		action.Execute(ctx)
+	}
+}
+
+// valuesMatch checks if two values are equivalent for feedback loop detection
+// This handles different representations of the same state (e.g., true/"ON", false/"OFF")
+func (t *DeviceTrigger) valuesMatch(incoming, pending any) bool {
+	if incoming == pending {
+		return true
+	}
+
+	// Handle binary state equivalents
+	if t.Name == "state" {
+		// Convert both to boolean for comparison
+		incomingBool := t.toBool(incoming)
+		pendingBool := t.toBool(pending)
+		return incomingBool == pendingBool
+	}
+
+	return false
+}
+
+// toBool converts various representations to boolean
+func (t *DeviceTrigger) toBool(value any) bool {
+	switch v := value.(type) {
+	case bool:
+		return v
+	case string:
+		return v == "ON" || v == "true"
+	case int:
+		return v != 0
+	case float64:
+		return v != 0
+	default:
+		return false
 	}
 }
 
