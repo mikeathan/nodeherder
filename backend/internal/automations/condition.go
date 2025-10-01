@@ -129,11 +129,8 @@ func (e *ExposeHandler) Evaluate(ctx AutomationContext) bool {
 		return false
 	}
 
-	if utils.EqualityOperators[e.Operation](expose.Data, e.Value) {
-		return true
-	}
-
-	return false
+	data := expose.Data.Value()
+	return utils.EqualityOperators[e.Operation](data, e.Value)
 }
 
 // TimeRange Handler

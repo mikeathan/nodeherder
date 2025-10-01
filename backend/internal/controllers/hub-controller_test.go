@@ -734,7 +734,7 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 			cfg.DebounceOverrides[expose.Name] = utils.IntervalFromMinutes(eIdx)
 		}
 		appCache.SetDeviceConfigOverrides(cfg)
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(200 * time.Millisecond)
 
 	}
 
@@ -750,10 +750,14 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 	expectedMilliseconds := 2
 	expectedDisabled := true
 	expectedMetricsEnabled := true
-	if cfg.Disabled != expectedDisabled && cfg.MetricsEnabled != expectedMetricsEnabled && cfg.RateLimit.Value != expectedMilliseconds {
-		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", expectedMilliseconds, cfg.RateLimit.Value)
+	if cfg.Disabled != expectedDisabled {
 		t.Fatalf("invalid config override. want expectedDisabled %v got %v", expectedDisabled, cfg.Disabled)
+	}
+	if cfg.MetricsEnabled != expectedMetricsEnabled {
 		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", expectedMetricsEnabled, cfg.MetricsEnabled)
+	}
+	if cfg.RateLimit.Value != expectedMilliseconds {
+		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", expectedMilliseconds, cfg.RateLimit.Value)
 	}
 
 	eIdx := 0
@@ -774,6 +778,9 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 		t.Fatalf("device not found. err %v ", err)
 	}
 
+	// Wait for the deletion to be processed
+	time.Sleep(200 * time.Millisecond)
+
 	cfg, err = appCache.GetDeviceConfig(dialDevice.Id)
 	if err != nil {
 		t.Fatalf("device not found. err %v ", err)
@@ -786,10 +793,14 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 	}
 	// assert device config has default values
 	defaults := app.Hub.Devices.Defaults
-	if cfg.Disabled != defaults.Disabled && cfg.MetricsEnabled != defaults.MetricsEnabled && cfg.RateLimit.Value != defaults.RateLimit.Value {
-		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", defaults.RateLimit.Value, cfg.RateLimit.Value)
+	if cfg.Disabled != defaults.Disabled {
 		t.Fatalf("invalid config override. want expectedDisabled %v got %v", defaults.Disabled, cfg.Disabled)
+	}
+	if cfg.MetricsEnabled != defaults.MetricsEnabled {
 		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", defaults.MetricsEnabled, cfg.MetricsEnabled)
+	}
+	if cfg.RateLimit.Value != defaults.RateLimit.Value {
+		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", defaults.RateLimit.Value, cfg.RateLimit.Value)
 	}
 
 	if cfg.DebounceOverrides != nil {
