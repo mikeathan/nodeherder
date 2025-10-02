@@ -129,7 +129,7 @@ func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	hub.TriggerManual(id, "state")
-	time.Sleep(60 * time.Second)
+	time.Sleep(5 * time.Second)
 
 }
 func TestProcessorTriggerScheduledAutomation(t *testing.T) {

@@ -481,6 +481,7 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 	wg.Wait()
 }
 
+this one fails as at ome point the pending and incoming are matchng and it skips thr execution
 func TestManualTriggerTurnsOnLight(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
@@ -507,7 +508,7 @@ func TestManualTriggerTurnsOnLight(t *testing.T) {
 		result   bool
 	}{
 		{presence: true, result: true},
-		{presence: false, result: true},
+		{presence: false, result: true}, 
 		{presence: true, result: true},
 	}
 	for _, testCase := range testCases {
