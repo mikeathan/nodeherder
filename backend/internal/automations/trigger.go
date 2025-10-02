@@ -139,13 +139,10 @@ func (t *DeviceTrigger) Process(ctx AutomationContext) {
 		pendingData := ctx.GetPendingState(t.Name)
 
 		if entity, ok := ctx.GetDevicePayload(t.Name); ok && pendingData != nil {
-			// Get the actual incoming value from the entity
-			incomingValue := entity.Data.Value()
-
 			// Check if incoming value matches what we're expecting (pending)
-			if t.valuesMatch(incomingValue, pendingData) {
-				utils.LogDebugf("Feedback loop detected for trigger %s: incoming=%v matches pending=%v, skipping", t.Name, incomingValue, pendingData)
-				ctx.SetCurrentState(t.Name, incomingValue)
+			if entity.Data.ValuesMatch(pendingData) {
+				utils.LogDebugf("Feedback loop detected for trigger %s: incoming=%v matches pending=%v, skipping", t.Name, entity.Data.Value(), pendingData)
+				ctx.SetCurrentState(t.Name, entity.Data.Value())
 				ctx.SetPendingState(t.Name, nil) // clear pending state
 				return
 			}
@@ -167,52 +164,9 @@ func (t *DeviceTrigger) Process(ctx AutomationContext) {
 			return
 		}
 	}
-	//currValue := ctx.GetCurrent(t.Name)
-
-	// if entity, ok := ctx.GetPayloadForEntity(t.Name); ok && entity.Data != nil && currValue != nil {
-	// 	value := entity.Data
-	// 	if currValue.(bool) && value == "TOGGLE" {
-	// 		value = !currValue.(bool)
-	// 	}
-	// 	ctx.SetPending(t.Name, value)
-	// }
 
 	for _, action := range t.Actions {
 		action.Execute(ctx)
-	}
-}
-
-// valuesMatch checks if two values are equivalent for feedback loop detection
-// This handles different representations of the same state (e.g., true/"ON", false/"OFF")
-func (t *DeviceTrigger) valuesMatch(incoming, pending any) bool {
-	if incoming == pending {
-		return true
-	}
-
-	// Handle binary state equivalents
-	if t.Name == "state" {
-		// Convert both to boolean for comparison
-		incomingBool := t.toBool(incoming)
-		pendingBool := t.toBool(pending)
-		return incomingBool == pendingBool
-	}
-
-	return false
-}
-
-// toBool converts various representations to boolean
-func (t *DeviceTrigger) toBool(value any) bool {
-	switch v := value.(type) {
-	case bool:
-		return v
-	case string:
-		return v == "ON" || v == "true"
-	case int:
-		return v != 0
-	case float64:
-		return v != 0
-	default:
-		return false
 	}
 }
 

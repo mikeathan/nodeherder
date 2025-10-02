@@ -237,19 +237,11 @@ func (m *MockMqttClient) messagePubHandler() func(id string, payload []byte) {
 	}
 }
 
-func stripAfterSeparator(input string, separator string) (string, bool) {
-	parts := strings.SplitN(input, separator, 2)
-	if len(parts) > 1 {
-		return parts[0], true
-	}
-	return input, false
-}
-
 func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 	fmt.Println("Mock Publish")
 
-	// handle setter mqtt messages. strip set and publish, it then gets handled as device update
-	topic = strings.Replace(topic, "/set", "", -1)
+	// Check if this is a command message (ends with /set)
+	isSetCommand := strings.HasSuffix(topic, "/set")
 
 	var data []byte
 	switch v := payload.(type) {
@@ -266,10 +258,31 @@ func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 		data = b
 	}
 
-	// push original message
-	m.messagePubHandler()(topic, data)
+	// For non-set messages, process them normally (like bridge/device messages, sensor updates)
+	if !isSetCommand {
+		m.messagePubHandler()(topic, data)
+		return
+	}
 
-	// Auto-response
+	// For /set commands: strip /set to get the device topic
+	topic = strings.Replace(topic, "/set", "", -1)
+
+	// Check if there's an auto-response configured for this topic
+	hasAutoResponse := false
+	if _, ok := m.responses[topic]; ok {
+		hasAutoResponse = true
+	}
+
+	// Only simulate immediate device response if there's no auto-response configured
+	// This prevents double responses that can cause feedback loops
+	if !hasAutoResponse {
+		go func() {
+			time.Sleep(50 * time.Millisecond) // Delay to let pending state be set
+			m.messagePubHandler()(topic, data)
+		}()
+	}
+
+	// Send configured auto-response if available (for specific test scenarios)
 	if resp, ok := m.responses[topic]; ok {
 		go func() {
 			time.Sleep(1 * time.Second)

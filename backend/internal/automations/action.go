@@ -237,30 +237,32 @@ func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
 	}
 
 	// on success update device context with new values to avoid querying the device again
-	// ideally we need to do it if publish has succeeded
-
+	// since dont know if action is succeed it we store it as a pending state
 	for key, value := range payload.Commands {
-		// Set pending state for feedback loop prevention
+		// Set pending state for feedback loop prevention - resolve TOGGLE to actual boolean
 		resolvedValue := b.resolveValue(key, value, ctx)
 		ctx.SetPendingState(key, resolvedValue)
 
-		// Also update current state
+		// Also update current state with resolved value
 		ctx.SetCurrentState(key, resolvedValue)
 	}
 
 	return nil
 }
 
-// resolveValue resolves special values like TOGGLE to their actual expected values
 func (b *MqttBaseAction) resolveValue(key string, value any, ctx AutomationContext) any {
 	// Handle TOGGLE for binary states
 	if valueStr, ok := value.(string); ok && valueStr == "TOGGLE" {
 		// Get current state to determine what TOGGLE should become
-		currentState := ctx.GetCurrentState(key)
+		currentValue := ctx.GetCurrentState(key)
 
 		// For binary states, toggle the boolean value
 		if key == "state" {
-			currentBool := b.toBool(currentState)
+			// If no current state exists, default to false (so TOGGLE becomes true)
+			if currentValue == nil {
+				return true
+			}
+			currentBool := b.toBool(currentValue)
 			return !currentBool // Return the toggled boolean value
 		}
 	}

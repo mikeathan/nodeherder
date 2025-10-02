@@ -76,7 +76,7 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 		expectedResult := testCase.expectedResult
 		payload := map[string]any{expose: value}
 		mqtt.Publish(doorSensorDevice.FriendlyName, payload)
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond) // Increased to account for mock delay
 
 		alarm, _ := store.FindDeviceById("x02222222")
 		if alarm.Exposes["alarm"].Data.Value() != expectedResult {
@@ -129,7 +129,7 @@ func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	hub.TriggerManual(id, "state")
-	time.Sleep(5 * time.Minute)
+	time.Sleep(60 * time.Second)
 
 }
 func TestProcessorTriggerScheduledAutomation(t *testing.T) {
@@ -213,7 +213,7 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 		payload := map[string]any{expose: value}
 
 		mqtt.Publish(doorSensorDevice.FriendlyName, payload)
-		time.Sleep(20 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 
 		// alarm should be triggered only when schedule is due
 		alarm, _ := store.FindDeviceById("x02222222")
@@ -274,7 +274,7 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 	payload = map[string]any{"action": "button_2_hold"} // this event shouldnt trigger autonation as is not in automation condition
 	mqtt.Publish(dialDevice.FriendlyName, payload)
 
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	light, _ := store.FindDeviceById("x02222222")
 	max := light.Exposes["brightness"].Attributes["max"].(float64)
@@ -292,7 +292,7 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 		payload = map[string]any{"action": "dial_rotate_left_slow", "action_direction": "left", "action_time": action_time, "action_type": "step"}
 		mqtt.Publish(dialDevice.FriendlyName, payload)
 
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 
 		// assert. calculate expected value
 		wantvalue := prevValue + (float64(action_time) * rotateStepAction.Data.(float64))
