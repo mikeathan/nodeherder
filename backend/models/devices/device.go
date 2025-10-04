@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"node-herder/models/bridge"
 	"node-herder/utils"
+	"strings"
 	"sync"
 	"time"
 )
@@ -205,18 +206,33 @@ func (d *EntityData) SetValue(v any) {
 	d.value = v
 }
 
+
 func (d *EntityData) ValuesMatch(pending any) bool {
 	if d.value == pending {
 		return true
 	}
 
 	// Handle binary state equivalents
-	if d.name == "state" {
+	if isBoolLike(d.value) || isBoolLike(pending) || d.name == "state" {
 		currBool := d.toBool(d.value)
 		pendingBool := d.toBool(pending)
 		return currBool == pendingBool
 	}
 
+	return false
+}
+
+func isBoolLike(v any) bool {
+	switch x := v.(type) {
+	case bool:
+		return true
+	case string:
+		s := strings.ToLower(x)
+		switch s {
+		case "on", "off", "toggle", "true", "false":
+			return true
+		}
+	}
 	return false
 }
 

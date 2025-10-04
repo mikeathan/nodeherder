@@ -481,7 +481,7 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 	wg.Wait()
 }
 
-this one fails as at ome point the pending and incoming are matchng and it skips thr execution
+//this one fails as at ome point the pending and incoming are matchng and it skips thr execution
 func TestManualTriggerTurnsOnLight(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
@@ -497,6 +497,8 @@ func TestManualTriggerTurnsOnLight(t *testing.T) {
 
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 	registrar.RegisterBridge(deviceBridgeList)
+
+	the actin always send true which is wrong oooooooooo
 	turnOnTrigger := createTriggerTurnOnLight(id, registrar, mqtt)
 
 	// create device trigger
