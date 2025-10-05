@@ -92,7 +92,6 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 
 	ws := &mocks.NopWsServer{}
-	//wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
 
 	eventHub := &mocks.MockEventHub{}
@@ -129,7 +128,13 @@ func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	hub.TriggerManual(id, "state")
-	time.Sleep(5 * time.Second)
+
+	time.Sleep(1 * time.Second)
+
+	device, _ = store.FindDeviceById(id)
+	if device.Exposes["state"].Data.Value() != "ON" {
+		t.Errorf("alarm should be ON when door sensor triggers got %v", device.Exposes["state"].Data.Value())
+	}
 }
 
 func TestProcessorTriggerScheduledAutomation(t *testing.T) {

@@ -467,7 +467,7 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 		var payload = map[string]any{
 			"presence": testCase.presence,
 		}
-		
+
 		device.Exposes = createExposures(payload)
 		deviceTrigger.Evaluate(automations.NewDeviceEvent(device))
 		time.Sleep(testCase.sleepdelay * time.Millisecond)
@@ -476,7 +476,7 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 	wg.Wait()
 }
 
-func TestManualTriggerTurnsOnLight(t *testing.T) {
+func TestManualTrigger_WithPendingTtl_TurnsOnLight(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
@@ -494,8 +494,6 @@ func TestManualTriggerTurnsOnLight(t *testing.T) {
 
 	turnOnTrigger := createTriggerTurnOnLight(id, registrar, mqtt)
 
-
-	to test wiht and without TTL
 	deviceTrigger := automations.NewDevice(id, automations.WithDeviceContextTtl(50*time.Millisecond))
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
 
@@ -549,6 +547,80 @@ func TestManualTriggerTurnsOnLight(t *testing.T) {
 		device.Exposes = createExposures(payload)
 		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device), turnOnTrigger.Name)
 		time.Sleep(60 * time.Millisecond)
+		wg.Wait()
+	}
+}
+
+func TestManualTrigger_WithDefaultPendingTtl_TurnsOnLight(t *testing.T) {
+
+	wg := &sync.WaitGroup{}
+	mqtt := &mocks.MockMqttClient{}
+
+	repo := repository.NewMemoryDeviceRepo()
+	store := utils_test.CreateStoreFromDeviceRepo(repo)
+	eventHub := &mocks.MockEventHub{}
+
+	id := "Light attic"
+	device := utils_test.CreatePresenceDevice(id, "light device", "presence", false)
+	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(deviceBridgeList)
+
+	turnOnTrigger := createTriggerTurnOnLight(id, registrar, mqtt)
+
+	deviceTrigger := automations.NewDevice(id)
+	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
+
+	testCases := []struct {
+		presence bool
+		result   bool
+	}{
+		{presence: true, result: true},
+		{presence: false, result: true},
+		{presence: true, result: false}, // it resets the pending feedback loop check
+		{presence: false, result: true},
+	}
+	for _, testCase := range testCases {
+
+		var messageHandler = func(id string, payload []byte) {
+			wg.Done()
+			for _, action := range turnOnTrigger.Actions {
+
+				responseData := unpackJsonToMap(string(payload))
+				if responseData == nil {
+					t.Fatalf("error unpacking json")
+				}
+				triggerAction, ok := action.(*automations.MqttTriggerAction)
+				if !ok {
+					t.Fatalf("invalid action type")
+				}
+				if !ok {
+					t.Fatalf("invalid action type")
+				}
+				for _, expose := range triggerAction.Exposes {
+					value, ok := responseData[expose.Name]
+					if !ok {
+						t.Fatalf("property not %s found in payload", expose.Name)
+					}
+					if value != expose.Data {
+						t.Fatalf("value mismatch: want %v got %v", expose.Data, value)
+					}
+				}
+
+			}
+		}
+
+		mqtt.OnMessageHandler(messageHandler)
+		if testCase.result {
+			wg.Add(1)
+		}
+
+		var payload = map[string]any{
+			"presence": testCase.presence,
+		}
+		device.Exposes = createExposures(payload)
+		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device), turnOnTrigger.Name)
 		wg.Wait()
 	}
 }
