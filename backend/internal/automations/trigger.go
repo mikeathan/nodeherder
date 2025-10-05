@@ -134,34 +134,19 @@ func NewDeviceTrigger(name string) *DeviceTrigger {
 
 func (t *DeviceTrigger) Process(ctx AutomationContext) {
 
-	// Feedback loop prevention: Check if this is a response to our own action
+	// feedback prevention when no conditions are set
 	if len(t.Conditions) == 0 {
 
 		pendingData := ctx.GetPendingState(t.Name)
 		entity, devicePayloadExists := ctx.GetDevicePayload(t.Name)
 
-		// Only apply feedback prevention if:
-		// 1. We have pending data (we expect a specific value)
-		// 2. This came from a device payload (not a direct manual trigger)
-		// 3. The incoming value matches our pending value (it's our own echo)
 		if pendingData != nil && devicePayloadExists && entity.Data.ValuesMatch(pendingData) {
 			utils.LogDebugf("Feedback loop detected for trigger %s: incoming=%v matches pending=%v, skipping",
 				t.Name, entity.Data.Value(), pendingData)
 			ctx.SetCurrentState(t.Name, entity.Data.Value())
-			ctx.SetPendingState(t.Name, nil) // clear pending state
+			ctx.SetPendingState(t.Name, nil) 
 			return
 		}
-		// 	pendingData := ctx.GetPendingState(t.Name)
-
-		// 	if entity, ok := ctx.GetDevicePayload(t.Name); ok && pendingData != nil {
-		// 		// Check if incoming value matches what we're expecting (pending)
-		// 		if entity.Data.ValuesMatch(pendingData) {
-		// 			utils.LogDebugf("Feedback loop detected for trigger %s: incoming=%v matches pending=%v, skipping", t.Name, entity.Data.Value(), pendingData)
-		// 			ctx.SetCurrentState(t.Name, entity.Data.Value())
-		// 			ctx.SetPendingState(t.Name, nil) // clear pending state
-		// 			return
-		// 		}
-		// 	}
 	}
 
 	for _, c := range t.Conditions {

@@ -70,11 +70,11 @@ func (d *DeviceContext) SetPendingState(name string, value any) {
 	}
 	d.setPendingWithTTL(name, value, d.ttl)
 }
-
+https://chatgpt.com/c/68e2b480-2170-832f-a57a-75b784603f5d
 func (d *DeviceContext) setPendingWithTTL(name string, value any, ttl time.Duration) {
 	d.mu.Lock()
+	defer d.mu.Unlock()
 	d.pendingData[name] = value
-	d.mu.Unlock()
 
 	time.AfterFunc(ttl, func() {
 		d.mu.Lock()
