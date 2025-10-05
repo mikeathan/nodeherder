@@ -127,6 +127,8 @@ func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
+	problem we dont call the hanlder as we dont send mqtt events
+
 	hub.TriggerManual(id, "state")
 
 	time.Sleep(1 * time.Second)
