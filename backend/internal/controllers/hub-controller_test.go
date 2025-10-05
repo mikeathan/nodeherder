@@ -130,8 +130,8 @@ func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 
 	hub.TriggerManual(id, "state")
 	time.Sleep(5 * time.Second)
-
 }
+
 func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}

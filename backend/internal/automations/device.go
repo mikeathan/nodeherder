@@ -43,7 +43,7 @@ func newDevice() *Device {
 	return NewDevice("")
 }
 
-func NewDevice(id string) *Device {
+func NewDevice(id string, opts... func(*DeviceContext)) *Device {
 
 	d := &Device{
 		BaseAutomation: BaseAutomation{
@@ -55,7 +55,7 @@ func NewDevice(id string) *Device {
 			Triggers:     TriggerList{},
 			Schedules:    []*TimeSchedule{},
 		},
-		ctx: NewDeviceContext(),
+		ctx: NewDeviceContext(opts...),
 	}
 
 	return d

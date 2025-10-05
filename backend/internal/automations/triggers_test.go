@@ -419,14 +419,8 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(11, 25, 0), result: true},
 	}
 
-	for i, testCase := range testCases {
-		var data = map[string]any{
-			"presence": testCase.presence,
-		}
+	for _, testCase := range testCases {
 
-		if i == 3 {
-			fmt.Println("test case debug")
-		}
 		mockClock.SetMockTime(testCase.timeNow)
 		var messageHandler = func(id string, payload []byte) {
 
@@ -470,18 +464,18 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 			wg.Add(1)
 		}
 
-		device.Exposes = createExposures(data)
-
-		fmt.Println("emiting presence", testCase.presence)
+		var payload = map[string]any{
+			"presence": testCase.presence,
+		}
+		
+		device.Exposes = createExposures(payload)
 		deviceTrigger.Evaluate(automations.NewDeviceEvent(device))
-
 		time.Sleep(testCase.sleepdelay * time.Millisecond)
 	}
 
 	wg.Wait()
 }
 
-//this one fails as at ome point the pending and incoming are matchng and it skips thr execution
 func TestManualTriggerTurnsOnLight(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
@@ -498,11 +492,11 @@ func TestManualTriggerTurnsOnLight(t *testing.T) {
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 	registrar.RegisterBridge(deviceBridgeList)
 
-	the actin always send true which is wrong oooooooooo
 	turnOnTrigger := createTriggerTurnOnLight(id, registrar, mqtt)
 
-	// create device trigger
-	deviceTrigger := automations.NewDevice(id)
+
+	to test wiht and without TTL
+	deviceTrigger := automations.NewDevice(id, automations.WithDeviceContextTtl(50*time.Millisecond))
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
 
 	testCases := []struct {
@@ -510,13 +504,11 @@ func TestManualTriggerTurnsOnLight(t *testing.T) {
 		result   bool
 	}{
 		{presence: true, result: true},
-		{presence: false, result: true}, 
+		{presence: false, result: true},
 		{presence: true, result: true},
+		{presence: false, result: true},
 	}
 	for _, testCase := range testCases {
-		var data = map[string]any{
-			"presence": testCase.presence,
-		}
 
 		var messageHandler = func(id string, payload []byte) {
 			wg.Done()
@@ -547,10 +539,16 @@ func TestManualTriggerTurnsOnLight(t *testing.T) {
 		}
 
 		mqtt.OnMessageHandler(messageHandler)
-		wg.Add(1)
+		if testCase.result {
+			wg.Add(1)
+		}
 
-		device.Exposes = createExposures(data)
+		var payload = map[string]any{
+			"presence": testCase.presence,
+		}
+		device.Exposes = createExposures(payload)
 		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device), turnOnTrigger.Name)
+		time.Sleep(60 * time.Millisecond)
 		wg.Wait()
 	}
 }
@@ -719,7 +717,6 @@ func createTriggerDelayTurnOffLightWithPresenceOff(id string, registrar services
 }
 
 func createTriggerTurnOnLight(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *automations.DeviceTrigger {
-	// action = turn off light
 	turnOnAction := automations.NewTriggerAction()
 	turnOnAction.Id = id
 	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
@@ -734,8 +731,6 @@ func createTriggerTurnOnLight(id string, registrar services.DeviceRegistrar, mqt
 	// Turn on sensor trigger
 	turnOnTrigger := automations.NewDeviceTrigger("presence")
 	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
-
-	// condition = presence = off
 
 	return turnOnTrigger
 }

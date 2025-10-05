@@ -2,7 +2,9 @@ package automations
 
 import (
 	"node-herder/models/devices"
+	"reflect"
 	"sync"
+	"time"
 )
 
 type AutomationContext interface {
@@ -21,33 +23,38 @@ type AutomationContext interface {
 
 var ContextIgnoreList = []string{"action"}
 
+func WithContextIgnoreList(ignoreList []string) func(*DeviceContext) {
+	return func(dc *DeviceContext) {
+		ContextIgnoreList = ignoreList
+	}
+}
+
+func WithDeviceContextTtl(d time.Duration) func(*DeviceContext) {
+	return func(dc *DeviceContext) {
+		dc.ttl = d
+	}
+}
+
 // Device Context
 type DeviceContext struct {
 	currentData map[string]any
 	payload     map[string]*devices.Entity
 	pendingData map[string]any
 	mu          sync.RWMutex
+	ttl         time.Duration
 }
 
-func NewDeviceContext() *DeviceContext {
-	return &DeviceContext{
+func NewDeviceContext(opts ...func(*DeviceContext)) *DeviceContext {
+	dc := &DeviceContext{
 		currentData: map[string]any{},
 		payload:     make(map[string]*devices.Entity),
 		pendingData: map[string]any{},
+		ttl:         1 * time.Second, // default TTL for pending state
 	}
-}
-
-func (d *DeviceContext) SetDevicePayload(payload map[string]*devices.Entity) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.payload = payload
-}
-
-// wIP
-func (d *DeviceContext) SetPendingState(name string, value any) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.pendingData[name] = value
+	for _, opt := range opts {
+		opt(dc)
+	}
+	return dc
 }
 
 func (d *DeviceContext) GetPendingState(name string) any {
@@ -56,7 +63,40 @@ func (d *DeviceContext) GetPendingState(name string) any {
 	return d.pendingData[name]
 }
 
-// wIP
+func (d *DeviceContext) SetPendingState(name string, value any) {
+	if value == nil {
+		d.clearPending(name)
+		return
+	}
+	d.setPendingWithTTL(name, value, d.ttl)
+}
+
+func (d *DeviceContext) setPendingWithTTL(name string, value any, ttl time.Duration) {
+	d.mu.Lock()
+	d.pendingData[name] = value
+	d.mu.Unlock()
+
+	time.AfterFunc(ttl, func() {
+		d.mu.Lock()
+		defer d.mu.Unlock()
+		// Only clear if still the same value
+		if current, exists := d.pendingData[name]; exists && reflect.DeepEqual(current, value) {
+			delete(d.pendingData, name)
+		}
+	})
+}
+
+func (d *DeviceContext) clearPending(name string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	delete(d.pendingData, name)
+}
+
+func (d *DeviceContext) SetDevicePayload(payload map[string]*devices.Entity) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.payload = payload
+}
 
 func (d *DeviceContext) GetDevicePayload(name string) (*devices.Entity, bool) {
 	d.mu.RLock()
