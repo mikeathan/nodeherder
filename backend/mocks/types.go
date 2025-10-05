@@ -195,6 +195,11 @@ func (h *MockEventHub) OnLoadDashboardGroups(action func() (interface{}, error))
 type MockMqttClient struct {
 	messageHandler func(string, []byte)
 	responses      map[string]interface{}
+	responseDelay  time.Duration
+}
+
+func (m *MockMqttClient) SetResponseDelay(delay time.Duration) {
+	m.responseDelay = delay
 }
 
 func (m *MockMqttClient) Connect() error {
@@ -285,7 +290,10 @@ func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 	// Send configured auto-response if available (for specific test scenarios)
 	if resp, ok := m.responses[topic]; ok {
 		go func() {
-			time.Sleep(1 * time.Second)
+			delay := m.responseDelay
+			if delay == 0 {
+				delay = 500 * time.Millisecond // Default to 500ms
+			}
 
 			var respBytes []byte
 			switch v := resp.(type) {

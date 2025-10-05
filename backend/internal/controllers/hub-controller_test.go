@@ -91,7 +91,7 @@ func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
 
 func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 
-	ws := &mocks.NopWsServer{}
+	wsServer := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
 
 	eventHub := &mocks.MockEventHub{}
@@ -119,7 +119,7 @@ func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 
 	automationStorage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{lightAutomation})
 
-	hub := controllers.RegisterHubController(ws, store, mqtt)
+	hub := controllers.RegisterHubController(wsServer, store, mqtt)
 	hub.WithAutomationStorage(automationStorage)
 
 	//  publish deviceBridgeList to configure hub with devices
@@ -127,15 +127,25 @@ func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 
 	time.Sleep(100 * time.Millisecond)
 
-	problem we dont call the hanlder as we dont send mqtt events
+	//problem we dont call the hanlder as we dont send mqtt events
 
 	hub.TriggerManual(id, "state")
+	timeout := time.After(3 * time.Second)
+	ticker := time.NewTicker(50 * time.Millisecond)
+	defer ticker.Stop()
 
-	time.Sleep(1 * time.Second)
-
-	device, _ = store.FindDeviceById(id)
-	if device.Exposes["state"].Data.Value() != "ON" {
-		t.Errorf("alarm should be ON when door sensor triggers got %v", device.Exposes["state"].Data.Value())
+	for {
+		select {
+		case <-timeout:
+			t.Fatal("timeout waiting for device state to change to ON")
+		case <-ticker.C:
+			device, _ := store.FindDeviceById(id)
+			if device.Exposes["state"].Data.Value() == "ON" {
+				return
+			}else{
+				t.Errorf("device state should be ON")
+			}
+		}
 	}
 }
 
