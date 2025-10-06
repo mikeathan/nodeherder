@@ -2,7 +2,6 @@ package automations
 
 import (
 	"node-herder/models/devices"
-	"reflect"
 	"sync"
 	"time"
 )
@@ -35,61 +34,98 @@ func WithDeviceContextTtl(d time.Duration) func(*DeviceContext) {
 	}
 }
 
+type pendingEntry struct {
+	value   any
+	expires time.Time
+}
+
 // Device Context
 type DeviceContext struct {
 	currentData map[string]any
 	payload     map[string]*devices.Entity
-	pendingData map[string]any
+	pendingData map[string]pendingEntry
 	mu          sync.RWMutex
 	ttl         time.Duration
+	stopCleanup chan struct{}
 }
 
 func NewDeviceContext(opts ...func(*DeviceContext)) *DeviceContext {
 	dc := &DeviceContext{
 		currentData: map[string]any{},
 		payload:     make(map[string]*devices.Entity),
-		pendingData: map[string]any{},
+		pendingData: map[string]pendingEntry{},
 		ttl:         1 * time.Second, // default TTL for pending state
+		stopCleanup: make(chan struct{}),
 	}
 	for _, opt := range opts {
 		opt(dc)
 	}
+	go dc.cleanupLoop()
 	return dc
 }
 
 func (d *DeviceContext) GetPendingState(name string) any {
 	d.mu.RLock()
-	defer d.mu.RUnlock()
-	return d.pendingData[name]
+	entry, exists := d.pendingData[name]
+	isExpired := exists && time.Now().After(entry.expires)
+	d.mu.RUnlock()
+
+	if !exists {
+		return nil
+	}
+
+	if isExpired {
+		d.removeExpiredPending(name)
+		return nil
+	}
+
+	return entry.value
 }
 
 func (d *DeviceContext) SetPendingState(name string, value any) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
 	if value == nil {
-		d.clearPending(name)
+		delete(d.pendingData, name)
 		return
 	}
-	d.setPendingWithTTL(name, value, d.ttl)
+
+	d.pendingData[name] = pendingEntry{
+		value:   value,
+		expires: time.Now().Add(d.ttl),
+	}
 }
-https://chatgpt.com/c/68e2b480-2170-832f-a57a-75b784603f5d
-func (d *DeviceContext) setPendingWithTTL(name string, value any, ttl time.Duration) {
+
+func (d *DeviceContext) removeExpiredPending(name string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	d.pendingData[name] = value
 
-	time.AfterFunc(ttl, func() {
-		d.mu.Lock()
-		defer d.mu.Unlock()
-		// Only clear if still the same value
-		if current, exists := d.pendingData[name]; exists && reflect.DeepEqual(current, value) {
-			delete(d.pendingData, name)
+	// Double-check under write lock
+	if entry, ok := d.pendingData[name]; ok && time.Now().After(entry.expires) {
+		delete(d.pendingData, name)
+	}
+}
+
+func (d *DeviceContext) cleanupLoop() {
+	// Reduced cleanup frequency - less CPU usage
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			d.mu.Lock()
+			now := time.Now()
+			for name, entry := range d.pendingData {
+				if now.After(entry.expires) {
+					delete(d.pendingData, name)
+				}
+			}
+			d.mu.Unlock()
+		case <-d.stopCleanup:
+			return
 		}
-	})
-}
-
-func (d *DeviceContext) clearPending(name string) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	delete(d.pendingData, name)
+	}
 }
 
 func (d *DeviceContext) SetDevicePayload(payload map[string]*devices.Entity) {
