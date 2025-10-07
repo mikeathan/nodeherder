@@ -406,14 +406,11 @@ func (h *HubController) registerEventHubEvents() {
 
 	h.eventHub.OnSaveAutomation(func(p interface{}) error {
 
-		// TODO: move that in automations package
-		// pass payload and return model
-		automation := automations.NewBaseAutomation()
 		bytes, _ := json.Marshal(p)
-
-		err := json.Unmarshal(bytes, &automation)
+		serializer := automations.NewAutomationSerialiser()
+		automation, err := serializer.Unmarshal(bytes)
 		if err != nil {
-			utils.LogErrorf("Save automation failed. Invalid payload type")
+			utils.LogErrorf("Save automation failed. Invalid payload type: %s", err.Error())
 			return errors.New("save automation failed. Invalid payload type")
 		}
 
@@ -423,10 +420,10 @@ func (h *HubController) registerEventHubEvents() {
 		}
 
 		// trigger automation for changes to apply
-		if automation.Enabled {
-			device, err := h.registrar.LookupById(automation.Id)
+		if automation.IsEnabled() {
+			device, err := h.registrar.LookupById(automation.GetId())
 			if err == nil {
-				utils.LogInfof("Trigger automation %s[%s] after update", automation.FriendlyName, automation.Id)
+				utils.LogInfof("Trigger automation %s[%s] after update", automation.GetFriendlyName(), automation.GetId())
 				h.TriggerAutomation(device)
 			}
 		}
