@@ -134,19 +134,10 @@ func NewDeviceTrigger(name string) *DeviceTrigger {
 
 func (t *DeviceTrigger) Process(ctx AutomationContext) {
 
-	// feedback prevention when no conditions are set
-	if len(t.Conditions) == 0 {
-
-		pendingData := ctx.GetPendingState(t.Name)
-		entity, devicePayloadExists := ctx.GetDevicePayload(t.Name)
-
-		if pendingData != nil && devicePayloadExists && entity.Data.ValuesMatch(pendingData) {
-			utils.LogDebugf("Feedback loop detected for trigger %s: incoming=%v matches pending=%v, skipping",
-				t.Name, entity.Data.Value(), pendingData)
-			ctx.SetCurrentState(t.Name, entity.Data.Value())
-			ctx.SetPendingState(t.Name, nil) 
-			return
-		}
+	// Simple feedback prevention: block device-triggered automations without conditions
+	if len(t.Conditions) == 0 && !ctx.IsManualTrigger() {
+		utils.LogDebugf("Blocking device-triggered automation without conditions: %s", t.Name)
+		return
 	}
 
 	for _, c := range t.Conditions {

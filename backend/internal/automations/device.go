@@ -43,7 +43,7 @@ func newDevice() *Device {
 	return NewDevice("")
 }
 
-func NewDevice(id string, opts... func(*DeviceContext)) *Device {
+func NewDevice(id string, opts ...func(*DeviceContext)) *Device {
 
 	d := &Device{
 		BaseAutomation: BaseAutomation{
@@ -103,6 +103,9 @@ func (d *Device) Evaluate(event TriggerEvent) bool {
 	device := deviceEvent.Device()
 	d.ctx.SetDevicePayload(device.Exposes)
 
+	// This is a device state change (not manual)
+	d.ctx.SetManualTrigger(false)
+
 	// NOTE: a trigger can have multiple conditions.
 	// e.g presence can have multiple conditions for on and off
 	for _, trigger := range d.Triggers {
@@ -124,7 +127,10 @@ func (d *Device) EvaluateTrigger(event TriggerEvent, triggerName string) bool {
 
 	// TODO: can pass the Device event directly
 	// payload is the current device expose
-	d.ctx.SetDevicePayload(device.Exposes) // rename to set currentData
+	d.ctx.SetDevicePayload(device.Exposes) 
+
+	// Set manual trigger flag - this method is called for manual triggers
+	d.ctx.SetManualTrigger(true)
 
 	for _, trigger := range d.Triggers {
 		if trigger.GetName() == triggerName {
