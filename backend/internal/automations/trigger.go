@@ -136,7 +136,7 @@ func (t *DeviceTrigger) Process(ctx AutomationContext) {
 
 	// Simple feedback prevention: block device-triggered automations without conditions
 	if len(t.Conditions) == 0 && !ctx.IsManualTrigger() {
-		utils.LogDebugf("Blocking device-triggered automation without conditions: %s", t.Name)
+		utils.LogInfof("Blocking device-triggered automation without conditions: %s", t.Name)
 		return
 	}
 

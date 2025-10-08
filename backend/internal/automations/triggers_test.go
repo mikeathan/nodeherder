@@ -100,7 +100,7 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 		}
 		device.Exposes = createExposures(data)
 
-		deviceTrigger.Evaluate(automations.NewDeviceEvent(device))
+		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device), testCase.triggeredEntity)
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -256,7 +256,7 @@ func TestHandleMultipleSameValueTriggerWithDelay(t *testing.T) {
 		}
 
 		device.Exposes = createExposures(data)
-		deviceTrigger.Evaluate(automations.NewDeviceEvent(device))
+		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device), "presence")
 
 		time.Sleep(500 * time.Millisecond)
 	}

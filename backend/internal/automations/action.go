@@ -203,7 +203,6 @@ func (a *MqttBaseAction) emit(payload []byte) {
 	a.Client.Publish(msg, payload)
 
 	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.friendlyName)
-
 }
 
 func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
