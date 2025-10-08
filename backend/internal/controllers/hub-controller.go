@@ -28,17 +28,17 @@ var (
 )
 
 type HubController struct {
-	eventHub                          ws.EventHub
-	mqtt                              mqtt.MqttClient
-	store                             store.AppStore
-	wp                                *utils.WorkerPool
-	responseHandlers                  map[string]handler
-	DeviceAvailabilityTimeoutOverride int
-	automationEngine                  automations.Engine
-	registrar                         *services.HubRegisterService
-	ctx                               context.Context
-	getDeviceProcessor                func() *services.DeviceProcessor
-	automationHandlers                []automations.AutomationHandler
+	eventHub                                 ws.EventHub
+	mqtt                                     mqtt.MqttClient
+	store                                    store.AppStore
+	wp                                       *utils.WorkerPool
+	responseHandlers                         map[string]handler
+	DeviceAvailabilityTimeoutOverrideInHours int
+	automationEngine                         automations.Engine
+	registrar                                *services.HubRegisterService
+	ctx                                      context.Context
+	getDeviceProcessor                       func() *services.DeviceProcessor
+	automationHandlers                       []automations.AutomationHandler
 }
 type HubControllerOption func(*HubController)
 
@@ -55,13 +55,13 @@ func WithAutomationHandlers(handlers []automations.AutomationHandler) HubControl
 
 func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, options ...HubControllerOption) *HubController {
 	h := &HubController{
-		eventHub:                          eventHub,
-		store:                             store,
-		mqtt:                              mqtt,
-		responseHandlers:                  map[string]handler{},
-		DeviceAvailabilityTimeoutOverride: 3600,
-		ctx:                               context.Background(),
-		automationHandlers:                []automations.AutomationHandler{},
+		eventHub:                                 eventHub,
+		store:                                    store,
+		mqtt:                                     mqtt,
+		responseHandlers:                         map[string]handler{},
+		DeviceAvailabilityTimeoutOverrideInHours: 24,
+		ctx:                                      context.Background(),
+		automationHandlers:                       []automations.AutomationHandler{},
 	}
 
 	h.automationHandlers = []automations.AutomationHandler{
@@ -540,7 +540,8 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 // will have to create some shared context for hub controller so i can add that thre as well with the others
 func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 
-	events := devices.NewDeviceRequestEvents(d.DeviceAvailabilityTimeoutOverride)
+	events := devices.NewDeviceRequestEvents()
+	events.WithAvailabilityTimeout(time.Duration(d.DeviceAvailabilityTimeoutOverrideInHours) * time.Hour)
 	events.WithOnNewDevice(func(device *devices.Device) {
 		d.handleDeviceAdded(device)
 	})

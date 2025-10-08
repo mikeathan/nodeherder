@@ -142,7 +142,7 @@ func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 			device, _ := store.FindDeviceById(id)
 			if device.Exposes["state"].Data.Value() == "ON" {
 				return
-			}else{
+			} else {
 				t.Errorf("device state should be ON")
 			}
 		}
@@ -1822,7 +1822,7 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
 	hub := controllers.RegisterHubController(ws, store, mqtt)
-	hub.DeviceAvailabilityTimeoutOverride = 1
+	hub.DeviceAvailabilityTimeoutOverrideInHours = 1
 
 	mqtt.Publish(name, []byte(device1BatterySource))
 	time.Sleep(100 * time.Millisecond)
@@ -1861,7 +1861,7 @@ func TestAvailabilityIsDisposed(t *testing.T) {
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
 	hub := controllers.RegisterHubController(ws, store, mqtt)
-	hub.DeviceAvailabilityTimeoutOverride = 1
+	hub.DeviceAvailabilityTimeoutOverrideInHours = 1
 
 	mqtt.Publish(name, []byte(device1BatterySource))
 	time.Sleep(100 * time.Millisecond)

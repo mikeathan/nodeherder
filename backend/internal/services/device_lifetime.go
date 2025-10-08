@@ -175,7 +175,7 @@ func (d *DeviceLifetimeService) attempToEmitMeasurementUpdate(payload map[string
 	}
 }
 
-func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutInSecs int, onChangeCallback func(p *devices.UpdatePackage)) {
+func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutDuration time.Duration, onChangeCallback func(p *devices.UpdatePackage)) {
 
 	if s.availabilityTicker != nil {
 		utils.LogDebugf("device %s availability monitor already running", s.device.Id)
@@ -212,7 +212,7 @@ func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutInSecs int, o
 
 				now := time.Now()
 				diff := now.Sub(lastSeen)
-				if diff.Seconds() >= float64(timeoutInSecs) {
+				if diff >= timeoutDuration {
 
 					s.device.SetAvailable(false)
 					utils.LogInfof("device %s is offine", s.device.Id)
