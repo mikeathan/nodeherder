@@ -24,5 +24,10 @@
       "conditions": []
     }
   ],
-  "schedules": []
+  "schedules": [
+    {
+      "startAt": "14:31",
+      "type": "enable"
+    }
+  ]
 }
