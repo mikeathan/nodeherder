@@ -109,15 +109,15 @@ func (j *job) getStartAtDuration() (time.Duration, error) {
 		return 0, nil
 	}
 
-	startAtTime, err := ConvertStringToTime(j.startAtTime)
+	startAtTime, err := ConvertStringToTimeUTC(j.clock, j.startAtTime)
 	if err != nil {
 		utils.LogError("Error parsing start time:", err)
 		return 0, err
 	}
 
 	now := j.clock.Now()
-
 	startTime := time.Date(now.Year(), now.Month(), now.Day(), startAtTime.Hour(), startAtTime.Minute(), startAtTime.Second(), 0, now.Location())
+
 	if startTime.Before(now) {
 		nextTime := now.Truncate(time.Second).Add(j.RepeatEvery)
 		nextDuration := nextTime.Sub(now)
@@ -232,7 +232,7 @@ func (s *Scheduler) Do(action func() error) error {
 	return nil
 }
 
-func ConvertStringToTime(timeString string) (time.Time, error) {
+func ConvertStringToTimeUTC(clock utils.Clock, timeString string) (time.Time, error) {
 
 	var layout string
 	if timeWithMilliseconds.MatchString(timeString) {
@@ -245,12 +245,19 @@ func ConvertStringToTime(timeString string) (time.Time, error) {
 		return time.Time{}, ErrUnsupportedTimeFormat
 	}
 
-	t, err := time.Parse(layout, timeString)
+	// TODO: for now we assume the automation schedule is in Europe/London timezone
+	loc, _ := time.LoadLocation("Europe/London")
+	t, err := time.ParseInLocation(layout, timeString, loc)
 	if err != nil {
 		return time.Time{}, ErrUnsupportedTimeFormat
 	}
 
-	return t, nil
+	// convert to UTC
+	now := clock.Now().In(loc)
+	utcTime := time.Date(now.Year(), now.Month(), now.Day(),
+		t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), loc)
+
+	return utcTime.UTC(), nil
 }
 
 func (s *Scheduler) IsRunning() bool {

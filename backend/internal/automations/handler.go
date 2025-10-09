@@ -77,12 +77,12 @@ func DefaultAutomationHandlers(ctx context.Context) []AutomationHandler {
 var scheduleFuncMap = map[string]ScheduleFunc{
 	"enable": NewAutomationScheduleFunc(EnableScheduleType, func(automation Automation) error {
 		automation.SetEnabled(true)
-		utils.LogDebugf("AutomationScheduler: enable automation %s", automation.GetId())
+		utils.LogInfof("AutomationScheduler: enable automation %s", automation.GetId())
 		return nil
 	}),
 	"disable": NewAutomationScheduleFunc(DisableScheduleType, func(automation Automation) error {
 		automation.SetEnabled(false)
-		utils.LogDebugf("AutomationScheduler: disable automation %s", automation.GetId())
+		utils.LogInfof("AutomationScheduler: disable automation %s", automation.GetId())
 		return nil
 	}),
 }

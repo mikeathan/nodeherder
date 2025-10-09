@@ -145,12 +145,12 @@ func (t *TimeRangeHandler) Evaluate(ctx AutomationContext) bool {
 }
 
 func NewTimeRangeHandler(timeRange *TimeRange, clock utils.Clock) (*TimeRangeHandler, error) {
-	st, err := ConvertStringToTime(timeRange.StartAt)
+	st, err := ConvertStringToTimeUTC(clock, timeRange.StartAt)
 	if err != nil {
 		return nil, fmt.Errorf("invalid TimeRangeHandler.StartAt format %s", err.Error())
 	}
 
-	et, err := ConvertStringToTime(timeRange.EndAt)
+	et, err := ConvertStringToTimeUTC(clock, timeRange.EndAt)
 	if err != nil {
 		return nil, fmt.Errorf("invalid TimeRangeHandler.EndAt format %s", err.Error())
 	}
