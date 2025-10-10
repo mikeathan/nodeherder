@@ -114,18 +114,25 @@ func (j *job) getStartAtDuration() (time.Duration, error) {
 		utils.LogError("Error parsing start time:", err)
 		return 0, err
 	}
-
+	// it get called twice !!
+	// 	[DEBUG-SCHEDULER] Before startTime 2025-10-10 18:06:00 +0000 UTC, nextTime -347.570019ms
+	// [DEBUG-SCHEDULER] Before startTime 2025-10-10 18:08:00 +0000 UTC, nextTime -347.631506ms
+	// [DEBUG-SCHEDULER] Before startTime 2025-10-10 18:08:00 +0000 UTC, nextTime 23h59m59.651975552s
+	// [DEBUG-SCHEDULER] Before startTime 2025-10-10 18:06:00 +0000 UTC, nextTime 23h59m59.651472509s
 	now := j.clock.Now()
 	startTime := time.Date(now.Year(), now.Month(), now.Day(), startAtTime.Hour(), startAtTime.Minute(), startAtTime.Second(), 0, now.Location())
 
 	if startTime.Before(now) {
 		nextTime := now.Truncate(time.Second).Add(j.RepeatEvery)
 		nextDuration := nextTime.Sub(now)
+		fmt.Printf("[DEBUG-SCHEDULER] Before startTime %v, nextTime %v\n", startTime, nextDuration)
 
 		return nextDuration, nil
 	}
 
-	return startTime.Sub(now), nil
+	n := startTime.Sub(now)
+	fmt.Printf("[DEBUG-SCHEDULER] Return startTime %v, nextTime %v\n", startTime, n)
+	return n, nil
 }
 
 type Scheduler struct {

@@ -204,7 +204,10 @@ func (a *AutomationScheduler) Process(automation Automation) error {
 	// disable automation and configure scheduler
 	automation.SetEnabled(false)
 
-	for _, schedule := range automation.GetSchedules() {
+	schedules := automation.GetSchedules()
+
+	fmt.Printf("[DEBUG-SCHEDULER] Num of schedules %v\n", len(schedules))
+	for _, schedule := range schedules {
 
 		name := fmt.Sprintf("%s-%s", automation.GetId(), schedule.Type)
 
