@@ -26,11 +26,11 @@
   ],
   "schedules": [
     {
-      "startAt": "19:06",
+      "startAt": "20:01",
       "type": "enable"
     },
     {
-      "startAt": "19:08",
+      "startAt": "20:05",
       "type": "enable"
     }
   ]

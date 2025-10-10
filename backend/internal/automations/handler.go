@@ -206,7 +206,6 @@ func (a *AutomationScheduler) Process(automation Automation) error {
 
 	schedules := automation.GetSchedules()
 
-	fmt.Printf("[DEBUG-SCHEDULER] Num of schedules %v\n", len(schedules))
 	for _, schedule := range schedules {
 
 		name := fmt.Sprintf("%s-%s", automation.GetId(), schedule.Type)

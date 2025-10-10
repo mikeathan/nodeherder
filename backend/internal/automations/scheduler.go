@@ -80,6 +80,16 @@ func (j *job) Start() error {
 		return j.Error
 	}
 
+	// Recalculate the start duration to ensure we don't execute immediately if time has passed
+	startDuration, err := j.getStartAtDuration()
+	if err != nil {
+		utils.LogErrorf("Job %s failed to calculate start duration: %s", j.Name, err.Error())
+		j.Error = err
+		return err
+	}
+
+	j.StartAtDuration = startDuration
+
 	j.timer = j.clock.AfterFunc(j.StartAtDuration, func() {
 		utils.LogInfo("Executing job ", j.Name)
 
@@ -114,25 +124,17 @@ func (j *job) getStartAtDuration() (time.Duration, error) {
 		utils.LogError("Error parsing start time:", err)
 		return 0, err
 	}
-	// it get called twice !!
-	// 	[DEBUG-SCHEDULER] Before startTime 2025-10-10 18:06:00 +0000 UTC, nextTime -347.570019ms
-	// [DEBUG-SCHEDULER] Before startTime 2025-10-10 18:08:00 +0000 UTC, nextTime -347.631506ms
-	// [DEBUG-SCHEDULER] Before startTime 2025-10-10 18:08:00 +0000 UTC, nextTime 23h59m59.651975552s
-	// [DEBUG-SCHEDULER] Before startTime 2025-10-10 18:06:00 +0000 UTC, nextTime 23h59m59.651472509s
 	now := j.clock.Now()
 	startTime := time.Date(now.Year(), now.Month(), now.Day(), startAtTime.Hour(), startAtTime.Minute(), startAtTime.Second(), 0, now.Location())
 
 	if startTime.Before(now) {
-		nextTime := now.Truncate(time.Second).Add(j.RepeatEvery)
-		nextDuration := nextTime.Sub(now)
-		fmt.Printf("[DEBUG-SCHEDULER] Before startTime %v, nextTime %v\n", startTime, nextDuration)
+		nextStartTime := startTime.Add(j.RepeatEvery)
+		nextDuration := nextStartTime.Sub(now)
 
 		return nextDuration, nil
 	}
 
-	n := startTime.Sub(now)
-	fmt.Printf("[DEBUG-SCHEDULER] Return startTime %v, nextTime %v\n", startTime, n)
-	return n, nil
+	return startTime.Sub(now), nil
 }
 
 type Scheduler struct {
@@ -212,6 +214,7 @@ func (s *Scheduler) Every(duration time.Duration) *Scheduler {
 }
 
 func (s *Scheduler) At(timeString string) *Scheduler {
+
 	job := s.getCurrentJob()
 
 	job.startAtTime = timeString
