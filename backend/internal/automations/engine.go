@@ -73,17 +73,20 @@ func (a *AutomationEngine) HandleManual(automationID string, triggerName string)
 		return err
 	}
 
-	if automation.IsEnabled() {
-		device, err := a.registrar.LookupById(automationID)
-		if err != nil {
-			utils.LogErrorf("Failed to lookup device with id %s. Error=%s", automationID, err.Error())
-			return err
-		}
-
-		if !automation.EvaluateTrigger(NewDeviceEvent(device), triggerName) {
-			return errors.New("automation trigger failed to run")
-		}
+	if !automation.IsEnabled() {
+		return errors.New("automation is disabled")
 	}
+
+	device, err := a.registrar.LookupById(automationID)
+	if err != nil {
+		utils.LogErrorf("Failed to lookup device with id %s. Error=%s", automationID, err.Error())
+		return err
+	}
+
+	if !automation.EvaluateTrigger(NewDeviceEvent(device), triggerName) {
+		return errors.New("automation trigger failed to run")
+	}
+
 	return nil
 }
 

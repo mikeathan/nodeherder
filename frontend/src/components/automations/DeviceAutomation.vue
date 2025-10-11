@@ -207,7 +207,6 @@
             v-if="canTriggerManually(slotProps.data)"
             label="Run"
             icon="pi pi-play"
-            :disabled="false" to control by scheduled timer
             :action="() => triggerAutomation(automation, slotProps.data.name)" />
         </template>
       </Column>
