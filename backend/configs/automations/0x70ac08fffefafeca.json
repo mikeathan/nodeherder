@@ -26,12 +26,12 @@
   ],
   "schedules": [
     {
-      "startAt": "20:01",
+      "startAt": "12:54",
       "type": "enable"
     },
     {
-      "startAt": "20:05",
-      "type": "enable"
+      "startAt": "12:56",
+      "type": "disable"
     }
   ]
 }
