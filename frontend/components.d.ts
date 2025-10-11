@@ -93,7 +93,7 @@ declare module 'vue' {
     ReorderableList: typeof import('./src/components/controls/ReorderableList.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    Scheduler: typeof import('./src/components/automations/Scheduler.vue')['default']
+    Scheduler: typeof import('./src/components/automations/schedule/Scheduler.vue')['default']
     Select: typeof import('primevue/select')['default']
     Selection: typeof import('./src/components/input/Selection.vue')['default']
     SelectionDialog: typeof import('./src/components/dialogs/SelectionDialog.vue')['default']

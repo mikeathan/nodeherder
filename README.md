@@ -82,6 +82,7 @@ TODO:
 - frontend - tabs - load tab on click -(leave for now)
 - frontend - handle timerange enum colours
 - toggle for live data ? later
+- authomation schedule - disable/enable button accorsing to scheduler if Manual Trigger
 
 once we send the request
 store response in metrics store ? needs thinking if we need that
