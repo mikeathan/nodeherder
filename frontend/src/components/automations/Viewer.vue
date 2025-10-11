@@ -1,125 +1,38 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { RouterLink, useRouter } from 'vue-router';
-import { store } from '../../store/index';
-import AutomationStatus from './schedule/AutomationStatus.vue';
-import { Automations } from '@/types/automation.type';
+  import { useRouter } from 'vue-router';
+  import { store } from '../../store/index';
+  import AutomationStatus from './schedule/AutomationStatus.vue';
+  import { emitOpenConfirmationDialog } from '@/contracts/dialog-events';
+  import { useAutomationsLoader } from '@/mixins/composables/useAutomationLoader';
 
-const router = useRouter();
-const automations = computed(() => {
-  if (
-    !store.getters['automations/initialized']() as Boolean
-  ) {
+  const router = useRouter();
+  const automations = useAutomationsLoader();
+
+  function openDeleteAutomationConfirmationDialog(id: string) {
+    const props = {
+      title: 'Question',
+      message: `Delete automation ${id} ?`,
+    };
+    emitOpenConfirmationDialog(() => onDeleteAutomationClick(id), props);
+  }
+
+  function onDeleteAutomationClick(id: string): void {
     store.dispatch('ws/emit', {
-      event: 'loadAutomations',
+      event: 'deleteAutomation',
+      message: { id },
     });
   }
-  return store.getters[
-    'automations/listAll'
-  ]() as Automations;
-});
 
-function onDeleteAutomationClick(id: string): void {
-  // emit delete event
-  store.dispatch('ws/emit', {
-    event: 'deleteAutomation',
-    message: {
-      id: id,
-    },
-  });
-}
-
-const navigateToCreator = () => {
-  router.push('/creator');
-};
+  const navigateToCreator = () => {
+    router.push('/creator');
+  };
 </script>
-
 <style scoped>
-.container {
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.list {
-  padding: 0;
-  margin: 0;
-}
-
-.list-item {
-  display: flex;
-  flex-direction: column;
-  padding: 16px;
-  border-bottom: 1px solid #e0e0e0;
-  gap: 16px;
-}
-
-.badge {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: white;
-  font-weight: bold;
-  width: 48px;
-  height: 48px;
-}
-
-.details {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex-grow: 1;
-}
-
-.friendly-name {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.link {
-  text-decoration: none;
-}
-
-.description {
-  font-size: 14px;
-  color: #4b5563;
-  line-height: 1.5;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.actions {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-
-/* Mobile: Stack vertically */
-@media (max-width: 768px) {
-  .list-item {
-    flex-direction: column;
+  .hover-row:hover,
+  .hover-row:focus,
+  .hover-row:active {
+    background: var(--p-content-hover-background);
   }
-
-  .actions {
-    justify-content: flex-start;
-    margin-top: 8px;
-  }
-}
-
-@media (min-width: 768px) {
-  .list-item {
-    flex-direction: row;
-    align-items: center;
-  }
-
-  .actions {
-    justify-content: flex-end;
-  }
-
-  .description {
-    white-space: normal;
-  }
-}
 </style>
 <template>
   <Card>
@@ -127,39 +40,33 @@ const navigateToCreator = () => {
       <h2>Automations</h2>
     </template>
     <template #content>
-      <Divider type="solid" />
-      <div class="container">
-        <ul class="list">
-          <template v-for="(automation, index) in automations" :key="automation.id">
-            <li class="list-item">
-              <div class="details">
-                <div class="friendly-name">
-                  <RouterLink :to="`/editor/${automation.id}`" class="link">
-                    {{ automation.friendlyname }}
-                  </RouterLink>
-                </div>
-                <div class="description">
-                  {{ automation.description }}
-                </div>
-              </div>
-
-              <!-- Actions Section -->
-              <div class="actions">
-                <AutomationStatus :automation="automation" />
-                <Button icon="pi pi-trash" variant="text" rounded @click="
-                  onDeleteAutomationClick(automation.id)
-                  " />
-              </div>
-            </li>
-          </template>
-        </ul>
+      <div class="flex align-items-center pb-3 gap-1">
+        <Button icon="pi pi-plus" label="Create" size="small" severity="secondary" @click="navigateToCreator" />
       </div>
-
-      <div class="pt-3"></div>
-      <div class="col md:col-3 sm:col-6">
-        <Button style="width: 60%" icon="pi pi-plus" label="Create automation" @click="navigateToCreator"
-          size="small" />
-      </div>
+      <DataView :value="automations" layout="list" data-key="id">
+        <template #list="slotProps">
+          <div
+            v-for="automation in slotProps.items"
+            :key="automation.id"
+            class="flex flex-column md:flex-row md:align-items-center md:justify-content-between p-3 border-bottom-1 surface-border mb-2 cursor-pointer hover-row"
+            @click="router.push(`/editor/${automation.id}`)">
+            <!-- Details -->
+            <div class="flex flex-column gap-1 flex-1">
+              <span class="font-medium text-lg text-primary">{{ automation.friendlyname }}</span>
+              <span class="text-sm text-secondary">{{ automation.description }}</span>
+            </div>
+            <!-- Actions -->
+            <div class="flex align-items-center gap-2" @click.stop>
+              <AutomationStatus :automation="automation" />
+              <Button
+                icon="pi pi-trash"
+                variant="text"
+                rounded
+                @click="openDeleteAutomationConfirmationDialog(automation.id)" />
+            </div>
+          </div>
+        </template>
+      </DataView>
     </template>
   </Card>
 </template>

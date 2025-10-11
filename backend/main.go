@@ -23,7 +23,7 @@ func readArgs() *cmdArgs {
 
 	port := flag.Int("port", 4110, "port number")
 	buildType := flag.String("buildType", "", "client build type")
-	logLevel := flag.String("logLevel", "info", "client build type")
+	logLevel := flag.String("logLevel", "info", "logging level")
 
 	flag.Parse()
 	if *port <= 0 {

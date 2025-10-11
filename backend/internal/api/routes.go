@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"node-herder/internal/controllers"
 	"node-herder/internal/fs"
+	"node-herder/internal/ratelimiter"
 	"node-herder/internal/ws"
+	"node-herder/models/automations"
 	"node-herder/models/logging"
 	"node-herder/store"
 	"node-herder/utils"
@@ -68,10 +70,10 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func (r *Router) getHandler(method, path string) http.Handler {
+
 	for _, route := range r.routes {
 		re := regexp.MustCompile(route.pattern)
-		if route.method == method && re.MatchString(path) {
-
+		if re.MatchString(path) && (route.method == method || method == http.MethodOptions) {
 			handler := route.handler
 
 			// chain handler with middleware
@@ -86,6 +88,7 @@ func (r *Router) getHandler(method, path string) http.Handler {
 	return http.NotFoundHandler()
 }
 
+// Web socket
 type WsHandler struct {
 	hub ws.EventHub
 }
@@ -106,6 +109,7 @@ func (h *WsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	utils.LogInfo("WsHandler: client connected")
 }
 
+// List file logs
 type ListFileLogsHandler struct {
 	fs fs.FileSystem
 }
@@ -119,8 +123,7 @@ func (h *ListFileLogsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	files, err := h.fs.ListFilesWithExtension(utils.LogsPath, utils.LogExtension)
 	if err != nil {
 		utils.LogErrorf("ListFileLogsHandler: ListFileLogs error %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-
+		writeJSONError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -128,12 +131,12 @@ func (h *ListFileLogsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(files); err != nil {
 		utils.LogErrorf("ListFileLogsHandler: Failed to encode response %s", err.Error())
-
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "Failed to encode response")
 		return
 	}
 }
 
+// Log file
 type LogFileHandler struct {
 	fs fs.FileSystem
 }
@@ -229,6 +232,7 @@ func (h *DataCollectorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	w.Write([]byte("Success"))
 }
 
+// File
 type FileHandler struct {
 	handlerFunc func(http.ResponseWriter, *http.Request)
 }
@@ -247,6 +251,7 @@ func NewFileHandler(path string, redirectPath string) *FileHandler {
 	return fh
 }
 
+// Hub State
 type HubStateHandler struct {
 	store            store.AppStore
 	cachedHubState   []byte
@@ -312,11 +317,74 @@ func (h *HubStateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := h.refreshCacheIfNeeded(); err != nil {
 		utils.LogErrorf("HubStateHandler: Failed to load hub state %s", err.Error())
-		http.Error(w, "Failed to load hub state", http.StatusInternalServerError)
+		writeJSONError(w, http.StatusInternalServerError, "Failed to load hub state")
 		return
 	}
 
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	w.Write(h.cachedHubState)
+}
+
+// Automation Trigger
+type AutomationTriggerHandler struct {
+	hub       automations.AutomationTrigger
+	limiter   *ratelimiter.RateLimiter
+	rateLimit time.Duration
+}
+
+func NewAutomationTriggerHandler(hub automations.AutomationTrigger, rateLimit time.Duration) *AutomationTriggerHandler {
+	sh := &AutomationTriggerHandler{
+		hub:       hub,
+		limiter:   ratelimiter.NewRateLimiter(),
+		rateLimit: rateLimit,
+	}
+	return sh
+}
+
+func (h *AutomationTriggerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Content-Type") != "application/json" {
+		writeJSONError(w, http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		return
+	}
+
+	// Read body
+	var payload struct {
+		AutomationId string `json:"automationId"`
+		TriggerName  string `json:"triggerName"`
+	}
+
+	err := json.NewDecoder(r.Body).Decode(&payload)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+
+	automationId := payload.AutomationId
+	triggerName := payload.TriggerName
+	if automationId == "" || triggerName == "" {
+		writeJSONError(w, http.StatusBadRequest, "missing automationId or triggerName")
+		return
+	}
+
+	if !h.limiter.AllowWrite(automationId, h.rateLimit) {
+		writeJSONError(w, http.StatusTooManyRequests, "rate limit exceeded")
+		return
+	}
+
+	err = h.hub.TriggerManual(automationId, triggerName)
+	if err != nil {
+		writeJSONError(w, http.StatusPreconditionFailed, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]any{"status": "ok"})
+}
+
+func writeJSONError(w http.ResponseWriter, status int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
 }

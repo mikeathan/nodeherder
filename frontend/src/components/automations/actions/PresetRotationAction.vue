@@ -62,7 +62,7 @@ function removeAction(): void {
 <template>
   <div class="row pb-3">
     <div class="col">
-      <ButtonPanel :buttons="buttonPanelItems"></ButtonPanel>
+     <ButtonPanel :buttons="buttonPanelItems" severity="secondary" />
     </div>
   </div>
 

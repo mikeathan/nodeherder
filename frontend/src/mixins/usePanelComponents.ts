@@ -10,5 +10,5 @@ export const PanelComponents: Map = {
   ActionEditor: defineAsyncComponent(() => import('../components/automations/actions/ActionEditor.vue')),
   ActionViewer: defineAsyncComponent(() => import('../components/automations/actions/ActionViewer.vue')),
   preset: defineAsyncComponent(() => import('../components/automations/actions/PresetRotationAction.vue')),
-  Scheduler: defineAsyncComponent(() => import('../components/automations/Scheduler.vue')),
+  Scheduler: defineAsyncComponent(() => import('../components/automations/schedule/Scheduler.vue')),
 };

@@ -7,6 +7,7 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
 	"node-herder/utils"
+	"reflect"
 	"sync"
 	"time"
 )
@@ -17,11 +18,26 @@ import (
 // action set brighness +/- some value = [value_source] [arithmetic operator] [step_value]
 // action set brighness  +/- some other numeric combination  eg direction_time * 0.5
 
+type PublishMode string
+
+type ActionType string
+
 const (
-	TriggerAction       = "trigger"
-	StepAction          = "step"
-	PresetCyclingAction = "preset"
+	PublishBatch  PublishMode = "batch"  // all commands in one payload
+	PublishSingle PublishMode = "single" // one payload per command
 )
+
+const (
+	TriggerAction       ActionType = "trigger"
+	StepAction          ActionType = "step"
+	PresetCyclingAction ActionType = "preset"
+)
+
+var actionTypeRegistry = map[ActionType]reflect.Type{
+	TriggerAction:       reflect.TypeOf(MqttTriggerAction{}),
+	StepAction:          reflect.TypeOf(MqttStepAction{}),
+	PresetCyclingAction: reflect.TypeOf(MqttPresetCyclingAction{}),
+}
 
 type Step struct {
 	Property string `json:"property"`
@@ -36,8 +52,9 @@ type MqttTriggerActionExpose struct {
 
 type MqttTriggerAction struct {
 	MqttBaseAction
-	Exposes []*MqttTriggerActionExpose `json:"exposes"`
-	Delay   *utils.TimeInterval        `json:"delay,omitempty"`
+	Exposes     []*MqttTriggerActionExpose `json:"exposes"`
+	Delay       *utils.TimeInterval        `json:"delay,omitempty"`
+	PublishMode PublishMode                `json:"publishMode,omitempty"`
 }
 
 func NewTriggerAction() *MqttTriggerAction {
@@ -83,7 +100,7 @@ func (a *MqttTriggerAction) Configure(registrar services.DeviceRegistrar, client
 	return nil
 }
 
-func (a *MqttTriggerAction) Execute(ctx *DeviceContext) error {
+func (a *MqttTriggerAction) Execute(ctx AutomationContext) error {
 	if a.Delay == nil {
 		return a.executeBase(ctx)
 	}
@@ -107,7 +124,7 @@ func NewStepAction() *MqttStepAction {
 	}
 }
 
-func (a *MqttStepAction) Execute(ctx *DeviceContext) error {
+func (a *MqttStepAction) Execute(ctx AutomationContext) error {
 	return a.executeBase(ctx)
 }
 
@@ -144,7 +161,7 @@ func NewPresetCyclingAction() *MqttPresetCyclingAction {
 	}
 }
 
-func (a *MqttPresetCyclingAction) Execute(ctx *DeviceContext) error {
+func (a *MqttPresetCyclingAction) Execute(ctx AutomationContext) error {
 	return a.executeBase(ctx)
 }
 
@@ -170,7 +187,7 @@ func (a *MqttPresetCyclingAction) Configure(registrar services.DeviceRegistrar, 
 
 type MqttBaseAction struct {
 	Id           string                   `json:"id"`
-	Type         string                   `json:"type"`
+	Type         ActionType               `json:"type"`
 	Client       mqtt.MqttClient          `json:"-"`
 	registrar    services.DeviceRegistrar `json:"-"`
 	mut          sync.RWMutex             `json:"-"`
@@ -188,36 +205,87 @@ func (a *MqttBaseAction) emit(payload []byte) {
 	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.friendlyName)
 }
 
-func (b *MqttBaseAction) processAction(ctx *DeviceContext) error {
+func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
+
 	payload, err := b.operation.CreatePayload()
 	if err != nil {
 		return err
 	}
 
-	// build payload
-	bytes, err := json.Marshal(payload)
-	if err != nil {
-		utils.LogErrorf("preset cycling action failed %s ", err.Error())
-		return err
+	if payload.PublishMode == PublishSingle {
+		for key, value := range payload.Commands {
+			single := map[string]any{key: value}
+
+			bytes, err := json.Marshal(single)
+			if err != nil {
+				utils.LogErrorf("Action triggered. Failed to marshal command %s: %s", key, err.Error())
+				return err
+			}
+			// emit message
+			b.emit(bytes)
+		}
+	} else {
+		bytes, err := json.Marshal(payload.Commands)
+		if err != nil {
+			utils.LogErrorf("Action triggered. Failed to marshal payload: %s", err.Error())
+			return err
+		}
+
+		// emit message
+		b.emit(bytes)
 	}
 
-	// emit message
-	b.emit(bytes)
-
-	// on sucess update device context with new values to avoid querying the device again
-	// ideally we need to do it if publish has succeeded
-	utils.LogInfof("Action triggered. Message %s published in %s", string(bytes), b.friendlyName)
-	for key, value := range payload {
-		ctx.SetCurrent(key, value)
+	// on success update device context with new values to avoid querying the device again
+	for key, value := range payload.Commands {
+		// Always resolve and set current state (used elsewhere)
+		resolvedValue := b.resolveValue(key, value, ctx)
+		ctx.SetCurrentState(key, resolvedValue)
 	}
+
 	return nil
+}
+
+func (b *MqttBaseAction) resolveValue(key string, value any, ctx AutomationContext) any {
+	// Handle TOGGLE for binary states
+	if valueStr, ok := value.(string); ok && valueStr == "TOGGLE" {
+		// Get current state to determine what TOGGLE should become
+		currentValue := ctx.GetCurrentState(key)
+
+		// For binary states, toggle the boolean value
+		if key == "state" {
+			// If no current state exists, default to false
+			if currentValue == nil {
+				return true
+			}
+			currentBool := b.toBool(currentValue)
+			return !currentBool // Return the toggled boolean value
+		}
+	}
+
+	return value
+}
+
+// toBool converts various representations to boolean (same as in trigger.go)
+func (b *MqttBaseAction) toBool(value any) bool {
+	switch v := value.(type) {
+	case bool:
+		return v
+	case string:
+		return v == "ON" || v == "true"
+	case int:
+		return v != 0
+	case float64:
+		return v != 0
+	default:
+		return false
+	}
 }
 
 func (b *MqttBaseAction) GetID() string {
 	return b.Id
 }
 
-func (b *MqttBaseAction) GetType() string {
+func (b *MqttBaseAction) GetType() ActionType {
 	return b.Type
 }
 
@@ -232,7 +300,7 @@ func (a *MqttBaseAction) Stop() {
 	}
 }
 
-func (b *MqttBaseAction) executeBaseWithDelay(delay *utils.TimeInterval, ctx *DeviceContext) error {
+func (b *MqttBaseAction) executeBaseWithDelay(delay *utils.TimeInterval, ctx AutomationContext) error {
 	b.mut.Lock()
 	defer b.mut.Unlock()
 
@@ -277,7 +345,7 @@ func (b *MqttBaseAction) executeBaseWithDelay(delay *utils.TimeInterval, ctx *De
 	return nil
 }
 
-func (b *MqttBaseAction) executeBase(ctx *DeviceContext) error {
+func (b *MqttBaseAction) executeBase(ctx AutomationContext) error {
 	b.mut.Lock()
 	defer b.mut.Unlock()
 
@@ -300,9 +368,9 @@ func (b *MqttBaseAction) executeBase(ctx *DeviceContext) error {
 }
 
 type MqttAction interface {
-	Execute(tx *DeviceContext) error
+	Execute(ctx AutomationContext) error
 	Stop()
 	GetID() string
-	GetType() string
+	GetType() ActionType
 	Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error
 }

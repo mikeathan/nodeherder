@@ -12,9 +12,8 @@ const (
 
 	// requests
 	LoadAutomations = "loadAutomations"
-	//LoadHubState    = "loadHubState"
-	LoadDevice     = "loadDevice"
-	LoadDeviceList = "loadDeviceList"
+	LoadDevice      = "loadDevice"
+	LoadDeviceList  = "loadDeviceList"
 
 	SaveAutomation          = "saveAutomation"
 	DeleteAutomation        = "deleteAutomation"
@@ -31,6 +30,7 @@ const (
 	DeleteDeviceConfigOverride = "deleteDeviceConfigOverride"
 	SaveDeviceConfigDefaults   = "saveDeviceConfigDefaults"
 	SaveDashboardGroup         = "saveDashboardGroup"
+	RenameDashboardGroup       = "renameDashboardGroup"
 	DeleteDashboardGroup       = "deleteDashboardGroup"
 	ImportDashboardGroups      = "importDashboardGroups"
 	LoadDashboardGroups        = "loadDashboardGroups"
@@ -47,7 +47,6 @@ const (
 	OperationFailed   = "operationFailed"
 	OperationSuccess  = "operationSuccess"
 	AutomationUpdated = "automationUpdated" // returns back upated automation
-	//HubState          = "hubState"
 
 	Metrics         = "metrics"
 	AppConfig       = "appConfig"
@@ -76,7 +75,6 @@ type EventHub interface {
 	OnDeleteAutomationTrigger(func(payload interface{}) (interface{}, error))
 	OnLoadMetrics(action func(interface{}) (interface{}, error))
 	OnLoadAppConfig(action func() (interface{}, error))
-	//OnLoadHubState(action func() (interface{}, error))
 	OnLoadBridgeConfig(action func() (interface{}, error))
 	OnSaveDeviceConfigOverride(func(payload interface{}) error)
 	OnDeleteDeviceConfigOverride(func(payload interface{}) error)
@@ -84,6 +82,7 @@ type EventHub interface {
 	OnSaveHistoryConfig(func(payload interface{}) error)
 	OnSaveLoggerConfig(func(payload interface{}) error)
 	OnSaveDashboardGroup(action func(payload interface{}) error)
+	OnRenameDashboardGroup(action func(payload interface{}) (interface{}, error))
 	OnImportDashboardGroups(action func(payload interface{}) error)
 	OnLoadDashboardGroups(action func() (interface{}, error))
 	OnDeleteDashboardGroup(action func(payload interface{}) error)
@@ -114,11 +113,11 @@ type eventHubImpl struct {
 	onSaveHistoryConfig          func(interface{}) error
 	onSaveLoggerConfig           func(interface{}) error
 	onSaveDashboardGroup         func(interface{}) error
+	onRenameDashboardGroup       func(interface{}) (interface{}, error)
 	onDeleteDashboardGroup       func(payload interface{}) error
 	onImportDashboardGroups      func(payload interface{}) error
 	onLoadDashboardGroups        func() (interface{}, error)
-	//onLoadHubState                func() (interface{}, error)
-	requestContext hub.Context
+	requestContext               hub.Context
 }
 
 func NewWsHub() EventHub {
@@ -146,10 +145,10 @@ func NewWsHub() EventHub {
 		onSaveLoggerConfig:           func(payload interface{}) error { return nil },
 		onSaveDashboardGroup:         func(payload interface{}) error { return nil },
 		onDeleteDashboardGroup:       func(payload interface{}) error { return nil },
+		onRenameDashboardGroup:       func(payload interface{}) (interface{}, error) { return nil, nil },
 		onImportDashboardGroups:      func(payload interface{}) error { return nil },
 		onLoadDashboardGroups:        func() (interface{}, error) { return nil, nil },
-		//onLoadHubState:                func() (interface{}, error) { return nil, nil },
-		requestContext: NewRequestContext(),
+		requestContext:               NewRequestContext(),
 	}
 }
 
@@ -245,6 +244,10 @@ func (h *eventHubImpl) OnSaveDashboardGroup(action func(payload interface{}) err
 	h.onSaveDashboardGroup = action
 }
 
+func (h *eventHubImpl) OnRenameDashboardGroup(action func(payload interface{}) (interface{}, error)) {
+	h.onRenameDashboardGroup = action
+}
+
 func (h *eventHubImpl) OnDeleteDashboardGroup(action func(payload interface{}) error) {
 	h.onDeleteDashboardGroup = action
 }
@@ -313,59 +316,59 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 			utils.LogErrorf("Failed to broadcast onLoadAutomations %s", err.Error())
 		}
 
-	// case LoadHubState:
-	// 	c.executeActionWithEvent(c.onLoadHubState, HubState)
-
 	case LoadMetrics:
-		c.executePayloadActionWithSuccessfullyEvent(eventMsg.Payload, c.onLoadMetrics, Metrics)
+		c.execute(eventExecutorOptionsWithResultNoError(eventMsg.Payload, wrapPayloadWithResult(c.onLoadMetrics), Metrics))
 
 	case LoadAppconfig:
-		c.executeActionWithEvent(c.onLoadAppConfig, AppConfig)
+		c.execute(eventExecutorOptionsWithResult(nil, wrapNoPayload(c.onLoadAppConfig), AppConfig))
 
 	case SaveDeviceConfigOverride:
-		c.executeAction(eventMsg.Payload, c.onSaveDeviceConfigOverride, true)
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onSaveDeviceConfigOverride)))
 
 	case DeleteDeviceConfigOverride:
-		c.executeAction(eventMsg.Payload, c.onDeleteDeviceConfigOverride, true)
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onDeleteDeviceConfigOverride)))
 
 	case SaveDeviceConfigDefaults:
-		c.executeAction(eventMsg.Payload, c.onSaveDeviceConfigDefaults, true)
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onSaveDeviceConfigDefaults)))
 
 	case SaveHistoryConfig:
-		c.executeAction(eventMsg.Payload, c.onSaveHistoryConfig, true)
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onSaveHistoryConfig)))
 
 	case SaveAutomation:
-		c.executeAction(eventMsg.Payload, c.onSaveAutomation, true)
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onSaveAutomation)))
 
 	case DeleteAutomation:
-		c.executePayloadActionWithEvent(eventMsg.Payload, c.onDeleteAutomation, Automations)
+		c.execute(eventExecutorOptionsWithResult(eventMsg.Payload, wrapPayloadWithResult(c.onDeleteAutomation), Automations))
 
 	case DeleteAutomationTrigger:
-		c.executePayloadActionWithEvent(eventMsg.Payload, c.onDeleteAutomationTrigger, AutomationUpdated)
+		c.execute(eventExecutorOptionsWithResult(eventMsg.Payload, wrapPayloadWithResult(c.onDeleteAutomationTrigger), AutomationUpdated))
 
 	case DeviceSetValue:
-		c.executeAction(eventMsg.Payload, c.onDeviceSetValue, false)
+		c.execute(eventExecutorOptionsWithoutSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onDeviceSetValue)))
 
 	case DeviceRename:
-		c.executeAction(eventMsg.Payload, c.onDeviceRename, false)
+		c.execute(eventExecutorOptionsWithoutSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onDeviceRename)))
 
 	case DeviceRemove:
-		c.executeAction(eventMsg.Payload, c.onDeviceRemove, false)
+		c.execute(eventExecutorOptionsWithoutSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onDeviceRemove)))
 
 	case DeviceInterview:
-		c.executeAction(eventMsg.Payload, c.onDeviceInterview, false)
+		c.execute(eventExecutorOptionsWithoutSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onDeviceInterview)))
 
 	case BridgePermitJoin:
-		c.executeAction(eventMsg.Payload, c.onBridgePermitJoin, false)
+		c.execute(eventExecutorOptionsWithoutSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onBridgePermitJoin)))
 
 	case SaveLoggerConfig:
-		c.executeAction(eventMsg.Payload, c.onSaveLoggerConfig, true)
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onSaveLoggerConfig)))
 
 	case SaveDashboardGroup:
-		c.executeAction(eventMsg.Payload, c.onSaveDashboardGroup, true)
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onSaveDashboardGroup)))
+
+	case RenameDashboardGroup:
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadWithResult(c.onRenameDashboardGroup)))
 
 	case DeleteDashboardGroup:
-		c.executeAction(eventMsg.Payload, c.onDeleteDashboardGroup, true)
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onDeleteDashboardGroup)))
 
 	case ImportDashboardGroups:
 		// will need refactoring
@@ -396,7 +399,7 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 		}
 
 	case LoadDashboardGroups:
-		c.executeActionWithEvent(c.onLoadDashboardGroups, DashboardGroups)
+		c.execute(eventExecutorOptionsWithResult(nil, wrapNoPayload(c.onLoadDashboardGroups), DashboardGroups))
 
 	default:
 
@@ -405,75 +408,116 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 	}
 }
 
-func (c *eventHubImpl) executeActionWithEvent(action func() (interface{}, error), successEvent string) {
+func (c *eventHubImpl) execute(opts *eventExecutorOptions) {
 
-	result, err := action()
-	if err != nil {
-		err = c.Broadcast(OperationFailed, err.Error())
-		if err != nil {
-			utils.LogErrorf("Failed to broadcast OperationFailed %s", err.Error())
-		}
-	} else {
-		err = c.Broadcast(successEvent, result)
-		if err != nil {
-			utils.LogErrorf("Failed to broadcast successEvent %s", err.Error())
-		}
-	}
-}
-
-func (c *eventHubImpl) executePayloadActionWithSuccessfullyEvent(payload interface{}, action func(interface{}) (interface{}, error), successEvent string) {
-
-	if payload == nil {
-		c.Broadcast(OperationFailed, "payload is empty")
+	if opts.Action == nil {
 		return
 	}
 
-	result, err := action(payload)
-	if err == nil {
-		err = c.Broadcast(successEvent, result)
-		if err != nil {
-			utils.LogErrorf("Failed to broadcast successEvent %s", err.Error())
+	// TODO:
+	//if we expect payload and is empty the
+	// if payload == nil {
+	// 	c.Broadcast(OperationFailed, "payload is empty")
+	// 	return
+	// }
+
+	result, err := opts.Action(opts.Payload)
+	if err != nil {
+		if opts.ReportError {
+			err = c.Broadcast(OperationFailed, err.Error())
+			if err != nil {
+				utils.LogErrorf("Failed to broadcast OperationFailed %s", err.Error())
+			}
 		}
-	}
-}
-
-func (c *eventHubImpl) executePayloadActionWithEvent(payload interface{}, action func(interface{}) (interface{}, error), successEvent string) {
-
-	if payload == nil {
-		c.Broadcast(OperationFailed, "payload is empty")
 		return
 	}
 
-	result, err := action(payload)
-	if err != nil {
-		err = c.Broadcast(OperationFailed, err.Error())
-		if err != nil {
-			utils.LogErrorf("Failed to broadcast OperationFailed %s", err.Error())
-		}
-	} else {
-		err = c.Broadcast(successEvent, result)
-		if err != nil {
-			utils.LogErrorf("Failed to broadcast OperationSuccess %s", err.Error())
-		}
-	}
-}
-
-func (c *eventHubImpl) executeAction(payload interface{}, action func(interface{}) error, reportSuccess bool) {
-	if payload == nil {
-		c.Broadcast(OperationFailed, "payload is empty")
+	if !opts.ReportSuccess {
 		return
 	}
 
-	err := action(payload)
+	var reportResult any = nil
+	if opts.ReportResult {
+		reportResult = result
+	}
+
+	var successEvent = opts.SuccessEvent
+	if successEvent == "" {
+		successEvent = OperationSuccess
+	}
+	err = c.Broadcast(successEvent, reportResult)
 	if err != nil {
-		err = c.Broadcast(OperationFailed, err.Error())
-		if err != nil {
-			utils.LogErrorf("Failed to broadcast OperationFailed %s", err.Error())
-		}
-	} else if reportSuccess {
-		err = c.Broadcast(OperationSuccess, nil)
-		if err != nil {
-			utils.LogErrorf("Failed to broadcast OperationSuccess %s", err.Error())
-		}
+		utils.LogErrorf("Failed to broadcast successEvent %s. Error: %s", successEvent, err.Error())
+	}
+}
+
+// Event Executors
+type eventAction func(payload interface{}) (interface{}, error)
+type eventExecutorOptions struct {
+	Payload       interface{}
+	Action        eventAction
+	SuccessEvent  string
+	ReportResult  bool
+	ReportSuccess bool
+	ReportError   bool
+}
+
+func eventExecutorOptionsWithSuccess(payload interface{}, event eventAction) *eventExecutorOptions {
+	return &eventExecutorOptions{
+		Action:        event,
+		Payload:       payload,
+		SuccessEvent:  OperationSuccess,
+		ReportResult:  false,
+		ReportSuccess: true,
+		ReportError:   true,
+	}
+}
+func eventExecutorOptionsWithResultNoError(payload interface{}, event eventAction, successEvent string) *eventExecutorOptions {
+	return &eventExecutorOptions{
+		Action:        event,
+		Payload:       payload,
+		SuccessEvent:  successEvent,
+		ReportResult:  true,
+		ReportSuccess: true,
+		ReportError:   false,
+	}
+}
+
+func eventExecutorOptionsWithResult(payload interface{}, event eventAction, successEvent string) *eventExecutorOptions {
+	return &eventExecutorOptions{
+		Action:        event,
+		Payload:       payload,
+		SuccessEvent:  successEvent,
+		ReportResult:  true,
+		ReportSuccess: true,
+		ReportError:   true,
+	}
+}
+
+func eventExecutorOptionsWithoutSuccess(payload interface{}, event eventAction) *eventExecutorOptions {
+	return &eventExecutorOptions{
+		Action:        event,
+		Payload:       payload,
+		ReportResult:  false,
+		ReportSuccess: false,
+		ReportError:   true,
+	}
+}
+
+func wrapNoPayload(action func() (interface{}, error)) eventAction {
+	return func(_ interface{}) (interface{}, error) {
+		return action()
+	}
+}
+
+func wrapPayloadWithResult(action func(interface{}) (interface{}, error)) eventAction {
+	return func(payload interface{}) (interface{}, error) {
+		return action(payload)
+	}
+}
+
+func wrapPayloadNoResult(action func(interface{}) error) eventAction {
+	return func(payload interface{}) (interface{}, error) {
+		return nil, action(payload)
 	}
 }

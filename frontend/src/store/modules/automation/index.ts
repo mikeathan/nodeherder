@@ -1,16 +1,9 @@
 import { Module } from 'vuex';
 import { RootState } from '../../state';
 import { AutomationModuleState } from './state';
-import {
-  AutomationMap,
-  Automation,
-  Automations,
-} from '../../../types/automation.type';
+import { AutomationMap, Automation, Automations } from '../../../types/automation.type';
 
-export const AutomationModule: Module<
-  AutomationModuleState,
-  RootState
-> = {
+export const AutomationModule: Module<AutomationModuleState, RootState> = {
   namespaced: true,
 
   state: () => ({
@@ -19,16 +12,11 @@ export const AutomationModule: Module<
   }),
 
   getters: {
-    listAll:
-      (state: AutomationModuleState) => (): Automations => {
-        return Object.values(
-          state.automationsMap
-        ) as Automations;
-      },
+    listAll: (state: AutomationModuleState) => (): Automations => {
+      return Object.values(state.automationsMap) as Automations;
+    },
 
-    initialized:
-      (state: AutomationModuleState) => (): boolean =>
-        state.initialized,
+    initialized: (state: AutomationModuleState) => (): boolean => state.initialized,
 
     find:
       (state: AutomationModuleState) =>
@@ -38,17 +26,11 @@ export const AutomationModule: Module<
   },
 
   mutations: {
-    add(
-      state: AutomationModuleState,
-      automation: Automation
-    ) {
+    add(state: AutomationModuleState, automation: Automation) {
       state.automationsMap[automation.id] = automation;
     },
 
-    update(
-      state: AutomationModuleState,
-      automation: Automation
-    ) {
+    update(state: AutomationModuleState, automation: Automation) {
       if (automation.id in state.automationsMap) {
         state.automationsMap[automation.id] = automation;
       }
@@ -59,11 +41,9 @@ export const AutomationModule: Module<
     },
 
     clear(state: AutomationModuleState) {
-      Object.entries(state.automationsMap).forEach(
-        ([key, value]) => {
-          delete state.automationsMap[key];
-        }
-      );
+      Object.entries(state.automationsMap).forEach(([key, value]) => {
+        delete state.automationsMap[key];
+      });
 
       state.initialized = false;
     },
@@ -79,25 +59,14 @@ export const AutomationModule: Module<
       state.initialized = true;
     },
 
-    save(
-      { commit, dispatch, rootState },
-      automation: Automations
-    ) {
+    save({ commit, dispatch, rootState }, automation: Automations) {
       commit('add', automation);
-      dispatch(
-        'ws/emit',
-        { event: 'saveAutomation', message: automation },
-        { root: true }
-      );
+      dispatch('ws/emit', { event: 'saveAutomation', message: automation }, { root: true });
     },
 
     delete({ commit, dispatch, rootState }, id: string) {
       commit('delete', id);
-      dispatch(
-        'ws/emit',
-        { event: 'deleteAutomation', message: { id: id } },
-        { root: true }
-      );
+      dispatch('ws/emit', { event: 'deleteAutomation', message: { id: id } }, { root: true });
     },
   },
 };

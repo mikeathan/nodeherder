@@ -12,7 +12,7 @@ import (
 type DeviceRegistrar interface {
 	LookupByName(name string) (*devices.Device, error)
 	LookupById(id string) (*devices.Device, error)
-	RetrieveEntityData(id string, property string) (any, error)
+	RetrieveEntityData(id string, property string) (*devices.EntityData, error)
 	CreateNewDevice(friendlyName string, connType string, data map[string]interface{}) (*devices.Device, error)
 	FindBridgeInfo(id string) (*devices.BridgeInfo, error)
 	RegisterBridge(bridgeInfoList []*devices.BridgeInfo)
@@ -29,7 +29,7 @@ func NewHubRegisterService(store store.AppStore, hub ws.EventHub, deviceAvailabi
 	return &HubRegisterService{store: store, eventHub: hub, deviceIdMapper: make(map[string]string), deviceAvailabilityTimeout: deviceAvailabilityTimeout}
 }
 
-func (s *HubRegisterService) RetrieveEntityData(id string, property string) (any, error) {
+func (s *HubRegisterService) RetrieveEntityData(id string, property string) (*devices.EntityData, error) {
 	device, err := s.LookupById(id)
 	if err != nil {
 		return nil, err

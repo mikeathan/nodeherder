@@ -32,13 +32,14 @@ type job struct {
 	StartAtDuration time.Duration
 	startAtTime     string
 	RepeatEvery     time.Duration
-	timer           *time.Timer
+	timer           utils.Timer
 	Error           error
 	lock            *sync.RWMutex
 	isRunning       *atomic.Bool
+	clock           utils.Clock
 }
 
-func newJob() *job {
+func newJob(clock utils.Clock) *job {
 
 	id := uuid.New()
 	return &job{
@@ -49,10 +50,11 @@ func newJob() *job {
 		},
 		StartAtDuration: 0,
 		RepeatEvery:     0,
-		timer:           &time.Timer{},
+		timer:           nil,
 		Error:           nil,
 		lock:            &sync.RWMutex{},
 		isRunning:       atomic.NewBool(false),
+		clock:           clock,
 	}
 }
 
@@ -78,8 +80,17 @@ func (j *job) Start() error {
 		return j.Error
 	}
 
-	j.timer = time.AfterFunc(j.StartAtDuration, func() {
+	// Recalculate the start duration to ensure we don't execute immediately if time has passed
+	startDuration, err := j.getStartAtDuration()
+	if err != nil {
+		utils.LogErrorf("Job %s failed to calculate start duration: %s", j.Name, err.Error())
+		j.Error = err
+		return err
+	}
 
+	j.StartAtDuration = startDuration
+
+	j.timer = j.clock.AfterFunc(j.StartAtDuration, func() {
 		utils.LogInfo("Executing job ", j.Name)
 
 		err := j.Action()
@@ -89,13 +100,12 @@ func (j *job) Start() error {
 		}
 
 		if j.RepeatEvery > 0 {
-			nexStartAtDuration, err := j.getStartAtDuration()
+			nextStart, err := j.getStartAtDuration()
 			if err != nil {
 				j.Error = errors.Join(j.Error, err)
 				return
 			}
-
-			j.timer.Reset(nexStartAtDuration)
+			j.timer.Reset(nextStart)
 		}
 	})
 
@@ -109,23 +119,35 @@ func (j *job) getStartAtDuration() (time.Duration, error) {
 		return 0, nil
 	}
 
-	startAtTime, err := ConvertStringToTime(j.startAtTime)
+	startAtTime, err := ConvertStringToTimeUTC(j.clock, j.startAtTime)
 	if err != nil {
 		utils.LogError("Error parsing start time:", err)
 		return 0, err
 	}
+	now := j.clock.Now()
+	// Preserve milliseconds by using the parsed nanosecond component
+	startTime := time.Date(
+		now.Year(), now.Month(), now.Day(),
+		startAtTime.Hour(), startAtTime.Minute(), startAtTime.Second(), startAtTime.Nanosecond(),
+		now.Location(),
+	)
 
-	now := time.Now().UTC()
-	startTime := time.Date(now.Year(), now.Month(), now.Day(), startAtTime.Hour(), startAtTime.Minute(), startAtTime.Second(), 0, time.UTC)
-
-	if startTime.Before(now) {
-		nextTime := now.Truncate(time.Second).Add(j.RepeatEvery)
-		nextDuration := nextTime.Sub(now)
-
-		return nextDuration, nil
+	// If start time is still in the future → wait until then.
+	if now.Before(startTime) {
+		return startTime.Sub(now), nil
 	}
 
-	return startTime.Sub(now), nil
+	// If RepeatEvery is not set, don't schedule again.
+	if j.RepeatEvery <= 0 {
+		return 0, nil
+	}
+
+	// Calculate next valid future start.
+	elapsed := now.Sub(startTime)
+	skippedIntervals := int64(elapsed / j.RepeatEvery)
+	nextStartTime := startTime.Add(time.Duration(skippedIntervals+1) * j.RepeatEvery)
+
+	return nextStartTime.Sub(now), nil
 }
 
 type Scheduler struct {
@@ -134,9 +156,10 @@ type Scheduler struct {
 	inScheduleChain *uuid.UUID
 	isRunning       *atomic.Bool
 	jobsLock        *sync.RWMutex
+	clock           utils.Clock
 }
 
-func NewScheduler(ctx context.Context) *Scheduler {
+func NewScheduler(clock utils.Clock, ctx context.Context) *Scheduler {
 
 	s := &Scheduler{
 		ctx:             ctx,
@@ -144,17 +167,15 @@ func NewScheduler(ctx context.Context) *Scheduler {
 		inScheduleChain: nil,
 		isRunning:       atomic.NewBool(false),
 		jobsLock:        &sync.RWMutex{},
+		clock:           clock,
 	}
 
 	go func() {
-		select {
-		case <-ctx.Done():
-			utils.LogError("Scheduler context cancel requested")
-			err := s.Stop()
-			if err != nil {
-				utils.LogError("Error stopping scheduler: ", err)
-			}
-			return
+		<-ctx.Done()
+		utils.LogError("Scheduler context cancel requested")
+		err := s.Stop()
+		if err != nil {
+			utils.LogError("Error stopping scheduler: ", err)
 		}
 	}()
 
@@ -184,7 +205,7 @@ func (s *Scheduler) getCurrentJob() *job {
 		return s.jobs[*s.inScheduleChain]
 	}
 
-	j := newJob()
+	j := newJob(s.clock)
 	s.jobs[j.Id] = j
 	s.inScheduleChain = &j.Id
 
@@ -206,6 +227,7 @@ func (s *Scheduler) Every(duration time.Duration) *Scheduler {
 }
 
 func (s *Scheduler) At(timeString string) *Scheduler {
+
 	job := s.getCurrentJob()
 
 	job.startAtTime = timeString
@@ -233,7 +255,7 @@ func (s *Scheduler) Do(action func() error) error {
 	return nil
 }
 
-func ConvertStringToTime(timeString string) (time.Time, error) {
+func ConvertStringToTimeUTC(clock utils.Clock, timeString string) (time.Time, error) {
 
 	var layout string
 	if timeWithMilliseconds.MatchString(timeString) {
@@ -246,12 +268,19 @@ func ConvertStringToTime(timeString string) (time.Time, error) {
 		return time.Time{}, ErrUnsupportedTimeFormat
 	}
 
-	t, err := time.Parse(layout, timeString)
+	// TODO: for now we assume the automation schedule is in Europe/London timezone
+	loc, _ := time.LoadLocation("Europe/London")
+	t, err := time.ParseInLocation(layout, timeString, loc)
 	if err != nil {
 		return time.Time{}, ErrUnsupportedTimeFormat
 	}
 
-	return t, nil
+	// convert to UTC
+	now := clock.Now().In(loc)
+	utcTime := time.Date(now.Year(), now.Month(), now.Day(),
+		t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), loc)
+
+	return utcTime.UTC(), nil
 }
 
 func (s *Scheduler) IsRunning() bool {
@@ -295,13 +324,14 @@ func (s *Scheduler) stopJobs() {
 	s.jobsLock.RLock()
 	defer s.jobsLock.RUnlock()
 	for _, job := range s.jobs {
+		utils.LogDebug("Scheduler stopping job: ", job.Name)
 		job.Stop()
 	}
 }
 func (s *Scheduler) Stop() error {
 
 	if !s.IsRunning() {
-		return fmt.Errorf("scheduler is not running")
+		return fmt.Errorf("Scheduler is not running")
 	}
 
 	if len(s.jobs) == 0 {
@@ -322,15 +352,3 @@ func (s *Scheduler) Stop() error {
 
 	return nil
 }
-
-// type DaySchedule struct {
-// 	Start int `json:"start"`
-// 	End   int `json:"end"`
-// }
-// day schedule
-// start day
-// end day
-
-// time schedule
-// start time
-// end time

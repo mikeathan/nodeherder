@@ -1,10 +1,12 @@
 package devices
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"node-herder/models/bridge"
 	"node-herder/utils"
+	"strings"
 	"sync"
 	"time"
 )
@@ -187,11 +189,87 @@ func (u *UpdatePackage) HasData() bool {
 	return len(u.Data) != 0
 }
 
+func NewEntityData(value any, name string) *EntityData {
+	return &EntityData{value: value, name: name}
+}
+
+type EntityData struct {
+	value any
+	name  string
+}
+
+func (d EntityData) Value() any {
+	return d.value
+}
+
+func (d *EntityData) SetValue(v any) {
+	d.value = v
+}
+
+
+func (d *EntityData) ValuesMatch(pending any) bool {
+	if d.value == pending {
+		return true
+	}
+
+	// Handle binary state equivalents
+	if isBoolLike(d.value) || isBoolLike(pending) || d.name == "state" {
+		currBool := d.toBool(d.value)
+		pendingBool := d.toBool(pending)
+		return currBool == pendingBool
+	}
+
+	return false
+}
+
+func isBoolLike(v any) bool {
+	switch x := v.(type) {
+	case bool:
+		return true
+	case string:
+		s := strings.ToLower(x)
+		switch s {
+		case "on", "off", "toggle", "true", "false":
+			return true
+		}
+	}
+	return false
+}
+
+// toBool converts various representations to boolean
+func (d *EntityData) toBool(value any) bool {
+	switch v := value.(type) {
+	case bool:
+		return v
+	case string:
+		return v == "ON" || v == "true"
+	case int:
+		return v != 0
+	case float64:
+		return v != 0
+	default:
+		return false
+	}
+}
+
+func (d EntityData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.value)
+}
+
+func (d *EntityData) UnmarshalJSON(b []byte) error {
+	var v any
+	if err := json.Unmarshal(b, &v); err != nil {
+		return err
+	}
+	d.value = v
+	return nil
+}
+
 type Entity struct {
 	Name        string                  `json:"name"`
 	Description string                  `json:"description,omitempty"`
 	Unit        string                  `json:"unit,omitempty"`
-	Data        any                     `json:"data"`
+	Data        *EntityData             `json:"data"`
 	Type        bridge.ExposeDataType   `json:"type"`
 	Category    bridge.ExposeCategory   `json:"category,omitempty"`
 	Attributes  map[string]any          `json:"attributes,omitempty"`
@@ -199,12 +277,23 @@ type Entity struct {
 	Values      map[string]any          `json:"values,omitempty"`
 }
 
-func newEntity() *Entity {
+func NewEntity(name string) *Entity {
 	return &Entity{
 		Attributes: make(map[string]any),
 		AccessMode: bridge.UnknownAccessMode,
 		Values:     make(map[string]any),
+		Data:       NewEntityData(nil, name),
+		Name:       name,
 	}
+}
+
+func (e *Entity) GetData() any {
+	return e.Data.Value()
+}
+
+// Setter
+func (e *Entity) SetData(v any) {
+	e.Data.SetValue(v)
 }
 
 func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
@@ -222,13 +311,12 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 		return nil, fmt.Errorf("invalid device feature access mode %v", expose.Access)
 	}
 
-	newEntity := newEntity()
+	newEntity := NewEntity(expose.Property)
 	newEntity.Category = getExposeCategory(expose)
-	newEntity.Name = expose.Property
 	newEntity.AccessMode = accessMode
 	newEntity.Description = expose.Description
 	newEntity.Unit = expose.Unit
-	newEntity.Data = data
+	newEntity.Data.SetValue(data)
 	newEntity.Type = expose.Type
 
 	switch expose.Type {
@@ -245,9 +333,6 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 				newEntity.Values[preset.Name] = preset.Value
 			}
 		}
-		// else {
-		// 	newEntity.Values[expose.Name] = 0 // ????????? - i dont think i need this
-		// }
 
 	case bridge.BinaryDataType:
 
@@ -267,6 +352,58 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 	return newEntity, nil
 }
 
+func (e *Entity) Sanitize(raw any) any {
+
+	if raw == nil {
+		return nil
+	}
+
+	switch e.Type {
+	case bridge.BinaryDataType:
+		if b, ok := raw.(bool); ok {
+			return b
+		}
+
+		// check if matches ON/OFF from Values
+		if s, ok := raw.(string); ok {
+			if valOn, ok := e.Values["on"]; ok && s == valOn {
+				return true
+			}
+			if valOff, ok := e.Values["off"]; ok && s == valOff {
+				return false
+			}
+		}
+	}
+	return raw
+}
+
+// func (e Entity) MarshalJSON() ([]byte, error) {
+// 	type Alias Entity
+// 	return json.Marshal(&struct {
+// 		Data any `json:"data"`
+// 		*Alias
+// 	}{
+// 		Data:  e.data,
+// 		Alias: (*Alias)(&e),
+// 	})
+// }
+
+// // Custom unmarshal
+// func (e *Entity) UnmarshalJSON(b []byte) error {
+// 	type Alias Entity
+// 	aux := &struct {
+// 		Data any `json:"data"`
+// 		*Alias
+// 	}{
+// 		Alias: (*Alias)(e),
+// 	}
+// 	if err := json.Unmarshal(b, &aux); err != nil {
+// 		return err
+// 	}
+// 	e.data = aux.Data
+// 	return nil
+// }
+
 // Not used yet, is for handling non bridge devices which we havent tested yet
 func createExpose(data map[string]interface{}) map[string]*Entity {
 	var entities = make(map[string]*Entity)
@@ -275,11 +412,10 @@ func createExpose(data map[string]interface{}) map[string]*Entity {
 			continue
 		}
 
-		newEntity := newEntity()
+		newEntity := NewEntity(key)
 		newEntity.Category = bridge.MeasurementCategory
-		newEntity.Name = key
 		newEntity.AccessMode = bridge.ReadAccessMode
-		newEntity.Data = value
+		newEntity.Data.SetValue(value)
 		newEntity.Unit = units[key]
 		newEntity.Type = bridge.NumericDataType // TODO: make this dynamic
 		entities[key] = newEntity

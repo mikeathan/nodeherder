@@ -2,6 +2,9 @@ package utils_test
 
 import (
 	"fmt"
+	"node-herder/internal/automations"
+	"node-herder/internal/mqtt"
+	"node-herder/internal/services"
 	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"time"
@@ -18,12 +21,11 @@ func CreateExposuresFromMap(data map[string]interface{}) map[string]*devices.Ent
 }
 func CreateEnumEntity(name string, enums map[string]any) *devices.Entity {
 
-	newEntity := &devices.Entity{}
+	newEntity := devices.NewEntity(name)
 	newEntity.Values = enums
 	newEntity.Category = bridge.MeasurementCategory
 
-	newEntity.Data = nil
-	newEntity.Name = name
+	newEntity.Data.SetValue(nil)
 	newEntity.Type = "enum"
 	newEntity.Unit = "unit_test"
 	newEntity.Category = bridge.MeasurementCategory
@@ -34,12 +36,11 @@ func CreateEnumEntity(name string, enums map[string]any) *devices.Entity {
 }
 func CreatePresetsEntity(name string, presets map[string]any) *devices.Entity {
 
-	newEntity := &devices.Entity{}
+	newEntity := devices.NewEntity(name)
 	newEntity.Category = bridge.MeasurementCategory
 
 	newEntity.Values = presets
-	newEntity.Data = nil
-	newEntity.Name = name
+	newEntity.Data.SetValue(nil)
 	newEntity.Type = "numeric"
 	newEntity.Unit = "unit_test"
 	newEntity.Description = fmt.Sprintf("description for expose: %s ", name)
@@ -50,12 +51,11 @@ func CreatePresetsEntity(name string, presets map[string]any) *devices.Entity {
 
 func CreateNumericEntity(name string, data any) *devices.Entity {
 
-	newEntity := &devices.Entity{}
+	newEntity := devices.NewEntity(name)
 	newEntity.Category = bridge.MeasurementCategory
 
 	newEntity.Attributes = map[string]any{"max": 0.0, "min": 255.0}
-	newEntity.Data = data
-	newEntity.Name = name
+	newEntity.Data.SetValue(data)
 	newEntity.Type = "numeric"
 	newEntity.Unit = "unit_test"
 	newEntity.Description = fmt.Sprintf("description for expose: %s ", name)
@@ -66,12 +66,11 @@ func CreateNumericEntity(name string, data any) *devices.Entity {
 
 func CreateEntity(name string, propType string, data any) *devices.Entity {
 
-	newEntity := &devices.Entity{}
+	newEntity := devices.NewEntity(name)
 	newEntity.Category = bridge.MeasurementCategory
 	newEntity.Attributes = map[string]any{"min": 0.0, "max": 255.0}
 	newEntity.Values = make(map[string]any)
-	newEntity.Data = data
-	newEntity.Name = name
+	newEntity.Data.SetValue(data)
 	newEntity.Type = propType
 	newEntity.Unit = "unit_test"
 	newEntity.Description = fmt.Sprintf("description for expose: %s ", name)
@@ -86,10 +85,61 @@ func CreateAlarmDevice(id string, name string, value bool) *devices.Device {
 	return CreateDeviceWithExposes(id, name, []*devices.Entity{device2Expose1})
 }
 
+func CreateAlarmDeviceWithDuration(id string, name string, state bool, duration int) *devices.Device {
+
+	expose1 := CreateEntity("alarm", "binary", state)
+	expose2 := CreateEntity("duration", "numeric", duration)
+	return CreateDeviceWithExposes(id, name, []*devices.Entity{expose1, expose2})
+}
+
 func CreateDoorSensorDevice(id string, name string, value bool) *devices.Device {
 
 	device1Expose1 := CreateEntity("contact", "binary", value)
 	return CreateDeviceWithExposes(id, name, []*devices.Entity{device1Expose1})
+}
+
+func CreateTriggerTurnOnLight(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *automations.DeviceTrigger {
+	// action = turn off light
+	turnOnAction := automations.NewTriggerAction()
+	turnOnAction.Id = id
+	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
+		{
+			Name: "presence",
+			Data: true,
+		},
+	}
+	turnOnAction.Delay = nil
+	turnOnAction.Configure(registrar, mqtt)
+
+	// Turn on sensor trigger
+	turnOnTrigger := automations.NewDeviceTrigger("presence")
+	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
+
+	// condition = presence = off
+
+	return turnOnTrigger
+}
+
+func CreateTriggerToggleLight(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *automations.DeviceTrigger {
+	// action = turn off light
+	turnOnAction := automations.NewTriggerAction()
+	turnOnAction.Id = id
+	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
+		{
+			Name: "state",
+			Data: "TOGGLE",
+		},
+	}
+	turnOnAction.Delay = nil
+	turnOnAction.Configure(registrar, mqtt)
+
+	// Turn on sensor trigger
+	turnOnTrigger := automations.NewDeviceTrigger("state")
+	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
+
+	// condition = presence = off
+
+	return turnOnTrigger
 }
 
 func CreateDialActionEnums() map[string]any {
@@ -176,11 +226,10 @@ func createEntity(name string, description string, data any, unit string, attrib
 		attributes = make(map[string]any)
 	}
 
-	newEntity := &devices.Entity{}
+	newEntity := devices.NewEntity(name)
 	newEntity.Attributes = map[string]any{}
 	newEntity.Values = map[string]any{}
-	newEntity.Data = data
-	newEntity.Name = name
+	newEntity.Data.SetValue(data)
 	newEntity.Unit = unit
 	newEntity.Description = description
 	newEntity.Attributes = attributes

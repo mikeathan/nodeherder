@@ -6,7 +6,6 @@ import (
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
 	"node-herder/models/devices"
-	"sync"
 )
 
 // examples
@@ -16,79 +15,47 @@ import (
 // presence = true = turn on
 // presence = false = turn off
 
-var contextIgnoreList = []string{"action"}
-
-type DeviceContext struct {
-	currentData map[string]any
-	payload     map[string]*devices.Entity
-	mu          sync.RWMutex
+type DeviceEvent struct {
+	TriggerEvent
+	device *devices.Device
 }
 
-func NewDeviceContext() *DeviceContext {
-	return &DeviceContext{
-		currentData: map[string]any{},
-		payload:     make(map[string]*devices.Entity),
-	}
+func NewDeviceEvent(device *devices.Device) *DeviceEvent {
+	return &DeviceEvent{device: device}
 }
 
-func (d *DeviceContext) SetPayload(payload map[string]*devices.Entity) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.payload = payload
+func (de *DeviceEvent) Device() *devices.Device {
+	return de.device
 }
 
-func (d *DeviceContext) GetPayload(name string) (*devices.Entity, bool) {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-
-	value, exists := d.payload[name]
-	return value, exists
+func (de *DeviceEvent) Type() string {
+	return "device"
 }
 
-func (d *DeviceContext) GetCurrent(name string) any {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	return d.currentData[name]
-}
-
-func (d *DeviceContext) SetCurrent(name string, value any) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	// if trigger is in ignore list, we  want to trigger it again
-	for _, item := range contextIgnoreList {
-		if item == name {
-			return
-		}
-	}
-
-	d.currentData[name] = value
-}
+// Device Automation
 
 type Device struct {
-	Id           string          `json:"id"`
-	FriendlyName string          `json:"friendlyname"`
-	Description  string          `json:"description"`
-	Enabled      bool            `json:"enabled"`
-	Triggers     []*Trigger      `json:"triggers"`
-	Schedules    []*TimeSchedule `json:"schedules"`
-	ctx          *DeviceContext
+	BaseAutomation
+	ctx AutomationContext
 }
 
 func newDevice() *Device {
 	return NewDevice("")
 }
 
-func NewDevice(id string) *Device {
+func NewDevice(id string, opts ...func(*DeviceContext)) *Device {
 
 	d := &Device{
-		Id:           id,
-		FriendlyName: "",
-		Description:  "",
-		Enabled:      false,
-		Triggers:     []*Trigger{},
-		Schedules:    []*TimeSchedule{},
-		ctx:          NewDeviceContext(),
+		BaseAutomation: BaseAutomation{
+			Id:           id,
+			Type:         DeviceAutomationType,
+			FriendlyName: "",
+			Description:  "",
+			Enabled:      false,
+			Triggers:     TriggerList{},
+			Schedules:    []*TimeSchedule{},
+		},
+		ctx: NewDeviceContext(opts...),
 	}
 
 	return d
@@ -113,31 +80,68 @@ func (d *Device) UnmarshalJSON(data []byte) error {
 	}
 
 	d.Id = aux.Id
+	d.Type = aux.Type
 	d.FriendlyName = aux.FriendlyName
 	d.Description = aux.Description
 	d.Enabled = aux.Enabled
 	d.Schedules = aux.Schedules
 	d.Triggers = aux.Triggers
+
+	if d.ctx == nil {
+		d.ctx = NewDeviceContext()
+	}
 	return nil
 }
 
-func (d *Device) Evaluate(device *devices.Device) bool {
+func (d *Device) Evaluate(event TriggerEvent) bool {
+	// only handle device events
+	deviceEvent, ok := event.(*DeviceEvent)
+	if !ok {
+		return false
+	}
 
-	d.ctx.SetPayload(device.Exposes)
+	device := deviceEvent.Device()
+	d.ctx.SetDevicePayload(device.Exposes)
+
+	// This is a device state change (not manual)
+	d.ctx.SetManualTrigger(false)
 
 	// NOTE: a trigger can have multiple conditions.
 	// e.g presence can have multiple conditions for on and off
 	for _, trigger := range d.Triggers {
-		if _, ok := device.Exposes[trigger.Name]; ok {
-			trigger.process(d.ctx)
+		if _, ok := device.Exposes[trigger.GetName()]; ok {
+			trigger.Process(d.ctx)
 		}
 	}
-	return false
+	return true
 }
 
-// TODO:
-// THIS CAN BE AUTOMATION HANDLE
-func (d *Device) configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
+func (d *Device) EvaluateTrigger(event TriggerEvent, triggerName string) bool {
+
+	deviceEvent, ok := event.(*DeviceEvent)
+	if !ok {
+		return false
+	}
+
+	device := deviceEvent.Device()
+
+	// TODO: can pass the Device event directly
+	// payload is the current device expose
+	d.ctx.SetDevicePayload(device.Exposes) 
+
+	// Set manual trigger flag - this method is called for manual triggers
+	d.ctx.SetManualTrigger(true)
+
+	for _, trigger := range d.Triggers {
+		if trigger.GetName() == triggerName {
+			trigger.Process(d.ctx)
+		}
+	}
+
+	return true
+}
+
+func (d *Device) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
 
 	//  check if device with automation id exists. friendyname can change
 	bridgeInfo, err := registrar.FindBridgeInfo(d.Id)
@@ -149,19 +153,7 @@ func (d *Device) configure(registrar services.DeviceRegistrar, client mqtt.MqttC
 		return fmt.Errorf("device %s is disabled ", bridgeInfo.FriendlyName)
 	}
 
-	// validate conditions
-	for _, trigger := range d.Triggers {
-
-		// validate actions
-		for _, action := range trigger.Actions {
-			err := action.Configure(registrar, client)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
 	d.FriendlyName = bridgeInfo.FriendlyName
 
-	return nil
+	return d.BaseAutomation.Configure(registrar, client)
 }

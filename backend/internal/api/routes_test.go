@@ -1,7 +1,7 @@
 package api_test
 
 import (
-	"context"
+	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -30,7 +30,7 @@ func TestHandleMissingDeviceIdPayload(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	store := utils_test.CreateStore()
 
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 	bodyReader := strings.NewReader(string(missingDeviceIdPayload))
 	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
@@ -55,7 +55,7 @@ func TestHandleInvalidDataPayload(t *testing.T) {
 	store := utils_test.CreateStore()
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 	bodyReader := strings.NewReader(string("test"))
 	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
@@ -77,7 +77,7 @@ func TestHandleSuccesfullyRootPayload(t *testing.T) {
 	store := utils_test.CreateStore()
 
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 	bodyReader := strings.NewReader(string(device1RootPayloadBatterySource))
 	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
@@ -111,7 +111,7 @@ func TestHandleInvalidRootPayload(t *testing.T) {
 	ws := &mocks.NopWsServer{}
 
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 	bodyReader := strings.NewReader(string(device1InvalidRootPayloadBatterySource))
 	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
@@ -143,7 +143,7 @@ func TestProcessorHandleRootPayloadWithTimestamp(t *testing.T) {
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 	bodyReader := strings.NewReader(string(device1RootPayload))
 	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
@@ -181,7 +181,7 @@ func TestHandleSuccesfullyPayload(t *testing.T) {
 	store := utils_test.CreateStore()
 
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 	bodyReader := strings.NewReader(string(gasNodePayload))
 	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
 	req.Header.Add("Content-Type", "application/json")
@@ -218,7 +218,7 @@ func TestHandleUnsuportedMediaType(t *testing.T) {
 	ws := &mocks.NopWsServer{}
 
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 
 	bodyReader := strings.NewReader(string(device1BatterySource))
 	req := httptest.NewRequest(http.MethodPost, "/api/collect", bodyReader)
@@ -339,29 +339,29 @@ func TestHubStateHandler_ReturnsHubState(t *testing.T) {
 		t.Fatalf("expected hub state, got nil")
 	}
 
-		// assert app config
-// 	if len(hubState.Config.Hub.Devices.Overrides) != len(inputAppConfig.Hub.Devices.Overrides) {
-// 		t.Fatalf("Expected numer of appconfig devices. want %v', got '%v'", len(inputAppConfig.Hub.Devices.Overrides), len(hubState.Config.Hub.Devices.Overrides))
-// 	}
-// 	for id, d := range inputAppConfig.Hub.Devices.Overrides {
-// 		gotDeviceConfig := hubState.Config.Hub.Devices.Overrides[id]
-// 		if d.Id != gotDeviceConfig.Id {
-// 			t.Fatalf("Expected device id %v', got '%v'", d.Id, gotDeviceConfig.Id)
-// 		}
-// 		if d.Disabled != gotDeviceConfig.Disabled {
-// 			t.Fatalf("Expected Disabled %v', got '%v'", d.Disabled, gotDeviceConfig.Disabled)
-// 		}
-// 		if d.MetricsEnabled != gotDeviceConfig.MetricsEnabled {
-// 			t.Fatalf("Expected MetricsEnabled %v', got '%v'", d.MetricsEnabled, gotDeviceConfig.MetricsEnabled)
-// 		}
+	// assert app config
+	// 	if len(hubState.Config.Hub.Devices.Overrides) != len(inputAppConfig.Hub.Devices.Overrides) {
+	// 		t.Fatalf("Expected numer of appconfig devices. want %v', got '%v'", len(inputAppConfig.Hub.Devices.Overrides), len(hubState.Config.Hub.Devices.Overrides))
+	// 	}
+	// 	for id, d := range inputAppConfig.Hub.Devices.Overrides {
+	// 		gotDeviceConfig := hubState.Config.Hub.Devices.Overrides[id]
+	// 		if d.Id != gotDeviceConfig.Id {
+	// 			t.Fatalf("Expected device id %v', got '%v'", d.Id, gotDeviceConfig.Id)
+	// 		}
+	// 		if d.Disabled != gotDeviceConfig.Disabled {
+	// 			t.Fatalf("Expected Disabled %v', got '%v'", d.Disabled, gotDeviceConfig.Disabled)
+	// 		}
+	// 		if d.MetricsEnabled != gotDeviceConfig.MetricsEnabled {
+	// 			t.Fatalf("Expected MetricsEnabled %v', got '%v'", d.MetricsEnabled, gotDeviceConfig.MetricsEnabled)
+	// 		}
 
-// 		if d.RateLimit.Value != gotDeviceConfig.RateLimit.Value {
-// 			t.Fatalf("Expected RateLimit.Value %v', got '%v'", d.RateLimit.Value, gotDeviceConfig.RateLimit.Value)
-// 		}
-// 		if d.RateLimit.Unit != gotDeviceConfig.RateLimit.Unit {
-// 			t.Fatalf("Expected RateLimit.Unit %v', got '%v'", d.RateLimit.Unit, gotDeviceConfig.RateLimit.Unit)
-// 		}
-// 	}
+	//		if d.RateLimit.Value != gotDeviceConfig.RateLimit.Value {
+	//			t.Fatalf("Expected RateLimit.Value %v', got '%v'", d.RateLimit.Value, gotDeviceConfig.RateLimit.Value)
+	//		}
+	//		if d.RateLimit.Unit != gotDeviceConfig.RateLimit.Unit {
+	//			t.Fatalf("Expected RateLimit.Unit %v', got '%v'", d.RateLimit.Unit, gotDeviceConfig.RateLimit.Unit)
+	//		}
+	//	}
 }
 
 func TestHubStateHandler_ReturnsCacheedState(t *testing.T) {
@@ -486,5 +486,114 @@ func TestHubStateHandler_ExpirationTriggersReload(t *testing.T) {
 	handler.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/", nil))
 	if callCount != 2 {
 		t.Fatalf("expected call count 2, got %d", callCount)
+	}
+}
+
+func TestAutomationTriggerHandler_MissingParams(t *testing.T) {
+	ws := &mocks.NopWsServer{}
+	mqtt := &mocks.MockMqttClient{}
+	store := utils_test.CreateStore()
+
+	hub := controllers.RegisterHubController(ws, store, mqtt)
+
+	handler := api.NewAutomationTriggerHandler((*controllers.HubController)(hub), 1*time.Second)
+
+	req := httptest.NewRequest("GET", "/automation/trigger", nil) // no params
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnsupportedMediaType {
+		t.Errorf("expected 415, got %d", w.Code)
+	}
+}
+
+func TestAutomationTriggerHandler_Cases(t *testing.T) {
+	cases := []struct {
+		name          string
+		automationId  string
+		triggerName   string
+		rateLimit     time.Duration
+		shouldSucceed bool
+	}{
+		{
+			name:          "success case",
+			automationId:  "123",
+			triggerName:   "test",
+			rateLimit:     1 * time.Second,
+			shouldSucceed: true,
+		},
+		{
+			name:          "missing automationId",
+			automationId:  "",
+			triggerName:   "test",
+			rateLimit:     1 * time.Second,
+			shouldSucceed: false,
+		},
+		{
+			name:          "missing triggerName",
+			automationId:  "123",
+			triggerName:   "",
+			rateLimit:     1 * time.Second,
+			shouldSucceed: false,
+		},
+		{
+			name:          "rate limit exceeded",
+			automationId:  "123",
+			triggerName:   "test",
+			rateLimit:     1 * time.Hour,
+			shouldSucceed: false,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			callCount := 0
+			mock := mocks.NewMockAutomationTrigger(func(automationId, triggerName string) error {
+				callCount++
+				return nil
+			})
+
+			handler := api.NewAutomationTriggerHandler(mock, c.rateLimit)
+
+			if c.name == "rate limit exceeded" {
+				body := map[string]string{"automationId": "123", "triggerName": "test"}
+				b, _ := json.Marshal(body)
+
+				// First call should succeed
+				req1 := httptest.NewRequest("POST", "/automation/trigger", bytes.NewReader(b))
+				req1.Header.Set("Content-Type", "application/json")
+				w1 := httptest.NewRecorder()
+				handler.ServeHTTP(w1, req1)
+				if w1.Code != http.StatusOK {
+					t.Errorf("expected first call to succeed, got %d", w1.Code)
+				}
+
+				// Second call immediately should be rate-limited
+				req2 := httptest.NewRequest("POST", "/automation/trigger", bytes.NewReader(b))
+				req2.Header.Set("Content-Type", "application/json")
+				w2 := httptest.NewRecorder()
+				handler.ServeHTTP(w2, req2)
+				if w2.Code != http.StatusTooManyRequests {
+					t.Errorf("expected 429 TooManyRequests, got %d", w2.Code)
+				}
+				return
+			}
+
+			payload := map[string]string{"automationId": c.automationId, "triggerName": c.triggerName}
+			b, _ := json.Marshal(payload)
+			req := httptest.NewRequest("POST", "/automation/trigger", bytes.NewReader(b))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+
+			handler.ServeHTTP(w, req)
+
+			if c.shouldSucceed && w.Code != http.StatusOK {
+				t.Errorf("expected 200 OK, got %d", w.Code)
+			}
+			if !c.shouldSucceed && w.Code == http.StatusOK {
+				t.Errorf("expected failure, got 200 OK")
+			}
+		})
 	}
 }

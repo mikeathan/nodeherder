@@ -14,7 +14,7 @@
   import { EntityInputComponents } from '@/mixins/useEntityComponents';
   import Menu from 'primevue/menu';
   import MenuDropdown from '../controls/MenuDropdown.vue';
-import { getSensorIcon } from '../../modules/formatters/sensor-formatter';
+  import { getSensorIcon } from '../../modules/formatters/sensor-formatter';
   const props = defineProps<{
     show: boolean;
     title?: string;
@@ -214,6 +214,7 @@ import { getSensorIcon } from '../../modules/formatters/sensor-formatter';
     return Object.values(expose.values).map((value: any) => {
       return {
         label: value,
+        value: value,
         command: () => {
           updateValue(expose.name, value);
         },

@@ -9,6 +9,7 @@ import ConsoleViewer from '../components/hub/console/ConsoleViewer.vue';
 import DeviceList from '../components/device-list/DeviceList.vue';
 import GroupDashboard from '../components/dashboards/GroupDashboard.vue';
 import { DashboardModes } from '@/types/controls.type';
+import DeviceView from '@/components/device/DeviceView.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -96,6 +97,15 @@ const router = createRouter({
         title: 'Node-herder - Device page',
       },
     },
+    {
+      path: '/deviceview/:id',
+      name: 'deviceview',
+      component: DeviceView,
+      props: true,
+      meta: {
+        title: 'Node-herder - Device view',
+      },
+    }
   ],
 });
 export default router;

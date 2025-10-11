@@ -1,19 +1,8 @@
 import { emitOpenPanel } from '@/mixins/useAutomationsEventBus';
-import {
-  Automation,
-  AutomationTrigger,
-  TimeSchedule,
-} from '@/types/automation.type';
-import {
-  DeleteTriggerFunc,
-  EventActions,
-  OpenPanelEvent,
-  SaveTriggerFunc,
-} from '@/types/events.type';
+import { Automation, AutomationTrigger, TimeSchedule } from '@/types/automation.type';
+import { DeleteTriggerFunc, EventActions, OpenPanelEvent, SaveTriggerFunc } from '@/types/events.type';
 
-export function emitOpenSchedulerPanelEvent(
-  automation: Automation
-): void {
+export function emitOpenSchedulerPanelEvent(automation: Automation): void {
   const events: EventActions = {
     save: (schedules: TimeSchedule[]) => {
       automation.schedules = schedules;
@@ -23,7 +12,7 @@ export function emitOpenSchedulerPanelEvent(
 
   const openPanelEvent: OpenPanelEvent = {
     name: 'Scheduler',
-    args: { schedules: automation.schedules },
+    args: { schedules: automation.schedules ?? [] },
     events: events,
   };
 

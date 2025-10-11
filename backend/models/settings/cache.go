@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"fmt"
 	"node-herder/models/bridge"
 	"node-herder/utils"
 	"sync"
@@ -280,6 +281,29 @@ func (s *AppConfigCache) SaveHistoryConfig(historyConfig *HistoryConfig) (*AppCo
 	s.reloadTasks(config)
 
 	return config, nil
+}
+
+func (s *AppConfigCache) RenameDashboardGroup(oldName string, newName string) (*DashboardGroup, error) {
+	config, err := s.LoadAppConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	group, ok := config.Hub.DashboardGroups[oldName]
+	if !ok {
+		return nil, fmt.Errorf("dashboard group %q not found", oldName)
+	}
+
+	delete(config.Hub.DashboardGroups, oldName)
+	group.Name = newName
+	config.Hub.DashboardGroups[newName] = group
+
+	err = s.store.SaveAppConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return group, nil
 }
 
 func (s *AppConfigCache) SaveDashboardGroup(exposeGroup *DashboardGroup) error {

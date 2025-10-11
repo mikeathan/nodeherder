@@ -175,6 +175,10 @@ func (h *MockEventHub) OnSaveDashboardGroup(action func(payload interface{}) err
 	fmt.Println("MockEventHub OnSaveDashboardGroup")
 }
 
+func (h *MockEventHub) OnRenameDashboardGroup(action func(payload interface{}) (interface{}, error)) {
+	fmt.Println("MockEventHub OnRenameDashboardGroup")
+}
+
 func (h *MockEventHub) OnDeleteDashboardGroup(action func(payload interface{}) error) {
 	fmt.Println("MockEventHub OnDeleteDashboardGroup")
 }
@@ -190,11 +194,24 @@ func (h *MockEventHub) OnLoadDashboardGroups(action func() (interface{}, error))
 // Mock MqttClient
 type MockMqttClient struct {
 	messageHandler func(string, []byte)
+	responses      map[string]interface{}
+	responseDelay  time.Duration
+}
+
+func (m *MockMqttClient) SetResponseDelay(delay time.Duration) {
+	m.responseDelay = delay
 }
 
 func (m *MockMqttClient) Connect() error {
 	fmt.Println("Mock Connect")
 	return nil
+}
+
+func (m *MockMqttClient) AddResponse(topic string, payload interface{}) {
+	if m.responses == nil {
+		m.responses = make(map[string]interface{})
+	}
+	m.responses[topic] = payload
 }
 
 func (m *MockMqttClient) WithMessageHandler(messageHandler func(client mqtt.Client, msg mqtt.Message)) {
@@ -225,36 +242,75 @@ func (m *MockMqttClient) messagePubHandler() func(id string, payload []byte) {
 	}
 }
 
-func stripAfterSeparator(input string, separator string) (string, bool) {
-	parts := strings.SplitN(input, separator, 2)
-	if len(parts) > 1 {
-		return parts[0], true
-	}
-	return input, false
-}
-
 func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 	fmt.Println("Mock Publish")
 
-	// handle setter mqtt messages. strip set and publish, it then gets handled as device update
-	topic = strings.Replace(topic, "/set", "", -1)
-	if payload == nil {
-		data := []byte("mock payload")
-		if p, ok := payload.([]byte); ok {
-			data = p
-		}
-		m.messagePubHandler()(topic, data)
-	} else if value, ok := payload.([]byte); ok {
-		m.messagePubHandler()(topic, value)
-	} else {
-		bytes, err := json.Marshal(payload)
+	// Check if this is a command message (ends with /set)
+	isSetCommand := strings.HasSuffix(topic, "/set")
+
+	var data []byte
+	switch v := payload.(type) {
+	case nil:
+		data = []byte("mock payload")
+	case []byte:
+		data = v
+	default:
+		b, err := json.Marshal(v)
 		if err != nil {
 			fmt.Println("Mock Publish error:", err.Error())
 			return
 		}
-		m.messagePubHandler()(topic, bytes)
+		data = b
 	}
 
+	// For non-set messages, process them normally (like bridge/device messages, sensor updates)
+	if !isSetCommand {
+		m.messagePubHandler()(topic, data)
+		return
+	}
+
+	// For /set commands: strip /set to get the device topic
+	topic = strings.Replace(topic, "/set", "", -1)
+
+	// Check if there's an auto-response configured for this topic
+	hasAutoResponse := false
+	if _, ok := m.responses[topic]; ok {
+		hasAutoResponse = true
+	}
+
+	// Only simulate immediate device response if there's no auto-response configured
+	// This prevents double responses that can cause feedback loops
+	if !hasAutoResponse {
+		go func() {
+			time.Sleep(50 * time.Millisecond) // Delay to let pending state be set
+			m.messagePubHandler()(topic, data)
+		}()
+	}
+
+	// Send configured auto-response if available (for specific test scenarios)
+	if resp, ok := m.responses[topic]; ok {
+		go func() {
+			delay := m.responseDelay
+			if delay == 0 {
+				delay = 500 * time.Millisecond // Default to 500ms
+			}
+
+			var respBytes []byte
+			switch v := resp.(type) {
+			case []byte:
+				respBytes = v
+			default:
+				b, err := json.Marshal(v)
+				if err != nil {
+					fmt.Println("Mock Auto-response error:", err)
+					return
+				}
+				respBytes = b
+			}
+
+			m.messagePubHandler()(topic, respBytes)
+		}()
+	}
 }
 
 // Mock WsServer
@@ -395,8 +451,12 @@ func (h *NopWsServer) OnSaveDashboardGroup(action func(payload interface{}) erro
 	fmt.Println("WsServer OnSaveDashboardGroup")
 }
 
+func (h *NopWsServer) OnRenameDashboardGroup(action func(payload interface{}) (interface{}, error)) {
+	fmt.Println("WsServer OnRenameDashboardGroup")
+}
+
 func (h *NopWsServer) OnDeleteDashboardGroup(action func(payload interface{}) error) {
-	fmt.Println("WsServer OnDeleteExpoOnDeleteDashboardGroupseGroup")
+	fmt.Println("WsServer OnDeleteDashboardGroup")
 }
 
 func (h *NopWsServer) OnImportDashboardGroups(action func(payload interface{}) error) {
@@ -765,34 +825,34 @@ func (s *NopAppStore) ResolveFriendlyName(friendlyName string) string {
 }
 
 // Mock engine
-type MockAutomationEngine[T any] struct {
-	cache    map[string]*automations.Device
-	mockData []*automations.Device
+type MockAutomationEngine[T automations.Automation] struct {
+	cache    map[string]automations.Automation
+	mockData []automations.Automation
 }
 
-func NewMockAutomationStorage[T automations.Device](mockData []*automations.Device) storage.Storage[automations.Device] {
-	d := new(MockAutomationEngine[automations.Device])
-	d.cache = make(map[string]*automations.Device)
+func NewMockAutomationStorage[T automations.Automation](mockData []automations.Automation) storage.Storage[automations.Automation] {
+	d := new(MockAutomationEngine[T])
+	d.cache = make(map[string]automations.Automation)
 	d.mockData = mockData
 	return d
 }
 
-func (d *MockAutomationEngine[T]) Initialize() ([]*automations.Device, error) {
+func (d *MockAutomationEngine[T]) Initialize() ([]automations.Automation, error) {
 
 	d.ClearCache()
 
 	// initialize with mock data
 	for _, mockItem := range d.mockData {
-		d.Store(mockItem.Id, mockItem)
+		d.Store(mockItem.GetId(), mockItem)
 	}
 
 	return d.LoadAll(), nil
 }
 
-func (d *MockAutomationEngine[T]) LoadAll() []*automations.Device {
+func (d *MockAutomationEngine[T]) LoadAll() []automations.Automation {
 
 	keys := make([]string, 0, len(d.cache))
-	values := make([]*automations.Device, 0, len(d.cache))
+	values := make([]automations.Automation, 0, len(d.cache))
 
 	for k, _ := range d.cache {
 		keys = append(keys, k)
@@ -819,12 +879,12 @@ func (d *MockAutomationEngine[T]) ClearCache() {
 	}
 }
 
-func (d *MockAutomationEngine[T]) Store(name string, item *automations.Device) error {
+func (d *MockAutomationEngine[T]) Store(name string, item automations.Automation) error {
 
 	d.addToCache(name, item)
 	return nil
 }
-func (d *MockAutomationEngine[T]) LoadFromCache(name string) (*automations.Device, error) {
+func (d *MockAutomationEngine[T]) LoadFromCache(name string) (automations.Automation, error) {
 	item := d.loadFromCache(name)
 	if item != nil {
 		return item, nil
@@ -833,7 +893,7 @@ func (d *MockAutomationEngine[T]) LoadFromCache(name string) (*automations.Devic
 	return nil, errors.New("not in cache")
 }
 
-func (d *MockAutomationEngine[T]) Load(name string) (*automations.Device, error) {
+func (d *MockAutomationEngine[T]) Load(name string) (automations.Automation, error) {
 
 	item := d.loadFromCache(name)
 	if item != nil {
@@ -841,7 +901,7 @@ func (d *MockAutomationEngine[T]) Load(name string) (*automations.Device, error)
 	}
 
 	for _, mockItem := range d.mockData {
-		if mockItem.Id == name {
+		if mockItem.GetId() == name {
 			return mockItem, nil
 		}
 	}
@@ -849,11 +909,11 @@ func (d *MockAutomationEngine[T]) Load(name string) (*automations.Device, error)
 	return nil, errors.New("item not found")
 }
 
-func (d *MockAutomationEngine[T]) addToCache(name string, item *automations.Device) {
+func (d *MockAutomationEngine[T]) addToCache(name string, item automations.Automation) {
 	d.cache[name] = item
 }
 
-func (d *MockAutomationEngine[T]) loadFromCache(name string) *automations.Device {
+func (d *MockAutomationEngine[T]) loadFromCache(name string) automations.Automation {
 	if item, ok := d.cache[name]; ok {
 		return item
 	}
@@ -897,10 +957,34 @@ func (s *MockAutomationDeviceQuerier) IsAutomationEnabled(id string) bool {
 type MockClock struct {
 	callback      func() time.Time
 	sleepDuration time.Duration
+	timers        []*mockTimer
 }
 
 func NewMockClock(callback func() time.Time) *MockClock {
 	return &MockClock{callback: callback}
+}
+
+func (m *MockClock) Advance(duration time.Duration) {
+	oldNow := m.Now()
+	newNow := oldNow.Add(duration)
+
+	// update Now()
+	m.callback = func() time.Time { return newNow }
+
+	// tick timers
+	var remaining []*mockTimer
+	for _, t := range m.timers {
+		if !t.fired {
+			if t.duration <= duration {
+				t.fired = true
+				t.f() // run inline for determinism
+			} else {
+				t.duration -= duration
+				remaining = append(remaining, t)
+			}
+		}
+	}
+	m.timers = remaining
 }
 
 func (m *MockClock) SetMockTime(t time.Time) {
@@ -935,7 +1019,37 @@ func (m *MockClock) Now() time.Time {
 }
 
 func (m *MockClock) Sleep(d time.Duration) {
-	time.Sleep(m.sleepDuration) // ignore the passed in duration and use the mock duration
+	//time.Sleep(m.sleepDuration) // ignore the passed in duration and use the mock duration
+	m.Advance(d)
+}
+
+func (m *MockClock) AfterFunc(d time.Duration, f func()) utils.Timer {
+	mt := &mockTimer{duration: d, f: f, parent: m}
+	m.timers = append(m.timers, mt)
+	return mt
+}
+
+type mockTimer struct {
+	duration time.Duration
+	f        func()
+	fired    bool
+	parent   *MockClock
+}
+
+func (t *mockTimer) Stop() bool {
+	if t.fired {
+		return false
+	}
+	t.fired = true
+	return true
+}
+
+func (t *mockTimer) Reset(d time.Duration) bool {
+	t.duration = d
+	t.fired = false
+	// put it back into parent’s active timers
+	t.parent.timers = append(t.parent.timers, t)
+	return true
 }
 
 // Mock RemoteLogger emitter
@@ -1006,4 +1120,17 @@ func (f MockFileLoader) Load(file string) ([]byte, error) {
 		return f.callback(), nil
 	}
 	return f.fileBuffer, nil
+}
+
+// Automation trigger handler
+type MockAutomationTrigger struct {
+	callback func(automationId string, triggerName string) error
+}
+
+func NewMockAutomationTrigger(callback func(automationId string, triggerName string) error) *MockAutomationTrigger {
+	return &MockAutomationTrigger{callback: callback}
+}
+
+func (m *MockAutomationTrigger) TriggerManual(automationId string, triggerName string) error {
+	return m.callback(automationId, triggerName)
 }

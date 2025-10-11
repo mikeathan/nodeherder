@@ -26,17 +26,19 @@ TODO:
 - Test new logic in RegisterBridge
 - backup automations
 - device lifetime optimization : check if automations or metrics is enabled for device before sending event
-- device disabled not working !!!!
+- device disabled not working - DONE
 
 ## Features
 
-- Add schemes - living room with grouped devices
+- Add groups - living room with grouped devices - Done
 
 ## frontend
 
 - add type in device.expose for http data ?
 - add functionality to enable/disable a trigger
 - add log window in frontend
+- update frontend store in the dashboard groups in the ws response for rename,delete etc. in case the request is not successful
+- Same for other ws requests
 
 BUGS:
 
@@ -80,6 +82,8 @@ TODO:
 - frontend - tabs - load tab on click -(leave for now)
 - frontend - handle timerange enum colours
 - toggle for live data ? later
+- authomation schedule - disable/enable button accorsing to scheduler if Manual Trigger - DONE
+- create device card view with sensor data and editor/options view
 
 once we send the request
 store response in metrics store ? needs thinking if we need that

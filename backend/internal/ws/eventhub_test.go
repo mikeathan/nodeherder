@@ -131,13 +131,13 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 		for sidx, sensorTrigger := range trigger.Triggers {
 			inputSensorTrigger := inputTrigger.Triggers[sidx]
 
-			if sensorTrigger.Name != inputSensorTrigger.Name {
+			if sensorTrigger.GetName() != inputSensorTrigger.GetName() {
 				t.Fatalf("unexpected sensorTrigger.Name value")
 			}
 
-			for aidx, action := range sensorTrigger.Actions {
+			for aidx, action := range sensorTrigger.GetActions() {
 				sensorTriggerAction := action.(*automations.MqttTriggerAction)
-				inputAction := inputSensorTrigger.Actions[aidx].(*automations.MqttTriggerAction)
+				inputAction := inputSensorTrigger.GetActions()[aidx].(*automations.MqttTriggerAction)
 
 				for eidx, expose := range inputAction.Exposes {
 					if sensorTriggerAction.Exposes[eidx].Name != expose.Name {
@@ -158,11 +158,10 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 				}
 			}
 
-			for cidx, condition := range sensorTrigger.Conditions {
-
+			for cidx, condition := range sensorTrigger.GetConditions() {
 				if condition.GetType() == automations.ExposeConditionType {
 					sensorCondition := condition.(*automations.ExposeCondition)
-					inputCondition := inputSensorTrigger.Conditions[cidx].(*automations.ExposeCondition)
+					inputCondition := inputSensorTrigger.GetConditions()[cidx].(*automations.ExposeCondition)
 					if sensorCondition.EqualityOperator != inputCondition.EqualityOperator {
 						t.Fatalf("unexpected condition.EqualityOperator  value")
 					}
@@ -172,16 +171,16 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 					if sensorCondition.Name != inputCondition.Name {
 						t.Fatalf("unexpected condition.Name  value")
 					}
-					if inputCondition.TimeRange != nil {
-						if inputCondition.TimeRange.StartAt != sensorCondition.TimeRange.StartAt {
-							t.Fatalf("unexpected imeRange.StartAt  value")
-						}
+					// if inputCondition.TimeRange != nil {
+					// 	if inputCondition.TimeRange.StartAt != sensorCondition.TimeRange.StartAt {
+					// 		t.Fatalf("unexpected imeRange.StartAt  value")
+					// 	}
 
-						if inputCondition.TimeRange.EndAt != sensorCondition.TimeRange.EndAt {
-							t.Fatalf("unexpected imeRange.StEndAtartAt  value")
-						}
+					// 	if inputCondition.TimeRange.EndAt != sensorCondition.TimeRange.EndAt {
+					// 		t.Fatalf("unexpected imeRange.StEndAtartAt  value")
+					// 	}
 
-					}
+					// }
 				}
 			}
 		}
@@ -1103,6 +1102,84 @@ func TestHandlerLoadDashboardGroupsMessage(t *testing.T) {
 	utils_test.CompareDashboardGroups(t, wantDashboardGroups, gotDashboardGroups)
 }
 
+func TestHandlerRenameDashboardGroupsMessage(t *testing.T) {
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
+	wantDashboardGroups := utils_test.CreateDashboardGroups()
+	wsHub.OnRenameDashboardGroup(func(p interface{}) (interface{}, error) {
+		req := devices.DashboardGroupRenameRequest{}
+		bytes := []byte(p.(string))
+		err := json.Unmarshal(bytes, &req)
+		if err != nil {
+			return nil, fmt.Errorf("OnRenameDashboardGroup failed. Invalid payload type : %v ", err.Error())
+		}
+
+		if req.NewName != "new_group1" {
+			t.Fatalf("Expected new name %v', got '%v'", "new_group1", req.NewName)
+		}
+		if req.OldName != "group1" {
+			t.Fatalf("Expected old name %v', got '%v'", "group1", req.OldName)
+		}
+
+		wantDashboardGroups["new_group1"] = wantDashboardGroups["group1"]
+		delete(wantDashboardGroups, "group1")
+
+		wg.Done()
+		return wantDashboardGroups["new_group1"], nil
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	defer s.Close()
+	defer wsConn.Close()
+
+	req := devices.DashboardGroupRenameRequest{}
+	req.OldName = "group1"
+	req.NewName = "new_group1"
+	reqBytes, err := json.Marshal(req)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	wsData := &ws.EventMessage{Type: ws.RenameDashboardGroup, Payload: reqBytes}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.OperationSuccess {
+		t.Fatalf("Expected type %v', got '%v'", ws.OperationSuccess, event.Type)
+	}
+
+	if wantDashboardGroups["new_group1"] == nil {
+		t.Fatalf("Expected group %v to be present", "new_group1")
+	}
+
+	if wantDashboardGroups["group1"] != nil {
+		t.Fatalf("Expected group %v to be deleted", "group1")
+	}
+
+	wg.Wait()
+}
+
 func TestHandlerImportDashboardGroupsMessage(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	wg.Add(2)
@@ -1536,13 +1613,13 @@ func createDevice1() *devices.Device {
 	ent1.Description = "temperature readings"
 	ent1.Name = "temperature"
 	ent1.Unit = "*c"
-	ent1.Data = 50.0
+	ent1.Data.SetValue(50.0)
 
 	ent2 := &devices.Entity{}
 	ent2.Description = "humidity readings"
 	ent2.Name = "humidity"
 	ent2.Unit = "%"
-	ent2.Data = 64.1
+	ent2.Data.SetValue(64.1)
 	device1.Exposes["1"] = ent1
 	device1.Exposes["2"] = ent2
 
@@ -1562,7 +1639,7 @@ func createDevice2() *devices.Device {
 	ent1 := &devices.Entity{}
 	ent1.Description = "smart light livining room"
 	ent1.Name = "brightness"
-	ent1.Data = 78.0
+	ent1.Data.SetValue(78.0)
 	ent1.Category = bridge.MeasurementCategory
 	ent1.Attributes = make(map[string]any)
 	ent1.Type = bridge.NumericDataType
@@ -1584,7 +1661,7 @@ func createTestAutomation() []*automations.Device {
 
 	deviceTrigger := automations.NewDevice("human sensor")
 	deviceTrigger.Description = "test human sensor automation"
-	deviceTrigger.Triggers = []*automations.Trigger{}
+	deviceTrigger.Triggers = []automations.Trigger{}
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOffTrigger)
 	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTriggerWithLux)
 
@@ -1607,7 +1684,7 @@ func createTestAutomation() []*automations.Device {
 	return triggers
 }
 
-func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any) *automations.Trigger {
+func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any) *automations.DeviceTrigger {
 	// action = turn off light
 	turnOnAction := automations.NewTriggerAction()
 	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
@@ -1621,13 +1698,12 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 	turnOnAction.Client = mqtt
 
 	// Turn on sensor trigger
-	turnOnTrigger := &automations.Trigger{}
-	turnOnTrigger.Name = "presence"
+	turnOnTrigger := automations.NewDeviceTrigger("presence")
 	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
 
 	// condition = presence = off && lux <= 30
-	turnOnCondition := automations.NewExposeCondition("presence", true, "=")
-	luxCondition := automations.NewExposeCondition("lux", lux, "<=")
+	turnOnCondition := utils_test.NewExposeCondition("presence", true, "=")
+	luxCondition := utils_test.NewExposeCondition("lux", lux, "<=")
 
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, luxCondition)
@@ -1635,7 +1711,7 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(mqtt mqtt.MqttClient, lux any)
 	return turnOnTrigger
 }
 
-func createTriggerTurnOnLightWithPresenceOn(mqtt mqtt.MqttClient) *automations.Trigger {
+func createTriggerTurnOnLightWithPresenceOn(mqtt mqtt.MqttClient) *automations.DeviceTrigger {
 	// action = turn off light
 	turnOnAction := automations.NewTriggerAction()
 	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
@@ -1648,18 +1724,20 @@ func createTriggerTurnOnLightWithPresenceOn(mqtt mqtt.MqttClient) *automations.T
 	turnOnAction.Client = mqtt
 
 	// Turn on sensor trigger
-	turnOnTrigger := &automations.Trigger{}
-	turnOnTrigger.Name = "presence"
+	turnOnTrigger := automations.NewDeviceTrigger("presence")
 	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
 
 	onTimeRange := automations.NewTimeRange("06:40", "17:15")
-	turnOnTimeAtCondition := automations.NewExposeConditionwithTimeRange("presence", true, "=", onTimeRange, &mocks.MockClock{})
-
-	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnTimeAtCondition)
+	turnOnCondition := utils_test.NewExposeCondition("presence", true, "=")
+	clock := mocks.NewMockClock(
+		func() time.Time { return time.Now() })
+	turnOnTimerCondition := utils_test.NewTimeCondition(onTimeRange, clock)
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnTimerCondition)
 	return turnOnTrigger
 }
 
-func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay *utils.TimeInterval) *automations.Trigger {
+func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay *utils.TimeInterval) *automations.DeviceTrigger {
 
 	// action = turn off light
 	turnOffAction := automations.NewTriggerAction()
@@ -1674,14 +1752,17 @@ func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay *
 	turnOffAction.Client = mqtt
 
 	// Turn off sensor trigger
-	turnOffTrigger := &automations.Trigger{}
-	turnOffTrigger.Name = "presence"
+	turnOffTrigger := automations.NewDeviceTrigger("presence")
 	turnOffTrigger.Actions = []automations.MqttAction{turnOffAction}
 
 	// condition = presence == false
 	onTimeRange := automations.NewTimeRange("11:13", "19:35")
-	turnOffTimeAtCondition := automations.NewExposeConditionwithTimeRange("presence", false, "=", onTimeRange, &mocks.MockClock{})
+	turnOffTimeAtCondition := utils_test.NewExposeCondition("presence", false, "=")
+	clock := mocks.NewMockClock(
+		func() time.Time { return time.Now() })
 
+	turnOffTimerCondition := utils_test.NewTimeCondition(onTimeRange, clock)
 	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffTimeAtCondition)
+	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffTimerCondition)
 	return turnOffTrigger
 }

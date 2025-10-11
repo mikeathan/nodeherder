@@ -8,36 +8,50 @@ export type AutomationActions = Array<AutomationAction>;
 
 export type NumericOperator = '+' | '-' | '*';
 
+// Triggers
+export type TriggerType = ValueOf<typeof TriggerTypes>;
+export const TriggerTypes = {
+  DeviceTrigger: 'deviceTrigger',
+  ManualTrigger: 'manualTrigger',
+} as const;
+
+// Actions
 export type TriggerAction = 'trigger';
 export type StepAction = 'step';
 export type PresetCyclingAction = 'preset';
 export type ActionType = TriggerAction | StepAction | PresetCyclingAction;
+
+export const PublishModes = {
+  Batch: 'batch',
+  Single: 'single',
+} as const;
+export type PublishMode = ValueOf<typeof PublishModes>;
 export const AutomationActionTypes = {
   Trigger: 'trigger',
   Step: 'step',
   PresetCycling: 'preset',
 } as const;
 
+// Operations
 export type TriggerActionOperation = ValueOf<typeof TriggerActionOperations>;
 export const TriggerActionOperations = {
   Delay: 'delay',
 } as const;
-export type ExposeConditionType = 'expose';
 
-export type ConditionType = ExposeConditionType;
+export type ExposeConditionType = 'expose';
+export type TimeConditionType = 'time';
+export type ConditionType = ExposeConditionType | TimeConditionType;
+
 export const AutomationConditionTypes = {
   Expose: 'expose',
+  Time: 'time',
 } as const;
 
-export type AutomationActionStep = {
-  id: string;
-  property: string;
-  operator: NumericOperator;
-};
-
+// Automations
 export type Automation = {
   id: string;
   friendlyname: string;
+  type: string;
   description: string;
   enabled: boolean;
   schedules: TimeSchedule[];
@@ -56,8 +70,15 @@ export type TimeSchedule = {
   type: TimeScheduleType;
 };
 
+export type AutomationActionStep = {
+  id: string;
+  property: string;
+  operator: NumericOperator;
+};
+
 export type AutomationTrigger = {
   name: string;
+  type: TriggerType;
   conditions: AutomationTriggerConditions;
   actions: AutomationActions;
 };
@@ -67,10 +88,22 @@ export type ExposeCondition = {
   name: string;
   value: Nullable<any>;
   equality: string;
-  timeRange?: TimeRange;
 };
 
-export type AutomationCondition = ExposeCondition;
+export type TimeCondition = {
+  type: ConditionType;
+  timeRange: TimeRange;
+};
+
+export const isExposeCondition = (condition: AutomationCondition): condition is ExposeCondition => {
+  return condition.type === 'expose';
+};
+
+export const isTimeCondition = (condition: AutomationCondition): condition is TimeCondition => {
+  return condition.type === 'time';
+};
+
+export type AutomationCondition = ExposeCondition | TimeCondition;
 
 type AutomationBaseAction = {
   id: string;
@@ -85,6 +118,7 @@ export type AutomationTriggerActionExpose = {
 export type AutomationTriggerAction = AutomationBaseAction & {
   exposes: Array<AutomationTriggerActionExpose>;
   delay?: TimeInterval | undefined;
+  publishMode: PublishMode;
 };
 
 export type AutomationStepAction = AutomationBaseAction & {

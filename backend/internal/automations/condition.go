@@ -3,56 +3,96 @@ package automations
 import (
 	"fmt"
 	"node-herder/utils"
+	"reflect"
 	"time"
 )
 
+type ConditionType string
+
 const (
-	ExposeConditionType = "expose"
+	ExposeConditionType ConditionType = "expose"
+	TimeConditionType   ConditionType = "time"
 )
 
-var exposeHandlerInitializer = newConditionHandlerInitialiser()
-
-type ConditionHandlerOption func(*ConditionHandlerOptions)
-type ConditionHandlerOptions struct {
-	Clock utils.Clock
+var conditionTypeRegistry = map[ConditionType]reflect.Type{
+	ExposeConditionType: reflect.TypeOf(ExposeCondition{}),
+	TimeConditionType:   reflect.TypeOf(TimeCondition{}),
 }
 
-func WithClock(clock utils.Clock) func(*ConditionHandlerOptions) {
-	return func(opts *ConditionHandlerOptions) {
-		opts.Clock = clock
+type Condition interface {
+	Evaluate(ctx AutomationContext) bool
+	GetType() ConditionType
+	HasValueChanged(name string, ctx AutomationContext) bool
+	InitHandlers(clock utils.Clock) error
+}
+
+// BaseCondition
+type BaseCondition struct {
+	EqualityOperator utils.EqualityOperator `json:"equality,omitempty"`
+	Type             ConditionType          `json:"type"`
+	handlers         []ConditionHandler
+}
+
+func (e *BaseCondition) Evaluate(ctx AutomationContext) bool {
+	return true
+}
+
+func (e *BaseCondition) GetType() ConditionType {
+	return e.Type
+}
+
+func (e *BaseCondition) HasValueChanged(name string, ctx AutomationContext) bool {
+	return true
+}
+
+func (b *BaseCondition) InitHandlers(clock utils.Clock) error {
+
+	return nil
+}
+
+func NewBaseCondition(conditionType ConditionType, operator utils.EqualityOperator) *BaseCondition {
+	return &BaseCondition{
+		Type:             conditionType,
+		EqualityOperator: operator,
+		handlers:         []ConditionHandler{},
 	}
 }
 
-func newConditionHandlerInitialiser(opts ...ConditionHandlerOption) map[string]func(Condition) error {
-	options := &ConditionHandlerOptions{}
-	for _, opt := range opts {
-		opt(options)
-	}
-
-	return map[string]func(Condition) error{
-		ExposeConditionType: func(condition Condition) error {
-			return exposeConditionInitialiser(condition, options)
-		},
-	}
+// ExposeCondition
+type ExposeCondition struct {
+	BaseCondition
+	Name  string `json:"name"`
+	Value any    `json:"value"`
 }
 
-func exposeConditionInitialiser(condition Condition, opts *ConditionHandlerOptions) error {
-	ec := condition.(*ExposeCondition)
-	if ec.TimeRange != nil {
+func (e *ExposeCondition) HasValueChanged(name string, ctx AutomationContext) bool {
+	return ctx.GetCurrentState(e.Name) != e.Value
+}
 
-		handler, err := NewTimeRangeHandler(ec.TimeRange, opts.Clock)
-		if err != nil {
-			return err
+func (e *ExposeCondition) Evaluate(ctx AutomationContext) bool {
+	for _, handler := range e.handlers {
+		if !handler.Evaluate(ctx) {
+			return false
 		}
-		ec.handlers = append(ec.handlers, handler)
 	}
+	return true
+}
 
-	eh, err := NewExposeHandler(ec)
-	if err != nil {
+func (e *ExposeCondition) GetType() ConditionType {
+	return ExposeConditionType
+}
+
+func (e *ExposeCondition) InitHandlers(clock utils.Clock) error {
+	if err := e.BaseCondition.InitHandlers(clock); err != nil {
 		return err
 	}
 
-	ec.handlers = append(ec.handlers, eh)
+	eh := &ExposeHandler{
+		Name:      e.Name,
+		Value:     e.Value,
+		Operation: e.EqualityOperator,
+	}
+	e.handlers = append(e.handlers, eh)
 	return nil
 }
 
@@ -82,18 +122,15 @@ func NewExposeHandler(cond *ExposeCondition) (*ExposeHandler, error) {
 	}, nil
 }
 
-func (e *ExposeHandler) Evaluate(ctx *DeviceContext) bool {
-	expose, ok := ctx.GetPayload(e.Name)
+func (e *ExposeHandler) Evaluate(ctx AutomationContext) bool {
+	expose, ok := ctx.GetDevicePayload(e.Name)
 	if !ok {
 		utils.LogDebugf("sensor %s not found in payload", e.Name)
 		return false
 	}
 
-	if utils.EqualityOperators[e.Operation](expose.Data, e.Value) {
-		return true
-	}
-
-	return false
+	data := expose.Data.Value()
+	return utils.EqualityOperators[e.Operation](data, e.Value)
 }
 
 // TimeRange Handler
@@ -103,17 +140,17 @@ type TimeRangeHandler struct {
 	clock     utils.Clock
 }
 
-func (t *TimeRangeHandler) Evaluate(ctx *DeviceContext) bool {
+func (t *TimeRangeHandler) Evaluate(ctx AutomationContext) bool {
 	return t.clock.IsInRange(t.startTime, t.endTime)
 }
 
 func NewTimeRangeHandler(timeRange *TimeRange, clock utils.Clock) (*TimeRangeHandler, error) {
-	st, err := ConvertStringToTime(timeRange.StartAt)
+	st, err := ConvertStringToTimeUTC(clock, timeRange.StartAt)
 	if err != nil {
 		return nil, fmt.Errorf("invalid TimeRangeHandler.StartAt format %s", err.Error())
 	}
 
-	et, err := ConvertStringToTime(timeRange.EndAt)
+	et, err := ConvertStringToTimeUTC(clock, timeRange.EndAt)
 	if err != nil {
 		return nil, fmt.Errorf("invalid TimeRangeHandler.EndAt format %s", err.Error())
 	}
@@ -129,19 +166,7 @@ func NewTimeRangeHandler(timeRange *TimeRange, clock utils.Clock) (*TimeRangeHan
 }
 
 type ConditionHandler interface {
-	Evaluate(ctx *DeviceContext) bool
-}
-
-type Condition interface {
-	Evaluate(ctx *DeviceContext) bool
-	GetType() string
-	HasValueChanged(name string, ctx *DeviceContext) bool
-}
-
-// BaseCondition
-type BaseCondition struct {
-	EqualityOperator utils.EqualityOperator `json:"equality"`
-	Type             string                 `json:"type"`
+	Evaluate(ctx AutomationContext) bool
 }
 
 type TimeRange struct {
@@ -156,20 +181,22 @@ func NewTimeRange(startAt string, endAt string) *TimeRange {
 	}
 }
 
-// ExposeCondition
-type ExposeCondition struct {
+// TimeCondition
+type TimeCondition struct {
 	BaseCondition
-	Name      string     `json:"name"`
-	Value     any        `json:"value"`
-	TimeRange *TimeRange `json:"timeRange,omitempty"`
-	handlers  []ConditionHandler
+	TimeRange *TimeRange `json:"timeRange"`
 }
 
-func (e *ExposeCondition) HasValueChanged(name string, ctx *DeviceContext) bool {
-	return ctx.GetCurrent(name) != e.Value
+func (e *TimeCondition) HasValueChanged(name string, ctx AutomationContext) bool {
+	return true
 }
 
-func (e *ExposeCondition) Evaluate(ctx *DeviceContext) bool {
+func (e *TimeCondition) Evaluate(ctx AutomationContext) bool {
+	if len(e.handlers) == 0 {
+		utils.LogError("no handlers found for time condition")
+		return false
+	}
+
 	for _, handler := range e.handlers {
 		if !handler.Evaluate(ctx) {
 			return false
@@ -178,86 +205,18 @@ func (e *ExposeCondition) Evaluate(ctx *DeviceContext) bool {
 	return true
 }
 
-func (e *ExposeCondition) GetType() string {
-	return ExposeConditionType
+func (e *TimeCondition) GetType() ConditionType {
+	return TimeConditionType
 }
 
-func NewExposeCondition(name string, value any, operation utils.EqualityOperator) *ExposeCondition {
-	cond := &ExposeCondition{
-		Name:      name,
-		Value:     value,
-		TimeRange: nil,
-		handlers:  []ConditionHandler{},
-		BaseCondition: BaseCondition{
-			Type:             ExposeConditionType,
-			EqualityOperator: operation,
-		},
-	}
+func (b *TimeCondition) InitHandlers(clock utils.Clock) error {
 
-	err := exposeHandlerInitializer[cond.Type](cond)
-	if err != nil {
-		utils.LogErrorf("error initialising expose condition %s", err.Error())
-		return nil
+	if b.TimeRange != nil {
+		trHandler, err := NewTimeRangeHandler(b.TimeRange, clock)
+		if err != nil {
+			return err
+		}
+		b.handlers = append(b.handlers, trHandler)
 	}
-
-	return cond
+	return nil
 }
-func NewExposeConditionwithTimeRange(name string, value any, operation utils.EqualityOperator, timeRange *TimeRange, clock utils.Clock) *ExposeCondition {
-
-	cond := &ExposeCondition{
-		Name:      name,
-		Value:     value,
-		TimeRange: timeRange,
-		handlers:  []ConditionHandler{},
-		BaseCondition: BaseCondition{
-			Type:             ExposeConditionType,
-			EqualityOperator: operation,
-		},
-	}
-
-	initialiser := newConditionHandlerInitialiser(WithClock(clock))
-	err := initialiser[cond.Type](cond)
-	if err != nil {
-		utils.LogErrorf("initialising expose timeRange failed. Error: %s", err.Error())
-		return nil
-	}
-	return cond
-}
-
-// TimeCondition
-// type TimeCondition struct {
-// 	BaseCondition
-// 	Value  string `json:"value"`
-// 	timeAt time.Time
-// 	clock  utils.Clock
-// }
-
-// func (t *TimeCondition) Evaluate(ctx *DeviceContext) bool {
-
-// 	result, _ := t.clock.CompareWithNow(t.timeAt, t.EqualityOperator)
-// 	return result
-// }
-
-// func (t *TimeCondition) GetType() string {
-// 	return TimeConditionType
-// }
-
-// func (e *TimeCondition) HasValueChanged(name string, ctx *DeviceContext) bool {
-// 	return true
-// }
-
-// func NewTimeCondition(value string, operation string, clock utils.Clock) (*TimeCondition, error) {
-// 	t, err := ConvertStringToTime(value)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return &TimeCondition{
-// 		Value:  value,
-// 		timeAt: t,
-// 		clock:  clock,
-// 		BaseCondition: BaseCondition{
-// 			Type:             TimeConditionType,
-// 			EqualityOperator: operation,
-// 		},
-// 	}, nil
-// }

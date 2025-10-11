@@ -43,13 +43,16 @@
     {
       isLogo: true,
       template: () => h(Logo),
+      command: () =>{},
     },
   ]);
+
 
   const sideNavigationItems = computed<MenuBarItem[]>(() => [
     {
       label: 'groups',
       icon: 'pi pi-home',
+
       command: () => router.push('/'),
     },
     {

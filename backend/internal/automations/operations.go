@@ -13,7 +13,7 @@ func CreateTriggerOperation(action *MqttTriggerAction) actionOperation {
 		actionData[expose.Name] = expose.Data
 	}
 
-	return newTriggerOperation(actionData)
+	return newTriggerOperation(actionData, action.PublishMode)
 }
 
 func CreateStepOperation(expose *devices.Entity, action *MqttStepAction) actionOperation {
@@ -46,21 +46,26 @@ func CreateRotateOperation(expose *devices.Entity) actionOperation {
 	return newRotateOperation(expose.Name, presets)
 }
 
+type actionPayload struct {
+	Commands    map[string]any
+	PublishMode PublishMode
+}
 
 type actionOperation interface {
-	CreatePayload() (map[string]any, error)
+	CreatePayload() (actionPayload, error)
 }
 
 type triggerOperation struct {
-	data map[string]any
+	data        map[string]any
+	publishMode PublishMode
 }
 
-func newTriggerOperation(data map[string]any) actionOperation {
-	return &triggerOperation{data: data}
+func newTriggerOperation(data map[string]any, publishMode PublishMode) actionOperation {
+	return &triggerOperation{data: data, publishMode: publishMode}
 }
 
-func (t *triggerOperation) CreatePayload() (map[string]any, error) {
-	return t.data, nil
+func (t *triggerOperation) CreatePayload() (actionPayload, error) {
+	return actionPayload{Commands: t.data, PublishMode: t.publishMode}, nil
 }
 
 type rotateOperation struct {
@@ -74,7 +79,7 @@ func newRotateOperation(property string, items []any) actionOperation {
 	return &rotateOperation{property: property, items: items, size: len(items)}
 }
 
-func (r *rotateOperation) CreatePayload() (map[string]any, error) {
+func (r *rotateOperation) CreatePayload() (actionPayload, error) {
 	if r.position >= r.size {
 		r.position = 0
 	}
@@ -85,7 +90,7 @@ func (r *rotateOperation) CreatePayload() (map[string]any, error) {
 	payload := map[string]any{
 		r.property: v,
 	}
-	return payload, nil
+	return actionPayload{Commands: payload}, nil
 }
 
 type stepOperation struct {
@@ -103,7 +108,7 @@ func newStepOperation(expose *devices.Entity, action *MqttStepAction, minLimit f
 	return &stepOperation{expose: expose, action: action, limits: limits, propertyMap: make(map[string]float64, len(action.Steps))}
 }
 
-func (r *stepOperation) CreatePayload() (map[string]any, error) {
+func (r *stepOperation) CreatePayload() (actionPayload, error) {
 
 	// example:
 	// brightness = 10
@@ -114,10 +119,10 @@ func (r *stepOperation) CreatePayload() (map[string]any, error) {
 	result := r.action.Data.(float64) // coefficient
 	for i := len(r.action.Steps) - 1; i >= 0; i-- {
 		step := r.action.Steps[i]
-		if value, err := r.action.registrar.RetrieveEntityData(step.Id, step.Property); err == nil {
+		if entityData, err := r.action.registrar.RetrieveEntityData(step.Id, step.Property); err == nil {
 			r.propertyMap[step.Property] = 0
 
-			if stepValue, ok := value.(float64); ok {
+			if stepValue, ok := entityData.Value().(float64); ok {
 				result = numericOperations[step.Operator](stepValue, result, r.limits[step.Operator])
 
 				// Cache value for equality check.  temp needs refactoring
@@ -127,13 +132,13 @@ func (r *stepOperation) CreatePayload() (map[string]any, error) {
 	}
 
 	if r.propertyMap[r.action.Property] == result {
-		return nil, errors.New("same value, skipping")
+		return actionPayload{}, errors.New("same value, skipping")
 	}
 
 	payload := map[string]any{
 		r.action.Property: result,
 	}
-	return payload, nil
+	return actionPayload{Commands: payload}, nil
 }
 
 var numericOperations = map[string]func(float64, float64, float64) float64{

@@ -17,13 +17,15 @@
     },
   });
 
-  const schedules = ref<TimeSchedule[]>({} as TimeSchedule[]);
+  const schedules = ref<TimeSchedule[]>([] as TimeSchedule[]);
 
   watch(
     () => props.schedules,
     () => {
-      // make a deep copy to make it not reactive
-      schedules.value = JSON.parse(JSON.stringify(props.schedules)) as TimeSchedule[];
+      if (props.schedules) {
+        // make a deep copy to make it not reactive
+        schedules.value = JSON.parse(JSON.stringify(props.schedules)) as TimeSchedule[];
+      }
     },
     { immediate: true }
   );
@@ -41,18 +43,18 @@
 
     return createButtons([
       {
-        name: 'Save',
-        click: save,
+        label: 'Save',
+        command: save,
         disabled: false,
       },
       {
-        name: 'Add',
-        click: addSchedule,
+        label: 'Add',
+        command: addSchedule,
         disabled: !canAdd,
       },
       {
-        name: 'Clear',
-        click: clear,
+        label: 'Clear',
+        command: clear,
         disabled: !canClear,
       },
     ]);
@@ -100,7 +102,7 @@
   <div>
     <h2>Schedules</h2>
     <div class="pt-3"></div>
-    <ButtonPanel :buttons="buttonPanelItems" />
+    <ButtonPanel :buttons="buttonPanelItems" severity="secondary" />
     <div class="pt-3"></div>
     <div v-for="schedule in schedules" :key="schedule.type">
       <div class="row">

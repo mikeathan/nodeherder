@@ -4,6 +4,7 @@ import (
 	"context"
 	"node-herder/internal/automations"
 	utils_test "node-herder/testing"
+	"node-herder/utils"
 	"sync"
 	"testing"
 	"time"
@@ -16,12 +17,13 @@ func TestAddTimeSchedule(t *testing.T) {
 
 	order := []int{1, 2, 1, 2}
 	done := make(chan int, 4)
-	now := time.Now().UTC()
+	loc, _ := time.LoadLocation("Europe/London")
+	now := time.Now().In(loc)
 	start := now.Add(500 * time.Millisecond)
 	end := now.Add(2000 * time.Millisecond)
 
 	schedules := utils_test.CreateTimeSchedules(start, end)
-	s := automations.NewScheduler(context.Background())
+	s := automations.NewScheduler(utils.NewRealClock(), context.Background())
 	// add start job
 	err := s.Name("Start job").At(schedules[0].StartAt).Every(time.Second * 4).Do(func() error {
 		done <- 1
@@ -48,7 +50,7 @@ func TestAddTimeSchedule(t *testing.T) {
 		t.Errorf("failed to start scheduler %s", err.Error())
 	}
 
-	if !waitTimeout(&wg, 60*time.Second) {
+	if !waitTimeout(&wg, 10*time.Second) {
 		t.Errorf("failed to execute jobs")
 	}
 
@@ -62,13 +64,13 @@ func TestAddTimeSchedule(t *testing.T) {
 }
 
 func TestStopTimeSchedule(t *testing.T) {
-
-	now := time.Now().UTC()
+	loc, _ := time.LoadLocation("Europe/London")
+	now := time.Now().In(loc)
 	start := now.Add(2000 * time.Millisecond)
 	end := start.Add(2000 * time.Millisecond)
 
 	schedules := utils_test.CreateTimeSchedules(start, end)
-	s := automations.NewScheduler(context.Background())
+	s := automations.NewScheduler(utils.NewRealClock(), context.Background())
 
 	// add start job
 	err := s.Name("Start job").At(schedules[0].StartAt).Every(time.Second * 1).Do(func() error {
@@ -108,12 +110,13 @@ func TestStopTimeSchedule(t *testing.T) {
 func TestTimeScheduleContextCancellation(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
-	now := time.Now().UTC()
+	loc, _ := time.LoadLocation("Europe/London")
+	now := time.Now().In(loc)
 	start := now.Add(2000 * time.Millisecond)
 	end := start.Add(2000 * time.Millisecond)
 
 	schedules := utils_test.CreateTimeSchedules(start, end)
-	s := automations.NewScheduler(ctx)
+	s := automations.NewScheduler(utils.NewRealClock(), ctx)
 
 	// add start job
 	err := s.Name("Start job").At(schedules[0].StartAt).Every(time.Second * 1).Do(func() error {
@@ -170,12 +173,13 @@ func TestTimeScheduleCSupportFileFormats(t *testing.T) {
 	}
 
 	for _, tc := range testCase {
-		now := time.Now().UTC()
+		loc, _ := time.LoadLocation("Europe/London")
+		now := time.Now().In(loc)
 		start := now.Add(2000 * time.Millisecond)
 		end := start.Add(2000 * time.Millisecond)
 
 		schedules := utils_test.CreateTimeSchedulesWithTimeFormat(start, end, tc.format)
-		s := automations.NewScheduler(ctx)
+		s := automations.NewScheduler(utils.NewRealClock(), ctx)
 		err := s.Name("Start job").At(schedules[0].StartAt).Every(time.Second * 1).Do(func() error {
 			t.Errorf("Start job executed")
 

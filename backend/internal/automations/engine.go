@@ -15,43 +15,46 @@ const (
 
 type Engine interface { // TODO: might need to move it to Models????
 	HandleDevice(device *devices.Device)
-	Add(automation *Device) error
+	HandleManual(automationID string, triggerName string) error
+	Add(automation Automation) error
 	Delete(id string) error
 	DeleteTrigger(id string, triggerId int) error
 	Initialize()
-	Load(id string) (*Device, error)
+	Load(id string) (Automation, error)
 	IsAutomationEnabled(id string) bool
-	GetAllTriggers() []*Device
-	WithStorage(storage storage.Storage[Device])
+	GetAllTriggers() []Automation
+	WithStorage(storage storage.Storage[Automation])
 }
 
 type AutomationEngine struct {
 	mqttClient mqtt.MqttClient
 	registrar  services.DeviceRegistrar
-	storage    storage.Storage[Device]
+	storage    storage.Storage[Automation]
 	handlers   []AutomationHandler
 }
 
-func NewEngine(handlers []AutomationHandler, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *AutomationEngine {
+func NewEngine(handlerFactory []AutomationHandler, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *AutomationEngine {
+
+	serializer := NewAutomationSerialiser()
+	storage := storage.NewJsonDiskStorage(automationDir, nil, serializer.Unmarshal)
 
 	return &AutomationEngine{
 		mqttClient: mqtt,
 		registrar:  registrar,
-		storage: storage.NewJsonDiskStorage[Device](automationDir, func() *Device {
-			return newDevice()
-		}),
-		handlers: handlers,
+		storage:    storage,
+		handlers:   handlerFactory,
 	}
+
 }
 
-func (a *AutomationEngine) WithStorage(storage storage.Storage[Device]) {
+func (a *AutomationEngine) WithStorage(storage storage.Storage[Automation]) {
 	a.storage = storage
 }
 
 func (a *AutomationEngine) IsAutomationEnabled(id string) bool {
 	automation, err := a.storage.LoadFromCache(id)
 	if err == nil {
-		return automation.Enabled
+		return automation.IsEnabled()
 	}
 
 	return false
@@ -59,29 +62,52 @@ func (a *AutomationEngine) IsAutomationEnabled(id string) bool {
 
 func (a *AutomationEngine) HandleDevice(device *devices.Device) {
 	automation, err := a.storage.LoadFromCache(device.Id)
-	if err == nil && automation.Enabled {
-		automation.Evaluate(device)
+	if err == nil && automation.IsEnabled() {
+		automation.Evaluate(NewDeviceEvent(device))
 	}
 }
 
-func (a *AutomationEngine) GetAllTriggers() []*Device {
-	return a.storage.LoadAll()
-}
-
-func (a *AutomationEngine) Load(id string) (*Device, error) {
-	return a.storage.Load(id)
-}
-
-func (a *AutomationEngine) Add(automation *Device) error {
-
-	utils.LogInfof("adding automation id=%s, friendlyName=%s, enabled=%v", automation.Id, automation.FriendlyName, automation.Enabled)
-	err := a.configureAutomation(automation)
+func (a *AutomationEngine) HandleManual(automationID string, triggerName string) error {
+	automation, err := a.storage.LoadFromCache(automationID)
 	if err != nil {
-		utils.LogErrorf("configure automation id %s failed. Error=%s", automation.Id, err.Error())
 		return err
 	}
 
-	a.storage.Store(automation.Id, automation)
+	if !automation.IsEnabled() {
+		return errors.New("automation is disabled")
+	}
+
+	device, err := a.registrar.LookupById(automationID)
+	if err != nil {
+		utils.LogErrorf("Failed to lookup device with id %s. Error=%s", automationID, err.Error())
+		return err
+	}
+
+	if !automation.EvaluateTrigger(NewDeviceEvent(device), triggerName) {
+		return errors.New("automation trigger failed to run")
+	}
+
+	return nil
+}
+
+func (a *AutomationEngine) GetAllTriggers() []Automation {
+	return a.storage.LoadAll()
+}
+
+func (a *AutomationEngine) Load(id string) (Automation, error) {
+	return a.storage.Load(id)
+}
+
+func (a *AutomationEngine) Add(automation Automation) error {
+
+	utils.LogInfof("adding automation id=%s, friendlyName=%s, enabled=%v", automation.GetId(), automation.GetFriendlyName(), automation.IsEnabled())
+	err := a.configureAutomation(automation)
+	if err != nil {
+		utils.LogErrorf("configure automation id %s failed. Error=%s", automation.GetId(), err.Error())
+		return err
+	}
+
+	a.storage.Store(automation.GetId(), automation)
 
 	return nil
 }
@@ -92,15 +118,17 @@ func (a *AutomationEngine) DeleteTrigger(id string, triggerId int) error {
 		return err
 	}
 
-	if triggerId >= len(automation.Triggers) {
+	if triggerId >= len(automation.GetTriggers()) {
 		return errors.New("trigger index out of bounds")
 	}
 
 	// remove trigger
-	automation.Triggers = append(automation.Triggers[:triggerId], automation.Triggers[triggerId+1:]...)
+	if err := automation.RemoveTrigger(triggerId); err != nil {
+		return err
+	}
 
 	// store
-	a.storage.Store(id, automation)
+	a.storage.Store(automation.GetId(), automation)
 	return nil
 }
 
@@ -121,19 +149,19 @@ func (a *AutomationEngine) Initialize() {
 
 	for _, automation := range automations {
 
-		utils.LogInfof("Loading automation id= %s, friendlyName=%s, Enabled=%t", automation.Id, automation.FriendlyName, automation.Enabled)
+		utils.LogInfof("Loading automation id= %s, friendlyName=%s, Enabled=%t", automation.GetId(), automation.GetFriendlyName(), automation.IsEnabled())
 
 		err := a.configureAutomation(automation)
 		if err != nil {
-			utils.LogErrorf("configure automation id %s failed. Error=%s", automation.Id, err.Error())
+			utils.LogErrorf("configure automation id %s failed. Error=%s", automation.GetId(), err.Error())
 			continue
 		}
 	}
 }
 
-func (a *AutomationEngine) configureAutomation(automation *Device) error {
+func (a *AutomationEngine) configureAutomation(automation Automation) error {
 
-	err := automation.configure(a.registrar, a.mqttClient)
+	err := automation.Configure(a.registrar, a.mqttClient)
 	if err != nil {
 		return err
 	}
