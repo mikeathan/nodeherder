@@ -100,7 +100,7 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 		}
 		device.Exposes = createExposures(data)
 
-		deviceTrigger.Evaluate(device)
+		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device), testCase.triggeredEntity)
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -129,7 +129,7 @@ func TestAutomationwithMultipleTriggerActions(t *testing.T) {
 	registrar.RegisterBridge(deviceBridgeList)
 
 	trigger := createTriggerwithMultipleActions(triggerId, registrar, mqtt, "button1", []string{"brightness", "color_temperature", "color_brightness"}, []any{120, 250, 200})
-	trigger.Conditions = append(trigger.Conditions, automations.NewExposeCondition("button1", "pressed", "="))
+	trigger.Conditions = append(trigger.Conditions, utils_test.NewExposeCondition("button1", "pressed", "="))
 
 	automation := automations.NewDevice(triggerId)
 	automation.Triggers = append(automation.Triggers, trigger)
@@ -176,7 +176,7 @@ func TestAutomationwithMultipleTriggerActions(t *testing.T) {
 		}
 		device.Exposes = createExposures(data)
 
-		automation.Evaluate(device)
+		automation.Evaluate(automations.NewDeviceEvent(device))
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -256,7 +256,7 @@ func TestHandleMultipleSameValueTriggerWithDelay(t *testing.T) {
 		}
 
 		device.Exposes = createExposures(data)
-		deviceTrigger.Evaluate(device)
+		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device), "presence")
 
 		time.Sleep(500 * time.Millisecond)
 	}
@@ -352,7 +352,7 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 		}
 
 		device.Exposes = createExposures(data)
-		deviceTrigger.Evaluate(device)
+		deviceTrigger.Evaluate(automations.NewDeviceEvent(device))
 
 		time.Sleep(testCase.sleepdelay * time.Millisecond)
 	}
@@ -364,7 +364,9 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
-	mockClock := &mocks.MockClock{}
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now().UTC()
+	})
 
 	repo := repository.NewMemoryDeviceRepo()
 	store := utils_test.CreateStoreFromDeviceRepo(repo)
@@ -379,20 +381,22 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 	// create turn on trigger
 	turnOnTrigger := createTriggerTurnOnLight(id, registrar, mqtt)
 
-	// initialize turn on condition
+	// initialize turn on condition with timer
 	onTimeRange := automations.NewTimeRange("11:00", "17:00")
-	turnOnCondition := automations.NewExposeConditionwithTimeRange("presence", true, "=", onTimeRange, mockClock)
-
+	turnOnCondition := utils_test.NewExposeCondition("presence", true, "=")
+	turnOnTimerCondition := utils_test.NewTimeCondition(onTimeRange, mockClock)
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnTimerCondition)
 
 	// create turn off trigger
 	turnOffTrigger := createTriggerDelayTurnOffLight(id, registrar, mqtt, nil)
 
-	// initialize turn off condition
+	// initialize turn off condition with timer
 	offTimeRange := automations.NewTimeRange("09:00", "13:25")
-	turnOffCondition := automations.NewExposeConditionwithTimeRange("presence", false, "=", offTimeRange, mockClock)
-
+	turnOffCondition := utils_test.NewExposeCondition("presence", false, "=")
+	turnOffTimerCondition := utils_test.NewTimeCondition(offTimeRange, mockClock)
 	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffCondition)
+	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffTimerCondition)
 
 	// create device trigger
 	deviceTrigger := automations.NewDevice(id)
@@ -417,15 +421,14 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 		{presence: false, sleepdelay: 200, timeNow: utils_test.CreateTimeFrom(11, 25, 0), result: true},
 	}
 
-	for i, testCase := range testCases {
-		var data = map[string]any{
-			"presence": testCase.presence,
-		}
+	for _, testCase := range testCases {
 
-		if i == 3 {
-			fmt.Println("test case debug")
-		}
-		mockClock.SetMockTime(testCase.timeNow)
+		loc, _ := time.LoadLocation("Europe/London")
+		now := time.Date(testCase.timeNow.Year(), testCase.timeNow.Month(), testCase.timeNow.Day(),
+			testCase.timeNow.Hour(), testCase.timeNow.Minute(), testCase.timeNow.Second(),
+			testCase.timeNow.Nanosecond(), loc)
+		mockClock.SetMockTime(now.UTC())
+
 		var messageHandler = func(id string, payload []byte) {
 
 			if !testCase.result {
@@ -468,15 +471,158 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 			wg.Add(1)
 		}
 
-		device.Exposes = createExposures(data)
+		var payload = map[string]any{
+			"presence": testCase.presence,
+		}
 
-		fmt.Println("emiting presence", testCase.presence)
-		deviceTrigger.Evaluate(device)
-
+		device.Exposes = createExposures(payload)
+		deviceTrigger.Evaluate(automations.NewDeviceEvent(device))
 		time.Sleep(testCase.sleepdelay * time.Millisecond)
 	}
 
 	wg.Wait()
+}
+
+func TestManualTrigger_TurnsOnLight(t *testing.T) {
+
+	wg := &sync.WaitGroup{}
+	mqtt := &mocks.MockMqttClient{}
+
+	repo := repository.NewMemoryDeviceRepo()
+	store := utils_test.CreateStoreFromDeviceRepo(repo)
+	eventHub := &mocks.MockEventHub{}
+
+	id := "Light attic"
+	device := utils_test.CreatePresenceDevice(id, "light device", "presence", false)
+	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(deviceBridgeList)
+
+	turnOnTrigger := createTriggerTurnOnLight(id, registrar, mqtt)
+
+	deviceTrigger := automations.NewDevice(id)
+	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
+
+	testCases := []struct {
+		presence bool
+		result   bool
+	}{
+		{presence: true, result: true},
+		{presence: false, result: true},
+		{presence: true, result: true},
+		{presence: false, result: true},
+	}
+	for _, testCase := range testCases {
+
+		publishCount := 0
+		var messageHandler = func(id string, payload []byte) {
+			publishCount++
+			if testCase.result {
+				wg.Done()
+				for _, action := range turnOnTrigger.Actions {
+
+					responseData := unpackJsonToMap(string(payload))
+					if responseData == nil {
+						t.Fatalf("error unpacking json")
+					}
+					triggerAction, ok := action.(*automations.MqttTriggerAction)
+					if !ok {
+						t.Fatalf("invalid action type")
+					}
+					for _, expose := range triggerAction.Exposes {
+						value, ok := responseData[expose.Name]
+						if !ok {
+							t.Fatalf("property not %s found in payload", expose.Name)
+						}
+						if value != expose.Data {
+							t.Fatalf("value mismatch: want %v got %v", expose.Data, value)
+						}
+					}
+				}
+			} else {
+				t.Fatalf("unexpected message published when result should be false")
+			}
+		}
+
+		mqtt.OnMessageHandler(messageHandler)
+		if testCase.result {
+			wg.Add(1)
+		}
+
+		var payload = map[string]any{
+			"presence": testCase.presence,
+		}
+		device.Exposes = createExposures(payload)
+		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device), turnOnTrigger.Name)
+		wg.Wait()
+	}
+}
+
+func TestManualTriggerWithScheduleTurnsOnLight(t *testing.T) {
+
+	wg := &sync.WaitGroup{}
+	mqtt := &mocks.MockMqttClient{}
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now().UTC()
+	})
+	repo := repository.NewMemoryDeviceRepo()
+	store := utils_test.CreateStoreFromDeviceRepo(repo)
+	eventHub := &mocks.MockEventHub{}
+
+	id := "Light attic"
+	device := utils_test.CreatePresenceDevice(id, "Attic Light", "state", false)
+	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(deviceBridgeList)
+	// create turn on trigger
+	onTimeRange := automations.NewTimeRange("11:00", "17:00")
+
+	turnOnTrigger := createDeviceTriggerWithScheduleTurnOnLight(id, onTimeRange, registrar, mqtt, mockClock)
+	deviceTrigger := automations.NewDevice(id)
+	deviceTrigger.Triggers = append(deviceTrigger.Triggers, turnOnTrigger)
+
+	testCases := []struct {
+		timeNow time.Time
+		result  bool
+	}{
+		{timeNow: utils_test.CreateTimeFrom(10, 59, 0), result: false},
+		{timeNow: utils_test.CreateTimeFrom(11, 0, 0), result: true},
+		{timeNow: utils_test.CreateTimeFrom(12, 15, 0), result: true},
+		{timeNow: utils_test.CreateTimeFrom(13, 36, 0), result: true},
+		{timeNow: utils_test.CreateTimeFrom(14, 7, 10), result: true},
+		{timeNow: utils_test.CreateTimeFrom(17, 0, 0), result: true},
+		{timeNow: utils_test.CreateTimeFrom(17, 0, 1), result: false},
+		{timeNow: utils_test.CreateTimeFrom(18, 10, 30), result: false},
+	}
+
+	for _, testCase := range testCases {
+		loc, _ := time.LoadLocation("Europe/London")
+		now := time.Date(testCase.timeNow.Year(), testCase.timeNow.Month(), testCase.timeNow.Day(),
+			testCase.timeNow.Hour(), testCase.timeNow.Minute(), testCase.timeNow.Second(),
+			testCase.timeNow.Nanosecond(), loc)
+			
+		mockClock.SetMockTime(now)
+
+		var data = map[string]any{
+			"presence": true,
+		}
+
+		var messageHandler = func(id string, payload []byte) {
+			wg.Done()
+		}
+
+		mqtt.OnMessageHandler(messageHandler)
+		if testCase.result {
+			wg.Add(1)
+		}
+
+		device.Exposes = createExposures(data)
+		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device), turnOnTrigger.Name)
+
+		wg.Wait()
+	}
 }
 
 func TestSwitch(t *testing.T) {
@@ -520,7 +666,7 @@ func unpackJsonToMap(value string) map[string]any {
 	return payload
 }
 
-func createTriggerTurnOnLightWithPresenceOnAndLux(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, lux any) *automations.Trigger {
+func createTriggerTurnOnLightWithPresenceOnAndLux(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, lux any) *automations.DeviceTrigger {
 	// action = turn off light
 	turnOnAction := automations.NewTriggerAction()
 	turnOnAction.Id = id
@@ -534,13 +680,12 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(id string, registrar services.
 	turnOnAction.Configure(registrar, mqtt)
 
 	// Turn on sensor trigger
-	turnOnTrigger := &automations.Trigger{}
-	turnOnTrigger.Name = "presence"
+	turnOnTrigger := automations.NewDeviceTrigger("presence")
 	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
 
 	// condition = presence = off && lux <= 30
-	turnOnCondition := automations.NewExposeCondition("presence", true, "=")
-	luxCondition := automations.NewExposeCondition("lux", lux, "<=")
+	turnOnCondition := utils_test.NewExposeCondition("presence", true, "=")
+	luxCondition := utils_test.NewExposeCondition("lux", lux, "<=")
 
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, luxCondition)
@@ -548,19 +693,43 @@ func createTriggerTurnOnLightWithPresenceOnAndLux(id string, registrar services.
 	return turnOnTrigger
 }
 
-func createTriggerDelayTurnOffLightWithPresenceOff(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, delay *utils.TimeInterval) *automations.Trigger {
+func createDeviceTriggerWithScheduleTurnOnLight(id string, timeRange *automations.TimeRange, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, clock utils.Clock) *automations.DeviceTrigger {
+
+	// Turn on sensor trigger
+	turnOnTrigger := automations.NewDeviceTrigger(id)
+
+	// action = turn off light
+	turnOnAction := automations.NewTriggerAction()
+	turnOnAction.Id = id
+	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
+		{
+			Name: "state",
+			Data: true,
+		},
+	}
+	turnOnAction.Delay = nil
+	turnOnAction.Configure(registrar, mqtt)
+	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
+
+	// schedule condition
+	scheduleCondition := utils_test.NewTimeCondition(timeRange, clock)
+	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, scheduleCondition)
+
+	return turnOnTrigger
+}
+
+func createTriggerDelayTurnOffLightWithPresenceOff(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, delay *utils.TimeInterval) *automations.DeviceTrigger {
 
 	turnOffTrigger := createTriggerDelayTurnOffLight(id, registrar, mqtt, delay)
 
-	turnOffCondition := automations.NewExposeCondition("presence", false, "=")
+	turnOffCondition := utils_test.NewExposeCondition("presence", false, "=")
 
 	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffCondition)
 
 	return turnOffTrigger
 }
 
-func createTriggerTurnOnLight(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *automations.Trigger {
-	// action = turn off light
+func createTriggerTurnOnLight(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient) *automations.DeviceTrigger {
 	turnOnAction := automations.NewTriggerAction()
 	turnOnAction.Id = id
 	turnOnAction.Exposes = []*automations.MqttTriggerActionExpose{
@@ -573,16 +742,13 @@ func createTriggerTurnOnLight(id string, registrar services.DeviceRegistrar, mqt
 	turnOnAction.Configure(registrar, mqtt)
 
 	// Turn on sensor trigger
-	turnOnTrigger := &automations.Trigger{}
-	turnOnTrigger.Name = "presence"
+	turnOnTrigger := automations.NewDeviceTrigger("presence")
 	turnOnTrigger.Actions = []automations.MqttAction{turnOnAction}
-
-	// condition = presence = off
 
 	return turnOnTrigger
 }
 
-func createSwitchTriggerWithBindingAction(id string, registrar services.DeviceRegistrar, triggerName string, actionProp string, actionData any, mqtt mqtt.MqttClient) *automations.Trigger {
+func createSwitchTriggerWithBindingAction(id string, registrar services.DeviceRegistrar, triggerName string, actionProp string, actionData any, mqtt mqtt.MqttClient) *automations.DeviceTrigger {
 	// action = turn off light
 	brightnessAction := automations.NewTriggerAction()
 	brightnessAction.Id = id
@@ -595,14 +761,13 @@ func createSwitchTriggerWithBindingAction(id string, registrar services.DeviceRe
 	brightnessAction.Configure(registrar, mqtt)
 
 	// Turn off sensor trigger
-	button1Trigger := &automations.Trigger{}
-	button1Trigger.Name = triggerName
+	button1Trigger := automations.NewDeviceTrigger(triggerName)
 	button1Trigger.Actions = []automations.MqttAction{brightnessAction}
 
 	return button1Trigger
 }
 
-func createTriggerwithMultipleActions(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, triggerName string, actions []string, data []any) *automations.Trigger {
+func createTriggerwithMultipleActions(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, triggerName string, actions []string, data []any) *automations.DeviceTrigger {
 	brightnessAction := automations.NewTriggerAction()
 	brightnessAction.Id = id
 	for i, action := range actions {
@@ -618,16 +783,14 @@ func createTriggerwithMultipleActions(id string, registrar services.DeviceRegist
 		return nil
 	}
 
-	trigger := &automations.Trigger{}
-
-	trigger.Name = triggerName
+	trigger := automations.NewDeviceTrigger(triggerName)
 	trigger.Actions = []automations.MqttAction{brightnessAction}
 	trigger.Conditions = []automations.Condition{}
 
 	return trigger
 }
 
-func createTriggerDelayTurnOffLight(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, delay *utils.TimeInterval) *automations.Trigger {
+func createTriggerDelayTurnOffLight(id string, registrar services.DeviceRegistrar, mqtt mqtt.MqttClient, delay *utils.TimeInterval) *automations.DeviceTrigger {
 	// action = turn off light
 	turnOffAction := automations.NewTriggerAction()
 	turnOffAction.Id = id
@@ -645,8 +808,7 @@ func createTriggerDelayTurnOffLight(id string, registrar services.DeviceRegistra
 	}
 
 	// Turn off sensor trigger
-	turnOffTrigger := &automations.Trigger{}
-	turnOffTrigger.Name = "presence"
+	turnOffTrigger := automations.NewDeviceTrigger("presence")
 	turnOffTrigger.Actions = []automations.MqttAction{turnOffAction}
 
 	return turnOffTrigger
@@ -667,11 +829,10 @@ func createEntity(name string, description string, data any, unit string, attrib
 		attributes = make(map[string]any)
 	}
 
-	newEntity := &devices.Entity{}
+	newEntity := devices.NewEntity(name)
 	newEntity.Attributes = map[string]any{}
 	newEntity.Values = map[string]any{}
-	newEntity.Data = data
-	newEntity.Name = name
+	newEntity.Data.SetValue(data)
 	newEntity.Unit = unit
 	newEntity.Description = description
 	newEntity.Attributes = attributes

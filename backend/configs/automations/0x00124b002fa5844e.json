@@ -1,32 +1,43 @@
 {
   "id": "0x00124b002fa5844e",
+  "type": "device",
   "friendlyname": "Front door sensor",
   "description": "test",
-  "enabled": false,
+  "enabled": true,
   "triggers": [
     {
-      "name": "contact",
-      "conditions": [
-        {
-          "type": "expose",
-          "name": "contact",
-          "value": true,
-          "equality": "="
-        }
-      ],
+      "type": "deviceTrigger",
       "actions": [
         {
           "id": "0xa4c1389b273366c3",
+          "type": "trigger",
           "exposes": [
+            {
+              "name": "duration",
+              "data": 2
+            },
+            {
+              "name": "volume",
+              "data": "low"
+            },
             {
               "name": "alarm",
               "data": true
             }
           ],
-          "type": "trigger"
+          "publishMode": "single"
+        }
+      ],
+      "name": "contact",
+      "conditions": [
+        {
+          "equality": "=",
+          "type": "expose",
+          "name": "contact",
+          "value": false
         }
       ]
     }
   ],
-  "schedule": []
+  "schedules": null
 }

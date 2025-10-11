@@ -1,7 +1,6 @@
 <script setup lang="ts">
   import { computed, PropType, ref, watch } from 'vue';
   import { IconProps } from '../../types/icon.type';
-  import { prop } from 'vue-class-component';
 
   const props = defineProps({
     icon: {

@@ -28,36 +28,56 @@ var (
 )
 
 type HubController struct {
-	eventHub                          ws.EventHub
-	mqtt                              mqtt.MqttClient
-	store                             store.AppStore
-	wp                                *utils.WorkerPool
-	responseHandlers                  map[string]handler
-	DeviceAvailabilityTimeoutOverride int
-	automationEngine                  automations.Engine
-	registrar                         *services.HubRegisterService
-	ctx                               context.Context
-	getDeviceProcessor                func() *services.DeviceProcessor
+	eventHub                                 ws.EventHub
+	mqtt                                     mqtt.MqttClient
+	store                                    store.AppStore
+	wp                                       *utils.WorkerPool
+	responseHandlers                         map[string]handler
+	DeviceAvailabilityTimeoutOverrideInHours int
+	automationEngine                         automations.Engine
+	registrar                                *services.HubRegisterService
+	ctx                                      context.Context
+	getDeviceProcessor                       func() *services.DeviceProcessor
+	automationHandlers                       []automations.AutomationHandler
+}
+type HubControllerOption func(*HubController)
+
+func WithContext(ctx context.Context) HubControllerOption {
+	return func(h *HubController) {
+		h.ctx = ctx
+	}
+}
+func WithAutomationHandlers(handlers []automations.AutomationHandler) HubControllerOption {
+	return func(h *HubController) {
+		h.automationHandlers = handlers
+	}
 }
 
-func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, ctx context.Context) *HubController {
+func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt.MqttClient, options ...HubControllerOption) *HubController {
 	h := &HubController{
-		eventHub:                          eventHub,
-		store:                             store,
-		mqtt:                              mqtt,
-		responseHandlers:                  map[string]handler{},
-		DeviceAvailabilityTimeoutOverride: 3600,
-		ctx:                               ctx,
+		eventHub:                                 eventHub,
+		store:                                    store,
+		mqtt:                                     mqtt,
+		responseHandlers:                         map[string]handler{},
+		DeviceAvailabilityTimeoutOverrideInHours: 24,
+		ctx:                                      context.Background(),
+		automationHandlers:                       []automations.AutomationHandler{},
 	}
 
-	h.registrar = services.NewHubRegisterService(store, eventHub, 3600)
+	h.automationHandlers = []automations.AutomationHandler{
+		automations.NewAutomationScheduler(
+			automations.WithContext(h.ctx),
+			automations.WithAutomationsFuncs(),
+		),
+	}
 
-	scheduleHandler := automations.NewAutomationScheduler(
-		automations.WithContext(ctx),
-		automations.WithAutomationsFuncs())
+	for _, option := range options {
+		option(h)
+	}
 
-	h.automationEngine = automations.NewEngine([]automations.AutomationHandler{scheduleHandler}, h.registrar, mqtt)
-	h.wp = utils.NewWorkerPool(4, ctx)
+	h.registrar = services.NewHubRegisterService(store, eventHub, 3600) // 3600 - is not used!!!!!!!!!!!!!!!!
+	h.automationEngine = automations.NewEngine(h.automationHandlers, h.registrar, mqtt)
+	h.wp = utils.NewWorkerPool(4, h.ctx)
 	h.wp.Run()
 
 	h.registerEventHubEvents()
@@ -163,11 +183,24 @@ func (h *HubController) registerEventHubEvents() {
 		for id := range req.DeviceGroup {
 			_, err := h.registrar.LookupById(id)
 			if err != nil {
-				return fmt.Errorf("OnSaveDashboardGroup failed. Invalid expose id : %v ", err.Error())
+				utils.LogErrorf("OnSaveDashboardGroup. Deleting invalid expose id : %v ", err.Error())
+				delete(req.DeviceGroup, id)
 			}
 		}
 
 		return appconfig.SaveDashboardGroup(req)
+	})
+
+	h.eventHub.OnRenameDashboardGroup(func(p interface{}) (interface{}, error) {
+
+		req := devices.DashboardGroupRenameRequest{}
+		bytes, _ := json.Marshal(p)
+		err := json.Unmarshal(bytes, &req)
+		if err != nil {
+			return nil, fmt.Errorf("OnRenameDashboardGroup failed. Invalid payload type : %v ", err.Error())
+		}
+
+		return appconfig.RenameDashboardGroup(req.OldName, req.NewName)
 	})
 
 	h.eventHub.OnDeleteDashboardGroup(func(p interface{}) error {
@@ -373,13 +406,11 @@ func (h *HubController) registerEventHubEvents() {
 
 	h.eventHub.OnSaveAutomation(func(p interface{}) error {
 
-		// TODO: move that in automations package
-		// pass payload and return model
-		automation := automations.NewDevice("")
 		bytes, _ := json.Marshal(p)
-		err := json.Unmarshal(bytes, &automation)
+		serializer := automations.NewAutomationSerialiser()
+		automation, err := serializer.Unmarshal(bytes)
 		if err != nil {
-			utils.LogErrorf("Save automation failed. Invalid payload type")
+			utils.LogErrorf("Save automation failed. Invalid payload type: %s", err.Error())
 			return errors.New("save automation failed. Invalid payload type")
 		}
 
@@ -389,10 +420,10 @@ func (h *HubController) registerEventHubEvents() {
 		}
 
 		// trigger automation for changes to apply
-		if automation.Enabled {
-			device, err := h.registrar.LookupById(automation.Id)
+		if automation.IsEnabled() {
+			device, err := h.registrar.LookupById(automation.GetId())
 			if err == nil {
-				utils.LogInfof("Trigger automation %s[%s] after update", automation.FriendlyName, automation.Id)
+				utils.LogInfof("Trigger automation %s[%s] after update", automation.GetFriendlyName(), automation.GetId())
 				h.TriggerAutomation(device)
 			}
 		}
@@ -446,7 +477,7 @@ func (h *HubController) registerEventHubEvents() {
 }
 
 // we only use that to override the default automation storage, lame but we cant easily refactor as weget alot of cyclic dependencies
-func (h *HubController) WithAutomationStorage(storage storage.Storage[automations.Device]) {
+func (h *HubController) WithAutomationStorage(storage storage.Storage[automations.Automation]) {
 	h.automationEngine.WithStorage(storage)
 }
 
@@ -462,6 +493,10 @@ func (c *HubController) Enqueue(id string, payload map[string]interface{}, connT
 
 func (m *HubController) TriggerAutomation(device *devices.Device) {
 	m.automationEngine.HandleDevice(device)
+}
+
+func (m *HubController) TriggerManual(automationId string, triggerName string) error {
+	return m.automationEngine.HandleManual(automationId, triggerName)
 }
 
 func (m *HubController) processMessage(id string, payload []byte, connType string) error {
@@ -505,7 +540,8 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 // will have to create some shared context for hub controller so i can add that thre as well with the others
 func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 
-	events := devices.NewDeviceRequestEvents(d.DeviceAvailabilityTimeoutOverride)
+	events := devices.NewDeviceRequestEvents()
+	events.WithAvailabilityTimeout(time.Duration(d.DeviceAvailabilityTimeoutOverrideInHours) * time.Hour)
 	events.WithOnNewDevice(func(device *devices.Device) {
 		d.handleDeviceAdded(device)
 	})

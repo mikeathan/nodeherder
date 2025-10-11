@@ -32,84 +32,216 @@ const device1BatterySource = `{"id":"device 1","conn":"mqtt","power_source":"bat
 const device2 = `{"battery":98, "humidity":71.2,  "linkquality":36.1,"temperature":17.1,"voltage":2999}`
 const device3NoLastSeen = `{"id":"device 1","conn":"mqtt","power_source":"battery","humidity":91.12,"temperature":19.000000000000004,"availability":"online","linkquality":47,"battery":67}`
 
+func TestDoorTriggersDoorAlarmAutomation(t *testing.T) {
+	mqtt := &mocks.MockMqttClient{}
+	ws := &mocks.NopWsServer{}
+
+	deviceAutomation := utils_test.CreateDoorContactDurationWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
+
+	automationStorage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{deviceAutomation})
+
+	// setup device
+	alarmDevice := utils_test.CreateAlarmDeviceWithDuration("x02222222", "alarm device", false, 1)
+	doorSensorDevice := utils_test.CreateDoorSensorDevice("x01111111", "front door sensor", false)
+
+	// setup bridgeInfo List
+	devices := []*devices.Device{doorSensorDevice, alarmDevice}
+	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
+
+	// register hub
+	store := utils_test.CreateStore()
+	hub := controllers.RegisterHubController(ws, store, mqtt)
+
+	hub.WithAutomationStorage(automationStorage)
+
+	//  publish deviceBridgeList to configure hub with devices
+	mqtt.Publish("bridge/devices", deviceBridgeList)
+
+	time.Sleep(100 * time.Millisecond)
+
+	testCases := []struct {
+		name           string
+		value          bool
+		expectedResult bool
+	}{
+		{"contact", true, true},
+		{"contact", false, false},
+		{"contact", true, true},
+	}
+
+	for _, testCase := range testCases {
+
+		expose := testCase.name
+		value := testCase.value
+		expectedResult := testCase.expectedResult
+		payload := map[string]any{expose: value}
+		mqtt.Publish(doorSensorDevice.FriendlyName, payload)
+		time.Sleep(100 * time.Millisecond) // Increased to account for mock delay
+
+		alarm, _ := store.FindDeviceById("x02222222")
+		if alarm.Exposes["alarm"].Data.Value() != expectedResult {
+			t.Errorf("alarm should be %v when door sensor triggers", expectedResult)
+		}
+		if alarm.Exposes["duration"].Data.Value() != float64(2) {
+			t.Errorf("alarm duration should be 2 got %v", alarm.Exposes["duration"].Data.Value())
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
+
+	wsServer := &mocks.NopWsServer{}
+	mqtt := &mocks.MockMqttClient{}
+
+	eventHub := &mocks.MockEventHub{}
+
+	id := "Light attic"
+	name := "light device"
+
+	// create mqtt response for device with specified data
+	// to simulate loop feedback
+	mqtt.AddResponse(name, map[string]any{"state": "ON"})
+
+	entity := utils_test.CreateEntity("state", bridge.BinaryDataType, "OFF")
+	device := utils_test.CreateDeviceWithExposes(id, name, []*devices.Entity{entity})
+	deviceBridgeList := utils_test.CreateBridgeInfoList([]*devices.Device{device})
+
+	store := utils_test.CreateStore()
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(deviceBridgeList)
+	toggleLightTrigger := utils_test.CreateTriggerToggleLight(id, registrar, mqtt)
+
+	// create device trigger automation without condition
+	lightAutomation := automations.NewDevice(id)
+	lightAutomation.Enabled = true
+	lightAutomation.Triggers = append(lightAutomation.Triggers, toggleLightTrigger)
+
+	automationStorage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{lightAutomation})
+
+	hub := controllers.RegisterHubController(wsServer, store, mqtt)
+	hub.WithAutomationStorage(automationStorage)
+
+	//  publish deviceBridgeList to configure hub with devices
+	mqtt.Publish("bridge/devices", deviceBridgeList)
+
+	time.Sleep(100 * time.Millisecond)
+
+	//problem we dont call the hanlder as we dont send mqtt events
+
+	hub.TriggerManual(id, "state")
+	timeout := time.After(3 * time.Second)
+	ticker := time.NewTicker(50 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-timeout:
+			t.Fatal("timeout waiting for device state to change to ON")
+		case <-ticker.C:
+			device, _ := store.FindDeviceById(id)
+			if device.Exposes["state"].Data.Value() == "ON" {
+				return
+			} else {
+				t.Errorf("device state should be ON")
+			}
+		}
+	}
+}
+
 func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 
 	mqtt := &mocks.MockMqttClient{}
 	ws := &mocks.NopWsServer{}
 
-	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
+	deviceAutomation := utils_test.CreateDoorContactDurationWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
-	now := time.Now().UTC()
-	start := now.Add(500 * time.Millisecond)
-	end := now.Add(1500 * time.Millisecond)
+	clock := mocks.NewMockClock(func() time.Time {
+		return time.Now().UTC()
+	})
+
+	loc, _ := time.LoadLocation("Europe/London")
+	now := time.Now().In(loc)
+	start := now.Add(1000 * time.Millisecond)
+	end := now.Add(3000 * time.Millisecond)
 
 	deviceAutomation.Schedules = utils_test.CreateTimeSchedules(start, end)
-	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+	automationStorage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{deviceAutomation})
+
 	// setup device
-	alarmDevice := utils_test.CreateAlarmDevice("x02222222", "alarm device", false)
+	alarmDevice := utils_test.CreateAlarmDeviceWithDuration("x02222222", "alarm device", false, 2)
 	doorSensorDevice := utils_test.CreateDoorSensorDevice("x01111111", "front door sensor", false)
 	// setup bridgeInfo List
 	devices := []*devices.Device{doorSensorDevice, alarmDevice}
 	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
 
-	// register hub		//todo
-
+	// register hub
 	store := utils_test.CreateStore()
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+
+	// overide automation handlers
+	wg := sync.WaitGroup{}
+
+	automationHandlers := []automations.AutomationHandler{
+		automations.NewAutomationScheduler(
+			automations.WithContext(context.Background()),
+			automations.WithSchedulerClock(clock),
+			automations.WithCustomScheduleFuncs(map[string]func(automations.Automation) error{
+				"enable": func(a automations.Automation) error {
+					a.SetEnabled(true)
+					wg.Done()
+					return nil
+				},
+				"disable": func(a automations.Automation) error {
+					a.SetEnabled(false)
+					wg.Done()
+					return nil
+				},
+			})),
+	}
+
+	wg.Add(2)
+
+	hub := controllers.RegisterHubController(ws, store, mqtt, controllers.WithAutomationHandlers(automationHandlers))
 
 	hub.WithAutomationStorage(automationStorage) // overide storage
 
 	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
 
-	time.Sleep(600 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
-	numOfEvents := 2
-	for i := 0; i < numOfEvents; i++ {
+	testCases := []struct {
+		name                 string
+		value                bool
+		expectedResult       bool
+		sleepBeforeNextEvent time.Duration
+	}{
+		{"contact", true, true, 1000 * time.Millisecond},
+		{"contact", false, false, 500 * time.Millisecond},
+		{"contact", true, false, 1500 * time.Millisecond}, // this should not trigger automation chain as it should be disabled by schedule
+	}
 
-		payload := map[string]any{"contact": true}
+	for idx, testCase := range testCases {
+
+		expose := testCase.name
+		value := testCase.value
+		expectedResult := testCase.expectedResult
+
+		clock.Advance(testCase.sleepBeforeNextEvent)
+
+		payload := map[string]any{expose: value}
+
 		mqtt.Publish(doorSensorDevice.FriendlyName, payload)
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 
 		// alarm should be triggered only when schedule is due
-		if i == 0 {
-			alarm, _ := store.FindDeviceById("x02222222")
-			if alarm.Exposes["alarm"].Data != true {
-				t.Errorf("alarm should be ON when door sensor triggers")
-			}
-
-			// reset alarm
-			payload = map[string]any{"alarm": false}
-			mqtt.Publish(alarmDevice.FriendlyName, payload)
-			time.Sleep(200 * time.Millisecond)
-
-			if alarm.Exposes["alarm"].Data != false {
-				t.Errorf("alarm should be off ")
-			}
-
-			// reset contact
-			payload = map[string]any{"contact": false}
-			mqtt.Publish(doorSensorDevice.FriendlyName, payload)
-			time.Sleep(200 * time.Millisecond)
-
-			contact, _ := store.FindDeviceById("x01111111")
-			if contact.Exposes["contact"].Data != false {
-				t.Errorf("contact should be off ")
-			}
-
-			time.Sleep(3 * time.Second)
-
-		} else {
-
-			time.Sleep(500 * time.Millisecond)
-
-			//  alarm should not be triggered as schedule is not due.
-			alarm, _ := store.FindDeviceById("x02222222")
-			if alarm.Exposes["alarm"].Data != false {
-				t.Errorf("alarm should be OFF - schedule end should disable automation")
-			}
+		alarm, _ := store.FindDeviceById("x02222222")
+		if alarm.Exposes["alarm"].Data.Value() != expectedResult {
+			t.Errorf("case %d: alarm should be %v when door sensor triggers. got %v", idx, expectedResult, alarm.Exposes["alarm"].Data.Value())
 		}
 	}
+
+	wg.Wait()
 }
 
 func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
@@ -128,8 +260,8 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 	deviceAutomation.Id = "x01111111"
 	deviceAutomation.FriendlyName = "dial button"
 	deviceAutomation.Enabled = true
-	deviceAutomation.Triggers = []*automations.Trigger{dialRotateSlowTrigger, btn1PressTrigger, btn2PressTrigger}
-	automationStorage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+	deviceAutomation.Triggers = automations.TriggerList{dialRotateSlowTrigger, btn1PressTrigger, btn2PressTrigger}
+	automationStorage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{deviceAutomation})
 
 	// setup device
 	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
@@ -146,11 +278,11 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 
 	// register hub
 	store := utils_test.CreateStore()
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	hub := controllers.RegisterHubController(ws, store, mqtt)
 	hub.WithAutomationStorage(automationStorage) // overide storage
 	//  publish deviceBridgeList to configure hub with devices
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
 	// publish light device
@@ -161,7 +293,7 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 	payload = map[string]any{"action": "button_2_hold"} // this event shouldnt trigger autonation as is not in automation condition
 	mqtt.Publish(dialDevice.FriendlyName, payload)
 
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	light, _ := store.FindDeviceById("x02222222")
 	max := light.Exposes["brightness"].Attributes["max"].(float64)
@@ -173,17 +305,17 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 	wg.Add(numTriggers)
 	for i := 0; i < numTriggers; i++ {
 
-		prevValue, _ := light.Exposes["brightness"].Data.(float64)
+		prevValue := light.Exposes["brightness"].Data.Value().(float64)
 
 		action_time := 10 + (i * 2)
 		payload = map[string]any{"action": "dial_rotate_left_slow", "action_direction": "left", "action_time": action_time, "action_type": "step"}
 		mqtt.Publish(dialDevice.FriendlyName, payload)
 
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 
 		// assert. calculate expected value
 		wantvalue := prevValue + (float64(action_time) * rotateStepAction.Data.(float64))
-		gotValue, _ := light.Exposes["brightness"].Data.(float64)
+		gotValue := light.Exposes["brightness"].Data.Value().(float64)
 
 		wantvalue = math.Min(wantvalue, max)
 
@@ -260,11 +392,11 @@ func TestHubEnableRemoteLogger(t *testing.T) {
 	remoteLogEmitter := mocks.NewMockRemoteLoggerEmitter(handler)
 	utils.RegisterRemoteLoggerHook(remoteLogEmitter)
 
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 
 	// find a way to test the remote logger
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 
 	expectedEnabledMessages := 5
 	testCases := []bool{true, false, true, false, true, false, true, false, true, false}
@@ -351,11 +483,11 @@ func TestHubTriggersRemoteLogger(t *testing.T) {
 	remoteLogEmitter := mocks.NewMockRemoteLoggerEmitter(handler)
 	utils.RegisterRemoteLoggerHook(remoteLogEmitter)
 
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 
 	// find a way to test the remote logger
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 
 	utils.EnableRemoteLoggerHook(true)
 
@@ -397,10 +529,10 @@ func TestProcessorStoresMetricsForNewNonBridgeDevice(t *testing.T) {
 	defer cleanup()
 
 	appCfg := store.AppConfig()
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
 	// note:
@@ -512,10 +644,10 @@ func TestHubSaveDeviceConfigOverrides(t *testing.T) {
 	defer cleanup()
 
 	appCfg := store.AppConfig()
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
 	configs := []*settings.DeviceConfig{}
@@ -598,10 +730,10 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 	defer cleanup()
 
 	appCache := store.AppConfig()
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
 	for id, device := range devices {
@@ -621,25 +753,30 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 			cfg.DebounceOverrides[expose.Name] = utils.IntervalFromMinutes(eIdx)
 		}
 		appCache.SetDeviceConfigOverrides(cfg)
-	}
+		time.Sleep(200 * time.Millisecond)
 
-	time.Sleep(500 * time.Millisecond)
+	}
 
 	// assert config override exists
 	cfg, err := appCache.GetDeviceConfig(dialDevice.Id)
 	if err != nil {
 		t.Fatalf("device not found. err %v ", err)
 	}
+	time.Sleep(100 * time.Millisecond)
 
 	// expected device config values to match with expected overrides values
 	expectedDebounceUnit := "minutes"
 	expectedMilliseconds := 2
 	expectedDisabled := true
 	expectedMetricsEnabled := true
-	if cfg.Disabled != expectedDisabled && cfg.MetricsEnabled != expectedMetricsEnabled && cfg.RateLimit.Value != expectedMilliseconds {
-		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", expectedMilliseconds, cfg.RateLimit.Value)
+	if cfg.Disabled != expectedDisabled {
 		t.Fatalf("invalid config override. want expectedDisabled %v got %v", expectedDisabled, cfg.Disabled)
+	}
+	if cfg.MetricsEnabled != expectedMetricsEnabled {
 		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", expectedMetricsEnabled, cfg.MetricsEnabled)
+	}
+	if cfg.RateLimit.Value != expectedMilliseconds {
+		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", expectedMilliseconds, cfg.RateLimit.Value)
 	}
 
 	eIdx := 0
@@ -660,6 +797,9 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 		t.Fatalf("device not found. err %v ", err)
 	}
 
+	// Wait for the deletion to be processed
+	time.Sleep(200 * time.Millisecond)
+
 	cfg, err = appCache.GetDeviceConfig(dialDevice.Id)
 	if err != nil {
 		t.Fatalf("device not found. err %v ", err)
@@ -672,10 +812,14 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 	}
 	// assert device config has default values
 	defaults := app.Hub.Devices.Defaults
-	if cfg.Disabled != defaults.Disabled && cfg.MetricsEnabled != defaults.MetricsEnabled && cfg.RateLimit.Value != defaults.RateLimit.Value {
-		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", defaults.RateLimit.Value, cfg.RateLimit.Value)
+	if cfg.Disabled != defaults.Disabled {
 		t.Fatalf("invalid config override. want expectedDisabled %v got %v", defaults.Disabled, cfg.Disabled)
+	}
+	if cfg.MetricsEnabled != defaults.MetricsEnabled {
 		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", defaults.MetricsEnabled, cfg.MetricsEnabled)
+	}
+	if cfg.RateLimit.Value != defaults.RateLimit.Value {
+		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", defaults.RateLimit.Value, cfg.RateLimit.Value)
 	}
 
 	if cfg.DebounceOverrides != nil {
@@ -712,10 +856,10 @@ func TestHubSaveDeviceConfigDefaults(t *testing.T) {
 	}
 	defer cleanup()
 
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
 	appCache := store.AppConfig()
@@ -801,10 +945,10 @@ func TestProcessorStoresMetricsForExistingDevice(t *testing.T) {
 	defer cleanup()
 
 	appCfg := store.AppConfig()
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
 	cfg, err := appCfg.GetDeviceConfig("x01111111")
@@ -961,7 +1105,7 @@ func TestImportDashboardGroupsMessage(t *testing.T) {
 	}
 
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
-	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+	controllers.RegisterHubController(eventHub, store, mqtt)
 
 	// create new expose group
 	newGroup := settings.NewDashboardGroup("living room group")
@@ -1057,7 +1201,7 @@ func TestSaveDashboardGroupIsValidated(t *testing.T) {
 		return nil
 	}
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
-	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+	controllers.RegisterHubController(eventHub, store, mqtt)
 
 	// create new expose group
 	newGroup := settings.NewDashboardGroup("living room group")
@@ -1086,6 +1230,105 @@ func TestSaveDashboardGroupIsValidated(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestRenameDashboardGroup(t *testing.T) {
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	// we dont need tasks here just using it as it using valid settings repo
+	bridgeInfoFile := filepath.Join("../../../docs", "device_bridge.json")
+	data, err := os.ReadFile(bridgeInfoFile)
+	if err != nil {
+		t.Fatal("Error reading file:", err)
+		return
+	}
+	bridgeInfoes, err := devices.LoadBridgeDevices(data)
+	if err != nil {
+		t.Fatal("Error parsing bridge info data:", err)
+		return
+	}
+
+	store, cleanup, err := utils_test.CreateFileStore()
+	if err != nil {
+		t.Fatalf("CreateFileStore failed. err %v ", err)
+	}
+	defer cleanup()
+
+	cfg := store.AppConfig()
+	newGroup := settings.NewDashboardGroup("living room group")
+	newGroup.AddDeviceExpose("0x00158d0005a23c38", "brightness")
+	newGroup.AddDeviceExpose("0x001788010d7d9d3f", "action")
+	newGroup.AddDeviceExpose("0xa4c13894070052fc", "presence")
+	newGroup.AddDeviceExpose("0xa4c13894070052fc", "illuminance")
+
+	cfg.SaveDashboardGroup(newGroup)
+	mqtt := &mocks.MockMqttClient{}
+
+	eventHub := mocks.NewMockEventHub()
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge(bridgeInfoes)
+
+	// for now replicate the hub-controller logic handling this until we can mock the event hub
+	broadcastHandler := func(eventName string, data interface{}) error {
+
+		if eventName != ws.RenameDashboardGroup {
+			t.Fatalf("invalid event name want %v got %v", ws.RenameDashboardGroup, eventName)
+			return fmt.Errorf("invalid event name %v", eventName)
+		}
+
+		req := &devices.DashboardGroupRenameRequest{}
+		bytes, _ := json.Marshal(data)
+		err := json.Unmarshal(bytes, &req)
+		if err != nil {
+			return fmt.Errorf("OnRenameDashboardGroup failed. Invalid payload type : %v ", err.Error())
+		}
+
+		dashgroup, err := cfg.RenameDashboardGroup(req.OldName, req.NewName)
+		if err != nil {
+			t.Fatalf("OnRenameDashboardGroup failed. %v ", err.Error())
+			return fmt.Errorf("OnRenameDashboardGroup failed. %v ", err.Error())
+		}
+
+		if dashgroup.Name != req.NewName {
+			t.Fatalf("OnRenameDashboardGroup failed. name mismatch want %v got %v ", req.NewName, dashgroup.Name)
+		}
+
+		for id, expose := range dashgroup.DeviceGroup {
+
+			if newGroup.DeviceGroup[id].DeviceId != expose.DeviceId {
+				t.Fatalf("want %v got %v", expose.DeviceId, newGroup.DeviceGroup[id].DeviceId)
+			}
+		}
+
+		wg.Done()
+		return nil
+	}
+
+	eventHub.SetMockBroadcastEvent(broadcastHandler)
+	controllers.RegisterHubController(eventHub, store, mqtt)
+
+	req := &devices.DashboardGroupRenameRequest{}
+	req.OldName = "living room group"
+	req.NewName = "new living room group"
+
+	eventHub.Broadcast(ws.RenameDashboardGroup, req)
+	wg.Wait()
+
+	c, _ := cfg.LoadAppConfig()
+
+	if len(c.Hub.DashboardGroups) != 1 {
+		t.Fatalf("want %v got %v", 1, len(c.Hub.DashboardGroups))
+	}
+
+	for _, group := range c.Hub.DashboardGroups {
+		if group.Name != "new living room group" {
+			t.Fatalf("want %v got %v", "new living room group", group.Name)
+		}
+
+	}
+
 }
 
 func TestDeleteDashboardGroupRemovesGroup(t *testing.T) {
@@ -1155,7 +1398,7 @@ func TestDeleteDashboardGroupRemovesGroup(t *testing.T) {
 		return nil
 	}
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
-	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+	controllers.RegisterHubController(eventHub, store, mqtt)
 
 	payload := map[string]string{
 		"groupName": "living room group",
@@ -1179,7 +1422,7 @@ func TestProcessorAddsNewDevice(t *testing.T) {
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
 
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 	mqtt.Publish(name, []byte(device1BatterySource))
 
 	time.Sleep(500 * time.Millisecond)
@@ -1204,7 +1447,7 @@ func TestProcessorUpdatesExistingDevice(t *testing.T) {
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 	mqtt.Publish("device1", []byte(device1BatterySource))
 	mqtt.Publish("device2", []byte(device2))
 	mqtt.Publish("device2", []byte(device1BatterySource))
@@ -1234,7 +1477,7 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 	mqtt.Publish(name, []byte(device3NoLastSeen))
 
 	want := time.Now().Format(time.RFC3339)
@@ -1332,7 +1575,7 @@ func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {
 	}
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
 
-	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+	controllers.RegisterHubController(eventHub, store, mqtt)
 
 	req := settings.NewBridgeConfig()
 	req.PermitJoin = true
@@ -1438,7 +1681,7 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 	}
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
 
-	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+	controllers.RegisterHubController(eventHub, store, mqtt)
 
 	req := settings.NewBridgeConfig()
 	req.PermitJoin = true
@@ -1547,7 +1790,7 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 	mqtt := &mocks.MockMqttClient{}
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
 
-	controllers.RegisterHubController(eventHub, store, mqtt, context.Background())
+	controllers.RegisterHubController(eventHub, store, mqtt)
 
 	for _, testCase := range testCases {
 
@@ -1580,8 +1823,8 @@ func TestAvailabilityStatusIsUpdated(t *testing.T) {
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
-	hub.DeviceAvailabilityTimeoutOverride = 1
+	hub := controllers.RegisterHubController(ws, store, mqtt)
+	hub.DeviceAvailabilityTimeoutOverrideInHours = 1
 
 	mqtt.Publish(name, []byte(device1BatterySource))
 	time.Sleep(100 * time.Millisecond)
@@ -1619,8 +1862,8 @@ func TestAvailabilityIsDisposed(t *testing.T) {
 
 	ws := &mocks.NopWsServer{}
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, store, mqtt, context.Background())
-	hub.DeviceAvailabilityTimeoutOverride = 1
+	hub := controllers.RegisterHubController(ws, store, mqtt)
+	hub.DeviceAvailabilityTimeoutOverrideInHours = 1
 
 	mqtt.Publish(name, []byte(device1BatterySource))
 	time.Sleep(100 * time.Millisecond)
@@ -1667,10 +1910,10 @@ func TestHub_DeviceConfigDefaults_DisableDevices(t *testing.T) {
 	}
 	defer cleanup()
 
-	controllers.RegisterHubController(ws, store, mqtt, context.Background())
+	controllers.RegisterHubController(ws, store, mqtt)
 
 	mqtt.Publish("bridge/devices", deviceBridgeList)
-	time.Sleep(500 * time.Millisecond) // give it time to configure bridgeInfo
+	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
 	payload := map[string]any{"brightness": 10.0, "color_temp": 100}
@@ -1682,8 +1925,8 @@ func TestHub_DeviceConfigDefaults_DisableDevices(t *testing.T) {
 	mqtt.Publish(dialDevice.FriendlyName, payload)
 	time.Sleep(100 * time.Millisecond)
 	d, _ := store.FindDeviceById("x01111111")
-	if d.Exposes["action"].Data != "button_2_hold" {
-		t.Errorf("expected dial device action to be button_2_hold, got %s", d.Exposes["action"].Data)
+	if d.Exposes["action"].Data.Value() != "button_2_hold" {
+		t.Errorf("expected dial device action to be button_2_hold, got %s", d.Exposes["action"].Data.Value())
 	}
 
 	appCache := store.AppConfig()
@@ -1698,8 +1941,8 @@ func TestHub_DeviceConfigDefaults_DisableDevices(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	d, _ = store.FindDeviceById("x01111111")
-	if d.Exposes["action"].Data == "button_1_hold" {
-		t.Errorf("expected dial device action to be disabled, got %s", d.Exposes["action"].Data)
+	if d.Exposes["action"].Data.Value() == "button_1_hold" {
+		t.Errorf("expected dial device action to be disabled, got %s", d.Exposes["action"].Data.Value())
 	}
 }
 

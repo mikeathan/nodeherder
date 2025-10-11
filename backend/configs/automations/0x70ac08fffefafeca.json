@@ -1,0 +1,37 @@
+{
+  "id": "0x70ac08fffefafeca",
+  "type": "device",
+  "friendlyname": "Attic room Light",
+  "description": "test",
+  "enabled": false,
+  "triggers": [
+    {
+      "type": "deviceTrigger",
+      "actions": [
+        {
+          "id": "0x70ac08fffefafeca",
+          "type": "trigger",
+          "exposes": [
+            {
+              "name": "state",
+              "data": "TOGGLE"
+            }
+          ],
+          "publishMode": "batch"
+        }
+      ],
+      "name": "state",
+      "conditions": []
+    }
+  ],
+  "schedules": [
+    {
+      "startAt": "12:54",
+      "type": "enable"
+    },
+    {
+      "startAt": "12:56",
+      "type": "disable"
+    }
+  ]
+}

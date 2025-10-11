@@ -10,14 +10,14 @@ export function useMenuItems(items: MenuBarItem[], onItemSelected?: () => void) 
         icon: item.icon,
         disabled: item.disabled,
         command: () => {
-          item.command?.();
+          item.command?.(null);
           onItemSelected?.();
         },
         items: item.children?.map((child) => ({
           label: child.label,
           icon: child.icon,
           command: () => {
-            child.command?.();
+            child.command?.(null);
             onItemSelected?.();
           },
         })),

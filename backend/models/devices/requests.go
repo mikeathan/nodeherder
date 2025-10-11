@@ -1,5 +1,12 @@
 package devices
 
+import "time"
+
+type DashboardGroupRenameRequest struct {
+	OldName string `json:"oldName"`
+	NewName string `json:"newName"`
+}
+
 type DeviceRemoveRequest struct {
 	ID    string `json:"id"`
 	Force bool   `json:"force,omitempty"`
@@ -13,20 +20,25 @@ func NewDeviceRemoveRequest(id string, force bool) *DeviceRemoveRequest {
 }
 
 type DeviceRequestEvents struct {
-	AvailabilityTimeout         int
+	AvailabilityTimeout         time.Duration
 	OnNewDevice                 func(device *Device)
 	OnDeviceUpdated             func(device *Device, data *UpdatePackage)
 	OnDeviceMeasurementsUpdated func(device *Device, dataMap map[string]interface{})
 	OnDeviceAvailabilityChanged func(p *UpdatePackage)
 }
 
-func NewDeviceRequestEvents(availabilitytimeout int) *DeviceRequestEvents {
+func NewDeviceRequestEvents() *DeviceRequestEvents {
 	return &DeviceRequestEvents{
-		AvailabilityTimeout:         availabilitytimeout,
+		AvailabilityTimeout:         time.Duration(24) * time.Hour,
 		OnNewDevice:                 nil,
 		OnDeviceUpdated:             nil,
 		OnDeviceAvailabilityChanged: nil,
 	}
+}
+
+func (d *DeviceRequestEvents) WithAvailabilityTimeout(timeout time.Duration) *DeviceRequestEvents {
+	d.AvailabilityTimeout = timeout
+	return d
 }
 
 func (d *DeviceRequestEvents) WithOnDeviceAvailabilityChanged(f func(p *UpdatePackage)) *DeviceRequestEvents {

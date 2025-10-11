@@ -29,8 +29,8 @@ func TestDeviceLifetimeService_Seed(t *testing.T) {
 				t.Errorf("OnNewDevice id = %v, want %v", d.Id, "x01234")
 			}
 
-			if d.Exposes["brightness"].Data != 10.2 {
-				t.Errorf("OnNewDevice payload = %v, want %v", d.Exposes["brightness"].Data, 10.2)
+			if d.Exposes["brightness"].Data.Value() != 10.2 {
+				t.Errorf("OnNewDevice payload = %v, want %v", d.Exposes["brightness"].Data.Value(), 10.2)
 			}
 
 			wg.Done()
@@ -101,7 +101,7 @@ func TestDeviceLifetimeService_UpdateWithNewData(t *testing.T) {
 	service.Update(payload)
 
 	wg.Wait()
-	if device.Exposes["brightness"].Data != 35.4 {
+	if device.Exposes["brightness"].Data.Value() != 35.4 {
 		t.Errorf("Device value not updated")
 	}
 
@@ -138,7 +138,7 @@ func TestDeviceLifetimeService_UpdateWithSameData(t *testing.T) {
 
 	service.Update(payload)
 	time.Sleep(1 * time.Second)
-	if device.Exposes["brightness"].Data != 124.2 {
+	if device.Exposes["brightness"].Data.Value() != 124.2 {
 		t.Errorf("Device value not updated")
 	}
 
@@ -218,7 +218,7 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 
 	for _, tc := range testCases {
 
-		currValue := device.Exposes["brightness"].Data
+		currValue := device.Exposes["brightness"].Data.Value()
 		mockClock.SetMockTime(tc.timestamp)
 
 		service.Update(tc.payload)
@@ -226,13 +226,13 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 
 		if tc.shouldUpdate {
 
-			if device.Exposes["brightness"].Data != tc.payload["brightness"] {
-				t.Errorf("Device value not updated. want %v, got %v", tc.payload["brightness"], device.Exposes["brightness"].Data)
+			if device.Exposes["brightness"].Data.Value() != tc.payload["brightness"] {
+				t.Errorf("Device value not updated. want %v, got %v", tc.payload["brightness"], device.Exposes["brightness"].Data.Value())
 			}
 		} else {
 
-			if device.Exposes["brightness"].Data != currValue {
-				t.Errorf("Error: Device value updated. want %v, got %v", currValue, device.Exposes["brightness"].Data)
+			if device.Exposes["brightness"].Data.Value() != currValue {
+				t.Errorf("Error: Device value updated. want %v, got %v", currValue, device.Exposes["brightness"].Data.Value())
 			}
 		}
 	}

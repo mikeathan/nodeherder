@@ -4,6 +4,7 @@ import {
   AutomationPresetCyclingAction,
   AutomationStepAction,
   AutomationActionStep,
+  PublishModes,
 } from '@/types/automation.type';
 
 function formatTriggerActionExposes(exposes: AutomationTriggerActionExpose[]): string {
@@ -24,6 +25,11 @@ export function transformTriggerAction(friendlyname: string, triggerAction: Auto
   const exposes = formatTriggerActionExposes(triggerAction.exposes);
   const action = `Trigger <strong>${friendlyname}</strong> ${exposes}`;
   const operations = formatTriggerActionOperations(triggerAction);
+
+  if (triggerAction.publishMode == PublishModes.Single) {
+    const broadcastMode = 'BroadcastMode: Single';
+    return [action, operations, broadcastMode];
+  }
   return [action, operations];
 }
 

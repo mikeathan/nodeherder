@@ -623,11 +623,11 @@ func createMockDeviceWithExposes(id string, name string, exposeNames []string, e
 
 		property := exposeNames[i]
 
-		ent1 := &devices.Entity{}
+		ent1 := devices.NewEntity(property)
 		ent1.Description = fmt.Sprintf("%s readings", property)
 		ent1.Name = property
 		ent1.Unit = "test"
-		ent1.Data = data
+		ent1.Data.SetValue(data)
 		ent1.Type = exposeType
 
 		device1.Exposes[property] = ent1
@@ -653,11 +653,11 @@ func createMockDevice(id string, name string, numOfExposes int, exposeType strin
 
 		property := fmt.Sprintf("property_%v_%v", id, (i + 1))
 
-		ent1 := &devices.Entity{}
+		ent1 := devices.NewEntity(property)
 		ent1.Description = fmt.Sprintf("%s readings", property)
 		ent1.Name = property
 		ent1.Unit = "test"
-		ent1.Data = data
+		ent1.Data.SetValue(data)
 		ent1.Type = exposeType
 
 		device1.Exposes[property] = ent1

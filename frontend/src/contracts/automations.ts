@@ -12,6 +12,10 @@ import {
   ActionType,
   ConditionType,
   AutomationConditionTypes,
+  TriggerType,
+  TriggerTypes,
+  TimeCondition,
+  PublishModes,
 } from '../types/automation.type.js';
 
 export const EqualityOperators: string[] = ['=', '<=', '>=', '>', '<'];
@@ -21,6 +25,7 @@ export const TimeScheduleTypes: string[] = ['enable', 'disable'];
 
 export class DeviceAutomation implements Automation {
   id: string;
+  type: string;
   friendlyname: string;
   description: string;
   enabled: boolean;
@@ -29,6 +34,7 @@ export class DeviceAutomation implements Automation {
 
   constructor() {
     this.id = '';
+    this.type = 'device';
     this.friendlyname = '';
     this.description = '';
     this.enabled = false;
@@ -39,12 +45,14 @@ export class DeviceAutomation implements Automation {
 
 export class EditableAutomationTrigger implements AutomationTrigger {
   name: string;
+  type: TriggerType;
   conditions: AutomationTriggerConditions;
   actions: AutomationAction[];
 
   static create(): AutomationTrigger {
     const trigger = {} as EditableAutomationTrigger;
     trigger.name = '';
+    trigger.type = TriggerTypes.DeviceTrigger;
     trigger.conditions = [];
     // trigger.action = new EditableActionTrigger(
     //   AutomationActionTypes.Trigger,
@@ -62,6 +70,7 @@ export class EditableAutomationTrigger implements AutomationTrigger {
     this.name = trigger.name;
     this.conditions = trigger.conditions;
     this.actions = trigger.actions;
+    this.type = trigger.type;
   }
 }
 
@@ -93,6 +102,22 @@ export function findActionExposes(action: AutomationAction): string[] {
 
   return [];
 }
+
+export const getConditionTypes = (): ConditionType[] => {
+  return Object.values(AutomationConditionTypes);
+};
+
+export const getActionTypes = (): ActionType[] => {
+  return Object.values(AutomationActionTypes);
+};
+
+export const canTriggerManually = (trigger: AutomationTrigger): boolean => {
+  return (
+    trigger.conditions.length == 0 ||
+    trigger.conditions.every((condition) => condition.type === AutomationConditionTypes.Time)
+  );
+};
+
 export function createConditionFromType(type: ConditionType): AutomationCondition {
   switch (type) {
     case AutomationConditionTypes.Expose:
@@ -101,6 +126,15 @@ export function createConditionFromType(type: ConditionType): AutomationConditio
         name: '',
         value: null,
         equality: '=',
+      } as AutomationCondition;
+
+    case AutomationConditionTypes.Time:
+      return {
+        type: type,
+        timeRange: {
+          startAt: '',
+          endAt: '',
+        },
       } as AutomationCondition;
   }
 }
@@ -112,6 +146,7 @@ export function createActionFromType(type: ActionType): AutomationAction {
         id: '',
         type: type,
         exposes: [],
+        publishMode: PublishModes.Batch,
         delay: { unit: 'seconds', value: 0 },
       } as AutomationTriggerAction;
     case AutomationActionTypes.Step:

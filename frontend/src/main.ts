@@ -37,6 +37,6 @@ app.directive('click-outside', ClickOutside);
 app.use(ToastService);
 app.use(store, key);
 app.use(router);
-app.use(VueApexCharts);
+app.component('ApexChart', VueApexCharts);
 app.provide('emitter', emitter);
 app.mount('#app');

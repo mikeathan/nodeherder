@@ -156,23 +156,24 @@ func TestEngineAutomationUpdateShouldNotResetScheduler(t *testing.T) {
 
 	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
-	now := time.Now().UTC()
+	loc, _ := time.LoadLocation("Europe/London")
+	now := time.Now().In(loc)
 	start := now.Add(500 * time.Millisecond)
 	end := now.Add(1 * time.Hour)
 
 	deviceAutomation.Schedules = utils_test.CreateTimeSchedules(start, end)
-	storage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+	storage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{deviceAutomation})
 
 	wg.Add(1) // we expect only one event to be triggered
 
 	scheduleHandler := automations.NewAutomationScheduler(
-		automations.WithScheduleFunc("enable", func(automation *automations.Device) error {
-			automation.Enabled = true
+		automations.WithScheduleFunc("enable", func(automation automations.Automation) error {
+			automation.SetEnabled(true)
 			wg.Done()
 			return nil
 		}),
-		automations.WithScheduleFunc("disable", func(automation *automations.Device) error {
-			automation.Enabled = false
+		automations.WithScheduleFunc("disable", func(automation automations.Automation) error {
+			automation.SetEnabled(false)
 			return nil
 		}),
 	)
@@ -186,7 +187,7 @@ func TestEngineAutomationUpdateShouldNotResetScheduler(t *testing.T) {
 		t.Fatalf("ERROR automation is enabled")
 	}
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(600 * time.Millisecond)
 
 	// automation must be enabled from scheduler
 	if !deviceAutomation.Enabled {
@@ -204,6 +205,11 @@ func TestEngineAutomationUpdateShouldNotResetScheduler(t *testing.T) {
 	// we expect only one event to be triggered and release the wait group
 	// any more events triggered will cause the test to fail
 	wg.Wait()
+
+	deviceAutomation.Schedules = []*automations.TimeSchedule{}
+	if err := scheduleHandler.Process(deviceAutomation); err != nil {
+		t.Fatalf("ERROR cleaning scheduler: %v", err)
+	}
 }
 
 func TestEngineAutomationUpdateShouldResetAndTriggerAgainScheduler(t *testing.T) {
@@ -230,12 +236,13 @@ func TestEngineAutomationUpdateShouldResetAndTriggerAgainScheduler(t *testing.T)
 
 	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
-	now := time.Now().UTC()
+	loc, _ := time.LoadLocation("Europe/London")
+	now := time.Now().In(loc)
 	start := now.Add(500 * time.Millisecond)
 	end := now.Add(1 * time.Hour)
 
 	deviceAutomation.Schedules = utils_test.CreateTimeSchedules(start, end)
-	storage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+	storage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{deviceAutomation})
 
 	// we expect only 2 event to be triggered
 	// first event is on startup
@@ -243,13 +250,13 @@ func TestEngineAutomationUpdateShouldResetAndTriggerAgainScheduler(t *testing.T)
 	wg.Add(2)
 
 	scheduleHandler := automations.NewAutomationScheduler(
-		automations.WithScheduleFunc("enable", func(automation *automations.Device) error {
-			automation.Enabled = true
+		automations.WithScheduleFunc("enable", func(automation automations.Automation) error {
+			automation.SetEnabled(true)
 			wg.Done()
 			return nil
 		}),
-		automations.WithScheduleFunc("disable", func(automation *automations.Device) error {
-			automation.Enabled = false
+		automations.WithScheduleFunc("disable", func(automation automations.Automation) error {
+			automation.SetEnabled(false)
 			return nil
 		}),
 	)
@@ -263,7 +270,7 @@ func TestEngineAutomationUpdateShouldResetAndTriggerAgainScheduler(t *testing.T)
 		t.Fatalf("ERROR automation is enabled")
 	}
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(600 * time.Millisecond)
 
 	// automation must be enabled from scheduler
 	if !deviceAutomation.Enabled {
@@ -271,7 +278,8 @@ func TestEngineAutomationUpdateShouldResetAndTriggerAgainScheduler(t *testing.T)
 	}
 
 	// update automation and change schedule
-	now = time.Now().UTC()
+	loc, _ = time.LoadLocation("Europe/London")
+	now = time.Now().In(loc)
 	start = now.Add(50 * time.Millisecond)
 	deviceAutomation.Schedules[0] = utils_test.CreateTimeSchedule(start)
 
@@ -285,6 +293,11 @@ func TestEngineAutomationUpdateShouldResetAndTriggerAgainScheduler(t *testing.T)
 	// we expect only 2 events to be triggered and release the wait group
 	// any more events triggered will cause the test to fail
 	wg.Wait()
+
+	deviceAutomation.Schedules = []*automations.TimeSchedule{}
+	if err := scheduleHandler.Process(deviceAutomation); err != nil {
+		t.Fatalf("ERROR cleaning scheduler: %v", err)
+	}
 }
 
 func TestEngineAutomationUpdateShouldResetScheduler(t *testing.T) {
@@ -307,25 +320,26 @@ func TestEngineAutomationUpdateShouldResetScheduler(t *testing.T) {
 
 	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
-	now := time.Now().UTC()
+	loc, _ := time.LoadLocation("Europe/London")
+	now := time.Now().In(loc)
 	start := now.Add(500 * time.Millisecond)
 	end := now.Add(1 * time.Hour)
 
 	deviceAutomation.Schedules = utils_test.CreateTimeSchedules(start, end)
-	storage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+	storage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{deviceAutomation})
 
 	// we expect only 1 event to be triggered
 	// first event is on startup
 	// after we update the automation schedule, the second event ashould not be trigger on time
 	wg.Add(1)
 	scheduleHandler := automations.NewAutomationScheduler(
-		automations.WithScheduleFunc("enable", func(automation *automations.Device) error {
-			automation.Enabled = true
+		automations.WithScheduleFunc("enable", func(automation automations.Automation) error {
+			automation.SetEnabled(true)
 			wg.Done()
 			return nil
 		}),
-		automations.WithScheduleFunc("disable", func(automation *automations.Device) error {
-			automation.Enabled = false
+		automations.WithScheduleFunc("disable", func(automation automations.Automation) error {
+			automation.SetEnabled(false)
 			return nil
 		}),
 	)
@@ -339,7 +353,7 @@ func TestEngineAutomationUpdateShouldResetScheduler(t *testing.T) {
 		t.Fatalf("ERROR automation is enabled")
 	}
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(600 * time.Millisecond)
 
 	// automation must be enabled from scheduler
 	if !deviceAutomation.Enabled {
@@ -347,7 +361,8 @@ func TestEngineAutomationUpdateShouldResetScheduler(t *testing.T) {
 	}
 
 	// update automation and change schedule
-	now = time.Now().UTC()
+	loc, _ = time.LoadLocation("Europe/London")
+	now = time.Now().In(loc)
 	start = now.Add(1000 * time.Millisecond)
 	deviceAutomation.Schedules[0] = utils_test.CreateTimeSchedule(start)
 
@@ -361,6 +376,11 @@ func TestEngineAutomationUpdateShouldResetScheduler(t *testing.T) {
 	// we expect only 1 event to be triggered and release the wait group
 	// any more events triggered will cause the test to fail
 	wg.Wait()
+
+	deviceAutomation.Schedules = []*automations.TimeSchedule{}
+	if err := scheduleHandler.Process(deviceAutomation); err != nil {
+		t.Fatalf("ERROR cleaning scheduler: %v", err)
+	}
 }
 
 func TestEngineAutomationUpdateShouldStopScheduler(t *testing.T) {
@@ -387,12 +407,13 @@ func TestEngineAutomationUpdateShouldStopScheduler(t *testing.T) {
 
 	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
-	now := time.Now().UTC()
+	loc, _ := time.LoadLocation("Europe/London")
+	now := time.Now().In(loc)
 	start := now.Add(500 * time.Millisecond)
 	end := now.Add(1 * time.Hour)
 
 	deviceAutomation.Schedules = utils_test.CreateTimeSchedules(start, end)
-	storage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+	storage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{deviceAutomation})
 
 	// we expect only 1 event to be triggered
 	// first event is on startup
@@ -400,13 +421,13 @@ func TestEngineAutomationUpdateShouldStopScheduler(t *testing.T) {
 	wg.Add(1)
 
 	scheduleHandler := automations.NewAutomationScheduler(
-		automations.WithScheduleFunc("enable", func(automation *automations.Device) error {
-			automation.Enabled = true
+		automations.WithScheduleFunc("enable", func(automation automations.Automation) error {
+			automation.SetEnabled(true)
 			wg.Done()
 			return nil
 		}),
-		automations.WithScheduleFunc("disable", func(automation *automations.Device) error {
-			automation.Enabled = false
+		automations.WithScheduleFunc("disable", func(automation automations.Automation) error {
+			automation.SetEnabled(false)
 			return nil
 		}),
 	)
@@ -420,7 +441,7 @@ func TestEngineAutomationUpdateShouldStopScheduler(t *testing.T) {
 		t.Fatalf("ERROR automation is enabled")
 	}
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(600 * time.Millisecond)
 
 	// automation must be enabled from scheduler
 	if !deviceAutomation.Enabled {
@@ -440,6 +461,11 @@ func TestEngineAutomationUpdateShouldStopScheduler(t *testing.T) {
 	// we expect only 1 event to be triggered and release the wait group
 	// any more events triggered will cause the test to fail
 	wg.Wait()
+
+	deviceAutomation.Schedules = []*automations.TimeSchedule{}
+	if err := scheduleHandler.Process(deviceAutomation); err != nil {
+		t.Fatalf("ERROR cleaning scheduler: %v", err)
+	}
 }
 
 func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
@@ -465,21 +491,24 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 
 	deviceAutomation := utils_test.CreateDoorContactWithAlarmTriggerAutomation("x01111111", "x02222222", mqtt)
 
-	now := time.Now().UTC()
+	loc, _ := time.LoadLocation("Europe/London")
+	now := time.Now().In(loc)
 	start := now.Add(500 * time.Millisecond)
 	end := now.Add(1500 * time.Millisecond)
 
 	deviceAutomation.Schedules = utils_test.CreateTimeSchedules(start, end)
-	storage := mocks.NewMockAutomationStorage([]*automations.Device{deviceAutomation})
+	storage := mocks.NewMockAutomationStorage[automations.Automation]([]automations.Automation{deviceAutomation})
+
+	wg.Add(1)
 
 	scheduleHandler := automations.NewAutomationScheduler(
-		automations.WithScheduleFunc("enable", func(automation *automations.Device) error {
-			automation.Enabled = true
+		automations.WithScheduleFunc("enable", func(automation automations.Automation) error {
+			automation.SetEnabled(true)
 			wg.Done()
 			return nil
 		}),
-		automations.WithScheduleFunc("disable", func(automation *automations.Device) error {
-			automation.Enabled = false
+		automations.WithScheduleFunc("disable", func(automation automations.Automation) error {
+			automation.SetEnabled(false)
 			wg.Done()
 
 			return nil
@@ -489,17 +518,15 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 	engine.WithStorage(storage)
 	engine.Initialize()
 
-	wg.Add(1)
-
 	a, _ := engine.Load(deviceAutomation.Id)
 
 	// make sure automation is disabled when we have scheduler enabled
-	if a.Enabled {
+	if a.IsEnabled() {
 		t.Fatalf("ERROR automation is enabled (initial state)")
 	}
 
 	// trigger the automation
-	doorSensorDevice.Exposes["contact"].Data = true
+	doorSensorDevice.Exposes["contact"].Data.SetValue(true)
 	engine.HandleDevice(doorSensorDevice)
 	time.Sleep(50 * time.Millisecond)
 
@@ -509,7 +536,7 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 	a, _ = engine.Load(deviceAutomation.Id)
 
 	// scheduler should have enabled automation
-	if !a.Enabled {
+	if !a.IsEnabled() {
 		t.Fatalf("ERROR automation is not enabled")
 	}
 
@@ -518,14 +545,19 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 	wg.Wait()
 
 	// trigger the automation
-	doorSensorDevice.Exposes["contact"].Data = true
+	doorSensorDevice.Exposes["contact"].Data.SetValue(false)
 	engine.HandleDevice(doorSensorDevice)
 	time.Sleep(50 * time.Millisecond)
 
 	a, _ = engine.Load(deviceAutomation.Id)
 
 	// scheduler should have disabled automation
-	if a.Enabled {
+	if a.IsEnabled() {
 		t.Fatalf("ERROR automation is enabled")
+	}
+
+	deviceAutomation.Schedules = []*automations.TimeSchedule{}
+	if err := scheduleHandler.Process(deviceAutomation); err != nil {
+		t.Fatalf("ERROR cleaning scheduler: %v", err)
 	}
 }

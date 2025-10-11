@@ -62,15 +62,18 @@ func TestOperationIncreaseValue(t *testing.T) {
 
 		var prevValue float64 = 0
 		// need to get the previous value of brightness before update
-		prevValue, _ = dd["livingroom"].Exposes["brightness"].Data.(float64)
+		brightnessExpose := dd["livingroom"].Exposes["brightness"]
+		prevValue = brightnessExpose.Data.Value().(float64)
 
 		want := prevValue + action.Data.(float64)
 		want = math.Min(want, max)
+
 		if got != want {
 			t.Fatalf("invalid operation value: want %v got %v", want, got)
+			return
 		}
 
-		dd["livingroom"].Exposes["brightness"].Data = data["brightness"]
+		brightnessExpose.Data.SetValue(got)
 		wg.Done()
 	}
 
@@ -91,7 +94,7 @@ func TestOperationIncreaseValue(t *testing.T) {
 
 			// action_time property of button is not really used for calculation,
 			// is just a triggering device so we can publish the payload
-			ctx.SetPayload(map[string]*devices.Entity{
+			ctx.SetDevicePayload(map[string]*devices.Entity{
 				"action_time": dd["button"].Exposes["action_time"],
 			})
 
@@ -155,7 +158,7 @@ func TestOperationDecreaseValue(t *testing.T) {
 
 		var prevValue float64 = 0
 		// need to get the previous value of brightness before update
-		prevValue, _ = dd["livingroom"].Exposes["brightness"].Data.(float64)
+		prevValue = dd["livingroom"].Exposes["brightness"].Data.Value().(float64)
 
 		want := prevValue - action.Data.(float64)
 		want = math.Min(want, max)
@@ -163,7 +166,7 @@ func TestOperationDecreaseValue(t *testing.T) {
 			t.Fatalf("invalid operation value: want %v got %v", want, got)
 		}
 
-		dd["livingroom"].Exposes["brightness"].Data = data["brightness"]
+		dd["livingroom"].Exposes["brightness"].Data.SetValue(got)
 		wg.Done()
 	}
 
@@ -184,7 +187,7 @@ func TestOperationDecreaseValue(t *testing.T) {
 			// action_time property of button is not really used for calculation,
 			// is just a triggering device so we can publish the payload
 
-			ctx.SetPayload(map[string]*devices.Entity{
+			ctx.SetDevicePayload(map[string]*devices.Entity{
 				"action_time": dd["button"].Exposes["action_time"],
 			})
 
@@ -246,7 +249,7 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 
 		var prevValue float64 = 0
 		// need to get the previous value of brightness before update
-		prevValue, _ = dd[name].Exposes["brightness"].Data.(float64)
+		prevValue = dd[name].Exposes["brightness"].Data.Value().(float64)
 
 		want := prevValue + (action_times[currentActionTimeIndex] * action.Data.(float64))
 		want = math.Min(want, max)
@@ -254,7 +257,7 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 			t.Fatalf("invalid operation value: want %v got %v", want, got)
 		}
 
-		dd[name].Exposes["brightness"].Data = data["brightness"]
+		dd[name].Exposes["brightness"].Data.SetValue(got)
 		wg.Done()
 	}
 
@@ -273,8 +276,8 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	go func() {
 		for _, t := range action_times {
 			// update both device and payload as they are used
-			dd["button"].Exposes["action_time"].Data = float64(t)
-			ctx.SetPayload(map[string]*devices.Entity{
+			dd["button"].Exposes["action_time"].Data.SetValue(float64(t))
+			ctx.SetDevicePayload(map[string]*devices.Entity{
 				"action_time": dd["button"].Exposes["action_time"],
 			})
 			action.Execute(ctx)
@@ -287,8 +290,8 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 
 	// we are expecting to have reached the max value of the 'brightness' property
 	// so next payload event shoud not publish new mqqt message. if it does it should error in the handler
-	dd["button"].Exposes["action_time"].Data = float64(30)
-	ctx.SetPayload(map[string]*devices.Entity{
+	dd["button"].Exposes["action_time"].Data.SetValue(float64(30))
+	ctx.SetDevicePayload(map[string]*devices.Entity{
 		"action_time": dd["button"].Exposes["action_time"],
 	})
 	action.Execute(ctx)
@@ -339,7 +342,7 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 
 		var prevValue float64 = 0
 		// need to get the previous value of brightness before update
-		prevValue, _ = dd[name].Exposes["brightness"].Data.(float64)
+		prevValue = dd[name].Exposes["brightness"].Data.Value().(float64)
 
 		want := prevValue - (action_times[currentActionTimeIndex] * action.Data.(float64))
 		want = math.Min(want, max)
@@ -347,7 +350,7 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 			t.Fatalf("invalid operation value: want %v got %v", want, got)
 		}
 
-		dd[name].Exposes["brightness"].Data = data["brightness"]
+		dd[name].Exposes["brightness"].Data.SetValue(got)
 		wg.Done()
 	}
 
@@ -366,8 +369,8 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 	go func() {
 		for _, t := range action_times {
 			// update both device and payload as they are used
-			dd["button"].Exposes["action_time"].Data = float64(t)
-			ctx.SetPayload(map[string]*devices.Entity{
+			dd["button"].Exposes["action_time"].Data.SetValue(float64(t))
+			ctx.SetDevicePayload(map[string]*devices.Entity{
 				"action_time": dd["button"].Exposes["action_time"],
 			})
 			action.Execute(ctx)
@@ -380,8 +383,8 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 
 	// we are expecting to have reached the max value of the 'brightness' property
 	// so next payload event shoud not publish new mqqt message. if it does it should error in the handler
-	dd["button"].Exposes["action_time"].Data = float64(30)
-	ctx.SetPayload(map[string]*devices.Entity{
+	dd["button"].Exposes["action_time"].Data.SetValue(float64(30))
+	ctx.SetDevicePayload(map[string]*devices.Entity{
 		"action_time": dd["button"].Exposes["action_time"],
 	})
 
@@ -431,7 +434,7 @@ func TestOperationCycleValue(t *testing.T) {
 		}
 
 		want := presets[pos].(float64)
-		got := payload[exposeName].(float64)
+		got := payload.Commands[exposeName].(float64)
 		if got != want {
 			t.Fatalf("invalid operation value: want %v got %v", want, got)
 		}
@@ -445,6 +448,7 @@ func TestOperationCycleValue(t *testing.T) {
 
 func createMockDevice(id string, name string, property string, data any, min float64, max float64) *devices.Device {
 	device1 := &devices.Device{}
+
 	device1.Id = id
 	device1.FriendlyName = name
 	device1.ConnectionType = "mqtt"
@@ -453,11 +457,11 @@ func createMockDevice(id string, name string, property string, data any, min flo
 	device1.LastSeen = time.Now().Format(time.RFC3339)
 	device1.Exposes = make(map[string]*devices.Entity)
 
-	ent1 := &devices.Entity{}
+	ent1 := devices.NewEntity(property)
+
 	ent1.Description = fmt.Sprintf("%s readings", property)
-	ent1.Name = property
 	ent1.Unit = "test"
-	ent1.Data = data
+	ent1.Data.SetValue(data)
 
 	device1.Exposes[property] = ent1
 	device1.Exposes[property].Attributes = make(map[string]any)

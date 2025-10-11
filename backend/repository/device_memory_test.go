@@ -125,7 +125,7 @@ func validateDevice(t *testing.T, dev1 *devices.Device, dev2 *devices.Device) {
 			t.Fatalf("unexpected expose.Description value")
 		}
 
-		if equalityCheck(expose.Data, inputExpose.Data) == false {
+		if equalityCheck(expose.Data.Value(), inputExpose.Data.Value()) == false {
 			t.Fatalf("unexpected expose.Data ")
 		}
 		if expose.Unit != inputExpose.Unit {

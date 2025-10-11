@@ -12,11 +12,17 @@ const (
 	UnitDays         = "days"
 )
 
+type Timer interface {
+	Stop() bool
+	Reset(d time.Duration) bool
+}
+
 type Clock interface {
 	Now() time.Time
 	Sleep(duration time.Duration)
 	CompareWithNow(t time.Time, operator EqualityOperator) bool
 	IsInRange(start time.Time, end time.Time) bool
+	AfterFunc(d time.Duration, f func()) Timer
 }
 
 type RealClock struct{}
@@ -57,12 +63,29 @@ func CompareTimeRange(from time.Time, to time.Time, operator EqualityOperator) b
 	return false
 }
 
+func (r *RealClock) AfterFunc(d time.Duration, f func()) Timer {
+	t := time.AfterFunc(d, f)
+	return &realTimer{t}
+}
+
 func (r *RealClock) Now() time.Time {
 	return time.Now().UTC()
 }
 
 func (r *RealClock) Sleep(duration time.Duration) {
 	time.Sleep(duration)
+}
+
+type realTimer struct {
+	t *time.Timer
+}
+
+func (r *realTimer) Stop() bool {
+	return r.t.Stop()
+}
+
+func (r *realTimer) Reset(d time.Duration) bool {
+	return r.t.Reset(d)
 }
 
 type TimeInterval struct {

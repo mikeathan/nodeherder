@@ -32,6 +32,7 @@ const logSeverity = ['info', 'warning', 'error', 'critical'];
 
 // App and server
 let app = express();
+
 let server = http.createServer(app).listen(port);
 console.log('[' + currentTime() + '] server listening at port ' + port);
 
@@ -65,6 +66,26 @@ var automationMap = new Map([
               equality: '=',
             },
           ],
+          actions: [
+            {
+              id: '0x00158d0005a23c38',
+              exposes: [
+                {
+                  name: 'state',
+                  data: 'OFF',
+                },
+              ],
+              delay: {
+                value: 5,
+                unit: 'minutes',
+              },
+              type: 'trigger',
+            },
+          ],
+        },
+        {
+          name: 'presence',
+          conditions: [],
           actions: [
             {
               id: '0x00158d0005a23c38',
@@ -269,11 +290,20 @@ app.use(
     origin: 'http://localhost:4100',
   })
 );
+app.use(express.json());
 
 // Register HTTP GET route for /hubstate
 app.get('/api/hubstate', (req, res) => {
   console.log('hubstate GET request');
   res.json(hubStatePayload);
+});
+
+app.post('/api/automation/trigger', (req, res) => {
+  console.log('automation trigger POST request');
+  const { triggerName, automationId } = req.body;
+  console.log('triggerName: ' + triggerName);
+  console.log('automationId: ' + automationId);
+  res.json({ success: true });
 });
 
 var connected = false;

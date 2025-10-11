@@ -3,6 +3,7 @@ package hub
 import (
 	"context"
 	"node-herder/internal/api"
+	"node-herder/internal/automations"
 	"node-herder/internal/controllers"
 	"node-herder/internal/fs"
 	"node-herder/internal/mqtt"
@@ -27,10 +28,10 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	router.POST("/api/collect", api.NewDataCollectorHandler(hub))
 
 	router.POST("/api/logfile", api.NewLogFileHandler(fservice))
+	router.POST("/api/automation/trigger", api.NewAutomationTriggerHandler(hub, 1*time.Second))
 	router.GET("/api/listlogs", api.NewListFileLogsHandler(fservice))
 
 	router.GET("/api/hubstate", api.NewHubStateHandler(store, 15*time.Minute))
-
 
 	apiServer := api.NewHttpServer(
 		port,
@@ -49,7 +50,13 @@ func Register(port int, store store.AppStore, config mqtt.MqttConfig, ctx contex
 	utils.RegisterRemoteLoggerHook(ws)
 
 	mqtt := mqtt.NewMqttClient(config)
-	hub := controllers.RegisterHubController(ws, store, mqtt, ctx)
+
+	automationHandlers := automations.DefaultAutomationHandlers(ctx)
+	hub := controllers.RegisterHubController(ws,
+		store,
+		mqtt,
+		controllers.WithContext(ctx),
+		controllers.WithAutomationHandlers(automationHandlers))
 
 	return registerApi(port, ws, hub, store, ctx)
 }

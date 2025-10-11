@@ -265,16 +265,16 @@ func assertDevicePayload(newDevice *devices.Device, deviceName string, payload m
 		t.Errorf("Error device power source mismatch want: %v got: %v", "battery", newDevice.PowerSource)
 	}
 
-	if newDevice.Exposes["brightness"].Data != 120.1 {
-		t.Errorf("Error device brightness mismatch want: %v got: %v", 120.1, newDevice.Exposes["brightness"].Data)
+	if newDevice.Exposes["brightness"].Data.Value() != 120.1 {
+		t.Errorf("Error device brightness mismatch want: %v got: %v", 120.1, newDevice.Exposes["brightness"].Data.Value())
 	}
 
-	if newDevice.Exposes["color_temp"].Data != 100.1 {
-		t.Errorf("Error device color temp mismatch want: %v got: %v", 100.1, newDevice.Exposes["color_temp"].Data)
+	if newDevice.Exposes["color_temp"].Data.Value() != 100.1 {
+		t.Errorf("Error device color temp mismatch want: %v got: %v", 100.1, newDevice.Exposes["color_temp"].Data.Value())
 	}
 
-	if newDevice.Exposes["state"].Data != "on" {
-		t.Errorf("Error device state mismatch want: %v got: %v", "on", newDevice.Exposes["state"].Data)
+	if newDevice.Exposes["state"].Data.Value() != "on" {
+		t.Errorf("Error device state mismatch want: %v got: %v", "on", newDevice.Exposes["state"].Data.Value())
 	}
 }
 func assetExpose(bridgeExpose devices.BridgeExpose, expose *devices.Entity, category bridge.ExposeCategory, t *testing.T) {
