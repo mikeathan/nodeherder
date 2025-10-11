@@ -1729,7 +1729,9 @@ func createTriggerTurnOnLightWithPresenceOn(mqtt mqtt.MqttClient) *automations.D
 
 	onTimeRange := automations.NewTimeRange("06:40", "17:15")
 	turnOnCondition := utils_test.NewExposeCondition("presence", true, "=")
-	turnOnTimerCondition := utils_test.NewTimeCondition(onTimeRange, &mocks.MockClock{})
+	clock := mocks.NewMockClock(
+		func() time.Time { return time.Now() })
+	turnOnTimerCondition := utils_test.NewTimeCondition(onTimeRange, clock)
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnCondition)
 	turnOnTrigger.Conditions = append(turnOnTrigger.Conditions, turnOnTimerCondition)
 	return turnOnTrigger
@@ -1756,8 +1758,10 @@ func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay *
 	// condition = presence == false
 	onTimeRange := automations.NewTimeRange("11:13", "19:35")
 	turnOffTimeAtCondition := utils_test.NewExposeCondition("presence", false, "=")
-	turnOffTimerCondition := utils_test.NewTimeCondition(onTimeRange, &mocks.MockClock{})
+	clock := mocks.NewMockClock(
+		func() time.Time { return time.Now() })
 
+	turnOffTimerCondition := utils_test.NewTimeCondition(onTimeRange, clock)
 	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffTimeAtCondition)
 	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffTimerCondition)
 	return turnOffTrigger

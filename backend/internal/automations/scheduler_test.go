@@ -17,7 +17,8 @@ func TestAddTimeSchedule(t *testing.T) {
 
 	order := []int{1, 2, 1, 2}
 	done := make(chan int, 4)
-	now := time.Now().UTC()
+	loc, _ := time.LoadLocation("Europe/London")
+	now := time.Now().In(loc)
 	start := now.Add(500 * time.Millisecond)
 	end := now.Add(2000 * time.Millisecond)
 
@@ -49,7 +50,7 @@ func TestAddTimeSchedule(t *testing.T) {
 		t.Errorf("failed to start scheduler %s", err.Error())
 	}
 
-	if !waitTimeout(&wg, 60*time.Second) {
+	if !waitTimeout(&wg, 10*time.Second) {
 		t.Errorf("failed to execute jobs")
 	}
 
@@ -63,8 +64,8 @@ func TestAddTimeSchedule(t *testing.T) {
 }
 
 func TestStopTimeSchedule(t *testing.T) {
-
-	now := time.Now().UTC()
+	loc, _ := time.LoadLocation("Europe/London")
+	now := time.Now().In(loc)
 	start := now.Add(2000 * time.Millisecond)
 	end := start.Add(2000 * time.Millisecond)
 
@@ -109,7 +110,8 @@ func TestStopTimeSchedule(t *testing.T) {
 func TestTimeScheduleContextCancellation(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
-	now := time.Now().UTC()
+	loc, _ := time.LoadLocation("Europe/London")
+	now := time.Now().In(loc)
 	start := now.Add(2000 * time.Millisecond)
 	end := start.Add(2000 * time.Millisecond)
 
@@ -171,7 +173,8 @@ func TestTimeScheduleCSupportFileFormats(t *testing.T) {
 	}
 
 	for _, tc := range testCase {
-		now := time.Now().UTC()
+		loc, _ := time.LoadLocation("Europe/London")
+		now := time.Now().In(loc)
 		start := now.Add(2000 * time.Millisecond)
 		end := start.Add(2000 * time.Millisecond)
 

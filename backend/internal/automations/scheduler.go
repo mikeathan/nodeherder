@@ -125,16 +125,29 @@ func (j *job) getStartAtDuration() (time.Duration, error) {
 		return 0, err
 	}
 	now := j.clock.Now()
-	startTime := time.Date(now.Year(), now.Month(), now.Day(), startAtTime.Hour(), startAtTime.Minute(), startAtTime.Second(), 0, now.Location())
+	// Preserve milliseconds by using the parsed nanosecond component
+	startTime := time.Date(
+		now.Year(), now.Month(), now.Day(),
+		startAtTime.Hour(), startAtTime.Minute(), startAtTime.Second(), startAtTime.Nanosecond(),
+		now.Location(),
+	)
 
-	if startTime.Before(now) {
-		nextStartTime := startTime.Add(j.RepeatEvery)
-		nextDuration := nextStartTime.Sub(now)
-
-		return nextDuration, nil
+	// If start time is still in the future → wait until then.
+	if now.Before(startTime) {
+		return startTime.Sub(now), nil
 	}
 
-	return startTime.Sub(now), nil
+	// If RepeatEvery is not set, don't schedule again.
+	if j.RepeatEvery <= 0 {
+		return 0, nil
+	}
+
+	// Calculate next valid future start.
+	elapsed := now.Sub(startTime)
+	skippedIntervals := int64(elapsed / j.RepeatEvery)
+	nextStartTime := startTime.Add(time.Duration(skippedIntervals+1) * j.RepeatEvery)
+
+	return nextStartTime.Sub(now), nil
 }
 
 type Scheduler struct {

@@ -159,7 +159,9 @@ func TestProcessorTriggerScheduledAutomation(t *testing.T) {
 	clock := mocks.NewMockClock(func() time.Time {
 		return time.Now().UTC()
 	})
-	now := time.Now().UTC()
+
+	loc, _ := time.LoadLocation("Europe/London")
+	now := time.Now().In(loc)
 	start := now.Add(1000 * time.Millisecond)
 	end := now.Add(3000 * time.Millisecond)
 

@@ -364,7 +364,9 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
-	mockClock := &mocks.MockClock{}
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now().UTC()
+	})
 
 	repo := repository.NewMemoryDeviceRepo()
 	store := utils_test.CreateStoreFromDeviceRepo(repo)
@@ -421,7 +423,12 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 
 	for _, testCase := range testCases {
 
-		mockClock.SetMockTime(testCase.timeNow)
+		loc, _ := time.LoadLocation("Europe/London")
+		now := time.Date(testCase.timeNow.Year(), testCase.timeNow.Month(), testCase.timeNow.Day(),
+			testCase.timeNow.Hour(), testCase.timeNow.Minute(), testCase.timeNow.Second(),
+			testCase.timeNow.Nanosecond(), loc)
+		mockClock.SetMockTime(now.UTC())
+
 		var messageHandler = func(id string, payload []byte) {
 
 			if !testCase.result {
@@ -556,7 +563,9 @@ func TestManualTriggerWithScheduleTurnsOnLight(t *testing.T) {
 
 	wg := &sync.WaitGroup{}
 	mqtt := &mocks.MockMqttClient{}
-	mockClock := &mocks.MockClock{}
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now().UTC()
+	})
 	repo := repository.NewMemoryDeviceRepo()
 	store := utils_test.CreateStoreFromDeviceRepo(repo)
 	eventHub := &mocks.MockEventHub{}
@@ -589,7 +598,12 @@ func TestManualTriggerWithScheduleTurnsOnLight(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		mockClock.SetMockTime(testCase.timeNow)
+		loc, _ := time.LoadLocation("Europe/London")
+		now := time.Date(testCase.timeNow.Year(), testCase.timeNow.Month(), testCase.timeNow.Day(),
+			testCase.timeNow.Hour(), testCase.timeNow.Minute(), testCase.timeNow.Second(),
+			testCase.timeNow.Nanosecond(), loc)
+			
+		mockClock.SetMockTime(now)
 
 		var data = map[string]any{
 			"presence": true,
