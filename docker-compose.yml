@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: nodeherder-frontend
     ports:
-      - "8081:80"
+      - "80:80"
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
