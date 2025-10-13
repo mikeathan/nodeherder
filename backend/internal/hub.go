@@ -3,6 +3,7 @@ package hub
 import (
 	"context"
 	"node-herder/internal/api"
+	"node-herder/internal/auth"
 	"node-herder/internal/automations"
 	"node-herder/internal/controllers"
 	"node-herder/internal/fs"
@@ -30,7 +31,7 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	router.POST("/api/automation/trigger", api.NewAutomationTriggerHandler(hub, 1*time.Second))
 	router.GET("/api/listlogs", api.NewListFileLogsHandler(fservice))
 	router.GET("/api/hubstate", api.NewHubStateHandler(store, 15*time.Minute))
-	router.AddAuthentication(api.NewGoogleOAuth())
+	router.AddAuthentication(auth.NewGoogleOAuth())
 	
 	apiServer := api.NewHttpServer(
 		port,

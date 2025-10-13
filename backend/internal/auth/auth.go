@@ -1,4 +1,4 @@
-package api
+package auth
 
 import (
 	"context"
@@ -6,16 +6,22 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
+	"node-herder/internal/auth"
 	"os"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
 
+type RouteRegistrar interface {
+	GET(path string, handler http.Handler)
+	POST(path string, handler http.Handler)
+}
+
 type OAuth interface {
 	HandleLogin(http.ResponseWriter, *http.Request)
 	HandleCallback(http.ResponseWriter, *http.Request)
-	RegisterRoutes(r *Router)
+	RegisterRoutes(registrar RouteRegistrar)
 }
 
 type googleOAuth struct {
@@ -23,13 +29,7 @@ type googleOAuth struct {
 }
 
 func NewGoogleOAuth() OAuth {
-	return &googleOAuth{
-		config: buildConfig(),
-	}
-}
-
-func buildConfig() *oauth2.Config {
-	return &oauth2.Config{
+	config := &oauth2.Config{
 		RedirectURL:  "http://localhost:4110/api/auth/google/callback",
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
@@ -39,13 +39,16 @@ func buildConfig() *oauth2.Config {
 		},
 		Endpoint: google.Endpoint,
 	}
+	return &googleOAuth{
+		config: config,
+	}
 }
 
-func (g *googleOAuth) RegisterRoutes(r *Router) {
+func (g *googleOAuth) RegisterRoutes(registrar RouteRegistrar) {
 	base := "/api/auth/google"
-	r.GET(base+"/login", http.HandlerFunc(g.HandleLogin))
-	r.GET(base+"/callback", http.HandlerFunc(g.HandleCallback))
-	r.GET("/api/auth/me", http.HandlerFunc(handleMe))
+	registrar.GET(base+"/login", http.HandlerFunc(g.HandleLogin))
+	registrar.GET(base+"/callback", http.HandlerFunc(g.HandleCallback))
+	registrar.GET("/api/auth/me", http.HandlerFunc(handleMe))
 }
 
 func (o *googleOAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
@@ -80,8 +83,12 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	var user map[string]any
 	json.NewDecoder(resp.Body).Decode(&user)
 
-	TODO
-	// create JWT
+	jwt, err := auth.GenerateJWT(user["id"].(string), user["email"].(string))
+	if err != nil {
+		http.Error(w, "Failed to create JWT: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	
 	// setCookie(w, tokenString)
 
 	// then we add middleware to check JWT on each request

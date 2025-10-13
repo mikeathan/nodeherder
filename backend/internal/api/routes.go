@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"node-herder/internal/auth"
 	"node-herder/internal/controllers"
 	"node-herder/internal/fs"
 	"node-herder/internal/ratelimiter"
@@ -56,7 +57,7 @@ func (r *Router) addRoute(method string, path string, handler http.Handler) {
 	r.routes = append(r.routes, &Route{method: method, pattern: path, handler: handler})
 }
 
-func (r *Router) AddAuthentication(provider OAuth) {
+func (r *Router) AddAuthentication(provider auth.OAuth) {
 	provider.RegisterRoutes(r)
 }
 
