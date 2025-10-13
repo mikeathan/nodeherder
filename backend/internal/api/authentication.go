@@ -12,17 +12,6 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
-var googleOAuthConfig = &oauth2.Config{
-	RedirectURL:  "http://localhost:4110/api/auth/google/callback",
-	ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-	ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-	Scopes: []string{
-		"https://www.googleapis.com/auth/userinfo.email",
-		"https://www.googleapis.com/auth/userinfo.profile",
-	},
-	Endpoint: google.Endpoint,
-}
-
 type OAuth interface {
 	HandleLogin(http.ResponseWriter, *http.Request)
 	HandleCallback(http.ResponseWriter, *http.Request)
@@ -30,10 +19,26 @@ type OAuth interface {
 }
 
 type googleOAuth struct {
+	config *oauth2.Config
 }
 
 func NewGoogleOAuth() OAuth {
-	return &googleOAuth{}
+	return &googleOAuth{
+		config: buildConfig(),
+	}
+}
+
+func buildConfig() *oauth2.Config {
+	return &oauth2.Config{
+		RedirectURL:  "http://localhost:4110/api/auth/google/callback",
+		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		Scopes: []string{
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/userinfo.profile",
+		},
+		Endpoint: google.Endpoint,
+	}
 }
 
 func (g *googleOAuth) RegisterRoutes(r *Router) {
@@ -52,14 +57,14 @@ func (o *googleOAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		Path:  "/",
 	})
 
-	url := googleOAuthConfig.AuthCodeURL(state)
+	url := o.config.AuthCodeURL(state)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
 func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
 
-	token, err := googleOAuthConfig.Exchange(context.Background(), code)
+	token, err := o.config.Exchange(context.Background(), code)
 	if err != nil {
 		http.Error(w, "Failed to exchange token: "+err.Error(), http.StatusBadRequest)
 		return

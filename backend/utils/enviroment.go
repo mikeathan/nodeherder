@@ -27,6 +27,10 @@ func GetFrontendBaseURL() (string, error) {
 }
 
 func LoadEnviromentConfig() error {
+
+	// loads .env if present
+	_ = godotenv.Load()
+
 	env := os.Getenv("APP_ENV")
 	if env == "" {
 		env = "development"
@@ -39,7 +43,6 @@ func LoadEnviromentConfig() error {
 	if err != nil {
 		return err
 	}
-
 	LogInfo("loaded env file: " + envFile)
 	return nil
 }
