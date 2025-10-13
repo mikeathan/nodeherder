@@ -80,6 +80,13 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	var user map[string]any
 	json.NewDecoder(resp.Body).Decode(&user)
 
+	TODO
+	// create JWT
+	// setCookie(w, tokenString)
+
+	// then we add middleware to check JWT on each request
+	// validate that cookie too
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(user)
 }
