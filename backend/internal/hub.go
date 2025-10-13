@@ -26,13 +26,12 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 
 	// api routing
 	router.POST("/api/collect", api.NewDataCollectorHandler(hub))
-
 	router.POST("/api/logfile", api.NewLogFileHandler(fservice))
 	router.POST("/api/automation/trigger", api.NewAutomationTriggerHandler(hub, 1*time.Second))
 	router.GET("/api/listlogs", api.NewListFileLogsHandler(fservice))
-
 	router.GET("/api/hubstate", api.NewHubStateHandler(store, 15*time.Minute))
-
+	router.AddAuthentication(api.NewGoogleOAuth())
+	
 	apiServer := api.NewHttpServer(
 		port,
 		api.WithContext(ctx),

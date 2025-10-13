@@ -56,6 +56,10 @@ func (r *Router) addRoute(method string, path string, handler http.Handler) {
 	r.routes = append(r.routes, &Route{method: method, pattern: path, handler: handler})
 }
 
+func (r *Router) AddAuthentication(provider OAuth) {
+	provider.RegisterRoutes(r)
+}
+
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	path := req.URL.Path
 	method := req.Method
