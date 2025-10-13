@@ -1,10 +1,14 @@
 # Build Vue app
 FROM node:20-alpine AS builder
 WORKDIR /frontend
+
+ARG MODE=development
+
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+
+RUN npm run build -- --mode ${MODE}
 
 # Nginx
 FROM nginx:alpine
