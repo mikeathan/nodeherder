@@ -8,7 +8,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtSecret = []byte(os.Getenv("JWT_SECRET_KEY")) 
+var jwtSecret = []byte(os.Getenv("JWT_SECRET_KEY"))
 
 type Claims struct {
 	UserID string `json:"user_id"`
@@ -16,13 +16,13 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func GenerateJWT(userID, email string) (string, error) {
+func GenerateJWT(userID, email string, expires time.Duration) (string, error) {
 
 	claims := Claims{
 		UserID: userID,
 		Email:  email,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // 1 day
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expires)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    "nodeherder",
 		},

@@ -6,8 +6,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
-	"node-herder/internal/auth"
 	"os"
+	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -28,7 +28,7 @@ type googleOAuth struct {
 	config *oauth2.Config
 }
 
-func NewGoogleOAuth() OAuth {
+func NewGoogleOAuth(jwtSecret string, jwtExpiry time.Duration) OAuth {
 	config := &oauth2.Config{
 		RedirectURL:  "http://localhost:4110/api/auth/google/callback",
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
@@ -83,19 +83,27 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	var user map[string]any
 	json.NewDecoder(resp.Body).Decode(&user)
 
-	jwt, err := auth.GenerateJWT(user["id"].(string), user["email"].(string))
+	// create JWT
+	jwt, err := GenerateJWT(user["id"].(string), user["email"].(string))
 	if err != nil {
 		http.Error(w, "Failed to create JWT: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	
-	// setCookie(w, tokenString)
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session",
+		Value:    jwt,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{"status": "success", "user": user})
 
 	// then we add middleware to check JWT on each request
 	// validate that cookie too
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
 }
 
 func handleMe(w http.ResponseWriter, r *http.Request) {

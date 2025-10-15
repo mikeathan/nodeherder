@@ -21,7 +21,7 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 
 	//middleware
 	router.Use(api.CORS)
-
+	router.Use(auth.Auth())
 	//websocket routing
 	router.GET("/ws", api.NewWsHandler(ws))
 
@@ -32,7 +32,7 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	router.GET("/api/listlogs", api.NewListFileLogsHandler(fservice))
 	router.GET("/api/hubstate", api.NewHubStateHandler(store, 15*time.Minute))
 	router.AddAuthentication(auth.NewGoogleOAuth())
-	
+
 	apiServer := api.NewHttpServer(
 		port,
 		api.WithContext(ctx),
