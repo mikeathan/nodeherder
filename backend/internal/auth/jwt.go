@@ -2,13 +2,10 @@ package auth
 
 import (
 	"errors"
-	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
-
-var jwtSecret = []byte(os.Getenv("JWT_SECRET_KEY"))
 
 type Claims struct {
 	UserID string `json:"user_id"`
@@ -16,25 +13,46 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func GenerateJWT(userID, email string, expires time.Duration) (string, error) {
+type JWTConfig struct {
+	Secret     []byte
+	Expiration time.Duration
+}
+
+type JWTService struct {
+	cfg *JWTConfig
+}
+
+func WithDefaultJWTConfig() JWTConfig {
+	return JWTConfig{
+		Secret:     []byte("JWT_SECRET_KEY"),
+		Expiration: 24 * time.Hour,
+	}
+}
+
+func NewJWTService(cfg JWTConfig) *JWTService {
+	return &JWTService{
+		cfg: &cfg,
+	}
+}
+func (s *JWTService) GenerateJWT(userID, email string) (string, error) {
 
 	claims := Claims{
 		UserID: userID,
 		Email:  email,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(expires)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.cfg.Expiration)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    "nodeherder",
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtSecret)
+	return token.SignedString(s.cfg.Secret)
 }
 
-func ValidateJWT(tokenStr string) (*Claims, error) {
+func (s *JWTService) ValidateJWT(tokenStr string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenStr, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
+		return s.cfg.Secret, nil
 	})
 	if err != nil {
 		return nil, err

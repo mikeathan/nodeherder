@@ -19,9 +19,11 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	router := api.NewRouter()
 	fservice := fs.NewFileSystem()
 
+	jwtService := auth.NewJWTService(auth.WithDefaultJWTConfig())
+
 	//middleware
 	router.Use(api.CORS)
-	router.Use(auth.Auth())
+	router.Use(auth.Auth(jwtService))
 	//websocket routing
 	router.GET("/ws", api.NewWsHandler(ws))
 
@@ -31,7 +33,9 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	router.POST("/api/automation/trigger", api.NewAutomationTriggerHandler(hub, 1*time.Second))
 	router.GET("/api/listlogs", api.NewListFileLogsHandler(fservice))
 	router.GET("/api/hubstate", api.NewHubStateHandler(store, 15*time.Minute))
-	router.AddAuthentication(auth.NewGoogleOAuth())
+
+	// authentication routes
+	router.AddAuthentication(auth.NewGoogleOAuth(jwtService))
 
 	apiServer := api.NewHttpServer(
 		port,

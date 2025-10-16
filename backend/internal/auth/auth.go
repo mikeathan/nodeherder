@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
-	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -25,10 +24,11 @@ type OAuth interface {
 }
 
 type googleOAuth struct {
-	config *oauth2.Config
+	config     *oauth2.Config
+	jwtService *JWTService
 }
 
-func NewGoogleOAuth(jwtSecret string, jwtExpiry time.Duration) OAuth {
+func NewGoogleOAuth(jwtService *JWTService) OAuth {
 	config := &oauth2.Config{
 		RedirectURL:  "http://localhost:4110/api/auth/google/callback",
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
@@ -40,7 +40,8 @@ func NewGoogleOAuth(jwtSecret string, jwtExpiry time.Duration) OAuth {
 		Endpoint: google.Endpoint,
 	}
 	return &googleOAuth{
-		config: config,
+		config:     config,
+		jwtService: jwtService,
 	}
 }
 
@@ -84,7 +85,7 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(resp.Body).Decode(&user)
 
 	// create JWT
-	jwt, err := GenerateJWT(user["id"].(string), user["email"].(string))
+	jwt, err := o.jwtService.GenerateJWT(user["id"].(string), user["email"].(string))
 	if err != nil {
 		http.Error(w, "Failed to create JWT: "+err.Error(), http.StatusInternalServerError)
 		return

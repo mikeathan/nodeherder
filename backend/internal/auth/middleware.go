@@ -9,7 +9,7 @@ type contextKey string
 
 const userKey contextKey = "user"
 
-func Auth() func(http.Handler) http.Handler {
+func Auth(jwtService *JWTService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
@@ -18,7 +18,7 @@ func Auth() func(http.Handler) http.Handler {
 				return
 			}
 
-			user, err := ValidateJWT(authHeader)
+			user, err := jwtService.ValidateJWT(authHeader)
 			if err != nil {
 				http.Error(w, "invalid token", http.StatusUnauthorized)
 				return
