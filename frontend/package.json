@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test-server": "node ./tools/index.mjs",
+    "test-server": "node ./tools/server/index.mjs",
     "start": "node scripts/start.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

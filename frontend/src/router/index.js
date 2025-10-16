@@ -10,6 +10,7 @@ import DeviceList from '../components/device-list/DeviceList.vue';
 import GroupDashboard from '../components/dashboards/GroupDashboard.vue';
 import { DashboardModes } from '@/types/controls.type';
 import DeviceView from '@/components/device/DeviceView.vue';
+import LoginPage from '@/components/auth/LoginPage.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -24,7 +25,15 @@ const router = createRouter({
     },
     {
       path: '/',
-      name: 'groups',
+      name: 'login',
+      component: LoginPage,
+      meta: {
+        title: 'Node-herder - Login',
+      },
+    },
+    {
+      path: '/groupdashboard',
+      name: 'groupdashboard',
       component: GroupDashboard,
       meta: {
         title: 'Node-herder - Groups Dashboard',
@@ -105,7 +114,7 @@ const router = createRouter({
       meta: {
         title: 'Node-herder - Device view',
       },
-    }
+    },
   ],
 });
 export default router;

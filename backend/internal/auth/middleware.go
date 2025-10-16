@@ -30,7 +30,7 @@ func Auth(jwtService *JWTService) func(http.Handler) http.Handler {
 	}
 }
 
-func GetUserFromContext(r *http.Request) (string, bool) {
-	user, ok := r.Context().Value(userKey).(string)
+func GetUserFromContext(r *http.Request) (*Claims, bool) {
+	user, ok := r.Context().Value(userKey).(*Claims)
 	return user, ok
 }

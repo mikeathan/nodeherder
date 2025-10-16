@@ -12,6 +12,8 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
+const AuthStateCookie = "oauthstate"
+
 type Provider struct {
 	jwt   *JWTService
 	oauth OAuth
@@ -45,6 +47,7 @@ type OAuth interface {
 type googleOAuth struct {
 	config     *oauth2.Config
 	jwtService *JWTService
+	basePath   string
 }
 
 func NewGoogleOAuth(jwtService *JWTService) OAuth {
@@ -61,21 +64,21 @@ func NewGoogleOAuth(jwtService *JWTService) OAuth {
 	return &googleOAuth{
 		config:     config,
 		jwtService: jwtService,
+		basePath:   "/api/auth",
 	}
 }
 
 func (g *googleOAuth) RegisterRoutes(registrar RouteRegistrar) {
-	base := "/api/auth/google"
-	registrar.GET(base+"/login", http.HandlerFunc(g.HandleLogin))
-	registrar.GET(base+"/callback", http.HandlerFunc(g.HandleCallback))
-	registrar.GET("/api/auth/me", http.HandlerFunc(handleMe))
+	registrar.POST(g.basePath+"/login", http.HandlerFunc(g.HandleLogin))
+	registrar.GET(g.basePath+"/callback", http.HandlerFunc(g.HandleCallback))
+	registrar.GET(g.basePath+"/me", http.HandlerFunc(handleMe))
 }
 
 func (o *googleOAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 	state := generateState()
 	http.SetCookie(w, &http.Cookie{
-		Name:  "oauthstate",
+		Name:  AuthStateCookie,
 		Value: state,
 		Path:  "/",
 	})

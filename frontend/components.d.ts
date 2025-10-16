@@ -72,6 +72,7 @@ declare module 'vue' {
     LastSeen: typeof import('./src/components/device/LastSeen.vue')['default']
     LinkQuality: typeof import('./src/components/device/LinkQuality.vue')['default']
     LoggerSettings: typeof import('./src/components/hub/settings/LoggerSettings.vue')['default']
+    LoginPage: typeof import('./src/components/auth/LoginPage.vue')['default']
     Logo: typeof import('./src/components/controls/Logo.vue')['default']
     Menubar: typeof import('primevue/menubar')['default']
     MenuDropdown: typeof import('./src/components/controls/MenuDropdown.vue')['default']
