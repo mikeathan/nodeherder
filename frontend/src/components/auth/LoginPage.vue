@@ -1,8 +1,19 @@
 <script setup lang="ts">
-  const baseUrl = import.meta.env.VITE_API_BASE_URL;
+  import { ref } from 'vue';
 
-  const loginWithGoogle = () => {
-    window.location.href = `${baseUrl}/api/auth/login`;
+  const baseUrl = import.meta.env.VITE_API_BASE_URL;
+  const user = ref(null);
+
+  const login = async () => {
+    const username = 'testuser';
+    const res = await fetch(`${baseUrl}/api/auth/login?username=${username}`);
+    const data = await res.json();
+
+    // store JWT in localStorage or your store
+    localStorage.setItem('jwt', data.token);
+
+    user.value = data.user;
+    console.log('Logged in with mock token', data.token);
   };
 </script>
 
@@ -16,6 +27,6 @@
 
 <template>
   <div class="flex align-items-center pb-3 gap-1">
-    <Button @click="loginWithGoogle">Login with Google</Button>
+    <Button @click="login">Login with Google</Button>
   </div>
 </template>

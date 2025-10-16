@@ -8,9 +8,12 @@ export function registerRoutes(app) {
     res.json(hubStatePayload);
   });
 
-  app.post('/api/auth/login', (req, res) => {
-    const { username } = req.body;
+  app.get('/api/auth/login', (req, res) => {
+    console.log('login GET request ', req.query);
+    const { username } = req.query || {};
     // return fake JWT or session token
+
+    var token = `mock-jwt-for-${username || 'guest'}`;
     res.json({
       status: 'ok',
       token: `mock-jwt-for-${username || 'guest'}`,
