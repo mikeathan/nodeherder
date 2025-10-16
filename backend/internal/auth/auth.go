@@ -12,6 +12,25 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
+type Provider struct {
+	jwt   *JWTService
+	oauth OAuth
+}
+
+func NewProvider(cfg JWTConfig) *Provider {
+	j := NewJWTService(cfg)
+	o := NewGoogleOAuth(j)
+	return &Provider{jwt: j, oauth: o}
+}
+
+func (m *Provider) Middleware() func(http.Handler) http.Handler {
+	return Auth(m.jwt)
+}
+
+func (m *Provider) OAuth() OAuth {
+	return m.oauth
+}
+
 type RouteRegistrar interface {
 	GET(path string, handler http.Handler)
 	POST(path string, handler http.Handler)

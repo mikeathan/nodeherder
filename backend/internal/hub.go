@@ -19,12 +19,13 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	router := api.NewRouter()
 	fservice := fs.NewFileSystem()
 
-	jwtService := auth.NewJWTService(auth.WithDefaultJWTConfig())
+	authProvider := auth.NewProvider(auth.WithDefaultJWTConfig())
 
-	//middleware
+	// middlewares
 	router.Use(api.CORS)
-	router.Use(auth.Auth(jwtService))
-	//websocket routing
+	router.Use(authProvider.Middleware())
+
+	// websocket routing
 	router.GET("/ws", api.NewWsHandler(ws))
 
 	// api routing
@@ -35,7 +36,7 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	router.GET("/api/hubstate", api.NewHubStateHandler(store, 15*time.Minute))
 
 	// authentication routes
-	router.AddAuthentication(auth.NewGoogleOAuth(jwtService))
+	router.AddAuthentication(authProvider.OAuth())
 
 	apiServer := api.NewHttpServer(
 		port,
