@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import { hubStatePayload } from './state.mjs';
+import { createMockToken } from './utils.mjs';
 
 export function registerRoutes(app) {
   // Register HTTP GET route for /hubstate
@@ -12,15 +13,17 @@ export function registerRoutes(app) {
     console.log('login GET request ', req.query);
     const { username } = req.query || {};
     // return fake JWT or session token
+    const user = {
+      id: '123',
+      email: `${username}@mock.com`,
+    };
 
-    var token = `mock-jwt-for-${username || 'guest'}`;
+    const token = createMockToken(user, 1440);
+
     res.json({
       status: 'ok',
-      token: `mock-jwt-for-${username || 'guest'}`,
-      user: {
-        id: '123',
-        email: `${username || 'guest'}@example.com`,
-      },
+      token: token,
+      user: user,
     });
   });
 

@@ -43,10 +43,9 @@
     {
       isLogo: true,
       template: () => h(Logo),
-      command: () =>{},
+      command: () => {},
     },
   ]);
-
 
   const sideNavigationItems = computed<MenuBarItem[]>(() => [
     {
@@ -104,6 +103,7 @@
         console.error('Failed to init hub state:', err);
         store.commit('ws/setConnectionStatus', 'disconnected');
       });
+    store.dispatch('auth/restoreSession');
   });
 </script>
 

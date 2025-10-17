@@ -34,3 +34,19 @@ export function unpackJsonToMap(value) {
     return null;
   }
 }
+
+export function createMockToken(payload, expiresInMinutes) {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+
+  const now = Math.floor(Date.now() / 1000); // current time in seconds
+  const bodyPayload = { ...payload };
+
+  if (expiresInMinutes) {
+    bodyPayload.exp = now + expiresInMinutes * 60; 
+  }
+
+  const body = Buffer.from(JSON.stringify(bodyPayload)).toString('base64url');
+  const signature = Buffer.from('mock_signature').toString('base64url');
+
+  return `${header}.${body}.${signature}`;
+}
