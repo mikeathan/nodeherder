@@ -15,7 +15,7 @@ export function registerRoutes(app) {
     // return fake JWT or session token
     const user = {
       id: '123',
-      email: `${username}@mock.com`,
+      username: username || 'mockuser',
     };
 
     const token = createMockToken(user, 1440);

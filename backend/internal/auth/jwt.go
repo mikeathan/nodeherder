@@ -8,8 +8,8 @@ import (
 )
 
 type Claims struct {
-	UserID string `json:"user_id"`
-	Email  string `json:"email"`
+	UserID   string `json:"user_id"`
+	Username string `json:"username"`
 	jwt.RegisteredClaims
 }
 
@@ -34,11 +34,11 @@ func NewJWTService(cfg JWTConfig) *JWTService {
 		cfg: &cfg,
 	}
 }
-func (s *JWTService) GenerateJWT(userID, email string) (string, error) {
+func (s *JWTService) GenerateJWT(userID, username string) (string, error) {
 
 	claims := Claims{
-		UserID: userID,
-		Email:  email,
+		UserID:   userID,
+		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.cfg.Expiration)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

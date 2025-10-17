@@ -3,6 +3,8 @@
   import { MenuBarItem } from '@/types/controls.type';
   import { useWindowSize } from '@/mixins/composables/useWindowsSize';
   import { useMenuItems } from '@/mixins/composables/useMenuItems';
+  import { useAuth } from '@/mixins/composables/useAuthentication';
+import { store } from '@/store';
   const version = __APP_VERSION__;
 
   const props = defineProps({
@@ -18,6 +20,8 @@
   }>();
 
   const onDrawerToggle = () => emit('click', true);
+  const { user, isAuthenticated } = useAuth();
+
   const toggleMobileMenu = () => {
     mobileMenuActive.value = !mobileMenuActive.value;
 
@@ -31,6 +35,10 @@
 
   const menubarRef = ref<ComponentPublicInstance | null>(null);
   const mobileMenuActive = ref(false);
+
+  const logout = () => {
+    store.dispatch('auth/logoutUser');
+  };
 </script>
 
 <template>
@@ -47,6 +55,10 @@
       </template>
     </Menubar>
     <div class="app-version">v{{ version }}</div>
+    <div v-if="isAuthenticated" class="user-info">
+      {{ user?.username }}
+      <Button @click="logout">Logout</Button>
+    </div>
     <div v-if="isMobile && mobileMenuActive" class="drawer-overlay" @click="toggleMobileMenu"></div>
   </div>
 </template>

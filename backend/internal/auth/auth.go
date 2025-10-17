@@ -107,7 +107,7 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	json.NewDecoder(resp.Body).Decode(&user)
 
 	// create JWT
-	jwt, err := o.jwtService.GenerateJWT(user["id"].(string), user["email"].(string))
+	jwt, err := o.jwtService.GenerateJWT(user["id"].(string), user["name"].(string))
 	if err != nil {
 		http.Error(w, "Failed to create JWT: "+err.Error(), http.StatusInternalServerError)
 		return

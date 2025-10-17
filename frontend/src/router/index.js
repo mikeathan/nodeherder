@@ -11,24 +11,27 @@ import GroupDashboard from '../components/dashboards/GroupDashboard.vue';
 import { DashboardModes } from '@/types/controls.type';
 import DeviceView from '@/components/device/DeviceView.vue';
 import LoginPage from '@/components/auth/LoginPage.vue';
+import { store } from '@/store/index.js';
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    {
-      path: '/devicedashboard',
-      name: 'devices',
-      component: Dashboard,
-      meta: {
-        title: 'Node-herder - Device Dashboard',
-      },
-    },
     {
       path: '/',
       name: 'login',
       component: LoginPage,
       meta: {
         title: 'Node-herder - Login',
+        public: true,
+      },
+    },
+    {
+      path: '/devicedashboard',
+      name: 'devices',
+      component: Dashboard,
+      meta: {
+        title: 'Node-herder - Device Dashboard',
+        requiresAuth: true,
       },
     },
     {
@@ -37,23 +40,16 @@ const router = createRouter({
       component: GroupDashboard,
       meta: {
         title: 'Node-herder - Groups Dashboard',
-      },
-    },
-    {
-      path: '/groupdashboard/:mode?',
-      name: 'groupdashboard',
-      component: GroupDashboard,
-      props: (route) => ({ editMode: route.params.mode === DashboardModes.editMode }),
-      meta: {
-        title: 'Node-herder - Groups Dashboard',
+        requiresAuth: true,
       },
     },
     {
       path: '/devicelist',
-      name: 'deicelist',
+      name: 'devicelist',
       component: DeviceList,
       meta: {
         title: 'Node-herder - Device List',
+        requiresAuth: true,
       },
     },
     {
@@ -62,6 +58,7 @@ const router = createRouter({
       component: AutomationsViewer,
       meta: {
         title: 'Node-herder - Automation viewer',
+        requiresAuth: true,
       },
     },
     {
@@ -70,6 +67,7 @@ const router = createRouter({
       component: Settings,
       meta: {
         title: 'Node-herder - Settings',
+        requiresAuth: true,
       },
     },
     {
@@ -78,6 +76,7 @@ const router = createRouter({
       component: ConsoleViewer,
       meta: {
         title: 'Node-herder - Console viewer',
+        requiresAuth: true,
       },
     },
     {
@@ -86,6 +85,7 @@ const router = createRouter({
       component: AutomationsCreator,
       meta: {
         title: 'Node-herder - Creator',
+        requiresAuth: true,
       },
     },
     {
@@ -95,6 +95,7 @@ const router = createRouter({
       props: true,
       meta: {
         title: 'Node-herder - Editor',
+        requiresAuth: true,
       },
     },
     {
@@ -104,6 +105,7 @@ const router = createRouter({
       props: true,
       meta: {
         title: 'Node-herder - Device page',
+        requiresAuth: true,
       },
     },
     {
@@ -113,15 +115,23 @@ const router = createRouter({
       props: true,
       meta: {
         title: 'Node-herder - Device view',
+        requiresAuth: true,
       },
     },
   ],
 });
-export default router;
 
-// Global navigation guard to
-// set the title based on the route
 router.beforeEach((to, from, next) => {
   document.title = to.meta.title || 'Node-herder';
+  const isAuthenticated = store.getters['auth/isAuthenticated']();
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    return next({ name: 'login' });
+  }
+
+  if (to.meta.public && isAuthenticated && to.name === 'login') {
+    return next({ name: 'groupdashboard' });
+  }
   next();
 });
+
+export default router;

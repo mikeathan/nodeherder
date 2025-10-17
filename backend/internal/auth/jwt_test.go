@@ -12,10 +12,10 @@ func TestGenerateAndValidateJWT(t *testing.T) {
 	jwtService := auth.NewJWTService(cfg)
 
 	userID := "123"
-	email := "test@example.com"
+	username := "test"
 
 	// Generate token
-	token, err := jwtService.GenerateJWT(userID, email)
+	token, err := jwtService.GenerateJWT(userID, username)
 	if err != nil {
 		t.Fatalf("failed to generate JWT: %v", err)
 	}
@@ -34,8 +34,8 @@ func TestGenerateAndValidateJWT(t *testing.T) {
 		t.Errorf("expected UserID %s, got %s", userID, claims.UserID)
 	}
 
-	if claims.Email != email {
-		t.Errorf("expected Email %s, got %s", email, claims.Email)
+	if claims.Username != username {
+		t.Errorf("expected Username %s, got %s", username, claims.Username)
 	}
 }
 
@@ -56,8 +56,8 @@ func TestValidateJWT_TamperedToken(t *testing.T) {
 	jwtService := auth.NewJWTService(cfg)
 
 	userID := "123"
-	email := "test@example.com"
-	token, _ := jwtService.GenerateJWT(userID, email)
+	username := "test"
+	token, _ := jwtService.GenerateJWT(userID, username)
 
 	parts := strings.Split(token, ".")
 	if len(parts) != 3 {
@@ -80,8 +80,8 @@ func TestValidateJWT_ExpiredToken(t *testing.T) {
 	jwtService := auth.NewJWTService(cfg)
 
 	userID := "123"
-	email := "test@example.com"
-	token, err := jwtService.GenerateJWT(userID, email)
+	username := "test"
+	token, err := jwtService.GenerateJWT(userID, username)
 	if err != nil {
 		t.Fatalf("failed to generate token: %v", err)
 	}
