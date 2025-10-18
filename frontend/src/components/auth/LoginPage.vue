@@ -47,3 +47,15 @@
     <p v-if="error" class="error-message">{{ error }}</p>
   </div>
 </template>
+
+
+<!-- <button class="gsi-material-button">
+  <div class="gsi-material-button-state"></div>
+  <div class="gsi-material-button-content-wrapper">
+    <div class="gsi-material-button-icon">
+     
+    </div>
+    <span class="gsi-material-button-contents">Sign in with Google</span>
+    <span style="display: none;">Sign in with Google</span>
+  </div>
+</button> -->
