@@ -1,12 +1,10 @@
 <script setup lang="ts">
   import { useAuth } from '@/mixins/composables/useAuthentication';
   import { ref } from 'vue';
-
   import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 
   const error = ref<string>('');
   const loading = ref(false);
-
   const { user, signIn } = useAuth();
 
   const handleLogin = async () => {
@@ -23,90 +21,241 @@
   };
 </script>
 
+<template>
+  <div class="login-container">
+    <div class="login-card">
+      <!-- Logo -->
+      <div class="logo-container">
+        <img src="@/assets/images/nodeherder_logo.png" alt="Logo" class="logo" />
+      </div>
+
+      <!-- Welcome Text -->
+      <div class="welcome-section">
+        <h1 class="welcome-title">Welcome Back</h1>
+        <p class="welcome-subtitle">Sign in to continue to your account</p>
+      </div>
+
+      <!-- Login Button -->
+      <div class="button-container">
+        <button class="google-button" :disabled="loading" @click="handleLogin">
+          <GoogleIcon class="icon" />
+          <span>{{ loading ? 'Signing in...' : 'Sign in with Google' }}</span>
+        </button>
+
+        <!-- Error Message -->
+        <div v-if="error" class="error-message">
+          {{ error }}
+        </div>
+
+        <!-- Redirect Notice -->
+        <p class="redirect-notice">You'll be redirected to Google to complete sign-in</p>
+      </div>
+
+      <!-- Security Badge -->
+      <div class="security-badge">
+        <svg class="security-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M12 2L4 6V12C4 16.55 7.16 20.74 12 22C16.84 20.74 20 16.55 20 12V6L12 2Z"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round" />
+          <path
+            d="M9 12L11 14L15 10"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+        <span>Secure Login</span>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <i class="footer-link">Copyright © 2025 NodeHerder</i>
+      <!-- <span class="footer-divider">•</span> -->
+    </div>
+  </div>
+</template>
+
 <style scoped>
-  .login-wrapper {
-    height: 20vh;
+  .login-container {
+    min-height: 100vh;
     width: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    padding: 20px;
+    position: relative;
   }
 
-  .error-message {
-    color: red;
-    font-size: 0.875rem;
+  .login-card {
+    background: rgba(30, 30, 30, 0.95);
+    border-radius: 24px;
+    padding: 48px 40px;
+    max-width: 450px;
+    width: 100%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .logo-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 32px;
+  }
+
+  .logo {
+    width: 120px;
+    height: 120px;
+    object-fit: contain;
+  }
+
+  .welcome-section {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .welcome-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: #e3e3e3;
+    margin: 0 0 8px 0;
+  }
+
+  .welcome-subtitle {
+    font-size: 14px;
+    color: #a0a0a0;
+    margin: 0;
+  }
+
+  .button-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 32px;
   }
 
   .google-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-
+    gap: 12px;
     font-weight: 500;
-    transition: background-color 0.2s, box-shadow 0.2s;
-    min-width: 200px;
-
+    transition: all 0.2s ease;
+    width: 100%;
     background-color: #131314;
-    background-image: none;
     border: 1px solid #747775;
-    -webkit-border-radius: 20px;
     border-radius: 20px;
-    -webkit-box-sizing: border-box;
-    box-sizing: border-box;
     color: #e3e3e3;
     cursor: pointer;
-    font-family: 'Roboto', arial, sans-serif;
     font-size: 14px;
-    height: 40px;
+    height: 48px;
     letter-spacing: 0.25px;
     outline: none;
-    overflow: hidden;
-    padding: 0 12px;
-    position: relative;
-    text-align: center;
+    padding: 0 24px;
   }
 
-  .google-button:hover {
-    box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3), 0 1px 3px rgba(60, 64, 67, 0.15);
+  .google-button:hover:not(:disabled) {
+    background-color: #1f1f1f;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border-color: #8f8f8f;
   }
 
-  .google-button:active {
-    background-color: rgba(0, 0, 0, 0.08);
+  .google-button:active:not(:disabled) {
+    transform: scale(0.98);
   }
 
   .google-button:disabled {
     opacity: 0.5;
-    cursor: default;
+    cursor: not-allowed;
   }
 
   .icon {
     width: 20px;
     height: 20px;
   }
+
+  .error-message {
+    color: #ff6b6b;
+    font-size: 14px;
+    text-align: center;
+    padding: 12px;
+    background: rgba(255, 107, 107, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 107, 107, 0.3);
+  }
+
+  .redirect-notice {
+    font-size: 12px;
+    color: #808080;
+    text-align: center;
+    margin: 0;
+  }
+
+  .security-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    background: rgba(77, 208, 225, 0.1);
+    border: 1px solid rgba(77, 208, 225, 0.3);
+    border-radius: 12px;
+    margin-bottom: 32px;
+    color: #4dd0e1;
+    font-size: 13px;
+  }
+
+  .security-icon {
+    width: 18px;
+    height: 18px;
+    color: #4dd0e1;
+  }
+
+  .footer {
+    position: absolute;
+    bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+  }
+
+  .footer-link {
+    color: #808080;
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .footer-link:hover {
+    color: #4dd0e1;
+  }
+
+  .footer-divider {
+    color: #4a4a4a;
+  }
+
+  @media (max-width: 768px) {
+    .login-card {
+      padding: 32px 24px;
+    }
+
+    .welcome-title {
+      font-size: 24px;
+    }
+
+    .footer {
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .footer-divider {
+      display: none;
+    }
+  }
 </style>
-
-<!-- <template>
-  <div class="login-wrapper flex flex-column align-items-center justify-content-center gap-3">
-    <Button @click="handleLogin" :disabled="loading">
-      <span v-if="!loading">Login with Google</span>
-      <span v-else>Signing in...</span>
-    </Button> 
-    <Button @click="handleLogin" :disabled="loading" class="google-login-button flex align-items-center gap-2">
-      <GoogleIcon class="google-icon" />
-      <span v-if="!loading">Sign in with Google</span>
-      <span v-else>Signing in...</span>
-    </Button>
-    <p v-if="error" class="error-message">{{ error }}</p>
-  </div>
-</template> -->
-
-<template>
-  <div class="login-wrapper flex flex-column align-items-center justify-content-center gap-3">
-    <button class="google-button" :disabled="loading" @click="handleLogin">
-      <GoogleIcon class="icon" />
-      <span>{{ loading ? 'Signing in...' : 'Sign in with Google' }}</span>
-    </button>
-  </div>
-</template>
