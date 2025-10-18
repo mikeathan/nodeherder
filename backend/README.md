@@ -44,7 +44,7 @@ Additional configuration may be required for MQTT broker connection, database pa
 Build the backend binary:
 
 ```bash
-go build -o nodeherder main.go
+go build -o ./nodeherder main.go
 ```
 
 Or use the makefile from the project root:
