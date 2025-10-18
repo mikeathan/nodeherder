@@ -50,8 +50,8 @@
       </template>
     </Menubar>
     <div class="app-info">
+      <i v-if="isAuthenticated" class="pi pi-sign-out app-signout" @click="signOut" />
       <div class="app-version">v{{ version }}</div>
-      <i v-if="isAuthenticated" class="pi pi-sign-out sign-out" @click="signOut" />
     </div>
     <div v-if="isMobile && mobileMenuActive" class="drawer-overlay" @click="toggleMobileMenu"></div>
   </div>
@@ -103,9 +103,9 @@
     pointer-events: none;
     opacity: 0.7;
   }
-  .sign-out {
-    font-size: 1.25rem;
-    color: #666;
+  .app-signout {
+    font-size: 1rem;
+    color: #f5ebeb;
     cursor: pointer;
     opacity: 0.7;
   }
