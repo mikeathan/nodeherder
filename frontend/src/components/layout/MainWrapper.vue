@@ -1,29 +1,23 @@
 <script setup lang="ts">
-  import AuthWrapper from './components/layout/AuthWrapper.vue';
-</script>
-
-<template>
-  <AuthWrapper />
-</template>
-
-<!-- <script setup lang="ts">
   import { h, ref, computed, onMounted } from 'vue';
-  import { store } from './store/index';
   import Notifications from './components/hub/alerts/Notifications.vue';
   import { useRouter } from 'vue-router';
   import NavigationDrawer from '@/components/controls/NavigationDrawer.vue';
   import Logo from '@/components/controls/Logo.vue';
   import DialogHost from './components/dialogs/DialogHost.vue';
   import PermitJoinTimer from './components/controls/PermitJoinTimer.vue';
-  import { MenuBarItem } from './types/controls.type';
-  import { DashboardModes } from '@/types/controls.type';
   import NavigationBar from './components/controls/NavigationBar.vue';
-  import { fetchHubState } from './services/hubstate.service';
+  import { MenuBarItem } from '@/types/controls.type';
+  import { fetchHubState } from '@/services/hubstate.service';
+  import { store } from '@/store';
+  import { goTo } from '@/router/navigation';
+  import { RouteName } from '@/types/router';
+  import { useSideNavigationItems } from '@/mixins/composables/useNavigationItems';
+
   const router = useRouter();
   const permitJoinDuration = 120;
 
-  const isPermitJoinActive = ref<boolean>(false);
-  const dashboardEditMode = ref<boolean>(false);
+  //   const isPermitJoinActive = ref<boolean>(false);
   const drawerWidth = ref(0);
   const isDrawerVisible = ref(false);
 
@@ -34,72 +28,70 @@
   const toggleDrawer = () => {
     isDrawerVisible.value = !isDrawerVisible.value;
   };
-  const toggleEditMode = () => {
-    dashboardEditMode.value = !dashboardEditMode.value;
-  };
+
   const onPermitJoinStatusUpdated = (status: boolean) => {
     isPermitJoinActive.value = status;
   };
 
-  const startPermitJoinTimer = () => {
-    if (!isPermitJoinActive.value) {
-      isPermitJoinActive.value = true;
-    }
-  };
+  //   const startPermitJoinTimer = () => {
+  //     if (!isPermitJoinActive.value) {
+  //       isPermitJoinActive.value = true;
+  //     }
+  //   };
 
-  const topNavigationItems = computed<MenuBarItem[]>(() => [
-    {
-      isLogo: true,
-      template: () => h(Logo),
-      command: () => {},
-    },
-  ]);
+  const { sideNavigationItems, topNavigationItems, isPermitJoinActive } = useSideNavigationItems();
+  //   const topNavigationItems = computed<MenuBarItem[]>(() => [
+  //     {
+  //       isLogo: true,
+  //       template: () => h(Logo),
+  //       command: () => {},
+  //     },
+  //   ]);
 
-  const sideNavigationItems = computed<MenuBarItem[]>(() => [
-    {
-      label: 'groups',
-      icon: 'pi pi-home',
-
-      command: () => router.push('/'),
-    },
-    {
-      label: 'devices',
-      icon: 'pi pi-mobile',
-      command: () => router.push('/deviceDashboard'),
-    },
-    {
-      to: '/devicelist',
-      label: 'device list',
-      icon: 'pi pi-list',
-      command: () => router.push('/devicelist'),
-    },
-    {
-      to: '/viewer',
-      label: 'automations',
-      icon: 'pi pi-objects-column',
-      command: () => router.push('/viewer'),
-    },
-    {
-      to: '/consoleviewer',
-      label: 'console',
-      icon: 'pi pi-code',
-      command: () => router.push('/consoleviewer'),
-    },
-    {
-      to: '/settings',
-      label: 'settings',
-      icon: 'pi pi-cog',
-      command: () => router.push('/settings'),
-    },
-    {
-      label: 'permit Join',
-      icon: 'pi pi-sitemap',
-      get disabled() {
-        return isPermitJoinActive.value;
-      },
-      command: () => startPermitJoinTimer(),
-    },
-  ]);
+  //   const sideNavigationItems = computed<MenuBarItem[]>(() => [
+  //     {
+  //       label: 'groups',
+  //       icon: 'pi pi-home',
+  //       command: () => goTo(RouteName.GroupDashboard),
+  //     },
+  //     {
+  //       label: 'devices',
+  //       icon: 'pi pi-mobile',
+  //       command: () => goTo(RouteName.Devices),
+  //     },
+  //     {
+  //       to: '/devicelist',
+  //       label: 'device list',
+  //       icon: 'pi pi-list',
+  //       command: () => goTo(RouteName.DeviceList),
+  //     },
+  //     {
+  //       to: '/viewer',
+  //       label: 'automations',
+  //       icon: 'pi pi-objects-column',
+  //       command: () => goTo(RouteName.Viewer),
+  //     },
+  //     {
+  //       to: '/consoleviewer',
+  //       label: 'console',
+  //       icon: 'pi pi-code',
+  //       command: () => goTo(RouteName.ConsoleViewer),
+  //     },
+  //     {
+  //       to: '/settings',
+  //       label: 'settings',
+  //       icon: 'pi pi-cog',
+  //       command: () => goTo(RouteName.Settings),
+  //     },
+  //     {
+  //       label: 'permit Join',
+  //       icon: 'pi pi-sitemap',
+  //       get disabled() {
+  //         return isPermitJoinActive.value;
+  //       },
+  //       command: () => startPermitJoinTimer(),
+  //     },
+  //   ]);
 
   onMounted(() => {
     fetchHubState()
@@ -150,4 +142,3 @@
     padding: 0 0.1rem;
   }
 </style>
- -->
