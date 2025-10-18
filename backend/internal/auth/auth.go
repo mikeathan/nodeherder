@@ -70,6 +70,7 @@ func NewGoogleOAuth(jwtService *JWTService) OAuth {
 
 func (g *googleOAuth) RegisterRoutes(registrar RouteRegistrar) {
 	registrar.POST(g.basePath+"/login", http.HandlerFunc(g.HandleLogin))
+	registrar.POST(g.basePath+"/logout", http.HandlerFunc(g.HandleLogout))
 	registrar.GET(g.basePath+"/callback", http.HandlerFunc(g.HandleCallback))
 	registrar.GET(g.basePath+"/me", http.HandlerFunc(handleMe))
 }
@@ -84,7 +85,8 @@ func (o *googleOAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	})
 
 	url := o.config.AuthCodeURL(state)
-	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"url": url})
 }
 
 func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
@@ -121,24 +123,51 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		Secure:   false,
 	})
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{"status": "success", "user": user})
-
-	// then we add middleware to check JWT on each request
-	// validate that cookie too
-
+	// Return small HTML page that posts message to popup opener
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(`
+        <script>
+            window.opener.postMessage({ status: 'success' }, window.origin);
+            window.close();
+        </script>
+    `))
 }
 
-func handleMe(w http.ResponseWriter, r *http.Request) {
-	// Later you can validate session/JWT etc.
-	w.Write([]byte("You are logged in"))
+func (o *googleOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+		MaxAge:   -1,
+	})
 
-	// 	 user, err := getUserFromSessionOrJWT(r)
-	// if err != nil {
-	//     http.Error(w, "unauthorized", http.StatusUnauthorized)
-	//     return
-	// }
-	// json.NewEncoder(w).Encode(user)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{"status": "success"})
+}
+
+
+TODO
+https://chatgpt.com/c/68f363dc-ab8c-8328-9459-2ae8eb9e9de4
+func (o *googleOAuth) handleMe(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("session")
+	if err != nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	claims, err := o.jwtService.ValidateJWT(cookie.Value)
+	if err != nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"id":       claims.UserID,
+		"username": claims.Username,
+	})
 }
 
 func generateState() string {
