@@ -1,7 +1,7 @@
 import { Module } from 'vuex';
 import { RootState } from '@/store/state';
 import { AuthModuleState } from './state';
-import { User } from '@/types/auth.type';
+import { User, UserSession } from '@/types/auth.type';
 import { isTokenExpired } from '@/contracts/auth';
 
 export const AuthModule: Module<AuthModuleState, RootState> = {
@@ -23,9 +23,9 @@ export const AuthModule: Module<AuthModuleState, RootState> = {
   },
 
   mutations: {
-    login(state: AuthModuleState, payload: { user: User; token: string }) {
-      state.user = payload.user;
-      state.token = payload.token;
+    login(state: AuthModuleState, userSession: UserSession) {
+      state.user = userSession.user;
+      state.token = userSession.token;
       state.authenticated = true;
     },
     logout(state: AuthModuleState) {
@@ -35,8 +35,8 @@ export const AuthModule: Module<AuthModuleState, RootState> = {
     },
   },
   actions: {
-    loginUser({ commit, rootState }, payload: { user: User; token: string }) {
-      commit('login', payload);
+    loginUser({ commit, rootState }, userSession: UserSession) {
+      commit('login', userSession);
     },
     logoutUser({ commit, rootState }) {
       commit('logout');

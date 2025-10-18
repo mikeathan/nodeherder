@@ -1,34 +1,44 @@
 import { computed } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { store } from '@/store';
-import { resolvePostLoginRoute, resolvePostLogoutRoute } from '@/utils/auth';
+import { login, logout } from '@/services/auth.service';
+import {  navigatePostLogin, navigatePostLogout } from '@/router/navigation';
 
 export function useAuth() {
-  const router = useRouter();
   const route = useRoute();
 
   const isAuthenticated = computed(() => store.getters['auth/isAuthenticated']());
   const user = computed(() => store.getters['auth/user']());
 
-  const login = (loginData: { user: any; token: string }) => {
-    store.dispatch('auth/loginUser', loginData);
-    const redirectPath = resolvePostLoginRoute(route);
-    router.push(redirectPath);
+  const signIn = async () => {
+    const userSession = await login();
+
+    if (!userSession.isAuthenticated) {
+      console.error('Sign-in failed: User is not authenticated');
+      // TODO:
+      // Show toast notification
+      return;
+    }
+
+    store.dispatch('auth/loginUser', userSession);
+    navigatePostLogin(route, userSession.isAuthenticated);
   };
 
-  // TODO:
-  //Add a backend logout endpoint to invalidate/blacklist the JWT token for better security
+  const signOut = async () => {
+    const success = await logout();
+    if (!success) {
+      console.error('Logout failed');
+      return;
+    }
 
-  const logout = () => {
     store.dispatch('auth/logoutUser');
-    const redirectPath = resolvePostLogoutRoute();
-    router.push(redirectPath);
+    navigatePostLogout();
   };
 
   return {
     isAuthenticated,
     user,
-    login,
-    logout,
+    signIn,
+    signOut,
   };
 }

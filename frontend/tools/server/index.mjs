@@ -21,6 +21,7 @@ console.log('[' + currentTime() + '] server listening at port ' + PORT);
 app.use(
   cors({
     origin: CORS_ORIGIN,
+    credentials: true,
   })
 );
 app.use(express.json());

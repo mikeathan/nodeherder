@@ -1,4 +1,4 @@
-import { User, UserSession } from '@/types/auth.type';
+import { AuthResponse, User, UserSession } from '@/types/auth.type';
 import { jwtDecode } from 'jwt-decode';
 
 export function isTokenExpired(token: string): boolean {
@@ -7,21 +7,18 @@ export function isTokenExpired(token: string): boolean {
     const decoded: { exp?: number } = jwtDecode(token);
     if (!decoded.exp) return true;
     return decoded.exp * 1000 < Date.now();
-  } catch {
+  } catch (error) {
+    console.error('Error decoding token:', error);
     return true;
   }
 }
 
-
-export function createAuthSession(token: string, user: User): UserSession {
+export function createAuthSession(authResponse: AuthResponse): UserSession {
   return {
-    token,
-    user,
+    ...authResponse,
     isAuthenticated: true,
   };
 }
-
-
 
 export function createNotAuthenticatedSession(): UserSession {
   return {

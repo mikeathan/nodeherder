@@ -9,22 +9,34 @@ export function registerRoutes(app) {
     res.json(hubStatePayload);
   });
 
-  app.get('/api/auth/login', (req, res) => {
-    console.log('login GET request ', req.query);
-    const { username } = req.query || {};
-    // return fake JWT or session token
+  // Register HTTP POST route for /auth/login
+  app.post('/api/auth/login', (req, res) => {
+    console.log('login POST request ', req.body);
     const user = {
       id: '123',
-      username: username || 'mockuser',
+      username: 'mockuser',
     };
 
     const token = createMockToken(user, 1440);
+    res.cookie('sessionId', token, {
+      httpOnly: true,
+      secure: false,
+      maxAge: 1440 * 60 * 1000, // 1 day
+    });
 
     res.json({
       status: 'ok',
       token: token,
       user: user,
     });
+  });
+
+  // Register HTTP POST route for /auth/logout
+  app.post('/api/auth/logout', (req, res) => {
+    console.log('logout POST request');
+
+    res.clearCookie('sessionId');
+    res.json({ status: 'ok' });
   });
 
   app.post('/api/automation/trigger', (req, res) => {

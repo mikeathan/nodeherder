@@ -19,7 +19,7 @@
   }>();
 
   const onDrawerToggle = () => emit('click', true);
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, signOut } = useAuth();
 
   const toggleMobileMenu = () => {
     mobileMenuActive.value = !mobileMenuActive.value;
@@ -49,10 +49,9 @@
         <i class="pi pi-ellipsis-v right-menu" @click="toggleMobileMenu" />
       </template>
     </Menubar>
-    <div class="app-version">v{{ version }}</div>
-    <div v-if="isAuthenticated" class="user-info">
-      {{ user?.username }}
-      <Button @click="logout">Logout</Button>
+    <div class="app-info">
+      <div class="app-version">v{{ version }}</div>
+      <i v-if="isAuthenticated" class="pi pi-sign-out sign-out" @click="signOut" />
     </div>
     <div v-if="isMobile && mobileMenuActive" class="drawer-overlay" @click="toggleMobileMenu"></div>
   </div>
@@ -87,15 +86,27 @@
     cursor: pointer;
     border-radius: 4px;
   }
-  .app-version {
+
+  .app-info {
     position: absolute;
     right: 1rem;
     top: 50%;
     transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .app-version {
     font-size: 0.875rem;
     color: #666;
     user-select: none;
     pointer-events: none;
+    opacity: 0.7;
+  }
+  .sign-out {
+    font-size: 1.25rem;
+    color: #666;
+    cursor: pointer;
     opacity: 0.7;
   }
   .navigation-wrapper {

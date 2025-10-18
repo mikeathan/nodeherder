@@ -8,3 +8,9 @@ export type UserSession = {
   token: string;
   isAuthenticated: boolean;
 };
+
+export type AuthResponse = {
+  status: 'ok' | 'error';
+  user: User;
+  token: string;
+};

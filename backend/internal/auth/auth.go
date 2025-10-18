@@ -69,7 +69,7 @@ func NewGoogleOAuth(jwtService *JWTService) OAuth {
 }
 
 func (g *googleOAuth) RegisterRoutes(registrar RouteRegistrar) {
-	registrar.GET(g.basePath+"/login", http.HandlerFunc(g.HandleLogin))
+	registrar.POST(g.basePath+"/login", http.HandlerFunc(g.HandleLogin))
 	registrar.GET(g.basePath+"/callback", http.HandlerFunc(g.HandleCallback))
 	registrar.GET(g.basePath+"/me", http.HandlerFunc(handleMe))
 }
