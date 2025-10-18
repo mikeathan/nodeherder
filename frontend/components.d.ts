@@ -61,6 +61,7 @@ declare module 'vue' {
     Fieldset: typeof import('primevue/fieldset')['default']
     FillSlider: typeof import('./src/components/input/FillSlider.vue')['default']
     FloatLabel: typeof import('primevue/floatlabel')['default']
+    GoogleIcon: typeof import('./src/components/icons/GoogleIcon.vue')['default']
     GroupDashboard: typeof import('./src/components/dashboards/GroupDashboard.vue')['default']
     HistorySettings: typeof import('./src/components/hub/settings/HistorySettings.vue')['default']
     Icon: typeof import('./src/components/controls/Icon.vue')['default']
