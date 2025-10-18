@@ -4,7 +4,6 @@
   import { useWindowSize } from '@/mixins/composables/useWindowsSize';
   import { useMenuItems } from '@/mixins/composables/useMenuItems';
   import { useAuth } from '@/mixins/composables/useAuthentication';
-import { store } from '@/store';
   const version = __APP_VERSION__;
 
   const props = defineProps({
@@ -20,7 +19,7 @@ import { store } from '@/store';
   }>();
 
   const onDrawerToggle = () => emit('click', true);
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
 
   const toggleMobileMenu = () => {
     mobileMenuActive.value = !mobileMenuActive.value;
@@ -35,10 +34,6 @@ import { store } from '@/store';
 
   const menubarRef = ref<ComponentPublicInstance | null>(null);
   const mobileMenuActive = ref(false);
-
-  const logout = () => {
-    store.dispatch('auth/logoutUser');
-  };
 </script>
 
 <template>
