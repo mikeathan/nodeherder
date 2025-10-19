@@ -158,7 +158,7 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteNoneMode,
 	})
 
 	fmt.Printf("User authenticated: %v %v\n", userID, userName)
