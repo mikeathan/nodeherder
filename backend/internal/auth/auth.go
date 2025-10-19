@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -53,7 +54,7 @@ type googleOAuth struct {
 
 func NewGoogleOAuth(jwtService *JWTService) OAuth {
 	config := &oauth2.Config{
-		RedirectURL:  "http://localhost:4110/api/auth/google/callback",
+		RedirectURL:  "http://localhost:4110/api/auth/callback",
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		Scopes: []string{
@@ -69,6 +70,7 @@ func NewGoogleOAuth(jwtService *JWTService) OAuth {
 	}
 }
 
+// http://localhost:4110/api/auth/callback
 func (g *googleOAuth) RegisterRoutes(registrar RouteRegistrar) {
 	registrar.POST(g.basePath+"/login", http.HandlerFunc(g.HandleLogin))
 	registrar.POST(g.basePath+"/logout", http.HandlerFunc(g.HandleLogout))
@@ -93,10 +95,27 @@ func (o *googleOAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
+	state := r.URL.Query().Get("state")
+	fmt.Println("Callback hit, code:", code, "state:", state)
 
+	if code == "" || state == "" {
+		http.Error(w, "Missing code or state", http.StatusBadRequest)
+		return
+	}
+
+	cookie, err := r.Cookie(AuthStateCookie)
+	if err != nil || cookie.Value != state {
+		http.Error(w, "Invalid state", http.StatusBadRequest)
+		return
+	}
 	token, err := o.config.Exchange(context.Background(), code)
 	if err != nil {
 		http.Error(w, "Failed to exchange token: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if token.AccessToken == "" {
+		http.Error(w, "Empty access token received from Google", http.StatusBadRequest)
 		return
 	}
 
@@ -110,8 +129,15 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	var user map[string]any
 	json.NewDecoder(resp.Body).Decode(&user)
 
+	userID, okID := user["id"].(string)
+	userName, okName := user["name"].(string)
+	if !okID || !okName {
+		http.Error(w, "Invalid user info from Google", http.StatusInternalServerError)
+		return
+	}
+
 	// create JWT
-	jwt, err := o.jwtService.GenerateJWT(user["id"].(string), user["name"].(string))
+	jwt, err := o.jwtService.GenerateJWT(userID, userName)
 	if err != nil {
 		http.Error(w, "Failed to create JWT: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -126,12 +152,18 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		Secure:   false,
 	})
 
+	fmt.Printf("%v %v ", userID, userName)
+
 	// Return small HTML page that posts message to popup opener
 	w.Header().Set("Content-Type", "text/html")
 	w.Write([]byte(`
         <script>
-            window.opener.postMessage({ status: 'success' }, window.origin);
-            window.close();
+			console.log("Posting message to opener", window.opener);
+			if (window.opener) {
+				window.opener.postMessage({ status: 'success' }, "*");
+				console.log("Message posted");
+			}
+			window.close();
         </script>
     `))
 }

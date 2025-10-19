@@ -7,7 +7,6 @@ const { isAuthenticated } = useAuth();
 </script>
 
 <template>
-  {{ isAuthenticated }}
   <LoginPage v-if="!isAuthenticated" />
   <MainLayout v-else />
 </template>

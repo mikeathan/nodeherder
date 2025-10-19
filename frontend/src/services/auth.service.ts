@@ -10,56 +10,56 @@ export async function login(): Promise<UserSession> {
     credentials: 'include',
   });
 
-  const data =  await res.json();
+  const data = await res.json();
   console.log('Opening popup for oauth url: ', data);
   const popup = window.open(data.url, 'oauth', 'width=500,height=600');
+  if (!popup) {
+    console.error('Popup blocked');
+    return createNotAuthenticatedSession();
+  }
 
-  window.addEventListener('message', async (event) => {
-    if (event.origin !== window.origin) return;
-    if (event.data.status === 'success') {
-      const res = await fetch(`${baseUrl}/api/auth/me`, {
-        method: 'GET',
-        credentials: 'include',
-      });
-      console.log('Fetched oauthcallback after login ', res.ok);
-      popup?.close();
+  return new Promise<UserSession>((resolve) => {
+    const handler = async (event: MessageEvent) => {
+      console.log('Received message from popup: ', event.origin, window.origin);
+      const allowedOrigins = ['http://localhost:4100', 'http://localhost:4110'];
+      if (!allowedOrigins.includes(event.origin)) return;
 
-      if (!res.ok) {
-        console.error('Failed to fetch user info');
-        return createNotAuthenticatedSession();
+      //if (event.origin !== window.origin) return;
+
+      if (event.data.status === 'success') {
+        console.log('OAuth success, fetching user info');
+        const res = await fetch(`${baseUrl}/api/auth/me`, {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        popup.close();
+        window.removeEventListener('message', handler);
+
+        console.log('Response from me: ', res);
+        if (!res.ok) {
+          console.error('Failed to fetch user info');
+          resolve(createNotAuthenticatedSession());
+          return;
+        }
+
+        const userData = await res.json();
+        console.log('Fetched user info from me ', userData);
+
+        if (!userData.id || !userData.username) {
+          resolve(createNotAuthenticatedSession());
+          return;
+        }
+
+        resolve(createAuthSession(userData));
       }
+    };
 
-      const data = await res.json();
-      console.log('Fetched user info from me ', data);
-
-      if (!data.user || !data.token) {
-        console.error('Invalid login response', data);
-        return createNotAuthenticatedSession();
-      }
-    }
+    window.addEventListener('message', handler);
   });
-
-
-  return createNotAuthenticatedSession();
 }
 
 
-// const handler = async (event: MessageEvent) => {
-//     if (event.origin !== window.origin) return;
-//     if (event.data.status === 'success') {
-//         const res = await fetch(`${baseUrl}/api/auth/me`, {
-//             method: 'GET',
-//             credentials: 'include',
-//         });
-//         popup?.close();
-//         window.removeEventListener('message', handler); // remove after first use
-//         if (!res.ok) return createNotAuthenticatedSession();
-//         const data = await res.json();
-//         console.log('User info', data);
-//     }
-// };
-
-// window.addEventListener('message', handler);
 export async function logout(): Promise<boolean> {
   const res = await fetch(`${baseUrl}/api/auth/logout`, {
     method: 'POST',

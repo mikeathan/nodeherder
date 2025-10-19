@@ -22,8 +22,8 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	authProvider := auth.NewProvider(auth.WithDefaultJWTConfig())
 
 	// middlewares
-	router.Use(api.CORS)
 	router.Use(authProvider.Middleware())
+	router.Use(api.CORS) // that needs to execute first
 
 	// websocket routing
 	router.GET("/ws", api.NewWsHandler(ws))
