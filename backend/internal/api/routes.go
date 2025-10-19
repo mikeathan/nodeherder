@@ -22,39 +22,57 @@ type Route struct {
 	pattern string
 	method  string
 	handler http.Handler
+	public  bool
 }
 
 type Router struct {
-	routes      []*Route
-	middlewares []func(http.Handler) http.Handler
+	routes               []*Route
+	protectedMiddlewares []func(http.Handler) http.Handler
+	globalMiddlewares    []func(http.Handler) http.Handler
 }
 
 func NewRouter() *Router {
-	return &Router{}
+	return &Router{
+		routes:               []*Route{},
+		protectedMiddlewares: []func(http.Handler) http.Handler{},
+		globalMiddlewares:    []func(http.Handler) http.Handler{},
+	}
 }
 
-func (r *Router) Use(fn func(http.Handler) http.Handler) {
-	r.middlewares = append(r.middlewares, fn)
+func (r *Router) UseProtected(fn func(http.Handler) http.Handler) {
+	r.protectedMiddlewares = append(r.protectedMiddlewares, fn)
+}
+
+func (r *Router) UseGlobal(fn func(http.Handler) http.Handler) {
+	r.globalMiddlewares = append(r.globalMiddlewares, fn)
+}
+
+func (r *Router) PublicGET(path string, handler http.Handler) {
+	r.addRoute(http.MethodGet, path, handler, true)
+}
+
+func (r *Router) PublicPOST(path string, handler http.Handler) {
+	r.addRoute(http.MethodPost, path, handler, true)
 }
 
 func (r *Router) GET(path string, handler http.Handler) {
-	r.addRoute(http.MethodGet, path, handler)
+	r.addRoute(http.MethodGet, path, handler, false)
 }
 
 func (r *Router) POST(path string, handler http.Handler) {
-	r.addRoute(http.MethodPost, path, handler)
+	r.addRoute(http.MethodPost, path, handler, false)
 }
 
 func (r *Router) PUT(path string, handler http.Handler) {
-	r.addRoute(http.MethodPut, path, handler)
+	r.addRoute(http.MethodPut, path, handler, false)
 }
 
 func (r *Router) DELETE(path string, handler http.Handler) {
-	r.addRoute(http.MethodDelete, path, handler)
+	r.addRoute(http.MethodDelete, path, handler, false)
 }
 
-func (r *Router) addRoute(method string, path string, handler http.Handler) {
-	r.routes = append(r.routes, &Route{method: method, pattern: path, handler: handler})
+func (r *Router) addRoute(method string, path string, handler http.Handler, public bool) {
+	r.routes = append(r.routes, &Route{method: method, pattern: path, handler: handler, public: public})
 }
 
 func (r *Router) AddAuthentication(provider auth.OAuth) {
@@ -81,9 +99,16 @@ func (r *Router) getHandler(method, path string) http.Handler {
 		if re.MatchString(path) && (route.method == method || method == http.MethodOptions) {
 			handler := route.handler
 
-			// chain handler with middleware
-			for _, mw := range r.middlewares {
+			// chain global middleware
+			for _, mw := range r.globalMiddlewares {
 				handler = mw(handler)
+			}
+			
+			// chain protected middleware
+			if !route.public {
+				for _, mw := range r.protectedMiddlewares {
+					handler = mw(handler)
+				}
 			}
 
 			return handler

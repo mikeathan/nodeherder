@@ -38,6 +38,8 @@ func (m *Provider) OAuth() OAuth {
 type RouteRegistrar interface {
 	GET(path string, handler http.Handler)
 	POST(path string, handler http.Handler)
+	PublicGET(path string, handler http.Handler)
+	PublicPOST(path string, handler http.Handler)
 }
 
 type OAuth interface {
@@ -70,11 +72,10 @@ func NewGoogleOAuth(jwtService *JWTService) OAuth {
 	}
 }
 
-// http://localhost:4110/api/auth/callback
 func (g *googleOAuth) RegisterRoutes(registrar RouteRegistrar) {
-	registrar.POST(g.basePath+"/login", http.HandlerFunc(g.HandleLogin))
-	registrar.POST(g.basePath+"/logout", http.HandlerFunc(g.HandleLogout))
-	registrar.GET(g.basePath+"/callback", http.HandlerFunc(g.HandleCallback))
+	registrar.PublicPOST(g.basePath+"/login", http.HandlerFunc(g.HandleLogin))
+	registrar.PublicPOST(g.basePath+"/logout", http.HandlerFunc(g.HandleLogout))
+	registrar.PublicGET(g.basePath+"/callback", http.HandlerFunc(g.HandleCallback))
 	registrar.GET(g.basePath+"/me", http.HandlerFunc(g.handleMe))
 }
 

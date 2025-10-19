@@ -13,19 +13,6 @@ func Auth(jwtService *JWTService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-			// exlude public path
-			// to refactor
-
-			needs fixing
-			https://chatgpt.com/c/68f4d89d-3aa8-8330-8aea-9ac471ab86e6
-			path := r.URL.Path
-			if path == "/api/auth/login" ||
-				path == "/api/auth/callback" ||
-				path == "/api/auth/logout" ||
-				path == "/api/auth/me" {
-				next.ServeHTTP(w, r)
-				return
-			}
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
 				http.Error(w, "missing token", http.StatusUnauthorized)
