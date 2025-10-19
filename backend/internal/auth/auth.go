@@ -73,7 +73,7 @@ func (g *googleOAuth) RegisterRoutes(registrar RouteRegistrar) {
 	registrar.POST(g.basePath+"/login", http.HandlerFunc(g.HandleLogin))
 	registrar.POST(g.basePath+"/logout", http.HandlerFunc(g.HandleLogout))
 	registrar.GET(g.basePath+"/callback", http.HandlerFunc(g.HandleCallback))
-	registrar.GET(g.basePath+"/me", http.HandlerFunc(handleMe))
+	registrar.GET(g.basePath+"/me", http.HandlerFunc(g.handleMe))
 }
 
 func (o *googleOAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
@@ -88,6 +88,7 @@ func (o *googleOAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	url := o.config.AuthCodeURL(state)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"url": url})
+
 }
 
 func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
@@ -150,22 +151,8 @@ func (o *googleOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]any{"status": "success"})
 }
 
+//https://chatgpt.com/c/68f363dc-ab8c-8328-9459-2ae8eb9e9de4
 
-// // 2. Open popup
-//   const popup = window.open(data.url, 'oauth', 'width=500,height=600');
-
-//   // 3. Listen for postMessage from popup
-//   window.addEventListener('message', async (event) => {
-//     if (event.origin !== window.origin) return;
-//     if (event.data.status === 'success') {
-//       // 4. Call /me to get user info
-//       const { data: user } = await axios.get('/api/auth/google/me');
-//       store.commit('auth/setUser', user);
-//       popup?.close();
-//     }
-//   });
-TODO
-https://chatgpt.com/c/68f363dc-ab8c-8328-9459-2ae8eb9e9de4
 func (o *googleOAuth) handleMe(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(AuthCookie)
 	if err != nil {
