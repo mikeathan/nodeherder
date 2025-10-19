@@ -100,29 +100,34 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Callback hit, code:", code, "state:", state)
 
 	if code == "" || state == "" {
-		http.Error(w, "Missing code or state", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Missing code or state\n"))
 		return
 	}
 
 	cookie, err := r.Cookie(AuthStateCookie)
 	if err != nil || cookie.Value != state {
-		http.Error(w, "Invalid state", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Invalid state\n"))
 		return
 	}
 	token, err := o.config.Exchange(context.Background(), code)
 	if err != nil {
-		http.Error(w, "Failed to exchange token: "+err.Error(), http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Failed to exchange token: " + err.Error() + "\n"))
 		return
 	}
 
 	if token.AccessToken == "" {
-		http.Error(w, "Empty access token received from Google", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Empty access token received from Google\n"))
 		return
 	}
 
 	resp, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
 	if err != nil {
-		http.Error(w, "Failed to get user info: "+err.Error(), http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Failed to get user info: " + err.Error() + "\n"))
 		return
 	}
 	defer resp.Body.Close()
@@ -133,27 +138,30 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	userID, okID := user["id"].(string)
 	userName, okName := user["name"].(string)
 	if !okID || !okName {
-		http.Error(w, "Invalid user info from Google", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Invalid user info from Google\n"))
 		return
 	}
 
 	// create JWT
 	jwt, err := o.jwtService.GenerateJWT(userID, userName)
 	if err != nil {
-		http.Error(w, "Failed to create JWT: "+err.Error(), http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Failed to create JWT: " + err.Error() + "\n"))
 		return
 	}
 
-	// Set auth cookie
+	// Set auth cookie (for same-origin requests to backend)
 	http.SetCookie(w, &http.Cookie{
 		Name:     AuthCookie,
 		Value:    jwt,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
 	})
 
-	fmt.Printf("%v %v ", userID, userName)
+	fmt.Printf("User authenticated: %v %v\n", userID, userName)
 
 	// Return small HTML page that posts message to popup opener
 	w.Header().Set("Content-Type", "text/html")
@@ -189,13 +197,19 @@ func (o *googleOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
 func (o *googleOAuth) handleMe(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(AuthCookie)
 	if err != nil {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		// Don't use http.Error - it overwrites CORS headers
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
 		return
 	}
 
 	claims, err := o.jwtService.ValidateJWT(cookie.Value)
 	if err != nil {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		// Don't use http.Error - it overwrites CORS headers
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
 		return
 	}
 
