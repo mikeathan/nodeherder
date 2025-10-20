@@ -26,16 +26,19 @@ export async function login(): Promise<UserSession> {
       if (!allowedOrigins.includes(event.origin)) return;
 
       if (event.data.status === 'success') {
+        const token: string | undefined = event.data.token;
+
         window.removeEventListener('message', handler);
         popup.close();
 
         try {
           // Give browser a moment to persist the auth cookie
-          await wait(200);
+          // await wait(200);
 
+          const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
           const meRes = await fetch(`${baseUrl}/api/auth/me`, {
             method: 'GET',
-            credentials: 'include',
+            headers,
           });
 
           if (!meRes.ok) {
@@ -74,4 +77,12 @@ export async function logout(): Promise<boolean> {
     console.error('Logout request error', err);
     return false;
   }
+}
+
+TODO;
+export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}) {
+  const headers = new Headers(init.headers || {});
+  const token = localStorage.getItem('auth_token');
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  return fetch(input, { ...init, headers });
 }

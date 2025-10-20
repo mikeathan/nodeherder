@@ -157,22 +157,24 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		Value:    jwt,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
-		SameSite: http.SameSiteLaxMode, // chnage in production !!!!!
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 	})
 
 	fmt.Printf("User authenticated: %v %v\n", userID, userName)
 
 	// Return small HTML page that posts message to popup opener
 	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(`
+	fmt.Fprintf(w, `
         <script>
-			if (window.opener) {
-				window.opener.postMessage({ status: 'success', token: '%s' }, "*");
-				}
-			window.close();
+            try {
+                if (window.opener) {
+                    window.opener.postMessage({ status: 'success', token: '%s' }, "*");
+                }
+            } catch (e) {}
+            window.close();
         </script>
-    `))
+    `, jwt)
 }
 
 func (o *googleOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
@@ -192,28 +194,18 @@ func (o *googleOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
 
 func (o *googleOAuth) handleMe(w http.ResponseWriter, r *http.Request) {
 
-	fmt.Print("[DEBUG] API ME route.")
-	cookie, err := r.Cookie(AuthCookie)
-	if err != nil {
-		fmt.Println(err.Error())
+	user, ok := GetUserFromContext(r)
+	if !ok {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
-		return
-	}
-
-	claims, err := o.jwtService.ValidateJWT(cookie.Value)
-	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
-		"id":       claims.UserID,
-		"username": claims.Username,
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"id":       user.UserID,
+		"username": user.Username,
 	})
 }
 
