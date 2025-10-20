@@ -129,10 +129,12 @@ router.beforeEach((to, from, next) => {
  // document.title = to.meta.title || 'Node-herder';
   const isAuthenticated = store.getters['auth/isAuthenticated']();
   if (to.meta.requiresAuth && !isAuthenticated) {
+    console.log('Route requires auth and user is not authenticated, redirecting to login.');
     return next({ name: 'login' });
   }
 
   if (to.meta.public && isAuthenticated && to.name === 'login') {
+    console.log('User is already authenticated, redirecting to group dashboard.');
     return next({ name: 'groupdashboard' });
   }
   next();

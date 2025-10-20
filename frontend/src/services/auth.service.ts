@@ -4,8 +4,6 @@ import { UserSession } from '@/types/auth.type';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
-// Utility to wait a bit for the cookie to persist
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function login(): Promise<UserSession> {
   // Get OAuth login URL from backend
@@ -48,6 +46,8 @@ export async function login(): Promise<UserSession> {
           }
 
           const userData = await meRes.json();
+          we dont get thetoken and te object is not mapped correctly
+          console.log('Fetched user info from me', userData);
           if (!userData.id || !userData.username) {
             resolve(createNotAuthenticatedSession());
             return;
@@ -79,10 +79,10 @@ export async function logout(): Promise<boolean> {
   }
 }
 
-TODO;
-export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}) {
-  const headers = new Headers(init.headers || {});
-  const token = localStorage.getItem('auth_token');
-  if (token) headers.set('Authorization', `Bearer ${token}`);
-  return fetch(input, { ...init, headers });
-}
+// export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}) {
+//   const headers = new Headers(init.headers || {});
+//   store.
+//   const token = localStorage.getItem('auth_token');
+//   if (token) headers.set('Authorization', `Bearer ${token}`);
+//   return fetch(input, { ...init, headers });
+// }
