@@ -38,7 +38,6 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 
 	// authentication routes
 	router.AddAuthentication(authProvider.OAuth())
-
 	apiServer := api.NewHttpServer(
 		port,
 		api.WithContext(ctx),

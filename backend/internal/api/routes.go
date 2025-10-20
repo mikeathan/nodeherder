@@ -84,11 +84,12 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	method := req.Method
 
 	handler := r.getHandler(method, path)
-	if handler == nil {
-		utils.LogErrorf("Failed to find handler for path: %s", path)
-		http.NotFound(w, req)
-		return
+
+	// chain global middleware
+	for _, mw := range r.globalMiddlewares {
+		handler = mw(handler)
 	}
+
 	handler.ServeHTTP(w, req)
 }
 
@@ -99,11 +100,6 @@ func (r *Router) getHandler(method, path string) http.Handler {
 		if re.MatchString(path) && (route.method == method || method == http.MethodOptions) {
 			handler := route.handler
 
-			// chain global middleware
-			for _, mw := range r.globalMiddlewares {
-				handler = mw(handler)
-			}
-			
 			// chain protected middleware
 			if !route.public {
 				for _, mw := range r.protectedMiddlewares {
@@ -114,7 +110,6 @@ func (r *Router) getHandler(method, path string) http.Handler {
 			return handler
 		}
 	}
-
 	return http.NotFoundHandler()
 }
 

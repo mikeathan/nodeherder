@@ -158,7 +158,7 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false,
-		SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteLaxMode, // chnage in production !!!!!
 	})
 
 	fmt.Printf("User authenticated: %v %v\n", userID, userName)
@@ -167,11 +167,9 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	w.Write([]byte(`
         <script>
-			console.log("Posting message to opener", window.opener);
 			if (window.opener) {
-				window.opener.postMessage({ status: 'success' }, "*");
-				console.log("Message posted");
-			}
+				window.opener.postMessage({ status: 'success', token: '%s' }, "*");
+				}
 			window.close();
         </script>
     `))
@@ -192,12 +190,12 @@ func (o *googleOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]any{"status": "success"})
 }
 
-//https://chatgpt.com/c/68f363dc-ab8c-8328-9459-2ae8eb9e9de4
-
 func (o *googleOAuth) handleMe(w http.ResponseWriter, r *http.Request) {
+
+	fmt.Print("[DEBUG] API ME route.")
 	cookie, err := r.Cookie(AuthCookie)
 	if err != nil {
-		// Don't use http.Error - it overwrites CORS headers
+		fmt.Println(err.Error())
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
@@ -206,7 +204,6 @@ func (o *googleOAuth) handleMe(w http.ResponseWriter, r *http.Request) {
 
 	claims, err := o.jwtService.ValidateJWT(cookie.Value)
 	if err != nil {
-		// Don't use http.Error - it overwrites CORS headers
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})

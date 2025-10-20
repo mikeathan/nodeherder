@@ -1,57 +1,60 @@
 import { createAuthSession, createNotAuthenticatedSession } from '@/contracts/auth';
 import { store } from '@/store';
-import { AuthResponse, UserSession } from '@/types/auth.type';
+import { UserSession } from '@/types/auth.type';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
-export async function login(): Promise<UserSession> {
-  const res = await fetch(`${baseUrl}/api/auth/login`, {
-    method: 'POST',
-    credentials: 'include',
-  });
+// Utility to wait a bit for the cookie to persist
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  const data = await res.json();
-  console.log('Opening popup for oauth url: ', data);
-  const popup = window.open(data.url, 'oauth', 'width=500,height=600');
+export async function login(): Promise<UserSession> {
+  // Get OAuth login URL from backend
+  const res = await fetch(`${baseUrl}/api/auth/login`, { method: 'POST', credentials: 'include' });
+  const { url } = await res.json();
+
+  // Open OAuth popup
+  const popup = window.open(url, 'oauth', 'width=500,height=600');
   if (!popup) {
     console.error('Popup blocked');
     return createNotAuthenticatedSession();
   }
 
+  // Wait for popup message
   return new Promise<UserSession>((resolve) => {
     const handler = async (event: MessageEvent) => {
-      console.log('Received message from popup: ', event.origin, window.origin);
-      const allowedOrigins = ['http://localhost:4100', 'http://localhost:4110'];
+      const allowedOrigins = ['http://localhost:4100', 'http://localhost:4110']; // local dev
       if (!allowedOrigins.includes(event.origin)) return;
 
-      //if (event.origin !== window.origin) return;
-
       if (event.data.status === 'success') {
-        console.log('OAuth success, fetching user info');
-        const res = await fetch(`${baseUrl}/api/auth/me`, {
-          method: 'GET',
-          credentials: 'include',
-        });
-
-        popup.close();
         window.removeEventListener('message', handler);
+        popup.close();
 
-        console.log('Response from me: ', res);
-        if (!res.ok) {
-          console.error('Failed to fetch user info');
+        try {
+          // Give browser a moment to persist the auth cookie
+          await wait(200);
+
+          const meRes = await fetch(`${baseUrl}/api/auth/me`, {
+            method: 'GET',
+            credentials: 'include',
+          });
+
+          if (!meRes.ok) {
+            console.error('/me fetch failed', meRes.status);
+            resolve(createNotAuthenticatedSession());
+            return;
+          }
+
+          const userData = await meRes.json();
+          if (!userData.id || !userData.username) {
+            resolve(createNotAuthenticatedSession());
+            return;
+          }
+
+          resolve(createAuthSession(userData));
+        } catch (err) {
+          console.error('Error fetching user info:', err);
           resolve(createNotAuthenticatedSession());
-          return;
         }
-
-        const userData = await res.json();
-        console.log('Fetched user info from me ', userData);
-
-        if (!userData.id || !userData.username) {
-          resolve(createNotAuthenticatedSession());
-          return;
-        }
-
-        resolve(createAuthSession(userData));
       }
     };
 
@@ -59,16 +62,16 @@ export async function login(): Promise<UserSession> {
   });
 }
 
-
 export async function logout(): Promise<boolean> {
-  const res = await fetch(`${baseUrl}/api/auth/logout`, {
-    method: 'POST',
-    credentials: 'include',
-  });
-
-  if (!res.ok) {
-    console.error('Logout failed');
+  try {
+    const res = await fetch(`${baseUrl}/api/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!res.ok) console.error('Logout failed', res.status);
+    return res.ok;
+  } catch (err) {
+    console.error('Logout request error', err);
+    return false;
   }
-
-  return res.ok;
 }
