@@ -23,25 +23,15 @@ export async function login(): Promise<UserSession> {
       if (!allowedOrigins.includes(event.origin)) return;
 
       if (event.data.status === 'success') {
-        const userSession: UserSession | undefined = event.data;
-
-        console.log('Received user session from popup', event.data, '----', userSession);
+        console.log('Received auth success from popup', event.data);
         window.removeEventListener('message', handler);
         popup.close();
 
-        if (!userSession || !userSession.token) {
-          console.error('/userSession is not valid');
-          resolve(createNotAuthenticatedSession());
-          return;
-        }
-
-        store.dispatch('auth/loginUser', userSession);
-
         try {
-          const headers: HeadersInit = userSession.token ? { Authorization: `Bearer ${userSession.token}` } : {};
+          // Token is now in cookie - just fetch user info
           const meRes = await fetch(`${baseUrl}/api/auth/me`, {
             method: 'GET',
-            headers,
+            credentials: 'include',
           });
 
           if (!meRes.ok) {
@@ -51,13 +41,15 @@ export async function login(): Promise<UserSession> {
           }
 
           const userData = await meRes.json();
-          console.log('Fetched user info from me', userData);
+          console.log('Fetched user info from /me', userData);
           if (!userData.id || !userData.username) {
             resolve(createNotAuthenticatedSession());
             return;
           }
 
-          resolve(createAuthSession(userData));
+          const userSession = createAuthSession(userData);
+          store.dispatch('auth/loginUser', userSession);
+          resolve(userSession);
         } catch (err) {
           console.error('Error fetching user info:', err);
           resolve(createNotAuthenticatedSession());
@@ -83,10 +75,23 @@ export async function logout(): Promise<boolean> {
   }
 }
 
-// export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}) {
-//   const headers = new Headers(init.headers || {});
-//   store.
-//   const token = localStorage.getItem('auth_token');
-//   if (token) headers.set('Authorization', `Bearer ${token}`);
-//   return fetch(input, { ...init, headers });
-// }
+export async function restoreSession(): Promise<UserSession | null> {
+  try {
+    const res = await fetch(`${baseUrl}/api/auth/me`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+
+    if (res.ok) {
+      const userData = await res.json();
+      if (userData.id && userData.username) {
+        return createAuthSession(userData);
+      }
+    }
+
+    return null;
+  } catch (err) {
+    console.error('Failed to restore session:', err);
+    return null;
+  }
+}

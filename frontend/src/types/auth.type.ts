@@ -5,7 +5,6 @@ export type User = {
 
 export type UserSession = {
   user: User;
-  token: string;
   isAuthenticated: boolean;
 };
 

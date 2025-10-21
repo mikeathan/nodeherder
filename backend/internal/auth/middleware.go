@@ -11,21 +11,29 @@ type contextKey string
 
 const userKey contextKey = "user"
 
-func Auth(jwtService *JWTService) func(http.Handler) http.Handler {
+func Auth(jwtService *JWTService, blacklist *TokenBlacklist) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var token string
 
-			token := extractBearer(r.Header.Get("Authorization"))
+			// FIRST: Try to get token from cookie (preferred for web clients)
+			if c, err := r.Cookie(AuthCookie); err == nil {
+				token = c.Value
+			}
 
+			// FALLBACK: Check Authorization header (for API clients/backward compatibility)
 			if token == "" {
-				// Fallback to cookie
-				if c, err := r.Cookie(AuthCookie); err == nil {
-					token = c.Value
-				}
+				token = extractBearer(r.Header.Get("Authorization"))
 			}
 
 			if token == "" {
 				writeJSONAuthError(w, http.StatusUnauthorized, "missing token")
+				return
+			}
+
+			// Check if token is blacklisted
+			if blacklist != nil && blacklist.IsBlacklisted(token) {
+				writeJSONAuthError(w, http.StatusUnauthorized, "token revoked")
 				return
 			}
 

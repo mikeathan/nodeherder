@@ -13,16 +13,15 @@ export function isTokenExpired(token: string): boolean {
   }
 }
 
-export function createAuthSession(authResponse: AuthResponse): UserSession {
+export function createAuthSession(user: User): UserSession {
   return {
-    ...authResponse,
+    user,
     isAuthenticated: true,
   };
 }
 
 export function createNotAuthenticatedSession(): UserSession {
   return {
-    token: '',
     user: { id: '', username: '' },
     isAuthenticated: false,
   };

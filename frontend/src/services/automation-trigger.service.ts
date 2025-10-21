@@ -10,6 +10,7 @@ export const triggerAutomation = async (automation: Automation, triggerName: str
 
     const res = await fetch(`${baseUrl}/api/automation/trigger`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },

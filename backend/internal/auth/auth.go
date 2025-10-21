@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -17,18 +18,20 @@ const AuthStateCookie = "oauthstate"
 const AuthCookie = "session"
 
 type Provider struct {
-	jwt   *JWTService
-	oauth OAuth
+	jwt       *JWTService
+	oauth     OAuth
+	blacklist *TokenBlacklist
 }
 
 func NewProvider(cfg JWTConfig) *Provider {
 	j := NewJWTService(cfg)
-	o := NewGoogleOAuth(j)
-	return &Provider{jwt: j, oauth: o}
+	b := NewTokenBlacklist()
+	o := NewGoogleOAuth(j, b)
+	return &Provider{jwt: j, oauth: o, blacklist: b}
 }
 
 func (m *Provider) Middleware() func(http.Handler) http.Handler {
-	return Auth(m.jwt)
+	return Auth(m.jwt, m.blacklist)
 }
 
 func (m *Provider) OAuth() OAuth {
@@ -51,10 +54,11 @@ type OAuth interface {
 type googleOAuth struct {
 	config     *oauth2.Config
 	jwtService *JWTService
+	blacklist  *TokenBlacklist
 	basePath   string
 }
 
-func NewGoogleOAuth(jwtService *JWTService) OAuth {
+func NewGoogleOAuth(jwtService *JWTService, blacklist *TokenBlacklist) OAuth {
 	config := &oauth2.Config{
 		RedirectURL:  "http://localhost:4110/api/auth/callback",
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
@@ -68,6 +72,7 @@ func NewGoogleOAuth(jwtService *JWTService) OAuth {
 	return &googleOAuth{
 		config:     config,
 		jwtService: jwtService,
+		blacklist:  blacklist,
 		basePath:   "/api/auth",
 	}
 }
@@ -151,15 +156,15 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set auth cookie (for same-origin requests to backend)
-	// http.SetCookie(w, &http.Cookie{
-	// 	Name:     AuthCookie,
-	// 	Value:    jwt,
-	// 	Path:     "/",
-	// 	HttpOnly: true,
-	// 	Secure:   true,
-	// 	SameSite: http.SameSiteNoneMode,
-	// })
+	// Set auth cookie with SameSite=None for cross-origin (localhost:4100 -> localhost:4110)
+	http.SetCookie(w, &http.Cookie{
+		Name:     AuthCookie,
+		Value:    jwt,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false, // Set to true in production with HTTPS
+		SameSite: http.SameSiteNoneMode,
+	})
 
 	fmt.Printf("User authenticated: %v %v\n", userID, userName)
 
@@ -171,28 +176,49 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
                 if (window.opener) {
                     window.opener.postMessage({ 
                         status: 'success', 
-                        token: '%s',
                         user: { id: '%s', username: '%s' }
                     }, "*");
                 }
             } catch (e) {}
             window.close();
         </script>
-    `, jwt, userID, userName)
+    `, userID, userName)
 }
 
 func (o *googleOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
-	// Clear the auth cookie
-	// http.SetCookie(w, &http.Cookie{
-	// 	Name:     AuthCookie,
-	// 	Value:    "",
-	// 	Path:     "/",
-	// 	HttpOnly: true,
-	// 	Secure:   false,
-	// 	MaxAge:   -1,
-	// })
+	// Get token from cookie or header
+	var token string
+	if c, err := r.Cookie(AuthCookie); err == nil {
+		token = c.Value
+	}
+	if token == "" {
+		// Fallback to Authorization header
+		auth := r.Header.Get("Authorization")
+		if auth != "" {
+			parts := strings.SplitN(auth, " ", 2)
+			if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+				token = parts[1]
+			}
+		}
+	}
 
-	// TODO !!!!!!!!!!!!!!!!!!!!1
+	// Blacklist the token if found and valid
+	if token != "" {
+		if claims, err := o.jwtService.ValidateJWT(token); err == nil {
+			o.blacklist.Add(token, claims.ExpiresAt.Time)
+		}
+	}
+
+	// Clear the auth cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     AuthCookie,
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false, // Set to true in production
+		SameSite: http.SameSiteNoneMode,
+		MaxAge:   -1,
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{"status": "success"})

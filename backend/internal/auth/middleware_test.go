@@ -9,12 +9,13 @@ import (
 
 func TestAuthMiddleware_ValidToken(t *testing.T) {
 	jwtService := auth.NewJWTService(auth.WithDefaultJWTConfig())
+	blacklist := auth.NewTokenBlacklist()
 	token, err := jwtService.GenerateJWT("123", "test@example.com")
 	if err != nil {
 		t.Fatalf("failed to generate token: %v", err)
 	}
 
-	handler := auth.Auth(jwtService)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := auth.Auth(jwtService, blacklist)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user, ok := auth.GetUserFromContext(r)
 		if !ok {
 			t.Fatal("user not found in context")
@@ -38,8 +39,9 @@ func TestAuthMiddleware_ValidToken(t *testing.T) {
 
 func TestAuthMiddleware_MissingToken(t *testing.T) {
 	jwtService := auth.NewJWTService(auth.WithDefaultJWTConfig())
+	blacklist := auth.NewTokenBlacklist()
 
-	handler := auth.Auth(jwtService)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	handler := auth.Auth(jwtService, blacklist)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	req := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 
@@ -52,8 +54,9 @@ func TestAuthMiddleware_MissingToken(t *testing.T) {
 
 func TestAuthMiddleware_InvalidToken(t *testing.T) {
 	jwtService := auth.NewJWTService(auth.WithDefaultJWTConfig())
+	blacklist := auth.NewTokenBlacklist()
 
-	handler := auth.Auth(jwtService)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	handler := auth.Auth(jwtService, blacklist)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	req := httptest.NewRequest("GET", "/", nil)
 	req.Header.Set("Authorization", "invalid.token.here")
 	w := httptest.NewRecorder()
