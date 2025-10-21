@@ -4,7 +4,6 @@ import { UserSession } from '@/types/auth.type';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
-
 export async function login(): Promise<UserSession> {
   // Get OAuth login URL from backend
   const res = await fetch(`${baseUrl}/api/auth/login`, { method: 'POST', credentials: 'include' });
@@ -24,16 +23,22 @@ export async function login(): Promise<UserSession> {
       if (!allowedOrigins.includes(event.origin)) return;
 
       if (event.data.status === 'success') {
-        const token: string | undefined = event.data.token;
+        const userSession: UserSession | undefined = event.data;
 
+        console.log('Received user session from popup', event.data, '----', userSession);
         window.removeEventListener('message', handler);
         popup.close();
 
-        try {
-          // Give browser a moment to persist the auth cookie
-          // await wait(200);
+        if (!userSession || !userSession.token) {
+          console.error('/userSession is not valid');
+          resolve(createNotAuthenticatedSession());
+          return;
+        }
 
-          const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+        store.dispatch('auth/loginUser', userSession);
+
+        try {
+          const headers: HeadersInit = userSession.token ? { Authorization: `Bearer ${userSession.token}` } : {};
           const meRes = await fetch(`${baseUrl}/api/auth/me`, {
             method: 'GET',
             headers,
@@ -46,7 +51,6 @@ export async function login(): Promise<UserSession> {
           }
 
           const userData = await meRes.json();
-          we dont get thetoken and te object is not mapped correctly
           console.log('Fetched user info from me', userData);
           if (!userData.id || !userData.username) {
             resolve(createNotAuthenticatedSession());

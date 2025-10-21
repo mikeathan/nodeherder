@@ -152,14 +152,14 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set auth cookie (for same-origin requests to backend)
-	http.SetCookie(w, &http.Cookie{
-		Name:     AuthCookie,
-		Value:    jwt,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true,
-		SameSite: http.SameSiteNoneMode,
-	})
+	// http.SetCookie(w, &http.Cookie{
+	// 	Name:     AuthCookie,
+	// 	Value:    jwt,
+	// 	Path:     "/",
+	// 	HttpOnly: true,
+	// 	Secure:   true,
+	// 	SameSite: http.SameSiteNoneMode,
+	// })
 
 	fmt.Printf("User authenticated: %v %v\n", userID, userName)
 
@@ -169,24 +169,30 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
         <script>
             try {
                 if (window.opener) {
-                    window.opener.postMessage({ status: 'success', token: '%s' }, "*");
+                    window.opener.postMessage({ 
+                        status: 'success', 
+                        token: '%s',
+                        user: { id: '%s', username: '%s' }
+                    }, "*");
                 }
             } catch (e) {}
             window.close();
         </script>
-    `, jwt)
+    `, jwt, userID, userName)
 }
 
 func (o *googleOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	// Clear the auth cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:     AuthCookie,
-		Value:    "",
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   false,
-		MaxAge:   -1,
-	})
+	// http.SetCookie(w, &http.Cookie{
+	// 	Name:     AuthCookie,
+	// 	Value:    "",
+	// 	Path:     "/",
+	// 	HttpOnly: true,
+	// 	Secure:   false,
+	// 	MaxAge:   -1,
+	// })
+
+	// TODO !!!!!!!!!!!!!!!!!!!!1
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]any{"status": "success"})
@@ -203,6 +209,7 @@ func (o *googleOAuth) handleMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+
 	_ = json.NewEncoder(w).Encode(map[string]string{
 		"id":       user.UserID,
 		"username": user.Username,
