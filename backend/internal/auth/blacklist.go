@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-// TokenBlacklist tracks revoked tokens until they naturally expire
 type TokenBlacklist struct {
 	mu     sync.RWMutex
 	tokens map[string]time.Time // token -> expiry time
@@ -38,13 +37,8 @@ func (bl *TokenBlacklist) IsBlacklisted(token string) bool {
 	bl.mu.RLock()
 	defer bl.mu.RUnlock()
 
-	expiresAt, exists := bl.tokens[token]
-	if !exists {
-		return false
-	}
-
-	// Token is blacklisted if it hasn't expired yet
-	return time.Now().Before(expiresAt)
+	_, exists := bl.tokens[token]
+	return exists
 }
 
 func (bl *TokenBlacklist) cleanup() {

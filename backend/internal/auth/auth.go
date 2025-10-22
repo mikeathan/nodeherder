@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -105,34 +104,29 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Callback hit, code:", code, "state:", state)
 
 	if code == "" || state == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Missing code or state\n"))
+		writeJSONAuthError(w, http.StatusBadRequest, "Missing code or state")
 		return
 	}
 
 	cookie, err := r.Cookie(AuthStateCookie)
 	if err != nil || cookie.Value != state {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Invalid state\n"))
+		writeJSONAuthError(w, http.StatusBadRequest, "Invalid state")
 		return
 	}
 	token, err := o.config.Exchange(context.Background(), code)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Failed to exchange token: " + err.Error() + "\n"))
+		writeJSONAuthError(w, http.StatusBadRequest, "Failed to exchange token: "+err.Error())
 		return
 	}
 
 	if token.AccessToken == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Empty access token received from Google\n"))
+		writeJSONAuthError(w, http.StatusBadRequest, "Empty access token received from Google")
 		return
 	}
 
 	resp, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Failed to get user info: " + err.Error() + "\n"))
+		writeJSONAuthError(w, http.StatusBadRequest, "Failed to get user info: "+err.Error())
 		return
 	}
 	defer resp.Body.Close()
@@ -143,30 +137,27 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	userID, okID := user["id"].(string)
 	userName, okName := user["name"].(string)
 	if !okID || !okName {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Invalid user info from Google\n"))
+		writeJSONAuthError(w, http.StatusInternalServerError, "Invalid user info from Google")
 		return
 	}
 
 	// create JWT
 	jwt, err := o.jwtService.GenerateJWT(userID, userName)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Failed to create JWT: " + err.Error() + "\n"))
+		writeJSONAuthError(w, http.StatusInternalServerError, "Failed to create JWT: "+err.Error())
 		return
 	}
 
-	// Set auth cookie with SameSite=None for cross-origin (localhost:4100 -> localhost:4110)
+	// Set auth cookie with SameSite=Lax (same domain, different ports = same-site)
 	http.SetCookie(w, &http.Cookie{
 		Name:     AuthCookie,
 		Value:    jwt,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false, // Set to true in production with HTTPS
-		SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteLaxMode,
 	})
 
-	fmt.Printf("User authenticated: %v %v\n", userID, userName)
 
 	// Return small HTML page that posts message to popup opener
 	w.Header().Set("Content-Type", "text/html")
@@ -191,16 +182,22 @@ func (o *googleOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	if c, err := r.Cookie(AuthCookie); err == nil {
 		token = c.Value
 	}
+
 	if token == "" {
-		// Fallback to Authorization header
-		auth := r.Header.Get("Authorization")
-		if auth != "" {
-			parts := strings.SplitN(auth, " ", 2)
-			if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
-				token = parts[1]
-			}
-		}
+		writeJSONAuthError(w, http.StatusInternalServerError, "no auth token found")
+		return
 	}
+
+	// if token == "" {
+	// 	// Fallback to Authorization header
+	// 	auth := r.Header.Get("Authorization")
+	// 	if auth != "" {
+	// 		parts := strings.SplitN(auth, " ", 2)
+	// 		if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+	// 			token = parts[1]
+	// 		}
+	// 	}
+	// }
 
 	// Blacklist the token if found and valid
 	if token != "" {
@@ -216,7 +213,7 @@ func (o *googleOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false, // Set to true in production
-		SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
 	})
 

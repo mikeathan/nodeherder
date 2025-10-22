@@ -16,15 +16,13 @@ func Auth(jwtService *JWTService, blacklist *TokenBlacklist) func(http.Handler) 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var token string
 
-			// FIRST: Try to get token from cookie (preferred for web clients)
 			if c, err := r.Cookie(AuthCookie); err == nil {
 				token = c.Value
 			}
 
-			// FALLBACK: Check Authorization header (for API clients/backward compatibility)
-			if token == "" {
-				token = extractBearer(r.Header.Get("Authorization"))
-			}
+			// if token == "" {
+			// 	token = extractBearer(r.Header.Get("Authorization"))
+			// }
 
 			if token == "" {
 				writeJSONAuthError(w, http.StatusUnauthorized, "missing token")

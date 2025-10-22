@@ -1,3 +1,4 @@
+import { get, post } from '@/contracts/api';
 import { createAuthSession, createNotAuthenticatedSession } from '@/contracts/auth';
 import { store } from '@/store';
 import { UserSession } from '@/types/auth.type';
@@ -6,7 +7,7 @@ const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
 export async function login(): Promise<UserSession> {
   // Get OAuth login URL from backend
-  const res = await fetch(`${baseUrl}/api/auth/login`, { method: 'POST', credentials: 'include' });
+  const res = await get(`api/auth/login`);
   const { url } = await res.json();
 
   // Open OAuth popup
@@ -29,10 +30,7 @@ export async function login(): Promise<UserSession> {
 
         try {
           // Token is now in cookie - just fetch user info
-          const meRes = await fetch(`${baseUrl}/api/auth/me`, {
-            method: 'GET',
-            credentials: 'include',
-          });
+          const meRes = await get(`api/auth/me`);
 
           if (!meRes.ok) {
             console.error('/me fetch failed', meRes.status);
@@ -63,10 +61,7 @@ export async function login(): Promise<UserSession> {
 
 export async function logout(): Promise<boolean> {
   try {
-    const res = await fetch(`${baseUrl}/api/auth/logout`, {
-      method: 'POST',
-      credentials: 'include',
-    });
+    const res = await post(`$api/auth/logout`);
     if (!res.ok) console.error('Logout failed', res.status);
     return res.ok;
   } catch (err) {
@@ -77,10 +72,7 @@ export async function logout(): Promise<boolean> {
 
 export async function restoreSession(): Promise<UserSession | null> {
   try {
-    const res = await fetch(`${baseUrl}/api/auth/me`, {
-      method: 'GET',
-      credentials: 'include',
-    });
+    const res = await get(`api/auth/me`);
 
     if (res.ok) {
       const userData = await res.json();
