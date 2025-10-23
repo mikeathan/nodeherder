@@ -8,7 +8,7 @@ const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
 export interface FetchOptions extends RequestInit {
   headers?: HeadersInit;
-  includeAuth?: boolean;
+  includeAuth?: boolean; // not used
 }
 
 export async function fetchWithAuth(endpoint: string, options: FetchOptions = {}): Promise<Response> {
@@ -19,24 +19,12 @@ export async function fetchWithAuth(endpoint: string, options: FetchOptions = {}
     'Content-Type': 'application/json',
   };
 
-  // // Add authorization token if required
-  // if (includeAuth) {
-  //   const token = store.getters['auth/token']();
-  //   if (token) {
-  //     Object.assign(defaultHeaders, {
-  //       Authorization: `Bearer ${token}`,
-  //     });
-  //   }
-  // }
-
-  // Merge custom headers with defaults
   const mergedHeaders = {
     ...defaultHeaders,
     ...headers,
   };
 
   const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}/${endpoint}`;
-
   return fetch(url, {
     ...restOptions,
     credentials: 'include',

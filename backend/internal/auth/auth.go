@@ -158,22 +158,9 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 	})
 
-
-	// Return small HTML page that posts message to popup opener
-	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprintf(w, `
-        <script>
-            try {
-                if (window.opener) {
-                    window.opener.postMessage({ 
-                        status: 'success', 
-                        user: { id: '%s', username: '%s' }
-                    }, "*");
-                }
-            } catch (e) {}
-            window.close();
-        </script>
-    `, userID, userName)
+	// Always redirect back to frontend for full-page OAuth flow
+	// This replaces the popup postMessage approach
+	http.Redirect(w, r, "http://localhost:4100/?auth=success", http.StatusFound)
 }
 
 func (o *googleOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
@@ -187,17 +174,6 @@ func (o *googleOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
 		writeJSONAuthError(w, http.StatusInternalServerError, "no auth token found")
 		return
 	}
-
-	// if token == "" {
-	// 	// Fallback to Authorization header
-	// 	auth := r.Header.Get("Authorization")
-	// 	if auth != "" {
-	// 		parts := strings.SplitN(auth, " ", 2)
-	// 		if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
-	// 			token = parts[1]
-	// 		}
-	// 	}
-	// }
 
 	// Blacklist the token if found and valid
 	if token != "" {

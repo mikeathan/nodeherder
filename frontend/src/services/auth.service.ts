@@ -5,31 +5,24 @@ import { UserSession } from '@/types/auth.type';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
-export async function login(): Promise<UserSession> {
-  // Get OAuth login URL from backend
-  const res = await get(`api/auth/login`);
+export async function getOAuthUrl(): Promise<string> {
+  const res = await post(`api/auth/login`);
   const { url } = await res.json();
+  return url;
+}
 
-  // Open OAuth popup
-  const popup = window.open(url, 'oauth', 'width=500,height=600');
-  if (!popup) {
-    console.error('Popup blocked');
-    return createNotAuthenticatedSession();
-  }
-
-  // Wait for popup message
-  return new Promise<UserSession>((resolve) => {
+export async function waitForOAuthCompletion(): Promise<UserSession> {
+  return new Promise<UserSession>((resolve, reject) => {
     const handler = async (event: MessageEvent) => {
       const allowedOrigins = ['http://localhost:4100', 'http://localhost:4110']; // local dev
-      if (!allowedOrigins.includes(event.origin)) return;
+      if (!allowedOrigins.includes(event.origin)) {
+        return;
+      }
 
       if (event.data.status === 'success') {
-        console.log('Received auth success from popup', event.data);
         window.removeEventListener('message', handler);
-        popup.close();
 
         try {
-          // Token is now in cookie - just fetch user info
           const meRes = await get(`api/auth/me`);
 
           if (!meRes.ok) {
@@ -39,7 +32,6 @@ export async function login(): Promise<UserSession> {
           }
 
           const userData = await meRes.json();
-          console.log('Fetched user info from /me', userData);
           if (!userData.id || !userData.username) {
             resolve(createNotAuthenticatedSession());
             return;
@@ -52,6 +44,9 @@ export async function login(): Promise<UserSession> {
           console.error('Error fetching user info:', err);
           resolve(createNotAuthenticatedSession());
         }
+      } else if (event.data.status === 'error') {
+        window.removeEventListener('message', handler);
+        reject(new Error(event.data.message || 'OAuth failed'));
       }
     };
 
@@ -59,9 +54,14 @@ export async function login(): Promise<UserSession> {
   });
 }
 
+export async function login(): Promise<UserSession> {
+  // Keep the old method for backward compatibility but don't auto-open popup
+  return waitForOAuthCompletion();
+}
+
 export async function logout(): Promise<boolean> {
   try {
-    const res = await post(`$api/auth/logout`);
+    const res = await post(`api/auth/logout`);
     if (!res.ok) console.error('Logout failed', res.status);
     return res.ok;
   } catch (err) {

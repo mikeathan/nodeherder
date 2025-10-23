@@ -1,22 +1,79 @@
 <script setup lang="ts">
   import { useAuth } from '@/mixins/composables/useAuthentication';
-  import { ref } from 'vue';
+  import { ref, onMounted } from 'vue';
+  import { getOAuthUrl, waitForOAuthCompletion } from '@/services/auth.service';
+  import { navigatePostLogin } from '@/router/navigation';
+  import { useRoute } from 'vue-router';
+  import { store } from '@/store';
   import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 
   const error = ref<string>('');
   const loading = ref(false);
-  const { user, signIn } = useAuth();
+  const isProcessing = ref(false);
+  const route = useRoute();
+  const { user } = useAuth();
+
+  // Check if we're returning from OAuth
+  onMounted(async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const authStatus = urlParams.get('auth');
+
+    if (authStatus === 'success') {
+      // Clear the URL parameter
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+
+      // Check if user is authenticated and redirect
+      try {
+        const response = await fetch('http://localhost:4110/api/auth/me', {
+          credentials: 'include',
+          method: 'GET',
+        });
+        if (response.ok) {
+          const userData = await response.json();
+          if (userData.id && userData.username) {
+            const userSession = {
+              user: userData,
+              isAuthenticated: true,
+            };
+            store.dispatch('auth/loginUser', userSession);
+            navigatePostLogin(route, true);
+            return;
+          }
+        }
+      } catch (e) {
+        console.error('Failed to verify authentication:', e);
+      }
+
+      // If we get here, auth failed
+      error.value = 'Authentication verification failed. Please try again.';
+    }
+  });
 
   const handleLogin = async () => {
+    if (isProcessing.value || loading.value) {
+      return;
+    }
+
+    isProcessing.value = true;
     loading.value = true;
     error.value = '';
+
     try {
-      await signIn();
-    } catch (e) {
+      // Get OAuth URL and redirect directly in the same window
+      const url = await getOAuthUrl();
+
+      // Store the fact that we're doing OAuth so we can handle the return
+      sessionStorage.setItem('oauth_in_progress', 'true');
+      sessionStorage.setItem('oauth_return_url', window.location.href);
+
+      // Redirect to OAuth URL in the same window
+      window.location.href = url;
+    } catch (e: any) {
       console.error('Login failed', e);
-      error.value = 'Login failed. Please try again.';
-    } finally {
+      error.value = e.message || 'Login failed. Please try again.';
       loading.value = false;
+      isProcessing.value = false;
     }
   };
 </script>
@@ -37,7 +94,7 @@
 
       <!-- Login Button -->
       <div class="button-container">
-        <button class="google-button" :disabled="loading" @click="handleLogin">
+        <button class="google-button" :disabled="loading" @click.prevent="handleLogin">
           <GoogleIcon class="icon" />
           <span>{{ loading ? 'Signing in...' : 'Sign in with Google' }}</span>
         </button>
@@ -48,7 +105,7 @@
         </div>
 
         <!-- Redirect Notice -->
-        <p class="redirect-notice">You'll be redirected to Google to complete sign-in</p>
+        <p class="redirect-notice">A popup window will open for secure authentication</p>
       </div>
 
       <!-- Security Badge -->
@@ -69,7 +126,6 @@
         </svg>
         <span>Secure Login</span>
       </div>
-
     </div>
 
     <!-- Footer -->
