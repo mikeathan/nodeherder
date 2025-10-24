@@ -1,6 +1,7 @@
 import { get, post } from '@/contracts/api';
 import { createAuthSession, createNotAuthenticatedSession } from '@/contracts/auth';
 import { store } from '@/store';
+import { getAllowedOrigins } from '@/utils/env.utils';
 import { UserSession } from '@/types/auth.type';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -14,7 +15,7 @@ export async function getOAuthUrl(): Promise<string> {
 export async function waitForOAuthCompletion(): Promise<UserSession> {
   return new Promise<UserSession>((resolve, reject) => {
     const handler = async (event: MessageEvent) => {
-      const allowedOrigins = ['http://localhost:4100', 'http://localhost:4110']; // local dev
+      const allowedOrigins = getAllowedOrigins();
       if (!allowedOrigins.includes(event.origin)) {
         return;
       }
@@ -55,7 +56,6 @@ export async function waitForOAuthCompletion(): Promise<UserSession> {
 }
 
 export async function login(): Promise<UserSession> {
-  // Keep the old method for backward compatibility but don't auto-open popup
   return waitForOAuthCompletion();
 }
 

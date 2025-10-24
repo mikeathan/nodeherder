@@ -1,54 +1,15 @@
 <script setup lang="ts">
   import { useAuth } from '@/mixins/composables/useAuthentication';
-  import { ref, onMounted } from 'vue';
-  import { getOAuthUrl, waitForOAuthCompletion } from '@/services/auth.service';
-  import { navigatePostLogin } from '@/router/navigation';
-  import { useRoute } from 'vue-router';
-  import { store } from '@/store';
+  import { ref } from 'vue';
+  import { getOAuthUrl } from '@/services/auth.service';
   import GoogleIcon from '@/components/icons/GoogleIcon.vue';
 
   const error = ref<string>('');
   const loading = ref(false);
   const isProcessing = ref(false);
-  const route = useRoute();
-  const { user } = useAuth();
 
-  // Check if we're returning from OAuth
-  onMounted(async () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const authStatus = urlParams.get('auth');
-
-    if (authStatus === 'success') {
-      // Clear the URL parameter
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
-
-      // Check if user is authenticated and redirect
-      try {
-        const response = await fetch('http://localhost:4110/api/auth/me', {
-          credentials: 'include',
-          method: 'GET',
-        });
-        if (response.ok) {
-          const userData = await response.json();
-          if (userData.id && userData.username) {
-            const userSession = {
-              user: userData,
-              isAuthenticated: true,
-            };
-            store.dispatch('auth/loginUser', userSession);
-            navigatePostLogin(route, true);
-            return;
-          }
-        }
-      } catch (e) {
-        console.error('Failed to verify authentication:', e);
-      }
-
-      // If we get here, auth failed
-      error.value = 'Authentication verification failed. Please try again.';
-    }
-  });
+  // calls onmounted inside useAuth
+  useAuth();
 
   const handleLogin = async () => {
     if (isProcessing.value || loading.value) {
@@ -101,7 +62,7 @@
         </div>
 
         <!-- Redirect Notice -->
-        <p class="redirect-notice">A popup window will open for secure authentication</p>
+        <p class="redirect-notice">You'll be redirected to Google to sign in securely</p>
       </div>
 
       <!-- Security Badge -->
