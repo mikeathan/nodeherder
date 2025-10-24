@@ -63,10 +63,6 @@
       // Get OAuth URL and redirect directly in the same window
       const url = await getOAuthUrl();
 
-      // Store the fact that we're doing OAuth so we can handle the return
-      sessionStorage.setItem('oauth_in_progress', 'true');
-      sessionStorage.setItem('oauth_return_url', window.location.href);
-
       // Redirect to OAuth URL in the same window
       window.location.href = url;
     } catch (e: any) {

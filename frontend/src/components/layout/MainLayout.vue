@@ -28,17 +28,24 @@
 
   const { sideNavigationItems, topNavigationItems, isPermitJoinActive } = useSideNavigationItems();
 
-  onMounted(() => {
-    fetchHubState()
-      .then((state) => {
-        store.dispatch('hub/init', state);
-        store.dispatch('ws/connect');
-      })
-      .catch((err) => {
-        console.error('Failed to init hub state:', err);
-        store.commit('ws/setConnectionStatus', 'disconnected');
-      });
-    store.dispatch('auth/restoreSession');
+  onMounted(async () => {
+
+    // Restore session first to check authentication
+    await store.dispatch('auth/restoreSession');
+
+    // Only fetch hub state and connect WS if user is authenticated
+    const isAuthenticated = store.getters['auth/isAuthenticated']();
+    if (isAuthenticated) {
+      fetchHubState()
+        .then((state) => {
+          store.dispatch('hub/init', state);
+          store.dispatch('ws/connect');
+        })
+        .catch((err) => {
+          console.error('Failed to init hub state:', err);
+          store.commit('ws/setConnectionStatus', 'disconnected');
+        });
+    }
   });
 </script>
 
