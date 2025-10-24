@@ -19,7 +19,6 @@ export const AuthModule: Module<AuthModuleState, RootState> = {
 
   mutations: {
     login(state: AuthModuleState, userSession: UserSession) {
-      console.log('Logging in user:', userSession.user);
       state.user = userSession.user;
       state.authenticated = true;
     },
@@ -30,7 +29,6 @@ export const AuthModule: Module<AuthModuleState, RootState> = {
   },
   actions: {
     loginUser({ commit }, userSession: UserSession) {
-      console.log('Logging in user:', userSession.user);
       commit('login', userSession);
     },
     logoutUser({ commit }) {

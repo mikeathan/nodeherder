@@ -2,6 +2,7 @@
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 
 import { PORT, CORS_ORIGIN } from './config.mjs';
 import { currentTime } from './utils.mjs';
@@ -14,6 +15,7 @@ initState();
 
 // App and server
 const app = express();
+app.set('port', PORT);
 const server = http.createServer(app).listen(PORT);
 console.log('[' + currentTime() + '] server listening at port ' + PORT);
 
@@ -25,6 +27,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(cookieParser());
 
 // Routes and websockets
 registerRoutes(app);
