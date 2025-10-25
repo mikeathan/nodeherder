@@ -9,7 +9,8 @@ import (
 
 func TestGoogleOAuth_HandleLogin(t *testing.T) {
 	cfg := auth.WithDefaultJWTConfig()
-	provider := auth.NewProvider(cfg)
+	callbackURL := "http://localhost:8080/auth/callback"
+	provider := auth.NewProvider(cfg, callbackURL)
 	oauth := provider.OAuth()
 
 	w := httptest.NewRecorder()
