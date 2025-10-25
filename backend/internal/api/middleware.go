@@ -1,22 +1,24 @@
 package api
 
 import (
+	"log"
 	"net/http"
+
+	"node-herder/utils"
 )
 
 func CORS(next http.Handler) http.Handler {
-	//frontendURL, err := utils.GetFrontendBaseURL()
-	// if err != nil {
-	// 	log.Fatalf("CORS middleware failed to get frontend base URL: %v", err)
-	// }
+	frontendURL, err := utils.GetFrontendBaseURL()
+	if err != nil {
+		log.Fatalf("CORS middleware failed to get frontend base URL: %v", err)
+	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
 
 		w.Header().Set("Vary", "Origin")
 		allowedOrigins := map[string]bool{
-			"http://localhost:4100": true,
-			"http://localhost:4110": true,
+			frontendURL: true,
 		}
 
 		if allowedOrigins[origin] {

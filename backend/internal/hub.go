@@ -2,6 +2,7 @@ package hub
 
 import (
 	"context"
+	"fmt"
 	"node-herder/internal/api"
 	"node-herder/internal/auth"
 	"node-herder/internal/automations"
@@ -11,6 +12,7 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/store"
 	"node-herder/utils"
+	"os"
 	"time"
 )
 
@@ -19,8 +21,15 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	router := api.NewRouter()
 	fservice := fs.NewFileSystem()
 
-	authProvider := auth.NewProvider(auth.WithDefaultJWTConfig())
+	// Build OAuth callback URL from env with port substitution
+	callbackURL, err := utils.GetAuthCallbackURL(port)
+	if err != nil {
+		fatalErr := fmt.Errorf("failed to get OAuth callback URL: %w", err)
+		fmt.Fprintln(os.Stderr, fatalErr)
+		os.Exit(1)
+	}
 
+	authProvider := auth.NewProvider(auth.WithDefaultJWTConfig(), callbackURL)
 	// middlewares
 
 	router.UseGlobal(api.CORS)

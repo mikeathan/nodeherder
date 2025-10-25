@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 
+	"node-herder/utils"
+
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
@@ -22,10 +24,10 @@ type Provider struct {
 	blacklist *TokenBlacklist
 }
 
-func NewProvider(cfg JWTConfig) *Provider {
+func NewProvider(cfg JWTConfig, oauthCallbackURL string) *Provider {
 	j := NewJWTService(cfg)
 	b := NewTokenBlacklist()
-	o := NewGoogleOAuth(j, b)
+	o := NewGoogleOAuth(j, b, oauthCallbackURL)
 	return &Provider{jwt: j, oauth: o, blacklist: b}
 }
 
@@ -57,9 +59,9 @@ type googleOAuth struct {
 	basePath   string
 }
 
-func NewGoogleOAuth(jwtService *JWTService, blacklist *TokenBlacklist) OAuth {
+func NewGoogleOAuth(jwtService *JWTService, blacklist *TokenBlacklist, callbackURL string) OAuth {
 	config := &oauth2.Config{
-		RedirectURL:  "http://localhost:4110/api/auth/callback",
+		RedirectURL:  callbackURL,
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		Scopes: []string{
@@ -158,9 +160,16 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 	})
 
+	// Get frontend URL from environment
+	frontendURL, err := utils.GetFrontendBaseURL()
+	if err != nil {
+		writeJSONAuthError(w, http.StatusInternalServerError, "Failed to get URL for redirect: "+err.Error())
+		return
+	}
+
 	// Always redirect back to frontend for full-page OAuth flow
 	// This replaces the popup postMessage approach
-	http.Redirect(w, r, "http://localhost:4100/?auth=success", http.StatusFound)
+	http.Redirect(w, r, frontendURL+"/?auth=success", http.StatusFound)
 }
 
 func (o *googleOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
