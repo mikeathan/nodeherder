@@ -2,9 +2,6 @@ package auth
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -233,34 +230,4 @@ func (o *googleOAuth) handleMe(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func generateState() string {
-	b := make([]byte, 16)
-	rand.Read(b)
-	return base64.URLEncoding.EncodeToString(b)
-}
-
-// PKCE helpers
-func generatePKCEVerifier(length int) string {
-	if length < 43 {
-		length = 43
-	}
-	if length > 128 {
-		length = 128
-	}
-	const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
-	b := make([]byte, length)
-	rb := make([]byte, length)
-	if _, err := rand.Read(rb); err != nil {
-		// fallback
-		return base64.RawURLEncoding.EncodeToString(rb)
-	}
-	for i := 0; i < length; i++ {
-		b[i] = charset[int(rb[i])%len(charset)]
-	}
-	return string(b)
-}
-
-func generatePKCEChallenge(verifier string) string {
-	sum := sha256.Sum256([]byte(verifier))
-	return base64.RawURLEncoding.EncodeToString(sum[:])
-}
+// PKCE helpers moved to auth_helpers.go
