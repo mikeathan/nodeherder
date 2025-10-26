@@ -16,7 +16,7 @@ func Auth(jwtService *JWTService, blacklist *TokenBlacklist) func(http.Handler) 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var token string
 
-			if c, err := r.Cookie(AuthCookie); err == nil {
+			if c, err := r.Cookie(CookieNameSession); err == nil {
 				token = c.Value
 			}
 

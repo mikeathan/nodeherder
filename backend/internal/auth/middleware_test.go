@@ -27,7 +27,7 @@ func TestAuthMiddleware_ValidToken(t *testing.T) {
 	}))
 
 	req := httptest.NewRequest("GET", "/", nil)
-	req.Header.Set("Authorization", token)
+	req.AddCookie(&http.Cookie{Name: auth.CookieNameSession, Value: token})
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
@@ -58,7 +58,7 @@ func TestAuthMiddleware_InvalidToken(t *testing.T) {
 
 	handler := auth.Auth(jwtService, blacklist)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	req := httptest.NewRequest("GET", "/", nil)
-	req.Header.Set("Authorization", "invalid.token.here")
+	req.AddCookie(&http.Cookie{Name: auth.CookieNameSession, Value: "invalid.token.here"})
 	w := httptest.NewRecorder()
 
 	handler.ServeHTTP(w, req)
