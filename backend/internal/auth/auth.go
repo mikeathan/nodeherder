@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 
@@ -116,7 +115,6 @@ func (o *googleOAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
 	state := r.URL.Query().Get("state")
-	fmt.Println("Callback hit, code:", code, "state:", state)
 
 	if code == "" || state == "" {
 		writeJSONAuthError(w, http.StatusBadRequest, "Missing code or state")
