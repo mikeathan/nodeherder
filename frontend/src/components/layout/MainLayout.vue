@@ -29,24 +29,71 @@
   const { sideNavigationItems, topNavigationItems, isPermitJoinActive } = useSideNavigationItems();
 
   onMounted(async () => {
+    // Fast-path using persisted state: if already authed, don't block the UI.
+    const authedAtMount = store.getters['auth/isAuthenticated']();
 
-    // Restore session first to check authentication
-    await store.dispatch('auth/restoreSession');
+    const ensureWsConnected = () => {
+      const status = store.getters['ws/getConnectionStatus'];
+      if (status !== 'connected' && status !== 'connecting') {
+        store.dispatch('ws/connect');
+      }
+    };
 
-    // Only fetch hub state and connect WS if user is authenticated
-    const isAuthenticated = store.getters['auth/isAuthenticated']();
-    if (isAuthenticated) {
-      fetchHubState()
-        .then((state) => {
+    const initHubIfNeeded = async () => {
+      const isHubInitialized = store.getters['hub/isInitialized']();
+      if (!isHubInitialized) {
+        try {
+          const state = await fetchHubState();
           store.dispatch('hub/init', state);
-          store.dispatch('ws/connect');
-        })
-        .catch((err) => {
+        } catch (err) {
           console.error('Failed to init hub state:', err);
           store.commit('ws/setConnectionStatus', 'disconnected');
-        });
+        }
+      }
+    };
+
+    if (authedAtMount) {
+      // Use persisted hub state immediately; refresh in background only if needed.
+      ensureWsConnected();
+      initHubIfNeeded();
+
+      // Validate session in the background without blocking initial render.
+      // If validation fails, route guard/AuthWrapper will handle redirect.
+      store.dispatch('auth/restoreSession');
+      return;
+    }
+
+    // Not authenticated yet: validate session first (e.g., after hard refresh)
+    await store.dispatch('auth/restoreSession');
+    const isAuthenticated = store.getters['auth/isAuthenticated']();
+    if (isAuthenticated) {
+      ensureWsConnected();
+      await initHubIfNeeded();
+    } else {
+      // Ensure WS is marked disconnected if not authenticated
+      store.commit('ws/setConnectionStatus', 'disconnected');
     }
   });
+
+  //  onMounted(async () => {
+
+  //   // Restore session first to check authentication
+  //   await store.dispatch('auth/restoreSession');
+
+  //   // Only fetch hub state and connect WS if user is authenticated
+  //   const isAuthenticated = store.getters['auth/isAuthenticated']();
+  //   if (isAuthenticated) {
+  //     fetchHubState()
+  //       .then((state) => {
+  //         store.dispatch('hub/init', state);
+  //         store.dispatch('ws/connect');
+  //       })
+  //       .catch((err) => {
+  //         console.error('Failed to init hub state:', err);
+  //         store.commit('ws/setConnectionStatus', 'disconnected');
+  //       });
+  //   }
+  // });
 </script>
 
 <template>
