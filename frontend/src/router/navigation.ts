@@ -29,7 +29,6 @@ function resolveAuthRoute(isAuthenticated: boolean, route?: RouteLocationNormali
 
       // If redirect exists and is not the login page itself, use it
       if (redirectPath && redirectPath !== '/' && redirectPath !== RouteName.Login) {
-        console.log('Redirecting to original path after login:', redirectPath);
         return redirectPath;
       }
     }
@@ -50,6 +49,5 @@ export function navigatePostLogin(route?: RouteLocationNormalizedLoaded, isAuthe
 
 export function navigatePostLogout() {
   const path = resolveAuthRoute(false);
-  console.log('Navigating to post-logout path:', path);
   goToPath(path);
 }

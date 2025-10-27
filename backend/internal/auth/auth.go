@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"node-herder/utils"
 	"os"
 
 	"golang.org/x/oauth2"
@@ -19,16 +20,19 @@ const CookieNameSession = "session"
 const CookieNameOAuthPKCE = "oauthpkce"
 
 type Provider struct {
-	jwt       *JWTService
-	oauth     OAuth
-	blacklist *TokenBlacklist
+	jwt          *JWTService
+	oauth        OAuth
+	blacklist    *TokenBlacklist
 }
 
 func NewProvider(cfg JWTConfig, oauthCallbackURL string) *Provider {
 	j := NewJWTService(cfg)
 	b := NewTokenBlacklist()
 	o := NewGoogleOAuth(j, b, oauthCallbackURL)
-	return &Provider{jwt: j, oauth: o, blacklist: b}
+
+	//offlineLocal := utils.GetAuthLocalOfflineMode()
+	utils.LogInfof("Auth offline local mode: %v", offlineLocal)
+	return &Provider{jwt: j, oauth: o, blacklist: b, }
 }
 
 func (m *Provider) Middleware() func(http.Handler) http.Handler {
@@ -52,6 +56,45 @@ type OAuth interface {
 	RegisterRoutes(registrar RouteRegistrar)
 }
 
+type offlineOAuth struct {
+	jwtService *JWTService
+	blacklist  *TokenBlacklist
+	basePath   string
+}
+
+// Offline Local OAuth implementation
+func NewOfflineOAuth(jwtService *JWTService, blacklist *TokenBlacklist) OAuth {
+	return &offlineOAuth{
+		jwtService: jwtService,
+		blacklist:  blacklist,
+		basePath:   "/api/auth",
+	}
+}
+
+func (o *offlineOAuth) RegisterRoutes(registrar RouteRegistrar) {
+	registrar.PublicPOST(o.basePath+"/login", http.HandlerFunc(o.HandleLogin))
+	registrar.PublicPOST(o.basePath+"/logout", http.HandlerFunc(o.HandleLogout))
+
+	registrar.GET(o.basePath+"/me", http.HandlerFunc(o.handleMe))
+}
+
+func (o *offlineOAuth) HandleLogin(w http.ResponseWriter, r *http.Request){
+
+}
+
+func (o *offlineOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
+	// Not implemented for offline mode
+}
+
+func (o *offlineOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (o *offlineOAuth) handleMe(w http.ResponseWriter, r *http.Request) {
+
+}
+
+// Google OAuth implementation
 type googleOAuth struct {
 	config     *oauth2.Config
 	jwtService *JWTService
@@ -82,6 +125,7 @@ func (g *googleOAuth) RegisterRoutes(registrar RouteRegistrar) {
 	registrar.PublicPOST(g.basePath+"/login", http.HandlerFunc(g.HandleLogin))
 	registrar.PublicPOST(g.basePath+"/logout", http.HandlerFunc(g.HandleLogout))
 	registrar.PublicGET(g.basePath+"/callback", http.HandlerFunc(g.HandleCallback))
+
 	registrar.GET(g.basePath+"/me", http.HandlerFunc(g.handleMe))
 }
 

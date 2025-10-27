@@ -28,6 +28,11 @@ func GetFrontendBaseURL() (string, error) {
 	return "", fmt.Errorf("unknown APP_ENV value: %q", env)
 }
 
+func GetAuthLocalOfflineMode() bool {
+	mode := os.Getenv("OFFLINE_STRICT_LOCAL")
+	return mode == "true"
+}
+
 func GetAuthCallbackURL(port int) (string, error) {
 	env := os.Getenv("APP_ENV")
 
