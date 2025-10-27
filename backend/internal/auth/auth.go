@@ -20,19 +20,36 @@ const CookieNameSession = "session"
 const CookieNameOAuthPKCE = "oauthpkce"
 
 type Provider struct {
-	jwt          *JWTService
-	oauth        OAuth
-	blacklist    *TokenBlacklist
+	jwt       *JWTService
+	oauth     OAuth
+	blacklist *TokenBlacklist
 }
 
 func NewProvider(cfg JWTConfig, oauthCallbackURL string) *Provider {
 	j := NewJWTService(cfg)
 	b := NewTokenBlacklist()
-	o := NewGoogleOAuth(j, b, oauthCallbackURL)
+	online := NewGoogleOAuth(j, b, oauthCallbackURL)
+	offline := NewOfflineOAuth(j, b)
 
-	//offlineLocal := utils.GetAuthLocalOfflineMode()
-	utils.LogInfof("Auth offline local mode: %v", offlineLocal)
-	return &Provider{jwt: j, oauth: o, blacklist: b, }
+	decide := func(r *http.Request) bool {
+		// Minimal decision rules:
+		// 1) Explicit override via header or query param
+		if r != nil {
+			if r.Header.Get("X-Auth-Mode") == "offline" {
+				return true
+			}
+			if r.URL.Query().Get("auth_mode") == "offline" {
+				return true
+			}
+		}
+		// 2) Environment flag as default
+		return utils.GetAuthLocalOfflineMode()
+	}
+
+	o := NewSwitchOAuth(online, offline, decide)
+
+	utils.LogInfof("Auth hybrid enabled (default offline=%v)", utils.GetAuthLocalOfflineMode())
+	return &Provider{jwt: j, oauth: o, blacklist: b}
 }
 
 func (m *Provider) Middleware() func(http.Handler) http.Handler {
@@ -53,6 +70,8 @@ type RouteRegistrar interface {
 type OAuth interface {
 	HandleLogin(http.ResponseWriter, *http.Request)
 	HandleCallback(http.ResponseWriter, *http.Request)
+	HandleLogout(http.ResponseWriter, *http.Request)
+	HandleMe(http.ResponseWriter, *http.Request)
 	RegisterRoutes(registrar RouteRegistrar)
 }
 
@@ -75,10 +94,10 @@ func (o *offlineOAuth) RegisterRoutes(registrar RouteRegistrar) {
 	registrar.PublicPOST(o.basePath+"/login", http.HandlerFunc(o.HandleLogin))
 	registrar.PublicPOST(o.basePath+"/logout", http.HandlerFunc(o.HandleLogout))
 
-	registrar.GET(o.basePath+"/me", http.HandlerFunc(o.handleMe))
+	registrar.GET(o.basePath+"/me", http.HandlerFunc(o.HandleMe))
 }
 
-func (o *offlineOAuth) HandleLogin(w http.ResponseWriter, r *http.Request){
+func (o *offlineOAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 }
 
@@ -90,7 +109,7 @@ func (o *offlineOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (o *offlineOAuth) handleMe(w http.ResponseWriter, r *http.Request) {
+func (o *offlineOAuth) HandleMe(w http.ResponseWriter, r *http.Request) {
 
 }
 
@@ -126,7 +145,7 @@ func (g *googleOAuth) RegisterRoutes(registrar RouteRegistrar) {
 	registrar.PublicPOST(g.basePath+"/logout", http.HandlerFunc(g.HandleLogout))
 	registrar.PublicGET(g.basePath+"/callback", http.HandlerFunc(g.HandleCallback))
 
-	registrar.GET(g.basePath+"/me", http.HandlerFunc(g.handleMe))
+	registrar.GET(g.basePath+"/me", http.HandlerFunc(g.HandleMe))
 }
 
 func (o *googleOAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
@@ -256,7 +275,7 @@ func (o *googleOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]any{"status": "success"})
 }
 
-func (o *googleOAuth) handleMe(w http.ResponseWriter, r *http.Request) {
+func (o *googleOAuth) HandleMe(w http.ResponseWriter, r *http.Request) {
 
 	user, ok := GetUserFromContext(r)
 	if !ok {
