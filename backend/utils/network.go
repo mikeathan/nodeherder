@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func isLocalRequest(r *http.Request) bool {
+func IsLocalRequest(r *http.Request) bool {
 	host := r.RemoteAddr
 	if xri := r.Header.Get("X-Real-IP"); xri != "" {
 		host = xri

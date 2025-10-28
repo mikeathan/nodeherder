@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"node-herder/utils"
 	"os"
@@ -29,24 +30,17 @@ func NewProvider(cfg JWTConfig, oauthCallbackURL string) *Provider {
 	j := NewJWTService(cfg)
 	b := NewTokenBlacklist()
 	online := NewGoogleOAuth(j, b, oauthCallbackURL)
-	offline := NewOfflineOAuth(j, b)
+	offline := NewOfflineOAuth(j, b, oauthCallbackURL)
 
 	decide := func(r *http.Request) bool {
-		// Minimal decision rules:
-		// 1) Explicit override via header or query param
-		if r != nil {
-			if r.Header.Get("X-Auth-Mode") == "offline" {
-				return true
-			}
-			if r.URL.Query().Get("auth_mode") == "offline" {
-				return true
-			}
+		if !utils.GetAuthLocalOfflineMode() {
+			return true
 		}
-		// 2) Environment flag as default
-		return utils.GetAuthLocalOfflineMode()
+
+		return !utils.IsLocalRequest(r)
 	}
 
-	o := NewSwitchOAuth(online, offline, decide)
+	o := newAuthDelegator(online, offline, decide)
 
 	utils.LogInfof("Auth hybrid enabled (default offline=%v)", utils.GetAuthLocalOfflineMode())
 	return &Provider{jwt: j, oauth: o, blacklist: b}
@@ -75,42 +69,66 @@ type OAuth interface {
 	RegisterRoutes(registrar RouteRegistrar)
 }
 
+// Offline Local OAuth implementation
 type offlineOAuth struct {
-	jwtService *JWTService
-	blacklist  *TokenBlacklist
-	basePath   string
+	jwtService  *JWTService
+	blacklist   *TokenBlacklist
+	basePath    string
+	RedirectURL string
 }
 
-// Offline Local OAuth implementation
-func NewOfflineOAuth(jwtService *JWTService, blacklist *TokenBlacklist) OAuth {
+func NewOfflineOAuth(jwtService *JWTService, blacklist *TokenBlacklist, callbackURL string) OAuth {
 	return &offlineOAuth{
-		jwtService: jwtService,
-		blacklist:  blacklist,
-		basePath:   "/api/auth",
+		jwtService:  jwtService,
+		blacklist:   blacklist,
+		basePath:    "/api/auth",
+		RedirectURL: callbackURL,
 	}
 }
 
 func (o *offlineOAuth) RegisterRoutes(registrar RouteRegistrar) {
 	registrar.PublicPOST(o.basePath+"/login", http.HandlerFunc(o.HandleLogin))
 	registrar.PublicPOST(o.basePath+"/logout", http.HandlerFunc(o.HandleLogout))
-
+	registrar.PublicGET(o.basePath+"/offline/start", http.HandlerFunc(o.HandleOfflineStart))
 	registrar.GET(o.basePath+"/me", http.HandlerFunc(o.HandleMe))
 }
 
 func (o *offlineOAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
+	// Return a URL to open in the popup that will create a local session and close the window.
+	url := o.RedirectURL + o.basePath + "/offline/start"
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(map[string]string{"url": url})
 }
 
 func (o *offlineOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	// Not implemented for offline mode
+	writeJSONAuthError(w, http.StatusNotFound, "callback not supported in offline mode")
+}
+
+func (o *offlineOAuth) HandleOfflineStart(w http.ResponseWriter, r *http.Request) {
+
+	// Create a local session for an offline user
+	token, err := o.jwtService.GenerateJWT("local", "Offline User")
+	if err != nil {
+		writeJSONAuthError(w, http.StatusInternalServerError, "failed to create session")
+		return
+	}
+
+	setSessionCookie(w, token)
+
+	// Respond with a tiny page that notifies the opener and closes the popup
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = fmt.Fprint(w, OfflineAuthSuccessHTML())
 }
 
 func (o *offlineOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
-
+	LogoutHandler(o.jwtService, o.blacklist)(w, r)
 }
 
 func (o *offlineOAuth) HandleMe(w http.ResponseWriter, r *http.Request) {
-
+	MeHandler()(w, r)
 }
 
 // Google OAuth implementation
@@ -251,46 +269,65 @@ func (o *googleOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 func (o *googleOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {
-	// Get token from cookie or header
-	var token string
-	if c, err := r.Cookie(CookieNameSession); err == nil {
-		token = c.Value
-	}
-
-	if token == "" {
-		writeJSONAuthError(w, http.StatusInternalServerError, "no auth token found")
-		return
-	}
-
-	// Blacklist the token if found and valid
-	if token != "" {
-		if claims, err := o.jwtService.ValidateJWT(token); err == nil {
-			o.blacklist.Add(token, claims.ExpiresAt.Time)
-		}
-	}
-
-	clearCookie(w, CookieNameSession)
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{"status": "success"})
+	LogoutHandler(o.jwtService, o.blacklist)(w, r)
 }
 
 func (o *googleOAuth) HandleMe(w http.ResponseWriter, r *http.Request) {
-
-	user, ok := GetUserFromContext(r)
-	if !ok {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
-		_ = json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-
-	_ = json.NewEncoder(w).Encode(map[string]string{
-		"id":       user.UserID,
-		"username": user.Username,
-	})
+	MeHandler()(w, r)
 }
 
-// PKCE helpers moved to auth_helpers.go
+// authDelegator
+// Delegator that routes to online or offline auth
+// based on a simple predicate. If decide(r) returns true, offline is used;
+// otherwise online is used.
+type authDelegator struct {
+	online  OAuth
+	offline OAuth
+	decide  func(*http.Request) bool
+}
+
+func newAuthDelegator(online, offline OAuth, decide func(*http.Request) bool) *authDelegator {
+	return &authDelegator{online: online, offline: offline, decide: decide}
+}
+
+func (s *authDelegator) pick(r *http.Request) OAuth {
+	if s.decide != nil && s.decide(r) {
+		return s.offline
+	}
+	return s.online
+}
+
+func (s *authDelegator) HandleLogin(w http.ResponseWriter, r *http.Request) {
+	s.pick(r).HandleLogin(w, r)
+}
+func (s *authDelegator) HandleCallback(w http.ResponseWriter, r *http.Request) {
+	s.pick(r).HandleCallback(w, r)
+}
+func (s *authDelegator) HandleLogout(w http.ResponseWriter, r *http.Request) {
+	s.pick(r).HandleLogout(w, r)
+}
+func (s *authDelegator) HandleMe(w http.ResponseWriter, r *http.Request) { s.pick(r).HandleMe(w, r) }
+
+need to refacor
+func (s *authDelegator) RegisterRoutes(registrar RouteRegistrar) {
+
+	base := "/api/auth"
+	registrar.PublicPOST(base+"/login", http.HandlerFunc(s.HandleLogin))
+	registrar.PublicPOST(base+"/logout", http.HandlerFunc(s.HandleLogout))
+	registrar.PublicGET(base+"/callback", http.HandlerFunc(s.HandleCallback))
+	registrar.PublicGET(base+"/offline/start", http.HandlerFunc(s.handleOfflineStartProxy))
+	registrar.GET(base+"/me", http.HandlerFunc(s.HandleMe))
+}
+
+// // handleOfflineStartProxy forwards the offline popup start request to the
+// // concrete offline implementation when available.
+func (s *authDelegator) handleOfflineStartProxy(w http.ResponseWriter, r *http.Request) {
+	type offlineStarter interface {
+		HandleOfflineStart(http.ResponseWriter, *http.Request)
+	}
+	if h, ok := s.offline.(offlineStarter); ok {
+		h.HandleOfflineStart(w, r)
+		return
+	}
+	writeJSONAuthError(w, http.StatusNotFound, "offline start not available")
+}
