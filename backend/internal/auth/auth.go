@@ -22,7 +22,7 @@ const CookieNameOAuthPKCE = "oauthpkce"
 
 type Provider struct {
 	jwt       *JWTService
-	oauth     OAuth
+	oauth     AuthProvider
 	blacklist *TokenBlacklist
 }
 
@@ -50,7 +50,7 @@ func (m *Provider) Middleware() func(http.Handler) http.Handler {
 	return Auth(m.jwt, m.blacklist)
 }
 
-func (m *Provider) OAuth() OAuth {
+func (m *Provider) OAuth() AuthProvider {
 	return m.oauth
 }
 
@@ -66,7 +66,18 @@ type OAuth interface {
 	HandleCallback(http.ResponseWriter, *http.Request)
 	HandleLogout(http.ResponseWriter, *http.Request)
 	HandleMe(http.ResponseWriter, *http.Request)
+}
+
+// AuthProvider is the top-level interface for route registration
+type AuthProvider interface {
+	OAuth
 	RegisterRoutes(registrar RouteRegistrar)
+}
+
+// Optional interface for offline-specific routes
+type OfflineAuth interface {
+	OAuth
+	HandleOfflineStart(http.ResponseWriter, *http.Request)
 }
 
 // Offline Local OAuth implementation
@@ -84,13 +95,6 @@ func NewOfflineOAuth(jwtService *JWTService, blacklist *TokenBlacklist, callback
 		basePath:    "/api/auth",
 		RedirectURL: callbackURL,
 	}
-}
-
-func (o *offlineOAuth) RegisterRoutes(registrar RouteRegistrar) {
-	registrar.PublicPOST(o.basePath+"/login", http.HandlerFunc(o.HandleLogin))
-	registrar.PublicPOST(o.basePath+"/logout", http.HandlerFunc(o.HandleLogout))
-	registrar.PublicGET(o.basePath+"/offline/start", http.HandlerFunc(o.HandleOfflineStart))
-	registrar.GET(o.basePath+"/me", http.HandlerFunc(o.HandleMe))
 }
 
 func (o *offlineOAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
@@ -156,14 +160,6 @@ func NewGoogleOAuth(jwtService *JWTService, blacklist *TokenBlacklist, callbackU
 		blacklist:  blacklist,
 		basePath:   "/api/auth",
 	}
-}
-
-func (g *googleOAuth) RegisterRoutes(registrar RouteRegistrar) {
-	registrar.PublicPOST(g.basePath+"/login", http.HandlerFunc(g.HandleLogin))
-	registrar.PublicPOST(g.basePath+"/logout", http.HandlerFunc(g.HandleLogout))
-	registrar.PublicGET(g.basePath+"/callback", http.HandlerFunc(g.HandleCallback))
-
-	registrar.GET(g.basePath+"/me", http.HandlerFunc(g.HandleMe))
 }
 
 func (o *googleOAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
@@ -300,34 +296,32 @@ func (s *authDelegator) pick(r *http.Request) OAuth {
 func (s *authDelegator) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	s.pick(r).HandleLogin(w, r)
 }
+
 func (s *authDelegator) HandleCallback(w http.ResponseWriter, r *http.Request) {
 	s.pick(r).HandleCallback(w, r)
 }
+
 func (s *authDelegator) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	s.pick(r).HandleLogout(w, r)
 }
-func (s *authDelegator) HandleMe(w http.ResponseWriter, r *http.Request) { s.pick(r).HandleMe(w, r) }
 
-need to refacor
-func (s *authDelegator) RegisterRoutes(registrar RouteRegistrar) {
-
-	base := "/api/auth"
-	registrar.PublicPOST(base+"/login", http.HandlerFunc(s.HandleLogin))
-	registrar.PublicPOST(base+"/logout", http.HandlerFunc(s.HandleLogout))
-	registrar.PublicGET(base+"/callback", http.HandlerFunc(s.HandleCallback))
-	registrar.PublicGET(base+"/offline/start", http.HandlerFunc(s.handleOfflineStartProxy))
-	registrar.GET(base+"/me", http.HandlerFunc(s.HandleMe))
+func (s *authDelegator) HandleMe(w http.ResponseWriter, r *http.Request) {
+	s.pick(r).HandleMe(w, r)
 }
 
-// // handleOfflineStartProxy forwards the offline popup start request to the
-// // concrete offline implementation when available.
-func (s *authDelegator) handleOfflineStartProxy(w http.ResponseWriter, r *http.Request) {
-	type offlineStarter interface {
-		HandleOfflineStart(http.ResponseWriter, *http.Request)
-	}
-	if h, ok := s.offline.(offlineStarter); ok {
+func (s *authDelegator) HandleOfflineStart(w http.ResponseWriter, r *http.Request) {
+	if h, ok := s.offline.(OfflineAuth); ok {
 		h.HandleOfflineStart(w, r)
 		return
 	}
 	writeJSONAuthError(w, http.StatusNotFound, "offline start not available")
+}
+
+func (s *authDelegator) RegisterRoutes(registrar RouteRegistrar) {
+	base := "/api/auth"
+	registrar.PublicPOST(base+"/login", http.HandlerFunc(s.HandleLogin))
+	registrar.PublicPOST(base+"/logout", http.HandlerFunc(s.HandleLogout))
+	registrar.PublicGET(base+"/callback", http.HandlerFunc(s.HandleCallback))
+	registrar.PublicGET(base+"/offline/start", http.HandlerFunc(s.HandleOfflineStart))
+	registrar.GET(base+"/me", http.HandlerFunc(s.HandleMe))
 }

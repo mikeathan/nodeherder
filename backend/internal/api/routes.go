@@ -75,7 +75,7 @@ func (r *Router) addRoute(method string, path string, handler http.Handler, publ
 	r.routes = append(r.routes, &Route{method: method, pattern: path, handler: handler, public: public})
 }
 
-func (r *Router) AddAuthentication(provider auth.OAuth) {
+func (r *Router) AddAuthentication(provider auth.AuthProvider) {
 	provider.RegisterRoutes(r)
 }
 
