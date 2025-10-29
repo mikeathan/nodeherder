@@ -58,8 +58,8 @@ func assertJSONResponse(t *testing.T, w *httptest.ResponseRecorder, expectedStat
 }
 
 func TestGoogleOAuth_HandleLogin(t *testing.T) {
-	// OFFLINE_STRICT_LOCAL=true + local IP (127.0.0.1) = online (Google OAuth)
-	// because: decide() returns !IsLocalRequest() = !true = false (use online)
+	// OFFLINE_STRICT_LOCAL=true + external IP = online (Google OAuth)
+	// because: decide() returns IsLocalRequest() = false (use online)
 	os.Setenv("OFFLINE_STRICT_LOCAL", "true")
 
 	provider := setupTestProvider(t, false)
@@ -67,8 +67,8 @@ func TestGoogleOAuth_HandleLogin(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/auth/login", nil)
-	// Use local IP to trigger online mode when OFFLINE_STRICT_LOCAL=true
-	req.RemoteAddr = "127.0.0.1:12345"
+	// Use external IP to trigger online mode when OFFLINE_STRICT_LOCAL=true
+	req.RemoteAddr = "203.0.113.1:12345"
 
 	oauth.HandleLogin(w, req)
 
@@ -137,7 +137,7 @@ func TestGoogleOAuth_HandleCallback_MissingParams(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			req := httptest.NewRequest("GET", tt.url, nil)
-			req.RemoteAddr = "127.0.0.1:12345" // Local IP to force online when OFFLINE_STRICT_LOCAL=true
+			req.RemoteAddr = "203.0.113.1:12345" // External IP to force online when OFFLINE_STRICT_LOCAL=true
 
 			oauth.HandleCallback(w, req)
 
@@ -156,7 +156,7 @@ func TestGoogleOAuth_HandleCallback_InvalidState(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/auth/callback?code=abc&state=invalid", nil)
-	req.RemoteAddr = "127.0.0.1:12345" // Local IP to force online
+	req.RemoteAddr = "203.0.113.1:12345" // External IP to force online
 
 	oauth.HandleCallback(w, req)
 
@@ -227,15 +227,15 @@ func TestGoogleOAuth_HandleMe_Unauthorized(t *testing.T) {
 }
 
 func TestOfflineOAuth_HandleLogin(t *testing.T) {
-	// OFFLINE_STRICT_LOCAL=true + external IP = offline
-	// because: decide() returns !IsLocalRequest() = !false = true (use offline)
+	// OFFLINE_STRICT_LOCAL=true + local IP = offline
+	// because: decide() returns IsLocalRequest() = true (use offline)
 	os.Setenv("OFFLINE_STRICT_LOCAL", "true")
 	provider := setupTestProvider(t, false)
 	oauth := provider.OAuth()
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/auth/login", nil)
-	req.RemoteAddr = "203.0.113.1:12345" // External IP to trigger offline
+	req.RemoteAddr = "127.0.0.1:12345" // Local IP to trigger offline
 
 	oauth.HandleLogin(w, req)
 
@@ -257,26 +257,32 @@ func TestOfflineOAuth_HandleLogin(t *testing.T) {
 }
 
 func TestOfflineOAuth_HandleCallback_NotSupported(t *testing.T) {
-	// OFFLINE_STRICT_LOCAL=true + external IP = offline (callback not supported)
+	// OFFLINE_STRICT_LOCAL=true + local IP = offline (callback not supported)
 	os.Setenv("OFFLINE_STRICT_LOCAL", "true")
 	provider := setupTestProvider(t, false)
 	oauth := provider.OAuth()
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/api/auth/callback?code=abc&state=xyz", nil)
-	req.RemoteAddr = "203.0.113.1:12345" // External IP for offline
+	req.RemoteAddr = "127.0.0.1:12345" // Local IP for offline
 
 	oauth.HandleCallback(w, req)
 
-	body := assertJSONResponse(t, w, http.StatusNotFound)
+	body := assertJSONResponse(t, w, http.StatusNotImplemented)
 	if errMsg, ok := body["error"].(string); !ok || !strings.Contains(errMsg, "not supported") {
 		t.Errorf("expected 'not supported' error, got: %v", body["error"])
 	}
 }
 
 func TestOfflineOAuth_HandleOfflineStart(t *testing.T) {
+	// Need to set environment variables for redirect
+	os.Setenv("APP_ENV", "development")
+	os.Setenv("FRONTEND_BASE_URL", "http://localhost:4100")
 	os.Setenv("OFFLINE_STRICT_LOCAL", "true")
-	provider := setupTestProvider(t, false)
+
+	cfg := auth.WithDefaultJWTConfig()
+	callbackURL := "http://localhost:8080/api/auth/callback"
+	provider := auth.NewProvider(cfg, callbackURL)
 
 	// Access the delegator and call HandleOfflineStart directly
 	type offlineStarter interface {
@@ -293,8 +299,9 @@ func TestOfflineOAuth_HandleOfflineStart(t *testing.T) {
 
 	delegator.HandleOfflineStart(w, req)
 
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected status 200, got %d", w.Code)
+	// Should redirect to frontend (like online callback does)
+	if w.Code != http.StatusFound {
+		t.Fatalf("expected status 302 (redirect), got %d. Response: %s", w.Code, w.Body.String())
 	}
 
 	// Should set session cookie with JWT
@@ -306,15 +313,10 @@ func TestOfflineOAuth_HandleOfflineStart(t *testing.T) {
 		t.Errorf("session cookie should have a JWT token")
 	}
 
-	// Response should be HTML for popup
-	contentType := w.Header().Get("Content-Type")
-	if !strings.Contains(contentType, "text/html") {
-		t.Errorf("expected HTML content type, got: %s", contentType)
-	}
-
-	body := w.Body.String()
-	if !strings.Contains(body, "<html") && !strings.Contains(body, "window.opener") {
-		t.Errorf("expected HTML popup response")
+	// Should redirect to frontend URL
+	location := w.Header().Get("Location")
+	if !strings.Contains(location, "localhost:4100") {
+		t.Errorf("expected redirect to frontend, got: %s", location)
 	}
 }
 
@@ -333,7 +335,7 @@ func TestOfflineOAuth_HandleLogout(t *testing.T) {
 
 	w := httptest.NewRecorder()
 	req := httptest.NewRequest("POST", "/api/auth/logout", nil)
-	req.RemoteAddr = "203.0.113.1:12345" // External IP for offline
+	req.RemoteAddr = "127.0.0.1:12345" // Local IP for offline
 	req.AddCookie(&http.Cookie{Name: auth.CookieNameSession, Value: token})
 
 	oauth.HandleLogout(w, req)
@@ -357,10 +359,10 @@ func TestAuthDelegator_PicksCorrectImplementation(t *testing.T) {
 		remoteAddr    string
 		expectOffline bool
 	}{
-		{"localhost IP should use online", "127.0.0.1:12345", false},
-		{"loopback IPv6 should use online", "[::1]:12345", false},
-		{"external host should use offline", "203.0.113.1:12345", true},
-		{"external IPv6 should use offline", "[2001:db8::1]:12345", true},
+		{"localhost IP should use offline", "127.0.0.1:12345", true},
+		{"loopback IPv6 should use offline", "[::1]:12345", true},
+		{"external host should use online", "203.0.113.1:12345", false},
+		{"external IPv6 should use online", "[2001:db8::1]:12345", false},
 	}
 
 	for _, tt := range tests {

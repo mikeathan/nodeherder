@@ -34,10 +34,10 @@ func NewProvider(cfg JWTConfig, oauthCallbackURL string) *Provider {
 
 	decide := func(r *http.Request) bool {
 		if !utils.GetAuthLocalOfflineMode() {
-			return true
+			return false
 		}
 
-		return !utils.IsLocalRequest(r)
+		return utils.IsLocalRequest(r)
 	}
 
 	o := newAuthDelegator(online, offline, decide)
@@ -98,21 +98,24 @@ func NewOfflineOAuth(jwtService *JWTService, blacklist *TokenBlacklist, callback
 }
 
 func (o *offlineOAuth) HandleLogin(w http.ResponseWriter, r *http.Request) {
-
-	// Return a URL to open in the popup that will create a local session and close the window.
-	url := o.RedirectURL + o.basePath + "/offline/start"
+	// Build URL using the request's host instead of RedirectURL
+	// This ensures we get the correct base URL for offline/start
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	url := fmt.Sprintf("%s://%s%s/offline/start", scheme, r.Host, o.basePath)
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]string{"url": url})
 }
 
 func (o *offlineOAuth) HandleCallback(w http.ResponseWriter, r *http.Request) {
-	// Not implemented for offline mode
-	writeJSONAuthError(w, http.StatusNotFound, "callback not supported in offline mode")
+	// Callback not used in offline flow - frontend opens /offline/start directly
+	writeJSONAuthError(w, http.StatusNotImplemented, "callback not supported in offline mode")
 }
 
 func (o *offlineOAuth) HandleOfflineStart(w http.ResponseWriter, r *http.Request) {
-
 	// Create a local session for an offline user
 	token, err := o.jwtService.GenerateJWT("local", "Offline User")
 	if err != nil {
@@ -122,9 +125,15 @@ func (o *offlineOAuth) HandleOfflineStart(w http.ResponseWriter, r *http.Request
 
 	setSessionCookie(w, token)
 
-	// Respond with a tiny page that notifies the opener and closes the popup
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = fmt.Fprint(w, OfflineAuthSuccessHTML())
+	// Build the frontend success redirect URL from environment.
+	frontendURL, err := frontendAuthSuccessURL()
+	if err != nil {
+		writeJSONAuthError(w, http.StatusInternalServerError, "Failed to get URL for redirect: "+err.Error())
+		return
+	}
+
+	// Redirect back to frontend, just like online OAuth flow
+	http.Redirect(w, r, frontendURL, http.StatusFound)
 }
 
 func (o *offlineOAuth) HandleLogout(w http.ResponseWriter, r *http.Request) {

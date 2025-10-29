@@ -204,15 +204,3 @@ func generatePKCEChallenge(verifier string) string {
 	sum := sha256.Sum256([]byte(verifier))
 	return base64.RawURLEncoding.EncodeToString(sum[:])
 }
-
-// =========================
-// Minimal HTML snippets for auth UX
-// =========================
-
-// OfflineAuthSuccessHTML returns a tiny HTML page used in the offline flow when a popup
-// is opened to create a local session. It will try to notify the opener via postMessage
-// and then close itself. If no opener exists, it shows a small message so the user can
-// close the window manually.
-func OfflineAuthSuccessHTML() string {
-	return "<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Authenticated</title><style>html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,\"Helvetica Neue\",Arial,sans-serif;background:#0b1020;color:#e8ecf1}main{min-height:100%;display:flex;align-items:center;justify-content:center}section{background:#111733;border:1px solid #1b254b;border-radius:10px;padding:20px 24px;box-shadow:0 10px 30px rgba(0,0,0,.4);max-width:420px}h1{font-size:18px;margin:0 0 8px}p{margin:0 0 10px;opacity:.9}small{opacity:.7}</style></head><body><main><section><h1>You're signed in (offline)</h1><p>You can close this window.</p><small>We'll close it automatically.</small></section></main><script>try{if(window.opener){window.opener.postMessage({type:'auth-success'},'*')}}catch(e){}try{window.close()}catch(e){}</script></body></html>"
-}
