@@ -33,7 +33,6 @@ function resolveAuthRoute(isAuthenticated: boolean, route?: RouteLocationNormali
       }
     }
 
-    console.log('No redirect specified, going to default authenticated route.');
     // Default authenticated route
     return getPathForRoute(RouteName.GroupDashboard);
   }

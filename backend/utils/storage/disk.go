@@ -81,7 +81,7 @@ func (d *JsonDiskStorage[T]) findAll() []T {
 	keys := make([]string, 0, len(d.cache))
 	values := make([]T, 0, len(d.cache))
 
-	for k, _ := range d.cache {
+	for k := range d.cache {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
@@ -249,7 +249,7 @@ func createDirIfNotExists(name string) {
 	if _, err := os.Stat(name); errors.Is(err, os.ErrNotExist) {
 		err := os.MkdirAll(name, os.ModePerm)
 		if err != nil {
-			utils.LogErrorf(fmt.Sprintf("Failed to create automations directory %s Error: %v", name, err))
+			utils.LogError(fmt.Sprintf("Failed to create automations directory %s Error: %v", name, err))
 			panic(err)
 		}
 	}
