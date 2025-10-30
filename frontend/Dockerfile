@@ -2,7 +2,7 @@
 FROM node:20-alpine AS builder
 WORKDIR /frontend
 
-ARG MODE=development
+ARG MODE=production
 
 COPY package*.json ./
 RUN npm ci

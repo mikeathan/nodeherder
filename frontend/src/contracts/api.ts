@@ -24,7 +24,7 @@ export async function fetchWithAuth(endpoint: string, options: FetchOptions = {}
     ...headers,
   };
 
-  const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}/${endpoint}`;
+  const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
   return fetch(url, {
     ...restOptions,
     credentials: 'include',
