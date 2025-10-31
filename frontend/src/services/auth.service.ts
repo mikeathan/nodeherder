@@ -7,7 +7,7 @@ import { UserSession } from '@/types/auth.type';
 const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
 export async function getOAuthUrl(): Promise<string> {
-  const res = await post(`api/auth/login`);
+  const res = await post(`auth/login`);
   const { url } = await res.json();
   return url;
 }
@@ -24,7 +24,7 @@ export async function waitForOAuthCompletion(): Promise<UserSession> {
         window.removeEventListener('message', handler);
 
         try {
-          const meRes = await get(`api/auth/me`);
+          const meRes = await get(`auth/me`);
 
           if (!meRes.ok) {
             console.error('/me fetch failed', meRes.status);
@@ -61,7 +61,7 @@ export async function login(): Promise<UserSession> {
 
 export async function logout(): Promise<boolean> {
   try {
-    const res = await post(`api/auth/logout`);
+    const res = await post(`auth/logout`);
     if (!res.ok) console.error('Logout failed', res.status);
     return res.ok;
   } catch (err) {
@@ -72,7 +72,7 @@ export async function logout(): Promise<boolean> {
 
 export async function restoreSession(): Promise<UserSession | null> {
   try {
-    const res = await get(`api/auth/me`);
+    const res = await get(`auth/me`);
 
     if (res.ok) {
       const userData = await res.json();
