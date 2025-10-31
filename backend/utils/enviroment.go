@@ -62,6 +62,11 @@ func GetMQTTBrokerURL() (string, error) {
 
 func LoadEnviromentConfig() error {
 
+	// If running inside Docker, skip dotenv
+	if os.Getenv("DOCKERIZED") == "true" {
+		return nil
+	}
+	
 	// loads .env if present
 	_ = godotenv.Load()
 
