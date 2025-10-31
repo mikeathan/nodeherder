@@ -61,10 +61,16 @@ func main() {
 		cancelCtx()
 	}()
 
+	mqttBrokerURL, err := utils.GetMQTTBrokerURL()
+	if err != nil {
+		utils.LogErrorf("error getting MQTT broker URL: %v", err.Error())
+		cancelCtx()
+	}
+
 	mqttConfig := mqtt.MqttConfig{
 		Username:   "sinkhole",
 		Password:   "mqtt2023",
-		Broker:     "tcp://192.168.50.241:1883",
+		Broker:     mqttBrokerURL,
 		ClientType: args.buildType,
 	}
 

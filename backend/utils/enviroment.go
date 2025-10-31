@@ -51,6 +51,15 @@ func GetAuthCallbackURL(port int) (string, error) {
 	return "", fmt.Errorf("unknown APP_ENV value: %q", env)
 }
 
+func GetMQTTBrokerURL() (string, error) {
+	mqttURL := os.Getenv("MQTT_URL")
+	if mqttURL == "" {
+		env := os.Getenv("APP_ENV")
+		return "", fmt.Errorf("MQTT_URL is not set for APP_ENV=%q", env)
+	}
+	return mqttURL, nil
+}
+
 func LoadEnviromentConfig() error {
 
 	// loads .env if present
