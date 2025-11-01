@@ -66,7 +66,7 @@ func LoadEnviromentConfig() error {
 	if os.Getenv("DOCKERIZED") == "true" {
 		return nil
 	}
-	
+
 	// loads .env if present
 	_ = godotenv.Load()
 
