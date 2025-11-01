@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"node-herder/models/devices"
 	"node-herder/utils"
+	"path/filepath"
 	"sync"
 
 	"github.com/boltdb/bolt"
@@ -23,7 +24,7 @@ type FileDeviceRepo struct {
 }
 
 func NewFileDeviceRepo() (devices.Repository, error) {
-	return NewFileDeviceRepoFromFile(deviceBaseFilename)
+	return NewFileDeviceRepoFromFile(filepath.Join("data", deviceBaseFilename))
 }
 
 func NewFileDeviceRepoFromFile(filename string) (devices.Repository, error) {

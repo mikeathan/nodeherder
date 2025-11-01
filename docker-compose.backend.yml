@@ -10,6 +10,8 @@ services:
     env_file:
       - ./backend/.env
       - ./backend/.env.production
+    volumes:
+      - ./backend/configs:/backend/configs
+      - ./backend/data:/backend/data
     environment:
       APP_ENV: production
-      MQTT_URL: tcp://192.168.50.241:1883

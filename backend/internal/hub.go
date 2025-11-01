@@ -56,14 +56,14 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	return apiServer
 }
 
-func Register(port int, store store.AppStore, config mqtt.MqttConfig, ctx context.Context) *api.ApiServer {
+func Register(port int, store store.AppStore, ctx context.Context) *api.ApiServer {
 
 	ws := ws.NewWsHub()
 	ws.Start()
 
 	utils.RegisterRemoteLoggerHook(ws)
 
-	mqtt := mqtt.NewMqttClient(config)
+	mqtt := mqtt.NewMqttClient(mqtt.WithDefaultMqttConfig())
 
 	automationHandlers := automations.DefaultAutomationHandlers(ctx)
 	hub := controllers.RegisterHubController(ws,

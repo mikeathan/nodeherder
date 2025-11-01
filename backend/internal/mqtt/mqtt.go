@@ -30,17 +30,12 @@ var bridgeTopics = []string{
 	"bridge/logging",
 }
 
-// TODO
-// bridge/request/device/configure - {"id": "deviceID"} - response = {"data":{"id": "my_remote"},"status":"ok"}.
-// bridge/request/permit_join - {"value": true, "time": 20} (will allow joining for 20 seconds).
-// bridge/request/restart - empty payload - response =  {"data":{},"status":"ok"}.
-// /bridge/request/backup - mpty payload - response: {"data":{"zip":"WklHQkVFMk1RVFQuUk9DS1M="},"status":"ok"}
-
 type MqttConfig struct {
 	Broker     string
 	Username   string
 	Password   string
 	ClientType string
+	ClientId   string
 }
 
 func (m *MqttService) onConnectedHandler() func(client mqttlib.Client) {
@@ -69,14 +64,43 @@ func (m *MqttService) messagePubHandler() func(client mqttlib.Client, msg mqttli
 	}
 }
 
-func NewMqttClient(config MqttConfig) MqttClient {
+func WithDefaultMqttConfig() func(c *MqttConfig) {
+	return func(c *MqttConfig) {
+		broker, err := utils.GetMQTTBrokerURL()
+		if err != nil {
+			utils.LogErrorf("error getting MQTT broker URL: %v", err.Error())
+			broker = "tcp://localhost:1883"
+		}
+
+		username, password := utils.GetMQTTBrokerCredentials()
+		if username == "" || password == "" {
+			utils.LogError("MQTT broker username or password is not set")
+		}
+
+		clientId := utils.GetMQTTClientID()
+		if clientId == "" {
+			utils.LogError("MQTT_CLIENT_ID is not set")
+		}
+		c.Password = password
+		c.Username = username
+		c.Broker = broker
+		c.ClientId = clientId
+	}
+}
+
+func NewMqttClient(opts ...func(*MqttConfig)) MqttClient {
+
+	var config = &MqttConfig{}
+	for _, opt := range opts {
+		opt(config)
+	}
 
 	var client = &MqttService{
 		broker:         config.Broker,
 		username:       config.Username,
 		password:       config.Password,
 		client:         nil,
-		clientId:       "sinkhole-z2m",
+		clientId:       config.ClientId,
 		messageHandler: func(s string, b []byte) {},
 		topics:         bridgeTopics,
 		mu:             sync.Mutex{},

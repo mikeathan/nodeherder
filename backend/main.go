@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	hub "node-herder/internal"
-	"node-herder/internal/mqtt"
 	"node-herder/store"
 	"node-herder/utils"
 	"os"
@@ -61,25 +60,12 @@ func main() {
 		cancelCtx()
 	}()
 
-	mqttBrokerURL, err := utils.GetMQTTBrokerURL()
-	if err != nil {
-		utils.LogErrorf("error getting MQTT broker URL: %v", err.Error())
-		cancelCtx()
-	}
-
-	mqttConfig := mqtt.MqttConfig{
-		Username:   "sinkhole",
-		Password:   "mqtt2023",
-		Broker:     mqttBrokerURL,
-		ClientType: args.buildType,
-	}
-
 	store, err := store.Create(ctx)
 	if err != nil {
 		utils.LogErrorf("error creating store: %v", err.Error())
 		cancelCtx()
 	}
-	h := hub.Register(args.port, store, mqttConfig, ctx)
+	h := hub.Register(args.port, store, ctx)
 	h.Listen()
 	utils.LogInfo("exit")
 }

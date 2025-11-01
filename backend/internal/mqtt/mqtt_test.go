@@ -3,45 +3,10 @@ package mqtt_test
 import (
 	"fmt"
 	"node-herder/internal/mqtt"
-	"strings"
-	"testing"
 	"time"
 
 	mqttlib "github.com/eclipse/paho.mqtt.golang"
 )
-
-func GetMqttConfig(broker string) mqtt.MqttConfig {
-	return mqtt.MqttConfig{
-		Username: "sinkhole",
-		Password: "mqtt2023",
-		Broker:   broker,
-	}
-}
-
-func TestMqttClientReceivesMessage(t *testing.T) {
-	t.Skip("skipping test")
-	var broker = "192.168.50.179:1883"
-	var topic = "device1"
-	var message = "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"
-	var messageHandler = func(id string, payload []byte) {
-
-		if strings.HasPrefix(id, "bridge") {
-			return
-		}
-
-		if string(payload) != message {
-			t.Errorf("Payload mismatch - want %s, got %s", message, string(payload))
-		}
-	}
-
-	cfg := GetMqttConfig(broker)
-	mqttClient := mqtt.NewMqttClient(cfg)
-
-	mqttClient.OnMessageHandler(messageHandler)
-	mqttClient.Connect()
-	mqttClient.AddTopic(topic)
-	StartMqttNodeClient(cfg, topic, message, 2)
-}
 
 func StartMqttNodeClient(cfg mqtt.MqttConfig, topic string, message string, nEvents int) {
 

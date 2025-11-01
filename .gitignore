@@ -1,4 +1,4 @@
 *.log
 nodeherder
-backend/*.db
+backend/data/*.db
 .env

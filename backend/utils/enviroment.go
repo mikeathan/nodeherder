@@ -60,6 +60,17 @@ func GetMQTTBrokerURL() (string, error) {
 	return mqttURL, nil
 }
 
+func GetMQTTBrokerCredentials() (string, string) {
+	username := os.Getenv("MQTT_USER")
+	password := os.Getenv("MQTT_PASSWORD")
+	return username, password
+}
+
+func GetMQTTClientID() string {
+	clientID := os.Getenv("MQTT_CLIENT_ID")
+	return clientID
+}
+
 func LoadEnviromentConfig() error {
 	// Local-only
 	if _, err := os.Stat(".env"); err == nil {

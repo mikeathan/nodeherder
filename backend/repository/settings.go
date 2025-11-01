@@ -5,6 +5,7 @@ import (
 	"errors"
 	"node-herder/models/settings"
 	"node-herder/utils/storage"
+	"path/filepath"
 )
 
 const settingsBaseFilename = "settings.db"
@@ -18,7 +19,7 @@ type FileSettingsRepo struct {
 }
 
 func NewFileSettingsRepo() (settings.Repository, error) {
-	return NewFileSettingsRepoFromFile(settingsBaseFilename)
+	return NewFileSettingsRepoFromFile(filepath.Join("data", settingsBaseFilename))
 }
 
 func NewFileSettingsRepoFromFile(filename string) (settings.Repository, error) {
@@ -149,7 +150,7 @@ func (s *FileSettingsRepo) Load() (*settings.AppConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	app := &settings.AppConfig{}
 	if buffer == nil {
 		app = settings.NewAppConfig()
