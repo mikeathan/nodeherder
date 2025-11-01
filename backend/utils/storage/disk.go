@@ -106,8 +106,8 @@ func (d *JsonDiskStorage[T]) Delete(name string) error {
 }
 
 func (d *JsonDiskStorage[T]) ClearCache() {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 
 	d.deleteCache()
 }

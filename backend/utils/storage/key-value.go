@@ -31,7 +31,7 @@ type KeyValueDatabase interface {
 type BoltKeyValueDatabase struct {
 	db         *bolt.DB
 	rootBucket string
-	mutex      *sync.RWMutex // TODO: use this !!!!
+	mutex      *sync.RWMutex
 }
 
 func NewBoltKeyValueDatabase(filename string, bucketName string) (KeyValueDatabase, error) {
