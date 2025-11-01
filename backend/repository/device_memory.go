@@ -49,8 +49,8 @@ func (s *MemoryDeviceRepo) FindBridgeInfo(key string) (*devices.BridgeInfo, erro
 
 func (s *MemoryDeviceRepo) Store(key string, device *devices.Device) (bool, error) {
 
-	defer s.mutex.Unlock()
 	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
 	ok := s.updated[key]
 	s.store[key] = device
@@ -61,8 +61,8 @@ func (s *MemoryDeviceRepo) Store(key string, device *devices.Device) (bool, erro
 
 func (s *MemoryDeviceRepo) Remove(key string) error {
 
-	defer s.mutex.Unlock()
 	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
 	delete(s.store, key)
 	return nil
@@ -70,9 +70,9 @@ func (s *MemoryDeviceRepo) Remove(key string) error {
 
 func (s *MemoryDeviceRepo) FindDevice(id string) (*devices.Device, error) {
 
+	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	s.mutex.RLock()
 	if val, ok := s.store[id]; ok {
 		return val, nil
 	}
@@ -83,9 +83,9 @@ func (s *MemoryDeviceRepo) FindDevice(id string) (*devices.Device, error) {
 func (s *MemoryDeviceRepo) FindDevices(ids []string) ([]*devices.Device, error) {
 	ds := []*devices.Device{}
 
+	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	s.mutex.RLock()
 	for _, id := range ids {
 		if val, ok := s.store[id]; ok {
 			ds = append(ds, val)
@@ -97,9 +97,8 @@ func (s *MemoryDeviceRepo) FindDevices(ids []string) ([]*devices.Device, error) 
 func (s *MemoryDeviceRepo) AllDevices() ([]*devices.Device, error) {
 
 	// sort before returning values
-	defer s.mutex.RUnlock()
-
 	s.mutex.RLock()
+	defer s.mutex.RUnlock()
 
 	keys := make([]string, 0, len(s.store))
 	for k := range s.store {

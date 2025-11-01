@@ -78,8 +78,6 @@ func (d *DeviceConfigCache) Size() int {
 }
 
 func (d *DeviceConfigCache) IsMetricsEnabled(deviceId string) bool {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
 	config, err := d.Get(deviceId)
 	if err != nil {
 		return false
@@ -88,8 +86,6 @@ func (d *DeviceConfigCache) IsMetricsEnabled(deviceId string) bool {
 }
 
 func (d *DeviceConfigCache) IsDeviceDisabled(deviceId string) bool {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
 	config, err := d.Get(deviceId)
 	if err != nil {
 		return false
@@ -99,9 +95,19 @@ func (d *DeviceConfigCache) IsDeviceDisabled(deviceId string) bool {
 
 func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, error) {
 
+	// First try with read lock
 	d.mutex.RLock()
-	defer d.mutex.RUnlock()
+	if deviceConfig, ok := d.devicesConfigs[id]; ok {
+		d.mutex.RUnlock()
+		return deviceConfig, nil
+	}
+	d.mutex.RUnlock()
 
+	// Not in cache, acquire write lock to load and store
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	// Double-check in case another goroutine loaded it
 	if deviceConfig, ok := d.devicesConfigs[id]; ok {
 		return deviceConfig, nil
 	}
