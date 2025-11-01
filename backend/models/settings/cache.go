@@ -78,9 +78,7 @@ func (d *DeviceConfigCache) Size() int {
 }
 
 func (d *DeviceConfigCache) IsMetricsEnabled(deviceId string) bool {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
-	config, err := d.getUnsafe(deviceId)
+	config, err := d.Get(deviceId)
 	if err != nil {
 		return false
 	}
@@ -88,30 +86,11 @@ func (d *DeviceConfigCache) IsMetricsEnabled(deviceId string) bool {
 }
 
 func (d *DeviceConfigCache) IsDeviceDisabled(deviceId string) bool {
-	d.mutex.RLock()
-	defer d.mutex.RUnlock()
-	config, err := d.getUnsafe(deviceId)
+	config, err := d.Get(deviceId)
 	if err != nil {
 		return false
 	}
 	return config.Disabled
-}
-
-// getUnsafe performs lookup without acquiring lock (caller must hold lock)
-func (d *DeviceConfigCache) getUnsafe(id string) (*DeviceConfig, error) {
-	if deviceConfig, ok := d.devicesConfigs[id]; ok {
-		return deviceConfig, nil
-	}
-
-	// load from db
-	config, err := d.store.LoadOrDefaultDeviceConfig(id)
-	if err != nil {
-		return nil, err
-	}
-
-	// store in cache
-	d.devicesConfigs[id] = config
-	return config, nil
 }
 
 func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, error) {
