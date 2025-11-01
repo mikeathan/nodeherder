@@ -81,8 +81,8 @@ func DefaultRemoteLoggerTask() settings.Task {
 }
 func (t *RemoteLoggerTask) Start(config *settings.AppConfig) error {
 
-	defer t.mutex.Unlock()
 	t.mutex.Lock()
+	defer t.mutex.Unlock()
 
 	utils.EnableRemoteLoggerHook(config.Hub.Logger.EnableRemoteLogger)
 

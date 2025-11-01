@@ -48,8 +48,8 @@ func NewFileDeviceRepoFromFile(filename string) (devices.Repository, error) {
 
 func (s *FileDeviceRepo) Remove(key string) error {
 
-	defer s.mutex.Unlock()
 	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
 	return s.db.Update(func(tx *bolt.Tx) error {
 
@@ -119,8 +119,8 @@ func (s *FileDeviceRepo) Close() error {
 
 func (s *FileDeviceRepo) Store(key string, device *devices.Device) (bool, error) {
 
-	defer s.mutex.Unlock()
 	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
 	err := s.db.Update(func(tx *bolt.Tx) error {
 
@@ -208,17 +208,17 @@ func (s *FileDeviceRepo) FindBridgeInfo(id string) (*devices.BridgeInfo, error) 
 
 func (s *FileDeviceRepo) FindDevice(id string) (*devices.Device, error) {
 
+	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	s.mutex.RLock()
 	return s.findDevice(id)
 }
 
 func (s *FileDeviceRepo) FindDevices(ids []string) ([]*devices.Device, error) {
 
+	s.mutex.RLock()
 	defer s.mutex.RUnlock()
 
-	s.mutex.RLock()
 	return s.findDevices(ids)
 }
 
