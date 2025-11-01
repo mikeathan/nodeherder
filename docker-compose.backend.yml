@@ -6,7 +6,10 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "4100:4100"
+      - "4110:4110"
+    env_file:
+      - ./backend/.env
+      - ./backend/.env.production
     environment:
       APP_ENV: production
       MQTT_URL: tcp://192.168.50.241:1883
