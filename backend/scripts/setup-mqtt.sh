@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+set -e
+
+USER="mqttuser"
+PASS=$(openssl rand -base64 16)
+
+# Directory where this script sits
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# backend/scripts → backend
+ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
+
+# backend/mqtt dirs
+CONFIG_DIR="$ROOT_DIR/mqtt/config"
+DATA_DIR="$ROOT_DIR/mqtt/data"
+LOG_DIR="$ROOT_DIR/mqtt/log"
+
+mkdir -p "$CONFIG_DIR" "$DATA_DIR" "$LOG_DIR"
+
+# Set permissive permissions so mosquitto container can access
+chmod -R 755 "$CONFIG_DIR" "$DATA_DIR" "$LOG_DIR"
+
+echo "✅ Generating Mosquitto password..."
+
+# Get current user's UID and GID
+CURRENT_UID=$(id -u)
+CURRENT_GID=$(id -g)
+
+# Create password file using Docker with current user permissions
+docker run --rm \
+  --user "$CURRENT_UID:$CURRENT_GID" \
+  -v "$CONFIG_DIR:/mosquitto/config" \
+  eclipse-mosquitto:2 \
+  sh -c "touch /mosquitto/config/password.txt && chmod 600 /mosquitto/config/password.txt && mosquitto_passwd -b /mosquitto/config/password.txt '$USER' '$PASS'"
+
+# Ensure password file has secure permissions
+chmod 600 "$CONFIG_DIR/password.txt"
+
+echo "✅ Password written → $CONFIG_DIR/password.txt"
+
+# Create mosquitto.conf if missing
+MOSQ_CONF="$CONFIG_DIR/mosquitto.conf"
+if [ ! -f "$MOSQ_CONF" ]; then
+cat <<EOF > "$MOSQ_CONF"
+allow_anonymous false
+password_file /mosquitto/config/password.txt
+listener 1883
+EOF
+    echo "✅ Created → $MOSQ_CONF"
+else
+    echo "ℹ️  Existing config found → $MOSQ_CONF"
+fi
+
+# backend/.env
+ENV_FILE="$ROOT_DIR/.env"
+touch "$ENV_FILE"
+
+# Update/append MQTT_USER
+grep -q "^MQTT_USER=" "$ENV_FILE" 2>/dev/null \
+  && sed -i "s|^MQTT_USER=.*|MQTT_USER=${USER}|" "$ENV_FILE" \
+  || echo "MQTT_USER=${USER}" >> "$ENV_FILE"
+
+# Update/append MQTT_PASS
+grep -q "^MQTT_PASS=" "$ENV_FILE" 2>/dev/null \
+  && sed -i "s|^MQTT_PASS=.*|MQTT_PASS=${PASS}|" "$ENV_FILE" \
+  || echo "MQTT_PASS=${PASS}" >> "$ENV_FILE"
+
+# Build URL
+MQTT_URL="tcp://${USER}:${PASS}@mqtt:1883"
+
+# Update/append MQTT_URL
+grep -q "^MQTT_URL=" "$ENV_FILE" 2>/dev/null \
+  && sed -i "s|^MQTT_URL=.*|MQTT_URL=${MQTT_URL}|" "$ENV_FILE" \
+  || echo "MQTT_URL=${MQTT_URL}" >> "$ENV_FILE"
+
+
+echo ""
+echo "✅ MQTT credentials generated"
+echo "   USER = $USER"
+echo "   PASS = $PASS"
+echo ""
+echo "✅ Files created/updated:"
+echo "   $CONFIG_DIR/password.txt"
+echo "   $MOSQ_CONF"
+echo "   $ENV_FILE"
+echo ""
+echo "✅ MQTT_URL written:"
+echo "   $MQTT_URL"
+echo ""
+echo "✅ Done"

@@ -62,7 +62,7 @@ func GetMQTTBrokerURL() (string, error) {
 
 func GetMQTTBrokerCredentials() (string, string) {
 	username := os.Getenv("MQTT_USER")
-	password := os.Getenv("MQTT_PASSWORD")
+	password := os.Getenv("MQTT_PASS")
 	return username, password
 }
 
