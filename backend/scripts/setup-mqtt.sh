@@ -88,3 +88,64 @@ echo "✅ MQTT_URL written:"
 echo "   $MQTT_URL"
 echo ""
 echo "✅ Done"
+
+
+# --------------------------------------
+# ✅ Update Zigbee2MQTT configuration.yaml
+# --------------------------
+
+# TODO:
+# That can be parameterized 
+Z2M_DIR="$ROOT_DIR/../../zigbee2mqtt-data"
+if [ ! -d "$Z2M_DIR" ]; then
+    echo "📁 Creating Zigbee2MQTT data directory → $Z2M_DIR"
+    mkdir -p "$Z2M_DIR"
+fi
+
+Z2M_CONFIG="$Z2M_DIR/configuration.yaml"
+
+echo ""
+echo "🔧 Updating Zigbee2MQTT config at: $Z2M_CONFIG"
+
+# Create file if missing
+if [ ! -f "$Z2M_CONFIG" ]; then
+    echo "⚠️  No configuration.yaml found — creating a minimal one"
+    cat <<EOF > "$Z2M_CONFIG"
+mqtt:
+  server: mqtt://mqtt:1883
+  user: ${USER}
+  password: ${PASS}
+EOF
+else
+    echo "✅ Updating existing Z2M configuration.yaml"
+
+    # Ensure mqtt block exists
+    if ! grep -q "^mqtt:" "$Z2M_CONFIG"; then
+        echo "" >> "$Z2M_CONFIG"
+        echo "mqtt:" >> "$Z2M_CONFIG"
+    fi
+
+    # server
+    if grep -q "server:" "$Z2M_CONFIG"; then
+        sed -i "s|server:.*|server: mqtt://mqtt:1883|" "$Z2M_CONFIG"
+    else
+        sed -i "/^mqtt:/a\  server: mqtt://mqtt:1883" "$Z2M_CONFIG"
+    fi
+
+    # user
+    if grep -q "user:" "$Z2M_CONFIG"; then
+        sed -i "s|user:.*|user: ${USER}|" "$Z2M_CONFIG"
+    else
+        sed -i "/^mqtt:/a\  user: ${USER}" "$Z2M_CONFIG"
+    fi
+
+    # password
+    if grep -q "password:" "$Z2M_CONFIG"; then
+        sed -i "s|password:.*|password: ${PASS}|" "$Z2M_CONFIG"
+    else
+        sed -i "/^mqtt:/a\  password: ${PASS}" "$Z2M_CONFIG"
+    fi
+fi
+
+echo "✅ Zigbee2MQTT MQTT credentials updated"
+
