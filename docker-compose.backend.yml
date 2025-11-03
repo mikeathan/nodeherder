@@ -28,9 +28,9 @@ services:
     # ports:
     #   - "1883:1883"
     volumes:
-      - ./backend/mqtt/config:/mosquitto/config
-      - ./backend/mqtt/data:/mosquitto/data
-      - ./backend/mqtt/log:/mosquitto/log
+      - ${DATA_ROOT}/mqtt/data:/mosquitto/data
+      - ${DATA_ROOT}/mqtt/config:/mosquitto/config
+      - ${DATA_ROOT}/mqtt/log:/mosquitto/log
     networks:
       - nodeherder
 
@@ -39,7 +39,7 @@ services:
     container_name: zigbee2mqtt
     restart: unless-stopped
     volumes:
-      - ./zigbee2mqtt-data:/app/data
+      - ${DATA_ROOT}/zigbee2mqtt-data:/app/data
       - /run/udev:/run/udev:ro
     ports:
       - "8089:8080"

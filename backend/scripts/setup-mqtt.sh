@@ -1,8 +1,36 @@
 #!/usr/bin/env bash
 set -e
 
+# Directory where this script sits
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# backend/scripts → backend
+ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
+
+# Load .env if present
+ENV_PATH="$ROOT_DIR/../.env"
+if [ -f "$ENV_PATH" ]; then
+  echo "🔄 Loading $ENV_PATH"
+  set -a
+  source "$ENV_PATH"
+  set +a
+else
+  echo "⚠️  No .env found at $ENV_PATH"
+fi
+
+# Check DATA_ROOT
+if [ -z "$DATA_ROOT" ]; then
+  echo "❌ DATA_ROOT env variable not set."
+  echo "Add to your .env or export it:"
+  echo "    export DATA_ROOT=/opt/nodeherder"
+  exit 1
+fi
+
+echo "📁 DATA_ROOT = $DATA_ROOT"
+
 USER="mqttuser"
 PASS=$(openssl rand -base64 16)
+
 
 # Directory where this script sits
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -10,10 +38,13 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # backend/scripts → backend
 ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 
-# backend/mqtt dirs
-CONFIG_DIR="$ROOT_DIR/mqtt/config"
-DATA_DIR="$ROOT_DIR/mqtt/data"
-LOG_DIR="$ROOT_DIR/mqtt/log"
+
+# --------------------------------------
+# ✅ MQTT folders under DATA_ROOT
+# --------------------------------------
+CONFIG_DIR="$DATA_ROOT/mqtt/config"
+DATA_DIR="$DATA_ROOT/mqtt/data"
+LOG_DIR="$DATA_ROOT/mqtt/log"
 
 mkdir -p "$CONFIG_DIR" "$DATA_DIR" "$LOG_DIR"
 
@@ -51,7 +82,10 @@ else
     echo "ℹ️  Existing config found → $MOSQ_CONF"
 fi
 
-# backend/.env
+
+# --------------------------------------
+# ✅ backend/.env stays inside repo
+# --------------------------------------
 ENV_FILE="$ROOT_DIR/.env"
 touch "$ENV_FILE"
 
@@ -92,11 +126,10 @@ echo "✅ Done"
 
 # --------------------------------------
 # ✅ Update Zigbee2MQTT configuration.yaml
-# --------------------------
+# --------------------------------------
 
-# TODO:
-# That can be parameterized 
-Z2M_DIR="$ROOT_DIR/../../zigbee2mqtt-data"
+Z2M_DIR="$DATA_ROOT/zigbee2mqtt-data"
+
 if [ ! -d "$Z2M_DIR" ]; then
     echo "📁 Creating Zigbee2MQTT data directory → $Z2M_DIR"
     mkdir -p "$Z2M_DIR"
@@ -148,4 +181,3 @@ else
 fi
 
 echo "✅ Zigbee2MQTT MQTT credentials updated"
-
