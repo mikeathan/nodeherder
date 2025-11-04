@@ -46,7 +46,7 @@ services:
     environment:
       - TZ=Europe/London
     devices:
-      - /dev/serial/by-id/usb-Silicon_Labs_Sonoff_Zigbee_3.0_USB_Dongle_Plus_0001-if00-port0:/dev/ttyUSB0
+      - ${Z2M_DEVICE}:${Z2M_SERIAL_PORT}
     depends_on:
       - mqtt
     networks:
