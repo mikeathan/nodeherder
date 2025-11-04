@@ -38,7 +38,6 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # backend/scripts → backend
 ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 
-
 # --------------------------------------
 # ✅ MQTT folders under DATA_ROOT
 # --------------------------------------
@@ -123,61 +122,60 @@ echo "   $MQTT_URL"
 echo ""
 echo "✅ Done"
 
-
-# --------------------------------------
-# ✅ Update Zigbee2MQTT configuration.yaml
-# --------------------------------------
+######################################################################
+# update Zigbee2MQTT configuration.yaml
+######################################################################
 
 Z2M_DIR="$DATA_ROOT/zigbee2mqtt-data"
-
-if [ ! -d "$Z2M_DIR" ]; then
-    echo "📁 Creating Zigbee2MQTT data directory → $Z2M_DIR"
-    mkdir -p "$Z2M_DIR"
-fi
+mkdir -p "$Z2M_DIR"
 
 Z2M_CONFIG="$Z2M_DIR/configuration.yaml"
 
 echo ""
-echo "🔧 Updating Zigbee2MQTT config at: $Z2M_CONFIG"
+echo "🔧 Updating Zigbee2MQTT config: $Z2M_CONFIG"
 
-# Create file if missing
-if [ ! -f "$Z2M_CONFIG" ]; then
-    echo "⚠️  No configuration.yaml found — creating a minimal one"
-    cat <<EOF > "$Z2M_CONFIG"
+# Convert tcp:// to mqtt://
+TMP="${MQTT_URL/tcp:\/\//mqtt://}"
+# remove creds → everything before @
+Z2M_MQTT_SERVER="${TMP#*@}"      # remove prefix up to @
+Z2M_MQTT_SERVER="mqtt://$Z2M_MQTT_SERVER"
+
+echo "🔗 Zigbee2MQTT MQTT server = $Z2M_MQTT_SERVER"
+
+Z2M_SERIAL_PORT="${Z2M_SERIAL_PORT:-/dev/ttyUSB0}"
+echo "🔌 Using Zigbee serial port: $Z2M_SERIAL_PORT"
+
+######################################################################
+#  create full template
+######################################################################
+
+# if [ -f "$Z2M_CONFIG" ]; then
+#     TS=$(date +%s)
+#     cp "$Z2M_CONFIG" "$Z2M_CONFIG.bak.$TS"
+#     echo "📁 Backed up existing config → $Z2M_CONFIG.bak.$TS"
+# fi
+cat <<EOF > "$Z2M_CONFIG"
+permit_join: true
+
 mqtt:
-  server: mqtt://mqtt:1883
+  base_topic: zigbee2mqtt
+  server: ${Z2M_MQTT_SERVER}
   user: ${USER}
   password: ${PASS}
+
+serial:
+  port: ${Z2M_SERIAL_PORT}
+
+frontend:
+  port: 8080
+
+advanced:
+  network_key: GENERATE
+  last_seen: ISO_8601_local
 EOF
-else
-    echo "✅ Updating existing Z2M configuration.yaml"
 
-    # Ensure mqtt block exists
-    if ! grep -q "^mqtt:" "$Z2M_CONFIG"; then
-        echo "" >> "$Z2M_CONFIG"
-        echo "mqtt:" >> "$Z2M_CONFIG"
-    fi
+echo "✅ Zigbee2MQTT configuration written fresh"
 
-    # server
-    if grep -q "server:" "$Z2M_CONFIG"; then
-        sed -i "s|server:.*|server: mqtt://mqtt:1883|" "$Z2M_CONFIG"
-    else
-        sed -i "/^mqtt:/a\  server: mqtt://mqtt:1883" "$Z2M_CONFIG"
-    fi
-
-    # user
-    if grep -q "user:" "$Z2M_CONFIG"; then
-        sed -i "s|user:.*|user: ${USER}|" "$Z2M_CONFIG"
-    else
-        sed -i "/^mqtt:/a\  user: ${USER}" "$Z2M_CONFIG"
-    fi
-
-    # password
-    if grep -q "password:" "$Z2M_CONFIG"; then
-        sed -i "s|password:.*|password: ${PASS}|" "$Z2M_CONFIG"
-    else
-        sed -i "/^mqtt:/a\  password: ${PASS}" "$Z2M_CONFIG"
-    fi
-fi
-
-echo "✅ Zigbee2MQTT MQTT credentials updated"
+echo "✅ Zigbee2MQTT configuration updated"
+echo ""
+echo "✅ Done"
