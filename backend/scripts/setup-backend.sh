@@ -136,24 +136,34 @@ echo "🔧 Updating Zigbee2MQTT config: $Z2M_CONFIG"
 
 # Convert tcp:// to mqtt://
 TMP="${MQTT_URL/tcp:\/\//mqtt://}"
-# remove creds → everything before @
-Z2M_MQTT_SERVER="${TMP#*@}"      # remove prefix up to @
+Z2M_MQTT_SERVER="${TMP#*@}"
 Z2M_MQTT_SERVER="mqtt://$Z2M_MQTT_SERVER"
 
-echo "🔗 Zigbee2MQTT MQTT server = $Z2M_MQTT_SERVER"
-
 Z2M_SERIAL_PORT="${Z2M_SERIAL_PORT:-/dev/ttyUSB0}"
-echo "🔌 Using Zigbee serial port: $Z2M_SERIAL_PORT"
 
-######################################################################
-#  create full template
-######################################################################
+if [ -f "$Z2M_CONFIG" ]; then
+    echo "ℹ️  Config exists → patching MQTT + serial only"
 
-# if [ -f "$Z2M_CONFIG" ]; then
-#     TS=$(date +%s)
-#     cp "$Z2M_CONFIG" "$Z2M_CONFIG.bak.$TS"
-#     echo "📁 Backed up existing config → $Z2M_CONFIG.bak.$TS"
-# fi
+    # Backup
+    TS=$(date +%s)
+    cp "$Z2M_CONFIG" "$Z2M_CONFIG.bak.$TS"
+
+    # Patch server
+    sed -i "s|^\(\s*server:\).*|\1 ${Z2M_MQTT_SERVER}|" "$Z2M_CONFIG"
+
+    # Patch user
+    sed -i "s|^\(\s*user:\).*|\1 ${USER}|" "$Z2M_CONFIG"
+
+    # Patch password
+    sed -i "s|^\(\s*password:\).*|\1 ${PASS}|" "$Z2M_CONFIG"
+
+    # Patch port
+    sed -i "s|^\(\s*port:\).*|\1 ${Z2M_SERIAL_PORT}|" "$Z2M_CONFIG"
+
+    echo "✅ Zigbee2MQTT config patched"
+else
+    echo "⚠️  No config found → creating fresh minimal config"
+
 cat <<EOF > "$Z2M_CONFIG"
 permit_join: true
 
@@ -174,8 +184,7 @@ advanced:
   last_seen: ISO_8601_local
 EOF
 
-echo "✅ Zigbee2MQTT configuration written fresh"
+    echo "✅ Zigbee2MQTT configuration created"
+fi
 
-echo "✅ Zigbee2MQTT configuration updated"
-echo ""
-echo "✅ Done"
+echo "✅ Done updating Zigbee2MQTT"
