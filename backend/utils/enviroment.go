@@ -51,6 +51,19 @@ func GetAuthCallbackURL(port int) (string, error) {
 	return "", fmt.Errorf("unknown APP_ENV value: %q", env)
 }
 
+func GetFrontendAllowedOrigins() []string {
+	originsEnv := os.Getenv("FRONTEND_ALLOWED_ORIGINS")
+	if originsEnv == "" {
+		return []string{}
+	}
+	origins := strings.Split(originsEnv, ",")
+	for i := range origins {
+		origins[i] = strings.TrimSpace(origins[i])
+	}
+
+	return origins
+}
+
 func GetMQTTBrokerURL() (string, error) {
 	mqttURL := os.Getenv("MQTT_URL")
 	if mqttURL == "" {
