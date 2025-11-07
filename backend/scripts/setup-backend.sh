@@ -32,11 +32,6 @@ USER="mqttuser"
 PASS=$(openssl rand -base64 16)
 
 
-# Directory where this script sits
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-# backend/scripts → backend
-ROOT_DIR="$(realpath "$SCRIPT_DIR/..")"
 
 # --------------------------------------
 # ✅ MQTT folders under DATA_ROOT
@@ -49,8 +44,6 @@ mkdir -p "$CONFIG_DIR" "$DATA_DIR" "$LOG_DIR"
 
 # Set permissive permissions so mosquitto container can access
 chmod -R 755 "$CONFIG_DIR" "$DATA_DIR" "$LOG_DIR"
-
-echo "✅ Generating Mosquitto password..."
 
 # Get current user's UID and GID
 CURRENT_UID=$(id -u)
@@ -98,8 +91,7 @@ grep -q "^MQTT_PASS=" "$ENV_FILE" 2>/dev/null \
   && sed -i "s|^MQTT_PASS=.*|MQTT_PASS=${PASS}|" "$ENV_FILE" \
   || echo "MQTT_PASS=${PASS}" >> "$ENV_FILE"
 
-# Build URL
-MQTT_URL="tcp://${USER}:${PASS}@mqtt:1883"
+MQTT_URL="tcp://mqtt:1883"
 
 # Update/append MQTT_URL
 grep -q "^MQTT_URL=" "$ENV_FILE" 2>/dev/null \
@@ -134,10 +126,9 @@ Z2M_CONFIG="$Z2M_DIR/configuration.yaml"
 echo ""
 echo "🔧 Updating Zigbee2MQTT config: $Z2M_CONFIG"
 
-# Convert tcp:// to mqtt://
+# Convert tcp:// to mqtt:// 
 TMP="${MQTT_URL/tcp:\/\//mqtt://}"
-Z2M_MQTT_SERVER="${TMP#*@}"
-Z2M_MQTT_SERVER="mqtt://$Z2M_MQTT_SERVER"
+Z2M_MQTT_SERVER="$TMP"
 
 Z2M_SERIAL_PORT="${Z2M_SERIAL_PORT:-/dev/ttyUSB0}"
 
