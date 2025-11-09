@@ -9,3 +9,9 @@ services:
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - nodeherder
+
+networks:
+  nodeherder:
+    driver: bridge
