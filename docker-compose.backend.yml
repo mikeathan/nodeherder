@@ -25,8 +25,8 @@ services:
     image: eclipse-mosquitto:2
     container_name: nodeherder-mqtt
     restart: unless-stopped
-    # ports:
-    #   - "1883:1883"
+    ports:
+      - "1883:1883"
     volumes:
       - ${DATA_ROOT}/mqtt/data:/mosquitto/data
       - ${DATA_ROOT}/mqtt/config:/mosquitto/config

@@ -159,10 +159,11 @@ export const settings = [
     availability: 'offline',
     method: 'mqtt',
     luminance_offset: 12,
-    delayInMs: 35000,
+    delayInMs: 7000, // Should show "now" most of the time
     luminance_: luminance_luxMin,
     luminance_LastChanged: moment(),
     presenceLastChanged: moment(),
+    presence: false,
   },
   {
     id: '0xa4c1389b273366c3',
@@ -173,7 +174,7 @@ export const settings = [
     melody: 6,
     duration: 1,
     volume: 'high',
-    delayInMs: 10500,
+    delayInMs: 90000, // 1.5 minutes - rarely shows "now"
     presenceLastChanged: moment(),
   },
   {
@@ -183,7 +184,7 @@ export const settings = [
     method: 'mqtt',
     temperatureOffset: 0.6,
     humidityOffset: 11.3,
-    delayInMs: 5000,
+    delayInMs: 18000, // 18 seconds - moderate delay
     humidity: humidityMin + 6,
     temperature: temperatureMin,
     temperatureLastChanged: moment(),
@@ -197,7 +198,7 @@ export const settings = [
     brightness: 60,
     color_temp: 370,
     state: 'ON',
-    delayInMs: 15000,
+    delayInMs: 8000, // Should show "now"
   },
   {
     id: '0xa4c138c383ac3fc8',
@@ -207,7 +208,88 @@ export const settings = [
     smoke: false,
     device_fault: false,
     silence: false,
-    delayInMs: 9000,
+    delayInMs: 120000, // 2 minutes - shows last seen time
+  },
+  {
+    id: '0x70ac08fffefafeca',
+    friendlyName: 'Attic Light',
+    availability: 'offline',
+    method: 'mqtt',
+    brightness: 120,
+    color_temp: 250,
+    state: 'OFF',
+    delayInMs: 35000, // 35 seconds - shows last seen time
+  },
+  {
+    id: '0x001788010d7d9d3f',
+    friendlyName: 'Living room switch dial',
+    availability: 'offline',
+    method: 'mqtt',
+    battery: 95,
+    brightness_dial: 128,
+    lastActionTime: moment(),
+    delayInMs: 55000, // 55 seconds - shows last seen time
+  },
+  {
+    id: '0x00124b002fa5844e',
+    friendlyName: 'Front door sensor',
+    availability: 'offline',
+    method: 'mqtt',
+    contact: true, // closed
+    battery: 87,
+    battery_low: false,
+    delayInMs: 6000, // Should show "now" - active door
+  },
+  {
+    id: '0x70b3d52b60136661',
+    friendlyName: 'Kitchen power socket',
+    availability: 'offline',
+    method: 'mqtt',
+    state: 'ON',
+    power: 0,
+    current: 0,
+    voltage: 230,
+    energy: 125.5,
+    delayInMs: 25000, // 25 seconds - moderate delay
+  },
+  {
+    id: '0xa4c1381b6fd53fc4',
+    friendlyName: 'Attic room power socket',
+    availability: 'offline',
+    method: 'mqtt',
+    state: 'ON',
+    power: 66,
+    current: 0.36,
+    voltage: 237,
+    energy: 637.73,
+    delayInMs: 22000, // 22 seconds - moderate delay
+  },
+  {
+    id: '0xa4c1384582432edd',
+    friendlyName: 'Garden temperature',
+    availability: 'offline',
+    method: 'mqtt',
+    temperature: 18.5,
+    humidity: 65.0,
+    battery: 82,
+    temperatureOffset: 0.4,
+    humidityOffset: 0.7,
+    temperatureLastChanged: moment(),
+    humidityLastChanged: moment(),
+    delayInMs: 45000, // 45 seconds - outdoor sensor, less frequent
+  },
+  {
+    id: '0xa4c138e1b5658e68',
+    friendlyName: 'Attic air sensor',
+    availability: 'offline',
+    method: 'mqtt',
+    co2: 450,
+    formaldehyd: 5,
+    humidity: 55,
+    temperature: 22,
+    pm25: 12,
+    voc: 120,
+    delayInMs: 70000, // 70 seconds - air quality updates slowly
   },
 ];
 
@@ -217,6 +299,13 @@ const updateDeviceMap = {
   '0x00158d0005a23c38': mockUpdateLivingRoomLight,
   '0xa4c1389b273366c3': mockUpdateAtticAlarm,
   '0xa4c138c383ac3fc8': mockSmokeAlarm,
+  '0x70ac08fffefafeca': mockUpdateAtticLight,
+  '0x001788010d7d9d3f': mockUpdateSwitchDial,
+  '0x00124b002fa5844e': mockUpdateDoorSensor,
+  '0x70b3d52b60136661': mockUpdateKitchenSocket,
+  '0xa4c1381b6fd53fc4': mockUpdateAtticSocket,
+  '0xa4c1384582432edd': mockUpdateGardenTemp,
+  '0xa4c138e1b5658e68': mockUpdateAirSensor,
 };
 
 export function buildDeviceUpdatedPayload(s) {
@@ -230,6 +319,14 @@ export function buildDeviceUpdatedPayload(s) {
 }
 
 function mockUpdateAtticAlarm(settings) {
+  // Occasionally toggle alarm (5% chance)
+  if (Math.random() < 0.05) {
+    settings.alarm = !settings.alarm;
+  }
+
+  // Randomly vary linkquality (90-100)
+  const linkquality = 90 + Math.floor(Math.random() * 11);
+
   return {
     id: '0xa4c1389b273366c3',
     last_seen: currentTime(),
@@ -239,48 +336,125 @@ function mockUpdateAtticAlarm(settings) {
       melody: settings.melody,
       duration: settings.duration,
       volume: settings.volume,
-      linkquality: 100,
+      linkquality,
     },
   };
 }
 
 function mockUpdateLivingRoomLight(settings) {
+  // Randomly adjust brightness slightly (±5)
+  let brightness = settings.brightness + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 5);
+  brightness = Math.max(1, Math.min(254, brightness));
+  settings.brightness = brightness;
+
+  // Occasionally change state (3% chance)
+  if (Math.random() < 0.03) {
+    settings.state = settings.state === 'ON' ? 'OFF' : 'ON';
+  }
+
+  // Randomly vary color_temp slightly (±10)
+  let color_temp = settings.color_temp + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 10);
+  color_temp = Math.max(153, Math.min(500, color_temp));
+  settings.color_temp = color_temp;
+
+  // Randomly vary linkquality (85-100)
+  const linkquality = 85 + Math.floor(Math.random() * 16);
+
   return {
     id: '0x00158d0005a23c38',
     last_seen: currentTime(),
     availability: setDeviceOnline(settings),
-    data: { brightness: 61, color_temp: 370, state: 'ON' },
+    data: {
+      brightness,
+      color_temp,
+      state: settings.state,
+      linkquality,
+    },
   };
 }
 
 function mockSmokeAlarm(settings) {
+  // Very rarely trigger smoke alarm (1% chance)
+  if (Math.random() < 0.01) {
+    settings.smoke = !settings.smoke;
+  }
+
+  // Even more rarely trigger device fault (0.5% chance)
+  if (Math.random() < 0.005) {
+    settings.device_fault = !settings.device_fault;
+  }
+
+  // Randomly vary linkquality (88-100)
+  const linkquality = 88 + Math.floor(Math.random() * 13);
+  const battery = 85 + Math.floor(Math.random() * 16); // 85-100
+
   return {
     id: '0xa4c138c383ac3fc8',
     last_seen: currentTime(),
     availability: setDeviceOnline(settings),
     data: {
-      smoke: !settings.smoke,
-      device_fault: !settings.device_fault,
-      silence: !settings.silence,
+      smoke: settings.smoke,
+      device_fault: settings.device_fault,
+      silence: settings.silence,
+      battery,
+      linkquality,
     },
   };
 }
 
 function mockUpdateHumanPresencev2(settings) {
+  // Randomly change illuminance (0-150 lux with more realistic variation)
+  const diff = moment().diff(settings.luminance_LastChanged);
+  const duration = moment.duration(diff);
+
+  if (duration.seconds() >= 3) {
+    // Gradual illuminance changes
+    const change = (Math.random() - 0.5) * 10; // ±5 lux
+    settings.luminance_ = Math.max(0, Math.min(150, settings.luminance_ + change));
+    settings.luminance_LastChanged = moment();
+  }
+
+  // Toggle presence more realistically (10% chance every update)
+  const presenceDiff = moment().diff(settings.presenceLastChanged);
+  const presenceDuration = moment.duration(presenceDiff);
+
+  if (presenceDuration.seconds() >= 8 && Math.random() < 0.1) {
+    settings.presence = !settings.presence;
+    settings.presenceLastChanged = moment();
+  }
+
+  // Randomly vary linkquality (75-100)
+  const linkquality = 75 + Math.floor(Math.random() * 26);
+
   return {
     id: '0xa4c13894070052fc',
     last_seen: currentTime(),
     availability: setDeviceOnline(settings),
-    data: { illuminance: 9, presence: true },
+    data: {
+      illuminance: Math.round(settings.luminance_),
+      presence: settings.presence,
+      linkquality,
+    },
   };
 }
 
 function mockUpdateTH01v2(settings) {
+  // Random battery fluctuation (80-100)
+  const battery = 80 + Math.floor(Math.random() * 21);
+
+  // Randomly vary linkquality (70-100)
+  const linkquality = 70 + Math.floor(Math.random() * 31);
+
   return {
     id: '0x00124b0029207763',
     last_seen: currentTime(),
     availability: setDeviceOnline(settings),
-    data: { temperature: getMockTemperature(settings), humidity: getMockHumidity(settings), battery: 92 },
+    data: {
+      temperature: getMockTemperature(settings),
+      humidity: getMockHumidity(settings),
+      battery,
+      linkquality,
+    },
   };
 }
 
@@ -298,10 +472,21 @@ function getMockTemperature(settings) {
   const diff = moment().diff(settings.temperatureLastChanged);
   const duration = moment.duration(diff);
   if (duration.seconds() < temperatureChangeDelaySec) return settings.temperature;
-  if (settings.temperature > temperatureMax) settings.temperature = temperatureMin;
-  settings.temperature += settings.temperatureOffset;
+
+  // More realistic temperature variation with some randomness
+  const randomChange = (Math.random() - 0.5) * 0.3; // ±0.15°C random variation
+  const change = settings.temperatureOffset + randomChange;
+  settings.temperature += change;
+
+  // Keep temperature in realistic bounds
+  if (settings.temperature > temperatureMax) {
+    settings.temperature = temperatureMax - Math.random() * 2;
+  } else if (settings.temperature < temperatureMin) {
+    settings.temperature = temperatureMin + Math.random() * 2;
+  }
+
   settings.temperatureLastChanged = moment();
-  return settings.temperature;
+  return parseFloat(settings.temperature.toFixed(1));
 }
 
 function getMockHumidity(settings) {
@@ -311,10 +496,289 @@ function getMockHumidity(settings) {
   const diff = moment().diff(settings.humidityLastChanged);
   const duration = moment.duration(diff);
   if (duration.seconds() < humidityChangeDelaySec) return settings.humidity;
-  if (settings.humidity > humidityMax) settings.humidity = humidityMin;
-  settings.humidity += settings.humidityOffset;
+
+  // More realistic humidity variation with some randomness
+  const randomChange = (Math.random() - 0.5) * 0.8; // ±0.4% random variation
+  const change = settings.humidityOffset + randomChange;
+  settings.humidity += change;
+
+  // Keep humidity in realistic bounds
+  if (settings.humidity > humidityMax) {
+    settings.humidity = humidityMax - Math.random() * 3;
+  } else if (settings.humidity < humidityMin) {
+    settings.humidity = humidityMin + Math.random() * 3;
+  }
+
   settings.humidityLastChanged = moment();
-  return settings.humidity;
+  return parseFloat(settings.humidity.toFixed(1));
+}
+
+function mockUpdateAtticLight(settings) {
+  // Randomly adjust brightness slightly (±5)
+  let brightness = settings.brightness + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 5);
+  brightness = Math.max(1, Math.min(254, brightness));
+  settings.brightness = brightness;
+
+  // Occasionally change state (4% chance)
+  if (Math.random() < 0.04) {
+    settings.state = settings.state === 'ON' ? 'OFF' : 'ON';
+  }
+
+  // Randomly vary color_temp slightly (±8)
+  let color_temp = settings.color_temp + (Math.random() > 0.5 ? 1 : -1) * Math.floor(Math.random() * 8);
+  color_temp = Math.max(153, Math.min(370, color_temp));
+  settings.color_temp = color_temp;
+
+  const linkquality = 82 + Math.floor(Math.random() * 19);
+
+  return {
+    id: '0x70ac08fffefafeca',
+    last_seen: currentTime(),
+    availability: setDeviceOnline(settings),
+    data: {
+      brightness,
+      color_temp,
+      state: settings.state,
+      linkquality,
+    },
+  };
+}
+
+function mockUpdateSwitchDial(settings) {
+  // Battery slowly decreases
+  if (Math.random() < 0.02) {
+    settings.battery = Math.max(0, settings.battery - 1);
+  }
+
+  // Occasionally simulate dial rotation (8% chance)
+  const actions = [
+    'button_1_press_release',
+    'dial_rotate_right_slow',
+    'dial_rotate_left_slow',
+    'button_2_press_release',
+  ];
+
+  let action = null;
+  let action_time = null;
+  let action_step_size = null;
+
+  if (Math.random() < 0.08) {
+    action = actions[Math.floor(Math.random() * actions.length)];
+    action_time = Math.floor(Math.random() * 3) + 1;
+    action_step_size = Math.floor(Math.random() * 20) + 5;
+  }
+
+  const linkquality = 78 + Math.floor(Math.random() * 23);
+
+  const data = {
+    battery: settings.battery,
+    brightness: settings.brightness_dial,
+    linkquality,
+  };
+
+  if (action) {
+    data.action = action;
+    data.action_time = action_time;
+    data.action_step_size = action_step_size;
+  }
+
+  return {
+    id: '0x001788010d7d9d3f',
+    last_seen: currentTime(),
+    availability: setDeviceOnline(settings),
+    data,
+  };
+}
+
+function mockUpdateDoorSensor(settings) {
+  // Toggle door contact state occasionally (12% chance - doors open/close frequently)
+  if (Math.random() < 0.12) {
+    settings.contact = !settings.contact;
+  }
+
+  // Battery slowly decreases
+  if (Math.random() < 0.01) {
+    settings.battery = Math.max(0, settings.battery - 1);
+    settings.battery_low = settings.battery < 20;
+  }
+
+  const linkquality = 65 + Math.floor(Math.random() * 36);
+  const voltage = 2800 + Math.floor(Math.random() * 300);
+
+  return {
+    id: '0x00124b002fa5844e',
+    last_seen: currentTime(),
+    availability: setDeviceOnline(settings),
+    data: {
+      contact: settings.contact,
+      battery: settings.battery,
+      battery_low: settings.battery_low,
+      voltage,
+      linkquality,
+    },
+  };
+}
+
+function mockUpdateKitchenSocket(settings) {
+  // Occasionally toggle state (2% chance)
+  if (Math.random() < 0.02) {
+    settings.state = settings.state === 'ON' ? 'OFF' : 'ON';
+  }
+
+  // Simulate realistic power consumption
+  if (settings.state === 'ON') {
+    // Random load between 0-150W
+    settings.power = Math.floor(Math.random() * 150);
+  } else {
+    settings.power = 0;
+  }
+
+  // Calculate current from power (P = V * I)
+  settings.current = settings.power > 0 ? parseFloat((settings.power / settings.voltage).toFixed(2)) : 0;
+
+  // Energy accumulates slowly
+  if (settings.state === 'ON' && settings.power > 0) {
+    settings.energy += settings.power / 3600000; // Wh to kWh per update interval
+  }
+
+  // Voltage varies slightly
+  settings.voltage = 228 + Math.floor(Math.random() * 7);
+
+  const linkquality = 80 + Math.floor(Math.random() * 21);
+
+  return {
+    id: '0x70b3d52b60136661',
+    last_seen: currentTime(),
+    availability: setDeviceOnline(settings),
+    data: {
+      state: settings.state,
+      power: settings.power,
+      current: settings.current,
+      voltage: settings.voltage,
+      energy: parseFloat(settings.energy.toFixed(2)),
+      linkquality,
+    },
+  };
+}
+
+function mockUpdateAtticSocket(settings) {
+  // More stable power consumption (fan or heater)
+  const basePower = 66;
+  settings.power = basePower + Math.floor(Math.random() * 10) - 5; // ±5W variation
+
+  // Calculate current from power
+  settings.current = parseFloat((settings.power / settings.voltage).toFixed(2));
+
+  // Energy accumulates
+  settings.energy += settings.power / 3600000;
+
+  // Voltage varies slightly
+  settings.voltage = 235 + Math.floor(Math.random() * 5);
+
+  const linkquality = 75 + Math.floor(Math.random() * 26);
+
+  return {
+    id: '0xa4c1381b6fd53fc4',
+    last_seen: currentTime(),
+    availability: setDeviceOnline(settings),
+    data: {
+      state: settings.state,
+      power: settings.power,
+      current: settings.current,
+      voltage: settings.voltage,
+      energy: parseFloat(settings.energy.toFixed(2)),
+      linkquality,
+    },
+  };
+}
+
+function mockUpdateGardenTemp(settings) {
+  // Use similar logic to TH01 but with outdoor-appropriate values
+  const diff = moment().diff(settings.temperatureLastChanged);
+  const duration = moment.duration(diff);
+
+  if (duration.seconds() >= temperatureChangeDelaySec) {
+    const randomChange = (Math.random() - 0.5) * 0.4;
+    const change = settings.temperatureOffset + randomChange;
+    settings.temperature += change;
+    settings.temperature = Math.max(5, Math.min(35, settings.temperature));
+    settings.temperatureLastChanged = moment();
+  }
+
+  const humidityDiff = moment().diff(settings.humidityLastChanged);
+  const humidityDuration = moment.duration(humidityDiff);
+
+  if (humidityDuration.seconds() >= humidityChangeDelaySec) {
+    const randomChange = (Math.random() - 0.5) * 1.0;
+    const change = settings.humidityOffset + randomChange;
+    settings.humidity += change;
+    settings.humidity = Math.max(30, Math.min(95, settings.humidity));
+    settings.humidityLastChanged = moment();
+  }
+
+  // Battery slowly decreases
+  if (Math.random() < 0.01) {
+    settings.battery = Math.max(0, settings.battery - 1);
+  }
+
+  const linkquality = 55 + Math.floor(Math.random() * 46);
+  const voltage = 2700 + Math.floor(Math.random() * 400);
+
+  return {
+    id: '0xa4c1384582432edd',
+    last_seen: currentTime(),
+    availability: setDeviceOnline(settings),
+    data: {
+      temperature: parseFloat(settings.temperature.toFixed(1)),
+      humidity: parseFloat(settings.humidity.toFixed(1)),
+      battery: settings.battery,
+      voltage,
+      linkquality,
+    },
+  };
+}
+
+function mockUpdateAirSensor(settings) {
+  // CO2 varies (400-1000 ppm)
+  settings.co2 += Math.floor((Math.random() - 0.5) * 30);
+  settings.co2 = Math.max(400, Math.min(1000, settings.co2));
+
+  // Formaldehyd varies (0-15 µg/m³)
+  settings.formaldehyd += (Math.random() - 0.5) * 2;
+  settings.formaldehyd = Math.max(0, Math.min(15, settings.formaldehyd));
+
+  // Humidity varies
+  settings.humidity += (Math.random() - 0.5) * 3;
+  settings.humidity = Math.max(30, Math.min(70, settings.humidity));
+
+  // Temperature varies
+  settings.temperature += (Math.random() - 0.5) * 0.5;
+  settings.temperature = Math.max(18, Math.min(26, settings.temperature));
+
+  // PM2.5 varies (0-50 µg/m³)
+  settings.pm25 += Math.floor((Math.random() - 0.5) * 8);
+  settings.pm25 = Math.max(0, Math.min(50, settings.pm25));
+
+  // VOC varies (0-500 ppb)
+  settings.voc += Math.floor((Math.random() - 0.5) * 40);
+  settings.voc = Math.max(0, Math.min(500, settings.voc));
+
+  const linkquality = 85 + Math.floor(Math.random() * 16);
+
+  return {
+    id: '0xa4c138e1b5658e68',
+    last_seen: currentTime(),
+    availability: setDeviceOnline(settings),
+    data: {
+      co2: settings.co2,
+      formaldehyd: parseFloat(settings.formaldehyd.toFixed(1)),
+      humidity: parseFloat(settings.humidity.toFixed(1)),
+      temperature: parseFloat(settings.temperature.toFixed(1)),
+      pm25: settings.pm25,
+      voc: settings.voc,
+      linkquality,
+    },
+  };
 }
 
 // --- Loaders ---

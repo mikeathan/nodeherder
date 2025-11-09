@@ -1,7 +1,7 @@
 import { Module } from 'vuex';
 import { RootState } from '../../state';
 import { HubStateModuleState } from './state';
-import { Device, Devices, DeviceMap, DeviceUpdate } from '../../../types/device';
+import { Device, Devices, DeviceMap, DeviceUpdate, Expose } from '../../../types/device';
 import {
   AppConfig,
   BridgeSettingsType,
@@ -85,22 +85,47 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     },
 
     updateDevice(state, deviceUpdate: DeviceUpdate) {
-      if (deviceUpdate.id in state.deviceMap == false) {
+      const current = state.deviceMap[deviceUpdate.id];
+      if (!current) {
         console.error('device ', deviceUpdate.id, ' not found');
         return;
       }
-      var device = state.deviceMap[deviceUpdate.id];
-      for (var key in deviceUpdate.data) {
-        if (key in device.exposes) {
-          device.exposes[key].data = deviceUpdate.data[key];
+      // Create a shallow cloned device object to ensure Vue reactivity triggers
+      let changed = false;
+      const updated = { ...current };
+
+      // Clone exposes map only if needed
+      const newExposes = { ...current.exposes };
+
+      for (const key in deviceUpdate.data) {
+        const incoming = deviceUpdate.data[key];
+        const expose = newExposes[key];
+        if (!expose) continue;
+
+        if (expose.data !== incoming) {
+          newExposes[key] = { ...expose, data: incoming };
+          changed = true;
         }
       }
-      device.last_seen = deviceUpdate.last_seen;
-      if (deviceUpdate.availability) {
-        device.availability = deviceUpdate.availability;
+
+      if (changed) {
+        updated.exposes = newExposes;
+      }
+
+      if (deviceUpdate.last_seen && deviceUpdate.last_seen !== current.last_seen) {
+        updated.last_seen = deviceUpdate.last_seen;
+        changed = true;
+      }
+
+      if (deviceUpdate.availability && deviceUpdate.availability !== current.availability) {
+        updated.availability = deviceUpdate.availability;
+        changed = true;
+      }
+
+      if (changed) {
+        state.deviceMap[deviceUpdate.id] = updated;
       }
     },
-
     // AppConfig mutations
     setAppConfig(state, config: AppConfig) {
       state.appConfig = config;
@@ -232,7 +257,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         { root: true }
       );
     },
-    
+
     deleteDashboardGroup({ commit, dispatch }, name: string) {
       commit('removeDashboardGroup', name);
 
