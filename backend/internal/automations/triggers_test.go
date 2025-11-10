@@ -602,7 +602,7 @@ func TestManualTriggerWithScheduleTurnsOnLight(t *testing.T) {
 		now := time.Date(testCase.timeNow.Year(), testCase.timeNow.Month(), testCase.timeNow.Day(),
 			testCase.timeNow.Hour(), testCase.timeNow.Minute(), testCase.timeNow.Second(),
 			testCase.timeNow.Nanosecond(), loc)
-			
+
 		mockClock.SetMockTime(now)
 
 		var data = map[string]any{

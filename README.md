@@ -1,110 +1,351 @@
-TEST:
+# Node Herder Setup Guide
 
-curl -X POST http://192.168.50.69:4100/api/collect -H 'Content-Type: application/json' -d '{"label":"weather node 1","temperature":45.6,"Timestamp":"2023-03-19T19:57:28.961193655Z"}'
+Node Herder is a smart home management system with Go backend, Vue.js frontend, MQTT broker, and Zigbee2MQTT integration.
 
-TODO:
+## Quick Start
 
-## Deployment
+### 1. Initial Setup
 
-- add build makefile - DONE
-- deploy to docker
+Create a `.env` file in the project root:
 
-## Backend
+```bash
+# .env (project root)
+DATA_ROOT=/opt/nodeherder
+Z2M_DEVICE=/dev/serial/by-id/usb-Silicon_Labs_Sonoff_Zigbee_3.0_USB_Dongle_Plus_0001-if00-port0
+Z2M_SERIAL_PORT=/dev/ttyUSB0
+```
 
-- add type in device.expose for http data
-- add refresh functionality to ping mqtt device for when we just started server an we want to awake devices ?
-- add remove /force remove/block functionality - DONE
-- add configure exposes device functionality - DONE
+### 2. Run Setup Script
 
-- add auth0
-- add support for https and websocket TLS
+The setup script creates MQTT and Zigbee2MQTT configurations:
 
-- http polling devices support
-- add more ws operation responses - eg success or error
-- test autiomation loading. configureAction for sanitizing numeric type data
-- do we need to unsubsribe from removed/renamed topic ??
-- Test new logic in RegisterBridge
-- backup automations
-- device lifetime optimization : check if automations or metrics is enabled for device before sending event
-- device disabled not working - DONE
+```bash
+./backend/scripts/setup-backend.sh
+```
 
-## Features
+**What it does:**
 
-- Add groups - living room with grouped devices - Done
+- Reads `DATA_ROOT` from `.env` at project root
+- Creates MQTT directories at `${DATA_ROOT}/mqtt/`
+- Generates random MQTT credentials
+- Creates `mosquitto.conf` and password file
+- Writes MQTT credentials to `backend/.env`
+- Creates/updates Zigbee2MQTT `configuration.yaml`
 
-## frontend
+**Example output:**
 
-- add type in device.expose for http data ?
-- add functionality to enable/disable a trigger
-- add log window in frontend
-- update frontend store in the dashboard groups in the ws response for rename,delete etc. in case the request is not successful
-- Same for other ws requests
+```
+📁 DATA_ROOT = /opt/nodeherder
+✅ Generating Mosquitto password...
+✅ Password written → /opt/nodeherder/mqtt/config/password.txt
+✅ Created → /opt/nodeherder/mqtt/config/mosquitto.conf
+✅ MQTT credentials generated
+   USER = mqttuser
+   PASS = [randomly generated]
+✅ MQTT_URL written:
+   tcp://mqttuser:[password]@mqtt:1883
+```
 
-BUGS:
+### 3. Start Services
 
-- Non bridge new device
-  when new nont Bridge device joins
-  because it hasnt Id, we build one Id on regisration. So we cant store it in metrics straighr away.
-  we would have to set it up afterwards
-  Also not sure if server is restarted that we have stored that information eg device id in the store, TO be tested
+```bash
+docker-compose -f docker-compose.backend.yml up -d
+```
 
-- Device config overrides on create they dont save the setting first time - DONE
-- frontend - device settings component - DONE
-- frontend - test metrics graph - need mocked data in test node server ! - DONE
-- metrics results could have property from/to so we know the range for ui purposes - DONE
-- device disabled not working - DONE
+The compose file reads `DATA_ROOT`, `Z2M_DEVICE`, and `Z2M_SERIAL_PORT` from `.env` to mount volumes.
 
-Improvements:
+---
 
-- device config defaults cant override existing device config overrides (do we care)
+## Environment Configuration
 
--
-- Non bridge devices . eg HTTP need more investigation/testing
-- error reporting - important - Done
-- metrics repo - keep for x days - DONE
+### Root `.env` (for Docker Compose)
 
-frontend - add app settings in main page - DONE
-frontend - add navigation for pages - use vuetify and redesign layout - DONE
-frontend - Send multiple messages in one mqtt request for same device - DONE
+Location: `/path/to/node-herder/.env`
 
-frontend - update icons match homeassistant - DONE
-frontend - add device list for devices not shown in dashboad - DONE
-frontend - add device groups to be shown in dashboard instead of current dashboard - DONE
-frontend/backend - create defauls for some device settings so we dont repeat alot of same info - DONE
+```bash
+# Data directory for MQTT and Zigbee2MQTT (outside repo)
+DATA_ROOT=/opt/nodeherder
 
-TODO:
+# Zigbee USB device
+Z2M_DEVICE=/dev/serial/by-id/usb-Silicon_Labs_Sonoff_Zigbee_3.0_USB_Dongle_Plus_0001-if00-port0
 
-- frontend -manage the dialogs via event messages - done
-- frontend - add expose selection dialog multiple selection - done
-- remove non measurement exposes from metrics - done
-- automation viewer - enable/disable doesnt save update
+# Serial port inside Zigbee2MQTT container
+Z2M_SERIAL_PORT=/dev/ttyUSB0
+```
 
-- frontend - tabs - load tab on click -(leave for now)
-- frontend - handle timerange enum colours
-- toggle for live data ? later
-- authomation schedule - disable/enable button accorsing to scheduler if Manual Trigger - DONE
-- create device card view with sensor data and editor/options view
+**Variables:**
 
-once we send the request
-store response in metrics store ? needs thinking if we need that
+- `DATA_ROOT` - Base directory for MQTT and Z2M data (outside git repo)
+- `Z2M_DEVICE` - Host USB device path for Zigbee dongle
+- `Z2M_SERIAL_PORT` - Serial port path inside container (usually `/dev/ttyUSB0`)
 
-# Logging
+---
 
-send mqqt message to enable log type from bridge to be emmited for zigbee2mqtt event logs
-add download file log in UI
+## Backend Configuration
 
-Backend TODO
+### Backend `.env` (Auto-generated)
 
-- RemoveDevice Handler add context request so we can emit back the updated deviceList
-  api limiter
-  cache with expiration
-- mqtt: if cant connect after timeout, exit
-- use device type to identify if its diagnostic, feature or expose - DONE
+Location: `backend/.env`
 
-METRICS backend TODO
+**Generated by setup script:**
 
-- returns lis of period for ui to choose from - NO
-- consider sampling data if too large data set ?
-- index entries = bolt.Bucket.CreateIndex
+```bash
+MQTT_USER=mqttuser
+MQTT_PASS=<randomly-generated>
+MQTT_URL=tcp://mqttuser:<password>@mqtt:1883
+```
 
-Check for disabled items in bridge - see if we can add them if online
+### Backend `.env.development`
+
+Location: `backend/.env.development`
+
+```bash
+APP_ENV=development
+FRONTEND_BASE_URL=http://localhost:4100
+OAUTH_CALLBACK_URL=http://localhost:4110/api/auth/callback
+OFFLINE_STRICT_LOCAL=true
+```
+
+**Variables:**
+
+- `APP_ENV` - Environment name: `development`, `staging`, or `production`
+- `FRONTEND_BASE_URL` - Frontend URL for CORS and redirects
+- `OAUTH_CALLBACK_URL` - Google OAuth callback URL (use `{PORT}` as placeholder)
+- `OFFLINE_STRICT_LOCAL` - When `true`, local requests use offline auth mode
+
+### Backend `.env.production`
+
+Location: `backend/.env.production`
+
+```bash
+APP_ENV=production
+FRONTEND_BASE_URL=http://nodeherder.local
+OAUTH_CALLBACK_URL=http://nodeherder.local/api/auth/callback
+GOOGLE_CLIENT_ID=<your-google-client-id>
+GOOGLE_CLIENT_SECRET=<your-google-client-secret>
+JWT_SECRET=<your-jwt-secret>
+OFFLINE_STRICT_LOCAL=false
+```
+
+**Additional production variables:**
+
+- `GOOGLE_CLIENT_ID` - OAuth 2.0 Client ID from Google Cloud Console
+- `GOOGLE_CLIENT_SECRET` - OAuth 2.0 Client Secret
+- `JWT_SECRET` - Secret key for JWT token signing (minimum 32 characters)
+
+---
+
+## Frontend Configuration
+
+### Frontend `.env.development`
+
+Location: `frontend/.env.development`
+
+```bash
+VITE_API_BASE_URL=http://localhost:4110/api
+VITE_WS_BASE_URL=ws://localhost:4110/ws
+PORT=4100
+```
+
+**Variables:**
+
+- `VITE_API_BASE_URL` - Backend API URL (must end with `/api`)
+- `VITE_WS_BASE_URL` - WebSocket URL (must end with `/ws`)
+- `PORT` - Frontend dev server port
+
+### Frontend `.env.production`
+
+Location: `frontend/.env.production`
+
+```bash
+VITE_API_BASE_URL=http://nodeherder.local/api
+VITE_WS_BASE_URL=ws://nodeherder.local/ws
+```
+
+---
+
+## Directory Structure
+
+After running setup script:
+
+```
+/opt/nodeherder/                    (DATA_ROOT location, outside repo)
+├── mqtt/
+│   ├── config/
+│   │   ├── mosquitto.conf
+│   │   └── password.txt
+│   ├── data/
+│   └── log/
+└── zigbee2mqtt-data/
+    └── configuration.yaml
+
+/path/to/node-herder/               (repo location)
+├── .env                            (Docker Compose config)
+├── docker-compose.backend.yml
+├── backend/
+│   ├── .env                        (MQTT credentials - auto-generated)
+│   ├── .env.development
+│   ├── .env.production
+│   ├── configs/                    (mounted in container)
+│   ├── data/                       (mounted in container)
+│   └── scripts/
+│       └── setup-backend.sh
+└── frontend/
+    ├── .env.development
+    └── .env.production
+```
+
+---
+
+## Development Workflow
+
+### Local Development
+
+1. **Create root `.env`:**
+
+   ```bash
+   echo "DATA_ROOT=$HOME/nodeherder-data" > .env
+   echo "Z2M_DEVICE=/dev/serial/by-id/your-zigbee-dongle" >> .env
+   echo "Z2M_SERIAL_PORT=/dev/ttyUSB0" >> .env
+   ```
+
+2. **Run setup:**
+
+   ```bash
+   ./backend/scripts/setup-backend.sh
+   ```
+
+3. **Start backend services:**
+
+   ```bash
+   docker-compose -f docker-compose.backend.yml up -d
+   ```
+
+4. **Run backend locally (optional):**
+
+   ```bash
+   cd backend
+   go run main.go -port 4110
+   ```
+
+5. **Run frontend:**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev  # Uses .env.development
+   ```
+
+### Production Deployment
+
+1. **Create root `.env` on server:**
+
+   ```bash
+   DATA_ROOT=/opt/nodeherder
+   Z2M_DEVICE=/dev/serial/by-id/your-zigbee-dongle
+   Z2M_SERIAL_PORT=/dev/ttyUSB0
+   ```
+
+2. **Create `backend/.env.production` with secrets:**
+
+   ```bash
+   APP_ENV=production
+   FRONTEND_BASE_URL=https://yourdomain.com
+   OAUTH_CALLBACK_URL=https://yourdomain.com/api/auth/callback
+   GOOGLE_CLIENT_ID=your-client-id
+   GOOGLE_CLIENT_SECRET=your-client-secret
+   JWT_SECRET=your-random-32-char-secret
+   OFFLINE_STRICT_LOCAL=false
+   ```
+
+3. **Run setup:**
+
+   ```bash
+   ./backend/scripts/setup-backend.sh
+   ```
+
+4. **Build and start:**
+   ```bash
+   docker-compose -f docker-compose.backend.yml up -d --build
+   ```
+
+---
+
+## Google OAuth Setup
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Navigate to: **APIs & Services → Credentials**
+3. Create OAuth 2.0 Client ID (or edit existing)
+4. Add **Authorized JavaScript origins:**
+   - `http://localhost:4100` (development)
+   - `https://yourdomain.com` (production)
+5. Add **Authorized redirect URIs:**
+   - `http://localhost:4110/api/auth/callback` (development)
+   - `https://yourdomain.com/api/auth/callback` (production)
+6. Copy Client ID and Client Secret to `backend/.env.production`
+
+---
+
+## Troubleshooting
+
+### CORS Errors
+
+Ensure `FRONTEND_BASE_URL` in backend matches the actual frontend URL:
+
+- Development: `http://localhost:4100`
+- Production: `https://yourdomain.com` (no port if using proxy)
+
+### MQTT Connection Issues
+
+Check generated credentials:
+
+```bash
+cat backend/.env | grep MQTT
+```
+
+Verify MQTT is running:
+
+```bash
+docker logs nodeherder-mqtt
+```
+
+### Zigbee2MQTT Not Starting
+
+Check device permissions:
+
+```bash
+ls -l /dev/serial/by-id/
+```
+
+Ensure your user has access to the serial device:
+
+```bash
+sudo usermod -a -G dialout $USER
+```
+
+### OAuth "invalid_request" Error
+
+1. Verify redirect URI is authorized in Google Cloud Console
+2. Check `OAUTH_CALLBACK_URL` matches the actual backend URL
+3. Ensure you're using the correct Client ID/Secret
+
+---
+
+## Port Reference
+
+| Service        | Port | Protocol | Purpose                |
+| -------------- | ---- | -------- | ---------------------- |
+| Frontend       | 4100 | HTTP     | Vue.js dev server      |
+| Backend        | 4110 | HTTP/WS  | Go API and WebSocket   |
+| MQTT           | 1883 | MQTT     | Internal (not exposed) |
+| Zigbee2MQTT UI | 8089 | HTTP     | Z2M frontend           |
+
+---
+
+## Security Notes
+
+- **Never commit `.env` files to git** - they contain secrets
+- `backend/.env` is auto-generated with random MQTT password
+- Use strong `JWT_SECRET` (32+ characters, random)
+- For production, use HTTPS and secure WebSocket (WSS)
+- Keep `GOOGLE_CLIENT_SECRET` confidential
+- Regularly rotate MQTT credentials if exposed

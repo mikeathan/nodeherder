@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { PropType, computed, ref } from 'vue';
+  import { PropType, computed } from 'vue';
   import DeviceFooter from '../cards/DeviceCardFooter.vue';
   import Sensor from '../../device/Sensor.vue';
   import { RouterLink } from 'vue-router';
@@ -18,14 +18,10 @@
     },
   });
 
-  const deviceConfig = computed(() => {
-    return store.getters['hub/findDeviceSetting'](props.device.id) as DeviceConfig;
-  });
+  const deviceConfig = computed(() => store.getters['hub/findDeviceSetting'](props.device.id) as DeviceConfig);
 
   const isDisabled = computed(() => deviceConfig.value?.disabled === true);
-  const isOffline = computed(() => !isDeviceOnline(device.value));
-
-  const device = ref<Device>(props.device);
+  const isOffline = computed(() => !isDeviceOnline(props.device));
   const measurementExposes = computed(() => {
     return Object.fromEntries(
       Object.entries(props.device.exposes).filter(([key, expose]) => expose.category === 'measurement')
@@ -43,9 +39,9 @@
   <Card>
     <template #title>
       <div class="card-title">
-        <RouterLink :to="`/devicepage/${device.id}`">
+        <RouterLink :to="`/devicepage/${props.device.id}`">
           <Button label="Link" variant="link" class="ps-0">
-            <h4>{{ device.friendly_name }}</h4>
+            <h4>{{ props.device.friendly_name }}</h4>
           </Button>
         </RouterLink>
       </div>
@@ -55,12 +51,12 @@
       <DeviceStatusOverlay v-else-if="isOffline" :icon="getIconForType('offline')" text="Device is offline" rounded />
       <template v-else>
         <div class="flex align-items-center" v-for="(_, sensor) in measurementExposes" :key="sensor">
-          <Sensor :id="device.id" :expose="device.exposes[sensor]" :disabled="isOffline" />
+          <Sensor :id="props.device.id" :expose="props.device.exposes[sensor]" :disabled="isOffline" />
         </div>
       </template>
     </template>
     <template v-if="!isDisabled && !isOffline" #footer>
-      <DeviceFooter :device="device" />
+      <DeviceFooter :device="props.device" />
     </template>
   </Card>
 </template>

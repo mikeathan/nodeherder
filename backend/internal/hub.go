@@ -2,7 +2,9 @@ package hub
 
 import (
 	"context"
+	"fmt"
 	"node-herder/internal/api"
+	"node-herder/internal/auth"
 	"node-herder/internal/automations"
 	"node-herder/internal/controllers"
 	"node-herder/internal/fs"
@@ -10,6 +12,7 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/store"
 	"node-herder/utils"
+	"os"
 	"time"
 )
 
@@ -18,21 +21,32 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	router := api.NewRouter()
 	fservice := fs.NewFileSystem()
 
-	//middleware
-	router.Use(api.CORS)
+	// Build OAuth callback URL from env with port substitution
+	callbackURL, err := utils.GetAuthCallbackURL(port)
+	if err != nil {
+		fatalErr := fmt.Errorf("failed to get OAuth callback URL: %w", err)
+		fmt.Fprintln(os.Stderr, fatalErr)
+		os.Exit(1)
+	}
 
-	//websocket routing
+	authProvider := auth.NewProvider(auth.WithDefaultJWTConfig(), callbackURL)
+	// middlewares
+
+	router.UseGlobal(api.CORS)
+	router.UseProtected(authProvider.Middleware())
+
+	// websocket routing
 	router.GET("/ws", api.NewWsHandler(ws))
 
 	// api routing
 	router.POST("/api/collect", api.NewDataCollectorHandler(hub))
-
 	router.POST("/api/logfile", api.NewLogFileHandler(fservice))
 	router.POST("/api/automation/trigger", api.NewAutomationTriggerHandler(hub, 1*time.Second))
 	router.GET("/api/listlogs", api.NewListFileLogsHandler(fservice))
-
 	router.GET("/api/hubstate", api.NewHubStateHandler(store, 15*time.Minute))
 
+	// authentication routes
+	router.AddAuthentication(authProvider.OAuth())
 	apiServer := api.NewHttpServer(
 		port,
 		api.WithContext(ctx),
@@ -42,14 +56,14 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	return apiServer
 }
 
-func Register(port int, store store.AppStore, config mqtt.MqttConfig, ctx context.Context) *api.ApiServer {
+func Register(port int, store store.AppStore, ctx context.Context) *api.ApiServer {
 
 	ws := ws.NewWsHub()
 	ws.Start()
 
 	utils.RegisterRemoteLoggerHook(ws)
 
-	mqtt := mqtt.NewMqttClient(config)
+	mqtt := mqtt.NewMqttClient(mqtt.WithDefaultMqttConfig())
 
 	automationHandlers := automations.DefaultAutomationHandlers(ctx)
 	hub := controllers.RegisterHubController(ws,

@@ -23,7 +23,14 @@
     "sourceMap": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "src/**/*.test.ts", "src/config/env/env.d.ts"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "src/**/*.test.ts",
+    "src/config/env/env.d.ts",
+    "src/assets/**/*.png"
+  ],
   "exclude": ["./node_modules", "./dist/**/*", "**/*.test.ts", "**/__tests__/**"],
   "types": ["jest"]
 }
