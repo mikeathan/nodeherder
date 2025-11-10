@@ -3,6 +3,7 @@
   import { MenuBarItem } from '@/types/controls.type';
   import { useWindowSize } from '@/mixins/composables/useWindowsSize';
   import { useMenuItems } from '@/mixins/composables/useMenuItems';
+  import { useAuth } from '@/mixins/composables/useAuthentication';
   const version = __APP_VERSION__;
 
   const props = defineProps({
@@ -18,19 +19,12 @@
   }>();
 
   const onDrawerToggle = () => emit('click', true);
-  const toggleMobileMenu = () => {
-    mobileMenuActive.value = !mobileMenuActive.value;
+  const { user, isAuthenticated, signOut } = useAuth();
 
-    const el = menubarRef.value?.$el || null;
-    if (el) {
-      el.classList.toggle('p-menubar-mobile-active', mobileMenuActive.value);
-    }
-  };
-  const { menuItems, logoItem } = useMenuItems(props.items, toggleMobileMenu);
+  const { menuItems, logoItem } = useMenuItems(props.items);
   const { isMobile } = useWindowSize();
 
   const menubarRef = ref<ComponentPublicInstance | null>(null);
-  const mobileMenuActive = ref(false);
 </script>
 
 <template>
@@ -42,24 +36,17 @@
         </div>
         <component :is="logoItem?.template" />
       </template>
-      <template #end v-if="isMobile && menuItems.length > 0">
-        <i class="pi pi-ellipsis-v right-menu" @click="toggleMobileMenu" />
+      <template #end>
+        <div class="app-info">
+          <div class="app-version">v{{ version }}</div>
+          <i v-if="isAuthenticated" class="pi pi-sign-out sign-out" @click="signOut" />
+        </div>
       </template>
     </Menubar>
-    <div class="app-version">v{{ version }}</div>
-    <div v-if="isMobile && mobileMenuActive" class="drawer-overlay" @click="toggleMobileMenu"></div>
   </div>
 </template>
 
 <style scoped>
-  .drawer-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 998;
-  }
   .custom-menubar {
     justify-content: space-between !important;
     z-index: 999;
@@ -67,28 +54,27 @@
   .custom-menubar :deep(.p-menubar-button) {
     display: none !important;
   }
-  .left-menu {
-    display: flex;
-    align-items: center;
-    padding-right: 1rem;
-    cursor: pointer;
-    border-radius: 4px;
-  }
-  .right-menu {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    border-radius: 4px;
-  }
-  .app-version {
+
+  .app-info {
     position: absolute;
     right: 1rem;
     top: 50%;
     transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .app-version {
     font-size: 0.875rem;
     color: #666;
     user-select: none;
     pointer-events: none;
+    opacity: 0.7;
+  }
+  .sign-out {
+    font-size: 1rem;
+    color: #666;
+    cursor: pointer;
     opacity: 0.7;
   }
   .navigation-wrapper {

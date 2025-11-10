@@ -6,6 +6,7 @@ import (
 	"node-herder/models/metrics"
 	"node-herder/utils"
 	"node-herder/utils/storage"
+	"path/filepath"
 	"sort"
 	"time"
 )
@@ -20,7 +21,7 @@ type MetricsRepo struct {
 }
 
 func NewMetricsRepo() (metrics.Repository, error) {
-	kvdb, err := storage.NewBoltKeyValueDatabase(metricsBaseFilename, metricsBucketName)
+	kvdb, err := storage.NewBoltKeyValueDatabase(filepath.Join("data", metricsBaseFilename), metricsBucketName)
 	if err != nil {
 		return nil, err
 	}

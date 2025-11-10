@@ -7,7 +7,7 @@ import { WSClientModule as ws } from './modules/ws/index';
 import { MetricsModule as metrics } from './modules/metrics/index';
 import { ConsoleModule as console } from './modules/console/index';
 import { AlertsModule as alerts } from './modules/alerts/index';
-
+import { AuthModule as auth } from './modules/auth';
 import createPersistedState from 'vuex-persistedstate';
 
 // https://blog.openreplay.com/integrate-vuex-and-typescript/
@@ -17,7 +17,12 @@ export const key: InjectionKey<Store<RootState>> = Symbol();
 export type StoreType = Store<RootState>;
 
 export const store = createStore<RootState>({
-  plugins: [], // createPersistedState() - needs fixing . stopped workig with vuetify ?
+  plugins: [
+    createPersistedState({
+      key: 'nodeherder_auth',
+      paths: ['auth', 'hub'],
+    }),
+  ],
   state: {},
   actions: {
     cleanup({ commit }) {
@@ -34,6 +39,7 @@ export const store = createStore<RootState>({
     alerts,
     hub,
     ws,
+    auth,
   },
 });
 

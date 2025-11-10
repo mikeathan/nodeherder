@@ -1,0 +1,19 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nodeherder-frontend
+    ports:
+      - "80:80" # DEBUG - change to 4100:80
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/London
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - nodeherder
+
+networks:
+  nodeherder:
+    driver: bridge
