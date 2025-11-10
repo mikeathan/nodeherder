@@ -31,7 +31,7 @@ type KeyValueDatabase interface {
 type BoltKeyValueDatabase struct {
 	db         *bolt.DB
 	rootBucket string
-	mutex      *sync.RWMutex // TODO: use this !!!!
+	mutex      *sync.RWMutex
 }
 
 func NewBoltKeyValueDatabase(filename string, bucketName string) (KeyValueDatabase, error) {
@@ -59,8 +59,8 @@ func NewBoltKeyValueDatabase(filename string, bucketName string) (KeyValueDataba
 
 func (b *BoltKeyValueDatabase) init(bucketName string) error {
 
-	defer b.mutex.Unlock()
 	b.mutex.Lock()
+	defer b.mutex.Unlock()
 
 	tx, err := b.db.Begin(true)
 	if err != nil {
@@ -89,8 +89,8 @@ func (b *BoltKeyValueDatabase) Close() error {
 
 func (b *BoltKeyValueDatabase) Set(key, value []byte) error {
 
-	defer b.mutex.Unlock()
 	b.mutex.Lock()
+	defer b.mutex.Unlock()
 
 	return b.db.Update(func(tx *bolt.Tx) error {
 
@@ -104,8 +104,8 @@ func (b *BoltKeyValueDatabase) Set(key, value []byte) error {
 }
 
 func (b *BoltKeyValueDatabase) SetBatch(bucketName string, data map[string]any, callback func(key string, value any) ([]byte, []byte, error)) error {
-	defer b.mutex.Unlock()
 	b.mutex.Lock()
+	defer b.mutex.Unlock()
 
 	return b.db.Update(func(tx *bolt.Tx) error {
 
@@ -131,8 +131,8 @@ func (b *BoltKeyValueDatabase) SetBatch(bucketName string, data map[string]any, 
 }
 
 func (b *BoltKeyValueDatabase) Get(key []byte) ([]byte, error) {
-	defer b.mutex.RUnlock()
 	b.mutex.RLock()
+	defer b.mutex.RUnlock()
 
 	var value []byte
 	err := b.db.View(func(tx *bolt.Tx) error {
@@ -150,8 +150,8 @@ func (b *BoltKeyValueDatabase) Get(key []byte) ([]byte, error) {
 }
 
 func (b *BoltKeyValueDatabase) Delete(bucketName string, key []byte) error {
-	defer b.mutex.Unlock()
 	b.mutex.Lock()
+	defer b.mutex.Unlock()
 
 	return b.db.Update(func(tx *bolt.Tx) error {
 		bucket, err := b.openChildBucket(tx, bucketName)
@@ -163,8 +163,8 @@ func (b *BoltKeyValueDatabase) Delete(bucketName string, key []byte) error {
 }
 
 func (b *BoltKeyValueDatabase) ViewInRange(bucketName string, from, to []byte, callback func(key, value []byte) error) error {
-	defer b.mutex.RUnlock()
 	b.mutex.RLock()
+	defer b.mutex.RUnlock()
 
 	return b.db.View(func(tx *bolt.Tx) error {
 		bucket, err := b.openChildBucket(tx, bucketName)
@@ -191,8 +191,8 @@ func (b *BoltKeyValueDatabase) ViewInRange(bucketName string, from, to []byte, c
 }
 
 func (b *BoltKeyValueDatabase) HasDataInRange(bucketName string, from, to []byte) (bool, error) {
-	defer b.mutex.RUnlock()
 	b.mutex.RLock()
+	defer b.mutex.RUnlock()
 
 	var result bool
 	err := b.db.View(func(tx *bolt.Tx) error {

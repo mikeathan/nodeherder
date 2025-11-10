@@ -3,9 +3,9 @@
   import DeviceCard from './cards/DeviceCard.vue';
   import { Devices } from '@/types/device';
   import { store } from '../../store/index';
-
   const devices = computed(() => store.getters['hub/listAllDevices']() as Devices);
 </script>
+
 <style scoped>
   /* .dashboard {
   background-color: var(--p-card-background);

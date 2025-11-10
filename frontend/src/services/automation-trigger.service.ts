@@ -8,8 +8,9 @@ export const triggerAutomation = async (automation: Automation, triggerName: str
     const automationId = automation.id;
     console.info(`Triggering automation: ${automationId} with target: ${triggerName}`);
 
-    const res = await fetch(`${baseUrl}/api/automation/trigger`, {
+    const res = await fetch(`${baseUrl}/automation/trigger`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },

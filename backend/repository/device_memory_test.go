@@ -67,7 +67,7 @@ func TestRepositoryCanAddOneDevice(t *testing.T) {
 	res, err := repo.FindDevice(name)
 
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 
 	if device != res {

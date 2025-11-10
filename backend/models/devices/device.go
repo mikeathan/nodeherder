@@ -533,8 +533,8 @@ func (d *Device) SetLastSeen(lastSeen string) {
 
 func (device *Device) LastSeenTime() (time.Time, error) {
 
-	defer device.mutex.RUnlock()
 	device.mutex.RLock()
+	defer device.mutex.RUnlock()
 
 	lastSeen, err := time.Parse(time.RFC3339, device.LastSeen)
 	if err != nil {
@@ -546,16 +546,16 @@ func (device *Device) LastSeenTime() (time.Time, error) {
 
 func (device *Device) IsAvailable() bool {
 
-	defer device.mutex.RUnlock()
 	device.mutex.RLock()
+	defer device.mutex.RUnlock()
 
 	return device.Availability == OnlineAvailability
 }
 
 func (device *Device) SetAvailable(value bool) {
 
-	defer device.mutex.Unlock()
 	device.mutex.Lock()
+	defer device.mutex.Unlock()
 	if value {
 		device.Availability = OnlineAvailability
 	} else {

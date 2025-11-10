@@ -10,6 +10,7 @@
     emitOpenInputDialogEvent,
   } from '@/contracts/dialog-events';
 
+  
   const dashboardGroups = computed(() => {
     return store.getters['hub/dashboardGroups']() as DashboardGroups;
   });

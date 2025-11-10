@@ -94,7 +94,7 @@ func TestHandleSuccesfullyRootPayload(t *testing.T) {
 	id := utils.HashName(name)
 	device, err := store.FindDeviceById(id)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	if device == nil {
 		t.Fatalf("want %s got %s", name, "nil")
@@ -159,7 +159,7 @@ func TestProcessorHandleRootPayloadWithTimestamp(t *testing.T) {
 	id := utils.HashName(name)
 	device, err := store.FindDeviceById(id)
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 
 	if device.Id != id {
@@ -201,7 +201,7 @@ func TestHandleSuccesfullyPayload(t *testing.T) {
 	device, err := store.FindDeviceById(id)
 
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err.Error())
 	}
 	if device == nil {
 		t.Fatalf("want %s got %s", name, "nil")

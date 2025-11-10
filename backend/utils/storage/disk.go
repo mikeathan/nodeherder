@@ -37,8 +37,8 @@ func NewJsonDiskStorage[T any](baseDir string, ctor func() T, loader func(data [
 }
 
 func (d *JsonDiskStorage[T]) Initialize() ([]T, error) {
-	defer d.mutex.Unlock()
 	d.mutex.Lock()
+	defer d.mutex.Unlock()
 
 	d.deleteCache()
 
@@ -71,8 +71,8 @@ func (d *JsonDiskStorage[T]) Initialize() ([]T, error) {
 }
 
 func (d *JsonDiskStorage[T]) LoadAll() []T {
-	defer d.mutex.RUnlock()
 	d.mutex.RLock()
+	defer d.mutex.RUnlock()
 
 	return d.findAll()
 }
@@ -81,7 +81,7 @@ func (d *JsonDiskStorage[T]) findAll() []T {
 	keys := make([]string, 0, len(d.cache))
 	values := make([]T, 0, len(d.cache))
 
-	for k, _ := range d.cache {
+	for k := range d.cache {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
@@ -93,8 +93,8 @@ func (d *JsonDiskStorage[T]) findAll() []T {
 	return values
 }
 func (d *JsonDiskStorage[T]) Delete(name string) error {
-	defer d.mutex.Unlock()
 	d.mutex.Lock()
+	defer d.mutex.Unlock()
 
 	err := d.deleteFile(name)
 	if err != nil {
@@ -106,8 +106,8 @@ func (d *JsonDiskStorage[T]) Delete(name string) error {
 }
 
 func (d *JsonDiskStorage[T]) ClearCache() {
-	defer d.mutex.RUnlock()
-	d.mutex.RLock()
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 
 	d.deleteCache()
 }
@@ -120,8 +120,8 @@ func (d *JsonDiskStorage[T]) deleteCache() {
 }
 func (d *JsonDiskStorage[T]) Store(name string, item T) error {
 
-	defer d.mutex.Unlock()
 	d.mutex.Lock()
+	defer d.mutex.Unlock()
 
 	err := d.saveFile(item, name, true)
 	if err != nil {
@@ -134,8 +134,8 @@ func (d *JsonDiskStorage[T]) Store(name string, item T) error {
 
 func (d *JsonDiskStorage[T]) LoadFromCache(name string) (T, error) {
 
-	defer d.mutex.RUnlock()
 	d.mutex.RLock()
+	defer d.mutex.RUnlock()
 
 	item, ok := d.loadFromCache(name)
 	if ok {
@@ -147,8 +147,8 @@ func (d *JsonDiskStorage[T]) LoadFromCache(name string) (T, error) {
 
 func (d *JsonDiskStorage[T]) Load(name string) (T, error) {
 
-	defer d.mutex.RUnlock()
 	d.mutex.RLock()
+	defer d.mutex.RUnlock()
 
 	item, ok := d.loadFromCache(name)
 	if ok {
@@ -249,7 +249,7 @@ func createDirIfNotExists(name string) {
 	if _, err := os.Stat(name); errors.Is(err, os.ErrNotExist) {
 		err := os.MkdirAll(name, os.ModePerm)
 		if err != nil {
-			utils.LogErrorf(fmt.Sprintf("Failed to create automations directory %s Error: %v", name, err))
+			utils.LogError(fmt.Sprintf("Failed to create automations directory %s Error: %v", name, err))
 			panic(err)
 		}
 	}

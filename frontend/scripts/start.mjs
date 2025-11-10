@@ -11,8 +11,8 @@ if (result.error) {
   process.exit(1);
 }
 
-const port = process.env.FRONTEND_PORT;
+const port = process.env.PORT || 9080; // default to vite preview port
 console.log(`Using env file: ${envFile}`);
-console.log(`Starting serve on port ${port}`);
+console.log(`Starting static server on port ${port}`);
 
 execSync(`serve -s dist -l tcp://0.0.0.0:${port}`, { stdio: 'inherit' });
