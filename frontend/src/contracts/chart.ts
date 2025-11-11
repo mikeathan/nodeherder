@@ -1,32 +1,30 @@
-import {
-  PeriodType,
-  PeriodTypes,
-} from '@/types/chart.type';
-import {
-  alllowedExposeList,
-  ExposeBinaryColor,
-} from '@/types/device.type';
-import {
-  getDateRange,
-  getLastWeekStartEndDate,
-  getWeekStartEndDate,
-} from '@/utils/date.utils';
+import { PeriodType, PeriodTypes } from '@/types/chart.type';
+import { alllowedExposeList, ExposeBinaryColor } from '@/types/device.type';
+import { getDateRange, getLastWeekStartEndDate, getWeekStartEndDate } from '@/utils/date.utils';
 import { KeyValuePair } from '@/types/types.type';
 import { ColorTypes, ColorValue } from '@/types/color.type';
 
 const HOURS = 24;
 
-export const getPeriodOffset = (
-  period: PeriodType
-): { from: Date; to: Date } => {
+export const getPeriodOffset = (period: PeriodType): { from: Date; to: Date } => {
   const now = new Date();
   switch (period) {
+    case PeriodTypes.OneHour:
+      return getDateRange(-1);
+    case PeriodTypes.SixHours:
+      return getDateRange(-6);
+    case PeriodTypes.TwelveHours:
+      return getDateRange(-12);
     case PeriodTypes.Today:
       return getDateRange(-(HOURS - now.getHours()));
     case PeriodTypes.OneDay:
       return getDateRange(-HOURS);
     case PeriodTypes.ThreeDays:
       return getDateRange(-(HOURS * 3));
+    case PeriodTypes.SevenDays:
+      return getDateRange(-(HOURS * 7));
+    case PeriodTypes.ThirtyDays:
+      return getDateRange(-(HOURS * 30));
     case PeriodTypes.ThisWeek:
       return getWeekStartEndDate();
     case PeriodTypes.LastWeek:
@@ -43,8 +41,7 @@ export function dynamicColors() {
 
   return {
     backgroundColor: 'rgb(' + r + ',' + g + ',' + b + ')',
-    borderColor:
-      'rgba(' + r + ',' + g + ',' + b + ',' + 0.5 + ')',
+    borderColor: 'rgba(' + r + ',' + g + ',' + b + ',' + 0.5 + ')',
   };
 }
 
@@ -52,36 +49,27 @@ const buildExposeColors = (): KeyValuePair<string> => {
   const colors = Object.values(ColorTypes);
   const exposeColors: KeyValuePair<string> = {};
   for (let i = 0; i < alllowedExposeList.length; i++) {
-    exposeColors[alllowedExposeList[i]] =
-      colors[i % colors.length];
+    exposeColors[alllowedExposeList[i]] = colors[i % colors.length];
   }
   return exposeColors;
 };
 
-const exposeColors: KeyValuePair<string> =
-  buildExposeColors();
+const exposeColors: KeyValuePair<string> = buildExposeColors();
 
-export const getExposeColor = (
-  exposeName: string
-): ColorValue => {
-  return (
-    exposeColors[exposeName] ?? Object.values(ColorTypes)[0]
-  );
+export const getExposeColor = (exposeName: string): ColorValue => {
+  return exposeColors[exposeName] ?? Object.values(ColorTypes)[0];
 };
 
-export const ExposeBinaryColours: KeyValuePair<ExposeBinaryColor> =
-  {
-    presence: {
-      on: ColorTypes.SkyBlue,
-      off: ColorTypes.Grey,
-    },
-    state: { on: ColorTypes.Yellow, off: ColorTypes.Grey },
-    tamper: { on: ColorTypes.Red, off: ColorTypes.SkyBlue },
-  };
+export const ExposeBinaryColours: KeyValuePair<ExposeBinaryColor> = {
+  presence: {
+    on: ColorTypes.SkyBlue,
+    off: ColorTypes.Grey,
+  },
+  state: { on: ColorTypes.Yellow, off: ColorTypes.Grey },
+  tamper: { on: ColorTypes.Red, off: ColorTypes.SkyBlue },
+};
 
-export const getExposeBinaryColour = (
-  exposeName: string
-): ExposeBinaryColor => {
+export const getExposeBinaryColour = (exposeName: string): ExposeBinaryColor => {
   return (
     ExposeBinaryColours[exposeName] ?? {
       on: ColorTypes.Blue,

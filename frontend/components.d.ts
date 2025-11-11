@@ -29,6 +29,7 @@ declare module 'vue' {
     DataTable: typeof import('primevue/datatable')['default']
     DataView: typeof import('primevue/dataview')['default']
     DatePicker: typeof import('primevue/datepicker')['default']
+    DateRangeDisplay: typeof import('./src/components/chart/DateRangeDisplay.vue')['default']
     DebounceEditor: typeof import('./src/components/settings/DebounceEditor.vue')['default']
     DeviceAbout: typeof import('./src/components/device/DeviceAbout.vue')['default']
     DeviceAutomation: typeof import('./src/components/automations/DeviceAutomation.vue')['default']

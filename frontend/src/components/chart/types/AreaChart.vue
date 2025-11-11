@@ -19,17 +19,13 @@
     () => props.chartData,
     () => {
       if (props.chartData !== null) {
-        chartData.value = transformedChartData(
-          props.chartData
-        );
+        chartData.value = transformedChartData(props.chartData);
       }
     },
     { immediate: true }
   );
 
-  function transformedChartData(
-    chartData: DeviceExposeNumericMetrics
-  ): AreaChartEntry[] {
+  function transformedChartData(chartData: DeviceExposeNumericMetrics): AreaChartEntry[] {
     return [
       {
         name: chartData.name,
@@ -51,6 +47,11 @@
         theme: 'dark',
         show: false,
       },
+      zoom: {
+        enabled: true,
+        type: 'x',
+        autoScaleYaxis: true,
+      },
     },
     fill: {
       type: 'gradient',
@@ -71,24 +72,81 @@
     },
     stroke: {
       curve: 'smooth',
+      width: 2,
     },
     xaxis: {
       type: 'datetime',
       labels: {
+        datetimeUTC: false,
         datetimeFormatter: {
           year: 'yyyy',
           month: "MMM 'yy",
           day: 'dd MMM',
           hour: 'HH:mm',
+          minute: 'HH:mm',
+        },
+        rotate: 0,
+        rotateAlways: false,
+        hideOverlappingLabels: true,
+        trim: false,
+        style: {
+          fontSize: '11px',
+        },
+      },
+      tooltip: {
+        enabled: false,
+      },
+    },
+    yaxis: {
+      decimalsInFloat: 1,
+      labels: {
+        formatter: (value: number) => {
+          return value !== null ? value.toFixed(1) : '';
         },
       },
     },
-    Tooltip: {
+    tooltip: {
       x: {
-        format: 'dd/MMM/yy HH:mm:ss ',
+        format: 'dd MMM yyyy HH:mm:ss',
+        formatter: function (value: number) {
+          const date = new Date(value);
+          const now = new Date();
+          const diffMs = now.getTime() - date.getTime();
+          const diffMins = Math.floor(diffMs / 60000);
+          const diffHours = Math.floor(diffMs / 3600000);
+          const diffDays = Math.floor(diffMs / 86400000);
+
+          // Format based on how old the data is
+          const timeStr = date.toLocaleTimeString('en-GB', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          });
+
+          if (diffMins < 60) {
+            return `${diffMins} min ago (${timeStr})`;
+          } else if (diffHours < 24) {
+            return `${diffHours}h ago (${timeStr})`;
+          } else if (diffDays === 1) {
+            return `Yesterday ${timeStr}`;
+          } else if (diffDays < 7) {
+            return `${diffDays} days ago (${timeStr})`;
+          }
+
+          const dateStr = date.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          });
+          return `${dateStr} ${timeStr}`;
+        },
+      },
+      y: {
+        formatter: (value: number) => {
+          return value !== null ? value.toFixed(2) : '';
+        },
       },
     },
-
     responsive: [
       {
         breakpoint: undefined,
@@ -104,9 +162,6 @@
 
 <template>
   <div class="area-chart">
-    <BaseChart
-      height="200"
-      :data="chartData"
-      :options="chartOptions" />
+    <BaseChart height="200" :data="chartData" :options="chartOptions" />
   </div>
 </template>
