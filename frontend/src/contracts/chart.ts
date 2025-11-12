@@ -90,8 +90,21 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
           zoom: { enabled: true, type: 'x' },
           width: '100%',
           height: '100%',
+          animations: { enabled: false },
+          parentHeightOffset: 0,
+          offsetX: 0,
+          sparkline: { enabled: true },
+          ...(extra?.chart ?? {}),
         },
-        grid: { borderColor: 'rgba(255,255,255,0.15)' },
+        grid: {
+          borderColor: 'rgba(255,255,255,0.15)',
+          padding: {
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+          },
+        },
         plotOptions: {
           bar: {
             horizontal: true,
@@ -100,7 +113,7 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
           },
         },
         colors: [],
-        stroke: { width: 1 },
+        stroke: { width: 0 },
         fill: { type: 'solid', opacity: 0.7 },
         legend: { show: false },
         xaxis: {
@@ -109,6 +122,12 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
             style: { colors: '#ccc', fontSize: '11px' },
             datetimeFormatter: { day: 'dd MMM', hour: 'HH:mm', minute: 'HH:mm' },
           },
+          ...(extra?.xaxis ?? {}),
+        },
+        yaxis: {
+          title: { text: undefined },
+          labels: { show: true },
+          show: false,
         },
         tooltip: extra?.tooltip ?? {},
       };
@@ -122,6 +141,7 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
           foreColor: '#ccc',
           toolbar: { show: false },
           zoom: { enabled: true, type: 'x' },
+          ...(extra?.chart ?? {}),
         },
         stroke: { curve: 'smooth', width: 2 },
         fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.1 } },
@@ -137,6 +157,7 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
           background: 'transparent',
           foreColor: '#ccc',
           toolbar: { show: false },
+          ...(extra?.chart ?? {}),
         },
         stroke: { width: 2 },
         markers: { size: 3 },

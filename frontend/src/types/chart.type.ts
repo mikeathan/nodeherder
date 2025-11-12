@@ -15,6 +15,8 @@ export type AreaChartEntry = {
 export type TimelineDataPoint = {
   x: string;
   y: number[];
+  state?: string;
+  fillColor?: ColorValue;
 };
 
 export type TimelineChartEntry = {
