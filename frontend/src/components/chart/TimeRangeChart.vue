@@ -13,6 +13,8 @@
 </script>
 
 <template>
-  <DateRangeDisplay v-if="props.chartData.length > 0" :from="props.chartData[0].from" :to="props.chartData[0].to" />
-  <TimelineChart :chartData="props.chartData"></TimelineChart>
+  <div style="width: 100%">
+    <DateRangeDisplay v-if="props.chartData.length > 0" :from="props.chartData[0].from" :to="props.chartData[0].to" />
+    <TimelineChart :chartData="props.chartData"></TimelineChart>
+  </div>
 </template>

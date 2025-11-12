@@ -1,4 +1,4 @@
-import { PeriodType, PeriodTypes } from '@/types/chart.type';
+import { ChartTypes, PeriodType, PeriodTypes } from '@/types/chart.type';
 import { alllowedExposeList, ExposeBinaryColor } from '@/types/device.type';
 import { getDateRange, getLastWeekStartEndDate, getWeekStartEndDate } from '@/utils/date.utils';
 import { KeyValuePair } from '@/types/types.type';
@@ -77,3 +77,75 @@ export const getExposeBinaryColour = (exposeName: string): ExposeBinaryColor => 
     }
   );
 };
+
+export function resolveChartOptions(chartType: string, extra?: Record<string, any>) {
+  switch (chartType) {
+    case ChartTypes.TimelineChart:
+      return {
+        chart: {
+          type: 'rangeBar',
+          background: 'transparent',
+          foreColor: '#ccc',
+          toolbar: { show: false },
+          zoom: { enabled: true, type: 'x' },
+          width: '100%',
+          height: '100%',
+        },
+        grid: { borderColor: 'rgba(255,255,255,0.15)' },
+        plotOptions: {
+          bar: {
+            horizontal: true,
+            barHeight: '60%',
+            rangeBarGroupRows: true,
+          },
+        },
+        colors: [],
+        stroke: { width: 1 },
+        fill: { type: 'solid', opacity: 0.7 },
+        legend: { show: false },
+        xaxis: {
+          type: 'datetime',
+          labels: {
+            style: { colors: '#ccc', fontSize: '11px' },
+            datetimeFormatter: { day: 'dd MMM', hour: 'HH:mm', minute: 'HH:mm' },
+          },
+        },
+        tooltip: extra?.tooltip ?? {},
+      };
+
+    case ChartTypes.AreaChart:
+    case ChartTypes.NumericChart:
+      return {
+        chart: {
+          type: 'area',
+          background: 'transparent',
+          foreColor: '#ccc',
+          toolbar: { show: false },
+          zoom: { enabled: true, type: 'x' },
+        },
+        stroke: { curve: 'smooth', width: 2 },
+        fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.1 } },
+        grid: { borderColor: 'rgba(255,255,255,0.15)' },
+        xaxis: { type: 'datetime', labels: { style: { colors: '#ccc' } } },
+        colors: extra?.colors ?? ['#4FC3F7'],
+      };
+
+    case ChartTypes.TimeRangeChart:
+      return {
+        chart: {
+          type: 'line',
+          background: 'transparent',
+          foreColor: '#ccc',
+          toolbar: { show: false },
+        },
+        stroke: { width: 2 },
+        markers: { size: 3 },
+        grid: { borderColor: 'rgba(255,255,255,0.15)' },
+        xaxis: { type: 'datetime', labels: { style: { colors: '#ccc' } } },
+        colors: extra?.colors ?? ['#FFB300'],
+      };
+
+    default:
+      throw new Error(`Unknown chart type: ${chartType}`);
+  }
+}

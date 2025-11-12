@@ -19,7 +19,7 @@
     const toDate = new Date(props.to);
     const now = new Date();
 
-    return `${formatSmartDate(fromDate)} – ${formatSmartDate(toDate)}`;
+    return `${formatSmartDate(fromDate)} - ${formatSmartDate(toDate)}`;
   });
 
   function formatSmartDate(date: Date): string {

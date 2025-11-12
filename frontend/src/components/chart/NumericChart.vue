@@ -13,6 +13,7 @@
 
 <template>
   <div v-for="(data, chartType) in props.chartData" :key="chartType">
+    <DateRangeDisplay v-if="props.chartData.length > 0" :from="props.chartData[0].from" :to="props.chartData[0].to" />
     <AreaChart :chartData="data"></AreaChart>
   </div>
 </template>
