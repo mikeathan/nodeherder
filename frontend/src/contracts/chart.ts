@@ -72,8 +72,8 @@ export const ExposeBinaryColours: KeyValuePair<ExposeBinaryColor> = {
 export const getExposeBinaryColour = (exposeName: string): ExposeBinaryColor => {
   return (
     ExposeBinaryColours[exposeName] ?? {
-      on: ColorTypes.Blue,
-      off: ColorTypes.Grey,
+      on: ColorTypes.EmeraldGreen,
+      off: ColorTypes.Lime,
     }
   );
 };
@@ -86,14 +86,15 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
           type: 'rangeBar',
           background: 'transparent',
           foreColor: '#ccc',
-          toolbar: { show: false },
-          zoom: { enabled: true, type: 'x' },
+          toolbar: {
+            show: false,
+          },
+          zoom: { enabled: false, type: 'x' },
           width: '100%',
           height: '100%',
           animations: { enabled: false },
           parentHeightOffset: 0,
           offsetX: 0,
-          sparkline: { enabled: true },
           ...(extra?.chart ?? {}),
         },
         grid: {
@@ -112,7 +113,6 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
             rangeBarGroupRows: true,
           },
         },
-        colors: [],
         stroke: { width: 0 },
         fill: { type: 'solid', opacity: 0.7 },
         legend: { show: false },
