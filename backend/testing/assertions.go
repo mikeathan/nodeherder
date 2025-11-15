@@ -50,7 +50,7 @@ func AssertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 				stringValues = stringArray
 			}
 
-			AsserTimeRangeExposeEvent(expose, event, timestamps, stringValues.([]string), t)
+			AssertBinaryEventsExposeEvent(expose, event, timestamps, stringValues.([]string), t)
 		} else if event.GetType() == "enum" {
 			AsserTimeRangeExposeEvent(expose, event, timestamps, values.([]string), t)
 		} else {
@@ -86,20 +86,65 @@ func AssertNumericExposeEvent(expose *devices.Entity, event metrics.ExposeResult
 			}
 		}
 		if !tsFound {
-			t.Fatalf(fmt.Sprintf("Timestamp not found %v,  timestamp: %v", eventTimestamp, time.UnixMilli(eventTimestamp).UTC()))
+			t.Fatalf("Timestamp not found %v,  timestamp: %v", eventTimestamp, time.UnixMilli(eventTimestamp).UTC())
 		}
 
 		wantValue := values[dataIdx]
 		wantKind := reflect.Float32
 		gotKind := reflect.TypeOf(eventValue).Kind()
 		if gotKind != wantKind {
-			t.Fatalf(fmt.Sprintf("Type mismatch want: %v got: %v", wantKind.String(), gotKind.String()))
+			t.Fatalf("Type mismatch want: %v got: %v", wantKind.String(), gotKind.String())
 		}
 
 		if wantValue != eventValue {
-			t.Fatalf(fmt.Sprintf("Value mismatch want:%v got: %v", wantValue, eventValue))
+			t.Fatalf("Value mismatch want:%v got: %v", wantValue, eventValue)
 		}
 		//fmt.Printf("found event %v with data: %v, timestamp: %v \n", expose.Name, event.Values[fId], foundTs)
+	}
+}
+
+func AssertBinaryEventsExposeEvent(expose *devices.Entity, event metrics.ExposeResult, timestamps []time.Time, values []string, t *testing.T) {
+	binaryEvent := metrics.ToExposeBinaryEventsResult(event)
+
+	if binaryEvent == nil {
+		t.Errorf("invalid expose type want binary got %v: ", event.GetType())
+	}
+
+	if binaryEvent.Name != expose.Name {
+		t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, binaryEvent.Name)
+	}
+
+	for _, binaryData := range binaryEvent.Data {
+		tsFound := false
+		dataIdx := 0
+
+		eventTimestamp := binaryData.Timestamp
+		eventValue := binaryData.Value
+
+		for insertIdx, insertTs := range timestamps {
+			insertTsUnix := insertTs.UnixMilli()
+
+			if eventTimestamp == insertTsUnix {
+				tsFound = true
+				dataIdx = insertIdx
+				break
+			}
+		}
+
+		if !tsFound {
+			t.Fatalf("Timestamp not found %v, timestamp: %v", eventTimestamp, time.UnixMilli(eventTimestamp).UTC())
+		}
+
+		wantValue := values[dataIdx]
+		wantKind := reflect.String
+		gotKind := reflect.TypeOf(eventValue).Kind()
+		if gotKind != wantKind {
+			t.Fatalf("Type mismatch want: %v got: %v", wantKind.String(), gotKind.String())
+		}
+
+		if wantValue != eventValue {
+			t.Fatalf("Value mismatch want:%v got: %v", wantValue, eventValue)
+		}
 	}
 }
 
@@ -135,7 +180,7 @@ func AsserTimeRangeExposeEvent(expose *devices.Entity, event metrics.ExposeResul
 		}
 
 		if !tsFound {
-			t.Fatalf(fmt.Sprintf("Start timestamp not found %v, timestamp: %v", eventStart, time.UnixMilli(eventStart).UTC()))
+			t.Fatalf("Start timestamp not found %v, timestamp: %v", eventStart, time.UnixMilli(eventStart).UTC())
 		}
 
 		// we are expecting the end timestamp to be the next one
@@ -143,10 +188,10 @@ func AsserTimeRangeExposeEvent(expose *devices.Entity, event metrics.ExposeResul
 			// if last item check to see if its been padded with previous item value and end timestamp
 			if idx+1 == len(enumEvent.Data) {
 				if eventEnd != timestamps[dataIdx].UnixMilli() {
-					t.Fatalf(fmt.Sprintf("End timestamp not matching %v", eventEnd))
+					t.Fatalf("End timestamp not matching %v", eventEnd)
 				}
 			} else {
-				t.Fatalf(fmt.Sprintf("End timestamp not matching %v", eventEnd))
+				t.Fatalf("End timestamp not matching %v", eventEnd)
 			}
 		}
 
@@ -154,11 +199,11 @@ func AsserTimeRangeExposeEvent(expose *devices.Entity, event metrics.ExposeResul
 		wantKind := reflect.String
 		gotKind := reflect.TypeOf(eventValue).Kind()
 		if gotKind != wantKind {
-			t.Fatalf(fmt.Sprintf("Type mismatch want: %v got: %v", wantKind.String(), gotKind.String()))
+			t.Fatalf("Type mismatch want: %v got: %v", wantKind.String(), gotKind.String())
 		}
 
 		if wantValue != eventValue {
-			t.Fatalf(fmt.Sprintf("Value mismatch want:%v got: %v", wantValue, eventValue))
+			t.Fatalf("Value mismatch want:%v got: %v", wantValue, eventValue)
 		}
 		//fmt.Printf("found event %v with data: %v, timestamp: %v \n", expose.Name, event.Values[fId], foundTs)
 	}
