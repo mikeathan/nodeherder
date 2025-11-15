@@ -1421,11 +1421,15 @@ func TestHandlingLoadMetricsMessage(t *testing.T) {
 		expose1.Add(value, timestamps[idx])
 	}
 
-	expose2 := metrics.NewExposeBinaryMetricResult("presence", from, to).(*metrics.ExposeTimeRangeMetricsResult)
+	expose2 := metrics.NewExposeBinaryMetricResult("presence", from, to).(*metrics.ExposeBinaryEventsResult)
 	timestamps2 := utils_test.CreateDateTimeTimestamps(1, 10, 1)
-
 	values2 := utils_test.CreateBinaryValues(10)
-	expose2 = utils_test.AddBinaryDataToExposeMetricsResult(expose2, values2, timestamps2)
+	for idx, ts := range timestamps2 {
+		expose2.Data = append(expose2.Data, metrics.BinaryEvent{
+			Timestamp: ts.UnixMilli(),
+			Value:     values2[idx],
+		})
+	}
 
 	expose3 := metrics.NewExposeEnumMetricResult("color_temp", from, to).(*metrics.ExposeTimeRangeMetricsResult)
 	timestamps3 := utils_test.CreateDateTimeTimestamps(1, 5, 1)
@@ -1498,7 +1502,7 @@ func TestHandlingLoadMetricsMessage(t *testing.T) {
 		if gotExpose.GetType() == "numeric" {
 			utils_test.AssertNumericExposeMetricResults(wantExpose, gotExpose, t)
 		} else if gotExpose.GetType() == "binary" {
-			utils_test.AssertTimeRangeExposeMetricResults(wantExpose, gotExpose, t)
+			utils_test.AssertBinaryEventsExposeEvent(wantExpose, gotExpose, t)
 		} else if gotExpose.GetType() == "enum" {
 			utils_test.AssertTimeRangeExposeMetricResults(wantExpose, gotExpose, t)
 		} else {

@@ -50,7 +50,24 @@ func AssertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 				stringValues = stringArray
 			}
 
-			AssertBinaryEventsExposeEvent(expose, event, timestamps, stringValues.([]string), t)
+			// Build expected binary result from the actual result's from/to times
+			gotBinaryResult := metrics.ToExposeBinaryEventsResult(event)
+			wantBinaryResult := metrics.NewExposeBinaryEventsResult(expose.Name,
+				time.UnixMilli(gotBinaryResult.From),
+				time.UnixMilli(gotBinaryResult.To))
+
+			// Only include data points within the queried time range
+			for i, ts := range timestamps {
+				tsMillis := ts.UnixMilli()
+				if tsMillis >= gotBinaryResult.From && tsMillis <= gotBinaryResult.To {
+					wantBinaryResult.Data = append(wantBinaryResult.Data, metrics.BinaryEvent{
+						Timestamp: tsMillis,
+						Value:     stringValues.([]string)[i],
+					})
+				}
+			}
+
+			AssertBinaryEventsExposeEvent(wantBinaryResult, event, t)
 		} else if event.GetType() == "enum" {
 			AsserTimeRangeExposeEvent(expose, event, timestamps, values.([]string), t)
 		} else {
@@ -103,47 +120,47 @@ func AssertNumericExposeEvent(expose *devices.Entity, event metrics.ExposeResult
 	}
 }
 
-func AssertBinaryEventsExposeEvent(expose *devices.Entity, event metrics.ExposeResult, timestamps []time.Time, values []string, t *testing.T) {
-	binaryEvent := metrics.ToExposeBinaryEventsResult(event)
-
-	if binaryEvent == nil {
-		t.Errorf("invalid expose type want binary got %v: ", event.GetType())
+func AssertBinaryEventsExposeEvent(wantResults metrics.ExposeResult, gotResults metrics.ExposeResult, t *testing.T) {
+	if wantResults.GetType() != gotResults.GetType() {
+		t.Fatalf("Expected type %v', got '%v'", wantResults.GetType(), gotResults.GetType())
 	}
 
-	if binaryEvent.Name != expose.Name {
-		t.Errorf("exposeName mismatch want %v got %v: ", expose.Name, binaryEvent.Name)
+	wantBinaryResults := metrics.ToExposeBinaryEventsResult(wantResults)
+	gotBinaryResults := metrics.ToExposeBinaryEventsResult(gotResults)
+
+	if wantBinaryResults == nil {
+		t.Errorf("invalid wantResults type, want binary got %v: ", wantResults.GetType())
 	}
 
-	for _, binaryData := range binaryEvent.Data {
-		tsFound := false
-		dataIdx := 0
+	if gotBinaryResults == nil {
+		t.Errorf("invalid gotResults type, want binary got %v: ", gotResults.GetType())
+	}
 
-		eventTimestamp := binaryData.Timestamp
-		eventValue := binaryData.Value
+	if wantBinaryResults.Name != gotBinaryResults.Name {
+		t.Fatalf("Expected name %v', got '%v'", wantBinaryResults.Name, gotBinaryResults.Name)
+	}
 
-		for insertIdx, insertTs := range timestamps {
-			insertTsUnix := insertTs.UnixMilli()
+	if wantBinaryResults.From != gotBinaryResults.From {
+		t.Fatalf("Expected from %v', got '%v'", wantBinaryResults.From, gotBinaryResults.From)
+	}
 
-			if eventTimestamp == insertTsUnix {
-				tsFound = true
-				dataIdx = insertIdx
-				break
-			}
+	if wantBinaryResults.To != gotBinaryResults.To {
+		t.Fatalf("Expected to %v', got '%v'", wantBinaryResults.To, gotBinaryResults.To)
+	}
+
+	if len(wantBinaryResults.Data) != len(gotBinaryResults.Data) {
+		t.Fatalf("Expected data length %v', got '%v'", len(wantBinaryResults.Data), len(gotBinaryResults.Data))
+	}
+
+	for idx, wantEvent := range wantBinaryResults.Data {
+		gotEvent := gotBinaryResults.Data[idx]
+
+		if wantEvent.Timestamp != gotEvent.Timestamp {
+			t.Fatalf("Expected Timestamp %v', got '%v'", wantEvent.Timestamp, gotEvent.Timestamp)
 		}
 
-		if !tsFound {
-			t.Fatalf("Timestamp not found %v, timestamp: %v", eventTimestamp, time.UnixMilli(eventTimestamp).UTC())
-		}
-
-		wantValue := values[dataIdx]
-		wantKind := reflect.String
-		gotKind := reflect.TypeOf(eventValue).Kind()
-		if gotKind != wantKind {
-			t.Fatalf("Type mismatch want: %v got: %v", wantKind.String(), gotKind.String())
-		}
-
-		if wantValue != eventValue {
-			t.Fatalf("Value mismatch want:%v got: %v", wantValue, eventValue)
+		if wantEvent.Value != gotEvent.Value {
+			t.Fatalf("Expected Value %v', got '%v'", wantEvent.Value, gotEvent.Value)
 		}
 	}
 }
