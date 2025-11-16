@@ -166,6 +166,23 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
         colors: extra?.colors ?? ['#FFB300'],
       };
 
+    case ChartTypes.BinaryChart:
+      return {
+        chart: {
+          type: 'line',
+          background: 'transparent',
+          foreColor: '#ccc',
+          toolbar: { show: false },
+          ...(extra?.chart ?? {}),
+        },
+        stroke: { curve: 'stepline', width: 2 },
+        markers: { size: 4 },
+        grid: { borderColor: 'rgba(255,255,255,0.15)' },
+        xaxis: { type: 'datetime', labels: { style: { colors: '#ccc' } } },
+        yaxis: { min: 0, max: 1, tickAmount: 1 },
+        colors: extra?.colors ?? ['#4ade80'],
+      };
+
     default:
       throw new Error(`Unknown chart type: ${chartType}`);
   }

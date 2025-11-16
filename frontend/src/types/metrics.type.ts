@@ -24,8 +24,8 @@ export type NumericDataPoint = {
 };
 
 export type BinaryDataPoint = {
-  x: string;
-  y: number[];
+  timestamp: number;
+  value: string;
 };
 
 export type DeviceExposeNumericMetrics = {

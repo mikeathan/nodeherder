@@ -30,6 +30,7 @@ export const ChartTypes = {
   TimelineChart: 'TimelineChart',
   TimeRangeChart: 'TimeRangeChart',
   NumericChart: 'NumericChart',
+  BinaryChart: 'BinaryChart',
 } as const;
 
 export type PeriodType = ValueOf<typeof PeriodTypes>;
