@@ -477,7 +477,6 @@ export const mockMetricsData = {
         { timestamp: 1762892585000, value: 'false' },
       ],
     },
-    },
   },
 };
 
