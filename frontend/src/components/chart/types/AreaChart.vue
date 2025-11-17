@@ -1,167 +1,112 @@
 <script setup lang="ts">
-  import { ref, watch } from 'vue';
-  import type { PropType, Ref } from 'vue';
-  import BaseChart from '../BaseChart.vue';
-  import { AreaChartEntry } from '@/types/chart.type';
-  import { DeviceExposeNumericMetrics } from '@/types/metrics.type';
-  import { getExposeColor } from '@/contracts/chart';
+import { ref, watch, computed } from 'vue';
+import BaseChart from '../BaseChart.vue';
+import { getExposeColor } from '@/contracts/chart';
 
-  const props = defineProps({
-    chartData: {
-      type: Object as PropType<DeviceExposeNumericMetrics>,
-      default: null,
-    },
-  });
+const props = defineProps({
+  chartData: {
+    type: Object,
+    required: true,
+  },
+});
 
-  const chartData = ref<AreaChartEntry[]>([]);
+const series = ref([] as ApexAxisChartSeries);
 
-  watch(
-    () => props.chartData,
-    () => {
-      if (props.chartData !== null) {
-        chartData.value = transformedChartData(props.chartData);
-      }
-    },
-    { immediate: true }
-  );
-
-  function transformedChartData(chartData: DeviceExposeNumericMetrics): AreaChartEntry[] {
-    return [
-      {
-        name: chartData.name,
-        color: getExposeColor(chartData.name),
-        data: chartData.data.map((point) => ({
-          x: point.x,
-          y: point.y,
-        })),
-      },
-    ] as AreaChartEntry[];
-  }
-
-  const chartOptions = {
-    chart: {
-      type: 'area',
-      background: '#fff',
-      toolbar: {
-        autoselected: 'pan',
-        theme: 'dark',
-        show: false,
-      },
-      zoom: {
-        enabled: true,
-        type: 'x',
-        autoScaleYaxis: true,
-      },
-    },
-    fill: {
-      type: 'gradient',
-      gradient: {
-        shadeIntensity: 1,
-        inverseColors: false,
-        opacityFrom: 0.6,
-        opacityTo: 0,
-        stops: [0, 100],
-      },
-    },
-    dataLabels: {
-      enabled: false,
-    },
-    legend: {
-      showForSingleSeries: true,
-      position: 'top',
-    },
-    stroke: {
-      curve: 'smooth',
-      width: 2,
-    },
-    xaxis: {
-      type: 'datetime',
-      labels: {
-        datetimeUTC: false,
-        datetimeFormatter: {
-          year: 'yyyy',
-          month: "MMM 'yy",
-          day: 'dd MMM',
-          hour: 'HH:mm',
-          minute: 'HH:mm',
+watch(
+  () => props.chartData,
+  () => {
+    if (props.chartData) {
+      series.value = [
+        {
+          name: props.chartData.name,
+          data: props.chartData.data.map((p: { x: number; y: number }) => ({
+            x: p.x,
+            y: p.y,
+          })),
         },
-        rotate: 0,
-        rotateAlways: false,
-        hideOverlappingLabels: true,
-        trim: false,
-        style: {
-          fontSize: '11px',
-        },
-      },
-      tooltip: {
-        enabled: false,
-      },
-    },
-    yaxis: {
-      decimalsInFloat: 1,
-      labels: {
-        formatter: (value: number) => {
-          return value !== null ? value.toFixed(1) : '';
-        },
-      },
-    },
-    tooltip: {
-      x: {
-        format: 'dd MMM yyyy HH:mm:ss',
-        formatter: function (value: number) {
-          const date = new Date(value);
-          const now = new Date();
-          const diffMs = now.getTime() - date.getTime();
-          const diffMins = Math.floor(diffMs / 60000);
-          const diffHours = Math.floor(diffMs / 3600000);
-          const diffDays = Math.floor(diffMs / 86400000);
+      ];
+    }
+  },
+  { immediate: true }
+);
 
-          // Format based on how old the data is
-          const timeStr = date.toLocaleTimeString('en-GB', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-          });
+// Color for both stroke + gradient
+const color = computed(() => getExposeColor(props.chartData.name));
 
-          if (diffMins < 60) {
-            return `${diffMins} min ago (${timeStr})`;
-          } else if (diffHours < 24) {
-            return `${diffHours}h ago (${timeStr})`;
-          } else if (diffDays === 1) {
-            return `Yesterday ${timeStr}`;
-          } else if (diffDays < 7) {
-            return `${diffDays} days ago (${timeStr})`;
-          }
+const options = computed(() => ({
+  chart: {
+    type: 'area',
+    background: 'transparent',
+    toolbar: { show: false },
+    zoom: { enabled: false },
+  },
 
-          const dateStr = date.toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          });
-          return `${dateStr} ${timeStr}`;
-        },
-      },
-      y: {
-        formatter: (value: number) => {
-          return value !== null ? value.toFixed(2) : '';
-        },
-      },
+  stroke: {
+    curve: 'smooth',
+    width: 1.5,
+    colors: [color.value],
+  },
+
+  fill: {
+    type: 'gradient',
+    gradient: {
+      shadeIntensity: 0.15,
+      opacityFrom: 0.15,
+      opacityTo: 0,
+      stops: [0, 100],
     },
-    responsive: [
-      {
-        breakpoint: undefined,
-        options: {
-          chart: {
-            width: '100%',
-          },
-        },
-      },
-    ],
-  };
+  },
+
+  markers: {
+    size: 0,
+    hover: {
+      size: 4,
+    },
+  },
+
+  dataLabels: { enabled: false },
+
+  grid: {
+    borderColor: 'rgba(255,255,255,0.08)',
+    strokeDashArray: 3,
+  },
+
+  xaxis: {
+    type: 'datetime',
+    labels: {
+      datetimeUTC: false,
+      style: { fontSize: '10px', colors: '#aaa' },
+    },
+  },
+
+  yaxis: {
+    decimalsInFloat: 0,
+    labels: {
+      style: { fontSize: '10px', colors: '#aaa' },
+    },
+  },
+
+  tooltip: {
+    theme: 'dark',
+    shared: false,
+    marker: { show: false },
+    y: {
+      formatter: (v: number | null) => (v === null ? '' : v.toFixed(1)),
+    },
+    x: {
+      format: 'dd MMM HH:mm',
+    },
+  },
+
+  legend: {
+    show: true,
+    position: 'top',
+    labels: { colors: '#ccc' },
+  },
+}));
+
 </script>
 
 <template>
-  <div class="area-chart">
-    <BaseChart height="200" :data="chartData" :options="chartOptions" />
-  </div>
+  <BaseChart height="240" :options="options" :data="series" />
 </template>
