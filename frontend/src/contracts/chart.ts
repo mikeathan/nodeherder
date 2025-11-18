@@ -62,18 +62,24 @@ export const getExposeColor = (exposeName: string): ColorValue => {
 
 export const ExposeBinaryColours: KeyValuePair<ExposeBinaryColor> = {
   presence: {
-    on: ColorTypes.SkyBlue,
-    off: ColorTypes.Grey,
+    on: ColorTypes.EmeraldGreen,
+    off: ColorTypes.SlateGrey,
   },
-  state: { on: ColorTypes.Yellow, off: ColorTypes.Grey },
-  tamper: { on: ColorTypes.Red, off: ColorTypes.SkyBlue },
+  state: {
+    on: ColorTypes.EmeraldGreen,
+    off: ColorTypes.SlateGrey,
+  },
+  tamper: {
+    on: ColorTypes.Red,
+    off: ColorTypes.SlateGrey,
+  },
 };
 
 export const getExposeBinaryColour = (exposeName: string): ExposeBinaryColor => {
   return (
     ExposeBinaryColours[exposeName] ?? {
       on: ColorTypes.EmeraldGreen,
-      off: ColorTypes.Lime,
+      off: ColorTypes.SlateGrey,
     }
   );
 };
@@ -139,14 +145,91 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
           type: 'area',
           background: 'transparent',
           foreColor: '#ccc',
-          toolbar: { show: false },
-          zoom: { enabled: true, type: 'x' },
+          toolbar: { show: false, autoselected: 'pan' },
+          zoom: { enabled: true, type: 'x', autoScaleYaxis: true },
           ...(extra?.chart ?? {}),
         },
-        stroke: { curve: 'smooth', width: 2 },
-        fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.1 } },
+        stroke: { curve: 'smooth', width: 2, ...(extra?.stroke ?? {}) },
+        fill: {
+          type: 'gradient',
+          gradient: {
+            shadeIntensity: 1,
+            inverseColors: false,
+            opacityFrom: 0.6,
+            opacityTo: 0,
+            stops: [0, 100],
+          },
+        },
+        dataLabels: { enabled: false },
+        legend: { showForSingleSeries: true, position: 'top' },
         grid: { borderColor: 'rgba(255,255,255,0.15)' },
-        xaxis: { type: 'datetime', labels: { style: { colors: '#ccc' } } },
+        xaxis: {
+          type: 'datetime',
+          labels: {
+            datetimeUTC: false,
+            style: { colors: '#ccc' },
+            datetimeFormatter: {
+              year: 'yyyy',
+              month: "MMM 'yy",
+              day: 'dd MMM',
+              hour: 'HH:mm',
+            },
+          },
+        },
+        yaxis: {
+          decimalsInFloat: 1,
+          labels: {
+            style: { colors: '#ccc' },
+            formatter: (value: number) => {
+              return value !== null ? value.toFixed(1) : '';
+            },
+          },
+        },
+        tooltip: {
+          theme: 'dark',
+          shared: false,
+          followCursor: false,
+          x: {
+            format: 'dd MMM yyyy HH:mm:ss',
+            formatter: function (value: number) {
+              const date = new Date(value);
+              const now = new Date();
+              const diffMs = now.getTime() - date.getTime();
+              const diffMins = Math.floor(diffMs / 60000);
+              const diffHours = Math.floor(diffMs / 3600000);
+              const diffDays = Math.floor(diffMs / 86400000);
+
+              const timeStr = date.toLocaleTimeString('en-GB', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+              });
+
+              if (diffMins < 60) {
+                return `${diffMins} min ago (${timeStr})`;
+              } else if (diffHours < 24) {
+                return `${diffHours}h ago (${timeStr})`;
+              } else if (diffDays === 1) {
+                return `Yesterday ${timeStr}`;
+              } else if (diffDays < 7) {
+                return `${diffDays} days ago (${timeStr})`;
+              }
+
+              const dateStr = date.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+              });
+              return `${dateStr} ${timeStr}`;
+            },
+          },
+          y: {
+            formatter: (value: number) => {
+              return value !== null ? value.toFixed(2) : '';
+            },
+          },
+          ...(extra?.tooltip ?? {}),
+        },
         colors: extra?.colors ?? ['#4FC3F7'],
       };
 
@@ -169,18 +252,38 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
     case ChartTypes.BinaryChart:
       return {
         chart: {
-          type: 'line',
+          type: 'rangeBar',
           background: 'transparent',
           foreColor: '#ccc',
           toolbar: { show: false },
+          zoom: { enabled: false },
           ...(extra?.chart ?? {}),
         },
-        stroke: { curve: 'stepline', width: 2 },
-        markers: { size: 4 },
+        plotOptions: {
+          bar: {
+            horizontal: true,
+            barHeight: '70%',
+            borderRadius: 6,
+            rangeBarGroupRows: true,
+            distributed: false,
+            ...(extra?.plotOptions?.bar ?? {}),
+          },
+        },
+        xaxis: {
+          type: 'datetime',
+          labels: {
+            datetimeUTC: false,
+            style: { colors: '#ccc', fontSize: '11px' },
+          },
+        },
+        yaxis: {
+          labels: {
+            style: { colors: '#ccc', fontSize: '12px' },
+          },
+        },
+        tooltip: extra?.tooltip ?? { theme: 'dark', x: { format: 'dd MMM HH:mm' } },
         grid: { borderColor: 'rgba(255,255,255,0.15)' },
-        xaxis: { type: 'datetime', labels: { style: { colors: '#ccc' } } },
-        yaxis: { min: 0, max: 1, tickAmount: 1 },
-        colors: extra?.colors ?? ['#4ade80'],
+        legend: { show: false },
       };
 
     default:

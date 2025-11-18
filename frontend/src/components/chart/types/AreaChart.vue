@@ -1,112 +1,42 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
-import BaseChart from '../BaseChart.vue';
-import { getExposeColor } from '@/contracts/chart';
+  import { computed } from 'vue';
+  import type { PropType } from 'vue';
+  import BaseChart from '../BaseChart.vue';
+  import type { DeviceExposeNumericMetrics } from '@/types/metrics.type';
+  import { getExposeColor, resolveChartOptions } from '@/contracts/chart';
+  import { ChartTypes } from '@/types/chart.type';
 
-const props = defineProps({
-  chartData: {
-    type: Object,
-    required: true,
-  },
-});
-
-const series = ref([] as ApexAxisChartSeries);
-
-watch(
-  () => props.chartData,
-  () => {
-    if (props.chartData) {
-      series.value = [
-        {
-          name: props.chartData.name,
-          data: props.chartData.data.map((p: { x: number; y: number }) => ({
-            x: p.x,
-            y: p.y,
-          })),
-        },
-      ];
-    }
-  },
-  { immediate: true }
-);
-
-// Color for both stroke + gradient
-const color = computed(() => getExposeColor(props.chartData.name));
-
-const options = computed(() => ({
-  chart: {
-    type: 'area',
-    background: 'transparent',
-    toolbar: { show: false },
-    zoom: { enabled: false },
-  },
-
-  stroke: {
-    curve: 'smooth',
-    width: 1.5,
-    colors: [color.value],
-  },
-
-  fill: {
-    type: 'gradient',
-    gradient: {
-      shadeIntensity: 0.15,
-      opacityFrom: 0.15,
-      opacityTo: 0,
-      stops: [0, 100],
+  const props = defineProps({
+    chartData: {
+      type: Object as PropType<DeviceExposeNumericMetrics>,
+      required: true,
     },
-  },
+  });
 
-  markers: {
-    size: 0,
-    hover: {
-      size: 4,
-    },
-  },
+  const series = computed<ApexAxisChartSeries>(() => {
+    if (!props.chartData?.data) return [];
 
-  dataLabels: { enabled: false },
+    return [
+      {
+        name: props.chartData.name,
+        data: props.chartData.data.map((point) => ({
+          x: point.x,
+          y: point.y,
+        })),
+      },
+    ];
+  });
 
-  grid: {
-    borderColor: 'rgba(255,255,255,0.08)',
-    strokeDashArray: 3,
-  },
+  const options = computed(() => {
+    const color = getExposeColor(props.chartData?.name ?? '');
 
-  xaxis: {
-    type: 'datetime',
-    labels: {
-      datetimeUTC: false,
-      style: { fontSize: '10px', colors: '#aaa' },
-    },
-  },
-
-  yaxis: {
-    decimalsInFloat: 0,
-    labels: {
-      style: { fontSize: '10px', colors: '#aaa' },
-    },
-  },
-
-  tooltip: {
-    theme: 'dark',
-    shared: false,
-    marker: { show: false },
-    y: {
-      formatter: (v: number | null) => (v === null ? '' : v.toFixed(1)),
-    },
-    x: {
-      format: 'dd MMM HH:mm',
-    },
-  },
-
-  legend: {
-    show: true,
-    position: 'top',
-    labels: { colors: '#ccc' },
-  },
-}));
-
+    return resolveChartOptions(ChartTypes.AreaChart, {
+      stroke: { colors: [color] },
+      colors: [color],
+    });
+  });
 </script>
 
 <template>
-  <BaseChart height="240" :options="options" :data="series" />
+  <BaseChart v-if="series.length > 0" height="240" width="100%" :options="options" :data="series" />
 </template>

@@ -92,3 +92,28 @@ export const formatTimestamp = (
     return 'Invalid Date';
   }
 };
+
+export function formatDuration(durationMs: number): string {
+  const minutes = Math.floor(durationMs / 60000);
+  const hours = Math.floor(minutes / 60);
+  const remainingMins = minutes % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${remainingMins}m`;
+  }
+  return `${minutes}m`;
+}
+
+
+export function formatTime(timestamp: number): string {
+  return new Date(timestamp).toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+
+export function parseTimestamp(value: string | number | undefined, fallback: number): number {
+  if (!value) return fallback;
+  return typeof value === 'string' ? new Date(value).getTime() : value;
+}
