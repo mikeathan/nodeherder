@@ -1,17 +1,5 @@
-import type { BinaryDataPoint } from '@/types/metrics.type';
-
-export interface BinaryRange {
-  value: string;
-  start: number;
-  end: number;
-}
-
-
-export interface ApexRangeBarDataPoint {
-  x: string;
-  y: [number, number];
-  fillColor: string;
-}
+import type { RangeBarDataPoint, BinaryDataPoint, BinaryRange } from '@/types/metrics.type';
+import { formatDuration } from './date.utils';
 
 /**
  * Normalizes binary events into continuous time ranges.
@@ -90,12 +78,7 @@ export function mergeBinaryFlickers(ranges: BinaryRange[], minDurationMs: number
   return merged;
 }
 
-
-export function toBinaryRangeBarData(
-  ranges: BinaryRange[],
-  colorOn: string,
-  colorOff: string
-): ApexRangeBarDataPoint[] {
+export function toBinaryRangeBarData(ranges: BinaryRange[], colorOn: string, colorOff: string): RangeBarDataPoint[] {
   return ranges.map((range) => ({
     x: range.value === 'true' ? 'On' : 'Off',
     y: [range.start, range.end] as [number, number],
@@ -103,3 +86,22 @@ export function toBinaryRangeBarData(
   }));
 }
 
+
+ export function renderRangeTooltip(name: string, label: string, start: number, end: number): string {
+    const durationMs = Math.max(0, end - start);
+    const fmtOpts: Intl.DateTimeFormatOptions = {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    };
+    const startStr = new Date(start).toLocaleString(undefined, fmtOpts);
+    const endStr = new Date(end).toLocaleString(undefined, fmtOpts);
+    const durStr = formatDuration(durationMs);
+    return `<div style='background:#1f2937;color:#f8fafc;padding:8px 10px;border-radius:6px;font-size:12px;min-width:180px;'>
+      <div style='font-weight:600;margin-bottom:4px;'>${name}: ${label}</div>
+      <div><span style='color:#94a3b8;'>From:</span> ${startStr}</div>
+      <div><span style='color:#94a3b8;'>To:</span> ${endStr}</div>
+      <div><span style='color:#94a3b8;'>Duration:</span> ${durStr}</div>
+    </div>`;
+  }

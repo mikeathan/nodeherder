@@ -175,6 +175,7 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
               hour: 'HH:mm',
             },
           },
+          tooltip: { enabled: false },
         },
         yaxis: {
           decimalsInFloat: 1,

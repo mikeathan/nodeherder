@@ -6,6 +6,18 @@ export const MetricsTypes = {
   Enum: 'enum',
 };
 
+export interface BinaryRange {
+  value: string;
+  start: number;
+  end: number;
+}
+
+export interface RangeBarDataPoint {
+  x: string;
+  y: [number, number];
+  fillColor: string;
+}
+
 export type DeviceMetrics = {
   deviceId: string;
   exposes: DeviceExposeMetrics[];

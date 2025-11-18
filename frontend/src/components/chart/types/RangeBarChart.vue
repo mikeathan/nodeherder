@@ -5,8 +5,13 @@
   import type { DeviceExposeBinaryMetrics } from '@/types/metrics.type';
   import { getExposeBinaryColour, resolveChartOptions } from '@/contracts/chart';
   import { ChartTypes } from '@/types/chart.type';
-  import { normalizeBinaryEvents, mergeBinaryFlickers, toBinaryRangeBarData } from '@/utils/chart.utils';
-  import { formatDuration, formatTime, parseTimestamp } from '@/utils/date.utils';
+  import {
+    normalizeBinaryEvents,
+    mergeBinaryFlickers,
+    toBinaryRangeBarData,
+    renderRangeTooltip,
+  } from '@/utils/chart.utils';
+  import { parseTimestamp } from '@/utils/date.utils';
 
   const FLICKER_THRESHOLD_MS = 15_000;
 
@@ -43,22 +48,12 @@
       tooltip: {
         theme: 'dark',
         x: { format: 'dd MMM HH:mm' },
-        custom: ({ seriesIndex, dataPointIndex, w }: any) => {
-          const data = w.globals.initialSeries?.[seriesIndex]?.data?.[dataPointIndex];
-          if (!data) return '';
-
-          const [start, end] = data.y;
-          const durationStr = formatDuration(end - start);
-          const startTime = formatTime(start);
-          const endTime = formatTime(end);
-
-          return `
-          <div style="padding:8px;font-size:12px;background:#1e1e1e;color:#fff;border-radius:4px;">
-            <div style="margin-bottom:4px;"><strong>${data.x}</strong></div>
-            <div>${startTime} → ${endTime}</div>
-            <div style="color:#aaa;font-size:11px;">Duration: ${durationStr}</div>
-          </div>
-        `;
+        custom: ({ w, seriesIndex, dataPointIndex }: { w: any; seriesIndex: number; dataPointIndex: number }) => {
+          const d = w.config.series[seriesIndex].data[dataPointIndex];
+          const start: number = Array.isArray(d.y) ? d.y[0] : d.y?.from ?? d.y ?? 0;
+          const end: number = Array.isArray(d.y) ? d.y[1] : d.y?.to ?? d.y ?? 0;
+          const label: string = typeof d.x === 'string' ? d.x : d.x?.toString?.() ?? '';
+          return renderRangeTooltip(props.chartData.name ?? 'State', label, start, end);
         },
       },
     });
