@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"bytes"
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
 	"node-herder/utils"
@@ -67,57 +66,62 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 
 func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 
-	// sort exposekeys
+	// sort exposekeys for result ordering
 	exposekeys := make([]string, 0, len(device.Exposes))
 	for k := range device.Exposes {
 		exposekeys = append(exposekeys, k)
 	}
-
 	sort.Strings(exposekeys)
 
 	result := metrics.NewDeviceMetricsResult(device.Id)
 
-	for _, key := range exposekeys {
-		expose := device.Exposes[key]
-
-		fromkey := s.keyGenerator.CreateKeyFromTimestamp(expose.Name, from)
-		toKey := s.keyGenerator.CreateKeyFromTimestamp(expose.Name, to)
-
-		event, err := metrics.NewExposeResult(expose.Name, expose.Type, from, to)
+	// Prepare result collectors per expose
+	collectors := make(map[string]metrics.ExposeResult, len(exposekeys))
+	for _, k := range exposekeys {
+		ex := device.Exposes[k]
+		r, err := metrics.NewExposeResult(ex.Name, ex.Type, from, to)
 		if err != nil {
 			return nil, err
 		}
+		collectors[ex.Name] = r
+	}
 
-		callback := func(key, value []byte) error {
-			if !bytes.HasSuffix(key, []byte(expose.Name)) {
-				return nil
-			}
+	fromKey := s.keyGenerator.CreateKeyPrefixFromTimestamp(from)
+	toKey := s.keyGenerator.CreateMaxKeyFromTimestamp(to)
 
-			timestamp, err := s.keyGenerator.GetTimestampFromkey(key)
-			if err != nil {
-				return err
-			}
-
-			err = event.Collect(timestamp, value)
-			if err != nil {
-				return err
-			}
+	callback := func(key, value []byte) error {
+		// Route by expose name (id suffix)
+		id, err := s.keyGenerator.GetIdFromKey(key)
+		if err != nil {
+			return err
+		}
+		collector, ok := collectors[id]
+		if !ok {
+			// not an expose we care about for this device
 			return nil
 		}
 
-		// NOTE:
-		// For now we do a db call for each expose. Needs to be optimized
-		err = s.kvdb.ViewInRange(device.Id, fromkey, toKey, callback)
+		timestamp, err := s.keyGenerator.GetTimestampFromkey(key)
 		if err != nil {
-			return nil, err
+			return err
 		}
+		if err := collector.Collect(timestamp, value); err != nil {
+			return err
+		}
+		return nil
+	}
 
-		if event.Size() == 0 {
+	if err := s.kvdb.ViewInRange(device.Id, fromKey, toKey, callback); err != nil {
+		return nil, err
+	}
+
+	for _, k := range exposekeys {
+		c := collectors[k]
+		if c.Size() == 0 {
 			continue
 		}
-
-		event.Flush()
-		result.Add(event)
+		c.Flush()
+		result.Add(c)
 	}
 
 	return result, nil
