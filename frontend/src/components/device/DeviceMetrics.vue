@@ -50,7 +50,7 @@
 </script>
 
 <template>
-  <div class="sm:col-3">
+  <div class="sm:col-3 pb-3">
     <Selection
       label="Period:"
       :value="selectePeriod"
@@ -67,6 +67,8 @@
     <p>No metrics available</p>
   </div>
   <div v-for="(metrics, chartType) in groupedMetrics">
-    <component :is="ChartComponents[chartType]" v-bind="{ chartData: metrics }"> </component>
+    <div class="w-full px-0 py-0">
+      <component :is="ChartComponents[chartType]" v-bind="{ chartData: metrics }"> </component>
+    </div>
   </div>
 </template>

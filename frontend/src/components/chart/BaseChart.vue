@@ -11,12 +11,18 @@
       type: Object,
       default: null,
     },
+    width: {
+      type: [String, Number],
+      default: '100%',
+    },
+    height: {
+      type: [String, Number],
+      default: 260,
+    },
   });
 </script>
 
 <template>
-  <VueApexCharts
-    :options="props.options"
-    :series="props.data">
+  <VueApexCharts :options="props.options" :series="props.data" :width="props.width" :height="props.height">
   </VueApexCharts>
 </template>

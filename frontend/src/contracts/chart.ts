@@ -162,7 +162,7 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
         },
         dataLabels: { enabled: false },
         legend: { showForSingleSeries: true, position: 'top' },
-        grid: { borderColor: 'rgba(255,255,255,0.15)' },
+        grid: { borderColor: 'rgba(255,255,255,0.15)', padding: { left: 0, right: 0, top: 0, bottom: 0 } },
         xaxis: {
           type: 'datetime',
           labels: {
@@ -232,6 +232,26 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
           ...(extra?.tooltip ?? {}),
         },
         colors: extra?.colors ?? ['#4FC3F7'],
+        responsive: [
+          {
+            breakpoint: 768,
+            options: {
+              chart: { height: 220 },
+              legend: { position: 'bottom' },
+              yaxis: { labels: { style: { fontSize: '10px' } } },
+              xaxis: { labels: { style: { fontSize: '10px' } } },
+            },
+          },
+          {
+            breakpoint: 480,
+            options: {
+              chart: { height: 180 },
+              legend: { position: 'bottom' },
+              yaxis: { labels: { style: { fontSize: '9px' } } },
+              xaxis: { labels: { style: { fontSize: '9px' } } },
+            },
+          },
+        ],
       };
 
     case ChartTypes.TimeRangeChart:
@@ -283,8 +303,26 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
           },
         },
         tooltip: extra?.tooltip ?? { theme: 'dark', x: { format: 'dd MMM HH:mm' } },
-        grid: { borderColor: 'rgba(255,255,255,0.15)' },
+        grid: { borderColor: 'rgba(255,255,255,0.15)', padding: { left: 0, right: 0, top: 0, bottom: 0 } },
         legend: { show: false },
+        responsive: [
+          {
+            breakpoint: 768,
+            options: {
+              chart: { height: 230 },
+              plotOptions: { bar: { barHeight: '60%' } },
+              xaxis: { labels: { style: { fontSize: '10px' } } },
+            },
+          },
+          {
+            breakpoint: 480,
+            options: {
+              chart: { height: 190 },
+              plotOptions: { bar: { barHeight: '55%' } },
+              xaxis: { labels: { style: { fontSize: '9px' } } },
+            },
+          },
+        ],
       };
 
     default:

@@ -38,5 +38,5 @@
 </script>
 
 <template>
-  <BaseChart v-if="series.length > 0" height="240" width="100%" :options="options" :data="series" />
+  <BaseChart v-if="series.length > 0" :height="240" :width="'100%'" :options="options" :data="series" />
 </template>

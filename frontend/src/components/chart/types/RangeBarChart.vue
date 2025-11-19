@@ -61,5 +61,5 @@
 </script>
 
 <template>
-  <BaseChart v-if="series.length > 0" :options="options" :data="series" width="100%" height="250" />
+  <BaseChart v-if="series.length > 0" :options="options" :data="series" :width="'100%'" :height="250" />
 </template>
