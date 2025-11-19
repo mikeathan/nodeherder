@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import { computed } from 'vue';
+  import { formatSmartDate, parseTimestamp } from '@/utils/date.utils';
 
   const props = defineProps({
     from: {
@@ -14,52 +15,11 @@
 
   const formattedRange = computed(() => {
     if (!props.from || !props.to) return '';
-
-    const fromDate = new Date(props.from);
-    const toDate = new Date(props.to);
-    const now = new Date();
-
-    return `${formatSmartDate(fromDate)} - ${formatSmartDate(toDate)}`;
+    const fromTs = parseTimestamp(props.from, 0);
+    const toTs = parseTimestamp(props.to, 0);
+    if (!fromTs || !toTs) return '';
+    return `${formatSmartDate(fromTs)} - ${formatSmartDate(toTs)}`;
   });
-
-  function formatSmartDate(date: Date): string {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-    const timeStr = date.toLocaleTimeString('en-GB', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-
-    if (dateOnly.getTime() === today.getTime()) {
-      return `Today ${timeStr}`;
-    }
-
-    if (dateOnly.getTime() === yesterday.getTime()) {
-      return `Yesterday ${timeStr}`;
-    }
-
-    // Same year
-    if (date.getFullYear() === now.getFullYear()) {
-      const dateStr = date.toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-      });
-      return `${dateStr} ${timeStr}`;
-    }
-
-    // Different year
-    const dateStr = date.toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
-    return `${dateStr} ${timeStr}`;
-  }
 </script>
 
 <template>

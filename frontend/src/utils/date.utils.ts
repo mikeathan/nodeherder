@@ -3,9 +3,7 @@ export const toUTC = (date: Date): Date => {
   const utcDate = new Date(date.getTime());
 
   // Adjust for local time offset
-  utcDate.setMinutes(
-    utcDate.getMinutes() - utcDate.getTimezoneOffset()
-  );
+  utcDate.setMinutes(utcDate.getMinutes() - utcDate.getTimezoneOffset());
 
   return utcDate;
 };
@@ -24,12 +22,9 @@ export const utcToUnixTimestamp = (date: Date): number => {
   const unixTimestamp = Math.floor(utcMilliseconds / 1000);
   return unixTimestamp;
 };
-export const toUnix = (date: Date): number =>
-  Math.floor(date.getTime() / 1000);
+export const toUnix = (date: Date): number => Math.floor(date.getTime() / 1000);
 
-export const getDateRange = (
-  hours: number
-): { from: Date; to: Date } => {
+export const getDateRange = (hours: number): { from: Date; to: Date } => {
   const now = new Date();
 
   const date = new Date();
@@ -82,9 +77,7 @@ export const getLastWeekStartEndDate = (): {
   return { from: lastWeekStart, to: lastWeekEnd };
 };
 
-export const formatTimestamp = (
-  timestamp: number
-): string => {
+export const formatTimestamp = (timestamp: number): string => {
   try {
     const date = new Date(timestamp);
     return date.toISOString();
@@ -104,7 +97,6 @@ export function formatDuration(durationMs: number): string {
   return `${minutes}m`;
 }
 
-
 export function formatTime(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString('en-GB', {
     hour: '2-digit',
@@ -112,8 +104,46 @@ export function formatTime(timestamp: number): string {
   });
 }
 
-
 export function parseTimestamp(value: string | number | undefined, fallback: number): number {
   if (!value) return fallback;
   return typeof value === 'string' ? new Date(value).getTime() : value;
+}
+
+// formatting: Today / Yesterday / same-year / cross-year.
+export function formatSmartDate(dateInput: Date | number): string {
+  const date = typeof dateInput === 'number' ? new Date(dateInput) : dateInput;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  const timeStr = date.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  if (dateOnly.getTime() === today.getTime()) {
+    return `Today ${timeStr}`;
+  }
+
+  if (dateOnly.getTime() === yesterday.getTime()) {
+    return `Yesterday ${timeStr}`;
+  }
+
+  if (date.getFullYear() === now.getFullYear()) {
+    const dateStr = date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+    });
+    return `${dateStr} ${timeStr}`;
+  }
+
+  const dateStr = date.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+  return `${dateStr} ${timeStr}`;
 }
