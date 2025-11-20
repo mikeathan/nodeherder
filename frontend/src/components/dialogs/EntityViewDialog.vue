@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, watchEffect, computed, onMounted, onUnmounted } from 'vue';
+  import { ref, watchEffect, computed, onMounted, onUnmounted, watch } from 'vue';
   import LastSeen from '../device/LastSeen.vue';
   import { store } from '../../store/index';
   import { Device, Expose } from '@/types/device';
@@ -15,6 +15,11 @@
   import Menu from 'primevue/menu';
   import MenuDropdown from '../controls/MenuDropdown.vue';
   import { getSensorIcon } from '../../modules/formatters/sensor-formatter';
+  import { useMiniChartData } from '@/composables/useMiniChartData';
+  import { MetricsTypes } from '@/types/metrics.type';
+  import MiniNumericChart from '@/components/chart/mini/MiniNumericChart.vue';
+  import MiniBinaryChart from '@/components/chart/mini/MiniBinaryChart.vue';
+
   const props = defineProps<{
     show: boolean;
     title?: string;
@@ -26,6 +31,25 @@
 
   const showDialog = ref<boolean>(props.show);
   const selectedControlExpose = ref<Expose | null>(null);
+
+  // Only fetch chart data when dialog is actually opened
+  const { chartData, refetch } = useMiniChartData(props.id, props.name, 24, false);
+
+  watch(
+    () => props.show,
+    (isShown: boolean) => {
+      if (isShown && !chartData.value.hasData && !chartData.value.isLoading) {
+        refetch();
+      }
+    },
+    { immediate: true }
+  );
+
+  const showMiniChart = computed(() => {
+    return (
+      chartData.value.hasData && (expose.value.type === ExposeTypes.Numeric || expose.value.type === ExposeTypes.Binary)
+    );
+  });
 
   const configExposes = computed(() => {
     const device = store.getters['hub/findDevice'](props.id) as Device;
@@ -247,6 +271,22 @@
       <div class="modal-value">{{ getFormattedSensorValue(expose) }}</div>
       <LastSeen :timestamp="lastSeen" class="modal-last-seen" />
     </div>
+
+    <!-- Mini chart section -->
+    <div v-if="showMiniChart" class="modal-chart-section">
+      <MiniNumericChart
+        v-if="chartData.type === MetricsTypes.Numeric"
+        :data="chartData.data as any"
+        :exposeName="expose.name"
+        :unit="expose.unit || ''"
+        :height="150" />
+      <MiniBinaryChart
+        v-else-if="chartData.type === MetricsTypes.Binary"
+        :data="chartData.data as any"
+        :exposeName="expose.name"
+        :height="150" />
+    </div>
+
     <div class="modal-content">
       <component
         v-if="selectedComponent"
@@ -319,8 +359,13 @@
     flex-direction: column;
     align-items: center;
     gap: 0.2rem;
-    padding-bottom: 2rem;
+    padding-bottom: 1rem;
     user-select: none;
+  }
+
+  .modal-chart-section {
+    width: 100%;
+    margin-bottom: 1.5rem;
   }
 
   .modal-value {

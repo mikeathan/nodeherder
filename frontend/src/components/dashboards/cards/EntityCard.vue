@@ -2,7 +2,7 @@
   import { getFormattedSensorValue, getSensorName } from '../../../modules/formatters/sensor-formatter';
   import { getSensorIcon } from '../../../modules/formatters/sensor-formatter';
   import { store } from '../../../store/index';
-  import { computed, nextTick, ref } from 'vue';
+  import { computed, nextTick, ref, watch } from 'vue';
   import { Device, Expose } from '@/types/device';
   import Icon from '../../controls/Icon.vue';
   import { ExposeAccessModes, ExposeTypes } from '@/types/device.type';
@@ -14,32 +14,21 @@
   import { DeviceConfig } from '@/types/settings.type';
   import { getIconForType } from '@/modules/formatters/icon.formatter';
   import { isDeviceOnline } from '@/contracts/device';
+  import { useMiniChartData } from '@/composables/useMiniChartData';
+  import { MetricsTypes } from '@/types/metrics.type';
+  import SparklineChart from '@/components/chart/mini/SparklineChart.vue';
+  import BinarySparklineChart from '@/components/chart/mini/BinarySparklineChart.vue';
+
   const props = defineProps({
     id: { type: String, required: true },
     name: { type: String, required: true },
     compact: { type: Boolean, required: false, default: false },
     isSelected: { type: Boolean, required: false, default: false },
   });
-  
+
   const deviceConfig = computed(() => {
     return store.getters['hub/findDeviceSetting'](props.id) as DeviceConfig;
   });
-
-  const isDisabled = computed(() => deviceConfig.value?.disabled === true);
-  const isOffline = computed(() => device.value && !isDeviceOnline(device.value));
-  const showValue = computed(() => !isOffline.value && !isDisabled.value);
-
-  const emit = defineEmits<{
-    (e: 'delete', value: { id: string; name: string }): void;
-    (e: 'selected', id: string): void;
-  }>();
-
-  function emitDelete() {
-    emit('delete', {
-      id: props.id,
-      name: props.name,
-    });
-  }
 
   const device = computed(() => {
     const device = store.getters['hub/findDevice'](props.id) as Device;
@@ -47,6 +36,10 @@
 
     return device as Device;
   });
+
+  const isDisabled = computed(() => deviceConfig.value?.disabled === true);
+  const isOffline = computed(() => device.value && !isDeviceOnline(device.value));
+  const showValue = computed(() => !isOffline.value && !isDisabled.value);
 
   const stateExpose = computed(() => {
     const device = store.getters['hub/findDevice'](props.id) as Device;
@@ -69,6 +62,42 @@
 
     return device.value.exposes[props.name] as Expose;
   });
+
+  // Only fetch chart data if device is online and enabled
+  const shouldFetchChart = computed(() => !isDisabled.value && !isOffline.value && device.value != null);
+  const { chartData, refetch } = useMiniChartData(props.id, props.name, 24, false);
+
+  // Fetch data when component becomes visible and device is ready
+  watch(
+    shouldFetchChart,
+    (should) => {
+      if (should && !chartData.value.hasData && !chartData.value.isLoading) {
+        refetch();
+      }
+    },
+    { immediate: true }
+  );
+
+  const showMiniChart = computed(() => {
+    return (
+      chartData.value.hasData &&
+      !isDisabled.value &&
+      !isOffline.value &&
+      (expose.value.type === ExposeTypes.Numeric || expose.value.type === ExposeTypes.Binary)
+    );
+  });
+
+  const emit = defineEmits<{
+    (e: 'delete', value: { id: string; name: string }): void;
+    (e: 'selected', id: string): void;
+  }>();
+
+  function emitDelete() {
+    emit('delete', {
+      id: props.id,
+      name: props.name,
+    });
+  }
 
   const iconProps = computed(() => {
     const icon = getSensorIcon(expose.value.name, expose.value.data);
@@ -183,6 +212,17 @@
         </div>
         <span v-if="isSelected" class="delete-icon pi pi-trash" @click.stop="emitDelete" title="Remove from group" />
       </div>
+      <!-- Mini chart background -->
+      <SparklineChart
+        v-if="showMiniChart && chartData.type === MetricsTypes.Numeric"
+        :data="chartData.data as any"
+        :exposeName="expose.name"
+        :height="60" />
+      <BinarySparklineChart
+        v-else-if="showMiniChart && chartData.type === MetricsTypes.Binary"
+        :data="chartData.data as any"
+        :exposeName="expose.name"
+        :height="60" />
     </template>
     <template #content> </template>
   </Card>
@@ -205,6 +245,8 @@
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
     -ms-user-select: none; /* Internet Explorer/Edge */
+    position: relative;
+    overflow: hidden;
   }
 
   .entity-card:hover {
@@ -222,6 +264,7 @@
     align-items: flex-end;
     gap: 0.9rem;
     position: relative;
+    z-index: 1;
   }
 
   .entity-labels {
