@@ -31,6 +31,7 @@ export function useMiniChartData(deviceId: string, exposeName: string, duration:
     type: MetricsTypes.Numeric,
   });
 
+  const isLiveUpdates = ref<boolean>(false);
   let unsubscribe: (() => void) | null = null;
 
   const fetchData = () => {
@@ -48,7 +49,14 @@ export function useMiniChartData(deviceId: string, exposeName: string, duration:
       to: toUnix(now),
     };
 
-    // Subscribe to store changes
+    // Clean up existing subscription before creating new one
+    if (unsubscribe) {
+      unsubscribe();
+      unsubscribe = null;
+    }
+
+    // Subscribe to store changes to get the data
+    let dataReceived = false;
     unsubscribe = store.watch(
       (state: any) => state.metrics.deviceMetricsQueryMap[deviceId],
       (metrics: DeviceMetrics) => {
@@ -61,6 +69,15 @@ export function useMiniChartData(deviceId: string, exposeName: string, duration:
           chartData.value.data = (exposeData as any).data || [];
           chartData.value.hasData = chartData.value.data.length > 0;
           chartData.value.isLoading = false;
+
+          // If live updates are not enabled and we got the data, unsubscribe
+          if (!isLiveUpdates.value && !dataReceived) {
+            dataReceived = true;
+            if (unsubscribe) {
+              unsubscribe();
+              unsubscribe = null;
+            }
+          }
         }
       },
       { deep: true }
@@ -68,6 +85,21 @@ export function useMiniChartData(deviceId: string, exposeName: string, duration:
 
     // Dispatch metrics query
     store.dispatch('metrics/query', request);
+  };
+
+  const toggleLiveUpdates = () => {
+    isLiveUpdates.value = !isLiveUpdates.value;
+
+    if (isLiveUpdates.value) {
+      // Start watching for updates
+      fetchData();
+    } else {
+      // Stop watching for updates
+      if (unsubscribe) {
+        unsubscribe();
+        unsubscribe = null;
+      }
+    }
   };
 
   // Auto-fetch if enabled
@@ -85,5 +117,7 @@ export function useMiniChartData(deviceId: string, exposeName: string, duration:
   return {
     chartData,
     refetch: fetchData,
+    isLiveUpdates,
+    toggleLiveUpdates,
   };
 }

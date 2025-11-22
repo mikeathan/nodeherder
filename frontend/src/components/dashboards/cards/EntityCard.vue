@@ -14,10 +14,6 @@
   import { DeviceConfig } from '@/types/settings.type';
   import { getIconForType } from '@/modules/formatters/icon.formatter';
   import { isDeviceOnline } from '@/contracts/device';
-  import { useMiniChartData } from '@/composables/useMiniChartData';
-  import { MetricsTypes } from '@/types/metrics.type';
-  import SparklineChart from '@/components/chart/mini/SparklineChart.vue';
-  import BinarySparklineChart from '@/components/chart/mini/BinarySparklineChart.vue';
 
   const props = defineProps({
     id: { type: String, required: true },
@@ -61,30 +57,6 @@
     if (!device.value) return {} as Expose;
 
     return device.value.exposes[props.name] as Expose;
-  });
-
-  // Only fetch chart data if device is online and enabled
-  const shouldFetchChart = computed(() => !isDisabled.value && !isOffline.value && device.value != null);
-  const { chartData, refetch } = useMiniChartData(props.id, props.name, 24, false);
-
-  // Fetch data when component becomes visible and device is ready
-  watch(
-    shouldFetchChart,
-    (should) => {
-      if (should && !chartData.value.hasData && !chartData.value.isLoading) {
-        refetch();
-      }
-    },
-    { immediate: true }
-  );
-
-  const showMiniChart = computed(() => {
-    return (
-      chartData.value.hasData &&
-      !isDisabled.value &&
-      !isOffline.value &&
-      (expose.value.type === ExposeTypes.Numeric || expose.value.type === ExposeTypes.Binary)
-    );
   });
 
   const emit = defineEmits<{
@@ -212,17 +184,6 @@
         </div>
         <span v-if="isSelected" class="delete-icon pi pi-trash" @click.stop="emitDelete" title="Remove from group" />
       </div>
-      <!-- Mini chart background -->
-      <SparklineChart
-        v-if="showMiniChart && chartData.type === MetricsTypes.Numeric"
-        :data="chartData.data as any"
-        :exposeName="expose.name"
-        :height="60" />
-      <BinarySparklineChart
-        v-else-if="showMiniChart && chartData.type === MetricsTypes.Binary"
-        :data="chartData.data as any"
-        :exposeName="expose.name"
-        :height="60" />
     </template>
     <template #content> </template>
   </Card>
