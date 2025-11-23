@@ -6,7 +6,7 @@ export const MetricsTypes = {
   Enum: 'enum',
 } as const;
 
-export type MetricsType = typeof MetricsTypes[keyof typeof MetricsTypes];
+export type MetricsType = (typeof MetricsTypes)[keyof typeof MetricsTypes];
 
 export interface BinaryRange {
   value: string;
