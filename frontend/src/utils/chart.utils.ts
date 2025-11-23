@@ -1,45 +1,5 @@
 import type { RangeBarDataPoint, BinaryDataPoint, BinaryRange } from '@/types/metrics.type';
 import { formatDuration } from './date.utils';
-import { Expose } from '@/types/device';
-import { ExposeTypes } from '@/types/device.type';
-
-/**
- * Determines if an expose should display a mini chart
- * @param expose - The device expose to check
- * @returns boolean indicating if the chart should be shown
- */
-export function shouldShowMiniChart(expose: Expose): boolean {
-  if (!expose) return false;
-
-  // Only show charts for numeric and binary types
-  if (expose.type !== ExposeTypes.Numeric && expose.type !== ExposeTypes.Binary) {
-    return false;
-  }
-
-
-  dont need ht i think !
-  // Skip certain exposes that don't make sense to chart
-  const skipList = ['linkquality', 'battery', 'voltage', 'device_temperature'];
-
-  return !skipList.some((skip) => expose.name.toLowerCase().includes(skip.toLowerCase()));
-}
-
-
-maybe make it configurable
-/**
- * Gets the appropriate chart duration based on expose type
- * @param expose - The device expose
- * @returns duration in hours
- */
-export function getChartDuration(expose: Expose): number {
-  // Binary sensors might benefit from longer duration to show patterns
-  if (expose.type === ExposeTypes.Binary) {
-    return 24; // 24 hours
-  }
-
-  // Numeric sensors - 24 hours by default
-  return 24;
-}
 
 /**
  * Normalizes binary events into continuous time ranges.
@@ -144,3 +104,4 @@ export function renderRangeTooltip(name: string, label: string, start: number, e
       <div><span style='color:#94a3b8;'>Duration:</span> ${durStr}</div>
     </div>`;
 }
+

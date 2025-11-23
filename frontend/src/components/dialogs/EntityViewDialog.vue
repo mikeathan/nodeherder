@@ -11,8 +11,7 @@
   import { useEntityDialog } from '@/composables/useEntityDialog';
   import { useDialogUI } from '@/composables/useDialogUI';
   import { MetricsTypes } from '@/types/metrics.type';
-  import MiniNumericChart from '@/components/chart/mini/MiniNumericChart.vue';
-  import MiniBinaryChart from '@/components/chart/mini/MiniBinaryChart.vue';
+  import MiniChart from '@/components/chart/mini/MiniChart.vue';
 
   const props = defineProps<{
     show: boolean;
@@ -104,16 +103,11 @@
         :class="['p-button-rounded', 'p-button-text', 'p-button-sm', 'chart-refresh-btn', { active: isLiveUpdates }]"
         @click="toggleLiveUpdates"
         :title="isLiveUpdates ? 'Disable auto refresh' : 'Enable auto refresh'" />
-      <MiniNumericChart
-        v-if="chartData.type === MetricsTypes.Numeric"
+      <MiniChart
+        :type="chartData.type"
         :data="chartData.data as any"
         :exposeName="expose.name"
         :unit="expose.unit || ''"
-        :height="150" />
-      <MiniBinaryChart
-        v-else-if="chartData.type === MetricsTypes.Binary"
-        :data="chartData.data as any"
-        :exposeName="expose.name"
         :height="150" />
     </div>
 

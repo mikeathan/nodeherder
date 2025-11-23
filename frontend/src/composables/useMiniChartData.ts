@@ -6,6 +6,7 @@ import {
   MetricsTypes,
   NumericDataPoint,
   BinaryDataPoint,
+  type MetricsType,
 } from '@/types/metrics.type';
 import { toUnix } from '@/utils/date.utils';
 
@@ -13,7 +14,7 @@ export interface MiniChartData {
   isLoading: boolean;
   hasData: boolean;
   data: NumericDataPoint[] | BinaryDataPoint[];
-  type: string;
+  type: MetricsType;
 }
 
 /**

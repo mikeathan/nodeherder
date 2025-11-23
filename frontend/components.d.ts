@@ -80,6 +80,7 @@ declare module 'vue' {
     Menubar: typeof import('primevue/menubar')['default']
     MenuDropdown: typeof import('./src/components/controls/MenuDropdown.vue')['default']
     MiniBinaryChart: typeof import('./src/components/chart/mini/MiniBinaryChart.vue')['default']
+    MiniChart: typeof import('./src/components/chart/mini/MiniChart.vue')['default']
     MiniNumericChart: typeof import('./src/components/chart/mini/MiniNumericChart.vue')['default']
     MultiSelection: typeof import('./src/components/input/MultiSelection.vue')['default']
     NavigationBar: typeof import('./src/components/controls/NavigationBar.vue')['default']
