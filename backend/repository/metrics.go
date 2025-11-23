@@ -64,6 +64,8 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 	return s.kvdb.SetBatch(id, data, callback)
 }
 
+
+todo caching 
 func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 
 	// sort exposekeys for result ordering
