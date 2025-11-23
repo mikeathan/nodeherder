@@ -7,6 +7,7 @@ import (
 	"node-herder/utils/storage"
 	"path/filepath"
 	"sort"
+	"sync"
 	"time"
 )
 
@@ -17,6 +18,11 @@ type MetricsRepo struct {
 	keyGenerator metrics.TimestampedKeyGenerator
 	kvdb         storage.KeyValueDatabase
 	clock        utils.Clock
+
+	// cache for tailing recent metrics
+	tailWindow    time.Duration
+	tailCache     map[string][]metrics.CachedEntry
+	tailCacheLock sync.RWMutex
 }
 
 func NewMetricsRepo() (metrics.Repository, error) {
@@ -50,6 +56,8 @@ func GetDayRange(now time.Time, duration time.Duration) (time.Time, time.Time) {
 	return from, to
 }
 
+https://chatgpt.com/g/g-p-68fdd5641cb48191a1aefd0912072cc6-engineering/c/69236542-43a8-8326-91f2-e51f72ed987c
+
 func (s *MetricsRepo) Store(id string, data map[string]any) error {
 
 	callback := func(key string, value any) ([]byte, []byte, error) {
@@ -61,11 +69,14 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 		return s.keyGenerator.CreateKey(key), buffer, nil
 	}
 
-	return s.kvdb.SetBatch(id, data, callback)
+
+	err:=s.kvdb.SetBatch(id, data, callback)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-
-todo caching 
 func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 
 	// sort exposekeys for result ordering
