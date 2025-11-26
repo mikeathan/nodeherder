@@ -2,7 +2,7 @@
   import { getFormattedSensorValue, getSensorName } from '../../../modules/formatters/sensor-formatter';
   import { getSensorIcon } from '../../../modules/formatters/sensor-formatter';
   import { store } from '../../../store/index';
-  import { computed, nextTick, ref } from 'vue';
+  import { computed, nextTick, ref, watch } from 'vue';
   import { Device, Expose } from '@/types/device';
   import Icon from '../../controls/Icon.vue';
   import { ExposeAccessModes, ExposeTypes } from '@/types/device.type';
@@ -14,32 +14,17 @@
   import { DeviceConfig } from '@/types/settings.type';
   import { getIconForType } from '@/modules/formatters/icon.formatter';
   import { isDeviceOnline } from '@/contracts/device';
+
   const props = defineProps({
     id: { type: String, required: true },
     name: { type: String, required: true },
     compact: { type: Boolean, required: false, default: false },
     isSelected: { type: Boolean, required: false, default: false },
   });
-  
+
   const deviceConfig = computed(() => {
     return store.getters['hub/findDeviceSetting'](props.id) as DeviceConfig;
   });
-
-  const isDisabled = computed(() => deviceConfig.value?.disabled === true);
-  const isOffline = computed(() => device.value && !isDeviceOnline(device.value));
-  const showValue = computed(() => !isOffline.value && !isDisabled.value);
-
-  const emit = defineEmits<{
-    (e: 'delete', value: { id: string; name: string }): void;
-    (e: 'selected', id: string): void;
-  }>();
-
-  function emitDelete() {
-    emit('delete', {
-      id: props.id,
-      name: props.name,
-    });
-  }
 
   const device = computed(() => {
     const device = store.getters['hub/findDevice'](props.id) as Device;
@@ -47,6 +32,10 @@
 
     return device as Device;
   });
+
+  const isDisabled = computed(() => deviceConfig.value?.disabled === true);
+  const isOffline = computed(() => device.value && !isDeviceOnline(device.value));
+  const showValue = computed(() => !isOffline.value && !isDisabled.value);
 
   const stateExpose = computed(() => {
     const device = store.getters['hub/findDevice'](props.id) as Device;
@@ -69,6 +58,18 @@
 
     return device.value.exposes[props.name] as Expose;
   });
+
+  const emit = defineEmits<{
+    (e: 'delete', value: { id: string; name: string }): void;
+    (e: 'selected', id: string): void;
+  }>();
+
+  function emitDelete() {
+    emit('delete', {
+      id: props.id,
+      name: props.name,
+    });
+  }
 
   const iconProps = computed(() => {
     const icon = getSensorIcon(expose.value.name, expose.value.data);
@@ -205,6 +206,8 @@
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
     -ms-user-select: none; /* Internet Explorer/Edge */
+    position: relative;
+    overflow: hidden;
   }
 
   .entity-card:hover {
@@ -222,6 +225,7 @@
     align-items: flex-end;
     gap: 0.9rem;
     position: relative;
+    z-index: 1;
   }
 
   .entity-labels {

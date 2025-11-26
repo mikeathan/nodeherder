@@ -15,6 +15,8 @@ export type AreaChartEntry = {
 export type TimelineDataPoint = {
   x: string;
   y: number[];
+  state?: string;
+  fillColor?: ColorValue;
 };
 
 export type TimelineChartEntry = {
@@ -28,15 +30,21 @@ export const ChartTypes = {
   TimelineChart: 'TimelineChart',
   TimeRangeChart: 'TimeRangeChart',
   NumericChart: 'NumericChart',
+  BinaryChart: 'BinaryChart',
 } as const;
 
 export type PeriodType = ValueOf<typeof PeriodTypes>;
 export const PeriodTypes = {
+  OneHour: '1 Hour',
+  SixHours: '6 Hours',
+  TwelveHours: '12 Hours',
   Today: 'Today',
   OneDay: '1 Day',
   ThreeDays: '3 Days',
-  ThisWeek: 'This week',
-  LastWeek: 'Last week',
+  SevenDays: '7 Days',
+  ThisWeek: 'This Week',
+  ThirtyDays: '30 Days',
+  LastWeek: 'Last Week',
 } as const;
 
 export const PeriodOptions = Object.values(PeriodTypes);

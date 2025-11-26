@@ -115,7 +115,7 @@ func NewDeviceConfigFrom(config *DeviceConfig) *DeviceConfig {
 }
 
 type HistoryConfig struct {
-	SleepTimeout *utils.TimeInterval `json:"sleepTmeout"`
+	SleepTimeout *utils.TimeInterval `json:"sleepTimeout"`
 	ExpireAt     *utils.TimeInterval `json:"expireAt"`
 }
 

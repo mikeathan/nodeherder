@@ -12,6 +12,8 @@
     },
   });
 
+  const activeTab = ref('0');
+
   const device = computed<Device>(() => {
     return store.getters['hub/findDevice'](props.id);
   });
@@ -41,7 +43,7 @@
     </template>
     <template #content>
       <div class="col-12 col-md-9">
-        <Tabs value="0" class="flex flex-wrap gap-2">
+        <Tabs v-model:value="activeTab" class="flex flex-wrap gap-2">
           <TabList>
             <Tab
               v-for="tab in deviceTabComponents"
@@ -53,7 +55,7 @@
           </TabList>
           <TabPanels>
             <TabPanel v-for="tab in deviceTabComponents" :key="tab.value" :value="tab.value">
-              <component :is="tab.content" v-bind="{ id: props.id }"></component>
+              <component v-if="activeTab === tab.value" :is="tab.content" v-bind="{ id: props.id }"></component>
             </TabPanel>
           </TabPanels>
         </Tabs>

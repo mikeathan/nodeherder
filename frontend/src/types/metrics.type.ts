@@ -4,7 +4,21 @@ export const MetricsTypes = {
   Binary: 'binary',
   Numeric: 'numeric',
   Enum: 'enum',
-};
+} as const;
+
+export type MetricsType = (typeof MetricsTypes)[keyof typeof MetricsTypes];
+
+export interface BinaryRange {
+  value: string;
+  start: number;
+  end: number;
+}
+
+export interface RangeBarDataPoint {
+  x: string;
+  y: [number, number];
+  fillColor: string;
+}
 
 export type DeviceMetrics = {
   deviceId: string;
@@ -13,7 +27,7 @@ export type DeviceMetrics = {
 
 export type DeviceExposeMetrics = {
   name: string;
-  type: string;
+  type: MetricsType;
   from?: string;
   to?: string;
 };
@@ -24,13 +38,13 @@ export type NumericDataPoint = {
 };
 
 export type BinaryDataPoint = {
-  x: string;
-  y: number[];
+  timestamp: number;
+  value: string;
 };
 
 export type DeviceExposeNumericMetrics = {
   name: string;
-  type: string;
+  type: MetricsType;
   from?: string;
   to?: string;
   data: NumericDataPoint[];
@@ -38,7 +52,7 @@ export type DeviceExposeNumericMetrics = {
 
 export type DeviceExposeBinaryMetrics = {
   name: string;
-  type: string;
+  type: MetricsType;
   from?: string;
   to?: string;
   data: BinaryDataPoint[];

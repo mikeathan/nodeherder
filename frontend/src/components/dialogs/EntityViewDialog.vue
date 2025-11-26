@@ -1,20 +1,18 @@
 <script setup lang="ts">
-  import { ref, watchEffect, computed, onMounted, onUnmounted } from 'vue';
+  import { ref, watchEffect, computed, onMounted } from 'vue';
   import LastSeen from '../device/LastSeen.vue';
-  import { store } from '../../store/index';
-  import { Device, Expose } from '@/types/device';
   import { getFormattedSensorValue, getSensorName } from '../../modules/formatters/sensor-formatter';
   import { ExposeTypes } from '@/types/device.type';
-  import { getExposeBinaryProperty, getExposes, toggleExposeBinaryProperty } from '@/contracts/device';
-  import {
-    writableExposesDeviceFilter,
-    writableConfigPresetsExposesDeviceFilter,
-  } from '@/configs/automation/device.config';
   import Icon from '../controls/Icon.vue';
-  import { EntityInputComponents } from '@/mixins/useEntityComponents';
   import Menu from 'primevue/menu';
   import MenuDropdown from '../controls/MenuDropdown.vue';
   import { getSensorIcon } from '../../modules/formatters/sensor-formatter';
+  import { useMiniChartData } from '@/composables/useMiniChartData';
+  import { useEntityDialog } from '@/composables/useEntityDialog';
+  import { useDialogUI } from '@/composables/useDialogUI';
+  import { MetricsTypes } from '@/types/metrics.type';
+  import MiniChart from '@/components/chart/mini/MiniChart.vue';
+
   const props = defineProps<{
     show: boolean;
     title?: string;
@@ -25,126 +23,39 @@
   const emit = defineEmits(['close']);
 
   const showDialog = ref<boolean>(props.show);
-  const selectedControlExpose = ref<Expose | null>(null);
 
-  const configExposes = computed(() => {
-    const device = store.getters['hub/findDevice'](props.id) as Device;
-    if (!device) {
-      return [];
-    }
+  // Entity dialog logic
+  const {
+    device,
+    expose,
+    lastSeen,
+    configExposes,
+    controlExposes,
+    selectedControlExpose,
+    selectedComponent,
+    isEnabled,
+    handleClick,
+    buildMenuItems,
+  } = useEntityDialog(props.id, props.name);
 
-    const exposeNameList = getExposes(device, writableConfigPresetsExposesDeviceFilter());
-    return exposeNameList.map((exposeName) => device.exposes[exposeName] as Expose);
-  });
+  // Chart data
+  const { chartData, refetch, isLiveUpdates, toggleLiveUpdates } = useMiniChartData(props.id, props.name, 4, false);
 
-  const controlExposes = computed(() => {
-    const device = store.getters['hub/findDevice'](props.id) as Device;
-    if (!device) {
-      return [];
-    }
+  // UI state
+  const { dialogStyle } = useDialogUI(() => close());
 
-    const exposeNameList = getExposes(device, writableExposesDeviceFilter());
-    return exposeNameList.map((exposeName) => device.exposes[exposeName] as Expose);
-  });
-
-  const selectedComponent = computed(() => {
-    if (!selectedControlExpose.value) return null;
-
+  const showMiniChart = computed(() => {
     return (
-      EntityInputComponents(selectedControlExpose.value, 'vertical', {
-        update: (e: any) => updateValue(selectedControlExpose.value!.name, e),
-      }) ?? null
+      chartData.value.hasData && (expose.value.type === ExposeTypes.Numeric || expose.value.type === ExposeTypes.Binary)
     );
   });
 
-  watchEffect(() => (showDialog.value = props.show));
-  watchEffect(() => {
-    // pre select expose control using priority order
-    if (!selectedControlExpose.value) {
-      const selected = controlExposes.value.reduce<Expose | null>((acc, expose) => {
-        if (acc) return acc;
-
-        if (expose.type === ExposeTypes.Numeric) {
-          if (expose.values === null) {
-            return expose; // Highest priority
-          }
-
-          // Lower-priority fallback
-          return acc ?? expose;
-        }
-
-        return acc;
-      }, null);
-
-      selectedControlExpose.value = selected;
-    }
-  });
-
-  const device = computed(() => {
-    const device = store.getters['hub/findDevice'](props.id) as Device;
-    if (!device) return null;
-
-    return device as Device;
-  });
-
-  const lastSeen = computed(() => {
-    return device.value ? device.value.last_seen : '';
-  });
-
-  const isMobile = ref(false);
-
-  const checkMobile = () => {
-    if (typeof window !== 'undefined') {
-      isMobile.value = window.innerWidth <= 640;
-    } else {
-      isMobile.value = false;
-    }
-  };
-
-  const handleEscape = (event: KeyboardEvent) => {
-    if (event.key === 'Escape' && showDialog.value) {
-      close();
-    }
-  };
-
+  // Fetch chart data when dialog is mounted
   onMounted(() => {
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    window.addEventListener('keydown', handleEscape);
-  });
-
-  onUnmounted(() => {
-    window.removeEventListener('resize', checkMobile);
-    window.removeEventListener('keydown', handleEscape);
+    refetch();
   });
 
   watchEffect(() => (showDialog.value = props.show));
-
-  const expose = computed(() => {
-    if (!device.value) return {} as Expose;
-
-    return device.value.exposes[props.name] as Expose;
-  });
-
-  function isEnabled() {
-    if (device.value?.availability == 'offline') {
-      return false;
-    }
-
-    if (expose.value.type == ExposeTypes.Numeric && expose.value.data == 0) {
-      return false;
-    }
-
-    if (controlExposes.value) {
-      // temporary fix for state control
-      return controlExposes.value.some((expose) => {
-        if (expose.type == ExposeTypes.Binary) {
-          return getExposeBinaryProperty(expose);
-        }
-      });
-    }
-    return true;
-  }
 
   function close() {
     emit('close', false);
@@ -153,74 +64,11 @@
   }
 
   const dialogTitle = () => props.title ?? expose.value.name;
-  const dialogStyle = computed(() => {
-    if (isMobile.value) {
-      return {
-        width: '100vw',
-        height: '100dvh',
-        maxHeight: '100dvh',
-        margin: '0',
-        transform: 'none',
-        borderRadius: '0',
-        zIndex: '9999',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      };
-    }
-    return {
-      width: 'auto',
-      minWidth: '460px',
-      maxWidth: '90vw',
-      height: 'auto',
-      maxHeight: '90vh',
-      borderRadius: '1rem',
-      overflow: 'auto',
-      display: 'flex',
-      flexDirection: 'column',
-    };
-  });
 
-  function handleClick(expose: Expose) {
-    if (device.value?.availability == 'offline') {
-      return;
-    }
-    if (expose.type == ExposeTypes.Binary) {
-      const value = toggleExposeBinaryProperty(expose);
-      updateValue(expose.name, value);
-    } else {
-      selectedControlExpose.value = expose;
-    }
-  }
-
-  function updateValue(exposeName: string, newValue: any): void {
-    const msg = {
-      id: props.id,
-      name: exposeName,
-      value: newValue,
-    };
-
-    store.dispatch('hub/setDeviceValue', msg);
-  }
   const menu = ref<InstanceType<typeof Menu> | null>(null);
   const toggleMenu = (event: Event) => {
     menu.value?.toggle(event);
   };
-
-  function buildMenuItems(expose: Expose) {
-    if (!expose.values) {
-      return [];
-    }
-    return Object.values(expose.values).map((value: any) => {
-      return {
-        label: value,
-        value: value,
-        command: () => {
-          updateValue(expose.name, value);
-        },
-      };
-    });
-  }
 </script>
 
 <template>
@@ -247,6 +95,22 @@
       <div class="modal-value">{{ getFormattedSensorValue(expose) }}</div>
       <LastSeen :timestamp="lastSeen" class="modal-last-seen" />
     </div>
+
+    <!-- Mini chart section -->
+    <div v-if="showMiniChart" class="modal-chart-section">
+      <Button
+        :icon="isLiveUpdates ? 'pi pi-sync' : 'pi pi-refresh'"
+        :class="['p-button-rounded', 'p-button-text', 'p-button-sm', 'chart-refresh-btn', { active: isLiveUpdates }]"
+        @click="toggleLiveUpdates"
+        :title="isLiveUpdates ? 'Disable auto refresh' : 'Enable auto refresh'" />
+      <MiniChart
+        :type="chartData.type"
+        :data="chartData.data as any"
+        :exposeName="expose.name"
+        :unit="expose.unit || ''"
+        :height="150" />
+    </div>
+
     <div class="modal-content">
       <component
         v-if="selectedComponent"
@@ -319,8 +183,36 @@
     flex-direction: column;
     align-items: center;
     gap: 0.2rem;
-    padding-bottom: 2rem;
+    padding-bottom: 1rem;
     user-select: none;
+  }
+
+  .modal-chart-section {
+    width: 100%;
+    margin-bottom: 1.5rem;
+    position: relative;
+  }
+
+  .chart-refresh-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 10;
+    transition: color 0.2s ease;
+  }
+
+  .chart-refresh-btn.active {
+    color: #4caf50 !important;
+    animation: spin 2s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .modal-value {
