@@ -5,6 +5,12 @@ import (
 	"time"
 )
 
+type CachedEntry struct {
+	ExposeName string
+	Timestamp  time.Time
+	Value      []byte
+}
+
 type Repository interface {
 	Store(id string, data map[string]any) error
 

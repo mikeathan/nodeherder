@@ -67,6 +67,13 @@ func ToNumericExposeResults(r ExposeResult) *ExposeNumericMetricsResult {
 	return nil
 }
 
+func ToExposeBinaryEventsResults(r ExposeResult) *ExposeBinaryEventsResult {
+	if e, ok := r.(*ExposeBinaryEventsResult); ok {
+		return e
+	}
+	return nil
+}
+
 func (e *ExposeNumericMetricsResult) GetType() string {
 	return "numeric"
 }
@@ -80,6 +87,82 @@ type timeRangeStartValue struct {
 	Timestamp time.Time
 }
 
+type BinaryEvent struct {
+	Timestamp int64  `json:"timestamp"`
+	Value     string `json:"value"`
+}
+
+type ExposeBinaryEventsResult struct {
+	Name string        `json:"name"`
+	Type string        `json:"type"`
+	From int64         `json:"from"`
+	To   int64         `json:"to"`
+	Data []BinaryEvent `json:"data"`
+}
+
+// ExposeBinaryEventsResult
+func NewExposeBinaryEventsResult(name string, from, to time.Time) *ExposeBinaryEventsResult {
+	return &ExposeBinaryEventsResult{
+		Name: name,
+		Type: "binary",
+		From: from.UnixMilli(),
+		To:   to.UnixMilli(),
+		Data: []BinaryEvent{},
+	}
+}
+
+func ToExposeBinaryEventsResult(r ExposeResult) *ExposeBinaryEventsResult {
+	if e, ok := r.(*ExposeBinaryEventsResult); ok {
+		return e
+	}
+	return nil
+}
+
+func (e *ExposeBinaryEventsResult) GetType() string {
+	return e.Type
+}
+
+func (e *ExposeBinaryEventsResult) Size() int {
+	return len(e.Data)
+}
+
+func (e *ExposeBinaryEventsResult) Collect(timestamp time.Time, raw []byte) error {
+	var value string
+	if err := utils.ByteArrayToAny(raw, &value); err != nil {
+		return err
+	}
+
+	e.Data = append(e.Data, BinaryEvent{
+		Timestamp: timestamp.UnixMilli(),
+		Value:     value,
+	})
+
+	return nil
+}
+
+func (e *ExposeBinaryEventsResult) Flush() {
+	// do nothing
+}
+
+func (c *ExposeBinaryEventsResult) MarshalJSON() ([]byte, error) {
+	res := struct {
+		Name string        `json:"name"`
+		Type string        `json:"type"`
+		From int64         `json:"from"`
+		To   int64         `json:"to"`
+		Data []BinaryEvent `json:"data"`
+	}{
+		Name: c.Name,
+		Type: c.Type,
+		From: c.From,
+		To:   c.To,
+		Data: c.Data,
+	}
+
+	return json.Marshal(res)
+}
+
+// ExposeTimeRangeMetricsResult
 type ExposeTimeRangeMetricsResult struct {
 	Name      string            `json:"name"`
 	Type      string            `json:"type"`
@@ -97,16 +180,6 @@ func (e *ExposeTimeRangeMetricsResult) Size() int {
 	return len(e.Data)
 }
 
-type BinaryValue struct {
-	X string   `json:"x"`
-	Y [2]int64 `json:"y"`
-}
-
-type EnumValue struct {
-	X string   `json:"x"`
-	Y [2]int64 `json:"y"`
-}
-
 type TimeRangeValue struct {
 	X string   `json:"x"`
 	Y [2]int64 `json:"y"`
@@ -119,11 +192,14 @@ type NumericValue struct {
 
 func NewExposeResult(name string, dataType string, from time.Time, to time.Time) (ExposeResult, error) {
 	var result ExposeResult
-	if dataType == "numeric" {
+	switch dataType {
+	case "numeric":
 		result = NewExposeNumericMetricResult(name, from, to)
-	} else if dataType == "binary" || dataType == "enum" {
+	case "binary":
+		result = NewExposeBinaryMetricResult(name, from, to)
+	case "enum":
 		result = NewExposeTimeRangeMetricResult(name, dataType, from, to)
-	} else {
+	default:
 		return nil, fmt.Errorf("expose type %v not supported", dataType)
 	}
 
@@ -191,12 +267,12 @@ func NewExposeTimeRangeMetricResult(name string, dataType string, from time.Time
 }
 
 func NewExposeBinaryMetricResult(name string, from time.Time, to time.Time) ExposeResult {
-	return &ExposeTimeRangeMetricsResult{
+	return &ExposeBinaryEventsResult{
 		Name: name,
 		Type: "binary",
 		From: from.UnixMilli(),
 		To:   to.UnixMilli(),
-		Data: []*TimeRangeValue{},
+		Data: []BinaryEvent{},
 	}
 }
 
@@ -306,7 +382,7 @@ func (c *DeviceMetricsResult) UnmarshalJSON(data []byte) error {
 						if err != nil {
 							return err
 						}
-						var b *ExposeTimeRangeMetricsResult = &ExposeTimeRangeMetricsResult{}
+						var b *ExposeBinaryEventsResult = &ExposeBinaryEventsResult{}
 						err = json.Unmarshal(exposeBytes, &b)
 						if err != nil {
 							return err

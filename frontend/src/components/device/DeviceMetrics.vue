@@ -15,6 +15,7 @@
   });
 
   const selectePeriod = ref<PeriodType>(PeriodTypes.Today);
+  const loading = ref<boolean>(false);
   const hasMetrics = computed(() => Object.keys(groupedMetrics.value).length > 0);
 
   watch(
@@ -25,15 +26,20 @@
     { immediate: true }
   );
 
-  function dateSelected(value: PeriodType) {
+  async function dateSelected(value: PeriodType) {
     selectePeriod.value = value;
     const { from, to } = getPeriodOffset(value);
-    var request: DeviceMetricsRequest = {
+    const request: DeviceMetricsRequest = {
       id: props.id,
       from: toUnix(from),
       to: toUnix(to),
     };
-    store.dispatch('metrics/query', request);
+    loading.value = true;
+    try {
+      await store.dispatch('metrics/query', request);
+    } finally {
+      loading.value = false;
+    }
   }
 
   const groupedMetrics = computed(() => {
@@ -44,20 +50,25 @@
 </script>
 
 <template>
-  <div class="sm:col-3">
+  <div class="sm:col-3 pb-3">
     <Selection
       label="Period:"
       :value="selectePeriod"
       @updated="dateSelected"
       :items="PeriodOptions"
-      :disabled="!hasMetrics">
+      :disabled="loading">
     </Selection>
   </div>
 
-  <div v-if="!hasMetrics">
+  <div v-if="loading">
+    <p>Loading metrics...</p>
+  </div>
+  <div v-else-if="!hasMetrics">
     <p>No metrics available</p>
   </div>
   <div v-for="(metrics, chartType) in groupedMetrics">
-    <component :is="ChartComponents[chartType]" v-bind="{ chartData: metrics }"> </component>
+    <div class="w-full px-0 py-0">
+      <component :is="ChartComponents[chartType]" v-bind="{ chartData: metrics }"> </component>
+    </div>
   </div>
 </template>

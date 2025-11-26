@@ -1,112 +1,42 @@
 <script setup lang="ts">
-  import { ref, watch } from 'vue';
-  import type { PropType, Ref } from 'vue';
+  import { computed } from 'vue';
+  import type { PropType } from 'vue';
   import BaseChart from '../BaseChart.vue';
-  import { AreaChartEntry } from '@/types/chart.type';
-  import { DeviceExposeNumericMetrics } from '@/types/metrics.type';
-  import { getExposeColor } from '@/contracts/chart';
+  import type { DeviceExposeNumericMetrics } from '@/types/metrics.type';
+  import { getExposeColor, resolveChartOptions } from '@/contracts/chart';
+  import { ChartTypes } from '@/types/chart.type';
 
   const props = defineProps({
     chartData: {
       type: Object as PropType<DeviceExposeNumericMetrics>,
-      default: null,
+      required: true,
     },
   });
 
-  const chartData = ref<AreaChartEntry[]>([]);
+  const series = computed<ApexAxisChartSeries>(() => {
+    if (!props.chartData?.data) return [];
 
-  watch(
-    () => props.chartData,
-    () => {
-      if (props.chartData !== null) {
-        chartData.value = transformedChartData(
-          props.chartData
-        );
-      }
-    },
-    { immediate: true }
-  );
-
-  function transformedChartData(
-    chartData: DeviceExposeNumericMetrics
-  ): AreaChartEntry[] {
     return [
       {
-        name: chartData.name,
-        color: getExposeColor(chartData.name),
-        data: chartData.data.map((point) => ({
+        name: props.chartData.name,
+        data: props.chartData.data.map((point) => ({
           x: point.x,
           y: point.y,
         })),
       },
-    ] as AreaChartEntry[];
-  }
+    ];
+  });
 
-  const chartOptions = {
-    chart: {
-      type: 'area',
-      background: '#fff',
-      toolbar: {
-        autoselected: 'pan',
-        theme: 'dark',
-        show: false,
-      },
-    },
-    fill: {
-      type: 'gradient',
-      gradient: {
-        shadeIntensity: 1,
-        inverseColors: false,
-        opacityFrom: 0.6,
-        opacityTo: 0,
-        stops: [0, 100],
-      },
-    },
-    dataLabels: {
-      enabled: false,
-    },
-    legend: {
-      showForSingleSeries: true,
-      position: 'top',
-    },
-    stroke: {
-      curve: 'smooth',
-    },
-    xaxis: {
-      type: 'datetime',
-      labels: {
-        datetimeFormatter: {
-          year: 'yyyy',
-          month: "MMM 'yy",
-          day: 'dd MMM',
-          hour: 'HH:mm',
-        },
-      },
-    },
-    Tooltip: {
-      x: {
-        format: 'dd/MMM/yy HH:mm:ss ',
-      },
-    },
+  const options = computed(() => {
+    const color = getExposeColor(props.chartData?.name ?? '');
 
-    responsive: [
-      {
-        breakpoint: undefined,
-        options: {
-          chart: {
-            width: '100%',
-          },
-        },
-      },
-    ],
-  };
+    return resolveChartOptions(ChartTypes.AreaChart, {
+      stroke: { colors: [color] },
+      colors: [color],
+    });
+  });
 </script>
 
 <template>
-  <div class="area-chart">
-    <BaseChart
-      height="200"
-      :data="chartData"
-      :options="chartOptions" />
-  </div>
+  <BaseChart v-if="series.length > 0" :height="240" :width="'100%'" :options="options" :data="series" />
 </template>
