@@ -19,7 +19,25 @@ func CreateMetricsRepo(filename string) (metrics.Repository, *mocks.MockClock, e
 		return time.Now().UTC()
 	})
 
-	repo, err := repository.NewMetricsRepoFromDatabase(kvdb, mockClock)
+	repo, err := repository.NewMetricsRepoFromDatabase(kvdb, mockClock, 0*time.Second)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return repo, mockClock, nil
+}
+
+func CreateMetricsRepoWithTailWindow(filename string, tailWindow time.Duration) (metrics.Repository, *mocks.MockClock, error) {
+	kvdb, err := storage.NewBoltKeyValueDatabase(filename, "metrics")
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to initialise keyvalue db: %s", err.Error())
+	}
+
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now().UTC()
+	})
+
+	repo, err := repository.NewMetricsRepoFromDatabase(kvdb, mockClock, tailWindow)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -33,7 +51,7 @@ func CreateMetricsRepoWithClock(filename string, mockClock *mocks.MockClock) (me
 		return nil, fmt.Errorf("failed to initialise keyvalue db: %s", err.Error())
 	}
 
-	repo, err := repository.NewMetricsRepoFromDatabase(kvdb, mockClock)
+	repo, err := repository.NewMetricsRepoFromDatabase(kvdb, mockClock, 0*time.Second)
 	if err != nil {
 		return nil, err
 	}

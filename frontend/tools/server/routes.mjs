@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import { hubStatePayload } from './state.mjs';
 import { createMockToken } from './utils.mjs';
+import { getMetricsForDevice } from './metrics-mock.mjs';
 
 export function registerRoutes(app) {
   // Helpers for mock PKCE/state
@@ -115,5 +116,37 @@ export function registerRoutes(app) {
     console.log('triggerName:', triggerName);
     console.log('automationId:', automationId);
     res.json({ success: true });
+  });
+
+  // Register HTTP GET route for /metrics
+  app.get('/api/metrics', (req, res) => {
+    console.log('metrics GET request');
+    const { deviceId, expose, from, to } = req.query;
+
+    if (!deviceId || !expose || !from || !to) {
+      return res.status(400).json({
+        error: 'Missing required parameters: deviceId, expose, from, to',
+      });
+    }
+
+    const fromMs = parseInt(from);
+    const toMs = parseInt(to);
+
+    const metricsData = getMetricsForDevice(deviceId, expose, fromMs, toMs);
+
+    if (!metricsData) {
+      return res.status(404).json({
+        error: `No metrics data available for device ${deviceId}, expose ${expose}`,
+      });
+    }
+
+    // Return in the expected format
+    res.json({
+      type: 'metrics',
+      payload: {
+        deviceId: deviceId,
+        exposes: [metricsData],
+      },
+    });
   });
 }

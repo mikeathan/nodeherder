@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { PropType } from 'vue';
-  import { DeviceExposeBinaryMetrics, DeviceExposeMetrics } from '@/types/metrics.type';
-  import TimelineChart from '../chart/types/TimelineChart.vue';
+  import { DeviceExposeBinaryMetrics } from '@/types/metrics.type';
+  import RangeBarChart from '../chart/types/RangeBarChart.vue';
   import DateRangeDisplay from '../chart/DateRangeDisplay.vue';
 
   const props = defineProps({
@@ -13,8 +13,8 @@
 </script>
 
 <template>
-  <div style="width: 100%">
+  <div v-for="(data, chartType) in props.chartData" :key="chartType">
     <DateRangeDisplay v-if="props.chartData.length > 0" :from="props.chartData[0].from" :to="props.chartData[0].to" />
-    <TimelineChart :chartData="props.chartData"></TimelineChart>
+    <RangeBarChart :chartData="data"></RangeBarChart>
   </div>
 </template>

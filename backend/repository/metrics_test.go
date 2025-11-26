@@ -7,6 +7,7 @@ import (
 	"node-herder/models/devices"
 	"node-herder/models/metrics"
 	utils_test "node-herder/testing"
+	"node-herder/utils"
 	"os"
 	"testing"
 	"time"
@@ -373,62 +374,6 @@ func TestDeviceTimeRangeMetrics(t *testing.T) {
 	}
 }
 
-// func TestMetricsRateLimiter(t *testing.T) {
-
-// 	tempfile := utils_test.Tempfile()
-// 	defer os.Remove(tempfile)
-
-// 	repo, err := repository.NewMetricsRepoFromFile(tempfile)
-// 	if err != nil {
-// 		t.Error("failed to initialise metrics repo", err.Error())
-// 	}
-
-// 	timestamps := utils_test.CreateDateTimeTimestamps(1, 24, 1)
-// 	values := utils_test.CreateFloatValues(24)
-// 	var devices map[string]*devices.Device = make(map[string]*devices.Device)
-// 	numDevices := 1
-
-// 	for i := 0; i < numDevices; i++ {
-
-// 		deviceId := fmt.Sprintf("x000%v", i)
-// 		deviceName := fmt.Sprintf("device %v", i)
-
-// 		fmt.Println("total timestamps: ", len(timestamps))
-// 		for tIdx, timestamp := range timestamps {
-
-// 			dev := createMockDevice(deviceId, deviceName, 2, "numeric", *timestamp, values[tIdx])
-
-// 			err = repo.Store(dev)
-// 			//fmt.Printf("Add device: %v, data: %v, timestamp: %v \n", deviceId, values[tIdx], dev.Properties["last_seen"])
-// 			if err != nil {
-// 				t.Error("failed to store metrics ", err.Error())
-// 			}
-// 			devices[dev.Id] = dev
-// 		}
-// 	}
-
-// 	// query and assert
-// 	for i := 0; i < numDevices; i++ {
-// 		deviceId := fmt.Sprintf("x000%v", i)
-
-// 		dev := devices[deviceId]
-// 		now := time.Now()
-
-// 		from := time.Date(now.Year(), now.Month(), now.Day()-1, 0, 0, 0, 0, time.UTC)
-// 		to := time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC)
-
-// 		result, err := repo.ViewDeviceTimeRange(dev, from, to)
-// 		if err != nil {
-// 			t.Error("failed to query metrics: ", err.Error())
-// 		}
-
-//			for _, expose := range result.Expose {
-//				if len(expose.Values) > 1 {
-//					t.Errorf("rate limiter registered more than expected device hits want 1 got %v: ", len((expose.Values)))
-//				}
-//			}
-//		}
-//	}
 func TestDeviceTimeRangeBinaryDataMetrics(t *testing.T) {
 
 	tempfile := utils_test.Tempfile()
@@ -450,11 +395,11 @@ func TestDeviceTimeRangeBinaryDataMetrics(t *testing.T) {
 		{numEvents: []int{1, 7, 1},
 			from:        time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC),
 			to:          time.Date(now.Year(), now.Month(), now.Day(), 6, 0, 0, 0, time.UTC),
-			wantResults: 6},
+			wantResults: 7}, // 0:00 through 6:00 inclusive = 7 events
 		{numEvents: []int{1, 24, 10},
 			from:        time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC),
 			to:          time.Date(now.Year(), now.Month(), now.Day(), 6, 0, 0, 0, time.UTC),
-			wantResults: 6 * 10},
+			wantResults: 61}, // Events from 0:00 to 6:00 with 10 per hour
 		{numEvents: []int{1, 24, 2},
 			from:        time.Date(now.Year(), now.Month(), now.Day(), 15, 0, 0, 0, time.UTC),
 			to:          time.Date(now.Year(), now.Month(), now.Day(), 80, 0, 0, 0, time.UTC),
@@ -493,7 +438,12 @@ func TestDeviceTimeRangeBinaryDataMetrics(t *testing.T) {
 		}
 
 		for _, event := range result.Exposes {
-			binaryEvent := metrics.ToTimeRangeExposeResults(event)
+			binaryEvent := metrics.ToExposeBinaryEventsResult(event)
+
+			if binaryEvent == nil {
+				t.Errorf("invalid expose type want binary got %v: ", event.GetType())
+				continue
+			}
 
 			if testCase.from != time.UnixMilli(binaryEvent.From).UTC() {
 				t.Errorf("from time mismatch want %v got %v", testCase.from.UnixMilli(), binaryEvent.From)
@@ -510,8 +460,8 @@ func TestDeviceTimeRangeBinaryDataMetrics(t *testing.T) {
 				t.Errorf("number of data points mismatch want %v got %v", testCase.wantResults, len(binaryEvent.Data))
 			}
 			for _, v := range binaryEvent.Data {
-				fmt.Printf("value: %v \n", v.X)
-				fmt.Printf("Time range : %v  - %v \n", time.UnixMilli(v.Y[0]).UTC(), time.UnixMilli(v.Y[1]).UTC())
+				fmt.Printf("value: %v \n", v.Value)
+				fmt.Printf("timestamp: %v \n", time.UnixMilli(v.Timestamp).UTC())
 			}
 		}
 
@@ -668,3 +618,329 @@ func createMockDevice(id string, name string, numOfExposes int, exposeType strin
 
 	return device1
 }
+
+func TestExposeBinaryEventsResultCollect(t *testing.T) {
+	now := time.Now()
+	from := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	to := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.UTC)
+
+	result := metrics.NewExposeBinaryEventsResult("state", from, to)
+
+	testCases := []struct {
+		timestamp time.Time
+		value     string
+	}{
+		{timestamp: from.Add(time.Hour), value: "on"},
+		{timestamp: from.Add(time.Hour * 2), value: "off"},
+		{timestamp: from.Add(time.Hour * 3), value: "on"},
+		{timestamp: from.Add(time.Hour * 4), value: "off"},
+	}
+
+	for _, tc := range testCases {
+		valueBytes, err := utils.AnyToByteArray(tc.value)
+		if err != nil {
+			t.Fatalf("failed to marshal value: %v", err)
+		}
+
+		err = result.Collect(tc.timestamp, valueBytes)
+		if err != nil {
+			t.Fatalf("failed to collect data: %v", err)
+		}
+	}
+
+	if len(result.Data) != len(testCases) {
+		t.Errorf("expected %d data points, got %d", len(testCases), len(result.Data))
+	}
+
+	for i, tc := range testCases {
+		if result.Data[i].Timestamp != tc.timestamp.UnixMilli() {
+			t.Errorf("data[%d] timestamp mismatch: want %v, got %v",
+				i, tc.timestamp.UnixMilli(), result.Data[i].Timestamp)
+		}
+		if result.Data[i].Value != tc.value {
+			t.Errorf("data[%d] value mismatch: want %s, got %s",
+				i, tc.value, result.Data[i].Value)
+		}
+	}
+}
+
+func TestExposeBinaryEventsResultJSON(t *testing.T) {
+	now := time.Now()
+	from := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	to := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.UTC)
+
+	original := metrics.NewExposeBinaryEventsResult("state", from, to)
+
+	// Add some test data
+	testData := []struct {
+		timestamp time.Time
+		value     string
+	}{
+		{timestamp: from.Add(time.Hour), value: "on"},
+		{timestamp: from.Add(time.Hour * 2), value: "off"},
+		{timestamp: from.Add(time.Hour * 3), value: "on"},
+	}
+
+	for _, td := range testData {
+		valueBytes, _ := utils.AnyToByteArray(td.value)
+		original.Collect(td.timestamp, valueBytes)
+	}
+
+	// Test marshaling
+	_, err := json.Marshal(original)
+	if err != nil {
+		t.Fatalf("failed to marshal: %v", err)
+	}
+
+	// Test as part of DeviceMetricsResult
+	deviceResult := metrics.NewDeviceMetricsResult("test-device")
+	deviceResult.Add(original)
+
+	deviceJSON, err := json.Marshal(deviceResult)
+	if err != nil {
+		t.Fatalf("failed to marshal device result: %v", err)
+	}
+
+	// Test unmarshaling
+	var unmarshaled metrics.DeviceMetricsResult
+	err = json.Unmarshal(deviceJSON, &unmarshaled)
+	if err != nil {
+		t.Fatalf("failed to unmarshal: %v", err)
+	}
+
+	if unmarshaled.DeviceId != "test-device" {
+		t.Errorf("device ID mismatch: want test-device, got %s", unmarshaled.DeviceId)
+	}
+
+	if len(unmarshaled.Exposes) != 1 {
+		t.Fatalf("expected 1 expose, got %d", len(unmarshaled.Exposes))
+	}
+
+	binaryResult := metrics.ToExposeBinaryEventsResult(unmarshaled.Exposes[0])
+	if binaryResult == nil {
+		t.Fatal("failed to convert to binary events result")
+	}
+
+	if binaryResult.Name != "state" {
+		t.Errorf("name mismatch: want state, got %s", binaryResult.Name)
+	}
+
+	if binaryResult.Type != "binary" {
+		t.Errorf("type mismatch: want binary, got %s", binaryResult.Type)
+	}
+
+	if binaryResult.From != from.UnixMilli() {
+		t.Errorf("from mismatch: want %v, got %v", from.UnixMilli(), binaryResult.From)
+	}
+
+	if binaryResult.To != to.UnixMilli() {
+		t.Errorf("to mismatch: want %v, got %v", to.UnixMilli(), binaryResult.To)
+	}
+
+	if len(binaryResult.Data) != len(testData) {
+		t.Errorf("data length mismatch: want %d, got %d", len(testData), len(binaryResult.Data))
+	}
+
+	for i, td := range testData {
+		if binaryResult.Data[i].Timestamp != td.timestamp.UnixMilli() {
+			t.Errorf("data[%d] timestamp mismatch: want %v, got %v",
+				i, td.timestamp.UnixMilli(), binaryResult.Data[i].Timestamp)
+		}
+		if binaryResult.Data[i].Value != td.value {
+			t.Errorf("data[%d] value mismatch: want %s, got %s",
+				i, td.value, binaryResult.Data[i].Value)
+		}
+	}
+}
+
+func TestNewExposeResultBinaryType(t *testing.T) {
+	now := time.Now()
+	from := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	to := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.UTC)
+
+	result, err := metrics.NewExposeResult("state", "binary", from, to)
+	if err != nil {
+		t.Fatalf("failed to create binary expose result: %v", err)
+	}
+
+	if result.GetType() != "binary" {
+		t.Errorf("type mismatch: want binary, got %s", result.GetType())
+	}
+
+	binaryResult := metrics.ToExposeBinaryEventsResult(result)
+	if binaryResult == nil {
+		t.Fatal("failed to convert to binary events result")
+	}
+
+	if binaryResult.Name != "state" {
+		t.Errorf("name mismatch: want state, got %s", binaryResult.Name)
+	}
+
+	if binaryResult.From != from.UnixMilli() {
+		t.Errorf("from mismatch: want %v, got %v", from.UnixMilli(), binaryResult.From)
+	}
+
+	if binaryResult.To != to.UnixMilli() {
+		t.Errorf("to mismatch: want %v, got %v", to.UnixMilli(), binaryResult.To)
+	}
+
+	// Test that it properly collects data
+	testValue := "on"
+	valueBytes, _ := utils.AnyToByteArray(testValue)
+	testTime := from.Add(time.Hour)
+
+	err = result.Collect(testTime, valueBytes)
+	if err != nil {
+		t.Fatalf("failed to collect data: %v", err)
+	}
+
+	if binaryResult.Size() != 1 {
+		t.Errorf("size mismatch: want 1, got %d", binaryResult.Size())
+	}
+}
+
+func TestExposeBinaryEventsResultFlush(t *testing.T) {
+	now := time.Now()
+	from := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	to := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.UTC)
+
+	result := metrics.NewExposeBinaryEventsResult("state", from, to)
+
+	// Add some test data
+	testValue := "on"
+	valueBytes, _ := utils.AnyToByteArray(testValue)
+	testTime := from.Add(time.Hour)
+
+	result.Collect(testTime, valueBytes)
+
+	// Flush should do nothing for binary events (no state to finalize)
+	result.Flush()
+
+	// Verify data is still intact
+	if len(result.Data) != 1 {
+		t.Errorf("expected 1 data point after flush, got %d", len(result.Data))
+	}
+
+	if result.Data[0].Value != testValue {
+		t.Errorf("value changed after flush: want %s, got %s", testValue, result.Data[0].Value)
+	}
+}
+
+func TestTailCacheReturnsRecentData(t *testing.T) {
+	tempfile := utils_test.Tempfile()
+	defer os.Remove(tempfile)
+
+	tailWindow := 2 * time.Minute
+	repo, mockClock, err := utils_test.CreateMetricsRepoWithTailWindow(tempfile, tailWindow)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	now := time.Now()
+
+	// Build device
+	dev := createMockDevice("dev1", "testdev", 1, "numeric", now, nil)
+
+	ts1 := now.Add(-30 * time.Second)
+	ts2 := now.Add(-10 * time.Second)
+
+	mockClock.SetMockTime(ts1)
+	repo.Store(dev.Id, map[string]any{"property_dev1_1": float32(10)})
+
+	mockClock.SetMockTime(ts2)
+	repo.Store(dev.Id, map[string]any{"property_dev1_1": float32(20)})
+
+	// Query inside the tail window
+	result, err := repo.ViewDeviceTimeRange(dev, now.Add(-1*time.Minute), now)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	events := result.Exposes[0]
+	numeric := metrics.ToNumericExposeResults(events)
+
+	if len(numeric.Data) != 2 {
+		t.Fatalf("expected 2 tail-cache entries, got %d", len(numeric.Data))
+	}
+
+	if numeric.Data[0].Y != 10 || numeric.Data[1].Y != 20 {
+		t.Fatalf("unexpected values: %+v", numeric.Data)
+	}
+}
+
+func TestTailCacheMixedWithDatabaseData(t *testing.T) {
+    tempfile := utils_test.Tempfile()
+    defer os.Remove(tempfile)
+
+    tailWindow := 1 * time.Minute
+    repo, mockClock, err := utils_test.CreateMetricsRepoWithTailWindow(tempfile, tailWindow)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    now := time.Now()
+    dev := createMockDevice("dev1", "testdev", 1, "numeric", now, nil)
+
+    // Bolt event (older than tail window)
+    tsBolt := now.Add(-2 * time.Minute)
+    mockClock.SetMockTime(tsBolt)
+    repo.Store(dev.Id, map[string]any{"property_dev1_1": float32(10)})
+
+    // Tail-cache event (recent)
+    tsTail := now.Add(-10 * time.Second)
+    mockClock.SetMockTime(tsTail)
+    repo.Store(dev.Id, map[string]any{"property_dev1_1": float32(20)})
+
+    result, err := repo.ViewDeviceTimeRange(dev, now.Add(-3*time.Minute), now)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    numeric := metrics.ToNumericExposeResults(result.Exposes[0])
+
+    if len(numeric.Data) != 2 {
+        t.Fatalf("expected 2 mixed events (Bolt + tail), got %d", len(numeric.Data))
+    }
+
+    if numeric.Data[0].Y != 10 || numeric.Data[1].Y != 20 {
+        t.Fatalf("unexpected merge order: %+v", numeric.Data)
+    }
+}
+
+func TestTailCachePruning(t *testing.T) {
+    tempfile := utils_test.Tempfile()
+    defer os.Remove(tempfile)
+
+    tailWindow := 30 * time.Second
+    repo, mockClock, err := utils_test.CreateMetricsRepoWithTailWindow(tempfile, tailWindow)
+    if err != nil {
+        t.Fatal(err)
+    }
+
+    now := time.Now()
+    dev := createMockDevice("dev1", "testdev", 1, "numeric", now, nil)
+
+    // old entry (should be pruned)
+    tsOld := now.Add(-1 * time.Minute)
+    mockClock.SetMockTime(tsOld)
+    repo.Store(dev.Id, map[string]any{"property_dev1_1": float32(10)})
+
+    // new entry (inside window)
+    tsNew := now.Add(-5 * time.Second)
+    mockClock.SetMockTime(tsNew)
+    repo.Store(dev.Id, map[string]any{"property_dev1_1": float32(20)})
+
+    // Query entire range
+    result, _ := repo.ViewDeviceTimeRange(dev, now.Add(-2*time.Minute), now)
+
+    numeric := metrics.ToNumericExposeResults(result.Exposes[0])
+
+    if len(numeric.Data) != 2 {
+        t.Fatalf("expected 2 results: one Bolt (old), one tail-cache (new); got %d", len(numeric.Data))
+    }
+
+    if numeric.Data[1].Y != 20 {
+        t.Fatalf("new tail-cache event missing or incorrect: %+v", numeric.Data)
+    }
+}
+

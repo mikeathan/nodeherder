@@ -12,6 +12,7 @@ export const ColorTypes = {
   Coral: '#FF4560',
   SkyBlue: '#69d2e7',
   SpringGreen: '#90ee7e',
+  EmeraldGreen: '#00C853',
   Red: '#D7263D',
   Blue: '#2983FF',
   NavyBlue: '#2E294E',
@@ -26,4 +27,5 @@ export const ColorTypes = {
   ElectricViolet: '#7D02EB',
   MidnightViolet: '#662E9B',
   Turquoise: '#4ecdc4',
+  SlateGrey: '#546E7A',
 };

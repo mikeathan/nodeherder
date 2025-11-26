@@ -11,6 +11,7 @@ import {
   runPermitJoin,
 } from './state.mjs';
 import { sendMessage, sendOperationSuccess, sendOperationFailed, currentTime } from './utils.mjs';
+import { getMetricsForDevice } from './metrics-mock.mjs';
 
 export function registerWebsocket(app, server) {
   expressWs(app, server);
@@ -95,12 +96,43 @@ export function registerWebsocket(app, server) {
           }, 2000);
           break;
         case 'loadMetrics': {
-          const payload = metricsMap[obj.payload.id];
-          if (!payload) {
-            console.log('Metrics for device id', obj.payload.id, 'not found');
-            return;
+          console.log('loadMetrics request:', obj.payload);
+          const request = obj.payload;
+          const deviceId = request.id;
+          const expose = request.expose;
+          const from = request.from * 1000; // Convert seconds to milliseconds
+          const to = request.to * 1000;
+
+          // If expose is specified, return only that expose
+          if (expose) {
+            const metricsData = getMetricsForDevice(deviceId, expose, from, to);
+            if (!metricsData) {
+              console.log('Metrics for device id', deviceId, 'expose', expose, 'not found');
+              return;
+            }
+            sendMessage(ws, 'metrics', {
+              deviceId: deviceId,
+              exposes: [metricsData],
+            });
+          } else {
+            // Return all exposes for the device
+            const illuminanceData = getMetricsForDevice(deviceId, 'illuminance', from, to);
+            const presenceData = getMetricsForDevice(deviceId, 'presence', from, to);
+
+            const exposes = [];
+            if (illuminanceData) exposes.push(illuminanceData);
+            if (presenceData) exposes.push(presenceData);
+
+            if (exposes.length === 0) {
+              console.log('No metrics for device id', deviceId);
+              return;
+            }
+
+            sendMessage(ws, 'metrics', {
+              deviceId: deviceId,
+              exposes: exposes,
+            });
           }
-          sendMessage(ws, 'metrics', payload);
           break;
         }
         case 'saveHistoryConfig':

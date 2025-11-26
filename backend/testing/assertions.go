@@ -50,7 +50,24 @@ func AssertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 				stringValues = stringArray
 			}
 
-			AsserTimeRangeExposeEvent(expose, event, timestamps, stringValues.([]string), t)
+			// Build expected binary result from the actual result's from/to times
+			gotBinaryResult := metrics.ToExposeBinaryEventsResult(event)
+			wantBinaryResult := metrics.NewExposeBinaryEventsResult(expose.Name,
+				time.UnixMilli(gotBinaryResult.From),
+				time.UnixMilli(gotBinaryResult.To))
+
+			// Only include data points within the queried time range
+			for i, ts := range timestamps {
+				tsMillis := ts.UnixMilli()
+				if tsMillis >= gotBinaryResult.From && tsMillis <= gotBinaryResult.To {
+					wantBinaryResult.Data = append(wantBinaryResult.Data, metrics.BinaryEvent{
+						Timestamp: tsMillis,
+						Value:     stringValues.([]string)[i],
+					})
+				}
+			}
+
+			AssertBinaryEventsExposeEvent(wantBinaryResult, event, t)
 		} else if event.GetType() == "enum" {
 			AsserTimeRangeExposeEvent(expose, event, timestamps, values.([]string), t)
 		} else {
@@ -86,20 +103,65 @@ func AssertNumericExposeEvent(expose *devices.Entity, event metrics.ExposeResult
 			}
 		}
 		if !tsFound {
-			t.Fatalf(fmt.Sprintf("Timestamp not found %v,  timestamp: %v", eventTimestamp, time.UnixMilli(eventTimestamp).UTC()))
+			t.Fatalf("Timestamp not found %v,  timestamp: %v", eventTimestamp, time.UnixMilli(eventTimestamp).UTC())
 		}
 
 		wantValue := values[dataIdx]
 		wantKind := reflect.Float32
 		gotKind := reflect.TypeOf(eventValue).Kind()
 		if gotKind != wantKind {
-			t.Fatalf(fmt.Sprintf("Type mismatch want: %v got: %v", wantKind.String(), gotKind.String()))
+			t.Fatalf("Type mismatch want: %v got: %v", wantKind.String(), gotKind.String())
 		}
 
 		if wantValue != eventValue {
-			t.Fatalf(fmt.Sprintf("Value mismatch want:%v got: %v", wantValue, eventValue))
+			t.Fatalf("Value mismatch want:%v got: %v", wantValue, eventValue)
 		}
 		//fmt.Printf("found event %v with data: %v, timestamp: %v \n", expose.Name, event.Values[fId], foundTs)
+	}
+}
+
+func AssertBinaryEventsExposeEvent(wantResults metrics.ExposeResult, gotResults metrics.ExposeResult, t *testing.T) {
+	if wantResults.GetType() != gotResults.GetType() {
+		t.Fatalf("Expected type %v', got '%v'", wantResults.GetType(), gotResults.GetType())
+	}
+
+	wantBinaryResults := metrics.ToExposeBinaryEventsResult(wantResults)
+	gotBinaryResults := metrics.ToExposeBinaryEventsResult(gotResults)
+
+	if wantBinaryResults == nil {
+		t.Errorf("invalid wantResults type, want binary got %v: ", wantResults.GetType())
+	}
+
+	if gotBinaryResults == nil {
+		t.Errorf("invalid gotResults type, want binary got %v: ", gotResults.GetType())
+	}
+
+	if wantBinaryResults.Name != gotBinaryResults.Name {
+		t.Fatalf("Expected name %v', got '%v'", wantBinaryResults.Name, gotBinaryResults.Name)
+	}
+
+	if wantBinaryResults.From != gotBinaryResults.From {
+		t.Fatalf("Expected from %v', got '%v'", wantBinaryResults.From, gotBinaryResults.From)
+	}
+
+	if wantBinaryResults.To != gotBinaryResults.To {
+		t.Fatalf("Expected to %v', got '%v'", wantBinaryResults.To, gotBinaryResults.To)
+	}
+
+	if len(wantBinaryResults.Data) != len(gotBinaryResults.Data) {
+		t.Fatalf("Expected data length %v', got '%v'", len(wantBinaryResults.Data), len(gotBinaryResults.Data))
+	}
+
+	for idx, wantEvent := range wantBinaryResults.Data {
+		gotEvent := gotBinaryResults.Data[idx]
+
+		if wantEvent.Timestamp != gotEvent.Timestamp {
+			t.Fatalf("Expected Timestamp %v', got '%v'", wantEvent.Timestamp, gotEvent.Timestamp)
+		}
+
+		if wantEvent.Value != gotEvent.Value {
+			t.Fatalf("Expected Value %v', got '%v'", wantEvent.Value, gotEvent.Value)
+		}
 	}
 }
 
@@ -135,7 +197,7 @@ func AsserTimeRangeExposeEvent(expose *devices.Entity, event metrics.ExposeResul
 		}
 
 		if !tsFound {
-			t.Fatalf(fmt.Sprintf("Start timestamp not found %v, timestamp: %v", eventStart, time.UnixMilli(eventStart).UTC()))
+			t.Fatalf("Start timestamp not found %v, timestamp: %v", eventStart, time.UnixMilli(eventStart).UTC())
 		}
 
 		// we are expecting the end timestamp to be the next one
@@ -143,10 +205,10 @@ func AsserTimeRangeExposeEvent(expose *devices.Entity, event metrics.ExposeResul
 			// if last item check to see if its been padded with previous item value and end timestamp
 			if idx+1 == len(enumEvent.Data) {
 				if eventEnd != timestamps[dataIdx].UnixMilli() {
-					t.Fatalf(fmt.Sprintf("End timestamp not matching %v", eventEnd))
+					t.Fatalf("End timestamp not matching %v", eventEnd)
 				}
 			} else {
-				t.Fatalf(fmt.Sprintf("End timestamp not matching %v", eventEnd))
+				t.Fatalf("End timestamp not matching %v", eventEnd)
 			}
 		}
 
@@ -154,11 +216,11 @@ func AsserTimeRangeExposeEvent(expose *devices.Entity, event metrics.ExposeResul
 		wantKind := reflect.String
 		gotKind := reflect.TypeOf(eventValue).Kind()
 		if gotKind != wantKind {
-			t.Fatalf(fmt.Sprintf("Type mismatch want: %v got: %v", wantKind.String(), gotKind.String()))
+			t.Fatalf("Type mismatch want: %v got: %v", wantKind.String(), gotKind.String())
 		}
 
 		if wantValue != eventValue {
-			t.Fatalf(fmt.Sprintf("Value mismatch want:%v got: %v", wantValue, eventValue))
+			t.Fatalf("Value mismatch want:%v got: %v", wantValue, eventValue)
 		}
 		//fmt.Printf("found event %v with data: %v, timestamp: %v \n", expose.Name, event.Values[fId], foundTs)
 	}
