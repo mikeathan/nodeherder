@@ -1,5 +1,5 @@
 import { ColorValue } from './color.type';
-import { KeyValuePair, ValueOf } from './types.type';
+import {  ValueOf } from './types.type';
 
 export type AreaDataPoint = {
   x: number;
@@ -12,23 +12,9 @@ export type AreaChartEntry = {
   data: AreaDataPoint[];
 };
 
-export type TimelineDataPoint = {
-  x: string;
-  y: number[];
-  state?: string;
-  fillColor?: ColorValue;
-};
-
-export type TimelineChartEntry = {
-  name: string;
-  data: TimelineDataPoint[];
-};
-
 export type ChartType = keyof typeof ChartTypes;
 export const ChartTypes = {
   AreaChart: 'AreaChart',
-  TimelineChart: 'TimelineChart',
-  TimeRangeChart: 'TimeRangeChart',
   NumericChart: 'NumericChart',
   BinaryChart: 'BinaryChart',
 } as const;
