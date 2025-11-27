@@ -11,7 +11,7 @@ export function groupMetricsByType(metrics: DeviceMetrics): KeyValuePair<DeviceE
     if (expose.type === MetricsTypes.Binary) {
       chartType = ChartTypes.BinaryChart;
     } else if (expose.type === MetricsTypes.Enum) {
-      chartType = ChartTypes.TimeRangeChart;
+      return grouped; // Skip enum types for now
     }
     grouped[chartType] = (grouped[chartType] || []).concat(expose);
 
