@@ -17,7 +17,7 @@
               "data": "TOGGLE"
             }
           ],
-          "publishMode": "batch"
+          "publishMode": "single"
         }
       ],
       "name": "state",
