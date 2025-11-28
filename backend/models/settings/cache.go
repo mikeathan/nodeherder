@@ -131,6 +131,24 @@ func (d *DeviceConfigCache) Set(deviceConfig *DeviceConfig) error {
 	return d.store.SaveDeviceConfig(deviceConfig)
 }
 
+func (d *DeviceConfigCache) UpdateDefaults(defaults *DeviceConfig, overrides map[string]*DeviceConfig) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
+	d.defaultDebounceByCategory = defaults.DefaultDebounceByCategory
+
+	for id := range d.devicesConfigs {
+		if _, ok := overrides[id]; ok {
+			// leave explicit overrides untouched
+			continue
+		}
+
+		refreshed := NewDeviceConfigFrom(defaults)
+		refreshed.Id = id
+		d.devicesConfigs[id] = refreshed
+	}
+}
+
 func (d *DeviceConfigCache) Delete(id string) error {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
@@ -403,6 +421,7 @@ func (s *AppConfigCache) SetDeviceConfigDefaults(deviceDefaults *DeviceConfig) e
 		return err
 	}
 
+	s.deviceCache.UpdateDefaults(deviceDefaults, config.Hub.Devices.Overrides)
 	s.setDirty(deviceDefaults)
 	return nil
 }

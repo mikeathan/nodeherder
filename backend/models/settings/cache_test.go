@@ -4,7 +4,9 @@ import (
 	"node-herder/mocks"
 	"node-herder/models/bridge"
 	"node-herder/models/settings"
+	"node-herder/repository"
 	"node-herder/utils"
+	"os"
 	"testing"
 	"time"
 )
@@ -318,5 +320,68 @@ func TestDeviceDebouncer_DiagnosticsDebouncerWhenOverrideIsNotAvailable(t *testi
 
 	if debouncer.DebounceExpose("expose3", bridge.MeasurementCategory) == true {
 		t.Error("Second expose3 event should not be debounced")
+	}
+}
+
+func TestDeviceConfigCache_UpdateDefaultsRefreshesCachedDevices(t *testing.T) {
+	tempFile, err := os.CreateTemp("", "settings-*.db")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	tempFile.Close()
+	defer os.Remove(tempFile.Name())
+
+	settingsRepo, err := repository.NewFileSettingsRepoFromFile(tempFile.Name())
+	if err != nil {
+		t.Fatalf("failed to create settings repo: %v", err)
+	}
+	defer settingsRepo.Close()
+
+	configCache, err := settings.NewAppConfigCache(settingsRepo, []settings.Task{})
+	if err != nil {
+		t.Fatalf("failed to create app config cache: %v", err)
+	}
+
+	deviceCache := configCache.GetDeviceConfigCache()
+
+	// prime the cache with a default device config
+	defaultId := "device-default"
+	cfg, err := deviceCache.Get(defaultId)
+	if err != nil {
+		t.Fatalf("failed to load default device config: %v", err)
+	}
+	if cfg.MetricsEnabled {
+		t.Fatalf("expected metrics to be disabled by default")
+	}
+
+	// add an explicit override that should not be changed by default updates
+	override := settings.NewDeviceConfig("device-override")
+	override.MetricsEnabled = false
+	if err := configCache.SetDeviceConfigOverrides(override); err != nil {
+		t.Fatalf("failed to set device override: %v", err)
+	}
+
+	// enable metrics via defaults
+	newDefaults := settings.DefaultDeviceConfig()
+	newDefaults.MetricsEnabled = true
+
+	if err := configCache.SetDeviceConfigDefaults(newDefaults); err != nil {
+		t.Fatalf("failed to update device defaults: %v", err)
+	}
+
+	updatedCfg, err := deviceCache.Get(defaultId)
+	if err != nil {
+		t.Fatalf("failed to load updated default device config: %v", err)
+	}
+	if !updatedCfg.MetricsEnabled {
+		t.Fatalf("expected metrics to be enabled after updating defaults")
+	}
+
+	overrideCfg, err := deviceCache.Get("device-override")
+	if err != nil {
+		t.Fatalf("failed to load override device config: %v", err)
+	}
+	if overrideCfg.MetricsEnabled {
+		t.Fatalf("expected override to remain unchanged after default update")
 	}
 }
