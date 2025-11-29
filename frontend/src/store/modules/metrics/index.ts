@@ -35,7 +35,6 @@ export const MetricsModule: Module<
         return;
       }
 
-      console.log('metrics', metrics);
       state.deviceMetricsQueryMap[metrics.deviceId] =
         metrics;
     },

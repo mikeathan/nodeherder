@@ -10,6 +10,7 @@
     mergeBinaryFlickers,
     toBinaryRangeBarData,
     renderRangeTooltip,
+    resolveBinaryLabel,
   } from '@/utils/chart.utils';
   import { parseTimestamp } from '@/utils/date.utils';
 
@@ -33,7 +34,11 @@
     const colors = getExposeBinaryColour(name ?? '');
     const normalizedRanges = normalizeBinaryEvents(data, fromTimestamp, toTimestamp);
     const mergedRanges = mergeBinaryFlickers(normalizedRanges, FLICKER_THRESHOLD_MS);
-    const apexData = toBinaryRangeBarData(mergedRanges, colors.on, colors.off);
+    const apexDataRaw = toBinaryRangeBarData(mergedRanges, colors.on, colors.off);
+    const apexData = apexDataRaw.map((d) => ({
+      ...d,
+      x: resolveBinaryLabel(name ?? '', d.x === 'On' ? 'true' : 'false'),
+    }));
 
     return [
       {
