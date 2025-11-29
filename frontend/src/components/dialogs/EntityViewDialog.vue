@@ -45,6 +45,10 @@
   const { dialogStyle } = useDialogUI(() => close());
 
   const showMiniChart = computed(() => {
+    // Don't show chart if there's a brightness control
+    const hasBrightnessControl = controlExposes.value.some((exp) => exp.name === 'brightness');
+    if (hasBrightnessControl) return false;
+
     return (
       chartData.value.hasData && (expose.value.type === ExposeTypes.Numeric || expose.value.type === ExposeTypes.Binary)
     );
@@ -157,10 +161,13 @@
 
   .modal-config-buttons {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 0.2rem;
+    justify-content: center;
+    gap: 0.5rem;
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
+    max-width: 100%;
   }
 
   .dialog-header {
