@@ -1,5 +1,6 @@
 import type { RangeBarDataPoint, BinaryDataPoint, BinaryRange } from '@/types/metrics.type';
 import { formatDuration } from './date.utils';
+import { getFormattedSensorValueByName } from '@/modules/formatters/sensor-formatter';
 
 /**
  * Normalizes binary events into continuous time ranges.
@@ -86,6 +87,12 @@ export function toBinaryRangeBarData(ranges: BinaryRange[], colorOn: string, col
   }));
 }
 
+// Resolve human-friendly label for a binary expose based on its name and value
+export function resolveBinaryLabel(exposeName: string, value: string | boolean): string {
+  const boolVal = typeof value === 'string' ? value === 'true' : !!value;
+  return getFormattedSensorValueByName(exposeName, boolVal);
+}
+
 export function renderRangeTooltip(name: string, label: string, start: number, end: number): string {
   const durationMs = Math.max(0, end - start);
   const fmtOpts: Intl.DateTimeFormatOptions = {
@@ -104,4 +111,3 @@ export function renderRangeTooltip(name: string, label: string, start: number, e
       <div><span style='color:#94a3b8;'>Duration:</span> ${durStr}</div>
     </div>`;
 }
-

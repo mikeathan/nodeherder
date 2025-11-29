@@ -159,16 +159,23 @@ export function getFormattedSensorValue(expose: Expose): string {
   if (expose.name == null || expose.data == null) {
     return '-';
   }
-  const unit = expose.unit ?? getSensorUnit(expose.name);
-  switch (expose.name) {
-    case 'presence':
-      return expose.data ? 'Detected' : 'Clear';
-    case 'contact':
-      return expose.data ? 'Closed' : 'Open';
-  }
-  return `${getSensorValue(expose.data)}${unit}`;
+  return getFormattedSensorValueByName(expose.name, expose.data, expose.unit);
 }
 
+export function getFormattedSensorValueByName(name: string, value: any, unit?: string): string {
+  if (!name || value == null) {
+    return '-';
+  }
+  const resolvedUnit = unit ?? getSensorUnit(name);
+  switch (name) {
+    case 'presence':
+      return value ? 'Detected' : 'Clear';
+    case 'contact':
+      return value ? 'Closed' : 'Open';
+    default:
+      return `${getSensorValue(value)}${resolvedUnit}`;
+  }
+}
 
 export function getSensorUnit(sensor: string): string {
   if (sensor in sensorUnits === false) {
