@@ -1,5 +1,5 @@
 import { ColorValue } from './color.type';
-import {  ValueOf } from './types.type';
+import { ValueOf } from './types.type';
 
 export type AreaDataPoint = {
   x: number;
@@ -25,6 +25,7 @@ export const PeriodTypes = {
   SixHours: '6 Hours',
   TwelveHours: '12 Hours',
   Today: 'Today',
+  Yesterday: 'Yesterday',
   OneDay: '1 Day',
   ThreeDays: '3 Days',
   SevenDays: '7 Days',

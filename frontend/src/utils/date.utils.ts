@@ -26,11 +26,22 @@ export const toUnix = (date: Date): number => Math.floor(date.getTime() / 1000);
 
 export const getDateRange = (hours: number): { from: Date; to: Date } => {
   const now = new Date();
+  const from = new Date(now.getTime() + hours * 60 * 60 * 1000);
+  return { from, to: now };
+};
+// Returns the range from local midnight today to now
+export const getTodayRange = (): { from: Date; to: Date } => {
+  const now = new Date();
+  const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  return { from: midnight, to: now };
+};
 
-  const date = new Date();
-  date.setHours(hours);
-
-  return { from: date, to: now };
+// Returns the range for yesterday: local midnight of previous day to local midnight of today
+export const getYesterdayRange = (): { from: Date; to: Date } => {
+  const now = new Date();
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const yesterdayMidnight = new Date(todayMidnight.getTime() - 24 * 60 * 60 * 1000);
+  return { from: yesterdayMidnight, to: todayMidnight };
 };
 
 export const getWeekStartEndDate = (): {
@@ -38,19 +49,16 @@ export const getWeekStartEndDate = (): {
   to: Date;
 } => {
   const today = new Date();
-
-  // Get the day of the week (0-6, Sunday-Saturday)
   const dayOfWeek = today.getDay();
-
-  // Calculate the start of the week (Monday)
   const weekStart = new Date(today);
   weekStart.setDate(today.getDate() - dayOfWeek + 1);
-
-  // Calculate the end of the week (Sunday)
-  const weekEnd = new Date(weekStart);
+  // normalize to local midnight
+  const from = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate(), 0, 0, 0, 0);
+  // end of week = Sunday 23:59:59.999
+  const weekEnd = new Date(from);
   weekEnd.setDate(weekEnd.getDate() + 6);
-
-  return { from: weekStart, to: weekEnd };
+  const to = new Date(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate(), 23, 59, 59, 999);
+  return { from, to };
 };
 
 export const getLastWeekStartEndDate = (): {
@@ -58,23 +66,16 @@ export const getLastWeekStartEndDate = (): {
   to: Date;
 } => {
   const today = new Date();
-
-  // Get the day of the week (0-6, Sunday-Saturday)
   const dayOfWeek = today.getDay();
-
-  // Calculate the start of this week (Monday)
   const thisWeekStart = new Date(today);
   thisWeekStart.setDate(today.getDate() - dayOfWeek + 1);
-
-  // Calculate the start of last week (Monday)
   const lastWeekStart = new Date(thisWeekStart);
   lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-
-  // Calculate the end of last week (Sunday)
-  const lastWeekEnd = new Date(lastWeekStart);
+  const from = new Date(lastWeekStart.getFullYear(), lastWeekStart.getMonth(), lastWeekStart.getDate(), 0, 0, 0, 0);
+  const lastWeekEnd = new Date(from);
   lastWeekEnd.setDate(lastWeekEnd.getDate() + 6);
-
-  return { from: lastWeekStart, to: lastWeekEnd };
+  const to = new Date(lastWeekEnd.getFullYear(), lastWeekEnd.getMonth(), lastWeekEnd.getDate(), 23, 59, 59, 999);
+  return { from, to };
 };
 
 export const formatTimestamp = (timestamp: number): string => {
