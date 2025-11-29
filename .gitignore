@@ -2,3 +2,4 @@
 nodeherder
 backend/data/*.db
 .env
+backend/.gocache/*

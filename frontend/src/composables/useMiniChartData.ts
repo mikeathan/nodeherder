@@ -42,6 +42,8 @@ export function useMiniChartData(deviceId: string, exposeName: string, duration:
 
     const now = new Date();
     const from = new Date(now.getTime() - duration * 60 * 60 * 1000);
+    const fromMs = from.getTime();
+    const toMs = now.getTime();
 
     const request = {
       id: deviceId,
@@ -67,8 +69,16 @@ export function useMiniChartData(deviceId: string, exposeName: string, duration:
 
         if (exposeData) {
           chartData.value.type = exposeData.type;
-          chartData.value.data = (exposeData as any).data || [];
-          chartData.value.hasData = chartData.value.data.length > 0;
+          const rawData = (exposeData as any).data || [];
+
+          // Filter data points to only include those within the requested time range
+          const filteredData = rawData.filter((point: any) => {
+            const pointTime = point.x || point.timestamp || 0;
+            return pointTime >= fromMs && pointTime <= toMs;
+          });
+
+          chartData.value.data = filteredData;
+          chartData.value.hasData = filteredData.length > 0;
           chartData.value.isLoading = false;
 
           // If live updates are not enabled and we got the data, unsubscribe

@@ -1,6 +1,12 @@
 import { ChartTypes, PeriodType, PeriodTypes } from '@/types/chart.type';
 import { alllowedExposeList, ExposeBinaryColor } from '@/types/device.type';
-import { getDateRange, getLastWeekStartEndDate, getWeekStartEndDate } from '@/utils/date.utils';
+import {
+  getDateRange,
+  getLastWeekStartEndDate,
+  getWeekStartEndDate,
+  getTodayRange,
+  getYesterdayRange,
+} from '@/utils/date.utils';
 import { KeyValuePair } from '@/types/types.type';
 import { ColorTypes, ColorValue } from '@/types/color.type';
 
@@ -16,7 +22,9 @@ export const getPeriodOffset = (period: PeriodType): { from: Date; to: Date } =>
     case PeriodTypes.TwelveHours:
       return getDateRange(-12);
     case PeriodTypes.Today:
-      return getDateRange(-(HOURS - now.getHours()));
+      return getTodayRange();
+    case PeriodTypes.Yesterday:
+      return getYesterdayRange();
     case PeriodTypes.OneDay:
       return getDateRange(-HOURS);
     case PeriodTypes.ThreeDays:
@@ -201,7 +209,7 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
           },
         ],
       };
-      case ChartTypes.BinaryChart:
+    case ChartTypes.BinaryChart:
       return {
         chart: {
           type: 'rangeBar',
@@ -255,7 +263,6 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
           },
         ],
       };
-
 
     default:
       throw new Error(`Unknown chart type: ${chartType}`);

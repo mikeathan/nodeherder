@@ -49,9 +49,6 @@ export const ConsoleModule: Module<
       expirationTimeInMs?: number
     ) {
       if (state.messages.length === 0) {
-        console.log(
-          'Store - removeExpiredMessages no messages'
-        );
         return;
       }
 
@@ -62,13 +59,6 @@ export const ConsoleModule: Module<
           ? MESSAGE_EXPIRATION_TIME
           : expirationTimeInMs);
 
-      console.log(
-        'Store - removeExpiredMessages before clean',
-        state.messages.length,
-        'expiration time',
-        new Date(expirationTime)
-      );
-
       state.messages = state.messages.filter((message) => {
         return (
           new Date(message.timestamp).getTime() >=
@@ -76,10 +66,7 @@ export const ConsoleModule: Module<
         );
       });
 
-      console.log(
-        'Store - removeExpiredMessages after clean',
-        state.messages.length
-      );
+    
     },
 
     clear(state: ConsoleModuleState) {
@@ -101,10 +88,6 @@ export const ConsoleModule: Module<
       enabled: boolean
     ) {
       if (enabled == state.isEnabled) {
-        console.log(
-          'Store - enableRemoteLogging already enabled',
-          enabled
-        );
         return;
       }
 
