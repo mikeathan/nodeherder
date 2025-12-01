@@ -1,0 +1,10 @@
+curl http://127.0.0.1:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{ "model": "local", 
+        "messages":[{"role":"user","content":"call my function"}],
+        "tools":[
+          {"type":"function","function":{
+             "name":"test",
+             "parameters":{"type":"object","properties":{}}
+          }}],
+        "tool_choice":"auto"}'

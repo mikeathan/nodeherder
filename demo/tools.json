@@ -1,0 +1,24 @@
+{
+  "model": "local",
+  "messages": [
+    { "role": "system", "content": "You are a helpful assistant." },
+    { "role": "user",   "content": "When was the door last opened?" }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_last_event",
+        "description": "Get last event timestamp for a device",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "device_id": { "type": "string" }
+          },
+          "required": ["device_id"]
+        }
+      }
+    }
+  ],
+  "tool_choice": "auto"
+}
