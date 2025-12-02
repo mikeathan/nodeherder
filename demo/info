@@ -20,3 +20,8 @@ curl http://192.168.50.60:5001/v1/chat/completions \
     ],
     "tool_choice": "auto"
   }'
+
+
+
+
+  when was the front door opened last?
