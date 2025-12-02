@@ -1,10 +1,22 @@
-curl http://127.0.0.1:8080/v1/chat/completions \
+curl http://192.168.50.60:5001/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{ "model": "local", 
-        "messages":[{"role":"user","content":"call my function"}],
-        "tools":[
-          {"type":"function","function":{
-             "name":"test",
-             "parameters":{"type":"object","properties":{}}
-          }}],
-        "tool_choice":"auto"}'
+  -d '{
+    "model": "local",
+    "messages": [
+      { "role": "user", "content": "call my function" }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "test",
+          "description": "Test function that does nothing.",
+          "parameters": {
+            "type": "object",
+            "properties": {}
+          }
+        }
+      }
+    ],
+    "tool_choice": "auto"
+  }'
