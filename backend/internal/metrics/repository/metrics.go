@@ -80,6 +80,11 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 	return nil
 }
 
+func (s *MetricsRepo) Query(query metrics.MetricsQuery) (*[]metrics.MetricsQueryResult, error) {
+	TODO
+	return nil, nil
+}
+
 func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 
 	exposeNames, collectors, err := s.prepareCollectors(device, from, to)

@@ -7,6 +7,12 @@ import (
 	"time"
 )
 
+type MetricsQueryResult struct {
+    Devices []DeviceMetricsResult
+    From    int64
+    To      int64
+}
+
 type LoadDeviceMetricsRequest struct {
 	Id     string `json:"id"`
 	Expose string `json:"expose,omitempty"`
