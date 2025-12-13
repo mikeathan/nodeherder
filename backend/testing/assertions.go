@@ -2,8 +2,8 @@ package utils_test
 
 import (
 	"fmt"
+	metrics "node-herder/internal/metrics/models"
 	"node-herder/models/devices"
-	"node-herder/models/metrics"
 	"reflect"
 	"sort"
 	"testing"

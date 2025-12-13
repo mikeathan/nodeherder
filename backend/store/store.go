@@ -2,10 +2,10 @@ package store
 
 import (
 	"fmt"
+	metrics "node-herder/internal/metrics/models"
 	"node-herder/internal/ratelimiter"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
-	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	"node-herder/repository"
 	"sort"

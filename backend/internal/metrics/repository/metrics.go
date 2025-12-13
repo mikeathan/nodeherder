@@ -1,8 +1,8 @@
 package repository
 
 import (
+	metrics "node-herder/internal/metrics/models"
 	"node-herder/models/devices"
-	"node-herder/models/metrics"
 	"node-herder/utils"
 	"node-herder/utils/storage"
 	"path/filepath"

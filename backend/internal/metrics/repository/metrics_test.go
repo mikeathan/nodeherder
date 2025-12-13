@@ -3,9 +3,9 @@ package repository_test
 import (
 	"encoding/json"
 	"fmt"
+	metrics "node-herder/internal/metrics/models"
 	"node-herder/mocks"
 	"node-herder/models/devices"
-	"node-herder/models/metrics"
 	utils_test "node-herder/testing"
 	"node-herder/utils"
 	"os"
@@ -869,78 +869,77 @@ func TestTailCacheReturnsRecentData(t *testing.T) {
 }
 
 func TestTailCacheMixedWithDatabaseData(t *testing.T) {
-    tempfile := utils_test.Tempfile()
-    defer os.Remove(tempfile)
+	tempfile := utils_test.Tempfile()
+	defer os.Remove(tempfile)
 
-    tailWindow := 1 * time.Minute
-    repo, mockClock, err := utils_test.CreateMetricsRepoWithTailWindow(tempfile, tailWindow)
-    if err != nil {
-        t.Fatal(err)
-    }
+	tailWindow := 1 * time.Minute
+	repo, mockClock, err := utils_test.CreateMetricsRepoWithTailWindow(tempfile, tailWindow)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-    now := time.Now()
-    dev := createMockDevice("dev1", "testdev", 1, "numeric", now, nil)
+	now := time.Now()
+	dev := createMockDevice("dev1", "testdev", 1, "numeric", now, nil)
 
-    // Bolt event (older than tail window)
-    tsBolt := now.Add(-2 * time.Minute)
-    mockClock.SetMockTime(tsBolt)
-    repo.Store(dev.Id, map[string]any{"property_dev1_1": float32(10)})
+	// Bolt event (older than tail window)
+	tsBolt := now.Add(-2 * time.Minute)
+	mockClock.SetMockTime(tsBolt)
+	repo.Store(dev.Id, map[string]any{"property_dev1_1": float32(10)})
 
-    // Tail-cache event (recent)
-    tsTail := now.Add(-10 * time.Second)
-    mockClock.SetMockTime(tsTail)
-    repo.Store(dev.Id, map[string]any{"property_dev1_1": float32(20)})
+	// Tail-cache event (recent)
+	tsTail := now.Add(-10 * time.Second)
+	mockClock.SetMockTime(tsTail)
+	repo.Store(dev.Id, map[string]any{"property_dev1_1": float32(20)})
 
-    result, err := repo.ViewDeviceTimeRange(dev, now.Add(-3*time.Minute), now)
-    if err != nil {
-        t.Fatal(err)
-    }
+	result, err := repo.ViewDeviceTimeRange(dev, now.Add(-3*time.Minute), now)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-    numeric := metrics.ToNumericExposeResults(result.Exposes[0])
+	numeric := metrics.ToNumericExposeResults(result.Exposes[0])
 
-    if len(numeric.Data) != 2 {
-        t.Fatalf("expected 2 mixed events (Bolt + tail), got %d", len(numeric.Data))
-    }
+	if len(numeric.Data) != 2 {
+		t.Fatalf("expected 2 mixed events (Bolt + tail), got %d", len(numeric.Data))
+	}
 
-    if numeric.Data[0].Y != 10 || numeric.Data[1].Y != 20 {
-        t.Fatalf("unexpected merge order: %+v", numeric.Data)
-    }
+	if numeric.Data[0].Y != 10 || numeric.Data[1].Y != 20 {
+		t.Fatalf("unexpected merge order: %+v", numeric.Data)
+	}
 }
 
 func TestTailCachePruning(t *testing.T) {
-    tempfile := utils_test.Tempfile()
-    defer os.Remove(tempfile)
+	tempfile := utils_test.Tempfile()
+	defer os.Remove(tempfile)
 
-    tailWindow := 30 * time.Second
-    repo, mockClock, err := utils_test.CreateMetricsRepoWithTailWindow(tempfile, tailWindow)
-    if err != nil {
-        t.Fatal(err)
-    }
+	tailWindow := 30 * time.Second
+	repo, mockClock, err := utils_test.CreateMetricsRepoWithTailWindow(tempfile, tailWindow)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-    now := time.Now()
-    dev := createMockDevice("dev1", "testdev", 1, "numeric", now, nil)
+	now := time.Now()
+	dev := createMockDevice("dev1", "testdev", 1, "numeric", now, nil)
 
-    // old entry (should be pruned)
-    tsOld := now.Add(-1 * time.Minute)
-    mockClock.SetMockTime(tsOld)
-    repo.Store(dev.Id, map[string]any{"property_dev1_1": float32(10)})
+	// old entry (should be pruned)
+	tsOld := now.Add(-1 * time.Minute)
+	mockClock.SetMockTime(tsOld)
+	repo.Store(dev.Id, map[string]any{"property_dev1_1": float32(10)})
 
-    // new entry (inside window)
-    tsNew := now.Add(-5 * time.Second)
-    mockClock.SetMockTime(tsNew)
-    repo.Store(dev.Id, map[string]any{"property_dev1_1": float32(20)})
+	// new entry (inside window)
+	tsNew := now.Add(-5 * time.Second)
+	mockClock.SetMockTime(tsNew)
+	repo.Store(dev.Id, map[string]any{"property_dev1_1": float32(20)})
 
-    // Query entire range
-    result, _ := repo.ViewDeviceTimeRange(dev, now.Add(-2*time.Minute), now)
+	// Query entire range
+	result, _ := repo.ViewDeviceTimeRange(dev, now.Add(-2*time.Minute), now)
 
-    numeric := metrics.ToNumericExposeResults(result.Exposes[0])
+	numeric := metrics.ToNumericExposeResults(result.Exposes[0])
 
-    if len(numeric.Data) != 2 {
-        t.Fatalf("expected 2 results: one Bolt (old), one tail-cache (new); got %d", len(numeric.Data))
-    }
+	if len(numeric.Data) != 2 {
+		t.Fatalf("expected 2 results: one Bolt (old), one tail-cache (new); got %d", len(numeric.Data))
+	}
 
-    if numeric.Data[1].Y != 20 {
-        t.Fatalf("new tail-cache event missing or incorrect: %+v", numeric.Data)
-    }
+	if numeric.Data[1].Y != 20 {
+		t.Fatalf("new tail-cache event missing or incorrect: %+v", numeric.Data)
+	}
 }
-

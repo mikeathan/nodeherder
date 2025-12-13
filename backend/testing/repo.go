@@ -2,9 +2,9 @@ package utils_test
 
 import (
 	"fmt"
+	metrics "node-herder/internal/metrics/models"
+	metricsrepo "node-herder/internal/metrics/repository"
 	"node-herder/mocks"
-	"node-herder/models/metrics"
-	"node-herder/repository"
 	"node-herder/utils/storage"
 	"time"
 )
@@ -19,7 +19,7 @@ func CreateMetricsRepo(filename string) (metrics.Repository, *mocks.MockClock, e
 		return time.Now().UTC()
 	})
 
-	repo, err := repository.NewMetricsRepoFromDatabase(kvdb, mockClock, 0*time.Second)
+	repo, err := metricsrepo.NewMetricsRepoFromDatabase(kvdb, mockClock, 0*time.Second)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -37,7 +37,7 @@ func CreateMetricsRepoWithTailWindow(filename string, tailWindow time.Duration) 
 		return time.Now().UTC()
 	})
 
-	repo, err := repository.NewMetricsRepoFromDatabase(kvdb, mockClock, tailWindow)
+	repo, err := metricsrepo.NewMetricsRepoFromDatabase(kvdb, mockClock, tailWindow)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -51,7 +51,7 @@ func CreateMetricsRepoWithClock(filename string, mockClock *mocks.MockClock) (me
 		return nil, fmt.Errorf("failed to initialise keyvalue db: %s", err.Error())
 	}
 
-	repo, err := repository.NewMetricsRepoFromDatabase(kvdb, mockClock, 0*time.Second)
+	repo, err := metricsrepo.NewMetricsRepoFromDatabase(kvdb, mockClock, 0*time.Second)
 	if err != nil {
 		return nil, err
 	}
