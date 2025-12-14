@@ -1,4 +1,4 @@
-package metrics
+package models
 
 import (
 	"encoding/json"
@@ -7,12 +7,8 @@ import (
 	"time"
 )
 
-type MetricsQueryResult struct {
-    Devices []DeviceMetricsResult
-    From    int64
-    To      int64
-}
 
+// View Range rwaw metrics 
 type LoadDeviceMetricsRequest struct {
 	Id     string `json:"id"`
 	Expose string `json:"expose,omitempty"`

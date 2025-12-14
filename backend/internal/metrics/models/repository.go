@@ -1,6 +1,7 @@
-package metrics
+package models
 
 import (
+	"node-herder/internal/metrics/query"
 	"node-herder/models/devices"
 	"time"
 )
@@ -16,8 +17,8 @@ type Repository interface {
 
 	ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*DeviceMetricsResult, error)
 
-	Query(query MetricsQuery) (*[]MetricsQueryResult, error)
-	
+	Query(query query.MetricsQueryRequest) (*[]query.MetricsQueryResponse, error)
+
 	Prune(expireAt time.Duration) error
 
 	Close() error
