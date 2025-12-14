@@ -2,7 +2,6 @@ package repository
 
 import (
 	metrics "node-herder/internal/metrics/models"
-	"node-herder/internal/metrics/query"
 	"node-herder/models/devices"
 	"node-herder/utils"
 	"node-herder/utils/storage"
@@ -79,36 +78,6 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 	// cache metrics in tail cache
 	s.updateTailCache(id, data)
 	return nil
-}
-
-func (s *MetricsRepo) Query(query query.MetricsQueryRequest) (*[]query.MetricsQueryResponse, error) {
-
-	// Build collectors
-
-	// many devices
-	// one expose
-	for _, id := range query.DeviceIds {
- will need expose type 
-	}
-
-	// exposeNames := make([]string, 0, len(device.Exposes))
-	// for k := range device.Exposes {
-	// 	exposeNames = append(exposeNames, k)
-	// }
-	// sort.Strings(exposeNames)
-
-	// collectors := make(map[string]metrics.ExposeResult, len(exposeNames))
-	// for _, name := range exposeNames {
-	// 	ex := device.Exposes[name]
-	// 	r, err := metrics.NewExposeResult(ex.Name, ex.Type, from, to)
-	// 	if err != nil {
-	// 		return nil, nil, err
-	// 	}
-	// 	collectors[ex.Name] = r
-	// 	///
-	// }
-	return nil, nil
-
 }
 
 func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {

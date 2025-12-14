@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"node-herder/internal/automations"
 	metrics "node-herder/internal/metrics/models"
-	"node-herder/internal/metrics/query"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
@@ -584,10 +583,6 @@ func (s *NopMetricsRepo) Store(id string, data map[string]any) error {
 	return nil
 }
 
-func (s *NopMetricsRepo) Query(query query.MetricsQueryRequest) (*[]query.MetricsQueryResponse, error) {
-	fmt.Println("Mocked Query")
-	return nil, nil
-}
 func (s *NopMetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 	fmt.Println("Mocked ViewDeviceTimeRange")
 	return nil, nil

@@ -1,6 +1,8 @@
 package query
 
-import "time"
+import (
+	"time"
+)
 
 type AggregationType string
 
@@ -41,6 +43,7 @@ const (
 type MetricsQueryRequest struct {
 	DeviceIds []string
 	Expose    string
+	//ExposeType bridge.ExposeDataType // to be resolved internally eg metadata
 
 	Time TimeQuery
 
