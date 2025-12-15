@@ -2,7 +2,7 @@ package store
 
 import (
 	"context"
-	metrics "node-herder/internal/metrics/models"
+	metrics "node-herder/internal/metrics/domain"
 	"node-herder/models/settings"
 	"node-herder/utils"
 	"sync"

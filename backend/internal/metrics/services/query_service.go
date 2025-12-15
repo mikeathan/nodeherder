@@ -1,7 +1,8 @@
-package service
+package services
 
 import (
 	"context"
+	"node-herder/internal/metrics/domain"
 	"node-herder/internal/metrics/query"
 	"node-herder/models/devices"
 )
@@ -29,13 +30,32 @@ func NewQueryService(devices DeviceResolver, metrics MetricsQuerier) *QueryServi
 
 func (s *QueryService) Query(ctx context.Context, req query.MetricsQueryRequest) (*[]query.MetricsQueryResponse, error) {
 
-	for _, id := range req.DeviceIds {
-		_, err := s.devices.FindDevices([]string{id})
+	devices, err := s.devices.FindDevices(req.DeviceIds)
+	if err != nil {
+		return nil, err
+	}
+
+	from := req.Time.From
+	to := req.Time.To
+
+	// build expose collectors
+	collectors := make(map[string]domain.ExposeResult, len(req.DeviceIds))
+
+	for _, device := range devices {
+
+		expose, ok := device.Exposes[req.Expose]
+		if !ok {
+			continue
+		}
+
+		result, err := domain.NewExposeResult(req.Expose, expose.Type, req.Aggregation, from, to)
 		if err != nil {
 			return nil, err
 		}
-
-		TODO
+		collectors[device.Id] = result
 	}
+
+	//
+
 	return nil, nil
 }

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"node-herder/internal/automations"
-	metrics "node-herder/internal/metrics/models"
+	metrics "node-herder/internal/metrics/domain"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
 	"node-herder/models/hub"

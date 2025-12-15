@@ -7,7 +7,7 @@ import (
 	"math"
 	"node-herder/internal/automations"
 	"node-herder/internal/controllers"
-	metrics "node-herder/internal/metrics/models"
+	metrics "node-herder/internal/metrics/domain"
 	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/mocks"

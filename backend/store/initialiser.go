@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
-	metricsrepo "node-herder/internal/metrics/repository"
+	metricsrepo "node-herder/internal/metrics/storage"
 	"node-herder/models/settings"
 	"node-herder/repository"
 )

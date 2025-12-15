@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"math"
 	"math/rand"
-	metrics "node-herder/internal/metrics/models"
+	metrics "node-herder/internal/metrics/domain"
 	"node-herder/internal/services"
 	"node-herder/mocks"
 	"node-herder/models/devices"

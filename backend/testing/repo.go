@@ -2,8 +2,8 @@ package utils_test
 
 import (
 	"fmt"
-	metrics "node-herder/internal/metrics/models"
-	metricsrepo "node-herder/internal/metrics/repository"
+	metrics "node-herder/internal/metrics/domain"
+	metricsrepo "node-herder/internal/metrics/storage"
 	"node-herder/mocks"
 	"node-herder/utils/storage"
 	"time"

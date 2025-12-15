@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"node-herder/internal/api"
 	"node-herder/internal/automations"
-	metrics "node-herder/internal/metrics/models"
+	"node-herder/internal/metrics/domain"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ws"
 	"node-herder/mocks"
@@ -1414,29 +1414,29 @@ func TestHandlingLoadMetricsMessage(t *testing.T) {
 	to := time.Date(now.Year(), now.Month(), now.Day(), 20, 0, 0, 0, time.UTC)
 
 	// input data
-	expose1 := metrics.NewExposeNumericMetricResult("temperature", from, to)
+	expose1 := domain.NewExposeNumericMetricResult("temperature", domain.AggNone, from, to)
 	timestamps := utils_test.CreateDateTimeTimestamps(1, 24, 1)
 	values := utils_test.CreateFloatValues(24)
 	for idx, value := range values {
 		expose1.Add(value, timestamps[idx])
 	}
 
-	expose2 := metrics.NewExposeBinaryMetricResult("presence", from, to).(*metrics.ExposeBinaryEventsResult)
+	expose2 := domain.NewExposeBinaryMetricResult("presence", from, to).(*domain.ExposeBinaryEventsResult)
 	timestamps2 := utils_test.CreateDateTimeTimestamps(1, 10, 1)
 	values2 := utils_test.CreateBinaryValues(10)
 	for idx, ts := range timestamps2 {
-		expose2.Data = append(expose2.Data, metrics.BinaryEvent{
+		expose2.Data = append(expose2.Data, domain.BinaryEvent{
 			Timestamp: ts.UnixMilli(),
 			Value:     values2[idx],
 		})
 	}
 
-	expose3 := metrics.NewExposeEnumMetricResult("color_temp", from, to).(*metrics.ExposeTimeRangeMetricsResult)
+	expose3 := domain.NewExposeEnumMetricResult("color_temp", from, to).(*domain.ExposeTimeRangeMetricsResult)
 	timestamps3 := utils_test.CreateDateTimeTimestamps(1, 5, 1)
 	values3 := utils_test.CreateEnumValues(5)
 	expose3 = utils_test.AddBinaryDataToExposeMetricsResult(expose3, values3, timestamps3)
 
-	viewMetrics := metrics.NewDeviceMetricsResult("x01234")
+	viewMetrics := domain.NewDeviceMetricsResult("x01234")
 	viewMetrics.Add(expose1)
 	viewMetrics.Add(expose2)
 	viewMetrics.Add(expose3)
@@ -1448,7 +1448,7 @@ func TestHandlingLoadMetricsMessage(t *testing.T) {
 	h := api.NewWsHandler(wsHub)
 	s, wsConn := NewTestWsServer(t, h)
 
-	req := metrics.LoadDeviceMetricsRequest{}
+	req := domain.LoadDeviceMetricsRequest{}
 	req.Id = "x01234"
 	req.From = from.UnixMilli()
 	req.To = to.UnixMilli()
@@ -1483,7 +1483,7 @@ func TestHandlingLoadMetricsMessage(t *testing.T) {
 	}
 
 	// output data
-	var resultMetrics *metrics.DeviceMetricsResult
+	var resultMetrics *domain.DeviceMetricsResult
 
 	bytes, _ := json.Marshal(event.Payload)
 	err = json.Unmarshal(bytes, &resultMetrics)

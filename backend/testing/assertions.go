@@ -2,7 +2,7 @@ package utils_test
 
 import (
 	"fmt"
-	metrics "node-herder/internal/metrics/models"
+	metrics "node-herder/internal/metrics/domain"
 	"node-herder/models/devices"
 	"reflect"
 	"sort"

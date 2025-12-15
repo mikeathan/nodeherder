@@ -1,9 +1,9 @@
-package repository_test
+package storage_test
 
 import (
 	"encoding/json"
 	"fmt"
-	metrics "node-herder/internal/metrics/models"
+	"node-herder/internal/metrics/domain"
 	"node-herder/mocks"
 	"node-herder/models/devices"
 	utils_test "node-herder/testing"
@@ -306,7 +306,7 @@ func TestMetricsPruning(t *testing.T) {
 		}
 
 		for _, expose := range result.Exposes {
-			eventResult := metrics.ToNumericExposeResults(expose)
+			eventResult := domain.ToNumericExposeResults(expose)
 			for _, event := range eventResult.Data {
 				timestamp := time.UnixMilli(event.X).UTC()
 
@@ -438,7 +438,7 @@ func TestDeviceTimeRangeBinaryDataMetrics(t *testing.T) {
 		}
 
 		for _, event := range result.Exposes {
-			binaryEvent := metrics.ToExposeBinaryEventsResult(event)
+			binaryEvent := domain.ToExposeBinaryEventsResult(event)
 
 			if binaryEvent == nil {
 				t.Errorf("invalid expose type want binary got %v: ", event.GetType())
@@ -526,7 +526,7 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 				value = v[tIdx]
 			}
 
-			// used dev.props['last_seen] previously but now using time.now in metrics.Store
+			// used dev.props['last_seen] previously but now using time.now in domain.Store
 			// so i cant test timestamps
 			dev := createMockDevice(deviceId, deviceName, 2, dataType, timestamp, value)
 			payload := utils_test.Payload(dev)
@@ -624,7 +624,7 @@ func TestExposeBinaryEventsResultCollect(t *testing.T) {
 	from := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	to := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.UTC)
 
-	result := metrics.NewExposeBinaryEventsResult("state", from, to)
+	result := domain.NewExposeBinaryEventsResult("state", from, to)
 
 	testCases := []struct {
 		timestamp time.Time
@@ -669,7 +669,7 @@ func TestExposeBinaryEventsResultJSON(t *testing.T) {
 	from := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	to := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.UTC)
 
-	original := metrics.NewExposeBinaryEventsResult("state", from, to)
+	original := domain.NewExposeBinaryEventsResult("state", from, to)
 
 	// Add some test data
 	testData := []struct {
@@ -693,7 +693,7 @@ func TestExposeBinaryEventsResultJSON(t *testing.T) {
 	}
 
 	// Test as part of DeviceMetricsResult
-	deviceResult := metrics.NewDeviceMetricsResult("test-device")
+	deviceResult := domain.NewDeviceMetricsResult("test-device")
 	deviceResult.Add(original)
 
 	deviceJSON, err := json.Marshal(deviceResult)
@@ -702,7 +702,7 @@ func TestExposeBinaryEventsResultJSON(t *testing.T) {
 	}
 
 	// Test unmarshaling
-	var unmarshaled metrics.DeviceMetricsResult
+	var unmarshaled domain.DeviceMetricsResult
 	err = json.Unmarshal(deviceJSON, &unmarshaled)
 	if err != nil {
 		t.Fatalf("failed to unmarshal: %v", err)
@@ -716,7 +716,7 @@ func TestExposeBinaryEventsResultJSON(t *testing.T) {
 		t.Fatalf("expected 1 expose, got %d", len(unmarshaled.Exposes))
 	}
 
-	binaryResult := metrics.ToExposeBinaryEventsResult(unmarshaled.Exposes[0])
+	binaryResult := domain.ToExposeBinaryEventsResult(unmarshaled.Exposes[0])
 	if binaryResult == nil {
 		t.Fatal("failed to convert to binary events result")
 	}
@@ -758,7 +758,7 @@ func TestNewExposeResultBinaryType(t *testing.T) {
 	from := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	to := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.UTC)
 
-	result, err := metrics.NewExposeResult("state", "binary", from, to)
+	result, err := domain.NewExposeResult("state", "binary", domain.AggNone, from, to)
 	if err != nil {
 		t.Fatalf("failed to create binary expose result: %v", err)
 	}
@@ -767,7 +767,7 @@ func TestNewExposeResultBinaryType(t *testing.T) {
 		t.Errorf("type mismatch: want binary, got %s", result.GetType())
 	}
 
-	binaryResult := metrics.ToExposeBinaryEventsResult(result)
+	binaryResult := domain.ToExposeBinaryEventsResult(result)
 	if binaryResult == nil {
 		t.Fatal("failed to convert to binary events result")
 	}
@@ -804,7 +804,7 @@ func TestExposeBinaryEventsResultFlush(t *testing.T) {
 	from := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	to := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, time.UTC)
 
-	result := metrics.NewExposeBinaryEventsResult("state", from, to)
+	result := domain.NewExposeBinaryEventsResult("state", from, to)
 
 	// Add some test data
 	testValue := "on"
@@ -857,7 +857,7 @@ func TestTailCacheReturnsRecentData(t *testing.T) {
 	}
 
 	events := result.Exposes[0]
-	numeric := metrics.ToNumericExposeResults(events)
+	numeric := domain.ToNumericExposeResults(events)
 
 	if len(numeric.Data) != 2 {
 		t.Fatalf("expected 2 tail-cache entries, got %d", len(numeric.Data))
@@ -896,7 +896,7 @@ func TestTailCacheMixedWithDatabaseData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	numeric := metrics.ToNumericExposeResults(result.Exposes[0])
+	numeric := domain.ToNumericExposeResults(result.Exposes[0])
 
 	if len(numeric.Data) != 2 {
 		t.Fatalf("expected 2 mixed events (Bolt + tail), got %d", len(numeric.Data))
@@ -933,7 +933,7 @@ func TestTailCachePruning(t *testing.T) {
 	// Query entire range
 	result, _ := repo.ViewDeviceTimeRange(dev, now.Add(-2*time.Minute), now)
 
-	numeric := metrics.ToNumericExposeResults(result.Exposes[0])
+	numeric := domain.ToNumericExposeResults(result.Exposes[0])
 
 	if len(numeric.Data) != 2 {
 		t.Fatalf("expected 2 results: one Bolt (old), one tail-cache (new); got %d", len(numeric.Data))

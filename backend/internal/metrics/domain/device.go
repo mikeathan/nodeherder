@@ -1,4 +1,4 @@
-package models
+package domain
 
 import (
 	"encoding/json"
@@ -7,8 +7,7 @@ import (
 	"time"
 )
 
-
-// View Range rwaw metrics 
+// View Range rwaw metrics
 type LoadDeviceMetricsRequest struct {
 	Id     string `json:"id"`
 	Expose string `json:"expose,omitempty"`
@@ -48,11 +47,12 @@ func (e *ExposeMetricsResult) Size() int {
 }
 
 type ExposeNumericMetricsResult struct {
-	Name string          `json:"name"`
-	Type string          `json:"type"`
-	From int64           `json:"from"`
-	To   int64           `json:"to"`
-	Data []*NumericValue `json:"data"`
+	Name       string          `json:"name"`
+	Type       string          `json:"type"`
+	From       int64           `json:"from"`
+	To         int64           `json:"to"`
+	Data       []*NumericValue `json:"data"`
+	Aggregator AggregationType
 }
 
 func ToTimeRangeExposeResults(r ExposeResult) *ExposeTimeRangeMetricsResult {
@@ -192,11 +192,11 @@ type NumericValue struct {
 	Y float32 `json:"y"`
 }
 
-func NewExposeResult(name string, dataType string, from time.Time, to time.Time) (ExposeResult, error) {
+func NewExposeResult(name string, dataType string, aggregator AggregationType, from time.Time, to time.Time) (ExposeResult, error) {
 	var result ExposeResult
 	switch dataType {
 	case "numeric":
-		result = NewExposeNumericMetricResult(name, from, to)
+		result = NewExposeNumericMetricResult(name, aggregator, from, to)
 	case "binary":
 		result = NewExposeBinaryMetricResult(name, from, to)
 	case "enum":
@@ -208,13 +208,14 @@ func NewExposeResult(name string, dataType string, from time.Time, to time.Time)
 	return result, nil
 }
 
-func NewExposeNumericMetricResult(name string, from time.Time, to time.Time) *ExposeNumericMetricsResult {
+func NewExposeNumericMetricResult(name string, aggregator AggregationType, from time.Time, to time.Time) *ExposeNumericMetricsResult {
 	return &ExposeNumericMetricsResult{
-		Name: name,
-		Type: "numeric",
-		From: from.UnixMilli(),
-		To:   to.UnixMilli(),
-		Data: []*NumericValue{},
+		Name:       name,
+		Type:       "numeric",
+		Aggregator: aggregator,
+		From:       from.UnixMilli(),
+		To:         to.UnixMilli(),
+		Data:       []*NumericValue{},
 	}
 }
 

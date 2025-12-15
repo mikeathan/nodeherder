@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"node-herder/internal/automations"
-	metrics "node-herder/internal/metrics/models"
+	metrics "node-herder/internal/metrics/domain"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
 	"node-herder/internal/ws"

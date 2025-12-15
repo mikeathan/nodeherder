@@ -1,7 +1,8 @@
-package repository
+package storage
 
 import (
-	metrics "node-herder/internal/metrics/models"
+	"node-herder/internal/metrics/domain"
+	"node-herder/internal/metrics/query"
 	"node-herder/models/devices"
 	"node-herder/utils"
 	"node-herder/utils/storage"
@@ -15,17 +16,17 @@ const metricsBaseFilename = "metrics.db"
 const metricsBucketName = "metrics"
 
 type MetricsRepo struct {
-	keyGenerator metrics.TimestampedKeyGenerator
+	keyGenerator domain.TimestampedKeyGenerator
 	kvdb         storage.KeyValueDatabase
 	clock        utils.Clock
 
 	// cache for tailing recent metrics
 	tailWindow    time.Duration
-	tailCache     map[string][]metrics.CachedEntry
+	tailCache     map[string][]domain.CachedEntry
 	tailCacheLock sync.RWMutex
 }
 
-func NewMetricsRepo() (metrics.Repository, error) {
+func NewMetricsRepo() (domain.Repository, error) {
 	kvdb, err := storage.NewBoltKeyValueDatabase(filepath.Join("data", metricsBaseFilename), metricsBucketName)
 	if err != nil {
 		return nil, err
@@ -33,13 +34,13 @@ func NewMetricsRepo() (metrics.Repository, error) {
 	return NewMetricsRepoFromDatabase(kvdb, utils.NewRealClock(), 90*time.Second)
 }
 
-func NewMetricsRepoFromDatabase(kvdb storage.KeyValueDatabase, clock utils.Clock, tailWindow time.Duration) (metrics.Repository, error) {
+func NewMetricsRepoFromDatabase(kvdb storage.KeyValueDatabase, clock utils.Clock, tailWindow time.Duration) (domain.Repository, error) {
 	repo := &MetricsRepo{
-		keyGenerator:  metrics.NewTimestampedKeyGenerator(clock),
+		keyGenerator:  domain.NewTimestampedKeyGenerator(clock),
 		kvdb:          kvdb,
 		clock:         clock,
 		tailWindow:    tailWindow,
-		tailCache:     make(map[string][]metrics.CachedEntry),
+		tailCache:     make(map[string][]domain.CachedEntry),
 		tailCacheLock: sync.RWMutex{},
 	}
 	return repo, nil
@@ -61,13 +62,13 @@ func GetDayRange(now time.Time, duration time.Duration) (time.Time, time.Time) {
 
 func (s *MetricsRepo) Store(id string, data map[string]any) error {
 
-	callback := func(key string, value any) ([]byte, []byte, error) {
+	callback := func(exposeName string, value any) ([]byte, []byte, error) {
 		buffer, err := utils.AnyToByteArray(value)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		return s.keyGenerator.CreateKey(key), buffer, nil
+		return s.keyGenerator.CreateKey(exposeName), buffer, nil
 	}
 
 	err := s.kvdb.SetBatch(id, data, callback)
@@ -80,38 +81,22 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 	return nil
 }
 
-func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
+func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*domain.DeviceMetricsResult, error) {
 
 	exposeNames, collectors, err := s.prepareExposeCollectors(device, from, to)
 	if err != nil {
 		return nil, err
 	}
 
-	//  Decide the DB range
-	var dbFrom, dbTo time.Time
-	var tailFrom time.Time
-	useTailCache := s.tailWindow > 0
-
-	if useTailCache {
-		dbFrom, dbTo, tailFrom = s.computeDatabaseRange(from, to)
-	} else {
-		dbFrom = from
-		dbTo = to
+	exposeTypes := make(map[string]string)
+	for _, name := range exposeNames {
+		exposeTypes[name] = device.Exposes[name].Type
 	}
 
-	//  Query database
-	if err := s.queryDatabase(device.Id, dbFrom, dbTo, collectors); err != nil {
+	if err := s.execute(device.Id, exposeTypes, from, to, nil, collectors); err != nil {
 		return nil, err
 	}
 
-	// Optionally merge tail cache
-	if useTailCache {
-		if err := s.mergeTailCache(device.Id, tailFrom, to, collectors); err != nil {
-			return nil, err
-		}
-	}
-
-	// 5. Finalize results (common for both paths)
 	result := s.finalizeCollectors(exposeNames, collectors, device.Id)
 	return result, nil
 }
@@ -130,6 +115,46 @@ func (s *MetricsRepo) Prune(expireAt time.Duration) error {
 	}
 
 	return s.kvdb.Prune(callback)
+}
+
+func (s *MetricsRepo) execute(deviceID string, exposeTypeByName map[string]string, from, to time.Time, filters []domain.MetricFilter, collectors map[string]domain.ExposeResult) error {
+
+	//  Decide the DB range
+	var dbFrom, dbTo time.Time
+	var tailFrom time.Time
+	useTailCache := s.tailWindow > 0
+
+	if useTailCache {
+		dbFrom, dbTo, tailFrom = s.computeDatabaseRange(from, to)
+	} else {
+		dbFrom = from
+		dbTo = to
+	}
+
+	// DB scan
+	if err := s.queryDatabase(
+		deviceID,
+		dbFrom,
+		dbTo,
+		exposeTypeByName, filters, collectors); err != nil {
+		return err
+	}
+
+	// tail merge
+	if useTailCache {
+		if err := s.mergeTailCache(
+			deviceID,
+			tailFrom,
+			to,
+			exposeTypeByName,
+			filters,
+			collectors,
+		); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *MetricsRepo) updateTailCache(deviceID string, data map[string]any) {
@@ -152,7 +177,7 @@ func (s *MetricsRepo) updateTailCache(deviceID string, data map[string]any) {
 			continue
 		}
 
-		entries = append(entries, metrics.CachedEntry{
+		entries = append(entries, domain.CachedEntry{
 			ExposeName: exposeName,
 			Timestamp:  now,
 			Value:      buf,
@@ -174,17 +199,17 @@ func (s *MetricsRepo) updateTailCache(deviceID string, data map[string]any) {
 	s.tailCache[deviceID] = entries
 }
 
-func (s *MetricsRepo) prepareExposeCollectors(device *devices.Device, from, to time.Time) ([]string, map[string]metrics.ExposeResult, error) {
+func (s *MetricsRepo) prepareExposeCollectors(device *devices.Device, from, to time.Time) ([]string, map[string]domain.ExposeResult, error) {
 	exposeNames := make([]string, 0, len(device.Exposes))
 	for k := range device.Exposes {
 		exposeNames = append(exposeNames, k)
 	}
 	sort.Strings(exposeNames)
 
-	collectors := make(map[string]metrics.ExposeResult, len(exposeNames))
+	collectors := make(map[string]domain.ExposeResult, len(exposeNames))
 	for _, name := range exposeNames {
 		ex := device.Exposes[name]
-		r, err := metrics.NewExposeResult(ex.Name, ex.Type, from, to)
+		r, err := domain.NewExposeResult(ex.Name, ex.Type, domain.AggNone, from, to)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -194,8 +219,8 @@ func (s *MetricsRepo) prepareExposeCollectors(device *devices.Device, from, to t
 	return exposeNames, collectors, nil
 }
 
-func (s *MetricsRepo) finalizeCollectors(exposeNames []string, collectors map[string]metrics.ExposeResult, deviceID string) *metrics.DeviceMetricsResult {
-	result := metrics.NewDeviceMetricsResult(deviceID)
+func (s *MetricsRepo) finalizeCollectors(exposeNames []string, collectors map[string]domain.ExposeResult, deviceID string) *domain.DeviceMetricsResult {
+	result := domain.NewDeviceMetricsResult(deviceID)
 
 	for _, name := range exposeNames {
 		c := collectors[name]
@@ -223,7 +248,12 @@ func (s *MetricsRepo) computeDatabaseRange(from, to time.Time) (time.Time, time.
 	return dbFrom, dbTo, tailStart
 }
 
-func (s *MetricsRepo) queryDatabase(deviceID string, dbFrom, dbTo time.Time, collectors map[string]metrics.ExposeResult) error {
+func (s *MetricsRepo) queryDatabase(deviceID string,
+	dbFrom, dbTo time.Time,
+	exposeTypeByName map[string]string,
+	filters []domain.MetricFilter,
+	collectors map[string]domain.ExposeResult) error {
+
 	if !dbTo.After(dbFrom) {
 		return nil
 	}
@@ -232,11 +262,11 @@ func (s *MetricsRepo) queryDatabase(deviceID string, dbFrom, dbTo time.Time, col
 	toKey := s.keyGenerator.CreateMaxKeyFromTimestamp(dbTo)
 
 	callback := func(key, value []byte) error {
-		id, err := s.keyGenerator.GetIdFromKey(key)
+		expose, err := s.keyGenerator.GetIdFromKey(key)
 		if err != nil {
 			return err
 		}
-		collector, ok := collectors[id]
+		collector, ok := collectors[expose]
 		if !ok {
 			return nil
 		}
@@ -245,6 +275,10 @@ func (s *MetricsRepo) queryDatabase(deviceID string, dbFrom, dbTo time.Time, col
 		if err != nil {
 			return err
 		}
+		exposeType := exposeTypeByName[expose]
+		if !query.MatchesFilters(value, filters, exposeType) {
+			return nil
+		}
 
 		return collector.Collect(ts, value)
 	}
@@ -252,7 +286,11 @@ func (s *MetricsRepo) queryDatabase(deviceID string, dbFrom, dbTo time.Time, col
 	return s.kvdb.ViewInRange(deviceID, fromKey, toKey, callback)
 }
 
-func (s *MetricsRepo) mergeTailCache(deviceID string, from, to time.Time, collectors map[string]metrics.ExposeResult) error {
+func (s *MetricsRepo) mergeTailCache(deviceID string, from, to time.Time,
+	exposeTypeByName map[string]string,
+	filters []domain.MetricFilter,
+	collectors map[string]domain.ExposeResult) error {
+
 	s.tailCacheLock.RLock()
 	entries := s.tailCache[deviceID]
 	s.tailCacheLock.RUnlock()
@@ -265,6 +303,12 @@ func (s *MetricsRepo) mergeTailCache(deviceID string, from, to time.Time, collec
 
 		collector, ok := collectors[e.ExposeName]
 		if !ok {
+			continue
+		}
+
+		exposeType := exposeTypeByName[e.ExposeName]
+
+		if !query.MatchesFilters(e.Value, filters, exposeType) {
 			continue
 		}
 
