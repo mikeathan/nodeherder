@@ -94,7 +94,7 @@ func buildDeviceQueryResponse(deviceID string, aggregation domain.AggregationTyp
 	return &query.MetricsQueryDeviceResponse{
 		DeviceId:  deviceID,
 		Value:     value,
-		Timestamp: timestamp, to fix
+		Timestamp: timestamp
 	}, nil
 }
 
