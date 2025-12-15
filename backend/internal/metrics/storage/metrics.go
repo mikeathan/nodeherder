@@ -83,21 +83,16 @@ func (s *MetricsRepo) Store(id string, data map[string]any) error {
 
 func (s *MetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*domain.DeviceMetricsResult, error) {
 
-	exposeNames, collectors, err := s.prepareExposeCollectors(device, from, to)
+	collectors, err := s.prepareExposeCollectors(device, from, to)
 	if err != nil {
 		return nil, err
 	}
 
-	exposeTypes := make(map[string]string)
-	for _, name := range exposeNames {
-		exposeTypes[name] = device.Exposes[name].Type
-	}
-
-	if err := s.execute(device.Id, exposeTypes, from, to, nil, collectors); err != nil {
+	if err := s.execute(device.Id, from, to, nil, collectors); err != nil {
 		return nil, err
 	}
 
-	result := s.finalizeCollectors(exposeNames, collectors, device.Id)
+	result := s.finalizeCollectors(collectors, device.Id)
 	return result, nil
 }
 
@@ -117,7 +112,18 @@ func (s *MetricsRepo) Prune(expireAt time.Duration) error {
 	return s.kvdb.Prune(callback)
 }
 
-func (s *MetricsRepo) execute(deviceID string, exposeTypeByName map[string]string, from, to time.Time, filters []domain.MetricFilter, collectors map[string]domain.ExposeResult) error {
+func (s *MetricsRepo) QueryDevice(deviceID string,
+	from, to time.Time, filters []domain.MetricFilter, collectors map[string]domain.ExposeResult)  (*domain.DeviceMetricsResult, error) {
+
+	if err := s.execute(deviceID, from, to, filters, collectors); err != nil {
+		return  nil, err
+	}
+
+	result := s.finalizeCollectors(collectors, deviceID)
+	return result, nil
+}
+
+func (s *MetricsRepo) execute(deviceID string, from, to time.Time, filters []domain.MetricFilter, collectors map[string]domain.ExposeResult) error {
 
 	//  Decide the DB range
 	var dbFrom, dbTo time.Time
@@ -135,8 +141,7 @@ func (s *MetricsRepo) execute(deviceID string, exposeTypeByName map[string]strin
 	if err := s.queryDatabase(
 		deviceID,
 		dbFrom,
-		dbTo,
-		exposeTypeByName, filters, collectors); err != nil {
+		dbTo, filters, collectors); err != nil {
 		return err
 	}
 
@@ -146,7 +151,6 @@ func (s *MetricsRepo) execute(deviceID string, exposeTypeByName map[string]strin
 			deviceID,
 			tailFrom,
 			to,
-			exposeTypeByName,
 			filters,
 			collectors,
 		); err != nil {
@@ -199,7 +203,7 @@ func (s *MetricsRepo) updateTailCache(deviceID string, data map[string]any) {
 	s.tailCache[deviceID] = entries
 }
 
-func (s *MetricsRepo) prepareExposeCollectors(device *devices.Device, from, to time.Time) ([]string, map[string]domain.ExposeResult, error) {
+func (s *MetricsRepo) prepareExposeCollectors(device *devices.Device, from, to time.Time) (map[string]domain.ExposeResult, error) {
 	exposeNames := make([]string, 0, len(device.Exposes))
 	for k := range device.Exposes {
 		exposeNames = append(exposeNames, k)
@@ -211,19 +215,18 @@ func (s *MetricsRepo) prepareExposeCollectors(device *devices.Device, from, to t
 		ex := device.Exposes[name]
 		r, err := domain.NewExposeResult(ex.Name, ex.Type, domain.AggNone, from, to)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		collectors[ex.Name] = r
 	}
 
-	return exposeNames, collectors, nil
+	return collectors, nil
 }
 
-func (s *MetricsRepo) finalizeCollectors(exposeNames []string, collectors map[string]domain.ExposeResult, deviceID string) *domain.DeviceMetricsResult {
+func (s *MetricsRepo) finalizeCollectors(collectors map[string]domain.ExposeResult, deviceID string) *domain.DeviceMetricsResult {
 	result := domain.NewDeviceMetricsResult(deviceID)
 
-	for _, name := range exposeNames {
-		c := collectors[name]
+	for _, c := range collectors {
 		if c.Size() == 0 {
 			continue
 		}
@@ -250,7 +253,6 @@ func (s *MetricsRepo) computeDatabaseRange(from, to time.Time) (time.Time, time.
 
 func (s *MetricsRepo) queryDatabase(deviceID string,
 	dbFrom, dbTo time.Time,
-	exposeTypeByName map[string]string,
 	filters []domain.MetricFilter,
 	collectors map[string]domain.ExposeResult) error {
 
@@ -275,8 +277,7 @@ func (s *MetricsRepo) queryDatabase(deviceID string,
 		if err != nil {
 			return err
 		}
-		exposeType := exposeTypeByName[expose]
-		if !query.MatchesFilters(value, filters, exposeType) {
+		if !query.MatchesFilters(value, filters, collector.GetType()) {
 			return nil
 		}
 
@@ -287,7 +288,6 @@ func (s *MetricsRepo) queryDatabase(deviceID string,
 }
 
 func (s *MetricsRepo) mergeTailCache(deviceID string, from, to time.Time,
-	exposeTypeByName map[string]string,
 	filters []domain.MetricFilter,
 	collectors map[string]domain.ExposeResult) error {
 
@@ -306,9 +306,7 @@ func (s *MetricsRepo) mergeTailCache(deviceID string, from, to time.Time,
 			continue
 		}
 
-		exposeType := exposeTypeByName[e.ExposeName]
-
-		if !query.MatchesFilters(e.Value, filters, exposeType) {
+		if !query.MatchesFilters(e.Value, filters, collector.GetType()) {
 			continue
 		}
 
