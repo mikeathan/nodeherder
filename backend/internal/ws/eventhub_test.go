@@ -1425,9 +1425,11 @@ func TestHandlingLoadMetricsMessage(t *testing.T) {
 	timestamps2 := utils_test.CreateDateTimeTimestamps(1, 10, 1)
 	values2 := utils_test.CreateBinaryValues(10)
 	for idx, ts := range timestamps2 {
-		expose2.Data = append(expose2.Data, domain.BinaryEvent{
+		val, _ := utils.ParseBool(values2[idx])
+
+		expose2.Data = append(expose2.Data, &domain.BinaryEvent{
 			Timestamp: ts.UnixMilli(),
-			Value:     values2[idx],
+			Value:     val,
 		})
 	}
 

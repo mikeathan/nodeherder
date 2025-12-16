@@ -90,16 +90,16 @@ type timeRangeStartValue struct {
 }
 
 type BinaryEvent struct {
-	Timestamp int64  `json:"timestamp"`
-	Value     string `json:"value"`
+	Timestamp int64 `json:"timestamp"`
+	Value     bool  `json:"value"`
 }
 
 type ExposeBinaryEventsResult struct {
-	Name string        `json:"name"`
-	Type string        `json:"type"`
-	From int64         `json:"from"`
-	To   int64         `json:"to"`
-	Data []BinaryEvent `json:"data"`
+	Name string         `json:"name"`
+	Type string         `json:"type"`
+	From int64          `json:"from"`
+	To   int64          `json:"to"`
+	Data []*BinaryEvent `json:"data"`
 }
 
 // ExposeBinaryEventsResult
@@ -109,7 +109,7 @@ func NewExposeBinaryEventsResult(name string, from, to time.Time) *ExposeBinaryE
 		Type: "binary",
 		From: from.UnixMilli(),
 		To:   to.UnixMilli(),
-		Data: []BinaryEvent{},
+		Data: []*BinaryEvent{},
 	}
 }
 
@@ -129,14 +129,19 @@ func (e *ExposeBinaryEventsResult) Size() int {
 }
 
 func (e *ExposeBinaryEventsResult) Collect(timestamp time.Time, raw []byte) error {
-	var value string
-	if err := utils.ByteArrayToAny(raw, &value); err != nil {
+	var valueStr string
+	if err := utils.ByteArrayToAny(raw, &valueStr); err != nil {
 		return err
 	}
 
-	e.Data = append(e.Data, BinaryEvent{
+	val, ok := utils.ParseBool(valueStr)
+	if !ok {
+		return fmt.Errorf("failed to parse bool value: %v", valueStr)
+	}
+
+	e.Data = append(e.Data, &BinaryEvent{
 		Timestamp: timestamp.UnixMilli(),
-		Value:     value,
+		Value:     val,
 	})
 
 	return nil
@@ -148,11 +153,11 @@ func (e *ExposeBinaryEventsResult) Flush() {
 
 func (c *ExposeBinaryEventsResult) MarshalJSON() ([]byte, error) {
 	res := struct {
-		Name string        `json:"name"`
-		Type string        `json:"type"`
-		From int64         `json:"from"`
-		To   int64         `json:"to"`
-		Data []BinaryEvent `json:"data"`
+		Name string         `json:"name"`
+		Type string         `json:"type"`
+		From int64          `json:"from"`
+		To   int64          `json:"to"`
+		Data []*BinaryEvent `json:"data"`
 	}{
 		Name: c.Name,
 		Type: c.Type,
@@ -275,7 +280,7 @@ func NewExposeBinaryMetricResult(name string, from time.Time, to time.Time) Expo
 		Type: "binary",
 		From: from.UnixMilli(),
 		To:   to.UnixMilli(),
-		Data: []BinaryEvent{},
+		Data: []*BinaryEvent{},
 	}
 }
 

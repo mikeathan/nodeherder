@@ -657,8 +657,9 @@ func TestExposeBinaryEventsResultCollect(t *testing.T) {
 			t.Errorf("data[%d] timestamp mismatch: want %v, got %v",
 				i, tc.timestamp.UnixMilli(), result.Data[i].Timestamp)
 		}
-		if result.Data[i].Value != tc.value {
-			t.Errorf("data[%d] value mismatch: want %s, got %s",
+		val, _ := utils.ParseBool(tc.value)
+		if result.Data[i].Value != val {
+			t.Errorf("data[%d] value mismatch: want %s, got %v",
 				i, tc.value, result.Data[i].Value)
 		}
 	}
@@ -746,8 +747,10 @@ func TestExposeBinaryEventsResultJSON(t *testing.T) {
 			t.Errorf("data[%d] timestamp mismatch: want %v, got %v",
 				i, td.timestamp.UnixMilli(), binaryResult.Data[i].Timestamp)
 		}
-		if binaryResult.Data[i].Value != td.value {
-			t.Errorf("data[%d] value mismatch: want %s, got %s",
+		val, _ := utils.ParseBool(td.value)
+
+		if binaryResult.Data[i].Value != val {
+			t.Errorf("data[%d] value mismatch: want %s, got %v",
 				i, td.value, binaryResult.Data[i].Value)
 		}
 	}
@@ -821,8 +824,9 @@ func TestExposeBinaryEventsResultFlush(t *testing.T) {
 		t.Errorf("expected 1 data point after flush, got %d", len(result.Data))
 	}
 
-	if result.Data[0].Value != testValue {
-		t.Errorf("value changed after flush: want %s, got %s", testValue, result.Data[0].Value)
+	val, _ := utils.ParseBool(testValue)
+	if result.Data[0].Value != val {
+		t.Errorf("value changed after flush: want %s, got %v", testValue, result.Data[0].Value)
 	}
 }
 
