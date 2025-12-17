@@ -129,14 +129,9 @@ func (e *ExposeBinaryEventsResult) Size() int {
 }
 
 func (e *ExposeBinaryEventsResult) Collect(timestamp time.Time, raw []byte) error {
-	var valueStr string
-	if err := utils.ByteArrayToAny(raw, &valueStr); err != nil {
+	var val bool
+	if err := utils.DecodeGobValue(raw, &val); err != nil {
 		return err
-	}
-
-	val, ok := utils.ParseBool(valueStr)
-	if !ok {
-		return fmt.Errorf("failed to parse bool value: %v", valueStr)
 	}
 
 	e.Data = append(e.Data, &BinaryEvent{
@@ -226,7 +221,7 @@ func NewExposeNumericMetricResult(name string, aggregator AggregationType, from 
 
 func (e *ExposeNumericMetricsResult) Collect(timestamp time.Time, data []byte) error {
 	var value float32
-	err := utils.ByteArrayToAny(data, &value)
+	err := utils.DecodeGobValue(data, &value)
 	if err != nil {
 		return err
 	}
@@ -296,7 +291,7 @@ func NewExposeEnumMetricResult(name string, from time.Time, to time.Time) Expose
 
 func (e *ExposeTimeRangeMetricsResult) Collect(timestamp time.Time, data []byte) error {
 	var value string
-	err := utils.ByteArrayToAny(data, &value)
+	err := utils.DecodeGobValue(data, &value)
 	if err != nil {
 		return err
 	}

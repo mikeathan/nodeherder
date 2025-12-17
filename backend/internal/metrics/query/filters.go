@@ -11,24 +11,30 @@ func MatchesFilters(raw []byte, filters []domain.MetricFilter, exposeType string
 	}
 
 	switch exposeType {
-
 	case "numeric":
 		var v float64
-		if err := utils.ByteArrayToAny(raw, &v); err != nil {
+		if err := utils.DecodeGobValue(raw, &v); err != nil {
 			return false
 		}
 		return matchNumericFilters(v, filters)
 
-	case "binary", "enum":
+	case "binary":
+		var v bool
+		if err := utils.DecodeGobValue(raw, &v); err != nil {
+			return false
+		}
+		return matchBoolFilters(v, filters)
+
+	case "enum":
 		var v string
-		if err := utils.ByteArrayToAny(raw, &v); err != nil {
+		if err := utils.DecodeGobValue(raw, &v); err != nil {
 			return false
 		}
 		return matchStringFilters(v, filters)
 
 	default:
-		// unknown expose type
-		return true
+		// Unknown expose type
+		return false
 	}
 }
 
@@ -44,12 +50,10 @@ func matchNumericFilters(v float64, filters []domain.MetricFilter) bool {
 			if v <= fv {
 				return false
 			}
-			return false
 		case domain.OpLessThan:
 			if v >= fv {
 				return false
 			}
-
 		case domain.OpEquals:
 			if v != fv {
 				return false
@@ -68,6 +72,29 @@ func matchNumericFilters(v float64, filters []domain.MetricFilter) bool {
 func matchStringFilters(v string, filters []domain.MetricFilter) bool {
 	for _, f := range filters {
 		fv, ok := f.Value.(string)
+		if !ok {
+			return false
+		}
+
+		switch f.Op {
+		case domain.OpEquals:
+			if v != fv {
+				return false
+			}
+		case domain.OpNotEquals:
+			if v == fv {
+				return false
+			}
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+func matchBoolFilters(v bool, filters []domain.MetricFilter) bool {
+	for _, f := range filters {
+		fv, ok := f.Value.(bool)
 		if !ok {
 			return false
 		}

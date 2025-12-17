@@ -1423,9 +1423,9 @@ func TestHandlingLoadMetricsMessage(t *testing.T) {
 
 	expose2 := domain.NewExposeBinaryMetricResult("presence", from, to).(*domain.ExposeBinaryEventsResult)
 	timestamps2 := utils_test.CreateDateTimeTimestamps(1, 10, 1)
-	values2 := utils_test.CreateBinaryValues(10)
+	values2 := utils_test.CreateBinaryBooleanValues(10)
 	for idx, ts := range timestamps2 {
-		val, _ := utils.ParseBool(values2[idx])
+		val, _ := utils.ConvertToBool(values2[idx])
 
 		expose2.Data = append(expose2.Data, &domain.BinaryEvent{
 			Timestamp: ts.UnixMilli(),

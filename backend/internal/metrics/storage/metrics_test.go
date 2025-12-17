@@ -22,7 +22,7 @@ func TestGenerateMockMetrics(t *testing.T) {
 
 	id := "0xa4c13894070052fc"
 	timestamps := utils_test.CreateDateTimeTimestamps(2, 24, 1)
-	values := utils_test.CreateBinaryValues(len(timestamps))
+	values := utils_test.CreateBinaryBooleanValues(len(timestamps))
 	from := time.Date(now.Year(), now.Month(), now.Day()-1, 0, 0, 0, 0, time.UTC)
 	to := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 
@@ -113,6 +113,7 @@ func TestNewVersionSingleExposeValueUpdatesDeviceTimeRangeMetrics(t *testing.T) 
 
 	utils_test.AssertDeviceAnyDataTypeEvents(dev, result, timestamps, values, t)
 }
+
 func TestSingleExposeValueUpdatesDeviceTimeRangeMetrics(t *testing.T) {
 
 	now := time.Now()
@@ -411,7 +412,7 @@ func TestDeviceTimeRangeBinaryDataMetrics(t *testing.T) {
 		eventPerHour := testCase.numEvents[1]
 		eventsPerMin := testCase.numEvents[2]
 		timestamps := utils_test.CreateDateTimeTimestamps(eventsPerDay, eventPerHour, eventsPerMin)
-		values := utils_test.CreateBinaryValues(eventsPerDay * eventPerHour * eventsPerMin)
+		values := utils_test.CreateBinaryBooleanValues(eventsPerDay * eventPerHour * eventsPerMin)
 
 		var devices map[string]*devices.Device = make(map[string]*devices.Device)
 
@@ -488,7 +489,6 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 		data     any
 	}{
 		{dataType: "numeric", data: utils_test.CreateFloatValues(24)},
-		{dataType: "binary", data: utils_test.CreateBinaryValues(24)},
 		{dataType: "binary", data: utils_test.CreateBinaryBooleanValues(24)},
 		{dataType: "enum", data: utils_test.CreateEnumValues(24)},
 	}
@@ -505,11 +505,12 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 
 		for tIdx, timestamp := range timestamps {
 			var value any = 0
-			if dataType == "numeric" {
+			switch dataType {
+			case "numeric":
 				v, _ := values.([]float32)
 				value = v[tIdx]
 
-			} else if dataType == "binary" {
+			case "binary":
 				if v, ok := values.([]string); ok {
 					value = v[tIdx]
 				} else if v, ok := values.([]bool); ok {
@@ -517,11 +518,11 @@ func TestDeviceTimeRangeDataTypesMetrics(t *testing.T) {
 				} else {
 					t.Error("failed to create data type")
 				}
-			} else if dataType == "binaryBool" {
+			case "binaryBool":
 				v, _ := values.([]bool)
 				value = v[tIdx]
 
-			} else if dataType == "enum" {
+			case "enum":
 				v, _ := values.([]string)
 				value = v[tIdx]
 			}
@@ -637,7 +638,8 @@ func TestExposeBinaryEventsResultCollect(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		valueBytes, err := utils.AnyToByteArray(tc.value)
+		boolVal, _ := utils.ConvertToBool(tc.value)
+		valueBytes, err := utils.AnyToByteArray(boolVal)
 		if err != nil {
 			t.Fatalf("failed to marshal value: %v", err)
 		}
@@ -657,7 +659,7 @@ func TestExposeBinaryEventsResultCollect(t *testing.T) {
 			t.Errorf("data[%d] timestamp mismatch: want %v, got %v",
 				i, tc.timestamp.UnixMilli(), result.Data[i].Timestamp)
 		}
-		val, _ := utils.ParseBool(tc.value)
+		val, _ := utils.ConvertToBool(tc.value)
 		if result.Data[i].Value != val {
 			t.Errorf("data[%d] value mismatch: want %s, got %v",
 				i, tc.value, result.Data[i].Value)
@@ -683,7 +685,8 @@ func TestExposeBinaryEventsResultJSON(t *testing.T) {
 	}
 
 	for _, td := range testData {
-		valueBytes, _ := utils.AnyToByteArray(td.value)
+		boolVal, _ := utils.ConvertToBool(td.value)
+		valueBytes, _ := utils.AnyToByteArray(boolVal)
 		original.Collect(td.timestamp, valueBytes)
 	}
 
@@ -747,7 +750,7 @@ func TestExposeBinaryEventsResultJSON(t *testing.T) {
 			t.Errorf("data[%d] timestamp mismatch: want %v, got %v",
 				i, td.timestamp.UnixMilli(), binaryResult.Data[i].Timestamp)
 		}
-		val, _ := utils.ParseBool(td.value)
+		val, _ := utils.ConvertToBool(td.value)
 
 		if binaryResult.Data[i].Value != val {
 			t.Errorf("data[%d] value mismatch: want %s, got %v",
@@ -789,7 +792,8 @@ func TestNewExposeResultBinaryType(t *testing.T) {
 
 	// Test that it properly collects data
 	testValue := "on"
-	valueBytes, _ := utils.AnyToByteArray(testValue)
+	boolVal, _ := utils.ConvertToBool(testValue)
+	valueBytes, _ := utils.AnyToByteArray(boolVal)
 	testTime := from.Add(time.Hour)
 
 	err = result.Collect(testTime, valueBytes)
@@ -811,7 +815,8 @@ func TestExposeBinaryEventsResultFlush(t *testing.T) {
 
 	// Add some test data
 	testValue := "on"
-	valueBytes, _ := utils.AnyToByteArray(testValue)
+	boolVal, _ := utils.ConvertToBool(testValue)
+	valueBytes, _ := utils.AnyToByteArray(boolVal)
 	testTime := from.Add(time.Hour)
 
 	result.Collect(testTime, valueBytes)
@@ -824,8 +829,7 @@ func TestExposeBinaryEventsResultFlush(t *testing.T) {
 		t.Errorf("expected 1 data point after flush, got %d", len(result.Data))
 	}
 
-	val, _ := utils.ParseBool(testValue)
-	if result.Data[0].Value != val {
+	if result.Data[0].Value != boolVal {
 		t.Errorf("value changed after flush: want %s, got %v", testValue, result.Data[0].Value)
 	}
 }

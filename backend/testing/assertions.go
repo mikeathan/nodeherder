@@ -72,7 +72,7 @@ func AssertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 				tsMillis := ts.UnixMilli()
 				if tsMillis >= gotBinaryResult.From && tsMillis <= gotBinaryResult.To {
 
-					val, _ := utils.ParseBool(stringValues.([]string)[i])
+					val, _ := utils.ConvertToBool(stringValues.([]string)[i])
 					wantBinaryResult.Data = append(wantBinaryResult.Data, &metrics.BinaryEvent{
 						Timestamp: tsMillis,
 						Value:     val,

@@ -113,10 +113,10 @@ func (s *MetricsRepo) Prune(expireAt time.Duration) error {
 }
 
 func (s *MetricsRepo) QueryDevice(deviceID string,
-	from, to time.Time, filters []domain.MetricFilter, collectors map[string]domain.ExposeResult)  (*domain.DeviceMetricsResult, error) {
+	from, to time.Time, filters []domain.MetricFilter, collectors map[string]domain.ExposeResult) (*domain.DeviceMetricsResult, error) {
 
 	if err := s.execute(deviceID, from, to, filters, collectors); err != nil {
-		return  nil, err
+		return nil, err
 	}
 
 	result := s.finalizeCollectors(collectors, deviceID)
