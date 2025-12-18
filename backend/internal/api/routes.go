@@ -413,3 +413,28 @@ func writeJSONError(w http.ResponseWriter, status int, message string) {
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
 }
+
+
+// Metrics query
+type MetricsQueryHandler struct {
+	limiter   *ratelimiter.RateLimiter
+	rateLimit time.Duration
+}
+
+
+func NewMetricsQueryHandler(limiter *ratelimiter.RateLimiter, rateLimit time.Duration) *MetricsQueryHandler {
+	sh := &MetricsQueryHandler{
+		limiter:   limiter,
+		rateLimit: rateLimit,
+	}
+	return sh
+}
+
+func (h *MetricsQueryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Content-Type") != "application/json" {
+		writeJSONError(w, http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		return
+	}
+
+	TODO: implement metrics query handling
+}
