@@ -54,12 +54,6 @@ func (s *MetricsRepo) Close() error {
 	return nil
 }
 
-func GetDayRange(now time.Time, duration time.Duration) (time.Time, time.Time) {
-	from := now.Truncate(24 * time.Hour)
-	to := from.Add(24 * time.Hour)
-	return from, to
-}
-
 func (s *MetricsRepo) Store(id string, data map[string]any) error {
 
 	callback := func(exposeName string, value any) ([]byte, []byte, error) {

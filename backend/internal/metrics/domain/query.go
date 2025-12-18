@@ -8,8 +8,6 @@ type OperationType string
 
 type MetricField string
 
-type RelativeTime string
-
 const (
 	AggNone  AggregationType = ""
 	AggLast  AggregationType = "last"
@@ -26,22 +24,12 @@ const (
 	FieldValue     MetricField = "value"
 	FieldState     MetricField = "state"
 	FieldTimestamp MetricField = "timestamp"
-
-	RelLatest        RelativeTime = "latest"
-	RelLast5Minutes  RelativeTime = "last_5m"
-	RelLast10Minutes RelativeTime = "last_10m"
-	RelLast30Minutes RelativeTime = "last_30m"
-	RelLast1Hour     RelativeTime = "last_1h"
-	RelLast24Hours   RelativeTime = "last_24h"
-	RelToday         RelativeTime = "today"
-	RelYesterday     RelativeTime = "yesterday"
-	RelSinceMidnight RelativeTime = "since_midnight"
 )
 
 type TimeQuery struct {
 	From     time.Time
 	To       time.Time
-	Relative string
+	Lookback string
 }
 
 type MetricFilter struct {

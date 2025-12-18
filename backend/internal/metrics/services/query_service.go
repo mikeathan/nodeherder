@@ -8,7 +8,6 @@ import (
 	"time"
 )
 
-// DeviceResolver exposes the subset of device repository methods that queries need.
 type DeviceResolver interface {
 	FindDevices(ids []string) ([]*devices.Device, error)
 }
@@ -36,8 +35,8 @@ func (s *QueryService) Query(ctx context.Context, req query.MetricsQueryRequest)
 		return nil, err
 	}
 
-	from := req.Time.From
-	to := req.Time.To
+	now := time.Now().UTC()
+	from, to := query.ResolveTime(req.Time, now)
 
 	response := query.MetricsQueryResponse{
 		Expose: req.Expose,
@@ -64,6 +63,10 @@ func (s *QueryService) Query(ctx context.Context, req query.MetricsQueryRequest)
 
 		if _, err := s.metrics.QueryDevice(device.Id, from, to, req.Filters, collectors); err != nil {
 			return nil, err
+		}
+
+		if req.Aggregation == domain.AggNone && (req.Limit > 0 || req.SortDesc) {
+			query.ApplyLimitSortBy(collector, req.Limit, req.SortDesc)
 		}
 
 		value, err := buildDeviceQueryResponse(device.Id, req.Aggregation, collector)
