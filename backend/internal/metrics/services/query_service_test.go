@@ -11,17 +11,15 @@ import (
 	"time"
 )
 
-type fakeDeviceResolver struct {
+type fakeQueryStore struct {
 	devices []*devices.Device
 }
 
-func (f fakeDeviceResolver) FindDevices(ids []string) ([]*devices.Device, error) {
+func (f fakeQueryStore) FindDeviceByIds(ids []string) ([]*devices.Device, error) {
 	return f.devices, nil
 }
 
-type fakeMetricsQuerier struct{}
-
-func (f fakeMetricsQuerier) QueryDevice(deviceID string, from, to time.Time, filters []domain.MetricFilter, collectors map[string]domain.ExposeResult) (*domain.DeviceMetricsResult, error) {
+func (f fakeQueryStore) QueryDevice(deviceID string, from, to time.Time, filters []domain.MetricFilter, collectors map[string]domain.ExposeResult) (*domain.DeviceMetricsResult, error) {
 	collector, ok := collectors["temperature"].(*domain.ExposeNumericMetricsResult)
 	if !ok {
 		return nil, fmt.Errorf("collector not found")
@@ -42,7 +40,7 @@ func TestQueryServiceAppliesLimitSort(t *testing.T) {
 		Exposes: map[string]*devices.Entity{"temperature": entity},
 	}
 
-	service := services.NewQueryService(fakeDeviceResolver{devices: []*devices.Device{dev}}, fakeMetricsQuerier{})
+	service := services.NewQueryService(fakeQueryStore{devices: []*devices.Device{dev}})
 
 	req := query.MetricsQueryRequest{
 		DeviceIds: []string{"dev1"},

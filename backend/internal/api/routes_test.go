@@ -9,11 +9,19 @@ import (
 	"node-herder/internal/api"
 	"node-herder/internal/controllers"
 	"node-herder/internal/fs"
+	metricsdomain "node-herder/internal/metrics/domain"
+	metricsquery "node-herder/internal/metrics/query"
+	"node-herder/internal/ratelimiter"
 	"node-herder/mocks"
+	"node-herder/models/devices"
 	"node-herder/models/hub"
 	"node-herder/models/logging"
+	"node-herder/models/settings"
+	"node-herder/repository"
+	"node-herder/store"
 	utils_test "node-herder/testing"
 	"node-herder/utils"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -596,4 +604,213 @@ func TestAutomationTriggerHandler_Cases(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMetricsQueryHandler_InvalidContentType(t *testing.T) {
+	store := utils_test.CreateStore()
+	handler := api.NewMetricsQueryHandler(ratelimiter.NewRateLimiter(), 1*time.Second, store)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/metrics/query", strings.NewReader(`{}`))
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnsupportedMediaType {
+		t.Fatalf("expected 415, got %d", w.Code)
+	}
+}
+
+func TestMetricsQueryHandler_InvalidJSON(t *testing.T) {
+	store := utils_test.CreateStore()
+	handler := api.NewMetricsQueryHandler(ratelimiter.NewRateLimiter(), 1*time.Second, store)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/metrics/query", strings.NewReader(`bad`))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", w.Code)
+	}
+}
+
+func TestMetricsQueryHandler_SuccessWithLimitSort(t *testing.T) {
+	store, metricsRepo, mockClock, cleanup := createMetricsQueryTestStore(t)
+	defer cleanup()
+
+	deviceName := "device1"
+	deviceID := utils.HashName(deviceName)
+
+	entity := devices.NewEntity("temperature")
+	entity.Type = "numeric"
+	entity.Data.SetValue(float32(0))
+
+	dev := &devices.Device{
+		Id:           deviceID,
+		FriendlyName: deviceName,
+		Exposes:      map[string]*devices.Entity{"temperature": entity},
+	}
+
+	if err := store.StoreDevice(deviceName, dev); err != nil {
+		t.Fatalf("failed to store device: %v", err)
+	}
+
+	base := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
+	timestamps := []time.Time{
+		base.Add(1 * time.Minute),
+		base.Add(2 * time.Minute),
+		base.Add(3 * time.Minute),
+	}
+	values := []float32{1, 2, 3}
+
+	for i, ts := range timestamps {
+		mockClock.SetMockTime(ts)
+		if err := metricsRepo.Store(deviceID, map[string]any{"temperature": values[i]}); err != nil {
+			t.Fatalf("failed to store metrics: %v", err)
+		}
+	}
+
+	payload := metricsquery.MetricsQueryRequest{
+		DeviceIds: []string{deviceID},
+		Expose:    "temperature",
+		Time: metricsdomain.TimeQuery{
+			From: base,
+			To:   base.Add(10 * time.Minute),
+		},
+		Aggregation: metricsdomain.AggNone,
+		Limit:       2,
+		SortDesc:    true,
+	}
+
+	body, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/api/metrics/query", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler := api.NewMetricsQueryHandler(ratelimiter.NewRateLimiter(), 1*time.Second, store)
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+
+	var response []metricsquery.MetricsQueryResponse
+	if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if len(response) != 1 || len(response[0].Values) != 1 {
+		t.Fatalf("expected 1 response and 1 value, got %+v", response)
+	}
+
+	data, ok := response[0].Values[0].Value.([]any)
+	if !ok {
+		t.Fatalf("unexpected value type: %T", response[0].Values[0].Value)
+	}
+
+	if len(data) != 2 {
+		t.Fatalf("expected 2 data points, got %d", len(data))
+	}
+
+	first := data[0].(map[string]any)
+	second := data[1].(map[string]any)
+	firstX := int64(first["x"].(float64))
+	secondX := int64(second["x"].(float64))
+
+	if firstX != timestamps[2].UnixMilli() || secondX != timestamps[1].UnixMilli() {
+		t.Fatalf("unexpected order after sort/limit: %v, %v", firstX, secondX)
+	}
+}
+
+func TestMetricsQueryHandler_RateLimit(t *testing.T) {
+	store, metricsRepo, mockClock, cleanup := createMetricsQueryTestStore(t)
+	defer cleanup()
+
+	deviceName := "device1"
+	deviceID := utils.HashName(deviceName)
+
+	entity := devices.NewEntity("temperature")
+	entity.Type = "numeric"
+	entity.Data.SetValue(float32(0))
+
+	dev := &devices.Device{
+		Id:           deviceID,
+		FriendlyName: deviceName,
+		Exposes:      map[string]*devices.Entity{"temperature": entity},
+	}
+
+	if err := store.StoreDevice(deviceName, dev); err != nil {
+		t.Fatalf("failed to store device: %v", err)
+	}
+
+	base := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
+	mockClock.SetMockTime(base)
+	if err := metricsRepo.Store(deviceID, map[string]any{"temperature": float32(1)}); err != nil {
+		t.Fatalf("failed to store metrics: %v", err)
+	}
+
+	payload := metricsquery.MetricsQueryRequest{
+		DeviceIds: []string{deviceID},
+		Expose:    "temperature",
+		Time: metricsdomain.TimeQuery{
+			From: base,
+			To:   base.Add(10 * time.Minute),
+		},
+		Aggregation: metricsdomain.AggNone,
+		Limit:       1,
+		SortDesc:    true,
+	}
+
+	body, _ := json.Marshal(payload)
+	handler := api.NewMetricsQueryHandler(ratelimiter.NewRateLimiter(), 1*time.Hour, store)
+
+	req1 := httptest.NewRequest(http.MethodPost, "/api/metrics/query", bytes.NewReader(body))
+	req1.Header.Set("Content-Type", "application/json")
+	w1 := httptest.NewRecorder()
+	handler.ServeHTTP(w1, req1)
+	if w1.Code != http.StatusOK {
+		t.Fatalf("expected first call 200, got %d", w1.Code)
+	}
+
+	req2 := httptest.NewRequest(http.MethodPost, "/api/metrics/query", bytes.NewReader(body))
+	req2.Header.Set("Content-Type", "application/json")
+	w2 := httptest.NewRecorder()
+	handler.ServeHTTP(w2, req2)
+	if w2.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected second call 429, got %d", w2.Code)
+	}
+}
+
+func createMetricsQueryTestStore(t *testing.T) (store.AppStore, metricsdomain.Repository, *mocks.MockClock, func()) {
+	t.Helper()
+
+	tempfile := utils_test.Tempfile()
+	metricsRepo, mockClock, err := utils_test.CreateMetricsRepo(tempfile)
+	if err != nil {
+		os.Remove(tempfile)
+		t.Fatalf("failed to create metrics repo: %v", err)
+	}
+
+	deviceRepo := repository.NewMemoryDeviceRepo()
+	settingsRepo := &mocks.NopSettingsrepo{}
+	configCache, err := settings.NewAppConfigCache(settingsRepo, []settings.Task{})
+	if err != nil {
+		os.Remove(tempfile)
+		t.Fatalf("failed to create config cache: %v", err)
+	}
+
+	appStore, err := store.NewAppStore(deviceRepo, metricsRepo, configCache)
+	if err != nil {
+		os.Remove(tempfile)
+		t.Fatalf("failed to create store: %v", err)
+	}
+
+	cleanup := func() {
+		_ = metricsRepo.Close()
+		_ = deviceRepo.Close()
+		_ = os.Remove(tempfile)
+	}
+
+	return appStore, metricsRepo, mockClock, cleanup
 }

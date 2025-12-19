@@ -9,11 +9,16 @@ import (
 )
 
 type DeviceResolver interface {
-	FindDevices(ids []string) ([]*devices.Device, error)
+	FindDeviceByIds(ids []string) ([]*devices.Device, error)
 }
 
 type MetricsQuerier interface {
 	QueryDevice(deviceID string, from, to time.Time, filters []domain.MetricFilter, collectors map[string]domain.ExposeResult) (*domain.DeviceMetricsResult, error)
+}
+
+type QueryStore interface {
+	DeviceResolver
+	MetricsQuerier
 }
 
 type QueryService struct {
@@ -21,16 +26,16 @@ type QueryService struct {
 	metrics MetricsQuerier
 }
 
-func NewQueryService(devices DeviceResolver, metrics MetricsQuerier) *QueryService {
+func NewQueryService(store QueryStore) *QueryService {
 	return &QueryService{
-		devices: devices,
-		metrics: metrics,
+		devices: store,
+		metrics: store,
 	}
 }
 
 func (s *QueryService) Query(ctx context.Context, req query.MetricsQueryRequest) (*[]query.MetricsQueryResponse, error) {
 
-	devices, err := s.devices.FindDevices(req.DeviceIds)
+	devices, err := s.devices.FindDeviceByIds(req.DeviceIds)
 	if err != nil {
 		return nil, err
 	}

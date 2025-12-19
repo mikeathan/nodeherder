@@ -583,6 +583,11 @@ func (s *NopMetricsRepo) Store(id string, data map[string]any) error {
 	return nil
 }
 
+func (s *NopMetricsRepo) QueryDevice(deviceID string, from, to time.Time, filters []metrics.MetricFilter, collectors map[string]metrics.ExposeResult) (*metrics.DeviceMetricsResult, error) {
+	fmt.Println("Mocked QueryDevice")
+	return nil, nil
+}
+
 func (s *NopMetricsRepo) ViewDeviceTimeRange(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 	fmt.Println("Mocked ViewDeviceTimeRange")
 	return nil, nil
@@ -787,6 +792,11 @@ func (s *NopAppStore) ViewMetrics(device *devices.Device, from time.Time, to tim
 	return &metrics.DeviceMetricsResult{}, nil
 }
 
+func (s *NopAppStore) QueryDevice(deviceID string, from, to time.Time, filters []metrics.MetricFilter, collectors map[string]metrics.ExposeResult) (*metrics.DeviceMetricsResult, error) {
+	fmt.Println("Mocked store QueryDevice")
+	return &metrics.DeviceMetricsResult{}, nil
+}
+
 func (s *NopAppStore) FindDeviceByFriendlyName(friendlyName string) (*devices.Device, error) {
 	fmt.Println("Mocked store FindDeviceByFriendlyName")
 	return &devices.Device{}, nil
@@ -800,6 +810,12 @@ func (s *NopAppStore) FindDeviceByIds(ids []string) ([]*devices.Device, error) {
 	fmt.Println("Mocked store FindDeviceByIds")
 	return []*devices.Device{}, nil
 }
+
+func (s *NopAppStore) FindDevices(ids []string) ([]*devices.Device, error) {
+	fmt.Println("Mocked store FindDevices")
+	return []*devices.Device{}, nil
+}
+
 func (s *NopAppStore) AllDevices() ([]*devices.Device, error) {
 	fmt.Println("Mocked store AllDevices")
 	return []*devices.Device{}, nil

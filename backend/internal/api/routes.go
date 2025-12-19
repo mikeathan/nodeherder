@@ -7,6 +7,8 @@ import (
 	"node-herder/internal/auth"
 	"node-herder/internal/controllers"
 	"node-herder/internal/fs"
+	metricsquery "node-herder/internal/metrics/query"
+	metrics "node-herder/internal/metrics/services"
 	"node-herder/internal/ratelimiter"
 	"node-herder/internal/ws"
 	"node-herder/models/automations"
@@ -414,20 +416,19 @@ func writeJSONError(w http.ResponseWriter, status int, message string) {
 	_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
 }
 
-
 // Metrics query
 type MetricsQueryHandler struct {
 	limiter   *ratelimiter.RateLimiter
 	rateLimit time.Duration
+	querier   *metrics.QueryService
 }
 
-
-func NewMetricsQueryHandler(limiter *ratelimiter.RateLimiter, rateLimit time.Duration) *MetricsQueryHandler {
-	sh := &MetricsQueryHandler{
+func NewMetricsQueryHandler(limiter *ratelimiter.RateLimiter, rateLimit time.Duration, store store.AppStore) *MetricsQueryHandler {
+	return &MetricsQueryHandler{
 		limiter:   limiter,
 		rateLimit: rateLimit,
+		querier:   metrics.NewQueryService(store),
 	}
-	return sh
 }
 
 func (h *MetricsQueryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -436,5 +437,34 @@ func (h *MetricsQueryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	TODO: implement metrics query handling
+	var req metricsquery.MetricsQueryRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSONError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+
+	if req.Expose == "" || len(req.DeviceIds) == 0 {
+		writeJSONError(w, http.StatusBadRequest, "missing deviceIds or expose")
+		return
+	}
+
+	rateKey := "metrics_query"
+	if len(req.DeviceIds) > 0 {
+		rateKey = req.DeviceIds[0]
+	}
+
+	if !h.limiter.AllowWrite(rateKey, h.rateLimit) {
+		writeJSONError(w, http.StatusTooManyRequests, "rate limit exceeded")
+		return
+	}
+
+	response, err := h.querier.Query(r.Context(), req)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(response)
 }

@@ -32,6 +32,7 @@ type AppStore interface {
 
 	StoreMetrics(friendlyName string, data map[string]any) error
 	ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error)
+	QueryDevice(deviceID string, from, to time.Time, filters []metrics.MetricFilter, collectors map[string]metrics.ExposeResult) (*metrics.DeviceMetricsResult, error)
 	ResolveFriendlyName(friendlyName string) string
 	RegisterIsDirtyCallback(cb AppStoreDirtyFlagCallback)
 }
@@ -84,6 +85,10 @@ func (s *appStore) LoadHubState() (*hub.HubState, error) {
 
 func (s *appStore) ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
 	return s.metrics.ViewDeviceTimeRange(device, from, to)
+}
+
+func (s *appStore) QueryDevice(deviceID string, from, to time.Time, filters []metrics.MetricFilter, collectors map[string]metrics.ExposeResult) (*metrics.DeviceMetricsResult, error) {
+	return s.metrics.QueryDevice(deviceID, from, to, filters, collectors)
 }
 
 func (s *appStore) AppConfig() *settings.AppConfigCache {
@@ -174,6 +179,10 @@ func (s *appStore) FindBridgeInfoById(id string) (*devices.BridgeInfo, error) {
 }
 
 func (s *appStore) FindDeviceByIds(ids []string) ([]*devices.Device, error) {
+	return s.devices.FindDevices(ids)
+}
+
+func (s *appStore) FindDevices(ids []string) ([]*devices.Device, error) {
 	return s.devices.FindDevices(ids)
 }
 

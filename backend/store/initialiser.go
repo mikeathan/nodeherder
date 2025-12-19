@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
-	metricsrepo "node-herder/internal/metrics/storage"
+	metrics "node-herder/internal/metrics/storage"
 	"node-herder/models/settings"
 	"node-herder/repository"
 )
@@ -11,7 +11,7 @@ import (
 func Create(ctx context.Context) (AppStore, error) {
 
 	devicesRepo := repository.NewMemoryDeviceRepo()
-	metricsRepo, err := metricsrepo.NewMetricsRepo()
+	metricsRepo, err := metrics.NewMetricsRepo()
 	if err != nil {
 		return nil, fmt.Errorf("loading metrics repository failed: %v", err.Error())
 	}

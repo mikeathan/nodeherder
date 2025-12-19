@@ -9,6 +9,7 @@ import (
 	"node-herder/internal/controllers"
 	"node-herder/internal/fs"
 	"node-herder/internal/mqtt"
+	"node-herder/internal/ratelimiter"
 	"node-herder/internal/ws"
 	"node-herder/store"
 	"node-herder/utils"
@@ -39,6 +40,7 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	router.GET("/ws", api.NewWsHandler(ws))
 
 	// api routing
+	router.POST("/api/metrics/query", api.NewMetricsQueryHandler(ratelimiter.NewRateLimiter(), 1*time.Second, store))
 	router.POST("/api/collect", api.NewDataCollectorHandler(hub))
 	router.POST("/api/logfile", api.NewLogFileHandler(fservice))
 	router.POST("/api/automation/trigger", api.NewAutomationTriggerHandler(hub, 1*time.Second))
