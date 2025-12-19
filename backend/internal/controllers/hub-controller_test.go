@@ -951,31 +951,114 @@ func TestQueryServiceReturnsLatestMetrics(t *testing.T) {
 
 	base := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
 
-	mockClock.SetMockTime(base.Add(1 * time.Minute))
-	mqtt.Publish(lightDevice.FriendlyName, map[string]any{"brightness": 10.0})
-	time.Sleep(100 * time.Millisecond)
-
-	mockClock.SetMockTime(base.Add(2 * time.Minute))
-	mqtt.Publish(lightDevice.FriendlyName, map[string]any{"brightness": 20.0})
-	time.Sleep(100 * time.Millisecond)
+	brightnessValues := []float64{5, 10, 15, 20, 25}
+	for i, value := range brightnessValues {
+		mockClock.SetMockTime(base.Add(time.Duration(i+1) * time.Minute))
+		mqtt.Publish(lightDevice.FriendlyName, map[string]any{"brightness": value})
+		time.Sleep(100 * time.Millisecond)
+	}
 
 	queryService := metricsservice.NewQueryService(store)
-	req := metricsquery.MetricsQueryRequest{
-		DeviceIds: []string{lightDevice.Id},
-		Expose:    "brightness",
-		Time: metrics.TimeQuery{
-			From: base,
-			To:   base.Add(5 * time.Minute),
+
+	testCases := []struct {
+		name   string
+		req    metricsquery.MetricsQueryRequest
+		assert func(t *testing.T, responses *[]metricsquery.MetricsQueryResponse)
+	}{
+		{
+			name: "latest desc limit",
+			req: metricsquery.MetricsQueryRequest{
+				DeviceIds: []string{lightDevice.Id},
+				Expose:    "brightness",
+				Time: metrics.TimeQuery{
+					From: base,
+					To:   base.Add(5 * time.Minute),
+				},
+				Aggregation: metrics.AggNone,
+				Limit:       1,
+				SortDesc:    true,
+			},
+			assert: func(t *testing.T, responses *[]metricsquery.MetricsQueryResponse) {
+				values := requireNumericValues(t, responses)
+				if len(values) != 1 {
+					t.Fatalf("expected 1 value, got %d", len(values))
+				}
+				if values[0].Y != 25.0 {
+					t.Fatalf("expected latest brightness 25.0 got %v", values[0].Y)
+				}
+				if values[0].X != base.Add(5*time.Minute).UnixMilli() {
+					t.Fatalf("unexpected timestamp %v", values[0].X)
+				}
+			},
 		},
-		Aggregation: metrics.AggNone,
-		Limit:       1,
-		SortDesc:    true,
+		{
+			name: "oldest asc limit",
+			req: metricsquery.MetricsQueryRequest{
+				DeviceIds: []string{lightDevice.Id},
+				Expose:    "brightness",
+				Time: metrics.TimeQuery{
+					From: base,
+					To:   base.Add(5 * time.Minute),
+				},
+				Aggregation: metrics.AggNone,
+				Limit:       1,
+				SortDesc:    false,
+			},
+			assert: func(t *testing.T, responses *[]metricsquery.MetricsQueryResponse) {
+				values := requireNumericValues(t, responses)
+				if len(values) != 1 {
+					t.Fatalf("expected 1 value, got %d", len(values))
+				}
+				if values[0].Y != 5.0 {
+					t.Fatalf("expected oldest brightness 5.0 got %v", values[0].Y)
+				}
+				if values[0].X != base.Add(1*time.Minute).UnixMilli() {
+					t.Fatalf("unexpected timestamp %v", values[0].X)
+				}
+			},
+		},
+		{
+			name: "count aggregation",
+			req: metricsquery.MetricsQueryRequest{
+				DeviceIds: []string{lightDevice.Id},
+				Expose:    "brightness",
+				Time: metrics.TimeQuery{
+					From: base,
+					To:   base.Add(5 * time.Minute),
+				},
+				Aggregation: metrics.AggCount,
+				Limit:       1,
+				SortDesc:    true,
+			},
+			assert: func(t *testing.T, responses *[]metricsquery.MetricsQueryResponse) {
+				if len(*responses) != 1 || len((*responses)[0].Values) != 1 {
+					t.Fatalf("expected 1 response and 1 value, got %+v", responses)
+				}
+				count, ok := (*responses)[0].Values[0].Value.(int)
+				if !ok {
+					t.Fatalf("unexpected count type: %T", (*responses)[0].Values[0].Value)
+				}
+				if count != 5 {
+					t.Fatalf("expected count 5 got %v", count)
+				}
+			},
+		},
 	}
 
-	responses, err := queryService.Query(context.Background(), req)
-	if err != nil {
-		t.Fatalf("Query failed. err %v ", err)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			responses, err := queryService.Query(context.Background(), tc.req)
+			if err != nil {
+				t.Fatalf("Query failed. err %v ", err)
+			}
+			tc.assert(t, responses)
+		})
 	}
+}
+
+func requireNumericValues(t *testing.T, responses *[]metricsquery.MetricsQueryResponse) []*metrics.NumericValue {
+	t.Helper()
+
 	if len(*responses) != 1 || len((*responses)[0].Values) != 1 {
 		t.Fatalf("expected 1 response and 1 value, got %+v", responses)
 	}
@@ -984,15 +1067,8 @@ func TestQueryServiceReturnsLatestMetrics(t *testing.T) {
 	if !ok {
 		t.Fatalf("unexpected value type: %T", (*responses)[0].Values[0].Value)
 	}
-	if len(values) != 1 {
-		t.Fatalf("expected 1 value, got %d", len(values))
-	}
-	if values[0].Y != 20.0 {
-		t.Fatalf("expected latest brightness 20.0 got %v", values[0].Y)
-	}
-	if values[0].X != base.Add(2*time.Minute).UnixMilli() {
-		t.Fatalf("unexpected timestamp %v", values[0].X)
-	}
+
+	return values
 }
 
 func TestProcessorStoresMetricsForExistingDevice(t *testing.T) {
