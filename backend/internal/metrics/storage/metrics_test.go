@@ -117,6 +117,47 @@ func TestNewVersionSingleExposeValueUpdatesDeviceTimeRangeMetrics(t *testing.T) 
 	utils_test.AssertDeviceAnyDataTypeEvents(dev, result, timestamps, values, t)
 }
 
+func TestViewDeviceTimeRangeSkipsUnsupportedExposes(t *testing.T) {
+	tempfile := utils_test.Tempfile()
+	defer os.Remove(tempfile)
+
+	repo, mockClock, err := utils_test.CreateMetricsRepo(tempfile)
+	if err != nil {
+		t.Error("failed to initialise metrics repo: ", err.Error())
+	}
+
+	now := time.Now().UTC()
+	from := now.Add(-1 * time.Minute)
+	to := now.Add(1 * time.Minute)
+
+	dev := createMockDeviceWithExposes("dev_unknown", "device_unknown", []string{"power"}, "numeric", now, nil)
+	unsupported := devices.NewEntity("socket_state")
+	unsupported.Type = "unsupported_type"
+	unsupported.Data.SetValue(map[string]any{"state": "ON"})
+	dev.Exposes["socket_state"] = unsupported
+
+	mockClock.SetMockTime(now)
+	err = repo.Store(dev.Id, map[string]any{
+		"power":        float64(12.3),
+		"socket_state": map[string]any{"state": "ON"},
+	})
+	if err != nil {
+		t.Fatalf("failed to store metrics: %v", err)
+	}
+
+	result, err := repo.ViewDeviceTimeRange(dev, from, to)
+	if err != nil {
+		t.Fatalf("failed to query metrics: %v", err)
+	}
+	if len(result.Exposes) != 1 {
+		t.Fatalf("expected 1 expose, got %d", len(result.Exposes))
+	}
+	if result.Exposes[0].GetType() != "numeric" {
+		t.Fatalf("expected numeric expose, got %s", result.Exposes[0].GetType())
+	}
+	assertExposeDataCount(t, result.Exposes[0], 1)
+}
+
 func TestSingleExposeValueUpdatesDeviceTimeRangeMetrics(t *testing.T) {
 
 	now := time.Now()

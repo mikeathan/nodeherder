@@ -59,7 +59,7 @@ func (s *QueryService) Query(ctx context.Context, req query.MetricsQueryRequest)
 
 		collector, err := domain.NewExposeResult(req.Expose, expose.Type, req.Aggregation, from, to)
 		if err != nil {
-			return nil, err
+			continue
 		}
 
 		collectors := map[string]domain.ExposeResult{

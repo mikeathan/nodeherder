@@ -209,7 +209,8 @@ func (s *MetricsRepo) prepareExposeCollectors(device *devices.Device, from, to t
 		ex := device.Exposes[name]
 		r, err := domain.NewExposeResult(ex.Name, ex.Type, domain.AggNone, from, to)
 		if err != nil {
-			return nil, err
+			// unknown expose type, skip
+			continue
 		}
 		collectors[ex.Name] = r
 	}

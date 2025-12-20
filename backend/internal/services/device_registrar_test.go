@@ -169,6 +169,47 @@ func TestCreateNewDevice(t *testing.T) {
 	assertDevicePayload(newDevice, deviceName, payload, t)
 }
 
+func TestRegisterBridgeSkipsUnsupportedExposeTypes(t *testing.T) {
+	repo := repository.NewMemoryDeviceRepo()
+	store := utils_test.CreateStoreFromDeviceRepo(repo)
+	eventHub := &mocks.MockEventHub{}
+
+	bridgeInfo := &devices.BridgeInfo{
+		FriendlyName: "UnsupportedTypeDevice",
+		IeeeAddress:  "dev-unsupported",
+		Type:         "EndDevice",
+		PowerSource:  "Mains",
+	}
+	bridgeInfo.Definition.Exposes = []devices.BridgeExpose{
+		{
+			Type:     "numeric",
+			Access:   devices.ReadBridgeAccessMode,
+			Name:     "power",
+			Property: "power",
+		},
+		{
+			Type:     "unsupported_type",
+			Access:   devices.ReadBridgeAccessMode,
+			Name:     "mystery",
+			Property: "mystery",
+		},
+	}
+
+	registrar := services.NewHubRegisterService(store, eventHub, 30000)
+	registrar.RegisterBridge([]*devices.BridgeInfo{bridgeInfo})
+
+	device, err := store.FindDeviceById("dev-unsupported")
+	if err != nil {
+		t.Fatalf("failed to find device: %v", err)
+	}
+	if _, ok := device.Exposes["mystery"]; ok {
+		t.Fatalf("unsupported expose type should not be imported")
+	}
+	if _, ok := device.Exposes["power"]; !ok {
+		t.Fatalf("expected supported expose to be imported")
+	}
+}
+
 func TestDefaultDebounceforDiagnosticExposes(t *testing.T) {
 
 	bridgeInfoFile := filepath.Join("../../../docs", "device_bridge.json")

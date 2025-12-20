@@ -206,7 +206,6 @@ func (d *EntityData) SetValue(v any) {
 	d.value = v
 }
 
-
 func (d *EntityData) ValuesMatch(pending any) bool {
 	if d.value == pending {
 		return true
@@ -347,6 +346,8 @@ func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
 		for id, item := range expose.Values {
 			newEntity.Values[fmt.Sprintf("%d", id)] = item
 		}
+	default:
+		return nil, fmt.Errorf("unsupported expose type %s", expose.Type)
 	}
 
 	return newEntity, nil
