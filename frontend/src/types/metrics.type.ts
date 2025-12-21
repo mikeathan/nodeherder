@@ -13,7 +13,22 @@ export interface BinaryRange {
   start: number;
   end: number;
 }
+export type NumericStats = {
+  min: number;
+  max: number;
+  avg: number;
+  first: number;
+  last: number;
+  delta: number;
+  deltaPct: number;
+};
 
+export type NumericChartHeaderData = DeviceExposeNumericMetrics & {
+  label: string;
+  unit: string | null;
+  color: string;
+  stats: NumericStats | null;
+};
 export interface RangeBarDataPoint {
   x: string;
   y: [number, number];

@@ -3,6 +3,7 @@
   import VueApexCharts from 'vue3-apexcharts';
   import { NumericDataPoint } from '@/types/metrics.type';
   import { getExposeColor } from '@/contracts/chart';
+  import { downsampleNumericData, getNumericStats, normalizeNumericData } from '@/utils/chart.utils';
 
   const props = defineProps({
     data: {
@@ -27,26 +28,8 @@
     },
   });
 
-  // Downsample for cleaner visualization
-  const downsampledData = computed(() => {
-    if (!props.data || props.data.length === 0) return [];
-
-    // Target ~50-60 points for detailed view
-    const targetPoints = 50;
-    const step = Math.max(1, Math.floor(props.data.length / targetPoints));
-
-    const sampled: any[] = [];
-    for (let i = 0; i < props.data.length; i += step) {
-      sampled.push(props.data[i]);
-    }
-
-    // Always include last point
-    if (sampled[sampled.length - 1] !== props.data[props.data.length - 1]) {
-      sampled.push(props.data[props.data.length - 1]);
-    }
-
-    return sampled;
-  });
+  const normalizedData = computed(() => normalizeNumericData(props.data ?? []));
+  const downsampledData = computed(() => downsampleNumericData(normalizedData.value, 60));
 
   const chartData = computed(() => {
     return [
@@ -66,16 +49,12 @@
   });
 
   const stats = computed(() => {
-    if (!props.data || props.data.length === 0) {
+    const numericStats = getNumericStats(normalizedData.value);
+    if (!numericStats) {
       return { min: 0, max: 0, avg: 0 };
     }
 
-    const values = props.data.map((p) => p.y);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
-
-    return { min, max, avg };
+    return { min: numericStats.min, max: numericStats.max, avg: numericStats.avg };
   });
 
   const chartOptions = computed(() => ({

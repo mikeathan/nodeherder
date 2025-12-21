@@ -42,17 +42,6 @@ export const getPeriodOffset = (period: PeriodType): { from: Date; to: Date } =>
   }
 };
 
-export function dynamicColors() {
-  var r = Math.floor(Math.random() * 255);
-  var g = Math.floor(Math.random() * 255);
-  var b = Math.floor(Math.random() * 255);
-
-  return {
-    backgroundColor: 'rgb(' + r + ',' + g + ',' + b + ')',
-    borderColor: 'rgba(' + r + ',' + g + ',' + b + ',' + 0.5 + ')',
-  };
-}
-
 const buildExposeColors = (): KeyValuePair<string> => {
   const colors = Object.values(ColorTypes);
   const exposeColors: KeyValuePair<string> = {};
@@ -101,113 +90,32 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
           type: 'area',
           background: 'transparent',
           foreColor: '#ccc',
-          toolbar: { show: false, autoselected: 'pan' },
+          toolbar: { show: false },
           zoom: { enabled: true, type: 'x', autoScaleYaxis: true },
           ...(extra?.chart ?? {}),
         },
         stroke: { curve: 'smooth', width: 2, ...(extra?.stroke ?? {}) },
-        fill: {
-          type: 'gradient',
-          gradient: {
-            shadeIntensity: 1,
-            inverseColors: false,
-            opacityFrom: 0.6,
-            opacityTo: 0,
-            stops: [0, 100],
-          },
+        fill: { type: 'gradient', ...(extra?.fill ?? {}) },
+        dataLabels: { enabled: false, ...(extra?.dataLabels ?? {}) },
+        legend: { show: false, ...(extra?.legend ?? {}) },
+        grid: {
+          borderColor: 'rgba(255,255,255,0.12)',
+          padding: { left: 0, right: 0, top: 0, bottom: 0 },
+          ...(extra?.grid ?? {}),
         },
-        dataLabels: { enabled: false },
-        legend: { showForSingleSeries: true, position: 'top' },
-        grid: { borderColor: 'rgba(255,255,255,0.15)', padding: { left: 0, right: 0, top: 0, bottom: 0 } },
+        markers: { ...(extra?.markers ?? {}) },
         xaxis: {
           type: 'datetime',
-          labels: {
-            datetimeUTC: false,
-            style: { colors: '#ccc' },
-            datetimeFormatter: {
-              year: 'yyyy',
-              month: "MMM 'yy",
-              day: 'dd MMM',
-              hour: 'HH:mm',
-            },
-          },
+          labels: { style: { colors: '#b8c1cc' }, ...(extra?.xaxis?.labels ?? {}) },
           tooltip: { enabled: false },
+          ...(extra?.xaxis ?? {}),
         },
         yaxis: {
-          decimalsInFloat: 1,
-          labels: {
-            style: { colors: '#ccc' },
-            formatter: (value: number) => {
-              return value !== null ? value.toFixed(1) : '';
-            },
-          },
+          labels: { style: { colors: '#b8c1cc' }, ...(extra?.yaxis?.labels ?? {}) },
+          ...(extra?.yaxis ?? {}),
         },
-        tooltip: {
-          theme: 'dark',
-          shared: false,
-          followCursor: false,
-          x: {
-            format: 'dd MMM yyyy HH:mm:ss',
-            formatter: function (value: number) {
-              const date = new Date(value);
-              const now = new Date();
-              const diffMs = now.getTime() - date.getTime();
-              const diffMins = Math.floor(diffMs / 60000);
-              const diffHours = Math.floor(diffMs / 3600000);
-              const diffDays = Math.floor(diffMs / 86400000);
-
-              const timeStr = date.toLocaleTimeString('en-GB', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-              });
-
-              if (diffMins < 60) {
-                return `${diffMins} min ago (${timeStr})`;
-              } else if (diffHours < 24) {
-                return `${diffHours}h ago (${timeStr})`;
-              } else if (diffDays === 1) {
-                return `Yesterday ${timeStr}`;
-              } else if (diffDays < 7) {
-                return `${diffDays} days ago (${timeStr})`;
-              }
-
-              const dateStr = date.toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-              });
-              return `${dateStr} ${timeStr}`;
-            },
-          },
-          y: {
-            formatter: (value: number) => {
-              return value !== null ? value.toFixed(2) : '';
-            },
-          },
-          ...(extra?.tooltip ?? {}),
-        },
+        tooltip: { theme: 'dark', ...(extra?.tooltip ?? {}) },
         colors: extra?.colors ?? ['#4FC3F7'],
-        responsive: [
-          {
-            breakpoint: 768,
-            options: {
-              chart: { height: 220 },
-              legend: { position: 'bottom' },
-              yaxis: { labels: { style: { fontSize: '10px' } } },
-              xaxis: { labels: { style: { fontSize: '10px' } } },
-            },
-          },
-          {
-            breakpoint: 480,
-            options: {
-              chart: { height: 180 },
-              legend: { position: 'bottom' },
-              yaxis: { labels: { style: { fontSize: '9px' } } },
-              xaxis: { labels: { style: { fontSize: '9px' } } },
-            },
-          },
-        ],
       };
     case ChartTypes.BinaryChart:
       return {
@@ -241,27 +149,9 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
             style: { colors: '#ccc', fontSize: '12px' },
           },
         },
-        tooltip: extra?.tooltip ?? { theme: 'dark', x: { format: 'dd MMM HH:mm' } },
-        grid: { borderColor: 'rgba(255,255,255,0.15)', padding: { left: 0, right: 0, top: 0, bottom: 0 } },
+        tooltip: extra?.tooltip ?? { theme: 'dark' },
+        grid: { borderColor: 'rgba(255,255,255,0.12)', padding: { left: 0, right: 0, top: 0, bottom: 0 } },
         legend: { show: false },
-        responsive: [
-          {
-            breakpoint: 768,
-            options: {
-              chart: { height: 230 },
-              plotOptions: { bar: { barHeight: '60%' } },
-              xaxis: { labels: { style: { fontSize: '10px' } } },
-            },
-          },
-          {
-            breakpoint: 480,
-            options: {
-              chart: { height: 190 },
-              plotOptions: { bar: { barHeight: '55%' } },
-              xaxis: { labels: { style: { fontSize: '9px' } } },
-            },
-          },
-        ],
       };
 
     default:

@@ -91,6 +91,7 @@ declare module 'vue' {
     NavigationMenuBar: typeof import('./src/components/controls/NavigationMenuBar.vue')['default']
     Notifications: typeof import('./src/components/hub/alerts/Notifications.vue')['default']
     NumericChart: typeof import('./src/components/chart/NumericChart.vue')['default']
+    NumericChartHeader: typeof import('./src/components/chart/NumericChartHeader.vue')['default']
     OAuthDialog: typeof import('./src/components/dialogs/OAuthDialog.vue')['default']
     Panel: typeof import('./src/components/controls/Panel.vue')['default']
     PanelMenu: typeof import('primevue/panelmenu')['default']
