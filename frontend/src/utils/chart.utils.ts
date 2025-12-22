@@ -87,17 +87,86 @@ export function mergeBinaryFlickers(ranges: BinaryRange[], minDurationMs: number
 
 export function toBinaryRangeBarData(ranges: BinaryRange[], colorOn: string, colorOff: string): RangeBarDataPoint[] {
   // Convert normalized ranges into Apex-compatible range-bar points.
+  const fadedOff = withAlpha(colorOff, 0.3);
   return ranges.map((range) => ({
-    x: range.value === 'true' ? 'On' : 'Off',
+    x: isBinaryOn(range.value) ? 'On' : 'Off',
     y: [range.start, range.end] as [number, number],
-    fillColor: range.value === 'true' ? colorOn : colorOff,
+    fillColor: isBinaryOn(range.value) ? colorOn : fadedOff,
   }));
 }
 
 // Resolve human-friendly label for a binary expose based on its name and value
 export function resolveBinaryLabel(exposeName: string, value: string | boolean): string {
-  const boolVal = typeof value === 'string' ? value === 'true' : !!value;
+  const boolVal = isBinaryOn(value);
   return getFormattedSensorValueByName(exposeName, boolVal);
+}
+
+export function isBinaryOn(value: string | boolean): boolean {
+  // Normalize common true/false string values.
+  if (typeof value === 'boolean') return value;
+  const normalized = value.toLowerCase();
+  return normalized === 'true' || normalized === 'on' || normalized === '1';
+}
+
+export function withAlpha(color: string, alpha: number): string {
+  // Convert #RRGGBB to rgba while leaving other formats untouched.
+  if (!color?.startsWith('#') || color.length !== 7) return color;
+  const r = parseInt(color.slice(1, 3), 16);
+  const g = parseInt(color.slice(3, 5), 16);
+  const b = parseInt(color.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+export function getBinaryStats(data: BinaryDataPoint[], endTimestamp = Date.now()): {
+  onCount: number;
+  offCount: number;
+  onPercentage: number;
+  onDurationMs: number;
+  offDurationMs: number;
+} {
+  // Aggregate counts and time-on vs time-off over the provided range.
+  if (!data?.length) {
+    return { onCount: 0, offCount: 0, onPercentage: 0, onDurationMs: 0, offDurationMs: 0 };
+  }
+
+  const points = data
+    .slice()
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .filter((point) => Number.isFinite(point.timestamp));
+
+  let onDuration = 0;
+  let offDuration = 0;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const current = points[i];
+    const next = points[i + 1];
+    const duration = Math.max(0, next.timestamp - current.timestamp);
+
+    if (isBinaryOn(current.value)) {
+      onDuration += duration;
+    } else {
+      offDuration += duration;
+    }
+  }
+
+  const last = points[points.length - 1];
+  const tailDuration = Math.max(0, endTimestamp - last.timestamp);
+  if (isBinaryOn(last.value)) {
+    onDuration += tailDuration;
+  } else {
+    offDuration += tailDuration;
+  }
+
+  const total = onDuration + offDuration;
+  const onPercentage = total > 0 ? (onDuration / total) * 100 : 0;
+
+  return {
+    onCount: points.filter((d) => isBinaryOn(d.value)).length,
+    offCount: points.filter((d) => !isBinaryOn(d.value)).length,
+    onPercentage,
+    onDurationMs: onDuration,
+    offDurationMs: offDuration,
+  };
 }
 
 export function renderRangeTooltip(name: string, label: string, start: number, end: number): string {

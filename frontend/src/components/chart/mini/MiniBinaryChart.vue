@@ -3,6 +3,7 @@
   import VueApexCharts from 'vue3-apexcharts';
   import { BinaryDataPoint } from '@/types/metrics.type';
   import { getExposeBinaryColour } from '@/contracts/chart';
+  import { getBinaryStats, isBinaryOn } from '@/utils/chart.utils';
 
   const props = defineProps({
     data: {
@@ -31,8 +32,7 @@
     const points: Array<{ x: number; y: number }> = [];
 
     props.data.forEach((point) => {
-      const value =
-        point.value.toLowerCase() === 'true' || point.value.toLowerCase() === 'on' || point.value === '1' ? 1 : 0;
+      const value = isBinaryOn(point.value) ? 1 : 0;
 
       points.push({
         x: point.timestamp,
@@ -56,44 +56,11 @@
     ];
   });
   const stats = computed(() => {
-    if (!props.data || props.data.length === 0) {
-      return { onCount: 0, offCount: 0, onPercentage: 0 };
-    }
-
-    let onDuration = 0;
-    let offDuration = 0;
-
-    for (let i = 0; i < props.data.length - 1; i++) {
-      const current = props.data[i];
-      const next = props.data[i + 1];
-      const duration = next.timestamp - current.timestamp;
-
-      if (current.value.toLowerCase() === 'on' || current.value.toLowerCase() === 'true') {
-        onDuration += duration;
-      } else {
-        offDuration += duration;
-      }
-    }
-
-    // Handle last data point
-    if (props.data.length > 0) {
-      const last = props.data[props.data.length - 1];
-      const duration = Date.now() - last.timestamp;
-
-      if (last.value.toLowerCase() === 'on' || last.value.toLowerCase() === 'true') {
-        onDuration += duration;
-      } else {
-        offDuration += duration;
-      }
-    }
-
-    const total = onDuration + offDuration;
-    const onPercentage = total > 0 ? (onDuration / total) * 100 : 0;
-
+    const result = getBinaryStats(props.data ?? []);
     return {
-      onCount: props.data.filter((d) => d.value.toLowerCase() === 'on' || d.value.toLowerCase() === 'true').length,
-      offCount: props.data.filter((d) => d.value.toLowerCase() === 'off' || d.value.toLowerCase() === 'false').length,
-      onPercentage: onPercentage.toFixed(0),
+      onCount: result.onCount,
+      offCount: result.offCount,
+      onPercentage: result.onPercentage.toFixed(0),
     };
   });
 

@@ -1,13 +1,13 @@
 <script setup lang="ts">
   import { store } from '../../store/index';
-  import { computed, onMounted, ref, watch } from 'vue';
+  import { computed, ref, watch } from 'vue';
   import { DeviceMetricsRequest, DeviceMetrics, DeviceExposeMetrics } from '@/types/metrics.type';
   import Selection from '../input/Selection.vue';
   import { KeyValuePair } from '@/types/types.type';
   import { toUnix } from '@/utils/date.utils';
   import { groupMetricsByType } from '@/contracts/metrics';
   import { ChartComponents } from '@/mixins/useChartComponents';
-  import { PeriodType, PeriodOptions, PeriodTypes } from '@/types/chart.type';
+  import { ChartType, ChartTypes, PeriodType, PeriodOptions, PeriodTypes } from '@/types/chart.type';
   import { getPeriodOffset } from '@/contracts/chart';
 
   const props = defineProps({
@@ -47,6 +47,31 @@
 
     return groupMetricsByType(results) as KeyValuePair<DeviceExposeMetrics[]>;
   });
+
+  const orderedMetrics = computed(() => {
+    const grouped = groupedMetrics.value;
+    const ordered: Array<{ chartType: ChartType; metrics: DeviceExposeMetrics[] }> = [];
+    const chartOrder: ChartType[] = [ChartTypes.NumericChart, ChartTypes.BinaryChart];
+
+    chartOrder.forEach((chartType) => {
+      const metrics = grouped[chartType];
+      if (metrics?.length) {
+        ordered.push({ chartType, metrics });
+      }
+    });
+
+    Object.keys(grouped)
+      .filter((chartType) => !chartOrder.includes(chartType as ChartType))
+      .sort()
+      .forEach((chartType) => {
+        const metrics = grouped[chartType];
+        if (metrics?.length) {
+          ordered.push({ chartType: chartType as ChartType, metrics });
+        }
+      });
+
+    return ordered;
+  });
 </script>
 
 <template>
@@ -66,9 +91,9 @@
   <div v-else-if="!hasMetrics">
     <p>No metrics available</p>
   </div>
-  <div v-for="(metrics, chartType) in groupedMetrics">
+  <div v-for="entry in orderedMetrics" :key="entry.chartType">
     <div class="w-full px-0 py-0">
-      <component :is="ChartComponents[chartType]" v-bind="{ chartData: metrics }"> </component>
+      <component :is="ChartComponents[entry.chartType]" v-bind="{ chartData: entry.metrics }"> </component>
     </div>
   </div>
 </template>
