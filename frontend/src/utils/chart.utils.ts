@@ -111,6 +111,14 @@ export function toBinaryRangeBarData(ranges: BinaryRange[], colorOn: string, col
   }));
 }
 
+export function isEnergyExpose(exposeName?: string, unit?: string): boolean {
+  const name = (exposeName ?? '').toLowerCase();
+  const unitValue = (unit ?? '').toLowerCase();
+  if (unitValue.includes('kwh') || unitValue.includes('wh')) return true;
+  const keywords = ['energy', 'consumption', 'energy_total', 'total_energy', 'daily_energy', 'monthly_energy'];
+  return keywords.some((keyword) => name.includes(keyword));
+}
+
 // Resolve human-friendly label for a binary expose based on its name and value
 export function resolveBinaryLabel(exposeName: string, value: string | boolean): string {
   const boolVal = isBinaryOn(value);
