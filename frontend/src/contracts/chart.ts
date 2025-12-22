@@ -59,24 +59,28 @@ export const getExposeColor = (exposeName: string): ColorValue => {
 
 export const ExposeBinaryColours: KeyValuePair<ExposeBinaryColor> = {
   presence: {
-    on: ColorTypes.EmeraldGreen,
-    off: ColorTypes.SlateGrey,
+    on: ColorTypes.BrightGreen,
+    off: ColorTypes.BrightRed,
+  },
+  contact: {
+    on: ColorTypes.AzureBlue,
+    off: ColorTypes.BrightRed,
   },
   state: {
-    on: ColorTypes.EmeraldGreen,
-    off: ColorTypes.SlateGrey,
+    on: ColorTypes.BrightGreen,
+    off: ColorTypes.BrightRed,
   },
   tamper: {
-    on: ColorTypes.Red,
-    off: ColorTypes.SlateGrey,
+    on: ColorTypes.BrightRed,
+    off: ColorTypes.BrightGreen,
   },
 };
 
 export const getExposeBinaryColour = (exposeName: string): ExposeBinaryColor => {
   return (
     ExposeBinaryColours[exposeName] ?? {
-      on: ColorTypes.EmeraldGreen,
-      off: ColorTypes.SlateGrey,
+      on: ColorTypes.BrightGreen,
+      off: ColorTypes.BrightRed,
     }
   );
 };

@@ -85,9 +85,25 @@ export function mergeBinaryFlickers(ranges: BinaryRange[], minDurationMs: number
   return merged;
 }
 
+export function getBinaryRanges(
+  data: BinaryDataPoint[],
+  from: number,
+  to: number,
+  minDurationMs = 0
+): BinaryRange[] {
+  if (!data?.length) return [];
+  const sorted = data
+    .slice()
+    .filter((point) => Number.isFinite(point.timestamp))
+    .sort((a, b) => a.timestamp - b.timestamp);
+  if (sorted.length === 0) return [];
+  const normalized = normalizeBinaryEvents(sorted, from, to);
+  return minDurationMs > 0 ? mergeBinaryFlickers(normalized, minDurationMs) : normalized;
+}
+
 export function toBinaryRangeBarData(ranges: BinaryRange[], colorOn: string, colorOff: string): RangeBarDataPoint[] {
   // Convert normalized ranges into Apex-compatible range-bar points.
-  const fadedOff = withAlpha(colorOff, 0.3);
+  const fadedOff = withAlpha(colorOff, 0.8);
   return ranges.map((range) => ({
     x: isBinaryOn(range.value) ? 'On' : 'Off',
     y: [range.start, range.end] as [number, number],
@@ -117,7 +133,10 @@ export function withAlpha(color: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-export function getBinaryStats(data: BinaryDataPoint[], endTimestamp = Date.now()): {
+export function getBinaryStats(
+  data: BinaryDataPoint[],
+  endTimestamp = Date.now()
+): {
   onCount: number;
   offCount: number;
   onPercentage: number;
@@ -169,7 +188,7 @@ export function getBinaryStats(data: BinaryDataPoint[], endTimestamp = Date.now(
   };
 }
 
-export function renderRangeTooltip(name: string, label: string, start: number, end: number): string {
+export function renderRangeTooltip(name: string, label: string, start: number, end: number, color?: string): string {
   // HTML tooltip for binary range bars with readable time/duration.
   const durationMs = Math.max(0, end - start);
   const fmtOpts: Intl.DateTimeFormatOptions = {
@@ -181,8 +200,11 @@ export function renderRangeTooltip(name: string, label: string, start: number, e
   const startStr = new Date(start).toLocaleString(undefined, fmtOpts);
   const endStr = new Date(end).toLocaleString(undefined, fmtOpts);
   const durStr = formatDuration(durationMs);
-  return `<div style='background:#1f2937;color:#f8fafc;padding:8px 10px;border-radius:6px;font-size:12px;min-width:180px;'>
-      <div style='font-weight:600;margin-bottom:4px;'>${name}: ${label}</div>
+  const swatch = color
+    ? `<span style='display:inline-block;width:8px;height:8px;border-radius:999px;background:${color};margin-right:6px;'></span>`
+    : '';
+  return `<div style='background:#1f2937;color:#f8fafc;padding:6px 8px;border-radius:6px;font-size:11px;min-width:140px;'>
+      <div style='font-weight:600;margin-bottom:4px;'>${swatch}${name}: ${label}</div>
       <div><span style='color:#94a3b8;'>From:</span> ${startStr}</div>
       <div><span style='color:#94a3b8;'>To:</span> ${endStr}</div>
       <div><span style='color:#94a3b8;'>Duration:</span> ${durStr}</div>

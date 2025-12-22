@@ -6,9 +6,8 @@
   import { getExposeBinaryColour, resolveChartOptions } from '@/contracts/chart';
   import { ChartTypes } from '@/types/chart.type';
   import {
+    getBinaryRanges,
     getBinaryStats,
-    normalizeBinaryEvents,
-    mergeBinaryFlickers,
     toBinaryRangeBarData,
     renderRangeTooltip,
     resolveBinaryLabel,
@@ -36,20 +35,22 @@
   const activeLabel = computed(() => resolveBinaryLabel(props.chartData?.name ?? '', true));
   const stats = computed(() => getBinaryStats(props.chartData?.data ?? [], range.value.to));
 
+  const chartOffsetX = -52;
+
+  const mergedRanges = computed(() => {
+    if (!props.chartData?.data) return [];
+    const rangeMs = Math.max(0, range.value.to - range.value.from);
+    const flickerThreshold = Math.max(15_000, Math.round(rangeMs / 1200));
+    return getBinaryRanges(props.chartData.data, range.value.from, range.value.to, flickerThreshold);
+  });
+
   const series = computed<ApexAxisChartSeries>(() => {
     if (!props.chartData?.data) return [];
 
-    const { data, name } = props.chartData;
-    const sorted = data
-      .slice()
-      .filter((point) => Number.isFinite(point.timestamp))
-      .sort((a, b) => a.timestamp - b.timestamp);
-    if (sorted.length === 0) return [];
-    const rangeMs = Math.max(0, range.value.to - range.value.from);
-    const flickerThreshold = Math.max(15_000, Math.round(rangeMs / 1200));
-    const normalizedRanges = normalizeBinaryEvents(sorted, range.value.from, range.value.to);
-    const mergedRanges = mergeBinaryFlickers(normalizedRanges, flickerThreshold);
-    const apexDataRaw = toBinaryRangeBarData(mergedRanges, colors.value.on, colors.value.off);
+    const { name } = props.chartData;
+    const ranges = mergedRanges.value;
+    if (ranges.length === 0) return [];
+    const apexDataRaw = toBinaryRangeBarData(ranges, colors.value.on, colors.value.off);
     const apexData = apexDataRaw.map((d) => ({
       ...d,
       x: name ?? 'State',
@@ -64,20 +65,25 @@
     ];
   });
 
+
   const options = computed(() => {
     return resolveChartOptions(ChartTypes.BinaryChart, {
       chart: {
-        offsetX: -52,
+        offsetX: chartOffsetX,
       },
       plotOptions: {
         bar: {
           barHeight: '28%',
-          borderRadius: 0,
+          borderRadius: 4,
+          dataLabels: {
+            position: 'center',
+            hideOverflowingLabels: true,
+          },
         },
       },
       stroke: {
-        width: 1,
-        colors: ['rgba(15, 23, 42, 0.7)'],
+        width: 1.5,
+        colors: ['rgba(15, 23, 42, 0.75)'],
       },
       fill: {
         opacity: 1,
@@ -109,12 +115,13 @@
       tooltip: {
         theme: 'dark',
         x: { format: 'dd MMM HH:mm' },
+        followCursor: true,
         custom: ({ w, seriesIndex, dataPointIndex }: { w: any; seriesIndex: number; dataPointIndex: number }) => {
           const d = w.config.series[seriesIndex].data[dataPointIndex];
           const start: number = Array.isArray(d.y) ? d.y[0] : d.y?.from ?? d.y ?? 0;
           const end: number = Array.isArray(d.y) ? d.y[1] : d.y?.to ?? d.y ?? 0;
           const label: string = d.stateLabel ?? (typeof d.x === 'string' ? d.x : d.x?.toString?.() ?? '');
-          return renderRangeTooltip(props.chartData.name ?? 'State', label, start, end);
+          return renderRangeTooltip(props.chartData.name ?? 'State', label, start, end, d.fillColor);
         },
       },
     });
@@ -139,7 +146,9 @@
         </div>
       </div>
     </div>
-    <BaseChart :options="options" :data="series" :width="'100%'" :height="180" />
+    <div class="chart-body">
+      <BaseChart :options="options" :data="series" :width="'100%'" :height="180" />
+    </div>
   </div>
 </template>
 
@@ -149,8 +158,24 @@
     display: none;
   }
 
+  :deep(.apexcharts-rangebar-area) {
+    transition: filter 0.15s ease;
+  }
+
+  :deep(.apexcharts-rangebar-area:hover) {
+    filter: drop-shadow(0 0 6px rgba(226, 232, 240, 0.45));
+  }
+
+  :deep(.apexcharts-tooltip) {
+    transform: translateY(-58px);
+  }
+
   .binary-chart {
     padding: 8px 0 18px;
+  }
+
+  .chart-body {
+    position: relative;
   }
 
   .chart-header {

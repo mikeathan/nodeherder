@@ -313,6 +313,25 @@ export const mockMetricsData = {
       ],
     },
   },
+  '0x00124b002fa5844e': {
+    contact: {
+      name: 'contact',
+      type: 'binary',
+      from: 1763236923000,
+      to: 1763323323000,
+      data: [
+        { timestamp: 1763321416429, value: 'true' },
+        { timestamp: 1763322000000, value: 'false' },
+        { timestamp: 1763322060000, value: 'true' },
+        { timestamp: 1763325000000, value: 'false' },
+        { timestamp: 1763325060000, value: 'true' },
+        { timestamp: 1763328500000, value: 'false' },
+        { timestamp: 1763328560000, value: 'true' },
+        { timestamp: 1763330500000, value: 'false' },
+        { timestamp: 1763330560000, value: 'true' },
+      ],
+    },
+  },
 };
 
 /**
@@ -364,4 +383,15 @@ export function getMetricsForDevice(deviceId, expose, from, to) {
     to: to,
     data: adjustedData,
   };
+}
+
+export function getAllMetricsForDevice(deviceId, from, to) {
+  const deviceData = mockMetricsData[deviceId];
+  if (!deviceData) {
+    return [];
+  }
+
+  return Object.keys(deviceData)
+    .map((expose) => getMetricsForDevice(deviceId, expose, from, to))
+    .filter(Boolean);
 }

@@ -3,7 +3,13 @@
   import VueApexCharts from 'vue3-apexcharts';
   import { BinaryDataPoint } from '@/types/metrics.type';
   import { getExposeBinaryColour } from '@/contracts/chart';
-  import { getBinaryStats, isBinaryOn } from '@/utils/chart.utils';
+  import {
+    getBinaryRanges,
+    getBinaryStats,
+    toBinaryRangeBarData,
+    renderRangeTooltip,
+    resolveBinaryLabel,
+  } from '@/utils/chart.utils';
 
   const props = defineProps({
     data: {
@@ -25,33 +31,30 @@
     return [color.on, color.off];
   });
 
-  // Transform binary data into step line (Home Assistant style)
+  // Compact range bar to keep binary states readable at small sizes.
   const chartData = computed(() => {
     if (!props.data || props.data.length === 0) return [];
 
-    const points: Array<{ x: number; y: number }> = [];
+    const now = Date.now();
+    const from = props.data.reduce((min, point) => {
+      if (!Number.isFinite(point.timestamp)) return min;
+      return Math.min(min, point.timestamp);
+    }, Number.POSITIVE_INFINITY);
 
-    props.data.forEach((point) => {
-      const value = isBinaryOn(point.value) ? 1 : 0;
+    if (!Number.isFinite(from)) return [];
 
-      points.push({
-        x: point.timestamp,
-        y: value,
-      });
-    });
-
-    // Add current time with last value
-    if (points.length > 0) {
-      points.push({
-        x: Date.now(),
-        y: points[points.length - 1].y,
-      });
-    }
+    const ranges = getBinaryRanges(props.data, from, now);
+    const apexDataRaw = toBinaryRangeBarData(ranges, colors.value[0], colors.value[1]);
+    const apexData = apexDataRaw.map((d) => ({
+      ...d,
+      x: props.exposeName,
+      stateValue: d.x === 'On' ? 'true' : 'false',
+    }));
 
     return [
       {
         name: props.exposeName,
-        data: points,
+        data: apexData,
       },
     ];
   });
@@ -66,29 +69,31 @@
 
   const chartOptions = computed(() => ({
     chart: {
-      type: 'area',
-      toolbar: {
-        show: false,
-      },
+      type: 'rangeBar',
+      toolbar: { show: false },
       background: 'transparent',
     },
-    stroke: {
-      curve: 'stepline',
-      width: 2.5,
-    },
-    fill: {
-      type: 'gradient',
-      gradient: {
-        shadeIntensity: 1,
-        opacityFrom: 0.6,
-        opacityTo: 0.1,
-        stops: [0, 100],
+    plotOptions: {
+      bar: {
+        horizontal: true,
+        barHeight: '85%',
+        borderRadius: 8,
       },
     },
-    colors: [colors.value[0]],
+    stroke: {
+      width: 2,
+      colors: ['rgba(15, 23, 42, 0.9)'],
+    },
+    fill: {
+      opacity: 1,
+    },
+    colors: [colors.value[0], colors.value[1]],
     grid: {
       borderColor: '#333',
       strokeDashArray: 3,
+      yaxis: {
+        lines: { show: true },
+      },
       padding: {
         left: 10,
         right: 10,
@@ -114,28 +119,25 @@
       },
     },
     yaxis: {
-      min: 0,
-      max: 1,
       show: false,
     },
     tooltip: {
       enabled: true,
       theme: 'dark',
-      x: {
-        format: 'dd MMM HH:mm',
-      },
-      y: {
-        formatter: (value: number) => {
-          return value === 1 ? 'On' : 'Off';
-        },
+      followCursor: true,
+      custom: ({ w, seriesIndex, dataPointIndex }: { w: any; seriesIndex: number; dataPointIndex: number }) => {
+        const d = w.config.series[seriesIndex].data[dataPointIndex];
+        const start: number = Array.isArray(d.y) ? d.y[0] : d.y?.from ?? d.y ?? 0;
+        const end: number = Array.isArray(d.y) ? d.y[1] : d.y?.to ?? d.y ?? 0;
+        const stateValue: string = d.stateValue ?? 'false';
+        const label = resolveBinaryLabel(props.exposeName, stateValue);
+        return renderRangeTooltip(props.exposeName, label, start, end, d.fillColor);
       },
     },
     legend: {
       show: false,
     },
-    markers: {
-      size: 0,
-    },
+    dataLabels: { enabled: false },
   }));
 </script>
 
@@ -183,9 +185,21 @@
     text-transform: uppercase;
   }
 
-  .stat-value {
-    font-size: 14px;
-    font-weight: 600;
-    color: #fff;
-  }
+.stat-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+:deep(.apexcharts-rangebar-area) {
+  transition: filter 0.15s ease;
+}
+
+:deep(.apexcharts-rangebar-area:hover) {
+  filter: drop-shadow(0 0 6px rgba(226, 232, 240, 0.45));
+}
+
+:deep(.apexcharts-tooltip) {
+  transform: translateY(-52px);
+}
 </style>
