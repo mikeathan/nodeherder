@@ -332,6 +332,53 @@ export const mockMetricsData = {
       ],
     },
   },
+  '0xa4c138c383ac3fc8': {
+    battery: {
+      name: 'battery',
+      type: 'numeric',
+      data: [
+        { x: 1763321400000, y: 95 },
+        { x: 1763325000000, y: 94 },
+        { x: 1763328600000, y: 94 },
+        { x: 1763332200000, y: 93 },
+        { x: 1763335800000, y: 92 },
+        { x: 1763339400000, y: 92 },
+        { x: 1763343000000, y: 91 },
+        { x: 1763346600000, y: 91 },
+        { x: 1763350200000, y: 90 },
+        { x: 1763353800000, y: 90 },
+      ],
+    },
+    smoke: {
+      name: 'smoke',
+      type: 'binary',
+      from: 1763321400000,
+      to: 1763353800000,
+      data: [
+        { timestamp: 1763322000000, value: 'false' },
+        { timestamp: 1763330500000, value: 'true' },
+        { timestamp: 1763331100000, value: 'false' },
+        { timestamp: 1763342200000, value: 'true' },
+        { timestamp: 1763342600000, value: 'false' },
+      ],
+    },
+    smoke_concentration: {
+      name: 'smoke_concentration',
+      type: 'numeric',
+      data: [
+        { x: 1763321400000, y: 4 },
+        { x: 1763325000000, y: 6 },
+        { x: 1763328600000, y: 5 },
+        { x: 1763332200000, y: 12 },
+        { x: 1763335800000, y: 9 },
+        { x: 1763339400000, y: 7 },
+        { x: 1763343000000, y: 18 },
+        { x: 1763346600000, y: 10 },
+        { x: 1763350200000, y: 6 },
+        { x: 1763353800000, y: 5 },
+      ],
+    },
+  },
   '0xa4c13801b36effff': {
     energy_today: {
       name: 'energy_today',

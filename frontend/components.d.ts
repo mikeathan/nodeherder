@@ -87,6 +87,7 @@ declare module 'vue' {
     MiniEnergyChart: typeof import('./src/components/chart/mini/MiniEnergyChart.vue')['default']
     MiniInstantChart: typeof import('./src/components/chart/mini/MiniInstantChart.vue')['default']
     MiniNumericChart: typeof import('./src/components/chart/mini/MiniNumericChart.vue')['default']
+    MiniPercentChart: typeof import('./src/components/chart/mini/MiniPercentChart.vue')['default']
     MiniRealtimeChart: typeof import('./src/components/chart/mini/MiniRealtimeChart.vue')['default']
     MultiSelection: typeof import('./src/components/input/MultiSelection.vue')['default']
     NavigationBar: typeof import('./src/components/controls/NavigationBar.vue')['default']

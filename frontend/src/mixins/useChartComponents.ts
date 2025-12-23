@@ -12,6 +12,7 @@ export const ChartComponents: ChartMap = {
 
 export const MiniChartComponents: ChartMap = {
   MiniNumericChart: defineAsyncComponent(() => import('../components/chart/mini/MiniNumericChart.vue')),
+  MiniPercentChart: defineAsyncComponent(() => import('../components/chart/mini/MiniPercentChart.vue')),
   MiniRealtimeChart: defineAsyncComponent(() => import('../components/chart/mini/MiniRealtimeChart.vue')),
   MiniEnergyChart: defineAsyncComponent(() => import('../components/chart/mini/MiniEnergyChart.vue')),
   MiniBinaryChart: defineAsyncComponent(() => import('../components/chart/mini/MiniBinaryChart.vue')),

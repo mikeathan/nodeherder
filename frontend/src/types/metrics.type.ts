@@ -10,6 +10,7 @@ export type MetricsType = (typeof MetricsTypes)[keyof typeof MetricsTypes];
 
 export type MiniChartComponentKey =
   | 'MiniEnergyChart'
+  | 'MiniPercentChart'
   | 'MiniRealtimeChart'
   | 'MiniNumericChart'
   | 'MiniBinaryChart';

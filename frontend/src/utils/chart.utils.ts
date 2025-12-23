@@ -115,12 +115,14 @@ export function toBinaryRangeBarData(ranges: BinaryRange[], colorOn: string, col
 const UNIT_SETS = {
   energy: new Set(['wh', 'kwh']),
   power: new Set(['w', 'kw']),
-  realtime: new Set(['a', 'ma', 'v', 'kv', 'mv']),
+  realtime: new Set(['a', 'ma', 'v', 'kv', 'mv', 'lux']),
+  percent: new Set(['%']),
 };
 
 const EXPOSE_KEYWORDS = {
   energy: ['energy', 'consumption', 'energy_total', 'total_energy', 'daily_energy', 'monthly_energy'],
-  realtime: ['current', 'voltage'],
+  realtime: ['current', 'voltage', 'illuminance'],
+  percent: ['battery', 'battery_percentage', 'battery_percent', 'battery_level', 'battpercentage'],
 };
 
 const DEFAULT_GAUGE_MAX_BY_UNIT: Record<string, number> = {
@@ -150,6 +152,10 @@ export function isRealtimeUnit(unit?: string): boolean {
   return UNIT_SETS.realtime.has(normalizeUnit(unit));
 }
 
+export function isPercentUnit(unit?: string): boolean {
+  return UNIT_SETS.percent.has(normalizeUnit(unit));
+}
+
 export function isEnergyExpose(exposeName?: string, unit?: string): boolean {
   if (isEnergyUnit(unit)) return true;
   const name = normalizeExposeName(exposeName);
@@ -160,6 +166,14 @@ export function isRealtimeExpose(exposeName?: string, unit?: string): boolean {
   if (isRealtimeUnit(unit)) return true;
   const name = normalizeExposeName(exposeName);
   return EXPOSE_KEYWORDS.realtime.some((keyword) => name.includes(keyword));
+}
+
+export function isPercentExpose(exposeName?: string, unit?: string): boolean {
+  const name = normalizeExposeName(exposeName);
+  const matches = EXPOSE_KEYWORDS.percent.some((keyword) => name === keyword);
+  if (!matches) return false;
+  if (!unit) return true;
+  return isPercentUnit(unit);
 }
 
 export function getDefaultGaugeMax(unit?: string): number {
@@ -175,6 +189,7 @@ export function resolveMiniChartComponentKey(
   if (type === MetricsTypes.Binary) return 'MiniBinaryChart';
   if (type !== MetricsTypes.Numeric) return null;
   if (isEnergyExpose(exposeName, unit)) return 'MiniEnergyChart';
+  if (isPercentExpose(exposeName, unit)) return 'MiniPercentChart';
   if (isRealtimeExpose(exposeName, unit)) return 'MiniRealtimeChart';
   return 'MiniNumericChart';
 }

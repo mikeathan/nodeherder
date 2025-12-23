@@ -197,6 +197,8 @@
     width: 100%;
     margin-bottom: 1.5rem;
     position: relative;
+    padding-top: 0.25rem;
+    padding-right: 2.5rem;
   }
 
   .chart-refresh-btn {
