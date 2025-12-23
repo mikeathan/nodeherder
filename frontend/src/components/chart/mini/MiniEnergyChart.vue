@@ -3,7 +3,7 @@
   import VueApexCharts from 'vue3-apexcharts';
   import { NumericDataPoint } from '@/types/metrics.type';
   import { getFormattedSensorValueByName, getSensorName } from '@/modules/formatters/sensor-formatter';
-  import { normalizeNumericData } from '@/utils/chart.utils';
+  import { getDefaultGaugeMax, isPowerUnit, normalizeNumericData } from '@/utils/chart.utils';
 
   const props = defineProps({
     data: {
@@ -39,19 +39,9 @@
     return points[points.length - 1]?.y ?? 0;
   });
 
-  const isPowerUnit = computed(() => {
-    const unit = props.unit.toLowerCase();
-    return unit === 'w' || unit === 'kw';
-  });
-
   const gaugeMax = computed(() => {
     if (Number.isFinite(props.maxValue)) return props.maxValue as number;
-    const unit = props.unit.toLowerCase();
-    if (unit === 'w') return 1000;
-    if (unit === 'kw') return 5;
-    if (unit.includes('kwh')) return 10;
-    if (unit.includes('wh')) return 1000;
-    return 100;
+    return getDefaultGaugeMax(props.unit);
   });
 
   const gaugePercent = computed(() => {
@@ -65,7 +55,7 @@
   const gaugeSeries = computed(() => [1, 1, 1, 1]);
 
   const label = computed(() => {
-    if (isPowerUnit.value) return 'Current Electricity Usage';
+    if (isPowerUnit(props.unit)) return 'Current Electricity Usage';
     return getSensorName(props.exposeName);
   });
 

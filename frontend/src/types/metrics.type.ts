@@ -8,6 +8,12 @@ export const MetricsTypes = {
 
 export type MetricsType = (typeof MetricsTypes)[keyof typeof MetricsTypes];
 
+export type MiniChartComponentKey =
+  | 'MiniEnergyChart'
+  | 'MiniRealtimeChart'
+  | 'MiniNumericChart'
+  | 'MiniBinaryChart';
+
 export interface BinaryRange {
   value: string;
   start: number;

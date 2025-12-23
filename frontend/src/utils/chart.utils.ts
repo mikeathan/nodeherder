@@ -7,6 +7,7 @@ import type {
 } from '@/types/metrics.type';
 import { formatDuration } from './date.utils';
 import { getFormattedSensorValueByName } from '@/modules/formatters/sensor-formatter';
+import { MetricsTypes, type MetricsType, type MiniChartComponentKey } from '@/types/metrics.type';
 
 /**
  * Normalizes binary events into continuous time ranges.
@@ -111,12 +112,71 @@ export function toBinaryRangeBarData(ranges: BinaryRange[], colorOn: string, col
   }));
 }
 
+const UNIT_SETS = {
+  energy: new Set(['wh', 'kwh']),
+  power: new Set(['w', 'kw']),
+  realtime: new Set(['a', 'ma', 'v', 'kv', 'mv']),
+};
+
+const EXPOSE_KEYWORDS = {
+  energy: ['energy', 'consumption', 'energy_total', 'total_energy', 'daily_energy', 'monthly_energy'],
+  realtime: ['current', 'voltage'],
+};
+
+const DEFAULT_GAUGE_MAX_BY_UNIT: Record<string, number> = {
+  w: 1000,
+  kw: 5,
+  wh: 1000,
+  kwh: 10,
+};
+
+function normalizeUnit(unit?: string): string {
+  return (unit ?? '').toLowerCase().trim();
+}
+
+function normalizeExposeName(exposeName?: string): string {
+  return (exposeName ?? '').toLowerCase();
+}
+
+export function isEnergyUnit(unit?: string): boolean {
+  return UNIT_SETS.energy.has(normalizeUnit(unit));
+}
+
+export function isPowerUnit(unit?: string): boolean {
+  return UNIT_SETS.power.has(normalizeUnit(unit));
+}
+
+export function isRealtimeUnit(unit?: string): boolean {
+  return UNIT_SETS.realtime.has(normalizeUnit(unit));
+}
+
 export function isEnergyExpose(exposeName?: string, unit?: string): boolean {
-  const name = (exposeName ?? '').toLowerCase();
-  const unitValue = (unit ?? '').toLowerCase();
-  if (unitValue.includes('kwh') || unitValue.includes('wh')) return true;
-  const keywords = ['energy', 'consumption', 'energy_total', 'total_energy', 'daily_energy', 'monthly_energy'];
-  return keywords.some((keyword) => name.includes(keyword));
+  if (isEnergyUnit(unit)) return true;
+  const name = normalizeExposeName(exposeName);
+  return EXPOSE_KEYWORDS.energy.some((keyword) => name.includes(keyword));
+}
+
+export function isRealtimeExpose(exposeName?: string, unit?: string): boolean {
+  if (isRealtimeUnit(unit)) return true;
+  const name = normalizeExposeName(exposeName);
+  return EXPOSE_KEYWORDS.realtime.some((keyword) => name.includes(keyword));
+}
+
+export function getDefaultGaugeMax(unit?: string): number {
+  const normalized = normalizeUnit(unit);
+  return DEFAULT_GAUGE_MAX_BY_UNIT[normalized] ?? 100;
+}
+
+export function resolveMiniChartComponentKey(
+  type?: MetricsType | string,
+  exposeName?: string,
+  unit?: string
+): MiniChartComponentKey | null {
+  if (type === MetricsTypes.Binary) return 'MiniBinaryChart';
+  if (type !== MetricsTypes.Numeric) return null;
+  if (isEnergyExpose(exposeName, unit)) return 'MiniEnergyChart';
+  if (isRealtimeExpose(exposeName, unit)) return 'MiniRealtimeChart';
+  return 'MiniNumericChart';
 }
 
 // Resolve human-friendly label for a binary expose based on its name and value
