@@ -2,6 +2,7 @@
   import { computed } from 'vue';
   import type { PropType } from 'vue';
   import MiniNumericChart from './MiniNumericChart.vue';
+  import MiniRealtimeChart from './MiniRealtimeChart.vue';
   import MiniBinaryChart from './MiniBinaryChart.vue';
   import MiniEnergyChart from './MiniEnergyChart.vue';
   import { MetricsTypes, type MetricsType } from '@/types/metrics.type';
@@ -34,15 +35,23 @@
   const isNumeric = computed(() => props.type === MetricsTypes.Numeric);
   const isBinary = computed(() => props.type === MetricsTypes.Binary);
   const isEnergy = computed(() => isNumeric.value && isEnergyExpose(props.exposeName, props.unit));
+  const isInstant = computed(() => {
+    const unit = props.unit.toLowerCase();
+    if (unit === 'a' || unit === 'ma' || unit === 'v' || unit === 'kv') return true;
+    const name = props.exposeName.toLowerCase();
+    return name.includes('current') || name.includes('voltage');
+  });
 </script>
 
 <template>
   <MiniEnergyChart v-if="isEnergy" :data="data as any" :exposeName="exposeName" :unit="unit" :height="height" />
-  <MiniNumericChart
-    v-else-if="isNumeric"
+  <MiniRealtimeChart
+    v-else-if="isNumeric && isInstant"
     :data="data as any"
     :exposeName="exposeName"
     :unit="unit"
-    :height="height" />
+    :height="height"
+  />
+  <MiniNumericChart v-else-if="isNumeric" :data="data as any" :exposeName="exposeName" :unit="unit" :height="height" />
   <MiniBinaryChart v-else-if="isBinary" :data="data as any" :exposeName="exposeName" :height="height" />
 </template>

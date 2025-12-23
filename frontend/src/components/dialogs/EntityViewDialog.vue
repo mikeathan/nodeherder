@@ -48,7 +48,6 @@
     // Don't show chart if there's a brightness control
     const hasBrightnessControl = controlExposes.value.some((exp) => exp.name === 'brightness');
     if (hasBrightnessControl) return false;
-
     return (
       chartData.value.hasData && (expose.value.type === ExposeTypes.Numeric || expose.value.type === ExposeTypes.Binary)
     );

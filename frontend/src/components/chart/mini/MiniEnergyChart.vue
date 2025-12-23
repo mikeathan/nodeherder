@@ -2,8 +2,8 @@
   import { computed, PropType } from 'vue';
   import VueApexCharts from 'vue3-apexcharts';
   import { NumericDataPoint } from '@/types/metrics.type';
-  import { getExposeColor } from '@/contracts/chart';
-  import { downsampleNumericData, getNumericStats, normalizeNumericData } from '@/utils/chart.utils';
+  import { getFormattedSensorValueByName, getSensorName } from '@/modules/formatters/sensor-formatter';
+  import { normalizeNumericData } from '@/utils/chart.utils';
 
   const props = defineProps({
     data: {
@@ -26,156 +26,163 @@
       type: String,
       default: '',
     },
+    maxValue: {
+      type: Number,
+      default: undefined,
+    },
   });
 
   const normalizedData = computed(() => normalizeNumericData(props.data ?? []));
-  const downsampledData = computed(() => downsampleNumericData(normalizedData.value, 48));
-
-  const chartData = computed(() => [
-    {
-      name: props.exposeName,
-      data: downsampledData.value.map((point) => ({
-        x: point.x,
-        y: point.y,
-      })),
-    },
-  ]);
-
-  const barColor = computed(() => {
-    if (props.color) return props.color;
-    return getExposeColor(props.exposeName);
+  const lastValue = computed(() => {
+    const points = normalizedData.value;
+    if (!points.length) return 0;
+    return points[points.length - 1]?.y ?? 0;
   });
 
-  const stats = computed(() => {
-    const numericStats = getNumericStats(normalizedData.value);
-    if (!numericStats) {
-      return { total: 0, avg: 0, last: 0 };
-    }
+  const isPowerUnit = computed(() => {
+    const unit = props.unit.toLowerCase();
+    return unit === 'w' || unit === 'kw';
+  });
 
-    const points = normalizedData.value;
-    const first = points[0]?.y ?? 0;
-    const last = points[points.length - 1]?.y ?? 0;
-    const total = Math.max(0, last - first);
+  const gaugeMax = computed(() => {
+    if (Number.isFinite(props.maxValue)) return props.maxValue as number;
+    const unit = props.unit.toLowerCase();
+    if (unit === 'w') return 1000;
+    if (unit === 'kw') return 5;
+    if (unit.includes('kwh')) return 10;
+    if (unit.includes('wh')) return 1000;
+    return 100;
+  });
 
-    return { total, avg: numericStats.avg, last };
+  const gaugePercent = computed(() => {
+    const max = gaugeMax.value;
+    if (!Number.isFinite(max) || max <= 0) return 0;
+    return Math.min(1, Math.max(0, lastValue.value / max));
+  });
+
+  const needleRotation = computed(() => -90 + gaugePercent.value * 180);
+
+  const gaugeSeries = computed(() => [1, 1, 1, 1]);
+
+  const label = computed(() => {
+    if (isPowerUnit.value) return 'Current Electricity Usage';
+    return getSensorName(props.exposeName);
+  });
+
+  const formattedValue = computed(() => {
+    const raw = getFormattedSensorValueByName(props.exposeName, lastValue.value, props.unit);
+    if (!props.unit) return raw;
+    return raw.replace(/(\d)([a-zA-Z])/g, '$1 $2');
   });
 
   const chartOptions = computed(() => ({
     chart: {
-      type: 'bar',
-      toolbar: { show: false },
-      zoom: { enabled: false },
+      type: 'donut',
       background: 'transparent',
+      sparkline: { enabled: true },
     },
-    plotOptions: {
-      bar: {
-        columnWidth: '60%',
-        borderRadius: 4,
-      },
-    },
+    stroke: { width: 0 },
     dataLabels: { enabled: false },
-    stroke: {
-      width: 0,
-    },
-    fill: {
-      opacity: 0.9,
-    },
-    colors: [barColor.value],
-    grid: {
-      borderColor: '#333',
-      strokeDashArray: 3,
-      padding: {
-        left: 10,
-        right: 10,
-      },
-    },
-    xaxis: {
-      type: 'datetime',
-      labels: {
-        style: {
-          colors: '#999',
-          fontSize: '10px',
-        },
-        datetimeFormatter: {
-          hour: 'HH:mm',
-          minute: 'HH:mm',
+    plotOptions: {
+      pie: {
+        startAngle: -90,
+        endAngle: 90,
+        offsetY: 10,
+        donut: {
+          size: '72%',
         },
       },
-      axisBorder: { show: false },
-      axisTicks: { show: false },
     },
-    yaxis: {
-      labels: {
-        style: {
-          colors: '#999',
-          fontSize: '10px',
-        },
-        formatter: (value: number) => value.toFixed(1) + (props.unit ? ` ${props.unit}` : ''),
-      },
-    },
-    tooltip: {
-      enabled: true,
-      theme: 'dark',
-      x: { format: 'dd MMM HH:mm' },
-      y: {
-        formatter: (value: number) => value.toFixed(1) + (props.unit ? ` ${props.unit}` : ''),
-      },
-    },
+    colors: ['#2ecc71', '#7ed957', '#f4c430', '#e74c3c'],
+    tooltip: { enabled: false },
     legend: { show: false },
   }));
 </script>
 
 <template>
   <div class="mini-energy-chart">
-    <div class="chart-stats">
-      <div class="stat">
-        <span class="stat-label">Total</span>
-        <span class="stat-value">{{ stats.total.toFixed(1) }}{{ unit }}</span>
-      </div>
-      <div class="stat">
-        <span class="stat-label">Avg</span>
-        <span class="stat-value">{{ stats.avg.toFixed(1) }}{{ unit }}</span>
-      </div>
-      <div class="stat">
-        <span class="stat-label">Last</span>
-        <span class="stat-value">{{ stats.last.toFixed(1) }}{{ unit }}</span>
+    <div class="energy-gauge" :style="{ '--gauge-height': `${height}px` }">
+      <VueApexCharts :height="height" :options="chartOptions" :series="gaugeSeries" />
+      <div class="gauge-needle" :style="{ transform: `translateX(-50%) rotate(${needleRotation}deg)` }"></div>
+      <div class="gauge-center">
+        <div class="gauge-value">{{ formattedValue }}</div>
+        <div class="gauge-label">{{ label }}</div>
       </div>
     </div>
-    <VueApexCharts :height="height" :options="chartOptions" :series="chartData" />
   </div>
 </template>
 
 <style scoped>
   .mini-energy-chart {
     width: 100%;
-    padding: 0.5rem;
-    background: rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
+    padding: 0.75rem 0.75rem 0.5rem;
+    background: linear-gradient(145deg, #1f1f1f, #151515);
+    border-radius: 12px;
   }
 
-  .chart-stats {
+  .energy-gauge {
+    position: relative;
+    height: var(--gauge-height);
     display: flex;
-    justify-content: space-around;
-    margin-bottom: 0.5rem;
-    gap: 0.5rem;
-  }
-
-  .stat {
-    display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.1rem;
+    justify-content: center;
   }
 
-  .stat-label {
-    font-size: 10px;
-    color: #999;
-    text-transform: uppercase;
+  .gauge-needle {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 2px;
+    height: 30px;
+    background: #f8fafc;
+    transform-origin: bottom center;
+    border-radius: 999px;
+    box-shadow: 0 0 6px rgba(248, 250, 252, 0.6);
+    z-index: 3;
   }
 
-  .stat-value {
-    font-size: 14px;
+  .gauge-needle::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    background: #f8fafc;
+    border-radius: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 0 6px rgba(248, 250, 252, 0.7);
+  }
+
+  .gauge-center {
+    position: absolute;
+    left: 50%;
+    top: 64%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: #f8fafc;
+    z-index: 4;
+  }
+
+  .gauge-value {
+    font-size: 26px;
     font-weight: 600;
-    color: #fff;
+    letter-spacing: 0.5px;
+  }
+
+  .gauge-label {
+    font-size: 11px;
+    color: #cbd5e1;
+    margin-top: 2px;
+  }
+
+  :deep(.apexcharts-canvas) {
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  :deep(.apexcharts-svg) {
+    overflow: visible;
   }
 </style>
