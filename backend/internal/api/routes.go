@@ -353,6 +353,41 @@ func (h *HubStateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write(h.cachedHubState)
 }
 
+// Device Context Handler
+type DeviceContextHandler struct {
+	store     store.AppStore
+	limiter   *ratelimiter.RateLimiter
+	rateLimit time.Duration
+}
+
+func NewDeviceContextHandler(store store.AppStore, rateLimit time.Duration) *DeviceContextHandler {
+	return &DeviceContextHandler{
+		store:     store,
+		limiter:   ratelimiter.NewRateLimiter(),
+		rateLimit: rateLimit,
+	}
+}
+
+func (h *DeviceContextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	if !h.limiter.AllowWrite("DeviceContext", h.rateLimit) {
+		writeJSONError(w, http.StatusTooManyRequests, "rate limit exceeded")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+
+	state, err := h.store.LoadHubState()
+	if err != nil {
+		utils.LogErrorf("DeviceContextHandler: Failed to load hub state %s", err.Error())
+		writeJSONError(w, http.StatusInternalServerError, "Failed to load hub state")
+	}
+
+	for _, device := range state.Devices {
+	}
+}
+
 // Automation Trigger
 type AutomationTriggerHandler struct {
 	hub       automations.AutomationTrigger

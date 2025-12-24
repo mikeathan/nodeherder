@@ -563,3 +563,4 @@ func (device *Device) SetAvailable(value bool) {
 		device.Availability = OfflineAvailability
 	}
 }
+
