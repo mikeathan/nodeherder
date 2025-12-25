@@ -375,16 +375,19 @@ func (h *DeviceContextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-
-
 	state, err := h.store.LoadHubState()
 	if err != nil {
 		utils.LogErrorf("DeviceContextHandler: Failed to load hub state %s", err.Error())
 		writeJSONError(w, http.StatusInternalServerError, "Failed to load hub state")
+		return
 	}
 
-	for _, device := range state.Devices {
+	w.Header().Set("Content-Type", "application/json")
+	response := CreateDeviceContextResponse(state.Devices)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		utils.LogErrorf("DeviceContextHandler: Failed to encode response %s", err.Error())
+		writeJSONError(w, http.StatusInternalServerError, "Failed to encode response")
+		return
 	}
 }
 

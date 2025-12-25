@@ -40,12 +40,16 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	router.GET("/ws", api.NewWsHandler(ws))
 
 	// api routing
+	// protected routes
 	router.POST("/api/metrics/query", api.NewMetricsQueryHandler(ratelimiter.NewRateLimiter(), 1*time.Second, store))
 	router.POST("/api/collect", api.NewDataCollectorHandler(hub))
 	router.POST("/api/logfile", api.NewLogFileHandler(fservice))
 	router.POST("/api/automation/trigger", api.NewAutomationTriggerHandler(hub, 1*time.Second))
 	router.GET("/api/listlogs", api.NewListFileLogsHandler(fservice))
 	router.GET("/api/hubstate", api.NewHubStateHandler(store, 15*time.Minute))
+
+	// public routes
+	router.PublicGET("/api/context/devices", api.NewDeviceContextHandler(store, 1*time.Second))
 
 	// authentication routes
 	router.AddAuthentication(authProvider.OAuth())

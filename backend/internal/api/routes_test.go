@@ -13,6 +13,7 @@ import (
 	metricsquery "node-herder/internal/metrics/query"
 	"node-herder/internal/ratelimiter"
 	"node-herder/mocks"
+	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
 	"node-herder/models/logging"
@@ -813,4 +814,172 @@ func createMetricsQueryTestStore(t *testing.T) (store.AppStore, metricsdomain.Re
 	}
 
 	return appStore, metricsRepo, mockClock, cleanup
+}
+
+func TestDeviceContextHandler_ReturnsDeviceContext(t *testing.T) {
+
+	// load real store to get read hubstate data
+	store, err := utils_test.CreateStoreWithDevices()
+	if err != nil {
+		t.Fatalf("error creating store: %v", err)
+	}
+
+	hubState, err := store.LoadHubState()
+	if err != nil {
+		t.Fatalf("error loading hub state: %v", err)
+
+	}
+	// now configure mock store to assert that the hub state is loaded only once
+	callCount := 0
+	loadHubStateFunc := (func() (*hub.HubState, error) {
+		callCount++
+		return hubState, nil
+	})
+
+	mockStore := mocks.NewMockAppStoreWithLoadStateFunc(loadHubStateFunc)
+
+	handler := api.NewDeviceContextHandler(mockStore, 1*time.Minute)
+	req := httptest.NewRequest(http.MethodGet, "/api/context/devices", nil)
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+
+	if callCount != 1 {
+		t.Fatalf("expected LoadHubState called once, got %d", callCount)
+	}
+
+	var resp api.DeviceContextResponse
+	if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if resp.Version != api.DeviceContextVersion {
+		t.Fatalf("expected version %s, got %s", api.DeviceContextVersion, resp.Version)
+	}
+
+	if len(resp.Devices) == 0 {
+		t.Fatalf("expected devices in context")
+	}
+
+	if resp.GeneratedAt.IsZero() {
+		t.Fatalf("expected generatedAt to be set")
+	}
+}
+
+func TestDeviceContextHandler_FiltersNonMeasurementExposes(t *testing.T) {
+	store, err := utils_test.CreateStoreWithDevices()
+	if err != nil {
+		t.Fatalf("error creating store: %v", err)
+	}
+
+	hubState, _ := store.LoadHubState()
+
+	mockStore := mocks.NewMockAppStoreWithLoadStateFunc(func() (*hub.HubState, error) {
+		return hubState, nil
+	})
+
+	handler := api.NewDeviceContextHandler(mockStore, 1*time.Second)
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/context/devices", nil)
+
+	handler.ServeHTTP(rr, req)
+
+	var resp api.DeviceContextResponse
+	_ = json.NewDecoder(rr.Body).Decode(&resp)
+
+	for _, d := range resp.Devices {
+		for _, e := range d.Exposes {
+			switch e.Name {
+			case "linkquality", "battery", "battery_low":
+				t.Fatalf("non-measurement expose leaked into context: %s", e.Name)
+			}
+		}
+	}
+}
+
+func TestDeviceContextHandler_EnumAndBinaryValuesFlattened(t *testing.T) {
+	store, err := utils_test.CreateStoreWithDevices()
+	if err != nil {
+		t.Fatalf("error creating store: %v", err)
+	}
+
+	hubState, _ := store.LoadHubState()
+
+	mockStore := mocks.NewMockAppStoreWithLoadStateFunc(func() (*hub.HubState, error) {
+		return hubState, nil
+	})
+
+	handler := api.NewDeviceContextHandler(mockStore, 1*time.Second)
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/api/context/devices", nil)
+	handler.ServeHTTP(rr, req)
+
+	var resp api.DeviceContextResponse
+	_ = json.NewDecoder(rr.Body).Decode(&resp)
+
+	foundEnum := false
+	foundBinary := false
+
+	for _, d := range resp.Devices {
+		for _, e := range d.Exposes {
+			switch e.Type {
+			case bridge.EnumDataType:
+				foundEnum = true
+				if len(e.Values) == 0 {
+					t.Fatalf("enum expose %s has no values", e.Name)
+				}
+
+			case bridge.BinaryDataType:
+				foundBinary = true
+				if e.ValueOn == nil || e.ValueOff == nil {
+					t.Fatalf(
+						"binary expose %s missing semantics (on=%v off=%v)",
+						e.Name, e.ValueOn, e.ValueOff,
+					)
+				}
+			}
+		}
+	}
+
+	if !foundEnum {
+		t.Fatalf("expected at least one enum expose")
+	}
+	if !foundBinary {
+		t.Fatalf("expected at least one binary expose")
+	}
+}
+
+func TestDeviceContextHandler_RateLimit(t *testing.T) {
+	store, err := utils_test.CreateStoreWithDevices()
+	if err != nil {
+		t.Fatalf("error creating store: %v", err)
+	}
+
+	hubState, _ := store.LoadHubState()
+
+	mockStore := mocks.NewMockAppStoreWithLoadStateFunc(func() (*hub.HubState, error) {
+		return hubState, nil
+	})
+
+	handler := api.NewDeviceContextHandler(mockStore, 1*time.Hour)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/context/devices", nil)
+
+	w1 := httptest.NewRecorder()
+	handler.ServeHTTP(w1, req)
+	if w1.Code != http.StatusOK {
+		t.Fatalf("expected first call 200, got %d", w1.Code)
+	}
+
+	w2 := httptest.NewRecorder()
+	handler.ServeHTTP(w2, req)
+	if w2.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected second call 429, got %d", w2.Code)
+	}
 }

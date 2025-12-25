@@ -2099,6 +2099,7 @@ func TestHub_DeviceConfigDefaults_DisableDevices(t *testing.T) {
 	}
 }
 
+
 func createMockDialAndLightDevices(dialName string, lightName string) []*devices.Device {
 
 	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
