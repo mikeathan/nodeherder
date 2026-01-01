@@ -7,6 +7,8 @@ import (
 	"node-herder/internal/auth"
 	"node-herder/internal/controllers"
 	"node-herder/internal/fs"
+	metricsquery "node-herder/internal/metrics/query"
+	metrics "node-herder/internal/metrics/services"
 	"node-herder/internal/ratelimiter"
 	"node-herder/internal/ws"
 	"node-herder/models/automations"
@@ -351,6 +353,44 @@ func (h *HubStateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Write(h.cachedHubState)
 }
 
+// Device Context Handler
+type DeviceContextHandler struct {
+	store     store.AppStore
+	limiter   *ratelimiter.RateLimiter
+	rateLimit time.Duration
+}
+
+func NewDeviceContextHandler(store store.AppStore, rateLimit time.Duration) *DeviceContextHandler {
+	return &DeviceContextHandler{
+		store:     store,
+		limiter:   ratelimiter.NewRateLimiter(),
+		rateLimit: rateLimit,
+	}
+}
+
+func (h *DeviceContextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	if !h.limiter.AllowWrite("DeviceContext", h.rateLimit) {
+		writeJSONError(w, http.StatusTooManyRequests, "rate limit exceeded")
+		return
+	}
+
+	state, err := h.store.LoadHubState()
+	if err != nil {
+		utils.LogErrorf("DeviceContextHandler: Failed to load hub state %s", err.Error())
+		writeJSONError(w, http.StatusInternalServerError, "Failed to load hub state")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	response := CreateDeviceContextResponse(state.Devices)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		utils.LogErrorf("DeviceContextHandler: Failed to encode response %s", err.Error())
+		writeJSONError(w, http.StatusInternalServerError, "Failed to encode response")
+		return
+	}
+}
+
 // Automation Trigger
 type AutomationTriggerHandler struct {
 	hub       automations.AutomationTrigger
@@ -412,4 +452,57 @@ func writeJSONError(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
+}
+
+// Metrics query
+type MetricsQueryHandler struct {
+	limiter   *ratelimiter.RateLimiter
+	rateLimit time.Duration
+	querier   *metrics.QueryService
+}
+
+func NewMetricsQueryHandler(limiter *ratelimiter.RateLimiter, rateLimit time.Duration, store store.AppStore) *MetricsQueryHandler {
+	return &MetricsQueryHandler{
+		limiter:   limiter,
+		rateLimit: rateLimit,
+		querier:   metrics.NewQueryService(store),
+	}
+}
+
+func (h *MetricsQueryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Content-Type") != "application/json" {
+		writeJSONError(w, http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		return
+	}
+
+	var req metricsquery.MetricsQueryRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSONError(w, http.StatusBadRequest, "invalid JSON body")
+		return
+	}
+
+	if req.Expose == "" || len(req.DeviceIds) == 0 {
+		writeJSONError(w, http.StatusBadRequest, "missing deviceIds or expose")
+		return
+	}
+
+	rateKey := "metrics_query"
+	if len(req.DeviceIds) > 0 {
+		rateKey = req.DeviceIds[0]
+	}
+
+	if !h.limiter.AllowWrite(rateKey, h.rateLimit) {
+		writeJSONError(w, http.StatusTooManyRequests, "rate limit exceeded")
+		return
+	}
+
+	response, err := h.querier.Query(r.Context(), req)
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(response)
 }

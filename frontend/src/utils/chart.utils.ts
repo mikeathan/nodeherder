@@ -1,6 +1,13 @@
-import type { RangeBarDataPoint, BinaryDataPoint, BinaryRange } from '@/types/metrics.type';
+import type {
+  RangeBarDataPoint,
+  BinaryDataPoint,
+  BinaryRange,
+  NumericDataPoint,
+  NumericStats,
+} from '@/types/metrics.type';
 import { formatDuration } from './date.utils';
 import { getFormattedSensorValueByName } from '@/modules/formatters/sensor-formatter';
+import { MetricsTypes, type MetricsType, type MiniChartComponentKey } from '@/types/metrics.type';
 
 /**
  * Normalizes binary events into continuous time ranges.
@@ -79,21 +86,193 @@ export function mergeBinaryFlickers(ranges: BinaryRange[], minDurationMs: number
   return merged;
 }
 
+export function getBinaryRanges(
+  data: BinaryDataPoint[],
+  from: number,
+  to: number,
+  minDurationMs = 0
+): BinaryRange[] {
+  if (!data?.length) return [];
+  const sorted = data
+    .slice()
+    .filter((point) => Number.isFinite(point.timestamp))
+    .sort((a, b) => a.timestamp - b.timestamp);
+  if (sorted.length === 0) return [];
+  const normalized = normalizeBinaryEvents(sorted, from, to);
+  return minDurationMs > 0 ? mergeBinaryFlickers(normalized, minDurationMs) : normalized;
+}
+
 export function toBinaryRangeBarData(ranges: BinaryRange[], colorOn: string, colorOff: string): RangeBarDataPoint[] {
+  // Convert normalized ranges into Apex-compatible range-bar points.
+  const fadedOff = withAlpha(colorOff, 0.8);
   return ranges.map((range) => ({
-    x: range.value === 'true' ? 'On' : 'Off',
+    x: isBinaryOn(range.value) ? 'On' : 'Off',
     y: [range.start, range.end] as [number, number],
-    fillColor: range.value === 'true' ? colorOn : colorOff,
+    fillColor: isBinaryOn(range.value) ? colorOn : fadedOff,
   }));
+}
+
+const UNIT_SETS = {
+  energy: new Set(['wh', 'kwh']),
+  power: new Set(['w', 'kw']),
+  realtime: new Set(['a', 'ma', 'v', 'kv', 'mv', 'lux']),
+  percent: new Set(['%']),
+};
+
+const EXPOSE_KEYWORDS = {
+  energy: ['energy', 'consumption', 'energy_total', 'total_energy', 'daily_energy', 'monthly_energy'],
+  realtime: ['current', 'voltage', 'illuminance'],
+  percent: ['battery', 'battery_percentage', 'battery_percent', 'battery_level', 'battpercentage'],
+};
+
+const DEFAULT_GAUGE_MAX_BY_UNIT: Record<string, number> = {
+  w: 1000,
+  kw: 5,
+  wh: 1000,
+  kwh: 10,
+};
+
+function normalizeUnit(unit?: string): string {
+  return (unit ?? '').toLowerCase().trim();
+}
+
+function normalizeExposeName(exposeName?: string): string {
+  return (exposeName ?? '').toLowerCase();
+}
+
+export function isEnergyUnit(unit?: string): boolean {
+  return UNIT_SETS.energy.has(normalizeUnit(unit));
+}
+
+export function isPowerUnit(unit?: string): boolean {
+  return UNIT_SETS.power.has(normalizeUnit(unit));
+}
+
+export function isRealtimeUnit(unit?: string): boolean {
+  return UNIT_SETS.realtime.has(normalizeUnit(unit));
+}
+
+export function isPercentUnit(unit?: string): boolean {
+  return UNIT_SETS.percent.has(normalizeUnit(unit));
+}
+
+export function isEnergyExpose(exposeName?: string, unit?: string): boolean {
+  if (isEnergyUnit(unit)) return true;
+  const name = normalizeExposeName(exposeName);
+  return EXPOSE_KEYWORDS.energy.some((keyword) => name.includes(keyword));
+}
+
+export function isRealtimeExpose(exposeName?: string, unit?: string): boolean {
+  if (isRealtimeUnit(unit)) return true;
+  const name = normalizeExposeName(exposeName);
+  return EXPOSE_KEYWORDS.realtime.some((keyword) => name.includes(keyword));
+}
+
+export function isPercentExpose(exposeName?: string, unit?: string): boolean {
+  const name = normalizeExposeName(exposeName);
+  const matches = EXPOSE_KEYWORDS.percent.some((keyword) => name === keyword);
+  if (!matches) return false;
+  if (!unit) return true;
+  return isPercentUnit(unit);
+}
+
+export function getDefaultGaugeMax(unit?: string): number {
+  const normalized = normalizeUnit(unit);
+  return DEFAULT_GAUGE_MAX_BY_UNIT[normalized] ?? 100;
+}
+
+export function resolveMiniChartComponentKey(
+  type?: MetricsType | string,
+  exposeName?: string,
+  unit?: string
+): MiniChartComponentKey | null {
+  if (type === MetricsTypes.Binary) return 'MiniBinaryChart';
+  if (type !== MetricsTypes.Numeric) return null;
+  if (isEnergyExpose(exposeName, unit)) return 'MiniEnergyChart';
+  if (isPercentExpose(exposeName, unit)) return 'MiniPercentChart';
+  if (isRealtimeExpose(exposeName, unit)) return 'MiniRealtimeChart';
+  return 'MiniNumericChart';
 }
 
 // Resolve human-friendly label for a binary expose based on its name and value
 export function resolveBinaryLabel(exposeName: string, value: string | boolean): string {
-  const boolVal = typeof value === 'string' ? value === 'true' : !!value;
+  const boolVal = isBinaryOn(value);
   return getFormattedSensorValueByName(exposeName, boolVal);
 }
 
-export function renderRangeTooltip(name: string, label: string, start: number, end: number): string {
+export function isBinaryOn(value: string | boolean): boolean {
+  // Normalize common true/false string values.
+  if (typeof value === 'boolean') return value;
+  const normalized = value.toLowerCase();
+  return normalized === 'true' || normalized === 'on' || normalized === '1';
+}
+
+export function withAlpha(color: string, alpha: number): string {
+  // Convert #RRGGBB to rgba while leaving other formats untouched.
+  if (!color?.startsWith('#') || color.length !== 7) return color;
+  const r = parseInt(color.slice(1, 3), 16);
+  const g = parseInt(color.slice(3, 5), 16);
+  const b = parseInt(color.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+export function getBinaryStats(
+  data: BinaryDataPoint[],
+  endTimestamp = Date.now()
+): {
+  onCount: number;
+  offCount: number;
+  onPercentage: number;
+  onDurationMs: number;
+  offDurationMs: number;
+} {
+  // Aggregate counts and time-on vs time-off over the provided range.
+  if (!data?.length) {
+    return { onCount: 0, offCount: 0, onPercentage: 0, onDurationMs: 0, offDurationMs: 0 };
+  }
+
+  const points = data
+    .slice()
+    .sort((a, b) => a.timestamp - b.timestamp)
+    .filter((point) => Number.isFinite(point.timestamp));
+
+  let onDuration = 0;
+  let offDuration = 0;
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const current = points[i];
+    const next = points[i + 1];
+    const duration = Math.max(0, next.timestamp - current.timestamp);
+
+    if (isBinaryOn(current.value)) {
+      onDuration += duration;
+    } else {
+      offDuration += duration;
+    }
+  }
+
+  const last = points[points.length - 1];
+  const tailDuration = Math.max(0, endTimestamp - last.timestamp);
+  if (isBinaryOn(last.value)) {
+    onDuration += tailDuration;
+  } else {
+    offDuration += tailDuration;
+  }
+
+  const total = onDuration + offDuration;
+  const onPercentage = total > 0 ? (onDuration / total) * 100 : 0;
+
+  return {
+    onCount: points.filter((d) => isBinaryOn(d.value)).length,
+    offCount: points.filter((d) => !isBinaryOn(d.value)).length,
+    onPercentage,
+    onDurationMs: onDuration,
+    offDurationMs: offDuration,
+  };
+}
+
+export function renderRangeTooltip(name: string, label: string, start: number, end: number, color?: string): string {
+  // HTML tooltip for binary range bars with readable time/duration.
   const durationMs = Math.max(0, end - start);
   const fmtOpts: Intl.DateTimeFormatOptions = {
     day: '2-digit',
@@ -104,10 +283,104 @@ export function renderRangeTooltip(name: string, label: string, start: number, e
   const startStr = new Date(start).toLocaleString(undefined, fmtOpts);
   const endStr = new Date(end).toLocaleString(undefined, fmtOpts);
   const durStr = formatDuration(durationMs);
-  return `<div style='background:#1f2937;color:#f8fafc;padding:8px 10px;border-radius:6px;font-size:12px;min-width:180px;'>
-      <div style='font-weight:600;margin-bottom:4px;'>${name}: ${label}</div>
+  const swatch = color
+    ? `<span style='display:inline-block;width:8px;height:8px;border-radius:999px;background:${color};margin-right:6px;'></span>`
+    : '';
+  return `<div style='background:#1f2937;color:#f8fafc;padding:6px 8px;border-radius:6px;font-size:11px;min-width:140px;'>
+      <div style='font-weight:600;margin-bottom:4px;'>${swatch}${name}: ${label}</div>
       <div><span style='color:#94a3b8;'>From:</span> ${startStr}</div>
       <div><span style='color:#94a3b8;'>To:</span> ${endStr}</div>
       <div><span style='color:#94a3b8;'>Duration:</span> ${durStr}</div>
     </div>`;
+}
+
+export function normalizeNumericData(data: NumericDataPoint[]): NumericDataPoint[] {
+  // Clean and sort numeric points by time.
+  if (!data?.length) return [];
+  return data
+    .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y))
+    .slice()
+    .sort((a, b) => a.x - b.x);
+}
+
+export function downsampleNumericData(data: NumericDataPoint[], maxPoints = 400): NumericDataPoint[] {
+  // Reduce point count while preserving the last value.
+  if (!data?.length || data.length <= maxPoints) return data;
+
+  const step = Math.ceil(data.length / maxPoints);
+  const sampled: NumericDataPoint[] = [];
+
+  for (let i = 0; i < data.length; i += step) {
+    sampled.push(data[i]);
+  }
+
+  const last = data[data.length - 1];
+  if (sampled[sampled.length - 1] !== last) {
+    sampled.push(last);
+  }
+
+  return sampled;
+}
+
+export function getNumericStats(data: NumericDataPoint[]): NumericStats | null {
+  // Summary stats for quick KPI display.
+  if (!data?.length) return null;
+
+  const values = data.map((point) => point.y).filter((value) => Number.isFinite(value));
+  if (values.length === 0) return null;
+
+  const first = values[0];
+  const last = values[values.length - 1];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const avg = values.reduce((sum, value) => sum + value, 0) / values.length;
+  const delta = last - first;
+  const deltaPct = first === 0 ? 0 : (delta / Math.abs(first)) * 100;
+
+  return {
+    min,
+    max,
+    avg,
+    first,
+    last,
+    delta,
+    deltaPct,
+  };
+}
+
+export function getNumericDomain(data: NumericDataPoint[], paddingRatio = 0.08): { min: number; max: number } {
+  // Calculate y-axis bounds with a small padding.
+  if (!data?.length) {
+    return { min: 0, max: 1 };
+  }
+
+  const values = data.map((point) => point.y).filter((value) => Number.isFinite(value));
+  if (values.length === 0) {
+    return { min: 0, max: 1 };
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  if (min === max) {
+    const pad = Math.abs(min) * paddingRatio || 1;
+    return { min: min - pad, max: max + pad };
+  }
+
+  const pad = (max - min) * paddingRatio;
+  return { min: min - pad, max: max + pad };
+}
+
+export function formatNumericXAxisLabel(
+  value: string | number,
+  showDayLabels: boolean,
+  opts: { date?: number }
+): string {
+  // Keep labels readable for short vs multi-day ranges.
+  const ts = typeof value === 'number' ? value : Number.isFinite(opts?.date) ? (opts?.date as number) : Number(value);
+  if (!Number.isFinite(ts)) return String(value);
+  const date = new Date(ts);
+  if (showDayLabels) {
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  }
+  return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }

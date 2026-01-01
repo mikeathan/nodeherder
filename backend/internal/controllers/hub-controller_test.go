@@ -7,6 +7,9 @@ import (
 	"math"
 	"node-herder/internal/automations"
 	"node-herder/internal/controllers"
+	metrics "node-herder/internal/metrics/domain"
+	metricsquery "node-herder/internal/metrics/query"
+	metricsservice "node-herder/internal/metrics/services"
 	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/mocks"
@@ -14,7 +17,6 @@ import (
 	"node-herder/models/devices"
 	"node-herder/models/hub"
 	"node-herder/models/logging"
-	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	"node-herder/repository"
 	"node-herder/store"
@@ -916,6 +918,157 @@ func TestHubSaveDeviceConfigDefaults(t *testing.T) {
 	if !reflect.DeepEqual(expectedNewdDeviceDeufalts.DefaultDebounceByCategory, deviceDefaults.DefaultDebounceByCategory) {
 		t.Fatalf("invalid config override. want expectedDefaultDebounceByCategory %v got %v", expectedNewdDeviceDeufalts.DefaultDebounceByCategory, deviceDefaults.DefaultDebounceByCategory)
 	}
+}
+
+func TestQueryServiceReturnsLatestMetrics(t *testing.T) {
+	mqtt := &mocks.MockMqttClient{}
+	ws := &mocks.NopWsServer{}
+
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return time.Now().UTC()
+	})
+
+	appConfig := settings.NewAppConfig()
+	deviceConfig := settings.NewDeviceConfig("x02222222")
+	deviceConfig.MetricsEnabled = true
+	deviceConfig.RateLimit = utils.IntervalFromMilliseconds(0)
+	appConfig.AddDeviceConfig(deviceConfig)
+
+	store, cleanup, err := utils_test.CreateFileStoreWithAppConfig(appConfig, mockClock)
+	if err != nil {
+		t.Fatalf("CreateFileStoreWithAppConfig failed. err %v ", err)
+	}
+	defer cleanup()
+
+	devices := createMockDialAndLightDevices("x01111111", "x02222222")
+	lightDevice := devices[1]
+	deviceBridgeList := utils_test.CreateBridgeInfoList(devices)
+
+	controllers.RegisterHubController(ws, store, mqtt)
+
+	mqtt.Publish("bridge/devices", deviceBridgeList)
+	time.Sleep(100 * time.Millisecond)
+
+	base := time.Date(2024, time.January, 1, 0, 0, 0, 0, time.UTC)
+
+	brightnessValues := []float64{5, 10, 15, 20, 25}
+	for i, value := range brightnessValues {
+		mockClock.SetMockTime(base.Add(time.Duration(i+1) * time.Minute))
+		mqtt.Publish(lightDevice.FriendlyName, map[string]any{"brightness": value})
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	queryService := metricsservice.NewQueryService(store)
+
+	testCases := []struct {
+		name   string
+		req    metricsquery.MetricsQueryRequest
+		assert func(t *testing.T, responses *[]metricsquery.MetricsQueryResponse)
+	}{
+		{
+			name: "latest desc limit",
+			req: metricsquery.MetricsQueryRequest{
+				DeviceIds: []string{lightDevice.Id},
+				Expose:    "brightness",
+				Time: metrics.TimeQuery{
+					From: base,
+					To:   base.Add(5 * time.Minute),
+				},
+				Aggregation: metrics.AggNone,
+				Limit:       1,
+				SortDesc:    true,
+			},
+			assert: func(t *testing.T, responses *[]metricsquery.MetricsQueryResponse) {
+				values := requireNumericValues(t, responses)
+				if len(values) != 1 {
+					t.Fatalf("expected 1 value, got %d", len(values))
+				}
+				if values[0].Y != 25.0 {
+					t.Fatalf("expected latest brightness 25.0 got %v", values[0].Y)
+				}
+				if values[0].X != base.Add(5*time.Minute).UnixMilli() {
+					t.Fatalf("unexpected timestamp %v", values[0].X)
+				}
+			},
+		},
+		{
+			name: "oldest asc limit",
+			req: metricsquery.MetricsQueryRequest{
+				DeviceIds: []string{lightDevice.Id},
+				Expose:    "brightness",
+				Time: metrics.TimeQuery{
+					From: base,
+					To:   base.Add(5 * time.Minute),
+				},
+				Aggregation: metrics.AggNone,
+				Limit:       1,
+				SortDesc:    false,
+			},
+			assert: func(t *testing.T, responses *[]metricsquery.MetricsQueryResponse) {
+				values := requireNumericValues(t, responses)
+				if len(values) != 1 {
+					t.Fatalf("expected 1 value, got %d", len(values))
+				}
+				if values[0].Y != 5.0 {
+					t.Fatalf("expected oldest brightness 5.0 got %v", values[0].Y)
+				}
+				if values[0].X != base.Add(1*time.Minute).UnixMilli() {
+					t.Fatalf("unexpected timestamp %v", values[0].X)
+				}
+			},
+		},
+		{
+			name: "count aggregation",
+			req: metricsquery.MetricsQueryRequest{
+				DeviceIds: []string{lightDevice.Id},
+				Expose:    "brightness",
+				Time: metrics.TimeQuery{
+					From: base,
+					To:   base.Add(5 * time.Minute),
+				},
+				Aggregation: metrics.AggCount,
+				Limit:       1,
+				SortDesc:    true,
+			},
+			assert: func(t *testing.T, responses *[]metricsquery.MetricsQueryResponse) {
+				if len(*responses) != 1 || len((*responses)[0].Values) != 1 {
+					t.Fatalf("expected 1 response and 1 value, got %+v", responses)
+				}
+				count, ok := (*responses)[0].Values[0].Value.(int)
+				if !ok {
+					t.Fatalf("unexpected count type: %T", (*responses)[0].Values[0].Value)
+				}
+				if count != 5 {
+					t.Fatalf("expected count 5 got %v", count)
+				}
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			responses, err := queryService.Query(context.Background(), tc.req)
+			if err != nil {
+				t.Fatalf("Query failed. err %v ", err)
+			}
+			tc.assert(t, responses)
+		})
+	}
+}
+
+func requireNumericValues(t *testing.T, responses *[]metricsquery.MetricsQueryResponse) []*metrics.NumericValue {
+	t.Helper()
+
+	if len(*responses) != 1 || len((*responses)[0].Values) != 1 {
+		t.Fatalf("expected 1 response and 1 value, got %+v", responses)
+	}
+
+	values, ok := (*responses)[0].Values[0].Value.([]*metrics.NumericValue)
+	if !ok {
+		t.Fatalf("unexpected value type: %T", (*responses)[0].Values[0].Value)
+	}
+
+	return values
 }
 
 func TestProcessorStoresMetricsForExistingDevice(t *testing.T) {
@@ -1945,6 +2098,7 @@ func TestHub_DeviceConfigDefaults_DisableDevices(t *testing.T) {
 		t.Errorf("expected dial device action to be disabled, got %s", d.Exposes["action"].Data.Value())
 	}
 }
+
 
 func createMockDialAndLightDevices(dialName string, lightName string) []*devices.Device {
 

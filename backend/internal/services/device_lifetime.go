@@ -165,7 +165,7 @@ func (d *DeviceLifetimeService) attempToEmitMeasurementUpdate(payload map[string
 	data := map[string]interface{}{}
 	for name, value := range payload {
 		if expose, ok := d.device.Exposes[name]; ok && expose.Category == bridge.MeasurementCategory {
-			data[name] = value
+			data[name] = normalizeMeasurementValue(expose, value)
 		}
 	}
 
@@ -173,6 +173,32 @@ func (d *DeviceLifetimeService) attempToEmitMeasurementUpdate(payload map[string
 		// this will attempt to run automation (if enabled) and store to metrics store (if enabled)
 		d.events.OnDeviceMeasurementsUpdated(d.device, data)
 	}
+}
+
+func normalizeMeasurementValue(expose *devices.Entity, value any) any {
+
+	if expose == nil {
+		return value
+	}
+
+	if expose.Type != bridge.BinaryDataType {
+		return value
+	}
+
+	switch v := value.(type) {
+	case bool:
+		return v
+	case string:
+		if boolVal, ok := utils.ConvertToBool(v); ok {
+			return boolVal
+		}
+	case []byte:
+		if boolVal, ok := utils.ConvertToBool(string(v)); ok {
+			return boolVal
+		}
+	}
+
+	return value
 }
 
 func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutDuration time.Duration, onChangeCallback func(p *devices.UpdatePackage)) {

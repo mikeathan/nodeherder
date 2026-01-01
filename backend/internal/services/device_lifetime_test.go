@@ -378,6 +378,46 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithMetricsEnabled(t *testing.
 	}
 }
 
+func TestDeviceLifetimeService_NormalizesBinaryMeasurementValues(t *testing.T) {
+
+	device := utils_test.CreateDoorSensorDevice("x0binary", "door sensor", false)
+
+	var measurements map[string]interface{}
+	events := &devices.DeviceRequestEvents{
+		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {},
+		OnDeviceMeasurementsUpdated: func(d *devices.Device, p map[string]interface{}) {
+			measurements = p
+		},
+	}
+
+	app := settings.NewAppConfig()
+	cfg := settings.NewDeviceConfig(device.Id)
+	cfg.MetricsEnabled = true
+	app.AddDeviceConfig(cfg)
+
+	repo := mocks.NopSettingsrepo{}
+	cache := settings.NewDeviceConfigCache(&repo, app)
+	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
+
+	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, utils.NewRealClock())
+
+	payload := map[string]interface{}{"contact": "open"}
+	service.Update(payload)
+
+	if measurements == nil {
+		t.Fatalf("expected measurements to be emitted")
+	}
+
+	val, ok := measurements["contact"].(bool)
+	if !ok {
+		t.Fatalf("expected binary measurement to be bool, got %T", measurements["contact"])
+	}
+
+	if !val {
+		t.Fatalf("expected contact measurement to be true")
+	}
+}
+
 func TestDeviceLifetimeService_MetricsAvailabilityWithAutomationEnabled(t *testing.T) {
 	wg := sync.WaitGroup{}
 

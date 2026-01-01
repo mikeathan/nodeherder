@@ -606,6 +606,72 @@
         "availability": "offline"
       },
       {
+        "id": "0xa4c13801b36effff",
+        "friendly_name": "TV power socket",
+        "description": "Smart plug with energy counters",
+        "connection_type": "mqtt",
+        "power_source": "mains (single phase)",
+        "exposes": {
+          "current": {
+            "name": "current",
+            "description": "Instantaneous measured electrical current",
+            "unit": "A",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "access_mode": "read"
+          },
+          "energy_today": {
+            "name": "energy_today",
+            "description": "Energy consumed today",
+            "unit": "kWh",
+            "data": null,
+            "type": "numeric",
+            "category": "measurement",
+            "access_mode": "read"
+          },
+          "energy_yesterday": {
+            "name": "energy_yesterday",
+            "description": "Energy consumed yesterday",
+            "unit": "kWh",
+            "data": null,
+            "type": "numeric",
+            "category": "measurement",
+            "access_mode": "read"
+          },
+          "energy_month": {
+            "name": "energy_month",
+            "description": "Energy consumed this month",
+            "unit": "kWh",
+            "data": null,
+            "type": "numeric",
+            "category": "measurement",
+            "access_mode": "read"
+          },
+          "linkquality": {
+            "name": "linkquality",
+            "description": "Link quality (signal strength)",
+            "unit": "lqi",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "attributes": { "max": 255, "min": 0 },
+            "access_mode": "read"
+          },
+          "voltage": {
+            "name": "voltage",
+            "description": "Measured electrical potential value",
+            "unit": "V",
+            "data": null,
+            "type": "numeric",
+            "category": "diagnostic",
+            "access_mode": "read"
+          }
+        },
+        "last_seen": "",
+        "availability": "offline"
+      },
+      {
         "id": "0xa4c1381b6fd53fc4",
         "friendly_name": "Attic room power socket",
         "description": "Smart plug",
