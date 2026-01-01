@@ -253,6 +253,18 @@ export const settings = [
     delayInMs: 25000, // 25 seconds - moderate delay
   },
   {
+    id: '0xa4c13801b36effff',
+    friendlyName: 'TV power socket',
+    availability: 'offline',
+    method: 'mqtt',
+    current: 0.35,
+    voltage: 230,
+    energy_today: 1.6,
+    energy_yesterday: 2.8,
+    energy_month: 42.5,
+    delayInMs: 20000, // 20 seconds - moderate delay
+  },
+  {
     id: '0xa4c1381b6fd53fc4',
     friendlyName: 'Attic room power socket',
     availability: 'offline',
@@ -303,6 +315,7 @@ const updateDeviceMap = {
   '0x001788010d7d9d3f': mockUpdateSwitchDial,
   '0x00124b002fa5844e': mockUpdateDoorSensor,
   '0x70b3d52b60136661': mockUpdateKitchenSocket,
+  '0xa4c13801b36effff': mockUpdateTvSocket,
   '0xa4c1381b6fd53fc4': mockUpdateAtticSocket,
   '0xa4c1384582432edd': mockUpdateGardenTemp,
   '0xa4c138e1b5658e68': mockUpdateAirSensor,
@@ -656,6 +669,33 @@ function mockUpdateKitchenSocket(settings) {
       current: settings.current,
       voltage: settings.voltage,
       energy: parseFloat(settings.energy.toFixed(2)),
+      linkquality,
+    },
+  };
+}
+
+function mockUpdateTvSocket(settings) {
+  // Simulate modest, steady TV load.
+  const baseCurrent = 0.25;
+  settings.current = parseFloat((baseCurrent + Math.random() * 0.25).toFixed(2));
+  settings.voltage = 228 + Math.floor(Math.random() * 7);
+
+  const power = settings.voltage * settings.current; // W
+  settings.energy_today += power / 3600000;
+  settings.energy_month += power / 3600000;
+
+  const linkquality = 78 + Math.floor(Math.random() * 24);
+
+  return {
+    id: '0xa4c13801b36effff',
+    last_seen: currentTime(),
+    availability: setDeviceOnline(settings),
+    data: {
+      current: settings.current,
+      voltage: settings.voltage,
+      energy_today: parseFloat(settings.energy_today.toFixed(2)),
+      energy_yesterday: parseFloat(settings.energy_yesterday.toFixed(2)),
+      energy_month: parseFloat(settings.energy_month.toFixed(2)),
       linkquality,
     },
   };

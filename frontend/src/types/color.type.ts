@@ -28,4 +28,11 @@ export const ColorTypes = {
   MidnightViolet: '#662E9B',
   Turquoise: '#4ecdc4',
   SlateGrey: '#546E7A',
+  PineGreen: '#22A06B',
+  Graphite: '#2C3642',
+  AzureBlue: '#3B82F6',
+  Amber: '#F59E0B',
+  BrightGreen: '#22E35F',
+  BrightRed: '#FF1F1F',
+  White: '#FFFFFF',
 };

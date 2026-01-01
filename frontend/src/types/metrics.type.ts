@@ -8,12 +8,34 @@ export const MetricsTypes = {
 
 export type MetricsType = (typeof MetricsTypes)[keyof typeof MetricsTypes];
 
+export type MiniChartComponentKey =
+  | 'MiniEnergyChart'
+  | 'MiniPercentChart'
+  | 'MiniRealtimeChart'
+  | 'MiniNumericChart'
+  | 'MiniBinaryChart';
+
 export interface BinaryRange {
   value: string;
   start: number;
   end: number;
 }
+export type NumericStats = {
+  min: number;
+  max: number;
+  avg: number;
+  first: number;
+  last: number;
+  delta: number;
+  deltaPct: number;
+};
 
+export type NumericChartHeaderData = DeviceExposeNumericMetrics & {
+  label: string;
+  unit: string | null;
+  color: string;
+  stats: NumericStats | null;
+};
 export interface RangeBarDataPoint {
   x: string;
   y: [number, number];

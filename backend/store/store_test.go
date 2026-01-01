@@ -2,9 +2,9 @@ package store_test
 
 import (
 	"fmt"
+	metrics "node-herder/internal/metrics/domain"
 	"node-herder/mocks"
 	"node-herder/models/devices"
-	"node-herder/models/metrics"
 	"node-herder/models/settings"
 	"node-herder/repository"
 	utils_test "node-herder/testing"
@@ -91,6 +91,7 @@ func TestStoreSavesLoggerConfig(t *testing.T) {
 	}
 }
 
+
 func TestStoreMetricsCleanupTasks(t *testing.T) {
 
 	mockClock := mocks.NewMockClock(func() time.Time {
@@ -131,11 +132,13 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	}
 	defer cleanup()
 
-	// set new history config
-	sleepTimeout := utils.IntervalFromSeconds(2) // start the cleanup after we finished ading and asserting the data. 2 seconds should be enough
+	// configure cleanup to stay idle while we populate and verify the metrics.
+	initialSleepTimeout := utils.IntervalFromMinutes(5)
 	expireAt := utils.IntervalFromHours(1)
 
-	cfg.SaveHistoryConfig(settings.NewHistoryConfig(sleepTimeout, expireAt))
+	if _, err := cfg.SaveHistoryConfig(settings.NewHistoryConfig(initialSleepTimeout, expireAt)); err != nil {
+		t.Fatalf("failed to save history config: %v", err)
+	}
 
 	timestamps := utils_test.CreateDateTimeTimestamps(3, 24, 1)
 
@@ -184,6 +187,13 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 			}
 		}
 	}
+
+	// Speed up cleanup and give it enough time to prune old entries.
+	cleanupSleepTimeout := utils.IntervalFromSeconds(1)
+	if _, err := cfg.SaveHistoryConfig(settings.NewHistoryConfig(cleanupSleepTimeout, expireAt)); err != nil {
+		t.Fatalf("failed to save cleanup history config: %v", err)
+	}
+	time.Sleep(cleanupSleepTimeout.Duration() + time.Second)
 
 	// assert that metrics are removed
 	for _, wd := range wantDevices {

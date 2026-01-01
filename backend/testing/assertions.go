@@ -2,8 +2,9 @@ package utils_test
 
 import (
 	"fmt"
+	metrics "node-herder/internal/metrics/domain"
 	"node-herder/models/devices"
-	"node-herder/models/metrics"
+	"node-herder/utils"
 	"reflect"
 	"sort"
 	"testing"
@@ -30,12 +31,22 @@ func AssertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 
 	sort.Strings(exposekeys)
 
-	idx := 0
+	resultByName := make(map[string]metrics.ExposeResult, len(result.Exposes))
+	for _, event := range result.Exposes {
+		name, ok := exposeResultName(event)
+		if !ok {
+			t.Fatalf("unsupported expose result type %T", event)
+		}
+		resultByName[name] = event
+	}
 
 	for _, key := range exposekeys {
 
 		expose := device.Exposes[key]
-		event := result.Exposes[idx]
+		event, ok := resultByName[expose.Name]
+		if !ok {
+			t.Fatalf("missing expose result for %s", expose.Name)
+		}
 		if event.GetType() == "numeric" {
 			AssertNumericExposeEvent(expose, event, timestamps, values.([]float32), t)
 		} else if event.GetType() == "binary" {
@@ -60,9 +71,11 @@ func AssertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 			for i, ts := range timestamps {
 				tsMillis := ts.UnixMilli()
 				if tsMillis >= gotBinaryResult.From && tsMillis <= gotBinaryResult.To {
-					wantBinaryResult.Data = append(wantBinaryResult.Data, metrics.BinaryEvent{
+
+					val, _ := utils.ConvertToBool(stringValues.([]string)[i])
+					wantBinaryResult.Data = append(wantBinaryResult.Data, &metrics.BinaryEvent{
 						Timestamp: tsMillis,
-						Value:     stringValues.([]string)[i],
+						Value:     val,
 					})
 				}
 			}
@@ -73,8 +86,20 @@ func AssertDeviceAnyDataTypeEvents(device *devices.Device, result *metrics.Devic
 		} else {
 			t.Errorf("invalid expose type %v: ", event.GetType())
 		}
-		idx++ // ?????
 
+	}
+}
+
+func exposeResultName(event metrics.ExposeResult) (string, bool) {
+	switch e := event.(type) {
+	case *metrics.ExposeNumericMetricsResult:
+		return e.Name, true
+	case *metrics.ExposeBinaryEventsResult:
+		return e.Name, true
+	case *metrics.ExposeTimeRangeMetricsResult:
+		return e.Name, true
+	default:
+		return "", false
 	}
 }
 func AssertNumericExposeEvent(expose *devices.Entity, event metrics.ExposeResult, timestamps []time.Time, values []float32, t *testing.T) {

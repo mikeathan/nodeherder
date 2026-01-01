@@ -1,4 +1,4 @@
-package metrics
+package domain
 
 import (
 	"encoding/json"
@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// View Range rwaw metrics
 type LoadDeviceMetricsRequest struct {
 	Id     string `json:"id"`
 	Expose string `json:"expose,omitempty"`
@@ -46,11 +47,12 @@ func (e *ExposeMetricsResult) Size() int {
 }
 
 type ExposeNumericMetricsResult struct {
-	Name string          `json:"name"`
-	Type string          `json:"type"`
-	From int64           `json:"from"`
-	To   int64           `json:"to"`
-	Data []*NumericValue `json:"data"`
+	Name       string          `json:"name"`
+	Type       string          `json:"type"`
+	From       int64           `json:"from"`
+	To         int64           `json:"to"`
+	Data       []*NumericValue `json:"data"`
+	Aggregator AggregationType
 }
 
 func ToTimeRangeExposeResults(r ExposeResult) *ExposeTimeRangeMetricsResult {
@@ -88,16 +90,16 @@ type timeRangeStartValue struct {
 }
 
 type BinaryEvent struct {
-	Timestamp int64  `json:"timestamp"`
-	Value     string `json:"value"`
+	Timestamp int64 `json:"timestamp"`
+	Value     bool  `json:"value"`
 }
 
 type ExposeBinaryEventsResult struct {
-	Name string        `json:"name"`
-	Type string        `json:"type"`
-	From int64         `json:"from"`
-	To   int64         `json:"to"`
-	Data []BinaryEvent `json:"data"`
+	Name string         `json:"name"`
+	Type string         `json:"type"`
+	From int64          `json:"from"`
+	To   int64          `json:"to"`
+	Data []*BinaryEvent `json:"data"`
 }
 
 // ExposeBinaryEventsResult
@@ -107,7 +109,7 @@ func NewExposeBinaryEventsResult(name string, from, to time.Time) *ExposeBinaryE
 		Type: "binary",
 		From: from.UnixMilli(),
 		To:   to.UnixMilli(),
-		Data: []BinaryEvent{},
+		Data: []*BinaryEvent{},
 	}
 }
 
@@ -127,14 +129,14 @@ func (e *ExposeBinaryEventsResult) Size() int {
 }
 
 func (e *ExposeBinaryEventsResult) Collect(timestamp time.Time, raw []byte) error {
-	var value string
-	if err := utils.ByteArrayToAny(raw, &value); err != nil {
+	var val bool
+	if err := utils.DecodeGobValue(raw, &val); err != nil {
 		return err
 	}
 
-	e.Data = append(e.Data, BinaryEvent{
+	e.Data = append(e.Data, &BinaryEvent{
 		Timestamp: timestamp.UnixMilli(),
-		Value:     value,
+		Value:     val,
 	})
 
 	return nil
@@ -146,11 +148,11 @@ func (e *ExposeBinaryEventsResult) Flush() {
 
 func (c *ExposeBinaryEventsResult) MarshalJSON() ([]byte, error) {
 	res := struct {
-		Name string        `json:"name"`
-		Type string        `json:"type"`
-		From int64         `json:"from"`
-		To   int64         `json:"to"`
-		Data []BinaryEvent `json:"data"`
+		Name string         `json:"name"`
+		Type string         `json:"type"`
+		From int64          `json:"from"`
+		To   int64          `json:"to"`
+		Data []*BinaryEvent `json:"data"`
 	}{
 		Name: c.Name,
 		Type: c.Type,
@@ -190,11 +192,11 @@ type NumericValue struct {
 	Y float32 `json:"y"`
 }
 
-func NewExposeResult(name string, dataType string, from time.Time, to time.Time) (ExposeResult, error) {
+func NewExposeResult(name string, dataType string, aggregator AggregationType, from time.Time, to time.Time) (ExposeResult, error) {
 	var result ExposeResult
 	switch dataType {
 	case "numeric":
-		result = NewExposeNumericMetricResult(name, from, to)
+		result = NewExposeNumericMetricResult(name, aggregator, from, to)
 	case "binary":
 		result = NewExposeBinaryMetricResult(name, from, to)
 	case "enum":
@@ -206,19 +208,20 @@ func NewExposeResult(name string, dataType string, from time.Time, to time.Time)
 	return result, nil
 }
 
-func NewExposeNumericMetricResult(name string, from time.Time, to time.Time) *ExposeNumericMetricsResult {
+func NewExposeNumericMetricResult(name string, aggregator AggregationType, from time.Time, to time.Time) *ExposeNumericMetricsResult {
 	return &ExposeNumericMetricsResult{
-		Name: name,
-		Type: "numeric",
-		From: from.UnixMilli(),
-		To:   to.UnixMilli(),
-		Data: []*NumericValue{},
+		Name:       name,
+		Type:       "numeric",
+		Aggregator: aggregator,
+		From:       from.UnixMilli(),
+		To:         to.UnixMilli(),
+		Data:       []*NumericValue{},
 	}
 }
 
 func (e *ExposeNumericMetricsResult) Collect(timestamp time.Time, data []byte) error {
 	var value float32
-	err := utils.ByteArrayToAny(data, &value)
+	err := utils.DecodeGobValue(data, &value)
 	if err != nil {
 		return err
 	}
@@ -272,7 +275,7 @@ func NewExposeBinaryMetricResult(name string, from time.Time, to time.Time) Expo
 		Type: "binary",
 		From: from.UnixMilli(),
 		To:   to.UnixMilli(),
-		Data: []BinaryEvent{},
+		Data: []*BinaryEvent{},
 	}
 }
 
@@ -288,7 +291,7 @@ func NewExposeEnumMetricResult(name string, from time.Time, to time.Time) Expose
 
 func (e *ExposeTimeRangeMetricsResult) Collect(timestamp time.Time, data []byte) error {
 	var value string
-	err := utils.ByteArrayToAny(data, &value)
+	err := utils.DecodeGobValue(data, &value)
 	if err != nil {
 		return err
 	}

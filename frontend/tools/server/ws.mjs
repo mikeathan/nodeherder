@@ -11,7 +11,7 @@ import {
   runPermitJoin,
 } from './state.mjs';
 import { sendMessage, sendOperationSuccess, sendOperationFailed, currentTime } from './utils.mjs';
-import { getMetricsForDevice } from './metrics-mock.mjs';
+import { getAllMetricsForDevice, getMetricsForDevice } from './metrics-mock.mjs';
 
 export function registerWebsocket(app, server) {
   expressWs(app, server);
@@ -116,12 +116,7 @@ export function registerWebsocket(app, server) {
             });
           } else {
             // Return all exposes for the device
-            const illuminanceData = getMetricsForDevice(deviceId, 'illuminance', from, to);
-            const presenceData = getMetricsForDevice(deviceId, 'presence', from, to);
-
-            const exposes = [];
-            if (illuminanceData) exposes.push(illuminanceData);
-            if (presenceData) exposes.push(presenceData);
+            const exposes = getAllMetricsForDevice(deviceId, from, to);
 
             if (exposes.length === 0) {
               console.log('No metrics for device id', deviceId);

@@ -1,10 +1,10 @@
 <script setup lang="ts">
   import { computed } from 'vue';
   import type { PropType } from 'vue';
-  import MiniNumericChart from './MiniNumericChart.vue';
-  import MiniBinaryChart from './MiniBinaryChart.vue';
-  import { MetricsTypes, type MetricsType } from '@/types/metrics.type';
+  import { type MetricsType } from '@/types/metrics.type';
   import type { DeviceExposeNumericMetrics, DeviceExposeBinaryMetrics } from '@/types/metrics.type';
+  import { resolveMiniChartComponentKey } from '@/utils/chart.utils';
+  import { MiniChartComponents } from '@/mixins/useChartComponents';
 
   const props = defineProps({
     type: {
@@ -29,11 +29,16 @@
     },
   });
 
-  const isNumeric = computed(() => props.type === MetricsTypes.Numeric);
-  const isBinary = computed(() => props.type === MetricsTypes.Binary);
+  const chartKey = computed(() => resolveMiniChartComponentKey(props.type, props.exposeName, props.unit));
+  const chartComponent = computed(() => (chartKey.value ? MiniChartComponents[chartKey.value] : null));
 </script>
 
 <template>
-  <MiniNumericChart v-if="isNumeric" :data="data as any" :exposeName="exposeName" :unit="unit" :height="height" />
-  <MiniBinaryChart v-else-if="isBinary" :data="data as any" :exposeName="exposeName" :height="height" />
+  <component
+    :is="chartComponent"
+    :data="data as any"
+    :exposeName="exposeName"
+    :unit="unit"
+    :height="height"
+  />
 </template>
