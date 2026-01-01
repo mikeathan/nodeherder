@@ -59,6 +59,7 @@ import {
   mdiPowerOff,
   mdiFlash,
   mdiFlashOutline,
+  mdiSmokeDetectorAlert,
 } from '@mdi/js';
 import { Expose } from '@/types/device';
 
@@ -96,6 +97,7 @@ const typeToClassMapsensor: KeyValuePair<IconProps> = {
   frequency: { name: mdiSineWave, color: 'purple' },
   tamper: { name: mdiAlertCircleOutline, color: 'red' },
   smoke: { name: mdiSmoking, color: 'red' },
+  smoke_concentration: { name: mdiSmokeDetectorAlert, color: 'orange' },
   radiation_dose_per_hour: {
     name: mdiRadioactive,
     color: 'orange',
