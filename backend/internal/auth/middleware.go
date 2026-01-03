@@ -20,9 +20,9 @@ func Auth(jwtService *JWTService, blacklist *TokenBlacklist) func(http.Handler) 
 				token = c.Value
 			}
 
-			// if token == "" {
-			// 	token = extractBearer(r.Header.Get("Authorization"))
-			// }
+			if token == "" {
+				token = extractBearer(r.Header.Get("Authorization"))
+			}
 
 			if token == "" {
 				writeJSONAuthError(w, http.StatusUnauthorized, "missing token")

@@ -582,39 +582,27 @@ func TestProcessorStoresMetricsForNewNonBridgeDevice(t *testing.T) {
 		t.Fatalf("size mismatch want %v got %v", 2, len(lightMetrics.Exposes))
 	}
 
-	for idx, gotExpose := range lightMetrics.Exposes {
-		if gotExpose.GetType() == "numeric" {
-			numericExpose := metrics.ToNumericExposeResults(gotExpose)
+	expectedValues := map[string]float32{
+		"brightness": 20.0,
+		"color_temp": 110.0,
+	}
 
-			// first index expected to be brightness
-			if idx == 0 {
-				if numericExpose.Name != "brightness" {
-					t.Fatalf("name mismatch want brightness got %v", numericExpose.Name)
-				}
-				// assert birghtness values
-				if len(numericExpose.Data) != 1 {
-					t.Fatalf("size mismatch want %v got %v", 1, len(numericExpose.Data))
-				}
+	for _, gotExpose := range lightMetrics.Exposes {
+		if gotExpose.GetType() != "numeric" {
+			t.Errorf("invalid expose type %v: ", gotExpose.GetType())
+			continue
+		}
 
-				if numericExpose.Data[0].Y != 20.0 {
-					t.Fatalf("name mismatch want brightness value 20.0 got %v", numericExpose.Data[0].Y)
-				}
-
-				//second index expected to be color_temp
-			} else if idx == 1 {
-				if numericExpose.Name != "color_temp" {
-					t.Fatalf("name mismatch want color_temp got %v", numericExpose.Name)
-				}
-
-				if len(numericExpose.Data) != 1 {
-					t.Fatalf("size mismatch want %v got %v", 1, len(numericExpose.Data))
-				}
-				if numericExpose.Data[0].Y != 110.0 {
-					t.Fatalf("name mismatch want color_temp value 110.0 got %v", numericExpose.Data[0].Y)
-				}
-			} else {
-				t.Errorf("invalid expose type %v: ", gotExpose.GetType())
-			}
+		numericExpose := metrics.ToNumericExposeResults(gotExpose)
+		expectedValue, ok := expectedValues[numericExpose.Name]
+		if !ok {
+			t.Fatalf("unexpected expose name %v", numericExpose.Name)
+		}
+		if len(numericExpose.Data) != 1 {
+			t.Fatalf("size mismatch want %v got %v", 1, len(numericExpose.Data))
+		}
+		if numericExpose.Data[0].Y != expectedValue {
+			t.Fatalf("name mismatch want %v value %v got %v", numericExpose.Name, expectedValue, numericExpose.Data[0].Y)
 		}
 	}
 
@@ -1262,7 +1250,7 @@ func TestImportDashboardGroupsMessage(t *testing.T) {
 
 	// create new expose group
 	newGroup := settings.NewDashboardGroup("living room group")
-	newGroup.AddDeviceExpose("0x00158d0005a23c38", "brightness")
+	newGroup.AddDeviceExpose("0x70ac08fffefafeca", "brightness")
 	newGroup.AddDeviceExpose("0x001788010d7d9d3f", "action")
 	newGroup.AddDeviceExpose("0xa4c13894070052fc", "presence")
 	newGroup.AddDeviceExpose("0xa4c13894070052fc", "illuminance")
@@ -1358,7 +1346,7 @@ func TestSaveDashboardGroupIsValidated(t *testing.T) {
 
 	// create new expose group
 	newGroup := settings.NewDashboardGroup("living room group")
-	newGroup.AddDeviceExpose("0x00158d0005a23c38", "brightness")
+	newGroup.AddDeviceExpose("0x70ac08fffefafeca", "brightness")
 	newGroup.AddDeviceExpose("0x001788010d7d9d3f", "action")
 	newGroup.AddDeviceExpose("0xa4c13894070052fc", "presence")
 	newGroup.AddDeviceExpose("0xa4c13894070052fc", "illuminance")
@@ -1410,7 +1398,7 @@ func TestRenameDashboardGroup(t *testing.T) {
 
 	cfg := store.AppConfig()
 	newGroup := settings.NewDashboardGroup("living room group")
-	newGroup.AddDeviceExpose("0x00158d0005a23c38", "brightness")
+	newGroup.AddDeviceExpose("0x70ac08fffefafeca", "brightness")
 	newGroup.AddDeviceExpose("0x001788010d7d9d3f", "action")
 	newGroup.AddDeviceExpose("0xa4c13894070052fc", "presence")
 	newGroup.AddDeviceExpose("0xa4c13894070052fc", "illuminance")
@@ -1509,7 +1497,7 @@ func TestDeleteDashboardGroupRemovesGroup(t *testing.T) {
 
 	cfg := store.AppConfig()
 	newGroup := settings.NewDashboardGroup("living room group")
-	newGroup.AddDeviceExpose("0x00158d0005a23c38", "brightness")
+	newGroup.AddDeviceExpose("0x70ac08fffefafeca", "brightness")
 	newGroup.AddDeviceExpose("0x001788010d7d9d3f", "action")
 	newGroup.AddDeviceExpose("0xa4c13894070052fc", "presence")
 	newGroup.AddDeviceExpose("0xa4c13894070052fc", "illuminance")
