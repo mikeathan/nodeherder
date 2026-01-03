@@ -38,7 +38,7 @@ func TestDeviceProcessor_CreateOrUpdateDevice_NewDevice(t *testing.T) {
 		},
 		AvailabilityTimeout: 1,
 	}
-	deviceName := "Living room light"
+	deviceName := "Attic room Light"
 
 	lastSeen := time.Now().Format(time.RFC3339)
 	payload := map[string]interface{}{}
@@ -132,7 +132,7 @@ func TestDeviceProcessor_CreateOrUpdateDevice_ExistingDevice(t *testing.T) {
 		},
 		AvailabilityTimeout: 1,
 	}
-	deviceName := "Living room light"
+	deviceName := "Attic room Light"
 
 	processor := services.NewDeviceProcessorBuilder().
 		WithRegistrar(registrar).
@@ -232,9 +232,9 @@ func TestOnDeviceConfigUpdated_WithDeviceOverride_ShouldDisableDevice(t *testing
 		Build()
 
 	//  Send payload 1
-	// "friendly_name": "Living room light",
-	// "ieee_address": "0x00158d0005a23c38",
-	deviceName := "Living room light"
+	// "friendly_name": "Attic room Light",
+	// "ieee_address": "0x70ac08fffefafeca",
+	deviceName := "Attic room Light"
 	lastSeen := time.Now().Format(time.RFC3339)
 	updatePayload := map[string]interface{}{}
 	updatePayload["brightness"] = 10.1
@@ -320,9 +320,9 @@ func TestOnDeviceConfigUpdated_WithDeviceDefaults_ShouldDisableAllDevices(t *tes
 	// send two new devices before setting defaults
 
 	//  Send payload 1
-	// "friendly_name": "Living room light",
-	// "ieee_address": "0x00158d0005a23c38",
-	deviceName := "Living room light"
+	// "friendly_name": "Attic room Light",
+	// "ieee_address": "0x70ac08fffefafeca",
+	deviceName := "Attic room Light"
 	lastSeen := time.Now().Format(time.RFC3339)
 	updatePayload := map[string]interface{}{}
 	updatePayload["brightness"] = 10.1
