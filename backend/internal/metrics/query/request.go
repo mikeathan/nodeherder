@@ -20,14 +20,18 @@ type MetricsQueryRequest struct {
 }
 
 func ResolveTime(q domain.TimeQuery, now time.Time) (time.Time, time.Time) {
-	if q.Lookback == "" {
-		return q.From, q.To
+	// If user provided nothing at all, we choose a safe global window
+	if q.Lookback == "" && q.From.IsZero() && q.To.IsZero() {
+		// Safe default: last 30 days
+		return now.Add(-30 * 24 * time.Hour), now
 	}
 
+	// If lookback provided, it overrides from/to
 	if d, ok := parseLookback(q.Lookback); ok {
 		return now.Add(-d), now
 	}
 
+	// Otherwise trust explicit from/to
 	return q.From, q.To
 }
 
