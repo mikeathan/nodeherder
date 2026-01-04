@@ -17,14 +17,29 @@ func TestResolveTime(t *testing.T) {
 		want domain.TimeQuery
 	}{
 		{
+			name: "no input defaults to 30 days",
+			in:   domain.TimeQuery{},
+			want: domain.TimeQuery{From: now.Add(-30 * 24 * time.Hour), To: now},
+		},
+		{
 			name: "no range",
 			in:   domain.TimeQuery{From: dayStart, To: now},
 			want: domain.TimeQuery{From: dayStart, To: now},
 		},
 		{
+			name: "lookback overrides from/to",
+			in:   domain.TimeQuery{Lookback: "6h", From: dayStart, To: now},
+			want: domain.TimeQuery{From: now.Add(-6 * time.Hour), To: now},
+		},
+		{
 			name: "lookback hours",
 			in:   domain.TimeQuery{Lookback: "6h"},
 			want: domain.TimeQuery{From: now.Add(-6 * time.Hour), To: now},
+		},
+		{
+			name: "lookback minutes",
+			in:   domain.TimeQuery{Lookback: "30m"},
+			want: domain.TimeQuery{From: now.Add(-30 * time.Minute), To: now},
 		},
 		{
 			name: "lookback days",
