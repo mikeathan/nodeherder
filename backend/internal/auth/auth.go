@@ -283,7 +283,7 @@ func (o *googleOAuth) HandleMe(w http.ResponseWriter, r *http.Request) {
 
 // authDelegator
 // Delegator that routes to online or offline auth
-// based on a simple predicate. If decide(r) returns true, offline is used;
+// based on a simple predicate. If decider returns true, offline is used;
 // otherwise online is used.
 type authDelegator struct {
 	online  OAuth
@@ -333,4 +333,45 @@ func (s *authDelegator) RegisterRoutes(registrar RouteRegistrar) {
 	registrar.PublicGET(base+"/callback", http.HandlerFunc(s.HandleCallback))
 	registrar.PublicGET(base+"/offline/start", http.HandlerFunc(s.HandleOfflineStart))
 	registrar.GET(base+"/me", http.HandlerFunc(s.HandleMe))
+}
+
+// HandleServiceToken handles service token requests for machine-to-machine authentication.
+type serviceTokenRequest struct {
+	ClientID     string `json:"client_id"`
+	ClientSecret string `json:"client_secret"`
+}
+
+type serviceTokenResponse struct {
+	AccessToken string `json:"access_token"`
+	ExpiresIn   int64  `json:"expires_in"`
+}
+
+func (p *Provider) ServiceTokenHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req serviceTokenRequest
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeJSONAuthError(w, http.StatusBadRequest, "invalid request")
+			return
+		}
+
+		if !utils.ValidateServiceCredentials(req.ClientID, req.ClientSecret) {
+			writeJSONAuthError(w, http.StatusUnauthorized, "invalid credentials")
+			return
+		}
+
+		token, err := p.jwt.GenerateJWT(req.ClientID, "Service")
+		if err != nil {
+			writeJSONAuthError(w, http.StatusInternalServerError, "failed to generate token")
+			return
+		}
+
+		resp := serviceTokenResponse{
+			AccessToken: token,
+			ExpiresIn:   int64(p.jwt.cfg.Expiration.Seconds()),
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(resp)
+	})
 }

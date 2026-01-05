@@ -50,9 +50,11 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 
 	// public routes
 	router.PublicGET("/api/context/devices", api.NewDeviceContextHandler(store, 1*time.Second))
+	router.PublicPOST("/api/auth/token", authProvider.ServiceTokenHandler())
 
 	// authentication routes
 	router.AddAuthentication(authProvider.OAuth())
+
 	apiServer := api.NewHttpServer(
 		port,
 		api.WithContext(ctx),
