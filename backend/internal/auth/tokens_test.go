@@ -8,8 +8,9 @@ import (
 )
 
 func TestGenerateAndValidateJWT(t *testing.T) {
-    cfg := auth.WithDefaultJWTConfig()
-    jwtService := auth.NewJWTService(cfg)
+	t.Setenv("JWT_SECRET_KEY", "test-secret")
+	cfg := auth.WithDefaultJWTConfig()
+	jwtService := auth.NewJWTService(cfg)
 
     userID := "123"
     username := "test"
@@ -40,8 +41,9 @@ func TestGenerateAndValidateJWT(t *testing.T) {
 }
 
 func TestValidateJWT_InvalidToken(t *testing.T) {
-    cfg := auth.WithDefaultJWTConfig()
-    jwtService := auth.NewJWTService(cfg)
+	t.Setenv("JWT_SECRET_KEY", "test-secret")
+	cfg := auth.WithDefaultJWTConfig()
+	jwtService := auth.NewJWTService(cfg)
 
     invalidToken := "not.a.valid.token"
 
@@ -52,8 +54,9 @@ func TestValidateJWT_InvalidToken(t *testing.T) {
 }
 
 func TestValidateJWT_TamperedToken(t *testing.T) {
-    cfg := auth.WithDefaultJWTConfig()
-    jwtService := auth.NewJWTService(cfg)
+	t.Setenv("JWT_SECRET_KEY", "test-secret")
+	cfg := auth.WithDefaultJWTConfig()
+	jwtService := auth.NewJWTService(cfg)
 
     userID := "123"
     username := "test"

@@ -36,8 +36,15 @@ type JWTService struct {
 }
 
 func WithDefaultJWTConfig() JWTConfig {
+
+	secret, err := utils.GetJwtSecretKey()
+	if err != nil {
+		utils.LogError("JWT_SECRET_KEY is not set")
+		panic("JWT_SECRET_KEY is not set")
+	}
+
 	return JWTConfig{
-		Secret:     []byte("JWT_SECRET_KEY"),
+		Secret:     secret,
 		Expiration: 24 * time.Hour,
 	}
 }

@@ -8,6 +8,7 @@ import (
 )
 
 func TestAuthMiddleware_ValidToken(t *testing.T) {
+	t.Setenv("JWT_SECRET_KEY", "test-secret")
 	jwtService := auth.NewJWTService(auth.WithDefaultJWTConfig())
 	blacklist := auth.NewTokenBlacklist()
 	token, err := jwtService.GenerateJWT("123", "test@example.com")
@@ -38,6 +39,7 @@ func TestAuthMiddleware_ValidToken(t *testing.T) {
 }
 
 func TestAuthMiddleware_MissingToken(t *testing.T) {
+	t.Setenv("JWT_SECRET_KEY", "test-secret")
 	jwtService := auth.NewJWTService(auth.WithDefaultJWTConfig())
 	blacklist := auth.NewTokenBlacklist()
 
@@ -53,6 +55,7 @@ func TestAuthMiddleware_MissingToken(t *testing.T) {
 }
 
 func TestAuthMiddleware_InvalidToken(t *testing.T) {
+	t.Setenv("JWT_SECRET_KEY", "test-secret")
 	jwtService := auth.NewJWTService(auth.WithDefaultJWTConfig())
 	blacklist := auth.NewTokenBlacklist()
 
@@ -69,6 +72,7 @@ func TestAuthMiddleware_InvalidToken(t *testing.T) {
 }
 
 func TestAuthMiddleware_UsesAuthorizationHeader(t *testing.T) {
+	t.Setenv("JWT_SECRET_KEY", "test-secret")
 	jwtService := auth.NewJWTService(auth.WithDefaultJWTConfig())
 	blacklist := auth.NewTokenBlacklist()
 	token, err := jwtService.GenerateJWT("123", "test@example.com")

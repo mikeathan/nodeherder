@@ -28,6 +28,41 @@ func GetFrontendBaseURL() (string, error) {
 	return "", fmt.Errorf("unknown APP_ENV value: %q", env)
 }
 
+func GetJwtSecretKey() ([]byte, error) {
+	secret := os.Getenv("JWT_SECRET_KEY")
+	if secret == "" {
+		return nil, fmt.Errorf("JWT_SECRET_KEY is not set")
+	}
+	return []byte(secret), nil
+}
+
+// ValidateServiceCredentials checks if the provided client ID and secret
+// match any of the configured service clients in the environment variables.
+func ValidateServiceCredentials(clientID, clientSecret string) bool {
+	raw := os.Getenv("SERVICE_CLIENTS")
+	if raw == "" {
+		return false
+	}
+
+	for _, id := range strings.Split(raw, ",") {
+		id = strings.TrimSpace(id)
+		if id == "" {
+			continue
+		}
+
+		secret := os.Getenv("SERVICE_SECRET_" + id)
+		if secret == "" {
+			continue
+		}
+
+		if clientID == id && clientSecret == secret {
+			return true
+		}
+	}
+
+	return false
+}
+
 func GetAuthLocalOfflineMode() bool {
 	mode := os.Getenv("OFFLINE_STRICT_LOCAL")
 	return mode == "true"
