@@ -103,6 +103,10 @@ Location: `backend/.env.development`
 APP_ENV=development
 FRONTEND_BASE_URL=http://localhost:4100
 OAUTH_CALLBACK_URL=http://localhost:4110/api/auth/callback
+JWT_SECRET_KEY=<your-jwt-secret>
+SERVICE_CLIENTS=service-a,service-b
+SERVICE_SECRET_service-a=<service-a-secret>
+SERVICE_SECRET_service-b=<service-b-secret>
 OFFLINE_STRICT_LOCAL=true
 ```
 
@@ -111,7 +115,16 @@ OFFLINE_STRICT_LOCAL=true
 - `APP_ENV` - Environment name: `development`, `staging`, or `production`
 - `FRONTEND_BASE_URL` - Frontend URL for CORS and redirects
 - `OAUTH_CALLBACK_URL` - Google OAuth callback URL (use `{PORT}` as placeholder)
+- `JWT_SECRET_KEY` - Secret key for JWT token signing (minimum 32 characters)
+- `SERVICE_CLIENTS` - Comma-separated list of service client IDs
+- `SERVICE_SECRET_<ID>` - Secret for each service client in `SERVICE_CLIENTS`
 - `OFFLINE_STRICT_LOCAL` - When `true`, local requests use offline auth mode
+
+Generate strong secrets:
+
+```bash
+openssl rand -base64 32
+```
 
 ### Backend `.env.production`
 
@@ -123,7 +136,10 @@ FRONTEND_BASE_URL=http://nodeherder.local
 OAUTH_CALLBACK_URL=http://nodeherder.local/api/auth/callback
 GOOGLE_CLIENT_ID=<your-google-client-id>
 GOOGLE_CLIENT_SECRET=<your-google-client-secret>
-JWT_SECRET=<your-jwt-secret>
+JWT_SECRET_KEY=<your-jwt-secret>
+SERVICE_CLIENTS=service-a,service-b
+SERVICE_SECRET_service-a=<service-a-secret>
+SERVICE_SECRET_service-b=<service-b-secret>
 OFFLINE_STRICT_LOCAL=false
 ```
 
@@ -131,7 +147,15 @@ OFFLINE_STRICT_LOCAL=false
 
 - `GOOGLE_CLIENT_ID` - OAuth 2.0 Client ID from Google Cloud Console
 - `GOOGLE_CLIENT_SECRET` - OAuth 2.0 Client Secret
-- `JWT_SECRET` - Secret key for JWT token signing (minimum 32 characters)
+- `JWT_SECRET_KEY` - Secret key for JWT token signing (minimum 32 characters)
+- `SERVICE_CLIENTS` - Comma-separated list of service client IDs
+- `SERVICE_SECRET_<ID>` - Secret for each service client in `SERVICE_CLIENTS`
+
+Generate strong secrets:
+
+```bash
+openssl rand -base64 32
+```
 
 ---
 
@@ -253,7 +277,10 @@ After running setup script:
    OAUTH_CALLBACK_URL=https://yourdomain.com/api/auth/callback
    GOOGLE_CLIENT_ID=your-client-id
    GOOGLE_CLIENT_SECRET=your-client-secret
-   JWT_SECRET=your-random-32-char-secret
+   JWT_SECRET_KEY=your-random-32-char-secret
+   SERVICE_CLIENTS=service-a,service-b
+   SERVICE_SECRET_service-a=your-service-a-secret
+   SERVICE_SECRET_service-b=your-service-b-secret
    OFFLINE_STRICT_LOCAL=false
    ```
 
@@ -345,7 +372,7 @@ sudo usermod -a -G dialout $USER
 
 - **Never commit `.env` files to git** - they contain secrets
 - `backend/.env` is auto-generated with random MQTT password
-- Use strong `JWT_SECRET` (32+ characters, random)
+- Use strong `JWT_SECRET_KEY` (32+ characters, random)
 - For production, use HTTPS and secure WebSocket (WSS)
 - Keep `GOOGLE_CLIENT_SECRET` confidential
 - Regularly rotate MQTT credentials if exposed
