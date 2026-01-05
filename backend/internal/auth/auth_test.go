@@ -13,6 +13,7 @@ import (
 // Test helpers
 func setupTestProvider(t *testing.T, forceOfflineMode bool) *auth.Provider {
 	t.Helper()
+	setTestJWTSecret(t)
 
 	// Set environment for testing
 	// When OFFLINE_STRICT_LOCAL=false: always offline (dev mode)
@@ -26,6 +27,11 @@ func setupTestProvider(t *testing.T, forceOfflineMode bool) *auth.Provider {
 	cfg := auth.WithDefaultJWTConfig()
 	callbackURL := "http://localhost:8080/api/auth/callback"
 	return auth.NewProvider(cfg, callbackURL)
+}
+
+func setTestJWTSecret(t *testing.T) {
+	t.Helper()
+	t.Setenv("JWT_SECRET_KEY", "test-secret")
 }
 
 func assertCookie(t *testing.T, cookies []*http.Cookie, name string, shouldExist bool) *http.Cookie {
@@ -226,6 +232,90 @@ func TestGoogleOAuth_HandleMe_Unauthorized(t *testing.T) {
 	}
 }
 
+func TestServiceTokenHandler(t *testing.T) {
+	setTestJWTSecret(t)
+	t.Setenv("SERVICE_CLIENTS", "service-client")
+	t.Setenv("SERVICE_SECRET_service-client", "service-secret")
+
+	cfg := auth.WithDefaultJWTConfig()
+	provider := auth.NewProvider(cfg, "http://localhost:8080/api/auth/callback")
+	handler := provider.ServiceTokenHandler()
+
+	testCases := []struct {
+		name        string
+		body        string
+		status      int
+		errContains string
+	}{
+		{
+			name:        "invalid json",
+			body:        "{",
+			status:      http.StatusBadRequest,
+			errContains: "invalid request",
+		},
+		{
+			name:        "invalid credentials",
+			body:        `{"client_id":"service-client","client_secret":"wrong"}`,
+			status:      http.StatusUnauthorized,
+			errContains: "invalid credentials",
+		},
+		{
+			name:   "valid credentials",
+			body:   `{"client_id":"service-client","client_secret":"service-secret"}`,
+			status: http.StatusOK,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			req := httptest.NewRequest("POST", "/api/auth/token", strings.NewReader(testCase.body))
+
+			handler.ServeHTTP(w, req)
+
+			if testCase.status != http.StatusOK {
+				body := assertJSONResponse(t, w, testCase.status)
+				if errMsg, ok := body["error"].(string); !ok || !strings.Contains(errMsg, testCase.errContains) {
+					t.Errorf("expected error containing %q, got: %v", testCase.errContains, body["error"])
+				}
+				return
+			}
+
+			if w.Code != http.StatusOK {
+				t.Fatalf("expected status %d, got %d", http.StatusOK, w.Code)
+			}
+
+			var resp struct {
+				AccessToken string `json:"access_token"`
+				ExpiresIn   int64  `json:"expires_in"`
+			}
+
+			if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+				t.Fatalf("failed to decode response: %v", err)
+			}
+
+			if resp.AccessToken == "" {
+				t.Fatal("expected access_token to be set")
+			}
+			if resp.ExpiresIn != int64(cfg.Expiration.Seconds()) {
+				t.Errorf("expected expires_in %d, got %d", int64(cfg.Expiration.Seconds()), resp.ExpiresIn)
+			}
+
+			jwtService := auth.NewJWTService(cfg)
+			claims, err := jwtService.ValidateJWT(resp.AccessToken)
+			if err != nil {
+				t.Fatalf("failed to validate service token: %v", err)
+			}
+			if claims.UserID != "service-client" {
+				t.Errorf("expected UserID service-client, got %s", claims.UserID)
+			}
+			if claims.Username != "Service" {
+				t.Errorf("expected Username Service, got %s", claims.Username)
+			}
+		})
+	}
+}
+
 func TestOfflineOAuth_HandleLogin(t *testing.T) {
 	// OFFLINE_STRICT_LOCAL=true + local IP = offline
 	// because: decide() returns IsLocalRequest() = true (use offline)
@@ -275,6 +365,7 @@ func TestOfflineOAuth_HandleCallback_NotSupported(t *testing.T) {
 }
 
 func TestOfflineOAuth_HandleOfflineStart(t *testing.T) {
+	setTestJWTSecret(t)
 	// Need to set environment variables for redirect
 	os.Setenv("APP_ENV", "development")
 	os.Setenv("FRONTEND_BASE_URL", "http://localhost:4100")
@@ -347,6 +438,7 @@ func TestOfflineOAuth_HandleLogout(t *testing.T) {
 }
 
 func TestAuthDelegator_PicksCorrectImplementation(t *testing.T) {
+	setTestJWTSecret(t)
 	os.Setenv("OFFLINE_STRICT_LOCAL", "true")
 
 	cfg := auth.WithDefaultJWTConfig()
@@ -385,6 +477,7 @@ func TestAuthDelegator_PicksCorrectImplementation(t *testing.T) {
 }
 
 func TestAuthDelegator_RegisterRoutes(t *testing.T) {
+	setTestJWTSecret(t)
 	cfg := auth.WithDefaultJWTConfig()
 	callbackURL := "http://localhost:8080/api/auth/callback"
 	provider := auth.NewProvider(cfg, callbackURL)
