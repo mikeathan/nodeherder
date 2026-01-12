@@ -27,13 +27,13 @@ const (
 )
 
 type TimeQuery struct {
-	From     time.Time
-	To       time.Time
-	Lookback string
+	From     time.Time `json:"from"`
+	To       time.Time `json:"to"`
+	Lookback string    `json:"lookback"`
 }
 
 type MetricFilter struct {
-	Field MetricField
-	Op    OperationType
-	Value any
+	Field MetricField   `json:"field"`
+	Op    OperationType `json:"op"`
+	Value any           `json:"value"`
 }

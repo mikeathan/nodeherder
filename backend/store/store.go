@@ -42,7 +42,7 @@ type appStore struct {
 	devices          devices.Repository
 	config           *settings.AppConfigCache
 	deviceIdMapper   *repository.DeviceIdMapper
-	rateLimiter      *ratelimiter.RateLimiter
+	rateLimiter      *ratelimiter.DeviceRateLimiter
 	isDirtyCallbacks []AppStoreDirtyFlagCallback
 }
 
@@ -53,7 +53,7 @@ func NewAppStore(devices devices.Repository, metrics metrics.Repository, config 
 		devices:          devices,
 		config:           config,
 		deviceIdMapper:   repository.NewDeviceIdMapper(devices),
-		rateLimiter:      ratelimiter.NewRateLimiter(),
+		rateLimiter:      ratelimiter.NewDeviceRateLimiter(),
 		isDirtyCallbacks: []AppStoreDirtyFlagCallback{},
 	}
 

@@ -6,17 +6,17 @@ import (
 )
 
 type MetricsQueryRequest struct {
-	DeviceIds []string
-	Expose    string
+	DeviceIds []string `json:"deviceIds"`
+	Expose    string   `json:"expose"`
 
-	Time domain.TimeQuery
+	Time domain.TimeQuery `json:"time"`
 
-	Aggregation domain.AggregationType
+	Aggregation domain.AggregationType `json:"aggregation"`
 
-	Filters []domain.MetricFilter
+	Filters []domain.MetricFilter `json:"filters"`
 
-	Limit    int
-	SortDesc bool
+	Limit    int  `json:"limit"`
+	SortDesc bool `json:"sortDesc"`
 }
 
 func ResolveTime(q domain.TimeQuery, now time.Time) (time.Time, time.Time) {

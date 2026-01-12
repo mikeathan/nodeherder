@@ -356,14 +356,14 @@ func (h *HubStateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // Device Context Handler
 type DeviceContextHandler struct {
 	store     store.AppStore
-	limiter   *ratelimiter.RateLimiter
+	limiter   *ratelimiter.DeviceRateLimiter
 	rateLimit time.Duration
 }
 
 func NewDeviceContextHandler(store store.AppStore, rateLimit time.Duration) *DeviceContextHandler {
 	return &DeviceContextHandler{
 		store:     store,
-		limiter:   ratelimiter.NewRateLimiter(),
+		limiter:   ratelimiter.NewDeviceRateLimiter(),
 		rateLimit: rateLimit,
 	}
 }
@@ -394,14 +394,14 @@ func (h *DeviceContextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 // Automation Trigger
 type AutomationTriggerHandler struct {
 	hub       automations.AutomationTrigger
-	limiter   *ratelimiter.RateLimiter
+	limiter   *ratelimiter.DeviceRateLimiter
 	rateLimit time.Duration
 }
 
 func NewAutomationTriggerHandler(hub automations.AutomationTrigger, rateLimit time.Duration) *AutomationTriggerHandler {
 	sh := &AutomationTriggerHandler{
 		hub:       hub,
-		limiter:   ratelimiter.NewRateLimiter(),
+		limiter:   ratelimiter.NewDeviceRateLimiter(),
 		rateLimit: rateLimit,
 	}
 	return sh
@@ -456,16 +456,15 @@ func writeJSONError(w http.ResponseWriter, status int, message string) {
 
 // Metrics query
 type MetricsQueryHandler struct {
-	limiter   *ratelimiter.RateLimiter
+	limiter   *ratelimiter.WindowRateLimiter
 	rateLimit time.Duration
 	querier   *metrics.QueryService
 }
 
-func NewMetricsQueryHandler(limiter *ratelimiter.RateLimiter, rateLimit time.Duration, store store.AppStore) *MetricsQueryHandler {
+func NewMetricsQueryHandler(limiter *ratelimiter.WindowRateLimiter, store store.AppStore) *MetricsQueryHandler {
 	return &MetricsQueryHandler{
-		limiter:   limiter,
-		rateLimit: rateLimit,
-		querier:   metrics.NewQueryService(store),
+		limiter: limiter,
+		querier: metrics.NewQueryService(store),
 	}
 }
 
@@ -486,12 +485,7 @@ func (h *MetricsQueryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	rateKey := "metrics_query"
-	if len(req.DeviceIds) > 0 {
-		rateKey = req.DeviceIds[0]
-	}
-
-	if !h.limiter.AllowWrite(rateKey, h.rateLimit) {
+	if !h.limiter.Allow() {
 		writeJSONError(w, http.StatusTooManyRequests, "rate limit exceeded")
 		return
 	}
