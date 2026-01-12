@@ -609,7 +609,7 @@ func TestAutomationTriggerHandler_Cases(t *testing.T) {
 
 func TestMetricsQueryHandler_InvalidContentType(t *testing.T) {
 	store := utils_test.CreateStore()
-	handler := api.NewMetricsQueryHandler(ratelimiter.NewRateLimiter(), 1*time.Second, store)
+	handler := api.NewMetricsQueryHandler(ratelimiter.NewWindowRateLimiter(1, time.Second), store)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/metrics/query", strings.NewReader(`{}`))
 	w := httptest.NewRecorder()
@@ -623,7 +623,7 @@ func TestMetricsQueryHandler_InvalidContentType(t *testing.T) {
 
 func TestMetricsQueryHandler_InvalidJSON(t *testing.T) {
 	store := utils_test.CreateStore()
-	handler := api.NewMetricsQueryHandler(ratelimiter.NewRateLimiter(), 1*time.Second, store)
+	handler := api.NewMetricsQueryHandler(ratelimiter.NewWindowRateLimiter(1, time.Second), store)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/metrics/query", strings.NewReader(`bad`))
 	req.Header.Set("Content-Type", "application/json")
@@ -689,7 +689,7 @@ func TestMetricsQueryHandler_SuccessWithLimitSort(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
-	handler := api.NewMetricsQueryHandler(ratelimiter.NewRateLimiter(), 1*time.Second, store)
+	handler := api.NewMetricsQueryHandler(ratelimiter.NewWindowRateLimiter(5, time.Second), store)
 	handler.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -764,7 +764,7 @@ func TestMetricsQueryHandler_RateLimit(t *testing.T) {
 	}
 
 	body, _ := json.Marshal(payload)
-	handler := api.NewMetricsQueryHandler(ratelimiter.NewRateLimiter(), 1*time.Hour, store)
+	handler := api.NewMetricsQueryHandler(ratelimiter.NewWindowRateLimiter(1, time.Hour), store)
 
 	req1 := httptest.NewRequest(http.MethodPost, "/api/metrics/query", bytes.NewReader(body))
 	req1.Header.Set("Content-Type", "application/json")

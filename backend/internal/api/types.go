@@ -9,6 +9,7 @@ type AggregationType string
 
 const DeviceContextVersion = "1"
 
+
 const (
 	AggNone  AggregationType = ""
 	AggLast  AggregationType = "last"
@@ -17,7 +18,6 @@ const (
 	AggAvg   AggregationType = "avg"
 	AggCount AggregationType = "count"
 )
-
 type DeviceContextResponse struct {
 	Version     string           `json:"version"`
 	GeneratedAt time.Time        `json:"generatedAt"`
