@@ -1,6 +1,7 @@
 package query_test
 
 import (
+	"reflect"
 	"testing"
 
 	"node-herder/internal/metrics/domain"
@@ -33,7 +34,7 @@ func TestAggregateExposeValue_Numeric(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			val, ts, ok, err := query.AggregateExposeValue(tt.agg, expose)
+			val, ts, ok, err := query.AggregateExposeValue(tt.agg, nil, expose)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -59,18 +60,34 @@ func TestAggregateExposeValue_Binary(t *testing.T) {
 		},
 	}
 
-	val, ts, ok, err := query.AggregateExposeValue(domain.AggLast, expose)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	tests := []struct {
+		name      string
+		agg       domain.AggregationType
+		wantValue any
+		wantTs    int64
+		wantOk    bool
+	}{
+		{"last", domain.AggLast, true, int64(20), true},
+		{"count", domain.AggCount, 2, 0, true},
+		{"none", domain.AggNone, expose.Data, 0, true},
 	}
-	if !ok {
-		t.Fatal("expected ok=true")
-	}
-	if val != true {
-		t.Fatalf("value = %v, want true", val)
-	}
-	if ts != int64(20) {
-		t.Fatalf("ts = %d, want 20", ts)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, ts, ok, err := query.AggregateExposeValue(tt.agg, nil, expose)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if ok != tt.wantOk {
+				t.Fatalf("ok = %v, want %v", ok, tt.wantOk)
+			}
+			if !reflect.DeepEqual(val, tt.wantValue) {
+				t.Fatalf("value = %#v, want %#v", val, tt.wantValue)
+			}
+			if ts != tt.wantTs {
+				t.Fatalf("ts = %d, want %d", ts, tt.wantTs)
+			}
+		})
 	}
 }
 
@@ -83,7 +100,7 @@ func TestAggregateExposeValue_TimeRange(t *testing.T) {
 		},
 	}
 
-	val, ts, ok, err := query.AggregateExposeValue(domain.AggLast, expose)
+	val, ts, ok, err := query.AggregateExposeValue(domain.AggLast, nil, expose)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -104,7 +121,7 @@ func TestAggregateExposeValue_EmptyData(t *testing.T) {
 		Data: []*domain.NumericValue{},
 	}
 
-	_, _, ok, err := query.AggregateExposeValue(domain.AggLast, expose)
+	_, _, ok, err := query.AggregateExposeValue(domain.AggLast, nil, expose)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -121,8 +138,68 @@ func TestAggregateExposeValue_UnsupportedAggregation(t *testing.T) {
 		},
 	}
 
-	_, _, _, err := query.AggregateExposeValue(domain.AggAvg, expose)
+	_, _, _, err := query.AggregateExposeValue(domain.AggAvg, nil, expose)
 	if err == nil {
 		t.Fatal("expected error for unsupported aggregation")
 	}
+}
+
+func TestAggregateExposeValue_LastEvent(t *testing.T) {
+	t.Run("numeric", func(t *testing.T) {
+		expose := &domain.ExposeNumericMetricsResult{
+			Name: "temperature",
+			Data: []*domain.NumericValue{
+				{X: 1, Y: 10},
+				{X: 2, Y: 20},
+				{X: 3, Y: 10},
+				{X: 4, Y: 5},
+			},
+		}
+
+		_, _, _, err := query.AggregateExposeValue(domain.LastEvent, 10.0, expose)
+		if err == nil {
+			t.Fatal("expected error for unsupported aggregation")
+		}
+	})
+
+	t.Run("binary", func(t *testing.T) {
+		expose := &domain.ExposeBinaryEventsResult{
+			Name: "door",
+			Data: []*domain.BinaryEvent{
+				{Timestamp: 10, Value: false},
+				{Timestamp: 20, Value: true},
+				{Timestamp: 30, Value: false},
+				{Timestamp: 40, Value: true},
+			},
+		}
+
+		val, ts, ok, err := query.AggregateExposeValue(domain.LastEvent, true, expose)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !ok {
+			t.Fatal("expected ok=true")
+		}
+		if val != true {
+			t.Fatalf("value = %v, want true", val)
+		}
+		if ts != 40 {
+			t.Fatalf("ts = %d, want %d", ts, 40)
+		}
+	})
+
+	t.Run("not found", func(t *testing.T) {
+		expose := &domain.ExposeNumericMetricsResult{
+			Name: "temperature",
+			Data: []*domain.NumericValue{
+				{X: 1, Y: 10},
+				{X: 2, Y: 20},
+			},
+		}
+
+		_, _, _, err := query.AggregateExposeValue(domain.LastEvent, 5.0, expose)
+		if err == nil {
+			t.Fatal("expected error for unsupported aggregation")
+		}
+	})
 }

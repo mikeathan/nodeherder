@@ -15,6 +15,7 @@ const (
 	AggMax   AggregationType = "max"
 	AggAvg   AggregationType = "avg"
 	AggCount AggregationType = "count"
+	LastEvent AggregationType = "last_event"
 
 	OpEquals      OperationType = "="
 	OpNotEquals   OperationType = "!="
