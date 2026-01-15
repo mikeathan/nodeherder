@@ -13,6 +13,8 @@ type MetricsQueryRequest struct {
 
 	Aggregation domain.AggregationType `json:"aggregation"`
 
+	AggregationValue any `json:"aggregation_value,omitempty"`
+
 	Filters []domain.MetricFilter `json:"filters"`
 
 	Limit    int  `json:"limit"`

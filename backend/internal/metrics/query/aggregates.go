@@ -5,7 +5,11 @@ import (
 	"node-herder/internal/metrics/domain"
 )
 
-func AggregateExposeValue(aggregator domain.AggregationType, expose domain.ExposeResult) (any, int64, bool, error) {
+func AggregateExposeValue(aggregator domain.AggregationType, aggregationValue any, expose domain.ExposeResult) (any, int64, bool, error) {
+	if aggregator == domain.LastEvent {
+		return aggregateLastEvent(aggregationValue, expose)
+	}
+
 	switch r := expose.(type) {
 	case *domain.ExposeNumericMetricsResult:
 		return aggregateNumericValues(aggregator, r)
@@ -64,7 +68,6 @@ func aggregateBinaryValues(aggregator domain.AggregationType, result *domain.Exp
 		return result.Data, 0, true, nil
 
 	case domain.AggLast:
-
 		last := result.Data[count-1]
 		return last.Value, last.Timestamp, true, nil
 
@@ -131,4 +134,27 @@ func numericAvg(data []*domain.NumericValue) (any, int64, bool, error) {
 		sum += float64(p.Y)
 	}
 	return sum / float64(len(data)), 0, true, nil
+}
+
+func aggregateLastEvent(aggregationValue any, expose domain.ExposeResult) (any, int64, bool, error) {
+	switch r := expose.(type) {
+	case *domain.ExposeNumericMetricsResult:
+		return nil, 0, false, fmt.Errorf("last_event not supported for numeric metrics; use AggLast")
+	case *domain.ExposeBinaryEventsResult:
+		// Type assertion to bool
+		aggValue, ok := aggregationValue.(bool)
+		if !ok {
+			return nil, 0, false, fmt.Errorf("aggregation_value for binary metric must be a boolean, got %T", aggregationValue)
+		}
+		for i := len(r.Data) - 1; i >= 0; i-- {
+			if r.Data[i].Value == aggValue {
+				return r.Data[i].Value, r.Data[i].Timestamp, true, nil
+			}
+		}
+		return nil, 0, false, nil
+	case *domain.ExposeTimeRangeMetricsResult:
+		return 0, 0, false, fmt.Errorf("last_event not supported for time range metrics")
+	default:
+		return nil, 0, false, fmt.Errorf("unknown expose type for last_event aggregation")
+	}
 }
