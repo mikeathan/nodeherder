@@ -26,9 +26,8 @@
       <h2>Create new automation</h2>
     </template>
     <template #content>
-      <div
-        class="col-xl-5 col-md-3"
-        v-if="selectedDevice == ''">
+      <div class="grid" v-if="selectedDevice == ''">
+        <div class="col-12 md:col-3 xl:col-5">
         <Selection
           :value="selectedDevice"
           label="Select device"
@@ -37,6 +36,7 @@
           @updated="(v) => (selectedDevice = v)"
           :items="deviceList">
         </Selection>
+        </div>
       </div>
       <div v-else>
         <DeviceAutomation

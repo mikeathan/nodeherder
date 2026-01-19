@@ -7,7 +7,7 @@
   });
 </script>
 <template>
-  <span key="linkquality" className="me-" v-if="props.value">
+  <span key="linkquality" class="mr-2" v-if="props.value">
     <Icon :icon="getSignalIcon(props.value)" />
     {{ props.value + ' LQI' }}
   </span>

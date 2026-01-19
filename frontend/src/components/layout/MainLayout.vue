@@ -11,12 +11,7 @@
 
   const permitJoinDuration = 120;
 
-  const drawerWidth = ref(0);
   const isDrawerVisible = ref(false);
-
-  const handleDrawerWidthChanged = (width: number) => {
-    drawerWidth.value = width;
-  };
 
   const toggleDrawer = () => {
     isDrawerVisible.value = !isDrawerVisible.value;
@@ -97,29 +92,23 @@
 </script>
 
 <template>
-  <NavigationBar
-    :style="{ marginLeft: `${drawerWidth}px` }"
-    :items="topNavigationItems"
-    @click="isDrawerVisible = $event" />
-  <NavigationDrawer
-    :items="sideNavigationItems"
-    :is-expanded="isDrawerVisible"
-    @toggle="toggleDrawer"
-    @widthChanged="handleDrawerWidthChanged" />
-  <div class="main-content" :style="{ marginLeft: `${drawerWidth}px` }">
-    <PermitJoinTimer
-      :duration="permitJoinDuration"
-      :allow-join="isPermitJoinActive"
-      @statusUpdated="onPermitJoinStatusUpdated" />
-    <Notifications />
-    <DialogHost />
-    <RouterView />
+  <div class="layout-wrapper flex h-screen overflow-hidden">
+    <NavigationDrawer
+      :items="sideNavigationItems"
+      :is-expanded="isDrawerVisible"
+      @toggle="toggleDrawer" />
+
+    <div class="layout-main flex flex-column flex-1 min-w-0">
+      <NavigationBar :items="topNavigationItems" @click="isDrawerVisible = $event" />
+      <main class="flex-1 overflow-auto p-4">
+        <PermitJoinTimer
+          :duration="permitJoinDuration"
+          :allow-join="isPermitJoinActive"
+          @statusUpdated="onPermitJoinStatusUpdated" />
+        <Notifications />
+        <DialogHost />
+        <RouterView />
+      </main>
+    </div>
   </div>
 </template>
-
-<style scoped>
-  .main-content {
-    transition: margin-left 0.5s ease;
-    padding: 0 0.1rem;
-  }
-</style>

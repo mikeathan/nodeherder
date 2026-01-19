@@ -40,5 +40,5 @@
         lastSeenElement = el;
       }
     "
-    className="col text-truncate"></div>
+    class="col white-space-nowrap overflow-hidden text-overflow-ellipsis"></div>
 </template>

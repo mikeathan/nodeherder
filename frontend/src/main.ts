@@ -2,8 +2,6 @@ import { createApp } from 'vue';
 import App from './App.vue';
 
 import router from './router';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap';
 import '@fontsource/roboto';
 
 import { store, key } from './store/index';
@@ -19,6 +17,7 @@ import ToastService from 'primevue/toastservice';
 import { MaterialBlue } from './themes/material_blue.js';
 import 'primeicons/primeicons.css'; // Icons
 import 'primeflex/primeflex.css';
+import '@/assets/styles/variables.css';
 
 const emitter = mitt<Events>();
 
@@ -28,7 +27,7 @@ app.use(PrimeVue, {
   theme: {
     preset: MaterialBlue,
     options: {
-      darkModeSelector: 'system',
+      darkModeSelector: '.dark',
     },
   },
 });
