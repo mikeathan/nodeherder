@@ -167,29 +167,27 @@
 <template>
   <!-- TODO: find better way to do this
     we have 2 components that use the same template and toggle from the if isinVieMode -->
-  <Button icon="pi pi-times" size="large" variant="text" rounded class="float-end" @click="cancel()" />
+  <Button icon="pi pi-times" size="large" variant="text" rounded class="float-right" @click="cancel()" />
   <div
     v-bind:style="{
       display: isInViewMode ? 'block' : 'none',
     }">
     <div class="grid">
-      <div class="row">
-        <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
-          <InputBox label="Id" :disabled="true" :value="automation.id" />
-        </div>
-        <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
-          <InputBox label="Friendly Name" :disabled="true" :value="automation.friendlyname" class="w-full" />
-        </div>
-        <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
-          <InputBox
-            label="Description"
-            @updated="(v) => (automation.description = v)"
-            :value="automation.description"
-            class="w-full" />
-        </div>
-        <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
-          <AutomationStatus :automation="automation" :clickToOpen="true" />
-        </div>
+      <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
+        <InputBox label="Id" :disabled="true" :value="automation.id" />
+      </div>
+      <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
+        <InputBox label="Friendly Name" :disabled="true" :value="automation.friendlyname" class="w-full" />
+      </div>
+      <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
+        <InputBox
+          label="Description"
+          @updated="(v) => (automation.description = v)"
+          :value="automation.description"
+          class="w-full" />
+      </div>
+      <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
+        <AutomationStatus :automation="automation" :clickToOpen="true" />
       </div>
     </div>
     <ButtonPanel :buttons="buttonPanelItems" class="pb-3 pt-3" severity="secondary" />
@@ -210,7 +208,7 @@
             :action="() => triggerAutomation(automation, slotProps.data.name)" />
         </template>
       </Column>
-      <Column class="col-sm-1">
+      <Column style="width: 3rem">
         <template #header="slotProps">
           <Button icon="pi pi-plus" variant="text" rounded @click="createNewTrigger()" />
         </template>

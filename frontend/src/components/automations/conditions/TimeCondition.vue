@@ -127,8 +127,8 @@
 </script>
 
 <template>
-  <div class="row">
-    <div class="col-sm-4">
+  <div class="grid">
+    <div class="col-12 sm:col-4">
       <TimePicker
         label="Start At"
         :value="getStartAtTime()"
@@ -136,7 +136,7 @@
         @updated="(e) => updateStartAtTime(e)"
         :validation="validateStartTime" />
     </div>
-    <div class="col-sm-2">
+    <div class="col-12 sm:col-2">
       <TimePicker
         label="End At"
         :value="getEndAtTime()"
