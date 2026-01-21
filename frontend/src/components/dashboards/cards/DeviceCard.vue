@@ -29,18 +29,29 @@
   });
 </script>
 <style scoped>
+  .device-card {
+    border: 1px solid rgba(0, 0, 0, 0.38);
+    border-radius: 12px;
+    box-shadow: none !important;
+    overflow: hidden;
+  }
   .card-title {
     display: flex;
     justify-content: center;
     align-items: center;
   }
+  h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+  }
 </style>
 <template>
-  <Card>
+  <Card class="device-card">
     <template #title>
       <div class="card-title">
         <RouterLink :to="`/devicepage/${props.device.id}`">
-          <Button label="Link" variant="link" class="ps-0">
+          <Button label="Link" variant="link" class="ps-0" text>
             <h4>{{ props.device.friendly_name }}</h4>
           </Button>
         </RouterLink>
