@@ -218,7 +218,7 @@
     </template>
   </div>
 
-  <div class="dashboard-container">
+  <div class="flex flex-wrap gap-2">
     <div v-for="group in dashboardGroups" :key="group.name" class="dashboard-group">
       <div class="dashboard-title">{{ group.name }}</div>
       <div class="card-container" :class="{ 'edit-mode': isEditMode }">
@@ -242,12 +242,6 @@
 </template>
 
 <style scoped>
-  .dashboard-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.2rem;
-  }
-
   /* Deskop view */
   .dashboard-group {
     padding: 1rem 0.1rem;
@@ -269,7 +263,7 @@
     padding-left: 12px;
     padding-bottom: 5px;
     line-height: 1.4;
-    color: #e0e0e0;
+    color: var(--text-color);
     letter-spacing: 0.25px;
   }
 
@@ -283,7 +277,7 @@
   }
 
   .card-container.edit-mode {
-    border: 2px dotted #d3d3d3;
+    border: 2px dotted var(--surface-border);
   }
 
   .card-item {
@@ -303,7 +297,7 @@
   }
 
   .edit-icon {
-    border: 2px dotted #d3d3d3;
+    border: 2px dotted var(--surface-border);
     border-radius: 8px;
     padding: 12px 14px;
     cursor: pointer;

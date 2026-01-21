@@ -18,11 +18,11 @@ import { getPowerSourceValue } from '@/contracts/device';
 <template>
   <div class="grid justify-content-between align-items-center">
     <LastSeen :timestamp="device.last_seen" />
-    <div class="text-truncate" v-if="device.availability === 'online'">
+    <div class="white-space-nowrap overflow-hidden text-overflow-ellipsis" v-if="device.availability === 'online'">
       <LinkQuality :value="device.exposes['linkquality']?.data" />
       <PowerSource :power_source="device.power_source" :value="getPowerSourceValue(device)" />
     </div>
-    <div className="col-auto text-truncate" v-else>
+    <div class="col-fixed white-space-nowrap overflow-hidden text-overflow-ellipsis" v-else>
       <Icon :icon="getOfflineIcon()" />
     </div>
   </div>

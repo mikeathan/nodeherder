@@ -175,12 +175,12 @@
 <template>
   <!-- TODO:  -->
   <!-- if automation for device exists message user else we overwrite it -->
-  <div class="row pb-3">
-    <div class="col">
+  <div class="grid pb-3">
+    <div class="col-12">
       <ButtonPanel :buttons="buttonPanelItems" severity="secondary" />
     </div>
   </div>
-  <div class="row" v-if="trigger.name == ''">
+  <div class="grid" v-if="trigger.name == ''">
     <Selection
       :value="trigger.name"
       text="Select trigger"
@@ -190,9 +190,12 @@
       :items="exposesList">
     </Selection>
   </div>
-  <div class="row" v-else>
-    <h4>Trigger for {{ capitalizeText(trigger.name) }}</h4>
-    <div class="pt-2" />
+  <div class="grid" v-else>
+    <div class="col-12">
+      <h4>Trigger for {{ capitalizeText(trigger.name) }}</h4>
+      <div class="pt-2" />
+
+    <!-- Conditions -->
 
     <!-- Conditions -->
 
@@ -246,7 +249,7 @@
             </ActionViewer>
           </template>
         </Column>
-        <Column class="col-sm-1">
+        <Column style="width: 3rem">
           <template #body="slotProps">
             <Button icon="pi pi-trash" variant="text" rounded @click="openDeleteActionConfirmationDialog()" />
           </template>
@@ -258,5 +261,6 @@
         </div>
       </div>
     </Fieldset>
+    </div>
   </div>
 </template>
