@@ -2,11 +2,20 @@
   import Status from '@/components/controls/Status.vue';
 </script>
 <style scoped>
+  .logo-container {
+    display: inline-flex;
+  }
+
   .logo-link {
     display: inline-flex;
     align-items: center;
     text-decoration: none;
-    gap: 0.5rem;
+    gap: 12px;
+  }
+
+  .logo-image {
+    display: block;
+    object-fit: contain;
   }
 
   .logo-text {
@@ -15,13 +24,14 @@
     font-size: 24px;
     font-weight: 700;
     white-space: nowrap;
+    line-height: 1;
+    letter-spacing: -0.5px; /* Slight tracking adjustment for professional look */
   }
 
   .status-wrapper {
     display: flex;
     align-items: center;
-    /* Adjust position to be vertically centered or slightly offset */
-    padding-top: 4px;
+    justify-content: center;
   }
 </style>
 
