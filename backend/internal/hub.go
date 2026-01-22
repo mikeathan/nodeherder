@@ -8,6 +8,8 @@ import (
 	"node-herder/internal/automations"
 	"node-herder/internal/controllers"
 	"node-herder/internal/fs"
+	mcpserver "node-herder/internal/mcp/server"
+	metrics "node-herder/internal/metrics/services"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ratelimiter"
 	"node-herder/internal/ws"
@@ -64,7 +66,7 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	return apiServer
 }
 
-func Register(port int, store store.AppStore, ctx context.Context) *api.ApiServer {
+func Register(port int, store store.AppStore, ctx context.Context, enableMCP bool) *api.ApiServer {
 
 	ws := ws.NewWsHub()
 	ws.Start()
@@ -80,5 +82,20 @@ func Register(port int, store store.AppStore, ctx context.Context) *api.ApiServe
 		controllers.WithContext(ctx),
 		controllers.WithAutomationHandlers(automationHandlers))
 
+	// Start MCP server in background for LLM clients (if enabled)
+	if enableMCP {
+		go startMCPServer(store)
+	}
+
 	return registerApi(port, ws, hub, store, ctx)
+}
+
+// startMCPServer starts the MCP server in a goroutine for LLM clients.
+func startMCPServer(store store.AppStore) {
+	utils.LogInfo("starting MCP server in stdio mode")
+	querier := metrics.NewQueryService(store)
+	srv := mcpserver.New(store, querier)
+	if err := srv.ServeStdio(); err != nil {
+		utils.LogErrorf("MCP server error: %v", err.Error())
+	}
 }
