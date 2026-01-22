@@ -21,8 +21,11 @@ const LogExtension = ".log"
 var log *logger = newConsoleLogger()
 var remoteHook *RemoteHook = newRemoteHook()
 
+// InitFileLogger initializes the logger with file output.
+// Logs are written to both a file and stderr (Unix convention).
+// stdout is reserved for program output only.
 func InitFileLogger() {
-	log = newFileLogger(LogName)
+	log = newFileLogger(LogName, os.Stderr)
 }
 
 type logger struct {
@@ -54,7 +57,7 @@ func newConsoleLogger() *logger {
 	return &logger{log: log}
 }
 
-func newFileLogger(logName string) *logger {
+func newFileLogger(logName string, consoleOut io.Writer) *logger {
 
 	createDirIfNotExists()
 	// f, err := os.OpenFile(filepath.Join(LogPath, logName), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
@@ -71,7 +74,7 @@ func newFileLogger(logName string) *logger {
 	}
 
 	log := &logrus.Logger{
-		Out: io.MultiWriter(lumberjackLogger, os.Stdout),
+		Out: io.MultiWriter(lumberjackLogger, consoleOut),
 
 		Level: logrus.InfoLevel,
 		Formatter: &easy.Formatter{

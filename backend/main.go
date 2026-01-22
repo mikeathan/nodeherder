@@ -5,6 +5,8 @@ import (
 	"flag"
 	"fmt"
 	hub "node-herder/internal"
+	mcpserver "node-herder/internal/mcp/server"
+	metrics "node-herder/internal/metrics/services"
 	"node-herder/store"
 	"node-herder/utils"
 	"os"
@@ -17,6 +19,7 @@ type cmdArgs struct {
 	buildType string
 	logLevel  string
 	enableMCP bool
+	mcpOnly   bool // Run as MCP server only (no HTTP server)
 }
 
 func readArgs() *cmdArgs {
@@ -25,14 +28,15 @@ func readArgs() *cmdArgs {
 	buildType := flag.String("buildType", "", "client build type")
 	logLevel := flag.String("logLevel", "info", "logging level")
 	enableMCP := flag.Bool("mcp", true, "enable MCP server for LLM clients")
+	mcpOnly := flag.Bool("mcp-only", false, "run as MCP server only (for MCP Inspector)")
 
 	flag.Parse()
-	if *port <= 0 {
+	if !*mcpOnly && *port <= 0 {
 		fmt.Print("Invalid port number")
 		os.Exit(-1)
 	}
 
-	return &cmdArgs{port: *port, buildType: *buildType, logLevel: *logLevel, enableMCP: *enableMCP}
+	return &cmdArgs{port: *port, buildType: *buildType, logLevel: *logLevel, enableMCP: *enableMCP, mcpOnly: *mcpOnly}
 }
 
 func main() {
@@ -64,6 +68,18 @@ func main() {
 	if err != nil {
 		utils.LogErrorf("error creating store: %v", err.Error())
 		cancelCtx()
+	}
+
+	// MCP-only mode: run just the MCP server (for MCP Inspector)
+	if args.mcpOnly {
+		utils.LogInfo("starting MCP server in stdio-only mode")
+		querier := metrics.NewQueryService(appStore)
+		srv := mcpserver.New(appStore, querier)
+		if err := srv.ServeStdio(); err != nil {
+			utils.LogErrorf("MCP server error: %v", err.Error())
+			os.Exit(1)
+		}
+		return
 	}
 
 	// Start HTTP server (and optionally MCP server)

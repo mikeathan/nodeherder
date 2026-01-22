@@ -41,6 +41,61 @@ The MCP server runs alongside the HTTP server in a separate goroutine, sharing t
 ./nodeherder --port=8080
 ```
 
+## Testing with MCP Inspector
+
+The MCP Inspector is a free tool from Anthropic for testing MCP servers without needing an LLM. It provides a web UI to interactively test tools and resources.
+
+### Prerequisites
+
+- Node.js installed (for npx)
+- Backend built: `npx @modelcontextprotocol/inspector ./nodeherder --mcp-only`
+
+### Running the Inspector
+
+```bash
+# From the backend directory
+cd /path/to/nodeherder/backend
+go build -o nodeherder .
+npx @modelcontextprotocol/inspector ./nodeherder --mcp-only
+```
+
+This opens a web UI at `http://localhost:5173` (or similar).
+
+### Using the Inspector
+
+1. **Resources Tab**: View available resources
+   - Click on `nodeherder://devices` to see all registered devices
+   - Click on `nodeherder://system-prompt` to see LLM guidance
+
+2. **Tools Tab**: Test the `query_device` tool
+   - Click on `query_device` to see its schema
+   - Fill in test parameters:
+     ```json
+     {
+       "target_name": "attic temperature",
+       "metrics": ["temperature"],
+       "time_scope": "today",
+       "aggregation": "latest_value"
+     }
+     ```
+   - Click "Call" to execute and see the response
+
+3. **Response Inspection**: View full JSON-RPC responses
+   - Success: `{"status": "success", "data": {...}}`
+   - Error: `{"status": "error", "error": {"code": "...", "message": "..."}}`
+   - Ambiguous: `{"status": "ambiguous", "candidates": [...]}`
+
+### Running Unit Tests
+
+```bash
+# Run all MCP tests
+go test ./internal/mcp/... -v
+
+# Run specific package tests
+go test ./internal/mcp/tools/... -v
+go test ./internal/mcp/resolver/... -v
+```
+
 ## Package Structure
 
 ```
