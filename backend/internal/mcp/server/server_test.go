@@ -1,9 +1,15 @@
 package server_test
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
 	"node-herder/internal/mcp/resolver"
 	"node-herder/internal/mcp/server"
 	"node-herder/models/devices"
+	"node-herder/store"
+	"os"
 	"testing"
 )
 
@@ -15,6 +21,10 @@ type mockDeviceStore struct {
 
 func (m *mockDeviceStore) AllDevices() ([]*devices.Device, error) {
 	return m.devices, m.err
+}
+
+func (m *mockDeviceStore) RegisterIsDirtyCallback(cb store.AppStoreDirtyFlagCallback) {
+	// no-op for tests
 }
 
 // mockMetricsRepo implements metrics.Repository for minimal testing
@@ -167,3 +177,66 @@ var _ server.DeviceStore = (*mockDeviceStore)(nil)
 
 // Compile-time check that deviceInfoAdapter implements resolver.DeviceStore
 var _ resolver.DeviceStore = (*deviceInfoAdapter)(nil)
+
+func TestServeStdio_SubscriptionInterception(t *testing.T) {
+	// Setup mock store
+	store := &mockDeviceStore{}
+	srv := server.New(store, nil)
+
+	// Capture stdin/stdout
+	oldStdin := os.Stdin
+	oldStdout := os.Stdout
+	defer func() {
+		os.Stdin = oldStdin
+		os.Stdout = oldStdout
+	}()
+
+	r, w, _ := os.Pipe()
+	os.Stdin = r
+	outReader, outWriter, _ := os.Pipe()
+	os.Stdout = outWriter
+
+	// Write subscription request
+	req := map[string]interface{}{
+		"jsonrpc": "2.0",
+		"id":      123,
+		"method":  "resources/subscribe",
+		"params": map[string]interface{}{
+			"uri": "nodeherder://devices",
+		},
+	}
+	json.NewEncoder(w).Encode(req)
+	w.Close()
+
+	// Run ServeStdio in background (it blocks until EOF)
+	go func() {
+		srv.ServeStdio()
+		outWriter.Close()
+	}()
+
+	// Read response
+	var buf bytes.Buffer
+	io.Copy(&buf, outReader)
+
+	var resp struct {
+		JSONRPC string          `json:"jsonrpc"`
+		ID      interface{}     `json:"id"`
+		Result  json.RawMessage `json:"result,omitempty"`
+		Error   interface{}     `json:"error,omitempty"`
+	}
+
+	if err := json.Unmarshal(buf.Bytes(), &resp); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	// Verify response
+	if resp.Error != nil {
+		t.Errorf("Expected success, got error: %v", resp.Error)
+	}
+
+	// We can't easily check for exact ID type match (int vs float64) without helpers,
+	// but we can check the value string rep
+	if fmt.Sprintf("%v", resp.ID) != "123" {
+		t.Errorf("Expected ID 123, got %v", resp.ID)
+	}
+}

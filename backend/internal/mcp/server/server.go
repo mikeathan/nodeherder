@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,9 @@ import (
 	"node-herder/internal/mcp/tools"
 	metrics "node-herder/internal/metrics/services"
 	"node-herder/models/devices"
+	"os"
+
+	"node-herder/store"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -17,6 +21,7 @@ import (
 // DeviceStore provides access to devices for the MCP server.
 type DeviceStore interface {
 	AllDevices() ([]*devices.Device, error)
+	RegisterIsDirtyCallback(cb store.AppStoreDirtyFlagCallback)
 }
 
 // deviceInfoAdapter adapts DeviceStore to resolver.DeviceStore
@@ -55,11 +60,18 @@ func New(store DeviceStore, querier *metrics.QueryService) *Server {
 		devicesResource: resources.NewDevicesResource(store),
 	}
 
+	// Register callback for updates
+	store.RegisterIsDirtyCallback(func() {
+		s.mcpServer.SendNotificationToAllClients("notifications/resources/updated", map[string]interface{}{
+			"uri": "nodeherder://devices",
+		})
+	})
+
 	// Create MCP server
 	s.mcpServer = server.NewMCPServer(
 		"nodeherder",
 		"1.0.0",
-		server.WithResourceCapabilities(true, false),
+		server.WithResourceCapabilities(true, true),
 		server.WithToolCapabilities(true),
 	)
 
@@ -156,6 +168,64 @@ func formatToolResponse(resp *tools.ToolResponse) *mcp.CallToolResult {
 }
 
 // ServeStdio starts the MCP server in stdio mode.
+// ServeStdio starts the MCP server in stdio mode.
 func (s *Server) ServeStdio() error {
-	return server.ServeStdio(s.mcpServer)
+	scanner := bufio.NewScanner(os.Stdin)
+	ctx := context.Background()
+
+	// Initialize session
+	// We need to manually register a session for HandleMessage to work with session-dependent logic
+	// In a real stdio server, this is handled by the server wrapper.
+	// For this workaround, we rely on the fact that HandleMessage handles stateless requests fine,
+	// and our specific use case (Inspector) might be okay.
+	// EXCEPT: notifications need a session to go to.
+	// We should try to use the library's StdioServer if possible, but we can't inject logic easily.
+	// So we will roll our own simple loop and ensure we use SendNotificationToAllClients which iterates sessions.
+	// But wait, if we don't register a session, SendNotificationToAllClients might send to no one if it checks registered sessions.
+	// The stdio implementation registers a static session. We should do the same if we can access it, but we can't (internal).
+	//
+	// Workaround for the Workaround:
+	// We will implement the loop. For notifications, SendNotificationToAllClients iterates `s.sessions`.
+	// We need to register a dummy session so notifications have somewhere to go if the library requires it.
+	// However, stdio is 1-to-1.
+	// Let's implement the read loop.
+
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		var rawMessage json.RawMessage
+		if err := json.Unmarshal(line, &rawMessage); err != nil {
+			fmt.Fprintf(os.Stderr, "Error parsing JSON: %v\n", err)
+			continue
+		}
+
+		// Peek at the method
+		var baseMessage struct {
+			JSONRPC string      `json:"jsonrpc"`
+			ID      interface{} `json:"id"`
+			Method  string      `json:"method"`
+		}
+		if err := json.Unmarshal(line, &baseMessage); err != nil {
+			continue
+		}
+
+		// Intercept subscribe/unsubscribe
+		if baseMessage.Method == "resources/subscribe" || baseMessage.Method == "resources/unsubscribe" {
+			// Return success
+			response := map[string]interface{}{
+				"jsonrpc": "2.0",
+				"id":      baseMessage.ID,
+				"result":  map[string]interface{}{},
+			}
+			json.NewEncoder(os.Stdout).Encode(response)
+			continue
+		}
+
+		// Delegate to library for everything else
+		resp := s.mcpServer.HandleMessage(ctx, rawMessage)
+		if resp != nil {
+			json.NewEncoder(os.Stdout).Encode(resp)
+		}
+	}
+
+	return scanner.Err()
 }

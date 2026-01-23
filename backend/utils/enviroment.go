@@ -50,7 +50,7 @@ func ValidateServiceCredentials(clientID, clientSecret string) bool {
 			continue
 		}
 
-		secret := os.Getenv("SERVICE_SECRET_" + id)
+		secret := os.Getenv("SERVICE_SECRET_" + strings.ReplaceAll(id, "-", "_"))
 		if secret == "" {
 			continue
 		}
@@ -124,6 +124,7 @@ func LoadEnviromentConfig() error {
 	if _, err := os.Stat(".env"); err == nil {
 		_ = godotenv.Load()
 	}
+
 	env := os.Getenv("APP_ENV")
 	if env == "" {
 		env = "development"
