@@ -84,18 +84,26 @@ func Register(port int, store store.AppStore, ctx context.Context, enableMCP boo
 
 	// Start MCP server in background for LLM clients (if enabled)
 	if enableMCP {
-		go startMCPServer(store)
+		go StartMCPServer(store)
 	}
 
 	return registerApi(port, ws, hub, store, ctx)
 }
 
-// startMCPServer starts the MCP server in a goroutine for LLM clients.
-func startMCPServer(store store.AppStore) {
+// StartMCPServer starts the MCP server in a goroutine for LLM clients.
+func StartMCPServer(store store.AppStore) {
 	utils.LogInfo("starting MCP server in stdio mode")
 	querier := metrics.NewQueryService(store)
 	srv := mcpserver.New(store, querier)
 	if err := srv.ServeStdio(); err != nil {
 		utils.LogErrorf("MCP server error: %v", err.Error())
 	}
+}
+
+// StartInspectorMode initializes the full backend (without HTTP listener)
+// and runs the MCP server on Stdio. This is used by the MCP Inspector.
+func StartInspectorMode(port int, store store.AppStore, ctx context.Context) {
+	Register(port, store, ctx, false)
+	utils.LogInfo("Hub initialization complete - Backend services (MQTT, Store, Automations) are running.")
+	StartMCPServer(store)
 }
