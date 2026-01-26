@@ -37,11 +37,11 @@ func TestScorer_Score(t *testing.T) {
 			wantMax: 0.3,
 		},
 		{
-			name:    "common words still match when they're the only token",
+			name:    "common words score low even when they're the only token",
 			target:  "sensor",
 			device:  "Attic temperature sensor",
-			wantMin: 0.9,
-			wantMax: 1.0, // Single token matching gives full ratio
+			wantMin: 0.0,
+			wantMax: 0.2, // Common words are penalized
 		},
 	}
 

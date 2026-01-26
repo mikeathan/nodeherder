@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"node-herder/internal/mcp/resources"
 	"node-herder/models/devices"
+	"node-herder/models/hub"
 	"testing"
 )
 
@@ -13,8 +14,11 @@ type mockDeviceStore struct {
 	err     error
 }
 
-func (m *mockDeviceStore) AllDevices() ([]*devices.Device, error) {
-	return m.devices, m.err
+func (m *mockDeviceStore) LoadHubState() (*hub.HubState, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return &hub.HubState{Devices: m.devices}, nil
 }
 
 func TestPromptResource_GetContent(t *testing.T) {

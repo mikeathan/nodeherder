@@ -54,26 +54,30 @@ func (s *Scorer) Score(targetName, deviceName string) float64 {
 		return 0
 	}
 
-	var totalWeight float64
+	var deviceTotalWeight float64
+	for _, token := range deviceTokens {
+		deviceTotalWeight += s.getTokenWeight(token)
+	}
+
 	var matchedWeight float64
+	// Check which device tokens are present in the target query
+	// This is "Recall": how much of the device name did the user mention?
+	for _, deviceToken := range deviceTokens {
+		tokenWeight := s.getTokenWeight(deviceToken)
 
-	for _, target := range targetTokens {
-		weight := s.getTokenWeight(target)
-		totalWeight += weight
-
-		for _, device := range deviceTokens {
-			if strings.EqualFold(target, device) {
-				matchedWeight += weight
+		for _, targetToken := range targetTokens {
+			if strings.EqualFold(deviceToken, targetToken) {
+				matchedWeight += tokenWeight
 				break
 			}
 		}
 	}
 
-	if totalWeight == 0 {
+	if deviceTotalWeight == 0 {
 		return 0
 	}
 
-	return matchedWeight / totalWeight
+	return matchedWeight / deviceTotalWeight
 }
 
 // getTokenWeight returns the weight for a token.

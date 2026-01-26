@@ -3,15 +3,19 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"node-herder/internal/mcp/intent"
 	"node-herder/internal/mcp/resolver"
+	"node-herder/internal/metrics/query"
 	metrics "node-herder/internal/metrics/services"
+	"node-herder/models/devices"
 )
 
 // ToolResponse is the unified response type for all MCP tools.
 type ToolResponse struct {
 	Status     string      `json:"status"` // success, error, ambiguous
 	Data       any         `json:"data,omitempty"`
+	Hint       string      `json:"hint,omitempty"` // Hint for LLM when results are empty
 	Error      *ToolError  `json:"error,omitempty"`
 	Candidates []Candidate `json:"candidates,omitempty"`
 }
@@ -56,17 +60,24 @@ func NewAmbiguousResponse(candidates []Candidate) *ToolResponse {
 	}
 }
 
+// DeviceLookup provides access to device details for hints.
+type DeviceLookup interface {
+	FindDeviceByIds(ids []string) ([]*devices.Device, error)
+}
+
 // IntentHandler handles query_device tool calls.
 type IntentHandler struct {
-	resolver *resolver.Resolver
-	querier  *metrics.QueryService
+	resolver     *resolver.Resolver
+	querier      *metrics.QueryService
+	deviceLookup DeviceLookup
 }
 
 // NewIntentHandler creates a new IntentHandler.
-func NewIntentHandler(resolver *resolver.Resolver, querier *metrics.QueryService) *IntentHandler {
+func NewIntentHandler(resolver *resolver.Resolver, querier *metrics.QueryService, deviceLookup DeviceLookup) *IntentHandler {
 	return &IntentHandler{
-		resolver: resolver,
-		querier:  querier,
+		resolver:     resolver,
+		querier:      querier,
+		deviceLookup: deviceLookup,
 	}
 }
 
@@ -101,7 +112,46 @@ func (h *IntentHandler) Handle(ctx context.Context, args json.RawMessage) *ToolR
 		return NewErrorResponse("query_error", err.Error())
 	}
 
-	return NewSuccessResponse(result)
+	resp := NewSuccessResponse(result)
+
+	// Add hint if results are empty
+	if h.isResultEmpty(result) && h.deviceLookup != nil {
+		resp.Hint = h.buildMetricsHint(deviceID)
+	}
+
+	return resp
+}
+
+// isResultEmpty checks if query results have no data.
+func (h *IntentHandler) isResultEmpty(result *[]query.MetricsQueryResponse) bool {
+	if result == nil || len(*result) == 0 {
+		return true
+	}
+	for _, r := range *result {
+		if len(r.Values) > 0 {
+			return false
+		}
+	}
+	return true
+}
+
+// buildMetricsHint creates a hint showing available device metrics.
+func (h *IntentHandler) buildMetricsHint(deviceID string) string {
+	devices, err := h.deviceLookup.FindDeviceByIds([]string{deviceID})
+	if err != nil || len(devices) == 0 {
+		return ""
+	}
+
+	var metrics []string
+	for name := range devices[0].Exposes {
+		metrics = append(metrics, name)
+	}
+
+	if len(metrics) == 0 {
+		return ""
+	}
+
+	return fmt.Sprintf("Available metrics for this device: %v", metrics)
 }
 
 func convertCandidates(candidates []resolver.Candidate) []Candidate {

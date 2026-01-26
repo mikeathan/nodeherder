@@ -30,7 +30,7 @@ func Translate(intent *Intent, deviceID string, opts TranslateOptions) *query.Me
 
 	req := &query.MetricsQueryRequest{
 		DeviceIds: []string{deviceID},
-		Expose:    intent.Metrics[0], // Primary metric
+		Exposes:   intent.Metrics, // All requested metrics
 		Time: domain.TimeQuery{
 			From: timeRange.From,
 			To:   timeRange.To,

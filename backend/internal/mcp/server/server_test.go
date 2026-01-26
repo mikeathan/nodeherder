@@ -8,6 +8,7 @@ import (
 	"node-herder/internal/mcp/resolver"
 	"node-herder/internal/mcp/server"
 	"node-herder/models/devices"
+	"node-herder/models/hub"
 	"node-herder/store"
 	"os"
 	"testing"
@@ -19,8 +20,11 @@ type mockDeviceStore struct {
 	err     error
 }
 
-func (m *mockDeviceStore) AllDevices() ([]*devices.Device, error) {
-	return m.devices, m.err
+func (m *mockDeviceStore) LoadHubState() (*hub.HubState, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return &hub.HubState{Devices: m.devices}, nil
 }
 
 func (m *mockDeviceStore) RegisterIsDirtyCallback(cb store.AppStoreDirtyFlagCallback) {
@@ -60,13 +64,13 @@ func TestServer_VerifyDeviceStoreAdapter(t *testing.T) {
 	}
 
 	// Verify the store works correctly
-	devs, err := store.AllDevices()
+	state, err := store.LoadHubState()
 	if err != nil {
-		t.Fatalf("AllDevices() error = %v", err)
+		t.Fatalf("LoadHubState() error = %v", err)
 	}
 
-	if len(devs) != 2 {
-		t.Errorf("AllDevices() returned %d devices, want 2", len(devs))
+	if len(state.Devices) != 2 {
+		t.Errorf("LoadHubState() returned %d devices, want 2", len(state.Devices))
 	}
 }
 
@@ -158,12 +162,12 @@ type deviceInfoAdapter struct {
 }
 
 func (a *deviceInfoAdapter) AllDeviceInfo() ([]resolver.DeviceInfo, error) {
-	devs, err := a.store.AllDevices()
+	state, err := a.store.LoadHubState()
 	if err != nil {
 		return nil, err
 	}
-	result := make([]resolver.DeviceInfo, len(devs))
-	for i, d := range devs {
+	result := make([]resolver.DeviceInfo, len(state.Devices))
+	for i, d := range state.Devices {
 		result[i] = resolver.DeviceInfo{
 			ID:   d.Id,
 			Name: d.FriendlyName,

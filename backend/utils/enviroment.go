@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -119,10 +120,54 @@ func GetMQTTClientID() string {
 	return clientID
 }
 
+// GetDataDir returns the data directory path, creating it if needed.
+// Uses DATA_DIR env var if set, otherwise defaults to "data".
+// Falls back to temp directory if the primary path is not writable.
+// This allows running multiple instances pointing to the same database for debugging.
+func GetDataDir() string {
+	dataDir := os.Getenv("DATA_DIR")
+	if dataDir == "" {
+		dataDir = "data"
+	}
+	return EnsureDir(dataDir)
+}
+
+// GetLogsDir returns the logs directory path, creating it if needed.
+// Falls back to temp directory if the primary path is not writable.
+func GetLogsDir() string {
+	return EnsureDir("logs")
+}
+
+// EnsureDir creates the directory if it doesn't exist.
+// Falls back to temp directory if the primary path is not writable.
+func EnsureDir(dir string) string {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+			// Fallback to temp dir if we can't write to current dir
+			tempDir := filepath.Join(os.TempDir(), dir)
+			if err := os.MkdirAll(tempDir, os.ModePerm); err == nil {
+				return tempDir
+			}
+			// If even temp dir fails, return original path (caller will handle error)
+			return dir
+		}
+	}
+	return dir
+}
+
 func LoadEnviromentConfig() error {
-	// Local-only
-	if _, err := os.Stat(".env"); err == nil {
-		_ = godotenv.Load()
+
+	// Get the directory where the binary is located
+	exe, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	exeDir := filepath.Dir(exe)
+
+	// Local-only: check .env in binary directory
+	envPath := filepath.Join(exeDir, ".env")
+	if _, err := os.Stat(envPath); err == nil {
+		_ = godotenv.Load(envPath)
 	}
 
 	env := os.Getenv("APP_ENV")
@@ -130,8 +175,8 @@ func LoadEnviromentConfig() error {
 		env = "development"
 	}
 
-	// Load env file explicitly
-	envFile := ".env." + env
+	// Load env specific file explicitly from binary directory
+	envFile := filepath.Join(exeDir, ".env."+env)
 	if _, err := os.Stat(envFile); err == nil {
 		_ = godotenv.Load(envFile)
 		LogInfo("loaded env file: " + envFile)

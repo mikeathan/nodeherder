@@ -2,8 +2,6 @@ package utils
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
 	"io"
 	"node-herder/models/logging"
 	"os"
@@ -32,16 +30,6 @@ type logger struct {
 	log *logrus.Logger
 }
 
-func createDirIfNotExists() {
-	if _, err := os.Stat(LogsPath); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(LogsPath, os.ModePerm)
-		if err != nil {
-			fmt.Printf("Failed to create log directory %s Error: %v\n", LogsPath, err)
-			panic(err)
-		}
-	}
-}
-
 func newConsoleLogger() *logger {
 
 	log := &logrus.Logger{
@@ -59,14 +47,14 @@ func newConsoleLogger() *logger {
 
 func newFileLogger(logName string, consoleOut io.Writer) *logger {
 
-	createDirIfNotExists()
+	logPath := GetLogsDir()
 	// f, err := os.OpenFile(filepath.Join(LogPath, logName), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	// if err != nil {
 	// 	fmt.Println("Failed to create logfile" + err.Error())
 	// 	panic(err)
 	// }
 	lumberjackLogger := &lumberjack.Logger{
-		Filename:   filepath.Join(LogsPath, logName),
+		Filename:   filepath.Join(logPath, logName),
 		MaxSize:    2,     // Max size in MB
 		MaxBackups: 3,     // Max number of old log files to keep
 		MaxAge:     30,    // Max age in days to keep a log file

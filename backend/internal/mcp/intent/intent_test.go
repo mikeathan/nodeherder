@@ -140,8 +140,8 @@ func TestTranslate(t *testing.T) {
 	if len(req.DeviceIds) != 1 || req.DeviceIds[0] != "dev123" {
 		t.Errorf("unexpected DeviceIds: %v", req.DeviceIds)
 	}
-	if req.Expose != "temperature" {
-		t.Errorf("unexpected Expose: %v", req.Expose)
+	if len(req.Exposes) != 1 || req.Exposes[0] != "temperature" {
+		t.Errorf("unexpected Exposes: %v", req.Exposes)
 	}
 	if req.Aggregation != "last" {
 		t.Errorf("unexpected Aggregation: %v", req.Aggregation)

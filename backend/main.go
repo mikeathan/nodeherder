@@ -40,6 +40,7 @@ func main() {
 	if err != nil {
 		utils.LogErrorf("error creating store: %v", err.Error())
 		cancelCtx()
+		os.Exit(-1)
 	}
 
 	if args.mcpOnly {

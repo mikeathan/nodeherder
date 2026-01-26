@@ -36,7 +36,7 @@ func TestIntentHandler_Handle(t *testing.T) {
 
 	// Note: In a real test, you'd mock the QueryService
 	// For now, we test the parsing and resolution logic
-	handler := tools.NewIntentHandler(r, nil)
+	handler := tools.NewIntentHandler(r, nil, nil)
 
 	tests := []struct {
 		name       string
@@ -91,7 +91,7 @@ func TestIntentHandler_DeviceResolution(t *testing.T) {
 			},
 		}
 		r := resolver.New(store)
-		handler := tools.NewIntentHandler(r, nil)
+		handler := tools.NewIntentHandler(r, nil, nil)
 
 		input := `{
 			"target_name": "bedroom light",
@@ -157,6 +157,36 @@ func TestToolResponse_Factories(t *testing.T) {
 		}
 		if len(resp.Candidates) != 2 {
 			t.Errorf("Candidates length = %d, want 2", len(resp.Candidates))
+		}
+	})
+}
+
+func TestToolResponse_HintField(t *testing.T) {
+	t.Run("success response can have hint", func(t *testing.T) {
+		resp := tools.NewSuccessResponse([]int{})
+		resp.Hint = "Available metrics: [temperature, humidity]"
+
+		if resp.Status != "success" {
+			t.Errorf("Status = %q, want %q", resp.Status, "success")
+		}
+		if resp.Hint == "" {
+			t.Error("Hint should not be empty")
+		}
+	})
+
+	t.Run("hint is empty by default", func(t *testing.T) {
+		resp := tools.NewSuccessResponse(map[string]int{"count": 5})
+
+		if resp.Hint != "" {
+			t.Errorf("Hint = %q, want empty", resp.Hint)
+		}
+	})
+
+	t.Run("error response does not need hint", func(t *testing.T) {
+		resp := tools.NewErrorResponse("query_error", "something went wrong")
+
+		if resp.Hint != "" {
+			t.Errorf("Error response should not have hint, got %q", resp.Hint)
 		}
 	})
 }

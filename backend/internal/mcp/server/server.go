@@ -10,6 +10,7 @@ import (
 	"node-herder/internal/mcp/tools"
 	metrics "node-herder/internal/metrics/services"
 	"node-herder/models/devices"
+	"node-herder/models/hub"
 	"os"
 
 	"node-herder/store"
@@ -20,7 +21,7 @@ import (
 
 // DeviceStore provides access to devices for the MCP server.
 type DeviceStore interface {
-	AllDevices() ([]*devices.Device, error)
+	LoadHubState() (*hub.HubState, error)
 	RegisterIsDirtyCallback(cb store.AppStoreDirtyFlagCallback)
 }
 
@@ -30,15 +31,40 @@ type deviceInfoAdapter struct {
 }
 
 func (a *deviceInfoAdapter) AllDeviceInfo() ([]resolver.DeviceInfo, error) {
-	devs, err := a.store.AllDevices()
+	state, err := a.store.LoadHubState()
 	if err != nil {
 		return nil, err
 	}
-	result := make([]resolver.DeviceInfo, len(devs))
-	for i, d := range devs {
+	result := make([]resolver.DeviceInfo, len(state.Devices))
+	for i, d := range state.Devices {
 		result[i] = resolver.DeviceInfo{
 			ID:   d.Id,
 			Name: d.FriendlyName,
+		}
+	}
+	return result, nil
+}
+
+// deviceLookupAdapter adapts DeviceStore to tools.DeviceLookup
+type deviceLookupAdapter struct {
+	store DeviceStore
+}
+
+func (a *deviceLookupAdapter) FindDeviceByIds(ids []string) ([]*devices.Device, error) {
+	state, err := a.store.LoadHubState()
+	if err != nil {
+		return nil, err
+	}
+
+	idSet := make(map[string]bool)
+	for _, id := range ids {
+		idSet[id] = true
+	}
+
+	var result []*devices.Device
+	for _, d := range state.Devices {
+		if idSet[d.Id] {
+			result = append(result, d)
 		}
 	}
 	return result, nil
@@ -55,7 +81,7 @@ type Server struct {
 // New creates a new MCP server.
 func New(store DeviceStore, querier *metrics.QueryService) *Server {
 	s := &Server{
-		intentHandler:   tools.NewIntentHandler(resolver.New(&deviceInfoAdapter{store}), querier),
+		intentHandler:   tools.NewIntentHandler(resolver.New(&deviceInfoAdapter{store}), querier, &deviceLookupAdapter{store}),
 		promptResource:  resources.NewPromptResource(),
 		devicesResource: resources.NewDevicesResource(store),
 	}
@@ -87,17 +113,17 @@ func New(store DeviceStore, querier *metrics.QueryService) *Server {
 func (s *Server) registerTools() {
 	// query_device tool
 	queryDeviceTool := mcp.NewTool("query_device",
-		mcp.WithDescription("Query device metrics using natural language descriptions"),
+		mcp.WithDescription("Query device metrics. Read nodeherder://devices first to get exact metric names."),
 		mcp.WithString("target_name",
 			mcp.Required(),
 			mcp.Description("Natural language name for the device")),
 		mcp.WithArray("metrics",
 			mcp.Required(),
-			mcp.Description("Array of metric names to query")),
+			mcp.Description("Metric names from nodeherder://devices resource")),
 		mcp.WithString("time_scope",
 			mcp.Description("Time range: today, yesterday, last_24_hours, last_7_days, last_hour")),
 		mcp.WithString("aggregation",
-			mcp.Description("Aggregation: latest_value, min_value, max_value, avg_value, count_events")),
+			mcp.Description("Aggregation: last, min, max, avg, count, last_event")),
 	)
 
 	s.mcpServer.AddTool(queryDeviceTool, s.handleDeclareIntent)

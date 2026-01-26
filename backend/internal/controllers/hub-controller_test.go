@@ -957,7 +957,7 @@ func TestQueryServiceReturnsLatestMetrics(t *testing.T) {
 			name: "latest desc limit",
 			req: metricsquery.MetricsQueryRequest{
 				DeviceIds: []string{lightDevice.Id},
-				Expose:    "brightness",
+				Exposes:   []string{"brightness"},
 				Time: metrics.TimeQuery{
 					From: base,
 					To:   base.Add(5 * time.Minute),
@@ -983,7 +983,7 @@ func TestQueryServiceReturnsLatestMetrics(t *testing.T) {
 			name: "oldest asc limit",
 			req: metricsquery.MetricsQueryRequest{
 				DeviceIds: []string{lightDevice.Id},
-				Expose:    "brightness",
+				Exposes:   []string{"brightness"},
 				Time: metrics.TimeQuery{
 					From: base,
 					To:   base.Add(5 * time.Minute),
@@ -1009,7 +1009,7 @@ func TestQueryServiceReturnsLatestMetrics(t *testing.T) {
 			name: "count aggregation",
 			req: metricsquery.MetricsQueryRequest{
 				DeviceIds: []string{lightDevice.Id},
-				Expose:    "brightness",
+				Exposes:   []string{"brightness"},
 				Time: metrics.TimeQuery{
 					From: base,
 					To:   base.Add(5 * time.Minute),
@@ -2086,7 +2086,6 @@ func TestHub_DeviceConfigDefaults_DisableDevices(t *testing.T) {
 		t.Errorf("expected dial device action to be disabled, got %s", d.Exposes["action"].Data.Value())
 	}
 }
-
 
 func createMockDialAndLightDevices(dialName string, lightName string) []*devices.Device {
 

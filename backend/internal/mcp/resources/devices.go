@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"node-herder/models/bridge"
 	"node-herder/models/devices"
+	"node-herder/models/hub"
 )
 
 // DeviceContextResponse matches the format in docs/device_context.json.
@@ -35,7 +36,7 @@ type ExposeContext struct {
 
 // DeviceStore provides access to devices for resource generation.
 type DeviceStore interface {
-	AllDevices() ([]*devices.Device, error)
+	LoadHubState() (*hub.HubState, error)
 }
 
 // DevicesResource provides the device context as an MCP resource.
@@ -50,12 +51,12 @@ func NewDevicesResource(store DeviceStore) *DevicesResource {
 
 // GetContent returns the device context as JSON.
 func (r *DevicesResource) GetContent() ([]byte, error) {
-	devs, err := r.store.AllDevices()
+	state, err := r.store.LoadHubState()
 	if err != nil {
 		return nil, err
 	}
 
-	response := buildDeviceContext(devs)
+	response := buildDeviceContext(state.Devices)
 	return json.Marshal(response)
 }
 
