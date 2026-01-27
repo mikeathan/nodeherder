@@ -159,6 +159,46 @@ openssl rand -base64 32
 
 ---
 
+## MCP Server Integration
+
+Node Herder implements the Model Context Protocol (MCP), allowing AI assistants (like Claude or custom LLM proxies) to directly query smart home metrics and discover devices.
+
+### Command Line Arguments
+
+| Flag         | Description                                                            |
+| ------------ | ---------------------------------------------------------------------- |
+| `--mcp`      | Enable MCP server alongside the HTTP API (default: `false`)            |
+| `--mcp-only` | Run _only_ the MCP server on stdio (no HTTP/MQTT). Used for Inspector. |
+| `--port`     | Specify HTTP port (default: 4110).                                     |
+
+### Inspecting the MCP Server
+
+You can use the official MCP Inspector to test tools and resources without an LLM:
+
+1. **Build the backend:**
+
+   ```bash
+   cd backend
+   go build -o nodeherder .
+   ```
+
+2. **Run the inspector:**
+
+   ```bash
+   npx @modelcontextprotocol/inspector ./nodeherder --mcp-only
+   ```
+
+### Available Capabilities
+
+- **Resources**:
+  - `nodeherder://devices`: JSON list of all devices and their metrics. Supports live subscriptions.
+  - `nodeherder://system-prompt`: Domain guidance for LLMs.
+
+- **Tools**:
+  - `query_device`: Query metrics with natural language (e.g., "temperature in the kitchen").
+
+---
+
 ## Frontend Configuration
 
 ### Frontend `.env.development`
