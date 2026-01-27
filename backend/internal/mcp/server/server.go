@@ -18,6 +18,19 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
+const (
+	ServerName    = "nodeherder"
+	ServerVersion = "1.0.0"
+
+	DevicesResourceURI      = "nodeherder://devices"
+	SystemPromptResourceURI = "nodeherder://system-prompt"
+
+	QueryDeviceToolName = "query_device"
+
+	MethodResourcesSubscribe   = "resources/subscribe"
+	MethodResourcesUnsubscribe = "resources/unsubscribe"
+)
+
 // DeviceStore provides access to devices for the MCP server.
 type DeviceStore interface {
 	LoadHubState() (*hub.HubState, error)
@@ -92,13 +105,13 @@ func New(store DeviceStore, querier *metrics.QueryService) *Server {
 
 	// Register callback for updates - notify all listeners
 	store.RegisterIsDirtyCallback(func() {
-		s.notifyListeners("nodeherder://devices")
+		s.notifyListeners(DevicesResourceURI)
 	})
 
 	// Create MCP server
 	s.mcpServer = server.NewMCPServer(
-		"nodeherder",
-		"1.0.0",
+		ServerName,
+		ServerVersion,
 		server.WithResourceCapabilities(true, true),
 		server.WithToolCapabilities(true),
 	)
@@ -159,7 +172,7 @@ func (s *Server) HandleRequest(ctx context.Context, rawMessage json.RawMessage) 
 
 	// Intercept subscribe/unsubscribe - return success
 	// The actual subscription is handled by the SSE connection
-	if baseMessage.Method == "resources/subscribe" || baseMessage.Method == "resources/unsubscribe" {
+	if baseMessage.Method == MethodResourcesSubscribe || baseMessage.Method == MethodResourcesUnsubscribe {
 		response := map[string]interface{}{
 			"jsonrpc": "2.0",
 			"id":      baseMessage.ID,
@@ -198,14 +211,14 @@ func (s *Server) errorResponse(id interface{}, code int, message string) json.Ra
 
 func (s *Server) registerTools() {
 	// query_device tool
-	queryDeviceTool := mcp.NewTool("query_device",
-		mcp.WithDescription("Query device metrics. Read nodeherder://devices first to get exact metric names."),
+	queryDeviceTool := mcp.NewTool(QueryDeviceToolName,
+		mcp.WithDescription(fmt.Sprintf("Query device metrics. Read %s first to get exact metric names.", DevicesResourceURI)),
 		mcp.WithString("target_name",
 			mcp.Required(),
 			mcp.Description("Natural language name for the device")),
 		mcp.WithArray("metrics",
 			mcp.Required(),
-			mcp.Description("Metric names from nodeherder://devices resource")),
+			mcp.Description(fmt.Sprintf("Metric names from %s resource", DevicesResourceURI))),
 		mcp.WithString("time_scope",
 			mcp.Description("Time range: today, yesterday, last_24_hours, last_7_days, last_hour")),
 		mcp.WithString("aggregation",
@@ -218,7 +231,7 @@ func (s *Server) registerTools() {
 func (s *Server) registerResources() {
 	// System prompt resource
 	promptResource := mcp.NewResource(
-		"nodeherder://system-prompt",
+		SystemPromptResourceURI,
 		"System Prompt",
 		mcp.WithResourceDescription("Domain rules and guidance for LLM interactions"),
 		mcp.WithMIMEType("text/plain"),
@@ -231,7 +244,7 @@ func (s *Server) registerResources() {
 		}
 		return []mcp.ResourceContents{
 			mcp.TextResourceContents{
-				URI:      "nodeherder://system-prompt",
+				URI:      SystemPromptResourceURI,
 				MIMEType: "text/plain",
 				Text:     string(content),
 			},
@@ -240,7 +253,7 @@ func (s *Server) registerResources() {
 
 	// Devices resource
 	devicesResource := mcp.NewResource(
-		"nodeherder://devices",
+		DevicesResourceURI,
 		"Device Context",
 		mcp.WithResourceDescription("Available devices and their metrics"),
 		mcp.WithMIMEType("application/json"),
@@ -253,7 +266,7 @@ func (s *Server) registerResources() {
 		}
 		return []mcp.ResourceContents{
 			mcp.TextResourceContents{
-				URI:      "nodeherder://devices",
+				URI:      DevicesResourceURI,
 				MIMEType: "application/json",
 				Text:     string(content),
 			},

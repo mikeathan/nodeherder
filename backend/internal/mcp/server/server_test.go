@@ -188,9 +188,9 @@ func TestHandleRequest_SubscriptionInterception(t *testing.T) {
 	req := map[string]interface{}{
 		"jsonrpc": "2.0",
 		"id":      123,
-		"method":  "resources/subscribe",
+		"method":  server.MethodResourcesSubscribe,
 		"params": map[string]interface{}{
-			"uri": "nodeherder://devices",
+			"uri": server.DevicesResourceURI,
 		},
 	}
 	reqBytes, _ := json.Marshal(req)
