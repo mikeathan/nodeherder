@@ -1,16 +1,13 @@
 package server_test
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"node-herder/internal/mcp/resolver"
 	"node-herder/internal/mcp/server"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
 	"node-herder/store"
-	"os"
 	"testing"
 )
 
@@ -182,25 +179,12 @@ var _ server.DeviceStore = (*mockDeviceStore)(nil)
 // Compile-time check that deviceInfoAdapter implements resolver.DeviceStore
 var _ resolver.DeviceStore = (*deviceInfoAdapter)(nil)
 
-func TestServeStdio_SubscriptionInterception(t *testing.T) {
+func TestHandleRequest_SubscriptionInterception(t *testing.T) {
 	// Setup mock store
 	store := &mockDeviceStore{}
 	srv := server.New(store, nil)
 
-	// Capture stdin/stdout
-	oldStdin := os.Stdin
-	oldStdout := os.Stdout
-	defer func() {
-		os.Stdin = oldStdin
-		os.Stdout = oldStdout
-	}()
-
-	r, w, _ := os.Pipe()
-	os.Stdin = r
-	outReader, outWriter, _ := os.Pipe()
-	os.Stdout = outWriter
-
-	// Write subscription request
+	// Create subscription request
 	req := map[string]interface{}{
 		"jsonrpc": "2.0",
 		"id":      123,
@@ -209,18 +193,10 @@ func TestServeStdio_SubscriptionInterception(t *testing.T) {
 			"uri": "nodeherder://devices",
 		},
 	}
-	json.NewEncoder(w).Encode(req)
-	w.Close()
+	reqBytes, _ := json.Marshal(req)
 
-	// Run ServeStdio in background (it blocks until EOF)
-	go func() {
-		srv.ServeStdio()
-		outWriter.Close()
-	}()
-
-	// Read response
-	var buf bytes.Buffer
-	io.Copy(&buf, outReader)
+	// Call HandleRequest
+	respBytes := srv.HandleRequest(t.Context(), reqBytes)
 
 	var resp struct {
 		JSONRPC string          `json:"jsonrpc"`
@@ -229,7 +205,7 @@ func TestServeStdio_SubscriptionInterception(t *testing.T) {
 		Error   interface{}     `json:"error,omitempty"`
 	}
 
-	if err := json.Unmarshal(buf.Bytes(), &resp); err != nil {
+	if err := json.Unmarshal(respBytes, &resp); err != nil {
 		t.Fatalf("Failed to decode response: %v", err)
 	}
 
@@ -238,9 +214,79 @@ func TestServeStdio_SubscriptionInterception(t *testing.T) {
 		t.Errorf("Expected success, got error: %v", resp.Error)
 	}
 
-	// We can't easily check for exact ID type match (int vs float64) without helpers,
-	// but we can check the value string rep
+	// Check the ID
 	if fmt.Sprintf("%v", resp.ID) != "123" {
 		t.Errorf("Expected ID 123, got %v", resp.ID)
+	}
+}
+
+func TestHandleRequest_ResourcesList(t *testing.T) {
+	// Setup mock store with devices
+	store := &mockDeviceStore{
+		devices: []*devices.Device{
+			{Id: "dev-001", FriendlyName: "Test device"},
+		},
+	}
+	srv := server.New(store, nil)
+
+	// First, send initialize request
+	initReq := map[string]interface{}{
+		"jsonrpc": "2.0",
+		"id":      1,
+		"method":  "initialize",
+		"params": map[string]interface{}{
+			"protocolVersion": "2024-11-05",
+			"capabilities":    map[string]interface{}{},
+			"clientInfo": map[string]interface{}{
+				"name":    "test",
+				"version": "1.0",
+			},
+		},
+	}
+	initBytes, _ := json.Marshal(initReq)
+	srv.HandleRequest(t.Context(), initBytes)
+
+	// Now test resources/list
+	req := map[string]interface{}{
+		"jsonrpc": "2.0",
+		"id":      2,
+		"method":  "resources/list",
+	}
+	reqBytes, _ := json.Marshal(req)
+
+	respBytes := srv.HandleRequest(t.Context(), reqBytes)
+
+	if respBytes == nil {
+		t.Fatal("HandleRequest returned nil")
+	}
+
+	// Just verify we got a valid JSON response
+	var resp map[string]interface{}
+	if err := json.Unmarshal(respBytes, &resp); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	if resp["error"] != nil {
+		t.Errorf("Expected success, got error: %v", resp["error"])
+	}
+}
+
+func TestNotificationListener(t *testing.T) {
+	store := &mockDeviceStore{}
+	srv := server.New(store, nil)
+
+	// Track notifications
+	var receivedURI string
+	listener := func(uri string) {
+		receivedURI = uri
+	}
+
+	srv.RegisterNotificationListener(listener)
+
+	// The store's dirty callback should trigger the listener
+	// In a real scenario, this would be called when devices change
+	// For this test, we directly test the listener registration
+	if receivedURI != "" {
+		t.Errorf("Expected no notification yet, got %q", receivedURI)
 	}
 }

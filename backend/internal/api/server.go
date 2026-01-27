@@ -44,29 +44,41 @@ func (s *ApiServer) Listen() {
 	done := make(chan bool)
 	errors := make(chan error)
 
-	defer close(done)
-	defer close(errors)
 
 	go func() {
 		<-s.ctx.Done()
 		if err := s.httpServer.Close(); err != nil {
-			errors <- fmt.Errorf("HTTP close error: %v", err)
+			select {
+			case errors <- fmt.Errorf("HTTP close error: %v", err):
+			default:
+			}
 		}
 		utils.LogInfof("HTTP Server Closed")
-		done <- true
+		select {
+		case done <- true:
+		default:
+		}
 	}()
 
 	go func() {
 		utils.LogInfof("HTTP Server Listening %s", s.httpServer.Addr)
 		if err := s.httpServer.ListenAndServe(); err != http.ErrServerClosed {
-			errors <- fmt.Errorf("HTTP server error: %v", err)
+			select {
+			case errors <- fmt.Errorf("HTTP server error: %v", err):
+			default:
+			}
 		}
 	}()
 
 	go func() {
 		err := <-errors
-		utils.LogErrorf("Finished with error %s", err.Error())
-		done <- true
+		if err != nil {
+			utils.LogErrorf("Finished with error %s", err.Error())
+		}
+		select {
+		case done <- true:
+		default:
+		}
 	}()
 
 	<-done

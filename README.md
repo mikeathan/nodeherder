@@ -161,32 +161,195 @@ openssl rand -base64 32
 
 ## MCP Server Integration
 
-Node Herder implements the Model Context Protocol (MCP), allowing AI assistants (like Claude or custom LLM proxies) to directly query smart home metrics and discover devices.
+Node Herder implements the Model Context Protocol (MCP), allowing AI assistants (like Claude or custom LLM proxies) to directly query smart home metrics and discover devices over HTTP.
 
 ### Command Line Arguments
 
-| Flag         | Description                                                            |
-| ------------ | ---------------------------------------------------------------------- |
-| `--mcp`      | Enable MCP server alongside the HTTP API (default: `false`)            |
-| `--mcp-only` | Run _only_ the MCP server on stdio (no HTTP/MQTT). Used for Inspector. |
-| `--port`     | Specify HTTP port (default: 4110).                                     |
+| Flag     | Description                                  |
+| -------- | -------------------------------------------- |
+| `--mcp`  | Enable MCP HTTP endpoints (default: `false`) |
+| `--port` | Specify HTTP port (default: 4110)            |
 
-### Inspecting the MCP Server
+### MCP Endpoints
 
-You can use the official MCP Inspector to test tools and resources without an LLM:
+When `--mcp` is enabled, the following endpoints are available:
 
-1. **Build the backend:**
+| Endpoint          | Method | Description                                       |
+| ----------------- | ------ | ------------------------------------------------- |
+| `/api/mcp`        | POST   | JSON-RPC endpoint for MCP requests                |
+| `/api/mcp/events` | GET    | SSE stream for live resource update notifications |
 
-   ```bash
-   cd backend
-   go build -o nodeherder .
-   ```
+### Testing the MCP Server
 
-2. **Run the inspector:**
+You can test the MCP server using `curl` commands to verify that the HTTP and SSE endpoints are working correctly.
 
-   ```bash
-   npx @modelcontextprotocol/inspector ./nodeherder --mcp-only
-   ```
+#### 1. Initialize Session
+
+To start an MCP session, send an `initialize` request.
+
+**Request:**
+
+```bash
+curl -X POST http://localhost:4110/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "initialize",
+    "params": {
+      "protocolVersion": "2024-11-05",
+      "capabilities": {},
+      "clientInfo": {"name": "test-client", "version": "1.0"}
+    }
+  }'
+```
+
+**Expected Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "protocolVersion": "2024-11-05",
+    "capabilities": {
+      "resources": { "subscribe": true, "listChanged": true },
+      "tools": { "listChanged": true }
+    },
+    "serverInfo": { "name": "nodeherder", "version": "1.0.0" }
+  }
+}
+```
+
+#### 2. List Resources
+
+Discover available resources exposed by the server.
+
+**Request:**
+
+```bash
+curl -X POST http://localhost:4110/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "resources/list"
+  }'
+```
+
+**Expected Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "result": {
+    "resources": [
+      {
+        "uri": "nodeherder://devices",
+        "name": "Device Context",
+        "description": "Available devices and their metrics",
+        "mimeType": "application/json"
+      },
+      {
+        "uri": "nodeherder://system-prompt",
+        "name": "System Prompt",
+        "description": "Domain rules and guidance for LLM interactions",
+        "mimeType": "text/plain"
+      }
+    ]
+  }
+}
+```
+
+#### 3. Read Device Context
+
+Fetch the current state of all devices.
+
+**Request:**
+
+```bash
+curl -X POST http://localhost:4110/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 3,
+    "method": "resources/read",
+    "params": {
+      "uri": "nodeherder://devices"
+    }
+  }'
+```
+
+**Response:** Returns a JSON object containing the full list of devices and their current metrics.
+
+#### 4. Call Tools
+
+Execute a tool (e.g., querying device metrics).
+
+**Request:**
+
+```bash
+curl -X POST http://localhost:4110/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 4,
+    "method": "tools/call",
+    "params": {
+      "name": "query_device",
+      "arguments": {
+        "target_name": "Living room presence sensor",
+        "metrics": ["presence"],
+        "aggregation": "last"
+      }
+    }
+  }'
+```
+
+**Expected Response:**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "result": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"Expose\": \"presence\",\n      \"From\": 1769457061761,\n      \"To\": 1769543461761,\n      \"Values\": [\n        {\n          \"deviceId\": \"0xa4c13894070052fc\",\n          \"value\": false,\n          \"timestamp\": 1769543448226\n        }\n      ]\n    }\n  ]\n}"
+      }
+    ]
+  }
+}
+```
+
+#### 5. Subscribe to Live Updates
+
+Listen for real-time changes via Server-Sent Events (SSE).
+
+**Step 1: Start Listening**
+Open a terminal and run:
+
+```bash
+curl -N http://localhost:4110/api/mcp/events
+```
+
+**Step 2: Subscribe to Resource**
+In a separate terminal, tell the server you want updates for specific resources:
+
+```bash
+curl -X POST http://localhost:4110/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 5,
+    "method": "resources/subscribe",
+    "params": {"uri": "nodeherder://devices"}
+  }'
+```
+
+**Result:** When a device updates, the SSE stream will emit a `notifications/resources/updated` event.
 
 ### Available Capabilities
 

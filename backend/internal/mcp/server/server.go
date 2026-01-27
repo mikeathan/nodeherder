@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,7 +10,7 @@ import (
 	metrics "node-herder/internal/metrics/services"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
-	"os"
+	"sync"
 
 	"node-herder/store"
 
@@ -76,6 +75,10 @@ type Server struct {
 	intentHandler   *tools.IntentHandler
 	promptResource  *resources.PromptResource
 	devicesResource *resources.DevicesResource
+
+	// Notification listeners for HTTP/SSE transport
+	listeners   []func(string)
+	listenersMu sync.RWMutex
 }
 
 // New creates a new MCP server.
@@ -84,13 +87,12 @@ func New(store DeviceStore, querier *metrics.QueryService) *Server {
 		intentHandler:   tools.NewIntentHandler(resolver.New(&deviceInfoAdapter{store}), querier, &deviceLookupAdapter{store}),
 		promptResource:  resources.NewPromptResource(),
 		devicesResource: resources.NewDevicesResource(store),
+		listeners:       []func(string){},
 	}
 
-	// Register callback for updates
+	// Register callback for updates - notify all listeners
 	store.RegisterIsDirtyCallback(func() {
-		s.mcpServer.SendNotificationToAllClients("notifications/resources/updated", map[string]interface{}{
-			"uri": "nodeherder://devices",
-		})
+		s.notifyListeners("nodeherder://devices")
 	})
 
 	// Create MCP server
@@ -108,6 +110,90 @@ func New(store DeviceStore, querier *metrics.QueryService) *Server {
 	s.registerResources()
 
 	return s
+}
+
+// notifyListeners calls all registered notification listeners.
+func (s *Server) notifyListeners(uri string) {
+	s.listenersMu.RLock()
+	defer s.listenersMu.RUnlock()
+
+	for _, listener := range s.listeners {
+		listener(uri)
+	}
+}
+
+// RegisterNotificationListener adds a callback for resource notifications.
+func (s *Server) RegisterNotificationListener(cb func(string)) {
+	s.listenersMu.Lock()
+	defer s.listenersMu.Unlock()
+	s.listeners = append(s.listeners, cb)
+}
+
+// UnregisterNotificationListener removes a previously registered callback.
+// Note: This uses function pointer comparison which may not work for closures.
+// For production use, consider using a unique ID-based approach.
+func (s *Server) UnregisterNotificationListener(cb func(string)) {
+	s.listenersMu.Lock()
+	defer s.listenersMu.Unlock()
+
+	for i, listener := range s.listeners {
+		if &listener == &cb {
+			s.listeners = append(s.listeners[:i], s.listeners[i+1:]...)
+			return
+		}
+	}
+}
+
+// HandleRequest processes a JSON-RPC request and returns the response.
+// This is used by the HTTP transport.
+func (s *Server) HandleRequest(ctx context.Context, rawMessage json.RawMessage) json.RawMessage {
+	// Peek at the method to intercept subscribe/unsubscribe
+	var baseMessage struct {
+		JSONRPC string      `json:"jsonrpc"`
+		ID      interface{} `json:"id"`
+		Method  string      `json:"method"`
+	}
+	if err := json.Unmarshal(rawMessage, &baseMessage); err != nil {
+		return s.errorResponse(nil, -32700, "Parse error")
+	}
+
+	// Intercept subscribe/unsubscribe - return success
+	// The actual subscription is handled by the SSE connection
+	if baseMessage.Method == "resources/subscribe" || baseMessage.Method == "resources/unsubscribe" {
+		response := map[string]interface{}{
+			"jsonrpc": "2.0",
+			"id":      baseMessage.ID,
+			"result":  map[string]interface{}{},
+		}
+		data, _ := json.Marshal(response)
+		return data
+	}
+
+	// Delegate to library for everything else
+	resp := s.mcpServer.HandleMessage(ctx, rawMessage)
+	if resp == nil {
+		return nil
+	}
+
+	data, err := json.Marshal(resp)
+	if err != nil {
+		return s.errorResponse(baseMessage.ID, -32603, "Internal error")
+	}
+	return data
+}
+
+// errorResponse creates a JSON-RPC error response.
+func (s *Server) errorResponse(id interface{}, code int, message string) json.RawMessage {
+	response := map[string]interface{}{
+		"jsonrpc": "2.0",
+		"id":      id,
+		"error": map[string]interface{}{
+			"code":    code,
+			"message": message,
+		},
+	}
+	data, _ := json.Marshal(response)
+	return data
 }
 
 func (s *Server) registerTools() {
@@ -191,67 +277,4 @@ func formatToolResponse(resp *tools.ToolResponse) *mcp.CallToolResult {
 		return mcp.NewToolResultError(string(data))
 	}
 	return mcp.NewToolResultText(string(data))
-}
-
-// ServeStdio starts the MCP server in stdio mode.
-// ServeStdio starts the MCP server in stdio mode.
-func (s *Server) ServeStdio() error {
-	scanner := bufio.NewScanner(os.Stdin)
-	ctx := context.Background()
-
-	// Initialize session
-	// We need to manually register a session for HandleMessage to work with session-dependent logic
-	// In a real stdio server, this is handled by the server wrapper.
-	// For this workaround, we rely on the fact that HandleMessage handles stateless requests fine,
-	// and our specific use case (Inspector) might be okay.
-	// EXCEPT: notifications need a session to go to.
-	// We should try to use the library's StdioServer if possible, but we can't inject logic easily.
-	// So we will roll our own simple loop and ensure we use SendNotificationToAllClients which iterates sessions.
-	// But wait, if we don't register a session, SendNotificationToAllClients might send to no one if it checks registered sessions.
-	// The stdio implementation registers a static session. We should do the same if we can access it, but we can't (internal).
-	//
-	// Workaround for the Workaround:
-	// We will implement the loop. For notifications, SendNotificationToAllClients iterates `s.sessions`.
-	// We need to register a dummy session so notifications have somewhere to go if the library requires it.
-	// However, stdio is 1-to-1.
-	// Let's implement the read loop.
-
-	for scanner.Scan() {
-		line := scanner.Bytes()
-		var rawMessage json.RawMessage
-		if err := json.Unmarshal(line, &rawMessage); err != nil {
-			fmt.Fprintf(os.Stderr, "Error parsing JSON: %v\n", err)
-			continue
-		}
-
-		// Peek at the method
-		var baseMessage struct {
-			JSONRPC string      `json:"jsonrpc"`
-			ID      interface{} `json:"id"`
-			Method  string      `json:"method"`
-		}
-		if err := json.Unmarshal(line, &baseMessage); err != nil {
-			continue
-		}
-
-		// Intercept subscribe/unsubscribe
-		if baseMessage.Method == "resources/subscribe" || baseMessage.Method == "resources/unsubscribe" {
-			// Return success
-			response := map[string]interface{}{
-				"jsonrpc": "2.0",
-				"id":      baseMessage.ID,
-				"result":  map[string]interface{}{},
-			}
-			json.NewEncoder(os.Stdout).Encode(response)
-			continue
-		}
-
-		// Delegate to library for everything else
-		resp := s.mcpServer.HandleMessage(ctx, rawMessage)
-		if resp != nil {
-			json.NewEncoder(os.Stdout).Encode(resp)
-		}
-	}
-
-	return scanner.Err()
 }

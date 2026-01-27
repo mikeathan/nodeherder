@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store store.AppStore, ctx context.Context) *api.ApiServer {
+func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store store.AppStore, mcpServer *mcpserver.Server, ctx context.Context) *api.ApiServer {
 
 	router := api.NewRouter()
 	fservice := fs.NewFileSystem()
@@ -54,6 +54,12 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	router.PublicGET("/api/context/devices", api.NewDeviceContextHandler(store, 1*time.Second))
 	router.PublicPOST("/api/auth/token", authProvider.ServiceTokenHandler())
 
+	// MCP routes 
+	if mcpServer != nil {
+		router.PublicPOST("/api/mcp", api.NewMCPHandler(mcpServer))
+		router.PublicGET("/api/mcp/events", api.NewMCPEventsHandler(mcpServer))
+	}
+
 	// authentication routes
 	router.AddAuthentication(authProvider.OAuth())
 
@@ -82,28 +88,13 @@ func Register(port int, store store.AppStore, ctx context.Context, enableMCP boo
 		controllers.WithContext(ctx),
 		controllers.WithAutomationHandlers(automationHandlers))
 
-	// Start MCP server in background for LLM clients (if enabled)
+	// Create MCP server for HTTP transport
+	var mcpServer *mcpserver.Server
 	if enableMCP {
-		go StartMCPServer(store)
+		utils.LogInfo("MCP HTTP transport enabled")
+		querier := metrics.NewQueryService(store)
+		mcpServer = mcpserver.New(store, querier)
 	}
 
-	return registerApi(port, ws, hub, store, ctx)
-}
-
-// StartMCPServer starts the MCP server in a goroutine for LLM clients.
-func StartMCPServer(store store.AppStore) {
-	utils.LogInfo("starting MCP server in stdio mode")
-	querier := metrics.NewQueryService(store)
-	srv := mcpserver.New(store, querier)
-	if err := srv.ServeStdio(); err != nil {
-		utils.LogErrorf("MCP server error: %v", err.Error())
-	}
-}
-
-// StartInspectorMode initializes the full backend (without HTTP listener)
-// and runs the MCP server on Stdio. This is used by the MCP Inspector.
-func StartInspectorMode(port int, store store.AppStore, ctx context.Context) {
-	Register(port, store, ctx, false)
-	utils.LogInfo("Hub initialization complete - Backend services (MQTT, Store, Automations) are running.")
-	StartMCPServer(store)
+	return registerApi(port, ws, hub, store, mcpServer, ctx)
 }

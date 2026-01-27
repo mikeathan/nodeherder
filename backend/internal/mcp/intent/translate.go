@@ -43,13 +43,19 @@ func Translate(intent *Intent, deviceID string, opts TranslateOptions) *query.Me
 }
 
 // AggregationMap maps intent aggregation strings to domain aggregation types.
+// AggregationMap maps intent aggregation strings to domain aggregation types.
 var AggregationMap = map[string]domain.AggregationType{
 	"count_events": domain.AggCount,
+	"count":        domain.AggCount,
 	"latest_value": domain.AggLast,
+	"last":         domain.AggLast,
 	"last_event":   domain.LastEvent,
 	"min_value":    domain.AggMin,
+	"min":          domain.AggMin,
 	"max_value":    domain.AggMax,
+	"max":          domain.AggMax,
 	"avg_value":    domain.AggAvg,
+	"avg":          domain.AggAvg,
 }
 
 func mapAggregation(agg string) domain.AggregationType {

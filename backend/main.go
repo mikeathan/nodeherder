@@ -43,12 +43,6 @@ func main() {
 		os.Exit(-1)
 	}
 
-	if args.mcpOnly {
-		utils.LogInfo("starting MCP server in stdio-only mode (backend initialized)")
-		hub.StartInspectorMode(args.port, appStore, ctx)
-		return
-	}
-
 	utils.LogInfo("starting up server")
 	h := hub.Register(args.port, appStore, ctx, args.enableMCP)
 	h.Listen()
