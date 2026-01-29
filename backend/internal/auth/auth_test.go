@@ -235,7 +235,7 @@ func TestGoogleOAuth_HandleMe_Unauthorized(t *testing.T) {
 func TestServiceTokenHandler(t *testing.T) {
 	setTestJWTSecret(t)
 	t.Setenv("SERVICE_CLIENTS", "service-client")
-	t.Setenv("SERVICE_SECRET_service-client", "service-secret")
+	t.Setenv("SERVICE_SECRET_service_client", "service-secret")
 
 	cfg := auth.WithDefaultJWTConfig()
 	provider := auth.NewProvider(cfg, "http://localhost:8080/api/auth/callback")

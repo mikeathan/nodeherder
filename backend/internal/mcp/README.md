@@ -1,44 +1,38 @@
 # MCP Server Architecture
 
-NodeHerder includes an MCP (Model Context Protocol) server for LLM tool integration. This allows AI assistants to query device metrics and understand your smart home state.
+NodeHerder includes an MCP (Model Context Protocol) server exposed via HTTP and SSE (Server-Sent Events). This allows AI assistants and other clients to query device metrics and receive real-time updates.
 
-## What is MCP?
+## Protocol Support
 
-MCP (Model Context Protocol) is a standard protocol for LLMs to interact with external tools and resources. It uses JSON-RPC over stdio, allowing AI assistants like Claude to:
-
-- **Call tools** to perform actions (query metrics, resolve devices)
-- **Read resources** to get context (device list, system prompts)
+- **HTTP POST** (`/api/mcp`): Standard JSON-RPC 2.0 endpoint for tool calls and resource reading.
+- **SSE** (`/api/mcp/events`): Notifications for resource updates (e.g., system prompt changes).
 
 ## Startup Flow
+
+The MCP server runs as part of the main `nodeherder` process:
 
 ```
 main.go
    │
-   └─► hub.Register(port, store, ctx, enableMCP)
+   └─► hub.Register(port, store, ctx, ...enableMCP=true)
           │
-          ├─► Start WebSocket hub
-          ├─► Connect MQTT
-          ├─► Initialize automations
+          ├─► Initialize MCP Server (server.New)
           │
-          ├─► if enableMCP:
-          │      └─► go startMCPServer(store)  ◄── runs in background goroutine
-          │
-          └─► Start HTTP API server
+          └─► Register HTTP Routes:
+                 ├─► POST /api/mcp
+                 └─► GET  /api/mcp/events
 ```
 
-The MCP server runs alongside the HTTP server in a separate goroutine, sharing the same data store.
+## Configuration
 
-## Command Line Options
+The MCP server is enabled by default. You can control it via flags:
 
 ```bash
-# Default: HTTP + MCP both running
+# Default: HTTP API + MCP enabled
 ./nodeherder
 
-# Disable MCP server
+# Disable MCP endpoints
 ./nodeherder --mcp=false
-
-# Custom port (MCP still runs on stdio)
-./nodeherder --port=8080
 ```
 
 ## Testing with MCP Inspector
@@ -64,7 +58,6 @@ This opens a web UI at `http://localhost:5173` (or similar).
 ### Using the Inspector
 
 1. **Resources Tab**: View available resources
-   - Click on `nodeherder://devices` to see all registered devices
    - Click on `nodeherder://system-prompt` to see LLM guidance
 
 2. **Tools Tab**: Test the `query_device` tool
@@ -78,12 +71,61 @@ This opens a web UI at `http://localhost:5173` (or similar).
        "aggregation": "latest_value"
      }
      ```
-   - Click "Call" to execute and see the response
-
-3. **Response Inspection**: View full JSON-RPC responses
-   - Success: `{"status": "success", "data": {...}}`
-   - Error: `{"status": "error", "error": {"code": "...", "message": "..."}}`
    - Ambiguous: `{"status": "ambiguous", "candidates": [...]}`
+
+---
+
+## HTTP API Examples
+
+You can interact with the MCP server directly using `curl` if the HTTP API is enabled.
+
+### 1. List Resources
+
+```bash
+curl -X POST http://localhost:4110/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "resources/list"
+  }'
+```
+
+### 2. Get System Prompt (and Device Context)
+
+```bash
+curl -X POST http://localhost:4110/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "resources/read",
+    "params": {
+      "uri": "nodeherder://system-prompt"
+    }
+  }'
+```
+
+### 3. Call Tool (query_device)
+
+```bash
+curl -X POST http://localhost:4110/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "query_device",
+      "arguments": {
+        "target_name": "attic temperature",
+        "metrics": ["temperature"],
+        "time_scope": "today",
+        "aggregation": "last"
+      }
+    }
+  }'
+```
 
 ### Running Unit Tests
 
@@ -163,24 +205,17 @@ Returns LLM guidance text explaining:
 - Best practices for querying
 - Aggregation type recommendations
 
-### nodeherder://devices
+**Example Usage**:
 
-Returns JSON with all available devices and their metrics:
-
-```json
-{
-  "version": "1",
-  "devices": [
-    {
-      "id": "0xa4c138e1b5658e68",
-      "name": "Attic air sensor",
-      "exposes": [
-        { "name": "temperature", "type": "numeric", "unit": "°C" },
-        { "name": "humidity", "type": "numeric", "unit": "%" }
-      ]
-    }
-  ]
-}
+```bash
+curl -X POST http://localhost:4110/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "resources/read",
+    "params": {"uri": "nodeherder://system-prompt"}
+  }' | jq '.result.contents[0].text'
 ```
 
 ---
@@ -342,27 +377,22 @@ When NodeHerder is used with a frontend and LLM proxy, here's the complete flow:
    }
    ```
 
-5. **LLM Proxy → NodeHerder MCP**: The proxy spawns/connects to nodeherder's MCP server via **stdio** and sends the tool call
+5. **NodeHerder executes**: Resolves "attic" → device, queries temperature, returns result
 
-6. **NodeHerder executes**: Resolves "attic" → device, queries temperature, returns result
-
-7. **LLM formats response**: Claude turns the data into natural language:
+6. **LLM formats response**: Claude turns the data into natural language:
 
    > "The attic is currently 22.5°C"
 
-8. **Response returns** through proxy to frontend
+7. **Response returns** through proxy to frontend
 
-### LLM Proxy Configuration
-
-The LLM proxy needs to be configured to spawn nodeherder as an MCP server. Example MCP config:
+The LLM proxy needs to be configured to connect to nodeherder as a remote MCP server (SSE). Example config:
 
 ```json
 {
   "mcpServers": {
     "nodeherder": {
-      "command": "./nodeherder",
-      "args": [],
-      "env": {}
+      "url": "http://localhost:4110/api/mcp/events",
+      "transport": "sse"
     }
   }
 }
@@ -383,12 +413,12 @@ The LLM proxy needs to be configured to spawn nodeherder as an MCP server. Examp
 │                            LLM PROXY                                     │
 │  ┌──────────────────────┐    ┌──────────────────────────────────────┐   │
 │  │  API Gateway         │    │  MCP Client                          │   │
-│  │  - Auth              │    │  - Spawns nodeherder process         │   │
-│  │  - Rate limiting     │    │  - Sends/receives JSON-RPC via stdio │   │
+│  │  - Auth              │    │  - Connects to nodeherder via HTTP   │   │
+│  │  - Rate limiting     │    │  - Sends/receives JSON-RPC over HTTP │   │
 │  └──────────────────────┘    └──────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────┘
           │                                      │
-          ▼ LLM API                              ▼ stdio (JSON-RPC)
+          ▼ LLM API                              ▼ HTTP (JSON-RPC)
 ┌─────────────────────┐                ┌──────────────────────────────────┐
 │        LLM          │                │         NODEHERDER               │
 │  (Claude/GPT/etc)   │                │  ┌────────────────────────────┐  │
@@ -405,7 +435,9 @@ The LLM proxy needs to be configured to spawn nodeherder as an MCP server. Examp
 
 ### Key Points
 
-- **MCP uses stdio**: The LLM proxy connects to nodeherder via stdin/stdout, not HTTP
+- **MCP uses HTTP/SSE**: The LLM proxy connects to nodeherder via HTTP endpoints
 - **Shared data store**: MCP server runs in the same process as HTTP server, shares the database
 - **LLM makes decisions**: The LLM decides when to call tools based on user questions
 - **Stateless queries**: Each tool call is independent, no session state needed
+
+---

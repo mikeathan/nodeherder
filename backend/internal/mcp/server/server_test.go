@@ -2,7 +2,6 @@ package server_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"node-herder/internal/mcp/resolver"
 	"node-herder/internal/mcp/server"
 	"node-herder/models/devices"
@@ -178,47 +177,6 @@ var _ server.DeviceStore = (*mockDeviceStore)(nil)
 
 // Compile-time check that deviceInfoAdapter implements resolver.DeviceStore
 var _ resolver.DeviceStore = (*deviceInfoAdapter)(nil)
-
-func TestHandleRequest_SubscriptionInterception(t *testing.T) {
-	// Setup mock store
-	store := &mockDeviceStore{}
-	srv := server.New(store, nil)
-
-	// Create subscription request
-	req := map[string]interface{}{
-		"jsonrpc": "2.0",
-		"id":      123,
-		"method":  server.MethodResourcesSubscribe,
-		"params": map[string]interface{}{
-			"uri": server.DevicesResourceURI,
-		},
-	}
-	reqBytes, _ := json.Marshal(req)
-
-	// Call HandleRequest
-	respBytes := srv.HandleRequest(t.Context(), reqBytes)
-
-	var resp struct {
-		JSONRPC string          `json:"jsonrpc"`
-		ID      interface{}     `json:"id"`
-		Result  json.RawMessage `json:"result,omitempty"`
-		Error   interface{}     `json:"error,omitempty"`
-	}
-
-	if err := json.Unmarshal(respBytes, &resp); err != nil {
-		t.Fatalf("Failed to decode response: %v", err)
-	}
-
-	// Verify response
-	if resp.Error != nil {
-		t.Errorf("Expected success, got error: %v", resp.Error)
-	}
-
-	// Check the ID
-	if fmt.Sprintf("%v", resp.ID) != "123" {
-		t.Errorf("Expected ID 123, got %v", resp.ID)
-	}
-}
 
 func TestHandleRequest_ResourcesList(t *testing.T) {
 	// Setup mock store with devices

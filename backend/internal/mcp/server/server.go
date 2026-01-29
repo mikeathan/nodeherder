@@ -22,7 +22,6 @@ const (
 	ServerName    = "nodeherder"
 	ServerVersion = "1.0.0"
 
-	DevicesResourceURI      = "nodeherder://devices"
 	SystemPromptResourceURI = "nodeherder://system-prompt"
 
 	QueryDeviceToolName = "query_device"
@@ -84,10 +83,9 @@ func (a *deviceLookupAdapter) FindDeviceByIds(ids []string) ([]*devices.Device, 
 
 // Server is the MCP server for nodeherder.
 type Server struct {
-	mcpServer       *server.MCPServer
-	intentHandler   *tools.IntentHandler
-	promptResource  *resources.PromptResource
-	devicesResource *resources.DevicesResource
+	mcpServer      *server.MCPServer
+	intentHandler  *tools.IntentHandler
+	promptResource *resources.PromptResource
 
 	// Notification listeners for HTTP/SSE transport
 	listeners   []func(string)
@@ -97,15 +95,14 @@ type Server struct {
 // New creates a new MCP server.
 func New(store DeviceStore, querier *metrics.QueryService) *Server {
 	s := &Server{
-		intentHandler:   tools.NewIntentHandler(resolver.New(&deviceInfoAdapter{store}), querier, &deviceLookupAdapter{store}),
-		promptResource:  resources.NewPromptResource(),
-		devicesResource: resources.NewDevicesResource(store),
-		listeners:       []func(string){},
+		intentHandler:  tools.NewIntentHandler(resolver.New(&deviceInfoAdapter{store}), querier, &deviceLookupAdapter{store}),
+		promptResource: resources.NewPromptResource(store),
+		listeners:      []func(string){},
 	}
 
 	// Register callback for updates - notify all listeners
 	store.RegisterIsDirtyCallback(func() {
-		s.notifyListeners(DevicesResourceURI)
+		s.notifyListeners(SystemPromptResourceURI)
 	})
 
 	// Create MCP server
@@ -212,13 +209,13 @@ func (s *Server) errorResponse(id interface{}, code int, message string) json.Ra
 func (s *Server) registerTools() {
 	// query_device tool
 	queryDeviceTool := mcp.NewTool(QueryDeviceToolName,
-		mcp.WithDescription(fmt.Sprintf("Query device metrics. Read %s first to get exact metric names.", DevicesResourceURI)),
+		mcp.WithDescription(fmt.Sprintf("Query device metrics. Read %s first to get exact metric names.", SystemPromptResourceURI)),
 		mcp.WithString("target_name",
 			mcp.Required(),
 			mcp.Description("Natural language name for the device")),
 		mcp.WithArray("metrics",
 			mcp.Required(),
-			mcp.Description(fmt.Sprintf("Metric names from %s resource", DevicesResourceURI))),
+			mcp.Description(fmt.Sprintf("Metric names from %s resource", SystemPromptResourceURI))),
 		mcp.WithString("time_scope",
 			mcp.Description("Time range: today, yesterday, last_24_hours, last_7_days, last_hour")),
 		mcp.WithString("aggregation",
@@ -251,27 +248,6 @@ func (s *Server) registerResources() {
 		}, nil
 	})
 
-	// Devices resource
-	devicesResource := mcp.NewResource(
-		DevicesResourceURI,
-		"Device Context",
-		mcp.WithResourceDescription("Available devices and their metrics"),
-		mcp.WithMIMEType("application/json"),
-	)
-
-	s.mcpServer.AddResource(devicesResource, func(ctx context.Context, req mcp.ReadResourceRequest) ([]mcp.ResourceContents, error) {
-		content, err := s.devicesResource.GetContent()
-		if err != nil {
-			return nil, err
-		}
-		return []mcp.ResourceContents{
-			mcp.TextResourceContents{
-				URI:      DevicesResourceURI,
-				MIMEType: "application/json",
-				Text:     string(content),
-			},
-		}, nil
-	})
 }
 
 func (s *Server) handleDeclareIntent(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
