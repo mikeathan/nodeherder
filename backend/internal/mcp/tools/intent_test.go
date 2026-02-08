@@ -3,6 +3,7 @@ package tools_test
 import (
 	"context"
 	"encoding/json"
+	"node-herder/internal/mcp/protocol"
 	"node-herder/internal/mcp/resolver"
 	"node-herder/internal/mcp/tools"
 	"testing"
@@ -118,7 +119,7 @@ func TestIntentHandler_DeviceResolution(t *testing.T) {
 func TestToolResponse_Factories(t *testing.T) {
 	t.Run("NewSuccessResponse", func(t *testing.T) {
 		data := map[string]interface{}{"temperature": 22.5}
-		resp := tools.NewSuccessResponse(data)
+		resp := protocol.NewSuccessResponse(data)
 
 		if resp.Status != "success" {
 			t.Errorf("Status = %q, want %q", resp.Status, "success")
@@ -132,7 +133,7 @@ func TestToolResponse_Factories(t *testing.T) {
 	})
 
 	t.Run("NewErrorResponse", func(t *testing.T) {
-		resp := tools.NewErrorResponse("validation_error", "target_name is required")
+		resp := protocol.NewErrorResponse("validation_error", "target_name is required")
 
 		if resp.Status != "error" {
 			t.Errorf("Status = %q, want %q", resp.Status, "error")
@@ -146,11 +147,11 @@ func TestToolResponse_Factories(t *testing.T) {
 	})
 
 	t.Run("NewAmbiguousResponse", func(t *testing.T) {
-		candidates := []tools.Candidate{
+		candidates := []protocol.Candidate{
 			{DeviceID: "dev-001", Name: "Attic sensor 1", Score: 0.85},
 			{DeviceID: "dev-002", Name: "Attic sensor 2", Score: 0.80},
 		}
-		resp := tools.NewAmbiguousResponse(candidates)
+		resp := protocol.NewAmbiguousResponse(candidates)
 
 		if resp.Status != "ambiguous" {
 			t.Errorf("Status = %q, want %q", resp.Status, "ambiguous")
@@ -163,7 +164,7 @@ func TestToolResponse_Factories(t *testing.T) {
 
 func TestToolResponse_HintField(t *testing.T) {
 	t.Run("success response can have hint", func(t *testing.T) {
-		resp := tools.NewSuccessResponse([]int{})
+		resp := protocol.NewSuccessResponse([]int{})
 		resp.Hint = "Available metrics: [temperature, humidity]"
 
 		if resp.Status != "success" {
@@ -175,7 +176,7 @@ func TestToolResponse_HintField(t *testing.T) {
 	})
 
 	t.Run("hint is empty by default", func(t *testing.T) {
-		resp := tools.NewSuccessResponse(map[string]int{"count": 5})
+		resp := protocol.NewSuccessResponse(map[string]int{"count": 5})
 
 		if resp.Hint != "" {
 			t.Errorf("Hint = %q, want empty", resp.Hint)
@@ -183,7 +184,7 @@ func TestToolResponse_HintField(t *testing.T) {
 	})
 
 	t.Run("error response does not need hint", func(t *testing.T) {
-		resp := tools.NewErrorResponse("query_error", "something went wrong")
+		resp := protocol.NewErrorResponse("query_error", "something went wrong")
 
 		if resp.Hint != "" {
 			t.Errorf("Error response should not have hint, got %q", resp.Hint)
@@ -193,14 +194,14 @@ func TestToolResponse_HintField(t *testing.T) {
 
 func TestToolResponse_JSONSerialization(t *testing.T) {
 	t.Run("success response serializes correctly", func(t *testing.T) {
-		resp := tools.NewSuccessResponse(map[string]float64{"temp": 22.5})
+		resp := protocol.NewSuccessResponse(map[string]float64{"temp": 22.5})
 
 		data, err := json.Marshal(resp)
 		if err != nil {
 			t.Fatalf("Marshal error: %v", err)
 		}
 
-		var decoded tools.ToolResponse
+		var decoded protocol.ToolResponse
 		if err := json.Unmarshal(data, &decoded); err != nil {
 			t.Fatalf("Unmarshal error: %v", err)
 		}
@@ -211,14 +212,14 @@ func TestToolResponse_JSONSerialization(t *testing.T) {
 	})
 
 	t.Run("error response serializes correctly", func(t *testing.T) {
-		resp := tools.NewErrorResponse("test_error", "test message")
+		resp := protocol.NewErrorResponse("test_error", "test message")
 
 		data, err := json.Marshal(resp)
 		if err != nil {
 			t.Fatalf("Marshal error: %v", err)
 		}
 
-		var decoded tools.ToolResponse
+		var decoded protocol.ToolResponse
 		if err := json.Unmarshal(data, &decoded); err != nil {
 			t.Fatalf("Unmarshal error: %v", err)
 		}
@@ -232,18 +233,18 @@ func TestToolResponse_JSONSerialization(t *testing.T) {
 	})
 
 	t.Run("ambiguous response serializes candidates", func(t *testing.T) {
-		candidates := []tools.Candidate{
+		candidates := []protocol.Candidate{
 			{DeviceID: "d1", Name: "Device 1", Score: 0.9},
 			{DeviceID: "d2", Name: "Device 2", Score: 0.8},
 		}
-		resp := tools.NewAmbiguousResponse(candidates)
+		resp := protocol.NewAmbiguousResponse(candidates)
 
 		data, err := json.Marshal(resp)
 		if err != nil {
 			t.Fatalf("Marshal error: %v", err)
 		}
 
-		var decoded tools.ToolResponse
+		var decoded protocol.ToolResponse
 		if err := json.Unmarshal(data, &decoded); err != nil {
 			t.Fatalf("Unmarshal error: %v", err)
 		}
@@ -256,7 +257,7 @@ func TestToolResponse_JSONSerialization(t *testing.T) {
 
 func TestToolResponse_OmitsEmptyFields(t *testing.T) {
 	t.Run("success response omits error and candidates", func(t *testing.T) {
-		resp := tools.NewSuccessResponse("data")
+		resp := protocol.NewSuccessResponse("data")
 
 		data, _ := json.Marshal(resp)
 		str := string(data)
@@ -270,7 +271,7 @@ func TestToolResponse_OmitsEmptyFields(t *testing.T) {
 	})
 
 	t.Run("error response omits data and candidates", func(t *testing.T) {
-		resp := tools.NewErrorResponse("err", "msg")
+		resp := protocol.NewErrorResponse("err", "msg")
 
 		data, _ := json.Marshal(resp)
 		str := string(data)

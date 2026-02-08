@@ -4,16 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"node-herder/internal/mcp/protocol"
 	"node-herder/internal/mcp/resolver"
 	"node-herder/internal/mcp/resources"
 	"node-herder/internal/mcp/tools"
 	metrics "node-herder/internal/metrics/services"
-	"node-herder/models/devices"
 	"node-herder/models/hub"
+	"node-herder/store"
 	"sync"
 
-	"node-herder/store"
-
+	"github.com/google/uuid"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -30,74 +30,26 @@ const (
 	MethodResourcesUnsubscribe = "resources/unsubscribe"
 )
 
-// DeviceStore provides access to devices for the MCP server.
 type DeviceStore interface {
 	LoadHubState() (*hub.HubState, error)
 	RegisterIsDirtyCallback(cb store.AppStoreDirtyFlagCallback)
 }
 
-// deviceInfoAdapter adapts DeviceStore to resolver.DeviceStore
-type deviceInfoAdapter struct {
-	store DeviceStore
-}
-
-func (a *deviceInfoAdapter) AllDeviceInfo() ([]resolver.DeviceInfo, error) {
-	state, err := a.store.LoadHubState()
-	if err != nil {
-		return nil, err
-	}
-	result := make([]resolver.DeviceInfo, len(state.Devices))
-	for i, d := range state.Devices {
-		result[i] = resolver.DeviceInfo{
-			ID:   d.Id,
-			Name: d.FriendlyName,
-		}
-	}
-	return result, nil
-}
-
-// deviceLookupAdapter adapts DeviceStore to tools.DeviceLookup
-type deviceLookupAdapter struct {
-	store DeviceStore
-}
-
-func (a *deviceLookupAdapter) FindDeviceByIds(ids []string) ([]*devices.Device, error) {
-	state, err := a.store.LoadHubState()
-	if err != nil {
-		return nil, err
-	}
-
-	idSet := make(map[string]bool)
-	for _, id := range ids {
-		idSet[id] = true
-	}
-
-	var result []*devices.Device
-	for _, d := range state.Devices {
-		if idSet[d.Id] {
-			result = append(result, d)
-		}
-	}
-	return result, nil
-}
-
-// Server is the MCP server for nodeherder.
 type Server struct {
 	mcpServer      *server.MCPServer
 	intentHandler  *tools.IntentHandler
 	promptResource *resources.PromptResource
 
 	// Notification listeners for HTTP/SSE transport
-	listeners   []func(string)
+	listeners   map[string]func(string)
 	listenersMu sync.RWMutex
 }
 
-// New creates a new MCP server.
 func New(store DeviceStore, querier *metrics.QueryService) *Server {
 	s := &Server{
 		intentHandler:  tools.NewIntentHandler(resolver.New(&deviceInfoAdapter{store}), querier, &deviceLookupAdapter{store}),
 		promptResource: resources.NewPromptResource(store),
-		listeners:      []func(string){},
+		listeners:      make(map[string]func(string)),
 	}
 
 	// Register callback for updates - notify all listeners
@@ -105,7 +57,6 @@ func New(store DeviceStore, querier *metrics.QueryService) *Server {
 		s.notifyListeners(SystemPromptResourceURI)
 	})
 
-	// Create MCP server
 	s.mcpServer = server.NewMCPServer(
 		ServerName,
 		ServerVersion,
@@ -113,55 +64,46 @@ func New(store DeviceStore, querier *metrics.QueryService) *Server {
 		server.WithToolCapabilities(true),
 	)
 
-	// Register tools
 	s.registerTools()
-
-	// Register resources
 	s.registerResources()
 
 	return s
 }
 
-// notifyListeners calls all registered notification listeners.
 func (s *Server) notifyListeners(uri string) {
 	s.listenersMu.RLock()
 	defer s.listenersMu.RUnlock()
 
 	for _, listener := range s.listeners {
-		listener(uri)
+		// invoke listener async to avoid blocking
+		go listener(uri)
 	}
 }
 
-// RegisterNotificationListener adds a callback for resource notifications.
-func (s *Server) RegisterNotificationListener(cb func(string)) {
-	s.listenersMu.Lock()
-	defer s.listenersMu.Unlock()
-	s.listeners = append(s.listeners, cb)
-}
-
-// UnregisterNotificationListener removes a previously registered callback.
-// Note: This uses function pointer comparison which may not work for closures.
-// For production use, consider using a unique ID-based approach.
-func (s *Server) UnregisterNotificationListener(cb func(string)) {
+// Returns a unique ID for unregistration.
+func (s *Server) RegisterNotificationListener(cb func(string)) string {
 	s.listenersMu.Lock()
 	defer s.listenersMu.Unlock()
 
-	for i, listener := range s.listeners {
-		if &listener == &cb {
-			s.listeners = append(s.listeners[:i], s.listeners[i+1:]...)
-			return
-		}
-	}
+	id := uuid.New().String()
+	s.listeners[id] = cb
+	return id
 }
 
-// HandleRequest processes a JSON-RPC request and returns the response.
+func (s *Server) UnregisterNotificationListener(id string) {
+	s.listenersMu.Lock()
+	defer s.listenersMu.Unlock()
+
+	delete(s.listeners, id)
+}
+
 // This is used by the HTTP transport.
 func (s *Server) HandleRequest(ctx context.Context, rawMessage json.RawMessage) json.RawMessage {
 	// Peek at the method to intercept subscribe/unsubscribe
 	var baseMessage struct {
-		JSONRPC string      `json:"jsonrpc"`
-		ID      interface{} `json:"id"`
-		Method  string      `json:"method"`
+		JSONRPC string          `json:"jsonrpc"`
+		ID      json.RawMessage `json:"id"`
+		Method  string          `json:"method"`
 	}
 	if err := json.Unmarshal(rawMessage, &baseMessage); err != nil {
 		return s.errorResponse(nil, -32700, "Parse error")
@@ -179,7 +121,6 @@ func (s *Server) HandleRequest(ctx context.Context, rawMessage json.RawMessage) 
 		return data
 	}
 
-	// Delegate to library for everything else
 	resp := s.mcpServer.HandleMessage(ctx, rawMessage)
 	if resp == nil {
 		return nil
@@ -192,7 +133,6 @@ func (s *Server) HandleRequest(ctx context.Context, rawMessage json.RawMessage) 
 	return data
 }
 
-// errorResponse creates a JSON-RPC error response.
 func (s *Server) errorResponse(id interface{}, code int, message string) json.RawMessage {
 	response := map[string]interface{}{
 		"jsonrpc": "2.0",
@@ -207,7 +147,6 @@ func (s *Server) errorResponse(id interface{}, code int, message string) json.Ra
 }
 
 func (s *Server) registerTools() {
-	// query_device tool
 	queryDeviceTool := mcp.NewTool(QueryDeviceToolName,
 		mcp.WithDescription(fmt.Sprintf("Query device metrics. Read %s first to get exact metric names.", SystemPromptResourceURI)),
 		mcp.WithString("target_name",
@@ -226,7 +165,6 @@ func (s *Server) registerTools() {
 }
 
 func (s *Server) registerResources() {
-	// System prompt resource
 	promptResource := mcp.NewResource(
 		SystemPromptResourceURI,
 		"System Prompt",
@@ -260,7 +198,7 @@ func (s *Server) handleDeclareIntent(ctx context.Context, req mcp.CallToolReques
 	return formatToolResponse(resp), nil
 }
 
-func formatToolResponse(resp *tools.ToolResponse) *mcp.CallToolResult {
+func formatToolResponse(resp *protocol.ToolResponse) *mcp.CallToolResult {
 	data, _ := json.MarshalIndent(resp, "", "  ")
 	if resp.Status == "error" {
 		return mcp.NewToolResultError(string(data))

@@ -7,26 +7,24 @@ import (
 	"io"
 	"net/http"
 	"sync"
+	"time"
 
 	"node-herder/utils"
 )
 
-// MCPServer defines the interface needed for HTTP transport.
 type MCPServer interface {
 	HandleRequest(ctx context.Context, rawMessage json.RawMessage) json.RawMessage
-	RegisterNotificationListener(cb func(string))
-	UnregisterNotificationListener(cb func(string))
+	RegisterNotificationListener(cb func(string)) string
+	UnregisterNotificationListener(id string)
 }
 
-// MCPHandler handles JSON-RPC requests over HTTP.
 type MCPHandler struct {
 	server MCPServer
-	events *MCPEventsHandler
+	sse    *SSEHandler
 }
 
-// NewMCPHandler creates a new MCPHandler.
-func NewMCPHandler(server MCPServer, events *MCPEventsHandler) *MCPHandler {
-	return &MCPHandler{server: server, events: events}
+func NewMCPHandler(server MCPServer, sse *SSEHandler) *MCPHandler {
+	return &MCPHandler{server: server, sse: sse}
 }
 
 func (h *MCPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -54,8 +52,8 @@ func (h *MCPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if response != nil {
 		// Dual-send: Broadcast via SSE if available, to support clients that expect it
-		if h.events != nil {
-			h.events.Send(response)
+		if h.sse != nil {
+			h.sse.Send(response)
 		}
 		w.WriteHeader(http.StatusOK)
 		w.Write(response)
@@ -64,39 +62,44 @@ func (h *MCPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// MCPEventsHandler handles SSE connections for MCP notifications.
-type MCPEventsHandler struct {
+type SSEHandler struct {
 	server  MCPServer
 	clients map[chan string]struct{}
 	mu      sync.RWMutex
 }
 
-// NewMCPEventsHandler creates a new MCPEventsHandler.
-func NewMCPEventsHandler(server MCPServer) *MCPEventsHandler {
-	h := &MCPEventsHandler{
+func NewSSEHandler(server MCPServer) *SSEHandler {
+	h := &SSEHandler{
 		server:  server,
 		clients: make(map[chan string]struct{}),
 	}
 
-	// Register for notifications from the MCP server
+	// We discard the ID because the global handler persists for the app lifetime
 	server.RegisterNotificationListener(h.broadcast)
 
 	return h
 }
 
-// broadcast sends a notification to all connected SSE clients.
-func (h *MCPEventsHandler) broadcast(uri string) {
-	notification := map[string]interface{}{
-		"jsonrpc": "2.0",
-		"method":  "notifications/resources/updated",
-		"params": map[string]interface{}{
-			"uri": uri,
-		},
+type notification struct {
+	JSONRPC string             `json:"jsonrpc"`
+	Method  string             `json:"method"`
+	Params  notificationParams `json:"params"`
+}
+
+type notificationParams struct {
+	URI string `json:"uri"`
+}
+
+func (h *SSEHandler) broadcast(uri string) {
+	msg := notification{
+		JSONRPC: "2.0",
+		Method:  "notifications/resources/updated",
+		Params:  notificationParams{URI: uri},
 	}
 
-	data, err := json.Marshal(notification)
+	data, err := json.Marshal(msg)
 	if err != nil {
-		utils.LogErrorf("MCPEventsHandler: failed to marshal notification: %v", err)
+		utils.LogErrorf("SSEHandler: failed to marshal notification: %v", err)
 		return
 	}
 
@@ -114,8 +117,7 @@ func (h *MCPEventsHandler) broadcast(uri string) {
 	}
 }
 
-// Send broadcasts a raw message to all clients.
-func (h *MCPEventsHandler) Send(data []byte) {
+func (h *SSEHandler) Send(data []byte) {
 	message := fmt.Sprintf("data: %s\n\n", string(data))
 
 	h.mu.RLock()
@@ -130,29 +132,24 @@ func (h *MCPEventsHandler) Send(data []byte) {
 	}
 }
 
-func (h *MCPEventsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Check if the client supports SSE
+func (h *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "SSE not supported", http.StatusInternalServerError)
 		return
 	}
 
-	// Set SSE headers
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	// Create a channel for this client
 	clientChan := make(chan string, 10)
 
-	// Register the client
 	h.mu.Lock()
 	h.clients[clientChan] = struct{}{}
 	h.mu.Unlock()
 
-	// Cleanup on disconnect
 	defer func() {
 		h.mu.Lock()
 		delete(h.clients, clientChan)
@@ -160,24 +157,37 @@ func (h *MCPEventsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		close(clientChan)
 	}()
 
-	// Send initial connection event
-	utils.LogInfo("MCPEventsHandler: Sending 'connected' event")
+	utils.LogInfo("SSEHandler: Sending 'connected' event")
 	fmt.Fprintf(w, "data: {\"type\":\"connected\"}\n\n")
 
 	// Send endpoint event (Required by MCP spec for SSE)
 	fmt.Fprintf(w, "event: endpoint\ndata: /api/mcp\n\n")
 
 	flusher.Flush()
-	utils.LogInfo("MCPEventsHandler: Flushed initial events")
+	utils.LogInfo("SSEHandler: Flushed initial events")
 
-	// Listen for notifications or client disconnect
+	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case msg := <-clientChan:
 			fmt.Fprint(w, msg)
 			flusher.Flush()
+		case <-ticker.C:
+			fmt.Fprint(w, ": heartbeat\n\n")
+			flusher.Flush()
 		case <-r.Context().Done():
 			return
 		}
 	}
+}
+
+func (r *Router) RegisterMCP(server MCPServer) {
+	if server == nil {
+		return
+	}
+	sseHandler := NewSSEHandler(server)
+	r.PublicPOST("/api/mcp", NewMCPHandler(server, sseHandler))
+	r.PublicGET("/api/mcp/events", sseHandler)
 }

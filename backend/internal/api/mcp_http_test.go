@@ -10,12 +10,14 @@ import (
 	"time"
 
 	"node-herder/internal/api"
+
+	"github.com/google/uuid"
 )
 
 // mockMCPServer implements api.MCPServer for testing
 type mockMCPServer struct {
 	handleRequestFn func(ctx context.Context, rawMessage json.RawMessage) json.RawMessage
-	listeners       []func(string)
+	listeners       map[string]func(string)
 }
 
 func (m *mockMCPServer) HandleRequest(ctx context.Context, rawMessage json.RawMessage) json.RawMessage {
@@ -25,12 +27,17 @@ func (m *mockMCPServer) HandleRequest(ctx context.Context, rawMessage json.RawMe
 	return []byte(`{"jsonrpc":"2.0","id":1,"result":{}}`)
 }
 
-func (m *mockMCPServer) RegisterNotificationListener(cb func(string)) {
-	m.listeners = append(m.listeners, cb)
+func (m *mockMCPServer) RegisterNotificationListener(cb func(string)) string {
+	if m.listeners == nil {
+		m.listeners = make(map[string]func(string))
+	}
+	id := uuid.New().String()
+	m.listeners[id] = cb
+	return id
 }
 
-func (m *mockMCPServer) UnregisterNotificationListener(cb func(string)) {
-	// no-op for tests
+func (m *mockMCPServer) UnregisterNotificationListener(id string) {
+	delete(m.listeners, id)
 }
 
 func (m *mockMCPServer) triggerNotification(uri string) {
@@ -124,9 +131,9 @@ func TestMCPHandler_NilResponse(t *testing.T) {
 	}
 }
 
-func TestMCPEventsHandler_Connection(t *testing.T) {
+func TestSSEHandler_Connection(t *testing.T) {
 	server := &mockMCPServer{}
-	handler := api.NewMCPEventsHandler(server)
+	handler := api.NewSSEHandler(server)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/mcp/events", nil)
 
@@ -159,9 +166,9 @@ func TestMCPEventsHandler_Connection(t *testing.T) {
 	}
 }
 
-func TestMCPEventsHandler_ReceivesNotification(t *testing.T) {
+func TestSSEHandler_ReceivesNotification(t *testing.T) {
 	server := &mockMCPServer{}
-	handler := api.NewMCPEventsHandler(server)
+	handler := api.NewSSEHandler(server)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/mcp/events", nil)
 
