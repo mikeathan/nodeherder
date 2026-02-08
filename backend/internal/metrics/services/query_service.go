@@ -117,9 +117,15 @@ func buildDeviceQueryResponse(deviceID string, aggregation domain.AggregationTyp
 		return nil, nil
 	}
 
+	var formattedTime string
+	if timestamp > 0 {
+		formattedTime = time.UnixMilli(timestamp).UTC().Format(time.RFC3339)
+	}
+
 	return &query.MetricsQueryDeviceResponse{
-		DeviceId:  deviceID,
-		Value:     value,
-		Timestamp: timestamp,
+		DeviceId:      deviceID,
+		Value:         value,
+		Timestamp:     timestamp,
+		FormattedTime: formattedTime,
 	}, nil
 }

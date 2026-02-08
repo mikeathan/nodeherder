@@ -35,8 +35,9 @@ func Translate(intent *Intent, deviceID string, opts TranslateOptions) *query.Me
 			From: timeRange.From,
 			To:   timeRange.To,
 		},
-		Aggregation: mapAggregation(intent.Aggregation),
-		Filters:     translateFilters(intent.Filters),
+		Aggregation:      mapAggregation(intent.Aggregation),
+		AggregationValue: intent.AggregationValue,
+		Filters:          translateFilters(intent.Filters),
 	}
 
 	return req
@@ -62,7 +63,8 @@ func mapAggregation(agg string) domain.AggregationType {
 	if mapped, ok := AggregationMap[agg]; ok {
 		return mapped
 	}
-	return domain.AggNone
+	// Default to "last" when no aggregation specified - gives single value with timestamp
+	return domain.AggLast
 }
 
 func translateFilters(filters []Filter) []domain.MetricFilter {

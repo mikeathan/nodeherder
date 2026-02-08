@@ -56,7 +56,7 @@
       "mode": "debug",
       "program": "${workspaceFolder}/backend",
       "cwd": "${workspaceFolder}/backend",
-      "args": ["-buildType", "dev", "-logLevel", "debug"]
+      "args": ["-buildType", "dev", "-logLevel", "debug", "-mcp"]
     }
   ]
 }

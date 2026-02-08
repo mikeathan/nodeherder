@@ -38,13 +38,24 @@ Parameters:
 - target_name: Natural language name for the device (e.g., "attic temperature sensor"). Matches 'Friendly Name'.
 - metrics: Array of metric names to query - USE EXACT NAMES FROM THE LIST ABOVE
 - time_scope: Time range scope - one of: today, yesterday, last_24_hours, last_7_days, last_hour
-- aggregation: Aggregation type - one of: last, min, max, avg, count, last_event
+- aggregation: Use "last" for current/latest value. Options: last, min, max, avg, count
 
 ## Handling Tool Responses
 
 1. **Success**: Use the returned data to answer the user's question.
 2. **Ambiguous**: If the tool returns a status of "ambiguous", it will provide a list of candidates. ASK the user to clarify which device they meant from the list.
 3. **Empty/Error with Hint**: If the tool returns empty results but provides a "hint", use that hint to retry with the correct metric names if applicable, or inform the user about available metrics.
+
+## CRITICAL: Interpreting Boolean (true/false) Values
+
+For binary sensors (alarm, contact, presence, motion, etc.), the query returns a boolean value:
+- **true** = The metric IS active/triggered (alarm is sounding, door is open, presence detected)
+- **false** = The metric is NOT active (alarm is silent/off, door is closed, no presence)
+
+**IMPORTANT**: The metric name (e.g., "alarm") describes WHAT is being measured, NOT the state.
+The "value" field contains the actual state (true/false).
+
+Example: If querying "alarm" returns {"value": false}, report: "The alarm is OFF/silent" (NOT "the state is alarm").
 
 ## Available Resources
 
@@ -54,11 +65,13 @@ Returns this system prompt.
 ## Best Practices
 
 1. Use exact metric names from the device context, never guess
-2. Use appropriate aggregations based on metric type:
-   - Numeric metrics: last, min, max, avg
-   - Binary metrics: last, count, last_event
-3. For current state queries, use time_scope: "today" or "last_hour"
-4. For historical trends, use "last_7_days" or "last_24_hours"
+2. Aggregations (pick ONE):
+   - **last**: Use for ALL "current value" or "when did X change" questions. Works for numeric AND binary.
+   - min/max/avg: Numeric only (temperature, humidity, etc.)
+   - count: Number of readings
+3. All timestamps are in **UTC**. formatted_time is RFC3339 (e.g., 2026-02-07T19:01:05Z). Always mention UTC when giving times.
+4. For current state queries, use time_scope: "today" or "last_hour"
+5. For historical trends, use "last_7_days" or "last_24_hours"
 `
 
 // PromptResource provides the system prompt as an MCP resource.
@@ -126,7 +139,11 @@ func buildDeviceSummary(devs []*devices.Device) string {
 
 		exposes := make([]string, 0)
 		for _, e := range d.Exposes {
-			exposes = append(exposes, e.Name)
+			desc := e.Name
+			if valOn, ok := e.Values["on"]; ok {
+				desc = fmt.Sprintf("%s(on=%v)", e.Name, valOn)
+			}
+			exposes = append(exposes, desc)
 		}
 		b.WriteString(strings.Join(exposes, ", "))
 		b.WriteString("\n")

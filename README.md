@@ -181,47 +181,9 @@ When `--mcp` is enabled, the following endpoints are available:
 
 ### Testing the MCP Server
 
-You can test the MCP server using `curl` commands to verify that the HTTP and SSE endpoints are working correctly.
+You can test the MCP server using `curl` commands.
 
-#### 1. Initialize Session
-
-To start an MCP session, send an `initialize` request.
-
-**Request:**
-
-```bash
-curl -X POST http://localhost:4110/api/mcp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "id": 1,
-    "method": "initialize",
-    "params": {
-      "protocolVersion": "2024-11-05",
-      "capabilities": {},
-      "clientInfo": {"name": "test-client", "version": "1.0"}
-    }
-  }'
-```
-
-**Expected Response:**
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "result": {
-    "protocolVersion": "2024-11-05",
-    "capabilities": {
-      "resources": { "subscribe": true, "listChanged": true },
-      "tools": { "listChanged": true }
-    },
-    "serverInfo": { "name": "nodeherder", "version": "1.0.0" }
-  }
-}
-```
-
-#### 2. List Resources
+#### 1. List Resources
 
 Discover available resources exposed by the server.
 
@@ -237,32 +199,7 @@ curl -X POST http://localhost:4110/api/mcp \
   }'
 ```
 
-**Expected Response:**
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 2,
-  "result": {
-    "resources": [
-      {
-        "uri": "nodeherder://devices",
-        "name": "Device Context",
-        "description": "Available devices and their metrics",
-        "mimeType": "application/json"
-      },
-      {
-        "uri": "nodeherder://system-prompt",
-        "name": "System Prompt",
-        "description": "Domain rules and guidance for LLM interactions",
-        "mimeType": "text/plain"
-      }
-    ]
-  }
-}
-```
-
-#### 3. Read Device Context
+#### 2. Read Device Context
 
 Fetch the current state of all devices.
 
@@ -281,9 +218,7 @@ curl -X POST http://localhost:4110/api/mcp \
   }'
 ```
 
-**Response:** Returns a JSON object containing the full list of devices and their current metrics.
-
-#### 4. Call Tools
+#### 3. Call Tools
 
 Execute a tool (e.g., querying device metrics).
 
@@ -307,24 +242,7 @@ curl -X POST http://localhost:4110/api/mcp \
   }'
 ```
 
-**Expected Response:**
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 4,
-  "result": {
-    "content": [
-      {
-        "type": "text",
-        "text": "{\n  \"status\": \"success\",\n  \"data\": [\n    {\n      \"Expose\": \"presence\",\n      \"From\": 1769457061761,\n      \"To\": 1769543461761,\n      \"Values\": [\n        {\n          \"deviceId\": \"0xa4c13894070052fc\",\n          \"value\": false,\n          \"timestamp\": 1769543448226\n        }\n      ]\n    }\n  ]\n}"
-      }
-    ]
-  }
-}
-```
-
-#### 5. Subscribe to Live Updates
+#### 4. Subscribe to Live Updates
 
 Listen for real-time changes via Server-Sent Events (SSE).
 
@@ -423,6 +341,39 @@ After running setup script:
 ```
 
 ---
+
+## Manual Metrics Query
+
+You can also query the backend metrics API directly without going through MCP. This requires authentication.
+
+### 1. Get Access Token
+
+First, obtain a JWT token using your service credentials (from `.env`):
+
+```bash
+export CLIENT_ID="llm-proxy"
+export CLIENT_SECRET="<your-service-secret>"
+
+export TOKEN=$(curl -s -X POST http://localhost:4110/api/auth/token \
+  -H "Content-Type: application/json" \
+  -d "{\"client_id\": \"$CLIENT_ID\", \"client_secret\": \"$CLIENT_SECRET\"}" | jq -r .access_token)
+```
+
+### 2. Query Metrics
+
+Use the token to query metrics directly:
+
+```bash
+curl -X POST http://localhost:4110/api/metrics/query \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "deviceIds": ["0xa4c1389b273366c3"],
+    "exposes": ["alarm"],
+    "time": { "lookback": "1h" },
+    "aggregation": "last"
+  }' | jq
+```
 
 ## Development Workflow
 

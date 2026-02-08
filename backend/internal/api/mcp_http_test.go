@@ -46,7 +46,7 @@ func TestMCPHandler_ValidRequest(t *testing.T) {
 		},
 	}
 
-	handler := api.NewMCPHandler(server)
+	handler := api.NewMCPHandler(server, nil)
 
 	reqBody := `{"jsonrpc":"2.0","id":1,"method":"resources/list"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/mcp", bytes.NewBufferString(reqBody))
@@ -75,7 +75,7 @@ func TestMCPHandler_ValidRequest(t *testing.T) {
 
 func TestMCPHandler_InvalidContentType(t *testing.T) {
 	server := &mockMCPServer{}
-	handler := api.NewMCPHandler(server)
+	handler := api.NewMCPHandler(server, nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/mcp", bytes.NewBufferString(`{}`))
 	req.Header.Set("Content-Type", "text/plain")
@@ -90,7 +90,7 @@ func TestMCPHandler_InvalidContentType(t *testing.T) {
 
 func TestMCPHandler_InvalidJSON(t *testing.T) {
 	server := &mockMCPServer{}
-	handler := api.NewMCPHandler(server)
+	handler := api.NewMCPHandler(server, nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/mcp", bytes.NewBufferString(`not json`))
 	req.Header.Set("Content-Type", "application/json")
@@ -110,7 +110,7 @@ func TestMCPHandler_NilResponse(t *testing.T) {
 		},
 	}
 
-	handler := api.NewMCPHandler(server)
+	handler := api.NewMCPHandler(server, nil)
 
 	reqBody := `{"jsonrpc":"2.0","method":"notifications/initialized"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/mcp", bytes.NewBufferString(reqBody))
@@ -119,8 +119,8 @@ func TestMCPHandler_NilResponse(t *testing.T) {
 
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusNoContent {
-		t.Errorf("Expected status %d, got %d", http.StatusNoContent, rec.Code)
+	if rec.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, rec.Code)
 	}
 }
 

@@ -239,3 +239,49 @@ func TestQueryServiceIgnoresQueryDeviceErrors(t *testing.T) {
 		t.Fatalf("expected at least 1 response, got %d", len(*responses))
 	}
 }
+
+func TestQueryServiceFormattedTime(t *testing.T) {
+	// Setup generic device/entity
+	entity := devices.NewEntity("temperature")
+	entity.Type = "numeric"
+	dev := &devices.Device{
+		Id:      "dev1",
+		Exposes: map[string]*devices.Entity{"temperature": entity},
+	}
+
+	// This store mock injects sample data (42) at 1000ms
+	store := fakeMultiMetricStore{devices: []*devices.Device{dev}}
+	service := services.NewQueryService(store)
+
+	req := query.MetricsQueryRequest{
+		DeviceIds: []string{"dev1"},
+		Exposes:   []string{"temperature"},
+		Time: domain.TimeQuery{
+			From: time.UnixMilli(0),
+			To:   time.UnixMilli(2000),
+		},
+		Aggregation: domain.AggLast, // Aggregating to single value
+	}
+
+	responses, err := service.Query(context.Background(), req)
+	if err != nil {
+		t.Fatalf("query failed: %v", err)
+	}
+
+	if len(*responses) != 1 || len((*responses)[0].Values) != 1 {
+		t.Fatalf("expected 1 response value")
+	}
+
+	val := (*responses)[0].Values[0]
+
+	// Verify timestamp is 1000
+	if val.Timestamp != 1000 {
+		t.Errorf("expected timestamp 1000, got %d", val.Timestamp)
+	}
+
+	// Verify formatted time string
+	expected := time.UnixMilli(1000).UTC().Format(time.RFC3339)
+	if val.FormattedTime != expected {
+		t.Errorf("expected formatted time %q, got %q", expected, val.FormattedTime)
+	}
+}

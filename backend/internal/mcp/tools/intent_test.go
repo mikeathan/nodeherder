@@ -190,3 +190,105 @@ func TestToolResponse_HintField(t *testing.T) {
 		}
 	})
 }
+
+func TestToolResponse_JSONSerialization(t *testing.T) {
+	t.Run("success response serializes correctly", func(t *testing.T) {
+		resp := tools.NewSuccessResponse(map[string]float64{"temp": 22.5})
+
+		data, err := json.Marshal(resp)
+		if err != nil {
+			t.Fatalf("Marshal error: %v", err)
+		}
+
+		var decoded tools.ToolResponse
+		if err := json.Unmarshal(data, &decoded); err != nil {
+			t.Fatalf("Unmarshal error: %v", err)
+		}
+
+		if decoded.Status != "success" {
+			t.Errorf("decoded.Status = %q, want %q", decoded.Status, "success")
+		}
+	})
+
+	t.Run("error response serializes correctly", func(t *testing.T) {
+		resp := tools.NewErrorResponse("test_error", "test message")
+
+		data, err := json.Marshal(resp)
+		if err != nil {
+			t.Fatalf("Marshal error: %v", err)
+		}
+
+		var decoded tools.ToolResponse
+		if err := json.Unmarshal(data, &decoded); err != nil {
+			t.Fatalf("Unmarshal error: %v", err)
+		}
+
+		if decoded.Status != "error" {
+			t.Errorf("decoded.Status = %q, want %q", decoded.Status, "error")
+		}
+		if decoded.Error == nil || decoded.Error.Code != "test_error" {
+			t.Error("decoded error should have correct code")
+		}
+	})
+
+	t.Run("ambiguous response serializes candidates", func(t *testing.T) {
+		candidates := []tools.Candidate{
+			{DeviceID: "d1", Name: "Device 1", Score: 0.9},
+			{DeviceID: "d2", Name: "Device 2", Score: 0.8},
+		}
+		resp := tools.NewAmbiguousResponse(candidates)
+
+		data, err := json.Marshal(resp)
+		if err != nil {
+			t.Fatalf("Marshal error: %v", err)
+		}
+
+		var decoded tools.ToolResponse
+		if err := json.Unmarshal(data, &decoded); err != nil {
+			t.Fatalf("Unmarshal error: %v", err)
+		}
+
+		if len(decoded.Candidates) != 2 {
+			t.Errorf("decoded.Candidates length = %d, want 2", len(decoded.Candidates))
+		}
+	})
+}
+
+func TestToolResponse_OmitsEmptyFields(t *testing.T) {
+	t.Run("success response omits error and candidates", func(t *testing.T) {
+		resp := tools.NewSuccessResponse("data")
+
+		data, _ := json.Marshal(resp)
+		str := string(data)
+
+		if contains(str, "error") {
+			t.Error("success response should not include 'error' field")
+		}
+		if contains(str, "candidates") {
+			t.Error("success response should not include 'candidates' field")
+		}
+	})
+
+	t.Run("error response omits data and candidates", func(t *testing.T) {
+		resp := tools.NewErrorResponse("err", "msg")
+
+		data, _ := json.Marshal(resp)
+		str := string(data)
+
+		if contains(str, "\"data\"") {
+			t.Error("error response should not include 'data' field")
+		}
+		if contains(str, "candidates") {
+			t.Error("error response should not include 'candidates' field")
+		}
+	})
+}
+
+func contains(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}

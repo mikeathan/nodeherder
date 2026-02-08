@@ -219,7 +219,7 @@ func (s *Server) registerTools() {
 		mcp.WithString("time_scope",
 			mcp.Description("Time range: today, yesterday, last_24_hours, last_7_days, last_hour")),
 		mcp.WithString("aggregation",
-			mcp.Description("Aggregation: last, min, max, avg, count, last_event")),
+			mcp.Description("Use 'last' for current value. Options: last, min, max, avg, count")),
 	)
 
 	s.mcpServer.AddTool(queryDeviceTool, s.handleDeclareIntent)

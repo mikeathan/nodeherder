@@ -8,7 +8,8 @@ type MetricsQueryResponse struct {
 }
 
 type MetricsQueryDeviceResponse struct {
-	DeviceId  string `json:"deviceId"`
-	Value     any    `json:"value"`
-	Timestamp int64  `json:"timestamp,omitempty"`
+	DeviceId      string `json:"deviceId"`
+	Value         any    `json:"value"`
+	Timestamp     int64  `json:"timestamp"`
+	FormattedTime string `json:"formatted_time,omitempty"`
 }

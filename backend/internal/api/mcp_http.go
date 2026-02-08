@@ -21,15 +21,17 @@ type MCPServer interface {
 // MCPHandler handles JSON-RPC requests over HTTP.
 type MCPHandler struct {
 	server MCPServer
+	events *MCPEventsHandler
 }
 
 // NewMCPHandler creates a new MCPHandler.
-func NewMCPHandler(server MCPServer) *MCPHandler {
-	return &MCPHandler{server: server}
+func NewMCPHandler(server MCPServer, events *MCPEventsHandler) *MCPHandler {
+	return &MCPHandler{server: server, events: events}
 }
 
 func (h *MCPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Content-Type") != "application/json" {
+		utils.LogErrorf("MCPHandler: Invalid content type: %s", r.Header.Get("Content-Type"))
 		writeJSONError(w, http.StatusUnsupportedMediaType, "Content-Type must be application/json")
 		return
 	}
@@ -51,10 +53,14 @@ func (h *MCPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if response != nil {
+		// Dual-send: Broadcast via SSE if available, to support clients that expect it
+		if h.events != nil {
+			h.events.Send(response)
+		}
 		w.WriteHeader(http.StatusOK)
 		w.Write(response)
 	} else {
-		w.WriteHeader(http.StatusNoContent)
+		w.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -108,6 +114,22 @@ func (h *MCPEventsHandler) broadcast(uri string) {
 	}
 }
 
+// Send broadcasts a raw message to all clients.
+func (h *MCPEventsHandler) Send(data []byte) {
+	message := fmt.Sprintf("data: %s\n\n", string(data))
+
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	for ch := range h.clients {
+		select {
+		case ch <- message:
+		default:
+			// Client buffer full, skip
+		}
+	}
+}
+
 func (h *MCPEventsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Check if the client supports SSE
 	flusher, ok := w.(http.Flusher)
@@ -139,8 +161,14 @@ func (h *MCPEventsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	// Send initial connection event
+	utils.LogInfo("MCPEventsHandler: Sending 'connected' event")
 	fmt.Fprintf(w, "data: {\"type\":\"connected\"}\n\n")
+
+	// Send endpoint event (Required by MCP spec for SSE)
+	fmt.Fprintf(w, "event: endpoint\ndata: /api/mcp\n\n")
+
 	flusher.Flush()
+	utils.LogInfo("MCPEventsHandler: Flushed initial events")
 
 	// Listen for notifications or client disconnect
 	for {
