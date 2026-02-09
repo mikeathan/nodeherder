@@ -184,9 +184,7 @@ func (h *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (r *Router) RegisterMCP(server MCPServer) {
-	if server == nil {
-		return
-	}
+
 	sseHandler := NewSSEHandler(server)
 	r.PublicPOST("/api/mcp", NewMCPHandler(server, sseHandler))
 	r.PublicGET("/api/mcp/events", sseHandler)

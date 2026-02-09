@@ -55,7 +55,9 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	router.PublicPOST("/api/auth/token", authProvider.ServiceTokenHandler())
 
 	// MCP routes
-	router.RegisterMCP(mcpServer)
+	if mcpServer != nil {
+		router.RegisterMCP(mcpServer)
+	}
 
 	// authentication routes
 	router.AddAuthentication(authProvider.OAuth())
