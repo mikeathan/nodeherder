@@ -163,12 +163,9 @@ openssl rand -base64 32
 
 Node Herder implements the Model Context Protocol (MCP), allowing AI assistants (like Claude or custom LLM proxies) to directly query smart home metrics and discover devices over HTTP.
 
-### Command Line Arguments
+### Configuration
 
-| Flag     | Description                                  |
-| -------- | -------------------------------------------- |
-| `--mcp`  | Enable MCP HTTP endpoints (default: `false`) |
-| `--port` | Specify HTTP port (default: 4110)            |
+The MCP server is managed via the **Settings -> MCP Server** page in the frontend. You can enable/disable it and see the connection status there.
 
 ### MCP Endpoints
 
