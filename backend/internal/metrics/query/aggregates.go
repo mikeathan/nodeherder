@@ -139,7 +139,7 @@ func numericAvg(data []*domain.NumericValue) (any, int64, bool, error) {
 func aggregateLastEvent(aggregationValue any, expose domain.ExposeResult) (any, int64, bool, error) {
 	switch r := expose.(type) {
 	case *domain.ExposeNumericMetricsResult:
-		return nil, 0, false, fmt.Errorf("last_event not supported for numeric metrics; use AggLast")
+		return nil, 0, false, fmt.Errorf("last_event not supported for numeric metrics; use aggregation: last")
 	case *domain.ExposeBinaryEventsResult:
 		// Type assertion to bool
 		aggValue, ok := aggregationValue.(bool)

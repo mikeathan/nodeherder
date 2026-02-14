@@ -8,11 +8,11 @@ build_backend:
 	@echo "Cleaning previous backend binary"
 	@rm -f ./nodeherder
 	@echo "Building node-herder backend"
-	@cd backend && go build -o ./nodeherder main.go
+	@cd backend && go build -o ./nodeherder .
 	
 run_backend: build_backend
 	@echo "Running backend"
-	@cd backend && ./nodeherder
+	@cd backend && ./nodeherder -mcp
 
 # Frontend
 build_frontend:

@@ -43,49 +43,68 @@ func (s *QueryService) Query(ctx context.Context, req query.MetricsQueryRequest)
 	now := time.Now().UTC()
 	from, to := query.ResolveTime(req.Time, now)
 
-	response := query.MetricsQueryResponse{
-		Expose: req.Expose,
-		From:   from.UnixMilli(),
-		To:     to.UnixMilli(),
-		Values: make([]query.MetricsQueryDeviceResponse, 0, len(req.DeviceIds)),
+	responses := make([]query.MetricsQueryResponse, 0, len(req.Exposes))
+
+	// Iterate over each requested metric
+	for _, exposeName := range req.Exposes {
+
+		// Check if any device actually has this expose
+		hasExpose := false
+		for _, device := range devices {
+			if _, ok := device.Exposes[exposeName]; ok {
+				hasExpose = true
+				break
+			}
+		}
+		if !hasExpose {
+			continue // Skip metrics that don't exist on any queried device
+		}
+
+		response := query.MetricsQueryResponse{
+			Expose: exposeName,
+			From:   from.UnixMilli(),
+			To:     to.UnixMilli(),
+			Values: make([]query.MetricsQueryDeviceResponse, 0, len(req.DeviceIds)),
+		}
+
+		for _, device := range devices {
+			expose, ok := device.Exposes[exposeName]
+			if !ok {
+				continue
+			}
+
+			collector, err := domain.NewExposeResult(exposeName, expose.Type, req.Aggregation, from, to)
+			if err != nil {
+				continue
+			}
+
+			collectors := map[string]domain.ExposeResult{
+				exposeName: collector,
+			}
+
+			if _, err := s.metrics.QueryDevice(device.Id, from, to, req.Filters, collectors); err != nil {
+				// Don't fail the whole request if one metric is missing (e.g. bucket not found)
+				continue
+			}
+
+			if req.Aggregation == domain.AggNone && (req.Limit > 0 || req.SortDesc) {
+				query.ApplyLimitSortBy(collector, req.Limit, req.SortDesc)
+			}
+
+			value, err := buildDeviceQueryResponse(device.Id, req.Aggregation, req.AggregationValue, collector)
+			if err != nil {
+				return nil, err
+			}
+			if value == nil {
+				continue
+			}
+
+			response.Values = append(response.Values, *value)
+		}
+
+		responses = append(responses, response)
 	}
 
-	for _, device := range devices {
-
-		expose, ok := device.Exposes[req.Expose]
-		if !ok {
-			continue
-		}
-
-		collector, err := domain.NewExposeResult(req.Expose, expose.Type, req.Aggregation, from, to)
-		if err != nil {
-			continue
-		}
-
-		collectors := map[string]domain.ExposeResult{
-			req.Expose: collector,
-		}
-
-		if _, err := s.metrics.QueryDevice(device.Id, from, to, req.Filters, collectors); err != nil {
-			return nil, err
-		}
-
-		if req.Aggregation == domain.AggNone && (req.Limit > 0 || req.SortDesc) {
-			query.ApplyLimitSortBy(collector, req.Limit, req.SortDesc)
-		}
-
-		value, err := buildDeviceQueryResponse(device.Id, req.Aggregation, req.AggregationValue, collector)
-		if err != nil {
-			return nil, err
-		}
-		if value == nil {
-			continue
-		}
-
-		response.Values = append(response.Values, *value)
-	}
-
-	responses := []query.MetricsQueryResponse{response}
 	return &responses, nil
 }
 
@@ -98,9 +117,15 @@ func buildDeviceQueryResponse(deviceID string, aggregation domain.AggregationTyp
 		return nil, nil
 	}
 
+	var formattedTime string
+	if timestamp > 0 {
+		formattedTime = time.UnixMilli(timestamp).UTC().Format(time.RFC3339)
+	}
+
 	return &query.MetricsQueryDeviceResponse{
-		DeviceId:  deviceID,
-		Value:     value,
-		Timestamp: timestamp,
+		DeviceId:      deviceID,
+		Value:         value,
+		Timestamp:     timestamp,
+		FormattedTime: formattedTime,
 	}, nil
 }

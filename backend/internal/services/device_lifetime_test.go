@@ -51,7 +51,7 @@ func TestDeviceLifetimeService_Seed(t *testing.T) {
 	repo := mocks.NopSettingsrepo{}
 	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
 
-	cache := settings.NewDeviceConfigCache(&repo, app)
+	cache := settings.NewDeviceConfigCache(&repo, app, &sync.RWMutex{})
 	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, utils.NewRealClock())
 	payload := map[string]interface{}{"brightness": 10.2}
 
@@ -94,7 +94,7 @@ func TestDeviceLifetimeService_UpdateWithNewData(t *testing.T) {
 	repo := mocks.NopSettingsrepo{}
 	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
 
-	cache := settings.NewDeviceConfigCache(&repo, app)
+	cache := settings.NewDeviceConfigCache(&repo, app, &sync.RWMutex{})
 	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, utils.NewRealClock())
 	payload := map[string]interface{}{"brightness": 35.4, "last_seen": "2023-01-01T00:00:00Z"}
 
@@ -131,7 +131,7 @@ func TestDeviceLifetimeService_UpdateWithSameData(t *testing.T) {
 	repo := mocks.NopSettingsrepo{}
 	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
 
-	cache := settings.NewDeviceConfigCache(&repo, app)
+	cache := settings.NewDeviceConfigCache(&repo, app, &sync.RWMutex{})
 
 	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, utils.NewRealClock())
 	payload := map[string]interface{}{"brightness": 124.2, "last_seen": "2023-01-01T00:00:00Z"}
@@ -176,7 +176,7 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 	repo := mocks.NopSettingsrepo{}
 	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
 
-	cache := settings.NewDeviceConfigCache(&repo, app)
+	cache := settings.NewDeviceConfigCache(&repo, app, &sync.RWMutex{})
 	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, mockClock)
 
 	testCases := []struct {
@@ -266,7 +266,7 @@ func TestDeviceLifetimeService_ShouldChangeAvailability_ToOffline(t *testing.T) 
 	app := settings.NewAppConfig()
 	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
 	repo := mocks.NopSettingsrepo{}
-	cache := settings.NewDeviceConfigCache(&repo, app)
+	cache := settings.NewDeviceConfigCache(&repo, app, &sync.RWMutex{})
 	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, mocks.NewMockClock(func() time.Time { return time.Now() }))
 	payload := map[string]interface{}{"test": "data"}
 
@@ -327,7 +327,7 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithMetricsEnabled(t *testing.
 	repo := mocks.NopSettingsrepo{}
 	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
 
-	cache := settings.NewDeviceConfigCache(&repo, app)
+	cache := settings.NewDeviceConfigCache(&repo, app, &sync.RWMutex{})
 	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, mocks.NewMockClock(func() time.Time { return time.Now() }))
 
 	testCases := []struct {
@@ -396,7 +396,7 @@ func TestDeviceLifetimeService_NormalizesBinaryMeasurementValues(t *testing.T) {
 	app.AddDeviceConfig(cfg)
 
 	repo := mocks.NopSettingsrepo{}
-	cache := settings.NewDeviceConfigCache(&repo, app)
+	cache := settings.NewDeviceConfigCache(&repo, app, &sync.RWMutex{})
 	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
 
 	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, utils.NewRealClock())
@@ -464,7 +464,7 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithAutomationEnabled(t *testi
 
 	// enable automation for device so we can collect measurement data changes
 	deviceQuerier := mocks.NewMockAutomationDeviceQuerierWithValues(map[string]bool{"x01234": true})
-	cache := settings.NewDeviceConfigCache(&repo, app)
+	cache := settings.NewDeviceConfigCache(&repo, app, &sync.RWMutex{})
 	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, mocks.NewMockClock(func() time.Time { return time.Now() }))
 
 	testCases := []struct {
@@ -542,7 +542,7 @@ func TestOnConfigUpdated_ShouldDisableDevice(t *testing.T) {
 	repo := mocks.NopSettingsrepo{}
 	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
 
-	cache := settings.NewDeviceConfigCache(&repo, app)
+	cache := settings.NewDeviceConfigCache(&repo, app, &sync.RWMutex{})
 	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, utils.NewRealClock())
 	payload := map[string]interface{}{"brightness": 10.2}
 
@@ -598,7 +598,7 @@ func TestOnConfigUpdated_ShouldDisableDevice_OnStartUp(t *testing.T) {
 	repo := mocks.NopSettingsrepo{}
 	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
 
-	cache := settings.NewDeviceConfigCache(&repo, app)
+	cache := settings.NewDeviceConfigCache(&repo, app, &sync.RWMutex{})
 	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, utils.NewRealClock())
 	payload := map[string]interface{}{"brightness": 10.2}
 
