@@ -2,6 +2,7 @@
   import HistorySettings from './HistorySettings.vue';
   import LoggerSettings from './LoggerSettings.vue';
   import DeviceDefaultSettings from './DeviceDefaultSettings.vue';
+  import MCPSettings from './MCPSettings.vue';
 </script>
 
 <template>
@@ -18,6 +19,9 @@
       </div>
       <div class="pt-3">
         <LoggerSettings />
+      </div>
+      <div class="pt-3">
+        <MCPSettings />
       </div>
     </template>
   </Card>

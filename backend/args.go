@@ -10,7 +10,6 @@ type cmdArgs struct {
 	port      int
 	buildType string
 	logLevel  string
-	enableMCP bool
 }
 
 func readArgs() *cmdArgs {
@@ -18,7 +17,6 @@ func readArgs() *cmdArgs {
 	port := flag.Int("port", 4110, "port number")
 	buildType := flag.String("buildType", "", "client build type")
 	logLevel := flag.String("logLevel", "info", "logging level")
-	enableMCP := flag.Bool("mcp", false, "enable MCP HTTP endpoints for LLM clients")
 
 	flag.Parse()
 	if *port <= 0 {
@@ -26,5 +24,5 @@ func readArgs() *cmdArgs {
 		os.Exit(-1)
 	}
 
-	return &cmdArgs{port: *port, buildType: *buildType, logLevel: *logLevel, enableMCP: *enableMCP}
+	return &cmdArgs{port: *port, buildType: *buildType, logLevel: *logLevel}
 }

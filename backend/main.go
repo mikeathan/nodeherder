@@ -44,7 +44,7 @@ func main() {
 	}
 
 	utils.LogInfo("starting up server")
-	h := hub.Register(args.port, appStore, ctx, args.enableMCP)
+	h := hub.Register(args.port, appStore, ctx)
 	h.Listen()
 	utils.LogInfo("exit")
 }

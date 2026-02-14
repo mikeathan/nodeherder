@@ -1,4 +1,4 @@
-package api
+package http
 
 import (
 	"context"
@@ -14,8 +14,10 @@ import (
 
 type MCPServer interface {
 	HandleRequest(ctx context.Context, rawMessage json.RawMessage) json.RawMessage
+	Running() bool
 	RegisterNotificationListener(cb func(string)) string
 	UnregisterNotificationListener(id string)
+	OnClientConnectionChange(count int)
 }
 
 type MCPHandler struct {
@@ -31,6 +33,11 @@ func (h *MCPHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Content-Type") != "application/json" {
 		utils.LogErrorf("MCPHandler: Invalid content type: %s", r.Header.Get("Content-Type"))
 		writeJSONError(w, http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		return
+	}
+
+	if !h.server.Running() {
+		writeJSONError(w, http.StatusServiceUnavailable, "MCP server is stopped")
 		return
 	}
 
@@ -139,6 +146,11 @@ func (h *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !h.server.Running() {
+		http.Error(w, "MCP server is stopped", http.StatusServiceUnavailable)
+		return
+	}
+
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -153,7 +165,12 @@ func (h *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		h.mu.Lock()
 		delete(h.clients, clientChan)
+		clientCount := len(h.clients)
 		h.mu.Unlock()
+
+		// Notify server of client change (outside lock)
+		h.server.OnClientConnectionChange(clientCount)
+
 		close(clientChan)
 	}()
 
@@ -166,6 +183,12 @@ func (h *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	flusher.Flush()
 	utils.LogInfo("SSEHandler: Flushed initial events")
 
+	// Update client count after successful flush
+	h.mu.Lock()
+	count := len(h.clients)
+	h.mu.Unlock()
+	h.server.OnClientConnectionChange(count)
+
 	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 
@@ -175,6 +198,10 @@ func (h *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprint(w, msg)
 			flusher.Flush()
 		case <-ticker.C:
+			if !h.server.Running() {
+				// Server stopped, close connection
+				return
+			}
 			fmt.Fprint(w, ": heartbeat\n\n")
 			flusher.Flush()
 		case <-r.Context().Done():
@@ -183,9 +210,14 @@ func (h *SSEHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (r *Router) RegisterMCP(server MCPServer) {
+func (h *SSEHandler) ClientCount() int {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return len(h.clients)
+}
 
-	sseHandler := NewSSEHandler(server)
-	r.PublicPOST("/api/mcp", NewMCPHandler(server, sseHandler))
-	r.PublicGET("/api/mcp/events", sseHandler)
+func writeJSONError(w http.ResponseWriter, status int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
 }

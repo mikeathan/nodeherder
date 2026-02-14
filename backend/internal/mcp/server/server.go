@@ -10,8 +10,11 @@ import (
 	"node-herder/internal/mcp/tools"
 	metrics "node-herder/internal/metrics/services"
 	"node-herder/models/hub"
+	"node-herder/models/settings"
 	"node-herder/store"
+	"node-herder/utils"
 	"sync"
+	"sync/atomic"
 
 	"github.com/google/uuid"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -33,24 +36,57 @@ const (
 type DeviceStore interface {
 	LoadHubState() (*hub.HubState, error)
 	RegisterIsDirtyCallback(cb store.AppStoreDirtyFlagCallback)
+	AppConfig() *settings.AppConfigCache
+}
+
+// MCPStatusProvider abstracts MCP server status queries.
+type MCPStatusProvider interface {
+	Status() MCPStatusInfo
+	Stop() error
+	Start() error
+	Restart() error
+	Running() bool
+	SetOnStatusChange(cb func())
+}
+
+// MCPStatusInfo represents the MCP server status for the settings UI.
+type MCPStatusInfo struct {
+	Running          bool   `json:"running"`
+	Enabled          bool   `json:"enabled"`
+	Name             string `json:"name"`
+	Version          string `json:"version"`
+	ConnectedClients int    `json:"connectedClients"`
 }
 
 type Server struct {
 	mcpServer      *server.MCPServer
 	intentHandler  *tools.IntentHandler
 	promptResource *resources.PromptResource
+	store          DeviceStore
 
 	// Notification listeners for HTTP/SSE transport
 	listeners   map[string]func(string)
 	listenersMu sync.RWMutex
+
+	// Atomic running state: 1 = running, 0 = stopped
+	running          int32
+	connectedClients int
+	clientCountMu    sync.RWMutex
+	onStatusChange   func()
+	configCache      *settings.AppConfigCache
 }
 
-func New(store DeviceStore, querier *metrics.QueryService) *Server {
+func New(store DeviceStore, configCache *settings.AppConfigCache, querier *metrics.QueryService) *Server {
 	s := &Server{
 		intentHandler:  tools.NewIntentHandler(resolver.New(&deviceInfoAdapter{store}), querier, &deviceLookupAdapter{store}),
 		promptResource: resources.NewPromptResource(store),
 		listeners:      make(map[string]func(string)),
+		store:          store,
+		configCache:    configCache,
 	}
+
+	// Server starts in running state
+	atomic.StoreInt32(&s.running, 1)
 
 	// Register callback for updates - notify all listeners
 	store.RegisterIsDirtyCallback(func() {
@@ -80,7 +116,6 @@ func (s *Server) notifyListeners(uri string) {
 	}
 }
 
-// Returns a unique ID for unregistration.
 func (s *Server) RegisterNotificationListener(cb func(string)) string {
 	s.listenersMu.Lock()
 	defer s.listenersMu.Unlock()
@@ -97,7 +132,77 @@ func (s *Server) UnregisterNotificationListener(id string) {
 	delete(s.listeners, id)
 }
 
-// This is used by the HTTP transport.
+func (s *Server) OnClientConnectionChange(count int) {
+	s.clientCountMu.Lock()
+	s.connectedClients = count
+	cb := s.onStatusChange
+	s.clientCountMu.Unlock()
+
+	if cb != nil {
+		cb()
+	}
+}
+
+func (s *Server) SetOnStatusChange(cb func()) {
+	s.clientCountMu.Lock()
+	defer s.clientCountMu.Unlock()
+	s.onStatusChange = cb
+}
+
+func (s *Server) Stop() error {
+	atomic.StoreInt32(&s.running, 0)
+	return nil
+}
+
+func (s *Server) Start() error {
+	atomic.StoreInt32(&s.running, 1)
+	return nil
+}
+
+func (s *Server) Restart() error {
+	if err := s.Stop(); err != nil {
+		return err
+	}
+	return s.Start()
+}
+
+func (s *Server) Initialize() error {
+	config, err := s.store.AppConfig().LoadAppConfig()
+	if err != nil {
+		return err
+	}
+
+	if config.Hub.MCP.Enabled {
+		utils.LogInfo("MCP Server starting")
+		return s.Start()
+	}
+	utils.LogInfo("MCP Server stopping")
+	return s.Stop()
+}
+
+func (s *Server) Running() bool {
+	return atomic.LoadInt32(&s.running) == 1
+}
+
+func (s *Server) Status() MCPStatusInfo {
+	s.clientCountMu.RLock()
+	clients := s.connectedClients
+	s.clientCountMu.RUnlock()
+
+	enabled := false
+	if config, err := s.configCache.LoadAppConfig(); err == nil && config != nil {
+		enabled = config.Hub.MCP.Enabled
+	}
+
+	return MCPStatusInfo{
+		Running:          s.Running(),
+		Enabled:          enabled,
+		Name:             ServerName,
+		Version:          ServerVersion,
+		ConnectedClients: clients,
+	}
+}
+
 func (s *Server) HandleRequest(ctx context.Context, rawMessage json.RawMessage) json.RawMessage {
 	// Peek at the method to intercept subscribe/unsubscribe
 	var baseMessage struct {

@@ -9,6 +9,8 @@ import (
 	"node-herder/internal/controllers"
 	"node-herder/internal/fs"
 	mcpserver "node-herder/internal/mcp/server"
+	mcphttp "node-herder/internal/mcp/transport/http"
+
 	metrics "node-herder/internal/metrics/services"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/ratelimiter"
@@ -56,7 +58,10 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 
 	// MCP routes
 	if mcpServer != nil {
-		router.RegisterMCP(mcpServer)
+		sseHandler := mcphttp.NewSSEHandler(mcpServer)
+		router.PublicPOST("/api/mcp", mcphttp.NewMCPHandler(mcpServer, sseHandler))
+		router.PublicGET("/api/mcp/events", sseHandler)
+
 	}
 
 	// authentication routes
@@ -71,7 +76,7 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	return apiServer
 }
 
-func Register(port int, store store.AppStore, ctx context.Context, enableMCP bool) *api.ApiServer {
+func Register(port int, store store.AppStore, ctx context.Context) *api.ApiServer {
 
 	ws := ws.NewWsHub()
 	ws.Start()
@@ -80,20 +85,21 @@ func Register(port int, store store.AppStore, ctx context.Context, enableMCP boo
 
 	mqtt := mqtt.NewMqttClient(mqtt.WithDefaultMqttConfig())
 
-	automationHandlers := automations.DefaultAutomationHandlers(ctx)
-	hub := controllers.RegisterHubController(ws,
-		store,
-		mqtt,
-		controllers.WithContext(ctx),
-		controllers.WithAutomationHandlers(automationHandlers))
+	querier := metrics.NewQueryService(store)
+	mcpServer := mcpserver.New(store, store.AppConfig(), querier)
 
-	// Create MCP server for HTTP transport
-	var mcpServer *mcpserver.Server
-	if enableMCP {
-		utils.LogInfo("MCP HTTP transport enabled")
-		querier := metrics.NewQueryService(store)
-		mcpServer = mcpserver.New(store, querier)
+	utils.LogInfo("Initializing MCP Server")
+	if err := mcpServer.Initialize(); err != nil {
+		utils.LogErrorf("Failed to initialize MCP server: %v", err)
 	}
+
+	automationHandlers := automations.DefaultAutomationHandlers(ctx)
+	controllerOpts := []controllers.HubControllerOption{
+		controllers.WithContext(ctx),
+		controllers.WithAutomationHandlers(automationHandlers),
+	}
+	controllerOpts = append(controllerOpts, controllers.WithMCPServer(mcpServer))
+	hub := controllers.RegisterHubController(ws, store, mqtt, controllerOpts...)
 
 	return registerApi(port, ws, hub, store, mcpServer, ctx)
 }

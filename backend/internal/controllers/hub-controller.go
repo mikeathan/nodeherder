@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"node-herder/internal/automations"
+	mcpserver "node-herder/internal/mcp/server"
 	metrics "node-herder/internal/metrics/domain"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
@@ -39,6 +40,7 @@ type HubController struct {
 	ctx                                      context.Context
 	getDeviceProcessor                       func() *services.DeviceProcessor
 	automationHandlers                       []automations.AutomationHandler
+	mcpServer                                mcpserver.MCPStatusProvider
 }
 type HubControllerOption func(*HubController)
 
@@ -50,6 +52,12 @@ func WithContext(ctx context.Context) HubControllerOption {
 func WithAutomationHandlers(handlers []automations.AutomationHandler) HubControllerOption {
 	return func(h *HubController) {
 		h.automationHandlers = handlers
+	}
+}
+
+func WithMCPServer(mcp mcpserver.MCPStatusProvider) HubControllerOption {
+	return func(h *HubController) {
+		h.mcpServer = mcp
 	}
 }
 
@@ -474,6 +482,50 @@ func (h *HubController) registerEventHubEvents() {
 		return nil
 	})
 
+	if h.mcpServer == nil {
+		return
+	}
+
+	// MCP status events
+	h.eventHub.OnLoadMCPStatus(func() (interface{}, error) {
+		return h.mcpServer.Status(), nil
+	})
+
+	h.eventHub.OnRestartMCP(func() (interface{}, error) {
+		utils.LogInfo("MCP server restart requested via settings UI")
+		if err := h.mcpServer.Restart(); err != nil {
+			return nil, err
+		}
+		return h.mcpServer.Status(), nil
+	})
+
+	h.eventHub.OnStopMCP(func() (interface{}, error) {
+		utils.LogInfo("MCP server stop requested via settings UI")
+		if err := h.mcpServer.Stop(); err != nil {
+			return nil, err
+		}
+		_, err := appconfig.SaveMCPConfig(&settings.MCPConfig{Enabled: false})
+		if err != nil {
+			return nil, err
+		}
+		return h.mcpServer.Status(), nil
+	})
+
+	h.eventHub.OnStartMCP(func() (interface{}, error) {
+		utils.LogInfo("MCP server start requested via settings UI")
+		if err := h.mcpServer.Start(); err != nil {
+			return nil, err
+		}
+		_, err := appconfig.SaveMCPConfig(&settings.MCPConfig{Enabled: true})
+		if err != nil {
+			return nil, err
+		}
+		return h.mcpServer.Status(), nil
+	})
+
+	h.mcpServer.SetOnStatusChange(func() {
+		h.eventHub.Broadcast(ws.MCPStatus, h.mcpServer.Status())
+	})
 }
 
 // we only use that to override the default automation storage, lame but we cant easily refactor as weget alot of cyclic dependencies

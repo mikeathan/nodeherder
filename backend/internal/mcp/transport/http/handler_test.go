@@ -1,4 +1,4 @@
-package api_test
+package http_test
 
 import (
 	"bytes"
@@ -6,18 +6,23 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	mcphttp "node-herder/internal/mcp/transport/http"
 	"testing"
 	"time"
-
-	"node-herder/internal/api"
 
 	"github.com/google/uuid"
 )
 
-// mockMCPServer implements api.MCPServer for testing
+// mockMCPServer implements mcphttp.MCPServer for testing
 type mockMCPServer struct {
-	handleRequestFn func(ctx context.Context, rawMessage json.RawMessage) json.RawMessage
-	listeners       map[string]func(string)
+	handleRequestFn        func(ctx context.Context, rawMessage json.RawMessage) json.RawMessage
+	listeners              map[string]func(string)
+	running                bool
+	unregisteredListenerID string
+}
+
+func (m *mockMCPServer) Running() bool {
+	return m.running
 }
 
 func (m *mockMCPServer) HandleRequest(ctx context.Context, rawMessage json.RawMessage) json.RawMessage {
@@ -37,7 +42,11 @@ func (m *mockMCPServer) RegisterNotificationListener(cb func(string)) string {
 }
 
 func (m *mockMCPServer) UnregisterNotificationListener(id string) {
-	delete(m.listeners, id)
+	m.unregisteredListenerID = id
+}
+
+func (m *mockMCPServer) OnClientConnectionChange(count int) {
+	// no-op for mock
 }
 
 func (m *mockMCPServer) triggerNotification(uri string) {
@@ -51,9 +60,10 @@ func TestMCPHandler_ValidRequest(t *testing.T) {
 		handleRequestFn: func(ctx context.Context, rawMessage json.RawMessage) json.RawMessage {
 			return []byte(`{"jsonrpc":"2.0","id":1,"result":{"resources":[]}}`)
 		},
+		running: true,
 	}
 
-	handler := api.NewMCPHandler(server, nil)
+	handler := mcphttp.NewMCPHandler(server, nil)
 
 	reqBody := `{"jsonrpc":"2.0","id":1,"method":"resources/list"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/mcp", bytes.NewBufferString(reqBody))
@@ -81,8 +91,8 @@ func TestMCPHandler_ValidRequest(t *testing.T) {
 }
 
 func TestMCPHandler_InvalidContentType(t *testing.T) {
-	server := &mockMCPServer{}
-	handler := api.NewMCPHandler(server, nil)
+	server := &mockMCPServer{running: true}
+	handler := mcphttp.NewMCPHandler(server, nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/mcp", bytes.NewBufferString(`{}`))
 	req.Header.Set("Content-Type", "text/plain")
@@ -96,8 +106,8 @@ func TestMCPHandler_InvalidContentType(t *testing.T) {
 }
 
 func TestMCPHandler_InvalidJSON(t *testing.T) {
-	server := &mockMCPServer{}
-	handler := api.NewMCPHandler(server, nil)
+	server := &mockMCPServer{running: true}
+	handler := mcphttp.NewMCPHandler(server, nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/mcp", bytes.NewBufferString(`not json`))
 	req.Header.Set("Content-Type", "application/json")
@@ -115,9 +125,10 @@ func TestMCPHandler_NilResponse(t *testing.T) {
 		handleRequestFn: func(ctx context.Context, rawMessage json.RawMessage) json.RawMessage {
 			return nil // Notification, no response expected
 		},
+		running: true,
 	}
 
-	handler := api.NewMCPHandler(server, nil)
+	handler := mcphttp.NewMCPHandler(server, nil)
 
 	reqBody := `{"jsonrpc":"2.0","method":"notifications/initialized"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/mcp", bytes.NewBufferString(reqBody))
@@ -132,8 +143,8 @@ func TestMCPHandler_NilResponse(t *testing.T) {
 }
 
 func TestSSEHandler_Connection(t *testing.T) {
-	server := &mockMCPServer{}
-	handler := api.NewSSEHandler(server)
+	server := &mockMCPServer{running: true}
+	handler := mcphttp.NewSSEHandler(server)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/mcp/events", nil)
 
@@ -167,8 +178,8 @@ func TestSSEHandler_Connection(t *testing.T) {
 }
 
 func TestSSEHandler_ReceivesNotification(t *testing.T) {
-	server := &mockMCPServer{}
-	handler := api.NewSSEHandler(server)
+	server := &mockMCPServer{running: true}
+	handler := mcphttp.NewSSEHandler(server)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/mcp/events", nil)
 

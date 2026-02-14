@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"node-herder/internal/automations"
+	mcpserver "node-herder/internal/mcp/server"
 	metrics "node-herder/internal/metrics/domain"
 	"node-herder/internal/ws"
 	"node-herder/models/devices"
@@ -33,6 +34,11 @@ type MockEventHub struct {
 	context hub.Context
 
 	MockBroadcastEvent func(eventName string, data interface{}) error
+
+	OnLoadMCPEvent    func() (interface{}, error)
+	OnRestartMCPEvent func() (interface{}, error)
+	OnStopMCPEvent    func() (interface{}, error)
+	OnStartMCPEvent   func() (interface{}, error)
 }
 
 func NewMockEventHub() *MockEventHub {
@@ -189,6 +195,26 @@ func (h *MockEventHub) OnImportDashboardGroups(action func(payload interface{}) 
 
 func (h *MockEventHub) OnLoadDashboardGroups(action func() (interface{}, error)) {
 	fmt.Println("MockEventHub OnLoadDashboardGroups")
+}
+
+func (h *MockEventHub) OnLoadMCPStatus(action func() (interface{}, error)) {
+	fmt.Println("MockEventHub OnLoadMCPStatus")
+	h.OnLoadMCPEvent = action
+}
+
+func (h *MockEventHub) OnRestartMCP(action func() (interface{}, error)) {
+	fmt.Println("MockEventHub OnRestartMCP")
+	h.OnRestartMCPEvent = action
+}
+
+func (h *MockEventHub) OnStopMCP(action func() (interface{}, error)) {
+	fmt.Println("MockEventHub OnStopMCP")
+	h.OnStopMCPEvent = action
+}
+
+func (h *MockEventHub) OnStartMCP(action func() (interface{}, error)) {
+	fmt.Println("MockEventHub OnStartMCP")
+	h.OnStartMCPEvent = action
 }
 
 // Mock MqttClient
@@ -467,6 +493,22 @@ func (h *NopWsServer) OnLoadDashboardGroups(action func() (interface{}, error)) 
 	fmt.Println("WsServer OnLoadDashboardGroups")
 }
 
+func (h *NopWsServer) OnLoadMCPStatus(action func() (interface{}, error)) {
+	fmt.Println("WsServer OnLoadMCPStatus")
+}
+
+func (h *NopWsServer) OnRestartMCP(action func() (interface{}, error)) {
+	fmt.Println("WsServer OnRestartMCP")
+}
+
+func (h *NopWsServer) OnStopMCP(action func() (interface{}, error)) {
+	fmt.Println("WsServer OnStopMCP")
+}
+
+func (h *NopWsServer) OnStartMCP(action func() (interface{}, error)) {
+	fmt.Println("WsServer OnStartMCP")
+}
+
 // Mock devices Repository
 type NopRepository struct {
 }
@@ -655,6 +697,17 @@ func (s *NopSettingsrepo) SaveHubConfig(hubConfig *settings.HubConfig) error {
 
 func (s *NopSettingsrepo) SaveAppConfig(appConfig *settings.AppConfig) error {
 	fmt.Println("Mocked settingsRepo SaveAppConfig")
+	return nil
+}
+
+// TrackingSettingsRepo wraps NopSettingsrepo but tracks SaveDeviceConfig calls
+type TrackingSettingsRepo struct {
+	NopSettingsrepo
+	SaveDeviceConfigCallCount int
+}
+
+func (s *TrackingSettingsRepo) SaveDeviceConfig(deviceConfig *settings.DeviceConfig) error {
+	s.SaveDeviceConfigCallCount++
 	return nil
 }
 
@@ -1149,4 +1202,52 @@ func NewMockAutomationTrigger(callback func(automationId string, triggerName str
 
 func (m *MockAutomationTrigger) TriggerManual(automationId string, triggerName string) error {
 	return m.callback(automationId, triggerName)
+}
+
+// MockMCPStatusProvider
+type MockMCPStatusProvider struct {
+	MockStatus  func() mcpserver.MCPStatusInfo
+	MockStop    func() error
+	MockStart   func() error
+	MockRestart func() error
+	MockRunning func() bool
+}
+
+func (m *MockMCPStatusProvider) Status() mcpserver.MCPStatusInfo {
+	if m.MockStatus != nil {
+		return m.MockStatus()
+	}
+	return mcpserver.MCPStatusInfo{}
+}
+
+func (m *MockMCPStatusProvider) Stop() error {
+	if m.MockStop != nil {
+		return m.MockStop()
+	}
+	return nil
+}
+
+func (m *MockMCPStatusProvider) Start() error {
+	if m.MockStart != nil {
+		return m.MockStart()
+	}
+	return nil
+}
+
+func (m *MockMCPStatusProvider) Restart() error {
+	if m.MockRestart != nil {
+		return m.MockRestart()
+	}
+	return nil
+}
+
+func (m *MockMCPStatusProvider) Running() bool {
+	if m.MockRunning != nil {
+		return m.MockRunning()
+	}
+	return false
+}
+
+func (m *MockMCPStatusProvider) SetOnStatusChange(cb func()) {
+	// no-op for mock
 }

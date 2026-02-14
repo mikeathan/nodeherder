@@ -6,14 +6,16 @@ import (
 	"node-herder/internal/mcp/server"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
+	"node-herder/models/settings"
 	"node-herder/store"
 	"testing"
 )
 
 // mockDeviceStore implements server.DeviceStore for testing
 type mockDeviceStore struct {
-	devices []*devices.Device
-	err     error
+	devices     []*devices.Device
+	err         error
+	configCache *settings.AppConfigCache
 }
 
 func (m *mockDeviceStore) LoadHubState() (*hub.HubState, error) {
@@ -27,11 +29,56 @@ func (m *mockDeviceStore) RegisterIsDirtyCallback(cb store.AppStoreDirtyFlagCall
 	// no-op for tests
 }
 
+func (m *mockDeviceStore) AppConfig() *settings.AppConfigCache {
+	return m.configCache
+}
+
+// mockSettingsRepo implements settings.Repository
+type mockSettingsRepo struct {
+	config *settings.AppConfig
+}
+
+func (m *mockSettingsRepo) SaveAppConfig(config *settings.AppConfig) error {
+	m.config = config
+	return nil
+}
+func (m *mockSettingsRepo) Load() (*settings.AppConfig, error) {
+	if m.config == nil {
+		return settings.NewAppConfig(), nil
+	}
+	return m.config, nil
+}
+func (m *mockSettingsRepo) LoadBridgeConfig() (*settings.BridgeConfig, error) {
+	return settings.NewBridgeConfig(), nil
+}
+func (m *mockSettingsRepo) SaveBridgeConfig(bridgeConfig *settings.BridgeConfig) error {
+	return nil
+}
+func (m *mockSettingsRepo) SaveHubConfig(hubConfig *settings.HubConfig) error {
+	return nil
+}
+func (m *mockSettingsRepo) LoadOrDefaultDeviceConfig(id string) (*settings.DeviceConfig, error) {
+	return settings.NewDeviceConfig(id), nil
+}
+func (m *mockSettingsRepo) SaveDeviceConfig(deviceConfig *settings.DeviceConfig) error {
+	return nil
+}
+func (m *mockSettingsRepo) DeleteDeviceConfig(id string) error {
+	return nil
+}
+func (m *mockSettingsRepo) Close() error {
+	return nil
+}
+
 // mockMetricsRepo implements metrics.Repository for minimal testing
 type mockMetricsRepo struct{}
 
 func TestServer_New(t *testing.T) {
+	repo := &mockSettingsRepo{}
+	cache, _ := settings.NewAppConfigCache(repo, nil)
+
 	store := &mockDeviceStore{
+		configCache: cache,
 		devices: []*devices.Device{
 			{
 				Id:           "dev-001",
@@ -43,7 +90,7 @@ func TestServer_New(t *testing.T) {
 
 	// Note: QueryService requires a full AppStore, so we test with nil
 	// In a real test, you'd use a proper mock
-	srv := server.New(store, nil)
+	srv := server.New(store, cache, nil)
 
 	if srv == nil {
 		t.Fatal("New() returned nil")
@@ -51,8 +98,12 @@ func TestServer_New(t *testing.T) {
 }
 
 func TestServer_VerifyDeviceStoreAdapter(t *testing.T) {
+	repo := &mockSettingsRepo{}
+	cache, _ := settings.NewAppConfigCache(repo, nil)
+
 	// Test that the device store adapter correctly converts devices
 	store := &mockDeviceStore{
+		configCache: cache,
 		devices: []*devices.Device{
 			{Id: "dev-001", FriendlyName: "Device One"},
 			{Id: "dev-002", FriendlyName: "Device Two"},
@@ -73,8 +124,12 @@ func TestServer_VerifyDeviceStoreAdapter(t *testing.T) {
 // TestMCPServerIntegration tests the full MCP flow
 // This is a lightweight integration test
 func TestMCPServerIntegration(t *testing.T) {
+	repo := &mockSettingsRepo{}
+	cache, _ := settings.NewAppConfigCache(repo, nil)
+
 	// Create a store with test devices
 	store := &mockDeviceStore{
+		configCache: cache,
 		devices: []*devices.Device{
 			{
 				Id:           "sensor-attic-01",
@@ -91,7 +146,7 @@ func TestMCPServerIntegration(t *testing.T) {
 	}
 
 	// Create server (without QueryService for this test)
-	srv := server.New(store, nil)
+	srv := server.New(store, cache, nil)
 
 	if srv == nil {
 		t.Fatal("Failed to create MCP server")
@@ -105,8 +160,12 @@ func TestMCPServerIntegration(t *testing.T) {
 
 // TestResolverIntegration tests the resolver with the device store adapter pattern
 func TestResolverIntegration(t *testing.T) {
+	repo := &mockSettingsRepo{}
+	cache, _ := settings.NewAppConfigCache(repo, nil)
+
 	// This tests the pattern used in server.go where DeviceStore is adapted
 	store := &mockDeviceStore{
+		configCache: cache,
 		devices: []*devices.Device{
 			{Id: "dev-001", FriendlyName: "Attic temperature sensor"},
 			{Id: "dev-002", FriendlyName: "Living room light"},
@@ -179,13 +238,17 @@ var _ server.DeviceStore = (*mockDeviceStore)(nil)
 var _ resolver.DeviceStore = (*deviceInfoAdapter)(nil)
 
 func TestHandleRequest_ResourcesList(t *testing.T) {
+	repo := &mockSettingsRepo{}
+	cache, _ := settings.NewAppConfigCache(repo, nil)
+
 	// Setup mock store with devices
 	store := &mockDeviceStore{
+		configCache: cache,
 		devices: []*devices.Device{
 			{Id: "dev-001", FriendlyName: "Test device"},
 		},
 	}
-	srv := server.New(store, nil)
+	srv := server.New(store, cache, nil)
 
 	// First, send initialize request
 	initReq := map[string]interface{}{
@@ -230,8 +293,11 @@ func TestHandleRequest_ResourcesList(t *testing.T) {
 }
 
 func TestNotificationListener(t *testing.T) {
-	store := &mockDeviceStore{}
-	srv := server.New(store, nil)
+	repo := &mockSettingsRepo{}
+	cache, _ := settings.NewAppConfigCache(repo, nil)
+
+	store := &mockDeviceStore{configCache: cache}
+	srv := server.New(store, cache, nil)
 
 	// Track notifications
 	var receivedURI string
@@ -246,5 +312,45 @@ func TestNotificationListener(t *testing.T) {
 	// For this test, we directly test the listener registration
 	if receivedURI != "" {
 		t.Errorf("Expected no notification yet, got %q", receivedURI)
+	}
+}
+
+func TestServer_Initialize(t *testing.T) {
+	repo := &mockSettingsRepo{}
+	cache, _ := settings.NewAppConfigCache(repo, nil)
+	store := &mockDeviceStore{configCache: cache}
+	srv := server.New(store, cache, nil)
+
+	// 1. Test Initialize with default config (Enabled: false)
+	err := srv.Initialize()
+	if err != nil {
+		t.Fatalf("Initialize() error = %v", err)
+	}
+	if srv.Running() {
+		t.Error("Expected server to be stopped by default")
+	}
+
+	// 2. Test Initialize with Enabled: true
+	// 2. Test Initialize with Enabled: true
+	cache.SaveMCPConfig(&settings.MCPConfig{Enabled: true})
+
+	err = srv.Initialize()
+	if err != nil {
+		t.Fatalf("Initialize() enabled error = %v", err)
+	}
+	if !srv.Running() {
+		t.Error("Expected server to be running")
+	}
+
+	// 3. Test Initialize with Enabled: false again
+	// 3. Test Initialize with Enabled: false again
+	cache.SaveMCPConfig(&settings.MCPConfig{Enabled: false})
+
+	err = srv.Initialize()
+	if err != nil {
+		t.Fatalf("Initialize() disabled error = %v", err)
+	}
+	if srv.Running() {
+		t.Error("Expected server to be stopped")
 	}
 }

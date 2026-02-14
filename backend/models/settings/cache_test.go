@@ -7,6 +7,7 @@ import (
 	"node-herder/repository"
 	"node-herder/utils"
 	"os"
+	"sync"
 	"testing"
 	"time"
 )
@@ -30,7 +31,7 @@ func TestNewDeviceConfigCache(t *testing.T) {
 	appConfig.AddDeviceConfig(d2)
 
 	repo := mocks.NopSettingsrepo{}
-	cache := settings.NewDeviceConfigCache(&repo, appConfig)
+	cache := settings.NewDeviceConfigCache(&repo, appConfig, &sync.RWMutex{})
 
 	if cache.Size() != 2 {
 		t.Errorf("Expected cache to have 2 devices, got %d", cache.Size())
@@ -70,7 +71,7 @@ func TestNewDeviceConfigCache(t *testing.T) {
 func TestDeviceConfigCache_Get(t *testing.T) {
 	repo := mocks.NopSettingsrepo{}
 
-	cache := settings.NewDeviceConfigCache(&repo, settings.NewAppConfig())
+	cache := settings.NewDeviceConfigCache(&repo, settings.NewAppConfig(), &sync.RWMutex{})
 	device1 := settings.NewDeviceConfig("device1")
 	cache.Set(device1)
 
@@ -94,7 +95,7 @@ func TestDeviceConfigCache_Set(t *testing.T) {
 		"expose1": utils.IntervalFromMilliseconds(1000),
 	}
 	appConfig.AddDeviceConfig(device1)
-	cache := settings.NewDeviceConfigCache(&repo, appConfig)
+	cache := settings.NewDeviceConfigCache(&repo, appConfig, &sync.RWMutex{})
 
 	// add a second debounce to device1 after initialization
 	device1.DebounceOverrides["expose2"] = utils.IntervalFromMilliseconds(2000)
@@ -126,7 +127,7 @@ func TestDeviceConfigCache_DeleteDebounce(t *testing.T) {
 	}
 	app.AddDeviceConfig(device1)
 
-	cache := settings.NewDeviceConfigCache(&repo, app)
+	cache := settings.NewDeviceConfigCache(&repo, app, &sync.RWMutex{})
 	cache.Set(device1)
 
 	// assert that the debounce is set
@@ -145,22 +146,82 @@ func TestDeviceConfigCache_DeleteDebounce(t *testing.T) {
 		t.Errorf("Expected expose2 debounce to be set")
 	}
 
-	// delete the deebounce
-	ok = cache.DeleteDebounce("device1", "expose2")
+	// delete the debounce
+	ok, err := cache.DeleteDebounce("device1", "expose2")
+	if err != nil {
+		t.Fatalf("DeleteDebounce returned error: %v", err)
+	}
 	if !ok {
-		t.Errorf("Expected expose1 debounce to be deleted")
+		t.Errorf("Expected expose2 debounce to be deleted")
 	}
 
-	// assert that the expose1 debounce is deleted
+	// assert that the expose2 debounce is deleted
 	_, ok = cache.GetDebounce("device1", "expose2", bridge.MeasurementCategory)
 	if ok {
 		t.Errorf("Expected expose2 debounce to be deleted")
 	}
 
-	// assert that the expose2 debounce is still set
+	// assert that the expose1 debounce is still set
 	_, ok = cache.GetDebounce("device1", "expose1", bridge.MeasurementCategory)
 	if !ok {
 		t.Errorf("Expected expose1 debounce to be set")
+	}
+}
+
+func TestDeviceConfigCache_SetDebounce_Persists(t *testing.T) {
+	repo := &mocks.TrackingSettingsRepo{}
+	app := settings.NewAppConfig()
+	device1 := settings.NewDeviceConfig("device1")
+	app.AddDeviceConfig(device1)
+
+	cache := settings.NewDeviceConfigCache(repo, app, &sync.RWMutex{})
+
+	err := cache.SetDebounce("device1", "expose1", utils.IntervalFromMilliseconds(500))
+	if err != nil {
+		t.Fatalf("SetDebounce returned error: %v", err)
+	}
+
+	if repo.SaveDeviceConfigCallCount != 1 {
+		t.Errorf("Expected SaveDeviceConfig to be called 1 time, got %d", repo.SaveDeviceConfigCallCount)
+	}
+
+	// Verify the value was set in memory
+	debounce, ok := cache.GetDebounce("device1", "expose1", bridge.MeasurementCategory)
+	if !ok {
+		t.Errorf("Expected expose1 debounce to be found")
+	}
+	if debounce != 500*time.Millisecond {
+		t.Errorf("Expected expose1 debounce to be 500ms, got %v", debounce)
+	}
+}
+
+func TestDeviceConfigCache_DeleteDebounce_Persists(t *testing.T) {
+	repo := &mocks.TrackingSettingsRepo{}
+	app := settings.NewAppConfig()
+	device1 := settings.NewDeviceConfig("device1")
+	device1.DebounceOverrides = map[string]*utils.TimeInterval{
+		"expose1": utils.IntervalFromMilliseconds(1000),
+	}
+	app.AddDeviceConfig(device1)
+
+	cache := settings.NewDeviceConfigCache(repo, app, &sync.RWMutex{})
+
+	ok, err := cache.DeleteDebounce("device1", "expose1")
+	if err != nil {
+		t.Fatalf("DeleteDebounce returned error: %v", err)
+	}
+	if !ok {
+		t.Errorf("Expected DeleteDebounce to return true")
+	}
+
+	if repo.SaveDeviceConfigCallCount != 1 {
+		t.Errorf("Expected SaveDeviceConfig to be called 1 time, got %d", repo.SaveDeviceConfigCallCount)
+	}
+
+	// Verify it was deleted from memory
+	_, ok = cache.GetDebounce("device1", "expose1", bridge.MeasurementCategory)
+	if ok {
+		t.Errorf("Expected expose1 debounce to be deleted")
 	}
 }
 
@@ -188,7 +249,7 @@ func TestDeviceDebouncer_DebounceExpose(t *testing.T) {
 
 	appConfig.AddDeviceConfig(d2)
 
-	cache := settings.NewDeviceConfigCache(&repo, appConfig)
+	cache := settings.NewDeviceConfigCache(&repo, appConfig, &sync.RWMutex{})
 
 	debouncer := settings.NewDeviceDebouncer("device1", cache, mockClock)
 
@@ -261,7 +322,7 @@ func TestDeviceDebouncer_DiagnosticsDebouncerWhenOverrideIsNotAvailable(t *testi
 	appConfig.Hub.Devices.Defaults.DefaultDebounceByCategory[bridge.DiagnosticCategory] = utils.IntervalFromSeconds(5)
 
 	appConfig.AddDeviceConfig(d1)
-	cache := settings.NewDeviceConfigCache(&repo, appConfig)
+	cache := settings.NewDeviceConfigCache(&repo, appConfig, &sync.RWMutex{})
 	debouncer := settings.NewDeviceDebouncer("device1", cache, mockClock)
 
 	// Test expose 1 event with debounce overrides
