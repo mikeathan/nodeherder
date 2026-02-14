@@ -38,6 +38,11 @@ const (
 
 	LoadMetrics = "loadMetrics"
 
+	LoadMCPStatus = "loadMCPStatus"
+	RestartMCP    = "restartMCP"
+	StopMCP       = "stopMCP"
+	StartMCP      = "startMCP"
+
 	// response
 	Automations       = "automations"
 	DeviceList        = "deviceList"
@@ -52,6 +57,7 @@ const (
 	AppConfig       = "appConfig"
 	BridgeConfig    = "bridgeConfig"
 	DashboardGroups = "dashboardGroups"
+	MCPStatus       = "mcpStatus"
 )
 
 type EventHub interface {
@@ -86,6 +92,10 @@ type EventHub interface {
 	OnImportDashboardGroups(action func(payload interface{}) error)
 	OnLoadDashboardGroups(action func() (interface{}, error))
 	OnDeleteDashboardGroup(action func(payload interface{}) error)
+	OnLoadMCPStatus(action func() (interface{}, error))
+	OnRestartMCP(action func() (interface{}, error))
+	OnStopMCP(action func() (interface{}, error))
+	OnStartMCP(action func() (interface{}, error))
 	HandleRequest(w http.ResponseWriter, r *http.Request) error
 	Context() hub.Context
 }
@@ -117,6 +127,10 @@ type eventHubImpl struct {
 	onDeleteDashboardGroup       func(payload interface{}) error
 	onImportDashboardGroups      func(payload interface{}) error
 	onLoadDashboardGroups        func() (interface{}, error)
+	onLoadMCPStatus              func() (interface{}, error)
+	onRestartMCP                 func() (interface{}, error)
+	onStopMCP                    func() (interface{}, error)
+	onStartMCP                   func() (interface{}, error)
 	requestContext               hub.Context
 }
 
@@ -148,6 +162,10 @@ func NewWsHub() EventHub {
 		onRenameDashboardGroup:       func(payload interface{}) (interface{}, error) { return nil, nil },
 		onImportDashboardGroups:      func(payload interface{}) error { return nil },
 		onLoadDashboardGroups:        func() (interface{}, error) { return nil, nil },
+		onLoadMCPStatus:              func() (interface{}, error) { return nil, nil },
+		onRestartMCP:                 func() (interface{}, error) { return nil, nil },
+		onStopMCP:                    func() (interface{}, error) { return nil, nil },
+		onStartMCP:                   func() (interface{}, error) { return nil, nil },
 		requestContext:               NewRequestContext(),
 	}
 }
@@ -258,6 +276,22 @@ func (h *eventHubImpl) OnImportDashboardGroups(action func(payload interface{}) 
 
 func (h *eventHubImpl) OnLoadDashboardGroups(action func() (interface{}, error)) {
 	h.onLoadDashboardGroups = action
+}
+
+func (h *eventHubImpl) OnLoadMCPStatus(action func() (interface{}, error)) {
+	h.onLoadMCPStatus = action
+}
+
+func (h *eventHubImpl) OnRestartMCP(action func() (interface{}, error)) {
+	h.onRestartMCP = action
+}
+
+func (h *eventHubImpl) OnStopMCP(action func() (interface{}, error)) {
+	h.onStopMCP = action
+}
+
+func (h *eventHubImpl) OnStartMCP(action func() (interface{}, error)) {
+	h.onStartMCP = action
 }
 
 func (h *eventHubImpl) EmitDevice(name string) error {
@@ -400,6 +434,18 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 
 	case LoadDashboardGroups:
 		c.execute(eventExecutorOptionsWithResult(nil, wrapNoPayload(c.onLoadDashboardGroups), DashboardGroups))
+
+	case LoadMCPStatus:
+		c.execute(eventExecutorOptionsWithResult(nil, wrapNoPayload(c.onLoadMCPStatus), MCPStatus))
+
+	case RestartMCP:
+		c.execute(eventExecutorOptionsWithResult(nil, wrapNoPayload(c.onRestartMCP), MCPStatus))
+
+	case StopMCP:
+		c.execute(eventExecutorOptionsWithResult(nil, wrapNoPayload(c.onStopMCP), MCPStatus))
+
+	case StartMCP:
+		c.execute(eventExecutorOptionsWithResult(nil, wrapNoPayload(c.onStartMCP), MCPStatus))
 
 	default:
 

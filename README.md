@@ -159,6 +159,124 @@ openssl rand -base64 32
 
 ---
 
+## MCP Server Integration
+
+Node Herder implements the Model Context Protocol (MCP), allowing AI assistants (like Claude or custom LLM proxies) to directly query smart home metrics and discover devices over HTTP.
+
+### Configuration
+
+The MCP server is managed via the **Settings -> MCP Server** page in the frontend. You can enable/disable it and see the connection status there.
+
+### MCP Endpoints
+
+When `--mcp` is enabled, the following endpoints are available:
+
+| Endpoint          | Method | Description                                       |
+| ----------------- | ------ | ------------------------------------------------- |
+| `/api/mcp`        | POST   | JSON-RPC endpoint for MCP requests                |
+| `/api/mcp/events` | GET    | SSE stream for live resource update notifications |
+
+### Testing the MCP Server
+
+You can test the MCP server using `curl` commands.
+
+#### 1. List Resources
+
+Discover available resources exposed by the server.
+
+**Request:**
+
+```bash
+curl -X POST http://localhost:4110/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "resources/list"
+  }'
+```
+
+#### 2. Read Device Context
+
+Fetch the current state of all devices.
+
+**Request:**
+
+```bash
+curl -X POST http://localhost:4110/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 3,
+    "method": "resources/read",
+    "params": {
+      "uri": "nodeherder://devices"
+    }
+  }'
+```
+
+#### 3. Call Tools
+
+Execute a tool (e.g., querying device metrics).
+
+**Request:**
+
+```bash
+curl -X POST http://localhost:4110/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 4,
+    "method": "tools/call",
+    "params": {
+      "name": "query_device",
+      "arguments": {
+        "target_name": "Living room presence sensor",
+        "metrics": ["presence"],
+        "aggregation": "last"
+      }
+    }
+  }'
+```
+
+#### 4. Subscribe to Live Updates
+
+Listen for real-time changes via Server-Sent Events (SSE).
+
+**Step 1: Start Listening**
+Open a terminal and run:
+
+```bash
+curl -N http://localhost:4110/api/mcp/events
+```
+
+**Step 2: Subscribe to Resource**
+In a separate terminal, tell the server you want updates for specific resources:
+
+```bash
+curl -X POST http://localhost:4110/api/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 5,
+    "method": "resources/subscribe",
+    "params": {"uri": "nodeherder://devices"}
+  }'
+```
+
+**Result:** When a device updates, the SSE stream will emit a `notifications/resources/updated` event.
+
+### Available Capabilities
+
+- **Resources**:
+  - `nodeherder://devices`: JSON list of all devices and their metrics. Supports live subscriptions.
+  - `nodeherder://system-prompt`: Domain guidance for LLMs.
+
+- **Tools**:
+  - `query_device`: Query metrics with natural language (e.g., "temperature in the kitchen").
+
+---
+
 ## Frontend Configuration
 
 ### Frontend `.env.development`
@@ -220,6 +338,39 @@ After running setup script:
 ```
 
 ---
+
+## Manual Metrics Query
+
+You can also query the backend metrics API directly without going through MCP. This requires authentication.
+
+### 1. Get Access Token
+
+First, obtain a JWT token using your service credentials (from `.env`):
+
+```bash
+export CLIENT_ID="llm-proxy"
+export CLIENT_SECRET="<your-service-secret>"
+
+export TOKEN=$(curl -s -X POST http://localhost:4110/api/auth/token \
+  -H "Content-Type: application/json" \
+  -d "{\"client_id\": \"$CLIENT_ID\", \"client_secret\": \"$CLIENT_SECRET\"}" | jq -r .access_token)
+```
+
+### 2. Query Metrics
+
+Use the token to query metrics directly:
+
+```bash
+curl -X POST http://localhost:4110/api/metrics/query \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "deviceIds": ["0xa4c1389b273366c3"],
+    "exposes": ["alarm"],
+    "time": { "lookback": "1h" },
+    "aggregation": "last"
+  }' | jq
+```
 
 ## Development Workflow
 

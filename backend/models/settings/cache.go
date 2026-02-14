@@ -51,30 +51,23 @@ func (d *DeviceDebouncer) DebounceExpose(exposeName string, category bridge.Expo
 }
 
 type DeviceConfigCache struct {
-	devicesConfigs            map[string]*DeviceConfig
-	defaultDebounceByCategory map[bridge.ExposeCategory]*utils.TimeInterval
-	mutex                     sync.RWMutex
-	store                     Repository
+	appConfig *AppConfig
+	mutex     *sync.RWMutex
+	store     Repository
 }
 
-func NewDeviceConfigCache(store Repository, appconfig *AppConfig) *DeviceConfigCache {
-	deviceConfigs := make(map[string]*DeviceConfig)
-	for _, dev := range appconfig.Hub.Devices.Overrides {
-		deviceConfigs[dev.Id] = dev
-	}
-
+func NewDeviceConfigCache(store Repository, appconfig *AppConfig, mutex *sync.RWMutex) *DeviceConfigCache {
 	return &DeviceConfigCache{
-		store:                     store,
-		devicesConfigs:            deviceConfigs,
-		mutex:                     sync.RWMutex{},
-		defaultDebounceByCategory: appconfig.Hub.Devices.Defaults.DefaultDebounceByCategory,
+		store:     store,
+		appConfig: appconfig,
+		mutex:     mutex,
 	}
 }
 
 func (d *DeviceConfigCache) Size() int {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
-	return len(d.devicesConfigs)
+	return len(d.appConfig.Hub.Devices.Overrides)
 }
 
 func (d *DeviceConfigCache) IsMetricsEnabled(deviceId string) bool {
@@ -95,58 +88,25 @@ func (d *DeviceConfigCache) IsDeviceDisabled(deviceId string) bool {
 
 func (d *DeviceConfigCache) Get(id string) (*DeviceConfig, error) {
 
-	// First try with read lock
 	d.mutex.RLock()
-	if deviceConfig, ok := d.devicesConfigs[id]; ok {
-		d.mutex.RUnlock()
-		return deviceConfig, nil
-	}
-	d.mutex.RUnlock()
+	defer d.mutex.RUnlock()
 
-	// Not in cache, acquire write lock to load and store
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-
-	// Double-check in case another goroutine loaded it
-	if deviceConfig, ok := d.devicesConfigs[id]; ok {
+	if deviceConfig, ok := d.appConfig.Hub.Devices.Overrides[id]; ok {
 		return deviceConfig, nil
 	}
 
-	// load from db
-	config, err := d.store.LoadOrDefaultDeviceConfig(id)
-	if err != nil {
-		return nil, err
-	}
-
-	// store in cache
-	d.devicesConfigs[id] = config
-	return config, nil
+	// Not in overrides, return default derived from AppConfig
+	defaultConfig := NewDeviceConfigFrom(d.appConfig.Hub.Devices.Defaults)
+	defaultConfig.Id = id
+	return defaultConfig, nil
 }
 
 func (d *DeviceConfigCache) Set(deviceConfig *DeviceConfig) error {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	d.devicesConfigs[deviceConfig.Id] = deviceConfig
+	d.appConfig.Hub.Devices.AddOverride(deviceConfig)
 	return d.store.SaveDeviceConfig(deviceConfig)
-}
-
-func (d *DeviceConfigCache) UpdateDefaults(defaults *DeviceConfig, overrides map[string]*DeviceConfig) {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-
-	d.defaultDebounceByCategory = defaults.DefaultDebounceByCategory
-
-	for id := range d.devicesConfigs {
-		if _, ok := overrides[id]; ok {
-			// leave explicit overrides untouched
-			continue
-		}
-
-		refreshed := NewDeviceConfigFrom(defaults)
-		refreshed.Id = id
-		d.devicesConfigs[id] = refreshed
-	}
 }
 
 func (d *DeviceConfigCache) Delete(id string) error {
@@ -158,39 +118,43 @@ func (d *DeviceConfigCache) Delete(id string) error {
 		return err
 	}
 
-	delete(d.devicesConfigs, id)
+	d.appConfig.Hub.Devices.DeleteOverride(id)
 	return nil
 }
 
-func (d *DeviceConfigCache) DeleteDebounce(id string, exposeName string) bool {
+func (d *DeviceConfigCache) DeleteDebounce(id string, exposeName string) (bool, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	config, exists := d.devicesConfigs[id]
+	config, exists := d.appConfig.Hub.Devices.Overrides[id]
 	if !exists {
-		return false
+		return false, nil
 	}
 	delete(config.DebounceOverrides, exposeName)
-	return true
+	if err := d.store.SaveDeviceConfig(config); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
-func (d *DeviceConfigCache) SetDebounce(id string, exposeName string, timeInterval *utils.TimeInterval) {
+func (d *DeviceConfigCache) SetDebounce(id string, exposeName string, timeInterval *utils.TimeInterval) error {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	config, exists := d.devicesConfigs[id]
+	config, exists := d.appConfig.Hub.Devices.Overrides[id]
 	if !exists {
 		config = NewDeviceConfig(id)
-		d.devicesConfigs[id] = config
+		d.appConfig.Hub.Devices.AddOverride(config)
 	}
 	config.DebounceOverrides[exposeName] = timeInterval
+	return d.store.SaveDeviceConfig(config)
 }
 
 func (d *DeviceConfigCache) GetDebounce(id string, exposeName string, category bridge.ExposeCategory) (time.Duration, bool) {
 	d.mutex.RLock()
 	defer d.mutex.RUnlock()
 
-	config, exists := d.devicesConfigs[id]
+	config, exists := d.appConfig.Hub.Devices.Overrides[id]
 	if !exists {
 		return 0, false
 	}
@@ -199,7 +163,7 @@ func (d *DeviceConfigCache) GetDebounce(id string, exposeName string, category b
 		return interval.Duration(), true
 	}
 
-	if defaultInterval, ok := d.defaultDebounceByCategory[category]; ok {
+	if defaultInterval, ok := d.appConfig.Hub.Devices.Defaults.DefaultDebounceByCategory[category]; ok {
 		return defaultInterval.Duration(), true
 	}
 
@@ -211,6 +175,8 @@ type AppConfigCache struct {
 	store                 Repository
 	tasks                 []Task
 	configUpdateListeners []DeviceConfigUpdateListener
+	appConfig             *AppConfig
+	mutex                 sync.RWMutex
 }
 
 func NewAppConfigCache(store Repository, task []Task) (*AppConfigCache, error) {
@@ -221,11 +187,12 @@ func NewAppConfigCache(store Repository, task []Task) (*AppConfigCache, error) {
 	}
 
 	cache := &AppConfigCache{
-		deviceCache:           NewDeviceConfigCache(store, config),
 		store:                 store,
 		tasks:                 task,
 		configUpdateListeners: []DeviceConfigUpdateListener{},
+		appConfig:             config,
 	}
+	cache.deviceCache = NewDeviceConfigCache(store, config, &cache.mutex)
 
 	cache.startTasks(config)
 	return cache, nil
@@ -240,7 +207,9 @@ func (s *AppConfigCache) GetDeviceConfigCache() *DeviceConfigCache {
 }
 
 func (s *AppConfigCache) LoadAppConfig() (*AppConfig, error) {
-	return s.store.Load()
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+	return s.appConfig, nil
 }
 
 func (s *AppConfigCache) LoadBridgeConfig() (*BridgeConfig, error) {
@@ -253,76 +222,91 @@ func (s *AppConfigCache) LoadBridgeConfig() (*BridgeConfig, error) {
 }
 
 func (s *AppConfigCache) SaveBridgePermitJoin(enabled bool) error {
-	config, err := s.store.LoadBridgeConfig()
-	if err != nil {
-		return err
-	}
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
-	config.PermitJoin = enabled
+	// Clone or update in place? AppConfig is a pointer, but we want to ensure consistency.
+	// Since we lock, we can update in place and then save.
+	s.appConfig.Bridge.PermitJoin = enabled
 
-	return s.store.SaveBridgeConfig(config)
+	// We also need to save the specific bridge config if there is a separate method?
+	// The repo has SaveBridgeConfig. And SaveAppConfig implies saving everything?
+	// Repository structure separates bridge config?
+	// Looking at Repo methods: LoadBridgeConfig, SaveBridgeConfig.
+	// But appConfig.Bridge comes from LoadBridgeConfig.
+	// So we should update appConfig.Bridge AND save via repo.
+
+	return s.store.SaveBridgeConfig(s.appConfig.Bridge)
 }
 
 func (s *AppConfigCache) SaveLoggerConfig(loggerConfig *LoggerConfig) (*AppConfig, error) {
-	config, err := s.LoadAppConfig()
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.appConfig.Hub.Logger = loggerConfig
+
+	err := s.store.SaveAppConfig(s.appConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	config.Hub.Logger = loggerConfig
+	s.reloadTasks(s.appConfig)
 
-	err = s.store.SaveAppConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	s.reloadTasks(config)
-
-	return config, nil
+	return s.appConfig, nil
 }
 
 func (s *AppConfigCache) LoadLoggerConfig() (*LoggerConfig, error) {
-	config, err := s.store.Load()
-	if err != nil {
-		return nil, err
-	}
-	return config.Hub.Logger, nil
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
+	return s.appConfig.Hub.Logger, nil
 }
 
 func (s *AppConfigCache) SaveHistoryConfig(historyConfig *HistoryConfig) (*AppConfig, error) {
-	config, err := s.LoadAppConfig()
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.appConfig.Hub.History = historyConfig
+
+	err := s.store.SaveAppConfig(s.appConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	config.Hub.History = historyConfig
+	s.reloadTasks(s.appConfig)
 
-	err = s.store.SaveAppConfig(config)
+	return s.appConfig, nil
+}
+
+func (s *AppConfigCache) SaveMCPConfig(mcpConfig *MCPConfig) (*AppConfig, error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.appConfig.Hub.MCP = mcpConfig
+
+	err := s.store.SaveAppConfig(s.appConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	s.reloadTasks(config)
+	s.reloadTasks(s.appConfig)
 
-	return config, nil
+	return s.appConfig, nil
 }
 
 func (s *AppConfigCache) RenameDashboardGroup(oldName string, newName string) (*DashboardGroup, error) {
-	config, err := s.LoadAppConfig()
-	if err != nil {
-		return nil, err
-	}
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
-	group, ok := config.Hub.DashboardGroups[oldName]
+	group, ok := s.appConfig.Hub.DashboardGroups[oldName]
 	if !ok {
 		return nil, fmt.Errorf("dashboard group %q not found", oldName)
 	}
 
-	delete(config.Hub.DashboardGroups, oldName)
+	delete(s.appConfig.Hub.DashboardGroups, oldName)
 	group.Name = newName
-	config.Hub.DashboardGroups[newName] = group
+	s.appConfig.Hub.DashboardGroups[newName] = group
 
-	err = s.store.SaveAppConfig(config)
+	err := s.store.SaveAppConfig(s.appConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -331,14 +315,12 @@ func (s *AppConfigCache) RenameDashboardGroup(oldName string, newName string) (*
 }
 
 func (s *AppConfigCache) SaveDashboardGroup(exposeGroup *DashboardGroup) error {
-	config, err := s.LoadAppConfig()
-	if err != nil {
-		return err
-	}
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
-	config.Hub.DashboardGroups[exposeGroup.Name] = exposeGroup
+	s.appConfig.Hub.DashboardGroups[exposeGroup.Name] = exposeGroup
 
-	err = s.store.SaveAppConfig(config)
+	err := s.store.SaveAppConfig(s.appConfig)
 	if err != nil {
 		return err
 	}
@@ -347,14 +329,12 @@ func (s *AppConfigCache) SaveDashboardGroup(exposeGroup *DashboardGroup) error {
 }
 
 func (s *AppConfigCache) DeleteDashboardGroup(name string) error {
-	config, err := s.LoadAppConfig()
-	if err != nil {
-		return err
-	}
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 
-	delete(config.Hub.DashboardGroups, name)
+	delete(s.appConfig.Hub.DashboardGroups, name)
 
-	err = s.store.SaveAppConfig(config)
+	err := s.store.SaveAppConfig(s.appConfig)
 	if err != nil {
 		return err
 	}
@@ -363,23 +343,22 @@ func (s *AppConfigCache) DeleteDashboardGroup(name string) error {
 }
 
 func (s *AppConfigCache) ImportDashboardGroups(groups map[string]*DashboardGroup) error {
-	config, err := s.LoadAppConfig()
-	if err != nil {
-		return err
-	}
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
 	// delete all
-	for name, _ := range config.Hub.DashboardGroups {
+	for name, _ := range s.appConfig.Hub.DashboardGroups {
 		if _, ok := groups[name]; !ok {
-			delete(config.Hub.DashboardGroups, name)
+			delete(s.appConfig.Hub.DashboardGroups, name)
 		}
 	}
 
 	// import new groups
 	for name, group := range groups {
-		config.Hub.DashboardGroups[name] = group
+		s.appConfig.Hub.DashboardGroups[name] = group
 	}
 
-	err = s.store.SaveAppConfig(config)
+	err := s.store.SaveAppConfig(s.appConfig)
 	if err != nil {
 		return err
 	}
@@ -388,17 +367,17 @@ func (s *AppConfigCache) ImportDashboardGroups(groups map[string]*DashboardGroup
 }
 
 func (d *AppConfigCache) SetDeviceConfigOverrides(deviceConfig *DeviceConfig) error {
-
+	// Simple delegation now
 	err := d.deviceCache.Set(deviceConfig)
 	if err != nil {
 		return err
 	}
-
 	d.setDirty(deviceConfig)
 	return nil
 }
 
 func (d *AppConfigCache) DeleteDeviceConfigOverrides(id string) error {
+	// Simple delegation now
 	return d.deviceCache.Delete(id)
 }
 
@@ -410,18 +389,18 @@ func (s *AppConfigCache) setDirty(cfg *DeviceConfig) {
 
 func (s *AppConfigCache) SetDeviceConfigDefaults(deviceDefaults *DeviceConfig) error {
 
-	config, err := s.LoadAppConfig()
+	// We need to update appConfig too?
+	// SetDeviceConfigDefaults loads, saves, and updates device cache.
+	// We should update s.appConfig.Hub.Devices.Defaults as well.
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.appConfig.Hub.Devices.Defaults = deviceDefaults
+	err := s.store.SaveAppConfig(s.appConfig)
 	if err != nil {
 		return err
 	}
 
-	config.Hub.Devices.Defaults = deviceDefaults
-	err = s.store.SaveAppConfig(config)
-	if err != nil {
-		return err
-	}
-
-	s.deviceCache.UpdateDefaults(deviceDefaults, config.Hub.Devices.Overrides)
 	s.setDirty(deviceDefaults)
 	return nil
 }

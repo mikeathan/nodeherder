@@ -120,6 +120,11 @@ export const WSClientModule: Module<WSClientState, RootState> = {
               root: true,
             });
             break;
+          case 'mcpStatus':
+            commit('hub/setMCPStatus', obj.payload, {
+              root: true,
+            });
+            break;
           case 'operationSuccess':
             let message = 'Operation was successful.';
             if (obj.payload) {

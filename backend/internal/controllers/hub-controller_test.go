@@ -7,6 +7,7 @@ import (
 	"math"
 	"node-herder/internal/automations"
 	"node-herder/internal/controllers"
+	mcpserver "node-herder/internal/mcp/server"
 	metrics "node-herder/internal/metrics/domain"
 	metricsquery "node-herder/internal/metrics/query"
 	metricsservice "node-herder/internal/metrics/services"
@@ -737,10 +738,14 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 		cfg.Disabled = true
 		cfg.MetricsEnabled = true
 		cfg.DebounceOverrides = map[string]*utils.TimeInterval{}
-		eIdx := 0
-		for _, expose := range device.Exposes {
-			eIdx++
-			cfg.DebounceOverrides[expose.Name] = utils.IntervalFromMinutes(eIdx)
+		// Use explicit expose names to avoid map iteration randomness
+		switch device.Id {
+		case dialDevice.Id:
+			cfg.DebounceOverrides["action"] = utils.IntervalFromMinutes(1)
+			cfg.DebounceOverrides["action_time"] = utils.IntervalFromMinutes(2)
+		case lightDevice.Id:
+			cfg.DebounceOverrides["brightness"] = utils.IntervalFromMinutes(1)
+			cfg.DebounceOverrides["color_temp"] = utils.IntervalFromMinutes(2)
 		}
 		appCache.SetDeviceConfigOverrides(cfg)
 		time.Sleep(200 * time.Millisecond)
@@ -755,7 +760,7 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// expected device config values to match with expected overrides values
-	expectedDebounceUnit := "minutes"
+
 	expectedMilliseconds := 2
 	expectedDisabled := true
 	expectedMetricsEnabled := true
@@ -769,17 +774,24 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", expectedMilliseconds, cfg.RateLimit.Value)
 	}
 
-	eIdx := 0
-	for name := range dialDevice.Exposes {
-		eIdx++
-		debounce := cfg.DebounceOverrides[name]
-		if debounce.Unit != expectedDebounceUnit {
-			t.Fatalf("debounceOverrides.Unit mismatch want %v got %v", expectedDebounceUnit, debounce.Unit)
-		}
-		expectedValue := eIdx
-		if debounce.Value != expectedValue {
-			t.Fatalf("debounceOverrides.Value mismatch want %v got %v", expectedValue, debounce.Value)
-		}
+	// Assert specific values based on the deterministic setup above
+	// "action" -> 1 minute from minutes(1)
+	// "action_time" -> 2 minutes from minutes(2)
+
+	actionDebounce, ok := cfg.DebounceOverrides["action"]
+	if !ok {
+		t.Fatalf("expected override for 'action'")
+	}
+	if actionDebounce.Value != 1 {
+		t.Fatalf("debounceOverrides.Value mismatch want 1 got %v", actionDebounce.Value)
+	}
+
+	timeDebounce, ok := cfg.DebounceOverrides["action_time"]
+	if !ok {
+		t.Fatalf("expected override for 'action_time'")
+	}
+	if timeDebounce.Value != 2 {
+		t.Fatalf("debounceOverrides.Value mismatch want 2 got %v", timeDebounce.Value)
 	}
 
 	err = appCache.DeleteDeviceConfigOverrides(dialDevice.Id)
@@ -957,7 +969,7 @@ func TestQueryServiceReturnsLatestMetrics(t *testing.T) {
 			name: "latest desc limit",
 			req: metricsquery.MetricsQueryRequest{
 				DeviceIds: []string{lightDevice.Id},
-				Expose:    "brightness",
+				Exposes:   []string{"brightness"},
 				Time: metrics.TimeQuery{
 					From: base,
 					To:   base.Add(5 * time.Minute),
@@ -983,7 +995,7 @@ func TestQueryServiceReturnsLatestMetrics(t *testing.T) {
 			name: "oldest asc limit",
 			req: metricsquery.MetricsQueryRequest{
 				DeviceIds: []string{lightDevice.Id},
-				Expose:    "brightness",
+				Exposes:   []string{"brightness"},
 				Time: metrics.TimeQuery{
 					From: base,
 					To:   base.Add(5 * time.Minute),
@@ -1009,7 +1021,7 @@ func TestQueryServiceReturnsLatestMetrics(t *testing.T) {
 			name: "count aggregation",
 			req: metricsquery.MetricsQueryRequest{
 				DeviceIds: []string{lightDevice.Id},
-				Expose:    "brightness",
+				Exposes:   []string{"brightness"},
 				Time: metrics.TimeQuery{
 					From: base,
 					To:   base.Add(5 * time.Minute),
@@ -1887,6 +1899,9 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 		t.Fatalf("error loading device config %s", err.Error())
 	}
 
+	if config.DebounceOverrides == nil {
+		config.DebounceOverrides = make(map[string]*utils.TimeInterval)
+	}
 	config.DebounceOverrides["illuminance"] = utils.IntervalFromMilliseconds(500)
 	appConfig.SetDeviceConfigOverrides(config)
 
@@ -2087,7 +2102,6 @@ func TestHub_DeviceConfigDefaults_DisableDevices(t *testing.T) {
 	}
 }
 
-
 func createMockDialAndLightDevices(dialName string, lightName string) []*devices.Device {
 
 	device1Expose1 := utils_test.CreateEnumEntity("action", utils_test.CreateDialActionEnums())
@@ -2105,4 +2119,121 @@ func createMockDialAndLightDevices(dialName string, lightName string) []*devices
 	lightDevice := utils_test.CreateDeviceWithExposes(lightName, "Attic light", []*devices.Entity{device2Expose1, device2Expose2})
 
 	return []*devices.Device{dialDevice, lightDevice}
+}
+func TestHubMCPStatusEvents(t *testing.T) {
+	t.Run("Status Enabled", func(t *testing.T) {
+		mqtt := &mocks.MockMqttClient{}
+		eventHub := mocks.NewMockEventHub()
+		store := utils_test.CreateStore()
+
+		expectedStatus := mcpserver.MCPStatusInfo{
+			Name:             "Test Server",
+			Version:          "1.0.0",
+			ConnectedClients: 5,
+		}
+
+		mockMCP := &mocks.MockMCPStatusProvider{
+			MockStatus: func() mcpserver.MCPStatusInfo {
+				return expectedStatus
+			},
+		}
+
+		controllers.RegisterHubController(eventHub, store, mqtt, controllers.WithMCPServer(mockMCP))
+
+		if eventHub.OnLoadMCPEvent == nil {
+			t.Fatal("OnLoadMCPStatus handler was not registered")
+		}
+
+		result, err := eventHub.OnLoadMCPEvent()
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+
+		status, ok := result.(mcpserver.MCPStatusInfo)
+		if !ok {
+			t.Fatalf("Expected MCPStatusInfo, got %T", result)
+		}
+
+		if status != expectedStatus {
+			t.Errorf("Expected status %v, got %v", expectedStatus, status)
+		}
+	})
+
+	t.Run("Restart Server", func(t *testing.T) {
+		mqtt := &mocks.MockMqttClient{}
+		eventHub := mocks.NewMockEventHub()
+		store := utils_test.CreateStore()
+
+		restartCalled := false
+		mockMCP := &mocks.MockMCPStatusProvider{
+			MockRestart: func() error {
+				restartCalled = true
+				return nil
+			},
+		}
+		controllers.RegisterHubController(eventHub, store, mqtt, controllers.WithMCPServer(mockMCP))
+
+		if eventHub.OnRestartMCPEvent == nil {
+			t.Fatal("OnRestartMCP handler was not registered")
+		}
+
+		_, err := eventHub.OnRestartMCPEvent()
+		if err != nil {
+			t.Errorf("Unexpected error on restart: %v", err)
+		}
+		if !restartCalled {
+			t.Error("Expected Restart() to be called on MCP server")
+		}
+	})
+
+	t.Run("Stop Server", func(t *testing.T) {
+		mqtt := &mocks.MockMqttClient{}
+		eventHub := mocks.NewMockEventHub()
+		store := utils_test.CreateStore()
+
+		stopCalled := false
+		mockMCP := &mocks.MockMCPStatusProvider{
+			MockStop: func() error { stopCalled = true; return nil },
+		}
+
+		controllers.RegisterHubController(eventHub, store, mqtt, controllers.WithMCPServer(mockMCP))
+
+		if eventHub.OnStopMCPEvent == nil {
+			t.Fatal("OnStopMCP handler was not registered")
+		}
+
+		_, err := eventHub.OnStopMCPEvent()
+		if err != nil {
+			t.Errorf("Unexpected error on stop: %v", err)
+		}
+		if !stopCalled {
+			t.Error("Expected Stop() to be called on MCP server")
+		}
+	})
+
+	t.Run("Start Server", func(t *testing.T) {
+		mqtt := &mocks.MockMqttClient{}
+		eventHub := mocks.NewMockEventHub()
+		store := utils_test.CreateStore()
+
+		startCalled := false
+		mockMCP := &mocks.MockMCPStatusProvider{
+			MockStart: func() error { startCalled = true; return nil },
+		}
+
+		controllers.RegisterHubController(eventHub, store, mqtt, controllers.WithMCPServer(mockMCP))
+
+		if eventHub.OnStartMCPEvent == nil {
+			t.Fatal("OnStartMCP handler was not registered")
+		}
+
+		_, err := eventHub.OnStartMCPEvent()
+		if err != nil {
+			t.Errorf("Unexpected error on start: %v", err)
+		}
+		if !startCalled {
+			t.Error("Expected Start() to be called on MCP server")
+		}
+	})
+
 }

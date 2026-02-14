@@ -211,13 +211,6 @@ Devices communicate through MQTT topics following the standard patterns.
 
 ## Troubleshooting
 
-### Port Already in Use
-
-If port 4110 is already in use, specify a different port:
-```bash
-./nodeherder -port 8080
-```
-
 ### MQTT Connection Issues
 
 - Verify MQTT broker is running

@@ -32,19 +32,33 @@ export function createDeviceConfigOverride(id: string): DeviceConfig {
     debounceOverrides: {},
   } as DeviceConfig;
 }
+
+export function createDeviceConfig(): DeviceConfig {
+  return {
+    id: '',
+    disabled: false,
+    metricsEnabled: false,
+    rateLimit: createTimeIntervalFromSeconds(60),
+    defaultDebounceByCategory: {},
+    debounceOverrides: {},
+  } as DeviceConfig;
+}
+
+export function createDeviceSettings(): DeviceSettings {
+  return {
+    defaults: createDeviceConfig(),
+    overrides: {},
+  };
+}
+
 export function createAppconfig(): AppConfig {
   return {
     hub: {
-      devices: {} as DeviceSettings,
+      mcp: { enabled: false },
+      devices: createDeviceSettings(),
       history: {
-        sleepTimeout: {
-          value: 0,
-          unit: 'days',
-        },
-        expireAt: {
-          value: 0,
-          unit: 'days',
-        },
+        sleepTimeout: { value: 0, unit: 'days' },
+        expireAt: { value: 0, unit: 'days' },
       },
       logger: {
         enableRemoteLogger: false,
