@@ -27,7 +27,7 @@ type MetricsRepo struct {
 }
 
 func NewMetricsRepo() (domain.Repository, error) {
-	kvdb, err := storage.NewBoltKeyValueDatabase(filepath.Join("data", metricsBaseFilename), metricsBucketName)
+	kvdb, err := storage.NewBoltKeyValueDatabase(filepath.Join(utils.GetDataDir(), metricsBaseFilename), metricsBucketName)
 	if err != nil {
 		return nil, err
 	}

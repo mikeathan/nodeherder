@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"node-herder/utils"
+	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/boltdb/bolt"
 )
@@ -36,8 +38,18 @@ type BoltKeyValueDatabase struct {
 
 func NewBoltKeyValueDatabase(filename string, bucketName string) (KeyValueDatabase, error) {
 
-	db, err := bolt.Open(filename, 0600, nil)
+	dir := filepath.Dir(filename)
+	finalDir := utils.EnsureDir(dir)
+	if finalDir != dir {
+		filename = filepath.Join(finalDir, filepath.Base(filename))
+	}
+
+	db, err := bolt.Open(filename, 0600, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
+		if err == bolt.ErrTimeout {
+			utils.LogErrorf("TIMEOUT: Could not acquire lock on database %s. Another instance of nodeherder is likely running.", filename)
+			return nil, err
+		}
 		utils.LogErrorf("opening keyvalue database %s failed. error %v", filename, err.Error())
 		return nil, err
 	}

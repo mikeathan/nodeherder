@@ -68,7 +68,7 @@ func TestValidateServiceCredentials(t *testing.T) {
 		{
 			name:         "matches configured client",
 			clients:      "service-a",
-			secrets:      map[string]string{"service-a": "secret-a"},
+			secrets:      map[string]string{"service_a": "secret-a"},
 			clientID:     "service-a",
 			clientSecret: "secret-a",
 			expected:     true,
@@ -76,9 +76,17 @@ func TestValidateServiceCredentials(t *testing.T) {
 		{
 			name:         "trims client ids and matches second entry",
 			clients:      " service-a , service-b ",
-			secrets:      map[string]string{"service-b": "secret-b"},
+			secrets:      map[string]string{"service_b": "secret-b"},
 			clientID:     "service-b",
 			clientSecret: "secret-b",
+			expected:     true,
+		},
+		{
+			name:         "handles client id with hyphens by mapping to underscores",
+			clients:      "llm-proxy",
+			secrets:      map[string]string{"llm_proxy": "secret-proxy"},
+			clientID:     "llm-proxy",
+			clientSecret: "secret-proxy",
 			expected:     true,
 		},
 	}

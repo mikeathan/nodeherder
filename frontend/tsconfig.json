@@ -12,7 +12,7 @@
     "useDefineForClassFields": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
-    "types": ["webpack-env"],
+    "types": ["vite/client", "jest"],
     "paths": {
       "@/*": ["src/*"]
     },
@@ -31,6 +31,5 @@
     "src/config/env/env.d.ts",
     "src/assets/**/*.png"
   ],
-  "exclude": ["./node_modules", "./dist/**/*", "**/*.test.ts", "**/__tests__/**"],
-  "types": ["jest"]
+  "exclude": ["./node_modules", "./dist/**/*", "**/*.test.ts", "**/__tests__/**"]
 }

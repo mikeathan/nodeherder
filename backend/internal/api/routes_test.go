@@ -674,7 +674,7 @@ func TestMetricsQueryHandler_SuccessWithLimitSort(t *testing.T) {
 
 	payload := metricsquery.MetricsQueryRequest{
 		DeviceIds: []string{deviceID},
-		Expose:    "temperature",
+		Exposes:   []string{"temperature"},
 		Time: metricsdomain.TimeQuery{
 			From: base,
 			To:   base.Add(10 * time.Minute),
@@ -753,7 +753,7 @@ func TestMetricsQueryHandler_RateLimit(t *testing.T) {
 
 	payload := metricsquery.MetricsQueryRequest{
 		DeviceIds: []string{deviceID},
-		Expose:    "temperature",
+		Exposes:   []string{"temperature"},
 		Time: metricsdomain.TimeQuery{
 			From: base,
 			To:   base.Add(10 * time.Minute),

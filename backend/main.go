@@ -2,8 +2,7 @@ package main
 
 import (
 	"context"
-	"flag"
-	"fmt"
+
 	hub "node-herder/internal"
 	"node-herder/store"
 	"node-herder/utils"
@@ -11,28 +10,6 @@ import (
 	"os/signal"
 	"syscall"
 )
-
-type cmdArgs struct {
-	port      int
-	buildType string
-	logLevel  string
-}
-
-func readArgs() *cmdArgs {
-
-	port := flag.Int("port", 4110, "port number")
-	buildType := flag.String("buildType", "", "client build type")
-	logLevel := flag.String("logLevel", "info", "logging level")
-
-	flag.Parse()
-	if *port <= 0 {
-
-		fmt.Print("Invalid port number")
-		os.Exit(-1)
-	}
-
-	return &cmdArgs{port: *port, buildType: *buildType, logLevel: *logLevel}
-}
 
 func main() {
 
@@ -49,8 +26,7 @@ func main() {
 
 	ctx, cancelCtx := context.WithCancel(context.Background())
 
-	utils.LogInfo("starting up server")
-	c := make(chan os.Signal)
+	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 
 	go func() {
@@ -60,12 +36,15 @@ func main() {
 		cancelCtx()
 	}()
 
-	store, err := store.Create(ctx)
+	appStore, err := store.Create(ctx)
 	if err != nil {
 		utils.LogErrorf("error creating store: %v", err.Error())
 		cancelCtx()
+		os.Exit(-1)
 	}
-	h := hub.Register(args.port, store, ctx)
+
+	utils.LogInfo("starting up server")
+	h := hub.Register(args.port, appStore, ctx)
 	h.Listen()
 	utils.LogInfo("exit")
 }

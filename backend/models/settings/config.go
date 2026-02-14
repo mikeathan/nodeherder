@@ -104,14 +104,22 @@ func NewDeviceConfig(id string) *DeviceConfig {
 }
 
 func NewDeviceConfigFrom(config *DeviceConfig) *DeviceConfig {
-	return &DeviceConfig{
+	newConfig := &DeviceConfig{
 		Id:                        config.Id,
 		Disabled:                  config.Disabled,
 		MetricsEnabled:            config.MetricsEnabled,
 		RateLimit:                 config.RateLimit,
-		DebounceOverrides:         config.DebounceOverrides,
+		DebounceOverrides:         nil,
 		DefaultDebounceByCategory: config.DefaultDebounceByCategory,
 	}
+
+	if config.DebounceOverrides != nil {
+		newConfig.DebounceOverrides = make(map[string]*utils.TimeInterval)
+		for k, v := range config.DebounceOverrides {
+			newConfig.DebounceOverrides[k] = v
+		}
+	}
+	return newConfig
 }
 
 type HistoryConfig struct {
@@ -149,6 +157,16 @@ func DefaultLoggingConfig() *LoggerConfig {
 	}
 }
 
+type MCPConfig struct {
+	Enabled bool `json:"enabled"`
+}
+
+func DefaultMCPConfig() *MCPConfig {
+	return &MCPConfig{
+		Enabled: false,
+	}
+}
+
 func DefaultBridgeConfig() *BridgeConfig {
 	return &BridgeConfig{
 		TimeExpireAt: utils.IntervalFromSeconds(120),
@@ -160,6 +178,7 @@ type HubConfig struct {
 	Devices         *DeviceSettings            `json:"devices"`
 	History         *HistoryConfig             `json:"history"`
 	Logger          *LoggerConfig              `json:"logger"`
+	MCP             *MCPConfig                 `json:"mcp"`
 	DashboardGroups map[string]*DashboardGroup `json:"dashboardGroups"`
 }
 
@@ -180,6 +199,7 @@ func NewHubConfig() *HubConfig {
 		Devices:         NewDeviceSettings(),
 		History:         DefaultHistoryConfig(),
 		Logger:          DefaultLoggingConfig(),
+		MCP:             DefaultMCPConfig(),
 		DashboardGroups: map[string]*DashboardGroup{},
 	}
 }
@@ -199,6 +219,7 @@ func NewAppConfig() *AppConfig {
 			Devices:         NewDeviceSettings(),
 			History:         DefaultHistoryConfig(),
 			Logger:          DefaultLoggingConfig(),
+			MCP:             DefaultMCPConfig(),
 			DashboardGroups: map[string]*DashboardGroup{},
 		},
 		Bridge: DefaultBridgeConfig(),

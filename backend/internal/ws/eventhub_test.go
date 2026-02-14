@@ -1772,3 +1772,119 @@ func createTriggerDelayTurnOffLightWithPresenceOff(mqtt mqtt.MqttClient, delay *
 	turnOffTrigger.Conditions = append(turnOffTrigger.Conditions, turnOffTimerCondition)
 	return turnOffTrigger
 }
+
+func TestLoadMCPStatusMessage(t *testing.T) {
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
+	expectedStatus := map[string]interface{}{
+		"enabled":          true,
+		"name":             "Test Server",
+		"version":          "1.0.0",
+		"connectedClients": float64(5), // JSON unmarshals numbers as float64
+	}
+
+	wsHub.OnLoadMCPStatus(func() (interface{}, error) {
+		return expectedStatus, nil
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	wsData := &ws.EventMessage{Type: ws.LoadMCPStatus, Payload: nil}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.MCPStatus {
+		t.Fatalf("Expected type %v', got '%v'", ws.MCPStatus, event.Type)
+	}
+
+	bytes, _ := json.Marshal(event.Payload)
+	var result map[string]interface{}
+	err = json.Unmarshal(bytes, &result)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if result["enabled"] != expectedStatus["enabled"] {
+		t.Errorf("Expected enabled %v, got %v", expectedStatus["enabled"], result["enabled"])
+	}
+	if result["name"] != expectedStatus["name"] {
+		t.Errorf("Expected name %v, got %v", expectedStatus["name"], result["name"])
+	}
+
+	defer s.Close()
+	defer wsConn.Close()
+	wsHub.Close()
+}
+
+func TestRestartMCPMessage(t *testing.T) {
+	testCases := []struct {
+		err     error
+		message string
+	}{
+		{err: nil, message: ws.MCPStatus},
+		{err: errors.New("restart failed"), message: ws.OperationFailed},
+	}
+
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	for _, testCase := range testCases {
+		wsHub.OnRestartMCP(func() (interface{}, error) {
+			return nil, testCase.err
+		})
+
+		wsData := &ws.EventMessage{Type: ws.RestartMCP, Payload: nil}
+		msg, err := wsData.MarshalJSON()
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+
+		SendMessage(t, wsConn, msg)
+
+		_, m, err := wsConn.ReadMessage()
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+
+		var event ws.EventMessage
+		err = json.Unmarshal(m, &event)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if event.Type != testCase.message {
+			t.Fatalf("Expected type %v', got '%v'", testCase.message, event.Type)
+		}
+
+		if testCase.err != nil {
+			response := event.Payload.(string)
+			if response != testCase.err.Error() {
+				t.Fatalf("Expected error %v', got '%v'", testCase.err.Error(), response)
+			}
+		}
+	}
+
+	defer s.Close()
+	defer wsConn.Close()
+	wsHub.Close()
+}

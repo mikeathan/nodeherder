@@ -10,6 +10,7 @@ import {
   DeviceConfig,
   HistorySettingsType,
   LoggerSettingsType,
+  MCPStatusType,
 } from '../../../types/settings.type';
 import { KeyValuePair } from '@/types/types.type';
 import { createAppconfig } from '@/contracts/settings';
@@ -21,6 +22,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     deviceMap: {} as DeviceMap,
     appConfig: createAppconfig(),
     initialized: false,
+    mcpStatus: null as MCPStatusType | null,
   }),
 
   getters: {
@@ -47,6 +49,10 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       return state.appConfig?.hub.devices?.defaults;
     },
 
+    mcpConfig: (state) => (): boolean => {
+      return state.appConfig?.hub.mcp?.enabled;
+    },
+
     // AppConfig getters
     history: (state) => (): HistorySettingsType => {
       return state.appConfig.hub.history;
@@ -54,6 +60,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     logger: (state) => (): LoggerSettingsType => state.appConfig.hub.logger,
     bridge: (state) => (): BridgeSettingsType => state.appConfig.bridge,
     dashboardGroups: (state) => (): DashboardGroups => state.appConfig.hub.dashboardGroups,
+    mcpStatus: (state) => (): MCPStatusType | null => state.mcpStatus,
     findDeviceSetting:
       (state) =>
       (id: string): DeviceConfig | undefined => {
@@ -127,6 +134,11 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       }
     },
     // AppConfig mutations
+    setMCPSettings(state, enabled: boolean) {
+      if (state.appConfig.hub.mcp) {
+        state.appConfig.hub.mcp.enabled = enabled;
+      }
+    },
     setAppConfig(state, config: AppConfig) {
       state.appConfig = config;
     },
@@ -157,6 +169,9 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     setBridgeSettings(state, bridgeSettings: BridgeSettingsType) {
       state.appConfig.bridge = bridgeSettings;
     },
+    setMCPStatus(state, mcpStatus: MCPStatusType) {
+      state.mcpStatus = mcpStatus;
+    },
     clear(state) {
       Object.entries(state.deviceMap).forEach(([key, value]) => {
         delete state.deviceMap[key];
@@ -164,6 +179,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
 
       state.appConfig = {} as AppConfig;
       state.initialized = false;
+      state.mcpStatus = null;
     },
 
     setInitialized(state, initialized: boolean) {
@@ -295,6 +311,20 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         },
         { root: true }
       );
+    },
+    loadMCPStatus({ dispatch }) {
+      dispatch('ws/emit', { event: 'loadMCPStatus', message: {} }, { root: true });
+    },
+    restartMCP({ dispatch }) {
+      dispatch('ws/emit', { event: 'restartMCP', message: {} }, { root: true });
+    },
+    stopMCP({ commit, dispatch }) {
+      commit('setMCPSettings', false);
+      dispatch('ws/emit', { event: 'stopMCP', message: {} }, { root: true });
+    },
+    startMCP({ commit, dispatch }) {
+      commit('setMCPSettings', true);
+      dispatch('ws/emit', { event: 'startMCP', message: {} }, { root: true });
     },
     enablePermitJoin({ dispatch }, timeout: number) {
       const cfg: BridgeSettingsType = {

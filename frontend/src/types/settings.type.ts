@@ -12,6 +12,7 @@ export type HubConfigType = {
   devices: DeviceSettings;
   history: HistorySettingsType;
   logger: LoggerSettingsType;
+  mcp: MCPSettingsType;
   dashboardGroups: DashboardGroups;
 };
 
@@ -27,6 +28,10 @@ export type LoggerSettingsTypePropsType = keyof LoggerSettingsType;
 export type DeviceDebounce = KeyValuePair<TimeInterval>;
 export type LoggerSettingsType = {
   enableRemoteLogger: boolean;
+};
+
+export type MCPSettingsType = {
+  enabled: boolean;
 };
 
 export type BridgeSettingsType = {
@@ -56,4 +61,11 @@ export type DashboardGroup = {
 export type DeviceGroup = {
   deviceId: string;
   exposes: string[];
+};
+
+export type MCPStatusType = {
+  running: boolean;
+  name: string;
+  version: string;
+  connectedClients: number;
 };

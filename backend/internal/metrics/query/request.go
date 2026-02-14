@@ -7,7 +7,7 @@ import (
 
 type MetricsQueryRequest struct {
 	DeviceIds []string `json:"deviceIds"`
-	Expose    string   `json:"expose"`
+	Exposes   []string `json:"exposes"`
 
 	Time domain.TimeQuery `json:"time"`
 

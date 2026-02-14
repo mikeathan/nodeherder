@@ -3,6 +3,7 @@ package mqtt
 import (
 	"fmt"
 	"node-herder/utils"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -84,6 +85,12 @@ func WithDefaultMqttConfig() func(c *MqttConfig) {
 		c.Password = password
 		c.Username = username
 		c.Broker = broker
+
+		// In development mode, append -dev to client ID to avoid conflicts with other running instances
+		if strings.ToLower(os.Getenv("APP_ENV")) == "development" {
+			clientId = fmt.Sprintf("%s-dev", clientId)
+			utils.LogInfof("Using Development MQTT Client ID: %s", clientId)
+		}
 		c.ClientId = clientId
 	}
 }

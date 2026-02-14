@@ -480,7 +480,7 @@ func (h *MetricsQueryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if req.Expose == "" || len(req.DeviceIds) == 0 {
+	if len(req.Exposes) == 0 || len(req.DeviceIds) == 0 {
 		writeJSONError(w, http.StatusBadRequest, "missing deviceIds or expose")
 		return
 	}

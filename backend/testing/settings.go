@@ -4,6 +4,7 @@ import (
 	"node-herder/mocks"
 	"node-herder/models/settings"
 	"node-herder/utils"
+	"sync"
 	"testing"
 	"time"
 )
@@ -11,13 +12,13 @@ import (
 func CreateDebouncer(id string) *settings.DeviceDebouncer {
 	repo := mocks.NopSettingsrepo{}
 	app := settings.NewAppConfig()
-	cache := settings.NewDeviceConfigCache(&repo, app)
+	cache := settings.NewDeviceConfigCache(&repo, app, &sync.RWMutex{})
 	return settings.NewDeviceDebouncer(id, cache, mocks.NewMockClock(func() time.Time { return time.Now() }))
 }
 
 func CreateDebouncerFromAppConfig(id string, appConfig *settings.AppConfig, clock utils.Clock) *settings.DeviceDebouncer {
 	repo := mocks.NopSettingsrepo{}
-	cache := settings.NewDeviceConfigCache(&repo, appConfig)
+	cache := settings.NewDeviceConfigCache(&repo, appConfig, &sync.RWMutex{})
 	return settings.NewDeviceDebouncer(id, cache, clock)
 }
 
