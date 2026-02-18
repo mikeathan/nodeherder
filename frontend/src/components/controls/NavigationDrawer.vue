@@ -80,9 +80,9 @@
   }
   .sidebar {
     width: 60px;
-    background-color: #1b1b1b;
-    color: white;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--sidebar-bg);
+    color: var(--text-color);
+    border-right: 1px solid var(--sidebar-border);
     transition: width 0.3s ease;
     display: flex;
     flex-direction: column;
@@ -98,7 +98,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.75rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--sidebar-border);
   }
 
   .menu-area {
@@ -121,13 +121,13 @@
     left: 0;
     width: 250px;
     height: 100vh;
-    background-color: #1b1b1b;
-    color: white;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--sidebar-bg);
+    color: var(--text-color);
+    border-right: 1px solid var(--sidebar-border);
     display: flex;
     flex-direction: column;
     z-index: 1100;
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.15);
     padding: 0.5rem;
   }
 

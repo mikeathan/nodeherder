@@ -72,14 +72,14 @@
   }
   .app-version {
     font-size: 0.875rem;
-    color: #666;
+    color: var(--text-color-secondary);
     user-select: none;
     pointer-events: none;
     opacity: 0.7;
   }
   .action-icon {
     font-size: 1rem;
-    color: #666;
+    color: var(--text-color-secondary);
     cursor: pointer;
     opacity: 0.7;
     transition: opacity 0.2s;

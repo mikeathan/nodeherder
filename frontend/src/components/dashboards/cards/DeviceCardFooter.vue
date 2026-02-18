@@ -7,7 +7,7 @@
   import Icon from '../../controls/Icon.vue';
   import { Device } from '@/types/device';
   import { computed } from 'vue';
-import { getPowerSourceValue } from '@/contracts/device';
+  import { getPowerSourceValue } from '@/contracts/device';
 
   const props = defineProps({
     device: Object as PropType<Device>,
@@ -16,14 +16,18 @@ import { getPowerSourceValue } from '@/contracts/device';
   const device = computed(() => props.device ?? ({} as Device));
 </script>
 <template>
-  <div class="grid justify-content-between align-items-center">
-    <LastSeen :timestamp="device.last_seen" />
-    <div class="white-space-nowrap overflow-hidden text-overflow-ellipsis" v-if="device.availability === 'online'">
-      <LinkQuality :value="device.exposes['linkquality']?.data" />
-      <PowerSource :power_source="device.power_source" :value="getPowerSourceValue(device)" />
-    </div>
-    <div class="col-fixed white-space-nowrap overflow-hidden text-overflow-ellipsis" v-else>
-      <Icon :icon="getOfflineIcon()" />
+  <div class="flex justify-content-end align-items-center">
+    <div class="col-12 flex justify-content-between align-items-center px-0">
+      <LastSeen :timestamp="device.last_seen" />
+      <div
+        class="flex align-items-center gap-2 overflow-hidden text-overflow-ellipsis"
+        v-if="device.availability === 'online'">
+        <LinkQuality :value="device.exposes['linkquality']?.data" />
+        <PowerSource :power_source="device.power_source" :value="getPowerSourceValue(device)" />
+      </div>
+      <div class="white-space-nowrap overflow-hidden text-overflow-ellipsis" v-else>
+        <Icon :icon="getOfflineIcon()" />
+      </div>
     </div>
   </div>
 </template>

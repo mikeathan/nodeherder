@@ -96,7 +96,7 @@
     </template>
     <div class="modal-content-header">
       <div class="modal-value">{{ getFormattedSensorValue(expose) }}</div>
-      <LastSeen :timestamp="lastSeen" class="modal-last-seen" />
+      <LastSeen :timestamp="lastSeen" class="modal-last-seen" :truncated="false" />
     </div>
 
     <!-- Mini chart section -->

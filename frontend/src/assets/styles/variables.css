@@ -1,14 +1,26 @@
 :root {
-  --surface-ground: #f8f9fa;
-  --surface-card: #ffffff;
-  --surface-border: #dee2e6;
-  --text-color: #212529;
-  --text-color-secondary: #6c757d;
+  --surface-ground: #d5dbe5;
+  --surface-card: #e8ecf0;
+  --surface-border: #b8c0ce;
+  --text-color: #1e2a3a;
+  --text-color-secondary: #5a6a7e;
+  --sidebar-bg: #c8ced8;
+  --sidebar-border: #b0b8c5;
 }
 :root.dark {
   --surface-ground: #121212;
-  --surface-card: #1e1e1e;
+  --surface-card: #2c3138;
   --surface-border: #383838;
   --text-color: rgba(255, 255, 255, 0.87);
-  --text-color-secondary: rgba(255, 255, 255, 0.60);
+  --text-color-secondary: rgba(255, 255, 255, 0.6);
+  --sidebar-bg: #1b1b1b;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+}
+
+body {
+  background-color: var(--surface-ground);
+}
+
+:root.dark body {
+  background-color: #212529 !important;
 }

@@ -30,8 +30,8 @@
 </script>
 <style scoped>
   .device-card {
-    border: 1px solid rgba(0, 0, 0, 0.38);
-    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
     box-shadow: none !important;
     overflow: hidden;
   }
@@ -42,7 +42,7 @@
   }
   h4 {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: 1.4rem;
     font-weight: 500;
   }
 </style>

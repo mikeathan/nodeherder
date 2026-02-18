@@ -52,8 +52,8 @@
             @click="router.push(`/editor/${automation.id}`)">
             <!-- Details -->
             <div class="flex flex-column gap-1 flex-1">
-              <span class="font-medium text-lg text-primary">{{ automation.friendlyname }}</span>
-              <span class="text-sm text-secondary">{{ automation.description }}</span>
+              <span class="font-medium text-lg text-color-primary">{{ automation.friendlyname }}</span>
+              <span class="text-sm text-color-secondary">{{ automation.description }}</span>
             </div>
             <!-- Actions -->
             <div class="flex align-items-center gap-2" @click.stop>

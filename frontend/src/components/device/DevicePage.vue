@@ -31,7 +31,7 @@
   <Card>
     <template #title>
       <div class="flex flex-row">
-        <div class="align-self-center mr-3">
+        <div class="align-self-center me-3">
           <RouterLink :to="`${previousPage}`">
             <Button icon="pi pi-arrow-left" variant="text" />
           </RouterLink>

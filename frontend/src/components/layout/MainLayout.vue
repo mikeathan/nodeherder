@@ -69,38 +69,15 @@
       store.commit('ws/setConnectionStatus', 'disconnected');
     }
   });
-
-  //  onMounted(async () => {
-
-  //   // Restore session first to check authentication
-  //   await store.dispatch('auth/restoreSession');
-
-  //   // Only fetch hub state and connect WS if user is authenticated
-  //   const isAuthenticated = store.getters['auth/isAuthenticated']();
-  //   if (isAuthenticated) {
-  //     fetchHubState()
-  //       .then((state) => {
-  //         store.dispatch('hub/init', state);
-  //         store.dispatch('ws/connect');
-  //       })
-  //       .catch((err) => {
-  //         console.error('Failed to init hub state:', err);
-  //         store.commit('ws/setConnectionStatus', 'disconnected');
-  //       });
-  //   }
-  // });
 </script>
 
 <template>
   <div class="layout-wrapper flex h-screen overflow-hidden">
-    <NavigationDrawer
-      :items="sideNavigationItems"
-      :is-expanded="isDrawerVisible"
-      @toggle="toggleDrawer" />
+    <NavigationDrawer :items="sideNavigationItems" :is-expanded="isDrawerVisible" @toggle="toggleDrawer" />
 
     <div class="layout-main flex flex-column flex-1 min-w-0">
       <NavigationBar :items="topNavigationItems" @click="isDrawerVisible = $event" />
-      <main class="flex-1 overflow-auto p-4">
+      <main class="flex-1 overflow-auto pt-0 pr-0 pl-0 pb-2">
         <PermitJoinTimer
           :duration="permitJoinDuration"
           :allow-join="isPermitJoinActive"
@@ -112,3 +89,14 @@
     </div>
   </div>
 </template>
+
+<style scoped>
+  @media screen and (max-width: 768px) {
+    main :deep(> .p-card) {
+      min-height: 100%;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      border: none !important;
+    }
+  }
+</style>

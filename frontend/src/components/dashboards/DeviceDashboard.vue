@@ -16,7 +16,7 @@
 
 <template>
   <div class="grid">
-    <div class="col-12 md:col-6 lg:col-3 xl:col-2" v-for="device in devices" :key="device.id">
+    <div class="col-12 md:col-6 lg:col-4 xl:col-3" v-for="device in devices" :key="device.id">
       <DeviceCard :device="device" :key="device.id"></DeviceCard>
     </div>
   </div>
