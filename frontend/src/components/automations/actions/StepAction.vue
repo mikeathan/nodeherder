@@ -106,8 +106,8 @@
 <template>
   <!-- Edit mode -->
   <!-- action controls -->
-  <div class="row pb-3">
-    <div class="col">
+  <div class="grid pb-3">
+    <div class="col-12">
       <ButtonPanel :buttons="buttonPanelItems" severity="secondary" />
     </div>
   </div>
@@ -116,21 +116,23 @@
   <div class="pb-3" />
 
   <!-- device select box  -->
-  <div class="row pb-2">
-    <DeviceSelector
-      label="Device to trigger"
-      @updated="deviceSelected"
-      :id="action.id"
-      :filter="featureDevicesFilter()" />
+  <div class="grid pb-2">
+    <div class="col-12">
+      <DeviceSelector
+        label="Device to trigger"
+        @updated="deviceSelected"
+        :id="action.id"
+        :filter="featureDevicesFilter()" />
+    </div>
   </div>
 
   <!-- data input box  -->
-  <div class="row">
-    <div class="col-sm-3">
+  <div class="grid">
+    <div class="col-12 sm:col-3">
       <InputBox label="Set value" :is-numeric="true" :value="action.data" @updated="actionDataChanged" />
     </div>
   </div>
-  <div class="flex align-items-center justify-content-left pt-3">
+  <div class="flex align-items-center justify-content-start pt-3">
     <Dropdown
       :items="dropdownItems"
       :disabled="action.id == ''"

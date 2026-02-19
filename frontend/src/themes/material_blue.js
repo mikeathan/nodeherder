@@ -388,35 +388,31 @@ export const MaterialBlue = definePreset(Material, {
     overlay: {
       select: {
         borderRadius: '{border.radius.md}',
-        shadow:
-          '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+        shadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
       },
       popover: {
         borderRadius: '{border.radius.md}',
         padding: '0.75rem',
-        shadow:
-          '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+        shadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
       },
       modal: {
         borderRadius: '{border.radius.xl}',
         padding: '1.25rem',
-        shadow:
-          '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+        shadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
       },
       navigation: {
-        shadow:
-          '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
+        shadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)',
       },
     },
     colorScheme: {
       light: {
         surface: {
-          0: '#ffffff',
-          50: '#f8fafc',
-          100: '#f1f5f9',
-          200: '#e2e8f0',
-          300: '#cbd5e1',
-          400: '#94a3b8',
+          0: '#e8ecf0',
+          50: '#e0e5ec',
+          100: '#d8dee7',
+          200: '#c8ced8',
+          300: '#b0b8c5',
+          400: '#8d98a9',
           500: '#64748b',
           600: '#475569',
           700: '#334155',
@@ -457,11 +453,9 @@ export const MaterialBlue = definePreset(Material, {
           floatLabelColor: '{surface.500}',
           floatLabelFocusColor: '{primary.600}',
           floatLabelActiveColor: '{surface.500}',
-          floatLabelInvalidColor:
-            '{form.field.invalid.placeholder.color}',
+          floatLabelInvalidColor: '{form.field.invalid.placeholder.color}',
           iconColor: '{surface.400}',
-          shadow:
-            '0 0 #0000, 0 0 #0000, 0 1px 2px 0 rgba(18, 18, 23, 0.05)',
+          shadow: '0 0 #0000, 0 0 #0000, 0 1px 2px 0 rgba(18, 18, 23, 0.05)',
         },
         text: {
           color: '{surface.700}',
@@ -497,8 +491,7 @@ export const MaterialBlue = definePreset(Material, {
           option: {
             focusBackground: '{surface.100}',
             selectedBackground: '{highlight.background}',
-            selectedFocusBackground:
-              '{highlight.focus.background}',
+            selectedFocusBackground: '{highlight.focus.background}',
             color: '{text.color}',
             focusColor: '{text.hover.color}',
             selectedColor: '{highlight.color}',
@@ -559,10 +552,8 @@ export const MaterialBlue = definePreset(Material, {
           activeColor: '{primary.200}',
         },
         highlight: {
-          background:
-            'color-mix(in srgb, {primary.400}, transparent 84%)',
-          focusBackground:
-            'color-mix(in srgb, {primary.400}, transparent 76%)',
+          background: 'color-mix(in srgb, {primary.400}, transparent 84%)',
+          focusBackground: 'color-mix(in srgb, {primary.400}, transparent 76%)',
           color: 'rgba(255,255,255,.87)',
           focusColor: 'rgba(255,255,255,.87)',
         },
@@ -587,11 +578,9 @@ export const MaterialBlue = definePreset(Material, {
           floatLabelColor: '{surface.400}',
           floatLabelFocusColor: '{primary.color}',
           floatLabelActiveColor: '{surface.400}',
-          floatLabelInvalidColor:
-            '{form.field.invalid.placeholder.color}',
+          floatLabelInvalidColor: '{form.field.invalid.placeholder.color}',
           iconColor: '{surface.400}',
-          shadow:
-            '0 0 #0000, 0 0 #0000, 0 1px 2px 0 rgba(18, 18, 23, 0.05)',
+          shadow: '0 0 #0000, 0 0 #0000, 0 1px 2px 0 rgba(18, 18, 23, 0.05)',
         },
         text: {
           color: '{surface.0}',
@@ -627,8 +616,7 @@ export const MaterialBlue = definePreset(Material, {
           option: {
             focusBackground: '{surface.800}',
             selectedBackground: '{highlight.background}',
-            selectedFocusBackground:
-              '{highlight.focus.background}',
+            selectedFocusBackground: '{highlight.focus.background}',
             color: '{text.color}',
             focusColor: '{text.hover.color}',
             selectedColor: '{highlight.color}',

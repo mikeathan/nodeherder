@@ -4,6 +4,7 @@
   import { useWindowSize } from '@/mixins/composables/useWindowsSize';
   import { useMenuItems } from '@/mixins/composables/useMenuItems';
   import { useAuth } from '@/mixins/composables/useAuthentication';
+  import { useTheme } from '@/services/theme.service';
   const version = __APP_VERSION__;
 
   const props = defineProps({
@@ -20,6 +21,7 @@
 
   const onDrawerToggle = () => emit('click', true);
   const { user, isAuthenticated, signOut } = useAuth();
+  const { isDarkMode, toggleTheme } = useTheme();
 
   const { menuItems, logoItem } = useMenuItems(props.items);
   const { isMobile } = useWindowSize();
@@ -38,8 +40,12 @@
       </template>
       <template #end>
         <div class="app-info">
+          <i
+            :class="['pi', isDarkMode ? 'pi-moon' : 'pi-sun', 'action-icon']"
+            @click="toggleTheme"
+            v-tooltip.bottom="isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'" />
           <div class="app-version">v{{ version }}</div>
-          <i v-if="isAuthenticated" class="pi pi-sign-out sign-out" @click="signOut" />
+          <i v-if="isAuthenticated" class="pi pi-sign-out action-icon" @click="signOut" v-tooltip.bottom="'Sign Out'" />
         </div>
       </template>
     </Menubar>
@@ -66,16 +72,20 @@
   }
   .app-version {
     font-size: 0.875rem;
-    color: #666;
+    color: var(--text-color-secondary);
     user-select: none;
     pointer-events: none;
     opacity: 0.7;
   }
-  .sign-out {
+  .action-icon {
     font-size: 1rem;
-    color: #666;
+    color: var(--text-color-secondary);
     cursor: pointer;
     opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  .action-icon:hover {
+    opacity: 1;
   }
   .navigation-wrapper {
     position: relative;

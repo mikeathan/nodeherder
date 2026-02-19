@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { KeyValuePair } from '@/types/types.type';
-  import { PropType, ref, watch } from 'vue';
+  import { PropType, computed, ref, watch } from 'vue';
 
   const props = defineProps({
     name: String,
@@ -40,18 +40,32 @@
   function getID() {
     return new Date().getTime();
   }
+
+  const sortedOptions = computed(() => {
+    if (!props.items) return []; 
+    const options = Object.entries(props.items).map(([label, value]) => ({ label, value }));
+    return options.sort((a, b) => {
+      // Sort logic
+      if (typeof a.value === 'number' && typeof b.value === 'number') {
+        return a.value - b.value;
+      }
+      return String(a.value).localeCompare(String(b.value));
+    });
+  });
 </script>
 
 <template>
-  <Button
-    v-for="(key, value) in props.items"
-    :key="key"
-    :label="value as string"
-    :disabled="props.disabled"
-    size="small"
-    @click="selectionChanged(key)"
-    :class="{
-      'p-button-primary': selectedValue === key,
-      'p-button-outlined': selectedValue !== key,
-    }" />
+  <div class="flex flex-wrap gap-2">
+    <Button
+      v-for="item in sortedOptions"
+      :key="item.value"
+      :label="item.label"
+      :disabled="props.disabled"
+      size="small"
+      @click="selectionChanged(item.value)"
+      :class="{
+        'p-button-primary': selectedValue === item.value,
+        'p-button-outlined': selectedValue !== item.value,
+      }" />
+  </div>
 </template>

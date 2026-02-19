@@ -9,10 +9,20 @@ const consoleLevelClassMap = {
   debug: 'bg-secondary',
 };
 
-export const getConsoleLevelClass = (
-  level: ConsoleLevel
-) => {
-  return (
-    consoleLevelClassMap[level] ?? defaultConsoleLevelClass
-  );
+export const getConsoleLevelClass = (level: ConsoleLevel) => {
+  return consoleLevelClassMap[level] ?? defaultConsoleLevelClass;
+};
+
+const defaultConsoleLevelSeverity = 'secondary';
+const consoleLevelSeverityMap: Record<string, string> = {
+  error: 'danger',
+  critical: 'danger',
+  info: 'info',
+  warn: 'warn',
+  warning: 'warn',
+  debug: 'secondary',
+};
+
+export const getConsoleLevelSeverity = (level: string) => {
+  return consoleLevelSeverityMap[level] ?? defaultConsoleLevelSeverity;
 };
