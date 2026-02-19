@@ -90,16 +90,16 @@ function hasExposeName(): boolean {
 </script>
 
 <template>
-  <div class="row">
-    <div class="col-sm-4">
+  <div class="grid">
+    <div class="col-12 sm:col-4">
       <ExposeSelector :id="props.id" :value="condition.name" @updated="exposeSelected" :filter="allExposeFilter()"
         :disabled="hasExposeName()" />
     </div>
-    <div class="col-sm-2">
+    <div class="col-12 sm:col-2">
       <Selection :value="condition.equality" @updated="operatorUpdated" :items="exposeOperators"
         :disabled="!hasExposeName()" />
     </div>
-    <div class="col-sm-5">
+    <div class="col-12 sm:col-5">
       <ExposeDataInput :id="props.id" :name="condition.name" :value="condition.value" @updated="dataUpdated"
         :disabled="!hasExposeName()" />
     </div>

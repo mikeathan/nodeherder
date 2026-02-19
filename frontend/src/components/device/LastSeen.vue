@@ -4,6 +4,10 @@
 
   const props = defineProps({
     timestamp: String,
+    truncated: {
+      type: Boolean,
+      default: true,
+    },
   });
 
   let elapsedTimer = null;
@@ -40,5 +44,5 @@
         lastSeenElement = el;
       }
     "
-    className="col text-truncate"></div>
+    :class="{ 'col white-space-nowrap overflow-hidden text-overflow-ellipsis': truncated }"></div>
 </template>

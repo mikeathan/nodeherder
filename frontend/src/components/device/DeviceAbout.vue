@@ -62,19 +62,19 @@
 </script>
 <template>
   <div>
-    <dl class="grid grid-nogutter" v-for="(prop, idx) in displayProps" :key="idx">
-      <dt class="col-12 md:col-5 text-secondary">
+    <div class="grid grid-nogutter mb-3 align-items-center" v-for="(prop, idx) in displayProps" :key="idx">
+      <div class="col-12 md:col-3 text-color-secondary">
         {{ prop.key }}
-      </dt>
-      <dd class="col-12 md:col-7">
+      </div>
+      <div class="col-12 md:col-9">
         <div v-if="prop.type === undefined">
           <span title="last update">{{ prop.value }}</span>
         </div>
         <template v-else>
           <component :is="prop.type" v-bind="prop.props"></component>
         </template>
-      </dd>
-    </dl>
+      </div>
+    </div>
   </div>
   <DeviceControl :id="props.id" />
 </template>

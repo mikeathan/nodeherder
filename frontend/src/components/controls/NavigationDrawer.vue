@@ -2,7 +2,7 @@
   import { PropType } from 'vue';
   import { MenuBarItem } from '@/types/controls.type';
   import { useMenuItems } from '@/mixins/composables/useMenuItems';
-  import { useDrawer } from '@/mixins/composables/useDrawer';
+  import { useWindowSize } from '@/mixins/composables/useWindowsSize';
 
   const props = defineProps({
     items: {
@@ -17,7 +17,6 @@
   });
 
   const emit = defineEmits<{
-    (e: 'widthChanged', width: number): void;
     (e: 'toggle'): void;
   }>();
 
@@ -30,15 +29,12 @@
     }
   };
   const { menuItems } = useMenuItems(props.items, onMenuItemClick);
-  const { isMobile } = useDrawer(
-    () => props.isExpanded,
-    (w) => emit('widthChanged', w)
-  );
+  const { isMobile } = useWindowSize();
 </script>
 
 <template>
   <!-- Desktop Sidebar -->
-  <div v-if="!isMobile" :class="['floating-sidebar', { expanded: isExpanded }]">
+  <div v-if="!isMobile" :class="['sidebar', { expanded: isExpanded }]">
     <div class="top-bar">
       <Button :icon="isExpanded ? 'pi pi-times' : 'pi pi-bars'" @click="toggleDrawer" rounded text />
     </div>
@@ -82,22 +78,18 @@
     z-index: 999;
     background: rgba(0, 0, 0, 0.2);
   }
-  .floating-sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh;
+  .sidebar {
     width: 60px;
-    background-color: #1b1b1b;
-    color: white;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--sidebar-bg);
+    color: var(--text-color);
+    border-right: 1px solid var(--sidebar-border);
     transition: width 0.3s ease;
     display: flex;
     flex-direction: column;
     z-index: 1000;
   }
 
-  .floating-sidebar.expanded {
+  .sidebar.expanded {
     width: 250px;
   }
 
@@ -106,7 +98,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.75rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid var(--sidebar-border);
   }
 
   .menu-area {
@@ -129,13 +121,13 @@
     left: 0;
     width: 250px;
     height: 100vh;
-    background-color: #1b1b1b;
-    color: white;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--sidebar-bg);
+    color: var(--text-color);
+    border-right: 1px solid var(--sidebar-border);
     display: flex;
     flex-direction: column;
     z-index: 1100;
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.15);
     padding: 0.5rem;
   }
 

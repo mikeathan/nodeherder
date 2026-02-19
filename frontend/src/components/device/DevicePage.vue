@@ -30,19 +30,19 @@
 <template>
   <Card>
     <template #title>
-      <div className="d-flex flex-row">
+      <div class="flex flex-row">
         <div class="align-self-center me-3">
           <RouterLink :to="`${previousPage}`">
             <Button icon="pi pi-arrow-left" variant="text" />
           </RouterLink>
         </div>
-        <div class="h3 align-self-center">
+        <div class="text-3xl align-self-center">
           {{ device?.friendly_name || 'friendly_Name not found' }}
         </div>
       </div>
     </template>
     <template #content>
-      <div class="col-12 col-md-9">
+      <div class="col-12 md:col-9">
         <Tabs v-model:value="activeTab" class="flex flex-wrap gap-2">
           <TabList>
             <Tab

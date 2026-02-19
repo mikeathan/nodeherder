@@ -165,72 +165,82 @@
 </script>
 
 <template>
-  <!-- TODO: find better way to do this
-    we have 2 components that use the same template and toggle from the if isinVieMode -->
-  <Button icon="pi pi-times" size="large" variant="text" rounded class="float-end" @click="cancel()" />
-  <div
-    v-bind:style="{
-      display: isInViewMode ? 'block' : 'none',
-    }">
-    <div class="grid">
-      <div class="row">
+  <div class="relative">
+    <!-- TODO: find better way to do this
+      we have 2 components that use the same template and toggle from the if isinVieMode -->
+    <Button
+      icon="pi pi-times"
+      size="large"
+      variant="text"
+      rounded
+      class="absolute top-0 right-0 z-5"
+      @click="cancel()" />
+    <div
+      v-bind:style="{
+        display: isInViewMode ? 'block' : 'none',
+      }">
+      <div class="grid">
         <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
           <InputBox label="Id" :disabled="true" :value="automation.id" />
         </div>
-        <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
-          <InputBox label="Friendly Name" :disabled="true" :value="automation.friendlyname" class="w-full" />
+        <div class="col-12 pb-3">
+          <div class="col-12 xl:col-4 lg:col-5 p-0">
+            <InputBox label="Friendly Name" :disabled="true" :value="automation.friendlyname" class="w-full" />
+          </div>
         </div>
-        <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
-          <InputBox
-            label="Description"
-            @updated="(v) => (automation.description = v)"
-            :value="automation.description"
-            class="w-full" />
+        <div class="col-12 pb-3">
+          <div class="col-12 xl:col-4 lg:col-5 p-0">
+            <InputBox
+              label="Description"
+              @updated="(v) => (automation.description = v)"
+              :value="automation.description"
+              class="w-full" />
+          </div>
         </div>
         <div class="col-12 xl:col-8 lg:col-8 sm:col-8 pb-3">
           <AutomationStatus :automation="automation" :clickToOpen="true" />
         </div>
       </div>
+      <ButtonPanel :buttons="buttonPanelItems" class="pb-3 pt-3" severity="secondary" />
+      <DataTable :value="automation.triggers" @row-click="rowClicked" selectionMode="single">
+        <Column field="action" header="Action">
+          <template #body="slotProps">
+            {{ getActionDescription(slotProps.data) }}
+          </template>
+        </Column>
+        <Column field="conditions" header="Conditions">
+          <template #body="slotProps">
+            <span v-html="formatTriggerConditions(slotProps.data)" />
+            <!-- show action button if we can trigger automation manually -->
+            <ActionButton
+              v-if="canTriggerManually(slotProps.data)"
+              label="Run"
+              icon="pi pi-play"
+              :action="() => triggerAutomation(automation, slotProps.data.name)" />
+          </template>
+        </Column>
+        <Column style="width: 3rem">
+          <template #header="slotProps">
+            <Button icon="pi pi-plus" variant="text" rounded @click="createNewTrigger()" />
+          </template>
+          <template #body="slotProps">
+            <Button
+              icon="pi pi-trash"
+              variant="text"
+              rounded
+              @click="openDeleteTriggerConfirmationDialog(slotProps.data)" />
+          </template>
+        </Column>
+      </DataTable>
+      <div class="pt-4 flex gap-2">
+        <Button label="Add Trigger" outlined rounded size="small" @click="createNewTrigger()" />
+      </div>
     </div>
-    <ButtonPanel :buttons="buttonPanelItems" class="pb-3 pt-3" severity="secondary" />
-    <DataTable :value="automation.triggers" @row-click="rowClicked" selectionMode="single">
-      <Column field="action" header="Action">
-        <template #body="slotProps">
-          {{ getActionDescription(slotProps.data) }}
-        </template>
-      </Column>
-      <Column field="conditions" header="Conditions">
-        <template #body="slotProps">
-          <span v-html="formatTriggerConditions(slotProps.data)" />
-          <!-- show action button if we can trigger automation manually -->
-          <ActionButton
-            v-if="canTriggerManually(slotProps.data)"
-            label="Run"
-            icon="pi pi-play"
-            :action="() => triggerAutomation(automation, slotProps.data.name)" />
-        </template>
-      </Column>
-      <Column class="col-sm-1">
-        <template #header="slotProps">
-          <Button icon="pi pi-plus" variant="text" rounded @click="createNewTrigger()" />
-        </template>
-        <template #body="slotProps">
-          <Button
-            icon="pi pi-trash"
-            variant="text"
-            rounded
-            @click="openDeleteTriggerConfirmationDialog(slotProps.data)" />
-        </template>
-      </Column>
-    </DataTable>
-    <div class="pt-4 flex gap-2">
-      <Button label="Add Trigger" outlined rounded size="small" @click="createNewTrigger()" />
+    <div
+      v-bind:style="{
+        display: isInViewMode == false ? 'block' : 'none',
+      }">
+      <Panel @close="onComponentHidden" @component-displayed="onComponentDisplayed"> </Panel>
     </div>
-  </div>
-  <div
-    v-bind:style="{
-      display: isInViewMode == false ? 'block' : 'none',
-    }">
-    <Panel @close="onComponentHidden" @component-displayed="onComponentDisplayed"> </Panel>
   </div>
 </template>
