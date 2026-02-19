@@ -7,8 +7,8 @@
   });
 </script>
 <template>
-  <span key="linkquality" className="me-" v-if="props.value">
+  <div key="linkquality" class="flex align-items-center mr-2" v-if="props.value">
     <Icon :icon="getSignalIcon(props.value)" />
-    {{ props.value + ' LQI' }}
-  </span>
+    <span class="ml-1">{{ props.value + ' LQI' }}</span>
+  </div>
 </template>

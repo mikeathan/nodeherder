@@ -60,17 +60,19 @@
   }
 </script>
 <template>
-  <div class="me-1">
+  <div class="me-3">
     <Icon :icon="getSensorIcon(props.expose.name, props.expose.data)" />
   </div>
   <div class="flex-grow-1">
     {{ getSensorName(props.expose.name) }}
   </div>
-  <div v-if="isReadOnly()">
-    {{ getValue() }}
-    {{ getUnit() }}
+  <div v-if="isReadOnly()" class="col-7 pl-2 flex justify-content-end align-items-center text-right white-space-nowrap">
+    <div>
+      {{ getValue() }}
+      {{ getUnit() }}
+    </div>
   </div>
-  <div v-else-if="hasNumericFeatures()" class="col-7">
+  <div v-else-if="hasNumericFeatures()" class="col-7 flex justify-content-end">
     <Range
       :value="getValue()"
       :min="getExposeAttribute(props.expose, 'min')"
@@ -78,7 +80,7 @@
       @update="updateValue"
       :disabled="props.disabled" />
   </div>
-  <div v-else-if="hasBinaryFeatures()">
+  <div v-else-if="hasBinaryFeatures()" class="col-7 pl-2 flex justify-content-end">
     <Toggle
       :value="props.expose.data"
       :valueOn="getExposeProperty(props.expose, 'on')"
@@ -86,5 +88,5 @@
       @update="(v) => updateValue(v)"
       :disabled="props.disabled" />
   </div>
-  <div v-else>N/A</div>
+  <div v-else class="col-7 pl-2 flex justify-content-end">N/A</div>
 </template>

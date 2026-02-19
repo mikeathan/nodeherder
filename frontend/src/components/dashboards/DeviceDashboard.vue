@@ -7,17 +7,17 @@
 </script>
 
 <style scoped>
-  /* .dashboard {
-  background-color: var(--p-card-background);
-  height: 100vh;
-  overflow: auto;
-} */
+  .dashboard-container {
+    overflow-x: hidden;
+  }
 </style>
 
 <template>
-  <div class="grid">
-    <div class="col-12 md:col-6 lg:col-3 xg:col-2" v-for="device in devices" :key="device.id">
-      <DeviceCard :device="device" :key="device.id"></DeviceCard>
+  <div class="dashboard-container">
+    <div class="grid">
+      <div class="col-12 md:col-6 lg:col-4 xl:col-3" v-for="device in devices" :key="device.id">
+        <DeviceCard :device="device" :key="device.id"></DeviceCard>
+      </div>
     </div>
   </div>
 </template>

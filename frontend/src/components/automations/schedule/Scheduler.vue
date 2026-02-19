@@ -105,14 +105,14 @@
     <ButtonPanel :buttons="buttonPanelItems" severity="secondary" />
     <div class="pt-3"></div>
     <div v-for="schedule in schedules" :key="schedule.type">
-      <div class="row">
-        <div class="col-sm-4">
+      <div class="grid">
+        <div class="col-12 sm:col-4">
           <Selection :value="schedule.type" :items="TimeScheduleTypes" @updated="(t) => updateType(schedule, t)" />
         </div>
-        <div class="col-sm-4">
+        <div class="col-12 sm:col-4">
           <TimePicker :value="convertTimeToDate(schedule.startAt)" @updated="(e) => updateStartAtTime(schedule, e)" />
         </div>
-        <div class="col-sm-1">
+        <div class="col-12 sm:col-1">
           <Button icon="pi pi-trash" variant="text" rounded @click="removeSchedule(schedule)" class="delete-button" />
         </div>
       </div>

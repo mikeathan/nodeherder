@@ -48,31 +48,31 @@
   }
 </script>
 <template>
-  <div class="grid col-12 align-items-center grid-nogutter" v-for="(expose, index) in exposes" :item="expose">
-    <dl class="col-12 md:col-3">
-      <dt>
+  <div
+    class="grid col-12 align-items-start border-bottom-1 surface-border py-4"
+    v-for="(expose, index) in exposes"
+    :item="expose">
+    <div class="col-12 md:col-4 pt-2">
+      <div>
         <strong> {{ expose.name }}</strong>
-      </dt>
-      <dd class="text-secondary">
+      </div>
+      <div class="text-color-secondary">
         <small> {{ expose.description }} </small>
-      </dd>
-    </dl>
-    <div class="col-12 md:col-9">
+      </div>
+    </div>
+    <div class="col-12 md:col-8">
       <div v-if="expose.access_mode == ExposeAccessModes.Read">
         {{ getSensorValue(expose.data) }}
         {{ getSensorUnit(expose.name) }}
       </div>
 
-      <div v-else-if="expose.type == ExposeTypes.Numeric" class="align-items-center">
-        <!-- TODO: refactor -->
-        <div class="pt-3"></div>
+      <div v-else-if="expose.type == ExposeTypes.Numeric" class="flex flex-column gap-3">
         <ButtonGroup
           v-if="expose.values != null"
-          :items="(expose.values as any)"
+          :items="expose.values as any"
           :value="expose.data"
           @update="(v) => updateValue(expose, v)"
           :disabled="!isDeviceOnline(device)" />
-        <div class="pt-3"></div>
         <Range
           :value="expose.data"
           :showInput="true"
