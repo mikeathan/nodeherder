@@ -77,7 +77,7 @@
 
     <div class="layout-main flex flex-column flex-1 min-w-0">
       <NavigationBar :items="topNavigationItems" @click="isDrawerVisible = $event" />
-      <main class="flex-1 overflow-auto pt-0 pr-0 pl-0 pb-2">
+      <main class="flex-1 overflow-auto pt-0 pr-0 pl-0 pb-2" style="overscroll-behavior: none">
         <PermitJoinTimer
           :duration="permitJoinDuration"
           :allow-join="isPermitJoinActive"
