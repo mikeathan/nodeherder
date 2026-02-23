@@ -34,8 +34,7 @@
     body {
       height: auto !important;
       min-height: 100dvh !important;
-      overflow-y: auto !important;
-      overscroll-behavior-y: contain !important;
+      overflow: visible !important;
     }
     #app {
       height: auto !important;

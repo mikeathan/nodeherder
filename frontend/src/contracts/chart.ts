@@ -59,28 +59,28 @@ export const getExposeColor = (exposeName: string): ColorValue => {
 
 export const ExposeBinaryColours: KeyValuePair<ExposeBinaryColor> = {
   presence: {
-    on: ColorTypes.BrightGreen,
-    off: ColorTypes.BrightRed,
+    on: ColorTypes.Green500,
+    off: ColorTypes.Slate700,
   },
   contact: {
-    on: ColorTypes.AzureBlue,
-    off: ColorTypes.BrightRed,
+    on: ColorTypes.Green500,
+    off: ColorTypes.Slate700,
   },
   state: {
-    on: ColorTypes.BrightGreen,
-    off: ColorTypes.BrightRed,
+    on: ColorTypes.Green500,
+    off: ColorTypes.Slate700,
   },
   tamper: {
-    on: ColorTypes.BrightRed,
-    off: ColorTypes.BrightGreen,
+    on: ColorTypes.Red500,
+    off: ColorTypes.Slate700,
   },
 };
 
 export const getExposeBinaryColour = (exposeName: string): ExposeBinaryColor => {
   return (
     ExposeBinaryColours[exposeName] ?? {
-      on: ColorTypes.BrightGreen,
-      off: ColorTypes.BrightRed,
+      on: ColorTypes.Green500,
+      off: ColorTypes.Slate700,
     }
   );
 };
@@ -146,15 +146,23 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
           labels: {
             datetimeUTC: false,
             style: { colors: '#ccc', fontSize: '11px' },
+            ...(extra?.xaxis?.labels ?? {}),
           },
+          ...(extra?.xaxis ?? {}),
         },
         yaxis: {
           labels: {
             style: { colors: '#ccc', fontSize: '12px' },
+            ...(extra?.yaxis?.labels ?? {}),
           },
+          ...(extra?.yaxis ?? {}),
         },
         tooltip: extra?.tooltip ?? { theme: 'dark' },
-        grid: { borderColor: 'rgba(255,255,255,0.12)', padding: { left: 0, right: 0, top: 0, bottom: 0 } },
+        grid: {
+          borderColor: 'rgba(255,255,255,0.12)',
+          padding: { left: 0, right: 0, top: 0, bottom: 0 },
+          ...(extra?.grid ?? {}),
+        },
         legend: { show: false },
       };
 

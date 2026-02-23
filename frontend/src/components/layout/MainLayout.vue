@@ -21,7 +21,7 @@
   const onPermitJoinStatusUpdated = (status: boolean) => {
     isPermitJoinActive.value = status;
   };
-
+ 
   const { sideNavigationItems, topNavigationItems, isPermitJoinActive } = useSideNavigationItems();
   const { isMobile } = useWindowSize();
 

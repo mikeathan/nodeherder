@@ -26,7 +26,6 @@
   const { menuItems, logoItem } = useMenuItems(props.items);
   const { isMobile } = useWindowSize();
 
-  const menubarRef = ref<ComponentPublicInstance | null>(null);
 </script>
 
 <template>
