@@ -8,6 +8,7 @@
   import { fetchHubState } from '@/services/hubstate.service';
   import { store } from '@/store';
   import { useSideNavigationItems } from '@/mixins/composables/useNavigationItems';
+  import { useWindowSize } from '@/mixins/composables/useWindowsSize';
 
   const permitJoinDuration = 120;
 
@@ -20,8 +21,9 @@
   const onPermitJoinStatusUpdated = (status: boolean) => {
     isPermitJoinActive.value = status;
   };
-
+ 
   const { sideNavigationItems, topNavigationItems, isPermitJoinActive } = useSideNavigationItems();
+  const { isMobile } = useWindowSize();
 
   onMounted(async () => {
     // Fast-path using persisted state: if already authed, don't block the UI.
@@ -72,12 +74,14 @@
 </script>
 
 <template>
-  <div class="layout-wrapper flex h-screen overflow-hidden">
+  <div :class="['layout-wrapper', 'flex', isMobile ? 'mobile-layout' : 'h-screen overflow-hidden']">
     <NavigationDrawer :items="sideNavigationItems" :is-expanded="isDrawerVisible" @toggle="toggleDrawer" />
 
     <div class="layout-main flex flex-column flex-1 min-w-0">
       <NavigationBar :items="topNavigationItems" @click="isDrawerVisible = $event" />
-      <main class="flex-1 overflow-auto pt-0 pr-0 pl-0 pb-2" style="overscroll-behavior: none">
+      <main
+        :class="['pt-0', 'pr-0', 'pl-0', 'pb-2', isMobile ? 'mobile-main' : 'flex-1 overflow-auto']"
+        :style="isMobile ? {} : { overscrollBehavior: 'none' }">
         <PermitJoinTimer
           :duration="permitJoinDuration"
           :allow-join="isPermitJoinActive"
@@ -91,12 +95,14 @@
 </template>
 
 <style scoped>
-  @media screen and (max-width: 768px) {
-    main :deep(> .p-card) {
-      min-height: 100%;
-      border-radius: 0 !important;
-      box-shadow: none !important;
-      border: none !important;
-    }
+  .mobile-layout,
+  .mobile-main {
+    min-height: 100dvh;
+  }
+  .mobile-main :deep(> .p-card) {
+    min-height: 100dvh;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
   }
 </style>

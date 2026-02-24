@@ -135,7 +135,6 @@
       stateExpose.value != null
     );
   }
-
   function handleCardClick(): void {
     emit('selected', getDeviceGroupId(props.id, props.name));
 

@@ -35,4 +35,10 @@ export const ColorTypes = {
   BrightGreen: '#22E35F',
   BrightRed: '#FF1F1F',
   White: '#FFFFFF',
+  Slate800: '#1e293b',
+  Slate700: '#334155',
+  Green800: '#166534',
+  Green500: '#22c55e',
+  Green400: '#4ade80',
+  Red500: '#ef4444',
 };

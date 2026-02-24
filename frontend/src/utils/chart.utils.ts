@@ -1,13 +1,22 @@
 import type {
   RangeBarDataPoint,
   BinaryDataPoint,
+  BinaryBucket,
   BinaryRange,
   NumericDataPoint,
   NumericStats,
 } from '@/types/metrics.type';
-import { formatDuration } from './date.utils';
+import { formatDuration, formatTime } from './date.utils';
 import { getFormattedSensorValueByName } from '@/modules/formatters/sensor-formatter';
 import { MetricsTypes, type MetricsType, type MiniChartComponentKey } from '@/types/metrics.type';
+import { ColorTypes } from '@/types/color.type';
+
+export const DENSITY_COLORS = {
+  idle: ColorTypes.Slate700,
+  low: ColorTypes.Green800,
+  medium: ColorTypes.Green500,
+  high: ColorTypes.Green400,
+} as const;
 
 /**
  * Normalizes binary events into continuous time ranges.
@@ -86,12 +95,7 @@ export function mergeBinaryFlickers(ranges: BinaryRange[], minDurationMs: number
   return merged;
 }
 
-export function getBinaryRanges(
-  data: BinaryDataPoint[],
-  from: number,
-  to: number,
-  minDurationMs = 0
-): BinaryRange[] {
+export function getBinaryRanges(data: BinaryDataPoint[], from: number, to: number, minDurationMs = 0): BinaryRange[] {
   if (!data?.length) return [];
   const sorted = data
     .slice()
@@ -181,12 +185,18 @@ export function getDefaultGaugeMax(unit?: string): number {
   return DEFAULT_GAUGE_MAX_BY_UNIT[normalized] ?? 100;
 }
 
+export function isBinaryChartableExpose(type?: MetricsType | string, exposeName?: string): boolean {
+  return type === MetricsTypes.Binary || (type === MetricsTypes.Enum && exposeName === 'state');
+}
+
 export function resolveMiniChartComponentKey(
   type?: MetricsType | string,
   exposeName?: string,
   unit?: string
 ): MiniChartComponentKey | null {
-  if (type === MetricsTypes.Binary) return 'MiniBinaryChart';
+  if (isBinaryChartableExpose(type, exposeName)) {
+    return 'MiniDynamicBinaryChart';
+  }
   if (type !== MetricsTypes.Numeric) return null;
   if (isEnergyExpose(exposeName, unit)) return 'MiniEnergyChart';
   if (isPercentExpose(exposeName, unit)) return 'MiniPercentChart';
@@ -383,4 +393,131 @@ export function formatNumericXAxisLabel(
     return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
   }
   return date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ── Binary heatmap utilities ──
+
+/** Event count threshold above which heatmap mode is preferred over timeline. */
+export const BINARY_NOISE_THRESHOLD = 50;
+
+/**
+ * Group binary events into fixed-width time buckets.
+ * Each bucket records the number of state transitions and total active-state
+ * duration, then normalizes intensity to 0..1 across all buckets.
+ */
+export function bucketBinaryEvents(
+  data: BinaryDataPoint[],
+  from: number,
+  to: number,
+  bucketMinutes = 15
+): BinaryBucket[] {
+  if (!data?.length || from >= to) return [];
+
+  const bucketMs = bucketMinutes * 60_000;
+  const sorted = data
+    .slice()
+    .filter((p) => Number.isFinite(p.timestamp))
+    .sort((a, b) => a.timestamp - b.timestamp);
+
+  if (sorted.length === 0) return [];
+
+  const ranges = normalizeBinaryEvents(sorted, from, to);
+  const bucketCount = Math.ceil((to - from) / bucketMs);
+  const buckets: BinaryBucket[] = [];
+
+  for (let i = 0; i < bucketCount; i++) {
+    const bStart = from + i * bucketMs;
+    const bEnd = Math.min(bStart + bucketMs, to);
+    let count = 0;
+    let activeMs = 0;
+
+    for (const range of ranges) {
+      // Skip ranges that don't overlap this bucket
+      if (range.end <= bStart || range.start >= bEnd) continue;
+
+      const overlapStart = Math.max(range.start, bStart);
+      const overlapEnd = Math.min(range.end, bEnd);
+
+      if (isBinaryOn(range.value)) {
+        activeMs += overlapEnd - overlapStart;
+      }
+
+      // Count transitions that START within this bucket
+      if (range.start >= bStart && range.start < bEnd && range.start > from) {
+        count++;
+      }
+    }
+
+    buckets.push({ start: bStart, end: bEnd, count, activeMs, intensity: 0 });
+  }
+
+  // Normalize intensity across all buckets
+  const maxCount = Math.max(...buckets.map((b) => b.count), 1);
+  for (const bucket of buckets) {
+    bucket.intensity = bucket.count / maxCount;
+  }
+
+  return buckets;
+}
+
+/**
+ * Generates percentage-based offsets and formatted time strings for density strip X-axis labels.
+ */
+export function getDensityTimeLabels(buckets: BinaryBucket[]): Array<{ offset: number; text: string }> {
+  if (!buckets?.length) return [];
+  const labels: Array<{ offset: number; text: string }> = [];
+
+  const startTime = buckets[0].start;
+  const endTime = buckets[buckets.length - 1].end;
+  const totalMs = endTime - startTime;
+  if (totalMs <= 0) return [];
+
+  const showDayLabels = totalMs > 86400000; // > 24 hours
+
+  // Decide how many labels to generate based on scale
+  let numLabels = 5;
+  if (showDayLabels) {
+    const totalDays = totalMs / 86400000;
+    if (totalDays <= 6) {
+      // 1-6 days: try to align exactly 1 interval per day
+      numLabels = Math.max(3, Math.round(totalDays) + 1);
+    }
+  }
+
+  let lastText = '';
+  for (let i = 0; i < numLabels; i++) {
+    const fraction = i / (numLabels - 1); // 0.0 to 1.0
+    const timeMs = startTime + fraction * totalMs;
+    const t = new Date(timeMs);
+
+    let text = '';
+    if (showDayLabels) {
+      text = t.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    } else {
+      text = t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    if (text !== lastText) {
+      labels.push({ offset: fraction * 100, text });
+      lastText = text;
+    }
+  }
+
+  return labels;
+}
+
+/**
+ * HTML tooltip for a heatmap bucket cell.
+ */
+export function renderHeatmapTooltip(bucket: BinaryBucket, exposeName: string): string {
+  const startStr = formatTime(bucket.start);
+  const endStr = formatTime(bucket.end);
+  const activeStr = formatDuration(bucket.activeMs);
+  const label = resolveBinaryLabel(exposeName, true);
+  return `<div style='background:#1f2937;color:#f8fafc;padding:6px 8px;border-radius:6px;font-size:11px;min-width:140px;'>
+      <div style='font-weight:600;margin-bottom:4px;'>${exposeName}</div>
+      <div><span style='color:#94a3b8;'>Time:</span> ${startStr} – ${endStr}</div>
+      <div><span style='color:#94a3b8;'>Triggers:</span> ${bucket.count}</div>
+      <div><span style='color:#94a3b8;'>${label}:</span> ${activeStr}</div>
+    </div>`;
 }
