@@ -1,5 +1,3 @@
-/* eslint-disable no-console */
-
 // Mock metrics data for device 0xa4c13894070052fc
 export const mockMetricsData = {
   '0xa4c13894070052fc': {
@@ -292,24 +290,207 @@ export const mockMetricsData = {
       from: 1763236923000,
       to: 1763323323000,
       data: [
-        { timestamp: 1763321416429, value: 'false' },
-        { timestamp: 1763321698972, value: 'true' },
-        { timestamp: 1763322098972, value: 'false' },
-        { timestamp: 1763322677986, value: 'true' },
-        { timestamp: 1763323099671, value: 'false' },
-        { timestamp: 1763323522554, value: 'true' },
-        { timestamp: 1763324122554, value: 'false' },
-        { timestamp: 1763324722554, value: 'true' },
-        { timestamp: 1763325520195, value: 'false' },
-        { timestamp: 1763326073302, value: 'true' },
-        { timestamp: 1763326881129, value: 'false' },
-        { timestamp: 1763327459022, value: 'true' },
-        { timestamp: 1763328124450, value: 'false' },
-        { timestamp: 1763328749901, value: 'true' },
-        { timestamp: 1763329282014, value: 'false' },
-        { timestamp: 1763329911409, value: 'true' },
-        { timestamp: 1763330557412, value: 'false' },
-        { timestamp: 1763331200027, value: 'true' },
+        // 00:00–05:00 — deep night, empty buckets (gap = idle)
+
+        // 05:00 — single blip
+        { timestamp: 1763255400000, value: 'true' },
+        { timestamp: 1763255460000, value: 'false' },
+
+        // 05:30 — single blip
+        { timestamp: 1763257200000, value: 'true' },
+        { timestamp: 1763257260000, value: 'false' },
+
+        // 06:00–06:15 — morning rush: 8 transitions (HIGH)
+        { timestamp: 1763259000000, value: 'true' },
+        { timestamp: 1763259060000, value: 'false' },
+        { timestamp: 1763259120000, value: 'true' },
+        { timestamp: 1763259180000, value: 'false' },
+        { timestamp: 1763259240000, value: 'true' },
+        { timestamp: 1763259300000, value: 'false' },
+        { timestamp: 1763259360000, value: 'true' },
+        { timestamp: 1763259420000, value: 'false' },
+        { timestamp: 1763259480000, value: 'true' },
+        { timestamp: 1763259540000, value: 'false' },
+        { timestamp: 1763259600000, value: 'true' },
+        { timestamp: 1763259660000, value: 'false' },
+        { timestamp: 1763259720000, value: 'true' },
+        { timestamp: 1763259780000, value: 'false' },
+        { timestamp: 1763259840000, value: 'true' },
+        { timestamp: 1763259899000, value: 'false' },
+
+        // 06:15–06:30 — still busy: 6 transitions (MEDIUM-HIGH)
+        { timestamp: 1763259900000, value: 'true' },
+        { timestamp: 1763259960000, value: 'false' },
+        { timestamp: 1763260020000, value: 'true' },
+        { timestamp: 1763260080000, value: 'false' },
+        { timestamp: 1763260140000, value: 'true' },
+        { timestamp: 1763260200000, value: 'false' },
+        { timestamp: 1763260260000, value: 'true' },
+        { timestamp: 1763260320000, value: 'false' },
+        { timestamp: 1763260380000, value: 'true' },
+        { timestamp: 1763260440000, value: 'false' },
+        { timestamp: 1763260500000, value: 'true' },
+        { timestamp: 1763260560000, value: 'false' },
+
+        // 06:30–06:45 — 4 transitions (MEDIUM)
+        { timestamp: 1763260800000, value: 'true' },
+        { timestamp: 1763260860000, value: 'false' },
+        { timestamp: 1763260920000, value: 'true' },
+        { timestamp: 1763260980000, value: 'false' },
+        { timestamp: 1763261040000, value: 'true' },
+        { timestamp: 1763261100000, value: 'false' },
+        { timestamp: 1763261160000, value: 'true' },
+        { timestamp: 1763261220000, value: 'false' },
+
+        // 06:45–07:00 — 2 transitions (LOW)
+        { timestamp: 1763261700000, value: 'true' },
+        { timestamp: 1763261760000, value: 'false' },
+        { timestamp: 1763261820000, value: 'true' },
+        { timestamp: 1763261880000, value: 'false' },
+
+        // 07:00–07:15 — 3 transitions (LOW)
+        { timestamp: 1763262600000, value: 'true' },
+        { timestamp: 1763262660000, value: 'false' },
+        { timestamp: 1763262720000, value: 'true' },
+        { timestamp: 1763262780000, value: 'false' },
+        { timestamp: 1763262840000, value: 'true' },
+        { timestamp: 1763262899000, value: 'false' },
+
+        // 07:15–08:00 — gaps (idle)
+
+        // 08:00–08:15 — 1 transition (LOW)
+        { timestamp: 1763266200000, value: 'true' },
+        { timestamp: 1763266260000, value: 'false' },
+
+        // 08:30–08:45 — 1 transition
+        { timestamp: 1763268000000, value: 'true' },
+        { timestamp: 1763268060000, value: 'false' },
+
+        // 09:00–12:00 — calm, 1 per hour
+        { timestamp: 1763269800000, value: 'true' },
+        { timestamp: 1763269860000, value: 'false' },
+
+        { timestamp: 1763273400000, value: 'true' },
+        { timestamp: 1763273460000, value: 'false' },
+
+        { timestamp: 1763277000000, value: 'true' },
+        { timestamp: 1763277060000, value: 'false' },
+
+        // 12:00–12:15 — lunch burst: 5 transitions (MEDIUM)
+        { timestamp: 1763280600000, value: 'true' },
+        { timestamp: 1763280660000, value: 'false' },
+        { timestamp: 1763280720000, value: 'true' },
+        { timestamp: 1763280780000, value: 'false' },
+        { timestamp: 1763280840000, value: 'true' },
+        { timestamp: 1763280900000, value: 'false' },
+        { timestamp: 1763280960000, value: 'true' },
+        { timestamp: 1763281020000, value: 'false' },
+        { timestamp: 1763281080000, value: 'true' },
+        { timestamp: 1763281140000, value: 'false' },
+
+        // 12:15–12:30 — 3 transitions (LOW)
+        { timestamp: 1763281500000, value: 'true' },
+        { timestamp: 1763281560000, value: 'false' },
+        { timestamp: 1763281620000, value: 'true' },
+        { timestamp: 1763281680000, value: 'false' },
+        { timestamp: 1763281740000, value: 'true' },
+        { timestamp: 1763281800000, value: 'false' },
+
+        // 13:00–15:00 — idle gaps
+
+        // 15:00 — single blip
+        { timestamp: 1763291400000, value: 'true' },
+        { timestamp: 1763291460000, value: 'false' },
+
+        // 16:00 — 2 transitions
+        { timestamp: 1763295000000, value: 'true' },
+        { timestamp: 1763295060000, value: 'false' },
+        { timestamp: 1763295120000, value: 'true' },
+        { timestamp: 1763295180000, value: 'false' },
+
+        // 17:00–17:15 — evening ramp: 7 transitions (HIGH)
+        { timestamp: 1763298600000, value: 'true' },
+        { timestamp: 1763298660000, value: 'false' },
+        { timestamp: 1763298720000, value: 'true' },
+        { timestamp: 1763298780000, value: 'false' },
+        { timestamp: 1763298840000, value: 'true' },
+        { timestamp: 1763298900000, value: 'false' },
+        { timestamp: 1763298960000, value: 'true' },
+        { timestamp: 1763299020000, value: 'false' },
+        { timestamp: 1763299080000, value: 'true' },
+        { timestamp: 1763299140000, value: 'false' },
+        { timestamp: 1763299200000, value: 'true' },
+        { timestamp: 1763299260000, value: 'false' },
+        { timestamp: 1763299320000, value: 'true' },
+        { timestamp: 1763299380000, value: 'false' },
+
+        // 17:15–17:30 — 5 transitions (MEDIUM)
+        { timestamp: 1763299500000, value: 'true' },
+        { timestamp: 1763299560000, value: 'false' },
+        { timestamp: 1763299620000, value: 'true' },
+        { timestamp: 1763299680000, value: 'false' },
+        { timestamp: 1763299740000, value: 'true' },
+        { timestamp: 1763299800000, value: 'false' },
+        { timestamp: 1763299860000, value: 'true' },
+        { timestamp: 1763299920000, value: 'false' },
+        { timestamp: 1763299980000, value: 'true' },
+        { timestamp: 1763300040000, value: 'false' },
+
+        // 17:30–17:45 — 3 transitions (LOW)
+        { timestamp: 1763300700000, value: 'true' },
+        { timestamp: 1763300760000, value: 'false' },
+        { timestamp: 1763300820000, value: 'true' },
+        { timestamp: 1763300880000, value: 'false' },
+        { timestamp: 1763300940000, value: 'true' },
+        { timestamp: 1763301000000, value: 'false' },
+
+        // 18:00–18:15 — peak: 10 transitions (HIGH)
+        { timestamp: 1763302200000, value: 'true' },
+        { timestamp: 1763302260000, value: 'false' },
+        { timestamp: 1763302320000, value: 'true' },
+        { timestamp: 1763302380000, value: 'false' },
+        { timestamp: 1763302440000, value: 'true' },
+        { timestamp: 1763302500000, value: 'false' },
+        { timestamp: 1763302560000, value: 'true' },
+        { timestamp: 1763302620000, value: 'false' },
+        { timestamp: 1763302680000, value: 'true' },
+        { timestamp: 1763302740000, value: 'false' },
+        { timestamp: 1763302800000, value: 'true' },
+        { timestamp: 1763302860000, value: 'false' },
+        { timestamp: 1763302920000, value: 'true' },
+        { timestamp: 1763302980000, value: 'false' },
+        { timestamp: 1763303040000, value: 'true' },
+        { timestamp: 1763303100000, value: 'false' },
+
+        // 18:15–18:30 — 6 transitions (MEDIUM-HIGH)
+        { timestamp: 1763303100001, value: 'true' },
+        { timestamp: 1763303160000, value: 'false' },
+        { timestamp: 1763303220000, value: 'true' },
+        { timestamp: 1763303280000, value: 'false' },
+        { timestamp: 1763303340000, value: 'true' },
+        { timestamp: 1763303400000, value: 'false' },
+        { timestamp: 1763303460000, value: 'true' },
+        { timestamp: 1763303520000, value: 'false' },
+        { timestamp: 1763303580000, value: 'true' },
+        { timestamp: 1763303640000, value: 'false' },
+        { timestamp: 1763303700000, value: 'true' },
+        { timestamp: 1763303760000, value: 'false' },
+
+        // 19:00 — 2 transitions (winding down)
+        { timestamp: 1763305800000, value: 'true' },
+        { timestamp: 1763305860000, value: 'false' },
+        { timestamp: 1763305920000, value: 'true' },
+        { timestamp: 1763305980000, value: 'false' },
+
+        // 20:00 — 1 transition
+        { timestamp: 1763309400000, value: 'true' },
+        { timestamp: 1763309460000, value: 'false' },
+
+        // 21:00 — 1 transition
+        { timestamp: 1763313000000, value: 'true' },
+        { timestamp: 1763313060000, value: 'false' },
+
+        // 22:00–23:59 — quiet night, no events
       ],
     },
   },
@@ -376,6 +557,17 @@ export const mockMetricsData = {
         { x: 1763346600000, y: 10 },
         { x: 1763350200000, y: 6 },
         { x: 1763353800000, y: 5 },
+      ],
+    },
+    silence: {
+      name: 'silence',
+      type: 'binary',
+      from: 1763321400000,
+      to: 1763353800000,
+      data: [
+        { timestamp: 1763322000000, value: 'false' },
+        { timestamp: 1763330500000, value: 'true' },
+        { timestamp: 1763331100000, value: 'false' },
       ],
     },
   },
@@ -455,6 +647,102 @@ export const mockMetricsData = {
         { x: 1763346600000, y: 0.49 },
         { x: 1763350200000, y: 0.41 },
         { x: 1763353800000, y: 0.33 },
+      ],
+    },
+  },
+  '0x70ac08fffefafeca': {
+    brightness: {
+      name: 'brightness',
+      type: 'numeric',
+      data: [
+        { x: 1763321400000, y: 120 },
+        { x: 1763325000000, y: 125 },
+        { x: 1763328600000, y: 130 },
+        { x: 1763332200000, y: 135 },
+        { x: 1763335800000, y: 140 },
+        { x: 1763339400000, y: 145 },
+        { x: 1763343000000, y: 150 },
+        { x: 1763346600000, y: 145 },
+        { x: 1763350200000, y: 140 },
+        { x: 1763353800000, y: 135 },
+      ],
+    },
+    color_temp: {
+      name: 'color_temp',
+      type: 'numeric',
+      data: [
+        { x: 1763321400000, y: 250 },
+        { x: 1763325000000, y: 255 },
+        { x: 1763328600000, y: 260 },
+        { x: 1763332200000, y: 265 },
+        { x: 1763335800000, y: 270 },
+        { x: 1763339400000, y: 275 },
+        { x: 1763343000000, y: 280 },
+        { x: 1763346600000, y: 275 },
+        { x: 1763350200000, y: 270 },
+        { x: 1763353800000, y: 265 },
+      ],
+    },
+    state: {
+      name: 'state',
+      type: 'binary',
+      from: 1763321400000,
+      to: 1763353800000,
+      data: [
+        { timestamp: 1763322000000, value: 'ON' },
+        { timestamp: 1763330500000, value: 'OFF' },
+        { timestamp: 1763331100000, value: 'ON' },
+        { timestamp: 1763342200000, value: 'OFF' },
+        { timestamp: 1763342600000, value: 'ON' },
+      ],
+    },
+  },
+  '0xa4c1389b273366c3': {
+    alarm: {
+      name: 'alarm',
+      type: 'binary',
+      from: 1763321400000,
+      to: 1763353800000,
+      data: [
+        { timestamp: 1763322000000, value: 'false' },
+        { timestamp: 1763330500000, value: 'true' },
+        { timestamp: 1763331100000, value: 'false' },
+        { timestamp: 1763342200000, value: 'true' },
+        { timestamp: 1763342600000, value: 'false' },
+      ],
+    },
+  },
+  '0x00124b0029207763': {
+    humidity: {
+      name: 'humidity',
+      type: 'numeric',
+      data: [
+        { x: 1763321400000, y: 40.0 },
+        { x: 1763325000000, y: 41.5 },
+        { x: 1763328600000, y: 43.0 },
+        { x: 1763332200000, y: 44.5 },
+        { x: 1763335800000, y: 46.0 },
+        { x: 1763339400000, y: 47.5 },
+        { x: 1763343000000, y: 49.0 },
+        { x: 1763346600000, y: 48.0 },
+        { x: 1763350200000, y: 46.5 },
+        { x: 1763353800000, y: 45.0 },
+      ],
+    },
+    temperature: {
+      name: 'temperature',
+      type: 'numeric',
+      data: [
+        { x: 1763321400000, y: 20.0 },
+        { x: 1763325000000, y: 20.5 },
+        { x: 1763328600000, y: 21.0 },
+        { x: 1763332200000, y: 21.5 },
+        { x: 1763335800000, y: 22.0 },
+        { x: 1763339400000, y: 22.5 },
+        { x: 1763343000000, y: 23.0 },
+        { x: 1763346600000, y: 22.5 },
+        { x: 1763350200000, y: 22.0 },
+        { x: 1763353800000, y: 21.5 },
       ],
     },
   },

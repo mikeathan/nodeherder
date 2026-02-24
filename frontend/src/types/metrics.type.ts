@@ -13,12 +13,20 @@ export type MiniChartComponentKey =
   | 'MiniPercentChart'
   | 'MiniRealtimeChart'
   | 'MiniNumericChart'
-  | 'MiniBinaryChart';
+  | 'MiniDynamicBinaryChart';
 
 export interface BinaryRange {
   value: string;
   start: number;
   end: number;
+}
+
+export interface BinaryBucket {
+  start: number;
+  end: number;
+  count: number;
+  activeMs: number;
+  intensity: number;
 }
 export type NumericStats = {
   min: number;

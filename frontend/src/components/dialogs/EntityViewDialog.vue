@@ -10,7 +10,7 @@
   import { useMiniChartData } from '@/composables/useMiniChartData';
   import { useEntityDialog } from '@/composables/useEntityDialog';
   import { useDialogUI } from '@/composables/useDialogUI';
-  import { MetricsTypes } from '@/types/metrics.type';
+  import { isBinaryChartableExpose } from '@/utils/chart.utils';
   import MiniChart from '@/components/chart/mini/MiniChart.vue';
 
   const props = defineProps<{
@@ -49,7 +49,9 @@
     const hasBrightnessControl = controlExposes.value.some((exp) => exp.name === 'brightness');
     if (hasBrightnessControl) return false;
     return (
-      chartData.value.hasData && (expose.value.type === ExposeTypes.Numeric || expose.value.type === ExposeTypes.Binary)
+      chartData.value.hasData &&
+      (expose.value.type === ExposeTypes.Numeric ||
+        isBinaryChartableExpose(expose.value.type as string, expose.value.name as string))
     );
   });
 
