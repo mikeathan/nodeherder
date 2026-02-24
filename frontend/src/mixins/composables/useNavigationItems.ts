@@ -3,6 +3,7 @@ import { MenuBarItem } from '@/types/controls.type';
 import { RouteName } from '@/types/router';
 import { computed, h, ref } from 'vue';
 import Logo from '@/components/controls/Logo.vue';
+import { emitOpenConfirmationDialog } from '@/contracts/dialog-events';
 
 export function useSideNavigationItems() {
   const isPermitJoinActive = ref<boolean>(false);
@@ -12,6 +13,14 @@ export function useSideNavigationItems() {
       isPermitJoinActive.value = true;
     }
   };
+
+  function openPermitJoinDialog() {
+    const props = {
+      title: 'Permit join',
+      message: 'Are you sure?',
+    };
+    emitOpenConfirmationDialog(startPermitJoinTimer, props);
+  }
   const topNavigationItems = computed<MenuBarItem[]>(() => [
     {
       isLogo: true,
@@ -60,7 +69,7 @@ export function useSideNavigationItems() {
       get disabled() {
         return isPermitJoinActive.value;
       },
-      command: () => startPermitJoinTimer(),
+      command: () => openPermitJoinDialog(),
     },
   ]);
   return { sideNavigationItems, topNavigationItems, isPermitJoinActive };

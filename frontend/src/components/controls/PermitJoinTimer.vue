@@ -128,47 +128,71 @@
     justify-content: center;
 
     width: 100%;
-    padding: 0.5rem;
-    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    border-radius: 0;
+    /* removed border radius for banner-like appearance if it sits at the top, or 8px if inside a card */
 
-    background-color: #2c2f36;
-    color: #e0e0e0;
-    border: 1px solid #41444b;
+    background-color: var(--p-surface-800);
+    color: var(--p-surface-0);
+    border-bottom: 1px solid var(--p-surface-700);
     text-decoration: none;
 
-    font-size: 1rem;
+    font-size: 0.875rem;
     font-weight: 500;
 
-    transition: background-color 0.3s, border-color 0.3s;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease;
     gap: 0.75rem;
   }
 
   .join-control:hover {
-    background-color: #34383f;
-    border-color: #555960;
+    background-color: var(--p-surface-700);
   }
 
   .join-control.running {
-    background-color: #37424b;
-    border-color: #5a6670;
+    background-color: var(--p-surface-800);
   }
 
   .join-control.disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     pointer-events: none;
   }
 
   .join-label {
-    font-size: 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
   }
 
   .join-timer {
-    font-family: monospace;
-    background-color: #1f252b;
-    padding: 0.2rem 0.75rem;
-    border-radius: 4px;
-    border: 1px solid #3b3f46;
-    color: #cbd5e1;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 700;
+    background-color: var(--p-surface-900);
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    border: 1px solid var(--p-surface-700);
+    color: var(--p-surface-0);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Light theme overrides (Targeting Tailwind's dark mode absence) ── */
+  :global(html:not(.dark)) .join-control,
+  :global(html:not(.dark)) .join-control.running {
+    background-color: var(--p-surface-100);
+    color: var(--p-surface-900);
+    border-bottom-color: var(--p-surface-200);
+  }
+
+  :global(html:not(.dark)) .join-control:hover,
+  :global(html:not(.dark)) .join-control.running:hover {
+    background-color: var(--p-surface-200);
+  }
+
+  :global(html:not(.dark)) .join-timer {
+    background-color: var(--p-surface-0);
+    color: var(--p-primary-600, #2563eb);
+    border-color: var(--p-surface-300);
   }
 </style>
 

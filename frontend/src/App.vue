@@ -28,6 +28,20 @@
     flex-direction: column;
   }
 
+  /* Mobile: enable native body scroll so browser chrome (URL bar) can hide */
+  @media screen and (max-width: 768px) {
+    html,
+    body {
+      height: auto !important;
+      min-height: 100dvh !important;
+      overflow: visible !important;
+    }
+    #app {
+      height: auto !important;
+      min-height: 100dvh !important;
+    }
+  }
+
   body {
     font-family: 'Roboto', sans-serif !important;
   }
