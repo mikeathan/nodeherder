@@ -37,6 +37,7 @@ export const ColorTypes = {
   White: '#FFFFFF',
   Slate800: '#1e293b',
   Slate700: '#334155',
+  Slate500: '#64748b',
   Green800: '#166534',
   Green500: '#22c55e',
   Green400: '#4ade80',

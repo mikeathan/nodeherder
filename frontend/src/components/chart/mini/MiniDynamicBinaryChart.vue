@@ -1,19 +1,17 @@
 <script setup lang="ts">
   import { computed, ref, onMounted, onUnmounted, PropType } from 'vue';
-  import VueApexCharts from 'vue3-apexcharts';
   import { BinaryDataPoint } from '@/types/metrics.type';
-  import { getExposeBinaryColour, resolveChartOptions } from '@/contracts/chart';
-  import { ChartTypes } from '@/types/chart.type';
+  import { getExposeBinaryColour } from '@/contracts/chart';
   import {
     getBinaryRanges,
     getBinaryStats,
-    toBinaryRangeBarData,
     renderRangeTooltip,
     resolveBinaryLabel,
     bucketBinaryEvents,
     BINARY_NOISE_THRESHOLD,
     DENSITY_COLORS,
     getDensityTimeLabels,
+    computeTimelineSegments,
   } from '@/utils/chart.utils';
 
   const DENSITY_BUCKET_MINUTES = 5;
@@ -33,15 +31,22 @@
     },
   });
 
-  const colors = computed(() => {
-    const color = getExposeBinaryColour(props.exposeName);
-    return [color.on, color.off];
-  });
+  const colors = computed(() => getExposeBinaryColour(props.exposeName));
 
   const isNoisy = computed(() => (props.data?.length ?? 0) >= BINARY_NOISE_THRESHOLD);
 
+  // ── Range — computed from data timestamps ──
+
+  const range = computed(() => {
+    if (!props.data?.length) return { from: 0, to: 0 };
+    const now = Date.now();
+    const timestamps = props.data.filter((p) => Number.isFinite(p.timestamp)).map((p) => p.timestamp);
+    if (timestamps.length === 0) return { from: 0, to: 0 };
+    return { from: Math.min(...timestamps), to: now };
+  });
+
   const stats = computed(() => {
-    const result = getBinaryStats(props.data ?? []);
+    const result = getBinaryStats(props.data ?? [], range.value.to);
     return {
       onCount: result.onCount,
       offCount: result.offCount,
@@ -51,16 +56,9 @@
 
   // ── Density mode (noisy data) ──
 
-  const densityRange = computed(() => {
-    if (!props.data?.length) return { from: 0, to: 0 };
-    const timestamps = props.data.filter((p) => Number.isFinite(p.timestamp)).map((p) => p.timestamp);
-    if (timestamps.length === 0) return { from: 0, to: 0 };
-    return { from: Math.min(...timestamps), to: Math.max(...timestamps) };
-  });
-
   const densityBuckets = computed(() => {
     if (!isNoisy.value || !props.data?.length) return [];
-    const { from, to } = densityRange.value;
+    const { from, to } = range.value;
     if (from >= to) return [];
     return bucketBinaryEvents(props.data, from, to, DENSITY_BUCKET_MINUTES);
   });
@@ -77,24 +75,69 @@
 
   const densityTimeLabels = computed(() => getDensityTimeLabels(densityBuckets.value));
 
+  // ── Timeline mode (clean data) — custom strip with MIN_WIDTH_PCT ──
+
+  const timelineSegments = computed(() => {
+    if (!props.data?.length) return [];
+    const { from, to } = range.value;
+    const totalMs = to - from;
+    if (totalMs <= 0) return [];
+
+    // Filter out zero-width ranges that occur when from === first event timestamp
+    const ranges = getBinaryRanges(props.data, from, to).filter((r) => r.end > r.start);
+
+    return computeTimelineSegments(
+      ranges,
+      totalMs,
+      3, // MIN_WIDTH_PCT
+      {
+        colorOn: colors.value.on,
+        colorOff: colors.value.off,
+        exposeName: props.exposeName,
+      }
+    );
+  });
+
+  const timelineTimeLabels = computed(() => {
+    if (!props.data?.length) return [];
+    const { from, to } = range.value;
+    if (from >= to) return [];
+    const ranges = getBinaryRanges(props.data, from, to).filter((r) => r.end > r.start);
+    // Reuse density time label logic by creating a simple bucket array
+    const buckets = ranges.map((r) => ({ start: r.start, end: r.end, count: 0, activeMs: 0, intensity: 0 }));
+    return getDensityTimeLabels(buckets);
+  });
+
   // ── Tooltip state ──
 
   const tooltipHtml = ref('');
   const tooltipVisible = ref(false);
   const tooltipPos = ref({ x: 0, y: 0 });
 
-  function onCellClick(
-    event: MouseEvent,
-    seg: { bucket: { start: number; end: number; count: number; activeMs: number; intensity: number } }
-  ) {
-    const label = resolveBinaryLabel(props.exposeName, true);
-    const html = renderRangeTooltip(
-      props.exposeName,
-      `${label} (${seg.bucket.count} triggers)`,
-      seg.bucket.start,
-      seg.bucket.end,
-      colors.value[0]
-    );
+  type TooltipSeg = {
+    bucket?: { start: number; end: number; count: number; activeMs: number; intensity: number };
+    start?: number;
+    end?: number;
+    stateLabel?: string;
+    color?: string;
+  };
+
+  function onCellClick(event: MouseEvent, seg: TooltipSeg) {
+    const html = seg.bucket
+      ? renderRangeTooltip(
+          props.exposeName,
+          `${resolveBinaryLabel(props.exposeName, true)} (${seg.bucket.count} triggers)`,
+          seg.bucket.start,
+          seg.bucket.end,
+          colors.value.on
+        )
+      : renderRangeTooltip(
+          props.exposeName,
+          seg.stateLabel ?? '',
+          seg.start ?? 0,
+          seg.end ?? 0,
+          seg.color ?? colors.value.on
+        );
 
     // Toggle off if tapping the same cell
     if (tooltipVisible.value && tooltipHtml.value === html) {
@@ -118,80 +161,6 @@
   }
   onMounted(() => document.addEventListener('click', onOutsideClick));
   onUnmounted(() => document.removeEventListener('click', onOutsideClick));
-
-  // ── Timeline mode (clean data) ──
-
-  const chartData = computed(() => {
-    if (!props.data || props.data.length === 0) return [];
-
-    const now = Date.now();
-    const from = props.data.reduce((min, point) => {
-      if (!Number.isFinite(point.timestamp)) return min;
-      return Math.min(min, point.timestamp);
-    }, Number.POSITIVE_INFINITY);
-
-    if (!Number.isFinite(from)) return [];
-
-    const ranges = getBinaryRanges(props.data, from, now);
-    const apexDataRaw = toBinaryRangeBarData(ranges, colors.value[0], colors.value[1]);
-    const apexData = apexDataRaw.map((d) => ({
-      ...d,
-      x: props.exposeName,
-      stateValue: d.x === 'On' ? 'true' : 'false',
-    }));
-
-    return [
-      {
-        name: props.exposeName,
-        data: apexData,
-      },
-    ];
-  });
-
-  const chartOptions = computed(() => {
-    return resolveChartOptions(ChartTypes.BinaryChart, {
-      chart: {
-        sparkline: { enabled: false },
-      },
-      plotOptions: {
-        bar: {
-          barHeight: '100%',
-          borderRadius: 0,
-        },
-      },
-      stroke: { width: 0 },
-      fill: { opacity: 1 },
-      colors: [colors.value[0], colors.value[1]],
-      grid: {
-        show: false,
-        padding: { left: 0, right: 0, top: -20, bottom: 0 },
-      },
-      xaxis: {
-        labels: {
-          style: { colors: 'var(--p-surface-400, #94a3b8)', fontSize: '10px' },
-          datetimeFormatter: { hour: 'HH:mm', minute: 'HH:mm' },
-        },
-        axisBorder: { show: false },
-        axisTicks: { show: false },
-      },
-      yaxis: { show: false },
-      tooltip: {
-        enabled: true,
-        theme: 'dark',
-        followCursor: true,
-        custom: ({ w, seriesIndex, dataPointIndex }: { w: any; seriesIndex: number; dataPointIndex: number }) => {
-          const d = w.config.series[seriesIndex].data[dataPointIndex];
-          const start: number = Array.isArray(d.y) ? d.y[0] : (d.y?.from ?? d.y ?? 0);
-          const end: number = Array.isArray(d.y) ? d.y[1] : (d.y?.to ?? d.y ?? 0);
-          const stateValue: string = d.stateValue ?? 'false';
-          const label = resolveBinaryLabel(props.exposeName, stateValue);
-          return renderRangeTooltip(props.exposeName, label, start, end, d.fillColor);
-        },
-      },
-      legend: { show: false },
-      dataLabels: { enabled: false },
-    });
-  });
 </script>
 
 <template>
@@ -226,18 +195,37 @@
           {{ lbl.text }}
         </span>
       </div>
-      <!-- Floating tooltip -->
-      <Teleport to="body">
-        <div
-          v-if="tooltipVisible"
-          class="density-tooltip"
-          :style="{ top: tooltipPos.y - 8 + 'px', left: tooltipPos.x + 'px' }"
-          v-html="tooltipHtml" />
-      </Teleport>
     </div>
 
-    <!-- Timeline for clean data -->
-    <VueApexCharts v-else :height="height" :options="chartOptions" :series="chartData" />
+    <!-- Timeline strip for clean data -->
+    <div v-else class="density-strip-container">
+      <div class="density-strip timeline-strip" :style="{ height: height + 'px' }">
+        <div
+          v-for="(seg, i) in timelineSegments"
+          :key="i"
+          class="density-cell"
+          :style="{ width: seg.width, backgroundColor: seg.color }"
+          @click="onCellClick($event, seg)" />
+      </div>
+      <div class="density-time-labels">
+        <span
+          v-for="(lbl, i) in timelineTimeLabels"
+          :key="i"
+          class="density-time-label"
+          :style="{ left: lbl.offset + '%' }">
+          {{ lbl.text }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Floating tooltip (shared by both modes) -->
+    <Teleport to="body">
+      <div
+        v-if="tooltipVisible"
+        class="density-tooltip"
+        :style="{ top: tooltipPos.y - 8 + 'px', left: tooltipPos.x + 'px' }"
+        v-html="tooltipHtml" />
+    </Teleport>
   </div>
 </template>
 
@@ -291,13 +279,25 @@
 
   .density-cell {
     flex: 1;
-    min-width: 1px;
+    min-width: 0;
     transition: opacity 0.15s ease;
     cursor: default;
   }
 
   .density-cell:hover {
     opacity: 0.8;
+  }
+
+  /* ── Timeline strip overrides ── */
+
+  .timeline-strip {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .timeline-strip .density-cell {
+    flex: none; /* Use explicit width percentages, not flex: 1 */
+    min-width: 4px; /* Fallback minimum for clickability */
   }
 
   .density-time-labels {
@@ -312,23 +312,6 @@
     font-size: 10px;
     color: var(--p-surface-400, #94a3b8);
     white-space: nowrap;
-  }
-
-  /* ── Timeline styles ── */
-  :deep(.apexcharts-rangebar-area) {
-    transition: opacity 0.15s ease;
-  }
-
-  :deep(.apexcharts-rangebar-area:hover) {
-    opacity: 0.85;
-  }
-
-  :deep(.apexcharts-tooltip) {
-    transform: translateY(-40px);
-  }
-
-  :deep(.apexcharts-plot-area) {
-    overflow: visible;
   }
 </style>
 

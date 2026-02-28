@@ -13,6 +13,7 @@
     BINARY_NOISE_THRESHOLD,
     DENSITY_COLORS,
     getDensityTimeLabels,
+    computeTimelineSegments,
   } from '@/utils/chart.utils';
   import { parseTimestamp } from '@/utils/date.utils';
   import { formatDuration } from '@/utils/date.utils';
@@ -63,31 +64,24 @@
 
   const mergedRanges = computed(() => {
     if (!props.chartData?.data) return [];
-    const rangeMs = Math.max(0, range.value.to - range.value.from);
-    const flickerThreshold = Math.max(15_000, Math.round(rangeMs / 1200));
-    return getBinaryRanges(props.chartData.data, range.value.from, range.value.to, flickerThreshold);
+    // No flicker merging — the MIN_WIDTH_PCT algorithm handles visual compaction
+    return getBinaryRanges(props.chartData.data, range.value.from, range.value.to);
   });
 
   const timelineSegments = computed(() => {
     const ranges = mergedRanges.value;
-    if (ranges.length === 0) return [];
-
-    // Total chart duration for percentage widths
     const totalMs = range.value.to - range.value.from;
-    if (totalMs <= 0) return [];
 
-    return ranges.map((r) => {
-      const segDuration = r.end - r.start;
-      const widthPct = (segDuration / totalMs) * 100;
-      const isOn = r.value === 'ON' || r.value === 'true' || r.value === 'true' || r.value === '1';
-      return {
-        width: `${widthPct}%`,
-        color: isOn ? colors.value.on : colors.value.off,
-        start: r.start,
-        end: r.end,
-        stateLabel: resolveBinaryLabel(props.chartData?.name ?? '', isOn ? 'true' : 'false'),
-      };
-    });
+    return computeTimelineSegments(
+      ranges,
+      totalMs,
+      2.5, // MIN_WIDTH_PCT
+      {
+        colorOn: colors.value.on,
+        colorOff: colors.value.off,
+        exposeName: props.chartData?.name ?? '',
+      }
+    );
   });
 
   // ── Heatmap (State B — high noise) ──
@@ -414,6 +408,7 @@
   .timeline-strip .density-cell {
     height: 60px;
     align-self: center;
+    /* min-width removed: handled dynamically via JS percentages to prevent mobile flex overflow */
   }
 
   .density-cell:hover {

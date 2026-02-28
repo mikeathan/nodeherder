@@ -58,15 +58,27 @@
       formatNumericXAxisLabel(value, showDayLabels, opts);
 
     return resolveChartOptions(ChartTypes.AreaChart, {
-      stroke: { colors: [color], width: 2.2 },
+      chart: {
+        dropShadow: {
+          enabled: true,
+          top: 4,
+          left: 0,
+          blur: 4,
+          opacity: 0.15,
+        },
+      },
+      stroke: { colors: [color], width: 1.5, curve: 'smooth' },
       colors: [color],
       markers: {
         size: showMarkers ? 4 : 0,
+        strokeWidth: 2,
+        strokeColors: '#1e293b', // Matches dark background
+        colors: [color],
         hover: { size: showMarkers ? 6 : 4 },
       },
       grid: {
-        borderColor: 'rgba(255,255,255,0.08)',
-        strokeDashArray: 4,
+        borderColor: 'rgba(255,255,255,0.04)',
+        strokeDashArray: 3,
         padding: { left: 6, right: 6, top: 8, bottom: 0 },
       },
       xaxis: {
@@ -89,10 +101,12 @@
         },
       },
       fill: {
+        type: 'gradient',
         gradient: {
-          opacityFrom: 0.35,
-          opacityTo: 0.03,
-          stops: [0, 60, 100],
+          shadeIntensity: 1,
+          opacityFrom: 0.2,
+          opacityTo: 0.0,
+          stops: [0, 95, 100],
         },
       },
       legend: { show: false },

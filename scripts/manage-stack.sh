@@ -12,7 +12,8 @@ function print_usage() {
   echo "  stop    - Stop containers (docker compose stop)"
   echo "  down    - Stop and remove containers (docker compose down)"
   echo "  restart - Restart containers (docker compose restart)"
-  echo "  rebuild - Rebuild and restart containers (down, build --no-cache, up -d)"
+  echo "  pull    - Pull latest images (docker compose pull)"
+  echo "  rebuild - Pull latest images, rebuild, and restart containers"
   echo ""
   echo "Stacks:"
   echo "  all     - Default. Manage both backend and frontend"
@@ -46,14 +47,22 @@ case $ACTION in
     [[ "$STACK" == "backend" || "$STACK" == "all" ]] && docker compose -f docker-compose.backend.yml restart
     [[ "$STACK" == "frontend" || "$STACK" == "all" ]] && docker compose -f docker-compose.frontend.yml restart
     ;;
+  pull)
+    [[ "$STACK" == "backend" || "$STACK" == "all" ]] && docker compose -f docker-compose.backend.yml pull
+    [[ "$STACK" == "frontend" || "$STACK" == "all" ]] && docker compose -f docker-compose.frontend.yml pull
+    ;;
   rebuild)
     echo "Stopping containers..."
     [[ "$STACK" == "backend" || "$STACK" == "all" ]] && docker compose -f docker-compose.backend.yml down
     [[ "$STACK" == "frontend" || "$STACK" == "all" ]] && docker compose -f docker-compose.frontend.yml down
 
+    echo "Pulling latest images..."
+    [[ "$STACK" == "backend" || "$STACK" == "all" ]] && docker compose -f docker-compose.backend.yml pull
+    [[ "$STACK" == "frontend" || "$STACK" == "all" ]] && docker compose -f docker-compose.frontend.yml pull
+
     echo "Rebuilding images..."
-    [[ "$STACK" == "backend" || "$STACK" == "all" ]] && docker compose -f docker-compose.backend.yml build --no-cache
-    [[ "$STACK" == "frontend" || "$STACK" == "all" ]] && docker compose -f docker-compose.frontend.yml build --no-cache
+    [[ "$STACK" == "backend" || "$STACK" == "all" ]] && docker compose -f docker-compose.backend.yml build --pull --no-cache
+    [[ "$STACK" == "frontend" || "$STACK" == "all" ]] && docker compose -f docker-compose.frontend.yml build --pull --no-cache
 
     echo "Starting containers..."
     [[ "$STACK" == "backend" || "$STACK" == "all" ]] && docker compose -f docker-compose.backend.yml up -d

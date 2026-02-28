@@ -51,6 +51,19 @@
               }
             }
           },
+          "Kitchen": {
+            "name": "Kitchen",
+            "deviceGroup": {
+              "0x70b3d52b60136661": {
+                "deviceId": "0x70b3d52b60136661",
+                "exposes": ["energy"]
+              },
+              "0x00124b002fa5844e": {
+                "deviceId": "0x00124b002fa5844e",
+                "exposes": ["contact"]
+              }
+            }
+          },
           "attic room": {
             "name": "attic room",
             "deviceGroup": {
