@@ -102,8 +102,94 @@ export function getBinaryRanges(data: BinaryDataPoint[], from: number, to: numbe
     .filter((point) => Number.isFinite(point.timestamp))
     .sort((a, b) => a.timestamp - b.timestamp);
   if (sorted.length === 0) return [];
-  const normalized = normalizeBinaryEvents(sorted, from, to);
+
+  let normalized = normalizeBinaryEvents(sorted, from, to);
+  normalized = mergeContiguousStates(normalized);
+
   return minDurationMs > 0 ? mergeBinaryFlickers(normalized, minDurationMs) : normalized;
+}
+
+function mergeContiguousStates(ranges: BinaryRange[]): BinaryRange[] {
+  if (!ranges.length) return [];
+  const merged: BinaryRange[] = [{ ...ranges[0] }];
+  for (let i = 1; i < ranges.length; i++) {
+    const current = ranges[i];
+    const last = merged[merged.length - 1];
+
+    if (isBinaryOn(current.value) === isBinaryOn(last.value)) {
+      last.end = current.end;
+    } else {
+      merged.push({ ...current });
+    }
+  }
+  return merged;
+}
+
+export interface TimelineSegment {
+  width: string;
+  color: string;
+  start: number;
+  end: number;
+  stateLabel: string;
+}
+
+export function computeTimelineSegments(
+  ranges: BinaryRange[],
+  totalMs: number,
+  baseMinWidthPct: number,
+  options: {
+    colorOn: string;
+    colorOff: string;
+    exposeName: string;
+  }
+): TimelineSegment[] {
+  if (ranges.length === 0 || totalMs <= 0) return [];
+
+  // 1. Calculate dynamic minimum width
+  // To avoid a "barcode" effect where all segments look identical due to flexbox over-shrinking,
+  // we cap the minimum width so that all ticks combined consume at most 50% of the timeline.
+  // The remaining 50% guarantees proportional differences between long and short spaces.
+  // Hard floor of 0.5% ensures thin ticks remain visible even in highly dense charts.
+  const dynamicMinWidth = Math.max(0.5, Math.min(baseMinWidthPct, 50 / ranges.length));
+
+  let totalExtra = 0;
+
+  // 2. First pass: compute real % widths and bump small elements to the dynamic minimum
+  const segments = ranges.map((r) => {
+    const rawPct = ((r.end - r.start) / totalMs) * 100;
+    const widthPct = Math.max(rawPct, dynamicMinWidth);
+
+    totalExtra += widthPct - rawPct;
+
+    return {
+      widthPct,
+      isOn: isBinaryOn(r.value),
+      start: r.start,
+      end: r.end,
+    };
+  });
+
+  // 3. Second pass: to keep total at 100%, steal the extra added percentage from genuinely large segments
+  if (totalExtra > 0) {
+    const largeSegments = segments.filter((s) => s.widthPct > dynamicMinWidth * 2);
+    const totalLargeWidth = largeSegments.reduce((sum, s) => sum + s.widthPct, 0);
+
+    if (totalLargeWidth > 0) {
+      for (const seg of largeSegments) {
+        const stolen = (seg.widthPct / totalLargeWidth) * totalExtra;
+        seg.widthPct = Math.max(dynamicMinWidth, seg.widthPct - stolen);
+      }
+    }
+  }
+
+  // 4. Map to final display objects
+  return segments.map((seg) => ({
+    width: `${seg.widthPct}%`,
+    color: seg.isOn ? options.colorOn : options.colorOff,
+    start: seg.start,
+    end: seg.end,
+    stateLabel: resolveBinaryLabel(options.exposeName, seg.isOn ? 'true' : 'false'),
+  }));
 }
 
 export function toBinaryRangeBarData(ranges: BinaryRange[], colorOn: string, colorOff: string): RangeBarDataPoint[] {

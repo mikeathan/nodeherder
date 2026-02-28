@@ -42,47 +42,120 @@ export const getPeriodOffset = (period: PeriodType): { from: Date; to: Date } =>
   }
 };
 
-const buildExposeColors = (): KeyValuePair<string> => {
-  const colors = Object.values(ColorTypes);
-  const exposeColors: KeyValuePair<string> = {};
-  for (let i = 0; i < alllowedExposeList.length; i++) {
-    exposeColors[alllowedExposeList[i]] = colors[i % colors.length];
-  }
-  return exposeColors;
+// ── Numeric Semantic Chart Colors ──
+
+const SEMANTIC_NUMERIC_COLORS: KeyValuePair<ColorValue> = {
+  // Temperature (Warm)
+  temperature: ColorTypes.Coral,
+  device_temperature: ColorTypes.Red500,
+  local_temperature: ColorTypes.Orange,
+
+  // Humidity/Water (Cool/Blue)
+  humidity: ColorTypes.SkyBlue,
+  water_leak: ColorTypes.AzureBlue,
+  soil_moisture: ColorTypes.Turquoise,
+
+  // Light/Illuminance (Yellow/Amber)
+  illuminance: ColorTypes.Amber,
+  illuminance_lux: ColorTypes.Yellow,
+  brightness: ColorTypes.Amber,
+  color_temp: ColorTypes.Yellow,
+
+  // Power/Energy (Purple/Neon)
+  power: ColorTypes.ElectricViolet,
+  energy: ColorTypes.Purple,
+  voltage: ColorTypes.Pink,
+  current: ColorTypes.SkyBlue,
+
+  // Health/Battery (Green)
+  battery: ColorTypes.Green500,
+  battpercentage: ColorTypes.Green400,
+  linkquality: ColorTypes.PineGreen,
+
+  // Air Quality/Pressure
+  pressure: ColorTypes.Turquoise,
+  co2: ColorTypes.SlateGrey,
+  voc: ColorTypes.LightBrown,
+
+  // Danger/Critical
+  smoke_concentration: ColorTypes.Red,
 };
 
-const exposeColors: KeyValuePair<string> = buildExposeColors();
+// Fallback palette: vibrant, highly visible colors only (no grays/whites/dull slates)
+const VIBRANT_FALLBACK_COLORS = [
+  ColorTypes.SkyBlue,
+  ColorTypes.SpringGreen,
+  ColorTypes.Coral,
+  ColorTypes.Yellow,
+  ColorTypes.ElectricViolet,
+  ColorTypes.Turquoise,
+  ColorTypes.Pink,
+  ColorTypes.Amber,
+  ColorTypes.BrightGreen,
+  ColorTypes.Blue,
+];
 
 export const getExposeColor = (exposeName: string): ColorValue => {
-  return exposeColors[exposeName] ?? Object.values(ColorTypes)[0];
+  // 1. Check for a specific semantic color mapping
+  const normalized = (exposeName || '').toLowerCase();
+
+  for (const [key, color] of Object.entries(SEMANTIC_NUMERIC_COLORS)) {
+    if (normalized.includes(key)) {
+      return color;
+    }
+  }
+
+  // 2. Fallback to a consistent vibrant color based on its position in the allowed list
+  let index = alllowedExposeList.indexOf(exposeName);
+  if (index === -1) {
+    // String hash for entirely unknown custom exposes to ensure consistent coloring
+    index = exposeName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  }
+
+  return VIBRANT_FALLBACK_COLORS[index % VIBRANT_FALLBACK_COLORS.length];
 };
 
 export const ExposeBinaryColours: KeyValuePair<ExposeBinaryColor> = {
   presence: {
     on: ColorTypes.Green500,
-    off: ColorTypes.Slate700,
+    off: ColorTypes.Slate500,
   },
   contact: {
     on: ColorTypes.Green500,
-    off: ColorTypes.Slate700,
+    off: ColorTypes.Slate500,
   },
   state: {
     on: ColorTypes.Green500,
-    off: ColorTypes.Slate700,
+    off: ColorTypes.Slate500,
   },
   tamper: {
     on: ColorTypes.Red500,
-    off: ColorTypes.Slate700,
+    off: ColorTypes.Slate500,
   },
 };
 
+const DANGER_KEYWORDS = ['smoke', 'alarm', 'tamper', 'leak', 'gas', 'carbon_monoxide'];
+const WARNING_KEYWORDS = ['silence', 'override', 'child_lock', 'bypass'];
+
 export const getExposeBinaryColour = (exposeName: string): ExposeBinaryColor => {
-  return (
-    ExposeBinaryColours[exposeName] ?? {
-      on: ColorTypes.Green500,
-      off: ColorTypes.Slate700,
-    }
-  );
+  if (ExposeBinaryColours[exposeName]) {
+    return ExposeBinaryColours[exposeName];
+  }
+
+  const normalizedName = (exposeName || '').toLowerCase();
+
+  if (DANGER_KEYWORDS.some((kw) => normalizedName.includes(kw))) {
+    return { on: ColorTypes.Red500, off: ColorTypes.Slate500 };
+  }
+
+  if (WARNING_KEYWORDS.some((kw) => normalizedName.includes(kw))) {
+    return { on: ColorTypes.Amber, off: ColorTypes.Slate500 };
+  }
+
+  return {
+    on: ColorTypes.Green500,
+    off: ColorTypes.Slate500,
+  };
 };
 
 export function resolveChartOptions(chartType: string, extra?: Record<string, any>) {
