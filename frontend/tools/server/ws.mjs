@@ -7,7 +7,6 @@ import {
   automationMap,
   getAutomations,
   appConfig,
-  metricsMap,
   runPermitJoin,
 } from './state.mjs';
 import { sendMessage, sendOperationSuccess, sendOperationFailed, currentTime } from './utils.mjs';
