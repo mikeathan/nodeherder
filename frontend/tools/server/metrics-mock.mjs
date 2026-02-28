@@ -501,15 +501,96 @@ export const mockMetricsData = {
       from: 1763236923000,
       to: 1763323323000,
       data: [
-        { timestamp: 1763321416429, value: 'true' },
-        { timestamp: 1763322000000, value: 'false' },
-        { timestamp: 1763322060000, value: 'true' },
-        { timestamp: 1763325000000, value: 'false' },
-        { timestamp: 1763325060000, value: 'true' },
-        { timestamp: 1763328500000, value: 'false' },
-        { timestamp: 1763328560000, value: 'true' },
-        { timestamp: 1763330500000, value: 'false' },
-        { timestamp: 1763330560000, value: 'true' },
+        // ~25 door open/close events spread across the day
+        // Each "open" lasts 3-30 seconds to test min-width rendering
+
+        // 06:15 — morning, leaving for work
+        { timestamp: 1763259300000, value: 'false' }, // open
+        { timestamp: 1763259305000, value: 'true' }, // closed after 5s
+
+        // 06:45 — came back for keys
+        { timestamp: 1763261100000, value: 'false' },
+        { timestamp: 1763261108000, value: 'true' }, // 8s
+
+        // 07:30 — left again
+        { timestamp: 1763263800000, value: 'false' },
+        { timestamp: 1763263803000, value: 'true' }, // 3s
+
+        // 08:00 — delivery arrived
+        { timestamp: 1763265600000, value: 'false' },
+        { timestamp: 1763265630000, value: 'true' }, // 30s (held open)
+
+        // 09:15 — post
+        { timestamp: 1763270100000, value: 'false' },
+        { timestamp: 1763270106000, value: 'true' }, // 6s
+
+        // 10:30 — neighbour visit
+        { timestamp: 1763274600000, value: 'false' },
+        { timestamp: 1763274615000, value: 'true' }, // 15s
+
+        // 11:00 — neighbour leaves
+        { timestamp: 1763276400000, value: 'false' },
+        { timestamp: 1763276410000, value: 'true' }, // 10s
+
+        // 12:15 — lunch delivery
+        { timestamp: 1763280900000, value: 'false' },
+        { timestamp: 1763280920000, value: 'true' }, // 20s
+
+        // 13:00 — bins
+        { timestamp: 1763283600000, value: 'false' },
+        { timestamp: 1763283625000, value: 'true' }, // 25s
+
+        // 14:30 — back from bins
+        { timestamp: 1763289000000, value: 'false' },
+        { timestamp: 1763289004000, value: 'true' }, // 4s
+
+        // 15:45 — school pick up
+        { timestamp: 1763293500000, value: 'false' },
+        { timestamp: 1763293507000, value: 'true' }, // 7s
+
+        // 16:00 — kids home
+        { timestamp: 1763294400000, value: 'false' },
+        { timestamp: 1763294412000, value: 'true' }, // 12s
+
+        // 16:05 — kid forgot bag
+        { timestamp: 1763294700000, value: 'false' },
+        { timestamp: 1763294704000, value: 'true' }, // 4s
+
+        // 16:06 — kid back
+        { timestamp: 1763294760000, value: 'false' },
+        { timestamp: 1763294763000, value: 'true' }, // 3s
+
+        // 17:30 — partner home
+        { timestamp: 1763300200000, value: 'false' },
+        { timestamp: 1763300206000, value: 'true' }, // 6s
+
+        // 18:00 — dog walk
+        { timestamp: 1763302200000, value: 'false' },
+        { timestamp: 1763302205000, value: 'true' }, // 5s
+
+        // 18:30 — back from walk
+        { timestamp: 1763304000000, value: 'false' },
+        { timestamp: 1763304008000, value: 'true' }, // 8s
+
+        // 19:15 — takeaway delivery
+        { timestamp: 1763306700000, value: 'false' },
+        { timestamp: 1763306718000, value: 'true' }, // 18s
+
+        // 20:00 — putting bins out
+        { timestamp: 1763309400000, value: 'false' },
+        { timestamp: 1763309420000, value: 'true' }, // 20s
+
+        // 21:00 — cat out
+        { timestamp: 1763313000000, value: 'false' },
+        { timestamp: 1763313005000, value: 'true' }, // 5s
+
+        // 21:45 — cat in
+        { timestamp: 1763315700000, value: 'false' },
+        { timestamp: 1763315710000, value: 'true' }, // 10s
+
+        // 22:00 — locked up for night
+        { timestamp: 1763316600000, value: 'false' },
+        { timestamp: 1763316603000, value: 'true' }, // 3s
       ],
     },
   },

@@ -2,7 +2,6 @@
   import type { PropType } from 'vue';
   import type { NumericChartHeaderData } from '@/types/metrics.type';
 
-
   defineProps({
     chart: {
       type: Object as PropType<NumericChartHeaderData>,
@@ -76,7 +75,7 @@
     align-items: center;
     gap: 8px;
     font-weight: 600;
-    color: #e5e7eb;
+    color: var(--p-surface-0, #e5e7eb);
   }
 
   .chart-dot {
@@ -93,29 +92,41 @@
 
   .chart-unit {
     font-size: 0.8rem;
-    color: #9aa4b2;
+    color: var(--p-surface-400, #9aa4b2);
   }
 
   .stat {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: 6px 10px;
+    padding: 8px 12px;
     border-radius: 8px;
-    background: rgba(15, 23, 42, 0.35);
+    background: rgba(15, 23, 42, 0.4);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05); /* very subtle top highlight */
+    border: 1px solid rgba(255, 255, 255, 0.03); /* subtle border */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     min-width: 90px;
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .stat:hover {
+    background: rgba(15, 23, 42, 0.55);
+    border-color: rgba(255, 255, 255, 0.06);
   }
 
   .stat-label {
     font-size: 0.65rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #8a94a6;
+    color: var(--p-surface-400, #8a94a6);
   }
 
   .stat-value {
     font-size: 0.9rem;
-    color: #f8fafc;
+    color: var(--p-surface-0, #f8fafc);
     font-weight: 600;
   }
 
@@ -153,5 +164,28 @@
     .stat-value {
       font-size: 0.8rem;
     }
+  }
+
+  /* ── Light theme overrides ── */
+  :root[data-p-theme='light'] .chart-header .chart-title,
+  .p-light .chart-header .chart-title {
+    color: var(--p-surface-700, #334155);
+  }
+
+  :root[data-p-theme='light'] .chart-header .stat,
+  .p-light .chart-header .stat {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.05);
+    box-shadow: none;
+  }
+
+  :root[data-p-theme='light'] .chart-header .stat:hover,
+  .p-light .chart-header .stat:hover {
+    background: rgba(0, 0, 0, 0.08);
+  }
+
+  :root[data-p-theme='light'] .chart-header .stat-value,
+  .p-light .chart-header .stat-value {
+    color: var(--p-surface-700, #334155);
   }
 </style>
