@@ -281,6 +281,20 @@ func TestProcessorTriggersStepActionDialAutomations(t *testing.T) {
 
 	// register hub
 	store := utils_test.CreateStore()
+
+	// Dial devices fire rapid action events that feed automations — they must not
+	// be throttled by the default 60s measurement debounce.
+	dialCfg := settings.NewDeviceConfig("x01111111")
+	dialCfg.DebounceOverrides["action"] = utils.IntervalFromMilliseconds(0)
+	dialCfg.DebounceOverrides["action_time"] = utils.IntervalFromMilliseconds(0)
+	store.AppConfig().SetDeviceConfigOverrides(dialCfg)
+
+	// Light device receives rapid brightness updates from the dial automation
+	lightCfg := settings.NewDeviceConfig("x02222222")
+	lightCfg.DebounceOverrides["brightness"] = utils.IntervalFromMilliseconds(0)
+	lightCfg.DebounceOverrides["color_temp"] = utils.IntervalFromMilliseconds(0)
+	store.AppConfig().SetDeviceConfigOverrides(lightCfg)
+
 	hub := controllers.RegisterHubController(ws, store, mqtt)
 	hub.WithAutomationStorage(automationStorage) // overide storage
 	//  publish deviceBridgeList to configure hub with devices
@@ -562,6 +576,10 @@ func TestProcessorStoresMetricsForNewNonBridgeDevice(t *testing.T) {
 	}
 	cfg.MetricsEnabled = true
 	cfg.RateLimit = utils.IntervalFromMilliseconds(10)
+	cfg.DebounceOverrides = map[string]*utils.TimeInterval{
+		"brightness": utils.IntervalFromMilliseconds(10),
+		"color_temp": utils.IntervalFromMilliseconds(10),
+	}
 	appCfg.SetDeviceConfigOverrides(cfg)
 	time.Sleep(500 * time.Millisecond)
 
