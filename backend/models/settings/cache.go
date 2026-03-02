@@ -164,12 +164,10 @@ func (d *DeviceConfigCache) GetDebounce(id string, exposeName string, category b
 	defer d.mutex.RUnlock()
 
 	config, exists := d.appConfig.Hub.Devices.Overrides[id]
-	if !exists {
-		return 0, false
-	}
-
-	if interval, ok := config.DebounceOverrides[exposeName]; ok {
-		return interval.Duration(), true
+	if exists {
+		if interval, ok := config.DebounceOverrides[exposeName]; ok {
+			return interval.Duration(), true
+		}
 	}
 
 	if defaultInterval, ok := d.appConfig.Hub.Devices.Defaults.DefaultDebounceByCategory[category]; ok {

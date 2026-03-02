@@ -447,3 +447,35 @@ func TestDeviceConfigCache_UpdateDefaultsRefreshesCachedDevices(t *testing.T) {
 		t.Fatalf("expected override to remain unchanged after default update")
 	}
 }
+
+func TestGetDebounce_FallsBackToDefaultsForUnconfiguredDevice(t *testing.T) {
+	repo := mocks.NopSettingsrepo{}
+	appConfig := settings.NewAppConfig()
+	// Don't add any device overrides — this device is completely unconfigured
+
+	cache := settings.NewDeviceConfigCache(&repo, appConfig, &sync.RWMutex{})
+
+	// Measurement category has a 60s default
+	debounce, ok := cache.GetDebounce("unconfigured-device", "temperature", bridge.MeasurementCategory)
+	if !ok {
+		t.Fatal("Expected GetDebounce to return true for unconfigured device with Measurement default")
+	}
+	if debounce != 60*time.Second {
+		t.Errorf("Expected 60s default debounce for Measurement, got %v", debounce)
+	}
+
+	// Diagnostic category has a 300s default
+	debounce, ok = cache.GetDebounce("unconfigured-device", "linkquality", bridge.DiagnosticCategory)
+	if !ok {
+		t.Fatal("Expected GetDebounce to return true for unconfigured device with Diagnostic default")
+	}
+	if debounce != 300*time.Second {
+		t.Errorf("Expected 300s default debounce for Diagnostic, got %v", debounce)
+	}
+
+	// Config category has no default — should return false
+	_, ok = cache.GetDebounce("unconfigured-device", "some_config", bridge.ConfigCategory)
+	if ok {
+		t.Error("Expected GetDebounce to return false for Config category with no default")
+	}
+}
