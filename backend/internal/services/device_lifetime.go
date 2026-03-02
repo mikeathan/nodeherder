@@ -61,7 +61,7 @@ func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
 
 		// skip if debounced, we need that to initialise the first debouncer timer
 		// so that we can debounce the next updates
-		if d.debouncerService.DebounceExpose(name, expose.Category) {
+		if d.debouncerService.DebounceExpose(expose) {
 			continue
 		}
 
@@ -109,7 +109,7 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 			continue
 		}
 
-		if d.debouncerService.DebounceExpose(name, expose.Category) {
+		if d.debouncerService.DebounceExpose(expose) {
 			continue
 		}
 
