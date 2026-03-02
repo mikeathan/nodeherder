@@ -317,18 +317,25 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithMetricsEnabled(t *testing.
 		},
 	}
 
+	now := time.Now()
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return now
+	})
+
 	app := settings.NewAppConfig()
 	d1 := settings.NewDeviceConfig("x01234")
 	d1.MetricsEnabled = true
 	d1.DebounceOverrides["battery"] = utils.IntervalFromMilliseconds(5000)
 	d1.DebounceOverrides["linkquality"] = utils.IntervalFromMilliseconds(5000)
+	d1.DebounceOverrides["brightness"] = utils.IntervalFromMilliseconds(10)
+	d1.DebounceOverrides["color_temp"] = utils.IntervalFromMilliseconds(10)
 
 	app.AddDeviceConfig(d1)
 	repo := mocks.NopSettingsrepo{}
 	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
 
 	cache := settings.NewDeviceConfigCache(&repo, app, &sync.RWMutex{})
-	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, mocks.NewMockClock(func() time.Time { return time.Now() }))
+	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, mockClock)
 
 	testCases := []struct {
 		payload         map[string]interface{}
@@ -363,6 +370,11 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithMetricsEnabled(t *testing.
 	for id, tc := range testCases {
 
 		payload := tc.payload
+
+		// Advance time 100ms between test cases so the 10ms brightness/color_temp
+		// debounce expires, but the 5s battery/linkquality debounce stays active
+		now = now.Add(100 * time.Millisecond)
+		mockClock.SetMockTime(now)
 
 		if id == 2 {
 			fmt.Println("")
@@ -454,10 +466,17 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithAutomationEnabled(t *testi
 		},
 	}
 
+	now := time.Now()
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return now
+	})
+
 	app := settings.NewAppConfig()
 	d1 := settings.NewDeviceConfig("x01234")
 	d1.DebounceOverrides["battery"] = utils.IntervalFromMilliseconds(5000)
 	d1.DebounceOverrides["linkquality"] = utils.IntervalFromMilliseconds(5000)
+	d1.DebounceOverrides["brightness"] = utils.IntervalFromMilliseconds(10)
+	d1.DebounceOverrides["color_temp"] = utils.IntervalFromMilliseconds(10)
 
 	app.AddDeviceConfig(d1)
 	repo := mocks.NopSettingsrepo{}
@@ -465,7 +484,7 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithAutomationEnabled(t *testi
 	// enable automation for device so we can collect measurement data changes
 	deviceQuerier := mocks.NewMockAutomationDeviceQuerierWithValues(map[string]bool{"x01234": true})
 	cache := settings.NewDeviceConfigCache(&repo, app, &sync.RWMutex{})
-	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, mocks.NewMockClock(func() time.Time { return time.Now() }))
+	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, mockClock)
 
 	testCases := []struct {
 		payload         map[string]interface{}
@@ -500,6 +519,11 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithAutomationEnabled(t *testi
 	for _, tc := range testCases {
 
 		payload := tc.payload
+
+		// Advance time 100ms between test cases so the 10ms brightness/color_temp
+		// debounce expires, but the 5s battery/linkquality debounce stays active
+		now = now.Add(100 * time.Millisecond)
+		mockClock.SetMockTime(now)
 
 		if tc.expectedUpdates > 0 {
 			wg.Add(tc.expectedUpdates)
@@ -622,4 +646,129 @@ func TestOnConfigUpdated_ShouldDisableDevice_OnStartUp(t *testing.T) {
 func createTimestamp(hour, minute, second int) time.Time {
 	now := time.Now()
 	return time.Date(now.Year(), now.Month(), now.Day(), hour, minute, second, 0, now.Location())
+}
+
+func TestDeviceLifetimeService_UnchangedValuesNeverConsumeDebounce(t *testing.T) {
+	// This test asserts that if the same value is sent repeatedly, it never
+	// triggers an update — even after the debounce window has expired.
+	// This verifies the ordering: value-check BEFORE debounce.
+
+	updateCount := 0
+
+	device := utils_test.CreateLightDevice("x01234", "testDevice", "brightness", 50.0)
+	device.Availability = devices.OnlineAvailability
+
+	events := &devices.DeviceRequestEvents{
+		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
+			updateCount++
+		},
+		OnDeviceMeasurementsUpdated: func(d *devices.Device, p map[string]interface{}) {},
+	}
+
+	now := time.Now()
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return now
+	})
+
+	app := settings.NewAppConfig()
+	d1 := settings.NewDeviceConfig("x01234")
+	d1.DebounceOverrides = map[string]*utils.TimeInterval{
+		"brightness": utils.IntervalFromSeconds(5),
+	}
+	app.AddDeviceConfig(d1)
+	repo := mocks.NopSettingsrepo{}
+	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
+
+	cache := settings.NewDeviceConfigCache(&repo, app, &sync.RWMutex{})
+	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, mockClock)
+
+	// Send the same value 50.0 many times, advancing past the debounce window each time
+	for i := 0; i < 10; i++ {
+		now = now.Add(6 * time.Second) // well past the 5s debounce
+		mockClock.SetMockTime(now)
+		service.Update(map[string]interface{}{"brightness": 50.0})
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	if updateCount != 0 {
+		t.Errorf("Expected 0 updates for unchanged values, got %d", updateCount)
+	}
+
+	// Now send an actually changed value — it SHOULD trigger an update
+	now = now.Add(6 * time.Second)
+	mockClock.SetMockTime(now)
+	service.Update(map[string]interface{}{"brightness": 75.0})
+	time.Sleep(50 * time.Millisecond)
+
+	if updateCount != 1 {
+		t.Errorf("Expected exactly 1 update after real value change, got %d", updateCount)
+	}
+}
+
+func TestDeviceLifetimeService_NoisyValuesDebouncedCorrectly(t *testing.T) {
+	// This test simulates a noisy sensor (like linkquality bouncing between 80 and 81)
+	// and asserts that the debouncer correctly throttles even when values change.
+
+	updateCount := 0
+
+	brightness := utils_test.CreateEntity("brightness", "number", 80.0)
+	brightness.Category = bridge.MeasurementCategory
+
+	device := utils_test.CreateDeviceWithExposes("x01234", "testDevice", []*devices.Entity{brightness})
+	device.Availability = devices.OnlineAvailability
+
+	events := &devices.DeviceRequestEvents{
+		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
+			updateCount++
+		},
+		OnDeviceMeasurementsUpdated: func(d *devices.Device, p map[string]interface{}) {},
+	}
+
+	now := time.Now()
+	mockClock := mocks.NewMockClock(func() time.Time {
+		return now
+	})
+
+	app := settings.NewAppConfig()
+	d1 := settings.NewDeviceConfig("x01234")
+	d1.DebounceOverrides = map[string]*utils.TimeInterval{
+		"brightness": utils.IntervalFromSeconds(60),
+	}
+	app.AddDeviceConfig(d1)
+	repo := mocks.NopSettingsrepo{}
+	deviceQuerier := mocks.NewMockAutomationDeviceQuerier()
+
+	cache := settings.NewDeviceConfigCache(&repo, app, &sync.RWMutex{})
+	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, mockClock)
+
+	// First update: value changes from 80 -> 81, should go through (first event)
+	service.Update(map[string]interface{}{"brightness": 81.0})
+	time.Sleep(50 * time.Millisecond)
+	if updateCount != 1 {
+		t.Fatalf("Expected 1 update after first change, got %d", updateCount)
+	}
+
+	// Noisy updates every 10s with alternating values — all should be debounced
+	values := []float64{80.0, 81.0, 80.0, 81.0, 80.0}
+	for _, v := range values {
+		now = now.Add(10 * time.Second)
+		mockClock.SetMockTime(now)
+		service.Update(map[string]interface{}{"brightness": v})
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	// Only the initial update should have gone through; the rest are debounced
+	if updateCount != 1 {
+		t.Errorf("Expected 1 total update (noisy values should be debounced), got %d", updateCount)
+	}
+
+	// After 60s, the next changed value should go through
+	now = now.Add(61 * time.Second)
+	mockClock.SetMockTime(now)
+	service.Update(map[string]interface{}{"brightness": 82.0})
+	time.Sleep(50 * time.Millisecond)
+
+	if updateCount != 2 {
+		t.Errorf("Expected 2 total updates after debounce window expired, got %d", updateCount)
+	}
 }

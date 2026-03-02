@@ -109,11 +109,11 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 			continue
 		}
 
-		if d.debouncerService.DebounceExpose(expose) {
+		if utils.ComparePayloadValues(expose.Data.Value(), newValue) {
 			continue
 		}
 
-		if utils.ComparePayloadValues(expose.Data.Value(), newValue) {
+		if d.debouncerService.DebounceExpose(expose) {
 			continue
 		}
 
