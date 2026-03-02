@@ -932,6 +932,9 @@ func TestQueryServiceReturnsLatestMetrics(t *testing.T) {
 	deviceConfig := settings.NewDeviceConfig("x02222222")
 	deviceConfig.MetricsEnabled = true
 	deviceConfig.RateLimit = utils.IntervalFromMilliseconds(0)
+	deviceConfig.DebounceOverrides = map[string]*utils.TimeInterval{
+		"brightness": utils.IntervalFromMilliseconds(0),
+	}
 	appConfig.AddDeviceConfig(deviceConfig)
 
 	store, cleanup, err := utils_test.CreateFileStoreWithAppConfig(appConfig, mockClock)
@@ -1112,6 +1115,9 @@ func TestProcessorStoresMetricsForExistingDevice(t *testing.T) {
 	// enable metrics for dial device
 	cfg.MetricsEnabled = true
 	cfg.RateLimit = utils.IntervalFromMilliseconds(10)
+	cfg.DebounceOverrides = map[string]*utils.TimeInterval{
+		"action_time": utils.IntervalFromMilliseconds(0),
+	}
 	appCfg.SetDeviceConfigOverrides(cfg)
 
 	// publish light device

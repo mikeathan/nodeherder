@@ -3,6 +3,7 @@ package settings
 import (
 	"fmt"
 	"node-herder/models/bridge"
+	"node-herder/models/devices"
 	"node-herder/utils"
 	"sync"
 	"time"
@@ -29,8 +30,16 @@ func NewDeviceDebouncer(deviceId string, configCache *DeviceConfigCache, clock u
 	}
 }
 
-func (d *DeviceDebouncer) DebounceExpose(exposeName string, category bridge.ExposeCategory) bool {
-	duration, ok := d.configCache.GetDebounce(d.id, exposeName, category)
+func (d *DeviceDebouncer) DebounceExpose(expose *devices.Entity) bool {
+	if expose == nil {
+		return false
+	}
+
+	if expose.Type == "binary" || expose.Type == "enum" {
+		return false
+	}
+
+	duration, ok := d.configCache.GetDebounce(d.id, expose.Name, expose.Category)
 	if !ok {
 		// no debounce time set, so don't debounce
 		return false
@@ -39,14 +48,14 @@ func (d *DeviceDebouncer) DebounceExpose(exposeName string, category bridge.Expo
 	defer d.mutex.Unlock()
 
 	now := d.clock.Now()
-	if lastEvent, ok := d.debounceMap[exposeName]; ok {
+	if lastEvent, ok := d.debounceMap[expose.Name]; ok {
 		if now.Sub(lastEvent) < duration {
 			return true
 		}
 	}
 
 	// update the last event time
-	d.debounceMap[exposeName] = now
+	d.debounceMap[expose.Name] = now
 	return false
 }
 
