@@ -103,16 +103,11 @@ func (s *appStore) StoreMetrics(friendlyName string, data map[string]any) error 
 		return nil
 	}
 
-	if config.MetricsEnabled &&
-		s.rateLimiter.AllowWrite(id, config.RateLimitDuration()) {
-
-		err := s.metrics.Store(id, data)
-		if err != nil {
-			return err
-		}
+	if !config.MetricsEnabled {
+		return nil
 	}
 
-	return nil
+	return s.metrics.Store(id, data)
 }
 
 func (s *appStore) RemoveDeviceById(id string) error {

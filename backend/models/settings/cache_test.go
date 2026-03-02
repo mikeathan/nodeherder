@@ -3,6 +3,7 @@ package settings_test
 import (
 	"node-herder/mocks"
 	"node-herder/models/bridge"
+	"node-herder/models/devices"
 	"node-herder/models/settings"
 	"node-herder/repository"
 	"node-herder/utils"
@@ -155,10 +156,10 @@ func TestDeviceConfigCache_DeleteDebounce(t *testing.T) {
 		t.Errorf("Expected expose2 debounce to be deleted")
 	}
 
-	// assert that the expose2 debounce is deleted
-	_, ok = cache.GetDebounce("device1", "expose2", bridge.MeasurementCategory)
-	if ok {
-		t.Errorf("Expected expose2 debounce to be deleted")
+	// assert that the expose2 debounce is deleted and falls back to default 60s
+	debounce, ok = cache.GetDebounce("device1", "expose2", bridge.MeasurementCategory)
+	if !ok || debounce != 60*time.Second {
+		t.Errorf("Expected expose2 debounce to fall back to 60s default")
 	}
 
 	// assert that the expose1 debounce is still set
@@ -218,10 +219,10 @@ func TestDeviceConfigCache_DeleteDebounce_Persists(t *testing.T) {
 		t.Errorf("Expected SaveDeviceConfig to be called 1 time, got %d", repo.SaveDeviceConfigCallCount)
 	}
 
-	// Verify it was deleted from memory
-	_, ok = cache.GetDebounce("device1", "expose1", bridge.MeasurementCategory)
-	if ok {
-		t.Errorf("Expected expose1 debounce to be deleted")
+	// Verify it was deleted from memory and fell back to 60s default
+	debounce, ok := cache.GetDebounce("device1", "expose1", bridge.MeasurementCategory)
+	if !ok || debounce != 60*time.Second {
+		t.Errorf("Expected expose1 debounce to fall back to 60s default")
 	}
 }
 
@@ -254,37 +255,37 @@ func TestDeviceDebouncer_DebounceExpose(t *testing.T) {
 	debouncer := settings.NewDeviceDebouncer("device1", cache, mockClock)
 
 	// Test First Event
-	if debouncer.DebounceExpose("expose1", bridge.MeasurementCategory) == true { // First event should not be debounced
+	if debouncer.DebounceExpose(&devices.Entity{Name: "expose1", Category: bridge.MeasurementCategory, Type: bridge.NumericDataType}) == true { // First event should not be debounced
 		t.Error("First event should not be debounced")
 	}
 
 	// Test Debounced Event (within duration)
 	now = now.Add(500 * time.Millisecond)
 	mockClock.SetMockTime(now)
-	if debouncer.DebounceExpose("expose1", bridge.MeasurementCategory) == false { // Event within duration should be debounced
+	if debouncer.DebounceExpose(&devices.Entity{Name: "expose1", Category: bridge.MeasurementCategory, Type: bridge.NumericDataType}) == false { // Event within duration should be debounced
 		t.Error("Event within duration should be debounced")
 	}
 
 	// Test After Duration
 	now = now.Add(500 * time.Millisecond)
 	mockClock.SetMockTime(now)
-	if debouncer.DebounceExpose("expose1", bridge.MeasurementCategory) == true { // Event after duration should not be debounced
+	if debouncer.DebounceExpose(&devices.Entity{Name: "expose1", Category: bridge.MeasurementCategory, Type: bridge.NumericDataType}) == true { // Event after duration should not be debounced
 		t.Error("Event after duration should not be debounced")
 	}
 
 	// Test No Debounce Config
-	if debouncer.DebounceExpose("expose3", bridge.MeasurementCategory) {
+	if debouncer.DebounceExpose(&devices.Entity{Name: "expose3", Category: bridge.MeasurementCategory, Type: bridge.NumericDataType}) {
 		t.Error("Event with no debounce config should not be debounced")
 	}
 	//Test multiple exposes.
-	if debouncer.DebounceExpose("expose2", bridge.MeasurementCategory) {
+	if debouncer.DebounceExpose(&devices.Entity{Name: "expose2", Category: bridge.MeasurementCategory, Type: bridge.NumericDataType}) {
 		t.Error("First expose2 event should not be debounced")
 	}
 
 	now = now.Add(1 * time.Second)
 	mockClock.SetMockTime(now)
 
-	if !debouncer.DebounceExpose("expose2", bridge.MeasurementCategory) {
+	if !debouncer.DebounceExpose(&devices.Entity{Name: "expose2", Category: bridge.MeasurementCategory, Type: bridge.NumericDataType}) {
 		t.Error("expose2 event within duration should be debounced")
 	}
 
@@ -293,14 +294,14 @@ func TestDeviceDebouncer_DebounceExpose(t *testing.T) {
 	mockClock.SetMockTime(now2)
 	debouncer2 := settings.NewDeviceDebouncer("device2", cache, mockClock)
 
-	if debouncer2.DebounceExpose("expose4", bridge.MeasurementCategory) {
+	if debouncer2.DebounceExpose(&devices.Entity{Name: "expose4", Category: bridge.MeasurementCategory, Type: bridge.NumericDataType}) {
 		t.Error("First expose4 event should not be debounced")
 	}
 
 	now2 = now2.Add(3 * time.Second)
 	mockClock.SetMockTime(now2)
 
-	if !debouncer2.DebounceExpose("expose4", bridge.MeasurementCategory) {
+	if !debouncer2.DebounceExpose(&devices.Entity{Name: "expose4", Category: bridge.MeasurementCategory, Type: bridge.NumericDataType}) {
 		t.Error("Second expose4 event should be debounced")
 	}
 }
@@ -327,60 +328,60 @@ func TestDeviceDebouncer_DiagnosticsDebouncerWhenOverrideIsNotAvailable(t *testi
 
 	// Test expose 1 event with debounce overrides
 	// ############################################################################
-	if debouncer.DebounceExpose("expose1", bridge.MeasurementCategory) == true { // First event should not be debounced
+	if debouncer.DebounceExpose(&devices.Entity{Name: "expose1", Category: bridge.MeasurementCategory, Type: bridge.NumericDataType}) == true { // First event should not be debounced
 		t.Error("First expose event should not be debounced")
 	}
 
 	now = now.Add(100 * time.Millisecond)
 	mockClock.SetMockTime(now)
-	if debouncer.DebounceExpose("expose1", bridge.MeasurementCategory) == false {
+	if debouncer.DebounceExpose(&devices.Entity{Name: "expose1", Category: bridge.MeasurementCategory, Type: bridge.NumericDataType}) == false {
 		t.Error("Second expose event should be debounced")
 	}
 
 	now = now.Add(1 * time.Second)
 	mockClock.SetMockTime(now)
 
-	if debouncer.DebounceExpose("expose1", bridge.MeasurementCategory) == true {
+	if debouncer.DebounceExpose(&devices.Entity{Name: "expose1", Category: bridge.MeasurementCategory, Type: bridge.NumericDataType}) == true {
 		t.Error("Third expose event should be not debounced")
 	}
 
 	// now test diagnostics expose with no override but using default debounce
 	// ############################################################################
-	if debouncer.DebounceExpose("expose2", bridge.DiagnosticCategory) == true {
+	if debouncer.DebounceExpose(&devices.Entity{Name: "expose2", Category: bridge.DiagnosticCategory, Type: bridge.NumericDataType}) == true {
 		t.Error("First expose2 event should not be debounced")
 	}
 	now = now.Add(2 * time.Second)
 	mockClock.SetMockTime(now)
 
-	if debouncer.DebounceExpose("expose2", bridge.DiagnosticCategory) == false {
+	if debouncer.DebounceExpose(&devices.Entity{Name: "expose2", Category: bridge.DiagnosticCategory, Type: bridge.NumericDataType}) == false {
 		t.Error("Second expose2 event should be debounced")
 	}
 
 	now = now.Add(4 * time.Second)
 	mockClock.SetMockTime(now)
 
-	if debouncer.DebounceExpose("expose2", bridge.DiagnosticCategory) == true {
+	if debouncer.DebounceExpose(&devices.Entity{Name: "expose2", Category: bridge.DiagnosticCategory, Type: bridge.NumericDataType}) == true {
 		t.Error("Third expose2 event should not be debounced")
 	}
 
-	// now test non-diagnostics expose with no override, it should not be debounced
+	// now test non-diagnostics expose with no override, it should be debounced with default 60s
 	// ############################################################################
-	if debouncer.DebounceExpose("expose3", bridge.MeasurementCategory) == true {
+	if debouncer.DebounceExpose(&devices.Entity{Name: "expose3", Category: bridge.MeasurementCategory, Type: bridge.NumericDataType}) == true {
 		t.Error("First expose3 event should not be debounced")
 	}
 
 	now = now.Add(1 * time.Second)
 	mockClock.SetMockTime(now)
 
-	if debouncer.DebounceExpose("expose3", bridge.MeasurementCategory) == true {
-		t.Error("Second expose3 event should not be debounced")
+	if debouncer.DebounceExpose(&devices.Entity{Name: "expose3", Category: bridge.MeasurementCategory, Type: bridge.NumericDataType}) == false {
+		t.Error("Second expose3 event SHOULD be debounced (60s default)")
 	}
 
-	now = now.Add(2 * time.Second)
+	now = now.Add(60 * time.Second)
 	mockClock.SetMockTime(now)
 
-	if debouncer.DebounceExpose("expose3", bridge.MeasurementCategory) == true {
-		t.Error("Second expose3 event should not be debounced")
+	if debouncer.DebounceExpose(&devices.Entity{Name: "expose3", Category: bridge.MeasurementCategory, Type: bridge.NumericDataType}) == true {
+		t.Error("Third expose3 event should NOT be debounced (past 60s default)")
 	}
 }
 
