@@ -68,11 +68,14 @@ func NewDeviceSettings() *DeviceSettings {
 
 func DefaultDeviceConfig() *DeviceConfig {
 	return &DeviceConfig{
-		Disabled:                  false,
-		MetricsEnabled:            false,
-		RateLimit:                 utils.IntervalFromSeconds(60),
-		DefaultDebounceByCategory: map[bridge.ExposeCategory]*utils.TimeInterval{bridge.DiagnosticCategory: utils.IntervalFromSeconds(300)},
-		DebounceOverrides:         nil,
+		Disabled:       false,
+		MetricsEnabled: false,
+		RateLimit:      utils.IntervalFromSeconds(60),
+		DefaultDebounceByCategory: map[bridge.ExposeCategory]*utils.TimeInterval{
+			bridge.DiagnosticCategory:  utils.IntervalFromSeconds(300),
+			bridge.MeasurementCategory: utils.IntervalFromSeconds(60),
+		},
+		DebounceOverrides: nil,
 	}
 }
 
