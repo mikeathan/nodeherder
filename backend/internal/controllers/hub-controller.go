@@ -262,11 +262,13 @@ func (h *HubController) registerEventHubEvents() {
 		err := json.Unmarshal(bytes, &req)
 
 		if err != nil {
+			utils.LogErrorf("LoadDeviceMetricsRequest failed. Invalid payload type : %v ", err.Error())
 			return nil, fmt.Errorf("LoadDeviceMetricsRequest failed. Invalid payload type : %v ", err.Error())
 		}
 
 		device, err := h.registrar.LookupById(req.Id)
 		if err != nil {
+			utils.LogErrorf("LoadDeviceMetricsRequest failed. Device %s not found : %v", req.Id, err.Error())
 			return nil, fmt.Errorf("LoadDeviceMetricsRequest failed. Device %s not found", req.Id)
 		}
 
