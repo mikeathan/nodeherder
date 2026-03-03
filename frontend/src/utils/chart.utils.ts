@@ -18,23 +18,23 @@ export const DENSITY_COLORS = {
   high: ColorTypes.Green400,
 } as const;
 
-/**
- * Normalizes binary events into continuous time ranges.
- * Creates segments from chart start to first event, between events, and last event to chart end.
- */
 export function normalizeBinaryEvents(events: BinaryDataPoint[], from: number, to: number): BinaryRange[] {
   if (!events?.length) {
-    return [{ value: 'false', start: from, end: to }];
+    return [{ value: 'unknown', start: from, end: to }];
   }
 
   const ranges: BinaryRange[] = [];
 
   // First segment: chart start → first event
-  ranges.push({
-    value: events[0].value,
-    start: from,
-    end: events[0].timestamp,
-  });
+  // We use 'unknown' instead of assuming the inverse, so we don't incorrectly
+  // paint the entire leading portion of a chart if it just started tracking.
+  if (events[0].timestamp > from) {
+    ranges.push({
+      value: 'unknown',
+      start: from,
+      end: events[0].timestamp,
+    });
+  }
 
   // Middle segments: event transitions
   for (let i = 1; i < events.length; i++) {
@@ -50,11 +50,13 @@ export function normalizeBinaryEvents(events: BinaryDataPoint[], from: number, t
 
   // Last segment: last event → chart end
   const lastEvent = events[events.length - 1];
-  ranges.push({
-    value: lastEvent.value,
-    start: lastEvent.timestamp,
-    end: to,
-  });
+  if (lastEvent.timestamp < to) {
+    ranges.push({
+      value: lastEvent.value,
+      start: lastEvent.timestamp,
+      end: to,
+    });
+  }
 
   return ranges;
 }
@@ -116,7 +118,13 @@ function mergeContiguousStates(ranges: BinaryRange[]): BinaryRange[] {
     const current = ranges[i];
     const last = merged[merged.length - 1];
 
-    if (isBinaryOn(current.value) === isBinaryOn(last.value)) {
+    if (current.value === 'unknown' || last.value === 'unknown') {
+      if (current.value === last.value) {
+        last.end = current.end;
+      } else {
+        merged.push({ ...current });
+      }
+    } else if (isBinaryOn(current.value) === isBinaryOn(last.value)) {
       last.end = current.end;
     } else {
       merged.push({ ...current });
@@ -131,6 +139,8 @@ export interface TimelineSegment {
   start: number;
   end: number;
   stateLabel: string;
+  isOn: boolean;
+  isUnknown: boolean;
 }
 
 export function computeTimelineSegments(
@@ -163,7 +173,8 @@ export function computeTimelineSegments(
 
     return {
       widthPct,
-      isOn: isBinaryOn(r.value),
+      isOn: r.value !== 'unknown' && isBinaryOn(r.value),
+      isUnknown: r.value === 'unknown',
       start: r.start,
       end: r.end,
     };
@@ -182,14 +193,24 @@ export function computeTimelineSegments(
     }
   }
 
+  const UNKNOWN_COLOR = 'rgba(148, 163, 184, 0.15)'; // Slate-400 with opacity 0.15 roughly matching background panel gap.
+
   // 4. Map to final display objects
-  return segments.map((seg) => ({
-    width: `${seg.widthPct}%`,
-    color: seg.isOn ? options.colorOn : options.colorOff,
-    start: seg.start,
-    end: seg.end,
-    stateLabel: resolveBinaryLabel(options.exposeName, seg.isOn ? 'true' : 'false'),
-  }));
+  return segments.map((seg) => {
+    let color = seg.isOn ? options.colorOn : options.colorOff;
+    if (seg.isUnknown) {
+      color = UNKNOWN_COLOR;
+    }
+    return {
+      width: `${seg.widthPct}%`,
+      color,
+      start: seg.start,
+      end: seg.end,
+      stateLabel: seg.isUnknown ? 'Unknown' : resolveBinaryLabel(options.exposeName, seg.isOn ? 'true' : 'false'),
+      isOn: seg.isOn,
+      isUnknown: seg.isUnknown,
+    };
+  });
 }
 
 export function toBinaryRangeBarData(ranges: BinaryRange[], colorOn: string, colorOff: string): RangeBarDataPoint[] {
@@ -340,27 +361,31 @@ export function getBinaryStats(
     const next = points[i + 1];
     const duration = Math.max(0, next.timestamp - current.timestamp);
 
-    if (isBinaryOn(current.value)) {
-      onDuration += duration;
-    } else {
-      offDuration += duration;
+    if (current.value !== 'unknown') {
+      if (isBinaryOn(current.value)) {
+        onDuration += duration;
+      } else {
+        offDuration += duration;
+      }
     }
   }
 
   const last = points[points.length - 1];
   const tailDuration = Math.max(0, endTimestamp - last.timestamp);
-  if (isBinaryOn(last.value)) {
-    onDuration += tailDuration;
-  } else {
-    offDuration += tailDuration;
+  if (last.value !== 'unknown') {
+    if (isBinaryOn(last.value)) {
+      onDuration += tailDuration;
+    } else {
+      offDuration += tailDuration;
+    }
   }
 
   const total = onDuration + offDuration;
   const onPercentage = total > 0 ? (onDuration / total) * 100 : 0;
 
   return {
-    onCount: points.filter((d) => isBinaryOn(d.value)).length,
-    offCount: points.filter((d) => !isBinaryOn(d.value)).length,
+    onCount: points.filter((d) => d.value !== 'unknown' && isBinaryOn(d.value)).length,
+    offCount: points.filter((d) => d.value !== 'unknown' && !isBinaryOn(d.value)).length,
     onPercentage,
     onDurationMs: onDuration,
     offDurationMs: offDuration,

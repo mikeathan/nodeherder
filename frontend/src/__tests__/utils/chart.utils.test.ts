@@ -72,8 +72,8 @@ describe('bucketBinaryEvents', () => {
     const buckets = bucketBinaryEvents(data, from, to, 15);
 
     // Bucket 0 (0-15min): normalizeBinaryEvents creates a leading segment
-    // from 0→5min with the first event's value ('true'), plus 5→15min active = 15min total
-    expect(buckets[0].activeMs).toBe(15 * 60_000);
+    // from 0→5min with the INVERSE of the first event's value (false), then 5→15min active = 10min
+    expect(buckets[0].activeMs).toBe(10 * 60_000);
     // Bucket 1 (15-30min): active from 15min to 25min = 10min
     expect(buckets[1].activeMs).toBe(10 * 60_000);
   });
