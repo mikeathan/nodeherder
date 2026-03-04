@@ -480,7 +480,8 @@ func (h *HubController) registerEventHubEvents() {
 			return err
 		}
 
-		utils.LogInfof("Remote logger enabled: %v", req.EnableRemoteLogger)
+		utils.SetLogLevel(req.Level)
+		utils.LogInfof("Remote logger enabled: %v, level: %s", req.EnableRemoteLogger, req.Level)
 		return nil
 	})
 

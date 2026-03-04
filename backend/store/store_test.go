@@ -79,7 +79,7 @@ func TestStoreSavesLoggerConfig(t *testing.T) {
 		t.Fatalf("Logger config EnableRemoteLogger is set")
 	}
 
-	mockLoggerConfig := settings.NewLoggerConfig(true)
+	mockLoggerConfig := settings.NewLoggerConfig(true, "debug")
 	cfg.SaveLoggerConfig(mockLoggerConfig)
 
 	l, err = cfg.LoadLoggerConfig()
@@ -119,7 +119,6 @@ func TestStoreMetricsCleanupTasks(t *testing.T) {
 	for _, wd := range wantDevices {
 		deviceConfig := settings.NewDeviceConfig(wd.Id)
 		deviceConfig.MetricsEnabled = true
-		deviceConfig.RateLimit = utils.IntervalFromMilliseconds(1)
 		cfg.SetDeviceConfigOverrides(deviceConfig)
 		if err != nil {
 			t.Fatalf("error updating device %v error: %v:", wd.FriendlyName, err.Error())
