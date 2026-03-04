@@ -8,6 +8,9 @@
   import { LoggerSettingsType } from '@/types/settings.type';
   import { getConsoleLevelClass, getConsoleLevelSeverity } from '@/contracts/console';
   import Tag from 'primevue/tag';
+  import Select from 'primevue/select';
+
+  const levelOptions = ref(['trace', 'debug', 'info', 'warn', 'error', 'fatal']);
 
   onMounted(() => {
     consoleCleanupService.startTimer(store);
@@ -43,12 +46,12 @@
     scrollToBottom();
   });
 
-  function enableLogging(enabled: boolean) {
-    if (enabled == loggerSettings.value.enableRemoteLogger) {
+  function updateSettings(key: keyof LoggerSettingsType, value: any) {
+    if (value === loggerSettings.value[key]) {
       return;
     }
-    loggerSettings.value.enableRemoteLogger = enabled;
-    store.dispatch('hub/saveLoggerSettings', loggerSettings.value);
+    const newSettings = { ...loggerSettings.value, [key]: value };
+    store.dispatch('hub/saveLoggerSettings', newSettings);
   }
 
   function clearConsole() {
@@ -69,14 +72,19 @@
       <h2>Remote logger</h2>
     </template>
     <template #content>
-      <Toggle
-        :value="loggerSettings.enableRemoteLogger"
-        :valueOn="true"
-        :valueOff="false"
-        @update="(v: boolean) => enableLogging(v)">
-      </Toggle>
-      <Button label="Clear" @click="clearConsole" variant="text" icon="pi pi-delete-left" />
-      <div class="pb-3"></div>
+      <div class="flex align-items-center gap-3 pb-3">
+        <Toggle
+          :value="loggerSettings.enableRemoteLogger"
+          :valueOn="true"
+          :valueOff="false"
+          @update="(v: boolean) => updateSettings('enableRemoteLogger', v)" />
+        <Select
+          :modelValue="loggerSettings.level"
+          :options="levelOptions"
+          @update:modelValue="(v: any) => updateSettings('level', v)"
+          class="w-auto text-sm h-2rem" />
+        <Button label="Clear" @click="clearConsole" variant="text" icon="pi pi-delete-left" />
+      </div>
       <div ref="messageContainer" class="message-container">
         <div v-for="(message, index) in messages" :key="message.timestamp" class="flex align-items-center mb-1">
           <div style="min-width: 70px">

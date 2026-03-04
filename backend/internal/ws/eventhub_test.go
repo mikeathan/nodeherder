@@ -1337,7 +1337,7 @@ func TestHandleBridgePermitJoin(t *testing.T) {
 func TestHandlingEnableRemoteLoggerMessage(t *testing.T) {
 	wsHub := ws.NewWsHub()
 	wsHub.Start()
-	req := &settings.LoggerConfig{EnableRemoteLogger: true}
+	req := &settings.LoggerConfig{EnableRemoteLogger: true, Level: "debug"}
 
 	wsHub.OnSaveLoggerConfig(func(p interface{}) error {
 		bytes := []byte(p.(string))
@@ -1349,6 +1349,9 @@ func TestHandlingEnableRemoteLoggerMessage(t *testing.T) {
 
 		if payload.EnableRemoteLogger != req.EnableRemoteLogger {
 			t.Fatalf("enable remote logger failed. want %v got %v", req.EnableRemoteLogger, payload.EnableRemoteLogger)
+		}
+		if payload.Level != req.Level {
+			t.Fatalf("level failed. want %v got %v", req.Level, payload.Level)
 		}
 		return nil
 	})

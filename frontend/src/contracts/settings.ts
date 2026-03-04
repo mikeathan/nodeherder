@@ -60,6 +60,7 @@ export function createAppconfig(): AppConfig {
       },
       logger: {
         enableRemoteLogger: false,
+        level: 'info',
       },
       dashboardGroups: {},
     },

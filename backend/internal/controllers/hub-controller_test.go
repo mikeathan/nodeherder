@@ -26,6 +26,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -391,6 +392,10 @@ func TestHubEnableRemoteLogger(t *testing.T) {
 			t.Errorf("log level is debug and is unsupported	")
 		}
 
+		if strings.HasPrefix(logMessage.Message, "set loglevel:") {
+			return nil
+		}
+
 		expectedLogLevel := "info"
 		expectedLogMessage := "Remote hook enabled: true"
 		if logMessage.Message != expectedLogMessage {
@@ -419,7 +424,7 @@ func TestHubEnableRemoteLogger(t *testing.T) {
 	testCases := []bool{true, false, true, false, true, false, true, false, true, false}
 	for _, enabled := range testCases {
 
-		logger := settings.NewLoggerConfig(enabled)
+		logger := settings.NewLoggerConfig(enabled, "info")
 		appCfg.SaveLoggerConfig(logger)
 		if enabled {
 			utils.LogInfo("Remote hook enabled: true")

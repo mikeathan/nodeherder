@@ -79,7 +79,7 @@ func TestStoreSavesLoggerConfig(t *testing.T) {
 		t.Fatalf("Logger config EnableRemoteLogger is set")
 	}
 
-	mockLoggerConfig := settings.NewLoggerConfig(true)
+	mockLoggerConfig := settings.NewLoggerConfig(true, "debug")
 	cfg.SaveLoggerConfig(mockLoggerConfig)
 
 	l, err = cfg.LoadLoggerConfig()

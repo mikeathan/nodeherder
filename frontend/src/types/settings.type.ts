@@ -28,6 +28,7 @@ export type LoggerSettingsTypePropsType = keyof LoggerSettingsType;
 export type DeviceDebounce = KeyValuePair<TimeInterval>;
 export type LoggerSettingsType = {
   enableRemoteLogger: boolean;
+  level: string;
 };
 
 export type MCPSettingsType = {

@@ -133,18 +133,21 @@ func DefaultHistoryConfig() *HistoryConfig {
 }
 
 type LoggerConfig struct {
-	EnableRemoteLogger bool `json:"enableRemoteLogger"`
+	EnableRemoteLogger bool   `json:"enableRemoteLogger"`
+	Level              string `json:"level"`
 }
 
-func NewLoggerConfig(enableRemoteLogger bool) *LoggerConfig {
+func NewLoggerConfig(enableRemoteLogger bool, level string) *LoggerConfig {
 	return &LoggerConfig{
 		EnableRemoteLogger: enableRemoteLogger,
+		Level:              level,
 	}
 }
 
 func DefaultLoggingConfig() *LoggerConfig {
 	return &LoggerConfig{
 		EnableRemoteLogger: false,
+		Level:              "info",
 	}
 }
 
