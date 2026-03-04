@@ -28,6 +28,7 @@ export type LoggerSettingsTypePropsType = keyof LoggerSettingsType;
 export type DeviceDebounce = KeyValuePair<TimeInterval>;
 export type LoggerSettingsType = {
   enableRemoteLogger: boolean;
+  level: string;
 };
 
 export type MCPSettingsType = {
@@ -48,7 +49,6 @@ export type DeviceConfig = {
   id: string;
   disabled: boolean;
   metricsEnabled: boolean;
-  rateLimit: TimeInterval;
   defaultDebounceByCategory: DeviceDebounce;
   debounceOverrides: DeviceDebounce;
 };

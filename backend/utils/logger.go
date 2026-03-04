@@ -119,7 +119,7 @@ type RemoteHook struct {
 
 func newRemoteHook() *RemoteHook {
 	return &RemoteHook{
-		levels:  []logrus.Level{logrus.InfoLevel, logrus.ErrorLevel, logrus.WarnLevel, logrus.PanicLevel, logrus.FatalLevel},
+		levels:  logrus.AllLevels,
 		enabled: false,
 	}
 }
@@ -185,6 +185,10 @@ func EnableRemoteLoggerHook(enabled bool) {
 }
 
 func (l *logger) SetLevel(level string) {
+	if level == "" {
+		level = "info"
+	}
+
 	ll, err := logrus.ParseLevel(level)
 	if err != nil {
 		l.Errorf("undefined level %s", level)

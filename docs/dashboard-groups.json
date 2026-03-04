@@ -55,16 +55,16 @@
     "Kitchen": {
       "name": "Kitchen",
       "deviceGroup": {
-        "0x70b3d52b60136661": {
-          "deviceId": "0x70b3d52b60136661",
-          "exposes": [
-            "energy"
-          ]
-        },
         "0x00124b002fa5844e": {
           "deviceId": "0x00124b002fa5844e",
           "exposes": [
             "contact"
+          ]
+        },
+        "0x70b3d52b60136661": {
+          "deviceId": "0x70b3d52b60136661",
+          "exposes": [
+            "energy"
           ]
         }
       }
@@ -76,8 +76,8 @@
           "deviceId": "0x00124b002fa5844e",
           "exposes": []
         },
-        "0x00158d0005a23c38": {
-          "deviceId": "0x00158d0005a23c38",
+        "0x001788010ba4328e": {
+          "deviceId": "0x001788010ba4328e",
           "exposes": [
             "brightness"
           ]
@@ -85,13 +85,15 @@
         "0xa4c13801b36effff": {
           "deviceId": "0xa4c13801b36effff",
           "exposes": [
-            "energy_today"
+            "energy_today",
+            "energy"
           ]
         },
         "0xa4c13894070052fc": {
           "deviceId": "0xa4c13894070052fc",
           "exposes": [
-            "presence"
+            "presence",
+            "illuminance"
           ]
         }
       }

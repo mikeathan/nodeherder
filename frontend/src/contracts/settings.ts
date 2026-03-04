@@ -27,7 +27,6 @@ export function createDeviceConfigOverride(id: string): DeviceConfig {
     id: id,
     disabled: false,
     metricsEnabled: false,
-    rateLimit: createTimeIntervalFromSeconds(60),
     defaultDebounceByCategory: {},
     debounceOverrides: {},
   } as DeviceConfig;
@@ -38,7 +37,6 @@ export function createDeviceConfig(): DeviceConfig {
     id: '',
     disabled: false,
     metricsEnabled: false,
-    rateLimit: createTimeIntervalFromSeconds(60),
     defaultDebounceByCategory: {},
     debounceOverrides: {},
   } as DeviceConfig;
@@ -62,6 +60,7 @@ export function createAppconfig(): AppConfig {
       },
       logger: {
         enableRemoteLogger: false,
+        level: 'info',
       },
       dashboardGroups: {},
     },
