@@ -348,29 +348,6 @@ func TestHubStateHandler_ReturnsHubState(t *testing.T) {
 		t.Fatalf("expected hub state, got nil")
 	}
 
-	// assert app config
-	// 	if len(hubState.Config.Hub.Devices.Overrides) != len(inputAppConfig.Hub.Devices.Overrides) {
-	// 		t.Fatalf("Expected numer of appconfig devices. want %v', got '%v'", len(inputAppConfig.Hub.Devices.Overrides), len(hubState.Config.Hub.Devices.Overrides))
-	// 	}
-	// 	for id, d := range inputAppConfig.Hub.Devices.Overrides {
-	// 		gotDeviceConfig := hubState.Config.Hub.Devices.Overrides[id]
-	// 		if d.Id != gotDeviceConfig.Id {
-	// 			t.Fatalf("Expected device id %v', got '%v'", d.Id, gotDeviceConfig.Id)
-	// 		}
-	// 		if d.Disabled != gotDeviceConfig.Disabled {
-	// 			t.Fatalf("Expected Disabled %v', got '%v'", d.Disabled, gotDeviceConfig.Disabled)
-	// 		}
-	// 		if d.MetricsEnabled != gotDeviceConfig.MetricsEnabled {
-	// 			t.Fatalf("Expected MetricsEnabled %v', got '%v'", d.MetricsEnabled, gotDeviceConfig.MetricsEnabled)
-	// 		}
-
-	//		if d.RateLimit.Value != gotDeviceConfig.RateLimit.Value {
-	//			t.Fatalf("Expected RateLimit.Value %v', got '%v'", d.RateLimit.Value, gotDeviceConfig.RateLimit.Value)
-	//		}
-	//		if d.RateLimit.Unit != gotDeviceConfig.RateLimit.Unit {
-	//			t.Fatalf("Expected RateLimit.Unit %v', got '%v'", d.RateLimit.Unit, gotDeviceConfig.RateLimit.Unit)
-	//		}
-	//	}
 }
 
 func TestHubStateHandler_ReturnsCacheedState(t *testing.T) {

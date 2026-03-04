@@ -204,9 +204,6 @@ func assertDeviceConfig(t *testing.T, d *settings.DeviceConfig, inputDev *settin
 		t.Error("device metrics enabled mismatch")
 	}
 
-	if !reflect.DeepEqual(d.RateLimit, inputDev.RateLimit) {
-		t.Error("device rate limit mismatch")
-	}
 	if !reflect.DeepEqual(d.DefaultDebounceByCategory, inputDev.DefaultDebounceByCategory) {
 		t.Error("device default debounce mismatch")
 	}

@@ -7,7 +7,6 @@
           "defaults": {
             "disabled": false,
             "metricsEnabled": false,
-            "rateLimit": { "value": 60, "unit": "seconds" },
             "defaultDebounceByCategory": {
               "diagnostic": { "value": 300, "unit": "seconds" }
             }
@@ -17,7 +16,6 @@
               "id": "0x00124b0029207763",
               "disabled": true,
               "metricsEnabled": false,
-              "rateLimit": { "value": 50, "unit": "seconds" },
               "debounceOverrides": {
                 "linkquality": { "value": 5, "unit": "seconds" }
               }

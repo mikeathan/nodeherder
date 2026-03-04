@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"node-herder/models/settings"
+	"node-herder/utils"
 	"node-herder/utils/storage"
 	"path/filepath"
 )
@@ -19,7 +20,7 @@ type FileSettingsRepo struct {
 }
 
 func NewFileSettingsRepo() (settings.Repository, error) {
-	return NewFileSettingsRepoFromFile(filepath.Join("data", settingsBaseFilename))
+	return NewFileSettingsRepoFromFile(filepath.Join(utils.GetDataDir(), settingsBaseFilename))
 }
 
 func NewFileSettingsRepoFromFile(filename string) (settings.Repository, error) {

@@ -3,7 +3,6 @@ package settings
 import (
 	"node-herder/models/bridge"
 	"node-herder/utils"
-	"time"
 )
 
 type DeviceSettings struct {
@@ -70,7 +69,6 @@ func DefaultDeviceConfig() *DeviceConfig {
 	return &DeviceConfig{
 		Disabled:       false,
 		MetricsEnabled: false,
-		RateLimit:      utils.IntervalFromSeconds(60),
 		DefaultDebounceByCategory: map[bridge.ExposeCategory]*utils.TimeInterval{
 			bridge.DiagnosticCategory:  utils.IntervalFromSeconds(300),
 			bridge.MeasurementCategory: utils.IntervalFromSeconds(60),
@@ -83,16 +81,8 @@ type DeviceConfig struct {
 	Id                        string                                        `json:"id,omitempty"`
 	Disabled                  bool                                          `json:"disabled"`
 	MetricsEnabled            bool                                          `json:"metricsEnabled"`
-	RateLimit                 *utils.TimeInterval                           `json:"rateLimit"`
 	DefaultDebounceByCategory map[bridge.ExposeCategory]*utils.TimeInterval `json:"defaultDebounceByCategory,omitempty"`
 	DebounceOverrides         map[string]*utils.TimeInterval                `json:"debounceOverrides,omitempty"`
-}
-
-func (d *DeviceConfig) RateLimitDuration() time.Duration {
-	if d.RateLimit == nil {
-		return 0
-	}
-	return d.RateLimit.Duration()
 }
 
 func NewDeviceConfig(id string) *DeviceConfig {
@@ -100,7 +90,6 @@ func NewDeviceConfig(id string) *DeviceConfig {
 		Id:                        id,
 		Disabled:                  false,
 		MetricsEnabled:            false,
-		RateLimit:                 utils.IntervalFromSeconds(60), // default to 60 seconds
 		DebounceOverrides:         map[string]*utils.TimeInterval{},
 		DefaultDebounceByCategory: nil,
 	}
@@ -111,7 +100,6 @@ func NewDeviceConfigFrom(config *DeviceConfig) *DeviceConfig {
 		Id:                        config.Id,
 		Disabled:                  config.Disabled,
 		MetricsEnabled:            config.MetricsEnabled,
-		RateLimit:                 config.RateLimit,
 		DebounceOverrides:         nil,
 		DefaultDebounceByCategory: config.DefaultDebounceByCategory,
 	}
@@ -145,18 +133,21 @@ func DefaultHistoryConfig() *HistoryConfig {
 }
 
 type LoggerConfig struct {
-	EnableRemoteLogger bool `json:"enableRemoteLogger"`
+	EnableRemoteLogger bool   `json:"enableRemoteLogger"`
+	Level              string `json:"level"`
 }
 
-func NewLoggerConfig(enableRemoteLogger bool) *LoggerConfig {
+func NewLoggerConfig(enableRemoteLogger bool, level string) *LoggerConfig {
 	return &LoggerConfig{
 		EnableRemoteLogger: enableRemoteLogger,
+		Level:              level,
 	}
 }
 
 func DefaultLoggingConfig() *LoggerConfig {
 	return &LoggerConfig{
 		EnableRemoteLogger: false,
+		Level:              "info",
 	}
 }
 
