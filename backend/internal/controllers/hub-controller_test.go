@@ -575,7 +575,6 @@ func TestProcessorStoresMetricsForNewNonBridgeDevice(t *testing.T) {
 		t.Fatalf("device not found. err %v ", err)
 	}
 	cfg.MetricsEnabled = true
-	cfg.RateLimit = utils.IntervalFromMilliseconds(10)
 	cfg.DebounceOverrides = map[string]*utils.TimeInterval{
 		"brightness": utils.IntervalFromMilliseconds(10),
 		"color_temp": utils.IntervalFromMilliseconds(10),
@@ -666,8 +665,6 @@ func TestHubSaveDeviceConfigOverrides(t *testing.T) {
 			t.Fatalf("device not found. err %v ", err)
 		}
 		// update values and store for assertions
-		rt := (id + 1) * 2
-		cfg.RateLimit = utils.IntervalFromMilliseconds(rt)
 		cfg.Disabled = true
 		cfg.MetricsEnabled = true
 
@@ -689,12 +686,6 @@ func TestHubSaveDeviceConfigOverrides(t *testing.T) {
 		}
 		if configs[id].Disabled != cfg.Disabled {
 			t.Fatalf("disabled mismatch want %v got %v", configs[id].Disabled, cfg.Disabled)
-		}
-		if configs[id].RateLimit.Unit != cfg.RateLimit.Unit {
-			t.Fatalf("rateLimit.Unit mismatch want %v got %v", configs[id].RateLimit.Unit, cfg.RateLimit.Unit)
-		}
-		if configs[id].RateLimit.Value != cfg.RateLimit.Value {
-			t.Fatalf("rateLimit.Value mismatch want %v got %v", configs[id].RateLimit.Value, cfg.RateLimit.Value)
 		}
 		if configs[id].MetricsEnabled != cfg.MetricsEnabled {
 			t.Fatalf("metricsEnabled mismatch want %v got %v", configs[id].MetricsEnabled, cfg.MetricsEnabled)
@@ -745,14 +736,12 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 	time.Sleep(100 * time.Millisecond) // give it time to configure bridgeInfo
 	//  SETUP END
 
-	for id, device := range devices {
+	for _, device := range devices {
 		cfg, err := appCache.GetDeviceConfig(device.Id)
 		if err != nil {
 			t.Fatalf("device not found. err %v ", err)
 		}
 		// update values and store for assertions
-		rt := (id + 1) * 2
-		cfg.RateLimit = utils.IntervalFromMilliseconds(rt)
 		cfg.Disabled = true
 		cfg.MetricsEnabled = true
 		cfg.DebounceOverrides = map[string]*utils.TimeInterval{}
@@ -779,7 +768,6 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 
 	// expected device config values to match with expected overrides values
 
-	expectedMilliseconds := 2
 	expectedDisabled := true
 	expectedMetricsEnabled := true
 	if cfg.Disabled != expectedDisabled {
@@ -787,9 +775,6 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 	}
 	if cfg.MetricsEnabled != expectedMetricsEnabled {
 		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", expectedMetricsEnabled, cfg.MetricsEnabled)
-	}
-	if cfg.RateLimit.Value != expectedMilliseconds {
-		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", expectedMilliseconds, cfg.RateLimit.Value)
 	}
 
 	// Assert specific values based on the deterministic setup above
@@ -837,9 +822,6 @@ func TestHubDeletesDeviceConfigOverride(t *testing.T) {
 	}
 	if cfg.MetricsEnabled != defaults.MetricsEnabled {
 		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", defaults.MetricsEnabled, cfg.MetricsEnabled)
-	}
-	if cfg.RateLimit.Value != defaults.RateLimit.Value {
-		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", defaults.RateLimit.Value, cfg.RateLimit.Value)
 	}
 
 	if cfg.DebounceOverrides != nil {
@@ -891,8 +873,7 @@ func TestHubSaveDeviceConfigDefaults(t *testing.T) {
 	expectedDefaults := settings.DefaultDeviceConfig()
 	deviceDefaults := app.Hub.Devices.Defaults
 
-	if expectedDefaults.Disabled != deviceDefaults.Disabled && expectedDefaults.MetricsEnabled != deviceDefaults.MetricsEnabled && expectedDefaults.RateLimit.Value != deviceDefaults.RateLimit.Value {
-		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", expectedDefaults.RateLimit.Value, deviceDefaults.RateLimit.Value)
+	if expectedDefaults.Disabled != deviceDefaults.Disabled && expectedDefaults.MetricsEnabled != deviceDefaults.MetricsEnabled {
 		t.Fatalf("invalid config override. want expectedDisabled %v got %v", expectedDefaults.Disabled, deviceDefaults.Disabled)
 		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", expectedDefaults.MetricsEnabled, deviceDefaults.MetricsEnabled)
 	}
@@ -908,7 +889,6 @@ func TestHubSaveDeviceConfigDefaults(t *testing.T) {
 	expectedNewdDeviceDeufalts := &settings.DeviceConfig{
 		Disabled:       true,
 		MetricsEnabled: true,
-		RateLimit:      utils.IntervalFromMilliseconds(500),
 		DefaultDebounceByCategory: map[bridge.ExposeCategory]*utils.TimeInterval{
 			bridge.ConfigCategory:      utils.IntervalFromMilliseconds(1000),
 			bridge.MeasurementCategory: utils.IntervalFromMinutes(6),
@@ -923,8 +903,7 @@ func TestHubSaveDeviceConfigDefaults(t *testing.T) {
 		t.Fatalf("app not found. err %v ", err)
 	}
 	deviceDefaults = app.Hub.Devices.Defaults
-	if expectedNewdDeviceDeufalts.Disabled != deviceDefaults.Disabled && expectedNewdDeviceDeufalts.MetricsEnabled != deviceDefaults.MetricsEnabled && expectedNewdDeviceDeufalts.RateLimit.Value != deviceDefaults.RateLimit.Value {
-		t.Fatalf("invalid config override. want expectedMilliseconds %v got %v", expectedNewdDeviceDeufalts.RateLimit.Value, deviceDefaults.RateLimit.Value)
+	if expectedNewdDeviceDeufalts.Disabled != deviceDefaults.Disabled && expectedNewdDeviceDeufalts.MetricsEnabled != deviceDefaults.MetricsEnabled {
 		t.Fatalf("invalid config override. want expectedDisabled %v got %v", expectedNewdDeviceDeufalts.Disabled, deviceDefaults.Disabled)
 		t.Fatalf("invalid config override. want expectedMetricsEnabled %v got %v", expectedNewdDeviceDeufalts.MetricsEnabled, deviceDefaults.MetricsEnabled)
 	}
@@ -949,7 +928,6 @@ func TestQueryServiceReturnsLatestMetrics(t *testing.T) {
 	appConfig := settings.NewAppConfig()
 	deviceConfig := settings.NewDeviceConfig("x02222222")
 	deviceConfig.MetricsEnabled = true
-	deviceConfig.RateLimit = utils.IntervalFromMilliseconds(0)
 	deviceConfig.DebounceOverrides = map[string]*utils.TimeInterval{
 		"brightness": utils.IntervalFromMilliseconds(0),
 	}
@@ -1132,7 +1110,6 @@ func TestProcessorStoresMetricsForExistingDevice(t *testing.T) {
 
 	// enable metrics for dial device
 	cfg.MetricsEnabled = true
-	cfg.RateLimit = utils.IntervalFromMilliseconds(10)
 	cfg.DebounceOverrides = map[string]*utils.TimeInterval{
 		"action_time": utils.IntervalFromMilliseconds(0),
 	}

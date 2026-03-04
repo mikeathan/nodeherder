@@ -48,7 +48,6 @@ export type DeviceConfig = {
   id: string;
   disabled: boolean;
   metricsEnabled: boolean;
-  rateLimit: TimeInterval;
   defaultDebounceByCategory: DeviceDebounce;
   debounceOverrides: DeviceDebounce;
 };

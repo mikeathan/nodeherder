@@ -3,7 +3,6 @@ package store
 import (
 	"fmt"
 	metrics "node-herder/internal/metrics/domain"
-	"node-herder/internal/ratelimiter"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
 	"node-herder/models/settings"
@@ -42,7 +41,6 @@ type appStore struct {
 	devices          devices.Repository
 	config           *settings.AppConfigCache
 	deviceIdMapper   *repository.DeviceIdMapper
-	rateLimiter      *ratelimiter.DeviceRateLimiter
 	isDirtyCallbacks []AppStoreDirtyFlagCallback
 }
 
@@ -53,7 +51,6 @@ func NewAppStore(devices devices.Repository, metrics metrics.Repository, config 
 		devices:          devices,
 		config:           config,
 		deviceIdMapper:   repository.NewDeviceIdMapper(devices),
-		rateLimiter:      ratelimiter.NewDeviceRateLimiter(),
 		isDirtyCallbacks: []AppStoreDirtyFlagCallback{},
 	}
 
