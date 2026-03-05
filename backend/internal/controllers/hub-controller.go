@@ -266,11 +266,15 @@ func (h *HubController) registerEventHubEvents() {
 			return nil, fmt.Errorf("LoadDeviceMetricsRequest failed. Invalid payload type : %v ", err.Error())
 		}
 
+		utils.LogDebugf("OnLoadMetrics: request id=%s from=%d to=%d", req.Id, req.From, req.To)
+
 		device, err := h.registrar.LookupById(req.Id)
 		if err != nil {
 			utils.LogErrorf("LoadDeviceMetricsRequest failed. Device %s not found : %v", req.Id, err.Error())
 			return nil, fmt.Errorf("LoadDeviceMetricsRequest failed. Device %s not found", req.Id)
 		}
+
+		utils.LogDebugf("OnLoadMetrics: device found id=%s friendlyName=%s exposeCount=%d", device.Id, device.FriendlyName, len(device.Exposes))
 
 		from := time.Unix(req.From, 0).UTC()
 		to := time.Unix(req.To, 0).UTC()
@@ -656,6 +660,8 @@ func (d *HubController) handleDeviceAvailabilityChanged(p *devices.UpdatePackage
 func (d *HubController) handleDeviceMeasurementsUpdated(device *devices.Device, payload map[string]interface{}) error {
 
 	d.automationEngine.HandleDevice(device)
+
+	utils.LogDebugf("handleDeviceMeasurementsUpdated: deviceId=%s friendlyName=%s keys=%d", device.Id, device.FriendlyName, len(payload))
 
 	return d.store.StoreMetrics(device.FriendlyName, payload)
 }

@@ -79,6 +79,10 @@ func SetLogLevel(level string) {
 	log.SetLevel(level)
 }
 
+func LogTrace(msg ...interface{}) {
+	log.Trace(msg...)
+}
+
 func LogDebug(msg ...interface{}) {
 	log.Debug(msg...)
 }
@@ -93,6 +97,10 @@ func LogWarn(msg ...interface{}) {
 
 func LogError(msg ...interface{}) {
 	log.Error(msg...)
+}
+
+func LogTracef(format string, msg ...interface{}) {
+	log.Tracef(format, msg...)
 }
 
 func LogDebugf(format string, msg ...interface{}) {
@@ -199,6 +207,10 @@ func (l *logger) SetLevel(level string) {
 	l.Infof("set loglevel: %s", ll.String())
 }
 
+func (l *logger) Trace(msg ...interface{}) {
+	l.log.Trace(msg...)
+}
+
 func (l *logger) Debug(msg ...interface{}) {
 	l.log.Debug(msg...)
 }
@@ -213,6 +225,10 @@ func (l *logger) Warn(msg ...interface{}) {
 
 func (l *logger) Error(msg ...interface{}) {
 	l.log.Error(msg...)
+}
+
+func (l *logger) Tracef(format string, msg ...interface{}) {
+	l.log.Tracef(format, msg...)
 }
 
 func (l *logger) Debugf(format string, msg ...interface{}) {
