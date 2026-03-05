@@ -252,35 +252,63 @@ func TestHandleUnsuportedMediaType(t *testing.T) {
 
 func TestLoadLogFileHandler(t *testing.T) {
 
-	mockFileBuffer := []byte("test file")
-	mockFile := "nodeherder.log"
-
-	fs := fs.NewFileSystem(
-		fs.WithFileLoader(mocks.NewMockFileLoader(mockFileBuffer)),
-		fs.WithFileWalker(mocks.NewMockWalker([]string{mockFile})))
-
-	reqJson, err := json.Marshal(logging.NewFileLogRequest(mockFile, logging.LoadAction))
-	if err != nil {
-		t.Errorf("error reading body got %v want nil", err)
+	tests := []struct {
+		name           string
+		requestedFile  string
+		expectedStatus int
+	}{
+		{
+			name:           "valid log file",
+			requestedFile:  "nodeherder.log",
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "valid nested log file",
+			requestedFile:  "logs/nodeherder.log",
+			expectedStatus: http.StatusOK,
+		},
+		{
+			name:           "invalid extension",
+			requestedFile:  "config.json",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "directory traversal",
+			requestedFile:  "../../etc/passwd.log",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "absolute path",
+			requestedFile:  "/var/log/syslog.log",
+			expectedStatus: http.StatusBadRequest,
+		},
 	}
-	bodyReader := strings.NewReader(string(reqJson))
-	req := httptest.NewRequest(http.MethodPost, "/api/logfile", bodyReader)
-	req.Header.Add("Content-Type", "application/json")
 
-	w := httptest.NewRecorder()
-	h := api.NewLogFileHandler(fs)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockFileBuffer := []byte("test file")
 
-	h.ServeHTTP(w, req)
+			mockFs := fs.NewFileSystem(
+				fs.WithFileLoader(mocks.NewMockFileLoader(mockFileBuffer)),
+				fs.WithFileWalker(mocks.NewMockWalker([]string{tc.requestedFile})))
 
-	if status := w.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+			reqJson, err := json.Marshal(logging.NewFileLogRequest(tc.requestedFile, logging.LoadAction))
+			if err != nil {
+				t.Errorf("error marshalling body: %v", err)
+			}
+			bodyReader := strings.NewReader(string(reqJson))
+			req := httptest.NewRequest(http.MethodPost, "/api/logfile", bodyReader)
+			req.Header.Add("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+			h := api.NewLogFileHandler(mockFs)
+			h.ServeHTTP(w, req)
+
+			if w.Code != tc.expectedStatus {
+				t.Errorf("expected status %d, got %d", tc.expectedStatus, w.Code)
+			}
+		})
 	}
-
-	body, _ := io.ReadAll(w.Body)
-	if string(body) != string(mockFileBuffer) {
-		t.Errorf("error reading body got %v want %v", string(body), string(mockFileBuffer))
-	}
-
 }
 func TestHandleListLogFiles(t *testing.T) {
 

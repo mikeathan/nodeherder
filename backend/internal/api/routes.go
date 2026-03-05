@@ -15,7 +15,9 @@ import (
 	"node-herder/models/logging"
 	"node-herder/store"
 	"node-herder/utils"
+	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 )
@@ -198,8 +200,14 @@ func (h *LogFileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	cleanPath := filepath.Clean(request.File)
+	if filepath.IsAbs(cleanPath) || strings.HasPrefix(cleanPath, "..") || filepath.Ext(cleanPath) != utils.LogExtension {
+		http.Error(w, "Invalid file path", http.StatusBadRequest)
+		return
+	}
+
 	// we only support loading files for now
-	bytes, err := h.fs.Load(request.File)
+	bytes, err := h.fs.Load(cleanPath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
