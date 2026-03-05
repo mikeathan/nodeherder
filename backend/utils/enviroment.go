@@ -133,9 +133,14 @@ func GetDataDir() string {
 }
 
 // GetLogsDir returns the logs directory path, creating it if needed.
+// Uses LOGS_DIR env var if set, otherwise defaults to "logs".
 // Falls back to temp directory if the primary path is not writable.
 func GetLogsDir() string {
-	return EnsureDir("logs")
+	logsDir := os.Getenv("LOGS_DIR")
+	if logsDir == "" {
+		logsDir = "logs"
+	}
+	return EnsureDir(logsDir)
 }
 
 // EnsureDir creates the directory if it doesn't exist.
