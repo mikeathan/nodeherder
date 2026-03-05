@@ -81,7 +81,16 @@ export const getLastWeekStartEndDate = (): {
 export const formatTimestamp = (timestamp: number): string => {
   try {
     const date = new Date(timestamp);
-    return date.toISOString();
+    const ms = String(date.getMilliseconds()).padStart(3, '0');
+    const base = date.toLocaleString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    return `${base}.${ms}`;
   } catch (error) {
     return 'Invalid Date';
   }

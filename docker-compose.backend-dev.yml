@@ -13,6 +13,7 @@ services:
     volumes:
       - ./backend/configs:/backend/configs
       - ./backend/data:/backend/data
+      - ./backend/logs:/backend/logs
     environment:
       APP_ENV: development
-      TZ: Europe/London 
+      TZ: Europe/London

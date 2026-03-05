@@ -106,17 +106,21 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 
 		expose, ok := d.device.GetExpose(name)
 		if !ok {
+			utils.LogTracef("device %s: expose %s not found in device model, skipping", d.device.Id, name)
 			continue
 		}
 
 		if utils.ComparePayloadValues(expose.Data.Value(), newValue) {
+			utils.LogTracef("device %s: expose %s value unchanged, skipping", d.device.Id, name)
 			continue
 		}
 
 		if d.debouncerService.DebounceExpose(expose) {
+			utils.LogTracef("device %s: expose %s is debounced, skipping", d.device.Id, name)
 			continue
 		}
 
+		utils.LogTracef("device %s: expose %s scheduled for update", d.device.Id, name)
 		updatePackage.Data[name] = newValue
 	}
 
@@ -158,6 +162,7 @@ func (d *DeviceLifetimeService) attempToEmitMeasurementUpdate(payload map[string
 	// TODO: BUG!
 	// bug here if device is not from bridge then id will be auto geerated and wont find if automation is enabld
 	if !d.configCache.IsMetricsEnabled(d.device.Id) && !d.automationQueries.IsAutomationEnabled(d.device.Id) {
+		utils.LogDebugf("device %s: metrics/automation disabled, skipping measurement update", d.device.Id)
 		return
 	}
 
