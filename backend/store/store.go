@@ -7,6 +7,7 @@ import (
 	"node-herder/models/hub"
 	"node-herder/models/settings"
 	"node-herder/repository"
+	"node-herder/utils"
 	"sort"
 	"time"
 )
@@ -81,7 +82,14 @@ func (s *appStore) LoadHubState() (*hub.HubState, error) {
 }
 
 func (s *appStore) ViewMetrics(device *devices.Device, from time.Time, to time.Time) (*metrics.DeviceMetricsResult, error) {
-	return s.metrics.ViewDeviceTimeRange(device, from, to)
+	utils.LogDebugf("ViewMetrics: deviceId=%s from=%s to=%s exposeCount=%d", device.Id, from.Format(time.RFC3339), to.Format(time.RFC3339), len(device.Exposes))
+	result, err := s.metrics.ViewDeviceTimeRange(device, from, to)
+	if err != nil {
+		utils.LogDebugf("ViewMetrics: error for deviceId=%s: %v", device.Id, err)
+		return nil, err
+	}
+	utils.LogDebugf("ViewMetrics: deviceId=%s returned %d exposes", device.Id, len(result.Exposes))
+	return result, nil
 }
 
 func (s *appStore) QueryDevice(deviceID string, from, to time.Time, filters []metrics.MetricFilter, collectors map[string]metrics.ExposeResult) (*metrics.DeviceMetricsResult, error) {
@@ -94,13 +102,16 @@ func (s *appStore) AppConfig() *settings.AppConfigCache {
 
 func (s *appStore) StoreMetrics(friendlyName string, data map[string]any) error {
 	id := s.ResolveFriendlyName(friendlyName)
+	utils.LogDebugf("StoreMetrics: friendlyName=%s resolvedId=%s exposeCount=%d", friendlyName, id, len(data))
 
 	config, err := s.config.GetDeviceConfig(id)
 	if err != nil {
+		utils.LogDebugf("StoreMetrics: config lookup failed for id=%s, skipping", id)
 		return nil
 	}
 
 	if !config.MetricsEnabled {
+		utils.LogDebugf("StoreMetrics: metrics disabled for id=%s, skipping", id)
 		return nil
 	}
 

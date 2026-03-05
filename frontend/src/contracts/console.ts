@@ -21,6 +21,7 @@ const consoleLevelSeverityMap: Record<string, string> = {
   warn: 'warn',
   warning: 'warn',
   debug: 'secondary',
+  trace: 'secondary',
 };
 
 export const getConsoleLevelSeverity = (level: string) => {

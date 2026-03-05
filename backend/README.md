@@ -33,9 +33,15 @@ The application uses environment variables for configuration. Two environment fi
 - `.env.development` - Development environment settings
 - `.env.production` - Production environment settings
 
-Key environment variables:
+General configuration:
+
 - `APP_ENV` - Application environment (`development` or `production`)
 - `FRONTEND_BASE_URL` - Frontend URL for CORS (default: `http://localhost:4100`)
+
+Storage configuration:
+
+- `DATA_DIR` - Directory for database files (default: `data`)
+- `LOGS_DIR` - Directory for log files (default: `logs`)
 
 Additional configuration may be required for MQTT broker connection, database paths, and other settings.
 
@@ -100,6 +106,7 @@ Real-time updates are provided via WebSocket at `/ws` endpoint.
 ### HTTP Data Collection
 
 Devices can send data via HTTP POST to:
+
 ```
 POST /api/collect
 ```
@@ -163,17 +170,22 @@ go test ./internal/api
 ## Database
 
 The backend uses BoltDB, an embedded key-value database, for storing:
+
 - Device metrics
 - Application state
 - Configuration data
 
-Database files are typically stored in the application directory.
+Database files are stored in the directory specified by `DATA_DIR` (default: `data`).
+In Docker environments, this is typically mapped to `./backend/data`.
 
 ## Logging
 
 Logs are written to both console and file:
-- Log files are rotated automatically
-- Log level can be controlled via `-logLevel` flag
+
+- Log files are stored in the directory specified by `LOGS_DIR` (default: `logs`)
+- In Docker environments, map `./backend/logs` to `/backend/logs` to persist logs on the host
+- Log files are rotated automatically (rotation configured via `lumberjack`)
+- Log level can be controlled via `-logLevel` flag or `LOG_LEVEL` environment variable
 - Structured logging provides detailed context for debugging
 
 ## Development
@@ -197,12 +209,14 @@ golangci-lint run
 ### Hot Reload (Optional)
 
 For development with hot reload, you can use tools like:
+
 - [air](https://github.com/cosmtrek/air)
 - [realize](https://github.com/oxequa/realize)
 
 ## MQTT Configuration
 
 The backend connects to an MQTT broker for device communication. Ensure your MQTT broker is:
+
 1. Running and accessible
 2. Configured with the correct host/port
 3. Has appropriate authentication (if required)
@@ -227,6 +241,7 @@ Devices communicate through MQTT topics following the standard patterns.
 ### Build Errors
 
 Ensure Go modules are up to date:
+
 ```bash
 go mod tidy
 go mod download
@@ -235,6 +250,7 @@ go mod download
 ## Contributing
 
 When contributing to the backend:
+
 1. Format your code: `go fmt ./...`
 2. Run tests: `go test ./...`
 3. Ensure all tests pass
@@ -244,12 +260,14 @@ When contributing to the backend:
 ## Performance
 
 The backend is designed to handle:
+
 - Multiple concurrent device connections
 - Real-time data streaming via WebSocket
 - High-frequency metric collection
 - Automation rule evaluation
 
 For optimal performance:
+
 - Use appropriate log levels in production (`info` or `warn`)
 - Monitor BoltDB size and compact if needed
 - Configure rate limiting based on your use case

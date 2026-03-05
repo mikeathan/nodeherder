@@ -82,6 +82,8 @@ func (a *HubRegisterService) FindBridgeInfo(id string) (*devices.BridgeInfo, err
 
 func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo) {
 
+	utils.LogDebugf("RegisterBridge: received %d bridge info entries", len(bridgeInfoList))
+
 	err := s.store.StoreBridgeInfoList(bridgeInfoList)
 	if err != nil {
 		utils.LogErrorf("store bridgeInfoList failed: %s", err.Error())
@@ -144,6 +146,8 @@ func (s *HubRegisterService) RegisterBridge(bridgeInfoList []*devices.BridgeInfo
 		d.Description = bridgeInfo.Definition.Description
 		d.FriendlyName = bridgeInfo.FriendlyName
 		d.PowerSource = strings.ToLower(bridgeInfo.PowerSource)
+
+		utils.LogDebugf("RegisterBridge: registering device ieee=%s friendlyName=%s exposeCount=%d", bridgeInfo.IeeeAddress, bridgeInfo.FriendlyName, len(d.Exposes))
 
 		// register device
 		s.store.StoreDevice(d.FriendlyName, d)

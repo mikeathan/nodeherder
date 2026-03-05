@@ -167,7 +167,17 @@ export function resolveChartOptions(chartType: string, extra?: Record<string, an
           type: 'area',
           background: 'transparent',
           foreColor: '#ccc',
-          toolbar: { show: false },
+          toolbar: {
+            tools: {
+              download: false,
+              selection: false,
+              zoom: false,
+              zoomin: false,
+              zoomout: false,
+              pan: false,
+              reset: true,
+            },
+          },
           zoom: { enabled: true, type: 'x', autoScaleYaxis: true },
           ...(extra?.chart ?? {}),
         },

@@ -52,7 +52,9 @@ func (a *DeviceIdMapper) ResolveFriendlyName(friendlyName string) string {
 		return id
 	}
 
-	return utils.HashName(friendlyName)
+	hashed := utils.HashName(friendlyName)
+	utils.LogDebugf("DeviceIdMapper.ResolveFriendlyName: no IEEE mapping for %q, using hash=%s", friendlyName, hashed)
+	return hashed
 }
 
 func (s *DeviceIdMapper) UpdateId(friendlyName string, id string) {
