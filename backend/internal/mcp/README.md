@@ -441,3 +441,67 @@ The LLM proxy needs to be configured to connect to nodeherder as a remote MCP se
 - **Stateless queries**: Each tool call is independent, no session state needed
 
 ---
+
+## Architectural Diagrams
+
+### The Prompt-Intent Loop
+
+This diagram illustrates the cycle that empowers the LLM to make informed tool calls:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant LLM as LLM Proxy
+    participant MCP as NodeHerder MCP Server
+    participant DB as Metrics Database
+
+    Note over MCP: 1. Prompt Phase
+    MCP->>LLM: Provide System Prompt and Device Context
+
+    Note over LLM: LLM knows available devices
+
+    User->>LLM: What is the attic temperature?
+
+    Note over LLM: 2. Intent Phase
+    LLM->>MCP: query_device(target_name="attic", metrics=["temperature"])
+
+    MCP->>MCP: Resolve device ID
+    MCP->>MCP: Translate Intent to Query
+    MCP->>DB: Execute Query
+    DB-->>MCP: Metrics Data
+    MCP-->>LLM: JSON-RPC Response
+
+    LLM-->>User: The attic is 22.5 C
+```
+
+---
+
+## Technical Appendix: Prompt & Intent Logic
+
+The Model Context Protocol (MCP) in NodeHerder facilitates the interaction between an LLM and the device metrics database. This system relies on a continuous loop of **Prompting** (providing context) and **Intent Handling** (resolving requests).
+
+### 1. The Prompt Logic (`internal/mcp/resources/`)
+
+The "Prompt" is where NodeHerder tells the LLM everything it needs to know to be a good assistant.
+
+- **Dynamic Context**: The `SystemPrompt` constant is a template. When requested via `nodeherder://system-prompt`, the server replaces a placeholder with a live list of every device in your system.
+- **Rules of Engagement**: It explicitly warns the LLM to use exact Friendly Names and provides guidance on interpreting boolean values.
+- **Cache Management**: The server caches this prompt and rebuilds it automatically whenever the device list changes.
+
+### 2. The Intent Logic (`internal/mcp/intent/`)
+
+When the LLM calls a tool, it sends an **Intent**. This package turns that AI request into a precise database query.
+
+- **Types**: The `Intent` struct defines parameters like `TargetName`, `Metrics`, `TimeScope`, and `Aggregation`.
+- **Validation**: Rules check if the request is logical (e.g., rejecting average calculations on binary sensors).
+- **Translation**: Bridges the gap between natural language time ("today") and UTC timestamps, mapping LLM-speak to domain logic.
+
+### 3. The Orchestrator (`internal/mcp/tools/intent.go`)
+
+The `IntentHandler.Handle` method coordinates the flow:
+
+1. **Parse**: JSON -> `Intent`.
+2. **Validate**: Ensure the request is sane.
+3. **Resolve**: Match "attic" to a specific `device_id` using token-scoring.
+4. **Translate**: `Intent` + `device_id` -> `MetricsQueryRequest`.
+5. **Execute**: Query the database and return structured results.
