@@ -24,6 +24,7 @@ func TestAddTimeSchedule(t *testing.T) {
 
 	schedules := utils_test.CreateTimeSchedules(start, end)
 	s := automations.NewScheduler(utils.NewRealClock(), context.Background())
+	defer s.Stop()
 	// add start job
 	err := s.Name("Start job").At(schedules[0].StartAt).Every(time.Second * 4).Do(func() error {
 		done <- 1

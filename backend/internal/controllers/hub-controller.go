@@ -616,6 +616,10 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 		d.handleDeviceMeasurementsUpdated(device, p)
 	})
 
+	events.WithOnDeviceAutomationTriggered(func(device *devices.Device) {
+		d.automationEngine.HandleDevice(device)
+	})
+
 	processor := services.NewDeviceProcessorBuilder().
 		WithRegistrar(d.registrar).
 		WithStore(d.store).
@@ -658,8 +662,6 @@ func (d *HubController) handleDeviceAvailabilityChanged(p *devices.UpdatePackage
 }
 
 func (d *HubController) handleDeviceMeasurementsUpdated(device *devices.Device, payload map[string]interface{}) error {
-
-	d.automationEngine.HandleDevice(device)
 
 	utils.LogDebugf("handleDeviceMeasurementsUpdated: deviceId=%s friendlyName=%s keys=%d", device.Id, device.FriendlyName, len(payload))
 
