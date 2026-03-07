@@ -35,7 +35,7 @@ func (d *DeviceDebouncer) DebounceExpose(expose *devices.Entity) bool {
 		return false
 	}
 
-	if expose.Type == "binary" || expose.Type == "enum" {
+	if expose.Type == bridge.BinaryDataType || expose.Type == bridge.EnumDataType {
 		return false
 	}
 
