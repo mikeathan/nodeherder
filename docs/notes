@@ -10,11 +10,11 @@ git config --global credential.helper cache
 
 // https://www.home-assistant.io/docs/automation/basics/
 // https://www.home-assistant.io/docs/automation/editor/
-// mosquitto_pub -h 192.168.179:1883 -u sinkhole -P mqtt2023 -t 'zigbee2mqtt/Hive light 1/set' -m '{ "state": "ON" }'
+// mosquitto_pub -h localhost:1883 -u mqttuser -P mqttpass -t 'zigbee2mqtt/Hive light 1/set' -m '{ "state": "ON" }'
 
-// mosquitto_pub -h 192.168.179:1883 -u sinkhole -P mqtt2023 -t 'zigbee2mqtt/bridge/devices'
+// mosquitto_pub -h localhost:1883 -u mqttuser -P mqttpass -t 'zigbee2mqtt/bridge/devices'
 
-mosquitto_sub -h 192.168.50.179 -u sinkhole -P mqtt2023 -v -t "#"
+mosquitto_sub -h localhost -u mqttuser -P mqttpass -v -t "#"
 
-mosquitto_sub -h 192.168.50.179 -u sinkhole -P mqtt2023 -v -t "#"
-mikeathan@sinkhole:~/dev/zigbee2mqtt-sinkhole$ mosquitto_sub -h 192.168.50.179 -u sinkhole -P mqtt2023 -v -t "zigbee2mqtt/Human presence"
+mosquitto_sub -h localhost -u mqttuser -P mqttpass -v -t "#"
+user@localhost:~$ mosquitto_sub -h localhost -u mqttuser -P mqttpass -v -t "zigbee2mqtt/Human presence"

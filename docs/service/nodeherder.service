@@ -4,10 +4,10 @@ Wants=network-online.target
 After=network-online.target
 
 [Service]
-User=mikeathan
+User=nodeherder
 Type=simple
-WorkingDirectory=/home/mikeathan/dev/node-herder/backend
-ExecStart=/home/mikeathan/dev/node-herder/backend/nodeherder -port 9080
+WorkingDirectory=/opt/nodeherder/backend
+ExecStart=/opt/nodeherder/backend/nodeherder -port 9080
 
 Restart=always
 

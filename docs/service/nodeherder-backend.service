@@ -5,10 +5,10 @@ After=network-online.target
 PartOf=nodeherder.target
 
 [Service]
-User=mikeathan
-WorkingDirectory=/home/mikeathan/dev/node-herder/backend
+User=nodeherder
+WorkingDirectory=/opt/nodeherder/backend
 Environment=APP_ENV=production
-ExecStart=/home/mikeathan/dev/node-herder/backend/nodeherder
+ExecStart=/opt/nodeherder/backend/nodeherder
 Restart=always
 RestartSec=5
 

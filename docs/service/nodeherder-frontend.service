@@ -5,8 +5,8 @@ After=network-online.target
 PartOf=nodeherder.target
 
 [Service]
-User=mikeathan
-WorkingDirectory=/home/mikeathan/dev/node-herder/frontend
+User=nodeherder
+WorkingDirectory=/opt/nodeherder/frontend
 Environment=NODE_ENV=production
 ExecStart=/usr/bin/npm start
 Restart=always
