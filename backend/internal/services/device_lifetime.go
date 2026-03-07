@@ -73,7 +73,8 @@ func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
 	d.device.Availability = devices.OnlineAvailability
 	utils.LogInfof("device [%s] %s is online", d.device.Id, d.device.FriendlyName)
 
-	d.attempToEmitMeasurementUpdate(payload)
+	d.attemptToTriggerAutomation()
+	d.attemptToStoreMetrics(payload)
 	d.events.OnNewDevice(d.device)
 }
 
@@ -102,6 +103,8 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 	}
 
 	var updatePackage = devices.NewUpdatePackage(d.device.Id)
+	var hasChanges bool
+
 	for name, newValue := range payload {
 
 		expose, ok := d.device.GetExpose(name)
@@ -114,6 +117,11 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 			utils.LogTracef("device %s: expose %s value unchanged, skipping", d.device.Id, name)
 			continue
 		}
+
+		// always update in-memory state so reads (e.g. automation step
+		// calculations) see the latest value regardless of debounce
+		d.device.Exposes[name].Data.SetValue(newValue)
+		hasChanges = true
 
 		if d.debouncerService.DebounceExpose(expose) {
 			utils.LogTracef("device %s: expose %s is debounced, skipping", d.device.Id, name)
@@ -140,33 +148,49 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 
 	d.device.LastSeen = getLastSeen(payload) // we need that.
 
-	if updatePackage.HasData() {
+	// automation: always trigger on any real value change (not debounced)
+	// so that dial/step operations read fresh in-memory state
+	if hasChanges {
+		d.attemptToTriggerAutomation()
+	}
+
+	// storage + UI: only emit for non-debounced changes or availability changes
+	if updatePackage.HasData() || updatePackage.Availability != "" {
 		updatePackage.LastSeen = d.device.LastSeen
 
-		// update device with expose changes
-		for expose, value := range updatePackage.Data {
-			d.device.Exposes[expose].Data.SetValue(value)
+		if updatePackage.HasData() {
+			d.attemptToStoreMetrics(updatePackage.Data)
 		}
-
-		d.attempToEmitMeasurementUpdate(updatePackage.Data)
 
 		// this will update device in store and emit ws event to connected clients
 		d.events.OnDeviceUpdated(d.device, updatePackage)
 	}
 }
 
-func (d *DeviceLifetimeService) attempToEmitMeasurementUpdate(payload map[string]interface{}) {
-
-	// collect measurement data only if below conditions are enabled
-
-	// TODO: BUG!
-	// bug here if device is not from bridge then id will be auto geerated and wont find if automation is enabld
-	if !d.configCache.IsMetricsEnabled(d.device.Id) && !d.automationQueries.IsAutomationEnabled(d.device.Id) {
-		utils.LogDebugf("device %s: metrics/automation disabled, skipping measurement update", d.device.Id)
+// attemptToTriggerAutomation fires the automation engine if automation is
+// enabled for this device. Called on every real value change, independent of
+// debounce, so that dial step-calculations always use fresh data.
+func (d *DeviceLifetimeService) attemptToTriggerAutomation() {
+	if !d.automationQueries.IsAutomationEnabled(d.device.Id) {
+		utils.LogDebugf("device %s: automation disabled, skipping", d.device.Id)
 		return
 	}
 
-	// send measurement updates to metrics store
+	if d.events.OnDeviceAutomationTriggered != nil {
+		d.events.OnDeviceAutomationTriggered(d.device)
+	}
+}
+
+// attemptToStoreMetrics sends debounced measurement data to the metrics store.
+// Only measurement-category exposes are included.
+func (d *DeviceLifetimeService) attemptToStoreMetrics(payload map[string]interface{}) {
+
+	if !d.configCache.IsMetricsEnabled(d.device.Id) {
+		utils.LogDebugf("device %s: metrics disabled, skipping storage", d.device.Id)
+		return
+	}
+
+	// filter to measurement exposes only
 	data := map[string]interface{}{}
 	for name, value := range payload {
 		if expose, ok := d.device.Exposes[name]; ok && expose.Category == bridge.MeasurementCategory {
@@ -175,7 +199,6 @@ func (d *DeviceLifetimeService) attempToEmitMeasurementUpdate(payload map[string
 	}
 
 	if len(data) > 0 {
-		// this will attempt to run automation (if enabled) and store to metrics store (if enabled)
 		d.events.OnDeviceMeasurementsUpdated(d.device, data)
 	}
 }

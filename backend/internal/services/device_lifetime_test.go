@@ -116,7 +116,7 @@ func TestDeviceLifetimeService_UpdateWithNewData(t *testing.T) {
 func TestDeviceLifetimeService_UpdateWithSameData(t *testing.T) {
 
 	device := utils_test.CreateLightDevice("x01234", "testDevice", "brightness", 124.2)
-	device.Availability = devices.OfflineAvailability
+	device.Availability = devices.OnlineAvailability
 
 	events := &devices.DeviceRequestEvents{
 		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
@@ -155,9 +155,10 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 	device := utils_test.CreateLightDevice("x01234", "testDevice", "brightness", 124.1)
 	device.Availability = devices.OfflineAvailability
 
+	var updates int
 	events := &devices.DeviceRequestEvents{
 		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {
-			//t.Error("OnDeviceUpdated should not be called")
+			updates++
 		},
 		OnDeviceMeasurementsUpdated: func(d *devices.Device, p map[string]interface{}) {
 
@@ -217,23 +218,22 @@ func TestDeviceLifetimeService_UpdateWithDebouncer(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
-		currValue := device.Exposes["brightness"].Data.Value()
+		updates = 0
 		mockClock.SetMockTime(tc.timestamp)
 
 		service.Update(tc.payload)
 		time.Sleep(50 * time.Millisecond)
 
+		if device.Exposes["brightness"].Data.Value() != tc.payload["brightness"] {
+			t.Errorf("Device value not updated (should always be fresh). want %v, got %v", tc.payload["brightness"], device.Exposes["brightness"].Data.Value())
+		}
+
+		expectedUpdates := 0
 		if tc.shouldUpdate {
-
-			if device.Exposes["brightness"].Data.Value() != tc.payload["brightness"] {
-				t.Errorf("Device value not updated. want %v, got %v", tc.payload["brightness"], device.Exposes["brightness"].Data.Value())
-			}
-		} else {
-
-			if device.Exposes["brightness"].Data.Value() != currValue {
-				t.Errorf("Error: Device value updated. want %v, got %v", currValue, device.Exposes["brightness"].Data.Value())
-			}
+			expectedUpdates = 1
+		}
+		if updates != expectedUpdates {
+			t.Errorf("at time %v, expected %d updates, got %d", tc.timestamp, expectedUpdates, updates)
 		}
 	}
 }
@@ -473,6 +473,7 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithAutomationEnabled(t *testi
 
 	app := settings.NewAppConfig()
 	d1 := settings.NewDeviceConfig("x01234")
+	d1.MetricsEnabled = true
 	d1.DebounceOverrides["battery"] = utils.IntervalFromMilliseconds(5000)
 	d1.DebounceOverrides["linkquality"] = utils.IntervalFromMilliseconds(5000)
 	d1.DebounceOverrides["brightness"] = utils.IntervalFromMilliseconds(10)
