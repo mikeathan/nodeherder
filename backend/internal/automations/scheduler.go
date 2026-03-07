@@ -268,7 +268,6 @@ func ConvertStringToTimeUTC(clock utils.Clock, timeString string) (time.Time, er
 		return time.Time{}, ErrUnsupportedTimeFormat
 	}
 
-	// TODO: for now we assume the automation schedule is in Europe/London timezone
 	loc, _ := time.LoadLocation("Europe/London")
 	t, err := time.ParseInLocation(layout, timeString, loc)
 	if err != nil {

@@ -627,7 +627,6 @@ func TestManualTriggerWithScheduleTurnsOnLight(t *testing.T) {
 
 func TestSwitch(t *testing.T) {
 
-	// todo
 }
 
 func TestEqualityChecks(t *testing.T) {

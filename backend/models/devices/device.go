@@ -418,7 +418,7 @@ func createExpose(data map[string]interface{}) map[string]*Entity {
 		newEntity.AccessMode = bridge.ReadAccessMode
 		newEntity.Data.SetValue(value)
 		newEntity.Unit = units[key]
-		newEntity.Type = bridge.NumericDataType // TODO: make this dynamic
+		newEntity.Type = bridge.NumericDataType
 		entities[key] = newEntity
 	}
 	return entities

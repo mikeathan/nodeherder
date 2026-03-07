@@ -334,7 +334,6 @@ func TestHandlingLoadAutomationsMessage(t *testing.T) {
 
 // }
 
-// TODO:
 // func TestHandlingLoadDeviceMessage(t *testing.T) {
 
 // 	wsHub := ws.NewWsHub()

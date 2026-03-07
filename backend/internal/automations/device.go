@@ -125,7 +125,6 @@ func (d *Device) EvaluateTrigger(event TriggerEvent, triggerName string) bool {
 
 	device := deviceEvent.Device()
 
-	// TODO: can pass the Device event directly
 	// payload is the current device expose
 	d.ctx.SetDevicePayload(device.Exposes) 
 

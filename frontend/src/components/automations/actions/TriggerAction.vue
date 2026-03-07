@@ -78,7 +78,6 @@
     return createTriggerActionModesDropdowItems((e: any) => setBroadcastMode(e));
   }
   function addOperation(operation: TriggerActionOperation) {
-    // TODO: handle more operations when needed
     if (operation != 'delay') {
       console.error('Unknown operation ', operation);
     }
@@ -96,7 +95,6 @@
   }
 
   function removeOperation(operation: TriggerActionOperation) {
-    // TODO: handle more operations when needed
     if (operation != 'delay') {
       console.error('Unknown operation ', operation);
     }

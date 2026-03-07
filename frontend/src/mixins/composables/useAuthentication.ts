@@ -15,7 +15,6 @@ export function useAuth() {
     const userSession: UserSession = await login();
     if (!userSession.isAuthenticated) {
       console.error('Sign-in failed: User is not authenticated');
-      // TODO:
       // Show toast notification
       return;
     }

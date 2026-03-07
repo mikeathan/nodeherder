@@ -25,10 +25,6 @@
 - [ ] Handle timerange enum colours
 - [ ] Create device card view with sensor data and editor/options view
 
-### Features
-
-- [ ] Deploy to Docker
-
 ---
 
 ## 🐛 Known Bugs
@@ -80,7 +76,6 @@ When new non-bridge device joins, ID is built on registration which prevents imm
 - [x] Add build makefile
 - [x] Add remove/force remove/block functionality
 - [x] Add configure exposes device functionality
-- [x] Add Auth0
 - [x] Device disabled feature
 - [x] Use device type to identify if diagnostic, feature or expose
 - [x] Error reporting
@@ -89,7 +84,6 @@ When new non-bridge device joins, ID is built on registration which prevents imm
 ### Frontend
 
 - [x] Add app settings in main page
-- [x] Add navigation for pages - use Vuetify and redesign layout
 - [x] Send multiple messages in one MQTT request for same device
 - [x] Update icons to match Home Assistant
 - [x] Add device list for devices not shown in dashboard
@@ -112,14 +106,115 @@ When new non-bridge device joins, ID is built on registration which prevents imm
 
 ## 🧪 Test Commands
 
-````bash
 ```bash
 # Test collect endpoint
-curl -X POST http://192.168.50.69:4100/api/collect \
+curl -X POST http://localhost:4100/api/collect \
   -H 'Content-Type: application/json' \
   -d '{"label":"weather node 1","temperature":45.6,"Timestamp":"2023-03-19T19:57:28.961193655Z"}'
-````
-
 ```
 
-```
+
+
+## 📝 Codebase TODOs
+
+### `./backend/internal/api/types.go`
+- [ ] Line 37: implement after fixing the bridge access flatting as now is wrong
+
+### `./backend/internal/automations/device.go`
+- [ ] Line 128: can pass the Device event directly
+
+### `./backend/internal/automations/engine.go`
+- [ ] Line 16: might need to move it to Models????
+
+### `./backend/internal/automations/scheduler.go`
+- [ ] Line 271: for now we assume the automation schedule is in Europe/London timezone
+
+### `./backend/internal/automations/triggers_test.go`
+- [ ] Line 630: Empty TODO
+
+### `./backend/internal/controllers/handlers.go`
+- [ ] Line 24: maybe do somethng wit the error
+- [ ] Line 101: Empty TODO
+- [ ] Line 233: if we dont have a request item eg the response came from zigbee2mqtt form their ui
+
+### `./backend/internal/controllers/hub-controller.go`
+- [ ] Line 399: see if we can cast p to string and then to bytes
+- [ ] Line 450: see if we can cast p to string and then to bytes
+- [ ] Line 598: can be refactored to use a factory. for now we will keep it simple
+- [ ] Line 635: execute in worker pool
+- [ ] Line 647: execute in worker pool
+
+### `./backend/internal/metrics/storage/metrics_test.go`
+- [ ] Line 515: Empty TODO
+
+### `./backend/internal/mqtt/mqtt.go`
+- [ ] Line 225: remove unused topics if got renamed
+
+### `./backend/internal/services/device_lifetime.go`
+- [ ] Line 131: handle this below better
+- [ ] Line 162: BUG!
+- [ ] Line 251: move it in one place
+
+### `./backend/internal/services/storage_pruning.go`
+- [ ] Line 8: Empty TODO
+
+### `./backend/internal/ws/eventhub.go`
+- [ ] Line 334: abstract this so we can mock it
+- [ ] Line 463: Empty TODO
+
+### `./backend/internal/ws/eventhub_test.go`
+- [ ] Line 337: Empty TODO
+
+### `./backend/internal/ws/websocket.go`
+- [ ] Line 95: need to segment data if data is too large
+
+### `./backend/mocks/types.go`
+- [ ] Line 32: get rid of this. we only used it to have a differnet mocked implementation of Publish
+
+### `./backend/models/devices/device.go`
+- [ ] Line 421: make this dynamic
+
+### `./backend/repository/device_file.go`
+- [ ] Line 19: use kv database
+
+### `./backend/utils/worker.go`
+- [ ] Line 23: maybe do somethng with the error
+
+### `./frontend/src/components/automations/DeviceAutomation.vue`
+- [ ] Line 121: ; alert message box to ask user
+
+- [ ] Line 168: find better way to do this we have 2 components that use the same template and toggle from the if isinVieMode
+
+### `./frontend/src/components/automations/Trigger.vue`
+- [ ] Line 36: can be refactor to some automation context
+- [ ] Line 176: Empty TODO
+
+### `./frontend/src/components/automations/actions/TriggerAction.vue`
+- [ ] Line 81: handle more operations when needed
+- [ ] Line 99: handle more operations when needed
+
+### `./frontend/src/components/automations/schedule/Scheduler.vue`
+- [ ] Line 40: Empty TODO
+
+### `./frontend/src/components/controls/Panel.vue`
+- [ ] Line 52: cleanup componentCache ?
+- [ ] Line 61: cleanup componentCache ?
+
+### `./frontend/src/components/dashboards/GroupDashboard.vue`
+- [ ] Line 90: emit error message
+- [ ] Line 98: emit error message
+- [ ] Line 118: this is wrong, this should be done in the ws event response in case the request is not successful
+- [ ] Line 133: this is wrong, this should be done in the ws event response in case the request is not successful
+- [ ] Line 150: this is wrong, this should be done in the ws event response in case the request is not successful
+
+### `./frontend/src/components/device/DeviceExposes.vue`
+- [ ] Line 28: do the same we did in Toggle component  so value comes out the correct type eg number
+
+### `./frontend/src/mixins/composables/useAuthentication.ts`
+- [ ] Line 18: Empty TODO
+
+### `./frontend/src/modules/formatters/sensor-formatter.ts`
+- [ ] Line 205: dont format integer values
+
+### `./frontend/src/transformers/automation/action-transformers.ts`
+- [ ] Line 66: add support for icons in operation

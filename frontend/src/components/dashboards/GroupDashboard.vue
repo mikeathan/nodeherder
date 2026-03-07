@@ -87,7 +87,6 @@
 
   function addNewDashboardGroup(grouName: string) {
     if (!grouName) {
-      // TODO: emit error message
       alert('groupName is empty');
       return;
     }
@@ -95,7 +94,6 @@
     if (dashboardGroups.value[grouName]) {
       alert('groupName already exists');
 
-      // TODO: emit error message
       return;
     }
 
@@ -115,7 +113,6 @@
       return;
     }
 
-    // TODO: this is wrong, this should be done in the ws event response in case the request is not successful
     const group = dashboardGroups.value[groupName];
     delete dashboardGroups.value[groupName];
 
@@ -130,7 +127,6 @@
       return;
     }
 
-    // TODO: this is wrong, this should be done in the ws event response in case the request is not successful
     const deviceGroupExposes = dashboardGroups.value[groupName].deviceGroup[deviceId].exposes;
     const idx = deviceGroupExposes.indexOf(exposeName);
     if (idx === -1) {
@@ -147,7 +143,6 @@
       return;
     }
 
-    // TODO: this is wrong, this should be done in the ws event response in case the request is not successful
     delete dashboardGroups.value[groupName];
     store.dispatch('hub/deleteDashboardGroup', groupName);
   }

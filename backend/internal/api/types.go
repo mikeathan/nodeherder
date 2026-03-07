@@ -34,7 +34,7 @@ type DeviceContext struct {
 type ExposeInfo struct {
 	Name string                `json:"name"`
 	Type bridge.ExposeDataType `json:"type"`
-	//AccessMode   bridge.ExposeAccessMode `json:"accessMode"` // TODO: implement after fixing the bridge access flatting as now is wrong
+	//AccessMode   bridge.ExposeAccessMode `json:"accessMode"`
 	Unit         string            `json:"unit,omitempty"`
 	Values       []string          `json:"values,omitempty"`
 	ValueOn      any               `json:"valueOn,omitempty"`

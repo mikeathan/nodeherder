@@ -63,7 +63,6 @@ export function transformStepAction(friendlyname: string, action: AutomationStep
   const operationType = formatStepOperations(action.steps);
   const expose = findActionStepProperty(action);
 
-  // TODO add support for icons in operation
   //<i class="pi pi-plus" style="font-size: 0.5rem;"></i>
   const formattedAction = `${operationType} <strong>${friendlyname}</strong> <strong>${expose}</strong> by  ${action.data}`;
   return [formattedAction];

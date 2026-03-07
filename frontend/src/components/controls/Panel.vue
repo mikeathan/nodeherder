@@ -49,7 +49,6 @@ function closeComponent(name: string): void {
     return;
   }
 
-  // TODO: cleanup componentCache ?
   presentationQueue.value.pop();
 
   if (presentationQueue.value.length == 0) {
@@ -58,7 +57,6 @@ function closeComponent(name: string): void {
 }
 
 function closeLastComponent(): void {
-  // TODO: cleanup componentCache ?
   presentationQueue.value.pop();
 
   if (presentationQueue.value.length == 0) {

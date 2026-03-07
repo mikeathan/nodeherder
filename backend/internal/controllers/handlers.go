@@ -21,7 +21,6 @@ type mqttResponseTask struct {
 }
 
 func (m *mqttResponseTask) OnFailure(err error) {
-	// TODO: maybe do somethng wit the error
 	utils.LogErrorf("Job: %s Error: %s", m.Id, err.Error())
 }
 
@@ -98,7 +97,6 @@ func (b *bridgeConfigurationHandler) ProcessPayload(id string, connType string, 
 			updatedDeviceMap[device.IeeeAddress] = dh
 		}
 
-		// TODO:
 		// do we need to unsubsribe from removed/renamed topic
 		err := b.mqtt.AddTopic(device.FriendlyName)
 		if err != nil {
@@ -230,7 +228,6 @@ func (b *bridgePermitJoinResponseHandler) ProcessPayload(id string, connType str
 	if resp.Status == "ok" {
 		utils.LogInfof("Bridge Permit join set to %v ", resp.Data["time"])
 		if resp.Transaction != "" {
-			// TODO: if we dont have a request item eg the response came from zigbee2mqtt form their ui
 			// then currently we cant update the status. maybe create new request object with state using the resp.Data["time"]
 
 			err := b.ws.Context().Process(resp.Transaction)

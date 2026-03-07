@@ -202,7 +202,6 @@ export function getSensorValue(value: any): any {
     return value;
   }
 
-  // todo : dont format integer values
   return parseFloat(value.toFixed(1));
 }
 

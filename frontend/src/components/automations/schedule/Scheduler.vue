@@ -37,7 +37,6 @@
   const buttonPanelItems = computed(() => {
     const canClear = schedules.value.length != 0;
     const canAdd = schedules.value.length != TimeScheduleTypes.length;
-    // TODO
     // const isModified = props.schedules.length != schedules.value.length;
     // const isValid = isModified && canClear && schedules.value.every(k => k.startAt != '' && k.type != undefined);
 

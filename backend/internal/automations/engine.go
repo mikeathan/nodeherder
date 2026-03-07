@@ -13,7 +13,7 @@ const (
 	automationDir = "configs/automations"
 )
 
-type Engine interface { // TODO: might need to move it to Models????
+type Engine interface {
 	HandleDevice(device *devices.Device)
 	HandleManual(automationID string, triggerName string) error
 	Add(automation Automation) error

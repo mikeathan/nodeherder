@@ -33,7 +33,6 @@
     },
   });
 
-  // TODO: can be refactor to some automation context
   const conditions = ref<AutomationTriggerConditions>({} as AutomationTriggerConditions);
   const actions = ref<AutomationActions>({} as AutomationActions);
   const trigger = ref<AutomationTrigger>(props.trigger);
@@ -173,7 +172,6 @@
 </script>
 
 <template>
-  <!-- TODO:  -->
   <!-- if automation for device exists message user else we overwrite it -->
   <div class="grid pb-3">
     <div class="col-12">

@@ -118,7 +118,6 @@
     var sourceAutomation = store.getters['automations/find'](props.id);
     if (sourceAutomation != undefined) {
       store.dispatch('automations/delete', automation.value.id);
-      // todo; alert message box to ask user
       router.push('/viewer');
     }
   }
@@ -166,8 +165,6 @@
 
 <template>
   <div class="relative">
-    <!-- TODO: find better way to do this
-      we have 2 components that use the same template and toggle from the if isinVieMode -->
     <Button
       icon="pi pi-times"
       size="large"

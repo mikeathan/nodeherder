@@ -16,7 +16,6 @@ const devicesBucketName = "devices"
 const bridgeBucketName = "bridge"
 const bridgeKeyName = "bridgeInfo"
 
-// TODO: use kv database
 type FileDeviceRepo struct {
 	mutex   sync.RWMutex
 	db      *bolt.DB

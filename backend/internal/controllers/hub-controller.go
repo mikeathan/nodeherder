@@ -396,7 +396,6 @@ func (h *HubController) registerEventHubEvents() {
 
 	h.eventHub.OnDeleteAutomationTrigger(func(p interface{}) (interface{}, error) {
 
-		// todo:see if we can cast p to string and then to bytes
 		bytes, _ := json.Marshal(p)
 		payload := make(map[string]interface{})
 		err := json.Unmarshal(bytes, &payload)
@@ -447,7 +446,6 @@ func (h *HubController) registerEventHubEvents() {
 
 	h.eventHub.OnDeleteAutomation(func(p interface{}) (interface{}, error) {
 
-		// todo:see if we can cast p to string and then to bytes
 
 		bytes, _ := json.Marshal(p)
 		payload := make(map[string]interface{})
@@ -595,7 +593,6 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 	return m.wp.AddTask(&mqttResponseTask{Id: id, Type: connType, Payload: payload, h: h})
 }
 
-// TODO: can be refactored to use a factory. for now we will keep it simple
 // will have to create some shared context for hub controller so i can add that thre as well with the others
 func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 
@@ -632,7 +629,6 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 }
 
 func (d *HubController) handleDeviceAdded(device *devices.Device) error {
-	// todo: execute in worker pool
 	// 	action()
 	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
 
@@ -644,7 +640,6 @@ func (d *HubController) handleDeviceAdded(device *devices.Device) error {
 // /
 func (d *HubController) handleDeviceUpdated(device *devices.Device, payload *devices.UpdatePackage) error {
 
-	// todo: execute in worker pool
 	// 	action()
 	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
 

@@ -25,7 +25,6 @@
   });
 
   // TEMPORARY QUICK FIX
-  // TODO: do the same we did in Toggle component  so value comes out the correct type eg number
   function updateValue(expose: Expose, value: any) {
     var msg = {
       id: props.id,

@@ -128,7 +128,6 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 	if d.device.Availability == devices.OfflineAvailability {
 		d.device.Availability = devices.OnlineAvailability
 
-		// TODO: handle this below better
 		// -updatePackage contains Availability only if we have a change on Device Availability. else its ommited.
 		// thats because we use updatePackage for either measurement data or device availability change
 		// -if everything is debounced then we wont emit anything. so need to think about that
@@ -159,7 +158,6 @@ func (d *DeviceLifetimeService) attempToEmitMeasurementUpdate(payload map[string
 
 	// collect measurement data only if below conditions are enabled
 
-	// TODO: BUG!
 	// bug here if device is not from bridge then id will be auto geerated and wont find if automation is enabld
 	if !d.configCache.IsMetricsEnabled(d.device.Id) && !d.automationQueries.IsAutomationEnabled(d.device.Id) {
 		utils.LogDebugf("device %s: metrics/automation disabled, skipping measurement update", d.device.Id)
@@ -248,7 +246,6 @@ func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutDuration time
 					s.device.SetAvailable(false)
 					utils.LogInfof("device %s is offine", s.device.Id)
 
-					// todo: move it in one place
 					if onChangeCallback != nil {
 						p := devices.NewUpdatePackage(s.device.Id)
 						p.Availability = devices.OfflineAvailability

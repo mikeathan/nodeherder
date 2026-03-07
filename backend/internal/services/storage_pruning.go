@@ -5,7 +5,7 @@ package services
 // 	go func() {
 // 		for {
 
-// 			// TODO:
+//
 // 			// maybe pass duration in configuration
 // 			s.clock.Sleep(time.Minute) // Change it hour or day !!!!!!
 // 			utils.LogInfof("Start pruning bucket %v", metricsBucketName)

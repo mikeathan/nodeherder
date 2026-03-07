@@ -512,7 +512,6 @@ func TestDeviceTimeRangeBinaryDataMetrics(t *testing.T) {
 
 	}
 
-	// TODO:
 	// add a test case for when we have repeated events
 	//values := []string{"on", "off", "on", "off", "on", "on", "off"}
 

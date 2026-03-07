@@ -29,7 +29,6 @@ import (
 
 // Mock EventHub
 
-// TODO: get rid of this. we only used it to have a differnet mocked implementation of Publish
 type MockEventHub struct {
 	context hub.Context
 

@@ -331,7 +331,6 @@ func (h *eventHubImpl) Start() {
 	h.server.Start(func(message []byte) { h.handleHubEvents(message) })
 }
 
-// TODO: abstract this so we can mock it
 // https://gemini.google.com/app/b3118f0d9cdcdba6
 func (c *eventHubImpl) handleHubEvents(message []byte) {
 	var eventMsg = &EventMessage{}
@@ -460,7 +459,6 @@ func (c *eventHubImpl) execute(opts *eventExecutorOptions) {
 		return
 	}
 
-	// TODO:
 	//if we expect payload and is empty the
 	// if payload == nil {
 	// 	c.Broadcast(OperationFailed, "payload is empty")
