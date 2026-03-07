@@ -23,7 +23,7 @@ The setup script creates MQTT and Zigbee2MQTT configurations:
 ./backend/scripts/setup-backend.sh
 ```
 
-**What it does:**
+**What it does**
 
 - Reads `DATA_ROOT` from `.env` at project root
 - Creates MQTT directories at `${DATA_ROOT}/mqtt/`

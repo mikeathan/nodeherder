@@ -7,6 +7,8 @@ LLM_URL="http://192.168.50.60:4001/api/conversation/message"
 # CLIENT_ID="llm-proxy"
 # CLIENT_SECRET="***********="
 
+
+
 CONVERSATION_ID="local-dev-1"
 CONTEXT_VERSION="v1"
 
