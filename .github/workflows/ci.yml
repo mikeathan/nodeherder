@@ -62,4 +62,4 @@ jobs:
       - name: Run Tag Script
         run: |
           chmod +x scripts/tag_build.sh
-          ./scripts/tag_build.sh
+          ./scripts/tag_build.sh --auto-increment-patch
