@@ -25,10 +25,18 @@ func TestAddTimeSchedule(t *testing.T) {
 	schedules := utils_test.CreateTimeSchedules(start, end)
 	s := automations.NewScheduler(utils.NewRealClock(), context.Background())
 	defer s.Stop()
+	var mu sync.Mutex
+	doneCount := 0
+
 	// add start job
 	err := s.Name("Start job").At(schedules[0].StartAt).Every(time.Second * 4).Do(func() error {
-		done <- 1
-		wg.Done()
+		mu.Lock()
+		defer mu.Unlock()
+		if doneCount < 4 {
+			done <- 1
+			wg.Done()
+			doneCount++
+		}
 		return nil
 	})
 
@@ -37,8 +45,13 @@ func TestAddTimeSchedule(t *testing.T) {
 	}
 
 	err = s.Name("End job").At(schedules[1].StartAt).Every(time.Second * 4).Do(func() error {
-		done <- 2
-		wg.Done()
+		mu.Lock()
+		defer mu.Unlock()
+		if doneCount < 4 {
+			done <- 2
+			wg.Done()
+			doneCount++
+		}
 		return nil
 	})
 

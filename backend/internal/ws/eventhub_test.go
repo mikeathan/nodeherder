@@ -30,7 +30,8 @@ import (
 func TestHubNewClientEventsAreReceived(t *testing.T) {
 
 	var expectedPayload = []byte("{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}")
-	var expectedMessage = "{\"battery\":100,\"humidity\":60.4,\"last_seen\":\"2023-06-27T15:33:24+01:00\",\"linkquality\":40,\"temperature\":24,\"voltage\":3000}"
+	var expectedMessage = make(map[string]interface{})
+	json.Unmarshal(expectedPayload, &expectedMessage)
 
 	wsHub := ws.NewWsHub()
 	wsHub.Start()
@@ -51,9 +52,22 @@ func TestHubNewClientEventsAreReceived(t *testing.T) {
 		if gotType != ws.DeviceUpdated {
 			t.Fatalf("Expected type %+v', got '%+v'", ws.DeviceUpdated, gotType)
 		}
-		gotData := reply["payload"]
-		if gotData != expectedMessage {
-			t.Fatalf("Expected message %+v', got '%+v'", expectedMessage, gotData)
+
+		gotDataMap, ok := reply["payload"].(map[string]interface{})
+		if !ok {
+			gotDataStr, okStr := reply["payload"].(string)
+			if okStr {
+				if err := json.Unmarshal([]byte(gotDataStr), &gotDataMap); err != nil {
+					t.Fatalf("Failed to unmarshal payload string: %v", err)
+				}
+			} else {
+				t.Fatalf("Expected payload to be map[string]interface{} or string, got %T", reply["payload"])
+			}
+		}
+
+
+		if !reflect.DeepEqual(gotDataMap, expectedMessage) {
+			t.Fatalf("Expected message %+v', got '%+v'", expectedMessage, gotDataMap)
 		}
 
 		defer s.Close()
