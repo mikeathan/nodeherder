@@ -61,5 +61,7 @@ jobs:
 
       - name: Run Tag Script
         run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           chmod +x scripts/tag_build.sh
           ./scripts/tag_build.sh --auto-increment-patch
