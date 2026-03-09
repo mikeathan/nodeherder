@@ -1,0 +1,16 @@
+[Unit]
+Description=Node-Herder Frontend Service
+Wants=network-online.target
+After=network-online.target
+PartOf=nodeherder.target
+
+[Service]
+User=mikeathan
+WorkingDirectory=/home/mikeathan/dev/node-herder/frontend
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=nodeherder.target

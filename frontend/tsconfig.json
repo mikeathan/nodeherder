@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "outDir": "./dist",
+    "jsx": "preserve",
+    "jsxFactory": "h",
+    "experimentalDecorators": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "useDefineForClassFields": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "types": ["webpack-env"],
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "lib": ["dom", "es5", "esnext"],
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "src/**/*.test.ts", "src/config/env/env.d.ts"],
+  "exclude": ["./node_modules", "./dist/**/*", "**/*.test.ts", "**/__tests__/**"],
+  "types": ["jest"]
+}

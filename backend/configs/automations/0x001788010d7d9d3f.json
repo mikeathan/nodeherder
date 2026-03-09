@@ -1,0 +1,181 @@
+{
+  "id": "0x001788010d7d9d3f",
+  "type": "device",
+  "friendlyname": "Living room switch dial",
+  "description": "Light switch automation",
+  "enabled": true,
+  "triggers": [
+    {
+      "type": "deviceTrigger",
+      "actions": [
+        {
+          "id": "0x001788010ba4328e",
+          "type": "trigger",
+          "exposes": [
+            {
+              "name": "state",
+              "data": "TOGGLE"
+            }
+          ]
+        }
+      ],
+      "name": "action",
+      "conditions": [
+        {
+          "equality": "=",
+          "type": "expose",
+          "name": "action",
+          "value": "button_1_press_release"
+        }
+      ]
+    },
+    {
+      "type": "deviceTrigger",
+      "actions": [
+        {
+          "id": "0x001788010ba4328e",
+          "type": "step",
+          "property": "brightness",
+          "steps": [
+            {
+              "property": "brightness",
+              "operator": "+",
+              "id": "0x001788010ba4328e"
+            },
+            {
+              "property": "action_time",
+              "operator": "*",
+              "id": "0x001788010d7d9d3f"
+            }
+          ],
+          "data": 0.5
+        }
+      ],
+      "name": "action",
+      "conditions": [
+        {
+          "equality": "=",
+          "type": "expose",
+          "name": "action",
+          "value": "dial_rotate_right_slow"
+        }
+      ]
+    },
+    {
+      "type": "deviceTrigger",
+      "actions": [
+        {
+          "id": "0x001788010ba4328e",
+          "type": "step",
+          "property": "brightness",
+          "steps": [
+            {
+              "property": "brightness",
+              "operator": "+",
+              "id": "0x001788010ba4328e"
+            },
+            {
+              "property": "action_time",
+              "operator": "*",
+              "id": "0x001788010d7d9d3f"
+            }
+          ],
+          "data": 1
+        }
+      ],
+      "name": "action",
+      "conditions": [
+        {
+          "equality": "=",
+          "type": "expose",
+          "name": "action",
+          "value": "dial_rotate_right_fast"
+        }
+      ]
+    },
+    {
+      "type": "deviceTrigger",
+      "actions": [
+        {
+          "id": "0x001788010ba4328e",
+          "type": "step",
+          "property": "brightness",
+          "steps": [
+            {
+              "property": "brightness",
+              "operator": "-",
+              "id": "0x001788010ba4328e"
+            },
+            {
+              "property": "action_time",
+              "operator": "*",
+              "id": "0x001788010d7d9d3f"
+            }
+          ],
+          "data": 0.5
+        }
+      ],
+      "name": "action",
+      "conditions": [
+        {
+          "equality": "=",
+          "type": "expose",
+          "name": "action",
+          "value": "dial_rotate_left_slow"
+        }
+      ]
+    },
+    {
+      "type": "deviceTrigger",
+      "actions": [
+        {
+          "id": "0x001788010ba4328e",
+          "type": "step",
+          "property": "brightness",
+          "steps": [
+            {
+              "property": "brightness",
+              "operator": "-",
+              "id": "0x001788010ba4328e"
+            },
+            {
+              "property": "action_time",
+              "operator": "*",
+              "id": "0x001788010d7d9d3f"
+            }
+          ],
+          "data": 1
+        }
+      ],
+      "name": "action",
+      "conditions": [
+        {
+          "equality": "=",
+          "type": "expose",
+          "name": "action",
+          "value": "dial_rotate_left_fast"
+        }
+      ]
+    },
+    {
+      "type": "deviceTrigger",
+      "actions": [
+        {
+          "id": "0x001788010ba4328e",
+          "type": "preset",
+          "property": "color_temp"
+        }
+      ],
+      "name": "action",
+      "conditions": [
+        {
+          "equality": "=",
+          "type": "expose",
+          "name": "action",
+          "value": "button_2_press_release"
+        }
+      ]
+    }
+  ],
+  "schedules": null
+}

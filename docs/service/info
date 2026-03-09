@@ -1,0 +1,7 @@
+1. Backend service: /etc/systemd/system/nodeherder-backend.service
+2. Frontend service: /etc/systemd/system/nodeherder-frontend.service
+3. Target unit: /etc/systemd/system/nodeherder.target
+
+sudo systemctl daemon-reload
+sudo systemctl enable nodeherder.target
+sudo systemctl start nodeherder.target

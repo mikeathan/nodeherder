@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "visualstudioexptteam.vscodeintellicode",
+    "golang.go",
+    "mhutchie.git-graph",
+    "donjayamanne.githistory",
+    "editorconfig.editorconfig"
+  ]
+}
