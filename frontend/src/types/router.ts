@@ -10,4 +10,5 @@ export enum RouteName {
   Editor = 'editor',
   DevicePage = 'devicepage',
   DeviceView = 'deviceview',
+  Assistant = 'assistant',
 }

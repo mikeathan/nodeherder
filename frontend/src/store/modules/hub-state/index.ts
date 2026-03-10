@@ -9,6 +9,7 @@ import {
   DashboardGroups,
   DeviceConfig,
   HistorySettingsType,
+  AssistantSettingsType,
   LoggerSettingsType,
   MCPStatusType,
 } from '../../../types/settings.type';
@@ -57,6 +58,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     history: (state) => (): HistorySettingsType => {
       return state.appConfig.hub.history;
     },
+    assistant: (state) => (): AssistantSettingsType => state.appConfig.hub.assistant,
     logger: (state) => (): LoggerSettingsType => state.appConfig.hub.logger,
     bridge: (state) => (): BridgeSettingsType => state.appConfig.bridge,
     dashboardGroups: (state) => (): DashboardGroups => state.appConfig.hub.dashboardGroups,
@@ -162,6 +164,9 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     },
     setHistorySettings(state, historySetting: HistorySettingsType) {
       state.appConfig.hub.history = historySetting;
+    },
+    setAssistantSettings(state, assistantSettings: AssistantSettingsType) {
+      state.appConfig.hub.assistant.url = assistantSettings.url;
     },
     setLoggerSettings(state, loggerSettings: LoggerSettingsType) {
       state.appConfig.hub.logger = loggerSettings;
@@ -297,6 +302,17 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
         {
           event: 'saveHistoryConfig',
           message: historySettings,
+        },
+        { root: true }
+      );
+    },
+    saveAssistantSettings({ commit, dispatch }, assistantSettings: AssistantSettingsType) {
+      commit('setAssistantSettings', assistantSettings);
+      dispatch(
+        'ws/emit',
+        {
+          event: 'saveAssistantConfig',
+          message: assistantSettings,
         },
         { root: true }
       );

@@ -44,46 +44,32 @@
 </script>
 
 <template>
-  <h3>MCP Server</h3>
-  <div class="pt-3" />
-
-  <div v-if="mcpStatus">
-    <div class="grid grid-nogutter pb-2">
-      <dl class="col-12 md:col-3 text-secondary">
-        <dt><strong>Status</strong></dt>
-      </dl>
-      <div class="col-12 md:col-3">
-        <Tag v-if="!mcpEnabled" severity="danger" value="Disabled" />
-        <Tag v-else-if="mcpStatus.running" severity="success" value="Running" />
-        <Tag v-else severity="warning" value="Stopped" />
-      </div>
-    </div>
-
-    <template v-if="mcpEnabled">
-      <div class="grid grid-nogutter pb-2">
-        <dl class="col-12 md:col-3 text-secondary">
-          <dt><strong>Server Name</strong></dt>
-        </dl>
-        <div class="col-12 md:col-3">{{ mcpStatus.name }}</div>
+  <div v-if="mcpStatus" class="mt-4">
+    <div class="grid align-items-center gap-y-3">
+      <!-- Status -->
+      <div class="col-12 md:col-3 text-secondary font-bold">Status</div>
+      <div class="col-12 md:col-9">
+        <Tag v-if="!mcpEnabled" severity="danger" value="Disabled" icon="pi pi-times" />
+        <Tag v-else-if="mcpStatus.running" severity="success" value="Running" icon="pi pi-check" />
+        <Tag v-else severity="warning" value="Stopped" icon="pi pi-exclamation-triangle" />
       </div>
 
-      <div class="grid grid-nogutter pb-2">
-        <dl class="col-12 md:col-3 text-secondary">
-          <dt><strong>Version</strong></dt>
-        </dl>
-        <div class="col-12 md:col-3">{{ mcpStatus.version }}</div>
-      </div>
+      <template v-if="mcpEnabled">
+        <!-- Server Name -->
+        <div class="col-12 md:col-3 text-secondary font-bold">Server Name</div>
+        <div class="col-12 md:col-9">{{ mcpStatus.name }}</div>
 
-      <div class="grid grid-nogutter pb-2">
-        <dl class="col-12 md:col-3 text-secondary">
-          <dt><strong>Connected Clients</strong></dt>
-        </dl>
-        <div class="col-12 md:col-3">{{ mcpStatus.connectedClients }}</div>
-      </div>
-    </template>
+        <!-- Version -->
+        <div class="col-12 md:col-3 text-secondary font-bold">Version</div>
+        <div class="col-12 md:col-9">{{ mcpStatus.version }}</div>
 
-    <div class="grid grid-nogutter pt-2">
-      <div class="col-12 md:col-6 flex gap-2">
+        <!-- Connected Clients -->
+        <div class="col-12 md:col-3 text-secondary font-bold">Connected Clients</div>
+        <div class="col-12 md:col-9">{{ mcpStatus.connectedClients }}</div>
+      </template>
+
+      <!-- Actions -->
+      <div class="col-12 mt-3 flex gap-2">
         <ActionButton
           v-if="!mcpEnabled || !mcpStatus.running"
           label="Start"

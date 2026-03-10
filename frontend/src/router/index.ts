@@ -8,9 +8,9 @@ import Settings from '../components/hub/settings/Settings.vue';
 import ConsoleViewer from '../components/hub/console/ConsoleViewer.vue';
 import DeviceList from '../components/device-list/DeviceList.vue';
 import GroupDashboard from '../components/dashboards/GroupDashboard.vue';
-import { DashboardModes } from '@/types/controls.type';
 import DeviceView from '@/components/device/DeviceView.vue';
 import LoginPage from '@/components/auth/LoginPage.vue';
+import AssistantView from '@/components/assistant/core/AssistantView.vue';
 import { store } from '@/store/index.js';
 import { RouteName } from '@/types/router';
 import type { RouteRecordRaw } from 'vue-router';
@@ -118,6 +118,15 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true,
     },
   },
+  {
+    path: '/assistant',
+    name: RouteName.Assistant,
+    component: AssistantView,
+    meta: {
+      title: 'Node-herder - Assistant',
+      requiresAuth: true,
+    },
+  },
 ];
 
 export const router = createRouter({
@@ -126,7 +135,7 @@ export const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
- // document.title = to.meta.title || 'Node-herder';
+  // document.title = to.meta.title || 'Node-herder';
   const isAuthenticated = store.getters['auth/isAuthenticated']();
   if (to.meta.requiresAuth && !isAuthenticated) {
     console.log('Route requires auth and user is not authenticated, redirecting to login.');

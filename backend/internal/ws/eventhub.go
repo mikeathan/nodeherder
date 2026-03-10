@@ -26,6 +26,7 @@ const (
 	BridgePermitJoin           = "bridgePermitJoin"
 	SaveLoggerConfig           = "saveLoggerConfig"
 	SaveHistoryConfig          = "saveHistoryConfig"
+	SaveAssistantConfig        = "saveAssistantConfig"
 	SaveDeviceConfigOverride   = "saveDeviceConfigOverride"
 	DeleteDeviceConfigOverride = "deleteDeviceConfigOverride"
 	SaveDeviceConfigDefaults   = "saveDeviceConfigDefaults"
@@ -87,6 +88,7 @@ type EventHub interface {
 	OnSaveDeviceConfigDefaults(func(payload interface{}) error)
 	OnSaveHistoryConfig(func(payload interface{}) error)
 	OnSaveLoggerConfig(func(payload interface{}) error)
+	OnSaveAssistantConfig(func(payload interface{}) error)
 	OnSaveDashboardGroup(action func(payload interface{}) error)
 	OnRenameDashboardGroup(action func(payload interface{}) (interface{}, error))
 	OnImportDashboardGroups(action func(payload interface{}) error)
@@ -122,6 +124,7 @@ type eventHubImpl struct {
 	onSaveDeviceConfigDefaults   func(interface{}) error
 	onSaveHistoryConfig          func(interface{}) error
 	onSaveLoggerConfig           func(interface{}) error
+	onSaveAssistantConfig        func(interface{}) error
 	onSaveDashboardGroup         func(interface{}) error
 	onRenameDashboardGroup       func(interface{}) (interface{}, error)
 	onDeleteDashboardGroup       func(payload interface{}) error
@@ -157,6 +160,7 @@ func NewWsHub() EventHub {
 		onSaveDeviceConfigDefaults:   func(payload interface{}) error { return nil },
 		onSaveHistoryConfig:          func(payload interface{}) error { return nil },
 		onSaveLoggerConfig:           func(payload interface{}) error { return nil },
+		onSaveAssistantConfig:        func(payload interface{}) error { return nil },
 		onSaveDashboardGroup:         func(payload interface{}) error { return nil },
 		onDeleteDashboardGroup:       func(payload interface{}) error { return nil },
 		onRenameDashboardGroup:       func(payload interface{}) (interface{}, error) { return nil, nil },
@@ -258,6 +262,10 @@ func (h *eventHubImpl) OnSaveLoggerConfig(action func(payload interface{}) error
 	h.onSaveLoggerConfig = action
 }
 
+func (h *eventHubImpl) OnSaveAssistantConfig(action func(payload interface{}) error) {
+	h.onSaveAssistantConfig = action
+}
+
 func (h *eventHubImpl) OnSaveDashboardGroup(action func(payload interface{}) error) {
 	h.onSaveDashboardGroup = action
 }
@@ -332,7 +340,6 @@ func (h *eventHubImpl) Start() {
 }
 
 // TODO: abstract this so we can mock it
-// https://gemini.google.com/app/b3118f0d9cdcdba6
 func (c *eventHubImpl) handleHubEvents(message []byte) {
 	var eventMsg = &EventMessage{}
 
@@ -394,6 +401,9 @@ func (c *eventHubImpl) handleHubEvents(message []byte) {
 
 	case SaveLoggerConfig:
 		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onSaveLoggerConfig)))
+
+	case SaveAssistantConfig:
+		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onSaveAssistantConfig)))
 
 	case SaveDashboardGroup:
 		c.execute(eventExecutorOptionsWithSuccess(eventMsg.Payload, wrapPayloadNoResult(c.onSaveDashboardGroup)))

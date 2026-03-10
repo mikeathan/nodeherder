@@ -177,6 +177,10 @@ func (w MockEventHub) OnSaveLoggerConfig(action func(payload interface{}) error)
 	fmt.Println("MockEventHub: OnSaveLoggerConfig")
 }
 
+func (w MockEventHub) OnSaveAssistantConfig(action func(payload interface{}) error) {
+	fmt.Println("MockEventHub: OnSaveAssistantConfig")
+}
+
 func (h *MockEventHub) OnSaveDashboardGroup(action func(payload interface{}) error) {
 	fmt.Println("MockEventHub OnSaveDashboardGroup")
 }
@@ -471,6 +475,10 @@ func (w *NopWsServer) OnDeleteDeviceConfigOverride(action func(payload interface
 }
 func (w NopWsServer) OnSaveLoggerConfig(action func(payload interface{}) error) {
 	fmt.Println("WsServer: Mocked OnSaveLoggerConfig")
+}
+
+func (w NopWsServer) OnSaveAssistantConfig(action func(payload interface{}) error) {
+	fmt.Println("WsServer: Mocked OnSaveAssistantConfig")
 }
 
 func (h *NopWsServer) OnSaveDashboardGroup(action func(payload interface{}) error) {

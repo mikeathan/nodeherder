@@ -132,7 +132,7 @@ type MqttService struct {
 }
 
 func sanitizeTopic(topic string) string {
-	return strings.Replace(topic, baseTopic, "", -1)
+	return strings.ReplaceAll(topic, baseTopic, "")
 }
 
 func (m *MqttService) OnMessageHandler(handler func(string, []byte)) {
@@ -169,6 +169,7 @@ func (m *MqttService) Connect() error {
 		utils.LogDebug("...... mqtt reconnecting ......")
 	})
 
+	utils.LogInfof("Connecting to MQTT broker: %s", m.broker)
 	m.client = mqttlib.NewClient(options)
 	token := m.client.Connect()
 
@@ -176,6 +177,7 @@ func (m *MqttService) Connect() error {
 		return token.Error()
 	}
 
+	utils.LogInfof("MQTT broker connected")
 	return nil
 }
 

@@ -168,11 +168,22 @@ func DefaultBridgeConfig() *BridgeConfig {
 	}
 }
 
+type AssistantConfig struct {
+	Url string `json:"url"`
+}
+
+func DefaultAssistantConfig() *AssistantConfig {
+	return &AssistantConfig{
+		Url: "",
+	}
+}
+
 type HubConfig struct {
 	Devices         *DeviceSettings            `json:"devices"`
 	History         *HistoryConfig             `json:"history"`
 	Logger          *LoggerConfig              `json:"logger"`
 	MCP             *MCPConfig                 `json:"mcp"`
+	Assistant       *AssistantConfig           `json:"assistant"`
 	DashboardGroups map[string]*DashboardGroup `json:"dashboardGroups"`
 }
 
@@ -194,6 +205,7 @@ func NewHubConfig() *HubConfig {
 		History:         DefaultHistoryConfig(),
 		Logger:          DefaultLoggingConfig(),
 		MCP:             DefaultMCPConfig(),
+		Assistant:       DefaultAssistantConfig(),
 		DashboardGroups: map[string]*DashboardGroup{},
 	}
 }
@@ -214,6 +226,7 @@ func NewAppConfig() *AppConfig {
 			History:         DefaultHistoryConfig(),
 			Logger:          DefaultLoggingConfig(),
 			MCP:             DefaultMCPConfig(),
+			Assistant:       DefaultAssistantConfig(),
 			DashboardGroups: map[string]*DashboardGroup{},
 		},
 		Bridge: DefaultBridgeConfig(),

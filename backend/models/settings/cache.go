@@ -262,6 +262,22 @@ func (s *AppConfigCache) SaveLoggerConfig(loggerConfig *LoggerConfig) (*AppConfi
 	return s.appConfig, nil
 }
 
+func (s *AppConfigCache) SaveAssistantConfig(assistantConfig *AssistantConfig) (*AppConfig, error) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.appConfig.Hub.Assistant = assistantConfig
+
+	err := s.store.SaveAppConfig(s.appConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	s.reloadTasks(s.appConfig)
+
+	return s.appConfig, nil
+}
+
 func (s *AppConfigCache) LoadLoggerConfig() (*LoggerConfig, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()

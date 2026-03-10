@@ -1,4 +1,4 @@
-import { Device, DeviceMap } from '../../../types/device';
+import {  DeviceMap } from '../../../types/device';
 import { AppConfig, MCPStatusType } from '../../../types/settings.type';
 
 export interface HubStateModuleState {

@@ -177,6 +177,7 @@ func LoadEnviromentConfig() error {
 
 	env := os.Getenv("APP_ENV")
 	if env == "" {
+		LogWarn("APP_ENV is not set, defaulting to development")
 		env = "development"
 	}
 

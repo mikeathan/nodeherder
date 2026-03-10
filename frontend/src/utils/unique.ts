@@ -7,3 +7,7 @@ export function genenerateUniqueId(): string {
 
   return `${dateStr}-${randomStr}`;
 }
+
+export function generateConversationId(): string {
+  return crypto.randomUUID();
+}

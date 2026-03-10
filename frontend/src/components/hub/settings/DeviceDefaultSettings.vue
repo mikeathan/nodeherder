@@ -30,8 +30,6 @@
 </script>
 
 <template>
-  <h3>Device Defaults</h3>
-  <div class="pt-3" />
   <div class="grid grid-nogutter" v-for="(value, key) in deviceDefaultSettings" :key="key">
     <dl class="col-12 md:col-3 text-secondary">
       <dt>
