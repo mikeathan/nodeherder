@@ -16,3 +16,21 @@ export interface Conversation {
   id: string;
   messages: AssistantMessage[];
 }
+
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  created_at: string;
+  message_count: number;
+}
+
+export interface ConversationHistoryResponse {
+  conversation_id: string;
+  title: string;
+  messages: AssistantMessage[];
+  created_at: string;
+}
+
+export interface ConversationsListResponse {
+  conversations: ConversationSummary[];
+}

@@ -17,6 +17,8 @@ export default defineConfig({
   },
   server: {
     port: 4100,
+    host: '0.0.0.0',
+    allowedHosts: true,
   },
   preview: {
     port: 9080,

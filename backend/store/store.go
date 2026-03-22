@@ -3,6 +3,7 @@ package store
 import (
 	"fmt"
 	metrics "node-herder/internal/metrics/domain"
+	"node-herder/models/assistant"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
 	"node-herder/models/settings"
@@ -35,22 +36,28 @@ type AppStore interface {
 	QueryDevice(deviceID string, from, to time.Time, filters []metrics.MetricFilter, collectors map[string]metrics.ExposeResult) (*metrics.DeviceMetricsResult, error)
 	ResolveFriendlyName(friendlyName string) string
 	RegisterIsDirtyCallback(cb AppStoreDirtyFlagCallback)
+	AppendAssistantMessage(conversationID string, role assistant.Role, content string) error
+	LoadAssistantHistory(conversationID string) (*assistant.Conversation, error)
+	ListAssistantConversations() ([]assistant.ConversationSummary, error)
+	DeleteAssistantConversation(conversationID string) error
 }
 
 type appStore struct {
 	metrics          metrics.Repository
 	devices          devices.Repository
 	config           *settings.AppConfigCache
+	assistantRepo    assistant.Repository
 	deviceIdMapper   *repository.DeviceIdMapper
 	isDirtyCallbacks []AppStoreDirtyFlagCallback
 }
 
-func NewAppStore(devices devices.Repository, metrics metrics.Repository, config *settings.AppConfigCache) (AppStore, error) {
+func NewAppStore(devices devices.Repository, metrics metrics.Repository, config *settings.AppConfigCache, assistantRepo assistant.Repository) (AppStore, error) {
 
 	app := &appStore{
 		metrics:          metrics,
 		devices:          devices,
 		config:           config,
+		assistantRepo:    assistantRepo,
 		deviceIdMapper:   repository.NewDeviceIdMapper(devices),
 		isDirtyCallbacks: []AppStoreDirtyFlagCallback{},
 	}

@@ -5,7 +5,13 @@ import (
 	metrics "node-herder/internal/metrics/domain"
 	metricsrepo "node-herder/internal/metrics/storage"
 	"node-herder/mocks"
+	"node-herder/models/assistant"
+	"node-herder/models/settings"
+	"node-herder/repository"
+	"node-herder/store"
 	"node-herder/utils/storage"
+	"os"
+	"testing"
 	"time"
 )
 
@@ -57,4 +63,32 @@ func CreateMetricsRepoWithClock(filename string, mockClock *mocks.MockClock) (me
 	}
 
 	return repo, nil
+}
+
+func CreateAssistantStore(t *testing.T, assistantRepo assistant.Repository, appConfig *settings.AppConfig) (store.AppStore, func()) {
+	settingsTempFile := Tempfile()
+	settingsRepo, err := repository.NewFileSettingsRepoFromFile(settingsTempFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if appConfig != nil {
+		settingsRepo.SaveAppConfig(appConfig)
+	}
+
+	configCache, err := settings.NewAppConfigCache(settingsRepo, []settings.Task{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	metricsRepo := mocks.NopMetricsRepo{}
+	deviceRepo := repository.NewMemoryDeviceRepo()
+
+	s, _ := store.NewAppStore(deviceRepo, &metricsRepo, configCache, assistantRepo)
+
+	cleanup := func() {
+		os.Remove(settingsTempFile)
+		deviceRepo.Close()
+	}
+	return s, cleanup
 }

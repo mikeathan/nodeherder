@@ -1,19 +1,22 @@
-import { ref, nextTick, computed } from 'vue';
-import type { Conversation } from '@/types/assistant.type';
-import { sendMessageToLLM } from '@/services/assistant.service';
-import { generateConversationId } from '@/utils/unique';
-import { createAssistantErrorResponse, createAssistantResponse, createUserRequest } from '@/contracts/assistant';
+import { ref, computed, onMounted, nextTick } from 'vue';
 import { store } from '@/store';
+import {
+  sendMessageToLLM,
+  fetchConversations,
+  fetchConversationHistory,
+  deleteConversation as deleteConversationApi
+} from '@/services/assistant.service';
+import { createAssistantErrorResponse, createAssistantResponse, createUserRequest } from '@/contracts/assistant';
 
 export function useAssistant() {
-  const activeConversation = ref<Conversation>({
-    id: generateConversationId(),
-    messages: [],
-  });
-
   const inputText = ref('');
-  const isLoading = ref(false);
   const chatContainer = ref<HTMLElement | null>(null);
+
+  const isLoading = ref(false);
+  const isLoadingHistory = ref(false);
+
+  const activeConversation = computed(() => store.getters['assistant/activeConversation']);
+  const conversations = computed(() => store.getters['assistant/conversations']);
 
   const isConfigured = computed(() => {
     const config = store.getters['hub/assistant']();
@@ -22,56 +25,113 @@ export function useAssistant() {
 
   const scrollToBottom = async () => {
     await nextTick();
-    if (chatContainer.value) {
-      chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
-    }
+    setTimeout(() => {
+      if (chatContainer.value) {
+        chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+      }
+    }, 10);
   };
 
   const sendMessage = async () => {
     if (!isConfigured.value) return;
 
-    const config = store.getters['hub/assistant']();
-    const url = config.url;
-
     const input = inputText.value.trim();
     if (!input || isLoading.value) return;
 
-    const userMessage = input;
     inputText.value = '';
-
-    activeConversation.value.messages.push(createUserRequest(userMessage));
-
-    await scrollToBottom();
     isLoading.value = true;
+    
+    await store.dispatch('assistant/addMessage', createUserRequest(input));
+    scrollToBottom();
 
     try {
-      const responseText = await sendMessageToLLM(url, activeConversation.value.id, userMessage);
-      activeConversation.value.messages.push(createAssistantResponse(responseText));
+      const responseText = await sendMessageToLLM(activeConversation.value.id, input);
+      await store.dispatch('assistant/addMessage', createAssistantResponse(responseText));
     } catch (error) {
       console.error('Failed to send message:', error);
-      activeConversation.value.messages.push(createAssistantErrorResponse(error as Error));
+      await store.dispatch('assistant/addMessage', createAssistantErrorResponse(error as Error));
     } finally {
       isLoading.value = false;
-      await scrollToBottom();
+      scrollToBottom();
     }
   };
 
   const startNewConversation = () => {
-    activeConversation.value = {
-      id: generateConversationId(),
-      messages: [],
-    };
+    store.dispatch('assistant/startNewConversation');
     inputText.value = '';
-    isLoading.value = false;
   };
+
+  const loadConversations = async () => {
+    try {
+      const response = await fetchConversations();
+      await store.dispatch('assistant/setConversations', response.conversations ?? []);
+    } catch (error) {
+      console.error('Failed to load conversations:', error);
+      await store.dispatch('assistant/setConversations', []);
+    }
+  };
+
+  const selectConversation = async (conversationId: string) => {
+    isLoadingHistory.value = true;
+    try {
+      const history = await fetchConversationHistory(conversationId);
+      await store.dispatch('assistant/setActiveConversation', {
+        id: history.conversation_id,
+        messages: history.messages ?? [],
+      });
+    } catch (error) {
+      console.error('Failed to load conversation history:', error);
+    } finally {
+      isLoadingHistory.value = false;
+      scrollToBottom();
+    }
+  };
+
+  const deleteConversation = async (conversationId: string) => {
+    try {
+      await deleteConversationApi(conversationId);
+      await store.dispatch('assistant/removeConversationFromList', conversationId);
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+    }
+  };
+
+  const hydrateFromBackend = async () => {
+    const id = activeConversation.value?.id;
+    if (!id) return;
+
+    isLoadingHistory.value = true;
+    try {
+      const history = await fetchConversationHistory(id);
+      await store.dispatch('assistant/setActiveConversation', {
+        id: history.conversation_id,
+        messages: history.messages ?? [],
+      });
+    } catch {
+      // Not found
+    } finally {
+      isLoadingHistory.value = false;
+      scrollToBottom();
+    }
+  };
+
+  onMounted(async () => {
+    await hydrateFromBackend();
+    await loadConversations();
+  });
 
   return {
     activeConversation,
+    conversations,
     inputText,
     isLoading,
+    isLoadingHistory,
     chatContainer,
     sendMessage,
     startNewConversation,
+    loadConversations,
+    selectConversation,
+    deleteConversation,
     isConfigured,
   };
 }

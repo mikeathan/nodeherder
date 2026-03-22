@@ -46,8 +46,12 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	router.POST("/api/collect", api.NewDataCollectorHandler(hub))
 	router.POST("/api/logfile", api.NewLogFileHandler(fservice))
 	router.POST("/api/automation/trigger", api.NewAutomationTriggerHandler(hub, 1*time.Second))
+	router.POST("/api/assistant/message", api.NewAssistantMessageHandler(store))
 	router.GET("/api/listlogs", api.NewListFileLogsHandler(fservice))
 	router.GET("/api/hubstate", api.NewHubStateHandler(store, 15*time.Minute))
+	router.GET("/api/assistant/conversations", api.NewAssistantConversationsHandler(store))
+	router.GET("/api/assistant/history/:id", api.NewAssistantHistoryHandler(store))
+	router.DELETE("/api/assistant/history/:id", api.NewAssistantDeleteHandler(store))
 
 	// public routes
 	router.PublicGET("/api/context/devices", api.NewDeviceContextHandler(store, 1*time.Second))
@@ -57,8 +61,8 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	if mcpServer != nil {
 		sseHandler := mcphttp.NewSSEHandler(mcpServer)
 		router.PublicPOST("/api/mcp", mcphttp.NewMCPHandler(mcpServer, sseHandler))
+		router.PublicGET("/api/mcp", sseHandler)
 		router.PublicGET("/api/mcp/events", sseHandler)
-
 	}
 
 	// authentication routes

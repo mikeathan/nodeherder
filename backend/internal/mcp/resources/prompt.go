@@ -140,8 +140,11 @@ func buildDeviceSummary(devs []*devices.Device) string {
 		exposes := make([]string, 0)
 		for _, e := range d.Exposes {
 			desc := e.Name
+			if e.Unit != "" {
+				desc = fmt.Sprintf("%s (%s)", desc, e.Unit)
+			}
 			if valOn, ok := e.Values["on"]; ok {
-				desc = fmt.Sprintf("%s(on=%v)", e.Name, valOn)
+				desc = fmt.Sprintf("%s(on=%v)", desc, valOn)
 			}
 			exposes = append(exposes, desc)
 		}

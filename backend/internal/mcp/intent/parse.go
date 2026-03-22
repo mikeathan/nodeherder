@@ -11,6 +11,14 @@ func Parse(raw json.RawMessage) (*Intent, error) {
 		return nil, fmt.Errorf("empty intent data")
 	}
 
+	// Support unwrapping if a client incorrectly sends `{"name": "tool", "arguments": {...}}`
+	var wrapper struct {
+		Arguments json.RawMessage `json:"arguments"`
+	}
+	if err := json.Unmarshal(raw, &wrapper); err == nil && wrapper.Arguments != nil {
+		raw = wrapper.Arguments
+	}
+
 	var intent Intent
 	if err := json.Unmarshal(raw, &intent); err != nil {
 		return nil, fmt.Errorf("invalid intent JSON: %w", err)

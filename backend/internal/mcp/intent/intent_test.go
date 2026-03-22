@@ -24,6 +24,31 @@ func TestParse(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "valid intent with wrapper",
+			input: `{
+				"name": "query_device",
+				"arguments": {
+					"target_name": "attic temperature sensor",
+					"metrics": ["temperature"],
+					"time_scope": "today",
+					"aggregation": "latest_value"
+				}
+			}`,
+			wantErr: false,
+		},
+		{
+			name: "valid intent with nested wrapper",
+			input: `{
+				"arguments": {
+					"target_name": "attic temperature sensor",
+					"metrics": ["temperature"],
+					"time_scope": "today",
+					"aggregation": "latest_value"
+				}
+			}`,
+			wantErr: false,
+		},
+		{
 			name:    "empty input",
 			input:   "",
 			wantErr: true,
