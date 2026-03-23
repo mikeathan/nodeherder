@@ -10,7 +10,7 @@ import DeviceList from '../components/device-list/DeviceList.vue';
 import GroupDashboard from '../components/dashboards/GroupDashboard.vue';
 import DeviceView from '@/components/device/DeviceView.vue';
 import LoginPage from '@/components/auth/LoginPage.vue';
-import AssistantView from '@/components/assistant/core/AssistantView.vue';
+import AssistantView from '@/components/assistant/AssistantView.vue';
 import { store } from '@/store/index.js';
 import { RouteName } from '@/types/router';
 import type { RouteRecordRaw } from 'vue-router';

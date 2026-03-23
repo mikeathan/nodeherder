@@ -3,7 +3,7 @@ import { ConversationSummary } from '@/types/assistant.type';
 
 defineProps<{
   conversations: ConversationSummary[];
-  activeId: string;
+  activeId?: string;
 }>();
 
 const emit = defineEmits<{

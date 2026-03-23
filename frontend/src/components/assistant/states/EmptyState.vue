@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import ChatInput from '../core/ChatInput.vue';
+  import ChatInput from '../chat/ChatInput.vue';
 
   defineProps<{
     modelValue: string;

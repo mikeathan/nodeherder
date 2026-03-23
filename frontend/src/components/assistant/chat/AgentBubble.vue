@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import type { AssistantMessage } from '@/types/assistant.type';
-  import BaseMessageBubble from './BaseMessageBubble.vue';
+  import BaseBubble from './BaseBubble.vue';
 
   defineProps<{
     message: AssistantMessage;
@@ -8,7 +8,7 @@
 </script>
 
 <template>
-  <BaseMessageBubble alignment="left" :textToCopy="message.content">
+  <BaseBubble alignment="left" :textToCopy="message.content">
     <template #avatar>
       <i class="pi pi-sparkles text-primary text-xl"></i>
     </template>
@@ -19,7 +19,7 @@
         {{ message.content }}
       </div>
     </template>
-  </BaseMessageBubble>
+  </BaseBubble>
 </template>
 
 <style scoped></style>

@@ -18,10 +18,31 @@ export function useAssistant() {
   const activeConversation = computed(() => store.getters['assistant/activeConversation']);
   const conversations = computed(() => store.getters['assistant/conversations']);
 
-  const isConfigured = computed(() => {
+  const notConfiguredReason = computed(() => {
     const config = store.getters['hub/assistant']();
-    return !!config?.url && config.url !== '';
+    if (!config?.url || config.url === '') {
+      return 'assistant';
+    }
+    const mcpEnabled = store.getters['hub/mcpConfig']();
+    const mcpStatus = store.getters['hub/mcpStatus']();
+    
+    if (!mcpEnabled) {
+      return 'mcp';
+    }
+
+    // Wait for the websocket to hydrate the status
+    if (mcpStatus === null) {
+      return null;
+    }
+
+    if (mcpStatus.running !== true || mcpStatus.connectedClients === 0) {
+      return 'mcp';
+    }
+    
+    return null;
   });
+
+  const isConfigured = computed(() => notConfiguredReason.value === null);
 
   const scrollToBottom = async () => {
     await nextTick();
@@ -133,5 +154,6 @@ export function useAssistant() {
     selectConversation,
     deleteConversation,
     isConfigured,
+    notConfiguredReason,
   };
 }
