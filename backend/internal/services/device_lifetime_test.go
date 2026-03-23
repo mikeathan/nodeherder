@@ -773,3 +773,53 @@ func TestDeviceLifetimeService_NoisyValuesDebouncedCorrectly(t *testing.T) {
 		t.Errorf("Expected 2 total updates after debounce window expired, got %d", updateCount)
 	}
 }
+
+func TestDeviceLifetimeService_AutomationCooldown(t *testing.T) {
+	device := utils_test.CreateDoorSensorDevice("x01234", "testDoor", false)
+	device.Availability = devices.OnlineAvailability
+
+	var triggers int
+	events := &devices.DeviceRequestEvents{
+		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {},
+		OnDeviceAutomationTriggered: func(d *devices.Device) {
+			triggers++
+		},
+	}
+
+	app := settings.NewAppConfig()
+	d1 := settings.NewDeviceConfig("x01234")
+	app.AddDeviceConfig(d1)
+	repo := mocks.NopSettingsrepo{}
+
+	// Mock querier: automation is enabled
+	deviceQuerier := mocks.NewMockAutomationDeviceQuerierWithValues(map[string]bool{"x01234": true})
+	cache := settings.NewDeviceConfigCache(&repo, app, &sync.RWMutex{})
+	mockClock := mocks.NewMockClock(func() time.Time { return time.Now() })
+
+	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, mockClock)
+
+	// Update 1: Should trigger automation
+	service.Update(map[string]interface{}{"contact": true})
+	
+	// Update 2: Immediately after, should BE BLOCKED by 20ms cooldown
+	service.Update(map[string]interface{}{"contact": false})
+	
+	// Update 3: Still immediately after, should BE BLOCKED
+	service.Update(map[string]interface{}{"contact": true})
+	
+	// Ensure we don't count test execution time as cooldown period. The real time.Now()
+	// is used in the cooldown check (which is why we use time.Sleep to bypass it)
+	if triggers != 1 {
+		t.Fatalf("Expected exactly 1 trigger, got %d", triggers)
+	}
+
+	// Wait for cooldown to expire (> 20ms)
+	time.Sleep(25 * time.Millisecond)
+
+	// Update 4: Should trigger automation again since cooldown expired
+	service.Update(map[string]interface{}{"contact": false})
+
+	if triggers != 2 {
+		t.Fatalf("Expected exactly 2 triggers after cooldown expired, got %d", triggers)
+	}
+}

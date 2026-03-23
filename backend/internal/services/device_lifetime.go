@@ -7,12 +7,14 @@ import (
 	"node-herder/models/devices"
 	"node-herder/models/settings"
 	"node-herder/utils"
+	"sync"
 	"time"
 )
 
 const (
 	deviceAvailabilityTimeoutOverride = 3600
 	lastSeenKey                       = "last_seen"
+	defaultAutomationCooldown         = 20 * time.Millisecond
 )
 
 type DeviceLifetimeService struct {
@@ -25,6 +27,11 @@ type DeviceLifetimeService struct {
 	automationQueries  automations.AutomationQuerier
 	availabilityCtx    context.Context
 	availabilityCancel context.CancelFunc
+
+	// automation cooldown: prevents rapid re-triggering from feedback loops
+	lastAutomationTime time.Time
+	automationCooldown time.Duration
+	cooldownMu         sync.Mutex
 }
 
 func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequestEvents, configCache *settings.DeviceConfigCache, automationQueries automations.AutomationQuerier, clock utils.Clock) *DeviceLifetimeService {
@@ -38,6 +45,7 @@ func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequ
 		automationQueries:  automationQueries,
 		availabilityCtx:    context.Background(),
 		availabilityCancel: func() {},
+		automationCooldown: defaultAutomationCooldown,
 	}
 }
 
@@ -53,6 +61,7 @@ func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
 	})
 
 	// update device with initial data
+	var hasChanges bool
 	for name, value := range payload {
 		expose, ok := d.device.GetExpose(name)
 		if !ok {
@@ -66,6 +75,7 @@ func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
 		}
 
 		d.device.Exposes[name].Data.SetValue(value)
+		hasChanges = true
 	}
 
 	d.device.LastSeen = getLastSeen(payload)
@@ -73,7 +83,11 @@ func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
 	d.device.Availability = devices.OnlineAvailability
 	utils.LogInfof("device [%s] %s is online", d.device.Id, d.device.FriendlyName)
 
-	d.attemptToTriggerAutomation()
+	// Seed fires automation directly, no cooldown is required
+	if hasChanges && d.automationQueries.IsAutomationEnabled(d.device.Id) {
+		utils.LogDebugf("device %s: triggering automation for seed event", d.device.Id)
+		d.events.OnDeviceAutomationTriggered(d.device)
+	}
 	d.attemptToStoreMetrics(payload)
 	d.events.OnNewDevice(d.device)
 }
@@ -148,8 +162,8 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 
 	d.device.LastSeen = getLastSeen(payload) // we need that.
 
-	// automation: always trigger on any real value change (not debounced)
-	// so that dial/step operations read fresh in-memory state
+	// automation: only trigger when relevant exposes have changed
+	// and respect a cooldown to break feedback loops from automation MQTT bounce-back
 	if hasChanges {
 		d.attemptToTriggerAutomation()
 	}
@@ -168,15 +182,35 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 }
 
 // attemptToTriggerAutomation fires the automation engine if automation is
-// enabled for this device. Called on every real value change, independent of
-// debounce, so that dial step-calculations always use fresh data.
+// enabled for this device. Only triggers when relevant exposes have changed
+// and respects a cooldown to prevent feedback loops from MQTT bounce-back.
 func (d *DeviceLifetimeService) attemptToTriggerAutomation() {
 	if !d.automationQueries.IsAutomationEnabled(d.device.Id) {
 		utils.LogDebugf("device %s: automation disabled, skipping", d.device.Id)
 		return
 	}
 
+	// Strategy C: enforce cooldown to break feedback loops.
+	// When an automation publishes MQTT, its output can bounce back as a
+	// new device update within milliseconds. The cooldown prevents the
+	// same device from re-triggering automation faster than humanly possible.
+	// Note: Multi-sensor devices are typically unaffected because Zigbee2MQTT
+	// batches simultaneous sensor readings into a single JSON payload (which 
+	// bypasses this cooldown since the entire payload is evaluated at once).
+	// This will only drop an automation if a device sends completely separate 
+	// MQTT messages less than 20ms apart.
+	d.cooldownMu.Lock()
+	now := time.Now()
+	if now.Sub(d.lastAutomationTime) < d.automationCooldown {
+		d.cooldownMu.Unlock()
+		utils.LogDebugf("device %s: automation cooldown active, skipping", d.device.Id)
+		return
+	}
+	d.lastAutomationTime = now
+	d.cooldownMu.Unlock()
+
 	if d.events.OnDeviceAutomationTriggered != nil {
+		utils.LogDebugf("device %s: triggering automation for changed exposes", d.device.Id)
 		d.events.OnDeviceAutomationTriggered(d.device)
 	}
 }
