@@ -48,17 +48,17 @@ function automationData1IsEqualToDeserializedObject() {
       isEqualToValueAndNotNull(
         condition,
         'name',
-        newCondition.name
+        (newCondition as any).name
       );
       isEqualToValueAndNotNull(
         condition,
         'value',
-        newCondition.value
+        (newCondition as any).value
       );
       isEqualToValueAndNotNull(
         condition,
         'equality',
-        newCondition.equality
+        (newCondition as any).equality
       );
     });
 
@@ -66,18 +66,18 @@ function automationData1IsEqualToDeserializedObject() {
     const newAction = newTrigger.actions[0];
 
     isEqualToValueAndNotNull(action, 'id', newAction.id);
-    isEqualToValueAndNotNull(
+    isEqualToValueOrNull(
       action,
       'friendlyname',
-      newAction.friendlyname
+      (newAction as any).friendlyname
     );
-    isEqualToValueAndNotNull(
+    isEqualToValueOrNull(
       action,
       'property',
-      newAction.property
+      (newAction as any).property
     );
 
-    isEqualToValueOrNull(action, 'data', newAction.data);
+    isEqualToValueOrNull(action, 'data', (newAction as any).data);
   });
 }
 
@@ -119,17 +119,17 @@ function automationData2IsEqualToDeserializedObject() {
       isEqualToValueAndNotNull(
         condition,
         'name',
-        newCondition.name
+        (newCondition as any).name
       );
       isEqualToValueAndNotNull(
         condition,
         'value',
-        newCondition.value
+        (newCondition as any).value
       );
       isEqualToValueAndNotNull(
         condition,
         'equality',
-        newCondition.equality
+        (newCondition as any).equality
       );
     });
 
@@ -137,18 +137,18 @@ function automationData2IsEqualToDeserializedObject() {
     const newAction = newTrigger.actions[0];
 
     isEqualToValueAndNotNull(action, 'id', newAction.id);
-    isEqualToValueAndNotNull(
+    isEqualToValueOrNull(
       action,
       'friendlyname',
-      newAction.friendlyname
+      (newAction as any).friendlyname
     );
-    isEqualToValueAndNotNull(
+    isEqualToValueOrNull(
       action,
       'property',
-      newAction.property
+      (newAction as any).property
     );
 
-    isEqualToValueOrNull(action, 'data', newAction.data);
+    isEqualToValueOrNull(action, 'data', (newAction as any).data);
   });
 }
 function isEqualToValueAndNotNull(

@@ -27,9 +27,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
   }),
 
   getters: {
-    isInitialized: (state) => (): boolean => {
-      return state.initialized;
-    },
+    isInitialized: (state) => (): boolean => state.initialized,
 
     // Device getters
     listAllDevices: (state) => (): Devices => {
@@ -144,7 +142,7 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
     setAppConfig(state, config: AppConfig) {
       state.appConfig = config;
     },
-    setDeviceDeConfigfaults(state, defaults: DeviceConfig) {
+    setDeviceDefaults(state, defaults: DeviceConfig) {
       state.appConfig.hub.devices.defaults = defaults;
     },
     removeDeviceConfigOverride(state, id: string) {
@@ -178,11 +176,8 @@ export const HubStateModule: Module<HubStateModuleState, RootState> = {
       state.mcpStatus = mcpStatus;
     },
     clear(state) {
-      Object.entries(state.deviceMap).forEach(([key, value]) => {
-        delete state.deviceMap[key];
-      });
-
-      state.appConfig = {} as AppConfig;
+      state.deviceMap = {};
+      state.appConfig = createAppconfig();
       state.initialized = false;
       state.mcpStatus = null;
     },

@@ -1,6 +1,6 @@
 import 'jest';
 import { describe, expect, test, beforeEach } from '@jest/globals';
-import { store } from '../../../../store/index';
+import { store } from '@/store/index';
 import { AppConfig, DeviceConfig, LoggerSettingsType } from '@/types/settings.type';
 
 const mockAppconfig: AppConfig = {
@@ -15,6 +15,9 @@ const mockAppconfig: AppConfig = {
     },
     mcp: {
       enabled: false,
+    },
+    assistant: {
+      url: 'http://localhost:4001',
     },
     dashboardGroups: {},
     devices: {
@@ -58,34 +61,34 @@ const mockAppconfig: AppConfig = {
 
 describe('test appconfig module', () => {
   beforeEach(() => {
-    store.commit('appconfig/clear');
+    store.commit('hub/clear');
   });
 
   test('test appconfig gets initialized', () => {
-    var result = store.getters['appconfig/initialized']() as boolean;
-    expect(result).toEqual(false);
+    var result1 = store.getters['hub/isInitialized']() as boolean;
+    expect(result1).toEqual(false);
 
-    store.dispatch('appconfig/init', mockAppconfig);
-    var result = store.getters['appconfig/initialized']() as boolean;
-    expect(result).toEqual(true);
+    store.dispatch('hub/init', { devices: [], config: mockAppconfig });
+    var result2 = store.getters['hub/isInitialized']() as boolean;
+    expect(result2).toEqual(true);
 
     Object.values(mockAppconfig.hub.devices.overrides).forEach((value) => {
-      const deviceSetting = store.getters['appconfig/findDeviceSetting']((value as DeviceConfig).id) as DeviceConfig;
+      const deviceSetting = store.getters['hub/findDeviceSetting']((value as DeviceConfig).id) as DeviceConfig;
       expect(value).toEqual(deviceSetting);
     });
   });
 
-  test('test save device settigs saves the device settigs changes', () => {
-    store.dispatch('appconfig/init', mockAppconfig);
+  test('test save device settings saves the device settings changes', () => {
+    store.dispatch('hub/init', { devices: [], config: mockAppconfig });
 
     const dev = mockAppconfig.hub.devices.overrides['x2222222'];
 
     dev.disabled = true;
     dev.metricsEnabled = false;
 
-    store.commit('appconfig/setDeviceSetting', dev);
+    store.commit('hub/setDeviceConfigOverride', dev);
 
-    var deviceSetting = store.getters['appconfig/findDeviceSetting']('x2222222') as DeviceConfig;
+    var deviceSetting = store.getters['hub/findDeviceSetting']('x2222222') as DeviceConfig;
 
     expect(deviceSetting.id).toEqual('x2222222');
     expect(deviceSetting.disabled).toEqual(true);
@@ -93,32 +96,32 @@ describe('test appconfig module', () => {
   });
 
   test('test clear device settings, clears the device settings', () => {
-    var result = store.getters['appconfig/initialized']() as boolean;
-    expect(result).toEqual(false);
-    store.dispatch('appconfig/init', mockAppconfig);
+    var result1 = store.getters['hub/isInitialized']() as boolean;
+    expect(result1).toEqual(false);
+    store.dispatch('hub/init', { devices: [], config: mockAppconfig });
 
-    var result = store.getters['appconfig/initialized']() as boolean;
-    expect(result).toEqual(true);
+    var result2 = store.getters['hub/isInitialized']() as boolean;
+    expect(result2).toEqual(true);
 
-    store.commit('appconfig/clear');
+    store.commit('hub/clear');
 
-    var result = store.getters['appconfig/initialized']() as boolean;
-    expect(result).toEqual(false);
+    var result3 = store.getters['hub/isInitialized']() as boolean;
+    expect(result3).toEqual(false);
 
-    var deviceSetting = store.getters['appconfig/findDeviceSetting']('x2222222') as DeviceConfig;
+    var deviceSetting = store.getters['hub/findDeviceSetting']('x2222222') as DeviceConfig;
 
-    expect(deviceSetting).toBeUndefined();
+    expect(deviceSetting.id).toEqual('');
   });
 
-  test('test save logger settigs saves the logger settings changes', () => {
-    store.dispatch('appconfig/init', mockAppconfig);
+  test('test save logger settings saves the logger settings changes', () => {
+    store.dispatch('hub/init', { devices: [], config: mockAppconfig });
 
     mockAppconfig.hub.logger.enableRemoteLogger = true;
     mockAppconfig.hub.logger.level = 'debug';
 
-    store.commit('appconfig/setLoggerSettings', mockAppconfig.hub.logger);
+    store.commit('hub/setLoggerSettings', mockAppconfig.hub.logger);
 
-    var loggerSetting = store.getters['appconfig/logger']() as LoggerSettingsType;
+    var loggerSetting = store.getters['hub/logger']() as LoggerSettingsType;
 
     expect(loggerSetting.enableRemoteLogger).toEqual(true);
     expect(loggerSetting.level).toEqual('debug');

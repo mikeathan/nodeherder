@@ -139,8 +139,8 @@ describe('test automation module', () => {
     newAutomation.enabled = false;
 
     newAutomation.triggers[0].name = 'trigger name updated';
-    newAutomation.triggers[0].conditions[0].value = 50;
-    newAutomation.triggers[0].actions[0].data = 12.9;
+    (newAutomation.triggers[0].conditions[0] as any).value = 50;
+    (newAutomation.triggers[0].actions[0] as any).data = 12.9;
     store.commit('automations/update', newAutomation);
 
     // assert values

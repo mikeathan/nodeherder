@@ -1,10 +1,10 @@
 import 'jest';
 import { describe, expect, test } from '@jest/globals';
-import { default as devicesObj } from '../../../../docs/devices.json';
-import { Device } from '../../types/device';
+import { default as hubStateObj } from '../../../../docs/hub_state.json';
+import { Device } from '../../types/device.d';
 
 test('roundtrip serializing device', () => {
-  devicesObj.payload.forEach((device) => {
+  (hubStateObj.payload as any).devices.forEach((device: any) => {
     var json = JSON.stringify(device);
 
     const newDevice: Device = JSON.parse(json);
@@ -37,10 +37,10 @@ test('roundtrip serializing device', () => {
     );
 
     for (const [key, expose] of Object.entries(
-      device['exposes']
+      (device['exposes'] as any) || {}
     )) {
       console.log('comparing expose:', key);
-      var newExpose = newDevice.exposes[key];
+      var newExpose = (newDevice.exposes as any)[key];
       isEqualToValueAndNotNull(
         expose,
         'name',
@@ -57,36 +57,36 @@ test('roundtrip serializing device', () => {
       isEqualToValueOrNull(expose, 'data', newExpose.data);
       isEqualToValueOrNull(expose, 'type', newExpose.type); // http expose might not have type - will needto fix it in backend
 
-      for (const [key, prop] of Object.entries(
-        device['properties']
+      for (const [propKey, prop] of Object.entries(
+        (device['properties'] as any) || {}
       )) {
         console.log(
           'comparing device property:',
-          key,
+          propKey,
           prop
         );
 
-        var newDeviceProperty = newDevice.properties[key];
+        var newDeviceProperty = (newDevice.properties as any)[propKey];
         isEqualToValueAndNotNull(
           device['properties'],
-          key,
+          propKey,
           newDeviceProperty
         );
       }
 
       // Expose attributes
-      if (expose.hasOwnProperty('attributes')) {
-        if (newExpose.attributes == null) {
+      if ((expose as any).hasOwnProperty('attributes')) {
+        if ((newExpose as any).attributes == null) {
           throw new TypeError('expose.attributes null');
         }
 
         for (const key of Object.keys(
-          expose['attributes']
+          (expose as any)['attributes']
         )) {
           console.log('comparing attribute:', key);
-          var newAttribute = newExpose.attributes[key];
+          var newAttribute = (newExpose as any).attributes[key];
           isEqualToValueAndNotNull(
-            expose['attributes'],
+            (expose as any)['attributes'],
             key,
             newAttribute
           );
@@ -94,17 +94,17 @@ test('roundtrip serializing device', () => {
       }
 
       // Expose presets
-      if (expose.hasOwnProperty('presets')) {
-        if (newExpose.presets == null) {
+      if ((expose as any).hasOwnProperty('presets')) {
+        if ((newExpose as any).presets == null) {
           throw new TypeError('expose.presets are null');
         }
 
-        for (const key of Object.keys(expose['presets'])) {
+        for (const key of Object.keys((expose as any)['presets'])) {
           console.log('comparing preset:', key);
 
-          var newPreset = newExpose.presets[key];
+          var newPreset = (newExpose as any).presets[key];
           isEqualToValueAndNotNull(
-            expose['presets'],
+            (expose as any)['presets'],
             key,
             newPreset
           );
@@ -112,19 +112,19 @@ test('roundtrip serializing device', () => {
       }
 
       // Expose properties
-      if (expose.hasOwnProperty('properties')) {
-        if (newExpose.properties == null) {
+      if ((expose as any).hasOwnProperty('properties')) {
+        if ((newExpose as any).properties == null) {
           throw new TypeError('expose.properties are null');
         }
 
         for (const key of Object.keys(
-          expose['properties']
+          (expose as any)['properties']
         )) {
           console.log('comparing property:', key);
 
-          var newExposeProperty = newExpose.properties[key];
+          var newExposeProperty = (newExpose as any).properties[key];
           isEqualToValueAndNotNull(
-            expose['properties'],
+            (expose as any)['properties'],
             key,
             newExposeProperty
           );

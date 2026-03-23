@@ -3,9 +3,10 @@ import { RootState } from '../../state';
 import { WSClientState } from './state';
 import { ConnectionStatus, ConnectionStatusType } from '@/types/connection.type';
 
+import { getEnv } from '@/config/env';
+
 function getSocketUri() {
-  const wsBaseUrl = import.meta.env.VITE_WS_BASE_URL;
-  return `${wsBaseUrl}/ws`;
+  return getEnv('VITE_WS_BASE_URL');
 }
 
 let reconnectAttempts: number = 0;

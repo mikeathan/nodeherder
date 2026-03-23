@@ -1,7 +1,9 @@
 import { getErrorMessage } from '@/contracts/errors';
 import { ApiResponse } from '@/types/api.type';
 import { Automation } from '@/types/automation.type';
-const baseUrl = import.meta.env.VITE_API_BASE_URL;
+import { getEnv } from '@/config/env';
+
+const baseUrl = getEnv('VITE_API_BASE_URL');
 
 export const triggerAutomation = async (automation: Automation, triggerName: string): Promise<ApiResponse<string>> => {
   try {

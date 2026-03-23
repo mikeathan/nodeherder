@@ -16,12 +16,11 @@
     "paths": {
       "@/*": ["src/*"]
     },
-    "lib": ["dom", "es5", "esnext"],
+    "lib": ["dom", "esnext"],
     "target": "esnext",
     "module": "esnext",
     "moduleResolution": "node",
-    "sourceMap": true,
-    "allowSyntheticDefaultImports": true
+    "sourceMap": true
   },
   "include": [
     "src/**/*.ts",
@@ -29,7 +28,8 @@
     "src/**/*.vue",
     "src/**/*.test.ts",
     "src/config/env/env.d.ts",
-    "src/assets/**/*.png"
+    "src/assets/**/*.png",
+    "vite-env.d.ts"
   ],
-  "exclude": ["./node_modules", "./dist/**/*", "**/*.test.ts", "**/__tests__/**"]
+  "exclude": ["./node_modules", "./dist/**/*"]
 }
