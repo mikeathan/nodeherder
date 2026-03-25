@@ -94,6 +94,18 @@ var configWhitelist = map[string]int{
 	"color_options":      4,
 	"options":            5,
 }
+
+var eventWhitelist = map[string]int{
+	"action":           1,
+	"click":            2,
+	"step":             3,
+	"recall":           4,
+	"command":          5,
+	"action_direction": 6,
+	"action_type":      7,
+	"action_time":      8,
+}
+
 var diagnosticWhitelist = map[string]int{
 	"linkquality":     1,
 	"battery":         2,
@@ -293,6 +305,31 @@ func (e *Entity) GetData() any {
 // Setter
 func (e *Entity) SetData(v any) {
 	e.Data.SetValue(v)
+}
+
+func (e *Entity) IsEventValue(newValue any) bool {
+	// 1. Whitelisted Events: If the property itself is a whitelisted event (like 'action' or 'click')
+	if _, isEvent := eventWhitelist[e.Name]; isEvent {
+		return true
+	}
+
+	// 2. Agnostic Toggle Check: Look up the dynamically populated toggle value from the schema.
+	// This uses the explicit 'value_toggle' defined by the device instead of hardcoding.
+	if toggleVal, ok := e.Values["toggle"]; ok {
+		if utils.CompareValuesCaseInsensitive(toggleVal, newValue) {
+			return true
+		}
+	}
+
+	// 3. Write-Only Fallback: If it's a known non-measurement, or fallback for older
+	// devices sending "TOGGLE" without proper schema definition.
+	if strVal, ok := newValue.(string); ok {
+		if strings.EqualFold(strVal, "TOGGLE") {
+			return true
+		}
+	}
+
+	return false
 }
 
 func CreateEntityFromExpose(expose BridgeExpose, data any) (*Entity, error) {
@@ -563,4 +600,3 @@ func (device *Device) SetAvailable(value bool) {
 		device.Availability = OfflineAvailability
 	}
 }
-

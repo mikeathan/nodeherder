@@ -1,7 +1,6 @@
 package services_test
 
 import (
-	"fmt"
 	"node-herder/internal/services"
 	"node-herder/mocks"
 	"node-herder/models/bridge"
@@ -282,7 +281,8 @@ func TestDeviceLifetimeService_ShouldChangeAvailability_ToOffline(t *testing.T) 
 }
 
 func TestDeviceLifetimeService_MetricsAvailabilityWithMetricsEnabled(t *testing.T) {
-	wg := sync.WaitGroup{}
+	var updatesCount int
+	var measurementsCount int
 
 	brightness := utils_test.CreateEntity("brightness", "number", 12.5)
 	brightness.Category = bridge.MeasurementCategory
@@ -303,7 +303,7 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithMetricsEnabled(t *testing.
 			if d != device {
 				t.Errorf("OnDeviceUpdated device = %v, want %v", d, device)
 			}
-			wg.Done()
+			updatesCount++
 		},
 		OnDeviceMeasurementsUpdated: func(d *devices.Device, p map[string]interface{}) {
 
@@ -313,7 +313,7 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithMetricsEnabled(t *testing.
 			if !ok1 && !ok2 {
 				t.Errorf("OnDeviceMetricsAvailable metrics = %v, want brightness and/or color_temp", p)
 			}
-			wg.Done()
+			measurementsCount++
 		},
 	}
 
@@ -367,7 +367,7 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithMetricsEnabled(t *testing.
 		},
 	}
 
-	for id, tc := range testCases {
+	for _, tc := range testCases {
 
 		payload := tc.payload
 
@@ -376,16 +376,15 @@ func TestDeviceLifetimeService_MetricsAvailabilityWithMetricsEnabled(t *testing.
 		now = now.Add(100 * time.Millisecond)
 		mockClock.SetMockTime(now)
 
-		if id == 2 {
-			fmt.Println("")
-		}
-		if tc.expectedUpdates > 0 {
-			wg.Add(tc.expectedUpdates)
-		}
-		service.Update(payload)
+		updatesCount = 0
+		measurementsCount = 0
 
-		if tc.expectedUpdates > 0 {
-			wg.Wait()
+		service.Update(payload)
+		time.Sleep(50 * time.Millisecond)
+
+		totalFired := updatesCount + measurementsCount
+		if totalFired != tc.expectedUpdates {
+			t.Errorf("For payload %v, expected %d updates, got %d", payload, tc.expectedUpdates, totalFired)
 		}
 	}
 }
@@ -774,14 +773,14 @@ func TestDeviceLifetimeService_NoisyValuesDebouncedCorrectly(t *testing.T) {
 	}
 }
 
-func TestDeviceLifetimeService_AutomationCooldown(t *testing.T) {
+func TestDeviceLifetimeService_AutomationTriggersOnChanges(t *testing.T) {
 	device := utils_test.CreateDoorSensorDevice("x01234", "testDoor", false)
 	device.Availability = devices.OnlineAvailability
 
 	var triggers int
 	events := &devices.DeviceRequestEvents{
 		OnDeviceUpdated: func(d *devices.Device, p *devices.UpdatePackage) {},
-		OnDeviceAutomationTriggered: func(d *devices.Device) {
+		OnDeviceAutomationTriggered: func(d *devices.Device, p map[string]interface{}) {
 			triggers++
 		},
 	}
@@ -801,25 +800,13 @@ func TestDeviceLifetimeService_AutomationCooldown(t *testing.T) {
 	// Update 1: Should trigger automation
 	service.Update(map[string]interface{}{"contact": true})
 	
-	// Update 2: Immediately after, should BE BLOCKED by 20ms cooldown
+	// Update 2: Immediately after, should trigger again (no cooldown)
 	service.Update(map[string]interface{}{"contact": false})
 	
-	// Update 3: Still immediately after, should BE BLOCKED
+	// Update 3: Still immediately after, should trigger again
 	service.Update(map[string]interface{}{"contact": true})
 	
-	// Ensure we don't count test execution time as cooldown period. The real time.Now()
-	// is used in the cooldown check (which is why we use time.Sleep to bypass it)
-	if triggers != 1 {
-		t.Fatalf("Expected exactly 1 trigger, got %d", triggers)
-	}
-
-	// Wait for cooldown to expire (> 20ms)
-	time.Sleep(25 * time.Millisecond)
-
-	// Update 4: Should trigger automation again since cooldown expired
-	service.Update(map[string]interface{}{"contact": false})
-
-	if triggers != 2 {
-		t.Fatalf("Expected exactly 2 triggers after cooldown expired, got %d", triggers)
+	if triggers != 3 {
+		t.Fatalf("Expected exactly 3 triggers (no cooldown), got %d", triggers)
 	}
 }

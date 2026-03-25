@@ -100,7 +100,7 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 		}
 		device.Exposes = createExposures(data)
 
-		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device), testCase.triggeredEntity)
+		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device, nil), testCase.triggeredEntity)
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -176,7 +176,7 @@ func TestAutomationwithMultipleTriggerActions(t *testing.T) {
 		}
 		device.Exposes = createExposures(data)
 
-		automation.Evaluate(automations.NewDeviceEvent(device))
+		automation.Evaluate(automations.NewDeviceEvent(device, data))
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -256,7 +256,7 @@ func TestHandleMultipleSameValueTriggerWithDelay(t *testing.T) {
 		}
 
 		device.Exposes = createExposures(data)
-		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device), "presence")
+		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device, nil), "presence")
 
 		time.Sleep(500 * time.Millisecond)
 	}
@@ -352,7 +352,7 @@ func TestTurnOnAndOffLightFromPresence(t *testing.T) {
 		}
 
 		device.Exposes = createExposures(data)
-		deviceTrigger.Evaluate(automations.NewDeviceEvent(device))
+		deviceTrigger.Evaluate(automations.NewDeviceEvent(device, data))
 
 		time.Sleep(testCase.sleepdelay * time.Millisecond)
 	}
@@ -476,7 +476,7 @@ func TestActionWithTimerRangeConditionLightFromPresence(t *testing.T) {
 		}
 
 		device.Exposes = createExposures(payload)
-		deviceTrigger.Evaluate(automations.NewDeviceEvent(device))
+		deviceTrigger.Evaluate(automations.NewDeviceEvent(device, payload))
 		time.Sleep(testCase.sleepdelay * time.Millisecond)
 	}
 
@@ -554,7 +554,7 @@ func TestManualTrigger_TurnsOnLight(t *testing.T) {
 			"presence": testCase.presence,
 		}
 		device.Exposes = createExposures(payload)
-		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device), turnOnTrigger.Name)
+		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device, nil), turnOnTrigger.Name)
 		wg.Wait()
 	}
 }
@@ -619,7 +619,7 @@ func TestManualTriggerWithScheduleTurnsOnLight(t *testing.T) {
 		}
 
 		device.Exposes = createExposures(data)
-		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device), turnOnTrigger.Name)
+		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device, nil), turnOnTrigger.Name)
 
 		wg.Wait()
 	}

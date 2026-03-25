@@ -14,7 +14,7 @@ const (
 )
 
 type Engine interface { // TODO: might need to move it to Models????
-	HandleDevice(device *devices.Device)
+	HandleDevice(device *devices.Device, payload map[string]interface{})
 	HandleManual(automationID string, triggerName string) error
 	Add(automation Automation) error
 	Delete(id string) error
@@ -60,10 +60,10 @@ func (a *AutomationEngine) IsAutomationEnabled(id string) bool {
 	return false
 }
 
-func (a *AutomationEngine) HandleDevice(device *devices.Device) {
+func (a *AutomationEngine) HandleDevice(device *devices.Device, payload map[string]interface{}) {
 	automation, err := a.storage.LoadFromCache(device.Id)
 	if err == nil && automation.IsEnabled() {
-		automation.Evaluate(NewDeviceEvent(device))
+		automation.Evaluate(NewDeviceEvent(device, payload))
 	}
 }
 
@@ -83,7 +83,7 @@ func (a *AutomationEngine) HandleManual(automationID string, triggerName string)
 		return err
 	}
 
-	if !automation.EvaluateTrigger(NewDeviceEvent(device), triggerName) {
+	if !automation.EvaluateTrigger(NewDeviceEvent(device, nil), triggerName) {
 		return errors.New("automation trigger failed to run")
 	}
 

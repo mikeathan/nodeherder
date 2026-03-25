@@ -24,7 +24,7 @@ type DeviceRequestEvents struct {
 	OnNewDevice                 func(device *Device)
 	OnDeviceUpdated             func(device *Device, data *UpdatePackage)
 	OnDeviceMeasurementsUpdated func(device *Device, dataMap map[string]interface{})
-	OnDeviceAutomationTriggered func(device *Device)
+	OnDeviceAutomationTriggered func(device *Device, payload map[string]interface{})
 	OnDeviceAvailabilityChanged func(p *UpdatePackage)
 }
 
@@ -62,7 +62,7 @@ func (d *DeviceRequestEvents) WithOnDeviceMeasurementsUpdated(f func(device *Dev
 	return d
 }
 
-func (d *DeviceRequestEvents) WithOnDeviceAutomationTriggered(f func(device *Device)) *DeviceRequestEvents {
+func (d *DeviceRequestEvents) WithOnDeviceAutomationTriggered(f func(device *Device, payload map[string]interface{})) *DeviceRequestEvents {
 	d.OnDeviceAutomationTriggered = f
 	return d
 }

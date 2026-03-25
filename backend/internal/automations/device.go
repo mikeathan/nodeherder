@@ -17,15 +17,20 @@ import (
 
 type DeviceEvent struct {
 	TriggerEvent
-	device *devices.Device
+	device  *devices.Device
+	payload map[string]interface{}
 }
 
-func NewDeviceEvent(device *devices.Device) *DeviceEvent {
-	return &DeviceEvent{device: device}
+func NewDeviceEvent(device *devices.Device, payload map[string]interface{}) *DeviceEvent {
+	return &DeviceEvent{device: device, payload: payload}
 }
 
 func (de *DeviceEvent) Device() *devices.Device {
 	return de.device
+}
+
+func (de *DeviceEvent) Payload() map[string]interface{} {
+	return de.payload
 }
 
 func (de *DeviceEvent) Type() string {
@@ -101,6 +106,7 @@ func (d *Device) Evaluate(event TriggerEvent) bool {
 	}
 
 	device := deviceEvent.Device()
+	payload := deviceEvent.Payload()
 	d.ctx.SetDevicePayload(device.Exposes)
 
 	// This is a device state change (not manual)
@@ -109,7 +115,8 @@ func (d *Device) Evaluate(event TriggerEvent) bool {
 	// NOTE: a trigger can have multiple conditions.
 	// e.g presence can have multiple conditions for on and off
 	for _, trigger := range d.Triggers {
-		if _, ok := device.Exposes[trigger.GetName()]; ok {
+		// Only process this trigger if its property is in the changed payload
+		if _, ok := payload[trigger.GetName()]; ok {
 			trigger.Process(d.ctx)
 		}
 	}
