@@ -527,7 +527,7 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 
 	// trigger the automation
 	doorSensorDevice.Exposes["contact"].Data.SetValue(true)
-	engine.HandleDevice(doorSensorDevice)
+	engine.HandleDevice(doorSensorDevice, map[string]interface{}{"contact": true})
 	time.Sleep(50 * time.Millisecond)
 
 	// scheduler is enable so any event will enable automation
@@ -546,7 +546,7 @@ func TestEngineSchedulerConfiguresAutomation(t *testing.T) {
 
 	// trigger the automation
 	doorSensorDevice.Exposes["contact"].Data.SetValue(false)
-	engine.HandleDevice(doorSensorDevice)
+	engine.HandleDevice(doorSensorDevice, map[string]interface{}{"contact": false})
 	time.Sleep(50 * time.Millisecond)
 
 	a, _ = engine.Load(deviceAutomation.Id)

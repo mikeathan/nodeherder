@@ -433,15 +433,10 @@ func (h *HubController) registerEventHubEvents() {
 			return fmt.Errorf("save automation failed. %s", err.Error())
 		}
 
-		// trigger automation for changes to apply
-		if automation.IsEnabled() {
-			device, err := h.registrar.LookupById(automation.GetId())
-			if err == nil {
-				utils.LogInfof("Trigger automation %s[%s] after update", automation.GetFriendlyName(), automation.GetId())
-				h.TriggerAutomation(device)
-			}
-		}
-
+		// NOTE: Do NOT trigger automation on save. The automation will
+		// naturally run on the next genuine device state change from MQTT.
+		// Triggering here causes a feedback loop: save → action → MQTT publish
+		// → bounce-back → device update → re-trigger → action → …
 		return nil
 	})
 
@@ -550,8 +545,8 @@ func (c *HubController) Enqueue(id string, payload map[string]interface{}, connT
 	return c.processMessage(id, bytes, connType)
 }
 
-func (m *HubController) TriggerAutomation(device *devices.Device) {
-	m.automationEngine.HandleDevice(device)
+func (m *HubController) TriggerAutomation(device *devices.Device, payload map[string]interface{}) {
+	m.automationEngine.HandleDevice(device, payload)
 }
 
 func (m *HubController) TriggerManual(automationId string, triggerName string) error {
@@ -616,8 +611,8 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 		d.handleDeviceMeasurementsUpdated(device, p)
 	})
 
-	events.WithOnDeviceAutomationTriggered(func(device *devices.Device) {
-		d.automationEngine.HandleDevice(device)
+	events.WithOnDeviceAutomationTriggered(func(device *devices.Device, payload map[string]interface{}) {
+		d.automationEngine.HandleDevice(device, payload)
 	})
 
 	processor := services.NewDeviceProcessorBuilder().
