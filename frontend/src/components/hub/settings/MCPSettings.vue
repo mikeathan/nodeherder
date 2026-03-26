@@ -13,20 +13,6 @@
     return store.getters['hub/mcpConfig']() as boolean;
   });
 
-  const connectionStatus = computed(() => {
-    return store.getters['ws/getConnectionStatus'];
-  });
-
-  watch(
-    connectionStatus,
-    (newValue) => {
-      if (newValue === ConnectionStatus.connected) {
-        store.dispatch('hub/loadMCPStatus');
-      }
-    },
-    { immediate: true }
-  );
-
   async function restart() {
     store.dispatch('hub/restartMCP');
     await new Promise((resolve) => setTimeout(resolve, 1000));

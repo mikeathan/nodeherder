@@ -25,7 +25,7 @@
     font-weight: 700;
     white-space: nowrap;
     line-height: 1;
-    letter-spacing: -0.5px; /* Slight tracking adjustment for professional look */
+    letter-spacing: -0.5px;
   }
 
   .status-wrapper {

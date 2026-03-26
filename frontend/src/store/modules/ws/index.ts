@@ -53,8 +53,9 @@ export const WSClientModule: Module<WSClientState, RootState> = {
       socket.onopen = function (event) {
         console.log('ws connected');
         reconnectAttempts = 0;
-        // dispatch('emit', { event: 'loadHubState' });
         commit('setConnectionStatus', 'connected');
+
+        dispatch('emit', { event: 'loadMCPStatus', message: {} });
       };
 
       socket.onmessage = function (event) {

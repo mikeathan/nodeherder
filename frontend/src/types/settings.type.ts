@@ -72,7 +72,9 @@ export type DeviceGroup = {
 
 export type MCPStatusType = {
   running: boolean;
+  enabled: boolean;
   name: string;
   version: string;
   connectedClients: number;
 };
+
