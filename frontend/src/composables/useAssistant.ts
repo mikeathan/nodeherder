@@ -4,7 +4,7 @@ import {
   sendMessageToLLM,
   fetchConversations,
   fetchConversationHistory,
-  deleteConversation as deleteConversationApi
+  deleteConversation as deleteConversationApi,
 } from '@/services/assistant.service';
 import { createAssistantErrorResponse, createAssistantResponse, createUserRequest } from '@/contracts/assistant';
 
@@ -25,7 +25,7 @@ export function useAssistant() {
     }
     const mcpEnabled = store.getters['hub/mcpConfig']();
     const mcpStatus = store.getters['hub/mcpStatus']();
-    
+
     if (!mcpEnabled) {
       return 'mcp';
     }
@@ -38,7 +38,7 @@ export function useAssistant() {
     if (mcpStatus.running !== true || mcpStatus.connectedClients === 0) {
       return 'mcp';
     }
-    
+
     return null;
   });
 
@@ -50,7 +50,7 @@ export function useAssistant() {
 
   const scrollToBottom = async () => {
     await nextTick();
-    
+
     const scroll = () => {
       if (chatContainer.value) {
         chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
@@ -70,7 +70,7 @@ export function useAssistant() {
 
     inputText.value = '';
     isLoading.value = true;
-    
+
     await store.dispatch('assistant/addMessage', createUserRequest(input));
     scrollToBottom();
 
