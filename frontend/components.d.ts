@@ -90,7 +90,6 @@ declare module 'vue' {
     Logo: typeof import('./src/components/controls/Logo.vue')['default']
     MainLayout: typeof import('./src/components/layout/MainLayout.vue')['default']
     MCPSettings: typeof import('./src/components/hub/settings/MCPSettings.vue')['default']
-    MCPStatus: typeof import('./src/components/controls/MCPStatus.vue')['default']
     Menubar: typeof import('primevue/menubar')['default']
     MenuDropdown: typeof import('./src/components/controls/MenuDropdown.vue')['default']
     Message: typeof import('primevue/message')['default']
@@ -147,7 +146,6 @@ declare module 'vue' {
     ToggleSwitch: typeof import('primevue/toggleswitch')['default']
     Trigger: typeof import('./src/components/automations/Trigger.vue')['default']
     TriggerAction: typeof import('./src/components/automations/actions/TriggerAction.vue')['default']
-    UnifiedStatus: typeof import('./src/components/controls/UnifiedStatus.vue')['default']
     UserBubble: typeof import('./src/components/assistant/chat/UserBubble.vue')['default']
     Viewer: typeof import('./src/components/automations/Viewer.vue')['default']
   }

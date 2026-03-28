@@ -31,6 +31,10 @@
     }
     isEditing.value = false;
   };
+
+  const rerunMessage = () => {
+    emit('rerun', props.message.content);
+  };
 </script>
 
 <template>
@@ -68,6 +72,15 @@
         style="width: 28px; height: 28px"
         v-tooltip.bottom="'Edit Message'"
         @click="startEdit" />
+      <Button
+        v-if="!isEditing"
+        icon="pi pi-refresh"
+        class="text-color-secondary p-button-sm p-0 flex align-items-center justify-content-center opacity-70 hover:opacity-100 transition-opacity"
+        text
+        rounded
+        style="width: 28px; height: 28px"
+        v-tooltip.bottom="'Rerun Message'"
+        @click="rerunMessage" />
     </template>
   </BaseBubble>
 </template>

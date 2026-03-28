@@ -13,6 +13,7 @@
     inputText,
     isLoading,
     isLoadingHistory,
+    setChatContainer,
     sendMessage,
     startNewConversation,
     selectConversation,
@@ -56,7 +57,7 @@
 
           <template v-else>
             <div
-              ref="chatContainer"
+              :ref="setChatContainer"
               class="flex-1 overflow-y-auto px-4 py-4 flex flex-column align-items-center w-full min-h-0 messages-container">
               <AssistantMessageList
                 :messages="activeConversation.messages"

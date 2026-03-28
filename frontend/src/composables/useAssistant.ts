@@ -44,13 +44,22 @@ export function useAssistant() {
 
   const isConfigured = computed(() => notConfiguredReason.value === null);
 
+  const setChatContainer = (el: any) => {
+    chatContainer.value = el;
+  };
+
   const scrollToBottom = async () => {
     await nextTick();
-    setTimeout(() => {
+    
+    const scroll = () => {
       if (chatContainer.value) {
         chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
       }
-    }, 10);
+    };
+
+    scroll();
+    // Fallback to allow time for heavy Markdown/components to finish rendering
+    setTimeout(scroll, 150);
   };
 
   const sendMessage = async () => {
@@ -148,6 +157,7 @@ export function useAssistant() {
     isLoading,
     isLoadingHistory,
     chatContainer,
+    setChatContainer,
     sendMessage,
     startNewConversation,
     loadConversations,
