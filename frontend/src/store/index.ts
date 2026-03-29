@@ -8,6 +8,7 @@ import { MetricsModule as metrics } from './modules/metrics/index';
 import { ConsoleModule as console } from './modules/console/index';
 import { AlertsModule as alerts } from './modules/alerts/index';
 import { AuthModule as auth } from './modules/auth';
+import { AssistantModule as assistant } from './modules/assistant/index';
 import createPersistedState from 'vuex-persistedstate';
 
 // https://blog.openreplay.com/integrate-vuex-and-typescript/
@@ -21,6 +22,10 @@ export const store = createStore<RootState>({
     createPersistedState({
       key: 'nodeherder_auth',
       paths: ['auth'],
+    }),
+    createPersistedState({
+      key: 'nodeherder_assistant',
+      paths: ['assistant.activeConversation.id'],
     }),
   ],
   state: {},
@@ -40,6 +45,7 @@ export const store = createStore<RootState>({
     hub,
     ws,
     auth,
+    assistant,
   },
 });
 

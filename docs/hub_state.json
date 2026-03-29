@@ -26,7 +26,11 @@
           "sleeptTmeout": { "value": 12, "unit": "hours" },
           "expireAt": { "value": 10, "unit": "days" }
         },
+        "assistant": {
+          "url": "http://localhost:4001/api/conversation"
+        },
         "logger": { "enableRemoteLogger": false },
+        "mcp": { "enabled": false },
         "dashboardGroups": {
           "living room group": {
             "name": "living room group",

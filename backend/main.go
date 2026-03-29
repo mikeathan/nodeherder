@@ -44,7 +44,12 @@ func main() {
 	}
 
 	utils.LogInfo("starting up server")
-	h := hub.Register(args.port, appStore, ctx)
+	h, err := hub.Register(args.port, appStore, ctx)
+	if err != nil {
+		utils.LogErrorf("failed to register server: %v", err)
+		cancelCtx()
+		os.Exit(1)
+	}
 	h.Listen()
 	utils.LogInfo("exit")
 }

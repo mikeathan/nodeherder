@@ -133,6 +133,10 @@ export function registerWebsocket(app, server) {
           appConfig.history = obj.payload;
           sendOperationSuccess(ws);
           break;
+        case 'saveAssistantConfig':
+          appConfig.hub.assistant = obj.payload;
+          sendOperationSuccess(ws);
+          break;
         case 'loadDashboardGroups':
           sendMessage(ws, 'dashboardGroups', appConfig.hub.dashboardGroups);
           break;
@@ -189,6 +193,45 @@ export function registerWebsocket(app, server) {
             clearInterval(consoleLogIntervalId);
             consoleLogIntervalId = 0;
           }
+          break;
+        }
+        case 'loadMCPStatus': {
+          sendMessage(ws, 'mcpStatus', {
+            running: appConfig.hub.mcp.enabled,
+            version: '1.0.0-mock',
+            connectedClients: appConfig.hub.mcp.enabled ? 1 : 0,
+            name: 'Mock MCP Server'
+          });
+          break;
+        }
+        case 'restartMCP': {
+          appConfig.hub.mcp.enabled = true;
+          sendMessage(ws, 'mcpStatus', {
+            running: true,
+            version: '1.0.0-mock',
+            connectedClients: 1,
+            name: 'Mock MCP Server'
+          });
+          break;
+        }
+        case 'stopMCP': {
+          appConfig.hub.mcp.enabled = false;
+          sendMessage(ws, 'mcpStatus', {
+            running: false,
+            version: '1.0.0-mock',
+            connectedClients: 0,
+            name: 'Mock MCP Server'
+          });
+          break;
+        }
+        case 'startMCP': {
+          appConfig.hub.mcp.enabled = true;
+          sendMessage(ws, 'mcpStatus', {
+            running: true,
+            version: '1.0.0-mock',
+            connectedClients: 1,
+            name: 'Mock MCP Server'
+          });
           break;
         }
         case 'pong':

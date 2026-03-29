@@ -1,6 +1,7 @@
 import { KeyValuePair, ValueOf } from './types.type';
 
 export type ControlDirection = 'horizontal' | 'vertical';
+export type MessageAlignment = 'left' | 'right';
 export const DashboardModes = {
   editMode: 'editmode',
   viewMode: 'viewmode',

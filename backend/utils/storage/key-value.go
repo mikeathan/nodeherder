@@ -25,7 +25,10 @@ type KeyValueDatabase interface {
 
 	HasDataInRange(bucketName string, from, to []byte) (bool, error)
 
-	Delete(bucketName string, key []byte) error
+
+	DeleteKey(key []byte) error
+
+	GetAll(callback func(key, value []byte) error) error
 
 	Prune(callback func(key []byte) (bool, error)) error
 }
@@ -161,16 +164,34 @@ func (b *BoltKeyValueDatabase) Get(key []byte) ([]byte, error) {
 	return value, err
 }
 
-func (b *BoltKeyValueDatabase) Delete(bucketName string, key []byte) error {
+func (b *BoltKeyValueDatabase) DeleteKey(key []byte) error {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 
 	return b.db.Update(func(tx *bolt.Tx) error {
-		bucket, err := b.openChildBucket(tx, bucketName)
-		if err != nil {
-			return err
+		bucket := tx.Bucket([]byte(b.rootBucket))
+		if bucket == nil {
+			return bolt.ErrBucketNotFound
 		}
 		return bucket.Delete(key)
+	})
+}
+
+func (b *BoltKeyValueDatabase) GetAll(callback func(key, value []byte) error) error {
+	b.mutex.RLock()
+	defer b.mutex.RUnlock()
+
+	return b.db.View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(b.rootBucket))
+		if bucket == nil {
+			return nil
+		}
+		return bucket.ForEach(func(key, value []byte) error {
+			if value == nil {
+				return nil // skip nested buckets
+			}
+			return callback(key, value)
+		})
 	})
 }
 

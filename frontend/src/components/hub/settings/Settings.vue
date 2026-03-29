@@ -1,27 +1,32 @@
 <script setup lang="ts">
-  import HistorySettings from './HistorySettings.vue';
-  import LoggerSettings from './LoggerSettings.vue';
-  import DeviceDefaultSettings from './DeviceDefaultSettings.vue';
-  import MCPSettings from './MCPSettings.vue';
+  import { ref } from 'vue';
+  import { settingsTabComponents as settingsTabs } from '../../../mixins/useTabComponents';
+
+  const activeTab = ref('0');
 </script>
 
 <template>
   <Card>
     <template #title>
-      <h2>Settings</h2>
+      <div class="text-3xl align-self-center">Settings</div>
     </template>
     <template #content>
-      <div class="pt-3">
-        <DeviceDefaultSettings />
-      </div>
-      <div class="pt-3">
-        <HistorySettings />
-      </div>
-      <div class="pt-3">
-        <LoggerSettings />
-      </div>
-      <div class="pt-3">
-        <MCPSettings />
+      <div class="col-12 md:col-12">
+        <Tabs v-model:value="activeTab">
+          <TabList>
+            <Tab
+              v-for="tab in settingsTabs"
+              :key="tab.value"
+              :value="tab.value">
+              {{ tab.title }}
+            </Tab>
+          </TabList>
+          <TabPanels>
+            <TabPanel v-for="tab in settingsTabs" :key="tab.value" :value="tab.value">
+              <component v-if="activeTab === tab.value" :is="tab.content"></component>
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
       </div>
     </template>
   </Card>

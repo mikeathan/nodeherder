@@ -52,6 +52,12 @@ export function useSideNavigationItems() {
       command: () => goTo(RouteName.Viewer),
     },
     {
+      to: '/assistant',
+      label: 'assistant',
+      icon: 'pi pi-sparkles',
+      command: () => goTo(RouteName.Assistant),
+    },
+    {
       to: '/consoleviewer',
       label: 'console',
       icon: 'pi pi-code',

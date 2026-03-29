@@ -2,7 +2,10 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"node-herder/internal/auth"
 	"node-herder/internal/controllers"
@@ -11,33 +14,60 @@ import (
 	metrics "node-herder/internal/metrics/services"
 	"node-herder/internal/ratelimiter"
 	"node-herder/internal/ws"
+	"node-herder/models/assistant"
 	"node-herder/models/automations"
 	"node-herder/models/logging"
 	"node-herder/store"
 	"node-herder/utils"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
 )
 
-type Route struct {
-	pattern string
+const ParametirsedSuffix = ":"
+
+type contextKey int
+
+const paramsKey contextKey = iota
+
+// Param extracts a named route parameter from the request context.
+func Param(r *http.Request, key string) string {
+	if params, ok := r.Context().Value(paramsKey).(map[string]string); ok {
+		return params[key]
+	}
+	return ""
+}
+
+type segment struct {
+	value   string
+	isParam bool
+}
+
+type route struct {
 	method  string
 	handler http.Handler
 	public  bool
 }
 
+type paramRoute struct {
+	route
+	segments []segment
+}
+
 type Router struct {
-	routes               []*Route
+	static               map[string]route // "METHOD /path" -> route
+	knownPaths           map[string]bool  // tracks all registered paths for OPTIONS
+	paramRoutes          []paramRoute
 	protectedMiddlewares []func(http.Handler) http.Handler
 	globalMiddlewares    []func(http.Handler) http.Handler
 }
 
 func NewRouter() *Router {
 	return &Router{
-		routes:               []*Route{},
+		static:               make(map[string]route),
+		knownPaths:           make(map[string]bool),
+		paramRoutes:          []paramRoute{},
 		protectedMiddlewares: []func(http.Handler) http.Handler{},
 		globalMiddlewares:    []func(http.Handler) http.Handler{},
 	}
@@ -75,8 +105,34 @@ func (r *Router) DELETE(path string, handler http.Handler) {
 	r.addRoute(http.MethodDelete, path, handler, false)
 }
 
-func (r *Router) addRoute(method string, path string, handler http.Handler, public bool) {
-	r.routes = append(r.routes, &Route{method: method, pattern: path, handler: handler, public: public})
+func routeKey(method, path string) string {
+	return fmt.Sprintf("%s %s", method, path)
+}
+
+func splitPath(path string) []string {
+	return strings.Split(strings.Trim(path, "/"), "/")
+}
+
+func (r *Router) addRoute(method, path string, handler http.Handler, public bool) {
+	rt := route{method: method, handler: handler, public: public}
+	r.knownPaths[path] = true
+
+	if !strings.Contains(path, ParametirsedSuffix) {
+		r.static[routeKey(method, path)] = rt
+		return
+	}
+
+	parts := splitPath(path)
+	segments := make([]segment, len(parts))
+	for i, p := range parts {
+		if strings.HasPrefix(p, ParametirsedSuffix) {
+			segments[i] = segment{value: p[1:], isParam: true}
+		} else {
+			segments[i] = segment{value: p}
+		}
+	}
+
+	r.paramRoutes = append(r.paramRoutes, paramRoute{route: rt, segments: segments})
 }
 
 func (r *Router) AddAuthentication(provider auth.AuthProvider) {
@@ -84,12 +140,14 @@ func (r *Router) AddAuthentication(provider auth.AuthProvider) {
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	path := req.URL.Path
-	method := req.Method
+	handler, params := r.match(req.Method, req.URL.Path)
 
-	handler := r.getHandler(method, path)
+	if len(params) > 0 {
+		// add params to context
+		ctx := context.WithValue(req.Context(), paramsKey, params)
+		req = req.WithContext(ctx)
+	}
 
-	// chain global middleware
 	for _, mw := range r.globalMiddlewares {
 		handler = mw(handler)
 	}
@@ -97,24 +155,73 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	handler.ServeHTTP(w, req)
 }
 
-func (r *Router) getHandler(method, path string) http.Handler {
+var noopHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 
-	for _, route := range r.routes {
-		re := regexp.MustCompile(route.pattern)
-		if re.MatchString(path) && (route.method == method || method == http.MethodOptions) {
-			handler := route.handler
+func (r *Router) match(method, path string) (http.Handler, map[string]string) {
+	// Fast path: static route lookup
+	if rt, ok := r.static[routeKey(method, path)]; ok {
+		return r.applyProtected(rt), nil
+	}
 
-			// chain protected middleware
-			if !route.public {
-				for _, mw := range r.protectedMiddlewares {
-					handler = mw(handler)
-				}
+	// Static OPTIONS fallback: just return noop so CORS can work
+	if method == http.MethodOptions && r.knownPaths[path] {
+		return noopHandler, nil
+	}
+
+	// Slow path: parameterized routes
+	handler, params := r.matchParam(method, path)
+
+	// Parameterized OPTIONS fallback: skip auth
+	if method == http.MethodOptions && handler != nil {
+		return noopHandler, params
+	}
+
+	if handler == nil {
+		return http.NotFoundHandler(), nil
+	}
+
+	return handler, params
+}
+
+func (r *Router) matchParam(method, path string) (http.Handler, map[string]string) {
+	pathParts := splitPath(path)
+	for _, pr := range r.paramRoutes {
+		// Method must match (skip check for OPTIONS preflight)
+		if method != http.MethodOptions && pr.method != method {
+			continue
+		}
+
+		if len(pr.segments) != len(pathParts) {
+			continue
+		}
+
+		params := make(map[string]string)
+		matched := true
+		for i, seg := range pr.segments {
+			if seg.isParam {
+				params[seg.value] = pathParts[i]
+			} else if seg.value != pathParts[i] {
+				matched = false
+				break
 			}
+		}
 
-			return handler
+		if matched {
+			return r.applyProtected(pr.route), params
 		}
 	}
-	return http.NotFoundHandler()
+
+	return nil, nil
+}
+
+func (r *Router) applyProtected(rt route) http.Handler {
+	handler := rt.handler
+	if !rt.public {
+		for _, mw := range r.protectedMiddlewares {
+			handler = mw(handler)
+		}
+	}
+	return handler
 }
 
 // Web socket
@@ -507,4 +614,160 @@ func (h *MetricsQueryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(response)
+}
+
+// Assistant Message Proxy
+type AssistantMessageHandler struct {
+	store store.AppStore
+}
+
+func NewAssistantMessageHandler(store store.AppStore) *AssistantMessageHandler {
+	return &AssistantMessageHandler{
+		store: store,
+	}
+}
+
+func (h *AssistantMessageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Header.Get("Content-Type") != "application/json" {
+		writeJSONError(w, http.StatusUnsupportedMediaType, "Content-Type must be application/json")
+		return
+	}
+
+	config, err := h.store.AppConfig().LoadAppConfig()
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Failed to load config")
+		return
+	}
+
+	url := config.Hub.Assistant.Url
+	if url == "" {
+		writeJSONError(w, http.StatusBadRequest, "Assistant URL not configured")
+		return
+	}
+
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, "Failed to read request body")
+		return
+	}
+
+	var reqPayload struct {
+		ConversationID string `json:"conversation_id"`
+		Message        string `json:"message"`
+	}
+	if err := json.Unmarshal(bodyBytes, &reqPayload); err != nil {
+		writeJSONError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	// Store user message
+	if reqPayload.ConversationID != "" && reqPayload.Message != "" {
+		if err := h.store.AppendAssistantMessage(reqPayload.ConversationID, assistant.RoleUser, reqPayload.Message); err != nil {
+			utils.LogErrorf("AssistantMessageHandler: failed to save user message: %v", err)
+		}
+	}
+
+	// Proxy to LLM
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		writeJSONError(w, http.StatusBadGateway, "Failed to connect to assistant: "+err.Error())
+		return
+	}
+	defer resp.Body.Close()
+
+	respBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		writeJSONError(w, http.StatusBadGateway, "Failed to read assistant response")
+		return
+	}
+
+	// Store assistant reply
+	if reqPayload.ConversationID != "" && resp.StatusCode == http.StatusOK {
+		var respPayload struct {
+			Reply string `json:"reply"`
+		}
+		if err := json.Unmarshal(respBytes, &respPayload); err == nil && respPayload.Reply != "" {
+			if err := h.store.AppendAssistantMessage(reqPayload.ConversationID, assistant.RoleAssistant, respPayload.Reply); err != nil {
+				utils.LogErrorf("AssistantMessageHandler: failed to save assistant reply: %v", err)
+			}
+		}
+	}
+
+	w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
+	w.WriteHeader(resp.StatusCode)
+	w.Write(respBytes)
+}
+
+// AssistantConversationsHandler handles GET /api/assistant/conversations
+type AssistantConversationsHandler struct {
+	store store.AppStore
+}
+
+func NewAssistantConversationsHandler(store store.AppStore) *AssistantConversationsHandler {
+	return &AssistantConversationsHandler{store: store}
+}
+
+func (h *AssistantConversationsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	conversations, err := h.store.ListAssistantConversations()
+	if err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Failed to list conversations")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]interface{}{"conversations": conversations})
+}
+
+// AssistantHistoryHandler handles GET /api/assistant/history/{id}
+type AssistantHistoryHandler struct {
+	store store.AppStore
+}
+
+func NewAssistantHistoryHandler(store store.AppStore) *AssistantHistoryHandler {
+	return &AssistantHistoryHandler{store: store}
+}
+
+func (h *AssistantHistoryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	conversationID := Param(r, "id")
+	if conversationID == "" {
+		writeJSONError(w, http.StatusBadRequest, "Missing conversation ID")
+		return
+	}
+
+	history, err := h.store.LoadAssistantHistory(conversationID)
+	if err != nil {
+		writeJSONError(w, http.StatusNotFound, "Conversation not found")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(history)
+}
+
+// AssistantDeleteHandler handles DELETE /api/assistant/history/{id}
+type AssistantDeleteHandler struct {
+	store store.AppStore
+}
+
+func NewAssistantDeleteHandler(store store.AppStore) *AssistantDeleteHandler {
+	return &AssistantDeleteHandler{store: store}
+}
+
+func (h *AssistantDeleteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	conversationID := Param(r, "id")
+	if conversationID == "" {
+		writeJSONError(w, http.StatusBadRequest, "Missing conversation ID")
+		return
+	}
+
+	if err := h.store.DeleteAssistantConversation(conversationID); err != nil {
+		writeJSONError(w, http.StatusInternalServerError, "Failed to delete conversation")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }

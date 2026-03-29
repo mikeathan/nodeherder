@@ -105,7 +105,11 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 	}
 
 	// setup
-	h.mqtt.Connect()
+	err := h.mqtt.Connect()
+	if err != nil {
+		utils.LogErrorf("Failed to connect to MQTT broker: %v", err)
+		return nil
+	}
 	h.mqtt.Publish("bridge/devices", nil) //zigbee2mqtt/ get devices for setup stuff
 	return h
 }
@@ -481,6 +485,23 @@ func (h *HubController) registerEventHubEvents() {
 
 		utils.SetLogLevel(req.Level)
 		utils.LogInfof("Remote logger enabled: %v, level: %s", req.EnableRemoteLogger, req.Level)
+		return nil
+	})
+
+	h.eventHub.OnSaveAssistantConfig(func(p interface{}) error {
+		req := &settings.AssistantConfig{}
+		bytes, _ := json.Marshal(p)
+		err := json.Unmarshal(bytes, &req)
+		if err != nil {
+			return errors.New("save assistant config failed. Invalid payload type")
+		}
+
+		_, err = appconfig.SaveAssistantConfig(req)
+		if err != nil {
+			return err
+		}
+
+		utils.LogInfof("Assistant config updated: Url=%s", req.Url)
 		return nil
 	})
 

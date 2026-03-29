@@ -41,7 +41,7 @@ func CreateStore() store.AppStore {
 
 	defer repo.Close()
 
-	store, _ := store.NewAppStore(repo, &metricsRepo, configCache)
+	store, _ := store.NewAppStore(repo, &metricsRepo, configCache, nil)
 	return store
 }
 
@@ -65,7 +65,7 @@ func CreateStoreWithTasks(tasks []settings.Task) (store.AppStore, func(), error)
 	}
 
 	defer repo.Close()
-	store, _ := store.NewAppStore(repo, &metricsRepo, configCache)
+	store, _ := store.NewAppStore(repo, &metricsRepo, configCache, nil)
 	return store, cleanup, nil
 }
 
@@ -97,7 +97,7 @@ func CreateFileStore() (store.AppStore, func(), error) {
 	}
 
 	defer repo.Close()
-	store, _ := store.NewAppStore(repo, metricsRepo, configCache)
+	store, _ := store.NewAppStore(repo, metricsRepo, configCache, nil)
 	return store, cleanup, nil
 }
 
@@ -136,7 +136,7 @@ func CreateFileStoreWithAppConfig(appConfig *settings.AppConfig, mockClock *mock
 	}
 	defer repo.Close()
 
-	store, _ := store.NewAppStore(repo, metricsRepo, configCache)
+	store, _ := store.NewAppStore(repo, metricsRepo, configCache, nil)
 	return store, cleanup, nil
 }
 
@@ -149,7 +149,7 @@ func CreateStoreFromDeviceRepo(repo devices.Repository) store.AppStore {
 		return nil
 	}
 
-	store, _ := store.NewAppStore(repo, &metricsRepo, configCache)
+	store, _ := store.NewAppStore(repo, &metricsRepo, configCache, nil)
 	return store
 }
 
@@ -183,7 +183,7 @@ func CreateStoreFromRepos(deviceRepo devices.Repository, metricsRepo metrics.Rep
 		return nil
 	}
 
-	store, _ := store.NewAppStore(deviceRepo, metricsRepo, configCache)
+	store, _ := store.NewAppStore(deviceRepo, metricsRepo, configCache, nil)
 	return store
 }
 

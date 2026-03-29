@@ -13,6 +13,7 @@ export type HubConfigType = {
   history: HistorySettingsType;
   logger: LoggerSettingsType;
   mcp: MCPSettingsType;
+  assistant: AssistantSettingsType;
   dashboardGroups: DashboardGroups;
 };
 
@@ -22,6 +23,8 @@ export type HistorySettingsType = {
   sleepTimeout: TimeInterval;
   expireAt: TimeInterval;
 };
+
+export type AssistantSettingsPropsType = keyof AssistantSettingsType;
 
 export type LoggerSettingsTypePropsType = keyof LoggerSettingsType;
 
@@ -33,6 +36,10 @@ export type LoggerSettingsType = {
 
 export type MCPSettingsType = {
   enabled: boolean;
+};
+
+export type AssistantSettingsType = {
+  url: string;
 };
 
 export type BridgeSettingsType = {
@@ -65,7 +72,9 @@ export type DeviceGroup = {
 
 export type MCPStatusType = {
   running: boolean;
+  enabled: boolean;
   name: string;
   version: string;
   connectedClients: number;
 };
+

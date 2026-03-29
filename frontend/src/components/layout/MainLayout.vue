@@ -21,7 +21,7 @@
   const onPermitJoinStatusUpdated = (status: boolean) => {
     isPermitJoinActive.value = status;
   };
- 
+
   const { sideNavigationItems, topNavigationItems, isPermitJoinActive } = useSideNavigationItems();
   const { isMobile } = useWindowSize();
 
@@ -45,8 +45,11 @@
         } catch (err) {
           console.error('Failed to init hub state:', err);
           store.commit('ws/setConnectionStatus', 'disconnected');
+          return;
         }
       }
+
+      store.dispatch('hub/loadMCPStatus');
     };
 
     if (authedAtMount) {

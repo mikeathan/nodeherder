@@ -4,7 +4,6 @@ import { store } from '@/store';
 import { getAllowedOrigins } from '@/utils/env.utils';
 import { UserSession } from '@/types/auth.type';
 
-const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
 export async function getOAuthUrl(): Promise<string> {
   const res = await post(`auth/login`);

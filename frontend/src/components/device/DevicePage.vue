@@ -42,14 +42,13 @@
       </div>
     </template>
     <template #content>
-      <div class="col-12 md:col-9">
-        <Tabs v-model:value="activeTab" class="flex flex-wrap gap-2">
+      <div class="col-12 md:col-12">
+        <Tabs v-model:value="activeTab">
           <TabList>
             <Tab
               v-for="tab in deviceTabComponents"
               :key="tab.title"
-              :value="tab.value"
-              class="flex-1 text-center p-2 md:flex-none">
+              :value="tab.value">
               {{ tab.title }}
             </Tab>
           </TabList>

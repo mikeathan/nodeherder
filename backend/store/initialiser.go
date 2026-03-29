@@ -16,7 +16,11 @@ func Create(ctx context.Context) (AppStore, error) {
 		return nil, fmt.Errorf("loading metrics repository failed: %v", err.Error())
 	}
 
-	// To Refactor
+	assistantRepo, err := repository.NewAssistantRepo()
+	if err != nil {
+		return nil, fmt.Errorf("loading assistant repository failed: %v", err.Error())
+	}
+
 	configRepo, err := repository.NewFileSettingsRepo()
 	if err != nil {
 		return nil, fmt.Errorf("loading settings repository failed: %v", err.Error())
@@ -28,7 +32,6 @@ func Create(ctx context.Context) (AppStore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("loading settings cache failed: %v", err.Error())
 	}
-	///
 
-	return NewAppStore(devicesRepo, metricsRepo, configCache)
+	return NewAppStore(devicesRepo, metricsRepo, configCache, assistantRepo)
 }

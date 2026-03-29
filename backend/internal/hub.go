@@ -17,11 +17,10 @@ import (
 	"node-herder/internal/ws"
 	"node-herder/store"
 	"node-herder/utils"
-	"os"
 	"time"
 )
 
-func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store store.AppStore, mcpServer *mcpserver.Server, ctx context.Context) *api.ApiServer {
+func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store store.AppStore, mcpServer *mcpserver.Server, ctx context.Context) (*api.ApiServer, error) {
 
 	router := api.NewRouter()
 	fservice := fs.NewFileSystem()
@@ -29,9 +28,7 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	// Build OAuth callback URL from env with port substitution
 	callbackURL, err := utils.GetAuthCallbackURL(port)
 	if err != nil {
-		fatalErr := fmt.Errorf("failed to get OAuth callback URL: %w", err)
-		fmt.Fprintln(os.Stderr, fatalErr)
-		os.Exit(1)
+		return nil, fmt.Errorf("failed to get OAuth callback URL: %w", err)
 	}
 
 	authProvider := auth.NewProvider(auth.WithDefaultJWTConfig(), callbackURL)
@@ -49,8 +46,12 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	router.POST("/api/collect", api.NewDataCollectorHandler(hub))
 	router.POST("/api/logfile", api.NewLogFileHandler(fservice))
 	router.POST("/api/automation/trigger", api.NewAutomationTriggerHandler(hub, 1*time.Second))
+	router.POST("/api/assistant/message", api.NewAssistantMessageHandler(store))
 	router.GET("/api/listlogs", api.NewListFileLogsHandler(fservice))
 	router.GET("/api/hubstate", api.NewHubStateHandler(store, 15*time.Minute))
+	router.GET("/api/assistant/conversations", api.NewAssistantConversationsHandler(store))
+	router.GET("/api/assistant/history/:id", api.NewAssistantHistoryHandler(store))
+	router.DELETE("/api/assistant/history/:id", api.NewAssistantDeleteHandler(store))
 
 	// public routes
 	router.PublicGET("/api/context/devices", api.NewDeviceContextHandler(store, 1*time.Second))
@@ -60,8 +61,8 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 	if mcpServer != nil {
 		sseHandler := mcphttp.NewSSEHandler(mcpServer)
 		router.PublicPOST("/api/mcp", mcphttp.NewMCPHandler(mcpServer, sseHandler))
+		router.PublicGET("/api/mcp", sseHandler)
 		router.PublicGET("/api/mcp/events", sseHandler)
-
 	}
 
 	// authentication routes
@@ -73,10 +74,10 @@ func registerApi(port int, ws ws.EventHub, hub *controllers.HubController, store
 		api.WithRouter(router),
 	)
 
-	return apiServer
+	return apiServer, nil
 }
 
-func Register(port int, store store.AppStore, ctx context.Context) *api.ApiServer {
+func Register(port int, store store.AppStore, ctx context.Context) (*api.ApiServer, error) {
 
 	ws := ws.NewWsHub()
 	ws.Start()
@@ -100,6 +101,9 @@ func Register(port int, store store.AppStore, ctx context.Context) *api.ApiServe
 	}
 	controllerOpts = append(controllerOpts, controllers.WithMCPServer(mcpServer))
 	hub := controllers.RegisterHubController(ws, store, mqtt, controllerOpts...)
+	if hub == nil {
+		return nil, fmt.Errorf("failed to register hub controller")
+	}
 
 	return registerApi(port, ws, hub, store, mcpServer, ctx)
 }

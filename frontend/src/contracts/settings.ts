@@ -58,6 +58,9 @@ export function createAppconfig(): AppConfig {
         sleepTimeout: { value: 0, unit: 'days' },
         expireAt: { value: 0, unit: 'days' },
       },
+      assistant: {
+        url: '',
+      },
       logger: {
         enableRemoteLogger: false,
         level: 'info',

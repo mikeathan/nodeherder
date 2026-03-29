@@ -1,22 +1,17 @@
 <script setup lang="ts">
   import { ref } from 'vue';
-  import { store } from '@/store';
   import { isApiResponse } from '@/contracts/api';
+  import { useAlerts } from '@/composables/useAlerts';
 
   const props = defineProps<{
     label: string;
     icon?: string;
+    severity?: string;
     action: () => Promise<any>;
   }>();
 
   const isLoading = ref(false);
-
-  function showSuccess() {
-    store.dispatch('alerts/showSuccess');
-  }
-  function showError(error: string) {
-    store.dispatch('alerts/showError', error);
-  }
+  const { showSuccess, showError } = useAlerts();
 
   function handleResponse(response: any) {
     if (isApiResponse(response) && !response.success) {
@@ -48,7 +43,7 @@
     :label="props.label"
     :icon="props.icon"
     size="small"
-    severity="primary"
+    :severity="props.severity || 'primary'"
     :loading="isLoading"
     :disabled="isLoading"
     @click="handleClick" />

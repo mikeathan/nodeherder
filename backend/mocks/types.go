@@ -9,6 +9,7 @@ import (
 	mcpserver "node-herder/internal/mcp/server"
 	metrics "node-herder/internal/metrics/domain"
 	"node-herder/internal/ws"
+	"node-herder/models/assistant"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
 	"node-herder/models/logging"
@@ -175,6 +176,10 @@ func (w *MockEventHub) OnSaveHistoryConfig(func(payload interface{}) error) {
 
 func (w MockEventHub) OnSaveLoggerConfig(action func(payload interface{}) error) {
 	fmt.Println("MockEventHub: OnSaveLoggerConfig")
+}
+
+func (w MockEventHub) OnSaveAssistantConfig(action func(payload interface{}) error) {
+	fmt.Println("MockEventHub: OnSaveAssistantConfig")
 }
 
 func (h *MockEventHub) OnSaveDashboardGroup(action func(payload interface{}) error) {
@@ -471,6 +476,10 @@ func (w *NopWsServer) OnDeleteDeviceConfigOverride(action func(payload interface
 }
 func (w NopWsServer) OnSaveLoggerConfig(action func(payload interface{}) error) {
 	fmt.Println("WsServer: Mocked OnSaveLoggerConfig")
+}
+
+func (w NopWsServer) OnSaveAssistantConfig(action func(payload interface{}) error) {
+	fmt.Println("WsServer: Mocked OnSaveAssistantConfig")
 }
 
 func (h *NopWsServer) OnSaveDashboardGroup(action func(payload interface{}) error) {
@@ -893,6 +902,26 @@ func (s *NopAppStore) ResolveFriendlyName(friendlyName string) string {
 	return ""
 }
 
+func (s *NopAppStore) AppendAssistantMessage(conversationID string, role assistant.Role, content string) error {
+	fmt.Println("Mocked store AppendAssistantMessage")
+	return nil
+}
+
+func (s *NopAppStore) LoadAssistantHistory(conversationID string) (*assistant.Conversation, error) {
+	fmt.Println("Mocked store LoadAssistantHistory")
+	return nil, nil
+}
+
+func (s *NopAppStore) ListAssistantConversations() ([]assistant.ConversationSummary, error) {
+	fmt.Println("Mocked store ListAssistantConversations")
+	return nil, nil
+}
+
+func (s *NopAppStore) DeleteAssistantConversation(conversationID string) error {
+	fmt.Println("Mocked store DeleteAssistantConversation")
+	return nil
+}
+
 // Mock engine
 type MockAutomationEngine[T automations.Automation] struct {
 	cache    map[string]automations.Automation
@@ -1250,4 +1279,64 @@ func (m *MockMCPStatusProvider) Running() bool {
 
 func (m *MockMCPStatusProvider) SetOnStatusChange(cb func()) {
 	// no-op for mock
+}
+// Mock Assistant Repository
+type MockAssistantRepo struct {
+	Conversations     map[string]*assistant.Conversation
+	OnSave            func(conv *assistant.Conversation) error
+	OnLoad            func(id string) (*assistant.Conversation, error)
+	OnList            func() ([]assistant.ConversationSummary, error)
+	OnDelete          func(id string) error
+	SaveCalled        bool
+	SavedConversation *assistant.Conversation
+}
+
+func NewMockAssistantRepo() *MockAssistantRepo {
+	return &MockAssistantRepo{
+		Conversations: make(map[string]*assistant.Conversation),
+	}
+}
+
+func (m *MockAssistantRepo) SaveConversation(conv *assistant.Conversation) error {
+	m.SaveCalled = true
+	m.SavedConversation = conv
+	if m.OnSave != nil {
+		return m.OnSave(conv)
+	}
+	m.Conversations[conv.ID] = conv
+	return nil
+}
+
+func (m *MockAssistantRepo) LoadConversation(id string) (*assistant.Conversation, error) {
+	if m.OnLoad != nil {
+		return m.OnLoad(id)
+	}
+	conv, ok := m.Conversations[id]
+	if !ok {
+		return nil, assistant.ErrNotFound
+	}
+	return conv, nil
+}
+
+func (m *MockAssistantRepo) ListConversations() ([]assistant.ConversationSummary, error) {
+	if m.OnList != nil {
+		return m.OnList()
+	}
+	var summaries []assistant.ConversationSummary
+	for _, conv := range m.Conversations {
+		summaries = append(summaries, conv.Summary())
+	}
+	return summaries, nil
+}
+
+func (m *MockAssistantRepo) DeleteConversation(id string) error {
+	if m.OnDelete != nil {
+		return m.OnDelete(id)
+	}
+	delete(m.Conversations, id)
+	return nil
+}
+
+func (m *MockAssistantRepo) Close() error {
+	return nil
 }

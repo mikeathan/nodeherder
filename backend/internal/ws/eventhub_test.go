@@ -65,7 +65,6 @@ func TestHubNewClientEventsAreReceived(t *testing.T) {
 			}
 		}
 
-
 		if !reflect.DeepEqual(gotDataMap, expectedMessage) {
 			t.Fatalf("Expected message %+v', got '%+v'", expectedMessage, gotDataMap)
 		}
@@ -773,6 +772,65 @@ func TestSaveConfigMessage(t *testing.T) {
 
 	reqBytes, _ := json.Marshal(modifiedHistory)
 	wsData := &ws.EventMessage{Type: ws.SaveHistoryConfig, Payload: reqBytes}
+	msg, err := wsData.MarshalJSON()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	SendMessage(t, wsConn, msg)
+
+	_, m, err := wsConn.ReadMessage()
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+
+	var event ws.EventMessage
+	err = json.Unmarshal(m, &event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if event.Type != ws.OperationSuccess {
+		t.Fatalf("Expected type %v', got '%v'", ws.OperationSuccess, event.Type)
+	}
+}
+
+func TestSaveAssistantConfigMessage(t *testing.T) {
+
+	inputAppConfig := createAppconfig()
+
+	modifiedAssistant := inputAppConfig.Hub.Assistant
+	modifiedAssistant.Url = "http://localhost:8080/v1/chat/completions"
+
+	wsHub := ws.NewWsHub()
+	wsHub.Start()
+
+	wsHub.OnSaveAssistantConfig(func(p interface{}) error {
+
+		bytes := []byte(p.(string))
+		payload := &settings.AssistantConfig{}
+
+		err := json.Unmarshal(bytes, &payload)
+		if err != nil {
+			fmt.Println(err.Error())
+			return errors.New("save assistant config failed. Invalid payload type")
+		}
+
+		if payload.Url != modifiedAssistant.Url {
+			t.Fatalf("Expected assistant Url %v', got '%v'", modifiedAssistant.Url, payload.Url)
+		}
+
+		return nil
+	})
+
+	h := api.NewWsHandler(wsHub)
+	s, wsConn := NewTestWsServer(t, h)
+
+	defer s.Close()
+	defer wsConn.Close()
+
+	reqBytes, _ := json.Marshal(modifiedAssistant)
+	wsData := &ws.EventMessage{Type: ws.SaveAssistantConfig, Payload: reqBytes}
 	msg, err := wsData.MarshalJSON()
 	if err != nil {
 		t.Fatal(err.Error())

@@ -2,119 +2,73 @@
   import { store } from '../../store/index';
   import { computed } from 'vue';
 
-  const connectionStatus = computed(() => {
-    return store.getters['ws/getConnectionStatus'] || 'disconnected';
+  const connectionStatus = computed(() => store.getters['ws/getConnectionStatus'] || 'disconnected');
+  const mcpStatus = computed(() => store.getters['hub/mcpStatus']());
+  
+  const isMcpRunning = computed(() => mcpStatus.value?.running);
+  const isMcpConnected = computed(() => isMcpRunning.value && mcpStatus.value.connectedClients > 0);
+
+  const tooltip = computed(() => {
+    let text = `Hub: ${connectionStatus.value}`;
+    if (isMcpRunning.value) {
+      const clientCount = mcpStatus.value.connectedClients || 0;
+      text += ` | MCP: ${isMcpConnected.value ? 'Active' : 'Idle'} (${clientCount} clients)`;
+    }
+    return text;
   });
 </script>
 
 <template>
-  <div class="status-indicator" :class="connectionStatus" :title="`Status: ${connectionStatus}`">
-    <div class="dot"></div>
-    <div class="ring"></div>
-  </div>
+  <div 
+    class="status-dot" 
+    :class="[
+      connectionStatus, 
+      { 'mcp-connected': isMcpConnected, 'mcp-idle': isMcpRunning && !isMcpConnected }
+    ]" 
+    :title="tooltip"
+  ></div>
 </template>
 
 <style scoped>
-  .status-indicator {
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    background-color: #64748b; /* Neutral Gray */
     position: relative;
-    width: 12px;
-    height: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-shrink: 0;
+    /* Ensure space for the halo */
+    margin: 4px; 
   }
 
-  .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: var(--text-color-secondary);
-    z-index: 2;
-    transition: background-color 0.3s ease;
+  /* Core WS Connection States */
+  .status-dot.connected { background-color: #22c55e; }    /* Green */
+  .status-dot.disconnected { background-color: #ef4444; } /* Red */
+  .status-dot.connecting { background-color: #eab308; animation: blink 0.8s infinite alternate; }
+
+  /* STATE 1: MCP Connected & Active (Solid Blue Halo) */
+  .status-dot.mcp-connected {
+    box-shadow: 
+      0 0 0 2px #121212,   /* Match your header BG color */
+      0 0 0 3.5px #3b82f6; /* Solid Blue */
   }
 
-  .ring {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    opacity: 0;
-    z-index: 1;
+  /* STATE 2: MCP Running but Idle/Searching (Pulsing Gray/Amber Halo) */
+  .status-dot.mcp-idle {
+    box-shadow: 
+      0 0 0 2px #121212, 
+      0 0 0 3.5px rgba(203, 213, 225, 0.4); /* Faint Gray */
+    animation: mcp-searching 2s infinite ease-in-out;
   }
 
-  /* Connected State */
-  .status-indicator.connected .dot {
-    background-color: #4ade80; /* bright green */
-    box-shadow: 0 0 4px #4ade80;
+  @keyframes mcp-searching {
+    0%, 100% { box-shadow: 0 0 0 2px #121212, 0 0 0 3px rgba(203, 213, 225, 0.3); }
+    50% { box-shadow: 0 0 0 2px #121212, 0 0 0 4.5px rgba(234, 179, 8, 0.5); } /* Pulse to Amber */
   }
 
-  .status-indicator.connected .ring {
-    border: 2px solid #4ade80;
-    animation: pulse-green 2s infinite;
-  }
-
-  /* Disconnected State */
-  .status-indicator.disconnected .dot {
-    background-color: #f87171; /* red */
-    box-shadow: 0 0 2px #f87171;
-  }
-
-  .status-indicator.disconnected .ring {
-    border: 2px solid #f87171;
-    animation: pulse-red 2s infinite; /* Slower pulse for error/disconnected? or just static? */
-    animation-duration: 3s;
-  }
-
-  /* Connecting State */
-  .status-indicator.connecting .dot {
-    background-color: #fbbf24; /* amber */
-  }
-
-  .status-indicator.connecting .ring {
-    border: 2px solid #fbbf24;
-    border-top-color: transparent;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes pulse-green {
-    0% {
-      transform: translate(-50%, -50%) scale(0.8);
-      opacity: 0.8;
-    }
-    70% {
-      transform: translate(-50%, -50%) scale(2);
-      opacity: 0;
-    }
-    100% {
-      transform: translate(-50%, -50%) scale(0.8);
-      opacity: 0;
-    }
-  }
-
-  @keyframes pulse-red {
-    0% {
-      transform: translate(-50%, -50%) scale(0.8);
-      opacity: 0.5;
-    }
-    50% {
-      transform: translate(-50%, -50%) scale(1.2);
-      opacity: 0;
-    }
-    100% {
-      transform: translate(-50%, -50%) scale(0.8);
-      opacity: 0;
-    }
-  }
-
-  @keyframes spin {
-    0% {
-      transform: translate(-50%, -50%) rotate(0deg);
-    }
-    100% {
-      transform: translate(-50%, -50%) rotate(360deg);
-    }
+  @keyframes blink {
+    from { opacity: 1; }
+    to { opacity: 0.5; }
   }
 </style>

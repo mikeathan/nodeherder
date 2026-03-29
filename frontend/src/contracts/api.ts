@@ -1,10 +1,11 @@
 import { ApiResponse } from '@/types/api.type';
+import { getEnv } from '@/config/env';
 
 export function isApiResponse<T>(res: any): res is ApiResponse<T> {
   return typeof res === 'object' && res !== null;
 }
 
-const baseUrl = import.meta.env.VITE_API_BASE_URL;
+const baseUrl = getEnv('VITE_API_BASE_URL');
 
 export interface FetchOptions extends RequestInit {
   headers?: HeadersInit;

@@ -13,6 +13,7 @@ import (
 	metricsquery "node-herder/internal/metrics/query"
 	"node-herder/internal/ratelimiter"
 	"node-herder/mocks"
+	"node-herder/models/assistant"
 	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
@@ -806,7 +807,7 @@ func createMetricsQueryTestStore(t *testing.T) (store.AppStore, metricsdomain.Re
 		t.Fatalf("failed to create config cache: %v", err)
 	}
 
-	appStore, err := store.NewAppStore(deviceRepo, metricsRepo, configCache)
+	appStore, err := store.NewAppStore(deviceRepo, metricsRepo, configCache, nil)
 	if err != nil {
 		os.Remove(tempfile)
 		t.Fatalf("failed to create store: %v", err)
@@ -986,5 +987,165 @@ func TestDeviceContextHandler_RateLimit(t *testing.T) {
 	handler.ServeHTTP(w2, req)
 	if w2.Code != http.StatusTooManyRequests {
 		t.Fatalf("expected second call 429, got %d", w2.Code)
+	}
+}
+
+func TestAssistantConversationsHandler(t *testing.T) {
+	mockRepo := mocks.NewMockAssistantRepo()
+	s, cleanup := utils_test.CreateAssistantStore(t, mockRepo, nil)
+	defer cleanup()
+
+	// Add some mock data
+	now := time.Now()
+	conv := assistant.NewConversation("conv-1", "hello title", now)
+	mockRepo.Conversations["conv-1"] = conv
+
+	handler := api.NewAssistantConversationsHandler(s)
+	req := httptest.NewRequest(http.MethodGet, "/api/assistant/conversations", nil)
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d", w.Code)
+	}
+
+	var resp map[string][]assistant.ConversationSummary
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	summaries, ok := resp["conversations"]
+	if !ok {
+		t.Fatalf("expected 'conversations' key in response")
+	}
+
+	if len(summaries) != 1 || summaries[0].ID != "conv-1" {
+		t.Errorf("unexpected conversations payload: %+v", summaries)
+	}
+}
+
+func TestAssistantHistoryHandler(t *testing.T) {
+	mockRepo := mocks.NewMockAssistantRepo()
+	s, cleanup := utils_test.CreateAssistantStore(t, mockRepo, nil)
+	defer cleanup()
+
+	now := time.Now()
+	conv := assistant.NewConversation("conv-1", "my title", now)
+	mockRepo.Conversations["conv-1"] = conv
+
+	router := api.NewRouter()
+	router.GET("/api/assistant/history/:id", api.NewAssistantHistoryHandler(s))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/assistant/history/conv-1", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d", w.Code)
+	}
+
+	var resp assistant.Conversation
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	if resp.ID != "conv-1" {
+		t.Errorf("expected ID conv-1, got %s", resp.ID)
+	}
+}
+
+func TestAssistantHistoryHandler_NotFound(t *testing.T) {
+	mockRepo := mocks.NewMockAssistantRepo()
+	s, cleanup := utils_test.CreateAssistantStore(t, mockRepo, nil)
+	defer cleanup()
+
+	router := api.NewRouter()
+	router.GET("/api/assistant/history/:id", api.NewAssistantHistoryHandler(s))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/assistant/history/nonexistent", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 Not Found, got %d", w.Code)
+	}
+}
+
+func TestAssistantDeleteHandler(t *testing.T) {
+	mockRepo := mocks.NewMockAssistantRepo()
+	s, cleanup := utils_test.CreateAssistantStore(t, mockRepo, nil)
+	defer cleanup()
+
+	now := time.Now()
+	conv := assistant.NewConversation("conv-1", "delete me", now)
+	mockRepo.Conversations["conv-1"] = conv
+
+	router := api.NewRouter()
+	router.DELETE("/api/assistant/history/:id", api.NewAssistantDeleteHandler(s))
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/assistant/history/conv-1", nil)
+	w := httptest.NewRecorder()
+
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d", w.Code)
+	}
+
+	if len(mockRepo.Conversations) != 0 {
+		t.Error("expected conversation to be deleted")
+	}
+}
+
+func TestAssistantMessageHandler(t *testing.T) {
+	mockLLM := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"reply": "I am a mock assistant"}`))
+	}))
+	defer mockLLM.Close()
+
+	appCfg := settings.NewAppConfig()
+	appCfg.Hub.Assistant.Url = mockLLM.URL
+
+	mockRepo := mocks.NewMockAssistantRepo()
+	s, cleanup := utils_test.CreateAssistantStore(t, mockRepo, appCfg)
+	defer cleanup()
+
+	handler := api.NewAssistantMessageHandler(s)
+
+	payload := []byte(`{"conversation_id": "test-conv", "message": "ping"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/assistant/message", bytes.NewReader(payload))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d", w.Code)
+	}
+
+	// Verify both user and assistant messages were saved
+	if !mockRepo.SaveCalled {
+		t.Fatal("expected conversation to be saved")
+	}
+
+	savedConv, err := mockRepo.LoadConversation("test-conv")
+	if err != nil {
+		t.Fatalf("expected test-conv to exist, got err: %v", err)
+	}
+
+	if len(savedConv.Messages) != 2 {
+		t.Fatalf("expected 2 messages, got %d", len(savedConv.Messages))
+	}
+
+	if savedConv.Messages[0].Role != assistant.RoleUser || savedConv.Messages[0].Content != "ping" {
+		t.Errorf("unexpected user message: %+v", savedConv.Messages[0])
+	}
+	if savedConv.Messages[1].Role != assistant.RoleAssistant || savedConv.Messages[1].Content != "I am a mock assistant" {
+		t.Errorf("unexpected assistant message: %+v", savedConv.Messages[1])
 	}
 }

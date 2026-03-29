@@ -111,12 +111,24 @@ Devices can send data via HTTP POST to:
 POST /api/collect
 ```
 
+### Assistant Chat History
+
+The backend persists multi-conversation chat history for the assistant. Messages are intercepted during the LLM proxy flow and stored in BoltDB.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/assistant/message` | Send a message (proxied to LLM, both sides stored) |
+| GET | `/api/assistant/conversations` | List all conversations (title + count) |
+| GET | `/api/assistant/history/{id}` | Get full message history for a conversation |
+| DELETE | `/api/assistant/history/{id}` | Delete a conversation |
+
 ## Project Structure
 
 ```
 backend/
 ├── internal/
 │   ├── api/           # HTTP API handlers
+│   ├── assistant/     # Assistant chat history service
 │   ├── controllers/   # Business logic controllers
 │   ├── services/      # Service layer
 │   ├── mqtt/          # MQTT client and handlers
@@ -126,6 +138,7 @@ backend/
 │   ├── ratelimiter/   # API rate limiting
 │   └── hub.go         # Main hub/server
 ├── models/            # Data models
+│   └── assistant/     # Assistant domain types
 ├── repository/        # Data access layer
 ├── store/             # State management
 ├── utils/             # Utility functions
@@ -143,6 +156,7 @@ backend/
 - **MQTT Integration**: Connect to MQTT broker for device communication
 - **Metrics Storage**: Store and query device metrics using BoltDB
 - **Automation Engine**: Create rules and automations for devices
+- **Assistant Chat History**: Persistent, multi-conversation chat with LLM assistant
 - **WebSocket Updates**: Real-time updates to connected clients
 - **Rate Limiting**: API rate limiting for security
 - **Structured Logging**: Comprehensive logging with rotation
@@ -171,9 +185,9 @@ go test ./internal/api
 
 The backend uses BoltDB, an embedded key-value database, for storing:
 
-- Device metrics
-- Application state
-- Configuration data
+- Device metrics (`metrics.db`)
+- Application settings (`settings.db`)
+- Assistant chat history (`assistant.db`)
 
 Database files are stored in the directory specified by `DATA_DIR` (default: `data`).
 In Docker environments, this is typically mapped to `./backend/data`.

@@ -91,7 +91,7 @@ func (s *QueryService) Query(ctx context.Context, req query.MetricsQueryRequest)
 				query.ApplyLimitSortBy(collector, req.Limit, req.SortDesc)
 			}
 
-			value, err := buildDeviceQueryResponse(device.Id, req.Aggregation, req.AggregationValue, collector)
+			value, err := buildDeviceQueryResponse(device.Id, req.Aggregation, req.AggregationValue, collector, expose.Unit)
 			if err != nil {
 				return nil, err
 			}
@@ -108,7 +108,7 @@ func (s *QueryService) Query(ctx context.Context, req query.MetricsQueryRequest)
 	return &responses, nil
 }
 
-func buildDeviceQueryResponse(deviceID string, aggregation domain.AggregationType, aggregationValue any, expose domain.ExposeResult) (*query.MetricsQueryDeviceResponse, error) {
+func buildDeviceQueryResponse(deviceID string, aggregation domain.AggregationType, aggregationValue any, expose domain.ExposeResult, unit string) (*query.MetricsQueryDeviceResponse, error) {
 	value, timestamp, ok, err := query.AggregateExposeValue(aggregation, aggregationValue, expose)
 	if err != nil {
 		return nil, err
@@ -125,6 +125,7 @@ func buildDeviceQueryResponse(deviceID string, aggregation domain.AggregationTyp
 	return &query.MetricsQueryDeviceResponse{
 		DeviceId:      deviceID,
 		Value:         value,
+		Unit:          unit,
 		Timestamp:     timestamp,
 		FormattedTime: formattedTime,
 	}, nil

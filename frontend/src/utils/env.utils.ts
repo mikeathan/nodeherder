@@ -1,6 +1,7 @@
+import { getEnv } from '@/config/env';
+
 export function getAllowedOrigins(): string[] {
-  const envAny = import.meta.env as any;
-  const envOrigins = (envAny?.VITE_API_BASE_URL as string | undefined) || '';
+  const envOrigins = getEnv('VITE_API_BASE_URL');
 
   let allowed: string[] = [];
   if (envOrigins) {

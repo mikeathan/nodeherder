@@ -1,6 +1,6 @@
 {
   "name": "frontend",
-  "version": "0.12.13",
+  "version": "0.12.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -23,10 +23,27 @@
       "vue"
     ],
     "moduleNameMapper": {
+      "^@/config/env$": "<rootDir>/src/__tests__/mocks/env.ts",
       "^@/(.*)$": "<rootDir>/src/$1"
     },
     "transform": {
       "^.+\\.tsx?$": "ts-jest"
+    },
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/src/__tests__/mocks/"
+    ],
+    "setupFiles": [
+      "<rootDir>/jest.setup.js"
+    ],
+    "globals": {
+      "ts-jest": {
+        "diagnostics": {
+          "ignoreCodes": [
+            1343
+          ]
+        }
+      }
     }
   },
   "dependencies": {

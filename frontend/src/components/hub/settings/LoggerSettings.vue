@@ -21,9 +21,6 @@
 </script>
 
 <template>
-  <h3>Logger</h3>
-  <div class="pt-3" />
-
   <div class="grid grid-nogutter mt-2">
     <dl class="col-12 md:col-3 text-secondary">
       <dt>

@@ -10,7 +10,6 @@ const historySettings = computed(() => {
 
 
 function inputLostFocus(propName: any, propValue: any) {
-  console.log('inputLostFocus', propName, propValue);
   save(propName, propValue);
 }
 
@@ -22,8 +21,6 @@ function save(propName: HistorySettingsPropsType, propValue: any) {
 }
 </script>
 <template>
-  <h3>History</h3>
-  <div class="pt-3" />
   <div class="grid grid-nogutter" v-for="(interval, key) in historySettings" :key="key">
     <dl class="col-12 md:col-3 text-secondary">
       <dt>
