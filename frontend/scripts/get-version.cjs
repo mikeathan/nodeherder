@@ -27,7 +27,9 @@ function getAppVersion() {
     // Add -dev suffix for non-main branches to indicate development build
     try {
       const currentBranch = execSync('git branch --show-current').toString().trim();
-      if (currentBranch !== 'main' && currentBranch !== 'master') {
+      // If currentBranch is empty (detached HEAD, like when a tag is checked out), 
+      // we assume it's a release and skip adding -dev.
+      if (currentBranch && currentBranch !== 'main' && currentBranch !== 'master') {
         appVersion += '-dev';
       }
     } catch {
