@@ -56,13 +56,17 @@ case $ACTION in
     [[ "$STACK" == "backend" || "$STACK" == "all" ]] && docker compose -f docker-compose.backend.yml down
     [[ "$STACK" == "frontend" || "$STACK" == "all" ]] && docker compose -f docker-compose.frontend.yml down
 
+    echo "Getting version..."
+    VERSION=$(node frontend/scripts/get-version.cjs)
+    echo "✅ Using version: $VERSION"
+
     echo "Pulling latest images..."
     [[ "$STACK" == "backend" || "$STACK" == "all" ]] && docker compose -f docker-compose.backend.yml pull
     [[ "$STACK" == "frontend" || "$STACK" == "all" ]] && docker compose -f docker-compose.frontend.yml pull
 
     echo "Rebuilding images..."
-    [[ "$STACK" == "backend" || "$STACK" == "all" ]] && docker compose -f docker-compose.backend.yml build --pull --no-cache
-    [[ "$STACK" == "frontend" || "$STACK" == "all" ]] && docker compose -f docker-compose.frontend.yml build --pull --no-cache
+    [[ "$STACK" == "backend" || "$STACK" == "all" ]] && docker compose -f docker-compose.backend.yml build --pull --no-cache --build-arg APP_VERSION=$VERSION
+    [[ "$STACK" == "frontend" || "$STACK" == "all" ]] && docker compose -f docker-compose.frontend.yml build --pull --no-cache --build-arg APP_VERSION=$VERSION
 
     echo "Starting containers..."
     [[ "$STACK" == "backend" || "$STACK" == "all" ]] && docker compose -f docker-compose.backend.yml up -d

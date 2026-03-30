@@ -3,6 +3,11 @@ FROM node:20-alpine AS builder
 WORKDIR /frontend
 
 ARG MODE=production
+# APP_VERSION is passed in from manage-stack.sh via --build-arg.
+# It must be declared as ARG and then re-exported as ENV so that
+# vite.config.js can read it via process.env.APP_VERSION at build time.
+ARG APP_VERSION
+ENV APP_VERSION=${APP_VERSION}
 
 COPY package*.json ./
 RUN npm ci
