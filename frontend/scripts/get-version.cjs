@@ -3,45 +3,50 @@ const { readFileSync } = require('fs');
 const { join } = require('path');
 
 /**
- * Get the application version based on git and package.json
+ * Get the application version based on git or package.json
  * Priority:
  * 1. Git tag for current commit (clean version)
- * 2. Git describe output (nearest tag)
- * 3. package.json version (fallback)
+ * 2. package.json version (fallback)
  *
  * Adds '-dev' suffix for non-main branches
  */
 function getAppVersion() {
-  const packageJsonPath = join(process.cwd(), 'package.json');
-  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
-  let appVersion = packageJson.version;
+  let appVersion = '0.0.0-unknown';
 
+  // 1. Try to get version from Git first
   try {
-    // Get git describe output
     const gitVersion = execSync('git describe --tags --always').toString().trim();
-
     // Remove everything after the first dash (commit count and hash)
-    // v0.12.13-1-gfa05ab14 → v0.12.13
-    // v0.12.13 → v0.12.13
-    // fa05ab14 → fa05ab14 (no tags, just commit hash)
     const cleanVersion = gitVersion.replace(/-.*$/, '');
-
     // Remove leading 'v' if present
-    appVersion = cleanVersion.replace(/^v/, '');
+    const version = cleanVersion.replace(/^v/, '');
+
+    appVersion = version;
 
     // Check if we're on a feature branch (not main)
     // Add -dev suffix for non-main branches to indicate development build
     try {
       const currentBranch = execSync('git branch --show-current').toString().trim();
       if (currentBranch !== 'main' && currentBranch !== 'master') {
-        appVersion = appVersion + '-dev';
+        appVersion += '-dev';
       }
     } catch {
       // Couldn't determine branch, keep as-is
     }
+
+    return appVersion; // Got pure git version, return it
   } catch (error) {
-    // Fallback to package.json if git is not available
+    // Git is not available, proceed to fallback
+  }
+
+  // 2. Fallback to package.json
+  try {
+    const packageJsonPath = join(__dirname, '..', 'package.json');
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+    appVersion = packageJson.version;
     console.log('Using package.json version:', appVersion);
+  } catch (e) {
+    console.log('Using fallback version:', appVersion);
   }
 
   return appVersion;

@@ -7,7 +7,7 @@ import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
 const { getAppVersion } = require('./scripts/get-version.cjs');
-const appVersion = getAppVersion();
+const appVersion = process.env.APP_VERSION || getAppVersion();
 
 export default defineConfig({
   plugins: [
