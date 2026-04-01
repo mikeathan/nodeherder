@@ -25,7 +25,6 @@
 
   const { menuItems, logoItem } = useMenuItems(props.items);
   const { isMobile } = useWindowSize();
-
 </script>
 
 <template>
@@ -75,6 +74,19 @@
     user-select: none;
     pointer-events: none;
     opacity: 0.7;
+    white-space: nowrap;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  @media (max-width: 768px) {
+    .app-version {
+      font-size: 0.75rem;
+      max-width: 60px;
+    }
+    .app-info {
+      gap: 0.5rem;
+    }
   }
   .action-icon {
     font-size: 1rem;
