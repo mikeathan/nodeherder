@@ -124,9 +124,9 @@ func TestBoltKeyValueDatabase_Prune(t *testing.T) {
 
 	err = db.Prune(func(key []byte) (bool, error) {
 		if string(key) == "k1" {
-			return true, nil 
+			return true, nil
 		}
-		return false, nil 
+		return false, nil
 	})
 	if err != nil {
 		t.Fatalf("Prune failed: %v", err)
@@ -146,5 +146,20 @@ func TestBoltKeyValueDatabase_Prune(t *testing.T) {
 	}
 	if !exists {
 		t.Errorf("Expected k2 to still exist in sub1")
+	}
+}
+
+func TestInitializationFailureReleasesDatabase(t *testing.T) {
+	filename := filepath.Join(t.TempDir(), "test.db")
+	if db, err := NewBoltKeyValueDatabase(filename, ""); err == nil {
+		_ = db.Close()
+		t.Fatal("empty bucket name should fail initialization")
+	}
+	db, err := NewBoltKeyValueDatabase(filename, "valid")
+	if err != nil {
+		t.Fatalf("failed initialization did not release database lock: %v", err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
 	}
 }

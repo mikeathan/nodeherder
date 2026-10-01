@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"node-herder/utils"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -34,8 +35,8 @@ func createTask(id string, eventId int, processFunc func(task utils.Task) error)
 
 func TestAsyncFuncProcessingAllJobs(t *testing.T) {
 	wg := &sync.WaitGroup{}
-	ticker := time.NewTicker(10 * time.Second)
-	ctx, _ := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	procesFunc := func(task utils.Task) error {
 
@@ -48,8 +49,11 @@ func TestAsyncFuncProcessingAllJobs(t *testing.T) {
 
 	worker := utils.NewWorkerPool(1, ctx)
 	worker.Run()
+	t.Cleanup(func() {
+		cancel()
+		worker.Wait()
+	})
 
-	var processed = false
 	numOfActivies := 3
 	numOfTasks := 10
 	totalJobs := numOfActivies * numOfTasks
@@ -72,16 +76,17 @@ func TestAsyncFuncProcessingAllJobs(t *testing.T) {
 		}()
 	}
 
+	completed := make(chan struct{})
 	go func() {
 		wg.Wait()
 		timeTrack(startTime, "")
-		processed = true
-		ticker.Reset(time.Microsecond)
+		close(completed)
 	}()
 
-	<-ticker.C
-	if !processed {
-		t.Error("Failed to process all tasks")
+	select {
+	case <-completed:
+	case <-time.After(10 * time.Second):
+		t.Fatal("Failed to process all tasks")
 	}
 }
 
@@ -96,42 +101,65 @@ func TestCancelContextStopsWorker(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		var expectedFinishedJobs = testCase.numOfJobs
-		var finishedJobs = 0
+		var finishedJobs atomic.Int32
+		started := make(chan struct{}, expectedFinishedJobs)
+		release := make(chan struct{})
+		var releaseOnce sync.Once
+		releaseJobs := func() { releaseOnce.Do(func() { close(release) }) }
 
 		procesFunc := func(task utils.Task) error {
 			mockTask := task.(*mockTask)
-			for i := 0; i < 10; i++ {
-				time.Sleep(100 * time.Millisecond)
-			}
+			started <- struct{}{}
+			<-release
 			fmt.Printf("Job: %d finished\n", mockTask.EventId)
-			finishedJobs++
+			finishedJobs.Add(1)
 			return nil
 		}
 
 		ctx, cancelCtx := context.WithCancel(context.Background())
 		worker := utils.NewWorkerPool(expectedFinishedJobs, ctx)
 		worker.Run()
+		t.Cleanup(func() {
+			cancelCtx()
+			releaseJobs()
+			worker.Wait()
+		})
 		numOfTasks := 10
 
+		producerDone := make(chan struct{})
 		go func() {
+			defer close(producerDone)
 			for j := 1; j <= numOfTasks; j++ {
 				eventId := j
-				func() {
-					job := createTask("test", eventId, procesFunc)
-					fmt.Println("adding", eventId)
-					worker.AddTask(job)
-				}()
+				job := createTask("test", eventId, procesFunc)
+				if err := worker.AddTask(job); err != nil {
+					return
+				}
 			}
 		}()
 
-		go func() {
-			time.Sleep(1 * time.Second)
-			cancelCtx()
-		}()
+		deadline := time.NewTimer(5 * time.Second)
+		for i := 0; i < expectedFinishedJobs; i++ {
+			select {
+			case <-started:
+			case <-deadline.C:
+				t.Fatal("Workers did not start their initial tasks")
+			}
+		}
+		deadline.Stop()
+		cancelCtx()
+		// Drain the blocked producer before releasing tasks, so cancellation cannot
+		// race with another submission to a newly available worker.
+		select {
+		case <-producerDone:
+		case <-time.After(5 * time.Second):
+			t.Fatal("Cancellation did not unblock task submission")
+		}
+		releaseJobs()
 		worker.Wait()
 
-		if finishedJobs != expectedFinishedJobs {
-			t.Errorf("Not matching num of finished jobs: got %d want %d", finishedJobs, expectedFinishedJobs)
+		if got := int(finishedJobs.Load()); got != expectedFinishedJobs {
+			t.Errorf("Not matching num of finished jobs: got %d want %d", got, expectedFinishedJobs)
 		}
 		fmt.Println("finish ")
 	}

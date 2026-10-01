@@ -66,6 +66,7 @@ func NewBoltKeyValueDatabase(filename string, bucketName string) (KeyValueDataba
 	err = kv.init(bucketName)
 	if err != nil {
 		utils.LogErrorf("error initialising keyvalue database %v", err.Error())
+		_ = db.Close()
 		return nil, err
 	}
 

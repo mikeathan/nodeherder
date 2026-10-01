@@ -1,0 +1,8 @@
+.env
+.env.*
+.git
+nodeherder
+data
+logs
+.gocache
+*.log
