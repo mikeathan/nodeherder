@@ -37,6 +37,7 @@ type job struct {
 	lock            *sync.RWMutex
 	isRunning       *atomic.Bool
 	clock           utils.Clock
+	runID           uint64
 }
 
 func newJob(clock utils.Clock) *job {
@@ -71,9 +72,12 @@ func (j *job) Stop() {
 	}
 
 	j.isRunning.Store(false)
+	j.runID++
 }
 
 func (j *job) Start() error {
+	j.lock.Lock()
+	defer j.lock.Unlock()
 
 	if j.Error != nil {
 		utils.LogErrorf("Job %s failed: %s", j.Name, j.Error.Error())
@@ -90,16 +94,34 @@ func (j *job) Start() error {
 
 	j.StartAtDuration = startDuration
 
+	j.isRunning.Store(true)
+	j.runID++
+	runID := j.runID
 	j.timer = j.clock.AfterFunc(j.StartAtDuration, func() {
+		j.lock.RLock()
+		running := j.IsRunning() && j.runID == runID
+		j.lock.RUnlock()
+		if !running {
+			return
+		}
 		utils.LogInfo("Executing job ", j.Name)
 
 		err := j.Action()
 		if err != nil {
 			utils.LogErrorf("Job %s failed: %s", j.Name, err.Error())
+		}
+		// Stop is non-joining: a committed callback may finish, but it must not
+		// rearm its timer after cancellation or replacement.
+		j.lock.Lock()
+		defer j.lock.Unlock()
+		if j.runID != runID {
+			return
+		}
+		if err != nil {
 			j.Error = errors.Join(j.Error, err)
 		}
 
-		if j.RepeatEvery > 0 {
+		if j.IsRunning() && j.RepeatEvery > 0 {
 			nextStart, err := j.getStartAtDuration()
 			if err != nil {
 				j.Error = errors.Join(j.Error, err)
@@ -109,7 +131,6 @@ func (j *job) Start() error {
 		}
 	})
 
-	j.isRunning.Store(true)
 	return nil
 }
 
@@ -157,6 +178,7 @@ type Scheduler struct {
 	isRunning       *atomic.Bool
 	jobsLock        *sync.RWMutex
 	clock           utils.Clock
+	watchOnce       sync.Once
 }
 
 func NewScheduler(clock utils.Clock, ctx context.Context) *Scheduler {
@@ -170,19 +192,12 @@ func NewScheduler(clock utils.Clock, ctx context.Context) *Scheduler {
 		clock:           clock,
 	}
 
-	go func() {
-		<-ctx.Done()
-		utils.LogError("Scheduler context cancel requested")
-		err := s.Stop()
-		if err != nil {
-			utils.LogError("Error stopping scheduler: ", err)
-		}
-	}()
-
 	return s
 }
 
 func (s *Scheduler) FindJobByStartTime(startTime string) *job {
+	s.jobsLock.RLock()
+	defer s.jobsLock.RUnlock()
 	for _, job := range s.jobs {
 		if job.startAtTime == startTime {
 			return job
@@ -192,12 +207,7 @@ func (s *Scheduler) FindJobByStartTime(startTime string) *job {
 }
 
 func (s *Scheduler) JobByStartAt(startAt string) *job {
-	for _, job := range s.jobs {
-		if job.startAtTime == startAt {
-			return job
-		}
-	}
-	return nil
+	return s.FindJobByStartTime(startAt)
 }
 
 func (s *Scheduler) getCurrentJob() *job {
@@ -292,6 +302,11 @@ func (s *Scheduler) setRunning(vaue bool) {
 }
 
 func (s *Scheduler) Start() error {
+	s.jobsLock.Lock()
+	defer s.jobsLock.Unlock()
+	if err := s.ctx.Err(); err != nil {
+		return err
+	}
 
 	if s.IsRunning() {
 		utils.LogInfo("Scheduler already running")
@@ -303,51 +318,43 @@ func (s *Scheduler) Start() error {
 		return ErrNoJobsScheduled
 	}
 
-	s.jobsLock.Lock()
-
-	defer s.jobsLock.Unlock()
-
 	for _, job := range s.jobs {
 		err := job.Start()
 		if err != nil {
+			for _, started := range s.jobs {
+				started.Stop()
+			}
 			return err
 		}
 	}
 
 	s.setRunning(true)
+	// Preparation owns no watcher. Only a successfully started cancellable
+	// scheduler needs one; Background would otherwise leak a permanent goroutine.
+	if s.ctx.Done() != nil {
+		s.watchOnce.Do(func() { go func() { <-s.ctx.Done(); _ = s.Stop() }() })
+	}
 
 	utils.LogInfo("Scheduler started")
 	return nil
 }
 
 func (s *Scheduler) stopJobs() {
-	s.jobsLock.RLock()
-	defer s.jobsLock.RUnlock()
+	// Caller owns jobsLock.
 	for _, job := range s.jobs {
 		utils.LogDebug("Scheduler stopping job: ", job.Name)
 		job.Stop()
 	}
 }
 func (s *Scheduler) Stop() error {
-
-	if !s.IsRunning() {
-		return fmt.Errorf("Scheduler is not running")
-	}
-
-	if len(s.jobs) == 0 {
-		return fmt.Errorf("no jobs scheduled")
-	}
-
+	s.jobsLock.Lock()
+	defer s.jobsLock.Unlock()
+	wasRunning := s.IsRunning()
 	s.stopJobs()
-
-	// check if all jobs are stopped
-	for _, job := range s.jobs {
-		if job.IsRunning() {
-			return ErrJobIsRunning
-		}
-	}
-
 	s.setRunning(false)
+	if !wasRunning {
+		return ErrNotRunning
+	}
 	utils.LogInfo("Scheduler stopped")
 
 	return nil

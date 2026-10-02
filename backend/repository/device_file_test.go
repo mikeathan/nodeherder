@@ -1,10 +1,15 @@
 package repository_test
 
 import (
+	"compress/gzip"
+	"encoding/base64"
+	"io"
 	"node-herder/models/devices"
 	"node-herder/repository"
 	utils_test "node-herder/testing"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -276,4 +281,69 @@ func createMockBridgeInfo() []*devices.BridgeInfo {
 	dev2.Definition.Exposes = append(dev2.Definition.Exposes, e2)
 
 	return []*devices.BridgeInfo{dev1, dev2}
+}
+
+// Synthetic database created with Bolt v1.3.1 before the driver replacement.
+func copyLegacyBoltFixture(t *testing.T) string {
+	t.Helper()
+	const data = "H4sIAAAAAAAA/+zdvWoUURQH8LOTL4yJpBRswhRWEVSsAqKgCD6DSNjduQlDvmRnNySELXwSCx/AJ7Cx9wUsLK2MlViL2Rs/AgEDxhX392v+98K9M2fZ+pyJbDrn0buFo+Lb4v5oPxO/ms05l7PI+frz+y+XPnTeBAAAAAAAAAAAAAAAAAAAAHBurZxn9f9PnTpfnDp/cv/F3bdXP1759OqCywUAAAAAAAAAAAAAAAAAAID/0kk//9KY6wAAAAAAAAAAAAAAAAAAAIBJdvJ9/2LMdQAAAAAAAAAAAAAAAAAAAMAkm85Z/DQBYDki5iNiISJaEXE9n7sXEVtpo909uLGZDvJqr701SM2gc+usNxTHzxhZiojFPG0g399O/V7dvXP7Yn8mAAAAAAAAAAAAAAAAAAAA/NNmchYxdZytiLgZEbMRMcz7lxExFxHP8/5aK+Jy7ubv9OpqI5319NO9//MR8eD7rcc767tPDss6pbTWrqpeappytcxzAaq0V3dTuVKu9+q0U20drO20t1O5Wj6q9/uDXlrOB4ZPR4vmd2tYjIiHP+YPjG4flnV1/nevlGn/2W6TmnL1cDjsp6a/1hl0N1N/+g/9OwAAAAAAAAAAAAAAAAAAAEyK2ZxL+fv/Rd5Pja0iAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPj7vgYAAP//83mKIQAAAgA="
+	r, err := gzip.NewReader(base64.NewDecoder(base64.StdEncoding, strings.NewReader(data)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer r.Close()
+	decoded, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	filename := filepath.Join(t.TempDir(), "legacy.db")
+	if err := os.WriteFile(filename, decoded, 0600); err != nil {
+		t.Fatal(err)
+	}
+	return filename
+}
+
+func TestFileRepositoryLegacyReadWriteReopen(t *testing.T) {
+	filename := copyLegacyBoltFixture(t)
+	for pass := 0; pass < 2; pass++ {
+		repo, err := repository.NewFileDeviceRepoFromFile(filename)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = repo.Close() })
+		device, err := repo.FindDevice("legacy-device")
+		if err != nil || device == nil {
+			t.Fatalf("legacy device: %v", err)
+		}
+		want := "Fixture device"
+		if pass == 1 {
+			want = "Updated fixture"
+		}
+		if device.Id != "legacy-device" || device.FriendlyName != want || len(device.Exposes) != 0 {
+			t.Fatalf("legacy device changed: %+v", device)
+		}
+		bridge, err := repo.FindBridgeInfo("legacy-device")
+		if err != nil || bridge == nil || bridge.FriendlyName != "Fixture device" {
+			t.Fatalf("legacy bridge: %v, %v", bridge, err)
+		}
+		if pass == 0 {
+			device.FriendlyName = "Updated fixture"
+			if _, err := repo.Store(device.Id, device); err != nil {
+				t.Fatal(err)
+			}
+			newDevice := devices.NewDevice("new-device")
+			newDevice.FriendlyName = "New fixture"
+			if _, err := repo.Store(newDevice.Id, newDevice); err != nil {
+				t.Fatal(err)
+			}
+		} else {
+			added, err := repo.FindDevice("new-device")
+			if err != nil || added == nil || added.FriendlyName != "New fixture" {
+				t.Fatalf("new device after reopen: %v, %v", added, err)
+			}
+		}
+		if err := repo.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}
 }

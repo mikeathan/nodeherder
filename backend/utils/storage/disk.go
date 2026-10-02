@@ -40,8 +40,7 @@ func (d *JsonDiskStorage[T]) Initialize() ([]T, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
-	d.deleteCache()
-
+	next := make(map[string]T)
 	err := filepath.Walk(d.rootDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			utils.LogErrorf("Error loading item %s", err.Error())
@@ -50,23 +49,24 @@ func (d *JsonDiskStorage[T]) Initialize() ([]T, error) {
 		if info.IsDir() {
 			return nil
 		}
-
-		item, err := d.loadFile(path)
-		if err != nil {
-			// we dont want to return error as it will stop loading next item
-			utils.LogErrorf("Error loading item %s %s", path, err.Error())
+		if filepath.Ext(path) != ext {
 			return nil
 		}
 
+		item, err := d.loadFile(path)
+		if err != nil {
+			return fmt.Errorf("load %s: %w", path, err)
+		}
+
 		name := filenameWithoutExtension(path)
-		d.addToCache(name, item)
+		next[name] = item
 		return nil
 	})
 
 	if err != nil {
-		utils.LogErrorf("Error loading items %s", err.Error())
+		return nil, err
 	}
-
+	d.cache = next
 	return d.findAll(), nil
 }
 
@@ -182,6 +182,9 @@ func (d *JsonDiskStorage[T]) deleteFromCache(name string) {
 }
 
 func (d *JsonDiskStorage[T]) saveFile(item T, name string, pretty bool) error {
+	if err := os.MkdirAll(d.rootDir, os.ModePerm); err != nil {
+		return fmt.Errorf("create recipe directory: %w", err)
+	}
 	filePath := d.getFilePath(name)
 
 	data, err := json.Marshal(item)
@@ -196,16 +199,47 @@ func (d *JsonDiskStorage[T]) saveFile(item T, name string, pretty bool) error {
 		}
 	}
 
-	err = os.WriteFile(filePath, data, 0644)
+	return replaceJSONFile(filePath, data)
+}
+
+// Stage beside the destination so rename is atomic on the same filesystem.
+// Preserve existing permissions and valid symlink targets, as direct writes did.
+func replaceJSONFile(filePath string, data []byte) error {
+	if info, err := os.Lstat(filePath); err == nil && info.Mode()&os.ModeSymlink != 0 {
+		resolved, err := filepath.EvalSymlinks(filePath)
+		if err != nil {
+			return err
+		}
+		filePath = resolved
+	}
+	mode := os.FileMode(0644)
+	if info, err := os.Stat(filePath); err == nil {
+		mode = info.Mode().Perm()
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	temp, err := os.CreateTemp(filepath.Dir(filePath), ".automation-*.tmp")
 	if err != nil {
 		return err
 	}
-	return nil
+	defer os.Remove(temp.Name())
+	defer temp.Close()
+	if err := temp.Chmod(mode); err != nil {
+		return err
+	}
+	if _, err := temp.Write(data); err != nil {
+		return err
+	}
+	if err := temp.Sync(); err != nil {
+		return err
+	}
+	if err := temp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(temp.Name(), filePath)
 }
 
 func (d *JsonDiskStorage[T]) getFilePath(name string) string {
-
-	createDirIfNotExists(d.rootDir)
 	return filepath.Join(d.rootDir, fmt.Sprintf("%s%s", name, ext))
 }
 
@@ -227,13 +261,12 @@ func (d *JsonDiskStorage[T]) loadFile(filePath string) (T, error) {
 
 		return zeroValue[T](), err
 	}
+	defer jsonFile.Close()
 
 	data, err := io.ReadAll(jsonFile)
 	if err != nil {
 		return zeroValue[T](), err
 	}
-	defer jsonFile.Close()
-
 	if d.loader != nil {
 		return d.loader(data)
 	}
@@ -243,16 +276,6 @@ func (d *JsonDiskStorage[T]) loadFile(filePath string) (T, error) {
 		return zeroValue[T](), err
 	}
 	return item, nil
-}
-
-func createDirIfNotExists(name string) {
-	if _, err := os.Stat(name); errors.Is(err, os.ErrNotExist) {
-		err := os.MkdirAll(name, os.ModePerm)
-		if err != nil {
-			utils.LogError(fmt.Sprintf("Failed to create automations directory %s Error: %v", name, err))
-			panic(err)
-		}
-	}
 }
 
 func zeroValue[T any]() T {

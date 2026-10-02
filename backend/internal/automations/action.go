@@ -2,13 +2,14 @@ package automations
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
+	"node-herder/models/devices"
 	"node-herder/utils"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -67,36 +68,72 @@ func NewTriggerAction() *MqttTriggerAction {
 	}
 }
 
+func (a *MqttTriggerAction) MarshalJSON() ([]byte, error) {
+	a.configMu.RLock()
+	exposes := make([]*MqttTriggerActionExpose, len(a.Exposes))
+	if a.Exposes == nil {
+		exposes = nil
+	}
+	for i, expose := range a.Exposes {
+		if expose != nil {
+			copy := *expose
+			exposes[i] = &copy
+		}
+	}
+	wire := struct {
+		Id          string                     `json:"id"`
+		Type        ActionType                 `json:"type"`
+		Exposes     []*MqttTriggerActionExpose `json:"exposes"`
+		Delay       *utils.TimeInterval        `json:"delay,omitempty"`
+		PublishMode PublishMode                `json:"publishMode,omitempty"`
+	}{a.Id, a.Type, exposes, a.Delay, a.PublishMode}
+	a.configMu.RUnlock()
+	return json.Marshal(wire)
+}
+
 func (a *MqttTriggerAction) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
-	bridgeInfo, err := registrar.FindBridgeInfo(a.Id)
+	a.configMu.RLock()
+	id := a.Id
+	exposes := make([]MqttTriggerActionExpose, len(a.Exposes))
+	for i, property := range a.Exposes {
+		if property == nil {
+			a.configMu.RUnlock()
+			return fmt.Errorf("nil expose in action %s", id)
+		}
+		exposes[i] = *property
+	}
+	mode := a.PublishMode
+	invalidDelay := a.Delay != nil && a.Delay.Value == 0
+	a.configMu.RUnlock()
+	bridgeInfo, err := registrar.FindBridgeInfo(id)
 	if err != nil {
 		return err
 	}
-	for _, property := range a.Exposes {
+	data := make(map[string]any, len(exposes))
+	for i := range exposes {
+		property := &exposes[i]
 		sanitizedData, err := bridgeInfo.SanitiseProperty(property.Name, property.Data)
 		if err != nil {
-			return errors.Join(fmt.Errorf("failed to sanitize data for action %s: %s", a.Id, err.Error()))
+			return fmt.Errorf("failed to sanitize data for action %s: %w", id, err)
 		}
 		property.Data = sanitizedData
+		data[property.Name] = sanitizedData
 	}
 
-	if a.Delay != nil && a.Delay.Value == 0 {
+	if invalidDelay {
 		return fmt.Errorf("delay must be greater than zero")
 	}
 
-	// NOTE: to refactor and remove from model. add to some handler to perfom the job
-	a.operation = CreateTriggerOperation(a)
-
-	// common logic
-	device, err := registrar.LookupById(a.Id)
+	device, err := registrar.LookupById(id)
 	if err != nil {
-		return fmt.Errorf("configure action %s failed: %s ", a.Id, err.Error())
+		return fmt.Errorf("configure action %s failed: %w ", id, err)
 	}
-	// NOTE: if device is renamed we might need to register the automations again
-	a.friendlyName = device.FriendlyName
-	a.Id = device.Id
-	a.Client = client
-	a.registrar = registrar
+	a.configMu.Lock()
+	defer a.configMu.Unlock()
+	for i := range exposes {
+		a.Exposes[i].Data = exposes[i].Data
+	}
+	a.publishConfiguration(device, client, registrar, newTriggerOperation(data, mode))
 	return nil
 }
 
@@ -129,21 +166,31 @@ func (a *MqttStepAction) Execute(ctx AutomationContext) error {
 }
 
 func (a *MqttStepAction) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
-
-	device, err := registrar.LookupById(a.Id)
-	if err != nil {
-		return fmt.Errorf("configure action %s failed: %s ", a.Id, err.Error())
+	a.configMu.RLock()
+	id := a.Id
+	// Copy recipe only; never copy the base action's synchronization fields.
+	recipe := &MqttStepAction{Property: a.Property, Data: a.Data}
+	for _, step := range a.Steps {
+		if step == nil {
+			a.configMu.RUnlock()
+			return fmt.Errorf("nil step in action %s", id)
+		}
+		copy := *step
+		recipe.Steps = append(recipe.Steps, &copy)
 	}
-	expose := device.Exposes[a.Property]
-
-	// NOTE: to refactor and remove from model. add to some handler to perfom the job
-	a.operation = CreateStepOperation(expose, a)
-
-	// common logic
-	a.Id = device.Id
-	a.friendlyName = device.FriendlyName
-	a.Client = client
-	a.registrar = registrar
+	a.configMu.RUnlock()
+	device, err := registrar.LookupById(id)
+	if err != nil {
+		return fmt.Errorf("configure action %s failed: %w ", id, err)
+	}
+	expose, ok := device.GetExpose(recipe.Property)
+	if !ok {
+		return fmt.Errorf("configure action %s: property %s not found", id, recipe.Property)
+	}
+	operation := createStepOperation(expose, recipe, registrar)
+	a.configMu.Lock()
+	a.publishConfiguration(device, client, registrar, operation)
+	a.configMu.Unlock()
 
 	return nil
 }
@@ -166,48 +213,68 @@ func (a *MqttPresetCyclingAction) Execute(ctx AutomationContext) error {
 }
 
 func (a *MqttPresetCyclingAction) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
-
-	device, err := registrar.LookupById(a.Id)
+	a.configMu.RLock()
+	id, property := a.Id, a.Property
+	a.configMu.RUnlock()
+	device, err := registrar.LookupById(id)
 	if err != nil {
-		return fmt.Errorf("configure action %s failed: %s ", a.Id, err.Error())
+		return fmt.Errorf("configure action %s failed: %w ", id, err)
 	}
 
-	expose := device.Exposes[a.Property]
-
-	// NOTE: to refactor and remove from model. add to some handler to perfom the job
-	a.operation = CreateRotateOperation(expose)
-
-	// common logic
-	a.Id = device.Id
-	a.friendlyName = device.FriendlyName
-	a.Client = client
-	a.registrar = registrar
+	expose, ok := device.GetExpose(property)
+	if !ok {
+		return fmt.Errorf("configure action %s: property %s not found", id, property)
+	}
+	operation := CreateRotateOperation(expose)
+	a.configMu.Lock()
+	a.publishConfiguration(device, client, registrar, operation)
+	a.configMu.Unlock()
 	return nil
 }
 
 type MqttBaseAction struct {
-	Id           string                   `json:"id"`
-	Type         ActionType               `json:"type"`
-	Client       mqtt.MqttClient          `json:"-"`
-	registrar    services.DeviceRegistrar `json:"-"`
-	mut          sync.RWMutex             `json:"-"`
-	exit         chan bool                `json:"-"`
-	isPending    bool                     `json:"-"`
-	friendlyName string                   `json:"-"`
-	operation    actionOperation          `json:"-"`
+	// Do not copy after use. Direct recipe/Client edits require exclusive ownership.
+	Id            string                              `json:"id"`
+	Type          ActionType                          `json:"type"`
+	Client        mqtt.MqttClient                     `json:"-"`
+	configMu      sync.RWMutex                        `json:"-"`
+	configuration atomic.Pointer[actionConfiguration] `json:"-"`
+	mut           sync.RWMutex                        `json:"-"`
+	exit          chan struct{}                       `json:"-"`
+	isPending     bool                                `json:"-"`
 }
 
-func (a *MqttBaseAction) emit(payload []byte) {
+// Immutable binding; operation-local mutable state retains existing Execute ownership.
+type actionConfiguration struct {
+	friendlyName string
+	client       mqtt.MqttClient
+	registrar    services.DeviceRegistrar
+	operation    actionOperation
+}
+
+// Caller holds configMu; preparation and external lookups have already succeeded.
+func (a *MqttBaseAction) publishConfiguration(device *devices.Device, client mqtt.MqttClient, registrar services.DeviceRegistrar, operation actionOperation) {
+	if a.Id != device.Id {
+		a.Id = device.Id
+	}
+	a.Client = client
+	a.configuration.Store(&actionConfiguration{device.FriendlyName, client, registrar, operation})
+}
+
+func (a *actionConfiguration) emit(payload []byte) {
 
 	msg := fmt.Sprintf("%s/set", a.friendlyName)
-	a.Client.Publish(msg, payload)
+	a.client.Publish(msg, payload)
 
 	utils.LogInfof("Action triggered. Message %s published in %s", string(payload), a.friendlyName)
 }
 
 func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
-
-	payload, err := b.operation.CreatePayload()
+	configuration := b.configuration.Load()
+	if configuration == nil {
+		return fmt.Errorf("action is not configured")
+	}
+	payload, err := configuration.operation.CreatePayload()
 	if err != nil {
 		return err
 	}
@@ -222,7 +289,7 @@ func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
 				return err
 			}
 			// emit message
-			b.emit(bytes)
+			configuration.emit(bytes)
 		}
 	} else {
 		bytes, err := json.Marshal(payload.Commands)
@@ -232,7 +299,7 @@ func (b *MqttBaseAction) processAction(ctx AutomationContext) error {
 		}
 
 		// emit message
-		b.emit(bytes)
+		configuration.emit(bytes)
 	}
 
 	// on success update device context with new values to avoid querying the device again
@@ -282,6 +349,8 @@ func (b *MqttBaseAction) toBool(value any) bool {
 }
 
 func (b *MqttBaseAction) GetID() string {
+	b.configMu.RLock()
+	defer b.configMu.RUnlock()
 	return b.Id
 }
 
@@ -290,12 +359,12 @@ func (b *MqttBaseAction) GetType() ActionType {
 }
 
 func (a *MqttBaseAction) Stop() {
-	if a.isPending {
-		// stop it and exit
-		a.mut.Lock()
-		defer a.mut.Unlock()
-
-		a.exit <- true
+	a.mut.Lock()
+	defer a.mut.Unlock()
+	if a.exit != nil {
+		// Do not join delayed workers: a committed publish may call Stop.
+		close(a.exit)
+		a.exit = nil
 		a.isPending = false
 	}
 }
@@ -308,36 +377,43 @@ func (b *MqttBaseAction) executeBaseWithDelay(delay *utils.TimeInterval, ctx Aut
 		return nil
 	}
 
-	b.exit = make(chan bool, 1)
+	duration := delay.Duration()
+	if duration <= 0 {
+		return fmt.Errorf("delay must be greater than zero")
+	}
+	exit := make(chan struct{})
+	b.exit = exit
+	b.isPending = true
 	go func() {
-
-		timestamp := time.Now().Add(delay.Duration())
-		diff := time.Until(timestamp).Milliseconds()
-
-		duration := time.Duration(diff)
-		ticker := *time.NewTicker(duration * time.Millisecond)
-		b.isPending = true
-		//utils.LogInfof("time constraint started Delay: %d ms", a.Delay)
-
+		timer := time.NewTimer(duration)
+		defer timer.Stop()
 		defer func() {
-			close(b.exit)
-			b.isPending = false
+			b.mut.Lock()
+			defer b.mut.Unlock()
+			// A cancelled run must not clear a replacement's pending state.
+			if b.exit == exit {
+				b.exit = nil
+				b.isPending = false
+			}
 		}()
 
 		select {
-		case <-ticker.C:
-
+		case <-timer.C:
+			// Serialize cancellation versus commitment, not external callbacks.
+			b.mut.Lock()
+			current := b.exit == exit
+			b.mut.Unlock()
+			if !current {
+				return
+			}
 			err := b.processAction(ctx)
 			if err != nil {
 				utils.LogErrorf("trigger action failed %s", err.Error())
 				return
 			}
-			//utils.LogInfo("timer constraint finished")
 			return
 
-		case <-b.exit:
-
-			//utils.LogInfo("timer constraint stopped")
+		case <-exit:
 			return
 		}
 	}()

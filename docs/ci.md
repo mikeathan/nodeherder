@@ -62,6 +62,13 @@ existing backend concurrency failures on Go 1.26.1/macOS. Strict checks intentio
 report these failures rather than suppress them; scoped fixes are needed for green CI.
 Full Ubuntu/GitHub image execution has not yet been observed locally.
 
+2026-10-02 follow-up: bbolt v1.4.3 replaces legacy Bolt; synthetic old-file
+read/write/reopen tests and storage race suites pass on macOS Go 1.26.1/1.24.8.
+All ordinary backend tests, vet and Linux/amd64 cross-build pass. Full race checks
+still report runtime concurrency failures, but no longer hit the Bolt pointer-check
+crash. Existing test assertions/CI checks remain enabled; see
+[scoped repair](../specs/003-backend-race-repair/plan.md) for evidence/rollout limits.
+
 Limits: frontend ESLint currently covers JS/config, not comprehensive Vue/TypeScript
 rules; the build checks compilation. Image smoke checks do not establish end-to-end
 API/WS/auth/device behavior or ARM64 support. Coverage thresholds, vulnerability/secret

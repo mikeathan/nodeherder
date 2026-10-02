@@ -9,9 +9,229 @@ import (
 	utils_test "node-herder/testing"
 	"node-herder/utils"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
+
+func TestEntityValueAutomationReadSemantics(t *testing.T) {
+	for _, tc := range []struct {
+		name, property    string
+		dataType          bridge.ExposeDataType
+		initial           any
+		values            []any
+		triggers, updates int
+	}{
+		{"fresh state before debounce", "brightness", bridge.NumericDataType, float64(0), []any{float64(1), float64(2), float64(2)}, 2, 1},
+		{"identical physical events", "action", bridge.EnumDataType, "single", []any{"single", "single"}, 2, 2},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			device := devices.NewDevice(tc.name)
+			device.SetAvailability(devices.OnlineAvailability)
+			entity := devices.NewEntity(tc.property)
+			entity.Type = tc.dataType
+			entity.Data.SetValue(tc.initial)
+			device.Exposes[tc.property] = entity
+			app := settings.NewAppConfig()
+			cfg := settings.NewDeviceConfig(device.Id)
+			cfg.DebounceOverrides[tc.property] = utils.IntervalFromSeconds(10)
+			app.AddDeviceConfig(cfg)
+			cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, app, &sync.RWMutex{})
+			triggers, updates := 0, 0
+			var expected any
+			events := &devices.DeviceRequestEvents{
+				OnDeviceUpdated: func(*devices.Device, *devices.UpdatePackage) { updates++ },
+				OnDeviceAutomationTriggered: func(d *devices.Device, payload map[string]interface{}) {
+					triggers++
+					if d.Exposes[tc.property].Data.Value() != expected || payload[tc.property] != expected {
+						t.Error("automation did not receive fresh state/event")
+					}
+					// A callback may read/write the entity; no model lock may surround it.
+					d.Exposes[tc.property].Data.SetValue(expected)
+				},
+			}
+			clock := mocks.NewMockClock(func() time.Time { return time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC) })
+			service := services.NewDeviceLifetimeService(device, events, cache,
+				mocks.NewMockAutomationDeviceQuerierWithValues(map[string]bool{device.Id: true}), clock)
+			for _, value := range tc.values {
+				expected = value
+				service.Update(map[string]interface{}{tc.property: value})
+			}
+			if triggers != tc.triggers || updates != tc.updates {
+				t.Fatalf("triggers/updates = %d/%d, want %d/%d", triggers, updates, tc.triggers, tc.updates)
+			}
+		})
+	}
+}
+
+func TestAvailabilityMonitorConcurrentConfiguration(t *testing.T) {
+	device := devices.NewDevice("monitor-concurrent")
+	device.SetAvailability(devices.OnlineAvailability)
+	device.SetLastSeen(time.Now().Format(time.RFC3339))
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, settings.NewAppConfig(), &sync.RWMutex{})
+	service := services.NewDeviceLifetimeService(device, &devices.DeviceRequestEvents{
+		AvailabilityTimeout:         time.Hour,
+		OnDeviceAvailabilityChanged: func(*devices.UpdatePackage) { t.Error("unexpected expiry") },
+	}, cache, mocks.NewMockAutomationDeviceQuerier(), utils.NewRealClock())
+	enabled, disabled := settings.NewDeviceConfig(device.Id), settings.NewDeviceConfig(device.Id)
+	disabled.Disabled = true
+	t.Cleanup(func() { service.OnConfigUpdated(disabled) })
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+	for worker := 0; worker < 8; worker++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			for i := 0; i < 100; i++ {
+				service.OnConfigUpdated(disabled)
+				service.OnConfigUpdated(enabled)
+			}
+		}()
+	}
+	close(start)
+	wg.Wait()
+	service.OnConfigUpdated(disabled)
+	service.OnConfigUpdated(disabled)
+}
+
+func TestAvailabilityMonitorCallbackCanDisableAndReenable(t *testing.T) {
+	device := devices.NewDevice("monitor-reentry")
+	device.SetAvailability(devices.OnlineAvailability)
+	old := time.Now().Add(-time.Hour).Format(time.RFC3339)
+	device.SetLastSeen(old)
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, settings.NewAppConfig(), &sync.RWMutex{})
+	enabled, disabled := settings.NewDeviceConfig(device.Id), settings.NewDeviceConfig(device.Id)
+	disabled.Disabled = true
+	var service *services.DeviceLifetimeService
+	var callbacks atomic.Int32
+	finished := make(chan struct{}, 1)
+	events := &devices.DeviceRequestEvents{AvailabilityTimeout: time.Second}
+	events.OnDeviceAvailabilityChanged = func(p *devices.UpdatePackage) {
+		if p.Availability != devices.OfflineAvailability {
+			t.Errorf("unexpected availability: %v", p.Availability)
+		}
+		service.OnConfigUpdated(disabled) // must not wait for this callback
+		switch callbacks.Add(1) {
+		case 1:
+			device.SetAvailability(devices.OnlineAvailability)
+			device.SetLastSeen(old)
+			service.OnConfigUpdated(enabled)
+		case 2:
+			finished <- struct{}{}
+		default:
+			t.Error("unexpected duplicate availability callback")
+		}
+	}
+	service = services.NewDeviceLifetimeService(device, events, cache,
+		mocks.NewMockAutomationDeviceQuerier(), utils.NewRealClock())
+	t.Cleanup(func() { service.OnConfigUpdated(disabled) })
+	service.OnConfigUpdated(disabled)
+	service.OnConfigUpdated(enabled)
+	select {
+	case <-finished:
+	case <-time.After(5 * time.Second):
+		t.Fatal("monitor callback/re-enable blocked or replacement monitor was lost")
+	}
+	if callbacks.Load() != 2 {
+		t.Fatalf("callbacks = %d, want 2", callbacks.Load())
+	}
+}
+
+func TestAvailabilityMonitorResumesAfterOnlineUpdate(t *testing.T) {
+	device := devices.NewDevice("monitor-reset")
+	device.SetAvailability(devices.OnlineAvailability)
+	old := time.Now().Add(-time.Hour).Format(time.RFC3339)
+	device.SetLastSeen(old)
+	cache := settings.NewDeviceConfigCache(&mocks.NopSettingsrepo{}, settings.NewAppConfig(), &sync.RWMutex{})
+	changed := make(chan struct{}, 2)
+	events := &devices.DeviceRequestEvents{
+		AvailabilityTimeout: time.Second,
+		OnDeviceAvailabilityChanged: func(p *devices.UpdatePackage) {
+			if p.Availability != devices.OfflineAvailability {
+				t.Errorf("unexpected availability: %v", p.Availability)
+			}
+			changed <- struct{}{}
+		},
+		OnDeviceUpdated: func(*devices.Device, *devices.UpdatePackage) {},
+	}
+	service := services.NewDeviceLifetimeService(device, events, cache,
+		mocks.NewMockAutomationDeviceQuerier(), utils.NewRealClock())
+	disabled := settings.NewDeviceConfig(device.Id)
+	disabled.Disabled = true
+	t.Cleanup(func() { service.OnConfigUpdated(disabled) })
+	service.OnConfigUpdated(disabled)
+	service.OnConfigUpdated(settings.NewDeviceConfig(device.Id))
+	awaitOffline := func() {
+		t.Helper()
+		select {
+		case <-changed:
+		case <-time.After(5 * time.Second):
+			t.Fatal("availability monitor did not expire")
+		}
+	}
+	awaitOffline()
+	service.Update(map[string]interface{}{"last_seen": old})
+	if !device.IsAvailable() {
+		t.Fatal("update did not bring device online")
+	}
+	awaitOffline() // Reset must resume the same monitor after its ticker stopped.
+}
+
+func TestDeviceLifetimeServiceLastSeenConcurrentRead(t *testing.T) {
+	device := utils_test.CreateLightDevice("last-seen", "timestamp test", "brightness", -1.0)
+	device.SetAvailability(devices.OnlineAvailability)
+	initial := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	device.SetLastSeen(initial.Format(time.RFC3339))
+	app := settings.NewAppConfig()
+	app.Hub.Devices.Defaults.DefaultDebounceByCategory = nil
+	repo := &mocks.NopSettingsrepo{}
+	cache := settings.NewDeviceConfigCache(repo, app, &sync.RWMutex{})
+	var expected string
+	callbacks := 0
+	events := &devices.DeviceRequestEvents{OnDeviceUpdated: func(_ *devices.Device, p *devices.UpdatePackage) {
+		callbacks++
+		if p.LastSeen != expected {
+			t.Errorf("payload timestamp = %q, want %q", p.LastSeen, expected)
+		}
+		// Read from a callback too: the setter must not retain the device lock.
+		if _, err := device.LastSeenTime(); err != nil {
+			t.Error(err)
+		}
+	}}
+	service := services.NewDeviceLifetimeService(device, events, cache,
+		mocks.NewMockAutomationDeviceQuerier(), utils.NewRealClock())
+	ready, stop, done := make(chan struct{}), make(chan struct{}), make(chan struct{})
+	go func() {
+		defer close(done)
+		close(ready)
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+				if _, err := device.LastSeenTime(); err != nil {
+					t.Error(err)
+					return
+				}
+			}
+		}
+	}()
+	<-ready
+	for i := 0; i < 200; i++ {
+		expected = initial.Add(time.Duration(i) * time.Second).Format(time.RFC3339)
+		service.Update(map[string]interface{}{"brightness": float64(i), "last_seen": expected})
+	}
+	close(stop)
+	<-done
+	if callbacks != 200 {
+		t.Fatalf("updates emitted = %d, want 200", callbacks)
+	}
+	actual, err := device.LastSeenTime()
+	if err != nil || actual.Format(time.RFC3339) != expected {
+		t.Fatalf("final LastSeen = %v (%v), want %s", actual, err, expected)
+	}
+}
 
 func TestDeviceLifetimeService_Seed(t *testing.T) {
 	wg := sync.WaitGroup{}
@@ -96,6 +316,11 @@ func TestDeviceLifetimeService_UpdateWithNewData(t *testing.T) {
 	cache := settings.NewDeviceConfigCache(&repo, app, &sync.RWMutex{})
 	service := services.NewDeviceLifetimeService(device, events, cache, deviceQuerier, utils.NewRealClock())
 	payload := map[string]interface{}{"brightness": 35.4, "last_seen": "2023-01-01T00:00:00Z"}
+	t.Cleanup(func() {
+		disabled := settings.NewDeviceConfig(device.Id)
+		disabled.Disabled = true
+		service.OnConfigUpdated(disabled)
+	})
 
 	service.Update(payload)
 
@@ -104,7 +329,7 @@ func TestDeviceLifetimeService_UpdateWithNewData(t *testing.T) {
 		t.Errorf("Device value not updated")
 	}
 
-	if device.Availability != devices.OnlineAvailability {
+	if device.GetAvailability() != devices.OnlineAvailability {
 		t.Errorf("Device availability not updated")
 	}
 	if device.LastSeen != "2023-01-01T00:00:00Z" {
@@ -141,7 +366,7 @@ func TestDeviceLifetimeService_UpdateWithSameData(t *testing.T) {
 		t.Errorf("Device value not updated")
 	}
 
-	if device.Availability != devices.OnlineAvailability {
+	if device.GetAvailability() != devices.OnlineAvailability {
 		t.Errorf("Device availability not updated")
 	}
 	if device.LastSeen != "2023-01-01T00:00:00Z" {
@@ -245,8 +470,8 @@ func TestDeviceLifetimeService_ShouldChangeAvailability_ToOffline(t *testing.T) 
 	events := &devices.DeviceRequestEvents{
 		AvailabilityTimeout: 10,
 		OnNewDevice: func(d *devices.Device) {
-			if d.Availability != devices.OnlineAvailability {
-				t.Errorf("OnNewDevice availability = %v, want %v", d.Availability, devices.OfflineAvailability)
+			if availability := d.GetAvailability(); availability != devices.OnlineAvailability {
+				t.Errorf("OnNewDevice availability = %v, want %v", availability, devices.OnlineAvailability)
 				return
 			}
 			wg.Done()
@@ -270,12 +495,17 @@ func TestDeviceLifetimeService_ShouldChangeAvailability_ToOffline(t *testing.T) 
 	payload := map[string]interface{}{"test": "data"}
 
 	// make last_seen 11 seconds ago as our availability timeout is 10 seconds
+	t.Cleanup(func() {
+		disabled := settings.NewDeviceConfig(device.Id)
+		disabled.Disabled = true
+		service.OnConfigUpdated(disabled)
+	})
 	device.LastSeen = time.Now().Add(-11 * time.Second).Format(time.RFC3339)
 
 	service.Seed(payload)
 	wg.Wait()
 
-	if device.Availability != devices.OfflineAvailability {
+	if device.GetAvailability() != devices.OfflineAvailability {
 		t.Errorf("Device availability not changed to offline")
 	}
 }
@@ -799,13 +1029,13 @@ func TestDeviceLifetimeService_AutomationTriggersOnChanges(t *testing.T) {
 
 	// Update 1: Should trigger automation
 	service.Update(map[string]interface{}{"contact": true})
-	
+
 	// Update 2: Immediately after, should trigger again (no cooldown)
 	service.Update(map[string]interface{}{"contact": false})
-	
+
 	// Update 3: Still immediately after, should trigger again
 	service.Update(map[string]interface{}{"contact": true})
-	
+
 	if triggers != 3 {
 		t.Fatalf("Expected exactly 3 triggers (no cooldown), got %d", triggers)
 	}
