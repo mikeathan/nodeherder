@@ -6,6 +6,7 @@ import (
 	"node-herder/models/logging"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 
 	"github.com/sirupsen/logrus"
 	easy "github.com/t-tomalak/logrus-easy-formatter"
@@ -122,13 +123,12 @@ func LogErrorf(format string, msg ...interface{}) {
 type RemoteHook struct {
 	levels  []logrus.Level
 	emitter logging.RemoteHookEmitter
-	enabled bool
+	enabled atomic.Bool
 }
 
 func newRemoteHook() *RemoteHook {
 	return &RemoteHook{
-		levels:  logrus.AllLevels,
-		enabled: false,
+		levels: logrus.AllLevels,
 	}
 }
 
@@ -140,11 +140,11 @@ func (h *RemoteHook) Levels() []logrus.Level {
 }
 
 func (h *RemoteHook) Enabled(enabled bool) {
-	h.enabled = enabled
+	h.enabled.Store(enabled)
 }
 
 func (h *RemoteHook) Fire(entry *logrus.Entry) error {
-	if !h.enabled {
+	if !h.enabled.Load() {
 		return nil
 	}
 

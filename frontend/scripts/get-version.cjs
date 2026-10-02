@@ -1,4 +1,4 @@
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 const { readFileSync } = require('fs');
 const { join } = require('path');
 
@@ -12,10 +12,11 @@ const { join } = require('path');
  */
 function getAppVersion() {
   let appVersion = '0.0.0-unknown';
+  const gitOptions = { cwd: join(__dirname, '..', '..'), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] };
 
   // 1. Try to get version from Git first
   try {
-    const gitVersion = execSync('git describe --tags --always').toString().trim();
+    const gitVersion = execFileSync('git', ['describe', '--tags', '--always'], gitOptions).trim();
     // Remove everything after the first dash (commit count and hash)
     const cleanVersion = gitVersion.replace(/-.*$/, '');
     // Remove leading 'v' if present
@@ -26,7 +27,7 @@ function getAppVersion() {
     // Check if we're on a feature branch (not main)
     // Add -dev suffix for non-main branches to indicate development build
     try {
-      const currentBranch = execSync('git branch --show-current').toString().trim();
+      const currentBranch = execFileSync('git', ['branch', '--show-current'], gitOptions).trim();
       // If currentBranch is empty (detached HEAD, like when a tag is checked out), 
       // we assume it's a release and skip adding -dev.
       if (currentBranch && currentBranch !== 'main' && currentBranch !== 'master') {
@@ -46,9 +47,8 @@ function getAppVersion() {
     const packageJsonPath = join(__dirname, '..', 'package.json');
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
     appVersion = packageJson.version;
-    console.log('Using package.json version:', appVersion);
   } catch (e) {
-    console.log('Using fallback version:', appVersion);
+    // Keep stdout limited to the version for shell callers.
   }
 
   return appVersion;

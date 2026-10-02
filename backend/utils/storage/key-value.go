@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/boltdb/bolt"
+	bolt "go.etcd.io/bbolt"
 )
 
 type KeyValueDatabase interface {
@@ -24,7 +24,6 @@ type KeyValueDatabase interface {
 	ViewInRange(bucketName string, from []byte, to []byte, callback func(key, value []byte) error) error
 
 	HasDataInRange(bucketName string, from, to []byte) (bool, error)
-
 
 	DeleteKey(key []byte) error
 
@@ -66,6 +65,7 @@ func NewBoltKeyValueDatabase(filename string, bucketName string) (KeyValueDataba
 	err = kv.init(bucketName)
 	if err != nil {
 		utils.LogErrorf("error initialising keyvalue database %v", err.Error())
+		_ = db.Close()
 		return nil, err
 	}
 

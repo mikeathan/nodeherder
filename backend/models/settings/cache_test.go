@@ -1,6 +1,9 @@
 package settings_test
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"node-herder/mocks"
 	"node-herder/models/bridge"
 	"node-herder/models/devices"
@@ -12,6 +15,181 @@ import (
 	"testing"
 	"time"
 )
+
+// This repository intentionally retains pointers, like the file repository's
+// memory cache. All access below goes through AppConfigCache's lock.
+type bridgeSnapshotRepo struct {
+	mocks.NopSettingsrepo
+	bridge *settings.BridgeConfig
+}
+
+func (r *bridgeSnapshotRepo) Load() (*settings.AppConfig, error) {
+	config := settings.NewAppConfig()
+	config.Bridge = r.bridge
+	return config, nil
+}
+
+func (r *bridgeSnapshotRepo) LoadBridgeConfig() (*settings.BridgeConfig, error) {
+	return r.bridge, nil
+}
+
+func (r *bridgeSnapshotRepo) SaveBridgeConfig(config *settings.BridgeConfig) error {
+	r.bridge = config
+	return nil
+}
+
+func TestBridgeConfigSnapshotOwnership(t *testing.T) {
+	repo := &bridgeSnapshotRepo{bridge: settings.DefaultBridgeConfig()}
+	cache, err := settings.NewAppConfigCache(repo, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	old, err := cache.LoadBridgeConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	app, err := cache.LoadAppConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := cache.SaveBridgePermitJoin(true); err != nil {
+		t.Fatal(err)
+	}
+	if old.PermitJoin || app.Bridge.PermitJoin {
+		t.Fatal("save mutated previously returned configuration")
+	}
+	old.TimeExpireAt.Value = 999
+	current, err := cache.LoadBridgeConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !current.PermitJoin || current.TimeExpireAt.Value != 120 {
+		t.Fatalf("unexpected persisted bridge configuration: %+v", current)
+	}
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+	for worker := 0; worker < 4; worker++ {
+		wg.Add(1)
+		go func(worker int) {
+			defer wg.Done()
+			<-start
+			for i := 0; i < 100; i++ {
+				if worker == 0 {
+					if err := cache.SaveBridgePermitJoin(i%2 == 0); err != nil {
+						t.Error(err)
+					}
+				} else {
+					bridge, err := cache.LoadBridgeConfig()
+					if err != nil {
+						t.Error(err)
+						return
+					}
+					app, err := cache.LoadAppConfig()
+					if err != nil {
+						t.Error(err)
+						return
+					}
+					_ = bridge.PermitJoin
+					_ = app.Bridge.PermitJoin
+				}
+			}
+		}(worker)
+	}
+	close(start)
+	wg.Wait()
+}
+
+func TestAppConfigSnapshotOwnsHub(t *testing.T) {
+	repo := &bridgeSnapshotRepo{bridge: settings.DefaultBridgeConfig()}
+	cache, err := settings.NewAppConfigCache(repo, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	devicesCache := cache.GetDeviceConfigCache()
+	if err := devicesCache.SetDebounce("dial", "brightness", utils.IntervalFromSeconds(1)); err != nil {
+		t.Fatal(err)
+	}
+	if err := cache.SaveDashboardGroup(&settings.DashboardGroup{Name: "living", DeviceGroup: map[string]*settings.DeviceGroup{"dial": settings.NewDeviceGroup("dial")}}); err != nil {
+		t.Fatal(err)
+	}
+	snapshot, err := cache.LoadAppConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, err := json.Marshal(snapshot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if live, _ := cache.LoadAppConfig(); !bytes.Equal(before, mustMarshal(t, live)) {
+		t.Fatal("snapshot payload differs from configuration")
+	}
+
+	// Writers that replace or mutate Hub content must not reach a returned snapshot.
+	if err := devicesCache.SetDebounce("dial", "brightness", utils.IntervalFromSeconds(5)); err != nil {
+		t.Fatal(err)
+	}
+	if err := devicesCache.SetDebounce("switch", "state", utils.IntervalFromSeconds(2)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := cache.RenameDashboardGroup("living", "kitchen"); err != nil {
+		t.Fatal(err)
+	}
+	if err := cache.SetDeviceConfigDefaults(&settings.DeviceConfig{MetricsEnabled: true}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := cache.SaveLoggerConfig(&settings.LoggerConfig{Level: "debug"}); err != nil {
+		t.Fatal(err)
+	}
+	if after := mustMarshal(t, snapshot); !bytes.Equal(before, after) {
+		t.Fatalf("snapshot changed after writes:\n%s\n%s", before, after)
+	}
+
+	start := make(chan struct{})
+	var wg sync.WaitGroup
+	for worker := 0; worker < 4; worker++ {
+		wg.Add(1)
+		go func(worker int) {
+			defer wg.Done()
+			<-start
+			for i := 0; i < 50; i++ {
+				switch worker {
+				case 0:
+					if err := devicesCache.SetDebounce("sensor", "temperature", utils.IntervalFromSeconds(i+1)); err != nil {
+						t.Error(err)
+					}
+					if err := cache.SetDeviceConfigDefaults(&settings.DeviceConfig{MetricsEnabled: i%2 == 0}); err != nil {
+						t.Error(err)
+					}
+				case 1:
+					if err := cache.SaveDashboardGroup(&settings.DashboardGroup{Name: fmt.Sprint("group", i%3)}); err != nil {
+						t.Error(err)
+					}
+					if err := cache.DeleteDashboardGroup(fmt.Sprint("group", (i+1)%3)); err != nil {
+						t.Error(err)
+					}
+				default:
+					config, err := cache.LoadAppConfig()
+					if err != nil {
+						t.Error(err)
+						return
+					}
+					mustMarshal(t, config)
+				}
+			}
+		}(worker)
+	}
+	close(start)
+	wg.Wait()
+}
+
+func mustMarshal(t *testing.T, value any) []byte {
+	t.Helper()
+	data, err := json.Marshal(value)
+	if err != nil {
+		t.Error(err)
+	}
+	return data
+}
 
 func TestNewDeviceConfigCache(t *testing.T) {
 

@@ -2,6 +2,7 @@ package settings
 
 import (
 	"fmt"
+	"maps"
 	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"node-herder/utils"
@@ -216,32 +217,97 @@ func (s *AppConfigCache) GetDeviceConfigCache() *DeviceConfigCache {
 func (s *AppConfigCache) LoadAppConfig() (*AppConfig, error) {
 	s.mutex.RLock()
 	defer s.mutex.RUnlock()
-	return s.appConfig, nil
+	config := *s.appConfig
+	config.Hub = cloneHubConfig(config.Hub)
+	config.Bridge = cloneBridgeConfig(config.Bridge)
+	return &config, nil
+}
+
+// cloneHubConfig copies everything writers replace or mutate under the cache lock
+// (device defaults/overrides and their debounce maps, dashboard groups, sections),
+// so callers may read or encode the snapshot after the lock is released.
+// Interval values and expose lists are replaced by writers, never mutated, and stay shared.
+func cloneHubConfig(hub *HubConfig) *HubConfig {
+	if hub == nil {
+		return nil
+	}
+	copy := *hub
+	if hub.Devices != nil {
+		devices := DeviceSettings{Defaults: cloneDeviceConfig(hub.Devices.Defaults)}
+		if hub.Devices.Overrides != nil {
+			devices.Overrides = make(map[string]*DeviceConfig, len(hub.Devices.Overrides))
+			for id, override := range hub.Devices.Overrides {
+				devices.Overrides[id] = cloneDeviceConfig(override)
+			}
+		}
+		copy.Devices = &devices
+	}
+	if hub.DashboardGroups != nil {
+		copy.DashboardGroups = make(map[string]*DashboardGroup, len(hub.DashboardGroups))
+		for name, group := range hub.DashboardGroups {
+			if group != nil {
+				groupCopy := *group
+				groupCopy.DeviceGroup = maps.Clone(group.DeviceGroup)
+				group = &groupCopy
+			}
+			copy.DashboardGroups[name] = group
+		}
+	}
+	copy.History = clonePointer(hub.History)
+	copy.Logger = clonePointer(hub.Logger)
+	copy.MCP = clonePointer(hub.MCP)
+	copy.Assistant = clonePointer(hub.Assistant)
+	return &copy
+}
+
+func cloneDeviceConfig(config *DeviceConfig) *DeviceConfig {
+	if config == nil {
+		return nil
+	}
+	copy := *config
+	copy.DefaultDebounceByCategory = maps.Clone(config.DefaultDebounceByCategory)
+	copy.DebounceOverrides = maps.Clone(config.DebounceOverrides)
+	return &copy
+}
+
+func clonePointer[T any](value *T) *T {
+	if value == nil {
+		return nil
+	}
+	copy := *value
+	return &copy
 }
 
 func (s *AppConfigCache) LoadBridgeConfig() (*BridgeConfig, error) {
+	s.mutex.RLock()
+	defer s.mutex.RUnlock()
 	config, err := s.store.LoadBridgeConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	return config, nil
+	return cloneBridgeConfig(config), nil
+}
+
+func cloneBridgeConfig(config *BridgeConfig) *BridgeConfig {
+	if config == nil {
+		return nil
+	}
+	copy := *config
+	if config.TimeExpireAt != nil {
+		interval := *config.TimeExpireAt
+		copy.TimeExpireAt = &interval
+	}
+	return &copy
 }
 
 func (s *AppConfigCache) SaveBridgePermitJoin(enabled bool) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	// Clone or update in place? AppConfig is a pointer, but we want to ensure consistency.
-	// Since we lock, we can update in place and then save.
-	s.appConfig.Bridge.PermitJoin = enabled
-
-	// We also need to save the specific bridge config if there is a separate method?
-	// The repo has SaveBridgeConfig. And SaveAppConfig implies saving everything?
-	// Repository structure separates bridge config?
-	// Looking at Repo methods: LoadBridgeConfig, SaveBridgeConfig.
-	// But appConfig.Bridge comes from LoadBridgeConfig.
-	// So we should update appConfig.Bridge AND save via repo.
+	config := cloneBridgeConfig(s.appConfig.Bridge)
+	config.PermitJoin = enabled
+	s.appConfig.Bridge = config
 
 	return s.store.SaveBridgeConfig(s.appConfig.Bridge)
 }

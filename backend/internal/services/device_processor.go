@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"maps"
 	"node-herder/models/automations"
 	"node-herder/models/devices"
 	"node-herder/models/settings"
@@ -13,18 +14,49 @@ import (
 
 type DeviceProcessor struct {
 	registrar         *HubRegisterService
-	deviceServices    map[string]*DeviceLifetimeService
-	store             store.AppStore
+	deviceServices    map[string]*deviceServiceEntry
+	configCache       *settings.DeviceConfigCache
 	events            *devices.DeviceRequestEvents
 	automationQueries automations.AutomationQuerier
 	mutex             *sync.RWMutex
 }
 
+// Only the creator drains this queue. Registry locking protects enqueue/publication;
+// Seed, Update and configuration callbacks always run outside that lock.
+type deviceServiceEntry struct {
+	service  *DeviceLifetimeService
+	creating bool
+	pending  []deviceCreationEvent
+}
+
+type deviceCreationEvent struct {
+	payload map[string]interface{}
+	config  *settings.DeviceConfig
+}
+
+func (event deviceCreationEvent) apply(service *DeviceLifetimeService) {
+	if event.config != nil {
+		service.OnConfigUpdated(event.config)
+	} else {
+		service.Update(event.payload)
+	}
+}
+
+func (event deviceCreationEvent) snapshot() deviceCreationEvent {
+	if event.config != nil {
+		// Lifetime configuration consumes only Disabled.
+		event.config = &settings.DeviceConfig{Disabled: event.config.Disabled}
+	} else {
+		event.payload = maps.Clone(event.payload)
+	}
+	return event
+}
+
 func newDeviceProcessor(registrar *HubRegisterService, store store.AppStore, events *devices.DeviceRequestEvents, automationRetreiver automations.AutomationQuerier) *DeviceProcessor {
 	return &DeviceProcessor{
 		registrar:         registrar,
-		deviceServices:    make(map[string]*DeviceLifetimeService),
-		store:             store,
+		deviceServices:    make(map[string]*deviceServiceEntry),
+		configCache:       store.AppConfig().GetDeviceConfigCache(),
 		events:            events,
 		automationQueries: automationRetreiver,
 		mutex:             &sync.RWMutex{},
@@ -34,7 +66,7 @@ func (dm *DeviceProcessor) OnDeviceConfigUpdated(cfg *settings.DeviceConfig) {
 
 	if cfg.Id == "" {
 		// device config defaults
-		for id := range dm.deviceServices {
+		for _, id := range dm.getDeviceIDs() {
 			dm.configureDeviceLifetime(id, cfg)
 		}
 		return
@@ -45,13 +77,10 @@ func (dm *DeviceProcessor) OnDeviceConfigUpdated(cfg *settings.DeviceConfig) {
 }
 
 func (dm *DeviceProcessor) configureDeviceLifetime(id string, cfg *settings.DeviceConfig) {
-
-	ls, ok := dm.deviceServices[id]
-	if !ok {
-		return
+	event := deviceCreationEvent{config: cfg}
+	if entry, _ := dm.routeDeviceEvent(id, nil, event); entry != nil {
+		event.apply(entry.service)
 	}
-
-	ls.OnConfigUpdated(cfg)
 }
 
 func (dm *DeviceProcessor) CreateOrUpdateDevice(friendlyName, connType string, dataMap map[string]interface{}) error {
@@ -60,7 +89,7 @@ func (dm *DeviceProcessor) CreateOrUpdateDevice(friendlyName, connType string, d
 		return dm.createNewDevice(friendlyName, connType, dataMap)
 	}
 
-	dm.updateExistingDevice(device, dataMap)
+	dm.processDeviceUpdate(device, dataMap)
 	return nil
 }
 
@@ -70,40 +99,79 @@ func (dm *DeviceProcessor) createNewDevice(friendlyName, connType string, dataMa
 		return fmt.Errorf("failed to create new device: %w", err)
 	}
 
-	dm.createDeviceService(device, dataMap)
+	dm.processDeviceUpdate(device, dataMap)
 	return nil
 }
 
-func (dm *DeviceProcessor) createDeviceService(device *devices.Device, dataMap map[string]interface{}) *DeviceLifetimeService {
+// A nil device means configuration-only: do not create an unknown service.
+// A nil result means absent or queued; true grants exclusive Seed/drain ownership.
+func (dm *DeviceProcessor) routeDeviceEvent(id string, device *devices.Device, event deviceCreationEvent) (*deviceServiceEntry, bool) {
 	dm.mutex.Lock()
 	defer dm.mutex.Unlock()
-
-	appConfig := dm.store.AppConfig()
-	ls := NewDeviceLifetimeService(device, dm.events, appConfig.GetDeviceConfigCache(), dm.automationQueries, utils.NewRealClock())
-	ls.Seed(dataMap)
-
-	dm.deviceServices[device.Id] = ls
-	return ls
+	if entry, ok := dm.deviceServices[id]; ok {
+		if entry.creating {
+			entry.pending = append(entry.pending, event.snapshot())
+			return nil, false
+		}
+		return entry, false
+	}
+	if device == nil {
+		return nil, false
+	}
+	entry := &deviceServiceEntry{
+		service:  NewDeviceLifetimeService(device, dm.events, dm.configCache, dm.automationQueries, utils.NewRealClock()),
+		creating: true,
+	}
+	dm.deviceServices[id] = entry
+	return entry, true
 }
 
-func (dm *DeviceProcessor) getDeviceLifetime(device *devices.Device) (*DeviceLifetimeService, bool) {
+func (dm *DeviceProcessor) processDeviceUpdate(device *devices.Device, dataMap map[string]interface{}) {
+	event := deviceCreationEvent{payload: dataMap}
+	entry, creator := dm.routeDeviceEvent(device.Id, device, event)
+	if entry == nil {
+		return
+	}
+	if !creator {
+		event.apply(entry.service)
+		return
+	}
+	entry.service.Seed(dataMap)
+	dm.drainDeviceEvents(entry)
+}
+
+func (dm *DeviceProcessor) drainDeviceEvents(entry *deviceServiceEntry) {
+	for {
+		pending := dm.takePendingDeviceEvents(entry)
+		if len(pending) == 0 {
+			return
+		}
+		for _, event := range pending {
+			event.apply(entry.service)
+		}
+	}
+}
+
+func (dm *DeviceProcessor) takePendingDeviceEvents(entry *deviceServiceEntry) []deviceCreationEvent {
+	dm.mutex.Lock()
+	defer dm.mutex.Unlock()
+	pending := entry.pending
+	entry.pending = nil
+	if len(pending) == 0 {
+		entry.creating = false
+	}
+	return pending
+}
+
+func (dm *DeviceProcessor) getDeviceIDs() []string {
 	dm.mutex.RLock()
 	defer dm.mutex.RUnlock()
 
-	ls, ok := dm.deviceServices[device.Id]
-	return ls, ok
-
-}
-func (dm *DeviceProcessor) updateExistingDevice(device *devices.Device, dataMap map[string]interface{}) {
-
-	if lf, ok := dm.getDeviceLifetime(device); ok {
-		lf.Update(dataMap)
-		return
+	ids := make([]string, 0, len(dm.deviceServices))
+	for id := range dm.deviceServices {
+		ids = append(ids, id)
 	}
-
-	// we are here because device is registered via bridge
-	// but we dont have a device lifetime service created yet
-	dm.createDeviceService(device, dataMap)
+	return ids
 }
 
 // DeviceProcessor builder

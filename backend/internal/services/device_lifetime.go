@@ -11,48 +11,44 @@ import (
 	"time"
 )
 
-const (
-	deviceAvailabilityTimeoutOverride = 3600
-	lastSeenKey                       = "last_seen"
-	defaultAutomationCooldown         = 20 * time.Millisecond
-)
+const lastSeenKey = "last_seen"
 
 type DeviceLifetimeService struct {
-	device             *devices.Device
-	debouncerService   *settings.DeviceDebouncer
-	stopped            bool
-	availabilityTicker *time.Ticker
-	events             *devices.DeviceRequestEvents
-	configCache        *settings.DeviceConfigCache
-	automationQueries  automations.AutomationQuerier
-	availabilityCtx    context.Context
-	availabilityCancel context.CancelFunc
+	device            *devices.Device
+	debouncerService  *settings.DeviceDebouncer
+	stopped           bool
+	events            *devices.DeviceRequestEvents
+	configCache       *settings.DeviceConfigCache
+	automationQueries automations.AutomationQuerier
+	monitorMu         sync.Mutex
+	monitor           *availabilityMonitor
+}
 
-	// automation cooldown: prevents rapid re-triggering from feedback loops
-	lastAutomationTime time.Time
-	automationCooldown time.Duration
-	cooldownMu         sync.Mutex
+type availabilityMonitor struct {
+	ticker *time.Ticker
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 func NewDeviceLifetimeService(device *devices.Device, events *devices.DeviceRequestEvents, configCache *settings.DeviceConfigCache, automationQueries automations.AutomationQuerier, clock utils.Clock) *DeviceLifetimeService {
 
 	return &DeviceLifetimeService{
-		configCache:        configCache,
-		debouncerService:   settings.NewDeviceDebouncer(device.Id, configCache, clock),
-		device:             device,
-		events:             events,
-		stopped:            false,
-		automationQueries:  automationQueries,
-		availabilityCtx:    context.Background(),
-		availabilityCancel: func() {},
-		automationCooldown: defaultAutomationCooldown,
+		configCache:       configCache,
+		debouncerService:  settings.NewDeviceDebouncer(device.Id, configCache, clock),
+		device:            device,
+		events:            events,
+		stopped:           false,
+		automationQueries: automationQueries,
 	}
 }
 
 func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
 
 	if d.configCache.IsDeviceDisabled(d.device.Id) {
+		d.monitorMu.Lock()
 		d.stopped = true
+		d.stopAvailabilityMonitoringLocked()
+		d.monitorMu.Unlock()
 		return
 	}
 
@@ -78,9 +74,9 @@ func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
 		hasChanges = true
 	}
 
-	d.device.LastSeen = getLastSeen(payload)
+	d.device.SetLastSeen(getLastSeen(payload))
 
-	d.device.Availability = devices.OnlineAvailability
+	d.device.SetAvailability(devices.OnlineAvailability)
 	utils.LogInfof("device [%s] %s is online", d.device.Id, d.device.FriendlyName)
 
 	// Seed fires automation directly, no cooldown is required
@@ -93,26 +89,30 @@ func (d *DeviceLifetimeService) Seed(payload map[string]interface{}) {
 }
 
 func (d *DeviceLifetimeService) OnConfigUpdated(cfg *settings.DeviceConfig) {
-
+	d.monitorMu.Lock()
+	defer d.monitorMu.Unlock()
 	if cfg.Disabled == d.stopped {
 		return
 	}
 
 	if cfg.Disabled {
 		d.stopped = true
-		d.stopAvailabilityMonitoring()
+		d.stopAvailabilityMonitoringLocked()
 		return
 	}
 
 	d.stopped = false
-	d.startAvailabilityMonitoring(d.events.AvailabilityTimeout, func(p *devices.UpdatePackage) {
+	d.startAvailabilityMonitoringLocked(d.events.AvailabilityTimeout, func(p *devices.UpdatePackage) {
 		d.events.OnDeviceAvailabilityChanged(p)
 	})
 
 }
 
 func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
-	if d.stopped {
+	d.monitorMu.Lock()
+	stopped := d.stopped
+	d.monitorMu.Unlock()
+	if stopped {
 		return
 	}
 
@@ -161,8 +161,8 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 	}
 
 	// if we are here even with no expose changes, it still means that the device is online
-	if d.device.Availability == devices.OfflineAvailability {
-		d.device.Availability = devices.OnlineAvailability
+	if d.device.GetAvailability() == devices.OfflineAvailability {
+		d.device.SetAvailability(devices.OnlineAvailability)
 
 		// Lazy initialize updatePackage if it hasn't been created yet
 		if updatePackage == nil {
@@ -179,7 +179,8 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 		d.resetAvailabilityTimer()
 	}
 
-	d.device.LastSeen = getLastSeen(payload) // we need that.
+	lastSeen := getLastSeen(payload)
+	d.device.SetLastSeen(lastSeen)
 
 	// automation: only trigger when relevant exposes have changed
 	if hasChanges {
@@ -188,7 +189,7 @@ func (d *DeviceLifetimeService) Update(payload map[string]interface{}) {
 
 	// storage + UI: only emit for non-debounced changes or availability changes
 	if updatePackage != nil && (updatePackage.HasData() || updatePackage.Availability != "") {
-		updatePackage.LastSeen = d.device.LastSeen
+		updatePackage.LastSeen = lastSeen
 
 		if updatePackage.HasData() {
 			d.attemptToStoreMetrics(updatePackage.Data)
@@ -262,32 +263,49 @@ func normalizeMeasurementValue(expose *devices.Entity, value any) any {
 }
 
 func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutDuration time.Duration, onChangeCallback func(p *devices.UpdatePackage)) {
+	s.monitorMu.Lock()
+	defer s.monitorMu.Unlock()
+	if !s.stopped {
+		s.startAvailabilityMonitoringLocked(timeoutDuration, onChangeCallback)
+	}
+}
 
-	if s.availabilityTicker != nil {
-		utils.LogDebugf("device %s availability monitor already running", s.device.Id)
+func (s *DeviceLifetimeService) startAvailabilityMonitoringLocked(timeoutDuration time.Duration, onChangeCallback func(p *devices.UpdatePackage)) {
+	if s.monitor != nil {
 		return
 	}
 
-	s.availabilityTicker = time.NewTicker(1 * time.Second)
-	s.availabilityCtx, s.availabilityCancel = context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	monitor := &availabilityMonitor{ticker: time.NewTicker(time.Second), ctx: ctx, cancel: cancel}
+	s.monitor = monitor
 
 	go func() {
+		defer func() {
+			monitor.ticker.Stop()
+			monitor.cancel()
+			s.monitorMu.Lock()
+			if s.monitor == monitor {
+				s.monitor = nil
+			}
+			s.monitorMu.Unlock()
+		}()
 
 		for {
 			select {
-			case <-s.availabilityCtx.Done():
-
-				s.availabilityTicker.Stop()
-				s.availabilityTicker = nil
-				//s.device.SetAvailable(false)
+			case <-monitor.ctx.Done():
 				utils.LogDebugf("device %s availability ticker cancelled", s.device.Id)
 
 				return
 
-			case <-s.availabilityTicker.C:
+			case <-monitor.ticker.C:
 
 				if !s.device.IsAvailable() {
-					return
+					s.monitorMu.Lock()
+					if s.monitor == monitor && !s.device.IsAvailable() {
+						monitor.ticker.Stop()
+					}
+					s.monitorMu.Unlock()
+					continue // retain the worker so an online update can reset it
 				}
 
 				lastSeen, err := s.device.LastSeenTime()
@@ -299,8 +317,14 @@ func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutDuration time
 				now := time.Now()
 				diff := now.Sub(lastSeen)
 				if diff >= timeoutDuration {
-
+					s.monitorMu.Lock()
+					if s.monitor != monitor || s.stopped || monitor.ctx.Err() != nil {
+						s.monitorMu.Unlock()
+						return
+					}
 					s.device.SetAvailable(false)
+					monitor.ticker.Stop()
+					s.monitorMu.Unlock()
 					utils.LogInfof("device %s is offine", s.device.Id)
 
 					// todo: move it in one place
@@ -310,7 +334,6 @@ func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutDuration time
 						onChangeCallback(p)
 					}
 
-					s.availabilityTicker.Stop()
 				}
 
 			}
@@ -318,20 +341,24 @@ func (s *DeviceLifetimeService) startAvailabilityMonitoring(timeoutDuration time
 	}()
 }
 func (d *DeviceLifetimeService) resetAvailabilityTimer() {
-	if d.availabilityTicker != nil {
-		d.availabilityTicker.Reset(1 * time.Second)
-	} else {
-		utils.LogDebugf("device %s availability ticker not initialized, cannot reset", d.device.Id)
+	d.monitorMu.Lock()
+	defer d.monitorMu.Unlock()
+	if d.stopped {
+		return
 	}
+	if d.monitor != nil {
+		d.monitor.ticker.Reset(time.Second)
+		return
+	}
+	d.startAvailabilityMonitoringLocked(d.events.AvailabilityTimeout, d.events.OnDeviceAvailabilityChanged)
 }
 
-func (s *DeviceLifetimeService) stopAvailabilityMonitoring() {
-
-	if s.availabilityCancel != nil {
-		s.availabilityCancel()
-		s.availabilityCancel = nil
+func (s *DeviceLifetimeService) stopAvailabilityMonitoringLocked() {
+	if s.monitor != nil {
+		s.monitor.cancel()
+		s.monitor.ticker.Stop()
+		s.monitor = nil
 	}
-	utils.LogDebugf("device %s monitoring stopped", s.device.Id)
 }
 
 func getLastSeen(data map[string]interface{}) string {

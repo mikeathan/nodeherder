@@ -4,7 +4,7 @@ This is the backend server for NodeHerder, a home automation and IoT device mana
 
 ## Technology Stack
 
-- **Go 1.20+** - Programming language
+- **Go** - Toolchain declared in [go.mod](go.mod)
 - **MQTT** - Message protocol for IoT device communication
 - **WebSocket** - Real-time bidirectional communication
 - **BoltDB** - Embedded key-value database for metrics and state
@@ -13,7 +13,7 @@ This is the backend server for NodeHerder, a home automation and IoT device mana
 
 ## Prerequisites
 
-- Go 1.20 or higher
+- Go toolchain from [go.mod](go.mod)
 - MQTT broker (e.g., Mosquitto) - for device communication
 
 ## Installation
@@ -36,7 +36,10 @@ The application uses environment variables for configuration. Two environment fi
 General configuration:
 
 - `APP_ENV` - Application environment (`development` or `production`)
-- `FRONTEND_BASE_URL` - Frontend URL for CORS (default: `http://localhost:4100`)
+- `FRONTEND_BASE_URL` - Frontend URL for login redirects (required)
+- `FRONTEND_ALLOWED_ORIGINS` - Comma-separated browser origins allowed by CORS
+
+Full environment/authentication and Docker lifecycle instructions: [setup guide](../docs/setup.md).
 
 Storage configuration:
 
@@ -50,7 +53,7 @@ Additional configuration may be required for MQTT broker connection, database pa
 Build the backend binary:
 
 ```bash
-go build -o ./nodeherder main.go
+go build -o ./nodeherder .
 ```
 
 Or use the makefile from the project root:
@@ -128,7 +131,7 @@ The backend persists multi-conversation chat history for the assistant. Messages
 backend/
 ├── internal/
 │   ├── api/           # HTTP API handlers
-│   ├── assistant/     # Assistant chat history service
+│   ├── mcp/           # MCP server, resources and metric queries
 │   ├── controllers/   # Business logic controllers
 │   ├── services/      # Service layer
 │   ├── mqtt/          # MQTT client and handlers

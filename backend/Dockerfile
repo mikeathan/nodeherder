@@ -18,7 +18,7 @@ FROM gcr.io/distroless/base-debian12
 WORKDIR /backend
 COPY --from=builder /backend/nodeherder .
 
-EXPOSE 4100
+EXPOSE 4110
 
 # Environment variable placeholders
 ENV APP_ENV=production

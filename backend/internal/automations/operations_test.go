@@ -12,7 +12,6 @@ import (
 	utils_test "node-herder/testing"
 	"sort"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 )
@@ -22,10 +21,10 @@ func TestOperationIncreaseValue(t *testing.T) {
 	stepValue := 17.0
 	expectedCalls := 255 / int(stepValue)
 
-	wg := &sync.WaitGroup{}
-	wg.Add(expectedCalls)
+	responses := 0
 
 	mqtt := &mocks.MockMqttClient{}
+	t.Cleanup(mqtt.WaitResponses)
 	currentActionTimeIndex := 0
 
 	// create mock action
@@ -46,18 +45,24 @@ func TestOperationIncreaseValue(t *testing.T) {
 	max := dd["livingroom"].Exposes["brightness"].Attributes["max"].(float64)
 
 	var messageHandler = func(id string, payload []byte) {
+		responses++
+		if responses > expectedCalls {
+			t.Errorf("unexpected command after reaching limit")
+			return
+		}
 
 		//name := strings.Replace(id, "/set", "", -1)
 		data := make(map[string]interface{})
 		err := json.Unmarshal(payload, &data)
 		if err != nil {
-			t.Fatalf("invalid payload")
+			t.Errorf("invalid payload")
+			return
 		}
 
 		// 	eg. brightness = brightness + action_time * 0.5
 		got := data["brightness"].(float64)
 		if got > max {
-			t.Fatalf("max limit invalid operation value: want %v got %v", max, got)
+			t.Errorf("max limit invalid operation value: want %v got %v", max, got)
 		}
 
 		var prevValue float64 = 0
@@ -69,12 +74,11 @@ func TestOperationIncreaseValue(t *testing.T) {
 		want = math.Min(want, max)
 
 		if got != want {
-			t.Fatalf("invalid operation value: want %v got %v", want, got)
+			t.Errorf("invalid operation value: want %v got %v", want, got)
 			return
 		}
 
 		brightnessExpose.Data.SetValue(got)
-		wg.Done()
 	}
 
 	mqtt.OnMessageHandler(messageHandler)
@@ -89,29 +93,31 @@ func TestOperationIncreaseValue(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error configuring action %v ", err.Error())
 	}
-	go func() {
-		for i := 0; i < expectedCalls; i++ {
+	for i := 0; i < expectedCalls; i++ {
 
-			// action_time property of button is not really used for calculation,
-			// is just a triggering device so we can publish the payload
-			ctx.SetDevicePayload(map[string]*devices.Entity{
-				"action_time": dd["button"].Exposes["action_time"],
-			})
+		// action_time property of button is not really used for calculation,
+		// is just a triggering device so we can publish the payload
+		ctx.SetDevicePayload(map[string]*devices.Entity{
+			"action_time": dd["button"].Exposes["action_time"],
+		})
 
-			action.Execute(ctx)
-
-			time.Sleep(100 * time.Millisecond)
-			currentActionTimeIndex++
+		if err := action.Execute(ctx); err != nil {
+			t.Fatal(err)
 		}
-	}()
-	wg.Wait()
+
+		mqtt.WaitResponses()
+		currentActionTimeIndex++
+	}
 
 	// we are expecting to have reached the max value of the 'brightness' property
 	// so next payload event shoud not publish new mqqt message. if it does it should error in the handler
 
 	action.Execute(ctx)
-	time.Sleep(100 * time.Millisecond)
+	mqtt.WaitResponses()
 
+	if responses != expectedCalls {
+		t.Fatalf("unexpected command count: %d", responses)
+	}
 }
 
 func TestOperationDecreaseValue(t *testing.T) {
@@ -119,10 +125,10 @@ func TestOperationDecreaseValue(t *testing.T) {
 	stepValue := 17.0
 	expectedCalls := 255 / int(stepValue)
 
-	wg := &sync.WaitGroup{}
-	wg.Add(expectedCalls)
+	responses := 0
 
 	mqtt := &mocks.MockMqttClient{}
+	t.Cleanup(mqtt.WaitResponses)
 	currentActionTimeIndex := 0
 
 	// create mock action
@@ -142,18 +148,24 @@ func TestOperationDecreaseValue(t *testing.T) {
 	max := dd["livingroom"].Exposes["brightness"].Attributes["max"].(float64)
 
 	var messageHandler = func(id string, payload []byte) {
+		responses++
+		if responses > expectedCalls {
+			t.Errorf("unexpected command after reaching limit")
+			return
+		}
 
 		//name := strings.Replace(id, "/set", "", -1)
 		data := make(map[string]interface{})
 		err := json.Unmarshal(payload, &data)
 		if err != nil {
-			t.Fatalf("invalid payload")
+			t.Errorf("invalid payload")
+			return
 		}
 
 		// 	eg. brightness = brightness + action_time * 0.5
 		got := data["brightness"].(float64)
 		if got > max {
-			t.Fatalf("max limit invalid operation value: want %v got %v", max, got)
+			t.Errorf("max limit invalid operation value: want %v got %v", max, got)
 		}
 
 		var prevValue float64 = 0
@@ -163,11 +175,10 @@ func TestOperationDecreaseValue(t *testing.T) {
 		want := prevValue - action.Data.(float64)
 		want = math.Min(want, max)
 		if got != want {
-			t.Fatalf("invalid operation value: want %v got %v", want, got)
+			t.Errorf("invalid operation value: want %v got %v", want, got)
 		}
 
 		dd["livingroom"].Exposes["brightness"].Data.SetValue(got)
-		wg.Done()
 	}
 
 	mqtt.OnMessageHandler(messageHandler)
@@ -181,38 +192,40 @@ func TestOperationDecreaseValue(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error configuring action %v ", err.Error())
 	}
-	go func() {
-		for i := 0; i < expectedCalls; i++ {
+	for i := 0; i < expectedCalls; i++ {
 
-			// action_time property of button is not really used for calculation,
-			// is just a triggering device so we can publish the payload
+		// action_time property of button is not really used for calculation,
+		// is just a triggering device so we can publish the payload
 
-			ctx.SetDevicePayload(map[string]*devices.Entity{
-				"action_time": dd["button"].Exposes["action_time"],
-			})
+		ctx.SetDevicePayload(map[string]*devices.Entity{
+			"action_time": dd["button"].Exposes["action_time"],
+		})
 
-			action.Execute(ctx)
-
-			time.Sleep(100 * time.Millisecond)
-			currentActionTimeIndex++
+		if err := action.Execute(ctx); err != nil {
+			t.Fatal(err)
 		}
-	}()
-	wg.Wait()
+
+		mqtt.WaitResponses()
+		currentActionTimeIndex++
+	}
 
 	// we are expecting to have reached the max value of the 'brightness' property
 	// so next payload event shoud not publish new mqqt message. if it does it should error in the handler
 
 	action.Execute(ctx)
-	time.Sleep(100 * time.Millisecond)
+	mqtt.WaitResponses()
+	if responses != expectedCalls {
+		t.Fatalf("unexpected command count: %d", responses)
+	}
 }
 
 func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	action_times := []float64{10.0, 20.0, 10.0, 40.0, 80.0, 20.0, 100.0, 50.0, 80.0, 20.0, 20.0, 30.0, 30.0}
 
-	wg := &sync.WaitGroup{}
-	wg.Add(len(action_times))
+	responses := 0
 
 	mqtt := &mocks.MockMqttClient{}
+	t.Cleanup(mqtt.WaitResponses)
 	currentActionTimeIndex := 0
 
 	// create mock action
@@ -233,18 +246,24 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	max := dd["livingroom"].Exposes["brightness"].Attributes["max"].(float64)
 
 	var messageHandler = func(id string, payload []byte) {
+		responses++
+		if responses > len(action_times) {
+			t.Errorf("unexpected command after reaching limit")
+			return
+		}
 
 		name := strings.Replace(id, "/set", "", -1)
 		data := make(map[string]interface{})
 		err := json.Unmarshal(payload, &data)
 		if err != nil {
-			t.Fatalf("invalid payload")
+			t.Errorf("invalid payload")
+			return
 		}
 
 		// 	eg. brightness = brightness + action_time * 0.5
 		got := data["brightness"].(float64)
 		if got > max {
-			t.Fatalf("max limit invalid operation value: want %v got %v", max, got)
+			t.Errorf("max limit invalid operation value: want %v got %v", max, got)
 		}
 
 		var prevValue float64 = 0
@@ -254,11 +273,10 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 		want := prevValue + (action_times[currentActionTimeIndex] * action.Data.(float64))
 		want = math.Min(want, max)
 		if got != want {
-			t.Fatalf("invalid operation value: want %v got %v", want, got)
+			t.Errorf("invalid operation value: want %v got %v", want, got)
 		}
 
 		dd[name].Exposes["brightness"].Data.SetValue(got)
-		wg.Done()
 	}
 
 	mqtt.OnMessageHandler(messageHandler)
@@ -273,20 +291,19 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error configuring action %v ", err.Error())
 	}
-	go func() {
-		for _, t := range action_times {
-			// update both device and payload as they are used
-			dd["button"].Exposes["action_time"].Data.SetValue(float64(t))
-			ctx.SetDevicePayload(map[string]*devices.Entity{
-				"action_time": dd["button"].Exposes["action_time"],
-			})
-			action.Execute(ctx)
-
-			time.Sleep(100 * time.Millisecond)
-			currentActionTimeIndex++
+	for _, actionTime := range action_times {
+		// update both device and payload as they are used
+		dd["button"].Exposes["action_time"].Data.SetValue(actionTime)
+		ctx.SetDevicePayload(map[string]*devices.Entity{
+			"action_time": dd["button"].Exposes["action_time"],
+		})
+		if err := action.Execute(ctx); err != nil {
+			t.Fatal(err)
 		}
-	}()
-	wg.Wait()
+
+		mqtt.WaitResponses()
+		currentActionTimeIndex++
+	}
 
 	// we are expecting to have reached the max value of the 'brightness' property
 	// so next payload event shoud not publish new mqqt message. if it does it should error in the handler
@@ -295,7 +312,10 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 		"action_time": dd["button"].Exposes["action_time"],
 	})
 	action.Execute(ctx)
-	time.Sleep(100 * time.Millisecond)
+	mqtt.WaitResponses()
+	if responses != len(action_times) {
+		t.Fatalf("unexpected command count: %d", responses)
+	}
 }
 
 func TestOperationMultiStepDecreaseValue(t *testing.T) {
@@ -303,10 +323,10 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 	action_times := []float64{10.0, 20.0, 10.0, 40.0, 80.0, 20.0, 100.0, 50.0, 80.0, 20.0, 20.0, 30.0, 30.0}
 	// brightness = brightness - action_time * 0.5
 
-	wg := &sync.WaitGroup{}
-	wg.Add(len(action_times))
+	responses := 0
 
 	mqtt := &mocks.MockMqttClient{}
+	t.Cleanup(mqtt.WaitResponses)
 	currentActionTimeIndex := 0
 
 	// create mock action
@@ -327,17 +347,23 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 	max := dd["livingroom"].Exposes["brightness"].Attributes["max"].(float64)
 
 	var messageHandler = func(id string, payload []byte) {
+		responses++
+		if responses > len(action_times) {
+			t.Errorf("unexpected command after reaching limit")
+			return
+		}
 		name := strings.Replace(id, "/set", "", -1)
 		data := make(map[string]interface{})
 		err := json.Unmarshal(payload, &data)
 		if err != nil {
-			t.Fatalf("invalid payload")
+			t.Errorf("invalid payload")
+			return
 		}
 
 		// 	eg. brightness = brightness - action_time * 0.5
 		got := data["brightness"].(float64)
 		if got > max {
-			t.Fatalf("max limit invalid operation value: want %v got %v", max, got)
+			t.Errorf("max limit invalid operation value: want %v got %v", max, got)
 		}
 
 		var prevValue float64 = 0
@@ -347,11 +373,10 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 		want := prevValue - (action_times[currentActionTimeIndex] * action.Data.(float64))
 		want = math.Min(want, max)
 		if got != want {
-			t.Fatalf("invalid operation value: want %v got %v", want, got)
+			t.Errorf("invalid operation value: want %v got %v", want, got)
 		}
 
 		dd[name].Exposes["brightness"].Data.SetValue(got)
-		wg.Done()
 	}
 
 	mqtt.OnMessageHandler(messageHandler)
@@ -366,20 +391,19 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error configuring action %v ", err.Error())
 	}
-	go func() {
-		for _, t := range action_times {
-			// update both device and payload as they are used
-			dd["button"].Exposes["action_time"].Data.SetValue(float64(t))
-			ctx.SetDevicePayload(map[string]*devices.Entity{
-				"action_time": dd["button"].Exposes["action_time"],
-			})
-			action.Execute(ctx)
-
-			time.Sleep(100 * time.Millisecond)
-			currentActionTimeIndex++
+	for _, actionTime := range action_times {
+		// update both device and payload as they are used
+		dd["button"].Exposes["action_time"].Data.SetValue(actionTime)
+		ctx.SetDevicePayload(map[string]*devices.Entity{
+			"action_time": dd["button"].Exposes["action_time"],
+		})
+		if err := action.Execute(ctx); err != nil {
+			t.Fatal(err)
 		}
-	}()
-	wg.Wait()
+
+		mqtt.WaitResponses()
+		currentActionTimeIndex++
+	}
 
 	// we are expecting to have reached the max value of the 'brightness' property
 	// so next payload event shoud not publish new mqqt message. if it does it should error in the handler
@@ -389,7 +413,10 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 	})
 
 	action.Execute(ctx)
-	time.Sleep(100 * time.Millisecond)
+	mqtt.WaitResponses()
+	if responses != len(action_times) {
+		t.Fatalf("unexpected command count: %d", responses)
+	}
 }
 
 func TestOperationCycleValue(t *testing.T) {
