@@ -30,9 +30,9 @@ services:
     ports:
       - "1883:1883"
     volumes:
-      - ${DATA_ROOT}/mqtt/data:/mosquitto/data
-      - ${DATA_ROOT}/mqtt/config:/mosquitto/config
-      - ${DATA_ROOT}/mqtt/log:/mosquitto/log
+      - ${DATA_ROOT:?Set DATA_ROOT in the root .env}/mqtt/data:/mosquitto/data
+      - ${DATA_ROOT:?Set DATA_ROOT in the root .env}/mqtt/config:/mosquitto/config
+      - ${DATA_ROOT:?Set DATA_ROOT in the root .env}/mqtt/log:/mosquitto/log
     networks:
       - nodeherder
 
@@ -41,14 +41,14 @@ services:
     container_name: zigbee2mqtt
     restart: unless-stopped
     volumes:
-      - ${DATA_ROOT}/zigbee2mqtt-data:/app/data
+      - ${DATA_ROOT:?Set DATA_ROOT in the root .env}/zigbee2mqtt-data:/app/data
       - /run/udev:/run/udev:ro
     ports:
       - "8089:8080"
     environment:
       - TZ=Europe/London
     devices:
-      - ${Z2M_DEVICE}:${Z2M_SERIAL_PORT}
+      - ${Z2M_DEVICE:?Set Z2M_DEVICE in the root .env}:${Z2M_SERIAL_PORT:?Set Z2M_SERIAL_PORT in the root .env}
     depends_on:
       - mqtt
     networks:

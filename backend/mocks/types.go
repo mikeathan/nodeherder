@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -224,12 +225,16 @@ func (h *MockEventHub) OnStartMCP(action func() (interface{}, error)) {
 
 // Mock MqttClient
 type MockMqttClient struct {
-	messageHandler func(string, []byte)
-	responses      map[string]interface{}
-	responseDelay  time.Duration
+	mutex            sync.RWMutex
+	responsesPending sync.WaitGroup
+	messageHandler   func(string, []byte)
+	responses        map[string]interface{}
+	responseDelay    time.Duration
 }
 
 func (m *MockMqttClient) SetResponseDelay(delay time.Duration) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	m.responseDelay = delay
 }
 
@@ -239,6 +244,8 @@ func (m *MockMqttClient) Connect() error {
 }
 
 func (m *MockMqttClient) AddResponse(topic string, payload interface{}) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	if m.responses == nil {
 		m.responses = make(map[string]interface{})
 	}
@@ -264,17 +271,29 @@ func (m *MockMqttClient) Disconnect() {
 }
 
 func (m *MockMqttClient) OnMessageHandler(handler func(id string, payload []byte)) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	m.messageHandler = handler
 }
 
 func (m *MockMqttClient) messagePubHandler() func(id string, payload []byte) {
+	m.mutex.RLock()
+	handler := m.messageHandler
+	m.mutex.RUnlock()
 	return func(id string, payload []byte) {
-		m.messageHandler(id, payload)
+		if handler != nil {
+			handler(id, payload)
+		}
 	}
 }
 
+// WaitResponses waits for async deliveries. Stop initiating publishes before calling.
+// Handlers must not call WaitResponses on their own client.
+func (m *MockMqttClient) WaitResponses() { m.responsesPending.Wait() }
+
 func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 	fmt.Println("Mock Publish")
+	handler := m.messagePubHandler()
 
 	// Check if this is a command message (ends with /set)
 	isSetCommand := strings.HasSuffix(topic, "/set")
@@ -284,7 +303,7 @@ func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 	case nil:
 		data = []byte("mock payload")
 	case []byte:
-		data = v
+		data = append([]byte(nil), v...)
 	default:
 		b, err := json.Marshal(v)
 		if err != nil {
@@ -296,7 +315,7 @@ func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 
 	// For non-set messages, process them normally (like bridge/device messages, sensor updates)
 	if !isSetCommand {
-		m.messagePubHandler()(topic, data)
+		handler(topic, data)
 		return
 	}
 
@@ -304,24 +323,27 @@ func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 	topic = strings.Replace(topic, "/set", "", -1)
 
 	// Check if there's an auto-response configured for this topic
-	hasAutoResponse := false
-	if _, ok := m.responses[topic]; ok {
-		hasAutoResponse = true
-	}
+	m.mutex.RLock()
+	resp, hasAutoResponse := m.responses[topic]
+	delay := m.responseDelay
+	m.mutex.RUnlock()
 
 	// Only simulate immediate device response if there's no auto-response configured
 	// This prevents double responses that can cause feedback loops
 	if !hasAutoResponse {
+		m.responsesPending.Add(1)
 		go func() {
+			defer m.responsesPending.Done()
 			time.Sleep(50 * time.Millisecond) // Delay to let pending state be set
-			m.messagePubHandler()(topic, data)
+			handler(topic, data)
 		}()
 	}
 
 	// Send configured auto-response if available (for specific test scenarios)
-	if resp, ok := m.responses[topic]; ok {
+	if hasAutoResponse {
+		m.responsesPending.Add(1)
 		go func() {
-			delay := m.responseDelay
+			defer m.responsesPending.Done()
 			if delay == 0 {
 				delay = 500 * time.Millisecond // Default to 500ms
 			}
@@ -339,7 +361,7 @@ func (m *MockMqttClient) Publish(topic string, payload interface{}) {
 				respBytes = b
 			}
 
-			m.messagePubHandler()(topic, respBytes)
+			handler(topic, respBytes)
 		}()
 	}
 }
@@ -924,6 +946,7 @@ func (s *NopAppStore) DeleteAssistantConversation(conversationID string) error {
 
 // Mock engine
 type MockAutomationEngine[T automations.Automation] struct {
+	mutex    sync.RWMutex
 	cache    map[string]automations.Automation
 	mockData []automations.Automation
 }
@@ -948,6 +971,8 @@ func (d *MockAutomationEngine[T]) Initialize() ([]automations.Automation, error)
 }
 
 func (d *MockAutomationEngine[T]) LoadAll() []automations.Automation {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
 
 	keys := make([]string, 0, len(d.cache))
 	values := make([]automations.Automation, 0, len(d.cache))
@@ -971,6 +996,8 @@ func (d *MockAutomationEngine[T]) Delete(name string) error {
 }
 
 func (d *MockAutomationEngine[T]) ClearCache() {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 
 	for k := range d.cache {
 		delete(d.cache, k)
@@ -1008,10 +1035,14 @@ func (d *MockAutomationEngine[T]) Load(name string) (automations.Automation, err
 }
 
 func (d *MockAutomationEngine[T]) addToCache(name string, item automations.Automation) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 	d.cache[name] = item
 }
 
 func (d *MockAutomationEngine[T]) loadFromCache(name string) automations.Automation {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
 	if item, ok := d.cache[name]; ok {
 		return item
 	}
@@ -1020,6 +1051,8 @@ func (d *MockAutomationEngine[T]) loadFromCache(name string) automations.Automat
 }
 
 func (d *MockAutomationEngine[T]) deleteFromCache(name string) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 	delete(d.cache, name)
 }
 
@@ -1053,6 +1086,8 @@ func (s *MockAutomationDeviceQuerier) IsAutomationEnabled(id string) bool {
 
 // Mock Clock
 type MockClock struct {
+	mutex         sync.RWMutex
+	advanceMutex  sync.Mutex
 	callback      func() time.Time
 	sleepDuration time.Duration
 	timers        []*mockTimer
@@ -1063,19 +1098,22 @@ func NewMockClock(callback func() time.Time) *MockClock {
 }
 
 func (m *MockClock) Advance(duration time.Duration) {
+	m.advanceMutex.Lock()
 	oldNow := m.Now()
 	newNow := oldNow.Add(duration)
+	m.mutex.Lock()
 
 	// update Now()
 	m.callback = func() time.Time { return newNow }
 
 	// tick timers
 	var remaining []*mockTimer
+	var callbacks []func()
 	for _, t := range m.timers {
 		if !t.fired {
 			if t.duration <= duration {
 				t.fired = true
-				t.f() // run inline for determinism
+				callbacks = append(callbacks, t.f)
 			} else {
 				t.duration -= duration
 				remaining = append(remaining, t)
@@ -1083,15 +1121,25 @@ func (m *MockClock) Advance(duration time.Duration) {
 		}
 	}
 	m.timers = remaining
+	m.mutex.Unlock()
+	m.advanceMutex.Unlock()
+	// Run inline, but outside locks so callbacks can query time/reset timers.
+	for _, callback := range callbacks {
+		callback()
+	}
 }
 
 func (m *MockClock) SetMockTime(t time.Time) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	m.callback = func() time.Time {
 		return t
 	}
 }
 
 func (m *MockClock) SetMockSleepDuration(d time.Duration) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	m.sleepDuration = d
 }
 
@@ -1113,7 +1161,10 @@ func (r *MockClock) CompareWithNow(t time.Time, operator utils.EqualityOperator)
 
 }
 func (m *MockClock) Now() time.Time {
-	return m.callback()
+	m.mutex.RLock()
+	callback := m.callback
+	m.mutex.RUnlock()
+	return callback()
 }
 
 func (m *MockClock) Sleep(d time.Duration) {
@@ -1122,6 +1173,8 @@ func (m *MockClock) Sleep(d time.Duration) {
 }
 
 func (m *MockClock) AfterFunc(d time.Duration, f func()) utils.Timer {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	mt := &mockTimer{duration: d, f: f, parent: m}
 	m.timers = append(m.timers, mt)
 	return mt
@@ -1135,6 +1188,8 @@ type mockTimer struct {
 }
 
 func (t *mockTimer) Stop() bool {
+	t.parent.mutex.Lock()
+	defer t.parent.mutex.Unlock()
 	if t.fired {
 		return false
 	}
@@ -1143,11 +1198,19 @@ func (t *mockTimer) Stop() bool {
 }
 
 func (t *mockTimer) Reset(d time.Duration) bool {
+	t.parent.mutex.Lock()
+	defer t.parent.mutex.Unlock()
+	wasActive := !t.fired
 	t.duration = d
 	t.fired = false
-	// put it back into parent’s active timers
+	// Reset can happen before Advance removes a stopped timer; do not duplicate it.
+	for _, timer := range t.parent.timers {
+		if timer == t {
+			return wasActive
+		}
+	}
 	t.parent.timers = append(t.parent.timers, t)
-	return true
+	return wasActive
 }
 
 // Mock RemoteLogger emitter
@@ -1280,6 +1343,7 @@ func (m *MockMCPStatusProvider) Running() bool {
 func (m *MockMCPStatusProvider) SetOnStatusChange(cb func()) {
 	// no-op for mock
 }
+
 // Mock Assistant Repository
 type MockAssistantRepo struct {
 	Conversations     map[string]*assistant.Conversation

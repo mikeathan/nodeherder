@@ -20,6 +20,7 @@ import (
 	"node-herder/utils"
 	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -1940,4 +1941,74 @@ func TestRestartMCPMessage(t *testing.T) {
 	defer s.Close()
 	defer wsConn.Close()
 	wsHub.Close()
+}
+
+func TestWebSocketConcurrentClientLifecycle(t *testing.T) {
+	endpoint := ws.NewWebSocket()
+	const clients = 16
+	received := make(chan struct{}, clients)
+	endpoint.Start(func([]byte) { received <- struct{}{} })
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := endpoint.HandleRequest(w, r); err != nil {
+			t.Errorf("upgrade: %v", err)
+		}
+	}))
+	t.Cleanup(server.Close)
+	release := make(chan struct{})
+	var releaseOnce sync.Once
+	unblock := func() { releaseOnce.Do(func() { close(release) }) }
+	var wg sync.WaitGroup
+	defer func() { unblock(); _ = endpoint.Close(); wg.Wait() }()
+	for i := 0; i < clients; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			conn, _, err := websocket.DefaultDialer.Dial("ws"+strings.TrimPrefix(server.URL, "http"), nil)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			defer conn.Close()
+			_ = conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+			if err := conn.WriteMessage(websocket.TextMessage, []byte("ready")); err != nil {
+				t.Error(err)
+				return
+			}
+			<-release
+			_, data, err := conn.ReadMessage()
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			var message ws.EventMessage
+			if err := json.Unmarshal(data, &message); err != nil {
+				t.Error(err)
+				return
+			}
+			if message.Type != "fixture" || message.Payload != "unchanged" {
+				t.Errorf("unexpected broadcast: %s", data)
+			}
+			if err := conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(time.Second)); err != nil {
+				t.Error(err)
+			}
+			// Drain disconnect notifications until the server acknowledges the close.
+			for {
+				if _, _, err := conn.ReadMessage(); err != nil {
+					break
+				}
+			}
+		}()
+	}
+	for i := 0; i < clients; i++ {
+		select {
+		case <-received:
+		case <-time.After(5 * time.Second):
+			t.Fatal("client readiness timed out")
+		}
+	}
+	if err := endpoint.Broadcast("fixture", "unchanged"); err != nil {
+		t.Fatal(err)
+	}
+	unblock()
+	wg.Wait()
 }

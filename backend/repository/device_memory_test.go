@@ -4,7 +4,9 @@ import (
 	"math"
 	"node-herder/models/devices"
 	"node-herder/repository"
+	"node-herder/utils"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 )
@@ -319,4 +321,32 @@ func TestRepositoryCanUpdateExistingDevice(t *testing.T) {
 		t.Fatalf("contains invalid devices")
 	}
 	validateDevice(t, devices[0], device1b)
+}
+
+func TestMapperConcurrentConfigureUpdateResolve(t *testing.T) {
+	repo := repository.NewMemoryDeviceRepo()
+	if err := repo.StoreBridge([]*devices.BridgeInfo{{IeeeAddress: "ieee", FriendlyName: "lamp"}}); err != nil {
+		t.Fatal(err)
+	}
+	m := repository.NewDeviceIdMapper(repo)
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 100; j++ {
+				m.Configure()
+				m.UpdateId("temporary", "old")
+				m.ResolveFriendlyName("lamp")
+			}
+		}()
+	}
+	wg.Wait()
+	m.Configure()
+	if got := m.ResolveFriendlyName("lamp"); got != "ieee" {
+		t.Fatalf("IEEE mapping: %s", got)
+	}
+	if got := m.ResolveFriendlyName("temporary"); got != utils.HashName("temporary") {
+		t.Fatalf("stale mapping: %s", got)
+	}
 }

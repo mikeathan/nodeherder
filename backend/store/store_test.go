@@ -1,20 +1,182 @@
 package store_test
 
 import (
+	"context"
 	"fmt"
 	metrics "node-herder/internal/metrics/domain"
 	"node-herder/mocks"
 	"node-herder/models/devices"
 	"node-herder/models/settings"
 	"node-herder/repository"
+	"node-herder/store"
 	utils_test "node-herder/testing"
 	"node-herder/utils"
 	"os"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
+
+type cleanupLifecycleRepo struct {
+	mocks.NopMetricsRepo
+	prune func(time.Duration) error
+}
+
+func (r *cleanupLifecycleRepo) Prune(expiry time.Duration) error { return r.prune(expiry) }
+
+func stopCleanupTask(t *testing.T, task settings.Task) {
+	t.Helper()
+	done := make(chan error, 1)
+	go func() { done <- task.Stop() }()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("cleanup Stop did not finish")
+	}
+}
+
+func TestMetricsCleanupLifecycleIdleRestartAndCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	var calls atomic.Int32
+	repo := &cleanupLifecycleRepo{prune: func(time.Duration) error { calls.Add(1); return nil }}
+	task := store.NewMetricsCleanupTask(ctx, repo)
+	config := settings.NewAppConfig()
+	config.Hub.History.SleepTimeout = utils.IntervalFromHours(12)
+	stopCleanupTask(t, task) // before Start
+	t.Cleanup(func() { stopCleanupTask(t, task) })
+	for i := 0; i < 10; i++ {
+		if err := task.Start(config); err != nil {
+			t.Fatal(err)
+		}
+	}
+	stopCleanupTask(t, task) // must interrupt the twelve-hour wait
+	stopCleanupTask(t, task)
+	if calls.Load() != 0 {
+		t.Fatal("cleanup pruned before its sleep elapsed")
+	}
+	if err := task.Start(config); err != nil {
+		t.Fatal(err)
+	}
+	cancel()
+	stopCleanupTask(t, task)
+	if err := task.Start(config); err != context.Canceled {
+		t.Fatalf("Start after parent cancellation: %v", err)
+	}
+}
+
+func TestMetricsCleanupLifecycleConcurrentStartStop(t *testing.T) {
+	task := store.NewMetricsCleanupTask(context.Background(), &cleanupLifecycleRepo{
+		prune: func(time.Duration) error { t.Error("unexpected prune during long wait"); return nil },
+	})
+	t.Cleanup(func() { stopCleanupTask(t, task) })
+	config := settings.NewAppConfig()
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 20; j++ {
+				if err := task.Start(config); err != nil {
+					t.Error(err)
+				}
+				if err := task.Stop(); err != nil {
+					t.Error(err)
+				}
+			}
+		}()
+	}
+	wg.Wait()
+	stopCleanupTask(t, task)
+}
+
+func TestMetricsCleanupLifecycleStopJoinsPrune(t *testing.T) {
+	entered := make(chan time.Duration, 1)
+	release := make(chan struct{})
+	var releaseOnce sync.Once
+	var calls atomic.Int32
+	repo := &cleanupLifecycleRepo{prune: func(expiry time.Duration) error {
+		calls.Add(1)
+		entered <- expiry
+		<-release
+		return nil
+	}}
+	task := store.NewMetricsCleanupTask(context.Background(), repo)
+	t.Cleanup(func() { releaseOnce.Do(func() { close(release) }); stopCleanupTask(t, task) })
+	config := settings.NewAppConfig()
+	config.Hub.History = settings.NewHistoryConfig(utils.IntervalFromMilliseconds(1), utils.IntervalFromHours(3))
+	if err := task.Start(config); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case expiry := <-entered:
+		if expiry != 3*time.Hour {
+			t.Fatalf("unexpected retention: %v", expiry)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("prune did not start")
+	}
+	stopped := make(chan error, 1)
+	go func() { stopped <- task.Stop() }()
+	select {
+	case <-stopped:
+		t.Fatal("Stop returned while Prune was still running")
+	case <-time.After(20 * time.Millisecond): // bounded negative assertion, prune is gated
+	}
+	releaseOnce.Do(func() { close(release) })
+	select {
+	case err := <-stopped:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Stop did not join released Prune")
+	}
+	if calls.Load() != 1 {
+		t.Fatalf("expected exactly one prune, got %d", calls.Load())
+	}
+}
+
+func TestMetricsCleanupOwnsConfigSnapshot(t *testing.T) {
+	for _, factory := range []struct {
+		name   string
+		create func(context.Context, metrics.Repository) settings.Task
+	}{
+		{"constructor", store.NewMetricsCleanupTask}, {"default", store.DefaultMetricsCleanupTask},
+	} {
+		t.Run(factory.name, func(t *testing.T) {
+			entered, release := make(chan time.Duration, 1), make(chan struct{})
+			var first, released sync.Once
+			task := factory.create(context.Background(), &cleanupLifecycleRepo{prune: func(expiry time.Duration) error {
+				first.Do(func() { entered <- expiry; <-release })
+				return nil
+			}})
+			t.Cleanup(func() { released.Do(func() { close(release) }); stopCleanupTask(t, task) })
+			config := settings.NewAppConfig()
+			config.Hub.History = settings.NewHistoryConfig(utils.IntervalFromMilliseconds(1), utils.IntervalFromHours(3))
+			if err := task.Start(config); err != nil {
+				t.Fatal(err)
+			}
+			// Start must capture values, not retain mutable configuration pointers.
+			config.Hub.History.SleepTimeout.Value = 12
+			config.Hub.History.SleepTimeout.Unit = utils.UnitHours
+			config.Hub.History.ExpireAt.Value = 9
+			select {
+			case expiry := <-entered:
+				if expiry != 3*time.Hour {
+					t.Fatalf("retention changed after Start: %v", expiry)
+				}
+			case <-time.After(2 * time.Second):
+				t.Fatal("worker used modified sleep instead of its snapshot")
+			}
+		})
+	}
+}
 
 func TestStoreLoadAllDevices(t *testing.T) {
 

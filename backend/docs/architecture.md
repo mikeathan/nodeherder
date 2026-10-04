@@ -10,7 +10,7 @@ When the backend receives a payload from a device (e.g. via Zigbee2MQTT), it is 
 
 ```mermaid
 flowchart TD
-    A["Payload arrives (MQTT)"] --> B{"Value changed?"}
+    A["Payload arrives (MQTT)"] --> B{"Physical event or value changed?"}
     B -->|No| SKIP["Skip"]
     B -->|Yes| C["SetValue (In-Memory)"]
     C --> D{"Debounced?"}
@@ -38,7 +38,9 @@ The `SetValue()` operation happens **before** any debouncing.
 
 ### 2. Automation Triggers are Unthrottled
 
-The `attemptToTriggerAutomation()` method fires on **any** real value change (after `ComparePayloadValues`), completely bypassing the debouncer.
+The `attemptToTriggerAutomation()` method receives accepted changes and repeated
+physical events, independently of UI/metrics debounce, when automation is enabled.
+Unchanged state is deduplicated; whitelisted event values bypass equality checks.
 
 - **Why**: User inputs like physical buttons or dials generate rapid, intentional bursts of events. Throttling these would result in missed button presses or sluggish dial responsiveness.
 
@@ -54,3 +56,36 @@ By splitting the pipeline early, we fulfill conflicting requirements without cou
 
 - **Immediate action** (automations) gets raw, real-time data.
 - **Historical tracking and observation** (metrics, UI) gets filtered, clean data.
+
+## Automation reload and failures
+
+The engine's runtime registry contains only configured generations. Storage holds
+persisted recipes; loading a recipe does not make it executable. Reads, enabled
+checks and triggers keep using the last working generation while replacements are
+prepared. Load/configuration/handler/save failures retain it and are logged/returned.
+First-load failures remain unavailable. A failed disk scan never implies deletion.
+
+Schedules prepare owned replacements and roll back on failure. Matching time/type
+sets preserve the current enabled window (including reordered lists), but callbacks
+bind the replacement object. Removed/replaced schedules cancel timers and context
+watchers; already committed callbacks may finish against their old generation.
+Already accepted actions, including delayed commands, may finish after replacement
+or deletion. Reload does not join commands, retry them, or confirm physical state.
+
+Management writes are single-owner: overlapping/re-entrant save/delete requests
+return an update-in-progress error; callers may retry after completion. Triggers and
+reads do not wait for preparation. Immediate execution errors reach manual callers;
+physical/asynchronous failures are logged. Later actions still run if one fails.
+An existing trigger whose conditions do not match remains a successful no-op.
+
+Recipe saves sync a staged file, then replace atomically in the same directory,
+preserving existing permission bits and valid symlink targets. The configuration
+directory must be writable (Compose mounts the directory). This is not a multi-file
+transaction or a guarantee against power-loss/directory-metadata corruption.
+
+Observed explicit Z2M source disable overrides failure fallback: remove executable
+access before retiring schedules. Cleanup failure is reported and retried on reload,
+never restores execution. Persisted recipes remain for successful later re-enable;
+already accepted commands remain non-joining. Ordinary configuration/save failures
+retain working generations. Disable is observed through existing configure/reload
+paths, not new polling. See [FR-20](../../specs/003-backend-race-repair/plan.md).

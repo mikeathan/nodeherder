@@ -3,9 +3,11 @@ package repository
 import (
 	"node-herder/models/devices"
 	"node-herder/utils"
+	"sync"
 )
 
 type DeviceIdMapper struct {
+	mutex          sync.RWMutex
 	deviceRepo     devices.Repository
 	deviceIdMapper map[string]string
 }
@@ -24,6 +26,8 @@ func (s *DeviceIdMapper) Configure() {
 		return
 	}
 	// clean up
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	for name, id := range s.deviceIdMapper {
 		var found = false
 		for _, device := range bridgeInfoList {
@@ -48,7 +52,10 @@ func (s *DeviceIdMapper) Configure() {
 func (a *DeviceIdMapper) ResolveFriendlyName(friendlyName string) string {
 
 	// check if id already exists
-	if id, ok := a.deviceIdMapper[friendlyName]; ok {
+	a.mutex.RLock()
+	id, ok := a.deviceIdMapper[friendlyName]
+	a.mutex.RUnlock()
+	if ok {
 		return id
 	}
 
@@ -58,5 +65,7 @@ func (a *DeviceIdMapper) ResolveFriendlyName(friendlyName string) string {
 }
 
 func (s *DeviceIdMapper) UpdateId(friendlyName string, id string) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
 	s.deviceIdMapper[friendlyName] = id
 }

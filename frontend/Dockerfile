@@ -1,5 +1,5 @@
 # Build Vue app
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /frontend
 
 ARG MODE=production
@@ -23,7 +23,7 @@ WORKDIR /usr/share/nginx/html
 RUN rm /etc/nginx/conf.d/default.conf
 
 # Copy your config 
-COPY ../config/nginx.conf /etc/nginx/conf.d/default.conf
+COPY config/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built app
 COPY --from=builder /frontend/dist .

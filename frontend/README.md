@@ -15,7 +15,7 @@ This is the frontend application for NodeHerder, a home automation and IoT devic
 
 ## Prerequisites
 
-- Node.js (v16 or higher recommended)
+- Node.js from [`.nvmrc`](../.nvmrc)
 - npm (comes with Node.js)
 
 ## Installation
@@ -23,7 +23,7 @@ This is the frontend application for NodeHerder, a home automation and IoT devic
 Install dependencies:
 
 ```bash
-npm install
+npm ci
 ```
 
 ## Environment Configuration
@@ -34,9 +34,11 @@ The application uses environment variables for configuration. Two environment fi
 - `.env.production` - Production environment settings
 
 Key environment variables:
-- `VITE_API_BASE_URL` - Backend API URL (default: `http://localhost:4110`)
-- `VITE_WS_BASE_URL` - WebSocket URL for real-time updates (default: `ws://localhost:4110`)
-- `FRONTEND_PORT` - Port for the frontend server (default: `4100`)
+- `VITE_API_BASE_URL` - Backend API base including `/api` (for example `http://localhost:4110/api`)
+- `VITE_WS_BASE_URL` - WebSocket URL including `/ws` (for example `ws://localhost:4110/ws`)
+
+Set local overrides in `.env.development.local`/`.env.production.local`.
+Vite embeds these values at build time. Docker lifecycle/nginx details: [setup guide](../docs/setup.md).
 
 ## Development
 
@@ -46,7 +48,7 @@ Start the development server with hot-reload:
 npm run dev
 ```
 
-The application will be available at `http://localhost:4100` (or the port specified in `FRONTEND_PORT`).
+The application will be available at `http://localhost:4100`; Vite sets its port in `vite.config.js`.
 
 ### Other Development Commands
 
@@ -150,7 +152,9 @@ The application supports modern browsers:
 
 ### Port Already in Use
 
-If port 4100 is already in use, you can change the `FRONTEND_PORT` in `.env.development` or `.env.production`.
+If port 4100 is already in use, pass `npm run dev -- --port 4101` or update `vite.config.js`.
+Update backend allowed origins and callback/frontend URLs to match. `npm start` separately
+uses `PORT` (default 9080) from `.env.production` for static serving.
 
 ### Type Checking Errors
 

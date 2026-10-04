@@ -28,6 +28,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -1665,8 +1666,9 @@ func TestProcessorHandlesDeviceNoLastSeen(t *testing.T) {
 func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
+	initial := make(chan struct{}, 1)
 
-	callbackCounter := 0
+	var callbackCounter atomic.Int32
 
 	// we dont need tasks here just using it as it using valid settings repo
 	tasks := []settings.Task{}
@@ -1694,25 +1696,27 @@ func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {
 		}
 
 		f := func(value bool) error {
+			defer wg.Done()
 
 			// we are expecting to hit it twice, once initally and another one from the timeout
 			expectedValue := true
-			if callbackCounter == 1 {
+			if callbackCounter.Load() == 1 {
 				expectedValue = false
 			}
-			if callbackCounter > 1 {
-				t.Fatalf("callbackCounter should be less than 2 got %v", callbackCounter)
+			if callbackCounter.Load() > 1 {
+				t.Errorf("callbackCounter should be less than 2 got %v", callbackCounter.Load())
 				return fmt.Errorf("failed")
 			}
 
 			if value != expectedValue {
-				t.Fatalf("want %v got %v", expectedValue, value)
+				t.Errorf("want %v got %v", expectedValue, value)
 				return fmt.Errorf("failed")
 			}
 
-			err = cfg.SaveBridgePermitJoin(value)
-			callbackCounter++
-			wg.Done()
+			err := cfg.SaveBridgePermitJoin(value)
+			if callbackCounter.Add(1) == 1 {
+				initial <- struct{}{}
+			}
 
 			return err
 		}
@@ -1742,7 +1746,11 @@ func TestProcessorHandlesBridgePermitJoinwithActiveStateTimer(t *testing.T) {
 
 	eventHub.Broadcast(ws.BridgePermitJoin, req)
 
-	time.Sleep(200 * time.Millisecond)
+	select {
+	case <-initial:
+	case <-time.After(5 * time.Second):
+		t.Fatal("initial permit-join callback timed out")
+	}
 
 	// assert bridge permit join is set to true, from initial request callback
 	bridgeConfig, err := cfg.LoadBridgeConfig()
@@ -1769,7 +1777,7 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
-	callbackCounter := 0
+	var callbackCounter atomic.Int32
 
 	// we dont need tasks here just using it as it using valid settings repo
 	tasks := []settings.Task{}
@@ -1786,7 +1794,7 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 	broadcastHandler := func(eventName string, data interface{}) error {
 
 		if eventName != ws.BridgePermitJoin {
-			if callbackCounter == 3 && eventName == ws.OperationFailed {
+			if callbackCounter.Load() == 3 && eventName == ws.OperationFailed {
 				// we are expecting to hit it twice. counter is 3 as we have send success event from first call
 				// second we should get back a failure event
 				// as the event cannot start since its active
@@ -1805,20 +1813,20 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 		}
 
 		f := func(value bool) error {
+			defer wg.Done()
 
-			if callbackCounter > 1 {
-				t.Fatalf("callbackCounter should be less than 2 got %v", callbackCounter)
+			if callbackCounter.Load() > 1 {
+				t.Errorf("callbackCounter should be less than 2 got %v", callbackCounter.Load())
 				return fmt.Errorf("failed")
 			}
 
 			if value != true {
-				t.Fatalf("callback error: want %v got %v", true, value)
+				t.Errorf("callback error: want %v got %v", true, value)
 				return fmt.Errorf("failed")
 			}
 
-			err = cfg.SaveBridgePermitJoin(value)
-			callbackCounter++
-			wg.Done()
+			err := cfg.SaveBridgePermitJoin(value)
+			callbackCounter.Add(1)
 
 			return err
 		}
@@ -1833,9 +1841,8 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 		response.Data["value"] = req.PermitJoin
 		jsonPayload, _ := json.Marshal(response)
 
+		callbackCounter.Add(1)
 		mqtt.Publish("bridge/response/permit_join", jsonPayload)
-
-		callbackCounter++
 		return nil
 	}
 	eventHub.SetMockBroadcastEvent(broadcastHandler)
@@ -1849,7 +1856,7 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 	// send first request
 	eventHub.Broadcast(ws.BridgePermitJoin, req)
 
-	time.Sleep(500 * time.Millisecond)
+	wg.Wait()
 
 	// assert bridge permit join is set to true, from initial request callback
 	bridgeConfig, err := cfg.LoadBridgeConfig()
@@ -1862,9 +1869,9 @@ func TestProcessorHandlesBridgePermitJoinRejectRequestWhenActive(t *testing.T) {
 
 	wg.Wait()
 
-	// send second request while first one is active
-	eventHub.Broadcast(ws.BridgePermitJoin, req)
+	// Register the completion before the request can invoke its callback.
 	wg.Add(1)
+	eventHub.Broadcast(ws.BridgePermitJoin, req)
 
 	//  assert bridge permit join is still set to true,
 	bridgeConfig, err = cfg.LoadBridgeConfig()
@@ -1978,41 +1985,79 @@ func TestNewDeviceExposeValuesAreBroadcastedOnly(t *testing.T) {
 	}
 }
 
+func waitAvailabilitySignal(t *testing.T, signal <-chan struct{}) {
+	t.Helper()
+	select {
+	case <-signal:
+	case <-time.After(5 * time.Second):
+		t.Fatal("availability broadcast timed out")
+	}
+}
+
+func findAvailabilityTestDevice(t *testing.T, appStore store.AppStore, id string) *devices.Device {
+	t.Helper()
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+	timeout := time.NewTimer(5 * time.Second)
+	defer timeout.Stop()
+	for {
+		if device, err := appStore.FindDeviceById(id); err == nil {
+			return device
+		}
+		select {
+		case <-ticker.C:
+		case <-timeout.C:
+			t.Fatal("device registration timed out")
+			return nil
+		}
+	}
+}
+
 func TestAvailabilityStatusIsUpdated(t *testing.T) {
 
 	name := "device 1"
 	store := utils_test.CreateStore()
 
-	ws := &mocks.NopWsServer{}
+	eventHub := mocks.NewMockEventHub()
+	offline, online := make(chan struct{}, 2), make(chan struct{}, 2)
+	eventHub.SetMockBroadcastEvent(func(name string, payload interface{}) error {
+		if name == ws.DeviceUpdated {
+			if p, ok := payload.(*devices.UpdatePackage); ok {
+				switch p.Availability {
+				case devices.OfflineAvailability:
+					offline <- struct{}{}
+				case devices.OnlineAvailability:
+					online <- struct{}{}
+				}
+			}
+		}
+		return nil
+	})
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, store, mqtt)
+	hub := controllers.RegisterHubController(eventHub, store, mqtt)
 	hub.DeviceAvailabilityTimeoutOverrideInHours = 1
 
 	mqtt.Publish(name, []byte(device1BatterySource))
-	time.Sleep(100 * time.Millisecond)
 
 	id := utils.HashName(name)
-	device, err := store.FindDeviceById(id)
-	if err != nil {
-		t.Fatalf("FindDeviceById failed. err %v ", err)
-	}
+	device := findAvailabilityTestDevice(t, store, id)
 
-	if device.Availability != devices.OnlineAvailability {
+	if device.GetAvailability() != devices.OnlineAvailability {
 		t.Fatalf("want online got offline")
 	}
 
-	time.Sleep(1100 * time.Millisecond)
-	if device.Availability != devices.OfflineAvailability {
+	waitAvailabilitySignal(t, offline)
+	if device.GetAvailability() != devices.OfflineAvailability {
 		t.Fatalf("want offline got online")
 	}
 
 	mqtt.Publish(name, []byte(device1BatterySource))
-	time.Sleep(200 * time.Millisecond)
+	waitAvailabilitySignal(t, online)
 
 	id = utils.HashName(name)
 	device1, _ := store.FindDeviceById(id)
 
-	if device1.Availability != devices.OnlineAvailability {
+	if device1.GetAvailability() != devices.OnlineAvailability {
 		t.Fatalf("want online got offline")
 	}
 }
@@ -2022,27 +2067,32 @@ func TestAvailabilityIsDisposed(t *testing.T) {
 	name := "device 1"
 	store := utils_test.CreateStore()
 
-	ws := &mocks.NopWsServer{}
+	eventHub := mocks.NewMockEventHub()
+	offline := make(chan struct{}, 2)
+	eventHub.SetMockBroadcastEvent(func(name string, payload interface{}) error {
+		if name == ws.DeviceUpdated {
+			if p, ok := payload.(*devices.UpdatePackage); ok && p.Availability == devices.OfflineAvailability {
+				offline <- struct{}{}
+			}
+		}
+		return nil
+	})
 	mqtt := &mocks.MockMqttClient{}
-	hub := controllers.RegisterHubController(ws, store, mqtt)
+	hub := controllers.RegisterHubController(eventHub, store, mqtt)
 	hub.DeviceAvailabilityTimeoutOverrideInHours = 1
 
 	mqtt.Publish(name, []byte(device1BatterySource))
-	time.Sleep(100 * time.Millisecond)
 
 	id := utils.HashName(name)
-	device, err := store.FindDeviceById(id)
-	if err != nil {
-		t.Fatalf("FindDeviceById failed. err %v ", err)
-	}
+	device := findAvailabilityTestDevice(t, store, id)
 
-	if device.Availability != devices.OnlineAvailability {
+	if device.GetAvailability() != devices.OnlineAvailability {
 		t.Fatalf("want online got offline")
 	}
 
-	time.Sleep(1500 * time.Millisecond)
+	waitAvailabilitySignal(t, offline)
 
-	if device.Availability != devices.OfflineAvailability {
+	if device.GetAvailability() != devices.OfflineAvailability {
 		t.Fatalf("want offline got online")
 	}
 }

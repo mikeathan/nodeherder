@@ -12,9 +12,494 @@ import (
 	utils_test "node-herder/testing"
 	"node-herder/utils"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
+
+type delayedLifecycleClient struct {
+	mocks.MockMqttClient
+	publish func(string, interface{})
+}
+
+type actionConfigRegistrar struct {
+	services.DeviceRegistrar
+	name       string
+	fail       bool
+	bridge     *devices.BridgeInfo
+	brightness *devices.Entity
+}
+
+func (r *actionConfigRegistrar) FindBridgeInfo(string) (*devices.BridgeInfo, error) {
+	return r.bridge, nil
+}
+func (r *actionConfigRegistrar) LookupById(id string) (*devices.Device, error) {
+	if r.fail {
+		return nil, fmt.Errorf("lookup failed")
+	}
+	d := devices.NewDevice(id)
+	d.FriendlyName = r.name
+	if r.brightness != nil {
+		d.Exposes["brightness"] = r.brightness
+	}
+	return d, nil
+}
+
+func (r *actionConfigRegistrar) RetrieveEntityData(id, property string) (*devices.EntityData, error) {
+	if r.brightness == nil || property != "brightness" {
+		return nil, fmt.Errorf("missing entity")
+	}
+	return r.brightness.Data, nil
+}
+
+func TestStepActionConfigurationBinding(t *testing.T) {
+	a := automations.NewStepAction()
+	a.Id = "light"
+	a.Property = "brightness"
+	a.Data = float64(2)
+	a.Steps = []*automations.Step{{Id: "light", Property: "brightness", Operator: "+"}}
+	var calls atomic.Int32
+	registrars := []*actionConfigRegistrar{}
+	clients := []*delayedLifecycleClient{}
+	for i, name := range []string{"old", "new"} {
+		entity := devices.NewEntity("brightness")
+		entity.Data.SetValue(float64(10 + 100*i))
+		entity.Attributes["min"] = float64(0)
+		entity.Attributes["max"] = float64(255)
+		registrars = append(registrars, &actionConfigRegistrar{name: name, brightness: entity})
+		want := float64(12 + 100*i)
+		clients = append(clients, &delayedLifecycleClient{publish: func(topic string, payload interface{}) {
+			calls.Add(1)
+			var data map[string]float64
+			if err := json.Unmarshal(payload.([]byte), &data); err != nil {
+				t.Error(err)
+				return
+			}
+			if topic != name+"/set" || data["brightness"] != want {
+				t.Errorf("mixed step binding: %s %s, want %v", topic, payload, want)
+			}
+		}})
+	}
+	if err := a.Configure(registrars[0], clients[0]); err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 500; i++ {
+			if err := a.Configure(registrars[i%2], clients[i%2]); err != nil {
+				t.Error(err)
+			}
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		ctx := automations.NewDeviceContext()
+		for i := 0; i < 500; i++ {
+			if err := a.Execute(ctx); err != nil {
+				t.Error(err)
+			}
+		}
+	}()
+	wg.Wait()
+	if calls.Load() != 500 {
+		t.Fatalf("want 500 commands, got %d", calls.Load())
+	}
+	if err := a.Configure(&actionConfigRegistrar{fail: true}, clients[0]); err == nil {
+		t.Fatal("expected failed reconfiguration")
+	}
+	if err := a.Execute(automations.NewDeviceContext()); err != nil {
+		t.Fatal(err)
+	}
+	if calls.Load() != 501 {
+		t.Fatal("failed step configuration lost working binding")
+	}
+}
+
+func TestActionUnconfiguredExecutionReturnsError(t *testing.T) {
+	for _, a := range []automations.MqttAction{automations.NewTriggerAction(), automations.NewStepAction(), automations.NewPresetCyclingAction()} {
+		if err := a.Execute(automations.NewDeviceContext()); err == nil {
+			t.Error("unconfigured action accepted")
+		}
+	}
+}
+
+type actionConfigJSONValue struct{ encode func() ([]byte, error) }
+
+func (v actionConfigJSONValue) MarshalJSON() ([]byte, error) { return v.encode() }
+
+func TestTriggerConfigurationJSONCompatibilityAndReentry(t *testing.T) {
+	for _, exposes := range [][]*automations.MqttTriggerActionExpose{nil, {}, {nil}} {
+		a := automations.NewTriggerAction()
+		a.Id = "sensor"
+		a.Exposes = exposes
+		data, err := json.Marshal(a)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(data, &fields); err != nil {
+			t.Fatal(err)
+		}
+		if len(fields) != 3 {
+			t.Fatalf("unexpected empty trigger fields: %s", data)
+		}
+		var decoded automations.MqttTriggerAction
+		if err := json.Unmarshal(data, &decoded); err != nil {
+			t.Fatal(err)
+		}
+		if decoded.Id != "sensor" || decoded.Type != automations.TriggerAction || len(decoded.Exposes) != len(exposes) || (decoded.Exposes == nil) != (exposes == nil) {
+			t.Fatalf("changed nil/empty wire: %s", data)
+		}
+	}
+	a := automations.NewTriggerAction()
+	a.Id = "sensor"
+	a.Delay = utils.IntervalFromSeconds(1)
+	a.PublishMode = automations.PublishSingle
+	b := &devices.BridgeInfo{}
+	b.Definition.Exposes = []devices.BridgeExpose{{Property: "one", Type: "numeric"}}
+	reg := &actionConfigRegistrar{name: "sensor", bridge: b}
+	client := &delayedLifecycleClient{publish: func(string, interface{}) {}}
+	a.Exposes = []*automations.MqttTriggerActionExpose{{Name: "one", Data: actionConfigJSONValue{encode: func() ([]byte, error) {
+		if err := a.Configure(reg, client); err != nil {
+			return nil, err
+		}
+		return []byte("42"), nil
+	}}}}
+	if err := a.Configure(reg, client); err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() {
+		data, err := json.Marshal(a)
+		if err != nil {
+			done <- err
+			return
+		}
+		var decoded automations.MqttTriggerAction
+		if err := json.Unmarshal(data, &decoded); err != nil {
+			done <- err
+			return
+		}
+		if decoded.Delay == nil || decoded.Delay.Duration() != time.Second || decoded.PublishMode != automations.PublishSingle || decoded.Exposes[0].Data != float64(42) {
+			done <- fmt.Errorf("wire changed: %s", data)
+			return
+		}
+		done <- nil
+	}()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("encoding reentry blocked on configuration lock")
+	}
+}
+
+func actionConfigBridge(off any) *devices.BridgeInfo {
+	b := &devices.BridgeInfo{}
+	b.Definition.Exposes = []devices.BridgeExpose{{Property: "presence", Type: "binary", ValueOff: off, ValueOn: true}}
+	return b
+}
+
+func TestActionConfigurationFailureRetainsWorkingCommand(t *testing.T) {
+	a := automations.NewTriggerAction()
+	a.Id = "sensor"
+	a.Exposes = []*automations.MqttTriggerActionExpose{{Name: "presence", Data: false}}
+	calls := 0
+	client := &delayedLifecycleClient{publish: func(topic string, payload interface{}) {
+		calls++
+		if topic != "old/set" || string(payload.([]byte)) != `{"presence":false}` {
+			t.Errorf("failed configuration changed command: %s %s", topic, payload)
+		}
+	}}
+	if err := a.Configure(&actionConfigRegistrar{name: "old", bridge: actionConfigBridge(false)}, client); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.Configure(&actionConfigRegistrar{name: "new", fail: true, bridge: actionConfigBridge("OFF")}, client); err == nil {
+		t.Fatal("expected lookup failure")
+	}
+	if a.Exposes[0].Data != false {
+		t.Error("failed configuration changed persisted recipe")
+	}
+	invalid := &devices.BridgeInfo{}
+	invalid.Definition.Exposes = []devices.BridgeExpose{{Property: "presence", Type: "enum", Values: []string{"other"}}}
+	if err := a.Configure(&actionConfigRegistrar{name: "invalid", bridge: invalid}, client); err == nil {
+		t.Fatal("expected sanitization failure")
+	}
+	if err := a.Execute(automations.NewDeviceContext()); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 1 {
+		t.Fatalf("want one command, got %d", calls)
+	}
+}
+
+func TestActionConcurrentConfigurationAndExecution(t *testing.T) {
+	a := automations.NewTriggerAction()
+	a.Id = "sensor"
+	a.Exposes = []*automations.MqttTriggerActionExpose{{Name: "presence", Data: false}}
+	var calls atomic.Int32
+	clients := []*delayedLifecycleClient{}
+	registrars := []*actionConfigRegistrar{}
+	for _, name := range []string{"old", "new"} {
+		clients = append(clients, &delayedLifecycleClient{publish: func(topic string, payload interface{}) {
+			calls.Add(1)
+			if topic != name+"/set" || string(payload.([]byte)) != `{"presence":false}` {
+				t.Errorf("mixed runtime configuration: %s %s", topic, payload)
+			}
+			data, err := json.Marshal(a)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			var decoded automations.MqttTriggerAction
+			if err := json.Unmarshal(data, &decoded); err != nil {
+				t.Error(err)
+				return
+			}
+			if decoded.Id != "sensor" || decoded.Type != automations.TriggerAction || len(decoded.Exposes) != 1 || decoded.Exposes[0].Data != false {
+				t.Errorf("changed trigger wire shape: %s", data)
+			}
+		}})
+		registrars = append(registrars, &actionConfigRegistrar{name: name, bridge: actionConfigBridge(false)})
+	}
+	if err := a.Configure(registrars[0], clients[0]); err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 500; i++ {
+			if err := a.Configure(registrars[i%2], clients[i%2]); err != nil {
+				t.Error(err)
+			}
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		ctx := automations.NewDeviceContext()
+		for i := 0; i < 500; i++ {
+			if err := a.Execute(ctx); err != nil {
+				t.Error(err)
+			}
+		}
+	}()
+	wg.Wait()
+	if calls.Load() != 500 {
+		t.Fatalf("lost executions: %d", calls.Load())
+	}
+}
+
+func TestActionConfigurationReentryKeepsSinglePublishBinding(t *testing.T) {
+	a := automations.NewTriggerAction()
+	a.Id = "sensor"
+	a.PublishMode = automations.PublishSingle
+	a.Exposes = []*automations.MqttTriggerActionExpose{{Name: "one", Data: 1}, {Name: "two", Data: 2}}
+	b := &devices.BridgeInfo{}
+	b.Definition.Exposes = []devices.BridgeExpose{{Property: "one", Type: "numeric"}, {Property: "two", Type: "numeric"}}
+	oldReg, newReg := &actionConfigRegistrar{name: "old", bridge: b}, &actionConfigRegistrar{name: "new", bridge: b}
+	oldCount, newCount := 0, 0
+	newClient := &delayedLifecycleClient{publish: func(topic string, payload interface{}) {
+		newCount++
+		if topic != "new/set" {
+			t.Errorf("wrong new topic: %s", topic)
+		}
+	}}
+	oldClient := &delayedLifecycleClient{publish: func(topic string, payload interface{}) {
+		oldCount++
+		if topic != "old/set" {
+			t.Errorf("wrong old topic: %s", topic)
+		}
+		if oldCount == 1 {
+			if err := a.Configure(newReg, newClient); err != nil {
+				t.Error(err)
+			}
+		}
+	}}
+	if err := a.Configure(oldReg, oldClient); err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() { done <- a.Execute(automations.NewDeviceContext()) }()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("configuration callback deadlocked")
+	}
+	if oldCount != 2 || newCount != 0 {
+		t.Fatalf("split execution across bindings: %d/%d", oldCount, newCount)
+	}
+	if err := a.Execute(automations.NewDeviceContext()); err != nil {
+		t.Fatal(err)
+	}
+	if newCount != 2 {
+		t.Fatalf("replacement not used: %d", newCount)
+	}
+}
+
+func (c *delayedLifecycleClient) Publish(topic string, payload interface{}) {
+	c.publish(topic, payload)
+}
+
+func delayedLifecycleAction(t *testing.T, client mqtt.MqttClient, delay *utils.TimeInterval) *automations.MqttTriggerAction {
+	t.Helper()
+	device := utils_test.CreatePresenceDevice("sensor", "sensor", "presence", false)
+	store := utils_test.CreateStoreFromDeviceRepo(repository.NewMemoryDeviceRepo())
+	registrar := services.NewHubRegisterService(store, &mocks.MockEventHub{}, 30000)
+	registrar.RegisterBridge(utils_test.CreateBridgeInfoList([]*devices.Device{device}))
+	action := automations.NewTriggerAction()
+	action.Id = device.Id
+	action.Delay = delay
+	action.Exposes = []*automations.MqttTriggerActionExpose{{Name: "presence", Data: false}}
+	if err := action.Configure(registrar, client); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(action.Stop)
+	return action
+}
+
+func waitDelayedLifecycle(t *testing.T, signal <-chan struct{}) {
+	t.Helper()
+	select {
+	case <-signal:
+	case <-time.After(3 * time.Second):
+		t.Fatal("delayed action did not reach expected phase")
+	}
+}
+
+func TestDelayedActionConcurrentExecuteStop(t *testing.T) {
+	var publishes atomic.Int32
+	client := &delayedLifecycleClient{publish: func(string, interface{}) { publishes.Add(1) }}
+	action := delayedLifecycleAction(t, client, utils.IntervalFromHours(1))
+	ctx := automations.NewDeviceContext()
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 200; j++ {
+				if err := action.Execute(ctx); err != nil {
+					t.Error(err)
+				}
+				action.Stop()
+				action.Stop()
+			}
+		}()
+	}
+	wg.Wait()
+	action.Stop()
+	if got := publishes.Load(); got != 0 {
+		t.Fatalf("cancelled long delay published %d commands", got)
+	}
+}
+
+func TestDelayedActionCancelRestartAndCallbackStop(t *testing.T) {
+	var action *automations.MqttTriggerAction
+	var count atomic.Int32
+	published := make(chan struct{}, 10)
+	client := &delayedLifecycleClient{publish: func(string, interface{}) {
+		count.Add(1)
+		action.Stop() // Re-entry from a committed publish must not deadlock.
+		published <- struct{}{}
+	}}
+	action = delayedLifecycleAction(t, client, utils.IntervalFromMilliseconds(50))
+	ctx := automations.NewDeviceContext()
+	if err := action.Execute(ctx); err != nil {
+		t.Fatal(err)
+	}
+	action.Stop() // Cancel before expiry, then restart without changing the delay.
+	action.Stop()
+	for i := 0; i < 20; i++ {
+		if err := action.Execute(ctx); err != nil {
+			t.Fatal(err)
+		}
+	}
+	waitDelayedLifecycle(t, published)
+	select {
+	case <-published:
+		t.Fatal("cancelled or duplicate run published")
+	case <-time.After(100 * time.Millisecond):
+	}
+	if got := count.Load(); got != 1 {
+		t.Fatalf("want one restart command, got %d", got)
+	}
+}
+
+func TestDelayedActionRejectsInvalidDuration(t *testing.T) {
+	for _, delay := range []*utils.TimeInterval{
+		utils.IntervalFromMilliseconds(0), utils.IntervalFromSeconds(-1),
+		{Value: 1, Unit: "unknown"},
+	} {
+		action := automations.NewTriggerAction()
+		action.Delay = delay
+		if err := action.Execute(automations.NewDeviceContext()); err == nil {
+			t.Errorf("invalid delay accepted: %+v", delay)
+		}
+		action.Stop()
+	}
+}
+
+func TestDelayedActionRestartDoesNotLoseReplacement(t *testing.T) {
+	first, second, extra := make(chan struct{}, 1), make(chan struct{}, 1), make(chan struct{}, 10)
+	releaseFirst, releaseSecond := make(chan struct{}), make(chan struct{})
+	var count atomic.Int32
+	client := &delayedLifecycleClient{publish: func(topic string, payload interface{}) {
+		if topic != "sensor/set" || string(payload.([]byte)) != `{"presence":false}` {
+			t.Errorf("changed command: %s %s", topic, payload)
+		}
+		switch count.Add(1) {
+		case 1:
+			first <- struct{}{}
+			<-releaseFirst
+		case 2:
+			second <- struct{}{}
+			<-releaseSecond
+		default:
+			extra <- struct{}{}
+		}
+	}}
+	// Always release blocked callbacks even if an assertion fails.
+	t.Cleanup(func() { close(releaseFirst); close(releaseSecond) })
+	action := delayedLifecycleAction(t, client, utils.IntervalFromMilliseconds(10))
+	ctx := automations.NewDeviceContext()
+	if err := action.Execute(ctx); err != nil {
+		t.Fatal(err)
+	}
+	waitDelayedLifecycle(t, first)
+	action.Stop() // Already publishing; must not join that callback.
+	if err := action.Execute(ctx); err != nil {
+		t.Fatal(err)
+	}
+	waitDelayedLifecycle(t, second)
+	// Let old completion run while the replacement is still committed/pending.
+	releaseFirst <- struct{}{}
+	tick := time.NewTicker(time.Millisecond)
+	defer tick.Stop()
+	deadline := time.NewTimer(100 * time.Millisecond)
+	defer deadline.Stop()
+	for {
+		select {
+		case <-tick.C:
+			if err := action.Execute(ctx); err != nil {
+				t.Fatal(err)
+			}
+		case <-extra:
+			t.Fatal("old completion cleared replacement; duplicate command published")
+		case <-deadline.C:
+			if got := count.Load(); got != 2 {
+				t.Fatalf("want two commands, got %d", got)
+			}
+			return
+		}
+	}
+}
 
 func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 	wg := &sync.WaitGroup{}
@@ -101,7 +586,7 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 		device.Exposes = createExposures(data)
 
 		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device, nil), testCase.triggeredEntity)
-		time.Sleep(100 * time.Millisecond)
+		mqtt.WaitResponses()
 	}
 
 	wg.Wait()
@@ -152,9 +637,7 @@ func TestAutomationwithMultipleTriggerActions(t *testing.T) {
 		}
 		var messageHandler = func(id string, payload []byte) {
 
-			for _, action := range trigger.Actions {
-
-				fmt.Println(action)
+			for range trigger.Actions {
 				data := unpackJsonToMap(string(payload))
 				if data == nil {
 					t.Fatalf("error unpacking json")
@@ -177,7 +660,7 @@ func TestAutomationwithMultipleTriggerActions(t *testing.T) {
 		device.Exposes = createExposures(data)
 
 		automation.Evaluate(automations.NewDeviceEvent(device, data))
-		time.Sleep(100 * time.Millisecond)
+		mqtt.WaitResponses()
 	}
 
 	wg.Wait()

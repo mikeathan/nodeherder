@@ -3,9 +3,12 @@ package utils_test
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"node-herder/mocks"
 	"node-herder/models/logging"
 	"node-herder/utils"
+	"sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -90,6 +93,71 @@ func TestRemoteLoggerEmitter(t *testing.T) {
 		testIndex++
 	}
 
+}
+
+func TestRemoteHookConcurrentToggleAndDelivery(t *testing.T) {
+	hook := &utils.RemoteHook{}
+	var calls atomic.Int32
+	hook.Configure(mocks.NewMockRemoteLoggerEmitter(func(name string, payload interface{}) error {
+		if name != "logger" {
+			t.Errorf("unexpected event: %s", name)
+		}
+		calls.Add(1)
+		return nil
+	}))
+	entry := logrus.NewEntry(logrus.New())
+	entry.Message = "concurrency fixture"
+	hook.Enabled(false)
+	if err := hook.Fire(entry); err != nil {
+		t.Fatal(err)
+	}
+	if calls.Load() != 0 {
+		t.Fatal("disabled hook emitted")
+	}
+	hook.Enabled(true)
+	if err := hook.Fire(entry); err != nil {
+		t.Fatal(err)
+	}
+	if calls.Load() != 1 {
+		t.Fatal("enabled hook did not emit")
+	}
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 100; j++ {
+				hook.Enabled(j%2 == 0)
+				if err := hook.Fire(entry); err != nil {
+					t.Error(err)
+				}
+			}
+		}()
+	}
+	wg.Wait()
+	hook.Enabled(false)
+	before := calls.Load()
+	if err := hook.Fire(entry); err != nil {
+		t.Fatal(err)
+	}
+	if calls.Load() != before {
+		t.Fatal("disabled hook emitted after workers finished")
+	}
+}
+
+func TestRemoteHookEmitterCanDisableWithoutDeadlock(t *testing.T) {
+	hook := &utils.RemoteHook{}
+	hook.Configure(mocks.NewMockRemoteLoggerEmitter(func(string, interface{}) error {
+		hook.Enabled(false)
+		return fmt.Errorf("emitter failure")
+	}))
+	hook.Enabled(true)
+	if err := hook.Fire(logrus.NewEntry(logrus.New())); err == nil || err.Error() != "emitter failure" {
+		t.Fatalf("emitter error not propagated: %v", err)
+	}
+	if err := hook.Fire(logrus.NewEntry(logrus.New())); err != nil {
+		t.Fatalf("disabled hook called emitter: %v", err)
+	}
 }
 
 func TestRemoveRemoteLoggerHook(t *testing.T) {

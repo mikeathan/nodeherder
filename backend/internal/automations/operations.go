@@ -3,11 +3,14 @@ package automations
 import (
 	"errors"
 	"math"
+	"node-herder/internal/services"
 	"node-herder/models/devices"
 	"sort"
 )
 
 func CreateTriggerOperation(action *MqttTriggerAction) actionOperation {
+	action.configMu.RLock()
+	defer action.configMu.RUnlock()
 	actionData := map[string]any{}
 	for _, expose := range action.Exposes {
 		actionData[expose.Name] = expose.Data
@@ -17,6 +20,14 @@ func CreateTriggerOperation(action *MqttTriggerAction) actionOperation {
 }
 
 func CreateStepOperation(expose *devices.Entity, action *MqttStepAction) actionOperation {
+	var registrar services.DeviceRegistrar
+	if configuration := action.configuration.Load(); configuration != nil {
+		registrar = configuration.registrar
+	}
+	return createStepOperation(expose, action, registrar)
+}
+
+func createStepOperation(expose *devices.Entity, action *MqttStepAction, registrar services.DeviceRegistrar) actionOperation {
 
 	var minLimit float64 = 0
 	var maxLimit float64 = 255
@@ -27,7 +38,7 @@ func CreateStepOperation(expose *devices.Entity, action *MqttStepAction) actionO
 		maxLimit = val.(float64)
 	}
 
-	return newStepOperation(expose, action, minLimit, maxLimit)
+	return newStepOperation(expose, action, registrar, minLimit, maxLimit)
 }
 
 func CreateRotateOperation(expose *devices.Entity) actionOperation {
@@ -95,17 +106,18 @@ func (r *rotateOperation) CreatePayload() (actionPayload, error) {
 
 type stepOperation struct {
 	action      *MqttStepAction
+	registrar   services.DeviceRegistrar
 	expose      *devices.Entity
 	limits      map[string]float64
 	propertyMap map[string]float64
 }
 
-func newStepOperation(expose *devices.Entity, action *MqttStepAction, minLimit float64, maxLimit float64) actionOperation {
+func newStepOperation(expose *devices.Entity, action *MqttStepAction, registrar services.DeviceRegistrar, minLimit float64, maxLimit float64) actionOperation {
 
 	limits := make(map[string]float64)
 	limits["+"] = maxLimit
 	limits["-"] = minLimit
-	return &stepOperation{expose: expose, action: action, limits: limits, propertyMap: make(map[string]float64, len(action.Steps))}
+	return &stepOperation{expose: expose, action: action, registrar: registrar, limits: limits, propertyMap: make(map[string]float64, len(action.Steps))}
 }
 
 func (r *stepOperation) CreatePayload() (actionPayload, error) {
@@ -119,7 +131,7 @@ func (r *stepOperation) CreatePayload() (actionPayload, error) {
 	result := r.action.Data.(float64) // coefficient
 	for i := len(r.action.Steps) - 1; i >= 0; i-- {
 		step := r.action.Steps[i]
-		if entityData, err := r.action.registrar.RetrieveEntityData(step.Id, step.Property); err == nil {
+		if entityData, err := r.registrar.RetrieveEntityData(step.Id, step.Property); err == nil {
 			r.propertyMap[step.Property] = 0
 
 			if stepValue, ok := entityData.Value().(float64); ok {

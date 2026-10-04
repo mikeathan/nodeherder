@@ -1,3 +1,7 @@
+Native systemd examples, not Docker Compose. Adapt hardcoded paths/users before
+installation; do not run alongside containers on the same ports/data. See
+../setup.md#native-systemd-examples for requirements and port differences.
+
 1. Backend service: /etc/systemd/system/nodeherder-backend.service
 2. Frontend service: /etc/systemd/system/nodeherder-frontend.service
 3. Target unit: /etc/systemd/system/nodeherder.target

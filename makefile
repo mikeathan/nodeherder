@@ -12,7 +12,7 @@ build_backend:
 	
 run_backend: build_backend
 	@echo "Running backend"
-	@cd backend && ./nodeherder -mcp
+	@cd backend && ./nodeherder
 
 # Frontend
 build_frontend:

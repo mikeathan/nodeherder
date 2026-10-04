@@ -2,6 +2,7 @@ package automations
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"node-herder/utils"
 	"reflect"
@@ -13,7 +14,7 @@ type TriggerList []Trigger
 type Trigger interface {
 	GetType() TriggerType
 	GetName() string
-	Process(ctx AutomationContext)
+	Process(ctx AutomationContext) error
 	GetActions() []MqttAction
 	GetConditions() []Condition
 }
@@ -45,7 +46,8 @@ func (t *BaseTrigger) GetName() string {
 	return t.Name
 }
 
-func (t *BaseTrigger) Process(ctx AutomationContext) {
+func (t *BaseTrigger) Process(ctx AutomationContext) error {
+	return nil
 }
 
 func (t *BaseTrigger) GetActions() []MqttAction {
@@ -132,12 +134,12 @@ func NewDeviceTrigger(name string) *DeviceTrigger {
 	}
 }
 
-func (t *DeviceTrigger) Process(ctx AutomationContext) {
+func (t *DeviceTrigger) Process(ctx AutomationContext) error {
 
 	// Simple feedback prevention: block device-triggered automations without conditions
 	if len(t.Conditions) == 0 && !ctx.IsManualTrigger() {
 		utils.LogInfof("Blocking device-triggered automation without conditions: %s", t.Name)
-		return
+		return nil
 	}
 
 	for _, c := range t.Conditions {
@@ -148,17 +150,21 @@ func (t *DeviceTrigger) Process(ctx AutomationContext) {
 			for _, action := range t.Actions {
 				action.Stop()
 			}
-			return
+			return nil
 		}
 
 		if !c.HasValueChanged(t.Name, ctx) {
-			return
+			return nil
 		}
 	}
 
-	for _, action := range t.Actions {
-		action.Execute(ctx)
+	var failures error
+	for i, action := range t.Actions {
+		if err := action.Execute(ctx); err != nil {
+			failures = errors.Join(failures, fmt.Errorf("trigger %s action %d: %w", t.Name, i, err))
+		}
 	}
+	return failures
 }
 
 // TriggerList

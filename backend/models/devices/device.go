@@ -206,26 +206,34 @@ func NewEntityData(value any, name string) *EntityData {
 }
 
 type EntityData struct {
+	// Protects value replacement, not mutation of referenced maps/slices.
+	// EntityData is pointer-owned and must not be copied after first use.
+	mutex sync.RWMutex
 	value any
 	name  string
 }
 
-func (d EntityData) Value() any {
+func (d *EntityData) Value() any {
+	d.mutex.RLock()
+	defer d.mutex.RUnlock()
 	return d.value
 }
 
 func (d *EntityData) SetValue(v any) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
 	d.value = v
 }
 
 func (d *EntityData) ValuesMatch(pending any) bool {
-	if d.value == pending {
+	value := d.Value()
+	if value == pending {
 		return true
 	}
 
 	// Handle binary state equivalents
-	if isBoolLike(d.value) || isBoolLike(pending) || d.name == "state" {
-		currBool := d.toBool(d.value)
+	if isBoolLike(value) || isBoolLike(pending) || d.name == "state" {
+		currBool := d.toBool(value)
 		pendingBool := d.toBool(pending)
 		return currBool == pendingBool
 	}
@@ -263,8 +271,8 @@ func (d *EntityData) toBool(value any) bool {
 	}
 }
 
-func (d EntityData) MarshalJSON() ([]byte, error) {
-	return json.Marshal(d.value)
+func (d *EntityData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(d.Value())
 }
 
 func (d *EntityData) UnmarshalJSON(b []byte) error {
@@ -272,7 +280,7 @@ func (d *EntityData) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &v); err != nil {
 		return err
 	}
-	d.value = v
+	d.SetValue(v)
 	return nil
 }
 

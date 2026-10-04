@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"node-herder/utils"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -56,8 +57,9 @@ type WebSocket interface {
 }
 
 type webSocketImpl struct {
-	conn    *melody.Melody
-	clients map[int64]bool
+	clientsMutex sync.Mutex
+	conn         *melody.Melody
+	clients      map[int64]bool
 }
 
 func NewWebSocket() WebSocket {
@@ -107,7 +109,9 @@ func (h *webSocketImpl) Start(messageHandler func(message []byte)) {
 		utils.LogDebugf("WebSocket: New client connected")
 		id := clientId.Add(1)
 
+		h.clientsMutex.Lock()
 		h.clients[id] = true
+		h.clientsMutex.Unlock()
 		s.Set("id", id)
 
 		//s.Write([]byte(fmt.Sprintf("client id %d connected", id)))
@@ -117,7 +121,9 @@ func (h *webSocketImpl) Start(messageHandler func(message []byte)) {
 		if id, ok := s.Get("id"); ok {
 			s.Write([]byte(fmt.Sprintf("WebSocket: client id %d disconnected", id)))
 
+			h.clientsMutex.Lock()
 			h.clients[id.(int64)] = false
+			h.clientsMutex.Unlock()
 			h.conn.BroadcastOthers([]byte(fmt.Sprintf("dis %d", id)), s)
 		} else {
 			utils.LogDebug("WebSocket: client diconnected")

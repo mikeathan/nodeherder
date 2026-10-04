@@ -2,49 +2,212 @@ name: CI Pipeline
 
 on:
   pull_request:
-    branches:
-      - main
+    branches: [main]
   push:
-    branches:
-      - main
+    branches: [main]
+  merge_group:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  test:
-    name: Run Tests
+  workflow-lint:
+    name: Workflow and Shell Checks
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.x"
+          cache: false
+      - name: Check workflow syntax, expressions, and inline shell
+        env:
+          GOBIN: ${{ runner.temp }}/ci-bin
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          "$GOBIN/actionlint"
+      - name: Check scripts without executing them
+        run: |
+          while IFS= read -r -d '' script; do
+            bash -n "$script"
+          done < <(git ls-files -z -- '*.sh')
+          shellcheck scripts/manage-stack.sh
+
+  stack-tools:
+    name: Stack Manager (Ubuntu)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
         with:
-          go-version-file: "backend/go.mod"
-          cache-dependency-path: backend/go.sum
-
-      - name: Run Backend Tests
-        run: |
-          cd backend
-          GOTOOLCHAIN=local go test ./...
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: ".nvmrc"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
 
-      - name: Run Frontend Tests
+      - name: Check deployment tooling
         run: |
-          cd frontend
-          npm ci
-          npm test
+          node --check frontend/scripts/get-version.cjs
+          node --test scripts/manage-stack.test.cjs
+
+      - name: Validate real Compose configuration (isolated, no containers)
+        env:
+          NODEHERDER_COMPOSE_TESTS: "1"
+        run: node --test scripts/manage-stack.compose.test.cjs
+
+  backend:
+    name: Backend Tests and Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      GOTOOLCHAIN: local
+      GOFLAGS: -mod=readonly
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: "backend/go.mod"
+          cache-dependency-path: backend/go.sum
+      - name: Verify module checksums
+        run: go mod verify
+      - name: Compile production Linux binary
+        env:
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: amd64
+        run: go build -o "${RUNNER_TEMP}/nodeherder" .
+      - name: Run backend tests (uncached)
+        run: go test -count=1 -timeout=5m ./...
+      - name: Go static analysis
+        if: ${{ !cancelled() }}
+        run: go vet ./...
+
+  backend-race:
+    name: Backend Race Detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      GOTOOLCHAIN: local
+      GOFLAGS: -mod=readonly
+      CGO_ENABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: "backend/go.mod"
+          cache-dependency-path: backend/go.sum
+      - name: Detect races in real test paths (uncached)
+        run: go test -race -count=1 -timeout=5m ./...
+
+  frontend:
+    name: Frontend Tests and Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Jest (non-interactive)
+        run: npm test -- --ci --runInBand
+      - name: Type-check and production build
+        env:
+          APP_VERSION: ci-${{ github.sha }}
+        run: npm run build -- --mode production
+
+  containers:
+    name: Container (${{ matrix.component }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@v4
+      - name: Build production image without publishing
+        uses: docker/build-push-action@v7
+        with:
+          context: ./${{ matrix.component }}
+          file: ./${{ matrix.component }}/Dockerfile
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: nodeherder-${{ matrix.component }}:ci
+          build-args: |
+            APP_VERSION=ci-${{ github.sha }}
+            MODE=production
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+      - name: Backend binary smoke check (no initialization/devices)
+        if: ${{ matrix.component == 'backend' }}
+        run: docker run --rm --network none nodeherder-backend:ci -h
+      - name: Frontend config and built assets (offline)
+        if: ${{ matrix.component == 'frontend' }}
+        run: |
+          docker run --rm --network none --add-host host.docker.internal:127.0.0.1 nodeherder-frontend:ci nginx -t
+          docker run --rm --network none nodeherder-frontend:ci test -s /usr/share/nginx/html/index.html
+
+  # Preserve the existing status name; skipped/failed checks must not produce green.
+  test:
+    name: Run Tests
+    if: ${{ always() }}
+    needs: [workflow-lint, stack-tools, backend, backend-race, frontend, containers]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require every verification job to succeed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          [[ -n "$RESULTS" ]] || exit 1
+          for result in $RESULTS; do
+            if [[ "$result" != success ]]; then
+              printf 'Verification did not succeed: %s\n' "$RESULTS" >&2
+              exit 1
+            fi
+          done
 
   tag:
     name: Tag Build
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     needs: test
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
     steps:
@@ -62,5 +225,4 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          chmod +x scripts/tag_build.sh
           ./scripts/tag_build.sh --auto-increment-patch

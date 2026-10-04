@@ -2,10 +2,12 @@ package automations
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
 	"node-herder/models/devices"
+	"node-herder/utils"
 )
 
 // examples
@@ -38,6 +40,10 @@ func (de *DeviceEvent) Type() string {
 }
 
 // Device Automation
+
+// ErrAutomationSourceDisabled distinguishes an explicit source disable from a
+// transient configuration failure, which may retain the last working generation.
+var ErrAutomationSourceDisabled = errors.New("automation source is disabled")
 
 type Device struct {
 	BaseAutomation
@@ -88,7 +94,7 @@ func (d *Device) UnmarshalJSON(data []byte) error {
 	d.Type = aux.Type
 	d.FriendlyName = aux.FriendlyName
 	d.Description = aux.Description
-	d.Enabled = aux.Enabled
+	d.SetEnabled(aux.Enabled)
 	d.Schedules = aux.Schedules
 	d.Triggers = aux.Triggers
 
@@ -96,6 +102,11 @@ func (d *Device) UnmarshalJSON(data []byte) error {
 		d.ctx = NewDeviceContext()
 	}
 	return nil
+}
+
+// Device's only serialized fields are its base; ctx remains private.
+func (d *Device) MarshalJSON() ([]byte, error) {
+	return d.BaseAutomation.MarshalJSON()
 }
 
 func (d *Device) Evaluate(event TriggerEvent) bool {
@@ -114,38 +125,48 @@ func (d *Device) Evaluate(event TriggerEvent) bool {
 
 	// NOTE: a trigger can have multiple conditions.
 	// e.g presence can have multiple conditions for on and off
+	success := true
 	for _, trigger := range d.Triggers {
 		// Only process this trigger if its property is in the changed payload
 		if _, ok := payload[trigger.GetName()]; ok {
-			trigger.Process(d.ctx)
+			if err := trigger.Process(d.ctx); err != nil {
+				utils.LogErrorf("automation %s: %v", d.Id, err)
+				success = false
+			}
 		}
 	}
-	return true
+	return success
 }
 
-func (d *Device) EvaluateTrigger(event TriggerEvent, triggerName string) bool {
+func (d *Device) EvaluateTrigger(event TriggerEvent, triggerName string) error {
 
 	deviceEvent, ok := event.(*DeviceEvent)
 	if !ok {
-		return false
+		return fmt.Errorf("manual trigger requires a device event")
 	}
 
 	device := deviceEvent.Device()
 
 	// TODO: can pass the Device event directly
 	// payload is the current device expose
-	d.ctx.SetDevicePayload(device.Exposes) 
+	d.ctx.SetDevicePayload(device.Exposes)
 
 	// Set manual trigger flag - this method is called for manual triggers
 	d.ctx.SetManualTrigger(true)
 
+	matched := false
+	var failures error
 	for _, trigger := range d.Triggers {
 		if trigger.GetName() == triggerName {
-			trigger.Process(d.ctx)
+			matched = true
+			failures = errors.Join(failures, trigger.Process(d.ctx))
 		}
 	}
 
-	return true
+	if !matched {
+		return fmt.Errorf("trigger %s not found", triggerName)
+	}
+	return failures
 }
 
 func (d *Device) Configure(registrar services.DeviceRegistrar, client mqtt.MqttClient) error {
@@ -157,7 +178,7 @@ func (d *Device) Configure(registrar services.DeviceRegistrar, client mqtt.MqttC
 	}
 
 	if bridgeInfo.Disabled {
-		return fmt.Errorf("device %s is disabled ", bridgeInfo.FriendlyName)
+		return fmt.Errorf("device %s: %w", bridgeInfo.FriendlyName, ErrAutomationSourceDisabled)
 	}
 
 	d.FriendlyName = bridgeInfo.FriendlyName
