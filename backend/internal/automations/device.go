@@ -21,10 +21,17 @@ type DeviceEvent struct {
 	TriggerEvent
 	device  *devices.Device
 	payload map[string]interface{}
+	manual  bool
 }
 
+// NewDeviceEvent is the event for a device message with its changed payload.
 func NewDeviceEvent(device *devices.Device, payload map[string]interface{}) *DeviceEvent {
 	return &DeviceEvent{device: device, payload: payload}
+}
+
+// NewManualEvent is the event for a manual trigger of device's automation.
+func NewManualEvent(device *devices.Device) *DeviceEvent {
+	return &DeviceEvent{device: device, manual: true}
 }
 
 func (de *DeviceEvent) Device() *devices.Device {
@@ -39,6 +46,20 @@ func (de *DeviceEvent) Type() string {
 	return "device"
 }
 
+// IsManual reports whether the event is a manual trigger rather than a device message.
+func (de *DeviceEvent) IsManual() bool {
+	return de.manual
+}
+
+// runContext isolates one run's exposes and origin over the persistent state.
+func (de *DeviceEvent) runContext(state *DeviceContext) AutomationContext {
+	var exposes map[string]*devices.Entity
+	if de.device != nil {
+		exposes = de.device.Exposes
+	}
+	return NewRunContext(state, exposes, de.manual)
+}
+
 // Device Automation
 
 // ErrAutomationSourceDisabled distinguishes an explicit source disable from a
@@ -47,7 +68,7 @@ var ErrAutomationSourceDisabled = errors.New("automation source is disabled")
 
 type Device struct {
 	BaseAutomation
-	ctx AutomationContext
+	state *DeviceContext
 }
 
 func newDevice() *Device {
@@ -66,7 +87,7 @@ func NewDevice(id string, opts ...func(*DeviceContext)) *Device {
 			Triggers:     TriggerList{},
 			Schedules:    []*TimeSchedule{},
 		},
-		ctx: NewDeviceContext(opts...),
+		state: NewDeviceContext(opts...),
 	}
 
 	return d
@@ -98,8 +119,8 @@ func (d *Device) UnmarshalJSON(data []byte) error {
 	d.Schedules = aux.Schedules
 	d.Triggers = aux.Triggers
 
-	if d.ctx == nil {
-		d.ctx = NewDeviceContext()
+	if d.state == nil {
+		d.state = NewDeviceContext()
 	}
 	return nil
 }
@@ -116,12 +137,8 @@ func (d *Device) Evaluate(event TriggerEvent) bool {
 		return false
 	}
 
-	device := deviceEvent.Device()
 	payload := deviceEvent.Payload()
-	d.ctx.SetDevicePayload(device.Exposes)
-
-	// This is a device state change (not manual)
-	d.ctx.SetManualTrigger(false)
+	ctx := deviceEvent.runContext(d.state)
 
 	// NOTE: a trigger can have multiple conditions.
 	// e.g presence can have multiple conditions for on and off
@@ -129,7 +146,7 @@ func (d *Device) Evaluate(event TriggerEvent) bool {
 	for _, trigger := range d.Triggers {
 		// Only process this trigger if its property is in the changed payload
 		if _, ok := payload[trigger.GetName()]; ok {
-			if err := trigger.Process(d.ctx); err != nil {
+			if err := trigger.Process(ctx); err != nil {
 				utils.LogErrorf("automation %s: %v", d.Id, err)
 				success = false
 			}
@@ -145,21 +162,14 @@ func (d *Device) EvaluateTrigger(event TriggerEvent, triggerName string) error {
 		return fmt.Errorf("manual trigger requires a device event")
 	}
 
-	device := deviceEvent.Device()
-
-	// TODO: can pass the Device event directly
-	// payload is the current device expose
-	d.ctx.SetDevicePayload(device.Exposes)
-
-	// Set manual trigger flag - this method is called for manual triggers
-	d.ctx.SetManualTrigger(true)
+	ctx := deviceEvent.runContext(d.state)
 
 	matched := false
 	var failures error
 	for _, trigger := range d.Triggers {
 		if trigger.GetName() == triggerName {
 			matched = true
-			failures = errors.Join(failures, trigger.Process(d.ctx))
+			failures = errors.Join(failures, trigger.Process(ctx))
 		}
 	}
 

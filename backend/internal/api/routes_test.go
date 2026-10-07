@@ -2,7 +2,10 @@ package api_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +17,7 @@ import (
 	"node-herder/internal/ratelimiter"
 	"node-herder/mocks"
 	"node-herder/models/assistant"
+	"node-herder/models/automations"
 	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
@@ -564,7 +568,7 @@ func TestAutomationTriggerHandler_Cases(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			callCount := 0
-			mock := mocks.NewMockAutomationTrigger(func(automationId, triggerName string) error {
+			mock := mocks.NewMockAutomationTrigger(func(ctx context.Context, automationId, triggerName string) error {
 				callCount++
 				return nil
 			})
@@ -608,6 +612,49 @@ func TestAutomationTriggerHandler_Cases(t *testing.T) {
 			}
 			if !c.shouldSucceed && w.Code == http.StatusOK {
 				t.Errorf("expected failure, got 200 OK")
+			}
+		})
+	}
+}
+
+// AC-10: engine errors keep 412; only a trigger that never started (busy lane)
+// maps to 503. The hub always receives a bounded deadline.
+func TestAutomationTriggerHandler_ErrorMapping(t *testing.T) {
+	cases := []struct {
+		name string
+		err  error
+		want int
+	}{
+		{"success", nil, http.StatusOK},
+		{"disabled automation", errors.New("automation is disabled"), http.StatusPreconditionFailed},
+		{"unknown automation", errors.New("automation 0x01 is not ready"), http.StatusPreconditionFailed},
+		{"unknown trigger", errors.New("trigger state not found"), http.StatusPreconditionFailed},
+		{"failing action wrapping a deadline", fmt.Errorf("trigger state action 0: %w", context.DeadlineExceeded), http.StatusPreconditionFailed},
+		{"busy lane", fmt.Errorf("%w: lane queue is full", automations.ErrLaneBusy), http.StatusServiceUnavailable},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			mock := mocks.NewMockAutomationTrigger(func(ctx context.Context, automationId, triggerName string) error {
+				deadline, ok := ctx.Deadline()
+				if !ok || time.Until(deadline) > 5*time.Second {
+					t.Errorf("trigger context deadline %v (set %v), want a bound of at most 5s", deadline, ok)
+				}
+				return c.err
+			})
+			handler := api.NewAutomationTriggerHandler(mock, time.Millisecond)
+
+			body, _ := json.Marshal(map[string]string{"automationId": "0x01", "triggerName": "state"})
+			req := httptest.NewRequest(http.MethodPost, "/automation/trigger", bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+			handler.ServeHTTP(w, req)
+
+			if w.Code != c.want {
+				t.Fatalf("status %d, want %d (body %s)", w.Code, c.want, w.Body.String())
+			}
+			if c.err != nil && !strings.Contains(w.Body.String(), c.err.Error()) {
+				t.Fatalf("body %s does not carry the error %q", w.Body.String(), c.err.Error())
 			}
 		})
 	}

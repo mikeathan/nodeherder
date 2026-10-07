@@ -5,17 +5,19 @@ import (
 	"sync"
 )
 
+// AutomationContext is what conditions and actions see during one automation
+// run: the triggering device's exposes and the run's origin, over state that
+// persists across runs.
 type AutomationContext interface {
-	// stores incoming updated device state
-	SetDevicePayload(payload map[string]*devices.Entity)
+	// device exposes as seen by this run
 	GetDevicePayload(name string) (*devices.Entity, bool)
 
 	// stores automation state across all devices, if included.
 	SetCurrentState(name string, value any)
 	GetCurrentState(name string) any
 
-	// source tracking
-	SetManualTrigger(manual bool)
+	// IsManualTrigger reports whether this run was started manually rather
+	// than by a device message.
 	IsManualTrigger() bool
 }
 
@@ -27,37 +29,20 @@ func WithContextIgnoreList(ignoreList []string) func(*DeviceContext) {
 	}
 }
 
-// Device Context
+// DeviceContext is an automation's state that persists across runs.
 type DeviceContext struct {
 	currentData map[string]any
-	payload     map[string]*devices.Entity
-	isManual    bool
 	mu          sync.RWMutex
 }
 
 func NewDeviceContext(opts ...func(*DeviceContext)) *DeviceContext {
 	dc := &DeviceContext{
 		currentData: map[string]any{},
-		payload:     make(map[string]*devices.Entity),
 	}
 	for _, opt := range opts {
 		opt(dc)
 	}
 	return dc
-}
-
-func (d *DeviceContext) SetDevicePayload(payload map[string]*devices.Entity) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.payload = payload
-}
-
-func (d *DeviceContext) GetDevicePayload(name string) (*devices.Entity, bool) {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-
-	value, exists := d.payload[name]
-	return value, exists
 }
 
 func (d *DeviceContext) GetCurrentState(name string) any {
@@ -79,14 +64,25 @@ func (d *DeviceContext) SetCurrentState(name string, value any) {
 	d.currentData[name] = value
 }
 
-func (d *DeviceContext) SetManualTrigger(manual bool) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	d.isManual = manual
+// runContext is one run's view: its own exposes and origin layered over the
+// automation's persistent DeviceContext. It is built per run and never shared,
+// so concurrent runs cannot overwrite each other's origin or exposes.
+type runContext struct {
+	*DeviceContext
+	exposes map[string]*devices.Entity
+	manual  bool
 }
 
-func (d *DeviceContext) IsManualTrigger() bool {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	return d.isManual
+// NewRunContext returns the context for one run over persistent state.
+func NewRunContext(state *DeviceContext, exposes map[string]*devices.Entity, manual bool) AutomationContext {
+	return &runContext{DeviceContext: state, exposes: exposes, manual: manual}
+}
+
+func (r *runContext) GetDevicePayload(name string) (*devices.Entity, bool) {
+	value, exists := r.exposes[name]
+	return value, exists
+}
+
+func (r *runContext) IsManualTrigger() bool {
+	return r.manual
 }

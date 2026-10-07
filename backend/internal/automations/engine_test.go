@@ -461,7 +461,7 @@ func TestEnginePersistenceAndTriggerErrors(t *testing.T) {
 	}
 	a.Triggers[0].(*automations.DeviceTrigger).Actions = []automations.MqttAction{automations.NewTriggerAction(), good}
 	device, _ := r.LookupById("source")
-	if err := a.EvaluateTrigger(automations.NewDeviceEvent(device, nil), "action"); err == nil {
+	if err := a.EvaluateTrigger(automations.NewManualEvent(device), "action"); err == nil {
 		t.Fatal("action error reported success")
 	}
 	if commands != 2 {

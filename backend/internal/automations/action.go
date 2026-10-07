@@ -10,7 +10,6 @@ import (
 	"reflect"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 // brightness + direction_time * value = [expose_name] [+/-] [expose_name] [numeric_operator] [numeric value]
@@ -242,6 +241,7 @@ type MqttBaseAction struct {
 	mut           sync.RWMutex                        `json:"-"`
 	exit          chan struct{}                       `json:"-"`
 	isPending     bool                                `json:"-"`
+	clock         utils.Clock                         `json:"-"`
 }
 
 // Immutable binding; operation-local mutable state retains existing Execute ownership.
@@ -358,6 +358,23 @@ func (b *MqttBaseAction) GetType() ActionType {
 	return b.Type
 }
 
+// SetClock sets the clock that times delayed execution; nil means the real
+// clock. Wiring only (tests inject a fake clock), not for use while executing.
+func (b *MqttBaseAction) SetClock(clock utils.Clock) {
+	b.configMu.Lock()
+	defer b.configMu.Unlock()
+	b.clock = clock
+}
+
+func (b *MqttBaseAction) delayClock() utils.Clock {
+	b.configMu.RLock()
+	defer b.configMu.RUnlock()
+	if b.clock == nil {
+		return utils.NewRealClock()
+	}
+	return b.clock
+}
+
 func (a *MqttBaseAction) Stop() {
 	a.mut.Lock()
 	defer a.mut.Unlock()
@@ -384,8 +401,9 @@ func (b *MqttBaseAction) executeBaseWithDelay(delay *utils.TimeInterval, ctx Aut
 	exit := make(chan struct{})
 	b.exit = exit
 	b.isPending = true
+	fired := make(chan struct{})
+	timer := b.delayClock().AfterFunc(duration, func() { close(fired) })
 	go func() {
-		timer := time.NewTimer(duration)
 		defer timer.Stop()
 		defer func() {
 			b.mut.Lock()
@@ -398,7 +416,7 @@ func (b *MqttBaseAction) executeBaseWithDelay(delay *utils.TimeInterval, ctx Aut
 		}()
 
 		select {
-		case <-timer.C:
+		case <-fired:
 			// Serialize cancellation versus commitment, not external callbacks.
 			b.mut.Lock()
 			current := b.exit == exit

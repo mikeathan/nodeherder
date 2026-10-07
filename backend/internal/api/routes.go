@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -506,6 +507,10 @@ func (h *DeviceContextHandler) ServeHTTP(w http.ResponseWriter, r *http.Request)
 	}
 }
 
+// manualTriggerTimeout bounds how long a manual trigger may wait for its device
+// lane before the request fails with 503.
+const manualTriggerTimeout = 5 * time.Second
+
 // Automation Trigger
 type AutomationTriggerHandler struct {
 	hub       automations.AutomationTrigger
@@ -552,7 +557,13 @@ func (h *AutomationTriggerHandler) ServeHTTP(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	err = h.hub.TriggerManual(automationId, triggerName)
+	ctx, cancel := context.WithTimeout(r.Context(), manualTriggerTimeout)
+	defer cancel()
+	err = h.hub.TriggerManual(ctx, automationId, triggerName)
+	if errors.Is(err, automations.ErrLaneBusy) {
+		writeJSONError(w, http.StatusServiceUnavailable, err.Error())
+		return
+	}
 	if err != nil {
 		writeJSONError(w, http.StatusPreconditionFailed, err.Error())
 		return

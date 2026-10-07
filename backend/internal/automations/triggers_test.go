@@ -95,7 +95,7 @@ func TestStepActionConfigurationBinding(t *testing.T) {
 	}()
 	go func() {
 		defer wg.Done()
-		ctx := automations.NewDeviceContext()
+		ctx := automations.NewRunContext(automations.NewDeviceContext(), nil, false)
 		for i := 0; i < 500; i++ {
 			if err := a.Execute(ctx); err != nil {
 				t.Error(err)
@@ -109,7 +109,7 @@ func TestStepActionConfigurationBinding(t *testing.T) {
 	if err := a.Configure(&actionConfigRegistrar{fail: true}, clients[0]); err == nil {
 		t.Fatal("expected failed reconfiguration")
 	}
-	if err := a.Execute(automations.NewDeviceContext()); err != nil {
+	if err := a.Execute(automations.NewRunContext(automations.NewDeviceContext(), nil, false)); err != nil {
 		t.Fatal(err)
 	}
 	if calls.Load() != 501 {
@@ -119,7 +119,7 @@ func TestStepActionConfigurationBinding(t *testing.T) {
 
 func TestActionUnconfiguredExecutionReturnsError(t *testing.T) {
 	for _, a := range []automations.MqttAction{automations.NewTriggerAction(), automations.NewStepAction(), automations.NewPresetCyclingAction()} {
-		if err := a.Execute(automations.NewDeviceContext()); err == nil {
+		if err := a.Execute(automations.NewRunContext(automations.NewDeviceContext(), nil, false)); err == nil {
 			t.Error("unconfigured action accepted")
 		}
 	}
@@ -229,7 +229,7 @@ func TestActionConfigurationFailureRetainsWorkingCommand(t *testing.T) {
 	if err := a.Configure(&actionConfigRegistrar{name: "invalid", bridge: invalid}, client); err == nil {
 		t.Fatal("expected sanitization failure")
 	}
-	if err := a.Execute(automations.NewDeviceContext()); err != nil {
+	if err := a.Execute(automations.NewRunContext(automations.NewDeviceContext(), nil, false)); err != nil {
 		t.Fatal(err)
 	}
 	if calls != 1 {
@@ -281,7 +281,7 @@ func TestActionConcurrentConfigurationAndExecution(t *testing.T) {
 	}()
 	go func() {
 		defer wg.Done()
-		ctx := automations.NewDeviceContext()
+		ctx := automations.NewRunContext(automations.NewDeviceContext(), nil, false)
 		for i := 0; i < 500; i++ {
 			if err := a.Execute(ctx); err != nil {
 				t.Error(err)
@@ -324,7 +324,7 @@ func TestActionConfigurationReentryKeepsSinglePublishBinding(t *testing.T) {
 		t.Fatal(err)
 	}
 	done := make(chan error, 1)
-	go func() { done <- a.Execute(automations.NewDeviceContext()) }()
+	go func() { done <- a.Execute(automations.NewRunContext(automations.NewDeviceContext(), nil, false)) }()
 	select {
 	case err := <-done:
 		if err != nil {
@@ -336,7 +336,7 @@ func TestActionConfigurationReentryKeepsSinglePublishBinding(t *testing.T) {
 	if oldCount != 2 || newCount != 0 {
 		t.Fatalf("split execution across bindings: %d/%d", oldCount, newCount)
 	}
-	if err := a.Execute(automations.NewDeviceContext()); err != nil {
+	if err := a.Execute(automations.NewRunContext(automations.NewDeviceContext(), nil, false)); err != nil {
 		t.Fatal(err)
 	}
 	if newCount != 2 {
@@ -378,7 +378,7 @@ func TestDelayedActionConcurrentExecuteStop(t *testing.T) {
 	var publishes atomic.Int32
 	client := &delayedLifecycleClient{publish: func(string, interface{}) { publishes.Add(1) }}
 	action := delayedLifecycleAction(t, client, utils.IntervalFromHours(1))
-	ctx := automations.NewDeviceContext()
+	ctx := automations.NewRunContext(automations.NewDeviceContext(), nil, false)
 	var wg sync.WaitGroup
 	for i := 0; i < 8; i++ {
 		wg.Add(1)
@@ -410,7 +410,7 @@ func TestDelayedActionCancelRestartAndCallbackStop(t *testing.T) {
 		published <- struct{}{}
 	}}
 	action = delayedLifecycleAction(t, client, utils.IntervalFromMilliseconds(50))
-	ctx := automations.NewDeviceContext()
+	ctx := automations.NewRunContext(automations.NewDeviceContext(), nil, false)
 	if err := action.Execute(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -439,7 +439,7 @@ func TestDelayedActionRejectsInvalidDuration(t *testing.T) {
 	} {
 		action := automations.NewTriggerAction()
 		action.Delay = delay
-		if err := action.Execute(automations.NewDeviceContext()); err == nil {
+		if err := action.Execute(automations.NewRunContext(automations.NewDeviceContext(), nil, false)); err == nil {
 			t.Errorf("invalid delay accepted: %+v", delay)
 		}
 		action.Stop()
@@ -468,7 +468,7 @@ func TestDelayedActionRestartDoesNotLoseReplacement(t *testing.T) {
 	// Always release blocked callbacks even if an assertion fails.
 	t.Cleanup(func() { close(releaseFirst); close(releaseSecond) })
 	action := delayedLifecycleAction(t, client, utils.IntervalFromMilliseconds(10))
-	ctx := automations.NewDeviceContext()
+	ctx := automations.NewRunContext(automations.NewDeviceContext(), nil, false)
 	if err := action.Execute(ctx); err != nil {
 		t.Fatal(err)
 	}
@@ -585,7 +585,7 @@ func TestTriggerWithNoConditionsCallsAction(t *testing.T) {
 		}
 		device.Exposes = createExposures(data)
 
-		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device, nil), testCase.triggeredEntity)
+		deviceTrigger.EvaluateTrigger(automations.NewManualEvent(device), testCase.triggeredEntity)
 		mqtt.WaitResponses()
 	}
 
@@ -739,7 +739,7 @@ func TestHandleMultipleSameValueTriggerWithDelay(t *testing.T) {
 		}
 
 		device.Exposes = createExposures(data)
-		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device, nil), "presence")
+		deviceTrigger.EvaluateTrigger(automations.NewManualEvent(device), "presence")
 
 		time.Sleep(500 * time.Millisecond)
 	}
@@ -1037,7 +1037,7 @@ func TestManualTrigger_TurnsOnLight(t *testing.T) {
 			"presence": testCase.presence,
 		}
 		device.Exposes = createExposures(payload)
-		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device, nil), turnOnTrigger.Name)
+		deviceTrigger.EvaluateTrigger(automations.NewManualEvent(device), turnOnTrigger.Name)
 		wg.Wait()
 	}
 }
@@ -1102,7 +1102,7 @@ func TestManualTriggerWithScheduleTurnsOnLight(t *testing.T) {
 		}
 
 		device.Exposes = createExposures(data)
-		deviceTrigger.EvaluateTrigger(automations.NewDeviceEvent(device, nil), turnOnTrigger.Name)
+		deviceTrigger.EvaluateTrigger(automations.NewManualEvent(device), turnOnTrigger.Name)
 
 		wg.Wait()
 	}

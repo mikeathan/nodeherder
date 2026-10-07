@@ -37,6 +37,18 @@ type MqttConfig struct {
 	Password   string
 	ClientType string
 	ClientId   string
+	newClient  ClientFactory
+}
+
+// ClientFactory builds the underlying paho client from the prepared options.
+type ClientFactory func(options *mqttlib.ClientOptions) mqttlib.Client
+
+// WithClientFactory replaces the paho client constructor; tests use it to
+// substitute an in-memory client. The default is mqttlib.NewClient.
+func WithClientFactory(factory ClientFactory) func(c *MqttConfig) {
+	return func(c *MqttConfig) {
+		c.newClient = factory
+	}
 }
 
 func (m *MqttService) onConnectedHandler() func(client mqttlib.Client) {
@@ -97,7 +109,7 @@ func WithDefaultMqttConfig() func(c *MqttConfig) {
 
 func NewMqttClient(opts ...func(*MqttConfig)) MqttClient {
 
-	var config = &MqttConfig{}
+	var config = &MqttConfig{newClient: mqttlib.NewClient}
 	for _, opt := range opts {
 		opt(config)
 	}
@@ -108,6 +120,7 @@ func NewMqttClient(opts ...func(*MqttConfig)) MqttClient {
 		password:       config.Password,
 		client:         nil,
 		clientId:       config.ClientId,
+		newClient:      config.newClient,
 		messageHandler: func(s string, b []byte) {},
 		topics:         bridgeTopics,
 		mu:             sync.Mutex{},
@@ -126,6 +139,7 @@ type MqttService struct {
 	username       string
 	password       string
 	clientId       string
+	newClient      ClientFactory
 	messageHandler func(string, []byte)
 	topics         []string
 	mu             sync.Mutex
@@ -135,6 +149,8 @@ func sanitizeTopic(topic string) string {
 	return strings.ReplaceAll(topic, baseTopic, "")
 }
 
+// OnMessageHandler sets the handler for inbound messages. It runs on paho's
+// router goroutine in arrival order and must return without blocking.
 func (m *MqttService) OnMessageHandler(handler func(string, []byte)) {
 	m.messageHandler = handler
 }
@@ -153,7 +169,10 @@ func (m *MqttService) Connect() error {
 	options.SetClientID(m.clientId)
 	options.Username = m.username
 	options.Password = m.password
-	options.SetOrderMatters(false)       // Allow out of order messages (use this option unless in order delivery is essential)
+	// Deliver messages in arrival order on paho's router goroutine. The handler must
+	// not block (it would stall delivery and subscription acks): it only enqueues
+	// onto the hub's ordered ingress lane.
+	options.SetOrderMatters(true)
 	options.ConnectTimeout = time.Second // Minimal delays on connect
 	options.WriteTimeout = time.Second   // Minimal delays on writes
 	options.KeepAlive = 10               // Keepalive every 10 seconds so we quickly detect network outages
@@ -170,7 +189,7 @@ func (m *MqttService) Connect() error {
 	})
 
 	utils.LogInfof("Connecting to MQTT broker: %s", m.broker)
-	m.client = mqttlib.NewClient(options)
+	m.client = m.newClient(options)
 	token := m.client.Connect()
 
 	if token.Wait() && token.Error() != nil {

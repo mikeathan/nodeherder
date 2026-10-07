@@ -7,8 +7,8 @@ Toolchain files supersede older setup versions: [go.mod](../../backend/go.mod),
 | Area | Paths | Evidence |
 | --- | --- | --- |
 | Startup/wiring | `backend/main.go`, `backend/internal/hub.go`, `backend/store/` | Store/controller tests |
-| Devices/MQTT | `backend/internal/{mqtt,services}/`, `backend/models/devices/` | MQTT/processor/registrar/lifetime tests |
-| Automations | `backend/internal/automations/`, `backend/models/automations/` | Engine/trigger/scheduler/operation tests |
+| Devices/MQTT | `backend/internal/{mqtt,services,controllers,lanes}/`, `backend/models/devices/` | Processor/registrar/lifetime tests; ordering replay, dial golden and lane tests (`controllers`, `lanes`) |
+| Automations | `backend/internal/automations/`, `backend/models/automations/` | Engine/trigger/scheduler/operation tests; per-automation scenarios in `internal/automations/scenarios/` over the shared `backend/testing/hubharness` |
 | Metrics/storage | `backend/internal/metrics/`, `backend/repository/`, `backend/utils/storage/` | Query/aggregation/filter/storage tests |
 | HTTP/auth/events | `backend/internal/{api,auth,ws}/` | Route/middleware/token/event-hub tests |
 | MCP/assistant | `backend/internal/mcp/`, `backend/models/assistant/`, `backend/store/assistant.go` | Resolver/intent/transport/assistant tests |
@@ -25,8 +25,9 @@ ApexCharts.
 
 - `DeviceLifetimeService.Update`: events bypass equality deduplication; accepted state
   updates precede debounce. Automation gets changed delta; metrics/WS get filtered
-  updates. Seed/availability have separate paths. The
-  [flow guide](../../backend/docs/architecture.md) omits details; verify code/tests.
+  updates. Seed/availability have separate paths. Messages are processed per device
+  in arrival order on lanes (spec 005); see the
+  [flow guide](../../backend/docs/architecture.md); verify code/tests.
 - `backend/internal/hub.go`: device context/MCP routes are public; many API/WS routes
   use protected middleware. NH-03 is an obligation, not proof of existing auth coverage.
   Changes must document actual exposure; hardening requires implementation work.
