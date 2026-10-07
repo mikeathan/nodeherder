@@ -13,6 +13,10 @@ import (
 
 const lastSeenKey = "last_seen"
 
+// DeviceLifetimeService owns one device's state. Seed and Update for a device
+// must not run concurrently: the hub runs them on that device's lane, one
+// message at a time in arrival order, so the automations they trigger read the
+// state written by that message (spec 005, FR-01).
 type DeviceLifetimeService struct {
 	device            *devices.Device
 	debouncerService  *settings.DeviceDebouncer

@@ -87,7 +87,8 @@ func TestOperationIncreaseValue(t *testing.T) {
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
 	// create trigger automation
-	ctx := automations.NewDeviceContext()
+	state := automations.NewDeviceContext()
+	var ctx automations.AutomationContext = automations.NewRunContext(state, nil, false)
 	err := action.Configure(registrar, mqtt)
 
 	if err != nil {
@@ -97,9 +98,9 @@ func TestOperationIncreaseValue(t *testing.T) {
 
 		// action_time property of button is not really used for calculation,
 		// is just a triggering device so we can publish the payload
-		ctx.SetDevicePayload(map[string]*devices.Entity{
+		ctx = automations.NewRunContext(state, map[string]*devices.Entity{
 			"action_time": dd["button"].Exposes["action_time"],
-		})
+		}, false)
 
 		if err := action.Execute(ctx); err != nil {
 			t.Fatal(err)
@@ -186,7 +187,8 @@ func TestOperationDecreaseValue(t *testing.T) {
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
 	// create trigger automation
-	ctx := automations.NewDeviceContext()
+	state := automations.NewDeviceContext()
+	var ctx automations.AutomationContext = automations.NewRunContext(state, nil, false)
 	err := action.Configure(registrar, mqtt)
 
 	if err != nil {
@@ -197,9 +199,9 @@ func TestOperationDecreaseValue(t *testing.T) {
 		// action_time property of button is not really used for calculation,
 		// is just a triggering device so we can publish the payload
 
-		ctx.SetDevicePayload(map[string]*devices.Entity{
+		ctx = automations.NewRunContext(state, map[string]*devices.Entity{
 			"action_time": dd["button"].Exposes["action_time"],
-		})
+		}, false)
 
 		if err := action.Execute(ctx); err != nil {
 			t.Fatal(err)
@@ -285,7 +287,8 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
 	// create trigger automation
-	ctx := automations.NewDeviceContext()
+	state := automations.NewDeviceContext()
+	var ctx automations.AutomationContext = automations.NewRunContext(state, nil, false)
 	err := action.Configure(registrar, mqtt)
 
 	if err != nil {
@@ -294,9 +297,9 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	for _, actionTime := range action_times {
 		// update both device and payload as they are used
 		dd["button"].Exposes["action_time"].Data.SetValue(actionTime)
-		ctx.SetDevicePayload(map[string]*devices.Entity{
+		ctx = automations.NewRunContext(state, map[string]*devices.Entity{
 			"action_time": dd["button"].Exposes["action_time"],
-		})
+		}, false)
 		if err := action.Execute(ctx); err != nil {
 			t.Fatal(err)
 		}
@@ -308,9 +311,9 @@ func TestOperationMultiStepIncreaseValue(t *testing.T) {
 	// we are expecting to have reached the max value of the 'brightness' property
 	// so next payload event shoud not publish new mqqt message. if it does it should error in the handler
 	dd["button"].Exposes["action_time"].Data.SetValue(float64(30))
-	ctx.SetDevicePayload(map[string]*devices.Entity{
+	ctx = automations.NewRunContext(state, map[string]*devices.Entity{
 		"action_time": dd["button"].Exposes["action_time"],
-	})
+	}, false)
 	action.Execute(ctx)
 	mqtt.WaitResponses()
 	if responses != len(action_times) {
@@ -385,7 +388,8 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 	registrar := services.NewHubRegisterService(store, eventHub, 30000)
 
 	// create trigger automation
-	ctx := automations.NewDeviceContext()
+	state := automations.NewDeviceContext()
+	var ctx automations.AutomationContext = automations.NewRunContext(state, nil, false)
 	err := action.Configure(registrar, mqtt)
 
 	if err != nil {
@@ -394,9 +398,9 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 	for _, actionTime := range action_times {
 		// update both device and payload as they are used
 		dd["button"].Exposes["action_time"].Data.SetValue(actionTime)
-		ctx.SetDevicePayload(map[string]*devices.Entity{
+		ctx = automations.NewRunContext(state, map[string]*devices.Entity{
 			"action_time": dd["button"].Exposes["action_time"],
-		})
+		}, false)
 		if err := action.Execute(ctx); err != nil {
 			t.Fatal(err)
 		}
@@ -408,9 +412,9 @@ func TestOperationMultiStepDecreaseValue(t *testing.T) {
 	// we are expecting to have reached the max value of the 'brightness' property
 	// so next payload event shoud not publish new mqqt message. if it does it should error in the handler
 	dd["button"].Exposes["action_time"].Data.SetValue(float64(30))
-	ctx.SetDevicePayload(map[string]*devices.Entity{
+	ctx = automations.NewRunContext(state, map[string]*devices.Entity{
 		"action_time": dd["button"].Exposes["action_time"],
-	})
+	}, false)
 
 	action.Execute(ctx)
 	mqtt.WaitResponses()

@@ -3,8 +3,10 @@ package controllers_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"node-herder/internal/automations"
 	"node-herder/internal/controllers"
 	mcpserver "node-herder/internal/mcp/server"
@@ -14,6 +16,7 @@ import (
 	"node-herder/internal/services"
 	"node-herder/internal/ws"
 	"node-herder/mocks"
+	automationmodels "node-herder/models/automations"
 	"node-herder/models/bridge"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
@@ -22,10 +25,14 @@ import (
 	"node-herder/repository"
 	"node-herder/store"
 	utils_test "node-herder/testing"
+	"node-herder/testing/hubharness"
 	"node-herder/utils"
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
+	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -134,7 +141,7 @@ func TestManualTriggerTurnsOnLightAutomation(t *testing.T) {
 
 	//problem we dont call the hanlder as we dont send mqtt events
 
-	hub.TriggerManual(id, "state")
+	hub.TriggerManual(context.Background(), id, "state")
 	timeout := time.After(3 * time.Second)
 	ticker := time.NewTicker(50 * time.Millisecond)
 	defer ticker.Stop()
@@ -2292,4 +2299,529 @@ func TestHubMCPStatusEvents(t *testing.T) {
 		}
 	})
 
+}
+
+const (
+	replayLightID   = "0x70ac08fffefafeca"
+	replayLightName = "Attic room Light"
+	// The probe is an enum expose (never debounced) absent from the stale/new
+	// pair; its broadcast marks that everything delivered before it on the
+	// device topic has been handled.
+	replayProbe = "power_on_behavior"
+)
+
+var replayProbeValues = []string{"off", "on", "previous"}
+
+func newReplayLight() *devices.Device {
+	return utils_test.CreateDeviceWithExposes(replayLightID, replayLightName, []*devices.Entity{
+		utils_test.CreateEntity("state", "binary", "OFF"),
+		utils_test.CreateEntity("brightness", "numeric", 120.0),
+		utils_test.CreateEntity("linkquality", "numeric", 0.0),
+		utils_test.CreateEnumEntity(replayProbe, map[string]any{"off": "off", "on": "on", "previous": "previous"}),
+	})
+}
+
+// zigbee2mqttStaleThenNew answers <name>/set like Zigbee2MQTT 2.14.2 (spec F-01):
+// first the cached old state with a fresh last_seen and linkquality 0, then the
+// new state, back to back. jitter randomises scheduling between the two.
+func zigbee2mqttStaleThenNew(h *hubharness.Harness, rng *rand.Rand, state *string) func(topic string, payload []byte) {
+	return func(topic string, payload []byte) {
+		name, ok := strings.CutSuffix(strings.TrimPrefix(topic, "zigbee2mqtt/"), "/set")
+		if !ok {
+			return
+		}
+		var cmd map[string]any
+		if err := json.Unmarshal(payload, &cmd); err != nil {
+			return
+		}
+		next, ok := cmd["state"].(string)
+		if !ok {
+			return
+		}
+		old := *state
+		if strings.EqualFold(next, "TOGGLE") {
+			next = map[string]string{"ON": "OFF", "OFF": "ON"}[old]
+		}
+		*state = next
+		lastSeen := time.Now().UTC().Format(time.RFC3339Nano)
+		stale, _ := json.Marshal(map[string]any{"state": old, "brightness": 120.0, "linkquality": 0.0, "last_seen": lastSeen})
+		fresh, _ := json.Marshal(map[string]any{"state": next, "brightness": 120.0, "linkquality": 87.0, "last_seen": lastSeen})
+		h.Paho.Deliver("zigbee2mqtt/"+name, stale)
+		for i := rng.Intn(3); i > 0; i-- {
+			runtime.Gosched()
+		}
+		h.Paho.Deliver("zigbee2mqtt/"+name, fresh)
+	}
+}
+
+type replayOutcome struct {
+	trials, wrongFinal, extraBroadcasts, timeouts int
+	examples                                      []string
+}
+
+func (o *replayOutcome) failed() bool {
+	return o.wrongFinal+o.extraBroadcasts+o.timeouts > 0
+}
+
+func (o *replayOutcome) note(format string, args ...any) {
+	if len(o.examples) < 5 {
+		o.examples = append(o.examples, fmt.Sprintf(format, args...))
+	}
+}
+
+// awaitProbe collects state broadcasts for the light until the probe value
+// arrives, so a trial ends only after everything before the probe was handled.
+func awaitProbe(updates <-chan *devices.UpdatePackage, probe string) (states []any, ok bool) {
+	timeout := time.After(2 * time.Second)
+	for {
+		select {
+		case p := <-updates:
+			if s, has := p.Data["state"]; has {
+				states = append(states, s)
+			}
+			if p.Data[replayProbe] == probe {
+				return states, true
+			}
+		case <-timeout:
+			return states, false
+		}
+	}
+}
+
+// AC-01, AC-02 (SC-01): the UI toggle path with Zigbee2MQTT's stale-then-new
+// reply must end on the new state with exactly one state broadcast, in every
+// randomised trial, in both directions.
+func TestReplayStaleThenNewPairEndsOnNewState(t *testing.T) {
+	const trials = 2000
+	seed := time.Now().UnixNano()
+	t.Logf("seed=%d", seed)
+	rng := rand.New(rand.NewSource(seed))
+
+	h := hubharness.New(t, []*devices.Device{newReplayLight()})
+	h.Seed(t, map[string]map[string]any{replayLightName: {"state": "OFF", "brightness": 120.0, "linkquality": 87.0}})
+
+	updates := make(chan *devices.UpdatePackage, 64)
+	h.EventHub.OnBroadcast(func(eventName string, data interface{}) {
+		if p, ok := data.(*devices.UpdatePackage); ok && eventName == ws.DeviceUpdated && p.Id == replayLightID {
+			updates <- p
+		}
+	})
+
+	deviceState := "OFF"
+	h.Paho.OnPublish(zigbee2mqttStaleThenNew(h, rng, &deviceState))
+
+	out := replayOutcome{}
+	for i := 0; i < trials; i++ {
+		want := map[string]string{"ON": "OFF", "OFF": "ON"}[deviceState]
+		if err := h.EventHub.SetValue(map[string]any{"id": replayLightID, "name": "state", "value": want}); err != nil {
+			t.Fatal(err)
+		}
+		probe := replayProbeValues[i%len(replayProbeValues)]
+		h.Deliver(t, replayLightName, map[string]any{replayProbe: probe})
+
+		out.trials++
+		states, ok := awaitProbe(updates, probe)
+		if !ok {
+			out.timeouts++
+			out.note("trial %d: probe not observed", i)
+			continue
+		}
+		stored, _ := h.Store.FindDeviceById(replayLightID)
+		storedState := stored.Exposes["state"].Data.Value()
+		if len(states) == 0 || states[len(states)-1] != want || storedState != want {
+			out.wrongFinal++
+			out.note("trial %d: want %s, broadcasts %v, stored %v", i, want, states, storedState)
+		}
+		if len(states) > 1 {
+			out.extraBroadcasts++
+		}
+	}
+
+	t.Logf("trials=%d wrongFinal=%d extraStateBroadcasts=%d timeouts=%d", out.trials, out.wrongFinal, out.extraBroadcasts, out.timeouts)
+	if out.failed() {
+		t.Fatalf("stale-then-new replay failed: %d/%d wrong final state, %d with >1 state broadcast, %d timeouts; examples: %v",
+			out.wrongFinal, out.trials, out.extraBroadcasts, out.timeouts, out.examples)
+	}
+}
+
+// AC-02: an identical pair [S, S] yields at most one state broadcast and ends on S.
+func TestReplayIdenticalPairBroadcastsOnce(t *testing.T) {
+	const trials = 500
+	h := hubharness.New(t, []*devices.Device{newReplayLight()})
+	h.Seed(t, map[string]map[string]any{replayLightName: {"state": "OFF", "brightness": 120.0, "linkquality": 87.0}})
+
+	updates := make(chan *devices.UpdatePackage, 64)
+	h.EventHub.OnBroadcast(func(eventName string, data interface{}) {
+		if p, ok := data.(*devices.UpdatePackage); ok && eventName == ws.DeviceUpdated && p.Id == replayLightID {
+			updates <- p
+		}
+	})
+
+	out := replayOutcome{}
+	state := "OFF"
+	for i := 0; i < trials; i++ {
+		state = map[string]string{"ON": "OFF", "OFF": "ON"}[state]
+		h.Deliver(t, replayLightName, map[string]any{"state": state, "linkquality": 87.0})
+		h.Deliver(t, replayLightName, map[string]any{"state": state, "linkquality": 87.0})
+		probe := replayProbeValues[i%len(replayProbeValues)]
+		h.Deliver(t, replayLightName, map[string]any{replayProbe: probe})
+
+		out.trials++
+		states, ok := awaitProbe(updates, probe)
+		if !ok {
+			out.timeouts++
+			continue
+		}
+		stored, _ := h.Store.FindDeviceById(replayLightID)
+		if len(states) != 1 || states[0] != state || stored.Exposes["state"].Data.Value() != state {
+			out.wrongFinal++
+			out.note("trial %d: want one %s broadcast, got %v", i, state, states)
+		}
+	}
+	t.Logf("trials=%d wrong=%d timeouts=%d", out.trials, out.wrongFinal, out.timeouts)
+	if out.failed() {
+		t.Fatalf("identical pair: %d/%d wrong, %d timeouts; examples: %v", out.wrongFinal, out.trials, out.timeouts, out.examples)
+	}
+}
+
+// AC-16: with ordered delivery, a bridge handler that subscribes (and waits for
+// the SUBACK, which paho completes on its router goroutine) must not stall
+// delivery: the subscription completes and the new device's messages flow.
+func TestBridgeSubscribeDoesNotStallOrderedDelivery(t *testing.T) {
+	light := newReplayLight()
+	h := hubharness.New(t, []*devices.Device{light})
+	h.Seed(t, map[string]map[string]any{replayLightName: {"state": "OFF"}})
+
+	hall := utils_test.CreateDeviceWithExposes("0xhall", "Hall light", []*devices.Entity{
+		utils_test.CreateEntity("state", "binary", "OFF"),
+	})
+	bridgeList, err := json.Marshal(utils_test.CreateBridgeInfoList([]*devices.Device{light, hall}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.Paho.Deliver("zigbee2mqtt/bridge/devices", bridgeList)
+	h.AwaitSubscriptions(t, 1) // only the new topic is subscribed
+	h.Seed(t, map[string]map[string]any{"Hall light": {"state": "ON"}})
+}
+
+// AC-15: HTTP data-collector ingestion uses the same ordered path as MQTT.
+func TestHTTPIngestionIsOrderedPerDevice(t *testing.T) {
+	const messages = 1000
+	h := hubharness.New(t, []*devices.Device{newReplayLight()})
+	h.Seed(t, map[string]map[string]any{replayLightName: {"state": "OFF"}})
+
+	updates := make(chan *devices.UpdatePackage, messages+1)
+	h.EventHub.OnBroadcast(func(eventName string, data interface{}) {
+		if p, ok := data.(*devices.UpdatePackage); ok && eventName == ws.DeviceUpdated {
+			updates <- p
+		}
+	})
+
+	want := make([]any, 0, messages)
+	for i := 0; i < messages; i++ {
+		state := [2]string{"ON", "OFF"}[i%2]
+		want = append(want, state)
+		if err := h.Hub.Enqueue(replayLightName, map[string]interface{}{"state": state}, "http"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := h.Hub.Enqueue(replayLightName, map[string]interface{}{replayProbe: "on"}, "http"); err != nil {
+		t.Fatal(err)
+	}
+
+	states, ok := awaitProbe(updates, "on")
+	if !ok {
+		t.Fatalf("probe not observed; %d state broadcasts", len(states))
+	}
+	if len(states) != messages {
+		t.Fatalf("%d state broadcasts, want %d", len(states), messages)
+	}
+	for i := range want {
+		if states[i] != want[i] {
+			t.Fatalf("broadcast %d is %v, want %v", i, states[i], want[i])
+		}
+	}
+}
+
+// AC-14: when the hub context ends, the lanes stop taking work.
+func TestHubStopsIngestingWhenContextEnds(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	hub := controllers.RegisterHubController(&mocks.NopWsServer{}, utils_test.CreateStore(), &mocks.MockMqttClient{}, controllers.WithContext(ctx))
+	cancel()
+
+	deadline := time.Now().Add(hubharness.Timeout)
+	for time.Now().Before(deadline) {
+		if err := hub.Enqueue("some device", map[string]interface{}{"state": "ON"}, "http"); err != nil {
+			return
+		}
+		time.Sleep(time.Millisecond)
+	}
+	t.Fatal("hub still accepted messages after its context ended")
+}
+
+const (
+	atticID   = "0x70ac08fffefafeca"
+	atticName = "Attic room Light"
+)
+
+var atticBridge = []byte(`[
+ {"ieee_address":"` + atticID + `","friendly_name":"` + atticName + `","type":"Router","interview_completed":true,
+  "definition":{"exposes":[{"type":"light","features":[
+   {"type":"binary","name":"state","property":"state","access":7,"value_on":"ON","value_off":"OFF","value_toggle":"TOGGLE"}]},
+   {"type":"enum","name":"` + replayProbe + `","property":"` + replayProbe + `","access":7,"values":["off","on","previous"]}]}}
+]`)
+
+// atticAutomation is the real 0x70ac08fffefafeca recipe (unconditional manual
+// "state" trigger) with its schedules removed and enabled as given.
+func atticAutomation(t *testing.T, enabled bool) automations.Automation {
+	t.Helper()
+	automation := hubharness.LoadAutomationConfig(t, atticID)
+	device := automation.(*automations.Device)
+	device.Schedules = nil
+	device.Enabled = enabled
+	return device
+}
+
+type publishLog struct {
+	mu       sync.Mutex
+	commands []string
+}
+
+func (p *publishLog) record(topic string, payload []byte) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.commands = append(p.commands, topic+" "+string(payload))
+}
+
+func (p *publishLog) all() []string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return append([]string(nil), p.commands...)
+}
+
+// AC-10: errors from the engine reach the caller unchanged.
+func TestTriggerManualKeepsEngineErrors(t *testing.T) {
+	h := hubharness.NewFromBridge(t, atticBridge, 1, atticAutomation(t, false))
+	h.Seed(t, map[string]map[string]any{atticName: {"state": "OFF"}})
+
+	cases := []struct {
+		name, automationID, trigger, want string
+	}{
+		{"unknown automation", "0xunknown", "state", "automation 0xunknown is not ready"},
+		{"disabled automation", atticID, "state", "automation is disabled"},
+	}
+	for _, c := range cases {
+		err := h.Hub.TriggerManual(context.Background(), c.automationID, c.trigger)
+		if err == nil || err.Error() != c.want || errors.Is(err, automationmodels.ErrLaneBusy) {
+			t.Errorf("%s: got %v, want %q", c.name, err, c.want)
+		}
+	}
+
+	enabled := hubharness.NewFromBridge(t, atticBridge, 1, atticAutomation(t, true))
+	enabled.Seed(t, map[string]map[string]any{atticName: {"state": "OFF"}})
+	err := enabled.Hub.TriggerManual(context.Background(), atticID, "nope")
+	if err == nil || err.Error() != "trigger nope not found" {
+		t.Errorf("unknown trigger: got %v", err)
+	}
+}
+
+// AC-08, AC-10, FR-04: a manual trigger runs on its device lane; if the lane
+// does not start it before the deadline it fails with ErrLaneBusy and never runs.
+func TestTriggerManualRunsOnDeviceLane(t *testing.T) {
+	h := hubharness.NewFromBridge(t, atticBridge, 1, atticAutomation(t, true))
+	h.Seed(t, map[string]map[string]any{atticName: {"state": "OFF"}})
+	published := &publishLog{}
+	h.Paho.OnPublish(published.record)
+
+	if err := h.Hub.TriggerManual(context.Background(), atticID, "state"); err != nil {
+		t.Fatalf("idle lane: %v", err)
+	}
+	if got := published.all(); len(got) != 1 || got[0] != "zigbee2mqtt/"+atticName+"/set {\"state\":\"TOGGLE\"}" {
+		t.Fatalf("published %v, want one TOGGLE", got)
+	}
+
+	// Hold the device lane inside a broadcast for this device.
+	entered, release := make(chan struct{}), make(chan struct{})
+	var once sync.Once
+	h.EventHub.OnBroadcast(func(eventName string, data interface{}) {
+		if p, ok := data.(*devices.UpdatePackage); ok && p.Data[replayProbe] == "on" {
+			once.Do(func() { close(entered); <-release })
+		}
+	})
+	h.Deliver(t, atticName, map[string]any{replayProbe: "on"})
+	<-entered
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	err := h.Hub.TriggerManual(ctx, atticID, "state")
+	if !errors.Is(err, automationmodels.ErrLaneBusy) {
+		t.Fatalf("busy lane: got %v, want ErrLaneBusy", err)
+	}
+	close(release)
+
+	// Drain the lane, then confirm the abandoned trigger never published.
+	probed := make(chan struct{})
+	h.EventHub.OnBroadcast(func(eventName string, data interface{}) {
+		if p, ok := data.(*devices.UpdatePackage); ok && p.Data[replayProbe] == "off" {
+			close(probed)
+		}
+	})
+	h.Deliver(t, atticName, map[string]any{replayProbe: "off"})
+	select {
+	case <-probed:
+	case <-time.After(hubharness.Timeout):
+		t.Fatal("lane did not drain")
+	}
+	if got := published.all(); len(got) != 1 {
+		t.Fatalf("abandoned trigger published: %v", got)
+	}
+}
+
+// FR-06 regression: first messages for many new devices arriving concurrently
+// from MQTT and HTTP. Before spec 005 this crashed the process with
+// "concurrent map read and map write" on responseHandlers (see plan T003).
+func TestConcurrentFirstMessagesFromMQTTAndHTTP(t *testing.T) {
+	const count = 20
+	devs := make([]*devices.Device, count)
+	for i := range devs {
+		devs[i] = utils_test.CreateDeviceWithExposes(fmt.Sprintf("0xfirst%02d", i), fmt.Sprintf("first device %02d", i), []*devices.Entity{
+			utils_test.CreateEntity("state", "binary", "OFF"),
+		})
+	}
+	h := hubharness.New(t, devs)
+
+	added := make(chan string, count)
+	h.EventHub.OnBroadcast(func(eventName string, data interface{}) {
+		if eventName == ws.DeviceAdded {
+			added <- data.(*devices.Device).FriendlyName
+		}
+	})
+
+	var wg sync.WaitGroup
+	for i, dev := range devs {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if i%2 == 0 {
+				h.Deliver(t, dev.FriendlyName, map[string]any{"state": "ON"})
+				return
+			}
+			if err := h.Hub.Enqueue(dev.FriendlyName, map[string]interface{}{"state": "ON"}, "http"); err != nil {
+				t.Error(err)
+			}
+		}()
+	}
+	wg.Wait()
+
+	seen := map[string]bool{}
+	timeout := time.After(hubharness.Timeout)
+	for len(seen) < count {
+		select {
+		case name := <-added:
+			seen[name] = true
+		case <-timeout:
+			t.Fatalf("%d of %d devices created", len(seen), count)
+		}
+	}
+}
+
+const (
+	benchDevices  = 20
+	benchMessages = 1000
+)
+
+// BenchmarkMixedBurst (NFR-01, NFR-02) measures one 1,000-message burst spread
+// over 20 devices through the production path (paho callback → hub → processor
+// → Update → broadcast). Every message carries a distinct event action, so each
+// produces exactly one deviceUpdated broadcast; state and linkquality vary so
+// dedupe and debounce paths are exercised too. Reported metrics:
+// p50/p95-ns (per-message latency from delivery to broadcast), allocs/op (per
+// burst), idle-goroutines (goroutines owned by this hub once the run settles)
+// and goroutine-growth (versus before the first burst).
+func BenchmarkMixedBurst(b *testing.B) {
+	devs := make([]*devices.Device, benchDevices)
+	seed := make(map[string]map[string]any, benchDevices)
+	for i := range devs {
+		name := fmt.Sprintf("bench device %02d", i)
+		devs[i] = utils_test.CreateDeviceWithExposes(fmt.Sprintf("0xbench%02d", i), name, []*devices.Entity{
+			utils_test.CreateEnumEntity("action", map[string]any{}),
+			utils_test.CreateEntity("state", "binary", "OFF"),
+			utils_test.CreateEntity("linkquality", "numeric", 0.0),
+		})
+		seed[name] = map[string]any{"state": "OFF", "linkquality": 1.0}
+	}
+
+	start := settle(b)
+	h := hubharness.New(b, devs)
+	h.Seed(b, seed)
+
+	total := b.N * benchMessages
+	sentAt := make([]time.Time, total)
+	latency := make([]time.Duration, total)
+	var handled atomic.Int64
+	done := make(chan struct{}, 1)
+	var target atomic.Int64
+
+	h.EventHub.OnBroadcast(func(eventName string, data interface{}) {
+		p, ok := data.(*devices.UpdatePackage)
+		if !ok || eventName != ws.DeviceUpdated {
+			return
+		}
+		action, _ := p.Data["action"].(string)
+		seq, found := strings.CutPrefix(action, "bench_")
+		if !found {
+			return
+		}
+		n, _ := strconv.Atoi(seq)
+		latency[n] = time.Since(sentAt[n])
+		if handled.Add(1) == target.Load() {
+			done <- struct{}{}
+		}
+	})
+
+	settle(b)
+	before := runtime.NumGoroutine()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		target.Store(int64((i + 1) * benchMessages))
+		for k := 0; k < benchMessages; k++ {
+			n := i*benchMessages + k
+			dev := devs[k%benchDevices]
+			payload := []byte(fmt.Sprintf(`{"action":"bench_%d","state":"%s","linkquality":%d}`,
+				n, [2]string{"ON", "OFF"}[(k/benchDevices)%2], k%255))
+			sentAt[n] = time.Now()
+			h.Paho.Deliver("zigbee2mqtt/"+dev.FriendlyName, payload)
+		}
+		select {
+		case <-done:
+		case <-time.After(30 * time.Second):
+			b.Fatalf("burst %d: handled %d of %d", i, handled.Load(), target.Load())
+		}
+	}
+	b.StopTimer()
+
+	idle := settle(b)
+	slices.Sort(latency)
+	b.ReportMetric(float64(latency[total/2].Nanoseconds()), "p50-ns")
+	b.ReportMetric(float64(latency[total*95/100].Nanoseconds()), "p95-ns")
+	b.ReportMetric(float64(idle-start), "idle-goroutines")
+	b.ReportMetric(float64(idle-before), "goroutine-growth")
+}
+
+// settle waits until the goroutine count stops changing, then returns it.
+func settle(tb testing.TB) int {
+	tb.Helper()
+	last, stable := runtime.NumGoroutine(), 0
+	deadline := time.Now().Add(5 * time.Second)
+	for stable < 5 && time.Now().Before(deadline) {
+		time.Sleep(20 * time.Millisecond)
+		if n := runtime.NumGoroutine(); n == last {
+			stable++
+		} else {
+			last, stable = n, 0
+		}
+	}
+	return last
 }

@@ -6,11 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"node-herder/internal/automations"
+	"node-herder/internal/lanes"
 	mcpserver "node-herder/internal/mcp/server"
 	metrics "node-herder/internal/metrics/domain"
 	"node-herder/internal/mqtt"
 	"node-herder/internal/services"
 	"node-herder/internal/ws"
+	automationmodels "node-herder/models/automations"
 	"node-herder/models/devices"
 	"node-herder/models/hub"
 	"node-herder/models/settings"
@@ -28,12 +30,32 @@ var (
 	ErrorEmptyPayload = fmt.Errorf("empty payload")
 )
 
+const (
+	// ingressKey is the single lane that receives every message in arrival order.
+	ingressKey = "ingress"
+	// bridgeKey is the lane shared by all bridge/* topics, preserving their order.
+	bridgeKey = "bridge"
+	// ingressCapacity bounds messages awaiting routing; routing is a map lookup and
+	// a non-blocking submit, so this lane drains far faster than device lanes.
+	ingressCapacity = 10 * lanes.DefaultCapacity
+	// laneShutdownTimeout bounds draining the lanes when the hub context ends.
+	laneShutdownTimeout = 5 * time.Second
+)
+
+// laneRunner runs work in per-key FIFO order (implemented by *lanes.Executor).
+type laneRunner interface {
+	Submit(key string, task func()) error
+	Do(ctx context.Context, key string, fn func() error) error
+	Shutdown(ctx context.Context) error
+}
+
 type HubController struct {
 	eventHub                                 ws.EventHub
 	mqtt                                     mqtt.MqttClient
 	store                                    store.AppStore
-	wp                                       *utils.WorkerPool
-	responseHandlers                         map[string]handler
+	ingress                                  laneRunner
+	deviceLanes                              laneRunner
+	responseHandlers                         map[string]handler // owned by the ingress lane
 	DeviceAvailabilityTimeoutOverrideInHours int
 	automationEngine                         automations.Engine
 	registrar                                *services.HubRegisterService
@@ -85,13 +107,20 @@ func RegisterHubController(eventHub ws.EventHub, store store.AppStore, mqtt mqtt
 
 	h.registrar = services.NewHubRegisterService(store, eventHub, 3600) // 3600 - is not used!!!!!!!!!!!!!!!!
 	h.automationEngine = automations.NewEngine(h.automationHandlers, h.registrar, mqtt)
-	h.wp = utils.NewWorkerPool(4, h.ctx)
-	h.wp.Run()
+
+	// Messages are routed on one ordered ingress lane, then handled on a lane per
+	// device topic (all bridge topics share one), so each device's messages are
+	// processed one at a time in arrival order while devices run concurrently.
+	h.ingress = lanes.New(lanes.WithName("ingress"), lanes.WithCapacity(ingressCapacity))
+	h.deviceLanes = lanes.New(lanes.WithName("device lanes"))
+	context.AfterFunc(h.ctx, h.shutdownLanes)
 
 	h.registerEventHubEvents()
 
 	h.mqtt.OnMessageHandler(func(id string, payload []byte) {
-		h.processMessage(id, payload, "mqtt")
+		if err := h.Ingest(id, payload, "mqtt"); err != nil {
+			utils.LogErrorf("mqtt message %s not accepted: %v", id, err)
+		}
 	})
 
 	//
@@ -563,18 +592,75 @@ func (c *HubController) Enqueue(id string, payload map[string]interface{}, connT
 		return err
 	}
 
-	return c.processMessage(id, bytes, connType)
+	return c.Ingest(id, bytes, connType)
+}
+
+// Ingest is the single entry for MQTT and HTTP messages. It only queues the
+// message on the ordered ingress lane, so it never blocks the caller (paho's
+// router goroutine for MQTT).
+func (h *HubController) Ingest(id string, payload []byte, connType string) error {
+	return h.ingress.Submit(ingressKey, func() { h.route(id, payload, connType) })
 }
 
 func (m *HubController) TriggerAutomation(device *devices.Device, payload map[string]interface{}) {
 	m.automationEngine.HandleDevice(device, payload)
 }
 
-func (m *HubController) TriggerManual(automationId string, triggerName string) error {
-	return m.automationEngine.HandleManual(automationId, triggerName)
+// TriggerManual runs a manual trigger on the automation's device lane, ordered
+// with that device's messages. Engine errors are returned unchanged; if the
+// lane is full, shut down, or does not start the trigger before ctx ends, the
+// error wraps ErrLaneBusy and the trigger does not run.
+func (m *HubController) TriggerManual(ctx context.Context, automationId string, triggerName string) error {
+	key := automationId
+	if device, err := m.registrar.LookupById(automationId); err == nil {
+		key = device.FriendlyName
+	}
+
+	err := m.deviceLanes.Do(ctx, key, func() error {
+		return m.automationEngine.HandleManual(automationId, triggerName)
+	})
+	if errors.Is(err, lanes.ErrLaneFull) || errors.Is(err, lanes.ErrClosed) || errors.Is(err, lanes.ErrNotStarted) {
+		return fmt.Errorf("%w: %w", automationmodels.ErrLaneBusy, err)
+	}
+	return err
 }
 
-func (m *HubController) processMessage(id string, payload []byte, connType string) error {
+// route runs on the ingress lane, which owns responseHandlers, and hands the
+// message to its device (or bridge) lane.
+func (m *HubController) route(id string, payload []byte, connType string) {
+	h := m.responseHandler(id)
+	if h == nil {
+		utils.LogErrorf("no handler for topic %s, message ignored", id)
+		return
+	}
+
+	key := id
+	if strings.HasPrefix(id, "bridge") {
+		key = bridgeKey
+	}
+	err := m.deviceLanes.Submit(key, func() {
+		if err := h.ProcessPayload(id, connType, payload); err != nil {
+			utils.LogErrorf("Job: %s Error: %s", id, err.Error())
+		}
+	})
+	if err != nil {
+		utils.LogErrorf("message %s not processed: %v", id, err)
+	}
+}
+
+func (m *HubController) shutdownLanes() {
+	ctx, cancel := context.WithTimeout(context.Background(), laneShutdownTimeout)
+	defer cancel()
+	// Ingress first: draining it may still hand messages to device lanes.
+	if err := m.ingress.Shutdown(ctx); err != nil {
+		utils.LogErrorf("ingress lane shutdown: %v", err)
+	}
+	if err := m.deviceLanes.Shutdown(ctx); err != nil {
+		utils.LogErrorf("device lanes shutdown: %v", err)
+	}
+}
+
+func (m *HubController) responseHandler(id string) handler {
 
 	if _, ok := m.responseHandlers[id]; !ok {
 		if strings.HasPrefix(id, "bridge") {
@@ -607,8 +693,7 @@ func (m *HubController) processMessage(id string, payload []byte, connType strin
 		}
 	}
 
-	var h handler = m.responseHandlers[id]
-	return m.wp.AddTask(&mqttResponseTask{Id: id, Type: connType, Payload: payload, h: h})
+	return m.responseHandlers[id]
 }
 
 // TODO: can be refactored to use a factory. for now we will keep it simple
@@ -652,10 +737,6 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 }
 
 func (d *HubController) handleDeviceAdded(device *devices.Device) error {
-	// todo: execute in worker pool
-	// 	action()
-	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
-
 	d.eventHub.Broadcast(ws.DeviceAdded, device)
 
 	return d.store.StoreDevice(device.FriendlyName, device)
@@ -663,11 +744,6 @@ func (d *HubController) handleDeviceAdded(device *devices.Device) error {
 
 // /
 func (d *HubController) handleDeviceUpdated(device *devices.Device, payload *devices.UpdatePackage) error {
-
-	// todo: execute in worker pool
-	// 	action()
-	// 	m.wp.AddTask(utils.NewWorkerTask(d.Id, action))
-
 	d.eventHub.Broadcast(ws.DeviceUpdated, payload)
 
 	return d.store.StoreDevice(device.FriendlyName, device)

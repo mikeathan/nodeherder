@@ -13,22 +13,6 @@ import (
 	"strings"
 )
 
-type mqttResponseTask struct {
-	Id      string
-	Payload []byte
-	Type    string
-	h       handler
-}
-
-func (m *mqttResponseTask) OnFailure(err error) {
-	// TODO: maybe do somethng wit the error
-	utils.LogErrorf("Job: %s Error: %s", m.Id, err.Error())
-}
-
-func (m *mqttResponseTask) Process() error {
-	return m.h.ProcessPayload(m.Id, m.Type, m.Payload)
-}
-
 type handler interface {
 	ProcessPayload(id string, connType string, payload []byte) error
 }

@@ -1,6 +1,7 @@
 package mocks
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -1285,15 +1286,15 @@ func (f MockFileLoader) Load(file string) ([]byte, error) {
 
 // Automation trigger handler
 type MockAutomationTrigger struct {
-	callback func(automationId string, triggerName string) error
+	callback func(ctx context.Context, automationId string, triggerName string) error
 }
 
-func NewMockAutomationTrigger(callback func(automationId string, triggerName string) error) *MockAutomationTrigger {
+func NewMockAutomationTrigger(callback func(ctx context.Context, automationId string, triggerName string) error) *MockAutomationTrigger {
 	return &MockAutomationTrigger{callback: callback}
 }
 
-func (m *MockAutomationTrigger) TriggerManual(automationId string, triggerName string) error {
-	return m.callback(automationId, triggerName)
+func (m *MockAutomationTrigger) TriggerManual(ctx context.Context, automationId string, triggerName string) error {
+	return m.callback(ctx, automationId, triggerName)
 }
 
 // MockMCPStatusProvider

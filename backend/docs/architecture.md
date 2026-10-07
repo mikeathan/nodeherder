@@ -6,6 +6,20 @@ This document describes the lifecycle of an incoming device update payload and h
 
 When the backend receives a payload from a device (e.g. via Zigbee2MQTT), it is processed by the `DeviceLifetimeService`. The service has a strict order of operations designed to keep the in-memory state fresh for immediate consumers (like automations) while debouncing the data written to the metrics storage and broadcast to the UI.
 
+### Ordering (spec 005)
+
+Messages are handled one at a time per device, in arrival order, end to end:
+paho delivers in order (`SetOrderMatters(true)`) and its callback only queues the
+message on the hub's single **ingress lane** (`HubController.Ingest`, also used by the
+HTTP data collector). The ingress lane owns the topic→handler map and hands each message
+to a **device lane** keyed by topic (all `bridge/*` topics share one lane), which runs
+the whole update (dedupe, automations, store, broadcast) before the next message for
+that device. Different devices run concurrently. Lanes (`internal/lanes`) hold a goroutine
+only while busy, queue at most 1,000 messages per device (beyond that: rejected, logged,
+counted) and drain on hub context cancellation. Manual triggers run on the automation's
+device lane; if it does not start before the request deadline the API returns 503.
+Each automation run gets its own context (exposes + origin) over persistent state.
+
 ### Flow Diagram
 
 ```mermaid

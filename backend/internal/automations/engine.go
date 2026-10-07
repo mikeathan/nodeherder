@@ -98,7 +98,7 @@ func (a *AutomationEngine) HandleManual(automationID string, triggerName string)
 		return err
 	}
 
-	return automation.EvaluateTrigger(NewDeviceEvent(device, nil), triggerName)
+	return automation.EvaluateTrigger(NewManualEvent(device), triggerName)
 }
 
 func (a *AutomationEngine) GetAllTriggers() []Automation {
