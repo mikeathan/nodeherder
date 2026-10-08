@@ -3,6 +3,9 @@ package mqtt_test
 import (
 	"fmt"
 	"node-herder/internal/mqtt"
+	"node-herder/mocks"
+	"slices"
+	"testing"
 	"time"
 
 	mqttlib "github.com/eclipse/paho.mqtt.golang"
@@ -64,4 +67,69 @@ func publishFunc(closeChan chan bool, client mqttlib.Client, topic string, messa
 
 	closeChan <- true
 
+}
+
+func newFakeMqttService(t *testing.T) (mqtt.MqttClient, *mocks.FakePahoClient) {
+	t.Helper()
+	var paho *mocks.FakePahoClient
+	client := mqtt.NewMqttClient(mqtt.WithClientFactory(func(options *mqttlib.ClientOptions) mqttlib.Client {
+		paho = mocks.NewFakePahoClient(options)
+		return paho
+	}))
+	if err := client.Connect(); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { paho.Disconnect(250) })
+	// OnConnect subscribes the six bridge topics on its own goroutine.
+	for i := 0; i < 6; i++ {
+		select {
+		case <-paho.Subscriptions():
+		case <-time.After(5 * time.Second):
+			t.Fatalf("timed out waiting for bridge subscription %d", i+1)
+		}
+	}
+	return client, paho
+}
+
+func TestRemoveTopicUnsubscribesTheSubscribedTopic(t *testing.T) {
+	client, paho := newFakeMqttService(t)
+	if err := client.AddTopic("fixture"); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(paho.Subscribed(), "zigbee2mqtt/fixture") {
+		t.Fatalf("subscriptions %v lack zigbee2mqtt/fixture", paho.Subscribed())
+	}
+	if err := client.RemoveTopic("fixture"); err != nil {
+		t.Fatal(err)
+	}
+	if slices.Contains(paho.Subscribed(), "zigbee2mqtt/fixture") {
+		t.Fatalf("zigbee2mqtt/fixture still subscribed after RemoveTopic: %v", paho.Subscribed())
+	}
+}
+
+func TestInboundTopicStripsOnlyTheBasePrefix(t *testing.T) {
+	client, paho := newFakeMqttService(t)
+	received := make(chan string, 1)
+	client.OnMessageHandler(func(topic string, _ []byte) { received <- topic })
+
+	paho.Deliver("zigbee2mqtt/garage/zigbee2mqtt/sensor", []byte(`{}`))
+	select {
+	case got := <-received:
+		if got != "garage/zigbee2mqtt/sensor" {
+			t.Fatalf("handler topic = %q, want %q", got, "garage/zigbee2mqtt/sensor")
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("timed out waiting for the message")
+	}
+}
+
+func TestRemoveTopicLeavesOtherClientsBridgeTopics(t *testing.T) {
+	client, _ := newFakeMqttService(t)
+	if err := client.RemoveTopic("bridge/devices"); err != nil {
+		t.Fatal(err)
+	}
+	_, other := newFakeMqttService(t)
+	if !slices.Contains(other.Subscribed(), "zigbee2mqtt/bridge/devices") {
+		t.Fatalf("a new client's bridge subscriptions %v lack zigbee2mqtt/bridge/devices", other.Subscribed())
+	}
 }

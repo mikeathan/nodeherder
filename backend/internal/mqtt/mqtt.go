@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"node-herder/utils"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -122,7 +123,7 @@ func NewMqttClient(opts ...func(*MqttConfig)) MqttClient {
 		clientId:       config.ClientId,
 		newClient:      config.newClient,
 		messageHandler: func(s string, b []byte) {},
-		topics:         bridgeTopics,
+		topics:         slices.Clone(bridgeTopics), // RemoveTopic edits in place
 		mu:             sync.Mutex{},
 	}
 
@@ -145,8 +146,14 @@ type MqttService struct {
 	mu             sync.Mutex
 }
 
+// fullTopic and sanitizeTopic are the single mapping between hub topic names and
+// broker topics; subscribe, unsubscribe, publish and receive must agree on it.
+func fullTopic(topic string) string {
+	return baseTopic + topic
+}
+
 func sanitizeTopic(topic string) string {
-	return strings.ReplaceAll(topic, baseTopic, "")
+	return strings.TrimPrefix(topic, baseTopic)
 }
 
 // OnMessageHandler sets the handler for inbound messages. It runs on paho's
@@ -156,7 +163,7 @@ func (m *MqttService) OnMessageHandler(handler func(string, []byte)) {
 }
 
 func (m *MqttService) Publish(friendlyName string, payload interface{}) {
-	topic := fmt.Sprintf("%s%s", baseTopic, friendlyName)
+	topic := fullTopic(friendlyName)
 
 	utils.LogDebugf("Publish: %s", topic)
 	m.client.Publish(topic, 0, false, payload)
@@ -213,8 +220,7 @@ func (m *MqttService) subscribeTopics() {
 
 func (m *MqttService) subscribe(topic string) error {
 
-	fullTopic := fmt.Sprintf("%s%s", baseTopic, topic)
-	token := m.client.Subscribe(fullTopic, 1, nil)
+	token := m.client.Subscribe(fullTopic(topic), 1, nil)
 
 	if token.Wait() && token.Error() != nil {
 		return token.Error()
@@ -227,7 +233,7 @@ func (m *MqttService) RemoveTopic(topic string) error {
 	for idx, t := range m.topics {
 		if t == topic {
 
-			if token := m.client.Unsubscribe(topic); token.Wait() && token.Error() != nil {
+			if token := m.client.Unsubscribe(fullTopic(topic)); token.Wait() && token.Error() != nil {
 				return token.Error()
 			}
 
