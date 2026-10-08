@@ -146,42 +146,46 @@ func (r *dialRig) confirm(t *testing.T, cmd map[string]any, lightState *string) 
 	}
 }
 
-// AC-05, AC-06, AC-07: golden commands for non-overlapping dial events using
-// the real automation 0x001788010d7d9d3f. Expected values follow the current
-// step maths: brightness ± action_time × coefficient (slow 0.5, fast 1),
-// clamped to the light's 0..254, skipped when unchanged.
-func TestDialGoldenSequence(t *testing.T) {
-	r := newDialRig(t, map[string]any{"state": "OFF", "brightness": 100.0, "color_temp": 370.0})
+// dialGoldenCases are the golden commands for non-overlapping dial events using
+// the real automation 0x001788010d7d9d3f, starting from a light seeded with
+// dialGoldenSeed. Expected values follow the current step maths: brightness ±
+// action_time × coefficient (slow 0.5, fast 1), clamped to the light's 0..254,
+// skipped when unchanged.
+var dialGoldenSeed = map[string]any{"state": "OFF", "brightness": 100.0, "color_temp": 370.0}
+
+var dialGoldenCases = []struct {
+	name  string
+	event map[string]any
+	want  []map[string]any
+}{
+	{"right slow", dialEvent("dial_rotate_right_slow", 20), []map[string]any{{"brightness": 110.0}}},
+	{"right fast", dialEvent("dial_rotate_right_fast", 30), []map[string]any{{"brightness": 140.0}}},
+	{"left slow", dialEvent("dial_rotate_left_slow", 40), []map[string]any{{"brightness": 120.0}}},
+	{"left fast", dialEvent("dial_rotate_left_fast", 50), []map[string]any{{"brightness": 70.0}}},
+	{"left fast clamps at min", dialEvent("dial_rotate_left_fast", 100), []map[string]any{{"brightness": 0.0}}},
+	{"left slow at min is skipped", dialEvent("dial_rotate_left_slow", 10), nil},
+	{"right fast clamps at max", dialEvent("dial_rotate_right_fast", 300), []map[string]any{{"brightness": 254.0}}},
+	{"right slow at max is skipped", dialEvent("dial_rotate_right_slow", 20), nil},
+	{"repeated event 1", dialEvent("dial_rotate_left_slow", 20), []map[string]any{{"brightness": 244.0}}},
+	{"repeated event 2", dialEvent("dial_rotate_left_slow", 20), []map[string]any{{"brightness": 234.0}}},
+	{"button 1 toggles", map[string]any{"action": "button_1_press_release"}, []map[string]any{{"state": "TOGGLE"}}},
+	{"button 1 toggles again", map[string]any{"action": "button_1_press_release"}, []map[string]any{{"state": "TOGGLE"}}},
+	{"button 1 press is ignored", map[string]any{"action": "button_1_press"}, nil},
+	// presets cycle in sorted-name order: cool, coolest, neutral, warm, warmest, then wrap
+	{"preset 1", map[string]any{"action": "button_2_press_release"}, []map[string]any{{"color_temp": 250.0}}},
+	{"preset 2", map[string]any{"action": "button_2_press_release"}, []map[string]any{{"color_temp": 153.0}}},
+	{"preset 3", map[string]any{"action": "button_2_press_release"}, []map[string]any{{"color_temp": 370.0}}},
+	{"preset 4", map[string]any{"action": "button_2_press_release"}, []map[string]any{{"color_temp": 454.0}}},
+	{"preset 5", map[string]any{"action": "button_2_press_release"}, []map[string]any{{"color_temp": 500.0}}},
+	{"preset wraps", map[string]any{"action": "button_2_press_release"}, []map[string]any{{"color_temp": 250.0}}},
+}
+
+// runDialGolden delivers each golden event, checks exactly the commands it
+// published, and confirms them as the light would.
+func (r *dialRig) runDialGolden(t *testing.T) {
+	t.Helper()
 	lightState := "OFF"
-
-	cases := []struct {
-		name  string
-		event map[string]any
-		want  []map[string]any
-	}{
-		{"right slow", dialEvent("dial_rotate_right_slow", 20), []map[string]any{{"brightness": 110.0}}},
-		{"right fast", dialEvent("dial_rotate_right_fast", 30), []map[string]any{{"brightness": 140.0}}},
-		{"left slow", dialEvent("dial_rotate_left_slow", 40), []map[string]any{{"brightness": 120.0}}},
-		{"left fast", dialEvent("dial_rotate_left_fast", 50), []map[string]any{{"brightness": 70.0}}},
-		{"left fast clamps at min", dialEvent("dial_rotate_left_fast", 100), []map[string]any{{"brightness": 0.0}}},
-		{"left slow at min is skipped", dialEvent("dial_rotate_left_slow", 10), nil},
-		{"right fast clamps at max", dialEvent("dial_rotate_right_fast", 300), []map[string]any{{"brightness": 254.0}}},
-		{"right slow at max is skipped", dialEvent("dial_rotate_right_slow", 20), nil},
-		{"repeated event 1", dialEvent("dial_rotate_left_slow", 20), []map[string]any{{"brightness": 244.0}}},
-		{"repeated event 2", dialEvent("dial_rotate_left_slow", 20), []map[string]any{{"brightness": 234.0}}},
-		{"button 1 toggles", map[string]any{"action": "button_1_press_release"}, []map[string]any{{"state": "TOGGLE"}}},
-		{"button 1 toggles again", map[string]any{"action": "button_1_press_release"}, []map[string]any{{"state": "TOGGLE"}}},
-		{"button 1 press is ignored", map[string]any{"action": "button_1_press"}, nil},
-		// presets cycle in sorted-name order: cool, coolest, neutral, warm, warmest, then wrap
-		{"preset 1", map[string]any{"action": "button_2_press_release"}, []map[string]any{{"color_temp": 250.0}}},
-		{"preset 2", map[string]any{"action": "button_2_press_release"}, []map[string]any{{"color_temp": 153.0}}},
-		{"preset 3", map[string]any{"action": "button_2_press_release"}, []map[string]any{{"color_temp": 370.0}}},
-		{"preset 4", map[string]any{"action": "button_2_press_release"}, []map[string]any{{"color_temp": 454.0}}},
-		{"preset 5", map[string]any{"action": "button_2_press_release"}, []map[string]any{{"color_temp": 500.0}}},
-		{"preset wraps", map[string]any{"action": "button_2_press_release"}, []map[string]any{{"color_temp": 250.0}}},
-	}
-
-	for _, c := range cases {
+	for _, c := range dialGoldenCases {
 		r.h.Deliver(t, dialName, c.event)
 		r.awaitDial(t, 1)
 		got := r.drainPublished()
@@ -192,6 +196,11 @@ func TestDialGoldenSequence(t *testing.T) {
 			r.confirm(t, cmd, &lightState)
 		}
 	}
+}
+
+// AC-05, AC-06, AC-07: golden commands for non-overlapping dial events.
+func TestDialGoldenSequence(t *testing.T) {
+	newDialRig(t, dialGoldenSeed).runDialGolden(t)
 }
 
 // AC-04: in a burst of alternating-direction rotations (no confirmations in
