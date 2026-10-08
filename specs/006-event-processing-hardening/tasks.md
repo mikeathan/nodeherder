@@ -1,11 +1,11 @@
 # Tasks: Event processing hardening
 
-Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: T002 and scoped T006/T007 complete; broader work pending review
+Spec: [spec.md](spec.md) | Plan: [plan.md](plan.md) | Status: T002, scoped T006/T007, T026 and MQTT topic mapping complete; broader work pending review
 Updated: 2026-10-08. [Runtime decisions](plan.md#runtime-decisions-awaiting-review) | [Review](plan.md#consolidated-design-review).
-Evidence: [T002 evidence](evidence.md#t002-characterization-and-faster-tests), [T006/T007 evidence](evidence.md#t006t007-validation-and-output-errors).
+Evidence: [T002 evidence](evidence.md#t002-characterization-and-faster-tests), [T006/T007 evidence](evidence.md#t006t007-validation-and-output-errors), [T026/topic mapping evidence](evidence.md#t026-and-mqtt-topic-mapping).
 
-The user authorized T002/test improvements and subsequently the scoped T006/T007
-validation/error-reporting work on 2026-10-08.
+The user authorized T002/test improvements, then the scoped T006/T007
+validation/error-reporting work, then T026 and the MQTT topic-mapping fix, all on 2026-10-08.
 Other tasks remain reviewable proposals. Maintain acceptance IDs and record actual commands/results
 when executed. Changes with different failure semantics should be separate commits.
 
@@ -75,7 +75,9 @@ when executed. Changes with different failure semantics should be separate commi
 
 - [ ] T009 — Reproduce subscription registry races, wrong unsubscribe prefix,
   identical-announcement recovery failure and unbounded waits with fake Paho in
-  `internal/mqtt/` and controller tests. IDs: FR-02, AC-04–06. Depends: T002.
+  `internal/mqtt/` and controller tests. The unsubscribe prefix, inbound prefix
+  stripping and shared bridge-topic slice were reproduced and fixed early; see
+  [topic mapping evidence](evidence.md#t026-and-mqtt-topic-mapping). IDs: FR-02, AC-04–06. Depends: T002.
   Done: tests exercise actual MQTT adapter callbacks with controlled token completion,
   concurrent reconnect/removal and late success; do not serialize away the race.
 - [ ] T010 — Implement desired-topic reconciler and bounded operation/retry scheduling
@@ -83,7 +85,9 @@ when executed. Changes with different failure semantics should be separate commi
   AC-04–06, NFR-04. Depends: T001, T004, T005, T009. Done: instance-owned normalized
   set, generation checks, short locks, coalesced worker wake, cancellable backoff,
   bounded startup (connection plus six mandatory bridge acknowledgements), late-result
-  reconciliation, local Stop/Wait and race tests pass; no QoS changes.
+  reconciliation, local Stop/Wait and race tests pass; no QoS changes. Already done
+  early: single topic mapping and per-instance bridge-topic copy (not the set,
+  locking or reconciler).
 - [ ] T011 — Integrate desired membership into bridge registration/rename/removal in
   `controllers/handlers.go` and `services/device_registrar.go`. IDs: FR-02/05,
   AC-04/05/12. Depends: T007, T010. Done: errors propagate, hash success does not
@@ -188,7 +192,7 @@ when executed. Changes with different failure semantics should be separate commi
 
 ## Deferred behavioral coverage
 
-- [ ] T026 — Complete controller save-without-execution characterization and enabled-
+- [x] T026 — Complete controller save-without-execution characterization and enabled-
   automation output-failure coverage in controller tests/harness and automation
   scenarios. IDs: FR-01/05, AC-03/11, NH-02/05. Depends: T002, T007. Done: a real
   controller configuration/save operation produces no physical command; subsequent
@@ -197,11 +201,14 @@ when executed. Changes with different failure semantics should be separate commi
   outputs attempted. Use fake publishers/storage and explicit barriers, no household
   devices. Reuse existing scenarios where possible. This is a test-only follow-up
   candidate; passing disabled-automation failure tests does not establish these claims.
+  Evidence: `internal/automations/scenarios/output_failures_test.go` reuses the dial
+  golden sequence with every broadcast and device/metrics write failing, and saves the
+  dial automation through the UI handler; see [T026 evidence](evidence.md#t026-and-mqtt-topic-mapping).
 
 ## Suggested review slices
 
-1. Evidence and error boundaries: T002, scoped T006/T007 complete; T026 is the
-   smallest recommended independent follow-up. T005 diagnostics follows scoped review.
+1. Evidence and error boundaries: T002, scoped T006/T007 and T026 complete. T005
+   diagnostics follows scoped review.
 2. MQTT recovery and publication observation: T008–T011.
 3. Application/device lifecycle and initialization: T012–T017.
 4. Browser recovery, then queue reduction: T003, T018–T020.

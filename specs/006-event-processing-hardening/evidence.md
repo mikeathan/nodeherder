@@ -398,3 +398,102 @@ All passed from `backend/`: `go build ./...`, `go vet ./...`,
 `go test -race -count=1 ./internal/ws ./internal/controllers ./internal/services`,
 `go test -race -count=20 ./internal/controllers -run TestDeviceCallbackFailuresAreReportedWithoutRetry`.
 Changed Go files are gofmt-clean. No household devices or brokers were contacted.
+
+## T026 and MQTT topic mapping
+
+2026-10-08. Authorization: after review, the user asked for T026 and the confirmed
+unsubscribe-prefix bug to be done in this branch, following the repository rules.
+
+### T026: enabled-automation output failures and save-without-execution
+
+Test-only. `backend/internal/automations/scenarios/output_failures_test.go`:
+
+- `TestDialCommandsUnchangedWhenOutputsFail` runs the real dial automation through
+  the hub with every broadcast and every device/metrics write failing. It asserts the
+  same golden commands as `TestDialGoldenSequence`, from the same `dialGoldenCases`
+  table (moved out of that test so both use one baseline). No extra, missing or
+  reordered command; broadcasts are still attempted (the rig waits on them); writes
+  are still attempted. Automation reads in-memory state, so failed persistence does
+  not change the next step's brightness basis.
+- `TestSavingAutomationDoesNotExecuteIt` saves the dial automation through the
+  controller's UI save handler, then delivers one dial event: exactly that event's
+  command is published. Scope: it catches a command published by the save itself
+  or routed through the hub's lanes, not a timer the save might start.
+
+`testing/hubharness` gained `EventHub.FailBroadcasts`, `EventHub.SaveAutomation`, a
+`Store` wrapper with `FailWrites`/`FailedWrites`, and `AutomationConfigPayload`
+(sharing the config reader with `LoadAutomationConfig`). Existing harness users only
+call `Store` methods, so the wrapper is compatible.
+
+These pass on unchanged production code, so each was mutation-checked. Making a failed
+broadcast skip the store write failed the first test ("no device or metrics write was
+attempted"). Publishing a command from the save handler failed the second (published
+`[map[state:ON] map[brightness:110]]`). Both mutations were reverted.
+
+### MQTT topic mapping (FR-02 subset, from T009/T010)
+
+Confirmed bugs in `backend/internal/mqtt/mqtt.go`, each reproduced by a failing test
+in `mqtt_test.go` before the fix:
+
+- `RemoveTopic` unsubscribed `<name>` while `subscribe` used `zigbee2mqtt/<name>`, so
+  renamed devices stayed subscribed at the broker. `TestRemoveTopicUnsubscribesTheSubscribedTopic`.
+- Inbound topics used `ReplaceAll`, so a friendly name containing `zigbee2mqtt/` was
+  mangled (`garage/zigbee2mqtt/sensor` became `garage/sensor`). `TestInboundTopicStripsOnlyTheBasePrefix`.
+- Every client's topic list aliased the package `bridgeTopics` array, which
+  `RemoveTopic` edits in place; a later client then subscribed `bridge/logging` twice
+  and never `bridge/devices`. Production creates one client (`internal/hub.go`), so
+  this affected only multi-hub tests. `TestRemoveTopicLeavesOtherClientsBridgeTopics`.
+
+Fix: `fullTopic`/`sanitizeTopic` are the single mapping used by subscribe, unsubscribe,
+publish and receive (`TrimPrefix`), and each client clones the bridge topics, as the
+plan's MQTT design specifies. `mocks.FakePahoClient.Unsubscribe` now removes the exact
+filter and `Subscribed()` reports current filters; previously unsubscribe was a no-op,
+so no test could observe this bug. Registry locking, reconciliation, bounded waits and
+retry remain T010 (Q-01). Topics, QoS, retain flags and payloads are unchanged.
+
+### Pre-existing WS test flake
+
+The first full run failed `TestLoadMCPStatusMessage` ("melody instance is closed",
+bad handshake); it passed in 90 isolated runs. melody 1.2.1 sets its hub open from a
+goroutine started by `New`, so a dial made immediately after construction can be
+refused under load. It predates this branch and does not affect production (clients
+connect long after startup). The shared `NewTestWsServer` helper now retries only
+`websocket.ErrBadHandshake`, for at most two seconds, because melody exposes no
+readiness signal to wait on.
+
+### Verification
+
+All passed from `backend/` (Go go1.26.1, Darwin arm64):
+
+```sh
+go build ./...
+go vet ./...
+go test -count=1 -timeout=5m ./...   # three consecutive runs
+go test -race -count=1 ./internal/mqtt ./internal/automations/... ./internal/controllers ./internal/services ./internal/ws
+go test -race -count=20 ./internal/mqtt
+go test -race -count=20 ./internal/mqtt ./internal/automations/scenarios -run 'TestRemoveTopic|TestDialCommandsUnchanged|TestSavingAutomation'
+go test -race -count=3 ./internal/ws
+```
+
+Changed Go files are gofmt-clean. Unrun: frontend checks (no frontend change) and
+live-broker or household checks (none permitted or required).
+
+### Benchmark
+
+`BenchmarkMixedBurst` uses `hubharness`, so the harness wrapper changed the NFR-01
+fixture, and topic mapping runs on every receive and publish. A single five-run batch
+gave median p95 4.198 ms, but comparing against hours-old T007 numbers mixes in machine
+drift, so a same-conditions A/B was run instead. Base was branch head `b142dcc7` in a
+temporary worktree, alternated with this change, three rounds of the recorded
+five-run command each, with no other jobs.
+
+| Side | Median p95 (15 runs) | Round medians p95 | allocs/burst | B/burst |
+| --- | ---: | --- | ---: | ---: |
+| Base `b142dcc7` | 3.395209 ms | 3.617959 / 3.316125 / 3.369834 ms | ~47,270 | ~2,324,000 |
+| This change | 3.550667 ms | 3.497667 / 3.486417 / 3.593084 ms | ~46,240 | ~2,307,000 |
+
+p95 +4.6%, within the +10% threshold; single runs ranged 2.28–5.65 ms on the base
+side alone. Allocations fell about 1,030 per 1,000-message burst (−2.2%), because
+`TrimPrefix` returns a substring where `ReplaceAll` allocated a string per received
+message. Every run: zero burst goroutine growth, 21 idle hub goroutines. Mocked I/O;
+no production throughput claim.

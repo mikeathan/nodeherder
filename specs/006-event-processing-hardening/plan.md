@@ -469,11 +469,11 @@ amendments, and before merge. Constitutions remain proposals.
 
 | Requirement / acceptance | Paths | Required evidence | Actual result |
 | --- | --- | --- | --- |
-| FR-01; AC-01–03 | controllers, services, automations/scenarios | 2,000 replay trials; unchanged golden commands; seed/disabled/manual/debounce | Existing traces and T002/T007 suites passed; controller save invariant pending T026 |
-| FR-02; AC-04–06 | mqtt, controllers/handlers, mocks | Reconnect/rename/late-token/failure/backoff/startup tests with fake Paho | Pending |
+| FR-01; AC-01–03 | controllers, services, automations/scenarios | 2,000 replay trials; unchanged golden commands; seed/disabled/manual/debounce | Existing traces and T002/T007 suites passed; controller save invariant passed (T026) |
+| FR-02; AC-04–06 | mqtt, controllers/handlers, mocks | Reconnect/rename/late-token/failure/backoff/startup tests with fake Paho | Topic-mapping subset passed (unsubscribe prefix, inbound strip, instance-owned bridge topics); reconciliation/waits/backoff pending T009–T011 |
 | FR-03; AC-07–08 | main, hub, api, store, services, automations | Ordered close log, deadline/partial-startup tests, no use-after-close or late timer command | Pending |
 | FR-04; AC-09–10 | ws, frontend WS/store/service | Slow-client fixture, reconnect races, fresh snapshot/removal and memory baseline | BLOCKED by Q-02 |
-| FR-05; AC-11–12 | callbacks, mqtt, action, handlers | Injected output failures; malformed typed payloads; no duplicate publish | Callback/validation subset passed; counters/publication and enabled-automation failures pending T005/T008/T026 |
+| FR-05; AC-11–12 | callbacks, mqtt, action, handlers | Injected output failures; malformed typed payloads; no duplicate publish | Callback/validation subset and enabled-automation output failures (T026) passed; counters/publication pending T005/T008 |
 | FR-06; AC-13 | lifetime, processor, registrar, lanes | Fake-clock timeout/update/disable/remove/rename generation interleavings | Pending |
 | FR-07; AC-14 | processor, lifetime | Seed/drain panic, bounded pending, observable fault, other-device progress | Policy Q-03 pending |
 | FR-08; AC-15 | lanes, mqtt, ws, diagnostics | Accounting identities under admission failure, panic, overload, shutdown | Pending |
@@ -570,7 +570,7 @@ controller changes/failure tests, initialization/lifetime, delayed actions, hubs
 cache and frontend WS/store recovery. Includes uncommitted T002/T006/T007; not a
 whole-repository audit. Historical 003/005 artifacts remain unchanged. No additional
 confirmed regression found in the scoped implementation; T026 combined failure/save
-coverage remains missing. Full acceptance, stronger delivery guarantees and production
+coverage remained missing at that review (since completed; see [evidence](evidence.md#t026-and-mqtt-topic-mapping)). Full acceptance, stronger delivery guarantees and production
 throughput gains are not claimed. See [execution evidence](evidence.md).
 
 ### Findings and disposition
@@ -581,7 +581,7 @@ throughput gains are not claimed. See [execution evidence](evidence.md).
 | High | Shutdown cancellation checked before an unlocked effect leaves a commitment race. Resource closure during unfinished work is unsafe. | Q-01/T012–T014 require a commitment gate, deterministic before/after barriers, one total budget, join-before-close and explicit unsuccessful forced exit. Implementation pending. |
 | High | Initialization failure may leave pending work/resources or later duplicate side effects if retried. | Q-03/T017 specify stable-ID fault latch until restart and cancellation of source-owned uncommitted work; no replay or invented physical-offline state. Policy acceptance pending. |
 | Medium | Token timeout cannot cancel Paho operations, and publication submission itself can block. | T008/T010 distinguish submission, observation, late results and physical acknowledgement. Preserve current network timeouts; new workers own Stop/Wait tests immediately. |
-| Medium | Disabled-automation fault tests do not prove command behavior under enabled automation; save-without-execution coverage was deferred. | Added test-only T026. Full AC-03/11 remains unclaimed. Final validation depends on it. |
+| Medium | Disabled-automation fault tests do not prove command behavior under enabled automation; save-without-execution coverage was deferred. | T026 complete: golden dial commands unchanged under failing outputs; save does not execute. Counters/publication parts of AC-11 remain unclaimed. |
 | Medium | Baseline harness disconnects fake Paho but does not join the full hub lifecycle. | T002 remains completed with explicit limitation; T014 owns composed teardown and rebaseline. Baseline goroutine counts are not leak-free evidence. |
 | Low | Plan progress said no production changes despite completed scoped T006/T007; endpoint prohibition preempted the Q-02 spike. | Corrected progress and ADR/BE-05 matrix. Any new recovery contract must be reviewed/authenticated, rather than assumed unnecessary. |
 
@@ -600,6 +600,6 @@ fixes so review can separate movement from semantic changes.
 Keep spec (outcomes), plan (design/decisions/review), tasks (sequence), ADR (significant
 boundary alternatives) and evidence (actual results). Removed redundant standalone
 reports/raw-output files; all unique execution data is consolidated in evidence.md.
-Next independent candidate: T026 test-only coverage. Q-01/Q-03 acceptance and Q-02
+T026 and the MQTT topic-mapping subset are complete ([evidence](evidence.md#t026-and-mqtt-topic-mapping)). Q-01/Q-03 acceptance and Q-02
 protocol design still gate dependent behavior; no pending runtime behavior was implemented during consolidation. Constitutions remain proposed; actual maintainer review
 is pending.

@@ -14,7 +14,9 @@ behavior is the primary acceptance condition. This is a follow-up to
 The initial request authorized planning only. On 2026-10-08 the user subsequently
 authorized T002 baseline characterization and test speed/reliability improvements;
 see [T002 evidence](evidence.md#t002-characterization-and-faster-tests). The user later authorized scoped T006/T007 validation
-and output-error handling; see [T006/T007 evidence](evidence.md#t006t007-validation-and-output-errors). Other
+and output-error handling; see [T006/T007 evidence](evidence.md#t006t007-validation-and-output-errors). The user then
+authorized T026 and the MQTT topic-mapping subset of FR-02; see
+[T026 and topic mapping evidence](evidence.md#t026-and-mqtt-topic-mapping). Other
 production changes and Q-01/02/03 decisions remain pending review.
 
 Repository review at `26f48d08` found:
