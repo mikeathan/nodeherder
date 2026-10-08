@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"node-herder/internal/automations"
 	"node-herder/internal/mqtt"
@@ -120,35 +121,24 @@ func newBridgeDeviceRemoveResponseHandler(registrar *services.HubRegisterService
 }
 
 func (b *bridgeDeviceRemoveResponseHandler) ProcessPayload(id string, connType string, payload []byte) error {
-
-	utils.LogDebugf("bridge/response/device/remove %s", string(payload))
 	if !strings.HasPrefix(id, b.topic) {
 		return nil
 	}
-
-	resp := new(BridgeResponse)
-	resp.Data = map[string]interface{}{}
-	err := json.Unmarshal(payload, &resp)
-
+	resp, err := decodeBridgeResponse[bridgeDeviceResponseData](b.topic, payload)
 	if err != nil {
 		return err
 	}
-
-	if resp.Status == "ok" {
-		if deviceId, ok := resp.Data["id"].(string); ok {
-			err = b.registrar.RemoveDevice(deviceId)
-			if err != nil {
-				utils.LogErrorf("error removing device %s from store = %s", deviceId, err.Error())
-				b.ws.Broadcast(ws.OperationFailed, fmt.Sprintf("Device %s failed to remove from store", deviceId))
-				return nil
-			}
-			b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Device %s removed", deviceId))
-		}
-	} else {
-		b.ws.Broadcast(ws.OperationFailed, resp.Error)
+	if resp.Status != "ok" {
+		return broadcastBridgeResult(b.ws, b.topic, ws.OperationFailed, resp.Error)
 	}
-
-	return nil
+	if resp.Data.ID == "" {
+		return fmt.Errorf("%s: missing device id", b.topic)
+	}
+	if err := b.registrar.RemoveDevice(resp.Data.ID); err != nil {
+		notifyErr := broadcastBridgeResult(b.ws, b.topic, ws.OperationFailed, fmt.Sprintf("Device %s failed to remove from store", resp.Data.ID))
+		return errors.Join(fmt.Errorf("%s: remove device: %w", b.topic, err), notifyErr)
+	}
+	return broadcastBridgeResult(b.ws, b.topic, ws.OperationSuccess, fmt.Sprintf("Device %s removed", resp.Data.ID))
 }
 
 type bridgeDeviceInterviewResponseHandler struct {
@@ -162,29 +152,20 @@ func newBridgeDeviceInterviewResponseHandler(ws ws.EventHub, mqtt mqtt.MqttClien
 }
 
 func (b *bridgeDeviceInterviewResponseHandler) ProcessPayload(id string, connType string, payload []byte) error {
-
-	utils.LogDebugf("bridge/response/device/interview: %s", string(payload))
 	if !strings.HasPrefix(id, b.topic) {
 		return nil
 	}
-
-	resp := new(BridgeResponse)
-	resp.Data = map[string]interface{}{}
-	err := json.Unmarshal(payload, &resp)
-
+	resp, err := decodeBridgeResponse[bridgeDeviceResponseData](b.topic, payload)
 	if err != nil {
 		return err
 	}
-
-	if resp.Status == "ok" {
-		if deviceId, ok := resp.Data["id"].(string); ok {
-			b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Device %s interview successful", deviceId))
-		}
-	} else {
-		b.ws.Broadcast(ws.OperationFailed, resp.Error)
+	if resp.Status != "ok" {
+		return broadcastBridgeResult(b.ws, b.topic, ws.OperationFailed, resp.Error)
 	}
-
-	return nil
+	if resp.Data.ID == "" {
+		return fmt.Errorf("%s: missing device id", b.topic)
+	}
+	return broadcastBridgeResult(b.ws, b.topic, ws.OperationSuccess, fmt.Sprintf("Device %s interview successful", resp.Data.ID))
 }
 
 type bridgePermitJoinResponseHandler struct {
@@ -199,33 +180,23 @@ func newBridgePermitJoinResponseHandler(ws ws.EventHub, mqtt mqtt.MqttClient) *b
 }
 
 func (b *bridgePermitJoinResponseHandler) ProcessPayload(id string, connType string, payload []byte) error {
-	utils.LogDebugf("bridge/response/permit_join: %s", string(payload))
 	if !strings.HasPrefix(id, b.topic) {
 		return nil
 	}
-	resp := new(BridgeResponse)
-	resp.Data = map[string]interface{}{}
-	err := json.Unmarshal(payload, &resp)
-
+	// Permit-join confirmation is correlated by transaction, not response data.
+	resp, err := decodeBridgeResponse[json.RawMessage](b.topic, payload)
 	if err != nil {
 		return err
 	}
-
-	if resp.Status == "ok" {
-		utils.LogInfof("Bridge Permit join set to %v ", resp.Data["time"])
-		if resp.Transaction != "" {
-			// TODO: if we dont have a request item eg the response came from zigbee2mqtt form their ui
-			// then currently we cant update the status. maybe create new request object with state using the resp.Data["time"]
-
-			err := b.ws.Context().Process(resp.Transaction)
-			if err != nil {
-				utils.LogErrorf("error starting permit join %s", err.Error())
-				b.ws.Broadcast(ws.OperationFailed, fmt.Sprintf("error starting permit join %s", err.Error()))
-				return err
-			}
-		}
-	} else {
-		b.ws.Broadcast(ws.OperationFailed, resp.Error)
+	if resp.Status != "ok" {
+		return broadcastBridgeResult(b.ws, b.topic, ws.OperationFailed, resp.Error)
+	}
+	if resp.Transaction == "" {
+		return nil
+	}
+	if err := b.ws.Context().Process(resp.Transaction); err != nil {
+		notifyErr := broadcastBridgeResult(b.ws, b.topic, ws.OperationFailed, fmt.Sprintf("error starting permit join %s", err.Error()))
+		return errors.Join(fmt.Errorf("%s: process transaction: %w", b.topic, err), notifyErr)
 	}
 	return nil
 }
@@ -262,34 +233,26 @@ type bridgeLoggingResponse struct {
 }
 
 func (b *bridgeDeviceRenameResponseHandler) ProcessPayload(id string, connType string, payload []byte) error {
-
-	utils.LogDebugf("bridge/response/device/rename: %s", string(payload))
 	if !strings.HasPrefix(id, b.topic) {
 		return nil
 	}
-
-	resp := new(BridgeResponse)
-	resp.Data = map[string]interface{}{}
-	err := json.Unmarshal(payload, &resp)
+	resp, err := decodeBridgeResponse[bridgeRenameResponseData](b.topic, payload)
 	if err != nil {
 		return err
 	}
-
-	if resp.Status == "ok" {
-		if oldName, ok := resp.Data["from"].(string); ok {
-			err = b.mqtt.RemoveTopic(oldName)
-			if err != nil {
-				return err
-			}
-
-			// emit back to clients updated device name. not tested to see if it works!!!
-			b.ws.EmitDevice(resp.Data["to"].(string))
-			//b.ws.Broadcast(ws.OperationSuccess, fmt.Sprintf("Device %s renamed to %s", oldName, resp.Data["to"].(string)))
-		}
-	} else {
-		b.ws.Broadcast(ws.OperationFailed, resp.Status)
+	if resp.Status != "ok" {
+		// Preserve the existing rename failure notification payload.
+		return broadcastBridgeResult(b.ws, b.topic, ws.OperationFailed, resp.Status)
 	}
-
+	if resp.Data.From == "" || resp.Data.To == "" {
+		return fmt.Errorf("%s: missing rename from or to", b.topic)
+	}
+	if err := b.mqtt.RemoveTopic(resp.Data.From); err != nil {
+		return fmt.Errorf("%s: remove old topic: %w", b.topic, err)
+	}
+	if err := b.ws.EmitDevice(resp.Data.To); err != nil {
+		return fmt.Errorf("%s: emit renamed device: %w", b.topic, err)
+	}
 	return nil
 }
 
@@ -307,15 +270,16 @@ func (b *bridgeLoggingHandler) ProcessPayload(id string, connType string, payloa
 		return nil
 	}
 
-	resp := new(bridgeLoggingResponse)
+	var resp bridgeLoggingResponse
 	err := json.Unmarshal(payload, &resp)
 	if err != nil {
 		return err
 	}
 
 	if resp.Level == logging.LogLevelError {
-		b.ws.Broadcast(ws.OperationFailed, resp.Message)
+		err := broadcastBridgeResult(b.ws, b.topic, ws.OperationFailed, resp.Message)
 		utils.LogError(resp.Message)
+		return err
 	}
 
 	return nil
@@ -336,8 +300,7 @@ func (c *deviceHandler) ProcessPayload(friendlyName string, connType string, pay
 
 	dataMap, err := convertToMap(payload)
 	if err != nil {
-		utils.LogErrorf("error converting payload to map %s", err.Error())
-		return nil
+		return fmt.Errorf("device payload: %w", err)
 	}
 
 	return c.deviceProcessor.CreateOrUpdateDevice(friendlyName, connType, dataMap)
