@@ -6,10 +6,14 @@ import {
   AutomationActionStep,
   PublishModes,
 } from '@/types/automation.type';
+import { escapeHTML } from '@/utils/html';
 
 function formatTriggerActionExposes(exposes: AutomationTriggerActionExpose[]): string {
   const listItems = exposes
-    .map((expose) => `<li>Set <strong>${expose.name}</strong> to <strong>${expose.data}</strong></li>`)
+    .map(
+      (expose) =>
+        `<li>Set <strong>${escapeHTML(expose.name)}</strong> to <strong>${escapeHTML(expose.data)}</strong></li>`
+    )
     .join('');
   return `<ul>${listItems}</ul>`;
 }
@@ -18,12 +22,12 @@ function formatTriggerActionOperations(triggerAction: AutomationTriggerAction): 
   if (!triggerAction.delay) {
     return '';
   }
-  return `Delay: ${triggerAction.delay.value} ${triggerAction.delay.unit}`;
+  return `Delay: ${escapeHTML(triggerAction.delay.value)} ${escapeHTML(triggerAction.delay.unit)}`;
 }
 
 export function transformTriggerAction(friendlyname: string, triggerAction: AutomationTriggerAction): string[] {
   const exposes = formatTriggerActionExposes(triggerAction.exposes);
-  const action = `Trigger <strong>${friendlyname}</strong> ${exposes}`;
+  const action = `Trigger <strong>${escapeHTML(friendlyname)}</strong> ${exposes}`;
   const operations = formatTriggerActionOperations(triggerAction);
 
   if (triggerAction.publishMode == PublishModes.Single) {
@@ -34,7 +38,9 @@ export function transformTriggerAction(friendlyname: string, triggerAction: Auto
 }
 
 export function transformPresetCyclingAction(friendlyname: string, action: AutomationPresetCyclingAction): string[] {
-  return [`Cycle <strong>${action.property}</strong> presets in <strong>${friendlyname}</strong>`];
+  return [
+    `Cycle <strong>${escapeHTML(action.property)}</strong> presets in <strong>${escapeHTML(friendlyname)}</strong>`,
+  ];
 }
 
 function formatStepOperations(steps: AutomationActionStep[]): string {
@@ -65,6 +71,8 @@ export function transformStepAction(friendlyname: string, action: AutomationStep
 
   // TODO add support for icons in operation
   //<i class="pi pi-plus" style="font-size: 0.5rem;"></i>
-  const formattedAction = `${operationType} <strong>${friendlyname}</strong> <strong>${expose}</strong> by  ${action.data}`;
+  const formattedAction = `${operationType} <strong>${escapeHTML(friendlyname)}</strong> <strong>${escapeHTML(
+    expose
+  )}</strong> by  ${escapeHTML(action.data)}`;
   return [formattedAction];
 }

@@ -7,6 +7,7 @@ import type {
   NumericStats,
 } from '@/types/metrics.type';
 import { formatDuration, formatTime } from './date.utils';
+import { escapeHTML } from './html';
 import { getFormattedSensorValueByName } from '@/modules/formatters/sensor-formatter';
 import { MetricsTypes, type MetricsType, type MiniChartComponentKey } from '@/types/metrics.type';
 import { ColorTypes } from '@/types/color.type';
@@ -408,7 +409,7 @@ export function renderRangeTooltip(name: string, label: string, start: number, e
     ? `<span style='display:inline-block;width:8px;height:8px;border-radius:999px;background:${color};margin-right:6px;'></span>`
     : '';
   return `<div style='background:#1f2937;color:#f8fafc;padding:6px 8px;border-radius:6px;font-size:11px;min-width:140px;'>
-      <div style='font-weight:600;margin-bottom:4px;'>${swatch}${name}: ${label}</div>
+      <div style='font-weight:600;margin-bottom:4px;'>${swatch}${escapeHTML(name)}: ${escapeHTML(label)}</div>
       <div><span style='color:#94a3b8;'>From:</span> ${startStr}</div>
       <div><span style='color:#94a3b8;'>To:</span> ${endStr}</div>
       <div><span style='color:#94a3b8;'>Duration:</span> ${durStr}</div>
@@ -626,9 +627,9 @@ export function renderHeatmapTooltip(bucket: BinaryBucket, exposeName: string): 
   const activeStr = formatDuration(bucket.activeMs);
   const label = resolveBinaryLabel(exposeName, true);
   return `<div style='background:#1f2937;color:#f8fafc;padding:6px 8px;border-radius:6px;font-size:11px;min-width:140px;'>
-      <div style='font-weight:600;margin-bottom:4px;'>${exposeName}</div>
+      <div style='font-weight:600;margin-bottom:4px;'>${escapeHTML(exposeName)}</div>
       <div><span style='color:#94a3b8;'>Time:</span> ${startStr} – ${endStr}</div>
       <div><span style='color:#94a3b8;'>Triggers:</span> ${bucket.count}</div>
-      <div><span style='color:#94a3b8;'>${label}:</span> ${activeStr}</div>
+      <div><span style='color:#94a3b8;'>${escapeHTML(label)}:</span> ${activeStr}</div>
     </div>`;
 }

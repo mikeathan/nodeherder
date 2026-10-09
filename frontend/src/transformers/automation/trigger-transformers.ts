@@ -1,4 +1,5 @@
 import { AutomationConditionTypes, AutomationTrigger, isExposeCondition } from '@/types/automation.type';
+import { escapeHTML } from '@/utils/html';
 
 export function formatTriggerConditions(trigger: AutomationTrigger): string {
   const conditions = trigger.conditions;
@@ -14,7 +15,7 @@ export function formatTriggerConditions(trigger: AutomationTrigger): string {
     description += '<i class="pi pi-stopwatch pe-2" aria-label="Time Range Set"></i>';
   }
   if (isExposeCondition(condition)) {
-    description += `${condition.name} ${condition.equality} ${condition.value}`;
+    description += `${escapeHTML(condition.name)} ${escapeHTML(condition.equality)} ${escapeHTML(condition.value)}`;
     if (conditions.length > 1) {
       description += ` <span class="ml-1"><span >+${conditions.length - 1}</span></span>`;
     }
