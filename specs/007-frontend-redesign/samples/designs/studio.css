@@ -1,0 +1,69 @@
+/* 4 · Studio — Braun/Dieter Rams hardware: warm neutrals, one signal colour, physical controls. */
+:root {
+  --nh-font-ui: 'Archivo', 'Helvetica Neue', Arial, system-ui, sans-serif; --nh-font-display: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  --nh-font-mono: 'Share Tech Mono', ui-monospace, monospace; --nh-area-w: 17rem;
+  --nh-ok: #3d8b4f; --nh-warn: #c7861b; --nh-danger: #c8371f; --nh-info: #3c6e91;
+}
+[data-mode='light'] {
+  --nh-bg: #e7e2d8; --nh-surface: #f5f2eb; --nh-surface-2: #e2ddd2; --nh-border: #d3ccbf; --nh-border-strong: #b5ad9e;
+  --nh-text: #262522; --nh-text-muted: #6e6a61; --nh-accent: #e1550b; --nh-accent-contrast: #fff;
+  --nh-nav-bg: #2b2a27; --nh-nav-text: #e9e4da; --nh-nav-hover: #3a3935; --nh-nav-active: #ffffff;
+  --nh-lcd-bg: #c9cdb8; --nh-lcd-text: #23271b; --nh-key-shadow: 0 2px 0 #b5ad9e, 0 3px 6px rgb(60 50 30 / 0.12);
+  --nh-shadow-1: 0 1px 0 rgb(255 255 255 / 0.7) inset, 0 1px 3px rgb(60 50 30 / 0.12); --nh-console-bg: #23211e;
+}
+[data-mode='dark'] {
+  --nh-bg: #1c1a17; --nh-surface: #27241f; --nh-surface-2: #322e28; --nh-border: #3b362f; --nh-border-strong: #575046;
+  --nh-text: #efe9de; --nh-text-muted: #aaa194; --nh-accent: #ff7a1f; --nh-accent-contrast: #1c1a17;
+  --nh-nav-bg: #12110f; --nh-nav-text: #d8d1c4; --nh-nav-hover: #24221e; --nh-nav-active: #ffffff;
+  --nh-lcd-bg: #12160f; --nh-lcd-text: #b6e36a; --nh-key-shadow: 0 2px 0 #0f0e0c, 0 3px 6px rgb(0 0 0 / 0.4);
+  --nh-shadow-1: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 1px 3px rgb(0 0 0 / 0.4);
+}
+[data-preset='olivetti'][data-mode='light'] { --nh-accent: #c9202f; --nh-bg: #ece7dc; --nh-surface: #faf7f0; --nh-nav-bg: #4a1d1d; --nh-nav-hover: #5c2a2a; }
+[data-preset='olivetti'][data-mode='dark'] { --nh-accent: #ff4d5a; --nh-nav-bg: #1a0d0d; }
+[data-preset='sage'][data-mode='light'] { --nh-accent: #4f7d4c; --nh-bg: #e3e5dc; --nh-surface: #f3f4ee; --nh-surface-2: #dde0d4; --nh-nav-bg: #2f3a2d; --nh-nav-hover: #3d4a3a; }
+[data-preset='sage'][data-mode='dark'] { --nh-accent: #8fc48a; --nh-accent-contrast: #141a13; --nh-nav-bg: #111510; }
+/* chrome */
+.nh-nav { border-right: 0; }
+.nh-nav .nh-nav-item.is-active { background: transparent; color: var(--nh-nav-active); }
+.nh-nav .nh-nav-item.is-active .nh-nav-ic { background: var(--nh-accent); color: var(--nh-accent-contrast); }
+.nh-nav-ic { width: 2.6rem; height: 2.6rem; border-radius: 50%; background: rgb(255 255 255 / 0.06); transition: background var(--nh-motion); }
+.nh-nav-foot { border-top-color: rgb(255 255 255 / 0.1); }
+.nh-brand-logo { border-radius: 50%; }
+.nh-brand-ver { color: rgb(255 255 255 / 0.45); }
+.nh-header { border-bottom: 0; background: var(--nh-bg); }
+.nh-h1 { font-weight: 600; letter-spacing: -0.02em; }
+.nh-card-title, .nh-area-head h2 { text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.78rem; font-weight: 700; color: var(--nh-text-muted); }
+.nh-card-title .nh-ic { color: var(--nh-accent); }
+.nh-btn { box-shadow: var(--nh-key-shadow); border-color: var(--nh-border-strong); background: var(--nh-surface); }
+.nh-btn:active:not(:disabled) { box-shadow: none; transform: translateY(2px); }
+.nh-btn.is-ghost { box-shadow: none; }
+.nh-btn.is-primary { box-shadow: 0 2px 0 color-mix(in srgb, var(--nh-accent) 60%, #000), 0 3px 6px rgb(0 0 0 / 0.15); }
+/* rocker switch */
+.nh-toggle { width: 3.3rem; height: 1.8rem; border-radius: 4px; background: var(--nh-surface-2); box-shadow: inset 0 2px 3px rgb(0 0 0 / 0.18); }
+.nh-toggle-knob { width: 1.45rem; height: 1.4rem; border-radius: 3px; left: 0.15rem; background: linear-gradient(#fbf9f4, #dcd6ca); box-shadow: 0 1px 2px rgb(0 0 0 / 0.35); }
+.nh-toggle[aria-checked='true'] { background: var(--nh-accent); }
+.nh-toggle[aria-checked='true'] .nh-toggle-knob { transform: translateX(1.5rem); }
+.nh-seg { box-shadow: var(--nh-key-shadow); }
+/* tiles with inset LCD readout */
+.nh-tile { flex-direction: column; align-items: stretch; gap: 0.4rem; padding: 0.65rem; min-height: calc(var(--nh-tile-h) + 2.6rem); }
+.nh-tile-ic { width: 2.2rem; height: 2.2rem; }
+.nh-tile-body { gap: 0.3rem; }
+.nh-tile-label { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.68rem; color: var(--nh-text-muted); }
+.nh-tile-value { font-family: var(--nh-font-mono); font-size: 1.05rem; color: var(--nh-lcd-text); background: var(--nh-lcd-bg); padding: 0.2rem 0.45rem; border-radius: 3px; box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.3); align-self: stretch; }
+.nh-tile.is-on .nh-tile-ic { background: var(--nh-accent); color: var(--nh-accent-contrast); }
+.nh-tile.is-on::after { content: ''; position: absolute; top: 0.7rem; right: 0.7rem; width: 0.45rem; height: 0.45rem; border-radius: 50%; background: var(--nh-accent); box-shadow: 0 0 6px var(--nh-accent); }
+.nh-tile.is-offline .nh-tile-value { color: var(--nh-danger); }
+.nh-tile-del { top: 0.3rem; right: 0.3rem; }
+.nh-tile.is-add { min-height: calc(var(--nh-tile-h) + 2.6rem); flex-direction: column; }
+.nh-tiles { grid-template-columns: repeat(auto-fill, minmax(min(100%, 7.4rem), 1fr)); }
+.nh-stat-num { font-family: var(--nh-font-mono); font-weight: 400; color: var(--nh-lcd-text); background: var(--nh-lcd-bg); border-radius: 3px; padding: 0 0.4rem; justify-self: start; box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.3); }
+.nh-stat-ic { color: var(--nh-text-muted); }
+.nh-row-val { font-family: var(--nh-font-mono); font-weight: 400; }
+.nh-block-label span { border-radius: 4px; }
+.nh-block.is-when { --nh-bc: var(--nh-accent); } .nh-block.is-if { --nh-bc: #6e6a61; } .nh-block.is-then { --nh-bc: #262522; }
+[data-mode='dark'] .nh-block.is-then { --nh-bc: #efe9de; --nh-bc-text: #1c1a17; }
+.nh-act-n { background: var(--nh-text); color: var(--nh-bg); }
+.nh-dot { box-shadow: 0 0 6px currentColor; }
+[data-effects='on'] body { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"); }
+/* speaker-grille brand mark */
+[data-effects='on'] .nh-brand::after { content: ''; display: block; width: 2.4rem; height: 0.9rem; margin-top: 0.2rem; background: radial-gradient(circle, rgb(255 255 255 / 0.35) 1.2px, transparent 1.6px) 0 0 / 6px 6px; }

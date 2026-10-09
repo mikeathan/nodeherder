@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NodeHerder redesign samples</title>
+<style>
+  :root { --bg:#f4f3f0; --card:#fff; --text:#1d1d1b; --muted:#66625b; --line:#dedad2; --accent:#e1550b; color-scheme: light dark; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141414; --card:#1e1e1e; --text:#ececea; --muted:#a3a09a; --line:#333; --accent:#ff7a1f; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; }
+  main { max-width:1280px; margin:0 auto; padding:2rem 1rem 4rem; }
+  h1 { font-size:2rem; margin:0 0 .3rem; } .lead { color:var(--muted); max-width:52rem; margin:0 0 1.5rem; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,22rem),1fr)); gap:1.25rem; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; }
+  .prev { position:relative; height:220px; overflow:hidden; border-bottom:1px solid var(--line); background:#000; }
+  .prev iframe { position:absolute; left:0; top:0; width:1440px; height:900px; border:0; transform:scale(.27); transform-origin:0 0; pointer-events:none; }
+  @media (min-width: 900px) { .prev { height:240px; } .prev iframe { transform:scale(.285); } }
+  .body { padding:1rem 1.1rem 1.2rem; display:flex; flex-direction:column; gap:.5rem; flex:1; }
+  .body h2 { margin:0; font-size:1.2rem; } .body h2 small { color:var(--muted); font-weight:500; font-size:.8rem; display:block; }
+  .body p { margin:0; color:var(--muted); font-size:.9rem; }
+  .links { display:flex; flex-wrap:wrap; gap:.35rem; margin-top:auto; padding-top:.5rem; }
+  .links a { font-size:.8rem; padding:.25rem .55rem; border:1px solid var(--line); border-radius:99px; text-decoration:none; color:inherit; }
+  .links a.open { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  .links a:hover { border-color:var(--accent); }
+  section { margin-top:2.5rem; } h3 { margin:0 0 .6rem; }
+  ul { margin:0; padding-left:1.2rem; color:var(--muted); } li { margin:.2rem 0; } a { color:var(--accent); }
+  code { font-size:.85em; }
+</style>
+</head>
+<body>
+<main>
+  <h1>NodeHerder redesign — design samples</h1>
+  <p class="lead">Five interactive, dependency-free prototypes for <a href="../spec.md">spec 007</a>. All share the same mock household
+  and screens, so you can compare look &amp; feel directly. Every sample has a live <b>Appearance</b> panel (palette icon, top right):
+  mode, palette, accent (incl. custom colour), density, corner radius, text size and retro effects. Switch designs from that panel
+  and you stay on the same screen. Mix-and-match is fine — tell me e.g. “Mesh layout with the Studio controls”.</p>
+  <div class="grid" id="grid"></div>
+
+  <section>
+    <h3>What to try in each sample</h3>
+    <ul>
+      <li><b>Home</b>: tap a tile icon to switch — it shows <i>Sending…</i> until confirmed. The Garage → Hallway Shelly plug simulates a 5 s command timeout. “Edit dashboard” adds/renames/removes areas and tiles.</li>
+      <li><b>Automations → any automation</b>: the new single-page When / If / Then editor. Remove a value or add an action to see inline validation, the live sentence summary, warnings, the JSON payload view and the unsaved-changes guard.</li>
+      <li><b>Device list</b>: search, protocol (Zigbee / Wi-Fi·HTTP), power and status filters, sortable columns; Zigbee-only actions are disabled for HTTP devices.</li>
+      <li><b>Overview</b>: Zigbee2MQTT-style counts and a live activity feed. Click the connection pill in the header to simulate reconnecting / offline.</li>
+      <li><b>Components</b>: every building block and state (tiles, chips, dialogs, toasts, empty/error/loading, tokens, icons).</li>
+      <li>Keyboard: <code>Alt+1…9</code> switches sections, <code>Esc</code> closes dialogs; all controls are focusable. Try a phone-width window too.</li>
+    </ul>
+  </section>
+  <section>
+    <h3>Documents</h3>
+    <ul>
+      <li><a href="../spec.md">spec.md</a> — problem, scenarios, acceptance criteria, open questions (Q-01: pick a design)</li>
+      <li><a href="../plan.md">plan.md</a> — architecture, phases, constitution check, traceability</li>
+      <li><a href="../tasks.md">tasks.md</a> — phased tasks</li>
+      <li><a href="../current-state.md">current-state.md</a> — today's code paths, contracts, logic and known gaps</li>
+      <li><a href="../design-system.md">design-system.md</a> — tokens, customisation model, components, states</li>
+      <li><a href="../device-support.md">device-support.md</a> — Zigbee/MQTT, Wi-Fi/HTTP and future protocols</li>
+      <li><a href="../automation-editor.md">automation-editor.md</a> — editor redesign</li>
+      <li><a href="../adr-001-theming-tokens.md">adr-001-theming-tokens.md</a> — theming decision</li>
+    </ul>
+  </section>
+</main>
+<script src="shared/designs.js"></script>
+<script>
+  const screens = [['overview','Overview'],['home','Home'],['devices','Devices'],['list','Device list'],['device/0x001788010c5f3e21/controls','Device page'],['automations','Automations'],['automation/0x001788010d1e2f09','Editor'],['assistant','Assistant'],['console','Console'],['settings','Settings'],['components','Components'],['login','Login']];
+  document.getElementById('grid').innerHTML = NH_DESIGNS.map(d =>
+    '<article class="card"><div class="prev"><iframe src="' + d.file + '#/home" title="' + d.name + ' preview" loading="lazy" tabindex="-1"></iframe></div>' +
+    '<div class="body"><h2>' + d.n + '. ' + d.name + '<small>' + d.short + '</small></h2><p>' + d.blurb + '</p>' +
+    '<div class="links"><a class="open" href="' + d.file + '#/overview">Open ' + d.name + '</a>' +
+    screens.map(s => '<a href="' + d.file + '#/' + s[0] + '">' + s[1] + '</a>').join('') + '</div></div></article>').join('');
+</script>
+</body>
+</html>
