@@ -703,18 +703,18 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 	events := devices.NewDeviceRequestEvents()
 	events.WithAvailabilityTimeout(time.Duration(d.DeviceAvailabilityTimeoutOverrideInHours) * time.Hour)
 	events.WithOnNewDevice(func(device *devices.Device) {
-		d.handleDeviceAdded(device)
+		reportDeviceOutputError(device.Id, d.handleDeviceAdded(device))
 	})
 
 	events.WithOnDeviceUpdated(func(device *devices.Device, p *devices.UpdatePackage) {
-		d.handleDeviceUpdated(device, p)
+		reportDeviceOutputError(device.Id, d.handleDeviceUpdated(device, p))
 	})
 	events.WithOnDeviceAvailabilityChanged(func(p *devices.UpdatePackage) {
 		d.handleDeviceAvailabilityChanged(p)
 	})
 
 	events.WithOnDeviceMeasurementsUpdated(func(device *devices.Device, p map[string]interface{}) {
-		d.handleDeviceMeasurementsUpdated(device, p)
+		reportDeviceOutputError(device.Id, d.handleDeviceMeasurementsUpdated(device, p))
 	})
 
 	events.WithOnDeviceAutomationTriggered(func(device *devices.Device, payload map[string]interface{}) {
@@ -737,27 +737,46 @@ func (d *HubController) createDeviceProcessor() *services.DeviceProcessor {
 }
 
 func (d *HubController) handleDeviceAdded(device *devices.Device) error {
-	d.eventHub.Broadcast(ws.DeviceAdded, device)
-
-	return d.store.StoreDevice(device.FriendlyName, device)
+	return d.broadcastAndStoreDevice(ws.DeviceAdded, device, device)
 }
 
-// /
 func (d *HubController) handleDeviceUpdated(device *devices.Device, payload *devices.UpdatePackage) error {
-	d.eventHub.Broadcast(ws.DeviceUpdated, payload)
+	return d.broadcastAndStoreDevice(ws.DeviceUpdated, payload, device)
+}
 
-	return d.store.StoreDevice(device.FriendlyName, device)
+// Keep both independent effects in their existing order, even if either fails.
+func (d *HubController) broadcastAndStoreDevice(event string, payload any, device *devices.Device) error {
+	broadcastErr := d.eventHub.Broadcast(event, payload)
+	if broadcastErr != nil {
+		broadcastErr = fmt.Errorf("broadcast %s: %w", event, broadcastErr)
+	}
+	storeErr := d.store.StoreDevice(device.FriendlyName, device)
+	if storeErr != nil {
+		storeErr = fmt.Errorf("store device: %w", storeErr)
+	}
+	return errors.Join(broadcastErr, storeErr)
+}
+
+func reportDeviceOutputError(id string, err error) {
+	if err != nil {
+		utils.LogErrorf("device %s output failed: %v", id, err)
+	}
 }
 
 func (d *HubController) handleDeviceAvailabilityChanged(p *devices.UpdatePackage) {
-	d.eventHub.Broadcast(ws.DeviceUpdated, p)
+	if err := d.eventHub.Broadcast(ws.DeviceUpdated, p); err != nil {
+		reportDeviceOutputError(p.Id, fmt.Errorf("broadcast availability: %w", err))
+	}
 }
 
 func (d *HubController) handleDeviceMeasurementsUpdated(device *devices.Device, payload map[string]interface{}) error {
 
 	utils.LogDebugf("handleDeviceMeasurementsUpdated: deviceId=%s friendlyName=%s keys=%d", device.Id, device.FriendlyName, len(payload))
 
-	return d.store.StoreMetrics(device.FriendlyName, payload)
+	if err := d.store.StoreMetrics(device.FriendlyName, payload); err != nil {
+		return fmt.Errorf("store metrics: %w", err)
+	}
+	return nil
 }
 
 func convertToMap(payload []byte) (map[string]interface{}, error) {
@@ -770,6 +789,9 @@ func convertToMap(payload []byte) (map[string]interface{}, error) {
 	err := json.Unmarshal(payload, &deviceMap)
 	if err != nil {
 		return nil, err
+	}
+	if deviceMap == nil {
+		return nil, fmt.Errorf("expected device JSON object")
 	}
 
 	return deviceMap, nil

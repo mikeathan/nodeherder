@@ -307,8 +307,7 @@ func (h *eventHubImpl) EmitDevice(name string) error {
 	if err != nil {
 		return err
 	}
-	h.Broadcast(Device, msg)
-	return nil
+	return h.Broadcast(Device, msg)
 }
 
 func (h *eventHubImpl) EmitBridgeConfig() {

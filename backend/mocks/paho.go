@@ -1,6 +1,7 @@
 package mocks
 
 import (
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -149,7 +150,23 @@ func (f *FakePahoClient) SubscribeMultiple(filters map[string]byte, callback mqt
 	return completedToken()
 }
 
-func (f *FakePahoClient) Unsubscribe(topics ...string) mqttlib.Token { return completedToken() }
+// Unsubscribe removes exactly the given topic filters, as a broker would; a
+// filter that was never subscribed is ignored.
+func (f *FakePahoClient) Unsubscribe(topics ...string) mqttlib.Token {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	for _, topic := range topics {
+		f.subscribed = slices.DeleteFunc(f.subscribed, func(s string) bool { return s == topic })
+	}
+	return completedToken()
+}
+
+// Subscribed returns the topic filters currently subscribed, in subscription order.
+func (f *FakePahoClient) Subscribed() []string {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return slices.Clone(f.subscribed)
+}
 
 func (f *FakePahoClient) AddRoute(topic string, callback mqttlib.MessageHandler) {}
 

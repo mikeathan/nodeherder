@@ -1612,12 +1612,20 @@ func NewTestWsServer(t *testing.T, h http.Handler) (*httptest.Server, *websocket
 	s := httptest.NewServer(h)
 	wsURL := httpToWs(t, s.URL)
 
-	ws, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
-	if err != nil {
-		t.Fatal(err)
+	// melody marks its hub open from a goroutine started by New, so a dial right
+	// after construction can be rejected as closed. It exposes no readiness
+	// signal; retry only that handshake rejection, within a bounded deadline.
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		ws, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+		if err == nil {
+			return s, ws
+		}
+		if !errors.Is(err, websocket.ErrBadHandshake) || time.Now().After(deadline) {
+			t.Fatal(err)
+		}
+		time.Sleep(5 * time.Millisecond)
 	}
-
-	return s, ws
 }
 
 func httpToWs(t *testing.T, s string) string {
