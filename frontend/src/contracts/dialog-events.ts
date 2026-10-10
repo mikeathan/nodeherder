@@ -14,23 +14,6 @@ import {
   SelectionDialogProps,
 } from '@/types/events.type';
 
-export function emitOpenInputDialogEvent(confirm: DialogEventAction, props?: InputDialogProps) {
-  const events: DialogEventActions = {
-    close: () => emitCloseDialog(),
-    confirm,
-  };
-
-  const event: OpenDialogEvent = {
-    type: 'input',
-    props: {
-      show: true,
-      ...props,
-    },
-    events: events,
-  };
-
-  emitOpenDialog(event);
-}
 
 export function emitOpenSelectionDialog(confirm: DialogEventAction, props: SelectionDialogProps) {
   const events: DialogEventActions = {
@@ -83,70 +66,9 @@ export function emitOpenEntityViewDialog(confirm: DialogEventAction, props: Enti
   emitOpenDialog(event);
 }
 
-export function emitOpenDeviceSelectionDialog(confirm: DialogEventAction, props: BaseDialogProps) {
-  const events: DialogEventActions = {
-    close: () => emitCloseDialog(),
-    confirm,
-  };
-  const event: OpenDialogEvent = {
-    type: 'deviceSelection',
-    props: {
-      show: true,
-      ...props,
-    },
-    events: events,
-  };
 
-  emitOpenDialog(event);
-}
 
-export  function emitOpenRenameDeviceDialog(confirm: DialogEventAction, props: RenameDeviceDialogProps) {
-  const events: DialogEventActions = {
-    close: () => emitCloseDialog(),
-    confirm,
-  };
-  const event: OpenDialogEvent = {
-    type: 'renameDevice',
-    props: {
-      show: true,
-      ...props,
-    },
-    events: events,
-  };
-  emitOpenDialog(event);
-}
 
-export function emitOpenDeleteDeviceDialog(confirm: DeleteDeviceEventAction, props: DeleteDeviceDialogProps) {
-  const events: DialogEventActions = {
-    close: () => emitCloseDialog(),
-    confirm,
-  };
-  const event: OpenDialogEvent = {
-    type: 'removeDevice',
-    props: {
-      show: true,
-      ...props,
-    },
-    events: events,
-  };
-  emitOpenDialog(event);
-}
-
-export function emitOpenDeviceGroupSelectionDialog(confirm: DeviceGroupEventAction, props: DeviceGroupSelectionDialogProps) {
-  const events: DialogEventActions = {
-    close: () => emitCloseDialog(),
-    confirm,
-  };
-  const event: OpenDialogEvent = {
-    type: 'deviceGroupSelection',
-    props: {
-      show: true,
-      ...props,
-    },
-    events: events,
-  };
-  emitOpenDialog(event);
-}
 
 export function emitOpenConfirmationDialog(confirm: DialogEventAction, props?: BaseDialogProps) {
   const events: DialogEventActions = {
